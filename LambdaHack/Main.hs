@@ -36,8 +36,15 @@ main =
         }
       cops = speedupCOps copsSlow
       loopServer = loopSer cmdSer
-      loopClient = loopCli2 cmdUpdateCli cmdQueryCli
       exeServer = executorSer loopServer
-      exeClient = executorCli loopClient
+      loopHuman :: (MonadClientUI m, MonadClientChan m) => m ()
+      loopHuman = loopCli4 cmdUpdateCli cmdQueryCli cmdUpdateUI cmdQueryUI
+      loopComputer :: MonadClientChan m => m ()
+      loopComputer = loopCli2 cmdUpdateCli cmdQueryCli
+      exeClient True sess = executorCli loopHuman sess
+      -- This is correct, because the implicit contract ensures
+      -- @MonadClientChan@ never tries to access the client UI session
+      -- (unlike @MonadClientUI@).
+      exeClient False _ = executorCli loopComputer undefined
       loopFrontend = connServer cops exeServer
   in exeFrontend cops exeClient launchClients loopFrontend

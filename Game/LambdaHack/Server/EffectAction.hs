@@ -80,7 +80,7 @@ effectToAction effect verbosity source target power block = do
            then getsState (bhp . getActorBody target)
            else return oldHP
   -- Target part of message sent here, so only target visibility checked.
-  void $ broadcastPosCli [bpos oldT]
+  void $ broadcastPosUI [bpos oldT]
          $ EffectCli msg (bpos oldT, bpos oldS) (newHP - oldHP) block
   -- TODO: use broadcastPosCli2 and to those that don't see the pos show that:
   -- when b $ msgAdd "You hear some noises."
@@ -309,7 +309,7 @@ fleeDungeon = do
   Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsState scops
   glo <- getState
   side <- getsState sside
-  go <- sendQueryCli side $ ConfirmYesNoCli
+  go <- sendQueryUI side $ ConfirmYesNoCli
           "This is the way out. Really leave now?"
   when (not go) $ abortWith "Game resumed."
   let (items, total) = calculateTotal glo
@@ -318,10 +318,10 @@ fleeDungeon = do
   if total == 0
   then do
     -- The player can back off at each of these steps.
-    go1 <- sendQueryCli side $ ConfirmMoreBWCli
+    go1 <- sendQueryUI side $ ConfirmMoreBWCli
              "Afraid of the challenge? Leaving so soon and empty-handed?"
     when (not go1) $ abortWith "Brave soul!"
-    go2 <- sendQueryCli side $ ConfirmMoreBWCli
+    go2 <- sendQueryUI side $ ConfirmMoreBWCli
             "This time try to grab some loot before escape!"
     when (not go2) $ abortWith "Here's your chance!"
   else do
@@ -331,7 +331,7 @@ fleeDungeon = do
           , "Here's your loot, worth"
           , MU.NWs total currencyName ]
     discoS <- getsState sdisco
-    sendUpdateCli side $ ShowItemsCli discoS winMsg items
+    sendUpdateUI side $ ShowItemsCli discoS winMsg items
     let upd2 f = f {gquit = Just (True, Victor)}
     modifyState $ updateSide upd2
 
@@ -416,8 +416,8 @@ checkPartyDeath target = do
   modifyState $ updateArena $ dropItemsAt bitems $ bpos pbody
   let fid = bfaction pbody
       animateDeath = do
-        broadcastPosCli [bpos pbody] (AnimateDeathCli target)
-        sendQueryCli fid $ CarryOnCli
+        broadcastPosUI [bpos pbody] (AnimateDeathCli target)
+        sendQueryUI fid $ CarryOnCli
       animateGameOver = do
         go <- animateDeath
         modifyState $ updateActorBody target $ \b -> b {bsymbol = Just '%'}
@@ -480,7 +480,7 @@ gameOver showEndingScreens = do
       else do
         discoS <- getsState sdisco
         side <- getsState sside
-        go <- sendQueryCli side $ ConfirmShowItemsCli discoS loseMsg items
+        go <- sendQueryUI side $ ConfirmShowItemsCli discoS loseMsg items
         when go $ do
           let upd2 f = f {gquit = Just (True, Killed arena)}
           modifyState $ updateSide upd2

@@ -7,7 +7,7 @@ module Game.LambdaHack.Action
     MonadActionAbort(..)
   , MonadActionRO(..)
   , MonadAction(..)
-  , ConnClient(..), ConnFaction, ConnDict
+  , ConnCli(..), ConnFaction, ConnDict
     -- * Various ways to abort action
   , abort, abortIfWith, neverMind
     -- * Abort exception handlers
@@ -31,15 +31,16 @@ import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
 
 -- | Connection channels between server and a single client.
-data ConnClient = ConnClient
-  { toClient   :: Chan CmdCli
-  , toServer   :: Chan Dynamic
+data ConnCli = ConnCli
+  { toClient :: Chan (Either CmdCli CmdUI)
+  , toServer :: Chan Dynamic
   }
 
-instance Show ConnClient where
+instance Show ConnCli where
   show _ = "client channels"
 
-type ConnFaction = (ConnClient, Maybe ConnClient)
+-- | Human-controlled client, UI of the client, AI of the client.
+type ConnFaction = (Maybe ConnCli, Maybe ConnCli)
 
 -- | Connection information for each client and an optional AI client
 -- for the same faction, indexed by faction identifier.

@@ -351,7 +351,7 @@ actorAttackActor source target = do
         then do
           blocked <- rndToAction $ chance $ 1%2
           if blocked
-            then broadcastPosCli [spos, tpos] $ AnimateBlockCli source target verb
+            then broadcastPosUI [spos, tpos] $ AnimateBlockCli source target verb
             else performHit True
         else performHit False
 
@@ -444,7 +444,7 @@ displaceActor source target = do
       tpos = bpos tm
   modifyState $ updateActorBody source $ \ m -> m { bpos = tpos }
   modifyState $ updateActorBody target $ \ m -> m { bpos = spos }
-  broadcastPosCli [spos, tpos] $ DisplaceCli source target
+  broadcastPosUI [spos, tpos] $ DisplaceCli source target
 --  leader <- getsClient getLeader
 --  if Just source == leader
 -- TODO: The actor will stop running due to the message as soon as running

@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings, RankNTypes #-}
 -- | The main loop of the client, processing human and computer player
 -- moves turn by turn.
-module Game.LambdaHack.Client.LoopAction (loopCli2) where
+module Game.LambdaHack.Client.LoopAction (loopCli2, loopCli4) where
 
 import Data.Dynamic
 
@@ -13,14 +13,10 @@ import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Msg
 import Game.LambdaHack.State
+import Game.LambdaHack.Utils.Assert
 
--- TODO Have a separate loop for AI and computer clients
-
-loopCli2 :: MonadClientChan m
-           => (CmdUpdateCli -> m ())
-           -> (forall a. Typeable a => CmdQueryCli a -> m a)
-           -> m ()
-loopCli2 cmdUpdateCli cmdQueryCli = do
+initCli :: MonadClient m => m ()
+initCli = do
   side <- getsState sside
   cops@Kind.COps{corule} <- getsState scops
   configUI <- getsClient sconfigUI
@@ -38,14 +34,48 @@ loopCli2 cmdUpdateCli cmdQueryCli = do
       putClient cli
       msgAdd msg
       -- TODO: somehow check that ContinueSave arrives before any other cmd
+
+loopCli2 :: MonadClientChan m
+         => (CmdUpdateCli -> m ())
+         -> (forall a. Typeable a => CmdQueryCli a -> m a)
+         -> m ()
+loopCli2 cmdUpdateCli cmdQueryCli = do
+  initCli
   loop
  where
   loop = do
+    side <- getsState sside
     cmd2 <- readChanFromSer
     case cmd2 of
-      CmdUpdateCli cmd -> do
+      Right _ -> assert `failure` (side, cmd2)
+      Left (CmdUpdateCli cmd) -> do
         cmdUpdateCli cmd
-      CmdQueryCli cmd -> do
+      Left (CmdQueryCli cmd) -> do
+        a <- cmdQueryCli cmd
+        writeChanToSer $ toDyn a
+    loop
+
+loopCli4 :: (MonadClientUI m, MonadClientChan m)
+         => (CmdUpdateCli -> m ())
+         -> (forall a. Typeable a => CmdQueryCli a -> m a)
+         -> (CmdUpdateUI -> m ())
+         -> (forall a. Typeable a => CmdQueryUI a -> m a)
+         -> m ()
+loopCli4 cmdUpdateCli cmdQueryCli cmdUpdateUI cmdQueryUI = do
+  initCli
+  loop
+ where
+  loop = do
+    cmd4 <- readChanFromSer
+    case cmd4 of
+      Right (CmdUpdateUI cmd) -> do
+        cmdUpdateUI cmd
+      Right (CmdQueryUI cmd) -> do
+        a <- cmdQueryUI cmd
+        writeChanToSer $ toDyn a
+      Left (CmdUpdateCli cmd) -> do
+        cmdUpdateCli cmd
+      Left (CmdQueryCli cmd) -> do
         a <- cmdQueryCli cmd
         writeChanToSer $ toDyn a
     loop

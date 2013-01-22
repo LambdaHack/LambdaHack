@@ -109,23 +109,11 @@ tryWithSlide exc h =
 
 -- | Get the frontend session.
 askFrontendSession :: MonadClientUI m => m Frontend.FrontendSession
-askFrontendSession = do
-  sfs <- getsSession sfs
-  case sfs of
-    Nothing ->
-      assert `failure`
-      ("Auxiliary AI or computer player client uses the frontend" :: Text)
-    Just fs -> return fs
+askFrontendSession = getsSession sfs
 
 -- | Get the key binding.
 askBinding :: MonadClientUI m => m Binding
-askBinding = do
-  sbinding <- getsSession sbinding
-  case sbinding of
-    Nothing ->
-      assert `failure`
-      ("Auxiliary AI or computer player client uses keybindings" :: Text)
-    Just binding -> return binding
+askBinding = getsSession sbinding
 
 -- | Add a message to the current report.
 msgAdd :: MonadClient m => Msg -> m ()
@@ -341,7 +329,7 @@ restoreGame :: MonadClient m
 restoreGame factionName configUI pathsDataFile title =
   liftIO $ Save.restoreGameCli factionName configUI pathsDataFile title
 
-readChanFromSer :: MonadClientChan m => m CmdCli
+readChanFromSer :: MonadClientChan m => m (Either CmdCli CmdUI)
 readChanFromSer = do
   toClient <- getsChan toClient
   liftIO $ readChan toClient
@@ -356,10 +344,8 @@ writeChanToSer cmd = do
 -- the server loop, if the whole game runs in one process),
 -- UI config and the definitions of game commands.
 exeFrontend :: Kind.COps
-            -> (Session -> State -> StateClient -> ConnClient -> IO ())
-            -> ((FactionId -> ConnClient -> IO ())
-                -> (FactionId -> ConnClient -> IO ())
-                -> a)
+            -> (Bool -> SessionUI -> State -> StateClient -> ConnCli -> IO ())
+            -> ((FactionId -> ConnCli -> Bool -> IO ()) -> a)
             -> (a -> IO ())
             -> IO ()
 exeFrontend cops@Kind.COps{corule} executorC connectClients loopFrontend = do
@@ -367,15 +353,8 @@ exeFrontend cops@Kind.COps{corule} executorC connectClients loopFrontend = do
   sconfigUI <- mkConfigUI corule
   let !sbinding = stdBinding sconfigUI  -- evaluate to check for errors
       font = configFont sconfigUI
-      sessHuman sfs = Session{ sfs = Just sfs
-                             , sbinding = Just sbinding }
-      sessComputer  = Session{ sfs = Nothing
-                             , sbinding = Nothing }
   defHist <- defHistory
   let cli = defStateClient defHist sconfigUI
-      executorHuman sfs fid =
-        executorC (sessHuman sfs) (defStateLocal cops fid) cli
-      executorComputer fid =
-        executorC sessComputer (defStateLocal cops fid) cli
-  startup font $ \sfs ->
-    loopFrontend (connectClients (executorHuman sfs) executorComputer)
+      exe sfs fid chanCli hasUI =
+        executorC hasUI SessionUI{..} (defStateLocal cops fid) cli chanCli
+  startup font $ \sfs -> loopFrontend (connectClients (exe sfs))

@@ -113,7 +113,7 @@ handleActors cmdSer subclipStart = withPerception $ do
   case mnext of
     _ | isJust quit -> return ()
     Nothing -> when (subclipStart == timeZero) $
-                 broadcastPosCli [] $ DisplayDelayCli
+                 broadcastPosUI [] $ DisplayDelayCli
     Just (actor, m) -> do
       let side = bfaction m
       switchGlobalSelectedSide side
@@ -124,9 +124,9 @@ handleActors cmdSer subclipStart = withPerception $ do
         then do
           -- Human moves always start a new subclip.
           -- TODO: remove or only push to sside?
-          broadcastPosCli [] $ DisplayPushCli
+          broadcastPosUI [] $ DisplayPushCli
           (cmdS, leaderNew, arenaNew) <-
-            sendQueryCli side $ HandleHumanCli leader
+            sendQueryUI side $ HandleHumanCli leader
           modifyState $ updateSelectedArena arenaNew
           tryWith (\msg -> do
                       sendUpdateCli side $ ShowMsgCli msg
@@ -148,7 +148,7 @@ handleActors cmdSer subclipStart = withPerception $ do
             maybe (return ()) advanceTime leaderNew
           -- Human moves always start a new subclip.
           lpos <- getsState $ bpos . getActorBody (fromMaybe actor leaderNew)
-          broadcastPosCli [lpos] $ DisplayPushCli
+          broadcastPosUI [lpos] $ DisplayPushCli
           handleActors cmdSer $ btime m
         else do
 --          recordHistory
@@ -164,7 +164,7 @@ handleActors cmdSer subclipStart = withPerception $ do
               -- this subclip, so his multiple moves would be collapsed.
               -- TODO: store frames somewhere for each faction and display
               -- the frames only after a "Faction X taking over..." prompt.
-              cmdS <- sendAIQueryCli side $ HandleAI actor
+              cmdS <- withAI $ sendQueryCli side $ HandleAI actor
     -- If the following action aborts, we just advance the time and continue.
     -- TODO: or just fail at each abort in AI code? or use tryWithFrame?
               tryWith (\msg -> if T.null msg
@@ -173,11 +173,11 @@ handleActors cmdSer subclipStart = withPerception $ do
                       )
                       (cmdSer cmdS)
               apos <- getsState $ bpos . getActorBody actor
-              broadcastPosCli [apos] $ DisplayPushCli
+              broadcastPosUI [apos] $ DisplayPushCli
               handleActors cmdSer $ btime m
             else do
               -- No new subclip.
-              cmdS <- sendAIQueryCli side $ HandleAI actor
+              cmdS <- withAI $ sendQueryCli side $ HandleAI actor
     -- If the following action aborts, we just advance the time and continue.
     -- TODO: or just fail at each abort in AI code? or use tryWithFrame?
               tryWith (\msg -> if T.null msg

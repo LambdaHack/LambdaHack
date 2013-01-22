@@ -3,6 +3,7 @@
 -- | Abstract syntax of client commands.
 module Game.LambdaHack.CmdCli
   ( CmdCli(..), CmdUpdateCli(..), CmdQueryCli(..)
+  , CmdUI(..), CmdUpdateUI(..), CmdQueryUI(..)
   ) where
 
 import qualified Data.IntSet as IS
@@ -21,49 +22,63 @@ import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import Game.LambdaHack.State
 
--- | Abstract syntax of client commands.
+-- | Abstract syntax of client commands that don't use the UI.
 data CmdCli where
   CmdUpdateCli :: CmdUpdateCli -> CmdCli
   CmdQueryCli :: forall a. Typeable a => CmdQueryCli a -> CmdCli
 
 deriving instance Show CmdCli
 
+-- | Abstract syntax of all client commands.
+data CmdUI where
+  CmdUpdateUI :: CmdUpdateUI -> CmdUI
+  CmdQueryUI :: forall a. Typeable a => CmdQueryUI a -> CmdUI
+
+deriving instance Show CmdUI
+
 data CmdUpdateCli =
     PickupCli ActorId Item Item
   | ApplyCli ActorId MU.Part Item
   | ShowMsgCli Msg
-  | ShowItemsCli Discoveries Msg [Item]
-  | AnimateDeathCli ActorId
   | InvalidateArenaCli LevelId
   | DiscoverCli (Kind.Id ItemKind) Item
   | RememberCli LevelId IS.IntSet Level  -- TODO: Level is an overkill
   | RememberPerCli LevelId Perception Level FactionDict
   | SwitchLevelCli ActorId LevelId Actor [Item]
-  | EffectCli Msg (Point, Point) Int Bool
   | ProjectCli Point ActorId Item
   | ShowAttackCli ActorId ActorId MU.Part Item Bool
+  | RestartCli FactionPers State
+  | ContinueSavedCli FactionPers
+  | GameSaveCli Bool
+  deriving Show
+
+data CmdUpdateUI =
+    ShowItemsCli Discoveries Msg [Item]
+  | AnimateDeathCli ActorId
+  | EffectCli Msg (Point, Point) Int Bool
   | AnimateBlockCli ActorId ActorId MU.Part
   | DisplaceCli ActorId ActorId
   | DisplayPushCli
   | DisplayDelayCli
   | MoreFullCli Msg
   | MoreBWCli Msg
-  | RestartCli FactionPers State
-  | ContinueSavedCli FactionPers
-  | GameSaveCli Bool
   deriving Show
 
 data CmdQueryCli a where
-  ShowSlidesCli :: Slideshow -> CmdQueryCli Bool
-  CarryOnCli :: CmdQueryCli Bool
-  ConfirmShowItemsCli :: Discoveries -> Msg -> [Item] -> CmdQueryCli Bool
   SelectLeaderCli :: ActorId -> LevelId -> CmdQueryCli Bool
-  ConfirmYesNoCli :: Msg -> CmdQueryCli Bool
-  ConfirmMoreBWCli :: Msg -> CmdQueryCli Bool
-  ConfirmMoreFullCli::  Msg -> CmdQueryCli Bool
   NullReportCli :: CmdQueryCli Bool
   SetArenaLeaderCli :: LevelId -> ActorId -> CmdQueryCli ActorId
-  HandleHumanCli :: ActorId -> CmdQueryCli (CmdSer, Maybe ActorId, LevelId)
   HandleAI :: ActorId -> CmdQueryCli CmdSer
 
 deriving instance Show (CmdQueryCli a)
+
+data CmdQueryUI a where
+  ShowSlidesCli :: Slideshow -> CmdQueryUI Bool
+  CarryOnCli :: CmdQueryUI Bool
+  ConfirmShowItemsCli :: Discoveries -> Msg -> [Item] -> CmdQueryUI Bool
+  ConfirmYesNoCli :: Msg -> CmdQueryUI Bool
+  ConfirmMoreBWCli :: Msg -> CmdQueryUI Bool
+  ConfirmMoreFullCli::  Msg -> CmdQueryUI Bool
+  HandleHumanCli :: ActorId -> CmdQueryUI (CmdSer, Maybe ActorId, LevelId)
+
+deriving instance Show (CmdQueryUI a)

@@ -24,17 +24,17 @@ speedupCOps !copsSlow@Kind.COps{cotile=tile} =
 
 -- | Connect to clients by starting them in spawned threads that read
 -- and write directly to the channels.
-launchClients :: (FactionId -> ConnClient -> IO ())
-              -> (FactionId -> ConnClient -> IO ())
-              -> ConnDict
-              -> IO ()
-launchClients executorHuman executorComputer chanAssocs =
-  let forkClient (fid, (chan, mchan)) = do
-        case mchan of
-          Nothing ->
-            void $ forkIO $ executorComputer fid chan
+launchClients :: (FactionId -> ConnCli -> Bool -> IO ()) -> ConnDict -> IO ()
+launchClients executorC chanAssocs =
+  let forkClient (fid, (chanCli, chanAI)) = do
+        let forkAI = case chanAI of
+              -- TODO: for a screensaver, try True
+              Just ch -> void $ forkIO $ executorC fid ch False
+              Nothing -> return ()
+        case chanCli of
           Just ch -> do
-            void $ forkIO $ executorHuman fid chan
-            -- The AI client does not know it's not the main client.
-            void $ forkIO $ executorComputer fid ch
+            void $ forkIO $ executorC fid ch True
+            forkAI
+          Nothing ->
+            forkAI
   in mapM_ forkClient $ IM.toList chanAssocs

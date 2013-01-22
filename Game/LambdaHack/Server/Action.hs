@@ -16,9 +16,11 @@ module Game.LambdaHack.Server.Action
     -- * Assorted primitives
   , saveGameBkp, dumpCfg, endOrLoop
   , switchGlobalSelectedSide
-  , sendUpdateCli, sendQueryCli, sendAIQueryCli
+  , sendUpdateUI, sendQueryUI
+  , sendUpdateCli, sendQueryCli
+  , broadcastUI, broadcastPosUI, funBroadcastUI
   , broadcastCli, broadcastPosCli, funBroadcastCli
-  , addHero
+  , withAI, addHero
   ) where
 
 import Control.Concurrent
@@ -102,10 +104,10 @@ remember = do
   lvl <- getsState getArena
   faction <- getsState sfaction
   pers <- ask
-  funBroadcastCli (\fid ->
-    RememberPerCli arena (pers IM.! fid M.! arena) lvl faction)
-  funAIBroadcastCli (\fid ->
-    RememberPerCli arena (pers IM.! fid M.! arena) lvl faction)
+  let broadcast = funBroadcastCli (\fid ->
+        RememberPerCli arena (pers IM.! fid M.! arena) lvl faction)
+  broadcast
+  withAI broadcast
 
 -- | Save the history and a backup of the save game file, in case of crashes.
 --
@@ -141,7 +143,7 @@ handleScores write status total =
     slides <-
       liftIO $ register config write total time curDate status
     side <- getsState sside
-    go <- sendQueryCli side $ ShowSlidesCli slides
+    go <- sendQueryUI side $ ShowSlidesCli slides
     when (not go) abort
 
 -- | Continue or restart or exit the game.
@@ -167,24 +169,24 @@ endOrLoop loopServer = do
       broadcastCli [] $ GameSaveCli False
       tryIgnore $ do
         handleScores False Camping total
-        broadcastPosCli [] $ MoreFullCli "See you soon, stronger and braver!"
+        broadcastUI [] $ MoreFullCli "See you soon, stronger and braver!"
       liftIO $ takeMVar mv  -- wait until saved
       -- Do nothing, that is, quit the game loop.
     (Nothing, Just (showScreens, status@Killed{})) -> do
       nullR <- sendQueryCli side NullReportCli
       unless nullR $ do
         -- Sisplay any leftover report. Suggest it could be the cause of death.
-        broadcastPosCli [] $ MoreBWCli "Who would have thought?"
+        broadcastUI [] $ MoreBWCli "Who would have thought?"
       tryWith
         (\ finalMsg ->
           let highScoreMsg = "Let's hope another party can save the day!"
               msg = if T.null finalMsg then highScoreMsg else finalMsg
-          in broadcastPosCli [] $ MoreBWCli msg
+          in broadcastUI [] $ MoreBWCli msg
           -- Do nothing, that is, quit the game loop.
         )
         (do
            when showScreens $ handleScores True status total
-           go <- sendQueryCli side
+           go <- sendQueryUI side
                  $ ConfirmMoreBWCli "Next time will be different."
            when (not go) $ abortWith "You could really win this time."
            restartGame loopServer
@@ -193,13 +195,13 @@ endOrLoop loopServer = do
       nullR <- sendQueryCli side NullReportCli
       unless nullR $ do
         -- Sisplay any leftover report. Suggest it could be the master move.
-        broadcastPosCli [] $ MoreFullCli "Brilliant, wasn't it?"
+        broadcastUI [] $ MoreFullCli "Brilliant, wasn't it?"
       when showScreens $ do
         tryIgnore $ handleScores True status total
-        broadcastPosCli [] $ MoreFullCli "Can it be done better, though?"
+        broadcastUI [] $ MoreFullCli "Can it be done better, though?"
       restartGame loopServer
     (Nothing, Just (_, Restart)) -> do
-      broadcastPosCli [] $ MoreBWCli "This time for real."
+      broadcastUI [] $ MoreBWCli "This time for real."
       restartGame loopServer
     (Nothing, _) -> loopServer  -- just continue
 
@@ -322,20 +324,36 @@ switchGlobalSelectedSide :: MonadServer m => FactionId -> m ()
 switchGlobalSelectedSide =
   modifyState . switchGlobalSelectedSideOnlyForGlobalState
 
-connSendUpdateCli :: MonadServerChan m => ConnClient -> CmdUpdateCli -> m ()
-connSendUpdateCli ConnClient {toClient} cmd =
-  liftIO $ writeChan toClient $ CmdUpdateCli cmd
+withAI :: MonadServerChan m => m a -> m a
+withAI m = do
+  d <- getDict
+  modifyDict $ IM.map $ \(_chanCli, chanAI) -> (chanAI, undefined)
+  a <- m
+  putDict d
+  return a
+
+isFactionAware :: MonadServerChan m => [Point] -> FactionId -> m Bool
+isFactionAware poss fid = do
+  arena <- getsState sarena
+  pers <- ask
+  let per = pers IM.! fid M.! arena
+      inter = IS.fromList poss `IS.intersection` totalVisible per
+  return $! null poss || not (IS.null inter)
+
+connSendUpdateCli :: MonadServerChan m => CmdUpdateCli -> ConnCli -> m ()
+connSendUpdateCli cmd ConnCli {toClient} =
+  liftIO $ writeChan toClient $ Left $ CmdUpdateCli cmd
 
 sendUpdateCli :: MonadServerChan m => FactionId -> CmdUpdateCli -> m ()
 sendUpdateCli fid cmd = do
   conn <- getsDict (fst . (IM.! fid))
-  connSendUpdateCli conn cmd
+  maybe (return ()) (connSendUpdateCli cmd) conn
 
 connSendQueryCli :: (Typeable a, MonadServerChan m)
-                 => ConnClient -> CmdQueryCli a
+                 => CmdQueryCli a -> ConnCli
                  -> m a
-connSendQueryCli ConnClient {toClient, toServer} cmd = do
-  liftIO $ writeChan toClient $ CmdQueryCli cmd
+connSendQueryCli cmd ConnCli{toClient, toServer} = do
+  liftIO $ writeChan toClient $ Left $ CmdQueryCli cmd
   a <- liftIO $ readChan toServer
   return $ fromDyn a (assert `failure` (cmd, a))
 
@@ -344,16 +362,7 @@ sendQueryCli :: (Typeable a, MonadServerChan m)
              -> m a
 sendQueryCli fid cmd = do
   conn <- getsDict (fst . (IM.! fid))
-  connSendQueryCli conn cmd
-
-sendAIQueryCli :: (Typeable a, MonadServerChan m)
-                  => FactionId -> CmdQueryCli a
-                  -> m a
-sendAIQueryCli fid cmd = do
-  connFaction <- getsDict (IM.! fid)
-  -- Prefer the AI client, if it exists.
-  let conn = fromMaybe (fst connFaction) (snd connFaction)
-  connSendQueryCli conn cmd
+  maybe (assert `failure` (fid, cmd)) (connSendQueryCli cmd) conn
 
 broadcastCli :: MonadServerChan m
              => [FactionId -> m Bool] -> CmdUpdateCli
@@ -366,20 +375,8 @@ broadcastCli ps cmd = do
   ks <- filterM p $ IM.keys faction
   mapM_ (flip sendUpdateCli cmd) ks
 
-isFactionHuman :: MonadServerChan m => FactionId -> m Bool
-isFactionHuman fid = getsState $ flip isHumanFaction fid
-
-isFactionAware :: MonadServerChan m => [Point] -> FactionId -> m Bool
-isFactionAware poss fid = do
-  arena <- getsState sarena
-  pers <- ask
-  let per = pers IM.! fid M.! arena
-      inter = IS.fromList poss `IS.intersection` totalVisible per
-  return $! null poss || not (IS.null inter)
-
 broadcastPosCli :: MonadServerChan m => [Point] -> CmdUpdateCli -> m ()
-broadcastPosCli poss cmd =
-  broadcastCli [isFactionHuman, isFactionAware poss] cmd
+broadcastPosCli poss = broadcastCli [isFactionAware poss]
 
 funBroadcastCli :: MonadServerChan m => (FactionId -> CmdUpdateCli) -> m ()
 funBroadcastCli cmd = do
@@ -387,13 +384,48 @@ funBroadcastCli cmd = do
   let f fid = sendUpdateCli fid (cmd fid)
   mapM_ f $ IM.keys faction
 
-funAIBroadcastCli :: MonadServerChan m => (FactionId -> CmdUpdateCli) -> m ()
-funAIBroadcastCli cmd = do
+connSendUpdateUI :: MonadServerChan m => CmdUpdateUI -> ConnCli -> m ()
+connSendUpdateUI cmd ConnCli{toClient} =
+  liftIO $ writeChan toClient $ Right $ CmdUpdateUI cmd
+
+sendUpdateUI :: MonadServerChan m => FactionId -> CmdUpdateUI -> m ()
+sendUpdateUI fid cmd = do
+  conn <- getsDict (fst . (IM.! fid))
+  maybe (return ()) (connSendUpdateUI cmd) conn
+
+connSendQueryUI :: (Typeable a, MonadServerChan m)
+                => CmdQueryUI a -> ConnCli
+                -> m a
+connSendQueryUI cmd ConnCli{toClient, toServer} = do
+  liftIO $ writeChan toClient $ Right $ CmdQueryUI cmd
+  a <- liftIO $ readChan toServer
+  return $ fromDyn a (assert `failure` (cmd, a))
+
+sendQueryUI :: (Typeable a, MonadServerChan m)
+            => FactionId -> CmdQueryUI a
+            -> m a
+sendQueryUI fid cmd = do
+  conn <- getsDict (fst . (IM.! fid))
+  maybe (assert `failure` (fid, cmd)) (connSendQueryUI cmd) conn
+
+broadcastUI :: MonadServerChan m
+            => [FactionId -> m Bool] -> CmdUpdateUI
+            -> m ()
+broadcastUI ps cmd = do
   faction <- getsState sfaction
-  d <- getDict
-  let f fid = case snd $ d IM.! fid of
-        Nothing -> return ()
-        Just conn -> connSendUpdateCli conn (cmd fid)
+  let p fid = do
+        bs <- sequence $ map (\f -> f fid) ps
+        return $! and bs
+  ks <- filterM p $ IM.keys faction
+  mapM_ (flip sendUpdateUI cmd) ks
+
+broadcastPosUI :: MonadServerChan m => [Point] -> CmdUpdateUI -> m ()
+broadcastPosUI poss = broadcastUI [isFactionAware poss]
+
+funBroadcastUI :: MonadServerChan m => (FactionId -> CmdUpdateUI) -> m ()
+funBroadcastUI cmd = do
+  faction <- getsState sfaction
+  let f fid = sendUpdateUI fid (cmd fid)
   mapM_ f $ IM.keys faction
 
 restoreOrRestart :: Kind.COps
@@ -428,21 +460,16 @@ connServer cops executorS connectClients = do
   -- Restor or restart game to get game factions and state.
   (faction, exeServer) <- restoreOrRestart cops executorS
   -- Prepare connections based on factions.
-  let mkConnClient = do
+  let mkConnCli = do
         toClient <- newChan
         toServer <- newChan
-        return $ ConnClient {toClient, toServer}
+        return $ Just $ ConnCli{..}
       addChan (fid, fact) = do
-        chan <- mkConnClient
-        -- For computer players we don't spawn a separate AI client.
-        -- In this way computer players are allowed to cheat:
-        -- their non-leader actors know leader plans and act accordingly,
-        -- while human non-leader actors are controlled by an AI ignorant
-        -- of human plans.
-        mchan <- if isHumanFact fact
-                 then fmap Just mkConnClient
-                 else return Nothing
-        return (fid, (chan, mchan))
+        chanCli <- if isHumanFact fact
+                   then mkConnCli
+                   else return Nothing
+        chanAI <- mkConnCli
+        return (fid, (chanCli, chanAI))
   chanAssocs <- mapM addChan $ IM.toList faction
   let d = IM.fromAscList chanAssocs
   -- Connect clients and launch server.

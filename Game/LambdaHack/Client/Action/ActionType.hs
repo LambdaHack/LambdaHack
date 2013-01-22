@@ -18,13 +18,13 @@ import Game.LambdaHack.State
 -- TODO: check if we can move factionPerception from state to Reader
 -- | The type of the function inside any client action.
 type FunActionCli a =
-   Session                            -- ^ client session setup data
-   -> (State -> StateClient -> ConnClient -> a -> IO ())
+   SessionUI                            -- ^ client UI setup data
+   -> ConnCli                         -- ^ this client connection information
+   -> (State -> StateClient -> a -> IO ())
                                       -- ^ continuation
    -> (Msg -> IO ())                  -- ^ failure/reset continuation
    -> State                           -- ^ current local state
    -> StateClient                     -- ^ current client state
-   -> ConnClient                      -- ^ this client connection information
    -> IO ()
 
 -- | Client parts of actions of human and computer player characters.
@@ -32,15 +32,15 @@ newtype ActionCli a = ActionCli {runActionCli :: FunActionCli a}
 
 -- | Invokes the action continuation on the provided argument.
 returnActionCli :: a -> ActionCli a
-returnActionCli x = ActionCli (\_c k _a s cli d -> k s cli d x)
+returnActionCli x = ActionCli (\_c _d k _a s cli  -> k s cli x)
 
 -- | Distributes the session and shutdown continuation,
 -- threads the state and history.
 bindActionCli :: ActionCli a -> (a -> ActionCli b) -> ActionCli b
-bindActionCli m f = ActionCli (\c k a s cli d ->
-                          let next ns ncli nd x =
-                                runActionCli (f x) c k a ns ncli nd
-                          in runActionCli m c next a s cli d)
+bindActionCli m f = ActionCli (\c d k a s cli ->
+                          let next ns ncli x =
+                                runActionCli (f x) c d k a ns ncli
+                          in runActionCli m c d next a s cli)
 
 instance Monad ActionCli where
   return = returnActionCli
@@ -49,56 +49,53 @@ instance Monad ActionCli where
 -- TODO: make sure fmap is inlinded and all else is inlined in this file
 instance Functor ActionCli where
   fmap f m =
-    ActionCli (\c k a s cli d ->
-               runActionCli m c (\s' cli' d' ->
-                                 k s' cli' d' . f) a s cli d)
+    ActionCli (\c d k a s cli ->
+               runActionCli m c d (\s' cli' ->
+                                 k s' cli' . f) a s cli)
 
 instance Show (ActionCli a) where
   show _ = "an action"
 
 instance MonadActionAbort ActionCli where
-  tryWith exc m =
-    ActionCli (\c k a s cli d ->
-             let runA msg = runActionCli (exc msg) c k a s cli d
-             in runActionCli m c k runA s cli d)
-  abortWith msg = ActionCli (\_c _k a _s _cli _d -> a msg)
+  tryWith exc m  =
+    ActionCli (\c d k a s cli ->
+             let runA msg = runActionCli (exc msg) c d k a s cli
+             in runActionCli m c d k runA s cli)
+  abortWith msg  = ActionCli (\_c _d _k a _s _cli -> a msg)
 
 instance MonadActionRO ActionCli where
-  getState      = ActionCli (\_c k _a s cli d -> k s cli d s)
-  getsState     = (`fmap` getState)
+  getState       = ActionCli (\_c _d k _a s cli -> k s cli s)
+  getsState      = (`fmap` getState)
 
 instance MonadAction ActionCli where
-  modifyState f  = ActionCli (\_c k _a s cli d -> k (f s) cli d ())
+  modifyState f  = ActionCli (\_c _d k _a s cli -> k (f s) cli ())
   putState       = modifyState . const
 
 instance MonadClientRO ActionCli where
-  getClient     = ActionCli (\_c k _a s cli d -> k s cli d cli)
-  getsClient    = (`fmap` getClient)
+  getClient      = ActionCli (\_c _d k _a s cli -> k s cli cli)
+  getsClient     = (`fmap` getClient)
 
 instance MonadClient ActionCli where
-  modifyClient f = ActionCli (\_c k _a s cli d -> k s (f cli) d ())
+  modifyClient f = ActionCli (\_c _d k _a s cli -> k s (f cli) ())
   putClient      = modifyClient . const
-  liftIO x       = ActionCli (\_c k _a s cli d -> x >>= k s cli d)
+  liftIO x       = ActionCli (\_c _d k _a s cli -> x >>= k s cli)
 
 instance MonadClientUI ActionCli where
-  getsSession f = ActionCli (\c k _a s cli d -> k s cli d (f c))
+  getsSession f  = ActionCli (\c _d k _a s cli -> k s cli (f c))
 
 instance MonadClientChan ActionCli where
-  getChan        = ActionCli (\_c k _a s cli d -> k s cli d d)
-  getsChan       = (`fmap` getChan)
-  modifyChan f   = ActionCli (\_c k _a s cli d -> k s cli (f d) ())
-  putChan        = modifyChan . const
+  getsChan f     = ActionCli (\_c d k _a s cli -> k s cli (f d))
 
 -- | Run an action, with a given session, state and history, in the @IO@ monad.
-executorCli :: ActionCli () -> Session -> State -> StateClient -> ConnClient
+executorCli :: ActionCli () -> SessionUI -> State -> StateClient -> ConnCli
             -> IO ()
 executorCli m sess s cli d =
   runActionCli m
     sess
-    (\_ _ _ _ -> return ())  -- final continuation returns result
+    d
+    (\_ _ _ -> return ())  -- final continuation returns result
     (\msg -> let err = "unhandled abort for client" <+> showT (getSide s)
                        <+> ":" <+> msg
              in fail $ T.unpack err)
     s
     cli
-    d

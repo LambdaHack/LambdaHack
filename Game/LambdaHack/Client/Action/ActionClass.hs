@@ -17,9 +17,9 @@ import Game.LambdaHack.Client.State
 -- including many consecutive games in a single session,
 -- but is completely disregarded and reset when a new playing session starts.
 -- Auxiliary AI and computer player clients have no @sfs@ nor @sbinding@.
-data Session = Session
-  { sfs       :: !(Maybe FrontendSession)  -- ^ frontend session information
-  , sbinding  :: !(Maybe Binding)          -- ^ binding of keys to commands
+data SessionUI = SessionUI
+  { sfs       :: !FrontendSession  -- ^ frontend session information
+  , sbinding  :: !Binding          -- ^ binding of keys to commands
   }
 
 class MonadActionRO m => MonadClientRO m where
@@ -43,13 +43,10 @@ instance (Monoid a, MonadClient m) => MonadClient (WriterT a m) where
   liftIO       = lift . liftIO
 
 class MonadClient m => MonadClientUI m where
-  getsSession  :: (Session -> a) -> m a
+  getsSession  :: (SessionUI -> a) -> m a
 
 instance (Monoid a, MonadClientUI m) => MonadClientUI (WriterT a m) where
   getsSession  = lift . getsSession
 
 class MonadClient m => MonadClientChan m where
-  getChan      :: m ConnClient
-  getsChan     :: (ConnClient -> a) -> m a
-  modifyChan   :: (ConnClient -> ConnClient) -> m ()
-  putChan      :: ConnClient -> m ()
+  getsChan     :: (ConnCli -> a) -> m a

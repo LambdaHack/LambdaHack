@@ -15,7 +15,6 @@ import System.IO.Unsafe (unsafePerformIO)
 
 import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Faction
 import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.File
@@ -54,7 +53,7 @@ saveGameBkpCli ConfigUI{configAppDataDirUI} s cli = do
   b <- tryPutMVar saveLock ()
   when b $
     void $ forkIO $ do
-      let factionName = gname $ getSide s
+      let factionName = showT $ sside s
           saveFile = configAppDataDirUI </> T.unpack factionName ++ ".client.sav"
           saveFileBkp = saveFile <.> ".bkp"
       encodeEOF saveFile (s, cli)
@@ -67,7 +66,7 @@ saveGameCli :: Bool -> ConfigUI -> State -> StateClient -> IO ()
 saveGameCli True configUI s cl = saveGameBkpCli configUI s cl
 saveGameCli False ConfigUI{configAppDataDirUI} s cli = do
   putMVar saveLock ()
-  let factionName = gname $ getSide s
+  let factionName = showT $ sside s
       saveFile = configAppDataDirUI </> T.unpack factionName ++ ".client.sav"
   encodeEOF saveFile (s, cli)
   takeMVar saveLock
