@@ -7,6 +7,7 @@ import Data.Dynamic
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Client.Action
+import Game.LambdaHack.Client.State
 import Game.LambdaHack.CmdCli
 import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Kind as Kind
@@ -22,7 +23,7 @@ loopCli2 :: MonadClientChan m
 loopCli2 cmdUpdateCli cmdQueryCli = do
   side <- getsState sside
   cops@Kind.COps{corule} <- getsState scops
-  configUI <- askConfigUI
+  configUI <- getsClient sconfigUI
   let pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
       title = rtitle $ Kind.stdRuleset corule
   restored <- restoreGame (showT side) configUI pathsDataFile title

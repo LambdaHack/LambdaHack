@@ -28,6 +28,7 @@ import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Client.Config
 
 -- | Client state, belonging to a single faction.
 -- Some of the data, e.g, the history, carries over
@@ -42,6 +43,7 @@ data StateClient = StateClient
   , sreport   :: !Report        -- ^ current messages
   , shistory  :: !History       -- ^ history of messages
   , sper      :: !FactionPers   -- ^ faction perception indexed by levels
+  , sconfigUI :: !ConfigUI      -- ^ this client config (including initial RNG)
   , slastKey  :: !(Maybe K.KM)  -- ^ last command key pressed
   , sframe    :: ![(Maybe SingleFrame, Bool)]  -- ^ accumulated frames
   , _sleader  :: !(Maybe ActorId)  -- ^ selected actor
@@ -71,8 +73,8 @@ data DebugModeCli = DebugModeCli
   deriving Show
 
 -- | Initial game client state.
-defStateClient :: History -> StateClient
-defStateClient shistory = do
+defStateClient :: History -> ConfigUI -> StateClient
+defStateClient shistory sconfigUI = do
   StateClient
     { stgtMode  = Nothing
     , scursor   = Nothing
@@ -82,6 +84,7 @@ defStateClient shistory = do
     , sreport   = emptyReport
     , shistory
     , sper      = M.empty
+    , sconfigUI
     , slastKey  = Nothing
     , sframe    = []
     , _sleader  = Nothing  -- no heroes yet alive
@@ -161,6 +164,7 @@ instance Binary StateClient where
     put srunning
     put sreport
     put shistory
+    put sconfigUI
     put _sleader
   get = do
     stgtMode <- get
@@ -170,6 +174,7 @@ instance Binary StateClient where
     srunning <- get
     sreport <- get
     shistory <- get
+    sconfigUI <- get
     _sleader <- get
     let sper = M.empty
         slastKey = Nothing

@@ -11,7 +11,6 @@ import Data.Monoid
 import Game.LambdaHack.Action
 import Game.LambdaHack.Client.Action.Frontend
 import Game.LambdaHack.Client.Binding
-import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.State
 
 -- | The information that is constant across a client playing session,
@@ -21,7 +20,6 @@ import Game.LambdaHack.Client.State
 data Session = Session
   { sfs       :: !(Maybe FrontendSession)  -- ^ frontend session information
   , sbinding  :: !(Maybe Binding)          -- ^ binding of keys to commands
-  , sconfigUI :: !ConfigUI                 -- ^ the UI config for this session
   }
 
 class MonadActionRO m => MonadClientRO m where

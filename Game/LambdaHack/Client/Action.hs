@@ -11,8 +11,8 @@ module Game.LambdaHack.Client.Action
   , executorCli, exeFrontend, frontendName
     -- * Abort exception handlers
   , tryWithSlide
-    -- * Accessors to the game session Reader and the Perception Reader
-  , askBinding, askConfigUI, askPerception
+    -- * Accessors to the game session Reader and the Perception Reader(-like)
+  , askBinding, askPerception
     -- * History and report
   , msgAdd, recordHistory
     -- * Key input
@@ -129,10 +129,6 @@ askBinding = do
       ("Auxiliary AI or computer player client uses keybindings" :: Text)
     Just binding -> return binding
 
--- | Get the config from the config file.
-askConfigUI :: MonadClientRO m => m ConfigUI
-askConfigUI = getsSession sconfigUI
-
 -- | Add a message to the current report.
 msgAdd :: MonadClient m => Msg -> m ()
 msgAdd msg = modifyClient $ \d -> d {sreport = addMsg (sreport d) msg}
@@ -146,7 +142,7 @@ recordHistory :: MonadClient m => m ()
 recordHistory = do
   StateClient{sreport, shistory} <- getClient
   unless (nullReport sreport) $ do
-    ConfigUI{configHistoryMax} <- askConfigUI
+    ConfigUI{configHistoryMax} <- getsClient sconfigUI
     msgReset ""
     let nhistory = takeHistory configHistoryMax $! addReport sreport shistory
     modifyClient $ \cli -> cli {shistory = nhistory}
@@ -337,7 +333,7 @@ clientGameSave :: MonadClient m => Bool -> m ()
 clientGameSave toBkp = do
   s <- getState
   cli <- getClient
-  configUI <- askConfigUI
+  configUI <- getsClient sconfigUI
   flushFrames
   liftIO $ Save.saveGameCli toBkp configUI s cli
 
@@ -374,13 +370,11 @@ exeFrontend cops@Kind.COps{corule} executorC connectClients loopFrontend = do
   let !sbinding = stdBinding sconfigUI  -- evaluate to check for errors
       font = configFont sconfigUI
       sessHuman sfs = Session{ sfs = Just sfs
-                             , sbinding = Just sbinding
-                             , sconfigUI }
+                             , sbinding = Just sbinding }
       sessComputer  = Session{ sfs = Nothing
-                             , sbinding = Nothing
-                             , sconfigUI }
+                             , sbinding = Nothing }
   defHist <- defHistory
-  let cli = defStateClient defHist
+  let cli = defStateClient defHist sconfigUI
       executorHuman sfs fid =
         executorC (sessHuman sfs) (defStateLocal cops fid) cli
       executorComputer fid =

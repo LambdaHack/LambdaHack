@@ -258,7 +258,8 @@ displaceCli source target = do
 restartCli :: MonadClient m => FactionPers -> State -> m ()
 restartCli sper locRaw = do
   shistory <- getsClient shistory
-  let cli = defStateClient shistory
+  sconfigUI <- getsClient sconfigUI
+  let cli = defStateClient shistory sconfigUI
   putClient cli {sper}
   random <- getsState srandom
   side <- getsState sside
