@@ -63,6 +63,8 @@ applyCli actor verb item = do
   Kind.COps{coactor, coitem} <- getsState scops
   disco <- getsState sdisco
   body <- getsState (getActorBody actor)
+  -- TODO: "you" instead of partActor? but keep partActor for other sides
+  -- TODO: perhaps automate you/partActor depending on side
   let msg = makeSentence
         [ MU.SubjectVerbSg (partActor coactor body) verb
         , partItemNWs coitem disco item ]

@@ -42,9 +42,8 @@
 ; human_hero_2: hero
 
 ; [heroNames]
-; HeroName_0: you
-; HeroName_1: Haskell Alvin
-; HeroName_2: Alonzo Barkley
-; HeroName_3: Ernst Abraham
-; HeroName_4: Samuel Saunders
-; HeroName_5: Roger Robin
+; HeroName_0: Haskell Alvin
+; HeroName_1: Alonzo Barkley
+; HeroName_2: Ernst Abraham
+; HeroName_3: Samuel Saunders
+; HeroName_4: Roger Robin

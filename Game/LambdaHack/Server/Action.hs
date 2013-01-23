@@ -156,7 +156,7 @@ endOrLoop :: MonadServerChan m => m () -> m ()
 endOrLoop loopServer = do
   quit <- getsState squit
   side <- getsState sside
-  gquit <- getsState $ gquit . (IM.! side) . sfaction
+  gquit <- getsState $ gquit . getSide
   s <- getState
   ser <- getServer
   config <- getsServer sconfig
@@ -232,22 +232,23 @@ restartGame loopServer = do
   loopServer
 
 -- | Find a hero name in the config file, or create a stock name.
-findHeroName :: Config -> Int -> Text
-findHeroName Config{configHeroNames} n =
+findHeroName :: [(Int, Text)] -> Int -> Text
+findHeroName configHeroNames n =
   let heroName = lookup n configHeroNames
   in fromMaybe ("hero number" <+> showT n) heroName
 
 -- | Create a new hero on the current level, close to the given position.
-addHero :: Kind.COps -> Point -> FactionId -> State -> StateServer
+addHero :: Kind.COps -> Point -> FactionId -> [(Int, Text)]
+        -> State -> StateServer
         -> (State, StateServer)
-addHero Kind.COps{coactor, cotile} ppos side
+addHero Kind.COps{coactor, cotile} ppos side configHeroNames
         s ser@StateServer{scounter} =
-  let config@Config{configBaseHP} = sconfig ser
+  let Config{configBaseHP} = sconfig ser
       loc = nearbyFreePos cotile ppos s
       freeHeroK = elemIndex Nothing $ map (tryFindHeroK s side) [0..9]
       n = fromMaybe 100 freeHeroK
       symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
-      name = findHeroName config n
+      name = findHeroName configHeroNames n
       startHP = configBaseHP - (configBaseHP `div` 5) * min 3 n
       m = template (heroKindId coactor) (Just symbol) (Just name)
                    startHP loc (getTime s) side False
@@ -256,11 +257,11 @@ addHero Kind.COps{coactor, cotile} ppos side
 
 -- | Create a set of initial heroes on the current level, at position ploc.
 initialHeroes :: Kind.COps -> Point -> FactionId -> State -> StateServer
-              -> (State, StateServer)
-initialHeroes cops ppos side s ser =
+              -> [(Int, Text)] -> (State, StateServer)
+initialHeroes cops ppos side s ser configHeroNames =
   let Config{configExtraHeroes} = sconfig ser
       k = 1 + configExtraHeroes
-  in iterate (uncurry $ addHero cops ppos side) (s, ser) !! k
+  in iterate (uncurry $ addHero cops ppos side configHeroNames) (s, ser) !! k
 
 createFactions :: Kind.COps -> Config -> Rnd FactionDict
 createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
@@ -316,10 +317,11 @@ gameReset cops@Kind.COps{ coitem, corule} = do
               defStateGlobal freshDungeon freshDepth discoS faction
                              cops random entryLevel
             defSer = defStateServer discoRev sflavour sconfig
-            fo (fid, epos) (gloF, serF) =
-              initialHeroes cops epos fid gloF serF
-            (glo, ser) =
-              foldr fo (defState, defSer) $ zip needInitialCrew entryPoss
+            fo (fid, epos, hNames) (gloF, serF) =
+              initialHeroes cops epos fid gloF serF hNames
+            heroNames = configHeroNames sconfig : repeat []
+            (glo, ser) = foldr fo (defState, defSer)
+                         $ zip3 needInitialCrew entryPoss heroNames
         return (glo, ser)
   return $! St.evalState rnd dungeonSeed
 

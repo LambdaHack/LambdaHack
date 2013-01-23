@@ -376,7 +376,7 @@ summonHeroes n pos =
   s <- getState
   ser <- getServer
   side <- getsState sside
-  let (sN, serN) = iterate (uncurry $ addHero cops pos side) (s, ser) !! n
+  let (sN, serN) = iterate (uncurry $ addHero cops pos side []) (s, ser) !! n
   putState sN
   putServer serN
   b <- focusIfOurs newHeroId

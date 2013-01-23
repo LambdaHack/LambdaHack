@@ -225,7 +225,7 @@ dropItem = do
   disco <- getsState sdisco
   let item = stack { jcount = 1 }
   -- Do not advertise if an enemy drops an item. Probably junk.
-  msgAdd $ makeSentence
+  msgAdd $ makeSentence  -- TODO: "you" instead of partActor?
     [ MU.SubjectVerbSg (partActor coactor pbody) "drop"
     , partItemNWs coitem disco item ]
   return $ DropSer leader item
