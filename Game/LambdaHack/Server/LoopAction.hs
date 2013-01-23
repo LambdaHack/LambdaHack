@@ -44,6 +44,10 @@ loopSer cmdSer = do
       let bcast = funBroadcastCli (\fid -> RestartCli (pers IM.! fid) defLoc)
       bcast
       withAI bcast
+      -- TODO: factor out common parts from restartGame and restoreOrRestart
+      faction <- getsState sfaction
+      let firstHuman = fst . head $ filter (isHumanFact . snd) $ IM.assocs faction
+      switchGlobalSelectedSide firstHuman
       -- Save ASAP in case of crashes and disconnects.
       saveGameBkp
     _ -> do  -- game restored from a savefile
@@ -63,9 +67,8 @@ loopSer cmdSer = do
         nHuman <- handleActors cmdSer timeZero previousHuman
         modifyState (updateTime (timeAdd timeClip))
         endOrLoop (loop nHuman)
-  faction <- getsState sfaction
-  let firstHuman = fst . head $ filter (isHumanFact . snd) $ IM.assocs faction
-  local (const pers) $ loop firstHuman
+  side <- getsState sside
+  local (const pers) $ loop side
 
 -- TODO: switch levels alternating between player factions,
 -- if there are many and on distinct levels.
@@ -108,6 +111,7 @@ handleActors cmdSer subclipStart previousHuman = withPerception $ do
   time <- getsState getTime  -- the end time of this clip, inclusive
    -- Older actors act earlier.
   lactor <- getsState (IM.toList . lactor . getArena)
+  gquit <- getsState $ gquit . getSide
   quit <- getsState squit
   let mnext = if null lactor  -- wait until any actor spawned
               then Nothing
@@ -118,7 +122,7 @@ handleActors cmdSer subclipStart previousHuman = withPerception $ do
                       then Nothing  -- no actor is ready for another move
                       else Just (actor, m)
   case mnext of
-    _ | isJust quit -> return previousHuman
+    _ | isJust quit || isJust gquit -> return previousHuman
     Nothing -> do
       when (subclipStart == timeZero) $
         broadcastPosUI [] $ DisplayDelayCli

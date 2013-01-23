@@ -84,7 +84,7 @@ defStateGlobal :: Dungeon -> Int -> Discoveries
                -> State
 defStateGlobal _sdungeon _sdepth _sdisco _sfaction _scops _srandom _sarena =
   State
-    { _sside = -1  -- no side yet selected
+    { _sside = -3  -- no side yet selected
     , _squit = Nothing
     , ..
     }
@@ -122,7 +122,7 @@ localFromGlobal State{ _scops=_scops@Kind.COps{ coitem=Kind.Ops{okind}
     , _sdisco = let f ik = isymbol (okind ik)
                            `notElem` (ritemProject $ Kind.stdRuleset corule)
                 in M.filter f _sdisco
-    , _sside = -1  -- will be set by the client
+    , _sside = -5  -- will be set by the client
     , _squit = Nothing
     , ..
     }

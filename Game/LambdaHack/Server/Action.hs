@@ -209,7 +209,7 @@ endOrLoop loopServer = do
         broadcastUI [] $ MoreFullCli "Can it be done better, though?"
       restartGame loopServer
     (Nothing, Just (_, Restart)) -> do
-      broadcastUI [] $ MoreBWCli "This time for real."
+--      broadcastUI [] $ MoreBWCli "This time for real."
       restartGame loopServer
     (Nothing, _) -> loopServer  -- just continue
 
@@ -226,8 +226,12 @@ restartGame loopServer = do
   -- The biggest part is content, which really needs to be updated
   -- at this point to keep clients in sync with server improvements.
   defLoc <- getsState localFromGlobal
-  funBroadcastCli (\fid -> RestartCli (pers IM.! fid) defLoc)
-  -- TODO: send to each client RestartCli; use d in its code; empty channels?
+  let bcast = funBroadcastCli (\fid -> RestartCli (pers IM.! fid) defLoc)
+  bcast
+  withAI bcast
+  faction <- getsState sfaction
+  let firstHuman = fst . head $ filter (isHumanFact . snd) $ IM.assocs faction
+  switchGlobalSelectedSide firstHuman
   saveGameBkp
   loopServer
 

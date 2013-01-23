@@ -198,8 +198,7 @@ eff Effect.Ascend _ _ target power = do
   effLvlGoUp target (power + 1)
   -- TODO: The following message too late if a monster squashed by going up,
   -- unless it's ironic. ;) The same below.
-  side <- getsState sside
-  gquit <- getsState $ gquit . (IM.! side) . sfaction
+  gquit <- getsState $ gquit . getSide
   return $ if maybe Camping snd gquit == Victor
            then (True, "")
            else (True, actorVerb coactor tm "find a way upstairs")
@@ -208,8 +207,7 @@ eff Effect.Descend _ _ target power = do
   tm <- getsState (getActorBody target)
   void $ focusIfOurs target
   effLvlGoUp target (- (power + 1))
-  side <- getsState sside
-  gquit <- getsState $ gquit . (IM.! side) . sfaction
+  gquit <- getsState $ gquit . getSide
   return $ if maybe Camping snd gquit == Victor
            then (True, "")
            else (True, actorVerb coactor tm "find a way downstairs")
