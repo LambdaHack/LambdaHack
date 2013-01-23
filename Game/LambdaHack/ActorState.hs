@@ -94,8 +94,8 @@ allActorsAnyLevel s =
   let one (ln, lvl) =
         [ (ln, (a, m)) | (a, m) <- IM.toList $ lactor lvl
                        , not (bproj m) ]
-      butFrist = M.delete (sarena s) (sdungeon s)
-      selectedFirst = (sarena s, sdungeon s M.! sarena s) : M.toList butFrist
+      butArena = M.delete (sarena s) (sdungeon s)
+      selectedFirst = (sarena s, sdungeon s M.! sarena s) : M.toList butArena
   in L.concatMap one selectedFirst
 
 -- TODO: start with current level; also elsewhere

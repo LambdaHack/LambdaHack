@@ -81,15 +81,21 @@ withPerception m = do
       per side = levelPerception cops fovMode side lvl
   local (IM.mapWithKey (\side lp -> M.insert arena (per side) lp)) m
 
+getPerFid :: MonadServerRO m => FactionId -> m Perception
+getPerFid fid = do
+  arena <- getsState sarena
+  pers <- ask
+  let fper = fromMaybe (assert `failure` (arena, fid)) $ IM.lookup fid pers
+      per = fromMaybe (assert `failure` (arena, fid)) $ M.lookup arena fper
+  return $! per
+
 -- | Get the current perception of the server.
 askPerceptionSer :: MonadServerRO m => m Perception
 askPerceptionSer = do
-  lid <- getsState sarena
-  pers <- ask
   side <- getsState sside
-  return $! pers IM.! side M.! lid
+  getPerFid side
 
--- | Update all factions memory of the current level.
+-- | Update all factions' memory of the current level.
 --
 -- This has to be strict wrt map operation sor we leak one perception
 -- per turn. This has to lazy wrt the perception sets or we compute them
@@ -291,7 +297,7 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
 gameReset :: Kind.COps -> IO (State, StateServer)
 gameReset cops@Kind.COps{ coitem, corule} = do
   -- Rules config reloaded at each new game start.
-  (sconfig, dungeonGen, random) <- ConfigIO.mkConfigRules corule
+  (sconfig, dungeonSeed, random) <- ConfigIO.mkConfigRules corule
   -- from sconfig (only known to server), other clients each should have
   -- one known only to them (or server, if needed)
   let rnd :: Rnd (State, StateServer)
@@ -313,7 +319,7 @@ gameReset cops@Kind.COps{ coitem, corule} = do
             (glo, ser) =
               foldr fo (defState, defSer) $ zip needInitialCrew entryPoss
         return (glo, ser)
-  return $! St.evalState rnd dungeonGen
+  return $! St.evalState rnd dungeonSeed
 
 gameResetAction :: MonadServer m
                 => Kind.COps
@@ -334,10 +340,8 @@ withAI m = do
 
 isFactionAware :: MonadServerChan m => [Point] -> FactionId -> m Bool
 isFactionAware poss fid = do
-  arena <- getsState sarena
-  pers <- ask
-  let per = pers IM.! fid M.! arena
-      inter = IS.fromList poss `IS.intersection` totalVisible per
+  per <- getPerFid fid
+  let inter = IS.fromList poss `IS.intersection` totalVisible per
   return $! null poss || not (IS.null inter)
 
 connSendUpdateCli :: MonadServerChan m => CmdUpdateCli -> ConnCli -> m ()

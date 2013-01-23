@@ -15,8 +15,10 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
 
-initCli :: MonadClient m => m ()
-initCli = do
+initCli :: MonadClientChan m => (CmdUpdateCli -> m ()) -> m ()
+initCli cmdUpdateCli = do
+  -- Warning: state and client state are invalid here, e.g., sdungeon
+  -- and sper are empty.
   side <- getsState sside
   cops@Kind.COps{corule} <- getsState scops
   configUI <- getsClient sconfigUI
@@ -27,20 +29,33 @@ initCli = do
     Right msg -> do  -- First visit ever, use the initial state.
       -- TODO: create or restore from config clients RNG seed
       msgAdd msg
-      -- TODO: somehow check that RestartCli arrives before any other cmd
+      let expected cmd = case cmd of RestartCli{} -> True; _ -> False
+      waitForCmd cmdUpdateCli expected
     Left (s, cli, msg) -> do  -- Restore a game or at least history.
       let sCops = updateCOps (const cops) s
       putState sCops
       putClient cli
       msgAdd msg
-      -- TODO: somehow check that ContinueSave arrives before any other cmd
+      let expected cmd = case cmd of ContinueSavedCli{} -> True; _ -> False
+      waitForCmd cmdUpdateCli expected
+  -- State and client state are now valid.
+
+waitForCmd :: MonadClientChan m
+           => (CmdUpdateCli -> m ()) -> (CmdUpdateCli -> Bool)
+           -> m ()
+waitForCmd cmdUpdateCli expected = do
+  side <- getsState sside
+  cmd1 <- readChanFromSer
+  case cmd1 of
+    Left (CmdUpdateCli cmd) | expected cmd -> cmdUpdateCli cmd
+    _ -> assert `failure` (side, cmd1)
 
 loopCli2 :: MonadClientChan m
          => (CmdUpdateCli -> m ())
          -> (forall a. Typeable a => CmdQueryCli a -> m a)
          -> m ()
 loopCli2 cmdUpdateCli cmdQueryCli = do
-  initCli
+  initCli cmdUpdateCli
   loop
  where
   loop = do
@@ -62,7 +77,7 @@ loopCli4 :: (MonadClientUI m, MonadClientChan m)
          -> (forall a. Typeable a => CmdQueryUI a -> m a)
          -> m ()
 loopCli4 cmdUpdateCli cmdQueryCli cmdUpdateUI cmdQueryUI = do
-  initCli
+  initCli cmdUpdateCli
   loop
  where
   loop = do

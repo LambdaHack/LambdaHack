@@ -140,7 +140,7 @@ askPerception = do
   arena <- getsState sarena
   let lid = maybe arena tgtLevelId stgtMode
   factionPers <- getsClient sper
-  return $! factionPers M.! lid
+  return $! fromMaybe (assert `failure` lid) $ M.lookup lid factionPers
 
 -- | Wait for a human player command.
 getKeyCommand :: MonadClientUI m => Maybe Bool -> m K.KM

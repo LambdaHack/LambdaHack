@@ -115,11 +115,11 @@ discoverCli ik i = do
 rememberCli :: MonadAction m => LevelId -> IS.IntSet -> Level -> m ()
 rememberCli arena vis lvl = do
   cops <- getsState scops
-  let updArena loc =
-        let clvl = sdungeon loc M.! arena
+  let updArena dng =
+        let clvl = fromMaybe (assert `failure` arena) $ M.lookup arena dng
             nlvl = rememberLevel cops vis lvl clvl
-        in updateDungeon (M.insert arena nlvl) loc
-  modifyState updArena
+        in M.insert arena nlvl dng
+  modifyState $ updateDungeon updArena
 
 rememberPerCli :: MonadClient m
             => LevelId -> Perception -> Level -> FactionDict

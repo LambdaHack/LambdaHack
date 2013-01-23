@@ -41,11 +41,15 @@ loopSer cmdSer = do
   defLoc <- getsState localFromGlobal
   case squit of
     Nothing -> do  -- game restarted
-      funBroadcastCli (\fid -> RestartCli (pers IM.! fid) defLoc)
+      let bcast = funBroadcastCli (\fid -> RestartCli (pers IM.! fid) defLoc)
+      bcast
+      withAI bcast
       -- Save ASAP in case of crashes and disconnects.
       saveGameBkp
-    _ ->  -- game restored from a savefile
-      funBroadcastCli (\fid -> ContinueSavedCli (pers IM.! fid))
+    _ -> do  -- game restored from a savefile
+      let bcast = funBroadcastCli (\fid -> ContinueSavedCli (pers IM.! fid))
+      bcast
+      withAI bcast
   modifyServer $ \cli -> cli {squit=Nothing}
   -- Loop.
   let loop = do
@@ -118,8 +122,10 @@ handleActors cmdSer subclipStart = withPerception $ do
       let side = bfaction m
       switchGlobalSelectedSide side
       arena <- getsState sarena
-      leader <- sendQueryCli side $ SetArenaLeaderCli arena actor
       isHuman <- getsState $ flip isHumanFaction side
+      leader <- if isHuman
+                then sendQueryCli side $ SetArenaLeaderCli arena actor
+                else withAI $ sendQueryCli side $ SetArenaLeaderCli arena actor
       if actor == leader && isHuman
         then do
           -- Human moves always start a new subclip.
