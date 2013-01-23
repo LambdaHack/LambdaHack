@@ -9,10 +9,7 @@ import Data.Maybe
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Client.Action
-import Game.LambdaHack.Client.State
 import Game.LambdaHack.CmdCli
-import Game.LambdaHack.Content.RuleKind
-import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
 
@@ -20,11 +17,8 @@ initCli :: MonadClientChan m => Bool -> (CmdUpdateCli -> m ()) -> m ()
 initCli isAI cmdUpdateCli = do
   -- Warning: state and client state are invalid here, e.g., sdungeon
   -- and sper are empty.
-  cops@Kind.COps{corule} <- getsState scops
-  configUI <- getsClient sconfigUI
-  let pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
-      title = rtitle $ Kind.stdRuleset corule
-  restored <- restoreGame isAI configUI pathsDataFile title
+  cops <- getsState scops
+  restored <- restoreGame isAI
   case restored of
     Right msg -> do  -- First visit ever, use the initial state.
       -- TODO: create or restore from config clients RNG seed

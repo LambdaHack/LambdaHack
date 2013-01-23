@@ -48,12 +48,12 @@ tryCopyDataFiles ConfigUI{configUICfgFile} pathsDataFile = do
 -- This is only a backup, so no problem is the game is shut down
 -- before saving finishes, so we don't wait on the mvar. However,
 -- if a previous save is already in progress, we skip this save.
-saveGameBkpCli :: Text -> ConfigUI -> State -> StateClient -> IO ()
-saveGameBkpCli factionName ConfigUI{configAppDataDirUI} s cli = do
+saveGameBkpCli :: String -> ConfigUI -> State -> StateClient -> IO ()
+saveGameBkpCli saveName ConfigUI{configAppDataDirUI} s cli = do
 --  b <- tryPutMVar saveLock ()
 --  when b $
 --    void $ forkIO $ do
-      let saveFile = configAppDataDirUI </> T.unpack factionName ++ ".sav"
+      let saveFile = configAppDataDirUI </> saveName
           saveFileBkp = saveFile <.> ".bkp"
       encodeEOF saveFile (s, cli)
       renameFile saveFile saveFileBkp
@@ -61,20 +61,20 @@ saveGameBkpCli factionName ConfigUI{configAppDataDirUI} s cli = do
 
 -- | Save a simple serialized version of the current state.
 -- Protected by a lock to avoid corrupting the file.
-saveGameCli :: Text -> Bool -> ConfigUI -> State -> StateClient -> IO ()
-saveGameCli factionName True configUI s cl =
-  saveGameBkpCli factionName configUI s cl
-saveGameCli factionName False ConfigUI{configAppDataDirUI} s cli = do
+saveGameCli :: String -> Bool -> ConfigUI -> State -> StateClient -> IO ()
+saveGameCli saveName True configUI s cl =
+  saveGameBkpCli saveName configUI s cl
+saveGameCli saveName False ConfigUI{configAppDataDirUI} s cli = do
 --  putMVar saveLock ()
-  let saveFile = configAppDataDirUI </> T.unpack factionName ++ ".sav"
+  let saveFile = configAppDataDirUI </> saveName
   encodeEOF saveFile (s, cli)
 --  takeMVar saveLock
 
 -- | Restore a saved game, if it exists. Initialize directory structure,
 -- if needed.
-restoreGameCli :: Text -> ConfigUI -> (FilePath -> IO FilePath) -> Text
+restoreGameCli :: String -> ConfigUI -> (FilePath -> IO FilePath) -> Text
                -> IO (Either (State, StateClient, Msg) Msg)
-restoreGameCli factionName configUI@ConfigUI{configAppDataDirUI}
+restoreGameCli saveName configUI@ConfigUI{configAppDataDirUI}
                pathsDataFile title = do
   ab <- doesDirectoryExist configAppDataDirUI
   -- If the directory can't be created, the current directory will be used.
@@ -88,7 +88,7 @@ restoreGameCli factionName configUI@ConfigUI{configAppDataDirUI}
   -- that should solve the problem. If the problems are more serious,
   -- the other functions will most probably also throw exceptions,
   -- this time without trying to fix it up.
-  let saveFile = configAppDataDirUI </> T.unpack factionName ++ ".client.sav"
+  let saveFile = configAppDataDirUI </> saveName
       saveFileBkp = saveFile <.> ".bkp"
   sb <- doesFileExist saveFile
   bb <- doesFileExist saveFileBkp

@@ -39,12 +39,12 @@ import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import qualified Data.Map as M
 import Data.Maybe
-import Data.Text (Text)
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Client.Action.ActionClass
 import Game.LambdaHack.Client.Action.ActionType (executorCli)
+import Game.LambdaHack.Client.Action.ConfigIO
 import Game.LambdaHack.Client.Action.Frontend (frontendName, startup)
 import qualified Game.LambdaHack.Client.Action.Frontend as Frontend
 import qualified Game.LambdaHack.Client.Action.Save as Save
@@ -54,8 +54,8 @@ import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.Draw
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Client.Action.ConfigIO
 import Game.LambdaHack.CmdCli
+import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
@@ -316,14 +316,16 @@ rememberLevel Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} visible lvl clvl =
           , lsecret = IM.empty
           }
 
+saveName :: FactionId -> Bool -> String
+saveName side isAI = show side ++ if isAI then ".ai.sav" else ".human.sav"
+
 clientGameSave :: MonadClient m => Bool -> Bool -> m ()
 clientGameSave toBkp isAI = do
   s <- getState
   cli <- getClient
   configUI <- getsClient sconfigUI
   side <- getsState sside
-  let factionName = showT side <> if isAI then ".ai" else ".human"
-  liftIO $ Save.saveGameCli factionName toBkp configUI s cli
+  liftIO $ Save.saveGameCli (saveName side isAI) toBkp configUI s cli
 
 clientDisconnect :: MonadClient m => Bool -> m ()
 clientDisconnect isAI = do
@@ -332,12 +334,16 @@ clientDisconnect isAI = do
   clientGameSave False isAI
 
 restoreGame :: MonadClient m
-            => Bool -> ConfigUI -> (FilePath -> IO FilePath) -> Text
+            => Bool
             -> m (Either (State, StateClient, Msg) Msg)
-restoreGame isAI configUI pathsDataFile title = do
+restoreGame isAI = do
+  Kind.COps{corule} <- getsState scops
+  configUI <- getsClient sconfigUI
+  let pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
+      title = rtitle $ Kind.stdRuleset corule
   side <- getsState sside
-  let factionName = showT side <> if isAI then ".ai" else ".client"
-  liftIO $ Save.restoreGameCli factionName configUI pathsDataFile title
+  let sName = saveName side isAI
+  liftIO $ Save.restoreGameCli sName configUI pathsDataFile title
 
 readChanFromSer :: MonadClientChan m => m (Either CmdCli CmdUI)
 readChanFromSer = do
