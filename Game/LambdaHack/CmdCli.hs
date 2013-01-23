@@ -49,7 +49,8 @@ data CmdUpdateCli =
   | ShowAttackCli ActorId ActorId MU.Part Item Bool
   | RestartCli FactionPers State
   | ContinueSavedCli FactionPers
-  | GameSaveCli Bool
+  | GameSaveBkpCli Bool
+  | GameDisconnectCli Bool
   deriving Show
 
 data CmdUpdateUI =

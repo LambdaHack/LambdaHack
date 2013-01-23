@@ -4,6 +4,8 @@
 module Game.LambdaHack.Client.LoopAction (loopCli2, loopCli4) where
 
 import Data.Dynamic
+import Control.Monad
+import Data.Maybe
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Client.Action
@@ -11,20 +13,18 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.CmdCli
 import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
 
-initCli :: MonadClientChan m => (CmdUpdateCli -> m ()) -> m ()
-initCli cmdUpdateCli = do
+initCli :: MonadClientChan m => Bool -> (CmdUpdateCli -> m ()) -> m ()
+initCli isAI cmdUpdateCli = do
   -- Warning: state and client state are invalid here, e.g., sdungeon
   -- and sper are empty.
-  side <- getsState sside
   cops@Kind.COps{corule} <- getsState scops
   configUI <- getsClient sconfigUI
   let pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
       title = rtitle $ Kind.stdRuleset corule
-  restored <- restoreGame (showT side) configUI pathsDataFile title
+  restored <- restoreGame isAI configUI pathsDataFile title
   case restored of
     Right msg -> do  -- First visit ever, use the initial state.
       -- TODO: create or restore from config clients RNG seed
@@ -38,6 +38,7 @@ initCli cmdUpdateCli = do
       msgAdd msg
       let expected cmd = case cmd of ContinueSavedCli{} -> True; _ -> False
       waitForCmd cmdUpdateCli expected
+  modifyState $ updateQuit (const Nothing)
   -- State and client state are now valid.
 
 waitForCmd :: MonadClientChan m
@@ -55,7 +56,7 @@ loopCli2 :: MonadClientChan m
          -> (forall a. Typeable a => CmdQueryCli a -> m a)
          -> m ()
 loopCli2 cmdUpdateCli cmdQueryCli = do
-  initCli cmdUpdateCli
+  initCli True cmdUpdateCli
   loop
  where
   loop = do
@@ -68,7 +69,8 @@ loopCli2 cmdUpdateCli cmdQueryCli = do
       Left (CmdQueryCli cmd) -> do
         a <- cmdQueryCli cmd
         writeChanToSer $ toDyn a
-    loop
+    quit <- getsState squit
+    when (isNothing quit) loop
 
 loopCli4 :: (MonadClientUI m, MonadClientChan m)
          => (CmdUpdateCli -> m ())
@@ -77,7 +79,7 @@ loopCli4 :: (MonadClientUI m, MonadClientChan m)
          -> (forall a. Typeable a => CmdQueryUI a -> m a)
          -> m ()
 loopCli4 cmdUpdateCli cmdQueryCli cmdUpdateUI cmdQueryUI = do
-  initCli cmdUpdateCli
+  initCli False cmdUpdateCli
   loop
  where
   loop = do
@@ -93,4 +95,5 @@ loopCli4 cmdUpdateCli cmdQueryCli cmdUpdateUI cmdQueryUI = do
       Left (CmdQueryCli cmd) -> do
         a <- cmdQueryCli cmd
         writeChanToSer $ toDyn a
-    loop
+    quit <- getsState squit
+    when (isNothing quit) loop

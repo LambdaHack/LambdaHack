@@ -156,7 +156,7 @@ toggleOmniscient s@StateClient{sdebugCli=sdebugCli@DebugModeCli{somniscient}} =
   s {sdebugCli = sdebugCli {somniscient = not somniscient}}
 
 instance Binary StateClient where
-  put StateClient{..} = assert (null sframe `blame` sframe) $ do
+  put StateClient{..} = do
     put stgtMode
     put scursor
     put seps

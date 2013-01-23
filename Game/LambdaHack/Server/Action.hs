@@ -24,7 +24,7 @@ module Game.LambdaHack.Server.Action
   ) where
 
 import Control.Concurrent
-import Control.Exception (finally)
+--import Control.Exception (finally)
 import Control.Monad
 import Control.Monad.Reader.Class
 import qualified Control.Monad.State as St
@@ -120,9 +120,8 @@ remember = do
 -- See 'Save.saveGameBkp'.
 saveGameBkp :: MonadServerChan m => m ()
 saveGameBkp = do
-  -- Only save regular clients, AI clients will restore from the same saves.
-  -- TODO: also save the targets from AI clients
-  broadcastCli [] $ GameSaveCli True
+  broadcastCli [] $ GameSaveBkpCli False
+  withAI $ broadcastCli [] $ GameSaveBkpCli True
   glo <- getState
   ser <- getServer
   config <- getsServer sconfig
@@ -155,28 +154,31 @@ handleScores write status total =
 -- | Continue or restart or exit the game.
 endOrLoop :: MonadServerChan m => m () -> m ()
 endOrLoop loopServer = do
-  squit <- getsServer squit
+  quit <- getsState squit
   side <- getsState sside
   gquit <- getsState $ gquit . (IM.! side) . sfaction
   s <- getState
   ser <- getServer
   config <- getsServer sconfig
   let (_, total) = calculateTotal s
-  -- The first, boolean component of squit determines
+  -- The first, boolean component of quit determines
   -- if ending screens should be shown, the other argument describes
   -- the cause of the disruption of game flow.
-  case (squit, gquit) of
+  case (quit, gquit) of
     (Just _, _) -> do
       -- Save and display in parallel.
-      mv <- liftIO newEmptyMVar
-      liftIO $ void
-        $ forkIO (Save.saveGameSer config s ser
-                  `finally` putMVar mv ())
-      broadcastCli [] $ GameSaveCli False
-      tryIgnore $ do
-        handleScores False Camping total
-        broadcastUI [] $ MoreFullCli "See you soon, stronger and braver!"
-      liftIO $ takeMVar mv  -- wait until saved
+--      mv <- liftIO newEmptyMVar
+      liftIO $ Save.saveGameSer config s ser
+--      liftIO $ void
+--        $ forkIO (Save.saveGameSer config s ser `finally` putMVar mv ())
+-- 7.6        $ forkFinally (Save.saveGameSer config s ser) (putMVar mv ())
+--      tryIgnore $ do
+--        handleScores False Camping total
+--        broadcastUI [] $ MoreFullCli "See you soon, stronger and braver!"
+        -- TODO: show the above
+      broadcastCli [] $ GameDisconnectCli False
+      withAI $ broadcastCli [] $ GameDisconnectCli True
+--      liftIO $ takeMVar mv  -- wait until saved
       -- Do nothing, that is, quit the game loop.
     (Nothing, Just (showScreens, status@Killed{})) -> do
       nullR <- sendQueryCli side NullReportCli

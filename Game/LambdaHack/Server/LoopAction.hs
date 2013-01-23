@@ -23,7 +23,6 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.Server.Action
 import Game.LambdaHack.Server.EffectAction
 import Game.LambdaHack.Server.SemAction
-import Game.LambdaHack.Server.State
 import Game.LambdaHack.State
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
@@ -36,10 +35,10 @@ import Game.LambdaHack.Utils.Assert
 loopSer :: MonadServerChan m => (CmdSer -> m ()) -> m ()
 loopSer cmdSer = do
   -- Startup.
-  squit <- getsServer squit
+  quit <- getsState squit
   pers <- ask
   defLoc <- getsState localFromGlobal
-  case squit of
+  case quit of
     Nothing -> do  -- game restarted
       let bcast = funBroadcastCli (\fid -> RestartCli (pers IM.! fid) defLoc)
       bcast
@@ -50,7 +49,7 @@ loopSer cmdSer = do
       let bcast = funBroadcastCli (\fid -> ContinueSavedCli (pers IM.! fid))
       bcast
       withAI bcast
-  modifyServer $ \cli -> cli {squit=Nothing}
+  modifyState $ updateQuit $ const Nothing
   -- Loop.
   let loop = do
         time <- getsState getTime  -- the end time of this clip, inclusive
@@ -105,7 +104,7 @@ handleActors cmdSer subclipStart = withPerception $ do
   time <- getsState getTime  -- the end time of this clip, inclusive
    -- Older actors act earlier.
   lactor <- getsState (IM.toList . lactor . getArena)
-  quit <- getsServer squit
+  quit <- getsState squit
   let mnext = if null lactor  -- wait until any actor spawned
               then Nothing
               else let -- Actors of the same faction move together.
@@ -149,7 +148,7 @@ handleActors cmdSer subclipStart = withPerception $ do
           -- at once. This requires quite a bit of refactoring
           -- and is perhaps better done when the other factions have
           -- selected leaders as well.
-          squitNew <- getsServer squit
+          squitNew <- getsState squit
           when (timedCmdSer cmdS && isNothing squitNew) $
             maybe (return ()) advanceTime leaderNew
           -- Human moves always start a new subclip.

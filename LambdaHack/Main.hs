@@ -23,7 +23,7 @@ import Game.LambdaHack.Start
 -- is different. Which of the frontends is run depends on the flags supplied
 -- when compiling the engine library.
 main :: IO ()
-main =
+main = do
   let copsSlow = Kind.COps
         { coactor = Kind.createOps Content.ActorKind.cdefs
         , cocave  = Kind.createOps Content.CaveKind.cdefs
@@ -47,4 +47,5 @@ main =
       -- (unlike @MonadClientUI@).
       exeClient False _ = executorCli loopComputer undefined
       loopFrontend = connServer cops exeServer
-  in exeFrontend cops exeClient launchClients loopFrontend
+  exeFrontend cops exeClient launchClients loopFrontend
+  waitForChildren

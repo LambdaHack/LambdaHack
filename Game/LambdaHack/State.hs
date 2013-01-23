@@ -4,11 +4,12 @@ module Game.LambdaHack.State
   ( -- * Basic game state, local or global
     State
     -- * State components
-  , sdungeon, sdepth, sdisco, sfaction, scops, srandom, sside, sarena
+  , sdungeon, sdepth, sdisco, sfaction, scops, srandom, squit, sside, sarena
     -- * State operations
   , defStateGlobal, defStateLocal, localFromGlobal
   , switchGlobalSelectedSideOnlyForGlobalState
-  , updateDungeon, updateDisco, updateFaction, updateCOps, updateRandom
+  , updateDungeon, updateDisco, updateFaction
+  , updateCOps, updateRandom, updateQuit
   , updateArena, updateTime, updateSide, updateSelectedArena
   , getArena, getTime, getSide
   , isHumanFaction, isSpawningFaction
@@ -44,6 +45,7 @@ data State = State
   , _sfaction :: !FactionDict  -- ^ remembered sides still in game
   , _scops    :: Kind.COps     -- ^ remembered content
   , _srandom  :: !R.StdGen     -- ^ current random generator
+  , _squit    :: !(Maybe Bool)  -- ^ just going to save the game
   , _sside    :: !FactionId    -- ^ faction of the selected actor
   , _sarena   :: !LevelId      -- ^ level of the selected actor
   }
@@ -83,6 +85,7 @@ defStateGlobal :: Dungeon -> Int -> Discoveries
 defStateGlobal _sdungeon _sdepth _sdisco _sfaction _scops _srandom _sarena =
   State
     { _sside = -1  -- no side yet selected
+    , _squit = Nothing
     , ..
     }
 
@@ -96,6 +99,7 @@ defStateLocal _scops _sside =
     , _sfaction = IM.empty
     , _scops
     , _srandom = R.mkStdGen _sside
+    , _squit = Nothing
     , _sside
     , _sarena = levelDefault 1
     }
@@ -119,6 +123,7 @@ localFromGlobal State{ _scops=_scops@Kind.COps{ coitem=Kind.Ops{okind}
                            `notElem` (ritemProject $ Kind.stdRuleset corule)
                 in M.filter f _sdisco
     , _sside = -1  -- will be set by the client
+    , _squit = Nothing
     , ..
     }
 
@@ -143,9 +148,13 @@ updateFaction f s = s { _sfaction = f (_sfaction s) }
 updateCOps :: (Kind.COps -> Kind.COps) -> State -> State
 updateCOps f s = s { _scops = f (_scops s) }
 
--- | Update content data within state.
+-- | Update random generator state.
 updateRandom :: (R.StdGen -> R.StdGen) -> State -> State
 updateRandom f s = s { _srandom = f (_srandom s) }
+
+-- | Update game save status.
+updateQuit :: (Maybe Bool -> Maybe Bool) -> State -> State
+updateQuit f s = s { _squit = f (_squit s) }
 
 -- | Update current arena data within state.
 updateArena :: (Level -> Level) -> State -> State
@@ -201,6 +210,9 @@ scops = _scops
 srandom :: State -> R.StdGen
 srandom = _srandom
 
+squit :: State -> Maybe Bool
+squit = _squit
+
 sside :: State -> FactionId
 sside = _sside
 
@@ -214,6 +226,7 @@ instance Binary State where
     put _sdisco
     put _sfaction
     put (show _srandom)
+    put _squit
     put _sside
     put _sarena
   get = do
@@ -222,6 +235,7 @@ instance Binary State where
     _sdisco <- get
     _sfaction <- get
     g <- get
+    _squit <- get
     _sside <- get
     _sarena <- get
     let _scops = undefined  -- overwritten by recreated cops

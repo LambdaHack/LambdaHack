@@ -18,7 +18,6 @@ data StateServer = StateServer
   , sflavour  :: !FlavourMap    -- ^ association of flavour to items
   , scounter  :: !Int           -- ^ stores next actor index
   , sconfig   :: !Config        -- ^ this game's config (including initial RNG)
-  , squit     :: !(Maybe Bool)  -- ^ just going to save the game
   , sdebugSer :: !DebugModeSer  -- ^ debugging mode
   }
   deriving (Show, Typeable)
@@ -32,7 +31,6 @@ defStateServer :: DiscoRev -> FlavourMap -> Config -> StateServer
 defStateServer sdiscoRev sflavour sconfig =
   StateServer
     { scounter  = 0
-    , squit     = Nothing
     , sdebugSer = defDebugModeSer
     , ..
     }
@@ -56,12 +54,10 @@ instance Binary StateServer where
     put sflavour
     put scounter
     put sconfig
-    put squit
   get = do
     sdiscoRev <- get
     sflavour <- get
     scounter <- get
     sconfig <- get
-    squit <- get
     let sdebugSer = defDebugModeSer
     return StateServer{..}

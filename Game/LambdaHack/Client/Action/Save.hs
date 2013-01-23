@@ -19,9 +19,9 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.File
 
-saveLock :: MVar ()
-{-# NOINLINE saveLock #-}
-saveLock = unsafePerformIO newEmptyMVar
+_saveLock :: MVar ()
+{-# NOINLINE _saveLock #-}
+_saveLock = unsafePerformIO newEmptyMVar
 
 -- | Try to create a directory. Hide errors due to,
 -- e.g., insufficient permissions, because the game can run
@@ -38,7 +38,7 @@ tryCreateDir dir =
 tryCopyDataFiles :: ConfigUI -> (FilePath -> IO FilePath) -> IO ()
 tryCopyDataFiles ConfigUI{configUICfgFile} pathsDataFile = do
   uiFile <- pathsDataFile $ takeFileName configUICfgFile <.> ".default"
-  let newUIFile     = configUICfgFile    <.> ".ini"
+  let newUIFile = configUICfgFile <.> ".ini"
   Ex.catch
     (copyFile uiFile newUIFile)
     (\ e -> case e :: Ex.IOException of _ -> return ())
@@ -48,28 +48,27 @@ tryCopyDataFiles ConfigUI{configUICfgFile} pathsDataFile = do
 -- This is only a backup, so no problem is the game is shut down
 -- before saving finishes, so we don't wait on the mvar. However,
 -- if a previous save is already in progress, we skip this save.
-saveGameBkpCli :: ConfigUI -> State -> StateClient -> IO ()
-saveGameBkpCli ConfigUI{configAppDataDirUI} s cli = do
-  b <- tryPutMVar saveLock ()
-  when b $
-    void $ forkIO $ do
-      let factionName = showT $ sside s
-          saveFile = configAppDataDirUI </> T.unpack factionName ++ ".client.sav"
+saveGameBkpCli :: Text -> ConfigUI -> State -> StateClient -> IO ()
+saveGameBkpCli factionName ConfigUI{configAppDataDirUI} s cli = do
+--  b <- tryPutMVar saveLock ()
+--  when b $
+--    void $ forkIO $ do
+      let saveFile = configAppDataDirUI </> T.unpack factionName ++ ".sav"
           saveFileBkp = saveFile <.> ".bkp"
       encodeEOF saveFile (s, cli)
       renameFile saveFile saveFileBkp
-      takeMVar saveLock
+--      takeMVar saveLock
 
 -- | Save a simple serialized version of the current state.
 -- Protected by a lock to avoid corrupting the file.
-saveGameCli :: Bool -> ConfigUI -> State -> StateClient -> IO ()
-saveGameCli True configUI s cl = saveGameBkpCli configUI s cl
-saveGameCli False ConfigUI{configAppDataDirUI} s cli = do
-  putMVar saveLock ()
-  let factionName = showT $ sside s
-      saveFile = configAppDataDirUI </> T.unpack factionName ++ ".client.sav"
+saveGameCli :: Text -> Bool -> ConfigUI -> State -> StateClient -> IO ()
+saveGameCli factionName True configUI s cl =
+  saveGameBkpCli factionName configUI s cl
+saveGameCli factionName False ConfigUI{configAppDataDirUI} s cli = do
+--  putMVar saveLock ()
+  let saveFile = configAppDataDirUI </> T.unpack factionName ++ ".sav"
   encodeEOF saveFile (s, cli)
-  takeMVar saveLock
+--  takeMVar saveLock
 
 -- | Restore a saved game, if it exists. Initialize directory structure,
 -- if needed.

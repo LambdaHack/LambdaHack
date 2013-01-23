@@ -33,7 +33,8 @@ cmdUpdateCli cmd = case cmd of
     showAttackCli source target verb stack say
   RestartCli sper locRaw -> restartCli sper locRaw
   ContinueSavedCli sper -> modifyClient $ \cli -> cli {sper}
-  GameSaveCli toBkp -> clientGameSave toBkp
+  GameSaveBkpCli isAI -> clientGameSave True isAI
+  GameDisconnectCli isAI -> clientDisconnect isAI
 
 cmdUpdateUI :: MonadClientUI m => CmdUpdateUI -> m ()
 cmdUpdateUI cmd = case cmd of

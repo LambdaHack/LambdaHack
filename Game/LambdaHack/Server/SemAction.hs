@@ -455,8 +455,7 @@ displaceActor source target = do
 -- ** GameExit
 
 gameExitSer :: MonadServer m => m ()
-gameExitSer =
-  modifyServer (\ s -> s {squit = Just True})
+gameExitSer = modifyState $ updateQuit $ const $ Just True
 
 -- ** GameRestart
 

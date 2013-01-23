@@ -27,7 +27,8 @@ module Game.LambdaHack.Client.Action
     -- * Turn init operations
   , rememberLevel, displayPush
     -- * Assorted primitives
-  , clientGameSave, restoreGame, readChanFromSer, writeChanToSer
+  , clientGameSave, clientDisconnect, restoreGame
+  , readChanFromSer, writeChanToSer
   ) where
 
 import Control.Concurrent
@@ -315,18 +316,27 @@ rememberLevel Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} visible lvl clvl =
           , lsecret = IM.empty
           }
 
-clientGameSave :: MonadClient m => Bool -> m ()
-clientGameSave toBkp = do
+clientGameSave :: MonadClient m => Bool -> Bool -> m ()
+clientGameSave toBkp isAI = do
   s <- getState
   cli <- getClient
   configUI <- getsClient sconfigUI
---  flushFrames  -- this would force MonadClientUI; TODO: assert instead
-  liftIO $ Save.saveGameCli toBkp configUI s cli
+  side <- getsState sside
+  let factionName = showT side <> if isAI then ".ai" else ".human"
+  liftIO $ Save.saveGameCli factionName toBkp configUI s cli
+
+clientDisconnect :: MonadClient m => Bool -> m ()
+clientDisconnect isAI = do
+--  flushFrames  -- this would force MonadClientUI
+  modifyState $ updateQuit $ const $ Just False
+  clientGameSave False isAI
 
 restoreGame :: MonadClient m
-            => Text -> ConfigUI -> (FilePath -> IO FilePath) -> Text
+            => Bool -> ConfigUI -> (FilePath -> IO FilePath) -> Text
             -> m (Either (State, StateClient, Msg) Msg)
-restoreGame factionName configUI pathsDataFile title =
+restoreGame isAI configUI pathsDataFile title = do
+  side <- getsState sside
+  let factionName = showT side <> if isAI then ".ai" else ".client"
   liftIO $ Save.restoreGameCli factionName configUI pathsDataFile title
 
 readChanFromSer :: MonadClientChan m => m (Either CmdCli CmdUI)
