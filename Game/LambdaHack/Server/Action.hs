@@ -69,7 +69,7 @@ import Game.LambdaHack.Utils.Assert
 -- | Update the cached perception for the selected level, for all factions,
 -- for the given computation. The assumption is the level, and only the level,
 -- has changed since the previous perception calculation.
-withPerception :: MonadServerRO m => m () -> m ()
+withPerception :: MonadServerRO m => m a -> m a
 withPerception m = do
   cops <- getsState scops
   configFovMode <- getsServer (configFovMode . sconfig)
@@ -97,11 +97,11 @@ askPerceptionSer = do
 
 -- | Update all factions' memory of the current level.
 --
--- This has to be strict wrt map operation sor we leak one perception
+-- This has to be strict wrt map operations or we leak one perception
 -- per turn. This has to lazy wrt the perception sets or we compute them
 -- for factions that do not move, perceive or not even reside on the level.
 -- When clients and server communicate via network the communication
--- has to be explicitely lazy and multiple updates have to collapsed
+-- has to be explicitely lazy and multiple updates have to be collapsed
 -- when sending is forced by the server asking a client to perceive
 -- something or to act.
 remember :: MonadServerChan m => m ()

@@ -297,7 +297,8 @@ setArenaLeaderCli arena actor = do
 -- | Continue running in the given direction.
 continueRun :: MonadClient m => ActorId -> (Vector, Int) -> m CmdSer
 continueRun leader dd = do
-  dir <- continueRunDir leader dd
+  (dir, distNew) <- continueRunDir leader dd
+  modifyClient $ \cli -> cli {srunning = Just (dir, distNew)}
   -- Attacks and opening doors disallowed when continuing to run.
   return $ RunSer leader dir
 

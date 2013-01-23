@@ -30,7 +30,7 @@ import Game.LambdaHack.Faction
 -- succeeds much more often than subsequent turns, because most
 -- of the disturbances are ignored, since the player is aware of them
 -- and still explicitly requests a run.
-runDir :: MonadClient m => ActorId -> (Vector, Int) -> m Vector
+runDir :: MonadClientRO m => ActorId -> (Vector, Int) -> m (Vector, Int)
 runDir leader (dir, dist) = do
   cops <- getsState scops
   posHere <- getsState (bpos . getActorBody leader)
@@ -40,8 +40,7 @@ runDir leader (dir, dist) = do
     let accessibleDir loc d = accessible cops lvl loc (loc `shift` d)
         -- Do not count distance if we just open a door.
         distNew = if accessibleDir posHere dir then dist + 1 else dist
-    modifyClient $ \cli -> cli {srunning = Just (dir, distNew)}
-    return dir
+    return (dir, distNew)
 
 -- | Human running mode, determined from the nearby cave layout.
 data RunMode =
@@ -149,12 +148,14 @@ runDisturbance locLast distLast msg hs ms per posHere
 -- it ajusts the direction given by the vector if we reached
 -- a corridor's corner (we never change direction except in corridors)
 -- and it increments the counter of traversed tiles.
-continueRunDir :: MonadClient m => ActorId -> (Vector, Int) -> m Vector
+continueRunDir :: MonadClientRO m
+               => ActorId -> (Vector, Int)
+               -> m (Vector, Int)
 continueRunDir leader (dirLast, distLast) = do
   cops@Kind.COps{cotile} <- getsState scops
   posHere <- getsState (bpos . getActorBody leader)
   per <- askPerception
-  StateClient{sreport} <- getClient  -- TODO: check the message before it goes into history
+  sreport <- getsClient sreport -- TODO: check the message before it goes into history
   genemy <- getsState $ genemy . getSide
   ms <- getsState $ actorList (`elem` genemy) . getArena
   hs <- getsState $ actorList (not . (`elem` genemy)) . getArena

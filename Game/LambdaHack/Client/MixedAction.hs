@@ -331,7 +331,8 @@ movePl dir = do
 runPl :: MonadClient m => Vector -> m CmdSer
 runPl dir = do
   Just leader <- getsClient getLeader
-  dirR <- runDir leader (dir, 0)
+  (dirR, distNew) <- runDir leader (dir, 0)
+  modifyClient $ \cli -> cli {srunning = Just (dirR, distNew)}
   return $! RunSer leader dirR
 
 -- ** GameExit

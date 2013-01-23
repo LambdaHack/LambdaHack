@@ -8,15 +8,20 @@ module Game.LambdaHack.Client
   ) where
 
 import Control.Monad
+import qualified Data.IntMap as IM
 
+import Game.LambdaHack.Action
 import Game.LambdaHack.Client.Action
-import Game.LambdaHack.Client.LoopAction
-import Game.LambdaHack.Client.SemAction
-import Game.LambdaHack.CmdCli
-import Game.LambdaHack.Client.State
-import Game.LambdaHack.Msg
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.LocalAction
+import Game.LambdaHack.Client.LoopAction
+import Game.LambdaHack.Client.RunAction
+import Game.LambdaHack.Client.SemAction
+import Game.LambdaHack.Client.State
+import Game.LambdaHack.CmdCli
+import Game.LambdaHack.Faction
+import Game.LambdaHack.Msg
+import Game.LambdaHack.State
 
 cmdUpdateCli :: MonadClient m => CmdUpdateCli -> m ()
 cmdUpdateCli cmd = case cmd of
@@ -60,6 +65,13 @@ cmdQueryCli cmd = case cmd of
     return $! nullReport sreport
   SetArenaLeaderCli arena actor -> setArenaLeaderCli arena actor
   HandleAI actor -> handleAI actor
+  IsRunningCli -> do
+    tryWith (\_ -> return False) $ do
+      mleader <- getsClient getLeader
+      leader <- maybe abort return mleader
+      srunning <- getsClient srunning
+      maybe abort (void . continueRunDir leader) srunning
+      return True
 
 cmdQueryUI :: MonadClientUI m => CmdQueryUI a -> m a
 cmdQueryUI cmd = case cmd of
@@ -82,3 +94,13 @@ cmdQueryUI cmd = case cmd of
     recordHistory  -- Prevent repeating the ending msgs.
     return go
   HandleHumanCli leader -> handleHuman leader
+  FlushFramesCli newSide -> do
+    srunning <- getsClient srunning
+    case srunning of
+      Just (_, k) | k > 1 -> return False
+      _ -> do
+        faction <- getsState sfaction
+        let factionName = gname $ faction IM.! newSide
+            msg = "Switching to player" <+> factionName <> "."
+        void $ displayMore ColorFull msg
+        return True

@@ -26,6 +26,7 @@ import Game.LambdaHack.Server.SemAction
 import Game.LambdaHack.State
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Faction
 
 -- | Start a clip (a part of a turn for which one or more frames
 -- will be generated). Do whatever has to be done
@@ -51,7 +52,7 @@ loopSer cmdSer = do
       withAI bcast
   modifyState $ updateQuit $ const Nothing
   -- Loop.
-  let loop = do
+  let loop previousHuman = do
         time <- getsState getTime  -- the end time of this clip, inclusive
         let clipN = (time `timeFit` timeClip)
                     `mod` (timeTurn `timeFit` timeClip)
@@ -59,10 +60,12 @@ loopSer cmdSer = do
         when (clipN == 1) checkEndGame
         when (clipN == 2) regenerateLevelHP
         when (clipN == 3) generateMonster
-        handleActors cmdSer timeZero
+        nHuman <- handleActors cmdSer timeZero previousHuman
         modifyState (updateTime (timeAdd timeClip))
-        endOrLoop loop
-  local (const pers) loop
+        endOrLoop (loop nHuman)
+  faction <- getsState sfaction
+  let firstHuman = fst . head $ filter (isHumanFact . snd) $ IM.assocs faction
+  local (const pers) $ loop firstHuman
 
 -- TODO: switch levels alternating between player factions,
 -- if there are many and on distinct levels.
@@ -97,8 +100,9 @@ checkEndGame = do
 handleActors :: MonadServerChan m
              => (CmdSer -> m ())
              -> Time  -- ^ start time of current subclip, exclusive
-             -> m ()
-handleActors cmdSer subclipStart = withPerception $ do
+             -> FactionId
+             -> m FactionId
+handleActors cmdSer subclipStart previousHuman = withPerception $ do
   remember
   Kind.COps{coactor} <- getsState scops
   time <- getsState getTime  -- the end time of this clip, inclusive
@@ -114,9 +118,11 @@ handleActors cmdSer subclipStart = withPerception $ do
                       then Nothing  -- no actor is ready for another move
                       else Just (actor, m)
   case mnext of
-    _ | isJust quit -> return ()
-    Nothing -> when (subclipStart == timeZero) $
-                 broadcastPosUI [] $ DisplayDelayCli
+    _ | isJust quit -> return previousHuman
+    Nothing -> do
+      when (subclipStart == timeZero) $
+        broadcastPosUI [] $ DisplayDelayCli
+      return previousHuman
     Just (actor, m) -> do
       let side = bfaction m
       switchGlobalSelectedSide side
@@ -130,31 +136,42 @@ handleActors cmdSer subclipStart = withPerception $ do
           -- Human moves always start a new subclip.
           -- TODO: remove or only push to sside?
           broadcastPosUI [] $ DisplayPushCli
+          nHuman <- if isHuman && side /= previousHuman
+                    then do
+                      newRuns <- sendQueryCli side IsRunningCli
+                      if newRuns
+                        then return previousHuman
+                        else do
+                          b <- sendQueryUI previousHuman $ FlushFramesCli side
+                          if b
+                            then return side
+                            else return previousHuman
+                    else return previousHuman
           (cmdS, leaderNew, arenaNew) <-
             sendQueryUI side $ HandleHumanCli leader
           modifyState $ updateSelectedArena arenaNew
           tryWith (\msg -> do
                       sendUpdateCli side $ ShowMsgCli msg
-                      handleActors cmdSer subclipStart
-                  )
-                  (cmdSer cmdS)
-          -- Advance time once, after the leader switched perhaps many times.
-          -- TODO: this is correct only when all heroes have the same
-          -- speed and can't switch leaders by, e.g., aiming a wand
-          -- of domination. We need to generalize by displaying
-          -- "(next move in .3s [RET]" when switching leaders.
-          -- RET waits .3s and gives back control,
-          -- Any other key does the .3s wait and the action form the key
-          -- at once. This requires quite a bit of refactoring
-          -- and is perhaps better done when the other factions have
-          -- selected leaders as well.
-          squitNew <- getsState squit
-          when (timedCmdSer cmdS && isNothing squitNew) $
-            maybe (return ()) advanceTime leaderNew
-          -- Human moves always start a new subclip.
-          lpos <- getsState $ bpos . getActorBody (fromMaybe actor leaderNew)
-          broadcastPosUI [lpos] $ DisplayPushCli
-          handleActors cmdSer $ btime m
+                      handleActors cmdSer subclipStart nHuman
+                  ) $ do
+            cmdSer cmdS
+            -- Advance time once, after the leader switched perhaps many times.
+            -- TODO: this is correct only when all heroes have the same
+            -- speed and can't switch leaders by, e.g., aiming a wand
+            -- of domination. We need to generalize by displaying
+            -- "(next move in .3s [RET]" when switching leaders.
+            -- RET waits .3s and gives back control,
+            -- Any other key does the .3s wait and the action form the key
+            -- at once. This requires quite a bit of refactoring
+            -- and is perhaps better done when the other factions have
+            -- selected leaders as well.
+            squitNew <- getsState squit
+            when (timedCmdSer cmdS && isNothing squitNew) $
+              maybe (return ()) advanceTime leaderNew
+            -- Human moves always start a new subclip.
+            lpos <- getsState $ bpos . getActorBody (fromMaybe actor leaderNew)
+            broadcastPosUI [lpos] $ DisplayPushCli
+            handleActors cmdSer (btime m) nHuman
         else do
 --          recordHistory
           advanceTime actor  -- advance time while the actor still alive
@@ -179,7 +196,7 @@ handleActors cmdSer subclipStart = withPerception $ do
                       (cmdSer cmdS)
               apos <- getsState $ bpos . getActorBody actor
               broadcastPosUI [apos] $ DisplayPushCli
-              handleActors cmdSer $ btime m
+              handleActors cmdSer (btime m) previousHuman
             else do
               -- No new subclip.
               cmdS <- withAI $ sendQueryCli side $ HandleAI actor
@@ -190,7 +207,7 @@ handleActors cmdSer subclipStart = withPerception $ do
                                else assert `failure` msg <> "in AI"
                       )
                       (cmdSer cmdS)
-              handleActors cmdSer subclipStart
+              handleActors cmdSer subclipStart previousHuman
 
 -- | Advance (or rewind) the move time for the given actor.
 advanceTime :: MonadServer m => ActorId -> m ()
