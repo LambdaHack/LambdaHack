@@ -13,9 +13,9 @@
 
 ; [computerPlayers]
 ; ; faction "playable" means a random choice
-; monster: computer monster
-; hero: computer hero
-; playable: computer playable
+; computer_monster: monster
+; computer_hero: hero
+; computer_playable: playable
 
 ; [dungeon]
 ; depth: 10
@@ -37,9 +37,9 @@
 ; firstDeathEnds: False
 
 ; [humanPlayers]
-; hero: human hero 1
-; monster: human monster
-; hero: human hero 2
+; human_hero_1: hero
+; human_monster: monster
+; human_hero_2: hero
 
 ; [heroNames]
 ; HeroName_0: you

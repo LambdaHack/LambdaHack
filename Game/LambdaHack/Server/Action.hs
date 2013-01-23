@@ -265,7 +265,7 @@ initialHeroes cops ppos side s ser =
 createFactions :: Kind.COps -> Config -> Rnd FactionDict
 createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
                         , costrat=Kind.Ops{opick=sopick} } config = do
-  let g isHuman (fType, gname) = do
+  let g isHuman (gname, fType) = do
         gkind <- opick fType (const True)
         let fk = okind gkind
             genemy = []  -- fixed below
