@@ -23,30 +23,6 @@ saveLock :: MVar ()
 {-# NOINLINE saveLock #-}
 saveLock = unsafePerformIO newEmptyMVar
 
--- | Try to create a directory. Hide errors due to,
--- e.g., insufficient permissions, because the game can run
--- in the current directory just as well.
-tryCreateDir :: FilePath -> IO ()
-tryCreateDir dir =
-  Ex.catch
-    (createDirectory dir)
-    (\ e -> case e :: Ex.IOException of _ -> return ())
-
--- | Try to copy over data files. Hide errors due to,
--- e.g., insufficient permissions, because the game can run
--- without data files just as well.
-tryCopyDataFiles :: Config -> (FilePath -> IO FilePath) -> IO ()
-tryCopyDataFiles Config{ configScoresFile
-                       , configRulesCfgFile } pathsDataFile = do
-  rulesFile  <- pathsDataFile $ takeFileName configRulesCfgFile <.> ".default"
-  scoresFile <- pathsDataFile $ takeFileName configScoresFile
-  let newRulesFile  = configRulesCfgFile <.> ".ini"
-      newScoresFile = configScoresFile
-  Ex.catch
-    (copyFile rulesFile newRulesFile >>
-     copyFile scoresFile newScoresFile)
-    (\ e -> case e :: Ex.IOException of _ -> return ())
-
 -- TODO: make sure it's executed eagerly.
 -- | Save game to the backup savefile, in case of crashes.
 -- This is only a backup, so no problem is the game is shut down
@@ -72,32 +48,32 @@ saveGameSer Config{configAppDataDir} s ser = do
   encodeEOF saveFile (s, ser)
   takeMVar saveLock
 
--- | Restore a saved game, if it exists. Initialize directory structure,
--- if needed.
+-- | Restore a saved game, if it exists. Initialize directory structure
+-- and cope over data files, if needed.
 restoreGameSer :: Config -> (FilePath -> IO FilePath) -> Text
                -> IO (Either (State, StateServer, Msg) Msg)
-restoreGameSer config@Config{configAppDataDir}
+restoreGameSer Config{ configAppDataDir
+                     , configRulesCfgFile
+                     , configScoresFile }
                pathsDataFile title = do
-  ab <- doesDirectoryExist configAppDataDir
-  -- If the directory can't be created, the current directory will be used.
-  unless ab $ do
-    tryCreateDir configAppDataDir
-    -- Possibly copy over data files. No problem if it fails.
-    tryCopyDataFiles config pathsDataFile
-  -- If the savefile exists but we get IO errors, we show them,
-  -- back up the savefile and move it out of the way and start a new game.
-  -- If the savefile was randomly corrupted or made read-only,
-  -- that should solve the problem. If the problems are more serious,
-  -- the other functions will most probably also throw exceptions,
-  -- this time without trying to fix it up.
+  -- Create user data directory and copy files, if not already there.
+  tryCreateDir configAppDataDir
+  tryCopyDataFiles pathsDataFile
+    [ (configRulesCfgFile <.> ".default", configRulesCfgFile <.> ".ini")
+    , (configScoresFile, configScoresFile) ]
   let saveFile = configAppDataDir </> "server.sav"
       saveFileBkp = saveFile <.> ".bkp"
   sb <- doesFileExist saveFile
   bb <- doesFileExist saveFileBkp
+  when sb $ renameFile saveFile saveFileBkp
+  -- If the savefile exists but we get IO or decoding errors, we show them,
+  -- back up the savefile, move it out of the way and start a new game.
+  -- If the savefile was randomly corrupted or made read-only,
+  -- that should solve the problem. Serious IO problems (e.g. failure
+  -- to create a user data directory) terminate the program with an exception.
   Ex.catch
     (if sb
        then do
-         renameFile saveFile saveFileBkp
          (s, ser) <- strictDecodeEOF saveFileBkp
          let msg = "Welcome back to" <+> title <> "."
          return $ Left (s, ser, msg)

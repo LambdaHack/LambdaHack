@@ -23,26 +23,6 @@ _saveLock :: MVar ()
 {-# NOINLINE _saveLock #-}
 _saveLock = unsafePerformIO newEmptyMVar
 
--- | Try to create a directory. Hide errors due to,
--- e.g., insufficient permissions, because the game can run
--- in the current directory just as well.
-tryCreateDir :: FilePath -> IO ()
-tryCreateDir dir =
-  Ex.catch
-    (createDirectory dir)
-    (\ e -> case e :: Ex.IOException of _ -> return ())
-
--- | Try to copy over data files. Hide errors due to,
--- e.g., insufficient permissions, because the game can run
--- without data files just as well.
-tryCopyDataFiles :: ConfigUI -> (FilePath -> IO FilePath) -> IO ()
-tryCopyDataFiles ConfigUI{configUICfgFile} pathsDataFile = do
-  uiFile <- pathsDataFile $ takeFileName configUICfgFile <.> ".default"
-  let newUIFile = configUICfgFile <.> ".ini"
-  Ex.catch
-    (copyFile uiFile newUIFile)
-    (\ e -> case e :: Ex.IOException of _ -> return ())
-
 -- TODO: make sure it's executed eagerly.
 -- | Save game to the backup savefile, in case of crashes.
 -- This is only a backup, so no problem is the game is shut down
@@ -74,28 +54,25 @@ saveGameCli saveName False ConfigUI{configAppDataDirUI} s cli = do
 -- if needed.
 restoreGameCli :: String -> ConfigUI -> (FilePath -> IO FilePath) -> Text
                -> IO (Either (State, StateClient, Msg) Msg)
-restoreGameCli saveName configUI@ConfigUI{configAppDataDirUI}
+restoreGameCli saveName ConfigUI{ configAppDataDirUI
+                                , configUICfgFile }
                pathsDataFile title = do
-  ab <- doesDirectoryExist configAppDataDirUI
-  -- If the directory can't be created, the current directory will be used.
-  unless ab $ do
-    tryCreateDir configAppDataDirUI
-    -- Possibly copy over data files. No problem if it fails.
-    tryCopyDataFiles configUI pathsDataFile
-  -- If the savefile exists but we get IO errors, we show them,
-  -- back up the savefile and move it out of the way and start a new game.
-  -- If the savefile was randomly corrupted or made read-only,
-  -- that should solve the problem. If the problems are more serious,
-  -- the other functions will most probably also throw exceptions,
-  -- this time without trying to fix it up.
+  tryCreateDir configAppDataDirUI
+  tryCopyDataFiles pathsDataFile
+    [(configUICfgFile <.> ".default", configUICfgFile <.> ".ini")]
   let saveFile = configAppDataDirUI </> saveName
       saveFileBkp = saveFile <.> ".bkp"
   sb <- doesFileExist saveFile
   bb <- doesFileExist saveFileBkp
+  when sb $ renameFile saveFile saveFileBkp
+  -- If the savefile exists but we get IO or decoding errors, we show them,
+  -- back up the savefile, move it out of the way and start a new game.
+  -- If the savefile was randomly corrupted or made read-only,
+  -- that should solve the problem. Serious IO problems (e.g. failure
+  -- to create a user data directory) terminate the program with an exception.
   Ex.catch
     (if sb
      then do
-       renameFile saveFile saveFileBkp
        (s, cli) <- strictDecodeEOF saveFileBkp
        let msg = "Welcome back to" <+> title <> "."
        return $ Left (s, cli, msg)
