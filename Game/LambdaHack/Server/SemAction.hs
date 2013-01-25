@@ -6,6 +6,7 @@
 module Game.LambdaHack.Server.SemAction where
 
 import Control.Monad
+import Control.Monad.Reader.Class
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import Data.List
@@ -467,45 +468,44 @@ gameRestartSer = do
 -- * Assorted helper server functions.
 
 -- | Create a new monster on the level, at a random position.
-rollMonster :: Kind.COps -> Perception -> State -> StateServer
+rollMonster :: Kind.COps -> IS.IntSet -> State -> StateServer
             -> Rnd (State, StateServer)
 rollMonster Kind.COps{ cotile
                      , coactor=Kind.Ops{opick, okind}
                      , cofact=Kind.Ops{okind=fokind}
-                     } per state ser = do
-  let lvl@Level{lactor} = getArena state
-      lenemy = genemy . getSide $ state
-      ms = actorNotProjList (`elem` lenemy) . getArena $ state
-      -- TODO: should be far from anybody but the monster's faction
-      hs = actorNotProjList (== sside state) . getArena $ state
-      isLit = Tile.isLit cotile
-  rc <- monsterGenChance (levelNumber $ sarena state) (length ms)
-  if not rc
-    then return (state, ser)
-    else do
-      let distantAtLeast d =
-            \ l _ -> all (\ h -> chessDist (lxsize lvl) (bpos h) l > d) hs
-      loc <-
-        findPosTry 20 (ltile lvl)  -- 20 only, for unpredictability
-          [ \ _ t -> not (isLit t)
-          , distantAtLeast 15
-          , \ l t -> not (isLit t) || distantAtLeast 15 l t
-          , distantAtLeast 10
-          , \ l _ -> not $ l `IS.member` totalVisible per
-          , distantAtLeast 5
-          , \ l t -> Tile.hasFeature cotile F.Walkable t
-                     && unoccupied (IM.elems lactor) l
-          ]
-      let f (fid, fa) =
-            let kind = fokind (gkind fa)
-            in if fspawn kind <= 0
-               then Nothing
-               else Just (fspawn kind, (kind, fid))
-      case catMaybes $ map f $ IM.toList $ sfaction state of
-        [] -> return (state, ser)
-        spawnList -> do
-          let freq = toFreq "spawn" spawnList
-          (spawnKind, bfaction) <- frequency freq
+                     } visible state ser = do
+  let f (fid, fa) =
+        let kind = fokind (gkind fa)
+        in if fspawn kind <= 0
+           then Nothing
+           else Just (fspawn kind, (kind, fid))
+  case catMaybes $ map f $ IM.toList $ sfaction state of
+    [] -> return (state, ser)
+    spawnList -> do
+      let freq = toFreq "spawn" spawnList
+      (spawnKind, bfaction) <- frequency freq
+      let lvl@Level{lactor} = getArena state
+          ours = actorNotProjList (== bfaction) lvl
+          others = actorNotProjList (/= bfaction) lvl
+          isLit = Tile.isLit cotile
+      rc <- monsterGenChance (levelNumber $ sarena state) (length ours)
+      if not rc
+        then return (state, ser)
+        else do
+          let distantAtLeast d =
+                \ l _ -> all (\ h ->
+                               chessDist (lxsize lvl) (bpos h) l > d) others
+          loc <-
+            findPosTry 40 (ltile lvl)
+              [ \ _ t -> not (isLit t)
+              , distantAtLeast 15
+              , \ l t -> not (isLit t) || distantAtLeast 15 l t
+              , distantAtLeast 10
+              , \ l _ -> not $ l `IS.member` visible
+              , distantAtLeast 5
+              , \ l t -> Tile.hasFeature cotile F.Walkable t
+                         && unoccupied (IM.elems lactor) l
+              ]
           mk <- opick (fname spawnKind) (const True)
           hp <- rollDice $ ahp $ okind mk
           return $ addMonster cotile mk hp loc bfaction False state ser
@@ -516,8 +516,10 @@ generateMonster = do
   cops <- getsState scops
   state <- getState
   ser <- getServer
-  per <- askPerceptionSer  -- TODO: sum over all not spawning factions
-  (nstate, nser) <- rndToAction $ rollMonster cops per state ser
+  pers <- ask
+  arena <- getsState sarena
+  let allPers = IS.unions $ map (totalVisible . (M.! arena)) $ IM.elems pers
+  (nstate, nser) <- rndToAction $ rollMonster cops allPers state ser
   random <- getsState srandom
   putState $! updateRandom (const random) nstate
   putServer nser

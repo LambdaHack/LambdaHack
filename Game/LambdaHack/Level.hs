@@ -170,7 +170,7 @@ findPos ltile p =
 
 -- | Try to find a random position on the map satisfying
 -- the conjunction of the list of predicates.
--- If the premitted number of attempts is not enough,
+-- If the permitted number of attempts is not enough,
 -- try again the same number of times without the first predicate,
 -- then without the first two, etc., until only one predicate remains,
 -- at which point try as many times, as needed.
