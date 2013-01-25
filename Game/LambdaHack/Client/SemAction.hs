@@ -282,7 +282,7 @@ carryOnCli = do
 setArenaLeaderCli :: MonadClient m => LevelId -> ActorId -> m ActorId
 setArenaLeaderCli arena actor = do
   arenaOld <- getsState sarena
-  leaderOld <- getsClient sleader
+  mleaderOld <- getsClient sleader
   -- Old leader may have been killed by enemies since @side@ last moved
   -- or local arena changed and the side has not elected a new leader yet
   -- or global arena changed the old leader is on the old arena.
@@ -291,7 +291,11 @@ setArenaLeaderCli arena actor = do
               modifyClient invalidateSelectedLeader
               modifyState $ updateSelectedArena arena
               return actor
-            else return $! fromMaybe actor leaderOld
+            else case mleaderOld of
+              Nothing -> return actor
+              Just leaderOld -> do
+                b <- getsState $ memActor leaderOld
+                return $! if b then leaderOld else actor
   loc <- getState
   modifyClient $ updateSelectedLeader leader loc
   return leader
