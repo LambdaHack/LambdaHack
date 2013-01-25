@@ -124,9 +124,10 @@ invalidateSelectedLeader cli = cli {srunning = Nothing, _sleader = Nothing}
 updateSelectedLeader :: ActorId -> State -> StateClient -> StateClient
 updateSelectedLeader leader s cli =
   let la = lactor $ sdungeon s M.! sarena s
-      side1 = fmap bfaction $ IM.lookup leader la
-      side2 = Just $ sside s
-  in assert (side1 == side2 `blame` (side1, side2, leader, sarena s, s))
+      mside1 = fmap bfaction $ IM.lookup leader la
+      side2 = sside s
+  in assert (maybe True (== side2) mside1
+             `blame` (mside1, side2, leader, sarena s, s))
      $ cli {_sleader = Just leader}
 
 getLeader :: StateClient -> Maybe ActorId
