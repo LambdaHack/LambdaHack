@@ -30,7 +30,7 @@ cmdAction :: MonadClientUI m => StateClient -> State -> CmdHuman
           -> WriterT Slideshow m (Maybe CmdSer)
 cmdAction cli s cmd =
   let tgtMode = stgtMode cli
-      leader = fromJust $ getLeader cli
+      leader = fromJust $ sleader cli
       arena = sarena s
       sm = getActorBody leader s
       ppos = bpos sm
@@ -83,8 +83,8 @@ cmdAction cli s cmd =
     Accept      -> acceptCurrent displayHelp >> return Nothing
     Clear       -> lift $ clearCurrent >> return Nothing
     History     -> displayHistory >> return Nothing
-    HeroCycle   -> lift $ cycleHero >> return Nothing
-    HeroBack    -> lift $ backCycleHero >> return Nothing
+    MemberCycle -> lift $ cycleMember >> return Nothing
+    MemberBack  -> lift $ backCycleMember >> return Nothing
     Help        -> displayHelp >> return Nothing
     SelectHero k -> lift $ selectHero k >> return Nothing
     DebugArea   -> modifyClient toggleMarkVision >> return Nothing
@@ -99,7 +99,7 @@ cmdAction cli s cmd =
 -- the level of the selected hero).
 cmdSemantics :: MonadClientUI m => CmdHuman -> WriterT Slideshow m (Maybe CmdSer)
 cmdSemantics cmd = do
-  Just leaderOld <- getsClient getLeader
+  Just leaderOld <- getsClient sleader
   arenaOld <- getsState sarena
   posOld <- getsState (bpos . getActorBody leaderOld)
   cli <- getClient
@@ -109,7 +109,7 @@ cmdSemantics cmd = do
            then checkCursor sem
            else sem
   arena <- getsState sarena
-  leaderNew <- getsClient getLeader
+  leaderNew <- getsClient sleader
   case leaderNew of
     Nothing -> return ()
     Just leader -> do

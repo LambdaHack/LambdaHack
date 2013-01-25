@@ -51,7 +51,7 @@ data Actor = Actor
   , bproj    :: !Bool                   -- ^ is a projectile? (shorthand only,
                                         -- this can be deduced from bkind)
   }
-  deriving Show
+  deriving (Show, Eq)
 
 instance Binary Actor where
   put Actor{..} = do

@@ -40,8 +40,8 @@ data CmdHuman =
   | Accept
   | Clear
   | History
-  | HeroCycle
-  | HeroBack
+  | MemberCycle
+  | MemberBack
   | Help
   | SelectHero Int
   | DebugArea
@@ -78,8 +78,8 @@ minorCmdHuman cmd = case cmd of
   Clear       -> True
   History     -> True
   CfgDump     -> True
-  HeroCycle   -> True
-  HeroBack    -> True
+  MemberCycle -> True
+  MemberBack  -> True
   _           -> False
 
 -- | Commands that are forbidden on a remote level, because they
@@ -130,8 +130,8 @@ cmdDescription cmd = case cmd of
   Accept    -> "accept choice"
   Clear     -> "clear messages"
   History   -> "display previous messages"
-  HeroCycle -> "cycle among heroes on level"
-  HeroBack  -> "cycle among heroes in the dungeon"
+  MemberCycle -> "cycle among heroes on level"
+  MemberBack  -> "cycle among heroes in the dungeon"
   Help      -> "display help"
   SelectHero{} -> "select hero"
   DebugArea    -> "debug visible area"

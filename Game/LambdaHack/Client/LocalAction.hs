@@ -62,7 +62,7 @@ retarget = do
 
 moveCursor :: MonadClient m => Vector -> Int -> WriterT Slideshow m ()
 moveCursor dir n = do
-  Just leader <- getsClient getLeader
+  Just leader <- getsClient sleader
   lpos <- getsState $ bpos . getActorBody leader
   scursor <- getsClient scursor
   let cpos = fromMaybe lpos scursor
@@ -122,7 +122,7 @@ doLook = do
   Kind.COps{coactor} <- getsState scops
   scursor <- getsClient scursor
   per <- askPerception
-  Just leader <- getsClient getLeader
+  Just leader <- getsClient sleader
   lpos <- getsState $ bpos . getActorBody leader
   target <- getsClient $ getTarget leader
   lvl <- cursorLevel
@@ -181,7 +181,7 @@ itemOverlay disco sorted is = do
 inventory :: MonadClientRO m => WriterT Slideshow m ()
 inventory = do
   Kind.COps{coactor} <- getsState scops
-  Just leader <- getsClient getLeader
+  Just leader <- getsClient sleader
   pbody <- getsState $ getActorBody leader
   items <- getsState $ getActorItem leader
   disco <- getsState sdisco
@@ -201,7 +201,7 @@ inventory = do
 -- | Start the floor targeting mode or reset the cursor position to the leader.
 targetFloor :: MonadClient m => TgtMode -> WriterT Slideshow m ()
 targetFloor stgtModeNew = do
-  Just leader <- getsClient getLeader
+  Just leader <- getsClient sleader
   ppos <- getsState (bpos . getActorBody leader)
   target <- getsClient $ getTarget leader
   stgtMode <- getsClient stgtMode
@@ -235,7 +235,7 @@ setCursor stgtModeNew = do
 -- | Start the enemy targeting mode. Cycle between enemy targets.
 targetEnemy :: MonadClient m => TgtMode -> WriterT Slideshow m ()
 targetEnemy stgtModeNew = do
-  Just leader <- getsClient getLeader
+  Just leader <- getsClient sleader
   ppos <- getsState (bpos . getActorBody leader)
   per <- askPerception
   target <- getsClient $ getTarget leader
@@ -400,7 +400,7 @@ acceptCurrent h = do
 endTargeting :: MonadClient m => Bool -> m ()
 endTargeting accept = do
   when accept $ do
-    Just leader <- getsClient getLeader
+    Just leader <- getsClient sleader
     target <- getsClient $ getTarget leader
     scursor <- getsClient scursor
     lvl <- cursorLevel
@@ -427,7 +427,7 @@ endTargeting accept = do
 endTargetingMsg :: MonadClient m => m ()
 endTargetingMsg = do
   Kind.COps{coactor} <- getsState scops
-  Just leader <- getsClient getLeader
+  Just leader <- getsClient sleader
   pbody <- getsState $ getActorBody leader
   target <- getsClient $ getTarget leader
   loc <- getState
@@ -464,28 +464,32 @@ displayHistory = do
   slides <- overlayToSlideshow msg $ renderHistory history
   tell slides
 
--- * HeroCycle
+-- * MemberCycle
 
--- | Switches current hero to the next hero on the level, if any, wrapping.
--- We cycle through at most 10 heroes (\@, 1--9).
-cycleHero :: MonadClient m => m ()
-cycleHero = do
-  Just leader <- getsClient getLeader
-  s  <- getState
+-- | Switches current member to the next on the level, if any, wrapping.
+cycleMember :: MonadClient m => m ()
+cycleMember = do
+  Just leader <- getsClient sleader
+  arena <- getsState sarena
   hs <- partyAfterLeader leader
-  case filter (flip memActor s . snd) hs of
-    [] -> abortWith "Cannot select any other hero on this level."
-    (nl, np) : _ -> selectLeader np nl
-                      >>= assert `trueM` (leader, nl, np, "hero duplicated")
+  case filter (\(nl, _) -> nl == arena) hs of
+    [] -> abortWith "Cannot select any other member on this level."
+    (nl, (np, _)) : _ -> selectLeader np nl
+                      >>= assert `trueM` (leader, nl, np, "member duplicated")
 
-partyAfterLeader :: MonadActionRO m => ActorId -> m [(LevelId, ActorId)]
+partyAfterLeader :: MonadActionRO m
+                 => ActorId
+                 -> m [(LevelId, (ActorId, Actor))]
 partyAfterLeader leader = do
-  bfaction <- getsState $ bfaction . getActorBody leader
+  faction <- getsState $ bfaction . getActorBody leader
+  allA <- getsState allActorsAnyLevel
   s <- getState
-  let hs = map (tryFindHeroK s bfaction) [0..9]
-      i = fromMaybe (-1) $ findIndex ((== Just leader) . fmap snd) hs
+  let hs9 = catMaybes $ map (tryFindHeroK s faction) [0..9]
+      factionA = filter (\(_, (_, body)) -> bfaction body == faction) allA
+      hs = hs9 ++ (deleteFirstsBy ((==) `on` fst . snd) factionA hs9)
+      i = fromMaybe (-1) $ findIndex ((== leader) . fst . snd) hs
       (lt, gt) = (take i hs, drop (i + 1) hs)
-  return $ catMaybes gt ++ catMaybes lt
+  return $ gt ++ lt
 
 -- | Select a faction leader. Switch level, if needed.
 -- False, if nothing to do. Should only be invoked as a direct result
@@ -493,7 +497,7 @@ partyAfterLeader leader = do
 selectLeader :: MonadClient m => ActorId -> LevelId -> m Bool
 selectLeader actor arena = do
   Kind.COps{coactor} <- getsState scops
-  leader <- getsClient getLeader
+  leader <- getsClient sleader
   stgtMode <- getsClient stgtMode
   if Just actor == leader
     then return False -- already selected
@@ -516,19 +520,17 @@ selectLeader actor arena = do
 stopRunning :: MonadClient m => m ()
 stopRunning = modifyClient (\ cli -> cli { srunning = Nothing })
 
--- * HeroBack
+-- * MemberBack
 
--- TODO: sort by level
--- | Switches current hero to the previous hero in the whole dungeon,
--- if any, wrapping. We cycle through at most 10 heroes (\@, 1--9).
-backCycleHero :: MonadClient m => m ()
-backCycleHero = do
-  Just leader <- getsClient getLeader
+-- | Switches current member to the previous in the whole dungeon, wrapping.
+backCycleMember :: MonadClient m => m ()
+backCycleMember = do
+  Just leader <- getsClient sleader
   hs <- partyAfterLeader leader
   case reverse hs of
-    [] -> abortWith "No other hero in the party."
-    (nl, np) : _ -> selectLeader np nl
-                      >>= assert `trueM` (leader, nl, np, "hero duplicated")
+    [] -> abortWith "No other member in the party."
+    (nl, (np, _)) : _ -> selectLeader np nl
+                      >>= assert `trueM` (leader, nl, np, "member duplicated")
 
 -- * Help
 
@@ -546,4 +548,4 @@ selectHero k = do
   loc <- getState
   case tryFindHeroK loc side k of
     Nothing  -> abortWith "No such member of the party."
-    Just (lid, aid) -> void $ selectLeader aid lid
+    Just (lid, (aid, _)) -> void $ selectLeader aid lid

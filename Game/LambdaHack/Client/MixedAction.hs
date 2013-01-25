@@ -62,7 +62,7 @@ leaderApplyGroupItem :: MonadClientUI m
                      -> m CmdSer
 leaderApplyGroupItem verb object syms = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
-  Just leader <- getsClient getLeader
+  Just leader <- getsClient sleader
   is <- getsState $ getActorItem leader
   item <- getGroupItem leader is object syms
             (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
@@ -98,7 +98,7 @@ leaderProjectGroupItem verb object syms = do
   ms <- getsState $ actorNotProjList (`elem` genemy) . getArena
   lxsize <- getsState (lxsize . getArena)
   lysize <- getsState (lysize . getArena)
-  Just leader <- getsClient getLeader
+  Just leader <- getsClient sleader
   ppos   <- getsState (bpos . getActorBody leader)
   if foesAdjacent lxsize lysize ppos ms
     then abortWith "You can't aim in melee."
@@ -142,7 +142,7 @@ leaderTriggerDir feat verb = do
 -- | Leader tries to trigger a tile in a given direction.
 leaderBumpDir :: MonadClientRO m => F.Feature -> Vector -> m CmdSer
 leaderBumpDir feat dir = do
-  Just leader <- getsClient getLeader
+  Just leader <- getsClient sleader
   body <- getsState $ getActorBody leader
   let dpos = bpos body `shift` dir
   bumpTile leader dpos feat
@@ -185,7 +185,7 @@ guessBump _ _ _ = neverMind True
 -- | Leader tries to trigger the tile he's standing on.
 leaderTriggerTile :: MonadClientRO m => F.Feature -> m CmdSer
 leaderTriggerTile feat = do
-  Just leader <- getsClient getLeader
+  Just leader <- getsClient sleader
   ppos <- getsState (bpos . getActorBody leader)
   bumpTile leader ppos feat
 
@@ -193,7 +193,7 @@ leaderTriggerTile feat = do
 
 pickupItem :: MonadClientRO m => m CmdSer
 pickupItem = do
-  Just leader <- getsClient getLeader
+  Just leader <- getsClient sleader
   actorPickupItem leader
 
 actorPickupItem :: MonadActionRO m => ActorId -> m CmdSer
@@ -218,7 +218,7 @@ dropItem :: MonadClientUI m => m CmdSer
 dropItem = do
   -- TODO: allow dropping a given number of identical items.
   Kind.COps{coactor, coitem} <- getsState scops
-  Just leader <- getsClient getLeader
+  Just leader <- getsClient sleader
   pbody <- getsState $ getActorBody leader
   ims   <- getsState $ getActorItem leader
   stack <- getAnyItem leader "What to drop?" ims "in inventory"
@@ -316,21 +316,21 @@ getItem leader prompt p ptext is0 isn = do
 -- | Leader waits a turn (and blocks, etc.).
 waitBlock :: MonadClientRO m => m CmdSer
 waitBlock = do
-  Just leader <- getsClient getLeader
+  Just leader <- getsClient sleader
   return $ WaitSer leader
 
 -- ** Move
 
 movePl :: MonadClientRO m => Vector -> m CmdSer
 movePl dir = do
-  Just leader <- getsClient getLeader
+  Just leader <- getsClient sleader
   return $! MoveSer leader dir
 
 -- ** Run
 
 runPl :: MonadClient m => Vector -> m CmdSer
 runPl dir = do
-  Just leader <- getsClient getLeader
+  Just leader <- getsClient sleader
   (dirR, distNew) <- runDir leader (dir, 0)
   modifyClient $ \cli -> cli {srunning = Just (dirR, distNew)}
   return $! RunSer leader dirR

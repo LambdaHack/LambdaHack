@@ -20,8 +20,8 @@
 ; asterisk: TgtEnemy
 ; plus: EpsIncr True
 ; minus: EpsIncr False
-; Tab: HeroCycle
-; ISO_Left_Tab: HeroBack
+; Tab: MemberCycle
+; ISO_Left_Tab: MemberBack
 ; ;
 ; ; Items.
 ; g: Pickup

@@ -282,7 +282,7 @@ carryOnCli = do
 setArenaLeaderCli :: MonadClient m => LevelId -> ActorId -> m ActorId
 setArenaLeaderCli arena actor = do
   arenaOld <- getsState sarena
-  leaderOld <- getsClient getLeader
+  leaderOld <- getsClient sleader
   -- Old leader may have been killed by enemies since @side@ last moved
   -- or local arena changed and the side has not elected a new leader yet
   -- or global arena changed the old leader is on the old arena.
@@ -316,7 +316,7 @@ handleHuman leader = do
     srunning <- getsClient srunning
     maybe abort (continueRun leader) srunning
 --  addSmell leader  -- TODO: instead do for all non-spawning factions
-  leaderNew <- getsClient getLeader
+  leaderNew <- getsClient sleader
   arenaNew <- getsState sarena
   return (cmdS, leaderNew, arenaNew)
 
@@ -399,7 +399,7 @@ handleAI actor = do
   side <- getsState sside
   assert (bfaction body == side `blame` (actor, bfaction body, side)) $ do
     Kind.COps{costrat=Kind.Ops{okind}} <- getsState scops
-    leader <- getsClient getLeader
+    leader <- getsClient sleader
     fact <- getsState getSide
     let factionAI | Just actor /= leader = gAiMember fact
                   | otherwise = fromJust $ gAiLeader fact

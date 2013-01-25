@@ -3,7 +3,7 @@
 module Game.LambdaHack.Client.State
   ( StateClient(..), defStateClient, defHistory
   , updateTarget, getTarget
-  , invalidateSelectedLeader, updateSelectedLeader, getLeader, targetToPos
+  , invalidateSelectedLeader, updateSelectedLeader, sleader, targetToPos
   , TgtMode(..), Target(..)
   , DebugModeCli(..), toggleMarkVision, toggleMarkSmell, toggleOmniscient
   ) where
@@ -130,13 +130,13 @@ updateSelectedLeader leader s cli =
              `blame` (mside1, side2, leader, sarena s, s))
      $ cli {_sleader = Just leader}
 
-getLeader :: StateClient -> Maybe ActorId
-getLeader = _sleader
+sleader :: StateClient -> Maybe ActorId
+sleader = _sleader
 
 -- | Calculate the position of leader's target.
 targetToPos :: StateClient -> State -> Maybe Point
 targetToPos cli@StateClient{scursor} s = do
-  leader <- getLeader cli
+  leader <- sleader cli
   case getTarget leader cli of
     Just (TPos pos) -> return pos
     Just (TEnemy a _ll) -> do

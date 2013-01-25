@@ -100,15 +100,15 @@ allActorsAnyLevel s =
 
 -- TODO: start with current level; also elsewhere
 -- | Tries to finds an actor body satisfying a predicate on any level.
-tryFindActor :: State -> (Actor -> Bool) -> Maybe (LevelId, ActorId)
+tryFindActor :: State -> (Actor -> Bool) -> Maybe (LevelId, (ActorId, Actor))
 tryFindActor s p =
   let chk (ln, lvl) =
         fmap (\a -> (ln, a)) $ L.find (p . snd) $ IM.assocs $ lactor lvl
   in case mapMaybe chk $ M.toList $ sdungeon s of
     [] -> Nothing
-    (ln, (aid, _)) : _ -> Just (ln, aid)
+    (ln, (aid, body)) : _ -> Just (ln, (aid, body))
 
-tryFindHeroK :: State -> FactionId -> Int -> Maybe (LevelId, ActorId)
+tryFindHeroK :: State -> FactionId -> Int -> Maybe (LevelId, (ActorId, Actor))
 tryFindHeroK s fact k =
   let c | k == 0          = '@'
         | k > 0 && k < 10 = Char.intToDigit k

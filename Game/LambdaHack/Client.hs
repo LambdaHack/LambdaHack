@@ -67,7 +67,7 @@ cmdQueryCli cmd = case cmd of
   HandleAI actor -> handleAI actor
   IsRunningCli -> do
     tryWith (\_ -> return False) $ do
-      mleader <- getsClient getLeader
+      mleader <- getsClient sleader
       leader <- maybe abort return mleader
       srunning <- getsClient srunning
       maybe abort (void . continueRunDir leader) srunning

@@ -59,7 +59,7 @@ draw dm cops per
         case stgtMode of
           Nothing -> (sarena s, getArena s)
           Just tgtM -> (tgtLevelId tgtM, sdungeon s M.! tgtLevelId tgtM)
-      mleader = getLeader cli
+      mleader = sleader cli
       (bitems, bracedL, ahpS, asmellL, bhpS, bposL) =
         case mleader of
           Nothing -> ([], False, "--", False, "--", undefined)
