@@ -103,4 +103,6 @@ cmdQueryUI cmd = case cmd of
         let factionName = gname $ faction IM.! newSide
             msg = "Switching to player" <+> factionName <> "."
         void $ displayMore ColorFull msg
+        -- Messages shown, so update history and reset current report.
+        recordHistory
         return True

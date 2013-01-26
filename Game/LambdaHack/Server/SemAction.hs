@@ -469,7 +469,7 @@ gameRestartSer = do
 
 -- | Create a new monster on the level, at a random position.
 rollMonster :: Kind.COps -> IS.IntSet -> State -> StateServer
-            -> Rnd (State, StateServer)
+            -> Rnd (Maybe (FactionId, (State, StateServer)))
 rollMonster Kind.COps{ cotile
                      , coactor=Kind.Ops{opick, okind}
                      , cofact=Kind.Ops{okind=fokind}
@@ -480,7 +480,7 @@ rollMonster Kind.COps{ cotile
            then Nothing
            else Just (fspawn kind, (kind, fid))
   case catMaybes $ map f $ IM.toList $ sfaction state of
-    [] -> return (state, ser)
+    [] -> return Nothing
     spawnList -> do
       let freq = toFreq "spawn" spawnList
       (spawnKind, bfaction) <- frequency freq
@@ -490,7 +490,7 @@ rollMonster Kind.COps{ cotile
           isLit = Tile.isLit cotile
       rc <- monsterGenChance (levelNumber $ sarena state) (length ours)
       if not rc
-        then return (state, ser)
+        then return Nothing
         else do
           let distantAtLeast d =
                 \ l _ -> all (\ h ->
@@ -508,10 +508,11 @@ rollMonster Kind.COps{ cotile
               ]
           mk <- opick (fname spawnKind) (const True)
           hp <- rollDice $ ahp $ okind mk
-          return $ addMonster cotile mk hp loc bfaction False state ser
+          return $ Just $
+            (bfaction, addMonster cotile mk hp loc bfaction False state ser)
 
 -- | Generate a monster, possibly.
-generateMonster :: MonadServer m => m ()
+generateMonster :: MonadServer m => m (Maybe FactionId)
 generateMonster = do
   cops <- getsState scops
   state <- getState
@@ -519,10 +520,14 @@ generateMonster = do
   pers <- ask
   arena <- getsState sarena
   let allPers = IS.unions $ map (totalVisible . (M.! arena)) $ IM.elems pers
-  (nstate, nser) <- rndToAction $ rollMonster cops allPers state ser
-  random <- getsState srandom
-  putState $! updateRandom (const random) nstate
-  putServer nser
+  nst <- rndToAction $ rollMonster cops allPers state ser
+  case nst of
+    Nothing -> return Nothing
+    Just (fid, (nstate, nser)) -> do
+      random <- getsState srandom
+      putState $! updateRandom (const random) nstate
+      putServer nser
+      return $ Just fid
 
 -- | Possibly regenerate HP for all actors on the current level.
 regenerateLevelHP :: MonadServer m => m ()

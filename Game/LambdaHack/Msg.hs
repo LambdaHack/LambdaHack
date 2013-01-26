@@ -111,9 +111,9 @@ renderRepetition (s, n) = decodeUtf8 s <> "<x" <> showT n <> ">"
 
 -- | Split a string into lines. Avoids ending the line with a character
 -- other than whitespace or punctuation. Space characters are removed
--- from hte start, but never from the end of lines.
+-- from the start, but never from the end of lines. Newlines are respected.
 splitText :: X -> Text -> [Text]
-splitText w xs = splitText' w $ T.dropWhile isSpace xs
+splitText w xs = concatMap (splitText' w . T.dropWhile isSpace) $ T.lines xs
 
 splitText' :: X -> Text -> [Text]
 splitText' w xs

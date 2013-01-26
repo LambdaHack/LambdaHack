@@ -53,7 +53,8 @@ pickupCli aid i ni = do
   disco <- getsState sdisco
   if bfaction body == side
     then msgAdd $ makePhrase [ letterLabel (jletter ni)
-                             , partItemNWs coitem disco ni ]
+                             , partItemNWs coitem disco ni
+                             , "\n" ]
     else msgAdd $ makeSentence
            [ MU.SubjectVerbSg (partActor coactor body) "pick up"
            , partItemNWs coitem disco i ]  -- single, not 'ni'
