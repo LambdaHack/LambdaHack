@@ -3,9 +3,9 @@ module Game.LambdaHack.Client.RunAction
   ( runDir, continueRunDir
   ) where
 
-import qualified Data.IntSet as IS
 import qualified Data.List as L
 import Data.Maybe (isNothing)
+import qualified Data.EnumSet as ES
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -90,9 +90,9 @@ runDisturbance :: Point -> Int -> Report
 runDisturbance locLast distLast msg hs ms per posHere
                posHasFeature posHasItems lxsize lysize (dirNew, distNew) =
   let msgShown  = not $ nullReport msg
-      msposs    = IS.delete posHere $ IS.fromList (L.map bpos ms)
+      msposs    = ES.delete posHere $ ES.fromList (L.map bpos ms)
       enemySeen =
-        not (IS.null (msposs `IS.intersection` totalVisible per))
+        not (ES.null (msposs `ES.intersection` totalVisible per))
       surrLast  = locLast : vicinity lxsize lysize locLast
       surrHere  = posHere : vicinity lxsize lysize posHere
       posThere  = posHere `shift` dirNew

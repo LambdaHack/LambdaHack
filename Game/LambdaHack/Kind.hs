@@ -1,3 +1,4 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings, RankNTypes, TypeFamilies #-}
 -- | General content types and operations.
 module Game.LambdaHack.Kind
@@ -9,7 +10,6 @@ module Game.LambdaHack.Kind
 
 import qualified Data.Array.Unboxed as A
 import Data.Binary
-import qualified Data.IntMap as IM
 import qualified Data.Ix as Ix
 import qualified Data.List as L
 import qualified Data.Map as M
@@ -18,6 +18,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Word as Word
 import Game.LambdaHack.Msg
+import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.CDefs
 import Game.LambdaHack.Content.ActorKind
@@ -35,7 +36,7 @@ import Game.LambdaHack.Utils.Frequency
 
 -- | Content identifiers for the content type @c@.
 newtype Id c = Id Word8
-  deriving (Show, Eq, Ord, Ix.Ix)
+  deriving (Show, Eq, Ord, Ix.Ix, Enum)
 
 instance Binary (Id c) where
   put (Id i) = put i
@@ -76,8 +77,8 @@ createOps CDefs{getSymbol, getName, getFreq, content, validate} =
   assert (Id (fromIntegral $ length content) < sentinelId) $
   let kindAssocs :: [(Word.Word8, a)]
       kindAssocs = L.zip [0..] content
-      kindMap :: IM.IntMap a
-      kindMap = IM.fromDistinctAscList $ L.zip [0..] content
+      kindMap :: EM.EnumMap (Id a) a
+      kindMap = EM.fromDistinctAscList $ L.zip [Id 0..] content
       kindFreq :: M.Map Text (Frequency (Id a, a))
       kindFreq =
         let tuples = [ (group, (n, (Id i, k)))
@@ -87,8 +88,8 @@ createOps CDefs{getSymbol, getName, getFreq, content, validate} =
             lists = L.foldl' f M.empty tuples
             nameFreq group = toFreq $ "opick ('" <> group <> "')"
         in M.mapWithKey nameFreq lists
-      okind (Id i) = fromMaybe (assert `failure` (i, fromEnum i, kindMap))
-                     $ IM.lookup (fromEnum i) kindMap
+      okind i = fromMaybe (assert `failure` (i, kindMap))
+                $ EM.lookup i kindMap
       correct a = not (T.null (getName a)) && L.all ((> 0) . snd) (getFreq a)
       offenders = validate content
   in assert (allB correct content) $
@@ -114,7 +115,8 @@ createOps CDefs{getSymbol, getName, getFreq, content, validate} =
              frequency [ i | (i, k) <- kindFreq M.! group, p k ]
              -}
        , ofoldrWithKey = \ f z -> L.foldr (\ (i, a) -> f (Id i) a) z kindAssocs
-       , obounds = (Id 0, Id $ toEnum $ fst $ IM.findMax kindMap)
+       , obounds = ( fst $ EM.findMin kindMap
+                   , fst $ EM.findMax kindMap )
        , ospeedup = undefined  -- define elsewhere
        }
 

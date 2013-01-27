@@ -11,12 +11,13 @@ import Data.Typeable
 import Game.LambdaHack.Item
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.Fov
+import Game.LambdaHack.Actor
 
 -- | Global, server state.
 data StateServer = StateServer
   { sdiscoRev :: !DiscoRev      -- ^ reverse map, used for item creation
   , sflavour  :: !FlavourMap    -- ^ association of flavour to items
-  , scounter  :: !Int           -- ^ stores next actor index
+  , scounter  :: !ActorId       -- ^ stores next actor index
   , sconfig   :: !Config        -- ^ this game's config (including initial RNG)
   , sdebugSer :: !DebugModeSer  -- ^ debugging mode
   }
@@ -30,7 +31,7 @@ data DebugModeSer = DebugModeSer
 defStateServer :: DiscoRev -> FlavourMap -> Config -> StateServer
 defStateServer sdiscoRev sflavour sconfig =
   StateServer
-    { scounter  = 0
+    { scounter  = toEnum 0
     , sdebugSer = defDebugModeSer
     , ..
     }

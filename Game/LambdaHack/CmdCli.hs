@@ -6,7 +6,7 @@ module Game.LambdaHack.CmdCli
   , CmdUI(..), CmdUpdateUI(..), CmdQueryUI(..)
   ) where
 
-import qualified Data.IntSet as IS
+import qualified Data.EnumSet as ES
 import Data.Typeable
 import qualified NLP.Miniutter.English as MU
 
@@ -42,7 +42,7 @@ data CmdUpdateCli =
   | ShowMsgCli Msg
   | InvalidateArenaCli LevelId
   | DiscoverCli (Kind.Id ItemKind) Item
-  | RememberCli LevelId IS.IntSet Level  -- TODO: Level is an overkill
+  | RememberCli LevelId (ES.EnumSet Point) Level  -- TODO: Level is an overkill
   | RememberPerCli LevelId Perception Level FactionDict
   | SwitchLevelCli ActorId LevelId Actor [Item]
   | ProjectCli Point ActorId Item

@@ -13,10 +13,10 @@ module Game.LambdaHack.Level
   ) where
 
 import Data.Binary
-import qualified Data.IntMap as IM
 import qualified Data.List as L
 import qualified Data.Map as M
 import Data.Text (Text)
+import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Content.CaveKind
@@ -33,19 +33,19 @@ import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
 
 -- | All actors on the level, indexed by actor identifier.
-type ActorDict = IM.IntMap Actor
+type ActorDict = EM.EnumMap ActorId Actor
 
 -- | Items carried by actors, indexed by actor identifier.
-type InvDict = IM.IntMap [Item]
+type InvDict = EM.EnumMap ActorId [Item]
 
 -- | Current smell on map tiles.
-type SmellMap = IM.IntMap SmellTime
+type SmellMap = EM.EnumMap Point SmellTime
 
 -- | Current secrecy value on map tiles.
-type SecretMap = IM.IntMap SecretTime
+type SecretMap = EM.EnumMap Point SecretTime
 
 -- | Item lists on map tiles.
-type ItemMap = IM.IntMap [Item]
+type ItemMap = EM.EnumMap Point [Item]
 
 -- | Tile kinds on the map.
 type TileMap = Kind.Array Point TileKind
@@ -96,11 +96,11 @@ dropItemsAt items loc =
   let joinItems = L.foldl' (\ acc i -> snd (joinItem i acc))
       adj Nothing = Just items
       adj (Just i) = Just $ joinItems items i
-  in  updateIMap (IM.alter adj loc)
+  in  updateIMap (EM.alter adj loc)
 
 assertSparseItems :: ItemMap -> ItemMap
 assertSparseItems m =
-  assert (IM.null (IM.filter (\ is -> L.null is) m) `blame` m) m
+  assert (EM.null (EM.filter (\ is -> L.null is) m) `blame` m) m
 
 instance Binary Level where
   put Level{..} = do
@@ -139,7 +139,7 @@ at Level{ltile}  p = ltile Kind.! p
 
 -- | Query for items on the ground.
 atI :: Level -> Point -> [Item]
-atI Level{litem} p = IM.findWithDefault [] p litem
+atI Level{litem} p = EM.findWithDefault [] p litem
 
 -- | Check whether one position is accessible from another,
 -- using the formula from the standard ruleset.

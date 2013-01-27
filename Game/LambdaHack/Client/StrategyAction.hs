@@ -7,9 +7,9 @@ module Game.LambdaHack.Client.StrategyAction
 import Control.Arrow
 import Control.Monad
 import Data.Function
-import qualified Data.IntMap as IM
 import qualified Data.List as L
 import Data.Maybe
+import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Ability (Ability)
 import qualified Game.LambdaHack.Ability as Ability
@@ -306,7 +306,7 @@ moveStrategy cops actor glo mFoe =
             $ L.sortBy (flip compare `on` snd)
             $ L.filter (\ (_, s) -> s > timeZero)
             $ L.map (\ x ->
-                      let sml = IM.findWithDefault
+                      let sml = EM.findWithDefault
                                   timeZero (bpos `shift` x) lsmell
                       in (x, sml `timeAdd` timeNegate ltime))
                 sensible

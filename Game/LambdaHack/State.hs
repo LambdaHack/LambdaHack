@@ -16,7 +16,6 @@ module Game.LambdaHack.State
   ) where
 
 import Data.Binary
-import qualified Data.IntMap as IM
 import qualified Data.Map as M
 import Data.Text (Text)
 import Data.Typeable
@@ -59,19 +58,19 @@ unknownLevel :: Kind.Ops TileKind -> X -> Y
              -> Level
 unknownLevel Kind.Ops{ouniqGroup} lxsize lysize ldesc lstair lclear =
   let unknownId = ouniqGroup "unknown space"
-  in Level { lactor = IM.empty
-           , linv = IM.empty
-           , litem = IM.empty
+  in Level { lactor = EM.empty
+           , linv = EM.empty
+           , litem = EM.empty
            , ltile = unknownTileMap unknownId lxsize lysize
            , lxsize = lxsize
            , lysize = lysize
-           , lsmell = IM.empty
+           , lsmell = EM.empty
            , ldesc
            , lstair
            , lseen = 0
            , lclear
            , ltime = timeZero
-           , lsecret = IM.empty
+           , lsecret = EM.empty
            }
 
 unknownTileMap :: Kind.Id TileKind -> Int -> Int -> TileMap

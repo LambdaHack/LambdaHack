@@ -36,10 +36,9 @@ import Control.Monad
 import Control.Monad.Writer.Strict (WriterT, lift, tell)
 import Data.Dynamic
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.IntMap as IM
-import qualified Data.IntSet as IS
 import qualified Data.Map as M
 import Data.Maybe
+import qualified Data.EnumSet as ES
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -65,6 +64,7 @@ import Game.LambdaHack.Perception
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Point
 
 displayFrame :: MonadClientUI m => Bool -> Maybe SingleFrame -> m ()
 displayFrame isRunning mf = do
@@ -287,16 +287,16 @@ displayPush = do
   displayFrame (isJust srunning) $ Just frame
 
 -- | Update faction memory at the given set of positions.
-rememberLevel :: Kind.COps -> IS.IntSet -> Level -> Level -> Level
+rememberLevel :: Kind.COps -> ES.EnumSet Point -> Level -> Level -> Level
 rememberLevel Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} visible lvl clvl =
   -- TODO: handle invisible actors, but then change also broadcastPosCli, etc.
-  let nactor = IM.filter (\m -> bpos m `IS.member` visible) (lactor lvl)
-      ninv   = IM.filterWithKey (\p _ -> p `IM.member` nactor) (linv lvl)
+  let nactor = EM.filter (\m -> bpos m `ES.member` visible) (lactor lvl)
+      ninv   = EM.filterWithKey (\p _ -> p `EM.member` nactor) (linv lvl)
       alt Nothing   _ = Nothing
       alt (Just []) _ = assert `failure` lvl
       alt x         _ = x
-      rememberItem p m = IM.alter (alt $ IM.lookup p $ litem lvl) p m
-      vis = IS.toList visible
+      rememberItem p m = EM.alter (alt $ EM.lookup p $ litem lvl) p m
+      vis = ES.toList visible
       rememberTile = [(pos, lvl `at` pos) | pos <- vis]
       unknownId = ouniqGroup "unknown space"
       eSeen (pos, tk) = clvl `at` pos == unknownId
@@ -314,7 +314,7 @@ rememberLevel Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} visible lvl clvl =
   -- doors (they built and hid them). Hide the Hidden feature in ltile.
   -- Wait with all that until the semantics of (repeated) searching
   -- is changed.
-          , lsecret = IM.empty
+          , lsecret = EM.empty
           }
 
 saveName :: FactionId -> Bool -> String

@@ -8,8 +8,6 @@ module Game.LambdaHack.Server.SemAction where
 import Control.Monad
 import Control.Monad.Reader.Class
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.IntMap as IM
-import qualified Data.IntSet as IS
 import Data.List
 import qualified Data.Map as M
 import Data.Maybe
@@ -17,6 +15,7 @@ import Data.Ratio
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
+import qualified Data.EnumSet as ES
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -114,7 +113,7 @@ removeFromPos i pos = do
         case removeItemByIdentity i is of
           [] -> Nothing
           x  -> Just x
-      adj = IM.alter rib pos
+      adj = EM.alter rib pos
 
 -- ** ProjectSer
 
@@ -204,10 +203,10 @@ addProjectile Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}}
         , bfaction
         , bproj   = True
         }
-      upd = updateActor (IM.insert scounter m)
-            . updateInv (IM.insert scounter [item])
+      upd = updateActor (EM.insert scounter m)
+            . updateInv (EM.insert scounter [item])
   in ( updateArena upd s
-     , ser {scounter = scounter + 1} )
+     , ser {scounter = succ scounter} )
 
 -- ** TriggerSer
 
@@ -223,7 +222,7 @@ triggerSer aid dpos = do
       f (F.ChangeTo tgroup) = do
         Level{lactor} <- getsState getArena
         case lvl `atI` dpos of
-          [] -> if unoccupied (IM.elems lactor) dpos
+          [] -> if unoccupied (EM.elems lactor) dpos
                 then do
                   newTileId <- rndToAction $ opick tgroup (const True)
                   let adj = (Kind.// [(dpos, newTileId)])
@@ -374,13 +373,13 @@ search aid = do
       searchTile sle mv =
         let loc = shift ppos mv
             t = lvl `at` loc
-            k = case IM.lookup loc lsecret of
+            k = case EM.lookup loc lsecret of
               Nothing -> assert `failure` (loc, lsecret)
               Just st -> timeAdd st $ timeNegate delta
         in if Tile.hasFeature cotile F.Hidden t
            then if k > timeZero
-                then IM.insert loc k sle
-                else IM.delete loc sle
+                then EM.insert loc k sle
+                else EM.delete loc sle
            else sle
       leNew = foldl' searchTile lsecret (moves lxsize)
   modifyState (updateArena (\ l -> l {lsecret = leNew}))
@@ -388,7 +387,7 @@ search aid = do
   let triggerHidden mv = do
         let dpos = shift ppos mv
             t = lvlNew `at` dpos
-        when (Tile.hasFeature cotile F.Hidden t && IM.notMember dpos leNew) $
+        when (Tile.hasFeature cotile F.Hidden t && EM.notMember dpos leNew) $
           triggerSer aid dpos
   mapM_ triggerHidden (moves lxsize)
 
@@ -469,7 +468,7 @@ gameRestartSer = do
 -- * Assorted helper server functions.
 
 -- | Create a new monster on the level, at a random position.
-rollMonster :: Kind.COps -> IS.IntSet -> State -> StateServer
+rollMonster :: Kind.COps -> ES.EnumSet Point -> State -> StateServer
             -> Rnd (Maybe (FactionId, (State, StateServer)))
 rollMonster Kind.COps{ cotile
                      , coactor=Kind.Ops{opick, okind}
@@ -502,10 +501,10 @@ rollMonster Kind.COps{ cotile
               , distantAtLeast 15
               , \ l t -> not (isLit t) || distantAtLeast 15 l t
               , distantAtLeast 10
-              , \ l _ -> not $ l `IS.member` visible
+              , \ l _ -> not $ l `ES.member` visible
               , distantAtLeast 5
               , \ l t -> Tile.hasFeature cotile F.Walkable t
-                         && unoccupied (IM.elems lactor) l
+                         && unoccupied (EM.elems lactor) l
               ]
           mk <- opick (fname spawnKind) (const True)
           hp <- rollDice $ ahp $ okind mk
@@ -520,7 +519,7 @@ generateMonster = do
   ser <- getServer
   pers <- ask
   arena <- getsState sarena
-  let allPers = IS.unions $ map (totalVisible . (M.! arena)) $ EM.elems pers
+  let allPers = ES.unions $ map (totalVisible . (M.! arena)) $ EM.elems pers
   nst <- rndToAction $ rollMonster cops allPers state ser
   case nst of
     Nothing -> return Nothing
@@ -540,7 +539,7 @@ regenerateLevelHP = do
   discoS <- getsState sdisco
   let upd itemIM a m =
         let ak = okind $ bkind m
-            bitems = fromMaybe [] $ IM.lookup a itemIM
+            bitems = fromMaybe [] $ EM.lookup a itemIM
             regen = max 1 $
                       aregen ak `div`
                       case strongestRegen coitem discoS bitems of
@@ -555,7 +554,7 @@ regenerateLevelHP = do
   -- in time together with their level). This prevents cheating
   -- via sending one hero to a safe level and waiting there.
   hi <- getsState (linv . getArena)
-  modifyState (updateArena (updateActor (IM.mapWithKey (upd hi))))
+  modifyState (updateArena (updateActor (EM.mapWithKey (upd hi))))
 
 -- | Add new smell traces to the level. Only non-spawning factions
 -- leave a scent that is easy to tell from common dungeon smells.
@@ -563,5 +562,5 @@ addSmell :: MonadServer m => ActorId -> m ()
 addSmell aid = do
   time <- getsState getTime
   ppos <- getsState $ bpos . getActorBody aid
-  let upd = IM.insert ppos $ timeAdd time smellTimeout
+  let upd = EM.insert ppos $ timeAdd time smellTimeout
   modifyState $ updateArena $ updateSmell upd

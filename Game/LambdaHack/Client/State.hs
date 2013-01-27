@@ -10,13 +10,13 @@ module Game.LambdaHack.Client.State
 
 import Control.Monad
 import Data.Binary
-import qualified Data.IntMap as IM
 import qualified Data.Map as M
 import qualified Data.Text as T
 import Data.Typeable
 import Game.LambdaHack.Vector
 import qualified NLP.Miniutter.English as MU
 import System.Time
+import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
@@ -38,7 +38,8 @@ data StateClient = StateClient
   { stgtMode  :: !(Maybe TgtMode)  -- ^ targeting mode
   , scursor   :: !(Maybe Point)    -- ^ cursor coordinates
   , seps      :: !Int           -- ^ a parameter of the tgt digital line
-  , starget   :: !(IM.IntMap Target)  -- ^ targets of all actors in the dungeon
+  , starget   :: !(EM.EnumMap ActorId Target)
+                                -- ^ targets of all our actors in the dungeon
   , srunning  :: !(Maybe (Vector, Int))  -- ^ direction and distance of running
   , sreport   :: !Report        -- ^ current messages
   , shistory  :: !History       -- ^ history of messages
@@ -79,7 +80,7 @@ defStateClient shistory sconfigUI = do
     { stgtMode  = Nothing
     , scursor   = Nothing
     , seps      = 0
-    , starget   = IM.empty
+    , starget   = EM.empty
     , srunning  = Nothing
     , sreport   = emptyReport
     , shistory
@@ -108,11 +109,11 @@ defHistory = do
 -- | Update target parameters within client state.
 updateTarget :: ActorId -> (Maybe Target -> Maybe Target) -> StateClient
              -> StateClient
-updateTarget aid f cli = cli { starget = IM.alter f aid (starget cli) }
+updateTarget aid f cli = cli { starget = EM.alter f aid (starget cli) }
 
 -- | Get target parameters from client state.
 getTarget :: ActorId -> StateClient -> Maybe Target
-getTarget aid cli = IM.lookup aid (starget cli)
+getTarget aid cli = EM.lookup aid (starget cli)
 
 -- | Invalidate selected actor, e.g., to avoid violatng the invariant.
 -- If the the leader was running, stop the run.
@@ -124,7 +125,7 @@ invalidateSelectedLeader cli = cli {srunning = Nothing, _sleader = Nothing}
 updateSelectedLeader :: ActorId -> State -> StateClient -> StateClient
 updateSelectedLeader leader s cli =
   let la = lactor $ sdungeon s M.! sarena s
-      mside1 = fmap bfaction $ IM.lookup leader la
+      mside1 = fmap bfaction $ EM.lookup leader la
       side2 = sside s
   in assert (maybe True (== side2) mside1
              `blame` (mside1, side2, leader, sarena s, s))

@@ -5,12 +5,12 @@ module Game.LambdaHack.Client.SemAction where
 
 import Control.Monad
 import Control.Monad.Writer.Strict (WriterT, runWriterT)
-import qualified Data.IntSet as IS
 import qualified Data.Map as M
 import Data.Maybe
 import Data.Monoid (mempty)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
+import qualified Data.EnumSet as ES
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -115,7 +115,7 @@ discoverCli ik i = do
           , partItemAW coitem disco i ]
     msgAdd msg
 
-rememberCli :: MonadAction m => LevelId -> IS.IntSet -> Level -> m ()
+rememberCli :: MonadAction m => LevelId -> ES.EnumSet Point -> Level -> m ()
 rememberCli arena vis lvl = do
   cops <- getsState scops
   let updArena dng =
@@ -174,7 +174,7 @@ projectCli spos source consumed = do
     per <- askPerception
     disco <- getsState sdisco
     sm <- getsState (getActorBody source)
-    let svisible = spos `IS.member` totalVisible per
+    let svisible = spos `ES.member` totalVisible per
         subject =
           if svisible
           then sm
@@ -195,8 +195,8 @@ showAttackCli source target verb stack say = do
   tmRaw <- getsState (getActorBody target)
   let spos = bpos smRaw
       tpos = bpos tmRaw
-      svisible = spos `IS.member` totalVisible per
-      tvisible = tpos `IS.member` totalVisible per
+      svisible = spos `ES.member` totalVisible per
+      tvisible = tpos `ES.member` totalVisible per
       sm | svisible  = smRaw
          | otherwise = smRaw {bname = Just "somebody"}
       tm | tvisible  = tmRaw
@@ -221,8 +221,8 @@ animateBlockCli source target verb = do
   tmRaw <- getsState (getActorBody target)
   let spos = bpos smRaw
       tpos = bpos tmRaw
-      svisible = spos `IS.member` totalVisible per
-      tvisible = tpos `IS.member` totalVisible per
+      svisible = spos `ES.member` totalVisible per
+      tvisible = tpos `ES.member` totalVisible per
       sm | svisible  = smRaw
          | otherwise = smRaw {bname = Just "somebody"}
       tm | tvisible  = tmRaw

@@ -6,14 +6,13 @@ module Game.LambdaHack.Server.EffectAction where
 
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.IntMap as IM
-import qualified Data.IntSet as IS
 import Data.List
 import qualified Data.Map as M
 import Data.Maybe
 import Data.Ratio ((%))
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
+import qualified Data.EnumSet as ES
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -53,8 +52,8 @@ addMonster :: Kind.Ops TileKind -> Kind.Id ActorKind -> Int -> Point
 addMonster cotile mk hp ppos bfaction bproj s ser@StateServer{scounter} =
   let loc = nearbyFreePos cotile ppos s
       m = template mk Nothing Nothing hp loc (getTime s) bfaction bproj
-  in ( updateArena (updateActor (IM.insert scounter m)) s
-     , ser {scounter = scounter + 1} )
+  in ( updateArena (updateActor (EM.insert scounter m)) s
+     , ser {scounter = succ scounter} )
 
 -- TODO: center screen, flash the background, etc. Perhaps wait for SPACE.
 -- | Focus on the hero being wounded/displaced/etc.
@@ -142,7 +141,7 @@ eff Effect.Dominate _ source target _power = do
       lxsize <- getsState (lxsize . getArena)
       lysize <- getsState (lysize . getArena)
       let cross m = bpos m : vicinityCardinal lxsize lysize (bpos m)
-          vis = IS.fromList $ concatMap cross lm
+          vis = ES.fromList $ concatMap cross lm
       lvl <- getsState getArena
       side <- getsState sside
       sendUpdateCli side $ RememberCli arena vis lvl
@@ -185,7 +184,7 @@ eff Effect.ApplyPerfume _ source target _ =
   if source == target
   then return (True, "Tastes like water, but with a strong rose scent.")
   else do
-    let upd lvl = lvl { lsmell = IM.empty }
+    let upd lvl = lvl { lsmell = EM.empty }
     modifyState (updateArena upd)
     return (True, "The fragrance quells all scents in the vicinity.")
 eff Effect.Regeneration verbosity source target power =
@@ -264,7 +263,7 @@ effLvlGoUp aid k = do
         -- Cancel smell. Reduces memory load and savefile size.
         hs <- getsState $ actorList (not . isSpawningFaction glo) . getArena
         when (null hs) $
-          modifyState (updateArena (updateSmell (const IM.empty)))
+          modifyState (updateArena (updateSmell (const EM.empty)))
         -- Change arena, but not the leader yet. The actor will become
         -- a leader, but he is not inserted into the new level yet.
         modifyState $ updateSelectedArena nln

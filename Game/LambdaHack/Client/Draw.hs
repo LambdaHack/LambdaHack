@@ -6,13 +6,13 @@ module Game.LambdaHack.Client.Draw
   ( ColorMode(..), draw, animate
   ) where
 
-import qualified Data.IntMap as IM
-import qualified Data.IntSet as IS
 import qualified Data.List as L
 import qualified Data.Map as M
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 
 import Game.LambdaHack.Actor as Actor
 import Game.LambdaHack.ActorState
@@ -97,7 +97,7 @@ draw dm cops per
             tile = lvl `at` pos0
             tk = tokind tile
             items = lvl `atI` pos0
-            sml = IM.findWithDefault timeZero pos0 lsmell
+            sml = EM.findWithDefault timeZero pos0 lsmell
             smlt = sml `timeAdd` timeNegate ltime
             viewActor loc Actor{bkind, bsymbol, bcolor}
               | isJust mleader
@@ -110,7 +110,7 @@ draw dm cops per
               color  = fromMaybe acolor  bcolor
               symbol = fromMaybe asymbol bsymbol
             rainbow loc = toEnum $ loc `rem` 14 + 1
-            actorsHere = IM.elems lactor
+            actorsHere = EM.elems lactor
             (char, fg0) =
               case ( L.find (\ m -> pos0 == Actor.bpos m) actorsHere
                    , L.find (\ m -> scursor == Just (Actor.bpos m))
@@ -138,7 +138,7 @@ draw dm cops per
                   case items of
                     [] -> (tsymbol tk, if vis then tcolor tk else tcolor2 tk)
                     i : _ -> Item.viewItem i
-            vis = IS.member pos0 $ totalVisible per
+            vis = ES.member pos0 $ totalVisible per
             visPl =
               maybe False (\leader -> actorSeesLoc per leader pos0) mleader
             bg0 = if isJust stgtMode && Just pos0 == scursor

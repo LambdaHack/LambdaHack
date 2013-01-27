@@ -16,7 +16,6 @@ module Game.LambdaHack.Msg
 import Data.Binary
 import qualified Data.ByteString.Char8 as BS
 import Data.Char
-import qualified Data.IntMap as IM
 import qualified Data.List as L
 import Data.Monoid hiding ((<>))
 import Data.Text (Text)
@@ -26,6 +25,7 @@ import Data.Typeable
 import Game.LambdaHack.Utils.Assert
 import NLP.Miniutter.English (showT, (<+>), (<>))
 import qualified NLP.Miniutter.English as MU
+import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Misc
 import Game.LambdaHack.PointXY
@@ -181,14 +181,14 @@ stringByLocation :: X -> Y -> Overlay
 stringByLocation _ _ [] = (T.empty, const Nothing, Nothing)
 stringByLocation lxsize lysize (msgTop : ls) =
   let (over, bottom) = splitAt lysize $ map (padMsg lxsize) ls
-      m = IM.fromDistinctAscList $
-            zip [0..] (L.map (IM.fromList . zip [0..] . T.unpack) over)
+      m = EM.fromDistinctAscList $
+            zip [0..] (L.map (EM.fromList . zip [0..] . T.unpack) over)
       msgBottom = case bottom of
                   [] -> Nothing
                   [s] -> Just s
                   _ -> Just "--a portion of the text trimmed--"
   in (padMsg lxsize msgTop,
-      \ (PointXY (x, y)) -> IM.lookup y m >>= \ n -> IM.lookup x n,
+      \ (PointXY (x, y)) -> EM.lookup y m >>= \ n -> EM.lookup x n,
       msgBottom)
 
 -- | Split an overlay into a slideshow in which each overlay,

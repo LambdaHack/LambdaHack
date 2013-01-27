@@ -7,11 +7,10 @@ module Game.LambdaHack.Server.Fov
   ) where
 
 import Data.Binary
-import qualified Data.EnumMap.Strict as EM
-import qualified Data.IntMap as IM
-import qualified Data.IntSet as IS
 import qualified Data.List as L
 import qualified Data.Map as M
+import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Content.ActorKind
@@ -31,7 +30,7 @@ import Game.LambdaHack.Vector
 import Game.LambdaHack.VectorXY
 
 newtype PerceptionReachable = PerceptionReachable
-  { preachable :: IS.IntSet }
+  { preachable :: ES.EnumSet Point }
   deriving Show
 
 -- | Calculate perception of the level.
@@ -39,16 +38,16 @@ levelPerception :: Kind.COps -> FovMode -> FactionId -> Level
                 -> Perception
 levelPerception cops@Kind.COps{cotile} configFovMode
                 fid lvl@Level{lactor} =
-  let hs = IM.filter (\m -> bfaction m == fid && not (bproj m)) lactor
+  let hs = EM.filter (\m -> bfaction m == fid && not (bproj m)) lactor
       reas =
-        IM.map (\h -> computeReachable cops configFovMode h lvl) hs
-      lreas = map preachable $ IM.elems reas
-      totalRea = PerceptionReachable $ IS.unions lreas
+        EM.map (\h -> computeReachable cops configFovMode h lvl) hs
+      lreas = map preachable $ EM.elems reas
+      totalRea = PerceptionReachable $ ES.unions lreas
       -- TODO: Instead of giving the monster a light source, alter vision.
-      lights = IS.fromList $ map bpos $ IM.elems hs
+      lights = ES.fromList $ map bpos $ EM.elems hs
       totalVis = computeVisible cotile totalRea lvl lights
-      f = PerceptionVisible . IS.intersection (pvisible totalVis) . preachable
-  in Perception { pactors = IM.map f reas
+      f = PerceptionVisible . ES.intersection (pvisible totalVis) . preachable
+  in Perception { pactors = EM.map f reas
                 , ptotal  = totalVis }
 
 -- | Calculate perception of a faction.
@@ -78,21 +77,21 @@ dungeonPerception cops configFovMode s =
 -- there must be a wall in-between. Stray rays indicate doors,
 -- moving shadows indicate monsters, etc.
 computeVisible :: Kind.Ops TileKind -> PerceptionReachable
-               -> Level -> IS.IntSet -> PerceptionVisible
+               -> Level -> ES.EnumSet Point -> PerceptionVisible
 computeVisible cops reachable@PerceptionReachable{preachable} lvl lights =
   let isV = isVisible cops reachable lvl lights
-  in PerceptionVisible $ IS.filter isV preachable
+  in PerceptionVisible $ ES.filter isV preachable
 
 -- TODO: this is calculated per-faction, not per-actor, but still optimize,
 -- e.g., by partitioning preachable wrt litDirectly and then running
 -- isVisible only over one of the parts, depending on which is smaller.
 isVisible :: Kind.Ops TileKind -> PerceptionReachable
-          -> Level -> IS.IntSet -> Point -> Bool
+          -> Level -> ES.EnumSet Point -> Point -> Bool
 isVisible cotile PerceptionReachable{preachable}
           lvl@Level{lxsize, lysize} lights pos0 =
   let litDirectly loc = Tile.isLit cotile (lvl `at` loc)
-                        || loc `IS.member` lights
-      l_and_R loc = litDirectly loc && loc `IS.member` preachable
+                        || loc `ES.member` lights
+      l_and_R loc = litDirectly loc && loc `ES.member` preachable
   in litDirectly pos0 || L.any l_and_R (vicinity lxsize lysize pos0)
 
 -- | Reachable are all fields on an unblocked path from the hero position.
@@ -107,7 +106,7 @@ computeReachable Kind.COps{cotile, coactor=Kind.Ops{okind}}
         else configFovMode
       ppos = bpos actor
   in PerceptionReachable $
-       IS.insert ppos $ IS.fromList $ fullscan cotile (fovMode actor) ppos lvl
+       ES.insert ppos $ ES.fromList $ fullscan cotile (fovMode actor) ppos lvl
 
 -- | Perform a full scan for a given position. Returns the positions
 -- that are currently in the field of view. The Field of View

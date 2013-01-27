@@ -1,4 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Actors in the game: heroes, monsters, etc. No operation in this module
 -- involves the 'State' or 'Action' type.
 module Game.LambdaHack.Actor
@@ -16,6 +18,7 @@ import Data.Maybe
 import Data.Ratio
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
+import Data.Typeable
 
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Content.ActorKind
@@ -89,7 +92,12 @@ instance Binary Actor where
 -- ActorId operations
 
 -- | A unique identifier of an actor in a dungeon.
-type ActorId = Int
+newtype ActorId = ActorId Int
+  deriving (Show, Eq, Ord, Enum, Typeable)
+
+instance Binary ActorId where
+  put (ActorId n) = put n
+  get = fmap ActorId get
 
 -- | Chance that a new monster is generated. Currently depends on the
 -- number of monsters already present, and on the level. In the future,

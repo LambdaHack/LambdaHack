@@ -33,8 +33,6 @@ import qualified Data.Char as Char
 import Data.Dynamic
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import qualified Data.IntMap as IM
-import qualified Data.IntSet as IS
 import Data.List
 import qualified Data.Map as M
 import Data.Maybe
@@ -258,8 +256,8 @@ addHero Kind.COps{coactor, cotile} ppos side configHeroNames
       startHP = configBaseHP - (configBaseHP `div` 5) * min 3 n
       m = template (heroKindId coactor) (Just symbol) (Just name)
                    startHP loc (getTime s) side False
-  in ( updateArena (updateActor (IM.insert scounter m)) s
-     , ser { scounter = scounter + 1 } )
+  in ( updateArena (updateActor (EM.insert scounter m)) s
+     , ser {scounter = succ scounter} )
 
 -- | Create a set of initial heroes on the current level, at position ploc.
 initialHeroes :: Kind.COps -> Point -> FactionId -> State -> StateServer
@@ -351,8 +349,8 @@ withAI m = do
 isFactionAware :: MonadServerChan m => [Point] -> FactionId -> m Bool
 isFactionAware poss fid = do
   per <- getPerFid fid
-  let inter = IS.fromList poss `IS.intersection` totalVisible per
-  return $! null poss || not (IS.null inter)
+  let inter = ES.fromList poss `ES.intersection` totalVisible per
+  return $! null poss || not (ES.null inter)
 
 connSendUpdateCli :: MonadServerChan m => CmdUpdateCli -> ConnCli -> m ()
 connSendUpdateCli cmd ConnCli {toClient} =

@@ -6,12 +6,12 @@ module Game.LambdaHack.Server.DungeonGen
 
 import Control.Monad
 import qualified Control.Monad.State as St
-import qualified Data.IntMap as IM
 import Data.List
 import qualified Data.Map as M
 import Data.Maybe
 import Data.Text (Text)
 import qualified System.Random as R
+import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.ItemKind
@@ -40,9 +40,9 @@ convertTileMaps cdefTile cxsize cysize ltile = do
   pickedTiles <- replicateM (cxsize * cysize) cdefTile
   return $ Kind.listArray bounds pickedTiles Kind.// assocs
 
-mapToIMap :: X -> M.Map PointXY a -> IM.IntMap a
+mapToIMap :: X -> M.Map PointXY a -> EM.EnumMap Point a
 mapToIMap cxsize m =
-  IM.fromList $ map (\ (xy, a) -> (toPoint cxsize xy, a)) (M.assocs m)
+  EM.fromList $ map (\ (xy, a) -> (toPoint cxsize xy, a)) (M.assocs m)
 
 rollItems :: Kind.COps -> FlavourMap -> DiscoRev -> Int -> Int
           -> CaveKind -> TileMap -> Point
@@ -99,16 +99,16 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
       lclear = Kind.foldlArray f 0 ltile
   is <- rollItems cops flavour discoRev ln depth kc ltile su
   -- TODO: split this into Level.defaultLevel
-  let itemMap = mapToIMap cxsize ditem `IM.union` IM.fromList is
-      litem = IM.map (: []) itemMap
+  let itemMap = mapToIMap cxsize ditem `EM.union` EM.fromList is
+      litem = EM.map (: []) itemMap
       level = Level
-        { lactor = IM.empty
-        , linv = IM.empty
+        { lactor = EM.empty
+        , linv = EM.empty
         , litem
         , ltile
         , lxsize = cxsize
         , lysize = cysize
-        , lsmell = IM.empty
+        , lsmell = EM.empty
         , ldesc = cname
         , lstair = (su, sd)
         , lseen = 0

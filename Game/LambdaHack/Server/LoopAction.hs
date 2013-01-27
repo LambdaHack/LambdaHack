@@ -7,7 +7,6 @@ import Control.Arrow ((&&&))
 import Control.Monad
 import Control.Monad.Reader.Class
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.IntMap as IM
 import qualified Data.List as L
 import Data.Maybe
 import qualified Data.Ord as Ord
@@ -116,7 +115,7 @@ handleActors cmdSer subclipStart previousHuman mfid = withPerception $ do
   Kind.COps{coactor} <- getsState scops
   time <- getsState getTime  -- the end time of this clip, inclusive
    -- Older actors act earlier.
-  lactor <- getsState (IM.toList . lactor . getArena)
+  lactor <- getsState (EM.toList . lactor . getArena)
   gquit <- getsState $ gquit . getSide
   quit <- getsState squit
   let mnext = if null lactor  -- wait until any actor spawned

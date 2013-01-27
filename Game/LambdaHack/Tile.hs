@@ -9,7 +9,7 @@
 -- too often in performance critical code
 -- to try to compress their representation and/or recompute them.
 -- Instead, of defining a @Tile@ type, we express various properties
--- of concrete tiles by arrays or sparse IntMaps, as appropriate.
+-- of concrete tiles by arrays or sparse EnumMaps, as appropriate.
 --
 -- Actors at normal speed (2 m/s) take one turn to move one tile (1 m by 1 m).
 module Game.LambdaHack.Tile

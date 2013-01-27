@@ -11,8 +11,6 @@ import qualified Paths_LambdaHack as Self (version)
 import Control.Monad
 import Control.Monad.Writer.Strict (WriterT, lift, tell)
 import Data.Function
-import qualified Data.IntMap as IM
-import qualified Data.IntSet as IS
 import Data.List
 import qualified Data.Map as M
 import Data.Maybe
@@ -21,6 +19,8 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Version
 import qualified NLP.Miniutter.English as MU
+import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -128,14 +128,14 @@ doLook = do
   lvl <- cursorLevel
   let p = fromMaybe lpos scursor
       hms = lactor lvl
-      canSee = IS.member p (totalVisible per)
-      ihabitant | canSee = find (\ m -> bpos m == p) (IM.elems hms)
+      canSee = ES.member p (totalVisible per)
+      ihabitant | canSee = find (\ m -> bpos m == p) (EM.elems hms)
                 | otherwise = Nothing
       enemyMsg =
         maybe "" (\ m -> makeSentence
                          [MU.SubjectVerbSg (partActor coactor m) "be here"])
                  ihabitant
-      vis | not $ p `IS.member` totalVisible per = " (not visible)"
+      vis | not $ p `ES.member` totalVisible per = " (not visible)"
           | actorSeesLoc per leader p = ""
           | otherwise = " (not visible by you)"
       mode = case target of
