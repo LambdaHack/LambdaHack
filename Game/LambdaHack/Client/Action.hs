@@ -35,6 +35,7 @@ import Control.Concurrent
 import Control.Monad
 import Control.Monad.Writer.Strict (WriterT, lift, tell)
 import Data.Dynamic
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import qualified Data.Map as M
@@ -69,7 +70,7 @@ displayFrame :: MonadClientUI m => Bool -> Maybe SingleFrame -> m ()
 displayFrame isRunning mf = do
   fs <- askFrontendSession
   faction <- getsState sfaction
-  case filter isHumanFact $ IM.elems faction of
+  case filter isHumanFact $ EM.elems faction of
     _ : _ : _ ->
       -- More than one human player; don't mix the output
       modifyClient $ \cli -> cli {sframe = (mf, isRunning) : sframe cli}
@@ -317,7 +318,8 @@ rememberLevel Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} visible lvl clvl =
           }
 
 saveName :: FactionId -> Bool -> String
-saveName side isAI = show side ++ if isAI then ".ai.sav" else ".human.sav"
+saveName side isAI = show (fromEnum side)
+                     ++ if isAI then ".ai.sav" else ".human.sav"
 
 clientGameSave :: MonadClient m => Bool -> Bool -> m ()
 clientGameSave toBkp isAI = do

@@ -1,12 +1,13 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Factions taking part in the game: e.g., two human players controlling
 -- the hero faction battling the monster and the animal factions.
 module Game.LambdaHack.Faction
   ( FactionId, Faction(..), Status(..), FactionDict
-  , isHumanFact, isSpawningFact
+  , isHumanFact, isSpawningFact, invalidFactionId
   ) where
 
 import Data.Binary
-import qualified Data.IntMap as IM
+import qualified Data.EnumMap.Strict as EM
 import Data.Text (Text)
 import Data.Maybe
 
@@ -36,8 +37,19 @@ data Status =
   | Restart          -- ^ the player quits and starts a new game
   deriving (Show, Eq, Ord)
 
+-- | A unique identifier of a faction in a game.
+newtype FactionId = FactionId Int
+  deriving (Show, Eq, Ord, Enum)
+
+instance Binary FactionId where
+  put (FactionId n) = put n
+  get = fmap FactionId get
+
 -- | All factions in the game, indexed by faction identifier.
-type FactionDict = IM.IntMap Faction
+type FactionDict = EM.EnumMap FactionId Faction
+
+invalidFactionId :: FactionId
+invalidFactionId = FactionId (-1)
 
 -- | Tell whether the faction is human player-controlled.
 isHumanFact :: Faction -> Bool
@@ -80,6 +92,3 @@ instance Binary Faction where
     gally <- get
     gquit <- get
     return Faction{..}
-
--- | A unique identifier of a faction in a game.
-type FactionId = Int

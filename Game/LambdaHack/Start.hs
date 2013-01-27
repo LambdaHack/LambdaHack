@@ -7,7 +7,7 @@ module Game.LambdaHack.Start
 import Control.Concurrent
 import Control.Exception (finally)
 import Control.Monad
-import qualified Data.IntMap as IM
+import qualified Data.EnumMap.Strict as EM
 import System.IO.Unsafe (unsafePerformIO)
 
 import Game.LambdaHack.Action
@@ -39,7 +39,7 @@ launchClients executorC chanAssocs =
             forkAI
           Nothing ->
             forkAI
-  in mapM_ forkClient $ IM.toList chanAssocs
+  in mapM_ forkClient $ EM.toList chanAssocs
 
 -- Swiped from http://www.haskell.org/ghc/docs/latest/html/libraries/base-4.6.0.0/Control-Concurrent.html
 children :: MVar [MVar ()]

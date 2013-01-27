@@ -5,6 +5,7 @@
 module Game.LambdaHack.Server.EffectAction where
 
 import Control.Monad
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import Data.List
@@ -396,7 +397,7 @@ summonMonsters n pos = do
   hp <- rndToAction $ rollDice $ ahp $ okind mk
   let bfaction = fst $ fromJust
                  $ find (\(_, fa) -> gkind fa == spawnKindId)
-                 $ IM.toList faction
+                 $ EM.toList faction
   s <- getState
   ser <- getServer
   let (sN, serN) = iterate (uncurry $ addMonster cotile mk hp pos

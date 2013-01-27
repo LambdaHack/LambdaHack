@@ -7,6 +7,7 @@ module Game.LambdaHack.Server.Fov
   ) where
 
 import Data.Binary
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import qualified Data.List as L
@@ -60,7 +61,7 @@ factionPerception cops configFovMode s fid =
 dungeonPerception :: Kind.COps -> FovMode -> State -> Pers
 dungeonPerception cops configFovMode s =
   let f fid _ = factionPerception cops configFovMode s fid
-  in IM.mapWithKey f $ sfaction s
+  in EM.mapWithKey f $ sfaction s
 
 -- | A position can be directly lit by an ambient shine or a weak, portable
 -- light source, e.g,, carried by a hero. (Only lights of radius 0

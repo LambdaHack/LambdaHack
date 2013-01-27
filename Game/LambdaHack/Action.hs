@@ -20,11 +20,12 @@ import Control.Concurrent.Chan
 import qualified Control.Monad.State as St
 import Control.Monad.Writer.Strict (WriterT (WriterT), lift, runWriterT)
 import Data.Dynamic
-import qualified Data.IntMap as IM
+import qualified Data.EnumMap.Strict as EM
 import Data.Monoid
 import qualified Data.Text as T
 
 import Game.LambdaHack.CmdCli
+import Game.LambdaHack.Faction
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Random
 import Game.LambdaHack.State
@@ -44,7 +45,7 @@ type ConnFaction = (Maybe ConnCli, Maybe ConnCli)
 
 -- | Connection information for each client and an optional AI client
 -- for the same faction, indexed by faction identifier.
-type ConnDict = IM.IntMap ConnFaction
+type ConnDict = EM.EnumMap FactionId ConnFaction
 
 -- | The bottom of the action monads class semilattice.
 class (Monad m, Functor m, Show (m ())) => MonadActionAbort m where

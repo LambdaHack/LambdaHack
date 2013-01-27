@@ -7,6 +7,7 @@ module Game.LambdaHack.Server.SemAction where
 
 import Control.Monad
 import Control.Monad.Reader.Class
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import Data.List
@@ -479,7 +480,7 @@ rollMonster Kind.COps{ cotile
         in if fspawn kind <= 0
            then Nothing
            else Just (fspawn kind, (kind, fid))
-  case catMaybes $ map f $ IM.toList $ sfaction state of
+  case catMaybes $ map f $ EM.toList $ sfaction state of
     [] -> return Nothing
     spawnList -> do
       let freq = toFreq "spawn" spawnList
@@ -519,7 +520,7 @@ generateMonster = do
   ser <- getServer
   pers <- ask
   arena <- getsState sarena
-  let allPers = IS.unions $ map (totalVisible . (M.! arena)) $ IM.elems pers
+  let allPers = IS.unions $ map (totalVisible . (M.! arena)) $ EM.elems pers
   nst <- rndToAction $ rollMonster cops allPers state ser
   case nst of
     Nothing -> return Nothing

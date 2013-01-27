@@ -25,11 +25,14 @@ module Game.LambdaHack.Server.Action
 
 import Control.Concurrent
 --import Control.Exception (finally)
+import Control.Arrow (second)
 import Control.Monad
 import Control.Monad.Reader.Class
 import qualified Control.Monad.State as St
 import qualified Data.Char as Char
 import Data.Dynamic
+import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import qualified Data.IntMap as IM
 import qualified Data.IntSet as IS
 import Data.List
@@ -38,7 +41,6 @@ import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import System.Time
-import Control.Arrow (second)
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -79,13 +81,13 @@ withPerception m = do
   let tryFov = stryFov sdebugSer
       fovMode = fromMaybe configFovMode tryFov
       per side = levelPerception cops fovMode side lvl
-  local (IM.mapWithKey (\side lp -> M.insert arena (per side) lp)) m
+  local (EM.mapWithKey (\side lp -> M.insert arena (per side) lp)) m
 
 getPerFid :: MonadServerRO m => FactionId -> m Perception
 getPerFid fid = do
   arena <- getsState sarena
   pers <- ask
-  let fper = fromMaybe (assert `failure` (arena, fid)) $ IM.lookup fid pers
+  let fper = fromMaybe (assert `failure` (arena, fid)) $ EM.lookup fid pers
       per = fromMaybe (assert `failure` (arena, fid)) $ M.lookup arena fper
   return $! per
 
@@ -111,7 +113,7 @@ remember = do
   faction <- getsState sfaction
   pers <- ask
   let broadcast = funBroadcastCli (\fid ->
-        RememberPerCli arena (pers IM.! fid M.! arena) lvl faction)
+        RememberPerCli arena (pers EM.! fid M.! arena) lvl faction)
   broadcast
   withAI broadcast
 
@@ -226,11 +228,11 @@ restartGame loopServer = do
   -- The biggest part is content, which really needs to be updated
   -- at this point to keep clients in sync with server improvements.
   defLoc <- getsState localFromGlobal
-  let bcast = funBroadcastCli (\fid -> RestartCli (pers IM.! fid) defLoc)
+  let bcast = funBroadcastCli (\fid -> RestartCli (pers EM.! fid) defLoc)
   bcast
   withAI bcast
   faction <- getsState sfaction
-  let firstHuman = fst . head $ filter (isHumanFact . snd) $ IM.assocs faction
+  let firstHuman = fst . head $ filter (isHumanFact . snd) $ EM.assocs faction
   switchGlobalSelectedSide firstHuman
   saveGameBkp
   loopServer
@@ -284,7 +286,7 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
         return Faction{..}
   lHuman <- mapM (g True) (configHuman config)
   lComputer <- mapM (g False) (configComputer config)
-  let rawFs = zip [1..] $ lHuman ++ lComputer
+  let rawFs = zip [toEnum 1..] $ lHuman ++ lComputer
       isOfType fType fact =
         let fk = okind $ gkind fact
         in case lookup fType $ ffreq fk of
@@ -293,12 +295,12 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
       enemyAlly fact =
         let f fType = filter (isOfType fType . snd) rawFs
             fk = okind $ gkind fact
-            setEnemy = IS.fromList $ map fst $ concatMap f $ fenemy fk
-            setAlly  = IS.fromList $ map fst $ concatMap f $ fally fk
-            genemy = IS.toList setEnemy
-            gally = IS.toList $ setAlly IS.\\ setEnemy
+            setEnemy = ES.fromList $ map fst $ concatMap f $ fenemy fk
+            setAlly  = ES.fromList $ map fst $ concatMap f $ fally fk
+            genemy = ES.toList setEnemy
+            gally = ES.toList $ setAlly ES.\\ setEnemy
         in fact {genemy, gally}
-  return $! IM.fromDistinctAscList $ map (second enemyAlly) rawFs
+  return $! EM.fromDistinctAscList $ map (second enemyAlly) rawFs
 
 -- TODO: do this inside Action ()
 gameReset :: Kind.COps -> IO (State, StateServer)
@@ -311,7 +313,7 @@ gameReset cops@Kind.COps{ coitem, corule} = do
       rnd = do
         faction <- createFactions cops sconfig
         let notSpawning (_, fact) = not $ isSpawningFact cops fact
-            needInitialCrew = map fst $ filter notSpawning $ IM.toList faction
+            needInitialCrew = map fst $ filter notSpawning $ EM.toList faction
         sflavour <- dungeonFlavourMap coitem
         (discoS, discoRev) <- serverDiscos coitem
         DungeonGen.FreshDungeon{..} <-
@@ -341,7 +343,7 @@ switchGlobalSelectedSide =
 withAI :: MonadServerChan m => m a -> m a
 withAI m = do
   d <- getDict
-  modifyDict $ IM.map $ \(_chanCli, chanAI) -> (chanAI, undefined)
+  modifyDict $ EM.map $ \(_chanCli, chanAI) -> (chanAI, undefined)
   a <- m
   putDict d
   return a
@@ -358,7 +360,7 @@ connSendUpdateCli cmd ConnCli {toClient} =
 
 sendUpdateCli :: MonadServerChan m => FactionId -> CmdUpdateCli -> m ()
 sendUpdateCli fid cmd = do
-  conn <- getsDict (fst . (IM.! fid))
+  conn <- getsDict (fst . (EM.! fid))
   maybe (return ()) (connSendUpdateCli cmd) conn
 
 connSendQueryCli :: (Typeable a, MonadServerChan m)
@@ -373,7 +375,7 @@ sendQueryCli :: (Typeable a, MonadServerChan m)
              => FactionId -> CmdQueryCli a
              -> m a
 sendQueryCli fid cmd = do
-  conn <- getsDict (fst . (IM.! fid))
+  conn <- getsDict (fst . (EM.! fid))
   maybe (assert `failure` (fid, cmd)) (connSendQueryCli cmd) conn
 
 broadcastCli :: MonadServerChan m
@@ -384,7 +386,7 @@ broadcastCli ps cmd = do
   let p fid = do
         bs <- sequence $ map (\f -> f fid) ps
         return $! and bs
-  ks <- filterM p $ IM.keys faction
+  ks <- filterM p $ EM.keys faction
   mapM_ (flip sendUpdateCli cmd) ks
 
 broadcastPosCli :: MonadServerChan m => [Point] -> CmdUpdateCli -> m ()
@@ -394,7 +396,7 @@ funBroadcastCli :: MonadServerChan m => (FactionId -> CmdUpdateCli) -> m ()
 funBroadcastCli cmd = do
   faction <- getsState sfaction
   let f fid = sendUpdateCli fid (cmd fid)
-  mapM_ f $ IM.keys faction
+  mapM_ f $ EM.keys faction
 
 connSendUpdateUI :: MonadServerChan m => CmdUpdateUI -> ConnCli -> m ()
 connSendUpdateUI cmd ConnCli{toClient} =
@@ -402,7 +404,7 @@ connSendUpdateUI cmd ConnCli{toClient} =
 
 sendUpdateUI :: MonadServerChan m => FactionId -> CmdUpdateUI -> m ()
 sendUpdateUI fid cmd = do
-  conn <- getsDict (fst . (IM.! fid))
+  conn <- getsDict (fst . (EM.! fid))
   maybe (return ()) (connSendUpdateUI cmd) conn
 
 connSendQueryUI :: (Typeable a, MonadServerChan m)
@@ -417,7 +419,7 @@ sendQueryUI :: (Typeable a, MonadServerChan m)
             => FactionId -> CmdQueryUI a
             -> m a
 sendQueryUI fid cmd = do
-  conn <- getsDict (fst . (IM.! fid))
+  conn <- getsDict (fst . (EM.! fid))
   maybe (assert `failure` (fid, cmd)) (connSendQueryUI cmd) conn
 
 broadcastUI :: MonadServerChan m
@@ -428,7 +430,7 @@ broadcastUI ps cmd = do
   let p fid = do
         bs <- sequence $ map (\f -> f fid) ps
         return $! and bs
-  ks <- filterM p $ IM.keys faction
+  ks <- filterM p $ EM.keys faction
   mapM_ (flip sendUpdateUI cmd) ks
 
 broadcastPosUI :: MonadServerChan m => [Point] -> CmdUpdateUI -> m ()
@@ -438,7 +440,7 @@ funBroadcastUI :: MonadServerChan m => (FactionId -> CmdUpdateUI) -> m ()
 funBroadcastUI cmd = do
   faction <- getsState sfaction
   let f fid = sendUpdateUI fid (cmd fid)
-  mapM_ f $ IM.keys faction
+  mapM_ f $ EM.keys faction
 
 restoreOrRestart :: Kind.COps
                  -> (Pers -> State -> StateServer -> ConnDict -> IO ())
@@ -482,8 +484,8 @@ connServer cops executorS connectClients = do
                    else return Nothing
         chanAI <- mkConnCli
         return (fid, (chanCli, chanAI))
-  chanAssocs <- mapM addChan $ IM.toList faction
-  let d = IM.fromAscList chanAssocs
+  chanAssocs <- mapM addChan $ EM.toList faction
+  let d = EM.fromAscList chanAssocs
   -- Connect clients and launch server.
   connectClients d
   exeServer d

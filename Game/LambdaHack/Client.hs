@@ -8,7 +8,7 @@ module Game.LambdaHack.Client
   ) where
 
 import Control.Monad
-import qualified Data.IntMap as IM
+import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Client.Action
@@ -100,7 +100,7 @@ cmdQueryUI cmd = case cmd of
       Just (_, k) | k > 1 -> return False
       _ -> do
         faction <- getsState sfaction
-        let factionName = gname $ faction IM.! newSide
+        let factionName = gname $ faction EM.! newSide
             msg = "Switching to player" <+> factionName <> "."
         void $ displayMore ColorFull msg
         -- Messages shown, so update history and reset current report.

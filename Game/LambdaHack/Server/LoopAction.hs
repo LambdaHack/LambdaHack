@@ -6,6 +6,7 @@ module Game.LambdaHack.Server.LoopAction (loopSer) where
 import Control.Arrow ((&&&))
 import Control.Monad
 import Control.Monad.Reader.Class
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap as IM
 import qualified Data.List as L
 import Data.Maybe
@@ -41,17 +42,17 @@ loopSer cmdSer = do
   defLoc <- getsState localFromGlobal
   case quit of
     Nothing -> do  -- game restarted
-      let bcast = funBroadcastCli (\fid -> RestartCli (pers IM.! fid) defLoc)
+      let bcast = funBroadcastCli (\fid -> RestartCli (pers EM.! fid) defLoc)
       bcast
       withAI bcast
       -- TODO: factor out common parts from restartGame and restoreOrRestart
       faction <- getsState sfaction
-      let firstHuman = fst . head $ filter (isHumanFact . snd) $ IM.assocs faction
+      let firstHuman = fst . head $ filter (isHumanFact . snd) $ EM.assocs faction
       switchGlobalSelectedSide firstHuman
       -- Save ASAP in case of crashes and disconnects.
       saveGameBkp
     _ -> do  -- game restored from a savefile
-      let bcast = funBroadcastCli (\fid -> ContinueSavedCli (pers IM.! fid))
+      let bcast = funBroadcastCli (\fid -> ContinueSavedCli (pers EM.! fid))
       bcast
       withAI bcast
   modifyState $ updateQuit $ const Nothing
@@ -153,6 +154,10 @@ handleActors cmdSer subclipStart previousHuman mfid = withPerception $ do
                             then return side
                             else return previousHuman
                     else return previousHuman
+          -- TODO: check that the commands is legal, that is, the leader
+          -- is acting, etc. Or perhaps instead have a separate type
+          -- of actions for humans. OTOH, AI is controlled by the servers
+          -- so the generated commands are assumed to be legal.
           (cmdS, leaderNew, arenaNew) <-
             sendQueryUI side $ HandleHumanCli leader
           modifyState $ updateSelectedArena arenaNew

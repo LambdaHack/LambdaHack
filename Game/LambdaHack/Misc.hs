@@ -1,10 +1,13 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | Hacks that haven't found their home yet.
 module Game.LambdaHack.Misc
   ( normalLevelBound, divUp, Freqs, breturn
   ) where
 
+import Data.Binary
 import Control.Monad
 import Data.Text (Text)
+import qualified Data.EnumMap.Strict as EM
 
 -- | Level bounds. TODO: query terminal size instead and scroll view.
 normalLevelBound :: (Int, Int)
@@ -23,3 +26,7 @@ type Freqs = [(Text, Int)]
 breturn :: MonadPlus m => Bool -> a -> m a
 breturn True a  = return a
 breturn False _ = mzero
+
+instance (Enum k, Binary k, Binary e) => Binary (EM.EnumMap k e) where
+  put m = put (EM.size m) >> mapM_ put (EM.toAscList m)
+  get = liftM EM.fromDistinctAscList get

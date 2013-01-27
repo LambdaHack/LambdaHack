@@ -21,6 +21,7 @@ import qualified Data.Map as M
 import Data.Text (Text)
 import Data.Typeable
 import qualified System.Random as R
+import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
@@ -84,7 +85,7 @@ defStateGlobal :: Dungeon -> Int -> Discoveries
                -> State
 defStateGlobal _sdungeon _sdepth _sdisco _sfaction _scops _srandom _sarena =
   State
-    { _sside = -3  -- no side yet selected
+    { _sside = invalidFactionId  -- no side yet selected
     , _squit = Nothing
     , ..
     }
@@ -96,9 +97,9 @@ defStateLocal _scops _sside =
     { _sdungeon = M.empty
     , _sdepth = 0
     , _sdisco = M.empty
-    , _sfaction = IM.empty
+    , _sfaction = EM.empty
     , _scops
-    , _srandom = R.mkStdGen _sside
+    , _srandom = R.mkStdGen 42  -- will be set by the client
     , _squit = Nothing
     , _sside
     , _sarena = levelDefault 1
@@ -122,7 +123,7 @@ localFromGlobal State{ _scops=_scops@Kind.COps{ coitem=Kind.Ops{okind}
     , _sdisco = let f ik = isymbol (okind ik)
                            `notElem` (ritemProject $ Kind.stdRuleset corule)
                 in M.filter f _sdisco
-    , _sside = -5  -- will be set by the client
+    , _sside = invalidFactionId  -- will be set by the client
     , _squit = Nothing
     , ..
     }
@@ -166,7 +167,7 @@ updateTime f s = updateArena (\lvl@Level{ltime} -> lvl {ltime = f ltime}) s
 
 -- | Update current side data within state.
 updateSide :: (Faction -> Faction) -> State -> State
-updateSide f s = updateFaction (IM.adjust f (_sside s)) s
+updateSide f s = updateFaction (EM.adjust f (_sside s)) s
 
 -- | Update selected level within state.
 updateSelectedArena :: LevelId -> State -> State
@@ -182,15 +183,15 @@ getTime State{_sarena, _sdungeon} = ltime $ _sdungeon M.! _sarena
 
 -- | Get current faction from state.
 getSide :: State -> Faction
-getSide State{_sfaction, _sside} = _sfaction IM.! _sside
+getSide State{_sfaction, _sside} = _sfaction EM.! _sside
 
 -- | Tell whether the faction is human player-controlled.
 isHumanFaction :: State -> FactionId -> Bool
-isHumanFaction s fid = isHumanFact $ _sfaction s IM.! fid
+isHumanFaction s fid = isHumanFact $ _sfaction s EM.! fid
 
 -- | Tell whether the faction can spawn actors.
 isSpawningFaction :: State -> FactionId -> Bool
-isSpawningFaction s fid = isSpawningFact (_scops s) $ _sfaction s IM.! fid
+isSpawningFaction s fid = isSpawningFact (_scops s) $ _sfaction s EM.! fid
 
 sdungeon :: State -> Dungeon
 sdungeon = _sdungeon
