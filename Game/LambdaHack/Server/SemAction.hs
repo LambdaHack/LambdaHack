@@ -488,7 +488,7 @@ rollMonster Kind.COps{ cotile
           ours = actorNotProjList (== bfaction) lvl
           others = actorNotProjList (/= bfaction) lvl
           isLit = Tile.isLit cotile
-      rc <- monsterGenChance (levelNumber $ sarena state) (length ours)
+      rc <- monsterGenChance (ldepth $ getArena state) (length ours)
       if not rc
         then return Nothing
         else do

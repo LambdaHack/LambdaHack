@@ -54,7 +54,7 @@ draw dm cops per
                , coitem=Kind.Ops{okind=iokind}
                , cotile=Kind.Ops{okind=tokind, ouniqGroup} } = cops
       DebugModeCli{smarkVision, smarkSmell} = sdebugCli
-      (drawnLevelId, lvl@Level{lxsize, lysize, lsmell,
+      (drawnLevelId, lvl@Level{ldepth, lxsize, lysize, lsmell,
                                ldesc, lactor, ltime, lseen, lclear}) =
         case stgtMode of
           Nothing -> (sarena s, getArena s)
@@ -166,7 +166,7 @@ draw dm cops per
       -- 'wait' command.
       braceSign | bracedL   = "{"
                 | otherwise = " "
-      lvlN = T.justifyLeft 2 ' ' (showT $ levelNumber drawnLevelId)
+      lvlN = T.justifyLeft 2 ' ' (showT ldepth)
       stats =
         T.justifyLeft 11 ' ' ("[" <> seenTxt <+> "seen]") <+>
         T.justifyLeft 9 ' ' ("$:" <+> showT wealth) <+>

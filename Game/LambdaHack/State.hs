@@ -53,12 +53,13 @@ data State = State
 
 -- TODO: add a flag 'fresh' and when saving levels, don't save
 -- and when loading regenerate this level.
-unknownLevel :: Kind.Ops TileKind -> X -> Y
+unknownLevel :: Kind.Ops TileKind -> Int -> X -> Y
              -> Text -> (Point, Point) -> Int
              -> Level
-unknownLevel Kind.Ops{ouniqGroup} lxsize lysize ldesc lstair lclear =
+unknownLevel Kind.Ops{ouniqGroup} ldepth lxsize lysize ldesc lstair lclear =
   let unknownId = ouniqGroup "unknown space"
-  in Level { lactor = EM.empty
+  in Level { ldepth
+           , lactor = EM.empty
            , linv = EM.empty
            , litem = EM.empty
            , ltile = unknownTileMap unknownId lxsize lysize
@@ -101,7 +102,7 @@ defStateLocal _scops _sside =
     , _srandom = R.mkStdGen 42  -- will be set by the client
     , _squit = Nothing
     , _sside
-    , _sarena = levelDefault 1
+    , _sarena = initialLevel
     }
 
 -- TODO: make lstair secret until discovered; use this later on for
@@ -116,8 +117,8 @@ localFromGlobal State{ _scops=_scops@Kind.COps{ coitem=Kind.Ops{okind}
                       , .. } =
   State
     { _sdungeon =
-      M.map (\Level{lxsize, lysize, ldesc, lstair, lclear} ->
-              unknownLevel cotile lxsize lysize ldesc lstair lclear)
+      M.map (\Level{ldepth, lxsize, lysize, ldesc, lstair, lclear} ->
+              unknownLevel cotile ldepth lxsize lysize ldesc lstair lclear)
             _sdungeon
     , _sdisco = let f ik = isymbol (okind ik)
                            `notElem` (ritemProject $ Kind.stdRuleset corule)

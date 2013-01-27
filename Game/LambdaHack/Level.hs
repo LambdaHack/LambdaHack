@@ -1,25 +1,27 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 -- | Inhabited dungeon levels and the operations to query and change them
 -- as the game progresses.
 module Game.LambdaHack.Level
-  ( -- * The @Level@ type and its components
-    ActorDict, InvDict, SmellMap, SecretMap, ItemMap, TileMap
+  ( -- * Dungeon
+    LevelId, Dungeon, ascendInBranch, initialLevel
+    -- * The @Level@ type and its components
+  , ActorDict, InvDict, SmellMap, SecretMap, ItemMap, TileMap
   , Level(..)
     -- * Level update
   , updateActor, updateInv, updateSmell, updateIMap, updateLMap, dropItemsAt
     -- * Level query
   , at, atI, accessible, openable, findPos, findPosTry
-    -- * Dungeon
-  , LevelId, levelNumber, levelDefault, Dungeon
-  ) where
+ ) where
 
 import Data.Binary
 import qualified Data.List as L
 import qualified Data.Map as M
 import Data.Text (Text)
 import qualified Data.EnumMap.Strict as EM
+import Data.Typeable
 
 import Game.LambdaHack.Actor
-import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Feature as F
@@ -31,6 +33,28 @@ import Game.LambdaHack.Random
 import Game.LambdaHack.Tile
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
+
+-- | Abstract level identifiers.
+newtype LevelId = LevelId Int
+  deriving (Show, Eq, Ord,  Enum, Typeable)
+
+instance Binary LevelId where
+  put (LevelId n) = put n
+  get = fmap LevelId get
+
+-- | The complete dungeon is a map from level names to levels.
+type Dungeon = M.Map LevelId Level
+
+-- | Levels in the current branch @k@ shallower than the current.
+ascendInBranch :: Dungeon -> LevelId -> Int -> [LevelId]
+ascendInBranch dungeon (LevelId n) k =
+  let ln = LevelId $ n - k  -- currently just one branch
+  in case M.lookup ln dungeon of
+    Nothing -> []
+    Just _ -> [ln]
+
+initialLevel :: LevelId
+initialLevel = LevelId 1
 
 -- | All actors on the level, indexed by actor identifier.
 type ActorDict = EM.EnumMap ActorId Actor
@@ -52,7 +76,8 @@ type TileMap = Kind.Array Point TileKind
 
 -- | A view on single, inhabited dungeon level.
 data Level = Level
-  { lactor  :: !ActorDict       -- ^ remembered actors on the level
+  { ldepth  :: !Int             -- ^ depth of the level
+  , lactor  :: !ActorDict       -- ^ remembered actors on the level
   , linv    :: !InvDict         -- ^ remembered actor inventories
   , litem   :: !ItemMap         -- ^ remembered items on the level
   , ltile   :: !TileMap         -- ^ remembered level map
@@ -104,6 +129,7 @@ assertSparseItems m =
 
 instance Binary Level where
   put Level{..} = do
+    put ldepth
     put lactor
     put linv
     put (assertSparseItems litem)
@@ -118,6 +144,7 @@ instance Binary Level where
     put ltime
     put lsecret
   get = do
+    ldepth <- get
     lactor <- get
     linv <- get
     litem <- get
@@ -189,14 +216,3 @@ findPosTry numTries ltile l@(_ : tl) = assert (numTries > 0) $
           then return loc
           else search (k - 1)
   in search numTries
-
--- | Depth of a level.
-levelNumber :: LevelId -> Int
-levelNumber (LambdaCave n) = n
-
--- | Default level for a given depth.
-levelDefault :: Int -> LevelId
-levelDefault = LambdaCave
-
--- | The complete dungeon is a map from level names to levels.
-type Dungeon = M.Map LevelId Level

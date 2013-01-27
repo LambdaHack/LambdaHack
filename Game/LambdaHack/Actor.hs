@@ -22,7 +22,7 @@ import Data.Typeable
 
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Faction
+import Game.LambdaHack.FactionId
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Point
 import Game.LambdaHack.Random

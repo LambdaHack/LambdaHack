@@ -444,6 +444,7 @@ checkPartyDeath target = do
 gameOver :: MonadServerChan m => Bool -> m ()
 gameOver showEndingScreens = do
   arena <- getsState sarena
+  deepest <- getsState $ ldepth . getArena  -- TODO: use deepest visited instead of current
   let upd f = f {gquit = Just (False, Killed arena)}
   modifyState $ updateSide upd
   when showEndingScreens $ do
@@ -452,7 +453,6 @@ gameOver showEndingScreens = do
     depth <- getsState sdepth
     time <- getsState getTime
     let (items, total) = calculateTotal s
-        deepest = levelNumber arena  -- use deepest visited instead of level of death
         failMsg | timeFit time timeTurn < 300 =
           "That song shall be short."
                 | total < 100 =

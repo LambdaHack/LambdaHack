@@ -87,22 +87,23 @@ buildLevel :: Kind.COps -> FlavourMap -> DiscoRev -> Cave -> Int -> Int
            -> Rnd Level
 buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                          , cocave=Kind.Ops{okind} }
-           flavour discoRev Cave{..} ln depth = do
+           flavour discoRev Cave{..} ldepth depth = do
   let kc@CaveKind{..} = okind dkind
   cmap <- convertTileMaps (opick cdefTile (const True)) cxsize cysize dmap
   (su, upId, sd, downId) <-
     placeStairs cotile cmap kc dplaces
-  let stairs = (su, upId) : if ln == depth then [] else [(sd, downId)]
+  let stairs = (su, upId) : if ldepth == depth then [] else [(sd, downId)]
       ltile = cmap Kind.// stairs
       f !n !tk | Tile.isExplorable cotile tk = n + 1
                | otherwise = n
       lclear = Kind.foldlArray f 0 ltile
-  is <- rollItems cops flavour discoRev ln depth kc ltile su
+  is <- rollItems cops flavour discoRev ldepth depth kc ltile su
   -- TODO: split this into Level.defaultLevel
   let itemMap = mapToIMap cxsize ditem `EM.union` EM.fromList is
       litem = EM.map (: []) itemMap
       level = Level
-        { lactor = EM.empty
+        { ldepth
+        , lactor = EM.empty
         , linv = EM.empty
         , litem
         , ltile
@@ -168,11 +169,11 @@ dungeonGen cops flavour discoRev config@Config{configDepth} nPos =
         let (g1, g2) = R.split g
             res = St.evalState (findGenerator cops flavour discoRev
                                               config k configDepth) g1
-        in (g2, (levelDefault k, res))
+        in (g2, (toEnum k, res))
       con :: R.StdGen -> (FreshDungeon, R.StdGen)
       con g = assert (configDepth >= 1 `blame` configDepth) $
         let (gd, levels) = mapAccumL gen g [1..configDepth]
-            entryLevel = levelDefault 1
+            entryLevel = initialLevel
             (entryPoss, gp) =
               St.runState (findEntryPoss cops nPos (snd (head levels))) gd
             freshDungeon = M.fromList levels

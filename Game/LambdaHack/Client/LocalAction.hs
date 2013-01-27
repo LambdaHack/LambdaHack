@@ -274,8 +274,8 @@ targetEnemy stgtModeNew = do
 tgtAscend :: MonadClient m => Int -> WriterT Slideshow m ()
 tgtAscend k = do
   Kind.COps{cotile} <- getsState scops
+  dungeon <- getsState sdungeon
   loc <- getState
-  depth <- getsState sdepth
   cursor <- getsClient scursor
   (tgtId, lvl) <- viewedLevel
   let rightStairs = case cursor of
@@ -297,11 +297,10 @@ tgtAscend k = do
                 else cursor    -- unknown, do not reveal
           modifyClient $ \cli -> cli {scursor}
           setTgtId nln
-    else do  -- no stairs in the right direction
-      let n = levelNumber tgtId
-          nln = levelDefault $ min depth $ max 1 $ n - k
-      when (nln == tgtId) $ abortWith "no more levels in this direction"
-      setTgtId nln
+    else  -- no stairs in the right direction
+      case ascendInBranch dungeon tgtId k of
+        [] -> abortWith "no more levels in this direction"
+        nln : _ -> setTgtId nln
   doLook
 
 setTgtId :: MonadClient m => LevelId -> m ()

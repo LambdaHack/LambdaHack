@@ -2,7 +2,7 @@
 -- | Factions taking part in the game: e.g., two human players controlling
 -- the hero faction battling the monster and the animal factions.
 module Game.LambdaHack.Faction
-  ( FactionId, Faction(..), Status(..), FactionDict
+  ( FactionId, FactionDict, Faction(..), Status(..)
   , isHumanFact, isSpawningFact, invalidFactionId
   ) where
 
@@ -11,10 +11,14 @@ import qualified Data.EnumMap.Strict as EM
 import Data.Text (Text)
 import Data.Maybe
 
-import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.StrategyKind
 import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Level
+import Game.LambdaHack.FactionId
+
+-- | All factions in the game, indexed by faction identifier.
+type FactionDict = EM.EnumMap FactionId Faction
 
 data Faction = Faction
   { gkind     :: !(Kind.Id FactionKind)   -- ^ the kind of the faction
@@ -36,20 +40,6 @@ data Status =
   | Victor           -- ^ the player won
   | Restart          -- ^ the player quits and starts a new game
   deriving (Show, Eq, Ord)
-
--- | A unique identifier of a faction in a game.
-newtype FactionId = FactionId Int
-  deriving (Show, Eq, Ord, Enum)
-
-instance Binary FactionId where
-  put (FactionId n) = put n
-  get = fmap FactionId get
-
--- | All factions in the game, indexed by faction identifier.
-type FactionDict = EM.EnumMap FactionId Faction
-
-invalidFactionId :: FactionId
-invalidFactionId = FactionId (-1)
 
 -- | Tell whether the faction is human player-controlled.
 isHumanFact :: Faction -> Bool

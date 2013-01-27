@@ -16,7 +16,6 @@ import Text.Printf
 
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Faction
-import Game.LambdaHack.Level
 import Game.LambdaHack.Misc
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Time
@@ -51,7 +50,7 @@ instance Binary ScoreRecord where
 showScore :: (Int, ScoreRecord) -> [Text]
 showScore (pos, score) =
   let died = case status score of
-        Killed lvl -> "perished on level " ++ show (levelNumber lvl) ++ ","
+        Killed lvl -> "perished on level " ++ show (fromEnum lvl) ++ ","
         Camping -> "is camping somewhere,"
         Victor -> "emerged victorious"
         Restart -> "resigned prematurely"
@@ -131,7 +130,7 @@ register config write total time date status = do
       height = nlines `div` 3
       (subject, person, msgUnless) =
         case status of
-          Killed lvl | levelNumber lvl <= 1 ->
+          Killed lvl | fromEnum lvl <= 1 ->
             ("your short-lived struggle", MU.Sg3rd, "(score halved)")
           Killed _ ->
             ("your heroic deeds", MU.PlEtc, "(score halved)")
