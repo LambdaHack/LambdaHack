@@ -1,3 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 -- | Basic operations on 2D points represented as linear offsets.
 module Game.LambdaHack.Point
   ( Point, toPoint, showPoint
@@ -7,6 +9,10 @@ module Game.LambdaHack.Point
 
 import qualified Data.List as L
 import Data.Text (Text)
+import Data.Binary
+import Data.Typeable
+import qualified Data.Ix as Ix
+import qualified System.Random as R
 
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.VectorXY
@@ -24,11 +30,14 @@ import Game.LambdaHack.Utils.Assert
 -- After dungeon is generated (using @PointXY@, not @Point@),
 -- and converted to the @Point@ representation, points are used
 -- mainly as keys and not constructed often, so the performance will improve
--- due to smaller save files, the use of @IntMap@ and cheaper array indexing,
+-- due to smaller save files, the use of @EnumMap@ and cheaper array indexing,
 -- including cheaper bounds checks.
--- We don't define @Point@ as a newtype to avoid the trouble
--- with using @EnumMap@ in place of @IntMap@, etc.
-type Point = Int
+newtype Point = Point Int
+  deriving (Show, Eq, Ord, Ix.Ix, Enum, Typeable, R.Random)
+
+instance Binary Point where
+  put (Point n) = put n
+  get = fmap Point get
 
 -- | Print a point as a tuple of cartesian coordinates.
 showPoint :: X -> Point -> Text
@@ -37,18 +46,18 @@ showPoint lxsize = showT . fromPoint lxsize
 -- | Conversion from cartesian coordinates to @Point@.
 toPoint :: X -> PointXY -> Point
 toPoint lxsize (PointXY (x, y)) =
-  assert (lxsize > x && x >= 0 && y >= 0 `blame` (lxsize, x, y)) $
-  x + y * lxsize
+  assert (lxsize > x && x >= 0 && y >= 0 `blame` (lxsize, x, y))
+  $ Point $ x + y * lxsize
 
 -- | Conversion from @Point@ to cartesian coordinates.
 fromPoint :: X -> Point -> PointXY
-fromPoint lxsize loc =
-  assert (loc >= 0 `blame` (lxsize, loc)) $
-  PointXY (loc `rem` lxsize, loc `quot` lxsize)
+fromPoint lxsize (Point p) =
+  assert (p >= 0 `blame` (lxsize, p))
+  $ PointXY (p `rem` lxsize, p `quot` lxsize)
 
 -- | The top-left corner position of the level.
 origin :: Point
-origin = 0
+origin = Point 0
 
 -- | The distance between two points in the chessboard metric.
 chessDist :: X -> Point -> Point -> Int
@@ -64,22 +73,22 @@ adjacent lxsize s t = chessDist lxsize s t == 1
 
 -- | Returns the 8, or less, surrounding positions of a given position.
 vicinity :: X -> Y -> Point -> [Point]
-vicinity lxsize lysize loc =
+vicinity lxsize lysize p =
   map (toPoint lxsize) $
     vicinityXY (0, 0, lxsize - 1, lysize - 1) $
-      fromPoint lxsize loc
+      fromPoint lxsize p
 
 -- | Returns the 4, or less, surrounding positions in cardinal directions
 -- from a given position.
 vicinityCardinal :: X -> Y -> Point -> [Point]
-vicinityCardinal lxsize lysize loc =
+vicinityCardinal lxsize lysize p =
   map (toPoint lxsize) $
     vicinityCardinalXY (0, 0, lxsize - 1, lysize - 1) $
-      fromPoint lxsize loc
+      fromPoint lxsize p
 
 -- | Checks that a point belongs to an area.
 inside :: X -> Point -> Area -> Bool
-inside lxsize loc = insideXY $ fromPoint lxsize loc
+inside lxsize p = insideXY $ fromPoint lxsize p
 
 -- | Calculate the displacement vector from a position to another.
 displacementXYZ :: X -> Point -> Point -> VectorXY

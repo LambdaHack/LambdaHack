@@ -161,10 +161,10 @@ openable cops lvl tpos =
 findPos :: TileMap -> (Point -> Kind.Id TileKind -> Bool) -> Rnd Point
 findPos ltile p =
   let search = do
-        loc <- randomR $ Kind.bounds ltile
-        let tile = ltile Kind.! loc
-        if p loc tile
-          then return loc
+        pos <- randomR $ Kind.bounds ltile
+        let tile = ltile Kind.! pos
+        if p pos tile
+          then return pos
           else search
   in search
 

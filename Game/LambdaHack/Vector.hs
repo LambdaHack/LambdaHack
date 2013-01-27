@@ -68,7 +68,7 @@ fromDir lxsize (Vector dir) =
 --
 -- Particularly simple and fast implementation in the linear representation.
 shift :: Point -> Vector -> Point
-shift loc (Vector dir) = loc + dir
+shift p (Vector dir) = toEnum $ fromEnum p + dir
 
 -- | Translate a point by a vector, but only if the result fits in an area.
 shiftBounded :: X -> Area -> Point -> Vector -> Point
@@ -142,7 +142,7 @@ towards lxsize pos0 pos1 =
 --
 -- Particularly simple and fast implementation in the linear representation.
 displacement :: Point -> Point -> Vector
-displacement pos1 pos2 = Vector $ pos2 - pos1
+displacement pos1 pos2 = Vector $ fromEnum pos2 - fromEnum pos1
 
 -- | A list of vectors between a list of points.
 displacePath :: [Point] -> [Vector]

@@ -109,7 +109,7 @@ draw dm cops per
               ActorKind{asymbol, acolor} = okind bkind
               color  = fromMaybe acolor  bcolor
               symbol = fromMaybe asymbol bsymbol
-            rainbow loc = toEnum $ loc `rem` 14 + 1
+            rainbow p = toEnum $ fromEnum p `rem` 14 + 1
             actorsHere = EM.elems lactor
             (char, fg0) =
               case ( L.find (\ m -> pos0 == Actor.bpos m) actorsHere
