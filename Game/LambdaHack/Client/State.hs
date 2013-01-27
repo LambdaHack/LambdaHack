@@ -10,7 +10,6 @@ module Game.LambdaHack.Client.State
 
 import Control.Monad
 import Data.Binary
-import qualified Data.Map as M
 import qualified Data.Text as T
 import Data.Typeable
 import Game.LambdaHack.Vector
@@ -84,7 +83,7 @@ defStateClient shistory sconfigUI = do
     , srunning  = Nothing
     , sreport   = emptyReport
     , shistory
-    , sper      = M.empty
+    , sper      = EM.empty
     , sconfigUI
     , slastKey  = Nothing
     , sframe    = []
@@ -124,7 +123,7 @@ invalidateSelectedLeader cli = cli {srunning = Nothing, _sleader = Nothing}
 -- to belong to the selected level and selected faction.
 updateSelectedLeader :: ActorId -> State -> StateClient -> StateClient
 updateSelectedLeader leader s cli =
-  let la = lactor $ sdungeon s M.! sarena s
+  let la = lactor $ sdungeon s EM.! sarena s
       mside1 = fmap bfaction $ EM.lookup leader la
       side2 = sside s
   in assert (maybe True (== side2) mside1
@@ -178,7 +177,7 @@ instance Binary StateClient where
     shistory <- get
     sconfigUI <- get
     _sleader <- get
-    let sper = M.empty
+    let sper = EM.empty
         slastKey = Nothing
         sframe = []
         sdebugCli = defDebugModeCli

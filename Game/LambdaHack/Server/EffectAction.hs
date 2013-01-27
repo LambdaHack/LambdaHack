@@ -7,7 +7,6 @@ module Game.LambdaHack.Server.EffectAction where
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.List
-import qualified Data.Map as M
 import Data.Maybe
 import Data.Ratio ((%))
 import Data.Text (Text)
@@ -356,7 +355,7 @@ discover :: MonadServerChan m => Discoveries -> Item -> m ()
 discover discoS i = do
   side <- getsState sside
   let ix = jkindIx i
-      ik = discoS M.! ix
+      ik = discoS EM.! ix
   sendUpdateCli side $ DiscoverCli ik i
 
 selectLeaderSer :: MonadServerChan m => ActorId -> LevelId -> m Bool

@@ -1,3 +1,4 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 -- | Weapons, treasure and all the other items in the game.
 -- No operation in this module
@@ -28,13 +29,14 @@ import Data.Char
 import Data.Function
 import qualified Data.Ix as Ix
 import qualified Data.List as L
-import qualified Data.Map as M
 import Data.Maybe
 import Data.Ord
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
+import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Content.ItemKind
@@ -49,7 +51,7 @@ import Game.LambdaHack.Utils.Assert
 -- | An index of the kind id of an item. Clients have partial knowledge
 -- how these idexes map to kind ids. They gain knowledge by identifying items.
 newtype ItemKindIx = ItemKindIx Int
-  deriving (Show, Eq, Ord, Ix.Ix)
+  deriving (Show, Eq, Ord, Enum, Ix.Ix)
 
 instance Binary ItemKindIx where
   put (ItemKindIx i) = put i
@@ -57,10 +59,10 @@ instance Binary ItemKindIx where
 
 -- | The map of item kind indexes to item kind ids.
 -- The full map, as known by the server, is a bijection.
-type Discoveries = M.Map ItemKindIx (Kind.Id ItemKind)
+type Discoveries = EM.EnumMap ItemKindIx (Kind.Id ItemKind)
 
 -- | The reverse map to @Discoveries@, needed for item creation.
-type DiscoRev    = M.Map (Kind.Id ItemKind) ItemKindIx
+type DiscoRev    = EM.EnumMap (Kind.Id ItemKind) ItemKindIx
 
 -- TODO: see the TODO about ipower in ItemKind.
 -- TODO: define type InvSymbol = Char and move all ops to another file.
@@ -105,7 +107,7 @@ instance Binary Item where
 
 -- | Recover a kind id of an item, if identified.
 jkind :: Discoveries -> Item -> Maybe (Kind.Id ItemKind)
-jkind disco i = M.lookup (jkindIx i) disco
+jkind disco i = EM.lookup (jkindIx i) disco
 
 serverDiscos :: Kind.Ops ItemKind -> Rnd (Discoveries, DiscoRev)
 serverDiscos Kind.Ops{obounds, ofoldrWithKey} = do
@@ -117,24 +119,24 @@ serverDiscos Kind.Ops{obounds, ofoldrWithKey} = do
         fmap (x :) $ shuffle (L.delete x l)
   shuffled <- shuffle ixs
   let f ik _ (ikMap, ikRev, ix : rest) =
-        (M.insert ix ik ikMap, M.insert ik ix ikRev, rest)
+        (EM.insert ix ik ikMap, EM.insert ik ix ikRev, rest)
       f ik  _ (ikMap, _, []) =
         assert `failure` (ik, ikMap, "too short ixs" :: Text)
       (discoS, discoRev, _) =
-        ofoldrWithKey f (M.empty, M.empty, shuffled)
+        ofoldrWithKey f (EM.empty, EM.empty, shuffled)
   return (discoS, discoRev)
 
 -- | Build an item with the given stats.
 buildItem :: FlavourMap -> DiscoRev
           -> Kind.Id ItemKind -> ItemKind -> Int -> Int -> Item
 buildItem (FlavourMap flavour) discoRev ikChosen kind jcount jpower =
-  let jkindIx  = discoRev M.! ikChosen
+  let jkindIx  = discoRev EM.! ikChosen
       jsymbol  = isymbol kind
       jname    = iname kind
       jflavour =
         case iflavour kind of
           [fl] -> fl
-          _ -> flavour M.! ikChosen
+          _ -> flavour EM.! ikChosen
       jletter  = if jsymbol == '$' then Just '$' else Nothing
   in Item{..}
 
@@ -166,7 +168,7 @@ itemPrice i =
     _   -> 0
 
 -- | Flavours assigned by the server to item kinds, in this particular game.
-newtype FlavourMap = FlavourMap (M.Map (Kind.Id ItemKind) Flavour)
+newtype FlavourMap = FlavourMap (EM.EnumMap (Kind.Id ItemKind) Flavour)
   deriving Show
 
 instance Binary FlavourMap where
@@ -176,8 +178,8 @@ instance Binary FlavourMap where
 -- | Assigns flavours to item kinds. Assures no flavor is repeated,
 -- except for items with only one permitted flavour.
 rollFlavourMap :: Kind.Id ItemKind -> ItemKind
-               -> Rnd (M.Map (Kind.Id ItemKind) Flavour, S.Set Flavour)
-               -> Rnd (M.Map (Kind.Id ItemKind) Flavour, S.Set Flavour)
+               -> Rnd (EM.EnumMap (Kind.Id ItemKind) Flavour, S.Set Flavour)
+               -> Rnd (EM.EnumMap (Kind.Id ItemKind) Flavour, S.Set Flavour)
 rollFlavourMap key ik rnd =
   let flavours = iflavour ik
   in if L.length flavours == 1
@@ -186,13 +188,13 @@ rollFlavourMap key ik rnd =
        (assocs, available) <- rnd
        let proper = S.fromList flavours `S.intersection` available
        flavour <- oneOf (S.toList proper)
-       return (M.insert key flavour assocs, S.delete flavour available)
+       return (EM.insert key flavour assocs, S.delete flavour available)
 
 -- | Randomly chooses flavour for all item kinds for this game.
 dungeonFlavourMap :: Kind.Ops ItemKind -> Rnd FlavourMap
 dungeonFlavourMap Kind.Ops{ofoldrWithKey} =
   liftM (FlavourMap . fst) $
-    ofoldrWithKey rollFlavourMap (return (M.empty, S.fromList stdFlav))
+    ofoldrWithKey rollFlavourMap (return (EM.empty, S.fromList stdFlav))
 
 -- | Assigns a letter to an item, for inclusion
 -- in the inventory of a hero. Takes a remembered
@@ -203,12 +205,12 @@ assignLetter r c is =
     Just l | l `elem` allowed -> Just l
     _ -> listToMaybe free
  where
-  current    = S.fromList (mapMaybe jletter is)
+  current    = ES.fromList (mapMaybe jletter is)
   allLetters = ['a'..'z'] ++ ['A'..'Z']
   candidates = take (length allLetters) $
                  drop (fromJust (L.findIndex (== c) allLetters)) $
                    cycle allLetters
-  free       = L.filter (\x -> not (x `S.member` current)) candidates
+  free       = L.filter (\x -> not (x `ES.member` current)) candidates
   allowed    = '$' : free
 
 cmpLetter :: Char -> Char -> Ordering

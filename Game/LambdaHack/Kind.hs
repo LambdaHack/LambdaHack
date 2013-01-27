@@ -1,5 +1,5 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE OverloadedStrings, RankNTypes, TypeFamilies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, OverloadedStrings, RankNTypes,
+             TypeFamilies #-}
 -- | General content types and operations.
 module Game.LambdaHack.Kind
   ( -- * General content types
@@ -10,6 +10,7 @@ module Game.LambdaHack.Kind
 
 import qualified Data.Array.Unboxed as A
 import Data.Binary
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.Ix as Ix
 import qualified Data.List as L
 import qualified Data.Map as M
@@ -18,7 +19,6 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Word as Word
 import Game.LambdaHack.Msg
-import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.CDefs
 import Game.LambdaHack.Content.ActorKind

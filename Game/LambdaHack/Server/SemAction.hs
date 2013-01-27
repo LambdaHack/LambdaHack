@@ -9,7 +9,6 @@ import Control.Monad
 import Control.Monad.Reader.Class
 import qualified Data.EnumMap.Strict as EM
 import Data.List
-import qualified Data.Map as M
 import Data.Maybe
 import Data.Ratio
 import Data.Text (Text)
@@ -184,7 +183,7 @@ addProjectile Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}}
       adj | range < 5 = "falling"
           | otherwise = "flying"
       -- Not much details about a fast flying object.
-      (object1, object2) = partItem coitem M.empty item
+      (object1, object2) = partItem coitem EM.empty item
       name = makePhrase [MU.AW $ MU.Text adj, object1, object2]
       dirPath = take range $ displacePath path
       m = Actor
@@ -519,7 +518,7 @@ generateMonster = do
   ser <- getServer
   pers <- ask
   arena <- getsState sarena
-  let allPers = ES.unions $ map (totalVisible . (M.! arena)) $ EM.elems pers
+  let allPers = ES.unions $ map (totalVisible . (EM.! arena)) $ EM.elems pers
   nst <- rndToAction $ rollMonster cops allPers state ser
   case nst of
     Nothing -> return Nothing

@@ -36,9 +36,9 @@ import Control.Monad
 import Control.Monad.Writer.Strict (WriterT, lift, tell)
 import Data.Dynamic
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.Map as M
 import Data.Maybe
 import qualified Data.EnumSet as ES
+import qualified Data.Map as M
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -142,7 +142,7 @@ askPerception = do
   arena <- getsState sarena
   let lid = maybe arena tgtLevelId stgtMode
   factionPers <- getsClient sper
-  return $! fromMaybe (assert `failure` lid) $ M.lookup lid factionPers
+  return $! fromMaybe (assert `failure` lid) $ EM.lookup lid factionPers
 
 -- | Wait for a human player command.
 getKeyCommand :: MonadClientUI m => Maybe Bool -> m K.KM

@@ -34,7 +34,6 @@ import Data.Dynamic
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.List
-import qualified Data.Map as M
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -79,14 +78,14 @@ withPerception m = do
   let tryFov = stryFov sdebugSer
       fovMode = fromMaybe configFovMode tryFov
       per side = levelPerception cops fovMode side lvl
-  local (EM.mapWithKey (\side lp -> M.insert arena (per side) lp)) m
+  local (EM.mapWithKey (\side lp -> EM.insert arena (per side) lp)) m
 
 getPerFid :: MonadServerRO m => FactionId -> m Perception
 getPerFid fid = do
   arena <- getsState sarena
   pers <- ask
   let fper = fromMaybe (assert `failure` (arena, fid)) $ EM.lookup fid pers
-      per = fromMaybe (assert `failure` (arena, fid)) $ M.lookup arena fper
+      per = fromMaybe (assert `failure` (arena, fid)) $ EM.lookup arena fper
   return $! per
 
 -- | Get the current perception of the server.
@@ -111,7 +110,7 @@ remember = do
   faction <- getsState sfaction
   pers <- ask
   let broadcast = funBroadcastCli (\fid ->
-        RememberPerCli arena (pers EM.! fid M.! arena) lvl faction)
+        RememberPerCli arena (pers EM.! fid EM.! arena) lvl faction)
   broadcast
   withAI broadcast
 

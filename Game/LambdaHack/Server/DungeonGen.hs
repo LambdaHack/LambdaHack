@@ -176,7 +176,7 @@ dungeonGen cops flavour discoRev config@Config{configDepth} nPos =
             entryLevel = initialLevel
             (entryPoss, gp) =
               St.runState (findEntryPoss cops nPos (snd (head levels))) gd
-            freshDungeon = M.fromList levels
+            freshDungeon = EM.fromList levels
             freshDepth = configDepth
         in (FreshDungeon{..}, gp)
   in St.state con

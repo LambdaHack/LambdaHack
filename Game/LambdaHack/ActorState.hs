@@ -12,7 +12,6 @@ module Game.LambdaHack.ActorState
 
 import qualified Data.Char as Char
 import qualified Data.List as L
-import qualified Data.Map as M
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.EnumMap.Strict as EM
@@ -94,8 +93,8 @@ allActorsAnyLevel s =
   let one (ln, lvl) =
         [ (ln, (a, m)) | (a, m) <- EM.toList $ lactor lvl
                        , not (bproj m) ]
-      butArena = M.delete (sarena s) (sdungeon s)
-      selectedFirst = (sarena s, sdungeon s M.! sarena s) : M.toList butArena
+      butArena = EM.delete (sarena s) (sdungeon s)
+      selectedFirst = (sarena s, sdungeon s EM.! sarena s) : EM.toList butArena
   in L.concatMap one selectedFirst
 
 -- TODO: start with current level; also elsewhere
@@ -104,7 +103,7 @@ tryFindActor :: State -> (Actor -> Bool) -> Maybe (LevelId, (ActorId, Actor))
 tryFindActor s p =
   let chk (ln, lvl) =
         fmap (\a -> (ln, a)) $ L.find (p . snd) $ EM.assocs $ lactor lvl
-  in case mapMaybe chk $ M.toList $ sdungeon s of
+  in case mapMaybe chk $ EM.toList $ sdungeon s of
     [] -> Nothing
     (ln, (aid, body)) : _ -> Just (ln, (aid, body))
 
@@ -125,7 +124,7 @@ whereTo :: State    -- ^ game state
 whereTo s lid k = assert (k /= 0) $
   case ascendInBranch (sdungeon s) lid k of
     [] -> Nothing
-    ln : _ -> let lvlTrg = sdungeon s M.! ln
+    ln : _ -> let lvlTrg = sdungeon s EM.! ln
               in Just (ln, (if k < 0 then fst else snd) (lstair lvlTrg))
 
 -- * The operations below disregard levels other than the current.

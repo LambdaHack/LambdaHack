@@ -11,6 +11,7 @@ import Data.Monoid (mempty)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 import qualified Data.EnumSet as ES
+import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -105,8 +106,8 @@ discoverCli ik i = do
   Kind.COps{coitem} <- getsState scops
   oldDisco <- getsState sdisco
   let ix = jkindIx i
-  unless (ix `M.member` oldDisco) $ do
-    modifyState (updateDisco (M.insert ix ik))
+  unless (ix `EM.member` oldDisco) $ do
+    modifyState (updateDisco (EM.insert ix ik))
     disco <- getsState sdisco
     let (object1, object2) = partItem coitem oldDisco i
         msg = makeSentence
@@ -119,9 +120,9 @@ rememberCli :: MonadAction m => LevelId -> ES.EnumSet Point -> Level -> m ()
 rememberCli arena vis lvl = do
   cops <- getsState scops
   let updArena dng =
-        let clvl = fromMaybe (assert `failure` arena) $ M.lookup arena dng
+        let clvl = fromMaybe (assert `failure` arena) $ EM.lookup arena dng
             nlvl = rememberLevel cops vis lvl clvl
-        in M.insert arena nlvl dng
+        in EM.insert arena nlvl dng
   modifyState $ updateDungeon updArena
 
 rememberPerCli :: MonadClient m
@@ -134,7 +135,7 @@ rememberPerCli arena per lvl faction = do
     modifyClient $ invalidateSelectedLeader
     modifyState $ updateSelectedArena arena
   rememberCli arena (totalVisible per) lvl
-  modifyClient $ \cli -> cli {sper = M.insert arena per (sper cli)}
+  modifyClient $ \cli -> cli {sper = EM.insert arena per (sper cli)}
   modifyState $ updateFaction (const faction)
 
 switchLevelCli :: MonadClient m

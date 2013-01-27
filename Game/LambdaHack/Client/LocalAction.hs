@@ -77,7 +77,7 @@ cursorLevel = do
   stgtMode <- getsClient stgtMode
   let tgtId =
         maybe (assert `failure` "not targetting right now") tgtLevelId stgtMode
-  return $! dungeon M.! tgtId
+  return $! dungeon EM.! tgtId
 
 viewedLevel :: MonadClientRO m => m (LevelId, Level)
 viewedLevel = do
@@ -85,7 +85,7 @@ viewedLevel = do
   dungeon <- getsState sdungeon
   stgtMode <- getsClient stgtMode
   let tgtId = maybe arena tgtLevelId stgtMode
-  return $! (tgtId, dungeon M.! tgtId)
+  return $! (tgtId, dungeon EM.! tgtId)
 
 -- TODO: probably move somewhere (Level?)
 -- | Produces a textual description of the terrain and items at an already

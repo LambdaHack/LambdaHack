@@ -4,7 +4,7 @@
 -- as the game progresses.
 module Game.LambdaHack.Level
   ( -- * Dungeon
-    LevelId, Dungeon, ascendInBranch, initialLevel
+    LevelId, Dungeon, initialLevel, ascendInBranch
     -- * The @Level@ type and its components
   , ActorDict, InvDict, SmellMap, SecretMap, ItemMap, TileMap
   , Level(..)
@@ -16,7 +16,6 @@ module Game.LambdaHack.Level
 
 import Data.Binary
 import qualified Data.List as L
-import qualified Data.Map as M
 import Data.Text (Text)
 import qualified Data.EnumMap.Strict as EM
 import Data.Typeable
@@ -43,18 +42,18 @@ instance Binary LevelId where
   get = fmap LevelId get
 
 -- | The complete dungeon is a map from level names to levels.
-type Dungeon = M.Map LevelId Level
+type Dungeon = EM.EnumMap LevelId Level
+
+initialLevel :: LevelId
+initialLevel = LevelId 1
 
 -- | Levels in the current branch @k@ shallower than the current.
 ascendInBranch :: Dungeon -> LevelId -> Int -> [LevelId]
 ascendInBranch dungeon (LevelId n) k =
   let ln = LevelId $ n - k  -- currently just one branch
-  in case M.lookup ln dungeon of
+  in case EM.lookup ln dungeon of
     Nothing -> []
     Just _ -> [ln]
-
-initialLevel :: LevelId
-initialLevel = LevelId 1
 
 -- | All actors on the level, indexed by actor identifier.
 type ActorDict = EM.EnumMap ActorId Actor

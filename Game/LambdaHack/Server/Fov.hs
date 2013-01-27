@@ -8,7 +8,6 @@ module Game.LambdaHack.Server.Fov
 
 import Data.Binary
 import qualified Data.List as L
-import qualified Data.Map as M
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 
@@ -54,7 +53,7 @@ levelPerception cops@Kind.COps{cotile} configFovMode
 factionPerception :: Kind.COps -> FovMode -> State -> FactionId
                   -> FactionPers
 factionPerception cops configFovMode s fid =
-  M.map (levelPerception cops configFovMode fid) $ sdungeon s
+  EM.map (levelPerception cops configFovMode fid) $ sdungeon s
 
 -- | Calculate the perception of the whole dungeon.
 dungeonPerception :: Kind.COps -> FovMode -> State -> Pers

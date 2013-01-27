@@ -5,7 +5,6 @@ module Game.LambdaHack.Perception
   , PerceptionVisible(..)
   ) where
 
-import qualified Data.Map as M
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 
@@ -29,7 +28,7 @@ data Perception = Perception
   deriving Show
 
 -- | Perception of a single faction, indexed by level identifier.
-type FactionPers = M.Map LevelId Perception
+type FactionPers = EM.EnumMap LevelId Perception
 
 -- | Perception indexed by faction identifier.
 type Pers = EM.EnumMap FactionId FactionPers

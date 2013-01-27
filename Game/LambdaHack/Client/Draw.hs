@@ -7,7 +7,6 @@ module Game.LambdaHack.Client.Draw
   ) where
 
 import qualified Data.List as L
-import qualified Data.Map as M
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -58,7 +57,7 @@ draw dm cops per
                                ldesc, lactor, ltime, lseen, lclear}) =
         case stgtMode of
           Nothing -> (sarena s, getArena s)
-          Just tgtM -> (tgtLevelId tgtM, sdungeon s M.! tgtLevelId tgtM)
+          Just tgtM -> (tgtLevelId tgtM, sdungeon s EM.! tgtLevelId tgtM)
       mleader = sleader cli
       (bitems, bracedL, ahpS, asmellL, bhpS, bposL) =
         case mleader of

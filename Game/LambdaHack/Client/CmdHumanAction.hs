@@ -6,9 +6,9 @@ module Game.LambdaHack.Client.CmdHumanAction
 
 import Control.Monad
 import Control.Monad.Writer.Strict (WriterT, lift)
-import qualified Data.Map as M
 import Data.Maybe
 import Data.Text (Text)
+import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -36,7 +36,7 @@ cmdAction cli s cmd =
       ppos = bpos sm
       tgtLoc = targetToPos cli s
       Level{lxsize} =
-        maybe (getArena s) ((sdungeon s M.!) . tgtLevelId) tgtMode
+        maybe (getArena s) ((sdungeon s EM.!) . tgtLevelId) tgtMode
   in case cmd of
     Apply{..} -> lift $ fmap Just $ leaderApplyGroupItem verb object syms
     Project{} | isNothing tgtLoc -> retarget >> return Nothing

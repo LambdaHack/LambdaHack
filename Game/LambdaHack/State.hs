@@ -16,7 +16,6 @@ module Game.LambdaHack.State
   ) where
 
 import Data.Binary
-import qualified Data.Map as M
 import Data.Text (Text)
 import Data.Typeable
 import qualified System.Random as R
@@ -37,7 +36,9 @@ import Game.LambdaHack.Time
 -- but the server updates it for them depending on client exploration.
 -- Data invariant: no actor belongs to more than one @sdungeon@ level.
 -- Each @sleader@ actor from any of the client states is on the @sarena@
--- level and belongs to @sside@ faction of the client's local state..
+-- level and belongs to @sside@ faction of the client's local state.
+-- Note: we use _sdepth instead of computing maximal depth whenever needed,
+-- to keep dungeon (which can be huge) lazy.
 data State = State
   { _sdungeon :: !Dungeon      -- ^ remembered dungeon
   , _sdepth   :: !Int          -- ^ remembered dungeon depth
@@ -94,9 +95,9 @@ defStateGlobal _sdungeon _sdepth _sdisco _sfaction _scops _srandom _sarena =
 defStateLocal :: Kind.COps -> FactionId -> State
 defStateLocal _scops _sside =
   State
-    { _sdungeon = M.empty
+    { _sdungeon = EM.empty
     , _sdepth = 0
-    , _sdisco = M.empty
+    , _sdisco = EM.empty
     , _sfaction = EM.empty
     , _scops
     , _srandom = R.mkStdGen 42  -- will be set by the client
@@ -117,12 +118,12 @@ localFromGlobal State{ _scops=_scops@Kind.COps{ coitem=Kind.Ops{okind}
                       , .. } =
   State
     { _sdungeon =
-      M.map (\Level{ldepth, lxsize, lysize, ldesc, lstair, lclear} ->
+      EM.map (\Level{ldepth, lxsize, lysize, ldesc, lstair, lclear} ->
               unknownLevel cotile ldepth lxsize lysize ldesc lstair lclear)
             _sdungeon
     , _sdisco = let f ik = isymbol (okind ik)
                            `notElem` (ritemProject $ Kind.stdRuleset corule)
-                in M.filter f _sdisco
+                in EM.filter f _sdisco
     , _sside = invalidFactionId  -- will be set by the client
     , _squit = Nothing
     , ..
@@ -159,7 +160,7 @@ updateQuit f s = s { _squit = f (_squit s) }
 
 -- | Update current arena data within state.
 updateArena :: (Level -> Level) -> State -> State
-updateArena f s = updateDungeon (M.adjust f (_sarena s)) s
+updateArena f s = updateDungeon (EM.adjust f (_sarena s)) s
 
 -- | Update time within state.
 updateTime :: (Time -> Time) -> State -> State
@@ -175,11 +176,11 @@ updateSelectedArena _sarena s = s {_sarena}
 
 -- | Get current level from the dungeon data.
 getArena :: State -> Level
-getArena State{_sarena, _sdungeon} = _sdungeon M.! _sarena
+getArena State{_sarena, _sdungeon} = _sdungeon EM.! _sarena
 
 -- | Get current time from the dungeon data.
 getTime :: State -> Time
-getTime State{_sarena, _sdungeon} = ltime $ _sdungeon M.! _sarena
+getTime State{_sarena, _sdungeon} = ltime $ _sdungeon EM.! _sarena
 
 -- | Get current faction from state.
 getSide :: State -> Faction

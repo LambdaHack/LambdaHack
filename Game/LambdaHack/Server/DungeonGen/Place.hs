@@ -7,9 +7,10 @@ module Game.LambdaHack.Server.DungeonGen.Place
 import Data.Binary
 import qualified Data.List as L
 import qualified Data.Map as M
-import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.EnumSet as ES
+import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Area
 import Game.LambdaHack.Content.CaveKind
@@ -109,21 +110,22 @@ buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
       place = assert (validArea qarea `blame` qarea) $
               Place{..}
   legend <- olegend cotile qlegend
-  let xlegend = M.insert 'X' qhollowFence legend
+  let xlegend = EM.insert 'X' qhollowFence legend
   return (digPlace place kr xlegend, place)
 
 -- | Roll a legend of a place plan: a map from plan symbols to tile kinds.
-olegend :: Kind.Ops TileKind -> Text -> Rnd (M.Map Char (Kind.Id TileKind))
+olegend :: Kind.Ops TileKind -> Text
+        -> Rnd (EM.EnumMap Char (Kind.Id TileKind))
 olegend Kind.Ops{ofoldrWithKey, opick} group =
   let getSymbols _ tk acc =
-        maybe acc (const $ S.insert (tsymbol tk) acc)
+        maybe acc (const $ ES.insert (tsymbol tk) acc)
           (L.lookup group $ tfreq tk)
-      symbols = ofoldrWithKey getSymbols S.empty
+      symbols = ofoldrWithKey getSymbols ES.empty
       getLegend s acc = do
         m <- acc
         tk <- opick group $ (== s) . tsymbol
-        return $ M.insert s tk m
-      legend = S.fold getLegend (return M.empty) symbols
+        return $ EM.insert s tk m
+      legend = ES.fold getLegend (return EM.empty) symbols
   in legend
 
 -- | Construct a fence around an area, with the given tile kind.
@@ -135,16 +137,16 @@ buildFence fenceId (x0, y0, x1, y1) =
                | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
 
 -- | Construct a place of the given kind, with the given fence tile.
-digPlace :: Place                          -- ^ the place parameters
-         -> PlaceKind                      -- ^ the place kind
-         -> M.Map Char (Kind.Id TileKind)  -- ^ the legend
+digPlace :: Place                               -- ^ the place parameters
+         -> PlaceKind                           -- ^ the place kind
+         -> EM.EnumMap Char (Kind.Id TileKind)  -- ^ the legend
          -> TileMapXY
 digPlace Place{..} kr legend =
   let fence = case pfence kr of
         FWall  -> buildFence qsolidFence qarea
         FFloor -> buildFence qhollowFence qarea
         FNone  -> M.empty
-  in M.union (M.map (legend M.!) $ tilePlace qarea kr) fence
+  in M.union (M.map (legend EM.!) $ tilePlace qarea kr) fence
 
 -- TODO: use Text more instead of [Char]?
 -- | Create a place by tiling patterns.
