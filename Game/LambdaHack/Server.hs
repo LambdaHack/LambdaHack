@@ -20,10 +20,10 @@ import Game.LambdaHack.State
 -- | The semantics of server commands.
 cmdSer :: MonadServerChan m => CmdSer -> m ()
 cmdSer cmd = case cmd of
-  ApplySer aid v item -> applySer aid v item
-  ProjectSer aid p eps v i -> projectSer aid p eps v i
+  ApplySer aid v iid -> applySer aid v iid
+  ProjectSer aid p eps v iid -> projectSer aid p eps v iid
   TriggerSer aid p -> triggerSer aid p
-  PickupSer aid i l -> pickupSer aid i l
+  PickupSer aid i k l -> pickupSer aid i k l
   DropSer aid item -> dropSer aid item
   WaitSer aid -> waitSer aid
   MoveSer aid dir -> moveSer aid dir
@@ -45,7 +45,7 @@ cmdSer cmd = case cmd of
       modifyState $ updateActorBody aid $ \m -> m {bcolor = Just Color.BrBlack}
     moveSer aid dir
   DieSer actor -> do  -- TODO: explode if a potion
-    bitems <- getsState (getActorItem actor)
+    bitems <- getsState $ getActorBag actor
     Actor{bpos} <- getsState (getActorBody actor)
     modifyState (updateArena (dropItemsAt bitems bpos))
     modifyState (deleteActor actor)

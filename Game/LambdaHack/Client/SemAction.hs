@@ -46,19 +46,19 @@ import Game.LambdaHack.Vector
 
 -- * cmdUpdateCli
 
-pickupCli :: MonadClient m => ActorId -> Item -> Item -> m ()
-pickupCli aid i ni = do
+pickupCli :: MonadClient m => ActorId -> Item -> Int -> Maybe Char -> m ()
+pickupCli aid i k l = do
   Kind.COps{coactor, coitem} <- getsState scops
   body <- getsState (getActorBody aid)
   side <- getsState sside
   disco <- getsState sdisco
   if bfaction body == side
-    then msgAdd $ makePhrase [ letterLabel (jletter ni)
-                             , partItemNWs coitem disco ni
+    then msgAdd $ makePhrase [ letterLabel l
+                             , partItemNWs coitem disco k i
                              , "\n" ]
     else msgAdd $ makeSentence
            [ MU.SubjectVerbSg (partActor coactor body) "pick up"
-           , partItemNWs coitem disco i ]  -- single, not 'ni'
+           , partItemNWs coitem disco 1 i ]  -- single, not 'ni'
 
 applyCli :: MonadClient m => ActorId -> MU.Part -> Item -> m ()
 applyCli actor verb item = do
@@ -69,12 +69,13 @@ applyCli actor verb item = do
   -- TODO: perhaps automate you/partActor depending on side
   let msg = makeSentence
         [ MU.SubjectVerbSg (partActor coactor body) verb
-        , partItemNWs coitem disco item ]
+        , partItemNWs coitem disco 1 item ]
   msgAdd msg
 
-showItemsCli :: MonadClientUI m => Discoveries -> Msg -> [Item] -> m ()
+showItemsCli :: MonadClientUI m => Discoveries -> Msg -> ItemBag -> m ()
 showItemsCli discoS msg items = do
-  io <- itemOverlay discoS True items
+  lvl <- getsState getArena
+  io <- itemOverlay discoS lvl True items
   slides <- overlayToSlideshow msg io
   void $ getManyConfirms [] slides
 
@@ -139,7 +140,7 @@ rememberPerCli arena per lvl faction = do
   modifyState $ updateFaction (const faction)
 
 switchLevelCli :: MonadClient m
-               => ActorId -> LevelId -> Actor -> [Item]
+               => ActorId -> LevelId -> Actor -> ItemBag
                -> m ()
 switchLevelCli aid arena pbody items = do
   arenaOld <- getsState sarena
@@ -170,7 +171,7 @@ effectCli msg poss deltaHP block = do
   displayFramesPush $ Nothing : animFrs
 
 projectCli :: MonadClient m => Point -> ActorId -> Item -> m ()
-projectCli spos source consumed = do
+projectCli spos source item = do
     Kind.COps{coactor, coitem} <- getsState scops
     per <- askPerception
     disco <- getsState sdisco
@@ -182,7 +183,7 @@ projectCli spos source consumed = do
           else sm {bname = Just "somebody"}
         msg = makeSentence
               [ MU.SubjectVerbSg (partActor coactor subject) "aim"
-              , partItemNWs coitem disco consumed ]
+              , partItemNWs coitem disco 1 item ]
     msgAdd msg
 
 showAttackCli :: MonadClient m

@@ -19,6 +19,7 @@ import Data.Ratio
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 import Data.Typeable
+import qualified Data.EnumMap.Strict as EM
 
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Content.ActorKind
@@ -29,6 +30,15 @@ import Game.LambdaHack.Random
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
+import Game.LambdaHack.Item
+
+-- | A unique identifier of an actor in the dungeon.
+newtype ActorId = ActorId Int
+  deriving (Show, Eq, Ord, Enum, Typeable)
+
+instance Binary ActorId where
+  put (ActorId n) = put n
+  get = fmap ActorId get
 
 -- TODO: use target (in ClientState) instead of bdirAI to determine goal,
 -- even for silly monsters just introduce more randomness,
@@ -47,6 +57,7 @@ data Actor = Actor
   , bdirAI   :: !(Maybe (Vector, Int))  -- ^ direction and distance of running
   , bpath    :: !(Maybe [Vector])       -- ^ path the actor is forced to travel
   , bpos     :: !Point                  -- ^ current position
+  , bitem    :: !ItemBag                -- ^ items carried
   , bletter  :: !Char                   -- ^ next inventory letter
   , btime    :: !Time                   -- ^ absolute time of next action
   , bwait    :: !Time                   -- ^ last bracing expires at this time
@@ -67,6 +78,7 @@ instance Binary Actor where
     put bdirAI
     put bpath
     put bpos
+    put bitem
     put bletter
     put btime
     put bwait
@@ -79,25 +91,16 @@ instance Binary Actor where
     bcolor  <- get
     bspeed  <- get
     bhp     <- get
-    bdirAI    <- get
+    bdirAI  <- get
     bpath   <- get
     bpos    <- get
+    bitem   <- get
     bletter <- get
     btime   <- get
     bwait   <- get
     bfaction <- get
     bproj    <- get
     return Actor{..}
-
--- ActorId operations
-
--- | A unique identifier of an actor in a dungeon.
-newtype ActorId = ActorId Int
-  deriving (Show, Eq, Ord, Enum, Typeable)
-
-instance Binary ActorId where
-  put (ActorId n) = put n
-  get = fmap ActorId get
 
 -- | Chance that a new monster is generated. Currently depends on the
 -- number of monsters already present, and on the level. In the future,
@@ -123,6 +126,7 @@ template bkind bsymbol bname bhp bpos btime bfaction bproj =
       bspeed  = Nothing
       bpath   = Nothing
       bdirAI  = Nothing
+      bitem   = EM.empty
       bletter = 'a'
       bwait   = timeZero
   in Actor{..}

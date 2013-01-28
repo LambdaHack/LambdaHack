@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 -- | Weapons, treasure and all the other items in the game.
@@ -7,12 +8,11 @@
 -- inventory manangement and items proper.
 module Game.LambdaHack.Item
   ( -- * Teh @Item@ type
-    Item(..), jkind, buildItem, newItem, viewItem, itemPrice
+    ItemId, ItemBag, Item(..), jkind, buildItem, newItem, viewItem
     -- * Inventory search
   , strongestSearch, strongestSword, strongestRegen
     -- * Inventory management
-  , joinItem, removeItemByLetter, equalItemIdentity, removeItemByIdentity
-  , assignLetter
+  , joinItem, assignLetter
     -- * Inventory symbol operations
   , letterLabel, cmpLetterMaybe, maxLetter, letterRange
     -- * The item discovery types
@@ -26,9 +26,8 @@ module Game.LambdaHack.Item
 import Control.Monad
 import Data.Binary
 import Data.Char
-import Data.Function
 import qualified Data.Ix as Ix
-import qualified Data.List as L
+import Data.List
 import Data.Maybe
 import Data.Ord
 import qualified Data.Set as S
@@ -37,6 +36,7 @@ import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import Data.Typeable
 
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Content.ItemKind
@@ -47,6 +47,16 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Random
 import Game.LambdaHack.Utils.Assert
+
+-- | A unique identifier of an item in the dungeon.
+newtype ItemId = ItemId Int
+  deriving (Show, Eq, Ord, Enum, Typeable)
+
+instance Binary ItemId where
+  put (ItemId n) = put n
+  get = fmap ItemId get
+
+type ItemBag = EM.EnumMap ItemId (Int, Maybe Char)
 
 -- | An index of the kind id of an item. Clients have partial knowledge
 -- how these idexes map to kind ids. They gain knowledge by identifying items.
@@ -66,8 +76,6 @@ type DiscoRev    = EM.EnumMap (Kind.Id ItemKind) ItemKindIx
 
 -- TODO: see the TODO about ipower in ItemKind.
 -- TODO: define type InvSymbol = Char and move all ops to another file.
--- TODO: perhaps remove jletter and jcount? Should inventory semantics
--- be separate from item semantics?
 -- TODO: the list resulting from joinItem can contain items
 -- with the same letter.
 -- TODO: name [Item] Inventory and have some invariants, e.g. no equal letters.
@@ -81,8 +89,6 @@ data Item = Item
   , jname    :: !Text          -- ^ individual generic name
   , jflavour :: !Flavour       -- ^ individual flavour
   , jpower   :: !Int           -- ^ power of the item
-  , jletter  :: !(Maybe Char)  -- ^ inventory symbol
-  , jcount   :: !Int           -- ^ inventory count
   }
   deriving Show
 
@@ -93,16 +99,12 @@ instance Binary Item where
     put jname
     put jflavour
     put jpower
-    put jletter
-    put jcount
   get = do
     jkindIx <- get
     jsymbol <- get
     jname <- get
     jflavour <- get
     jpower <- get
-    jletter <- get
-    jcount <- get
     return Item{..}
 
 -- | Recover a kind id of an item, if identified.
@@ -116,7 +118,7 @@ serverDiscos Kind.Ops{obounds, ofoldrWithKey} = do
       shuffle [] = return []
       shuffle l = do
         x <- oneOf l
-        fmap (x :) $ shuffle (L.delete x l)
+        fmap (x :) $ shuffle (delete x l)
   shuffled <- shuffle ixs
   let f ik _ (ikMap, ikRev, ix : rest) =
         (EM.insert ix ik ikMap, EM.insert ik ix ikRev, rest)
@@ -128,8 +130,8 @@ serverDiscos Kind.Ops{obounds, ofoldrWithKey} = do
 
 -- | Build an item with the given stats.
 buildItem :: FlavourMap -> DiscoRev
-          -> Kind.Id ItemKind -> ItemKind -> Int -> Int -> Item
-buildItem (FlavourMap flavour) discoRev ikChosen kind jcount jpower =
+          -> Kind.Id ItemKind -> ItemKind -> Int -> Item
+buildItem (FlavourMap flavour) discoRev ikChosen kind jpower =
   let jkindIx  = discoRev EM.! ikChosen
       jsymbol  = isymbol kind
       jname    = iname kind
@@ -137,35 +139,27 @@ buildItem (FlavourMap flavour) discoRev ikChosen kind jcount jpower =
         case iflavour kind of
           [fl] -> fl
           _ -> flavour EM.! ikChosen
-      jletter  = if jsymbol == '$' then Just '$' else Nothing
   in Item{..}
 
 -- | Generate an item based on level.
 newItem :: Kind.Ops ItemKind -> FlavourMap -> DiscoRev -> Int -> Int
-        -> Rnd (Item, ItemKind)
+        -> Rnd (Item, Int, ItemKind)
 newItem cops@Kind.Ops{opick, okind} flavour discoRev lvl depth = do
   ikChosen <- opick (T.pack "dng") (const True)
   let kind = okind ikChosen
   jcount <- rollDeep lvl depth (icount kind)
   if jcount == 0
-    then -- Rare item; beware of inifite loops.
-         newItem cops flavour discoRev lvl depth
+    then  -- Rare item; beware of inifite loops.
+      newItem cops flavour discoRev lvl depth
     else do
       jpower <- rollDeep lvl depth (ipower kind)
-      return ( buildItem flavour discoRev ikChosen kind jcount jpower
+      return ( buildItem flavour discoRev ikChosen kind jpower
+             , jcount
              , kind )
 
 -- | Represent an item on the map.
 viewItem :: Item -> (Char, Color.Color)
 viewItem i = (jsymbol i, flavourToColor $ jflavour i)
-
--- | Price an item, taking count into consideration.
-itemPrice :: Item -> Int
-itemPrice i =
-  case jsymbol i of
-    '$' -> jcount i
-    '*' -> jcount i * 100
-    _   -> 0
 
 -- | Flavours assigned by the server to item kinds, in this particular game.
 newtype FlavourMap = FlavourMap (EM.EnumMap (Kind.Id ItemKind) Flavour)
@@ -182,7 +176,7 @@ rollFlavourMap :: Kind.Id ItemKind -> ItemKind
                -> Rnd (EM.EnumMap (Kind.Id ItemKind) Flavour, S.Set Flavour)
 rollFlavourMap key ik rnd =
   let flavours = iflavour ik
-  in if L.length flavours == 1
+  in if length flavours == 1
      then rnd
      else do
        (assocs, available) <- rnd
@@ -199,18 +193,18 @@ dungeonFlavourMap Kind.Ops{ofoldrWithKey} =
 -- | Assigns a letter to an item, for inclusion
 -- in the inventory of a hero. Takes a remembered
 -- letter and a starting letter.
-assignLetter :: Maybe Char -> Char -> [Item] -> Maybe Char
-assignLetter r c is =
+assignLetter :: Maybe Char -> Char -> [Char] -> Maybe Char
+assignLetter r c cs =
   case r of
     Just l | l `elem` allowed -> Just l
     _ -> listToMaybe free
  where
-  current    = ES.fromList (mapMaybe jletter is)
+  current    = ES.fromList cs
   allLetters = ['a'..'z'] ++ ['A'..'Z']
   candidates = take (length allLetters) $
-                 drop (fromJust (L.findIndex (== c) allLetters)) $
+                 drop (fromJust (findIndex (== c) allLetters)) $
                    cycle allLetters
-  free       = L.filter (\x -> not (x `ES.member` current)) candidates
+  free       = filter (\x -> not (x `ES.member` current)) candidates
   allowed    = '$' : free
 
 cmpLetter :: Char -> Char -> Ordering
@@ -235,7 +229,7 @@ mergeLetter = mplus
 
 letterRange :: [Char] -> Text
 letterRange ls =
-  sectionBy (L.sortBy cmpLetter ls) Nothing
+  sectionBy (sortBy cmpLetter ls) Nothing
  where
   succLetter c d = ord d - ord c == 1
 
@@ -254,60 +248,16 @@ letterLabel :: Maybe Char -> MU.Part
 letterLabel Nothing  = MU.Text $ T.pack "   "
 letterLabel (Just c) = MU.Text $ T.pack $ c : " -"
 
--- | Adds an item to a list of items, joining equal items.
--- Also returns the joined item.
-joinItem :: Item -> [Item] -> (Item, [Item])
-joinItem i is =
-  case findItem (equalItemIdentity i) is of
-    Nothing     -> (i, i : is)
-    Just (j,js) -> let n = i { jcount = jcount i + jcount j,
-                               jletter = mergeLetter (jletter j) (jletter i) }
-                   in (n, n : js)
-
--- | Removes an item from a list of items.
--- Takes an equality function (i.e., by letter or ny kind) as an argument.
-removeItemBy :: (Item -> Item -> Bool) -> Item -> [Item] -> [Item]
-removeItemBy eq i = concatMap $ \ x ->
-  if eq i x
-  then let remaining = jcount x - jcount i
-       in if remaining > 0
-          then [x { jcount = remaining }]
-          else []
-  else [x]
-
-equalItemIdentity :: Item -> Item -> Bool
-equalItemIdentity i1 i2 = jkindIx i1 == jkindIx i2
-                          && jsymbol i1 == jsymbol i2
-                          && jname i1 == jname i2
-                          && jflavour i1 == jflavour i2
-                          && jpower i1 == jpower i2
-
-removeItemByIdentity :: Item -> [Item] -> [Item]
-removeItemByIdentity = removeItemBy equalItemIdentity
-
-equalItemLetter :: Item -> Item -> Bool
-equalItemLetter = (==) `on` jletter
-
-removeItemByLetter :: Item -> [Item] -> [Item]
-removeItemByLetter = removeItemBy equalItemLetter
-
--- | Finds an item in a list of items.
-findItem :: (Item -> Bool) -> [Item] -> Maybe (Item, [Item])
-findItem p =
-  findItem' []
- where
-  findItem' _   []     = Nothing
-  findItem' acc (i:is)
-    | p i              = Just (i, reverse acc ++ is)
-    | otherwise        = findItem' (i:acc) is
+joinItem :: (Int, Maybe Char) -> (Int, Maybe Char) -> (Int, Maybe Char)
+joinItem (i, a) (j, b) = (i + j, mergeLetter a b)
 
 strongestItem :: [Item] -> (Item -> Bool) -> Maybe Item
 strongestItem is p =
   let cmp = comparing jpower
-      igs = L.filter p is
+      igs = filter p is
   in case igs of
     [] -> Nothing
-    _  -> Just $ L.maximumBy cmp igs
+    _  -> Just $ maximumBy cmp igs
 
 strongestSearch :: Kind.Ops ItemKind -> Discoveries -> [Item] -> Maybe Item
 strongestSearch Kind.Ops{okind} disco bitems =
@@ -344,10 +294,10 @@ partItem Kind.Ops{okind} disco i =
                 else "(+" <> showT (jpower i) <> ")"
       in (MU.Text genericName, MU.Text $ eff <+> pwr)
 
-partItemNWs :: Kind.Ops ItemKind -> Discoveries -> Item -> MU.Part
-partItemNWs coitem disco i =
+partItemNWs :: Kind.Ops ItemKind -> Discoveries -> Int -> Item -> MU.Part
+partItemNWs coitem disco jcount i =
   let (name, stats) = partItem coitem disco i
-  in MU.Phrase [MU.NWs (jcount i) name, stats]
+  in MU.Phrase [MU.NWs jcount name, stats]
 
 partItemAW :: Kind.Ops ItemKind -> Discoveries -> Item -> MU.Part
 partItemAW coitem disco i =

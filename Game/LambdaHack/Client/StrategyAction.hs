@@ -193,13 +193,14 @@ pickup actor glo =
  where
   lvl = getArena glo
   Actor{bpos, bletter} = getActorBody actor glo
-  lootHere x = not $ L.null $ lvl `atI` x
-  bitems = getActorItem actor glo
-  actionPickup = case lvl `atI` bpos of
-    [] -> assert `failure` (actor, bpos, lvl)
-    i : _ ->  -- pick up first item
-      case assignLetter (jletter i) bletter bitems of
-        Just l -> returN "pickup" $ PickupSer actor i l
+  lootHere x = not $ EM.null $ lvl `atI` x
+  bitems = getActorBag actor glo
+  ls = mapMaybe snd $ EM.elems bitems
+  actionPickup = case EM.minViewWithKey $ lvl `atI` bpos of
+    Nothing -> assert `failure` (actor, bpos, lvl)
+    Just ((iid, (k, l)), _) ->  -- pick up first item
+      case assignLetter l bletter ls of
+        Just l2 -> returN "pickup" $ PickupSer actor iid k l2
         Nothing -> returN "pickup" $ WaitSer actor
 
 melee :: ActorId -> State -> Point -> Strategy CmdSer
@@ -227,7 +228,7 @@ rangedFreq cops actor glo fpos =
            } = cops
   lvl@Level{lxsize, lysize} = getArena glo
   Actor{ bkind, bpos } = getActorBody actor glo
-  bitems = getActorItem actor glo
+  bitems = getActorBag actor glo
   mk = okind bkind
   tis = lvl `atI` bpos
   lenemy = genemy . getSide $ glo
@@ -242,10 +243,11 @@ rangedFreq cops actor glo fpos =
     Nothing -> bpos  -- TODO
     Just [] -> bpos  -- TODO
     Just (lbl:_) -> lbl
-  throwFreq is multi =
+  throwFreq bag multi =
     [ (benefit * multi,
-       ProjectSer actor fpos eps (iverbProject ik) i)
-    | i <- is,
+       ProjectSer actor fpos eps (iverbProject ik) iid)
+    | (iid, i) <- map (\iid -> (iid, getItemBody iid (getArena glo)))
+                   $ EM.keys bag,
       let (ik, benefit) =
             case jkind (sdisco glo) i of
               Nothing -> (undefined, 0)
@@ -264,11 +266,12 @@ toolsFreq cops actor glo =
   Kind.COps{coitem=Kind.Ops{okind=iokind}} = cops
   lvl = getArena glo
   Actor{bpos} = getActorBody actor glo
-  bitems = getActorItem actor glo
+  bitems = getActorBag actor glo
   tis = lvl `atI` bpos
-  quaffFreq is multi =
-    [ (benefit * multi, ApplySer actor (iverbApply ik) i)
-    | i <- is,
+  quaffFreq bag multi =
+    [ (benefit * multi, ApplySer actor (iverbApply ik) iid)
+    | (iid, i) <- map (\iid -> (iid, getItemBody iid (getArena glo)))
+                  $ EM.keys bag,
       let (ik, benefit) =
             case jkind (sdisco glo) i of
               Nothing -> (undefined, 0)
@@ -322,7 +325,7 @@ moveStrategy cops actor glo mFoe =
   lvl@Level{lsmell, lxsize, lysize, ltime} = getArena glo
   Actor{ bkind, bpos, bdirAI } = getActorBody actor glo
   mk = okind bkind
-  lootHere x = not $ L.null $ lvl `atI` x
+  lootHere x = not $ EM.null $ lvl `atI` x
   onlyLoot   = onlyMoves lootHere bpos
   interestHere x = let t = lvl `at` x
                        ts = map (lvl `at`) $ vicinity lxsize lysize x

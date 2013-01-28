@@ -15,11 +15,11 @@ import Game.LambdaHack.Vector
 
 -- | Abstract syntax of server commands.
 data CmdSer =
-    ApplySer ActorId MU.Part Item
-  | ProjectSer ActorId Point Int MU.Part Item
+    ApplySer ActorId MU.Part ItemId
+  | ProjectSer ActorId Point Int MU.Part ItemId
   | TriggerSer ActorId Point
-  | PickupSer ActorId Item Char
-  | DropSer ActorId Item
+  | PickupSer ActorId ItemId Int Char
+  | DropSer ActorId ItemId
   | WaitSer ActorId
   | MoveSer ActorId Vector
   | RunSer ActorId Vector

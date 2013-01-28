@@ -25,7 +25,7 @@ import Game.LambdaHack.State
 
 cmdUpdateCli :: MonadClient m => CmdUpdateCli -> m ()
 cmdUpdateCli cmd = case cmd of
-  PickupCli aid i ni -> pickupCli aid i ni
+  PickupCli aid i k l -> pickupCli aid i k l
   ApplyCli actor verb item -> applyCli actor verb item
   ShowMsgCli msg -> msgAdd msg
   InvalidateArenaCli lid -> void $ invalidateArenaCli lid
@@ -33,7 +33,7 @@ cmdUpdateCli cmd = case cmd of
   RememberCli arena vis lvl -> rememberCli arena vis lvl
   RememberPerCli arena per lvl faction -> rememberPerCli arena per lvl faction
   SwitchLevelCli aid arena pbody items -> switchLevelCli aid arena pbody items
-  ProjectCli spos source consumed -> projectCli spos source consumed
+  ProjectCli spos source item -> projectCli spos source item
   ShowAttackCli source target verb stack say ->
     showAttackCli source target verb stack say
   RestartCli sper locRaw -> restartCli sper locRaw
@@ -78,7 +78,8 @@ cmdQueryUI cmd = case cmd of
   ShowSlidesCli slides -> getManyConfirms [] slides
   CarryOnCli -> carryOnCli
   ConfirmShowItemsCli discoS msg items -> do
-    io <- itemOverlay discoS True items
+    lvl <- getsState getArena
+    io <- itemOverlay discoS lvl True items
     slides <- overlayToSlideshow msg io
     getManyConfirms [] slides
   ConfirmYesNoCli msg -> do

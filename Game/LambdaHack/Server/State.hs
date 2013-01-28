@@ -17,7 +17,8 @@ import Game.LambdaHack.Actor
 data StateServer = StateServer
   { sdiscoRev :: !DiscoRev      -- ^ reverse map, used for item creation
   , sflavour  :: !FlavourMap    -- ^ association of flavour to items
-  , scounter  :: !ActorId       -- ^ stores next actor index
+  , sacounter :: !ActorId       -- ^ stores next actor index
+  , sicounter :: !ItemId        -- ^ stores next item index
   , sconfig   :: !Config        -- ^ this game's config (including initial RNG)
   , sdebugSer :: !DebugModeSer  -- ^ debugging mode
   }
@@ -28,17 +29,16 @@ data DebugModeSer = DebugModeSer
   deriving Show
 
 -- | Initial game server state.
-defStateServer :: DiscoRev -> FlavourMap -> Config -> StateServer
-defStateServer sdiscoRev sflavour sconfig =
+defStateServer :: DiscoRev -> FlavourMap -> Config -> ItemId -> StateServer
+defStateServer sdiscoRev sflavour sconfig sicounter =
   StateServer
-    { scounter  = toEnum 0
+    { sacounter = toEnum 0
     , sdebugSer = defDebugModeSer
     , ..
     }
 
 defDebugModeSer :: DebugModeSer
-defDebugModeSer = DebugModeSer
-  { stryFov = Nothing }
+defDebugModeSer = DebugModeSer {stryFov = Nothing}
 
 cycleTryFov :: StateServer -> StateServer
 cycleTryFov s@StateServer{sdebugSer=sdebugSer@DebugModeSer{stryFov}} =
@@ -53,12 +53,14 @@ instance Binary StateServer where
   put StateServer{..} = do
     put sdiscoRev
     put sflavour
-    put scounter
+    put sacounter
+    put sicounter
     put sconfig
   get = do
     sdiscoRev <- get
     sflavour <- get
-    scounter <- get
+    sacounter <- get
+    sicounter <- get
     sconfig <- get
     let sdebugSer = defDebugModeSer
     return StateServer{..}

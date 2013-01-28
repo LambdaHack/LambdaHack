@@ -46,12 +46,12 @@ mapToIMap cxsize m =
 
 rollItems :: Kind.COps -> FlavourMap -> DiscoRev -> Int -> Int
           -> CaveKind -> TileMap -> Point
-          -> Rnd [(Point, Item)]
+          -> Rnd [(Point, (Item, Int))]
 rollItems Kind.COps{cotile, coitem=coitem} flavour discoRev
           ln depth CaveKind{cxsize, citemNum, cminStairDist} ltile ppos = do
   nri <- rollDice citemNum
   replicateM nri $ do
-    (item, ik) <- newItem coitem flavour discoRev ln depth
+    (item, n, ik) <- newItem coitem flavour discoRev ln depth
     l <- case ieffect ik of
            Effect.Wound dice | maxDice dice > 0  -- a weapon
                                && maxDice dice + maxDeep (ipower ik) > 3 ->
@@ -64,7 +64,7 @@ rollItems Kind.COps{cotile, coitem=coitem} flavour discoRev
                , const (Tile.hasFeature cotile F.Boring)
                ]
            _ -> findPos ltile (const (Tile.hasFeature cotile F.Boring))
-    return (l, item)
+    return (l, (item, n))
 
 placeStairs :: Kind.Ops TileKind -> TileMap -> CaveKind -> [Place]
             -> Rnd (Point, Kind.Id TileKind, Point, Kind.Id TileKind)
@@ -84,10 +84,11 @@ placeStairs cotile@Kind.Ops{opick} cmap CaveKind{..} dplaces = do
 
 -- | Create a level from a cave, from a cave kind.
 buildLevel :: Kind.COps -> FlavourMap -> DiscoRev -> Cave -> Int -> Int
-           -> Rnd Level
+           -> ItemId
+           -> Rnd (Level, ItemId)
 buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                          , cocave=Kind.Ops{okind} }
-           flavour discoRev Cave{..} ldepth depth = do
+           flavour discoRev Cave{..} ldepth depth icounter = do
   let kc@CaveKind{..} = okind dkind
   cmap <- convertTileMaps (opick cdefTile (const True)) cxsize cysize dmap
   (su, upId, sd, downId) <-
@@ -97,15 +98,12 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
       f !n !tk | Tile.isExplorable cotile tk = n + 1
                | otherwise = n
       lclear = Kind.foldlArray f 0 ltile
-  is <- rollItems cops flavour discoRev ldepth depth kc ltile su
   -- TODO: split this into Level.defaultLevel
-  let itemMap = mapToIMap cxsize ditem `EM.union` EM.fromList is
-      litem = EM.map (: []) itemMap
       level = Level
         { ldepth
         , lactor = EM.empty
-        , linv = EM.empty
-        , litem
+        , litem = EM.empty
+        , lfloor = EM.empty
         , ltile
         , lxsize = cxsize
         , lysize = cysize
@@ -117,20 +115,31 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
         , ltime = timeTurn
         , lsecret = mapToIMap cxsize dsecret
         }
-  return level
+  is <- rollItems cops flavour discoRev ldepth depth kc ltile su
+  let itemMap = mapToIMap cxsize ditem `EM.union` EM.fromList is
+      fo (pos, (item, k)) (lvlF, icounterF) =
+        let jletter = if jsymbol item == '$' then Just '$' else Nothing
+            bag = EM.singleton icounterF (k, jletter)
+            mergeBag =EM.insertWith (EM.unionWith joinItem)
+            lvlG = updateItem (EM.insert icounterF item)
+                   $ updateFloor (mergeBag pos bag) lvlF
+        in (lvlG, succ icounterF)
+      (nlvl, nicounter) = foldr fo (level, icounter) $ EM.assocs itemMap
+  return (nlvl, nicounter)
 
 matchGenerator :: Kind.Ops CaveKind -> Maybe Text -> Rnd (Kind.Id CaveKind)
 matchGenerator Kind.Ops{opick} mname =
   opick (fromMaybe "dng" mname) (const True)
 
 findGenerator :: Kind.COps -> FlavourMap -> DiscoRev -> Config -> Int -> Int
-              -> Rnd Level
-findGenerator cops flavour discoRev Config{configCaves} k depth = do
+              -> ItemId
+              -> Rnd (Level, ItemId)
+findGenerator cops flavour discoRev Config{configCaves} k depth icounter = do
   let ln = "LambdaCave_" <> showT k
       genName = lookup ln configCaves
   ci <- matchGenerator (Kind.cocave cops) genName
   cave <- buildCave cops k depth ci
-  buildLevel cops flavour discoRev cave k depth
+  buildLevel cops flavour discoRev cave k depth icounter
 
 -- | Find starting postions for all factions. Try to make them distant
 -- from each other and from any stairs.
@@ -154,25 +163,29 @@ findEntryPoss Kind.COps{cotile} nPos Level{ltile, lxsize, lstair} =
 
 -- | Freshly generated and not yet populated dungeon.
 data FreshDungeon = FreshDungeon
-  { entryLevel   :: LevelId  -- ^ starting level
-  , entryPoss    :: [Point]  -- ^ starting positions for non-spawning parties
-  , freshDungeon :: Dungeon  -- ^ maps for all levels
-  , freshDepth   :: Int      -- ^ dungeon depth (can be different than size)
+  { entryLevel    :: LevelId  -- ^ starting level
+  , entryPoss     :: [Point]  -- ^ starting positions for non-spawning parties
+  , freshDungeon  :: Dungeon  -- ^ maps for all levels
+  , freshDepth    :: Int      -- ^ dungeon depth (can be different than size)
+  , freshICounter :: ItemId   -- ^ first unused item index
   }
 
 -- | Generate the dungeon for a new game.
 dungeonGen :: Kind.COps -> FlavourMap -> DiscoRev -> Config -> Int
            -> Rnd FreshDungeon
 dungeonGen cops flavour discoRev config@Config{configDepth} nPos =
-  let gen :: R.StdGen -> Int -> (R.StdGen, (LevelId, Level))
-      gen g k =
+  let gen :: (R.StdGen, ItemId) -> Int
+          -> ((R.StdGen, ItemId), (LevelId, Level))
+      gen (g, icounter) k =
         let (g1, g2) = R.split g
-            res = St.evalState (findGenerator cops flavour discoRev
-                                              config k configDepth) g1
-        in (g2, (toEnum k, res))
+            (res, nicounter) =
+                St.evalState (findGenerator cops flavour discoRev config k
+                                            configDepth icounter) g1
+        in ((g2, nicounter), (toEnum k, res))
       con :: R.StdGen -> (FreshDungeon, R.StdGen)
       con g = assert (configDepth >= 1 `blame` configDepth) $
-        let (gd, levels) = mapAccumL gen g [1..configDepth]
+        let ((gd, freshICounter), levels) =
+              mapAccumL gen (g, toEnum 0) [1..configDepth]
             entryLevel = initialLevel
             (entryPoss, gp) =
               St.runState (findEntryPoss cops nPos (snd (head levels))) gd

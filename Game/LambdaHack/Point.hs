@@ -33,11 +33,15 @@ import Game.LambdaHack.Utils.Assert
 -- due to smaller save files, the use of @EnumMap@ and cheaper array indexing,
 -- including cheaper bounds checks.
 newtype Point = Point Int
-  deriving (Show, Eq, Ord, Ix.Ix, Enum, Typeable, R.Random)
+  deriving (Eq, Ord, Ix.Ix, Enum, Typeable, R.Random)
 
 instance Binary Point where
   put (Point n) = put n
   get = fmap Point get
+
+-- For debugging.
+instance Show Point where
+  show (Point n) = show n
 
 -- | Print a point as a tuple of cartesian coordinates.
 showPoint :: X -> Point -> Text

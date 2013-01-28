@@ -6,6 +6,7 @@ module Game.LambdaHack.Client.RunAction
 import qualified Data.List as L
 import Data.Maybe (isNothing)
 import qualified Data.EnumSet as ES
+import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -161,7 +162,7 @@ continueRunDir leader (dirLast, distLast) = do
   hs <- getsState $ actorList (not . (`elem` genemy)) . getArena
   lvl@Level{lxsize, lysize} <- getsState getArena
   let posHasFeature f loc = Tile.hasFeature cotile f (lvl `at` loc)
-      posHasItems loc = not $ L.null $ lvl `atI` loc
+      posHasItems loc = not $ EM.null $ lvl `atI` loc
       locLast = if distLast == 0 then posHere else posHere `shift` neg dirLast
       tryRunDist (dir, distNew)
         | accessibleDir posHere dir =

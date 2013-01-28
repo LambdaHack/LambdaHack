@@ -103,12 +103,12 @@ lookAt detailed canSee pos msg = do
   let is = lvl `atI` pos
       prefixSee = MU.Text $ if canSee then "you see" else "you remember"
   disco <- getsState sdisco
-  let nWs = partItemNWs coitem disco
-      isd = case is of
-              [] -> ""
-              _ | length is <= 2 ->
-                makeSentence [prefixSee, MU.WWandW $ map nWs is]
-              _ | detailed -> "Objects:"
+  let nWs (iid, (k, _)) = partItemNWs coitem disco k (getItemBody iid lvl)
+      isd = case detailed of
+              _ | EM.size is == 0 -> ""
+              _ | EM.size is <= 2 ->
+                makeSentence [prefixSee, MU.WWandW $ map nWs $ EM.assocs is]
+              True -> "Objects:"
               _ -> "Objects here."
   if detailed
     then let tile = lvl `at` pos
@@ -147,26 +147,28 @@ doLook = do
   -- Show general info about current p.
   lookMsg <- lookAt True canSee p enemyMsg
   modifyClient (\st -> st {slastKey = Nothing})
-  if length is <= 2
+  if EM.size is <= 2
     then do
       slides <- promptToSlideshow (mode <+> lookMsg)
       tell slides
     else do
      disco <- getsState sdisco
-     io <- itemOverlay disco False is
+     io <- itemOverlay disco lvl False is
      slides <- overlayToSlideshow (mode <+> lookMsg) io
      tell slides
 
 -- | Create a list of item names.
 itemOverlay :: MonadActionRO m
-            => Discoveries -> Bool -> [Item] -> m Overlay
-itemOverlay disco sorted is = do
+            => Discoveries -> Level -> Bool -> ItemBag -> m Overlay
+itemOverlay disco lvl sorted bag = do
   Kind.COps{coitem} <- getsState scops
-  let items | sorted = sortBy (cmpLetterMaybe `on` jletter) is
+  let is = EM.assocs bag
+      items | sorted = sortBy (cmpLetterMaybe `on` snd . snd) is
             | otherwise = is
-      pr i = makePhrase [ letterLabel (jletter i)
-                        , partItemNWs coitem disco i ]
-             <> " "
+      pr (iid, (k, l)) =
+        makePhrase [ letterLabel l
+                   , partItemNWs coitem disco k (getItemBody iid lvl) ]
+        <> " "
   return $ map pr items
 
 -- GameSave doesn't take time, but needs the server, so it's defined elsewhere.
@@ -183,16 +185,17 @@ inventory = do
   Kind.COps{coactor} <- getsState scops
   Just leader <- getsClient sleader
   pbody <- getsState $ getActorBody leader
-  items <- getsState $ getActorItem leader
+  items <- getsState $ getActorBag leader
+  lvl <- getsState getArena
   disco <- getsState sdisco
-  if null items
+  if EM.null items
     then abortWith $ makeSentence
       [ MU.SubjectVerbSg (partActor coactor pbody) "be"
       , "not carrying anything" ]
     else do
       let blurb = makePhrase [MU.Capitalize $
             MU.SubjectVerbSg (partActor coactor pbody) "be carrying:"]
-      io <- itemOverlay disco True items
+      io <- itemOverlay disco lvl True items
       slides <- overlayToSlideshow blurb io
       tell slides
 

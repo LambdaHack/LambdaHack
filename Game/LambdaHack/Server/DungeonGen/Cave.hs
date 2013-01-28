@@ -1,6 +1,6 @@
 -- | Generation of caves (not yet inhabited dungeon levels) from cave kinds.
 module Game.LambdaHack.Server.DungeonGen.Cave
-  ( TileMapXY, SecretMapXY, ItemMapXY, Cave(..), buildCave
+  ( TileMapXY, SecretMapXY, FloorMapXY, Cave(..), buildCave
   ) where
 
 import Control.Monad
@@ -36,14 +36,14 @@ type SecretMapXY = M.Map PointXY Tile.SecretTime
 
 -- | The map of starting items in tiles of a cave. The map is sparse.
 -- Unspecified tiles have no starting items.
-type ItemMapXY = M.Map PointXY Item
+type FloorMapXY = M.Map PointXY (Item, Int)
 
 -- | The type of caves (not yet inhabited dungeon levels).
 data Cave = Cave
   { dkind   :: !(Kind.Id CaveKind)  -- ^ the kind of the cave
   , dmap    :: TileMapXY            -- ^ tile kinds in the cave
   , dsecret :: SecretMapXY          -- ^ secrecy strength of cave tiles
-  , ditem   :: ItemMapXY            -- ^ starting items in the cave
+  , ditem   :: FloorMapXY            -- ^ starting items in the cave
   , dplaces :: [Place]              -- ^ places generated in the cave
   }
   deriving Show

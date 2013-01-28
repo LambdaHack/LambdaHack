@@ -11,6 +11,8 @@ import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
+import qualified Data.EnumMap.Strict as EM
+import Data.Function
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -63,26 +65,26 @@ leaderApplyGroupItem :: MonadClientUI m
 leaderApplyGroupItem verb object syms = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   Just leader <- getsClient sleader
-  is <- getsState $ getActorItem leader
-  item <- getGroupItem leader is object syms
-            (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
+  is <- getsState $ getActorBag leader
+  ((iid, item), _) <- getGroupItem leader is object syms
+                 (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
   disco <- getsState sdisco
   let verbApply = case jkind disco item of
         Nothing -> verb
         Just ik -> iverbApply $ okind ik
-  return $! ApplySer leader verbApply item
+  return $! ApplySer leader verbApply iid
 
 -- | Let a human player choose any item with a given group name.
 -- Note that this does not guarantee the chosen item belongs to the group,
 -- as the player can override the choice.
 getGroupItem :: MonadClientUI m
              => ActorId
-             -> [Item]   -- ^ all objects in question
+             -> ItemBag  -- ^ all objects in question
              -> MU.Part  -- ^ name of the group
              -> [Char]   -- ^ accepted item symbols
              -> Text     -- ^ prompt
              -> Text     -- ^ how to refer to the collection of objects
-             -> m Item
+             -> m ((ItemId, Item), Int)
 getGroupItem leader is object syms prompt packName = do
   let choice i = jsymbol i `elem` syms
       header = makePhrase [MU.Capitalize (MU.Ws object)]
@@ -114,9 +116,10 @@ actorProjectGI aid verb object syms = do
   case targetToPos cli pos of
     Just p -> do
       Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
-      is <- getsState $ getActorItem aid
-      item <- getGroupItem aid is object syms
-                (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
+      is <- getsState $ getActorBag aid
+      ((iid, item), _) <-
+        getGroupItem aid is object syms
+          (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
       stgtMode <- getsClient stgtMode
       case stgtMode of
         Just (TgtAuto _) -> endTargeting True
@@ -125,7 +128,7 @@ actorProjectGI aid verb object syms = do
       let verbProject = case jkind disco item of
             Nothing -> verb
             Just ik -> iverbProject $ okind ik
-      return $! ProjectSer aid p seps verbProject item
+      return $! ProjectSer aid p seps verbProject iid
     Nothing -> assert `failure` (pos, aid, "target unexpectedly invalid")
 
 -- ** TriggerDir
@@ -199,14 +202,15 @@ pickupItem = do
 actorPickupItem :: MonadActionRO m => ActorId -> m CmdSer
 actorPickupItem actor = do
   lvl <- getsState getArena
-  body <- getsState (getActorBody actor)
-  bitems <- getsState (getActorItem actor)
+  body <- getsState $ getActorBody actor
+  bitems <- getsState $ getActorBag actor
+  let ls = mapMaybe snd $ EM.elems bitems
   -- Check if something is here to pick up. Items are never invisible.
-  case lvl `atI` bpos body of
-    [] -> abortWith "nothing here"
-    i : _ ->  -- pick up first item; TODO: let pl select item; not for monsters
-      case assignLetter (jletter i) (bletter body) bitems of
-        Just l -> return $ PickupSer actor i l
+  case EM.minViewWithKey $ lvl `atI` bpos body of
+    Nothing -> abortWith "nothing here"
+    Just ((iid, (k, l)), _) ->  -- pick up first item; TODO: let pl select item; not for monsters
+      case assignLetter l (bletter body) ls of
+        Just l2 -> return $ PickupSer actor iid k l2
         Nothing -> abortWith "cannot carry any more"
 
 -- ** Drop
@@ -220,15 +224,14 @@ dropItem = do
   Kind.COps{coactor, coitem} <- getsState scops
   Just leader <- getsClient sleader
   pbody <- getsState $ getActorBody leader
-  ims   <- getsState $ getActorItem leader
-  stack <- getAnyItem leader "What to drop?" ims "in inventory"
+  ims <- getsState $ getActorBag leader
+  ((iid, item), _k) <- getAnyItem leader "What to drop?" ims "in inventory"
   disco <- getsState sdisco
-  let item = stack { jcount = 1 }
   -- Do not advertise if an enemy drops an item. Probably junk.
   msgAdd $ makeSentence  -- TODO: "you" instead of partActor?
     [ MU.SubjectVerbSg (partActor coactor pbody) "drop"
-    , partItemNWs coitem disco item ]
-  return $ DropSer leader item
+    , partItemNWs coitem disco 1 item ]
+  return $ DropSer leader iid
 
 allObjectsName :: Text
 allObjectsName = "Objects"
@@ -236,10 +239,10 @@ allObjectsName = "Objects"
 -- | Let the human player choose any item from a list of items.
 getAnyItem :: MonadClientUI m
            => ActorId
-           -> Text    -- ^ prompt
-           -> [Item]  -- ^ all items in question
-           -> Text    -- ^ how to refer to the collection of items
-           -> m Item
+           -> Text     -- ^ prompt
+           -> ItemBag  -- ^ all items in question
+           -> Text     -- ^ how to refer to the collection of items
+           -> m ((ItemId, Item), Int)
 getAnyItem leader prompt = getItem leader prompt (const True) allObjectsName
 
 data ItemDialogState = INone | ISuitable | IAll deriving Eq
@@ -251,49 +254,53 @@ getItem :: MonadClientUI m
         -> Text            -- ^ prompt message
         -> (Item -> Bool)  -- ^ which items to consider suitable
         -> Text            -- ^ how to describe suitable items
-        -> [Item]          -- ^ all items in question
+        -> ItemBag         -- ^ all items in question
         -> Text            -- ^ how to refer to the collection of items
-        -> m Item
-getItem leader prompt p ptext is0 isn = do
+        -> m ((ItemId, Item), Int)
+getItem leader prompt p ptext bag isn = do
   lvl  <- getsState getArena
   body <- getsState $ getActorBody leader
-  let pos = bpos body
+  let is0 = map (\(iid, kl) -> ((iid, getItemBody iid lvl), kl))
+            $ EM.assocs bag
+      pos = bpos body
       tis = lvl `atI` pos
-      floorFull = not $ null tis
+      floorFull = not $ EM.null tis
       (floorMsg, floorKey) | floorFull = (", -", [K.Char '-'])
                            | otherwise = ("", [])
-      isp = filter p is0
+      isp = filter (p . snd . fst) is0
       bestFull = not $ null isp
       (bestMsg, bestKey)
         | bestFull =
-          let bestLetter = maybe "" (\ l -> "(" <> T.singleton l <> ")") $
-                             jletter $ maximumBy cmpItemLM isp
+          let bestLetter = maybe "" (\ l -> "(" <> T.singleton l <> ")")
+                           $ maximumBy cmpLetterMaybe $ map (snd . snd) isp
           in (", RET" <> bestLetter, [K.Return])
         | otherwise = ("", [])
-      cmpItemLM i1 i2 = cmpLetterMaybe (jletter i1) (jletter i2)
       keys ims =
-        let mls = mapMaybe jletter ims
+        let mls = mapMaybe (snd . snd) ims
             ks = bestKey ++ floorKey ++ [K.Char '?'] ++ map K.Char mls
         in zip ks $ repeat K.NoModifier
       choice ims =
         if null ims
         then "[?" <> floorMsg
-        else let mls = mapMaybe jletter ims
+        else let mls = mapMaybe (snd . snd) ims
                  r = letterRange mls
              in "[" <> r <> ", ?" <> floorMsg <> bestMsg
       ask = do
-        when (null is0 && null tis) $
+        when (null is0 && EM.null tis) $
           abortWith "Not carrying anything."
-        perform INone
+        res <- perform INone
+        return (fst res, fst (snd res))
+      bagP = EM.filterWithKey (\iid _ -> p (getItemBody iid lvl)) bag
       perform itemDialogState = do
         let (ims, imsOver, msg) = case itemDialogState of
-              INone     -> (isp, [], prompt)
-              ISuitable -> (isp, isp, ptext <+> isn <> ".")
-              IAll      -> (is0, is0, allObjectsName <+> isn <> ".")
+              INone     -> (isp, EM.empty, prompt)
+              ISuitable -> (isp, bagP, ptext <+> isn <> ".")
+              IAll      -> (is0, bag, allObjectsName <+> isn <> ".")
         disco <- getsState sdisco
-        io <- itemOverlay disco True imsOver
+        io <- itemOverlay disco lvl True imsOver
         (command, modifier) <-
           displayChoiceUI (msg <+> choice ims) io (keys ims)
+        let cmpItemLM = cmpLetterMaybe `on` snd . snd
         assert (modifier == K.NoModifier) $
           case command of
             K.Char '?' -> case itemDialogState of
@@ -302,9 +309,11 @@ getItem leader prompt p ptext is0 isn = do
               _ -> perform INone
             K.Char '-' | floorFull ->
               -- TODO: let player select item
-              return $ maximumBy cmpItemLM tis
-            K.Char l | l `elem` mapMaybe jletter ims ->
-              let mitem = find (maybe False (== l) . jletter) ims
+              return $ maximumBy cmpItemLM
+                     $ map (\(iid, kl) -> ((iid, getItemBody iid lvl), kl))
+                     $ EM.assocs tis
+            K.Char l | l `elem` mapMaybe (snd . snd) ims ->
+              let mitem = find (maybe False (== l) . snd . snd) ims
               in return $ fromJust mitem
             K.Return | bestFull ->
               return $ maximumBy cmpItemLM isp

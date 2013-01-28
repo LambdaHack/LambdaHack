@@ -72,16 +72,16 @@ cfgDumpSer = do
 applySer :: MonadServerChan m   -- MonadServer m
          => ActorId  -- ^ actor applying the item (is on current level)
          -> MU.Part  -- ^ how the applying is called
-         -> Item     -- ^ the item to be applied
+         -> ItemId   -- ^ the item to be applied
          -> m ()
-applySer actor verb item = do
+applySer actor verb iid = do
+  lvl <- getsState getArena
+  let item = getItemBody iid lvl
   body <- getsState (getActorBody actor)
   let pos = bpos body
-      -- Only one item consumed, even if several in inventory.
-      consumed = item { jcount = 1 }
-  broadcastPosCli [pos] $ ApplyCli actor verb consumed
-  removeFromInventory actor consumed pos
-  itemEffectAction 5 actor actor consumed False
+  broadcastPosCli [pos] $ ApplyCli actor verb item
+  removeFromInventory actor iid pos
+  itemEffectAction 5 actor actor item False
 
 -- TODO: this is subtly wrong: if identical items are on the floor and in
 -- inventory, the floor one will be chosen, regardless of player intention.
@@ -91,28 +91,34 @@ applySer actor verb item = do
 -- so we use them up in inventory, but remove them after use from the floor.
 -- TODO: How can this happen considering we remove them before use?
 -- | Remove given item from an actor's inventory or floor.
-removeFromInventory :: MonadServer m => ActorId -> Item -> Point -> m ()
+removeFromInventory :: MonadServer m => ActorId -> ItemId -> Point -> m ()
 removeFromInventory actor i pos = do
-  b <- removeFromPos i pos
+  b <- removeFromPos i 1 pos
   unless b $
-    modifyState (updateActorItem actor (removeItemByLetter i))
+    modifyState (updateActorItem actor (removeFromBag i 1))
+
+removeFromBag :: ItemId -> Int -> ItemBag -> ItemBag
+removeFromBag i k bag =
+  let rib Nothing = assert `failure` (i, k, bag)
+      rib (Just (n, l)) = case compare n k of
+        LT -> assert `failure` (i, k, bag)
+        EQ -> Nothing
+        GT -> Just (n - k, l)
+  in EM.alter rib i bag
 
 -- | Remove given item from the given position. Tell if successful.
-removeFromPos :: MonadServer m => Item -> Point -> m Bool
-removeFromPos i pos = do
+removeFromPos :: MonadServer m => ItemId -> Int -> Point -> m Bool
+removeFromPos i k pos = do
   lvl <- getsState getArena
-  if not $ any (equalItemIdentity i) (lvl `atI` pos)
+  if not $ EM.member i (lvl `atI` pos)
     then return False
     else do
-      modifyState (updateArena (updateIMap adj))
+      let adj = EM.update (\bag -> let nbag = removeFromBag i k bag
+                                   in if EM.null nbag
+                                      then Nothing
+                                      else Just nbag) pos
+      modifyState (updateArena (updateFloor adj))
       return True
-     where
-      rib Nothing = assert `failure` (i, pos)
-      rib (Just is) =
-        case removeItemByIdentity i is of
-          [] -> Nothing
-          x  -> Just x
-      adj = EM.alter rib pos
 
 -- ** ProjectSer
 
@@ -121,9 +127,9 @@ projectSer :: MonadServerChan m
            -> Point    -- ^ target position of the projectile
            -> Int      -- ^ digital line parameter
            -> MU.Part  -- ^ how the projecting is called
-           -> Item     -- ^ the item to be projected
+           -> ItemId   -- ^ the item to be projected
            -> m ()
-projectSer source tpos eps _verb item = do
+projectSer source tpos eps _verb iid = do
   cops@Kind.COps{coactor} <- getsState scops
   sm    <- getsState (getActorBody source)
   Actor{btime} <- getsState $ getActorBody source
@@ -131,8 +137,7 @@ projectSer source tpos eps _verb item = do
   lxsize <- getsState (lxsize . getArena)
   lysize <- getsState (lysize . getArena)
   side <- getsState sside
-  let consumed = item { jcount = 1 }
-      spos = bpos sm
+  let spos = bpos sm
       -- When projecting, the first turn is spent aiming.
       -- The projectile is seen one tile from the actor, giving a hint
       -- about the aim and letting the target evade.
@@ -156,28 +161,30 @@ projectSer source tpos eps _verb item = do
     Nothing -> abortWith "cannot zap oneself"
     Just [] -> assert `failure` (spos, tpos, "project from the edge of level")
     Just path@(pos:_) -> do
-      removeFromInventory source consumed spos
+      removeFromInventory source iid spos
       inhabitants <- getsState (posToActor pos)
       if accessible cops lvl spos pos && isNothing inhabitants
         then do
           glo <- getState
           ser <- getServer
           let (nglo, nser) =
-                addProjectile cops consumed pos (bfaction sm) path time glo ser
+                addProjectile cops iid pos (bfaction sm) path time glo ser
           putState nglo
           putServer nser
-          broadcastPosCli [spos, pos] $ ProjectCli spos source consumed
+          item <- getsState $ getItemBody iid . getArena
+          broadcastPosCli [spos, pos] $ ProjectCli spos source item
         else
           abortWith "blocked"
 
 -- | Create a projectile actor containing the given missile.
-addProjectile :: Kind.COps -> Item -> Point -> FactionId
+addProjectile :: Kind.COps -> ItemId -> Point -> FactionId
               -> [Point] -> Time -> State -> StateServer
               -> (State, StateServer)
 addProjectile Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}}
-              item loc bfaction path btime
-              s ser@StateServer{scounter} =
-  let ik = okind (fromJust $ jkind (sdisco s) item)
+              iid loc bfaction path btime
+              s ser@StateServer{sacounter} =
+  let item = getItemBody iid (getArena s)
+      ik = okind (fromJust $ jkind (sdisco s) item)
       speed = speedFromWeight (iweight ik) (itoThrow ik)
       range = rangeFromSpeed speed
       adj | range < 5 = "falling"
@@ -196,16 +203,16 @@ addProjectile Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}}
         , bdirAI  = Nothing
         , bpath   = Just dirPath
         , bpos    = loc
+        , bitem   = EM.singleton iid (1, Nothing)
         , bletter = 'a'
         , btime
         , bwait   = timeZero
         , bfaction
         , bproj   = True
         }
-      upd = updateActor (EM.insert scounter m)
-            . updateInv (EM.insert scounter [item])
+      upd = updateActor $ EM.insert sacounter m
   in ( updateArena upd s
-     , ser {scounter = succ scounter} )
+     , ser {sacounter = succ sacounter} )
 
 -- ** TriggerSer
 
@@ -220,43 +227,47 @@ triggerSer aid dpos = do
         return ()
       f (F.ChangeTo tgroup) = do
         Level{lactor} <- getsState getArena
-        case lvl `atI` dpos of
-          [] -> if unoccupied (EM.elems lactor) dpos
-                then do
-                  newTileId <- rndToAction $ opick tgroup (const True)
-                  let adj = (Kind.// [(dpos, newTileId)])
-                  modifyState (updateArena (updateLMap adj))
+        if EM.null $ lvl `atI` dpos
+          then if unoccupied (EM.elems lactor) dpos
+               then do
+                 newTileId <- rndToAction $ opick tgroup (const True)
+                 let adj = (Kind.// [(dpos, newTileId)])
+                 modifyState (updateArena (updateTile adj))
 -- TODO: take care of AI using this function (aborts, etc.).
-                else abortWith "blocked"  -- by monsters or heroes
-          _ : _ -> abortWith "jammed"  -- by items
+               else abortWith "blocked"  -- by monsters or heroes
+          else abortWith "jammed"  -- by items
       f _ = return ()
   mapM_ f $ TileKind.tfeature $ okind $ lvl `at` dpos
 
 -- * PickupSer
 
-pickupSer :: MonadServerChan m => ActorId -> Item -> Char -> m ()
-pickupSer aid i l = do
+pickupSer :: MonadServerChan m => ActorId -> ItemId -> Int -> Char -> m ()
+pickupSer aid i k l = assert (k > 0 `blame` (aid, i, k, l)) $ do
   side <- getsState sside
   body <- getsState (getActorBody aid)
+  lvl  <- getsState getArena
   -- Nobody can be forced to pick up an item.
   assert (bfaction body == side `blame` (body, side)) $ do
     let p = bpos body
-    bitems <- getsState (getActorItem aid)
-    removeFromPos i p
+    bitems <- getsState $ getActorBag aid
+    removeFromPos i k p
       >>= assert `trueM` (aid, i, p, "item is stuck")
-    let (ni, nitems) = joinItem (i {jletter = Just l}) bitems
+    let nitems = EM.insertWith joinItem i (k, Just l) bitems
+        ni = nitems EM.! i
+        item = getItemBody i lvl
     modifyState $ updateActorBody aid $ \m ->
-      m {bletter = maxLetter (fromJust $ jletter ni) (bletter m)}
+      m {bletter = maxLetter (fromJust $ snd ni) (bletter m)}
     modifyState (updateActorItem aid (const nitems))
-    void $ broadcastPosCli [p] (PickupCli aid i ni)
+    void $ broadcastPosCli [p] (PickupCli aid item k (snd ni))
 
 -- ** DropSer
 
-dropSer :: MonadServer m => ActorId -> Item -> m ()
-dropSer aid item = do
+dropSer :: MonadServer m => ActorId -> ItemId -> m ()
+dropSer aid iid = do
   pos <- getsState (bpos . getActorBody aid)
-  modifyState (updateActorItem aid (removeItemByLetter item))
-  modifyState (updateArena (dropItemsAt [item] pos))
+  kl <- getsState $ (EM.! iid) . getActorBag aid
+  modifyState (updateActorItem aid (EM.delete iid))
+  modifyState (updateArena (dropItemsAt (EM.singleton iid kl) pos))
 
 -- * WaitSer
 
@@ -328,7 +339,7 @@ actorAttackActor source target = do
       h2hKind <- rndToAction $ opick h2hGroup (const True)
       flavour <- getsServer sflavour
       discoRev <- getsServer sdiscoRev
-      let h2hItem = buildItem flavour discoRev h2hKind (okind h2hKind) 1 0
+      let h2hItem = buildItem flavour discoRev h2hKind (okind h2hKind) 0
           (stack, say, verbosity, verb) =
             if isProjectile state source
             then case bitems of
@@ -536,12 +547,13 @@ regenerateLevelHP = do
            } <- getsState scops
   time <- getsState getTime
   discoS <- getsState sdisco
-  let upd itemIM a m =
+  s <- getState
+  let upd a m =
         let ak = okind $ bkind m
-            bitems = fromMaybe [] $ EM.lookup a itemIM
+            items = getActorItem a s
             regen = max 1 $
                       aregen ak `div`
-                      case strongestRegen coitem discoS bitems of
+                      case strongestRegen coitem discoS items of
                         Just i  -> 5 * jpower i
                         Nothing -> 1
         in if (time `timeFit` timeTurn) `mod` regen /= 0
@@ -552,8 +564,7 @@ regenerateLevelHP = do
   -- Only the heroes on the current level regenerate (others are frozen
   -- in time together with their level). This prevents cheating
   -- via sending one hero to a safe level and waiting there.
-  hi <- getsState (linv . getArena)
-  modifyState (updateArena (updateActor (EM.mapWithKey (upd hi))))
+  modifyState (updateArena (updateActor (EM.mapWithKey upd)))
 
 -- | Add new smell traces to the level. Only non-spawning factions
 -- leave a scent that is easy to tell from common dungeon smells.

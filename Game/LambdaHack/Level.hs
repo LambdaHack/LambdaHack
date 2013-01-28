@@ -6,10 +6,10 @@ module Game.LambdaHack.Level
   ( -- * Dungeon
     LevelId, Dungeon, initialLevel, ascendInBranch
     -- * The @Level@ type and its components
-  , ActorDict, InvDict, SmellMap, SecretMap, ItemMap, TileMap
+  , ActorDict, ItemDict, SmellMap, SecretMap, FloorMap, TileMap
   , Level(..)
     -- * Level update
-  , updateActor, updateInv, updateSmell, updateIMap, updateLMap, dropItemsAt
+  , updateActor, updateItem, updateSmell, updateFloor, updateTile, dropItemsAt
     -- * Level query
   , at, atI, accessible, openable, findPos, findPosTry
  ) where
@@ -58,8 +58,9 @@ ascendInBranch dungeon (LevelId n) k =
 -- | All actors on the level, indexed by actor identifier.
 type ActorDict = EM.EnumMap ActorId Actor
 
--- | Items carried by actors, indexed by actor identifier.
-type InvDict = EM.EnumMap ActorId [Item]
+-- | All items on the level (including in actor inventories),
+-- indexed by item identifier.
+type ItemDict = EM.EnumMap ItemId Item
 
 -- | Current smell on map tiles.
 type SmellMap = EM.EnumMap Point SmellTime
@@ -67,8 +68,8 @@ type SmellMap = EM.EnumMap Point SmellTime
 -- | Current secrecy value on map tiles.
 type SecretMap = EM.EnumMap Point SecretTime
 
--- | Item lists on map tiles.
-type ItemMap = EM.EnumMap Point [Item]
+-- | Items located on map tiles.
+type FloorMap = EM.EnumMap Point ItemBag
 
 -- | Tile kinds on the map.
 type TileMap = Kind.Array Point TileKind
@@ -77,8 +78,8 @@ type TileMap = Kind.Array Point TileKind
 data Level = Level
   { ldepth  :: !Int             -- ^ depth of the level
   , lactor  :: !ActorDict       -- ^ remembered actors on the level
-  , linv    :: !InvDict         -- ^ remembered actor inventories
-  , litem   :: !ItemMap         -- ^ remembered items on the level
+  , litem   :: !ItemDict        -- ^ remembered items on the level
+  , lfloor  :: !FloorMap         -- ^ remembered items lying on the floor
   , ltile   :: !TileMap         -- ^ remembered level map
   , lxsize  :: !X               -- ^ width of the level
   , lysize  :: !Y               -- ^ height of the level
@@ -92,46 +93,42 @@ data Level = Level
   }
   deriving Show
 
--- | Update the actor map.
+-- | Update the actor dictionary.
 updateActor :: (ActorDict -> ActorDict) -> Level -> Level
 updateActor f lvl = lvl { lactor = f (lactor lvl) }
 
--- | Update the actor items map.
-updateInv :: (InvDict -> InvDict) -> Level -> Level
-updateInv f lvl = lvl { linv = f (linv lvl) }
+-- | Update the items dictionary.
+updateItem :: (ItemDict -> ItemDict) -> Level -> Level
+updateItem f lvl = lvl { litem = f (litem lvl) }
 
 -- | Update the smell map.
 updateSmell :: (SmellMap -> SmellMap) -> Level -> Level
 updateSmell f lvl = lvl { lsmell = f (lsmell lvl) }
 
 -- | Update the items on the ground map.
-updateIMap :: (ItemMap -> ItemMap) -> Level -> Level
-updateIMap f lvl = lvl { litem = f (litem lvl) }
+updateFloor :: (FloorMap -> FloorMap) -> Level -> Level
+updateFloor f lvl = lvl { lfloor = f (lfloor lvl) }
 
 -- | Update the tile map.
-updateLMap :: (TileMap -> TileMap) -> Level -> Level
-updateLMap f lvl = lvl { ltile = f (ltile lvl) }
+updateTile :: (TileMap -> TileMap) -> Level -> Level
+updateTile f lvl = lvl { ltile = f (ltile lvl) }
 
 -- Note: do not scatter items around, it's too much work for the player.
 -- | Place all items on the list at a position on the level.
-dropItemsAt :: [Item] -> Point -> Level -> Level
-dropItemsAt [] _pos = id
-dropItemsAt items loc =
-  let joinItems = L.foldl' (\ acc i -> snd (joinItem i acc))
-      adj Nothing = Just items
-      adj (Just i) = Just $ joinItems items i
-  in  updateIMap (EM.alter adj loc)
+dropItemsAt :: ItemBag -> Point -> Level -> Level
+dropItemsAt b p = let adj c = Just $ maybe b (EM.unionWith joinItem b) c
+                  in updateFloor (EM.alter adj p)
 
-assertSparseItems :: ItemMap -> ItemMap
+assertSparseItems :: FloorMap -> FloorMap
 assertSparseItems m =
-  assert (EM.null (EM.filter (\ is -> L.null is) m) `blame` m) m
+  assert (EM.null (EM.filter EM.null m) `blame` m) m
 
 instance Binary Level where
   put Level{..} = do
     put ldepth
     put lactor
-    put linv
-    put (assertSparseItems litem)
+    put litem
+    put (assertSparseItems lfloor)
     put ltile
     put lxsize
     put lysize
@@ -145,8 +142,8 @@ instance Binary Level where
   get = do
     ldepth <- get
     lactor <- get
-    linv <- get
     litem <- get
+    lfloor <- get
     ltile <- get
     lxsize <- get
     lysize <- get
@@ -164,8 +161,8 @@ at :: Level -> Point -> Kind.Id TileKind
 at Level{ltile}  p = ltile Kind.! p
 
 -- | Query for items on the ground.
-atI :: Level -> Point -> [Item]
-atI Level{litem} p = EM.findWithDefault [] p litem
+atI :: Level -> Point -> ItemBag
+atI Level{lfloor} p = EM.findWithDefault EM.empty p lfloor
 
 -- | Check whether one position is accessible from another,
 -- using the formula from the standard ruleset.

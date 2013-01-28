@@ -61,8 +61,8 @@ unknownLevel Kind.Ops{ouniqGroup} ldepth lxsize lysize ldesc lstair lclear =
   let unknownId = ouniqGroup "unknown space"
   in Level { ldepth
            , lactor = EM.empty
-           , linv = EM.empty
            , litem = EM.empty
+           , lfloor = EM.empty
            , ltile = unknownTileMap unknownId lxsize lysize
            , lxsize = lxsize
            , lysize = lysize

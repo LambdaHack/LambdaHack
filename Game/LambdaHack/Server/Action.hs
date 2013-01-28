@@ -109,6 +109,7 @@ remember = do
   lvl <- getsState getArena
   faction <- getsState sfaction
   pers <- ask
+  -- TODO: leaky! secret lvl sent
   let broadcast = funBroadcastCli (\fid ->
         RememberPerCli arena (pers EM.! fid EM.! arena) lvl faction)
   broadcast
@@ -245,7 +246,7 @@ addHero :: Kind.COps -> Point -> FactionId -> [(Int, Text)]
         -> State -> StateServer
         -> (State, StateServer)
 addHero Kind.COps{coactor, cotile} ppos side configHeroNames
-        s ser@StateServer{scounter} =
+        s ser@StateServer{sacounter} =
   let Config{configBaseHP} = sconfig ser
       loc = nearbyFreePos cotile ppos s
       freeHeroK = elemIndex Nothing $ map (tryFindHeroK s side) [0..9]
@@ -255,8 +256,8 @@ addHero Kind.COps{coactor, cotile} ppos side configHeroNames
       startHP = configBaseHP - (configBaseHP `div` 5) * min 3 n
       m = template (heroKindId coactor) (Just symbol) (Just name)
                    startHP loc (getTime s) side False
-  in ( updateArena (updateActor (EM.insert scounter m)) s
-     , ser {scounter = succ scounter} )
+  in ( updateArena (updateActor (EM.insert sacounter m)) s
+     , ser {sacounter = succ sacounter} )
 
 -- | Create a set of initial heroes on the current level, at position ploc.
 initialHeroes :: Kind.COps -> Point -> FactionId -> State -> StateServer
@@ -319,7 +320,7 @@ gameReset cops@Kind.COps{ coitem, corule} = do
         let defState =
               defStateGlobal freshDungeon freshDepth discoS faction
                              cops random entryLevel
-            defSer = defStateServer discoRev sflavour sconfig
+            defSer = defStateServer discoRev sflavour sconfig freshICounter
             fo (fid, epos, hNames) (gloF, serF) =
               initialHeroes cops epos fid gloF serF hNames
             heroNames = configHeroNames sconfig : repeat []

@@ -288,28 +288,30 @@ displayPush = do
 
 -- | Update faction memory at the given set of positions.
 rememberLevel :: Kind.COps -> ES.EnumSet Point -> Level -> Level -> Level
-rememberLevel Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} visible lvl clvl =
+rememberLevel Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} visible nlvl olvl =
   -- TODO: handle invisible actors, but then change also broadcastPosCli, etc.
-  let nactor = EM.filter (\m -> bpos m `ES.member` visible) (lactor lvl)
-      ninv   = EM.filterWithKey (\p _ -> p `EM.member` nactor) (linv lvl)
-      alt Nothing   _ = Nothing
-      alt (Just []) _ = assert `failure` lvl
-      alt x         _ = x
-      rememberItem p m = EM.alter (alt $ EM.lookup p $ litem lvl) p m
+  let nactor = EM.filter (\m -> bpos m `ES.member` visible) (lactor nlvl)
+      nvis = EM.filterWithKey (\p _ -> p `ES.member` visible) (lfloor nlvl)
+      ovis = EM.filterWithKey (\p _ -> p `ES.notMember` visible) (lfloor olvl)
+      nfloor = EM.union nvis ovis
+      -- TODO: too costly
+      is = ES.fromList $ concatMap EM.keys $ map bitem (EM.elems nactor)
+                                             ++ EM.elems nfloor
+      nitem  = EM.filterWithKey (\iid _ -> iid `ES.member` is) (litem nlvl)
       vis = ES.toList visible
-      rememberTile = [(pos, lvl `at` pos) | pos <- vis]
+      rememberTile = [(pos, nlvl `at` pos) | pos <- vis]
       unknownId = ouniqGroup "unknown space"
-      eSeen (pos, tk) = clvl `at` pos == unknownId
+      eSeen (pos, tk) = olvl `at` pos == unknownId
                         && Tile.isExplorable cotile tk
       extraSeen = length $ filter eSeen rememberTile
-  in clvl { lactor = nactor
-          , linv = ninv
-          , litem = foldr rememberItem (litem clvl) vis
-          , ltile = ltile clvl Kind.// rememberTile
+  in olvl { lactor = nactor
+          , litem = nitem
+          , lfloor = nfloor
+          , ltile = ltile olvl Kind.// rememberTile
   -- TODO: update enemy smell probably only around a sniffing party member
-          , lsmell = lsmell lvl
-          , lseen = lseen clvl + extraSeen
-          , ltime = ltime lvl
+          , lsmell = lsmell nlvl
+          , lseen = lseen olvl + extraSeen
+          , ltime = ltime nlvl
   -- TODO: let factions that spawn see hidden features and open all hidden
   -- doors (they built and hid them). Hide the Hidden feature in ltile.
   -- Wait with all that until the semantics of (repeated) searching

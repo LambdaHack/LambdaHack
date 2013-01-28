@@ -43,16 +43,16 @@ actorVerb :: Kind.Ops ActorKind -> Actor -> Text -> Text
 actorVerb coactor a v =
   makeSentence [MU.SubjectVerbSg (partActor coactor a) (MU.Text v)]
 
--- | Create a new monster in the level, at a given position
+-- | Create a new monster on the level, at a given position
 -- and with a given actor kind and HP.
 addMonster :: Kind.Ops TileKind -> Kind.Id ActorKind -> Int -> Point
            -> FactionId -> Bool -> State -> StateServer
            -> (State, StateServer)
-addMonster cotile mk hp ppos bfaction bproj s ser@StateServer{scounter} =
+addMonster cotile mk hp ppos bfaction bproj s ser@StateServer{sacounter} =
   let loc = nearbyFreePos cotile ppos s
       m = template mk Nothing Nothing hp loc (getTime s) bfaction bproj
-  in ( updateArena (updateActor (EM.insert scounter m)) s
-     , ser {scounter = succ scounter} )
+  in ( updateArena (updateActor (EM.insert sacounter m)) s
+     , ser {sacounter = succ sacounter} )
 
 -- TODO: center screen, flash the background, etc. Perhaps wait for SPACE.
 -- | Focus on the hero being wounded/displaced/etc.
@@ -226,7 +226,7 @@ squashActor source target = do
   let h2hKind = ouniqGroup "weight"
       kind = okind h2hKind
       power = maxDeep $ ipower kind
-      h2h = buildItem flavour discoRev h2hKind kind 1 power
+      h2h = buildItem flavour discoRev h2hKind kind power
 --      verb = iverbApply kind
 --      msg = makeSentence
 --        [ MU.SubjectVerbSg (partActor coactor sm) verb
@@ -242,7 +242,7 @@ squashActor source target = do
 effLvlGoUp :: MonadServerChan m => ActorId -> Int -> m ()
 effLvlGoUp aid k = do
   pbodyCurrent <- getsState $ getActorBody aid
-  bitems <- getsState $ getActorItem aid
+  bitems <- getsState $ getActorBag aid
   arena <- getsState sarena
   glo <- getState
   case whereTo glo arena k of
@@ -309,7 +309,7 @@ fleeDungeon = do
   go <- sendQueryUI side $ ConfirmYesNoCli
           "This is the way out. Really leave now?"
   when (not go) $ abortWith "Game resumed."
-  let (items, total) = calculateTotal glo
+  let (bag, total) = calculateTotal glo
       upd f = f {gquit = Just (False, Victor)}
   modifyState $ updateSide upd
   if total == 0
@@ -328,7 +328,7 @@ fleeDungeon = do
           , "Here's your loot, worth"
           , MU.NWs total currencyName ]
     discoS <- getsState sdisco
-    sendUpdateUI side $ ShowItemsCli discoS winMsg items
+    sendUpdateUI side $ ShowItemsCli discoS winMsg bag
     let upd2 f = f {gquit = Just (True, Victor)}
     modifyState $ updateSide upd2
 
@@ -369,7 +369,7 @@ summonHeroes :: MonadServer m => Int -> Point -> m ()
 summonHeroes n pos =
   assert (n > 0) $ do
   cops <- getsState scops
-  newHeroId <- getsServer scounter
+  newHeroId <- getsServer sacounter
   s <- getState
   ser <- getServer
   side <- getsState sside
@@ -409,7 +409,7 @@ checkPartyDeath target = do
   pbody <- getsState $ getActorBody target
   Config{configFirstDeathEnds} <- getsServer sconfig
   -- Place the actor's possessions on the map.
-  bitems <- getsState (getActorItem target)
+  bitems <- getsState $ getActorBag target
   modifyState $ updateArena $ dropItemsAt bitems $ bpos pbody
   let fid = bfaction pbody
       animateDeath = do
@@ -451,7 +451,7 @@ gameOver showEndingScreens = do
     s <- getState
     depth <- getsState sdepth
     time <- getsState getTime
-    let (items, total) = calculateTotal s
+    let (bag, total) = calculateTotal s
         failMsg | timeFit time timeTurn < 300 =
           "That song shall be short."
                 | total < 100 =
@@ -470,14 +470,15 @@ gameOver showEndingScreens = do
           , "You left"
           , MU.NWs total currencyName
           , "and some junk." ]
-    if null items
+    if EM.null bag
       then do
         let upd2 f = f {gquit = Just (True, Killed arena)}
         modifyState $ updateSide upd2
       else do
         discoS <- getsState sdisco
         side <- getsState sside
-        go <- sendQueryUI side $ ConfirmShowItemsCli discoS loseMsg items
+        go <- sendQueryUI side
+              $ ConfirmShowItemsCli discoS loseMsg bag
         when go $ do
           let upd2 f = f {gquit = Just (True, Killed arena)}
           modifyState $ updateSide upd2

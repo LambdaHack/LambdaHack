@@ -37,14 +37,14 @@ data CmdUI where
 deriving instance Show CmdUI
 
 data CmdUpdateCli =
-    PickupCli ActorId Item Item
+    PickupCli ActorId Item Int (Maybe Char)
   | ApplyCli ActorId MU.Part Item
   | ShowMsgCli Msg
   | InvalidateArenaCli LevelId
   | DiscoverCli (Kind.Id ItemKind) Item
   | RememberCli LevelId (ES.EnumSet Point) Level  -- TODO: Level is an overkill
   | RememberPerCli LevelId Perception Level FactionDict
-  | SwitchLevelCli ActorId LevelId Actor [Item]
+  | SwitchLevelCli ActorId LevelId Actor ItemBag
   | ProjectCli Point ActorId Item
   | ShowAttackCli ActorId ActorId MU.Part Item Bool
   | RestartCli FactionPers State
@@ -54,7 +54,7 @@ data CmdUpdateCli =
   deriving Show
 
 data CmdUpdateUI =
-    ShowItemsCli Discoveries Msg [Item]
+    ShowItemsCli Discoveries Msg ItemBag
   | AnimateDeathCli ActorId
   | EffectCli Msg (Point, Point) Int Bool
   | AnimateBlockCli ActorId ActorId MU.Part
@@ -77,7 +77,7 @@ deriving instance Show (CmdQueryCli a)
 data CmdQueryUI a where
   ShowSlidesCli :: Slideshow -> CmdQueryUI Bool
   CarryOnCli :: CmdQueryUI Bool
-  ConfirmShowItemsCli :: Discoveries -> Msg -> [Item] -> CmdQueryUI Bool
+  ConfirmShowItemsCli :: Discoveries -> Msg -> ItemBag -> CmdQueryUI Bool
   ConfirmYesNoCli :: Msg -> CmdQueryUI Bool
   ConfirmMoreBWCli :: Msg -> CmdQueryUI Bool
   ConfirmMoreFullCli::  Msg -> CmdQueryUI Bool

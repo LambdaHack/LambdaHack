@@ -134,9 +134,9 @@ draw dm cops per
                 _ | (smarkSmell || asmellL) && smlt > timeZero ->
                   (timeToDigit smellTimeout smlt, rainbow pos0)
                   | otherwise ->
-                  case items of
+                  case EM.keys items of
                     [] -> (tsymbol tk, if vis then tcolor tk else tcolor2 tk)
-                    i : _ -> Item.viewItem i
+                    i : _ -> Item.viewItem $ getItemBody i lvl
             vis = ES.member pos0 $ totalVisible per
             visPl =
               maybe False (\leader -> actorSeesLoc per leader pos0) mleader
