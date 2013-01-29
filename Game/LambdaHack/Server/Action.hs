@@ -133,6 +133,7 @@ dumpCfg fn = do
   config <- getsServer sconfig
   liftIO $ ConfigIO.dump config fn
 
+-- TODO: show this for all humans and only humans.
 -- | Handle current score and display it with the high scores.
 -- Aborts if display of the scores was interrupted by the user.
 --
@@ -181,6 +182,7 @@ endOrLoop loopServer = do
 --      liftIO $ takeMVar mv  -- wait until saved
       -- Do nothing, that is, quit the game loop.
     (Nothing, Just (showScreens, status@Killed{})) -> do
+      -- TODO: rewrite; handle killed faction, if human, mostly ignore if not
       nullR <- sendQueryCli side NullReportCli
       unless nullR $ do
         -- Sisplay any leftover report. Suggest it could be the cause of death.

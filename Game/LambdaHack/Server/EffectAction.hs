@@ -300,6 +300,7 @@ effLvlGoUp aid k = do
         -- Create a backup of the savegame.
         saveGameBkp
 
+-- TODO: right now it only works for human factions (sendQueryUI).
 -- | The leader leaves the dungeon.
 fleeDungeon :: MonadServerChan m => m ()
 fleeDungeon = do
@@ -412,9 +413,10 @@ checkPartyDeath target = do
   bitems <- getsState $ getActorBag target
   modifyState $ updateArena $ dropItemsAt bitems $ bpos pbody
   let fid = bfaction pbody
-      animateDeath = do
+  isHuman <- getsState $ flip isHumanFaction fid
+  let animateDeath = do
         broadcastPosUI [bpos pbody] (AnimateDeathCli target)
-        sendQueryUI fid $ CarryOnCli
+        if isHuman then sendQueryUI fid CarryOnCli else return False
       animateGameOver = do
         go <- animateDeath
         modifyState $ updateActorBody target $ \b -> b {bsymbol = Just '%'}
@@ -476,6 +478,7 @@ gameOver showEndingScreens = do
         modifyState $ updateSide upd2
       else do
         discoS <- getsState sdisco
+        -- TODO: do this for the killed factions, not for side
         side <- getsState sside
         go <- sendQueryUI side
               $ ConfirmShowItemsCli discoS loseMsg bag
