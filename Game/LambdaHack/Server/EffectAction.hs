@@ -156,8 +156,8 @@ eff Effect.Dominate _ source target _power = do
       -- Sync the monster with the hero move time for better display
       -- of missiles and for the domination to actually take one player's turn.
       modifyState $ updateActorBody target $ \ b -> b { bfaction = sside s
-                                                       , btime = getTime s
-                                                       , bspeed = halfSpeed b }
+                                                      , btime = getTime s
+                                                      , bspeed = halfSpeed b }
       -- Display status line and FOV for the new actor.
 --TODO      sli <- promptToSlideshow ""
 --      fr <- drawOverlay ColorBW $ head $ runSlideshow sli

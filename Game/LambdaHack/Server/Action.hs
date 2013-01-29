@@ -208,9 +208,7 @@ endOrLoop loopServer = do
         tryIgnore $ handleScores True status total
         broadcastUI [] $ MoreFullCli "Can it be done better, though?"
       restartGame loopServer
-    (Nothing, Just (_, Restart)) -> do
---      broadcastUI [] $ MoreBWCli "This time for real."
-      restartGame loopServer
+    (Nothing, Just (_, Restart)) -> restartGame loopServer
     (Nothing, _) -> loopServer  -- just continue
 
 restartGame :: MonadServerChan m => m () -> m ()
@@ -233,6 +231,8 @@ restartGame loopServer = do
   let firstHuman = fst . head $ filter (isHumanFact . snd) $ EM.assocs faction
   switchGlobalSelectedSide firstHuman
   saveGameBkp
+  broadcastCli [] $ ShowMsgCli "This time for real."
+  broadcastUI [] $ DisplayPushCli
   loopServer
 
 -- | Find a hero name in the config file, or create a stock name.

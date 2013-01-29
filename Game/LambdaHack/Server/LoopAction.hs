@@ -55,10 +55,8 @@ loopSer cmdSer = do
       bcast
       withAI bcast
   modifyState $ updateQuit $ const Nothing
-  -- TODO: show a global starting message
-  broadcastUI [] DisplayPushCli
   -- Loop.
-  let loop previousHuman = do
+  let loop (disp, prevHuman) = do
         time <- getsState getTime  -- the end time of this clip, inclusive
         let clipN = (time `timeFit` timeClip)
                     `mod` (timeTurn `timeFit` timeClip)
@@ -66,11 +64,11 @@ loopSer cmdSer = do
         when (clipN == 1) checkEndGame
         when (clipN == 2) regenerateLevelHP
         mfid <- if clipN == 3 then generateMonster else return Nothing
-        nHuman <- handleActors cmdSer timeZero previousHuman mfid
+        nres <- handleActors cmdSer timeZero prevHuman (disp || isJust mfid)
         modifyState (updateTime (timeAdd timeClip))
-        endOrLoop (loop nHuman)
+        endOrLoop (loop nres)
   side <- getsState sside
-  local (const pers) $ loop side
+  local (const pers) $ loop (True, side)
 
 -- TODO: switch levels alternating between player factions,
 -- if there are many and on distinct levels.
@@ -106,12 +104,10 @@ handleActors :: MonadServerChan m
              => (CmdSer -> m ())
              -> Time  -- ^ start time of current subclip, exclusive
              -> FactionId
-             -> Maybe FactionId
-             -> m FactionId
-handleActors cmdSer subclipStart previousHuman mfid = withPerception $ do
+             -> Bool
+             -> m (Bool, FactionId)
+handleActors cmdSer subclipStart prevHuman disp = withPerception $ do
   remember
-  -- Needed for newly generaated monsters to be visible when asked for a move.
-  maybe (return ()) (\fid -> sendUpdateUI fid DisplayPushCli) mfid
   Kind.COps{coactor} <- getsState scops
   time <- getsState getTime  -- the end time of this clip, inclusive
    -- Older actors act earlier.
@@ -127,11 +123,11 @@ handleActors cmdSer subclipStart previousHuman mfid = withPerception $ do
                       then Nothing  -- no actor is ready for another move
                       else Just (actor, m)
   case mnext of
-    _ | isJust quit || isJust gquit -> return previousHuman
+    _ | isJust quit || isJust gquit -> return (disp, prevHuman)
     Nothing -> do
       when (subclipStart == timeZero) $
-        broadcastPosUI [] $ DisplayDelayCli
-      return previousHuman
+        broadcastUI [] $ DisplayDelayCli
+      return (disp, prevHuman)
     Just (actor, m) -> do
       let side = bfaction m
       switchGlobalSelectedSide side
@@ -140,19 +136,20 @@ handleActors cmdSer subclipStart previousHuman mfid = withPerception $ do
       leader <- if isHuman
                 then sendQueryCli side $ SetArenaLeaderCli arena actor
                 else withAI $ sendQueryCli side $ SetArenaLeaderCli arena actor
+      when disp $ broadcastUI [] DisplayPushCli
       if actor == leader && isHuman
         then do
-          nHuman <- if isHuman && side /= previousHuman
+          nHuman <- if isHuman && side /= prevHuman
                     then do
                       newRuns <- sendQueryCli side IsRunningCli
                       if newRuns
-                        then return previousHuman
+                        then return prevHuman
                         else do
-                          b <- sendQueryUI previousHuman $ FlushFramesCli side
+                          b <- sendQueryUI prevHuman $ FlushFramesCli side
                           if b
                             then return side
-                            else return previousHuman
-                    else return previousHuman
+                            else return prevHuman
+                    else return prevHuman
           -- TODO: check that the commands is legal, that is, the leader
           -- is acting, etc. Or perhaps instead have a separate type
           -- of actions for humans. OTOH, AI is controlled by the servers
@@ -162,7 +159,7 @@ handleActors cmdSer subclipStart previousHuman mfid = withPerception $ do
           modifyState $ updateSelectedArena arenaNew
           tryWith (\msg -> do
                       sendUpdateCli side $ ShowMsgCli msg
-                      handleActors cmdSer subclipStart nHuman Nothing
+                      handleActors cmdSer subclipStart nHuman False
                   ) $ do
             cmdSer cmdS
             -- Advance time once, after the leader switched perhaps many times.
@@ -185,8 +182,7 @@ handleActors cmdSer subclipStart previousHuman mfid = withPerception $ do
             -- Right now other need it too, to notice the delay.
             -- This will also be more accurate since now unseen
             -- simultaneous moves also generate delays.
-            broadcastUI [] DisplayPushCli
-            handleActors cmdSer (btime m) nHuman Nothing
+            handleActors cmdSer (btime m) nHuman True
         else do
 --          recordHistory
           advanceTime actor  -- advance time while the actor still alive
@@ -199,8 +195,6 @@ handleActors cmdSer subclipStart previousHuman mfid = withPerception $ do
               -- or it's another faction, but it's the first move of
               -- this whole clip or the actor has already moved during
               -- this subclip, so his multiple moves would be collapsed.
-              -- TODO: store frames somewhere for each faction and display
-              -- the frames only after a "Faction X taking over..." prompt.
               cmdS <- withAI $ sendQueryCli side $ HandleAI actor
     -- If the following action aborts, we just advance the time and continue.
     -- TODO: or just fail at each abort in AI code? or use tryWithFrame?
@@ -209,9 +203,7 @@ handleActors cmdSer subclipStart previousHuman mfid = withPerception $ do
                                else assert `failure` msg <> "in AI"
                       )
                       (cmdSer cmdS)
-              apos <- getsState $ bpos . getActorBody actor
-              broadcastPosUI [apos] DisplayPushCli
-              handleActors cmdSer (btime m) previousHuman Nothing
+              handleActors cmdSer (btime m) prevHuman True
             else do
               -- No new subclip.
               cmdS <- withAI $ sendQueryCli side $ HandleAI actor
@@ -222,7 +214,7 @@ handleActors cmdSer subclipStart previousHuman mfid = withPerception $ do
                                else assert `failure` msg <> "in AI"
                       )
                       (cmdSer cmdS)
-              handleActors cmdSer subclipStart previousHuman Nothing
+              handleActors cmdSer subclipStart prevHuman False
 
 -- | Advance (or rewind) the move time for the given actor.
 advanceTime :: MonadServer m => ActorId -> m ()
