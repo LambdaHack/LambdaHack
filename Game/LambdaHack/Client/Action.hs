@@ -66,6 +66,14 @@ import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Point
 
+withUI :: MonadClientUI m => m a -> m a
+withUI m = do
+  mvarUI <- getsSession smvarUI
+  liftIO $ putMVar mvarUI ()
+  a <- m
+  liftIO $ takeMVar mvarUI
+  return a
+
 displayFrame :: MonadClientUI m => Bool -> Maybe SingleFrame -> m ()
 displayFrame isRunning mf = do
   fs <- askFrontendSession
@@ -76,7 +84,7 @@ displayFrame isRunning mf = do
       modifyClient $ \cli -> cli {sframe = (mf, isRunning) : sframe cli}
     _ ->
       -- At most one human player, display everything at once.
-      liftIO $ Frontend.displayFrame fs isRunning mf
+      withUI $ liftIO $ Frontend.displayFrame fs isRunning mf
 
 flushFrames :: MonadClientUI m => m ()
 flushFrames = do
@@ -86,13 +94,13 @@ flushFrames = do
   modifyClient $ \cli -> cli {sframe = []}
 
 nextEvent :: MonadClientUI m => Maybe Bool -> m K.KM
-nextEvent mb = do
+nextEvent mb = withUI $ do
   fs <- askFrontendSession
   flushFrames
   liftIO $ Frontend.nextEvent fs mb
 
 promptGetKey :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
-promptGetKey keys frame = do
+promptGetKey keys frame = withUI $ do
   fs <- askFrontendSession
   flushFrames
   liftIO $ Frontend.promptGetKey fs keys frame
@@ -371,6 +379,7 @@ exeFrontend :: Kind.COps
 exeFrontend cops@Kind.COps{corule} executorC connectClients loopFrontend = do
   -- UI config reloaded at each client start.
   sconfigUI <- mkConfigUI corule
+  smvarUI <- newEmptyMVar
   let !sbinding = stdBinding sconfigUI  -- evaluate to check for errors
       font = configFont sconfigUI
   defHist <- defHistory

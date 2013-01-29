@@ -36,7 +36,7 @@ data FrameState =
       , fshown  :: !GtkFrame                   -- ^ last full frame shown
       }
   | FSet  -- a single frame stored, to be drawn when a keypress is requested
-      { fsetFrame :: !(Maybe GtkFrame)  -- ^ frame to draw at input key
+      { fsetFrame :: !(Maybe GtkFrame)         -- ^ frame to draw at input key
       }
   | FNone  -- no frames stored
 
@@ -44,11 +44,11 @@ data FrameState =
 data FrontendSession = FrontendSession
   { sview       :: !TextView                    -- ^ the widget to draw to
   , stags       :: !(M.Map Color.Attr TextTag)  -- ^ text color tags for fg/bg
-  , schanKey    :: !(Chan K.KM)  -- ^ channel for keyboard input
+  , schanKey    :: !(Chan K.KM)                 -- ^ channel for keyboard input
   , sframeState :: !(MVar FrameState)           -- ^ state of the frame machine
   , slastFull   :: !(IORef (GtkFrame, Bool))
-       -- ^ most recent full (not empty, not repeated) frame received
-       -- and if any empty frame followed it
+      -- ^ most recent full (not empty, not repeated) frame received
+      -- and if any empty frame followed it
   }
 
 data GtkFrame = GtkFrame

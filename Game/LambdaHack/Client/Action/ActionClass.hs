@@ -7,6 +7,7 @@ module Game.LambdaHack.Client.Action.ActionClass where
 
 import Control.Monad.Writer.Strict (WriterT, lift)
 import Data.Monoid
+import Control.Concurrent
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Client.Action.Frontend
@@ -19,6 +20,7 @@ import Game.LambdaHack.Client.State
 -- Auxiliary AI and computer player clients have no @sfs@ nor @sbinding@.
 data SessionUI = SessionUI
   { sfs       :: !FrontendSession  -- ^ frontend session information
+  , smvarUI   :: !(MVar ())        -- ^ locks the UI sybsystem
   , sbinding  :: !Binding          -- ^ binding of keys to commands
   }
 
