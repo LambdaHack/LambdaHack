@@ -68,7 +68,7 @@ effectToAction :: MonadServerChan m
                => Effect.Effect -> Int -> ActorId -> ActorId -> Int -> Bool
                -> m Bool
 effectToAction effect verbosity source target power block = do
-  oldS <- getsState (getActorBody target)
+  oldS <- getsState (getActorBody source)
   oldT <- getsState (getActorBody target)
   let oldHP = bhp oldT
   (b, msg) <- eff effect verbosity source target power
