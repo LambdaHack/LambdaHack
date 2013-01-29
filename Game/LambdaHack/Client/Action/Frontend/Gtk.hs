@@ -16,7 +16,7 @@ import Control.Monad.Reader
 import qualified Data.ByteString.Char8 as BS
 import Data.IORef
 import qualified Data.List as L
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)

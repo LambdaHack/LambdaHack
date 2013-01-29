@@ -13,7 +13,7 @@ import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Ix as Ix
 import qualified Data.List as L
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T

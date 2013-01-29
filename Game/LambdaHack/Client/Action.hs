@@ -38,7 +38,7 @@ import Data.Dynamic
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 import qualified Data.EnumSet as ES
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor

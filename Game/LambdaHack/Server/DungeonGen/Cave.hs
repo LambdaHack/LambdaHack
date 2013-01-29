@@ -5,7 +5,7 @@ module Game.LambdaHack.Server.DungeonGen.Cave
 
 import Control.Monad
 import qualified Data.List as L
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Text (Text)
 

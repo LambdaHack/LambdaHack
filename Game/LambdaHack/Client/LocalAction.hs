@@ -12,7 +12,7 @@ import Control.Monad
 import Control.Monad.Writer.Strict (WriterT, lift, tell)
 import Data.Function
 import Data.List
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Ord
 import Data.Text (Text)

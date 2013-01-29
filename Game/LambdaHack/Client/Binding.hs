@@ -8,7 +8,7 @@ module Game.LambdaHack.Client.Binding
 
 import qualified Data.Char as Char
 import qualified Data.List as L
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T

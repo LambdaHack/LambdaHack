@@ -11,7 +11,7 @@ module Game.LambdaHack.Client.Action.Frontend.Curses
 import Control.Monad
 import Data.Char (chr, ord)
 import qualified Data.List as L
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified UI.HSCurses.Curses as C
 import qualified UI.HSCurses.CursesHelper as C

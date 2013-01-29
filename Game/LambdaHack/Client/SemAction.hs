@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.SemAction where
 
 import Control.Monad
 import Control.Monad.Writer.Strict (WriterT, runWriterT)
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid (mempty)
 import qualified Data.Text as T

@@ -7,7 +7,7 @@ module Game.LambdaHack.Server.DungeonGen
 import Control.Monad
 import qualified Control.Monad.State as St
 import Data.List
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Text (Text)
 import qualified System.Random as R

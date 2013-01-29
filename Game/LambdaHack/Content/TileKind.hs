@@ -4,7 +4,7 @@ module Game.LambdaHack.Content.TileKind
   ) where
 
 import qualified Data.List as L
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import Data.Text (Text)
 
 import Game.LambdaHack.Utils.Assert
