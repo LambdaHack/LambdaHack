@@ -1,5 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, GADTs, OverloadedStrings, StandaloneDeriving
-             #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 -- | Abstract syntax of server commands.
 module Game.LambdaHack.CmdSer
   ( CmdSer(..), timedCmdSer

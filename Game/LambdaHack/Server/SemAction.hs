@@ -43,6 +43,7 @@ import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.Frequency
 import Game.LambdaHack.Vector
+import Game.LambdaHack.Server.CmdAtomicAction
 
 default (Text)
 
@@ -540,15 +541,21 @@ generateMonster = do
       return $ Just fid
 
 -- | Possibly regenerate HP for all actors on the current level.
+--
+-- We really want hero selection to be a purely UI distinction,
+-- so all heroes need to regenerate, not just the leader.
+-- Only the heroes on the current level regenerate (others are frozen
+-- in time together with their level). This prevents cheating
+-- via sending one hero to a safe level and waiting there.
 regenerateLevelHP :: MonadServer m => m ()
 regenerateLevelHP = do
   Kind.COps{ coitem
-           , coactor=coactor@Kind.Ops{okind}
+           , coactor=Kind.Ops{okind}
            } <- getsState scops
   time <- getsState getTime
   discoS <- getsState sdisco
   s <- getState
-  let upd a m =
+  let pick (a, m) =
         let ak = okind $ bkind m
             items = getActorItem a s
             regen = max 1 $
@@ -556,15 +563,13 @@ regenerateLevelHP = do
                       case strongestRegen coitem discoS items of
                         Just i  -> 5 * jpower i
                         Nothing -> 1
-        in if (time `timeFit` timeTurn) `mod` regen /= 0
-           then m
-           else addHp coactor 1 m
-  -- We really want hero selection to be a purely UI distinction,
-  -- so all heroes need to regenerate, not just the leader.
-  -- Only the heroes on the current level regenerate (others are frozen
-  -- in time together with their level). This prevents cheating
-  -- via sending one hero to a safe level and waiting there.
-  modifyState (updateArena (updateActor (EM.mapWithKey upd)))
+            bhpMax = maxDice (ahp ak)
+            deltaHP = min 1 (bhpMax - bhp m)
+        in if (time `timeFit` timeTurn) `mod` regen /= 0 || deltaHP <= 0
+           then Nothing
+           else Just a
+  toRegen <- getsState $ catMaybes . map pick . EM.assocs . lactor . getArena
+  mapM_ (healAtomic 1) toRegen
 
 -- | Add new smell traces to the level. Only non-spawning factions
 -- leave a scent that is easy to tell from common dungeon smells.

@@ -32,6 +32,7 @@ import Game.LambdaHack.Random
 import Game.LambdaHack.Server.Action
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.State
+import Game.LambdaHack.Server.CmdAtomicAction
 import Game.LambdaHack.State
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
@@ -94,25 +95,26 @@ eff :: MonadServerChan m => Effect.Effect -> Int -> ActorId -> ActorId -> Int
 eff Effect.NoEffect _ _ _ _ = nullEffect
 eff Effect.Heal _ _source target power = do
   Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
-  let bhpMax m = maxDice (ahp $ okind $ bkind m)
   tm <- getsState (getActorBody target)
-  if bhp tm >= bhpMax tm || power <= 0
+  let bhpMax = maxDice (ahp $ okind $ bkind tm)
+  if bhp tm >= bhpMax || power <= 0
     then nullEffect
     else do
       void $ focusIfOurs target
-      modifyState $ updateActorBody target (addHp coactor power)
+      let deltaHP = min power (bhpMax - bhp tm)
+      healAtomic deltaHP target
       return (True, actorVerb coactor tm "feel better")
 eff (Effect.Wound nDm) verbosity source target power = do
   Kind.COps{coactor} <- getsState scops
   s <- getState
   n <- rndToAction $ rollDice nDm
-  if n + power <= 0 then nullEffect else do
+  let deltaHP = - (n + power)
+  if deltaHP >= 0 then nullEffect else do
     void $ focusIfOurs target
     tm <- getsState (getActorBody target)
     isSpawning <- getsState $ flip isSpawningFaction $ bfaction tm
-    let newHP = bhp tm - n - power
-        msg
-          | newHP <= 0 =
+    let msg
+          | bhp tm + deltaHP <= 0 =
             if isSpawning
             then ""  -- Handled later on in checkPartyDeath. Suspense.
             else -- Not as important, so let the player read the message
@@ -127,7 +129,7 @@ eff (Effect.Wound nDm) verbosity source target power = do
             actorVerb coactor tm $ "lose" <+> showT (n + power) <> "HP"
           | otherwise = actorVerb coactor tm "hiss in pain"
     -- Damage the target.
-    modifyState $ updateActorBody target $ \ m -> m { bhp = newHP }
+    healAtomic deltaHP target
     return (True, msg)
 eff Effect.Dominate _ source target _power = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops

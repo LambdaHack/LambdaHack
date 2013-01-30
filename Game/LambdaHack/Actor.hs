@@ -7,7 +7,7 @@ module Game.LambdaHack.Actor
   ( -- * Actor identifiers and related operations
     ActorId, monsterGenChance, partActor
     -- * The@ Acto@r type
-  , Actor(..), template, addHp, timeAddFromSpeed, braced
+  , Actor(..), template, timeAddFromSpeed, braced
   , unoccupied, heroKindId, projectileKindId, actorSpeed
     -- * Assorted
   , smellTimeout
@@ -28,7 +28,6 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Point
 import Game.LambdaHack.Random
 import Game.LambdaHack.Time
-import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 import Game.LambdaHack.Item
 
@@ -130,16 +129,6 @@ template bkind bsymbol bname bhp bpos btime bfaction bproj =
       bletter = 'a'
       bwait   = timeZero
   in Actor{..}
-
--- | Increment current hit points of an actor.
-addHp :: Kind.Ops ActorKind -> Int -> Actor -> Actor
-addHp Kind.Ops{okind} extra m =
-  assert (extra >= 0 `blame` extra) $
-  let maxHP = maxDice (ahp $ okind $ bkind m)
-      currentHP = bhp m
-  in if currentHP > maxHP
-     then m
-     else m {bhp = min maxHP (currentHP + extra)}
 
 -- | Access actor speed, individual or, otherwise, stock.
 actorSpeed :: Kind.Ops ActorKind -> Actor -> Speed

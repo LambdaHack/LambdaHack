@@ -135,6 +135,8 @@ library
                       Game.LambdaHack.Server.Action.ConfigIO,
                       Game.LambdaHack.Server.Action.HighScore,
                       Game.LambdaHack.Server.Action.Save,
+                      Game.LambdaHack.Server.CmdAtomic,
+                      Game.LambdaHack.Server.CmdAtomicAction,
                       Game.LambdaHack.Server.Config,
                       Game.LambdaHack.Server.DungeonGen,
                       Game.LambdaHack.Server.DungeonGen.AreaRnd,
