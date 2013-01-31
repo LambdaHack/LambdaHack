@@ -42,4 +42,24 @@ import Game.LambdaHack.Vector
 
 healAtomic :: MonadAction m => Int -> ActorId -> m ()
 healAtomic n aid = assert (n /= 0) $
-  modifyState $ updateActorBody aid $ \a -> a {bhp = n + bhp a}
+  modifyState $ updateActorBody aid $ \b -> b {bhp = n + bhp b}
+
+hasteAtomic :: MonadAction m => ActorId -> Speed -> m ()
+hasteAtomic aid delta = assert (delta /= speedZero) $ do
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  modifyState $ updateActorBody aid $ \ b ->
+    let innateSpeed = aspeed $ okind $ bkind b
+        curSpeed = fromMaybe innateSpeed (bspeed b)
+        newSpeed = speedAdd curSpeed delta
+    in assert (newSpeed >= speedZero `blame` (aid, curSpeed, delta)) $
+       if curSpeed == innateSpeed
+       then b {bspeed = Nothing}
+       else b {bspeed = Just newSpeed}
+
+dominateAtomic :: MonadAction m => ActorId -> m ()
+dominateAtomic target = do
+  -- Sync the monster with the source actor's move time for better display
+  -- of missiles and for the domination to actually take one player's turn.
+  bfaction <- getsState sside
+  btime <- getsState getTime
+  modifyState $ updateActorBody target $ \ b -> b {bfaction, btime}

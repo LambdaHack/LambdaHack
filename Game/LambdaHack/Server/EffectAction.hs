@@ -8,10 +8,10 @@ import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.List
 import Data.Maybe
-import Data.Ratio ((%))
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 import qualified Data.EnumSet as ES
+import Data.Ratio ((%))
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -132,9 +132,8 @@ eff (Effect.Wound nDm) verbosity source target power = do
     healAtomic deltaHP target
     return (True, msg)
 eff Effect.Dominate _ source target _power = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-  s <- getState
   arena <- getsState sarena
+  side <- getsState sside
   if source == target
     then do
       genemy <- getsState $ genemy . getSide
@@ -144,22 +143,19 @@ eff Effect.Dominate _ source target _power = do
       let cross m = bpos m : vicinityCardinal lxsize lysize (bpos m)
           vis = ES.fromList $ concatMap cross lm
       lvl <- getsState getArena
-      side <- getsState sside
       sendUpdateCli side $ RememberCli arena vis lvl
       return (True, "A dozen voices yells in anger.")
     else do
-      selectLeaderSer target arena
-        >>= assert `trueM` (source, arena, target, "leader dominates himself")
+      Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+      Actor{bspeed, bkind} <- getsState (getActorBody target)
       -- Halve the speed as a side-effect of domination.
-      let halfSpeed :: Actor -> Maybe Speed
-          halfSpeed Actor{bkind} =
-            let speed = aspeed $ okind bkind
-            in Just $ speedScale (1%2) speed
-      -- Sync the monster with the hero move time for better display
-      -- of missiles and for the domination to actually take one player's turn.
-      modifyState $ updateActorBody target $ \ b -> b { bfaction = sside s
-                                                      , btime = getTime s
-                                                      , bspeed = halfSpeed b }
+      let speed = fromMaybe (aspeed $ okind bkind) bspeed
+          delta = speedScale (1%2) speed
+      when (delta > speedZero) $ hasteAtomic target (speedNegate delta)
+      -- TODO: Perhaps insert a turn of delay here to allow countermeasures.
+      dominateAtomic target
+      sendQueryCli side (SelectLeaderCli target arena)
+        >>= assert `trueM` (arena, target, "leader dominates himself")
       -- Display status line and FOV for the new actor.
 --TODO      sli <- promptToSlideshow ""
 --      fr <- drawOverlay ColorBW $ head $ runSlideshow sli
@@ -169,16 +165,18 @@ eff Effect.SummonFriend _ source target power = do
   sm <- getsState (getActorBody source)
   tm <- getsState (getActorBody target)
   s <- getState
+  side <- getsState sside
   if isSpawningFaction s (bfaction sm)
     then summonMonsters (1 + power) (bpos tm)
-    else summonHeroes (1 + power) (bpos tm)
+    else summonHeroes side (1 + power) (bpos tm)
   return (True, "")
 eff Effect.SummonEnemy _ source target power = do
   sm <- getsState (getActorBody source)
   tm <- getsState (getActorBody target)
   s  <- getState
+  side <- getsState sside
   if isSpawningFaction s (bfaction sm)
-    then summonHeroes (1 + power) (bpos tm)
+    then summonHeroes side (1 + power) (bpos tm)
     else summonMonsters (1 + power) (bpos tm)
   return (True, "")
 eff Effect.ApplyPerfume _ source target _ =
@@ -361,26 +359,17 @@ discover discoS i = do
       ik = discoS EM.! ix
   sendUpdateCli side $ DiscoverCli ik i
 
-selectLeaderSer :: MonadServerChan m => ActorId -> LevelId -> m Bool
-selectLeaderSer actor lid = do
-  side <- getsState sside
-  b <- sendQueryCli side $ SelectLeaderCli actor lid
-  modifyState $ updateSelectedArena lid
-  return b
-
-summonHeroes :: MonadServer m => Int -> Point -> m ()
-summonHeroes n pos =
-  assert (n > 0) $ do
+summonHeroes :: MonadServer m => FactionId -> Int -> Point -> m ()
+summonHeroes side n pos = assert (n > 0) $ do
   cops <- getsState scops
-  newHeroId <- getsServer sacounter
+  acounter <- getsServer sacounter
   s <- getState
   ser <- getServer
-  side <- getsState sside
   let (sN, serN) = iterate (uncurry $ addHero cops pos side []) (s, ser) !! n
   putState sN
   putServer serN
-  b <- focusIfOurs newHeroId
-  assert (b `blame` (newHeroId, "leader summons himself")) $
+  b <- focusIfOurs acounter
+  assert (b `blame` (acounter, "leader summons himself")) $
     return ()
 
 -- TODO: merge with summonHeroes; disregard "spawn" and "playable" factions and "spawn" flags for monsters; only check 'summon"

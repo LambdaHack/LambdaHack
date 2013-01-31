@@ -307,8 +307,6 @@ gameReset :: Kind.COps -> IO (State, StateServer)
 gameReset cops@Kind.COps{ coitem, corule} = do
   -- Rules config reloaded at each new game start.
   (sconfig, dungeonSeed, random) <- ConfigIO.mkConfigRules corule
-  -- from sconfig (only known to server), other clients each should have
-  -- one known only to them (or server, if needed)
   let rnd :: Rnd (State, StateServer)
       rnd = do
         faction <- createFactions cops sconfig

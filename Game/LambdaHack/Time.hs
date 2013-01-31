@@ -3,8 +3,8 @@ module Game.LambdaHack.Time
   ( Time, timeZero, timeClip, timeTurn
   , timeAdd, timeFit, timeNegate, timeScale
   , timeToDigit
-  , Speed, toSpeed, speedNormal
-  , speedScale, ticksPerMeter, traveled, speedFromWeight, rangeFromSpeed
+  , Speed, toSpeed, speedZero, speedNormal, speedScale, speedAdd, speedNegate
+  , ticksPerMeter, traveled, speedFromWeight, rangeFromSpeed
   ) where
 
 import Data.Binary
@@ -103,6 +103,10 @@ sInMs = 1000000
 toSpeed :: Double -> Speed
 toSpeed s = Speed $ round $ s * fromIntegral sInMs
 
+-- | No movement possible at that speed.
+speedZero :: Speed
+speedZero = Speed 0
+
 -- | Normal speed (2 m/s) that suffices to move one tile in one turn.
 speedNormal :: Speed
 speedNormal = Speed $ 2 * sInMs
@@ -110,6 +114,14 @@ speedNormal = Speed $ 2 * sInMs
 -- | Scale speed by an @Int@ scalar value.
 speedScale :: Rational -> Speed -> Speed
 speedScale s (Speed v) = Speed (round $ fromIntegral v * s)
+
+-- | Speed addition.
+speedAdd :: Speed -> Speed -> Speed
+speedAdd (Speed s1) (Speed s2) = Speed (s1 + s2)
+
+-- | Speed negation.
+speedNegate :: Speed -> Speed
+speedNegate (Speed n) = Speed (-n)
 
 -- | The number of time ticks it takes to walk 1 meter at the given speed.
 ticksPerMeter :: Speed -> Time
