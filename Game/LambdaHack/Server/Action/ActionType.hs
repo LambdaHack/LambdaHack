@@ -98,7 +98,7 @@ executorSer :: ActionSer () -> Pers -> State -> StateServer -> ConnDict
 executorSer m pers s ser d =
   runActionSer m
     pers
-    (\_ _ _ _ -> return ())  -- final continuation returns result
+    (\_ _ _ _ -> return ())
     (\msg -> let err = "unhandled server abort for side" <+> showT (getSide s)
                        <+> ":" <+> msg
              in fail $ T.unpack err)

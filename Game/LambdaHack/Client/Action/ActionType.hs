@@ -93,7 +93,7 @@ executorCli m sess s cli d =
   runActionCli m
     sess
     d
-    (\_ _ _ -> return ())  -- final continuation returns result
+    (\_ _ _ -> return ())
     (\msg -> let err = "unhandled abort for client" <+> showT (getSide s)
                        <+> ":" <+> msg
              in fail $ T.unpack err)

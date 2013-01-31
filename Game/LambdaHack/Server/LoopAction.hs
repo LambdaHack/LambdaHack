@@ -27,6 +27,9 @@ import Game.LambdaHack.State
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Faction
+import Game.LambdaHack.Server.Fov
+import Game.LambdaHack.Server.State
+import Game.LambdaHack.Server.Config
 
 -- | Start a clip (a part of a turn for which one or more frames
 -- will be generated). Do whatever has to be done
@@ -35,9 +38,15 @@ import Game.LambdaHack.Faction
 -- and repeat.
 loopSer :: MonadServerChan m => (CmdSer -> m ()) -> m ()
 loopSer cmdSer = do
-  -- Startup.
+ cops <- getsState scops
+ glo <- getState
+ ser <- getServer
+ config <- getsServer sconfig
+ let tryFov = stryFov $ sdebugSer ser
+     fovMode = fromMaybe (configFovMode config) tryFov
+     pers = dungeonPerception cops fovMode glo
+ local (const pers) $ do
   quit <- getsState squit
-  pers <- ask
   defLoc <- getsState localFromGlobal
   case quit of
     Nothing -> do  -- game restarted
@@ -55,7 +64,6 @@ loopSer cmdSer = do
       bcast
       withAI bcast
   modifyState $ updateQuit $ const Nothing
-  -- Loop.
   let loop (disp, prevHuman) = do
         time <- getsState getTime  -- the end time of this clip, inclusive
         let clipN = (time `timeFit` timeClip)
@@ -68,7 +76,7 @@ loopSer cmdSer = do
         modifyState (updateTime (timeAdd timeClip))
         endOrLoop (loop nres)
   side <- getsState sside
-  local (const pers) $ loop (True, side)
+  loop (True, side)
 
 -- TODO: switch levels alternating between player factions,
 -- if there are many and on distinct levels.

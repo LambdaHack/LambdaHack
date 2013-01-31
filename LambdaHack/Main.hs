@@ -15,6 +15,7 @@ import Game.LambdaHack.Client
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Server
 import Game.LambdaHack.Start
+import qualified Data.EnumMap.Strict as EM
 
 -- | Fire up the frontend with the engine fueled by content.
 -- The action monad types to be used are determined by the 'executorSer'
@@ -36,7 +37,7 @@ main = do
         }
       cops = speedupCOps copsSlow
       loopServer = loopSer cmdSer
-      exeServer = executorSer loopServer
+      exeServer = executorSer loopServer EM.empty
       loopHuman :: (MonadClientUI m, MonadClientChan m) => m ()
       loopHuman = loopCli4 cmdUpdateCli cmdQueryCli cmdUpdateUI cmdQueryUI
       loopComputer :: MonadClientChan m => m ()

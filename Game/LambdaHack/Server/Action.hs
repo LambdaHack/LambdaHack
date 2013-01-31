@@ -441,7 +441,7 @@ funBroadcastUI cmd = do
   mapM_ f $ EM.keys faction
 
 restoreOrRestart :: Kind.COps
-                 -> (Pers -> State -> StateServer -> ConnDict -> IO ())
+                 -> (State -> StateServer -> ConnDict -> IO ())
                  -> IO (FactionDict, ConnDict -> IO ())
 restoreOrRestart cops@Kind.COps{corule} executorS = do
   let title = rtitle $ Kind.stdRuleset corule
@@ -457,15 +457,12 @@ restoreOrRestart cops@Kind.COps{corule} executorS = do
     Left (glo, ser, _msg) ->  -- Running a restored game.
       return (glo, ser)
   let glo = updateCOps (const cops) gloRaw
-      tryFov = stryFov $ sdebugSer ser
-      fovMode = fromMaybe (configFovMode sconfig) tryFov
-      pers = dungeonPerception cops fovMode glo
-  return $ (sfaction glo, executorS pers glo ser)
+  return $ (sfaction glo, executorS glo ser)
 
 -- | Either restore a saved game, or setup a new game, connect clients
 -- and launch the server.
 connServer :: Kind.COps
-           -> (Pers -> State -> StateServer -> ConnDict -> IO ())
+           -> (State -> StateServer -> ConnDict -> IO ())
            -> (ConnDict -> IO ())
            -> IO ()
 connServer cops executorS connectClients = do
