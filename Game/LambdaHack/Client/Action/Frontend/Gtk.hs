@@ -10,7 +10,6 @@ module Game.LambdaHack.Client.Action.Frontend.Gtk
   ) where
 
 import Control.Concurrent
-import Control.Exception (finally)
 import Control.Monad
 import Control.Monad.Reader
 import qualified Data.ByteString.Char8 as BS
@@ -75,18 +74,13 @@ trimQueue FrontendSession{sframeState} = do
 frontendName :: String
 frontendName = "gtk"
 
--- | Spawns the gtk input and output thread, which spawns all the other
--- required threads. We create a separate thread for gtk to minimize
--- communication with the heavy main thread. The other threads have to be
--- spawned after gtk is initialized, because they call @postGUIAsync@,
--- and need @sview@ and @stags@.
+-- | Starts GTK. The other threads have to be spawned
+-- after gtk is initialized, because they call @postGUIAsync@,
+-- and need @sview@ and @stags@. Because of Windows, GTK needs to be
+-- on a bound thread, so we can't avoid the communication overhead
+-- of bound threads, so there's no point spawning a separate thread for GTK.
 startup :: String -> (FrontendSession -> IO ()) -> IO ()
-startup configFont k = do
-  mv <- newEmptyMVar
-  -- Fork the gtk input and output thread.
-  -- TODO: when GHC changes, make sure GTK is still faster on its own thread.
-  void $ forkOS (runGtk configFont k `finally` putMVar mv ())
-  takeMVar mv
+startup configFont k = runGtk configFont k
 
 -- | Sets up and starts the main GTK loop providing input and output.
 runGtk :: String ->  (FrontendSession -> IO ()) -> IO ()
