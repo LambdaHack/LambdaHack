@@ -37,10 +37,16 @@ import Game.LambdaHack.Server.Config
 -- Run the leader and other actors moves. Eventually advance the time
 -- and repeat.
 loopSer :: MonadServerChan m
-        => (CmdSer -> m ()) -> (FactionId -> ConnCli -> Bool -> IO ()) -> m ()
-loopSer cmdSer executorC = do
+        => (CmdSer -> m ())
+        -> (FactionId -> ConnCli -> Bool -> IO ())
+        -> Kind.COps
+        -> m ()
+loopSer cmdSer executorC cops = do
+ -- Recover states and connections
+ connServer cops
+ -- Launch clients.
  launchClients executorC
- cops <- getsState scops
+ -- Compute perception
  glo <- getState
  ser <- getServer
  config <- getsServer sconfig
@@ -48,6 +54,7 @@ loopSer cmdSer executorC = do
      fovMode = fromMaybe (configFovMode config) tryFov
      pers = dungeonPerception cops fovMode glo
  local (const pers) $ do
+  -- Send init messages.
   quit <- getsState squit
   defLoc <- getsState localFromGlobal
   case quit of
@@ -66,6 +73,7 @@ loopSer cmdSer executorC = do
       bcast
       withAI bcast
   modifyState $ updateQuit $ const Nothing
+  -- Loop.
   let loop (disp, prevHuman) = do
         time <- getsState getTime  -- the end time of this clip, inclusive
         let clipN = (time `timeFit` timeClip)

@@ -92,16 +92,14 @@ instance MonadServerChan ActionSer where
   modifyDict f   = ActionSer (\_p k _a s ser d -> k s ser (f d) ())
   putDict        = modifyDict . const
 
--- | Run an action, with a given session, state and history, in the @IO@ monad.
-executorSer :: ActionSer () -> Pers -> State -> StateServer -> ConnDict
-            -> IO ()
-executorSer m pers s ser d =
+-- | Run an action in the @IO@ monad, with undefined state.
+executorSer :: ActionSer () -> IO ()
+executorSer m =
   runActionSer m
-    pers
+    undefined
     (\_ _ _ _ -> return ())
-    (\msg -> let err = "unhandled server abort for side" <+> showT (getSide s)
-                       <+> ":" <+> msg
+    (\msg -> let err = "unhandled server abort for side:" <+> msg
              in fail $ T.unpack err)
-    s
-    ser
-    d
+    undefined
+    undefined
+    undefined

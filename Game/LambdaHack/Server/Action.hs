@@ -443,33 +443,31 @@ funBroadcastUI cmd = do
   let f fid = sendUpdateUI fid (cmd fid)
   mapM_ f $ EM.keys faction
 
-restoreOrRestart :: Kind.COps
-                 -> (State -> StateServer -> ConnDict -> IO ())
-                 -> IO (FactionDict, ConnDict -> IO ())
-restoreOrRestart cops@Kind.COps{corule} executorS = do
+restoreOrRestart :: MonadServer m => Kind.COps -> m ()
+restoreOrRestart cops@Kind.COps{corule} = do
   let title = rtitle $ Kind.stdRuleset corule
       pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
   -- A throw-away copy of rules config, to be used until the old
   -- version of the config can be read from the savefile.
-  (sconfig, _, _) <- ConfigIO.mkConfigRules corule
-  restored <- Save.restoreGameSer sconfig pathsDataFile title
+  (sconfig, _, _) <- liftIO $ ConfigIO.mkConfigRules corule
+  restored <- liftIO $ Save.restoreGameSer sconfig pathsDataFile title
   -- TODO: use the _msg somehow
   (gloRaw, ser) <- case restored of
     Right _msg ->  -- Starting a new game.
-      gameReset cops
+      gameResetAction cops
     Left (glo, ser, _msg) ->  -- Running a restored game.
       return (glo, ser)
   let glo = updateCOps (const cops) gloRaw
-  return $ (sfaction glo, executorS glo ser)
+  putState glo
+  putServer ser
 
 -- | Either restore a saved game, or setup a new game, connect clients
 -- and launch the server.
-connServer :: Kind.COps
-           -> (State -> StateServer -> ConnDict -> IO ())
-           -> IO ()
-connServer cops executorS = do
+connServer :: MonadServerChan m => Kind.COps  -> m ()
+connServer cops = do
   -- Restor or restart game to get game factions and state.
-  (faction, exeServer) <- restoreOrRestart cops executorS
+  restoreOrRestart cops
+  faction <- getsState sfaction
   -- Prepare connections based on factions.
   let mkConnCli = do
         toClient <- newChan
@@ -481,9 +479,8 @@ connServer cops executorS = do
                    else return Nothing
         chanAI <- mkConnCli
         return (fid, (chanCli, chanAI))
-  chanAssocs <- mapM addChan $ EM.toList faction
-  let d = EM.fromAscList chanAssocs
-  exeServer d
+  chanAssocs <- liftIO $ mapM addChan $ EM.toList faction
+  putDict $ EM.fromAscList chanAssocs
 
 -- | Connect to clients by starting them in spawned threads that read
 -- and write directly to the channels.

@@ -14,7 +14,6 @@ import qualified Content.TileKind
 import Game.LambdaHack.Client
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Server
-import qualified Data.EnumMap.Strict as EM
 
 -- | Fire up the frontend with the engine fueled by content.
 -- The action monad types to be used are determined by the 'executorSer'
@@ -35,8 +34,6 @@ main = do
         , cotile  = Kind.createOps Content.TileKind.cdefs
         }
       cops = speedupCOps copsSlow
-      loopServer = loopSer cmdSer
-      exeServer executorC = executorSer (loopServer executorC) EM.empty
       loopHuman :: (MonadClientUI m, MonadClientChan m) => m ()
       loopHuman = loopCli4 cmdUpdateCli cmdQueryCli cmdUpdateUI cmdQueryUI
       loopComputer :: MonadClientChan m => m ()
@@ -46,6 +43,7 @@ main = do
       -- @MonadClientChan@ never tries to access the client UI session
       -- (unlike @MonadClientUI@).
       exeClient False _ = executorCli loopComputer undefined
-      loopFrontend executorC = connServer cops (exeServer executorC)
-  exeFrontend cops exeClient loopFrontend
+      loopServer = loopSer cmdSer
+      exeServer executorC = executorSer (loopServer executorC cops)
+  exeFrontend cops exeClient exeServer
   waitForChildren
