@@ -151,7 +151,6 @@ library
                       Game.LambdaHack.Server.LoopAction,
                       Game.LambdaHack.Server.SemAction,
                       Game.LambdaHack.Server.State,
-                      Game.LambdaHack.Start,
                       Game.LambdaHack.State,
                       Game.LambdaHack.Tile,
                       Game.LambdaHack.Time,

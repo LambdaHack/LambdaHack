@@ -36,8 +36,10 @@ import Game.LambdaHack.Server.Config
 -- every fixed number of time units, e.g., monster generation.
 -- Run the leader and other actors moves. Eventually advance the time
 -- and repeat.
-loopSer :: MonadServerChan m => (CmdSer -> m ()) -> m ()
-loopSer cmdSer = do
+loopSer :: MonadServerChan m
+        => (CmdSer -> m ()) -> (FactionId -> ConnCli -> Bool -> IO ()) -> m ()
+loopSer cmdSer executorC = do
+ launchClients executorC
  cops <- getsState scops
  glo <- getState
  ser <- getServer

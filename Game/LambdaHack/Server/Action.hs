@@ -8,7 +8,7 @@ module Game.LambdaHack.Server.Action
     MonadServerRO( getServer, getsServer )
   , MonadServer( putServer, modifyServer )
   , MonadServerChan
-  , executorSer, connServer
+  , executorSer, connServer, launchClients, waitForChildren, speedupCOps
     -- * Accessor to the Perception Reader
   , askPerceptionSer
     -- * Turn init operations
@@ -38,6 +38,8 @@ import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import System.Time
+import System.IO.Unsafe (unsafePerformIO)
+import Control.Exception (finally)
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -64,6 +66,7 @@ import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
+import qualified Game.LambdaHack.Tile as Tile
 
 -- | Update the cached perception for the selected level, for all factions,
 -- for the given computation. The assumption is the level, and only the level,
@@ -463,9 +466,8 @@ restoreOrRestart cops@Kind.COps{corule} executorS = do
 -- and launch the server.
 connServer :: Kind.COps
            -> (State -> StateServer -> ConnDict -> IO ())
-           -> (ConnDict -> IO ())
            -> IO ()
-connServer cops executorS connectClients = do
+connServer cops executorS = do
   -- Restor or restart game to get game factions and state.
   (faction, exeServer) <- restoreOrRestart cops executorS
   -- Prepare connections based on factions.
@@ -481,6 +483,56 @@ connServer cops executorS connectClients = do
         return (fid, (chanCli, chanAI))
   chanAssocs <- mapM addChan $ EM.toList faction
   let d = EM.fromAscList chanAssocs
-  -- Connect clients and launch server.
-  connectClients d
   exeServer d
+
+-- | Connect to clients by starting them in spawned threads that read
+-- and write directly to the channels.
+launchClients :: MonadServerChan m
+              => (FactionId -> ConnCli -> Bool -> IO ())
+              -> m ()
+launchClients executorC = do
+  let forkClient (fid, (chanCli, chanAI)) = do
+        let forkAI = case chanAI of
+              -- TODO: for a screensaver, try True
+              Just ch -> void $ forkChild $ executorC fid ch False
+              Nothing -> return ()
+        case chanCli of
+          Just ch -> do
+            void $ forkChild $ executorC fid ch True
+            forkAI
+          Nothing ->
+            forkAI
+  d <- getDict
+  liftIO $ mapM_ forkClient $ EM.toList d
+
+-- Swiped from http://www.haskell.org/ghc/docs/latest/html/libraries/base-4.6.0.0/Control-Concurrent.html
+children :: MVar [MVar ()]
+{-# NOINLINE children #-}
+children = unsafePerformIO (newMVar [])
+
+waitForChildren :: IO ()
+waitForChildren = do
+  cs <- takeMVar children
+  case cs of
+    [] -> return ()
+    m : ms -> do
+      putMVar children ms
+      takeMVar m
+      waitForChildren
+
+forkChild :: IO () -> IO ThreadId
+forkChild io = do
+  mvar <- newEmptyMVar
+  childs <- takeMVar children
+  putMVar children (mvar : childs)
+  forkIO (io `finally` putMVar mvar ())
+-- 7.6  forkFinally io (\_ -> putMVar mvar ())
+
+-- | Compute and insert auxiliary optimized components into game content,
+-- to be used in time-critical sections of the code. Also, evaluate content
+-- to check consistency.
+speedupCOps :: Kind.COps -> Kind.COps
+speedupCOps !copsSlow@Kind.COps{cotile=tile} =
+  let ospeedup = Tile.speedup tile
+      cotile = tile {Kind.ospeedup}
+  in copsSlow {Kind.cotile}

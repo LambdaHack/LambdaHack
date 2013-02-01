@@ -373,10 +373,9 @@ writeChanToSer cmd = do
 -- UI config and the definitions of game commands.
 exeFrontend :: Kind.COps
             -> (Bool -> SessionUI -> State -> StateClient -> ConnCli -> IO ())
-            -> ((FactionId -> ConnCli -> Bool -> IO ()) -> a)
-            -> (a -> IO ())
+            -> ((FactionId -> ConnCli -> Bool -> IO ()) -> IO ())
             -> IO ()
-exeFrontend cops@Kind.COps{corule} executorC connectClients loopFrontend = do
+exeFrontend cops@Kind.COps{corule} executorC loopFrontend = do
   -- UI config reloaded at each client start.
   sconfigUI <- mkConfigUI corule
   smvarUI <- newEmptyMVar
@@ -386,4 +385,4 @@ exeFrontend cops@Kind.COps{corule} executorC connectClients loopFrontend = do
   let cli = defStateClient defHist sconfigUI
       exe sfs fid chanCli hasUI =
         executorC hasUI SessionUI{..} (defStateLocal cops fid) cli chanCli
-  startup font $ \sfs -> loopFrontend (connectClients (exe sfs))
+  startup font $ \sfs -> loopFrontend (exe sfs)
