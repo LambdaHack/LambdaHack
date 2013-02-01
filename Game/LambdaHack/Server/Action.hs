@@ -15,54 +15,41 @@ module Game.LambdaHack.Server.Action
     -- * Turn init operations
   , withPerception, remember
     -- * Assorted primitives
-  , saveGameBkp, dumpCfg, endOrLoop, gameReset
+  , saveGameSer, saveGameBkp, dumpCfg, mkConfigRules, handleScores
   , switchGlobalSelectedSide
   , sendUpdateUI, sendQueryUI
   , sendUpdateCli, sendQueryCli
   , broadcastUI, broadcastPosUI, funBroadcastUI
   , broadcastCli, broadcastPosCli, funBroadcastCli
-  , withAI, addHero
+  , withAI
   ) where
 
 import Control.Concurrent
---import Control.Exception (finally)
-import Control.Arrow (second)
 import Control.Monad
 import Control.Monad.Reader.Class
-import qualified Control.Monad.State as St
-import qualified Data.Char as Char
 import Data.Dynamic
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.List
 import Data.Maybe
-import Data.Text (Text)
-import qualified Data.Text as T
 import System.Time
 import System.IO.Unsafe (unsafePerformIO)
 import Control.Exception (finally)
+import qualified System.Random as R
 
 import Game.LambdaHack.Action
-import Game.LambdaHack.Actor
-import Game.LambdaHack.ActorState
 import Game.LambdaHack.CmdCli
-import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Faction
-import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
-import Game.LambdaHack.Random
 import Game.LambdaHack.Server.Action.ActionClass (MonadServerRO(..), MonadServer(..), MonadServerChan(..))
 import Game.LambdaHack.Server.Action.ActionType (executorSer)
 import qualified Game.LambdaHack.Server.Action.ConfigIO as ConfigIO
 import Game.LambdaHack.Server.Action.HighScore (register)
 import qualified Game.LambdaHack.Server.Action.Save as Save
 import Game.LambdaHack.Server.Config
-import qualified Game.LambdaHack.Server.DungeonGen as DungeonGen
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.State
@@ -119,7 +106,16 @@ remember = do
   broadcast
   withAI broadcast
 
--- | Save the history and a backup of the save game file, in case of crashes.
+saveGameSer :: MonadServerChan m => m ()
+saveGameSer = do
+--  broadcastCli [] $ GameSaveBkpCli False
+--  withAI $ broadcastCli [] $ GameSaveBkpCli True
+  glo <- getState
+  ser <- getServer
+  config <- getsServer sconfig
+  liftIO $ Save.saveGameSer config glo ser
+
+-- | Save a backup of the save game file, in case of crashes.
 --
 -- See 'Save.saveGameBkp'.
 saveGameBkp :: MonadServerChan m => m ()
@@ -155,179 +151,6 @@ handleScores write status total =
     side <- getsState sside
     go <- sendQueryUI side $ ShowSlidesCli slides
     when (not go) abort
-
--- | Continue or restart or exit the game.
-endOrLoop :: MonadServerChan m => m () -> m ()
-endOrLoop loopServer = do
-  quit <- getsState squit
-  side <- getsState sside
-  gquit <- getsState $ gquit . getSide
-  s <- getState
-  ser <- getServer
-  config <- getsServer sconfig
-  let (_, total) = calculateTotal s
-  -- The first, boolean component of quit determines
-  -- if ending screens should be shown, the other argument describes
-  -- the cause of the disruption of game flow.
-  case (quit, gquit) of
-    (Just _, _) -> do
-      -- Save and display in parallel.
---      mv <- liftIO newEmptyMVar
-      liftIO $ Save.saveGameSer config s ser
---      liftIO $ void
---        $ forkIO (Save.saveGameSer config s ser `finally` putMVar mv ())
--- 7.6        $ forkFinally (Save.saveGameSer config s ser) (putMVar mv ())
---      tryIgnore $ do
---        handleScores False Camping total
---        broadcastUI [] $ MoreFullCli "See you soon, stronger and braver!"
-        -- TODO: show the above
-      broadcastCli [] $ GameDisconnectCli False
-      withAI $ broadcastCli [] $ GameDisconnectCli True
---      liftIO $ takeMVar mv  -- wait until saved
-      -- Do nothing, that is, quit the game loop.
-    (Nothing, Just (showScreens, status@Killed{})) -> do
-      -- TODO: rewrite; handle killed faction, if human, mostly ignore if not
-      nullR <- sendQueryCli side NullReportCli
-      unless nullR $ do
-        -- Sisplay any leftover report. Suggest it could be the cause of death.
-        broadcastUI [] $ MoreBWCli "Who would have thought?"
-      tryWith
-        (\ finalMsg ->
-          let highScoreMsg = "Let's hope another party can save the day!"
-              msg = if T.null finalMsg then highScoreMsg else finalMsg
-          in broadcastUI [] $ MoreBWCli msg
-          -- Do nothing, that is, quit the game loop.
-        )
-        (do
-           when showScreens $ handleScores True status total
-           go <- sendQueryUI side
-                 $ ConfirmMoreBWCli "Next time will be different."
-           when (not go) $ abortWith "You could really win this time."
-           restartGame loopServer
-        )
-    (Nothing, Just (showScreens, status@Victor)) -> do
-      nullR <- sendQueryCli side NullReportCli
-      unless nullR $ do
-        -- Sisplay any leftover report. Suggest it could be the master move.
-        broadcastUI [] $ MoreFullCli "Brilliant, wasn't it?"
-      when showScreens $ do
-        tryIgnore $ handleScores True status total
-        broadcastUI [] $ MoreFullCli "Can it be done better, though?"
-      restartGame loopServer
-    (Nothing, Just (_, Restart)) -> restartGame loopServer
-    (Nothing, _) -> loopServer  -- just continue
-
-restartGame :: MonadServerChan m => m () -> m ()
-restartGame loopServer = do
-  cops <- getsState scops
-  gameReset cops
-  pers <- ask
-  -- This state is quite small, fit for transmition to the client.
-  -- The biggest part is content, which really needs to be updated
-  -- at this point to keep clients in sync with server improvements.
-  defLoc <- getsState localFromGlobal
-  let bcast = funBroadcastCli (\fid -> RestartCli (pers EM.! fid) defLoc)
-  bcast
-  withAI bcast
-  faction <- getsState sfaction
-  let firstHuman = fst . head $ filter (isHumanFact . snd) $ EM.assocs faction
-  switchGlobalSelectedSide firstHuman
-  saveGameBkp
-  broadcastCli [] $ ShowMsgCli "This time for real."
-  broadcastUI [] $ DisplayPushCli
-  loopServer
-
--- | Find a hero name in the config file, or create a stock name.
-findHeroName :: [(Int, Text)] -> Int -> Text
-findHeroName configHeroNames n =
-  let heroName = lookup n configHeroNames
-  in fromMaybe ("hero number" <+> showT n) heroName
-
--- TODO: apply this special treatment only to actors with symbol '@'.
--- | Create a new hero on the current level, close to the given position.
-addHero :: MonadServer m => FactionId -> Point -> [(Int, Text)] -> m ()
-addHero side ppos configHeroNames = do
-  Kind.COps{coactor, cotile} <- getsState scops
-  configBaseHP <- getsServer $ configBaseHP . sconfig
-  time <- getsState getTime
-  loc <- getsState $ nearbyFreePos cotile ppos
-  mhs <- mapM (\n -> getsState $ \s -> tryFindHeroK s side n) [0..9]
-  let freeHeroK = elemIndex Nothing mhs
-      n = fromMaybe 100 freeHeroK
-      symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
-      name = findHeroName configHeroNames n
-      startHP = configBaseHP - (configBaseHP `div` 5) * min 3 n
-      m = template (heroKindId coactor) (Just symbol) (Just name)
-                   startHP loc time side False
-  acounter <- getsServer sacounter
-  modifyState $ updateArena $ updateActor $ EM.insert acounter m
-  modifyServer $ \ser -> ser {sacounter = succ acounter}
-
--- | Create a set of initial heroes on the current level, at position ploc.
-initialHeroes :: MonadServer m => (FactionId, Point, [(Int, Text)]) -> m ()
-initialHeroes (side, ppos, configHeroNames) = do
-  configExtraHeroes <- getsServer $ configExtraHeroes . sconfig
-  replicateM_ (1 + configExtraHeroes) $ addHero side ppos configHeroNames
-
-createFactions :: Kind.COps -> Config -> Rnd FactionDict
-createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
-                        , costrat=Kind.Ops{opick=sopick} } config = do
-  let g isHuman (gname, fType) = do
-        gkind <- opick fType (const True)
-        let fk = okind gkind
-            genemy = []  -- fixed below
-            gally  = []  -- fixed below
-            gquit = Nothing
-        gAiLeader <-
-          if isHuman
-          then return Nothing
-          else fmap Just $ sopick (fAiLeader fk) (const True)
-        gAiMember <- sopick (fAiMember fk) (const True)
-        return Faction{..}
-  lHuman <- mapM (g True) (configHuman config)
-  lComputer <- mapM (g False) (configComputer config)
-  let rawFs = zip [toEnum 1..] $ lHuman ++ lComputer
-      isOfType fType fact =
-        let fk = okind $ gkind fact
-        in case lookup fType $ ffreq fk of
-          Just n | n > 0 -> True
-          _ -> False
-      enemyAlly fact =
-        let f fType = filter (isOfType fType . snd) rawFs
-            fk = okind $ gkind fact
-            setEnemy = ES.fromList $ map fst $ concatMap f $ fenemy fk
-            setAlly  = ES.fromList $ map fst $ concatMap f $ fally fk
-            genemy = ES.toList setEnemy
-            gally = ES.toList $ setAlly ES.\\ setEnemy
-        in fact {genemy, gally}
-  return $! EM.fromDistinctAscList $ map (second enemyAlly) rawFs
-
--- TODO: do this inside Action ()
-gameReset :: MonadServer m => Kind.COps -> m ()
-gameReset cops@Kind.COps{coitem, corule} = do
-  -- Rules config reloaded at each new game start.
-  -- Taking the original config from config file, to reroll RNG, if needed
-  -- (the current config file has the RNG rolled for the previous game).
-  (sconfig, dungeonSeed, random) <- liftIO $ ConfigIO.mkConfigRules corule
-  let rnd :: Rnd (FactionDict, FlavourMap, Discoveries, DiscoRev,
-                  DungeonGen.FreshDungeon)
-      rnd = do
-        faction <- createFactions cops sconfig
-        flavour <- dungeonFlavourMap coitem
-        (discoS, discoRev) <- serverDiscos coitem
-        freshDng <- DungeonGen.dungeonGen cops flavour discoRev sconfig
-        return (faction, flavour, discoS, discoRev, freshDng)
-  let (faction, flavour, discoS, discoRev, DungeonGen.FreshDungeon{..}) =
-        St.evalState rnd dungeonSeed
-      defState = defStateGlobal freshDungeon freshDepth discoS faction
-                                cops random entryLevel
-      defSer = defStateServer discoRev flavour sconfig freshICounter
-      notSpawning (_, fact) = not $ isSpawningFact cops fact
-      needInitialCrew = map fst $ filter notSpawning $ EM.toList faction
-      heroNames = configHeroNames sconfig : repeat []
-  putState defState
-  putServer defSer
-  mapM_ initialHeroes $ zip3 needInitialCrew entryPoss heroNames
 
 switchGlobalSelectedSide :: MonadServer m => FactionId -> m ()
 switchGlobalSelectedSide =
@@ -435,6 +258,12 @@ funBroadcastUI cmd = do
   let f fid = sendUpdateUI fid (cmd fid)
   mapM_ f $ EM.keys faction
 
+-- | Create a server config file. Warning: when it's use, the game state
+-- may still be undefined, hence the content ops are given as an argument.
+mkConfigRules :: MonadServer m
+              => Kind.Ops RuleKind -> m (Config, R.StdGen, R.StdGen)
+mkConfigRules = liftIO . ConfigIO.mkConfigRules
+
 tryRestore :: MonadServer m
            => Kind.COps -> m (Either (State, StateServer, Msg) Msg)
 tryRestore Kind.COps{corule} = do
@@ -442,7 +271,7 @@ tryRestore Kind.COps{corule} = do
       pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
   -- A throw-away copy of rules config, to be used until the old
   -- version of the config can be read from the savefile.
-  (sconfig, _, _) <- liftIO $ ConfigIO.mkConfigRules corule
+  (sconfig, _, _) <- mkConfigRules corule
   liftIO $ Save.restoreGameSer sconfig pathsDataFile title
 
 -- | Prepare connections based on factions.

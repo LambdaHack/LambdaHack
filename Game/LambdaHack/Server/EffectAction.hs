@@ -12,6 +12,7 @@ import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 import qualified Data.EnumSet as ES
 import Data.Ratio ((%))
+import qualified Data.Char as Char
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -365,6 +366,32 @@ summonHeroes side n pos = assert (n > 0) $ do
   replicateM_ n $ addHero side pos []
   b <- focusIfOurs acounter
   assert (b `blame` (acounter, "leader summons himself")) $ return ()
+
+-- | Find a hero name in the config file, or create a stock name.
+findHeroName :: [(Int, Text)] -> Int -> Text
+findHeroName configHeroNames n =
+  let heroName = lookup n configHeroNames
+  in fromMaybe ("hero number" <+> showT n) heroName
+
+-- TODO: apply this special treatment only to actors with symbol '@'.
+-- | Create a new hero on the current level, close to the given position.
+addHero :: MonadServer m => FactionId -> Point -> [(Int, Text)] -> m ()
+addHero side ppos configHeroNames = do
+  Kind.COps{coactor, cotile} <- getsState scops
+  configBaseHP <- getsServer $ configBaseHP . sconfig
+  time <- getsState getTime
+  loc <- getsState $ nearbyFreePos cotile ppos
+  mhs <- mapM (\n -> getsState $ \s -> tryFindHeroK s side n) [0..9]
+  let freeHeroK = elemIndex Nothing mhs
+      n = fromMaybe 100 freeHeroK
+      symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
+      name = findHeroName configHeroNames n
+      startHP = configBaseHP - (configBaseHP `div` 5) * min 3 n
+      m = template (heroKindId coactor) (Just symbol) (Just name)
+                   startHP loc time side False
+  acounter <- getsServer sacounter
+  modifyState $ updateArena $ updateActor $ EM.insert acounter m
+  modifyServer $ \ser -> ser {sacounter = succ acounter}
 
 -- TODO: merge with summonHeroes; disregard "spawn" and "playable" factions and "spawn" flags for monsters; only check 'summon"
 summonMonsters :: MonadServer m => Int -> Point -> m ()
