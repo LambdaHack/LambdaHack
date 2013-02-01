@@ -218,12 +218,8 @@ endOrLoop loopServer = do
 
 restartGame :: MonadServerChan m => m () -> m ()
 restartGame loopServer = do
-  -- Take the original config from config file, to reroll RNG, if needed
-  -- (the current config file has the RNG rolled for the previous game).
   cops <- getsState scops
-  (state, ser) <- gameResetAction cops
-  putState state
-  putServer ser
+  gameReset cops
   pers <- ask
   -- This state is quite small, fit for transmition to the client.
   -- The biggest part is content, which really needs to be updated
@@ -306,36 +302,35 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
   return $! EM.fromDistinctAscList $ map (second enemyAlly) rawFs
 
 -- TODO: do this inside Action ()
-gameReset :: Kind.COps -> IO (State, StateServer)
-gameReset cops@Kind.COps{ coitem, corule} = do
+gameReset :: MonadServer m => Kind.COps -> m ()
+gameReset cops@Kind.COps{coitem, corule} = do
   -- Rules config reloaded at each new game start.
-  (sconfig, dungeonSeed, random) <- ConfigIO.mkConfigRules corule
-  let rnd :: Rnd (State, StateServer)
+  -- Taking the original config from config file, to reroll RNG, if needed
+  -- (the current config file has the RNG rolled for the previous game).
+  (sconfig, dungeonSeed, random) <- liftIO $ ConfigIO.mkConfigRules corule
+  let rnd :: Rnd (FactionDict, FlavourMap, Discoveries, DiscoRev,
+                  DungeonGen.FreshDungeon)
       rnd = do
         faction <- createFactions cops sconfig
-        let notSpawning (_, fact) = not $ isSpawningFact cops fact
-            needInitialCrew = map fst $ filter notSpawning $ EM.toList faction
-        sflavour <- dungeonFlavourMap coitem
+        flavour <- dungeonFlavourMap coitem
         (discoS, discoRev) <- serverDiscos coitem
-        DungeonGen.FreshDungeon{..} <-
-          DungeonGen.dungeonGen
-            cops sflavour discoRev sconfig (length needInitialCrew)
-        let defState =
-              defStateGlobal freshDungeon freshDepth discoS faction
-                             cops random entryLevel
-            defSer = defStateServer discoRev sflavour sconfig freshICounter
-            fo (fid, epos, hNames) (gloF, serF) =
-              initialHeroes cops epos fid gloF serF hNames
-            heroNames = configHeroNames sconfig : repeat []
-            (glo, ser) = foldr fo (defState, defSer)
-                         $ zip3 needInitialCrew entryPoss heroNames
-        return (glo, ser)
-  return $! St.evalState rnd dungeonSeed
-
-gameResetAction :: MonadServer m
-                => Kind.COps
-                -> m (State, StateServer)
-gameResetAction = liftIO . gameReset
+        freshDng <- DungeonGen.dungeonGen cops flavour discoRev sconfig
+        return (faction, flavour, discoS, discoRev, freshDng)
+  let (faction, flavour, discoS, discoRev, DungeonGen.FreshDungeon{..}) =
+        St.evalState rnd dungeonSeed
+      defState =
+        defStateGlobal freshDungeon freshDepth discoS faction
+                       cops random entryLevel
+      defSer = defStateServer discoRev flavour sconfig freshICounter
+      notSpawning (_, fact) = not $ isSpawningFact cops fact
+      needInitialCrew = map fst $ filter notSpawning $ EM.toList faction
+      heroNames = configHeroNames sconfig : repeat []
+      fo (fid, epos, hNames) (gloF, serF) =
+        initialHeroes cops epos fid gloF serF hNames
+      (glo, ser) = foldr fo (defState, defSer)
+                   $ zip3 needInitialCrew entryPoss heroNames
+  putState glo
+  putServer ser
 
 switchGlobalSelectedSide :: MonadServer m => FactionId -> m ()
 switchGlobalSelectedSide =
@@ -452,14 +447,12 @@ restoreOrRestart cops@Kind.COps{corule} = do
   (sconfig, _, _) <- liftIO $ ConfigIO.mkConfigRules corule
   restored <- liftIO $ Save.restoreGameSer sconfig pathsDataFile title
   -- TODO: use the _msg somehow
-  (gloRaw, ser) <- case restored of
+  case restored of
     Right _msg ->  -- Starting a new game.
-      gameResetAction cops
-    Left (glo, ser, _msg) ->  -- Running a restored game.
-      return (glo, ser)
-  let glo = updateCOps (const cops) gloRaw
-  putState glo
-  putServer ser
+      gameReset cops
+    Left (gloRaw, ser, _msg) -> do  -- Running a restored game.
+      putState $ updateCOps (const cops) gloRaw
+      putServer ser
 
 -- | Either restore a saved game, or setup a new game, connect clients
 -- and launch the server.
