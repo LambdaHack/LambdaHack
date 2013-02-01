@@ -42,11 +42,20 @@ loopSer :: MonadServerChan m
         -> Kind.COps
         -> m ()
 loopSer cmdSer executorC cops = do
- -- Recover states and connections
- connServer cops
+ -- Recover states.
+ restored <- tryRestore cops
+ -- TODO: use the _msg somehow
+ case restored of
+   Right _msg ->  -- Starting a new game.
+     gameReset cops
+   Left (gloRaw, ser, _msg) -> do  -- Running a restored game.
+     putState $ updateCOps (const cops) gloRaw
+     putServer ser
+ -- Set up connections
+ connServer
  -- Launch clients.
  launchClients executorC
- -- Compute perception
+ -- Compute perception.
  glo <- getState
  ser <- getServer
  config <- getsServer sconfig

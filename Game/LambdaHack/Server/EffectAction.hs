@@ -361,16 +361,10 @@ discover discoS i = do
 
 summonHeroes :: MonadServer m => FactionId -> Int -> Point -> m ()
 summonHeroes side n pos = assert (n > 0) $ do
-  cops <- getsState scops
   acounter <- getsServer sacounter
-  s <- getState
-  ser <- getServer
-  let (sN, serN) = iterate (uncurry $ addHero cops pos side []) (s, ser) !! n
-  putState sN
-  putServer serN
+  replicateM_ n $ addHero side pos []
   b <- focusIfOurs acounter
-  assert (b `blame` (acounter, "leader summons himself")) $
-    return ()
+  assert (b `blame` (acounter, "leader summons himself")) $ return ()
 
 -- TODO: merge with summonHeroes; disregard "spawn" and "playable" factions and "spawn" flags for monsters; only check 'summon"
 summonMonsters :: MonadServer m => Int -> Point -> m ()

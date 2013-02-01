@@ -8,13 +8,14 @@ module Game.LambdaHack.Server.Action
     MonadServerRO( getServer, getsServer )
   , MonadServer( putServer, modifyServer )
   , MonadServerChan
-  , executorSer, connServer, launchClients, waitForChildren, speedupCOps
+  , executorSer, tryRestore, connServer, launchClients
+  , waitForChildren, speedupCOps
     -- * Accessor to the Perception Reader
   , askPerceptionSer
     -- * Turn init operations
   , withPerception, remember
     -- * Assorted primitives
-  , saveGameBkp, dumpCfg, endOrLoop
+  , saveGameBkp, dumpCfg, endOrLoop, gameReset
   , switchGlobalSelectedSide
   , sendUpdateUI, sendQueryUI
   , sendUpdateCli, sendQueryCli
@@ -242,31 +243,31 @@ findHeroName configHeroNames n =
   let heroName = lookup n configHeroNames
   in fromMaybe ("hero number" <+> showT n) heroName
 
+-- TODO: apply this special treatment only to actors with symbol '@'.
 -- | Create a new hero on the current level, close to the given position.
-addHero :: Kind.COps -> Point -> FactionId -> [(Int, Text)]
-        -> State -> StateServer
-        -> (State, StateServer)
-addHero Kind.COps{coactor, cotile} ppos side configHeroNames
-        s ser@StateServer{sacounter} =
-  let Config{configBaseHP} = sconfig ser
-      loc = nearbyFreePos cotile ppos s
-      freeHeroK = elemIndex Nothing $ map (tryFindHeroK s side) [0..9]
+addHero :: MonadServer m => FactionId -> Point -> [(Int, Text)] -> m ()
+addHero side ppos configHeroNames = do
+  Kind.COps{coactor, cotile} <- getsState scops
+  configBaseHP <- getsServer $ configBaseHP . sconfig
+  time <- getsState getTime
+  loc <- getsState $ nearbyFreePos cotile ppos
+  mhs <- mapM (\n -> getsState $ \s -> tryFindHeroK s side n) [0..9]
+  let freeHeroK = elemIndex Nothing mhs
       n = fromMaybe 100 freeHeroK
       symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
       name = findHeroName configHeroNames n
       startHP = configBaseHP - (configBaseHP `div` 5) * min 3 n
       m = template (heroKindId coactor) (Just symbol) (Just name)
-                   startHP loc (getTime s) side False
-  in ( updateArena (updateActor (EM.insert sacounter m)) s
-     , ser {sacounter = succ sacounter} )
+                   startHP loc time side False
+  acounter <- getsServer sacounter
+  modifyState $ updateArena $ updateActor $ EM.insert acounter m
+  modifyServer $ \ser -> ser {sacounter = succ acounter}
 
 -- | Create a set of initial heroes on the current level, at position ploc.
-initialHeroes :: Kind.COps -> Point -> FactionId -> State -> StateServer
-              -> [(Int, Text)] -> (State, StateServer)
-initialHeroes cops ppos side s ser configHeroNames =
-  let Config{configExtraHeroes} = sconfig ser
-      k = 1 + configExtraHeroes
-  in iterate (uncurry $ addHero cops ppos side configHeroNames) (s, ser) !! k
+initialHeroes :: MonadServer m => (FactionId, Point, [(Int, Text)]) -> m ()
+initialHeroes (side, ppos, configHeroNames) = do
+  configExtraHeroes <- getsServer $ configExtraHeroes . sconfig
+  replicateM_ (1 + configExtraHeroes) $ addHero side ppos configHeroNames
 
 createFactions :: Kind.COps -> Config -> Rnd FactionDict
 createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
@@ -318,19 +319,15 @@ gameReset cops@Kind.COps{coitem, corule} = do
         return (faction, flavour, discoS, discoRev, freshDng)
   let (faction, flavour, discoS, discoRev, DungeonGen.FreshDungeon{..}) =
         St.evalState rnd dungeonSeed
-      defState =
-        defStateGlobal freshDungeon freshDepth discoS faction
-                       cops random entryLevel
+      defState = defStateGlobal freshDungeon freshDepth discoS faction
+                                cops random entryLevel
       defSer = defStateServer discoRev flavour sconfig freshICounter
       notSpawning (_, fact) = not $ isSpawningFact cops fact
       needInitialCrew = map fst $ filter notSpawning $ EM.toList faction
       heroNames = configHeroNames sconfig : repeat []
-      fo (fid, epos, hNames) (gloF, serF) =
-        initialHeroes cops epos fid gloF serF hNames
-      (glo, ser) = foldr fo (defState, defSer)
-                   $ zip3 needInitialCrew entryPoss heroNames
-  putState glo
-  putServer ser
+  putState defState
+  putServer defSer
+  mapM_ initialHeroes $ zip3 needInitialCrew entryPoss heroNames
 
 switchGlobalSelectedSide :: MonadServer m => FactionId -> m ()
 switchGlobalSelectedSide =
@@ -438,28 +435,19 @@ funBroadcastUI cmd = do
   let f fid = sendUpdateUI fid (cmd fid)
   mapM_ f $ EM.keys faction
 
-restoreOrRestart :: MonadServer m => Kind.COps -> m ()
-restoreOrRestart cops@Kind.COps{corule} = do
+tryRestore :: MonadServer m
+           => Kind.COps -> m (Either (State, StateServer, Msg) Msg)
+tryRestore Kind.COps{corule} = do
   let title = rtitle $ Kind.stdRuleset corule
       pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
   -- A throw-away copy of rules config, to be used until the old
   -- version of the config can be read from the savefile.
   (sconfig, _, _) <- liftIO $ ConfigIO.mkConfigRules corule
-  restored <- liftIO $ Save.restoreGameSer sconfig pathsDataFile title
-  -- TODO: use the _msg somehow
-  case restored of
-    Right _msg ->  -- Starting a new game.
-      gameReset cops
-    Left (gloRaw, ser, _msg) -> do  -- Running a restored game.
-      putState $ updateCOps (const cops) gloRaw
-      putServer ser
+  liftIO $ Save.restoreGameSer sconfig pathsDataFile title
 
--- | Either restore a saved game, or setup a new game, connect clients
--- and launch the server.
-connServer :: MonadServerChan m => Kind.COps  -> m ()
-connServer cops = do
-  -- Restor or restart game to get game factions and state.
-  restoreOrRestart cops
+-- | Prepare connections based on factions.
+connServer :: MonadServerChan m =>m ()
+connServer = do
   faction <- getsState sfaction
   -- Prepare connections based on factions.
   let mkConnCli = do
