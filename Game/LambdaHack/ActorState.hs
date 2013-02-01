@@ -31,14 +31,14 @@ import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert
 
 actorAssocs :: (FactionId -> Bool) -> Level -> [(ActorId, Actor)]
-actorAssocs p lvl = filter (p . bfaction . snd) $ EM.toList $ lactor lvl
+actorAssocs p lvl = filter (p . bfaction . snd) $ EM.assocs $ lactor lvl
 
 actorList :: (FactionId -> Bool) -> Level -> [Actor]
 actorList p lvl = filter (p . bfaction) $ EM.elems $ lactor lvl
 
 actorNotProjAssocs :: (FactionId -> Bool) -> Level -> [(ActorId, Actor)]
 actorNotProjAssocs p lvl =
-  filter (\(_, m) -> not (bproj m) && p (bfaction m)) $ EM.toList $ lactor lvl
+  filter (\(_, m) -> not (bproj m) && p (bfaction m)) $ EM.assocs $ lactor lvl
 
 actorNotProjList :: (FactionId -> Bool) -> Level -> [Actor]
 actorNotProjList p lvl =
@@ -101,10 +101,10 @@ foesAdjacent lxsize lysize loc foes =
 allActorsAnyLevel :: State -> [(LevelId, (ActorId, Actor))]
 allActorsAnyLevel s =
   let one (ln, lvl) =
-        [ (ln, (a, m)) | (a, m) <- EM.toList $ lactor lvl
+        [ (ln, (a, m)) | (a, m) <- EM.assocs $ lactor lvl
                        , not (bproj m) ]
       butArena = EM.delete (sarena s) (sdungeon s)
-      selectedFirst = (sarena s, sdungeon s EM.! sarena s) : EM.toList butArena
+      selectedFirst = (sarena s, sdungeon s EM.! sarena s) : EM.assocs butArena
   in concatMap one selectedFirst
 
 -- TODO: start with current level; also elsewhere
@@ -113,7 +113,7 @@ tryFindActor :: State -> (Actor -> Bool) -> Maybe (LevelId, (ActorId, Actor))
 tryFindActor s p =
   let chk (ln, lvl) =
         fmap (\a -> (ln, a)) $ find (p . snd) $ EM.assocs $ lactor lvl
-  in case mapMaybe chk $ EM.toList $ sdungeon s of
+  in case mapMaybe chk $ EM.assocs $ sdungeon s of
     [] -> Nothing
     (ln, (aid, body)) : _ -> Just (ln, (aid, body))
 

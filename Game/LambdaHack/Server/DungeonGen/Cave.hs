@@ -143,7 +143,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick}
                         secret <- rollSecret (tokind t)
                         return (l, M.insert p secret le)
           else return (l, le)
-    in foldM f (lm, M.empty) (M.toList lm)
+    in foldM f (lm, M.empty) (M.assocs lm)
   let cave = Cave
         { dkind = ci
         , dsecret = secretMap

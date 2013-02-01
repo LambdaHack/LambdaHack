@@ -490,7 +490,7 @@ rollMonster Kind.COps{ cotile
         in if fspawn kind <= 0
            then Nothing
            else Just (fspawn kind, (kind, fid))
-  case catMaybes $ map f $ EM.toList $ sfaction state of
+  case catMaybes $ map f $ EM.assocs $ sfaction state of
     [] -> return Nothing
     spawnList -> do
       let freq = toFreq "spawn" spawnList

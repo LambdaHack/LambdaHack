@@ -147,7 +147,7 @@ handleActors cmdSer subclipStart prevHuman disp = withPerception $ do
   Kind.COps{coactor} <- getsState scops
   time <- getsState getTime  -- the end time of this clip, inclusive
    -- Older actors act earlier.
-  lactor <- getsState (EM.toList . lactor . getArena)
+  lactor <- getsState (EM.assocs . lactor . getArena)
   gquit <- getsState $ gquit . getSide
   quit <- getsState squit
   let mnext = if null lactor  -- wait until any actor spawned
@@ -397,7 +397,7 @@ gameReset cops@Kind.COps{coitem, corule} = do
                                 cops random entryLevel
       defSer = defStateServer discoRev flavour sconfig freshICounter
       notSpawning (_, fact) = not $ isSpawningFact cops fact
-      needInitialCrew = map fst $ filter notSpawning $ EM.toList faction
+      needInitialCrew = map fst $ filter notSpawning $ EM.assocs faction
       heroNames = configHeroNames sconfig : repeat []
   putState defState
   putServer defSer

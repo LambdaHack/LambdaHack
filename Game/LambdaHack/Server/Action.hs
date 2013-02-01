@@ -289,7 +289,7 @@ connServer = do
                    else return Nothing
         chanAI <- mkConnCli
         return (fid, (chanCli, chanAI))
-  chanAssocs <- liftIO $ mapM addChan $ EM.toList faction
+  chanAssocs <- liftIO $ mapM addChan $ EM.assocs faction
   putDict $ EM.fromAscList chanAssocs
 
 -- | Connect to clients by starting them in spawned threads that read
@@ -310,7 +310,7 @@ launchClients executorC = do
           Nothing ->
             forkAI
   d <- getDict
-  liftIO $ mapM_ forkClient $ EM.toList d
+  liftIO $ mapM_ forkClient $ EM.assocs d
 
 -- Swiped from http://www.haskell.org/ghc/docs/latest/html/libraries/base-4.6.0.0/Control-Concurrent.html
 children :: MVar [MVar ()]
