@@ -26,7 +26,6 @@ data Config = Config
   , configScoresFile     :: !FilePath
   , configRulesCfgFile   :: !FilePath
     -- heroes
-  , configBaseHP         :: !Int
   , configExtraHeroes    :: !Int
   , configFirstDeathEnds :: !Bool
     -- humanPlayers
@@ -45,7 +44,6 @@ instance Binary Config where
     put configAppDataDir
     put configScoresFile
     put configRulesCfgFile
-    put configBaseHP
     put configExtraHeroes
     put configFirstDeathEnds
     put configHuman
@@ -59,7 +57,6 @@ instance Binary Config where
     configAppDataDir     <- get
     configScoresFile     <- get
     configRulesCfgFile   <- get
-    configBaseHP         <- get
     configExtraHeroes    <- get
     configFirstDeathEnds <- get
     configHuman          <- get

@@ -154,7 +154,7 @@ scroll1 = scroll
   { ieffect  = SummonFriend
   }
 scroll2 = scroll
-  { ieffect  = SummonEnemy
+  { ieffect  = SpawnMonster
   }
 scroll3 = scroll
   { ieffect  = Descend

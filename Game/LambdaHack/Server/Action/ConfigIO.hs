@@ -133,7 +133,6 @@ parseConfigRules dataDir cp =
       configAppDataDir = dataDir
       configScoresFile = dataDir </> get cp "files" "scoresFile"
       configRulesCfgFile = dataDir </> "config.rules"
-      configBaseHP = get cp "heroes" "baseHP"
       configExtraHeroes = get cp "heroes" "extraHeroes"
       configFirstDeathEnds = get cp "heroes" "firstDeathEnds"
       configHuman =

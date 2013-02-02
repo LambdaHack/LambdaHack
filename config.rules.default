@@ -32,7 +32,6 @@
 ; scoresFile: scores
 
 ; [heroes]
-; baseHP: 50
 ; extraHeroes: 2
 ; firstDeathEnds: False
 

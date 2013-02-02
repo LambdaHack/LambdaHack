@@ -21,7 +21,6 @@ import Game.LambdaHack.CmdCli
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
-import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Effect as Effect
 import Game.LambdaHack.Faction
 import Game.LambdaHack.Item
@@ -37,6 +36,7 @@ import Game.LambdaHack.Server.CmdAtomicAction
 import Game.LambdaHack.State
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Utils.Frequency
 
 default (Text)
 
@@ -44,17 +44,6 @@ default (Text)
 actorVerb :: Kind.Ops ActorKind -> Actor -> Text -> Text
 actorVerb coactor a v =
   makeSentence [MU.SubjectVerbSg (partActor coactor a) (MU.Text v)]
-
--- | Create a new monster on the level, at a given position
--- and with a given actor kind and HP.
-addMonster :: Kind.Ops TileKind -> Kind.Id ActorKind -> Int -> Point
-           -> FactionId -> Bool -> State -> StateServer
-           -> (State, StateServer)
-addMonster cotile mk hp ppos bfaction bproj s ser@StateServer{sacounter} =
-  let loc = nearbyFreePos cotile ppos s
-      m = template mk Nothing Nothing hp loc (getTime s) bfaction bproj
-  in ( updateArena (updateActor (EM.insert sacounter m)) s
-     , ser {sacounter = succ sacounter} )
 
 -- TODO: center screen, flash the background, etc. Perhaps wait for SPACE.
 -- | Focus on the hero being wounded/displaced/etc.
@@ -165,20 +154,11 @@ eff Effect.Dominate _ source target _power = do
 eff Effect.SummonFriend _ source target power = do
   sm <- getsState (getActorBody source)
   tm <- getsState (getActorBody target)
-  s <- getState
-  side <- getsState sside
-  if isSpawningFaction s (bfaction sm)
-    then summonMonsters (1 + power) (bpos tm)
-    else summonHeroes side (1 + power) (bpos tm)
+  summonFriends (bfaction sm) (1 + power) (bpos tm)
   return (True, "")
-eff Effect.SummonEnemy _ source target power = do
-  sm <- getsState (getActorBody source)
+eff Effect.SpawnMonster _ _source target power = do
   tm <- getsState (getActorBody target)
-  s  <- getState
-  side <- getsState sside
-  if isSpawningFaction s (bfaction sm)
-    then summonHeroes side (1 + power) (bpos tm)
-    else summonMonsters (1 + power) (bpos tm)
+  void $ spawnMonsters (1 + power) (bpos tm)
   return (True, "")
 eff Effect.ApplyPerfume _ source target _ =
   if source == target
@@ -360,12 +340,33 @@ discover discoS i = do
       ik = discoS EM.! ix
   sendUpdateCli side $ DiscoverCli ik i
 
-summonHeroes :: MonadServer m => FactionId -> Int -> Point -> m ()
-summonHeroes side n pos = assert (n > 0) $ do
+addActor :: MonadServer m
+         => Kind.Id ActorKind -> FactionId -> Point -> Int
+         -> Maybe Char -> Maybe Text
+         -> m ()
+addActor mk bfaction ppos hp msymbol mname = do
+  Kind.COps{cotile} <- getsState scops
+  time <- getsState getTime
+  pos <- getsState $ nearbyFreePos cotile ppos
+  let m = actorTemplate mk msymbol mname hp pos time bfaction False
   acounter <- getsServer sacounter
-  replicateM_ n $ addHero side pos []
-  b <- focusIfOurs acounter
-  assert (b `blame` (acounter, "leader summons himself")) $ return ()
+  modifyServer $ \ser -> ser {sacounter = succ acounter}
+  modifyState $ insertActor acounter m
+
+-- TODO: apply this special treatment only to actors with symbol '@'.
+-- | Create a new hero on the current level, close to the given position.
+addHero :: MonadServer m => FactionId -> Point -> [(Int, Text)] -> m ()
+addHero bfaction ppos configHeroNames = do
+  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
+  let mk = heroKindId coactor
+  hp <- rndToAction $ rollDice $ ahp $ okind mk
+  mhs <- mapM (\n -> getsState $ \s -> tryFindHeroK s bfaction n) [0..9]
+  let freeHeroK = elemIndex Nothing mhs
+      n = fromMaybe 100 freeHeroK
+      symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
+      name = findHeroName configHeroNames n
+      startHP = hp - (hp `div` 5) * min 3 n
+  addActor mk bfaction ppos startHP (Just symbol) (Just name)
 
 -- | Find a hero name in the config file, or create a stock name.
 findHeroName :: [(Int, Text)] -> Int -> Text
@@ -373,48 +374,48 @@ findHeroName configHeroNames n =
   let heroName = lookup n configHeroNames
   in fromMaybe ("hero number" <+> showT n) heroName
 
--- TODO: apply this special treatment only to actors with symbol '@'.
--- | Create a new hero on the current level, close to the given position.
-addHero :: MonadServer m => FactionId -> Point -> [(Int, Text)] -> m ()
-addHero side ppos configHeroNames = do
-  Kind.COps{coactor, cotile} <- getsState scops
-  configBaseHP <- getsServer $ configBaseHP . sconfig
-  time <- getsState getTime
-  loc <- getsState $ nearbyFreePos cotile ppos
-  mhs <- mapM (\n -> getsState $ \s -> tryFindHeroK s side n) [0..9]
-  let freeHeroK = elemIndex Nothing mhs
-      n = fromMaybe 100 freeHeroK
-      symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
-      name = findHeroName configHeroNames n
-      startHP = configBaseHP - (configBaseHP `div` 5) * min 3 n
-      m = template (heroKindId coactor) (Just symbol) (Just name)
-                   startHP loc time side False
-  acounter <- getsServer sacounter
-  modifyState $ updateArena $ updateActor $ EM.insert acounter m
-  modifyServer $ \ser -> ser {sacounter = succ acounter}
-
--- TODO: merge with summonHeroes; disregard "spawn" and "playable" factions and "spawn" flags for monsters; only check 'summon"
-summonMonsters :: MonadServer m => Int -> Point -> m ()
-summonMonsters n pos = do
+summonFriends :: MonadServer m => FactionId -> Int -> Point -> m ()
+summonFriends bfaction n pos = assert (n > 0) $ do
+  Kind.COps{ coactor=coactor@Kind.Ops{opick}
+           , cofact=Kind.Ops{okind} } <- getsState scops
   faction <- getsState sfaction
-  Kind.COps{ cotile
-           , coactor=Kind.Ops{opick, okind}
-           , cofact=Kind.Ops{opick=fopick, oname=foname}} <- getsState scops
-  spawnKindId <- rndToAction $ fopick "playable" (\k -> fspawn k > 0)
-  -- Spawn frequency required greater than zero, but otherwise ignored.
-  let inFactionKind m = isJust $ lookup (foname spawnKindId) (afreq m)
-  -- Summon frequency used for picking the actor.
-  mk <- rndToAction $ opick "summon" inFactionKind
+  let fact = okind $ gkind $ faction EM.! bfaction
+  replicateM_ n $ do
+    mk <- rndToAction $ opick (fname fact) (const True)
+    if mk == heroKindId coactor
+      then addHero bfaction pos []
+      else addMonster mk bfaction pos
+
+-- | Create a new monster on the level, at a given position
+-- and with a given actor kind and HP.
+addMonster :: MonadServer m
+           => Kind.Id ActorKind -> FactionId -> Point -> m ()
+addMonster mk bfaction ppos = do
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   hp <- rndToAction $ rollDice $ ahp $ okind mk
-  let bfaction = fst $ fromJust
-                 $ find (\(_, fa) -> gkind fa == spawnKindId)
-                 $ EM.assocs faction
-  s <- getState
-  ser <- getServer
-  let (sN, serN) = iterate (uncurry $ addMonster cotile mk hp pos
-                                                 bfaction False) (s, ser) !! n
-  putState sN
-  putServer serN
+  addActor mk bfaction ppos hp Nothing Nothing
+
+-- | Spawn monsters of any spawning faction, friendly or not.
+-- To be used for spontaneous spawning of monsters and for the spawning effect.
+spawnMonsters :: MonadServer m => Int -> Point -> m (Maybe FactionId)
+spawnMonsters n pos = do
+  Kind.COps{ coactor=Kind.Ops{opick}
+           , cofact=Kind.Ops{okind} } <- getsState scops
+  faction <- getsState sfaction
+  let f (fid, fa) =
+        let kind = okind (gkind fa)
+        in if fspawn kind <= 0
+           then Nothing
+           else Just (fspawn kind, (kind, fid))
+  case catMaybes $ map f $ EM.assocs faction of
+    [] -> return Nothing  -- no faction spawns
+    spawnList -> do
+      let freq = toFreq "spawn" spawnList
+      (spawnKind, bfaction) <- rndToAction $ frequency freq
+      replicateM_ n $ do
+        mk <- rndToAction $ opick (fname spawnKind) (const True)
+        addMonster mk bfaction pos
+      return $ Just bfaction
 
 -- | Remove a dead actor. Check if game over.
 checkPartyDeath :: MonadServerChan m => ActorId -> m ()

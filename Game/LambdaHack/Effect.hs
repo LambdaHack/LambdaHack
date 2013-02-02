@@ -19,7 +19,7 @@ data Effect =
   | Wound !RollDice  -- base damage, to-dam bonus in ipower
   | Dominate
   | SummonFriend
-  | SummonEnemy
+  | SpawnMonster
   | ApplyPerfume
   | Regeneration
   | Searching
@@ -37,7 +37,7 @@ effectToSuffix (Wound dice@(RollDice a b)) =
   else "(" <> showT dice <> ")"
 effectToSuffix Dominate = "of domination"
 effectToSuffix SummonFriend = "of aid calling"
-effectToSuffix SummonEnemy = "of summoning"
+effectToSuffix SpawnMonster = "of spawning"
 effectToSuffix ApplyPerfume = "of rose water"
 effectToSuffix Regeneration = "of regeneration"
 effectToSuffix Searching = "of searching"
@@ -53,7 +53,7 @@ effectToBenefit Heal = 10           -- TODO: depends on (maxhp - hp)
 effectToBenefit (Wound _) = -10     -- TODO: dice ignored for now
 effectToBenefit Dominate = 0        -- AI can't use this
 effectToBenefit SummonFriend = 100
-effectToBenefit SummonEnemy = 0
+effectToBenefit SpawnMonster = 5    -- may or may not spawn a friendly
 effectToBenefit ApplyPerfume = 0
 effectToBenefit Regeneration = 0    -- much more benefit from carrying around
 effectToBenefit Searching = 0       -- AI does not need to search

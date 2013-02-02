@@ -41,7 +41,6 @@ import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Utils.Frequency
 import Game.LambdaHack.Vector
 import Game.LambdaHack.Server.CmdAtomicAction
 
@@ -479,66 +478,41 @@ gameRestartSer = do
 -- * Assorted helper server functions.
 
 -- | Create a new monster on the level, at a random position.
-rollMonster :: Kind.COps -> ES.EnumSet Point -> State -> StateServer
-            -> Rnd (Maybe (FactionId, (State, StateServer)))
-rollMonster Kind.COps{ cotile
-                     , coactor=Kind.Ops{opick, okind}
-                     , cofact=Kind.Ops{okind=fokind}
-                     } visible state ser = do
-  let f (fid, fa) =
-        let kind = fokind (gkind fa)
-        in if fspawn kind <= 0
-           then Nothing
-           else Just (fspawn kind, (kind, fid))
-  case catMaybes $ map f $ EM.assocs $ sfaction state of
-    [] -> return Nothing
-    spawnList -> do
-      let freq = toFreq "spawn" spawnList
-      (spawnKind, bfaction) <- frequency freq
-      let lvl@Level{lactor} = getArena state
-          ours = actorNotProjList (== bfaction) lvl
-          others = actorNotProjList (/= bfaction) lvl
-          isLit = Tile.isLit cotile
-      rc <- monsterGenChance (ldepth $ getArena state) (length ours)
-      if not rc
-        then return Nothing
-        else do
-          let distantAtLeast d =
-                \ l _ -> all (\ h ->
-                               chessDist (lxsize lvl) (bpos h) l > d) others
-          loc <-
-            findPosTry 40 (ltile lvl)
-              [ \ _ t -> not (isLit t)
-              , distantAtLeast 15
-              , \ l t -> not (isLit t) || distantAtLeast 15 l t
-              , distantAtLeast 10
-              , \ l _ -> not $ l `ES.member` visible
-              , distantAtLeast 5
-              , \ l t -> Tile.hasFeature cotile F.Walkable t
-                         && unoccupied (EM.elems lactor) l
-              ]
-          mk <- opick (fname spawnKind) (const True)
-          hp <- rollDice $ ahp $ okind mk
-          return $ Just $
-            (bfaction, addMonster cotile mk hp loc bfaction False state ser)
+rollSpawnPos :: Kind.COps -> ES.EnumSet Point -> Level -> Rnd Point
+rollSpawnPos Kind.COps{cotile} visible lvl@Level{lactor} = do
+  let inhabitants = actorNotProjList (const True) lvl
+      isLit = Tile.isLit cotile
+      distantAtLeast d =
+        \ l _ -> all (\ h -> chessDist (lxsize lvl) (bpos h) l > d) inhabitants
+  findPosTry 40 (ltile lvl)
+    [ \ _ t -> not (isLit t)
+    , distantAtLeast 15
+    , \ l t -> not (isLit t) || distantAtLeast 15 l t
+    , distantAtLeast 10
+    , \ l _ -> not $ l `ES.member` visible
+    , distantAtLeast 5
+    , \ l t -> Tile.hasFeature cotile F.Walkable t
+               && unoccupied (EM.elems lactor) l
+    ]
 
 -- | Generate a monster, possibly.
 generateMonster :: MonadServer m => m (Maybe FactionId)
 generateMonster = do
-  cops <- getsState scops
-  state <- getState
-  ser <- getServer
+  cops@Kind.COps{cofact=Kind.Ops{okind}} <- getsState scops
   pers <- ask
   arena <- getsState sarena
-  let allPers = ES.unions $ map (totalVisible . (EM.! arena)) $ EM.elems pers
-  nst <- rndToAction $ rollMonster cops allPers state ser
-  case nst of
-    Nothing -> return Nothing
-    Just (fid, (nstate, nser)) -> do
-      random <- getsState srandom
-      putState $! updateRandom (const random) nstate
-      putServer nser
-      return $ Just fid
+  lvl@Level{ldepth} <- getsState getArena
+  faction <- getsState sfaction
+  let f fid = fspawn (okind (gkind (faction EM.! fid))) > 0
+      spawns = actorNotProjList f lvl
+  rc <- rndToAction $ monsterGenChance ldepth (length spawns)
+  if not rc
+    then return Nothing
+    else do
+      let allPers =
+            ES.unions $ map (totalVisible . (EM.! arena)) $ EM.elems pers
+      pos <- rndToAction $ rollSpawnPos cops allPers lvl
+      spawnMonsters 1 pos
 
 -- | Possibly regenerate HP for all actors on the current level.
 --

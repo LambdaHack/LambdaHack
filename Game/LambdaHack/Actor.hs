@@ -7,7 +7,7 @@ module Game.LambdaHack.Actor
   ( -- * Actor identifiers and related operations
     ActorId, monsterGenChance, partActor
     -- * The@ Acto@r type
-  , Actor(..), template, timeAddFromSpeed, braced
+  , Actor(..), actorTemplate, timeAddFromSpeed, braced
   , unoccupied, heroKindId, projectileKindId, actorSpeed
     -- * Assorted
   , smellTimeout
@@ -118,9 +118,9 @@ partActor Kind.Ops{oname} a = MU.Text $ fromMaybe (oname $ bkind a) (bname a)
 -- Actor operations
 
 -- | A template for a new non-projectile actor.
-template :: Kind.Id ActorKind -> Maybe Char -> Maybe Text -> Int -> Point
-         -> Time -> FactionId -> Bool -> Actor
-template bkind bsymbol bname bhp bpos btime bfaction bproj =
+actorTemplate :: Kind.Id ActorKind -> Maybe Char -> Maybe Text -> Int -> Point
+              -> Time -> FactionId -> Bool -> Actor
+actorTemplate bkind bsymbol bname bhp bpos btime bfaction bproj =
   let bcolor  = Nothing
       bspeed  = Nothing
       bpath   = Nothing
