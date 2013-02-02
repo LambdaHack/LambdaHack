@@ -131,9 +131,9 @@ projectSer :: MonadServerChan m
            -> m ()
 projectSer source tpos eps _verb iid = do
   cops@Kind.COps{coactor} <- getsState scops
-  sm    <- getsState (getActorBody source)
+  sm <- getsState (getActorBody source)
   Actor{btime} <- getsState $ getActorBody source
-  lvl   <- getsState getArena
+  lvl <- getsState getArena
   lxsize <- getsState (lxsize . getArena)
   lysize <- getsState (lysize . getArena)
   side <- getsState sside
@@ -152,10 +152,9 @@ projectSer source tpos eps _verb iid = do
       -- Both parties would see their own projectiles move part of the way
       -- and the opposite party's projectiles waiting one turn.
       btimeDelta = timeAddFromSpeed coactor sm btime
-      time =
-        if bfaction sm == side
-        then btimeDelta `timeAdd` timeNegate timeClip
-        else btime
+      time = if bfaction sm == side
+             then btimeDelta `timeAdd` timeNegate timeClip
+             else btime
       bl = bla lxsize lysize eps spos tpos
   case bl of
     Nothing -> abortWith "cannot zap oneself"
@@ -165,26 +164,22 @@ projectSer source tpos eps _verb iid = do
       inhabitants <- getsState (posToActor pos)
       if accessible cops lvl spos pos && isNothing inhabitants
         then do
-          glo <- getState
-          ser <- getServer
-          let (nglo, nser) =
-                addProjectile cops iid pos (bfaction sm) path time glo ser
-          putState nglo
-          putServer nser
+          addProjectile iid pos (bfaction sm) path time
           item <- getsState $ getItemBody iid . getArena
           broadcastPosCli [spos, pos] $ ProjectCli spos source item
         else
           abortWith "blocked"
 
 -- | Create a projectile actor containing the given missile.
-addProjectile :: Kind.COps -> ItemId -> Point -> FactionId
-              -> [Point] -> Time -> State -> StateServer
-              -> (State, StateServer)
-addProjectile Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}}
-              iid loc bfaction path btime
-              s ser@StateServer{sacounter} =
-  let item = getItemBody iid (getArena s)
-      ik = okind (fromJust $ jkind (sdisco s) item)
+addProjectile :: MonadServer m
+              => ItemId -> Point -> FactionId -> [Point] -> Time
+              -> m ()
+addProjectile iid loc bfaction path btime = do
+  Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}} <- getsState scops
+  lvl <- getsState getArena
+  disco <- getsState sdisco
+  let item = getItemBody iid lvl
+      ik = okind (fromJust $ jkind disco item)
       speed = speedFromWeight (iweight ik) (itoThrow ik)
       range = rangeFromSpeed speed
       adj | range < 5 = "falling"
@@ -210,9 +205,9 @@ addProjectile Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}}
         , bfaction
         , bproj   = True
         }
-      upd = updateActor $ EM.insert sacounter m
-  in ( updateArena upd s
-     , ser {sacounter = succ sacounter} )
+  acounter <- getsServer sacounter
+  modifyServer $ \ser -> ser {sacounter = succ acounter}
+  spawnAtomic acounter m
 
 -- ** TriggerSer
 

@@ -232,7 +232,7 @@ effLvlGoUp aid k = do
       assert (nln /= arena `blame` (nln, "stairs looped")) $ do
         timeCurrent <- getsState getTime
         -- Remove the actor from the old level.
-        modifyState (deleteActor aid)
+        killAtomic aid pbodyCurrent
         -- Remember the level (e.g., when teleporting via scroll on the floor,
         -- register the scroll vanished, also let the other factions register
         -- the actor vanished in case they switch to this level from another
@@ -253,7 +253,7 @@ effLvlGoUp aid k = do
             pbody = pbodyCurrent {btime = timeAdd timeLastVisited diff}
         -- The actor is added to the new level, but there can be other actors
         -- at his old position or at his new position.
-        modifyState (insertActor aid pbody)
+        spawnAtomic aid pbody
         modifyState (updateActorItem aid (const bitems))
         -- Reset level and leader for all factions.
         broadcastCli [return . (/= bfaction pbody)] $ InvalidateArenaCli nln
@@ -320,10 +320,9 @@ itemEffectAction :: MonadServerChan m
                  => Int -> ActorId -> ActorId -> Item -> Bool -> m ()
 itemEffectAction verbosity source target item block = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
-  st <- getState
-  -- Destroys attacking actor and its items: a hack for projectiles.
-  when (isProjectile st source) $
-    modifyState (deleteActor source)
+  sm <- getsState (getActorBody source)
+  -- Destroys attacking actor: a hack for projectiles.
+  when (bproj sm) $ killAtomic source sm
   discoS <- getsState sdisco
   let effect = ieffect $ okind $ fromJust $ jkind discoS item
   -- The msg describes the target part of the action.
@@ -351,7 +350,7 @@ addActor mk bfaction ppos hp msymbol mname = do
   let m = actorTemplate mk msymbol mname hp pos time bfaction False
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
-  modifyState $ insertActor acounter m
+  spawnAtomic acounter m
 
 -- TODO: apply this special treatment only to actors with symbol '@'.
 -- | Create a new hero on the current level, close to the given position.
@@ -420,15 +419,15 @@ spawnMonsters n pos = do
 -- | Remove a dead actor. Check if game over.
 checkPartyDeath :: MonadServerChan m => ActorId -> m ()
 checkPartyDeath target = do
-  pbody <- getsState $ getActorBody target
+  tm <- getsState $ getActorBody target
   Config{configFirstDeathEnds} <- getsServer sconfig
   -- Place the actor's possessions on the map.
   bitems <- getsState $ getActorBag target
-  modifyState $ updateArena $ dropItemsAt bitems $ bpos pbody
-  let fid = bfaction pbody
+  modifyState $ updateArena $ dropItemsAt bitems $ bpos tm
+  let fid = bfaction tm
   isHuman <- getsState $ flip isHumanFaction fid
   let animateDeath = do
-        broadcastPosUI [bpos pbody] (AnimateDeathCli target)
+        broadcastPosUI [bpos tm] (AnimateDeathCli target)
         if isHuman then sendQueryUI fid CarryOnCli else return False
       animateGameOver = do
         go <- animateDeath
@@ -446,7 +445,7 @@ checkPartyDeath target = do
       then animateGameOver
       else void $ animateDeath
   -- Remove the dead actor.
-  modifyState $ deleteActor target
+  killAtomic target tm
   -- We don't register that the lethal potion on the floor
   -- is used up. If that's a problem, add a one turn delay
   -- to the effect of all lethal objects (displaying an "agh! dying"

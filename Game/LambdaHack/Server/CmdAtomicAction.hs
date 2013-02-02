@@ -63,3 +63,12 @@ dominateAtomic target = do
   bfaction <- getsState sside
   btime <- getsState getTime
   modifyState $ updateActorBody target $ \ b -> b {bfaction, btime}
+
+-- TODO: perhaps assert that the inventory of the actor is empty
+-- or at least that the items belong to litem.
+spawnAtomic :: MonadServer m => ActorId -> Actor -> m ()
+spawnAtomic aid body = modifyState $ insertActor aid body
+
+-- TODO: perhaps assert that the inventory of the actor is empty.
+killAtomic :: MonadServer m => ActorId -> Actor -> m ()
+killAtomic aid _body = modifyState $ deleteActor aid
