@@ -56,13 +56,11 @@ hasteAtomic aid delta = assert (delta /= speedZero) $ do
        then b {bspeed = Nothing}
        else b {bspeed = Just newSpeed}
 
-dominateAtomic :: MonadAction m => ActorId -> m ()
-dominateAtomic target = do
-  -- Sync the monster with the source actor's move time for better display
-  -- of missiles and for the domination to actually take one player's turn.
-  bfaction <- getsState sside
-  btime <- getsState getTime
-  modifyState $ updateActorBody target $ \ b -> b {bfaction, btime}
+dominateAtomic :: MonadAction m => FactionId -> FactionId -> ActorId -> m ()
+dominateAtomic fromFaction toFaction target = do
+  tm <- getsState (getActorBody target)
+  assert (fromFaction == bfaction tm `blame` (fromFaction, tm, toFaction)) $
+    modifyState $ updateActorBody target $ \b -> b {bfaction = toFaction}
 
 -- TODO: perhaps assert that the inventory of the actor is empty
 -- or at least that the items belong to litem.

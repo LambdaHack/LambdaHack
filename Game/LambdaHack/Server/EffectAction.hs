@@ -122,29 +122,29 @@ eff (Effect.Wound nDm) verbosity source target power = do
     healAtomic deltaHP target
     return (True, msg)
 eff Effect.Dominate _ source target _power = do
+  sm <- getsState (getActorBody source)
   arena <- getsState sarena
-  side <- getsState sside
   if source == target
     then do
       genemy <- getsState $ genemy . getSide
-      lm <- getsState $ actorNotProjList (`elem` genemy) . getArena
       lxsize <- getsState (lxsize . getArena)
       lysize <- getsState (lysize . getArena)
-      let cross m = bpos m : vicinityCardinal lxsize lysize (bpos m)
-          vis = ES.fromList $ concatMap cross lm
       lvl <- getsState getArena
-      sendUpdateCli side $ RememberCli arena vis lvl
+      let lm = actorNotProjList (`elem` genemy) lvl
+          cross m = bpos m : vicinityCardinal lxsize lysize (bpos m)
+          vis = ES.fromList $ concatMap cross lm
+      sendUpdateCli (bfaction sm) $ RememberCli arena vis lvl
       return (True, "A dozen voices yells in anger.")
     else do
       Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-      Actor{bspeed, bkind} <- getsState (getActorBody target)
+      tm@Actor{bspeed, bkind} <- getsState (getActorBody target)
       -- Halve the speed as a side-effect of domination.
       let speed = fromMaybe (aspeed $ okind bkind) bspeed
           delta = speedScale (1%2) speed
       when (delta > speedZero) $ hasteAtomic target (speedNegate delta)
       -- TODO: Perhaps insert a turn of delay here to allow countermeasures.
-      dominateAtomic target
-      sendQueryCli side (SelectLeaderCli target arena)
+      dominateAtomic (bfaction tm) (bfaction sm) target
+      sendQueryCli (bfaction sm) (SelectLeaderCli target arena)
         >>= assert `trueM` (arena, target, "leader dominates himself")
       -- Display status line and FOV for the new actor.
 --TODO      sli <- promptToSlideshow ""
