@@ -64,9 +64,18 @@ dominateAtomic fromFaction toFaction target = do
 
 -- TODO: perhaps assert that the inventory of the actor is empty
 -- or at least that the items belong to litem.
-spawnAtomic :: MonadServer m => ActorId -> Actor -> m ()
+spawnAtomic :: MonadAction m => ActorId -> Actor -> m ()
 spawnAtomic aid body = modifyState $ insertActor aid body
 
 -- TODO: perhaps assert that the inventory of the actor is empty.
-killAtomic :: MonadServer m => ActorId -> Actor -> m ()
+killAtomic :: MonadAction m => ActorId -> Actor -> m ()
 killAtomic aid _body = modifyState $ deleteActor aid
+
+setSmellAtomic :: MonadAction m => SmellMap -> SmellMap -> m ()
+setSmellAtomic _fromSmell toSmell = do
+  modifyState $ updateArena $ updateSmell $ const toSmell
+
+alterSmellAtomic :: MonadAction m => Point -> Maybe Time -> Maybe Time -> m ()
+alterSmellAtomic pos oldS newS = do
+  let f old = assert (oldS == old `blame` (pos, old, oldS)) newS
+  modifyState $ updateArena $ updateSmell $ EM.alter f pos

@@ -164,8 +164,8 @@ eff Effect.ApplyPerfume _ source target _ =
   if source == target
   then return (True, "Tastes like water, but with a strong rose scent.")
   else do
-    let upd lvl = lvl { lsmell = EM.empty }
-    modifyState (updateArena upd)
+    oldSmell <- getsState $ lsmell . getArena
+    setSmellAtomic oldSmell EM.empty
     return (True, "The fragrance quells all scents in the vicinity.")
 eff Effect.Regeneration verbosity source target power =
   eff Effect.Heal verbosity source target power
@@ -176,8 +176,6 @@ eff Effect.Ascend _ _ target power = do
   tm <- getsState (getActorBody target)
   void $ focusIfOurs target
   effLvlGoUp target (power + 1)
-  -- TODO: The following message too late if a monster squashed by going up,
-  -- unless it's ironic. ;) The same below.
   gquit <- getsState $ gquit . getSide
   return $ if maybe Camping snd gquit == Victor
            then (True, "")
@@ -239,11 +237,13 @@ effLvlGoUp aid k = do
         -- level). Perception is unchanged, so for one turn (this level turn)
         -- there will be visibility left on the old actor location.
         remember
-        -- Only spawning factions left on the level, so no new smell generate.
-        -- Cancel smell. Reduces memory load and savefile size.
-        hs <- getsState $ actorList (not . isSpawningFaction glo) . getArena
-        when (null hs) $
-          modifyState (updateArena (updateSmell (const EM.empty)))
+        -- TODO: wipe out smell on save instead, based on timeLastVisited
+        -- -- Only spawning factions left on the level, so no new smell generated.
+        -- -- Cancel smell. Reduces memory load and savefile size.
+        -- hs <- getsState $ actorList (not . isSpawningFaction glo) . getArena
+        -- when (null hs) $ do
+        --   oldSmell <- getsState $ lsmell . getArena
+        --   setSmellAtomic oldSmell EM.empty
         -- Change arena, but not the leader yet. The actor will become
         -- a leader, but he is not inserted into the new level yet.
         modifyState $ updateSelectedArena nln

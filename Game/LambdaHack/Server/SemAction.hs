@@ -540,11 +540,11 @@ regenerateLevelHP = do
   toRegen <- getsState $ catMaybes . map pick . EM.assocs . lactor . getArena
   mapM_ (healAtomic 1) toRegen
 
--- | Add new smell traces to the level. Only non-spawning factions
--- leave a scent that is easy to tell from common dungeon smells.
+-- TODO: let only some actors/items leave smell, e.g., a Smelly Hide Armour.
+-- | Add a smell trace for the actor to the level.
 addSmell :: MonadServer m => ActorId -> m ()
 addSmell aid = do
   time <- getsState getTime
-  ppos <- getsState $ bpos . getActorBody aid
-  let upd = EM.insert ppos $ timeAdd time smellTimeout
-  modifyState $ updateArena $ updateSmell upd
+  pos <- getsState $ bpos . getActorBody aid
+  oldS <- getsState $ (EM.lookup pos) . lsmell . getArena
+  alterSmellAtomic pos oldS $ Just $ timeAdd time smellTimeout
