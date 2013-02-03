@@ -1,6 +1,6 @@
 -- | Semantics of server commands.
 module Game.LambdaHack.Server
-  ( cmdSer
+  ( cmdSerSem
   , loopSer, executorSer, waitForChildren, speedupCOps
   ) where
 
@@ -18,8 +18,8 @@ import Game.LambdaHack.Server.LoopAction
 import Game.LambdaHack.State
 
 -- | The semantics of server commands.
-cmdSer :: MonadServerChan m => CmdSer -> m ()
-cmdSer cmd = case cmd of
+cmdSerSem :: MonadServerChan m => CmdSer -> m ()
+cmdSerSem cmd = case cmd of
   ApplySer aid v iid -> applySer aid v iid
   ProjectSer aid p eps v iid -> projectSer aid p eps v iid
   TriggerSer aid p -> triggerSer aid p

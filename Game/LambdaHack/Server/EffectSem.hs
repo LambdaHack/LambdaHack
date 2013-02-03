@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, ExtendedDefaultRules #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
--- | The @effectToAction@ function and related operations.
+-- | Effect semantics.
 -- TODO: document
 module Game.LambdaHack.Server.EffectSem where
 
@@ -40,29 +40,21 @@ import Game.LambdaHack.Utils.Frequency
 
 default (Text)
 
--- | Sentences such as \"Dog barks loudly.\".
-actorVerb :: Kind.Ops ActorKind -> Actor -> Text -> Text
-actorVerb coactor a v =
-  makeSentence [MU.SubjectVerbSg (partActor coactor a) (MU.Text v)]
-
--- TODO: center screen, flash the background, etc. Perhaps wait for SPACE.
--- | Focus on the hero being wounded/displaced/etc.
-focusIfOurs :: MonadActionAbort m => ActorId -> m Bool
-focusIfOurs _target = return True
+-- + Semantics of effects
 
 -- | The source actor affects the target actor, with a given effect and power.
 -- The second argument is verbosity of the resulting message.
 -- Both actors are on the current level and can be the same actor.
 -- The boolean result indicates if the effect was spectacular enough
 -- for the actors to identify it (and the item that caused it, if any).
-effectToAction :: MonadServerChan m
-               => Effect.Effect -> Int -> ActorId -> ActorId -> Int -> Bool
-               -> m Bool
-effectToAction effect verbosity source target power block = do
+effectSem :: MonadServerChan m
+          => Effect.Effect -> Int -> ActorId -> ActorId -> Int -> Bool
+          -> m Bool
+effectSem ef verbosity source target power block = do
   oldS <- getsState (getActorBody source)
   oldT <- getsState (getActorBody target)
   let oldHP = bhp oldT
-  (b, msg) <- eff effect verbosity source target power
+  (b, msg) <- eff ef verbosity source target power
   -- We assume if targed moved to a level, which is not the current level,
   -- his HP is unchanged.
   memTm <- getsState $ memActor target
@@ -77,29 +69,90 @@ effectToAction effect verbosity source target power block = do
   when (newHP <= 0) $ checkPartyDeath target
   return b
 
+-- | The source actor affects the target actor, with a given item.
+-- If the event is seen, the item may get identified. This function
+-- is mutually recursive with @effect@, hence it's a part of @Effect@
+-- semantics.
+itemEffect :: MonadServerChan m
+           => Int -> ActorId -> ActorId -> Item -> Bool -> m ()
+itemEffect verbosity source target item block = do
+  Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
+  sm <- getsState (getActorBody source)
+  -- Destroys attacking actor: a hack for projectiles.
+  when (bproj sm) $ killAtomic source sm
+  discoS <- getsState sdisco
+  let ef = ieffect $ okind $ fromJust $ jkind discoS item
+  -- The msg describes the target part of the action.
+  b <- effectSem ef verbosity source target (jpower item) block
+  -- The effect is interesting so the item gets identified, if seen.
+  when b $ discover discoS item
+
+-- TODO: send to all clients that see tpos.
+-- | Make the item known to the leader.
+discover :: MonadServerChan m => Discoveries -> Item -> m ()
+discover discoS i = do
+  side <- getsState sside
+  let ix = jkindIx i
+      ik = discoS EM.! ix
+  sendUpdateCli side $ DiscoverCli ik i
+
 -- | The boolean part of the result says if the ation was interesting
 -- and the string part describes how the target reacted
 -- (not what the source did).
-eff :: MonadServerChan m => Effect.Effect -> Int -> ActorId -> ActorId -> Int
+eff :: MonadServerChan m
+    => Effect.Effect -> Int -> ActorId -> ActorId -> Int
     -> m (Bool, Text)
-eff Effect.NoEffect _ _ _ _ = nullEffect
-eff Effect.Heal _ _source target power = do
+eff Effect.NoEffect _ _ _ _ = effectNoEffect
+eff Effect.Heal _ _ target power = effectHeal target power
+eff (Effect.Wound nDm) verbosity source target power =
+  effectWound nDm verbosity source target power
+eff Effect.Dominate _ source target _ =
+  effectDominate source target
+eff Effect.SummonFriend _ source target power =
+  effectSummonFriend source target power
+eff Effect.SpawnMonster _ _ target power =
+  effectSpawnMonster target power
+eff Effect.ApplyPerfume _ source target _ =
+  effectApplyPerfume source target
+eff Effect.Regeneration verbosity source target power =
+  eff Effect.Heal verbosity source target power
+eff Effect.Searching _ _source _target _power =
+  return (True, "It gets lost and you search in vain.")
+eff Effect.Ascend _ _ target power = effectAscend target power
+eff Effect.Descend _ _ target power = effectDescend target power
+
+-- + Individual semantic functions for effects
+
+-- ** NoEffect
+
+effectNoEffect :: MonadActionAbort m => m (Bool, Text)
+effectNoEffect = return (False, "Nothing happens.")
+
+-- ** Heal
+
+effectHeal :: MonadServer m => ActorId -> Int -> m (Bool, Text)
+effectHeal target power = do
   Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
   tm <- getsState (getActorBody target)
   let bhpMax = maxDice (ahp $ okind $ bkind tm)
   if bhp tm >= bhpMax || power <= 0
-    then nullEffect
+    then effectNoEffect
     else do
       void $ focusIfOurs target
       let deltaHP = min power (bhpMax - bhp tm)
       healAtomic deltaHP target
       return (True, actorVerb coactor tm "feel better")
-eff (Effect.Wound nDm) verbosity source target power = do
+
+-- ** Wound
+
+effectWound :: MonadServer m
+            => RollDice -> Int -> ActorId -> ActorId -> Int -> m (Bool, Text)
+effectWound nDm verbosity source target power = do
   Kind.COps{coactor} <- getsState scops
-  s <- getState
+  isProjTarget <- getsState $ flip isProjectile target
   n <- rndToAction $ rollDice nDm
   let deltaHP = - (n + power)
-  if deltaHP >= 0 then nullEffect else do
+  if deltaHP >= 0 then effectNoEffect else do
     void $ focusIfOurs target
     tm <- getsState (getActorBody target)
     isSpawning <- getsState $ flip isSpawningFaction $ bfaction tm
@@ -109,7 +162,7 @@ eff (Effect.Wound nDm) verbosity source target power = do
             then ""  -- Handled later on in checkPartyDeath. Suspense.
             else -- Not as important, so let the player read the message
                  -- about monster death while he watches the combat animation.
-              if isProjectile s target
+              if isProjTarget
               then actorVerb coactor tm "drop down"
               else actorVerb coactor tm "die"
           | source == target =  -- a potion of wounding, etc.
@@ -121,7 +174,11 @@ eff (Effect.Wound nDm) verbosity source target power = do
     -- Damage the target.
     healAtomic deltaHP target
     return (True, msg)
-eff Effect.Dominate _ source target _power = do
+
+-- ** Dominate
+
+effectDominate :: MonadServerChan m => ActorId -> ActorId -> m (Bool, Text)
+effectDominate source target = do
   sm <- getsState (getActorBody source)
   arena <- getsState sarena
   if source == target
@@ -151,72 +208,132 @@ eff Effect.Dominate _ source target _power = do
 --      fr <- drawOverlay ColorBW $ head $ runSlideshow sli
 --      displayFramesPush [Nothing, Just fr, Nothing]
       return (True, "")
-eff Effect.SummonFriend _ source target power = do
+
+-- ** SummonFriend
+
+effectSummonFriend :: MonadServer m
+                   => ActorId -> ActorId -> Int -> m (Bool, Text)
+effectSummonFriend source target power = do
   sm <- getsState (getActorBody source)
   tm <- getsState (getActorBody target)
   summonFriends (bfaction sm) (1 + power) (bpos tm)
   return (True, "")
-eff Effect.SpawnMonster _ _source target power = do
+
+summonFriends :: MonadServer m => FactionId -> Int -> Point -> m ()
+summonFriends bfaction n pos = assert (n > 0) $ do
+  Kind.COps{ coactor=coactor@Kind.Ops{opick}
+           , cofact=Kind.Ops{okind} } <- getsState scops
+  faction <- getsState sfaction
+  let fact = okind $ gkind $ faction EM.! bfaction
+  replicateM_ n $ do
+    mk <- rndToAction $ opick (fname fact) (const True)
+    if mk == heroKindId coactor
+      then addHero bfaction pos []
+      else addMonster mk bfaction pos
+
+addActor :: MonadServer m
+         => Kind.Id ActorKind -> FactionId -> Point -> Int
+         -> Maybe Char -> Maybe Text
+         -> m ()
+addActor mk bfaction ppos hp msymbol mname = do
+  Kind.COps{cotile} <- getsState scops
+  time <- getsState getTime
+  pos <- getsState $ nearbyFreePos cotile ppos
+  let m = actorTemplate mk msymbol mname hp pos time bfaction False
+  acounter <- getsServer sacounter
+  modifyServer $ \ser -> ser {sacounter = succ acounter}
+  spawnAtomic acounter m
+
+-- TODO: apply this special treatment only to actors with symbol '@'.
+-- | Create a new hero on the current level, close to the given position.
+addHero :: MonadServer m => FactionId -> Point -> [(Int, Text)] -> m ()
+addHero bfaction ppos configHeroNames = do
+  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
+  let mk = heroKindId coactor
+  hp <- rndToAction $ rollDice $ ahp $ okind mk
+  mhs <- mapM (\n -> getsState $ \s -> tryFindHeroK s bfaction n) [0..9]
+  let freeHeroK = elemIndex Nothing mhs
+      n = fromMaybe 100 freeHeroK
+      symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
+      name = findHeroName configHeroNames n
+      startHP = hp - (hp `div` 5) * min 3 n
+  addActor mk bfaction ppos startHP (Just symbol) (Just name)
+
+-- | Find a hero name in the config file, or create a stock name.
+findHeroName :: [(Int, Text)] -> Int -> Text
+findHeroName configHeroNames n =
+  let heroName = lookup n configHeroNames
+  in fromMaybe ("hero number" <+> showT n) heroName
+
+-- ** SpawnMonster
+
+effectSpawnMonster :: MonadServer m => ActorId -> Int -> m (Bool, Text)
+effectSpawnMonster target power = do
   tm <- getsState (getActorBody target)
   void $ spawnMonsters (1 + power) (bpos tm)
   return (True, "")
-eff Effect.ApplyPerfume _ source target _ =
+
+-- | Spawn monsters of any spawning faction, friendly or not.
+-- To be used for spontaneous spawning of monsters and for the spawning effect.
+spawnMonsters :: MonadServer m => Int -> Point -> m (Maybe FactionId)
+spawnMonsters n pos = do
+  Kind.COps{ coactor=Kind.Ops{opick}
+           , cofact=Kind.Ops{okind} } <- getsState scops
+  faction <- getsState sfaction
+  let f (fid, fa) =
+        let kind = okind (gkind fa)
+        in if fspawn kind <= 0
+           then Nothing
+           else Just (fspawn kind, (kind, fid))
+  case catMaybes $ map f $ EM.assocs faction of
+    [] -> return Nothing  -- no faction spawns
+    spawnList -> do
+      let freq = toFreq "spawn" spawnList
+      (spawnKind, bfaction) <- rndToAction $ frequency freq
+      replicateM_ n $ do
+        mk <- rndToAction $ opick (fname spawnKind) (const True)
+        addMonster mk bfaction pos
+      return $ Just bfaction
+
+-- | Create a new monster on the level, at a given position
+-- and with a given actor kind and HP.
+addMonster :: MonadServer m
+           => Kind.Id ActorKind -> FactionId -> Point -> m ()
+addMonster mk bfaction ppos = do
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  hp <- rndToAction $ rollDice $ ahp $ okind mk
+  addActor mk bfaction ppos hp Nothing Nothing
+
+-- ** ApplyPerfume
+
+effectApplyPerfume :: MonadServer m => ActorId -> ActorId -> m (Bool, Text)
+effectApplyPerfume source target =
   if source == target
   then return (True, "Tastes like water, but with a strong rose scent.")
   else do
     oldSmell <- getsState $ lsmell . getArena
     setSmellAtomic oldSmell EM.empty
     return (True, "The fragrance quells all scents in the vicinity.")
-eff Effect.Regeneration verbosity source target power =
-  eff Effect.Heal verbosity source target power
-eff Effect.Searching _ _source _target _power =
-  return (True, "It gets lost and you search in vain.")
-eff Effect.Ascend _ _ target power = do
+
+-- ** Regeneration
+
+-- ** Searching
+
+-- ** Ascend
+
+effectAscend :: MonadServerChan m => ActorId -> Int -> m (Bool, Text)
+effectAscend target power = useStairs target (power + 1) "find a way upstairs"
+
+useStairs :: MonadServerChan m => ActorId -> Int -> Msg -> m (Bool, Text)
+useStairs target delta msg = do
   Kind.COps{coactor} <- getsState scops
   tm <- getsState (getActorBody target)
   void $ focusIfOurs target
-  effLvlGoUp target (power + 1)
+  effLvlGoUp target delta
   gquit <- getsState $ gquit . getSide
   return $ if maybe Camping snd gquit == Victor
            then (True, "")
-           else (True, actorVerb coactor tm "find a way upstairs")
-eff Effect.Descend _ _ target power = do
-  Kind.COps{coactor} <- getsState scops
-  tm <- getsState (getActorBody target)
-  void $ focusIfOurs target
-  effLvlGoUp target (- (power + 1))
-  gquit <- getsState $ gquit . getSide
-  return $ if maybe Camping snd gquit == Victor
-           then (True, "")
-           else (True, actorVerb coactor tm "find a way downstairs")
-
-nullEffect :: MonadActionAbort m => m (Bool, Text)
-nullEffect = return (False, "Nothing happens.")
-
--- TODO: refactor with actorAttackActor or perhaps displace the other
--- actor or swap positions with it, instead of squashing.
-squashActor :: MonadServerChan m => ActorId -> ActorId -> m ()
-squashActor source target = do
-  Kind.COps{{-coactor,-} coitem=Kind.Ops{okind, ouniqGroup}} <- getsState scops
---  sm <- getsState (getActorBody source)
---  tm <- getsState (getActorBody target)
-  flavour <- getsServer sflavour
-  discoRev <- getsServer sdiscoRev
-  let h2hKind = ouniqGroup "weight"
-      kind = okind h2hKind
-      power = maxDeep $ ipower kind
-      h2h = buildItem flavour discoRev h2hKind kind power
---      verb = iverbApply kind
---      msg = makeSentence
---        [ MU.SubjectVerbSg (partActor coactor sm) verb
---        , partActor coactor tm
---        , "in a staircase accident" ]
---  msgAdd msg
-  itemEffectSem 0 source target h2h False
-  s <- getState
-  -- The monster has to be killed first, before we step there (same turn!).
-  assert (not (memActor target s) `blame` (source, target, "not killed")) $
-    return ()
+           else (True, actorVerb coactor tm msg)
 
 effLvlGoUp :: MonadServerChan m => ActorId -> Int -> m ()
 effLvlGoUp aid k = do
@@ -281,6 +398,49 @@ effLvlGoUp aid k = do
         -- Create a backup of the savegame.
         saveGameBkp
 
+-- TODO: refactor with actorAttackActor or perhaps displace the other
+-- actor or swap positions with it, instead of squashing.
+squashActor :: MonadServerChan m => ActorId -> ActorId -> m ()
+squashActor source target = do
+  Kind.COps{{-coactor,-} coitem=Kind.Ops{okind, ouniqGroup}} <- getsState scops
+--  sm <- getsState (getActorBody source)
+--  tm <- getsState (getActorBody target)
+  flavour <- getsServer sflavour
+  discoRev <- getsServer sdiscoRev
+  let h2hKind = ouniqGroup "weight"
+      kind = okind h2hKind
+      power = maxDeep $ ipower kind
+      h2h = buildItem flavour discoRev h2hKind kind power
+--      verb = iverbApply kind
+--      msg = makeSentence
+--        [ MU.SubjectVerbSg (partActor coactor sm) verb
+--        , partActor coactor tm
+--        , "in a staircase accident" ]
+--  msgAdd msg
+  itemEffect 0 source target h2h False
+  s <- getState
+  -- The monster has to be killed first, before we step there (same turn!).
+  assert (not (memActor target s) `blame` (source, target, "not killed")) $
+    return ()
+
+-- ** Descend
+
+effectDescend :: MonadServerChan m => ActorId -> Int -> m (Bool, Text)
+effectDescend target power =
+  useStairs target (- (power + 1)) "find a way downstairs"
+
+-- * Assorted helper functions
+
+-- | Sentences such as \"Dog barks loudly.\".
+actorVerb :: Kind.Ops ActorKind -> Actor -> Text -> Text
+actorVerb coactor a v =
+  makeSentence [MU.SubjectVerbSg (partActor coactor a) (MU.Text v)]
+
+-- TODO: center screen, flash the background, etc. Perhaps wait for SPACE.
+-- | Focus on the hero being wounded/displaced/etc.
+focusIfOurs :: MonadActionAbort m => ActorId -> m Bool
+focusIfOurs _target = return True
+
 -- TODO: right now it only works for human factions (sendQueryUI).
 -- | The leader leaves the dungeon.
 fleeDungeon :: MonadServerChan m => m ()
@@ -313,108 +473,6 @@ fleeDungeon = do
     sendUpdateUI side $ ShowItemsCli discoS winMsg bag
     let upd2 f = f {gquit = Just (True, Victor)}
     modifyState $ updateSide upd2
-
--- | The source actor affects the target actor, with a given item.
--- If the event is seen, the item may get identified.
-itemEffectSem :: MonadServerChan m
-                 => Int -> ActorId -> ActorId -> Item -> Bool -> m ()
-itemEffectSem verbosity source target item block = do
-  Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
-  sm <- getsState (getActorBody source)
-  -- Destroys attacking actor: a hack for projectiles.
-  when (bproj sm) $ killAtomic source sm
-  discoS <- getsState sdisco
-  let effect = ieffect $ okind $ fromJust $ jkind discoS item
-  -- The msg describes the target part of the action.
-  b <- effectToAction effect verbosity source target (jpower item) block
-  -- The effect is interesting so the item gets identified, if seen.
-  when b $ discover discoS item
-
--- TODO: send to all clients that see tpos.
--- | Make the item known to the leader.
-discover :: MonadServerChan m => Discoveries -> Item -> m ()
-discover discoS i = do
-  side <- getsState sside
-  let ix = jkindIx i
-      ik = discoS EM.! ix
-  sendUpdateCli side $ DiscoverCli ik i
-
-addActor :: MonadServer m
-         => Kind.Id ActorKind -> FactionId -> Point -> Int
-         -> Maybe Char -> Maybe Text
-         -> m ()
-addActor mk bfaction ppos hp msymbol mname = do
-  Kind.COps{cotile} <- getsState scops
-  time <- getsState getTime
-  pos <- getsState $ nearbyFreePos cotile ppos
-  let m = actorTemplate mk msymbol mname hp pos time bfaction False
-  acounter <- getsServer sacounter
-  modifyServer $ \ser -> ser {sacounter = succ acounter}
-  spawnAtomic acounter m
-
--- TODO: apply this special treatment only to actors with symbol '@'.
--- | Create a new hero on the current level, close to the given position.
-addHero :: MonadServer m => FactionId -> Point -> [(Int, Text)] -> m ()
-addHero bfaction ppos configHeroNames = do
-  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
-  let mk = heroKindId coactor
-  hp <- rndToAction $ rollDice $ ahp $ okind mk
-  mhs <- mapM (\n -> getsState $ \s -> tryFindHeroK s bfaction n) [0..9]
-  let freeHeroK = elemIndex Nothing mhs
-      n = fromMaybe 100 freeHeroK
-      symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
-      name = findHeroName configHeroNames n
-      startHP = hp - (hp `div` 5) * min 3 n
-  addActor mk bfaction ppos startHP (Just symbol) (Just name)
-
--- | Find a hero name in the config file, or create a stock name.
-findHeroName :: [(Int, Text)] -> Int -> Text
-findHeroName configHeroNames n =
-  let heroName = lookup n configHeroNames
-  in fromMaybe ("hero number" <+> showT n) heroName
-
-summonFriends :: MonadServer m => FactionId -> Int -> Point -> m ()
-summonFriends bfaction n pos = assert (n > 0) $ do
-  Kind.COps{ coactor=coactor@Kind.Ops{opick}
-           , cofact=Kind.Ops{okind} } <- getsState scops
-  faction <- getsState sfaction
-  let fact = okind $ gkind $ faction EM.! bfaction
-  replicateM_ n $ do
-    mk <- rndToAction $ opick (fname fact) (const True)
-    if mk == heroKindId coactor
-      then addHero bfaction pos []
-      else addMonster mk bfaction pos
-
--- | Create a new monster on the level, at a given position
--- and with a given actor kind and HP.
-addMonster :: MonadServer m
-           => Kind.Id ActorKind -> FactionId -> Point -> m ()
-addMonster mk bfaction ppos = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-  hp <- rndToAction $ rollDice $ ahp $ okind mk
-  addActor mk bfaction ppos hp Nothing Nothing
-
--- | Spawn monsters of any spawning faction, friendly or not.
--- To be used for spontaneous spawning of monsters and for the spawning effect.
-spawnMonsters :: MonadServer m => Int -> Point -> m (Maybe FactionId)
-spawnMonsters n pos = do
-  Kind.COps{ coactor=Kind.Ops{opick}
-           , cofact=Kind.Ops{okind} } <- getsState scops
-  faction <- getsState sfaction
-  let f (fid, fa) =
-        let kind = okind (gkind fa)
-        in if fspawn kind <= 0
-           then Nothing
-           else Just (fspawn kind, (kind, fid))
-  case catMaybes $ map f $ EM.assocs faction of
-    [] -> return Nothing  -- no faction spawns
-    spawnList -> do
-      let freq = toFreq "spawn" spawnList
-      (spawnKind, bfaction) <- rndToAction $ frequency freq
-      replicateM_ n $ do
-        mk <- rndToAction $ opick (fname spawnKind) (const True)
-        addMonster mk bfaction pos
-      return $ Just bfaction
 
 -- | Remove a dead actor. Check if game over.
 checkPartyDeath :: MonadServerChan m => ActorId -> m ()

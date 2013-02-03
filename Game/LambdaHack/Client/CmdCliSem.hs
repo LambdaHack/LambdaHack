@@ -72,25 +72,6 @@ applyCli actor verb item = do
         , partItemNWs coitem disco 1 item ]
   msgAdd msg
 
-showItemsCli :: MonadClientUI m => Discoveries -> Msg -> ItemBag -> m ()
-showItemsCli discoS msg items = do
-  lvl <- getsState getArena
-  io <- itemOverlay discoS lvl True items
-  slides <- overlayToSlideshow msg io
-  void $ getManyConfirms [] slides
-
-animateDeathCli :: MonadClientUI m => ActorId -> m ()
-animateDeathCli target = do
-  Kind.COps{coactor} <- getsState scops
-  pbody <- getsState $ getActorBody target
-  msgAdd $ makeSentence [MU.SubjectVerbSg (partActor coactor pbody) "die"]
-  recordHistory  -- Prevent repeating the "die" msgs.
-  cli <- getClient
-  loc <- getState
-  per <- askPerception
-  let animFrs = animate cli loc per $ deathBody (bpos pbody)
-  displayFramesPush animFrs
-
 invalidateArenaCli :: MonadClient m => LevelId -> m Bool
 invalidateArenaCli arena = do
   arenaOld <- getsState sarena
@@ -152,24 +133,6 @@ switchLevelCli aid arena pbody items = do
     loc <- getState
     modifyClient $ updateSelectedLeader aid loc
 
-effectCli :: MonadClientUI m => Msg -> (Point, Point) -> Int -> Bool -> m ()
-effectCli msg poss deltaHP block = do
-  msgAdd msg
-  cli <- getClient
-  loc <- getState
-  per <- askPerception
-  -- Try to show an animation. Sometimes, e.g., when HP is unchaged,
-  -- the animation will not be shown, but a single frame with @msg@ will.
-  let anim | deltaHP > 0 =
-        twirlSplash poss Color.BrBlue Color.Blue
-           | deltaHP < 0 && block =
-        blockHit    poss Color.BrRed  Color.Red
-           | deltaHP < 0 && not block =
-        twirlSplash poss Color.BrRed  Color.Red
-           | otherwise = mempty
-      animFrs = animate cli loc per anim
-  displayFramesPush $ Nothing : animFrs
-
 projectCli :: MonadClient m => Point -> ActorId -> Item -> m ()
 projectCli spos source item = do
     Kind.COps{coactor, coitem} <- getsState scops
@@ -214,6 +177,59 @@ showAttackCli source target verb stack say = do
            then ["with", partItemAW coitem disco stack]
            else []
   msgAdd msg
+
+restartCli :: MonadClient m => FactionPers -> State -> m ()
+restartCli sper locRaw = do
+  shistory <- getsClient shistory
+  sconfigUI <- getsClient sconfigUI
+  let cli = defStateClient shistory sconfigUI
+  putClient cli {sper}
+  random <- getsState srandom
+  side <- getsState sside
+  let loc = updateRandom (const random)
+            $ switchGlobalSelectedSideOnlyForGlobalState side locRaw  -- :O)
+  putState loc
+  -- Save ASAP in case of crashes and disconnects.
+  --TODO
+
+-- * cmdUpdateUI
+
+showItemsCli :: MonadClientUI m => Discoveries -> Msg -> ItemBag -> m ()
+showItemsCli discoS msg items = do
+  lvl <- getsState getArena
+  io <- itemOverlay discoS lvl True items
+  slides <- overlayToSlideshow msg io
+  void $ getManyConfirms [] slides
+
+animateDeathCli :: MonadClientUI m => ActorId -> m ()
+animateDeathCli target = do
+  Kind.COps{coactor} <- getsState scops
+  pbody <- getsState $ getActorBody target
+  msgAdd $ makeSentence [MU.SubjectVerbSg (partActor coactor pbody) "die"]
+  recordHistory  -- Prevent repeating the "die" msgs.
+  cli <- getClient
+  loc <- getState
+  per <- askPerception
+  let animFrs = animate cli loc per $ deathBody (bpos pbody)
+  displayFramesPush animFrs
+
+effectCli :: MonadClientUI m => Msg -> (Point, Point) -> Int -> Bool -> m ()
+effectCli msg poss deltaHP block = do
+  msgAdd msg
+  cli <- getClient
+  loc <- getState
+  per <- askPerception
+  -- Try to show an animation. Sometimes, e.g., when HP is unchaged,
+  -- the animation will not be shown, but a single frame with @msg@ will.
+  let anim | deltaHP > 0 =
+        twirlSplash poss Color.BrBlue Color.Blue
+           | deltaHP < 0 && block =
+        blockHit    poss Color.BrRed  Color.Red
+           | deltaHP < 0 && not block =
+        twirlSplash poss Color.BrRed  Color.Red
+           | otherwise = mempty
+      animFrs = animate cli loc per anim
+  displayFramesPush $ Nothing : animFrs
 
 animateBlockCli :: MonadClientUI m => ActorId -> ActorId -> MU.Part -> m ()
 animateBlockCli source target verb = do
@@ -260,27 +276,7 @@ displaceCli source target = do
       animFrs = animate cli loc per $ swapPlaces poss
   displayFramesPush $ Nothing : animFrs
 
-restartCli :: MonadClient m => FactionPers -> State -> m ()
-restartCli sper locRaw = do
-  shistory <- getsClient shistory
-  sconfigUI <- getsClient sconfigUI
-  let cli = defStateClient shistory sconfigUI
-  putClient cli {sper}
-  random <- getsState srandom
-  side <- getsState sside
-  let loc = updateRandom (const random)
-            $ switchGlobalSelectedSideOnlyForGlobalState side locRaw  -- :O)
-  putState loc
-  -- Save ASAP in case of crashes and disconnects.
-  --TODO
-
 -- * cmdQueryCli
-
-carryOnCli :: MonadClientUI m => m Bool
-carryOnCli = do
-  go <- displayMore ColorBW ""
-  msgAdd "The survivors carry on."  -- TODO: reset messages at game over not to display it if there are no survivors.
-  return go
 
 setArenaLeaderCli :: MonadClient m => LevelId -> ActorId -> m ActorId
 setArenaLeaderCli arena actor = do
@@ -303,13 +299,39 @@ setArenaLeaderCli arena actor = do
   modifyClient $ updateSelectedLeader leader loc
   return leader
 
--- | Continue running in the given direction.
-continueRun :: MonadClient m => ActorId -> (Vector, Int) -> m CmdSer
-continueRun leader dd = do
-  (dir, distNew) <- continueRunDir leader dd
-  modifyClient $ \cli -> cli {srunning = Just (dir, distNew)}
-  -- Attacks and opening doors disallowed when continuing to run.
-  return $ RunSer leader dir
+handleAI :: MonadClient m => ActorId -> m CmdSer
+handleAI actor = do
+  body <- getsState $ getActorBody actor
+  side <- getsState sside
+  assert (bfaction body == side `blame` (actor, bfaction body, side)) $ do
+    Kind.COps{costrat=Kind.Ops{okind}} <- getsState scops
+    leader <- getsClient sleader
+    fact <- getsState getSide
+    let factionAI | Just actor /= leader = gAiMember fact
+                  | otherwise = fromJust $ gAiLeader fact
+        factionAbilities = sabilities (okind factionAI)
+    stratTarget <- targetStrategy actor factionAbilities
+    -- Choose a target from those proposed by AI for the actor.
+    btarget <- rndToAction $ frequency $ bestVariant stratTarget
+    modifyClient $ updateTarget actor (const btarget)
+    stratAction <- actionStrategy actor factionAbilities
+    let _debug = T.unpack
+          $ "HandleAI abilities:" <+> showT factionAbilities
+          <>          ", symbol:" <+> showT (bsymbol body)
+          <>          ", loc:"    <+> showT (bpos body)
+          <> "\nHandleAI target:" <+> showT stratTarget
+          <> "\nHandleAI move:"   <+> showT stratAction
+    -- trace _debug $ return ()
+    -- Run the AI: chose an action from those given by the AI strategy.
+    rndToAction $ frequency $ bestVariant $ stratAction
+
+-- * cmdQueryUI
+
+carryOnCli :: MonadClientUI m => m Bool
+carryOnCli = do
+  go <- displayMore ColorBW ""
+  msgAdd "The survivors carry on."  -- TODO: reset messages at game over not to display it if there are no survivors.
+  return go
 
 -- | Handle the move of the hero.
 handleHuman :: MonadClientUI m
@@ -326,6 +348,14 @@ handleHuman leader = do
   leaderNew <- getsClient sleader
   arenaNew <- getsState sarena
   return (cmdS, leaderNew, arenaNew)
+
+-- | Continue running in the given direction.
+continueRun :: MonadClient m => ActorId -> (Vector, Int) -> m CmdSer
+continueRun leader dd = do
+  (dir, distNew) <- continueRunDir leader dd
+  modifyClient $ \cli -> cli {srunning = Just (dir, distNew)}
+  -- Attacks and opening doors disallowed when continuing to run.
+  return $ RunSer leader dir
 
 -- | Determine and process the next human player command. The argument is
 -- the last abort message due to running, if any.
@@ -361,8 +391,8 @@ humanCommand msgRunAbort = do
               -- is needed in other parts of code.
               modifyClient (\st -> st {slastKey = Just km})
               if (Just km == lastKey)
-                then cmdSemantics Clear
-                else cmdSemantics cmd
+                then cmdHumanSem Clear
+                else cmdHumanSem cmd
             Nothing -> let msgKey = "unknown command <" <> K.showKM km <> ">"
                        in abortWith msgKey
         -- The command was aborted or successful and if the latter,
@@ -399,29 +429,3 @@ humanCommand msgRunAbort = do
                 -- Look up and perform the next command.
                 loop kmNext
   loop kmPush
-
-handleAI :: MonadClient m => ActorId -> m CmdSer
-handleAI actor = do
-  body <- getsState $ getActorBody actor
-  side <- getsState sside
-  assert (bfaction body == side `blame` (actor, bfaction body, side)) $ do
-    Kind.COps{costrat=Kind.Ops{okind}} <- getsState scops
-    leader <- getsClient sleader
-    fact <- getsState getSide
-    let factionAI | Just actor /= leader = gAiMember fact
-                  | otherwise = fromJust $ gAiLeader fact
-        factionAbilities = sabilities (okind factionAI)
-    stratTarget <- targetStrategy actor factionAbilities
-    -- Choose a target from those proposed by AI for the actor.
-    btarget <- rndToAction $ frequency $ bestVariant stratTarget
-    modifyClient $ updateTarget actor (const btarget)
-    stratAction <- actionStrategy actor factionAbilities
-    let _debug = T.unpack
-          $ "HandleAI abilities:" <+> showT factionAbilities
-          <>          ", symbol:" <+> showT (bsymbol body)
-          <>          ", loc:"    <+> showT (bpos body)
-          <> "\nHandleAI target:" <+> showT stratTarget
-          <> "\nHandleAI move:"   <+> showT stratAction
-    -- trace _debug $ return ()
-    -- Run the AI: chose an action from those given by the AI strategy.
-    rndToAction $ frequency $ bestVariant $ stratAction

@@ -16,6 +16,7 @@ import qualified Data.EnumSet as ES
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
+import Game.LambdaHack.Server.CmdAtomic
 import Game.LambdaHack.CmdCli
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
@@ -39,6 +40,10 @@ import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.Frequency
 import Game.LambdaHack.Vector
+
+cmdAtomicSem :: MonadAction m => CmdAtomic -> m ()
+cmdAtomicSem cmd = case cmd of
+  HealAtomic n aid -> healAtomic n aid
 
 healAtomic :: MonadAction m => Int -> ActorId -> m ()
 healAtomic n aid = assert (n /= 0) $

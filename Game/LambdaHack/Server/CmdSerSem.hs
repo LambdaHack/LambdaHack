@@ -48,24 +48,6 @@ default (Text)
 
 -- + Semantics of server commands
 
--- ** GameSaveSer
-
-gameSaveSer :: MonadServerChan m => m ()
-gameSaveSer = saveGameBkp
-
--- ** CfgDumpSer
-
-cfgDumpSer :: MonadServer m => m ()
-cfgDumpSer = do
-  Config{configRulesCfgFile} <- getsServer sconfig
-  let fn = configRulesCfgFile ++ ".dump"
-      msg = "Current game rules configuration dumped to file"
-            <+> T.pack fn <> "."
-  dumpCfg fn
-  -- Wait with confirmation until saved; tell where the file is.
-  -- TODO: show abort message to the current client, not all clients
-  abortWith msg
-
 -- ** ApplySer
 
 -- TODO: split into ApplyInvSer and ApplyFloorSer
@@ -81,7 +63,7 @@ applySer actor verb iid = do
   let pos = bpos body
   broadcastPosCli [pos] $ ApplyCli actor verb item
   removeFromInventory actor iid pos
-  itemEffectSem 5 actor actor item False
+  itemEffect 5 actor actor item False
 
 -- TODO: this is subtly wrong: if identical items are on the floor and in
 -- inventory, the floor one will be chosen, regardless of player intention.
@@ -216,9 +198,9 @@ triggerSer :: MonadServerChan m => ActorId -> Point -> m ()
 triggerSer aid dpos = do
   Kind.COps{cotile=Kind.Ops{okind, opick}} <- getsState scops
   lvl <- getsState getArena
-  let f (F.Cause effect) = do
+  let f (F.Cause ef) = do
         -- No block against tile, hence @False@.
-        void $ effectToAction effect 0 aid aid 0 False
+        void $ effectSem ef 0 aid aid 0 False
         return ()
       f (F.ChangeTo tgroup) = do
         Level{lactor} <- getsState getArena
@@ -351,7 +333,7 @@ actorAttackActor source target = do
       let performHit block = do
             broadcastPosCli [spos, tpos] $ ShowAttackCli source target verb stack say
             -- Msgs inside itemEffectSem describe the target part.
-            itemEffectSem verbosity source target stack block
+            itemEffect verbosity source target stack block
       -- Projectiles can't be blocked, can be sidestepped.
       if braced tm time && not (bproj sm)
         then do
@@ -470,7 +452,25 @@ gameRestartSer = do
   let upd f = f {gquit = Just (False, Restart)}
   modifyState $ updateSide upd
 
--- * Assorted helper server functions.
+-- ** GameSaveSer
+
+gameSaveSer :: MonadServerChan m => m ()
+gameSaveSer = saveGameBkp
+
+-- ** CfgDumpSer
+
+cfgDumpSer :: MonadServer m => m ()
+cfgDumpSer = do
+  Config{configRulesCfgFile} <- getsServer sconfig
+  let fn = configRulesCfgFile ++ ".dump"
+      msg = "Current game rules configuration dumped to file"
+            <+> T.pack fn <> "."
+  dumpCfg fn
+  -- Wait with confirmation until saved; tell where the file is.
+  -- TODO: show abort message to the current client, not all clients
+  abortWith msg
+
+-- * Assorted helper functions
 
 -- | Create a new monster on the level, at a random position.
 rollSpawnPos :: Kind.COps -> ES.EnumSet Point -> Level -> Rnd Point

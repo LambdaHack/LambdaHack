@@ -1,7 +1,7 @@
 {-# LANGUAGE GADTs, OverloadedStrings #-}
 -- | Semantics of human player commands.
 module Game.LambdaHack.Client.CmdHumanSem
-  ( cmdSemantics
+  ( cmdHumanSem
   ) where
 
 import Control.Monad
@@ -24,6 +24,37 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
+
+-- | The semantics of human player commands in terms of the @Action@ monad.
+-- Decides if the action takes time and what action to perform.
+-- Time cosuming commands are marked as such in help and cannot be
+-- invoked in targeting mode on a remote level (level different than
+-- the level of the selected hero).
+cmdHumanSem :: MonadClientUI m
+            => CmdHuman -> WriterT Slideshow m (Maybe CmdSer)
+cmdHumanSem cmd = do
+  Just leaderOld <- getsClient sleader
+  arenaOld <- getsState sarena
+  posOld <- getsState (bpos . getActorBody leaderOld)
+  cli <- getClient
+  loc <- getState
+  let sem = cmdAction cli loc cmd
+  mcmdS <- if noRemoteCmdHuman cmd
+           then checkCursor sem
+           else sem
+  arena <- getsState sarena
+  leaderNew <- getsClient sleader
+  case leaderNew of
+    Nothing -> return ()
+    Just leader -> do
+      pos <- getsState (bpos . getActorBody leader)
+      tgtMode <- getsClient stgtMode
+      when (isNothing tgtMode  -- targeting performs a more extensive look
+            && (posOld /= pos
+                || arenaOld /= arena)) $ do
+        lookMsg <- lookAt False True pos ""
+        msgAdd lookMsg
+  return mcmdS
 
 -- | The basic action for a command and whether it takes time.
 cmdAction :: MonadClientUI m => StateClient -> State -> CmdHuman
@@ -91,36 +122,6 @@ cmdAction cli s cmd =
     DebugOmni   -> modifyClient toggleOmniscient >> return Nothing  -- TODO: Server
     DebugSmell  -> modifyClient toggleMarkSmell >> return Nothing
     DebugVision -> undefined {-modifyServer cycleTryFov-}
-
--- | The semantics of human player commands in terms of the @Action@ monad.
--- Decides if the action takes time and what action to perform.
--- Time cosuming commands are marked as such in help and cannot be
--- invoked in targeting mode on a remote level (level different than
--- the level of the selected hero).
-cmdSemantics :: MonadClientUI m => CmdHuman -> WriterT Slideshow m (Maybe CmdSer)
-cmdSemantics cmd = do
-  Just leaderOld <- getsClient sleader
-  arenaOld <- getsState sarena
-  posOld <- getsState (bpos . getActorBody leaderOld)
-  cli <- getClient
-  loc <- getState
-  let sem = cmdAction cli loc cmd
-  mcmdS <- if noRemoteCmdHuman cmd
-           then checkCursor sem
-           else sem
-  arena <- getsState sarena
-  leaderNew <- getsClient sleader
-  case leaderNew of
-    Nothing -> return ()
-    Just leader -> do
-      pos <- getsState (bpos . getActorBody leader)
-      tgtMode <- getsClient stgtMode
-      when (isNothing tgtMode  -- targeting performs a more extensive look
-            && (posOld /= pos
-                || arenaOld /= arena)) $ do
-        lookMsg <- lookAt False True pos ""
-        msgAdd lookMsg
-  return mcmdS
 
 -- | If in targeting mode, check if the current level is the same
 -- as player level and refuse performing the action otherwise.

@@ -43,7 +43,7 @@ main = do
       -- @MonadClientChan@ never tries to access the client UI session
       -- (unlike @MonadClientUI@).
       exeClient False _ = executorCli loopComputer undefined
-      loopServer = loopSer cmdSer
+      loopServer = loopSer cmdSerSem
       exeServer executorC = executorSer (loopServer executorC cops)
   exeFrontend cops exeClient exeServer
   waitForChildren
