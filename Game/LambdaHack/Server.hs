@@ -13,7 +13,7 @@ import Game.LambdaHack.CmdSer
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Level
 import Game.LambdaHack.Server.Action
-import Game.LambdaHack.Server.SemAction
+import Game.LambdaHack.Server.CmdSerSem
 import Game.LambdaHack.Server.LoopAction
 import Game.LambdaHack.State
 

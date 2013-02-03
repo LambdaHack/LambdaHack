@@ -1,6 +1,6 @@
 {-# LANGUAGE GADTs, OverloadedStrings #-}
 -- | Semantics of human player commands.
-module Game.LambdaHack.Client.CmdHumanAction
+module Game.LambdaHack.Client.CmdHumanSem
   ( cmdSemantics
   ) where
 

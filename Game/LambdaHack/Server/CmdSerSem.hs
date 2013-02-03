@@ -3,7 +3,7 @@
 -- | Semantics of 'CmdSer' server commands.
 -- A couple of them do not take time, the rest does.
 -- TODO: document
-module Game.LambdaHack.Server.SemAction where
+module Game.LambdaHack.Server.CmdSerSem where
 
 import Control.Monad
 import Control.Monad.Reader.Class
@@ -35,14 +35,14 @@ import Game.LambdaHack.Point
 import Game.LambdaHack.Random
 import Game.LambdaHack.Server.Action
 import Game.LambdaHack.Server.Config
-import Game.LambdaHack.Server.EffectAction
+import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
-import Game.LambdaHack.Server.CmdAtomicAction
+import Game.LambdaHack.Server.CmdAtomicSem
 
 default (Text)
 
@@ -81,7 +81,7 @@ applySer actor verb iid = do
   let pos = bpos body
   broadcastPosCli [pos] $ ApplyCli actor verb item
   removeFromInventory actor iid pos
-  itemEffectAction 5 actor actor item False
+  itemEffectSem 5 actor actor item False
 
 -- TODO: this is subtly wrong: if identical items are on the floor and in
 -- inventory, the floor one will be chosen, regardless of player intention.
@@ -350,8 +350,8 @@ actorAttackActor source target = do
                 in (w, True, 0, verbApply)
       let performHit block = do
             broadcastPosCli [spos, tpos] $ ShowAttackCli source target verb stack say
-            -- Msgs inside itemEffectAction describe the target part.
-            itemEffectAction verbosity source target stack block
+            -- Msgs inside itemEffectSem describe the target part.
+            itemEffectSem verbosity source target stack block
       -- Projectiles can't be blocked, can be sidestepped.
       if braced tm time && not (bproj sm)
         then do

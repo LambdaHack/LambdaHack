@@ -1,6 +1,6 @@
 -- | Semantics of 'CmdAction' server commands.
 -- TODO: document
-module Game.LambdaHack.Server.CmdAtomicAction where
+module Game.LambdaHack.Server.CmdAtomicSem where
 
 import Control.Monad
 import Control.Monad.Reader.Class

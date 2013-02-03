@@ -16,7 +16,7 @@ import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.LocalAction
 import Game.LambdaHack.Client.LoopAction
 import Game.LambdaHack.Client.RunAction
-import Game.LambdaHack.Client.SemAction
+import Game.LambdaHack.Client.CmdCliSem
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.CmdCli
 import Game.LambdaHack.Faction

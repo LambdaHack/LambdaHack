@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 -- | The @effectToAction@ function and related operations.
 -- TODO: document
-module Game.LambdaHack.Server.EffectAction where
+module Game.LambdaHack.Server.EffectSem where
 
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
@@ -32,7 +32,7 @@ import Game.LambdaHack.Random
 import Game.LambdaHack.Server.Action
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.State
-import Game.LambdaHack.Server.CmdAtomicAction
+import Game.LambdaHack.Server.CmdAtomicSem
 import Game.LambdaHack.State
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
@@ -212,7 +212,7 @@ squashActor source target = do
 --        , partActor coactor tm
 --        , "in a staircase accident" ]
 --  msgAdd msg
-  itemEffectAction 0 source target h2h False
+  itemEffectSem 0 source target h2h False
   s <- getState
   -- The monster has to be killed first, before we step there (same turn!).
   assert (not (memActor target s) `blame` (source, target, "not killed")) $
@@ -316,9 +316,9 @@ fleeDungeon = do
 
 -- | The source actor affects the target actor, with a given item.
 -- If the event is seen, the item may get identified.
-itemEffectAction :: MonadServerChan m
+itemEffectSem :: MonadServerChan m
                  => Int -> ActorId -> ActorId -> Item -> Bool -> m ()
-itemEffectAction verbosity source target item block = do
+itemEffectSem verbosity source target item block = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   sm <- getsState (getActorBody source)
   -- Destroys attacking actor: a hack for projectiles.

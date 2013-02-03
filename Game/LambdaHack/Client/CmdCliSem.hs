@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable, GADTs, OverloadedStrings, StandaloneDeriving
              #-}
 -- | Semantics of 'CmdCli' client commands.
-module Game.LambdaHack.Client.SemAction where
+module Game.LambdaHack.Client.CmdCliSem where
 
 import Control.Monad
 import Control.Monad.Writer.Strict (WriterT, runWriterT)
@@ -20,7 +20,7 @@ import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Animation
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.CmdHuman
-import Game.LambdaHack.Client.CmdHumanAction
+import Game.LambdaHack.Client.CmdHumanSem
 import Game.LambdaHack.Client.Draw
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.LocalAction

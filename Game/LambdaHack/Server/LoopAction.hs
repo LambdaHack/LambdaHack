@@ -31,9 +31,9 @@ import Game.LambdaHack.Random
 import Game.LambdaHack.Server.Action
 import Game.LambdaHack.Server.Config
 import qualified Game.LambdaHack.Server.DungeonGen as DungeonGen
-import Game.LambdaHack.Server.EffectAction
+import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.Fov
-import Game.LambdaHack.Server.SemAction
+import Game.LambdaHack.Server.CmdSerSem
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.State
 import Game.LambdaHack.Time
