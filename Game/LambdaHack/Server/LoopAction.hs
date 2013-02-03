@@ -195,6 +195,7 @@ handleActors cmdSer subclipStart prevHuman disp = withPerception $ do
           modifyState $ updateSelectedArena arenaNew
           tryWith (\msg -> do
                       sendUpdateCli side $ ShowMsgCli msg
+                      sendUpdateUI side DisplayPushCli
                       handleActors cmdSer subclipStart nHuman False
                   ) $ do
             cmdSer cmdS
