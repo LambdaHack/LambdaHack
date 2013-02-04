@@ -4,6 +4,7 @@ module Game.LambdaHack.Server.DungeonGen
   ( FreshDungeon(..), dungeonGen
   ) where
 
+import Control.Arrow (second)
 import Control.Monad
 import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
@@ -14,11 +15,8 @@ import Data.Text (Text)
 import qualified System.Random as R
 
 import Game.LambdaHack.Content.CaveKind
-import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind
-import qualified Game.LambdaHack.Effect as Effect
 import qualified Game.LambdaHack.Feature as F
-import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
@@ -44,28 +42,6 @@ mapToIMap :: X -> M.Map PointXY a -> EM.EnumMap Point a
 mapToIMap cxsize m =
   EM.fromList $ map (\ (xy, a) -> (toPoint cxsize xy, a)) (M.assocs m)
 
-rollItems :: Kind.COps -> FlavourMap -> DiscoRev -> Int -> Int
-          -> CaveKind -> TileMap -> Point
-          -> Rnd [(Point, (Item, Int))]
-rollItems Kind.COps{cotile, coitem} flavour discoRev
-          ln depth CaveKind{cxsize, citemNum, cminStairDist} ltile ppos = do
-  nri <- rollDice citemNum
-  replicateM nri $ do
-    (item, n, ik) <- newItem coitem flavour discoRev ln depth
-    l <- case ieffect ik of
-           Effect.Wound dice | maxDice dice > 0  -- a weapon
-                               && maxDice dice + maxDeep (ipower ik) > 3 ->
-             -- Powerful weapons generated close to monsters, MUAHAHAHA.
-             findPosTry 20 ltile  -- 20 only, for unpredictability
-               [ \ l _ -> chessDist cxsize ppos l > cminStairDist
-               , \ l _ -> chessDist cxsize ppos l > 2 * cminStairDist `div` 3
-               , \ l _ -> chessDist cxsize ppos l > cminStairDist `div` 2
-               , \ l _ -> chessDist cxsize ppos l > cminStairDist `div` 3
-               , const (Tile.hasFeature cotile F.Boring)
-               ]
-           _ -> findPos ltile (const (Tile.hasFeature cotile F.Boring))
-    return (l, (item, n))
-
 placeStairs :: Kind.Ops TileKind -> TileMap -> CaveKind -> [Place]
             -> Rnd (Point, Kind.Id TileKind, Point, Kind.Id TileKind)
 placeStairs cotile@Kind.Ops{opick} cmap CaveKind{..} dplaces = do
@@ -83,12 +59,11 @@ placeStairs cotile@Kind.Ops{opick} cmap CaveKind{..} dplaces = do
   return (su, upId, sd, downId)
 
 -- | Create a level from a cave, from a cave kind.
-buildLevel :: Kind.COps -> FlavourMap -> DiscoRev -> Cave -> Int -> Int
-           -> ItemId
-           -> Rnd (Level, ItemId)
-buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
-                         , cocave=Kind.Ops{okind} }
-           flavour discoRev Cave{..} ldepth depth icounter = do
+buildLevel :: Kind.COps -> Cave -> Int -> Int
+           -> Rnd (Level, RollDice)
+buildLevel Kind.COps{ cotile=cotile@Kind.Ops{opick}
+                    , cocave=Kind.Ops{okind} }
+           Cave{..} ldepth depth = do
   let kc@CaveKind{..} = okind dkind
   cmap <- convertTileMaps (opick cdefTile (const True)) cxsize cysize dmap
   (su, upId, sd, downId) <-
@@ -115,31 +90,19 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
         , ltime = timeTurn
         , lsecret = mapToIMap cxsize dsecret
         }
-  is <- rollItems cops flavour discoRev ldepth depth kc ltile su
-  let itemMap = mapToIMap cxsize ditem `EM.union` EM.fromList is
-      fo (pos, (item, k)) (lvlF, icounterF) =
-        let jletter = if jsymbol item == '$' then Just '$' else Nothing
-            bag = EM.singleton icounterF (k, jletter)
-            mergeBag = EM.insertWith (EM.unionWith joinItem)
-            lvlG = updateItem (EM.insert icounterF item)
-                   $ updateFloor (mergeBag pos bag) lvlF
-        in (lvlG, succ icounterF)
-      (nlvl, nicounter) = foldr fo (level, icounter) $ EM.assocs itemMap
-  return (nlvl, nicounter)
+  return (level, citemNum)
 
 matchGenerator :: Kind.Ops CaveKind -> Maybe Text -> Rnd (Kind.Id CaveKind)
 matchGenerator Kind.Ops{opick} mname =
   opick (fromMaybe "dng" mname) (const True)
 
-findGenerator :: Kind.COps -> FlavourMap -> DiscoRev -> Config -> Int -> Int
-              -> ItemId
-              -> Rnd (Level, ItemId)
-findGenerator cops flavour discoRev Config{configCaves} k depth icounter = do
+findGenerator :: Kind.COps -> Config -> Int -> Int -> Rnd (Level, RollDice)
+findGenerator cops Config{configCaves} k depth = do
   let ln = "LambdaCave_" <> showT k
       genName = lookup ln configCaves
   ci <- matchGenerator (Kind.cocave cops) genName
   cave <- buildCave cops k depth ci
-  buildLevel cops flavour discoRev cave k depth icounter
+  buildLevel cops cave k depth
 
 -- | Find starting postions for all factions. Try to make them distant
 -- from each other and from any stairs.
@@ -162,33 +125,29 @@ findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lstair} =
 
 -- | Freshly generated and not yet populated dungeon.
 data FreshDungeon = FreshDungeon
-  { entryLevel    :: LevelId  -- ^ starting level
-  , entryPoss     :: [Point]  -- ^ starting positions for non-spawning parties
-  , freshDungeon  :: Dungeon  -- ^ maps for all levels
-  , freshDepth    :: Int      -- ^ dungeon depth (can be different than size)
-  , freshICounter :: ItemId   -- ^ first unused item index
+  { entryLevel   :: LevelId  -- ^ starting level
+  , entryPoss    :: [Point]  -- ^ starting positions for non-spawning parties
+  , freshDungeon :: Dungeon  -- ^ maps for all levels
+  , freshDepth   :: Int      -- ^ dungeon depth (can be different than size)
+  , itemCounts   :: [(LevelId, (Level, RollDice))]
   }
 
 -- | Generate the dungeon for a new game.
-dungeonGen :: Kind.COps -> FlavourMap -> DiscoRev -> Config
-           -> Rnd FreshDungeon
-dungeonGen cops flavour discoRev config@Config{configDepth} =
-  let gen :: (R.StdGen, ItemId) -> Int
-          -> ((R.StdGen, ItemId), (LevelId, Level))
-      gen (g, icounter) k =
+dungeonGen :: Kind.COps -> Config -> Rnd FreshDungeon
+dungeonGen cops config@Config{configDepth} =
+  let gen :: R.StdGen -> Int -> (R.StdGen, (LevelId, (Level, RollDice)))
+      gen g k =
         let (g1, g2) = R.split g
-            (res, nicounter) =
-                St.evalState (findGenerator cops flavour discoRev config k
-                                            configDepth icounter) g1
-        in ((g2, nicounter), (toEnum k, res))
+            res = St.evalState (findGenerator cops config k configDepth) g1
+        in (g2, (toEnum k, res))
       con :: R.StdGen -> (FreshDungeon, R.StdGen)
       con g = assert (configDepth >= 1 `blame` configDepth) $
-        let ((gd, freshICounter), levels) =
-              mapAccumL gen (g, toEnum 0) [1..configDepth]
+        let (gd, itemCounts) = mapAccumL gen g [1..configDepth]
+            levels = map (second fst) itemCounts
             entryLevel = initialLevel
             (entryPoss, gp) =
               St.runState (findEntryPoss cops (snd (head levels))) gd
             freshDungeon = EM.fromList levels
             freshDepth = configDepth
-        in (FreshDungeon{..}, gp)
+       in (FreshDungeon{..}, gp)
   in St.state con

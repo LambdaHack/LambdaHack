@@ -8,10 +8,10 @@ module Game.LambdaHack.Server.State
 import Data.Binary
 import Data.Typeable
 
+import Game.LambdaHack.Actor
 import Game.LambdaHack.Item
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.Fov
-import Game.LambdaHack.Actor
 
 -- | Global, server state.
 data StateServer = StateServer
@@ -29,10 +29,11 @@ data DebugModeSer = DebugModeSer
   deriving Show
 
 -- | Initial game server state.
-defStateServer :: DiscoRev -> FlavourMap -> Config -> ItemId -> StateServer
-defStateServer sdiscoRev sflavour sconfig sicounter =
+defStateServer :: DiscoRev -> FlavourMap -> Config -> StateServer
+defStateServer sdiscoRev sflavour sconfig =
   StateServer
     { sacounter = toEnum 0
+    , sicounter = toEnum 0
     , sdebugSer = defDebugModeSer
     , ..
     }

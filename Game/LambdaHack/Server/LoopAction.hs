@@ -9,12 +9,12 @@ import Control.Monad
 import Control.Monad.Reader.Class
 import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import Data.List
 import Data.Maybe
 import qualified Data.Ord as Ord
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.EnumSet as ES
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -23,22 +23,24 @@ import Game.LambdaHack.CmdCli
 import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Faction
+import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
+import Game.LambdaHack.Point
 import Game.LambdaHack.Random
 import Game.LambdaHack.Server.Action
+import Game.LambdaHack.Server.CmdSerSem
 import Game.LambdaHack.Server.Config
 import qualified Game.LambdaHack.Server.DungeonGen as DungeonGen
 import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.Fov
-import Game.LambdaHack.Server.CmdSerSem
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.State
+import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Point
 
 -- | Start a clip (a part of a turn for which one or more frames
 -- will be generated). Do whatever has to be done
@@ -379,7 +381,7 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
 
 -- TODO: do this inside Action ()
 gameReset :: MonadServer m => Kind.COps -> m ()
-gameReset cops@Kind.COps{coitem, corule} = do
+gameReset cops@Kind.COps{coitem, corule, cotile} = do
   -- Rules config reloaded at each new game start.
   -- Taking the original config from config file, to reroll RNG, if needed
   -- (the current config file has the RNG rolled for the previous game).
@@ -390,16 +392,25 @@ gameReset cops@Kind.COps{coitem, corule} = do
         faction <- createFactions cops sconfig
         flavour <- dungeonFlavourMap coitem
         (discoS, discoRev) <- serverDiscos coitem
-        freshDng <- DungeonGen.dungeonGen cops flavour discoRev sconfig
+        freshDng <- DungeonGen.dungeonGen cops sconfig
         return (faction, flavour, discoS, discoRev, freshDng)
   let (faction, flavour, discoS, discoRev, DungeonGen.FreshDungeon{..}) =
         St.evalState rnd dungeonSeed
       defState = defStateGlobal freshDungeon freshDepth discoS faction
                                 cops random entryLevel
-      defSer = defStateServer discoRev flavour sconfig freshICounter
+      defSer = defStateServer discoRev flavour sconfig
       notSpawning (_, fact) = not $ isSpawningFact cops fact
       needInitialCrew = map fst $ filter notSpawning $ EM.assocs faction
       heroNames = configHeroNames sconfig : repeat []
   putState defState
   putServer defSer
+  let initialItems (lid, (Level{ltile}, citemNum)) = do
+        modifyState $ updateSelectedArena lid
+        nri <- rndToAction $ rollDice citemNum
+        replicateM nri $ do
+          pos <- rndToAction
+                 $ findPos ltile (const (Tile.hasFeature cotile F.Boring))
+          createItems 1 pos
+  mapM_ initialItems itemCounts
+  modifyState $ updateSelectedArena entryLevel
   mapM_ initialHeroes $ zip3 needInitialCrew entryPoss heroNames
