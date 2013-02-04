@@ -1,18 +1,18 @@
-{-# LANGUAGE OverloadedStrings, ExtendedDefaultRules #-}
+{-# LANGUAGE ExtendedDefaultRules, OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 -- | Effect semantics.
 -- TODO: document
 module Game.LambdaHack.Server.EffectSem where
 
 import Control.Monad
+import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import Data.List
 import Data.Maybe
+import Data.Ratio ((%))
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
-import qualified Data.EnumSet as ES
-import Data.Ratio ((%))
-import qualified Data.Char as Char
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -30,9 +30,9 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.Point
 import Game.LambdaHack.Random
 import Game.LambdaHack.Server.Action
+import Game.LambdaHack.Server.CmdAtomicSem
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.State
-import Game.LambdaHack.Server.CmdAtomicSem
 import Game.LambdaHack.State
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
@@ -112,6 +112,8 @@ eff Effect.SummonFriend _ source target power =
   effectSummonFriend source target power
 eff Effect.SpawnMonster _ _ target power =
   effectSpawnMonster target power
+eff Effect.CreateItem _ _ target power =
+  effectCreateItem target power
 eff Effect.ApplyPerfume _ source target _ =
   effectApplyPerfume source target
 eff Effect.Regeneration verbosity source target power =
@@ -303,6 +305,27 @@ addMonster mk bfaction ppos = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   hp <- rndToAction $ rollDice $ ahp $ okind mk
   addActor mk bfaction ppos hp Nothing Nothing
+
+-- ** CreateItem
+
+effectCreateItem :: MonadServer m => ActorId -> Int -> m (Bool, Text)
+effectCreateItem target power = do
+  tm <- getsState (getActorBody target)
+  void $ createItems (1 + power) (bpos tm)
+  return (True, "")
+
+createItems :: MonadServer m => Int -> Point -> m ()
+createItems n pos = do
+  Kind.COps{coitem} <- getsState scops
+  flavour <- getsServer sflavour
+  discoRev <- getsServer sdiscoRev
+  ldepth <- getsState $ ldepth . getArena
+  depth <- getsState sdepth
+  replicateM_ n $ do
+    icounter <- getsServer sicounter
+    modifyServer $ \ser -> ser {sicounter = succ icounter}
+    (item, k, _) <- rndToAction $ newItem coitem flavour discoRev ldepth depth
+    createItemAtomic icounter item k (CFloor pos)
 
 -- ** ApplyPerfume
 

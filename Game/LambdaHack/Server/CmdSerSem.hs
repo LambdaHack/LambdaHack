@@ -8,13 +8,13 @@ module Game.LambdaHack.Server.CmdSerSem where
 import Control.Monad
 import Control.Monad.Reader.Class
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import Data.List
 import Data.Maybe
 import Data.Ratio
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
-import qualified Data.EnumSet as ES
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -34,6 +34,7 @@ import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import Game.LambdaHack.Random
 import Game.LambdaHack.Server.Action
+import Game.LambdaHack.Server.CmdAtomicSem
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.State
@@ -42,7 +43,6 @@ import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
-import Game.LambdaHack.Server.CmdAtomicSem
 
 default (Text)
 
@@ -50,11 +50,11 @@ default (Text)
 
 -- ** ApplySer
 
--- TODO: split into ApplyInvSer and ApplyFloorSer
 applySer :: MonadServerChan m   -- MonadServer m
-         => ActorId  -- ^ actor applying the item (is on current level)
-         -> MU.Part  -- ^ how the applying is called
-         -> ItemId   -- ^ the item to be applied
+         => ActorId    -- ^ actor applying the item (is on current level)
+         -> MU.Part    -- ^ how the applying is called
+         -> ItemId     -- ^ the item to be applied
+--         -> Container  -- ^ the location of the item
          -> m ()
 applySer actor verb iid = do
   lvl <- getsState getArena
@@ -62,8 +62,8 @@ applySer actor verb iid = do
   body <- getsState (getActorBody actor)
   let pos = bpos body
   broadcastPosCli [pos] $ ApplyCli actor verb item
-  removeFromInventory actor iid pos
   itemEffect 5 actor actor item False
+--  destroyItem iid item container
 
 -- TODO: this is subtly wrong: if identical items are on the floor and in
 -- inventory, the floor one will be chosen, regardless of player intention.
@@ -230,12 +230,11 @@ pickupSer aid i k l = assert (k > 0 `blame` (aid, i, k, l)) $ do
     removeFromPos i k p
       >>= assert `trueM` (aid, i, p, "item is stuck")
     let nitems = EM.insertWith joinItem i (k, Just l) bitems
-        ni = nitems EM.! i
         item = getItemBody i lvl
     modifyState $ updateActorBody aid $ \m ->
-      m {bletter = maxLetter (fromJust $ snd ni) (bletter m)}
+      m {bletter = maxLetter l (bletter m)}
     modifyState (updateActorItem aid (const nitems))
-    void $ broadcastPosCli [p] (PickupCli aid item k (snd ni))
+    void $ broadcastPosCli [p] (PickupCli aid item k (Just l))
 
 -- ** DropSer
 

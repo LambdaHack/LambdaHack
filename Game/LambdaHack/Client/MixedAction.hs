@@ -66,7 +66,8 @@ leaderApplyGroupItem verb object syms = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   Just leader <- getsClient sleader
   is <- getsState $ getActorBag leader
-  ((iid, item), _) <- getGroupItem leader is object syms
+  ((iid, item), _) <-
+    getGroupItem leader is object syms
                  (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
   disco <- getsState sdisco
   let verbApply = case jkind disco item of

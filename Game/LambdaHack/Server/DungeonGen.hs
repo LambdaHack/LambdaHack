@@ -6,12 +6,12 @@ module Game.LambdaHack.Server.DungeonGen
 
 import Control.Monad
 import qualified Control.Monad.State as St
+import qualified Data.EnumMap.Strict as EM
 import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Text (Text)
 import qualified System.Random as R
-import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.ItemKind
@@ -47,7 +47,7 @@ mapToIMap cxsize m =
 rollItems :: Kind.COps -> FlavourMap -> DiscoRev -> Int -> Int
           -> CaveKind -> TileMap -> Point
           -> Rnd [(Point, (Item, Int))]
-rollItems Kind.COps{cotile, coitem=coitem} flavour discoRev
+rollItems Kind.COps{cotile, coitem} flavour discoRev
           ln depth CaveKind{cxsize, citemNum, cminStairDist} ltile ppos = do
   nri <- rollDice citemNum
   replicateM nri $ do
@@ -120,7 +120,7 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
       fo (pos, (item, k)) (lvlF, icounterF) =
         let jletter = if jsymbol item == '$' then Just '$' else Nothing
             bag = EM.singleton icounterF (k, jletter)
-            mergeBag =EM.insertWith (EM.unionWith joinItem)
+            mergeBag = EM.insertWith (EM.unionWith joinItem)
             lvlG = updateItem (EM.insert icounterF item)
                    $ updateFloor (mergeBag pos bag) lvlF
         in (lvlG, succ icounterF)

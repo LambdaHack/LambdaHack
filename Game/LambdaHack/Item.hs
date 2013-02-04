@@ -1,6 +1,5 @@
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving, OverloadedStrings
+             #-}
 -- | Weapons, treasure and all the other items in the game.
 -- No operation in this module
 -- involves the 'State' or 'Action' type.
@@ -26,6 +25,8 @@ module Game.LambdaHack.Item
 import Control.Monad
 import Data.Binary
 import Data.Char
+import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import qualified Data.Ix as Ix
 import Data.List
 import Data.Maybe
@@ -33,10 +34,8 @@ import Data.Ord
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified NLP.Miniutter.English as MU
-import qualified Data.EnumMap.Strict as EM
-import qualified Data.EnumSet as ES
 import Data.Typeable
+import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Content.ItemKind
@@ -90,7 +89,7 @@ data Item = Item
   , jflavour :: !Flavour       -- ^ individual flavour
   , jpower   :: !Int           -- ^ power of the item
   }
-  deriving Show
+  deriving (Show, Eq)
 
 instance Binary Item where
   put (Item{..} ) = do

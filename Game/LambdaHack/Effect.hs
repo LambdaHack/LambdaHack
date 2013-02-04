@@ -20,6 +20,7 @@ data Effect =
   | Dominate
   | SummonFriend
   | SpawnMonster
+  | CreateItem
   | ApplyPerfume
   | Regeneration
   | Searching
@@ -38,6 +39,7 @@ effectToSuffix (Wound dice@(RollDice a b)) =
 effectToSuffix Dominate = "of domination"
 effectToSuffix SummonFriend = "of aid calling"
 effectToSuffix SpawnMonster = "of spawning"
+effectToSuffix CreateItem = "of item creation"
 effectToSuffix ApplyPerfume = "of rose water"
 effectToSuffix Regeneration = "of regeneration"
 effectToSuffix Searching = "of searching"
@@ -54,6 +56,7 @@ effectToBenefit (Wound _) = -10     -- TODO: dice ignored for now
 effectToBenefit Dominate = 0        -- AI can't use this
 effectToBenefit SummonFriend = 100
 effectToBenefit SpawnMonster = 5    -- may or may not spawn a friendly
+effectToBenefit CreateItem = 100
 effectToBenefit ApplyPerfume = 0
 effectToBenefit Regeneration = 0    -- much more benefit from carrying around
 effectToBenefit Searching = 0       -- AI does not need to search

@@ -1,5 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
 -- | Inhabited dungeon levels and the operations to query and change them
 -- as the game progresses.
 module Game.LambdaHack.Level
@@ -12,12 +11,14 @@ module Game.LambdaHack.Level
   , updateActor, updateItem, updateSmell, updateFloor, updateTile, dropItemsAt
     -- * Level query
   , at, atI, accessible, openable, findPos, findPosTry
+    -- * Item containers
+  , Container(..)
  ) where
 
 import Data.Binary
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.List as L
 import Data.Text (Text)
-import qualified Data.EnumMap.Strict as EM
 import Data.Typeable
 
 import Game.LambdaHack.Actor
@@ -212,3 +213,8 @@ findPosTry numTries ltile l@(_ : tl) = assert (numTries > 0) $
           then return loc
           else search (k - 1)
   in search numTries
+
+data Container =
+    CFloor Point
+  | CActor ActorId
+  deriving (Show, Eq, Ord, Typeable)
