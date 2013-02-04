@@ -115,7 +115,9 @@ destroyItemAtomic :: MonadAction m
                   => ItemId -> Item -> Int -> Container -> m ()
 destroyItemAtomic iid item k container = assert (k > 0) $ do
   -- TODO: check if the item appears anywhere else and GC it
-  let rmItem (Just (m, l)) = (Just (m - k, l))
+  let rmItem (Just (m, _)) | m < k = assert `failure` (m, iid, item, k)
+      rmItem (Just (m, _)) | m == k = Nothing
+      rmItem (Just (m, l)) = (Just (m - k, l))
       rmItem Nothing = assert `failure` (iid, item, k, container)
       rmFromBag (Just bag) = Just $ EM.alter rmItem iid bag
       rmFromBag Nothing = assert `failure` (iid, item, k, container)

@@ -20,7 +20,7 @@ import Game.LambdaHack.State
 -- | The semantics of server commands.
 cmdSerSem :: MonadServerChan m => CmdSer -> m ()
 cmdSerSem cmd = case cmd of
-  ApplySer aid v iid -> applySer aid v iid
+  ApplySer aid v iid container -> applySer aid v iid container
   ProjectSer aid p eps v iid -> projectSer aid p eps v iid
   TriggerSer aid p -> triggerSer aid p
   PickupSer aid i k l -> pickupSer aid i k l

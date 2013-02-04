@@ -6,13 +6,13 @@
 module Game.LambdaHack.Client.MixedAction where
 
 import Control.Monad
+import qualified Data.EnumMap.Strict as EM
+import Data.Function
 import Data.List
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
-import qualified Data.EnumMap.Strict as EM
-import Data.Function
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -66,14 +66,14 @@ leaderApplyGroupItem verb object syms = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   Just leader <- getsClient sleader
   is <- getsState $ getActorBag leader
-  ((iid, item), _) <-
+  ((iid, item), (_, container)) <-
     getGroupItem leader is object syms
                  (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
   disco <- getsState sdisco
   let verbApply = case jkind disco item of
         Nothing -> verb
         Just ik -> iverbApply $ okind ik
-  return $! ApplySer leader verbApply iid
+  return $! ApplySer leader verbApply iid container
 
 -- | Let a human player choose any item with a given group name.
 -- Note that this does not guarantee the chosen item belongs to the group,
@@ -85,7 +85,7 @@ getGroupItem :: MonadClientUI m
              -> [Char]   -- ^ accepted item symbols
              -> Text     -- ^ prompt
              -> Text     -- ^ how to refer to the collection of objects
-             -> m ((ItemId, Item), Int)
+             -> m ((ItemId, Item), (Int, Container))
 getGroupItem leader is object syms prompt packName = do
   let choice i = jsymbol i `elem` syms
       header = makePhrase [MU.Capitalize (MU.Ws object)]
@@ -243,7 +243,7 @@ getAnyItem :: MonadClientUI m
            -> Text     -- ^ prompt
            -> ItemBag  -- ^ all items in question
            -> Text     -- ^ how to refer to the collection of items
-           -> m ((ItemId, Item), Int)
+           -> m ((ItemId, Item), (Int, Container))
 getAnyItem leader prompt = getItem leader prompt (const True) allObjectsName
 
 data ItemDialogState = INone | ISuitable | IAll deriving Eq
@@ -257,10 +257,10 @@ getItem :: MonadClientUI m
         -> Text            -- ^ how to describe suitable items
         -> ItemBag         -- ^ all items in question
         -> Text            -- ^ how to refer to the collection of items
-        -> m ((ItemId, Item), Int)
-getItem leader prompt p ptext bag isn = do
+        -> m ((ItemId, Item), (Int, Container))
+getItem aid prompt p ptext bag isn = do
   lvl  <- getsState getArena
-  body <- getsState $ getActorBody leader
+  body <- getsState $ getActorBody aid
   let is0 = map (\(iid, kl) -> ((iid, getItemBody iid lvl), kl))
             $ EM.assocs bag
       pos = bpos body
@@ -289,8 +289,7 @@ getItem leader prompt p ptext bag isn = do
       ask = do
         when (null is0 && EM.null tis) $
           abortWith "Not carrying anything."
-        res <- perform INone
-        return (fst res, fst (snd res))
+        perform INone
       bagP = EM.filterWithKey (\iid _ -> p (getItemBody iid lvl)) bag
       perform itemDialogState = do
         let (ims, imsOver, msg) = case itemDialogState of
@@ -310,14 +309,17 @@ getItem leader prompt p ptext bag isn = do
               _ -> perform INone
             K.Char '-' | floorFull ->
               -- TODO: let player select item
-              return $ maximumBy cmpItemLM
-                     $ map (\(iid, kl) -> ((iid, getItemBody iid lvl), kl))
+              return $ maximumBy (compare `on` fst . fst)
+                     $ map (\(iid, (k, _)) ->
+                             ((iid, getItemBody iid lvl), (k, CFloor pos)))
                      $ EM.assocs tis
             K.Char l | l `elem` mapMaybe (snd . snd) ims ->
-              let mitem = find (maybe False (== l) . snd . snd) ims
-              in return $ fromJust mitem
+              case find (maybe False (== l) . snd . snd) ims of
+                Nothing -> assert `failure` (l,  ims)
+                Just (iidItem, (k, _)) -> return (iidItem, (k, CActor aid))
             K.Return | bestFull ->
-              return $ maximumBy cmpItemLM isp
+              let (iidItem, (k, _)) = maximumBy cmpItemLM isp
+              in return (iidItem, (k, CActor aid))
             k -> assert `failure` "perform: unexpected key:" <+> showT k
   ask
 

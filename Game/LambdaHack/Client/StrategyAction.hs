@@ -6,10 +6,10 @@ module Game.LambdaHack.Client.StrategyAction
 
 import Control.Arrow
 import Control.Monad
+import qualified Data.EnumMap.Strict as EM
 import Data.Function
 import qualified Data.List as L
 import Data.Maybe
-import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Ability (Ability)
 import qualified Game.LambdaHack.Ability as Ability
@@ -261,15 +261,16 @@ rangedFreq cops actor glo fpos =
 
 toolsFreq :: Kind.COps -> ActorId -> State -> Frequency CmdSer
 toolsFreq cops actor glo =
-  toFreq "quaffFreq" $ quaffFreq bitems 1 ++ quaffFreq tis 2
+  toFreq "quaffFreq"
+  $ quaffFreq bitems 1 (CActor actor) ++ quaffFreq tis 2 (CFloor bpos)
  where
   Kind.COps{coitem=Kind.Ops{okind=iokind}} = cops
   lvl = getArena glo
   Actor{bpos} = getActorBody actor glo
   bitems = getActorBag actor glo
   tis = lvl `atI` bpos
-  quaffFreq bag multi =
-    [ (benefit * multi, ApplySer actor (iverbApply ik) iid)
+  quaffFreq bag multi container=
+    [ (benefit * multi, ApplySer actor (iverbApply ik) iid container)
     | (iid, i) <- map (\iid -> (iid, getItemBody iid (getArena glo)))
                   $ EM.keys bag,
       let (ik, benefit) =

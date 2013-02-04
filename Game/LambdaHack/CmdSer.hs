@@ -9,12 +9,13 @@ import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Item
+import Game.LambdaHack.Level
 import Game.LambdaHack.Point
 import Game.LambdaHack.Vector
 
 -- | Abstract syntax of server commands.
 data CmdSer =
-    ApplySer ActorId MU.Part ItemId
+    ApplySer ActorId MU.Part ItemId Container
   | ProjectSer ActorId Point Int MU.Part ItemId
   | TriggerSer ActorId Point
   | PickupSer ActorId ItemId Int Char

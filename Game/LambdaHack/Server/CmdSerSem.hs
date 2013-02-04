@@ -54,16 +54,16 @@ applySer :: MonadServerChan m   -- MonadServer m
          => ActorId    -- ^ actor applying the item (is on current level)
          -> MU.Part    -- ^ how the applying is called
          -> ItemId     -- ^ the item to be applied
---         -> Container  -- ^ the location of the item
+         -> Container  -- ^ the location of the item
          -> m ()
-applySer actor verb iid = do
+applySer actor verb iid container = do
   lvl <- getsState getArena
   let item = getItemBody iid lvl
   body <- getsState (getActorBody actor)
   let pos = bpos body
   broadcastPosCli [pos] $ ApplyCli actor verb item
   itemEffect 5 actor actor item False
---  destroyItem iid item container
+  destroyItemAtomic iid item 1 container
 
 -- TODO: this is subtly wrong: if identical items are on the floor and in
 -- inventory, the floor one will be chosen, regardless of player intention.
