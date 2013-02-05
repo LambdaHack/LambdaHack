@@ -36,9 +36,9 @@ import Control.Monad
 import Control.Monad.Writer.Strict (WriterT, lift, tell)
 import Data.Dynamic
 import qualified Data.EnumMap.Strict as EM
-import Data.Maybe
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
+import Data.Maybe
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -61,10 +61,10 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
+import Game.LambdaHack.Point
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Point
 
 withUI :: MonadClientUI m => m a -> m a
 withUI m = do
@@ -303,7 +303,7 @@ rememberLevel Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} visible nlvl olvl =
       ovis = EM.filterWithKey (\p _ -> p `ES.notMember` visible) (lfloor olvl)
       nfloor = EM.union nvis ovis
       -- TODO: too costly
-      is = ES.fromList $ concatMap EM.keys $ map bitem (EM.elems nactor)
+      is = ES.fromList $ concatMap EM.keys $ map bbag (EM.elems nactor)
                                              ++ EM.elems nfloor
       nitem  = EM.filterWithKey (\iid _ -> iid `ES.member` is) (litem nlvl)
       vis = ES.toList visible

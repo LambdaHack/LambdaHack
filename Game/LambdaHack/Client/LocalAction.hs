@@ -10,6 +10,8 @@ import qualified Paths_LambdaHack as Self (version)
 
 import Control.Monad
 import Control.Monad.Writer.Strict (WriterT, lift, tell)
+import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import Data.Function
 import Data.List
 import qualified Data.Map.Strict as M
@@ -19,8 +21,6 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Version
 import qualified NLP.Miniutter.English as MU
-import qualified Data.EnumMap.Strict as EM
-import qualified Data.EnumSet as ES
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -103,7 +103,7 @@ lookAt detailed canSee pos msg = do
   let is = lvl `atI` pos
       prefixSee = MU.Text $ if canSee then "you see" else "you remember"
   disco <- getsState sdisco
-  let nWs (iid, (k, _)) = partItemNWs coitem disco k (getItemBody iid lvl)
+  let nWs (iid, k) = partItemNWs coitem disco k (getItemBody iid lvl)
       isd = case detailed of
               _ | EM.size is == 0 -> ""
               _ | EM.size is <= 2 ->
@@ -142,7 +142,7 @@ doLook = do
                Just TEnemy{} -> "[targeting foe" <> vis <> "]"
                Just TPos{}   -> "[targeting position" <> vis <> "]"
                Nothing       -> "[targeting current" <> vis <> "]"
-      -- Check if there's something lying around at current p.
+      -- Check if there's something lying around at current position.
       is = lvl `atI` p
   -- Show general info about current p.
   lookMsg <- lookAt True canSee p enemyMsg
@@ -153,23 +153,34 @@ doLook = do
       tell slides
     else do
      disco <- getsState sdisco
-     io <- itemOverlay disco lvl False is
+     io <- floorItemOverlay disco lvl is
      slides <- overlayToSlideshow (mode <+> lookMsg) io
      tell slides
 
 -- | Create a list of item names.
-itemOverlay :: MonadActionRO m
-            => Discoveries -> Level -> Bool -> ItemBag -> m Overlay
-itemOverlay disco lvl sorted bag = do
+floorItemOverlay :: MonadActionRO m
+                 => Discoveries -> Level -> ItemBag -> m Overlay
+floorItemOverlay disco lvl bag = do
   Kind.COps{coitem} <- getsState scops
-  let is = EM.assocs bag
-      items | sorted = sortBy (cmpLetterMaybe `on` snd . snd) is
-            | otherwise = is
-      pr (iid, (k, l)) =
-        makePhrase [ letterLabel l
-                   , partItemNWs coitem disco k (getItemBody iid lvl) ]
-        <> " "
-  return $ map pr items
+  let is = zip (EM.assocs bag) (allLetters ++ repeat (InvChar ' '))
+      pr ((iid, k), l) =
+         makePhrase [ letterLabel l
+                    , partItemNWs coitem disco k (getItemBody iid lvl) ]
+         <> " "
+  return $ map pr is
+
+-- | Create a list of item names.
+itemOverlay :: MonadActionRO m
+            => Discoveries -> Level -> ItemBag -> ItemInv -> m Overlay
+itemOverlay disco lvl bag inv = do
+  Kind.COps{coitem} <- getsState scops
+  let checkItem (l, iid) = fmap (\k -> (l, iid, k)) $ EM.lookup iid bag
+      is = mapMaybe checkItem $ EM.assocs inv
+      pr (l, iid, k) =
+         makePhrase [ letterLabel l
+                    , partItemNWs coitem disco k (getItemBody iid lvl) ]
+         <> " "
+  return $ map pr is
 
 -- GameSave doesn't take time, but needs the server, so it's defined elsewhere.
 
@@ -185,17 +196,18 @@ inventory = do
   Kind.COps{coactor} <- getsState scops
   Just leader <- getsClient sleader
   pbody <- getsState $ getActorBody leader
-  items <- getsState $ getActorBag leader
+  bag <- getsState $ getActorBag leader
+  inv <- getsState $ getActorInv leader
   lvl <- getsState getArena
   disco <- getsState sdisco
-  if EM.null items
+  if EM.null bag
     then abortWith $ makeSentence
       [ MU.SubjectVerbSg (partActor coactor pbody) "be"
       , "not carrying anything" ]
     else do
       let blurb = makePhrase [MU.Capitalize $
             MU.SubjectVerbSg (partActor coactor pbody) "be carrying:"]
-      io <- itemOverlay disco lvl True items
+      io <- itemOverlay disco lvl bag inv
       slides <- overlayToSlideshow blurb io
       tell slides
 

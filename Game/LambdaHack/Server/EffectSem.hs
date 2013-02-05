@@ -361,7 +361,8 @@ useStairs target delta msg = do
 effLvlGoUp :: MonadServerChan m => ActorId -> Int -> m ()
 effLvlGoUp aid k = do
   pbodyCurrent <- getsState $ getActorBody aid
-  bitems <- getsState $ getActorBag aid
+  bbag <- getsState $ getActorBag aid
+  binv <- getsState $ getActorInv aid
   arena <- getsState sarena
   glo <- getState
   case whereTo glo arena k of
@@ -394,10 +395,11 @@ effLvlGoUp aid k = do
         -- The actor is added to the new level, but there can be other actors
         -- at his old position or at his new position.
         spawnAtomic aid pbody
-        modifyState (updateActorItem aid (const bitems))
+        modifyState $ updateArena $ updateActor
+          $ EM.adjust (\b -> b {bbag, binv}) aid
         -- Reset level and leader for all factions.
         broadcastCli [return . (/= bfaction pbody)] $ InvalidateArenaCli nln
-        sendUpdateCli (bfaction pbody) $ SwitchLevelCli aid nln pbody bitems
+--        sendUpdateCli (bfaction pbody) $ SwitchLevelCli aid nln pbody bbag
         -- Checking actors at the new posiiton of the aid.
         inhabitants <- getsState (posToActor npos)
         case inhabitants of
@@ -493,7 +495,7 @@ fleeDungeon = do
           , "Here's your loot, worth"
           , MU.NWs total currencyName ]
     discoS <- getsState sdisco
-    sendUpdateUI side $ ShowItemsCli discoS winMsg bag
+    void $ sendQueryUI side $ ConfirmShowItemsFloorCli discoS winMsg bag
     let upd2 f = f {gquit = Just (True, Victor)}
     modifyState $ updateSide upd2
 
@@ -574,7 +576,7 @@ gameOver showEndingScreens = do
         -- TODO: do this for the killed factions, not for side
         side <- getsState sside
         go <- sendQueryUI side
-              $ ConfirmShowItemsCli discoS loseMsg bag
+              $ ConfirmShowItemsFloorCli discoS loseMsg bag
         when go $ do
           let upd2 f = f {gquit = Just (True, Killed arena)}
           modifyState $ updateSide upd2

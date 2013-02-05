@@ -92,38 +92,36 @@ createItemAtomic :: MonadAction m
 createItemAtomic iid item k container = assert (k > 0) $ do
   let f item1 item2 = assert (item1 == item2) item1
   modifyState $ updateArena $ updateItem $ EM.insertWith f iid item
-  let l = if jsymbol item == '$' then Just '$' else Nothing
+  let l = if jsymbol item == '$' then Just $ InvChar '$' else Nothing
+      bag = EM.singleton iid k
   case container of
     CFloor pos -> do
-      let mergeBag = EM.insertWith (EM.unionWith joinItem)
-          bag = EM.singleton iid (k, l)
-      modifyState $ updateArena $ updateFloor $ mergeBag pos bag
+      let mergeBag = EM.insertWith (EM.unionWith (+)) pos bag
+      modifyState $ updateArena $ updateFloor mergeBag
     CActor aid -> do
-      b <- getsState $ getActorBody aid
-      bitems <- getsState $ getActorBag aid
-      let ls = mapMaybe snd $ EM.elems bitems
-      case assignLetter l (bletter b) ls of
-        Nothing -> createItemAtomic iid item k (CFloor $ bpos b)
+      body <- getsState $ getActorBody aid
+      case assignLetter iid l body of
+        Nothing -> createItemAtomic iid item k (CFloor $ bpos body)
         Just l2 -> do
-          let upd = EM.insertWith joinItem iid (k, Just l2)
-          modifyState $ updateActorItem aid upd
-          modifyState $ updateActorBody aid $ \body ->
-            body {bletter = maxLetter l2 (bletter body)}
+          let upd = EM.unionWith (+) bag
+          modifyState $ updateArena $ updateActor
+            $ EM.adjust (\b -> b {bbag = upd (bbag b)}) aid
+          modifyState $ updateArena $ updateActor
+            $ EM.adjust (\b -> b {binv = EM.insert l2 iid (binv b)}) aid
+          modifyState $ updateActorBody aid $ \b ->
+            b {bletter = max l2 (bletter b)}
 
 -- | Destroy some copies (possibly not all) of an item.
 destroyItemAtomic :: MonadAction m
                   => ItemId -> Item -> Int -> Container -> m ()
 destroyItemAtomic iid item k container = assert (k > 0) $ do
   -- TODO: check if the item appears anywhere else and GC it
-  let rmItem (Just (m, _)) | m < k = assert `failure` (m, iid, item, k)
-      rmItem (Just (m, _)) | m == k = Nothing
-      rmItem (Just (m, l)) = (Just (m - k, l))
-      rmItem Nothing = assert `failure` (iid, item, k, container)
-      rmFromBag (Just bag) = Just $ EM.alter rmItem iid bag
+  let rmFromBag (Just bag) = Just $ removeFromBag k iid bag
       rmFromBag Nothing = assert `failure` (iid, item, k, container)
   case container of
     CFloor pos ->
       modifyState $ updateArena $ updateFloor $ EM.alter rmFromBag pos
     CActor aid ->
-      modifyState $ updateActorItem aid $ EM.alter rmItem iid
+      modifyState $ updateArena $ updateActor
+      $ EM.adjust (\b -> b {bbag = removeFromBag k iid (bbag b)}) aid
       -- Actor's @bletter@ for UI not reset. This is OK up to isomorphism.

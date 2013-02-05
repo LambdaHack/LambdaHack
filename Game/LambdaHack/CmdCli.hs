@@ -37,7 +37,7 @@ data CmdUI where
 deriving instance Show CmdUI
 
 data CmdUpdateCli =
-    PickupCli ActorId Item Int (Maybe Char)
+    PickupCli ActorId Item Int InvChar
   | ApplyCli ActorId MU.Part Item
   | ShowMsgCli Msg
   | InvalidateArenaCli LevelId
@@ -54,8 +54,7 @@ data CmdUpdateCli =
   deriving Show
 
 data CmdUpdateUI =
-    ShowItemsCli Discoveries Msg ItemBag
-  | AnimateDeathCli ActorId
+    AnimateDeathCli ActorId
   | EffectCli Msg (Point, Point) Int Bool
   | AnimateBlockCli ActorId ActorId MU.Part
   | DisplaceCli ActorId ActorId
@@ -77,7 +76,10 @@ deriving instance Show (CmdQueryCli a)
 data CmdQueryUI a where
   ShowSlidesCli :: Slideshow -> CmdQueryUI Bool
   CarryOnCli :: CmdQueryUI Bool
-  ConfirmShowItemsCli :: Discoveries -> Msg -> ItemBag -> CmdQueryUI Bool
+  ConfirmShowItemsCli :: Discoveries -> Msg -> ItemBag -> ItemInv
+                      -> CmdQueryUI Bool
+  ConfirmShowItemsFloorCli :: Discoveries -> Msg -> ItemBag
+                           -> CmdQueryUI Bool
   ConfirmYesNoCli :: Msg -> CmdQueryUI Bool
   ConfirmMoreBWCli :: Msg -> CmdQueryUI Bool
   ConfirmMoreFullCli::  Msg -> CmdQueryUI Bool

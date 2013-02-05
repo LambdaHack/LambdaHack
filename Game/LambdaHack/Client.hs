@@ -12,11 +12,11 @@ import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Client.Action
+import Game.LambdaHack.Client.CmdCliSem
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.LocalAction
 import Game.LambdaHack.Client.LoopAction
 import Game.LambdaHack.Client.RunAction
-import Game.LambdaHack.Client.CmdCliSem
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.CmdCli
 import Game.LambdaHack.Faction
@@ -32,7 +32,7 @@ cmdUpdateCli cmd = case cmd of
   DiscoverCli ik i -> discoverCli ik i
   RememberCli arena vis lvl -> rememberCli arena vis lvl
   RememberPerCli arena per lvl faction -> rememberPerCli arena per lvl faction
-  SwitchLevelCli aid arena pbody items -> switchLevelCli aid arena pbody items
+  SwitchLevelCli _aid _arena _pbody _items -> undefined  -- switchLevelCli aid arena pbody items
   ProjectCli spos source item -> projectCli spos source item
   ShowAttackCli source target verb stack say ->
     showAttackCli source target verb stack say
@@ -43,7 +43,6 @@ cmdUpdateCli cmd = case cmd of
 
 cmdUpdateUI :: MonadClientUI m => CmdUpdateUI -> m ()
 cmdUpdateUI cmd = case cmd of
-  ShowItemsCli discoS msg items -> showItemsCli discoS msg items
   AnimateDeathCli aid -> animateDeathCli aid
   EffectCli msg poss deltaHP block -> effectCli msg poss deltaHP block
   AnimateBlockCli source target verb -> animateBlockCli source target verb
@@ -77,9 +76,14 @@ cmdQueryUI :: MonadClientUI m => CmdQueryUI a -> m a
 cmdQueryUI cmd = case cmd of
   ShowSlidesCli slides -> getManyConfirms [] slides
   CarryOnCli -> carryOnCli
-  ConfirmShowItemsCli discoS msg items -> do
+  ConfirmShowItemsCli discoS msg bag inv -> do
     lvl <- getsState getArena
-    io <- itemOverlay discoS lvl True items
+    io <- itemOverlay discoS lvl bag inv
+    slides <- overlayToSlideshow msg io
+    getManyConfirms [] slides
+  ConfirmShowItemsFloorCli discoS msg bag -> do
+    lvl <- getsState getArena
+    io <- floorItemOverlay discoS lvl bag
     slides <- overlayToSlideshow msg io
     getManyConfirms [] slides
   ConfirmYesNoCli msg -> do

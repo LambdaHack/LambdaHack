@@ -74,28 +74,21 @@ applySer actor verb iid container = do
 -- TODO: How can this happen considering we remove them before use?
 -- | Remove given item from an actor's inventory or floor.
 removeFromInventory :: MonadServer m => ActorId -> ItemId -> Point -> m ()
-removeFromInventory actor i pos = do
-  b <- removeFromPos i 1 pos
-  unless b $
-    modifyState (updateActorItem actor (removeFromBag i 1))
-
-removeFromBag :: ItemId -> Int -> ItemBag -> ItemBag
-removeFromBag i k bag =
-  let rib Nothing = assert `failure` (i, k, bag)
-      rib (Just (n, l)) = case compare n k of
-        LT -> assert `failure` (i, k, bag)
-        EQ -> Nothing
-        GT -> Just (n - k, l)
-  in EM.alter rib i bag
+removeFromInventory aid iid pos = do
+  boo <- removeFromPos iid 1 pos
+  let k = 1
+  unless boo $
+    modifyState $ updateArena $ updateActor
+    $ EM.adjust (\b -> b {bbag = removeFromBag k iid (bbag b)}) aid
 
 -- | Remove given item from the given position. Tell if successful.
 removeFromPos :: MonadServer m => ItemId -> Int -> Point -> m Bool
-removeFromPos i k pos = do
+removeFromPos iid k pos = do
   lvl <- getsState getArena
-  if not $ EM.member i (lvl `atI` pos)
+  if not $ EM.member iid (lvl `atI` pos)
     then return False
     else do
-      let adj = EM.update (\bag -> let nbag = removeFromBag i k bag
+      let adj = EM.update (\bag -> let nbag = removeFromBag k iid bag
                                    in if EM.null nbag
                                       then Nothing
                                       else Just nbag) pos
@@ -180,8 +173,9 @@ addProjectile iid loc bfaction path btime = do
         , bdirAI  = Nothing
         , bpath   = Just dirPath
         , bpos    = loc
-        , bitem   = EM.singleton iid (1, Nothing)
-        , bletter = 'a'
+        , bbag    = EM.singleton iid 1
+        , binv    = EM.singleton (InvChar 'a') iid
+        , bletter = InvChar 'b'
         , btime
         , bwait   = timeZero
         , bfaction
@@ -218,32 +212,35 @@ triggerSer aid dpos = do
 
 -- * PickupSer
 
-pickupSer :: MonadServerChan m => ActorId -> ItemId -> Int -> Char -> m ()
-pickupSer aid i k l = assert (k > 0 `blame` (aid, i, k, l)) $ do
+pickupSer :: MonadServerChan m => ActorId -> ItemId -> Int -> InvChar -> m ()
+pickupSer aid iid k l = assert (k > 0 `blame` (aid, iid, k, l)) $ do
   side <- getsState sside
   body <- getsState (getActorBody aid)
   lvl  <- getsState getArena
   -- Nobody can be forced to pick up an item.
   assert (bfaction body == side `blame` (body, side)) $ do
     let p = bpos body
-    bitems <- getsState $ getActorBag aid
-    removeFromPos i k p
-      >>= assert `trueM` (aid, i, p, "item is stuck")
-    let nitems = EM.insertWith joinItem i (k, Just l) bitems
-        item = getItemBody i lvl
+    removeFromPos iid k p
+      >>= assert `trueM` (aid, iid, p, "item is stuck")
+    let item = getItemBody iid lvl
     modifyState $ updateActorBody aid $ \m ->
-      m {bletter = maxLetter l (bletter m)}
-    modifyState (updateActorItem aid (const nitems))
-    void $ broadcastPosCli [p] (PickupCli aid item k (Just l))
+      m {bletter = max l (bletter m)}
+    modifyState $ updateArena $ updateActor
+      $ EM.adjust (\b -> b {bbag = EM.insertWith (+) iid k (bbag b)}) aid
+    modifyState $ updateArena $ updateActor
+      $ EM.adjust (\b -> b {binv = EM.insert l iid (binv b)}) aid
+    void $ broadcastPosCli [p] (PickupCli aid item k l)
 
 -- ** DropSer
 
 dropSer :: MonadServer m => ActorId -> ItemId -> m ()
 dropSer aid iid = do
   pos <- getsState (bpos . getActorBody aid)
-  kl <- getsState $ (EM.! iid) . getActorBag aid
-  modifyState (updateActorItem aid (EM.delete iid))
-  modifyState (updateArena (dropItemsAt (EM.singleton iid kl) pos))
+  _k <- getsState $ (EM.! iid) . getActorBag aid
+  let k = 1
+  modifyState $ updateArena $ updateActor
+    $ EM.adjust (\b -> b {bbag = removeFromBag k iid (bbag b)}) aid
+  modifyState $ updateArena (dropItemsAt (EM.singleton iid k) pos)
 
 -- * WaitSer
 

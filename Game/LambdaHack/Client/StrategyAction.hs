@@ -192,14 +192,14 @@ pickup actor glo =
   lootHere bpos .=> actionPickup
  where
   lvl = getArena glo
-  Actor{bpos, bletter} = getActorBody actor glo
+  body@Actor{bpos} = getActorBody actor glo
   lootHere x = not $ EM.null $ lvl `atI` x
-  bitems = getActorBag actor glo
-  ls = mapMaybe snd $ EM.elems bitems
   actionPickup = case EM.minViewWithKey $ lvl `atI` bpos of
     Nothing -> assert `failure` (actor, bpos, lvl)
-    Just ((iid, (k, l)), _) ->  -- pick up first item
-      case assignLetter l bletter ls of
+    Just ((iid, k), _) ->  -- pick up first item
+      let item = getItemBody iid $ getArena glo
+          l = if jsymbol item == '$' then Just $ InvChar '$' else Nothing
+      in case assignLetter iid l body of
         Just l2 -> returN "pickup" $ PickupSer actor iid k l2
         Nothing -> returN "pickup" $ WaitSer actor
 

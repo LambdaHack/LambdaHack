@@ -5,17 +5,17 @@
 module Game.LambdaHack.ActorState
   ( actorAssocs, actorList, actorNotProjAssocs, actorNotProjList
   , isProjectile, calculateTotal, allActorsAnyLevel, nearbyFreePos, whereTo
-  , posToActor, deleteActor, updateActorItem, getItemBody
+  , posToActor, deleteActor, getItemBody
   , insertActor, memActor, getActorBody, updateActorBody
-  , getActorBag, getActorItem, tryFindHeroK, foesAdjacent
+  , getActorItem, getActorBag, getActorInv, tryFindHeroK, foesAdjacent
   ) where
 
 import qualified Data.Char as Char
+import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import Data.List
 import Data.Maybe
 import Data.Text (Text)
-import qualified Data.EnumMap.Strict as EM
-import qualified Data.EnumSet as ES
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Content.TileKind
@@ -74,9 +74,9 @@ nearbyFreePos cotile start s =
 calculateTotal :: State -> (ItemBag, Int)
 calculateTotal s =
   let lvl = getArena s
-      bag = EM.unionsWith joinItem
-            $ map bitem $ actorList (== sside s) lvl
-      heroItem = map (\(iid, (k, _)) -> (getItemBody iid lvl, k))
+      bag = EM.unionsWith (+)
+            $ map bbag $ actorList (== sside s) lvl
+      heroItem = map (\(iid, k) -> (getItemBody iid lvl, k))
                  $ EM.assocs bag
   in (bag, sum $ map itemPrice heroItem)
 
@@ -147,18 +147,16 @@ updateActorBody :: ActorId -> (Actor -> Actor) -> State -> State
 updateActorBody actor f s = updateArena (updateActor $ EM.adjust f actor) s
 
 getActorBag :: ActorId -> State -> ItemBag
-getActorBag aid s = bitem $ getActorBody aid s
+getActorBag aid s = bbag $ getActorBody aid s
+
+getActorInv :: ActorId -> State -> ItemInv
+getActorInv aid s = binv $ getActorBody aid s
 
 -- | Gets actor's items from the current level. Warning: this does not work
 -- for viewing items of actors from remote level.
 getActorItem :: ActorId -> State -> [Item]
 getActorItem aid s =
   map (flip getItemBody (getArena s)) $ EM.keys $ getActorBag aid s
-
-updateActorItem :: ActorId -> (ItemBag -> ItemBag) -> State -> State
-updateActorItem actor f s =
-  let g body = body {bitem = f $ bitem body}
-  in updateArena (updateActor $ EM.adjust g actor) s
 
 getItemBody :: ItemId -> Level -> Item
 getItemBody iid lvl = litem lvl EM.! iid

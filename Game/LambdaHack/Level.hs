@@ -117,7 +117,7 @@ updateTile f lvl = lvl { ltile = f (ltile lvl) }
 -- Note: do not scatter items around, it's too much work for the player.
 -- | Place all items on the list at a position on the level.
 dropItemsAt :: ItemBag -> Point -> Level -> Level
-dropItemsAt b p = let adj c = Just $ maybe b (EM.unionWith joinItem b) c
+dropItemsAt b p = let adj c = Just $ maybe b (EM.unionWith (+) b) c
                   in updateFloor (EM.alter adj p)
 
 assertSparseItems :: FloorMap -> FloorMap

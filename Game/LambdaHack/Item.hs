@@ -7,14 +7,10 @@
 -- inventory manangement and items proper.
 module Game.LambdaHack.Item
   ( -- * Teh @Item@ type
-    ItemId, ItemBag, Item(..), jkind, buildItem, newItem, viewItem
+    ItemId, Item(..), jkind, buildItem, newItem, viewItem
     -- * Inventory search
   , strongestSearch, strongestSword, strongestRegen
-    -- * Inventory management
-  , joinItem, assignLetter
-    -- * Inventory symbol operations
-  , letterLabel, cmpLetterMaybe, maxLetter, letterRange
-    -- * The item discovery types
+   -- * The item discovery types
   , ItemKindIx, Discoveries, DiscoRev, serverDiscos
     -- * The @FlavourMap@ type
   , FlavourMap, dungeonFlavourMap
@@ -54,8 +50,6 @@ newtype ItemId = ItemId Int
 instance Binary ItemId where
   put (ItemId n) = put n
   get = fmap ItemId get
-
-type ItemBag = EM.EnumMap ItemId (Int, Maybe Char)
 
 -- | An index of the kind id of an item. Clients have partial knowledge
 -- how these idexes map to kind ids. They gain knowledge by identifying items.
@@ -188,67 +182,6 @@ dungeonFlavourMap :: Kind.Ops ItemKind -> Rnd FlavourMap
 dungeonFlavourMap Kind.Ops{ofoldrWithKey} =
   liftM (FlavourMap . fst) $
     ofoldrWithKey rollFlavourMap (return (EM.empty, S.fromList stdFlav))
-
--- | Assigns a letter to an item, for inclusion
--- in the inventory of a hero. Takes a remembered
--- letter and a starting letter.
-assignLetter :: Maybe Char -> Char -> [Char] -> Maybe Char
-assignLetter r c cs =
-  case r of
-    Just l | l `elem` allowed -> Just l
-    _ -> listToMaybe free
- where
-  current    = ES.fromList cs
-  allLetters = ['a'..'z'] ++ ['A'..'Z']
-  candidates = take (length allLetters) $
-                 drop (fromJust (findIndex (== c) allLetters)) $
-                   cycle allLetters
-  free       = filter (\x -> not (x `ES.member` current)) candidates
-  allowed    = '$' : free
-
-cmpLetter :: Char -> Char -> Ordering
-cmpLetter x y = compare (isUpper x, toLower x) (isUpper y, toLower y)
-
-cmpLetterMaybe :: Maybe Char -> Maybe Char -> Ordering
-cmpLetterMaybe Nothing  Nothing   = EQ
-cmpLetterMaybe Nothing  (Just _)  = GT
-cmpLetterMaybe (Just _) Nothing   = LT
-cmpLetterMaybe (Just l) (Just l') = cmpLetter l l'
-
-maxBy :: (a -> a -> Ordering) -> a -> a -> a
-maxBy cmp x y = case cmp x y of
-                  LT  ->  y
-                  _   ->  x
-
-maxLetter :: Char -> Char -> Char
-maxLetter = maxBy cmpLetter
-
-mergeLetter :: Maybe Char -> Maybe Char -> Maybe Char
-mergeLetter = mplus
-
-letterRange :: [Char] -> Text
-letterRange ls =
-  sectionBy (sortBy cmpLetter ls) Nothing
- where
-  succLetter c d = ord d - ord c == 1
-
-  sectionBy []     Nothing      = T.empty
-  sectionBy []     (Just (c,d)) = finish (c,d)
-  sectionBy (x:xs) Nothing      = sectionBy xs (Just (x,x))
-  sectionBy (x:xs) (Just (c,d))
-    | succLetter d x            = sectionBy xs (Just (c,x))
-    | otherwise                 = finish (c,d) <> sectionBy xs (Just (x,x))
-
-  finish (c,d) | c == d         = T.pack [c]
-               | succLetter c d = T.pack $ [c, d]
-               | otherwise      = T.pack $ [c, '-', d]
-
-letterLabel :: Maybe Char -> MU.Part
-letterLabel Nothing  = MU.Text $ T.pack "   "
-letterLabel (Just c) = MU.Text $ T.pack $ c : " -"
-
-joinItem :: (Int, Maybe Char) -> (Int, Maybe Char) -> (Int, Maybe Char)
-joinItem (i, a) (j, b) = (i + j, mergeLetter a b)
 
 strongestItem :: [Item] -> (Item -> Bool) -> Maybe Item
 strongestItem is p =

@@ -5,13 +5,13 @@ module Game.LambdaHack.Client.CmdCliSem where
 
 import Control.Monad
 import Control.Monad.Writer.Strict (WriterT, runWriterT)
+import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid (mempty)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
-import qualified Data.EnumSet as ES
-import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -46,7 +46,7 @@ import Game.LambdaHack.Vector
 
 -- * cmdUpdateCli
 
-pickupCli :: MonadClient m => ActorId -> Item -> Int -> Maybe Char -> m ()
+pickupCli :: MonadClient m => ActorId -> Item -> Int -> InvChar -> m ()
 pickupCli aid i k l = do
   Kind.COps{coactor, coitem} <- getsState scops
   body <- getsState (getActorBody aid)
@@ -120,18 +120,18 @@ rememberPerCli arena per lvl faction = do
   modifyClient $ \cli -> cli {sper = EM.insert arena per (sper cli)}
   modifyState $ updateFaction (const faction)
 
-switchLevelCli :: MonadClient m
-               => ActorId -> LevelId -> Actor -> ItemBag
-               -> m ()
-switchLevelCli aid arena pbody items = do
-  arenaOld <- getsState sarena
-  assert (arenaOld /= arena) $ do
-    modifyClient $ invalidateSelectedLeader
-    modifyState $ updateSelectedArena arena
-    modifyState (insertActor aid pbody)
-    modifyState (updateActorItem aid (const items))
-    loc <- getState
-    modifyClient $ updateSelectedLeader aid loc
+-- switchLevelCli :: MonadClient m
+--                => ActorId -> LevelId -> Actor -> ItemBag
+--                -> m ()
+-- switchLevelCli aid arena pbody items = do
+--   arenaOld <- getsState sarena
+--   assert (arenaOld /= arena) $ do
+--     modifyClient $ invalidateSelectedLeader
+--     modifyState $ updateSelectedArena arena
+--     modifyState (insertActor aid pbody)
+--     modifyState (updateActorItem aid (const items))
+--     loc <- getState
+--     modifyClient $ updateSelectedLeader aid loc
 
 projectCli :: MonadClient m => Point -> ActorId -> Item -> m ()
 projectCli spos source item = do
@@ -194,10 +194,11 @@ restartCli sper locRaw = do
 
 -- * cmdUpdateUI
 
-showItemsCli :: MonadClientUI m => Discoveries -> Msg -> ItemBag -> m ()
-showItemsCli discoS msg items = do
+showItemsCli :: MonadClientUI m
+             => Discoveries -> Msg -> ItemBag -> ItemInv -> m ()
+showItemsCli discoS msg bag inv = do
   lvl <- getsState getArena
-  io <- itemOverlay discoS lvl True items
+  io <- itemOverlay discoS lvl bag inv
   slides <- overlayToSlideshow msg io
   void $ getManyConfirms [] slides
 

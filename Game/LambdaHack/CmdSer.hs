@@ -18,7 +18,7 @@ data CmdSer =
     ApplySer ActorId MU.Part ItemId Container
   | ProjectSer ActorId Point Int MU.Part ItemId
   | TriggerSer ActorId Point
-  | PickupSer ActorId ItemId Int Char
+  | PickupSer ActorId ItemId Int InvChar
   | DropSer ActorId ItemId
   | WaitSer ActorId
   | MoveSer ActorId Vector
