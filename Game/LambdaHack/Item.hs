@@ -20,12 +20,9 @@ module Game.LambdaHack.Item
 
 import Control.Monad
 import Data.Binary
-import Data.Char
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.EnumSet as ES
 import qualified Data.Ix as Ix
 import Data.List
-import Data.Maybe
 import Data.Ord
 import qualified Data.Set as S
 import Data.Text (Text)

@@ -6,12 +6,12 @@ module Game.LambdaHack.Client.Animation
   , twirlSplash, blockHit, blockMiss, deathBody, swapPlaces
   ) where
 
+import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import qualified Data.List as L
 import Data.Maybe
 import Data.Monoid
 import Data.Text (Text)
-import qualified Data.EnumSet as ES
-import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Color
 import Game.LambdaHack.Point
@@ -68,11 +68,8 @@ mzipPairs (p1, p2) (mattr1, mattr2) =
 restrictAnim :: ES.EnumSet Point -> Animation -> Animation
 restrictAnim vis (Animation as) =
   let f imap =
--- TODO readd when we switch to containers 5.0
---      let common = EM.intersection imap $ EM.fromSet (const ()) vis
-        let common = EM.intersection imap $ EM.fromDistinctAscList
-                     $ map (\x -> (x, ())) $ ES.toAscList vis
-        in if EM.null common then Nothing else Just common
+        let common = EM.intersection imap $ EM.fromSet (const ()) vis
+          in if EM.null common then Nothing else Just common
   in Animation $ catMaybes $ map f as
 
 -- | Attack animation. A part of it also reused for self-damage and healing.

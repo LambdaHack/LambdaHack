@@ -303,8 +303,8 @@ rememberLevel Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} visible nlvl olvl =
       ovis = EM.filterWithKey (\p _ -> p `ES.notMember` visible) (lfloor olvl)
       nfloor = EM.union nvis ovis
       -- TODO: too costly
-      is = ES.fromList $ concatMap EM.keys $ map bbag (EM.elems nactor)
-                                             ++ EM.elems nfloor
+      is = ES.unions $ map EM.keysSet $ map bbag (EM.elems nactor)
+                                        ++ EM.elems nfloor
       nitem  = EM.filterWithKey (\iid _ -> iid `ES.member` is) (litem nlvl)
       vis = ES.toList visible
       rememberTile = [(pos, nlvl `at` pos) | pos <- vis]
