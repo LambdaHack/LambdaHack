@@ -9,7 +9,6 @@ import Control.Monad
 import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
 import Data.List
-import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Text (Text)
 import qualified System.Random as R
@@ -34,13 +33,13 @@ convertTileMaps :: Rnd (Kind.Id TileKind) -> Int -> Int -> TileMapXY
                 -> Rnd TileMap
 convertTileMaps cdefTile cxsize cysize ltile = do
   let bounds = (origin, toPoint cxsize $ PointXY (cxsize - 1, cysize - 1))
-      assocs = map (\ (xy, t) -> (toPoint cxsize xy, t)) (M.assocs ltile)
+      assocs = map (\ (xy, t) -> (toPoint cxsize xy, t)) (EM.assocs ltile)
   pickedTiles <- replicateM (cxsize * cysize) cdefTile
   return $ Kind.listArray bounds pickedTiles Kind.// assocs
 
-mapToIMap :: X -> M.Map PointXY a -> EM.EnumMap Point a
+mapToIMap :: X -> EM.EnumMap PointXY a -> EM.EnumMap Point a
 mapToIMap cxsize m =
-  EM.fromList $ map (\ (xy, a) -> (toPoint cxsize xy, a)) (M.assocs m)
+  EM.fromList $ map (\ (xy, a) -> (toPoint cxsize xy, a)) (EM.assocs m)
 
 placeStairs :: Kind.Ops TileKind -> TileMap -> CaveKind -> [Place]
             -> Rnd (Point, Kind.Id TileKind, Point, Kind.Id TileKind)

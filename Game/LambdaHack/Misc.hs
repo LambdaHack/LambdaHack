@@ -1,17 +1,22 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | Hacks that haven't found their home yet.
 module Game.LambdaHack.Misc
-  ( normalLevelBound, divUp, Freqs, breturn
+  ( normalLevelBound, maxLevelDim, divUp, Freqs, breturn
   ) where
 
-import Data.Binary
 import Control.Monad
-import Data.Text (Text)
+import Data.Binary
 import qualified Data.EnumMap.Strict as EM
+import Data.Text (Text)
 
 -- | Level bounds. TODO: query terminal size instead and scroll view.
 normalLevelBound :: (Int, Int)
 normalLevelBound = (79, 21)
+
+-- | Maximal supported level X and Y dimension (32768). Not checked anywhere.
+-- The value is chosen to support architectures with 32-bit ints.
+maxLevelDim :: Int
+maxLevelDim = 2 ^ (15 :: Int)
 
 -- | Integer division, rounding up.
 divUp :: Int -> Int -> Int

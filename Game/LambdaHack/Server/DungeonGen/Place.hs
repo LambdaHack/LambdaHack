@@ -5,12 +5,11 @@ module Game.LambdaHack.Server.DungeonGen.Place
   ) where
 
 import Data.Binary
+import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import qualified Data.List as L
-import qualified Data.Map.Strict as M
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.EnumSet as ES
-import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Area
 import Game.LambdaHack.Content.CaveKind
@@ -56,7 +55,7 @@ instance Binary Place where
 -- | The map of tile kinds in a place (and generally anywhere in a cave).
 -- The map is sparse. The default tile that eventually fills the empty spaces
 -- is specified in the cave kind specification with @cdefTile@.
-type TileMapXY = M.Map PointXY (Kind.Id TileKind)
+type TileMapXY = EM.EnumMap PointXY (Kind.Id TileKind)
 
 -- | For @CAlternate@ tiling, require the place be comprised
 -- of an even number of whole corners, with exactly one square
@@ -131,10 +130,10 @@ olegend Kind.Ops{ofoldrWithKey, opick} group =
 -- | Construct a fence around an area, with the given tile kind.
 buildFence :: Kind.Id TileKind -> Area -> TileMapXY
 buildFence fenceId (x0, y0, x1, y1) =
-  M.fromList $ [ (PointXY (x, y), fenceId)
-               | x <- [x0-1, x1+1], y <- [y0..y1] ] ++
-               [ (PointXY (x, y), fenceId)
-               | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
+  EM.fromList $ [ (PointXY (x, y), fenceId)
+                | x <- [x0-1, x1+1], y <- [y0..y1] ] ++
+                [ (PointXY (x, y), fenceId)
+                | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
 
 -- | Construct a place of the given kind, with the given fence tile.
 digPlace :: Place                               -- ^ the place parameters
@@ -145,14 +144,14 @@ digPlace Place{..} kr legend =
   let fence = case pfence kr of
         FWall  -> buildFence qsolidFence qarea
         FFloor -> buildFence qhollowFence qarea
-        FNone  -> M.empty
-  in M.union (M.map (legend EM.!) $ tilePlace qarea kr) fence
+        FNone  -> EM.empty
+  in EM.union (EM.map (legend EM.!) $ tilePlace qarea kr) fence
 
 -- TODO: use Text more instead of [Char]?
 -- | Create a place by tiling patterns.
 tilePlace :: Area                           -- ^ the area to fill
           -> PlaceKind                      -- ^ the place kind to construct
-          -> M.Map PointXY Char
+          -> EM.EnumMap PointXY Char
 tilePlace (x0, y0, x1, y1) pl@PlaceKind{..} =
   let dx = x1 - x0 + 1
       dy = y1 - y0 + 1
@@ -183,4 +182,4 @@ tilePlace (x0, y0, x1, y1) pl@PlaceKind{..} =
           let reflect :: Int -> [a] -> [a]
               reflect d pat = tileReflect d (L.cycle pat)
           in fillInterior reflect
-  in M.fromList interior
+  in EM.fromList interior

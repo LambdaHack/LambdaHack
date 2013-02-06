@@ -4,8 +4,8 @@ module Game.LambdaHack.Server.DungeonGen.Cave
   ) where
 
 import Control.Monad
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.List as L
-import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Text (Text)
 
@@ -32,11 +32,11 @@ type TileMapXY = Place.TileMapXY
 
 -- | The map of starting secrecy strength of tiles in a cave.
 -- The map is sparse. Unspecified tiles have secrecy strength of 0.
-type SecretMapXY = M.Map PointXY Tile.SecretTime
+type SecretMapXY = EM.EnumMap PointXY Tile.SecretTime
 
 -- | The map of starting items in tiles of a cave. The map is sparse.
 -- Unspecified tiles have no starting items.
-type FloorMapXY = M.Map PointXY (Item, Int)
+type FloorMapXY = EM.EnumMap PointXY (Item, Int)
 
 -- | The type of caves (not yet inhabited dungeon levels).
 data Cave = Cave
@@ -101,10 +101,10 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick}
          in replicateM caux (randomConnection lgrid)
     else return []
   let allConnects = L.union connects addedConnects  -- no duplicates
-      places = M.fromList places0
+      places = EM.fromList places0
   cs <- mapM (\ (p0, p1) -> do
-                 let r0 = places M.! p0
-                     r1 = places M.! p1
+                 let r0 = places EM.! p0
+                     r1 = places EM.! p1
                  connectPlaces r0 r1) allConnects
   wallId <- opick cfillerTile (const True)
   let fenceBounds = (1, 1, cxsize - 2, cysize - 2)
@@ -113,11 +113,11 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick}
   let addPl (m, pls) (_, (x0, _, x1, _)) | x0 == x1 = return (m, pls)
       addPl (m, pls) (_, r) = do
         (tmap, place) <- buildPlace cops kc pickedCorTile ln depth r
-        return (M.union tmap m, place : pls)
+        return (EM.union tmap m, place : pls)
   (lplaces, dplaces) <- foldM addPl (fence, []) places0
-  let lcorridors = M.unions (L.map (digCorridors pickedCorTile) cs)
+  let lcorridors = EM.unions (L.map (digCorridors pickedCorTile) cs)
   hiddenMap <- mapToHidden cotile chiddenTile
-  let lm = M.unionWith (mergeCorridor cotile hiddenMap) lcorridors lplaces
+  let lm = EM.unionWith (mergeCorridor cotile hiddenMap) lcorridors lplaces
   -- Convert openings into doors, possibly.
   (dmap, secretMap) <-
     let f (l, le) (p, t) =
@@ -128,26 +128,26 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick}
             -- closed doors have a certain chance to be hidden
             rd <- chance cdoorChance
             if not rd
-              then return (M.insert p pickedCorTile l, le)
+              then return (EM.insert p pickedCorTile l, le)
               else do
                 doorClosedId <- trigger cotile t
                 doorOpenId   <- trigger cotile doorClosedId
                 ro <- chance copenChance
                 if ro
-                  then return (M.insert p doorOpenId l, le)
+                  then return (EM.insert p doorOpenId l, le)
                   else do
                     rs <- chance chiddenChance
                     if not rs
-                      then return (M.insert p doorClosedId l, le)
+                      then return (EM.insert p doorClosedId l, le)
                       else do
                         secret <- rollSecret (tokind t)
-                        return (l, M.insert p secret le)
+                        return (l, EM.insert p secret le)
           else return (l, le)
-    in foldM f (lm, M.empty) (M.assocs lm)
+    in foldM f (lm, EM.empty) (EM.assocs lm)
   let cave = Cave
         { dkind = ci
         , dsecret = secretMap
-        , ditem = M.empty
+        , ditem = EM.empty
         , dmap
         , dplaces
         }
@@ -172,32 +172,32 @@ trigger Kind.Ops{okind, opick} t =
 
 digCorridors :: Kind.Id TileKind -> Corridor -> TileMapXY
 digCorridors tile (p1:p2:ps) =
-  M.union corPos (digCorridors tile (p2:ps))
+  EM.union corPos (digCorridors tile (p2:ps))
  where
   corXY  = fromTo p1 p2
-  corPos = M.fromList $ L.zip corXY (repeat tile)
-digCorridors _ _ = M.empty
+  corPos = EM.fromList $ L.zip corXY (repeat tile)
+digCorridors _ _ = EM.empty
 
 passable :: [F.Feature]
 passable = [F.Walkable, F.Openable, F.Hidden]
 
 mapToHidden :: Kind.Ops TileKind -> Text
-            -> Rnd (M.Map (Kind.Id TileKind) (Kind.Id TileKind))
+            -> Rnd (EM.EnumMap (Kind.Id TileKind) (Kind.Id TileKind))
 mapToHidden cotile@Kind.Ops{ofoldrWithKey, opick} chiddenTile =
   let getHidden ti tk acc =
         if Tile.canBeHidden cotile tk
         then do
           ti2 <- opick chiddenTile $ \ k -> Tile.kindHasFeature F.Hidden k
                                             && Tile.similar k tk
-          fmap (M.insert ti ti2) acc
+          fmap (EM.insert ti ti2) acc
         else acc
-  in ofoldrWithKey getHidden (return M.empty)
+  in ofoldrWithKey getHidden (return EM.empty)
 
 mergeCorridor :: Kind.Ops TileKind
-              -> M.Map (Kind.Id TileKind) (Kind.Id TileKind)
+              -> EM.EnumMap (Kind.Id TileKind) (Kind.Id TileKind)
               -> Kind.Id TileKind -> Kind.Id TileKind -> Kind.Id TileKind
 mergeCorridor cotile _    _ t
   | L.any (\ f -> Tile.hasFeature cotile f t) passable = t
 mergeCorridor _ hiddenMap u t =
   fromMaybe (assert `failure` (u, hiddenMap, t)) $
-    M.lookup t hiddenMap
+    EM.lookup t hiddenMap

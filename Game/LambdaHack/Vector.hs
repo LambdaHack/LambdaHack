@@ -8,11 +8,11 @@ module Game.LambdaHack.Vector
 
 import Data.Binary
 
-import Game.LambdaHack.PointXY
-import Game.LambdaHack.VectorXY
 import Game.LambdaHack.Area
 import Game.LambdaHack.Point
+import Game.LambdaHack.PointXY
 import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.VectorXY
 
 -- | 2D vectors  represented as offsets in the linear framebuffer
 -- indexed by 'Point'.

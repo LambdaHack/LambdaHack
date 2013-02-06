@@ -5,6 +5,7 @@ module Game.LambdaHack.PointXY
 
 import qualified Data.List as L
 
+import Game.LambdaHack.Misc
 import Game.LambdaHack.Utils.Assert
 
 -- | Spacial dimension for points and vectors.
@@ -19,6 +20,18 @@ newtype PointXY = PointXY (X, Y)
 
 instance Show PointXY where
   show (PointXY (x, y)) = show (x, y)
+
+-- TODO: perhaps use this instead of Point, but then @shift@ is not longer
+-- so cheap, and we need, e.g., an extra addition per FOV point and per
+-- AI speculative move. Additions are cheap though and code would be
+-- shorter thanks to removing the lxsize argument in many places.
+-- More serious is one addition and one multiplication per EnumMap lookup,
+-- though in the computation-intensive cases of FOV and AI, the extra
+-- operations were already there, performed before lookup.
+-- TODO: rem and quot by 2^w can probably be optimised
+instance Enum PointXY where
+  toEnum p = PointXY (p `rem` maxLevelDim, p `quot` maxLevelDim)
+  fromEnum (PointXY (x, y)) = x + y * maxLevelDim
 
 -- | A list of all points on a straight vertical or straight horizontal line
 -- between two points. Fails if no such line exists.
