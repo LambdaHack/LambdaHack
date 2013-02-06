@@ -76,7 +76,7 @@ calculateTotal s =
   let lvl = getArena s
       bag = EM.unionsWith (+)
             $ map bbag $ actorList (== sside s) lvl
-      heroItem = map (\(iid, k) -> (getItemBody iid lvl, k))
+      heroItem = map (\(iid, k) -> (getItemBody iid s, k))
                  $ EM.assocs bag
   in (bag, sum $ map itemPrice heroItem)
 
@@ -156,10 +156,10 @@ getActorInv aid s = binv $ getActorBody aid s
 -- for viewing items of actors from remote level.
 getActorItem :: ActorId -> State -> [Item]
 getActorItem aid s =
-  map (flip getItemBody (getArena s)) $ EM.keys $ getActorBag aid s
+  map (flip getItemBody s) $ EM.keys $ getActorBag aid s
 
-getItemBody :: ItemId -> Level -> Item
-getItemBody iid lvl = litem lvl EM.! iid
+getItemBody :: ItemId -> State -> Item
+getItemBody iid s = sitem s EM.! iid
 
 -- | Checks if the actor is present on the current level.
 -- The order of argument here and in other functions is set to allow

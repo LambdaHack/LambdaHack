@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 -- | Colours and text attributes.
 module Game.LambdaHack.Color
   ( -- * Colours
@@ -7,6 +8,8 @@ module Game.LambdaHack.Color
   ) where
 
 import Data.Binary
+import qualified Data.Hashable as Hashable
+import GHC.Generics (Generic)
 
 -- TODO: since this type may be essential to speed, consider implementing
 -- it as an Int, with color numbered as they are on terminals, see
@@ -31,7 +34,9 @@ data Color =
   | BrMagenta
   | BrCyan
   | BrWhite
-  deriving (Show, Eq, Ord, Enum, Bounded)
+  deriving (Show, Eq, Ord, Enum, Bounded, Generic)
+
+instance Hashable.Hashable Color
 
 instance Binary Color where
   put = putWord8 . toEnum . fromEnum

@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 -- | The appearance of in-game items, as communicated to the player.
 module Game.LambdaHack.Flavour
   ( -- * The @Flavour@ type
@@ -9,9 +9,11 @@ module Game.LambdaHack.Flavour
     flavourToColor, flavourToName
   ) where
 
-import qualified Data.List as L
 import Data.Binary
+import qualified Data.Hashable as Hashable
+import qualified Data.List as L
 import Data.Text (Text)
+import GHC.Generics (Generic)
 
 import Game.LambdaHack.Color
 
@@ -21,7 +23,9 @@ data Flavour = Flavour
   { fancyName :: Bool   -- ^ should the colour description be fancy or plain
   , baseColor :: Color  -- ^ the colour of the flavour
   }
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Generic)
+
+instance Hashable.Hashable Flavour
 
 instance Binary Flavour where
   put Flavour{..} = do

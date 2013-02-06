@@ -302,10 +302,6 @@ rememberLevel Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} visible nlvl olvl =
       nvis = EM.filterWithKey (\p _ -> p `ES.member` visible) (lfloor nlvl)
       ovis = EM.filterWithKey (\p _ -> p `ES.notMember` visible) (lfloor olvl)
       nfloor = EM.union nvis ovis
-      -- TODO: too costly
-      is = ES.unions $ map EM.keysSet $ map bbag (EM.elems nactor)
-                                        ++ EM.elems nfloor
-      nitem  = EM.filterWithKey (\iid _ -> iid `ES.member` is) (litem nlvl)
       vis = ES.toList visible
       rememberTile = [(pos, nlvl `at` pos) | pos <- vis]
       unknownId = ouniqGroup "unknown space"
@@ -313,7 +309,6 @@ rememberLevel Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} visible nlvl olvl =
                         && Tile.isExplorable cotile tk
       extraSeen = length $ filter eSeen rememberTile
   in olvl { lactor = nactor
-          , litem = nitem
           , lfloor = nfloor
           , ltile = ltile olvl Kind.// rememberTile
   -- TODO: update enemy smell probably only around a sniffing party member

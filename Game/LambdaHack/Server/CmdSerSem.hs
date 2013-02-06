@@ -57,8 +57,7 @@ applySer :: MonadServerChan m   -- MonadServer m
          -> Container  -- ^ the location of the item
          -> m ()
 applySer actor verb iid container = do
-  lvl <- getsState getArena
-  let item = getItemBody iid lvl
+  item <- getsState $ getItemBody iid
   body <- getsState (getActorBody actor)
   let pos = bpos body
   broadcastPosCli [pos] $ ApplyCli actor verb item
@@ -140,7 +139,7 @@ projectSer source tpos eps _verb iid = do
       if accessible cops lvl spos pos && isNothing inhabitants
         then do
           addProjectile iid pos (bfaction sm) path time
-          item <- getsState $ getItemBody iid . getArena
+          item <- getsState $ getItemBody iid
           broadcastPosCli [spos, pos] $ ProjectCli spos source item
         else
           abortWith "blocked"
@@ -151,10 +150,9 @@ addProjectile :: MonadServer m
               -> m ()
 addProjectile iid loc bfaction path btime = do
   Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}} <- getsState scops
-  lvl <- getsState getArena
   disco <- getsState sdisco
-  let item = getItemBody iid lvl
-      ik = okind (fromJust $ jkind disco item)
+  item <- getsState $ getItemBody iid
+  let ik = okind (fromJust $ jkind disco item)
       speed = speedFromWeight (iweight ik) (itoThrow ik)
       range = rangeFromSpeed speed
       adj | range < 5 = "falling"
@@ -216,13 +214,12 @@ pickupSer :: MonadServerChan m => ActorId -> ItemId -> Int -> InvChar -> m ()
 pickupSer aid iid k l = assert (k > 0 `blame` (aid, iid, k, l)) $ do
   side <- getsState sside
   body <- getsState (getActorBody aid)
-  lvl  <- getsState getArena
   -- Nobody can be forced to pick up an item.
   assert (bfaction body == side `blame` (body, side)) $ do
     let p = bpos body
     removeFromPos iid k p
       >>= assert `trueM` (aid, iid, p, "item is stuck")
-    let item = getItemBody iid lvl
+    item <- getsState $ getItemBody iid
     modifyState $ updateActorBody aid $ \m ->
       m {bletter = max l (bletter m)}
     modifyState $ updateArena $ updateActor

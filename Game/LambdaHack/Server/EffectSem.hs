@@ -8,6 +8,7 @@ import Control.Monad
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import qualified Data.HashMap.Strict as HM
 import Data.List
 import Data.Maybe
 import Data.Ratio ((%))
@@ -322,10 +323,18 @@ createItems n pos = do
   ldepth <- getsState $ ldepth . getArena
   depth <- getsState sdepth
   replicateM_ n $ do
-    icounter <- getsServer sicounter
-    modifyServer $ \ser -> ser {sicounter = succ icounter}
     (item, k, _) <- rndToAction $ newItem coitem flavour discoRev ldepth depth
-    createItemAtomic icounter item k (CFloor pos)
+    itemRev <- getsServer sitemRev
+    case HM.lookup item itemRev of
+      Just iid ->
+        -- TODO: try to avoid this case, to make items more interesting
+        createItemAtomic iid item k (CFloor pos)
+      Nothing -> do
+        icounter <- getsServer sicounter
+        modifyServer $ \ser ->
+          ser { sicounter = succ icounter
+              , sitemRev = HM.insert item icounter (sitemRev ser)}
+        createItemAtomic icounter item k (CFloor pos)
 
 -- ** ApplyPerfume
 
@@ -494,8 +503,7 @@ fleeDungeon = do
           [ "Congratulations, you won!"
           , "Here's your loot, worth"
           , MU.NWs total currencyName ]
-    discoS <- getsState sdisco
-    void $ sendQueryUI side $ ConfirmShowItemsFloorCli discoS winMsg bag
+    void $ sendQueryUI side $ ConfirmShowItemsFloorCli winMsg bag
     let upd2 f = f {gquit = Just (True, Victor)}
     modifyState $ updateSide upd2
 
@@ -572,11 +580,9 @@ gameOver showEndingScreens = do
         let upd2 f = f {gquit = Just (True, Killed arena)}
         modifyState $ updateSide upd2
       else do
-        discoS <- getsState sdisco
         -- TODO: do this for the killed factions, not for side
         side <- getsState sside
-        go <- sendQueryUI side
-              $ ConfirmShowItemsFloorCli discoS loseMsg bag
+        go <- sendQueryUI side $ ConfirmShowItemsFloorCli loseMsg bag
         when go $ do
           let upd2 f = f {gquit = Just (True, Killed arena)}
           modifyState $ updateSide upd2

@@ -4,11 +4,12 @@ module Game.LambdaHack.State
   ( -- * Basic game state, local or global
     State
     -- * State components
-  , sdungeon, sdepth, sdisco, sfaction, scops, srandom, squit, sside, sarena
+  , sdungeon, sdepth, sitem, sdisco, sfaction, scops, srandom, squit
+  , sside, sarena
     -- * State operations
   , defStateGlobal, defStateLocal, localFromGlobal
   , switchGlobalSelectedSideOnlyForGlobalState
-  , updateDungeon, updateDisco, updateFaction
+  , updateDungeon, updateItem, updateDisco, updateFaction
   , updateCOps, updateRandom, updateQuit
   , updateArena, updateTime, updateSide, updateSelectedArena
   , getArena, getTime, getSide
@@ -16,11 +17,12 @@ module Game.LambdaHack.State
   ) where
 
 import Data.Binary
+import qualified Data.EnumMap.Strict as EM
 import Data.Text (Text)
 import Data.Typeable
 import qualified System.Random as R
-import qualified Data.EnumMap.Strict as EM
 
+import Game.LambdaHack.Actor
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
@@ -42,6 +44,7 @@ import Game.LambdaHack.Time
 data State = State
   { _sdungeon :: !Dungeon      -- ^ remembered dungeon
   , _sdepth   :: !Int          -- ^ remembered dungeon depth
+  , _sitem    :: !ItemDict     -- ^ remembered items in the dungeon
   , _sdisco   :: !Discoveries  -- ^ remembered item discoveries
   , _sfaction :: !FactionDict  -- ^ remembered sides still in game
   , _scops    :: Kind.COps     -- ^ remembered content
@@ -61,7 +64,6 @@ unknownLevel Kind.Ops{ouniqGroup} ldepth lxsize lysize ldesc lstair lclear =
   let unknownId = ouniqGroup "unknown space"
   in Level { ldepth
            , lactor = EM.empty
-           , litem = EM.empty
            , lfloor = EM.empty
            , ltile = unknownTileMap unknownId lxsize lysize
            , lxsize = lxsize
@@ -88,6 +90,7 @@ defStateGlobal _sdungeon _sdepth _sdisco _sfaction _scops _srandom _sarena =
   State
     { _sside = invalidFactionId  -- no side yet selected
     , _squit = Nothing
+    , _sitem = EM.empty
     , ..
     }
 
@@ -97,6 +100,7 @@ defStateLocal _scops _sside =
   State
     { _sdungeon = EM.empty
     , _sdepth = 0
+    , _sitem = EM.empty
     , _sdisco = EM.empty
     , _sfaction = EM.empty
     , _scops
@@ -138,25 +142,29 @@ switchGlobalSelectedSideOnlyForGlobalState fid s = s {_sside = fid}
 updateDungeon :: (Dungeon -> Dungeon) -> State -> State
 updateDungeon f s = s {_sdungeon = f (_sdungeon s)}
 
+-- | Update the items dictionary.
+updateItem :: (ItemDict -> ItemDict) -> State -> State
+updateItem f s = s {_sitem = f (_sitem s)}
+
 -- | Update item discoveries within state.
 updateDisco :: (Discoveries -> Discoveries) -> State -> State
-updateDisco f s = s { _sdisco = f (_sdisco s) }
+updateDisco f s = s {_sdisco = f (_sdisco s)}
 
 -- | Update faction data within state.
 updateFaction :: (FactionDict -> FactionDict) -> State -> State
-updateFaction f s = s { _sfaction = f (_sfaction s) }
+updateFaction f s = s {_sfaction = f (_sfaction s)}
 
 -- | Update content data within state.
 updateCOps :: (Kind.COps -> Kind.COps) -> State -> State
-updateCOps f s = s { _scops = f (_scops s) }
+updateCOps f s = s {_scops = f (_scops s)}
 
 -- | Update random generator state.
 updateRandom :: (R.StdGen -> R.StdGen) -> State -> State
-updateRandom f s = s { _srandom = f (_srandom s) }
+updateRandom f s = s {_srandom = f (_srandom s)}
 
 -- | Update game save status.
 updateQuit :: (Maybe Bool -> Maybe Bool) -> State -> State
-updateQuit f s = s { _squit = f (_squit s) }
+updateQuit f s = s {_squit = f (_squit s)}
 
 -- | Update current arena data within state.
 updateArena :: (Level -> Level) -> State -> State
@@ -200,6 +208,9 @@ sdungeon = _sdungeon
 sdepth :: State -> Int
 sdepth = _sdepth
 
+sitem :: State -> ItemDict
+sitem = _sitem
+
 sdisco :: State -> Discoveries
 sdisco = _sdisco
 
@@ -225,6 +236,7 @@ instance Binary State where
   put State{..} = do
     put _sdungeon
     put _sdepth
+    put _sitem
     put _sdisco
     put _sfaction
     put (show _srandom)
@@ -234,6 +246,7 @@ instance Binary State where
   get = do
     _sdungeon <- get
     _sdepth <- get
+    _sitem <- get
     _sdisco <- get
     _sfaction <- get
     g <- get

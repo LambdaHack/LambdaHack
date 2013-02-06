@@ -85,13 +85,14 @@ alterSmellAtomic pos oldS newS = do
   let f old = assert (oldS == old `blame` (pos, old, oldS)) newS
   modifyState $ updateArena $ updateSmell $ EM.alter f pos
 
--- | Create a few copies of an item. The item may already be present
--- on the level, in which case only some more copies are added.
+-- | Create a few copies of an item that is already registered for the dungeon
+-- (in @sitemRev@ field of @StateServer@).
 createItemAtomic :: MonadAction m
                  => ItemId -> Item -> Int -> Container -> m ()
 createItemAtomic iid item k container = assert (k > 0) $ do
+  -- The item may or may not be already present in the dungeon.
   let f item1 item2 = assert (item1 == item2) item1
-  modifyState $ updateArena $ updateItem $ EM.insertWith f iid item
+  modifyState $ updateItem $ EM.insertWith f iid item
   let l = if jsymbol item == '$' then Just $ InvChar '$' else Nothing
       bag = EM.singleton iid k
   case container of
@@ -115,7 +116,7 @@ createItemAtomic iid item k container = assert (k > 0) $ do
 destroyItemAtomic :: MonadAction m
                   => ItemId -> Item -> Int -> Container -> m ()
 destroyItemAtomic iid item k container = assert (k > 0) $ do
-  -- TODO: check if the item appears anywhere else and GC it
+  -- Do not remove the item from @sitem@ nor from @sitemRev@,
   let rmFromBag (Just bag) = Just $ removeFromBag k iid bag
       rmFromBag Nothing = assert `failure` (iid, item, k, container)
   case container of

@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving, OverloadedStrings
              #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | Actors in the game: heroes, monsters, etc. No operation in this module
 -- involves the 'State' or 'Action' type.
 module Game.LambdaHack.Actor
@@ -9,7 +10,7 @@ module Game.LambdaHack.Actor
   , Actor(..), actorTemplate, timeAddFromSpeed, braced
   , unoccupied, heroKindId, projectileKindId, actorSpeed
     -- * Inventory management
-  , ItemBag, ItemInv, InvChar(..)
+  , ItemBag, ItemInv, InvChar(..), ItemDict, ItemRev
   , allLetters, assignLetter, letterLabel, letterRange, removeFromBag
     -- * Assorted
   , smellTimeout
@@ -19,6 +20,8 @@ import Data.Binary
 import Data.Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import qualified Data.Hashable as Hashable
+import qualified Data.HashMap.Strict as HM
 import Data.List
 import Data.Maybe
 import Data.Ratio
@@ -155,6 +158,19 @@ instance Binary InvChar where
 type ItemBag = EM.EnumMap ItemId Int
 
 type ItemInv = EM.EnumMap InvChar ItemId
+
+-- | All items in the dungeon (including in actor inventories),
+-- indexed by item identifier.
+type ItemDict = EM.EnumMap ItemId Item
+
+-- | Reverse item map, for item creation, to keep items and item identifiers
+-- in bijection.
+type ItemRev = HM.HashMap Item ItemId
+
+instance (Binary k, Binary v, Eq k, Hashable.Hashable k)
+  => Binary (HM.HashMap k v) where
+  put ir = put $ HM.toList ir
+  get = fmap HM.fromList get
 
 cmpLetter :: InvChar -> InvChar -> Ordering
 cmpLetter (InvChar x) (InvChar y) =

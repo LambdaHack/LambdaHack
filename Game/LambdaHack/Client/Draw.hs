@@ -6,12 +6,12 @@ module Game.LambdaHack.Client.Draw
   ( ColorMode(..), draw, animate
   ) where
 
+import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import qualified Data.List as L
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.EnumMap.Strict as EM
-import qualified Data.EnumSet as ES
 
 import Game.LambdaHack.Actor as Actor
 import Game.LambdaHack.ActorState
@@ -136,7 +136,7 @@ draw dm cops per
                   | otherwise ->
                   case EM.keys items of
                     [] -> (tsymbol tk, if vis then tcolor tk else tcolor2 tk)
-                    i : _ -> Item.viewItem $ getItemBody i lvl
+                    i : _ -> Item.viewItem $ getItemBody i s
             vis = ES.member pos0 $ totalVisible per
             visPl =
               maybe False (\leader -> actorSeesLoc per leader pos0) mleader

@@ -6,6 +6,7 @@ module Game.LambdaHack.Server.State
   ) where
 
 import Data.Binary
+import qualified Data.HashMap.Strict as HM
 import Data.Typeable
 
 import Game.LambdaHack.Actor
@@ -15,7 +16,8 @@ import Game.LambdaHack.Server.Fov
 
 -- | Global, server state.
 data StateServer = StateServer
-  { sdiscoRev :: !DiscoRev      -- ^ reverse map, used for item creation
+  { sdiscoRev :: !DiscoRev      -- ^ reverse disco map, used for item creation
+  , sitemRev  :: !ItemRev       -- ^ reverse id map, used for item creation
   , sflavour  :: !FlavourMap    -- ^ association of flavour to items
   , sacounter :: !ActorId       -- ^ stores next actor index
   , sicounter :: !ItemId        -- ^ stores next item index
@@ -35,6 +37,7 @@ defStateServer sdiscoRev sflavour sconfig =
     { sacounter = toEnum 0
     , sicounter = toEnum 0
     , sdebugSer = defDebugModeSer
+    , sitemRev = HM.empty
     , ..
     }
 
@@ -53,12 +56,14 @@ cycleTryFov s@StateServer{sdebugSer=sdebugSer@DebugModeSer{stryFov}} =
 instance Binary StateServer where
   put StateServer{..} = do
     put sdiscoRev
+    put sitemRev
     put sflavour
     put sacounter
     put sicounter
     put sconfig
   get = do
     sdiscoRev <- get
+    sitemRev <- get
     sflavour <- get
     sacounter <- get
     sicounter <- get

@@ -195,10 +195,9 @@ restartCli sper locRaw = do
 -- * cmdUpdateUI
 
 showItemsCli :: MonadClientUI m
-             => Discoveries -> Msg -> ItemBag -> ItemInv -> m ()
-showItemsCli discoS msg bag inv = do
-  lvl <- getsState getArena
-  io <- itemOverlay discoS lvl bag inv
+             => Msg -> ItemBag -> ItemInv -> m ()
+showItemsCli msg bag inv = do
+  io <- itemOverlay bag inv
   slides <- overlayToSlideshow msg io
   void $ getManyConfirms [] slides
 

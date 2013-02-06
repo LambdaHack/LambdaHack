@@ -76,14 +76,12 @@ cmdQueryUI :: MonadClientUI m => CmdQueryUI a -> m a
 cmdQueryUI cmd = case cmd of
   ShowSlidesCli slides -> getManyConfirms [] slides
   CarryOnCli -> carryOnCli
-  ConfirmShowItemsCli discoS msg bag inv -> do
-    lvl <- getsState getArena
-    io <- itemOverlay discoS lvl bag inv
+  ConfirmShowItemsCli msg bag inv -> do
+    io <- itemOverlay bag inv
     slides <- overlayToSlideshow msg io
     getManyConfirms [] slides
-  ConfirmShowItemsFloorCli discoS msg bag -> do
-    lvl <- getsState getArena
-    io <- floorItemOverlay discoS lvl bag
+  ConfirmShowItemsFloorCli msg bag -> do
+    io <- floorItemOverlay bag
     slides <- overlayToSlideshow msg io
     getManyConfirms [] slides
   ConfirmYesNoCli msg -> do

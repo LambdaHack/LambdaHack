@@ -1,5 +1,5 @@
-{-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving, OverloadedStrings
-             #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric, GeneralizedNewtypeDeriving,
+             OverloadedStrings #-}
 -- | Weapons, treasure and all the other items in the game.
 -- No operation in this module
 -- involves the 'State' or 'Action' type.
@@ -21,6 +21,7 @@ module Game.LambdaHack.Item
 import Control.Monad
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.Hashable as Hashable
 import qualified Data.Ix as Ix
 import Data.List
 import Data.Ord
@@ -28,6 +29,7 @@ import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Typeable
+import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Color as Color
@@ -51,7 +53,9 @@ instance Binary ItemId where
 -- | An index of the kind id of an item. Clients have partial knowledge
 -- how these idexes map to kind ids. They gain knowledge by identifying items.
 newtype ItemKindIx = ItemKindIx Int
-  deriving (Show, Eq, Ord, Enum, Ix.Ix)
+  deriving (Show, Eq, Ord, Enum, Ix.Ix, Generic)
+
+instance Hashable.Hashable ItemKindIx
 
 instance Binary ItemKindIx where
   put (ItemKindIx i) = put i
@@ -80,7 +84,9 @@ data Item = Item
   , jflavour :: !Flavour       -- ^ individual flavour
   , jpower   :: !Int           -- ^ power of the item
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
+
+instance Hashable.Hashable Item
 
 instance Binary Item where
   put (Item{..} ) = do

@@ -100,10 +100,11 @@ lookAt :: MonadClientRO m
 lookAt detailed canSee pos msg = do
   Kind.COps{coitem, cotile=Kind.Ops{oname}} <- getsState scops
   (_, lvl) <- viewedLevel
+  s <- getState
   let is = lvl `atI` pos
       prefixSee = MU.Text $ if canSee then "you see" else "you remember"
   disco <- getsState sdisco
-  let nWs (iid, k) = partItemNWs coitem disco k (getItemBody iid lvl)
+  let nWs (iid, k) = partItemNWs coitem disco k (getItemBody iid s)
       isd = case detailed of
               _ | EM.size is == 0 -> ""
               _ | EM.size is <= 2 ->
@@ -152,33 +153,34 @@ doLook = do
       slides <- promptToSlideshow (mode <+> lookMsg)
       tell slides
     else do
-     disco <- getsState sdisco
-     io <- floorItemOverlay disco lvl is
+     io <- floorItemOverlay is
      slides <- overlayToSlideshow (mode <+> lookMsg) io
      tell slides
 
 -- | Create a list of item names.
-floorItemOverlay :: MonadActionRO m
-                 => Discoveries -> Level -> ItemBag -> m Overlay
-floorItemOverlay disco lvl bag = do
+floorItemOverlay :: MonadActionRO m => ItemBag -> m Overlay
+floorItemOverlay bag = do
   Kind.COps{coitem} <- getsState scops
+  s <- getState
+  disco <- getsState sdisco
   let is = zip (EM.assocs bag) (allLetters ++ repeat (InvChar ' '))
       pr ((iid, k), l) =
          makePhrase [ letterLabel l
-                    , partItemNWs coitem disco k (getItemBody iid lvl) ]
+                    , partItemNWs coitem disco k (getItemBody iid s) ]
          <> " "
   return $ map pr is
 
 -- | Create a list of item names.
-itemOverlay :: MonadActionRO m
-            => Discoveries -> Level -> ItemBag -> ItemInv -> m Overlay
-itemOverlay disco lvl bag inv = do
+itemOverlay :: MonadActionRO m => ItemBag -> ItemInv -> m Overlay
+itemOverlay bag inv = do
   Kind.COps{coitem} <- getsState scops
+  s <- getState
+  disco <- getsState sdisco
   let checkItem (l, iid) = fmap (\k -> (l, iid, k)) $ EM.lookup iid bag
       is = mapMaybe checkItem $ EM.assocs inv
       pr (l, iid, k) =
          makePhrase [ letterLabel l
-                    , partItemNWs coitem disco k (getItemBody iid lvl) ]
+                    , partItemNWs coitem disco k (getItemBody iid s) ]
          <> " "
   return $ map pr is
 
@@ -198,8 +200,6 @@ inventory = do
   pbody <- getsState $ getActorBody leader
   bag <- getsState $ getActorBag leader
   inv <- getsState $ getActorInv leader
-  lvl <- getsState getArena
-  disco <- getsState sdisco
   if EM.null bag
     then abortWith $ makeSentence
       [ MU.SubjectVerbSg (partActor coactor pbody) "be"
@@ -207,7 +207,7 @@ inventory = do
     else do
       let blurb = makePhrase [MU.Capitalize $
             MU.SubjectVerbSg (partActor coactor pbody) "be carrying:"]
-      io <- itemOverlay disco lvl bag inv
+      io <- itemOverlay bag inv
       slides <- overlayToSlideshow blurb io
       tell slides
 

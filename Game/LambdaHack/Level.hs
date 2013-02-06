@@ -5,10 +5,10 @@ module Game.LambdaHack.Level
   ( -- * Dungeon
     LevelId, Dungeon, initialLevel, ascendInBranch
     -- * The @Level@ type and its components
-  , ActorDict, ItemDict, SmellMap, SecretMap, FloorMap, TileMap
+  , ActorDict, SmellMap, SecretMap, FloorMap, TileMap
   , Level(..)
     -- * Level update
-  , updateActor, updateItem, updateSmell, updateFloor, updateTile, dropItemsAt
+  , updateActor, updateSmell, updateFloor, updateTile, dropItemsAt
     -- * Level query
   , at, atI, accessible, openable, findPos, findPosTry
     -- * Item containers
@@ -25,7 +25,6 @@ import Game.LambdaHack.Actor
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Feature as F
-import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Point
 import Game.LambdaHack.PointXY
@@ -59,10 +58,6 @@ ascendInBranch dungeon (LevelId n) k =
 -- | All actors on the level, indexed by actor identifier.
 type ActorDict = EM.EnumMap ActorId Actor
 
--- | All items on the level (including in actor inventories),
--- indexed by item identifier.
-type ItemDict = EM.EnumMap ItemId Item
-
 -- | Current smell on map tiles.
 type SmellMap = EM.EnumMap Point SmellTime
 
@@ -79,8 +74,7 @@ type TileMap = Kind.Array Point TileKind
 data Level = Level
   { ldepth  :: !Int             -- ^ depth of the level
   , lactor  :: !ActorDict       -- ^ remembered actors on the level
-  , litem   :: !ItemDict        -- ^ remembered items on the level
-  , lfloor  :: !FloorMap         -- ^ remembered items lying on the floor
+  , lfloor  :: !FloorMap        -- ^ remembered items lying on the floor
   , ltile   :: !TileMap         -- ^ remembered level map
   , lxsize  :: !X               -- ^ width of the level
   , lysize  :: !Y               -- ^ height of the level
@@ -97,10 +91,6 @@ data Level = Level
 -- | Update the actor dictionary.
 updateActor :: (ActorDict -> ActorDict) -> Level -> Level
 updateActor f lvl = lvl { lactor = f (lactor lvl) }
-
--- | Update the items dictionary.
-updateItem :: (ItemDict -> ItemDict) -> Level -> Level
-updateItem f lvl = lvl { litem = f (litem lvl) }
 
 -- | Update the smell map.
 updateSmell :: (SmellMap -> SmellMap) -> Level -> Level
@@ -128,7 +118,6 @@ instance Binary Level where
   put Level{..} = do
     put ldepth
     put lactor
-    put litem
     put (assertSparseItems lfloor)
     put ltile
     put lxsize
@@ -143,7 +132,6 @@ instance Binary Level where
   get = do
     ldepth <- get
     lactor <- get
-    litem <- get
     lfloor <- get
     ltile <- get
     lxsize <- get

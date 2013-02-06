@@ -76,7 +76,6 @@ buildLevel Kind.COps{ cotile=cotile@Kind.Ops{opick}
       level = Level
         { ldepth
         , lactor = EM.empty
-        , litem = EM.empty
         , lfloor = EM.empty
         , ltile
         , lxsize = cxsize

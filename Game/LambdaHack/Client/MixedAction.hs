@@ -211,7 +211,7 @@ actorPickupItem actor = do
   case EM.minViewWithKey $ lvl `atI` bpos body of
     Nothing -> abortWith "nothing here"
     Just ((iid, k), _) ->  do -- pick up first item; TODO: let pl select item; not for monsters
-      item <- getsState $ getItemBody iid . getArena
+      item <- getsState $ getItemBody iid
       let l = if jsymbol item == '$' then Just $ InvChar '$' else Nothing
       case assignLetter iid l body of
         Just l2 -> return $ PickupSer actor iid k l2
@@ -265,10 +265,11 @@ getItem :: MonadClientUI m
         -> Text            -- ^ how to refer to the collection of items
         -> m ((ItemId, Item), (Int, Container))
 getItem aid prompt p ptext bag inv isn = do
-  lvl  <- getsState getArena
+  lvl <- getsState getArena
+  s <- getState
   body <- getsState $ getActorBody aid
   let checkItem (l, iid) =
-        fmap (\k -> ((iid, getItemBody iid lvl), (k, l))) $ EM.lookup iid bag
+        fmap (\k -> ((iid, getItemBody iid s), (k, l))) $ EM.lookup iid bag
       is0 = mapMaybe checkItem $ EM.assocs inv
       pos = bpos body
       tis = lvl `atI` pos
@@ -297,14 +298,13 @@ getItem aid prompt p ptext bag inv isn = do
         when (null is0 && EM.null tis) $
           abortWith "Not carrying anything."
         perform INone
-      invP = EM.filter (\iid -> p (getItemBody iid lvl)) inv
+      invP = EM.filter (\iid -> p (getItemBody iid s)) inv
       perform itemDialogState = do
         let (ims, invOver, msg) = case itemDialogState of
               INone     -> (isp, EM.empty, prompt)
               ISuitable -> (isp, invP, ptext <+> isn <> ".")
               IAll      -> (is0, inv, allObjectsName <+> isn <> ".")
-        disco <- getsState sdisco
-        io <- itemOverlay disco lvl bag invOver
+        io <- itemOverlay bag invOver
         (command, modifier) <-
           displayChoiceUI (msg <+> choice ims) io (keys ims)
         assert (modifier == K.NoModifier) $
@@ -317,7 +317,7 @@ getItem aid prompt p ptext bag inv isn = do
               -- TODO: let player select item
               return $ maximumBy (compare `on` fst . fst)
                      $ map (\(iid, k) ->
-                             ((iid, getItemBody iid lvl), (k, CFloor pos)))
+                             ((iid, getItemBody iid s), (k, CFloor pos)))
                      $ EM.assocs tis
             K.Char l | InvChar l `elem` map (snd . snd) ims ->
               case find ((InvChar l ==) . snd . snd) ims of

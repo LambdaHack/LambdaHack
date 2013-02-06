@@ -197,7 +197,7 @@ pickup actor glo =
   actionPickup = case EM.minViewWithKey $ lvl `atI` bpos of
     Nothing -> assert `failure` (actor, bpos, lvl)
     Just ((iid, k), _) ->  -- pick up first item
-      let item = getItemBody iid $ getArena glo
+      let item = getItemBody iid glo
           l = if jsymbol item == '$' then Just $ InvChar '$' else Nothing
       in case assignLetter iid l body of
         Just l2 -> returN "pickup" $ PickupSer actor iid k l2
@@ -246,7 +246,7 @@ rangedFreq cops actor glo fpos =
   throwFreq bag multi =
     [ (benefit * multi,
        ProjectSer actor fpos eps (iverbProject ik) iid)
-    | (iid, i) <- map (\iid -> (iid, getItemBody iid (getArena glo)))
+    | (iid, i) <- map (\iid -> (iid, getItemBody iid glo))
                    $ EM.keys bag,
       let (ik, benefit) =
             case jkind (sdisco glo) i of
@@ -271,7 +271,7 @@ toolsFreq cops actor glo =
   tis = lvl `atI` bpos
   quaffFreq bag multi container=
     [ (benefit * multi, ApplySer actor (iverbApply ik) iid container)
-    | (iid, i) <- map (\iid -> (iid, getItemBody iid (getArena glo)))
+    | (iid, i) <- map (\iid -> (iid, getItemBody iid glo))
                   $ EM.keys bag,
       let (ik, benefit) =
             case jkind (sdisco glo) i of
