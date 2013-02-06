@@ -121,7 +121,7 @@ actorProjectGI aid verb object syms = do
       Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
       bag <- getsState $ getActorBag aid
       inv <- getsState $ getActorInv aid
-      ((iid, item), _) <-
+      ((iid, item), (_, container)) <-
         getGroupItem aid bag inv object syms
           (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
       stgtMode <- getsClient stgtMode
@@ -132,7 +132,7 @@ actorProjectGI aid verb object syms = do
       let verbProject = case jkind disco item of
             Nothing -> verb
             Just ik -> iverbProject $ okind ik
-      return $! ProjectSer aid p seps verbProject iid
+      return $! ProjectSer aid p seps verbProject iid container
     Nothing -> assert `failure` (pos, aid, "target unexpectedly invalid")
 
 -- ** TriggerDir

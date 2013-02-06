@@ -21,7 +21,7 @@ import Game.LambdaHack.State
 cmdSerSem :: MonadServerChan m => CmdSer -> m ()
 cmdSerSem cmd = case cmd of
   ApplySer aid v iid container -> applySer aid v iid container
-  ProjectSer aid p eps v iid -> projectSer aid p eps v iid
+  ProjectSer aid p eps v iid container -> projectSer aid p eps v iid container
   TriggerSer aid p -> triggerSer aid p
   PickupSer aid i k l -> pickupSer aid i k l
   DropSer aid item -> dropSer aid item

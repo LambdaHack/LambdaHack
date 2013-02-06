@@ -93,36 +93,81 @@ createItemAtomic iid item k container = assert (k > 0) $ do
   -- The item may or may not be already present in the dungeon.
   let f item1 item2 = assert (item1 == item2) item1
   modifyState $ updateItem $ EM.insertWith f iid item
+  case container of
+    CFloor pos -> insertItemFloor iid k pos
+    CActor aid -> insertItemActor iid k aid
+
+insertItemFloor :: MonadAction m
+                => ItemId -> Int -> Point -> m ()
+insertItemFloor iid k pos =
+  let bag = EM.singleton iid k
+      mergeBag = EM.insertWith (EM.unionWith (+)) pos bag
+  in modifyState $ updateArena $ updateFloor mergeBag
+
+insertItemActor :: MonadAction m
+                => ItemId -> Int -> ActorId -> m ()
+insertItemActor iid k aid = do
+  item <- getsState $ getItemBody iid
   let l = if jsymbol item == '$' then Just $ InvChar '$' else Nothing
       bag = EM.singleton iid k
-  case container of
-    CFloor pos -> do
-      let mergeBag = EM.insertWith (EM.unionWith (+)) pos bag
-      modifyState $ updateArena $ updateFloor mergeBag
-    CActor aid -> do
-      body <- getsState $ getActorBody aid
-      case assignLetter iid l body of
-        Nothing -> createItemAtomic iid item k (CFloor $ bpos body)
-        Just l2 -> do
-          let upd = EM.unionWith (+) bag
-          modifyState $ updateArena $ updateActor
-            $ EM.adjust (\b -> b {bbag = upd (bbag b)}) aid
-          modifyState $ updateArena $ updateActor
-            $ EM.adjust (\b -> b {binv = EM.insert l2 iid (binv b)}) aid
-          modifyState $ updateActorBody aid $ \b ->
-            b {bletter = max l2 (bletter b)}
+  body <- getsState $ getActorBody aid
+  case assignLetter iid l body of
+    Nothing -> insertItemFloor iid k (bpos body)
+    Just l2 -> do
+      let upd = EM.unionWith (+) bag
+      modifyState $ updateArena $ updateActor
+        $ EM.adjust (\b -> b {bbag = upd (bbag b)}) aid
+      modifyState $ updateArena $ updateActor
+        $ EM.adjust (\b -> b {binv = EM.insert l2 iid (binv b)}) aid
+      modifyState $ updateActorBody aid $ \b ->
+        b {bletter = max l2 (bletter b)}
 
 -- | Destroy some copies (possibly not all) of an item.
 destroyItemAtomic :: MonadAction m
                   => ItemId -> Item -> Int -> Container -> m ()
-destroyItemAtomic iid item k container = assert (k > 0) $ do
+destroyItemAtomic iid _item k container = assert (k > 0) $ do
   -- Do not remove the item from @sitem@ nor from @sitemRev@,
-  let rmFromBag (Just bag) = Just $ removeFromBag k iid bag
-      rmFromBag Nothing = assert `failure` (iid, item, k, container)
+  -- This is behaviourally equivalent.
   case container of
-    CFloor pos ->
-      modifyState $ updateArena $ updateFloor $ EM.alter rmFromBag pos
-    CActor aid ->
-      modifyState $ updateArena $ updateActor
-      $ EM.adjust (\b -> b {bbag = removeFromBag k iid (bbag b)}) aid
-      -- Actor's @bletter@ for UI not reset. This is OK up to isomorphism.
+    CFloor pos -> deleteItemFloor iid k pos
+    CActor aid -> deleteItemActor iid k aid
+                  -- Actor's @bletter@ for UI not reset.
+                  -- This is OK up to isomorphism.
+
+deleteItemFloor :: MonadAction m
+                 => ItemId -> Int -> Point -> m ()
+deleteItemFloor iid k pos =
+  let rmFromFloor (Just bag) =
+        let nbag = rmFromBag k iid bag
+        in if EM.null nbag then Nothing else Just nbag
+      rmFromFloor Nothing = assert `failure` (iid, k, pos)
+  in modifyState $ updateArena $ updateFloor $ EM.alter rmFromFloor pos
+
+deleteItemActor :: MonadAction m
+                 => ItemId -> Int -> ActorId -> m ()
+deleteItemActor iid k aid =
+  modifyState $ updateArena $ updateActor
+  $ EM.adjust (\b -> b {bbag = rmFromBag k iid (bbag b)}) aid
+
+moveItemAtomic :: MonadAction m
+               => ItemId -> Int -> Container -> Container -> m ()
+moveItemAtomic iid k c1 c2 = assert (k > 0) $ do
+  case c1 of
+    CFloor pos -> deleteItemFloor iid k pos
+    CActor aid -> deleteItemActor iid k aid
+  case c2 of
+    CFloor pos -> insertItemFloor iid k pos
+    CActor aid -> insertItemActor iid k aid
+
+waitAtomic :: MonadAction m => ActorId -> m ()
+waitAtomic actor = do
+  Kind.COps{coactor} <- getsState scops
+  time <- getsState getTime
+  modifyState $ updateActorBody actor $ \ m ->
+    m {bwait = timeAddFromSpeed coactor m time}
+
+changeTileAtomic :: MonadAction m
+                 => Point -> Kind.Id TileKind ->  Kind.Id TileKind -> m ()
+changeTileAtomic p _fromTile toTile =
+  let adj = (Kind.// [(p, toTile)])
+  in modifyState (updateArena (updateTile adj))

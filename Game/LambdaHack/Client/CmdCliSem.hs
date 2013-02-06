@@ -46,19 +46,20 @@ import Game.LambdaHack.Vector
 
 -- * cmdUpdateCli
 
-pickupCli :: MonadClient m => ActorId -> Item -> Int -> InvChar -> m ()
-pickupCli aid i k l = do
+pickupCli :: MonadClient m => ActorId -> ItemId -> Int -> InvChar -> m ()
+pickupCli aid iid k l = do
   Kind.COps{coactor, coitem} <- getsState scops
   body <- getsState (getActorBody aid)
+  item <- getsState $ getItemBody iid
   side <- getsState sside
   disco <- getsState sdisco
   if bfaction body == side
     then msgAdd $ makePhrase [ letterLabel l
-                             , partItemNWs coitem disco k i
+                             , partItemNWs coitem disco k item
                              , "\n" ]
     else msgAdd $ makeSentence
            [ MU.SubjectVerbSg (partActor coactor body) "pick up"
-           , partItemNWs coitem disco 1 i ]  -- single, not 'ni'
+           , partItemNWs coitem disco 1 item ]  -- single, not 'ni'
 
 applyCli :: MonadClient m => ActorId -> MU.Part -> Item -> m ()
 applyCli actor verb item = do
@@ -108,9 +109,9 @@ rememberCli arena vis lvl = do
   modifyState $ updateDungeon updArena
 
 rememberPerCli :: MonadClient m
-            => LevelId -> Perception -> Level -> FactionDict
+            => LevelId -> Perception -> Level -> ItemDict -> FactionDict
             -> m ()
-rememberPerCli arena per lvl faction = do
+rememberPerCli arena per lvl itemD faction = do
   -- TODO: remove if clients are guaranteed to be on good arena:
   arenaOld <- getsState sarena
   when (arenaOld /= arena) $ do
@@ -119,6 +120,7 @@ rememberPerCli arena per lvl faction = do
   rememberCli arena (totalVisible per) lvl
   modifyClient $ \cli -> cli {sper = EM.insert arena per (sper cli)}
   modifyState $ updateFaction (const faction)
+  modifyState $ updateItem (const itemD)
 
 -- switchLevelCli :: MonadClient m
 --                => ActorId -> LevelId -> Actor -> ItemBag

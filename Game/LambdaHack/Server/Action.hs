@@ -99,10 +99,11 @@ remember = do
   arena <- getsState sarena
   lvl <- getsState getArena
   faction <- getsState sfaction
+  itemD <- getsState sitem
   pers <- ask
   -- TODO: leaky! secret lvl sent
   let broadcast = funBroadcastCli (\fid ->
-        RememberPerCli arena (pers EM.! fid EM.! arena) lvl faction)
+        RememberPerCli arena (pers EM.! fid EM.! arena) lvl itemD faction)
   broadcast
   withAI broadcast
 

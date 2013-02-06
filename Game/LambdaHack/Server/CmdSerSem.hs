@@ -64,46 +64,17 @@ applySer actor verb iid container = do
   itemEffect 5 actor actor item False
   destroyItemAtomic iid item 1 container
 
--- TODO: this is subtly wrong: if identical items are on the floor and in
--- inventory, the floor one will be chosen, regardless of player intention.
--- TODO: right now it nastily hacks (with the ppos) around removing items
--- of actors that die when applying items. The subtle incorrectness
--- helps here a lot, because items of dead actors land on the floor,
--- so we use them up in inventory, but remove them after use from the floor.
--- TODO: How can this happen considering we remove them before use?
--- | Remove given item from an actor's inventory or floor.
-removeFromInventory :: MonadServer m => ActorId -> ItemId -> Point -> m ()
-removeFromInventory aid iid pos = do
-  boo <- removeFromPos iid 1 pos
-  let k = 1
-  unless boo $
-    modifyState $ updateArena $ updateActor
-    $ EM.adjust (\b -> b {bbag = removeFromBag k iid (bbag b)}) aid
-
--- | Remove given item from the given position. Tell if successful.
-removeFromPos :: MonadServer m => ItemId -> Int -> Point -> m Bool
-removeFromPos iid k pos = do
-  lvl <- getsState getArena
-  if not $ EM.member iid (lvl `atI` pos)
-    then return False
-    else do
-      let adj = EM.update (\bag -> let nbag = removeFromBag k iid bag
-                                   in if EM.null nbag
-                                      then Nothing
-                                      else Just nbag) pos
-      modifyState (updateArena (updateFloor adj))
-      return True
-
 -- ** ProjectSer
 
 projectSer :: MonadServerChan m
-           => ActorId  -- ^ actor projecting the item (is on current lvl)
-           -> Point    -- ^ target position of the projectile
-           -> Int      -- ^ digital line parameter
-           -> MU.Part  -- ^ how the projecting is called
-           -> ItemId   -- ^ the item to be projected
+           => ActorId    -- ^ actor projecting the item (is on current lvl)
+           -> Point      -- ^ target position of the projectile
+           -> Int        -- ^ digital line parameter
+           -> MU.Part    -- ^ how the projecting is called
+           -> ItemId     -- ^ the item to be projected
+           -> Container  -- ^ whether the items comes from floor or inventory
            -> m ()
-projectSer source tpos eps _verb iid = do
+projectSer source tpos eps _verb iid container = do
   cops@Kind.COps{coactor} <- getsState scops
   sm <- getsState (getActorBody source)
   Actor{btime} <- getsState $ getActorBody source
@@ -134,11 +105,11 @@ projectSer source tpos eps _verb iid = do
     Nothing -> abortWith "cannot zap oneself"
     Just [] -> assert `failure` (spos, tpos, "project from the edge of level")
     Just path@(pos:_) -> do
-      removeFromInventory source iid spos
       inhabitants <- getsState (posToActor pos)
       if accessible cops lvl spos pos && isNothing inhabitants
         then do
-          addProjectile iid pos (bfaction sm) path time
+          projId <- addProjectile iid pos (bfaction sm) path time
+          moveItemAtomic iid 1 container (CActor projId)
           item <- getsState $ getItemBody iid
           broadcastPosCli [spos, pos] $ ProjectCli spos source item
         else
@@ -147,7 +118,7 @@ projectSer source tpos eps _verb iid = do
 -- | Create a projectile actor containing the given missile.
 addProjectile :: MonadServer m
               => ItemId -> Point -> FactionId -> [Point] -> Time
-              -> m ()
+              -> m ActorId
 addProjectile iid loc bfaction path btime = do
   Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}} <- getsState scops
   disco <- getsState sdisco
@@ -171,9 +142,9 @@ addProjectile iid loc bfaction path btime = do
         , bdirAI  = Nothing
         , bpath   = Just dirPath
         , bpos    = loc
-        , bbag    = EM.singleton iid 1
-        , binv    = EM.singleton (InvChar 'a') iid
-        , bletter = InvChar 'b'
+        , bbag    = EM.empty
+        , binv    = EM.empty
+        , bletter = InvChar 'a'
         , btime
         , bwait   = timeZero
         , bfaction
@@ -182,6 +153,7 @@ addProjectile iid loc bfaction path btime = do
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
   spawnAtomic acounter m
+  return acounter
 
 -- ** TriggerSer
 
@@ -199,9 +171,9 @@ triggerSer aid dpos = do
         if EM.null $ lvl `atI` dpos
           then if unoccupied (EM.elems lactor) dpos
                then do
-                 newTileId <- rndToAction $ opick tgroup (const True)
-                 let adj = (Kind.// [(dpos, newTileId)])
-                 modifyState (updateArena (updateTile adj))
+                 fromTile <- getsState $ (`at` dpos) . getArena
+                 toTile <- rndToAction $ opick tgroup (const True)
+                 changeTileAtomic dpos fromTile toTile
 -- TODO: take care of AI using this function (aborts, etc.).
                else abortWith "blocked"  -- by monsters or heroes
           else abortWith "jammed"  -- by items
@@ -215,39 +187,25 @@ pickupSer aid iid k l = assert (k > 0 `blame` (aid, iid, k, l)) $ do
   side <- getsState sside
   body <- getsState (getActorBody aid)
   -- Nobody can be forced to pick up an item.
+  -- TODO: check elsewhere and for all commands.
   assert (bfaction body == side `blame` (body, side)) $ do
     let p = bpos body
-    removeFromPos iid k p
-      >>= assert `trueM` (aid, iid, p, "item is stuck")
-    item <- getsState $ getItemBody iid
-    modifyState $ updateActorBody aid $ \m ->
-      m {bletter = max l (bletter m)}
-    modifyState $ updateArena $ updateActor
-      $ EM.adjust (\b -> b {bbag = EM.insertWith (+) iid k (bbag b)}) aid
-    modifyState $ updateArena $ updateActor
-      $ EM.adjust (\b -> b {binv = EM.insert l iid (binv b)}) aid
-    void $ broadcastPosCli [p] (PickupCli aid item k l)
+    moveItemAtomic iid k (CFloor p) (CActor aid)
+    void $ broadcastPosCli [p] (PickupCli aid iid k l)
 
 -- ** DropSer
 
-dropSer :: MonadServer m => ActorId -> ItemId -> m ()
+dropSer :: MonadAction m => ActorId -> ItemId -> m ()
 dropSer aid iid = do
-  pos <- getsState (bpos . getActorBody aid)
-  _k <- getsState $ (EM.! iid) . getActorBag aid
+  p <- getsState (bpos . getActorBody aid)
   let k = 1
-  modifyState $ updateArena $ updateActor
-    $ EM.adjust (\b -> b {bbag = removeFromBag k iid (bbag b)}) aid
-  modifyState $ updateArena (dropItemsAt (EM.singleton iid k) pos)
+  moveItemAtomic iid k (CActor aid) (CFloor p)
 
 -- * WaitSer
 
 -- | Update the wait/block count.
-waitSer :: MonadServer m => ActorId -> m ()
-waitSer actor = do
-  Kind.COps{coactor} <- getsState scops
-  time <- getsState getTime
-  modifyState $ updateActorBody actor $ \ m ->
-    m {bwait = timeAddFromSpeed coactor m time}
+waitSer :: MonadAction m => ActorId -> m ()
+waitSer = waitAtomic
 
 -- ** MoveSer
 

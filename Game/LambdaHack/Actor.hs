@@ -11,7 +11,7 @@ module Game.LambdaHack.Actor
   , unoccupied, heroKindId, projectileKindId, actorSpeed
     -- * Inventory management
   , ItemBag, ItemInv, InvChar(..), ItemDict, ItemRev
-  , allLetters, assignLetter, letterLabel, letterRange, removeFromBag
+  , allLetters, assignLetter, letterLabel, letterRange, rmFromBag
     -- * Assorted
   , smellTimeout
   ) where
@@ -218,8 +218,8 @@ letterRange ls =
 letterLabel :: InvChar -> MU.Part
 letterLabel c = MU.Text $ T.pack $ invChar c : " -"
 
-removeFromBag :: Int -> ItemId -> ItemBag -> ItemBag
-removeFromBag k iid bag =
+rmFromBag :: Int -> ItemId -> ItemBag -> ItemBag
+rmFromBag k iid bag =
   let rib Nothing = assert `failure` (k, iid, bag)
       rib (Just n) = case compare n k of
         LT -> assert `failure` (n, k, iid, bag)

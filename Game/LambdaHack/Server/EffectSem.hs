@@ -370,8 +370,6 @@ useStairs target delta msg = do
 effLvlGoUp :: MonadServerChan m => ActorId -> Int -> m ()
 effLvlGoUp aid k = do
   pbodyCurrent <- getsState $ getActorBody aid
-  bbag <- getsState $ getActorBag aid
-  binv <- getsState $ getActorInv aid
   arena <- getsState sarena
   glo <- getState
   case whereTo glo arena k of
@@ -404,8 +402,6 @@ effLvlGoUp aid k = do
         -- The actor is added to the new level, but there can be other actors
         -- at his old position or at his new position.
         spawnAtomic aid pbody
-        modifyState $ updateArena $ updateActor
-          $ EM.adjust (\b -> b {bbag, binv}) aid
         -- Reset level and leader for all factions.
         broadcastCli [return . (/= bfaction pbody)] $ InvalidateArenaCli nln
 --        sendUpdateCli (bfaction pbody) $ SwitchLevelCli aid nln pbody bbag

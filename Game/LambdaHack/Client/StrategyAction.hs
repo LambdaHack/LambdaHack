@@ -219,7 +219,7 @@ rangedFreq cops actor glo fpos =
        && asight mk
        && accessible cops lvl bpos pos1      -- first accessible
        && isNothing (posToActor pos1 glo)  -- no friends on first
-    then throwFreq bitems 3 ++ throwFreq tis 6
+    then throwFreq bitems 3 (CActor actor) ++ throwFreq tis 6 (CFloor bpos)
     else []
  where
   Kind.COps{ coactor=Kind.Ops{okind}
@@ -243,11 +243,11 @@ rangedFreq cops actor glo fpos =
     Nothing -> bpos  -- TODO
     Just [] -> bpos  -- TODO
     Just (lbl:_) -> lbl
-  throwFreq bag multi =
+  throwFreq bag multi container =
     [ (benefit * multi,
-       ProjectSer actor fpos eps (iverbProject ik) iid)
+       ProjectSer actor fpos eps (iverbProject ik) iid container)
     | (iid, i) <- map (\iid -> (iid, getItemBody iid glo))
-                   $ EM.keys bag,
+                  $ EM.keys bag,
       let (ik, benefit) =
             case jkind (sdisco glo) i of
               Nothing -> (undefined, 0)
@@ -269,7 +269,7 @@ toolsFreq cops actor glo =
   Actor{bpos} = getActorBody actor glo
   bitems = getActorBag actor glo
   tis = lvl `atI` bpos
-  quaffFreq bag multi container=
+  quaffFreq bag multi container =
     [ (benefit * multi, ApplySer actor (iverbApply ik) iid container)
     | (iid, i) <- map (\iid -> (iid, getItemBody iid glo))
                   $ EM.keys bag,

@@ -37,13 +37,13 @@ data CmdUI where
 deriving instance Show CmdUI
 
 data CmdUpdateCli =
-    PickupCli ActorId Item Int InvChar
+    PickupCli ActorId ItemId Int InvChar
   | ApplyCli ActorId MU.Part Item
   | ShowMsgCli Msg
   | InvalidateArenaCli LevelId
   | DiscoverCli (Kind.Id ItemKind) Item
   | RememberCli LevelId (ES.EnumSet Point) Level  -- TODO: Level is an overkill
-  | RememberPerCli LevelId Perception Level FactionDict
+  | RememberPerCli LevelId Perception Level ItemDict FactionDict
   | SwitchLevelCli ActorId LevelId Actor ItemBag
   | ProjectCli Point ActorId Item
   | ShowAttackCli ActorId ActorId MU.Part Item Bool

@@ -25,13 +25,13 @@ import Game.LambdaHack.State
 
 cmdUpdateCli :: MonadClient m => CmdUpdateCli -> m ()
 cmdUpdateCli cmd = case cmd of
-  PickupCli aid i k l -> pickupCli aid i k l
+  PickupCli aid iid k l -> pickupCli aid iid k l
   ApplyCli actor verb item -> applyCli actor verb item
   ShowMsgCli msg -> msgAdd msg
   InvalidateArenaCli lid -> void $ invalidateArenaCli lid
   DiscoverCli ik i -> discoverCli ik i
   RememberCli arena vis lvl -> rememberCli arena vis lvl
-  RememberPerCli arena per lvl faction -> rememberPerCli arena per lvl faction
+  RememberPerCli arena per lvl itemD faction -> rememberPerCli arena per lvl itemD faction
   SwitchLevelCli _aid _arena _pbody _items -> undefined  -- switchLevelCli aid arena pbody items
   ProjectCli spos source item -> projectCli spos source item
   ShowAttackCli source target verb stack say ->
