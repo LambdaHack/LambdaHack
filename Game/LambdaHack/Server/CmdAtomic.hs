@@ -7,12 +7,58 @@
 -- way to affect game state. Clients should be sent state updates
 -- after each atomic command they can observe.
 module Game.LambdaHack.Server.CmdAtomic
-  ( CmdAtomic(..)
+  ( CmdAtomic(..), undoCmdAtomic
   ) where
 
+import Control.Arrow (second)
+import Data.Tuple (swap)
+
 import Game.LambdaHack.Actor
+import Game.LambdaHack.Content.TileKind as TileKind
+import Game.LambdaHack.Faction
+import Game.LambdaHack.Item
+import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Level
+import Game.LambdaHack.Misc
+import Game.LambdaHack.Point
+import Game.LambdaHack.Time
 
 -- | Abstract syntax of atomic commands.
 data CmdAtomic =
     HealAtomic Int ActorId
+  | HasteAtomic ActorId Speed
+  | DominateAtomic FactionId FactionId ActorId
+  | SpawnAtomic ActorId Actor
+  | KillAtomic ActorId Actor
+  | CreateItemAtomic ItemId Item Int Container
+  | DestroyItemAtomic ItemId Item Int Container
+  | MoveItemAtomic ItemId Int Container Container
+  | WaitAtomic ActorId Time Time
+  | ChangeTileAtomic Point (Kind.Id TileKind) (Kind.Id TileKind)
+  | MoveActorAtomic ActorId Point Point
+  | DisplaceActorAtomic ActorId ActorId
+  | AlterSecretAtomic (DiffEM Point Time)
+  | AlterSmellAtomic (DiffEM Point Time)
+  | SetSmellAtomic SmellMap SmellMap
   deriving Show
+
+undoCmdAtomic :: CmdAtomic -> CmdAtomic
+undoCmdAtomic cmd = case cmd of
+  HealAtomic n aid -> HealAtomic (-n) aid
+  HasteAtomic aid delta -> HasteAtomic aid (speedNegate delta)
+  DominateAtomic fromFaction toFaction target ->
+    DominateAtomic toFaction fromFaction target
+  SpawnAtomic aid body -> KillAtomic aid body
+  KillAtomic aid body -> SpawnAtomic aid body
+  CreateItemAtomic iid item k container ->
+    DestroyItemAtomic iid item k container
+  DestroyItemAtomic iid item k container ->
+    CreateItemAtomic iid item k container
+  MoveItemAtomic iid k c1 c2 -> MoveItemAtomic iid k c2 c1
+  WaitAtomic actor fromWait toWait -> WaitAtomic actor toWait fromWait
+  ChangeTileAtomic p fromTile toTile -> ChangeTileAtomic p toTile fromTile
+  MoveActorAtomic aid fromP toP -> MoveActorAtomic aid toP fromP
+  DisplaceActorAtomic source target -> DisplaceActorAtomic target source
+  AlterSecretAtomic diffL -> AlterSecretAtomic $ map (second swap) diffL
+  AlterSmellAtomic diffL -> AlterSmellAtomic $ map (second swap) diffL
+  SetSmellAtomic fromSmell toSmell -> SetSmellAtomic toSmell fromSmell

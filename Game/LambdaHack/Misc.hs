@@ -2,12 +2,16 @@
 -- | Hacks that haven't found their home yet.
 module Game.LambdaHack.Misc
   ( normalLevelBound, maxLevelDim, divUp, Freqs, breturn
+  , DiffEM, applyDiffEM
   ) where
 
 import Control.Monad
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
+import Data.List
 import Data.Text (Text)
+
+import Game.LambdaHack.Utils.Assert
 
 -- | Level bounds. TODO: query terminal size instead and scroll view.
 normalLevelBound :: (Int, Int)
@@ -35,3 +39,13 @@ breturn False _ = mzero
 instance (Enum k, Binary k, Binary e) => Binary (EM.EnumMap k e) where
   put m = put (EM.size m) >> mapM_ put (EM.toAscList m)
   get = liftM EM.fromDistinctAscList get
+
+type DiffEM k v = [(k, (Maybe v, Maybe v))]
+
+applyDiffEM :: (Enum k, Eq v, Show k, Show v)
+            => DiffEM k v -> EM.EnumMap k v -> EM.EnumMap k v
+applyDiffEM diffL em =
+  let f m (k, (ov, nv)) =
+        let g v = assert (v == ov `blame` (v, ov, nv, em, diffL)) nv
+        in EM.alter g k m
+  in foldl' f em diffL

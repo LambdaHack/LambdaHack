@@ -2,48 +2,45 @@
 -- TODO: document
 module Game.LambdaHack.Server.CmdAtomicSem where
 
-import Control.Monad
-import Control.Monad.Reader.Class
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.EnumSet as ES
-import Data.List
 import Data.Maybe
-import Data.Ratio
-import Data.Text (Text)
-import qualified Data.Text as T
-import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.CmdCli
 import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Content.FactionKind
-import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Faction
-import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
-import Game.LambdaHack.Msg
-import Game.LambdaHack.Perception
+import Game.LambdaHack.Misc
 import Game.LambdaHack.Point
-import Game.LambdaHack.Random
-import Game.LambdaHack.Server.Action
 import Game.LambdaHack.Server.CmdAtomic
-import Game.LambdaHack.Server.Config
-import Game.LambdaHack.Server.State
 import Game.LambdaHack.State
-import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Utils.Frequency
-import Game.LambdaHack.Vector
 
 cmdAtomicSem :: MonadAction m => CmdAtomic -> m ()
 cmdAtomicSem cmd = case cmd of
   HealAtomic n aid -> healAtomic n aid
+  HasteAtomic aid delta -> hasteAtomic aid delta
+  DominateAtomic fromFaction toFaction target ->
+    dominateAtomic fromFaction toFaction target
+  SpawnAtomic aid body -> spawnAtomic aid body
+  KillAtomic aid body -> killAtomic aid body
+  CreateItemAtomic iid item k container ->
+    createItemAtomic iid item k container
+  DestroyItemAtomic iid item k container ->
+    destroyItemAtomic iid item k container
+  MoveItemAtomic iid k c1 c2 -> moveItemAtomic iid k c1 c2
+  WaitAtomic actor fromWait toWait -> waitAtomic actor fromWait toWait
+  ChangeTileAtomic p fromTile toTile -> changeTileAtomic p fromTile toTile
+  MoveActorAtomic aid fromP toP -> moveActorAtomic aid fromP toP
+  DisplaceActorAtomic source target -> displaceActorAtomic source target
+  AlterSecretAtomic diffL -> alterSecretAtomic diffL
+  AlterSmellAtomic diffL -> alterSmellAtomic diffL
+  SetSmellAtomic fromSmell toSmell -> setSmellAtomic fromSmell toSmell
 
 healAtomic :: MonadAction m => Int -> ActorId -> m ()
 healAtomic n aid = assert (n /= 0) $
@@ -150,15 +147,12 @@ moveItemAtomic iid k c1 c2 = assert (k > 0) $ do
     CFloor pos -> insertItemFloor iid k pos
     CActor aid -> insertItemActor iid k aid
 
-waitAtomic :: MonadAction m => ActorId -> m ()
-waitAtomic actor = do
-  Kind.COps{coactor} <- getsState scops
-  time <- getsState getTime
-  modifyState $ updateActorBody actor $ \ m ->
-    m {bwait = timeAddFromSpeed coactor m time}
+waitAtomic :: MonadAction m => ActorId -> Time -> Time -> m ()
+waitAtomic aid _fromWait toWait =
+  modifyState $ updateActorBody aid $ \b -> b {bwait = toWait}
 
 changeTileAtomic :: MonadAction m
-                 => Point -> Kind.Id TileKind ->  Kind.Id TileKind -> m ()
+                 => Point -> Kind.Id TileKind -> Kind.Id TileKind -> m ()
 changeTileAtomic p _fromTile toTile =
   let adj = (Kind.// [(p, toTile)])
   in modifyState (updateArena (updateTile adj))
@@ -177,16 +171,6 @@ displaceActorAtomic source target = do
 alterSecretAtomic :: MonadAction m => DiffEM Point Time -> m ()
 alterSecretAtomic diffL =
   modifyState $ updateArena $ updateSecret $ applyDiffEM diffL
-
-type DiffEM k v = [(k, (Maybe v, Maybe v))]
-
-applyDiffEM :: (Enum k, Eq v, Show k, Show v)
-            => DiffEM k v -> EM.EnumMap k v -> EM.EnumMap k v
-applyDiffEM diffL em =
-  let f m (k, (ov, nv)) =
-        let g v = assert (v == ov `blame` (v, ov, nv, em, diffL)) nv
-        in EM.alter g k m
-  in foldl' f em diffL
 
 alterSmellAtomic :: MonadAction m => DiffEM Point Time -> m ()
 alterSmellAtomic diffL =

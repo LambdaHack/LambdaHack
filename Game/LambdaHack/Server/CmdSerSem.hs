@@ -205,7 +205,13 @@ dropSer aid iid = do
 
 -- | Update the wait/block count.
 waitSer :: MonadAction m => ActorId -> m ()
-waitSer = waitAtomic
+waitSer aid = do
+  Kind.COps{coactor} <- getsState scops
+  time <- getsState getTime
+  body <- getsState $ getActorBody aid
+  let fromWait = bwait body
+      toWait = timeAddFromSpeed coactor body time
+  waitAtomic aid fromWait toWait
 
 -- ** MoveSer
 
