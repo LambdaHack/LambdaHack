@@ -8,7 +8,7 @@ module Game.LambdaHack.Level
   , ActorDict, SmellMap, SecretMap, FloorMap, TileMap
   , Level(..)
     -- * Level update
-  , updateActor, updateSmell, updateFloor, updateTile, dropItemsAt
+  , updateActor, updateSmell, updateSecret, updateFloor, updateTile
     -- * Level query
   , at, atI, accessible, openable, findPos, findPosTry
     -- * Item containers
@@ -90,25 +90,23 @@ data Level = Level
 
 -- | Update the actor dictionary.
 updateActor :: (ActorDict -> ActorDict) -> Level -> Level
-updateActor f lvl = lvl { lactor = f (lactor lvl) }
+updateActor f lvl = lvl {lactor = f (lactor lvl)}
 
 -- | Update the smell map.
 updateSmell :: (SmellMap -> SmellMap) -> Level -> Level
-updateSmell f lvl = lvl { lsmell = f (lsmell lvl) }
+updateSmell f lvl = lvl {lsmell = f (lsmell lvl)}
+
+-- | Update the secret map.
+updateSecret :: (SecretMap -> SecretMap) -> Level -> Level
+updateSecret f lvl = lvl {lsecret = f (lsecret lvl)}
 
 -- | Update the items on the ground map.
 updateFloor :: (FloorMap -> FloorMap) -> Level -> Level
-updateFloor f lvl = lvl { lfloor = f (lfloor lvl) }
+updateFloor f lvl = lvl {lfloor = f (lfloor lvl)}
 
 -- | Update the tile map.
 updateTile :: (TileMap -> TileMap) -> Level -> Level
-updateTile f lvl = lvl { ltile = f (ltile lvl) }
-
--- Note: do not scatter items around, it's too much work for the player.
--- | Place all items on the list at a position on the level.
-dropItemsAt :: ItemBag -> Point -> Level -> Level
-dropItemsAt b p = let adj c = Just $ maybe b (EM.unionWith (+) b) c
-                  in updateFloor (EM.alter adj p)
+updateTile f lvl = lvl {ltile = f (ltile lvl)}
 
 assertSparseItems :: FloorMap -> FloorMap
 assertSparseItems m =

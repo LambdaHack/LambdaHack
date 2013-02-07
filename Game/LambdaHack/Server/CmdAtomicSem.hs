@@ -76,15 +76,6 @@ spawnAtomic aid body = modifyState $ insertActor aid body
 killAtomic :: MonadAction m => ActorId -> Actor -> m ()
 killAtomic aid _body = modifyState $ deleteActor aid
 
-setSmellAtomic :: MonadAction m => SmellMap -> SmellMap -> m ()
-setSmellAtomic _fromSmell toSmell = do
-  modifyState $ updateArena $ updateSmell $ const toSmell
-
-alterSmellAtomic :: MonadAction m => Point -> Maybe Time -> Maybe Time -> m ()
-alterSmellAtomic pos oldS newS = do
-  let f old = assert (oldS == old `blame` (pos, old, oldS)) newS
-  modifyState $ updateArena $ updateSmell $ EM.alter f pos
-
 -- | Create a few copies of an item that is already registered for the dungeon
 -- (in @sitemRev@ field of @StateServer@).
 createItemAtomic :: MonadAction m
@@ -171,3 +162,37 @@ changeTileAtomic :: MonadAction m
 changeTileAtomic p _fromTile toTile =
   let adj = (Kind.// [(p, toTile)])
   in modifyState (updateArena (updateTile adj))
+
+moveActorAtomic :: MonadAction m => ActorId -> Point -> Point -> m ()
+moveActorAtomic aid _fromP toP =
+  modifyState $ updateActorBody aid $ \b -> b {bpos = toP}
+
+displaceActorAtomic :: MonadAction m => ActorId -> ActorId -> m ()
+displaceActorAtomic source target = do
+  spos <- getsState $ bpos . getActorBody source
+  tpos <- getsState $ bpos . getActorBody target
+  modifyState $ updateActorBody source $ \ b -> b {bpos = tpos}
+  modifyState $ updateActorBody target $ \ b -> b {bpos = spos}
+
+alterSecretAtomic :: MonadAction m => DiffEM Point Time -> m ()
+alterSecretAtomic diffL =
+  modifyState $ updateArena $ updateSecret $ applyDiffEM diffL
+
+type DiffEM k v = [(k, (Maybe v, Maybe v))]
+
+applyDiffEM :: (Enum k, Eq v, Show k, Show v)
+            => DiffEM k v -> EM.EnumMap k v -> EM.EnumMap k v
+applyDiffEM diffL em =
+  let f m (k, (ov, nv)) =
+        let g v = assert (v == ov `blame` (v, ov, nv, em, diffL)) nv
+        in EM.alter g k m
+  in foldl' f em diffL
+
+alterSmellAtomic :: MonadAction m => DiffEM Point Time -> m ()
+alterSmellAtomic diffL =
+  modifyState $ updateArena $ updateSmell $ applyDiffEM diffL
+
+-- TODO: only wipe out smell within radius 10; use DiffEM
+setSmellAtomic :: MonadAction m => SmellMap -> SmellMap -> m ()
+setSmellAtomic _fromSmell toSmell = do
+  modifyState $ updateArena $ updateSmell $ const toSmell

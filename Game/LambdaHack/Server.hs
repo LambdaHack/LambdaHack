@@ -11,11 +11,9 @@ import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.CmdSer
 import qualified Game.LambdaHack.Color as Color
-import Game.LambdaHack.Level
 import Game.LambdaHack.Server.Action
 import Game.LambdaHack.Server.CmdSerSem
 import Game.LambdaHack.Server.LoopAction
-import Game.LambdaHack.State
 
 -- | The semantics of server commands.
 cmdSerSem :: MonadServerChan m => CmdSer -> m ()
@@ -45,7 +43,7 @@ cmdSerSem cmd = case cmd of
       modifyState $ updateActorBody aid $ \m -> m {bcolor = Just Color.BrBlack}
     moveSer aid dir
   DieSer actor -> do  -- TODO: explode if a potion
-    bitems <- getsState $ getActorBag actor
-    Actor{bpos} <- getsState (getActorBody actor)
-    modifyState (updateArena (dropItemsAt bitems bpos))
+--    bitems <- getsState $ getActorBag actor
+--    Actor{bpos} <- getsState (getActorBody actor)
+--    modifyState (updateArena (dropItemsAt bitems bpos))
     modifyState (deleteActor actor)

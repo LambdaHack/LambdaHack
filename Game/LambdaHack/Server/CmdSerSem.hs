@@ -217,10 +217,10 @@ waitSer = waitAtomic
 -- for that, e.g., the initial actor position to check if melee attack
 -- does not try to reach to a distant tile.
 moveSer :: MonadServerChan m => ActorId -> Vector -> m ()
-moveSer actor dir = do
+moveSer aid dir = do
   cops@Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getsState scops
   lvl <- getsState getArena
-  sm <- getsState (getActorBody actor)
+  sm <- getsState (getActorBody aid)
   let spos = bpos sm           -- source position
       tpos = spos `shift` dir  -- target position
   -- We start by looking at the target position.
@@ -229,17 +229,16 @@ moveSer actor dir = do
   case tgt of
     Just target ->
       -- Attacking does not require full access, adjacency is enough.
-      actorAttackActor actor target
+      actorAttackActor aid target
     Nothing
       | accessible cops lvl spos tpos ->
-          -- Perform the actual move.
-          modifyState $ updateActorBody actor $ \ body -> body {bpos = tpos}
+          moveActorAtomic aid spos tpos
       | Tile.canBeHidden cotile (okind $ lvl `at` tpos) -> do
           sendUpdateCli side
             $ ShowMsgCli "You search all adjacent walls for half a second."
-          search actor
+          search aid
       | otherwise ->
-          actorOpenDoor actor dir
+          actorOpenDoor aid dir
 
 -- | Resolves the result of an actor moving into another.
 -- Actors on blocked positions can be attacked without any restrictions.
@@ -255,44 +254,44 @@ actorAttackActor source target = do
   s <- getState
   let spos = bpos sm
       tpos = bpos tm
-  if bfaction sm == bfaction tm && isHumanFaction s (bfaction sm)
-     && not (bproj sm) && not (bproj tm)
-    then assert `failure` (source, target, "human AI bumps into friendlies")
-    else do
-      cops@Kind.COps{coitem=Kind.Ops{opick, okind}} <- getsState scops
-      state <- getState
-      bitems <- getsState (getActorItem source)
-      let h2hGroup | isSpawningFaction state (bfaction sm) = "monstrous"
-                   | otherwise = "unarmed"
-      h2hKind <- rndToAction $ opick h2hGroup (const True)
-      flavour <- getsServer sflavour
-      discoRev <- getsServer sdiscoRev
-      let h2hItem = buildItem flavour discoRev h2hKind (okind h2hKind) 0
-          (stack, say, verbosity, verb) =
-            if isProjectile state source
-            then case bitems of
-              [bitem] -> (bitem, False, 10, "hit")     -- projectile
-              _ -> assert `failure` bitems
-            else case strongestSword cops bitems of
-              Nothing -> (h2hItem, False, 0,
-                          iverbApply $ okind h2hKind)  -- hand to hand combat
-              Just w  ->
-                let verbApply = case jkind discoS w of  -- TODO: use disco
-                      Nothing -> "hit"
-                      Just ik -> iverbApply $ okind ik
-                in (w, True, 0, verbApply)
-      let performHit block = do
-            broadcastPosCli [spos, tpos] $ ShowAttackCli source target verb stack say
-            -- Msgs inside itemEffectSem describe the target part.
-            itemEffect verbosity source target stack block
-      -- Projectiles can't be blocked, can be sidestepped.
-      if braced tm time && not (bproj sm)
-        then do
-          blocked <- rndToAction $ chance $ 1%2
-          if blocked
-            then broadcastPosUI [spos, tpos] $ AnimateBlockCli source target verb
-            else performHit True
-        else performHit False
+  when (bfaction sm == bfaction tm && isHumanFaction s (bfaction sm)
+        && not (bproj sm) && not (bproj tm))
+    $ assert `failure` (source, target, "human AI bumps into friendlies")
+  cops@Kind.COps{coitem=Kind.Ops{opick, okind}} <- getsState scops
+  state <- getState
+  bitems <- getsState (getActorItem source)
+  let h2hGroup | isSpawningFaction state (bfaction sm) = "monstrous"
+               | otherwise = "unarmed"
+  h2hKind <- rndToAction $ opick h2hGroup (const True)
+  flavour <- getsServer sflavour
+  discoRev <- getsServer sdiscoRev
+  let h2hItem = buildItem flavour discoRev h2hKind (okind h2hKind) 0
+      (stack, say, verbosity, verb) =
+        if isProjectile state source
+        then case bitems of
+          [bitem] -> (bitem, False, 10, "hit")     -- projectile
+          _ -> assert `failure` bitems
+        else case strongestSword cops bitems of
+          Nothing -> (h2hItem, False, 0,
+                      iverbApply $ okind h2hKind)  -- hand to hand combat
+          Just w  ->
+            let verbApply = case jkind discoS w of  -- TODO: use disco
+                  Nothing -> "hit"
+                  Just ik -> iverbApply $ okind ik
+            in (w, True, 0, verbApply)
+  let performHit block = do
+        broadcastPosCli [spos, tpos]
+          $ ShowAttackCli source target verb stack say
+        -- Msgs inside itemEffectSem describe the target part.
+        itemEffect verbosity source target stack block
+  -- Projectiles can't be blocked, can be sidestepped.
+  if braced tm time && not (bproj sm)
+    then do
+      blocked <- rndToAction $ chance $ 1%2
+      if blocked
+        then broadcastPosUI [spos, tpos] $ AnimateBlockCli source target verb
+        else performHit True
+    else performHit False
 
 -- | Search for hidden doors.
 search :: MonadServerChan m => ActorId -> m ()
@@ -308,26 +307,22 @@ search aid = do
                 case strongestSearch coitem discoS pitems of
                   Just i  -> 1 + jpower i
                   Nothing -> 1
-      searchTile sle mv =
+      searchTile diffL mv =
         let loc = shift ppos mv
             t = lvl `at` loc
-            k = case EM.lookup loc lsecret of
+            (ok, k) = case EM.lookup loc lsecret of
               Nothing -> assert `failure` (loc, lsecret)
-              Just st -> timeAdd st $ timeNegate delta
+              Just ti -> (ti, timeAdd ti $ timeNegate delta)
         in if Tile.hasFeature cotile F.Hidden t
            then if k > timeZero
-                then EM.insert loc k sle
-                else EM.delete loc sle
-           else sle
-      leNew = foldl' searchTile lsecret (moves lxsize)
-  modifyState (updateArena (\ l -> l {lsecret = leNew}))
-  lvlNew <- getsState getArena
-  let triggerHidden mv = do
-        let dpos = shift ppos mv
-            t = lvlNew `at` dpos
-        when (Tile.hasFeature cotile F.Hidden t && EM.notMember dpos leNew) $
-          triggerSer aid dpos
-  mapM_ triggerHidden (moves lxsize)
+                then (loc, (Just ok, Just k)) : diffL
+                else (loc, (Just ok, Nothing)) : diffL
+           else diffL
+  let diffL = foldl' searchTile [] (moves lxsize)
+  alterSecretAtomic diffL
+  let triggerHidden (_, (_, Just _)) = return ()
+      triggerHidden (dpos, (_, Nothing)) = triggerSer aid dpos
+  mapM_ triggerHidden diffL
 
 -- TODO: bumpTile tpos F.Openable
 -- | An actor opens a door.
@@ -369,20 +364,16 @@ runSer actor dir = do
       | otherwise -> abortWith "blocked"
     Nothing
       | accessible cops lvl spos tpos ->
-          -- Perform the actual move.
-          modifyState $ updateActorBody actor $ \ body -> body {bpos = tpos}
+          moveActorAtomic actor spos tpos
       | otherwise ->
           actorOpenDoor actor dir
 
 -- | When an actor runs (not walks) into another, they switch positions.
 displaceActor :: MonadServerChan m => ActorId -> ActorId -> m ()
 displaceActor source target = do
-  sm <- getsState (getActorBody source)
-  tm <- getsState (getActorBody target)
-  let spos = bpos sm
-      tpos = bpos tm
-  modifyState $ updateActorBody source $ \ m -> m { bpos = tpos }
-  modifyState $ updateActorBody target $ \ m -> m { bpos = spos }
+  displaceActorAtomic source target
+  spos <- getsState $ bpos . getActorBody source
+  tpos <- getsState $ bpos . getActorBody target
   broadcastPosUI [spos, tpos] $ DisplaceCli source target
 --  leader <- getsClient getLeader
 --  if Just source == leader
@@ -498,4 +489,4 @@ addSmell aid = do
   time <- getsState getTime
   pos <- getsState $ bpos . getActorBody aid
   oldS <- getsState $ (EM.lookup pos) . lsmell . getArena
-  alterSmellAtomic pos oldS $ Just $ timeAdd time smellTimeout
+  alterSmellAtomic [(pos, (oldS, Just $ timeAdd time smellTimeout))]

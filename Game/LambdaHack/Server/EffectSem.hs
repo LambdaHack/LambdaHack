@@ -503,14 +503,21 @@ fleeDungeon = do
     let upd2 f = f {gquit = Just (True, Victor)}
     modifyState $ updateSide upd2
 
+-- | Drop all actor's items.
+dropAllItems :: MonadAction m => ActorId -> m ()
+dropAllItems aid = do
+  pos <- getsState $ bpos . getActorBody aid
+  bag <- getsState $ getActorBag aid
+  let f (iid, k) = moveItemAtomic iid k (CActor aid) (CFloor pos)
+  mapM_ f $ EM.assocs bag
+
 -- | Remove a dead actor. Check if game over.
 checkPartyDeath :: MonadServerChan m => ActorId -> m ()
 checkPartyDeath target = do
   tm <- getsState $ getActorBody target
   Config{configFirstDeathEnds} <- getsServer sconfig
   -- Place the actor's possessions on the map.
-  bitems <- getsState $ getActorBag target
-  modifyState $ updateArena $ dropItemsAt bitems $ bpos tm
+  dropAllItems target
   let fid = bfaction tm
   isHuman <- getsState $ flip isHumanFaction fid
   let animateDeath = do
