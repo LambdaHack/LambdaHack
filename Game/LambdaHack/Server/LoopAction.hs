@@ -401,8 +401,8 @@ gameReset cops@Kind.COps{coitem, corule, cotile} = do
   let (faction, flavour, discoS, discoRev, DungeonGen.FreshDungeon{..}) =
         St.evalState rnd dungeonSeed
       defState = defStateGlobal freshDungeon freshDepth discoS faction
-                                cops random entryLevel
-      defSer = defStateServer discoRev flavour sconfig
+                                cops entryLevel
+      defSer = defStateServer discoRev flavour random sconfig
       notSpawning (_, fact) = not $ isSpawningFact cops fact
       needInitialCrew = map fst $ filter notSpawning $ EM.assocs faction
       heroNames = configHeroNames sconfig : repeat []

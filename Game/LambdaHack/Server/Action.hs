@@ -34,6 +34,7 @@ import System.Time
 import System.IO.Unsafe (unsafePerformIO)
 import Control.Exception (finally)
 import qualified System.Random as R
+import qualified Control.Monad.State as St
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.CmdCli
@@ -345,5 +346,10 @@ speedupCOps !copsSlow@Kind.COps{cotile=tile} =
       cotile = tile {Kind.ospeedup}
   in copsSlow {Kind.cotile}
 
+-- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: MonadServer m => Rnd a -> m a
-rndToAction _r = undefined
+rndToAction r = do
+  g <- getsServer srandom
+  let (a, ng) = St.runState r g
+  modifyServer $ \ser -> ser {srandom = ng}
+  return a

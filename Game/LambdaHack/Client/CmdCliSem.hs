@@ -180,16 +180,15 @@ showAttackCli source target verb stack say = do
            else []
   msgAdd msg
 
+-- TODO: here or elsewhere re-read RNG seed from config file
 restartCli :: MonadClient m => FactionPers -> State -> m ()
 restartCli sper locRaw = do
   shistory <- getsClient shistory
   sconfigUI <- getsClient sconfigUI
   let cli = defStateClient shistory sconfigUI
   putClient cli {sper}
-  random <- getsState srandom
   side <- getsState sside
-  let loc = updateRandom (const random)
-            $ switchGlobalSelectedSideOnlyForGlobalState side locRaw  -- :O)
+  let loc = switchGlobalSelectedSideOnlyForGlobalState side locRaw  -- :O)
   putState loc
   -- Save ASAP in case of crashes and disconnects.
   --TODO

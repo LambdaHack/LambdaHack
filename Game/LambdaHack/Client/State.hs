@@ -10,16 +10,18 @@ module Game.LambdaHack.Client.State
 
 import Control.Monad
 import Data.Binary
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 import Data.Typeable
 import Game.LambdaHack.Vector
 import qualified NLP.Miniutter.English as MU
+import qualified System.Random as R
 import System.Time
-import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Client.Animation
+import Game.LambdaHack.Client.Config
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
@@ -27,7 +29,6 @@ import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Client.Config
 
 -- | Client state, belonging to a single faction.
 -- Some of the data, e.g, the history, carries over
@@ -43,6 +44,7 @@ data StateClient = StateClient
   , sreport   :: !Report        -- ^ current messages
   , shistory  :: !History       -- ^ history of messages
   , sper      :: !FactionPers   -- ^ faction perception indexed by levels
+  , srandom   :: !R.StdGen      -- ^ current random generator
   , sconfigUI :: !ConfigUI      -- ^ this client config (including initial RNG)
   , slastKey  :: !(Maybe K.KM)  -- ^ last command key pressed
   , sframe    :: ![(Maybe SingleFrame, Bool)]  -- ^ accumulated frames
@@ -85,6 +87,7 @@ defStateClient shistory sconfigUI = do
     , shistory
     , sper      = EM.empty
     , sconfigUI
+    , srandom = R.mkStdGen 42  -- will be set later
     , slastKey  = Nothing
     , sframe    = []
     , _sleader  = Nothing  -- no heroes yet alive
@@ -165,6 +168,7 @@ instance Binary StateClient where
     put srunning
     put sreport
     put shistory
+    put (show srandom)
     put sconfigUI
     put _sleader
   get = do
@@ -175,9 +179,11 @@ instance Binary StateClient where
     srunning <- get
     sreport <- get
     shistory <- get
+    g <- get
     sconfigUI <- get
     _sleader <- get
     let sper = EM.empty
+        srandom = read g
         slastKey = Nothing
         sframe = []
         sdebugCli = defDebugModeCli

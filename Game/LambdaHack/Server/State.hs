@@ -8,6 +8,7 @@ module Game.LambdaHack.Server.State
 import Data.Binary
 import qualified Data.HashMap.Strict as HM
 import Data.Typeable
+import qualified System.Random as R
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Item
@@ -21,6 +22,7 @@ data StateServer = StateServer
   , sflavour  :: !FlavourMap    -- ^ association of flavour to items
   , sacounter :: !ActorId       -- ^ stores next actor index
   , sicounter :: !ItemId        -- ^ stores next item index
+  , srandom   :: !R.StdGen      -- ^ current random generator
   , sconfig   :: !Config        -- ^ this game's config (including initial RNG)
   , sdebugSer :: !DebugModeSer  -- ^ debugging mode
   }
@@ -31,13 +33,13 @@ data DebugModeSer = DebugModeSer
   deriving Show
 
 -- | Initial game server state.
-defStateServer :: DiscoRev -> FlavourMap -> Config -> StateServer
-defStateServer sdiscoRev sflavour sconfig =
+defStateServer :: DiscoRev -> FlavourMap -> R.StdGen -> Config -> StateServer
+defStateServer sdiscoRev sflavour srandom sconfig =
   StateServer
-    { sacounter = toEnum 0
+    { sitemRev = HM.empty
+    , sacounter = toEnum 0
     , sicounter = toEnum 0
     , sdebugSer = defDebugModeSer
-    , sitemRev = HM.empty
     , ..
     }
 
@@ -60,6 +62,7 @@ instance Binary StateServer where
     put sflavour
     put sacounter
     put sicounter
+    put (show srandom)
     put sconfig
   get = do
     sdiscoRev <- get
@@ -67,6 +70,8 @@ instance Binary StateServer where
     sflavour <- get
     sacounter <- get
     sicounter <- get
+    g <- get
     sconfig <- get
-    let sdebugSer = defDebugModeSer
+    let srandom = read g
+        sdebugSer = defDebugModeSer
     return StateServer{..}

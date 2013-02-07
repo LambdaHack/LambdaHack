@@ -33,6 +33,7 @@ module Game.LambdaHack.Client.Action
 
 import Control.Concurrent
 import Control.Monad
+import qualified Control.Monad.State as St
 import Control.Monad.Writer.Strict (WriterT, lift, tell)
 import Data.Dynamic
 import qualified Data.EnumMap.Strict as EM
@@ -383,5 +384,10 @@ exeFrontend cops@Kind.COps{corule} executorC loopFrontend = do
         executorC hasUI SessionUI{..} (defStateLocal cops fid) cli chanCli
   startup font $ \sfs -> loopFrontend (exe sfs)
 
+-- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: MonadClient m => Rnd a -> m a
-rndToAction _r = undefined
+rndToAction r = do
+  g <- getsClient srandom
+  let (a, ng) = St.runState r g
+  modifyClient $ \cli -> cli {srandom = ng}
+  return a
