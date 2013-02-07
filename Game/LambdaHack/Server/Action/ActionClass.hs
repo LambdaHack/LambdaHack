@@ -13,15 +13,9 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Server.State
 
-class (MonadReader Pers m, MonadActionRO m) => MonadServerRO m where
+class (MonadReader Pers m, MonadActionRO m) => MonadServer m where
   getServer    :: m StateServer
   getsServer   :: (StateServer -> a) -> m a
-
-instance (Monoid a, MonadServerRO m) => MonadServerRO (WriterT a m) where
-  getServer    = lift getServer
-  getsServer   = lift . getsServer
-
-class (MonadAction m, MonadServerRO m) => MonadServer m where
   modifyServer :: (StateServer -> StateServer) -> m ()
   putServer    :: StateServer -> m ()
   -- We do not provide a MonadIO instance, so that outside of Action/
@@ -29,6 +23,8 @@ class (MonadAction m, MonadServerRO m) => MonadServer m where
   liftIO       :: IO a -> m a
 
 instance (Monoid a, MonadServer m) => MonadServer (WriterT a m) where
+  getServer    = lift getServer
+  getsServer   = lift . getsServer
   modifyServer = lift . modifyServer
   putServer    = lift . putServer
   liftIO       = lift . liftIO

@@ -12,12 +12,9 @@ module Game.LambdaHack.Action
   , abort, abortIfWith, neverMind
     -- * Abort exception handlers
   , tryRepeatedlyWith, tryIgnore
-    -- * Assorted primitives
-  , rndToAction
   ) where
 
 import Control.Concurrent.Chan
-import qualified Control.Monad.State as St
 import Control.Monad.Writer.Strict (WriterT (WriterT), lift, runWriterT)
 import Data.Dynamic
 import qualified Data.EnumMap.Strict as EM
@@ -27,7 +24,6 @@ import qualified Data.Text as T
 import Game.LambdaHack.CmdCli
 import Game.LambdaHack.Faction
 import Game.LambdaHack.Msg
-import Game.LambdaHack.Random
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
 
@@ -105,11 +101,3 @@ tryIgnore =
   tryWith (\msg -> if T.null msg
                    then return ()
                    else assert `failure` msg <+> "in tryIgnore")
-
--- | Invoke pseudo-random computation with the generator kept in the state.
-rndToAction :: MonadAction m => Rnd a -> m a
-rndToAction r = do
-  g <- getsState srandom
-  let (a, ng) = St.runState r g
-  modifyState $ updateRandom $ const ng
-  return a

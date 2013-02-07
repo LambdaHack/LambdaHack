@@ -77,11 +77,9 @@ instance MonadAction ActionSer where
   modifyState f = ActionSer (\_p k _a s ser d -> k (f s) ser d ())
   putState      = modifyState . const
 
-instance MonadServerRO ActionSer where
+instance MonadServer ActionSer where
   getServer  = ActionSer (\_p k _a s ser d -> k s ser d ser)
   getsServer = (`fmap` getServer)
-
-instance MonadServer ActionSer where
   modifyServer f = ActionSer (\_p k _a s ser d -> k s (f ser) d ())
   putServer      = modifyServer . const
   liftIO x       = ActionSer (\_p k _a s ser d -> x >>= k s ser d)

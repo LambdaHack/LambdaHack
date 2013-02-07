@@ -28,7 +28,7 @@ module Game.LambdaHack.Client.Action
   , rememberLevel, displayPush
     -- * Assorted primitives
   , clientGameSave, clientDisconnect, restoreGame
-  , readChanFromSer, writeChanToSer
+  , readChanFromSer, writeChanToSer, rndToAction
   ) where
 
 import Control.Concurrent
@@ -62,6 +62,7 @@ import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
+import Game.LambdaHack.Random
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert
@@ -269,7 +270,7 @@ drawOverlay dm over = do
   return $! draw dm cops per cli loc over
 
 -- -- | Draw the current level using server data, for debugging.
--- drawOverlayDebug :: MonadServerRO m
+-- drawOverlayDebug :: MonadActionAbort m
 --                  => ColorMode -> Overlay -> m SingleFrame
 -- drawOverlayDebug dm over = do
 --   cops <- getsState scops
@@ -381,3 +382,6 @@ exeFrontend cops@Kind.COps{corule} executorC loopFrontend = do
       exe sfs fid chanCli hasUI =
         executorC hasUI SessionUI{..} (defStateLocal cops fid) cli chanCli
   startup font $ \sfs -> loopFrontend (exe sfs)
+
+rndToAction :: MonadClient m => Rnd a -> m a
+rndToAction _r = undefined

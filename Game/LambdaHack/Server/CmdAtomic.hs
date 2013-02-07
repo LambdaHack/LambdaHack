@@ -14,6 +14,7 @@ import Control.Arrow (second)
 import Data.Tuple (swap)
 
 import Game.LambdaHack.Actor
+import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Faction
 import Game.LambdaHack.Item
@@ -22,6 +23,7 @@ import Game.LambdaHack.Level
 import Game.LambdaHack.Misc
 import Game.LambdaHack.Point
 import Game.LambdaHack.Time
+import Game.LambdaHack.Vector
 
 -- | Abstract syntax of atomic commands.
 data CmdAtomic =
@@ -40,6 +42,8 @@ data CmdAtomic =
   | AlterSecretAtomic (DiffEM Point Time)
   | AlterSmellAtomic (DiffEM Point Time)
   | SetSmellAtomic SmellMap SmellMap
+  | AlterPath ActorId (Maybe [Vector]) (Maybe [Vector])
+  | ColorActor ActorId (Maybe Color.Color) (Maybe Color.Color)
   deriving Show
 
 undoCmdAtomic :: CmdAtomic -> CmdAtomic
@@ -62,3 +66,5 @@ undoCmdAtomic cmd = case cmd of
   AlterSecretAtomic diffL -> AlterSecretAtomic $ map (second swap) diffL
   AlterSmellAtomic diffL -> AlterSmellAtomic $ map (second swap) diffL
   SetSmellAtomic fromSmell toSmell -> SetSmellAtomic toSmell fromSmell
+  AlterPath aid fromPath toPath -> AlterPath aid toPath fromPath
+  ColorActor aid fromColor toColor -> ColorActor aid toColor fromColor

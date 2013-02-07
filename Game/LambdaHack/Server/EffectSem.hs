@@ -80,7 +80,7 @@ itemEffect :: MonadServerChan m
            -> WriterT [CmdAtomic] m ()
 itemEffect verbosity source target item block = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
-  sm <- getsState (getActorBody source)
+  sm <- getsState $ getActorBody source
   -- Destroys attacking actor: a hack for projectiles.
   when (bproj sm) $ tell [KillAtomic source sm]
   discoS <- getsState sdisco
@@ -350,7 +350,7 @@ createItems n pos = do
 
 -- ** ApplyPerfume
 
-effectApplyPerfume :: MonadServer m
+effectApplyPerfume :: MonadActionRO m
                    => ActorId -> ActorId -> WriterT [CmdAtomic] m (Bool, Text)
 effectApplyPerfume source target =
   if source == target
@@ -409,11 +409,12 @@ effLvlGoUp aid k = do
         --   setSmellAtomic oldSmell EM.empty
         -- Change arena, but not the leader yet. The actor will become
         -- a leader, but he is not inserted into the new level yet.
-        modifyState $ updateSelectedArena nln
+-- TODO:        modifyState $ updateSelectedArena nln
         -- Sync the actor time with the level time.
         timeLastVisited <- getsState getTime
         let diff = timeAdd (btime pbodyCurrent) (timeNegate timeCurrent)
-            pbody = pbodyCurrent {btime = timeAdd timeLastVisited diff}
+            pbody = pbodyCurrent { btime = timeAdd timeLastVisited diff
+                                 , bpos = npos }
         -- The actor is added to the new level, but there can be other actors
         -- at his old position or at his new position.
         tell [SpawnAtomic aid pbody]
@@ -436,9 +437,6 @@ effLvlGoUp aid k = do
         -- Verify the monster on the staircase died.
         inhabitants2 <- getsState (posToActor npos)
         when (isJust inhabitants2) $ assert `failure` inhabitants2
-        -- Land the aid at the other end of the stairs, which is now
-        -- clear of other actors.
-        modifyState $ updateActorBody aid $ \b -> b { bpos = npos }
         -- The property of at most one actor on a tile is restored.
         -- Create a backup of the savegame.
         saveGameBkp
@@ -499,8 +497,10 @@ fleeDungeon = do
           "This is the way out. Really leave now?"
   when (not go) $ abortWith "Game resumed."
   let (bag, total) = calculateTotal glo
-      upd f = f {gquit = Just (False, Victor)}
-  modifyState $ updateSide upd
+      _upd f = f {gquit = Just (False, Victor)}
+-- TODO: move to StateServer?
+  return ()
+--  modifyState $ updateSide upd
   if total == 0
   then do
     -- The player can back off at each of these steps.
@@ -517,11 +517,14 @@ fleeDungeon = do
           , "Here's your loot, worth"
           , MU.NWs total currencyName ]
     void $ sendQueryUI side $ ConfirmShowItemsFloorCli winMsg bag
-    let upd2 f = f {gquit = Just (True, Victor)}
-    modifyState $ updateSide upd2
+    let _upd2 f = f {gquit = Just (True, Victor)}
+-- TODO: move to StateServer?
+    return ()
+--    modifyState $ updateSide upd2
+
 
 -- | Drop all actor's items.
-dropAllItems :: MonadAction m => ActorId -> WriterT [CmdAtomic] m ()
+dropAllItems :: MonadActionRO m => ActorId -> WriterT [CmdAtomic] m ()
 dropAllItems aid = do
   pos <- getsState $ bpos . getActorBody aid
   bag <- getsState $ getActorBag aid
@@ -541,13 +544,16 @@ checkPartyDeath target = do
         broadcastPosUI [bpos tm] (AnimateDeathCli target)
         if isHuman then sendQueryUI fid CarryOnCli else return False
       animateGameOver = do
-        go <- animateDeath
-        modifyState $ updateActorBody target $ \b -> b {bsymbol = Just '%'}
+        _go <- animateDeath
+-- TODO; perhaps set in clients instead
+--        modifyState $ updateActorBody target $ \b -> b {bsymbol = Just '%'}
         -- TODO: add side argument to gameOver instead
-        side <- getsState sside
-        switchGlobalSelectedSide fid
-        gameOver go
-        switchGlobalSelectedSide side
+--        side <- getsState sside
+--        switchGlobalSelectedSide fid
+-- TODO: perhaps move to loop
+--        gameOver go
+        return ()
+--        switchGlobalSelectedSide side
   isSpawning <- getsState $ flip isSpawningFaction fid
   -- For a swapning faction, no messages nor animations are shown below.
   -- A message was shown in @eff@ and that's enough.
@@ -565,7 +571,7 @@ checkPartyDeath target = do
   -- is recorded for this level.
 
 -- | End game, showing the ending screens, if requested.
-gameOver :: MonadServerChan m => Bool -> m ()
+gameOver :: (MonadAction m, MonadServerChan m) => Bool -> m ()
 gameOver showEndingScreens = do
   arena <- getsState sarena
   deepest <- getsState $ ldepth . getArena  -- TODO: use deepest visited instead of current

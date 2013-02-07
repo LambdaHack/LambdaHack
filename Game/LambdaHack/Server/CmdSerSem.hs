@@ -52,7 +52,7 @@ default (Text)
 
 -- ** ApplySer
 
-applySer :: MonadServerChan m   -- MonadServer m
+applySer :: MonadServerChan m   -- MonadActionAbort m
          => ActorId    -- ^ actor applying the item (is on current level)
          -> MU.Part    -- ^ how the applying is called
          -> ItemId     -- ^ the item to be applied
@@ -198,7 +198,7 @@ pickupSer aid iid k l = assert (k > 0 `blame` (aid, iid, k, l)) $ do
 
 -- ** DropSer
 
-dropSer :: MonadAction m => ActorId -> ItemId -> WriterT [CmdAtomic] m ()
+dropSer :: MonadActionRO m => ActorId -> ItemId -> WriterT [CmdAtomic] m ()
 dropSer aid iid = do
   p <- getsState (bpos . getActorBody aid)
   let k = 1
@@ -207,7 +207,7 @@ dropSer aid iid = do
 -- * WaitSer
 
 -- | Update the wait/block count.
-waitSer :: MonadAction m => ActorId -> WriterT [CmdAtomic] m ()
+waitSer :: MonadActionRO m => ActorId -> WriterT [CmdAtomic] m ()
 waitSer aid = do
   Kind.COps{coactor} <- getsState scops
   time <- getsState getTime
@@ -396,12 +396,12 @@ displaceActor source target = do
 
 -- ** GameExit
 
-gameExitSer :: MonadServer m => m ()
+gameExitSer :: MonadAction m => m ()
 gameExitSer = modifyState $ updateQuit $ const $ Just True
 
 -- ** GameRestart
 
-gameRestartSer :: MonadServer m => m ()
+gameRestartSer :: MonadAction m => m ()
 gameRestartSer = do
   let upd f = f {gquit = Just (False, Restart)}
   modifyState $ updateSide upd
@@ -445,7 +445,7 @@ rollSpawnPos Kind.COps{cotile} visible lvl@Level{lactor} = do
     ]
 
 -- | Generate a monster, possibly.
-generateMonster :: MonadServer m => m (Maybe FactionId)
+generateMonster :: (MonadAction m, MonadServer m) => m (Maybe FactionId)
 generateMonster = do
   cops@Kind.COps{cofact=Kind.Ops{okind}} <- getsState scops
   pers <- ask
@@ -472,7 +472,7 @@ generateMonster = do
 -- Only the heroes on the current level regenerate (others are frozen
 -- in time together with their level). This prevents cheating
 -- via sending one hero to a safe level and waiting there.
-regenerateLevelHP :: MonadServer m => m ()
+regenerateLevelHP :: MonadAction m => m ()
 regenerateLevelHP = do
   Kind.COps{ coitem
            , coactor=Kind.Ops{okind}
@@ -498,7 +498,7 @@ regenerateLevelHP = do
 
 -- TODO: let only some actors/items leave smell, e.g., a Smelly Hide Armour.
 -- | Add a smell trace for the actor to the level.
-addSmell :: MonadServer m => ActorId -> WriterT [CmdAtomic] m ()
+addSmell :: MonadActionRO m => ActorId -> WriterT [CmdAtomic] m ()
 addSmell aid = do
   time <- getsState getTime
   pos <- getsState $ bpos . getActorBody aid

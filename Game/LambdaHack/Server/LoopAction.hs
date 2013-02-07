@@ -49,7 +49,7 @@ import Game.LambdaHack.Utils.Assert
 -- every fixed number of time units, e.g., monster generation.
 -- Run the leader and other actors moves. Eventually advance the time
 -- and repeat.
-loopSer :: MonadServerChan m
+loopSer :: (MonadAction m, MonadServerChan m)
         => (CmdSer -> m ())
         -> (FactionId -> ConnCli -> Bool -> IO ())
         -> Kind.COps
@@ -118,7 +118,7 @@ loopSer cmdSer executorC cops = do
 -- if the player requests to see it.
 -- | If no actor of a non-spawning faction on the level,
 -- switch levels. If no level to switch to, end game globally.
-checkEndGame :: MonadServerChan m => m ()
+checkEndGame ::  (MonadAction m, MonadServerChan m) => m ()
 checkEndGame = do
   -- Actors on the current level go first so that we don't switch levels
   -- unnecessarily.
@@ -140,7 +140,7 @@ checkEndGame = do
 -- We start by updating perception, because the selected level of dungeon
 -- has changed since last time (every change, whether by human or AI
 -- or @generateMonster@ is followd by a call to @handleActors@).
-handleActors :: MonadServerChan m
+handleActors :: (MonadAction m, MonadServerChan m)
              => (CmdSer -> m ())
              -> Time  -- ^ start time of current subclip, exclusive
              -> FactionId
@@ -258,14 +258,14 @@ handleActors cmdSer subclipStart prevHuman disp = withPerception $ do
               handleActors cmdSer subclipStart prevHuman False
 
 -- | Advance (or rewind) the move time for the given actor.
-advanceTime :: MonadServer m => ActorId -> m ()
+advanceTime :: MonadAction m => ActorId -> m ()
 advanceTime actor = do
   Kind.COps{coactor} <- getsState scops
   let upd m@Actor{btime} = m {btime = timeAddFromSpeed coactor m btime}
   modifyState $ updateActorBody actor upd
 
 -- | Continue or restart or exit the game.
-endOrLoop :: MonadServerChan m => m () -> m ()
+endOrLoop :: (MonadAction m, MonadServerChan m) => m () -> m ()
 endOrLoop loopServer = do
   quit <- getsState squit
   side <- getsState sside
@@ -322,7 +322,7 @@ endOrLoop loopServer = do
     (Nothing, Just (_, Restart)) -> restartGame loopServer
     (Nothing, _) -> loopServer  -- just continue
 
-restartGame :: MonadServerChan m => m () -> m ()
+restartGame :: (MonadAction m, MonadServerChan m) => m () -> m ()
 restartGame loopServer = do
   cops <- getsState scops
   gameReset cops
@@ -343,7 +343,8 @@ restartGame loopServer = do
   loopServer
 
 -- | Create a set of initial heroes on the current level, at position ploc.
-initialHeroes :: MonadServer m => (FactionId, Point, [(Int, Text)]) -> m ()
+initialHeroes :: (MonadAction m, MonadServer m)
+              => (FactionId, Point, [(Int, Text)]) -> m ()
 initialHeroes (side, ppos, configHeroNames) = do
   configExtraHeroes <- getsServer $ configExtraHeroes . sconfig
   replicateM_ (1 + configExtraHeroes) $ do
@@ -383,7 +384,7 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
         in fact {genemy, gally}
   return $! EM.fromDistinctAscList $ map (second enemyAlly) rawFs
 
-gameReset :: MonadServer m => Kind.COps -> m ()
+gameReset :: (MonadAction m, MonadServer m) => Kind.COps -> m ()
 gameReset cops@Kind.COps{coitem, corule, cotile} = do
   -- Rules config reloaded at each new game start.
   -- Taking the original config from config file, to reroll RNG, if needed

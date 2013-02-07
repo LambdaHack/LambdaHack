@@ -5,8 +5,7 @@
 -- details.
 module Game.LambdaHack.Server.Action
   ( -- * Action monads
-    MonadServerRO( getServer, getsServer )
-  , MonadServer( putServer, modifyServer )
+    MonadServer( getServer, getsServer, putServer, modifyServer )
   , MonadServerChan
   , executorSer, tryRestore, connServer, launchClients
   , waitForChildren, speedupCOps
@@ -21,7 +20,7 @@ module Game.LambdaHack.Server.Action
   , sendUpdateCli, sendQueryCli
   , broadcastUI, broadcastPosUI, funBroadcastUI
   , broadcastCli, broadcastPosCli, funBroadcastCli
-  , withAI
+  , withAI, rndToAction
   ) where
 
 import Control.Concurrent
@@ -44,7 +43,7 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
-import Game.LambdaHack.Server.Action.ActionClass (MonadServerRO(..), MonadServer(..), MonadServerChan(..))
+import Game.LambdaHack.Server.Action.ActionClass (MonadServer(..), MonadServerChan(..))
 import Game.LambdaHack.Server.Action.ActionType (executorSer)
 import qualified Game.LambdaHack.Server.Action.ConfigIO as ConfigIO
 import Game.LambdaHack.Server.Action.HighScore (register)
@@ -55,11 +54,12 @@ import Game.LambdaHack.Server.State
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
 import qualified Game.LambdaHack.Tile as Tile
+import Game.LambdaHack.Random
 
 -- | Update the cached perception for the selected level, for all factions,
 -- for the given computation. The assumption is the level, and only the level,
 -- has changed since the previous perception calculation.
-withPerception :: MonadServerRO m => m a -> m a
+withPerception :: MonadServer m => m a -> m a
 withPerception m = do
   cops <- getsState scops
   configFovMode <- getsServer (configFovMode . sconfig)
@@ -71,7 +71,7 @@ withPerception m = do
       per side = levelPerception cops fovMode side lvl
   local (EM.mapWithKey (\side lp -> EM.insert arena (per side) lp)) m
 
-getPerFid :: MonadServerRO m => FactionId -> m Perception
+getPerFid :: MonadServer m => FactionId -> m Perception
 getPerFid fid = do
   arena <- getsState sarena
   pers <- ask
@@ -80,7 +80,7 @@ getPerFid fid = do
   return $! per
 
 -- | Get the current perception of the server.
-askPerceptionSer :: MonadServerRO m => m Perception
+askPerceptionSer :: MonadServer m => m Perception
 askPerceptionSer = do
   side <- getsState sside
   getPerFid side
@@ -107,7 +107,7 @@ remember = do
   broadcast
   withAI broadcast
 
-saveGameSer :: MonadServerChan m => m ()
+saveGameSer :: MonadServer m => m ()
 saveGameSer = do
 --  broadcastCli [] $ GameSaveBkpCli False
 --  withAI $ broadcastCli [] $ GameSaveBkpCli True
@@ -153,7 +153,7 @@ handleScores write status total =
     go <- sendQueryUI side $ ShowSlidesCli slides
     when (not go) abort
 
-switchGlobalSelectedSide :: MonadServer m => FactionId -> m ()
+switchGlobalSelectedSide :: MonadAction m => FactionId -> m ()
 switchGlobalSelectedSide =
   modifyState . switchGlobalSelectedSideOnlyForGlobalState
 
@@ -165,7 +165,7 @@ withAI m = do
   putDict d
   return a
 
-isFactionAware :: MonadServerChan m => [Point] -> FactionId -> m Bool
+isFactionAware :: MonadServer m => [Point] -> FactionId -> m Bool
 isFactionAware poss fid = do
   per <- getPerFid fid
   let inter = ES.fromList poss `ES.intersection` totalVisible per
@@ -344,3 +344,6 @@ speedupCOps !copsSlow@Kind.COps{cotile=tile} =
   let ospeedup = Tile.speedup tile
       cotile = tile {Kind.ospeedup}
   in copsSlow {Kind.cotile}
+
+rndToAction :: MonadServer m => Rnd a -> m a
+rndToAction _r = undefined

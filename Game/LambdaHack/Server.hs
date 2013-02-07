@@ -5,7 +5,7 @@ module Game.LambdaHack.Server
   ) where
 
 import Control.Monad
-import Control.Monad.Writer.Strict (WriterT, execWriterT)
+import Control.Monad.Writer.Strict (WriterT, execWriterT, tell)
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -19,7 +19,7 @@ import Game.LambdaHack.Server.CmdSerSem
 import Game.LambdaHack.Server.LoopAction
 
 -- | The semantics of server commands.
-cmdSerSem :: MonadServerChan m => CmdSer -> m ()
+cmdSerSem :: (MonadAction m, MonadServerChan m) => CmdSer -> m ()
 cmdSerSem cmd = do
   cmds <- execWriterT $ cmdSerWriterT cmd
   mapM_ cmdAtomicSem cmds
@@ -34,24 +34,29 @@ cmdSerWriterT cmd = case cmd of
   WaitSer aid -> waitSer aid
   MoveSer aid dir -> moveSer aid dir
   RunSer aid dir -> runSer aid dir
-  GameExitSer -> gameExitSer
-  GameRestartSer -> gameRestartSer
+  GameExitSer -> undefined -- gameExitSer
+  GameRestartSer -> undefined -- gameRestartSer
   GameSaveSer -> gameSaveSer
   CfgDumpSer -> cfgDumpSer
   DirToAction actor allowAttacks dir -> do
-    modifyState $ updateActorBody actor $ \ m -> m { bdirAI = Just (dir, 0) }
+-- TODO: move this to ClientState
+--    modifyState $ updateActorBody actor $ \ m -> m { bdirAI = Just (dir, 0) }
     if allowAttacks
       then moveSer actor dir
       else runSer actor dir
-  ClearPath aid ->
-    modifyState $ updateActorBody aid $ \m -> m {bpath = Nothing}
+  ClearPath aid -> do
+    fromPath <- getsState $ bpath . getActorBody aid
+    tell [AlterPath aid fromPath Nothing]
   FollowPath aid dir path darken -> do
-    modifyState $ updateActorBody aid $ \m -> m {bpath = Just path}
-    when darken $
-      modifyState $ updateActorBody aid $ \m -> m {bcolor = Just Color.BrBlack}
+    fromPath <- getsState $ bpath . getActorBody aid
+    tell [AlterPath aid fromPath (Just path)]
+    when darken $ do
+      fromColor <- getsState $ bcolor . getActorBody aid
+      tell [ColorActor aid fromColor (Just Color.BrBlack)]
     moveSer aid dir
-  DieSer actor -> do  -- TODO: explode if a potion
+  DieSer aid -> do  -- TODO: explode if a potion
 --    bitems <- getsState $ getActorBag actor
 --    Actor{bpos} <- getsState (getActorBody actor)
 --    modifyState (updateArena (dropItemsAt bitems bpos))
-    modifyState (deleteActor actor)
+    body <- getsState $ getActorBody aid
+    tell [KillAtomic aid body]

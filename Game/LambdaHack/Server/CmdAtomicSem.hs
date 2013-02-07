@@ -8,6 +8,7 @@ import Data.Maybe
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
+import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Faction
@@ -20,6 +21,7 @@ import Game.LambdaHack.Server.CmdAtomic
 import Game.LambdaHack.State
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Vector
 
 cmdAtomicSem :: MonadAction m => CmdAtomic -> m ()
 cmdAtomicSem cmd = case cmd of
@@ -41,6 +43,8 @@ cmdAtomicSem cmd = case cmd of
   AlterSecretAtomic diffL -> alterSecretAtomic diffL
   AlterSmellAtomic diffL -> alterSmellAtomic diffL
   SetSmellAtomic fromSmell toSmell -> setSmellAtomic fromSmell toSmell
+  AlterPath aid fromPath toPath -> alterPath aid fromPath toPath
+  ColorActor aid fromColor toColor -> colorActor aid fromColor toColor
 
 healAtomic :: MonadAction m => Int -> ActorId -> m ()
 healAtomic n aid = assert (n /= 0) $
@@ -180,3 +184,13 @@ alterSmellAtomic diffL =
 setSmellAtomic :: MonadAction m => SmellMap -> SmellMap -> m ()
 setSmellAtomic _fromSmell toSmell = do
   modifyState $ updateArena $ updateSmell $ const toSmell
+
+alterPath :: MonadAction m
+          => ActorId -> Maybe [Vector] -> Maybe [Vector] -> m ()
+alterPath aid _fromPath toPath =
+  modifyState $ updateActorBody aid $ \b -> b {bpath = toPath}
+
+colorActor :: MonadAction m
+           => ActorId -> Maybe Color.Color -> Maybe Color.Color -> m ()
+colorActor aid _fromColor toColor =
+  modifyState $ updateActorBody aid $ \b -> b {bcolor = toColor}
