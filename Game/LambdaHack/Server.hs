@@ -5,6 +5,7 @@ module Game.LambdaHack.Server
   ) where
 
 import Control.Monad
+import Control.Monad.Writer.Strict (WriterT, execWriterT)
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -12,12 +13,19 @@ import Game.LambdaHack.ActorState
 import Game.LambdaHack.CmdSer
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Server.Action
+import Game.LambdaHack.Server.CmdAtomic
+import Game.LambdaHack.Server.CmdAtomicSem
 import Game.LambdaHack.Server.CmdSerSem
 import Game.LambdaHack.Server.LoopAction
 
 -- | The semantics of server commands.
 cmdSerSem :: MonadServerChan m => CmdSer -> m ()
-cmdSerSem cmd = case cmd of
+cmdSerSem cmd = do
+  cmds <- execWriterT $ cmdSerWriterT cmd
+  mapM_ cmdAtomicSem cmds
+
+cmdSerWriterT :: MonadServerChan m => CmdSer -> WriterT [CmdAtomic] m ()
+cmdSerWriterT cmd = case cmd of
   ApplySer aid v iid container -> applySer aid v iid container
   ProjectSer aid p eps v iid container -> projectSer aid p eps v iid container
   TriggerSer aid p -> triggerSer aid p

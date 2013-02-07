@@ -7,6 +7,7 @@ module Game.LambdaHack.Server.CmdSerSem where
 
 import Control.Monad
 import Control.Monad.Reader.Class
+import Control.Monad.Writer.Strict (WriterT, runWriterT, tell)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.List
@@ -34,6 +35,7 @@ import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import Game.LambdaHack.Random
 import Game.LambdaHack.Server.Action
+import Game.LambdaHack.Server.CmdAtomic
 import Game.LambdaHack.Server.CmdAtomicSem
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.EffectSem
@@ -55,14 +57,14 @@ applySer :: MonadServerChan m   -- MonadServer m
          -> MU.Part    -- ^ how the applying is called
          -> ItemId     -- ^ the item to be applied
          -> Container  -- ^ the location of the item
-         -> m ()
+         -> WriterT [CmdAtomic] m ()
 applySer actor verb iid container = do
   item <- getsState $ getItemBody iid
   body <- getsState (getActorBody actor)
   let pos = bpos body
   broadcastPosCli [pos] $ ApplyCli actor verb item
   itemEffect 5 actor actor item False
-  destroyItemAtomic iid item 1 container
+  tell [DestroyItemAtomic iid item 1 container]
 
 -- ** ProjectSer
 
@@ -73,7 +75,7 @@ projectSer :: MonadServerChan m
            -> MU.Part    -- ^ how the projecting is called
            -> ItemId     -- ^ the item to be projected
            -> Container  -- ^ whether the items comes from floor or inventory
-           -> m ()
+           -> WriterT [CmdAtomic] m ()
 projectSer source tpos eps _verb iid container = do
   cops@Kind.COps{coactor} <- getsState scops
   sm <- getsState (getActorBody source)
@@ -109,7 +111,7 @@ projectSer source tpos eps _verb iid container = do
       if accessible cops lvl spos pos && isNothing inhabitants
         then do
           projId <- addProjectile iid pos (bfaction sm) path time
-          moveItemAtomic iid 1 container (CActor projId)
+          tell [MoveItemAtomic iid 1 container (CActor projId)]
           item <- getsState $ getItemBody iid
           broadcastPosCli [spos, pos] $ ProjectCli spos source item
         else
@@ -118,7 +120,7 @@ projectSer source tpos eps _verb iid container = do
 -- | Create a projectile actor containing the given missile.
 addProjectile :: MonadServer m
               => ItemId -> Point -> FactionId -> [Point] -> Time
-              -> m ActorId
+              -> WriterT [CmdAtomic] m ActorId
 addProjectile iid loc bfaction path btime = do
   Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}} <- getsState scops
   disco <- getsState sdisco
@@ -152,13 +154,13 @@ addProjectile iid loc bfaction path btime = do
         }
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
-  spawnAtomic acounter m
+  tell [SpawnAtomic acounter m]
   return acounter
 
 -- ** TriggerSer
 
 -- | Perform the action specified for the tile in case it's triggered.
-triggerSer :: MonadServerChan m => ActorId -> Point -> m ()
+triggerSer :: MonadServerChan m => ActorId -> Point -> WriterT [CmdAtomic] m ()
 triggerSer aid dpos = do
   Kind.COps{cotile=Kind.Ops{okind, opick}} <- getsState scops
   lvl <- getsState getArena
@@ -173,7 +175,7 @@ triggerSer aid dpos = do
                then do
                  fromTile <- getsState $ (`at` dpos) . getArena
                  toTile <- rndToAction $ opick tgroup (const True)
-                 changeTileAtomic dpos fromTile toTile
+                 tell [ChangeTileAtomic dpos fromTile toTile]
 -- TODO: take care of AI using this function (aborts, etc.).
                else abortWith "blocked"  -- by monsters or heroes
           else abortWith "jammed"  -- by items
@@ -182,7 +184,8 @@ triggerSer aid dpos = do
 
 -- * PickupSer
 
-pickupSer :: MonadServerChan m => ActorId -> ItemId -> Int -> InvChar -> m ()
+pickupSer :: MonadServerChan m
+          => ActorId -> ItemId -> Int -> InvChar -> WriterT [CmdAtomic] m ()
 pickupSer aid iid k l = assert (k > 0 `blame` (aid, iid, k, l)) $ do
   side <- getsState sside
   body <- getsState (getActorBody aid)
@@ -190,28 +193,28 @@ pickupSer aid iid k l = assert (k > 0 `blame` (aid, iid, k, l)) $ do
   -- TODO: check elsewhere and for all commands.
   assert (bfaction body == side `blame` (body, side)) $ do
     let p = bpos body
-    moveItemAtomic iid k (CFloor p) (CActor aid)
+    tell [MoveItemAtomic iid k (CFloor p) (CActor aid)]
     void $ broadcastPosCli [p] (PickupCli aid iid k l)
 
 -- ** DropSer
 
-dropSer :: MonadAction m => ActorId -> ItemId -> m ()
+dropSer :: MonadAction m => ActorId -> ItemId -> WriterT [CmdAtomic] m ()
 dropSer aid iid = do
   p <- getsState (bpos . getActorBody aid)
   let k = 1
-  moveItemAtomic iid k (CActor aid) (CFloor p)
+  tell [MoveItemAtomic iid k (CActor aid) (CFloor p)]
 
 -- * WaitSer
 
 -- | Update the wait/block count.
-waitSer :: MonadAction m => ActorId -> m ()
+waitSer :: MonadAction m => ActorId -> WriterT [CmdAtomic] m ()
 waitSer aid = do
   Kind.COps{coactor} <- getsState scops
   time <- getsState getTime
   body <- getsState $ getActorBody aid
   let fromWait = bwait body
       toWait = timeAddFromSpeed coactor body time
-  waitAtomic aid fromWait toWait
+  tell [WaitAtomic aid fromWait toWait]
 
 -- ** MoveSer
 
@@ -222,7 +225,7 @@ waitSer aid = do
 -- is authorized to check if a move is legal and it needs full context
 -- for that, e.g., the initial actor position to check if melee attack
 -- does not try to reach to a distant tile.
-moveSer :: MonadServerChan m => ActorId -> Vector -> m ()
+moveSer :: MonadServerChan m => ActorId -> Vector -> WriterT [CmdAtomic] m ()
 moveSer aid dir = do
   cops@Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getsState scops
   lvl <- getsState getArena
@@ -238,7 +241,7 @@ moveSer aid dir = do
       actorAttackActor aid target
     Nothing
       | accessible cops lvl spos tpos ->
-          moveActorAtomic aid spos tpos
+          tell [MoveActorAtomic aid spos tpos]
       | Tile.canBeHidden cotile (okind $ lvl `at` tpos) -> do
           sendUpdateCli side
             $ ShowMsgCli "You search all adjacent walls for half a second."
@@ -251,7 +254,8 @@ moveSer aid dir = do
 -- For instance, an actor embedded in a wall can be attacked from
 -- an adjacent position. This function is analogous to projectGroupItem,
 -- but for melee and not using up the weapon.
-actorAttackActor :: MonadServerChan m => ActorId -> ActorId -> m ()
+actorAttackActor :: MonadServerChan m
+                 => ActorId -> ActorId -> WriterT [CmdAtomic] m ()
 actorAttackActor source target = do
   sm <- getsState (getActorBody source)
   tm <- getsState (getActorBody target)
@@ -300,7 +304,7 @@ actorAttackActor source target = do
     else performHit False
 
 -- | Search for hidden doors.
-search :: MonadServerChan m => ActorId -> m ()
+search :: MonadServerChan m => ActorId -> WriterT [CmdAtomic] m ()
 search aid = do
   Kind.COps{coitem, cotile} <- getsState scops
   lvl <- getsState getArena
@@ -325,14 +329,15 @@ search aid = do
                 else (loc, (Just ok, Nothing)) : diffL
            else diffL
   let diffL = foldl' searchTile [] (moves lxsize)
-  alterSecretAtomic diffL
+  tell [AlterSecretAtomic diffL]
   let triggerHidden (_, (_, Just _)) = return ()
       triggerHidden (dpos, (_, Nothing)) = triggerSer aid dpos
   mapM_ triggerHidden diffL
 
 -- TODO: bumpTile tpos F.Openable
 -- | An actor opens a door.
-actorOpenDoor :: MonadServerChan m => ActorId -> Vector -> m ()
+actorOpenDoor :: MonadServerChan m
+              => ActorId -> Vector -> WriterT [CmdAtomic] m ()
 actorOpenDoor actor dir = do
   Kind.COps{cotile} <- getsState scops
   lvl<- getsState getArena
@@ -353,7 +358,7 @@ actorOpenDoor actor dir = do
 -- ** RunSer
 
 -- | Actor moves or swaps position with others or opens doors.
-runSer :: MonadServerChan m => ActorId -> Vector -> m ()
+runSer :: MonadServerChan m => ActorId -> Vector -> WriterT [CmdAtomic] m ()
 runSer actor dir = do
   cops <- getsState scops
   lvl <- getsState getArena
@@ -370,14 +375,15 @@ runSer actor dir = do
       | otherwise -> abortWith "blocked"
     Nothing
       | accessible cops lvl spos tpos ->
-          moveActorAtomic actor spos tpos
+          tell [MoveActorAtomic actor spos tpos]
       | otherwise ->
           actorOpenDoor actor dir
 
 -- | When an actor runs (not walks) into another, they switch positions.
-displaceActor :: MonadServerChan m => ActorId -> ActorId -> m ()
+displaceActor :: MonadServerChan m
+              => ActorId -> ActorId -> WriterT [CmdAtomic] m ()
 displaceActor source target = do
-  displaceActorAtomic source target
+  tell [DisplaceActorAtomic source target]
   spos <- getsState $ bpos . getActorBody source
   tpos <- getsState $ bpos . getActorBody target
   broadcastPosUI [spos, tpos] $ DisplaceCli source target
@@ -455,7 +461,9 @@ generateMonster = do
       let allPers =
             ES.unions $ map (totalVisible . (EM.! arena)) $ EM.elems pers
       pos <- rndToAction $ rollSpawnPos cops allPers lvl
-      spawnMonsters 1 pos
+      (mf, cmds) <- runWriterT $ spawnMonsters 1 pos
+      mapM_ cmdAtomicSem cmds
+      return mf
 
 -- | Possibly regenerate HP for all actors on the current level.
 --
@@ -486,13 +494,13 @@ regenerateLevelHP = do
            then Nothing
            else Just a
   toRegen <- getsState $ catMaybes . map pick . EM.assocs . lactor . getArena
-  mapM_ (healAtomic 1) toRegen
+  mapM_ (\aid -> cmdAtomicSem $ HealAtomic 1 aid) toRegen
 
 -- TODO: let only some actors/items leave smell, e.g., a Smelly Hide Armour.
 -- | Add a smell trace for the actor to the level.
-addSmell :: MonadServer m => ActorId -> m ()
+addSmell :: MonadServer m => ActorId -> WriterT [CmdAtomic] m ()
 addSmell aid = do
   time <- getsState getTime
   pos <- getsState $ bpos . getActorBody aid
   oldS <- getsState $ (EM.lookup pos) . lsmell . getArena
-  alterSmellAtomic [(pos, (oldS, Just $ timeAdd time smellTimeout))]
+  tell [AlterSmellAtomic [(pos, (oldS, Just $ timeAdd time smellTimeout))]]

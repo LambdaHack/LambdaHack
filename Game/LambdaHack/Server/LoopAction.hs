@@ -8,6 +8,7 @@ import Control.Arrow (second)
 import Control.Monad
 import Control.Monad.Reader.Class
 import qualified Control.Monad.State as St
+import Control.Monad.Writer.Strict (execWriterT)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.List
@@ -31,6 +32,7 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.Point
 import Game.LambdaHack.Random
 import Game.LambdaHack.Server.Action
+import Game.LambdaHack.Server.CmdAtomicSem
 import Game.LambdaHack.Server.CmdSerSem
 import Game.LambdaHack.Server.Config
 import qualified Game.LambdaHack.Server.DungeonGen as DungeonGen
@@ -344,7 +346,9 @@ restartGame loopServer = do
 initialHeroes :: MonadServer m => (FactionId, Point, [(Int, Text)]) -> m ()
 initialHeroes (side, ppos, configHeroNames) = do
   configExtraHeroes <- getsServer $ configExtraHeroes . sconfig
-  replicateM_ (1 + configExtraHeroes) $ addHero side ppos configHeroNames
+  replicateM_ (1 + configExtraHeroes) $ do
+    cmds <- execWriterT $ addHero side ppos configHeroNames
+    mapM_ cmdAtomicSem cmds
 
 createFactions :: Kind.COps -> Config -> Rnd FactionDict
 createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
@@ -379,7 +383,6 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
         in fact {genemy, gally}
   return $! EM.fromDistinctAscList $ map (second enemyAlly) rawFs
 
--- TODO: do this inside Action ()
 gameReset :: MonadServer m => Kind.COps -> m ()
 gameReset cops@Kind.COps{coitem, corule, cotile} = do
   -- Rules config reloaded at each new game start.
@@ -410,7 +413,8 @@ gameReset cops@Kind.COps{coitem, corule, cotile} = do
         replicateM nri $ do
           pos <- rndToAction
                  $ findPos ltile (const (Tile.hasFeature cotile F.Boring))
-          createItems 1 pos
+          cmds <- execWriterT $ createItems 1 pos
+          mapM_ cmdAtomicSem cmds
   mapM_ initialItems itemCounts
   modifyState $ updateSelectedArena entryLevel
   mapM_ initialHeroes $ zip3 needInitialCrew entryPoss heroNames

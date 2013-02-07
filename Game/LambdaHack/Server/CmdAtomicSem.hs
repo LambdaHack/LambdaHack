@@ -1,6 +1,6 @@
 -- | Semantics of 'CmdAction' server commands.
 -- TODO: document
-module Game.LambdaHack.Server.CmdAtomicSem where
+module Game.LambdaHack.Server.CmdAtomicSem (cmdAtomicSem) where
 
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe

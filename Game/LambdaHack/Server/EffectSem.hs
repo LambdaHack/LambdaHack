@@ -5,6 +5,7 @@
 module Game.LambdaHack.Server.EffectSem where
 
 import Control.Monad
+import Control.Monad.Writer.Strict (WriterT, lift, tell)
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
@@ -31,7 +32,7 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.Point
 import Game.LambdaHack.Random
 import Game.LambdaHack.Server.Action
-import Game.LambdaHack.Server.CmdAtomicSem
+import Game.LambdaHack.Server.CmdAtomic
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.State
@@ -50,7 +51,7 @@ default (Text)
 -- for the actors to identify it (and the item that caused it, if any).
 effectSem :: MonadServerChan m
           => Effect.Effect -> Int -> ActorId -> ActorId -> Int -> Bool
-          -> m Bool
+          -> WriterT [CmdAtomic] m Bool
 effectSem ef verbosity source target power block = do
   oldS <- getsState (getActorBody source)
   oldT <- getsState (getActorBody target)
@@ -75,12 +76,13 @@ effectSem ef verbosity source target power block = do
 -- is mutually recursive with @effect@, hence it's a part of @Effect@
 -- semantics.
 itemEffect :: MonadServerChan m
-           => Int -> ActorId -> ActorId -> Item -> Bool -> m ()
+           => Int -> ActorId -> ActorId -> Item -> Bool
+           -> WriterT [CmdAtomic] m ()
 itemEffect verbosity source target item block = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   sm <- getsState (getActorBody source)
   -- Destroys attacking actor: a hack for projectiles.
-  when (bproj sm) $ killAtomic source sm
+  when (bproj sm) $ tell [KillAtomic source sm]
   discoS <- getsState sdisco
   let ef = ieffect $ okind $ fromJust $ jkind discoS item
   -- The msg describes the target part of the action.
@@ -102,8 +104,8 @@ discover discoS i = do
 -- (not what the source did).
 eff :: MonadServerChan m
     => Effect.Effect -> Int -> ActorId -> ActorId -> Int
-    -> m (Bool, Text)
-eff Effect.NoEffect _ _ _ _ = effectNoEffect
+    -> WriterT [CmdAtomic] m (Bool, Text)
+eff Effect.NoEffect _ _ _ _ = lift $ effectNoEffect
 eff Effect.Heal _ _ target power = effectHeal target power
 eff (Effect.Wound nDm) verbosity source target power =
   effectWound nDm verbosity source target power
@@ -133,7 +135,8 @@ effectNoEffect = return (False, "Nothing happens.")
 
 -- ** Heal
 
-effectHeal :: MonadServer m => ActorId -> Int -> m (Bool, Text)
+effectHeal :: MonadServer m
+           => ActorId -> Int -> WriterT [CmdAtomic] m (Bool, Text)
 effectHeal target power = do
   Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
   tm <- getsState (getActorBody target)
@@ -143,13 +146,14 @@ effectHeal target power = do
     else do
       void $ focusIfOurs target
       let deltaHP = min power (bhpMax - bhp tm)
-      healAtomic deltaHP target
+      tell [HealAtomic deltaHP target]
       return (True, actorVerb coactor tm "feel better")
 
 -- ** Wound
 
 effectWound :: MonadServer m
-            => RollDice -> Int -> ActorId -> ActorId -> Int -> m (Bool, Text)
+            => RollDice -> Int -> ActorId -> ActorId -> Int
+            -> WriterT [CmdAtomic] m (Bool, Text)
 effectWound nDm verbosity source target power = do
   Kind.COps{coactor} <- getsState scops
   isProjTarget <- getsState $ flip isProjectile target
@@ -175,12 +179,13 @@ effectWound nDm verbosity source target power = do
             actorVerb coactor tm $ "lose" <+> showT (n + power) <> "HP"
           | otherwise = actorVerb coactor tm "hiss in pain"
     -- Damage the target.
-    healAtomic deltaHP target
+    tell [HealAtomic deltaHP target]
     return (True, msg)
 
 -- ** Dominate
 
-effectDominate :: MonadServerChan m => ActorId -> ActorId -> m (Bool, Text)
+effectDominate :: MonadServerChan m
+               => ActorId -> ActorId -> WriterT [CmdAtomic] m (Bool, Text)
 effectDominate source target = do
   sm <- getsState (getActorBody source)
   arena <- getsState sarena
@@ -201,9 +206,9 @@ effectDominate source target = do
       -- Halve the speed as a side-effect of domination.
       let speed = fromMaybe (aspeed $ okind bkind) bspeed
           delta = speedScale (1%2) speed
-      when (delta > speedZero) $ hasteAtomic target (speedNegate delta)
+      when (delta > speedZero) $ tell [HasteAtomic target (speedNegate delta)]
       -- TODO: Perhaps insert a turn of delay here to allow countermeasures.
-      dominateAtomic (bfaction tm) (bfaction sm) target
+      tell [DominateAtomic (bfaction tm) (bfaction sm) target]
       sendQueryCli (bfaction sm) (SelectLeaderCli target arena)
         >>= assert `trueM` (arena, target, "leader dominates himself")
       -- Display status line and FOV for the new actor.
@@ -215,14 +220,16 @@ effectDominate source target = do
 -- ** SummonFriend
 
 effectSummonFriend :: MonadServer m
-                   => ActorId -> ActorId -> Int -> m (Bool, Text)
+                   => ActorId -> ActorId -> Int
+                   -> WriterT [CmdAtomic] m (Bool, Text)
 effectSummonFriend source target power = do
   sm <- getsState (getActorBody source)
   tm <- getsState (getActorBody target)
   summonFriends (bfaction sm) (1 + power) (bpos tm)
   return (True, "")
 
-summonFriends :: MonadServer m => FactionId -> Int -> Point -> m ()
+summonFriends :: MonadServer m
+              => FactionId -> Int -> Point -> WriterT [CmdAtomic] m ()
 summonFriends bfaction n pos = assert (n > 0) $ do
   Kind.COps{ coactor=coactor@Kind.Ops{opick}
            , cofact=Kind.Ops{okind} } <- getsState scops
@@ -237,7 +244,7 @@ summonFriends bfaction n pos = assert (n > 0) $ do
 addActor :: MonadServer m
          => Kind.Id ActorKind -> FactionId -> Point -> Int
          -> Maybe Char -> Maybe Text
-         -> m ()
+         -> WriterT [CmdAtomic] m ()
 addActor mk bfaction ppos hp msymbol mname = do
   Kind.COps{cotile} <- getsState scops
   time <- getsState getTime
@@ -245,11 +252,12 @@ addActor mk bfaction ppos hp msymbol mname = do
   let m = actorTemplate mk msymbol mname hp pos time bfaction False
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
-  spawnAtomic acounter m
+  tell [SpawnAtomic acounter m]
 
 -- TODO: apply this special treatment only to actors with symbol '@'.
 -- | Create a new hero on the current level, close to the given position.
-addHero :: MonadServer m => FactionId -> Point -> [(Int, Text)] -> m ()
+addHero :: MonadServer m
+        => FactionId -> Point -> [(Int, Text)] -> WriterT [CmdAtomic] m ()
 addHero bfaction ppos configHeroNames = do
   Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
   let mk = heroKindId coactor
@@ -270,7 +278,8 @@ findHeroName configHeroNames n =
 
 -- ** SpawnMonster
 
-effectSpawnMonster :: MonadServer m => ActorId -> Int -> m (Bool, Text)
+effectSpawnMonster :: MonadServer m
+                   => ActorId -> Int -> WriterT [CmdAtomic] m (Bool, Text)
 effectSpawnMonster target power = do
   tm <- getsState (getActorBody target)
   void $ spawnMonsters (1 + power) (bpos tm)
@@ -278,7 +287,8 @@ effectSpawnMonster target power = do
 
 -- | Spawn monsters of any spawning faction, friendly or not.
 -- To be used for spontaneous spawning of monsters and for the spawning effect.
-spawnMonsters :: MonadServer m => Int -> Point -> m (Maybe FactionId)
+spawnMonsters :: MonadServer m
+              => Int -> Point -> WriterT [CmdAtomic] m (Maybe FactionId)
 spawnMonsters n pos = do
   Kind.COps{ coactor=Kind.Ops{opick}
            , cofact=Kind.Ops{okind} } <- getsState scops
@@ -301,7 +311,8 @@ spawnMonsters n pos = do
 -- | Create a new monster on the level, at a given position
 -- and with a given actor kind and HP.
 addMonster :: MonadServer m
-           => Kind.Id ActorKind -> FactionId -> Point -> m ()
+           => Kind.Id ActorKind -> FactionId -> Point
+           -> WriterT [CmdAtomic] m ()
 addMonster mk bfaction ppos = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   hp <- rndToAction $ rollDice $ ahp $ okind mk
@@ -309,13 +320,14 @@ addMonster mk bfaction ppos = do
 
 -- ** CreateItem
 
-effectCreateItem :: MonadServer m => ActorId -> Int -> m (Bool, Text)
+effectCreateItem :: MonadServer m
+                 => ActorId -> Int -> WriterT [CmdAtomic] m (Bool, Text)
 effectCreateItem target power = do
   tm <- getsState (getActorBody target)
   void $ createItems (1 + power) (bpos tm)
   return (True, "")
 
-createItems :: MonadServer m => Int -> Point -> m ()
+createItems :: MonadServer m => Int -> Point -> WriterT [CmdAtomic] m ()
 createItems n pos = do
   Kind.COps{coitem} <- getsState scops
   flavour <- getsServer sflavour
@@ -328,23 +340,24 @@ createItems n pos = do
     case HM.lookup item itemRev of
       Just iid ->
         -- TODO: try to avoid this case, to make items more interesting
-        createItemAtomic iid item k (CFloor pos)
+        tell [CreateItemAtomic iid item k (CFloor pos)]
       Nothing -> do
         icounter <- getsServer sicounter
         modifyServer $ \ser ->
           ser { sicounter = succ icounter
               , sitemRev = HM.insert item icounter (sitemRev ser)}
-        createItemAtomic icounter item k (CFloor pos)
+        tell [CreateItemAtomic icounter item k (CFloor pos)]
 
 -- ** ApplyPerfume
 
-effectApplyPerfume :: MonadServer m => ActorId -> ActorId -> m (Bool, Text)
+effectApplyPerfume :: MonadServer m
+                   => ActorId -> ActorId -> WriterT [CmdAtomic] m (Bool, Text)
 effectApplyPerfume source target =
   if source == target
   then return (True, "Tastes like water, but with a strong rose scent.")
   else do
     oldSmell <- getsState $ lsmell . getArena
-    setSmellAtomic oldSmell EM.empty
+    tell [SetSmellAtomic oldSmell EM.empty]
     return (True, "The fragrance quells all scents in the vicinity.")
 
 -- ** Regeneration
@@ -353,10 +366,12 @@ effectApplyPerfume source target =
 
 -- ** Ascend
 
-effectAscend :: MonadServerChan m => ActorId -> Int -> m (Bool, Text)
+effectAscend :: MonadServerChan m
+             => ActorId -> Int -> WriterT [CmdAtomic] m (Bool, Text)
 effectAscend target power = useStairs target (power + 1) "find a way upstairs"
 
-useStairs :: MonadServerChan m => ActorId -> Int -> Msg -> m (Bool, Text)
+useStairs :: MonadServerChan m
+          => ActorId -> Int -> Msg -> WriterT [CmdAtomic] m (Bool, Text)
 useStairs target delta msg = do
   Kind.COps{coactor} <- getsState scops
   tm <- getsState (getActorBody target)
@@ -367,7 +382,7 @@ useStairs target delta msg = do
            then (True, "")
            else (True, actorVerb coactor tm msg)
 
-effLvlGoUp :: MonadServerChan m => ActorId -> Int -> m ()
+effLvlGoUp :: MonadServerChan m => ActorId -> Int -> WriterT [CmdAtomic] m ()
 effLvlGoUp aid k = do
   pbodyCurrent <- getsState $ getActorBody aid
   arena <- getsState sarena
@@ -378,7 +393,7 @@ effLvlGoUp aid k = do
       assert (nln /= arena `blame` (nln, "stairs looped")) $ do
         timeCurrent <- getsState getTime
         -- Remove the actor from the old level.
-        killAtomic aid pbodyCurrent
+        tell [KillAtomic aid pbodyCurrent]
         -- Remember the level (e.g., when teleporting via scroll on the floor,
         -- register the scroll vanished, also let the other factions register
         -- the actor vanished in case they switch to this level from another
@@ -401,7 +416,7 @@ effLvlGoUp aid k = do
             pbody = pbodyCurrent {btime = timeAdd timeLastVisited diff}
         -- The actor is added to the new level, but there can be other actors
         -- at his old position or at his new position.
-        spawnAtomic aid pbody
+        tell [SpawnAtomic aid pbody]
         -- Reset level and leader for all factions.
         broadcastCli [return . (/= bfaction pbody)] $ InvalidateArenaCli nln
 --        sendUpdateCli (bfaction pbody) $ SwitchLevelCli aid nln pbody bbag
@@ -430,7 +445,8 @@ effLvlGoUp aid k = do
 
 -- TODO: refactor with actorAttackActor or perhaps displace the other
 -- actor or swap positions with it, instead of squashing.
-squashActor :: MonadServerChan m => ActorId -> ActorId -> m ()
+squashActor :: MonadServerChan m
+            => ActorId -> ActorId -> WriterT [CmdAtomic] m ()
 squashActor source target = do
   Kind.COps{{-coactor,-} coitem=Kind.Ops{okind, ouniqGroup}} <- getsState scops
 --  sm <- getsState (getActorBody source)
@@ -455,7 +471,8 @@ squashActor source target = do
 
 -- ** Descend
 
-effectDescend :: MonadServerChan m => ActorId -> Int -> m (Bool, Text)
+effectDescend :: MonadServerChan m
+              => ActorId -> Int -> WriterT [CmdAtomic] m (Bool, Text)
 effectDescend target power =
   useStairs target (- (power + 1)) "find a way downstairs"
 
@@ -504,15 +521,15 @@ fleeDungeon = do
     modifyState $ updateSide upd2
 
 -- | Drop all actor's items.
-dropAllItems :: MonadAction m => ActorId -> m ()
+dropAllItems :: MonadAction m => ActorId -> WriterT [CmdAtomic] m ()
 dropAllItems aid = do
   pos <- getsState $ bpos . getActorBody aid
   bag <- getsState $ getActorBag aid
-  let f (iid, k) = moveItemAtomic iid k (CActor aid) (CFloor pos)
+  let f (iid, k) = tell [MoveItemAtomic iid k (CActor aid) (CFloor pos)]
   mapM_ f $ EM.assocs bag
 
 -- | Remove a dead actor. Check if game over.
-checkPartyDeath :: MonadServerChan m => ActorId -> m ()
+checkPartyDeath :: MonadServerChan m => ActorId -> WriterT [CmdAtomic] m ()
 checkPartyDeath target = do
   tm <- getsState $ getActorBody target
   Config{configFirstDeathEnds} <- getsServer sconfig
@@ -539,7 +556,7 @@ checkPartyDeath target = do
       then animateGameOver
       else void $ animateDeath
   -- Remove the dead actor.
-  killAtomic target tm
+  tell [KillAtomic target tm]
   -- We don't register that the lethal potion on the floor
   -- is used up. If that's a problem, add a one turn delay
   -- to the effect of all lethal objects (displaying an "agh! dying"
