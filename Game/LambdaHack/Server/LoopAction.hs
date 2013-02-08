@@ -78,7 +78,7 @@ loopSer cmdSer executorC cops = do
       pers = dungeonPerception cops fovMode glo
   modifyServer $ \ser1 -> ser1 {sper = dungeonPerception cops fovMode glo}
   -- Send init messages.
-  quit <- getsState squit
+  quit <- getsServer squit
   defLoc <- getsState localFromGlobal
   case quit of
     Nothing -> do  -- game restarted
@@ -95,7 +95,7 @@ loopSer cmdSer executorC cops = do
       let bcast = funBroadcastCli (\fid -> ContinueSavedCli (pers EM.! fid))
       bcast
       withAI bcast
-  modifyState $ updateQuit $ const Nothing
+  modifyServer $ \ser1 -> ser1 {squit = Nothing}
   cmdAtomicBroad SyncAtomic
   -- Loop.
   let loop (disp, prevHuman) = do
@@ -178,7 +178,7 @@ handleActors cmdSer subclipStart prevHuman disp = do
    -- Older actors act earlier.
   lactor <- getsState (EM.assocs . lactor . getArena)
   gquit <- getsState $ gquit . getSide
-  quit <- getsState squit
+  quit <- getsServer squit
   let mnext = if null lactor  -- wait until any actor spawned
               then Nothing
               else let -- Actors of the same faction move together.
@@ -238,7 +238,7 @@ handleActors cmdSer subclipStart prevHuman disp = do
             -- at once. This requires quite a bit of refactoring
             -- and is perhaps better done when the other factions have
             -- selected leaders as well.
-            squitNew <- getsState squit
+            squitNew <- getsServer squit
             when (timedCmdSer cmdS && isNothing squitNew) $
               maybe (return ()) advanceTime leaderNew
             -- Human moves always start a new subclip.
@@ -292,7 +292,7 @@ advanceTime actor = do
 -- | Continue or restart or exit the game.
 endOrLoop :: (MonadAction m, MonadServerChan m) => m () -> m ()
 endOrLoop loopServer = do
-  quit <- getsState squit
+  quit <- getsServer squit
   side <- getsState sside
   gquit <- getsState $ gquit . getSide
   (_, total) <- getsState calculateTotal

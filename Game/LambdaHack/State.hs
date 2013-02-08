@@ -4,13 +4,11 @@ module Game.LambdaHack.State
   ( -- * Basic game state, local or global
     State
     -- * State components
-  , sdungeon, sdepth, sitem, sdisco, sfaction, scops, squit
-  , sside, sarena
+  , sdungeon, sdepth, sitem, sdisco, sfaction, scops, sside, sarena
     -- * State operations
   , defStateGlobal, defStateLocal, localFromGlobal
   , switchGlobalSelectedSideOnlyForGlobalState
-  , updateDungeon, updateItem, updateDisco, updateFaction
-  , updateCOps, updateQuit
+  , updateDungeon, updateItem, updateDisco, updateFaction, updateCOps
   , updateArena, updateTime, updateSide, updateSelectedArena
   , getArena, getTime, getSide
   , isHumanFaction, isSpawningFaction
@@ -48,7 +46,6 @@ data State = State
   , _sdisco   :: !Discoveries  -- ^ remembered item discoveries
   , _sfaction :: !FactionDict  -- ^ remembered sides still in game
   , _scops    :: Kind.COps     -- ^ remembered content
-  , _squit    :: !(Maybe Bool)  -- ^ just about to save the game
   , _sside    :: !FactionId    -- ^ faction of the selected actor
   , _sarena   :: !LevelId      -- ^ level of the selected actor
   }
@@ -88,7 +85,6 @@ defStateGlobal :: Dungeon -> Int -> Discoveries
 defStateGlobal _sdungeon _sdepth _sdisco _sfaction _scops _sarena =
   State
     { _sside = invalidFactionId  -- no side yet selected
-    , _squit = Nothing
     , _sitem = EM.empty
     , ..
     }
@@ -103,7 +99,6 @@ defStateLocal _scops _sside =
     , _sdisco = EM.empty
     , _sfaction = EM.empty
     , _scops
-    , _squit = Nothing
     , _sside
     , _sarena = initialLevel
     }
@@ -127,7 +122,6 @@ localFromGlobal State{ _scops=_scops@Kind.COps{ coitem=Kind.Ops{okind}
                            `notElem` (ritemProject $ Kind.stdRuleset corule)
                 in EM.filter f _sdisco
     , _sside = invalidFactionId  -- will be set by the client
-    , _squit = Nothing
     , ..
     }
 
@@ -155,10 +149,6 @@ updateFaction f s = s {_sfaction = f (_sfaction s)}
 -- | Update content data within state.
 updateCOps :: (Kind.COps -> Kind.COps) -> State -> State
 updateCOps f s = s {_scops = f (_scops s)}
-
--- | Update game save status.
-updateQuit :: (Maybe Bool -> Maybe Bool) -> State -> State
-updateQuit f s = s {_squit = f (_squit s)}
 
 -- | Update current arena data within state.
 updateArena :: (Level -> Level) -> State -> State
@@ -214,9 +204,6 @@ sfaction = _sfaction
 scops :: State -> Kind.COps
 scops = _scops
 
-squit :: State -> Maybe Bool
-squit = _squit
-
 sside :: State -> FactionId
 sside = _sside
 
@@ -230,7 +217,6 @@ instance Binary State where
     put _sitem
     put _sdisco
     put _sfaction
-    put _squit
     put _sside
     put _sarena
   get = do
@@ -239,7 +225,6 @@ instance Binary State where
     _sitem <- get
     _sdisco <- get
     _sfaction <- get
-    _squit <- get
     _sside <- get
     _sarena <- get
     let _scops = undefined  -- overwritten by recreated cops

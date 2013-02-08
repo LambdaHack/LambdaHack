@@ -336,7 +336,7 @@ clientGameSave toBkp isAI = do
 clientDisconnect :: MonadClient m => Bool -> m ()
 clientDisconnect isAI = do
 --  flushFrames  -- this would force MonadClientUI
-  modifyState $ updateQuit $ const $ Just False
+  modifyClient $ \cli -> cli {squit = Just False}
   clientGameSave False isAI
 
 restoreGame :: MonadClient m

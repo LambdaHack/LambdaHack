@@ -3,12 +3,13 @@
 -- moves turn by turn.
 module Game.LambdaHack.Client.LoopAction (loopCli2, loopCli4) where
 
-import Data.Dynamic
 import Control.Monad
+import Data.Dynamic
 import Data.Maybe
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Client.Action
+import Game.LambdaHack.Client.State
 import Game.LambdaHack.CmdCli
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
@@ -32,7 +33,7 @@ initCli isAI cmdUpdateCli = do
       msgAdd msg
       let expected cmd = case cmd of ContinueSavedCli{} -> True; _ -> False
       waitForCmd cmdUpdateCli expected
-  modifyState $ updateQuit (const Nothing)
+  modifyClient $ \cli -> cli {squit = Nothing}
   -- State and client state are now valid.
 
 waitForCmd :: MonadClientChan m
@@ -63,7 +64,7 @@ loopCli2 cmdUpdateCli cmdQueryCli = do
       Left (CmdQueryCli cmd) -> do
         a <- cmdQueryCli cmd
         writeChanToSer $ toDyn a
-    quit <- getsState squit
+    quit <- getsClient squit
     when (isNothing quit) loop
 
 loopCli4 :: (MonadClientUI m, MonadClientChan m)
@@ -89,5 +90,5 @@ loopCli4 cmdUpdateCli cmdQueryCli cmdUpdateUI cmdQueryUI = do
       Left (CmdQueryCli cmd) -> do
         a <- cmdQueryCli cmd
         writeChanToSer $ toDyn a
-    quit <- getsState squit
+    quit <- getsClient squit
     when (isNothing quit) loop

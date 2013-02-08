@@ -27,6 +27,7 @@ data StateServer = StateServer
   , sper      :: !Pers          -- ^ perception of all factions
   , srandom   :: !R.StdGen      -- ^ current random generator
   , sconfig   :: !Config        -- ^ this game's config (including initial RNG)
+  , squit     :: !(Maybe Bool)  -- ^ just about to save and exit the game
   , sdebugSer :: !DebugModeSer  -- ^ debugging mode
   }
   deriving (Show, Typeable)
@@ -42,7 +43,8 @@ defStateServer sdiscoRev sflavour srandom sconfig =
     { sitemRev = HM.empty
     , sacounter = toEnum 0
     , sicounter = toEnum 0
-    , sper      = EM.empty
+    , sper = EM.empty
+    , squit = Nothing
     , sdebugSer = defDebugModeSer
     , ..
     }
@@ -68,6 +70,7 @@ instance Binary StateServer where
     put sicounter
     put (show srandom)
     put sconfig
+    put squit
   get = do
     sdiscoRev <- get
     sitemRev <- get
@@ -76,6 +79,7 @@ instance Binary StateServer where
     sicounter <- get
     g <- get
     sconfig <- get
+    squit <- get
     let srandom = read g
         sper = EM.empty
         sdebugSer = defDebugModeSer

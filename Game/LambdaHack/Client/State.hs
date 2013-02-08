@@ -49,6 +49,7 @@ data StateClient = StateClient
   , slastKey  :: !(Maybe K.KM)  -- ^ last command key pressed
   , sframe    :: ![(Maybe SingleFrame, Bool)]  -- ^ accumulated frames
   , _sleader  :: !(Maybe ActorId)  -- ^ selected actor
+  , squit     :: !(Maybe Bool)  -- ^ just about to save and exit the game
   , sdebugCli :: !DebugModeCli  -- ^ debugging mode
   }
   deriving (Show, Typeable)
@@ -91,6 +92,7 @@ defStateClient shistory sconfigUI = do
     , slastKey  = Nothing
     , sframe    = []
     , _sleader  = Nothing  -- no heroes yet alive
+    , squit = Nothing
     , sdebugCli = defDebugModeCli
     }
 
@@ -171,6 +173,7 @@ instance Binary StateClient where
     put (show srandom)
     put sconfigUI
     put _sleader
+    put squit
   get = do
     stgtMode <- get
     scursor <- get
@@ -182,6 +185,7 @@ instance Binary StateClient where
     g <- get
     sconfigUI <- get
     _sleader <- get
+    squit <- get
     let sper = EM.empty
         srandom = read g
         slastKey = Nothing

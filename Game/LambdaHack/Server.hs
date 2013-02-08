@@ -33,7 +33,7 @@ cmdSerWriterT cmd = case cmd of
   WaitSer aid -> waitSer aid
   MoveSer aid dir -> moveSer aid dir
   RunSer aid dir -> runSer aid dir
-  GameExitSer -> undefined -- gameExitSer
+  GameExitSer -> gameExitSer
   GameRestartSer -> undefined -- gameRestartSer
   GameSaveSer -> gameSaveSer
   CfgDumpSer -> cfgDumpSer
