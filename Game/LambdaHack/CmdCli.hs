@@ -20,6 +20,7 @@ import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
+import Game.LambdaHack.Server.CmdAtomic
 import Game.LambdaHack.State
 
 -- | Abstract syntax of client commands that don't use the UI.
@@ -51,6 +52,7 @@ data CmdUpdateCli =
   | ContinueSavedCli FactionPers
   | GameSaveBkpCli Bool
   | GameDisconnectCli Bool
+  | AtomicSeenCli CmdAtomic
   deriving Show
 
 data CmdUpdateUI =

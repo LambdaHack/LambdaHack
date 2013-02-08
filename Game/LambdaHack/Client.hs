@@ -21,6 +21,7 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.CmdCli
 import Game.LambdaHack.Faction
 import Game.LambdaHack.Msg
+import Game.LambdaHack.Server.CmdAtomicSem
 import Game.LambdaHack.State
 
 cmdUpdateCli :: MonadClient m => CmdUpdateCli -> m ()
@@ -40,6 +41,7 @@ cmdUpdateCli cmd = case cmd of
   ContinueSavedCli sper -> modifyClient $ \cli -> cli {sper}
   GameSaveBkpCli isAI -> clientGameSave True isAI
   GameDisconnectCli isAI -> clientDisconnect isAI
+  AtomicSeenCli catomic -> cmdAtomicSem catomic
 
 cmdUpdateUI :: MonadClientUI m => CmdUpdateUI -> m ()
 cmdUpdateUI cmd = case cmd of

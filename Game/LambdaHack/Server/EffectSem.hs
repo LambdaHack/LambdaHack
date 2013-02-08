@@ -399,7 +399,7 @@ effLvlGoUp aid k = do
         -- the actor vanished in case they switch to this level from another
         -- level). Perception is unchanged, so for one turn (this level turn)
         -- there will be visibility left on the old actor location.
-        remember
+        -- remember
         -- TODO: wipe out smell on save instead, based on timeLastVisited
         -- -- Only spawning factions left on the level, so no new smell generated.
         -- -- Cancel smell. Reduces memory load and savefile size.

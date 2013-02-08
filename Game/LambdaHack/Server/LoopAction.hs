@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | The main loop of the server, processing human and computer player
 -- moves turn by turn.
-module Game.LambdaHack.Server.LoopAction (loopSer) where
+module Game.LambdaHack.Server.LoopAction (loopSer, cmdAtomicBroad) where
 
 import Control.Arrow ((&&&))
 import Control.Arrow (second)
@@ -28,9 +28,11 @@ import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
+import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import Game.LambdaHack.Random
 import Game.LambdaHack.Server.Action
+import Game.LambdaHack.Server.CmdAtomic
 import Game.LambdaHack.Server.CmdAtomicSem
 import Game.LambdaHack.Server.CmdSerSem
 import Game.LambdaHack.Server.Config
@@ -94,6 +96,7 @@ loopSer cmdSer executorC cops = do
       bcast
       withAI bcast
   modifyState $ updateQuit $ const Nothing
+  cmdAtomicBroad SyncAtomic
   -- Loop.
   let loop (disp, prevHuman) = do
         time <- getsState getTime  -- the end time of this clip, inclusive
@@ -108,6 +111,30 @@ loopSer cmdSer executorC cops = do
         endOrLoop (loop nres)
   side <- getsState sside
   loop (True, side)
+
+cmdAtomicBroad :: MonadServerChan m => CmdAtomic -> m ()
+cmdAtomicBroad cmd = do
+  arena <- getsState sarena
+  lvl <- getsState getArena
+  itemD <- getsState sitem
+  faction <- getsState sfaction
+  ps <- cmdPosAtomic cmd
+  let es = ES.fromList ps
+      send fid = do
+        resets <- resetsFovAtomic fid cmd
+        when resets $ do
+          resetFidPerception fid
+          per <- getPerFid fid
+          let sendUp = sendUpdateCli fid
+                     $ RememberPerCli arena per lvl itemD faction
+          sendUp
+          withAI sendUp
+        per <- getPerFid fid
+        unless (ES.null $ es `ES.intersection` totalVisible per) $ do
+          let sendCmd = sendUpdateCli fid $ AtomicSeenCli cmd
+          sendCmd
+          withAI sendCmd
+  mapM_ send $ EM.keys faction
 
 -- TODO: switch levels alternating between player factions,
 -- if there are many and on distinct levels.
@@ -145,8 +172,7 @@ handleActors :: (MonadAction m, MonadServerChan m)
              -> FactionId
              -> Bool
              -> m (Bool, FactionId)
-handleActors cmdSer subclipStart prevHuman disp = withPerception $ do
-  remember
+handleActors cmdSer subclipStart prevHuman disp = do
   Kind.COps{coactor} <- getsState scops
   time <- getsState getTime  -- the end time of this clip, inclusive
    -- Older actors act earlier.

@@ -45,10 +45,12 @@ cmdAtomicSem cmd = case cmd of
   AlterSecretAtomic diffL -> alterSecretAtomic diffL
   AlterSmellAtomic diffL -> alterSmellAtomic diffL
   SetSmellAtomic fromSmell toSmell -> setSmellAtomic fromSmell toSmell
-  AlterPath aid fromPath toPath -> alterPath aid fromPath toPath
-  ColorActor aid fromColor toColor -> colorActor aid fromColor toColor
+  AlterPathAtomic aid fromPath toPath -> alterPathAtomic aid fromPath toPath
+  ColorActorAtomic aid fromColor toColor ->
+    colorActorAtomic aid fromColor toColor
+  SyncAtomic -> return ()
 
-resetsFovAtomic :: MonadAction m => FactionId -> CmdAtomic -> m Bool
+resetsFovAtomic :: MonadActionRO m => FactionId -> CmdAtomic -> m Bool
 resetsFovAtomic fid cmd = case cmd of
   DominateAtomic source target _ -> return $ fid `elem` [source, target]
   SpawnAtomic _ body -> return $ fid == bfaction body
@@ -63,14 +65,15 @@ resetsFovAtomic fid cmd = case cmd of
     bs <- fidEquals fid source
     bt <- fidEquals fid target
     return $ source /= target && (bs || bt)
+  SyncAtomic -> return True
   _ -> return False
 
-fidEquals :: MonadAction m => FactionId -> ActorId -> m Bool
+fidEquals :: MonadActionRO m => FactionId -> ActorId -> m Bool
 fidEquals fid aid = do
   afid <- getsState $ bfaction . getActorBody aid
   return $ fid == afid
 
-cmdPosAtomic :: MonadAction m => CmdAtomic -> m [Point]
+cmdPosAtomic :: MonadActionRO m => CmdAtomic -> m [Point]
 cmdPosAtomic cmd = case cmd of
   HealAtomic _ aid -> singlePos $ posOfAid aid
   HasteAtomic aid _ -> singlePos $ posOfAid aid
@@ -87,16 +90,17 @@ cmdPosAtomic cmd = case cmd of
   AlterSecretAtomic diffL -> return []  -- TODO
   AlterSmellAtomic diffL -> return []  -- TODO
   SetSmellAtomic fromSmell toSmell -> return []  -- TODO
-  AlterPath aid _ _ -> singlePos $ posOfAid aid
-  ColorActor aid _ _-> singlePos $ posOfAid aid
+  AlterPathAtomic aid _ _ -> singlePos $ posOfAid aid
+  ColorActorAtomic aid _ _ -> singlePos $ posOfAid aid
+  SyncAtomic -> return []
 
-singlePos :: MonadAction m => m Point -> m [Point]
+singlePos :: MonadActionAbort m => m Point -> m [Point]
 singlePos m = fmap return m
 
-posOfAid :: MonadAction m => ActorId -> m Point
+posOfAid :: MonadActionRO m => ActorId -> m Point
 posOfAid aid = getsState $ bpos . getActorBody aid
 
-posOfContainer :: MonadAction m => Container -> m Point
+posOfContainer :: MonadActionRO m => Container -> m Point
 posOfContainer (CFloor pos) = return pos
 posOfContainer (CActor aid) = posOfAid aid
 
@@ -239,12 +243,12 @@ setSmellAtomic :: MonadAction m => SmellMap -> SmellMap -> m ()
 setSmellAtomic _fromSmell toSmell = do
   modifyState $ updateArena $ updateSmell $ const toSmell
 
-alterPath :: MonadAction m
-          => ActorId -> Maybe [Vector] -> Maybe [Vector] -> m ()
-alterPath aid _fromPath toPath =
+alterPathAtomic :: MonadAction m
+                => ActorId -> Maybe [Vector] -> Maybe [Vector] -> m ()
+alterPathAtomic aid _fromPath toPath =
   modifyState $ updateActorBody aid $ \b -> b {bpath = toPath}
 
-colorActor :: MonadAction m
-           => ActorId -> Maybe Color.Color -> Maybe Color.Color -> m ()
-colorActor aid _fromColor toColor =
+colorActorAtomic :: MonadAction m
+                 => ActorId -> Maybe Color.Color -> Maybe Color.Color -> m ()
+colorActorAtomic aid _fromColor toColor =
   modifyState $ updateActorBody aid $ \b -> b {bcolor = toColor}

@@ -18,7 +18,10 @@ import Game.LambdaHack.Server.LoopAction
 cmdSerSem :: (MonadAction m, MonadServerChan m) => CmdSer -> m ()
 cmdSerSem cmd = do
   cmds <- execWriterT $ cmdSerWriterT cmd
-  mapM_ cmdAtomicSem cmds
+  let process cmd1 = do
+        cmdAtomicBroad cmd1
+        cmdAtomicSem cmd1
+  mapM_ process cmds
 
 cmdSerWriterT :: MonadServerChan m => CmdSer -> WriterT [CmdAtomic] m ()
 cmdSerWriterT cmd = case cmd of

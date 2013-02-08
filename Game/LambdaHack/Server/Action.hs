@@ -9,16 +9,15 @@ module Game.LambdaHack.Server.Action
   , MonadServerChan
   , executorSer, tryRestore, connServer, launchClients
   , waitForChildren, speedupCOps
-    -- * Turn init operations
-  , withPerception, remember
-    -- * Assorted primitives
-  , saveGameSer, saveGameBkp, dumpCfg, mkConfigRules, handleScores
-  , switchGlobalSelectedSide
+    -- * Communication
   , sendUpdateUI, sendQueryUI
   , sendUpdateCli, sendQueryCli
   , broadcastUI, broadcastPosUI, funBroadcastUI
   , broadcastCli, broadcastPosCli, funBroadcastCli
-  , withAI, rndToAction
+    -- * Assorted primitives
+  , saveGameSer, saveGameBkp, dumpCfg, mkConfigRules, handleScores
+  , switchGlobalSelectedSide
+  , withAI, rndToAction, resetFidPerception, getPerFid
   ) where
 
 import Control.Concurrent
@@ -54,11 +53,11 @@ import Game.LambdaHack.Utils.Assert
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Random
 
--- | Update the cached perception for the selected level, for all factions,
--- for the given computation. The assumption is the level, and only the level,
--- has changed since the previous perception calculation.
-withPerception :: MonadServer m => m a -> m a
-withPerception m = do
+-- | Update the cached perception for the selected level, for a faction.
+-- The assumption is the level, and only the level, has changed since
+-- the previous perception calculation.
+resetFidPerception :: MonadServer m => FactionId -> m ()
+resetFidPerception fid = do
   cops <- getsState scops
   configFovMode <- getsServer (configFovMode . sconfig)
   sdebugSer <- getsServer sdebugSer
@@ -66,10 +65,9 @@ withPerception m = do
   arena <- getsState sarena
   let tryFov = stryFov sdebugSer
       fovMode = fromMaybe configFovMode tryFov
-      per side = levelPerception cops fovMode side lvl
-      mapPer = EM.mapWithKey (\side lp -> EM.insert arena (per side) lp)
-  modifyServer $ \ser -> ser {sper = mapPer (sper ser)}
-  m
+      per = levelPerception cops fovMode fid lvl
+      upd = EM.adjust (EM.adjust (const per) arena) fid
+  modifyServer $ \ser -> ser {sper = upd (sper ser)}
 
 getPerFid :: MonadServer m => FactionId -> m Perception
 getPerFid fid = do
@@ -78,28 +76,6 @@ getPerFid fid = do
   let fper = fromMaybe (assert `failure` (arena, fid)) $ EM.lookup fid pers
       per = fromMaybe (assert `failure` (arena, fid)) $ EM.lookup arena fper
   return $! per
-
--- | Update all factions' memory of the current level.
---
--- This has to be strict wrt map operations or we leak one perception
--- per turn. This has to lazy wrt the perception sets or we compute them
--- for factions that do not move, perceive or not even reside on the level.
--- When clients and server communicate via network the communication
--- has to be explicitely lazy and multiple updates have to be collapsed
--- when sending is forced by the server asking a client to perceive
--- something or to act.
-remember :: MonadServerChan m => m ()
-remember = do
-  arena <- getsState sarena
-  lvl <- getsState getArena
-  faction <- getsState sfaction
-  itemD <- getsState sitem
-  pers <- getsServer sper
-  -- TODO: leaky! secret lvl sent
-  let broadcast = funBroadcastCli (\fid ->
-        RememberPerCli arena (pers EM.! fid EM.! arena) lvl itemD faction)
-  broadcast
-  withAI broadcast
 
 saveGameSer :: MonadServer m => m ()
 saveGameSer = do

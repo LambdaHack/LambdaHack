@@ -428,7 +428,7 @@ cfgDumpSer = do
 clearPathSer :: MonadServer m => ActorId -> WriterT [CmdAtomic] m ()
 clearPathSer aid = do
   fromPath <- getsState $ bpath . getActorBody aid
-  tell [AlterPath aid fromPath Nothing]
+  tell [AlterPathAtomic aid fromPath Nothing]
 
 -- * SetPathSer
 
@@ -436,12 +436,12 @@ setPathSer :: MonadServerChan m
            => ActorId -> Vector -> [Vector] -> WriterT [CmdAtomic] m ()
 setPathSer aid dir path = do
   fromPath <- getsState $ bpath . getActorBody aid
-  tell [AlterPath aid fromPath (Just path)]
+  tell [AlterPathAtomic aid fromPath (Just path)]
   when (length path < 3) $ do
     fromColor <- getsState $ bcolor . getActorBody aid
     let toColor = Just Color.BrBlack
     when (fromColor /= toColor) $
-      tell [ColorActor aid fromColor toColor]
+      tell [ColorActorAtomic aid fromColor toColor]
   moveSer aid dir
 
 -- * DieSer

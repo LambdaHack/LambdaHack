@@ -42,8 +42,9 @@ data CmdAtomic =
   | AlterSecretAtomic (DiffEM Point Time)
   | AlterSmellAtomic (DiffEM Point Time)
   | SetSmellAtomic SmellMap SmellMap
-  | AlterPath ActorId (Maybe [Vector]) (Maybe [Vector])
-  | ColorActor ActorId (Maybe Color.Color) (Maybe Color.Color)
+  | AlterPathAtomic ActorId (Maybe [Vector]) (Maybe [Vector])
+  | ColorActorAtomic ActorId (Maybe Color.Color) (Maybe Color.Color)
+  | SyncAtomic
   deriving Show
 
 undoCmdAtomic :: CmdAtomic -> CmdAtomic
@@ -66,5 +67,7 @@ undoCmdAtomic cmd = case cmd of
   AlterSecretAtomic diffL -> AlterSecretAtomic $ map (second swap) diffL
   AlterSmellAtomic diffL -> AlterSmellAtomic $ map (second swap) diffL
   SetSmellAtomic fromSmell toSmell -> SetSmellAtomic toSmell fromSmell
-  AlterPath aid fromPath toPath -> AlterPath aid toPath fromPath
-  ColorActor aid fromColor toColor -> ColorActor aid toColor fromColor
+  AlterPathAtomic aid fromPath toPath -> AlterPathAtomic aid toPath fromPath
+  ColorActorAtomic aid fromColor toColor ->
+    ColorActorAtomic aid toColor fromColor
+  SyncAtomic -> SyncAtomic
