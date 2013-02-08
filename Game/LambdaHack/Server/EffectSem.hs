@@ -357,7 +357,8 @@ effectApplyPerfume source target =
   then return (True, "Tastes like water, but with a strong rose scent.")
   else do
     oldSmell <- getsState $ lsmell . getArena
-    tell [SetSmellAtomic oldSmell EM.empty]
+    let diffL = map (\(p, sm) -> (p, (Just sm, Nothing))) $ EM.assocs oldSmell
+    tell [AlterSmellAtomic diffL]
     return (True, "The fragrance quells all scents in the vicinity.")
 
 -- ** Regeneration

@@ -296,7 +296,7 @@ displayPush = do
   srunning <- getsClient srunning
   displayFrame (isJust srunning) $ Just frame
 
--- | Update faction memory at the given set of positions.
+-- | Update faction memory at the given set of positions, given new visibility.
 rememberLevel :: Kind.COps -> ES.EnumSet Point -> Level -> Level -> Level
 rememberLevel Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} visible nlvl olvl =
   -- TODO: handle invisible actors, but then change also broadcastPosCli, etc.
@@ -313,15 +313,12 @@ rememberLevel Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} visible nlvl olvl =
   in olvl { lactor = nactor
           , lfloor = nfloor
           , ltile = ltile olvl Kind.// rememberTile
-  -- TODO: update enemy smell probably only around a sniffing party member
-          , lsmell = lsmell nlvl
           , lseen = lseen olvl + extraSeen
-          , ltime = ltime nlvl
   -- TODO: let factions that spawn see hidden features and open all hidden
   -- doors (they built and hid them). Hide the Hidden feature in ltile.
   -- Wait with all that until the semantics of (repeated) searching
   -- is changed.
-          , lsecret = EM.empty
+  --        , lsecret = ...
           }
 
 saveName :: FactionId -> Bool -> String

@@ -43,7 +43,6 @@ data CmdAtomic =
   | DisplaceActorAtomic ActorId ActorId
   | AlterSecretAtomic (DiffEM Point Time)
   | AlterSmellAtomic (DiffEM Point Time)
-  | SetSmellAtomic SmellMap SmellMap
   | AlterPathAtomic ActorId (Maybe [Vector]) (Maybe [Vector])
   | ColorActorAtomic ActorId (Maybe Color.Color) (Maybe Color.Color)
   | SyncAtomic
@@ -53,14 +52,11 @@ undoCmdAtomic :: CmdAtomic -> CmdAtomic
 undoCmdAtomic cmd = case cmd of
   HealAtomic n aid -> HealAtomic (-n) aid
   HasteAtomic aid delta -> HasteAtomic aid (speedNegate delta)
-  DominateAtomic fromFaction toFaction target ->
-    DominateAtomic toFaction fromFaction target
+  DominateAtomic fromFid toFid target -> DominateAtomic toFid fromFid target
   SpawnAtomic aid body -> KillAtomic aid body
   KillAtomic aid body -> SpawnAtomic aid body
-  CreateItemAtomic iid item k container ->
-    DestroyItemAtomic iid item k container
-  DestroyItemAtomic iid item k container ->
-    CreateItemAtomic iid item k container
+  CreateItemAtomic iid item k c -> DestroyItemAtomic iid item k c
+  DestroyItemAtomic iid item k c -> CreateItemAtomic iid item k c
   MoveItemAtomic iid k c1 c2 -> MoveItemAtomic iid k c2 c1
   WaitAtomic actor fromWait toWait -> WaitAtomic actor toWait fromWait
   ChangeTileAtomic p fromTile toTile -> ChangeTileAtomic p toTile fromTile
@@ -68,8 +64,6 @@ undoCmdAtomic cmd = case cmd of
   DisplaceActorAtomic source target -> DisplaceActorAtomic target source
   AlterSecretAtomic diffL -> AlterSecretAtomic $ map (second swap) diffL
   AlterSmellAtomic diffL -> AlterSmellAtomic $ map (second swap) diffL
-  SetSmellAtomic fromSmell toSmell -> SetSmellAtomic toSmell fromSmell
   AlterPathAtomic aid fromPath toPath -> AlterPathAtomic aid toPath fromPath
-  ColorActorAtomic aid fromColor toColor ->
-    ColorActorAtomic aid toColor fromColor
+  ColorActorAtomic aid fromCol toCol -> ColorActorAtomic aid toCol fromCol
   SyncAtomic -> SyncAtomic

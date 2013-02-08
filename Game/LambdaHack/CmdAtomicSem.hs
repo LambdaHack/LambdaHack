@@ -1,5 +1,4 @@
 -- | Semantics of atomic commands shared by client and server.
--- TODO: document
 module Game.LambdaHack.CmdAtomicSem
   ( cmdAtomicSem, resetsFovAtomic, cmdPosAtomic
   ) where
@@ -29,14 +28,11 @@ cmdAtomicSem :: MonadAction m => CmdAtomic -> m ()
 cmdAtomicSem cmd = case cmd of
   HealAtomic n aid -> healAtomic n aid
   HasteAtomic aid delta -> hasteAtomic aid delta
-  DominateAtomic fromFaction toFaction target ->
-    dominateAtomic fromFaction toFaction target
+  DominateAtomic fromFid toFid target -> dominateAtomic fromFid toFid target
   SpawnAtomic aid body -> spawnAtomic aid body
   KillAtomic aid body -> killAtomic aid body
-  CreateItemAtomic iid item k container ->
-    createItemAtomic iid item k container
-  DestroyItemAtomic iid item k container ->
-    destroyItemAtomic iid item k container
+  CreateItemAtomic iid item k c -> createItemAtomic iid item k c
+  DestroyItemAtomic iid item k c -> destroyItemAtomic iid item k c
   MoveItemAtomic iid k c1 c2 -> moveItemAtomic iid k c1 c2
   WaitAtomic aid fromWait toWait -> waitAtomic aid fromWait toWait
   ChangeTileAtomic p fromTile toTile -> changeTileAtomic p fromTile toTile
@@ -44,10 +40,8 @@ cmdAtomicSem cmd = case cmd of
   DisplaceActorAtomic source target -> displaceActorAtomic source target
   AlterSecretAtomic diffL -> alterSecretAtomic diffL
   AlterSmellAtomic diffL -> alterSmellAtomic diffL
-  SetSmellAtomic fromSmell toSmell -> setSmellAtomic fromSmell toSmell
   AlterPathAtomic aid fromPath toPath -> alterPathAtomic aid fromPath toPath
-  ColorActorAtomic aid fromColor toColor ->
-    colorActorAtomic aid fromColor toColor
+  ColorActorAtomic aid fromCol toCol -> colorActorAtomic aid fromCol toCol
   SyncAtomic -> return ()
 
 resetsFovAtomic :: MonadActionRO m => FactionId -> CmdAtomic -> m Bool
@@ -65,7 +59,7 @@ resetsFovAtomic fid cmd = case cmd of
     bs <- fidEquals fid source
     bt <- fidEquals fid target
     return $ source /= target && (bs || bt)
-  SyncAtomic -> return True
+  SyncAtomic -> return True  -- that's the only meaning of this command
   _ -> return False
 
 fidEquals :: MonadActionRO m => FactionId -> ActorId -> m Bool
@@ -80,16 +74,15 @@ cmdPosAtomic cmd = case cmd of
   DominateAtomic _ _ target -> singlePos $ posOfAid target
   SpawnAtomic _ body -> return $ [bpos body]
   KillAtomic _ body -> return $ [bpos body]
-  CreateItemAtomic _ _ _ container -> singlePos $ posOfContainer container
-  DestroyItemAtomic _ _ _ container -> singlePos $ posOfContainer container
+  CreateItemAtomic _ _ _ c -> singlePos $ posOfContainer c
+  DestroyItemAtomic _ _ _ c -> singlePos $ posOfContainer c
   MoveItemAtomic _ _ c1 c2 -> mapM posOfContainer [c1, c2]
   WaitAtomic aid _ _ -> singlePos $ posOfAid aid
   ChangeTileAtomic p _ _ -> return [p]
   MoveActorAtomic _ fromP toP -> return [fromP, toP]
   DisplaceActorAtomic source target -> mapM posOfAid [source, target]
-  AlterSecretAtomic diffL -> return []  -- TODO
-  AlterSmellAtomic diffL -> return []  -- TODO
-  SetSmellAtomic fromSmell toSmell -> return []  -- TODO
+  AlterSecretAtomic _ -> return []  -- none of clients' business
+  AlterSmellAtomic diffL -> return $ map fst diffL
   AlterPathAtomic aid _ _ -> singlePos $ posOfAid aid
   ColorActorAtomic aid _ _ -> singlePos $ posOfAid aid
   SyncAtomic -> return []
@@ -121,10 +114,10 @@ hasteAtomic aid delta = assert (delta /= speedZero) $ do
        else b {bspeed = Just newSpeed}
 
 dominateAtomic :: MonadAction m => FactionId -> FactionId -> ActorId -> m ()
-dominateAtomic fromFaction toFaction target = do
+dominateAtomic fromFid toFid target = do
   tm <- getsState (getActorBody target)
-  assert (fromFaction == bfaction tm `blame` (fromFaction, tm, toFaction)) $
-    modifyState $ updateActorBody target $ \b -> b {bfaction = toFaction}
+  assert (fromFid == bfaction tm `blame` (fromFid, tm, toFid)) $
+    modifyState $ updateActorBody target $ \b -> b {bfaction = toFid}
 
 -- TODO: perhaps assert that the inventory of the actor is empty
 -- or at least that the items belong to litem.
@@ -139,11 +132,11 @@ killAtomic aid _body = modifyState $ deleteActor aid
 -- (in @sitemRev@ field of @StateServer@).
 createItemAtomic :: MonadAction m
                  => ItemId -> Item -> Int -> Container -> m ()
-createItemAtomic iid item k container = assert (k > 0) $ do
+createItemAtomic iid item k c = assert (k > 0) $ do
   -- The item may or may not be already present in the dungeon.
   let f item1 item2 = assert (item1 == item2) item1
   modifyState $ updateItem $ EM.insertWith f iid item
-  case container of
+  case c of
     CFloor pos -> insertItemFloor iid k pos
     CActor aid -> insertItemActor iid k aid
 
@@ -175,10 +168,10 @@ insertItemActor iid k aid = do
 -- | Destroy some copies (possibly not all) of an item.
 destroyItemAtomic :: MonadAction m
                   => ItemId -> Item -> Int -> Container -> m ()
-destroyItemAtomic iid _item k container = assert (k > 0) $ do
+destroyItemAtomic iid _item k c = assert (k > 0) $ do
   -- Do not remove the item from @sitem@ nor from @sitemRev@,
   -- This is behaviourally equivalent.
-  case container of
+  case c of
     CFloor pos -> deleteItemFloor iid k pos
     CActor aid -> deleteItemActor iid k aid
                   -- Actor's @bletter@ for UI not reset.
@@ -238,11 +231,6 @@ alterSmellAtomic :: MonadAction m => DiffEM Point Time -> m ()
 alterSmellAtomic diffL =
   modifyState $ updateArena $ updateSmell $ applyDiffEM diffL
 
--- TODO: only wipe out smell within radius 10; use DiffEM
-setSmellAtomic :: MonadAction m => SmellMap -> SmellMap -> m ()
-setSmellAtomic _fromSmell toSmell = do
-  modifyState $ updateArena $ updateSmell $ const toSmell
-
 alterPathAtomic :: MonadAction m
                 => ActorId -> Maybe [Vector] -> Maybe [Vector] -> m ()
 alterPathAtomic aid _fromPath toPath =
@@ -250,5 +238,5 @@ alterPathAtomic aid _fromPath toPath =
 
 colorActorAtomic :: MonadAction m
                  => ActorId -> Maybe Color.Color -> Maybe Color.Color -> m ()
-colorActorAtomic aid _fromColor toColor =
-  modifyState $ updateActorBody aid $ \b -> b {bcolor = toColor}
+colorActorAtomic aid _fromCol toCol =
+  modifyState $ updateActorBody aid $ \b -> b {bcolor = toCol}

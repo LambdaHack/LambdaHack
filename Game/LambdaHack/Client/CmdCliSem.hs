@@ -119,8 +119,12 @@ rememberPerCli arena per lvl itemD faction = do
     modifyState $ updateSelectedArena arena
   rememberCli arena (totalVisible per) lvl
   modifyClient $ \cli -> cli {sper = EM.insert arena per (sper cli)}
+  -- TODO: instead gather info about factions when first encountered
+  -- and update when they are killed
   modifyState $ updateFaction (const faction)
+  -- TODO: only add new visible items
   modifyState $ updateItem (const itemD)
+
 
 -- switchLevelCli :: MonadClient m
 --                => ActorId -> LevelId -> Actor -> ItemBag

@@ -70,7 +70,8 @@ type FloorMap = EM.EnumMap Point ItemBag
 -- | Tile kinds on the map.
 type TileMap = Kind.Array Point TileKind
 
--- | A view on single, inhabited dungeon level.
+-- | A view on single, inhabited dungeon level. "Remembered" fields
+-- carry a subset of the info in the client copies of levels.
 data Level = Level
   { ldepth  :: !Int             -- ^ depth of the level
   , lactor  :: !ActorDict       -- ^ remembered actors on the level
@@ -81,10 +82,10 @@ data Level = Level
   , lsmell  :: !SmellMap        -- ^ remembered smells on the level
   , ldesc   :: !Text            -- ^ level description
   , lstair  :: !(Point, Point)  -- ^ destination of (up, down) stairs
-  , lseen   :: !Int             -- ^ number of clear tiles already seen
+  , lseen   :: !Int             -- ^ remembered number of tiles already seen
   , lclear  :: !Int             -- ^ total number of clear tiles
   , ltime   :: !Time            -- ^ date of the last activity on the level
-  , lsecret :: !SecretMap       -- ^ remembered secrecy values
+  , lsecret :: !SecretMap       -- ^ secrecy values; empty for clients
   }
   deriving Show
 

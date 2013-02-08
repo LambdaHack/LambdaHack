@@ -33,13 +33,14 @@ import Game.LambdaHack.Point
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Time
 
--- | View on game state. Clients never update @sdungeon@ and @sfaction@,
--- but the server updates it for them depending on client exploration.
+-- | View on game state. "Remembered" fields carry a subset of the info
+-- in the client copies of the state.
+--
 -- Data invariant: no actor belongs to more than one @sdungeon@ level.
 -- Each @sleader@ actor from any of the client states is on the @sarena@
 -- level and belongs to @sside@ faction of the client's local state.
--- Note: we use _sdepth instead of computing maximal depth whenever needed,
--- to keep dungeon (which can be huge) lazy.
+-- Note: we use @_sdepth@ instead of computing maximal depth whenever needed,
+-- to keep the dungeon (which can be huge) lazy.
 data State = State
   { _sdungeon :: !Dungeon      -- ^ remembered dungeon
   , _sdepth   :: !Int          -- ^ remembered dungeon depth
@@ -47,7 +48,7 @@ data State = State
   , _sdisco   :: !Discoveries  -- ^ remembered item discoveries
   , _sfaction :: !FactionDict  -- ^ remembered sides still in game
   , _scops    :: Kind.COps     -- ^ remembered content
-  , _squit    :: !(Maybe Bool)  -- ^ just going to save the game
+  , _squit    :: !(Maybe Bool)  -- ^ just about to save the game
   , _sside    :: !FactionId    -- ^ faction of the selected actor
   , _sarena   :: !LevelId      -- ^ level of the selected actor
   }
