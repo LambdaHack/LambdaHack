@@ -7,10 +7,10 @@ module Game.LambdaHack.Server
 import Control.Monad.Writer.Strict (WriterT, execWriterT)
 
 import Game.LambdaHack.Action
+import Game.LambdaHack.CmdAtomic
+import Game.LambdaHack.CmdAtomicSem
 import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Server.Action
-import Game.LambdaHack.Server.CmdAtomic
-import Game.LambdaHack.Server.CmdAtomicSem
 import Game.LambdaHack.Server.CmdSerSem
 import Game.LambdaHack.Server.LoopAction
 

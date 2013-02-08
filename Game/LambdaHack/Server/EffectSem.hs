@@ -19,6 +19,7 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
+import Game.LambdaHack.CmdAtomic
 import Game.LambdaHack.CmdCli
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
@@ -32,7 +33,6 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.Point
 import Game.LambdaHack.Random
 import Game.LambdaHack.Server.Action
-import Game.LambdaHack.Server.CmdAtomic
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.State

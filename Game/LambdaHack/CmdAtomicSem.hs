@@ -1,6 +1,6 @@
--- | Semantics of 'CmdAction' server commands.
+-- | Semantics of atomic commands shared by client and server.
 -- TODO: document
-module Game.LambdaHack.Server.CmdAtomicSem
+module Game.LambdaHack.CmdAtomicSem
   ( cmdAtomicSem, resetsFovAtomic, cmdPosAtomic
   ) where
 
@@ -10,6 +10,7 @@ import Data.Maybe
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
+import Game.LambdaHack.CmdAtomic
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind as TileKind
@@ -19,7 +20,6 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Misc
 import Game.LambdaHack.Point
-import Game.LambdaHack.Server.CmdAtomic
 import Game.LambdaHack.State
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert

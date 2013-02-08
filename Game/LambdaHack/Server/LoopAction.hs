@@ -19,6 +19,8 @@ import qualified Data.Text as T
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
+import Game.LambdaHack.CmdAtomic
+import Game.LambdaHack.CmdAtomicSem
 import Game.LambdaHack.CmdCli
 import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Content.FactionKind
@@ -32,8 +34,6 @@ import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import Game.LambdaHack.Random
 import Game.LambdaHack.Server.Action
-import Game.LambdaHack.Server.CmdAtomic
-import Game.LambdaHack.Server.CmdAtomicSem
 import Game.LambdaHack.Server.CmdSerSem
 import Game.LambdaHack.Server.Config
 import qualified Game.LambdaHack.Server.DungeonGen as DungeonGen

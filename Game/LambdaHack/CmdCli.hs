@@ -11,6 +11,7 @@ import Data.Typeable
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Actor
+import Game.LambdaHack.CmdAtomic
 import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Faction
@@ -20,7 +21,6 @@ import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
-import Game.LambdaHack.Server.CmdAtomic
 import Game.LambdaHack.State
 
 -- | Abstract syntax of client commands that don't use the UI.

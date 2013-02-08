@@ -19,6 +19,8 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
+import Game.LambdaHack.CmdAtomic
+import Game.LambdaHack.CmdAtomicSem
 import Game.LambdaHack.CmdCli
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Content.ActorKind
@@ -35,8 +37,6 @@ import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import Game.LambdaHack.Random
 import Game.LambdaHack.Server.Action
-import Game.LambdaHack.Server.CmdAtomic
-import Game.LambdaHack.Server.CmdAtomicSem
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.State
