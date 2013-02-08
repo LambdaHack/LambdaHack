@@ -6,7 +6,6 @@ module Game.LambdaHack.Server.LoopAction (loopSer) where
 import Control.Arrow ((&&&))
 import Control.Arrow (second)
 import Control.Monad
-import Control.Monad.Reader.Class
 import qualified Control.Monad.State as St
 import Control.Monad.Writer.Strict (execWriterT)
 import qualified Data.EnumMap.Strict as EM
@@ -55,27 +54,27 @@ loopSer :: (MonadAction m, MonadServerChan m)
         -> Kind.COps
         -> m ()
 loopSer cmdSer executorC cops = do
- -- Recover states.
- restored <- tryRestore cops
- -- TODO: use the _msg somehow
- case restored of
-   Right _msg ->  -- Starting a new game.
-     gameReset cops
-   Left (gloRaw, ser, _msg) -> do  -- Running a restored game.
-     putState $ updateCOps (const cops) gloRaw
-     putServer ser
- -- Set up connections
- connServer
- -- Launch clients.
- launchClients executorC
- -- Compute perception.
- glo <- getState
- ser <- getServer
- config <- getsServer sconfig
- let tryFov = stryFov $ sdebugSer ser
-     fovMode = fromMaybe (configFovMode config) tryFov
-     pers = dungeonPerception cops fovMode glo
- local (const pers) $ do
+  -- Recover states.
+  restored <- tryRestore cops
+  -- TODO: use the _msg somehow
+  case restored of
+    Right _msg ->  -- Starting a new game.
+      gameReset cops
+    Left (gloRaw, ser, _msg) -> do  -- Running a restored game.
+      putState $ updateCOps (const cops) gloRaw
+      putServer ser
+  -- Set up connections
+  connServer
+  -- Launch clients.
+  launchClients executorC
+  -- Compute perception.
+  glo <- getState
+  ser <- getServer
+  config <- getsServer sconfig
+  let tryFov = stryFov $ sdebugSer ser
+      fovMode = fromMaybe (configFovMode config) tryFov
+      pers = dungeonPerception cops fovMode glo
+  modifyServer $ \ser1 -> ser1 {sper = dungeonPerception cops fovMode glo}
   -- Send init messages.
   quit <- getsState squit
   defLoc <- getsState localFromGlobal
@@ -326,7 +325,7 @@ restartGame :: (MonadAction m, MonadServerChan m) => m () -> m ()
 restartGame loopServer = do
   cops <- getsState scops
   gameReset cops
-  pers <- ask
+  pers <- getsServer sper
   -- This state is quite small, fit for transmition to the client.
   -- The biggest part is content, which really needs to be updated
   -- at this point to keep clients in sync with server improvements.

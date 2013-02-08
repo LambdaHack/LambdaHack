@@ -5,15 +5,13 @@
 -- and 'TypeAction'.
 module Game.LambdaHack.Server.Action.ActionClass where
 
-import Control.Monad.Reader.Class
 import Control.Monad.Writer.Strict (WriterT, lift)
 import Data.Monoid
 
 import Game.LambdaHack.Action
-import Game.LambdaHack.Perception
 import Game.LambdaHack.Server.State
 
-class (MonadReader Pers m, MonadActionRO m) => MonadServer m where
+class MonadActionRO m => MonadServer m where
   getServer    :: m StateServer
   getsServer   :: (StateServer -> a) -> m a
   modifyServer :: (StateServer -> StateServer) -> m ()

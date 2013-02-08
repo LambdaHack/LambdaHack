@@ -9,8 +9,6 @@ module Game.LambdaHack.Server.Action
   , MonadServerChan
   , executorSer, tryRestore, connServer, launchClients
   , waitForChildren, speedupCOps
-    -- * Accessor to the Perception Reader
-  , askPerceptionSer
     -- * Turn init operations
   , withPerception, remember
     -- * Assorted primitives
@@ -25,7 +23,6 @@ module Game.LambdaHack.Server.Action
 
 import Control.Concurrent
 import Control.Monad
-import Control.Monad.Reader.Class
 import Data.Dynamic
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
@@ -70,21 +67,17 @@ withPerception m = do
   let tryFov = stryFov sdebugSer
       fovMode = fromMaybe configFovMode tryFov
       per side = levelPerception cops fovMode side lvl
-  local (EM.mapWithKey (\side lp -> EM.insert arena (per side) lp)) m
+      mapPer = EM.mapWithKey (\side lp -> EM.insert arena (per side) lp)
+  modifyServer $ \ser -> ser {sper = mapPer (sper ser)}
+  m
 
 getPerFid :: MonadServer m => FactionId -> m Perception
 getPerFid fid = do
   arena <- getsState sarena
-  pers <- ask
+  pers <- getsServer sper
   let fper = fromMaybe (assert `failure` (arena, fid)) $ EM.lookup fid pers
       per = fromMaybe (assert `failure` (arena, fid)) $ EM.lookup arena fper
   return $! per
-
--- | Get the current perception of the server.
-askPerceptionSer :: MonadServer m => m Perception
-askPerceptionSer = do
-  side <- getsState sside
-  getPerFid side
 
 -- | Update all factions' memory of the current level.
 --
@@ -101,7 +94,7 @@ remember = do
   lvl <- getsState getArena
   faction <- getsState sfaction
   itemD <- getsState sitem
-  pers <- ask
+  pers <- getsServer sper
   -- TODO: leaky! secret lvl sent
   let broadcast = funBroadcastCli (\fid ->
         RememberPerCli arena (pers EM.! fid EM.! arena) lvl itemD faction)

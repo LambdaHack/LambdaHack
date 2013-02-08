@@ -6,12 +6,14 @@ module Game.LambdaHack.Server.State
   ) where
 
 import Data.Binary
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.HashMap.Strict as HM
 import Data.Typeable
 import qualified System.Random as R
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Item
+import Game.LambdaHack.Perception
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.Fov
 
@@ -22,6 +24,7 @@ data StateServer = StateServer
   , sflavour  :: !FlavourMap    -- ^ association of flavour to items
   , sacounter :: !ActorId       -- ^ stores next actor index
   , sicounter :: !ItemId        -- ^ stores next item index
+  , sper      :: !Pers          -- ^ perception of all factions
   , srandom   :: !R.StdGen      -- ^ current random generator
   , sconfig   :: !Config        -- ^ this game's config (including initial RNG)
   , sdebugSer :: !DebugModeSer  -- ^ debugging mode
@@ -39,6 +42,7 @@ defStateServer sdiscoRev sflavour srandom sconfig =
     { sitemRev = HM.empty
     , sacounter = toEnum 0
     , sicounter = toEnum 0
+    , sper      = EM.empty
     , sdebugSer = defDebugModeSer
     , ..
     }
@@ -73,5 +77,6 @@ instance Binary StateServer where
     g <- get
     sconfig <- get
     let srandom = read g
+        sper = EM.empty
         sdebugSer = defDebugModeSer
     return StateServer{..}

@@ -6,7 +6,6 @@
 module Game.LambdaHack.Server.CmdSerSem where
 
 import Control.Monad
-import Control.Monad.Reader.Class
 import Control.Monad.Writer.Strict (WriterT, runWriterT, tell)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
@@ -477,7 +476,7 @@ rollSpawnPos Kind.COps{cotile} visible lvl@Level{lactor} = do
 generateMonster :: (MonadAction m, MonadServer m) => m (Maybe FactionId)
 generateMonster = do
   cops@Kind.COps{cofact=Kind.Ops{okind}} <- getsState scops
-  pers <- ask
+  pers <- getsServer sper
   arena <- getsState sarena
   lvl@Level{ldepth} <- getsState getArena
   faction <- getsState sfaction

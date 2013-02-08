@@ -15,10 +15,9 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 
--- TODO: check if we can move factionPerception from state to Reader
 -- | The type of the function inside any client action.
 type FunActionCli a =
-   SessionUI                            -- ^ client UI setup data
+   SessionUI                          -- ^ client UI setup data
    -> ConnCli                         -- ^ this client connection information
    -> (State -> StateClient -> a -> IO ())
                                       -- ^ continuation
