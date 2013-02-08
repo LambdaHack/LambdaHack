@@ -27,9 +27,8 @@ data CmdSer =
   | GameRestartSer
   | GameSaveSer
   | CfgDumpSer
-  | DirToAction ActorId Bool Vector
-  | ClearPath ActorId
-  | FollowPath ActorId Vector [Vector] Bool
+  | ClearPathSer ActorId
+  | SetPathSer ActorId Vector [Vector]
   | DieSer ActorId
   deriving (Show, Typeable)
 
@@ -39,4 +38,7 @@ timedCmdSer cmd = case cmd of
   GameRestartSer -> False
   GameSaveSer -> False
   CfgDumpSer -> False
+  ClearPathSer{} -> False
+  SetPathSer{} -> False
+  DieSer{} -> False
   _ -> True

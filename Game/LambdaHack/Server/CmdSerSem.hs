@@ -21,6 +21,7 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.CmdCli
+import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
@@ -141,7 +142,6 @@ addProjectile iid loc bfaction path btime = do
         , bcolor  = Nothing
         , bspeed  = Just speed
         , bhp     = 0
-        , bdirAI  = Nothing
         , bpath   = Just dirPath
         , bpos    = loc
         , bbag    = EM.empty
@@ -423,6 +423,35 @@ cfgDumpSer = do
   -- Wait with confirmation until saved; tell where the file is.
   -- TODO: show abort message to the current client, not all clients
   abortWith msg
+
+-- * ClearPathSer aid -> do
+
+clearPathSer :: MonadServer m => ActorId -> WriterT [CmdAtomic] m ()
+clearPathSer aid = do
+  fromPath <- getsState $ bpath . getActorBody aid
+  tell [AlterPath aid fromPath Nothing]
+
+-- * SetPathSer
+
+setPathSer :: MonadServerChan m
+           => ActorId -> Vector -> [Vector] -> WriterT [CmdAtomic] m ()
+setPathSer aid dir path = do
+  fromPath <- getsState $ bpath . getActorBody aid
+  tell [AlterPath aid fromPath (Just path)]
+  when (length path < 3) $ do
+    fromColor <- getsState $ bcolor . getActorBody aid
+    let toColor = Just Color.BrBlack
+    when (fromColor /= toColor) $
+      tell [ColorActor aid fromColor toColor]
+  moveSer aid dir
+
+-- * DieSer
+
+dieSer :: MonadServer m => ActorId -> WriterT [CmdAtomic] m ()
+dieSer aid = do  -- TODO: explode if a projectile holdding a potion
+  dropAllItems aid
+  body <- getsState $ getActorBody aid
+  tell [KillAtomic aid body]
 
 -- * Assorted helper functions
 

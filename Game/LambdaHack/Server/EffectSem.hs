@@ -522,7 +522,6 @@ fleeDungeon = do
     return ()
 --    modifyState $ updateSide upd2
 
-
 -- | Drop all actor's items.
 dropAllItems :: MonadActionRO m => ActorId -> WriterT [CmdAtomic] m ()
 dropAllItems aid = do

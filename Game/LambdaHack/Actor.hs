@@ -51,9 +51,6 @@ instance Binary ActorId where
   put (ActorId n) = put n
   get = fmap ActorId get
 
--- TODO: use target (in ClientState) instead of bdirAI to determine goal,
--- even for silly monsters just introduce more randomness,
--- but try to attain the goal. Then remove bdirAI.
 -- | Actor properties that are changing throughout the game.
 -- If they are dublets of properties from @ActorKind@,
 -- they are usually modified temporarily, but tend to return
@@ -65,7 +62,6 @@ data Actor = Actor
   , bcolor   :: !(Maybe Color.Color)    -- ^ individual map color
   , bspeed   :: !(Maybe Speed)          -- ^ individual speed
   , bhp      :: !Int                    -- ^ current hit points
-  , bdirAI   :: !(Maybe (Vector, Int))  -- ^ direction and distance of running
   , bpath    :: !(Maybe [Vector])       -- ^ path the actor is forced to travel
   , bpos     :: !Point                  -- ^ current position
   , bbag     :: !ItemBag                -- ^ items carried
@@ -102,7 +98,6 @@ actorTemplate bkind bsymbol bname bhp bpos btime bfaction bproj =
   let bcolor  = Nothing
       bspeed  = Nothing
       bpath   = Nothing
-      bdirAI  = Nothing
       bbag    = EM.empty
       binv    = EM.empty
       bletter = InvChar 'a'
@@ -235,7 +230,6 @@ instance Binary Actor where
     put bcolor
     put bspeed
     put bhp
-    put bdirAI
     put bpath
     put bpos
     put bbag
@@ -252,7 +246,6 @@ instance Binary Actor where
     bcolor  <- get
     bspeed  <- get
     bhp     <- get
-    bdirAI  <- get
     bpath   <- get
     bpos    <- get
     bbag <- get

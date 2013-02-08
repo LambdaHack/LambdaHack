@@ -178,13 +178,11 @@ track cops actor glo =
   lvl = getArena glo
   Actor{ bpos, bpath, bhp } = getActorBody actor glo
   dieOrReset | bhp <= 0  = returN "die" $ DieSer actor
-             | otherwise = returN "reset TPath" $ ClearPath actor
+             | otherwise = returN "clear TPath" $ ClearPathSer actor
   strat = case bpath of
     Just [] -> dieOrReset
     Just (d : _) | not $ accessible cops lvl bpos (shift bpos d) -> dieOrReset
-    -- TODO: perhaps colour differently the whole second turn of movement?
-    Just [d] -> returN "last TPath" $ FollowPath actor d [] True
-    Just (d : lv) -> returN "follow TPath" $ FollowPath actor d lv False
+    Just (d : lv) -> returN "ser TPath" $ SetPathSer actor d lv
     Nothing -> reject
 
 pickup :: ActorId -> State -> Strategy CmdSer
@@ -217,7 +215,7 @@ rangedFreq cops actor glo fpos =
   toFreq "throwFreq" $
     if not foesAdj
        && asight mk
-       && accessible cops lvl bpos pos1      -- first accessible
+       && accessible cops lvl bpos pos1    -- first accessible
        && isNothing (posToActor pos1 glo)  -- no friends on first
     then throwFreq bitems 3 (CActor actor) ++ throwFreq tis 6 (CFloor bpos)
     else []
@@ -324,7 +322,7 @@ moveStrategy cops actor glo mFoe =
            , coactor=Kind.Ops{okind}
            } = cops
   lvl@Level{lsmell, lxsize, lysize, ltime} = getArena glo
-  Actor{ bkind, bpos, bdirAI } = getActorBody actor glo
+  Actor{bkind, bpos} = getActorBody actor glo
   mk = okind bkind
   lootHere x = not $ EM.null $ lvl `atI` x
   onlyLoot   = onlyMoves lootHere bpos
@@ -335,9 +333,11 @@ moveStrategy cops actor glo mFoe =
                       || (not (Tile.hasFeature cotile F.Lit t)
                           && L.any (Tile.hasFeature cotile F.Lit) ts)
   onlyInterest   = onlyMoves interestHere bpos
-  onlyKeepsDir k =
-    only (\ x -> maybe True (\ (d, _) -> euclidDistSq lxsize d x <= k) bdirAI)
-  onlyKeepsDir_9 = only (\ x -> maybe True (\ (d, _) -> neg x /= d) bdirAI)
+  onlyKeepsDir k = let _ = k :: Int in id
+    -- only (\ x -> maybe True (\ (d, _) -> euclidDistSq lxsize d x <= k) bdirAI)
+  -- TODO: use old target instead of bdirAI
+  onlyKeepsDir_9 = id
+    -- only (\ x -> maybe True (\ (d, _) -> neg x /= d) bdirAI)
   moveIQ = aiq mk > 15 .=> onlyKeepsDir 0 moveRandomly
         .| aiq mk > 10 .=> onlyKeepsDir 1 moveRandomly
         .| aiq mk > 5  .=> onlyKeepsDir 2 moveRandomly
@@ -374,11 +374,13 @@ chase cops actor glo foe@(_, foeVisible) =
   -- The foe is visible, or we remember his last position.
   let mFoe = Just foe
       fight = not foeVisible  -- don't pick fights if the real foe is close
-  in DirToAction actor fight `liftM` moveStrategy cops actor glo mFoe
+  in if fight
+     then MoveSer actor `liftM` moveStrategy cops actor glo mFoe
+     else RunSer actor `liftM` moveStrategy cops actor glo mFoe
 
 wander :: Kind.COps -> ActorId -> State -> Strategy CmdSer
 wander cops actor glo =
   -- Target set, but we don't chase the foe, e.g., because we are blocked
   -- or we cannot chase at all.
   let mFoe = Nothing
-  in DirToAction actor True `liftM` moveStrategy cops actor glo mFoe
+  in MoveSer actor `liftM` moveStrategy cops actor glo mFoe

@@ -4,14 +4,10 @@ module Game.LambdaHack.Server
   , loopSer, executorSer, waitForChildren, speedupCOps
   ) where
 
-import Control.Monad
-import Control.Monad.Writer.Strict (WriterT, execWriterT, tell)
+import Control.Monad.Writer.Strict (WriterT, execWriterT)
 
 import Game.LambdaHack.Action
-import Game.LambdaHack.Actor
-import Game.LambdaHack.ActorState
 import Game.LambdaHack.CmdSer
-import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Server.Action
 import Game.LambdaHack.Server.CmdAtomic
 import Game.LambdaHack.Server.CmdAtomicSem
@@ -38,25 +34,6 @@ cmdSerWriterT cmd = case cmd of
   GameRestartSer -> undefined -- gameRestartSer
   GameSaveSer -> gameSaveSer
   CfgDumpSer -> cfgDumpSer
-  DirToAction actor allowAttacks dir -> do
--- TODO: move this to ClientState
---    modifyState $ updateActorBody actor $ \ m -> m { bdirAI = Just (dir, 0) }
-    if allowAttacks
-      then moveSer actor dir
-      else runSer actor dir
-  ClearPath aid -> do
-    fromPath <- getsState $ bpath . getActorBody aid
-    tell [AlterPath aid fromPath Nothing]
-  FollowPath aid dir path darken -> do
-    fromPath <- getsState $ bpath . getActorBody aid
-    tell [AlterPath aid fromPath (Just path)]
-    when darken $ do
-      fromColor <- getsState $ bcolor . getActorBody aid
-      tell [ColorActor aid fromColor (Just Color.BrBlack)]
-    moveSer aid dir
-  DieSer aid -> do  -- TODO: explode if a potion
---    bitems <- getsState $ getActorBag actor
---    Actor{bpos} <- getsState (getActorBody actor)
---    modifyState (updateArena (dropItemsAt bitems bpos))
-    body <- getsState $ getActorBody aid
-    tell [KillAtomic aid body]
+  ClearPathSer aid -> clearPathSer aid
+  SetPathSer aid dir path -> setPathSer aid dir path
+  DieSer aid -> dieSer aid
