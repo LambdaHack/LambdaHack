@@ -1,6 +1,8 @@
 -- | Semantics of 'CmdAction' server commands.
 -- TODO: document
-module Game.LambdaHack.Server.CmdAtomicSem (cmdAtomicSem) where
+module Game.LambdaHack.Server.CmdAtomicSem
+  ( cmdAtomicSem, resetsFovAtomic, cmdPosAtomic
+  ) where
 
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
@@ -36,7 +38,7 @@ cmdAtomicSem cmd = case cmd of
   DestroyItemAtomic iid item k container ->
     destroyItemAtomic iid item k container
   MoveItemAtomic iid k c1 c2 -> moveItemAtomic iid k c1 c2
-  WaitAtomic actor fromWait toWait -> waitAtomic actor fromWait toWait
+  WaitAtomic aid fromWait toWait -> waitAtomic aid fromWait toWait
   ChangeTileAtomic p fromTile toTile -> changeTileAtomic p fromTile toTile
   MoveActorAtomic aid fromP toP -> moveActorAtomic aid fromP toP
   DisplaceActorAtomic source target -> displaceActorAtomic source target
@@ -45,6 +47,58 @@ cmdAtomicSem cmd = case cmd of
   SetSmellAtomic fromSmell toSmell -> setSmellAtomic fromSmell toSmell
   AlterPath aid fromPath toPath -> alterPath aid fromPath toPath
   ColorActor aid fromColor toColor -> colorActor aid fromColor toColor
+
+resetsFovAtomic :: MonadAction m => FactionId -> CmdAtomic -> m Bool
+resetsFovAtomic fid cmd = case cmd of
+  DominateAtomic source target _ -> return $ fid `elem` [source, target]
+  SpawnAtomic _ body -> return $ fid == bfaction body
+  KillAtomic _ _ -> return False  -- FOV left for 1 turn to see aftermath
+  CreateItemAtomic _ _ _ _ -> return False  -- unless shines
+  DestroyItemAtomic _ _ _ _ -> return False  -- ditto
+  MoveItemAtomic _ _ _ _ -> return False  -- assumption: stays on the same pos
+  ChangeTileAtomic _ _ _ -> return True  -- even if pos not visible initially
+  MoveActorAtomic aid _ _ -> fidEquals fid aid  -- assumption: carries no light
+-- TODO: MoveActorCarryingLIghtAtomic _ _ _ -> True
+  DisplaceActorAtomic source target -> do
+    bs <- fidEquals fid source
+    bt <- fidEquals fid target
+    return $ source /= target && (bs || bt)
+  _ -> return False
+
+fidEquals :: MonadAction m => FactionId -> ActorId -> m Bool
+fidEquals fid aid = do
+  afid <- getsState $ bfaction . getActorBody aid
+  return $ fid == afid
+
+cmdPosAtomic :: MonadAction m => CmdAtomic -> m [Point]
+cmdPosAtomic cmd = case cmd of
+  HealAtomic _ aid -> singlePos $ posOfAid aid
+  HasteAtomic aid _ -> singlePos $ posOfAid aid
+  DominateAtomic _ _ target -> singlePos $ posOfAid target
+  SpawnAtomic _ body -> return $ [bpos body]
+  KillAtomic _ body -> return $ [bpos body]
+  CreateItemAtomic _ _ _ container -> singlePos $ posOfContainer container
+  DestroyItemAtomic _ _ _ container -> singlePos $ posOfContainer container
+  MoveItemAtomic _ _ c1 c2 -> mapM posOfContainer [c1, c2]
+  WaitAtomic aid _ _ -> singlePos $ posOfAid aid
+  ChangeTileAtomic p _ _ -> return [p]
+  MoveActorAtomic _ fromP toP -> return [fromP, toP]
+  DisplaceActorAtomic source target -> mapM posOfAid [source, target]
+  AlterSecretAtomic diffL -> return []  -- TODO
+  AlterSmellAtomic diffL -> return []  -- TODO
+  SetSmellAtomic fromSmell toSmell -> return []  -- TODO
+  AlterPath aid _ _ -> singlePos $ posOfAid aid
+  ColorActor aid _ _-> singlePos $ posOfAid aid
+
+singlePos :: MonadAction m => m Point -> m [Point]
+singlePos m = fmap return m
+
+posOfAid :: MonadAction m => ActorId -> m Point
+posOfAid aid = getsState $ bpos . getActorBody aid
+
+posOfContainer :: MonadAction m => Container -> m Point
+posOfContainer (CFloor pos) = return pos
+posOfContainer (CActor aid) = posOfAid aid
 
 healAtomic :: MonadAction m => Int -> ActorId -> m ()
 healAtomic n aid = assert (n /= 0) $
