@@ -7,7 +7,7 @@ import Control.Arrow ((&&&))
 import Control.Arrow (second)
 import Control.Monad
 import qualified Control.Monad.State as St
-import Control.Monad.Writer.Strict (execWriterT)
+import Control.Monad.Writer.Strict (WriterT, execWriterT, runWriterT, tell)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.List
@@ -23,6 +23,7 @@ import Game.LambdaHack.CmdAtomic
 import Game.LambdaHack.CmdAtomicSem
 import Game.LambdaHack.CmdCli
 import Game.LambdaHack.CmdSer
+import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Feature as F
@@ -34,7 +35,6 @@ import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import Game.LambdaHack.Random
 import Game.LambdaHack.Server.Action
-import Game.LambdaHack.Server.CmdSerSem
 import Game.LambdaHack.Server.Config
 import qualified Game.LambdaHack.Server.DungeonGen as DungeonGen
 import Game.LambdaHack.Server.EffectSem
@@ -481,3 +481,84 @@ gameReset cops@Kind.COps{coitem, corule, cotile} = do
   mapM_ initialItems itemCounts
   modifyState $ updateSelectedArena entryLevel
   mapM_ initialHeroes $ zip3 needInitialCrew entryPoss heroNames
+
+-- * Assorted helper functions
+
+-- | Generate a monster, possibly.
+generateMonster :: (MonadAction m, MonadServerChan m) => m (Maybe FactionId)
+generateMonster = do
+  cops@Kind.COps{cofact=Kind.Ops{okind}} <- getsState scops
+  pers <- getsServer sper
+  arena <- getsState sarena
+  lvl@Level{ldepth} <- getsState getArena
+  faction <- getsState sfaction
+  let f fid = fspawn (okind (gkind (faction EM.! fid))) > 0
+      spawns = actorNotProjList f lvl
+  rc <- rndToAction $ monsterGenChance ldepth (length spawns)
+  if not rc
+    then return Nothing
+    else do
+      let allPers =
+            ES.unions $ map (totalVisible . (EM.! arena)) $ EM.elems pers
+      pos <- rndToAction $ rollSpawnPos cops allPers lvl
+      (mf, cmds) <- runWriterT $ spawnMonsters 1 pos
+      mapM_ cmdAtomicBroad cmds
+      return mf
+
+-- | Create a new monster on the level, at a random position.
+rollSpawnPos :: Kind.COps -> ES.EnumSet Point -> Level -> Rnd Point
+rollSpawnPos Kind.COps{cotile} visible lvl@Level{lactor} = do
+  let inhabitants = actorNotProjList (const True) lvl
+      isLit = Tile.isLit cotile
+      distantAtLeast d =
+        \ l _ -> all (\ h -> chessDist (lxsize lvl) (bpos h) l > d) inhabitants
+  findPosTry 40 (ltile lvl)
+    [ \ _ t -> not (isLit t)
+    , distantAtLeast 15
+    , \ l t -> not (isLit t) || distantAtLeast 15 l t
+    , distantAtLeast 10
+    , \ l _ -> not $ l `ES.member` visible
+    , distantAtLeast 5
+    , \ l t -> Tile.hasFeature cotile F.Walkable t
+               && unoccupied (EM.elems lactor) l
+    ]
+
+-- | Possibly regenerate HP for all actors on the current level.
+--
+-- We really want hero selection to be a purely UI distinction,
+-- so all heroes need to regenerate, not just the leader.
+-- Only the heroes on the current level regenerate (others are frozen
+-- in time together with their level). This prevents cheating
+-- via sending one hero to a safe level and waiting there.
+regenerateLevelHP :: (MonadAction m, MonadServerChan m) => m ()
+regenerateLevelHP = do
+  Kind.COps{ coitem
+           , coactor=Kind.Ops{okind}
+           } <- getsState scops
+  time <- getsState getTime
+  discoS <- getsState sdisco
+  s <- getState
+  let pick (a, m) =
+        let ak = okind $ bkind m
+            items = getActorItem a s
+            regen = max 1 $
+                      aregen ak `div`
+                      case strongestRegen coitem discoS items of
+                        Just i  -> 5 * jpower i
+                        Nothing -> 1
+            bhpMax = maxDice (ahp ak)
+            deltaHP = min 1 (bhpMax - bhp m)
+        in if (time `timeFit` timeTurn) `mod` regen /= 0 || deltaHP <= 0
+           then Nothing
+           else Just a
+  toRegen <- getsState $ catMaybes . map pick . EM.assocs . lactor . getArena
+  mapM_ (\aid -> cmdAtomicBroad $ HealAtomic 1 aid) toRegen
+
+-- TODO: let only some actors/items leave smell, e.g., a Smelly Hide Armour.
+-- | Add a smell trace for the actor to the level.
+_addSmell :: MonadActionRO m => ActorId -> WriterT [CmdAtomic] m ()
+_addSmell aid = do
+  time <- getsState getTime
+  pos <- getsState $ bpos . getActorBody aid
+  oldS <- getsState $ (EM.lookup pos) . lsmell . getArena
+  tell [AlterSmellAtomic [(pos, (oldS, Just $ timeAdd time smellTimeout))]]
