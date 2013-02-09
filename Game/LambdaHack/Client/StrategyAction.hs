@@ -41,7 +41,7 @@ import Game.LambdaHack.Vector
 -- TODO: extress many (all?) functions as MonadActionRO
 
 -- | AI proposes possible targets for the actor. Never empty.
-targetStrategy :: MonadClientRO m
+targetStrategy :: MonadClient m
                => ActorId -> [Ability]
                -> m (Strategy (Maybe Target))
 targetStrategy actor factionAbilities = do
@@ -113,7 +113,7 @@ reacquireTgt cops actor btarget glo per factionAbilities =
     (Just . TPos . (me `shift`)) `liftM` moveStrategy cops actor glo Nothing
 
 -- | AI strategy based on actor's sight, smell, intelligence, etc. Never empty.
-actionStrategy :: MonadClientRO m
+actionStrategy :: MonadClient m
                => ActorId -> [Ability]
                -> m (Strategy CmdSer)
 actionStrategy actor factionAbilities = do

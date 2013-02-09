@@ -73,7 +73,7 @@ applyCli actor verb item = do
         , partItemNWs coitem disco 1 item ]
   msgAdd msg
 
-invalidateArenaCli :: MonadClient m => LevelId -> m Bool
+invalidateArenaCli :: (MonadAction m, MonadClient m) => LevelId -> m Bool
 invalidateArenaCli arena = do
   arenaOld <- getsState sarena
   if arenaOld == arena
@@ -84,7 +84,7 @@ invalidateArenaCli arena = do
       return True
 
 -- | Make the item known to the player.
-discoverCli :: MonadClient m => Kind.Id ItemKind -> Item -> m ()
+discoverCli :: (MonadAction m, MonadClient m) => Kind.Id ItemKind -> Item -> m ()
 discoverCli ik i = do
   Kind.COps{coitem} <- getsState scops
   oldDisco <- getsState sdisco
@@ -108,7 +108,7 @@ remCli arena vis lvl = do
         in EM.insert arena nlvl dng
   modifyState $ updateDungeon updArena
 
-rememberCli :: MonadClient m
+rememberCli :: (MonadAction m, MonadClient m)
             => LevelId -> Level -> ItemDict -> FactionDict
             -> m ()
 rememberCli arena lvl itemD faction = do
@@ -125,7 +125,7 @@ rememberCli arena lvl itemD faction = do
   -- TODO: only add new visible items
   modifyState $ updateItem (const itemD)
 
-rememberPerCli :: MonadClient m
+rememberPerCli :: (MonadAction m, MonadClient m)
                => Perception -> LevelId -> Level -> ItemDict -> FactionDict
                -> m ()
 rememberPerCli per arena lvl itemD faction = do
@@ -191,7 +191,7 @@ showAttackCli source target verb stack say = do
   msgAdd msg
 
 -- TODO: here or elsewhere re-read RNG seed from config file
-restartCli :: MonadClient m => FactionPers -> State -> m ()
+restartCli :: (MonadAction m, MonadClient m) => FactionPers -> State -> m ()
 restartCli sper locRaw = do
   shistory <- getsClient shistory
   sconfigUI <- getsClient sconfigUI
@@ -289,7 +289,7 @@ displaceCli source target = do
 
 -- * cmdQueryCli
 
-setArenaLeaderCli :: MonadClient m => LevelId -> ActorId -> m ActorId
+setArenaLeaderCli :: (MonadAction m, MonadClient m) => LevelId -> ActorId -> m ActorId
 setArenaLeaderCli arena actor = do
   arenaOld <- getsState sarena
   mleaderOld <- getsClient sleader
@@ -345,7 +345,7 @@ carryOnCli = do
   return go
 
 -- | Handle the move of the hero.
-handleHuman :: MonadClientUI m
+handleHuman :: (MonadAction m, MonadClientUI m)
              => ActorId
              -> m (CmdSer, Maybe ActorId, LevelId)
 handleHuman leader = do
@@ -370,7 +370,7 @@ continueRun leader dd = do
 
 -- | Determine and process the next human player command. The argument is
 -- the last abort message due to running, if any.
-humanCommand :: forall m. MonadClientUI m
+humanCommand :: forall m. (MonadAction m, MonadClientUI m)
              => Msg
              -> m CmdSer
 humanCommand msgRunAbort = do

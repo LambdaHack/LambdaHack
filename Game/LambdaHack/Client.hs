@@ -24,7 +24,7 @@ import Game.LambdaHack.Faction
 import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 
-cmdUpdateCli :: MonadClient m => CmdUpdateCli -> m ()
+cmdUpdateCli :: (MonadAction m, MonadClient m) => CmdUpdateCli -> m ()
 cmdUpdateCli cmd = case cmd of
   PickupCli aid iid k l -> pickupCli aid iid k l
   ApplyCli actor verb item -> applyCli actor verb item
@@ -61,7 +61,7 @@ cmdUpdateUI cmd = case cmd of
     void $ displayMore ColorFull msg
     recordHistory
 
-cmdQueryCli :: MonadClient m => CmdQueryCli a -> m a
+cmdQueryCli :: (MonadAction m, MonadClient m) => CmdQueryCli a -> m a
 cmdQueryCli cmd = case cmd of
   SelectLeaderCli aid lid -> selectLeader aid lid
   NullReportCli -> do
@@ -77,7 +77,7 @@ cmdQueryCli cmd = case cmd of
       maybe abort (void . continueRunDir leader) srunning
       return True
 
-cmdQueryUI :: MonadClientUI m => CmdQueryUI a -> m a
+cmdQueryUI :: (MonadAction m, MonadClientUI m) => CmdQueryUI a -> m a
 cmdQueryUI cmd = case cmd of
   ShowSlidesCli slides -> getManyConfirms [] slides
   CarryOnCli -> carryOnCli

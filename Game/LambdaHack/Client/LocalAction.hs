@@ -71,7 +71,7 @@ moveCursor dir n = do
   modifyClient $ \cli -> cli {scursor = Just $ iterate shiftB cpos !! n}
   doLook
 
-cursorLevel :: MonadClientRO m => m Level
+cursorLevel :: MonadClient m => m Level
 cursorLevel = do
   dungeon <- getsState sdungeon
   stgtMode <- getsClient stgtMode
@@ -79,7 +79,7 @@ cursorLevel = do
         maybe (assert `failure` "not targetting right now") tgtLevelId stgtMode
   return $! dungeon EM.! tgtId
 
-viewedLevel :: MonadClientRO m => m (LevelId, Level)
+viewedLevel :: MonadClient m => m (LevelId, Level)
 viewedLevel = do
   arena <- getsState sarena
   dungeon <- getsState sdungeon
@@ -91,7 +91,7 @@ viewedLevel = do
 -- | Produces a textual description of the terrain and items at an already
 -- explored position. Mute for unknown positions.
 -- The detailed variant is for use in the targeting mode.
-lookAt :: MonadClientRO m
+lookAt :: MonadClient m
        => Bool       -- ^ detailed?
        -> Bool       -- ^ can be seen right now?
        -> Point      -- ^ position to describe
@@ -193,7 +193,7 @@ itemOverlay bag inv = do
 -- TODO: When inventory is displayed, let TAB switch the leader (without
 -- announcing that) and show the inventory of the new leader.
 -- | Display inventory
-inventory :: MonadClientRO m => WriterT Slideshow m ()
+inventory :: MonadClient m => WriterT Slideshow m ()
 inventory = do
   Kind.COps{coactor} <- getsState scops
   Just leader <- getsClient sleader
@@ -467,7 +467,7 @@ clearCurrent = return ()
 
 -- TODO: add times from all levels. Also, show time spend on this level alone.
 -- "You survived for x turns (y turns on this level)"
-displayHistory :: MonadClientRO m => WriterT Slideshow m ()
+displayHistory :: MonadClient m => WriterT Slideshow m ()
 displayHistory = do
   history <- getsClient shistory
   time <- getsState getTime
@@ -481,7 +481,7 @@ displayHistory = do
 -- * MemberCycle
 
 -- | Switches current member to the next on the level, if any, wrapping.
-cycleMember :: MonadClient m => m ()
+cycleMember :: (MonadAction m, MonadClient m) => m ()
 cycleMember = do
   Just leader <- getsClient sleader
   arena <- getsState sarena
@@ -508,7 +508,7 @@ partyAfterLeader leader = do
 -- | Select a faction leader. Switch level, if needed.
 -- False, if nothing to do. Should only be invoked as a direct result
 -- of a human player action (leader death just sets sleader to -1).
-selectLeader :: MonadClient m => ActorId -> LevelId -> m Bool
+selectLeader :: (MonadAction m, MonadClient m) => ActorId -> LevelId -> m Bool
 selectLeader actor arena = do
   Kind.COps{coactor} <- getsState scops
   leader <- getsClient sleader
@@ -537,7 +537,7 @@ stopRunning = modifyClient (\ cli -> cli { srunning = Nothing })
 -- * MemberBack
 
 -- | Switches current member to the previous in the whole dungeon, wrapping.
-backCycleMember :: MonadClient m => m ()
+backCycleMember :: (MonadAction m, MonadClient m) => m ()
 backCycleMember = do
   Just leader <- getsClient sleader
   hs <- partyAfterLeader leader
@@ -556,7 +556,7 @@ displayHelp = do
 
 -- * SelectHero
 
-selectHero :: MonadClient m => Int -> m ()
+selectHero :: (MonadAction m, MonadClient m) => Int -> m ()
 selectHero k = do
   side <- getsState sside
   loc <- getState

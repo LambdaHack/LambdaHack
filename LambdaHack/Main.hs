@@ -11,6 +11,7 @@ import qualified Content.PlaceKind
 import qualified Content.RuleKind
 import qualified Content.StrategyKind
 import qualified Content.TileKind
+import Game.LambdaHack.Action
 import Game.LambdaHack.Client
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Server
@@ -34,9 +35,9 @@ main = do
         , cotile  = Kind.createOps Content.TileKind.cdefs
         }
       cops = speedupCOps copsSlow
-      loopHuman :: (MonadClientUI m, MonadClientChan m) => m ()
+      loopHuman :: (MonadAction m, MonadClientUI m, MonadClientChan m) => m ()
       loopHuman = loopCli4 cmdUpdateCli cmdQueryCli cmdUpdateUI cmdQueryUI
-      loopComputer :: MonadClientChan m => m ()
+      loopComputer :: (MonadAction m, MonadClientChan m) => m ()
       loopComputer = loopCli2 cmdUpdateCli cmdQueryCli
       exeClient True sess = executorCli loopHuman sess
       -- This is correct, because the implicit contract ensures

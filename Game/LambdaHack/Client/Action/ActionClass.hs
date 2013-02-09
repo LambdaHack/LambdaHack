@@ -5,9 +5,9 @@
 -- and 'TypeAction'.
 module Game.LambdaHack.Client.Action.ActionClass where
 
+import Control.Concurrent
 import Control.Monad.Writer.Strict (WriterT, lift)
 import Data.Monoid
-import Control.Concurrent
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Client.Action.Frontend
@@ -19,20 +19,14 @@ import Game.LambdaHack.Client.State
 -- but is completely disregarded and reset when a new playing session starts.
 -- Auxiliary AI and computer player clients have no @sfs@ nor @sbinding@.
 data SessionUI = SessionUI
-  { sfs       :: !FrontendSession  -- ^ frontend session information
-  , smvarUI   :: !(MVar ())        -- ^ locks the UI sybsystem
-  , sbinding  :: !Binding          -- ^ binding of keys to commands
+  { sfs      :: !FrontendSession  -- ^ frontend session information
+  , smvarUI  :: !(MVar ())        -- ^ locks the UI sybsystem
+  , sbinding :: !Binding          -- ^ binding of keys to commands
   }
 
-class MonadActionRO m => MonadClientRO m where
+class MonadActionRO m => MonadClient m where
   getClient    :: m StateClient
   getsClient   :: (StateClient -> a) -> m a
-
-instance (Monoid a, MonadClientRO m) => MonadClientRO (WriterT a m) where
-  getClient    = lift getClient
-  getsClient   = lift . getsClient
-
-class (MonadAction m, MonadClientRO m) => MonadClient m where
   modifyClient :: (StateClient -> StateClient) -> m ()
   putClient    :: StateClient -> m ()
   -- We do not provide a MonadIO instance, so that outside of Action/
@@ -40,6 +34,8 @@ class (MonadAction m, MonadClientRO m) => MonadClient m where
   liftIO       :: IO a -> m a
 
 instance (Monoid a, MonadClient m) => MonadClient (WriterT a m) where
+  getClient    = lift getClient
+  getsClient   = lift . getsClient
   modifyClient = lift . modifyClient
   putClient    = lift . putClient
   liftIO       = lift . liftIO

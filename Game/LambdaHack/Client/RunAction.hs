@@ -3,16 +3,17 @@ module Game.LambdaHack.Client.RunAction
   ( runDir, continueRunDir
   ) where
 
+import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import qualified Data.List as L
 import Data.Maybe (isNothing)
-import qualified Data.EnumSet as ES
-import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.State
+import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Feature as F
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
@@ -24,14 +25,13 @@ import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
-import Game.LambdaHack.Faction
 
 -- | Start running in the given direction and with the given number
 -- of tiles already traversed (usually 0). The first turn of running
 -- succeeds much more often than subsequent turns, because most
 -- of the disturbances are ignored, since the player is aware of them
 -- and still explicitly requests a run.
-runDir :: MonadClientRO m => ActorId -> (Vector, Int) -> m (Vector, Int)
+runDir :: MonadClient m => ActorId -> (Vector, Int) -> m (Vector, Int)
 runDir leader (dir, dist) = do
   cops <- getsState scops
   posHere <- getsState (bpos . getActorBody leader)
@@ -149,7 +149,7 @@ runDisturbance locLast distLast msg hs ms per posHere
 -- it ajusts the direction given by the vector if we reached
 -- a corridor's corner (we never change direction except in corridors)
 -- and it increments the counter of traversed tiles.
-continueRunDir :: MonadClientRO m
+continueRunDir :: MonadClient m
                => ActorId -> (Vector, Int)
                -> m (Vector, Int)
 continueRunDir leader (dirLast, distLast) = do

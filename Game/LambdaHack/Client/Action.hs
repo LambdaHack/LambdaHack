@@ -5,8 +5,7 @@
 -- details.
 module Game.LambdaHack.Client.Action
   ( -- * Action monads
-    MonadClientRO( getClient, getsClient )
-  , MonadClient( putClient, modifyClient )
+    MonadClient( getClient, getsClient, putClient, modifyClient )
   , MonadClientUI
   , MonadClientChan
   , executorCli, exeFrontend, frontendName
@@ -146,7 +145,7 @@ recordHistory = do
     modifyClient $ \cli -> cli {shistory = nhistory}
 
 -- | Get the current perception of a client.
-askPerception :: MonadClientRO m => m Perception
+askPerception :: MonadClient m => m Perception
 askPerception = do
   stgtMode <- getsClient stgtMode
   arena <- getsState sarena
@@ -247,14 +246,14 @@ displayChoiceUI prompt ov keys = do
 
 -- | The prompt is shown after the current message, but not added to history.
 -- This is useful, e.g., in targeting mode, not to spam history.
-promptToSlideshow :: MonadClientRO m => Msg -> m Slideshow
+promptToSlideshow :: MonadClient m => Msg -> m Slideshow
 promptToSlideshow prompt = overlayToSlideshow prompt []
 
 -- | The prompt is shown after the current message at the top of each slide.
 -- Together they may take more than one line. The prompt is not added
 -- to history. The portions of overlay that fit on the the rest
 -- of the screen are displayed below. As many slides as needed are shown.
-overlayToSlideshow :: MonadClientRO m => Msg -> Overlay -> m Slideshow
+overlayToSlideshow :: MonadClient m => Msg -> Overlay -> m Slideshow
 overlayToSlideshow prompt overlay = do
   lysize <- getsState (lysize . getArena)  -- TODO: screen length or viewLevel
   sreport <- getsClient sreport
@@ -262,7 +261,7 @@ overlayToSlideshow prompt overlay = do
   return $! splitOverlay lysize msg overlay
 
 -- | Draw the current level with the overlay on top.
-drawOverlay :: MonadClientRO m => ColorMode -> Overlay -> m SingleFrame
+drawOverlay :: MonadClient m => ColorMode -> Overlay -> m SingleFrame
 drawOverlay dm over = do
   cops <- getsState scops
   per <- askPerception

@@ -104,7 +104,7 @@ leaderProjectGroupItem verb object syms = do
   lxsize <- getsState (lxsize . getArena)
   lysize <- getsState (lysize . getArena)
   Just leader <- getsClient sleader
-  ppos   <- getsState (bpos . getActorBody leader)
+  ppos <- getsState (bpos . getActorBody leader)
   if foesAdjacent lxsize lysize ppos ms
     then abortWith "You can't aim in melee."
     else actorProjectGI leader verb object syms
@@ -147,7 +147,7 @@ leaderTriggerDir feat verb = do
   K.handleDir lxsize e (leaderBumpDir feat) (neverMind True)
 
 -- | Leader tries to trigger a tile in a given direction.
-leaderBumpDir :: MonadClientRO m => F.Feature -> Vector -> m CmdSer
+leaderBumpDir :: MonadClient m => F.Feature -> Vector -> m CmdSer
 leaderBumpDir feat dir = do
   Just leader <- getsClient sleader
   body <- getsState $ getActorBody leader
@@ -190,7 +190,7 @@ guessBump _ _ _ = neverMind True
 -- ** TriggerTile
 
 -- | Leader tries to trigger the tile he's standing on.
-leaderTriggerTile :: MonadClientRO m => F.Feature -> m CmdSer
+leaderTriggerTile :: MonadClient m => F.Feature -> m CmdSer
 leaderTriggerTile feat = do
   Just leader <- getsClient sleader
   ppos <- getsState (bpos . getActorBody leader)
@@ -198,7 +198,7 @@ leaderTriggerTile feat = do
 
 -- ** Pickup
 
-pickupItem :: MonadClientRO m => m CmdSer
+pickupItem :: MonadClient m => m CmdSer
 pickupItem = do
   Just leader <- getsClient sleader
   actorPickupItem leader
@@ -332,14 +332,14 @@ getItem aid prompt p ptext bag inv isn = do
 -- ** Wait
 
 -- | Leader waits a turn (and blocks, etc.).
-waitBlock :: MonadClientRO m => m CmdSer
+waitBlock :: MonadClient m => m CmdSer
 waitBlock = do
   Just leader <- getsClient sleader
   return $ WaitSer leader
 
 -- ** Move
 
-movePl :: MonadClientRO m => Vector -> m CmdSer
+movePl :: MonadClient m => Vector -> m CmdSer
 movePl dir = do
   Just leader <- getsClient sleader
   return $! MoveSer leader dir

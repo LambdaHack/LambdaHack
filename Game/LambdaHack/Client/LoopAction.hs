@@ -14,7 +14,7 @@ import Game.LambdaHack.CmdCli
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
 
-initCli :: MonadClientChan m => Bool -> (CmdUpdateCli -> m ()) -> m ()
+initCli :: (MonadAction m, MonadClientChan m) => Bool -> (CmdUpdateCli -> m ()) -> m ()
 initCli isAI cmdUpdateCli = do
   -- Warning: state and client state are invalid here, e.g., sdungeon
   -- and sper are empty.
@@ -46,7 +46,7 @@ waitForCmd cmdUpdateCli expected = do
     Left (CmdUpdateCli cmd) | expected cmd -> cmdUpdateCli cmd
     _ -> assert `failure` (side, cmd1)
 
-loopCli2 :: MonadClientChan m
+loopCli2 :: (MonadAction m, MonadClientChan m)
          => (CmdUpdateCli -> m ())
          -> (forall a. Typeable a => CmdQueryCli a -> m a)
          -> m ()
@@ -67,7 +67,7 @@ loopCli2 cmdUpdateCli cmdQueryCli = do
     quit <- getsClient squit
     when (isNothing quit) loop
 
-loopCli4 :: (MonadClientUI m, MonadClientChan m)
+loopCli4 :: (MonadAction m, MonadClientUI m, MonadClientChan m)
          => (CmdUpdateCli -> m ())
          -> (forall a. Typeable a => CmdQueryCli a -> m a)
          -> (CmdUpdateUI -> m ())
