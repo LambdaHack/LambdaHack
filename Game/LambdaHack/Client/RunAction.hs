@@ -154,14 +154,15 @@ continueRunDir :: MonadClient m
                -> m (Vector, Int)
 continueRunDir leader (dirLast, distLast) = do
   cops@Kind.COps{cotile} <- getsState scops
-  posHere <- getsState (bpos . getActorBody leader)
+  body <- getsState $ getActorBody leader
   per <- askPerception
   sreport <- getsClient sreport -- TODO: check the message before it goes into history
-  genemy <- getsState $ genemy . getSide
+  genemy <- getsState $ genemy . (EM.! bfaction body) . sfaction
   ms <- getsState $ actorList (`elem` genemy) . getArena
   hs <- getsState $ actorList (not . (`elem` genemy)) . getArena
   lvl@Level{lxsize, lysize} <- getsState getArena
-  let posHasFeature f loc = Tile.hasFeature cotile f (lvl `at` loc)
+  let posHere = bpos body
+      posHasFeature f loc = Tile.hasFeature cotile f (lvl `at` loc)
       posHasItems loc = not $ EM.null $ lvl `atI` loc
       locLast = if distLast == 0 then posHere else posHere `shift` neg dirLast
       tryRunDist (dir, distNew)

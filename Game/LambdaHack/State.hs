@@ -9,9 +9,8 @@ module Game.LambdaHack.State
   , defStateGlobal, defStateLocal, localFromGlobal
   , switchGlobalSelectedSideOnlyForGlobalState
   , updateDungeon, updateItem, updateDisco, updateFaction, updateCOps
-  , updateArena, updateTime, updateSide, updateSelectedArena
-  , getArena, getTime, getSide
-  , isHumanFaction, isSpawningFaction
+  , updateArena, updateTime, updateSelectedArena
+  , getArena, getTime, isHumanFaction, isSpawningFaction
   ) where
 
 import Data.Binary
@@ -158,10 +157,6 @@ updateArena f s = updateDungeon (EM.adjust f (_sarena s)) s
 updateTime :: (Time -> Time) -> State -> State
 updateTime f s = updateArena (\lvl@Level{ltime} -> lvl {ltime = f ltime}) s
 
--- | Update current side data within state.
-updateSide :: (Faction -> Faction) -> State -> State
-updateSide f s = updateFaction (EM.adjust f (_sside s)) s
-
 -- | Update selected level within state.
 updateSelectedArena :: LevelId -> State -> State
 updateSelectedArena _sarena s = s {_sarena}
@@ -173,10 +168,6 @@ getArena State{_sarena, _sdungeon} = _sdungeon EM.! _sarena
 -- | Get current time from the dungeon data.
 getTime :: State -> Time
 getTime State{_sarena, _sdungeon} = ltime $ _sdungeon EM.! _sarena
-
--- | Get current faction from state.
-getSide :: State -> Faction
-getSide State{_sfaction, _sside} = _sfaction EM.! _sside
 
 -- | Tell whether the faction is human player-controlled.
 isHumanFaction :: State -> FactionId -> Bool

@@ -191,7 +191,7 @@ effectDominate source target = do
   arena <- getsState sarena
   if source == target
     then do
-      genemy <- getsState $ genemy . getSide
+      genemy <- getsState $ genemy . (EM.! bfaction sm) . sfaction
       lxsize <- getsState (lxsize . getArena)
       lysize <- getsState (lysize . getArena)
       lvl <- getsState getArena
@@ -378,7 +378,7 @@ useStairs target delta msg = do
   tm <- getsState (getActorBody target)
   void $ focusIfOurs target
   effLvlGoUp target delta
-  gquit <- getsState $ gquit . getSide
+  gquit <- getsState $ gquit . (EM.! bfaction tm) . sfaction
   return $ if maybe Camping snd gquit == Victor
            then (True, "")
            else (True, actorVerb coactor tm msg)
@@ -571,12 +571,12 @@ checkPartyDeath target = do
   -- is recorded for this level.
 
 -- | End game, showing the ending screens, if requested.
-gameOver :: (MonadAction m, MonadServerChan m) => Bool -> m ()
-gameOver showEndingScreens = do
+gameOver :: (MonadAction m, MonadServerChan m) => FactionId -> Bool -> m ()
+gameOver fid showEndingScreens = do
   arena <- getsState sarena
   deepest <- getsState $ ldepth . getArena  -- TODO: use deepest visited instead of current
   let upd f = f {gquit = Just (False, Killed arena)}
-  modifyState $ updateSide upd
+  modifyState $ updateFaction (EM.adjust upd fid)
   when showEndingScreens $ do
     Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsState scops
     s <- getState
@@ -604,11 +604,11 @@ gameOver showEndingScreens = do
     if EM.null bag
       then do
         let upd2 f = f {gquit = Just (True, Killed arena)}
-        modifyState $ updateSide upd2
+        modifyState $ updateFaction (EM.adjust upd2 fid)
       else do
         -- TODO: do this for the killed factions, not for side
         side <- getsState sside
         go <- sendQueryUI side $ ConfirmShowItemsFloorCli loseMsg bag
         when go $ do
           let upd2 f = f {gquit = Just (True, Killed arena)}
-          modifyState $ updateSide upd2
+          modifyState $ updateFaction (EM.adjust upd2 fid)

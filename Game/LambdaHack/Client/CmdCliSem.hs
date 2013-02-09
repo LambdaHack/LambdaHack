@@ -313,7 +313,7 @@ handleAI actor = do
   assert (bfaction body == side `blame` (actor, bfaction body, side)) $ do
     Kind.COps{costrat=Kind.Ops{okind}} <- getsState scops
     leader <- getsClient sleader
-    fact <- getsState getSide
+    fact <- getsState $ (EM.! bfaction body) . sfaction
     let factionAI | Just actor /= leader = gAiMember fact
                   | otherwise = fromJust $ gAiLeader fact
         factionAbilities = sabilities (okind factionAI)

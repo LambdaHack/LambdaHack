@@ -30,7 +30,7 @@ cmdSerWriterT cmd = case cmd of
   MoveSer aid dir -> moveSer aid dir
   RunSer aid dir -> runSer aid dir
   GameExitSer -> gameExitSer
-  GameRestartSer -> gameRestartSer
+  GameRestartSer fid -> gameRestartSer fid
   GameSaveSer -> gameSaveSer
   CfgDumpSer -> cfgDumpSer
   ClearPathSer aid -> clearPathSer aid

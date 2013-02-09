@@ -395,11 +395,10 @@ gameExitSer = modifyServer $ \ser -> ser {squit = Just True}
 
 -- ** GameRestart
 
-gameRestartSer :: MonadActionRO m => WriterT [CmdAtomic] m ()
-gameRestartSer = do
-  side <- getsState sside
-  oldSt <- getsState $ gquit . getSide
-  tell [FactionQuitAtomic side oldSt $ Just (False, Restart)]
+gameRestartSer :: MonadActionRO m => FactionId -> WriterT [CmdAtomic] m ()
+gameRestartSer fid = do
+  oldSt <- getsState $ gquit . (EM.! fid) . sfaction
+  tell [FactionQuitAtomic fid oldSt $ Just (False, Restart)]
 
 -- ** GameSaveSer
 

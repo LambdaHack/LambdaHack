@@ -59,7 +59,7 @@ reacquireTgt cops actor btarget glo per factionAbilities =
  where
   Kind.COps{coactor=coactor@Kind.Ops{okind}} = cops
   lvl@Level{lxsize} = getArena glo
-  actorBody@Actor{ bkind, bpos = me, bpath } =
+  actorBody@Actor{ bkind, bpos = me, bpath, bfaction } =
     getActorBody actor glo
   mk = okind bkind
   enemyVisible l =
@@ -94,7 +94,7 @@ reacquireTgt cops actor btarget glo per factionAbilities =
                                        -- nothing visible, go to pos
       Just TPos{} -> closest                -- prefer visible foes
       Nothing -> closest
-  lenemy = genemy . getSide $ glo
+  lenemy = genemy . (EM.! bfaction) . sfaction $ glo
   foes = actorNotProjAssocs (`elem` lenemy) lvl
   visibleFoes = L.filter (enemyVisible . snd) (L.map (second bpos) foes)
   closest :: Strategy (Maybe Target)
@@ -225,11 +225,11 @@ rangedFreq cops actor glo fpos =
            , corule
            } = cops
   lvl@Level{lxsize, lysize} = getArena glo
-  Actor{ bkind, bpos } = getActorBody actor glo
+  Actor{ bkind, bpos, bfaction } = getActorBody actor glo
   bitems = getActorBag actor glo
   mk = okind bkind
   tis = lvl `atI` bpos
-  lenemy = genemy . getSide $ glo
+  lenemy = genemy . (EM.! bfaction) . sfaction $ glo
   foes = actorNotProjAssocs (`elem` lenemy) lvl
   foesAdj = foesAdjacent lxsize lysize bpos (map snd foes)
   -- TODO: also don't throw if any pos on path is visibly not accessible
@@ -322,7 +322,7 @@ moveStrategy cops actor glo mFoe =
            , coactor=Kind.Ops{okind}
            } = cops
   lvl@Level{lsmell, lxsize, lysize, ltime} = getArena glo
-  Actor{bkind, bpos} = getActorBody actor glo
+  Actor{bkind, bpos, bfaction} = getActorBody actor glo
   mk = okind bkind
   lootHere x = not $ EM.null $ lvl `atI` x
   onlyLoot   = onlyMoves lootHere bpos
@@ -361,7 +361,7 @@ moveStrategy cops actor glo mFoe =
   moveRandomly = liftFrequency $ uniformFreq "moveRandomly" sensible
   openableHere   = openable cotile lvl
   accessibleHere = accessible cops lvl bpos
-  lenemy = genemy . getSide $ glo
+  lenemy = genemy . (EM.! bfaction) . sfaction $ glo
   friends = actorList (not . (`elem` lenemy)) . getArena $ glo
   noFriends | asight mk = unoccupied friends
             | otherwise = const True

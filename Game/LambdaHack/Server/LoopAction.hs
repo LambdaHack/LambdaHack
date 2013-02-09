@@ -185,7 +185,7 @@ checkEndGame = do
   glo <- getState
   let aNotSp = filter (not . isSpawningFaction glo . bfaction . snd . snd) as
   case aNotSp of
-    [] -> gameOver True
+    [] -> gameOver (sside glo) True
     (lid, _) : _ ->
       -- Switch to the level (can be the currently selected level, too).
       modifyState $ updateSelectedArena lid
@@ -210,7 +210,7 @@ handleActors cmdSer subclipStart prevHuman disp = do
   time <- getsState getTime  -- the end time of this clip, inclusive
    -- Older actors act earlier.
   lactor <- getsState (EM.assocs . lactor . getArena)
-  gquit <- getsState $ gquit . getSide
+  gquit <- getsState $ gquit . (EM.! prevHuman) . sfaction
   quit <- getsServer squit
   let mnext = if null lactor  -- wait until any actor spawned
               then Nothing
@@ -327,7 +327,7 @@ endOrLoop :: (MonadAction m, MonadServerChan m) => m () -> m ()
 endOrLoop loopServer = do
   quit <- getsServer squit
   side <- getsState sside
-  gquit <- getsState $ gquit . getSide
+  gquit <- getsState $ gquit . (EM.! side) . sfaction
   (_, total) <- getsState calculateTotal
   -- The first, boolean component of quit determines
   -- if ending screens should be shown, the other argument describes

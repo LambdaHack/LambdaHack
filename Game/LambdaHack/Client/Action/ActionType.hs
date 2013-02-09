@@ -7,6 +7,7 @@ module Game.LambdaHack.Client.Action.ActionType
   ( FunActionCli, ActionCli, executorCli
   ) where
 
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 
 import Game.LambdaHack.Action
@@ -91,7 +92,8 @@ executorCli m sess s cli d =
     sess
     d
     (\_ _ _ -> return ())
-    (\msg -> let err = "unhandled abort for client" <+> showT (getSide s)
+    (\msg -> let err = "unhandled abort for client"
+                       <+> showT (sfaction s EM.! sside s)
                        <+> ":" <+> msg
              in fail $ T.unpack err)
     s

@@ -8,6 +8,7 @@ import Data.Typeable
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Actor
+import Game.LambdaHack.Faction
 import Game.LambdaHack.Item
 import Game.LambdaHack.Level
 import Game.LambdaHack.Point
@@ -24,7 +25,7 @@ data CmdSer =
   | MoveSer ActorId Vector
   | RunSer ActorId Vector
   | GameExitSer
-  | GameRestartSer
+  | GameRestartSer FactionId
   | GameSaveSer
   | CfgDumpSer
   | ClearPathSer ActorId
@@ -35,7 +36,7 @@ data CmdSer =
 timedCmdSer :: CmdSer -> Bool
 timedCmdSer cmd = case cmd of
   GameExitSer -> False
-  GameRestartSer -> False
+  GameRestartSer{} -> False
   GameSaveSer -> False
   CfgDumpSer -> False
   ClearPathSer{} -> False
