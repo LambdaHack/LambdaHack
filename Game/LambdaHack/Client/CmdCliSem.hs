@@ -99,8 +99,9 @@ discoverCli ik i = do
           , partItemAW coitem disco i ]
     msgAdd msg
 
-remCli :: MonadAction m => LevelId -> ES.EnumSet Point -> Level -> m ()
-remCli arena vis lvl = do
+remCli :: MonadAction m => ES.EnumSet Point -> Level -> m ()
+remCli vis lvl = do
+  arena <- getsState sarena
   cops <- getsState scops
   let updArena dng =
         let clvl = fromMaybe (assert `failure` arena) $ EM.lookup arena dng
@@ -109,16 +110,10 @@ remCli arena vis lvl = do
   modifyState $ updateDungeon updArena
 
 rememberCli :: (MonadAction m, MonadClient m)
-            => LevelId -> Level -> ItemDict -> FactionDict
-            -> m ()
-rememberCli arena lvl itemD faction = do
+            => Level -> ItemDict -> FactionDict -> m ()
+rememberCli lvl itemD faction = do
   per <- askPerception
-  -- TODO: remove if clients are guaranteed to be on good arena:
-  arenaOld <- getsState sarena
-  when (arenaOld /= arena) $ do
-    modifyClient $ invalidateSelectedLeader
-    modifyState $ updateSelectedArena arena
-  remCli arena (totalVisible per) lvl
+  remCli (totalVisible per) lvl
   -- TODO: instead gather info about factions when first encountered
   -- and update when they are killed
   modifyState $ updateFaction (const faction)
@@ -126,11 +121,12 @@ rememberCli arena lvl itemD faction = do
   modifyState $ updateItem (const itemD)
 
 rememberPerCli :: (MonadAction m, MonadClient m)
-               => Perception -> LevelId -> Level -> ItemDict -> FactionDict
+               => Perception -> Level -> ItemDict -> FactionDict
                -> m ()
-rememberPerCli per arena lvl itemD faction = do
+rememberPerCli per lvl itemD faction = do
+  arena <- getsState sarena
   modifyClient $ \cli -> cli {sper = EM.insert arena per (sper cli)}
-  rememberCli arena lvl itemD faction
+  rememberCli lvl itemD faction
 
 -- switchLevelCli :: MonadClient m
 --                => ActorId -> LevelId -> Actor -> ItemBag

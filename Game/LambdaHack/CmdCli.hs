@@ -43,9 +43,9 @@ data CmdUpdateCli =
   | ShowMsgCli Msg
   | InvalidateArenaCli LevelId
   | DiscoverCli (Kind.Id ItemKind) Item
-  | RemCli LevelId (ES.EnumSet Point) Level
-  | RememberCli LevelId Level ItemDict FactionDict
-  | RememberPerCli Perception LevelId Level ItemDict FactionDict
+  | RemCli (ES.EnumSet Point) Level
+  | RememberCli Level ItemDict FactionDict
+  | RememberPerCli Perception Level ItemDict FactionDict
   | SwitchLevelCli ActorId LevelId Actor ItemBag
   | ProjectCli Point ActorId Item
   | ShowAttackCli ActorId ActorId MU.Part Item Bool

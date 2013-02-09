@@ -31,11 +31,11 @@ cmdUpdateCli cmd = case cmd of
   ShowMsgCli msg -> msgAdd msg
   InvalidateArenaCli lid -> void $ invalidateArenaCli lid
   DiscoverCli ik i -> discoverCli ik i
-  RemCli arena vis lvl -> remCli arena vis lvl
-  RememberCli arena lvl itemD faction ->
-    rememberCli arena lvl itemD faction
-  RememberPerCli per arena lvl itemD faction ->
-    rememberPerCli per arena lvl itemD faction
+  RemCli vis lvl -> remCli vis lvl
+  RememberCli lvl itemD faction ->
+    rememberCli lvl itemD faction
+  RememberPerCli per lvl itemD faction ->
+    rememberPerCli per lvl itemD faction
   SwitchLevelCli _aid _arena _pbody _items -> undefined  -- switchLevelCli aid arena pbody items
   ProjectCli spos source item -> projectCli spos source item
   ShowAttackCli source target verb stack say ->

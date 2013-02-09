@@ -119,12 +119,10 @@ initPer = do
 
 cmdAtomicBroad :: (MonadAction m, MonadServerChan m) => CmdAtomic -> m ()
 cmdAtomicBroad cmd = do
-  arenaOld <- getsState sarena
   lvlOld <- getsState getArena
   itemDOld <- getsState sitem
   factionOld <- getsState sfaction
   cmdAtomicSem cmd
-  arenaNew <- getsState sarena
   lvlNew <- getsState getArena
   itemDNew <- getsState sitem
   factionNew <- getsState sfaction
@@ -143,7 +141,7 @@ cmdAtomicBroad cmd = do
           then do
             let sendUp =
                   sendUpdateCli fid
-                  $ RememberPerCli perNew arenaOld lvlOld itemDOld factionOld
+                  $ RememberPerCli perNew lvlOld itemDOld factionOld
             sendUp
             withAI sendUp
             let sendCmd = sendUpdateCli fid $ AtomicSeenCli cmd
@@ -152,7 +150,7 @@ cmdAtomicBroad cmd = do
           else do
             let sendUp =
                   sendUpdateCli fid
-                  $ RememberPerCli perNew arenaNew lvlNew itemDNew factionNew
+                  $ RememberPerCli perNew lvlNew itemDNew factionNew
             sendUp
             withAI sendUp
         else do
@@ -166,7 +164,7 @@ cmdAtomicBroad cmd = do
           else do
             let sendUp =
                   sendUpdateCli fid
-                  $ RememberCli arenaNew lvlNew itemDNew factionNew
+                  $ RememberCli lvlNew itemDNew factionNew
             sendUp
             withAI sendUp
   mapM_ send $ EM.keys factionNew
