@@ -3,7 +3,7 @@
 module Game.LambdaHack.Client.State
   ( StateClient(..), defStateClient, defHistory
   , updateTarget, getTarget
-  , invalidateSelectedLeader, updateSelectedLeader, sleader, targetToPos
+  , invalidateSelectedLeader, updateSelectedLeader, sleader, sside, targetToPos
   , TgtMode(..), Target(..)
   , DebugModeCli(..), toggleMarkVision, toggleMarkSmell, toggleOmniscient
   ) where
@@ -23,6 +23,7 @@ import Game.LambdaHack.ActorState
 import Game.LambdaHack.Client.Animation
 import Game.LambdaHack.Client.Config
 import qualified Game.LambdaHack.Client.Key as K
+import Game.LambdaHack.FactionId
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
@@ -49,6 +50,7 @@ data StateClient = StateClient
   , slastKey  :: !(Maybe K.KM)  -- ^ last command key pressed
   , sframe    :: ![(Maybe SingleFrame, Bool)]  -- ^ accumulated frames
   , _sleader  :: !(Maybe ActorId)  -- ^ selected actor
+  , _sside    :: !FactionId     -- ^ faction controlled by the client
   , squit     :: !(Maybe Bool)  -- ^ just about to save and exit the game
   , sdebugCli :: !DebugModeCli  -- ^ debugging mode
   }
@@ -76,8 +78,8 @@ data DebugModeCli = DebugModeCli
   deriving Show
 
 -- | Initial game client state.
-defStateClient :: History -> ConfigUI -> StateClient
-defStateClient shistory sconfigUI = do
+defStateClient :: History -> ConfigUI -> FactionId -> StateClient
+defStateClient shistory sconfigUI _sside = do
   StateClient
     { stgtMode  = Nothing
     , scursor   = Nothing
@@ -92,6 +94,7 @@ defStateClient shistory sconfigUI = do
     , slastKey  = Nothing
     , sframe    = []
     , _sleader  = Nothing  -- no heroes yet alive
+    , _sside
     , squit = Nothing
     , sdebugCli = defDebugModeCli
     }
@@ -130,13 +133,16 @@ updateSelectedLeader :: ActorId -> State -> StateClient -> StateClient
 updateSelectedLeader leader s cli =
   let la = lactor $ sdungeon s EM.! sarena s
       mside1 = fmap bfaction $ EM.lookup leader la
-      side2 = sside s
+      side2 = sside cli
   in assert (maybe True (== side2) mside1
              `blame` (mside1, side2, leader, sarena s, s))
      $ cli {_sleader = Just leader}
 
 sleader :: StateClient -> Maybe ActorId
 sleader = _sleader
+
+sside :: StateClient -> FactionId
+sside = _sside
 
 -- | Calculate the position of leader's target.
 targetToPos :: StateClient -> State -> Maybe Point
@@ -173,6 +179,7 @@ instance Binary StateClient where
     put (show srandom)
     put sconfigUI
     put _sleader
+    put _sside
     put squit
   get = do
     stgtMode <- get
@@ -185,6 +192,7 @@ instance Binary StateClient where
     g <- get
     sconfigUI <- get
     _sleader <- get
+    _sside <- get
     squit <- get
     let sper = EM.empty
         srandom = read g

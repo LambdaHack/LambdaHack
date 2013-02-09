@@ -257,7 +257,7 @@ targetEnemy stgtModeNew = do
   -- TODO: sort enemies by distance to the leader.
   stgtMode <- getsClient stgtMode
   (_, lvl@Level{lxsize}) <- viewedLevel
-  side <- getsState sside
+  side <- getsClient sside
   genemy <- getsState $ genemy . (EM.! side) . sfaction
   let ms = actorNotProjAssocs (`elem` genemy) lvl
       plms = filter ((/= leader) . fst) ms  -- don't target yourself
@@ -419,7 +419,7 @@ endTargeting accept = do
     target <- getsClient $ getTarget leader
     scursor <- getsClient scursor
     lvl <- cursorLevel
-    side <- getsState sside
+    side <- getsClient sside
     genemy <- getsState $ genemy . (EM.! side) . sfaction
     let ms = actorNotProjAssocs (`elem` genemy) lvl
     case target of
@@ -560,7 +560,7 @@ displayHelp = do
 
 selectHero :: (MonadAction m, MonadClient m) => Int -> m ()
 selectHero k = do
-  side <- getsState sside
+  side <- getsClient sside
   loc <- getState
   case tryFindHeroK loc side k of
     Nothing  -> abortWith "No such member of the party."

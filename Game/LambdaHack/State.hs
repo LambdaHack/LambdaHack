@@ -4,10 +4,9 @@ module Game.LambdaHack.State
   ( -- * Basic game state, local or global
     State
     -- * State components
-  , sdungeon, sdepth, sitem, sdisco, sfaction, scops, sside, sarena
+  , sdungeon, sdepth, sitem, sdisco, sfaction, scops, sarena
     -- * State operations
   , defStateGlobal, defStateLocal, localFromGlobal
-  , switchGlobalSelectedSideOnlyForGlobalState
   , updateDungeon, updateItem, updateDisco, updateFaction, updateCOps
   , updateArena, updateTime, updateSelectedArena
   , getArena, getTime, isHumanFaction, isSpawningFaction
@@ -35,7 +34,7 @@ import Game.LambdaHack.Time
 --
 -- Data invariant: no actor belongs to more than one @sdungeon@ level.
 -- Each @sleader@ actor from any of the client states is on the @sarena@
--- level and belongs to @sside@ faction of the client's local state.
+-- level and belongs to @sside@ faction.
 -- Note: we use @_sdepth@ instead of computing maximal depth whenever needed,
 -- to keep the dungeon (which can be huge) lazy.
 data State = State
@@ -45,7 +44,6 @@ data State = State
   , _sdisco   :: !Discoveries  -- ^ remembered item discoveries
   , _sfaction :: !FactionDict  -- ^ remembered sides still in game
   , _scops    :: Kind.COps     -- ^ remembered content
-  , _sside    :: !FactionId    -- ^ faction of the selected actor
   , _sarena   :: !LevelId      -- ^ level of the selected actor
   }
   deriving (Show, Typeable)
@@ -83,14 +81,13 @@ defStateGlobal :: Dungeon -> Int -> Discoveries
                -> State
 defStateGlobal _sdungeon _sdepth _sdisco _sfaction _scops _sarena =
   State
-    { _sside = invalidFactionId  -- no side yet selected
-    , _sitem = EM.empty
+    { _sitem = EM.empty
     , ..
     }
 
 -- | Initial per-faction local game state.
-defStateLocal :: Kind.COps -> FactionId -> State
-defStateLocal _scops _sside =
+defStateLocal :: Kind.COps -> State
+defStateLocal _scops =
   State
     { _sdungeon = EM.empty
     , _sdepth = 0
@@ -98,7 +95,6 @@ defStateLocal _scops _sside =
     , _sdisco = EM.empty
     , _sfaction = EM.empty
     , _scops
-    , _sside
     , _sarena = initialLevel
     }
 
@@ -120,14 +116,8 @@ localFromGlobal State{ _scops=_scops@Kind.COps{ coitem=Kind.Ops{okind}
     , _sdisco = let f ik = isymbol (okind ik)
                            `notElem` (ritemProject $ Kind.stdRuleset corule)
                 in EM.filter f _sdisco
-    , _sside = invalidFactionId  -- will be set by the client
     , ..
     }
-
--- | Switch selected faction within the global state. Local state side
--- is set at default level creation and never changes.
-switchGlobalSelectedSideOnlyForGlobalState :: FactionId -> State -> State
-switchGlobalSelectedSideOnlyForGlobalState fid s = s {_sside = fid}
 
 -- | Update dungeon data within state.
 updateDungeon :: (Dungeon -> Dungeon) -> State -> State
@@ -195,9 +185,6 @@ sfaction = _sfaction
 scops :: State -> Kind.COps
 scops = _scops
 
-sside :: State -> FactionId
-sside = _sside
-
 sarena :: State -> LevelId
 sarena = _sarena
 
@@ -208,7 +195,6 @@ instance Binary State where
     put _sitem
     put _sdisco
     put _sfaction
-    put _sside
     put _sarena
   get = do
     _sdungeon <- get
@@ -216,7 +202,6 @@ instance Binary State where
     _sitem <- get
     _sdisco <- get
     _sfaction <- get
-    _sside <- get
     _sarena <- get
     let _scops = undefined  -- overwritten by recreated cops
     return State{..}

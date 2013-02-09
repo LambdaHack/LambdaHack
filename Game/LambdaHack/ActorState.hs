@@ -71,11 +71,11 @@ nearbyFreePos cotile start s =
      $ find good poss
 
 -- | Calculate loot's worth for heroes on the current level.
-calculateTotal :: State -> (ItemBag, Int)
-calculateTotal s =
+calculateTotal :: FactionId -> State -> (ItemBag, Int)
+calculateTotal fid s =
   let lvl = getArena s
       bag = EM.unionsWith (+)
-            $ map bbag $ actorList (== sside s) lvl
+            $ map bbag $ actorList (== fid) lvl
       heroItem = map (\(iid, k) -> (getItemBody iid s, k))
                  $ EM.assocs bag
   in (bag, sum $ map itemPrice heroItem)

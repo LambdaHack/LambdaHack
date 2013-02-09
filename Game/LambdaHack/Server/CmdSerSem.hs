@@ -78,7 +78,6 @@ projectSer source tpos eps _verb iid container = do
   lvl <- getsState getArena
   lxsize <- getsState (lxsize . getArena)
   lysize <- getsState (lysize . getArena)
-  side <- getsState sside
   let spos = bpos sm
       -- When projecting, the first turn is spent aiming.
       -- The projectile is seen one tile from the actor, giving a hint
@@ -94,9 +93,7 @@ projectSer source tpos eps _verb iid container = do
       -- Both parties would see their own projectiles move part of the way
       -- and the opposite party's projectiles waiting one turn.
       btimeDelta = timeAddFromSpeed coactor sm btime
-      time = if bfaction sm == side
-             then btimeDelta `timeAdd` timeNegate timeClip
-             else btime
+      time = btimeDelta `timeAdd` timeNegate timeClip
       bl = bla lxsize lysize eps spos tpos
   case bl of
     Nothing -> abortWith "cannot zap oneself"
@@ -181,14 +178,10 @@ triggerSer aid dpos = do
 pickupSer :: MonadServerChan m
           => ActorId -> ItemId -> Int -> InvChar -> WriterT [CmdAtomic] m ()
 pickupSer aid iid k l = assert (k > 0 `blame` (aid, iid, k, l)) $ do
-  side <- getsState sside
   body <- getsState (getActorBody aid)
-  -- Nobody can be forced to pick up an item.
-  -- TODO: check elsewhere and for all commands.
-  assert (bfaction body == side `blame` (body, side)) $ do
-    let p = bpos body
-    tell [MoveItemAtomic iid k (CFloor p) (CActor aid)]
-    void $ broadcastPosCli [p] (PickupCli aid iid k l)
+  let p = bpos body
+  tell [MoveItemAtomic iid k (CFloor p) (CActor aid)]
+  void $ broadcastPosCli [p] (PickupCli aid iid k l)
 
 -- ** DropSer
 
@@ -228,7 +221,6 @@ moveSer aid dir = do
       tpos = spos `shift` dir  -- target position
   -- We start by looking at the target position.
   tgt <- getsState (posToActor tpos)
-  side <- getsState sside
   case tgt of
     Just target ->
       -- Attacking does not require full access, adjacency is enough.
@@ -237,7 +229,7 @@ moveSer aid dir = do
       | accessible cops lvl spos tpos ->
           tell [MoveActorAtomic aid spos tpos]
       | Tile.canBeHidden cotile (okind $ lvl `at` tpos) -> do
-          sendUpdateCli side
+          sendUpdateCli (bfaction sm)
             $ ShowMsgCli "You search all adjacent walls for half a second."
           search aid
       | otherwise ->

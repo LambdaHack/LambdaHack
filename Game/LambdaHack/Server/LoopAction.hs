@@ -80,9 +80,6 @@ loopSer cmdSer executorC cops = do
       bcast
       withAI bcast
       -- TODO: factor out common parts from restartGame and restoreOrRestart
-      faction <- getsState sfaction
-      let firstHuman = fst . head $ filter (isHumanFact . snd) $ EM.assocs faction
-      switchGlobalSelectedSide firstHuman
       cmdAtomicBroad SyncAtomic
       -- Save ASAP in case of crashes and disconnects.
       saveGameBkp
@@ -102,9 +99,8 @@ loopSer cmdSer executorC cops = do
         mfid <- if clipN == 3 then generateMonster else return Nothing
         nres <- handleActors cmdSer timeZero prevHuman (disp || isJust mfid)
         modifyState (updateTime (timeAdd timeClip))
-        endOrLoop (loop nres)
-  side <- getsState sside
-  loop (True, side)
+        endOrLoop prevHuman (loop nres)
+  loop (True, Nothing)
 
 initPer :: MonadServer m => m ()
 initPer = do
@@ -185,7 +181,7 @@ checkEndGame = do
   glo <- getState
   let aNotSp = filter (not . isSpawningFaction glo . bfaction . snd . snd) as
   case aNotSp of
-    [] -> gameOver (sside glo) True
+    [] -> gameOver undefined True  -- TODO: should send to all factions
     (lid, _) : _ ->
       -- Switch to the level (can be the currently selected level, too).
       modifyState $ updateSelectedArena lid
@@ -202,15 +198,17 @@ checkEndGame = do
 handleActors :: (MonadAction m, MonadServerChan m)
              => (CmdSer -> m ())
              -> Time  -- ^ start time of current subclip, exclusive
-             -> FactionId
+             -> Maybe FactionId
              -> Bool
-             -> m (Bool, FactionId)
+             -> m (Bool, Maybe FactionId)
 handleActors cmdSer subclipStart prevHuman disp = do
   Kind.COps{coactor} <- getsState scops
   time <- getsState getTime  -- the end time of this clip, inclusive
    -- Older actors act earlier.
   lactor <- getsState (EM.assocs . lactor . getArena)
-  gquit <- getsState $ gquit . (EM.! prevHuman) . sfaction
+  gquit <- case prevHuman of
+    Just fid -> getsState $ gquit . (EM.! fid) . sfaction
+    Nothing -> return Nothing
   quit <- getsServer squit
   let mnext = if null lactor  -- wait until any actor spawned
               then Nothing
@@ -228,7 +226,6 @@ handleActors cmdSer subclipStart prevHuman disp = do
       return (disp, prevHuman)
     Just (actor, m) -> do
       let side = bfaction m
-      switchGlobalSelectedSide side
       arena <- getsState sarena
       isHuman <- getsState $ flip isHumanFaction side
       leader <- if isHuman
@@ -237,16 +234,19 @@ handleActors cmdSer subclipStart prevHuman disp = do
       when disp $ broadcastUI [] DisplayPushCli
       if actor == leader && isHuman
         then do
-          nHuman <- if isHuman && side /= prevHuman
+          nHuman <- if isHuman && Just side /= prevHuman
                     then do
                       newRuns <- sendQueryCli side IsRunningCli
                       if newRuns
                         then return prevHuman
                         else do
-                          b <- sendQueryUI prevHuman $ FlushFramesCli side
-                          if b
-                            then return side
-                            else return prevHuman
+                          case prevHuman of
+                            Just fid -> do
+                              b <- sendQueryUI fid $ FlushFramesCli side
+                              if b
+                                then return $ Just side
+                                else return prevHuman
+                            Nothing -> return $ Just side
                     else return prevHuman
           -- TODO: check that the commands is legal, that is, the leader
           -- is acting, etc. Or perhaps instead have a separate type
@@ -323,12 +323,13 @@ advanceTime actor = do
   modifyState $ updateActorBody actor upd
 
 -- | Continue or restart or exit the game.
-endOrLoop :: (MonadAction m, MonadServerChan m) => m () -> m ()
-endOrLoop loopServer = do
+endOrLoop :: (MonadAction m, MonadServerChan m)
+          => Maybe FactionId -> m () -> m ()
+endOrLoop Nothing loopServer = loopServer
+endOrLoop (Just fid) loopServer = do
   quit <- getsServer squit
-  side <- getsState sside
-  gquit <- getsState $ gquit . (EM.! side) . sfaction
-  (_, total) <- getsState calculateTotal
+  gquit <- getsState $ gquit . (EM.! fid) . sfaction
+  (_, total) <- getsState (calculateTotal fid)
   -- The first, boolean component of quit determines
   -- if ending screens should be shown, the other argument describes
   -- the cause of the disruption of game flow.
@@ -350,7 +351,7 @@ endOrLoop loopServer = do
       -- Do nothing, that is, quit the game loop.
     (Nothing, Just (showScreens, status@Killed{})) -> do
       -- TODO: rewrite; handle killed faction, if human, mostly ignore if not
-      nullR <- sendQueryCli side NullReportCli
+      nullR <- sendQueryCli fid NullReportCli
       unless nullR $ do
         -- Sisplay any leftover report. Suggest it could be the cause of death.
         broadcastUI [] $ MoreBWCli "Who would have thought?"
@@ -362,19 +363,19 @@ endOrLoop loopServer = do
           -- Do nothing, that is, quit the game loop.
         )
         (do
-           when showScreens $ handleScores True status total
-           go <- sendQueryUI side
+           when showScreens $ handleScores fid True status total
+           go <- sendQueryUI fid
                  $ ConfirmMoreBWCli "Next time will be different."
            when (not go) $ abortWith "You could really win this time."
            restartGame loopServer
         )
     (Nothing, Just (showScreens, status@Victor)) -> do
-      nullR <- sendQueryCli side NullReportCli
+      nullR <- sendQueryCli fid NullReportCli
       unless nullR $ do
         -- Sisplay any leftover report. Suggest it could be the master move.
         broadcastUI [] $ MoreFullCli "Brilliant, wasn't it?"
       when showScreens $ do
-        tryIgnore $ handleScores True status total
+        tryIgnore $ handleScores fid True status total
         broadcastUI [] $ MoreFullCli "Can it be done better, though?"
       restartGame loopServer
     (Nothing, Just (_, Restart)) -> restartGame loopServer
@@ -393,9 +394,6 @@ restartGame loopServer = do
   let bcast = funBroadcastCli (\fid -> RestartCli (pers EM.! fid) defLoc)
   bcast
   withAI bcast
-  faction <- getsState sfaction
-  let firstHuman = fst . head $ filter (isHumanFact . snd) $ EM.assocs faction
-  switchGlobalSelectedSide firstHuman
   cmdAtomicBroad SyncAtomic
   saveGameBkp
   broadcastCli [] $ ShowMsgCli "This time for real."

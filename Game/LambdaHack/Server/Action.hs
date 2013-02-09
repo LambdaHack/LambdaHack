@@ -16,7 +16,6 @@ module Game.LambdaHack.Server.Action
   , broadcastCli, broadcastPosCli, funBroadcastCli
     -- * Assorted primitives
   , saveGameSer, saveGameBkp, dumpCfg, mkConfigRules, handleScores
-  , switchGlobalSelectedSide
   , withAI, rndToAction, resetFidPerception, getPerFid
   ) where
 
@@ -111,21 +110,16 @@ dumpCfg fn = do
 -- Warning: scores are shown during the game,
 -- so we should be careful not to leak secret information through them
 -- (e.g., the nature of the items through the total worth of inventory).
-handleScores :: MonadServerChan m => Bool -> Status -> Int -> m ()
-handleScores write status total =
+handleScores :: MonadServerChan m => FactionId -> Bool -> Status -> Int -> m ()
+handleScores fid write status total =
   when (total /= 0) $ do
     config <- getsServer sconfig
     time <- getsState getTime
     curDate <- liftIO getClockTime
     slides <-
       liftIO $ register config write total time curDate status
-    side <- getsState sside
-    go <- sendQueryUI side $ ShowSlidesCli slides
+    go <- sendQueryUI fid $ ShowSlidesCli slides
     when (not go) abort
-
-switchGlobalSelectedSide :: MonadAction m => FactionId -> m ()
-switchGlobalSelectedSide =
-  modifyState . switchGlobalSelectedSideOnlyForGlobalState
 
 withAI :: MonadServerChan m => m a -> m a
 withAI m = do

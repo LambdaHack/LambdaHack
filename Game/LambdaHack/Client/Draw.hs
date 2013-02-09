@@ -76,7 +76,7 @@ draw dm cops per
                                         then Color.Blue
                                         else Color.defBG
                else \ _vis _visPl -> Color.defBG
-      (_, wealth)  = calculateTotal s
+      (_, wealth) = calculateTotal (sside cli) s
       damage  = case Item.strongestSword cops bitems of
                   Just sw ->
                     case Item.jkind (sdisco s) sw of

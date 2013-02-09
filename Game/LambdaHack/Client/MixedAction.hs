@@ -99,7 +99,7 @@ leaderProjectGroupItem :: MonadClientUI m
                        => MU.Part -> MU.Part -> [Char]
                        -> m CmdSer
 leaderProjectGroupItem verb object syms = do
-  side <- getsState sside
+  side <- getsClient sside
   genemy <- getsState $ genemy . (EM.! side) . sfaction
   ms <- getsState $ actorNotProjList (`elem` genemy) . getArena
   lxsize <- getsState (lxsize . getArena)
@@ -371,5 +371,5 @@ gameRestart = do
   when (not b1) $ neverMind True
   b2 <- displayYesNo "Current progress will be lost! Really restart the game?"
   when (not b2) $ abortWith "Yea, would be a pity to leave them to die."
-  side <- getsState sside
+  side <- getsClient sside
   return $ GameRestartSer side

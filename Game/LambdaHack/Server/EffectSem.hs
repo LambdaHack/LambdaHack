@@ -94,10 +94,10 @@ itemEffect verbosity source target item block = do
 -- | Make the item known to the leader.
 discover :: MonadServerChan m => Discoveries -> Item -> m ()
 discover discoS i = do
-  side <- getsState sside
   let ix = jkindIx i
       ik = discoS EM.! ix
-  sendUpdateCli side $ DiscoverCli ik i
+-- TODO: send to all clients that see tpos.
+  sendUpdateCli undefined $ DiscoverCli ik i
 
 -- | The boolean part of the result says if the ation was interesting
 -- and the string part describes how the target reacted
@@ -389,7 +389,8 @@ effLvlGoUp aid k = do
   arena <- getsState sarena
   glo <- getState
   case whereTo glo arena k of
-    Nothing -> fleeDungeon -- we are at the "end" of the dungeon
+    Nothing -> fleeDungeon (bfaction pbodyCurrent)
+               -- We are at the "end" of the dungeon.
     Just (nln, npos) ->
       assert (nln /= arena `blame` (nln, "stairs looped")) $ do
         timeCurrent <- getsState getTime
@@ -489,15 +490,14 @@ focusIfOurs _target = return True
 
 -- TODO: right now it only works for human factions (sendQueryUI).
 -- | The leader leaves the dungeon.
-fleeDungeon :: MonadServerChan m => m ()
-fleeDungeon = do
+fleeDungeon :: MonadServerChan m => FactionId -> m ()
+fleeDungeon fid = do
   Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsState scops
   glo <- getState
-  side <- getsState sside
-  go <- sendQueryUI side $ ConfirmYesNoCli
+  go <- sendQueryUI fid $ ConfirmYesNoCli
           "This is the way out. Really leave now?"
   when (not go) $ abortWith "Game resumed."
-  let (bag, total) = calculateTotal glo
+  let (bag, total) = calculateTotal fid glo
       _upd f = f {gquit = Just (False, Victor)}
 -- TODO: move to StateServer?
   return ()
@@ -505,10 +505,10 @@ fleeDungeon = do
   if total == 0
   then do
     -- The player can back off at each of these steps.
-    go1 <- sendQueryUI side $ ConfirmMoreBWCli
+    go1 <- sendQueryUI fid $ ConfirmMoreBWCli
              "Afraid of the challenge? Leaving so soon and empty-handed?"
     when (not go1) $ abortWith "Brave soul!"
-    go2 <- sendQueryUI side $ ConfirmMoreBWCli
+    go2 <- sendQueryUI fid $ ConfirmMoreBWCli
             "This time try to grab some loot before escape!"
     when (not go2) $ abortWith "Here's your chance!"
   else do
@@ -517,7 +517,7 @@ fleeDungeon = do
           [ "Congratulations, you won!"
           , "Here's your loot, worth"
           , MU.NWs total currencyName ]
-    void $ sendQueryUI side $ ConfirmShowItemsFloorCli winMsg bag
+    void $ sendQueryUI fid $ ConfirmShowItemsFloorCli winMsg bag
     let _upd2 f = f {gquit = Just (True, Victor)}
 -- TODO: move to StateServer?
     return ()
@@ -582,7 +582,7 @@ gameOver fid showEndingScreens = do
     s <- getState
     depth <- getsState sdepth
     time <- getsState getTime
-    let (bag, total) = calculateTotal s
+    let (bag, total) = calculateTotal fid s
         failMsg | timeFit time timeTurn < 300 =
           "That song shall be short."
                 | total < 100 =
@@ -607,8 +607,7 @@ gameOver fid showEndingScreens = do
         modifyState $ updateFaction (EM.adjust upd2 fid)
       else do
         -- TODO: do this for the killed factions, not for side
-        side <- getsState sside
-        go <- sendQueryUI side $ ConfirmShowItemsFloorCli loseMsg bag
+        go <- sendQueryUI fid $ ConfirmShowItemsFloorCli loseMsg bag
         when go $ do
           let upd2 f = f {gquit = Just (True, Killed arena)}
           modifyState $ updateFaction (EM.adjust upd2 fid)

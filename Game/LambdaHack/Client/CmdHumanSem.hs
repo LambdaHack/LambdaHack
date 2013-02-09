@@ -86,7 +86,7 @@ cmdAction cli s cmd =
           -- We always see actors from our own faction.
           tgt = posToActor tpos s
       in case tgt of
-        Just target | bfaction (getActorBody target s) == sside s
+        Just target | bfaction (getActorBody target s) == bfaction sm
                       && not (bproj (getActorBody target s)) ->
           -- Select adjacent actor by bumping into him. Takes no time.
           selectLeader target arena

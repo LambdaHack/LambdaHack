@@ -51,7 +51,7 @@ pickupCli aid iid k l = do
   Kind.COps{coactor, coitem} <- getsState scops
   body <- getsState (getActorBody aid)
   item <- getsState $ getItemBody iid
-  side <- getsState sside
+  side <- getsClient sside
   disco <- getsState sdisco
   if bfaction body == side
     then msgAdd $ makePhrase [ letterLabel l
@@ -188,13 +188,12 @@ showAttackCli source target verb stack say = do
 
 -- TODO: here or elsewhere re-read RNG seed from config file
 restartCli :: (MonadAction m, MonadClient m) => FactionPers -> State -> m ()
-restartCli sper locRaw = do
+restartCli sper loc = do
   shistory <- getsClient shistory
   sconfigUI <- getsClient sconfigUI
-  let cli = defStateClient shistory sconfigUI
+  side <- getsClient sside
+  let cli = defStateClient shistory sconfigUI side
   putClient cli {sper}
-  side <- getsState sside
-  let loc = switchGlobalSelectedSideOnlyForGlobalState side locRaw  -- :O)
   putState loc
   -- Save ASAP in case of crashes and disconnects.
   --TODO
@@ -309,7 +308,7 @@ setArenaLeaderCli arena actor = do
 handleAI :: MonadClient m => ActorId -> m CmdSer
 handleAI actor = do
   body <- getsState $ getActorBody actor
-  side <- getsState sside
+  side <- getsClient sside
   assert (bfaction body == side `blame` (actor, bfaction body, side)) $ do
     Kind.COps{costrat=Kind.Ops{okind}} <- getsState scops
     leader <- getsClient sleader

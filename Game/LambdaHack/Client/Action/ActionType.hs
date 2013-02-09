@@ -93,7 +93,7 @@ executorCli m sess s cli d =
     d
     (\_ _ _ -> return ())
     (\msg -> let err = "unhandled abort for client"
-                       <+> showT (sfaction s EM.! sside s)
+                       <+> showT (sfaction s EM.! sside cli)
                        <+> ":" <+> msg
              in fail $ T.unpack err)
     s

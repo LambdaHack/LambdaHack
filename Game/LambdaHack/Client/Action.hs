@@ -329,7 +329,7 @@ clientGameSave toBkp isAI = do
   s <- getState
   cli <- getClient
   configUI <- getsClient sconfigUI
-  side <- getsState sside
+  side <- getsClient sside
   liftIO $ Save.saveGameCli (saveName side isAI) toBkp configUI s cli
 
 clientDisconnect :: MonadClient m => Bool -> m ()
@@ -346,7 +346,7 @@ restoreGame isAI = do
   configUI <- getsClient sconfigUI
   let pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
       title = rtitle $ Kind.stdRuleset corule
-  side <- getsState sside
+  side <- getsClient sside
   let sName = saveName side isAI
   liftIO $ Save.restoreGameCli sName configUI pathsDataFile title
 
@@ -375,9 +375,10 @@ exeFrontend cops@Kind.COps{corule} executorC loopFrontend = do
   let !sbinding = stdBinding sconfigUI  -- evaluate to check for errors
       font = configFont sconfigUI
   defHist <- defHistory
-  let cli = defStateClient defHist sconfigUI
+  let cli fid = defStateClient defHist sconfigUI fid
+      loc = defStateLocal cops
       exe sfs fid chanCli hasUI =
-        executorC hasUI SessionUI{..} (defStateLocal cops fid) cli chanCli
+        executorC hasUI SessionUI{..} loc (cli fid) chanCli
   startup font $ \sfs -> loopFrontend (exe sfs)
 
 -- | Invoke pseudo-random computation with the generator kept in the state.

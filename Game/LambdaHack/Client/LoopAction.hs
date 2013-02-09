@@ -40,7 +40,7 @@ waitForCmd :: MonadClientChan m
            => (CmdUpdateCli -> m ()) -> (CmdUpdateCli -> Bool)
            -> m ()
 waitForCmd cmdUpdateCli expected = do
-  side <- getsState sside
+  side <- getsClient sside
   cmd1 <- readChanFromSer
   case cmd1 of
     Left (CmdUpdateCli cmd) | expected cmd -> cmdUpdateCli cmd
@@ -55,7 +55,7 @@ loopCli2 cmdUpdateCli cmdQueryCli = do
   loop
  where
   loop = do
-    side <- getsState sside
+    side <- getsClient sside
     cmd2 <- readChanFromSer
     case cmd2 of
       Right _ -> assert `failure` (side, cmd2)
