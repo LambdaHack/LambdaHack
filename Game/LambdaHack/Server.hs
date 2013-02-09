@@ -19,8 +19,8 @@ cmdSerSem :: (MonadAction m, MonadServerChan m) => CmdSer -> m ()
 cmdSerSem cmd = do
   cmds <- execWriterT $ cmdSerWriterT cmd
   let process cmd1 = do
-        cmdAtomicBroad cmd1
         cmdAtomicSem cmd1
+        cmdAtomicBroad cmd1
   mapM_ process cmds
 
 cmdSerWriterT :: MonadServerChan m => CmdSer -> WriterT [CmdAtomic] m ()
@@ -34,7 +34,7 @@ cmdSerWriterT cmd = case cmd of
   MoveSer aid dir -> moveSer aid dir
   RunSer aid dir -> runSer aid dir
   GameExitSer -> gameExitSer
-  GameRestartSer -> undefined -- gameRestartSer
+  GameRestartSer -> gameRestartSer
   GameSaveSer -> gameSaveSer
   CfgDumpSer -> cfgDumpSer
   ClearPathSer aid -> clearPathSer aid

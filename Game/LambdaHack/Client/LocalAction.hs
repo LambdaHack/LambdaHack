@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.LocalAction where
 import qualified Paths_LambdaHack as Self (version)
 
 import Control.Monad
-import Control.Monad.Writer.Strict (WriterT, lift, tell)
+import Control.Monad.Writer.Strict (WriterT, tell)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Function
@@ -345,7 +345,7 @@ cancelCurrent :: MonadClient m => WriterT Slideshow m () -> WriterT Slideshow m 
 cancelCurrent h = do
   stgtMode <- getsClient stgtMode
   if isJust stgtMode
-    then lift $ endTargeting False
+    then endTargeting False
     else h  -- nothing to cancel right now, treat this as a command invocation
 
 -- | Display the main menu.
@@ -407,7 +407,7 @@ acceptCurrent :: MonadClient m => WriterT Slideshow m () -> WriterT Slideshow m 
 acceptCurrent h = do
   stgtMode <- getsClient stgtMode
   if isJust stgtMode
-    then lift $ endTargeting True
+    then endTargeting True
     else h  -- nothing to accept right now, treat this as a command invocation
 
 -- | End targeting mode, accepting the current position or not.

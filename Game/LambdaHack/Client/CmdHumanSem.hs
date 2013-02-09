@@ -5,10 +5,10 @@ module Game.LambdaHack.Client.CmdHumanSem
   ) where
 
 import Control.Monad
-import Control.Monad.Writer.Strict (WriterT, lift)
+import Control.Monad.Writer.Strict (WriterT)
+import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 import Data.Text (Text)
-import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -69,14 +69,14 @@ cmdAction cli s cmd =
       Level{lxsize} =
         maybe (getArena s) ((sdungeon s EM.!) . tgtLevelId) tgtMode
   in case cmd of
-    Apply{..} -> lift $ fmap Just $ leaderApplyGroupItem verb object syms
+    Apply{..} -> fmap Just $ leaderApplyGroupItem verb object syms
     Project{} | isNothing tgtLoc -> retarget >> return Nothing
-    Project{..} -> lift $ fmap Just $ leaderProjectGroupItem verb object syms
-    TriggerDir{..} -> lift $ fmap Just $ leaderTriggerDir feature verb
-    TriggerTile{..} -> lift $ fmap Just $ leaderTriggerTile feature
-    Pickup -> lift $ fmap Just $ pickupItem
-    Drop   -> lift $ fmap Just $ dropItem
-    Wait   -> lift $ fmap Just $ waitBlock
+    Project{..} -> fmap Just $ leaderProjectGroupItem verb object syms
+    TriggerDir{..} -> fmap Just $ leaderTriggerDir feature verb
+    TriggerTile{..} -> fmap Just $ leaderTriggerTile feature
+    Pickup -> fmap Just $ pickupItem
+    Drop -> fmap Just $ dropItem
+    Wait -> fmap Just $ waitBlock
     Move v | isJust tgtMode ->
       let dir = toDir lxsize v
       in moveCursor dir 1 >> return Nothing
@@ -93,31 +93,31 @@ cmdAction cli s cmd =
             >>= assert `trueM`
                   (leader, target, "leader bumps into himself" :: Text)
             >> return Nothing
-        _ -> lift $ fmap Just $ movePl dir
+        _ -> fmap Just $ movePl dir
     Run v | isJust tgtMode ->
       let dir = toDir lxsize v
       in moveCursor dir 10 >> return Nothing
     Run v ->
       let dir = toDir lxsize v
-      in lift $ fmap Just $ runPl dir
+      in fmap Just $ runPl dir
 
-    GameExit    -> lift $ fmap Just $ gameExit
-    GameRestart -> lift $ fmap Just $ gameRestart
-    GameSave    -> lift $ fmap Just $ gameSave
-    CfgDump     -> lift $ fmap Just $ dumpConfig
+    GameExit    -> fmap Just $ gameExit
+    GameRestart -> fmap Just $ gameRestart
+    GameSave    -> fmap Just $ gameSave
+    CfgDump     -> fmap Just $ dumpConfig
     Inventory   -> inventory >> return Nothing
     TgtFloor    -> (targetFloor   $ TgtExplicit arena) >> return Nothing
     TgtEnemy    -> (targetEnemy $ TgtExplicit arena) >> return Nothing
     TgtAscend k -> tgtAscend k >> return Nothing
-    EpsIncr b   -> lift $ epsIncr b >> return Nothing
+    EpsIncr b   -> epsIncr b >> return Nothing
     Cancel      -> cancelCurrent displayMainMenu >> return Nothing
     Accept      -> acceptCurrent displayHelp >> return Nothing
-    Clear       -> lift $ clearCurrent >> return Nothing
+    Clear       -> clearCurrent >> return Nothing
     History     -> displayHistory >> return Nothing
-    MemberCycle -> lift $ cycleMember >> return Nothing
-    MemberBack  -> lift $ backCycleMember >> return Nothing
+    MemberCycle -> cycleMember >> return Nothing
+    MemberBack  -> backCycleMember >> return Nothing
     Help        -> displayHelp >> return Nothing
-    SelectHero k -> lift $ selectHero k >> return Nothing
+    SelectHero k -> selectHero k >> return Nothing
     DebugArea   -> modifyClient toggleMarkVision >> return Nothing
     DebugOmni   -> modifyClient toggleOmniscient >> return Nothing  -- TODO: Server
     DebugSmell  -> modifyClient toggleMarkSmell >> return Nothing

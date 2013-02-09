@@ -42,6 +42,7 @@ cmdAtomicSem cmd = case cmd of
   AlterSmellAtomic diffL -> alterSmellAtomic diffL
   AlterPathAtomic aid fromPath toPath -> alterPathAtomic aid fromPath toPath
   ColorActorAtomic aid fromCol toCol -> colorActorAtomic aid fromCol toCol
+  FactionQuitAtomic fid fromSt toSt -> factionQuitAtomic fid fromSt toSt
   SyncAtomic -> return ()
 
 resetsFovAtomic :: MonadActionRO m => FactionId -> CmdAtomic -> m Bool
@@ -67,28 +68,32 @@ fidEquals fid aid = do
   afid <- getsState $ bfaction . getActorBody aid
   return $ fid == afid
 
-cmdPosAtomic :: MonadActionRO m => CmdAtomic -> m [Point]
+cmdPosAtomic :: MonadActionRO m => CmdAtomic -> m (Maybe [Point])
 cmdPosAtomic cmd = case cmd of
   HealAtomic _ aid -> singlePos $ posOfAid aid
   HasteAtomic aid _ -> singlePos $ posOfAid aid
   DominateAtomic _ _ target -> singlePos $ posOfAid target
-  SpawnAtomic _ body -> return $ [bpos body]
-  KillAtomic _ body -> return $ [bpos body]
+  SpawnAtomic _ body -> return $ Just [bpos body]
+  KillAtomic _ body -> return $ Just [bpos body]
   CreateItemAtomic _ _ _ c -> singlePos $ posOfContainer c
   DestroyItemAtomic _ _ _ c -> singlePos $ posOfContainer c
-  MoveItemAtomic _ _ c1 c2 -> mapM posOfContainer [c1, c2]
+  MoveItemAtomic _ _ c1 c2 -> fmap Just $ mapM posOfContainer [c1, c2]
   WaitAtomic aid _ _ -> singlePos $ posOfAid aid
-  ChangeTileAtomic p _ _ -> return [p]
-  MoveActorAtomic _ fromP toP -> return [fromP, toP]
-  DisplaceActorAtomic source target -> mapM posOfAid [source, target]
-  AlterSecretAtomic _ -> return []  -- none of clients' business
-  AlterSmellAtomic diffL -> return $ map fst diffL
+  ChangeTileAtomic p _ _ -> return $ Just [p]
+  MoveActorAtomic _ fromP toP -> return $ Just [fromP, toP]
+  DisplaceActorAtomic source target ->
+    fmap Just $ mapM posOfAid [source, target]
+  AlterSecretAtomic _ -> return $ Just []  -- none of clients' business
+  AlterSmellAtomic _ -> return Nothing  -- always register
   AlterPathAtomic aid _ _ -> singlePos $ posOfAid aid
   ColorActorAtomic aid _ _ -> singlePos $ posOfAid aid
-  SyncAtomic -> return []
+  FactionQuitAtomic _ _ _ -> return Nothing  -- always learn
+  SyncAtomic -> return $ Just []
 
-singlePos :: MonadActionAbort m => m Point -> m [Point]
-singlePos m = fmap return m
+singlePos :: MonadActionAbort m => m Point -> m (Maybe [Point])
+singlePos m = do
+  pos <- m
+  return $ Just [pos]
 
 posOfAid :: MonadActionRO m => ActorId -> m Point
 posOfAid aid = getsState $ bpos . getActorBody aid
@@ -240,3 +245,10 @@ colorActorAtomic :: MonadAction m
                  => ActorId -> Maybe Color.Color -> Maybe Color.Color -> m ()
 colorActorAtomic aid _fromCol toCol =
   modifyState $ updateActorBody aid $ \b -> b {bcolor = toCol}
+
+factionQuitAtomic :: MonadAction m
+                  => FactionId -> Maybe (Bool, Status) -> Maybe (Bool, Status)
+                  -> m ()
+factionQuitAtomic fid _fromSt toSt = do
+  let adj fac = fac {gquit = toSt}
+  modifyState $ updateFaction $ EM.adjust adj fid

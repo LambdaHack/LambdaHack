@@ -5,7 +5,7 @@
 module Game.LambdaHack.Server.EffectSem where
 
 import Control.Monad
-import Control.Monad.Writer.Strict (WriterT, lift, tell)
+import Control.Monad.Writer.Strict (WriterT, tell)
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
@@ -105,7 +105,7 @@ discover discoS i = do
 eff :: MonadServerChan m
     => Effect.Effect -> Int -> ActorId -> ActorId -> Int
     -> WriterT [CmdAtomic] m (Bool, Text)
-eff Effect.NoEffect _ _ _ _ = lift $ effectNoEffect
+eff Effect.NoEffect _ _ _ _ = effectNoEffect
 eff Effect.Heal _ _ target power = effectHeal target power
 eff (Effect.Wound nDm) verbosity source target power =
   effectWound nDm verbosity source target power

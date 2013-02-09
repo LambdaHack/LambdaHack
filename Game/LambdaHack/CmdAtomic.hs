@@ -45,6 +45,7 @@ data CmdAtomic =
   | AlterSmellAtomic (DiffEM Point Time)
   | AlterPathAtomic ActorId (Maybe [Vector]) (Maybe [Vector])
   | ColorActorAtomic ActorId (Maybe Color.Color) (Maybe Color.Color)
+  | FactionQuitAtomic FactionId (Maybe (Bool, Status))(Maybe (Bool, Status))
   | SyncAtomic
   deriving Show
 
@@ -66,4 +67,5 @@ undoCmdAtomic cmd = case cmd of
   AlterSmellAtomic diffL -> AlterSmellAtomic $ map (second swap) diffL
   AlterPathAtomic aid fromPath toPath -> AlterPathAtomic aid toPath fromPath
   ColorActorAtomic aid fromCol toCol -> ColorActorAtomic aid toCol fromCol
+  FactionQuitAtomic fid fromSt toSt -> FactionQuitAtomic fid toSt fromSt
   SyncAtomic -> SyncAtomic

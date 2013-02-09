@@ -69,17 +69,11 @@ loopSer cmdSer executorC cops = do
   connServer
   -- Launch clients.
   launchClients executorC
-  -- Compute perception.
-  glo <- getState
-  ser <- getServer
-  config <- getsServer sconfig
-  let tryFov = stryFov $ sdebugSer ser
-      fovMode = fromMaybe (configFovMode config) tryFov
-      pers = dungeonPerception cops fovMode glo
-  modifyServer $ \ser1 -> ser1 {sper = dungeonPerception cops fovMode glo}
   -- Send init messages.
-  quit <- getsServer squit
+  initPer
+  pers <- getsServer sper
   defLoc <- getsState localFromGlobal
+  quit <- getsServer squit
   case quit of
     Nothing -> do  -- game restarted
       let bcast = funBroadcastCli (\fid -> RestartCli (pers EM.! fid) defLoc)
@@ -89,6 +83,7 @@ loopSer cmdSer executorC cops = do
       faction <- getsState sfaction
       let firstHuman = fst . head $ filter (isHumanFact . snd) $ EM.assocs faction
       switchGlobalSelectedSide firstHuman
+      cmdAtomicBroad SyncAtomic
       -- Save ASAP in case of crashes and disconnects.
       saveGameBkp
     _ -> do  -- game restored from a savefile
@@ -96,7 +91,6 @@ loopSer cmdSer executorC cops = do
       bcast
       withAI bcast
   modifyServer $ \ser1 -> ser1 {squit = Nothing}
-  cmdAtomicBroad SyncAtomic
   -- Loop.
   let loop (disp, prevHuman) = do
         time <- getsState getTime  -- the end time of this clip, inclusive
@@ -112,6 +106,17 @@ loopSer cmdSer executorC cops = do
   side <- getsState sside
   loop (True, side)
 
+initPer :: MonadServer m => m ()
+initPer = do
+  cops <- getsState scops
+  glo <- getState
+  ser <- getServer
+  config <- getsServer sconfig
+  let tryFov = stryFov $ sdebugSer ser
+      fovMode = fromMaybe (configFovMode config) tryFov
+      pers = dungeonPerception cops fovMode glo
+  modifyServer $ \ser1 -> ser1 {sper = pers}
+
 cmdAtomicBroad :: MonadServerChan m => CmdAtomic -> m ()
 cmdAtomicBroad cmd = do
   arena <- getsState sarena
@@ -119,18 +124,22 @@ cmdAtomicBroad cmd = do
   itemD <- getsState sitem
   faction <- getsState sfaction
   ps <- cmdPosAtomic cmd
-  let es = ES.fromList ps
-      send fid = do
+  let send fid = do
+        perOld <- getPerFid fid
         resets <- resetsFovAtomic fid cmd
-        when resets $ do
-          resetFidPerception fid
-          per <- getPerFid fid
-          let sendUp = sendUpdateCli fid
-                     $ RememberPerCli arena per lvl itemD faction
-          sendUp
-          withAI sendUp
-        per <- getPerFid fid
-        unless (ES.null $ es `ES.intersection` totalVisible per) $ do
+        visible <-
+          if resets
+          then do
+            resetFidPerception fid
+            perNew <- getPerFid fid
+            let sendUp = sendUpdateCli fid
+                         $ RememberPerCli arena perNew lvl itemD faction
+            sendUp
+            withAI sendUp
+            return $ totalVisible perOld `ES.union` totalVisible perNew
+          else return $ totalVisible perOld
+        let allVis = all (`ES.member` visible)
+        when (maybe True allVis ps) $ do
           let sendCmd = sendUpdateCli fid $ AtomicSeenCli cmd
           sendCmd
           withAI sendCmd
@@ -351,6 +360,7 @@ restartGame :: (MonadAction m, MonadServerChan m) => m () -> m ()
 restartGame loopServer = do
   cops <- getsState scops
   gameReset cops
+  initPer
   pers <- getsServer sper
   -- This state is quite small, fit for transmition to the client.
   -- The biggest part is content, which really needs to be updated
@@ -362,6 +372,7 @@ restartGame loopServer = do
   faction <- getsState sfaction
   let firstHuman = fst . head $ filter (isHumanFact . snd) $ EM.assocs faction
   switchGlobalSelectedSide firstHuman
+  cmdAtomicBroad SyncAtomic
   saveGameBkp
   broadcastCli [] $ ShowMsgCli "This time for real."
   broadcastUI [] $ DisplayPushCli

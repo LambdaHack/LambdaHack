@@ -400,10 +400,11 @@ gameExitSer = modifyServer $ \ser -> ser {squit = Just True}
 
 -- ** GameRestart
 
-gameRestartSer :: MonadAction m => m ()
+gameRestartSer :: MonadActionRO m => WriterT [CmdAtomic] m ()
 gameRestartSer = do
-  let upd f = f {gquit = Just (False, Restart)}
-  modifyState $ updateSide upd
+  side <- getsState sside
+  oldSt <- getsState $ gquit . getSide
+  tell [FactionQuitAtomic side oldSt $ Just (False, Restart)]
 
 -- ** GameSaveSer
 
