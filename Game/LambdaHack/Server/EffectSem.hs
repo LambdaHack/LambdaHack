@@ -198,7 +198,7 @@ effectDominate source target = do
       let lm = actorNotProjList (`elem` genemy) lvl
           cross m = bpos m : vicinityCardinal lxsize lysize (bpos m)
           vis = ES.fromList $ concatMap cross lm
-      sendUpdateCli (bfaction sm) $ RememberCli arena vis lvl
+      sendUpdateCli (bfaction sm) $ RemCli arena vis lvl
       return (True, "A dozen voices yells in anger.")
     else do
       Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops

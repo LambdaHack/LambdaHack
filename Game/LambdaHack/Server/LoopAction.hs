@@ -117,33 +117,59 @@ initPer = do
       pers = dungeonPerception cops fovMode glo
   modifyServer $ \ser1 -> ser1 {sper = pers}
 
-cmdAtomicBroad :: MonadServerChan m => CmdAtomic -> m ()
+cmdAtomicBroad :: (MonadAction m, MonadServerChan m) => CmdAtomic -> m ()
 cmdAtomicBroad cmd = do
-  arena <- getsState sarena
-  lvl <- getsState getArena
-  itemD <- getsState sitem
-  faction <- getsState sfaction
-  ps <- cmdPosAtomic cmd
-  let send fid = do
+  arenaOld <- getsState sarena
+  lvlOld <- getsState getArena
+  itemDOld <- getsState sitem
+  factionOld <- getsState sfaction
+  cmdAtomicSem cmd
+  arenaNew <- getsState sarena
+  lvlNew <- getsState getArena
+  itemDNew <- getsState sitem
+  factionNew <- getsState sfaction
+  (pStart, pEnd) <- cmdPosAtomic cmd
+  let vis per = all (`ES.member` totalVisible per)
+      send fid = do
         perOld <- getPerFid fid
         resets <- resetsFovAtomic fid cmd
-        visible <-
-          if resets
+        if resets
+        then do
+          resetFidPerception fid
+          perNew <- getPerFid fid
+          let startSeen = either id (vis perOld) pStart
+              endSeen = either id (vis perNew) pEnd
+          if startSeen && endSeen
           then do
-            resetFidPerception fid
-            perNew <- getPerFid fid
-            let sendUp = sendUpdateCli fid
-                         $ RememberPerCli arena perNew lvl itemD faction
+            let sendUp =
+                  sendUpdateCli fid
+                  $ RememberPerCli perNew arenaOld lvlOld itemDOld factionOld
             sendUp
             withAI sendUp
-            return $ totalVisible perOld `ES.union` totalVisible perNew
-          else return $ totalVisible perOld
-        let allVis = all (`ES.member` visible)
-        when (maybe True allVis ps) $ do
-          let sendCmd = sendUpdateCli fid $ AtomicSeenCli cmd
-          sendCmd
-          withAI sendCmd
-  mapM_ send $ EM.keys faction
+            let sendCmd = sendUpdateCli fid $ AtomicSeenCli cmd
+            sendCmd
+            withAI sendCmd
+          else do
+            let sendUp =
+                  sendUpdateCli fid
+                  $ RememberPerCli perNew arenaNew lvlNew itemDNew factionNew
+            sendUp
+            withAI sendUp
+        else do
+          let startSeen = either id (vis perOld) pStart
+              endSeen = either id (vis perOld) pEnd
+          if startSeen && endSeen
+          then do
+            let sendCmd = sendUpdateCli fid $ AtomicSeenCli cmd
+            sendCmd
+            withAI sendCmd
+          else do
+            let sendUp =
+                  sendUpdateCli fid
+                  $ RememberCli arenaNew lvlNew itemDNew factionNew
+            sendUp
+            withAI sendUp
+  mapM_ send $ EM.keys factionNew
 
 -- TODO: switch levels alternating between player factions,
 -- if there are many and on distinct levels.

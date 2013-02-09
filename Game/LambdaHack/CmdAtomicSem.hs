@@ -68,32 +68,46 @@ fidEquals fid aid = do
   afid <- getsState $ bfaction . getActorBody aid
   return $ fid == afid
 
-cmdPosAtomic :: MonadActionRO m => CmdAtomic -> m (Maybe [Point])
+-- | Produces the positions where the action takes place: a sets where
+-- the action starts and a set where the action ends. The boolean indicates
+-- that, regardless of the position, the start (or end) is always visible
+-- to clients (or always invisible).
+cmdPosAtomic :: MonadActionRO m
+             => CmdAtomic -> m (Either Bool [Point], Either Bool [Point])
 cmdPosAtomic cmd = case cmd of
   HealAtomic _ aid -> singlePos $ posOfAid aid
   HasteAtomic aid _ -> singlePos $ posOfAid aid
   DominateAtomic _ _ target -> singlePos $ posOfAid target
-  SpawnAtomic _ body -> return $ Just [bpos body]
-  KillAtomic _ body -> return $ Just [bpos body]
+  SpawnAtomic _ body ->
+    -- Faction sees spawning of its actor, even if it spawns out of sight.
+    return (Left True, Right [bpos body])
+  KillAtomic _ body -> return (Right [bpos body], Left True)
   CreateItemAtomic _ _ _ c -> singlePos $ posOfContainer c
   DestroyItemAtomic _ _ _ c -> singlePos $ posOfContainer c
-  MoveItemAtomic _ _ c1 c2 -> fmap Just $ mapM posOfContainer [c1, c2]
+  MoveItemAtomic _ _ c1 c2 -> do  -- works even if item moved between positions
+    p1 <- posOfContainer c1
+    p2 <- posOfContainer c2
+    return (Right [p1], Right [p2])
   WaitAtomic aid _ _ -> singlePos $ posOfAid aid
-  ChangeTileAtomic p _ _ -> return $ Just [p]
-  MoveActorAtomic _ fromP toP -> return $ Just [fromP, toP]
-  DisplaceActorAtomic source target ->
-    fmap Just $ mapM posOfAid [source, target]
-  AlterSecretAtomic _ -> return $ Just []  -- none of clients' business
-  AlterSmellAtomic _ -> return Nothing  -- always register
+  ChangeTileAtomic p _ _ -> singlePos $ return p
+  MoveActorAtomic _ fromP toP -> return (Right [fromP], Right [toP])
+  DisplaceActorAtomic source target -> do
+    p1 <- posOfAid source
+    p2 <- posOfAid target
+    return (Right [p1, p2], Right [p1, p2])
+  AlterSecretAtomic _ ->
+    return (Left False, Left False)  -- none of clients' business
+  AlterSmellAtomic _ -> return (Left True, Left True)  -- always register
   AlterPathAtomic aid _ _ -> singlePos $ posOfAid aid
   ColorActorAtomic aid _ _ -> singlePos $ posOfAid aid
-  FactionQuitAtomic _ _ _ -> return Nothing  -- always learn
-  SyncAtomic -> return $ Just []
+  FactionQuitAtomic _ _ _ -> return (Left True, Left True)  -- always learn
+  SyncAtomic -> return (Left False, Left False)
 
-singlePos :: MonadActionAbort m => m Point -> m (Maybe [Point])
+singlePos :: MonadActionAbort m
+          => m Point -> m (Either Bool [Point], Either Bool [Point])
 singlePos m = do
   pos <- m
-  return $ Just [pos]
+  return (Right [pos], Right [pos])
 
 posOfAid :: MonadActionRO m => ActorId -> m Point
 posOfAid aid = getsState $ bpos . getActorBody aid

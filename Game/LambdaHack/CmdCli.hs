@@ -43,8 +43,9 @@ data CmdUpdateCli =
   | ShowMsgCli Msg
   | InvalidateArenaCli LevelId
   | DiscoverCli (Kind.Id ItemKind) Item
-  | RememberCli LevelId (ES.EnumSet Point) Level  -- TODO: Level is an overkill
-  | RememberPerCli LevelId Perception Level ItemDict FactionDict
+  | RemCli LevelId (ES.EnumSet Point) Level
+  | RememberCli LevelId Level ItemDict FactionDict
+  | RememberPerCli Perception LevelId Level ItemDict FactionDict
   | SwitchLevelCli ActorId LevelId Actor ItemBag
   | ProjectCli Point ActorId Item
   | ShowAttackCli ActorId ActorId MU.Part Item Bool

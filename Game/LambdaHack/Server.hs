@@ -8,7 +8,6 @@ import Control.Monad.Writer.Strict (WriterT, execWriterT)
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.CmdAtomic
-import Game.LambdaHack.CmdAtomicSem
 import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Server.Action
 import Game.LambdaHack.Server.CmdSerSem
@@ -18,10 +17,7 @@ import Game.LambdaHack.Server.LoopAction
 cmdSerSem :: (MonadAction m, MonadServerChan m) => CmdSer -> m ()
 cmdSerSem cmd = do
   cmds <- execWriterT $ cmdSerWriterT cmd
-  let process cmd1 = do
-        cmdAtomicSem cmd1
-        cmdAtomicBroad cmd1
-  mapM_ process cmds
+  mapM_ cmdAtomicBroad cmds
 
 cmdSerWriterT :: MonadServerChan m => CmdSer -> WriterT [CmdAtomic] m ()
 cmdSerWriterT cmd = case cmd of
