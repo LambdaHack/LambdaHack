@@ -34,15 +34,15 @@ data CmdAtomic =
   | DominateAtomic FactionId FactionId ActorId
   | SpawnAtomic ActorId Actor
   | KillAtomic ActorId Actor
-  | CreateItemAtomic ItemId Item Int Container
-  | DestroyItemAtomic ItemId Item Int Container
-  | MoveItemAtomic ItemId Int Container Container
+  | CreateItemAtomic LevelId ItemId Item Int Container
+  | DestroyItemAtomic LevelId ItemId Item Int Container
+  | MoveItemAtomic LevelId ItemId Int Container Container
   | WaitAtomic ActorId Time Time
-  | ChangeTileAtomic Point (Kind.Id TileKind) (Kind.Id TileKind)
+  | ChangeTileAtomic Point LevelId (Kind.Id TileKind) (Kind.Id TileKind)
   | MoveActorAtomic ActorId Point Point
   | DisplaceActorAtomic ActorId ActorId
-  | AlterSecretAtomic (DiffEM Point Time)
-  | AlterSmellAtomic (DiffEM Point Time)
+  | AlterSecretAtomic LevelId (DiffEM Point Time)
+  | AlterSmellAtomic LevelId (DiffEM Point Time)
   | AlterPathAtomic ActorId (Maybe [Vector]) (Maybe [Vector])
   | ColorActorAtomic ActorId (Maybe Color.Color) (Maybe Color.Color)
   | FactionQuitAtomic FactionId (Maybe (Bool, Status)) (Maybe (Bool, Status))
@@ -56,15 +56,18 @@ undoCmdAtomic cmd = case cmd of
   DominateAtomic fromFid toFid target -> DominateAtomic toFid fromFid target
   SpawnAtomic aid body -> KillAtomic aid body
   KillAtomic aid body -> SpawnAtomic aid body
-  CreateItemAtomic iid item k c -> DestroyItemAtomic iid item k c
-  DestroyItemAtomic iid item k c -> CreateItemAtomic iid item k c
-  MoveItemAtomic iid k c1 c2 -> MoveItemAtomic iid k c2 c1
+  CreateItemAtomic lid iid item k c -> DestroyItemAtomic lid iid item k c
+  DestroyItemAtomic lid iid item k c -> CreateItemAtomic lid iid item k c
+  MoveItemAtomic lid iid k c1 c2 -> MoveItemAtomic lid iid k c2 c1
   WaitAtomic actor fromWait toWait -> WaitAtomic actor toWait fromWait
-  ChangeTileAtomic p fromTile toTile -> ChangeTileAtomic p toTile fromTile
+  ChangeTileAtomic p lid fromTile toTile ->
+    ChangeTileAtomic p lid toTile fromTile
   MoveActorAtomic aid fromP toP -> MoveActorAtomic aid toP fromP
   DisplaceActorAtomic source target -> DisplaceActorAtomic target source
-  AlterSecretAtomic diffL -> AlterSecretAtomic $ map (second swap) diffL
-  AlterSmellAtomic diffL -> AlterSmellAtomic $ map (second swap) diffL
+  AlterSecretAtomic lid diffL ->
+    AlterSecretAtomic lid $ map (second swap) diffL
+  AlterSmellAtomic lid diffL ->
+    AlterSmellAtomic lid $ map (second swap) diffL
   AlterPathAtomic aid fromPath toPath -> AlterPathAtomic aid toPath fromPath
   ColorActorAtomic aid fromCol toCol -> ColorActorAtomic aid toCol fromCol
   FactionQuitAtomic fid fromSt toSt -> FactionQuitAtomic fid toSt fromSt

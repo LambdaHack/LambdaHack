@@ -319,7 +319,7 @@ handleActors cmdSer subclipStart prevHuman disp = do
 
 -- | Advance the move time for the given actor.
 advanceTime :: MonadAction m => LevelId -> ActorId -> m ()
-advanceTime _lid aid = do
+advanceTime lid aid = do
   Kind.COps{coactor} <- getsState scops
   b <- getsState $ getActorBody aid
   let oldTime = btime b
@@ -329,10 +329,10 @@ advanceTime _lid aid = do
   let rm Nothing = assert `failure` aid
       rm (Just l) = let l2 = delete aid l
                     in if null l2 then Nothing else Just l2
-  modifyState $ updateArena $ updatePrio $ EM.alter rm oldTime
+  updateLevel lid $ updatePrio $ EM.alter rm oldTime
   let add Nothing = Just [aid]
       add (Just l) = Just $ aid : l
-  modifyState $ updateArena $ updatePrio $ EM.alter add newTime
+  updateLevel lid $ updatePrio $ EM.alter add newTime
 
 -- | Continue or restart or exit the game.
 endOrLoop :: (MonadAction m, MonadServerChan m)
@@ -485,7 +485,7 @@ gameReset cops@Kind.COps{coitem, corule, cotile} = do
         replicateM nri $ do
           pos <- rndToAction
                  $ findPos ltile (const (Tile.hasFeature cotile F.Boring))
-          cmds <- execWriterT $ createItems 1 pos
+          cmds <- execWriterT $ createItems 1 pos lid
           mapM_ cmdAtomicSem cmds
   mapM_ initialItems itemCounts
   modifyState $ updateSelectedArena entryLevel
@@ -572,6 +572,7 @@ regenerateLevelHP = do
 _addSmell :: MonadActionRO m => ActorId -> WriterT [CmdAtomic] m ()
 _addSmell aid = do
   time <- getsState getTime
-  pos <- getsState $ bpos . getActorBody aid
-  oldS <- getsState $ (EM.lookup pos) . lsmell . getArena
-  tell [AlterSmellAtomic [(pos, (oldS, Just $ timeAdd time smellTimeout))]]
+  b <- getsState $ getActorBody aid
+  oldS <- getsState $ (EM.lookup $ bpos b) . lsmell . getArena
+  let newTime = timeAdd time smellTimeout
+  tell [AlterSmellAtomic (blvl b) [(bpos b, (oldS, Just newTime))]]

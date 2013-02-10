@@ -32,15 +32,16 @@ cmdAtomicSem cmd = case cmd of
   DominateAtomic fromFid toFid target -> dominateAtomic fromFid toFid target
   SpawnAtomic aid body -> spawnAtomic aid body
   KillAtomic aid body -> killAtomic aid body
-  CreateItemAtomic iid item k c -> createItemAtomic iid item k c
-  DestroyItemAtomic iid item k c -> destroyItemAtomic iid item k c
-  MoveItemAtomic iid k c1 c2 -> moveItemAtomic iid k c1 c2
+  CreateItemAtomic lid iid item k c -> createItemAtomic lid iid item k c
+  DestroyItemAtomic lid iid item k c -> destroyItemAtomic lid iid item k c
+  MoveItemAtomic lid iid k c1 c2 -> moveItemAtomic lid iid k c1 c2
   WaitAtomic aid fromWait toWait -> waitAtomic aid fromWait toWait
-  ChangeTileAtomic p fromTile toTile -> changeTileAtomic p fromTile toTile
+  ChangeTileAtomic p lid fromTile toTile ->
+    changeTileAtomic p lid fromTile toTile
   MoveActorAtomic aid fromP toP -> moveActorAtomic aid fromP toP
   DisplaceActorAtomic source target -> displaceActorAtomic source target
-  AlterSecretAtomic diffL -> alterSecretAtomic diffL
-  AlterSmellAtomic diffL -> alterSmellAtomic diffL
+  AlterSecretAtomic lid diffL -> alterSecretAtomic lid diffL
+  AlterSmellAtomic lid diffL -> alterSmellAtomic lid diffL
   AlterPathAtomic aid fromPath toPath -> alterPathAtomic aid fromPath toPath
   ColorActorAtomic aid fromCol toCol -> colorActorAtomic aid fromCol toCol
   FactionQuitAtomic fid fromSt toSt -> factionQuitAtomic fid fromSt toSt
@@ -51,10 +52,10 @@ resetsFovAtomic fid cmd = case cmd of
   DominateAtomic source target _ -> return $ fid `elem` [source, target]
   SpawnAtomic _ body -> return $ fid == bfaction body
   KillAtomic _ _ -> return False  -- FOV left for 1 turn to see aftermath
-  CreateItemAtomic _ _ _ _ -> return False  -- unless shines
-  DestroyItemAtomic _ _ _ _ -> return False  -- ditto
-  MoveItemAtomic _ _ _ _ -> return False  -- assumption: stays on the same pos
-  ChangeTileAtomic _ _ _ -> return True  -- even if pos not visible initially
+  CreateItemAtomic _ _ _ _ _ -> return False  -- unless shines
+  DestroyItemAtomic _ _ _ _ _ -> return False  -- ditto
+  MoveItemAtomic _ _ _ _ _ -> return False  -- assumption: stays on same pos
+  ChangeTileAtomic _ _ _ _ -> return True  -- even if pos not visible initially
   MoveActorAtomic aid _ _ -> fidEquals fid aid  -- assumption: carries no light
 -- TODO: MoveActorCarryingLIghtAtomic _ _ _ -> True
   DisplaceActorAtomic source target -> do
@@ -83,22 +84,22 @@ cmdPosAtomic cmd = case cmd of
     -- Faction sees spawning of its actor, even if it spawns out of sight.
     return (Left True, Right [bpos body])
   KillAtomic _ body -> return (Right [bpos body], Left True)
-  CreateItemAtomic _ _ _ c -> singlePos $ posOfContainer c
-  DestroyItemAtomic _ _ _ c -> singlePos $ posOfContainer c
-  MoveItemAtomic _ _ c1 c2 -> do  -- works even if item moved between positions
+  CreateItemAtomic _ _ _ _ c -> singlePos $ posOfContainer c
+  DestroyItemAtomic _ _ _ _ c -> singlePos $ posOfContainer c
+  MoveItemAtomic _ _ _ c1 c2 -> do  -- works even if moved between positions
     p1 <- posOfContainer c1
     p2 <- posOfContainer c2
     return (Right [p1], Right [p2])
   WaitAtomic aid _ _ -> singlePos $ posOfAid aid
-  ChangeTileAtomic p _ _ -> singlePos $ return p
+  ChangeTileAtomic p _ _ _ -> singlePos $ return p
   MoveActorAtomic _ fromP toP -> return (Right [fromP], Right [toP])
   DisplaceActorAtomic source target -> do
     p1 <- posOfAid source
     p2 <- posOfAid target
     return (Right [p1, p2], Right [p1, p2])
-  AlterSecretAtomic _ ->
+  AlterSecretAtomic _ _ ->
     return (Left False, Left False)  -- none of clients' business
-  AlterSmellAtomic _ -> return (Left True, Left True)  -- always register
+  AlterSmellAtomic _ _ -> return (Left True, Left True)  -- always register
   AlterPathAtomic aid _ _ -> singlePos $ posOfAid aid
   ColorActorAtomic aid _ _ -> singlePos $ posOfAid aid
   FactionQuitAtomic _ _ _ -> return (Left True, Left True)  -- always learn
@@ -146,7 +147,7 @@ spawnAtomic aid body = do
   modifyState $ updateActorD $ EM.insert aid body
   let add Nothing = Just [aid]
       add (Just l) = Just $ aid : l
-  modifyState $ updateArena $ updatePrio $ EM.alter add (btime body)
+  updateLevel (blvl body) $ updatePrio $ EM.alter add (btime body)
 
 -- TODO: perhaps assert that the inventory of the actor is empty.
 killAtomic :: MonadAction m => ActorId -> Actor -> m ()
@@ -155,26 +156,26 @@ killAtomic aid body = do
   let rm Nothing = assert `failure` aid
       rm (Just l) = let l2 = delete aid l
                     in if null l2 then Nothing else Just l2
-  modifyState $ updateArena $ updatePrio $ EM.alter rm (btime body)
+  updateLevel (blvl body) $ updatePrio $ EM.alter rm (btime body)
 
 -- | Create a few copies of an item that is already registered for the dungeon
 -- (in @sitemRev@ field of @StateServer@).
 createItemAtomic :: MonadAction m
-                 => ItemId -> Item -> Int -> Container -> m ()
-createItemAtomic iid item k c = assert (k > 0) $ do
+                 => LevelId -> ItemId -> Item -> Int -> Container -> m ()
+createItemAtomic lid iid item k c = assert (k > 0) $ do
   -- The item may or may not be already present in the dungeon.
   let f item1 item2 = assert (item1 == item2) item1
   modifyState $ updateItemD $ EM.insertWith f iid item
   case c of
-    CFloor pos -> insertItemFloor iid k pos
+    CFloor pos -> insertItemFloor lid iid k pos
     CActor aid -> insertItemActor iid k aid
 
 insertItemFloor :: MonadAction m
-                => ItemId -> Int -> Point -> m ()
-insertItemFloor iid k pos =
+                => LevelId -> ItemId -> Int -> Point -> m ()
+insertItemFloor lid iid k pos =
   let bag = EM.singleton iid k
       mergeBag = EM.insertWith (EM.unionWith (+)) pos bag
-  in modifyState $ updateArena $ updateFloor mergeBag
+  in updateLevel lid $ updateFloor mergeBag
 
 insertItemActor :: MonadAction m
                 => ItemId -> Int -> ActorId -> m ()
@@ -184,7 +185,7 @@ insertItemActor iid k aid = do
       bag = EM.singleton iid k
   body <- getsState $ getActorBody aid
   case assignLetter iid l body of
-    Nothing -> insertItemFloor iid k (bpos body)
+    Nothing -> insertItemFloor (blvl body) iid k (bpos body)
     Just l2 -> do
       let upd = EM.unionWith (+) bag
       modifyState $ updateActorD
@@ -196,24 +197,24 @@ insertItemActor iid k aid = do
 
 -- | Destroy some copies (possibly not all) of an item.
 destroyItemAtomic :: MonadAction m
-                  => ItemId -> Item -> Int -> Container -> m ()
-destroyItemAtomic iid _item k c = assert (k > 0) $ do
+                  => LevelId -> ItemId -> Item -> Int -> Container -> m ()
+destroyItemAtomic lid iid _item k c = assert (k > 0) $ do
   -- Do not remove the item from @sitemD@ nor from @sitemRev@,
   -- This is behaviourally equivalent.
   case c of
-    CFloor pos -> deleteItemFloor iid k pos
+    CFloor pos -> deleteItemFloor lid iid k pos
     CActor aid -> deleteItemActor iid k aid
                   -- Actor's @bletter@ for UI not reset.
                   -- This is OK up to isomorphism.
 
 deleteItemFloor :: MonadAction m
-                 => ItemId -> Int -> Point -> m ()
-deleteItemFloor iid k pos =
+                => LevelId -> ItemId -> Int -> Point -> m ()
+deleteItemFloor lid iid k pos =
   let rmFromFloor (Just bag) =
         let nbag = rmFromBag k iid bag
         in if EM.null nbag then Nothing else Just nbag
       rmFromFloor Nothing = assert `failure` (iid, k, pos)
-  in modifyState $ updateArena $ updateFloor $ EM.alter rmFromFloor pos
+  in updateLevel lid $ updateFloor $ EM.alter rmFromFloor pos
 
 deleteItemActor :: MonadAction m
                  => ItemId -> Int -> ActorId -> m ()
@@ -222,13 +223,13 @@ deleteItemActor iid k aid =
   $ EM.adjust (\b -> b {bbag = rmFromBag k iid (bbag b)}) aid
 
 moveItemAtomic :: MonadAction m
-               => ItemId -> Int -> Container -> Container -> m ()
-moveItemAtomic iid k c1 c2 = assert (k > 0) $ do
+               => LevelId -> ItemId -> Int -> Container -> Container -> m ()
+moveItemAtomic lid iid k c1 c2 = assert (k > 0) $ do
   case c1 of
-    CFloor pos -> deleteItemFloor iid k pos
+    CFloor pos -> deleteItemFloor lid iid k pos
     CActor aid -> deleteItemActor iid k aid
   case c2 of
-    CFloor pos -> insertItemFloor iid k pos
+    CFloor pos -> insertItemFloor lid iid k pos
     CActor aid -> insertItemActor iid k aid
 
 waitAtomic :: MonadAction m => ActorId -> Time -> Time -> m ()
@@ -236,10 +237,11 @@ waitAtomic aid _fromWait toWait =
   modifyState $ updateActorBody aid $ \b -> b {bwait = toWait}
 
 changeTileAtomic :: MonadAction m
-                 => Point -> Kind.Id TileKind -> Kind.Id TileKind -> m ()
-changeTileAtomic p _fromTile toTile =
+                 => Point -> LevelId -> Kind.Id TileKind -> Kind.Id TileKind
+                 -> m ()
+changeTileAtomic p lid _fromTile toTile =
   let adj = (Kind.// [(p, toTile)])
-  in modifyState (updateArena (updateTile adj))
+  in updateLevel lid $ updateTile adj
 
 moveActorAtomic :: MonadAction m => ActorId -> Point -> Point -> m ()
 moveActorAtomic aid _fromP toP =
@@ -252,13 +254,13 @@ displaceActorAtomic source target = do
   modifyState $ updateActorBody source $ \ b -> b {bpos = tpos}
   modifyState $ updateActorBody target $ \ b -> b {bpos = spos}
 
-alterSecretAtomic :: MonadAction m => DiffEM Point Time -> m ()
-alterSecretAtomic diffL =
-  modifyState $ updateArena $ updateSecret $ applyDiffEM diffL
+alterSecretAtomic :: MonadAction m => LevelId -> DiffEM Point Time -> m ()
+alterSecretAtomic lid diffL =
+  updateLevel lid $ updateSecret $ applyDiffEM diffL
 
-alterSmellAtomic :: MonadAction m => DiffEM Point Time -> m ()
-alterSmellAtomic diffL =
-  modifyState $ updateArena $ updateSmell $ applyDiffEM diffL
+alterSmellAtomic :: MonadAction m => LevelId -> DiffEM Point Time -> m ()
+alterSmellAtomic lid diffL =
+  updateLevel lid $ updateSmell $ applyDiffEM diffL
 
 alterPathAtomic :: MonadAction m
                 => ActorId -> Maybe [Vector] -> Maybe [Vector] -> m ()

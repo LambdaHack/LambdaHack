@@ -8,7 +8,7 @@ module Game.LambdaHack.State
     -- * State operations
   , defStateGlobal, defStateLocal, localFromGlobal
   , updateDungeon, updateDepth, updateActorD, updateItemD, updateDisco
-  , updateFaction, updateCOps, updateArena, updateTime, updateSelectedArena
+  , updateFaction, updateCOps, updateTime, updateSelectedArena
   , getArena, getTime, isHumanFaction, isSpawningFaction
   ) where
 
@@ -30,7 +30,9 @@ import Game.LambdaHack.PointXY
 import Game.LambdaHack.Time
 
 -- | View on game state. "Remembered" fields carry a subset of the info
--- in the client copies of the state.
+-- in the client copies of the state. Clients never directly change
+-- their @State@, but apply atomic actions sent by the server to do so
+-- (except the @_sarena@ field).
 --
 -- Data invariant: no actor belongs to more than one @sdungeon@ level.
 -- Each @sleader@ actor from any of the client states is on the @sarena@
@@ -150,13 +152,11 @@ updateFaction f s = s {_sfaction = f (_sfaction s)}
 updateCOps :: (Kind.COps -> Kind.COps) -> State -> State
 updateCOps f s = s {_scops = f (_scops s)}
 
--- | Update current arena data within state.
-updateArena :: (Level -> Level) -> State -> State
-updateArena f s = updateDungeon (EM.adjust f (_sarena s)) s
-
 -- | Update time within state.
 updateTime :: (Time -> Time) -> State -> State
-updateTime f s = updateArena (\lvl@Level{ltime} -> lvl {ltime = f ltime}) s
+updateTime f s =
+  let g lvl@Level{ltime} = lvl {ltime = f ltime}
+  in updateDungeon (EM.adjust g (_sarena s)) s
 
 -- | Update selected level within state.
 updateSelectedArena :: LevelId -> State -> State

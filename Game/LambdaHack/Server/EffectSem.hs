@@ -327,12 +327,13 @@ addMonster mk bfaction ppos lid = do
 effectCreateItem :: MonadServer m
                  => ActorId -> Int -> WriterT [CmdAtomic] m (Bool, Text)
 effectCreateItem target power = do
-  tm <- getsState (getActorBody target)
-  void $ createItems (1 + power) (bpos tm)
+  tm <- getsState $ getActorBody target
+  void $ createItems (1 + power) (bpos tm) (blvl tm)
   return (True, "")
 
-createItems :: MonadServer m => Int -> Point -> WriterT [CmdAtomic] m ()
-createItems n pos = do
+createItems :: MonadServer m
+            => Int -> Point -> LevelId -> WriterT [CmdAtomic] m ()
+createItems n pos lid = do
   Kind.COps{coitem} <- getsState scops
   flavour <- getsServer sflavour
   discoRev <- getsServer sdiscoRev
@@ -344,13 +345,13 @@ createItems n pos = do
     case HM.lookup item itemRev of
       Just iid ->
         -- TODO: try to avoid this case, to make items more interesting
-        tell [CreateItemAtomic iid item k (CFloor pos)]
+        tell [CreateItemAtomic lid iid item k (CFloor pos)]
       Nothing -> do
         icounter <- getsServer sicounter
         modifyServer $ \ser ->
           ser { sicounter = succ icounter
               , sitemRev = HM.insert item icounter (sitemRev ser)}
-        tell [CreateItemAtomic icounter item k (CFloor pos)]
+        tell [CreateItemAtomic lid icounter item k (CFloor pos)]
 
 -- ** ApplyPerfume
 
@@ -360,9 +361,10 @@ effectApplyPerfume source target =
   if source == target
   then return (True, "Tastes like water, but with a strong rose scent.")
   else do
+    tm <- getsState $ getActorBody target
     oldSmell <- getsState $ lsmell . getArena
     let diffL = map (\(p, sm) -> (p, (Just sm, Nothing))) $ EM.assocs oldSmell
-    tell [AlterSmellAtomic diffL]
+    tell [AlterSmellAtomic (blvl tm) diffL]
     return (True, "The fragrance quells all scents in the vicinity.")
 
 -- ** Regeneration
@@ -379,7 +381,7 @@ useStairs :: MonadServerChan m
           => ActorId -> Int -> Msg -> WriterT [CmdAtomic] m (Bool, Text)
 useStairs target delta msg = do
   Kind.COps{coactor} <- getsState scops
-  tm <- getsState (getActorBody target)
+  tm <- getsState $ getActorBody target
   void $ focusIfOurs target
   effLvlGoUp target delta
   gquit <- getsState $ gquit . (EM.! bfaction tm) . sfaction
@@ -530,10 +532,10 @@ fleeDungeon fid lid = do
 -- | Drop all actor's items.
 dropAllItems :: MonadActionRO m => ActorId -> WriterT [CmdAtomic] m ()
 dropAllItems aid = do
-  pos <- getsState $ bpos . getActorBody aid
-  bag <- getsState $ getActorBag aid
-  let f (iid, k) = tell [MoveItemAtomic iid k (CActor aid) (CFloor pos)]
-  mapM_ f $ EM.assocs bag
+  b <- getsState $ getActorBody aid
+  let f (iid, k) =
+        tell [MoveItemAtomic (blvl b) iid k (CActor aid) (CFloor $ bpos b)]
+  mapM_ f $ EM.assocs $ bbag b
 
 -- | Remove a dead actor. Check if game over.
 checkPartyDeath :: MonadServerChan m => ActorId -> WriterT [CmdAtomic] m ()

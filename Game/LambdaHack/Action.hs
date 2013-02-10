@@ -12,6 +12,8 @@ module Game.LambdaHack.Action
   , abort, abortIfWith, neverMind
     -- * Abort exception handlers
   , tryRepeatedlyWith, tryIgnore
+    -- * Shorthands
+  , updateLevel
   ) where
 
 import Control.Concurrent.Chan
@@ -23,6 +25,7 @@ import qualified Data.Text as T
 
 import Game.LambdaHack.CmdCli
 import Game.LambdaHack.Faction
+import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
@@ -101,3 +104,7 @@ tryIgnore =
   tryWith (\msg -> if T.null msg
                    then return ()
                    else assert `failure` msg <+> "in tryIgnore")
+
+-- | Update a given level data within state.
+updateLevel :: MonadAction m => LevelId -> (Level -> Level) -> m ()
+updateLevel lid f = modifyState $ updateDungeon $ EM.adjust f lid
