@@ -9,6 +9,7 @@ module Game.LambdaHack.Client
 
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
+import Data.Maybe
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Client.Action
@@ -44,7 +45,13 @@ cmdUpdateCli cmd = case cmd of
   ContinueSavedCli sper -> modifyClient $ \cli -> cli {sper}
   GameSaveBkpCli isAI -> clientGameSave True isAI
   GameDisconnectCli isAI -> clientDisconnect isAI
-  AtomicSeenCli catomic -> cmdAtomicSem catomic
+  AtomicSeenCli catomic -> do
+    cmdAtomicSem catomic
+    mleader <- getsClient sleader
+    when (isNothing mleader) $ do
+      side <- getsClient sside
+      mleaderNew <- getsState $ gleader . (EM.! side) . sfaction
+      modifyClient $ \cli -> cli {_sleader = mleaderNew}
 
 cmdUpdateUI :: MonadClientUI m => CmdUpdateUI -> m ()
 cmdUpdateUI cmd = case cmd of
@@ -101,7 +108,7 @@ cmdQueryUI cmd = case cmd of
     go <- displayMore ColorFull msg
     recordHistory  -- Prevent repeating the ending msgs.
     return go
-  HandleHumanCli leader -> handleHuman leader
+  HandleHumanCli -> handleHuman
   FlushFramesCli newSide -> do
     srunning <- getsClient srunning
     case srunning of

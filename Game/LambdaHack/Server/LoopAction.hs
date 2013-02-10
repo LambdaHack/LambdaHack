@@ -231,11 +231,9 @@ handleActors cmdSer subclipStart prevHuman disp = do
     Just (actor, m) -> do
       let side = bfaction m
       isHuman <- getsState $ flip isHumanFaction side
-      leader <- if isHuman
-                then sendQueryCli side $ SetArenaLeaderCli arena actor
-                else withAI $ sendQueryCli side $ SetArenaLeaderCli arena actor
+      mleader <- getsState $ gleader . (EM.! side) . sfaction
       when disp $ broadcastUI [] DisplayPushCli
-      if actor == leader && isHuman
+      if Just actor == mleader && isHuman
         then do
           nHuman <- if isHuman && Just side /= prevHuman
                     then do
@@ -251,19 +249,17 @@ handleActors cmdSer subclipStart prevHuman disp = do
                                 else return prevHuman
                             Nothing -> return $ Just side
                     else return prevHuman
-          -- TODO: check that the commands is legal, that is, the leader
+          -- TODO: check that the command is legal, that is, the leader
           -- is acting, etc. Or perhaps instead have a separate type
           -- of actions for humans. OTOH, AI is controlled by the servers
           -- so the generated commands are assumed to be legal.
-          (cmdS, leaderNew, arenaNew) <-
-            sendQueryUI side $ HandleHumanCli leader
-          modifyState $ updateSelectedArena arenaNew
+          cmdS <- sendQueryUI side HandleHumanCli
           tryWith (\msg -> do
                       sendUpdateCli side $ ShowMsgCli msg
                       sendUpdateUI side DisplayPushCli
                       handleActors cmdSer subclipStart nHuman False
                   ) $ do
-            cmdSer cmdS
+            mapM_ cmdSer cmdS
             -- Advance time once, after the leader switched perhaps many times.
             -- TODO: this is correct only when all heroes have the same
             -- speed and can't switch leaders by, e.g., aiming a wand
@@ -274,11 +270,16 @@ handleActors cmdSer subclipStart prevHuman disp = do
             -- at once. This requires quite a bit of refactoring
             -- and is perhaps better done when the other factions have
             -- selected leaders as well.
-            squitNew <- getsServer squit
-            when (timedCmdSer cmdS && isNothing squitNew) $
-              maybe (return ()) (advanceTime arenaNew) leaderNew
+            mleaderNew <- getsState $ gleader . (EM.! side) . sfaction
+            case mleaderNew of
+              Nothing -> return ()
+              Just leaderNew -> do
+                squitNew <- getsServer squit
+                when (any timedCmdSer cmdS && isNothing squitNew) $ do
+                  arenaNew <- getsState $ blvl . getActorBody leaderNew
+                  advanceTime arenaNew leaderNew
             -- Human moves always start a new subclip.
-            _pos <- getsState $ bpos . getActorBody (fromMaybe actor leaderNew)
+            -- _pos <- getsState $ bpos . getActorBody (fromMaybe actor leaderNew)
             -- TODO: send messages with time (or at least DisplayPushCli)
             -- and then send DisplayPushCli only to actors that see _pos.
             -- Right now other need it too, to notice the delay.

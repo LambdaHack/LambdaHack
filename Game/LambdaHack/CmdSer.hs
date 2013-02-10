@@ -31,6 +31,7 @@ data CmdSer =
   | ClearPathSer ActorId
   | SetPathSer ActorId Vector [Vector]
   | DieSer ActorId
+  | LeaderSer FactionId ActorId
   deriving (Show, Typeable)
 
 timedCmdSer :: CmdSer -> Bool
@@ -42,4 +43,5 @@ timedCmdSer cmd = case cmd of
   ClearPathSer{} -> False
   SetPathSer{} -> False
   DieSer{} -> False
+  LeaderSer _ _ -> False
   _ -> True

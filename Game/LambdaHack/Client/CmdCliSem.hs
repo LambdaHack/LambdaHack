@@ -342,34 +342,31 @@ carryOnCli = do
   return go
 
 -- | Handle the move of the hero.
-handleHuman :: (MonadAction m, MonadClientUI m)
-             => ActorId
-             -> m (CmdSer, Maybe ActorId, LevelId)
-handleHuman leader = do
+handleHuman :: (MonadAction m, MonadClientUI m) => m [CmdSer]
+handleHuman = do
   -- When running, stop if aborted by a disturbance. Otherwise let
   -- the human player issue commands, until any of them takes time.
   -- First time, just after pushing frames, ask for commands in Push mode.
   cmdS <- tryWith (\msg -> stopRunning >> humanCommand msg) $ do
     srunning <- getsClient srunning
+    Just leader <- getsClient sleader
     maybe abort (continueRun leader) srunning
 --  addSmell leader  -- TODO: instead do for all non-spawning factions
-  leaderNew <- getsClient sleader
-  arenaNew <- getsState sarena
-  return (cmdS, leaderNew, arenaNew)
+  return cmdS
 
 -- | Continue running in the given direction.
-continueRun :: MonadClient m => ActorId -> (Vector, Int) -> m CmdSer
+continueRun :: MonadClient m => ActorId -> (Vector, Int) -> m [CmdSer]
 continueRun leader dd = do
   (dir, distNew) <- continueRunDir leader dd
   modifyClient $ \cli -> cli {srunning = Just (dir, distNew)}
   -- Attacks and opening doors disallowed when continuing to run.
-  return $ RunSer leader dir
+  return [RunSer leader dir]
 
 -- | Determine and process the next human player command. The argument is
 -- the last abort message due to running, if any.
 humanCommand :: forall m. (MonadAction m, MonadClientUI m)
              => Msg
-             -> m CmdSer
+             -> m [CmdSer]
 humanCommand msgRunAbort = do
   -- The frame state is now Push.
   kmPush <- case msgRunAbort of
@@ -379,13 +376,13 @@ humanCommand msgRunAbort = do
       getKeyOverlayCommand $ head $ runSlideshow slides
   -- The frame state is now None and remains so between each pair
   -- of lines of @loop@ (but can change within called actions).
-  let loop :: K.KM -> m CmdSer
+  let loop :: K.KM -> m [CmdSer]
       loop km = do
         -- Messages shown, so update history and reset current report.
         recordHistory
         -- On abort, just reset state and call loop again below.
         -- Each abort that gets this far generates a slide to be shown.
-        (mcmdS, slides) <- runWriterT $ tryWithSlide (return Nothing) $ do
+        (mcmdS, slides) <- runWriterT $ tryWithSlide (return []) $ do
           -- Look up the key.
           Binding{kcmd} <- askBinding
           case M.lookup km kcmd of
@@ -406,12 +403,12 @@ humanCommand msgRunAbort = do
         -- The command was aborted or successful and if the latter,
         -- possibly took some time.
         case mcmdS of
-          Just cmdS -> assert (null (runSlideshow slides) `blame` slides) $ do
+          _ : _ -> assert (null (runSlideshow slides) `blame` slides) $ do
             -- Exit the loop and let other actors act. No next key needed
             -- and no slides could have been generated.
             modifyClient (\st -> st {slastKey = Nothing})
-            return cmdS
-          Nothing ->
+            return mcmdS
+          [] ->
             -- If no time taken, rinse and repeat.
             -- Analyse the obtained slides.
             case reverse (runSlideshow slides) of

@@ -46,6 +46,7 @@ data CmdAtomic =
   | AlterPathAtomic ActorId (Maybe [Vector]) (Maybe [Vector])
   | ColorActorAtomic ActorId (Maybe Color.Color) (Maybe Color.Color)
   | FactionQuitAtomic FactionId (Maybe (Bool, Status)) (Maybe (Bool, Status))
+  | LeaderAtomic FactionId (Maybe ActorId) (Maybe ActorId)
   | SyncAtomic
   deriving Show
 
@@ -71,4 +72,5 @@ undoCmdAtomic cmd = case cmd of
   AlterPathAtomic aid fromPath toPath -> AlterPathAtomic aid toPath fromPath
   ColorActorAtomic aid fromCol toCol -> ColorActorAtomic aid toCol fromCol
   FactionQuitAtomic fid fromSt toSt -> FactionQuitAtomic fid toSt fromSt
+  LeaderAtomic fid source target -> LeaderAtomic fid target source
   SyncAtomic -> SyncAtomic

@@ -66,7 +66,7 @@ effectSem ef verbosity source target power block = do
            else return oldHP
   -- Target part of message sent here, so only target visibility checked.
   void $ broadcastPosUI [bpos oldT]
-         $ EffectCli msg (bpos oldT, bpos oldS) (newHP - oldHP) block
+       $ EffectCli msg (bpos oldT, bpos oldS) (newHP - oldHP) block
   -- TODO: use broadcastPosCli2 and to those that don't see the pos show that:
   -- when b $ msgAdd "You hear some noises."
   when (newHP <= 0) $ checkPartyDeath target
@@ -569,12 +569,25 @@ checkPartyDeath target = do
       else void $ animateDeath
   -- Remove the dead actor.
   tell [KillAtomic target tm]
+  electLeader (bfaction tm) (blvl tm)
   -- We don't register that the lethal potion on the floor
   -- is used up. If that's a problem, add a one turn delay
   -- to the effect of all lethal objects (displaying an "agh! dying"
   -- message). Other factions do register that the actor (and potion)
   -- is gone, because the level is not switched and so perception
   -- is recorded for this level.
+
+electLeader :: MonadServer m => FactionId -> LevelId -> WriterT [CmdAtomic] m ()
+electLeader fid lid = do
+  mleader <- getsState $ gleader . (EM.! fid) . sfaction
+  let _ = assert (isNothing mleader `blame` (mleader, fid, lid))
+  actorD <- getsState sactorD
+  let party = filter (\(_, b) ->
+                bfaction b == fid && not (bproj b)) $ EM.assocs actorD
+  when (not $ null $ party) $ do
+    onLevel <- getsState $ actorNotProjAssocs (== fid) lid
+    let leader = fst $ head $ onLevel ++ party
+    tell [LeaderAtomic fid Nothing (Just leader)]
 
 -- | End game, showing the ending screens, if requested.
 gameOver :: (MonadAction m, MonadServerChan m) => FactionId -> Bool -> m ()

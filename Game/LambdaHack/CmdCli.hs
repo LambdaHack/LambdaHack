@@ -84,7 +84,7 @@ data CmdQueryUI a where
   ConfirmYesNoCli :: Msg -> CmdQueryUI Bool
   ConfirmMoreBWCli :: Msg -> CmdQueryUI Bool
   ConfirmMoreFullCli::  Msg -> CmdQueryUI Bool
-  HandleHumanCli :: ActorId -> CmdQueryUI (CmdSer, Maybe ActorId, LevelId)
+  HandleHumanCli :: CmdQueryUI [CmdSer]
   FlushFramesCli :: FactionId -> CmdQueryUI Bool
 
 deriving instance Show (CmdQueryUI a)

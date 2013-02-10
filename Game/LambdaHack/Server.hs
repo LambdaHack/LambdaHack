@@ -36,3 +36,4 @@ cmdSerWriterT cmd = case cmd of
   ClearPathSer aid -> clearPathSer aid
   SetPathSer aid dir path -> setPathSer aid dir path
   DieSer aid -> dieSer aid
+  LeaderSer fid aid -> leaderSer fid aid

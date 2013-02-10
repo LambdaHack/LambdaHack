@@ -443,3 +443,11 @@ dieSer aid = do  -- TODO: explode if a projectile holdding a potion
   dropAllItems aid
   body <- getsState $ getActorBody aid
   tell [KillAtomic aid body]
+  electLeader (bfaction body) (blvl body)
+
+-- * LeaderSer
+
+leaderSer :: MonadServer m => FactionId -> ActorId -> WriterT [CmdAtomic] m ()
+leaderSer fid aid = do
+  mleader <- getsState $ gleader . (EM.! fid) . sfaction
+  tell [LeaderAtomic fid mleader (Just aid)]

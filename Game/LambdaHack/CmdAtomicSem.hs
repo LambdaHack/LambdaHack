@@ -3,6 +3,7 @@ module Game.LambdaHack.CmdAtomicSem
   ( cmdAtomicSem, resetsFovAtomic, cmdPosAtomic
   ) where
 
+import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.List
 import Data.Maybe
@@ -45,6 +46,7 @@ cmdAtomicSem cmd = case cmd of
   AlterPathAtomic aid fromPath toPath -> alterPathAtomic aid fromPath toPath
   ColorActorAtomic aid fromCol toCol -> colorActorAtomic aid fromCol toCol
   FactionQuitAtomic fid fromSt toSt -> factionQuitAtomic fid fromSt toSt
+  LeaderAtomic fid source target -> leaderAtomic fid source target
   SyncAtomic -> return ()
 
 resetsFovAtomic :: MonadActionRO m => FactionId -> CmdAtomic -> m Bool
@@ -94,15 +96,17 @@ cmdPosAtomic cmd = case cmd of
   ChangeTileAtomic p _ _ _ -> singlePos $ return p
   MoveActorAtomic _ fromP toP -> return (Right [fromP], Right [toP])
   DisplaceActorAtomic source target -> do
-    p1 <- posOfAid source
-    p2 <- posOfAid target
-    return (Right [p1, p2], Right [p1, p2])
+    ps <- mapM posOfAid [source, target]
+    return (Right ps, Right ps)
   AlterSecretAtomic _ _ ->
     return (Left False, Left False)  -- none of clients' business
   AlterSmellAtomic _ _ -> return (Left True, Left True)  -- always register
   AlterPathAtomic aid _ _ -> singlePos $ posOfAid aid
   ColorActorAtomic aid _ _ -> singlePos $ posOfAid aid
   FactionQuitAtomic _ _ _ -> return (Left True, Left True)  -- always learn
+  LeaderAtomic _ source target -> do
+    ps <- mapM posOfAid $ catMaybes [source, target]
+    return (Right ps, Right ps)
   SyncAtomic -> return (Left False, Left False)
 
 singlePos :: MonadActionAbort m
@@ -148,8 +152,15 @@ spawnAtomic aid body = do
   let add Nothing = Just [aid]
       add (Just l) = Just $ aid : l
   updateLevel (blvl body) $ updatePrio $ EM.alter add (btime body)
+  let fid = bfaction body
+      adj fac = fac {gleader = Just aid}
+  mleader <- getsState $ gleader . (EM.! fid) . sfaction
+  when (mleader == Nothing) $
+    modifyState $ updateFaction $ EM.adjust adj fid
 
 -- TODO: perhaps assert that the inventory of the actor is empty.
+-- | Kills an actor. Note: after this command, usually a new leader
+-- for the party should be elected.
 killAtomic :: MonadAction m => ActorId -> Actor -> m ()
 killAtomic aid body = do
   modifyState $ updateActorD $ EM.delete aid
@@ -157,6 +168,11 @@ killAtomic aid body = do
       rm (Just l) = let l2 = delete aid l
                     in if null l2 then Nothing else Just l2
   updateLevel (blvl body) $ updatePrio $ EM.alter rm (btime body)
+  let fid = bfaction body
+      adj fac = fac {gleader = Nothing}
+  mleader <- getsState $ gleader . (EM.! fid) . sfaction
+  when (mleader == Just aid) $
+    modifyState $ updateFaction $ EM.adjust adj fid
 
 -- | Create a few copies of an item that is already registered for the dungeon
 -- (in @sitemRev@ field of @StateServer@).
@@ -277,4 +293,10 @@ factionQuitAtomic :: MonadAction m
                   -> m ()
 factionQuitAtomic fid _fromSt toSt = do
   let adj fac = fac {gquit = toSt}
+  modifyState $ updateFaction $ EM.adjust adj fid
+
+leaderAtomic :: MonadAction m
+             => FactionId -> (Maybe ActorId) -> (Maybe ActorId) -> m ()
+leaderAtomic fid source target = assert (source /= target) $ do
+  let adj fac = fac {gleader = target}
   modifyState $ updateFaction $ EM.adjust adj fid

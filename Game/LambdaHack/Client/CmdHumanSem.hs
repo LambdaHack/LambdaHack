@@ -31,30 +31,30 @@ import Game.LambdaHack.Vector
 -- invoked in targeting mode on a remote level (level different than
 -- the level of the selected hero).
 cmdHumanSem :: (MonadAction m, MonadClientUI m)
-            => CmdHuman -> WriterT Slideshow m (Maybe CmdSer)
+            => CmdHuman -> WriterT Slideshow m [CmdSer]
 cmdHumanSem cmd = do
   Just leaderOld <- getsClient sleader
   arenaOld <- getsState sarena
   posOld <- getsState (bpos . getActorBody leaderOld)
   cli <- getClient
   loc <- getState
-  let sem = cmdAction cli loc cmd
-  mcmdS <- if noRemoteCmdHuman cmd
-           then checkCursor sem
-           else sem
+  msem <- cmdAction cli loc cmd
+  when (noRemoteCmdHuman cmd) checkCursor
+  let sems = maybeToList msem
   arena <- getsState sarena
-  leaderNew <- getsClient sleader
-  case leaderNew of
-    Nothing -> return ()
-    Just leader -> do
-      pos <- getsState (bpos . getActorBody leader)
-      tgtMode <- getsClient stgtMode
-      when (isNothing tgtMode  -- targeting performs a more extensive look
-            && (posOld /= pos
-                || arenaOld /= arena)) $ do
-        lookMsg <- lookAt False True pos ""
-        msgAdd lookMsg
-  return mcmdS
+  Just leaderNew <- getsClient sleader
+  pos <- getsState (bpos . getActorBody leaderNew)
+  tgtMode <- getsClient stgtMode
+  when (isNothing tgtMode  -- targeting performs a more extensive look
+        && (posOld /= pos
+            || arenaOld /= arena)) $ do
+    lookMsg <- lookAt False True pos ""
+    msgAdd lookMsg
+  if null sems || leaderNew == leaderOld then
+    return sems
+  else do
+    fid <- getsClient sside
+    return $ LeaderSer fid leaderNew : sems
 
 -- | The basic action for a command and whether it takes time.
 cmdAction :: (MonadAction m, MonadClientUI m) => StateClient -> State -> CmdHuman
@@ -125,12 +125,9 @@ cmdAction cli s cmd =
 
 -- | If in targeting mode, check if the current level is the same
 -- as player level and refuse performing the action otherwise.
-checkCursor :: MonadClient m
-            => WriterT Slideshow m (Maybe CmdSer)
-            -> WriterT Slideshow m (Maybe CmdSer)
-checkCursor h = do
+checkCursor :: MonadClient m => m ()
+checkCursor = do
   arena <- getsState sarena
   (lid, _) <- viewedLevel
-  if arena == lid
-    then h
-    else abortWith "[targeting] command disabled on a remote level, press ESC to switch back"
+  when (arena /= lid) $
+    abortWith "[targeting] command disabled on a remote level, press ESC to switch back"
