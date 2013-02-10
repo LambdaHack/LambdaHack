@@ -437,6 +437,7 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
           then return Nothing
           else fmap Just $ sopick (fAiLeader fk) (const True)
         gAiMember <- sopick (fAiMember fk) (const True)
+        let gleader = Nothing
         return Faction{..}
   lHuman <- mapM (g True) (configHuman config)
   lComputer <- mapM (g False) (configComputer config)

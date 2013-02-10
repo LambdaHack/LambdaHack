@@ -3,7 +3,7 @@
 -- the hero faction battling the monster and the animal factions.
 module Game.LambdaHack.Faction
   ( FactionId, FactionDict, Faction(..), Status(..)
-  , isHumanFact, isSpawningFact, invalidFactionId
+  , isHumanFact, isSpawningFact
   ) where
 
 import Data.Binary
@@ -11,21 +11,11 @@ import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 import Data.Text (Text)
 
+import Game.LambdaHack.Actor
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.StrategyKind
 import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Point
-
--- | A unique identifier of a faction in a game.
-newtype FactionId = FactionId Int
-  deriving (Show, Eq, Ord, Enum)
-
-instance Binary FactionId where
-  put (FactionId n) = put n
-  get = fmap FactionId get
-
-invalidFactionId :: FactionId
-invalidFactionId = FactionId (-1)
+import Game.LambdaHack.Misc
 
 -- | All factions in the game, indexed by faction identifier.
 type FactionDict = EM.EnumMap FactionId Faction
@@ -40,6 +30,7 @@ data Faction = Faction
   , genemy    :: ![FactionId]  -- ^ currently in war with these factions
   , gally     :: ![FactionId]  -- ^ currently allied with these factions
   , gquit     :: !(Maybe (Bool, Status))  -- ^ cause of game end/exit
+  , gleader   :: !(Maybe ActorId)
   }
   deriving Show
 
@@ -83,6 +74,7 @@ instance Binary Faction where
     put genemy
     put gally
     put gquit
+    put gleader
   get = do
     gkind <- get
     gname <- get
@@ -91,4 +83,5 @@ instance Binary Faction where
     genemy <- get
     gally <- get
     gquit <- get
+    gleader <- get
     return Faction{..}

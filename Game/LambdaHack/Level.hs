@@ -26,6 +26,7 @@ import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Feature as F
 import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Misc
 import Game.LambdaHack.Point
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Random

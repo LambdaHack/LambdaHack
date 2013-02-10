@@ -4,7 +4,6 @@ module Game.LambdaHack.Point
   ( Point, toPoint, showPoint
   , origin, chessDist, adjacent, vicinity, vicinityCardinal
   , inside, displacementXYZ, bla
-  , LevelId
   ) where
 
 import Data.Binary
@@ -113,11 +112,3 @@ bla lxsize lysize eps source target = Just $
       inBounds p@(PointXY (x, y)) =
         lxsize > x && x >= 0 && lysize > y && y >= 0 && p /= s
   in L.map (toPoint lxsize) $ L.takeWhile inBounds $ L.tail $ blaXY eps s e
-
--- | Abstract level identifiers.
-newtype LevelId = LevelId Int
-  deriving (Show, Eq, Ord,  Enum, Typeable)
-
-instance Binary LevelId where
-  put (LevelId n) = put n
-  get = fmap LevelId get

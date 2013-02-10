@@ -1,8 +1,10 @@
+{-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | Hacks that haven't found their home yet.
 module Game.LambdaHack.Misc
   ( normalLevelBound, maxLevelDim, divUp, Freqs, breturn
   , DiffEM, applyDiffEM
+  , FactionId, LevelId
   ) where
 
 import Control.Monad
@@ -10,6 +12,7 @@ import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import Data.List
 import Data.Text (Text)
+import Data.Typeable
 
 import Game.LambdaHack.Utils.Assert
 
@@ -49,3 +52,19 @@ applyDiffEM diffL em =
         let g v = assert (v == ov `blame` (v, ov, nv, em, diffL)) nv
         in EM.alter g k m
   in foldl' f em diffL
+
+-- | A unique identifier of a faction in a game.
+newtype FactionId = FactionId Int
+  deriving (Show, Eq, Ord, Enum)
+
+instance Binary FactionId where
+  put (FactionId n) = put n
+  get = fmap FactionId get
+
+-- | Abstract level identifiers.
+newtype LevelId = LevelId Int
+  deriving (Show, Eq, Ord,  Enum, Typeable)
+
+instance Binary LevelId where
+  put (LevelId n) = put n
+  get = fmap LevelId get
