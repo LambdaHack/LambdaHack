@@ -310,7 +310,7 @@ carryOnCli = do
   return go
 
 -- | Handle the move of the hero.
-handleHuman :: (MonadAction m, MonadClientUI m) => m [CmdSer]
+handleHuman :: MonadClientUI m => m [CmdSer]
 handleHuman = do
   -- When running, stop if aborted by a disturbance. Otherwise let
   -- the human player issue commands, until any of them takes time.
@@ -332,7 +332,7 @@ continueRun leader dd = do
 
 -- | Determine and process the next human player command. The argument is
 -- the last abort message due to running, if any.
-humanCommand :: forall m. (MonadAction m, MonadClientUI m)
+humanCommand :: forall m. MonadClientUI m
              => Msg
              -> m [CmdSer]
 humanCommand msgRunAbort = do

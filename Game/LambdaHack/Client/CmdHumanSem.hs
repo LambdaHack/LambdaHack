@@ -30,8 +30,7 @@ import Game.LambdaHack.Vector
 -- Time cosuming commands are marked as such in help and cannot be
 -- invoked in targeting mode on a remote level (level different than
 -- the level of the selected hero).
-cmdHumanSem :: (MonadAction m, MonadClientUI m)
-            => CmdHuman -> WriterT Slideshow m [CmdSer]
+cmdHumanSem :: MonadClientUI m => CmdHuman -> WriterT Slideshow m [CmdSer]
 cmdHumanSem cmd = do
   Just leaderOld <- getsClient sleader
   bOld <- getsState $ getActorBody leaderOld
@@ -59,7 +58,8 @@ cmdHumanSem cmd = do
     return $ LeaderSer fid leaderNew : sems
 
 -- | The basic action for a command and whether it takes time.
-cmdAction :: (MonadAction m, MonadClientUI m) => StateClient -> State -> CmdHuman
+cmdAction :: MonadClientUI m
+          => StateClient -> State -> CmdHuman
           -> WriterT Slideshow m (Maybe CmdSer)
 cmdAction cli s cmd =
   let tgtMode = stgtMode cli

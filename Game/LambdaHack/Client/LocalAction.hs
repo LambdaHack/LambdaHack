@@ -484,7 +484,7 @@ displayHistory = do
 -- * MemberCycle
 
 -- | Switches current member to the next on the level, if any, wrapping.
-cycleMember :: (MonadAction m, MonadClient m) => m ()
+cycleMember :: MonadClient m => m ()
 cycleMember = do
   Just leader <- getsClient sleader
   body <- getsState $ getActorBody leader
@@ -511,7 +511,7 @@ partyAfterLeader leader = do
 -- | Select a faction leader. Switch level, if needed.
 -- False, if nothing to do. Should only be invoked as a direct result
 -- of a human player action (leader death just sets sleader to -1).
-selectLeader :: (MonadAction m, MonadClient m) => ActorId -> m Bool
+selectLeader :: MonadClient m => ActorId -> m Bool
 selectLeader actor = do
   Kind.COps{coactor} <- getsState scops
   leader <- getsClient sleader
@@ -536,7 +536,7 @@ stopRunning = modifyClient (\ cli -> cli { srunning = Nothing })
 -- * MemberBack
 
 -- | Switches current member to the previous in the whole dungeon, wrapping.
-backCycleMember :: (MonadAction m, MonadClient m) => m ()
+backCycleMember :: MonadClient m => m ()
 backCycleMember = do
   Just leader <- getsClient sleader
   hs <- partyAfterLeader leader
@@ -555,7 +555,7 @@ displayHelp = do
 
 -- * SelectHero
 
-selectHero :: (MonadAction m, MonadClient m) => Int -> m ()
+selectHero :: MonadClient m => Int -> m ()
 selectHero k = do
   side <- getsClient sside
   loc <- getState

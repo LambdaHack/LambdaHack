@@ -67,7 +67,7 @@ cmdUpdateUI cmd = case cmd of
     void $ displayMore ColorFull msg
     recordHistory
 
-cmdQueryCli :: (MonadAction m, MonadClient m) => CmdQueryCli a -> m a
+cmdQueryCli :: MonadClient m => CmdQueryCli a -> m a
 cmdQueryCli cmd = case cmd of
   SelectLeaderCli aid -> selectLeader aid
   NullReportCli -> do
@@ -82,7 +82,7 @@ cmdQueryCli cmd = case cmd of
       maybe abort (void . continueRunDir leader) srunning
       return True
 
-cmdQueryUI :: (MonadAction m, MonadClientUI m) => CmdQueryUI a -> m a
+cmdQueryUI :: MonadClientUI m => CmdQueryUI a -> m a
 cmdQueryUI cmd = case cmd of
   ShowSlidesCli slides -> getManyConfirms [] slides
   CarryOnCli -> carryOnCli
