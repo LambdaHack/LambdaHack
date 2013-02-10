@@ -60,8 +60,8 @@ resetFidPerception fid = do
   cops <- getsState scops
   configFovMode <- getsServer (configFovMode . sconfig)
   sdebugSer <- getsServer sdebugSer
-  lvl <- getsState getArena
   arena <- getsState sarena
+  lvl <- getsLevel arena id
   s <- getState
   let tryFov = stryFov sdebugSer
       fovMode = fromMaybe configFovMode tryFov

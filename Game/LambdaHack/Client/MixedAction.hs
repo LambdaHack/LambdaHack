@@ -103,8 +103,8 @@ leaderProjectGroupItem verb object syms = do
   genemy <- getsState $ genemy . (EM.! side) . sfaction
   arena <- getsState sarena
   ms <- getsState $ actorNotProjList (`elem` genemy) arena
-  lxsize <- getsState (lxsize . getArena)
-  lysize <- getsState (lysize . getArena)
+  lxsize <- getsLevel arena lxsize
+  lysize <- getsLevel arena lysize
   Just leader <- getsClient sleader
   ppos <- getsState (bpos . getActorBody leader)
   if foesAdjacent lxsize lysize ppos ms
@@ -145,7 +145,9 @@ leaderTriggerDir feat verb = do
   let keys = zip K.dirAllMoveKey $ repeat K.NoModifier
       prompt = makePhrase ["What to", verb MU.:> "? [movement key"]
   e <- displayChoiceUI prompt [] keys
-  lxsize <- getsState (lxsize . getArena)
+  Just leader <- getsClient sleader
+  b <- getsState $ getActorBody leader
+  lxsize <- getsLevel (blvl b) lxsize
   K.handleDir lxsize e (leaderBumpDir feat) (neverMind True)
 
 -- | Leader tries to trigger a tile in a given direction.
@@ -160,7 +162,8 @@ leaderBumpDir feat dir = do
 bumpTile :: MonadActionRO m => ActorId -> Point -> F.Feature -> m CmdSer
 bumpTile leader dpos feat = do
   Kind.COps{cotile} <- getsState scops
-  lvl <- getsState getArena
+  b <- getsState $ getActorBody leader
+  lvl <- getsLevel (blvl b) id
   let t = lvl `at` dpos
   -- Features are never invisible; visible tiles are identified accurately.
   -- A tile can be triggered even if an invisible monster occupies it.
@@ -207,8 +210,8 @@ pickupItem = do
 
 actorPickupItem :: MonadActionRO m => ActorId -> m CmdSer
 actorPickupItem actor = do
-  lvl <- getsState getArena
   body <- getsState $ getActorBody actor
+  lvl <- getsLevel (blvl body) id
   -- Check if something is here to pick up. Items are never invisible.
   case EM.minViewWithKey $ lvl `atI` bpos body of
     Nothing -> abortWith "nothing here"
@@ -267,7 +270,9 @@ getItem :: MonadClientUI m
         -> Text            -- ^ how to refer to the collection of items
         -> m ((ItemId, Item), (Int, Container))
 getItem aid prompt p ptext bag inv isn = do
-  lvl <- getsState getArena
+  Just leader <- getsClient sleader
+  b <- getsState $ getActorBody leader
+  lvl <- getsLevel (blvl b) id
   s <- getState
   body <- getsState $ getActorBody aid
   let checkItem (l, iid) =

@@ -255,7 +255,8 @@ promptToSlideshow prompt = overlayToSlideshow prompt []
 -- of the screen are displayed below. As many slides as needed are shown.
 overlayToSlideshow :: MonadClient m => Msg -> Overlay -> m Slideshow
 overlayToSlideshow prompt overlay = do
-  lysize <- getsState (lysize . getArena)  -- TODO: screen length or viewLevel
+  lid <- getsState sarena
+  lysize <- getsLevel lid lysize  -- TODO: screen length or viewLevel
   sreport <- getsClient sreport
   let msg = splitReport (addMsg sreport prompt)
   return $! splitOverlay lysize msg overlay

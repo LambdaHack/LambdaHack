@@ -67,7 +67,7 @@ cmdAction cli s cmd =
       ppos = bpos sm
       tgtLoc = targetToPos cli s
       Level{lxsize} =
-        maybe (getArena s) ((sdungeon s EM.!) . tgtLevelId) tgtMode
+        maybe (sdungeon s EM.! arena) ((sdungeon s EM.!) . tgtLevelId) tgtMode
   in case cmd of
     Apply{..} -> fmap Just $ leaderApplyGroupItem verb object syms
     Project{} | isNothing tgtLoc -> retarget >> return Nothing

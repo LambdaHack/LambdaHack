@@ -74,9 +74,9 @@ projectSer source tpos eps _verb iid container = do
   cops@Kind.COps{coactor} <- getsState scops
   sm <- getsState (getActorBody source)
   Actor{btime} <- getsState $ getActorBody source
-  lvl <- getsState getArena
-  lxsize <- getsState (lxsize . getArena)
-  lysize <- getsState (lysize . getArena)
+  lvl <- getsLevel (blvl sm) id
+  lxsize <- getsLevel (blvl sm) lxsize
+  lysize <- getsLevel (blvl sm) lysize
   let spos = bpos sm
       -- When projecting, the first turn is spent aiming.
       -- The projectile is seen one tile from the actor, giving a hint
@@ -156,7 +156,8 @@ addProjectile iid loc bfaction path btime = do
 triggerSer :: MonadServerChan m => ActorId -> Point -> WriterT [CmdAtomic] m ()
 triggerSer aid dpos = do
   Kind.COps{cotile=Kind.Ops{okind, opick}} <- getsState scops
-  lvl <- getsState getArena
+  b <- getsState $ getActorBody aid
+  lvl <- getsLevel (blvl b) id
   let f (F.Cause ef) = do
         -- No block against tile, hence @False@.
         void $ effectSem ef 0 aid aid 0 False
@@ -167,8 +168,7 @@ triggerSer aid dpos = do
         if EM.null $ lvl `atI` dpos
           then if unoccupied as dpos
                then do
-                 b <- getsState $ getActorBody aid
-                 fromTile <- getsState $ (`at` dpos) . getArena
+                 fromTile <- getsLevel (blvl b) (`at` dpos)
                  toTile <- rndToAction $ opick tgroup (const True)
                  tell [ChangeTileAtomic dpos (blvl b) fromTile toTile]
 -- TODO: take care of AI using this function (aborts, etc.).
@@ -218,8 +218,8 @@ waitSer aid = do
 moveSer :: MonadServerChan m => ActorId -> Vector -> WriterT [CmdAtomic] m ()
 moveSer aid dir = do
   cops@Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getsState scops
-  lvl <- getsState getArena
-  sm <- getsState (getActorBody aid)
+  sm <- getsState $ getActorBody aid
+  lvl <- getsLevel (blvl sm) id
   let spos = bpos sm           -- source position
       tpos = spos `shift` dir  -- target position
   -- We start by looking at the target position.
@@ -297,10 +297,10 @@ actorAttackActor source target = do
 search :: MonadServerChan m => ActorId -> WriterT [CmdAtomic] m ()
 search aid = do
   Kind.COps{coitem, cotile} <- getsState scops
-  lvl <- getsState getArena
-  lsecret <- getsState (lsecret . getArena)
-  lxsize <- getsState (lxsize . getArena)
   b <- getsState $ getActorBody aid
+  lvl <- getsLevel (blvl b) id
+  lsecret <- getsLevel (blvl b) lsecret
+  lxsize <- getsLevel (blvl b) lxsize
   pitems <- getsState (getActorItem aid)
   discoS <- getsState sdisco
   let delta = timeScale timeTurn $
@@ -330,8 +330,8 @@ actorOpenDoor :: MonadServerChan m
               => ActorId -> Vector -> WriterT [CmdAtomic] m ()
 actorOpenDoor actor dir = do
   Kind.COps{cotile} <- getsState scops
-  lvl<- getsState getArena
-  body <- getsState (getActorBody actor)
+  body <- getsState $ getActorBody actor
+  lvl <- getsLevel (blvl body) id
   glo <- getState
   let dpos = shift (bpos body) dir  -- the position we act upon
       t = lvl `at` dpos
@@ -351,8 +351,8 @@ actorOpenDoor actor dir = do
 runSer :: MonadServerChan m => ActorId -> Vector -> WriterT [CmdAtomic] m ()
 runSer actor dir = do
   cops <- getsState scops
-  lvl <- getsState getArena
-  sm <- getsState (getActorBody actor)
+  sm <- getsState $ getActorBody actor
+  lvl <- getsLevel (blvl sm) id
   let spos = bpos sm           -- source position
       tpos = spos `shift` dir  -- target position
   -- We start by looking at the target position.

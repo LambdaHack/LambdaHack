@@ -9,7 +9,7 @@ module Game.LambdaHack.State
   , defStateGlobal, defStateLocal, localFromGlobal
   , updateDungeon, updateDepth, updateActorD, updateItemD, updateDisco
   , updateFaction, updateCOps, updateTime, updateSelectedArena
-  , getArena, getTime, isHumanFaction, isSpawningFaction
+  , getTime, isHumanFaction, isSpawningFaction
   ) where
 
 import Data.Binary
@@ -161,10 +161,6 @@ updateTime f s =
 -- | Update selected level within state.
 updateSelectedArena :: LevelId -> State -> State
 updateSelectedArena _sarena s = s {_sarena}
-
--- | Get current level from the dungeon data.
-getArena :: State -> Level
-getArena State{_sarena, _sdungeon} = _sdungeon EM.! _sarena
 
 -- | Get current time from the dungeon data.
 getTime :: State -> Time

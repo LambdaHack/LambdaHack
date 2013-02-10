@@ -113,12 +113,13 @@ initPer = do
 
 cmdAtomicBroad :: (MonadAction m, MonadServerChan m) => CmdAtomic -> m ()
 cmdAtomicBroad cmd = do
-  lvlOld <- getsState getArena
+  arena <- getsState sarena
+  lvlOld <- getsLevel arena id
   actorDOld <- getsState sactorD
   itemDOld <- getsState sitemD
   factionOld <- getsState sfaction
   cmdAtomicSem cmd
-  lvlNew <- getsState getArena
+  lvlNew <- getsLevel arena id
   actorDNew <- getsState sactorD
   itemDNew <- getsState sitemD
   factionNew <- getsState sfaction
@@ -204,7 +205,8 @@ handleActors cmdSer subclipStart prevHuman disp = do
   Kind.COps{coactor} <- getsState scops
   time <- getsState getTime  -- the end time of this clip, inclusive
    -- Older actors act earlier.
-  prio <- getsState $ lprio . getArena
+  arena <- getsState sarena
+  prio <- getsLevel arena lprio
   gquit <- case prevHuman of
     Just fid -> getsState $ gquit . (EM.! fid) . sfaction
     Nothing -> return Nothing
@@ -228,7 +230,6 @@ handleActors cmdSer subclipStart prevHuman disp = do
       return (disp, prevHuman)
     Just (actor, m) -> do
       let side = bfaction m
-      arena <- getsState sarena
       isHuman <- getsState $ flip isHumanFaction side
       leader <- if isHuman
                 then sendQueryCli side $ SetArenaLeaderCli arena actor
@@ -499,7 +500,7 @@ generateMonster = do
   cops@Kind.COps{cofact=Kind.Ops{okind}} <- getsState scops
   pers <- getsServer sper
   arena <- getsState sarena
-  lvl@Level{ldepth} <- getsState getArena
+  lvl@Level{ldepth} <- getsLevel arena id
   faction <- getsState sfaction
   s <- getState
   let f fid = fspawn (okind (gkind (faction EM.! fid))) > 0
@@ -573,6 +574,6 @@ _addSmell :: MonadActionRO m => ActorId -> WriterT [CmdAtomic] m ()
 _addSmell aid = do
   time <- getsState getTime
   b <- getsState $ getActorBody aid
-  oldS <- getsState $ (EM.lookup $ bpos b) . lsmell . getArena
+  oldS <- getsLevel (blvl b) $ (EM.lookup $ bpos b) . lsmell
   let newTime = timeAdd time smellTimeout
   tell [AlterSmellAtomic (blvl b) [(bpos b, (oldS, Just newTime))]]

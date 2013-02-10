@@ -74,7 +74,7 @@ posToActors pos lid s =
 
 nearbyFreePos :: Kind.Ops TileKind -> Point -> LevelId -> State -> Point
 nearbyFreePos cotile start lid s =
-  let lvl@Level{lxsize, lysize} = getArena s
+  let lvl@Level{lxsize, lysize} = sdungeon s EM.! lid
       poss = start : nub (concatMap (vicinity lxsize lysize) poss)
       good loc = Tile.hasFeature cotile F.Walkable (lvl `at` loc)
                  && unoccupied (actorList (const True) lid s) loc

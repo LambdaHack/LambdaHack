@@ -56,7 +56,7 @@ draw dm cops per
       (drawnLevelId, lvl@Level{ldepth, lxsize, lysize, lsmell,
                                ldesc, ltime, lseen, lclear}) =
         case stgtMode of
-          Nothing -> (sarena s, getArena s)
+          Nothing -> (sarena s, sdungeon s EM.! sarena s)
           Just tgtM -> (tgtLevelId tgtM, sdungeon s EM.! tgtLevelId tgtM)
       mleader = sleader cli
       (bitems, bracedL, ahpS, asmellL, bhpS, bposL) =
@@ -190,9 +190,9 @@ draw dm cops per
 -- | Render animations on top of the current screen frame.
 animate :: StateClient -> State -> Perception -> Animation
         -> Frames
-animate cli@StateClient{sreport} loc per anim =
-  let Level{lxsize, lysize} = getArena loc
+animate cli@StateClient{sreport} s per anim =
+  let Level{lxsize, lysize} = sdungeon s EM.! sarena s
       over = renderReport sreport
       topLineOnly = padMsg lxsize over
-      basicFrame = draw ColorFull (scops loc) per cli loc [topLineOnly]
+      basicFrame = draw ColorFull (scops s) per cli s [topLineOnly]
   in renderAnim lxsize lysize basicFrame anim

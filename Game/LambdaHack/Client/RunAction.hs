@@ -34,13 +34,13 @@ import Game.LambdaHack.Vector
 runDir :: MonadClient m => ActorId -> (Vector, Int) -> m (Vector, Int)
 runDir leader (dir, dist) = do
   cops <- getsState scops
-  posHere <- getsState (bpos . getActorBody leader)
-  lvl <- getsState getArena
+  b <- getsState $ getActorBody leader
+  lvl <- getsLevel (blvl b) id
   stgtMode <- getsClient stgtMode
   assert (isNothing stgtMode `blame` (dir, dist, stgtMode, "not off")) $ do
     let accessibleDir loc d = accessible cops lvl loc (loc `shift` d)
         -- Do not count distance if we just open a door.
-        distNew = if accessibleDir posHere dir then dist + 1 else dist
+        distNew = if accessibleDir (bpos b) dir then dist + 1 else dist
     return (dir, distNew)
 
 -- | Human running mode, determined from the nearby cave layout.
@@ -161,7 +161,7 @@ continueRunDir leader (dirLast, distLast) = do
   arena <- getsState sarena
   ms <- getsState $ actorList (`elem` genemy) arena
   hs <- getsState $ actorList (not . (`elem` genemy)) arena
-  lvl@Level{lxsize, lysize} <- getsState getArena
+  lvl@Level{lxsize, lysize} <- getsLevel (blvl body) id
   let posHere = bpos body
       posHasFeature f loc = Tile.hasFeature cotile f (lvl `at` loc)
       posHasItems loc = not $ EM.null $ lvl `atI` loc

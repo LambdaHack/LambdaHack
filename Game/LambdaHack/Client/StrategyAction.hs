@@ -58,7 +58,7 @@ reacquireTgt cops actor btarget glo per factionAbilities =
   reacquire btarget
  where
   Kind.COps{coactor=coactor@Kind.Ops{okind}} = cops
-  Level{lxsize} = getArena glo
+  Level{lxsize} = sdungeon glo EM.! blvl
   actorBody@Actor{ bkind, bpos = me, bpath, bfaction, blvl } =
     getActorBody actor glo
   mk = okind bkind
@@ -175,8 +175,8 @@ track :: Kind.COps -> ActorId -> State -> Strategy CmdSer
 track cops actor glo =
   strat
  where
-  lvl = getArena glo
-  Actor{ bpos, bpath, bhp } = getActorBody actor glo
+  lvl = sdungeon glo EM.! blvl
+  Actor{ bpos, bpath, bhp, blvl } = getActorBody actor glo
   dieOrReset | bhp <= 0  = returN "die" $ DieSer actor
              | otherwise = returN "clear TPath" $ ClearPathSer actor
   strat = case bpath of
@@ -189,8 +189,8 @@ pickup :: ActorId -> State -> Strategy CmdSer
 pickup actor glo =
   lootHere bpos .=> actionPickup
  where
-  lvl = getArena glo
-  body@Actor{bpos} = getActorBody actor glo
+  lvl = sdungeon glo EM.! blvl
+  body@Actor{bpos, blvl} = getActorBody actor glo
   lootHere x = not $ EM.null $ lvl `atI` x
   actionPickup = case EM.minViewWithKey $ lvl `atI` bpos of
     Nothing -> assert `failure` (actor, bpos, lvl)
@@ -205,8 +205,8 @@ melee :: ActorId -> State -> Point -> Strategy CmdSer
 melee actor glo fpos =
   foeAdjacent .=> (returN "melee" $ MoveSer actor dir)
  where
-  Level{lxsize} = getArena glo
-  Actor{bpos} = getActorBody actor glo
+  Level{lxsize} = sdungeon glo EM.! blvl
+  Actor{bpos, blvl} = getActorBody actor glo
   foeAdjacent = adjacent lxsize bpos fpos
   dir = displacement bpos fpos
 
@@ -224,7 +224,7 @@ rangedFreq cops actor glo fpos =
            , coitem=Kind.Ops{okind=iokind}
            , corule
            } = cops
-  lvl@Level{lxsize, lysize} = getArena glo
+  lvl@Level{lxsize, lysize} = sdungeon glo EM.! blvl
   Actor{ bkind, bpos, bfaction, blvl } = getActorBody actor glo
   bitems = getActorBag actor glo
   mk = okind bkind
@@ -263,8 +263,8 @@ toolsFreq cops actor glo =
   $ quaffFreq bitems 1 (CActor actor) ++ quaffFreq tis 2 (CFloor bpos)
  where
   Kind.COps{coitem=Kind.Ops{okind=iokind}} = cops
-  lvl = getArena glo
-  Actor{bpos} = getActorBody actor glo
+  Actor{bpos, blvl} = getActorBody actor glo
+  lvl = sdungeon glo EM.! blvl
   bitems = getActorBag actor glo
   tis = lvl `atI` bpos
   quaffFreq bag multi container =
@@ -321,7 +321,7 @@ moveStrategy cops actor glo mFoe =
   Kind.COps{ cotile
            , coactor=Kind.Ops{okind}
            } = cops
-  lvl@Level{lsmell, lxsize, lysize, ltime} = getArena glo
+  lvl@Level{lsmell, lxsize, lysize, ltime} = sdungeon glo EM.! blvl
   Actor{bkind, bpos, bfaction, blvl} = getActorBody actor glo
   mk = okind bkind
   lootHere x = not $ EM.null $ lvl `atI` x

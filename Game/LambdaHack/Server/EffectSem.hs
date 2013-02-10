@@ -193,9 +193,9 @@ effectDominate source target = do
   if source == target
     then do
       genemy <- getsState $ genemy . (EM.! bfaction sm) . sfaction
-      lxsize <- getsState (lxsize . getArena)
-      lysize <- getsState (lysize . getArena)
-      lvl <- getsState getArena
+      lxsize <- getsLevel arena lxsize
+      lysize <- getsLevel arena lysize
+      lvl <- getsLevel arena id
       lm <- getsState $ actorNotProjList (`elem` genemy) arena
       let cross m = bpos m : vicinityCardinal lxsize lysize (bpos m)
           vis = ES.fromList $ concatMap cross lm
@@ -337,7 +337,7 @@ createItems n pos lid = do
   Kind.COps{coitem} <- getsState scops
   flavour <- getsServer sflavour
   discoRev <- getsServer sdiscoRev
-  ldepth <- getsState $ ldepth . getArena
+  ldepth <- getsLevel lid ldepth
   depth <- getsState sdepth
   replicateM_ n $ do
     (item, k, _) <- rndToAction $ newItem coitem flavour discoRev ldepth depth
@@ -362,7 +362,7 @@ effectApplyPerfume source target =
   then return (True, "Tastes like water, but with a strong rose scent.")
   else do
     tm <- getsState $ getActorBody target
-    oldSmell <- getsState $ lsmell . getArena
+    oldSmell <- getsLevel (blvl tm) lsmell
     let diffL = map (\(p, sm) -> (p, (Just sm, Nothing))) $ EM.assocs oldSmell
     tell [AlterSmellAtomic (blvl tm) diffL]
     return (True, "The fragrance quells all scents in the vicinity.")
@@ -580,7 +580,7 @@ checkPartyDeath target = do
 gameOver :: (MonadAction m, MonadServerChan m) => FactionId -> Bool -> m ()
 gameOver fid showEndingScreens = do
   arena <- getsState sarena
-  deepest <- getsState $ ldepth . getArena  -- TODO: use deepest visited instead of current
+  deepest <- getsLevel arena ldepth  -- TODO: use deepest visited instead of current
   let upd f = f {gquit = Just (False, Killed arena)}
   modifyState $ updateFaction (EM.adjust upd fid)
   when showEndingScreens $ do

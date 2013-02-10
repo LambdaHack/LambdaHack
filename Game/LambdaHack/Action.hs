@@ -13,7 +13,7 @@ module Game.LambdaHack.Action
     -- * Abort exception handlers
   , tryRepeatedlyWith, tryIgnore
     -- * Shorthands
-  , updateLevel
+  , updateLevel, getsLevel
   ) where
 
 import Control.Concurrent.Chan
@@ -108,3 +108,6 @@ tryIgnore =
 -- | Update a given level data within state.
 updateLevel :: MonadAction m => LevelId -> (Level -> Level) -> m ()
 updateLevel lid f = modifyState $ updateDungeon $ EM.adjust f lid
+
+getsLevel :: MonadActionRO m => LevelId -> (Level -> a) -> m a
+getsLevel lid f = getsState $ f . (EM.! lid) . sdungeon
