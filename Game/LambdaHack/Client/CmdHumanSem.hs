@@ -84,7 +84,7 @@ cmdAction cli s cmd =
       let dir = toDir lxsize v
           tpos = ppos `shift` dir
           -- We always see actors from our own faction.
-          tgt = posToActor tpos s
+          tgt = posToActor tpos arena s
       in case tgt of
         Just target | bfaction (getActorBody target s) == bfaction sm
                       && not (bproj (getActorBody target s)) ->

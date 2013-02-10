@@ -13,7 +13,7 @@ module Game.LambdaHack.Actor
   , ItemBag, ItemInv, InvChar(..), ItemDict, ItemRev
   , allLetters, assignLetter, letterLabel, letterRange, rmFromBag
     -- * Assorted
-  , smellTimeout
+  , ActorDict, smellTimeout
   ) where
 
 import Data.Binary
@@ -64,6 +64,7 @@ data Actor = Actor
   , bhp      :: !Int                    -- ^ current hit points
   , bpath    :: !(Maybe [Vector])       -- ^ path the actor is forced to travel
   , bpos     :: !Point                  -- ^ current position
+  , blvl     :: !LevelId                -- ^ current level
   , bbag     :: !ItemBag                -- ^ items carried
   , binv     :: !ItemInv                -- ^ map from letters to items
   , bletter  :: !InvChar                -- ^ next inventory letter
@@ -92,9 +93,9 @@ partActor Kind.Ops{oname} a = MU.Text $ fromMaybe (oname $ bkind a) (bname a)
 -- Actor operations
 
 -- | A template for a new non-projectile actor.
-actorTemplate :: Kind.Id ActorKind -> Maybe Char -> Maybe Text -> Int -> Point
-              -> Time -> FactionId -> Bool -> Actor
-actorTemplate bkind bsymbol bname bhp bpos btime bfaction bproj =
+actorTemplate :: Kind.Id ActorKind -> Maybe Char -> Maybe Text -> Int
+              -> Point -> LevelId -> Time -> FactionId -> Bool -> Actor
+actorTemplate bkind bsymbol bname bhp bpos blvl btime bfaction bproj =
   let bcolor  = Nothing
       bspeed  = Nothing
       bpath   = Nothing
@@ -124,8 +125,8 @@ braced m time = time < bwait m
 -- | Checks for the presence of actors in a position.
 -- Does not check if the tile is walkable.
 unoccupied :: [Actor] -> Point -> Bool
-unoccupied actors loc =
-  all (\ body -> bpos body /= loc) actors
+unoccupied actors pos =
+  all (\ body -> bpos body /= pos) actors
 
 -- | The unique kind of heroes.
 heroKindId :: Kind.Ops ActorKind -> Kind.Id ActorKind
@@ -157,6 +158,9 @@ type ItemInv = EM.EnumMap InvChar ItemId
 -- | All items in the dungeon (including in actor inventories),
 -- indexed by item identifier.
 type ItemDict = EM.EnumMap ItemId Item
+
+-- | All actors on the level, indexed by actor identifier.
+type ActorDict = EM.EnumMap ActorId Actor
 
 -- | Reverse item map, for item creation, to keep items and item identifiers
 -- in bijection.
@@ -232,6 +236,7 @@ instance Binary Actor where
     put bhp
     put bpath
     put bpos
+    put blvl
     put bbag
     put binv
     put bletter
@@ -248,6 +253,7 @@ instance Binary Actor where
     bhp     <- get
     bpath   <- get
     bpos    <- get
+    blvl    <- get
     bbag <- get
     binv    <- get
     bletter <- get

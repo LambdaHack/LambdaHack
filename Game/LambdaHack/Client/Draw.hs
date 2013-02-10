@@ -54,7 +54,7 @@ draw dm cops per
                , cotile=Kind.Ops{okind=tokind, ouniqGroup} } = cops
       DebugModeCli{smarkVision, smarkSmell} = sdebugCli
       (drawnLevelId, lvl@Level{ldepth, lxsize, lysize, lsmell,
-                               ldesc, lactor, ltime, lseen, lclear}) =
+                               ldesc, ltime, lseen, lclear}) =
         case stgtMode of
           Nothing -> (sarena s, getArena s)
           Just tgtM -> (tgtLevelId tgtM, sdungeon s EM.! tgtLevelId tgtM)
@@ -76,7 +76,7 @@ draw dm cops per
                                         then Color.Blue
                                         else Color.defBG
                else \ _vis _visPl -> Color.defBG
-      (_, wealth) = calculateTotal (sside cli) s
+      (_, wealth) = calculateTotal (sside cli) drawnLevelId s
       damage  = case Item.strongestSword cops bitems of
                   Just sw ->
                     case Item.jkind (sdisco s) sw of
@@ -109,7 +109,7 @@ draw dm cops per
               color  = fromMaybe acolor  bcolor
               symbol = fromMaybe asymbol bsymbol
             rainbow p = toEnum $ fromEnum p `rem` 14 + 1
-            actorsHere = EM.elems lactor
+            actorsHere = actorList (const True) drawnLevelId s
             (char, fg0) =
               case ( L.find (\ m -> pos0 == Actor.bpos m) actorsHere
                    , L.find (\ m -> scursor == Just (Actor.bpos m))

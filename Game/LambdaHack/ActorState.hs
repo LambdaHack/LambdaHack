@@ -4,9 +4,8 @@
 -- TODO: Document an export list after it's rewritten according to #17.
 module Game.LambdaHack.ActorState
   ( actorAssocs, actorList, actorNotProjAssocs, actorNotProjList
-  , isProjectile, calculateTotal, allActorsAnyLevel, nearbyFreePos, whereTo
-  , posToActor, deleteActor, getItemBody
-  , insertActor, memActor, getActorBody, updateActorBody
+  , isProjectile, calculateTotal, nearbyFreePos, whereTo
+  , posToActor, getItemBody, memActor, getActorBody, updateActorBody
   , getActorItem, getActorBag, getActorInv, tryFindHeroK, foesAdjacent
   ) where
 
@@ -30,52 +29,63 @@ import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert
 
-actorAssocs :: (FactionId -> Bool) -> Level -> [(ActorId, Actor)]
-actorAssocs p lvl = filter (p . bfaction . snd) $ EM.assocs $ lactor lvl
+actorAssocs :: (FactionId -> Bool) -> LevelId -> State
+            -> [(ActorId, Actor)]
+actorAssocs p lid s =
+  mapMaybe (\aid -> let actor = sactorD s EM.! aid
+                    in if p (bfaction actor)
+                       then Just (aid, actor)
+                       else Nothing)
+  $ concat $ EM.elems $ lprio $ sdungeon s EM.! lid
 
-actorList :: (FactionId -> Bool) -> Level -> [Actor]
-actorList p lvl = filter (p . bfaction) $ EM.elems $ lactor lvl
+actorList :: (FactionId -> Bool) -> LevelId -> State
+          -> [Actor]
+actorList p lid s = map snd $ actorAssocs p lid s
 
-actorNotProjAssocs :: (FactionId -> Bool) -> Level -> [(ActorId, Actor)]
-actorNotProjAssocs p lvl =
-  filter (\(_, m) -> not (bproj m) && p (bfaction m)) $ EM.assocs $ lactor lvl
+actorNotProjAssocs :: (FactionId -> Bool) -> LevelId -> State
+                   -> [(ActorId, Actor)]
+actorNotProjAssocs p lid s =
+  mapMaybe (\aid -> let actor = sactorD s EM.! aid
+                    in if not (bproj actor) && p (bfaction actor)
+                       then Just (aid, actor)
+                       else Nothing)
+  $ concat $ EM.elems $ lprio $ sdungeon s EM.! lid
 
-actorNotProjList :: (FactionId -> Bool) -> Level -> [Actor]
-actorNotProjList p lvl =
-  filter (\m -> not (bproj m) && p (bfaction m)) $ EM.elems $ lactor lvl
+actorNotProjList :: (FactionId -> Bool) -> LevelId -> State
+                 -> [Actor]
+actorNotProjList p lid s = map snd $ actorNotProjAssocs p lid s
 
 -- | Checks whether an actor identifier represents a hero.
 isProjectile :: State -> ActorId -> Bool
 isProjectile s aid = bproj $ getActorBody aid s
 
 -- | Finds an actor at a position on the current level. Perception irrelevant.
-posToActor :: Point -> State -> Maybe ActorId
-posToActor loc s =
-  let l = posToActors loc s
+posToActor :: Point -> LevelId -> State -> Maybe ActorId
+posToActor pos lid s =
+  let l = posToActors pos lid s
   in assert (length l <= 1 `blame` l) $
      listToMaybe l
 
-posToActors :: Point -> State -> [ActorId]
-posToActors loc s =
-    let l  = EM.assocs $ lactor $ getArena s
-        im = filter (\ (_i, m) -> bpos m == loc) l
-    in fmap fst im
+posToActors :: Point -> LevelId -> State -> [ActorId]
+posToActors pos lid s =
+    let as = actorAssocs (const True) lid s
+        apos = filter (\(_, b) -> bpos b == pos) as
+    in fmap fst apos
 
-nearbyFreePos :: Kind.Ops TileKind -> Point -> State -> Point
-nearbyFreePos cotile start s =
-  let lvl@Level{lxsize, lysize, lactor} = getArena s
+nearbyFreePos :: Kind.Ops TileKind -> Point -> LevelId -> State -> Point
+nearbyFreePos cotile start lid s =
+  let lvl@Level{lxsize, lysize} = getArena s
       poss = start : nub (concatMap (vicinity lxsize lysize) poss)
       good loc = Tile.hasFeature cotile F.Walkable (lvl `at` loc)
-                 && unoccupied (EM.elems lactor) loc
+                 && unoccupied (actorList (const True) lid s) loc
   in fromMaybe (assert `failure` ("too crowded map" :: Text))
      $ find good poss
 
 -- | Calculate loot's worth for heroes on the current level.
-calculateTotal :: FactionId -> State -> (ItemBag, Int)
-calculateTotal fid s =
-  let lvl = getArena s
-      bag = EM.unionsWith (+)
-            $ map bbag $ actorList (== fid) lvl
+calculateTotal :: FactionId -> LevelId -> State -> (ItemBag, Int)
+calculateTotal fid lid s =
+  let bag = EM.unionsWith (+)
+            $ map bbag $ actorList (== fid) lid s
       heroItem = map (\(iid, k) -> (getItemBody iid s, k))
                  $ EM.assocs bag
   in (bag, sum $ map itemPrice heroItem)
@@ -96,28 +106,12 @@ foesAdjacent lxsize lysize loc foes =
 
 -- * These few operations look at, potentially, all levels of the dungeon.
 
--- | The list of all non-projectile actors and their levels in the dungeon,
--- starting with the selected level.
-allActorsAnyLevel :: State -> [(LevelId, (ActorId, Actor))]
-allActorsAnyLevel s =
-  let one (ln, lvl) =
-        [ (ln, (a, m)) | (a, m) <- EM.assocs $ lactor lvl
-                       , not (bproj m) ]
-      butArena = EM.delete (sarena s) (sdungeon s)
-      selectedFirst = (sarena s, sdungeon s EM.! sarena s) : EM.assocs butArena
-  in concatMap one selectedFirst
-
--- TODO: start with current level; also elsewhere
 -- | Tries to finds an actor body satisfying a predicate on any level.
-tryFindActor :: State -> (Actor -> Bool) -> Maybe (LevelId, (ActorId, Actor))
+tryFindActor :: State -> (Actor -> Bool) -> Maybe (ActorId, Actor)
 tryFindActor s p =
-  let chk (ln, lvl) =
-        fmap (\a -> (ln, a)) $ find (p . snd) $ EM.assocs $ lactor lvl
-  in case mapMaybe chk $ EM.assocs $ sdungeon s of
-    [] -> Nothing
-    (ln, (aid, body)) : _ -> Just (ln, (aid, body))
+  find (p . snd) $ EM.assocs $ sactorD s
 
-tryFindHeroK :: State -> FactionId -> Int -> Maybe (LevelId, (ActorId, Actor))
+tryFindHeroK :: State -> FactionId -> Int -> Maybe (ActorId, Actor)
 tryFindHeroK s fact k =
   let c | k == 0          = '@'
         | k > 0 && k < 10 = Char.intToDigit k
@@ -141,10 +135,10 @@ whereTo s lid k = assert (k /= 0) $
 
 -- | Gets actor body from the current level. Error if not found.
 getActorBody :: ActorId -> State -> Actor
-getActorBody a s = lactor (getArena s) EM.! a
+getActorBody aid s = sactorD s EM.! aid
 
 updateActorBody :: ActorId -> (Actor -> Actor) -> State -> State
-updateActorBody actor f s = updateArena (updateActor $ EM.adjust f actor) s
+updateActorBody aid f s = updateActorD (EM.adjust f aid) s
 
 getActorBag :: ActorId -> State -> ItemBag
 getActorBag aid s = bbag $ getActorBody aid s
@@ -159,19 +153,11 @@ getActorItem aid s =
   map (flip getItemBody s) $ EM.keys $ getActorBag aid s
 
 getItemBody :: ItemId -> State -> Item
-getItemBody iid s = sitem s EM.! iid
+getItemBody iid s = sitemD s EM.! iid
 
 -- | Checks if the actor is present on the current level.
 -- The order of argument here and in other functions is set to allow
 --
 -- > b <- getsState (memActor a)
-memActor :: ActorId -> State -> Bool
-memActor a s = EM.member a (lactor (getArena s))
-
--- | Add actor to the current level.
-insertActor :: ActorId -> Actor -> State -> State
-insertActor a m = updateArena (updateActor (EM.insert a m))
-
--- | Removes the actor, if present, from the current level.
-deleteActor :: ActorId -> State -> State
-deleteActor a = updateArena (updateActor (EM.delete a))
+memActor :: ActorId -> LevelId -> State -> Bool
+memActor a lid s = lid == blvl (getActorBody a s)

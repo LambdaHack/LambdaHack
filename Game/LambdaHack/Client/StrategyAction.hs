@@ -58,8 +58,8 @@ reacquireTgt cops actor btarget glo per factionAbilities =
   reacquire btarget
  where
   Kind.COps{coactor=coactor@Kind.Ops{okind}} = cops
-  lvl@Level{lxsize} = getArena glo
-  actorBody@Actor{ bkind, bpos = me, bpath, bfaction } =
+  Level{lxsize} = getArena glo
+  actorBody@Actor{ bkind, bpos = me, bpath, bfaction, blvl } =
     getActorBody actor glo
   mk = okind bkind
   enemyVisible l =
@@ -79,7 +79,7 @@ reacquireTgt cops actor btarget glo per factionAbilities =
   reacquire tgt =
     case tgt of
       Just (TEnemy a ll) | focused
-                    && memActor a glo ->  -- present on this level
+                    && memActor a blvl glo ->  -- present on this level
         let l = bpos $ getActorBody a glo
         in if enemyVisible l           -- prefer visible foes
            then returN "TEnemy" $ Just $ TEnemy a l
@@ -95,7 +95,7 @@ reacquireTgt cops actor btarget glo per factionAbilities =
       Just TPos{} -> closest                -- prefer visible foes
       Nothing -> closest
   lenemy = genemy . (EM.! bfaction) . sfaction $ glo
-  foes = actorNotProjAssocs (`elem` lenemy) lvl
+  foes = actorNotProjAssocs (`elem` lenemy) blvl glo
   visibleFoes = L.filter (enemyVisible . snd) (L.map (second bpos) foes)
   closest :: Strategy (Maybe Target)
   closest =
@@ -216,7 +216,7 @@ rangedFreq cops actor glo fpos =
     if not foesAdj
        && asight mk
        && accessible cops lvl bpos pos1    -- first accessible
-       && isNothing (posToActor pos1 glo)  -- no friends on first
+       && isNothing (posToActor pos1 blvl glo)  -- no friends on first
     then throwFreq bitems 3 (CActor actor) ++ throwFreq tis 6 (CFloor bpos)
     else []
  where
@@ -225,12 +225,12 @@ rangedFreq cops actor glo fpos =
            , corule
            } = cops
   lvl@Level{lxsize, lysize} = getArena glo
-  Actor{ bkind, bpos, bfaction } = getActorBody actor glo
+  Actor{ bkind, bpos, bfaction, blvl } = getActorBody actor glo
   bitems = getActorBag actor glo
   mk = okind bkind
   tis = lvl `atI` bpos
   lenemy = genemy . (EM.! bfaction) . sfaction $ glo
-  foes = actorNotProjAssocs (`elem` lenemy) lvl
+  foes = actorNotProjAssocs (`elem` lenemy) blvl glo
   foesAdj = foesAdjacent lxsize lysize bpos (map snd foes)
   -- TODO: also don't throw if any pos on path is visibly not accessible
   -- from previous (and tweak eps in bla to make it accessible).
@@ -322,7 +322,7 @@ moveStrategy cops actor glo mFoe =
            , coactor=Kind.Ops{okind}
            } = cops
   lvl@Level{lsmell, lxsize, lysize, ltime} = getArena glo
-  Actor{bkind, bpos, bfaction} = getActorBody actor glo
+  Actor{bkind, bpos, bfaction, blvl} = getActorBody actor glo
   mk = okind bkind
   lootHere x = not $ EM.null $ lvl `atI` x
   onlyLoot   = onlyMoves lootHere bpos
@@ -362,7 +362,7 @@ moveStrategy cops actor glo mFoe =
   openableHere   = openable cotile lvl
   accessibleHere = accessible cops lvl bpos
   lenemy = genemy . (EM.! bfaction) . sfaction $ glo
-  friends = actorList (not . (`elem` lenemy)) . getArena $ glo
+  friends = actorList (not . (`elem` lenemy)) blvl $ glo
   noFriends | asight mk = unoccupied friends
             | otherwise = const True
   isSensible l = noFriends l && (accessibleHere l || openableHere l)

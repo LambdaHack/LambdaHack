@@ -3,7 +3,6 @@
 -- moves turn by turn.
 module Game.LambdaHack.Server.LoopAction (loopSer, cmdAtomicBroad) where
 
-import Control.Arrow ((&&&))
 import Control.Arrow (second)
 import Control.Monad
 import qualified Control.Monad.State as St
@@ -12,7 +11,6 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.List
 import Data.Maybe
-import qualified Data.Ord as Ord
 import Data.Text (Text)
 import qualified Data.Text as T
 
@@ -116,11 +114,13 @@ initPer = do
 cmdAtomicBroad :: (MonadAction m, MonadServerChan m) => CmdAtomic -> m ()
 cmdAtomicBroad cmd = do
   lvlOld <- getsState getArena
-  itemDOld <- getsState sitem
+  actorDOld <- getsState sactorD
+  itemDOld <- getsState sitemD
   factionOld <- getsState sfaction
   cmdAtomicSem cmd
   lvlNew <- getsState getArena
-  itemDNew <- getsState sitem
+  actorDNew <- getsState sactorD
+  itemDNew <- getsState sitemD
   factionNew <- getsState sfaction
   (pStart, pEnd) <- cmdPosAtomic cmd
   let vis per = all (`ES.member` totalVisible per)
@@ -137,7 +137,7 @@ cmdAtomicBroad cmd = do
           then do
             let sendUp =
                   sendUpdateCli fid
-                  $ RememberPerCli perNew lvlOld itemDOld factionOld
+                  $ RememberPerCli perNew lvlOld actorDOld itemDOld factionOld
             sendUp
             withAI sendUp
             let sendCmd = sendUpdateCli fid $ AtomicSeenCli cmd
@@ -146,7 +146,7 @@ cmdAtomicBroad cmd = do
           else do
             let sendUp =
                   sendUpdateCli fid
-                  $ RememberPerCli perNew lvlNew itemDNew factionNew
+                  $ RememberPerCli perNew lvlNew actorDNew itemDNew factionNew
             sendUp
             withAI sendUp
         else do
@@ -160,7 +160,7 @@ cmdAtomicBroad cmd = do
           else do
             let sendUp =
                   sendUpdateCli fid
-                  $ RememberCli lvlNew itemDNew factionNew
+                  $ RememberCli lvlNew actorDNew itemDNew factionNew
             sendUp
             withAI sendUp
   mapM_ send $ EM.keys factionNew
@@ -177,16 +177,15 @@ checkEndGame ::  (MonadAction m, MonadServerChan m) => m ()
 checkEndGame = do
   -- Actors on the current level go first so that we don't switch levels
   -- unnecessarily.
-  as <- getsState allActorsAnyLevel
+  as <- getsState $ EM.elems . sactorD
   glo <- getState
-  let aNotSp = filter (not . isSpawningFaction glo . bfaction . snd . snd) as
+  let aNotSp = filter (not . isSpawningFaction glo . bfaction) as
   case aNotSp of
     [] -> gameOver undefined True  -- TODO: should send to all factions
-    (lid, _) : _ ->
+    actor : _ ->
       -- Switch to the level (can be the currently selected level, too).
-      modifyState $ updateSelectedArena lid
+      modifyState $ updateSelectedArena $ blvl actor
 
--- TODO: We should replace this structure using a priority search queue/tree.
 -- | Perform moves for individual actors, as long as there are actors
 -- with the next move time less than or equal to the current time.
 -- Some very fast actors may move many times a clip and then
@@ -205,17 +204,20 @@ handleActors cmdSer subclipStart prevHuman disp = do
   Kind.COps{coactor} <- getsState scops
   time <- getsState getTime  -- the end time of this clip, inclusive
    -- Older actors act earlier.
-  lactor <- getsState (EM.assocs . lactor . getArena)
+  prio <- getsState $ lprio . getArena
   gquit <- case prevHuman of
     Just fid -> getsState $ gquit . (EM.! fid) . sfaction
     Nothing -> return Nothing
   quit <- getsServer squit
-  let mnext = if null lactor  -- wait until any actor spawned
+  s <- getState
+  let mnext = if EM.null prio  -- wait until any actor spawned
               then Nothing
               else let -- Actors of the same faction move together.
-                       order = Ord.comparing (btime . snd &&& bfaction . snd)
-                       (actor, m) = minimumBy order lactor
-                   in if btime m > time
+--                       order = Ord.comparing (btime . snd &&& bfaction . snd)
+                       (atime, as) = EM.findMin prio
+                       actor = head as
+                       m = getActorBody actor s
+                   in if atime > time
                       then Nothing  -- no actor is ready for another move
                       else Just (actor, m)
   case mnext of
@@ -273,7 +275,7 @@ handleActors cmdSer subclipStart prevHuman disp = do
             -- selected leaders as well.
             squitNew <- getsServer squit
             when (timedCmdSer cmdS && isNothing squitNew) $
-              maybe (return ()) advanceTime leaderNew
+              maybe (return ()) (advanceTime arenaNew) leaderNew
             -- Human moves always start a new subclip.
             _pos <- getsState $ bpos . getActorBody (fromMaybe actor leaderNew)
             -- TODO: send messages with time (or at least DisplayPushCli)
@@ -284,7 +286,7 @@ handleActors cmdSer subclipStart prevHuman disp = do
             handleActors cmdSer (btime m) nHuman True
         else do
 --          recordHistory
-          advanceTime actor  -- advance time while the actor still alive
+          advanceTime arena actor  -- advance time while the actor still alive
           let subclipStartDelta = timeAddFromSpeed coactor m subclipStart
           if isHuman && not (bproj m)
              || subclipStart == timeZero
@@ -315,12 +317,22 @@ handleActors cmdSer subclipStart prevHuman disp = do
                       (cmdSer cmdS)
               handleActors cmdSer subclipStart prevHuman False
 
--- | Advance (or rewind) the move time for the given actor.
-advanceTime :: MonadAction m => ActorId -> m ()
-advanceTime actor = do
+-- | Advance the move time for the given actor.
+advanceTime :: MonadAction m => LevelId -> ActorId -> m ()
+advanceTime _lid aid = do
   Kind.COps{coactor} <- getsState scops
-  let upd m@Actor{btime} = m {btime = timeAddFromSpeed coactor m btime}
-  modifyState $ updateActorBody actor upd
+  b <- getsState $ getActorBody aid
+  let oldTime = btime b
+      newTime = timeAddFromSpeed coactor b oldTime
+      upd body = body {btime = newTime}
+  modifyState $ updateActorBody aid upd
+  let rm Nothing = assert `failure` aid
+      rm (Just l) = let l2 = delete aid l
+                    in if null l2 then Nothing else Just l2
+  modifyState $ updateArena $ updatePrio $ EM.alter rm oldTime
+  let add Nothing = Just [aid]
+      add (Just l) = Just $ aid : l
+  modifyState $ updateArena $ updatePrio $ EM.alter add newTime
 
 -- | Continue or restart or exit the game.
 endOrLoop :: (MonadAction m, MonadServerChan m)
@@ -329,7 +341,8 @@ endOrLoop Nothing loopServer = loopServer
 endOrLoop (Just fid) loopServer = do
   quit <- getsServer squit
   gquit <- getsState $ gquit . (EM.! fid) . sfaction
-  (_, total) <- getsState (calculateTotal fid)
+  arena <- getsState sarena
+  (_, total) <- getsState (calculateTotal fid arena)
   -- The first, boolean component of quit determines
   -- if ending screens should be shown, the other argument describes
   -- the cause of the disruption of game flow.
@@ -488,23 +501,25 @@ generateMonster = do
   arena <- getsState sarena
   lvl@Level{ldepth} <- getsState getArena
   faction <- getsState sfaction
+  s <- getState
   let f fid = fspawn (okind (gkind (faction EM.! fid))) > 0
-      spawns = actorNotProjList f lvl
+      spawns = actorNotProjList f arena s
   rc <- rndToAction $ monsterGenChance ldepth (length spawns)
   if not rc
     then return Nothing
     else do
       let allPers =
             ES.unions $ map (totalVisible . (EM.! arena)) $ EM.elems pers
-      pos <- rndToAction $ rollSpawnPos cops allPers lvl
+      pos <- rndToAction $ rollSpawnPos cops allPers arena lvl s
       (mf, cmds) <- runWriterT $ spawnMonsters 1 pos
       mapM_ cmdAtomicBroad cmds
       return mf
 
 -- | Create a new monster on the level, at a random position.
-rollSpawnPos :: Kind.COps -> ES.EnumSet Point -> Level -> Rnd Point
-rollSpawnPos Kind.COps{cotile} visible lvl@Level{lactor} = do
-  let inhabitants = actorNotProjList (const True) lvl
+rollSpawnPos :: Kind.COps -> ES.EnumSet Point -> LevelId -> Level -> State
+             -> Rnd Point
+rollSpawnPos Kind.COps{cotile} visible lid lvl s = do
+  let inhabitants = actorNotProjList (const True) lid s
       isLit = Tile.isLit cotile
       distantAtLeast d =
         \ l _ -> all (\ h -> chessDist (lxsize lvl) (bpos h) l > d) inhabitants
@@ -516,7 +531,7 @@ rollSpawnPos Kind.COps{cotile} visible lvl@Level{lactor} = do
     , \ l _ -> not $ l `ES.member` visible
     , distantAtLeast 5
     , \ l t -> Tile.hasFeature cotile F.Walkable t
-               && unoccupied (EM.elems lactor) l
+               && unoccupied (actorList (const True) lid s) l
     ]
 
 -- | Possibly regenerate HP for all actors on the current level.
@@ -547,7 +562,9 @@ regenerateLevelHP = do
         in if (time `timeFit` timeTurn) `mod` regen /= 0 || deltaHP <= 0
            then Nothing
            else Just a
-  toRegen <- getsState $ catMaybes . map pick . EM.assocs . lactor . getArena
+  arena <- getsState sarena
+  toRegen <-
+    getsState $ catMaybes . map pick .actorNotProjAssocs (const True) arena
   mapM_ (\aid -> cmdAtomicBroad $ HealAtomic 1 aid) toRegen
 
 -- TODO: let only some actors/items leave smell, e.g., a Smelly Hide Armour.

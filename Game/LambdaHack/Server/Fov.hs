@@ -7,11 +7,12 @@ module Game.LambdaHack.Server.Fov
   ) where
 
 import Data.Binary
-import qualified Data.List as L
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import qualified Data.List as L
 
 import Game.LambdaHack.Actor
+import Game.LambdaHack.ActorState
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Faction
@@ -33,32 +34,32 @@ newtype PerceptionReachable = PerceptionReachable
   deriving Show
 
 -- | Calculate perception of the level.
-levelPerception :: Kind.COps -> FovMode -> FactionId -> Level
+levelPerception :: Kind.COps -> State -> FovMode -> FactionId
+                -> LevelId -> Level
                 -> Perception
-levelPerception cops@Kind.COps{cotile} configFovMode
-                fid lvl@Level{lactor} =
-  let hs = EM.filter (\m -> bfaction m == fid && not (bproj m)) lactor
+levelPerception cops@Kind.COps{cotile} s configFov fid lid lvl =
+  let hs = actorNotProjAssocs (== fid) lid s
       reas =
-        EM.map (\h -> computeReachable cops configFovMode h lvl) hs
-      lreas = map preachable $ EM.elems reas
+        map (\(aid, b) -> (aid, computeReachable cops configFov b lvl)) hs
+      lreas = map (preachable . snd) reas
       totalRea = PerceptionReachable $ ES.unions lreas
       -- TODO: Instead of giving the monster a light source, alter vision.
-      lights = ES.fromList $ map bpos $ EM.elems hs
+      lights = ES.fromList $ map (bpos . snd) hs
       totalVis = computeVisible cotile totalRea lvl lights
       f = PerceptionVisible . ES.intersection (pvisible totalVis) . preachable
-  in Perception { pactors = EM.map f reas
+  in Perception { pactors = EM.map f $ EM.fromDistinctAscList reas
                 , ptotal  = totalVis }
 
 -- | Calculate perception of a faction.
 factionPerception :: Kind.COps -> FovMode -> State -> FactionId
                   -> FactionPers
-factionPerception cops configFovMode s fid =
-  EM.map (levelPerception cops configFovMode fid) $ sdungeon s
+factionPerception cops configFov s fid =
+  EM.mapWithKey (levelPerception cops s configFov fid) $ sdungeon s
 
 -- | Calculate the perception of the whole dungeon.
 dungeonPerception :: Kind.COps -> FovMode -> State -> Pers
-dungeonPerception cops configFovMode s =
-  let f fid _ = factionPerception cops configFovMode s fid
+dungeonPerception cops configFov s =
+  let f fid _ = factionPerception cops configFov s fid
   in EM.mapWithKey f $ sfaction s
 
 -- | A position can be directly lit by an ambient shine or a weak, portable
@@ -98,11 +99,11 @@ isVisible cotile PerceptionReachable{preachable}
 computeReachable :: Kind.COps -> FovMode -> Actor -> Level
                  -> PerceptionReachable
 computeReachable Kind.COps{cotile, coactor=Kind.Ops{okind}}
-                 configFovMode actor lvl =
+                 configFov actor lvl =
   let fovMode m =
         if not $ asight $ okind $ bkind m
         then Blind
-        else configFovMode
+        else configFov
       ppos = bpos actor
   in PerceptionReachable $
        ES.insert ppos $ ES.fromList $ fullscan cotile (fovMode actor) ppos lvl

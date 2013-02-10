@@ -1,3 +1,4 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Game time and speed.
 module Game.LambdaHack.Time
   ( Time, timeZero, timeClip, timeTurn
@@ -15,7 +16,7 @@ import Data.Int (Int64)
 -- One tick is 1 microsecond (one millionth of a second),
 -- one turn is 0.5 s.
 newtype Time = Time Int64
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Enum)
 
 instance Binary Time where
   put (Time n) = put n

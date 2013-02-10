@@ -126,11 +126,11 @@ doLook = do
   Just leader <- getsClient sleader
   lpos <- getsState $ bpos . getActorBody leader
   target <- getsClient $ getTarget leader
-  lvl <- cursorLevel
+  (lid, lvl) <- viewedLevel
+  hms <- getsState $ actorList (const True) lid
   let p = fromMaybe lpos scursor
-      hms = lactor lvl
       canSee = ES.member p (totalVisible per)
-      ihabitant | canSee = find (\ m -> bpos m == p) (EM.elems hms)
+      ihabitant | canSee = find (\m -> bpos m == p) hms
                 | otherwise = Nothing
       enemyMsg =
         maybe "" (\ m -> makeSentence
@@ -256,11 +256,11 @@ targetEnemy stgtModeNew = do
   target <- getsClient $ getTarget leader
   -- TODO: sort enemies by distance to the leader.
   stgtMode <- getsClient stgtMode
-  (_, lvl@Level{lxsize}) <- viewedLevel
+  (lid, Level{lxsize}) <- viewedLevel
   side <- getsClient sside
   genemy <- getsState $ genemy . (EM.! side) . sfaction
-  let ms = actorNotProjAssocs (`elem` genemy) lvl
-      plms = filter ((/= leader) . fst) ms  -- don't target yourself
+  ms <- getsState $ actorNotProjAssocs (`elem` genemy) lid
+  let plms = filter ((/= leader) . fst) ms  -- don't target yourself
       ordPos (_, m) = (chessDist lxsize ppos $ bpos m, bpos m)
       dms = sortBy (comparing ordPos) plms
       (lt, gt) = case target of
@@ -418,10 +418,10 @@ endTargeting accept = do
     Just leader <- getsClient sleader
     target <- getsClient $ getTarget leader
     scursor <- getsClient scursor
-    lvl <- cursorLevel
+    (lid, _) <- viewedLevel
     side <- getsClient sside
     genemy <- getsState $ genemy . (EM.! side) . sfaction
-    let ms = actorNotProjAssocs (`elem` genemy) lvl
+    ms <- getsState $ actorNotProjAssocs (`elem` genemy) lid
     case target of
       Just TEnemy{} -> do
         -- If in enemy targeting mode, switch to the enemy under
@@ -447,10 +447,11 @@ endTargetingMsg = do
   pbody <- getsState $ getActorBody leader
   target <- getsClient $ getTarget leader
   loc <- getState
+  arena <- getsState sarena
   Level{lxsize} <- cursorLevel
   let targetMsg = case target of
                     Just (TEnemy a _ll) ->
-                      if memActor a loc
+                      if memActor a arena loc
                       then partActor coactor $ getActorBody a loc
                       else "a fear of the past"
                     Just (TPos pos) ->
@@ -488,22 +489,22 @@ cycleMember = do
   Just leader <- getsClient sleader
   arena <- getsState sarena
   hs <- partyAfterLeader leader
-  case filter (\(nl, _) -> nl == arena) hs of
+  case filter (\(_, b) -> blvl b == arena) hs of
     [] -> abortWith "Cannot select any other member on this level."
-    (nl, (np, _)) : _ -> selectLeader np nl
-                      >>= assert `trueM` (leader, nl, np, "member duplicated")
+    (np, b) : _ -> selectLeader np (blvl b)
+                   >>= assert `trueM` (leader, blvl b, np, "member duplicated")
 
 partyAfterLeader :: MonadActionRO m
                  => ActorId
-                 -> m [(LevelId, (ActorId, Actor))]
+                 -> m [(ActorId, Actor)]
 partyAfterLeader leader = do
   faction <- getsState $ bfaction . getActorBody leader
-  allA <- getsState allActorsAnyLevel
+  allA <- getsState $ EM.assocs . sactorD
   s <- getState
   let hs9 = catMaybes $ map (tryFindHeroK s faction) [0..9]
-      factionA = filter (\(_, (_, body)) -> bfaction body == faction) allA
-      hs = hs9 ++ (deleteFirstsBy ((==) `on` fst . snd) factionA hs9)
-      i = fromMaybe (-1) $ findIndex ((== leader) . fst . snd) hs
+      factionA = filter (\(_, body) -> bfaction body == faction) allA
+      hs = hs9 ++ (deleteFirstsBy ((==) `on` fst) factionA hs9)
+      i = fromMaybe (-1) $ findIndex ((== leader) . fst) hs
       (lt, gt) = (take i hs, drop (i + 1) hs)
   return $ gt ++ lt
 
@@ -545,8 +546,8 @@ backCycleMember = do
   hs <- partyAfterLeader leader
   case reverse hs of
     [] -> abortWith "No other member in the party."
-    (nl, (np, _)) : _ -> selectLeader np nl
-                      >>= assert `trueM` (leader, nl, np, "member duplicated")
+    (np, b) : _ -> selectLeader np (blvl b)
+                   >>= assert `trueM` (leader, blvl b, np, "member duplicated")
 
 -- * Help
 
@@ -564,4 +565,4 @@ selectHero k = do
   loc <- getState
   case tryFindHeroK loc side k of
     Nothing  -> abortWith "No such member of the party."
-    Just (lid, (aid, _)) -> void $ selectLeader aid lid
+    Just (aid, b) -> void $ selectLeader aid (blvl b)

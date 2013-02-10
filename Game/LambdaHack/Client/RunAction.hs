@@ -158,8 +158,9 @@ continueRunDir leader (dirLast, distLast) = do
   per <- askPerception
   sreport <- getsClient sreport -- TODO: check the message before it goes into history
   genemy <- getsState $ genemy . (EM.! bfaction body) . sfaction
-  ms <- getsState $ actorList (`elem` genemy) . getArena
-  hs <- getsState $ actorList (not . (`elem` genemy)) . getArena
+  arena <- getsState sarena
+  ms <- getsState $ actorList (`elem` genemy) arena
+  hs <- getsState $ actorList (not . (`elem` genemy)) arena
   lvl@Level{lxsize, lysize} <- getsState getArena
   let posHere = bpos body
       posHasFeature f loc = Tile.hasFeature cotile f (lvl `at` loc)

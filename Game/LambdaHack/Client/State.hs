@@ -127,15 +127,12 @@ getTarget aid cli = EM.lookup aid (starget cli)
 invalidateSelectedLeader :: StateClient -> StateClient
 invalidateSelectedLeader cli = cli {srunning = Nothing, _sleader = Nothing}
 
--- | Update selected actor within state. The actor is required
--- to belong to the selected level and selected faction.
+-- | Update selected actor within state. Verify actor's faction.
 updateSelectedLeader :: ActorId -> State -> StateClient -> StateClient
 updateSelectedLeader leader s cli =
-  let la = lactor $ sdungeon s EM.! sarena s
-      mside1 = fmap bfaction $ EM.lookup leader la
+  let side1 = bfaction $ sactorD s EM.! leader
       side2 = sside cli
-  in assert (maybe True (== side2) mside1
-             `blame` (mside1, side2, leader, sarena s, s))
+  in assert (side1 == side2 `blame` (side1, side2, leader, s))
      $ cli {_sleader = Just leader}
 
 sleader :: StateClient -> Maybe ActorId
@@ -151,7 +148,7 @@ targetToPos cli@StateClient{scursor} s = do
   case getTarget leader cli of
     Just (TPos pos) -> return pos
     Just (TEnemy a _ll) -> do
-      guard $ memActor a s           -- alive and visible?
+      guard $ memActor a (sarena s) s           -- alive and visible?
       return $! bpos (getActorBody a s)
     Nothing -> scursor
 

@@ -99,7 +99,8 @@ projectSer source tpos eps _verb iid container = do
     Nothing -> abortWith "cannot zap oneself"
     Just [] -> assert `failure` (spos, tpos, "project from the edge of level")
     Just path@(pos:_) -> do
-      inhabitants <- getsState (posToActor pos)
+      arena <- getsState sarena
+      inhabitants <- getsState (posToActor pos arena)
       if accessible cops lvl spos pos && isNothing inhabitants
         then do
           projId <- addProjectile iid pos (bfaction sm) path time
@@ -117,6 +118,7 @@ addProjectile iid loc bfaction path btime = do
   Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}} <- getsState scops
   disco <- getsState sdisco
   item <- getsState $ getItemBody iid
+  blvl <- getsState sarena
   let ik = okind (fromJust $ jkind disco item)
       speed = speedFromWeight (iweight ik) (itoThrow ik)
       range = rangeFromSpeed speed
@@ -135,6 +137,7 @@ addProjectile iid loc bfaction path btime = do
         , bhp     = 0
         , bpath   = Just dirPath
         , bpos    = loc
+        , blvl
         , bbag    = EM.empty
         , binv    = EM.empty
         , bletter = InvChar 'a'
@@ -160,9 +163,10 @@ triggerSer aid dpos = do
         void $ effectSem ef 0 aid aid 0 False
         return ()
       f (F.ChangeTo tgroup) = do
-        Level{lactor} <- getsState getArena
+        arena <- getsState sarena
+        as <- getsState $ actorList (const True) arena
         if EM.null $ lvl `atI` dpos
-          then if unoccupied (EM.elems lactor) dpos
+          then if unoccupied as dpos
                then do
                  fromTile <- getsState $ (`at` dpos) . getArena
                  toTile <- rndToAction $ opick tgroup (const True)
@@ -220,7 +224,8 @@ moveSer aid dir = do
   let spos = bpos sm           -- source position
       tpos = spos `shift` dir  -- target position
   -- We start by looking at the target position.
-  tgt <- getsState (posToActor tpos)
+  arena <- getsState sarena
+  tgt <- getsState (posToActor tpos arena)
   case tgt of
     Just target ->
       -- Attacking does not require full access, adjacency is enough.
@@ -352,7 +357,8 @@ runSer actor dir = do
   let spos = bpos sm           -- source position
       tpos = spos `shift` dir  -- target position
   -- We start by looking at the target position.
-  tgt <- getsState (posToActor tpos)
+  arena <- getsState sarena
+  tgt <- getsState (posToActor tpos arena)
   case tgt of
     Just target
       | accessible cops lvl spos tpos ->

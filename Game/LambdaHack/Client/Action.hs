@@ -296,10 +296,15 @@ displayPush = do
   displayFrame (isJust srunning) $ Just frame
 
 -- | Update faction memory at the given set of positions, given new visibility.
-rememberLevel :: Kind.COps -> ES.EnumSet Point -> Level -> Level -> Level
-rememberLevel Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} visible nlvl olvl =
+rememberLevel :: Kind.COps -> ActorDict -> ES.EnumSet Point -> Level -> Level
+              -> Level
+rememberLevel Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}}
+              actorD visible nlvl olvl =
   -- TODO: handle invisible actors, but then change also broadcastPosCli, etc.
-  let nactor = EM.filter (\m -> bpos m `ES.member` visible) (lactor nlvl)
+  let nprio =
+        EM.filter (not . null)
+        $ EM.map (filter (\aid ->
+            bpos (actorD EM.! aid) `ES.member` visible)) (lprio nlvl)
       nvis = EM.filterWithKey (\p _ -> p `ES.member` visible) (lfloor nlvl)
       ovis = EM.filterWithKey (\p _ -> p `ES.notMember` visible) (lfloor olvl)
       nfloor = EM.union nvis ovis
@@ -309,7 +314,7 @@ rememberLevel Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} visible nlvl olvl =
       eSeen (pos, tk) = olvl `at` pos == unknownId
                         && Tile.isExplorable cotile tk
       extraSeen = length $ filter eSeen rememberTile
-  in olvl { lactor = nactor
+  in olvl { lprio = nprio
           , lfloor = nfloor
           , ltile = ltile olvl Kind.// rememberTile
           , lseen = lseen olvl + extraSeen

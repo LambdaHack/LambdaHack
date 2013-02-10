@@ -45,7 +45,7 @@ data CmdAtomic =
   | AlterSmellAtomic (DiffEM Point Time)
   | AlterPathAtomic ActorId (Maybe [Vector]) (Maybe [Vector])
   | ColorActorAtomic ActorId (Maybe Color.Color) (Maybe Color.Color)
-  | FactionQuitAtomic FactionId (Maybe (Bool, Status))(Maybe (Bool, Status))
+  | FactionQuitAtomic FactionId (Maybe (Bool, Status)) (Maybe (Bool, Status))
   | SyncAtomic
   deriving Show
 

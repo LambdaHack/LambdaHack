@@ -59,7 +59,8 @@ effectSem ef verbosity source target power block = do
   (b, msg) <- eff ef verbosity source target power
   -- We assume if targed moved to a level, which is not the current level,
   -- his HP is unchanged.
-  memTm <- getsState $ memActor target
+  arena <- getsState sarena
+  memTm <- getsState $ memActor target arena
   newHP <- if memTm
            then getsState (bhp . getActorBody target)
            else return oldHP
@@ -195,8 +196,8 @@ effectDominate source target = do
       lxsize <- getsState (lxsize . getArena)
       lysize <- getsState (lysize . getArena)
       lvl <- getsState getArena
-      let lm = actorNotProjList (`elem` genemy) lvl
-          cross m = bpos m : vicinityCardinal lxsize lysize (bpos m)
+      lm <- getsState $ actorNotProjList (`elem` genemy) arena
+      let cross m = bpos m : vicinityCardinal lxsize lysize (bpos m)
           vis = ES.fromList $ concatMap cross lm
       sendUpdateCli (bfaction sm) $ RemCli vis lvl
       return (True, "A dozen voices yells in anger.")
@@ -235,21 +236,22 @@ summonFriends bfaction n pos = assert (n > 0) $ do
            , cofact=Kind.Ops{okind} } <- getsState scops
   faction <- getsState sfaction
   let fact = okind $ gkind $ faction EM.! bfaction
+  arena <- getsState sarena
   replicateM_ n $ do
     mk <- rndToAction $ opick (fname fact) (const True)
     if mk == heroKindId coactor
       then addHero bfaction pos []
-      else addMonster mk bfaction pos
+      else addMonster mk bfaction pos arena
 
 addActor :: MonadServer m
-         => Kind.Id ActorKind -> FactionId -> Point -> Int
+         => Kind.Id ActorKind -> FactionId -> Point -> LevelId -> Int
          -> Maybe Char -> Maybe Text
          -> WriterT [CmdAtomic] m ()
-addActor mk bfaction ppos hp msymbol mname = do
+addActor mk bfaction ppos lid hp msymbol mname = do
   Kind.COps{cotile} <- getsState scops
   time <- getsState getTime
-  pos <- getsState $ nearbyFreePos cotile ppos
-  let m = actorTemplate mk msymbol mname hp pos time bfaction False
+  pos <- getsState $ nearbyFreePos cotile ppos lid
+  let m = actorTemplate mk msymbol mname hp pos lid time bfaction False
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
   tell [SpawnAtomic acounter m]
@@ -268,7 +270,8 @@ addHero bfaction ppos configHeroNames = do
       symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
       name = findHeroName configHeroNames n
       startHP = hp - (hp `div` 5) * min 3 n
-  addActor mk bfaction ppos startHP (Just symbol) (Just name)
+  arena <- getsState sarena
+  addActor mk bfaction ppos arena startHP (Just symbol) (Just name)
 
 -- | Find a hero name in the config file, or create a stock name.
 findHeroName :: [(Int, Text)] -> Int -> Text
@@ -292,6 +295,7 @@ spawnMonsters :: MonadServer m
 spawnMonsters n pos = do
   Kind.COps{ coactor=Kind.Ops{opick}
            , cofact=Kind.Ops{okind} } <- getsState scops
+  arena <- getsState sarena
   faction <- getsState sfaction
   let f (fid, fa) =
         let kind = okind (gkind fa)
@@ -305,18 +309,18 @@ spawnMonsters n pos = do
       (spawnKind, bfaction) <- rndToAction $ frequency freq
       replicateM_ n $ do
         mk <- rndToAction $ opick (fname spawnKind) (const True)
-        addMonster mk bfaction pos
+        addMonster mk bfaction pos arena
       return $ Just bfaction
 
 -- | Create a new monster on the level, at a given position
 -- and with a given actor kind and HP.
 addMonster :: MonadServer m
-           => Kind.Id ActorKind -> FactionId -> Point
+           => Kind.Id ActorKind -> FactionId -> Point -> LevelId
            -> WriterT [CmdAtomic] m ()
-addMonster mk bfaction ppos = do
+addMonster mk bfaction ppos lid = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   hp <- rndToAction $ rollDice $ ahp $ okind mk
-  addActor mk bfaction ppos hp Nothing Nothing
+  addActor mk bfaction ppos lid hp Nothing Nothing
 
 -- ** CreateItem
 
@@ -389,7 +393,7 @@ effLvlGoUp aid k = do
   arena <- getsState sarena
   glo <- getState
   case whereTo glo arena k of
-    Nothing -> fleeDungeon (bfaction pbodyCurrent)
+    Nothing -> fleeDungeon (bfaction pbodyCurrent) (blvl pbodyCurrent)
                -- We are at the "end" of the dungeon.
     Just (nln, npos) ->
       assert (nln /= arena `blame` (nln, "stairs looped")) $ do
@@ -424,7 +428,7 @@ effLvlGoUp aid k = do
         broadcastCli [return . (/= bfaction pbody)] $ InvalidateArenaCli nln
 --        sendUpdateCli (bfaction pbody) $ SwitchLevelCli aid nln pbody bbag
         -- Checking actors at the new posiiton of the aid.
-        inhabitants <- getsState (posToActor npos)
+        inhabitants <- getsState (posToActor npos arena)
         case inhabitants of
           Nothing -> return ()
 -- Broken if the effect happens, e.g. via a scroll and abort is not enough.
@@ -437,7 +441,7 @@ effLvlGoUp aid k = do
             -- because here an inactive actor is squashed.
             squashActor aid m
         -- Verify the monster on the staircase died.
-        inhabitants2 <- getsState (posToActor npos)
+        inhabitants2 <- getsState (posToActor npos arena)
         when (isJust inhabitants2) $ assert `failure` inhabitants2
         -- The property of at most one actor on a tile is restored.
         -- Create a backup of the savegame.
@@ -466,7 +470,7 @@ squashActor source target = do
   itemEffect 0 source target h2h False
   s <- getState
   -- The monster has to be killed first, before we step there (same turn!).
-  assert (not (memActor target s) `blame` (source, target, "not killed")) $
+  assert (not (target `EM.member` sactorD s) `blame` (source, target, "not killed")) $
     return ()
 
 -- ** Descend
@@ -490,14 +494,14 @@ focusIfOurs _target = return True
 
 -- TODO: right now it only works for human factions (sendQueryUI).
 -- | The leader leaves the dungeon.
-fleeDungeon :: MonadServerChan m => FactionId -> m ()
-fleeDungeon fid = do
+fleeDungeon :: MonadServerChan m => FactionId -> LevelId -> m ()
+fleeDungeon fid lid = do
   Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsState scops
   glo <- getState
   go <- sendQueryUI fid $ ConfirmYesNoCli
           "This is the way out. Really leave now?"
   when (not go) $ abortWith "Game resumed."
-  let (bag, total) = calculateTotal fid glo
+  let (bag, total) = calculateTotal fid lid glo
       _upd f = f {gquit = Just (False, Victor)}
 -- TODO: move to StateServer?
   return ()
@@ -582,7 +586,7 @@ gameOver fid showEndingScreens = do
     s <- getState
     depth <- getsState sdepth
     time <- getsState getTime
-    let (bag, total) = calculateTotal fid s
+    let (bag, total) = calculateTotal fid arena s
         failMsg | timeFit time timeTurn < 300 =
           "That song shall be short."
                 | total < 100 =

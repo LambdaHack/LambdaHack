@@ -5,10 +5,10 @@ module Game.LambdaHack.Level
   ( -- * Dungeon
     LevelId, Dungeon, initialLevel, ascendInBranch
     -- * The @Level@ type and its components
-  , ActorDict, SmellMap, SecretMap, FloorMap, TileMap
+  , SmellMap, SecretMap, ItemFloor, TileMap
   , Level(..)
     -- * Level update
-  , updateActor, updateSmell, updateSecret, updateFloor, updateTile
+  , updatePrio, updateSmell, updateSecret, updateFloor, updateTile
     -- * Level query
   , at, atI, accessible, openable, findPos, findPosTry
     -- * Item containers
@@ -47,8 +47,14 @@ ascendInBranch dungeon lid k =
     Nothing -> []
     Just _ -> [ln]
 
--- | All actors on the level, indexed by actor identifier.
-type ActorDict = EM.EnumMap ActorId Actor
+-- | Actor time priority queue.
+type ActorPrio = EM.EnumMap Time [ActorId]
+
+-- | Items located on map tiles.
+type ItemFloor = EM.EnumMap Point ItemBag
+
+-- | Tile kinds on the map.
+type TileMap = Kind.Array Point TileKind
 
 -- | Current smell on map tiles.
 type SmellMap = EM.EnumMap Point SmellTime
@@ -56,18 +62,12 @@ type SmellMap = EM.EnumMap Point SmellTime
 -- | Current secrecy value on map tiles.
 type SecretMap = EM.EnumMap Point SecretTime
 
--- | Items located on map tiles.
-type FloorMap = EM.EnumMap Point ItemBag
-
--- | Tile kinds on the map.
-type TileMap = Kind.Array Point TileKind
-
 -- | A view on single, inhabited dungeon level. "Remembered" fields
 -- carry a subset of the info in the client copies of levels.
 data Level = Level
   { ldepth  :: !Int             -- ^ depth of the level
-  , lactor  :: !ActorDict       -- ^ remembered actors on the level
-  , lfloor  :: !FloorMap        -- ^ remembered items lying on the floor
+  , lprio   :: !ActorPrio       -- ^ remembered actor times on the level
+  , lfloor  :: !ItemFloor       -- ^ remembered items lying on the floor
   , ltile   :: !TileMap         -- ^ remembered level map
   , lxsize  :: !X               -- ^ width of the level
   , lysize  :: !Y               -- ^ height of the level
@@ -81,9 +81,9 @@ data Level = Level
   }
   deriving Show
 
--- | Update the actor dictionary.
-updateActor :: (ActorDict -> ActorDict) -> Level -> Level
-updateActor f lvl = lvl {lactor = f (lactor lvl)}
+-- | Update the actor time priority queue.
+updatePrio :: (ActorPrio -> ActorPrio) -> Level -> Level
+updatePrio f lvl = lvl {lprio = f (lprio lvl)}
 
 -- | Update the smell map.
 updateSmell :: (SmellMap -> SmellMap) -> Level -> Level
@@ -94,21 +94,21 @@ updateSecret :: (SecretMap -> SecretMap) -> Level -> Level
 updateSecret f lvl = lvl {lsecret = f (lsecret lvl)}
 
 -- | Update the items on the ground map.
-updateFloor :: (FloorMap -> FloorMap) -> Level -> Level
+updateFloor :: (ItemFloor -> ItemFloor) -> Level -> Level
 updateFloor f lvl = lvl {lfloor = f (lfloor lvl)}
 
 -- | Update the tile map.
 updateTile :: (TileMap -> TileMap) -> Level -> Level
 updateTile f lvl = lvl {ltile = f (ltile lvl)}
 
-assertSparseItems :: FloorMap -> FloorMap
+assertSparseItems :: ItemFloor -> ItemFloor
 assertSparseItems m =
   assert (EM.null (EM.filter EM.null m) `blame` m) m
 
 instance Binary Level where
   put Level{..} = do
     put ldepth
-    put lactor
+    put lprio
     put (assertSparseItems lfloor)
     put ltile
     put lxsize
@@ -122,7 +122,7 @@ instance Binary Level where
     put lsecret
   get = do
     ldepth <- get
-    lactor <- get
+    lprio <- get
     lfloor <- get
     ltile <- get
     lxsize <- get

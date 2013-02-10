@@ -4,11 +4,11 @@ module Game.LambdaHack.State
   ( -- * Basic game state, local or global
     State
     -- * State components
-  , sdungeon, sdepth, sitem, sdisco, sfaction, scops, sarena
+  , sdungeon, sdepth, sactorD, sitemD, sdisco, sfaction, scops, sarena
     -- * State operations
   , defStateGlobal, defStateLocal, localFromGlobal
-  , updateDungeon, updateItem, updateDisco, updateFaction, updateCOps
-  , updateArena, updateTime, updateSelectedArena
+  , updateDungeon, updateDepth, updateActorD, updateItemD, updateDisco
+  , updateFaction, updateCOps, updateArena, updateTime, updateSelectedArena
   , getArena, getTime, isHumanFaction, isSpawningFaction
   ) where
 
@@ -40,7 +40,8 @@ import Game.LambdaHack.Time
 data State = State
   { _sdungeon :: !Dungeon      -- ^ remembered dungeon
   , _sdepth   :: !Int          -- ^ remembered dungeon depth
-  , _sitem    :: !ItemDict     -- ^ remembered items in the dungeon
+  , _sactorD  :: !ActorDict    -- ^ remembered actors in the dungeon
+  , _sitemD   :: !ItemDict     -- ^ remembered items in the dungeon
   , _sdisco   :: !Discoveries  -- ^ remembered item discoveries
   , _sfaction :: !FactionDict  -- ^ remembered sides still in game
   , _scops    :: Kind.COps     -- ^ remembered content
@@ -56,7 +57,7 @@ unknownLevel :: Kind.Ops TileKind -> Int -> X -> Y
 unknownLevel Kind.Ops{ouniqGroup} ldepth lxsize lysize ldesc lstair lclear =
   let unknownId = ouniqGroup "unknown space"
   in Level { ldepth
-           , lactor = EM.empty
+           , lprio = EM.empty
            , lfloor = EM.empty
            , ltile = unknownTileMap unknownId lxsize lysize
            , lxsize = lxsize
@@ -81,7 +82,8 @@ defStateGlobal :: Dungeon -> Int -> Discoveries
                -> State
 defStateGlobal _sdungeon _sdepth _sdisco _sfaction _scops _sarena =
   State
-    { _sitem = EM.empty
+    { _sactorD = EM.empty
+    , _sitemD = EM.empty
     , ..
     }
 
@@ -91,7 +93,8 @@ defStateLocal _scops =
   State
     { _sdungeon = EM.empty
     , _sdepth = 0
-    , _sitem = EM.empty
+    , _sactorD = EM.empty
+    , _sitemD = EM.empty
     , _sdisco = EM.empty
     , _sfaction = EM.empty
     , _scops
@@ -123,9 +126,17 @@ localFromGlobal State{ _scops=_scops@Kind.COps{ coitem=Kind.Ops{okind}
 updateDungeon :: (Dungeon -> Dungeon) -> State -> State
 updateDungeon f s = s {_sdungeon = f (_sdungeon s)}
 
--- | Update the items dictionary.
-updateItem :: (ItemDict -> ItemDict) -> State -> State
-updateItem f s = s {_sitem = f (_sitem s)}
+-- | Update dungeon depth.
+updateDepth :: (Int -> Int) -> State -> State
+updateDepth f s = s {_sdepth = f (_sdepth s)}
+
+-- | Update the actor dictionary.
+updateActorD :: (ActorDict -> ActorDict) -> State -> State
+updateActorD f s = s {_sactorD = f (_sactorD s)}
+
+-- | Update the item dictionary.
+updateItemD :: (ItemDict -> ItemDict) -> State -> State
+updateItemD f s = s {_sitemD = f (_sitemD s)}
 
 -- | Update item discoveries within state.
 updateDisco :: (Discoveries -> Discoveries) -> State -> State
@@ -173,8 +184,11 @@ sdungeon = _sdungeon
 sdepth :: State -> Int
 sdepth = _sdepth
 
-sitem :: State -> ItemDict
-sitem = _sitem
+sactorD :: State -> ActorDict
+sactorD = _sactorD
+
+sitemD :: State -> ItemDict
+sitemD = _sitemD
 
 sdisco :: State -> Discoveries
 sdisco = _sdisco
@@ -192,14 +206,16 @@ instance Binary State where
   put State{..} = do
     put _sdungeon
     put _sdepth
-    put _sitem
+    put _sactorD
+    put _sitemD
     put _sdisco
     put _sfaction
     put _sarena
   get = do
     _sdungeon <- get
     _sdepth <- get
-    _sitem <- get
+    _sactorD <- get
+    _sitemD <- get
     _sdisco <- get
     _sfaction <- get
     _sarena <- get

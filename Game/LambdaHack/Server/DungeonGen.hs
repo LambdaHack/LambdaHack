@@ -75,7 +75,7 @@ buildLevel Kind.COps{ cotile=cotile@Kind.Ops{opick}
   -- TODO: split this into Level.defaultLevel
       level = Level
         { ldepth
-        , lactor = EM.empty
+        , lprio = EM.empty
         , lfloor = EM.empty
         , ltile
         , lxsize = cxsize

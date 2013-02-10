@@ -4,6 +4,7 @@ module Game.LambdaHack.CmdAtomicSem
   ) where
 
 import qualified Data.EnumMap.Strict as EM
+import Data.List
 import Data.Maybe
 
 import Game.LambdaHack.Action
@@ -141,11 +142,20 @@ dominateAtomic fromFid toFid target = do
 -- TODO: perhaps assert that the inventory of the actor is empty
 -- or at least that the items belong to litem.
 spawnAtomic :: MonadAction m => ActorId -> Actor -> m ()
-spawnAtomic aid body = modifyState $ insertActor aid body
+spawnAtomic aid body = do
+  modifyState $ updateActorD $ EM.insert aid body
+  let add Nothing = Just [aid]
+      add (Just l) = Just $ aid : l
+  modifyState $ updateArena $ updatePrio $ EM.alter add (btime body)
 
 -- TODO: perhaps assert that the inventory of the actor is empty.
 killAtomic :: MonadAction m => ActorId -> Actor -> m ()
-killAtomic aid _body = modifyState $ deleteActor aid
+killAtomic aid body = do
+  modifyState $ updateActorD $ EM.delete aid
+  let rm Nothing = assert `failure` aid
+      rm (Just l) = let l2 = delete aid l
+                    in if null l2 then Nothing else Just l2
+  modifyState $ updateArena $ updatePrio $ EM.alter rm (btime body)
 
 -- | Create a few copies of an item that is already registered for the dungeon
 -- (in @sitemRev@ field of @StateServer@).
@@ -154,7 +164,7 @@ createItemAtomic :: MonadAction m
 createItemAtomic iid item k c = assert (k > 0) $ do
   -- The item may or may not be already present in the dungeon.
   let f item1 item2 = assert (item1 == item2) item1
-  modifyState $ updateItem $ EM.insertWith f iid item
+  modifyState $ updateItemD $ EM.insertWith f iid item
   case c of
     CFloor pos -> insertItemFloor iid k pos
     CActor aid -> insertItemActor iid k aid
@@ -177,9 +187,9 @@ insertItemActor iid k aid = do
     Nothing -> insertItemFloor iid k (bpos body)
     Just l2 -> do
       let upd = EM.unionWith (+) bag
-      modifyState $ updateArena $ updateActor
+      modifyState $ updateActorD
         $ EM.adjust (\b -> b {bbag = upd (bbag b)}) aid
-      modifyState $ updateArena $ updateActor
+      modifyState $ updateActorD
         $ EM.adjust (\b -> b {binv = EM.insert l2 iid (binv b)}) aid
       modifyState $ updateActorBody aid $ \b ->
         b {bletter = max l2 (bletter b)}
@@ -188,7 +198,7 @@ insertItemActor iid k aid = do
 destroyItemAtomic :: MonadAction m
                   => ItemId -> Item -> Int -> Container -> m ()
 destroyItemAtomic iid _item k c = assert (k > 0) $ do
-  -- Do not remove the item from @sitem@ nor from @sitemRev@,
+  -- Do not remove the item from @sitemD@ nor from @sitemRev@,
   -- This is behaviourally equivalent.
   case c of
     CFloor pos -> deleteItemFloor iid k pos
@@ -208,7 +218,7 @@ deleteItemFloor iid k pos =
 deleteItemActor :: MonadAction m
                  => ItemId -> Int -> ActorId -> m ()
 deleteItemActor iid k aid =
-  modifyState $ updateArena $ updateActor
+  modifyState $ updateActorD
   $ EM.adjust (\b -> b {bbag = rmFromBag k iid (bbag b)}) aid
 
 moveItemAtomic :: MonadAction m

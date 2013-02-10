@@ -103,30 +103,32 @@ remCli :: MonadAction m => ES.EnumSet Point -> Level -> m ()
 remCli vis lvl = do
   arena <- getsState sarena
   cops <- getsState scops
+  actorD <- getsState sactorD
   let updArena dng =
         let clvl = fromMaybe (assert `failure` arena) $ EM.lookup arena dng
-            nlvl = rememberLevel cops vis lvl clvl
+            nlvl = rememberLevel cops actorD vis lvl clvl
         in EM.insert arena nlvl dng
   modifyState $ updateDungeon updArena
 
 rememberCli :: (MonadAction m, MonadClient m)
-            => Level -> ItemDict -> FactionDict -> m ()
-rememberCli lvl itemD faction = do
+            => Level -> ActorDict -> ItemDict -> FactionDict -> m ()
+rememberCli lvl actorD itemD faction = do
   per <- askPerception
-  remCli (totalVisible per) lvl
   -- TODO: instead gather info about factions when first encountered
   -- and update when they are killed
   modifyState $ updateFaction (const faction)
+  modifyState $ updateActorD (const actorD)
   -- TODO: only add new visible items
-  modifyState $ updateItem (const itemD)
+  modifyState $ updateItemD (const itemD)
+  remCli (totalVisible per) lvl
 
 rememberPerCli :: (MonadAction m, MonadClient m)
-               => Perception -> Level -> ItemDict -> FactionDict
+               => Perception -> Level -> ActorDict -> ItemDict -> FactionDict
                -> m ()
-rememberPerCli per lvl itemD faction = do
+rememberPerCli per lvl actorD itemD faction = do
   arena <- getsState sarena
   modifyClient $ \cli -> cli {sper = EM.insert arena per (sper cli)}
-  rememberCli lvl itemD faction
+  rememberCli lvl actorD itemD faction
 
 -- switchLevelCli :: MonadClient m
 --                => ActorId -> LevelId -> Actor -> ItemBag
@@ -137,7 +139,7 @@ rememberPerCli per lvl itemD faction = do
 --     modifyClient $ invalidateSelectedLeader
 --     modifyState $ updateSelectedArena arena
 --     modifyState (insertActor aid pbody)
---     modifyState (updateActorItem aid (const items))
+--     modifyState (updateActorDItem aid (const items))
 --     loc <- getState
 --     modifyClient $ updateSelectedLeader aid loc
 
@@ -299,7 +301,7 @@ setArenaLeaderCli arena actor = do
             else case mleaderOld of
               Nothing -> return actor
               Just leaderOld -> do
-                b <- getsState $ memActor leaderOld
+                b <- getsState $ memActor leaderOld arenaOld
                 return $! if b then leaderOld else actor
   loc <- getState
   modifyClient $ updateSelectedLeader leader loc

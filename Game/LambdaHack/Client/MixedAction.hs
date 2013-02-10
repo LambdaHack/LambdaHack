@@ -101,7 +101,8 @@ leaderProjectGroupItem :: MonadClientUI m
 leaderProjectGroupItem verb object syms = do
   side <- getsClient sside
   genemy <- getsState $ genemy . (EM.! side) . sfaction
-  ms <- getsState $ actorNotProjList (`elem` genemy) . getArena
+  arena <- getsState sarena
+  ms <- getsState $ actorNotProjList (`elem` genemy) arena
   lxsize <- getsState (lxsize . getArena)
   lysize <- getsState (lysize . getArena)
   Just leader <- getsClient sleader

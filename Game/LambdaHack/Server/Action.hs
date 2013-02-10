@@ -62,9 +62,10 @@ resetFidPerception fid = do
   sdebugSer <- getsServer sdebugSer
   lvl <- getsState getArena
   arena <- getsState sarena
+  s <- getState
   let tryFov = stryFov sdebugSer
       fovMode = fromMaybe configFovMode tryFov
-      per = levelPerception cops fovMode fid lvl
+      per = levelPerception cops s fovMode fid arena lvl
       upd = EM.adjust (EM.adjust (const per) arena) fid
   modifyServer $ \ser -> ser {sper = upd (sper ser)}
 
