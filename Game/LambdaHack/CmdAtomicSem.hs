@@ -151,7 +151,7 @@ spawnAtomic aid body = do
   modifyState $ updateActorD $ EM.insert aid body
   let add Nothing = Just [aid]
       add (Just l) = Just $ aid : l
-  updateLevel (blvl body) $ updatePrio $ EM.alter add (btime body)
+  updateLevel (blid body) $ updatePrio $ EM.alter add (btime body)
   let fid = bfaction body
       adj fac = fac {gleader = Just aid}
   mleader <- getsState $ gleader . (EM.! fid) . sfaction
@@ -167,7 +167,7 @@ killAtomic aid body = do
   let rm Nothing = assert `failure` aid
       rm (Just l) = let l2 = delete aid l
                     in if null l2 then Nothing else Just l2
-  updateLevel (blvl body) $ updatePrio $ EM.alter rm (btime body)
+  updateLevel (blid body) $ updatePrio $ EM.alter rm (btime body)
   let fid = bfaction body
       adj fac = fac {gleader = Nothing}
   mleader <- getsState $ gleader . (EM.! fid) . sfaction
@@ -201,7 +201,7 @@ insertItemActor iid k aid = do
       bag = EM.singleton iid k
   body <- getsState $ getActorBody aid
   case assignLetter iid l body of
-    Nothing -> insertItemFloor (blvl body) iid k (bpos body)
+    Nothing -> insertItemFloor (blid body) iid k (bpos body)
     Just l2 -> do
       let upd = EM.unionWith (+) bag
       modifyState $ updateActorD

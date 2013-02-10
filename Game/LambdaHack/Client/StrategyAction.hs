@@ -58,8 +58,8 @@ reacquireTgt cops actor btarget glo per factionAbilities =
   reacquire btarget
  where
   Kind.COps{coactor=coactor@Kind.Ops{okind}} = cops
-  Level{lxsize} = sdungeon glo EM.! blvl
-  actorBody@Actor{ bkind, bpos = me, bpath, bfaction, blvl } =
+  Level{lxsize} = sdungeon glo EM.! blid
+  actorBody@Actor{ bkind, bpos = me, bpath, bfaction, blid } =
     getActorBody actor glo
   mk = okind bkind
   enemyVisible l =
@@ -79,7 +79,7 @@ reacquireTgt cops actor btarget glo per factionAbilities =
   reacquire tgt =
     case tgt of
       Just (TEnemy a ll) | focused
-                    && memActor a blvl glo ->  -- present on this level
+                    && memActor a blid glo ->  -- present on this level
         let l = bpos $ getActorBody a glo
         in if enemyVisible l           -- prefer visible foes
            then returN "TEnemy" $ Just $ TEnemy a l
@@ -95,7 +95,7 @@ reacquireTgt cops actor btarget glo per factionAbilities =
       Just TPos{} -> closest                -- prefer visible foes
       Nothing -> closest
   lenemy = genemy . (EM.! bfaction) . sfaction $ glo
-  foes = actorNotProjAssocs (`elem` lenemy) blvl glo
+  foes = actorNotProjAssocs (`elem` lenemy) blid glo
   visibleFoes = L.filter (enemyVisible . snd) (L.map (second bpos) foes)
   closest :: Strategy (Maybe Target)
   closest =
@@ -175,8 +175,8 @@ track :: Kind.COps -> ActorId -> State -> Strategy CmdSer
 track cops actor glo =
   strat
  where
-  lvl = sdungeon glo EM.! blvl
-  Actor{ bpos, bpath, bhp, blvl } = getActorBody actor glo
+  lvl = sdungeon glo EM.! blid
+  Actor{ bpos, bpath, bhp, blid } = getActorBody actor glo
   dieOrReset | bhp <= 0  = returN "die" $ DieSer actor
              | otherwise = returN "clear TPath" $ ClearPathSer actor
   strat = case bpath of
@@ -189,8 +189,8 @@ pickup :: ActorId -> State -> Strategy CmdSer
 pickup actor glo =
   lootHere bpos .=> actionPickup
  where
-  lvl = sdungeon glo EM.! blvl
-  body@Actor{bpos, blvl} = getActorBody actor glo
+  lvl = sdungeon glo EM.! blid
+  body@Actor{bpos, blid} = getActorBody actor glo
   lootHere x = not $ EM.null $ lvl `atI` x
   actionPickup = case EM.minViewWithKey $ lvl `atI` bpos of
     Nothing -> assert `failure` (actor, bpos, lvl)
@@ -205,8 +205,8 @@ melee :: ActorId -> State -> Point -> Strategy CmdSer
 melee actor glo fpos =
   foeAdjacent .=> (returN "melee" $ MoveSer actor dir)
  where
-  Level{lxsize} = sdungeon glo EM.! blvl
-  Actor{bpos, blvl} = getActorBody actor glo
+  Level{lxsize} = sdungeon glo EM.! blid
+  Actor{bpos, blid} = getActorBody actor glo
   foeAdjacent = adjacent lxsize bpos fpos
   dir = displacement bpos fpos
 
@@ -216,7 +216,7 @@ rangedFreq cops actor glo fpos =
     if not foesAdj
        && asight mk
        && accessible cops lvl bpos pos1    -- first accessible
-       && isNothing (posToActor pos1 blvl glo)  -- no friends on first
+       && isNothing (posToActor pos1 blid glo)  -- no friends on first
     then throwFreq bitems 3 (CActor actor) ++ throwFreq tis 6 (CFloor bpos)
     else []
  where
@@ -224,13 +224,13 @@ rangedFreq cops actor glo fpos =
            , coitem=Kind.Ops{okind=iokind}
            , corule
            } = cops
-  lvl@Level{lxsize, lysize} = sdungeon glo EM.! blvl
-  Actor{ bkind, bpos, bfaction, blvl } = getActorBody actor glo
+  lvl@Level{lxsize, lysize} = sdungeon glo EM.! blid
+  Actor{ bkind, bpos, bfaction, blid } = getActorBody actor glo
   bitems = getActorBag actor glo
   mk = okind bkind
   tis = lvl `atI` bpos
   lenemy = genemy . (EM.! bfaction) . sfaction $ glo
-  foes = actorNotProjAssocs (`elem` lenemy) blvl glo
+  foes = actorNotProjAssocs (`elem` lenemy) blid glo
   foesAdj = foesAdjacent lxsize lysize bpos (map snd foes)
   -- TODO: also don't throw if any pos on path is visibly not accessible
   -- from previous (and tweak eps in bla to make it accessible).
@@ -263,8 +263,8 @@ toolsFreq cops actor glo =
   $ quaffFreq bitems 1 (CActor actor) ++ quaffFreq tis 2 (CFloor bpos)
  where
   Kind.COps{coitem=Kind.Ops{okind=iokind}} = cops
-  Actor{bpos, blvl} = getActorBody actor glo
-  lvl = sdungeon glo EM.! blvl
+  Actor{bpos, blid} = getActorBody actor glo
+  lvl = sdungeon glo EM.! blid
   bitems = getActorBag actor glo
   tis = lvl `atI` bpos
   quaffFreq bag multi container =
@@ -321,8 +321,8 @@ moveStrategy cops actor glo mFoe =
   Kind.COps{ cotile
            , coactor=Kind.Ops{okind}
            } = cops
-  lvl@Level{lsmell, lxsize, lysize, ltime} = sdungeon glo EM.! blvl
-  Actor{bkind, bpos, bfaction, blvl} = getActorBody actor glo
+  lvl@Level{lsmell, lxsize, lysize, ltime} = sdungeon glo EM.! blid
+  Actor{bkind, bpos, bfaction, blid} = getActorBody actor glo
   mk = okind bkind
   lootHere x = not $ EM.null $ lvl `atI` x
   onlyLoot   = onlyMoves lootHere bpos
@@ -362,7 +362,7 @@ moveStrategy cops actor glo mFoe =
   openableHere   = openable cotile lvl
   accessibleHere = accessible cops lvl bpos
   lenemy = genemy . (EM.! bfaction) . sfaction $ glo
-  friends = actorList (not . (`elem` lenemy)) blvl $ glo
+  friends = actorList (not . (`elem` lenemy)) blid $ glo
   noFriends | asight mk = unoccupied friends
             | otherwise = const True
   isSensible l = noFriends l && (accessibleHere l || openableHere l)

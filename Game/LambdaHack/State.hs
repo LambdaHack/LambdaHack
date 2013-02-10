@@ -4,11 +4,11 @@ module Game.LambdaHack.State
   ( -- * Basic game state, local or global
     State
     -- * State components
-  , sdungeon, sdepth, sactorD, sitemD, sdisco, sfaction, scops, sarena
+  , sdungeon, sdepth, sactorD, sitemD, sdisco, sfaction, scops
     -- * State operations
   , defStateGlobal, defStateLocal, localFromGlobal
   , updateDungeon, updateDepth, updateActorD, updateItemD, updateDisco
-  , updateFaction, updateCOps, updateTime, updateSelectedArena
+  , updateFaction, updateCOps, updateTime
   , getTime, isHumanFaction, isSpawningFaction
   ) where
 
@@ -31,12 +31,7 @@ import Game.LambdaHack.Time
 
 -- | View on game state. "Remembered" fields carry a subset of the info
 -- in the client copies of the state. Clients never directly change
--- their @State@, but apply atomic actions sent by the server to do so
--- (except the @_sarena@ field).
---
--- Data invariant: no actor belongs to more than one @sdungeon@ level.
--- Each @sleader@ actor from any of the client states is on the @sarena@
--- level and belongs to @sside@ faction.
+-- their @State@, but apply atomic actions sent by the server to do so.
 -- Note: we use @_sdepth@ instead of computing maximal depth whenever needed,
 -- to keep the dungeon (which can be huge) lazy.
 data State = State
@@ -47,7 +42,6 @@ data State = State
   , _sdisco   :: !Discoveries  -- ^ remembered item discoveries
   , _sfaction :: !FactionDict  -- ^ remembered sides still in game
   , _scops    :: Kind.COps     -- ^ remembered content
-  , _sarena   :: !LevelId      -- ^ level of the selected actor
   }
   deriving (Show, Typeable)
 
@@ -80,9 +74,9 @@ unknownTileMap unknownId cxsize cysize =
 
 -- | Initial complete global game state.
 defStateGlobal :: Dungeon -> Int -> Discoveries
-               -> FactionDict -> Kind.COps -> LevelId
+               -> FactionDict -> Kind.COps
                -> State
-defStateGlobal _sdungeon _sdepth _sdisco _sfaction _scops _sarena =
+defStateGlobal _sdungeon _sdepth _sdisco _sfaction _scops =
   State
     { _sactorD = EM.empty
     , _sitemD = EM.empty
@@ -100,7 +94,6 @@ defStateLocal _scops =
     , _sdisco = EM.empty
     , _sfaction = EM.empty
     , _scops
-    , _sarena = initialLevel
     }
 
 -- TODO: make lstair secret until discovered; use this later on for
@@ -153,18 +146,14 @@ updateCOps :: (Kind.COps -> Kind.COps) -> State -> State
 updateCOps f s = s {_scops = f (_scops s)}
 
 -- | Update time within state.
-updateTime :: (Time -> Time) -> State -> State
-updateTime f s =
-  let g lvl@Level{ltime} = lvl {ltime = f ltime}
-  in updateDungeon (EM.adjust g (_sarena s)) s
-
--- | Update selected level within state.
-updateSelectedArena :: LevelId -> State -> State
-updateSelectedArena _sarena s = s {_sarena}
+updateTime :: LevelId -> (Time -> Time) -> State -> State
+updateTime lid f s =
+  let adj lvl@Level{ltime} = lvl {ltime = f ltime}
+  in updateDungeon (EM.adjust adj lid) s
 
 -- | Get current time from the dungeon data.
-getTime :: State -> Time
-getTime State{_sarena, _sdungeon} = ltime $ _sdungeon EM.! _sarena
+getTime :: LevelId -> State -> Time
+getTime lid s = ltime $ _sdungeon s EM.! lid
 
 -- | Tell whether the faction is human player-controlled.
 isHumanFaction :: State -> FactionId -> Bool
@@ -195,9 +184,6 @@ sfaction = _sfaction
 scops :: State -> Kind.COps
 scops = _scops
 
-sarena :: State -> LevelId
-sarena = _sarena
-
 instance Binary State where
   put State{..} = do
     put _sdungeon
@@ -206,7 +192,6 @@ instance Binary State where
     put _sitemD
     put _sdisco
     put _sfaction
-    put _sarena
   get = do
     _sdungeon <- get
     _sdepth <- get
@@ -214,6 +199,5 @@ instance Binary State where
     _sitemD <- get
     _sdisco <- get
     _sfaction <- get
-    _sarena <- get
     let _scops = undefined  -- overwritten by recreated cops
     return State{..}

@@ -101,13 +101,13 @@ leaderProjectGroupItem :: MonadClientUI m
 leaderProjectGroupItem verb object syms = do
   side <- getsClient sside
   genemy <- getsState $ genemy . (EM.! side) . sfaction
-  arena <- getsState sarena
+  Just leader <- getsClient sleader
+  b <- getsState $ getActorBody leader
+  let arena = blid b
   ms <- getsState $ actorNotProjList (`elem` genemy) arena
   lxsize <- getsLevel arena lxsize
   lysize <- getsLevel arena lysize
-  Just leader <- getsClient sleader
-  ppos <- getsState (bpos . getActorBody leader)
-  if foesAdjacent lxsize lysize ppos ms
+  if foesAdjacent lxsize lysize (bpos b) ms
     then abortWith "You can't aim in melee."
     else actorProjectGI leader verb object syms
 
@@ -147,7 +147,7 @@ leaderTriggerDir feat verb = do
   e <- displayChoiceUI prompt [] keys
   Just leader <- getsClient sleader
   b <- getsState $ getActorBody leader
-  lxsize <- getsLevel (blvl b) lxsize
+  lxsize <- getsLevel (blid b) lxsize
   K.handleDir lxsize e (leaderBumpDir feat) (neverMind True)
 
 -- | Leader tries to trigger a tile in a given direction.
@@ -163,13 +163,13 @@ bumpTile :: MonadActionRO m => ActorId -> Point -> F.Feature -> m CmdSer
 bumpTile leader dpos feat = do
   Kind.COps{cotile} <- getsState scops
   b <- getsState $ getActorBody leader
-  lvl <- getsLevel (blvl b) id
+  lvl <- getsLevel (blid b) id
   let t = lvl `at` dpos
   -- Features are never invisible; visible tiles are identified accurately.
   -- A tile can be triggered even if an invisible monster occupies it.
   -- TODO: let the user choose whether to attack or activate.
   if Tile.hasFeature cotile feat t
-    then return $ TriggerSer leader dpos
+    then return $ TriggerSer leader dpos $ blid b
     else guessBump cotile feat t
 
 -- | Guess and report why the bump command failed.
@@ -211,7 +211,7 @@ pickupItem = do
 actorPickupItem :: MonadActionRO m => ActorId -> m CmdSer
 actorPickupItem actor = do
   body <- getsState $ getActorBody actor
-  lvl <- getsLevel (blvl body) id
+  lvl <- getsLevel (blid body) id
   -- Check if something is here to pick up. Items are never invisible.
   case EM.minViewWithKey $ lvl `atI` bpos body of
     Nothing -> abortWith "nothing here"
@@ -272,7 +272,7 @@ getItem :: MonadClientUI m
 getItem aid prompt p ptext bag inv isn = do
   Just leader <- getsClient sleader
   b <- getsState $ getActorBody leader
-  lvl <- getsLevel (blvl b) id
+  lvl <- getsLevel (blid b) id
   s <- getState
   body <- getsState $ getActorBody aid
   let checkItem (l, iid) =

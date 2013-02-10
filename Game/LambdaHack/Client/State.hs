@@ -2,8 +2,8 @@
 -- | Server and client game state types and operations.
 module Game.LambdaHack.Client.State
   ( StateClient(..), defStateClient, defHistory
-  , updateTarget, getTarget
-  , invalidateSelectedLeader, updateSelectedLeader, sleader, sside, targetToPos
+  , updateTarget, getTarget, getArena
+  , updateSelectedLeader, sleader, sside, targetToPos
   , TgtMode(..), Target(..)
   , DebugModeCli(..), toggleMarkVision, toggleMarkSmell, toggleOmniscient
   ) where
@@ -122,10 +122,11 @@ updateTarget aid f cli = cli { starget = EM.alter f aid (starget cli) }
 getTarget :: ActorId -> StateClient -> Maybe Target
 getTarget aid cli = EM.lookup aid (starget cli)
 
--- | Invalidate selected actor, e.g., to avoid violatng the invariant.
--- If the the leader was running, stop the run.
-invalidateSelectedLeader :: StateClient -> StateClient
-invalidateSelectedLeader cli = cli {srunning = Nothing, _sleader = Nothing}
+getArena :: StateClient -> State -> LevelId
+getArena cli s =
+  case sleader cli of
+    Nothing -> initialLevel
+    Just leader -> blid $ sactorD s EM.! leader
 
 -- | Update selected actor within state. Verify actor's faction.
 updateSelectedLeader :: ActorId -> State -> StateClient -> StateClient
@@ -145,10 +146,11 @@ sside = _sside
 targetToPos :: StateClient -> State -> Maybe Point
 targetToPos cli@StateClient{scursor} s = do
   leader <- sleader cli
+  let lid = blid $ getActorBody leader s
   case getTarget leader cli of
     Just (TPos pos) -> return pos
     Just (TEnemy a _ll) -> do
-      guard $ memActor a (sarena s) s           -- alive and visible?
+      guard $ memActor a lid s  -- alive and visible?
       return $! bpos (getActorBody a s)
     Nothing -> scursor
 

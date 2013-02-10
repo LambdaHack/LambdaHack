@@ -73,16 +73,6 @@ applyCli actor verb item = do
         , partItemNWs coitem disco 1 item ]
   msgAdd msg
 
-invalidateArenaCli :: (MonadAction m, MonadClient m) => LevelId -> m Bool
-invalidateArenaCli arena = do
-  arenaOld <- getsState sarena
-  if arenaOld == arena
-    then return False
-    else do
-      modifyClient invalidateSelectedLeader
-      modifyState $ updateSelectedArena arena
-      return True
-
 -- | Make the item known to the player.
 discoverCli :: (MonadAction m, MonadClient m) => Kind.Id ItemKind -> Item -> m ()
 discoverCli ik i = do
@@ -99,9 +89,8 @@ discoverCli ik i = do
           , partItemAW coitem disco i ]
     msgAdd msg
 
-remCli :: MonadAction m => ES.EnumSet Point -> Level -> m ()
-remCli vis lvl = do
-  arena <- getsState sarena
+remCli :: MonadAction m => ES.EnumSet Point -> Level -> LevelId -> m ()
+remCli vis lvl arena = do
   cops <- getsState scops
   actorD <- getsState sactorD
   let updArena dng =
@@ -111,8 +100,8 @@ remCli vis lvl = do
   modifyState $ updateDungeon updArena
 
 rememberCli :: (MonadAction m, MonadClient m)
-            => Level -> ActorDict -> ItemDict -> FactionDict -> m ()
-rememberCli lvl actorD itemD faction = do
+            => Level -> LevelId -> ActorDict -> ItemDict -> FactionDict -> m ()
+rememberCli lvl lid actorD itemD faction = do
   per <- askPerception
   -- TODO: instead gather info about factions when first encountered
   -- and update when they are killed
@@ -120,15 +109,15 @@ rememberCli lvl actorD itemD faction = do
   modifyState $ updateActorD (const actorD)
   -- TODO: only add new visible items
   modifyState $ updateItemD (const itemD)
-  remCli (totalVisible per) lvl
+  remCli (totalVisible per) lvl lid
 
 rememberPerCli :: (MonadAction m, MonadClient m)
-               => Perception -> Level -> ActorDict -> ItemDict -> FactionDict
+               => Perception -> Level -> LevelId
+               -> ActorDict -> ItemDict -> FactionDict
                -> m ()
-rememberPerCli per lvl actorD itemD faction = do
-  arena <- getsState sarena
-  modifyClient $ \cli -> cli {sper = EM.insert arena per (sper cli)}
-  rememberCli lvl actorD itemD faction
+rememberPerCli per lvl lid actorD itemD faction = do
+  modifyClient $ \cli -> cli {sper = EM.insert lid per (sper cli)}
+  rememberCli lvl lid actorD itemD faction
 
 -- switchLevelCli :: MonadClient m
 --                => ActorId -> LevelId -> Actor -> ItemBag
@@ -285,27 +274,6 @@ displaceCli source target = do
   displayFramesPush $ Nothing : animFrs
 
 -- * cmdQueryCli
-
-setArenaLeaderCli :: (MonadAction m, MonadClient m) => LevelId -> ActorId -> m ActorId
-setArenaLeaderCli arena actor = do
-  arenaOld <- getsState sarena
-  mleaderOld <- getsClient sleader
-  -- Old leader may have been killed by enemies since @side@ last moved
-  -- or local arena changed and the side has not elected a new leader yet
-  -- or global arena changed the old leader is on the old arena.
-  leader <- if arenaOld /= arena
-            then do
-              modifyClient invalidateSelectedLeader
-              modifyState $ updateSelectedArena arena
-              return actor
-            else case mleaderOld of
-              Nothing -> return actor
-              Just leaderOld -> do
-                b <- getsState $ memActor leaderOld arenaOld
-                return $! if b then leaderOld else actor
-  loc <- getState
-  modifyClient $ updateSelectedLeader leader loc
-  return leader
 
 handleAI :: MonadClient m => ActorId -> m CmdSer
 handleAI actor = do

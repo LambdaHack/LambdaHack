@@ -56,7 +56,7 @@ draw dm cops per
       (drawnLevelId, lvl@Level{ldepth, lxsize, lysize, lsmell,
                                ldesc, ltime, lseen, lclear}) =
         case stgtMode of
-          Nothing -> (sarena s, sdungeon s EM.! sarena s)
+          Nothing -> (getArena cli s, sdungeon s EM.! getArena cli s)
           Just tgtM -> (tgtLevelId tgtM, sdungeon s EM.! tgtLevelId tgtM)
       mleader = sleader cli
       (bitems, bracedL, ahpS, asmellL, bhpS, bposL) =
@@ -101,7 +101,7 @@ draw dm cops per
             viewActor loc Actor{bkind, bsymbol, bcolor}
               | isJust mleader
                 && loc == bposL
-                && drawnLevelId == sarena s =
+                && drawnLevelId == getArena cli s =
                   (symbol, Color.defBG)  -- highlight leader
               | otherwise = (symbol, color)
              where
@@ -115,7 +115,7 @@ draw dm cops per
                    , L.find (\ m -> scursor == Just (Actor.bpos m))
                        actorsHere ) of
                 (_, actorTgt) | isJust stgtMode
-                                && (drawnLevelId == sarena s
+                                && (drawnLevelId == getArena cli s
                                     && L.elem pos0 bl
                                     || (case actorTgt of
                                            Just (Actor{ bpath=Just p
@@ -191,7 +191,7 @@ draw dm cops per
 animate :: StateClient -> State -> Perception -> Animation
         -> Frames
 animate cli@StateClient{sreport} s per anim =
-  let Level{lxsize, lysize} = sdungeon s EM.! sarena s
+  let Level{lxsize, lysize} = sdungeon s EM.! getArena cli s
       over = renderReport sreport
       topLineOnly = padMsg lxsize over
       basicFrame = draw ColorFull (scops s) per cli s [topLineOnly]

@@ -34,16 +34,18 @@ cmdHumanSem :: (MonadAction m, MonadClientUI m)
             => CmdHuman -> WriterT Slideshow m [CmdSer]
 cmdHumanSem cmd = do
   Just leaderOld <- getsClient sleader
-  arenaOld <- getsState sarena
-  posOld <- getsState (bpos . getActorBody leaderOld)
+  bOld <- getsState $ getActorBody leaderOld
+  let posOld = bpos bOld
+      arenaOld = blid bOld
   cli <- getClient
   loc <- getState
+  when (noRemoteCmdHuman cmd) $ checkCursor arenaOld
   msem <- cmdAction cli loc cmd
-  when (noRemoteCmdHuman cmd) checkCursor
   let sems = maybeToList msem
-  arena <- getsState sarena
   Just leaderNew <- getsClient sleader
-  pos <- getsState (bpos . getActorBody leaderNew)
+  bNew <- getsState $ getActorBody leaderNew
+  let pos = bpos bNew
+      arena = blid bNew
   tgtMode <- getsClient stgtMode
   when (isNothing tgtMode  -- targeting performs a more extensive look
         && (posOld /= pos
@@ -62,8 +64,8 @@ cmdAction :: (MonadAction m, MonadClientUI m) => StateClient -> State -> CmdHuma
 cmdAction cli s cmd =
   let tgtMode = stgtMode cli
       leader = fromJust $ sleader cli
-      arena = sarena s
       sm = getActorBody leader s
+      arena = blid sm
       ppos = bpos sm
       tgtLoc = targetToPos cli s
       Level{lxsize} =
@@ -89,7 +91,7 @@ cmdAction cli s cmd =
         Just target | bfaction (getActorBody target s) == bfaction sm
                       && not (bproj (getActorBody target s)) ->
           -- Select adjacent actor by bumping into him. Takes no time.
-          selectLeader target arena
+          selectLeader target
             >>= assert `trueM`
                   (leader, target, "leader bumps into himself" :: Text)
             >> return Nothing
@@ -125,9 +127,8 @@ cmdAction cli s cmd =
 
 -- | If in targeting mode, check if the current level is the same
 -- as player level and refuse performing the action otherwise.
-checkCursor :: MonadClient m => m ()
-checkCursor = do
-  arena <- getsState sarena
+checkCursor :: MonadClient m => LevelId -> m ()
+checkCursor arena = do
   (lid, _) <- viewedLevel
   when (arena /= lid) $
     abortWith "[targeting] command disabled on a remote level, press ESC to switch back"

@@ -27,7 +27,7 @@ module Game.LambdaHack.Client.Action
   , rememberLevel, displayPush
     -- * Assorted primitives
   , clientGameSave, clientDisconnect, restoreGame
-  , readChanFromSer, writeChanToSer, rndToAction
+  , readChanFromSer, writeChanToSer, rndToAction, getArenaCli
   ) where
 
 import Control.Concurrent
@@ -118,6 +118,12 @@ tryWithSlide exc h =
         lift exc
   in tryWith excMsg h
 
+getArenaCli :: MonadClient m => m LevelId
+getArenaCli = do
+  cli <- getClient
+  s <- getState
+  return $! getArena cli s
+
 -- | Get the frontend session.
 askFrontendSession :: MonadClientUI m => m Frontend.FrontendSession
 askFrontendSession = getsSession sfs
@@ -148,7 +154,7 @@ recordHistory = do
 askPerception :: MonadClient m => m Perception
 askPerception = do
   stgtMode <- getsClient stgtMode
-  arena <- getsState sarena
+  arena <- getArenaCli
   let lid = maybe arena tgtLevelId stgtMode
   factionPers <- getsClient sper
   return $! fromMaybe (assert `failure` lid) $ EM.lookup lid factionPers
@@ -255,7 +261,7 @@ promptToSlideshow prompt = overlayToSlideshow prompt []
 -- of the screen are displayed below. As many slides as needed are shown.
 overlayToSlideshow :: MonadClient m => Msg -> Overlay -> m Slideshow
 overlayToSlideshow prompt overlay = do
-  lid <- getsState sarena
+  lid <- getArenaCli
   lysize <- getsLevel lid lysize  -- TODO: screen length or viewLevel
   sreport <- getsClient sreport
   let msg = splitReport (addMsg sreport prompt)

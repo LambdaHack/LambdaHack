@@ -35,7 +35,7 @@ runDir :: MonadClient m => ActorId -> (Vector, Int) -> m (Vector, Int)
 runDir leader (dir, dist) = do
   cops <- getsState scops
   b <- getsState $ getActorBody leader
-  lvl <- getsLevel (blvl b) id
+  lvl <- getsLevel (blid b) id
   stgtMode <- getsClient stgtMode
   assert (isNothing stgtMode `blame` (dir, dist, stgtMode, "not off")) $ do
     let accessibleDir loc d = accessible cops lvl loc (loc `shift` d)
@@ -158,10 +158,10 @@ continueRunDir leader (dirLast, distLast) = do
   per <- askPerception
   sreport <- getsClient sreport -- TODO: check the message before it goes into history
   genemy <- getsState $ genemy . (EM.! bfaction body) . sfaction
-  arena <- getsState sarena
+  let arena = blid body
   ms <- getsState $ actorList (`elem` genemy) arena
   hs <- getsState $ actorList (not . (`elem` genemy)) arena
-  lvl@Level{lxsize, lysize} <- getsLevel (blvl body) id
+  lvl@Level{lxsize, lysize} <- getsLevel (blid body) id
   let posHere = bpos body
       posHasFeature f loc = Tile.hasFeature cotile f (lvl `at` loc)
       posHasItems loc = not $ EM.null $ lvl `atI` loc

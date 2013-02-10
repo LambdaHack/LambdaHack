@@ -160,4 +160,4 @@ getItemBody iid s = sitemD s EM.! iid
 --
 -- > b <- getsState (memActor a)
 memActor :: ActorId -> LevelId -> State -> Bool
-memActor a lid s = lid == blvl (getActorBody a s)
+memActor a lid s = lid == blid (getActorBody a s)

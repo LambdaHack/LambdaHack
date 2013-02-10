@@ -18,7 +18,7 @@ import Game.LambdaHack.Vector
 data CmdSer =
     ApplySer ActorId MU.Part ItemId Container
   | ProjectSer ActorId Point Int MU.Part ItemId Container
-  | TriggerSer ActorId Point
+  | TriggerSer ActorId Point LevelId
   | PickupSer ActorId ItemId Int InvChar
   | DropSer ActorId ItemId
   | WaitSer ActorId

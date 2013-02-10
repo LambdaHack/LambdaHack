@@ -53,7 +53,7 @@ retarget :: MonadClient m => WriterT Slideshow m ()
 retarget = do
   stgtMode <- getsClient stgtMode
   assert (isNothing stgtMode) $ do
-    arena <- getsState sarena
+    arena <- getArenaCli
     msgAdd "Last target invalid."
     modifyClient $ \cli -> cli {scursor = Nothing, seps = 0}
     targetEnemy $ TgtAuto arena
@@ -81,7 +81,7 @@ cursorLevel = do
 
 viewedLevel :: MonadClient m => m (LevelId, Level)
 viewedLevel = do
-  arena <- getsState sarena
+  arena <- getArenaCli
   dungeon <- getsState sdungeon
   stgtMode <- getsClient stgtMode
   let tgtId = maybe arena tgtLevelId stgtMode
@@ -447,11 +447,10 @@ endTargetingMsg = do
   pbody <- getsState $ getActorBody leader
   target <- getsClient $ getTarget leader
   loc <- getState
-  arena <- getsState sarena
   Level{lxsize} <- cursorLevel
   let targetMsg = case target of
                     Just (TEnemy a _ll) ->
-                      if memActor a arena loc
+                      if memActor a (blid pbody) loc
                       then partActor coactor $ getActorBody a loc
                       else "a fear of the past"
                     Just (TPos pos) ->
@@ -473,7 +472,8 @@ clearCurrent = return ()
 displayHistory :: MonadClient m => WriterT Slideshow m ()
 displayHistory = do
   history <- getsClient shistory
-  time <- getsState getTime
+  arena <- getArenaCli
+  time <- getsState $ getTime arena
   let turn = time `timeFit` timeTurn
       msg = makeSentence [ "You spent on this level"
                          , MU.NWs turn "half-second turn" ]
@@ -487,12 +487,12 @@ displayHistory = do
 cycleMember :: (MonadAction m, MonadClient m) => m ()
 cycleMember = do
   Just leader <- getsClient sleader
-  arena <- getsState sarena
+  body <- getsState $ getActorBody leader
   hs <- partyAfterLeader leader
-  case filter (\(_, b) -> blvl b == arena) hs of
+  case filter (\(_, b) -> blid b == blid body) hs of
     [] -> abortWith "Cannot select any other member on this level."
-    (np, b) : _ -> selectLeader np (blvl b)
-                   >>= assert `trueM` (leader, blvl b, np, "member duplicated")
+    (np, b) : _ -> selectLeader np
+                   >>= assert `trueM` (leader, blid b, np, "member duplicated")
 
 partyAfterLeader :: MonadActionRO m
                  => ActorId
@@ -511,26 +511,22 @@ partyAfterLeader leader = do
 -- | Select a faction leader. Switch level, if needed.
 -- False, if nothing to do. Should only be invoked as a direct result
 -- of a human player action (leader death just sets sleader to -1).
-selectLeader :: (MonadAction m, MonadClient m) => ActorId -> LevelId -> m Bool
-selectLeader actor arena = do
+selectLeader :: (MonadAction m, MonadClient m) => ActorId -> m Bool
+selectLeader actor = do
   Kind.COps{coactor} <- getsState scops
   leader <- getsClient sleader
   stgtMode <- getsClient stgtMode
   if Just actor == leader
     then return False -- already selected
     else do
-      arenaOld <- getsState sarena
-      when (arenaOld /= arena) $ do
-        modifyClient invalidateSelectedLeader
-        modifyState $ updateSelectedArena arena
       loc <- getState
       modifyClient $ updateSelectedLeader actor loc
+      pbody <- getsState $ getActorBody actor
       -- Move the cursor, if active, to the new level.
-      when (isJust stgtMode) $ setTgtId arena
+      when (isJust stgtMode) $ setTgtId $ blid pbody
       -- Don't continue an old run, if any.
       stopRunning
       -- Announce.
-      pbody <- getsState $ getActorBody actor
       msgAdd $ makeSentence [partActor coactor pbody, "selected"]
       return True
 
@@ -546,8 +542,8 @@ backCycleMember = do
   hs <- partyAfterLeader leader
   case reverse hs of
     [] -> abortWith "No other member in the party."
-    (np, b) : _ -> selectLeader np (blvl b)
-                   >>= assert `trueM` (leader, blvl b, np, "member duplicated")
+    (np, b) : _ -> selectLeader np
+                   >>= assert `trueM` (leader, blid b, np, "member duplicated")
 
 -- * Help
 
@@ -565,4 +561,4 @@ selectHero k = do
   loc <- getState
   case tryFindHeroK loc side k of
     Nothing  -> abortWith "No such member of the party."
-    Just (aid, b) -> void $ selectLeader aid (blvl b)
+    Just (aid, _) -> void $ selectLeader aid

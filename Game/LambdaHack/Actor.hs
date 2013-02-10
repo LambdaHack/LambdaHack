@@ -64,7 +64,7 @@ data Actor = Actor
   , bhp      :: !Int                    -- ^ current hit points
   , bpath    :: !(Maybe [Vector])       -- ^ path the actor is forced to travel
   , bpos     :: !Point                  -- ^ current position
-  , blvl     :: !LevelId                -- ^ current level
+  , blid     :: !LevelId                -- ^ current level
   , bbag     :: !ItemBag                -- ^ items carried
   , binv     :: !ItemInv                -- ^ map from letters to items
   , bletter  :: !InvChar                -- ^ next inventory letter
@@ -95,7 +95,7 @@ partActor Kind.Ops{oname} a = MU.Text $ fromMaybe (oname $ bkind a) (bname a)
 -- | A template for a new non-projectile actor.
 actorTemplate :: Kind.Id ActorKind -> Maybe Char -> Maybe Text -> Int
               -> Point -> LevelId -> Time -> FactionId -> Bool -> Actor
-actorTemplate bkind bsymbol bname bhp bpos blvl btime bfaction bproj =
+actorTemplate bkind bsymbol bname bhp bpos blid btime bfaction bproj =
   let bcolor  = Nothing
       bspeed  = Nothing
       bpath   = Nothing
@@ -236,7 +236,7 @@ instance Binary Actor where
     put bhp
     put bpath
     put bpos
-    put blvl
+    put blid
     put bbag
     put binv
     put bletter
@@ -253,7 +253,7 @@ instance Binary Actor where
     bhp     <- get
     bpath   <- get
     bpos    <- get
-    blvl    <- get
+    blid    <- get
     bbag <- get
     binv    <- get
     bletter <- get

@@ -30,13 +30,12 @@ cmdUpdateCli cmd = case cmd of
   PickupCli aid iid k l -> pickupCli aid iid k l
   ApplyCli actor verb item -> applyCli actor verb item
   ShowMsgCli msg -> msgAdd msg
-  InvalidateArenaCli lid -> void $ invalidateArenaCli lid
   DiscoverCli ik i -> discoverCli ik i
-  RemCli vis lvl -> remCli vis lvl
-  RememberCli lvl actorD itemD faction ->
-    rememberCli lvl actorD itemD faction
-  RememberPerCli per lvl actorD itemD faction ->
-    rememberPerCli per lvl actorD itemD faction
+  RemCli vis lvl lid -> remCli vis lvl lid
+  RememberCli lvl lid actorD itemD faction ->
+    rememberCli lvl lid actorD itemD faction
+  RememberPerCli per lvl lid actorD itemD faction ->
+    rememberPerCli per lvl lid actorD itemD faction
   SwitchLevelCli _aid _arena _pbody _items -> undefined  -- switchLevelCli aid arena pbody items
   ProjectCli spos source item -> projectCli spos source item
   ShowAttackCli source target verb stack say ->
@@ -70,11 +69,10 @@ cmdUpdateUI cmd = case cmd of
 
 cmdQueryCli :: (MonadAction m, MonadClient m) => CmdQueryCli a -> m a
 cmdQueryCli cmd = case cmd of
-  SelectLeaderCli aid lid -> selectLeader aid lid
+  SelectLeaderCli aid -> selectLeader aid
   NullReportCli -> do
     StateClient{sreport} <- getClient
     return $! nullReport sreport
-  SetArenaLeaderCli arena actor -> setArenaLeaderCli arena actor
   HandleAI actor -> handleAI actor
   IsRunningCli -> do
     tryWith (\_ -> return False) $ do

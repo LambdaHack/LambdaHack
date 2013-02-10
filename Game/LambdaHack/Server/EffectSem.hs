@@ -53,19 +53,19 @@ effectSem :: MonadServerChan m
           => Effect.Effect -> Int -> ActorId -> ActorId -> Int -> Bool
           -> WriterT [CmdAtomic] m Bool
 effectSem ef verbosity source target power block = do
-  oldS <- getsState (getActorBody source)
-  oldT <- getsState (getActorBody target)
+  oldS <- getsState $ getActorBody source
+  oldT <- getsState $ getActorBody target
   let oldHP = bhp oldT
   (b, msg) <- eff ef verbosity source target power
   -- We assume if targed moved to a level, which is not the current level,
   -- his HP is unchanged.
-  arena <- getsState sarena
+  let arena = blid oldT
   memTm <- getsState $ memActor target arena
   newHP <- if memTm
            then getsState (bhp . getActorBody target)
            else return oldHP
   -- Target part of message sent here, so only target visibility checked.
-  void $ broadcastPosUI [bpos oldT]
+  void $ broadcastPosUI [bpos oldT] arena
        $ EffectCli msg (bpos oldT, bpos oldS) (newHP - oldHP) block
   -- TODO: use broadcastPosCli2 and to those that don't see the pos show that:
   -- when b $ msgAdd "You hear some noises."
@@ -189,7 +189,7 @@ effectDominate :: MonadServerChan m
                => ActorId -> ActorId -> WriterT [CmdAtomic] m (Bool, Text)
 effectDominate source target = do
   sm <- getsState (getActorBody source)
-  arena <- getsState sarena
+  let arena = blid sm
   if source == target
     then do
       genemy <- getsState $ genemy . (EM.! bfaction sm) . sfaction
@@ -199,7 +199,7 @@ effectDominate source target = do
       lm <- getsState $ actorNotProjList (`elem` genemy) arena
       let cross m = bpos m : vicinityCardinal lxsize lysize (bpos m)
           vis = ES.fromList $ concatMap cross lm
-      sendUpdateCli (bfaction sm) $ RemCli vis lvl
+      sendUpdateCli (bfaction sm) $ RemCli vis lvl arena
       return (True, "A dozen voices yells in anger.")
     else do
       Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
@@ -210,7 +210,7 @@ effectDominate source target = do
       when (delta > speedZero) $ tell [HasteAtomic target (speedNegate delta)]
       -- TODO: Perhaps insert a turn of delay here to allow countermeasures.
       tell [DominateAtomic (bfaction tm) (bfaction sm) target]
-      sendQueryCli (bfaction sm) (SelectLeaderCli target arena)
+      sendQueryCli (bfaction sm) (SelectLeaderCli target)
         >>= assert `trueM` (arena, target, "leader dominates himself")
       -- Display status line and FOV for the new actor.
 --TODO      sli <- promptToSlideshow ""
@@ -226,21 +226,21 @@ effectSummonFriend :: MonadServer m
 effectSummonFriend source target power = do
   sm <- getsState (getActorBody source)
   tm <- getsState (getActorBody target)
-  summonFriends (bfaction sm) (1 + power) (bpos tm)
+  summonFriends (bfaction sm) (1 + power) (bpos tm) (blid tm)
   return (True, "")
 
 summonFriends :: MonadServer m
-              => FactionId -> Int -> Point -> WriterT [CmdAtomic] m ()
-summonFriends bfaction n pos = assert (n > 0) $ do
+              => FactionId -> Int -> Point -> LevelId
+              -> WriterT [CmdAtomic] m ()
+summonFriends bfaction n pos arena = assert (n > 0) $ do
   Kind.COps{ coactor=coactor@Kind.Ops{opick}
            , cofact=Kind.Ops{okind} } <- getsState scops
   faction <- getsState sfaction
   let fact = okind $ gkind $ faction EM.! bfaction
-  arena <- getsState sarena
   replicateM_ n $ do
     mk <- rndToAction $ opick (fname fact) (const True)
     if mk == heroKindId coactor
-      then addHero bfaction pos []
+      then addHero bfaction pos arena []
       else addMonster mk bfaction pos arena
 
 addActor :: MonadServer m
@@ -249,7 +249,7 @@ addActor :: MonadServer m
          -> WriterT [CmdAtomic] m ()
 addActor mk bfaction ppos lid hp msymbol mname = do
   Kind.COps{cotile} <- getsState scops
-  time <- getsState getTime
+  time <- getsState $ getTime lid
   pos <- getsState $ nearbyFreePos cotile ppos lid
   let m = actorTemplate mk msymbol mname hp pos lid time bfaction False
   acounter <- getsServer sacounter
@@ -259,8 +259,9 @@ addActor mk bfaction ppos lid hp msymbol mname = do
 -- TODO: apply this special treatment only to actors with symbol '@'.
 -- | Create a new hero on the current level, close to the given position.
 addHero :: MonadServer m
-        => FactionId -> Point -> [(Int, Text)] -> WriterT [CmdAtomic] m ()
-addHero bfaction ppos configHeroNames = do
+        => FactionId -> Point -> LevelId -> [(Int, Text)]
+        -> WriterT [CmdAtomic] m ()
+addHero bfaction ppos arena configHeroNames = do
   Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
   let mk = heroKindId coactor
   hp <- rndToAction $ rollDice $ ahp $ okind mk
@@ -270,7 +271,6 @@ addHero bfaction ppos configHeroNames = do
       symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
       name = findHeroName configHeroNames n
       startHP = hp - (hp `div` 5) * min 3 n
-  arena <- getsState sarena
   addActor mk bfaction ppos arena startHP (Just symbol) (Just name)
 
 -- | Find a hero name in the config file, or create a stock name.
@@ -285,17 +285,17 @@ effectSpawnMonster :: MonadServer m
                    => ActorId -> Int -> WriterT [CmdAtomic] m (Bool, Text)
 effectSpawnMonster target power = do
   tm <- getsState (getActorBody target)
-  void $ spawnMonsters (1 + power) (bpos tm)
+  void $ spawnMonsters (1 + power) (bpos tm) (blid tm)
   return (True, "")
 
 -- | Spawn monsters of any spawning faction, friendly or not.
 -- To be used for spontaneous spawning of monsters and for the spawning effect.
 spawnMonsters :: MonadServer m
-              => Int -> Point -> WriterT [CmdAtomic] m (Maybe FactionId)
-spawnMonsters n pos = do
+              => Int -> Point -> LevelId
+              -> WriterT [CmdAtomic] m (Maybe FactionId)
+spawnMonsters n pos arena = do
   Kind.COps{ coactor=Kind.Ops{opick}
            , cofact=Kind.Ops{okind} } <- getsState scops
-  arena <- getsState sarena
   faction <- getsState sfaction
   let f (fid, fa) =
         let kind = okind (gkind fa)
@@ -328,7 +328,7 @@ effectCreateItem :: MonadServer m
                  => ActorId -> Int -> WriterT [CmdAtomic] m (Bool, Text)
 effectCreateItem target power = do
   tm <- getsState $ getActorBody target
-  void $ createItems (1 + power) (bpos tm) (blvl tm)
+  void $ createItems (1 + power) (bpos tm) (blid tm)
   return (True, "")
 
 createItems :: MonadServer m
@@ -362,9 +362,9 @@ effectApplyPerfume source target =
   then return (True, "Tastes like water, but with a strong rose scent.")
   else do
     tm <- getsState $ getActorBody target
-    oldSmell <- getsLevel (blvl tm) lsmell
+    oldSmell <- getsLevel (blid tm) lsmell
     let diffL = map (\(p, sm) -> (p, (Just sm, Nothing))) $ EM.assocs oldSmell
-    tell [AlterSmellAtomic (blvl tm) diffL]
+    tell [AlterSmellAtomic (blid tm) diffL]
     return (True, "The fragrance quells all scents in the vicinity.")
 
 -- ** Regeneration
@@ -392,14 +392,14 @@ useStairs target delta msg = do
 effLvlGoUp :: MonadServerChan m => ActorId -> Int -> WriterT [CmdAtomic] m ()
 effLvlGoUp aid k = do
   pbodyCurrent <- getsState $ getActorBody aid
-  arena <- getsState sarena
+  let arena = blid pbodyCurrent
   glo <- getState
   case whereTo glo arena k of
-    Nothing -> fleeDungeon (bfaction pbodyCurrent) (blvl pbodyCurrent)
+    Nothing -> fleeDungeon (bfaction pbodyCurrent) (blid pbodyCurrent)
                -- We are at the "end" of the dungeon.
     Just (nln, npos) ->
       assert (nln /= arena `blame` (nln, "stairs looped")) $ do
-        timeCurrent <- getsState getTime
+        timeCurrent <- getsState $ getTime arena
         -- Remove the actor from the old level.
         tell [KillAtomic aid pbodyCurrent]
         -- Remember the level (e.g., when teleporting via scroll on the floor,
@@ -419,16 +419,13 @@ effLvlGoUp aid k = do
         -- a leader, but he is not inserted into the new level yet.
 -- TODO:        modifyState $ updateSelectedArena nln
         -- Sync the actor time with the level time.
-        timeLastVisited <- getsState getTime
+        timeLastVisited <- getsState $ getTime arena
         let diff = timeAdd (btime pbodyCurrent) (timeNegate timeCurrent)
             pbody = pbodyCurrent { btime = timeAdd timeLastVisited diff
                                  , bpos = npos }
         -- The actor is added to the new level, but there can be other actors
         -- at his old position or at his new position.
         tell [SpawnAtomic aid pbody]
-        -- Reset level and leader for all factions.
-        broadcastCli [return . (/= bfaction pbody)] $ InvalidateArenaCli nln
---        sendUpdateCli (bfaction pbody) $ SwitchLevelCli aid nln pbody bbag
         -- Checking actors at the new posiiton of the aid.
         inhabitants <- getsState (posToActor npos arena)
         case inhabitants of
@@ -534,7 +531,7 @@ dropAllItems :: MonadActionRO m => ActorId -> WriterT [CmdAtomic] m ()
 dropAllItems aid = do
   b <- getsState $ getActorBody aid
   let f (iid, k) =
-        tell [MoveItemAtomic (blvl b) iid k (CActor aid) (CFloor $ bpos b)]
+        tell [MoveItemAtomic (blid b) iid k (CActor aid) (CFloor $ bpos b)]
   mapM_ f $ EM.assocs $ bbag b
 
 -- | Remove a dead actor. Check if game over.
@@ -547,7 +544,7 @@ checkPartyDeath target = do
   let fid = bfaction tm
   isHuman <- getsState $ flip isHumanFaction fid
   let animateDeath = do
-        broadcastPosUI [bpos tm] (AnimateDeathCli target)
+        broadcastPosUI [bpos tm] (blid tm) (AnimateDeathCli target)
         if isHuman then sendQueryUI fid CarryOnCli else return False
       animateGameOver = do
         _go <- animateDeath
@@ -569,7 +566,7 @@ checkPartyDeath target = do
       else void $ animateDeath
   -- Remove the dead actor.
   tell [KillAtomic target tm]
-  electLeader (bfaction tm) (blvl tm)
+  electLeader (bfaction tm) (blid tm)
   -- We don't register that the lethal potion on the floor
   -- is used up. If that's a problem, add a one turn delay
   -- to the effect of all lethal objects (displaying an "agh! dying"
@@ -590,9 +587,9 @@ electLeader fid lid = do
     tell [LeaderAtomic fid Nothing (Just leader)]
 
 -- | End game, showing the ending screens, if requested.
-gameOver :: (MonadAction m, MonadServerChan m) => FactionId -> Bool -> m ()
-gameOver fid showEndingScreens = do
-  arena <- getsState sarena
+gameOver :: (MonadAction m, MonadServerChan m)
+         => FactionId -> LevelId -> Bool -> m ()
+gameOver fid arena showEndingScreens = do
   deepest <- getsLevel arena ldepth  -- TODO: use deepest visited instead of current
   let upd f = f {gquit = Just (False, Killed arena)}
   modifyState $ updateFaction (EM.adjust upd fid)
@@ -600,7 +597,7 @@ gameOver fid showEndingScreens = do
     Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsState scops
     s <- getState
     depth <- getsState sdepth
-    time <- getsState getTime
+    time <- undefined  -- TODO: sum over all levels? getsState getTime
     let (bag, total) = calculateTotal fid arena s
         failMsg | timeFit time timeTurn < 300 =
           "That song shall be short."

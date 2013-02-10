@@ -41,11 +41,10 @@ data CmdUpdateCli =
     PickupCli ActorId ItemId Int InvChar
   | ApplyCli ActorId MU.Part Item
   | ShowMsgCli Msg
-  | InvalidateArenaCli LevelId
   | DiscoverCli (Kind.Id ItemKind) Item
-  | RemCli (ES.EnumSet Point) Level
-  | RememberCli Level ActorDict ItemDict FactionDict
-  | RememberPerCli Perception Level ActorDict ItemDict FactionDict
+  | RemCli (ES.EnumSet Point) Level LevelId
+  | RememberCli Level LevelId ActorDict ItemDict FactionDict
+  | RememberPerCli Perception Level LevelId ActorDict ItemDict FactionDict
   | SwitchLevelCli ActorId LevelId Actor ItemBag
   | ProjectCli Point ActorId Item
   | ShowAttackCli ActorId ActorId MU.Part Item Bool
@@ -68,9 +67,8 @@ data CmdUpdateUI =
   deriving Show
 
 data CmdQueryCli a where
-  SelectLeaderCli :: ActorId -> LevelId -> CmdQueryCli Bool
+  SelectLeaderCli :: ActorId -> CmdQueryCli Bool
   NullReportCli :: CmdQueryCli Bool
-  SetArenaLeaderCli :: LevelId -> ActorId -> CmdQueryCli ActorId
   HandleAI :: ActorId -> CmdQueryCli CmdSer
   IsRunningCli :: CmdQueryCli Bool
 

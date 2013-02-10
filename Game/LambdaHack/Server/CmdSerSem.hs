@@ -56,9 +56,9 @@ applySer :: MonadServerChan m   -- MonadActionAbort m
 applySer actor verb iid container = do
   item <- getsState $ getItemBody iid
   b <- getsState $ getActorBody actor
-  broadcastPosCli [bpos b] $ ApplyCli actor verb item
+  broadcastPosCli [bpos b] (blid b) $ ApplyCli actor verb item
   itemEffect 5 actor actor item False
-  tell [DestroyItemAtomic (blvl b) iid item 1 container]
+  tell [DestroyItemAtomic (blid b) iid item 1 container]
 
 -- ** ProjectSer
 
@@ -74,10 +74,11 @@ projectSer source tpos eps _verb iid container = do
   cops@Kind.COps{coactor} <- getsState scops
   sm <- getsState (getActorBody source)
   Actor{btime} <- getsState $ getActorBody source
-  lvl <- getsLevel (blvl sm) id
-  lxsize <- getsLevel (blvl sm) lxsize
-  lysize <- getsLevel (blvl sm) lysize
+  lvl <- getsLevel (blid sm) id
+  lxsize <- getsLevel (blid sm) lxsize
+  lysize <- getsLevel (blid sm) lysize
   let spos = bpos sm
+      arena = blid sm
       -- When projecting, the first turn is spent aiming.
       -- The projectile is seen one tile from the actor, giving a hint
       -- about the aim and letting the target evade.
@@ -98,26 +99,24 @@ projectSer source tpos eps _verb iid container = do
     Nothing -> abortWith "cannot zap oneself"
     Just [] -> assert `failure` (spos, tpos, "project from the edge of level")
     Just path@(pos:_) -> do
-      arena <- getsState sarena
       inhabitants <- getsState (posToActor pos arena)
       if accessible cops lvl spos pos && isNothing inhabitants
         then do
-          projId <- addProjectile iid pos (bfaction sm) path time
-          tell [MoveItemAtomic (blvl sm) iid 1 container (CActor projId)]
+          projId <- addProjectile iid pos (blid sm) (bfaction sm) path time
+          tell [MoveItemAtomic (blid sm) iid 1 container (CActor projId)]
           item <- getsState $ getItemBody iid
-          broadcastPosCli [spos, pos] $ ProjectCli spos source item
+          broadcastPosCli [spos, pos] (blid sm) $ ProjectCli spos source item
         else
           abortWith "blocked"
 
 -- | Create a projectile actor containing the given missile.
 addProjectile :: MonadServer m
-              => ItemId -> Point -> FactionId -> [Point] -> Time
+              => ItemId -> Point -> LevelId -> FactionId -> [Point] -> Time
               -> WriterT [CmdAtomic] m ActorId
-addProjectile iid loc bfaction path btime = do
+addProjectile iid loc blid bfaction path btime = do
   Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}} <- getsState scops
   disco <- getsState sdisco
   item <- getsState $ getItemBody iid
-  blvl <- getsState sarena
   let ik = okind (fromJust $ jkind disco item)
       speed = speedFromWeight (iweight ik) (itoThrow ik)
       range = rangeFromSpeed speed
@@ -136,7 +135,7 @@ addProjectile iid loc bfaction path btime = do
         , bhp     = 0
         , bpath   = Just dirPath
         , bpos    = loc
-        , blvl
+        , blid
         , bbag    = EM.empty
         , binv    = EM.empty
         , bletter = InvChar 'a'
@@ -153,24 +152,24 @@ addProjectile iid loc bfaction path btime = do
 -- ** TriggerSer
 
 -- | Perform the action specified for the tile in case it's triggered.
-triggerSer :: MonadServerChan m => ActorId -> Point -> WriterT [CmdAtomic] m ()
-triggerSer aid dpos = do
+triggerSer :: MonadServerChan m
+           => ActorId -> Point -> LevelId -> WriterT [CmdAtomic] m ()
+triggerSer aid dpos arena = do
   Kind.COps{cotile=Kind.Ops{okind, opick}} <- getsState scops
   b <- getsState $ getActorBody aid
-  lvl <- getsLevel (blvl b) id
+  lvl <- getsLevel (blid b) id
   let f (F.Cause ef) = do
         -- No block against tile, hence @False@.
         void $ effectSem ef 0 aid aid 0 False
         return ()
       f (F.ChangeTo tgroup) = do
-        arena <- getsState sarena
         as <- getsState $ actorList (const True) arena
         if EM.null $ lvl `atI` dpos
           then if unoccupied as dpos
                then do
-                 fromTile <- getsLevel (blvl b) (`at` dpos)
+                 fromTile <- getsLevel (blid b) (`at` dpos)
                  toTile <- rndToAction $ opick tgroup (const True)
-                 tell [ChangeTileAtomic dpos (blvl b) fromTile toTile]
+                 tell [ChangeTileAtomic dpos (blid b) fromTile toTile]
 -- TODO: take care of AI using this function (aborts, etc.).
                else abortWith "blocked"  -- by monsters or heroes
           else abortWith "jammed"  -- by items
@@ -183,8 +182,8 @@ pickupSer :: MonadServerChan m
           => ActorId -> ItemId -> Int -> InvChar -> WriterT [CmdAtomic] m ()
 pickupSer aid iid k l = assert (k > 0 `blame` (aid, iid, k, l)) $ do
   b <- getsState $ getActorBody aid
-  tell [MoveItemAtomic (blvl b) iid k (CFloor (bpos b)) (CActor aid)]
-  void $ broadcastPosCli [bpos b] (PickupCli aid iid k l)
+  tell [MoveItemAtomic (blid b) iid k (CFloor (bpos b)) (CActor aid)]
+  void $ broadcastPosCli [bpos b] (blid b) (PickupCli aid iid k l)
 
 -- ** DropSer
 
@@ -192,7 +191,7 @@ dropSer :: MonadActionRO m => ActorId -> ItemId -> WriterT [CmdAtomic] m ()
 dropSer aid iid = do
   b <- getsState $ getActorBody aid
   let k = 1
-  tell [MoveItemAtomic (blvl b) iid k (CActor aid) (CFloor (bpos b))]
+  tell [MoveItemAtomic (blid b) iid k (CActor aid) (CFloor (bpos b))]
 
 -- * WaitSer
 
@@ -200,8 +199,8 @@ dropSer aid iid = do
 waitSer :: MonadActionRO m => ActorId -> WriterT [CmdAtomic] m ()
 waitSer aid = do
   Kind.COps{coactor} <- getsState scops
-  time <- getsState getTime
   body <- getsState $ getActorBody aid
+  time <- getsState $ getTime $ blid body
   let fromWait = bwait body
       toWait = timeAddFromSpeed coactor body time
   tell [WaitAtomic aid fromWait toWait]
@@ -219,11 +218,11 @@ moveSer :: MonadServerChan m => ActorId -> Vector -> WriterT [CmdAtomic] m ()
 moveSer aid dir = do
   cops@Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getsState scops
   sm <- getsState $ getActorBody aid
-  lvl <- getsLevel (blvl sm) id
+  lvl <- getsLevel (blid sm) id
   let spos = bpos sm           -- source position
       tpos = spos `shift` dir  -- target position
   -- We start by looking at the target position.
-  arena <- getsState sarena
+  let arena = blid sm
   tgt <- getsState (posToActor tpos arena)
   case tgt of
     Just target ->
@@ -249,7 +248,7 @@ actorAttackActor :: MonadServerChan m
 actorAttackActor source target = do
   sm <- getsState (getActorBody source)
   tm <- getsState (getActorBody target)
-  time <- getsState getTime
+  time <- getsState $ getTime (blid tm)
   discoS <- getsState sdisco
   s <- getState
   let spos = bpos sm
@@ -280,7 +279,7 @@ actorAttackActor source target = do
                   Just ik -> iverbApply $ okind ik
             in (w, True, 0, verbApply)
   let performHit block = do
-        broadcastPosCli [spos, tpos]
+        broadcastPosCli [spos, tpos] (blid tm)
           $ ShowAttackCli source target verb stack say
         -- Msgs inside itemEffectSem describe the target part.
         itemEffect verbosity source target stack block
@@ -289,7 +288,8 @@ actorAttackActor source target = do
     then do
       blocked <- rndToAction $ chance $ 1%2
       if blocked
-        then broadcastPosUI [spos, tpos] $ AnimateBlockCli source target verb
+        then broadcastPosUI [spos, tpos] (blid tm)
+             $ AnimateBlockCli source target verb
         else performHit True
     else performHit False
 
@@ -298,9 +298,9 @@ search :: MonadServerChan m => ActorId -> WriterT [CmdAtomic] m ()
 search aid = do
   Kind.COps{coitem, cotile} <- getsState scops
   b <- getsState $ getActorBody aid
-  lvl <- getsLevel (blvl b) id
-  lsecret <- getsLevel (blvl b) lsecret
-  lxsize <- getsLevel (blvl b) lxsize
+  lvl <- getsLevel (blid b) id
+  lsecret <- getsLevel (blid b) lsecret
+  lxsize <- getsLevel (blid b) lxsize
   pitems <- getsState (getActorItem aid)
   discoS <- getsState sdisco
   let delta = timeScale timeTurn $
@@ -319,9 +319,9 @@ search aid = do
                 else (loc, (Just ok, Nothing)) : diffL
            else diffL
   let diffL = foldl' searchTile [] (moves lxsize)
-  tell [AlterSecretAtomic (blvl b) diffL]
+  tell [AlterSecretAtomic (blid b) diffL]
   let triggerHidden (_, (_, Just _)) = return ()
-      triggerHidden (dpos, (_, Nothing)) = triggerSer aid dpos
+      triggerHidden (dpos, (_, Nothing)) = triggerSer aid dpos (blid b)
   mapM_ triggerHidden diffL
 
 -- TODO: bumpTile tpos F.Openable
@@ -331,7 +331,7 @@ actorOpenDoor :: MonadServerChan m
 actorOpenDoor actor dir = do
   Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody actor
-  lvl <- getsLevel (blvl body) id
+  lvl <- getsLevel (blid body) id
   glo <- getState
   let dpos = shift (bpos body) dir  -- the position we act upon
       t = lvl `at` dpos
@@ -343,7 +343,7 @@ actorOpenDoor actor dir = do
                  Tile.hasFeature cotile F.Openable t ||
                  Tile.hasFeature cotile F.Hidden t)
          then neverMind isVerbose  -- not doors at all
-         else triggerSer actor dpos
+         else triggerSer actor dpos (blid body)
 
 -- ** RunSer
 
@@ -352,11 +352,11 @@ runSer :: MonadServerChan m => ActorId -> Vector -> WriterT [CmdAtomic] m ()
 runSer actor dir = do
   cops <- getsState scops
   sm <- getsState $ getActorBody actor
-  lvl <- getsLevel (blvl sm) id
+  lvl <- getsLevel (blid sm) id
   let spos = bpos sm           -- source position
       tpos = spos `shift` dir  -- target position
   -- We start by looking at the target position.
-  arena <- getsState sarena
+  let arena = blid sm
   tgt <- getsState (posToActor tpos arena)
   case tgt of
     Just target
@@ -376,8 +376,10 @@ displaceActor :: MonadServerChan m
 displaceActor source target = do
   tell [DisplaceActorAtomic source target]
   spos <- getsState $ bpos . getActorBody source
-  tpos <- getsState $ bpos . getActorBody target
-  broadcastPosUI [spos, tpos] $ DisplaceCli source target
+  tb <- getsState $ getActorBody target
+  let tpos = bpos tb
+      lid = blid tb
+  broadcastPosUI [spos, tpos] lid $ DisplaceCli source target
 --  leader <- getsClient getLeader
 --  if Just source == leader
 -- TODO: The actor will stop running due to the message as soon as running
@@ -443,7 +445,7 @@ dieSer aid = do  -- TODO: explode if a projectile holdding a potion
   dropAllItems aid
   body <- getsState $ getActorBody aid
   tell [KillAtomic aid body]
-  electLeader (bfaction body) (blvl body)
+  electLeader (bfaction body) (blid body)
 
 -- * LeaderSer
 

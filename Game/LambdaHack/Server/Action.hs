@@ -51,16 +51,17 @@ import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Random
+import Game.LambdaHack.Level
+import Game.LambdaHack.Time
 
 -- | Update the cached perception for the selected level, for a faction.
 -- The assumption is the level, and only the level, has changed since
 -- the previous perception calculation.
-resetFidPerception :: MonadServer m => FactionId -> m ()
-resetFidPerception fid = do
+resetFidPerception :: MonadServer m => FactionId -> LevelId -> m ()
+resetFidPerception fid arena = do
   cops <- getsState scops
   configFovMode <- getsServer (configFovMode . sconfig)
   sdebugSer <- getsServer sdebugSer
-  arena <- getsState sarena
   lvl <- getsLevel arena id
   s <- getState
   let tryFov = stryFov sdebugSer
@@ -69,9 +70,8 @@ resetFidPerception fid = do
       upd = EM.adjust (EM.adjust (const per) arena) fid
   modifyServer $ \ser -> ser {sper = upd (sper ser)}
 
-getPerFid :: MonadServer m => FactionId -> m Perception
-getPerFid fid = do
-  arena <- getsState sarena
+getPerFid :: MonadServer m => FactionId -> LevelId -> m Perception
+getPerFid fid arena = do
   pers <- getsServer sper
   let fper = fromMaybe (assert `failure` (arena, fid)) $ EM.lookup fid pers
       per = fromMaybe (assert `failure` (arena, fid)) $ EM.lookup arena fper
@@ -115,10 +115,10 @@ handleScores :: MonadServerChan m => FactionId -> Bool -> Status -> Int -> m ()
 handleScores fid write status total =
   when (total /= 0) $ do
     config <- getsServer sconfig
-    time <- getsState getTime
+-- TODO: sum over all levels?    time <- getsState getTime
     curDate <- liftIO getClockTime
     slides <-
-      liftIO $ register config write total time curDate status
+      liftIO $ register config write total timeZero curDate status
     go <- sendQueryUI fid $ ShowSlidesCli slides
     when (not go) abort
 
@@ -130,9 +130,9 @@ withAI m = do
   putDict d
   return a
 
-isFactionAware :: MonadServer m => [Point] -> FactionId -> m Bool
-isFactionAware poss fid = do
-  per <- getPerFid fid
+isFactionAware :: MonadServer m => [Point] -> LevelId -> FactionId -> m Bool
+isFactionAware poss lid fid = do
+  per <- getPerFid fid lid
   let inter = ES.fromList poss `ES.intersection` totalVisible per
   return $! null poss || not (ES.null inter)
 
@@ -171,8 +171,9 @@ broadcastCli ps cmd = do
   ks <- filterM p $ EM.keys faction
   mapM_ (flip sendUpdateCli cmd) ks
 
-broadcastPosCli :: MonadServerChan m => [Point] -> CmdUpdateCli -> m ()
-broadcastPosCli poss = broadcastCli [isFactionAware poss]
+broadcastPosCli :: MonadServerChan m
+                => [Point] -> LevelId -> CmdUpdateCli -> m ()
+broadcastPosCli poss lid = broadcastCli [isFactionAware poss lid]
 
 funBroadcastCli :: MonadServerChan m => (FactionId -> CmdUpdateCli) -> m ()
 funBroadcastCli cmd = do
@@ -215,8 +216,9 @@ broadcastUI ps cmd = do
   ks <- filterM p $ EM.keys faction
   mapM_ (flip sendUpdateUI cmd) ks
 
-broadcastPosUI :: MonadServerChan m => [Point] -> CmdUpdateUI -> m ()
-broadcastPosUI poss = broadcastUI [isFactionAware poss]
+broadcastPosUI :: MonadServerChan m
+               => [Point] -> LevelId -> CmdUpdateUI -> m ()
+broadcastPosUI poss lid = broadcastUI [isFactionAware poss lid]
 
 funBroadcastUI :: MonadServerChan m => (FactionId -> CmdUpdateUI) -> m ()
 funBroadcastUI cmd = do

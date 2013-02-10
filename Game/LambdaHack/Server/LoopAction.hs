@@ -49,7 +49,7 @@ import Game.LambdaHack.Utils.Assert
 -- Run the leader and other actors moves. Eventually advance the time
 -- and repeat.
 loopSer :: (MonadAction m, MonadServerChan m)
-        => (CmdSer -> m ())
+        => (LevelId -> CmdSer -> m ())
         -> (FactionId -> ConnCli -> Bool -> IO ())
         -> Kind.COps
         -> m ()
@@ -78,7 +78,7 @@ loopSer cmdSer executorC cops = do
       bcast
       withAI bcast
       -- TODO: factor out common parts from restartGame and restoreOrRestart
-      cmdAtomicBroad SyncAtomic
+      cmdAtomicBroad initialLevel SyncAtomic
       -- Save ASAP in case of crashes and disconnects.
       saveGameBkp
     _ -> do  -- game restored from a savefile
@@ -88,16 +88,17 @@ loopSer cmdSer executorC cops = do
   modifyServer $ \ser1 -> ser1 {squit = Nothing}
   -- Loop.
   let loop (disp, prevHuman) = do
-        time <- getsState getTime  -- the end time of this clip, inclusive
+        let arena = initialLevel  -- TODO
+        time <- getsState $ getTime arena  -- the end time of this clip, inclusive
         let clipN = (time `timeFit` timeClip)
                     `mod` (timeTurn `timeFit` timeClip)
         -- Regenerate HP and add monsters each turn, not each clip.
         when (clipN == 1) checkEndGame
-        when (clipN == 2) regenerateLevelHP
-        mfid <- if clipN == 3 then generateMonster else return Nothing
-        nres <- handleActors cmdSer timeZero prevHuman (disp || isJust mfid)
-        modifyState (updateTime (timeAdd timeClip))
-        endOrLoop prevHuman (loop nres)
+        when (clipN == 2) $ regenerateLevelHP arena
+        mfid <- if clipN == 3 then generateMonster arena else return Nothing
+        nres <- handleActors cmdSer arena timeZero prevHuman (disp || isJust mfid)
+        modifyState $ updateTime arena $ timeAdd timeClip
+        endOrLoop prevHuman arena (loop nres)
   loop (True, Nothing)
 
 initPer :: MonadServer m => m ()
@@ -111,9 +112,9 @@ initPer = do
       pers = dungeonPerception cops fovMode glo
   modifyServer $ \ser1 -> ser1 {sper = pers}
 
-cmdAtomicBroad :: (MonadAction m, MonadServerChan m) => CmdAtomic -> m ()
-cmdAtomicBroad cmd = do
-  arena <- getsState sarena
+cmdAtomicBroad :: (MonadAction m, MonadServerChan m)
+               => LevelId -> CmdAtomic -> m ()
+cmdAtomicBroad arena cmd = do
   lvlOld <- getsLevel arena id
   actorDOld <- getsState sactorD
   itemDOld <- getsState sitemD
@@ -126,19 +127,17 @@ cmdAtomicBroad cmd = do
   (pStart, pEnd) <- cmdPosAtomic cmd
   let vis per = all (`ES.member` totalVisible per)
       send fid = do
-        perOld <- getPerFid fid
+        perOld <- getPerFid fid arena
         resets <- resetsFovAtomic fid cmd
-        if resets
-        then do
-          resetFidPerception fid
-          perNew <- getPerFid fid
+        if resets then do
+          resetFidPerception fid arena
+          perNew <- getPerFid fid arena
           let startSeen = either id (vis perOld) pStart
               endSeen = either id (vis perNew) pEnd
-          if startSeen && endSeen
-          then do
+          if startSeen && endSeen then do
             let sendUp =
                   sendUpdateCli fid
-                  $ RememberPerCli perNew lvlOld actorDOld itemDOld factionOld
+                  $ RememberPerCli perNew lvlOld arena actorDOld itemDOld factionOld
             sendUp
             withAI sendUp
             let sendCmd = sendUpdateCli fid $ AtomicSeenCli cmd
@@ -147,7 +146,7 @@ cmdAtomicBroad cmd = do
           else do
             let sendUp =
                   sendUpdateCli fid
-                  $ RememberPerCli perNew lvlNew actorDNew itemDNew factionNew
+                  $ RememberPerCli perNew lvlNew arena actorDNew itemDNew factionNew
             sendUp
             withAI sendUp
         else do
@@ -161,7 +160,7 @@ cmdAtomicBroad cmd = do
           else do
             let sendUp =
                   sendUpdateCli fid
-                  $ RememberCli lvlNew actorDNew itemDNew factionNew
+                  $ RememberCli lvlNew arena actorDNew itemDNew factionNew
             sendUp
             withAI sendUp
   mapM_ send $ EM.keys factionNew
@@ -182,10 +181,8 @@ checkEndGame = do
   glo <- getState
   let aNotSp = filter (not . isSpawningFaction glo . bfaction) as
   case aNotSp of
-    [] -> gameOver undefined True  -- TODO: should send to all factions
-    actor : _ ->
-      -- Switch to the level (can be the currently selected level, too).
-      modifyState $ updateSelectedArena $ blvl actor
+    [] -> gameOver undefined undefined True  -- TODO: should send to all factions
+    _ : _ -> return ()
 
 -- | Perform moves for individual actors, as long as there are actors
 -- with the next move time less than or equal to the current time.
@@ -196,16 +193,15 @@ checkEndGame = do
 -- has changed since last time (every change, whether by human or AI
 -- or @generateMonster@ is followd by a call to @handleActors@).
 handleActors :: (MonadAction m, MonadServerChan m)
-             => (CmdSer -> m ())
+             => (LevelId -> CmdSer -> m ())
+             -> LevelId
              -> Time  -- ^ start time of current subclip, exclusive
              -> Maybe FactionId
              -> Bool
              -> m (Bool, Maybe FactionId)
-handleActors cmdSer subclipStart prevHuman disp = do
+handleActors cmdSer arena subclipStart prevHuman disp = do
   Kind.COps{coactor} <- getsState scops
-  time <- getsState getTime  -- the end time of this clip, inclusive
-   -- Older actors act earlier.
-  arena <- getsState sarena
+  time <- getsState $ getTime arena  -- the end time of this clip, inclusive
   prio <- getsLevel arena lprio
   gquit <- case prevHuman of
     Just fid -> getsState $ gquit . (EM.! fid) . sfaction
@@ -257,9 +253,9 @@ handleActors cmdSer subclipStart prevHuman disp = do
           tryWith (\msg -> do
                       sendUpdateCli side $ ShowMsgCli msg
                       sendUpdateUI side DisplayPushCli
-                      handleActors cmdSer subclipStart nHuman False
+                      handleActors cmdSer arena subclipStart nHuman False
                   ) $ do
-            mapM_ cmdSer cmdS
+            mapM_ (cmdSer arena) cmdS
             -- Advance time once, after the leader switched perhaps many times.
             -- TODO: this is correct only when all heroes have the same
             -- speed and can't switch leaders by, e.g., aiming a wand
@@ -276,7 +272,7 @@ handleActors cmdSer subclipStart prevHuman disp = do
               Just leaderNew -> do
                 squitNew <- getsServer squit
                 when (any timedCmdSer cmdS && isNothing squitNew) $ do
-                  arenaNew <- getsState $ blvl . getActorBody leaderNew
+                  arenaNew <- getsState $ blid . getActorBody leaderNew
                   advanceTime arenaNew leaderNew
             -- Human moves always start a new subclip.
             -- _pos <- getsState $ bpos . getActorBody (fromMaybe actor leaderNew)
@@ -285,7 +281,7 @@ handleActors cmdSer subclipStart prevHuman disp = do
             -- Right now other need it too, to notice the delay.
             -- This will also be more accurate since now unseen
             -- simultaneous moves also generate delays.
-            handleActors cmdSer (btime m) nHuman True
+            handleActors cmdSer arena (btime m) nHuman True
         else do
 --          recordHistory
           advanceTime arena actor  -- advance time while the actor still alive
@@ -305,8 +301,8 @@ handleActors cmdSer subclipStart prevHuman disp = do
                                then return ()
                                else assert `failure` msg <> "in AI"
                       )
-                      (cmdSer cmdS)
-              handleActors cmdSer (btime m) prevHuman True
+                      (cmdSer arena cmdS)
+              handleActors cmdSer arena (btime m) prevHuman True
             else do
               -- No new subclip.
               cmdS <- withAI $ sendQueryCli side $ HandleAI actor
@@ -316,8 +312,8 @@ handleActors cmdSer subclipStart prevHuman disp = do
                                then return ()
                                else assert `failure` msg <> "in AI"
                       )
-                      (cmdSer cmdS)
-              handleActors cmdSer subclipStart prevHuman False
+                      (cmdSer arena cmdS)
+              handleActors cmdSer arena subclipStart prevHuman False
 
 -- | Advance the move time for the given actor.
 advanceTime :: MonadAction m => LevelId -> ActorId -> m ()
@@ -338,12 +334,11 @@ advanceTime lid aid = do
 
 -- | Continue or restart or exit the game.
 endOrLoop :: (MonadAction m, MonadServerChan m)
-          => Maybe FactionId -> m () -> m ()
-endOrLoop Nothing loopServer = loopServer
-endOrLoop (Just fid) loopServer = do
+          => Maybe FactionId -> LevelId -> m () -> m ()
+endOrLoop Nothing _ loopServer = loopServer
+endOrLoop (Just fid) arena loopServer = do
   quit <- getsServer squit
   gquit <- getsState $ gquit . (EM.! fid) . sfaction
-  arena <- getsState sarena
   (_, total) <- getsState (calculateTotal fid arena)
   -- The first, boolean component of quit determines
   -- if ending screens should be shown, the other argument describes
@@ -409,7 +404,7 @@ restartGame loopServer = do
   let bcast = funBroadcastCli (\fid -> RestartCli (pers EM.! fid) defLoc)
   bcast
   withAI bcast
-  cmdAtomicBroad SyncAtomic
+  cmdAtomicBroad initialLevel SyncAtomic
   saveGameBkp
   broadcastCli [] $ ShowMsgCli "This time for real."
   broadcastUI [] $ DisplayPushCli
@@ -417,11 +412,11 @@ restartGame loopServer = do
 
 -- | Create a set of initial heroes on the current level, at position ploc.
 initialHeroes :: (MonadAction m, MonadServer m)
-              => (FactionId, Point, [(Int, Text)]) -> m ()
-initialHeroes (side, ppos, configHeroNames) = do
+              => LevelId -> (FactionId, Point, [(Int, Text)]) -> m ()
+initialHeroes lid (side, ppos, configHeroNames) = do
   configExtraHeroes <- getsServer $ configExtraHeroes . sconfig
   replicateM_ (1 + configExtraHeroes) $ do
-    cmds <- execWriterT $ addHero side ppos configHeroNames
+    cmds <- execWriterT $ addHero side ppos lid configHeroNames
     mapM_ cmdAtomicSem cmds
 
 createFactions :: Kind.COps -> Config -> Rnd FactionDict
@@ -474,8 +469,7 @@ gameReset cops@Kind.COps{coitem, corule, cotile} = do
         return (faction, flavour, discoS, discoRev, freshDng)
   let (faction, flavour, discoS, discoRev, DungeonGen.FreshDungeon{..}) =
         St.evalState rnd dungeonSeed
-      defState = defStateGlobal freshDungeon freshDepth discoS faction
-                                cops entryLevel
+      defState = defStateGlobal freshDungeon freshDepth discoS faction cops
       defSer = defStateServer discoRev flavour random sconfig
       notSpawning (_, fact) = not $ isSpawningFact cops fact
       needInitialCrew = map fst $ filter notSpawning $ EM.assocs faction
@@ -483,7 +477,6 @@ gameReset cops@Kind.COps{coitem, corule, cotile} = do
   putState defState
   putServer defSer
   let initialItems (lid, (Level{ltile}, citemNum)) = do
-        modifyState $ updateSelectedArena lid
         nri <- rndToAction $ rollDice citemNum
         replicateM nri $ do
           pos <- rndToAction
@@ -491,17 +484,16 @@ gameReset cops@Kind.COps{coitem, corule, cotile} = do
           cmds <- execWriterT $ createItems 1 pos lid
           mapM_ cmdAtomicSem cmds
   mapM_ initialItems itemCounts
-  modifyState $ updateSelectedArena entryLevel
-  mapM_ initialHeroes $ zip3 needInitialCrew entryPoss heroNames
+  mapM_ (initialHeroes entryLevel) $ zip3 needInitialCrew entryPoss heroNames
 
 -- * Assorted helper functions
 
 -- | Generate a monster, possibly.
-generateMonster :: (MonadAction m, MonadServerChan m) => m (Maybe FactionId)
-generateMonster = do
+generateMonster :: (MonadAction m, MonadServerChan m)
+                => LevelId -> m (Maybe FactionId)
+generateMonster arena = do
   cops@Kind.COps{cofact=Kind.Ops{okind}} <- getsState scops
   pers <- getsServer sper
-  arena <- getsState sarena
   lvl@Level{ldepth} <- getsLevel arena id
   faction <- getsState sfaction
   s <- getState
@@ -514,8 +506,8 @@ generateMonster = do
       let allPers =
             ES.unions $ map (totalVisible . (EM.! arena)) $ EM.elems pers
       pos <- rndToAction $ rollSpawnPos cops allPers arena lvl s
-      (mf, cmds) <- runWriterT $ spawnMonsters 1 pos
-      mapM_ cmdAtomicBroad cmds
+      (mf, cmds) <- runWriterT $ spawnMonsters 1 pos arena
+      mapM_ (cmdAtomicBroad arena) cmds
       return mf
 
 -- | Create a new monster on the level, at a random position.
@@ -544,12 +536,12 @@ rollSpawnPos Kind.COps{cotile} visible lid lvl s = do
 -- Only the heroes on the current level regenerate (others are frozen
 -- in time together with their level). This prevents cheating
 -- via sending one hero to a safe level and waiting there.
-regenerateLevelHP :: (MonadAction m, MonadServerChan m) => m ()
-regenerateLevelHP = do
+regenerateLevelHP :: (MonadAction m, MonadServerChan m) => LevelId -> m ()
+regenerateLevelHP arena = do
   Kind.COps{ coitem
            , coactor=Kind.Ops{okind}
            } <- getsState scops
-  time <- getsState getTime
+  time <- getsState $ getTime arena
   discoS <- getsState sdisco
   s <- getState
   let pick (a, m) =
@@ -565,17 +557,16 @@ regenerateLevelHP = do
         in if (time `timeFit` timeTurn) `mod` regen /= 0 || deltaHP <= 0
            then Nothing
            else Just a
-  arena <- getsState sarena
   toRegen <-
     getsState $ catMaybes . map pick .actorNotProjAssocs (const True) arena
-  mapM_ (\aid -> cmdAtomicBroad $ HealAtomic 1 aid) toRegen
+  mapM_ (\aid -> cmdAtomicBroad arena $ HealAtomic 1 aid) toRegen
 
 -- TODO: let only some actors/items leave smell, e.g., a Smelly Hide Armour.
 -- | Add a smell trace for the actor to the level.
 _addSmell :: MonadActionRO m => ActorId -> WriterT [CmdAtomic] m ()
 _addSmell aid = do
-  time <- getsState getTime
   b <- getsState $ getActorBody aid
-  oldS <- getsLevel (blvl b) $ (EM.lookup $ bpos b) . lsmell
+  time <- getsState $ getTime $ blid b
+  oldS <- getsLevel (blid b) $ (EM.lookup $ bpos b) . lsmell
   let newTime = timeAdd time smellTimeout
-  tell [AlterSmellAtomic (blvl b) [(bpos b, (oldS, Just newTime))]]
+  tell [AlterSmellAtomic (blid b) [(bpos b, (oldS, Just newTime))]]
