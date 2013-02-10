@@ -1,24 +1,24 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
 -- | Basic operations on 2D points represented as linear offsets.
 module Game.LambdaHack.Point
   ( Point, toPoint, showPoint
   , origin, chessDist, adjacent, vicinity, vicinityCardinal
   , inside, displacementXYZ, bla
+  , LevelId
   ) where
 
+import Data.Binary
+import qualified Data.Ix as Ix
 import qualified Data.List as L
 import Data.Text (Text)
-import Data.Binary
 import Data.Typeable
-import qualified Data.Ix as Ix
 import qualified System.Random as R
 
-import Game.LambdaHack.PointXY
-import Game.LambdaHack.VectorXY
 import Game.LambdaHack.Area
 import Game.LambdaHack.Msg
+import Game.LambdaHack.PointXY
 import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.VectorXY
 
 -- | The type of positions on the 2D level map, heavily optimized.
 --
@@ -113,3 +113,11 @@ bla lxsize lysize eps source target = Just $
       inBounds p@(PointXY (x, y)) =
         lxsize > x && x >= 0 && lysize > y && y >= 0 && p /= s
   in L.map (toPoint lxsize) $ L.takeWhile inBounds $ L.tail $ blaXY eps s e
+
+-- | Abstract level identifiers.
+newtype LevelId = LevelId Int
+  deriving (Show, Eq, Ord,  Enum, Typeable)
+
+instance Binary LevelId where
+  put (LevelId n) = put n
+  get = fmap LevelId get

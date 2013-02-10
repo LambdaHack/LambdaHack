@@ -8,14 +8,24 @@ module Game.LambdaHack.Faction
 
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
-import Data.Text (Text)
 import Data.Maybe
+import Data.Text (Text)
 
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.StrategyKind
 import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Level
-import Game.LambdaHack.FactionId
+import Game.LambdaHack.Point
+
+-- | A unique identifier of a faction in a game.
+newtype FactionId = FactionId Int
+  deriving (Show, Eq, Ord, Enum)
+
+instance Binary FactionId where
+  put (FactionId n) = put n
+  get = fmap FactionId get
+
+invalidFactionId :: FactionId
+invalidFactionId = FactionId (-1)
 
 -- | All factions in the game, indexed by faction identifier.
 type FactionDict = EM.EnumMap FactionId Faction

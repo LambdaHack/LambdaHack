@@ -23,7 +23,7 @@ import Game.LambdaHack.ActorState
 import Game.LambdaHack.Client.Animation
 import Game.LambdaHack.Client.Config
 import qualified Game.LambdaHack.Client.Key as K
-import Game.LambdaHack.FactionId
+import Game.LambdaHack.Faction
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception

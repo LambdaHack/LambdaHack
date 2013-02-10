@@ -33,24 +33,16 @@ import Game.LambdaHack.Tile
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
 
--- | Abstract level identifiers.
-newtype LevelId = LevelId Int
-  deriving (Show, Eq, Ord,  Enum, Typeable)
-
-instance Binary LevelId where
-  put (LevelId n) = put n
-  get = fmap LevelId get
-
 -- | The complete dungeon is a map from level names to levels.
 type Dungeon = EM.EnumMap LevelId Level
 
 initialLevel :: LevelId
-initialLevel = LevelId 1
+initialLevel = toEnum 1
 
 -- | Levels in the current branch @k@ shallower than the current.
 ascendInBranch :: Dungeon -> LevelId -> Int -> [LevelId]
-ascendInBranch dungeon (LevelId n) k =
-  let ln = LevelId $ n - k  -- currently just one branch
+ascendInBranch dungeon lid k =
+  let ln = toEnum $ fromEnum lid - k  -- currently just one branch
   in case EM.lookup ln dungeon of
     Nothing -> []
     Just _ -> [ln]

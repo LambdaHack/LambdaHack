@@ -33,7 +33,7 @@ import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.FactionId
+import Game.LambdaHack.Faction
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Msg

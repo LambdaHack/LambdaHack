@@ -118,7 +118,6 @@ library
                       Game.LambdaHack.Content.TileKind,
                       Game.LambdaHack.Effect,
                       Game.LambdaHack.Faction,
-                      Game.LambdaHack.FactionId,
                       Game.LambdaHack.Feature,
                       Game.LambdaHack.Flavour,
                       Game.LambdaHack.Item,
