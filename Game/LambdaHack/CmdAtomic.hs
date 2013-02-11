@@ -29,48 +29,51 @@ import Game.LambdaHack.Vector
 
 -- | Abstract syntax of atomic commands.
 data CmdAtomic =
-    HealAtomic Int ActorId
-  | HasteAtomic ActorId Speed
-  | DominateAtomic FactionId FactionId ActorId
-  | SpawnAtomic ActorId Actor
-  | KillAtomic ActorId Actor
-  | CreateItemAtomic LevelId ItemId Item Int Container
-  | DestroyItemAtomic LevelId ItemId Item Int Container
-  | MoveItemAtomic LevelId ItemId Int Container Container
-  | WaitAtomic ActorId Time Time
-  | ChangeTileAtomic Point LevelId (Kind.Id TileKind) (Kind.Id TileKind)
-  | MoveActorAtomic ActorId Point Point
-  | DisplaceActorAtomic ActorId ActorId
-  | AlterSecretAtomic LevelId (DiffEM Point Time)
-  | AlterSmellAtomic LevelId (DiffEM Point Time)
-  | AlterPathAtomic ActorId (Maybe [Vector]) (Maybe [Vector])
-  | ColorActorAtomic ActorId (Maybe Color.Color) (Maybe Color.Color)
-  | FactionQuitAtomic FactionId (Maybe (Bool, Status)) (Maybe (Bool, Status))
-  | LeaderAtomic FactionId (Maybe ActorId) (Maybe ActorId)
-  | SyncAtomic
+  -- Create/destroy actors and items.
+    CreateActorA ActorId Actor
+  | DestroyActorA ActorId Actor
+  | CreateItemA LevelId ItemId Item Int Container
+  | DestroyItemA LevelId ItemId Item Int Container
+  -- Move actors and items.
+  | MoveActorA ActorId Point Point
+  | WaitActorA ActorId Time Time
+  | DisplaceActorA ActorId ActorId
+  | MoveItemA LevelId ItemId Int Container Container
+  -- Change actor attributes.
+  | HealActorA ActorId Int
+  | HasteActorA ActorId Speed
+  | DominateActorA ActorId FactionId FactionId
+  | PathActorA ActorId (Maybe [Vector]) (Maybe [Vector])
+  | ColorActorA ActorId (Maybe Color.Color) (Maybe Color.Color)
+  -- Change faction attributes.
+  | QuitFactionA FactionId (Maybe (Bool, Status)) (Maybe (Bool, Status))
+  | LeadFactionA FactionId (Maybe ActorId) (Maybe ActorId)
+  -- Alter map.
+  | AlterTileA LevelId Point (Kind.Id TileKind) (Kind.Id TileKind)
+  | AlterSecretA LevelId (DiffEM Point Time)
+  | AlterSmellA LevelId (DiffEM Point Time)
+  -- Special.
+  | SyncA
   deriving Show
 
 undoCmdAtomic :: CmdAtomic -> CmdAtomic
 undoCmdAtomic cmd = case cmd of
-  HealAtomic n aid -> HealAtomic (-n) aid
-  HasteAtomic aid delta -> HasteAtomic aid (speedNegate delta)
-  DominateAtomic fromFid toFid target -> DominateAtomic toFid fromFid target
-  SpawnAtomic aid body -> KillAtomic aid body
-  KillAtomic aid body -> SpawnAtomic aid body
-  CreateItemAtomic lid iid item k c -> DestroyItemAtomic lid iid item k c
-  DestroyItemAtomic lid iid item k c -> CreateItemAtomic lid iid item k c
-  MoveItemAtomic lid iid k c1 c2 -> MoveItemAtomic lid iid k c2 c1
-  WaitAtomic actor fromWait toWait -> WaitAtomic actor toWait fromWait
-  ChangeTileAtomic p lid fromTile toTile ->
-    ChangeTileAtomic p lid toTile fromTile
-  MoveActorAtomic aid fromP toP -> MoveActorAtomic aid toP fromP
-  DisplaceActorAtomic source target -> DisplaceActorAtomic target source
-  AlterSecretAtomic lid diffL ->
-    AlterSecretAtomic lid $ map (second swap) diffL
-  AlterSmellAtomic lid diffL ->
-    AlterSmellAtomic lid $ map (second swap) diffL
-  AlterPathAtomic aid fromPath toPath -> AlterPathAtomic aid toPath fromPath
-  ColorActorAtomic aid fromCol toCol -> ColorActorAtomic aid toCol fromCol
-  FactionQuitAtomic fid fromSt toSt -> FactionQuitAtomic fid toSt fromSt
-  LeaderAtomic fid source target -> LeaderAtomic fid target source
-  SyncAtomic -> SyncAtomic
+  CreateActorA aid body -> DestroyActorA aid body
+  DestroyActorA aid body -> CreateActorA aid body
+  CreateItemA lid iid item k c -> DestroyItemA lid iid item k c
+  DestroyItemA lid iid item k c -> CreateItemA lid iid item k c
+  MoveActorA aid fromP toP -> MoveActorA aid toP fromP
+  WaitActorA actor fromWait toWait -> WaitActorA actor toWait fromWait
+  DisplaceActorA source target -> DisplaceActorA target source
+  MoveItemA lid iid k c1 c2 -> MoveItemA lid iid k c2 c1
+  HealActorA aid n -> HealActorA aid (-n)
+  HasteActorA aid delta -> HasteActorA aid (speedNegate delta)
+  DominateActorA target fromFid toFid -> DominateActorA target toFid fromFid
+  PathActorA aid fromPath toPath -> PathActorA aid toPath fromPath
+  ColorActorA aid fromCol toCol -> ColorActorA aid toCol fromCol
+  QuitFactionA fid fromSt toSt -> QuitFactionA fid toSt fromSt
+  LeadFactionA fid source target -> LeadFactionA fid target source
+  AlterTileA lid p fromTile toTile -> AlterTileA lid p toTile fromTile
+  AlterSecretA lid diffL -> AlterSecretA lid $ map (second swap) diffL
+  AlterSmellA lid diffL -> AlterSmellA lid $ map (second swap) diffL
+  SyncA -> SyncA

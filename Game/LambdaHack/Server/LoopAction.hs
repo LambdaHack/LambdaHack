@@ -78,7 +78,7 @@ loopSer cmdSer executorC cops = do
       bcast
       withAI bcast
       -- TODO: factor out common parts from restartGame and restoreOrRestart
-      cmdAtomicBroad initialLevel SyncAtomic
+      cmdAtomicBroad initialLevel SyncA
       -- Save ASAP in case of crashes and disconnects.
       saveGameBkp
     _ -> do  -- game restored from a savefile
@@ -423,7 +423,7 @@ restartGame loopServer = do
   let bcast = funBroadcastCli (\fid -> RestartCli (pers EM.! fid) defLoc)
   bcast
   withAI bcast
-  cmdAtomicBroad initialLevel SyncAtomic
+  cmdAtomicBroad initialLevel SyncA
   saveGameBkp
   broadcastCli [] $ ShowMsgCli "This time for real."
   broadcastUI [] $ DisplayPushCli
@@ -574,7 +574,7 @@ regenerateLevelHP arena = do
            else Just a
   toRegen <-
     getsState $ catMaybes . map pick .actorNotProjAssocs (const True) arena
-  mapM_ (\aid -> cmdAtomicBroad arena $ HealAtomic 1 aid) toRegen
+  mapM_ (\aid -> cmdAtomicBroad arena $ HealActorA aid 1) toRegen
 
 -- TODO: let only some actors/items leave smell, e.g., a Smelly Hide Armour.
 -- | Add a smell trace for the actor to the level.
@@ -584,4 +584,4 @@ _addSmell aid = do
   time <- getsState $ getTime $ blid b
   oldS <- getsLevel (blid b) $ (EM.lookup $ bpos b) . lsmell
   let newTime = timeAdd time smellTimeout
-  tell [AlterSmellAtomic (blid b) [(bpos b, (oldS, Just newTime))]]
+  tell [AlterSmellA (blid b) [(bpos b, (oldS, Just newTime))]]

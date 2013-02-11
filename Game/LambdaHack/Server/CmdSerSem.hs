@@ -58,7 +58,7 @@ applySer actor verb iid container = do
   b <- getsState $ getActorBody actor
   broadcastPosCli [bpos b] (blid b) $ ApplyCli actor verb item
   itemEffect 5 actor actor item False
-  tell [DestroyItemAtomic (blid b) iid item 1 container]
+  tell [DestroyItemA (blid b) iid item 1 container]
 
 -- ** ProjectSer
 
@@ -103,7 +103,7 @@ projectSer source tpos eps _verb iid container = do
       if accessible cops lvl spos pos && isNothing inhabitants
         then do
           projId <- addProjectile iid pos (blid sm) (bfaction sm) path time
-          tell [MoveItemAtomic (blid sm) iid 1 container (CActor projId)]
+          tell [MoveItemA (blid sm) iid 1 container (CActor projId)]
           item <- getsState $ getItemBody iid
           broadcastPosCli [spos, pos] (blid sm) $ ProjectCli spos source item
         else
@@ -146,7 +146,7 @@ addProjectile iid loc blid bfaction path btime = do
         }
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
-  tell [SpawnAtomic acounter m]
+  tell [CreateActorA acounter m]
   return acounter
 
 -- ** TriggerSer
@@ -169,7 +169,7 @@ triggerSer aid dpos arena = do
                then do
                  fromTile <- getsLevel (blid b) (`at` dpos)
                  toTile <- rndToAction $ opick tgroup (const True)
-                 tell [ChangeTileAtomic dpos (blid b) fromTile toTile]
+                 tell [AlterTileA (blid b) dpos fromTile toTile]
 -- TODO: take care of AI using this function (aborts, etc.).
                else abortWith "blocked"  -- by monsters or heroes
           else abortWith "jammed"  -- by items
@@ -182,7 +182,7 @@ pickupSer :: MonadServerChan m
           => ActorId -> ItemId -> Int -> InvChar -> WriterT [CmdAtomic] m ()
 pickupSer aid iid k l = assert (k > 0 `blame` (aid, iid, k, l)) $ do
   b <- getsState $ getActorBody aid
-  tell [MoveItemAtomic (blid b) iid k (CFloor (bpos b)) (CActor aid)]
+  tell [MoveItemA (blid b) iid k (CFloor (bpos b)) (CActor aid)]
   void $ broadcastPosCli [bpos b] (blid b) (PickupCli aid iid k l)
 
 -- ** DropSer
@@ -191,7 +191,7 @@ dropSer :: MonadActionRO m => ActorId -> ItemId -> WriterT [CmdAtomic] m ()
 dropSer aid iid = do
   b <- getsState $ getActorBody aid
   let k = 1
-  tell [MoveItemAtomic (blid b) iid k (CActor aid) (CFloor (bpos b))]
+  tell [MoveItemA (blid b) iid k (CActor aid) (CFloor (bpos b))]
 
 -- * WaitSer
 
@@ -203,7 +203,7 @@ waitSer aid = do
   time <- getsState $ getTime $ blid body
   let fromWait = bwait body
       toWait = timeAddFromSpeed coactor body time
-  tell [WaitAtomic aid fromWait toWait]
+  tell [WaitActorA aid fromWait toWait]
 
 -- ** MoveSer
 
@@ -230,7 +230,7 @@ moveSer aid dir = do
       actorAttackActor aid target
     Nothing
       | accessible cops lvl spos tpos ->
-          tell [MoveActorAtomic aid spos tpos]
+          tell [MoveActorA aid spos tpos]
       | Tile.canBeHidden cotile (okind $ lvl `at` tpos) -> do
           sendUpdateCli (bfaction sm)
             $ ShowMsgCli "You search all adjacent walls for half a second."
@@ -319,7 +319,7 @@ search aid = do
                 else (loc, (Just ok, Nothing)) : diffL
            else diffL
   let diffL = foldl' searchTile [] (moves lxsize)
-  tell [AlterSecretAtomic (blid b) diffL]
+  tell [AlterSecretA (blid b) diffL]
   let triggerHidden (_, (_, Just _)) = return ()
       triggerHidden (dpos, (_, Nothing)) = triggerSer aid dpos (blid b)
   mapM_ triggerHidden diffL
@@ -366,7 +366,7 @@ runSer actor dir = do
       | otherwise -> abortWith "blocked"
     Nothing
       | accessible cops lvl spos tpos ->
-          tell [MoveActorAtomic actor spos tpos]
+          tell [MoveActorA actor spos tpos]
       | otherwise ->
           actorOpenDoor actor dir
 
@@ -374,7 +374,7 @@ runSer actor dir = do
 displaceActor :: MonadServerChan m
               => ActorId -> ActorId -> WriterT [CmdAtomic] m ()
 displaceActor source target = do
-  tell [DisplaceActorAtomic source target]
+  tell [DisplaceActorA source target]
   spos <- getsState $ bpos . getActorBody source
   tb <- getsState $ getActorBody target
   let tpos = bpos tb
@@ -397,7 +397,7 @@ gameExitSer = modifyServer $ \ser -> ser {squit = Just True}
 gameRestartSer :: MonadActionRO m => FactionId -> WriterT [CmdAtomic] m ()
 gameRestartSer fid = do
   oldSt <- getsState $ gquit . (EM.! fid) . sfaction
-  tell [FactionQuitAtomic fid oldSt $ Just (False, Restart)]
+  tell [QuitFactionA fid oldSt $ Just (False, Restart)]
 
 -- ** GameSaveSer
 
@@ -422,7 +422,7 @@ cfgDumpSer = do
 clearPathSer :: MonadServer m => ActorId -> WriterT [CmdAtomic] m ()
 clearPathSer aid = do
   fromPath <- getsState $ bpath . getActorBody aid
-  tell [AlterPathAtomic aid fromPath Nothing]
+  tell [PathActorA aid fromPath Nothing]
 
 -- * SetPathSer
 
@@ -430,12 +430,12 @@ setPathSer :: MonadServerChan m
            => ActorId -> Vector -> [Vector] -> WriterT [CmdAtomic] m ()
 setPathSer aid dir path = do
   fromPath <- getsState $ bpath . getActorBody aid
-  tell [AlterPathAtomic aid fromPath (Just path)]
+  tell [PathActorA aid fromPath (Just path)]
   when (length path < 3) $ do
     fromColor <- getsState $ bcolor . getActorBody aid
     let toColor = Just Color.BrBlack
     when (fromColor /= toColor) $
-      tell [ColorActorAtomic aid fromColor toColor]
+      tell [ColorActorA aid fromColor toColor]
   moveSer aid dir
 
 -- * DieSer
@@ -444,7 +444,7 @@ dieSer :: MonadServer m => ActorId -> WriterT [CmdAtomic] m ()
 dieSer aid = do  -- TODO: explode if a projectile holdding a potion
   dropAllItems aid
   body <- getsState $ getActorBody aid
-  tell [KillAtomic aid body]
+  tell [DestroyActorA aid body]
   electLeader (bfaction body) (blid body)
 
 -- * LeaderSer
@@ -452,4 +452,4 @@ dieSer aid = do  -- TODO: explode if a projectile holdding a potion
 leaderSer :: MonadServer m => FactionId -> ActorId -> WriterT [CmdAtomic] m ()
 leaderSer fid aid = do
   mleader <- getsState $ gleader . (EM.! fid) . sfaction
-  tell [LeaderAtomic fid mleader (Just aid)]
+  tell [LeadFactionA fid mleader (Just aid)]

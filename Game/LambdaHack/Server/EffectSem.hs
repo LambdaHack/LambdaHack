@@ -83,7 +83,7 @@ itemEffect verbosity source target item block = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   sm <- getsState $ getActorBody source
   -- Destroys attacking actor: a hack for projectiles.
-  when (bproj sm) $ tell [KillAtomic source sm]
+  when (bproj sm) $ tell [DestroyActorA source sm]
   discoS <- getsState sdisco
   let ef = ieffect $ okind $ fromJust $ jkind discoS item
   -- The msg describes the target part of the action.
@@ -148,7 +148,7 @@ effectHeal target power = do
     else do
       void $ focusIfOurs target
       let deltaHP = min power (bhpMax - bhp tm)
-      tell [HealAtomic deltaHP target]
+      tell [HealActorA target deltaHP]
       return (True, actorVerb coactor tm "feel better")
 
 -- ** Wound
@@ -181,7 +181,7 @@ effectWound nDm verbosity source target power = do
             actorVerb coactor tm $ "lose" <+> showT (n + power) <> "HP"
           | otherwise = actorVerb coactor tm "hiss in pain"
     -- Damage the target.
-    tell [HealAtomic deltaHP target]
+    tell [HealActorA target deltaHP]
     return (True, msg)
 
 -- ** Dominate
@@ -208,9 +208,9 @@ effectDominate source target = do
       -- Halve the speed as a side-effect of domination.
       let speed = fromMaybe (aspeed $ okind bkind) bspeed
           delta = speedScale (1%2) speed
-      when (delta > speedZero) $ tell [HasteAtomic target (speedNegate delta)]
+      when (delta > speedZero) $ tell [HasteActorA target (speedNegate delta)]
       -- TODO: Perhaps insert a turn of delay here to allow countermeasures.
-      tell [DominateAtomic (bfaction tm) (bfaction sm) target]
+      tell [DominateActorA target (bfaction tm) (bfaction sm)]
       sendQueryCli (bfaction sm) (SelectLeaderCli target)
         >>= assert `trueM` (arena, target, "leader dominates himself")
       -- Display status line and FOV for the new actor.
@@ -255,7 +255,7 @@ addActor mk bfaction ppos lid hp msymbol mname = do
   let m = actorTemplate mk msymbol mname hp pos lid time bfaction False
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
-  tell [SpawnAtomic acounter m]
+  tell [CreateActorA acounter m]
 
 -- TODO: apply this special treatment only to actors with symbol '@'.
 -- | Create a new hero on the current level, close to the given position.
@@ -346,13 +346,13 @@ createItems n pos lid = do
     case HM.lookup item itemRev of
       Just iid ->
         -- TODO: try to avoid this case, to make items more interesting
-        tell [CreateItemAtomic lid iid item k (CFloor pos)]
+        tell [CreateItemA lid iid item k (CFloor pos)]
       Nothing -> do
         icounter <- getsServer sicounter
         modifyServer $ \ser ->
           ser { sicounter = succ icounter
               , sitemRev = HM.insert item icounter (sitemRev ser)}
-        tell [CreateItemAtomic lid icounter item k (CFloor pos)]
+        tell [CreateItemA lid icounter item k (CFloor pos)]
 
 -- ** ApplyPerfume
 
@@ -365,7 +365,7 @@ effectApplyPerfume source target =
     tm <- getsState $ getActorBody target
     oldSmell <- getsLevel (blid tm) lsmell
     let diffL = map (\(p, sm) -> (p, (Just sm, Nothing))) $ EM.assocs oldSmell
-    tell [AlterSmellAtomic (blid tm) diffL]
+    tell [AlterSmellA (blid tm) diffL]
     return (True, "The fragrance quells all scents in the vicinity.")
 
 -- ** Regeneration
@@ -402,7 +402,7 @@ effLvlGoUp aid k = do
       assert (nln /= arena `blame` (nln, "stairs looped")) $ do
         timeCurrent <- getsState $ getTime arena
         -- Remove the actor from the old level.
-        tell [KillAtomic aid pbodyCurrent]
+        tell [DestroyActorA aid pbodyCurrent]
         -- Remember the level (e.g., when teleporting via scroll on the floor,
         -- register the scroll vanished, also let the other factions register
         -- the actor vanished in case they switch to this level from another
@@ -426,7 +426,7 @@ effLvlGoUp aid k = do
                                  , bpos = npos }
         -- The actor is added to the new level, but there can be other actors
         -- at his old position or at his new position.
-        tell [SpawnAtomic aid pbody]
+        tell [CreateActorA aid pbody]
         -- Checking actors at the new posiiton of the aid.
         inhabitants <- getsState (posToActor npos arena)
         case inhabitants of
@@ -532,7 +532,7 @@ dropAllItems :: MonadActionRO m => ActorId -> WriterT [CmdAtomic] m ()
 dropAllItems aid = do
   b <- getsState $ getActorBody aid
   let f (iid, k) =
-        tell [MoveItemAtomic (blid b) iid k (CActor aid) (CFloor $ bpos b)]
+        tell [MoveItemA (blid b) iid k (CActor aid) (CFloor $ bpos b)]
   mapM_ f $ EM.assocs $ bbag b
 
 -- | Remove a dead actor. Check if game over.
@@ -566,7 +566,7 @@ checkPartyDeath target = do
       then animateGameOver
       else void $ animateDeath
   -- Remove the dead actor.
-  tell [KillAtomic target tm]
+  tell [DestroyActorA target tm]
   electLeader (bfaction tm) (blid tm)
   -- We don't register that the lethal potion on the floor
   -- is used up. If that's a problem, add a one turn delay
@@ -585,7 +585,7 @@ electLeader fid lid = do
   when (not $ null $ party) $ do
     onLevel <- getsState $ actorNotProjAssocs (== fid) lid
     let leader = fst $ head $ onLevel ++ party
-    tell [LeaderAtomic fid Nothing (Just leader)]
+    tell [LeadFactionA fid Nothing (Just leader)]
 
 -- | End game, showing the ending screens, if requested.
 gameOver :: (MonadAction m, MonadServerChan m)

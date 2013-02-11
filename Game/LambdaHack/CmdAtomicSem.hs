@@ -28,43 +28,42 @@ import Game.LambdaHack.Vector
 
 cmdAtomicSem :: MonadAction m => CmdAtomic -> m ()
 cmdAtomicSem cmd = case cmd of
-  HealAtomic n aid -> healAtomic n aid
-  HasteAtomic aid delta -> hasteAtomic aid delta
-  DominateAtomic fromFid toFid target -> dominateAtomic fromFid toFid target
-  SpawnAtomic aid body -> spawnAtomic aid body
-  KillAtomic aid body -> killAtomic aid body
-  CreateItemAtomic lid iid item k c -> createItemAtomic lid iid item k c
-  DestroyItemAtomic lid iid item k c -> destroyItemAtomic lid iid item k c
-  MoveItemAtomic lid iid k c1 c2 -> moveItemAtomic lid iid k c1 c2
-  WaitAtomic aid fromWait toWait -> waitAtomic aid fromWait toWait
-  ChangeTileAtomic p lid fromTile toTile ->
-    changeTileAtomic p lid fromTile toTile
-  MoveActorAtomic aid fromP toP -> moveActorAtomic aid fromP toP
-  DisplaceActorAtomic source target -> displaceActorAtomic source target
-  AlterSecretAtomic lid diffL -> alterSecretAtomic lid diffL
-  AlterSmellAtomic lid diffL -> alterSmellAtomic lid diffL
-  AlterPathAtomic aid fromPath toPath -> alterPathAtomic aid fromPath toPath
-  ColorActorAtomic aid fromCol toCol -> colorActorAtomic aid fromCol toCol
-  FactionQuitAtomic fid fromSt toSt -> factionQuitAtomic fid fromSt toSt
-  LeaderAtomic fid source target -> leaderAtomic fid source target
-  SyncAtomic -> return ()
+  CreateActorA aid body -> createActorA aid body
+  DestroyActorA aid body -> destroyActorA aid body
+  CreateItemA lid iid item k c -> createItemA lid iid item k c
+  DestroyItemA lid iid item k c -> destroyItemA lid iid item k c
+  MoveActorA aid fromP toP -> moveActorA aid fromP toP
+  WaitActorA aid fromWait toWait -> waitActorA aid fromWait toWait
+  DisplaceActorA source target -> displaceActorA source target
+  MoveItemA lid iid k c1 c2 -> moveItemA lid iid k c1 c2
+  HealActorA aid n -> healActorA aid n
+  HasteActorA aid delta -> hasteActorA aid delta
+  DominateActorA target fromFid toFid -> dominateActorA target fromFid toFid
+  PathActorA aid fromPath toPath -> pathActorA aid fromPath toPath
+  ColorActorA aid fromCol toCol -> colorActorA aid fromCol toCol
+  QuitFactionA fid fromSt toSt -> quitFactionA fid fromSt toSt
+  LeadFactionA fid source target -> leadFactionA fid source target
+  AlterTileA lid p fromTile toTile -> alterTileA lid p fromTile toTile
+  AlterSecretA lid diffL -> alterSecretA lid diffL
+  AlterSmellA lid diffL -> alterSmellA lid diffL
+  SyncA -> return ()
 
 resetsFovAtomic :: MonadActionRO m => FactionId -> CmdAtomic -> m Bool
 resetsFovAtomic fid cmd = case cmd of
-  DominateAtomic source target _ -> return $ fid `elem` [source, target]
-  SpawnAtomic _ body -> return $ fid == bfaction body
-  KillAtomic _ _ -> return False  -- FOV left for 1 turn to see aftermath
-  CreateItemAtomic _ _ _ _ _ -> return False  -- unless shines
-  DestroyItemAtomic _ _ _ _ _ -> return False  -- ditto
-  MoveItemAtomic _ _ _ _ _ -> return False  -- assumption: stays on same pos
-  ChangeTileAtomic _ _ _ _ -> return True  -- even if pos not visible initially
-  MoveActorAtomic aid _ _ -> fidEquals fid aid  -- assumption: carries no light
--- TODO: MoveActorCarryingLIghtAtomic _ _ _ -> True
-  DisplaceActorAtomic source target -> do
+  CreateActorA _ body -> return $ fid == bfaction body
+  DestroyActorA _ _ -> return False  -- FOV left for 1 turn to see aftermath
+  CreateItemA _ _ _ _ _ -> return False  -- unless shines
+  DestroyItemA _ _ _ _ _ -> return False  -- ditto
+  MoveActorA aid _ _ -> fidEquals fid aid  -- assumption: carries no light
+-- TODO: MoveActorCarryingLIghtA _ _ _ -> True
+  DisplaceActorA source target -> do
     bs <- fidEquals fid source
     bt <- fidEquals fid target
     return $ source /= target && (bs || bt)
-  SyncAtomic -> return True  -- that's the only meaning of this command
+  DominateActorA _ fromFid toFid -> return $ fid `elem` [fromFid, toFid]
+  MoveItemA _ _ _ _ _ -> return False  -- assumption: stays on same pos
+  AlterTileA _ _ _ _ -> return True  -- even if pos not visible initially
+  SyncA -> return True  -- that's the only meaning of this command
   _ -> return False
 
 fidEquals :: MonadActionRO m => FactionId -> ActorId -> m Bool
@@ -79,35 +78,35 @@ fidEquals fid aid = do
 cmdPosAtomic :: MonadActionRO m
              => CmdAtomic -> m (Either Bool [Point], Either Bool [Point])
 cmdPosAtomic cmd = case cmd of
-  HealAtomic _ aid -> singlePos $ posOfAid aid
-  HasteAtomic aid _ -> singlePos $ posOfAid aid
-  DominateAtomic _ _ target -> singlePos $ posOfAid target
-  SpawnAtomic _ body ->
+  CreateActorA _ body ->
     -- Faction sees spawning of its actor, even if it spawns out of sight.
     return (Left True, Right [bpos body])
-  KillAtomic _ body -> return (Right [bpos body], Left True)
-  CreateItemAtomic _ _ _ _ c -> singlePos $ posOfContainer c
-  DestroyItemAtomic _ _ _ _ c -> singlePos $ posOfContainer c
-  MoveItemAtomic _ _ _ c1 c2 -> do  -- works even if moved between positions
+  DestroyActorA _ body -> return (Right [bpos body], Left True)
+  CreateItemA _ _ _ _ c -> singlePos $ posOfContainer c
+  DestroyItemA _ _ _ _ c -> singlePos $ posOfContainer c
+  MoveActorA _ fromP toP -> return (Right [fromP], Right [toP])
+  WaitActorA aid _ _ -> singlePos $ posOfAid aid
+  DisplaceActorA source target -> do
+    ps <- mapM posOfAid [source, target]
+    return (Right ps, Right ps)
+  MoveItemA _ _ _ c1 c2 -> do  -- works even if moved between positions
     p1 <- posOfContainer c1
     p2 <- posOfContainer c2
     return (Right [p1], Right [p2])
-  WaitAtomic aid _ _ -> singlePos $ posOfAid aid
-  ChangeTileAtomic p _ _ _ -> singlePos $ return p
-  MoveActorAtomic _ fromP toP -> return (Right [fromP], Right [toP])
-  DisplaceActorAtomic source target -> do
-    ps <- mapM posOfAid [source, target]
-    return (Right ps, Right ps)
-  AlterSecretAtomic _ _ ->
-    return (Left False, Left False)  -- none of clients' business
-  AlterSmellAtomic _ _ -> return (Left True, Left True)  -- always register
-  AlterPathAtomic aid _ _ -> singlePos $ posOfAid aid
-  ColorActorAtomic aid _ _ -> singlePos $ posOfAid aid
-  FactionQuitAtomic _ _ _ -> return (Left True, Left True)  -- always learn
-  LeaderAtomic _ source target -> do
+  HealActorA aid _ -> singlePos $ posOfAid aid
+  HasteActorA aid _ -> singlePos $ posOfAid aid
+  DominateActorA target _ _ -> singlePos $ posOfAid target
+  PathActorA aid _ _ -> singlePos $ posOfAid aid
+  ColorActorA aid _ _ -> singlePos $ posOfAid aid
+  QuitFactionA _ _ _ -> return (Left True, Left True)  -- always learn
+  LeadFactionA _ source target -> do
     ps <- mapM posOfAid $ catMaybes [source, target]
     return (Right ps, Right ps)
-  SyncAtomic -> return (Left False, Left False)
+  AlterTileA _ p _ _ -> singlePos $ return p
+  AlterSecretA _ _ ->
+    return (Left False, Left False)  -- none of clients' business
+  AlterSmellA _ _ -> return (Left True, Left True)  -- always register
+  SyncA -> return (Left False, Left False)
 
 singlePos :: MonadActionAbort m
           => m Point -> m (Either Bool [Point], Either Bool [Point])
@@ -122,32 +121,10 @@ posOfContainer :: MonadActionRO m => Container -> m Point
 posOfContainer (CFloor pos) = return pos
 posOfContainer (CActor aid) = posOfAid aid
 
-healAtomic :: MonadAction m => Int -> ActorId -> m ()
-healAtomic n aid = assert (n /= 0) $
-  modifyState $ updateActorBody aid $ \b -> b {bhp = n + bhp b}
-
-hasteAtomic :: MonadAction m => ActorId -> Speed -> m ()
-hasteAtomic aid delta = assert (delta /= speedZero) $ do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-  modifyState $ updateActorBody aid $ \ b ->
-    let innateSpeed = aspeed $ okind $ bkind b
-        curSpeed = fromMaybe innateSpeed (bspeed b)
-        newSpeed = speedAdd curSpeed delta
-    in assert (newSpeed >= speedZero `blame` (aid, curSpeed, delta)) $
-       if curSpeed == innateSpeed
-       then b {bspeed = Nothing}
-       else b {bspeed = Just newSpeed}
-
-dominateAtomic :: MonadAction m => FactionId -> FactionId -> ActorId -> m ()
-dominateAtomic fromFid toFid target = do
-  tm <- getsState (getActorBody target)
-  assert (fromFid == bfaction tm `blame` (fromFid, tm, toFid)) $
-    modifyState $ updateActorBody target $ \b -> b {bfaction = toFid}
-
 -- TODO: perhaps assert that the inventory of the actor is empty
 -- or at least that the items belong to litem.
-spawnAtomic :: MonadAction m => ActorId -> Actor -> m ()
-spawnAtomic aid body = do
+createActorA :: MonadAction m => ActorId -> Actor -> m ()
+createActorA aid body = do
   modifyState $ updateActorD $ EM.insert aid body
   let add Nothing = Just [aid]
       add (Just l) = Just $ aid : l
@@ -161,8 +138,8 @@ spawnAtomic aid body = do
 -- TODO: perhaps assert that the inventory of the actor is empty.
 -- | Kills an actor. Note: after this command, usually a new leader
 -- for the party should be elected.
-killAtomic :: MonadAction m => ActorId -> Actor -> m ()
-killAtomic aid body = do
+destroyActorA :: MonadAction m => ActorId -> Actor -> m ()
+destroyActorA aid body = do
   modifyState $ updateActorD $ EM.delete aid
   let rm Nothing = assert `failure` aid
       rm (Just l) = let l2 = delete aid l
@@ -176,9 +153,9 @@ killAtomic aid body = do
 
 -- | Create a few copies of an item that is already registered for the dungeon
 -- (in @sitemRev@ field of @StateServer@).
-createItemAtomic :: MonadAction m
+createItemA :: MonadAction m
                  => LevelId -> ItemId -> Item -> Int -> Container -> m ()
-createItemAtomic lid iid item k c = assert (k > 0) $ do
+createItemA lid iid item k c = assert (k > 0) $ do
   -- The item may or may not be already present in the dungeon.
   let f item1 item2 = assert (item1 == item2) item1
   modifyState $ updateItemD $ EM.insertWith f iid item
@@ -212,9 +189,9 @@ insertItemActor iid k aid = do
         b {bletter = max l2 (bletter b)}
 
 -- | Destroy some copies (possibly not all) of an item.
-destroyItemAtomic :: MonadAction m
+destroyItemA :: MonadAction m
                   => LevelId -> ItemId -> Item -> Int -> Container -> m ()
-destroyItemAtomic lid iid _item k c = assert (k > 0) $ do
+destroyItemA lid iid _item k c = assert (k > 0) $ do
   -- Do not remove the item from @sitemD@ nor from @sitemRev@,
   -- This is behaviourally equivalent.
   case c of
@@ -238,9 +215,24 @@ deleteItemActor iid k aid =
   modifyState $ updateActorD
   $ EM.adjust (\b -> b {bbag = rmFromBag k iid (bbag b)}) aid
 
-moveItemAtomic :: MonadAction m
+moveActorA :: MonadAction m => ActorId -> Point -> Point -> m ()
+moveActorA aid _fromP toP =
+  modifyState $ updateActorBody aid $ \b -> b {bpos = toP}
+
+waitActorA :: MonadAction m => ActorId -> Time -> Time -> m ()
+waitActorA aid _fromWait toWait =
+  modifyState $ updateActorBody aid $ \b -> b {bwait = toWait}
+
+displaceActorA :: MonadAction m => ActorId -> ActorId -> m ()
+displaceActorA source target = do
+  spos <- getsState $ bpos . getActorBody source
+  tpos <- getsState $ bpos . getActorBody target
+  modifyState $ updateActorBody source $ \ b -> b {bpos = tpos}
+  modifyState $ updateActorBody target $ \ b -> b {bpos = spos}
+
+moveItemA :: MonadAction m
                => LevelId -> ItemId -> Int -> Container -> Container -> m ()
-moveItemAtomic lid iid k c1 c2 = assert (k > 0) $ do
+moveItemA lid iid k c1 c2 = assert (k > 0) $ do
   case c1 of
     CFloor pos -> deleteItemFloor lid iid k pos
     CActor aid -> deleteItemActor iid k aid
@@ -248,55 +240,62 @@ moveItemAtomic lid iid k c1 c2 = assert (k > 0) $ do
     CFloor pos -> insertItemFloor lid iid k pos
     CActor aid -> insertItemActor iid k aid
 
-waitAtomic :: MonadAction m => ActorId -> Time -> Time -> m ()
-waitAtomic aid _fromWait toWait =
-  modifyState $ updateActorBody aid $ \b -> b {bwait = toWait}
+healActorA :: MonadAction m => ActorId -> Int -> m ()
+healActorA aid n = assert (n /= 0) $
+  modifyState $ updateActorBody aid $ \b -> b {bhp = n + bhp b}
 
-changeTileAtomic :: MonadAction m
-                 => Point -> LevelId -> Kind.Id TileKind -> Kind.Id TileKind
-                 -> m ()
-changeTileAtomic p lid _fromTile toTile =
-  let adj = (Kind.// [(p, toTile)])
-  in updateLevel lid $ updateTile adj
+hasteActorA :: MonadAction m => ActorId -> Speed -> m ()
+hasteActorA aid delta = assert (delta /= speedZero) $ do
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  modifyState $ updateActorBody aid $ \ b ->
+    let innateSpeed = aspeed $ okind $ bkind b
+        curSpeed = fromMaybe innateSpeed (bspeed b)
+        newSpeed = speedAdd curSpeed delta
+    in assert (newSpeed >= speedZero `blame` (aid, curSpeed, delta)) $
+       if curSpeed == innateSpeed
+       then b {bspeed = Nothing}
+       else b {bspeed = Just newSpeed}
 
-moveActorAtomic :: MonadAction m => ActorId -> Point -> Point -> m ()
-moveActorAtomic aid _fromP toP =
-  modifyState $ updateActorBody aid $ \b -> b {bpos = toP}
+dominateActorA :: MonadAction m => ActorId -> FactionId -> FactionId -> m ()
+dominateActorA target fromFid toFid = do
+  tm <- getsState (getActorBody target)
+  assert (fromFid == bfaction tm `blame` (fromFid, tm, toFid)) $
+    modifyState $ updateActorBody target $ \b -> b {bfaction = toFid}
 
-displaceActorAtomic :: MonadAction m => ActorId -> ActorId -> m ()
-displaceActorAtomic source target = do
-  spos <- getsState $ bpos . getActorBody source
-  tpos <- getsState $ bpos . getActorBody target
-  modifyState $ updateActorBody source $ \ b -> b {bpos = tpos}
-  modifyState $ updateActorBody target $ \ b -> b {bpos = spos}
-
-alterSecretAtomic :: MonadAction m => LevelId -> DiffEM Point Time -> m ()
-alterSecretAtomic lid diffL =
-  updateLevel lid $ updateSecret $ applyDiffEM diffL
-
-alterSmellAtomic :: MonadAction m => LevelId -> DiffEM Point Time -> m ()
-alterSmellAtomic lid diffL =
-  updateLevel lid $ updateSmell $ applyDiffEM diffL
-
-alterPathAtomic :: MonadAction m
+pathActorA :: MonadAction m
                 => ActorId -> Maybe [Vector] -> Maybe [Vector] -> m ()
-alterPathAtomic aid _fromPath toPath =
+pathActorA aid _fromPath toPath =
   modifyState $ updateActorBody aid $ \b -> b {bpath = toPath}
 
-colorActorAtomic :: MonadAction m
+colorActorA :: MonadAction m
                  => ActorId -> Maybe Color.Color -> Maybe Color.Color -> m ()
-colorActorAtomic aid _fromCol toCol =
+colorActorA aid _fromCol toCol =
   modifyState $ updateActorBody aid $ \b -> b {bcolor = toCol}
 
-factionQuitAtomic :: MonadAction m
+quitFactionA :: MonadAction m
                   => FactionId -> Maybe (Bool, Status) -> Maybe (Bool, Status)
                   -> m ()
-factionQuitAtomic fid _fromSt toSt = do
+quitFactionA fid _fromSt toSt = do
   let adj fac = fac {gquit = toSt}
   modifyState $ updateFaction $ EM.adjust adj fid
 
-leaderAtomic :: MonadAction m
+leadFactionA :: MonadAction m
              => FactionId -> (Maybe ActorId) -> (Maybe ActorId) -> m ()
-leaderAtomic fid source target = assert (source /= target) $ do
+leadFactionA fid source target = assert (source /= target) $ do
   let adj fac = fac {gleader = target}
   modifyState $ updateFaction $ EM.adjust adj fid
+
+alterTileA :: MonadAction m
+                => LevelId -> Point -> Kind.Id TileKind -> Kind.Id TileKind
+                -> m ()
+alterTileA lid p _fromTile toTile =
+  let adj = (Kind.// [(p, toTile)])
+  in updateLevel lid $ updateTile adj
+
+alterSecretA :: MonadAction m => LevelId -> DiffEM Point Time -> m ()
+alterSecretA lid diffL =
+  updateLevel lid $ updateSecret $ applyDiffEM diffL
+
+alterSmellA :: MonadAction m => LevelId -> DiffEM Point Time -> m ()
+alterSmellA lid diffL =
+  updateLevel lid $ updateSmell $ applyDiffEM diffL
