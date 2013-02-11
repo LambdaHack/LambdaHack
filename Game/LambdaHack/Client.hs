@@ -9,7 +9,6 @@ module Game.LambdaHack.Client
 
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
-import Data.Maybe
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Client.Action
@@ -46,11 +45,9 @@ cmdUpdateCli cmd = case cmd of
   GameDisconnectCli isAI -> clientDisconnect isAI
   AtomicSeenCli catomic -> do
     cmdAtomicSem catomic
-    mleader <- getsClient sleader
-    when (isNothing mleader) $ do
-      side <- getsClient sside
-      mleaderNew <- getsState $ gleader . (EM.! side) . sfaction
-      modifyClient $ \cli -> cli {_sleader = mleaderNew}
+    side <- getsClient sside
+    mleaderNew <- getsState $ gleader . (EM.! side) . sfaction
+    modifyClient $ \cli -> cli {_sleader = mleaderNew}
 
 cmdUpdateUI :: MonadClientUI m => CmdUpdateUI -> m ()
 cmdUpdateUI cmd = case cmd of

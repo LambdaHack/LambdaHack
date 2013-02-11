@@ -96,9 +96,10 @@ itemEffect verbosity source target item block = do
 discover :: MonadServerChan m => Discoveries -> Item -> m ()
 discover discoS i = do
   let ix = jkindIx i
-      ik = discoS EM.! ix
+      _ik = discoS EM.! ix
+  return ()
 -- TODO: send to all clients that see tpos.
-  sendUpdateCli undefined $ DiscoverCli ik i
+--  sendUpdateCli undefined $ DiscoverCli ik i
 
 -- | The boolean part of the result says if the ation was interesting
 -- and the string part describes how the target reacted

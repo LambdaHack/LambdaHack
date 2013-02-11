@@ -205,21 +205,17 @@ leaderTriggerTile feat = do
 
 pickupItem :: MonadClient m => m CmdSer
 pickupItem = do
-  Just leader <- getsClient sleader
-  actorPickupItem leader
-
-actorPickupItem :: MonadActionRO m => ActorId -> m CmdSer
-actorPickupItem actor = do
-  body <- getsState $ getActorBody actor
+  Just aid <- getsClient sleader
+  body <- getsState $ getActorBody aid
   lvl <- getsLevel (blid body) id
   -- Check if something is here to pick up. Items are never invisible.
   case EM.minViewWithKey $ lvl `atI` bpos body of
     Nothing -> abortWith "nothing here"
-    Just ((iid, k), _) ->  do -- pick up first item; TODO: let pl select item; not for monsters
+    Just ((iid, k), _) ->  do  -- pick up first item; TODO: let pl select item
       item <- getsState $ getItemBody iid
       let l = if jsymbol item == '$' then Just $ InvChar '$' else Nothing
       case assignLetter iid l body of
-        Just l2 -> return $ PickupSer actor iid k l2
+        Just l2 -> return $ PickupSer aid iid k l2
         Nothing -> abortWith "cannot carry any more"
 
 -- ** Drop
@@ -231,17 +227,17 @@ dropItem :: MonadClientUI m => m CmdSer
 dropItem = do
   -- TODO: allow dropping a given number of identical items.
   Kind.COps{coactor, coitem} <- getsState scops
-  Just leader <- getsClient sleader
-  pbody <- getsState $ getActorBody leader
-  bag <- getsState $ getActorBag leader
-  inv <- getsState $ getActorInv leader
-  ((iid, item), _k) <- getAnyItem leader "What to drop?" bag inv "in inventory"
+  Just aid <- getsClient sleader
+  pbody <- getsState $ getActorBody aid
+  bag <- getsState $ getActorBag aid
+  inv <- getsState $ getActorInv aid
+  ((iid, item), _k) <- getAnyItem aid "What to drop?" bag inv "in inventory"
   disco <- getsState sdisco
   -- Do not advertise if an enemy drops an item. Probably junk.
   msgAdd $ makeSentence  -- TODO: "you" instead of partActor?
     [ MU.SubjectVerbSg (partActor coactor pbody) "drop"
     , partItemNWs coitem disco 1 item ]
-  return $ DropSer leader iid
+  return $ DropSer aid iid
 
 allObjectsName :: Text
 allObjectsName = "Objects"

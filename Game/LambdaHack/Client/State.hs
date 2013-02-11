@@ -3,7 +3,7 @@
 module Game.LambdaHack.Client.State
   ( StateClient(..), defStateClient, defHistory
   , updateTarget, getTarget, getArena
-  , updateSelectedLeader, sleader, sside, targetToPos
+  , updateLeader, sleader, sside, targetToPos
   , TgtMode(..), Target(..)
   , DebugModeCli(..), toggleMarkVision, toggleMarkSmell, toggleOmniscient
   ) where
@@ -129,8 +129,8 @@ getArena cli s =
     Just leader -> blid $ sactorD s EM.! leader
 
 -- | Update selected actor within state. Verify actor's faction.
-updateSelectedLeader :: ActorId -> State -> StateClient -> StateClient
-updateSelectedLeader leader s cli =
+updateLeader :: ActorId -> State -> StateClient -> StateClient
+updateLeader leader s cli =
   let side1 = bfaction $ sactorD s EM.! leader
       side2 = sside cli
   in assert (side1 == side2 `blame` (side1, side2, leader, s))

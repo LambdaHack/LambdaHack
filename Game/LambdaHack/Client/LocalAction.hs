@@ -520,7 +520,7 @@ selectLeader actor = do
     then return False -- already selected
     else do
       loc <- getState
-      modifyClient $ updateSelectedLeader actor loc
+      modifyClient $ updateLeader actor loc
       pbody <- getsState $ getActorBody actor
       -- Move the cursor, if active, to the new level.
       when (isJust stgtMode) $ setTgtId $ blid pbody

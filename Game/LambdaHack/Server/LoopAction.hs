@@ -48,7 +48,7 @@ import Game.LambdaHack.Utils.Assert
 -- every fixed number of time units, e.g., monster generation.
 -- Run the leader and other actors moves. Eventually advance the time
 -- and repeat.
-loopSer :: (MonadAction m, MonadServerChan m)
+loopSer :: forall m . (MonadAction m, MonadServerChan m)
         => (LevelId -> CmdSer -> m ())
         -> (FactionId -> ConnCli -> Bool -> IO ())
         -> Kind.COps
@@ -86,20 +86,35 @@ loopSer cmdSer executorC cops = do
       bcast
       withAI bcast
   modifyServer $ \ser1 -> ser1 {squit = Nothing}
+  let cinT = let r = timeTurn `timeFit` timeClip
+             in assert (r > 2) r
   -- Loop.
-  let loop (disp, prevHuman) = do
-        let arena = initialLevel  -- TODO
-        time <- getsState $ getTime arena  -- the end time of this clip, inclusive
-        let clipN = (time `timeFit` timeClip)
-                    `mod` (timeTurn `timeFit` timeClip)
-        -- Regenerate HP and add monsters each turn, not each clip.
-        when (clipN == 1) checkEndGame
-        when (clipN == 2) $ regenerateLevelHP arena
-        mfid <- if clipN == 3 then generateMonster arena else return Nothing
-        nres <- handleActors cmdSer arena timeZero prevHuman (disp || isJust mfid)
-        modifyState $ updateTime arena $ timeAdd timeClip
-        endOrLoop prevHuman arena (loop nres)
-  loop (True, Nothing)
+  let loop :: (Maybe FactionId) -> Int -> m ()
+      loop prevHuman clipN = do
+        let h pHuman arena = do
+              -- Regenerate HP and add monsters each turn, not each clip.
+              when (clipN `mod` cinT == 0) $ generateMonster arena
+              when (clipN `mod` cinT == 1) $ regenerateLevelHP arena
+              when (clipN `mod` cinT == 2) checkEndGame
+              pHumanOut <- handleActors cmdSer arena timeZero pHuman
+              modifyState $ updateTime arena $ timeAdd timeClip
+              return pHumanOut
+        let f fac = do
+              case gleader fac of
+                Nothing -> return Nothing
+                Just leader -> do
+                  b <- getsState $ getActorBody leader
+                  return $ Just $ blid b
+        faction <- getsState sfaction
+        marenas <- mapM f $ EM.elems faction
+        let arenas = ES.toList $ ES.fromList $ catMaybes marenas
+            mapH pHuman [] = return pHuman
+            mapH pHuman (arena : as) = do
+              pHumanOut <- h pHuman arena
+              mapH pHumanOut as
+        pHumanOut <- mapH prevHuman arenas
+        endOrLoop prevHuman (loop pHumanOut (clipN + 1))
+  loop Nothing 1
 
 initPer :: MonadServer m => m ()
 initPer = do
@@ -197,9 +212,8 @@ handleActors :: (MonadAction m, MonadServerChan m)
              -> LevelId
              -> Time  -- ^ start time of current subclip, exclusive
              -> Maybe FactionId
-             -> Bool
-             -> m (Bool, Maybe FactionId)
-handleActors cmdSer arena subclipStart prevHuman disp = do
+             -> m (Maybe FactionId)
+handleActors cmdSer arena subclipStart prevHuman = do
   Kind.COps{coactor} <- getsState scops
   time <- getsState $ getTime arena  -- the end time of this clip, inclusive
   prio <- getsLevel arena lprio
@@ -219,16 +233,16 @@ handleActors cmdSer arena subclipStart prevHuman disp = do
                       then Nothing  -- no actor is ready for another move
                       else Just (actor, m)
   case mnext of
-    _ | isJust quit || isJust gquit -> return (disp, prevHuman)
+    _ | isJust quit || isJust gquit -> return prevHuman
     Nothing -> do
       when (subclipStart == timeZero) $
         broadcastUI [] $ DisplayDelayCli
-      return (disp, prevHuman)
-    Just (actor, m) -> do
-      let side = bfaction m
+      return prevHuman
+    Just (actor, body) -> do
+      broadcastUI [] DisplayPushCli  -- TODO: too often
+      let side = bfaction body
       isHuman <- getsState $ flip isHumanFaction side
       mleader <- getsState $ gleader . (EM.! side) . sfaction
-      when disp $ broadcastUI [] DisplayPushCli
       if Just actor == mleader && isHuman
         then do
           nHuman <- if isHuman && Just side /= prevHuman
@@ -253,7 +267,7 @@ handleActors cmdSer arena subclipStart prevHuman disp = do
           tryWith (\msg -> do
                       sendUpdateCli side $ ShowMsgCli msg
                       sendUpdateUI side DisplayPushCli
-                      handleActors cmdSer arena subclipStart nHuman False
+                      handleActors cmdSer arena subclipStart nHuman
                   ) $ do
             mapM_ (cmdSer arena) cmdS
             -- Advance time once, after the leader switched perhaps many times.
@@ -267,13 +281,13 @@ handleActors cmdSer arena subclipStart prevHuman disp = do
             -- and is perhaps better done when the other factions have
             -- selected leaders as well.
             mleaderNew <- getsState $ gleader . (EM.! side) . sfaction
-            case mleaderNew of
-              Nothing -> return ()
-              Just leaderNew -> do
-                squitNew <- getsServer squit
-                when (any timedCmdSer cmdS && isNothing squitNew) $ do
-                  arenaNew <- getsState $ blid . getActorBody leaderNew
-                  advanceTime arenaNew leaderNew
+            quitNew <- getsServer squit
+            bodyNew <- case mleaderNew of
+              Just leaderNew | any timedCmdSer cmdS && isNothing quitNew -> do
+                bNew <- getsState $ getActorBody leaderNew
+                advanceTime (blid bNew) leaderNew
+                return bNew
+              _ -> return body
             -- Human moves always start a new subclip.
             -- _pos <- getsState $ bpos . getActorBody (fromMaybe actor leaderNew)
             -- TODO: send messages with time (or at least DisplayPushCli)
@@ -281,14 +295,14 @@ handleActors cmdSer arena subclipStart prevHuman disp = do
             -- Right now other need it too, to notice the delay.
             -- This will also be more accurate since now unseen
             -- simultaneous moves also generate delays.
-            handleActors cmdSer arena (btime m) nHuman True
+            handleActors cmdSer arena (btime bodyNew) nHuman
         else do
 --          recordHistory
           advanceTime arena actor  -- advance time while the actor still alive
-          let subclipStartDelta = timeAddFromSpeed coactor m subclipStart
-          if isHuman && not (bproj m)
+          let subclipStartDelta = timeAddFromSpeed coactor body subclipStart
+          if isHuman && not (bproj body)
              || subclipStart == timeZero
-             || btime m > subclipStartDelta
+             || btime body > subclipStartDelta
             then do
               -- Start a new subclip if its our own faction moving
               -- or it's another faction, but it's the first move of
@@ -302,7 +316,7 @@ handleActors cmdSer arena subclipStart prevHuman disp = do
                                else assert `failure` msg <> "in AI"
                       )
                       (cmdSer arena cmdS)
-              handleActors cmdSer arena (btime m) prevHuman True
+              handleActors cmdSer arena (btime body) prevHuman
             else do
               -- No new subclip.
               cmdS <- withAI $ sendQueryCli side $ HandleAI actor
@@ -313,7 +327,7 @@ handleActors cmdSer arena subclipStart prevHuman disp = do
                                else assert `failure` msg <> "in AI"
                       )
                       (cmdSer arena cmdS)
-              handleActors cmdSer arena subclipStart prevHuman False
+              handleActors cmdSer arena subclipStart prevHuman
 
 -- | Advance the move time for the given actor.
 advanceTime :: MonadAction m => LevelId -> ActorId -> m ()
@@ -334,16 +348,21 @@ advanceTime lid aid = do
 
 -- | Continue or restart or exit the game.
 endOrLoop :: (MonadAction m, MonadServerChan m)
-          => Maybe FactionId -> LevelId -> m () -> m ()
-endOrLoop Nothing _ loopServer = loopServer
-endOrLoop (Just fid) arena loopServer = do
-  quit <- getsServer squit
-  gquit <- getsState $ gquit . (EM.! fid) . sfaction
-  (_, total) <- getsState (calculateTotal fid arena)
+          => Maybe FactionId -> m () -> m ()
+endOrLoop Nothing loopServer = loopServer
+endOrLoop (Just fid) loopServer = do
+  quitS <- getsServer squit
+  fac <- getsState $ (EM.! fid) . sfaction
+  let quitG = gquit fac
+  total <- case gleader fac of
+    Nothing -> return 0
+    Just leader -> do
+      b <- getsState $ getActorBody leader
+      getsState $ snd . calculateTotal fid (blid b)
   -- The first, boolean component of quit determines
   -- if ending screens should be shown, the other argument describes
   -- the cause of the disruption of game flow.
-  case (quit, gquit) of
+  case (quitS, quitG) of
     (Just _, _) -> do
       -- Save and display in parallel.
 --      mv <- liftIO newEmptyMVar
@@ -489,8 +508,7 @@ gameReset cops@Kind.COps{coitem, corule, cotile} = do
 -- * Assorted helper functions
 
 -- | Generate a monster, possibly.
-generateMonster :: (MonadAction m, MonadServerChan m)
-                => LevelId -> m (Maybe FactionId)
+generateMonster :: (MonadAction m, MonadServerChan m) => LevelId -> m ()
 generateMonster arena = do
   cops@Kind.COps{cofact=Kind.Ops{okind}} <- getsState scops
   pers <- getsServer sper
@@ -500,15 +518,12 @@ generateMonster arena = do
   let f fid = fspawn (okind (gkind (faction EM.! fid))) > 0
       spawns = actorNotProjList f arena s
   rc <- rndToAction $ monsterGenChance ldepth (length spawns)
-  if not rc
-    then return Nothing
-    else do
-      let allPers =
-            ES.unions $ map (totalVisible . (EM.! arena)) $ EM.elems pers
-      pos <- rndToAction $ rollSpawnPos cops allPers arena lvl s
-      (mf, cmds) <- runWriterT $ spawnMonsters 1 pos arena
-      mapM_ (cmdAtomicBroad arena) cmds
-      return mf
+  when rc $ do
+    let allPers =
+          ES.unions $ map (totalVisible . (EM.! arena)) $ EM.elems pers
+    pos <- rndToAction $ rollSpawnPos cops allPers arena lvl s
+    (_, cmds) <- runWriterT $ spawnMonsters 1 pos arena
+    mapM_ (cmdAtomicBroad arena) cmds
 
 -- | Create a new monster on the level, at a random position.
 rollSpawnPos :: Kind.COps -> ES.EnumSet Point -> LevelId -> Level -> State
