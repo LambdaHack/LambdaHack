@@ -149,10 +149,14 @@ restartCli sper loc = do
   -- Save ASAP in case of crashes and disconnects.
   --TODO
 
-atomicSeen :: MonadAction m => Atomic -> m ()
-atomicSeen atomic = case atomic of
-  Left cmd -> cmdAtomicSem cmd
-  Right _ -> return ()
+atomicSeen :: (MonadAction m, MonadClient m) => Atomic -> m ()
+atomicSeen atomic =
+  case atomic of
+    Left cmd -> do
+      cmdAtomicSem cmd
+      cmdAtomicCli cmd
+    Right desc ->
+      descAtomicCli desc
 
 cmdAtomicCli :: MonadClient m => CmdAtomic -> m ()
 cmdAtomicCli cmd = case cmd of
@@ -173,8 +177,10 @@ cmdAtomicCli cmd = case cmd of
   PathActorA aid fromPath toPath -> return ()
   ColorActorA aid fromCol toCol -> return ()
   QuitFactionA fid fromSt toSt -> return ()
-  LeadFactionA fid source target ->
-    modifyClient $ \cli -> cli {_sleader = target}
+  LeadFactionA fid source target -> do
+    side <- getsClient sside
+    when (side == fid) $
+      modifyClient $ \cli -> cli {_sleader = target}
   AlterTileA _ _ _ _ -> return ()
   AlterSecretA lid diffL -> return ()
   AlterSmellA lid diffL -> return ()

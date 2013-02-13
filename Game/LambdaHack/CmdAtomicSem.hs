@@ -3,7 +3,6 @@ module Game.LambdaHack.CmdAtomicSem
   ( cmdAtomicSem, resetsFovAtomic, posCmdAtomic, posDescAtomic
   ) where
 
-import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.List
 import Data.Maybe
@@ -149,11 +148,6 @@ createActorA aid body = do
   let add Nothing = Just [aid]
       add (Just l) = Just $ aid : l
   updateLevel (blid body) $ updatePrio $ EM.alter add (btime body)
-  let fid = bfaction body
-      adj fac = fac {gleader = Just aid}
-  mleader <- getsState $ gleader . (EM.! fid) . sfaction
-  when (mleader == Nothing) $
-    modifyState $ updateFaction $ EM.adjust adj fid
 
 -- TODO: perhaps assert that the inventory of the actor is empty.
 -- | Kills an actor. Note: after this command, usually a new leader
@@ -165,11 +159,6 @@ destroyActorA aid body = do
       rm (Just l) = let l2 = delete aid l
                     in if null l2 then Nothing else Just l2
   updateLevel (blid body) $ updatePrio $ EM.alter rm (btime body)
-  let fid = bfaction body
-      adj fac = fac {gleader = Nothing}
-  mleader <- getsState $ gleader . (EM.! fid) . sfaction
-  when (mleader == Just aid) $
-    modifyState $ updateFaction $ EM.adjust adj fid
 
 -- | Create a few copies of an item that is already registered for the dungeon
 -- (in @sitemRev@ field of @StateServer@).

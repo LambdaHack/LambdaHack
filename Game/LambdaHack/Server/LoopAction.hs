@@ -11,7 +11,6 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.List
 import Data.Maybe
-import Data.Text (Text)
 import qualified Data.Text as T
 
 import Game.LambdaHack.Action
@@ -77,6 +76,7 @@ loopSer cmdSer executorC cops = do
       let bcast = funBroadcastCli (\fid -> RestartCli (pers EM.! fid) defLoc)
       bcast
       withAI bcast
+      populateDungeon
       -- TODO: factor out common parts from restartGame and restoreOrRestart
       cmdAtomicBroad initialLevel $ Left SyncA
       -- Save ASAP in case of crashes and disconnects.
@@ -435,20 +435,12 @@ restartGame loopServer = do
   let bcast = funBroadcastCli (\fid -> RestartCli (pers EM.! fid) defLoc)
   bcast
   withAI bcast
+  populateDungeon
   cmdAtomicBroad initialLevel $ Left $ SyncA
   saveGameBkp
   broadcastCli [] $ ShowMsgCli "This time for real."
   broadcastUI [] $ DisplayPushCli
   loopServer
-
--- | Create a set of initial heroes on the current level, at position ploc.
-initialHeroes :: (MonadAction m, MonadServer m)
-              => LevelId -> (FactionId, Point, [(Int, Text)]) -> m ()
-initialHeroes lid (side, ppos, configHeroNames) = do
-  configExtraHeroes <- getsServer $ configExtraHeroes . sconfig
-  replicateM_ (1 + configExtraHeroes) $ do
-    cmds <- execWriterT $ addHero side ppos lid configHeroNames
-    mapM_ atomicSem cmds
 
 createFactions :: Kind.COps -> Config -> Rnd FactionDict
 createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
@@ -502,11 +494,10 @@ gameReset cops@Kind.COps{coitem, corule, cotile} = do
         St.evalState rnd dungeonSeed
       defState = defStateGlobal freshDungeon freshDepth discoS faction cops
       defSer = defStateServer discoRev flavour random sconfig
-      notSpawning (_, fact) = not $ isSpawningFact cops fact
-      needInitialCrew = map fst $ filter notSpawning $ EM.assocs faction
-      heroNames = configHeroNames sconfig : repeat []
   putState defState
   putServer defSer
+  -- Clients have no business noticing initial item creation, so we can
+  -- do this here and evaluate with atomicSem, without notifying clients.
   let initialItems (lid, (Level{ltile}, citemNum)) = do
         nri <- rndToAction $ rollDice citemNum
         replicateM nri $ do
@@ -515,7 +506,47 @@ gameReset cops@Kind.COps{coitem, corule, cotile} = do
           cmds <- execWriterT $ createItems 1 pos lid
           mapM_ atomicSem cmds
   mapM_ initialItems itemCounts
-  mapM_ (initialHeroes entryLevel) $ zip3 needInitialCrew entryPoss heroNames
+
+-- TODO: use rollSpawnPos in the inner loop
+-- | Find starting postions for all factions. Try to make them distant
+-- from each other and from any stairs.
+findEntryPoss :: Kind.COps -> Level -> Int -> Rnd [Point]
+findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lstair} k =
+  let cminStairDist = chessDist lxsize (fst lstair) (snd lstair)
+      dist l poss cmin =
+        all (\pos -> chessDist lxsize l pos > cmin) poss
+      tryFind _ 0 = return []
+      tryFind ps n = do
+        np <- findPosTry 20 ltile  -- 20 only, for unpredictability
+                [ \ l _ -> dist l ps $ 2 * cminStairDist
+                , \ l _ -> dist l ps cminStairDist
+                , \ l _ -> dist l ps $ cminStairDist `div` 2
+                , \ l _ -> dist l ps $ cminStairDist `div` 4
+                , const (Tile.hasFeature cotile F.Walkable)
+                ]
+        nps <- tryFind (np : ps) (n - 1)
+        return $ np : nps
+      stairPoss = [fst lstair, snd lstair]
+  in tryFind stairPoss k
+
+-- Spawn initial actors. Clients should notice that so that they elect leaders.
+populateDungeon :: (MonadAction m, MonadServerChan m) => m ()
+populateDungeon = do
+  -- TODO entryLevel should be defined per-faction in content
+  let entryLevel = initialLevel
+  lvl <- getsLevel entryLevel id
+  cops <- getsState scops
+  faction <- getsState sfaction
+  config <- getsServer sconfig
+  let notSpawning (_, fact) = not $ isSpawningFact cops fact
+      needInitialCrew = map fst $ filter notSpawning $ EM.assocs faction
+      heroNames = configHeroNames config : repeat []
+      initialHeroes (side, ppos, heroName) = do
+        replicateM_ (1 + configExtraHeroes config) $ do
+          cmds <- execWriterT $ addHero side ppos entryLevel heroName
+          mapM_ (cmdAtomicBroad entryLevel) cmds
+  entryPoss <- rndToAction $ findEntryPoss cops lvl (length needInitialCrew)
+  mapM_ initialHeroes $ zip3 needInitialCrew entryPoss heroNames
 
 -- * Assorted helper functions
 

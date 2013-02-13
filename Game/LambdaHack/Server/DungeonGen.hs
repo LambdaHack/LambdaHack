@@ -102,30 +102,9 @@ findGenerator cops Config{configCaves} k depth = do
   cave <- buildCave cops k depth ci
   buildLevel cops cave k depth
 
--- | Find starting postions for all factions. Try to make them distant
--- from each other and from any stairs.
-findEntryPoss :: Kind.COps -> Level -> Rnd [Point]
-findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lstair} =
-  let cminStairDist = chessDist lxsize (fst lstair) (snd lstair)
-      dist l poss cmin =
-        all (\pos -> chessDist lxsize l pos > cmin) poss
-      tryFind poss = do
-        pos <- findPosTry 20 ltile  -- 20 only, for unpredictability
-                 [ \ l _ -> dist l poss $ 2 * cminStairDist
-                 , \ l _ -> dist l poss cminStairDist
-                 , \ l _ -> dist l poss $ cminStairDist `div` 2
-                 , \ l _ -> dist l poss $ cminStairDist `div` 4
-                 , const (Tile.hasFeature cotile F.Walkable)
-                 ]
-        fmap (pos :) $ tryFind (pos : poss)
-      stairPoss = [fst lstair, snd lstair]
-  in tryFind stairPoss
-
 -- | Freshly generated and not yet populated dungeon.
 data FreshDungeon = FreshDungeon
-  { entryLevel   :: LevelId  -- ^ starting level
-  , entryPoss    :: [Point]  -- ^ starting positions for non-spawning parties
-  , freshDungeon :: Dungeon  -- ^ maps for all levels
+  { freshDungeon :: Dungeon  -- ^ maps for all levels
   , freshDepth   :: Int      -- ^ dungeon depth (can be different than size)
   , itemCounts   :: [(LevelId, (Level, RollDice))]
   }
@@ -142,10 +121,7 @@ dungeonGen cops config@Config{configDepth} =
       con g = assert (configDepth >= 1 `blame` configDepth) $
         let (gd, itemCounts) = mapAccumL gen g [1..configDepth]
             levels = map (second fst) itemCounts
-            entryLevel = initialLevel
-            (entryPoss, gp) =
-              St.runState (findEntryPoss cops (snd (head levels))) gd
             freshDungeon = EM.fromList levels
             freshDepth = configDepth
-       in (FreshDungeon{..}, gp)
+        in (FreshDungeon{..}, gd)
   in St.state con

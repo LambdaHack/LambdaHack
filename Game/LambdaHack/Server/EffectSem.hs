@@ -256,6 +256,9 @@ addActor mk bfaction ppos lid hp msymbol mname = do
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
   tellCmdAtomic $ CreateActorA acounter m
+  mleader <- getsState $ gleader . (EM.! bfaction) . sfaction
+  when (mleader == Nothing) $
+    tellCmdAtomic $ LeadFactionA bfaction Nothing (Just acounter)
 
 -- TODO: apply this special treatment only to actors with symbol '@'.
 -- | Create a new hero on the current level, close to the given position.
@@ -580,14 +583,14 @@ checkPartyDeath target = do
 electLeader :: MonadServer m => FactionId -> LevelId -> WriterT [Atomic] m ()
 electLeader fid lid = do
   mleader <- getsState $ gleader . (EM.! fid) . sfaction
-  let _ = assert (isNothing mleader `blame` (mleader, fid, lid))
-  actorD <- getsState sactorD
-  let party = filter (\(_, b) ->
-                bfaction b == fid && not (bproj b)) $ EM.assocs actorD
-  when (not $ null $ party) $ do
-    onLevel <- getsState $ actorNotProjAssocs (== fid) lid
-    let leader = fst $ head $ onLevel ++ party
-    tellCmdAtomic $ LeadFactionA fid Nothing (Just leader)
+  when (isNothing mleader) $ do
+    actorD <- getsState sactorD
+    let party = filter (\(_, b) ->
+                  bfaction b == fid && not (bproj b)) $ EM.assocs actorD
+    when (not $ null $ party) $ do
+      onLevel <- getsState $ actorNotProjAssocs (== fid) lid
+      let leader = fst $ head $ onLevel ++ party
+      tellCmdAtomic $ LeadFactionA fid Nothing (Just leader)
 
 -- | End game, showing the ending screens, if requested.
 gameOver :: (MonadAction m, MonadServerChan m)
