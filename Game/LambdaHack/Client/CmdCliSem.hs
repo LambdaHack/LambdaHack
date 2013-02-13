@@ -28,6 +28,8 @@ import Game.LambdaHack.Client.RunAction
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.Strategy
 import Game.LambdaHack.Client.StrategyAction
+import Game.LambdaHack.CmdAtomic
+import Game.LambdaHack.CmdAtomicSem
 import Game.LambdaHack.CmdSer
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Content.ItemKind
@@ -188,6 +190,29 @@ restartCli sper loc = do
   putState loc
   -- Save ASAP in case of crashes and disconnects.
   --TODO
+
+atomicSeen :: MonadAction m => Atomic -> m ()
+atomicSeen atomic = case atomic of
+  Left cmd -> cmdAtomicSem cmd
+  Right _ -> return ()
+
+displayHeal :: MonadClientUI m => Msg -> (Point, Point) -> Int -> Bool -> m ()
+displayHeal msg poss deltaHP block = do
+  msgAdd msg
+  cli <- getClient
+  loc <- getState
+  per <- askPerception
+  -- Try to show an animation. Sometimes, e.g., when HP is unchaged,
+  -- the animation will not be shown, but a single frame with @msg@ will.
+  let anim | deltaHP > 0 =
+        twirlSplash poss Color.BrBlue Color.Blue
+           | deltaHP < 0 && block =
+        blockHit    poss Color.BrRed  Color.Red
+           | deltaHP < 0 && not block =
+        twirlSplash poss Color.BrRed  Color.Red
+           | otherwise = mempty
+      animFrs = animate cli loc per anim
+  displayFramesPush $ Nothing : animFrs
 
 -- * cmdUpdateUI
 

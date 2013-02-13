@@ -52,7 +52,7 @@ data CmdUpdateCli =
   | ContinueSavedCli FactionPers
   | GameSaveBkpCli Bool
   | GameDisconnectCli Bool
-  | AtomicSeenCli CmdAtomic
+  | AtomicSeenCli Atomic
   deriving Show
 
 data CmdUpdateUI =

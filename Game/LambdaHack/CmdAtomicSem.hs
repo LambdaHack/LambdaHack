@@ -1,6 +1,6 @@
 -- | Semantics of atomic commands shared by client and server.
 module Game.LambdaHack.CmdAtomicSem
-  ( cmdAtomicSem, resetsFovAtomic, cmdPosAtomic
+  ( cmdAtomicSem, resetsFovAtomic, posCmdAtomic, posDescAtomic
   ) where
 
 import Control.Monad
@@ -75,9 +75,9 @@ fidEquals fid aid = do
 -- the action starts and a set where the action ends. The boolean indicates
 -- that, regardless of the position, the start (or end) is always visible
 -- to clients (or always invisible).
-cmdPosAtomic :: MonadActionRO m
+posCmdAtomic :: MonadActionRO m
              => CmdAtomic -> m (Either Bool [Point], Either Bool [Point])
-cmdPosAtomic cmd = case cmd of
+posCmdAtomic cmd = case cmd of
   CreateActorA _ body ->
     -- Faction sees spawning of its actor, even if it spawns out of sight.
     return (Left True, Right [bpos body])
@@ -107,6 +107,26 @@ cmdPosAtomic cmd = case cmd of
     return (Left False, Left False)  -- none of clients' business
   AlterSmellA _ _ -> return (Left True, Left True)  -- always register
   SyncA -> return (Left False, Left False)
+
+posDescAtomic :: MonadActionRO m
+              => DescAtomic -> m (Either Bool [Point], Either Bool [Point])
+posDescAtomic cmd = case cmd of
+  StrikeA source target _ _ -> do
+    ps <- mapM posOfAid [source, target]
+    return (Right ps, Right ps)
+  RecoilA source target _ _ -> do
+    ps <- mapM posOfAid [source, target]
+    return (Right ps, Right ps)
+  ProjectA aid _ -> singlePos $ posOfAid aid
+  CatchA aid _ -> singlePos $ posOfAid aid
+  ActivateA aid _ -> singlePos $ posOfAid aid
+  CheckA aid _ -> singlePos $ posOfAid aid
+  TriggerA aid p _ _ -> do
+    pa <- posOfAid aid
+    return (Right [pa], Right [pa, p])
+  ShunA aid p _ _ -> do
+    pa <- posOfAid aid
+    return (Right [pa], Right [pa, p])
 
 singlePos :: MonadActionAbort m
           => m Point -> m (Either Bool [Point], Either Bool [Point])

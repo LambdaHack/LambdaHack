@@ -20,7 +20,7 @@ cmdSerSem lid cmd = do
   cmds <- execWriterT $ cmdSerWriterT cmd
   mapM_ (cmdAtomicBroad lid) cmds
 
-cmdSerWriterT :: MonadServerChan m => CmdSer -> WriterT [CmdAtomic] m ()
+cmdSerWriterT :: MonadServerChan m => CmdSer -> WriterT [Atomic] m ()
 cmdSerWriterT cmd = case cmd of
   ApplySer aid v iid container -> applySer aid v iid container
   ProjectSer aid p eps v iid container -> projectSer aid p eps v iid container

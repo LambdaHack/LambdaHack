@@ -6,7 +6,7 @@ module Game.LambdaHack.Server.LoopAction (loopSer, cmdAtomicBroad) where
 import Control.Arrow (second)
 import Control.Monad
 import qualified Control.Monad.State as St
-import Control.Monad.Writer.Strict (WriterT, execWriterT, runWriterT, tell)
+import Control.Monad.Writer.Strict (WriterT, execWriterT, runWriterT)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.List
@@ -78,7 +78,7 @@ loopSer cmdSer executorC cops = do
       bcast
       withAI bcast
       -- TODO: factor out common parts from restartGame and restoreOrRestart
-      cmdAtomicBroad initialLevel SyncA
+      cmdAtomicBroad initialLevel $ Left SyncA
       -- Save ASAP in case of crashes and disconnects.
       saveGameBkp
     _ -> do  -- game restored from a savefile
@@ -127,35 +127,49 @@ initPer = do
       pers = dungeonPerception cops fovMode glo
   modifyServer $ \ser1 -> ser1 {sper = pers}
 
+atomicSem :: MonadAction m => Atomic -> m ()
+atomicSem atomic = case atomic of
+  Left cmd -> cmdAtomicSem cmd
+  Right _ -> return ()
+
 cmdAtomicBroad :: (MonadAction m, MonadServerChan m)
-               => LevelId -> CmdAtomic -> m ()
-cmdAtomicBroad arena cmd = do
+               => LevelId -> Atomic -> m ()
+cmdAtomicBroad arena atomic = do
   lvlOld <- getsLevel arena id
   actorDOld <- getsState sactorD
   itemDOld <- getsState sitemD
   factionOld <- getsState sfaction
-  cmdAtomicSem cmd
+  atomicSem atomic
   lvlNew <- getsLevel arena id
   actorDNew <- getsState sactorD
   itemDNew <- getsState sitemD
   factionNew <- getsState sfaction
-  (pStart, pEnd) <- cmdPosAtomic cmd
+  (pStart, pEnd) <- case atomic of
+    Left cmd -> posCmdAtomic cmd
+    Right desc -> posDescAtomic desc
   let vis per = all (`ES.member` totalVisible per)
       send fid = do
         perOld <- getPerFid fid arena
-        resets <- resetsFovAtomic fid cmd
+        resets <- case atomic of
+          Left cmd -> resetsFovAtomic fid cmd
+          Right _ -> return False
+        perNew <-
+          if resets then do
+            resetFidPerception fid arena
+            perNew <- getPerFid fid arena
+            return perNew
+          else return perOld
+        let startSeen = either id (vis perOld) pStart
+            endSeen = either id (vis perNew) pEnd
+            seen = startSeen && endSeen
         if resets then do
-          resetFidPerception fid arena
-          perNew <- getPerFid fid arena
-          let startSeen = either id (vis perOld) pStart
-              endSeen = either id (vis perNew) pEnd
-          if startSeen && endSeen then do
+          if seen then do
             let sendUp =
                   sendUpdateCli fid
                   $ RememberPerCli perNew lvlOld arena actorDOld itemDOld factionOld
             sendUp
             withAI sendUp
-            let sendCmd = sendUpdateCli fid $ AtomicSeenCli cmd
+            let sendCmd = sendUpdateCli fid $ AtomicSeenCli atomic
             sendCmd
             withAI sendCmd
           else do
@@ -165,11 +179,8 @@ cmdAtomicBroad arena cmd = do
             sendUp
             withAI sendUp
         else do
-          let startSeen = either id (vis perOld) pStart
-              endSeen = either id (vis perOld) pEnd
-          if startSeen && endSeen
-          then do
-            let sendCmd = sendUpdateCli fid $ AtomicSeenCli cmd
+          if seen then do
+            let sendCmd = sendUpdateCli fid $ AtomicSeenCli atomic
             sendCmd
             withAI sendCmd
           else do
@@ -178,7 +189,8 @@ cmdAtomicBroad arena cmd = do
                   $ RememberCli lvlNew arena actorDNew itemDNew factionNew
             sendUp
             withAI sendUp
-  mapM_ send $ EM.keys factionNew
+  faction <- getsState sfaction
+  mapM_ send $ EM.keys faction
 
 -- TODO: switch levels alternating between player factions,
 -- if there are many and on distinct levels.
@@ -423,7 +435,7 @@ restartGame loopServer = do
   let bcast = funBroadcastCli (\fid -> RestartCli (pers EM.! fid) defLoc)
   bcast
   withAI bcast
-  cmdAtomicBroad initialLevel SyncA
+  cmdAtomicBroad initialLevel $ Left $ SyncA
   saveGameBkp
   broadcastCli [] $ ShowMsgCli "This time for real."
   broadcastUI [] $ DisplayPushCli
@@ -436,7 +448,7 @@ initialHeroes lid (side, ppos, configHeroNames) = do
   configExtraHeroes <- getsServer $ configExtraHeroes . sconfig
   replicateM_ (1 + configExtraHeroes) $ do
     cmds <- execWriterT $ addHero side ppos lid configHeroNames
-    mapM_ cmdAtomicSem cmds
+    mapM_ atomicSem cmds
 
 createFactions :: Kind.COps -> Config -> Rnd FactionDict
 createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
@@ -501,7 +513,7 @@ gameReset cops@Kind.COps{coitem, corule, cotile} = do
           pos <- rndToAction
                  $ findPos ltile (const (Tile.hasFeature cotile F.Boring))
           cmds <- execWriterT $ createItems 1 pos lid
-          mapM_ cmdAtomicSem cmds
+          mapM_ atomicSem cmds
   mapM_ initialItems itemCounts
   mapM_ (initialHeroes entryLevel) $ zip3 needInitialCrew entryPoss heroNames
 
@@ -574,14 +586,14 @@ regenerateLevelHP arena = do
            else Just a
   toRegen <-
     getsState $ catMaybes . map pick .actorNotProjAssocs (const True) arena
-  mapM_ (\aid -> cmdAtomicBroad arena $ HealActorA aid 1) toRegen
+  mapM_ (\aid -> cmdAtomicBroad arena $ Left $ HealActorA aid 1) toRegen
 
 -- TODO: let only some actors/items leave smell, e.g., a Smelly Hide Armour.
 -- | Add a smell trace for the actor to the level.
-_addSmell :: MonadActionRO m => ActorId -> WriterT [CmdAtomic] m ()
+_addSmell :: MonadActionRO m => ActorId -> WriterT [Atomic] m ()
 _addSmell aid = do
   b <- getsState $ getActorBody aid
   time <- getsState $ getTime $ blid b
   oldS <- getsLevel (blid b) $ (EM.lookup $ bpos b) . lsmell
   let newTime = timeAdd time smellTimeout
-  tell [AlterSmellA (blid b) [(bpos b, (oldS, Just newTime))]]
+  tellCmdAtomic $ AlterSmellA (blid b) [(bpos b, (oldS, Just newTime))]
