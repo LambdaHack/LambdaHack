@@ -314,10 +314,11 @@ getItem aid prompt p ptext bag inv isn = do
             K.Char l | InvChar l `elem` map (snd . snd) ims ->
               case find ((InvChar l ==) . snd . snd) ims of
                 Nothing -> assert `failure` (l,  ims)
-                Just (iidItem, (k, _)) -> return (iidItem, (k, CActor aid))
+                Just (iidItem, (k, l2)) ->
+                  return (iidItem, (k, CActor aid l2))
             K.Return | bestFull ->
-              let (iidItem, (k, _)) = maximumBy (compare `on` snd . snd) isp
-              in return (iidItem, (k, CActor aid))
+              let (iidItem, (k, l2)) = maximumBy (compare `on` snd . snd) isp
+              in return (iidItem, (k, CActor aid l2))
             k -> assert `failure` "perform: unexpected key:" <+> showT k
   ask
 

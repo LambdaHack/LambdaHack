@@ -217,7 +217,8 @@ rangedFreq cops actor glo fpos =
        && asight mk
        && accessible cops lvl bpos pos1    -- first accessible
        && isNothing (posToActor pos1 blid glo)  -- no friends on first
-    then throwFreq bitems 3 (CActor actor) ++ throwFreq tis 6 (CFloor bpos)
+    then throwFreq bbag 3 (actorContainer actor binv)
+         ++ throwFreq tis 6 (const $ CFloor bpos)
     else []
  where
   Kind.COps{ coactor=Kind.Ops{okind}
@@ -225,8 +226,7 @@ rangedFreq cops actor glo fpos =
            , corule
            } = cops
   lvl@Level{lxsize, lysize} = sdungeon glo EM.! blid
-  Actor{ bkind, bpos, bfaction, blid } = getActorBody actor glo
-  bitems = getActorBag actor glo
+  Actor{bkind, bpos, bfaction, blid, bbag, binv} = getActorBody actor glo
   mk = okind bkind
   tis = lvl `atI` bpos
   lenemy = genemy . (EM.! bfaction) . sfaction $ glo
@@ -243,7 +243,7 @@ rangedFreq cops actor glo fpos =
     Just (lbl:_) -> lbl
   throwFreq bag multi container =
     [ (benefit * multi,
-       ProjectSer actor fpos eps iid container)
+       ProjectSer actor fpos eps iid (container iid))
     | (iid, i) <- map (\iid -> (iid, getItemBody iid glo))
                   $ EM.keys bag,
       let (ik, benefit) =
@@ -260,15 +260,15 @@ rangedFreq cops actor glo fpos =
 toolsFreq :: Kind.COps -> ActorId -> State -> Frequency CmdSer
 toolsFreq cops actor glo =
   toFreq "quaffFreq"
-  $ quaffFreq bitems 1 (CActor actor) ++ quaffFreq tis 2 (CFloor bpos)
+  $ quaffFreq bbag 1 (actorContainer actor binv)
+  ++ quaffFreq tis 2 (const $ CFloor bpos)
  where
   Kind.COps{coitem=Kind.Ops{okind=iokind}} = cops
-  Actor{bpos, blid} = getActorBody actor glo
+  Actor{bpos, blid, bbag, binv} = getActorBody actor glo
   lvl = sdungeon glo EM.! blid
-  bitems = getActorBag actor glo
   tis = lvl `atI` bpos
   quaffFreq bag multi container =
-    [ (benefit * multi, ApplySer actor iid container)
+    [ (benefit * multi, ApplySer actor iid (container iid))
     | (iid, i) <- map (\iid -> (iid, getItemBody iid glo))
                   $ EM.keys bag,
       let (ik, benefit) =

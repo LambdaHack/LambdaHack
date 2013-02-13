@@ -6,7 +6,8 @@ module Game.LambdaHack.ActorState
   ( actorAssocs, actorList, actorNotProjAssocs, actorNotProjList
   , isProjectile, calculateTotal, nearbyFreePos, whereTo
   , posToActor, getItemBody, memActor, getActorBody, updateActorBody
-  , getActorItem, getActorBag, getActorInv, tryFindHeroK, foesAdjacent
+  , getActorItem, getActorBag, actorContainer, getActorInv
+  , tryFindHeroK, foesAdjacent
   ) where
 
 import qualified Data.Char as Char
@@ -142,6 +143,12 @@ updateActorBody aid f s = updateActorD (EM.adjust f aid) s
 
 getActorBag :: ActorId -> State -> ItemBag
 getActorBag aid s = bbag $ getActorBody aid s
+
+actorContainer :: ActorId -> ItemInv -> ItemId -> Container
+actorContainer aid binv iid =
+  case find ((== iid) . snd) $ EM.assocs binv of
+    Just (l, _) -> CActor aid l
+    Nothing -> assert `failure` (aid, binv, iid)
 
 getActorInv :: ActorId -> State -> ItemInv
 getActorInv aid s = binv $ getActorBody aid s

@@ -102,7 +102,9 @@ projectSer source tpos eps iid container = do
         then do
           tellDescAtomic $ ProjectA source iid
           projId <- addProjectile iid pos (blid sm) (bfaction sm) path time
-          tellCmdAtomic $ MoveItemA (blid sm) iid 1 container (CActor projId)
+          tellCmdAtomic
+            $ MoveItemA (blid sm) iid 1 container
+                                        (CActor projId (InvChar 'a'))
         else
           abortWith "blocked"
 
@@ -184,7 +186,7 @@ pickupSer :: MonadServerChan m
           => ActorId -> ItemId -> Int -> InvChar -> WriterT [Atomic] m ()
 pickupSer aid iid k l = assert (k > 0 `blame` (aid, iid, k, l)) $ do
   b <- getsState $ getActorBody aid
-  tellCmdAtomic $ MoveItemA (blid b) iid k (CFloor (bpos b)) (CActor aid)
+  tellCmdAtomic $ MoveItemA (blid b) iid k (CFloor (bpos b)) (CActor aid l)
 
 -- ** DropSer
 
@@ -192,7 +194,8 @@ dropSer :: MonadActionRO m => ActorId -> ItemId -> WriterT [Atomic] m ()
 dropSer aid iid = do
   b <- getsState $ getActorBody aid
   let k = 1
-  tellCmdAtomic $ MoveItemA (blid b) iid k (CActor aid) (CFloor (bpos b))
+  tellCmdAtomic $ MoveItemA (blid b) iid k (actorContainer aid (binv b) iid)
+                                           (CFloor (bpos b))
 
 -- * WaitSer
 

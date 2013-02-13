@@ -139,7 +139,7 @@ posOfAid aid = getsState $ bpos . getActorBody aid
 
 posOfContainer :: MonadActionRO m => Container -> m Point
 posOfContainer (CFloor pos) = return pos
-posOfContainer (CActor aid) = posOfAid aid
+posOfContainer (CActor aid _) = posOfAid aid
 
 -- TODO: perhaps assert that the inventory of the actor is empty
 -- or at least that the items belong to litem.
@@ -181,7 +181,7 @@ createItemA lid iid item k c = assert (k > 0) $ do
   modifyState $ updateItemD $ EM.insertWith f iid item
   case c of
     CFloor pos -> insertItemFloor lid iid k pos
-    CActor aid -> insertItemActor iid k aid
+    CActor aid l -> insertItemActor iid k l aid
 
 insertItemFloor :: MonadAction m
                 => LevelId -> ItemId -> Int -> Point -> m ()
@@ -191,22 +191,16 @@ insertItemFloor lid iid k pos =
   in updateLevel lid $ updateFloor mergeBag
 
 insertItemActor :: MonadAction m
-                => ItemId -> Int -> ActorId -> m ()
-insertItemActor iid k aid = do
-  item <- getsState $ getItemBody iid
-  let l = if jsymbol item == '$' then Just $ InvChar '$' else Nothing
-      bag = EM.singleton iid k
-  body <- getsState $ getActorBody aid
-  case assignLetter iid l body of
-    Nothing -> insertItemFloor (blid body) iid k (bpos body)
-    Just l2 -> do
-      let upd = EM.unionWith (+) bag
-      modifyState $ updateActorD
-        $ EM.adjust (\b -> b {bbag = upd (bbag b)}) aid
-      modifyState $ updateActorD
-        $ EM.adjust (\b -> b {binv = EM.insert l2 iid (binv b)}) aid
-      modifyState $ updateActorBody aid $ \b ->
-        b {bletter = max l2 (bletter b)}
+                => ItemId -> Int -> InvChar -> ActorId -> m ()
+insertItemActor iid k l aid = do
+  let bag = EM.singleton iid k
+  let upd = EM.unionWith (+) bag
+  modifyState $ updateActorD
+    $ EM.adjust (\b -> b {bbag = upd (bbag b)}) aid
+  modifyState $ updateActorD
+    $ EM.adjust (\b -> b {binv = EM.insert l iid (binv b)}) aid
+  modifyState $ updateActorBody aid $ \b ->
+    b {bletter = max l (bletter b)}
 
 -- | Destroy some copies (possibly not all) of an item.
 destroyItemA :: MonadAction m
@@ -216,9 +210,9 @@ destroyItemA lid iid _item k c = assert (k > 0) $ do
   -- This is behaviourally equivalent.
   case c of
     CFloor pos -> deleteItemFloor lid iid k pos
-    CActor aid -> deleteItemActor iid k aid
-                  -- Actor's @bletter@ for UI not reset.
-                  -- This is OK up to isomorphism.
+    CActor aid _ -> deleteItemActor iid k aid
+                    -- Actor's @bletter@ for UI not reset.
+                    -- This is OK up to isomorphism.
 
 deleteItemFloor :: MonadAction m
                 => LevelId -> ItemId -> Int -> Point -> m ()
@@ -255,10 +249,10 @@ moveItemA :: MonadAction m
 moveItemA lid iid k c1 c2 = assert (k > 0) $ do
   case c1 of
     CFloor pos -> deleteItemFloor lid iid k pos
-    CActor aid -> deleteItemActor iid k aid
+    CActor aid _ -> deleteItemActor iid k aid
   case c2 of
     CFloor pos -> insertItemFloor lid iid k pos
-    CActor aid -> insertItemActor iid k aid
+    CActor aid l -> insertItemActor iid k l aid
 
 healActorA :: MonadAction m => ActorId -> Int -> m ()
 healActorA aid n = assert (n /= 0) $

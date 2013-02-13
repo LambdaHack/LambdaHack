@@ -533,7 +533,8 @@ dropAllItems aid = do
   b <- getsState $ getActorBody aid
   let f (iid, k) =
         tellCmdAtomic
-        $ MoveItemA (blid b) iid k (CActor aid) (CFloor $ bpos b)
+        $ MoveItemA (blid b) iid k (actorContainer aid (binv b) iid)
+                                   (CFloor $ bpos b)
   mapM_ f $ EM.assocs $ bbag b
 
 -- | Remove a dead actor. Check if game over.

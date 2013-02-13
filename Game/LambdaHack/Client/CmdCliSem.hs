@@ -219,11 +219,11 @@ moveItemA iid k c1 c2 = do
   item <- getsState $ getItemBody iid
   disco <- getsState sdisco
   case (c1, c2) of
-    (CFloor _, CActor aid) -> do
+    (CFloor _, CActor aid l) -> do
       b <- getsState $ getActorBody aid
       side <- getsClient sside
       if bfaction b == side then
-        msgAdd $ makePhrase [ letterLabel undefined  -- l
+        msgAdd $ makePhrase [ letterLabel l
                             , partItemNWs coitem disco k item
                             , "\n" ]
       else aiVerbMU aid "pick up" iid k
