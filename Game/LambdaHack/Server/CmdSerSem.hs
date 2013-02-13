@@ -49,14 +49,13 @@ default (Text)
 
 applySer :: MonadServerChan m   -- MonadActionAbort m
          => ActorId    -- ^ actor applying the item (is on current level)
-         -> MU.Part    -- ^ how the applying is called
          -> ItemId     -- ^ the item to be applied
          -> Container  -- ^ the location of the item
          -> WriterT [Atomic] m ()
-applySer actor verb iid container = do
+applySer actor iid container = do
   item <- getsState $ getItemBody iid
   b <- getsState $ getActorBody actor
-  broadcastPosCli [bpos b] (blid b) $ ApplyCli actor verb item
+  tellDescAtomic $ ActivateA actor iid
   itemEffect 5 actor actor item False
   tellCmdAtomic $ DestroyItemA (blid b) iid item 1 container
 
@@ -66,11 +65,10 @@ projectSer :: MonadServerChan m
            => ActorId    -- ^ actor projecting the item (is on current lvl)
            -> Point      -- ^ target position of the projectile
            -> Int        -- ^ digital line parameter
-           -> MU.Part    -- ^ how the projecting is called
            -> ItemId     -- ^ the item to be projected
            -> Container  -- ^ whether the items comes from floor or inventory
            -> WriterT [Atomic] m ()
-projectSer source tpos eps _verb iid container = do
+projectSer source tpos eps iid container = do
   cops@Kind.COps{coactor} <- getsState scops
   sm <- getsState (getActorBody source)
   Actor{btime} <- getsState $ getActorBody source
@@ -102,10 +100,9 @@ projectSer source tpos eps _verb iid container = do
       inhabitants <- getsState (posToActor pos arena)
       if accessible cops lvl spos pos && isNothing inhabitants
         then do
+          tellDescAtomic $ ProjectA source iid
           projId <- addProjectile iid pos (blid sm) (bfaction sm) path time
           tellCmdAtomic $ MoveItemA (blid sm) iid 1 container (CActor projId)
-          item <- getsState $ getItemBody iid
-          broadcastPosCli [spos, pos] (blid sm) $ ProjectCli spos source item
         else
           abortWith "blocked"
 
@@ -153,27 +150,32 @@ addProjectile iid loc blid bfaction path btime = do
 
 -- | Perform the action specified for the tile in case it's triggered.
 triggerSer :: MonadServerChan m
-           => ActorId -> Point -> LevelId -> WriterT [Atomic] m ()
-triggerSer aid dpos arena = do
+           => ActorId -> Point -> WriterT [Atomic] m ()
+triggerSer aid dpos = do
   Kind.COps{cotile=Kind.Ops{okind, opick}} <- getsState scops
   b <- getsState $ getActorBody aid
-  lvl <- getsLevel (blid b) id
-  let f (F.Cause ef) = do
-        -- No block against tile, hence @False@.
-        void $ effectSem ef 0 aid aid 0 False
-        return ()
-      f (F.ChangeTo tgroup) = do
-        as <- getsState $ actorList (const True) arena
-        if EM.null $ lvl `atI` dpos
-          then if unoccupied as dpos
-               then do
-                 fromTile <- getsLevel (blid b) (`at` dpos)
-                 toTile <- rndToAction $ opick tgroup (const True)
-                 tellCmdAtomic $ AlterTileA (blid b) dpos fromTile toTile
+  let arena = blid b
+  lvl <- getsLevel arena id
+  let f feat = do
+        case feat of
+          F.Cause ef -> do
+            tellDescAtomic $ TriggerA aid dpos feat {-TODO-}True
+            -- No block against tile, hence @False@.
+            void $ effectSem ef 0 aid aid 0 False
+            return ()
+          F.ChangeTo tgroup -> do
+            tellDescAtomic $ TriggerA aid dpos feat {-TODO-}True
+            as <- getsState $ actorList (const True) arena
+            if EM.null $ lvl `atI` dpos
+              then if unoccupied as dpos
+                 then do
+                   fromTile <- getsLevel (blid b) (`at` dpos)
+                   toTile <- rndToAction $ opick tgroup (const True)
+                   tellCmdAtomic $ AlterTileA (blid b) dpos fromTile toTile
 -- TODO: take care of AI using this function (aborts, etc.).
-               else abortWith "blocked"  -- by monsters or heroes
-          else abortWith "jammed"  -- by items
-      f _ = return ()
+                 else abortWith "blocked"  -- by monsters or heroes
+            else abortWith "jammed"  -- by items
+          _ -> return ()
   mapM_ f $ TileKind.tfeature $ okind $ lvl `at` dpos
 
 -- * PickupSer
@@ -183,7 +185,6 @@ pickupSer :: MonadServerChan m
 pickupSer aid iid k l = assert (k > 0 `blame` (aid, iid, k, l)) $ do
   b <- getsState $ getActorBody aid
   tellCmdAtomic $ MoveItemA (blid b) iid k (CFloor (bpos b)) (CActor aid)
-  void $ broadcastPosCli [bpos b] (blid b) (PickupCli aid iid k l)
 
 -- ** DropSer
 
@@ -321,7 +322,7 @@ search aid = do
   let diffL = foldl' searchTile [] (moves lxsize)
   tellCmdAtomic $ AlterSecretA (blid b) diffL
   let triggerHidden (_, (_, Just _)) = return ()
-      triggerHidden (dpos, (_, Nothing)) = triggerSer aid dpos (blid b)
+      triggerHidden (dpos, (_, Nothing)) = triggerSer aid dpos
   mapM_ triggerHidden diffL
 
 -- TODO: bumpTile tpos F.Openable
@@ -343,7 +344,7 @@ actorOpenDoor actor dir = do
                  Tile.hasFeature cotile F.Openable t ||
                  Tile.hasFeature cotile F.Hidden t)
          then neverMind isVerbose  -- not doors at all
-         else triggerSer actor dpos (blid body)
+         else triggerSer actor dpos
 
 -- ** RunSer
 

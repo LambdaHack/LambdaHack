@@ -5,7 +5,6 @@ module Game.LambdaHack.CmdSer
   ) where
 
 import Data.Typeable
-import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Faction
@@ -16,9 +15,9 @@ import Game.LambdaHack.Vector
 
 -- | Abstract syntax of server commands.
 data CmdSer =
-    ApplySer ActorId MU.Part ItemId Container
-  | ProjectSer ActorId Point Int MU.Part ItemId Container
-  | TriggerSer ActorId Point LevelId
+    ApplySer ActorId ItemId Container
+  | ProjectSer ActorId Point Int ItemId Container
+  | TriggerSer ActorId Point
   | PickupSer ActorId ItemId Int InvChar
   | DropSer ActorId ItemId
   | WaitSer ActorId

@@ -22,9 +22,9 @@ cmdSerSem lid cmd = do
 
 cmdSerWriterT :: MonadServerChan m => CmdSer -> WriterT [Atomic] m ()
 cmdSerWriterT cmd = case cmd of
-  ApplySer aid v iid container -> applySer aid v iid container
-  ProjectSer aid p eps v iid container -> projectSer aid p eps v iid container
-  TriggerSer aid p lid -> triggerSer aid p lid
+  ApplySer aid iid container -> applySer aid iid container
+  ProjectSer aid p eps iid container -> projectSer aid p eps iid container
+  TriggerSer aid p -> triggerSer aid p
   PickupSer aid i k l -> pickupSer aid i k l
   DropSer aid item -> dropSer aid item
   WaitSer aid -> waitSer aid

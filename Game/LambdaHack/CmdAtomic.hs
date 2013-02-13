@@ -9,7 +9,7 @@
 -- it easier to undo the commands. In principle, the commands are the only
 -- way to affect the basic game state (@State@).
 module Game.LambdaHack.CmdAtomic
-  ( tellCmdAtomic, tellDesc
+  ( tellCmdAtomic, tellDescAtomic
   , Atomic, CmdAtomic(..), DescAtomic(..)
   , undoCmdAtomic, undoDescAtomic, undoAtomic
   ) where
@@ -34,8 +34,8 @@ import Game.LambdaHack.Vector
 tellCmdAtomic :: Monad m => CmdAtomic -> WriterT [Atomic] m ()
 tellCmdAtomic cmd = tell [Left cmd]
 
-tellDesc :: Monad m => DescAtomic -> WriterT [Atomic] m ()
-tellDesc desc = tell [Right desc]
+tellDescAtomic :: Monad m => DescAtomic -> WriterT [Atomic] m ()
+tellDescAtomic desc = tell [Right desc]
 
 type Atomic = Either CmdAtomic DescAtomic
 
@@ -87,7 +87,7 @@ undoCmdAtomic cmd = case cmd of
   CreateItemA lid iid item k c -> DestroyItemA lid iid item k c
   DestroyItemA lid iid item k c -> CreateItemA lid iid item k c
   MoveActorA aid fromP toP -> MoveActorA aid toP fromP
-  WaitActorA actor fromWait toWait -> WaitActorA actor toWait fromWait
+  WaitActorA aid fromWait toWait -> WaitActorA aid toWait fromWait
   DisplaceActorA source target -> DisplaceActorA target source
   MoveItemA lid iid k c1 c2 -> MoveItemA lid iid k c2 c1
   HealActorA aid n -> HealActorA aid (-n)

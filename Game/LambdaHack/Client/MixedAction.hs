@@ -24,7 +24,6 @@ import Game.LambdaHack.Client.LocalAction
 import Game.LambdaHack.Client.RunAction
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.CmdSer
-import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Feature as F
@@ -63,18 +62,13 @@ leaderApplyGroupItem :: MonadClientUI m
                      => MU.Part -> MU.Part -> [Char]
                      -> m CmdSer
 leaderApplyGroupItem verb object syms = do
-  Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   Just leader <- getsClient sleader
   bag <- getsState $ getActorBag leader
   inv <- getsState $ getActorInv leader
-  ((iid, item), (_, container)) <-
+  ((iid, _), (_, container)) <-
     getGroupItem leader bag inv object syms
                  (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
-  disco <- getsState sdisco
-  let verbApply = case jkind disco item of
-        Nothing -> verb
-        Just ik -> iverbApply $ okind ik
-  return $! ApplySer leader verbApply iid container
+  return $! ApplySer leader iid container
 
 -- | Let a human player choose any item with a given group name.
 -- Note that this does not guarantee the chosen item belongs to the group,
@@ -120,21 +114,16 @@ actorProjectGI aid verb object syms = do
   seps <- getsClient seps
   case targetToPos cli pos of
     Just p -> do
-      Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
       bag <- getsState $ getActorBag aid
       inv <- getsState $ getActorInv aid
-      ((iid, item), (_, container)) <-
+      ((iid, _), (_, container)) <-
         getGroupItem aid bag inv object syms
           (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
       stgtMode <- getsClient stgtMode
       case stgtMode of
         Just (TgtAuto _) -> endTargeting True
         _ -> return ()
-      disco <- getsState sdisco
-      let verbProject = case jkind disco item of
-            Nothing -> verb
-            Just ik -> iverbProject $ okind ik
-      return $! ProjectSer aid p seps verbProject iid container
+      return $! ProjectSer aid p seps iid container
     Nothing -> assert `failure` (pos, aid, "target unexpectedly invalid")
 
 -- ** TriggerDir
@@ -169,7 +158,7 @@ bumpTile leader dpos feat = do
   -- A tile can be triggered even if an invisible monster occupies it.
   -- TODO: let the user choose whether to attack or activate.
   if Tile.hasFeature cotile feat t
-    then return $ TriggerSer leader dpos $ blid b
+    then return $ TriggerSer leader dpos
     else guessBump cotile feat t
 
 -- | Guess and report why the bump command failed.

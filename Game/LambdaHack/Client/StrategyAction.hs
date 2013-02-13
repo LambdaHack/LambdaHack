@@ -243,7 +243,7 @@ rangedFreq cops actor glo fpos =
     Just (lbl:_) -> lbl
   throwFreq bag multi container =
     [ (benefit * multi,
-       ProjectSer actor fpos eps (iverbProject ik) iid container)
+       ProjectSer actor fpos eps iid container)
     | (iid, i) <- map (\iid -> (iid, getItemBody iid glo))
                   $ EM.keys bag,
       let (ik, benefit) =
@@ -268,7 +268,7 @@ toolsFreq cops actor glo =
   bitems = getActorBag actor glo
   tis = lvl `atI` bpos
   quaffFreq bag multi container =
-    [ (benefit * multi, ApplySer actor (iverbApply ik) iid container)
+    [ (benefit * multi, ApplySer actor iid container)
     | (iid, i) <- map (\iid -> (iid, getItemBody iid glo))
                   $ EM.keys bag,
       let (ik, benefit) =

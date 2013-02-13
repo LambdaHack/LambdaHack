@@ -61,7 +61,7 @@ resetsFovAtomic fid cmd = case cmd of
     bt <- fidEquals fid target
     return $ source /= target && (bs || bt)
   DominateActorA _ fromFid toFid -> return $ fid `elem` [fromFid, toFid]
-  MoveItemA _ _ _ _ _ -> return False  -- assumption: stays on same pos
+  MoveItemA _ _ _ _ _ -> return False  -- unless shiny
   AlterTileA _ _ _ _ -> return True  -- even if pos not visible initially
   SyncA -> return True  -- that's the only meaning of this command
   _ -> return False

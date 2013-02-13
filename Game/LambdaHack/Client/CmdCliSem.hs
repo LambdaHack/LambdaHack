@@ -42,38 +42,12 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import Game.LambdaHack.Random
+import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 
 -- * cmdUpdateCli
-
-pickupCli :: MonadClient m => ActorId -> ItemId -> Int -> InvChar -> m ()
-pickupCli aid iid k l = do
-  Kind.COps{coactor, coitem} <- getsState scops
-  body <- getsState (getActorBody aid)
-  item <- getsState $ getItemBody iid
-  side <- getsClient sside
-  disco <- getsState sdisco
-  if bfaction body == side
-    then msgAdd $ makePhrase [ letterLabel l
-                             , partItemNWs coitem disco k item
-                             , "\n" ]
-    else msgAdd $ makeSentence
-           [ MU.SubjectVerbSg (partActor coactor body) "pick up"
-           , partItemNWs coitem disco 1 item ]  -- single, not 'ni'
-
-applyCli :: MonadClient m => ActorId -> MU.Part -> Item -> m ()
-applyCli actor verb item = do
-  Kind.COps{coactor, coitem} <- getsState scops
-  disco <- getsState sdisco
-  body <- getsState (getActorBody actor)
-  -- TODO: "you" instead of partActor? but keep partActor for other sides
-  -- TODO: perhaps automate you/partActor depending on side
-  let msg = makeSentence
-        [ MU.SubjectVerbSg (partActor coactor body) verb
-        , partItemNWs coitem disco 1 item ]
-  msgAdd msg
 
 -- | Make the item known to the player.
 discoverCli :: (MonadAction m, MonadClient m) => Kind.Id ItemKind -> Item -> m ()
@@ -134,22 +108,6 @@ rememberPerCli per lvl lid actorD itemD faction = do
 --     loc <- getState
 --     modifyClient $ updateSelectedLeader aid loc
 
-projectCli :: MonadClient m => Point -> ActorId -> Item -> m ()
-projectCli spos source item = do
-    Kind.COps{coactor, coitem} <- getsState scops
-    per <- askPerception
-    disco <- getsState sdisco
-    sm <- getsState (getActorBody source)
-    let svisible = spos `ES.member` totalVisible per
-        subject =
-          if svisible
-          then sm
-          else sm {bname = Just "somebody"}
-        msg = makeSentence
-              [ MU.SubjectVerbSg (partActor coactor subject) "aim"
-              , partItemNWs coitem disco 1 item ]
-    msgAdd msg
-
 showAttackCli :: MonadClient m
               => ActorId -> ActorId -> MU.Part -> Item -> Bool
               -> m ()
@@ -196,6 +154,81 @@ atomicSeen atomic = case atomic of
   Left cmd -> cmdAtomicSem cmd
   Right _ -> return ()
 
+cmdAtomicCli :: MonadClient m => CmdAtomic -> m ()
+cmdAtomicCli cmd = case cmd of
+  CreateActorA _ _ -> return ()
+  DestroyActorA _ _ -> return ()
+  CreateItemA _ _ _ _ _ -> return ()
+  DestroyItemA _ _ _ _ _ -> return ()
+  MoveActorA aid fromP toP -> return ()
+  WaitActorA _ _ _ -> return ()
+  DisplaceActorA source target -> return ()
+  MoveItemA _ iid k c1 c2 -> moveItemA iid k c1 c2
+  HealActorA aid n -> do
+    Kind.COps{coactor} <- getsState scops
+    b <- getsState $ getActorBody aid
+    void $ return $ actorVerb coactor b "feel better"
+  HasteActorA aid delta -> return ()
+  DominateActorA target fromFid toFid -> return ()
+  PathActorA aid fromPath toPath -> return ()
+  ColorActorA aid fromCol toCol -> return ()
+  QuitFactionA fid fromSt toSt -> return ()
+  LeadFactionA fid source target ->
+    modifyClient $ \cli -> cli {_sleader = target}
+  AlterTileA _ _ _ _ -> return ()
+  AlterSecretA lid diffL -> return ()
+  AlterSmellA lid diffL -> return ()
+  SyncA -> return ()
+
+actorVerbMU :: MonadClient m => Actor -> MU.Part -> m ()
+actorVerbMU body verb = do
+  Kind.COps{coactor} <- getsState scops
+  let msg = makeSentence [MU.SubjectVerbSg (partActor coactor body) verb]
+  msgAdd msg
+
+aVerbMU :: MonadClient m => ActorId -> MU.Part -> m ()
+aVerbMU aid verb = do
+  body <- getsState $ getActorBody aid
+  actorVerbMU body verb
+
+iVerbMU :: MonadClient m => ItemId -> Int -> MU.Part -> m ()
+iVerbMU iid k verb = do
+  Kind.COps{coitem} <- getsState scops
+  disco <- getsState sdisco
+  item <- getsState $ getItemBody iid
+  let msg =
+        makeSentence [MU.SubjectVerbSg (partItemNWs coitem disco k item) verb]
+  msgAdd msg
+
+aiVerbMU :: MonadClient m => ActorId -> MU.Part -> ItemId -> Int -> m ()
+aiVerbMU aid verb iid k = do
+  Kind.COps{coactor, coitem} <- getsState scops
+  disco <- getsState sdisco
+  body <- getsState $ getActorBody aid
+  item <- getsState $ getItemBody iid
+  -- TODO: "you" instead of partActor? but keep partActor for other sides
+  -- TODO: perhaps automate you/partActor depending on side
+  let msg = makeSentence
+        [ MU.SubjectVerbSg (partActor coactor body) verb
+        , partItemNWs coitem disco k item ]
+  msgAdd msg
+
+moveItemA :: MonadClient m => ItemId -> Int -> Container -> Container -> m ()
+moveItemA iid k c1 c2 = do
+  Kind.COps{coitem} <- getsState scops
+  item <- getsState $ getItemBody iid
+  disco <- getsState sdisco
+  case (c1, c2) of
+    (CFloor _, CActor aid) -> do
+      b <- getsState $ getActorBody aid
+      side <- getsClient sside
+      if bfaction b == side then
+        msgAdd $ makePhrase [ letterLabel undefined  -- l
+                            , partItemNWs coitem disco k item
+                            , "\n" ]
+      else aiVerbMU aid "pick up" iid k
+    _ -> return ()
+
 displayHeal :: MonadClientUI m => Msg -> (Point, Point) -> Int -> Bool -> m ()
 displayHeal msg poss deltaHP block = do
   msgAdd msg
@@ -213,6 +246,54 @@ displayHeal msg poss deltaHP block = do
            | otherwise = mempty
       animFrs = animate cli loc per anim
   displayFramesPush $ Nothing : animFrs
+
+cmdAtomicVerboseCli :: MonadClient m => CmdAtomic -> m ()
+cmdAtomicVerboseCli cmd = case cmd of
+  CreateActorA aid body -> actorVerbMU body "appear"
+  DestroyActorA aid body -> actorVerbMU body "disappear"
+  CreateItemA _ iid item k _ -> iVerbMU iid k "appear"
+  DestroyItemA _ iid item k _ -> iVerbMU iid k "disappear"
+  MoveActorA aid fromP toP -> return ()
+  WaitActorA aid _ _ -> aVerbMU aid "wait"
+  DisplaceActorA source target -> return ()
+  MoveItemA lid iid k c1 c2 -> return ()
+  HealActorA aid n -> do
+    Kind.COps{coactor} <- getsState scops
+    b <- getsState $ getActorBody aid
+    void $ return $ actorVerb coactor b "feel better"
+  HasteActorA aid delta -> return ()
+  DominateActorA target fromFid toFid -> return ()
+  PathActorA aid fromPath toPath -> return ()
+  ColorActorA aid fromCol toCol -> return ()
+  QuitFactionA fid fromSt toSt -> return ()
+  LeadFactionA fid source target ->
+    modifyClient $ \cli -> cli {_sleader = target}
+  AlterTileA lid p fromTile toTile -> return ()  -- TODO: door opens
+  AlterSecretA lid diffL -> return ()
+  AlterSmellA lid diffL -> return ()
+  SyncA -> return ()
+
+descAtomicCli :: MonadClient m => DescAtomic -> m ()
+descAtomicCli desc = case desc of
+  StrikeA source target iid b -> return ()
+  RecoilA source target iid b -> return ()
+  ProjectA aid iid -> aiVerbMU aid "aim" iid 1
+  CatchA aid iid -> aiVerbMU aid "catch" iid 1
+  ActivateA aid iid -> aiVerbMU aid "activate" {-TODO-} iid 1
+  CheckA aid iid -> aiVerbMU aid "check" iid 1
+  TriggerA _ _ _ _-> return ()
+  ShunA _ _ _ _ -> return ()
+
+descAtomicVerboseCli :: MonadClient m => DescAtomic -> m ()
+descAtomicVerboseCli desc = case desc of
+  StrikeA source target iid b -> return ()
+  RecoilA source target iid b -> return ()
+  ProjectA aid iid -> return ()
+  CatchA aid iid -> return ()
+  ActivateA aid iid -> return ()
+  CheckA aid iid -> return ()
+  TriggerA aid _p _feat _ -> aVerbMU aid $ "trigger"  -- TODO: opens door
+  ShunA aid _p _ _ -> aVerbMU aid $ "shun"  -- TODO: shuns stairs down
 
 -- * cmdUpdateUI
 
