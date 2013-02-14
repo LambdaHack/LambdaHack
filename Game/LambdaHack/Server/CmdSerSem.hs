@@ -56,7 +56,7 @@ applySer actor iid container = do
   item <- getsState $ getItemBody iid
   b <- getsState $ getActorBody actor
   tellDescAtomic $ ActivateA actor iid
-  itemEffect 5 actor actor item False
+  itemEffect actor actor item
   tellCmdAtomic $ DestroyItemA (blid b) iid item 1 container
 
 -- ** ProjectSer
@@ -163,7 +163,7 @@ triggerSer aid dpos = do
           F.Cause ef -> do
             tellDescAtomic $ TriggerA aid dpos feat {-TODO-}True
             -- No block against tile, hence @False@.
-            void $ effectSem ef 0 aid aid 0 False
+            void $ effectSem ef aid aid 0
             return ()
           F.ChangeTo tgroup -> do
             tellDescAtomic $ TriggerA aid dpos feat {-TODO-}True
@@ -235,9 +235,7 @@ moveSer aid dir = do
     Nothing
       | accessible cops lvl spos tpos ->
           tellCmdAtomic $ MoveActorA aid spos tpos
-      | Tile.canBeHidden cotile (okind $ lvl `at` tpos) -> do
-          sendUpdateCli (bfaction sm)
-            $ ShowMsgCli "You search all adjacent walls for half a second."
+      | Tile.canBeHidden cotile (okind $ lvl `at` tpos) ->
           search aid
       | otherwise ->
           actorOpenDoor aid dir
@@ -250,50 +248,40 @@ moveSer aid dir = do
 actorAttackActor :: MonadServerChan m
                  => ActorId -> ActorId -> WriterT [Atomic] m ()
 actorAttackActor source target = do
+  cops@Kind.COps{coitem=Kind.Ops{opick, okind}} <- getsState scops
   sm <- getsState (getActorBody source)
   tm <- getsState (getActorBody target)
   time <- getsState $ getTime (blid tm)
-  discoS <- getsState sdisco
   s <- getState
-  let spos = bpos sm
-      tpos = bpos tm
   when (bfaction sm == bfaction tm && isHumanFaction s (bfaction sm)
         && not (bproj sm) && not (bproj tm))
     $ assert `failure` (source, target, "human AI bumps into friendlies")
-  cops@Kind.COps{coitem=Kind.Ops{opick, okind}} <- getsState scops
-  state <- getState
   bitems <- getsState (getActorItem source)
-  let h2hGroup | isSpawningFaction state (bfaction sm) = "monstrous"
-               | otherwise = "unarmed"
-  h2hKind <- rndToAction $ opick h2hGroup (const True)
-  flavour <- getsServer sflavour
-  discoRev <- getsServer sdiscoRev
-  let h2hItem = buildItem flavour discoRev h2hKind (okind h2hKind) 0
-      (stack, say, verbosity, verb) =
-        if isProjectile state source
-        then case bitems of
-          [bitem] -> (bitem, False, 10, "hit")     -- projectile
-          _ -> assert `failure` bitems
-        else case strongestSword cops bitems of
-          Nothing -> (h2hItem, False, 0,
-                      iverbApply $ okind h2hKind)  -- hand to hand combat
-          Just w  ->
-            let verbApply = case jkind discoS w of  -- TODO: use disco
-                  Nothing -> "hit"
-                  Just ik -> iverbApply $ okind ik
-            in (w, True, 0, verbApply)
+  item <-
+    if bproj tm
+    then case bitems of
+      [bitem] -> return bitem  -- projectile
+      _ -> assert `failure` bitems
+    else case strongestSword cops bitems of
+      Just w -> return w
+      Nothing -> do  -- hand to hand combat
+        let h2hGroup | isSpawningFaction s (bfaction sm) = "monstrous"
+                     | otherwise = "unarmed"
+        h2hKind <- rndToAction $ opick h2hGroup (const True)
+        flavour <- getsServer sflavour
+        discoRev <- getsServer sdiscoRev
+        return $ buildItem flavour discoRev h2hKind (okind h2hKind) 0
   let performHit block = do
-        broadcastPosCli [spos, tpos] (blid tm)
-          $ ShowAttackCli source target verb stack say
+        let hitA = if block then HitBlockA else HitA
+        tellDescAtomic $ StrikeA source target item hitA
         -- Msgs inside itemEffectSem describe the target part.
-        itemEffect verbosity source target stack block
+        itemEffect source target item
   -- Projectiles can't be blocked, can be sidestepped.
   if braced tm time && not (bproj sm)
     then do
       blocked <- rndToAction $ chance $ 1%2
       if blocked
-        then broadcastPosUI [spos, tpos] (blid tm)
-             $ AnimateBlockCli source target verb
+        then tellDescAtomic $ StrikeA source target item MissBlockA
         else performHit True
     else performHit False
 

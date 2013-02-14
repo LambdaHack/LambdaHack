@@ -8,7 +8,6 @@ module Game.LambdaHack.CmdCli
 
 import qualified Data.EnumSet as ES
 import Data.Typeable
-import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.CmdAtomic
@@ -44,23 +43,21 @@ data CmdUpdateCli =
   | RememberCli Level LevelId ActorDict ItemDict FactionDict
   | RememberPerCli Perception Level LevelId ActorDict ItemDict FactionDict
   | SwitchLevelCli ActorId LevelId Actor ItemBag
-  | ShowAttackCli ActorId ActorId MU.Part Item Bool
   | RestartCli FactionPers State
   | ContinueSavedCli FactionPers
   | GameSaveBkpCli Bool
   | GameDisconnectCli Bool
-  | AtomicSeenCli Atomic
+  | AtomicSeen Atomic
   deriving Show
 
 data CmdUpdateUI =
     AnimateDeathCli ActorId
-  | EffectCli Msg (Point, Point) Int Bool
-  | AnimateBlockCli ActorId ActorId MU.Part
   | DisplaceCli ActorId ActorId
   | DisplayPushCli
   | DisplayDelayCli
   | MoreFullCli Msg
   | MoreBWCli Msg
+  | AtomicSeenUI Atomic
   deriving Show
 
 data CmdQueryCli a where

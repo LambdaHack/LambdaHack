@@ -33,19 +33,15 @@ cmdUpdateCli cmd = case cmd of
   RememberPerCli per lvl lid actorD itemD faction ->
     rememberPerCli per lvl lid actorD itemD faction
   SwitchLevelCli _aid _arena _pbody _items -> undefined  -- switchLevelCli aid arena pbody items
-  ShowAttackCli source target verb stack say ->
-    showAttackCli source target verb stack say
   RestartCli sper locRaw -> restartCli sper locRaw
   ContinueSavedCli sper -> modifyClient $ \cli -> cli {sper}
   GameSaveBkpCli isAI -> clientGameSave True isAI
   GameDisconnectCli isAI -> clientDisconnect isAI
-  AtomicSeenCli catomic -> atomicSeen catomic
+  AtomicSeen catomic -> atomicSeen catomic
 
-cmdUpdateUI :: MonadClientUI m => CmdUpdateUI -> m ()
+cmdUpdateUI :: (MonadAction m, MonadClientUI m) => CmdUpdateUI -> m ()
 cmdUpdateUI cmd = case cmd of
   AnimateDeathCli aid -> animateDeathCli aid
-  EffectCli msg poss deltaHP block -> effectCli msg poss deltaHP block
-  AnimateBlockCli source target verb -> animateBlockCli source target verb
   DisplaceCli source target -> displaceCli source target
   DisplayPushCli -> displayPush
   DisplayDelayCli -> displayFramesPush [Nothing]
@@ -55,6 +51,7 @@ cmdUpdateUI cmd = case cmd of
   MoreFullCli msg -> do
     void $ displayMore ColorFull msg
     recordHistory
+  AtomicSeenUI catomic -> atomicSeenUI catomic
 
 cmdQueryCli :: MonadClient m => CmdQueryCli a -> m a
 cmdQueryCli cmd = case cmd of

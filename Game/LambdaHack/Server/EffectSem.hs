@@ -45,49 +45,41 @@ default (Text)
 -- + Semantics of effects
 
 -- | The source actor affects the target actor, with a given effect and power.
--- The second argument is verbosity of the resulting message.
 -- Both actors are on the current level and can be the same actor.
 -- The boolean result indicates if the effect was spectacular enough
 -- for the actors to identify it (and the item that caused it, if any).
 effectSem :: MonadServerChan m
-          => Effect.Effect -> Int -> ActorId -> ActorId -> Int -> Bool
+          => Effect.Effect -> ActorId -> ActorId -> Int
           -> WriterT [Atomic] m Bool
-effectSem ef verbosity source target power block = do
-  oldS <- getsState $ getActorBody source
-  oldT <- getsState $ getActorBody target
-  let oldHP = bhp oldT
-  (b, msg) <- eff ef verbosity source target power
+effectSem ef source target power = do
+  tb <- getsState $ getActorBody target
   -- We assume if targed moved to a level, which is not the current level,
   -- his HP is unchanged.
-  let arena = blid oldT
+  let oldHP = bhp tb
+      arena = blid tb
+  b <- eff ef source target power
   memTm <- getsState $ memActor target arena
   newHP <- if memTm
-           then getsState (bhp . getActorBody target)
+           then getsState $ bhp . getActorBody target
            else return oldHP
-  -- Target part of message sent here, so only target visibility checked.
-  void $ broadcastPosUI [bpos oldT] arena
-       $ EffectCli msg (bpos oldT, bpos oldS) (newHP - oldHP) block
-  -- TODO: use broadcastPosCli2 and to those that don't see the pos show that:
-  -- when b $ msgAdd "You hear some noises."
   when (newHP <= 0) $ checkPartyDeath target
   return b
 
 -- | The source actor affects the target actor, with a given item.
 -- If the event is seen, the item may get identified. This function
--- is mutually recursive with @effect@, hence it's a part of @Effect@
+-- is mutually recursive with @effect@ and so it's a part of @Effect@
 -- semantics.
 itemEffect :: MonadServerChan m
-           => Int -> ActorId -> ActorId -> Item -> Bool
+           => ActorId -> ActorId -> Item
            -> WriterT [Atomic] m ()
-itemEffect verbosity source target item block = do
+itemEffect source target item = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   sm <- getsState $ getActorBody source
   -- Destroys attacking actor: a hack for projectiles.
   when (bproj sm) $ tellCmdAtomic $ DestroyActorA source sm
   discoS <- getsState sdisco
   let ef = ieffect $ okind $ fromJust $ jkind discoS item
-  -- The msg describes the target part of the action.
-  b <- effectSem ef verbosity source target (jpower item) block
+  b <- effectSem ef source target (jpower item)
   -- The effect is interesting so the item gets identified, if seen.
   when b $ discover discoS item
 
@@ -105,130 +97,111 @@ discover discoS i = do
 -- and the string part describes how the target reacted
 -- (not what the source did).
 eff :: MonadServerChan m
-    => Effect.Effect -> Int -> ActorId -> ActorId -> Int
-    -> WriterT [Atomic] m (Bool, Text)
-eff Effect.NoEffect _ _ _ _ = effectNoEffect
-eff Effect.Heal _ _ target power = effectHeal target power
-eff (Effect.Wound nDm) verbosity source target power =
-  effectWound nDm verbosity source target power
-eff Effect.Dominate _ source target _ =
-  effectDominate source target
-eff Effect.SummonFriend _ source target power =
-  effectSummonFriend source target power
-eff Effect.SpawnMonster _ _ target power =
-  effectSpawnMonster target power
-eff Effect.CreateItem _ _ target power =
-  effectCreateItem target power
-eff Effect.ApplyPerfume _ source target _ =
-  effectApplyPerfume source target
-eff Effect.Regeneration verbosity source target power =
-  eff Effect.Heal verbosity source target power
-eff Effect.Searching _ _source _target _power =
-  return (True, "It gets lost and you search in vain.")
-eff Effect.Ascend _ _ target power = effectAscend target power
-eff Effect.Descend _ _ target power = effectDescend target power
+    => Effect.Effect -> ActorId -> ActorId -> Int
+    -> WriterT [Atomic] m Bool
+eff effect source target power = case effect of
+  Effect.NoEffect -> effectNoEffect
+  Effect.Heal -> effectHeal target power
+  Effect.Wound nDm -> effectWound nDm source target power
+  Effect.Mindprobe -> effectMindprobe target
+  Effect.Dominate | source /= target -> effectDominate source target
+  Effect.Dominate -> eff Effect.Mindprobe source target power
+  Effect.SummonFriend -> effectSummonFriend source target power
+  Effect.SpawnMonster -> effectSpawnMonster target power
+  Effect.CreateItem -> effectCreateItem target power
+  Effect.ApplyPerfume -> effectApplyPerfume source target
+  Effect.Regeneration -> eff Effect.Heal source target power
+  Effect.Searching -> effectSearching source
+  Effect.Ascend -> effectAscend target power
+  Effect.Descend -> effectDescend target power
 
 -- + Individual semantic functions for effects
 
 -- ** NoEffect
 
-effectNoEffect :: MonadActionAbort m => m (Bool, Text)
-effectNoEffect = return (False, "Nothing happens.")
+effectNoEffect :: MonadActionAbort m => m Bool
+effectNoEffect = return False
 
 -- ** Heal
 
 effectHeal :: MonadServer m
-           => ActorId -> Int -> WriterT [Atomic] m (Bool, Text)
+           => ActorId -> Int -> WriterT [Atomic] m Bool
 effectHeal target power = do
-  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   tm <- getsState $ getActorBody target
   let bhpMax = maxDice (ahp $ okind $ bkind tm)
   if bhp tm >= bhpMax || power <= 0
     then effectNoEffect
     else do
-      void $ focusIfOurs target
       let deltaHP = min power (bhpMax - bhp tm)
       tellCmdAtomic $ HealActorA target deltaHP
-      return (True, actorVerb coactor tm "feel better")
+      tellDescAtomic $ EffectA target Effect.Heal
+      return True
 
 -- ** Wound
 
 effectWound :: MonadServer m
-            => RollDice -> Int -> ActorId -> ActorId -> Int
-            -> WriterT [Atomic] m (Bool, Text)
-effectWound nDm verbosity source target power = do
-  Kind.COps{coactor} <- getsState scops
-  isProjTarget <- getsState $ flip isProjectile target
+            => RollDice -> ActorId -> ActorId -> Int
+            -> WriterT [Atomic] m Bool
+effectWound nDm source target power = do
   n <- rndToAction $ rollDice nDm
   let deltaHP = - (n + power)
-  if deltaHP >= 0 then effectNoEffect else do
-    void $ focusIfOurs target
-    tm <- getsState (getActorBody target)
-    isSpawning <- getsState $ flip isSpawningFaction $ bfaction tm
-    let msg
-          | bhp tm + deltaHP <= 0 =
-            if isSpawning
-            then ""  -- Handled later on in checkPartyDeath. Suspense.
-            else -- Not as important, so let the player read the message
-                 -- about monster death while he watches the combat animation.
-              if isProjTarget
-              then actorVerb coactor tm "drop down"
-              else actorVerb coactor tm "die"
-          | source == target =  -- a potion of wounding, etc.
-            actorVerb coactor tm "feel wounded"
-          | verbosity <= 0 = ""
-          | isSpawning =
-            actorVerb coactor tm $ "lose" <+> showT (n + power) <> "HP"
-          | otherwise = actorVerb coactor tm "hiss in pain"
-    -- Damage the target.
-    tellCmdAtomic $ HealActorA target deltaHP
-    return (True, msg)
+  if deltaHP >= 0
+    then effectNoEffect
+    else do
+      -- Damage the target.
+      tellCmdAtomic $ HealActorA target deltaHP
+      when (source == target) $
+        tellDescAtomic $ EffectA source $ Effect.Wound nDm
+      return True
+
+-- ** Mindprobe
+
+effectMindprobe :: MonadServerChan m
+                => ActorId -> WriterT [Atomic] m Bool
+effectMindprobe target = do
+  tb <- getsState (getActorBody target)
+  let arena = blid tb
+  genemy <- getsState $ genemy . (EM.! bfaction tb) . sfaction
+  lxsize <- getsLevel arena lxsize
+  lysize <- getsLevel arena lysize
+  lvl <- getsLevel arena id
+  lb <- getsState $ actorNotProjList (`elem` genemy) arena
+  let cross b = bpos b : vicinityCardinal lxsize lysize (bpos b)
+      vis = ES.fromList $ concatMap cross lb
+  sendUpdateCli (bfaction tb) $ RemCli vis lvl arena
+  tellDescAtomic $ EffectA target Effect.Mindprobe
+  return True
 
 -- ** Dominate
 
 effectDominate :: MonadServerChan m
-               => ActorId -> ActorId -> WriterT [Atomic] m (Bool, Text)
+               => ActorId -> ActorId -> WriterT [Atomic] m Bool
 effectDominate source target = do
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   sm <- getsState (getActorBody source)
-  let arena = blid sm
-  if source == target
-    then do
-      genemy <- getsState $ genemy . (EM.! bfaction sm) . sfaction
-      lxsize <- getsLevel arena lxsize
-      lysize <- getsLevel arena lysize
-      lvl <- getsLevel arena id
-      lm <- getsState $ actorNotProjList (`elem` genemy) arena
-      let cross m = bpos m : vicinityCardinal lxsize lysize (bpos m)
-          vis = ES.fromList $ concatMap cross lm
-      sendUpdateCli (bfaction sm) $ RemCli vis lvl arena
-      return (True, "A dozen voices yells in anger.")
-    else do
-      Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-      tm@Actor{bspeed, bkind} <- getsState (getActorBody target)
-      -- Halve the speed as a side-effect of domination.
-      let speed = fromMaybe (aspeed $ okind bkind) bspeed
-          delta = speedScale (1%2) speed
-      when (delta > speedZero) $ tellCmdAtomic $ HasteActorA target (speedNegate delta)
-      -- TODO: Perhaps insert a turn of delay here to allow countermeasures.
-      tellCmdAtomic $ DominateActorA target (bfaction tm) (bfaction sm)
-      sendQueryCli (bfaction sm) (SelectLeaderCli target)
-        >>= assert `trueM` (arena, target, "leader dominates himself")
-      -- Display status line and FOV for the new actor.
---TODO      sli <- promptToSlideshow ""
---      fr <- drawOverlay ColorBW $ head $ runSlideshow sli
---      displayFramesPush [Nothing, Just fr, Nothing]
-      return (True, "")
+  tm@Actor{bspeed, bkind} <- getsState (getActorBody target)
+  -- Halve the speed as a side-effect of domination.
+  let speed = fromMaybe (aspeed $ okind bkind) bspeed
+      delta = speedScale (1%2) speed
+  when (delta > speedZero) $
+    tellCmdAtomic $ HasteActorA target (speedNegate delta)
+  -- TODO: Perhaps insert a turn of delay here to allow countermeasures.
+  tellCmdAtomic $ DominateActorA target (bfaction tm) (bfaction sm)
+  leaderOld <- getsState $ gleader . (EM.! bfaction sm) . sfaction
+  tellCmdAtomic $ LeadFactionA (bfaction sm) leaderOld (Just target)
+  return True
 
 -- ** SummonFriend
 
 effectSummonFriend :: MonadServer m
                    => ActorId -> ActorId -> Int
-                   -> WriterT [Atomic] m (Bool, Text)
+                   -> WriterT [Atomic] m Bool
 effectSummonFriend source target power = do
   sm <- getsState (getActorBody source)
   tm <- getsState (getActorBody target)
   summonFriends (bfaction sm) (1 + power) (bpos tm) (blid tm)
-  return (True, "")
+  return True
 
 summonFriends :: MonadServer m
               => FactionId -> Int -> Point -> LevelId
@@ -286,11 +259,11 @@ findHeroName configHeroNames n =
 -- ** SpawnMonster
 
 effectSpawnMonster :: MonadServer m
-                   => ActorId -> Int -> WriterT [Atomic] m (Bool, Text)
+                   => ActorId -> Int -> WriterT [Atomic] m Bool
 effectSpawnMonster target power = do
   tm <- getsState (getActorBody target)
   void $ spawnMonsters (1 + power) (bpos tm) (blid tm)
-  return (True, "")
+  return True
 
 -- | Spawn monsters of any spawning faction, friendly or not.
 -- To be used for spontaneous spawning of monsters and for the spawning effect.
@@ -329,11 +302,11 @@ addMonster mk bfaction ppos lid = do
 -- ** CreateItem
 
 effectCreateItem :: MonadServer m
-                 => ActorId -> Int -> WriterT [Atomic] m (Bool, Text)
+                 => ActorId -> Int -> WriterT [Atomic] m Bool
 effectCreateItem target power = do
   tm <- getsState $ getActorBody target
   void $ createItems (1 + power) (bpos tm) (blid tm)
-  return (True, "")
+  return True
 
 createItems :: MonadServer m
             => Int -> Point -> LevelId -> WriterT [Atomic] m ()
@@ -360,38 +333,35 @@ createItems n pos lid = do
 -- ** ApplyPerfume
 
 effectApplyPerfume :: MonadActionRO m
-                   => ActorId -> ActorId -> WriterT [Atomic] m (Bool, Text)
+                   => ActorId -> ActorId -> WriterT [Atomic] m Bool
 effectApplyPerfume source target =
   if source == target
-  then return (True, "Tastes like water, but with a strong rose scent.")
+  then return False
   else do
     tm <- getsState $ getActorBody target
     oldSmell <- getsLevel (blid tm) lsmell
     let diffL = map (\(p, sm) -> (p, (Just sm, Nothing))) $ EM.assocs oldSmell
     tellCmdAtomic $ AlterSmellA (blid tm) diffL
-    return (True, "The fragrance quells all scents in the vicinity.")
+    tellDescAtomic $ EffectA target Effect.ApplyPerfume
+    return True
 
 -- ** Regeneration
 
 -- ** Searching
 
+effectSearching :: MonadActionAbort m => ActorId -> WriterT [Atomic] m Bool
+effectSearching source = do
+  tellDescAtomic $ EffectA source Effect.Searching
+  return True
+
 -- ** Ascend
 
 effectAscend :: MonadServerChan m
-             => ActorId -> Int -> WriterT [Atomic] m (Bool, Text)
-effectAscend target power = useStairs target (power + 1) "find a way upstairs"
-
-useStairs :: MonadServerChan m
-          => ActorId -> Int -> Msg -> WriterT [Atomic] m (Bool, Text)
-useStairs target delta msg = do
-  Kind.COps{coactor} <- getsState scops
-  tm <- getsState $ getActorBody target
-  void $ focusIfOurs target
-  effLvlGoUp target delta
-  gquit <- getsState $ gquit . (EM.! bfaction tm) . sfaction
-  return $ if maybe Camping snd gquit == Victor
-           then (True, "")
-           else (True, actorVerb coactor tm msg)
+             => ActorId -> Int -> WriterT [Atomic] m Bool
+effectAscend target power = do
+  effLvlGoUp target (power + 1)
+  tellDescAtomic $ EffectA target Effect.Ascend
+  return True
 
 effLvlGoUp :: MonadServerChan m => ActorId -> Int -> WriterT [Atomic] m ()
 effLvlGoUp aid k = do
@@ -470,7 +440,7 @@ squashActor source target = do
 --        , partActor coactor tm
 --        , "in a staircase accident" ]
 --  msgAdd msg
-  itemEffect 0 source target h2h False
+  itemEffect source target h2h
   s <- getState
   -- The monster has to be killed first, before we step there (same turn!).
   assert (not (target `EM.member` sactorD s) `blame` (source, target, "not killed")) $
@@ -479,21 +449,13 @@ squashActor source target = do
 -- ** Descend
 
 effectDescend :: MonadServerChan m
-              => ActorId -> Int -> WriterT [Atomic] m (Bool, Text)
-effectDescend target power =
-  useStairs target (- (power + 1)) "find a way downstairs"
+              => ActorId -> Int -> WriterT [Atomic] m Bool
+effectDescend target power = do
+  effLvlGoUp target (- (power + 1))
+  tellDescAtomic $ EffectA target Effect.Descend
+  return True
 
 -- * Assorted helper functions
-
--- | Sentences such as \"Dog barks loudly.\".
-actorVerb :: Kind.Ops ActorKind -> Actor -> Text -> Text
-actorVerb coactor a v =
-  makeSentence [MU.SubjectVerbSg (partActor coactor a) (MU.Text v)]
-
--- TODO: center screen, flash the background, etc. Perhaps wait for SPACE.
--- | Focus on the hero being wounded/displaced/etc.
-focusIfOurs :: MonadActionAbort m => ActorId -> m Bool
-focusIfOurs _target = return True
 
 -- TODO: right now it only works for human factions (sendQueryUI).
 -- | The leader leaves the dungeon.

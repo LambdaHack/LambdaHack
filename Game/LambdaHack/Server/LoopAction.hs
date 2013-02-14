@@ -169,9 +169,8 @@ cmdAtomicBroad arena atomic = do
                   $ RememberPerCli perNew lvlOld arena actorDOld itemDOld factionOld
             sendUp
             withAI sendUp
-            let sendCmd = sendUpdateCli fid $ AtomicSeenCli atomic
-            sendCmd
-            withAI sendCmd
+            sendUpdateUI fid $ AtomicSeenUI atomic
+            withAI $ sendUpdateCli fid $ AtomicSeen atomic
           else do
             let sendUp =
                   sendUpdateCli fid
@@ -180,9 +179,8 @@ cmdAtomicBroad arena atomic = do
             withAI sendUp
         else do
           if seen then do
-            let sendCmd = sendUpdateCli fid $ AtomicSeenCli atomic
-            sendCmd
-            withAI sendCmd
+            sendUpdateUI fid $ AtomicSeenUI atomic
+            withAI $ sendUpdateCli fid $ AtomicSeen atomic
           else do
             let sendUp =
                   sendUpdateCli fid

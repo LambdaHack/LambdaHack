@@ -4,7 +4,7 @@
 -- TODO: Document an export list after it's rewritten according to #17.
 module Game.LambdaHack.ActorState
   ( actorAssocs, actorList, actorNotProjAssocs, actorNotProjList
-  , isProjectile, calculateTotal, nearbyFreePos, whereTo
+  , calculateTotal, nearbyFreePos, whereTo
   , posToActor, getItemBody, memActor, getActorBody, updateActorBody
   , getActorItem, getActorBag, actorContainer, getActorInv
   , tryFindHeroK, foesAdjacent
@@ -55,10 +55,6 @@ actorNotProjAssocs p lid s =
 actorNotProjList :: (FactionId -> Bool) -> LevelId -> State
                  -> [Actor]
 actorNotProjList p lid s = map snd $ actorNotProjAssocs p lid s
-
--- | Checks whether an actor identifier represents a hero.
-isProjectile :: State -> ActorId -> Bool
-isProjectile s aid = bproj $ getActorBody aid s
 
 -- | Finds an actor at a position on the current level. Perception irrelevant.
 posToActor :: Point -> LevelId -> State -> Maybe ActorId

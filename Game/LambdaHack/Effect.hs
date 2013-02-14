@@ -7,8 +7,8 @@ module Game.LambdaHack.Effect
 
 import Data.Text (Text)
 
-import Game.LambdaHack.Random
 import Game.LambdaHack.Msg
+import Game.LambdaHack.Random
 
 -- TODO: document each constructor
 -- | All possible effects, some of them parameterized or dependent
@@ -17,6 +17,7 @@ data Effect =
     NoEffect
   | Heal             -- healing strength in ipower
   | Wound !RollDice  -- base damage, to-dam bonus in ipower
+  | Mindprobe
   | Dominate
   | SummonFriend
   | SpawnMonster
@@ -36,6 +37,7 @@ effectToSuffix (Wound dice@(RollDice a b)) =
   if a == 0 && b == 0
   then "of wounding"
   else "(" <> showT dice <> ")"
+effectToSuffix Mindprobe = "of soul searching"
 effectToSuffix Dominate = "of domination"
 effectToSuffix SummonFriend = "of aid calling"
 effectToSuffix SpawnMonster = "of spawning"
@@ -53,12 +55,13 @@ effectToBenefit :: Effect -> Int
 effectToBenefit NoEffect = 0
 effectToBenefit Heal = 10           -- TODO: depends on (maxhp - hp)
 effectToBenefit (Wound _) = -10     -- TODO: dice ignored for now
-effectToBenefit Dominate = 0        -- AI can't use this
+effectToBenefit Mindprobe = 1       -- hard to use; TODO: limit by IQ
+effectToBenefit Dominate = 1        -- hard to use; TODO: limit by IQ
 effectToBenefit SummonFriend = 100
 effectToBenefit SpawnMonster = 5    -- may or may not spawn a friendly
 effectToBenefit CreateItem = 100
 effectToBenefit ApplyPerfume = 0
 effectToBenefit Regeneration = 0    -- much more benefit from carrying around
 effectToBenefit Searching = 0       -- AI does not need to search
-effectToBenefit Ascend = 0          -- AI can't change levels
-effectToBenefit Descend = 0
+effectToBenefit Ascend = 1          -- AI can't choose levels smartly yet
+effectToBenefit Descend = 1

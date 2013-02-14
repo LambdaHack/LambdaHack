@@ -196,21 +196,21 @@ wand2 = wand
 fist = sword
   { isymbol  = '@'
   , iname    = "fist"
-  , ifreq    = [("unarmed", 100)]
+  , ifreq    = [("hth", 1), ("unarmed", 100)]
   , iverbApply   = "punch"
   , iverbProject = "ERROR, please report: iverbProject fist"
   }
 foot = sword
   { isymbol  = '@'
   , iname    = "foot"
-  , ifreq    = [("unarmed", 50)]
+  , ifreq    = [("hth", 1), ("unarmed", 50)]
   , iverbApply   = "kick"
   , iverbProject = "ERROR, please report: iverbProject foot"
   }
 tentacle = sword
   { isymbol  = 'S'
   , iname    = "tentacle"
-  , ifreq    = [("monstrous", 100)]
+  , ifreq    = [("hth", 1), ("monstrous", 100)]
   , iverbApply   = "hit"
   , iverbProject = "ERROR, please report: iverbProject tentacle"
   }

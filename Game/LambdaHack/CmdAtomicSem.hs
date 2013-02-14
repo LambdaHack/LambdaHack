@@ -126,6 +126,7 @@ posDescAtomic cmd = case cmd of
   ShunA aid p _ _ -> do
     pa <- posOfAid aid
     return (Right [pa], Right [pa, p])
+  EffectA aid _ -> singlePos $ posOfAid aid
 
 singlePos :: MonadActionAbort m
           => m Point -> m (Either Bool [Point], Either Bool [Point])

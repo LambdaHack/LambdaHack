@@ -10,7 +10,7 @@
 -- way to affect the basic game state (@State@).
 module Game.LambdaHack.CmdAtomic
   ( tellCmdAtomic, tellDescAtomic
-  , Atomic, CmdAtomic(..), DescAtomic(..)
+  , Atomic, CmdAtomic(..), DescAtomic(..), HitAtomic(..)
   , undoCmdAtomic, undoDescAtomic, undoAtomic
   ) where
 
@@ -21,6 +21,7 @@ import Data.Tuple (swap)
 import Game.LambdaHack.Actor
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Content.TileKind as TileKind
+import qualified Game.LambdaHack.Effect as Effect
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Item
@@ -69,15 +70,19 @@ data CmdAtomic =
   deriving Show
 
 data DescAtomic =
-    StrikeA ActorId ActorId ItemId Bool
-  | RecoilA ActorId ActorId ItemId Bool
+    StrikeA ActorId ActorId Item HitAtomic
+  | RecoilA ActorId ActorId Item HitAtomic
   | ProjectA ActorId ItemId
   | CatchA ActorId ItemId
   | ActivateA ActorId ItemId
   | CheckA ActorId ItemId
   | TriggerA ActorId Point F.Feature Bool
   | ShunA ActorId Point F.Feature Bool
+  | EffectA ActorId Effect.Effect
 -- TODO: SearchA
+  deriving Show
+
+data HitAtomic = HitA | HitBlockA | MissBlockA
   deriving Show
 
 undoCmdAtomic :: CmdAtomic -> CmdAtomic
@@ -104,14 +109,15 @@ undoCmdAtomic cmd = case cmd of
 
 undoDescAtomic :: DescAtomic -> DescAtomic
 undoDescAtomic cmd = case cmd of
-  StrikeA source target iid b -> RecoilA source target iid b
-  RecoilA source target iid b -> StrikeA source target iid b
+  StrikeA source target item b -> RecoilA source target item b
+  RecoilA source target item b -> StrikeA source target item b
   ProjectA aid iid -> CatchA aid iid
   CatchA aid iid -> ProjectA aid iid
   ActivateA aid iid -> CheckA aid iid
   CheckA aid iid -> ActivateA aid iid
   TriggerA aid p feat b -> ShunA aid p feat b
   ShunA aid p feat b -> TriggerA aid p feat b
+  EffectA aid effect -> EffectA aid effect  -- not ideal
 
 undoAtomic :: Atomic -> Atomic
 undoAtomic (Left cmd) = Left $ undoCmdAtomic cmd
