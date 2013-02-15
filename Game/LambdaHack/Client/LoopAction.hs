@@ -25,21 +25,21 @@ initCli isAI cmdUpdateCli = do
       -- TODO: create or restore from config clients RNG seed
       msgAdd msg
       let expected cmd = case cmd of RestartCli{} -> True; _ -> False
-      waitForCmd cmdUpdateCli expected
+      expectCmd cmdUpdateCli expected
     Left (s, cli, msg) -> do  -- Restore a game or at least history.
       let sCops = updateCOps (const cops) s
       putState sCops
       putClient cli
       msgAdd msg
       let expected cmd = case cmd of ContinueSavedCli{} -> True; _ -> False
-      waitForCmd cmdUpdateCli expected
+      expectCmd cmdUpdateCli expected
   modifyClient $ \cli -> cli {squit = Nothing}
   -- State and client state are now valid.
 
-waitForCmd :: MonadClientChan m
+expectCmd :: MonadClientChan m
            => (CmdUpdateCli -> m ()) -> (CmdUpdateCli -> Bool)
            -> m ()
-waitForCmd cmdUpdateCli expected = do
+expectCmd cmdUpdateCli expected = do
   side <- getsClient sside
   cmd1 <- readChanFromSer
   case cmd1 of

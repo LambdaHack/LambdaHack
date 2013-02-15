@@ -42,9 +42,7 @@ import Game.LambdaHack.Vector
 
 default (Text)
 
--- + Semantics of server commands
-
--- ** ApplySer
+-- * ApplySer
 
 applySer :: MonadServerChan m   -- MonadActionAbort m
          => ActorId    -- ^ actor applying the item (is on current level)
@@ -58,7 +56,7 @@ applySer actor iid container = do
   itemEffect actor actor item
   tellCmdAtomic $ DestroyItemA (blid b) iid item 1 container
 
--- ** ProjectSer
+-- * ProjectSer
 
 projectSer :: MonadServerChan m
            => ActorId    -- ^ actor projecting the item (is on current lvl)
@@ -147,7 +145,7 @@ addProjectile iid loc blid bfaction path btime = do
   tellCmdAtomic $ CreateActorA acounter m
   return acounter
 
--- ** TriggerSer
+-- * TriggerSer
 
 -- | Perform the action specified for the tile in case it's triggered.
 triggerSer :: MonadServerChan m
@@ -187,7 +185,7 @@ pickupSer aid iid k l = assert (k > 0 `blame` (aid, iid, k, l)) $ do
   b <- getsState $ getActorBody aid
   tellCmdAtomic $ MoveItemA (blid b) iid k (CFloor (bpos b)) (CActor aid l)
 
--- ** DropSer
+-- * DropSer
 
 dropSer :: MonadActionRO m => ActorId -> ItemId -> WriterT [Atomic] m ()
 dropSer aid iid = do
@@ -208,7 +206,7 @@ waitSer aid = do
       toWait = timeAddFromSpeed coactor body time
   tellCmdAtomic $ WaitActorA aid fromWait toWait
 
--- ** MoveSer
+-- * MoveSer
 
 -- | Actor moves or attacks or searches or opens doors.
 -- Note that client can't determine which of these actions is chosen,
@@ -338,7 +336,7 @@ actorOpenDoor actor dir = do
          then neverMind isVerbose  -- not doors at all
          else triggerSer actor dpos
 
--- ** RunSer
+-- * RunSer
 
 -- | Actor moves or swaps position with others or opens doors.
 runSer :: MonadServerChan m => ActorId -> Vector -> WriterT [Atomic] m ()
@@ -374,24 +372,24 @@ displaceActor source target =  tellCmdAtomic $ DisplaceActorA source target
 --   then stopRunning  -- do not switch positions repeatedly
 --   else void $ focusIfOurs target
 
--- ** GameExit
+-- * GameExit
 
 gameExitSer :: MonadServer m => m ()
 gameExitSer = modifyServer $ \ser -> ser {squit = Just True}
 
--- ** GameRestart
+-- * GameRestart
 
 gameRestartSer :: MonadActionRO m => FactionId -> WriterT [Atomic] m ()
 gameRestartSer fid = do
   oldSt <- getsState $ gquit . (EM.! fid) . sfaction
   tellCmdAtomic $ QuitFactionA fid oldSt $ Just (False, Restart)
 
--- ** GameSaveSer
+-- * GameSaveSer
 
 gameSaveSer :: MonadServerChan m => m ()
 gameSaveSer = saveGameBkp
 
--- ** CfgDumpSer
+-- * CfgDumpSer
 
 cfgDumpSer :: MonadServer m => m ()
 cfgDumpSer = do

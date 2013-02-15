@@ -14,7 +14,6 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.CmdCliSem
 import Game.LambdaHack.Client.Draw
-import Game.LambdaHack.Client.LocalAction
 import Game.LambdaHack.Client.LoopAction
 import Game.LambdaHack.Client.RunAction
 import Game.LambdaHack.Client.State
@@ -26,13 +25,10 @@ import Game.LambdaHack.State
 cmdUpdateCli :: (MonadAction m, MonadClient m) => CmdUpdateCli -> m ()
 cmdUpdateCli cmd = case cmd of
   ShowMsgCli msg -> msgAdd msg
-  DiscoverCli ik i -> discoverCli ik i
-  RemCli vis lvl lid -> remCli vis lvl lid
   RememberCli lvl lid actorD itemD faction ->
     rememberCli lvl lid actorD itemD faction
   RememberPerCli per lvl lid actorD itemD faction ->
     rememberPerCli per lvl lid actorD itemD faction
-  SwitchLevelCli _aid _arena _pbody _items -> undefined  -- switchLevelCli aid arena pbody items
   RestartCli sper locRaw -> restartCli sper locRaw
   ContinueSavedCli sper -> modifyClient $ \cli -> cli {sper}
   GameSaveBkpCli isAI -> clientGameSave True isAI
@@ -53,7 +49,6 @@ cmdUpdateUI cmd = case cmd of
 
 cmdQueryCli :: MonadClient m => CmdQueryCli a -> m a
 cmdQueryCli cmd = case cmd of
-  SelectLeaderCli aid -> selectLeader aid
   NullReportCli -> do
     StateClient{sreport} <- getClient
     return $! nullReport sreport
@@ -69,24 +64,8 @@ cmdQueryCli cmd = case cmd of
 cmdQueryUI :: MonadClientUI m => CmdQueryUI a -> m a
 cmdQueryUI cmd = case cmd of
   ShowSlidesCli slides -> getManyConfirms [] slides
-  ConfirmShowItemsCli msg bag inv -> do
-    io <- itemOverlay bag inv
-    slides <- overlayToSlideshow msg io
-    getManyConfirms [] slides
-  ConfirmShowItemsFloorCli msg bag -> do
-    io <- floorItemOverlay bag
-    slides <- overlayToSlideshow msg io
-    getManyConfirms [] slides
-  ConfirmYesNoCli msg -> do
-    go <- displayYesNo msg
-    recordHistory  -- Prevent repeating the ending msgs.
-    return go
   ConfirmMoreBWCli msg -> do
     go <- displayMore ColorBW msg
-    recordHistory  -- Prevent repeating the ending msgs.
-    return go
-  ConfirmMoreFullCli msg -> do
-    go <- displayMore ColorFull msg
     recordHistory  -- Prevent repeating the ending msgs.
     return go
   HandleHumanCli -> handleHuman

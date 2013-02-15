@@ -50,22 +50,6 @@ import Game.LambdaHack.Vector
 
 -- * cmdUpdateCli
 
--- | Make the item known to the player.
-discoverCli :: (MonadAction m, MonadClient m) => Kind.Id ItemKind -> Item -> m ()
-discoverCli ik i = do
-  Kind.COps{coitem} <- getsState scops
-  oldDisco <- getsState sdisco
-  let ix = jkindIx i
-  unless (ix `EM.member` oldDisco) $ do
-    modifyState (updateDisco (EM.insert ix ik))
-    disco <- getsState sdisco
-    let (object1, object2) = partItem coitem oldDisco i
-        msg = makeSentence
-          [ "the", MU.SubjectVerbSg (MU.Phrase [object1, object2])
-                                    "turn out to be"
-          , partItemAW coitem disco i ]
-    msgAdd msg
-
 remCli :: MonadAction m => ES.EnumSet Point -> Level -> LevelId -> m ()
 remCli vis lvl arena = do
   cops <- getsState scops
@@ -96,19 +80,6 @@ rememberPerCli per lvl lid actorD itemD faction = do
   modifyClient $ \cli -> cli {sper = EM.insert lid per (sper cli)}
   rememberCli lvl lid actorD itemD faction
 
--- switchLevelCli :: MonadClient m
---                => ActorId -> LevelId -> Actor -> ItemBag
---                -> m ()
--- switchLevelCli aid arena pbody items = do
---   arenaOld <- getsState sarena
---   assert (arenaOld /= arena) $ do
---     modifyClient $ invalidateSelectedLeader
---     modifyState $ updateSelectedArena arena
---     modifyState (insertActor aid pbody)
---     modifyState (updateActorDItem aid (const items))
---     loc <- getState
---     modifyClient $ updateSelectedLeader aid loc
-
 -- TODO: here or elsewhere re-read RNG seed from config file
 restartCli :: (MonadAction m, MonadClient m) => FactionPers -> State -> m ()
 restartCli sper loc = do
@@ -128,16 +99,6 @@ atomicSeen atomic =
       cmdAtomicSem cmd
       cmdAtomicSemCli cmd
     Right _ -> return ()
-
-atomicSeenUI :: (MonadAction m, MonadClientUI m) => Atomic -> m ()
-atomicSeenUI atomic =
-  case atomic of
-    Left cmd -> do
-      cmdAtomicSem cmd
-      cmdAtomicSemCli cmd
-      drawCmdAtomicUI False cmd
-    Right desc ->
-      drawDescAtomicUI False desc
 
 cmdAtomicSemCli :: MonadClient m => CmdAtomic -> m ()
 cmdAtomicSemCli cmd = case cmd of
@@ -394,12 +355,15 @@ moveItemA verbose iid k c1 c2 = do
 
 -- * cmdUpdateUI
 
-showItemsCli :: MonadClientUI m
-             => Msg -> ItemBag -> ItemInv -> m ()
-showItemsCli msg bag inv = do
-  io <- itemOverlay bag inv
-  slides <- overlayToSlideshow msg io
-  void $ getManyConfirms [] slides
+atomicSeenUI :: (MonadAction m, MonadClientUI m) => Atomic -> m ()
+atomicSeenUI atomic =
+  case atomic of
+    Left cmd -> do
+      cmdAtomicSem cmd
+      cmdAtomicSemCli cmd
+      drawCmdAtomicUI False cmd
+    Right desc ->
+      drawDescAtomicUI False desc
 
 -- * cmdQueryCli
 

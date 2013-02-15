@@ -237,7 +237,7 @@ gameOver fid arena showEndingScreens = do
                 | otherwise =
           "Dead heroes make better legends."
         currencyName = MU.Text $ oname $ ouniqGroup "currency"
-        loseMsg = makePhrase
+        _loseMsg = makePhrase
           [ failMsg
           , "You left"
           , MU.NWs total currencyName
@@ -248,8 +248,8 @@ gameOver fid arena showEndingScreens = do
         modifyState $ updateFaction (EM.adjust upd2 fid)
       else do
         -- TODO: do this for the killed factions, not for side
-        go <- sendQueryUI fid $ ConfirmShowItemsFloorCli loseMsg bag
-        when go $ do
+--        go <- sendQueryUI fid $ ConfirmShowItemsFloorCli loseMsg bag
+--        when go $ do
           let upd2 f = f {gquit = Just (True, Killed arena)}
           modifyState $ updateFaction (EM.adjust upd2 fid)
 
@@ -440,7 +440,7 @@ endOrLoop (Just fid) loopServer = do
       -- TODO: rewrite; handle killed faction, if human, mostly ignore if not
       nullR <- sendQueryCli fid NullReportCli
       unless nullR $ do
-        -- Sisplay any leftover report. Suggest it could be the cause of death.
+        -- Display any leftover report. Suggest it could be the death cause.
         broadcastUI [] $ MoreBWCli "Who would have thought?"
       tryWith
         (\ finalMsg ->
@@ -459,7 +459,7 @@ endOrLoop (Just fid) loopServer = do
     (Nothing, Just (showScreens, status@Victor)) -> do
       nullR <- sendQueryCli fid NullReportCli
       unless nullR $ do
-        -- Sisplay any leftover report. Suggest it could be the master move.
+        -- Display any leftover report. Suggest it could be the master move.
         broadcastUI [] $ MoreFullCli "Brilliant, wasn't it?"
       when showScreens $ do
         tryIgnore $ handleScores fid True status total

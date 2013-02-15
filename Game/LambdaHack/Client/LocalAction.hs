@@ -3,7 +3,15 @@
 -- | Semantics of 'CmdHuman.Cmd' client commands that do not return
 -- server commands. None of such commands takes game time.
 -- TODO: document
-module Game.LambdaHack.Client.LocalAction where
+module Game.LambdaHack.Client.LocalAction
+  ( -- * Semantics of serverl-less human commands
+    retarget, moveCursor, inventory, targetFloor, targetEnemy, tgtAscend
+  , epsIncr, cancelCurrent, displayMainMenu, acceptCurrent, clearCurrent
+  , displayHistory, cycleMember, backCycleMember, displayHelp, selectHero
+    -- * Helper functions useful also elsewhere
+  , endTargeting, floorItemOverlay, itemOverlay, viewedLevel, selectLeader
+  , stopRunning, lookAt
+  ) where
 
 -- Cabal
 import qualified Paths_LambdaHack as Self (version)
@@ -184,9 +192,9 @@ itemOverlay bag inv = do
          <> " "
   return $ map pr is
 
--- GameSave doesn't take time, but needs the server, so it's defined elsewhere.
+-- GameSave doesn't take time, but needs server, so it's defined elsewhere.
 
--- CfgDump doesn't take time, but needs the server, so it's defined elsewhere.
+-- CfgDump doesn't take time, but needs server, so it's defined elsewhere.
 
 -- * Inventory
 
@@ -213,7 +221,7 @@ inventory = do
 
 -- * TgtFloor
 
--- | Start the floor targeting mode or reset the cursor position to the leader.
+-- | Start floor targeting mode or reset the cursor position to the leader.
 targetFloor :: MonadClient m => TgtMode -> WriterT Slideshow m ()
 targetFloor stgtModeNew = do
   Just leader <- getsClient sleader
@@ -510,7 +518,7 @@ partyAfterLeader leader = do
 
 -- | Select a faction leader. Switch level, if needed.
 -- False, if nothing to do. Should only be invoked as a direct result
--- of a human player action (leader death just sets sleader to -1).
+-- of a human player action (leader death just sets sleader to Nothing).
 selectLeader :: MonadClient m => ActorId -> m Bool
 selectLeader actor = do
   Kind.COps{coactor} <- getsState scops

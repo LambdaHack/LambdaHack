@@ -3,7 +3,11 @@
 -- | Semantics of 'Command.Cmd' client commands that return server commands.
 -- A couple of them do not take time, the rest does.
 -- TODO: document
-module Game.LambdaHack.Client.MixedAction where
+module Game.LambdaHack.Client.MixedAction
+  ( gameSave, dumpConfig, leaderApplyGroupItem, leaderProjectGroupItem
+  , leaderTriggerDir, leaderTriggerTile, pickupItem, dropItem
+  , waitBlock, movePl, runPl, gameExit, gameRestart
+  ) where
 
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
