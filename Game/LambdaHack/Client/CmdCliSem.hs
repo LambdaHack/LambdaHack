@@ -152,7 +152,19 @@ cmdAtomicSemCli cmd = case cmd of
 drawCmdAtomicUI :: MonadClientUI m => Bool -> CmdAtomic -> m ()
 drawCmdAtomicUI verbose cmd = case cmd of
   CreateActorA _ body | verbose -> actorVerbMU body "appear"
-  DestroyActorA _ body | verbose -> actorVerbMU body "disappear"
+  DestroyActorA _ body -> do
+    side <- getsClient sside
+    if bhp body <= 0 && not (bproj body) && bfaction body == side then do
+      actorVerbMU body "die"
+      --  Config{configFirstDeathEnds} <- getsServer sconfig
+      -- if isHuman then sendQueryUI fid CarryOnCli else return False
+      go <- displayMore ColorBW ""
+      when go $ do
+        actorD <- getsState sactorD
+        let party = filter (\(_, b) ->
+                      bfaction b == side && not (bproj b)) $ EM.assocs actorD
+        when (not $ null $ party) $ msgAdd "The survivors carry on."
+    else when verbose $ actorVerbMU body "disappear"
   CreateItemA _ _ item k _ -> itemVerbMU item k "appear"
   DestroyItemA _ _ item k _ -> itemVerbMU item k "disappear"
   MoveActorA _ _ _ -> return ()  -- too boring even for verbose mode
@@ -207,8 +219,8 @@ drawDescAtomicUI verbose desc = case desc of
     aVerbMU aid $ "shun"  -- TODO: shuns stairs down
   EffectA aid effect -> do
     b <- getsState $ getActorBody aid
-    when (bhp b > 0) $
-      case effect of
+    if bhp b > 0
+      then case effect of
         Effect.NoEffect -> msgAdd "Nothing happens."
         Effect.Heal -> aVerbMU aid "feel better"
         Effect.Wound _ -> aVerbMU aid "feel wounded"
@@ -229,6 +241,13 @@ drawDescAtomicUI verbose desc = case desc of
         Effect.Ascend -> aVerbMU aid "find a way upstairs"
         Effect.Descend -> aVerbMU aid "find a way downstairs"
         _ ->  return ()
+      else case effect of
+        Effect.Wound _ -> do
+          -- Presumably the cause of death.
+          let verbD = if bproj b then "break up" else "collapse"
+          aVerbMU aid verbD
+        _ ->  return ()
+
   _ -> return ()
 
 quitFactionA :: MonadClientUI m => FactionId -> Maybe (Bool, Status) -> m ()
@@ -411,12 +430,6 @@ handleAI actor = do
     rndToAction $ frequency $ bestVariant $ stratAction
 
 -- * cmdQueryUI
-
-carryOnCli :: MonadClientUI m => m Bool
-carryOnCli = do
-  go <- displayMore ColorBW ""
-  msgAdd "The survivors carry on."  -- TODO: reset messages at game over not to display it if there are no survivors.
-  return go
 
 -- | Handle the move of the hero.
 handleHuman :: MonadClientUI m => m [CmdSer]

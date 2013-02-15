@@ -199,6 +199,7 @@ cmdAtomicBroad arena atomic = do
 -- if the player requests to see it.
 -- | If no actor of a non-spawning faction on the level,
 -- switch levels. If no level to switch to, end game globally.
+-- TODO: instead check if a non-spawn faction has Nothing leader. Equivalent.
 checkEndGame ::  (MonadAction m, MonadServerChan m) => m ()
 checkEndGame = do
   -- Actors on the current level go first so that we don't switch levels
@@ -291,6 +292,10 @@ handleActors cmdSer arena subclipStart prevHuman = do
       when (subclipStart == timeZero) $
         broadcastUI [] $ DisplayDelayCli
       return prevHuman
+    Just (actor, body) | bhp body <= 0 && not (bproj body) -> do
+      cmdSer arena $ DieSer actor
+      -- Death is serious, new subclip.
+      handleActors cmdSer arena (btime body) prevHuman
     Just (actor, body) -> do
       broadcastUI [] DisplayPushCli  -- TODO: too often
       let side = bfaction body

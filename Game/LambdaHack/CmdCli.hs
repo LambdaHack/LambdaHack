@@ -68,7 +68,6 @@ deriving instance Show (CmdQueryCli a)
 
 data CmdQueryUI a where
   ShowSlidesCli :: Slideshow -> CmdQueryUI Bool
-  CarryOnCli :: CmdQueryUI Bool
   ConfirmShowItemsCli :: Msg -> ItemBag -> ItemInv -> CmdQueryUI Bool
   ConfirmShowItemsFloorCli :: Msg -> ItemBag -> CmdQueryUI Bool
   ConfirmYesNoCli :: Msg -> CmdQueryUI Bool

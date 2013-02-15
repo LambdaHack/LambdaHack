@@ -433,15 +433,15 @@ dieSer aid = do  -- TODO: explode if a projectile holdding a potion
   body <- getsState $ getActorBody aid
   tellCmdAtomic $ DestroyActorA aid body
   electLeader (bfaction body) (blid body)
+--  Config{configFirstDeathEnds} <- getsServer sconfig
 
 -- | Drop all actor's items.
 dropAllItems :: MonadActionRO m => ActorId -> WriterT [Atomic] m ()
 dropAllItems aid = do
   b <- getsState $ getActorBody aid
-  let f (iid, k) =
-        tellCmdAtomic
-        $ MoveItemA (blid b) iid k (actorContainer aid (binv b) iid)
-                                   (CFloor $ bpos b)
+  let f (iid, k) = tellCmdAtomic
+                   $ MoveItemA (blid b) iid k (actorContainer aid (binv b) iid)
+                                              (CFloor $ bpos b)
   mapM_ f $ EM.assocs $ bbag b
 
 electLeader :: MonadServer m => FactionId -> LevelId -> WriterT [Atomic] m ()
