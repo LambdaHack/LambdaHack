@@ -19,7 +19,6 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.CmdAtomic
-import Game.LambdaHack.CmdCli
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind as TileKind
@@ -273,9 +272,11 @@ actorAttackActor source target = do
         return $ buildItem flavour discoRev h2hKind (okind h2hKind) 0
   let performHit block = do
         let hitA = if block then HitBlockA else HitA
-        tellDescAtomic $ StrikeA source target item hitA
         -- Msgs inside itemEffectSem describe the target part.
         itemEffect source target item
+        -- Order reversed to anticipate death in the strike message.
+        -- Note: this means actors should not be destroyed in @itemEffect@.
+        tellDescAtomic $ StrikeA source target item hitA
   -- Projectiles can't be blocked, can be sidestepped.
   if braced tm time && not (bproj sm)
     then do
@@ -365,13 +366,7 @@ runSer actor dir = do
 -- | When an actor runs (not walks) into another, they switch positions.
 displaceActor :: MonadServerChan m
               => ActorId -> ActorId -> WriterT [Atomic] m ()
-displaceActor source target = do
-  tellCmdAtomic $ DisplaceActorA source target
-  spos <- getsState $ bpos . getActorBody source
-  tb <- getsState $ getActorBody target
-  let tpos = bpos tb
-      lid = blid tb
-  broadcastPosUI [spos, tpos] lid $ DisplaceCli source target
+displaceActor source target =  tellCmdAtomic $ DisplaceActorA source target
 --  leader <- getsClient getLeader
 --  if Just source == leader
 -- TODO: The actor will stop running due to the message as soon as running
@@ -402,7 +397,7 @@ cfgDumpSer :: MonadServer m => m ()
 cfgDumpSer = do
   Config{configRulesCfgFile} <- getsServer sconfig
   let fn = configRulesCfgFile ++ ".dump"
-      msg = "Current game rules configuration dumped to file"
+      msg = "Server dumped current game rules configuration to file"
             <+> T.pack fn <> "."
   dumpCfg fn
   -- Wait with confirmation until saved; tell where the file is.
@@ -438,6 +433,28 @@ dieSer aid = do  -- TODO: explode if a projectile holdding a potion
   body <- getsState $ getActorBody aid
   tellCmdAtomic $ DestroyActorA aid body
   electLeader (bfaction body) (blid body)
+
+-- | Drop all actor's items.
+dropAllItems :: MonadActionRO m => ActorId -> WriterT [Atomic] m ()
+dropAllItems aid = do
+  b <- getsState $ getActorBody aid
+  let f (iid, k) =
+        tellCmdAtomic
+        $ MoveItemA (blid b) iid k (actorContainer aid (binv b) iid)
+                                   (CFloor $ bpos b)
+  mapM_ f $ EM.assocs $ bbag b
+
+electLeader :: MonadServer m => FactionId -> LevelId -> WriterT [Atomic] m ()
+electLeader fid lid = do
+  mleader <- getsState $ gleader . (EM.! fid) . sfaction
+  when (isNothing mleader) $ do
+    actorD <- getsState sactorD
+    let party = filter (\(_, b) ->
+                  bfaction b == fid && not (bproj b)) $ EM.assocs actorD
+    when (not $ null $ party) $ do
+      onLevel <- getsState $ actorNotProjAssocs (== fid) lid
+      let leader = fst $ head $ onLevel ++ party
+      tellCmdAtomic $ LeadFactionA fid Nothing (Just leader)
 
 -- * LeaderSer
 

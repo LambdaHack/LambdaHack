@@ -41,8 +41,6 @@ cmdUpdateCli cmd = case cmd of
 
 cmdUpdateUI :: (MonadAction m, MonadClientUI m) => CmdUpdateUI -> m ()
 cmdUpdateUI cmd = case cmd of
-  AnimateDeathCli aid -> animateDeathCli aid
-  DisplaceCli source target -> displaceCli source target
   DisplayPushCli -> displayPush
   DisplayDelayCli -> displayFramesPush [Nothing]
   MoreBWCli msg -> do

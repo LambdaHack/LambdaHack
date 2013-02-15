@@ -50,7 +50,7 @@ cmdAtomicSem cmd = case cmd of
 resetsFovAtomic :: MonadActionRO m => FactionId -> CmdAtomic -> m Bool
 resetsFovAtomic fid cmd = case cmd of
   CreateActorA _ body -> return $ fid == bfaction body
-  DestroyActorA _ _ -> return False  -- FOV left for 1 turn to see aftermath
+  DestroyActorA _ _ -> return False  -- FOV left for a bit to see aftermath
   CreateItemA _ _ _ _ _ -> return False  -- unless shines
   DestroyItemA _ _ _ _ _ -> return False  -- ditto
   MoveActorA aid _ _ -> fidEquals fid aid  -- assumption: carries no light

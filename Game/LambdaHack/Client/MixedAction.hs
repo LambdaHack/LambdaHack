@@ -140,26 +140,59 @@ leaderTriggerDir feat verb = do
   K.handleDir lxsize e (leaderBumpDir feat) (neverMind True)
 
 -- | Leader tries to trigger a tile in a given direction.
-leaderBumpDir :: MonadClient m => F.Feature -> Vector -> m CmdSer
+leaderBumpDir :: MonadClientUI m => F.Feature -> Vector -> m CmdSer
 leaderBumpDir feat dir = do
   Just leader <- getsClient sleader
   body <- getsState $ getActorBody leader
   let dpos = bpos body `shift` dir
   bumpTile leader dpos feat
 
--- | Leader tries to trigger a tile using a feature.
-bumpTile :: MonadActionRO m => ActorId -> Point -> F.Feature -> m CmdSer
+-- | Player tries to trigger a tile using a feature.
+-- To help the player, only visible features can be triggered.
+bumpTile :: MonadClientUI m => ActorId -> Point -> F.Feature -> m CmdSer
 bumpTile leader dpos feat = do
   Kind.COps{cotile} <- getsState scops
   b <- getsState $ getActorBody leader
   lvl <- getsLevel (blid b) id
   let t = lvl `at` dpos
-  -- Features are never invisible; visible tiles are identified accurately.
   -- A tile can be triggered even if an invisible monster occupies it.
   -- TODO: let the user choose whether to attack or activate.
-  if Tile.hasFeature cotile feat t
-    then return $ TriggerSer leader dpos
-    else guessBump cotile feat t
+  if Tile.hasFeature cotile feat t then do
+    verifyTrigger leader feat
+    return $ TriggerSer leader dpos
+  else guessBump cotile feat t
+
+-- | Verify important feature triggers, such as fleeing the dungeon.
+verifyTrigger :: MonadClientUI m => ActorId -> F.Feature -> m ()
+verifyTrigger leader feat = case feat of
+  F.Ascendable -> do
+    s <- getState
+    b <- getsState $ getActorBody leader
+    if isNothing $ whereTo s (blid b) 1 then do -- TODO: consider power > 1
+      Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsState scops
+      go <- displayYesNo "This is the way out. Really leave now?"
+      when (not go) $ abortWith "Game resumed."
+      side <- getsClient sside
+      let (bag, total) = calculateTotal side (blid b) s
+      if total == 0 then do
+        -- The player can back off at each of these steps.
+        go1 <- displayMore ColorBW
+                 "Afraid of the challenge? Leaving so soon and empty-handed?"
+        when (not go1) $ abortWith "Brave soul!"
+        go2 <- displayMore ColorBW
+                 "This time try to grab some loot before escape!"
+        when (not go2) $ abortWith "Here's your chance!"
+      else do
+        let currencyName = MU.Text $ oname $ ouniqGroup "currency"
+            winMsg = makeSentence
+              [ "Congratulations, you won!"
+              , "Here's your loot, worth"
+              , MU.NWs total currencyName ]
+        io <- floorItemOverlay bag
+        slides <- overlayToSlideshow winMsg io
+        void $ getManyConfirms [] slides
+    else return ()
+  _ -> return ()
 
 -- | Guess and report why the bump command failed.
 guessBump :: MonadActionAbort m => Kind.Ops TileKind -> F.Feature -> Kind.Id TileKind -> m a
@@ -184,7 +217,7 @@ guessBump _ _ _ = neverMind True
 -- ** TriggerTile
 
 -- | Leader tries to trigger the tile he's standing on.
-leaderTriggerTile :: MonadClient m => F.Feature -> m CmdSer
+leaderTriggerTile :: MonadClientUI m => F.Feature -> m CmdSer
 leaderTriggerTile feat = do
   Just leader <- getsClient sleader
   ppos <- getsState (bpos . getActorBody leader)

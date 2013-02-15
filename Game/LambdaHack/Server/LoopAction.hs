@@ -12,6 +12,7 @@ import qualified Data.EnumSet as ES
 import Data.List
 import Data.Maybe
 import qualified Data.Text as T
+import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -208,6 +209,48 @@ checkEndGame = do
   case aNotSp of
     [] -> gameOver undefined undefined True  -- TODO: should send to all factions
     _ : _ -> return ()
+
+-- | End game, showing the ending screens, if requested.
+gameOver :: (MonadAction m, MonadServerChan m)
+         => FactionId -> LevelId -> Bool -> m ()
+gameOver fid arena showEndingScreens = do
+  deepest <- getsLevel arena ldepth  -- TODO: use deepest visited instead of current
+  let upd f = f {gquit = Just (False, Killed arena)}
+  modifyState $ updateFaction (EM.adjust upd fid)
+  when showEndingScreens $ do
+    Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsState scops
+    s <- getState
+    depth <- getsState sdepth
+    time <- undefined  -- TODO: sum over all levels? getsState getTime
+    let (bag, total) = calculateTotal fid arena s
+        failMsg | timeFit time timeTurn < 300 =
+          "That song shall be short."
+                | total < 100 =
+          "Born poor, dies poor."
+                | deepest < 4 && total < 500 =
+          "This should end differently."
+                | deepest < depth - 1 =
+          "This defeat brings no dishonour."
+                | deepest < depth =
+          "That is your name. 'Almost'."
+                | otherwise =
+          "Dead heroes make better legends."
+        currencyName = MU.Text $ oname $ ouniqGroup "currency"
+        loseMsg = makePhrase
+          [ failMsg
+          , "You left"
+          , MU.NWs total currencyName
+          , "and some junk." ]
+    if EM.null bag
+      then do
+        let upd2 f = f {gquit = Just (True, Killed arena)}
+        modifyState $ updateFaction (EM.adjust upd2 fid)
+      else do
+        -- TODO: do this for the killed factions, not for side
+        go <- sendQueryUI fid $ ConfirmShowItemsFloorCli loseMsg bag
+        when go $ do
+          let upd2 f = f {gquit = Just (True, Killed arena)}
+          modifyState $ updateFaction (EM.adjust upd2 fid)
 
 -- | Perform moves for individual actors, as long as there are actors
 -- with the next move time less than or equal to the current time.

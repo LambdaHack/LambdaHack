@@ -17,7 +17,7 @@ data Effect =
     NoEffect
   | Heal             -- healing strength in ipower
   | Wound !RollDice  -- base damage, to-dam bonus in ipower
-  | Mindprobe
+  | Mindprobe Int    -- the @Int@ is a hack to send the result to clients
   | Dominate
   | SummonFriend
   | SpawnMonster
@@ -37,7 +37,7 @@ effectToSuffix (Wound dice@(RollDice a b)) =
   if a == 0 && b == 0
   then "of wounding"
   else "(" <> showT dice <> ")"
-effectToSuffix Mindprobe = "of soul searching"
+effectToSuffix (Mindprobe _) = "of soul searching"
 effectToSuffix Dominate = "of domination"
 effectToSuffix SummonFriend = "of aid calling"
 effectToSuffix SpawnMonster = "of spawning"
@@ -55,7 +55,7 @@ effectToBenefit :: Effect -> Int
 effectToBenefit NoEffect = 0
 effectToBenefit Heal = 10           -- TODO: depends on (maxhp - hp)
 effectToBenefit (Wound _) = -10     -- TODO: dice ignored for now
-effectToBenefit Mindprobe = 1       -- hard to use; TODO: limit by IQ
+effectToBenefit (Mindprobe _) = 0   -- AI can't benefit yet
 effectToBenefit Dominate = 1        -- hard to use; TODO: limit by IQ
 effectToBenefit SummonFriend = 100
 effectToBenefit SpawnMonster = 5    -- may or may not spawn a friendly

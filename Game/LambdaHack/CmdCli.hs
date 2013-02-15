@@ -51,9 +51,7 @@ data CmdUpdateCli =
   deriving Show
 
 data CmdUpdateUI =
-    AnimateDeathCli ActorId
-  | DisplaceCli ActorId ActorId
-  | DisplayPushCli
+    DisplayPushCli
   | DisplayDelayCli
   | MoreFullCli Msg
   | MoreBWCli Msg

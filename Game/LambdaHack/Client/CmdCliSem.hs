@@ -157,12 +157,12 @@ drawCmdAtomicUI verbose cmd = case cmd of
   DestroyItemA _ _ item k _ -> itemVerbMU item k "disappear"
   MoveActorA _ _ _ -> return ()  -- too boring even for verbose mode
   WaitActorA aid _ _| verbose -> aVerbMU aid "wait"
-  DisplaceActorA _source _target -> return ()
+  DisplaceActorA source target -> displaceActorA source target
   MoveItemA _ iid k c1 c2 -> moveItemA verbose iid k c1 c2
   HealActorA aid n | verbose ->
     if n > 0
     then aVerbMU aid $ MU.Text $ "heal"  <+> showT n <> "HP"
-    else aVerbMU aid $ MU.Text $ "bleed" <+> showT n <> "HP"
+    else aVerbMU aid $ MU.Text $ "be about to lose" <+> showT n <> "HP"
   HasteActorA aid delta | verbose ->
     if delta > speedZero
     then aVerbMU aid "speeds up"
@@ -178,8 +178,7 @@ drawCmdAtomicUI verbose cmd = case cmd of
     else do
       fidName <- getsState $ gname . (EM.! toFid) . sfaction
       aVerbMU target $ MU.Text $ "fall under the influence of" <+> fidName
-  QuitFactionA _fid _fromSt _toSt ->
-    return ()  -- TODO: aliens request restart
+  QuitFactionA fid _ toSt -> quitFactionA fid toSt
   LeadFactionA _ _ _ -> return ()  -- boring; display enemy leaders instead
   AlterTileA _lid _p _fromTile _toTile | verbose ->
     return ()  -- TODO: door opens
@@ -206,25 +205,49 @@ drawDescAtomicUI verbose desc = case desc of
     aVerbMU aid $ "trigger"  -- TODO: opens door
   ShunA aid _p _ _ | verbose ->
     aVerbMU aid $ "shun"  -- TODO: shuns stairs down
-  EffectA aid effect -> case effect of
-    Effect.NoEffect -> msgAdd "Nothing happens."
-    Effect.Heal -> aVerbMU aid "feel better"
-    Effect.Wound _ -> aVerbMU aid "feel wounded"
-    Effect.Mindprobe -> msgAdd "A dozen voices yells in anger."
-    Effect.Dominate | verbose -> aVerbMU aid "be dominated"
-    Effect.ApplyPerfume ->
-      msgAdd "The fragrance quells all scents in the vicinity."
-    Effect.Searching -> do
-      Kind.COps{coactor} <- getsState scops
-      b <- getsState $ getActorBody aid
-      let msg = makeSentence
-            [ "It gets lost and"
-            , MU.SubjectVerbSg (partActor coactor b) "search in vain" ]
-      msgAdd msg
-    Effect.Ascend -> aVerbMU aid "find a way upstairs"
-    Effect.Descend -> aVerbMU aid "find a way downstairs"
-    _ ->  return ()
+  EffectA aid effect -> do
+    b <- getsState $ getActorBody aid
+    when (bhp b > 0) $
+      case effect of
+        Effect.NoEffect -> msgAdd "Nothing happens."
+        Effect.Heal -> aVerbMU aid "feel better"
+        Effect.Wound _ -> aVerbMU aid "feel wounded"
+        Effect.Mindprobe nEnemy -> do
+          -- TODO: NWs with spelled cardinal would be handy
+          let msg = makeSentence
+                [MU.SubjectVerbSg (MU.NWs nEnemy "howl of anger") "be heard"]
+          msgAdd msg
+        Effect.Dominate | verbose -> aVerbMU aid "be dominated"
+        Effect.ApplyPerfume ->
+          msgAdd "The fragrance quells all scents in the vicinity."
+        Effect.Searching -> do
+          Kind.COps{coactor} <- getsState scops
+          let msg = makeSentence
+                [ "It gets lost and"
+                , MU.SubjectVerbSg (partActor coactor b) "search in vain" ]
+          msgAdd msg
+        Effect.Ascend -> aVerbMU aid "find a way upstairs"
+        Effect.Descend -> aVerbMU aid "find a way downstairs"
+        _ ->  return ()
   _ -> return ()
+
+quitFactionA :: MonadClientUI m => FactionId -> Maybe (Bool, Status) -> m ()
+quitFactionA fid toSt = do
+  fidName <- getsState $ MU.Text . gname . (EM.! fid) . sfaction
+  case toSt of
+    Just (_, Restart) -> do
+      let msg = makeSentence
+            [MU.SubjectVerbSg fidName "request mission restart"]
+      msgAdd msg
+    Just (_, Victor) -> do
+      let msg = makeSentence
+            [MU.SubjectVerbSg fidName "complete the mission"]
+      msgAdd msg
+    Nothing -> do
+      let msg = makeSentence
+            [MU.SubjectVerbSg fidName "cancel all requests"]
+      msgAdd msg
+    _ -> return ()
 
 strikeA :: MonadClientUI m
         => ActorId -> ActorId -> Item -> HitAtomic -> m ()
@@ -256,15 +279,41 @@ strikeA source target item b = do
         ++ if withWhat
            then ["with", partItemAW coitem disco item]
            else []
-  msgAdd $ msg b
   cli <- getClient
   loc <- getState
   per <- askPerception
+  side <- getsClient sside
+  let (msgDie, animDie) | bhp tb > 0 = ("", [])
+                        | otherwise =
+        let verbD = if bproj tb then "drop down" else "fall down"
+            msgD = makeSentence
+                   [MU.SubjectVerbSg (partActor coactor tb) verbD]
+            animD = animate cli loc per $ deathBody $ bpos tb
+        in (msgD, animD)
+  msgAdd $ msg b <+> msgDie
   let ps = (bpos tb, bpos sb)
       anim HitA = twirlSplash ps Color.BrRed Color.Red
       anim HitBlockA = blockHit ps Color.BrRed Color.Red
       anim MissBlockA = blockMiss ps
       animFrs = animate cli loc per (anim b)
+  displayFramesPush $ Nothing : animFrs
+  -- Animate only when the client's own actor dies.
+  when (bfaction tb == side && not (bproj tb)) $ displayFramesPush animDie
+
+displaceActorA :: MonadClientUI m => ActorId -> ActorId -> m ()
+displaceActorA source target = do
+  Kind.COps{coactor} <- getsState scops
+  per <- askPerception
+  sm <- getsState (getActorBody source)
+  tm <- getsState (getActorBody target)
+  let msg = makeSentence
+        [ MU.SubjectVerbSg (partActor coactor sm) "displace"
+        , partActor coactor tm ]
+  msgAdd msg
+  cli <- getClient
+  loc <- getState
+  let ps = (bpos tm, bpos sm)
+      animFrs = animate cli loc per $ swapPlaces ps
   displayFramesPush $ Nothing : animFrs
 
 -- | Sentences such as \"Dog barks loudly.\".
@@ -332,36 +381,6 @@ showItemsCli msg bag inv = do
   io <- itemOverlay bag inv
   slides <- overlayToSlideshow msg io
   void $ getManyConfirms [] slides
-
-animateDeathCli :: MonadClientUI m => ActorId -> m ()
-animateDeathCli target = do
-  Kind.COps{coactor} <- getsState scops
-  pbody <- getsState $ getActorBody target
-  msgAdd $ makeSentence [MU.SubjectVerbSg (partActor coactor pbody) "die"]
-  recordHistory  -- Prevent repeating the "die" msgs.
-  cli <- getClient
-  loc <- getState
-  per <- askPerception
-  let animFrs = animate cli loc per $ deathBody (bpos pbody)
-  displayFramesPush animFrs
-
-displaceCli :: MonadClientUI m => ActorId -> ActorId -> m ()
-displaceCli source target = do
-  Kind.COps{coactor} <- getsState scops
-  per <- askPerception
-  sm <- getsState (getActorBody source)
-  tm <- getsState (getActorBody target)
-  let spos = bpos sm
-      tpos = bpos tm
-      msg = makeSentence
-        [ MU.SubjectVerbSg (partActor coactor sm) "displace"
-        , partActor coactor tm ]
-  msgAdd msg
-  cli <- getClient
-  loc <- getState
-  let poss = (tpos, spos)
-      animFrs = animate cli loc per $ swapPlaces poss
-  displayFramesPush $ Nothing : animFrs
 
 -- * cmdQueryCli
 
