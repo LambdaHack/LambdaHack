@@ -148,7 +148,16 @@ cmdAtomicBroad arena atomic = do
   (pStart, pEnd) <- case atomic of
     Left cmd -> posCmdAtomic cmd
     Right desc -> posDescAtomic desc
-  let vis per = all (`ES.member` totalVisible per)
+  let sendRem fid cmdRem = do
+        let sendUp = sendUpdateCli fid cmdRem
+        sendUp
+        withAI sendUp
+      sendA fid cmd = do
+        sendUpdateUI fid $ CmdAtomicUI cmd
+        withAI $ sendUpdateCli fid $ CmdAtomicCli cmd
+      sendUpdate fid (Left cmd) = sendA fid cmd
+      sendUpdate fid (Right desc) = sendUpdateUI fid $ DescAtomicUI desc
+      vis per = all (`ES.member` totalVisible per)
       send fid = do
         perOld <- getPerFid fid arena
         resets <- case atomic of
@@ -165,29 +174,18 @@ cmdAtomicBroad arena atomic = do
             seen = startSeen && endSeen
         if resets then do
           if seen then do
-            let sendUp =
-                  sendUpdateCli fid
-                  $ RememberPerCli perNew lvlOld arena actorDOld itemDOld factionOld
-            sendUp
-            withAI sendUp
-            sendUpdateUI fid $ AtomicSeenUI atomic
-            withAI $ sendUpdateCli fid $ AtomicSeen atomic
-          else do
-            let sendUp =
-                  sendUpdateCli fid
-                  $ RememberPerCli perNew lvlNew arena actorDNew itemDNew factionNew
-            sendUp
-            withAI sendUp
+            sendRem fid $
+              RememberPerCli perNew lvlOld arena actorDOld itemDOld factionOld
+            sendUpdate fid atomic
+          else
+            sendRem fid $
+              RememberPerCli perNew lvlNew arena actorDNew itemDNew factionNew
         else do
-          if seen then do
-            sendUpdateUI fid $ AtomicSeenUI atomic
-            withAI $ sendUpdateCli fid $ AtomicSeen atomic
-          else do
-            let sendUp =
-                  sendUpdateCli fid
-                  $ RememberCli lvlNew arena actorDNew itemDNew factionNew
-            sendUp
-            withAI sendUp
+          if seen then
+            sendUpdate fid atomic
+          else
+            sendRem fid $
+              RememberCli lvlNew arena actorDNew itemDNew factionNew
   faction <- getsState sfaction
   mapM_ send $ EM.keys faction
 
@@ -290,14 +288,14 @@ handleActors cmdSer arena subclipStart prevHuman = do
     _ | isJust quit || isJust gquit -> return prevHuman
     Nothing -> do
       when (subclipStart == timeZero) $
-        broadcastUI [] $ DisplayDelayCli
+        broadcastUI [] $ DisplayDelayUI
       return prevHuman
     Just (actor, body) | bhp body <= 0 && not (bproj body) -> do
       cmdSer arena $ DieSer actor
       -- Death is serious, new subclip.
       handleActors cmdSer arena (btime body) prevHuman
     Just (actor, body) -> do
-      broadcastUI [] DisplayPushCli  -- TODO: too often
+      broadcastUI [] DisplayPushUI  -- TODO: too often
       let side = bfaction body
       isHuman <- getsState $ flip isHumanFaction side
       mleader <- getsState $ gleader . (EM.! side) . sfaction
@@ -311,7 +309,7 @@ handleActors cmdSer arena subclipStart prevHuman = do
                         else do
                           case prevHuman of
                             Just fid -> do
-                              b <- sendQueryUI fid $ FlushFramesCli side
+                              b <- sendQueryUI fid $ FlushFramesUI side
                               if b
                                 then return $ Just side
                                 else return prevHuman
@@ -321,10 +319,10 @@ handleActors cmdSer arena subclipStart prevHuman = do
           -- is acting, etc. Or perhaps instead have a separate type
           -- of actions for humans. OTOH, AI is controlled by the servers
           -- so the generated commands are assumed to be legal.
-          cmdS <- sendQueryUI side HandleHumanCli
+          cmdS <- sendQueryUI side HandleHumanUI
           tryWith (\msg -> do
                       sendUpdateCli side $ ShowMsgCli msg
-                      sendUpdateUI side DisplayPushCli
+                      sendUpdateUI side DisplayPushUI
                       handleActors cmdSer arena subclipStart nHuman
                   ) $ do
             mapM_ (cmdSer arena) cmdS
@@ -366,7 +364,7 @@ handleActors cmdSer arena subclipStart prevHuman = do
               -- or it's another faction, but it's the first move of
               -- this whole clip or the actor has already moved during
               -- this subclip, so his multiple moves would be collapsed.
-              cmdS <- withAI $ sendQueryCli side $ HandleAI actor
+              cmdS <- withAI $ sendQueryCli side $ HandleAICli actor
     -- If the following action aborts, we just advance the time and continue.
     -- TODO: or just fail at each abort in AI code? or use tryWithFrame?
               tryWith (\msg -> if T.null msg
@@ -377,7 +375,7 @@ handleActors cmdSer arena subclipStart prevHuman = do
               handleActors cmdSer arena (btime body) prevHuman
             else do
               -- No new subclip.
-              cmdS <- withAI $ sendQueryCli side $ HandleAI actor
+              cmdS <- withAI $ sendQueryCli side $ HandleAICli actor
     -- If the following action aborts, we just advance the time and continue.
     -- TODO: or just fail at each abort in AI code? or use tryWithFrame?
               tryWith (\msg -> if T.null msg
@@ -441,18 +439,18 @@ endOrLoop (Just fid) loopServer = do
       nullR <- sendQueryCli fid NullReportCli
       unless nullR $ do
         -- Display any leftover report. Suggest it could be the death cause.
-        broadcastUI [] $ MoreBWCli "Who would have thought?"
+        broadcastUI [] $ MoreBWUI "Who would have thought?"
       tryWith
         (\ finalMsg ->
           let highScoreMsg = "Let's hope another party can save the day!"
               msg = if T.null finalMsg then highScoreMsg else finalMsg
-          in broadcastUI [] $ MoreBWCli msg
+          in broadcastUI [] $ MoreBWUI msg
           -- Do nothing, that is, quit the game loop.
         )
         (do
            when showScreens $ handleScores fid True status total
            go <- sendQueryUI fid
-                 $ ConfirmMoreBWCli "Next time will be different."
+                 $ ConfirmMoreBWUI "Next time will be different."
            when (not go) $ abortWith "You could really win this time."
            restartGame loopServer
         )
@@ -460,10 +458,10 @@ endOrLoop (Just fid) loopServer = do
       nullR <- sendQueryCli fid NullReportCli
       unless nullR $ do
         -- Display any leftover report. Suggest it could be the master move.
-        broadcastUI [] $ MoreFullCli "Brilliant, wasn't it?"
+        broadcastUI [] $ MoreFullUI "Brilliant, wasn't it?"
       when showScreens $ do
         tryIgnore $ handleScores fid True status total
-        broadcastUI [] $ MoreFullCli "Can it be done better, though?"
+        broadcastUI [] $ MoreFullUI "Can it be done better, though?"
       restartGame loopServer
     (Nothing, Just (_, Restart)) -> restartGame loopServer
     (Nothing, _) -> loopServer  -- just continue
@@ -485,7 +483,7 @@ restartGame loopServer = do
   cmdAtomicBroad initialLevel $ Left $ SyncA
   saveGameBkp
   broadcastCli [] $ ShowMsgCli "This time for real."
-  broadcastUI [] $ DisplayPushCli
+  broadcastUI [] $ DisplayPushUI
   loopServer
 
 createFactions :: Kind.COps -> Config -> Rnd FactionDict

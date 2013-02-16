@@ -119,7 +119,7 @@ handleScores fid write status total =
     curDate <- liftIO getClockTime
     slides <-
       liftIO $ register config write total timeZero curDate status
-    go <- sendQueryUI fid $ ShowSlidesCli slides
+    go <- sendQueryUI fid $ ShowSlidesUI slides
     when (not go) abort
 
 withAI :: MonadServerChan m => m a -> m a

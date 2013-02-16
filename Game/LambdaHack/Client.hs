@@ -2,12 +2,13 @@
              #-}
 -- | Semantics of client commands.
 module Game.LambdaHack.Client
-  ( cmdUpdateCli, cmdUpdateUI, cmdQueryCli, cmdQueryUI
-  , loopCli2, loopCli4, executorCli, exeFrontend
+  ( cmdCliSem, cmdUISem
+  , loopCli, loopUI, executorCli, exeFrontend
   , MonadClientChan, MonadClientUI
   ) where
 
 import Control.Monad
+import Data.Dynamic
 import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Action
@@ -22,8 +23,24 @@ import Game.LambdaHack.Faction
 import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 
+cmdCliSem :: (MonadAction m, MonadClientChan m) => CmdCli -> m ()
+cmdCliSem cmd2 = case cmd2 of
+  CmdUpdateCli cmd -> cmdUpdateCli cmd
+  CmdQueryCli cmd -> do
+    a <- cmdQueryCli cmd
+    writeChanToSer $ toDyn a
+
+cmdUISem :: (MonadAction m, MonadClientUI m, MonadClientChan m)
+         => CmdUI -> m ()
+cmdUISem cmd2 = case cmd2 of
+  CmdUpdateUI cmd -> cmdUpdateUI cmd
+  CmdQueryUI cmd -> do
+    a <- cmdQueryUI cmd
+    writeChanToSer $ toDyn a
+
 cmdUpdateCli :: (MonadAction m, MonadClient m) => CmdUpdateCli -> m ()
 cmdUpdateCli cmd = case cmd of
+  CmdAtomicCli cmdA -> cmdAtomicCli cmdA
   ShowMsgCli msg -> msgAdd msg
   RememberCli lvl lid actorD itemD faction ->
     rememberCli lvl lid actorD itemD faction
@@ -33,26 +50,26 @@ cmdUpdateCli cmd = case cmd of
   ContinueSavedCli sper -> modifyClient $ \cli -> cli {sper}
   GameSaveBkpCli isAI -> clientGameSave True isAI
   GameDisconnectCli isAI -> clientDisconnect isAI
-  AtomicSeen catomic -> atomicSeen catomic
 
 cmdUpdateUI :: (MonadAction m, MonadClientUI m) => CmdUpdateUI -> m ()
 cmdUpdateUI cmd = case cmd of
-  DisplayPushCli -> displayPush
-  DisplayDelayCli -> displayFramesPush [Nothing]
-  MoreBWCli msg -> do
+  CmdAtomicUI cmdA -> cmdAtomicUI cmdA
+  DescAtomicUI desc -> descAtomicUI desc
+  DisplayPushUI -> displayPush
+  DisplayDelayUI -> displayFramesPush [Nothing]
+  MoreBWUI msg -> do
     void $ displayMore ColorBW msg
     recordHistory
-  MoreFullCli msg -> do
+  MoreFullUI msg -> do
     void $ displayMore ColorFull msg
     recordHistory
-  AtomicSeenUI catomic -> atomicSeenUI catomic
 
 cmdQueryCli :: MonadClient m => CmdQueryCli a -> m a
 cmdQueryCli cmd = case cmd of
   NullReportCli -> do
     StateClient{sreport} <- getClient
     return $! nullReport sreport
-  HandleAI actor -> handleAI actor
+  HandleAICli actor -> handleAI actor
   IsRunningCli -> do
     tryWith (\_ -> return False) $ do
       mleader <- getsClient sleader
@@ -63,13 +80,13 @@ cmdQueryCli cmd = case cmd of
 
 cmdQueryUI :: MonadClientUI m => CmdQueryUI a -> m a
 cmdQueryUI cmd = case cmd of
-  ShowSlidesCli slides -> getManyConfirms [] slides
-  ConfirmMoreBWCli msg -> do
+  ShowSlidesUI slides -> getManyConfirms [] slides
+  ConfirmMoreBWUI msg -> do
     go <- displayMore ColorBW msg
     recordHistory  -- Prevent repeating the ending msgs.
     return go
-  HandleHumanCli -> handleHuman
-  FlushFramesCli newSide -> do
+  HandleHumanUI -> handleHuman
+  FlushFramesUI newSide -> do
     srunning <- getsClient srunning
     case srunning of
       Just (_, k) | k > 1 -> return False

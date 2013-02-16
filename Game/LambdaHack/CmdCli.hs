@@ -24,7 +24,7 @@ data CmdCli where
 
 deriving instance Show CmdCli
 
--- | Abstract syntax of all client commands.
+-- | Abstract syntax of client commands that use the UI.
 data CmdUI where
   CmdUpdateUI :: CmdUpdateUI -> CmdUI
   CmdQueryUI :: forall a. Typeable a => CmdQueryUI a -> CmdUI
@@ -32,35 +32,36 @@ data CmdUI where
 deriving instance Show CmdUI
 
 data CmdUpdateCli =
-    ShowMsgCli Msg
+    CmdAtomicCli CmdAtomic
+  | ShowMsgCli Msg
   | RememberCli Level LevelId ActorDict ItemDict FactionDict
   | RememberPerCli Perception Level LevelId ActorDict ItemDict FactionDict
   | RestartCli FactionPers State
   | ContinueSavedCli FactionPers
   | GameSaveBkpCli Bool
   | GameDisconnectCli Bool
-  | AtomicSeen Atomic
-  deriving Show
-
-data CmdUpdateUI =
-    DisplayPushCli
-  | DisplayDelayCli
-  | MoreFullCli Msg
-  | MoreBWCli Msg
-  | AtomicSeenUI Atomic
   deriving Show
 
 data CmdQueryCli a where
   NullReportCli :: CmdQueryCli Bool
-  HandleAI :: ActorId -> CmdQueryCli CmdSer
+  HandleAICli :: ActorId -> CmdQueryCli CmdSer
   IsRunningCli :: CmdQueryCli Bool
 
 deriving instance Show (CmdQueryCli a)
 
+data CmdUpdateUI =
+    CmdAtomicUI CmdAtomic
+  | DescAtomicUI DescAtomic
+  | DisplayPushUI
+  | DisplayDelayUI
+  | MoreFullUI Msg
+  | MoreBWUI Msg
+  deriving Show
+
 data CmdQueryUI a where
-  ShowSlidesCli :: Slideshow -> CmdQueryUI Bool
-  ConfirmMoreBWCli :: Msg -> CmdQueryUI Bool
-  HandleHumanCli :: CmdQueryUI [CmdSer]
-  FlushFramesCli :: FactionId -> CmdQueryUI Bool
+  ShowSlidesUI :: Slideshow -> CmdQueryUI Bool
+  ConfirmMoreBWUI :: Msg -> CmdQueryUI Bool
+  HandleHumanUI :: CmdQueryUI [CmdSer]
+  FlushFramesUI :: FactionId -> CmdQueryUI Bool
 
 deriving instance Show (CmdQueryUI a)

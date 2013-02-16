@@ -1,10 +1,9 @@
 {-# LANGUAGE OverloadedStrings, RankNTypes #-}
 -- | The main loop of the client, processing human and computer player
 -- moves turn by turn.
-module Game.LambdaHack.Client.LoopAction (loopCli2, loopCli4) where
+module Game.LambdaHack.Client.LoopAction (loopCli, loopUI) where
 
 import Control.Monad
-import Data.Dynamic
 import Data.Maybe
 
 import Game.LambdaHack.Action
@@ -14,8 +13,9 @@ import Game.LambdaHack.CmdCli
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
 
-initCli :: (MonadAction m, MonadClientChan m) => Bool -> (CmdUpdateCli -> m ()) -> m ()
-initCli isAI cmdUpdateCli = do
+initCli :: (MonadAction m, MonadClientChan m)
+        => Bool -> (CmdCli -> m ()) -> m ()
+initCli isAI cmdCliSem = do
   -- Warning: state and client state are invalid here, e.g., sdungeon
   -- and sper are empty.
   cops <- getsState scops
@@ -25,70 +25,51 @@ initCli isAI cmdUpdateCli = do
       -- TODO: create or restore from config clients RNG seed
       msgAdd msg
       let expected cmd = case cmd of RestartCli{} -> True; _ -> False
-      expectCmd cmdUpdateCli expected
+      expectCmd cmdCliSem expected
     Left (s, cli, msg) -> do  -- Restore a game or at least history.
       let sCops = updateCOps (const cops) s
       putState sCops
       putClient cli
       msgAdd msg
       let expected cmd = case cmd of ContinueSavedCli{} -> True; _ -> False
-      expectCmd cmdUpdateCli expected
+      expectCmd cmdCliSem expected
   modifyClient $ \cli -> cli {squit = Nothing}
   -- State and client state are now valid.
 
 expectCmd :: MonadClientChan m
-           => (CmdUpdateCli -> m ()) -> (CmdUpdateCli -> Bool)
-           -> m ()
-expectCmd cmdUpdateCli expected = do
+           => (CmdCli -> m ()) -> (CmdUpdateCli -> Bool) -> m ()
+expectCmd cmdCliSem expected = do
   side <- getsClient sside
   cmd1 <- readChanFromSer
   case cmd1 of
-    Left (CmdUpdateCli cmd) | expected cmd -> cmdUpdateCli cmd
+    Left (CmdUpdateCli cmd) | expected cmd -> cmdCliSem (CmdUpdateCli cmd)
     _ -> assert `failure` (side, cmd1)
 
-loopCli2 :: (MonadAction m, MonadClientChan m)
-         => (CmdUpdateCli -> m ())
-         -> (forall a. Typeable a => CmdQueryCli a -> m a)
-         -> m ()
-loopCli2 cmdUpdateCli cmdQueryCli = do
-  initCli True cmdUpdateCli
+loopCli :: (MonadAction m, MonadClientChan m)
+        => (CmdCli -> m ()) -> m ()
+loopCli cmdCliSem = do
+  initCli True cmdCliSem
   loop
  where
   loop = do
     side <- getsClient sside
     cmd2 <- readChanFromSer
     case cmd2 of
+      Left cmd -> cmdCliSem cmd
       Right _ -> assert `failure` (side, cmd2)
-      Left (CmdUpdateCli cmd) -> do
-        cmdUpdateCli cmd
-      Left (CmdQueryCli cmd) -> do
-        a <- cmdQueryCli cmd
-        writeChanToSer $ toDyn a
     quit <- getsClient squit
     when (isNothing quit) loop
 
-loopCli4 :: (MonadAction m, MonadClientUI m, MonadClientChan m)
-         => (CmdUpdateCli -> m ())
-         -> (forall a. Typeable a => CmdQueryCli a -> m a)
-         -> (CmdUpdateUI -> m ())
-         -> (forall a. Typeable a => CmdQueryUI a -> m a)
-         -> m ()
-loopCli4 cmdUpdateCli cmdQueryCli cmdUpdateUI cmdQueryUI = do
-  initCli False cmdUpdateCli
+loopUI :: (MonadAction m, MonadClientUI m, MonadClientChan m)
+       => (CmdCli -> m ()) -> (CmdUI -> m ()) -> m ()
+loopUI cmdCliSem cmdUISem = do
+  initCli False cmdCliSem
   loop
  where
   loop = do
     cmd4 <- readChanFromSer
     case cmd4 of
-      Right (CmdUpdateUI cmd) -> do
-        cmdUpdateUI cmd
-      Right (CmdQueryUI cmd) -> do
-        a <- cmdQueryUI cmd
-        writeChanToSer $ toDyn a
-      Left (CmdUpdateCli cmd) -> do
-        cmdUpdateCli cmd
-      Left (CmdQueryCli cmd) -> do
-        a <- cmdQueryCli cmd
-        writeChanToSer $ toDyn a
+      Left cmd -> cmdCliSem cmd
+      Right cmd -> cmdUISem cmd
     quit <- getsClient squit
     when (isNothing quit) loop
