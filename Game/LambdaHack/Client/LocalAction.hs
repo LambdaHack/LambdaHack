@@ -5,9 +5,10 @@
 -- TODO: document
 module Game.LambdaHack.Client.LocalAction
   ( -- * Semantics of serverl-less human commands
-    retarget, moveCursor, inventory, targetFloor, targetEnemy, tgtAscend
+    moveCursor, retarget, selectHero, cycleMember, backCycleMember
+  , inventory, targetFloor, targetEnemy, tgtAscend
   , epsIncr, cancelCurrent, displayMainMenu, acceptCurrent, clearCurrent
-  , displayHistory, cycleMember, backCycleMember, displayHelp, selectHero
+  , displayHistory, displayHelp
     -- * Helper functions useful also elsewhere
   , endTargeting, floorItemOverlay, itemOverlay, viewedLevel, selectLeader
   , stopRunning, lookAt
@@ -54,17 +55,6 @@ import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 
 default (Text)
-
--- * Project
-
-retarget :: MonadClient m => WriterT Slideshow m ()
-retarget = do
-  stgtMode <- getsClient stgtMode
-  assert (isNothing stgtMode) $ do
-    arena <- getArenaCli
-    msgAdd "Last target invalid."
-    modifyClient $ \cli -> cli {scursor = Nothing, seps = 0}
-    targetEnemy $ TgtAuto arena
 
 -- * Move and Run
 
@@ -192,9 +182,90 @@ itemOverlay bag inv = do
          <> " "
   return $ map pr is
 
--- GameSave doesn't take time, but needs server, so it's defined elsewhere.
+-- * Project
 
--- CfgDump doesn't take time, but needs server, so it's defined elsewhere.
+retarget :: MonadClient m => WriterT Slideshow m ()
+retarget = do
+  stgtMode <- getsClient stgtMode
+  assert (isNothing stgtMode) $ do
+    arena <- getArenaCli
+    msgAdd "Last target invalid."
+    modifyClient $ \cli -> cli {scursor = Nothing, seps = 0}
+    targetEnemy $ TgtAuto arena
+
+-- * SelectHero
+
+selectHero :: MonadClient m => Int -> m ()
+selectHero k = do
+  side <- getsClient sside
+  loc <- getState
+  case tryFindHeroK loc side k of
+    Nothing  -> abortWith "No such member of the party."
+    Just (aid, _) -> void $ selectLeader aid
+
+-- * MemberCycle
+
+-- | Switches current member to the next on the level, if any, wrapping.
+cycleMember :: MonadClient m => m ()
+cycleMember = do
+  Just leader <- getsClient sleader
+  body <- getsState $ getActorBody leader
+  hs <- partyAfterLeader leader
+  case filter (\(_, b) -> blid b == blid body) hs of
+    [] -> abortWith "Cannot select any other member on this level."
+    (np, b) : _ -> selectLeader np
+                   >>= assert `trueM` (leader, blid b, np, "member duplicated")
+
+partyAfterLeader :: MonadActionRO m
+                 => ActorId
+                 -> m [(ActorId, Actor)]
+partyAfterLeader leader = do
+  faction <- getsState $ bfaction . getActorBody leader
+  allA <- getsState $ EM.assocs . sactorD
+  s <- getState
+  let hs9 = catMaybes $ map (tryFindHeroK s faction) [0..9]
+      factionA = filter (\(_, body) -> bfaction body == faction) allA
+      hs = hs9 ++ (deleteFirstsBy ((==) `on` fst) factionA hs9)
+      i = fromMaybe (-1) $ findIndex ((== leader) . fst) hs
+      (lt, gt) = (take i hs, drop (i + 1) hs)
+  return $ gt ++ lt
+
+-- | Select a faction leader. Switch level, if needed.
+-- False, if nothing to do. Should only be invoked as a direct result
+-- of a human player action (leader death just sets sleader to Nothing).
+selectLeader :: MonadClient m => ActorId -> m Bool
+selectLeader actor = do
+  Kind.COps{coactor} <- getsState scops
+  leader <- getsClient sleader
+  stgtMode <- getsClient stgtMode
+  if Just actor == leader
+    then return False -- already selected
+    else do
+      loc <- getState
+      modifyClient $ updateLeader actor loc
+      pbody <- getsState $ getActorBody actor
+      -- Move the cursor, if active, to the new level.
+      when (isJust stgtMode) $ setTgtId $ blid pbody
+      -- Don't continue an old run, if any.
+      stopRunning
+      -- Announce.
+      msgAdd $ makeSentence [partActor coactor pbody, "selected"]
+      return True
+
+stopRunning :: MonadClient m => m ()
+stopRunning = modifyClient (\ cli -> cli { srunning = Nothing })
+
+-- * MemberBack
+
+-- | Switches current member to the previous in the whole dungeon, wrapping.
+backCycleMember :: MonadClient m => m ()
+backCycleMember = do
+  Just leader <- getsClient sleader
+  hs <- partyAfterLeader leader
+  case reverse hs of
+    [] -> abortWith "No other member in the party."
+    (np, b) : _ -> selectLeader np
+                   >>= assert `trueM` (leader, blid b, np, "member duplicated")
 
 -- * Inventory
 
@@ -489,70 +560,6 @@ displayHistory = do
   slides <- overlayToSlideshow msg $ renderHistory history
   tell slides
 
--- * MemberCycle
-
--- | Switches current member to the next on the level, if any, wrapping.
-cycleMember :: MonadClient m => m ()
-cycleMember = do
-  Just leader <- getsClient sleader
-  body <- getsState $ getActorBody leader
-  hs <- partyAfterLeader leader
-  case filter (\(_, b) -> blid b == blid body) hs of
-    [] -> abortWith "Cannot select any other member on this level."
-    (np, b) : _ -> selectLeader np
-                   >>= assert `trueM` (leader, blid b, np, "member duplicated")
-
-partyAfterLeader :: MonadActionRO m
-                 => ActorId
-                 -> m [(ActorId, Actor)]
-partyAfterLeader leader = do
-  faction <- getsState $ bfaction . getActorBody leader
-  allA <- getsState $ EM.assocs . sactorD
-  s <- getState
-  let hs9 = catMaybes $ map (tryFindHeroK s faction) [0..9]
-      factionA = filter (\(_, body) -> bfaction body == faction) allA
-      hs = hs9 ++ (deleteFirstsBy ((==) `on` fst) factionA hs9)
-      i = fromMaybe (-1) $ findIndex ((== leader) . fst) hs
-      (lt, gt) = (take i hs, drop (i + 1) hs)
-  return $ gt ++ lt
-
--- | Select a faction leader. Switch level, if needed.
--- False, if nothing to do. Should only be invoked as a direct result
--- of a human player action (leader death just sets sleader to Nothing).
-selectLeader :: MonadClient m => ActorId -> m Bool
-selectLeader actor = do
-  Kind.COps{coactor} <- getsState scops
-  leader <- getsClient sleader
-  stgtMode <- getsClient stgtMode
-  if Just actor == leader
-    then return False -- already selected
-    else do
-      loc <- getState
-      modifyClient $ updateLeader actor loc
-      pbody <- getsState $ getActorBody actor
-      -- Move the cursor, if active, to the new level.
-      when (isJust stgtMode) $ setTgtId $ blid pbody
-      -- Don't continue an old run, if any.
-      stopRunning
-      -- Announce.
-      msgAdd $ makeSentence [partActor coactor pbody, "selected"]
-      return True
-
-stopRunning :: MonadClient m => m ()
-stopRunning = modifyClient (\ cli -> cli { srunning = Nothing })
-
--- * MemberBack
-
--- | Switches current member to the previous in the whole dungeon, wrapping.
-backCycleMember :: MonadClient m => m ()
-backCycleMember = do
-  Just leader <- getsClient sleader
-  hs <- partyAfterLeader leader
-  case reverse hs of
-    [] -> abortWith "No other member in the party."
-    (np, b) : _ -> selectLeader np
-                   >>= assert `trueM` (leader, blid b, np, "member duplicated")
-
 -- * Help
 
 -- | Display command help.
@@ -560,13 +567,3 @@ displayHelp :: MonadClientUI m => WriterT Slideshow m ()
 displayHelp = do
   keyb <- askBinding
   tell $ keyHelp keyb
-
--- * SelectHero
-
-selectHero :: MonadClient m => Int -> m ()
-selectHero k = do
-  side <- getsClient sside
-  loc <- getState
-  case tryFindHeroK loc side k of
-    Nothing  -> abortWith "No such member of the party."
-    Just (aid, _) -> void $ selectLeader aid

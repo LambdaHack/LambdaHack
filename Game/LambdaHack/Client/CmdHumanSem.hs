@@ -67,14 +67,6 @@ cmdAction cli s cmd =
       Level{lxsize} =
         maybe (sdungeon s EM.! arena) ((sdungeon s EM.!) . tgtLevelId) tgtMode
   in case cmd of
-    Apply{..} -> fmap Just $ leaderApplyGroupItem verb object syms
-    Project{} | isNothing tgtLoc -> retarget >> return Nothing
-    Project{..} -> fmap Just $ leaderProjectGroupItem verb object syms
-    TriggerDir{..} -> fmap Just $ leaderTriggerDir feature verb
-    TriggerTile{..} -> fmap Just $ leaderTriggerTile feature
-    Pickup -> fmap Just $ pickupItem
-    Drop -> fmap Just $ dropItem
-    Wait -> fmap Just $ waitBlock
     Move v | isJust tgtMode ->
       let dir = toDir lxsize v
       in moveCursor dir 1 >> return Nothing
@@ -98,11 +90,23 @@ cmdAction cli s cmd =
     Run v ->
       let dir = toDir lxsize v
       in fmap Just $ runPl dir
+    Wait -> fmap Just $ waitBlock
+    Pickup -> fmap Just $ pickupItem
+    Drop -> fmap Just $ dropItem
+    Project{} | isNothing tgtLoc -> retarget >> return Nothing
+    Project{..} -> fmap Just $ leaderProjectGroupItem verb object syms
+    Apply{..} -> fmap Just $ leaderApplyGroupItem verb object syms
+    TriggerDir{..} -> fmap Just $ leaderTriggerDir feature verb
+    TriggerTile{..} -> fmap Just $ leaderTriggerTile feature
 
-    GameExit    -> fmap Just $ gameExit
     GameRestart -> fmap Just $ gameRestart
+    GameExit    -> fmap Just $ gameExit
     GameSave    -> fmap Just $ gameSave
     CfgDump     -> fmap Just $ dumpConfig
+
+    SelectHero k -> selectHero k >> return Nothing
+    MemberCycle -> cycleMember >> return Nothing
+    MemberBack  -> backCycleMember >> return Nothing
     Inventory   -> inventory >> return Nothing
     TgtFloor    -> (targetFloor   $ TgtExplicit arena) >> return Nothing
     TgtEnemy    -> (targetEnemy $ TgtExplicit arena) >> return Nothing
@@ -112,10 +116,7 @@ cmdAction cli s cmd =
     Accept      -> acceptCurrent displayHelp >> return Nothing
     Clear       -> clearCurrent >> return Nothing
     History     -> displayHistory >> return Nothing
-    MemberCycle -> cycleMember >> return Nothing
-    MemberBack  -> backCycleMember >> return Nothing
     Help        -> displayHelp >> return Nothing
-    SelectHero k -> selectHero k >> return Nothing
     DebugArea   -> modifyClient toggleMarkVision >> return Nothing
     DebugOmni   -> modifyClient toggleOmniscient >> return Nothing  -- TODO: Server
     DebugSmell  -> modifyClient toggleMarkSmell >> return Nothing

@@ -43,169 +43,36 @@ import Game.LambdaHack.Vector
 
 default (Text)
 
--- * ApplySer
+-- * DieSer
 
-applySer :: MonadServerChan m   -- MonadActionAbort m
-         => ActorId    -- ^ actor applying the item (is on current level)
-         -> ItemId     -- ^ the item to be applied
-         -> Container  -- ^ the location of the item
-         -> WriterT [Atomic] m ()
-applySer actor iid container = do
-  item <- getsState $ getItemBody iid
-  b <- getsState $ getActorBody actor
-  tellDescAtomic $ ActivateA actor iid
-  itemEffect actor actor item
-  tellCmdAtomic $ DestroyItemA (blid b) iid item 1 container
-
--- * ProjectSer
-
-projectSer :: MonadServerChan m
-           => ActorId    -- ^ actor projecting the item (is on current lvl)
-           -> Point      -- ^ target position of the projectile
-           -> Int        -- ^ digital line parameter
-           -> ItemId     -- ^ the item to be projected
-           -> Container  -- ^ whether the items comes from floor or inventory
-           -> WriterT [Atomic] m ()
-projectSer source tpos eps iid container = do
-  cops@Kind.COps{coactor} <- getsState scops
-  sm <- getsState (getActorBody source)
-  Actor{btime} <- getsState $ getActorBody source
-  lvl <- getsLevel (blid sm) id
-  lxsize <- getsLevel (blid sm) lxsize
-  lysize <- getsLevel (blid sm) lysize
-  let spos = bpos sm
-      arena = blid sm
-      -- When projecting, the first turn is spent aiming.
-      -- The projectile is seen one tile from the actor, giving a hint
-      -- about the aim and letting the target evade.
-      -- TODO: AI should choose the best eps.
-      -- Setting monster's projectiles time to player time ensures
-      -- the projectile covers the whole normal distance already the first
-      -- turn that the player observes it moving. This removes
-      -- the possibility of micromanagement by, e.g.,  waiting until
-      -- the first distance is short.
-      -- When the monster faction has its leader, player's
-      -- projectiles should be set to the time of the opposite party as well.
-      -- Both parties would see their own projectiles move part of the way
-      -- and the opposite party's projectiles waiting one turn.
-      btimeDelta = timeAddFromSpeed coactor sm btime
-      time = btimeDelta `timeAdd` timeNegate timeClip
-      bl = bla lxsize lysize eps spos tpos
-  case bl of
-    Nothing -> abortWith "cannot zap oneself"
-    Just [] -> assert `failure` (spos, tpos, "project from the edge of level")
-    Just path@(pos:_) -> do
-      inhabitants <- getsState (posToActor pos arena)
-      if accessible cops lvl spos pos && isNothing inhabitants
-        then do
-          tellDescAtomic $ ProjectA source iid
-          projId <- addProjectile iid pos (blid sm) (bfaction sm) path time
-          tellCmdAtomic
-            $ MoveItemA (blid sm) iid 1 container
-                                        (CActor projId (InvChar 'a'))
-        else
-          abortWith "blocked"
-
--- | Create a projectile actor containing the given missile.
-addProjectile :: MonadServer m
-              => ItemId -> Point -> LevelId -> FactionId -> [Point] -> Time
-              -> WriterT [Atomic] m ActorId
-addProjectile iid loc blid bfaction path btime = do
-  Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}} <- getsState scops
-  disco <- getsState sdisco
-  item <- getsState $ getItemBody iid
-  let ik = okind (fromJust $ jkind disco item)
-      speed = speedFromWeight (iweight ik) (itoThrow ik)
-      range = rangeFromSpeed speed
-      adj | range < 5 = "falling"
-          | otherwise = "flying"
-      -- Not much details about a fast flying object.
-      (object1, object2) = partItem coitem EM.empty item
-      name = makePhrase [MU.AW $ MU.Text adj, object1, object2]
-      dirPath = take range $ displacePath path
-      m = Actor
-        { bkind   = projectileKindId coactor
-        , bsymbol = Nothing
-        , bname   = Just name
-        , bcolor  = Nothing
-        , bspeed  = Just speed
-        , bhp     = 0
-        , bpath   = Just dirPath
-        , bpos    = loc
-        , blid
-        , bbag    = EM.empty
-        , binv    = EM.empty
-        , bletter = InvChar 'a'
-        , btime
-        , bwait   = timeZero
-        , bfaction
-        , bproj   = True
-        }
-  acounter <- getsServer sacounter
-  modifyServer $ \ser -> ser {sacounter = succ acounter}
-  tellCmdAtomic $ CreateActorA acounter m
-  return acounter
-
--- * TriggerSer
-
--- | Perform the action specified for the tile in case it's triggered.
-triggerSer :: MonadServerChan m
-           => ActorId -> Point -> WriterT [Atomic] m ()
-triggerSer aid dpos = do
-  Kind.COps{cotile=Kind.Ops{okind, opick}} <- getsState scops
-  b <- getsState $ getActorBody aid
-  let arena = blid b
-  lvl <- getsLevel arena id
-  let f feat = do
-        case feat of
-          F.Cause ef -> do
-            tellDescAtomic $ TriggerA aid dpos feat {-TODO-}True
-            -- No block against tile, hence @False@.
-            void $ effectSem ef aid aid 0
-            return ()
-          F.ChangeTo tgroup -> do
-            tellDescAtomic $ TriggerA aid dpos feat {-TODO-}True
-            as <- getsState $ actorList (const True) arena
-            if EM.null $ lvl `atI` dpos
-              then if unoccupied as dpos
-                 then do
-                   fromTile <- getsLevel (blid b) (`at` dpos)
-                   toTile <- rndToAction $ opick tgroup (const True)
-                   tellCmdAtomic $ AlterTileA (blid b) dpos fromTile toTile
--- TODO: take care of AI using this function (aborts, etc.).
-                 else abortWith "blocked"  -- by monsters or heroes
-            else abortWith "jammed"  -- by items
-          _ -> return ()
-  mapM_ f $ TileKind.tfeature $ okind $ lvl `at` dpos
-
--- * PickupSer
-
-pickupSer :: MonadServerChan m
-          => ActorId -> ItemId -> Int -> InvChar -> WriterT [Atomic] m ()
-pickupSer aid iid k l = assert (k > 0 `blame` (aid, iid, k, l)) $ do
-  b <- getsState $ getActorBody aid
-  tellCmdAtomic $ MoveItemA (blid b) iid k (CFloor (bpos b)) (CActor aid l)
-
--- * DropSer
-
-dropSer :: MonadActionRO m => ActorId -> ItemId -> WriterT [Atomic] m ()
-dropSer aid iid = do
-  b <- getsState $ getActorBody aid
-  let k = 1
-  tellCmdAtomic $ MoveItemA (blid b) iid k (actorContainer aid (binv b) iid)
-                                           (CFloor (bpos b))
-
--- * WaitSer
-
--- | Update the wait/block count.
-waitSer :: MonadActionRO m => ActorId -> WriterT [Atomic] m ()
-waitSer aid = do
-  Kind.COps{coactor} <- getsState scops
+dieSer :: MonadServer m => ActorId -> WriterT [Atomic] m ()
+dieSer aid = do  -- TODO: explode if a projectile holdding a potion
+  dropAllItems aid
   body <- getsState $ getActorBody aid
-  time <- getsState $ getTime $ blid body
-  let fromWait = bwait body
-      toWait = timeAddFromSpeed coactor body time
-  tellCmdAtomic $ WaitActorA aid fromWait toWait
+  tellCmdAtomic $ DestroyActorA aid body
+  electLeader (bfaction body) (blid body)
+--  Config{configFirstDeathEnds} <- getsServer sconfig
+
+-- | Drop all actor's items.
+dropAllItems :: MonadActionRO m => ActorId -> WriterT [Atomic] m ()
+dropAllItems aid = do
+  b <- getsState $ getActorBody aid
+  let f (iid, k) = tellCmdAtomic
+                   $ MoveItemA (blid b) iid k (actorContainer aid (binv b) iid)
+                                              (CFloor $ bpos b)
+  mapM_ f $ EM.assocs $ bbag b
+
+electLeader :: MonadServer m => FactionId -> LevelId -> WriterT [Atomic] m ()
+electLeader fid lid = do
+  mleader <- getsState $ gleader . (EM.! fid) . sfaction
+  when (isNothing mleader) $ do
+    actorD <- getsState sactorD
+    let party = filter (\(_, b) ->
+                  bfaction b == fid && not (bproj b)) $ EM.assocs actorD
+    when (not $ null $ party) $ do
+      onLevel <- getsState $ actorNotProjAssocs (== fid) lid
+      let leader = fst $ head $ onLevel ++ party
+      tellCmdAtomic $ LeadFactionA fid Nothing (Just leader)
 
 -- * MoveSer
 
@@ -373,37 +240,169 @@ displaceActor source target =  tellCmdAtomic $ DisplaceActorA source target
 --   then stopRunning  -- do not switch positions repeatedly
 --   else void $ focusIfOurs target
 
--- * GameExit
+-- * WaitSer
 
-gameExitSer :: MonadServer m => WriterT [Atomic] m ()
-gameExitSer = modifyServer $ \ser -> ser {squit = True}
+-- | Update the wait/block count.
+waitSer :: MonadActionRO m => ActorId -> WriterT [Atomic] m ()
+waitSer aid = do
+  Kind.COps{coactor} <- getsState scops
+  body <- getsState $ getActorBody aid
+  time <- getsState $ getTime $ blid body
+  let fromWait = bwait body
+      toWait = timeAddFromSpeed coactor body time
+  tellCmdAtomic $ WaitActorA aid fromWait toWait
 
--- * GameRestart
+-- * PickupSer
 
-gameRestartSer :: MonadActionRO m => FactionId -> WriterT [Atomic] m ()
-gameRestartSer fid = do
-  oldSt <- getsState $ gquit . (EM.! fid) . sfaction
-  tellCmdAtomic $ QuitFactionA fid oldSt $ Just (False, Restart)
+pickupSer :: MonadServerChan m
+          => ActorId -> ItemId -> Int -> InvChar -> WriterT [Atomic] m ()
+pickupSer aid iid k l = assert (k > 0 `blame` (aid, iid, k, l)) $ do
+  b <- getsState $ getActorBody aid
+  tellCmdAtomic $ MoveItemA (blid b) iid k (CFloor (bpos b)) (CActor aid l)
 
--- * GameSaveSer
+-- * DropSer
 
-gameSaveSer :: MonadServerChan m => m ()
-gameSaveSer = do
-  broadcastCli GameSaveBkpCli
-  saveGameBkp
+dropSer :: MonadActionRO m => ActorId -> ItemId -> WriterT [Atomic] m ()
+dropSer aid iid = do
+  b <- getsState $ getActorBody aid
+  let k = 1
+  tellCmdAtomic $ MoveItemA (blid b) iid k (actorContainer aid (binv b) iid)
+                                           (CFloor (bpos b))
 
--- * CfgDumpSer
+-- * ProjectSer
 
-cfgDumpSer :: MonadServer m => m ()
-cfgDumpSer = do
-  Config{configRulesCfgFile} <- getsServer sconfig
-  let fn = configRulesCfgFile ++ ".dump"
-      msg = "Server dumped current game rules configuration to file"
-            <+> T.pack fn <> "."
-  dumpCfg fn
-  -- Wait with confirmation until saved; tell where the file is.
-  -- TODO: show abort message to the current client, not all clients
-  abortWith msg
+projectSer :: MonadServerChan m
+           => ActorId    -- ^ actor projecting the item (is on current lvl)
+           -> Point      -- ^ target position of the projectile
+           -> Int        -- ^ digital line parameter
+           -> ItemId     -- ^ the item to be projected
+           -> Container  -- ^ whether the items comes from floor or inventory
+           -> WriterT [Atomic] m ()
+projectSer source tpos eps iid container = do
+  cops@Kind.COps{coactor} <- getsState scops
+  sm <- getsState (getActorBody source)
+  Actor{btime} <- getsState $ getActorBody source
+  lvl <- getsLevel (blid sm) id
+  lxsize <- getsLevel (blid sm) lxsize
+  lysize <- getsLevel (blid sm) lysize
+  let spos = bpos sm
+      arena = blid sm
+      -- When projecting, the first turn is spent aiming.
+      -- The projectile is seen one tile from the actor, giving a hint
+      -- about the aim and letting the target evade.
+      -- TODO: AI should choose the best eps.
+      -- Setting monster's projectiles time to player time ensures
+      -- the projectile covers the whole normal distance already the first
+      -- turn that the player observes it moving. This removes
+      -- the possibility of micromanagement by, e.g.,  waiting until
+      -- the first distance is short.
+      -- When the monster faction has its leader, player's
+      -- projectiles should be set to the time of the opposite party as well.
+      -- Both parties would see their own projectiles move part of the way
+      -- and the opposite party's projectiles waiting one turn.
+      btimeDelta = timeAddFromSpeed coactor sm btime
+      time = btimeDelta `timeAdd` timeNegate timeClip
+      bl = bla lxsize lysize eps spos tpos
+  case bl of
+    Nothing -> abortWith "cannot zap oneself"
+    Just [] -> assert `failure` (spos, tpos, "project from the edge of level")
+    Just path@(pos:_) -> do
+      inhabitants <- getsState (posToActor pos arena)
+      if accessible cops lvl spos pos && isNothing inhabitants
+        then do
+          tellDescAtomic $ ProjectA source iid
+          projId <- addProjectile iid pos (blid sm) (bfaction sm) path time
+          tellCmdAtomic
+            $ MoveItemA (blid sm) iid 1 container
+                                        (CActor projId (InvChar 'a'))
+        else
+          abortWith "blocked"
+
+-- | Create a projectile actor containing the given missile.
+addProjectile :: MonadServer m
+              => ItemId -> Point -> LevelId -> FactionId -> [Point] -> Time
+              -> WriterT [Atomic] m ActorId
+addProjectile iid loc blid bfaction path btime = do
+  Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}} <- getsState scops
+  disco <- getsState sdisco
+  item <- getsState $ getItemBody iid
+  let ik = okind (fromJust $ jkind disco item)
+      speed = speedFromWeight (iweight ik) (itoThrow ik)
+      range = rangeFromSpeed speed
+      adj | range < 5 = "falling"
+          | otherwise = "flying"
+      -- Not much details about a fast flying object.
+      (object1, object2) = partItem coitem EM.empty item
+      name = makePhrase [MU.AW $ MU.Text adj, object1, object2]
+      dirPath = take range $ displacePath path
+      m = Actor
+        { bkind   = projectileKindId coactor
+        , bsymbol = Nothing
+        , bname   = Just name
+        , bcolor  = Nothing
+        , bspeed  = Just speed
+        , bhp     = 0
+        , bpath   = Just dirPath
+        , bpos    = loc
+        , blid
+        , bbag    = EM.empty
+        , binv    = EM.empty
+        , bletter = InvChar 'a'
+        , btime
+        , bwait   = timeZero
+        , bfaction
+        , bproj   = True
+        }
+  acounter <- getsServer sacounter
+  modifyServer $ \ser -> ser {sacounter = succ acounter}
+  tellCmdAtomic $ CreateActorA acounter m
+  return acounter
+
+-- * ApplySer
+
+applySer :: MonadServerChan m   -- MonadActionAbort m
+         => ActorId    -- ^ actor applying the item (is on current level)
+         -> ItemId     -- ^ the item to be applied
+         -> Container  -- ^ the location of the item
+         -> WriterT [Atomic] m ()
+applySer actor iid container = do
+  item <- getsState $ getItemBody iid
+  b <- getsState $ getActorBody actor
+  tellDescAtomic $ ActivateA actor iid
+  itemEffect actor actor item
+  tellCmdAtomic $ DestroyItemA (blid b) iid item 1 container
+
+-- * TriggerSer
+
+-- | Perform the action specified for the tile in case it's triggered.
+triggerSer :: MonadServerChan m
+           => ActorId -> Point -> WriterT [Atomic] m ()
+triggerSer aid dpos = do
+  Kind.COps{cotile=Kind.Ops{okind, opick}} <- getsState scops
+  b <- getsState $ getActorBody aid
+  let arena = blid b
+  lvl <- getsLevel arena id
+  let f feat = do
+        case feat of
+          F.Cause ef -> do
+            tellDescAtomic $ TriggerA aid dpos feat {-TODO-}True
+            -- No block against tile, hence @False@.
+            void $ effectSem ef aid aid 0
+            return ()
+          F.ChangeTo tgroup -> do
+            tellDescAtomic $ TriggerA aid dpos feat {-TODO-}True
+            as <- getsState $ actorList (const True) arena
+            if EM.null $ lvl `atI` dpos
+              then if unoccupied as dpos
+                 then do
+                   fromTile <- getsLevel (blid b) (`at` dpos)
+                   toTile <- rndToAction $ opick tgroup (const True)
+                   tellCmdAtomic $ AlterTileA (blid b) dpos fromTile toTile
+-- TODO: take care of AI using this function (aborts, etc.).
+                 else abortWith "blocked"  -- by monsters or heroes
+            else abortWith "jammed"  -- by items
+          _ -> return ()
+  mapM_ f $ TileKind.tfeature $ okind $ lvl `at` dpos
 
 -- * ClearPathSer
 
@@ -426,36 +425,12 @@ setPathSer aid dir path = do
       tellCmdAtomic $ ColorActorA aid fromColor toColor
   moveSer aid dir
 
--- * DieSer
+-- * GameRestart
 
-dieSer :: MonadServer m => ActorId -> WriterT [Atomic] m ()
-dieSer aid = do  -- TODO: explode if a projectile holdding a potion
-  dropAllItems aid
-  body <- getsState $ getActorBody aid
-  tellCmdAtomic $ DestroyActorA aid body
-  electLeader (bfaction body) (blid body)
---  Config{configFirstDeathEnds} <- getsServer sconfig
-
--- | Drop all actor's items.
-dropAllItems :: MonadActionRO m => ActorId -> WriterT [Atomic] m ()
-dropAllItems aid = do
-  b <- getsState $ getActorBody aid
-  let f (iid, k) = tellCmdAtomic
-                   $ MoveItemA (blid b) iid k (actorContainer aid (binv b) iid)
-                                              (CFloor $ bpos b)
-  mapM_ f $ EM.assocs $ bbag b
-
-electLeader :: MonadServer m => FactionId -> LevelId -> WriterT [Atomic] m ()
-electLeader fid lid = do
-  mleader <- getsState $ gleader . (EM.! fid) . sfaction
-  when (isNothing mleader) $ do
-    actorD <- getsState sactorD
-    let party = filter (\(_, b) ->
-                  bfaction b == fid && not (bproj b)) $ EM.assocs actorD
-    when (not $ null $ party) $ do
-      onLevel <- getsState $ actorNotProjAssocs (== fid) lid
-      let leader = fst $ head $ onLevel ++ party
-      tellCmdAtomic $ LeadFactionA fid Nothing (Just leader)
+gameRestartSer :: MonadActionRO m => FactionId -> WriterT [Atomic] m ()
+gameRestartSer fid = do
+  oldSt <- getsState $ gquit . (EM.! fid) . sfaction
+  tellCmdAtomic $ QuitFactionA fid oldSt $ Just (False, Restart)
 
 -- * LeaderSer
 
@@ -463,3 +438,28 @@ leaderSer :: MonadServer m => ActorId -> FactionId -> WriterT [Atomic] m ()
 leaderSer aid fid = do
   mleader <- getsState $ gleader . (EM.! fid) . sfaction
   tellCmdAtomic $ LeadFactionA fid mleader (Just aid)
+
+-- * GameExit
+
+gameExitSer :: MonadServer m => WriterT [Atomic] m ()
+gameExitSer = modifyServer $ \ser -> ser {squit = True}
+
+-- * GameSaveSer
+
+gameSaveSer :: MonadServerChan m => m ()
+gameSaveSer = do
+  broadcastCli GameSaveBkpCli
+  saveGameBkp
+
+-- * CfgDumpSer
+
+cfgDumpSer :: MonadServer m => m ()
+cfgDumpSer = do
+  Config{configRulesCfgFile} <- getsServer sconfig
+  let fn = configRulesCfgFile ++ ".dump"
+      msg = "Server dumped current game rules configuration to file"
+            <+> T.pack fn <> "."
+  dumpCfg fn
+  -- Wait with confirmation until saved; tell where the file is.
+  -- TODO: show abort message to the current client, not all clients
+  abortWith msg

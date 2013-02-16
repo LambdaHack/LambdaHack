@@ -4,9 +4,9 @@
 -- A couple of them do not take time, the rest does.
 -- TODO: document
 module Game.LambdaHack.Client.MixedAction
-  ( gameSave, dumpConfig, leaderApplyGroupItem, leaderProjectGroupItem
-  , leaderTriggerDir, leaderTriggerTile, pickupItem, dropItem
-  , waitBlock, movePl, runPl, gameExit, gameRestart
+  ( movePl, runPl, waitBlock, pickupItem, dropItem, leaderProjectGroupItem
+  , leaderApplyGroupItem, leaderTriggerDir, leaderTriggerTile
+  , gameRestart, gameExit, gameSave, dumpConfig
   ) where
 
 import Control.Monad
@@ -43,191 +43,31 @@ import Game.LambdaHack.Vector
 
 default (Text)
 
--- + Semantics of client commands that return a server command
+-- * Move
 
--- ** Two commands that do not take time, but still return a server command
-
--- *** GameSave
-
-gameSave :: MonadClient m => m CmdSer
-gameSave = do
-  msgAdd "Saving game to a backup file."
-  -- Let the server save, while the client continues taking commands.
-  return GameSaveSer
-
--- *** CfgDump
-
-dumpConfig :: MonadActionAbort m => m CmdSer
-dumpConfig = return CfgDumpSer
-
--- ** Apply
-
-leaderApplyGroupItem :: MonadClientUI m
-                     => MU.Part -> MU.Part -> [Char]
-                     -> m CmdSer
-leaderApplyGroupItem verb object syms = do
+movePl :: MonadClient m => Vector -> m CmdSer
+movePl dir = do
   Just leader <- getsClient sleader
-  bag <- getsState $ getActorBag leader
-  inv <- getsState $ getActorInv leader
-  ((iid, _), (_, container)) <-
-    getGroupItem leader bag inv object syms
-                 (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
-  return $! ApplySer leader iid container
+  return $! MoveSer leader dir
 
--- | Let a human player choose any item with a given group name.
--- Note that this does not guarantee the chosen item belongs to the group,
--- as the player can override the choice.
-getGroupItem :: MonadClientUI m
-             => ActorId
-             -> ItemBag  -- ^ all objects in question
-             -> ItemInv  -- ^ inventory characters
-             -> MU.Part  -- ^ name of the group
-             -> [Char]   -- ^ accepted item symbols
-             -> Text     -- ^ prompt
-             -> Text     -- ^ how to refer to the collection of objects
-             -> m ((ItemId, Item), (Int, Container))
-getGroupItem leader is inv object syms prompt packName = do
-  let choice i = jsymbol i `elem` syms
-      header = makePhrase [MU.Capitalize (MU.Ws object)]
-  getItem leader prompt choice header is inv packName
+-- * Run
 
--- ** Project
-
-leaderProjectGroupItem :: MonadClientUI m
-                       => MU.Part -> MU.Part -> [Char]
-                       -> m CmdSer
-leaderProjectGroupItem verb object syms = do
-  side <- getsClient sside
-  genemy <- getsState $ genemy . (EM.! side) . sfaction
+runPl :: MonadClient m => Vector -> m CmdSer
+runPl dir = do
   Just leader <- getsClient sleader
-  b <- getsState $ getActorBody leader
-  let arena = blid b
-  ms <- getsState $ actorNotProjList (`elem` genemy) arena
-  lxsize <- getsLevel arena lxsize
-  lysize <- getsLevel arena lysize
-  if foesAdjacent lxsize lysize (bpos b) ms
-    then abortWith "You can't aim in melee."
-    else actorProjectGI leader verb object syms
+  (dirR, distNew) <- runDir leader (dir, 0)
+  modifyClient $ \cli -> cli {srunning = Just (dirR, distNew)}
+  return $! RunSer leader dirR
 
-actorProjectGI :: MonadClientUI m
-               => ActorId -> MU.Part -> MU.Part -> [Char]
-               -> m CmdSer
-actorProjectGI aid verb object syms = do
-  cli <- getClient
-  pos <- getState
-  seps <- getsClient seps
-  case targetToPos cli pos of
-    Just p -> do
-      bag <- getsState $ getActorBag aid
-      inv <- getsState $ getActorInv aid
-      ((iid, _), (_, container)) <-
-        getGroupItem aid bag inv object syms
-          (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
-      stgtMode <- getsClient stgtMode
-      case stgtMode of
-        Just (TgtAuto _) -> endTargeting True
-        _ -> return ()
-      return $! ProjectSer aid p seps iid container
-    Nothing -> assert `failure` (pos, aid, "target unexpectedly invalid")
+-- * Wait
 
--- ** TriggerDir
-
--- | Ask for a direction and trigger a tile, if possible.
-leaderTriggerDir :: MonadClientUI m => F.Feature -> MU.Part -> m CmdSer
-leaderTriggerDir feat verb = do
-  let keys = zip K.dirAllMoveKey $ repeat K.NoModifier
-      prompt = makePhrase ["What to", verb MU.:> "? [movement key"]
-  e <- displayChoiceUI prompt [] keys
+-- | Leader waits a turn (and blocks, etc.).
+waitBlock :: MonadClient m => m CmdSer
+waitBlock = do
   Just leader <- getsClient sleader
-  b <- getsState $ getActorBody leader
-  lxsize <- getsLevel (blid b) lxsize
-  K.handleDir lxsize e (leaderBumpDir feat) (neverMind True)
+  return $ WaitSer leader
 
--- | Leader tries to trigger a tile in a given direction.
-leaderBumpDir :: MonadClientUI m => F.Feature -> Vector -> m CmdSer
-leaderBumpDir feat dir = do
-  Just leader <- getsClient sleader
-  body <- getsState $ getActorBody leader
-  let dpos = bpos body `shift` dir
-  bumpTile leader dpos feat
-
--- | Player tries to trigger a tile using a feature.
--- To help the player, only visible features can be triggered.
-bumpTile :: MonadClientUI m => ActorId -> Point -> F.Feature -> m CmdSer
-bumpTile leader dpos feat = do
-  Kind.COps{cotile} <- getsState scops
-  b <- getsState $ getActorBody leader
-  lvl <- getsLevel (blid b) id
-  let t = lvl `at` dpos
-  -- A tile can be triggered even if an invisible monster occupies it.
-  -- TODO: let the user choose whether to attack or activate.
-  if Tile.hasFeature cotile feat t then do
-    verifyTrigger leader feat
-    return $ TriggerSer leader dpos
-  else guessBump cotile feat t
-
--- | Verify important feature triggers, such as fleeing the dungeon.
-verifyTrigger :: MonadClientUI m => ActorId -> F.Feature -> m ()
-verifyTrigger leader feat = case feat of
-  F.Ascendable -> do
-    s <- getState
-    b <- getsState $ getActorBody leader
-    if isNothing $ whereTo s (blid b) 1 then do -- TODO: consider power > 1
-      Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsState scops
-      go <- displayYesNo "This is the way out. Really leave now?"
-      when (not go) $ abortWith "Game resumed."
-      side <- getsClient sside
-      let (bag, total) = calculateTotal side (blid b) s
-      if total == 0 then do
-        -- The player can back off at each of these steps.
-        go1 <- displayMore ColorBW
-                 "Afraid of the challenge? Leaving so soon and empty-handed?"
-        when (not go1) $ abortWith "Brave soul!"
-        go2 <- displayMore ColorBW
-                 "This time try to grab some loot before escape!"
-        when (not go2) $ abortWith "Here's your chance!"
-      else do
-        let currencyName = MU.Text $ oname $ ouniqGroup "currency"
-            winMsg = makeSentence
-              [ "Congratulations, you won!"
-              , "Here's your loot, worth"
-              , MU.NWs total currencyName ]
-        io <- floorItemOverlay bag
-        slides <- overlayToSlideshow winMsg io
-        void $ getManyConfirms [] slides
-    else return ()
-  _ -> return ()
-
--- | Guess and report why the bump command failed.
-guessBump :: MonadActionAbort m => Kind.Ops TileKind -> F.Feature -> Kind.Id TileKind -> m a
-guessBump cotile F.Openable t | Tile.hasFeature cotile F.Closable t =
-  abortWith "already open"
-guessBump _ F.Openable _ =
-  abortWith "not a door"
-guessBump cotile F.Closable t | Tile.hasFeature cotile F.Openable t =
-  abortWith "already closed"
-guessBump _ F.Closable _ =
-  abortWith "not a door"
-guessBump cotile F.Ascendable t | Tile.hasFeature cotile F.Descendable t =
-  abortWith "the way goes down, not up"
-guessBump _ F.Ascendable _ =
-  abortWith "no stairs up"
-guessBump cotile F.Descendable t | Tile.hasFeature cotile F.Ascendable t =
-  abortWith "the way goes up, not down"
-guessBump _ F.Descendable _ =
-  abortWith "no stairs down"
-guessBump _ _ _ = neverMind True
-
--- ** TriggerTile
-
--- | Leader tries to trigger the tile he's standing on.
-leaderTriggerTile :: MonadClientUI m => F.Feature -> m CmdSer
-leaderTriggerTile feat = do
-  Just leader <- getsClient sleader
-  ppos <- getsState (bpos . getActorBody leader)
-  bumpTile leader ppos feat
-
--- ** Pickup
+-- * Pickup
 
 pickupItem :: MonadClient m => m CmdSer
 pickupItem = do
@@ -244,7 +84,7 @@ pickupItem = do
         Just l2 -> return $ PickupSer aid iid k l2
         Nothing -> abortWith "cannot carry any more"
 
--- ** Drop
+-- * Drop
 
 -- TODO: you can drop an item already on the floor, which works correctly,
 -- but is weird and useless.
@@ -359,31 +199,184 @@ getItem aid prompt p ptext bag inv isn = do
             k -> assert `failure` "perform: unexpected key:" <+> showT k
   ask
 
--- ** Wait
+-- * Project
 
--- | Leader waits a turn (and blocks, etc.).
-waitBlock :: MonadClient m => m CmdSer
-waitBlock = do
+leaderProjectGroupItem :: MonadClientUI m
+                       => MU.Part -> MU.Part -> [Char]
+                       -> m CmdSer
+leaderProjectGroupItem verb object syms = do
+  side <- getsClient sside
+  genemy <- getsState $ genemy . (EM.! side) . sfaction
   Just leader <- getsClient sleader
-  return $ WaitSer leader
+  b <- getsState $ getActorBody leader
+  let arena = blid b
+  ms <- getsState $ actorNotProjList (`elem` genemy) arena
+  lxsize <- getsLevel arena lxsize
+  lysize <- getsLevel arena lysize
+  if foesAdjacent lxsize lysize (bpos b) ms
+    then abortWith "You can't aim in melee."
+    else actorProjectGI leader verb object syms
 
--- ** Move
+actorProjectGI :: MonadClientUI m
+               => ActorId -> MU.Part -> MU.Part -> [Char]
+               -> m CmdSer
+actorProjectGI aid verb object syms = do
+  cli <- getClient
+  pos <- getState
+  seps <- getsClient seps
+  case targetToPos cli pos of
+    Just p -> do
+      bag <- getsState $ getActorBag aid
+      inv <- getsState $ getActorInv aid
+      ((iid, _), (_, container)) <-
+        getGroupItem aid bag inv object syms
+          (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
+      stgtMode <- getsClient stgtMode
+      case stgtMode of
+        Just (TgtAuto _) -> endTargeting True
+        _ -> return ()
+      return $! ProjectSer aid p seps iid container
+    Nothing -> assert `failure` (pos, aid, "target unexpectedly invalid")
 
-movePl :: MonadClient m => Vector -> m CmdSer
-movePl dir = do
+-- * Apply
+
+leaderApplyGroupItem :: MonadClientUI m
+                     => MU.Part -> MU.Part -> [Char]
+                     -> m CmdSer
+leaderApplyGroupItem verb object syms = do
   Just leader <- getsClient sleader
-  return $! MoveSer leader dir
+  bag <- getsState $ getActorBag leader
+  inv <- getsState $ getActorInv leader
+  ((iid, _), (_, container)) <-
+    getGroupItem leader bag inv object syms
+                 (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
+  return $! ApplySer leader iid container
 
--- ** Run
+-- | Let a human player choose any item with a given group name.
+-- Note that this does not guarantee the chosen item belongs to the group,
+-- as the player can override the choice.
+getGroupItem :: MonadClientUI m
+             => ActorId
+             -> ItemBag  -- ^ all objects in question
+             -> ItemInv  -- ^ inventory characters
+             -> MU.Part  -- ^ name of the group
+             -> [Char]   -- ^ accepted item symbols
+             -> Text     -- ^ prompt
+             -> Text     -- ^ how to refer to the collection of objects
+             -> m ((ItemId, Item), (Int, Container))
+getGroupItem leader is inv object syms prompt packName = do
+  let choice i = jsymbol i `elem` syms
+      header = makePhrase [MU.Capitalize (MU.Ws object)]
+  getItem leader prompt choice header is inv packName
 
-runPl :: MonadClient m => Vector -> m CmdSer
-runPl dir = do
+-- * TriggerDir
+
+-- | Ask for a direction and trigger a tile, if possible.
+leaderTriggerDir :: MonadClientUI m => F.Feature -> MU.Part -> m CmdSer
+leaderTriggerDir feat verb = do
+  let keys = zip K.dirAllMoveKey $ repeat K.NoModifier
+      prompt = makePhrase ["What to", verb MU.:> "? [movement key"]
+  e <- displayChoiceUI prompt [] keys
   Just leader <- getsClient sleader
-  (dirR, distNew) <- runDir leader (dir, 0)
-  modifyClient $ \cli -> cli {srunning = Just (dirR, distNew)}
-  return $! RunSer leader dirR
+  b <- getsState $ getActorBody leader
+  lxsize <- getsLevel (blid b) lxsize
+  K.handleDir lxsize e (leaderBumpDir feat) (neverMind True)
 
--- ** GameExit
+-- | Leader tries to trigger a tile in a given direction.
+leaderBumpDir :: MonadClientUI m => F.Feature -> Vector -> m CmdSer
+leaderBumpDir feat dir = do
+  Just leader <- getsClient sleader
+  body <- getsState $ getActorBody leader
+  let dpos = bpos body `shift` dir
+  bumpTile leader dpos feat
+
+-- | Player tries to trigger a tile using a feature.
+-- To help the player, only visible features can be triggered.
+bumpTile :: MonadClientUI m => ActorId -> Point -> F.Feature -> m CmdSer
+bumpTile leader dpos feat = do
+  Kind.COps{cotile} <- getsState scops
+  b <- getsState $ getActorBody leader
+  lvl <- getsLevel (blid b) id
+  let t = lvl `at` dpos
+  -- A tile can be triggered even if an invisible monster occupies it.
+  -- TODO: let the user choose whether to attack or activate.
+  if Tile.hasFeature cotile feat t then do
+    verifyTrigger leader feat
+    return $ TriggerSer leader dpos
+  else guessBump cotile feat t
+
+-- | Verify important feature triggers, such as fleeing the dungeon.
+verifyTrigger :: MonadClientUI m => ActorId -> F.Feature -> m ()
+verifyTrigger leader feat = case feat of
+  F.Ascendable -> do
+    s <- getState
+    b <- getsState $ getActorBody leader
+    if isNothing $ whereTo s (blid b) 1 then do -- TODO: consider power > 1
+      Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsState scops
+      go <- displayYesNo "This is the way out. Really leave now?"
+      when (not go) $ abortWith "Game resumed."
+      side <- getsClient sside
+      let (bag, total) = calculateTotal side (blid b) s
+      if total == 0 then do
+        -- The player can back off at each of these steps.
+        go1 <- displayMore ColorBW
+                 "Afraid of the challenge? Leaving so soon and empty-handed?"
+        when (not go1) $ abortWith "Brave soul!"
+        go2 <- displayMore ColorBW
+                 "This time try to grab some loot before escape!"
+        when (not go2) $ abortWith "Here's your chance!"
+      else do
+        let currencyName = MU.Text $ oname $ ouniqGroup "currency"
+            winMsg = makeSentence
+              [ "Congratulations, you won!"
+              , "Here's your loot, worth"
+              , MU.NWs total currencyName ]
+        io <- floorItemOverlay bag
+        slides <- overlayToSlideshow winMsg io
+        void $ getManyConfirms [] slides
+    else return ()
+  _ -> return ()
+
+-- | Guess and report why the bump command failed.
+guessBump :: MonadActionAbort m => Kind.Ops TileKind -> F.Feature -> Kind.Id TileKind -> m a
+guessBump cotile F.Openable t | Tile.hasFeature cotile F.Closable t =
+  abortWith "already open"
+guessBump _ F.Openable _ =
+  abortWith "not a door"
+guessBump cotile F.Closable t | Tile.hasFeature cotile F.Openable t =
+  abortWith "already closed"
+guessBump _ F.Closable _ =
+  abortWith "not a door"
+guessBump cotile F.Ascendable t | Tile.hasFeature cotile F.Descendable t =
+  abortWith "the way goes down, not up"
+guessBump _ F.Ascendable _ =
+  abortWith "no stairs up"
+guessBump cotile F.Descendable t | Tile.hasFeature cotile F.Ascendable t =
+  abortWith "the way goes up, not down"
+guessBump _ F.Descendable _ =
+  abortWith "no stairs down"
+guessBump _ _ _ = neverMind True
+
+-- * TriggerTile
+
+-- | Leader tries to trigger the tile he's standing on.
+leaderTriggerTile :: MonadClientUI m => F.Feature -> m CmdSer
+leaderTriggerTile feat = do
+  Just leader <- getsClient sleader
+  ppos <- getsState (bpos . getActorBody leader)
+  bumpTile leader ppos feat
+
+-- * GameRestart; does not take time
+
+gameRestart :: MonadClientUI m => m CmdSer
+gameRestart = do
+  b1 <- displayMore ColorFull "You just requested a new game."
+  when (not b1) $ neverMind True
+  b2 <- displayYesNo "Current progress will be lost! Really restart the game?"
+  when (not b2) $ abortWith "Yea, would be a pity to leave them to die."
+  return GameRestartSer
+
+-- * GameExit; does not take time
 
 gameExit :: MonadClientUI m => m CmdSer
 gameExit = do
@@ -392,13 +385,15 @@ gameExit = do
     then return GameExitSer
     else abortWith "Game resumed."
 
--- ** GameRestart
+-- * GameSave; does not take time
 
-gameRestart :: MonadClientUI m => m CmdSer
-gameRestart = do
-  b1 <- displayMore ColorFull "You just requested a new game."
-  when (not b1) $ neverMind True
-  b2 <- displayYesNo "Current progress will be lost! Really restart the game?"
-  when (not b2) $ abortWith "Yea, would be a pity to leave them to die."
-  side <- getsClient sside
-  return GameRestartSer
+gameSave :: MonadClient m => m CmdSer
+gameSave = do
+  msgAdd "Saving game to a backup file."
+  -- Let the server save, while the client continues taking commands.
+  return GameSaveSer
+
+-- * CfgDump; does not take time
+
+dumpConfig :: MonadActionAbort m => m CmdSer
+dumpConfig = return CfgDumpSer

@@ -17,20 +17,24 @@ import Game.LambdaHack.VectorXY
 -- | Abstract syntax of player commands.
 data CmdHuman =
     -- These usually take time.
-    Apply       { verb :: MU.Part, object :: MU.Part, syms :: [Char] }
-  | Project     { verb :: MU.Part, object :: MU.Part, syms :: [Char] }
-  | TriggerDir  { verb :: MU.Part, object :: MU.Part, feature :: F.Feature }
-  | TriggerTile { verb :: MU.Part, object :: MU.Part, feature :: F.Feature }
+    Move VectorXY
+  | Run VectorXY
+  | Wait
   | Pickup
   | Drop
-  | Wait
-  | Move VectorXY
-  | Run VectorXY
+  | Project     { verb :: MU.Part, object :: MU.Part, syms :: [Char] }
+  | Apply       { verb :: MU.Part, object :: MU.Part, syms :: [Char] }
+  | TriggerDir  { verb :: MU.Part, object :: MU.Part, feature :: F.Feature }
+  | TriggerTile { verb :: MU.Part, object :: MU.Part, feature :: F.Feature }
     -- These do not take time.
-  | GameExit
   | GameRestart
+  | GameExit
   | GameSave
   | CfgDump
+    -- These do not notify the server.
+  | SelectHero Int
+  | MemberCycle
+  | MemberBack
   | Inventory
   | TgtFloor
   | TgtEnemy
@@ -40,10 +44,7 @@ data CmdHuman =
   | Accept
   | Clear
   | History
-  | MemberCycle
-  | MemberBack
   | Help
-  | SelectHero Int
   | DebugArea
   | DebugOmni
   | DebugSmell
@@ -53,14 +54,14 @@ data CmdHuman =
 -- | Major commands land on the first page of command help.
 majorCmdHuman :: CmdHuman -> Bool
 majorCmdHuman cmd = case cmd of
-  Apply{}       -> True
-  Project{}     -> True
-  TriggerDir{}  -> True
-  TriggerTile{} -> True
   Pickup        -> True
   Drop          -> True
-  GameExit      -> True
+  Project{}     -> True
+  Apply{}       -> True
+  TriggerDir{}  -> True
+  TriggerTile{} -> True
   GameRestart   -> True
+  GameExit      -> True
   GameSave      -> True
   Inventory     -> True
   Help          -> True
@@ -69,6 +70,9 @@ majorCmdHuman cmd = case cmd of
 -- | Minor commands land on the second page of command help.
 minorCmdHuman :: CmdHuman -> Bool
 minorCmdHuman cmd = case cmd of
+  CfgDump     -> True
+  MemberCycle -> True
+  MemberBack  -> True
   TgtFloor    -> True
   TgtEnemy    -> True
   TgtAscend{} -> True
@@ -77,9 +81,6 @@ minorCmdHuman cmd = case cmd of
   Accept      -> True
   Clear       -> True
   History     -> True
-  CfgDump     -> True
-  MemberCycle -> True
-  MemberBack  -> True
   _           -> False
 
 -- | Commands that are forbidden on a remote level, because they
@@ -89,32 +90,36 @@ minorCmdHuman cmd = case cmd of
 -- in targeting mode.
 noRemoteCmdHuman :: CmdHuman -> Bool
 noRemoteCmdHuman cmd = case cmd of
-  Apply{}       -> True
-  Project{}     -> True
-  TriggerDir{}  -> True
-  TriggerTile{} -> True
+  Wait          -> True
   Pickup        -> True
   Drop          -> True
-  Wait          -> True
+  Project{}     -> True
+  Apply{}       -> True
+  TriggerDir{}  -> True
+  TriggerTile{} -> True
   _             -> False
 
 -- | Description of player commands.
 cmdDescription :: CmdHuman -> Text
 cmdDescription cmd = case cmd of
-  Apply{..}       -> makePhrase [verb, MU.AW object]
-  Project{..}     -> makePhrase [verb, MU.AW object]
-  TriggerDir{..}  -> makePhrase [verb, MU.AW object]
-  TriggerTile{..} -> makePhrase [verb, MU.AW object]
-  Pickup      -> "get an object"
-  Drop        -> "drop an object"
   Move{}      -> "move"
   Run{}       -> "run"
   Wait        -> "wait"
+  Pickup      -> "get an object"
+  Drop        -> "drop an object"
+  Project{..}     -> makePhrase [verb, MU.AW object]
+  Apply{..}       -> makePhrase [verb, MU.AW object]
+  TriggerDir{..}  -> makePhrase [verb, MU.AW object]
+  TriggerTile{..} -> makePhrase [verb, MU.AW object]
 
-  GameExit    -> "save and exit"
   GameRestart -> "restart game"
+  GameExit    -> "save and exit"
   GameSave    -> "save game"
   CfgDump     -> "dump current configuration"
+
+  SelectHero{} -> "select hero"
+  MemberCycle -> "cycle among heroes on level"
+  MemberBack  -> "cycle among heroes in the dungeon"
   Inventory   -> "display inventory"
   TgtFloor    -> "target position"
   TgtEnemy    -> "target monster"
@@ -130,10 +135,7 @@ cmdDescription cmd = case cmd of
   Accept    -> "accept choice"
   Clear     -> "clear messages"
   History   -> "display previous messages"
-  MemberCycle -> "cycle among heroes on level"
-  MemberBack  -> "cycle among heroes in the dungeon"
   Help      -> "display help"
-  SelectHero{} -> "select hero"
   DebugArea    -> "debug visible area"
   DebugOmni    -> "debug omniscience"
   DebugSmell   -> "debug smell"

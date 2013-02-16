@@ -7,46 +7,37 @@
 ; [commands]
 ; ; All commands are defined here, except movement, hero selection and debug.
 ; ;
-; ; Interaction with the dungeon.
+; KP_Begin: Wait
+; g: Pickup
+; d: Drop
+; t: Project { verb = "throw", object = "missile", syms = "|" }
+; z: Project { verb = "zap", object = "wand", syms = "/" }
+; q: Apply { verb = "quaff", object = "potion", syms = "!" }
+; r: Apply { verb = "read", object = "scroll", syms = "?" }
 ; c: TriggerDir { verb = "close", object = "door", feature = Closable }
 ; o: TriggerDir { verb = "open", object = "door", feature = Openable }
 ; less:    TriggerTile { verb = "ascend", object = "level", feature = Cause Ascend }
 ; greater: TriggerTile { verb = "descend", object = "level", feature = Cause Descend }
+; R: GameRestart
+; X: GameExit
+; S: GameSave
+; D: CfgDump
+; Tab: MemberCycle
+; ISO_Left_Tab: MemberBack
+; i: Inventory
+; slash: TgtFloor
+; asterisk: TgtEnemy
 ; bracketleft:  TgtAscend 1
 ; bracketright: TgtAscend (-1)
 ; braceleft:    TgtAscend 10
 ; braceright:   TgtAscend (-10)
-; slash: TgtFloor
-; asterisk: TgtEnemy
 ; plus: EpsIncr True
 ; minus: EpsIncr False
-; Tab: MemberCycle
-; ISO_Left_Tab: MemberBack
-; ;
-; ; Items.
-; g: Pickup
-; d: Drop
-; i: Inventory
-; q: Apply { verb = "quaff", object = "potion", syms = "!" }
-; r: Apply { verb = "read", object = "scroll", syms = "?" }
-; z: Project { verb = "zap", object = "wand", syms = "/" }
-; t: Project { verb = "throw", object = "missile", syms = "|" }
-; ;
-; ; Saving, exiting and restarting the game.
-; X: GameExit
-; R: GameRestart
-; S: GameSave
-; ;
-; ; Information for the player.
-; P: History
-; question: Help
-; D: CfgDump
-; ;
-; ; General.
-; KP_Begin: Wait
 ; Escape: Cancel
 ; Return: Accept
 ; space: Clear
+; P: History
+; question: Help
 
 ; [macros]
 ; ; Handy with Vi keys:

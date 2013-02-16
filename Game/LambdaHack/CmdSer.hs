@@ -14,32 +14,32 @@ import Game.LambdaHack.Vector
 
 -- | Abstract syntax of server commands.
 data CmdSer =
-    ApplySer ActorId ItemId Container
-  | ProjectSer ActorId Point Int ItemId Container
-  | TriggerSer ActorId Point
-  | PickupSer ActorId ItemId Int InvChar
-  | DropSer ActorId ItemId
-  | WaitSer ActorId
+    DieSer ActorId
   | MoveSer ActorId Vector
   | RunSer ActorId Vector
-  | GameExitSer
-  | GameRestartSer
-  | GameSaveSer
-  | CfgDumpSer
+  | WaitSer ActorId
+  | PickupSer ActorId ItemId Int InvChar
+  | DropSer ActorId ItemId
+  | ProjectSer ActorId Point Int ItemId Container
+  | ApplySer ActorId ItemId Container
+  | TriggerSer ActorId Point
   | ClearPathSer ActorId
   | SetPathSer ActorId Vector [Vector]
-  | DieSer ActorId
+  | GameRestartSer
   | LeaderSer ActorId
+  | GameExitSer
+  | GameSaveSer
+  | CfgDumpSer
   deriving (Show, Typeable)
 
 timedCmdSer :: CmdSer -> Bool
 timedCmdSer cmd = case cmd of
-  GameExitSer -> False
-  GameRestartSer -> False
-  GameSaveSer -> False
-  CfgDumpSer -> False
+  DieSer{} -> False
   ClearPathSer{} -> False
   SetPathSer{} -> False
-  DieSer{} -> False
+  GameRestartSer -> False
   LeaderSer{} -> False
+  GameExitSer -> False
+  GameSaveSer -> False
+  CfgDumpSer -> False
   _ -> True

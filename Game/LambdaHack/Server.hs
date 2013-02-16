@@ -25,19 +25,19 @@ cmdSerSem fid lid cmd = do
 cmdSerWriterT :: MonadServerChan m
               => FactionId -> CmdSer -> WriterT [Atomic] m ()
 cmdSerWriterT fid cmd = case cmd of
-  ApplySer aid iid container -> applySer aid iid container
-  ProjectSer aid p eps iid container -> projectSer aid p eps iid container
-  TriggerSer aid p -> triggerSer aid p
-  PickupSer aid i k l -> pickupSer aid i k l
-  DropSer aid item -> dropSer aid item
-  WaitSer aid -> waitSer aid
+  DieSer aid -> dieSer aid
   MoveSer aid dir -> moveSer aid dir
   RunSer aid dir -> runSer aid dir
-  GameExitSer -> gameExitSer
-  GameRestartSer -> gameRestartSer fid
-  GameSaveSer -> gameSaveSer
-  CfgDumpSer -> cfgDumpSer
+  WaitSer aid -> waitSer aid
+  PickupSer aid i k l -> pickupSer aid i k l
+  DropSer aid iid -> dropSer aid iid
+  ProjectSer aid p eps iid container -> projectSer aid p eps iid container
+  ApplySer aid iid container -> applySer aid iid container
+  TriggerSer aid p -> triggerSer aid p
   ClearPathSer aid -> clearPathSer aid
   SetPathSer aid dir path -> setPathSer aid dir path
-  DieSer aid -> dieSer aid
+  GameRestartSer -> gameRestartSer fid
   LeaderSer aid -> leaderSer aid fid
+  GameExitSer -> gameExitSer
+  GameSaveSer -> gameSaveSer
+  CfgDumpSer -> cfgDumpSer
