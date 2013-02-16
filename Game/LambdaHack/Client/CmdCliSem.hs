@@ -359,7 +359,8 @@ restartCli sper loc = do
   shistory <- getsClient shistory
   sconfigUI <- getsClient sconfigUI
   side <- getsClient sside
-  let cli = defStateClient shistory sconfigUI side
+  isAI <- getsClient sisAI
+  let cli = defStateClient shistory sconfigUI side isAI
   putClient cli {sper}
   putState loc
   -- Save ASAP in case of crashes and disconnects.

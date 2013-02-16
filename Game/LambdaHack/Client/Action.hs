@@ -336,29 +336,29 @@ saveName :: FactionId -> Bool -> String
 saveName side isAI = show (fromEnum side)
                      ++ if isAI then ".ai.sav" else ".human.sav"
 
-clientGameSave :: MonadClient m => Bool -> Bool -> m ()
-clientGameSave toBkp isAI = do
+clientGameSave :: MonadClient m => Bool -> m ()
+clientGameSave toBkp = do
   s <- getState
   cli <- getClient
   configUI <- getsClient sconfigUI
   side <- getsClient sside
+  isAI <- getsClient sisAI
   liftIO $ Save.saveGameCli (saveName side isAI) toBkp configUI s cli
 
-clientDisconnect :: MonadClient m => Bool -> m ()
-clientDisconnect isAI = do
+clientDisconnect :: MonadClient m => m ()
+clientDisconnect = do
 --  flushFrames  -- this would force MonadClientUI
   modifyClient $ \cli -> cli {squit = Just False}
-  clientGameSave False isAI
+  clientGameSave False
 
-restoreGame :: MonadClient m
-            => Bool
-            -> m (Either (State, StateClient, Msg) Msg)
-restoreGame isAI = do
+restoreGame :: MonadClient m => m (Either (State, StateClient, Msg) Msg)
+restoreGame = do
   Kind.COps{corule} <- getsState scops
   configUI <- getsClient sconfigUI
   let pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
       title = rtitle $ Kind.stdRuleset corule
   side <- getsClient sside
+  isAI <- getsClient sisAI
   let sName = saveName side isAI
   liftIO $ Save.restoreGameCli sName configUI pathsDataFile title
 
@@ -380,18 +380,20 @@ exeFrontend :: Kind.COps
             -> (Bool -> SessionUI -> State -> StateClient -> ConnCli -> IO ())
             -> ((FactionId -> ConnCli -> Bool -> IO ()) -> IO ())
             -> IO ()
-exeFrontend cops@Kind.COps{corule} executorC loopFrontend = do
+exeFrontend cops@Kind.COps{corule} exeClient exeServer = do
   -- UI config reloaded at each client start.
   sconfigUI <- mkConfigUI corule
   smvarUI <- newEmptyMVar
   let !sbinding = stdBinding sconfigUI  -- evaluate to check for errors
       font = configFont sconfigUI
   defHist <- defHistory
-  let cli fid = defStateClient defHist sconfigUI fid
+  let cli = defStateClient defHist sconfigUI
       loc = defStateLocal cops
-      exe sfs fid chanCli hasUI =
-        executorC hasUI SessionUI{..} loc (cli fid) chanCli
-  startup font $ \sfs -> loopFrontend (exe sfs)
+      executorC sfs fid chanCli isAI =
+        let sess | isAI = undefined
+                 | otherwise = SessionUI{..}
+        in exeClient isAI sess loc (cli fid isAI) chanCli
+  startup font $ \sfs -> exeServer (executorC sfs)
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: MonadClient m => Rnd a -> m a

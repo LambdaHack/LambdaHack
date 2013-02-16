@@ -11,19 +11,18 @@ module Game.LambdaHack.Server.Action
   , waitForChildren, speedupCOps
     -- * Communication
   , sendUpdateUI, sendQueryUI
-  , sendUpdateCli, sendQueryCli
-  , broadcastUI, broadcastPosUI, funBroadcastUI
-  , broadcastCli, broadcastPosCli, funBroadcastCli
+  , sendUpdateCli, sendUpdateCliAI, sendQueryCli, sendQueryCliAI
+  , broadcastUI, funBroadcastUI
+  , broadcastCli, funBroadcastCli
     -- * Assorted primitives
   , saveGameSer, saveGameBkp, dumpCfg, mkConfigRules, handleScores
-  , withAI, rndToAction, resetFidPerception, getPerFid
+  , rndToAction, resetFidPerception, getPerFid
   ) where
 
 import Control.Concurrent
 import Control.Monad
 import Data.Dynamic
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.EnumSet as ES
 import Data.Maybe
 import System.Time
 import System.IO.Unsafe (unsafePerformIO)
@@ -38,7 +37,6 @@ import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
-import Game.LambdaHack.Point
 import Game.LambdaHack.Server.Action.ActionClass (MonadServer(..), MonadServerChan(..))
 import Game.LambdaHack.Server.Action.ActionType (executorSer)
 import qualified Game.LambdaHack.Server.Action.ConfigIO as ConfigIO
@@ -91,8 +89,7 @@ saveGameSer = do
 -- See 'Save.saveGameBkp'.
 saveGameBkp :: MonadServerChan m => m ()
 saveGameBkp = do
-  broadcastCli [] $ GameSaveBkpCli False
-  withAI $ broadcastCli [] $ GameSaveBkpCli True
+  broadcastCli GameSaveBkpCli
   glo <- getState
   ser <- getServer
   config <- getsServer sconfig
@@ -130,20 +127,17 @@ withAI m = do
   putDict d
   return a
 
-isFactionAware :: MonadServer m => [Point] -> LevelId -> FactionId -> m Bool
-isFactionAware poss lid fid = do
-  per <- getPerFid fid lid
-  let inter = ES.fromList poss `ES.intersection` totalVisible per
-  return $! null poss || not (ES.null inter)
-
 connSendUpdateCli :: MonadServerChan m => CmdUpdateCli -> ConnCli -> m ()
-connSendUpdateCli cmd ConnCli {toClient} =
+connSendUpdateCli cmd ConnCli{toClient} =
   liftIO $ writeChan toClient $ Left $ CmdUpdateCli cmd
 
 sendUpdateCli :: MonadServerChan m => FactionId -> CmdUpdateCli -> m ()
 sendUpdateCli fid cmd = do
   conn <- getsDict (fst . (EM.! fid))
   maybe (return ()) (connSendUpdateCli cmd) conn
+
+sendUpdateCliAI :: MonadServerChan m => FactionId -> CmdUpdateCli -> m ()
+sendUpdateCliAI fid cmd = withAI $ sendUpdateCli fid cmd
 
 connSendQueryCli :: (Typeable a, MonadServerChan m)
                  => CmdQueryCli a -> ConnCli
@@ -160,26 +154,25 @@ sendQueryCli fid cmd = do
   conn <- getsDict (fst . (EM.! fid))
   maybe (assert `failure` (fid, cmd)) (connSendQueryCli cmd) conn
 
-broadcastCli :: MonadServerChan m
-             => [FactionId -> m Bool] -> CmdUpdateCli
-             -> m ()
-broadcastCli ps cmd = do
-  faction <- getsState sfaction
-  let p fid = do
-        bs <- sequence $ map (\f -> f fid) ps
-        return $! and bs
-  ks <- filterM p $ EM.keys faction
-  mapM_ (flip sendUpdateCli cmd) ks
+sendQueryCliAI :: (Typeable a, MonadServerChan m)
+               => FactionId -> CmdQueryCli a
+               -> m a
+sendQueryCliAI fid cmd = withAI $ sendQueryCli fid cmd
 
-broadcastPosCli :: MonadServerChan m
-                => [Point] -> LevelId -> CmdUpdateCli -> m ()
-broadcastPosCli poss lid = broadcastCli [isFactionAware poss lid]
+broadcastCli :: MonadServerChan m => CmdUpdateCli -> m ()
+broadcastCli cmd = do
+  faction <- getsState sfaction
+  let broad = mapM_ (flip sendUpdateCli cmd) $ EM.keys faction
+  broad
+  withAI broad
 
 funBroadcastCli :: MonadServerChan m => (FactionId -> CmdUpdateCli) -> m ()
 funBroadcastCli cmd = do
   faction <- getsState sfaction
   let f fid = sendUpdateCli fid (cmd fid)
-  mapM_ f $ EM.keys faction
+  let broad = mapM_ f $ EM.keys faction
+  broad
+  withAI broad
 
 connSendUpdateUI :: MonadServerChan m => CmdUpdateUI -> ConnCli -> m ()
 connSendUpdateUI cmd ConnCli{toClient} =
@@ -205,20 +198,10 @@ sendQueryUI fid cmd = do
   conn <- getsDict (fst . (EM.! fid))
   maybe (assert `failure` (fid, cmd)) (connSendQueryUI cmd) conn
 
-broadcastUI :: MonadServerChan m
-            => [FactionId -> m Bool] -> CmdUpdateUI
-            -> m ()
-broadcastUI ps cmd = do
+broadcastUI :: MonadServerChan m => CmdUpdateUI -> m ()
+broadcastUI cmd = do
   faction <- getsState sfaction
-  let p fid = do
-        bs <- sequence $ map (\f -> f fid) ps
-        return $! and bs
-  ks <- filterM p $ EM.keys faction
-  mapM_ (flip sendUpdateUI cmd) ks
-
-broadcastPosUI :: MonadServerChan m
-               => [Point] -> LevelId -> CmdUpdateUI -> m ()
-broadcastPosUI poss lid = broadcastUI [isFactionAware poss lid]
+  mapM_ (flip sendUpdateUI cmd) $ EM.keys faction
 
 funBroadcastUI :: MonadServerChan m => (FactionId -> CmdUpdateUI) -> m ()
 funBroadcastUI cmd = do
@@ -269,11 +252,11 @@ launchClients executorC = do
   let forkClient (fid, (chanCli, chanAI)) = do
         let forkAI = case chanAI of
               -- TODO: for a screensaver, try True
-              Just ch -> void $ forkChild $ executorC fid ch False
+              Just ch -> void $ forkChild $ executorC fid ch True
               Nothing -> return ()
         case chanCli of
           Just ch -> do
-            void $ forkChild $ executorC fid ch True
+            void $ forkChild $ executorC fid ch False
             forkAI
           Nothing ->
             forkAI

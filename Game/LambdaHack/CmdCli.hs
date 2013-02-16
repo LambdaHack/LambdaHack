@@ -38,8 +38,8 @@ data CmdUpdateCli =
   | RememberPerCli Perception Level LevelId ActorDict ItemDict FactionDict
   | RestartCli FactionPers State
   | ContinueSavedCli FactionPers
-  | GameSaveBkpCli Bool
-  | GameDisconnectCli Bool
+  | GameSaveBkpCli
+  | GameDisconnectCli
   deriving Show
 
 data CmdQueryCli a where

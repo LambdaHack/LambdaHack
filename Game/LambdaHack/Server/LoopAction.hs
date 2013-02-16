@@ -74,18 +74,14 @@ loopSer cmdSer executorC cops = do
   quit <- getsServer squit
   case quit of
     Nothing -> do  -- game restarted
-      let bcast = funBroadcastCli (\fid -> RestartCli (pers EM.! fid) defLoc)
-      bcast
-      withAI bcast
+      funBroadcastCli (\fid -> RestartCli (pers EM.! fid) defLoc)
       populateDungeon
       -- TODO: factor out common parts from restartGame and restoreOrRestart
       cmdAtomicBroad initialLevel $ Left SyncA
       -- Save ASAP in case of crashes and disconnects.
       saveGameBkp
     _ -> do  -- game restored from a savefile
-      let bcast = funBroadcastCli (\fid -> ContinueSavedCli (pers EM.! fid))
-      bcast
-      withAI bcast
+      funBroadcastCli (\fid -> ContinueSavedCli (pers EM.! fid))
   modifyServer $ \ser1 -> ser1 {squit = Nothing}
   let cinT = let r = timeTurn `timeFit` timeClip
              in assert (r > 2) r
@@ -149,12 +145,11 @@ cmdAtomicBroad arena atomic = do
     Left cmd -> posCmdAtomic cmd
     Right desc -> posDescAtomic desc
   let sendRem fid cmdRem = do
-        let sendUp = sendUpdateCli fid cmdRem
-        sendUp
-        withAI sendUp
+        sendUpdateCli fid cmdRem
+        sendUpdateCliAI fid cmdRem
       sendA fid cmd = do
         sendUpdateUI fid $ CmdAtomicUI cmd
-        withAI $ sendUpdateCli fid $ CmdAtomicCli cmd
+        sendUpdateCliAI fid $ CmdAtomicCli cmd
       sendUpdate fid (Left cmd) = sendA fid cmd
       sendUpdate fid (Right desc) = sendUpdateUI fid $ DescAtomicUI desc
       vis per = all (`ES.member` totalVisible per)
@@ -288,14 +283,14 @@ handleActors cmdSer arena subclipStart prevHuman = do
     _ | isJust quit || isJust gquit -> return prevHuman
     Nothing -> do
       when (subclipStart == timeZero) $
-        broadcastUI [] $ DisplayDelayUI
+        broadcastUI DisplayDelayUI
       return prevHuman
     Just (actor, body) | bhp body <= 0 && not (bproj body) -> do
       cmdSer arena $ DieSer actor
       -- Death is serious, new subclip.
       handleActors cmdSer arena (btime body) prevHuman
     Just (actor, body) -> do
-      broadcastUI [] DisplayPushUI  -- TODO: too often
+      broadcastUI DisplayPushUI  -- TODO: too often
       let side = bfaction body
       isHuman <- getsState $ flip isHumanFaction side
       mleader <- getsState $ gleader . (EM.! side) . sfaction
@@ -364,7 +359,7 @@ handleActors cmdSer arena subclipStart prevHuman = do
               -- or it's another faction, but it's the first move of
               -- this whole clip or the actor has already moved during
               -- this subclip, so his multiple moves would be collapsed.
-              cmdS <- withAI $ sendQueryCli side $ HandleAICli actor
+              cmdS <- sendQueryCliAI side $ HandleAICli actor
     -- If the following action aborts, we just advance the time and continue.
     -- TODO: or just fail at each abort in AI code? or use tryWithFrame?
               tryWith (\msg -> if T.null msg
@@ -375,7 +370,7 @@ handleActors cmdSer arena subclipStart prevHuman = do
               handleActors cmdSer arena (btime body) prevHuman
             else do
               -- No new subclip.
-              cmdS <- withAI $ sendQueryCli side $ HandleAICli actor
+              cmdS <- sendQueryCliAI side $ HandleAICli actor
     -- If the following action aborts, we just advance the time and continue.
     -- TODO: or just fail at each abort in AI code? or use tryWithFrame?
               tryWith (\msg -> if T.null msg
@@ -430,8 +425,7 @@ endOrLoop (Just fid) loopServer = do
 --        handleScores False Camping total
 --        broadcastUI [] $ MoreFullCli "See you soon, stronger and braver!"
         -- TODO: show the above
-      broadcastCli [] $ GameDisconnectCli False
-      withAI $ broadcastCli [] $ GameDisconnectCli True
+      broadcastCli GameDisconnectCli
 --      liftIO $ takeMVar mv  -- wait until saved
       -- Do nothing, that is, quit the game loop.
     (Nothing, Just (showScreens, status@Killed{})) -> do
@@ -439,12 +433,12 @@ endOrLoop (Just fid) loopServer = do
       nullR <- sendQueryCli fid NullReportCli
       unless nullR $ do
         -- Display any leftover report. Suggest it could be the death cause.
-        broadcastUI [] $ MoreBWUI "Who would have thought?"
+        broadcastUI $ MoreBWUI "Who would have thought?"
       tryWith
         (\ finalMsg ->
           let highScoreMsg = "Let's hope another party can save the day!"
               msg = if T.null finalMsg then highScoreMsg else finalMsg
-          in broadcastUI [] $ MoreBWUI msg
+          in broadcastUI $ MoreBWUI msg
           -- Do nothing, that is, quit the game loop.
         )
         (do
@@ -458,10 +452,10 @@ endOrLoop (Just fid) loopServer = do
       nullR <- sendQueryCli fid NullReportCli
       unless nullR $ do
         -- Display any leftover report. Suggest it could be the master move.
-        broadcastUI [] $ MoreFullUI "Brilliant, wasn't it?"
+        broadcastUI $ MoreFullUI "Brilliant, wasn't it?"
       when showScreens $ do
         tryIgnore $ handleScores fid True status total
-        broadcastUI [] $ MoreFullUI "Can it be done better, though?"
+        broadcastUI $ MoreFullUI "Can it be done better, though?"
       restartGame loopServer
     (Nothing, Just (_, Restart)) -> restartGame loopServer
     (Nothing, _) -> loopServer  -- just continue
@@ -476,14 +470,12 @@ restartGame loopServer = do
   -- The biggest part is content, which really needs to be updated
   -- at this point to keep clients in sync with server improvements.
   defLoc <- getsState localFromGlobal
-  let bcast = funBroadcastCli (\fid -> RestartCli (pers EM.! fid) defLoc)
-  bcast
-  withAI bcast
+  funBroadcastCli (\fid -> RestartCli (pers EM.! fid) defLoc)
   populateDungeon
   cmdAtomicBroad initialLevel $ Left $ SyncA
   saveGameBkp
-  broadcastCli [] $ ShowMsgCli "This time for real."
-  broadcastUI [] $ DisplayPushUI
+  broadcastCli $ ShowMsgCli "This time for real."
+  broadcastUI DisplayPushUI
   loopServer
 
 createFactions :: Kind.COps -> Config -> Rnd FactionDict

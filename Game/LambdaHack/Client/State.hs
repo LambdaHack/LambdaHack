@@ -52,6 +52,7 @@ data StateClient = StateClient
   , _sleader  :: !(Maybe ActorId)  -- ^ selected actor
   , _sside    :: !FactionId     -- ^ faction controlled by the client
   , squit     :: !(Maybe Bool)  -- ^ just about to save and exit the game
+  , sisAI     :: !Bool          -- ^ whether it's an AI client
   , sdebugCli :: !DebugModeCli  -- ^ debugging mode
   }
   deriving (Show, Typeable)
@@ -78,8 +79,8 @@ data DebugModeCli = DebugModeCli
   deriving Show
 
 -- | Initial game client state.
-defStateClient :: History -> ConfigUI -> FactionId -> StateClient
-defStateClient shistory sconfigUI _sside = do
+defStateClient :: History -> ConfigUI -> FactionId -> Bool -> StateClient
+defStateClient shistory sconfigUI _sside sisAI = do
   StateClient
     { stgtMode  = Nothing
     , scursor   = Nothing
@@ -96,6 +97,7 @@ defStateClient shistory sconfigUI _sside = do
     , _sleader  = Nothing  -- no heroes yet alive
     , _sside
     , squit = Nothing
+    , sisAI
     , sdebugCli = defDebugModeCli
     }
 
@@ -180,6 +182,7 @@ instance Binary StateClient where
     put _sleader
     put _sside
     put squit
+    put sisAI
   get = do
     stgtMode <- get
     scursor <- get
@@ -193,6 +196,7 @@ instance Binary StateClient where
     _sleader <- get
     _sside <- get
     squit <- get
+    sisAI <- get
     let sper = EM.empty
         srandom = read g
         slastKey = Nothing

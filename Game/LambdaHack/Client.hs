@@ -48,8 +48,8 @@ cmdUpdateCli cmd = case cmd of
     rememberPerCli per lvl lid actorD itemD faction
   RestartCli sper locRaw -> restartCli sper locRaw
   ContinueSavedCli sper -> modifyClient $ \cli -> cli {sper}
-  GameSaveBkpCli isAI -> clientGameSave True isAI
-  GameDisconnectCli isAI -> clientDisconnect isAI
+  GameSaveBkpCli -> clientGameSave True
+  GameDisconnectCli -> clientDisconnect
 
 cmdUpdateUI :: (MonadAction m, MonadClientUI m) => CmdUpdateUI -> m ()
 cmdUpdateUI cmd = case cmd of

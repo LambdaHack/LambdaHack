@@ -13,13 +13,12 @@ import Game.LambdaHack.CmdCli
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
 
-initCli :: (MonadAction m, MonadClientChan m)
-        => Bool -> (CmdCli -> m ()) -> m ()
-initCli isAI cmdCliSem = do
+initCli :: (MonadAction m, MonadClientChan m) => (CmdCli -> m ()) -> m ()
+initCli cmdCliSem = do
   -- Warning: state and client state are invalid here, e.g., sdungeon
   -- and sper are empty.
   cops <- getsState scops
-  restored <- restoreGame isAI
+  restored <- restoreGame
   case restored of
     Right msg -> do  -- First visit ever, use the initial state.
       -- TODO: create or restore from config clients RNG seed
@@ -48,7 +47,7 @@ expectCmd cmdCliSem expected = do
 loopCli :: (MonadAction m, MonadClientChan m)
         => (CmdCli -> m ()) -> m ()
 loopCli cmdCliSem = do
-  initCli True cmdCliSem
+  initCli cmdCliSem
   loop
  where
   loop = do
@@ -63,7 +62,7 @@ loopCli cmdCliSem = do
 loopUI :: (MonadAction m, MonadClientUI m, MonadClientChan m)
        => (CmdCli -> m ()) -> (CmdUI -> m ()) -> m ()
 loopUI cmdCliSem cmdUISem = do
-  initCli False cmdCliSem
+  initCli cmdCliSem
   loop
  where
   loop = do
