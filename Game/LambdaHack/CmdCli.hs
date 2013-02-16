@@ -45,7 +45,6 @@ data CmdUpdateCli =
 data CmdQueryCli a where
   NullReportCli :: CmdQueryCli Bool
   HandleAICli :: ActorId -> CmdQueryCli CmdSer
-  IsRunningCli :: CmdQueryCli Bool
 
 deriving instance Show (CmdQueryCli a)
 
@@ -56,12 +55,12 @@ data CmdUpdateUI =
   | DisplayDelayUI
   | MoreFullUI Msg
   | MoreBWUI Msg
+  | FlushFramesUI
   deriving Show
 
 data CmdQueryUI a where
   ShowSlidesUI :: Slideshow -> CmdQueryUI Bool
   ConfirmMoreBWUI :: Msg -> CmdQueryUI Bool
   HandleHumanUI :: CmdQueryUI [CmdSer]
-  FlushFramesUI :: FactionId -> CmdQueryUI Bool
 
 deriving instance Show (CmdQueryUI a)

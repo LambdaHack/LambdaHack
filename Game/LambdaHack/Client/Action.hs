@@ -26,7 +26,7 @@ module Game.LambdaHack.Client.Action
     -- * Turn init operations
   , rememberLevel, displayPush
     -- * Assorted primitives
-  , clientGameSave, clientDisconnect, restoreGame
+  , flushFrames, clientGameSave, clientDisconnect, restoreGame
   , readChanFromSer, writeChanToSer, rndToAction, getArenaCli
   ) where
 

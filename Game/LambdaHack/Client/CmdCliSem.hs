@@ -403,7 +403,10 @@ handleHuman = do
   -- the human player issue commands, until any of them takes time.
   -- First time, just after pushing frames, ask for commands in Push mode.
   Just leader <- getsClient sleader
-  cmdS <- tryWith (\msg -> stopRunning >> humanCommand msg) $ do
+  let inputHumanCmd msg = do
+        stopRunning
+        humanCommand msg
+  cmdS <- tryWith inputHumanCmd $ do
     srunning <- getsClient srunning
     maybe abort (continueRun leader) srunning
 --  addSmell leader  -- TODO: instead do for all non-spawning factions

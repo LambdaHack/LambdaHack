@@ -9,19 +9,15 @@ module Game.LambdaHack.Client
 
 import Control.Monad
 import Data.Dynamic
-import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.CmdCliSem
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.LoopAction
-import Game.LambdaHack.Client.RunAction
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.CmdCli
-import Game.LambdaHack.Faction
 import Game.LambdaHack.Msg
-import Game.LambdaHack.State
 
 cmdCliSem :: (MonadAction m, MonadClientChan m) => CmdCli -> m ()
 cmdCliSem cmd2 = case cmd2 of
@@ -63,6 +59,13 @@ cmdUpdateUI cmd = case cmd of
   MoreFullUI msg -> do
     void $ displayMore ColorFull msg
     recordHistory
+  FlushFramesUI -> do
+    srunning <- getsClient srunning
+    case srunning of
+      Just (_, k) | k > 1 -> return ()
+      _ -> do
+        displayPush
+        flushFrames
 
 cmdQueryCli :: MonadClient m => CmdQueryCli a -> m a
 cmdQueryCli cmd = case cmd of
@@ -70,13 +73,6 @@ cmdQueryCli cmd = case cmd of
     StateClient{sreport} <- getClient
     return $! nullReport sreport
   HandleAICli actor -> handleAI actor
-  IsRunningCli -> do
-    tryWith (\_ -> return False) $ do
-      mleader <- getsClient sleader
-      leader <- maybe abort return mleader
-      srunning <- getsClient srunning
-      maybe abort (void . continueRunDir leader) srunning
-      return True
 
 cmdQueryUI :: MonadClientUI m => CmdQueryUI a -> m a
 cmdQueryUI cmd = case cmd of
@@ -86,15 +82,3 @@ cmdQueryUI cmd = case cmd of
     recordHistory  -- Prevent repeating the ending msgs.
     return go
   HandleHumanUI -> handleHuman
-  FlushFramesUI newSide -> do
-    srunning <- getsClient srunning
-    case srunning of
-      Just (_, k) | k > 1 -> return False
-      _ -> do
-        faction <- getsState sfaction
-        let factionName = gname $ faction EM.! newSide
-            msg = "Switching to player" <+> factionName <> "."
-        void $ displayMore ColorFull msg
-        -- Messages shown, so update history and reset current report.
-        recordHistory
-        return True

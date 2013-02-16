@@ -86,16 +86,15 @@ loopSer cmdSer executorC cops = do
   let cinT = let r = timeTurn `timeFit` timeClip
              in assert (r > 2) r
   -- Loop.
-  let loop :: (Maybe FactionId) -> Int -> m ()
-      loop prevHuman clipN = do
-        let h pHuman arena = do
+  let loop :: Int -> m ()
+      loop clipN = do
+        let h arena = do
               -- Regenerate HP and add monsters each turn, not each clip.
               when (clipN `mod` cinT == 0) $ generateMonster arena
               when (clipN `mod` cinT == 1) $ regenerateLevelHP arena
               when (clipN `mod` cinT == 2) checkEndGame
-              pHumanOut <- handleActors cmdSer arena timeZero pHuman
+              handleActors cmdSer arena timeZero
               modifyState $ updateTime arena $ timeAdd timeClip
-              return pHumanOut
         let f fac = do
               case gleader fac of
                 Nothing -> return Nothing
@@ -105,13 +104,9 @@ loopSer cmdSer executorC cops = do
         faction <- getsState sfaction
         marenas <- mapM f $ EM.elems faction
         let arenas = ES.toList $ ES.fromList $ catMaybes marenas
-            mapH pHuman [] = return pHuman
-            mapH pHuman (arena : as) = do
-              pHumanOut <- h pHuman arena
-              mapH pHumanOut as
-        pHumanOut <- mapH prevHuman arenas
-        endOrLoop prevHuman (loop pHumanOut (clipN + 1))
-  loop Nothing 1
+        mapM_ h arenas
+        endOrLoop (loop (clipN + 1))
+  loop 1
 
 initPer :: MonadServer m => m ()
 initPer = do
@@ -258,21 +253,16 @@ handleActors :: (MonadAction m, MonadServerChan m)
              => (LevelId -> CmdSer -> m ())
              -> LevelId
              -> Time  -- ^ start time of current subclip, exclusive
-             -> Maybe FactionId
-             -> m (Maybe FactionId)
-handleActors cmdSer arena subclipStart prevHuman = do
+             -> m ()
+handleActors cmdSer arena subclipStart = do
   Kind.COps{coactor} <- getsState scops
   time <- getsState $ getTime arena  -- the end time of this clip, inclusive
   prio <- getsLevel arena lprio
-  gquit <- case prevHuman of
-    Just fid -> getsState $ gquit . (EM.! fid) . sfaction
-    Nothing -> return Nothing
-  quit <- getsServer squit
   s <- getState
   let mnext = if EM.null prio  -- wait until any actor spawned
               then Nothing
               else let -- Actors of the same faction move together.
---                       order = Ord.comparing (btime . snd &&& bfaction . snd)
+-- TODO: insert wrt this order = Ord.comparing (btime . snd &&& bfaction . snd)
                        (atime, as) = EM.findMin prio
                        actor = head as
                        m = getActorBody actor s
@@ -280,15 +270,13 @@ handleActors cmdSer arena subclipStart prevHuman = do
                       then Nothing  -- no actor is ready for another move
                       else Just (actor, m)
   case mnext of
-    _ | isJust quit || isJust gquit -> return prevHuman
     Nothing -> do
       when (subclipStart == timeZero) $
         broadcastUI DisplayDelayUI
-      return prevHuman
     Just (actor, body) | bhp body <= 0 && not (bproj body) -> do
       cmdSer arena $ DieSer actor
       -- Death is serious, new subclip.
-      handleActors cmdSer arena (btime body) prevHuman
+      handleActors cmdSer arena (btime body)
     Just (actor, body) -> do
       broadcastUI DisplayPushUI  -- TODO: too often
       let side = bfaction body
@@ -296,20 +284,6 @@ handleActors cmdSer arena subclipStart prevHuman = do
       mleader <- getsState $ gleader . (EM.! side) . sfaction
       if Just actor == mleader && isHuman
         then do
-          nHuman <- if isHuman && Just side /= prevHuman
-                    then do
-                      newRuns <- sendQueryCli side IsRunningCli
-                      if newRuns
-                        then return prevHuman
-                        else do
-                          case prevHuman of
-                            Just fid -> do
-                              b <- sendQueryUI fid $ FlushFramesUI side
-                              if b
-                                then return $ Just side
-                                else return prevHuman
-                            Nothing -> return $ Just side
-                    else return prevHuman
           -- TODO: check that the command is legal, that is, the leader
           -- is acting, etc. Or perhaps instead have a separate type
           -- of actions for humans. OTOH, AI is controlled by the servers
@@ -318,9 +292,11 @@ handleActors cmdSer arena subclipStart prevHuman = do
           tryWith (\msg -> do
                       sendUpdateCli side $ ShowMsgCli msg
                       sendUpdateUI side DisplayPushUI
-                      handleActors cmdSer arena subclipStart nHuman
+                      handleActors cmdSer arena subclipStart
                   ) $ do
             mapM_ (cmdSer arena) cmdS
+            -- All resulting atomic actions sent to @side@. Time to show them.
+            sendUpdateUI side FlushFramesUI
             -- Advance time once, after the leader switched perhaps many times.
             -- TODO: this is correct only when all heroes have the same
             -- speed and can't switch leaders by, e.g., aiming a wand
@@ -332,9 +308,8 @@ handleActors cmdSer arena subclipStart prevHuman = do
             -- and is perhaps better done when the other factions have
             -- selected leaders as well.
             mleaderNew <- getsState $ gleader . (EM.! side) . sfaction
-            quitNew <- getsServer squit
             bodyNew <- case mleaderNew of
-              Just leaderNew | any timedCmdSer cmdS && isNothing quitNew -> do
+              Just leaderNew | any timedCmdSer cmdS -> do
                 bNew <- getsState $ getActorBody leaderNew
                 advanceTime (blid bNew) leaderNew
                 return bNew
@@ -346,7 +321,7 @@ handleActors cmdSer arena subclipStart prevHuman = do
             -- Right now other need it too, to notice the delay.
             -- This will also be more accurate since now unseen
             -- simultaneous moves also generate delays.
-            handleActors cmdSer arena (btime bodyNew) nHuman
+            handleActors cmdSer arena (btime bodyNew)
         else do
 --          recordHistory
           advanceTime arena actor  -- advance time while the actor still alive
@@ -367,7 +342,7 @@ handleActors cmdSer arena subclipStart prevHuman = do
                                else assert `failure` msg <> "in AI"
                       )
                       (cmdSer arena cmdS)
-              handleActors cmdSer arena (btime body) prevHuman
+              handleActors cmdSer arena (btime body)
             else do
               -- No new subclip.
               cmdS <- sendQueryCliAI side $ HandleAICli actor
@@ -378,7 +353,7 @@ handleActors cmdSer arena subclipStart prevHuman = do
                                else assert `failure` msg <> "in AI"
                       )
                       (cmdSer arena cmdS)
-              handleActors cmdSer arena subclipStart prevHuman
+              handleActors cmdSer arena subclipStart
 
 -- | Advance the move time for the given actor.
 advanceTime :: MonadAction m => LevelId -> ActorId -> m ()
@@ -398,18 +373,18 @@ advanceTime lid aid = do
   updateLevel lid $ updatePrio $ EM.alter add newTime
 
 -- | Continue or restart or exit the game.
-endOrLoop :: (MonadAction m, MonadServerChan m)
-          => Maybe FactionId -> m () -> m ()
-endOrLoop Nothing loopServer = loopServer
-endOrLoop (Just fid) loopServer = do
+endOrLoop :: (MonadAction m, MonadServerChan m) => m () -> m ()
+endOrLoop loopServer = do
   quitS <- getsServer squit
-  fac <- getsState $ (EM.! fid) . sfaction
-  let quitG = gquit fac
-  total <- case gleader fac of
-    Nothing -> return 0
-    Just leader -> do
-      b <- getsState $ getActorBody leader
-      getsState $ snd . calculateTotal fid (blid b)
+  let fid = undefined
+      total = undefined
+--  fac <- getsState $ (EM.! fid) . sfaction
+  let quitG = Nothing -- gquit fac
+  -- total <- case gleader fac of
+  --   Nothing -> return 0
+  --   Just leader -> do
+  --     b <- getsState $ getActorBody leader
+  --     getsState $ snd . calculateTotal fid (blid b)
   -- The first, boolean component of quit determines
   -- if ending screens should be shown, the other argument describes
   -- the cause of the disruption of game flow.
