@@ -19,6 +19,7 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.CmdAtomic
+import Game.LambdaHack.CmdCli
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind as TileKind
@@ -374,8 +375,8 @@ displaceActor source target =  tellCmdAtomic $ DisplaceActorA source target
 
 -- * GameExit
 
-gameExitSer :: MonadServer m => m ()
-gameExitSer = modifyServer $ \ser -> ser {squit = Just True}
+gameExitSer :: MonadServer m => WriterT [Atomic] m ()
+gameExitSer = modifyServer $ \ser -> ser {squit = True}
 
 -- * GameRestart
 
@@ -387,7 +388,9 @@ gameRestartSer fid = do
 -- * GameSaveSer
 
 gameSaveSer :: MonadServerChan m => m ()
-gameSaveSer = saveGameBkp
+gameSaveSer = do
+  broadcastCli GameSaveBkpCli
+  saveGameBkp
 
 -- * CfgDumpSer
 
@@ -456,7 +459,7 @@ electLeader fid lid = do
 
 -- * LeaderSer
 
-leaderSer :: MonadServer m => FactionId -> ActorId -> WriterT [Atomic] m ()
-leaderSer fid aid = do
+leaderSer :: MonadServer m => ActorId -> FactionId -> WriterT [Atomic] m ()
+leaderSer aid fid = do
   mleader <- getsState $ gleader . (EM.! fid) . sfaction
   tellCmdAtomic $ LeadFactionA fid mleader (Just aid)

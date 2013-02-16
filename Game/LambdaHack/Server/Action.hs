@@ -89,7 +89,6 @@ saveGameSer = do
 -- See 'Save.saveGameBkp'.
 saveGameBkp :: MonadServerChan m => m ()
 saveGameBkp = do
-  broadcastCli GameSaveBkpCli
   glo <- getState
   ser <- getServer
   config <- getsServer sconfig

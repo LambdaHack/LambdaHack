@@ -82,7 +82,7 @@ restoreGameSer Config{ configAppDataDir
            then do
              (s, ser) <- strictDecodeEOF saveFileBkp
              let msg = "No savefile found. Restoring from a backup savefile."
-             return $ Left (s, ser {squit = Just False}, msg)
+             return $ Left (s, ser {squit = True}, msg)
            else do
              let msg = "Welcome to" <+> title <> "!"
              return $ Right msg

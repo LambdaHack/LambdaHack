@@ -199,19 +199,26 @@ quitFactionA :: MonadClientUI m => FactionId -> Maybe (Bool, Status) -> m ()
 quitFactionA fid toSt = do
   fidName <- getsState $ MU.Text . gname . (EM.! fid) . sfaction
   case toSt of
-    Just (_, Restart) -> do
+    Just (_, Killed _) -> do
       let msg = makeSentence
-            [MU.SubjectVerbSg fidName "request mission restart"]
+            [MU.SubjectVerbSg fidName "be decisively defeated"]
+      msgAdd msg
+    Just (_, Camping) -> do
+      let msg = makeSentence
+            [MU.SubjectVerbSg fidName "saved his game and left"]
       msgAdd msg
     Just (_, Victor) -> do
       let msg = makeSentence
             [MU.SubjectVerbSg fidName "complete the mission"]
       msgAdd msg
+    Just (_, Restart) -> do
+      let msg = makeSentence
+            [MU.SubjectVerbSg fidName "request a mission restart"]
+      msgAdd msg
     Nothing -> do
       let msg = makeSentence
             [MU.SubjectVerbSg fidName "cancel all requests"]
       msgAdd msg
-    _ -> return ()
 
 -- * descAtomicUI
 
@@ -411,11 +418,9 @@ handleHuman = do
     maybe abort (continueRun leader) srunning
 --  addSmell leader  -- TODO: instead do for all non-spawning factions
   Just leaderNew <- getsClient sleader
-  if leaderNew == leader then
-    return [cmdS]
-  else do
-    fid <- getsClient sside
-    return [LeaderSer fid leaderNew, cmdS]
+  if leaderNew == leader
+    then return [cmdS]
+    else return [LeaderSer leaderNew, cmdS]
 
 -- | Continue running in the given direction.
 continueRun :: MonadClient m => ActorId -> (Vector, Int) -> m CmdSer

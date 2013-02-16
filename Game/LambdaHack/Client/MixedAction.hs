@@ -401,4 +401,4 @@ gameRestart = do
   b2 <- displayYesNo "Current progress will be lost! Really restart the game?"
   when (not b2) $ abortWith "Yea, would be a pity to leave them to die."
   side <- getsClient sside
-  return $ GameRestartSer side
+  return GameRestartSer

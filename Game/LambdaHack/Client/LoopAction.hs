@@ -4,7 +4,6 @@
 module Game.LambdaHack.Client.LoopAction (loopCli, loopUI) where
 
 import Control.Monad
-import Data.Maybe
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Client.Action
@@ -32,7 +31,7 @@ initCli cmdCliSem = do
       msgAdd msg
       let expected cmd = case cmd of ContinueSavedCli{} -> True; _ -> False
       expectCmd cmdCliSem expected
-  modifyClient $ \cli -> cli {squit = Nothing}
+  modifyClient $ \cli -> cli {squit = False}
   -- State and client state are now valid.
 
 expectCmd :: MonadClientChan m
@@ -57,7 +56,7 @@ loopCli cmdCliSem = do
       Left cmd -> cmdCliSem cmd
       Right _ -> assert `failure` (side, cmd2)
     quit <- getsClient squit
-    when (isNothing quit) loop
+    when (not quit) loop
 
 loopUI :: (MonadAction m, MonadClientUI m, MonadClientChan m)
        => (CmdCli -> m ()) -> (CmdUI -> m ()) -> m ()
@@ -71,4 +70,4 @@ loopUI cmdCliSem cmdUISem = do
       Left cmd -> cmdCliSem cmd
       Right cmd -> cmdUISem cmd
     quit <- getsClient squit
-    when (isNothing quit) loop
+    when (not quit) loop

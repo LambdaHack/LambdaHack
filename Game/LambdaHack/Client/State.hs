@@ -51,7 +51,7 @@ data StateClient = StateClient
   , sframe    :: ![(Maybe SingleFrame, Bool)]  -- ^ accumulated frames
   , _sleader  :: !(Maybe ActorId)  -- ^ selected actor
   , _sside    :: !FactionId     -- ^ faction controlled by the client
-  , squit     :: !(Maybe Bool)  -- ^ just about to save and exit the game
+  , squit     :: !Bool          -- ^ will finish listening and exit
   , sisAI     :: !Bool          -- ^ whether it's an AI client
   , sdebugCli :: !DebugModeCli  -- ^ debugging mode
   }
@@ -96,7 +96,7 @@ defStateClient shistory sconfigUI _sside sisAI = do
     , sframe    = []
     , _sleader  = Nothing  -- no heroes yet alive
     , _sside
-    , squit = Nothing
+    , squit = False
     , sisAI
     , sdebugCli = defDebugModeCli
     }

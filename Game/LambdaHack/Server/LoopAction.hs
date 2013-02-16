@@ -49,7 +49,7 @@ import Game.LambdaHack.Utils.Assert
 -- Run the leader and other actors moves. Eventually advance the time
 -- and repeat.
 loopSer :: forall m . (MonadAction m, MonadServerChan m)
-        => (LevelId -> CmdSer -> m ())
+        => (FactionId -> LevelId -> CmdSer -> m ())
         -> (FactionId -> ConnCli -> Bool -> IO ())
         -> Kind.COps
         -> m ()
@@ -72,17 +72,16 @@ loopSer cmdSer executorC cops = do
   pers <- getsServer sper
   defLoc <- getsState localFromGlobal
   quit <- getsServer squit
-  case quit of
-    Nothing -> do  -- game restarted
-      funBroadcastCli (\fid -> RestartCli (pers EM.! fid) defLoc)
-      populateDungeon
-      -- TODO: factor out common parts from restartGame and restoreOrRestart
-      cmdAtomicBroad initialLevel $ Left SyncA
-      -- Save ASAP in case of crashes and disconnects.
-      saveGameBkp
-    _ -> do  -- game restored from a savefile
-      funBroadcastCli (\fid -> ContinueSavedCli (pers EM.! fid))
-  modifyServer $ \ser1 -> ser1 {squit = Nothing}
+  if quit then do -- game restored from a savefile
+    funBroadcastCli (\fid -> ContinueSavedCli (pers EM.! fid))
+  else do  -- game restarted
+    funBroadcastCli (\fid -> RestartCli (pers EM.! fid) defLoc)
+    populateDungeon
+    -- TODO: factor out common parts from restartGame and restoreOrRestart
+    cmdAtomicBroad initialLevel $ Left SyncA
+    -- Save ASAP in case of crashes and disconnects.
+    saveGameBkp
+  modifyServer $ \ser1 -> ser1 {squit = False}
   let cinT = let r = timeTurn `timeFit` timeClip
              in assert (r > 2) r
   -- Loop.
@@ -250,7 +249,7 @@ gameOver fid arena showEndingScreens = do
 -- has changed since last time (every change, whether by human or AI
 -- or @generateMonster@ is followd by a call to @handleActors@).
 handleActors :: (MonadAction m, MonadServerChan m)
-             => (LevelId -> CmdSer -> m ())
+             => (FactionId -> LevelId -> CmdSer -> m ())
              -> LevelId
              -> Time  -- ^ start time of current subclip, exclusive
              -> m ()
@@ -258,6 +257,7 @@ handleActors cmdSer arena subclipStart = do
   Kind.COps{coactor} <- getsState scops
   time <- getsState $ getTime arena  -- the end time of this clip, inclusive
   prio <- getsLevel arena lprio
+  quitS <- getsServer squit
   s <- getState
   let mnext = if EM.null prio  -- wait until any actor spawned
               then Nothing
@@ -270,11 +270,12 @@ handleActors cmdSer arena subclipStart = do
                       then Nothing  -- no actor is ready for another move
                       else Just (actor, m)
   case mnext of
+    _ | quitS -> return ()
     Nothing -> do
       when (subclipStart == timeZero) $
         broadcastUI DisplayDelayUI
     Just (actor, body) | bhp body <= 0 && not (bproj body) -> do
-      cmdSer arena $ DieSer actor
+      cmdSer (bfaction body) arena $ DieSer actor
       -- Death is serious, new subclip.
       handleActors cmdSer arena (btime body)
     Just (actor, body) -> do
@@ -294,7 +295,7 @@ handleActors cmdSer arena subclipStart = do
                       sendUpdateUI side DisplayPushUI
                       handleActors cmdSer arena subclipStart
                   ) $ do
-            mapM_ (cmdSer arena) cmdS
+            mapM_ (cmdSer side arena) cmdS
             -- All resulting atomic actions sent to @side@. Time to show them.
             sendUpdateUI side FlushFramesUI
             -- Advance time once, after the leader switched perhaps many times.
@@ -341,7 +342,7 @@ handleActors cmdSer arena subclipStart = do
                                then return ()
                                else assert `failure` msg <> "in AI"
                       )
-                      (cmdSer arena cmdS)
+                      (cmdSer side arena cmdS)
               handleActors cmdSer arena (btime body)
             else do
               -- No new subclip.
@@ -352,7 +353,7 @@ handleActors cmdSer arena subclipStart = do
                                then return ()
                                else assert `failure` msg <> "in AI"
                       )
-                      (cmdSer arena cmdS)
+                      (cmdSer side arena cmdS)
               handleActors cmdSer arena subclipStart
 
 -- | Advance the move time for the given actor.
@@ -376,64 +377,67 @@ advanceTime lid aid = do
 endOrLoop :: (MonadAction m, MonadServerChan m) => m () -> m ()
 endOrLoop loopServer = do
   quitS <- getsServer squit
-  let fid = undefined
-      total = undefined
---  fac <- getsState $ (EM.! fid) . sfaction
-  let quitG = Nothing -- gquit fac
-  -- total <- case gleader fac of
-  --   Nothing -> return 0
-  --   Just leader -> do
-  --     b <- getsState $ getActorBody leader
-  --     getsState $ snd . calculateTotal fid (blid b)
-  -- The first, boolean component of quit determines
-  -- if ending screens should be shown, the other argument describes
-  -- the cause of the disruption of game flow.
-  case (quitS, quitG) of
-    (Just _, _) -> do
+  faction <- getsState sfaction
+  let f (_, Faction{gquit=Nothing}) = Nothing
+      f (fid, Faction{gquit=Just quit}) = Just (fid, quit)
+  case mapMaybe f $ EM.assocs faction of
+    _ | quitS -> do
       -- Save and display in parallel.
---      mv <- liftIO newEmptyMVar
+    --      mv <- liftIO newEmptyMVar
       saveGameSer
---      liftIO $ void
---        $ forkIO (Save.saveGameSer config s ser `finally` putMVar mv ())
--- 7.6        $ forkFinally (Save.saveGameSer config s ser) (putMVar mv ())
---      tryIgnore $ do
---        handleScores False Camping total
---        broadcastUI [] $ MoreFullCli "See you soon, stronger and braver!"
-        -- TODO: show the above
+    --      liftIO $ void
+    --        $ forkIO (Save.saveGameSer config s ser `finally` putMVar mv ())
+    -- 7.6        $ forkFinally (Save.saveGameSer config s ser) (putMVar mv ())
+    --      tryIgnore $ do
+    --        handleScores False Camping total
+    --        broadcastUI [] $ MoreFullCli "See you soon, stronger and braver!"
+            -- TODO: show the above
       broadcastCli GameDisconnectCli
---      liftIO $ takeMVar mv  -- wait until saved
-      -- Do nothing, that is, quit the game loop.
-    (Nothing, Just (showScreens, status@Killed{})) -> do
-      -- TODO: rewrite; handle killed faction, if human, mostly ignore if not
-      nullR <- sendQueryCli fid NullReportCli
-      unless nullR $ do
-        -- Display any leftover report. Suggest it could be the death cause.
-        broadcastUI $ MoreBWUI "Who would have thought?"
-      tryWith
-        (\ finalMsg ->
-          let highScoreMsg = "Let's hope another party can save the day!"
-              msg = if T.null finalMsg then highScoreMsg else finalMsg
-          in broadcastUI $ MoreBWUI msg
+    --      liftIO $ takeMVar mv  -- wait until saved
           -- Do nothing, that is, quit the game loop.
-        )
-        (do
-           when showScreens $ handleScores fid True status total
-           go <- sendQueryUI fid
-                 $ ConfirmMoreBWUI "Next time will be different."
-           when (not go) $ abortWith "You could really win this time."
-           restartGame loopServer
-        )
-    (Nothing, Just (showScreens, status@Victor)) -> do
-      nullR <- sendQueryCli fid NullReportCli
-      unless nullR $ do
-        -- Display any leftover report. Suggest it could be the master move.
-        broadcastUI $ MoreFullUI "Brilliant, wasn't it?"
-      when showScreens $ do
-        tryIgnore $ handleScores fid True status total
-        broadcastUI $ MoreFullUI "Can it be done better, though?"
-      restartGame loopServer
-    (Nothing, Just (_, Restart)) -> restartGame loopServer
-    (Nothing, _) -> loopServer  -- just continue
+    [] -> loopServer  -- just continue
+    (fid, quit) : _ -> do
+      fac <- getsState $ (EM.! fid) . sfaction
+      total <- case gleader fac of
+        Nothing -> return 0
+        Just leader -> do
+          b <- getsState $ getActorBody leader
+          getsState $ snd . calculateTotal fid (blid b)
+      -- The first, boolean component of quit determines
+      -- if ending screens should be shown, the other argument describes
+      -- the cause of the disruption of game flow.
+      case quit of
+        (showScreens, status@Killed{}) -> do
+          -- TODO: rewrite; handle killed faction, if human, mostly ignore if not
+          nullR <- sendQueryCli fid NullReportCli
+          unless nullR $ do
+            -- Display any leftover report. Suggest it could be the death cause.
+            broadcastUI $ MoreBWUI "Who would have thought?"
+          tryWith
+            (\ finalMsg ->
+              let highScoreMsg = "Let's hope another party can save the day!"
+                  msg = if T.null finalMsg then highScoreMsg else finalMsg
+              in broadcastUI $ MoreBWUI msg
+              -- Do nothing, that is, quit the game loop.
+            )
+            (do
+               when showScreens $ handleScores fid True status total
+               go <- sendQueryUI fid
+                     $ ConfirmMoreBWUI "Next time will be different."
+               when (not go) $ abortWith "You could really win this time."
+               restartGame loopServer
+            )
+        (showScreens, status@Victor) -> do
+          nullR <- sendQueryCli fid NullReportCli
+          unless nullR $ do
+            -- Display any leftover report. Suggest it could be the master move.
+            broadcastUI $ MoreFullUI "Brilliant, wasn't it?"
+          when showScreens $ do
+            tryIgnore $ handleScores fid True status total
+            broadcastUI $ MoreFullUI "Can it be done better, though?"
+          restartGame loopServer
+        (_, Restart) -> restartGame loopServer
+        (_, Camping) -> assert `failure` (fid, quit)
 
 restartGame :: (MonadAction m, MonadServerChan m) => m () -> m ()
 restartGame loopServer = do

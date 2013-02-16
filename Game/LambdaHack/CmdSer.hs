@@ -7,7 +7,6 @@ module Game.LambdaHack.CmdSer
 import Data.Typeable
 
 import Game.LambdaHack.Actor
-import Game.LambdaHack.Faction
 import Game.LambdaHack.Item
 import Game.LambdaHack.Level
 import Game.LambdaHack.Point
@@ -24,23 +23,23 @@ data CmdSer =
   | MoveSer ActorId Vector
   | RunSer ActorId Vector
   | GameExitSer
-  | GameRestartSer FactionId
+  | GameRestartSer
   | GameSaveSer
   | CfgDumpSer
   | ClearPathSer ActorId
   | SetPathSer ActorId Vector [Vector]
   | DieSer ActorId
-  | LeaderSer FactionId ActorId
+  | LeaderSer ActorId
   deriving (Show, Typeable)
 
 timedCmdSer :: CmdSer -> Bool
 timedCmdSer cmd = case cmd of
   GameExitSer -> False
-  GameRestartSer{} -> False
+  GameRestartSer -> False
   GameSaveSer -> False
   CfgDumpSer -> False
   ClearPathSer{} -> False
   SetPathSer{} -> False
   DieSer{} -> False
-  LeaderSer _ _ -> False
+  LeaderSer{} -> False
   _ -> True

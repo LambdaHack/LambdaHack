@@ -348,7 +348,7 @@ clientGameSave toBkp = do
 clientDisconnect :: MonadClient m => m ()
 clientDisconnect = do
 --  flushFrames  -- this would force MonadClientUI
-  modifyClient $ \cli -> cli {squit = Just False}
+  modifyClient $ \cli -> cli {squit = True}
   clientGameSave False
 
 restoreGame :: MonadClient m => m (Either (State, StateClient, Msg) Msg)
