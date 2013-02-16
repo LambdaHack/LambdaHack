@@ -1,12 +1,8 @@
-{-# LANGUAGE DeriveDataTypeable, GADTs, OverloadedStrings, StandaloneDeriving
-             #-}
 -- | Abstract syntax of client commands.
 module Game.LambdaHack.CmdCli
-  ( CmdCli(..), CmdUpdateCli(..), CmdQueryCli(..)
-  , CmdUI(..), CmdUpdateUI(..), CmdQueryUI(..)
+  ( CmdCli(..), CmdUpdateCli(..)
+  , CmdUI(..), CmdUpdateUI(..)
   ) where
-
-import Data.Typeable
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.CmdAtomic
@@ -18,18 +14,16 @@ import Game.LambdaHack.Perception
 import Game.LambdaHack.State
 
 -- | Abstract syntax of client commands that don't use the UI.
-data CmdCli where
-  CmdUpdateCli :: CmdUpdateCli -> CmdCli
-  CmdQueryCli :: forall a. Typeable a => CmdQueryCli a -> CmdCli
-
-deriving instance Show CmdCli
+data CmdCli =
+    CmdUpdateCli CmdUpdateCli
+  | CmdHandleAICli ActorId
+  deriving Show
 
 -- | Abstract syntax of client commands that use the UI.
-data CmdUI where
-  CmdUpdateUI :: CmdUpdateUI -> CmdUI
-  CmdQueryUI :: forall a. Typeable a => CmdQueryUI a -> CmdUI
-
-deriving instance Show CmdUI
+data CmdUI =
+    CmdUpdateUI CmdUpdateUI
+  | CmdHandleHumanUI ActorId
+  deriving Show
 
 data CmdUpdateCli =
     CmdAtomicCli CmdAtomic
@@ -42,12 +36,6 @@ data CmdUpdateCli =
   | GameDisconnectCli
   deriving Show
 
-data CmdQueryCli a where
-  NullReportCli :: CmdQueryCli Bool
-  HandleAICli :: ActorId -> CmdQueryCli CmdSer
-
-deriving instance Show (CmdQueryCli a)
-
 data CmdUpdateUI =
     CmdAtomicUI CmdAtomic
   | DescAtomicUI DescAtomic
@@ -57,10 +45,3 @@ data CmdUpdateUI =
   | MoreBWUI Msg
   | FlushFramesUI
   deriving Show
-
-data CmdQueryUI a where
-  ShowSlidesUI :: Slideshow -> CmdQueryUI Bool
-  ConfirmMoreBWUI :: Msg -> CmdQueryUI Bool
-  HandleHumanUI :: CmdQueryUI [CmdSer]
-
-deriving instance Show (CmdQueryUI a)

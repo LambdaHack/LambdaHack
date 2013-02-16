@@ -18,12 +18,12 @@ module Game.LambdaHack.Action
 
 import Control.Concurrent.Chan
 import Control.Monad.Writer.Strict (WriterT (WriterT), lift, runWriterT)
-import Data.Dynamic
 import qualified Data.EnumMap.Strict as EM
 import Data.Monoid
 import qualified Data.Text as T
 
 import Game.LambdaHack.CmdCli
+import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Faction
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
@@ -33,7 +33,7 @@ import Game.LambdaHack.Utils.Assert
 -- | Connection channels between server and a single client.
 data ConnCli = ConnCli
   { toClient :: Chan (Either CmdCli CmdUI)
-  , toServer :: Chan Dynamic
+  , toServer :: Chan [CmdSer]
   }
 
 instance Show ConnCli where

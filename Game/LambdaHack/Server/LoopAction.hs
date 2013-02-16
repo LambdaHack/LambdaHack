@@ -289,7 +289,7 @@ handleActors cmdSer arena subclipStart = do
           -- is acting, etc. Or perhaps instead have a separate type
           -- of actions for humans. OTOH, AI is controlled by the servers
           -- so the generated commands are assumed to be legal.
-          cmdS <- sendQueryUI side HandleHumanUI
+          cmdS <- sendQueryUI side actor
           tryWith (\msg -> do
                       sendUpdateCli side $ ShowMsgCli msg
                       sendUpdateUI side DisplayPushUI
@@ -335,25 +335,25 @@ handleActors cmdSer arena subclipStart = do
               -- or it's another faction, but it's the first move of
               -- this whole clip or the actor has already moved during
               -- this subclip, so his multiple moves would be collapsed.
-              cmdS <- sendQueryCliAI side $ HandleAICli actor
+              cmdS <- sendQueryCliAI side actor
     -- If the following action aborts, we just advance the time and continue.
     -- TODO: or just fail at each abort in AI code? or use tryWithFrame?
               tryWith (\msg -> if T.null msg
                                then return ()
                                else assert `failure` msg <> "in AI"
                       )
-                      (cmdSer side arena cmdS)
+                      (mapM_ (cmdSer side arena) cmdS)
               handleActors cmdSer arena (btime body)
             else do
               -- No new subclip.
-              cmdS <- sendQueryCliAI side $ HandleAICli actor
+              cmdS <- sendQueryCliAI side actor
     -- If the following action aborts, we just advance the time and continue.
     -- TODO: or just fail at each abort in AI code? or use tryWithFrame?
               tryWith (\msg -> if T.null msg
                                then return ()
                                else assert `failure` msg <> "in AI"
                       )
-                      (cmdSer side arena cmdS)
+                      (mapM_ (cmdSer side arena) cmdS)
               handleActors cmdSer arena subclipStart
 
 -- | Advance the move time for the given actor.
@@ -409,7 +409,7 @@ endOrLoop loopServer = do
       case quit of
         (showScreens, status@Killed{}) -> do
           -- TODO: rewrite; handle killed faction, if human, mostly ignore if not
-          nullR <- sendQueryCli fid NullReportCli
+          nullR <- undefined -- sendQueryCli fid NullReportCli
           unless nullR $ do
             -- Display any leftover report. Suggest it could be the death cause.
             broadcastUI $ MoreBWUI "Who would have thought?"
@@ -422,13 +422,13 @@ endOrLoop loopServer = do
             )
             (do
                when showScreens $ handleScores fid True status total
-               go <- sendQueryUI fid
-                     $ ConfirmMoreBWUI "Next time will be different."
+               go <- undefined  -- sendQueryUI fid
+--                     $ ConfirmMoreBWUI "Next time will be different."
                when (not go) $ abortWith "You could really win this time."
                restartGame loopServer
             )
         (showScreens, status@Victor) -> do
-          nullR <- sendQueryCli fid NullReportCli
+          nullR <- undefined -- sendQueryCli fid NullReportCli
           unless nullR $ do
             -- Display any leftover report. Suggest it could be the master move.
             broadcastUI $ MoreFullUI "Brilliant, wasn't it?"

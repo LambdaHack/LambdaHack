@@ -21,7 +21,6 @@ module Game.LambdaHack.Server.Action
 
 import Control.Concurrent
 import Control.Monad
-import Data.Dynamic
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 import System.Time
@@ -31,6 +30,7 @@ import qualified System.Random as R
 import qualified Control.Monad.State as St
 
 import Game.LambdaHack.Action
+import Game.LambdaHack.Actor
 import Game.LambdaHack.CmdCli
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Faction
@@ -51,6 +51,7 @@ import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Random
 import Game.LambdaHack.Level
 import Game.LambdaHack.Time
+import Game.LambdaHack.CmdSer
 
 -- | Update the cached perception for the selected level, for a faction.
 -- The assumption is the level, and only the level, has changed since
@@ -108,14 +109,14 @@ dumpCfg fn = do
 -- so we should be careful not to leak secret information through them
 -- (e.g., the nature of the items through the total worth of inventory).
 handleScores :: MonadServerChan m => FactionId -> Bool -> Status -> Int -> m ()
-handleScores fid write status total =
+handleScores _fid write status total =
   when (total /= 0) $ do
     config <- getsServer sconfig
 -- TODO: sum over all levels?    time <- getsState getTime
     curDate <- liftIO getClockTime
-    slides <-
+    _slides <-
       liftIO $ register config write total timeZero curDate status
-    go <- sendQueryUI fid $ ShowSlidesUI slides
+    go <- undefined -- sendQueryUI fid $ ShowSlidesUI slides
     when (not go) abort
 
 withAI :: MonadServerChan m => m a -> m a
@@ -138,25 +139,18 @@ sendUpdateCli fid cmd = do
 sendUpdateCliAI :: MonadServerChan m => FactionId -> CmdUpdateCli -> m ()
 sendUpdateCliAI fid cmd = withAI $ sendUpdateCli fid cmd
 
-connSendQueryCli :: (Typeable a, MonadServerChan m)
-                 => CmdQueryCli a -> ConnCli
-                 -> m a
-connSendQueryCli cmd ConnCli{toClient, toServer} = do
-  liftIO $ writeChan toClient $ Left $ CmdQueryCli cmd
-  a <- liftIO $ readChan toServer
-  return $ fromDyn a (assert `failure` (cmd, a))
+connSendQueryCli :: MonadServerChan m => ActorId -> ConnCli -> m [CmdSer]
+connSendQueryCli aid ConnCli{toClient, toServer} = do
+  liftIO $ writeChan toClient $ Left $ CmdHandleAICli aid
+  liftIO $ readChan toServer
 
-sendQueryCli :: (Typeable a, MonadServerChan m)
-             => FactionId -> CmdQueryCli a
-             -> m a
-sendQueryCli fid cmd = do
+sendQueryCli :: MonadServerChan m => FactionId -> ActorId -> m [CmdSer]
+sendQueryCli fid aid = do
   conn <- getsDict (fst . (EM.! fid))
-  maybe (assert `failure` (fid, cmd)) (connSendQueryCli cmd) conn
+  maybe (assert `failure` (fid, aid)) (connSendQueryCli aid) conn
 
-sendQueryCliAI :: (Typeable a, MonadServerChan m)
-               => FactionId -> CmdQueryCli a
-               -> m a
-sendQueryCliAI fid cmd = withAI $ sendQueryCli fid cmd
+sendQueryCliAI :: MonadServerChan m => FactionId -> ActorId -> m [CmdSer]
+sendQueryCliAI fid aid = withAI $ sendQueryCli fid aid
 
 broadcastCli :: MonadServerChan m => CmdUpdateCli -> m ()
 broadcastCli cmd = do
@@ -182,20 +176,15 @@ sendUpdateUI fid cmd = do
   conn <- getsDict (fst . (EM.! fid))
   maybe (return ()) (connSendUpdateUI cmd) conn
 
-connSendQueryUI :: (Typeable a, MonadServerChan m)
-                => CmdQueryUI a -> ConnCli
-                -> m a
-connSendQueryUI cmd ConnCli{toClient, toServer} = do
-  liftIO $ writeChan toClient $ Right $ CmdQueryUI cmd
-  a <- liftIO $ readChan toServer
-  return $ fromDyn a (assert `failure` (cmd, a))
+connSendQueryUI :: MonadServerChan m => ActorId -> ConnCli -> m [CmdSer]
+connSendQueryUI aid ConnCli{toClient, toServer} = do
+  liftIO $ writeChan toClient $ Right $ CmdHandleHumanUI aid
+  liftIO $ readChan toServer
 
-sendQueryUI :: (Typeable a, MonadServerChan m)
-            => FactionId -> CmdQueryUI a
-            -> m a
-sendQueryUI fid cmd = do
+sendQueryUI :: MonadServerChan m => FactionId -> ActorId -> m [CmdSer]
+sendQueryUI fid aid = do
   conn <- getsDict (fst . (EM.! fid))
-  maybe (assert `failure` (fid, cmd)) (connSendQueryUI cmd) conn
+  maybe (assert `failure` (fid, aid)) (connSendQueryUI aid) conn
 
 broadcastUI :: MonadServerChan m => CmdUpdateUI -> m ()
 broadcastUI cmd = do

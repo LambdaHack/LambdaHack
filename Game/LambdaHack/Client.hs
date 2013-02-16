@@ -1,5 +1,3 @@
-{-# LANGUAGE DeriveDataTypeable, GADTs, OverloadedStrings, StandaloneDeriving
-             #-}
 -- | Semantics of client commands.
 module Game.LambdaHack.Client
   ( cmdCliSem, cmdUISem
@@ -8,7 +6,6 @@ module Game.LambdaHack.Client
   ) where
 
 import Control.Monad
-import Data.Dynamic
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Client.Action
@@ -17,22 +14,21 @@ import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.LoopAction
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.CmdCli
-import Game.LambdaHack.Msg
 
 cmdCliSem :: (MonadAction m, MonadClientChan m) => CmdCli -> m ()
 cmdCliSem cmd2 = case cmd2 of
   CmdUpdateCli cmd -> cmdUpdateCli cmd
-  CmdQueryCli cmd -> do
-    a <- cmdQueryCli cmd
-    writeChanToSer $ toDyn a
+  CmdHandleAICli aid -> do
+    a <- handleAI aid
+    writeChanToSer a
 
 cmdUISem :: (MonadAction m, MonadClientUI m, MonadClientChan m)
          => CmdUI -> m ()
 cmdUISem cmd2 = case cmd2 of
   CmdUpdateUI cmd -> cmdUpdateUI cmd
-  CmdQueryUI cmd -> do
-    a <- cmdQueryUI cmd
-    writeChanToSer $ toDyn a
+  CmdHandleHumanUI aid -> do
+    a <- handleHuman aid
+    writeChanToSer a
 
 cmdUpdateCli :: (MonadAction m, MonadClient m) => CmdUpdateCli -> m ()
 cmdUpdateCli cmd = case cmd of
@@ -66,19 +62,3 @@ cmdUpdateUI cmd = case cmd of
       _ -> do
         displayPush
         flushFrames
-
-cmdQueryCli :: MonadClient m => CmdQueryCli a -> m a
-cmdQueryCli cmd = case cmd of
-  NullReportCli -> do
-    StateClient{sreport} <- getClient
-    return $! nullReport sreport
-  HandleAICli actor -> handleAI actor
-
-cmdQueryUI :: MonadClientUI m => CmdQueryUI a -> m a
-cmdQueryUI cmd = case cmd of
-  ShowSlidesUI slides -> getManyConfirms [] slides
-  ConfirmMoreBWUI msg -> do
-    go <- displayMore ColorBW msg
-    recordHistory  -- Prevent repeating the ending msgs.
-    return go
-  HandleHumanUI -> handleHuman

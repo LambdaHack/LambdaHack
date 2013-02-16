@@ -34,7 +34,6 @@ import Control.Concurrent
 import Control.Monad
 import qualified Control.Monad.State as St
 import Control.Monad.Writer.Strict (WriterT, lift, tell)
-import Data.Dynamic
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
@@ -55,6 +54,7 @@ import Game.LambdaHack.Client.Draw
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.CmdCli
+import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Kind as Kind
@@ -367,7 +367,7 @@ readChanFromSer = do
   toClient <- getsChan toClient
   liftIO $ readChan toClient
 
-writeChanToSer :: MonadClientChan m => Dynamic -> m ()
+writeChanToSer :: MonadClientChan m => [CmdSer] -> m ()
 writeChanToSer cmd = do
   toServer <- getsChan toServer
   liftIO $ writeChan toServer cmd

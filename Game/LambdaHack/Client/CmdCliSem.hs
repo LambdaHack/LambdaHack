@@ -373,9 +373,9 @@ restartCli sper loc = do
   -- Save ASAP in case of crashes and disconnects.
   --TODO
 
--- * cmdQueryCli
+-- * CmdHandleHumanUI
 
-handleAI :: MonadClient m => ActorId -> m CmdSer
+handleAI :: MonadClient m => ActorId -> m [CmdSer]
 handleAI actor = do
   body <- getsState $ getActorBody actor
   side <- getsClient sside
@@ -399,17 +399,19 @@ handleAI actor = do
           <> "\nHandleAI move:"   <+> showT stratAction
     -- trace _debug $ return ()
     -- Run the AI: chose an action from those given by the AI strategy.
-    rndToAction $ frequency $ bestVariant $ stratAction
+    cmd <- rndToAction $ frequency $ bestVariant $ stratAction
+    return [cmd]
 
--- * cmdQueryUI
+-- * CmdHandleHumanUI
 
 -- | Handle the move of the hero.
-handleHuman :: MonadClientUI m => m [CmdSer]
-handleHuman = do
+handleHuman :: MonadClientUI m => ActorId -> m [CmdSer]
+handleHuman aid = do
   -- When running, stop if aborted by a disturbance. Otherwise let
   -- the human player issue commands, until any of them takes time.
   -- First time, just after pushing frames, ask for commands in Push mode.
   Just leader <- getsClient sleader
+  let _ = assert (leader == aid `blame` (leader, aid)) 'd'
   let inputHumanCmd msg = do
         stopRunning
         humanCommand msg
