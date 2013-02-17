@@ -6,6 +6,7 @@ module Game.LambdaHack.Client.Animation
   , twirlSplash, blockHit, blockMiss, deathBody, swapPlaces
   ) where
 
+import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.List as L
@@ -24,6 +25,17 @@ data SingleFrame = SingleFrame
   , sfBottom :: Text          -- ^ an extra line to show at the bottom
   }
   deriving (Eq, Show)
+
+instance Binary SingleFrame where
+  put SingleFrame{..} = do
+    put sfLevel
+    put sfTop
+    put sfBottom
+  get = do
+    sfLevel <- get
+    sfTop <- get
+    sfBottom <- get
+    return SingleFrame{..}
 
 -- | Animation is a list of frame modifications to play one by one,
 -- where each modification if a map from positions to level map symbols.

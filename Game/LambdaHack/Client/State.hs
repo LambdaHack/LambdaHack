@@ -179,6 +179,7 @@ instance Binary StateClient where
     put shistory
     put (show srandom)
     put sconfigUI
+    put sframe
     put _sleader
     put _sside
     put squit
@@ -193,6 +194,7 @@ instance Binary StateClient where
     shistory <- get
     g <- get
     sconfigUI <- get
+    sframe <- get
     _sleader <- get
     _sside <- get
     squit <- get
@@ -200,7 +202,6 @@ instance Binary StateClient where
     let sper = EM.empty
         srandom = read g
         slastKey = Nothing
-        sframe = []
         sdebugCli = defDebugModeCli
     return StateClient{..}
 
