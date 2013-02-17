@@ -9,6 +9,7 @@ import Control.Monad
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Client.Action
+import Game.LambdaHack.Client.CmdAtomicUI
 import Game.LambdaHack.Client.CmdCliSem
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.LoopAction

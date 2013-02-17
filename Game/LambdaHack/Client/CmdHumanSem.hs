@@ -15,8 +15,8 @@ import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.CmdHuman
+import Game.LambdaHack.Client.GlobalAction
 import Game.LambdaHack.Client.LocalAction
-import Game.LambdaHack.Client.MixedAction
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Level

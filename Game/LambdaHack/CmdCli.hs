@@ -6,7 +6,6 @@ module Game.LambdaHack.CmdCli
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.CmdAtomic
-import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Faction
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg

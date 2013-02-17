@@ -3,7 +3,7 @@
 -- | Semantics of 'Command.Cmd' client commands that return server commands.
 -- A couple of them do not take time, the rest does.
 -- TODO: document
-module Game.LambdaHack.Client.MixedAction
+module Game.LambdaHack.Client.GlobalAction
   ( movePl, runPl, waitBlock, pickupItem, dropItem, leaderProjectGroupItem
   , leaderApplyGroupItem, leaderTriggerDir, leaderTriggerTile
   , gameRestart, gameExit, gameSave, dumpConfig
