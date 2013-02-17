@@ -151,9 +151,10 @@ getActorInv aid s = binv $ getActorBody aid s
 
 -- | Gets actor's items from the current level. Warning: this does not work
 -- for viewing items of actors from remote level.
-getActorItem :: ActorId -> State -> [Item]
+getActorItem :: ActorId -> State -> [(ItemId, Item)]
 getActorItem aid s =
-  map (flip getItemBody s) $ EM.keys $ getActorBag aid s
+  let f iid = (iid, getItemBody iid s)
+  in map f $ EM.keys $ getActorBag aid s
 
 getItemBody :: ItemId -> State -> Item
 getItemBody iid s = sitemD s EM.! iid

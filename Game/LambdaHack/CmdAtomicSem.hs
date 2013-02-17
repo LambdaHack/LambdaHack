@@ -13,6 +13,7 @@ import Game.LambdaHack.ActorState
 import Game.LambdaHack.CmdAtomic
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.Content.ItemKind as ItemKind
 import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Faction
 import Game.LambdaHack.Item
@@ -45,6 +46,8 @@ cmdAtomicSem cmd = case cmd of
   AlterTileA lid p fromTile toTile -> alterTileA lid p fromTile toTile
   AlterSecretA lid diffL -> alterSecretA lid diffL
   AlterSmellA lid diffL -> alterSmellA lid diffL
+  DiscoverA lid p iid ik -> discoverA lid p iid ik
+  CoverA lid p iid ik -> coverA lid p iid ik
   SyncA -> return ()
 
 resetsFovAtomic :: MonadActionRO m => FactionId -> CmdAtomic -> m Bool
@@ -105,6 +108,8 @@ posCmdAtomic cmd = case cmd of
   AlterSecretA _ _ ->
     return (Left False, Left False)  -- none of clients' business
   AlterSmellA _ _ -> return (Left True, Left True)  -- always register
+  DiscoverA _ p _ _ -> return (Left True, Right [p])
+  CoverA _ p _ _ -> return (Left True, Right [p])
   SyncA -> return (Left False, Left False)
 
 posDescAtomic :: MonadActionRO m
@@ -164,7 +169,7 @@ destroyActorA aid body = do
 -- | Create a few copies of an item that is already registered for the dungeon
 -- (in @sitemRev@ field of @StateServer@).
 createItemA :: MonadAction m
-                 => LevelId -> ItemId -> Item -> Int -> Container -> m ()
+            => LevelId -> ItemId -> Item -> Int -> Container -> m ()
 createItemA lid iid item k c = assert (k > 0) $ do
   -- The item may or may not be already present in the dungeon.
   let f item1 item2 = assert (item1 == item2) item1
@@ -194,7 +199,7 @@ insertItemActor iid k l aid = do
 
 -- | Destroy some copies (possibly not all) of an item.
 destroyItemA :: MonadAction m
-                  => LevelId -> ItemId -> Item -> Int -> Container -> m ()
+             => LevelId -> ItemId -> Item -> Int -> Container -> m ()
 destroyItemA lid iid _item k c = assert (k > 0) $ do
   -- Do not remove the item from @sitemD@ nor from @sitemRev@,
   -- This is behaviourally equivalent.
@@ -214,7 +219,7 @@ deleteItemFloor lid iid k pos =
   in updateLevel lid $ updateFloor $ EM.alter rmFromFloor pos
 
 deleteItemActor :: MonadAction m
-                 => ItemId -> Int -> ActorId -> m ()
+                => ItemId -> Int -> ActorId -> m ()
 deleteItemActor iid k aid =
   modifyState $ updateActorD
   $ EM.adjust (\b -> b {bbag = rmFromBag k iid (bbag b)}) aid
@@ -235,7 +240,7 @@ displaceActorA source target = do
   modifyState $ updateActorBody target $ \ b -> b {bpos = spos}
 
 moveItemA :: MonadAction m
-               => LevelId -> ItemId -> Int -> Container -> Container -> m ()
+          => LevelId -> ItemId -> Int -> Container -> Container -> m ()
 moveItemA lid iid k c1 c2 = assert (k > 0) $ do
   case c1 of
     CFloor pos -> deleteItemFloor lid iid k pos
@@ -267,18 +272,18 @@ dominateActorA target fromFid toFid = do
     modifyState $ updateActorBody target $ \b -> b {bfaction = toFid}
 
 pathActorA :: MonadAction m
-                => ActorId -> Maybe [Vector] -> Maybe [Vector] -> m ()
+           => ActorId -> Maybe [Vector] -> Maybe [Vector] -> m ()
 pathActorA aid _fromPath toPath =
   modifyState $ updateActorBody aid $ \b -> b {bpath = toPath}
 
 colorActorA :: MonadAction m
-                 => ActorId -> Maybe Color.Color -> Maybe Color.Color -> m ()
+            => ActorId -> Maybe Color.Color -> Maybe Color.Color -> m ()
 colorActorA aid _fromCol toCol =
   modifyState $ updateActorBody aid $ \b -> b {bcolor = toCol}
 
 quitFactionA :: MonadAction m
-                  => FactionId -> Maybe (Bool, Status) -> Maybe (Bool, Status)
-                  -> m ()
+             => FactionId -> Maybe (Bool, Status) -> Maybe (Bool, Status)
+             -> m ()
 quitFactionA fid _fromSt toSt = do
   let adj fac = fac {gquit = toSt}
   modifyState $ updateFaction $ EM.adjust adj fid
@@ -290,16 +295,26 @@ leadFactionA fid source target = assert (source /= target) $ do
   modifyState $ updateFaction $ EM.adjust adj fid
 
 alterTileA :: MonadAction m
-                => LevelId -> Point -> Kind.Id TileKind -> Kind.Id TileKind
-                -> m ()
+           => LevelId -> Point -> Kind.Id TileKind -> Kind.Id TileKind
+           -> m ()
 alterTileA lid p _fromTile toTile =
   let adj = (Kind.// [(p, toTile)])
   in updateLevel lid $ updateTile adj
 
 alterSecretA :: MonadAction m => LevelId -> DiffEM Point Time -> m ()
-alterSecretA lid diffL =
-  updateLevel lid $ updateSecret $ applyDiffEM diffL
+alterSecretA lid diffL = updateLevel lid $ updateSecret $ applyDiffEM diffL
 
 alterSmellA :: MonadAction m => LevelId -> DiffEM Point Time -> m ()
-alterSmellA lid diffL =
-  updateLevel lid $ updateSmell $ applyDiffEM diffL
+alterSmellA lid diffL = updateLevel lid $ updateSmell $ applyDiffEM diffL
+
+discoverA :: MonadAction m
+          => LevelId -> Point -> ItemId -> (Kind.Id ItemKind) -> m ()
+discoverA _ _ iid ik = do
+  item <- getsState $ getItemBody iid
+  modifyState (updateDisco (EM.insert (jkindIx item) ik))
+
+coverA :: MonadAction m
+       => LevelId -> Point -> ItemId -> (Kind.Id ItemKind) -> m ()
+coverA _ _ iid _ = do
+  item <- getsState $ getItemBody iid
+  modifyState (updateDisco (EM.delete (jkindIx item)))

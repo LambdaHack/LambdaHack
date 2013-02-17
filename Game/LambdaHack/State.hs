@@ -39,7 +39,7 @@ data State = State
   , _sdepth   :: !Int          -- ^ remembered dungeon depth
   , _sactorD  :: !ActorDict    -- ^ remembered actors in the dungeon
   , _sitemD   :: !ItemDict     -- ^ remembered items in the dungeon
-  , _sdisco   :: !Discoveries  -- ^ remembered item discoveries
+  , _sdisco   :: !Discovery  -- ^ remembered item discoveries
   , _sfaction :: !FactionDict  -- ^ remembered sides still in game
   , _scops    :: Kind.COps     -- ^ remembered content
   }
@@ -73,7 +73,7 @@ unknownTileMap unknownId cxsize cysize =
   in Kind.listArray bounds (repeat unknownId)
 
 -- | Initial complete global game state.
-defStateGlobal :: Dungeon -> Int -> Discoveries
+defStateGlobal :: Dungeon -> Int -> Discovery
                -> FactionDict -> Kind.COps
                -> State
 defStateGlobal _sdungeon _sdepth _sdisco _sfaction _scops =
@@ -134,7 +134,7 @@ updateItemD :: (ItemDict -> ItemDict) -> State -> State
 updateItemD f s = s {_sitemD = f (_sitemD s)}
 
 -- | Update item discoveries within state.
-updateDisco :: (Discoveries -> Discoveries) -> State -> State
+updateDisco :: (Discovery -> Discovery) -> State -> State
 updateDisco f s = s {_sdisco = f (_sdisco s)}
 
 -- | Update faction data within state.
@@ -175,7 +175,7 @@ sactorD = _sactorD
 sitemD :: State -> ItemDict
 sitemD = _sitemD
 
-sdisco :: State -> Discoveries
+sdisco :: State -> Discovery
 sdisco = _sdisco
 
 sfaction :: State -> FactionDict

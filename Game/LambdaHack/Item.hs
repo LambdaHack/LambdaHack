@@ -11,7 +11,7 @@ module Game.LambdaHack.Item
     -- * Inventory search
   , strongestSearch, strongestSword, strongestRegen
    -- * The item discovery types
-  , ItemKindIx, Discoveries, DiscoRev, serverDiscos
+  , ItemKindIx, Discovery, DiscoRev, serverDiscos
     -- * The @FlavourMap@ type
   , FlavourMap, dungeonFlavourMap
     -- * Textual description
@@ -63,9 +63,9 @@ instance Binary ItemKindIx where
 
 -- | The map of item kind indexes to item kind ids.
 -- The full map, as known by the server, is a bijection.
-type Discoveries = EM.EnumMap ItemKindIx (Kind.Id ItemKind)
+type Discovery = EM.EnumMap ItemKindIx (Kind.Id ItemKind)
 
--- | The reverse map to @Discoveries@, needed for item creation.
+-- | The reverse map to @Discovery@, needed for item creation.
 type DiscoRev    = EM.EnumMap (Kind.Id ItemKind) ItemKindIx
 
 -- TODO: see the TODO about ipower in ItemKind.
@@ -104,10 +104,10 @@ instance Binary Item where
     return Item{..}
 
 -- | Recover a kind id of an item, if identified.
-jkind :: Discoveries -> Item -> Maybe (Kind.Id ItemKind)
+jkind :: Discovery -> Item -> Maybe (Kind.Id ItemKind)
 jkind disco i = EM.lookup (jkindIx i) disco
 
-serverDiscos :: Kind.Ops ItemKind -> Rnd (Discoveries, DiscoRev)
+serverDiscos :: Kind.Ops ItemKind -> Rnd (Discovery, DiscoRev)
 serverDiscos Kind.Ops{obounds, ofoldrWithKey} = do
   let ixs = map ItemKindIx $ take (Ix.rangeSize obounds) [0..]
       shuffle :: Eq a => [a] -> Rnd [a]
@@ -186,36 +186,38 @@ dungeonFlavourMap Kind.Ops{ofoldrWithKey} =
   liftM (FlavourMap . fst) $
     ofoldrWithKey rollFlavourMap (return (EM.empty, S.fromList stdFlav))
 
-strongestItem :: [Item] -> (Item -> Bool) -> Maybe Item
+strongestItem :: [(ItemId, Item)] -> (Item -> Bool) -> Maybe (ItemId, Item)
 strongestItem is p =
-  let cmp = comparing jpower
-      igs = filter p is
+  let cmp = comparing $ jpower . snd
+      igs = filter (p . snd) is
   in case igs of
     [] -> Nothing
     _  -> Just $ maximumBy cmp igs
 
-strongestSearch :: Kind.Ops ItemKind -> Discoveries -> [Item] -> Maybe Item
-strongestSearch Kind.Ops{okind} disco bitems =
-  strongestItem bitems $ \ i ->
+strongestSearch :: Kind.Ops ItemKind -> Discovery -> [(ItemId, Item)]
+                -> Maybe (ItemId, Item)
+strongestSearch Kind.Ops{okind} disco is =
+  strongestItem is $ \ i ->
     case jkind disco i of
       Nothing -> False
       Just ik -> ieffect (okind ik) == Searching
 
 -- TODO: generalise, in particular take base damage into account
-strongestSword :: Kind.COps -> [Item] -> Maybe Item
-strongestSword Kind.COps{corule} bitems =
-  strongestItem bitems $ \ i ->
+strongestSword :: Kind.COps -> [(ItemId, Item)] -> Maybe (ItemId, Item)
+strongestSword Kind.COps{corule} is =
+  strongestItem is $ \ i ->
     jsymbol i `elem` (ritemMelee $ Kind.stdRuleset corule)
 
-strongestRegen :: Kind.Ops ItemKind -> Discoveries -> [Item] -> Maybe Item
-strongestRegen Kind.Ops{okind} disco bitems =
-  strongestItem bitems $ \ i ->
+strongestRegen :: Kind.Ops ItemKind -> Discovery -> [(ItemId, Item)]
+               -> Maybe (ItemId, Item)
+strongestRegen Kind.Ops{okind} disco is =
+  strongestItem is $ \ i ->
     case jkind disco i of
       Nothing -> False
       Just ik -> ieffect (okind ik) == Regeneration
 
 -- | The part of speech describing the item.
-partItem :: Kind.Ops ItemKind -> Discoveries -> Item -> (MU.Part, MU.Part)
+partItem :: Kind.Ops ItemKind -> Discovery -> Item -> (MU.Part, MU.Part)
 partItem Kind.Ops{okind} disco i =
   let genericName = jname i
       flav = flavourToName $ jflavour i
@@ -229,12 +231,12 @@ partItem Kind.Ops{okind} disco i =
                 else "(+" <> showT (jpower i) <> ")"
       in (MU.Text genericName, MU.Text $ eff <+> pwr)
 
-partItemNWs :: Kind.Ops ItemKind -> Discoveries -> Int -> Item -> MU.Part
+partItemNWs :: Kind.Ops ItemKind -> Discovery -> Int -> Item -> MU.Part
 partItemNWs coitem disco jcount i =
   let (name, stats) = partItem coitem disco i
   in MU.Phrase [MU.NWs jcount name, stats]
 
-partItemAW :: Kind.Ops ItemKind -> Discoveries -> Item -> MU.Part
+partItemAW :: Kind.Ops ItemKind -> Discovery -> Item -> MU.Part
 partItemAW coitem disco i =
   let (name, stats) = partItem coitem disco i
   in MU.AW $ MU.Phrase [name, stats]

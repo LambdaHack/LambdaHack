@@ -63,33 +63,27 @@ effectSem effect source target power = case effect of
   Effect.Ascend -> effectAscend target power
   Effect.Descend -> effectDescend target power
 
+-- TODO: when h2h items have ItemId, replace Item with ItemId
 -- | The source actor affects the target actor, with a given item.
 -- If the event is seen, the item may get identified. This function
 -- is mutually recursive with @effect@ and so it's a part of @Effect@
 -- semantics.
 itemEffect :: MonadServer m
-           => ActorId -> ActorId -> Item
+           => ActorId -> ActorId -> Maybe ItemId -> Item
            -> WriterT [Atomic] m ()
-itemEffect source target item = do
+itemEffect source target miid item = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
-  sm <- getsState $ getActorBody source
+  sb <- getsState $ getActorBody source
+  tb <- getsState $ getActorBody target
   -- Destroys attacking actor: a hack for projectiles.
-  when (bproj sm) $ tellCmdAtomic $ DestroyActorA source sm
+  when (bproj sb) $ tellCmdAtomic $ DestroyActorA source sb
   discoS <- getsState sdisco
-  let ef = ieffect $ okind $ fromJust $ jkind discoS item
+  let ik = fromJust $ jkind discoS item
+      ef = ieffect $ okind ik
   b <- effectSem ef source target (jpower item)
   -- The effect is interesting so the item gets identified, if seen.
-  when b $ discover discoS item
-
--- TODO: send to all clients that see tpos.
--- | Make the item known to the leader.
-discover :: MonadActionRO m => Discoveries -> Item -> m ()
-discover discoS i = do
-  let ix = jkindIx i
-      _ik = discoS EM.! ix
-  return ()
--- TODO: send to all clients that see tpos.
---  sendUpdateCli undefined $ DiscoverCli ik i
+  let atomic iid = tellCmdAtomic $ DiscoverA (blid tb) (bpos tb) iid ik
+  when b $ maybe (return ()) atomic miid
 
 -- + Individual semantic functions for effects
 
@@ -425,7 +419,7 @@ squashActor source target = do
 --        , partActor coactor tm
 --        , "in a staircase accident" ]
 --  msgAdd msg
-  itemEffect source target h2h
+  itemEffect source target Nothing h2h
   s <- getState
   -- The monster has to be killed first, before we step there (same turn!).
   assert (not (target `EM.member` sactorD s) `blame` (source, target, "not killed")) $

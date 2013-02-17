@@ -120,25 +120,26 @@ actorAttackActor source target = do
   when (bfaction sm == bfaction tm && isHumanFaction s (bfaction sm)
         && not (bproj sm) && not (bproj tm))
     $ assert `failure` (source, target, "human AI bumps into friendlies")
-  bitems <- getsState (getActorItem source)
-  item <-
+  itemAssocs <- getsState $ getActorItem source
+  (miid, item) <-
     if bproj tm
-    then case bitems of
-      [bitem] -> return bitem  -- projectile
-      _ -> assert `failure` bitems
-    else case strongestSword cops bitems of
-      Just w -> return w
+    then case itemAssocs of
+      [(iid, item)] -> return (Just iid, item)  -- projectile
+      _ -> assert `failure` itemAssocs
+    else case strongestSword cops itemAssocs of
+      Just (iid, w) -> return (Just iid, w)
       Nothing -> do  -- hand to hand combat
         let h2hGroup | isSpawningFaction s (bfaction sm) = "monstrous"
                      | otherwise = "unarmed"
         h2hKind <- rndToAction $ opick h2hGroup (const True)
         flavour <- getsServer sflavour
         discoRev <- getsServer sdiscoRev
-        return $ buildItem flavour discoRev h2hKind (okind h2hKind) 0
+        return $ ( Nothing
+                 , buildItem flavour discoRev h2hKind (okind h2hKind) 0 )
   let performHit block = do
         let hitA = if block then HitBlockA else HitA
         -- Msgs inside itemEffectSem describe the target part.
-        itemEffect source target item
+        itemEffect source target miid item
         -- Order reversed to anticipate death in the strike message.
         -- Note: this means actors should not be destroyed in @itemEffect@.
         tellDescAtomic $ StrikeA source target item hitA
@@ -159,11 +160,11 @@ search aid = do
   lvl <- getsLevel (blid b) id
   lsecret <- getsLevel (blid b) lsecret
   lxsize <- getsLevel (blid b) lxsize
-  pitems <- getsState (getActorItem aid)
+  itemAssocs <- getsState (getActorItem aid)
   discoS <- getsState sdisco
   let delta = timeScale timeTurn $
-                case strongestSearch coitem discoS pitems of
-                  Just i  -> 1 + jpower i
+                case strongestSearch coitem discoS itemAssocs of
+                  Just (_, i)  -> 1 + jpower i
                   Nothing -> 1
       searchTile diffL mv =
         let loc = shift (bpos b) mv
@@ -368,7 +369,7 @@ applySer actor iid container = do
   item <- getsState $ getItemBody iid
   b <- getsState $ getActorBody actor
   tellDescAtomic $ ActivateA actor iid
-  itemEffect actor actor item
+  itemEffect actor actor (Just iid) item
   tellCmdAtomic $ DestroyItemA (blid b) iid item 1 container
 
 -- * TriggerSer

@@ -72,8 +72,8 @@ drawCmdAtomicUI verbose cmd = case cmd of
                       bfaction b == side && not (bproj b)) $ EM.assocs actorD
         when (not $ null $ party) $ msgAdd "The survivors carry on."
     else when verbose $ actorVerbMU body "disappear"
-  CreateItemA _ _ item k _ -> itemVerbMU item k "appear"
-  DestroyItemA _ _ item k _ -> itemVerbMU item k "disappear"
+  CreateItemA _ _ item k _ | verbose -> itemVerbMU item k "appear"
+  DestroyItemA _ _ item k _ | verbose -> itemVerbMU item k "disappear"
   MoveActorA _ _ _ -> return ()  -- too boring even for verbose mode
   WaitActorA aid _ _| verbose -> aVerbMU aid "wait"
   DisplaceActorA source target -> displaceActorA source target
@@ -103,6 +103,32 @@ drawCmdAtomicUI verbose cmd = case cmd of
     return ()  -- TODO: door opens
   AlterSecretA _ _ ->
     assert `failure` ("client learns secrets" :: Text, cmd)
+  DiscoverA _ _ iid _ -> do
+    -- TODO: drop these commands if item already known
+    Kind.COps{coitem} <- getsState scops
+    item <- getsState $ getItemBody iid
+    disco <- getsState sdisco
+    let ix = jkindIx item
+        discoUnknown = EM.delete ix disco
+        (objectUnkown1, objectUnkown2) = partItem coitem discoUnknown item
+        msg = makeSentence
+          [ "the", MU.SubjectVerbSg (MU.Phrase [objectUnkown1, objectUnkown2])
+                                    "turn out to be"
+          , partItemAW coitem disco item ]
+    msgAdd msg
+  CoverA _ _ iid ik -> do
+    Kind.COps{coitem} <- getsState scops
+    item <- getsState $ getItemBody iid
+    discoUnknown <- getsState sdisco
+    let ix = jkindIx item
+        disco = EM.insert ix ik discoUnknown
+        (objectUnkown1, objectUnkown2) = partItem coitem discoUnknown item
+        (object1, object2) = partItem coitem disco item
+        msg = makeSentence
+          [ "the", MU.SubjectVerbSg (MU.Phrase [object1, object2])
+                                    "look like an ordinary"
+          , objectUnkown1, objectUnkown2 ]
+    msgAdd msg
   _ -> return ()
 
 -- | Sentences such as \"Dog barks loudly.\".

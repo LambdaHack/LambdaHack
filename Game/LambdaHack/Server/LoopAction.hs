@@ -502,7 +502,7 @@ gameReset cops@Kind.COps{coitem, corule, cotile} = do
   -- Taking the original config from config file, to reroll RNG, if needed
   -- (the current config file has the RNG rolled for the previous game).
   (sconfig, dungeonSeed, random) <- mkConfigRules corule
-  let rnd :: Rnd (FactionDict, FlavourMap, Discoveries, DiscoRev,
+  let rnd :: Rnd (FactionDict, FlavourMap, Discovery, DiscoRev,
                   DungeonGen.FreshDungeon)
       rnd = do
         faction <- createFactions cops sconfig
@@ -624,11 +624,11 @@ regenerateLevelHP arena = do
   s <- getState
   let pick (a, m) =
         let ak = okind $ bkind m
-            items = getActorItem a s
+            itemAssocs = getActorItem a s
             regen = max 1 $
                       aregen ak `div`
-                      case strongestRegen coitem discoS items of
-                        Just i  -> 5 * jpower i
+                      case strongestRegen coitem discoS itemAssocs of
+                        Just (_, i)  -> 5 * jpower i
                         Nothing -> 1
             bhpMax = maxDice (ahp ak)
             deltaHP = min 1 (bhpMax - bhp m)

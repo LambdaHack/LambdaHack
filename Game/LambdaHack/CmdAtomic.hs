@@ -20,6 +20,7 @@ import Data.Tuple (swap)
 
 import Game.LambdaHack.Actor
 import qualified Game.LambdaHack.Color as Color
+import Game.LambdaHack.Content.ItemKind as ItemKind
 import Game.LambdaHack.Content.TileKind as TileKind
 import qualified Game.LambdaHack.Effect as Effect
 import Game.LambdaHack.Faction
@@ -65,7 +66,9 @@ data CmdAtomic =
   | AlterTileA LevelId Point (Kind.Id TileKind) (Kind.Id TileKind)
   | AlterSecretA LevelId (DiffEM Point Time)
   | AlterSmellA LevelId (DiffEM Point Time)
-  -- Special.
+  -- Assorted.
+  | DiscoverA LevelId Point ItemId (Kind.Id ItemKind)
+  | CoverA LevelId Point ItemId (Kind.Id ItemKind)
   | SyncA
   deriving Show
 
@@ -105,6 +108,8 @@ undoCmdAtomic cmd = case cmd of
   AlterTileA lid p fromTile toTile -> AlterTileA lid p toTile fromTile
   AlterSecretA lid diffL -> AlterSecretA lid $ map (second swap) diffL
   AlterSmellA lid diffL -> AlterSmellA lid $ map (second swap) diffL
+  DiscoverA lid p iid ik -> CoverA lid p iid ik
+  CoverA lid p iid ik -> DiscoverA lid p iid ik
   SyncA -> SyncA
 
 undoDescAtomic :: DescAtomic -> DescAtomic
