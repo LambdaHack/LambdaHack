@@ -385,7 +385,7 @@ gameExitHuman = do
 
 -- * GameSave; does not take time
 
-gameSaveHuman :: MonadClient m => m CmdSer
+gameSaveHuman :: MonadClientUI m => m CmdSer
 gameSaveHuman = do
   msgAdd "Saving game to a backup file."
   -- Let the server save, while the client continues taking commands.

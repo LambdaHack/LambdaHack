@@ -9,10 +9,11 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.CmdCli
+import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
 
-initCli :: (MonadAction m, MonadClientChan m) => (CmdCli -> m ()) -> m ()
+initCli :: (MonadAction m, MonadClientChan m) => (CmdCli -> m ()) -> m Msg
 initCli cmdCliSem = do
   -- Warning: state and client state are invalid here, e.g., sdungeon
   -- and sper are empty.
@@ -21,17 +22,17 @@ initCli cmdCliSem = do
   case restored of
     Right msg -> do  -- First visit ever, use the initial state.
       -- TODO: create or restore from config clients RNG seed
-      msgAdd msg
       let expected cmd = case cmd of RestartCli{} -> True; _ -> False
       expectCmd cmdCliSem expected
+      return msg
     Left (s, cli, msg) -> do  -- Restore a game or at least history.
       let sCops = updateCOps (const cops) s
       putState sCops
       putClient cli
-      msgAdd msg
       let expected cmd = case cmd of ContinueSavedCli{} -> True; _ -> False
       expectCmd cmdCliSem expected
-  modifyClient $ \cli -> cli {squit = False}
+      modifyClient $ \cli2 -> cli2 {squit = False}
+      return msg
   -- State and client state are now valid.
 
 expectCmd :: MonadClientChan m
@@ -46,7 +47,7 @@ expectCmd cmdCliSem expected = do
 loopCli :: (MonadAction m, MonadClientChan m)
         => (CmdCli -> m ()) -> m ()
 loopCli cmdCliSem = do
-  initCli cmdCliSem
+  void $ initCli cmdCliSem
   loop
  where
   loop = do
@@ -61,7 +62,8 @@ loopCli cmdCliSem = do
 loopUI :: (MonadAction m, MonadClientUI m, MonadClientChan m)
        => (CmdCli -> m ()) -> (CmdUI -> m ()) -> m ()
 loopUI cmdCliSem cmdUISem = do
-  initCli cmdCliSem
+  msg <- initCli cmdCliSem
+  msgAdd msg
   loop
  where
   loop = do

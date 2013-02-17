@@ -185,7 +185,7 @@ itemOverlay bag inv = do
 
 -- * Project
 
-retargetLeader :: MonadClient m => WriterT Slideshow m ()
+retargetLeader :: MonadClientUI m => WriterT Slideshow m ()
 retargetLeader = do
   stgtMode <- getsClient stgtMode
   assert (isNothing stgtMode) $ do
@@ -196,7 +196,7 @@ retargetLeader = do
 
 -- * SelectHero
 
-selectHeroHuman :: MonadClient m => Int -> m ()
+selectHeroHuman :: MonadClientUI m => Int -> m ()
 selectHeroHuman k = do
   side <- getsClient sside
   loc <- getState
@@ -207,7 +207,7 @@ selectHeroHuman k = do
 -- * MemberCycle
 
 -- | Switches current member to the next on the level, if any, wrapping.
-memberCycleHuman :: MonadClient m => m ()
+memberCycleHuman :: MonadClientUI m => m ()
 memberCycleHuman = do
   Just leader <- getsClient sleader
   body <- getsState $ getActorBody leader
@@ -234,7 +234,7 @@ partyAfterLeader leader = do
 -- | Select a faction leader. Switch level, if needed.
 -- False, if nothing to do. Should only be invoked as a direct result
 -- of a human player action (leader death just sets sleader to Nothing).
-selectLeader :: MonadClient m => ActorId -> m Bool
+selectLeader :: MonadClientUI m => ActorId -> m Bool
 selectLeader actor = do
   Kind.COps{coactor} <- getsState scops
   leader <- getsClient sleader
@@ -259,7 +259,7 @@ stopRunning = modifyClient (\ cli -> cli { srunning = Nothing })
 -- * MemberBack
 
 -- | Switches current member to the previous in the whole dungeon, wrapping.
-memberBackHuman :: MonadClient m => m ()
+memberBackHuman :: MonadClientUI m => m ()
 memberBackHuman = do
   Just leader <- getsClient sleader
   hs <- partyAfterLeader leader
@@ -422,7 +422,7 @@ epsIncrHuman b = do
 
 -- | Cancel something, e.g., targeting mode, resetting the cursor
 -- to the position of the leader. Chosen target is not invalidated.
-cancelHuman :: MonadClient m
+cancelHuman :: MonadClientUI m
             => WriterT Slideshow m () -> WriterT Slideshow m ()
 cancelHuman h = do
   stgtMode <- getsClient stgtMode
@@ -485,7 +485,7 @@ displayMainMenu = do
 
 -- | Accept something, e.g., targeting mode, keeping cursor where it was.
 -- Or perform the default action, if nothing needs accepting.
-acceptHuman :: MonadClient m
+acceptHuman :: MonadClientUI m
             => WriterT Slideshow m () -> WriterT Slideshow m ()
 acceptHuman h = do
   stgtMode <- getsClient stgtMode
@@ -494,7 +494,7 @@ acceptHuman h = do
     else h  -- nothing to accept right now, treat this as a command invocation
 
 -- | End targeting mode, accepting the current position or not.
-endTargeting :: MonadClient m => Bool -> m ()
+endTargeting :: MonadClientUI m => Bool -> m ()
 endTargeting accept = do
   when accept $ do
     Just leader <- getsClient sleader
@@ -522,7 +522,7 @@ endTargeting accept = do
     else msgAdd "targeting canceled"
   modifyClient $ \cli -> cli { stgtMode = Nothing }
 
-endTargetingMsg :: MonadClient m => m ()
+endTargetingMsg :: MonadClientUI m => m ()
 endTargetingMsg = do
   Kind.COps{coactor} <- getsState scops
   Just leader <- getsClient sleader

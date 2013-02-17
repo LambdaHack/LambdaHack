@@ -133,7 +133,7 @@ askBinding :: MonadClientUI m => m Binding
 askBinding = getsSession sbinding
 
 -- | Add a message to the current report.
-msgAdd :: MonadClient m => Msg -> m ()
+msgAdd :: MonadClientUI m => Msg -> m ()
 msgAdd msg = modifyClient $ \d -> d {sreport = addMsg (sreport d) msg}
 
 -- | Wipe out and set a new value for the current report.

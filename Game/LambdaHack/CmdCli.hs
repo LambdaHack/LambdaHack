@@ -26,7 +26,6 @@ data CmdUI =
 
 data CmdUpdateCli =
     CmdAtomicCli CmdAtomic
-  | ShowMsgCli Msg
   | RememberCli Level LevelId ActorDict ItemDict FactionDict
   | RememberPerCli Perception Level LevelId ActorDict ItemDict FactionDict
   | RestartCli FactionPers State
@@ -38,6 +37,7 @@ data CmdUpdateCli =
 data CmdUpdateUI =
     CmdAtomicUI CmdAtomic
   | DescAtomicUI DescAtomic
+  | ShowMsgUI Msg
   | DisplayPushUI
   | DisplayDelayUI
   | MoreFullUI Msg

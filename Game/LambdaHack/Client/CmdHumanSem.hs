@@ -95,7 +95,7 @@ checkCursor arena = do
   when (arena /= lid) $
     abortWith "[targeting] command disabled on a remote level, press ESC to switch back"
 
-moveHuman :: MonadClient m => VectorXY -> WriterT Slideshow m (Maybe CmdSer)
+moveHuman :: MonadClientUI m => VectorXY -> WriterT Slideshow m (Maybe CmdSer)
 moveHuman v = do
   tgtMode <- getsClient stgtMode
   (arena, Level{lxsize}) <- viewedLevel

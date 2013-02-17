@@ -35,7 +35,6 @@ cmdUISem cmd2 = case cmd2 of
 cmdUpdateCli :: (MonadAction m, MonadClient m) => CmdUpdateCli -> m ()
 cmdUpdateCli cmd = case cmd of
   CmdAtomicCli cmdA -> cmdAtomicCli cmdA
-  ShowMsgCli msg -> msgAdd msg
   RememberCli lvl lid actorD itemD faction ->
     rememberCli lvl lid actorD itemD faction
   RememberPerCli per lvl lid actorD itemD faction ->
@@ -49,6 +48,7 @@ cmdUpdateUI :: (MonadAction m, MonadClientUI m) => CmdUpdateUI -> m ()
 cmdUpdateUI cmd = case cmd of
   CmdAtomicUI cmdA -> cmdAtomicUI cmdA
   DescAtomicUI desc -> descAtomicUI desc
+  ShowMsgUI msg -> msgAdd msg
   DisplayPushUI -> displayPush
   DisplayDelayUI -> displayFramesPush [Nothing]
   MoreBWUI msg -> do

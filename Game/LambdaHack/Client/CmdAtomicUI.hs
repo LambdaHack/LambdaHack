@@ -106,18 +106,18 @@ drawCmdAtomicUI verbose cmd = case cmd of
   _ -> return ()
 
 -- | Sentences such as \"Dog barks loudly.\".
-actorVerbMU :: MonadClient m => Actor -> MU.Part -> m ()
+actorVerbMU :: MonadClientUI m => Actor -> MU.Part -> m ()
 actorVerbMU body verb = do
   Kind.COps{coactor} <- getsState scops
   let msg = makeSentence [MU.SubjectVerbSg (partActor coactor body) verb]
   msgAdd msg
 
-aVerbMU :: MonadClient m => ActorId -> MU.Part -> m ()
+aVerbMU :: MonadClientUI m => ActorId -> MU.Part -> m ()
 aVerbMU aid verb = do
   body <- getsState $ getActorBody aid
   actorVerbMU body verb
 
-itemVerbMU :: MonadClient m => Item -> Int -> MU.Part -> m ()
+itemVerbMU :: MonadClientUI m => Item -> Int -> MU.Part -> m ()
 itemVerbMU item k verb = do
   Kind.COps{coitem} <- getsState scops
   disco <- getsState sdisco
@@ -125,12 +125,12 @@ itemVerbMU item k verb = do
         makeSentence [MU.SubjectVerbSg (partItemNWs coitem disco k item) verb]
   msgAdd msg
 
-_iVerbMU :: MonadClient m => ItemId -> Int -> MU.Part -> m ()
+_iVerbMU :: MonadClientUI m => ItemId -> Int -> MU.Part -> m ()
 _iVerbMU iid k verb = do
   item <- getsState $ getItemBody iid
   itemVerbMU item k verb
 
-aiVerbMU :: MonadClient m => ActorId -> MU.Part -> ItemId -> Int -> m ()
+aiVerbMU :: MonadClientUI m => ActorId -> MU.Part -> ItemId -> Int -> m ()
 aiVerbMU aid verb iid k = do
   Kind.COps{coactor, coitem} <- getsState scops
   disco <- getsState sdisco
@@ -143,7 +143,7 @@ aiVerbMU aid verb iid k = do
         , partItemNWs coitem disco k item ]
   msgAdd msg
 
-moveItemA :: MonadClient m
+moveItemA :: MonadClientUI m
           => Bool -> ItemId -> Int -> Container -> Container -> m ()
 moveItemA verbose iid k c1 c2 = do
   Kind.COps{coitem} <- getsState scops

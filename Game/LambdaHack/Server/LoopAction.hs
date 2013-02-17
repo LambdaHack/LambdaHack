@@ -291,7 +291,7 @@ handleActors cmdSer arena subclipStart = do
           -- so the generated commands are assumed to be legal.
           cmdS <- sendQueryUI side actor
           tryWith (\msg -> do
-                      sendUpdateCli side $ ShowMsgCli msg
+                      sendUpdateUI side $ ShowMsgUI msg
                       sendUpdateUI side DisplayPushUI
                       handleActors cmdSer arena subclipStart
                   ) $ do
@@ -458,7 +458,7 @@ restartGame loopServer = do
   populateDungeon
   cmdAtomicBroad initialLevel $ Left $ SyncA
   saveGameBkp
-  broadcastCli $ ShowMsgCli "This time for real."
+  broadcastUI $ ShowMsgUI "This time for real."
   broadcastUI DisplayPushUI
   loopServer
 
