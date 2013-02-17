@@ -4,9 +4,9 @@
 -- A couple of them do not take time, the rest does.
 -- TODO: document
 module Game.LambdaHack.Client.GlobalAction
-  ( movePl, runPl, waitBlock, pickupItem, dropItem, leaderProjectGroupItem
-  , leaderApplyGroupItem, leaderTriggerDir, leaderTriggerTile
-  , gameRestart, gameExit, gameSave, dumpConfig
+  ( moveLeader, runLeader, waitHuman, pickupHuman, dropHuman
+  , projectLeader, applyHuman, triggerDirHuman, triggerTileHuman
+  , gameRestartHuman, gameExitHuman, gameSaveHuman, cfgDumpHuman
   ) where
 
 import Control.Monad
@@ -45,15 +45,15 @@ default (Text)
 
 -- * Move
 
-movePl :: MonadClient m => Vector -> m CmdSer
-movePl dir = do
+moveLeader :: MonadClient m => Vector -> m CmdSer
+moveLeader dir = do
   Just leader <- getsClient sleader
   return $! MoveSer leader dir
 
 -- * Run
 
-runPl :: MonadClient m => Vector -> m CmdSer
-runPl dir = do
+runLeader :: MonadClient m => Vector -> m CmdSer
+runLeader dir = do
   Just leader <- getsClient sleader
   (dirR, distNew) <- runDir leader (dir, 0)
   modifyClient $ \cli -> cli {srunning = Just (dirR, distNew)}
@@ -62,15 +62,15 @@ runPl dir = do
 -- * Wait
 
 -- | Leader waits a turn (and blocks, etc.).
-waitBlock :: MonadClient m => m CmdSer
-waitBlock = do
+waitHuman :: MonadClient m => m CmdSer
+waitHuman = do
   Just leader <- getsClient sleader
   return $ WaitSer leader
 
 -- * Pickup
 
-pickupItem :: MonadClient m => m CmdSer
-pickupItem = do
+pickupHuman :: MonadClient m => m CmdSer
+pickupHuman = do
   Just aid <- getsClient sleader
   body <- getsState $ getActorBody aid
   lvl <- getsLevel (blid body) id
@@ -89,8 +89,8 @@ pickupItem = do
 -- TODO: you can drop an item already on the floor, which works correctly,
 -- but is weird and useless.
 -- | Drop a single item.
-dropItem :: MonadClientUI m => m CmdSer
-dropItem = do
+dropHuman :: MonadClientUI m => m CmdSer
+dropHuman = do
   -- TODO: allow dropping a given number of identical items.
   Kind.COps{coactor, coitem} <- getsState scops
   Just aid <- getsClient sleader
@@ -201,10 +201,8 @@ getItem aid prompt p ptext bag inv isn = do
 
 -- * Project
 
-leaderProjectGroupItem :: MonadClientUI m
-                       => MU.Part -> MU.Part -> [Char]
-                       -> m CmdSer
-leaderProjectGroupItem verb object syms = do
+projectLeader :: MonadClientUI m => MU.Part -> MU.Part -> [Char] -> m CmdSer
+projectLeader verb object syms = do
   side <- getsClient sside
   genemy <- getsState $ genemy . (EM.! side) . sfaction
   Just leader <- getsClient sleader
@@ -240,10 +238,10 @@ actorProjectGI aid verb object syms = do
 
 -- * Apply
 
-leaderApplyGroupItem :: MonadClientUI m
+applyHuman :: MonadClientUI m
                      => MU.Part -> MU.Part -> [Char]
                      -> m CmdSer
-leaderApplyGroupItem verb object syms = do
+applyHuman verb object syms = do
   Just leader <- getsClient sleader
   bag <- getsState $ getActorBag leader
   inv <- getsState $ getActorInv leader
@@ -272,8 +270,8 @@ getGroupItem leader is inv object syms prompt packName = do
 -- * TriggerDir
 
 -- | Ask for a direction and trigger a tile, if possible.
-leaderTriggerDir :: MonadClientUI m => F.Feature -> MU.Part -> m CmdSer
-leaderTriggerDir feat verb = do
+triggerDirHuman :: MonadClientUI m => F.Feature -> MU.Part -> m CmdSer
+triggerDirHuman feat verb = do
   let keys = zip K.dirAllMoveKey $ repeat K.NoModifier
       prompt = makePhrase ["What to", verb MU.:> "? [movement key"]
   e <- displayChoiceUI prompt [] keys
@@ -360,16 +358,16 @@ guessBump _ _ _ = neverMind True
 -- * TriggerTile
 
 -- | Leader tries to trigger the tile he's standing on.
-leaderTriggerTile :: MonadClientUI m => F.Feature -> m CmdSer
-leaderTriggerTile feat = do
+triggerTileHuman :: MonadClientUI m => F.Feature -> m CmdSer
+triggerTileHuman feat = do
   Just leader <- getsClient sleader
   ppos <- getsState (bpos . getActorBody leader)
   bumpTile leader ppos feat
 
 -- * GameRestart; does not take time
 
-gameRestart :: MonadClientUI m => m CmdSer
-gameRestart = do
+gameRestartHuman :: MonadClientUI m => m CmdSer
+gameRestartHuman = do
   b1 <- displayMore ColorFull "You just requested a new game."
   when (not b1) $ neverMind True
   b2 <- displayYesNo "Current progress will be lost! Really restart the game?"
@@ -378,8 +376,8 @@ gameRestart = do
 
 -- * GameExit; does not take time
 
-gameExit :: MonadClientUI m => m CmdSer
-gameExit = do
+gameExitHuman :: MonadClientUI m => m CmdSer
+gameExitHuman = do
   b <- displayYesNo "Really save and exit?"
   if b
     then return GameExitSer
@@ -387,13 +385,13 @@ gameExit = do
 
 -- * GameSave; does not take time
 
-gameSave :: MonadClient m => m CmdSer
-gameSave = do
+gameSaveHuman :: MonadClient m => m CmdSer
+gameSaveHuman = do
   msgAdd "Saving game to a backup file."
   -- Let the server save, while the client continues taking commands.
   return GameSaveSer
 
 -- * CfgDump; does not take time
 
-dumpConfig :: MonadActionAbort m => m CmdSer
-dumpConfig = return CfgDumpSer
+cfgDumpHuman :: MonadActionAbort m => m CmdSer
+cfgDumpHuman = return CfgDumpSer

@@ -5,10 +5,11 @@
 -- TODO: document
 module Game.LambdaHack.Client.LocalAction
   ( -- * Semantics of serverl-less human commands
-    moveCursor, retarget, selectHero, cycleMember, backCycleMember
-  , inventory, targetFloor, targetEnemy, tgtAscend
-  , epsIncr, cancelCurrent, displayMainMenu, acceptCurrent, clearCurrent
-  , displayHistory, displayHelp
+    moveCursor, retargetLeader
+  , selectHeroHuman, memberCycleHuman, memberBackHuman
+  , inventoryHuman, tgtFloorLeader, tgtEnemyLeader, tgtAscendHuman
+  , epsIncrHuman, cancelHuman, displayMainMenu, acceptHuman, clearHuman
+  , historyHuman, helpHuman
     -- * Helper functions useful also elsewhere
   , endTargeting, floorItemOverlay, itemOverlay, viewedLevel, selectLeader
   , stopRunning, lookAt
@@ -184,19 +185,19 @@ itemOverlay bag inv = do
 
 -- * Project
 
-retarget :: MonadClient m => WriterT Slideshow m ()
-retarget = do
+retargetLeader :: MonadClient m => WriterT Slideshow m ()
+retargetLeader = do
   stgtMode <- getsClient stgtMode
   assert (isNothing stgtMode) $ do
     arena <- getArenaCli
     msgAdd "Last target invalid."
     modifyClient $ \cli -> cli {scursor = Nothing, seps = 0}
-    targetEnemy $ TgtAuto arena
+    tgtEnemyLeader $ TgtAuto arena
 
 -- * SelectHero
 
-selectHero :: MonadClient m => Int -> m ()
-selectHero k = do
+selectHeroHuman :: MonadClient m => Int -> m ()
+selectHeroHuman k = do
   side <- getsClient sside
   loc <- getState
   case tryFindHeroK loc side k of
@@ -206,8 +207,8 @@ selectHero k = do
 -- * MemberCycle
 
 -- | Switches current member to the next on the level, if any, wrapping.
-cycleMember :: MonadClient m => m ()
-cycleMember = do
+memberCycleHuman :: MonadClient m => m ()
+memberCycleHuman = do
   Just leader <- getsClient sleader
   body <- getsState $ getActorBody leader
   hs <- partyAfterLeader leader
@@ -258,8 +259,8 @@ stopRunning = modifyClient (\ cli -> cli { srunning = Nothing })
 -- * MemberBack
 
 -- | Switches current member to the previous in the whole dungeon, wrapping.
-backCycleMember :: MonadClient m => m ()
-backCycleMember = do
+memberBackHuman :: MonadClient m => m ()
+memberBackHuman = do
   Just leader <- getsClient sleader
   hs <- partyAfterLeader leader
   case reverse hs of
@@ -272,8 +273,8 @@ backCycleMember = do
 -- TODO: When inventory is displayed, let TAB switch the leader (without
 -- announcing that) and show the inventory of the new leader.
 -- | Display inventory
-inventory :: MonadClient m => WriterT Slideshow m ()
-inventory = do
+inventoryHuman :: MonadClient m => WriterT Slideshow m ()
+inventoryHuman = do
   Kind.COps{coactor} <- getsState scops
   Just leader <- getsClient sleader
   pbody <- getsState $ getActorBody leader
@@ -293,8 +294,8 @@ inventory = do
 -- * TgtFloor
 
 -- | Start floor targeting mode or reset the cursor position to the leader.
-targetFloor :: MonadClient m => TgtMode -> WriterT Slideshow m ()
-targetFloor stgtModeNew = do
+tgtFloorLeader :: MonadClient m => TgtMode -> WriterT Slideshow m ()
+tgtFloorLeader stgtModeNew = do
   Just leader <- getsClient sleader
   ppos <- getsState (bpos . getActorBody leader)
   target <- getsClient $ getTarget leader
@@ -327,8 +328,8 @@ setCursor stgtModeNew = do
 -- * TgtEnemy
 
 -- | Start the enemy targeting mode. Cycle between enemy targets.
-targetEnemy :: MonadClient m => TgtMode -> WriterT Slideshow m ()
-targetEnemy stgtModeNew = do
+tgtEnemyLeader :: MonadClient m => TgtMode -> WriterT Slideshow m ()
+tgtEnemyLeader stgtModeNew = do
   Just leader <- getsClient sleader
   ppos <- getsState (bpos . getActorBody leader)
   per <- askPerception
@@ -366,8 +367,8 @@ targetEnemy stgtModeNew = do
 
 -- | Change the displayed level in targeting mode to (at most)
 -- k levels shallower. Enters targeting mode, if not already in one.
-tgtAscend :: MonadClient m => Int -> WriterT Slideshow m ()
-tgtAscend k = do
+tgtAscendHuman :: MonadClient m => Int -> WriterT Slideshow m ()
+tgtAscendHuman k = do
   Kind.COps{cotile} <- getsState scops
   dungeon <- getsState sdungeon
   loc <- getState
@@ -410,8 +411,8 @@ setTgtId nln = do
 -- * EpsIncr
 
 -- | Tweak the @eps@ parameter of the targeting digital line.
-epsIncr :: MonadClient m => Bool -> m ()
-epsIncr b = do
+epsIncrHuman :: MonadClient m => Bool -> m ()
+epsIncrHuman b = do
   stgtMode <- getsClient stgtMode
   if isJust stgtMode
     then modifyClient $ \cli -> cli {seps = seps cli + if b then 1 else -1}
@@ -421,8 +422,9 @@ epsIncr b = do
 
 -- | Cancel something, e.g., targeting mode, resetting the cursor
 -- to the position of the leader. Chosen target is not invalidated.
-cancelCurrent :: MonadClient m => WriterT Slideshow m () -> WriterT Slideshow m ()
-cancelCurrent h = do
+cancelHuman :: MonadClient m
+            => WriterT Slideshow m () -> WriterT Slideshow m ()
+cancelHuman h = do
   stgtMode <- getsClient stgtMode
   if isJust stgtMode
     then endTargeting False
@@ -483,8 +485,9 @@ displayMainMenu = do
 
 -- | Accept something, e.g., targeting mode, keeping cursor where it was.
 -- Or perform the default action, if nothing needs accepting.
-acceptCurrent :: MonadClient m => WriterT Slideshow m () -> WriterT Slideshow m ()
-acceptCurrent h = do
+acceptHuman :: MonadClient m
+            => WriterT Slideshow m () -> WriterT Slideshow m ()
+acceptHuman h = do
   stgtMode <- getsClient stgtMode
   if isJust stgtMode
     then endTargeting True
@@ -541,15 +544,15 @@ endTargetingMsg = do
 -- * Clear
 
 -- | Clear current messages, show the next screen if any.
-clearCurrent :: MonadActionAbort m => m ()
-clearCurrent = return ()
+clearHuman :: MonadActionAbort m => m ()
+clearHuman = return ()
 
 -- * History
 
 -- TODO: add times from all levels. Also, show time spend on this level alone.
 -- "You survived for x turns (y turns on this level)"
-displayHistory :: MonadClient m => WriterT Slideshow m ()
-displayHistory = do
+historyHuman :: MonadClient m => WriterT Slideshow m ()
+historyHuman = do
   history <- getsClient shistory
   arena <- getArenaCli
   time <- getsState $ getTime arena
@@ -563,7 +566,7 @@ displayHistory = do
 -- * Help
 
 -- | Display command help.
-displayHelp :: MonadClientUI m => WriterT Slideshow m ()
-displayHelp = do
+helpHuman :: MonadClientUI m => WriterT Slideshow m ()
+helpHuman = do
   keyb <- askBinding
   tell $ keyHelp keyb

@@ -1,8 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Semantics of client UI response to atomic commands.
 module Game.LambdaHack.Client.CmdAtomicUI
-  ( cmdAtomicCli, cmdAtomicUI, descAtomicUI )
-  where
+  ( cmdAtomicCli, cmdAtomicUI, descAtomicUI
+  ) where
 
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
