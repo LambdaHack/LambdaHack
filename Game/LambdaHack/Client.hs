@@ -31,6 +31,7 @@ cmdUISem cmd2 = case cmd2 of
     a <- handleHuman aid
     writeChanToSer a
 
+-- TODO: show that all but CmdAtomicCli do not use MonadAction
 cmdUpdateCli :: (MonadAction m, MonadClient m) => CmdUpdateCli -> m ()
 cmdUpdateCli cmd = case cmd of
   CmdAtomicCli cmdA -> cmdAtomicCli cmdA

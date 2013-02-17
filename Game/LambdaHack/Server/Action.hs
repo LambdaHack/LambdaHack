@@ -88,7 +88,7 @@ saveGameSer = do
 -- | Save a backup of the save game file, in case of crashes.
 --
 -- See 'Save.saveGameBkp'.
-saveGameBkp :: MonadServerChan m => m ()
+saveGameBkp :: MonadServer m => m ()
 saveGameBkp = do
   glo <- getState
   ser <- getServer

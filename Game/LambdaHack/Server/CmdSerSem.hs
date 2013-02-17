@@ -44,7 +44,7 @@ default (Text)
 
 -- * DieSer
 
-dieSer :: MonadServer m => ActorId -> WriterT [Atomic] m ()
+dieSer :: MonadActionRO m => ActorId -> WriterT [Atomic] m ()
 dieSer aid = do  -- TODO: explode if a projectile holdding a potion
   dropAllItems aid
   body <- getsState $ getActorBody aid
@@ -61,7 +61,7 @@ dropAllItems aid = do
                                               (CFloor $ bpos b)
   mapM_ f $ EM.assocs $ bbag b
 
-electLeader :: MonadServer m => FactionId -> LevelId -> WriterT [Atomic] m ()
+electLeader :: MonadActionRO m => FactionId -> LevelId -> WriterT [Atomic] m ()
 electLeader fid lid = do
   mleader <- getsState $ gleader . (EM.! fid) . sfaction
   when (isNothing mleader) $ do
@@ -82,7 +82,7 @@ electLeader fid lid = do
 -- is authorized to check if a move is legal and it needs full context
 -- for that, e.g., the initial actor position to check if melee attack
 -- does not try to reach to a distant tile.
-moveSer :: MonadServerChan m => ActorId -> Vector -> WriterT [Atomic] m ()
+moveSer :: MonadServer m => ActorId -> Vector -> WriterT [Atomic] m ()
 moveSer aid dir = do
   cops@Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getsState scops
   sm <- getsState $ getActorBody aid
@@ -109,7 +109,7 @@ moveSer aid dir = do
 -- For instance, an actor embedded in a wall can be attacked from
 -- an adjacent position. This function is analogous to projectGroupItem,
 -- but for melee and not using up the weapon.
-actorAttackActor :: MonadServerChan m
+actorAttackActor :: MonadServer m
                  => ActorId -> ActorId -> WriterT [Atomic] m ()
 actorAttackActor source target = do
   cops@Kind.COps{coitem=Kind.Ops{opick, okind}} <- getsState scops
@@ -152,7 +152,7 @@ actorAttackActor source target = do
     else performHit False
 
 -- | Search for hidden doors.
-search :: MonadServerChan m => ActorId -> WriterT [Atomic] m ()
+search :: MonadServer m => ActorId -> WriterT [Atomic] m ()
 search aid = do
   Kind.COps{coitem, cotile} <- getsState scops
   b <- getsState $ getActorBody aid
@@ -184,7 +184,7 @@ search aid = do
 
 -- TODO: bumpTile tpos F.Openable
 -- | An actor opens a door.
-actorOpenDoor :: MonadServerChan m
+actorOpenDoor :: MonadServer m
               => ActorId -> Vector -> WriterT [Atomic] m ()
 actorOpenDoor actor dir = do
   Kind.COps{cotile} <- getsState scops
@@ -206,7 +206,7 @@ actorOpenDoor actor dir = do
 -- * RunSer
 
 -- | Actor moves or swaps position with others or opens doors.
-runSer :: MonadServerChan m => ActorId -> Vector -> WriterT [Atomic] m ()
+runSer :: MonadServer m => ActorId -> Vector -> WriterT [Atomic] m ()
 runSer actor dir = do
   cops <- getsState scops
   sm <- getsState $ getActorBody actor
@@ -229,7 +229,7 @@ runSer actor dir = do
           actorOpenDoor actor dir
 
 -- | When an actor runs (not walks) into another, they switch positions.
-displaceActor :: MonadServerChan m
+displaceActor :: MonadActionRO m
               => ActorId -> ActorId -> WriterT [Atomic] m ()
 displaceActor source target =  tellCmdAtomic $ DisplaceActorA source target
 --  leader <- getsClient getLeader
@@ -253,7 +253,7 @@ waitSer aid = do
 
 -- * PickupSer
 
-pickupSer :: MonadServerChan m
+pickupSer :: MonadActionRO m
           => ActorId -> ItemId -> Int -> InvChar -> WriterT [Atomic] m ()
 pickupSer aid iid k l = assert (k > 0 `blame` (aid, iid, k, l)) $ do
   b <- getsState $ getActorBody aid
@@ -270,7 +270,7 @@ dropSer aid iid = do
 
 -- * ProjectSer
 
-projectSer :: MonadServerChan m
+projectSer :: MonadServer m
            => ActorId    -- ^ actor projecting the item (is on current lvl)
            -> Point      -- ^ target position of the projectile
            -> Int        -- ^ digital line parameter
@@ -359,7 +359,7 @@ addProjectile iid loc blid bfaction path btime = do
 
 -- * ApplySer
 
-applySer :: MonadServerChan m   -- MonadActionAbort m
+applySer :: MonadServer m   -- MonadActionAbort m
          => ActorId    -- ^ actor applying the item (is on current level)
          -> ItemId     -- ^ the item to be applied
          -> Container  -- ^ the location of the item
@@ -374,7 +374,7 @@ applySer actor iid container = do
 -- * TriggerSer
 
 -- | Perform the action specified for the tile in case it's triggered.
-triggerSer :: MonadServerChan m
+triggerSer :: MonadServer m
            => ActorId -> Point -> WriterT [Atomic] m ()
 triggerSer aid dpos = do
   Kind.COps{cotile=Kind.Ops{okind, opick}} <- getsState scops
@@ -405,14 +405,14 @@ triggerSer aid dpos = do
 
 -- * ClearPathSer
 
-clearPathSer :: MonadServer m => ActorId -> WriterT [Atomic] m ()
+clearPathSer :: MonadActionRO m => ActorId -> WriterT [Atomic] m ()
 clearPathSer aid = do
   fromPath <- getsState $ bpath . getActorBody aid
   tellCmdAtomic $ PathActorA aid fromPath Nothing
 
 -- * SetPathSer
 
-setPathSer :: MonadServerChan m
+setPathSer :: MonadServer m
            => ActorId -> Vector -> [Vector] -> WriterT [Atomic] m ()
 setPathSer aid dir path = do
   fromPath <- getsState $ bpath . getActorBody aid
@@ -433,7 +433,7 @@ gameRestartSer fid = do
 
 -- * LeaderSer
 
-leaderSer :: MonadServer m => ActorId -> FactionId -> WriterT [Atomic] m ()
+leaderSer :: MonadActionRO m => ActorId -> FactionId -> WriterT [Atomic] m ()
 leaderSer aid fid = do
   mleader <- getsState $ gleader . (EM.! fid) . sfaction
   tellCmdAtomic $ LeadFactionA fid mleader (Just aid)

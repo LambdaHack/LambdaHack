@@ -44,7 +44,7 @@ default (Text)
 -- Both actors are on the current level and can be the same actor.
 -- The boolean result indicates if the effect was spectacular enough
 -- for the actors to identify it (and the item that caused it, if any).
-effectSem :: MonadServerChan m
+effectSem :: MonadServer m
           => Effect.Effect -> ActorId -> ActorId -> Int
           -> WriterT [Atomic] m Bool
 effectSem effect source target power = case effect of
@@ -67,7 +67,7 @@ effectSem effect source target power = case effect of
 -- If the event is seen, the item may get identified. This function
 -- is mutually recursive with @effect@ and so it's a part of @Effect@
 -- semantics.
-itemEffect :: MonadServerChan m
+itemEffect :: MonadServer m
            => ActorId -> ActorId -> Item
            -> WriterT [Atomic] m ()
 itemEffect source target item = do
@@ -83,7 +83,7 @@ itemEffect source target item = do
 
 -- TODO: send to all clients that see tpos.
 -- | Make the item known to the leader.
-discover :: MonadServerChan m => Discoveries -> Item -> m ()
+discover :: MonadActionRO m => Discoveries -> Item -> m ()
 discover discoS i = do
   let ix = jkindIx i
       _ik = discoS EM.! ix
@@ -100,7 +100,7 @@ effectNoEffect = return False
 
 -- ** Heal
 
-effectHeal :: MonadServer m
+effectHeal :: MonadActionRO m
            => ActorId -> Int -> WriterT [Atomic] m Bool
 effectHeal target power = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
@@ -133,7 +133,7 @@ effectWound nDm source target power = do
 
 -- ** Mindprobe
 
-effectMindprobe :: MonadServerChan m
+effectMindprobe :: MonadActionRO m
                 => ActorId -> WriterT [Atomic] m Bool
 effectMindprobe target = do
   tb <- getsState (getActorBody target)
@@ -150,7 +150,7 @@ effectMindprobe target = do
 
 -- ** Dominate
 
-effectDominate :: MonadServerChan m
+effectDominate :: MonadActionRO m
                => ActorId -> ActorId -> WriterT [Atomic] m Bool
 effectDominate source target = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
@@ -331,14 +331,14 @@ effectSearching source = do
 
 -- ** Ascend
 
-effectAscend :: MonadServerChan m
+effectAscend :: MonadServer m
              => ActorId -> Int -> WriterT [Atomic] m Bool
 effectAscend target power = do
   effLvlGoUp target (power + 1)
   tellDescAtomic $ EffectA target Effect.Ascend
   return True
 
-effLvlGoUp :: MonadServerChan m => ActorId -> Int -> WriterT [Atomic] m ()
+effLvlGoUp :: MonadServer m => ActorId -> Int -> WriterT [Atomic] m ()
 effLvlGoUp aid k = do
   pbodyCurrent <- getsState $ getActorBody aid
   let arena = blid pbodyCurrent
@@ -396,7 +396,7 @@ effLvlGoUp aid k = do
         saveGameBkp
 
 -- | The faction leaves the dungeon.
-fleeDungeon :: MonadServerChan m
+fleeDungeon :: MonadActionRO m
             => FactionId -> LevelId -> WriterT [Atomic] m ()
 fleeDungeon fid lid = do
   (_, total) <- getsState $ calculateTotal fid lid
@@ -407,7 +407,7 @@ fleeDungeon fid lid = do
 
 -- TODO: refactor with actorAttackActor or perhaps displace the other
 -- actor or swap positions with it, instead of squashing.
-squashActor :: MonadServerChan m
+squashActor :: MonadServer m
             => ActorId -> ActorId -> WriterT [Atomic] m ()
 squashActor source target = do
   Kind.COps{{-coactor,-} coitem=Kind.Ops{okind, ouniqGroup}} <- getsState scops
@@ -433,7 +433,7 @@ squashActor source target = do
 
 -- ** Descend
 
-effectDescend :: MonadServerChan m
+effectDescend :: MonadServer m
               => ActorId -> Int -> WriterT [Atomic] m Bool
 effectDescend target power = do
   effLvlGoUp target (- (power + 1))

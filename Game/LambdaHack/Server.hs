@@ -22,7 +22,7 @@ cmdSerSem fid lid cmd = do
   cmds <- execWriterT $ cmdSerWriterT fid cmd
   mapM_ (cmdAtomicBroad lid) cmds
 
-cmdSerWriterT :: MonadServerChan m
+cmdSerWriterT :: MonadServer m
               => FactionId -> CmdSer -> WriterT [Atomic] m ()
 cmdSerWriterT fid cmd = case cmd of
   DieSer aid -> dieSer aid
