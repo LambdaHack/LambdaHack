@@ -135,7 +135,7 @@ cmdAtomicBroad arena atomic = do
   actorDNew <- getsState sactorD
   itemDNew <- getsState sitemD
   factionNew <- getsState sfaction
-  (pStart, pEnd) <- case atomic of
+  ps <- case atomic of
     Left cmd -> posCmdAtomic cmd
     Right desc -> posDescAtomic desc
   let sendRem fid cmdRem = do
@@ -158,8 +158,8 @@ cmdAtomicBroad arena atomic = do
             perNew <- getPerFid fid arena
             return perNew
           else return perOld
-        let startSeen = either id (vis perOld) pStart
-            endSeen = either id (vis perNew) pEnd
+        let startSeen = either id (vis perOld) ps
+            endSeen = either id (vis perNew) ps
             seen = startSeen && endSeen
         if resets then do
           if seen then do

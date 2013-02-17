@@ -78,78 +78,80 @@ fidEquals fid aid = do
   afid <- getsState $ bfaction . getActorBody aid
   return $ fid == afid
 
--- | Produces the positions where the action takes place: a sets where
--- the action starts and a set where the action ends. The boolean indicates
--- that, regardless of the position, the start (or end) is always visible
--- to clients (or always invisible).
+-- | Produces the positions where the action takes place. The boolean
+-- indicates that, regardless of the position, the start (or end)
+-- is always visible to clients (or always invisible).
+--
+-- The goal of the mechanics: client should not get significantly
+-- more information by looking at the atomic commands he is able to see
+-- than by looking at the state changes they enact. E.g., @DisplaceActorA@
+-- in a black room, with one actor carrying a 0-radius light would not be
+-- distinguishable by looking at the state (or the screen) from @MoveActorA@
+-- of the illuminated actor, hence such @DisplaceActorA@ should not be
+-- observable, but @MoveActorA@ should be (or the former should be perceived
+-- as the latter). However, to simplify, we assing as strict visibility
+-- requirements to @MoveActorA@ as to @DisplaceActorA@ and fall back
+-- to @SpotActorA@ (which provides minimal information that does not
+-- contradict state) if the visibility is lower.
 posCmdAtomic :: MonadActionRO m
-             => CmdAtomic -> m (Either Bool [Point], Either Bool [Point])
+             => CmdAtomic -> m (Either Bool [Point])
 posCmdAtomic cmd = case cmd of
-  CreateActorA _ body ->
-    -- Faction sees spawning of its actor, even if it spawns out of sight.
-    return (Left True, Right [bpos body])
-  DestroyActorA _ body -> return (Right [bpos body], Left True)
-  CreateItemA _ _ _ _ c -> singlePos $ posOfContainer c
-  DestroyItemA _ _ _ _ c -> singlePos $ posOfContainer c
-  SpotActorA _ body -> return (Left True, Right [bpos body])
-  LoseActorA _ body -> return (Right [bpos body], Left True)
-  SpotItemA _ _ _ _ c -> singlePos $ posOfContainer c
-  LoseItemA _ _ _ _ c -> singlePos $ posOfContainer c
-  MoveActorA _ fromP toP -> return (Right [fromP], Right [toP])
-  WaitActorA aid _ _ -> singlePos $ posOfAid aid
+  CreateActorA _ body -> return $ Right [bpos body]
+  DestroyActorA _ body -> return $ Right [bpos body]
+  CreateItemA _ _ _ _ c -> singleContainer c
+  DestroyItemA _ _ _ _ c -> singleContainer c
+  SpotActorA _ body -> return $ Right [bpos body]
+  LoseActorA _ body -> return $ Right [bpos body]
+  SpotItemA _ _ _ _ c -> singleContainer c
+  LoseItemA _ _ _ _ c -> singleContainer c
+  MoveActorA _ fromP toP -> return $ Right [fromP, toP]
+  WaitActorA aid _ _ -> singleAid aid
   DisplaceActorA source target -> do
     ps <- mapM posOfAid [source, target]
-    return (Right ps, Right ps)
+    return $ Right ps
   MoveItemA _ _ _ c1 c2 -> do  -- works even if moved between positions
     p1 <- posOfContainer c1
     p2 <- posOfContainer c2
-    return (Right [p1], Right [p2])
-  HealActorA aid _ -> singlePos $ posOfAid aid
-  HasteActorA aid _ -> singlePos $ posOfAid aid
-  DominateActorA target _ _ -> singlePos $ posOfAid target
-  PathActorA aid _ _ -> singlePos $ posOfAid aid
-  ColorActorA aid _ _ -> singlePos $ posOfAid aid
-  QuitFactionA _ _ _ -> return (Left True, Left True)  -- always learn
+    return $ Right [p1, p2]
+  HealActorA aid _ -> singleAid aid
+  HasteActorA aid _ -> singleAid aid
+  DominateActorA target _ _ -> singleAid target
+  PathActorA aid _ _ -> singleAid aid
+  ColorActorA aid _ _ -> singleAid aid
+  QuitFactionA _ _ _ -> return $ Left True  -- always learn
   LeadFactionA _ source target -> do
     ps <- mapM posOfAid $ catMaybes [source, target]
-    return (Right ps, Right ps)
-  AlterTileA _ p _ _ -> singlePos $ return p
+    return $ Right ps
+  AlterTileA _ p _ _ -> return $ Right [p]
   SpotTileA _ diffL -> do
     let ps = map fst diffL
-    return (Right ps, Right ps)
-  AlterSecretA _ _ ->
-    return (Left False, Left False)  -- none of clients' business
-  AlterSmellA _ _ -> return (Left True, Left True)  -- always register
-  DiscoverA _ p _ _ -> return (Left True, Right [p])
-  CoverA _ p _ _ -> return (Left True, Right [p])
-  SyncA -> return (Left False, Left False)
+    return $ Right ps
+  AlterSecretA _ _ -> return $ Left False  -- none of clients' business
+  AlterSmellA _ _ -> return $ Left True  -- always register
+  DiscoverA _ p _ _ -> return $ Right [p]
+  CoverA _ p _ _ -> return $ Right [p]
+  SyncA -> return $ Left False
 
 posDescAtomic :: MonadActionRO m
-              => DescAtomic -> m (Either Bool [Point], Either Bool [Point])
+              => DescAtomic -> m (Either Bool [Point])
 posDescAtomic cmd = case cmd of
   StrikeA source target _ _ -> do
     ps <- mapM posOfAid [source, target]
-    return (Right ps, Right ps)
+    return $ Right ps
   RecoilA source target _ _ -> do
     ps <- mapM posOfAid [source, target]
-    return (Right ps, Right ps)
-  ProjectA aid _ -> singlePos $ posOfAid aid
-  CatchA aid _ -> singlePos $ posOfAid aid
-  ActivateA aid _ -> singlePos $ posOfAid aid
-  CheckA aid _ -> singlePos $ posOfAid aid
+    return $ Right ps
+  ProjectA aid _ -> singleAid aid
+  CatchA aid _ -> singleAid aid
+  ActivateA aid _ -> singleAid aid
+  CheckA aid _ -> singleAid aid
   TriggerA aid p _ _ -> do
     pa <- posOfAid aid
-    return (Right [pa], Right [pa, p])
+    return $ Right [pa, p]
   ShunA aid p _ _ -> do
     pa <- posOfAid aid
-    return (Right [pa], Right [pa, p])
-  EffectA aid _ -> singlePos $ posOfAid aid
-
-singlePos :: MonadActionAbort m
-          => m Point -> m (Either Bool [Point], Either Bool [Point])
-singlePos m = do
-  pos <- m
-  return (Right [pos], Right [pos])
+    return $ Right [pa, p]
+  EffectA aid _ -> singleAid aid
 
 posOfAid :: MonadActionRO m => ActorId -> m Point
 posOfAid aid = getsState $ bpos . getActorBody aid
@@ -157,6 +159,15 @@ posOfAid aid = getsState $ bpos . getActorBody aid
 posOfContainer :: MonadActionRO m => Container -> m Point
 posOfContainer (CFloor pos) = return pos
 posOfContainer (CActor aid _) = posOfAid aid
+
+singleAid :: MonadActionRO m => ActorId -> m (Either Bool [Point])
+singleAid aid = do
+  p <- posOfAid aid
+  return $ Right [p]
+singleContainer :: MonadActionRO m => Container -> m (Either Bool [Point])
+singleContainer c = do
+  p <- posOfContainer c
+  return $ Right [p]
 
 -- TODO: perhaps assert that the inventory of the actor is empty
 -- or at least that the items belong to litem.
