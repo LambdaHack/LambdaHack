@@ -1,6 +1,6 @@
 -- | Semantics of atomic commands shared by client and server.
 module Game.LambdaHack.CmdAtomicSem
-  ( cmdAtomicSem, resetsFovAtomic, posCmdAtomic, posDescAtomic
+  ( cmdAtomicSem, resetsFovAtomic, posCmdAtomic, posDescAtomic, breakCmdAtomic
   ) where
 
 import qualified Data.EnumMap.Strict as EM
@@ -118,16 +118,14 @@ posCmdAtomic cmd = case cmd of
   DominateActorA target _ _ -> singleAid target
   PathActorA aid _ _ -> singleAid aid
   ColorActorA aid _ _ -> singleAid aid
-  QuitFactionA _ _ _ -> return $ Left True  -- always learn
-  LeadFactionA _ source target -> do
-    ps <- mapM posOfAid $ catMaybes [source, target]
-    return $ Right ps
+  QuitFactionA _ _ _ -> alwaysKnow
+  LeadFactionA _ _ _ -> alwaysKnow
   AlterTileA _ p _ _ -> return $ Right [p]
   SpotTileA _ diffL -> do
     let ps = map fst diffL
     return $ Right ps
   AlterSecretA _ _ -> return $ Left False  -- none of clients' business
-  AlterSmellA _ _ -> return $ Left True  -- always register
+  AlterSmellA _ _ -> alwaysKnow
   DiscoverA _ p _ _ -> return $ Right [p]
   CoverA _ p _ _ -> return $ Right [p]
   SyncA -> return $ Left False
@@ -153,6 +151,9 @@ posDescAtomic cmd = case cmd of
     return $ Right [pa, p]
   EffectA aid _ -> singleAid aid
 
+alwaysKnow :: MonadActionAbort m => m (Either Bool [Point])
+alwaysKnow = return $ Left True
+
 posOfAid :: MonadActionRO m => ActorId -> m Point
 posOfAid aid = getsState $ bpos . getActorBody aid
 
@@ -168,6 +169,29 @@ singleContainer :: MonadActionRO m => Container -> m (Either Bool [Point])
 singleContainer c = do
   p <- posOfContainer c
   return $ Right [p]
+
+-- | Decompose an atomic action. The original action is visible
+-- if it's positions are visible both before and after the action
+-- (in between the FOV might have changed). The decomposed actions
+-- are only tested vs the FOV after the action and they give minimum
+-- information but still modify client's state to match the server state
+-- wrt the current FOV (the original actions give more informations, e.g.,
+-- @MoveActorA@ informs about the continued existence of the actor
+-- between moves, v.s., popping out of existence and then back in).
+breakCmdAtomic :: MonadActionRO m => CmdAtomic -> m [CmdAtomic]
+breakCmdAtomic cmd = case cmd of
+  MoveActorA aid fromP _ -> do
+    b <- getsState $ getActorBody aid
+    return [LoseActorA aid b {bpos = fromP}, SpotActorA aid b]
+  DisplaceActorA source target -> do
+    sb <- getsState $ getActorBody source
+    tb <- getsState $ getActorBody target
+    return [ LoseActorA source sb {bpos = bpos tb}, SpotActorA source sb
+           , LoseActorA target tb {bpos = bpos sb}, SpotActorA target tb ]
+  MoveItemA lid iid k c1 c2 -> do
+    item <- getsState $ getItemBody iid
+    return [LoseItemA lid iid item k c1, SpotItemA lid iid item k c2]
+  _ -> return []
 
 -- TODO: perhaps assert that the inventory of the actor is empty
 -- or at least that the items belong to litem.
@@ -290,8 +314,8 @@ hasteActorA aid delta = assert (delta /= speedZero) $ do
 
 dominateActorA :: MonadAction m => ActorId -> FactionId -> FactionId -> m ()
 dominateActorA target fromFid toFid = do
-  tm <- getsState (getActorBody target)
-  assert (fromFid == bfaction tm `blame` (fromFid, tm, toFid)) $
+  tb <- getsState $ getActorBody target
+  assert (fromFid == bfaction tb `blame` (fromFid, tb, toFid)) $
     modifyState $ updateActorBody target $ \b -> b {bfaction = toFid}
 
 pathActorA :: MonadAction m

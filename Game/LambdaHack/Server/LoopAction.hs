@@ -172,9 +172,15 @@ cmdAtomicBroad arena atomic = do
         else do
           if seen then
             sendUpdate fid atomic
-          else
-            sendRem fid $
-              RememberCli lvlNew arena actorDNew itemDNew factionNew
+          else do
+            atomicBroken <- case atomic of
+              Left cmd -> breakCmdAtomic cmd
+              Right _ -> return []
+            let send2 atomic2 = do
+                  ps2 <- posCmdAtomic atomic2
+                  let seen2 = either id (vis perNew) ps2
+                  when seen2 $ sendUpdate fid $ Left atomic2
+            mapM_ send2 atomicBroken
   faction <- getsState sfaction
   mapM_ send $ EM.keys faction
 

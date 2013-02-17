@@ -318,10 +318,10 @@ rememberLevel Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}}
       vis = ES.toList visible
       rememberTile = [(pos, nlvl `at` pos) | pos <- vis]
       unknownId = ouniqGroup "unknown space"
-      eSeen (pos, tk) = olvl `at` pos == unknownId
-                        && Tile.isExplorable cotile tk
-      newTile = filter eSeen rememberTile
-      extraSeen = length newTile
+      wasUnknown (pos, _) = olvl `at` pos == unknownId
+      isExplorable (_, tk) = Tile.isExplorable cotile tk
+      newTile = filter wasUnknown rememberTile
+      extraSeen = length $ filter isExplorable newTile
   in olvl { lprio = nprio
           , lfloor = nfloor
           , ltile = ltile olvl Kind.// newTile
