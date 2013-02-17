@@ -48,6 +48,10 @@ data CmdAtomic =
   | DestroyActorA ActorId Actor
   | CreateItemA LevelId ItemId Item Int Container
   | DestroyItemA LevelId ItemId Item Int Container
+  | SpotActorA ActorId Actor
+  | LoseActorA ActorId Actor
+  | SpotItemA LevelId ItemId Item Int Container
+  | LoseItemA LevelId ItemId Item Int Container
   -- Move actors and items.
   | MoveActorA ActorId Point Point
   | WaitActorA ActorId Time Time
@@ -64,6 +68,7 @@ data CmdAtomic =
   | LeadFactionA FactionId (Maybe ActorId) (Maybe ActorId)
   -- Alter map.
   | AlterTileA LevelId Point (Kind.Id TileKind) (Kind.Id TileKind)
+  | SpotTileA LevelId [(Point, (Kind.Id TileKind, Kind.Id TileKind))]
   | AlterSecretA LevelId (DiffEM Point Time)
   | AlterSmellA LevelId (DiffEM Point Time)
   -- Assorted.
@@ -94,6 +99,10 @@ undoCmdAtomic cmd = case cmd of
   DestroyActorA aid body -> CreateActorA aid body
   CreateItemA lid iid item k c -> DestroyItemA lid iid item k c
   DestroyItemA lid iid item k c -> CreateItemA lid iid item k c
+  SpotActorA aid body -> LoseActorA aid body
+  LoseActorA aid body -> SpotActorA aid body
+  SpotItemA lid iid item k c -> LoseItemA lid iid item k c
+  LoseItemA lid iid item k c -> SpotItemA lid iid item k c
   MoveActorA aid fromP toP -> MoveActorA aid toP fromP
   WaitActorA aid fromWait toWait -> WaitActorA aid toWait fromWait
   DisplaceActorA source target -> DisplaceActorA target source
@@ -106,6 +115,7 @@ undoCmdAtomic cmd = case cmd of
   QuitFactionA fid fromSt toSt -> QuitFactionA fid toSt fromSt
   LeadFactionA fid source target -> LeadFactionA fid target source
   AlterTileA lid p fromTile toTile -> AlterTileA lid p toTile fromTile
+  SpotTileA lid diff -> SpotTileA lid $ map (second swap) diff
   AlterSecretA lid diffL -> AlterSecretA lid $ map (second swap) diffL
   AlterSmellA lid diffL -> AlterSmellA lid $ map (second swap) diffL
   DiscoverA lid p iid ik -> CoverA lid p iid ik

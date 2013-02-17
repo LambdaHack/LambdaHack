@@ -320,10 +320,11 @@ rememberLevel Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}}
       unknownId = ouniqGroup "unknown space"
       eSeen (pos, tk) = olvl `at` pos == unknownId
                         && Tile.isExplorable cotile tk
-      extraSeen = length $ filter eSeen rememberTile
+      newTile = filter eSeen rememberTile
+      extraSeen = length newTile
   in olvl { lprio = nprio
           , lfloor = nfloor
-          , ltile = ltile olvl Kind.// rememberTile
+          , ltile = ltile olvl Kind.// newTile
           , lseen = lseen olvl + extraSeen
   -- TODO: let factions that spawn see hidden features and open all hidden
   -- doors (they built and hid them). Hide the Hidden feature in ltile.

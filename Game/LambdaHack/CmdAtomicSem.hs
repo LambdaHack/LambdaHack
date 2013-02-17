@@ -32,6 +32,10 @@ cmdAtomicSem cmd = case cmd of
   DestroyActorA aid body -> destroyActorA aid body
   CreateItemA lid iid item k c -> createItemA lid iid item k c
   DestroyItemA lid iid item k c -> destroyItemA lid iid item k c
+  SpotActorA aid body -> createActorA aid body
+  LoseActorA aid body -> destroyActorA aid body
+  SpotItemA lid iid item k c -> createItemA lid iid item k c
+  LoseItemA lid iid item k c -> destroyItemA lid iid item k c
   MoveActorA aid fromP toP -> moveActorA aid fromP toP
   WaitActorA aid fromWait toWait -> waitActorA aid fromWait toWait
   DisplaceActorA source target -> displaceActorA source target
@@ -44,6 +48,7 @@ cmdAtomicSem cmd = case cmd of
   QuitFactionA fid fromSt toSt -> quitFactionA fid fromSt toSt
   LeadFactionA fid source target -> leadFactionA fid source target
   AlterTileA lid p fromTile toTile -> alterTileA lid p fromTile toTile
+  SpotTileA lid diff -> spotTileA lid diff
   AlterSecretA lid diffL -> alterSecretA lid diffL
   AlterSmellA lid diffL -> alterSmellA lid diffL
   DiscoverA lid p iid ik -> discoverA lid p iid ik
@@ -86,6 +91,10 @@ posCmdAtomic cmd = case cmd of
   DestroyActorA _ body -> return (Right [bpos body], Left True)
   CreateItemA _ _ _ _ c -> singlePos $ posOfContainer c
   DestroyItemA _ _ _ _ c -> singlePos $ posOfContainer c
+  SpotActorA _ body -> return (Left True, Right [bpos body])
+  LoseActorA _ body -> return (Right [bpos body], Left True)
+  SpotItemA _ _ _ _ c -> singlePos $ posOfContainer c
+  LoseItemA _ _ _ _ c -> singlePos $ posOfContainer c
   MoveActorA _ fromP toP -> return (Right [fromP], Right [toP])
   WaitActorA aid _ _ -> singlePos $ posOfAid aid
   DisplaceActorA source target -> do
@@ -105,6 +114,9 @@ posCmdAtomic cmd = case cmd of
     ps <- mapM posOfAid $ catMaybes [source, target]
     return (Right ps, Right ps)
   AlterTileA _ p _ _ -> singlePos $ return p
+  SpotTileA _ diffL -> do
+    let ps = map fst diffL
+    return (Right ps, Right ps)
   AlterSecretA _ _ ->
     return (Left False, Left False)  -- none of clients' business
   AlterSmellA _ _ -> return (Left True, Left True)  -- always register
@@ -299,6 +311,14 @@ alterTileA :: MonadAction m
            -> m ()
 alterTileA lid p _fromTile toTile =
   let adj = (Kind.// [(p, toTile)])
+  in updateLevel lid $ updateTile adj
+
+spotTileA :: MonadAction m
+          => LevelId -> [(Point, (Kind.Id TileKind, Kind.Id TileKind))] -> m ()
+spotTileA lid diffL =
+  let f (k, (_, nv)) = (k, nv)
+      dif = map f diffL
+      adj = (Kind.// dif)
   in updateLevel lid $ updateTile adj
 
 alterSecretA :: MonadAction m => LevelId -> DiffEM Point Time -> m ()

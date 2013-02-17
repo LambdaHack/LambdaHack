@@ -99,7 +99,7 @@ drawCmdAtomicUI verbose cmd = case cmd of
       aVerbMU target $ MU.Text $ "fall under the influence of" <+> fidName
   QuitFactionA fid _ toSt -> quitFactionA fid toSt
   LeadFactionA _ _ _ -> return ()  -- boring; display enemy leaders instead
-  AlterTileA _lid _p _fromTile _toTile | verbose ->
+  AlterTileA _ _ _ _ | verbose ->
     return ()  -- TODO: door opens
   AlterSecretA _ _ ->
     assert `failure` ("client learns secrets" :: Text, cmd)
