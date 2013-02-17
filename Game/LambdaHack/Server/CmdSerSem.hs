@@ -19,7 +19,6 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.CmdAtomic
-import Game.LambdaHack.CmdCli
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind as TileKind
@@ -441,15 +440,13 @@ leaderSer aid fid = do
 
 -- * GameExit
 
-gameExitSer :: MonadServer m => WriterT [Atomic] m ()
-gameExitSer = modifyServer $ \ser -> ser {squit = True}
+gameExitSer :: MonadServer m => m ()
+gameExitSer = modifyServer $ \ser -> ser {squit = Just True}
 
 -- * GameSaveSer
 
-gameSaveSer :: MonadServerChan m => m ()
-gameSaveSer = do
-  broadcastCli GameSaveBkpCli
-  saveGameBkp
+gameSaveSer :: MonadServer m => m ()
+gameSaveSer = modifyServer $ \ser -> ser {squit = Just False}
 
 -- * CfgDumpSer
 

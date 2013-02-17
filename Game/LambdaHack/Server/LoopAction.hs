@@ -72,7 +72,7 @@ loopSer cmdSer executorC cops = do
   pers <- getsServer sper
   defLoc <- getsState localFromGlobal
   quit <- getsServer squit
-  if quit then do -- game restored from a savefile
+  if isJust quit then do -- game restored from a savefile
     funBroadcastCli (\fid -> ContinueSavedCli (pers EM.! fid))
   else do  -- game restarted
     funBroadcastCli (\fid -> RestartCli (pers EM.! fid) defLoc)
@@ -81,7 +81,7 @@ loopSer cmdSer executorC cops = do
     cmdAtomicBroad initialLevel $ Left SyncA
     -- Save ASAP in case of crashes and disconnects.
     saveGameBkp
-  modifyServer $ \ser1 -> ser1 {squit = False}
+  modifyServer $ \ser1 -> ser1 {squit = Nothing}
   let cinT = let r = timeTurn `timeFit` timeClip
              in assert (r > 2) r
   -- Loop.
@@ -270,7 +270,7 @@ handleActors cmdSer arena subclipStart = do
                       then Nothing  -- no actor is ready for another move
                       else Just (actor, m)
   case mnext of
-    _ | quitS -> return ()
+    _ | quitS == Just True -> return ()  -- SaveBkp waits for clip end
     Nothing -> do
       when (subclipStart == timeZero) $
         broadcastUI DisplayDelayUI
@@ -380,8 +380,8 @@ endOrLoop loopServer = do
   faction <- getsState sfaction
   let f (_, Faction{gquit=Nothing}) = Nothing
       f (fid, Faction{gquit=Just quit}) = Just (fid, quit)
-  case mapMaybe f $ EM.assocs faction of
-    _ | quitS -> do
+  case (quitS, mapMaybe f $ EM.assocs faction) of
+    (Just True, _) -> do
       -- Save and display in parallel.
     --      mv <- liftIO newEmptyMVar
       saveGameSer
@@ -395,8 +395,13 @@ endOrLoop loopServer = do
       broadcastCli GameDisconnectCli
     --      liftIO $ takeMVar mv  -- wait until saved
           -- Do nothing, that is, quit the game loop.
-    [] -> loopServer  -- just continue
-    (fid, quit) : _ -> do
+    (Just False, _) -> do
+      broadcastCli GameSaveBkpCli
+      saveGameBkp
+      modifyServer $ \ser1 -> ser1 {squit = Nothing}
+      loopServer
+    (_, []) -> loopServer  -- just continue
+    (_, (fid, quit) : _) -> do
       fac <- getsState $ (EM.! fid) . sfaction
       total <- case gleader fac of
         Nothing -> return 0

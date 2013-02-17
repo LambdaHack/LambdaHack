@@ -27,7 +27,7 @@ data StateServer = StateServer
   , sper      :: !Pers          -- ^ perception of all factions
   , srandom   :: !R.StdGen      -- ^ current random generator
   , sconfig   :: !Config        -- ^ this game's config (including initial RNG)
-  , squit     :: !Bool          -- ^ will exit the game soon
+  , squit     :: !(Maybe Bool)  -- ^ will save and possibly exit the game soon
   , sdebugSer :: !DebugModeSer  -- ^ debugging mode
   }
   deriving (Show, Typeable)
@@ -44,7 +44,7 @@ defStateServer sdiscoRev sflavour srandom sconfig =
     , sacounter = toEnum 0
     , sicounter = toEnum 0
     , sper = EM.empty
-    , squit = False
+    , squit = Nothing
     , sdebugSer = defDebugModeSer
     , ..
     }
