@@ -35,10 +35,10 @@ cmdUISem cmd2 = case cmd2 of
 cmdUpdateCli :: (MonadAction m, MonadClient m) => CmdUpdateCli -> m ()
 cmdUpdateCli cmd = case cmd of
   CmdAtomicCli cmdA -> cmdAtomicCli cmdA
-  RememberPerCli per lvl lid actorD itemD faction ->
-    rememberPerCli per lvl lid actorD itemD faction
+  RememberPerCli per lvl lid actorD itemD ->
+    rememberPerCli per lvl lid actorD itemD
   RestartCli sper locRaw -> restartCli sper locRaw
-  ContinueSavedCli sper -> modifyClient $ \cli -> cli {sper}
+  ContinueSavedCli sfper -> modifyClient $ \cli -> cli {sfper}
   GameSaveBkpCli -> clientGameSave True
   GameDisconnectCli -> clientDisconnect
 

@@ -48,12 +48,9 @@ remCli vis lvl arena = do
   modifyState $ updateDungeon updArena
 
 rememberCli :: (MonadAction m, MonadClient m)
-            => Level -> LevelId -> ActorDict -> ItemDict -> FactionDict -> m ()
-rememberCli lvl lid actorD itemD faction = do
+            => Level -> LevelId -> ActorDict -> ItemDict -> m ()
+rememberCli lvl lid actorD itemD = do
   per <- askPerception
-  -- TODO: instead gather info about factions when first encountered
-  -- and update when they are killed
-  modifyState $ updateFaction (const faction)
   modifyState $ updateActorD (const actorD)
   -- TODO: only add new visible items
   modifyState $ updateItemD (const itemD)
@@ -61,21 +58,21 @@ rememberCli lvl lid actorD itemD faction = do
 
 rememberPerCli :: (MonadAction m, MonadClient m)
                => Perception -> Level -> LevelId
-               -> ActorDict -> ItemDict -> FactionDict
+               -> ActorDict -> ItemDict
                -> m ()
-rememberPerCli per lvl lid actorD itemD faction = do
-  modifyClient $ \cli -> cli {sper = EM.insert lid per (sper cli)}
-  rememberCli lvl lid actorD itemD faction
+rememberPerCli per lvl lid actorD itemD = do
+  modifyClient $ \cli -> cli {sfper = EM.insert lid per (sfper cli)}
+  rememberCli lvl lid actorD itemD
 
 -- TODO: here or elsewhere re-read RNG seed from config file
 restartCli :: (MonadAction m, MonadClient m) => FactionPers -> State -> m ()
-restartCli sper loc = do
+restartCli sfper loc = do
   shistory <- getsClient shistory
   sconfigUI <- getsClient sconfigUI
   side <- getsClient sside
   isAI <- getsClient sisAI
   let cli = defStateClient shistory sconfigUI side isAI
-  putClient cli {sper}
+  putClient cli {sfper}
   putState loc
   -- Save ASAP in case of crashes and disconnects.
   --TODO

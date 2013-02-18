@@ -129,12 +129,10 @@ cmdAtomicBroad arena atomic = do
   lvlOld <- getsLevel arena id
   actorDOld <- getsState sactorD
   itemDOld <- getsState sitemD
-  factionOld <- getsState sfaction
   atomicSem atomic
   lvlNew <- getsLevel arena id
   actorDNew <- getsState sactorD
   itemDNew <- getsState sitemD
-  factionNew <- getsState sfaction
   ps <- case atomic of
     Left cmd -> posCmdAtomic cmd
     Right desc -> posDescAtomic desc
@@ -164,11 +162,11 @@ cmdAtomicBroad arena atomic = do
         if resets then do
           if seen then do
             sendRem fid $
-              RememberPerCli perNew lvlOld arena actorDOld itemDOld factionOld
+              RememberPerCli perNew lvlOld arena actorDOld itemDOld
             sendUpdate fid atomic
           else
             sendRem fid $
-              RememberPerCli perNew lvlNew arena actorDNew itemDNew factionNew
+              RememberPerCli perNew lvlNew arena actorDNew itemDNew
         else do
           if seen then
             sendUpdate fid atomic

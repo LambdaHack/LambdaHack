@@ -93,8 +93,7 @@ fidEquals fid aid = do
 -- requirements to @MoveActorA@ as to @DisplaceActorA@ and fall back
 -- to @SpotActorA@ (which provides minimal information that does not
 -- contradict state) if the visibility is lower.
-posCmdAtomic :: MonadActionRO m
-             => CmdAtomic -> m (Either Bool [Point])
+posCmdAtomic :: MonadActionRO m => CmdAtomic -> m (Either Bool [Point])
 posCmdAtomic cmd = case cmd of
   CreateActorA _ body -> return $ Right [bpos body]
   DestroyActorA _ body -> return $ Right [bpos body]
@@ -130,8 +129,7 @@ posCmdAtomic cmd = case cmd of
   CoverA _ p _ _ -> return $ Right [p]
   SyncA -> return $ Left False
 
-posDescAtomic :: MonadActionRO m
-              => DescAtomic -> m (Either Bool [Point])
+posDescAtomic :: MonadActionRO m => DescAtomic -> m (Either Bool [Point])
 posDescAtomic cmd = case cmd of
   StrikeA source target _ _ -> do
     ps <- mapM posOfAid [source, target]
@@ -165,6 +163,7 @@ singleAid :: MonadActionRO m => ActorId -> m (Either Bool [Point])
 singleAid aid = do
   p <- posOfAid aid
   return $ Right [p]
+
 singleContainer :: MonadActionRO m => Container -> m (Either Bool [Point])
 singleContainer c = do
   p <- posOfContainer c

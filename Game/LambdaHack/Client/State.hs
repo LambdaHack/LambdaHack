@@ -44,7 +44,7 @@ data StateClient = StateClient
   , srunning  :: !(Maybe (Vector, Int))  -- ^ direction and distance of running
   , sreport   :: !Report        -- ^ current messages
   , shistory  :: !History       -- ^ history of messages
-  , sper      :: !FactionPers   -- ^ faction perception indexed by levels
+  , sfper     :: !FactionPers   -- ^ faction perception indexed by levels
   , srandom   :: !R.StdGen      -- ^ current random generator
   , sconfigUI :: !ConfigUI      -- ^ this client config (including initial RNG)
   , slastKey  :: !(Maybe K.KM)  -- ^ last command key pressed
@@ -89,7 +89,7 @@ defStateClient shistory sconfigUI _sside sisAI = do
     , srunning  = Nothing
     , sreport   = emptyReport
     , shistory
-    , sper      = EM.empty
+    , sfper     = EM.empty
     , sconfigUI
     , srandom = R.mkStdGen 42  -- will be set later
     , slastKey  = Nothing
@@ -199,7 +199,7 @@ instance Binary StateClient where
     _sside <- get
     squit <- get
     sisAI <- get
-    let sper = EM.empty
+    let sfper = EM.empty
         srandom = read g
         slastKey = Nothing
         sdebugCli = defDebugModeCli
