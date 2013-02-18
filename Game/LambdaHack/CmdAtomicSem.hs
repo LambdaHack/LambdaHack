@@ -78,9 +78,10 @@ fidEquals fid aid = do
   afid <- getsState $ bfaction . getActorBody aid
   return $ fid == afid
 
--- | Produces the positions where the action takes place. The boolean
--- indicates that, regardless of the position, the start (or end)
--- is always visible to clients (or always invisible).
+-- | Produces the positions where the action takes place. If a faction
+-- is returned, the action is visible only for that faction, if Nothing
+-- is returned, it's never visible. Empty list of positions implies
+-- the action is visible always.
 --
 -- The goal of the mechanics: client should not get significantly
 -- more information by looking at the atomic commands he is able to see
@@ -93,7 +94,8 @@ fidEquals fid aid = do
 -- requirements to @MoveActorA@ as to @DisplaceActorA@ and fall back
 -- to @SpotActorA@ (which provides minimal information that does not
 -- contradict state) if the visibility is lower.
-posCmdAtomic :: MonadActionRO m => CmdAtomic -> m (Either Bool [Point])
+posCmdAtomic :: MonadActionRO m
+             => CmdAtomic -> m (Either (Maybe FactionId) [Point])
 posCmdAtomic cmd = case cmd of
   CreateActorA _ body -> return $ Right [bpos body]
   DestroyActorA _ body -> return $ Right [bpos body]
@@ -118,18 +120,19 @@ posCmdAtomic cmd = case cmd of
   PathActorA aid _ _ -> singleAid aid
   ColorActorA aid _ _ -> singleAid aid
   QuitFactionA _ _ _ -> alwaysKnow
-  LeadFactionA _ _ _ -> alwaysKnow
+  LeadFactionA fid _ _ -> return $ Left $ Just fid
   AlterTileA _ p _ _ -> return $ Right [p]
   SpotTileA _ diffL -> do
     let ps = map fst diffL
     return $ Right ps
-  AlterSecretA _ _ -> return $ Left False  -- none of clients' business
+  AlterSecretA _ _ -> return $ Left Nothing  -- none of clients' business
   AlterSmellA _ _ -> alwaysKnow
   DiscoverA _ p _ _ -> return $ Right [p]
   CoverA _ p _ _ -> return $ Right [p]
-  SyncA -> return $ Left False
+  SyncA -> return $ Left Nothing
 
-posDescAtomic :: MonadActionRO m => DescAtomic -> m (Either Bool [Point])
+posDescAtomic :: MonadActionRO m
+              => DescAtomic -> m (Either (Maybe FactionId) [Point])
 posDescAtomic cmd = case cmd of
   StrikeA source target _ _ -> do
     ps <- mapM posOfAid [source, target]
@@ -149,8 +152,8 @@ posDescAtomic cmd = case cmd of
     return $ Right [pa, p]
   EffectA aid _ -> singleAid aid
 
-alwaysKnow :: MonadActionAbort m => m (Either Bool [Point])
-alwaysKnow = return $ Left True
+alwaysKnow :: MonadActionAbort m => m (Either (Maybe FactionId) [Point])
+alwaysKnow = return $ Right []
 
 posOfAid :: MonadActionRO m => ActorId -> m Point
 posOfAid aid = getsState $ bpos . getActorBody aid
@@ -159,12 +162,13 @@ posOfContainer :: MonadActionRO m => Container -> m Point
 posOfContainer (CFloor pos) = return pos
 posOfContainer (CActor aid _) = posOfAid aid
 
-singleAid :: MonadActionRO m => ActorId -> m (Either Bool [Point])
+singleAid :: MonadActionRO m => ActorId -> m (Either (Maybe FactionId) [Point])
 singleAid aid = do
   p <- posOfAid aid
   return $ Right [p]
 
-singleContainer :: MonadActionRO m => Container -> m (Either Bool [Point])
+singleContainer :: MonadActionRO m
+                => Container -> m (Either (Maybe FactionId) [Point])
 singleContainer c = do
   p <- posOfContainer c
   return $ Right [p]

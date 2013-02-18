@@ -156,8 +156,9 @@ cmdAtomicBroad arena atomic = do
             perNew <- getPerFid fid arena
             return perNew
           else return perOld
-        let startSeen = either id (vis perOld) ps
-            endSeen = either id (vis perNew) ps
+        let isOurs = maybe False (== fid)
+            startSeen = either isOurs (vis perOld) ps
+            endSeen = either isOurs (vis perNew) ps
             seen = startSeen && endSeen
         if resets then do
           if seen then do
@@ -176,7 +177,7 @@ cmdAtomicBroad arena atomic = do
               Right _ -> return []
             let send2 atomic2 = do
                   ps2 <- posCmdAtomic atomic2
-                  let seen2 = either id (vis perNew) ps2
+                  let seen2 = either isOurs (vis perNew) ps2
                   when seen2 $ sendUpdate fid $ Left atomic2
             mapM_ send2 atomicBroken
   faction <- getsState sfaction

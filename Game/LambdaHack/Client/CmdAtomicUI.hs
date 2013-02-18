@@ -98,7 +98,6 @@ drawCmdAtomicUI verbose cmd = case cmd of
       fidName <- getsState $ gname . (EM.! toFid) . sfaction
       aVerbMU target $ MU.Text $ "fall under the influence of" <+> fidName
   QuitFactionA fid _ toSt -> quitFactionA fid toSt
-  LeadFactionA _ _ _ -> return ()  -- boring; display enemy leaders instead
   AlterTileA _ _ _ _ | verbose ->
     return ()  -- TODO: door opens
   AlterSecretA _ _ ->
