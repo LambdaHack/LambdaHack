@@ -6,7 +6,6 @@ module Game.LambdaHack.CmdCli
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.CmdAtomic
-import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.State
@@ -25,7 +24,6 @@ data CmdUI =
 
 data CmdUpdateCli =
     CmdAtomicCli CmdAtomic
-  | RememberPerCli Perception Level LevelId ActorDict ItemDict
   | RestartCli FactionPers State
   | ContinueSavedCli FactionPers
   | GameSaveBkpCli

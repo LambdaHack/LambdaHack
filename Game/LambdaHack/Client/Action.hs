@@ -23,10 +23,8 @@ module Game.LambdaHack.Client.Action
   , promptToSlideshow, overlayToSlideshow
     -- * Draw frames
   , drawOverlay
-    -- * Turn init operations
-  , rememberLevel, displayPush
     -- * Assorted primitives
-  , flushFrames, clientGameSave, clientDisconnect, restoreGame
+  , flushFrames, clientGameSave, clientDisconnect, restoreGame, displayPush
   , readChanFromSer, writeChanToSer, rndToAction, getArenaCli
   ) where
 
@@ -35,12 +33,10 @@ import Control.Monad
 import qualified Control.Monad.State as St
 import Control.Monad.Writer.Strict (WriterT, lift, tell)
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
 import Data.Maybe
 
 import Game.LambdaHack.Action
-import Game.LambdaHack.Actor
 import Game.LambdaHack.Client.Action.ActionClass
 import Game.LambdaHack.Client.Action.ActionType (executorCli)
 import Game.LambdaHack.Client.Action.ConfigIO
@@ -61,10 +57,8 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
-import Game.LambdaHack.Point
 import Game.LambdaHack.Random
 import Game.LambdaHack.State
-import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert
 
 withUI :: MonadClientUI m => m a -> m a
@@ -301,37 +295,6 @@ displayPush = do
   -- of the move frames if the player is running.
   srunning <- getsClient srunning
   displayFrame (isJust srunning) $ Just frame
-
--- | Update faction memory at the given set of positions, given new visibility.
-rememberLevel :: Kind.COps -> ActorDict -> ES.EnumSet Point -> Level -> Level
-              -> Level
-rememberLevel Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}}
-              actorD visible nlvl olvl =
-  -- TODO: handle invisible actors, but then change also broadcastPosCli, etc.
-  let nprio =
-        EM.filter (not . null)
-        $ EM.map (filter (\aid ->
-            bpos (actorD EM.! aid) `ES.member` visible)) (lprio nlvl)
-      nvis = EM.filterWithKey (\p _ -> p `ES.member` visible) (lfloor nlvl)
-      ovis = EM.filterWithKey (\p _ -> p `ES.notMember` visible) (lfloor olvl)
-      nfloor = EM.union nvis ovis
-      vis = ES.toList visible
-      rememberTile = [(pos, nlvl `at` pos) | pos <- vis]
-      unknownId = ouniqGroup "unknown space"
-      wasUnknown (pos, _) = olvl `at` pos == unknownId
-      isExplorable (_, tk) = Tile.isExplorable cotile tk
-      newTile = filter wasUnknown rememberTile
-      extraSeen = length $ filter isExplorable newTile
-  in olvl { lprio = nprio
-          , lfloor = nfloor
-          , ltile = ltile olvl Kind.// newTile
-          , lseen = lseen olvl + extraSeen
-  -- TODO: let factions that spawn see hidden features and open all hidden
-  -- doors (they built and hid them). Hide the Hidden feature in ltile.
-  -- Wait with all that until the semantics of (repeated) searching
-  -- is changed.
-  --        , lsecret = ...
-          }
 
 saveName :: FactionId -> Bool -> String
 saveName side isAI = show (fromEnum side)

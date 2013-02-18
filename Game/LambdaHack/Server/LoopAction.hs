@@ -126,20 +126,13 @@ atomicSem atomic = case atomic of
 cmdAtomicBroad :: (MonadAction m, MonadServerChan m)
                => LevelId -> Atomic -> m ()
 cmdAtomicBroad arena atomic = do
-  lvlOld <- getsLevel arena id
-  actorDOld <- getsState sactorD
-  itemDOld <- getsState sitemD
+  sOld <- getState
   atomicSem atomic
-  lvlNew <- getsLevel arena id
-  actorDNew <- getsState sactorD
-  itemDNew <- getsState sitemD
+  sNew <- getState
   ps <- case atomic of
     Left cmd -> posCmdAtomic cmd
     Right desc -> posDescAtomic desc
-  let sendRem fid cmdRem = do
-        sendUpdateCli fid cmdRem
-        sendUpdateCliAI fid cmdRem
-      sendA fid cmd = do
+  let sendA fid cmd = do
         sendUpdateUI fid $ CmdAtomicUI cmd
         sendUpdateCliAI fid $ CmdAtomicCli cmd
       sendUpdate fid (Left cmd) = sendA fid cmd
@@ -161,14 +154,18 @@ cmdAtomicBroad arena atomic = do
             endSeen = either isOurs (vis perNew) ps
             seen = startSeen && endSeen
         if resets then do
+          let inFov = ES.elems $ totalVisible perNew ES.\\ totalVisible perOld
+              outFov = ES.elems $ totalVisible perOld ES.\\ totalVisible perNew
           if seen then do
-            sendRem fid $
-              RememberPerCli perNew lvlOld arena actorDOld itemDOld
+            mapM_ (sendA fid) $ atomicRemember arena inFov outFov sOld
             sendUpdate fid atomic
           else
-            sendRem fid $
-              RememberPerCli perNew lvlNew arena actorDNew itemDNew
-        else do
+            mapM_ (sendA fid) $ atomicRemember arena inFov outFov sNew
+            -- TODO: if an actor moves, this is wrong, because atomicRemember
+            -- only compares FOV to see what's changed; we need
+            -- atomicRemember sOld and then breakCmdAtomic cmd;
+            -- if break is empty, then the action was irrelevant
+        else
           if seen then
             sendUpdate fid atomic
           else do
@@ -183,6 +180,42 @@ cmdAtomicBroad arena atomic = do
   faction <- getsState sfaction
   mapM_ send $ EM.keys faction
 
+atomicRemember :: LevelId -> [Point] -> [Point] -> State -> [CmdAtomic]
+atomicRemember lid inFov outFov s =
+  let lvl = sdungeon s EM.! lid
+      actorD = sactorD s
+      itemD = sitemD s
+      pMaybe p = maybe Nothing (\x -> Just (p, x))
+      inFloor = mapMaybe (\p -> pMaybe p $ EM.lookup p (lfloor lvl)) inFov
+      fItem p (iid, k) = SpotItemA lid iid (itemD EM.! iid) k (CFloor p)
+      fBag (p, bag) = map (fItem p) $ EM.assocs bag
+      inItem = concatMap fBag inFloor
+      -- No outItem, since items out of sight are not forgotten, unlike actors.
+      -- The client will create atomic actions that forget remembered items
+      -- that are revealed not to be there any more.
+      atomicItem = inItem
+      -- ++ items of actors; actually, we need to empty each actor,
+      -- then createItemA; moveItemA --- can be optimized for old items;
+      -- or add an atomic action that registers items and apply it to server s
+      inPrio = mapMaybe (\p -> posToActor p lid s) inFov
+      -- By this point the items of the actor are already registered in state.
+      fActor aid = SpotActorA aid (actorD EM.! aid)
+      inActor = map fActor inPrio
+      outPrio = mapMaybe (\p -> posToActor p lid s) outFov
+      gActor aid = LoseActorA aid (actorD EM.! aid)
+      outActor = map gActor outPrio
+      atomicActor = inActor ++ outActor
+      inTileMap = map (\p -> (p, ltile lvl Kind.! p)) inFov
+      fTile (p, nt) = (p, (undefined, nt))
+      inTile = map fTile inTileMap
+      -- No outTlie, since tiles out of sight are not forgotten, unlike actors.
+      -- The client will create atomic actions that forget remembered tiles
+      -- that are revealed not to be there any more.
+      atomicTile = SpotTileA lid inTile
+      -- @SpotTileA@ needs to be last, since it triggers client computation
+      -- of a new FOV.
+  in atomicItem ++ atomicActor ++ [atomicTile]
+
 -- TODO: switch levels alternating between player factions,
 -- if there are many and on distinct levels.
 -- TODO: If a faction has no actors left in the dungeon,
@@ -192,7 +225,7 @@ cmdAtomicBroad arena atomic = do
 -- | If no actor of a non-spawning faction on the level,
 -- switch levels. If no level to switch to, end game globally.
 -- TODO: instead check if a non-spawn faction has Nothing leader. Equivalent.
-checkEndGame ::  (MonadAction m, MonadServerChan m) => m ()
+checkEndGame :: (MonadAction m, MonadServerChan m) => m ()
 checkEndGame = do
   -- Actors on the current level go first so that we don't switch levels
   -- unnecessarily.

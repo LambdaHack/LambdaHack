@@ -70,6 +70,7 @@ resetsFovAtomic fid cmd = case cmd of
   DominateActorA _ fromFid toFid -> return $ fid `elem` [fromFid, toFid]
   MoveItemA _ _ _ _ _ -> return False  -- unless shiny
   AlterTileA _ _ _ _ -> return True  -- even if pos not visible initially
+  SpotTileA _ _ -> return True  -- indicates server thinks we need new FOV
   SyncA -> return True  -- that's the only meaning of this command
   _ -> return False
 
@@ -196,8 +197,7 @@ breakCmdAtomic cmd = case cmd of
     return [LoseItemA lid iid item k c1, SpotItemA lid iid item k c2]
   _ -> return []
 
--- TODO: perhaps assert that the inventory of the actor is empty
--- or at least that the items belong to litem.
+-- TODO: assert that the actor's items belong to sitemD.
 createActorA :: MonadAction m => ActorId -> Actor -> m ()
 createActorA aid body = do
   modifyState $ updateActorD $ EM.insert aid body
@@ -205,7 +205,7 @@ createActorA aid body = do
       add (Just l) = Just $ aid : l
   updateLevel (blid body) $ updatePrio $ EM.alter add (btime body)
 
--- TODO: perhaps assert that the inventory of the actor is empty.
+-- TODO: assert that the actor's items belong to sitemD.
 -- | Kills an actor. Note: after this command, usually a new leader
 -- for the party should be elected.
 destroyActorA :: MonadAction m => ActorId -> Actor -> m ()
@@ -344,6 +344,8 @@ leadFactionA fid source target = assert (source /= target) $ do
   let adj fac = fac {gleader = target}
   modifyState $ updateFaction $ EM.adjust adj fid
 
+-- TODO: if to or from unknownId, update lseen (if to/from explorable,
+-- update lclear)
 alterTileA :: MonadAction m
            => LevelId -> Point -> Kind.Id TileKind -> Kind.Id TileKind
            -> m ()
@@ -351,13 +353,15 @@ alterTileA lid p _fromTile toTile =
   let adj = (Kind.// [(p, toTile)])
   in updateLevel lid $ updateTile adj
 
+-- TODO: if to or from unknownId, update lseen (if to/from explorable,
+-- update lclear)
 spotTileA :: MonadAction m
           => LevelId -> [(Point, (Kind.Id TileKind, Kind.Id TileKind))] -> m ()
-spotTileA lid diffL =
-  let f (k, (_, nv)) = (k, nv)
+spotTileA lid diffL = do
+  let f (p, (_, nv)) = (p, nv)
       dif = map f diffL
       adj = (Kind.// dif)
-  in updateLevel lid $ updateTile adj
+  updateLevel lid $ updateTile adj
 
 alterSecretA :: MonadAction m => LevelId -> DiffEM Point Time -> m ()
 alterSecretA lid diffL = updateLevel lid $ updateSecret $ applyDiffEM diffL

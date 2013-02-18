@@ -65,9 +65,9 @@ posToActor pos lid s =
 
 posToActors :: Point -> LevelId -> State -> [ActorId]
 posToActors pos lid s =
-    let as = actorAssocs (const True) lid s
-        apos = filter (\(_, b) -> bpos b == pos) as
-    in fmap fst apos
+  let as = actorAssocs (const True) lid s
+      apos = filter (\(_, b) -> bpos b == pos) as
+  in fmap fst apos
 
 nearbyFreePos :: Kind.Ops TileKind -> Point -> LevelId -> State -> Point
 nearbyFreePos cotile start lid s =

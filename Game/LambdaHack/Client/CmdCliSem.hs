@@ -4,7 +4,6 @@ module Game.LambdaHack.Client.CmdCliSem where
 
 import Control.Monad.Writer.Strict (WriterT, runWriterT)
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Text as T
@@ -26,43 +25,14 @@ import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Content.StrategyKind
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
-import Game.LambdaHack.Point
 import Game.LambdaHack.Random
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 
 -- * cmdUpdateCli
-
-remCli :: MonadAction m => ES.EnumSet Point -> Level -> LevelId -> m ()
-remCli vis lvl arena = do
-  cops <- getsState scops
-  actorD <- getsState sactorD
-  let updArena dng =
-        let clvl = fromMaybe (assert `failure` arena) $ EM.lookup arena dng
-            nlvl = rememberLevel cops actorD vis lvl clvl
-        in EM.insert arena nlvl dng
-  modifyState $ updateDungeon updArena
-
-rememberCli :: (MonadAction m, MonadClient m)
-            => Level -> LevelId -> ActorDict -> ItemDict -> m ()
-rememberCli lvl lid actorD itemD = do
-  per <- askPerception
-  modifyState $ updateActorD (const actorD)
-  -- TODO: only add new visible items
-  modifyState $ updateItemD (const itemD)
-  remCli (totalVisible per) lvl lid
-
-rememberPerCli :: (MonadAction m, MonadClient m)
-               => Perception -> Level -> LevelId
-               -> ActorDict -> ItemDict
-               -> m ()
-rememberPerCli per lvl lid actorD itemD = do
-  modifyClient $ \cli -> cli {sfper = EM.insert lid per (sfper cli)}
-  rememberCli lvl lid actorD itemD
 
 -- TODO: here or elsewhere re-read RNG seed from config file
 restartCli :: (MonadAction m, MonadClient m) => FactionPers -> State -> m ()
