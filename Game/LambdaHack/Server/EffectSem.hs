@@ -89,7 +89,7 @@ itemEffect source target miid item = do
 
 -- ** NoEffect
 
-effectNoEffect :: MonadActionAbort m => m Bool
+effectNoEffect :: Monad m => m Bool
 effectNoEffect = return False
 
 -- ** Heal
@@ -318,7 +318,7 @@ effectApplyPerfume source target =
 
 -- ** Searching
 
-effectSearching :: MonadActionAbort m => ActorId -> WriterT [Atomic] m Bool
+effectSearching :: Monad m => ActorId -> WriterT [Atomic] m Bool
 effectSearching source = do
   tellDescAtomic $ EffectA source Effect.Searching
   return True

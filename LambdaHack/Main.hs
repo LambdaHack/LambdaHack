@@ -35,7 +35,9 @@ main = do
         , cotile  = Kind.createOps Content.TileKind.cdefs
         }
       cops = speedupCOps copsSlow
-      loopHuman :: (MonadAction m, MonadClientUI m, MonadClientChan m) => m ()
+      loopHuman :: (MonadActionAbort m, MonadAction m
+                   , MonadClientUI m, MonadClientChan m)
+                => m ()
       loopHuman = loopUI cmdCliSem cmdUISem
       loopComputer :: (MonadAction m, MonadClientChan m) => m ()
       loopComputer = loopCli cmdCliSem

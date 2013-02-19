@@ -48,7 +48,7 @@ import Game.LambdaHack.Utils.Assert
 -- every fixed number of time units, e.g., monster generation.
 -- Run the leader and other actors moves. Eventually advance the time
 -- and repeat.
-loopSer :: forall m . (MonadAction m, MonadServerChan m)
+loopSer :: forall m . (MonadActionAbort m, MonadAction m, MonadServerChan m)
         => (FactionId -> LevelId -> CmdSer -> m ())
         -> (FactionId -> ConnCli -> Bool -> IO ())
         -> Kind.COps
@@ -276,7 +276,7 @@ gameOver fid arena showEndingScreens = do
 -- We start by updating perception, because the selected level of dungeon
 -- has changed since last time (every change, whether by human or AI
 -- or @generateMonster@ is followd by a call to @handleActors@).
-handleActors :: (MonadAction m, MonadServerChan m)
+handleActors :: (MonadActionAbort m, MonadAction m, MonadServerChan m)
              => (FactionId -> LevelId -> CmdSer -> m ())
              -> LevelId
              -> Time  -- ^ start time of current subclip, exclusive
@@ -411,7 +411,8 @@ advanceTime lid aid = do
   updateLevel lid $ updatePrio $ EM.alter add newTime
 
 -- | Continue or restart or exit the game.
-endOrLoop :: (MonadAction m, MonadServerChan m) => m () -> m ()
+endOrLoop :: (MonadActionAbort m, MonadAction m, MonadServerChan m)
+          => m () -> m ()
 endOrLoop loopServer = do
   quitS <- getsServer squit
   faction <- getsState sfaction

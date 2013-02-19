@@ -108,7 +108,8 @@ dumpCfg fn = do
 -- Warning: scores are shown during the game,
 -- so we should be careful not to leak secret information through them
 -- (e.g., the nature of the items through the total worth of inventory).
-handleScores :: MonadServerChan m => FactionId -> Bool -> Status -> Int -> m ()
+handleScores :: (MonadActionAbort m, MonadServerChan m)
+             => FactionId -> Bool -> Status -> Int -> m ()
 handleScores _fid write status total =
   when (total /= 0) $ do
     config <- getsServer sconfig

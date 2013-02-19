@@ -102,7 +102,7 @@ promptGetKey keys frame = withUI $ do
 
 -- | Set the current exception handler. Apart of executing it,
 -- draw and pass along a slide with the abort message (even if message empty).
-tryWithSlide :: MonadClient m
+tryWithSlide :: (MonadActionAbort m, MonadClient m)
              => m a -> WriterT Slideshow m a -> WriterT Slideshow m a
 tryWithSlide exc h =
   let excMsg msg = do
@@ -230,7 +230,8 @@ displayYesNo prompt = do
 -- | Print a prompt and an overlay and wait for a player keypress.
 -- If many overlays, scroll screenfuls with SPACE. Do not wrap screenfuls
 -- (in some menus @?@ cycles views, so the user can restart from the top).
-displayChoiceUI :: MonadClientUI m => Msg -> Overlay -> [K.KM] -> m K.KM
+displayChoiceUI :: (MonadActionAbort m, MonadClientUI m)
+                => Msg -> Overlay -> [K.KM] -> m K.KM
 displayChoiceUI prompt ov keys = do
   slides <- fmap runSlideshow $ overlayToSlideshow (prompt <> ", ESC]") ov
   let legalKeys = (K.Space, K.NoModifier) : (K.Esc, K.NoModifier) : keys
@@ -271,7 +272,7 @@ drawOverlay dm over = do
   return $! draw dm cops per cli loc over
 
 -- -- | Draw the current level using server data, for debugging.
--- drawOverlayDebug :: MonadActionAbort m
+-- drawOverlayDebug :: Monad m
 --                  => ColorMode -> Overlay -> m SingleFrame
 -- drawOverlayDebug dm over = do
 --   cops <- getsState scops

@@ -47,7 +47,7 @@ type ConnFaction = (Maybe ConnCli, Maybe ConnCli)
 type ConnDict = EM.EnumMap FactionId ConnFaction
 
 -- | The bottom of the action monads class semilattice.
-class (Monad m, Functor m, Show (m ())) => MonadActionAbort m where
+class (Monad m, Functor m) => MonadActionAbort m where
   -- Set the current exception handler. First argument is the handler,
   -- second is the computation the handler scopes over.
   tryWith      :: (Msg -> m a) -> m a -> m a
@@ -59,16 +59,16 @@ instance (Monoid a, MonadActionAbort m) => MonadActionAbort (WriterT a m) where
     WriterT $ tryWith (\msg -> runWriterT (exc msg)) (runWriterT m)
   abortWith   = lift . abortWith
 
-instance MonadActionAbort m => Show (WriterT a m b) where
-  show _ = "an action"
-
-class MonadActionAbort m => MonadActionRO m where
+class (Monad m, Functor m, Show (m ())) => MonadActionRO m where
   getState    :: m State
   getsState   :: (State -> a) -> m a
 
 instance (Monoid a, MonadActionRO m) => MonadActionRO (WriterT a m) where
   getState    = lift getState
   getsState   = lift . getsState
+
+instance MonadActionRO m => Show (WriterT a m b) where
+  show _ = "an action"
 
 class MonadActionRO m => MonadAction m where
   modifyState :: (State -> State) -> m ()

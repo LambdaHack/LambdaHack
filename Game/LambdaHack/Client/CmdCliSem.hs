@@ -79,7 +79,7 @@ handleAI actor = do
 -- * CmdHandleHumanUI
 
 -- | Handle the move of the hero.
-handleHuman :: MonadClientUI m => ActorId -> m [CmdSer]
+handleHuman :: (MonadActionAbort m, MonadClientUI m) => ActorId -> m [CmdSer]
 handleHuman aid = do
   -- When running, stop if aborted by a disturbance. Otherwise let
   -- the human player issue commands, until any of them takes time.
@@ -99,7 +99,8 @@ handleHuman aid = do
     else return [LeaderSer leaderNew, cmdS]
 
 -- | Continue running in the given direction.
-continueRun :: MonadClient m => ActorId -> (Vector, Int) -> m CmdSer
+continueRun :: (MonadActionAbort m, MonadClient m)
+            => ActorId -> (Vector, Int) -> m CmdSer
 continueRun leader dd = do
   (dir, distNew) <- continueRunDir leader dd
   modifyClient $ \cli -> cli {srunning = Just (dir, distNew)}
@@ -108,7 +109,7 @@ continueRun leader dd = do
 
 -- | Determine and process the next human player command. The argument is
 -- the last abort message due to running, if any.
-humanCommand :: forall m. MonadClientUI m
+humanCommand :: forall m. (MonadActionAbort m, MonadClientUI m)
              => Msg
              -> m CmdSer
 humanCommand msgRunAbort = do

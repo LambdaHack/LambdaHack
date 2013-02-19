@@ -154,7 +154,7 @@ posDescAtomic cmd = case cmd of
     return $ Right [pa, p]
   EffectA aid _ -> singleAid aid
 
-alwaysKnow :: MonadActionAbort m => m (Either (Maybe FactionId) [Point])
+alwaysKnow :: Monad m => m (Either (Maybe FactionId) [Point])
 alwaysKnow = return $ Right []
 
 posOfAid :: MonadActionRO m => ActorId -> m Point

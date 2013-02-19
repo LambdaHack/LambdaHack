@@ -23,7 +23,8 @@ cmdCliSem cmd2 = case cmd2 of
     a <- handleAI aid
     writeChanToSer a
 
-cmdUISem :: (MonadAction m, MonadClientUI m, MonadClientChan m)
+cmdUISem :: (MonadActionAbort m, MonadAction m
+            , MonadClientUI m, MonadClientChan m)
          => CmdUI -> m ()
 cmdUISem cmd2 = case cmd2 of
   CmdUpdateUI cmd -> cmdUpdateUI cmd

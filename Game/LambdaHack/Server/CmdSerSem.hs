@@ -82,7 +82,8 @@ electLeader fid lid = do
 -- is authorized to check if a move is legal and it needs full context
 -- for that, e.g., the initial actor position to check if melee attack
 -- does not try to reach to a distant tile.
-moveSer :: MonadServer m => ActorId -> Vector -> WriterT [Atomic] m ()
+moveSer :: (MonadActionAbort m, MonadServer m)
+        => ActorId -> Vector -> WriterT [Atomic] m ()
 moveSer aid dir = do
   cops@Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getsState scops
   sm <- getsState $ getActorBody aid
@@ -153,7 +154,8 @@ actorAttackActor source target = do
     else performHit False
 
 -- | Search for hidden doors.
-search :: MonadServer m => ActorId -> WriterT [Atomic] m ()
+search :: (MonadActionAbort m, MonadServer m)
+       => ActorId -> WriterT [Atomic] m ()
 search aid = do
   Kind.COps{coitem, cotile} <- getsState scops
   b <- getsState $ getActorBody aid
@@ -185,7 +187,7 @@ search aid = do
 
 -- TODO: bumpTile tpos F.Openable
 -- | An actor opens a door.
-actorOpenDoor :: MonadServer m
+actorOpenDoor :: (MonadActionAbort m, MonadServer m)
               => ActorId -> Vector -> WriterT [Atomic] m ()
 actorOpenDoor actor dir = do
   Kind.COps{cotile} <- getsState scops
@@ -207,7 +209,8 @@ actorOpenDoor actor dir = do
 -- * RunSer
 
 -- | Actor moves or swaps position with others or opens doors.
-runSer :: MonadServer m => ActorId -> Vector -> WriterT [Atomic] m ()
+runSer :: (MonadActionAbort m, MonadServer m)
+       => ActorId -> Vector -> WriterT [Atomic] m ()
 runSer actor dir = do
   cops <- getsState scops
   sm <- getsState $ getActorBody actor
@@ -271,7 +274,7 @@ dropSer aid iid = do
 
 -- * ProjectSer
 
-projectSer :: MonadServer m
+projectSer :: (MonadActionAbort m, MonadServer m)
            => ActorId    -- ^ actor projecting the item (is on current lvl)
            -> Point      -- ^ target position of the projectile
            -> Int        -- ^ digital line parameter
@@ -360,7 +363,7 @@ addProjectile iid loc blid bfaction path btime = do
 
 -- * ApplySer
 
-applySer :: MonadServer m   -- MonadActionAbort m
+applySer :: MonadServer m
          => ActorId    -- ^ actor applying the item (is on current level)
          -> ItemId     -- ^ the item to be applied
          -> Container  -- ^ the location of the item
@@ -375,7 +378,7 @@ applySer actor iid container = do
 -- * TriggerSer
 
 -- | Perform the action specified for the tile in case it's triggered.
-triggerSer :: MonadServer m
+triggerSer :: (MonadActionAbort m, MonadServer m)
            => ActorId -> Point -> WriterT [Atomic] m ()
 triggerSer aid dpos = do
   Kind.COps{cotile=Kind.Ops{okind, opick}} <- getsState scops
@@ -413,7 +416,7 @@ clearPathSer aid = do
 
 -- * SetPathSer
 
-setPathSer :: MonadServer m
+setPathSer :: (MonadActionAbort m, MonadServer m)
            => ActorId -> Vector -> [Vector] -> WriterT [Atomic] m ()
 setPathSer aid dir path = do
   fromPath <- getsState $ bpath . getActorBody aid
@@ -451,7 +454,7 @@ gameSaveSer = modifyServer $ \ser -> ser {squit = Just False}
 
 -- * CfgDumpSer
 
-cfgDumpSer :: MonadServer m => m ()
+cfgDumpSer :: (MonadActionAbort m, MonadServer m) => m ()
 cfgDumpSer = do
   Config{configRulesCfgFile} <- getsServer sconfig
   let fn = configRulesCfgFile ++ ".dump"
