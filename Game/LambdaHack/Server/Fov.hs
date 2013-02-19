@@ -43,11 +43,11 @@ levelPerception cops@Kind.COps{cotile} s configFov fid lid lvl =
         map (\(aid, b) -> (aid, computeReachable cops configFov b lvl)) hs
       lreas = map (preachable . snd) reas
       totalRea = PerceptionReachable $ ES.unions lreas
-      -- TODO: Instead of giving the monster a light source, alter vision.
+      -- TODO: Instead of giving the actor a light source, alter vision.
       lights = ES.fromList $ map (bpos . snd) hs
       totalVis = computeVisible cotile totalRea lvl lights
       f = PerceptionVisible . ES.intersection (pvisible totalVis) . preachable
-  in Perception { pactors = EM.map f $ EM.fromDistinctAscList reas
+  in Perception { pactors = EM.map f $ EM.fromList reas  -- reas is not sorted
                 , ptotal  = totalVis }
 
 -- | Calculate perception of a faction.
@@ -78,8 +78,8 @@ dungeonPerception cops configFov s =
 -- moving shadows indicate monsters, etc.
 computeVisible :: Kind.Ops TileKind -> PerceptionReachable
                -> Level -> ES.EnumSet Point -> PerceptionVisible
-computeVisible cops reachable@PerceptionReachable{preachable} lvl lights =
-  let isV = isVisible cops reachable lvl lights
+computeVisible cotile reachable@PerceptionReachable{preachable} lvl lights =
+  let isV = isVisible cotile reachable lvl lights
   in PerceptionVisible $ ES.filter isV preachable
 
 -- TODO: this is calculated per-faction, not per-actor, but still optimize,
@@ -113,10 +113,10 @@ computeReachable Kind.COps{cotile, coactor=Kind.Ops{okind}}
 -- algorithm to use, passed in the second argument, is set in the config file.
 fullscan :: Kind.Ops TileKind  -- ^ tile content, determines clear tiles
          -> FovMode            -- ^ scanning mode
-         -> Point              -- ^ position of the spectacor
+         -> Point              -- ^ position of the spectator
          -> Level              -- ^ the map that is scanned
          -> [Point]
-fullscan cotile fovMode loc Level{lxsize, ltile} =
+fullscan cotile fovMode spectatorPos Level{lxsize, ltile} =
   case fovMode of
     Shadow ->
       L.concatMap (\ tr -> map tr (Shadow.scan (isCl . tr) 1 (0, 1))) tr8
@@ -131,7 +131,7 @@ fullscan cotile fovMode loc Level{lxsize, ltile} =
   isCl :: Point -> Bool
   isCl = Tile.isClear cotile . (ltile Kind.!)
 
-  trV xy = shift loc $ toVector lxsize $ VectorXY xy
+  trV xy = shift spectatorPos $ toVector lxsize $ VectorXY xy
 
   -- | The translation, rotation and symmetry functions for octants.
   tr8 :: [(Distance, Progress) -> Point]

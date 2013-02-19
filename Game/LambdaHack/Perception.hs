@@ -1,8 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Actors perceiving other actors and the dungeon level.
 module Game.LambdaHack.Perception
-  ( Perception(..), totalVisible, actorSeesLoc, FactionPers, Pers
-  , PerceptionVisible(..)
+  ( Perception(..), PerceptionVisible(..)
+  , totalVisible, actorSeesLoc, nullPer, diffPer
+  , FactionPers, Pers
   ) where
 
 import qualified Data.EnumMap.Strict as EM
@@ -40,3 +41,18 @@ totalVisible = pvisible . ptotal
 -- | Whether an actor can see a position.
 actorSeesLoc :: Perception -> ActorId -> Point -> Bool
 actorSeesLoc per aid pos = pos `ES.member` pvisible (pactors per EM.! aid)
+
+nullPer :: Perception -> Bool
+nullPer per = EM.null (pactors per) && ES.null (pvisible (ptotal per))
+
+diffPer :: Perception -> Perception -> Perception
+diffPer per1 per2 =
+  let f :: (PerceptionVisible -> PerceptionVisible -> Maybe PerceptionVisible)
+      f pv1 pv2 =
+        let diff = pvisible pv1 ES.\\ pvisible pv2
+        in if ES.null diff then Nothing else Just $ PerceptionVisible diff
+  in Perception
+       { pactors = EM.differenceWith f (pactors per1) (pactors per2)
+       , ptotal = PerceptionVisible
+                  $ pvisible (ptotal per1) ES.\\ pvisible (ptotal per2)
+       }

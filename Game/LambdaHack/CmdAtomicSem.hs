@@ -53,6 +53,7 @@ cmdAtomicSem cmd = case cmd of
   AlterSmellA lid diffL -> alterSmellA lid diffL
   DiscoverA lid p iid ik -> discoverA lid p iid ik
   CoverA lid p iid ik -> coverA lid p iid ik
+  PerceptionA _ -> return ()
   SyncA -> return ()
 
 resetsFovAtomic :: MonadActionRO m => FactionId -> CmdAtomic -> m Bool
@@ -70,7 +71,6 @@ resetsFovAtomic fid cmd = case cmd of
   DominateActorA _ fromFid toFid -> return $ fid `elem` [fromFid, toFid]
   MoveItemA _ _ _ _ _ -> return False  -- unless shiny
   AlterTileA _ _ _ _ -> return True  -- even if pos not visible initially
-  SpotTileA _ _ -> return True  -- indicates server thinks we need new FOV
   SyncA -> return True  -- that's the only meaning of this command
   _ -> return False
 
@@ -130,6 +130,7 @@ posCmdAtomic cmd = case cmd of
   AlterSmellA _ _ -> alwaysKnow
   DiscoverA _ p _ _ -> return $ Right [p]
   CoverA _ p _ _ -> return $ Right [p]
+  PerceptionA _ -> return $ Left Nothing
   SyncA -> return $ Left Nothing
 
 posDescAtomic :: MonadActionRO m
@@ -177,11 +178,13 @@ singleContainer c = do
 -- | Decompose an atomic action. The original action is visible
 -- if it's positions are visible both before and after the action
 -- (in between the FOV might have changed). The decomposed actions
--- are only tested vs the FOV after the action and they give minimum
--- information but still modify client's state to match the server state
--- wrt the current FOV (the original actions give more informations, e.g.,
--- @MoveActorA@ informs about the continued existence of the actor
--- between moves, v.s., popping out of existence and then back in).
+-- are only tested vs the FOV after the action and they give reduced
+-- information that still modifies client's state to match the server state
+-- wrt the current FOV and the subset of @posCmdAtomic@ that is visible.
+-- The original actions give more information not only due to spanning
+-- potentially more positions than those visible. E.g., @MoveActorA@
+-- informs about the continued existence of the actor between
+-- moves, v.s., popping out of existence and then back in.
 breakCmdAtomic :: MonadActionRO m => CmdAtomic -> m [CmdAtomic]
 breakCmdAtomic cmd = case cmd of
   MoveActorA aid fromP _ -> do
@@ -195,7 +198,7 @@ breakCmdAtomic cmd = case cmd of
   MoveItemA lid iid k c1 c2 -> do
     item <- getsState $ getItemBody iid
     return [LoseItemA lid iid item k c1, SpotItemA lid iid item k c2]
-  _ -> return []
+  _ -> return [cmd]
 
 -- TODO: assert that the actor's items belong to sitemD.
 createActorA :: MonadAction m => ActorId -> Actor -> m ()
@@ -211,7 +214,7 @@ createActorA aid body = do
 destroyActorA :: MonadAction m => ActorId -> Actor -> m ()
 destroyActorA aid body = do
   modifyState $ updateActorD $ EM.delete aid
-  let rm Nothing = assert `failure` aid
+  let rm Nothing = assert `failure` (aid, body)
       rm (Just l) = let l2 = delete aid l
                     in if null l2 then Nothing else Just l2
   updateLevel (blid body) $ updatePrio $ EM.alter rm (btime body)

@@ -128,7 +128,6 @@ cmdAtomicBroad :: (MonadAction m, MonadServerChan m)
 cmdAtomicBroad arena atomic = do
   sOld <- getState
   atomicSem atomic
-  sNew <- getState
   ps <- case atomic of
     Left cmd -> posCmdAtomic cmd
     Right desc -> posDescAtomic desc
@@ -138,45 +137,40 @@ cmdAtomicBroad arena atomic = do
       sendUpdate fid (Left cmd) = sendA fid cmd
       sendUpdate fid (Right desc) = sendUpdateUI fid $ DescAtomicUI desc
       vis per = all (`ES.member` totalVisible per)
+      isOurs fid = maybe False (== fid)
+      breakSend fid perNew = do
+        atomicBroken <- case atomic of
+          Left cmd -> breakCmdAtomic cmd
+          Right _ -> return []
+        let send2 atomic2 = do
+              ps2 <- posCmdAtomic atomic2
+              let seen2 = either (isOurs fid) (vis perNew) ps2
+              when seen2 $ sendUpdate fid $ Left atomic2
+        mapM_ send2 atomicBroken
+      anySend fid perOld perNew = do
+        let startSeen = either (isOurs fid) (vis perOld) ps
+            endSeen = either (isOurs fid) (vis perNew) ps
+        if startSeen && endSeen
+          then sendUpdate fid atomic
+          else breakSend fid perNew
       send fid = do
         perOld <- getPerFid fid arena
         resets <- case atomic of
           Left cmd -> resetsFovAtomic fid cmd
           Right _ -> return False
-        perNew <-
-          if resets then do
-            resetFidPerception fid arena
-            perNew <- getPerFid fid arena
-            return perNew
-          else return perOld
-        let isOurs = maybe False (== fid)
-            startSeen = either isOurs (vis perOld) ps
-            endSeen = either isOurs (vis perNew) ps
-            seen = startSeen && endSeen
         if resets then do
+          resetFidPerception fid arena
+          perNew <- getPerFid fid arena
           let inFov = ES.elems $ totalVisible perNew ES.\\ totalVisible perOld
               outFov = ES.elems $ totalVisible perOld ES.\\ totalVisible perNew
-          if seen then do
-            mapM_ (sendA fid) $ atomicRemember arena inFov outFov sOld
-            sendUpdate fid atomic
-          else
-            mapM_ (sendA fid) $ atomicRemember arena inFov outFov sNew
-            -- TODO: if an actor moves, this is wrong, because atomicRemember
-            -- only compares FOV to see what's changed; we need
-            -- atomicRemember sOld and then breakCmdAtomic cmd;
-            -- if break is empty, then the action was irrelevant
-        else
-          if seen then
-            sendUpdate fid atomic
-          else do
-            atomicBroken <- case atomic of
-              Left cmd -> breakCmdAtomic cmd
-              Right _ -> return []
-            let send2 atomic2 = do
-                  ps2 <- posCmdAtomic atomic2
-                  let seen2 = either isOurs (vis perNew) ps2
-                  when seen2 $ sendUpdate fid $ Left atomic2
-            mapM_ send2 atomicBroken
+          mapM_ (sendA fid) $ atomicRemember arena inFov outFov sOld
+          anySend fid perOld perNew
+          -- Sending perception to verify the client's computed perception
+          -- is correct. TODO: For clients over slow connections turn it off;
+          -- for slow/primitive clients, w.g., within a browser, use this
+          -- instead of client computation.
+          sendA fid $ PerceptionA perNew
+        else anySend fid perOld perOld
   faction <- getsState sfaction
   mapM_ send $ EM.keys faction
 

@@ -29,6 +29,7 @@ import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Misc
+import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import Game.LambdaHack.Time
 import Game.LambdaHack.Vector
@@ -74,6 +75,7 @@ data CmdAtomic =
   -- Assorted.
   | DiscoverA LevelId Point ItemId (Kind.Id ItemKind)
   | CoverA LevelId Point ItemId (Kind.Id ItemKind)
+  | PerceptionA Perception
   | SyncA
   deriving Show
 
@@ -120,6 +122,7 @@ undoCmdAtomic cmd = case cmd of
   AlterSmellA lid diffL -> AlterSmellA lid $ map (second swap) diffL
   DiscoverA lid p iid ik -> CoverA lid p iid ik
   CoverA lid p iid ik -> DiscoverA lid p iid ik
+  PerceptionA per -> PerceptionA per  -- does not change State, anyway
   SyncA -> SyncA
 
 undoDescAtomic :: DescAtomic -> DescAtomic

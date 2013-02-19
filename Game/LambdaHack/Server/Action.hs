@@ -229,7 +229,7 @@ connServer = do
         chanAI <- mkConnCli
         return (fid, (chanCli, chanAI))
   chanAssocs <- liftIO $ mapM addChan $ EM.assocs faction
-  putDict $ EM.fromAscList chanAssocs
+  putDict $ EM.fromDistinctAscList chanAssocs
 
 -- | Connect to clients by starting them in spawned threads that read
 -- and write directly to the channels.

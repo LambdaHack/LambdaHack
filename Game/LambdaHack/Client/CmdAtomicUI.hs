@@ -44,14 +44,21 @@ cmdAtomicSemCli cmd = case cmd of
     side <- getsClient sside
     when (side == fid) $
       modifyClient $ \cli -> cli {_sleader = target}
+  PerceptionA per -> do
+    -- Clients can't compute FOV on their own, because they don't know
+    -- if unknown tiles are clear or not. Server would need to send
+    -- info about properties of unknown tiles, which complicates
+    -- and makes heavier the most bulky data set in the game: tile maps.
+    arena <- getArenaCli
+    let f = EM.adjust (const per) arena
+    modifyClient $ \cli -> cli {sfper = f (sfper cli)}
   _ -> return ()
 
 -- * cmdAtomicUI
 
 cmdAtomicUI :: (MonadAction m, MonadClientUI m) => CmdAtomic -> m ()
 cmdAtomicUI cmd = do
-  cmdAtomicSem cmd
-  cmdAtomicSemCli cmd
+  cmdAtomicCli cmd
   drawCmdAtomicUI False cmd
 
 -- TODO: let user configure which messages are not created, which are
