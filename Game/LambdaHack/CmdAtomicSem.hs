@@ -40,6 +40,7 @@ cmdAtomicSem cmd = case cmd of
   WaitActorA aid fromWait toWait -> waitActorA aid fromWait toWait
   DisplaceActorA source target -> displaceActorA source target
   MoveItemA lid iid k c1 c2 -> moveItemA lid iid k c1 c2
+  AgeActorA aid t -> ageActorA aid t
   HealActorA aid n -> healActorA aid n
   HasteActorA aid delta -> hasteActorA aid delta
   DominateActorA target fromFid toFid -> dominateActorA target fromFid toFid
@@ -115,6 +116,7 @@ posCmdAtomic cmd = case cmd of
     p1 <- posOfContainer c1
     p2 <- posOfContainer c2
     return $ Right [p1, p2]
+  AgeActorA aid _ -> singleAid aid
   HealActorA aid _ -> singleAid aid
   HasteActorA aid _ -> singleAid aid
   DominateActorA target _ _ -> singleAid target
@@ -203,10 +205,13 @@ breakCmdAtomic cmd = case cmd of
 -- TODO: assert that the actor's items belong to sitemD.
 createActorA :: MonadAction m => ActorId -> Actor -> m ()
 createActorA aid body = do
-  modifyState $ updateActorD $ EM.insert aid body
-  let add Nothing = Just [aid]
-      add (Just l) = Just $ aid : l
-  updateLevel (blid body) $ updatePrio $ EM.alter add (btime body)
+  let f Nothing = Just body
+      f (Just b) = assert `failure` (aid, b, body)
+  modifyState $ updateActorD $ EM.alter f aid
+  let g Nothing = Just [aid]
+      g (Just l) = assert (not (aid `elem` l) `blame` (aid, l, body))
+                   $ Just $ aid : l
+  updateLevel (blid body) $ updatePrio $ EM.alter g (btime body)
 
 -- TODO: assert that the actor's items belong to sitemD.
 -- | Kills an actor. Note: after this command, usually a new leader
@@ -216,11 +221,11 @@ destroyActorA aid body = do
   let f Nothing = assert `failure` (aid, body)
       f (Just b) = assert (b == body `blame` (aid, b, body)) $ Nothing
   modifyState $ updateActorD $ EM.alter f aid
-  let rm Nothing = assert `failure` (aid, body)
-      rm (Just l) = assert (aid `elem` l `blame` (aid, body, l)) $
-        let l2 = delete aid l
-        in if null l2 then Nothing else Just l2
-  updateLevel (blid body) $ updatePrio $ EM.alter rm (btime body)
+  let g Nothing = assert `failure` (aid, body)
+      g (Just l) = assert (aid `elem` l `blame` (aid, l, body))
+                   $ let l2 = delete aid l
+                     in if null l2 then Nothing else Just l2
+  updateLevel (blid body) $ updatePrio $ EM.alter g (btime body)
 
 -- | Create a few copies of an item that is already registered for the dungeon
 -- (in @sitemRev@ field of @StateServer@).
@@ -304,6 +309,12 @@ moveItemA lid iid k c1 c2 = assert (k > 0) $ do
   case c2 of
     CFloor pos -> insertItemFloor lid iid k pos
     CActor aid l -> insertItemActor iid k l aid
+
+ageActorA :: MonadAction m => ActorId -> Time -> m ()
+ageActorA aid t = assert (t /= timeZero) $ do
+  body <- getsState $ getActorBody aid
+  destroyActorA aid body
+  createActorA aid body {btime = timeAdd (btime body) t}
 
 healActorA :: MonadAction m => ActorId -> Int -> m ()
 healActorA aid n = assert (n /= 0) $

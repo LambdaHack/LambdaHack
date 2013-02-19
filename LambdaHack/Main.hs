@@ -42,9 +42,6 @@ main = do
       loopComputer :: (MonadAction m, MonadClientChan m) => m ()
       loopComputer = loopCli cmdCliSem
       exeClient False = executorCli loopHuman
-      -- This is correct, because the implicit contract ensures
-      -- @MonadClientChan@ never tries to access the client UI session
-      -- (unlike @MonadClientUI@).
       exeClient True = executorCli loopComputer
       loopServer = loopSer cmdSerSem
       exeServer executorC = executorSer (loopServer executorC cops)

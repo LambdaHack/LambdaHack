@@ -9,7 +9,6 @@ import qualified Control.Monad.State as St
 import Control.Monad.Writer.Strict (WriterT, execWriterT, runWriterT)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.List
 import Data.Maybe
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
@@ -53,7 +52,7 @@ loopSer :: forall m . (MonadActionAbort m, MonadAction m, MonadServerChan m)
         -> (FactionId -> ConnCli -> Bool -> IO ())
         -> Kind.COps
         -> m ()
-loopSer cmdSer executorC cops = do
+loopSer cmdSerSem executorC cops = do
   -- Recover states.
   restored <- tryRestore cops
   -- TODO: use the _msg somehow
@@ -92,7 +91,7 @@ loopSer cmdSer executorC cops = do
               when (clipN `mod` cinT == 0) $ generateMonster arena
               when (clipN `mod` cinT == 1) $ regenerateLevelHP arena
               when (clipN `mod` cinT == 2) checkEndGame
-              handleActors cmdSer arena timeZero
+              handleActors cmdSerSem arena timeZero
               modifyState $ updateTime arena $ timeAdd timeClip
         let f fac = do
               case gleader fac of
@@ -281,7 +280,7 @@ handleActors :: (MonadActionAbort m, MonadAction m, MonadServerChan m)
              -> LevelId
              -> Time  -- ^ start time of current subclip, exclusive
              -> m ()
-handleActors cmdSer arena subclipStart = do
+handleActors cmdSerSem arena subclipStart = do
   Kind.COps{coactor} <- getsState scops
   time <- getsState $ getTime arena  -- the end time of this clip, inclusive
   prio <- getsLevel arena lprio
@@ -303,9 +302,9 @@ handleActors cmdSer arena subclipStart = do
       when (subclipStart == timeZero) $
         broadcastUI DisplayDelayUI
     Just (actor, body) | bhp body <= 0 && not (bproj body) -> do
-      cmdSer (bfaction body) arena $ DieSer actor
+      cmdSerSem (bfaction body) arena $ DieSer actor
       -- Death is serious, new subclip.
-      handleActors cmdSer arena (btime body)
+      handleActors cmdSerSem arena (btime body)
     Just (actor, body) -> do
       broadcastUI DisplayPushUI  -- TODO: too often
       let side = bfaction body
@@ -325,13 +324,13 @@ handleActors cmdSer arena subclipStart = do
                             sendUpdateUI side DisplayPushUI
                             return True
                         ) $ do
-                  cmdSer side arena cmd
+                  cmdSerSem side arena cmd
                   return False
                 if aborted then return True else forCmd rest
           aborted <- forCmd cmdS
           -- All resulting atomic actions sent to @side@. Time to show them.
           sendUpdateUI side FlushFramesUI
-          if aborted then handleActors cmdSer arena subclipStart
+          if aborted then handleActors cmdSerSem arena subclipStart
           else do
             -- Advance time once, after the leader switched perhaps many times.
             -- TODO: this is correct only when all heroes have the same
@@ -347,7 +346,7 @@ handleActors cmdSer arena subclipStart = do
             bodyNew <- case mleaderNew of
               Just leaderNew | any timedCmdSer cmdS -> do
                 bNew <- getsState $ getActorBody leaderNew
-                advanceTime (blid bNew) leaderNew
+                advanceTime leaderNew
                 return bNew
               _ -> return body
             -- Human moves always start a new subclip.
@@ -359,10 +358,10 @@ handleActors cmdSer arena subclipStart = do
             -- simultaneous moves also generate delays.
             -- TODO: when changing leaders of different levels, if there's
             -- abort, a turn may be lost. Investigate/fix.
-            handleActors cmdSer arena (btime bodyNew)
+            handleActors cmdSerSem arena (btime bodyNew)
         else do
 --          recordHistory
-          advanceTime arena actor  -- advance time while the actor still alive
+          advanceTime actor  -- advance time while the actor still alive
           let subclipStartDelta = timeAddFromSpeed coactor body subclipStart
           if isHuman && not (bproj body)
              || subclipStart == timeZero
@@ -379,8 +378,8 @@ handleActors cmdSer arena subclipStart = do
                                then return ()
                                else assert `failure` msg <> "in AI"
                       )
-                      (mapM_ (cmdSer side arena) cmdS)
-              handleActors cmdSer arena (btime body)
+                      (mapM_ (cmdSerSem side arena) cmdS)
+              handleActors cmdSerSem arena (btime body)
             else do
               -- No new subclip.
               cmdS <- sendQueryCliAI side actor
@@ -390,25 +389,17 @@ handleActors cmdSer arena subclipStart = do
                                then return ()
                                else assert `failure` msg <> "in AI"
                       )
-                      (mapM_ (cmdSer side arena) cmdS)
-              handleActors cmdSer arena subclipStart
+                      (mapM_ (cmdSerSem side arena) cmdS)
+              handleActors cmdSerSem arena subclipStart
 
 -- | Advance the move time for the given actor.
-advanceTime :: MonadAction m => LevelId -> ActorId -> m ()
-advanceTime lid aid = do
+advanceTime :: (MonadAction m, MonadServerChan m) => ActorId -> m ()
+advanceTime aid = do
   Kind.COps{coactor} <- getsState scops
   b <- getsState $ getActorBody aid
-  let oldTime = btime b
-      newTime = timeAddFromSpeed coactor b oldTime
-      upd body = body {btime = newTime}
-  modifyState $ updateActorBody aid upd
-  let rm Nothing = assert `failure` aid
-      rm (Just l) = let l2 = delete aid l
-                    in if null l2 then Nothing else Just l2
-  updateLevel lid $ updatePrio $ EM.alter rm oldTime
-  let add Nothing = Just [aid]
-      add (Just l) = Just $ aid : l
-  updateLevel lid $ updatePrio $ EM.alter add newTime
+  let speed = actorSpeed coactor b
+      t = ticksPerMeter speed
+  cmdAtomicBroad (blid b) $ Left $ AgeActorA aid t
 
 -- | Continue or restart or exit the game.
 endOrLoop :: (MonadActionAbort m, MonadAction m, MonadServerChan m)

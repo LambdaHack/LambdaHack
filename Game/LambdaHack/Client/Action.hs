@@ -354,6 +354,9 @@ exeFrontend cops@Kind.COps{corule} exeClient exeServer = do
   let cli = defStateClient defHist sconfigUI
       loc = defStateLocal cops
       executorC sfs fid chanCli isAI =
+        -- This is correct, because the implicit contract ensures
+        -- @MonadClientChan@ never tries to access the client UI session
+        -- (unlike @MonadClientUI@).
         let sess | isAI = undefined
                  | otherwise = SessionUI{..}
         in exeClient isAI sess loc (cli fid isAI) chanCli

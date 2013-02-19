@@ -59,6 +59,7 @@ data CmdAtomic =
   | DisplaceActorA ActorId ActorId
   | MoveItemA LevelId ItemId Int Container Container
   -- Change actor attributes.
+  | AgeActorA ActorId Time
   | HealActorA ActorId Int
   | HasteActorA ActorId Speed
   | DominateActorA ActorId FactionId FactionId
@@ -109,6 +110,7 @@ undoCmdAtomic cmd = case cmd of
   WaitActorA aid fromWait toWait -> WaitActorA aid toWait fromWait
   DisplaceActorA source target -> DisplaceActorA target source
   MoveItemA lid iid k c1 c2 -> MoveItemA lid iid k c2 c1
+  AgeActorA aid t -> AgeActorA aid (timeNegate t)
   HealActorA aid n -> HealActorA aid (-n)
   HasteActorA aid delta -> HasteActorA aid (speedNegate delta)
   DominateActorA target fromFid toFid -> DominateActorA target toFid fromFid
