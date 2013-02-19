@@ -77,7 +77,6 @@ data CmdAtomic =
   | DiscoverA LevelId Point ItemId (Kind.Id ItemKind)
   | CoverA LevelId Point ItemId (Kind.Id ItemKind)
   | PerceptionA Perception
-  | SyncA
   deriving Show
 
 data DescAtomic =
@@ -125,7 +124,6 @@ undoCmdAtomic cmd = case cmd of
   DiscoverA lid p iid ik -> CoverA lid p iid ik
   CoverA lid p iid ik -> DiscoverA lid p iid ik
   PerceptionA per -> PerceptionA per  -- does not change State, anyway
-  SyncA -> SyncA
 
 undoDescAtomic :: DescAtomic -> DescAtomic
 undoDescAtomic cmd = case cmd of

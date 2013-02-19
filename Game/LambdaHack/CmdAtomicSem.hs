@@ -55,7 +55,6 @@ cmdAtomicSem cmd = case cmd of
   DiscoverA lid p iid ik -> discoverA lid p iid ik
   CoverA lid p iid ik -> coverA lid p iid ik
   PerceptionA _ -> return ()
-  SyncA -> return ()
 
 resetsFovAtomic :: MonadActionRO m => FactionId -> CmdAtomic -> m Bool
 resetsFovAtomic fid cmd = case cmd of
@@ -72,7 +71,6 @@ resetsFovAtomic fid cmd = case cmd of
   DominateActorA _ fromFid toFid -> return $ fid `elem` [fromFid, toFid]
   MoveItemA _ _ _ _ _ -> return False  -- unless shiny
   AlterTileA _ _ _ _ -> return True  -- even if pos not visible initially
-  SyncA -> return True  -- that's the only meaning of this command
   _ -> return False
 
 fidEquals :: MonadActionRO m => FactionId -> ActorId -> m Bool
@@ -133,7 +131,6 @@ posCmdAtomic cmd = case cmd of
   DiscoverA _ p _ _ -> return $ Right [p]
   CoverA _ p _ _ -> return $ Right [p]
   PerceptionA _ -> return $ Left Nothing
-  SyncA -> return $ Left Nothing
 
 posDescAtomic :: MonadActionRO m
               => DescAtomic -> m (Either (Maybe FactionId) [Point])

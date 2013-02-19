@@ -77,7 +77,6 @@ loopSer cmdSerSem executorC cops = do
     funBroadcastCli (\fid -> RestartCli (pers EM.! fid) defLoc)
     populateDungeon
     -- TODO: factor out common parts from restartGame and restoreOrRestart
-    cmdAtomicBroad initialLevel $ Left SyncA
     -- Save ASAP in case of crashes and disconnects.
     saveGameBkp
   modifyServer $ \ser1 -> ser1 {squit = Nothing}
@@ -485,7 +484,6 @@ restartGame loopServer = do
   defLoc <- getsState localFromGlobal
   funBroadcastCli (\fid -> RestartCli (pers EM.! fid) defLoc)
   populateDungeon
-  cmdAtomicBroad initialLevel $ Left $ SyncA
   saveGameBkp
   broadcastUI $ ShowMsgUI "This time for real."
   broadcastUI DisplayPushUI
