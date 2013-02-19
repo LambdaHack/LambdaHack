@@ -165,10 +165,6 @@ cmdAtomicBroad arena atomic = do
               outFov = ES.elems $ totalVisible perOld ES.\\ totalVisible perNew
           mapM_ (sendA fid) $ atomicRemember arena inFov outFov sOld
           anySend fid perOld perNew
-          -- Sending perception to verify the client's computed perception
-          -- is correct. TODO: For clients over slow connections turn it off;
-          -- for slow/primitive clients, w.g., within a browser, use this
-          -- instead of client computation.
           sendA fid $ PerceptionA perNew
         else anySend fid perOld perOld
   faction <- getsState sfaction
@@ -322,14 +318,21 @@ handleActors cmdSer arena subclipStart = do
           -- of actions for humans. OTOH, AI is controlled by the servers
           -- so the generated commands are assumed to be legal.
           cmdS <- sendQueryUI side actor
-          tryWith (\msg -> do
-                      sendUpdateUI side $ ShowMsgUI msg
-                      sendUpdateUI side DisplayPushUI
-                      handleActors cmdSer arena subclipStart
-                  ) $ do
-            mapM_ (cmdSer side arena) cmdS
-            -- All resulting atomic actions sent to @side@. Time to show them.
-            sendUpdateUI side FlushFramesUI
+          let forCmd [] = return False
+              forCmd (cmd : rest) = do
+                aborted <- tryWith (\msg -> do
+                            sendUpdateUI side $ ShowMsgUI msg
+                            sendUpdateUI side DisplayPushUI
+                            return True
+                        ) $ do
+                  cmdSer side arena cmd
+                  return False
+                if aborted then return True else forCmd rest
+          aborted <- forCmd cmdS
+          -- All resulting atomic actions sent to @side@. Time to show them.
+          sendUpdateUI side FlushFramesUI
+          if aborted then handleActors cmdSer arena subclipStart
+          else do
             -- Advance time once, after the leader switched perhaps many times.
             -- TODO: this is correct only when all heroes have the same
             -- speed and can't switch leaders by, e.g., aiming a wand
@@ -354,6 +357,8 @@ handleActors cmdSer arena subclipStart = do
             -- Right now other need it too, to notice the delay.
             -- This will also be more accurate since now unseen
             -- simultaneous moves also generate delays.
+            -- TODO: when changing leaders of different levels, if there's
+            -- abort, a turn may be lost. Investigate/fix.
             handleActors cmdSer arena (btime bodyNew)
         else do
 --          recordHistory

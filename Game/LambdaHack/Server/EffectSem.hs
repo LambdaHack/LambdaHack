@@ -364,7 +364,8 @@ effLvlGoUp aid k = do
         -- Sync the actor time with the level time.
         timeLastVisited <- getsState $ getTime arena
         let diff = timeAdd (btime pbodyCurrent) (timeNegate timeCurrent)
-            pbody = pbodyCurrent { btime = timeAdd timeLastVisited diff
+            pbody = pbodyCurrent { blid = nln
+                                 , btime = timeAdd timeLastVisited diff
                                  , bpos = npos }
         -- The actor is added to the new level, but there can be other actors
         -- at his old position or at his new position.

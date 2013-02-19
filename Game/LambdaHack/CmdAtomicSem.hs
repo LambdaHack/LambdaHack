@@ -187,14 +187,14 @@ singleContainer c = do
 -- moves, v.s., popping out of existence and then back in.
 breakCmdAtomic :: MonadActionRO m => CmdAtomic -> m [CmdAtomic]
 breakCmdAtomic cmd = case cmd of
-  MoveActorA aid fromP _ -> do
+  MoveActorA aid _ toP -> do
     b <- getsState $ getActorBody aid
-    return [LoseActorA aid b {bpos = fromP}, SpotActorA aid b]
+    return [LoseActorA aid b, SpotActorA aid b {bpos = toP}]
   DisplaceActorA source target -> do
     sb <- getsState $ getActorBody source
     tb <- getsState $ getActorBody target
-    return [ LoseActorA source sb {bpos = bpos tb}, SpotActorA source sb
-           , LoseActorA target tb {bpos = bpos sb}, SpotActorA target tb ]
+    return [ LoseActorA source sb, SpotActorA source sb {bpos = bpos tb}
+           , LoseActorA target tb, SpotActorA target tb {bpos = bpos sb}]
   MoveItemA lid iid k c1 c2 -> do
     item <- getsState $ getItemBody iid
     return [LoseItemA lid iid item k c1, SpotItemA lid iid item k c2]
@@ -210,13 +210,16 @@ createActorA aid body = do
 
 -- TODO: assert that the actor's items belong to sitemD.
 -- | Kills an actor. Note: after this command, usually a new leader
--- for the party should be elected.
+-- for the pa rty should be elected.
 destroyActorA :: MonadAction m => ActorId -> Actor -> m ()
 destroyActorA aid body = do
-  modifyState $ updateActorD $ EM.delete aid
+  let f Nothing = assert `failure` (aid, body)
+      f (Just b) = assert (b == body `blame` (aid, b, body)) $ Nothing
+  modifyState $ updateActorD $ EM.alter f aid
   let rm Nothing = assert `failure` (aid, body)
-      rm (Just l) = let l2 = delete aid l
-                    in if null l2 then Nothing else Just l2
+      rm (Just l) = assert (aid `elem` l `blame` (aid, body, l)) $
+        let l2 = delete aid l
+        in if null l2 then Nothing else Just l2
   updateLevel (blid body) $ updatePrio $ EM.alter rm (btime body)
 
 -- | Create a few copies of an item that is already registered for the dungeon
