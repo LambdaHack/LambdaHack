@@ -3,13 +3,15 @@
 -- moves turn by turn.
 module Game.LambdaHack.Server.LoopAction (loopSer, cmdAtomicBroad) where
 
-import Control.Arrow (second)
+import Control.Arrow (second, (&&&))
 import Control.Monad
 import qualified Control.Monad.State as St
 import Control.Monad.Writer.Strict (WriterT, execWriterT, runWriterT)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import Data.List
 import Data.Maybe
+import qualified Data.Ord as Ord
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
@@ -301,17 +303,23 @@ handleActors cmdSerSem arena subclipStart = do
   time <- getsState $ getTime arena  -- the end time of this clip, inclusive
   prio <- getsLevel arena lprio
   quitS <- getsServer squit
+  faction <- getsState sfaction
   s <- getState
-  let mnext = if EM.null prio  -- wait until any actor spawned
-              then Nothing
-              else let -- Actors of the same faction move together.
--- TODO: insert wrt this order = Ord.comparing (btime . snd &&& bfaction . snd)
-                       (atime, as) = EM.findMin prio
-                       actor = head as
-                       m = getActorBody actor s
-                   in if atime > time
-                      then Nothing  -- no actor is ready for another move
-                      else Just (actor, m)
+  let mnext =
+        if EM.null prio  -- wait until any actor spawned
+        then Nothing
+        else let -- Actors of the same faction move together.
+                 -- TODO: insert wrt order, instead of sorting
+                 isLeader (a1, b1) =
+                   not $ Just a1 == gleader (faction EM.! bfaction b1)
+                 order = Ord.comparing
+                   (bfaction . snd &&& isLeader &&& bsymbol . snd)
+                 (atime, as) = EM.findMin prio
+                 ams = map (\a -> (a, getActorBody a s)) as
+                 (actor, m) = head $ sortBy order ams
+             in if atime > time
+                then Nothing  -- no actor is ready for another move
+                else Just (actor, m)
   case mnext of
     _ | quitS == Just True -> return ()  -- SaveBkp waits for clip end
     Nothing -> do
@@ -324,8 +332,8 @@ handleActors cmdSerSem arena subclipStart = do
     Just (actor, body) -> do
       broadcastUI DisplayPushUI  -- TODO: too often
       let side = bfaction body
+          mleader = gleader $ faction EM.! side
       isHuman <- getsState $ flip isHumanFaction side
-      mleader <- getsState $ gleader . (EM.! side) . sfaction
       if Just actor == mleader && isHuman
         then do
           -- TODO: check that the command is legal, that is, the leader
