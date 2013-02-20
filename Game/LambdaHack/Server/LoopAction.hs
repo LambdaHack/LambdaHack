@@ -50,7 +50,7 @@ import Game.LambdaHack.Utils.Assert
 -- Run the leader and other actors moves. Eventually advance the time
 -- and repeat.
 loopSer :: forall m . (MonadActionAbort m, MonadAction m, MonadServerChan m)
-        => (FactionId -> CmdSer -> m ())
+        => (FactionId -> CmdSer -> m [Atomic])
         -> (FactionId -> ConnCli -> Bool -> IO ())
         -> Kind.COps
         -> m ()
@@ -294,7 +294,7 @@ gameOver fid arena showEndingScreens = do
 -- has changed since last time (every change, whether by human or AI
 -- or @generateMonster@ is followd by a call to @handleActors@).
 handleActors :: (MonadActionAbort m, MonadAction m, MonadServerChan m)
-             => (FactionId -> CmdSer -> m ())
+             => (FactionId -> CmdSer -> m [Atomic])
              -> LevelId
              -> Time  -- ^ start time of current subclip, exclusive
              -> m ()
@@ -326,7 +326,8 @@ handleActors cmdSerSem arena subclipStart = do
       when (subclipStart == timeZero) $
         broadcastUI DisplayDelayUI
     Just (actor, body) | bhp body <= 0 && not (bproj body) -> do
-      cmdSerSem (bfaction body) $ DieSer actor
+      atoms <- cmdSerSem (bfaction body) $ DieSer actor
+      mapM_ cmdAtomicBroad atoms
       -- Death is serious, new subclip.
       handleActors cmdSerSem arena (btime body)
     Just (actor, body) -> do
@@ -341,20 +342,24 @@ handleActors cmdSerSem arena subclipStart = do
           -- of actions for humans. OTOH, AI is controlled by the servers
           -- so the generated commands are assumed to be legal.
           cmdS <- sendQueryUI side actor
-          let forCmd [] = return False
+          let forCmd [] = return []
               forCmd (cmd : rest) = do
-                aborted <- tryWith (\msg -> do
-                            sendUpdateUI side $ ShowMsgUI msg
-                            sendUpdateUI side DisplayPushUI
-                            return True
-                        ) $ do
-                  cmdSerSem side cmd
-                  return False
-                if aborted then return True else forCmd rest
-          aborted <- forCmd cmdS
+                atoms <- tryWith (\msg -> do
+                           sendUpdateUI side $ ShowMsgUI msg
+                           sendUpdateUI side DisplayPushUI
+                           return []
+                           ) $ cmdSerSem side cmd
+                atomsRest <- forCmd rest
+                return $ atoms ++ atomsRest
+          atoms <- forCmd cmdS
+          mapM_ cmdAtomicBroad atoms
           -- All resulting atomic actions sent to @side@. Time to show them.
           sendUpdateUI side FlushFramesUI
-          if aborted then handleActors cmdSerSem arena subclipStart
+          let atomsAbort = case atoms of
+                [] -> True
+                [Left LeadFactionA{}] -> True
+                _ -> False
+          if atomsAbort then handleActors cmdSerSem arena subclipStart
           else do
             -- Advance time once, after the leader switched perhaps many times.
             -- TODO: this is correct only when all heroes have the same
@@ -402,7 +407,8 @@ handleActors cmdSerSem arena subclipStart = do
                                then return ()
                                else assert `failure` msg <> "in AI"
                       )
-                      (mapM_ (cmdSerSem side) cmdS)
+                      (do atoms <- fmap concat $ mapM (cmdSerSem side) cmdS
+                          mapM_ cmdAtomicBroad atoms)
               handleActors cmdSerSem arena (btime body)
             else do
               -- No new subclip.
@@ -413,7 +419,8 @@ handleActors cmdSerSem arena subclipStart = do
                                then return ()
                                else assert `failure` msg <> "in AI"
                       )
-                      (mapM_ (cmdSerSem side) cmdS)
+                      (do atoms <- fmap concat $ mapM (cmdSerSem side) cmdS
+                          mapM_ cmdAtomicBroad atoms)
               handleActors cmdSerSem arena subclipStart
 
 -- | Advance the move time for the given actor.

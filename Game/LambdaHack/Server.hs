@@ -15,11 +15,9 @@ import Game.LambdaHack.Server.CmdSerSem
 import Game.LambdaHack.Server.LoopAction
 
 -- | The semantics of server commands.
-cmdSerSem :: (MonadActionAbort m, MonadAction m, MonadServerChan m)
-          => FactionId -> CmdSer -> m ()
-cmdSerSem fid cmd = do
-  cmds <- execWriterT $ cmdSerWriterT fid cmd
-  mapM_ cmdAtomicBroad cmds
+cmdSerSem :: (MonadActionAbort m, MonadServerChan m)
+          => FactionId -> CmdSer -> m [Atomic]
+cmdSerSem fid cmd = execWriterT $ cmdSerWriterT fid cmd
 
 cmdSerWriterT :: (MonadActionAbort m, MonadServer m)
               => FactionId -> CmdSer -> WriterT [Atomic] m ()
