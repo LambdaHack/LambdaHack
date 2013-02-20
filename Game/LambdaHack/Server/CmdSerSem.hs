@@ -43,7 +43,7 @@ import Game.LambdaHack.Vector
 default (Text)
 
 abortWith :: Monad m => FactionId -> Msg -> WriterT [Atomic] m ()
-abortWith fid msg = tellDescAtomic $ FailureA fid msg
+abortWith fid msg = tellDescAtomic $ FailureD fid msg
 
 neverMind :: Monad m => FactionId -> WriterT [Atomic] m ()
 neverMind fid = abortWith fid "never mind"
@@ -143,18 +143,18 @@ actorAttackActor source target = do
         return $ ( Nothing
                  , buildItem flavour discoRev h2hKind (okind h2hKind) 0 )
   let performHit block = do
-        let hitA = if block then HitBlockA else HitA
+        let hitA = if block then HitBlockD else HitD
         -- Msgs inside itemEffectSem describe the target part.
         itemEffect source target miid item
         -- Order reversed to anticipate death in the strike message.
         -- Note: this means actors should not be destroyed in @itemEffect@.
-        tellDescAtomic $ StrikeA source target item hitA
+        tellDescAtomic $ StrikeD source target item hitA
   -- Projectiles can't be blocked, can be sidestepped.
   if braced tm time && not (bproj sm)
     then do
       blocked <- rndToAction $ chance $ 1%2
       if blocked
-        then tellDescAtomic $ StrikeA source target item MissBlockA
+        then tellDescAtomic $ StrikeD source target item MissBlockD
         else performHit True
     else performHit False
 
@@ -314,7 +314,7 @@ projectSer source tpos eps iid container = do
       inhabitants <- getsState (posToActor pos arena)
       if accessible cops lvl spos pos && isNothing inhabitants
         then do
-          tellDescAtomic $ ProjectA source iid
+          tellDescAtomic $ ProjectD source iid
           projId <- addProjectile iid pos (blid sm) (bfaction sm) path time
           tellCmdAtomic
             $ MoveItemA iid 1 container (CActor projId (InvChar 'a'))
@@ -370,7 +370,7 @@ applySer :: MonadServer m
          -> WriterT [Atomic] m ()
 applySer actor iid container = do
   item <- getsState $ getItemBody iid
-  tellDescAtomic $ ActivateA actor iid
+  tellDescAtomic $ ActivateD actor iid
   itemEffect actor actor (Just iid) item
   tellCmdAtomic $ DestroyItemA iid item 1 container
 
@@ -387,12 +387,12 @@ triggerSer aid dpos = do
   let f feat = do
         case feat of
           F.Cause ef -> do
-            tellDescAtomic $ TriggerA aid dpos feat {-TODO-}True
+            tellDescAtomic $ TriggerD aid dpos feat {-TODO-}True
             -- No block against tile, hence @False@.
             void $ effectSem ef aid aid 0
             return ()
           F.ChangeTo tgroup -> do
-            tellDescAtomic $ TriggerA aid dpos feat {-TODO-}True
+            tellDescAtomic $ TriggerD aid dpos feat {-TODO-}True
             as <- getsState $ actorList (const True) arena
             if EM.null $ lvl `atI` dpos
               then if unoccupied as dpos

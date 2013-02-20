@@ -105,7 +105,7 @@ effectHeal target power = do
     else do
       let deltaHP = min power (bhpMax - bhp tm)
       tellCmdAtomic $ HealActorA target deltaHP
-      tellDescAtomic $ EffectA target Effect.Heal
+      tellDescAtomic $ EffectD target Effect.Heal
       return True
 
 -- ** Wound
@@ -122,7 +122,7 @@ effectWound nDm source target power = do
       -- Damage the target.
       tellCmdAtomic $ HealActorA target deltaHP
       when (source == target) $
-        tellDescAtomic $ EffectA source $ Effect.Wound nDm
+        tellDescAtomic $ EffectD source $ Effect.Wound nDm
       return True
 
 -- ** Mindprobe
@@ -136,10 +136,10 @@ effectMindprobe target = do
   lb <- getsState $ actorNotProjList (`elem` genemy) arena
   let nEnemy = length lb
   if nEnemy == 0 then do
-    tellDescAtomic $ EffectA target Effect.NoEffect
+    tellDescAtomic $ EffectD target Effect.NoEffect
     return False
   else do
-    tellDescAtomic $ EffectA target $ Effect.Mindprobe nEnemy
+    tellDescAtomic $ EffectD target $ Effect.Mindprobe nEnemy
     return True
 
 -- ** Dominate
@@ -311,7 +311,7 @@ effectApplyPerfume source target =
     oldSmell <- getsLevel (blid tm) lsmell
     let diffL = map (\(p, sm) -> (p, (Just sm, Nothing))) $ EM.assocs oldSmell
     tellCmdAtomic $ AlterSmellA (blid tm) diffL
-    tellDescAtomic $ EffectA target Effect.ApplyPerfume
+    tellDescAtomic $ EffectD target Effect.ApplyPerfume
     return True
 
 -- ** Regeneration
@@ -320,7 +320,7 @@ effectApplyPerfume source target =
 
 effectSearching :: Monad m => ActorId -> WriterT [Atomic] m Bool
 effectSearching source = do
-  tellDescAtomic $ EffectA source Effect.Searching
+  tellDescAtomic $ EffectD source Effect.Searching
   return True
 
 -- ** Ascend
@@ -329,7 +329,7 @@ effectAscend :: MonadServer m
              => ActorId -> Int -> WriterT [Atomic] m Bool
 effectAscend target power = do
   effLvlGoUp target (power + 1)
-  tellDescAtomic $ EffectA target Effect.Ascend
+  tellDescAtomic $ EffectD target Effect.Ascend
   return True
 
 effLvlGoUp :: MonadServer m => ActorId -> Int -> WriterT [Atomic] m ()
@@ -432,5 +432,5 @@ effectDescend :: MonadServer m
               => ActorId -> Int -> WriterT [Atomic] m Bool
 effectDescend target power = do
   effLvlGoUp target (- (power + 1))
-  tellDescAtomic $ EffectA target Effect.Descend
+  tellDescAtomic $ EffectD target Effect.Descend
   return True

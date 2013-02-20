@@ -344,7 +344,7 @@ handleActors cmdSerSem arena subclipStart = do
           -- so the generated commands are assumed to be legal.
           cmdS <- sendQueryUI side actor
           atoms <- cmdSerSem side cmdS
-          let isFailure cmd = case cmd of Right FailureA{} -> True; _ -> False
+          let isFailure cmd = case cmd of Right FailureD{} -> True; _ -> False
               aborted = all isFailure atoms
               mleaderNew = aidCmdSer cmdS
               timed = timedCmdSer cmdS
@@ -384,7 +384,7 @@ handleActors cmdSerSem arena subclipStart = do
         else do
           cmdS <- sendQueryCliAI side actor
           atoms <- cmdSerSem side cmdS
-          let isFailure cmd = case cmd of Right FailureA{} -> True; _ -> False
+          let isFailure cmd = case cmd of Right FailureD{} -> True; _ -> False
               aborted = all isFailure atoms
               mleaderNew = aidCmdSer cmdS
               timed = timedCmdSer cmdS

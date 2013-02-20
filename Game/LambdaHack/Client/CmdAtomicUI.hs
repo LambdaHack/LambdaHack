@@ -260,8 +260,8 @@ descAtomicUI desc = drawDescAtomicUI False desc
 
 drawDescAtomicUI :: MonadClientUI m => Bool -> DescAtomic -> m ()
 drawDescAtomicUI verbose desc = case desc of
-  StrikeA source target item b -> strikeA source target item b
-  RecoilA source target _ _ -> do
+  StrikeD source target item b -> strikeD source target item b
+  RecoilD source target _ _ -> do
     Kind.COps{coactor} <- getsState scops
     sb <- getsState $ getActorBody source
     tb <- getsState $ getActorBody target
@@ -269,15 +269,15 @@ drawDescAtomicUI verbose desc = case desc of
           [ MU.SubjectVerbSg (partActor coactor sb) "shrink back from"
           , partActor coactor tb ]
     msgAdd msg
-  ProjectA aid iid -> aiVerbMU aid "aim" iid 1
-  CatchA aid iid -> aiVerbMU aid "catch" iid 1
-  ActivateA aid iid -> aiVerbMU aid "activate"{-TODO-} iid 1
-  CheckA aid iid -> aiVerbMU aid "check" iid 1
-  TriggerA aid _p _feat _ | verbose ->
+  ProjectD aid iid -> aiVerbMU aid "aim" iid 1
+  CatchD aid iid -> aiVerbMU aid "catch" iid 1
+  ActivateD aid iid -> aiVerbMU aid "activate"{-TODO-} iid 1
+  CheckD aid iid -> aiVerbMU aid "check" iid 1
+  TriggerD aid _p _feat _ | verbose ->
     aVerbMU aid $ "trigger"  -- TODO: opens door
-  ShunA aid _p _ _ | verbose ->
+  ShunD aid _p _ _ | verbose ->
     aVerbMU aid $ "shun"  -- TODO: shuns stairs down
-  EffectA aid effect -> do
+  EffectD aid effect -> do
     b <- getsState $ getActorBody aid
     if bhp b > 0
       then case effect of
@@ -307,15 +307,15 @@ drawDescAtomicUI verbose desc = case desc of
           let verbD = if bproj b then "break up" else "collapse"
           aVerbMU aid verbD
         _ ->  return ()
-  FailureA fid msg -> do
+  FailureD fid msg -> do
     side <- getsClient sside
     assert (fid == side) $ return ()
     msgAdd msg
   _ -> return ()
 
-strikeA :: MonadClientUI m
+strikeD :: MonadClientUI m
         => ActorId -> ActorId -> Item -> HitAtomic -> m ()
-strikeA source target item b = do
+strikeD source target item b = do
   Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}} <- getsState scops
   disco <- getsState sdisco
   sb <- getsState $ getActorBody source
@@ -327,7 +327,7 @@ strikeA source target item b = do
           Just ik -> let kind = okind ik
                      in ( iverbApply kind
                         , isNothing $ lookup "hth" $ ifreq kind )
-      msg MissBlockA =
+      msg MissBlockD =
         let (partBlock1, partBlock2) =
               if withWhat
               then ("swing", partItemAW coitem disco item)
@@ -356,9 +356,9 @@ strikeA source target item b = do
         in (msgD, animD)
   msgAdd $ msg b <+> msgDie
   let ps = (bpos tb, bpos sb)
-      anim HitA = twirlSplash ps Color.BrRed Color.Red
-      anim HitBlockA = blockHit ps Color.BrRed Color.Red
-      anim MissBlockA = blockMiss ps
+      anim HitD = twirlSplash ps Color.BrRed Color.Red
+      anim HitBlockD = blockHit ps Color.BrRed Color.Red
+      anim MissBlockD = blockMiss ps
       animFrs = animate cli loc per (anim b)
   displayFramesPush $ Nothing : animFrs
   -- Animate only when the client's own actor dies.

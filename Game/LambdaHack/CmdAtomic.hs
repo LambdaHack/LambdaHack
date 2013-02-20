@@ -83,20 +83,20 @@ data CmdAtomic =
   deriving (Show, Eq)
 
 data DescAtomic =
-    StrikeA ActorId ActorId Item HitAtomic
-  | RecoilA ActorId ActorId Item HitAtomic
-  | ProjectA ActorId ItemId
-  | CatchA ActorId ItemId
-  | ActivateA ActorId ItemId
-  | CheckA ActorId ItemId
-  | TriggerA ActorId Point F.Feature Bool
-  | ShunA ActorId Point F.Feature Bool
-  | EffectA ActorId Effect.Effect
-  | FailureA FactionId Msg
+    StrikeD ActorId ActorId Item HitAtomic
+  | RecoilD ActorId ActorId Item HitAtomic
+  | ProjectD ActorId ItemId
+  | CatchD ActorId ItemId
+  | ActivateD ActorId ItemId
+  | CheckD ActorId ItemId
+  | TriggerD ActorId Point F.Feature Bool
+  | ShunD ActorId Point F.Feature Bool
+  | EffectD ActorId Effect.Effect
+  | FailureD FactionId Msg
 -- TODO: SearchA
   deriving (Show, Eq)
 
-data HitAtomic = HitA | HitBlockA | MissBlockA
+data HitAtomic = HitD | HitBlockD | MissBlockD
   deriving (Show, Eq)
 
 undoCmdAtomic :: CmdAtomic -> CmdAtomic
@@ -132,16 +132,16 @@ undoCmdAtomic cmd = case cmd of
 
 undoDescAtomic :: DescAtomic -> DescAtomic
 undoDescAtomic cmd = case cmd of
-  StrikeA source target item b -> RecoilA source target item b
-  RecoilA source target item b -> StrikeA source target item b
-  ProjectA aid iid -> CatchA aid iid
-  CatchA aid iid -> ProjectA aid iid
-  ActivateA aid iid -> CheckA aid iid
-  CheckA aid iid -> ActivateA aid iid
-  TriggerA aid p feat b -> ShunA aid p feat b
-  ShunA aid p feat b -> TriggerA aid p feat b
-  EffectA _ _ -> cmd  -- not ideal?
-  FailureA _ _ -> cmd
+  StrikeD source target item b -> RecoilD source target item b
+  RecoilD source target item b -> StrikeD source target item b
+  ProjectD aid iid -> CatchD aid iid
+  CatchD aid iid -> ProjectD aid iid
+  ActivateD aid iid -> CheckD aid iid
+  CheckD aid iid -> ActivateD aid iid
+  TriggerD aid p feat b -> ShunD aid p feat b
+  ShunD aid p feat b -> TriggerD aid p feat b
+  EffectD _ _ -> cmd  -- not ideal?
+  FailureD _ _ -> cmd
 
 undoAtomic :: Atomic -> Atomic
 undoAtomic (Left cmd) = Left $ undoCmdAtomic cmd

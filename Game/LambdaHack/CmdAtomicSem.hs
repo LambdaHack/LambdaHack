@@ -146,26 +146,26 @@ posDescAtomic :: MonadActionRO m
               => DescAtomic
               -> m (Either (Either Bool FactionId) (LevelId, [Point]))
 posDescAtomic cmd = case cmd of
-  StrikeA source target _ _ -> do
+  StrikeD source target _ _ -> do
     (slid, sp) <- posOfAid source
     (tlid, tp) <- posOfAid target
     return $ assert (slid == tlid) $ Right (slid, [sp, tp])
-  RecoilA source target _ _ -> do
+  RecoilD source target _ _ -> do
     (slid, sp) <- posOfAid source
     (tlid, tp) <- posOfAid target
     return $ assert (slid == tlid) $ Right (slid, [sp, tp])
-  ProjectA aid _ -> singleAid aid
-  CatchA aid _ -> singleAid aid
-  ActivateA aid _ -> singleAid aid
-  CheckA aid _ -> singleAid aid
-  TriggerA aid p _ _ -> do
+  ProjectD aid _ -> singleAid aid
+  CatchD aid _ -> singleAid aid
+  ActivateD aid _ -> singleAid aid
+  CheckD aid _ -> singleAid aid
+  TriggerD aid p _ _ -> do
     (lid, pa) <- posOfAid aid
     return $ Right (lid, [pa, p])
-  ShunA aid p _ _ -> do
+  ShunD aid p _ _ -> do
     (lid, pa) <- posOfAid aid
     return $ Right (lid, [pa, p])
-  EffectA aid _ -> singleAid aid
-  FailureA fid _ -> return $ Left $ Right fid  -- failures are secret
+  EffectD aid _ -> singleAid aid
+  FailureD fid _ -> return $ Left $ Right fid  -- failures are secret
 
 posOfAid :: MonadActionRO m => ActorId -> m (LevelId, Point)
 posOfAid aid = do
