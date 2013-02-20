@@ -93,6 +93,9 @@ data DescAtomic =
   | ShunD ActorId Point F.Feature Bool
   | EffectD ActorId Effect.Effect
   | FailureD FactionId Msg
+  | DisplayPushD FactionId
+  | DisplayDelayD FactionId
+  | FlushFramesD FactionId
 -- TODO: SearchA
   deriving (Show, Eq)
 
@@ -142,6 +145,9 @@ undoDescAtomic cmd = case cmd of
   ShunD aid p feat b -> TriggerD aid p feat b
   EffectD _ _ -> cmd  -- not ideal?
   FailureD _ _ -> cmd
+  DisplayPushD _ -> cmd
+  DisplayDelayD _ -> cmd
+  FlushFramesD _ -> cmd
 
 undoAtomic :: Atomic -> Atomic
 undoAtomic (Left cmd) = Left $ undoCmdAtomic cmd

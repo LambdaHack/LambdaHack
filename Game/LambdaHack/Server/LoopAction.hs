@@ -325,14 +325,16 @@ handleActors cmdSerSem arena subclipStart = do
     _ | quitS == Just True -> return ()  -- SaveBkp waits for clip end
     Nothing -> do
       when (subclipStart == timeZero) $
-        broadcastUI DisplayDelayUI
+        mapM_ cmdAtomicBroad $ map (Right . DisplayDelayD) $ EM.keys faction
     Just (actor, body) | bhp body <= 0 && not (bproj body) -> do
       atoms <- cmdSerSem (bfaction body) $ DieSer actor
       mapM_ cmdAtomicBroad atoms
       -- Death is serious, new subclip.
       handleActors cmdSerSem arena (btime body)
     Just (actor, body) -> do
-      broadcastUI DisplayPushUI  -- TODO: too often
+      let allPush =
+            map (Right . DisplayPushD) $ EM.keys faction  -- TODO: too often
+      mapM_ cmdAtomicBroad allPush  -- needs to be there before key presses
       let side = bfaction body
           mleader = gleader $ faction EM.! side
       isHuman <- getsState $ flip isHumanFaction side
@@ -356,9 +358,8 @@ handleActors cmdSerSem arena subclipStart = do
           advanceAtoms <- if aborted || not timed
                           then return []
                           else advanceTime leaderNew
-          mapM_ cmdAtomicBroad $ leadAtoms ++ atoms ++ advanceAtoms
-          -- All resulting atomic actions sent to @side@. Time to show them.
-          sendUpdateUI side FlushFramesUI
+          let flush = [Right $ FlushFramesD side]
+          mapM_ cmdAtomicBroad $ leadAtoms ++ atoms ++ advanceAtoms ++ flush
           if aborted then handleActors cmdSerSem arena subclipStart
           else do
             -- Advance time once, after the leader switched perhaps many times.

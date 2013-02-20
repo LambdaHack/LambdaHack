@@ -166,6 +166,9 @@ posDescAtomic cmd = case cmd of
     return $ Right (lid, [pa, p])
   EffectD aid _ -> singleAid aid
   FailureD fid _ -> return $ Left $ Right fid  -- failures are secret
+  DisplayPushD fid -> return $ Left $ Right fid
+  DisplayDelayD fid -> return $ Left $ Right fid
+  FlushFramesD fid -> return $ Left $ Right fid
 
 posOfAid :: MonadActionRO m => ActorId -> m (LevelId, Point)
 posOfAid aid = do

@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Semantics of client UI response to atomic commands.
 module Game.LambdaHack.Client.CmdAtomicUI
-  ( cmdAtomicCli, cmdAtomicUI, descAtomicUI
+  ( cmdAtomicSem, cmdAtomicSemCli, drawCmdAtomicUI, drawDescAtomicUI
   ) where
 
 import Control.Monad
@@ -33,12 +33,7 @@ import Game.LambdaHack.State
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
 
--- * cmdAtomicCli
-
-cmdAtomicCli :: (MonadAction m, MonadClient m) => CmdAtomic -> m ()
-cmdAtomicCli cmd = do
-  cmdAtomicSem cmd
-  cmdAtomicSemCli cmd
+-- * CmdAtomicCli
 
 cmdAtomicSemCli :: MonadClient m => CmdAtomic -> m ()
 cmdAtomicSemCli cmd = case cmd of
@@ -71,12 +66,7 @@ cmdAtomicSemCli cmd = case cmd of
     -- TODO: Save ASAP in case of crashes and disconnects.
   _ -> return ()
 
--- * cmdAtomicUI
-
-cmdAtomicUI :: (MonadAction m, MonadClientUI m) => CmdAtomic -> m ()
-cmdAtomicUI cmd = do
-  cmdAtomicCli cmd
-  drawCmdAtomicUI False cmd
+-- * CmdAtomicUI
 
 -- TODO: let user configure which messages are not created, which are
 -- slightly hidden, which are shown and which flash and center screen.
@@ -253,10 +243,7 @@ quitFactionA fid toSt = do
             [MU.SubjectVerbSg fidName "cancel all requests"]
       msgAdd msg
 
--- * descAtomicUI
-
-descAtomicUI :: MonadClientUI m => DescAtomic -> m ()
-descAtomicUI desc = drawDescAtomicUI False desc
+-- * DescAtomicUI
 
 drawDescAtomicUI :: MonadClientUI m => Bool -> DescAtomic -> m ()
 drawDescAtomicUI verbose desc = case desc of
@@ -311,6 +298,15 @@ drawDescAtomicUI verbose desc = case desc of
     side <- getsClient sside
     assert (fid == side) $ return ()
     msgAdd msg
+  DisplayPushD _ -> displayPush
+  DisplayDelayD _ -> displayFramesPush [Nothing]
+  FlushFramesD _ -> do
+    srunning <- getsClient srunning
+    case srunning of
+      Just (_, k) | k > 1 -> return ()
+      _ -> do
+        displayPush
+        flushFrames
   _ -> return ()
 
 strikeD :: MonadClientUI m

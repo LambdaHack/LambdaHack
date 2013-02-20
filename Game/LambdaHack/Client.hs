@@ -14,8 +14,10 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.CmdCli
 
 cmdCliSem :: (MonadAction m, MonadClientChan m) => CmdCli -> m ()
-cmdCliSem cmd2 = case cmd2 of
-  CmdAtomicCli cmdA -> cmdAtomicCli cmdA
+cmdCliSem cmd = case cmd of
+  CmdAtomicCli cmdA -> do
+    cmdAtomicSem cmdA
+    cmdAtomicSemCli cmdA
   ContinueSavedCli sfper -> modifyClient $ \cli -> cli {sfper}
   GameSaveBkpCli -> clientGameSave True
   GameDisconnectCli -> clientDisconnect
@@ -26,18 +28,13 @@ cmdCliSem cmd2 = case cmd2 of
 cmdUISem :: ( MonadActionAbort m, MonadAction m
             , MonadClientUI m, MonadClientChan m )
          => CmdUI -> m ()
-cmdUISem cmd2 = case cmd2 of
-  CmdAtomicUI cmdA -> cmdAtomicUI cmdA
-  DescAtomicUI desc -> descAtomicUI desc
-  DisplayPushUI -> displayPush
-  DisplayDelayUI -> displayFramesPush [Nothing]
-  FlushFramesUI -> do
-    srunning <- getsClient srunning
-    case srunning of
-      Just (_, k) | k > 1 -> return ()
-      _ -> do
-        displayPush
-        flushFrames
+cmdUISem cmd = case cmd of
+  CmdAtomicUI cmdA -> do
+    cmdAtomicSem cmdA
+    cmdAtomicSemCli cmdA
+    drawCmdAtomicUI False cmdA
+  DescAtomicUI desc ->
+    drawDescAtomicUI False desc
   CmdHandleHumanUI aid -> do
     a <- handleHuman aid
     writeChanToSer a

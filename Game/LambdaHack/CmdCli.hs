@@ -17,13 +17,9 @@ data CmdCli =
   | CmdHandleAICli ActorId
   deriving Show
 
--- TODO: move most to atomic
 -- | Abstract syntax of client commands that use the UI.
 data CmdUI =
     CmdAtomicUI CmdAtomic
   | DescAtomicUI DescAtomic
-  | DisplayPushUI
-  | DisplayDelayUI
-  | FlushFramesUI
   | CmdHandleHumanUI ActorId
   deriving Show
