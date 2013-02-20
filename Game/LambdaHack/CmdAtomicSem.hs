@@ -30,16 +30,16 @@ cmdAtomicSem :: MonadAction m => CmdAtomic -> m ()
 cmdAtomicSem cmd = case cmd of
   CreateActorA aid body -> createActorA aid body
   DestroyActorA aid body -> destroyActorA aid body
-  CreateItemA lid iid item k c -> createItemA lid iid item k c
-  DestroyItemA lid iid item k c -> destroyItemA lid iid item k c
+  CreateItemA iid item k c -> createItemA iid item k c
+  DestroyItemA iid item k c -> destroyItemA iid item k c
   SpotActorA aid body -> createActorA aid body
   LoseActorA aid body -> destroyActorA aid body
-  SpotItemA lid iid item k c -> createItemA lid iid item k c
-  LoseItemA lid iid item k c -> destroyItemA lid iid item k c
+  SpotItemA iid item k c -> createItemA iid item k c
+  LoseItemA iid item k c -> destroyItemA iid item k c
   MoveActorA aid fromP toP -> moveActorA aid fromP toP
   WaitActorA aid fromWait toWait -> waitActorA aid fromWait toWait
   DisplaceActorA source target -> displaceActorA source target
-  MoveItemA lid iid k c1 c2 -> moveItemA lid iid k c1 c2
+  MoveItemA iid k c1 c2 -> moveItemA iid k c1 c2
   AgeActorA aid t -> ageActorA aid t
   HealActorA aid n -> healActorA aid n
   HasteActorA aid delta -> hasteActorA aid delta
@@ -63,8 +63,8 @@ resetsFovAtomic :: MonadActionRO m => CmdAtomic -> m (Maybe [FactionId])
 resetsFovAtomic cmd = case cmd of
   CreateActorA _ body -> return $ Just [bfaction body]
   DestroyActorA _ _ -> return $ Just []  -- FOV kept for a bit to see aftermath
-  CreateItemA _ _ _ _ _ -> return $ Just []  -- unless shines
-  DestroyItemA _ _ _ _ _ -> return $ Just []  -- ditto
+  CreateItemA _ _ _ _ -> return $ Just []  -- unless shines
+  DestroyItemA _ _ _ _ -> return $ Just []  -- ditto
   MoveActorA aid _ _ -> fmap Just $ fidOfAid aid  -- assumption: has no light
 -- TODO: MoveActorCarryingLIghtA _ _ _ -> True
   DisplaceActorA source target -> do
@@ -74,7 +74,7 @@ resetsFovAtomic cmd = case cmd of
       then return $ Just []
       else return $ Just $ sfid ++ tfid
   DominateActorA _ fromFid toFid -> return $ Just [fromFid, toFid]
-  MoveItemA _ _ _ _ _ -> return $ Just []  -- unless shiny
+  MoveItemA _ _ _ _ -> return $ Just []  -- unless shiny
   AlterTileA _ _ _ _ -> return Nothing  -- even if pos not visible initially
   _ -> return $ Just []
 
@@ -103,12 +103,12 @@ posCmdAtomic :: MonadActionRO m
 posCmdAtomic cmd = case cmd of
   CreateActorA _ body -> return $ Right (blid body, [bpos body])
   DestroyActorA _ body -> return $ Right (blid body, [bpos body])
-  CreateItemA lid _ _ _ c -> singleContainer c lid
-  DestroyItemA lid _ _ _ c -> singleContainer c lid
+  CreateItemA _ _ _ c -> singleContainer c
+  DestroyItemA _ _ _ c -> singleContainer c
   SpotActorA _ body -> return $ Right (blid body, [bpos body])
   LoseActorA _ body -> return $ Right (blid body, [bpos body])
-  SpotItemA lid _ _ _ c -> singleContainer c lid
-  LoseItemA lid _ _ _ c -> singleContainer c lid
+  SpotItemA _ _ _ c -> singleContainer c
+  LoseItemA _ _ _ c -> singleContainer c
   MoveActorA aid fromP toP -> do
     (lid, p) <- posOfAid aid
     return $ assert (fromP == p) $ Right (lid, [fromP, toP])
@@ -117,10 +117,10 @@ posCmdAtomic cmd = case cmd of
     (slid, sp) <- posOfAid source
     (tlid, tp) <- posOfAid target
     return $ assert (slid == tlid) $ Right (slid, [sp, tp])
-  MoveItemA lid _ _ c1 c2 -> do  -- works even if moved between positions
-    p1 <- posOfContainer c1
-    p2 <- posOfContainer c2
-    return $ Right (lid, [p1, p2])
+  MoveItemA _ _ c1 c2 -> do  -- works even if moved between positions
+    (lid1, p1) <- posOfContainer c1
+    (lid2, p2) <- posOfContainer c2
+    return $ assert (lid1 == lid2) $ Right (lid1, [p1, p2])
   AgeActorA aid _ -> singleAid aid
   HealActorA aid _ -> singleAid aid
   HasteActorA aid _ -> singleAid aid
@@ -168,9 +168,9 @@ posOfAid aid = do
   b <- getsState $ getActorBody aid
   return (blid b, bpos b)
 
-posOfContainer :: MonadActionRO m => Container -> m Point
-posOfContainer (CFloor p) = return p
-posOfContainer (CActor aid _) = fmap snd $ posOfAid aid
+posOfContainer :: MonadActionRO m => Container -> m (LevelId, Point)
+posOfContainer (CFloor lid p) = return (lid, p)
+posOfContainer (CActor aid _) = posOfAid aid
 
 singleAid :: MonadActionRO m
           => ActorId -> m (Either (Either Bool FactionId) (LevelId, [Point]))
@@ -179,10 +179,10 @@ singleAid aid = do
   return $ Right (lid, [p])
 
 singleContainer :: MonadActionRO m
-                => Container -> LevelId
+                => Container
                 -> m (Either (Either Bool FactionId) (LevelId, [Point]))
-singleContainer c lid = do
-  p <- posOfContainer c
+singleContainer c = do
+  (lid, p) <- posOfContainer c
   return $ Right (lid, [p])
 
 -- | Decompose an atomic action. The original action is visible
@@ -205,9 +205,9 @@ breakCmdAtomic cmd = case cmd of
     tb <- getsState $ getActorBody target
     return [ LoseActorA source sb, SpotActorA source sb {bpos = bpos tb}
            , LoseActorA target tb, SpotActorA target tb {bpos = bpos sb}]
-  MoveItemA lid iid k c1 c2 -> do
+  MoveItemA iid k c1 c2 -> do
     item <- getsState $ getItemBody iid
-    return [LoseItemA lid iid item k c1, SpotItemA lid iid item k c2]
+    return [LoseItemA iid item k c1, SpotItemA iid item k c2]
   _ -> return [cmd]
 
 -- TODO: assert that the actor's items belong to sitemD.
@@ -237,14 +237,13 @@ destroyActorA aid body = do
 
 -- | Create a few copies of an item that is already registered for the dungeon
 -- (in @sitemRev@ field of @StateServer@).
-createItemA :: MonadAction m
-            => LevelId -> ItemId -> Item -> Int -> Container -> m ()
-createItemA lid iid item k c = assert (k > 0) $ do
+createItemA :: MonadAction m => ItemId -> Item -> Int -> Container -> m ()
+createItemA iid item k c = assert (k > 0) $ do
   -- The item may or may not be already present in the dungeon.
   let f item1 item2 = assert (item1 == item2) item1
   modifyState $ updateItemD $ EM.insertWith f iid item
   case c of
-    CFloor pos -> insertItemFloor lid iid k pos
+    CFloor lid pos -> insertItemFloor lid iid k pos
     CActor aid l -> insertItemActor iid k l aid
 
 insertItemFloor :: MonadAction m
@@ -267,13 +266,12 @@ insertItemActor iid k l aid = do
     b {bletter = max l (bletter b)}
 
 -- | Destroy some copies (possibly not all) of an item.
-destroyItemA :: MonadAction m
-             => LevelId -> ItemId -> Item -> Int -> Container -> m ()
-destroyItemA lid iid _item k c = assert (k > 0) $ do
+destroyItemA :: MonadAction m => ItemId -> Item -> Int -> Container -> m ()
+destroyItemA iid _item k c = assert (k > 0) $ do
   -- Do not remove the item from @sitemD@ nor from @sitemRev@,
   -- This is behaviourally equivalent.
   case c of
-    CFloor pos -> deleteItemFloor lid iid k pos
+    CFloor lid pos -> deleteItemFloor lid iid k pos
     CActor aid _ -> deleteItemActor iid k aid
                     -- Actor's @bletter@ for UI not reset.
                     -- This is OK up to isomorphism.
@@ -308,14 +306,13 @@ displaceActorA source target = do
   modifyState $ updateActorBody source $ \ b -> b {bpos = tpos}
   modifyState $ updateActorBody target $ \ b -> b {bpos = spos}
 
-moveItemA :: MonadAction m
-          => LevelId -> ItemId -> Int -> Container -> Container -> m ()
-moveItemA lid iid k c1 c2 = assert (k > 0) $ do
+moveItemA :: MonadAction m => ItemId -> Int -> Container -> Container -> m ()
+moveItemA iid k c1 c2 = assert (k > 0) $ do
   case c1 of
-    CFloor pos -> deleteItemFloor lid iid k pos
+    CFloor lid pos -> deleteItemFloor lid iid k pos
     CActor aid _ -> deleteItemActor iid k aid
   case c2 of
-    CFloor pos -> insertItemFloor lid iid k pos
+    CFloor lid pos -> insertItemFloor lid iid k pos
     CActor aid l -> insertItemActor iid k l aid
 
 ageActorA :: MonadAction m => ActorId -> Time -> m ()

@@ -195,6 +195,6 @@ findPosTry numTries ltile l@(_ : tl) = assert (numTries > 0) $
   in search numTries
 
 data Container =
-    CFloor Point
+    CFloor LevelId Point
   | CActor ActorId InvChar
   deriving (Show, Eq, Ord, Typeable)

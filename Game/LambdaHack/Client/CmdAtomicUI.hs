@@ -78,12 +78,12 @@ drawCmdAtomicUI verbose cmd = case cmd of
                       bfaction b == side && not (bproj b)) $ EM.assocs actorD
         when (not $ null $ party) $ msgAdd "The survivors carry on."
     else when verbose $ actorVerbMU body "disappear"
-  CreateItemA _ _ item k _ | verbose -> itemVerbMU item k "appear"
-  DestroyItemA _ _ item k _ | verbose -> itemVerbMU item k "disappear"
+  CreateItemA _ item k _ | verbose -> itemVerbMU item k "appear"
+  DestroyItemA _ item k _ | verbose -> itemVerbMU item k "disappear"
   MoveActorA _ _ _ -> return ()  -- too boring even for verbose mode
   WaitActorA aid _ _| verbose -> aVerbMU aid "wait"
   DisplaceActorA source target -> displaceActorA source target
-  MoveItemA _ iid k c1 c2 -> moveItemA verbose iid k c1 c2
+  MoveItemA iid k c1 c2 -> moveItemA verbose iid k c1 c2
   HealActorA aid n | verbose ->
     if n > 0
     then aVerbMU aid $ MU.Text $ "heal"  <+> showT n <> "HP"
@@ -181,7 +181,7 @@ moveItemA verbose iid k c1 c2 = do
   item <- getsState $ getItemBody iid
   disco <- getsState sdisco
   case (c1, c2) of
-    (CFloor _, CActor aid l) -> do
+    (CFloor _ _, CActor aid l) -> do
       b <- getsState $ getActorBody aid
       side <- getsClient sside
       if bfaction b == side then
@@ -189,7 +189,7 @@ moveItemA verbose iid k c1 c2 = do
                             , partItemNWs coitem disco k item
                             , "\n" ]
       else aiVerbMU aid "pick up" iid k
-    (CActor aid _, CFloor _) | verbose -> do
+    (CActor aid _, CFloor _ _) | verbose -> do
       aiVerbMU aid "drop" iid k
     _ -> return ()
 

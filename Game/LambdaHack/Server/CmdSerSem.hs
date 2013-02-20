@@ -57,8 +57,8 @@ dropAllItems :: MonadActionRO m => ActorId -> WriterT [Atomic] m ()
 dropAllItems aid = do
   b <- getsState $ getActorBody aid
   let f (iid, k) = tellCmdAtomic
-                   $ MoveItemA (blid b) iid k (actorContainer aid (binv b) iid)
-                                              (CFloor $ bpos b)
+                   $ MoveItemA iid k (actorContainer aid (binv b) iid)
+                                              (CFloor (blid b) (bpos b))
   mapM_ f $ EM.assocs $ bbag b
 
 electLeader :: MonadActionRO m => FactionId -> LevelId -> WriterT [Atomic] m ()
@@ -261,7 +261,7 @@ pickupSer :: MonadActionRO m
           => ActorId -> ItemId -> Int -> InvChar -> WriterT [Atomic] m ()
 pickupSer aid iid k l = assert (k > 0 `blame` (aid, iid, k, l)) $ do
   b <- getsState $ getActorBody aid
-  tellCmdAtomic $ MoveItemA (blid b) iid k (CFloor (bpos b)) (CActor aid l)
+  tellCmdAtomic $ MoveItemA iid k (CFloor (blid b) (bpos b)) (CActor aid l)
 
 -- * DropSer
 
@@ -269,8 +269,8 @@ dropSer :: MonadActionRO m => ActorId -> ItemId -> WriterT [Atomic] m ()
 dropSer aid iid = do
   b <- getsState $ getActorBody aid
   let k = 1
-  tellCmdAtomic $ MoveItemA (blid b) iid k (actorContainer aid (binv b) iid)
-                                           (CFloor (bpos b))
+  tellCmdAtomic $ MoveItemA iid k (actorContainer aid (binv b) iid)
+                                           (CFloor (blid b) (bpos b))
 
 -- * ProjectSer
 
@@ -316,8 +316,7 @@ projectSer source tpos eps iid container = do
           tellDescAtomic $ ProjectA source iid
           projId <- addProjectile iid pos (blid sm) (bfaction sm) path time
           tellCmdAtomic
-            $ MoveItemA (blid sm) iid 1 container
-                                        (CActor projId (InvChar 'a'))
+            $ MoveItemA iid 1 container (CActor projId (InvChar 'a'))
         else
           abortWith "blocked"
 
@@ -370,10 +369,9 @@ applySer :: MonadServer m
          -> WriterT [Atomic] m ()
 applySer actor iid container = do
   item <- getsState $ getItemBody iid
-  b <- getsState $ getActorBody actor
   tellDescAtomic $ ActivateA actor iid
   itemEffect actor actor (Just iid) item
-  tellCmdAtomic $ DestroyItemA (blid b) iid item 1 container
+  tellCmdAtomic $ DestroyItemA iid item 1 container
 
 -- * TriggerSer
 

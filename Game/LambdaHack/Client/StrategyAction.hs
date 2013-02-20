@@ -218,7 +218,7 @@ rangedFreq cops actor glo fpos =
        && accessible cops lvl bpos pos1    -- first accessible
        && isNothing (posToActor pos1 blid glo)  -- no friends on first
     then throwFreq bbag 3 (actorContainer actor binv)
-         ++ throwFreq tis 6 (const $ CFloor bpos)
+         ++ throwFreq tis 6 (const $ CFloor blid bpos)
     else []
  where
   Kind.COps{ coactor=Kind.Ops{okind}
@@ -261,7 +261,7 @@ toolsFreq :: Kind.COps -> ActorId -> State -> Frequency CmdSer
 toolsFreq cops actor glo =
   toFreq "quaffFreq"
   $ quaffFreq bbag 1 (actorContainer actor binv)
-  ++ quaffFreq tis 2 (const $ CFloor bpos)
+  ++ quaffFreq tis 2 (const $ CFloor blid bpos)
  where
   Kind.COps{coitem=Kind.Ops{okind=iokind}} = cops
   Actor{bpos, blid, bbag, binv} = getActorBody actor glo

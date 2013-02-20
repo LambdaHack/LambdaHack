@@ -291,13 +291,13 @@ createItems n pos lid = do
     case HM.lookup item itemRev of
       Just iid ->
         -- TODO: try to avoid this case, to make items more interesting
-        tellCmdAtomic $ CreateItemA lid iid item k (CFloor pos)
+        tellCmdAtomic $ CreateItemA iid item k (CFloor lid pos)
       Nothing -> do
         icounter <- getsServer sicounter
         modifyServer $ \ser ->
           ser { sicounter = succ icounter
               , sitemRev = HM.insert item icounter (sitemRev ser)}
-        tellCmdAtomic $ CreateItemA lid icounter item k (CFloor pos)
+        tellCmdAtomic $ CreateItemA icounter item k (CFloor lid pos)
 
 -- ** ApplyPerfume
 

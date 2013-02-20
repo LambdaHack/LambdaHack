@@ -47,17 +47,17 @@ data CmdAtomic =
   -- Create/destroy actors and items.
     CreateActorA ActorId Actor
   | DestroyActorA ActorId Actor
-  | CreateItemA LevelId ItemId Item Int Container
-  | DestroyItemA LevelId ItemId Item Int Container
+  | CreateItemA ItemId Item Int Container
+  | DestroyItemA ItemId Item Int Container
   | SpotActorA ActorId Actor
   | LoseActorA ActorId Actor
-  | SpotItemA LevelId ItemId Item Int Container
-  | LoseItemA LevelId ItemId Item Int Container
+  | SpotItemA ItemId Item Int Container
+  | LoseItemA ItemId Item Int Container
   -- Move actors and items.
   | MoveActorA ActorId Point Point
   | WaitActorA ActorId Time Time
   | DisplaceActorA ActorId ActorId
-  | MoveItemA LevelId ItemId Int Container Container
+  | MoveItemA ItemId Int Container Container
   -- Change actor attributes.
   | AgeActorA ActorId Time
   | HealActorA ActorId Int
@@ -99,16 +99,16 @@ undoCmdAtomic :: CmdAtomic -> CmdAtomic
 undoCmdAtomic cmd = case cmd of
   CreateActorA aid body -> DestroyActorA aid body
   DestroyActorA aid body -> CreateActorA aid body
-  CreateItemA lid iid item k c -> DestroyItemA lid iid item k c
-  DestroyItemA lid iid item k c -> CreateItemA lid iid item k c
+  CreateItemA iid item k c -> DestroyItemA iid item k c
+  DestroyItemA iid item k c -> CreateItemA iid item k c
   SpotActorA aid body -> LoseActorA aid body
   LoseActorA aid body -> SpotActorA aid body
-  SpotItemA lid iid item k c -> LoseItemA lid iid item k c
-  LoseItemA lid iid item k c -> SpotItemA lid iid item k c
+  SpotItemA iid item k c -> LoseItemA iid item k c
+  LoseItemA iid item k c -> SpotItemA iid item k c
   MoveActorA aid fromP toP -> MoveActorA aid toP fromP
   WaitActorA aid fromWait toWait -> WaitActorA aid toWait fromWait
   DisplaceActorA source target -> DisplaceActorA target source
-  MoveItemA lid iid k c1 c2 -> MoveItemA lid iid k c2 c1
+  MoveItemA iid k c1 c2 -> MoveItemA iid k c2 c1
   AgeActorA aid t -> AgeActorA aid (timeNegate t)
   HealActorA aid n -> HealActorA aid (-n)
   HasteActorA aid delta -> HasteActorA aid (speedNegate delta)

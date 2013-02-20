@@ -186,7 +186,8 @@ getItem aid prompt p ptext bag inv isn = do
               -- TODO: let player select item
               return $ maximumBy (compare `on` fst . fst)
                      $ map (\(iid, k) ->
-                             ((iid, getItemBody iid s), (k, CFloor pos)))
+                             ((iid, getItemBody iid s),
+                              (k, CFloor (blid b) pos)))
                      $ EM.assocs tis
             K.Char l | InvChar l `elem` map (snd . snd) ims ->
               case find ((InvChar l ==) . snd . snd) ims of

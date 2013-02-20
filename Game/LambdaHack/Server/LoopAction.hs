@@ -192,7 +192,7 @@ atomicRemember lid inFov outFov s =
       itemD = sitemD s
       pMaybe p = maybe Nothing (\x -> Just (p, x))
       inFloor = mapMaybe (\p -> pMaybe p $ EM.lookup p (lfloor lvl)) inFov
-      fItem p (iid, k) = SpotItemA lid iid (itemD EM.! iid) k (CFloor p)
+      fItem p (iid, k) = SpotItemA iid (itemD EM.! iid) k (CFloor lid p)
       fBag (p, bag) = map (fItem p) $ EM.assocs bag
       inItem = concatMap fBag inFloor
       -- No outItem, since items out of sight are not forgotten, unlike actors.
