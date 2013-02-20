@@ -80,7 +80,7 @@ data Level = Level
   , ltime   :: !Time            -- ^ date of the last activity on the level
   , lsecret :: !SecretMap       -- ^ secrecy values; empty for clients
   }
-  deriving Show
+  deriving (Show, Eq)
 
 -- | Update the actor time priority queue.
 updatePrio :: (ActorPrio -> ActorPrio) -> Level -> Level

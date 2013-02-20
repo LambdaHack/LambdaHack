@@ -8,6 +8,7 @@ import Control.Monad
 import Game.LambdaHack.Action
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.State
+import Game.LambdaHack.CmdAtomic
 import Game.LambdaHack.CmdCli
 import Game.LambdaHack.Msg
 import Game.LambdaHack.State
@@ -22,7 +23,8 @@ initCli cmdCliSem = do
   case restored of
     Right msg -> do  -- First visit ever, use the initial state.
       -- TODO: create or restore from config clients RNG seed
-      let expected cmd = case cmd of RestartCli{} -> True; _ -> False
+      let expected cmd =
+            case cmd of CmdAtomicCli RestartA{} -> True; _ -> False
       expectCmd cmdCliSem expected
       return msg
     Left (s, cli, msg) -> do  -- Restore a game or at least history.

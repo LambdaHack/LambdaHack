@@ -20,6 +20,7 @@ import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Misc
+import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import Game.LambdaHack.State
 import Game.LambdaHack.Time
@@ -55,6 +56,7 @@ cmdAtomicSem cmd = case cmd of
   DiscoverA lid p iid ik -> discoverA lid p iid ik
   CoverA lid p iid ik -> coverA lid p iid ik
   PerceptionA _ _ _ -> return ()
+  RestartA fid sfper s -> restartA fid sfper s
 
 -- All functions here that take an atomic action are executed
 -- in the state just before the action is executed.
@@ -127,17 +129,18 @@ posCmdAtomic cmd = case cmd of
   DominateActorA target _ _ -> singleAid target
   PathActorA aid _ _ -> singleAid aid
   ColorActorA aid _ _ -> singleAid aid
-  QuitFactionA _ _ _ -> return $ Left $ Left True
+  QuitFactionA _ _ _ -> return $ Left $ Left True  -- all always notice this
   LeadFactionA fid _ _ -> return $ Left $ Right fid  -- a faction's secret
   AlterTileA lid p _ _ -> return $ Right (lid, [p])
   SpotTileA lid diffL -> do
     let ps = map fst diffL
     return $ Right (lid, ps)
   AlterSecretA _ _ -> return $ Left $ Left False  -- none of clients' business
-  AlterSmellA _ _ ->  return $ Left $ Left True
+  AlterSmellA _ _ -> return $ Left $ Left True
   DiscoverA lid p _ _ -> return $ Right (lid, [p])
   CoverA lid p _ _ -> return $ Right (lid, [p])
   PerceptionA _ _ _ -> return $ Left $ Left False
+  RestartA fid _ _ -> return $ Left $ Right fid
 
 posDescAtomic :: MonadActionRO m
               => DescAtomic
@@ -398,8 +401,16 @@ discoverA _ _ iid ik = do
   item <- getsState $ getItemBody iid
   modifyState (updateDisco (EM.insert (jkindIx item) ik))
 
+-- TODO: as a result of undo, this will be wrong on the server,
+-- so it has to be filtered out from the server, just as from some clients.
 coverA :: MonadAction m
        => LevelId -> Point -> ItemId -> (Kind.Id ItemKind) -> m ()
 coverA _ _ iid _ = do
   item <- getsState $ getItemBody iid
   modifyState (updateDisco (EM.delete (jkindIx item)))
+
+-- TODO here, too, it would be disastrous for the server.
+-- Perhaps the server should have factionId -1, so that ocmparison
+-- with fid below will be False.
+restartA :: MonadAction m => FactionId -> FactionPers -> State -> m ()
+restartA _ _ s = putState s

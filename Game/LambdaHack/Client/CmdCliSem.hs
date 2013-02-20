@@ -26,28 +26,10 @@ import Game.LambdaHack.Content.StrategyKind
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Msg
-import Game.LambdaHack.Perception
 import Game.LambdaHack.Random
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
-
--- * cmdUpdateCli
-
--- TODO: here or elsewhere re-read RNG seed from config file
-restartCli :: (MonadAction m, MonadClient m) => FactionPers -> State -> m ()
-restartCli sfper loc = do
-  shistory <- getsClient shistory
-  sconfigUI <- getsClient sconfigUI
-  side <- getsClient sside
-  isAI <- getsClient sisAI
-  let cli = defStateClient shistory sconfigUI side isAI
-  putClient cli {sfper}
-  putState loc
-  -- Save ASAP in case of crashes and disconnects.
-  --TODO
-
--- * CmdHandleHumanUI
 
 handleAI :: MonadClient m => ActorId -> m CmdSer
 handleAI actor = do
@@ -75,8 +57,6 @@ handleAI actor = do
     -- Run the AI: chose an action from those given by the AI strategy.
     cmd <- rndToAction $ frequency $ bestVariant $ stratAction
     return cmd
-
--- * CmdHandleHumanUI
 
 -- | Handle the move of the hero.
 handleHuman :: (MonadActionAbort m, MonadClientUI m) => ActorId -> m CmdSer

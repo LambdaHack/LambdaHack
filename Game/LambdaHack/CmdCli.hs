@@ -6,13 +6,11 @@ module Game.LambdaHack.CmdCli
 import Game.LambdaHack.Actor
 import Game.LambdaHack.CmdAtomic
 import Game.LambdaHack.Perception
-import Game.LambdaHack.State
 
 -- TODO: move most to atomic
 -- | Abstract syntax of client commands that don't use the UI.
 data CmdCli =
     CmdAtomicCli CmdAtomic
-  | RestartCli FactionPers State
   | ContinueSavedCli FactionPers
   | GameSaveBkpCli
   | GameDisconnectCli

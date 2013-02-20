@@ -32,6 +32,7 @@ import Game.LambdaHack.Misc
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
+import Game.LambdaHack.State
 import Game.LambdaHack.Time
 import Game.LambdaHack.Vector
 
@@ -78,6 +79,7 @@ data CmdAtomic =
   | DiscoverA LevelId Point ItemId (Kind.Id ItemKind)
   | CoverA LevelId Point ItemId (Kind.Id ItemKind)
   | PerceptionA LevelId PActors PActors
+  | RestartA FactionId FactionPers State
   deriving (Show, Eq)
 
 data DescAtomic =
@@ -126,6 +128,7 @@ undoCmdAtomic cmd = case cmd of
   DiscoverA lid p iid ik -> CoverA lid p iid ik
   CoverA lid p iid ik -> DiscoverA lid p iid ik
   PerceptionA lid outPer inPer -> PerceptionA lid inPer outPer
+  RestartA _ _ _ -> cmd  -- here history ends; change direction
 
 undoDescAtomic :: DescAtomic -> DescAtomic
 undoDescAtomic cmd = case cmd of
@@ -137,12 +140,9 @@ undoDescAtomic cmd = case cmd of
   CheckA aid iid -> ActivateA aid iid
   TriggerA aid p feat b -> ShunA aid p feat b
   ShunA aid p feat b -> TriggerA aid p feat b
-  EffectA aid effect -> EffectA aid effect  -- not ideal
-  FailureA fid msg -> FailureA fid msg
+  EffectA _ _ -> cmd  -- not ideal?
+  FailureA _ _ -> cmd
 
 undoAtomic :: Atomic -> Atomic
 undoAtomic (Left cmd) = Left $ undoCmdAtomic cmd
 undoAtomic (Right desc) = Right $ undoDescAtomic desc
--- TODO
---undoAtomic (Right (desc, as)) =
---  Right (undoDescAtomic desc, reverse $ map undoCmdAtomic as)

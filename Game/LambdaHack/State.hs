@@ -39,11 +39,11 @@ data State = State
   , _sdepth   :: !Int          -- ^ remembered dungeon depth
   , _sactorD  :: !ActorDict    -- ^ remembered actors in the dungeon
   , _sitemD   :: !ItemDict     -- ^ remembered items in the dungeon
-  , _sdisco   :: !Discovery  -- ^ remembered item discoveries
+  , _sdisco   :: !Discovery    -- ^ remembered item discoveries
   , _sfaction :: !FactionDict  -- ^ remembered sides still in game
   , _scops    :: Kind.COps     -- ^ remembered content
   }
-  deriving (Show, Typeable)
+  deriving (Show, Typeable, Eq)
 
 -- TODO: add a flag 'fresh' and when saving levels, don't save
 -- and when loading regenerate this level.

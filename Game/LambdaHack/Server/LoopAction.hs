@@ -75,9 +75,10 @@ loopSer cmdSerSem executorC cops = do
   if isJust quit then do -- game restored from a savefile
     funBroadcastCli (\fid -> ContinueSavedCli (pers EM.! fid))
   else do  -- game restarted
-    funBroadcastCli (\fid -> RestartCli (pers EM.! fid) defLoc)
-    populateDungeon
     -- TODO: factor out common parts from restartGame and restoreOrRestart
+    funBroadcastCli
+       (\fid -> CmdAtomicCli (RestartA fid (pers EM.! fid) defLoc))
+    populateDungeon
     -- Save ASAP in case of crashes and disconnects.
     saveGameBkp
   modifyServer $ \ser1 -> ser1 {squit = Nothing}
@@ -505,7 +506,8 @@ restartGame loopServer = do
   -- The biggest part is content, which really needs to be updated
   -- at this point to keep clients in sync with server improvements.
   defLoc <- getsState localFromGlobal
-  funBroadcastCli (\fid -> RestartCli (pers EM.! fid) defLoc)
+  -- TODO: this is too hacky still
+  funBroadcastCli (\fid -> CmdAtomicCli (RestartA fid (pers EM.! fid) defLoc))
   populateDungeon
   saveGameBkp
   loopServer

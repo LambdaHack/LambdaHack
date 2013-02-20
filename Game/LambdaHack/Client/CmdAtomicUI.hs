@@ -60,6 +60,15 @@ cmdAtomicSemCli cmd = case cmd of
         adj per = addPer (diffPer per outPer) inPer
         f sfper = EM.adjust adj lid sfper
     modifyClient $ \cli -> cli {sfper = f (sfper cli)}
+  RestartA _ sfper _ -> do
+    -- TODO: here or elsewhere re-read RNG seed from config file
+    shistory <- getsClient shistory
+    sconfigUI <- getsClient sconfigUI
+    side <- getsClient sside
+    isAI <- getsClient sisAI
+    let cli = defStateClient shistory sconfigUI side isAI
+    putClient cli {sfper}
+    -- TODO: Save ASAP in case of crashes and disconnects.
   _ -> return ()
 
 -- * cmdAtomicUI
@@ -143,6 +152,7 @@ drawCmdAtomicUI verbose cmd = case cmd of
                                     "look like an ordinary"
           , objectUnkown1, objectUnkown2 ]
     msgAdd msg
+  RestartA _ _ _ -> msgAdd "This time for real."
   _ -> return ()
 
 -- | Sentences such as \"Dog barks loudly.\".

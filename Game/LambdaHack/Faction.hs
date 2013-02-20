@@ -32,7 +32,7 @@ data Faction = Faction
   , gquit     :: !(Maybe (Bool, Status))  -- ^ cause of game end/exit
   , gleader   :: !(Maybe ActorId)
   }
-  deriving Show
+  deriving (Show, Eq)
 
 -- | Current result of the game.
 data Status =
