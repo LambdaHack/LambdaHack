@@ -48,7 +48,7 @@ import Game.LambdaHack.Utils.Assert
 -- Run the leader and other actors moves. Eventually advance the time
 -- and repeat.
 loopSer :: forall m . (MonadActionAbort m, MonadAction m, MonadServerChan m)
-        => (FactionId -> LevelId -> CmdSer -> m ())
+        => (FactionId -> CmdSer -> m ())
         -> (FactionId -> ConnCli -> Bool -> IO ())
         -> Kind.COps
         -> m ()
@@ -121,50 +121,67 @@ atomicSem atomic = case atomic of
   Left cmd -> cmdAtomicSem cmd
   Right _ -> return ()
 
-cmdAtomicBroad :: (MonadAction m, MonadServerChan m)
-               => LevelId -> Atomic -> m ()
-cmdAtomicBroad arena atomic = do
+cmdAtomicBroad :: (MonadAction m, MonadServerChan m) => Atomic -> m ()
+cmdAtomicBroad atomic = do
+  -- Gather data from the old state.
   sOld <- getState
+  persOld <- getsServer sper
+  (ps, resets, atomicBroken, psBroken) <-
+    case atomic of
+      Left cmd -> do
+        ps <- posCmdAtomic cmd
+        resets <- resetsFovAtomic cmd
+        atomicBroken <- breakCmdAtomic cmd
+        psBroken <- mapM posCmdAtomic atomicBroken
+        return (ps, resets, atomicBroken, psBroken)
+      Right desc -> do
+        ps <- posDescAtomic desc
+        return (ps, Just [], [], [])
+  let atomicPsBroken = zip atomicBroken psBroken
+  -- TODO: assert also that the sum of psBroken is equal to ps
+  -- TODO: with deep equality these assertions can be expensive. Optimize.
+  assert (either (const $ resets == Just []
+                          && fmap Left atomicBroken == [atomic])
+                 (const True) ps) $ return ()
+  -- Perform the action on the server.
   atomicSem atomic
-  ps <- case atomic of
-    Left cmd -> posCmdAtomic cmd
-    Right desc -> posDescAtomic desc
+  -- Send some actions to the clients, one faction at a time.
   let sendA fid cmd = do
         sendUpdateUI fid $ CmdAtomicUI cmd
         sendUpdateCliAI fid $ CmdAtomicCli cmd
       sendUpdate fid (Left cmd) = sendA fid cmd
       sendUpdate fid (Right desc) = sendUpdateUI fid $ DescAtomicUI desc
-      vis per = all (`ES.member` totalVisible per)
-      isOurs fid = maybe False (== fid)
+      vis per = all (`ES.member` totalVisible per) . snd
+      isOurs fid = either id (== fid)
       breakSend fid perNew = do
-        atomicBroken <- case atomic of
-          Left cmd -> breakCmdAtomic cmd
-          Right _ -> return []
-        let send2 atomic2 = do
-              ps2 <- posCmdAtomic atomic2
+        let send2 (atomic2, ps2) = do
               let seen2 = either (isOurs fid) (vis perNew) ps2
               when seen2 $ sendUpdate fid $ Left atomic2
-        mapM_ send2 atomicBroken
+        mapM_ send2 atomicPsBroken
       anySend fid perOld perNew = do
         let startSeen = either (isOurs fid) (vis perOld) ps
             endSeen = either (isOurs fid) (vis perNew) ps
         if startSeen && endSeen
           then sendUpdate fid atomic
           else breakSend fid perNew
-      send fid = do
-        perOld <- getPerFid fid arena
-        resets <- case atomic of
-          Left cmd -> resetsFovAtomic fid cmd
-          Right _ -> return False
-        if resets then do
-          resetFidPerception fid arena
-          perNew <- getPerFid fid arena
-          let inFov = ES.elems $ totalVisible perNew ES.\\ totalVisible perOld
-              outFov = ES.elems $ totalVisible perOld ES.\\ totalVisible perNew
-          mapM_ (sendA fid) $ atomicRemember arena inFov outFov sOld
-          anySend fid perOld perNew
-          sendA fid $ PerceptionA perNew
-        else anySend fid perOld perOld
+      send fid = case ps of
+        Right (arena, _) -> do
+          let perOld = persOld EM.! fid EM.! arena
+              resetsFid = maybe True (fid `elem`) resets
+          if resetsFid then do
+            resetFidPerception fid arena
+            perNew <- getPerFid fid arena
+            let inFov =
+                  ES.elems $ totalVisible perNew ES.\\ totalVisible perOld
+                outFov =
+                  ES.elems $ totalVisible perOld ES.\\ totalVisible perNew
+            mapM_ (sendA fid) $ atomicRemember arena inFov outFov sOld
+            anySend fid perOld perNew
+            sendA fid $ PerceptionA arena perNew
+          else anySend fid perOld perOld
+        Left mfid ->
+          -- @resets@ is false here and broken atomic has the same mfid
+          when (isOurs fid mfid) $ sendUpdate fid atomic
   faction <- getsState sfaction
   mapM_ send $ EM.keys faction
 
@@ -275,7 +292,7 @@ gameOver fid arena showEndingScreens = do
 -- has changed since last time (every change, whether by human or AI
 -- or @generateMonster@ is followd by a call to @handleActors@).
 handleActors :: (MonadActionAbort m, MonadAction m, MonadServerChan m)
-             => (FactionId -> LevelId -> CmdSer -> m ())
+             => (FactionId -> CmdSer -> m ())
              -> LevelId
              -> Time  -- ^ start time of current subclip, exclusive
              -> m ()
@@ -301,7 +318,7 @@ handleActors cmdSerSem arena subclipStart = do
       when (subclipStart == timeZero) $
         broadcastUI DisplayDelayUI
     Just (actor, body) | bhp body <= 0 && not (bproj body) -> do
-      cmdSerSem (bfaction body) arena $ DieSer actor
+      cmdSerSem (bfaction body) $ DieSer actor
       -- Death is serious, new subclip.
       handleActors cmdSerSem arena (btime body)
     Just (actor, body) -> do
@@ -323,7 +340,7 @@ handleActors cmdSerSem arena subclipStart = do
                             sendUpdateUI side DisplayPushUI
                             return True
                         ) $ do
-                  cmdSerSem side arena cmd
+                  cmdSerSem side cmd
                   return False
                 if aborted then return True else forCmd rest
           aborted <- forCmd cmdS
@@ -377,7 +394,7 @@ handleActors cmdSerSem arena subclipStart = do
                                then return ()
                                else assert `failure` msg <> "in AI"
                       )
-                      (mapM_ (cmdSerSem side arena) cmdS)
+                      (mapM_ (cmdSerSem side) cmdS)
               handleActors cmdSerSem arena (btime body)
             else do
               -- No new subclip.
@@ -388,7 +405,7 @@ handleActors cmdSerSem arena subclipStart = do
                                then return ()
                                else assert `failure` msg <> "in AI"
                       )
-                      (mapM_ (cmdSerSem side arena) cmdS)
+                      (mapM_ (cmdSerSem side) cmdS)
               handleActors cmdSerSem arena subclipStart
 
 -- | Advance the move time for the given actor.
@@ -398,7 +415,7 @@ advanceTime aid = do
   b <- getsState $ getActorBody aid
   let speed = actorSpeed coactor b
       t = ticksPerMeter speed
-  cmdAtomicBroad (blid b) $ Left $ AgeActorA aid t
+  cmdAtomicBroad $ Left $ AgeActorA aid t
 
 -- | Continue or restart or exit the game.
 endOrLoop :: (MonadActionAbort m, MonadAction m, MonadServerChan m)
@@ -591,7 +608,7 @@ populateDungeon = do
       initialHeroes (side, ppos, heroName) = do
         replicateM_ (1 + configExtraHeroes config) $ do
           cmds <- execWriterT $ addHero side ppos entryLevel heroName
-          mapM_ (cmdAtomicBroad entryLevel) cmds
+          mapM_ cmdAtomicBroad cmds
   entryPoss <- rndToAction $ findEntryPoss cops lvl (length needInitialCrew)
   mapM_ initialHeroes $ zip3 needInitialCrew entryPoss heroNames
 
@@ -613,7 +630,7 @@ generateMonster arena = do
           ES.unions $ map (totalVisible . (EM.! arena)) $ EM.elems pers
     pos <- rndToAction $ rollSpawnPos cops allPers arena lvl s
     (_, cmds) <- runWriterT $ spawnMonsters 1 pos arena
-    mapM_ (cmdAtomicBroad arena) cmds
+    mapM_ cmdAtomicBroad cmds
 
 -- | Create a new monster on the level, at a random position.
 rollSpawnPos :: Kind.COps -> ES.EnumSet Point -> LevelId -> Level -> State
@@ -664,7 +681,7 @@ regenerateLevelHP arena = do
            else Just a
   toRegen <-
     getsState $ catMaybes . map pick .actorNotProjAssocs (const True) arena
-  mapM_ (\aid -> cmdAtomicBroad arena $ Left $ HealActorA aid 1) toRegen
+  mapM_ (\aid -> cmdAtomicBroad $ Left $ HealActorA aid 1) toRegen
 
 -- TODO: let only some actors/items leave smell, e.g., a Smelly Hide Armour.
 -- | Add a smell trace for the actor to the level.

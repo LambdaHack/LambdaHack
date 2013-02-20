@@ -76,8 +76,8 @@ data CmdAtomic =
   -- Assorted.
   | DiscoverA LevelId Point ItemId (Kind.Id ItemKind)
   | CoverA LevelId Point ItemId (Kind.Id ItemKind)
-  | PerceptionA Perception
-  deriving Show
+  | PerceptionA LevelId Perception
+  deriving (Show, Eq)
 
 data DescAtomic =
     StrikeA ActorId ActorId Item HitAtomic
@@ -90,10 +90,10 @@ data DescAtomic =
   | ShunA ActorId Point F.Feature Bool
   | EffectA ActorId Effect.Effect
 -- TODO: SearchA
-  deriving Show
+  deriving (Show, Eq)
 
 data HitAtomic = HitA | HitBlockA | MissBlockA
-  deriving Show
+  deriving (Show, Eq)
 
 undoCmdAtomic :: CmdAtomic -> CmdAtomic
 undoCmdAtomic cmd = case cmd of
@@ -123,7 +123,7 @@ undoCmdAtomic cmd = case cmd of
   AlterSmellA lid diffL -> AlterSmellA lid $ map (second swap) diffL
   DiscoverA lid p iid ik -> CoverA lid p iid ik
   CoverA lid p iid ik -> DiscoverA lid p iid ik
-  PerceptionA per -> PerceptionA per  -- does not change State, anyway
+  PerceptionA lid per -> PerceptionA lid per  -- does not change State, anyway
 
 undoDescAtomic :: DescAtomic -> DescAtomic
 undoDescAtomic cmd = case cmd of

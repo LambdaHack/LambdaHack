@@ -17,7 +17,7 @@ import Game.LambdaHack.Point
 -- TOOD: if really needed, optimize by representing as a set of intervals.
 newtype PerceptionVisible = PerceptionVisible
   { pvisible :: ES.EnumSet Point}
-  deriving Show
+  deriving (Show, Eq)
 
 -- | The type representing the perception of a faction on a level.
 -- The total visibility holds the sum of FOVs of all actors
@@ -26,7 +26,7 @@ data Perception = Perception
   { pactors :: EM.EnumMap ActorId PerceptionVisible  -- ^ per actor
   , ptotal  :: PerceptionVisible                     -- ^ sum for all actors
   }
-  deriving Show
+  deriving (Show, Eq)
 
 -- | Perception of a single faction, indexed by level identifier.
 type FactionPers = EM.EnumMap LevelId Perception

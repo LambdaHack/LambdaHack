@@ -54,29 +54,32 @@ cmdAtomicSem cmd = case cmd of
   AlterSmellA lid diffL -> alterSmellA lid diffL
   DiscoverA lid p iid ik -> discoverA lid p iid ik
   CoverA lid p iid ik -> coverA lid p iid ik
-  PerceptionA _ -> return ()
+  PerceptionA _ _ -> return ()
 
-resetsFovAtomic :: MonadActionRO m => FactionId -> CmdAtomic -> m Bool
-resetsFovAtomic fid cmd = case cmd of
-  CreateActorA _ body -> return $ fid == bfaction body
-  DestroyActorA _ _ -> return False  -- FOV left for a bit to see aftermath
-  CreateItemA _ _ _ _ _ -> return False  -- unless shines
-  DestroyItemA _ _ _ _ _ -> return False  -- ditto
-  MoveActorA aid _ _ -> fidEquals fid aid  -- assumption: carries no light
+-- All functions here that take an atomic action are executed
+-- in the state just before the action is executed.
+
+resetsFovAtomic :: MonadActionRO m => CmdAtomic -> m (Maybe [FactionId])
+resetsFovAtomic cmd = case cmd of
+  CreateActorA _ body -> return $ Just [bfaction body]
+  DestroyActorA _ _ -> return $ Just []  -- FOV kept for a bit to see aftermath
+  CreateItemA _ _ _ _ _ -> return $ Just []  -- unless shines
+  DestroyItemA _ _ _ _ _ -> return $ Just []  -- ditto
+  MoveActorA aid _ _ -> fmap Just $ fidOfAid aid  -- assumption: has no light
 -- TODO: MoveActorCarryingLIghtA _ _ _ -> True
   DisplaceActorA source target -> do
-    bs <- fidEquals fid source
-    bt <- fidEquals fid target
-    return $ source /= target && (bs || bt)
-  DominateActorA _ fromFid toFid -> return $ fid `elem` [fromFid, toFid]
-  MoveItemA _ _ _ _ _ -> return False  -- unless shiny
-  AlterTileA _ _ _ _ -> return True  -- even if pos not visible initially
-  _ -> return False
+    sfid <- fidOfAid source
+    tfid <- fidOfAid target
+    if source == target
+      then return $ Just []
+      else return $ Just $ sfid ++ tfid
+  DominateActorA _ fromFid toFid -> return $ Just [fromFid, toFid]
+  MoveItemA _ _ _ _ _ -> return $ Just []  -- unless shiny
+  AlterTileA _ _ _ _ -> return Nothing  -- even if pos not visible initially
+  _ -> return $ Just []
 
-fidEquals :: MonadActionRO m => FactionId -> ActorId -> m Bool
-fidEquals fid aid = do
-  afid <- getsState $ bfaction . getActorBody aid
-  return $ fid == afid
+fidOfAid :: MonadActionRO m => ActorId -> m [FactionId]
+fidOfAid aid = getsState $ (: []) . bfaction . getActorBody aid
 
 -- | Produces the positions where the action takes place. If a faction
 -- is returned, the action is visible only for that faction, if Nothing
@@ -95,84 +98,92 @@ fidEquals fid aid = do
 -- to @SpotActorA@ (which provides minimal information that does not
 -- contradict state) if the visibility is lower.
 posCmdAtomic :: MonadActionRO m
-             => CmdAtomic -> m (Either (Maybe FactionId) [Point])
+             => CmdAtomic
+             -> m (Either (Either Bool FactionId) (LevelId, [Point]))
 posCmdAtomic cmd = case cmd of
-  CreateActorA _ body -> return $ Right [bpos body]
-  DestroyActorA _ body -> return $ Right [bpos body]
-  CreateItemA _ _ _ _ c -> singleContainer c
-  DestroyItemA _ _ _ _ c -> singleContainer c
-  SpotActorA _ body -> return $ Right [bpos body]
-  LoseActorA _ body -> return $ Right [bpos body]
-  SpotItemA _ _ _ _ c -> singleContainer c
-  LoseItemA _ _ _ _ c -> singleContainer c
-  MoveActorA _ fromP toP -> return $ Right [fromP, toP]
+  CreateActorA _ body -> return $ Right (blid body, [bpos body])
+  DestroyActorA _ body -> return $ Right (blid body, [bpos body])
+  CreateItemA lid _ _ _ c -> singleContainer c lid
+  DestroyItemA lid _ _ _ c -> singleContainer c lid
+  SpotActorA _ body -> return $ Right (blid body, [bpos body])
+  LoseActorA _ body -> return $ Right (blid body, [bpos body])
+  SpotItemA lid _ _ _ c -> singleContainer c lid
+  LoseItemA lid _ _ _ c -> singleContainer c lid
+  MoveActorA aid fromP toP -> do
+    (lid, p) <- posOfAid aid
+    return $ assert (fromP == p) $ Right (lid, [fromP, toP])
   WaitActorA aid _ _ -> singleAid aid
   DisplaceActorA source target -> do
-    ps <- mapM posOfAid [source, target]
-    return $ Right ps
-  MoveItemA _ _ _ c1 c2 -> do  -- works even if moved between positions
+    (slid, sp) <- posOfAid source
+    (tlid, tp) <- posOfAid target
+    return $ assert (slid == tlid) $ Right (slid, [sp, tp])
+  MoveItemA lid _ _ c1 c2 -> do  -- works even if moved between positions
     p1 <- posOfContainer c1
     p2 <- posOfContainer c2
-    return $ Right [p1, p2]
+    return $ Right (lid, [p1, p2])
   AgeActorA aid _ -> singleAid aid
   HealActorA aid _ -> singleAid aid
   HasteActorA aid _ -> singleAid aid
   DominateActorA target _ _ -> singleAid target
   PathActorA aid _ _ -> singleAid aid
   ColorActorA aid _ _ -> singleAid aid
-  QuitFactionA _ _ _ -> alwaysKnow
-  LeadFactionA fid _ _ -> return $ Left $ Just fid
-  AlterTileA _ p _ _ -> return $ Right [p]
-  SpotTileA _ diffL -> do
+  QuitFactionA _ _ _ -> return $ Left $ Left True
+  LeadFactionA fid _ _ -> return $ Left $ Right fid  -- a faction's secret
+  AlterTileA lid p _ _ -> return $ Right (lid, [p])
+  SpotTileA lid diffL -> do
     let ps = map fst diffL
-    return $ Right ps
-  AlterSecretA _ _ -> return $ Left Nothing  -- none of clients' business
-  AlterSmellA _ _ -> alwaysKnow
-  DiscoverA _ p _ _ -> return $ Right [p]
-  CoverA _ p _ _ -> return $ Right [p]
-  PerceptionA _ -> return $ Left Nothing
+    return $ Right (lid, ps)
+  AlterSecretA _ _ -> return $ Left $ Left False  -- none of clients' business
+  AlterSmellA _ _ ->  return $ Left $ Left True
+  DiscoverA lid p _ _ -> return $ Right (lid, [p])
+  CoverA lid p _ _ -> return $ Right (lid, [p])
+  PerceptionA _ _ -> return $ Left $ Left False
 
 posDescAtomic :: MonadActionRO m
-              => DescAtomic -> m (Either (Maybe FactionId) [Point])
+              => DescAtomic
+              -> m (Either (Either Bool FactionId) (LevelId, [Point]))
 posDescAtomic cmd = case cmd of
   StrikeA source target _ _ -> do
-    ps <- mapM posOfAid [source, target]
-    return $ Right ps
+    (slid, sp) <- posOfAid source
+    (tlid, tp) <- posOfAid target
+    return $ assert (slid == tlid) $ Right (slid, [sp, tp])
   RecoilA source target _ _ -> do
-    ps <- mapM posOfAid [source, target]
-    return $ Right ps
+    (slid, sp) <- posOfAid source
+    (tlid, tp) <- posOfAid target
+    return $ assert (slid == tlid) $ Right (slid, [sp, tp])
   ProjectA aid _ -> singleAid aid
   CatchA aid _ -> singleAid aid
   ActivateA aid _ -> singleAid aid
   CheckA aid _ -> singleAid aid
   TriggerA aid p _ _ -> do
-    pa <- posOfAid aid
-    return $ Right [pa, p]
+    (lid, pa) <- posOfAid aid
+    return $ Right (lid, [pa, p])
   ShunA aid p _ _ -> do
-    pa <- posOfAid aid
-    return $ Right [pa, p]
+    (lid, pa) <- posOfAid aid
+    return $ Right (lid, [pa, p])
   EffectA aid _ -> singleAid aid
 
-alwaysKnow :: Monad m => m (Either (Maybe FactionId) [Point])
-alwaysKnow = return $ Right []
-
-posOfAid :: MonadActionRO m => ActorId -> m Point
-posOfAid aid = getsState $ bpos . getActorBody aid
+posOfAid :: MonadActionRO m => ActorId -> m (LevelId, Point)
+posOfAid aid = do
+  b <- getsState $ getActorBody aid
+  return (blid b, bpos b)
 
 posOfContainer :: MonadActionRO m => Container -> m Point
-posOfContainer (CFloor pos) = return pos
-posOfContainer (CActor aid _) = posOfAid aid
+posOfContainer (CFloor p) = return p
+posOfContainer (CActor aid _) = fmap snd $ posOfAid aid
 
-singleAid :: MonadActionRO m => ActorId -> m (Either (Maybe FactionId) [Point])
+singleAid :: MonadActionRO m
+          => ActorId -> m (Either (Either Bool FactionId) (LevelId, [Point]))
 singleAid aid = do
-  p <- posOfAid aid
-  return $ Right [p]
+  (lid, p) <- posOfAid aid
+  return $ Right (lid, [p])
 
 singleContainer :: MonadActionRO m
-                => Container -> m (Either (Maybe FactionId) [Point])
-singleContainer c = do
+                => Container -> LevelId
+                -> m (Either (Either Bool FactionId) (LevelId, [Point]))
+singleContainer c lid = do
   p <- posOfContainer c
-  return $ Right [p]
+  return $ Right (lid, [p])
 
 -- | Decompose an atomic action. The original action is visible
 -- if it's positions are visible both before and after the action
