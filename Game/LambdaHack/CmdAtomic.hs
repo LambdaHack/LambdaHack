@@ -29,6 +29,7 @@ import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Misc
+import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import Game.LambdaHack.Time
@@ -89,6 +90,7 @@ data DescAtomic =
   | TriggerA ActorId Point F.Feature Bool
   | ShunA ActorId Point F.Feature Bool
   | EffectA ActorId Effect.Effect
+  | FailureA FactionId Msg
 -- TODO: SearchA
   deriving (Show, Eq)
 
@@ -136,6 +138,7 @@ undoDescAtomic cmd = case cmd of
   TriggerA aid p feat b -> ShunA aid p feat b
   ShunA aid p feat b -> TriggerA aid p feat b
   EffectA aid effect -> EffectA aid effect  -- not ideal
+  FailureA fid msg -> FailureA fid msg
 
 undoAtomic :: Atomic -> Atomic
 undoAtomic (Left cmd) = Left $ undoCmdAtomic cmd

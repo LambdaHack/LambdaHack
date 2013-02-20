@@ -6,7 +6,6 @@ module Game.LambdaHack.Server
 
 import Control.Monad.Writer.Strict (WriterT, execWriterT)
 
-import Game.LambdaHack.Action
 import Game.LambdaHack.CmdAtomic
 import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Faction
@@ -15,12 +14,10 @@ import Game.LambdaHack.Server.CmdSerSem
 import Game.LambdaHack.Server.LoopAction
 
 -- | The semantics of server commands.
-cmdSerSem :: (MonadActionAbort m, MonadServerChan m)
-          => FactionId -> CmdSer -> m [Atomic]
+cmdSerSem :: MonadServer m => FactionId -> CmdSer -> m [Atomic]
 cmdSerSem fid cmd = execWriterT $ cmdSerWriterT fid cmd
 
-cmdSerWriterT :: (MonadActionAbort m, MonadServer m)
-              => FactionId -> CmdSer -> WriterT [Atomic] m ()
+cmdSerWriterT :: MonadServer m => FactionId -> CmdSer -> WriterT [Atomic] m ()
 cmdSerWriterT fid cmd = case cmd of
   DieSer aid -> dieSer aid
   MoveSer aid dir -> moveSer aid dir
@@ -36,4 +33,4 @@ cmdSerWriterT fid cmd = case cmd of
   GameRestartSer -> gameRestartSer fid
   GameExitSer -> gameExitSer
   GameSaveSer -> gameSaveSer
-  CfgDumpSer -> cfgDumpSer
+  CfgDumpSer -> cfgDumpSer fid

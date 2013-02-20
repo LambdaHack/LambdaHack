@@ -400,5 +400,5 @@ gameSaveHuman = do
 
 -- * CfgDump; does not take time
 
-cfgDumpHuman :: Monad m => m CmdSer
+cfgDumpHuman :: MonadClient m => m CmdSer
 cfgDumpHuman = return CfgDumpSer

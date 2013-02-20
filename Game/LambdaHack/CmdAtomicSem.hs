@@ -162,6 +162,7 @@ posDescAtomic cmd = case cmd of
     (lid, pa) <- posOfAid aid
     return $ Right (lid, [pa, p])
   EffectA aid _ -> singleAid aid
+  FailureA fid _ -> return $ Left $ Right fid  -- failures are secret
 
 posOfAid :: MonadActionRO m => ActorId -> m (LevelId, Point)
 posOfAid aid = do

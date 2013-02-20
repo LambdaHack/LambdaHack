@@ -143,7 +143,8 @@ cmdAtomicBroad atomic = do
   -- TODO: assert also that the sum of psBroken is equal to ps
   -- TODO: with deep equality these assertions can be expensive. Optimize.
   assert (either (const $ resets == Just []
-                          && fmap Left atomicBroken == [atomic])
+                          && (null atomicBroken
+                             || fmap Left atomicBroken == [atomic]))
                  (const True) ps) $ return ()
   -- Perform the action on the server.
   atomicSem atomic
@@ -342,25 +343,23 @@ handleActors cmdSerSem arena subclipStart = do
           -- of actions for humans. OTOH, AI is controlled by the servers
           -- so the generated commands are assumed to be legal.
           cmdS <- sendQueryUI side actor
-          atoms <- tryWith (\msg -> do
-                               sendUpdateUI side $ ShowMsgUI msg
-                               sendUpdateUI side DisplayPushUI
-                               return []
-                           ) $ cmdSerSem side cmdS
-          let mleaderNew = aidCmdSer cmdS
+          atoms <- cmdSerSem side cmdS
+          let isFailure cmd = case cmd of Right FailureA{} -> True; _ -> False
+              aborted = all isFailure atoms
+              mleaderNew = aidCmdSer cmdS
               timed = timedCmdSer cmdS
               (leadAtoms, leaderNew) = case mleaderNew of
                 Nothing -> assert (not timed) $ ([], actor)
                 Just lNew | lNew /= actor ->
                   ([Left (LeadFactionA side mleader (Just lNew))], lNew)
                 Just _ -> ([], actor)
-          advanceAtoms <- if null atoms || not timed
+          advanceAtoms <- if aborted || not timed
                           then return []
                           else advanceTime leaderNew
           mapM_ cmdAtomicBroad $ leadAtoms ++ atoms ++ advanceAtoms
           -- All resulting atomic actions sent to @side@. Time to show them.
           sendUpdateUI side FlushFramesUI
-          if null atoms then handleActors cmdSerSem arena subclipStart
+          if aborted then handleActors cmdSerSem arena subclipStart
           else do
             -- Advance time once, after the leader switched perhaps many times.
             -- TODO: this is correct only when all heroes have the same
@@ -384,18 +383,17 @@ handleActors cmdSerSem arena subclipStart = do
             handleActors cmdSerSem arena (btime bNew)
         else do
           cmdS <- sendQueryCliAI side actor
-          atoms <- tryWith (\msg -> if T.null msg
-                                    then return []
-                                    else assert `failure` msg <> "in AI"
-                           ) $ cmdSerSem side cmdS
-          let mleaderNew = aidCmdSer cmdS
+          atoms <- cmdSerSem side cmdS
+          let isFailure cmd = case cmd of Right FailureA{} -> True; _ -> False
+              aborted = all isFailure atoms
+              mleaderNew = aidCmdSer cmdS
               timed = timedCmdSer cmdS
               (leadAtoms, leaderNew) = assert timed $ case mleaderNew of
                 Nothing -> assert `failure` (actor, cmdS, atoms)
                 Just lNew | lNew /= actor ->
                   ([Left (LeadFactionA side mleader (Just lNew))], lNew)
                 Just _ -> ([], actor)
-          advanceAtoms <- if null atoms || not timed
+          advanceAtoms <- if aborted || not timed
                           then assert `failure` (actor, cmdS, atoms)
                           else advanceTime leaderNew
           mapM_ cmdAtomicBroad $ leadAtoms ++ atoms ++ advanceAtoms

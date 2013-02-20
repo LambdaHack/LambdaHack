@@ -15,7 +15,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Action
+import Game.LambdaHack.Action hiding (abortWith, neverMind)
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.CmdAtomic
@@ -41,6 +41,12 @@ import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 
 default (Text)
+
+abortWith :: Monad m => FactionId -> Msg -> WriterT [Atomic] m ()
+abortWith fid msg = tellDescAtomic $ FailureA fid msg
+
+neverMind :: Monad m => FactionId -> WriterT [Atomic] m ()
+neverMind fid = abortWith fid "never mind"
 
 -- * DieSer
 
@@ -82,8 +88,7 @@ electLeader fid lid = do
 -- is authorized to check if a move is legal and it needs full context
 -- for that, e.g., the initial actor position to check if melee attack
 -- does not try to reach to a distant tile.
-moveSer :: (MonadActionAbort m, MonadServer m)
-        => ActorId -> Vector -> WriterT [Atomic] m ()
+moveSer :: MonadServer m => ActorId -> Vector -> WriterT [Atomic] m ()
 moveSer aid dir = do
   cops@Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getsState scops
   sm <- getsState $ getActorBody aid
@@ -154,8 +159,7 @@ actorAttackActor source target = do
     else performHit False
 
 -- | Search for hidden doors.
-search :: (MonadActionAbort m, MonadServer m)
-       => ActorId -> WriterT [Atomic] m ()
+search :: MonadServer m => ActorId -> WriterT [Atomic] m ()
 search aid = do
   Kind.COps{coitem, cotile} <- getsState scops
   b <- getsState $ getActorBody aid
@@ -187,30 +191,27 @@ search aid = do
 
 -- TODO: bumpTile tpos F.Openable
 -- | An actor opens a door.
-actorOpenDoor :: (MonadActionAbort m, MonadServer m)
-              => ActorId -> Vector -> WriterT [Atomic] m ()
+actorOpenDoor :: MonadServer m => ActorId -> Vector -> WriterT [Atomic] m ()
 actorOpenDoor actor dir = do
   Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody actor
   lvl <- getsLevel (blid body) id
-  glo <- getState
   let dpos = shift (bpos body) dir  -- the position we act upon
       t = lvl `at` dpos
-      isVerbose = isHumanFaction glo (bfaction body)
-  unless (openable cotile lvl dpos) $ neverMind isVerbose
-  if Tile.hasFeature cotile F.Closable t
-    then abortIfWith isVerbose "already open"
-    else if not (Tile.hasFeature cotile F.Closable t ||
-                 Tile.hasFeature cotile F.Openable t ||
-                 Tile.hasFeature cotile F.Hidden t)
-         then neverMind isVerbose  -- not doors at all
-         else triggerSer actor dpos
+  if not (openable cotile lvl dpos) then neverMind (bfaction body)
+  else do
+    if Tile.hasFeature cotile F.Closable t
+      then abortWith (bfaction body) "already open"
+      else if not (Tile.hasFeature cotile F.Closable t ||
+                   Tile.hasFeature cotile F.Openable t ||
+                   Tile.hasFeature cotile F.Hidden t)
+           then neverMind (bfaction body)  -- not doors at all
+           else triggerSer actor dpos
 
 -- * RunSer
 
 -- | Actor moves or swaps position with others or opens doors.
-runSer :: (MonadActionAbort m, MonadServer m)
-       => ActorId -> Vector -> WriterT [Atomic] m ()
+runSer :: MonadServer m => ActorId -> Vector -> WriterT [Atomic] m ()
 runSer actor dir = do
   cops <- getsState scops
   sm <- getsState $ getActorBody actor
@@ -225,7 +226,7 @@ runSer actor dir = do
       | accessible cops lvl spos tpos ->
           -- Switching positions requires full access.
           displaceActor actor target
-      | otherwise -> abortWith "blocked"
+      | otherwise -> abortWith (bfaction sm) "blocked"
     Nothing
       | accessible cops lvl spos tpos ->
           tellCmdAtomic $ MoveActorA actor spos tpos
@@ -274,7 +275,7 @@ dropSer aid iid = do
 
 -- * ProjectSer
 
-projectSer :: (MonadActionAbort m, MonadServer m)
+projectSer :: MonadServer m
            => ActorId    -- ^ actor projecting the item (is on current lvl)
            -> Point      -- ^ target position of the projectile
            -> Int        -- ^ digital line parameter
@@ -307,7 +308,7 @@ projectSer source tpos eps iid container = do
       time = btimeDelta `timeAdd` timeNegate timeClip
       bl = bla lxsize lysize eps spos tpos
   case bl of
-    Nothing -> abortWith "cannot zap oneself"
+    Nothing -> abortWith (bfaction sm) "cannot zap oneself"
     Just [] -> assert `failure` (spos, tpos, "project from the edge of level")
     Just path@(pos:_) -> do
       inhabitants <- getsState (posToActor pos arena)
@@ -318,7 +319,7 @@ projectSer source tpos eps iid container = do
           tellCmdAtomic
             $ MoveItemA iid 1 container (CActor projId (InvChar 'a'))
         else
-          abortWith "blocked"
+          abortWith (bfaction sm) "blocked"
 
 -- | Create a projectile actor containing the given missile.
 addProjectile :: MonadServer m
@@ -376,7 +377,7 @@ applySer actor iid container = do
 -- * TriggerSer
 
 -- | Perform the action specified for the tile in case it's triggered.
-triggerSer :: (MonadActionAbort m, MonadServer m)
+triggerSer :: MonadServer m
            => ActorId -> Point -> WriterT [Atomic] m ()
 triggerSer aid dpos = do
   Kind.COps{cotile=Kind.Ops{okind, opick}} <- getsState scops
@@ -400,8 +401,8 @@ triggerSer aid dpos = do
                    toTile <- rndToAction $ opick tgroup (const True)
                    tellCmdAtomic $ AlterTileA (blid b) dpos fromTile toTile
 -- TODO: take care of AI using this function (aborts, etc.).
-                 else abortWith "blocked"  -- by monsters or heroes
-            else abortWith "jammed"  -- by items
+                 else abortWith (bfaction b) "blocked"  -- by actors
+            else abortWith (bfaction b) "jammed"  -- by items
           _ -> return ()
   mapM_ f $ TileKind.tfeature $ okind $ lvl `at` dpos
 
@@ -414,7 +415,7 @@ clearPathSer aid = do
 
 -- * SetPathSer
 
-setPathSer :: (MonadActionAbort m, MonadServer m)
+setPathSer :: MonadServer m
            => ActorId -> Vector -> [Vector] -> WriterT [Atomic] m ()
 setPathSer aid dir path = do
   fromPath <- getsState $ bpath . getActorBody aid
@@ -445,8 +446,8 @@ gameSaveSer = modifyServer $ \ser -> ser {squit = Just False}
 
 -- * CfgDumpSer
 
-cfgDumpSer :: (MonadActionAbort m, MonadServer m) => m ()
-cfgDumpSer = do
+cfgDumpSer :: MonadServer m => FactionId -> WriterT [Atomic] m ()
+cfgDumpSer fid = do
   Config{configRulesCfgFile} <- getsServer sconfig
   let fn = configRulesCfgFile ++ ".dump"
       msg = "Server dumped current game rules configuration to file"
@@ -454,4 +455,4 @@ cfgDumpSer = do
   dumpCfg fn
   -- Wait with confirmation until saved; tell where the file is.
   -- TODO: show abort message to the current client, not all clients
-  abortWith msg
+  abortWith fid msg

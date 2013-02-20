@@ -297,7 +297,10 @@ drawDescAtomicUI verbose desc = case desc of
           let verbD = if bproj b then "break up" else "collapse"
           aVerbMU aid verbD
         _ ->  return ()
-
+  FailureA fid msg -> do
+    side <- getsClient sside
+    assert (fid == side) $ return ()
+    msgAdd msg
   _ -> return ()
 
 strikeA :: MonadClientUI m
