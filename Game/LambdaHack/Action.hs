@@ -59,7 +59,7 @@ instance (Monoid a, MonadActionAbort m) => MonadActionAbort (WriterT a m) where
     WriterT $ tryWith (\msg -> runWriterT (exc msg)) (runWriterT m)
   abortWith   = lift . abortWith
 
-class (Monad m, Functor m, Show (m ())) => MonadActionRO m where
+class (Monad m, Functor m) => MonadActionRO m where
   getState    :: m State
   getsState   :: (State -> a) -> m a
 

@@ -1,81 +1,61 @@
-{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, OverloadedStrings #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | The main game action monad type implementation. Just as any other
 -- component of the library, this implementation can be substituted.
 -- This module should not be imported anywhere except in 'Action'
 -- to expose the executor to any code using the library.
 module Game.LambdaHack.Server.Action.ActionType
-  ( FunActionSer, ActionSer, executorSer
+  ( ActionSer, executorSer
   ) where
+
+import qualified Control.Monad.IO.Class as IO
+import Control.Monad.Trans.State.Strict hiding (State)
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Server.Action.ActionClass
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.State
 
--- | The type of the function inside any server action.
-type FunActionSer a =
-   (State -> StateServer -> ConnDict -> a -> IO ())
-                                      -- ^ continuation
-   -> State                           -- ^ current global state
-   -> StateServer                     -- ^ current server state
-   -> ConnDict                        -- ^ client-server connection information
-   -> IO ()
+-- TODO: make all fields strict
+data SerState = SerState
+  { serState  :: State        -- ^ current global state
+  , serServer :: StateServer  -- ^ current server state
+  , serDict   :: ConnDict     -- ^ client-server connection information
+  }
 
--- | Server parts of actions of human and computer player characters.
-newtype ActionSer a = ActionSer {runActionSer :: FunActionSer a}
-
--- | Invokes the action continuation on the provided argument.
-returnActionSer :: a -> ActionSer a
-returnActionSer x = ActionSer (\k s ser d -> k s ser d x)
-
--- | Distributes the session and shutdown continuation,
--- threads the state and history.
-bindActionSer :: ActionSer a -> (a -> ActionSer b) -> ActionSer b
-bindActionSer m f = ActionSer (\k s ser d ->
-                          let next ns nser nd x =
-                                runActionSer (f x) k ns nser nd
-                          in runActionSer m next s ser d)
-
-instance Monad ActionSer where
-  return = returnActionSer
-  (>>=)  = bindActionSer
-
--- TODO: make sure fmap is inlinded and all else is inlined in this file
-instance Functor ActionSer where
-  fmap f m =
-    ActionSer (\k s ser d ->
-               runActionSer m (\s' ser' d' ->
-                                   k s' ser' d'. f) s ser d)
-
-instance Show (ActionSer a) where
-  show _ = "an action"
+-- | Server state transformation monad.
+newtype ActionSer a = ActionSer {runActionSer :: StateT SerState IO a}
+  deriving (Monad, Functor)
 
 instance MonadActionRO ActionSer where
-  getState  = ActionSer (\k s ser d -> k s ser d s)
-  getsState = (`fmap` getState)
+  getState    = ActionSer $ gets serState
+  getsState f = ActionSer $ gets $ f . serState
 
 instance MonadAction ActionSer where
-  modifyState f = ActionSer (\k s ser d -> k (f s) ser d ())
-  putState      = modifyState . const
+  modifyState f =
+    ActionSer $ modify $ \serS -> serS {serState = f $ serState serS}
+  putState    s =
+    ActionSer $ modify $ \serS -> serS {serState = s}
 
 instance MonadServer ActionSer where
-  getServer  = ActionSer (\k s ser d -> k s ser d ser)
-  getsServer = (`fmap` getServer)
-  modifyServer f = ActionSer (\k s ser d -> k s (f ser) d ())
-  putServer      = modifyServer . const
-  liftIO x       = ActionSer (\k s ser d -> x >>= k s ser d)
+  getServer      = ActionSer $ gets $ serServer
+  getsServer   f = ActionSer $ gets $ f . serServer
+  modifyServer f =
+    ActionSer $ modify $ \serS -> serS {serServer = f $ serServer serS}
+  putServer    s =
+    ActionSer $ modify $ \serS -> serS {serServer = s}
+  liftIO         = ActionSer . IO.liftIO
 
 instance MonadServerChan ActionSer where
-  getDict        = ActionSer (\k s ser d -> k s ser d d)
-  getsDict       = (`fmap` getDict)
-  modifyDict f   = ActionSer (\k s ser d -> k s ser (f d) ())
-  putDict        = modifyDict . const
+  getDict      = ActionSer $ gets $ serDict
+  getsDict   f = ActionSer $ gets $ f . serDict
+  modifyDict f =
+    ActionSer $ modify $ \serS -> serS {serDict = f $ serDict serS}
+  putDict    s =
+    ActionSer $ modify $ \serS -> serS {serDict = s}
 
 -- | Run an action in the @IO@ monad, with undefined state.
 executorSer :: ActionSer () -> IO ()
-executorSer m =
-  runActionSer m
-    (\_ _ _ _ -> return ())
-    undefined
-    undefined
-    undefined
+executorSer m = evalStateT (runActionSer m) SerState { serState = undefined
+                                                     , serServer = undefined
+                                                     , serDict = undefined
+                                                     }
