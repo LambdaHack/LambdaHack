@@ -12,7 +12,6 @@ import qualified Data.EnumSet as ES
 import Data.List
 import Data.Maybe
 import qualified Data.Ord as Ord
-import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Action
@@ -49,7 +48,7 @@ import Game.LambdaHack.Utils.Assert
 -- every fixed number of time units, e.g., monster generation.
 -- Run the leader and other actors moves. Eventually advance the time
 -- and repeat.
-loopSer :: forall m . (MonadActionAbort m, MonadAction m, MonadServerChan m)
+loopSer :: forall m . (MonadAction m, MonadServerChan m)
         => (FactionId -> CmdSer -> m [Atomic])
         -> (FactionId -> ConnCli -> Bool -> IO ())
         -> Kind.COps
@@ -294,7 +293,7 @@ gameOver fid arena showEndingScreens = do
 -- We start by updating perception, because the selected level of dungeon
 -- has changed since last time (every change, whether by human or AI
 -- or @generateMonster@ is followd by a call to @handleActors@).
-handleActors :: (MonadActionAbort m, MonadAction m, MonadServerChan m)
+handleActors :: (MonadAction m, MonadServerChan m)
              => (FactionId -> CmdSer -> m [Atomic])
              -> LevelId
              -> Time  -- ^ start time of current subclip, exclusive
@@ -426,7 +425,7 @@ advanceTime aid = do
   return [Left $ AgeActorA aid t]
 
 -- | Continue or restart or exit the game.
-endOrLoop :: (MonadActionAbort m, MonadAction m, MonadServerChan m)
+endOrLoop :: (MonadAction m, MonadServerChan m)
           => m () -> m ()
 endOrLoop loopServer = do
   quitS <- getsServer squit
@@ -456,7 +455,7 @@ endOrLoop loopServer = do
     (_, []) -> loopServer  -- just continue
     (_, (fid, quit) : _) -> do
       fac <- getsState $ (EM.! fid) . sfaction
-      total <- case gleader fac of
+      _total <- case gleader fac of
         Nothing -> return 0
         Just leader -> do
           b <- getsState $ getActorBody leader
@@ -465,34 +464,33 @@ endOrLoop loopServer = do
       -- if ending screens should be shown, the other argument describes
       -- the cause of the disruption of game flow.
       case quit of
-        (showScreens, status@Killed{}) -> do
-          -- TODO: rewrite; handle killed faction, if human, mostly ignore if not
-          nullR <- undefined -- sendQueryCli fid NullReportCli
-          unless nullR $ do
-            -- Display any leftover report. Suggest it could be the death cause.
-            broadcastUI $ MoreBWUI "Who would have thought?"
-          tryWith
-            (\ finalMsg ->
-              let highScoreMsg = "Let's hope another party can save the day!"
-                  msg = if T.null finalMsg then highScoreMsg else finalMsg
-              in broadcastUI $ MoreBWUI msg
-              -- Do nothing, that is, quit the game loop.
-            )
-            (do
-               when showScreens $ handleScores fid True status total
-               go <- undefined  -- sendQueryUI fid
---                     $ ConfirmMoreBWUI "Next time will be different."
-               when (not go) $ abortWith "You could really win this time."
+        (_showScreens, _status@Killed{}) -> do
+--           -- TODO: rewrite; handle killed faction, if human, mostly ignore if not
+--           nullR <- undefined -- sendQueryCli fid NullReportCli
+--           unless nullR $ do
+--             -- Display any leftover report. Suggest it could be the death cause.
+--             broadcastUI $ MoreBWUI "Who would have thought?"
+--           tryWith
+--             (\ finalMsg ->
+--               let highScoreMsg = "Let's hope another party can save the day!"
+--                   msg = if T.null finalMsg then highScoreMsg else finalMsg
+--               in broadcastUI $ MoreBWUI msg
+--               -- Do nothing, that is, quit the game loop.
+--             )
+--             (do
+--                when showScreens $ handleScores fid True status total
+--                go <- undefined  -- sendQueryUI fid
+-- --                     $ ConfirmMoreBWUI "Next time will be different."
+--                when (not go) $ abortWith "You could really win this time."
                restartGame loopServer
-            )
-        (showScreens, status@Victor) -> do
-          nullR <- undefined -- sendQueryCli fid NullReportCli
-          unless nullR $ do
-            -- Display any leftover report. Suggest it could be the master move.
-            broadcastUI $ MoreFullUI "Brilliant, wasn't it?"
-          when showScreens $ do
-            tryIgnore $ handleScores fid True status total
-            broadcastUI $ MoreFullUI "Can it be done better, though?"
+        (_showScreens, _status@Victor) -> do
+          -- nullR <- undefined -- sendQueryCli fid NullReportCli
+          -- unless nullR $ do
+          --   -- Display any leftover report. Suggest it could be the master move.
+          --   broadcastUI $ MoreFullUI "Brilliant, wasn't it?"
+          -- when showScreens $ do
+          --   tryIgnore $ handleScores fid True status total
+          --   broadcastUI $ MoreFullUI "Can it be done better, though?"
           restartGame loopServer
         (_, Restart) -> restartGame loopServer
         (_, Camping) -> assert `failure` (fid, quit)
