@@ -362,7 +362,7 @@ effLvlGoUp aid k = do
         -- a leader, but he is not inserted into the new level yet.
 -- TODO:        modifyState $ updateSelectedArena nln
         -- Sync the actor time with the level time.
-        timeLastVisited <- getsState $ getTime arena
+        timeLastVisited <- getsState $ getTime nln
         let diff = timeAdd (btime pbodyCurrent) (timeNegate timeCurrent)
             pbody = pbodyCurrent { blid = nln
                                  , btime = timeAdd timeLastVisited diff
@@ -371,7 +371,7 @@ effLvlGoUp aid k = do
         -- at his old position or at his new position.
         tellCmdAtomic $ CreateActorA aid pbody
         -- Checking actors at the new posiiton of the aid.
-        inhabitants <- getsState (posToActor npos arena)
+        inhabitants <- getsState $ posToActor npos nln
         case inhabitants of
           Nothing -> return ()
 -- Broken if the effect happens, e.g. via a scroll and abort is not enough.
@@ -384,7 +384,7 @@ effLvlGoUp aid k = do
             -- because here an inactive actor is squashed.
             squashActor aid m
         -- Verify the monster on the staircase died.
-        inhabitants2 <- getsState (posToActor npos arena)
+        inhabitants2 <- getsState $ posToActor npos nln
         when (isJust inhabitants2) $ assert `failure` inhabitants2
         -- The property of at most one actor on a tile is restored.
         -- Create a backup of the savegame.
