@@ -331,7 +331,7 @@ readChanFromSer = do
   toClient <- getsChan toClient
   liftIO $ readChan toClient
 
-writeChanToSer :: MonadClientChan m => [CmdSer] -> m ()
+writeChanToSer :: MonadClientChan m => CmdSer -> m ()
 writeChanToSer cmd = do
   toServer <- getsChan toServer
   liftIO $ writeChan toServer cmd

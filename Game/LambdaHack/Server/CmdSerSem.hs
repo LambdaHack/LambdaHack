@@ -433,13 +433,6 @@ gameRestartSer fid = do
   oldSt <- getsState $ gquit . (EM.! fid) . sfaction
   tellCmdAtomic $ QuitFactionA fid oldSt $ Just (False, Restart)
 
--- * LeaderSer
-
-leaderSer :: MonadActionRO m => ActorId -> FactionId -> WriterT [Atomic] m ()
-leaderSer aid fid = do
-  mleader <- getsState $ gleader . (EM.! fid) . sfaction
-  tellCmdAtomic $ LeadFactionA fid mleader (Just aid)
-
 -- * GameExit
 
 gameExitSer :: MonadServer m => m ()

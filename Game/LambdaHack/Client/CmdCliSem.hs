@@ -49,7 +49,7 @@ restartCli sfper loc = do
 
 -- * CmdHandleHumanUI
 
-handleAI :: MonadClient m => ActorId -> m [CmdSer]
+handleAI :: MonadClient m => ActorId -> m CmdSer
 handleAI actor = do
   body <- getsState $ getActorBody actor
   side <- getsClient sside
@@ -74,12 +74,12 @@ handleAI actor = do
     -- trace _debug $ return ()
     -- Run the AI: chose an action from those given by the AI strategy.
     cmd <- rndToAction $ frequency $ bestVariant $ stratAction
-    return [cmd]
+    return cmd
 
 -- * CmdHandleHumanUI
 
 -- | Handle the move of the hero.
-handleHuman :: (MonadActionAbort m, MonadClientUI m) => ActorId -> m [CmdSer]
+handleHuman :: (MonadActionAbort m, MonadClientUI m) => ActorId -> m CmdSer
 handleHuman aid = do
   -- When running, stop if aborted by a disturbance. Otherwise let
   -- the human player issue commands, until any of them takes time.
@@ -89,14 +89,10 @@ handleHuman aid = do
   let inputHumanCmd msg = do
         stopRunning
         humanCommand msg
-  cmdS <- tryWith inputHumanCmd $ do
+  tryWith inputHumanCmd $ do
     srunning <- getsClient srunning
     maybe abort (continueRun leader) srunning
 --  addSmell leader  -- TODO: instead do for all non-spawning factions
-  Just leaderNew <- getsClient sleader
-  if leaderNew == leader
-    then return [cmdS]
-    else return [LeaderSer leaderNew, cmdS]
 
 -- | Continue running in the given direction.
 continueRun :: (MonadActionAbort m, MonadClient m)

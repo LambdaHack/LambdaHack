@@ -140,17 +140,17 @@ sendUpdateCli fid cmd = do
 sendUpdateCliAI :: MonadServerChan m => FactionId -> CmdUpdateCli -> m ()
 sendUpdateCliAI fid cmd = withAI $ sendUpdateCli fid cmd
 
-connSendQueryCli :: MonadServerChan m => ActorId -> ConnCli -> m [CmdSer]
+connSendQueryCli :: MonadServerChan m => ActorId -> ConnCli -> m CmdSer
 connSendQueryCli aid ConnCli{toClient, toServer} = do
   liftIO $ writeChan toClient $ Left $ CmdHandleAICli aid
   liftIO $ readChan toServer
 
-sendQueryCli :: MonadServerChan m => FactionId -> ActorId -> m [CmdSer]
+sendQueryCli :: MonadServerChan m => FactionId -> ActorId -> m CmdSer
 sendQueryCli fid aid = do
   conn <- getsDict (fst . (EM.! fid))
   maybe (assert `failure` (fid, aid)) (connSendQueryCli aid) conn
 
-sendQueryCliAI :: MonadServerChan m => FactionId -> ActorId -> m [CmdSer]
+sendQueryCliAI :: MonadServerChan m => FactionId -> ActorId -> m CmdSer
 sendQueryCliAI fid aid = withAI $ sendQueryCli fid aid
 
 broadcastCli :: MonadServerChan m => CmdUpdateCli -> m ()
@@ -177,12 +177,12 @@ sendUpdateUI fid cmd = do
   conn <- getsDict (fst . (EM.! fid))
   maybe (return ()) (connSendUpdateUI cmd) conn
 
-connSendQueryUI :: MonadServerChan m => ActorId -> ConnCli -> m [CmdSer]
+connSendQueryUI :: MonadServerChan m => ActorId -> ConnCli -> m CmdSer
 connSendQueryUI aid ConnCli{toClient, toServer} = do
   liftIO $ writeChan toClient $ Right $ CmdHandleHumanUI aid
   liftIO $ readChan toServer
 
-sendQueryUI :: MonadServerChan m => FactionId -> ActorId -> m [CmdSer]
+sendQueryUI :: MonadServerChan m => FactionId -> ActorId -> m CmdSer
 sendQueryUI fid aid = do
   conn <- getsDict (fst . (EM.! fid))
   maybe (assert `failure` (fid, aid)) (connSendQueryUI aid) conn

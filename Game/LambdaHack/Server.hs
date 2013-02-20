@@ -34,7 +34,6 @@ cmdSerWriterT fid cmd = case cmd of
   ClearPathSer aid -> clearPathSer aid
   SetPathSer aid dir path -> setPathSer aid dir path
   GameRestartSer -> gameRestartSer fid
-  LeaderSer aid -> leaderSer aid fid
   GameExitSer -> gameExitSer
   GameSaveSer -> gameSaveSer
   CfgDumpSer -> cfgDumpSer

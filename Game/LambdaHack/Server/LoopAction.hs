@@ -342,24 +342,25 @@ handleActors cmdSerSem arena subclipStart = do
           -- of actions for humans. OTOH, AI is controlled by the servers
           -- so the generated commands are assumed to be legal.
           cmdS <- sendQueryUI side actor
-          let forCmd [] = return []
-              forCmd (cmd : rest) = do
-                atoms <- tryWith (\msg -> do
-                           sendUpdateUI side $ ShowMsgUI msg
-                           sendUpdateUI side DisplayPushUI
-                           return []
-                           ) $ cmdSerSem side cmd
-                atomsRest <- forCmd rest
-                return $ atoms ++ atomsRest
-          atoms <- forCmd cmdS
-          mapM_ cmdAtomicBroad atoms
+          atoms <- tryWith (\msg -> do
+                               sendUpdateUI side $ ShowMsgUI msg
+                               sendUpdateUI side DisplayPushUI
+                               return []
+                           ) $ cmdSerSem side cmdS
+          let mleaderNew = aidCmdSer cmdS
+              timed = timedCmdSer cmdS
+              (leadAtoms, leaderNew) = case mleaderNew of
+                Nothing -> assert (not timed) $ ([], actor)
+                Just lNew | lNew /= actor ->
+                  ([Left (LeadFactionA side mleader (Just lNew))], lNew)
+                Just _ -> ([], actor)
+          advanceAtoms <- if null atoms || not timed
+                          then return []
+                          else advanceTime leaderNew
+          mapM_ cmdAtomicBroad $ leadAtoms ++ atoms ++ advanceAtoms
           -- All resulting atomic actions sent to @side@. Time to show them.
           sendUpdateUI side FlushFramesUI
-          let atomsAbort = case atoms of
-                [] -> True
-                [Left LeadFactionA{}] -> True
-                _ -> False
-          if atomsAbort then handleActors cmdSerSem arena subclipStart
+          if null atoms then handleActors cmdSerSem arena subclipStart
           else do
             -- Advance time once, after the leader switched perhaps many times.
             -- TODO: this is correct only when all heroes have the same
@@ -371,15 +372,8 @@ handleActors cmdSerSem arena subclipStart = do
             -- at once. This requires quite a bit of refactoring
             -- and is perhaps better done when the other factions have
             -- selected leaders as well.
-            mleaderNew <- getsState $ gleader . (EM.! side) . sfaction
-            bodyNew <- case mleaderNew of
-              Just leaderNew | any timedCmdSer cmdS -> do
-                bNew <- getsState $ getActorBody leaderNew
-                advanceTime leaderNew
-                return bNew
-              _ -> return body
+            bNew <- getsState $ getActorBody leaderNew
             -- Human moves always start a new subclip.
-            -- _pos <- getsState $ bpos . getActorBody (fromMaybe actor leaderNew)
             -- TODO: send messages with time (or at least DisplayPushCli)
             -- and then send DisplayPushCli only to actors that see _pos.
             -- Right now other need it too, to notice the delay.
@@ -387,50 +381,51 @@ handleActors cmdSerSem arena subclipStart = do
             -- simultaneous moves also generate delays.
             -- TODO: when changing leaders of different levels, if there's
             -- abort, a turn may be lost. Investigate/fix.
-            handleActors cmdSerSem arena (btime bodyNew)
+            handleActors cmdSerSem arena (btime bNew)
         else do
+          cmdS <- sendQueryCliAI side actor
+          atoms <- tryWith (\msg -> if T.null msg
+                                    then return []
+                                    else assert `failure` msg <> "in AI"
+                           ) $ cmdSerSem side cmdS
+          let mleaderNew = aidCmdSer cmdS
+              timed = timedCmdSer cmdS
+              (leadAtoms, leaderNew) = assert timed $ case mleaderNew of
+                Nothing -> assert `failure` (actor, cmdS, atoms)
+                Just lNew | lNew /= actor ->
+                  ([Left (LeadFactionA side mleader (Just lNew))], lNew)
+                Just _ -> ([], actor)
+          advanceAtoms <- if null atoms || not timed
+                          then assert `failure` (actor, cmdS, atoms)
+                          else advanceTime leaderNew
+          mapM_ cmdAtomicBroad $ leadAtoms ++ atoms ++ advanceAtoms
 --          recordHistory
-          advanceTime actor  -- advance time while the actor still alive
           let subclipStartDelta = timeAddFromSpeed coactor body subclipStart
           if isHuman && not (bproj body)
              || subclipStart == timeZero
              || btime body > subclipStartDelta
-            then do
+            then
               -- Start a new subclip if its our own faction moving
               -- or it's another faction, but it's the first move of
               -- this whole clip or the actor has already moved during
               -- this subclip, so his multiple moves would be collapsed.
-              cmdS <- sendQueryCliAI side actor
     -- If the following action aborts, we just advance the time and continue.
     -- TODO: or just fail at each abort in AI code? or use tryWithFrame?
-              tryWith (\msg -> if T.null msg
-                               then return ()
-                               else assert `failure` msg <> "in AI"
-                      )
-                      (do atoms <- fmap concat $ mapM (cmdSerSem side) cmdS
-                          mapM_ cmdAtomicBroad atoms)
               handleActors cmdSerSem arena (btime body)
-            else do
+            else
               -- No new subclip.
-              cmdS <- sendQueryCliAI side actor
     -- If the following action aborts, we just advance the time and continue.
     -- TODO: or just fail at each abort in AI code? or use tryWithFrame?
-              tryWith (\msg -> if T.null msg
-                               then return ()
-                               else assert `failure` msg <> "in AI"
-                      )
-                      (do atoms <- fmap concat $ mapM (cmdSerSem side) cmdS
-                          mapM_ cmdAtomicBroad atoms)
               handleActors cmdSerSem arena subclipStart
 
 -- | Advance the move time for the given actor.
-advanceTime :: (MonadAction m, MonadServerChan m) => ActorId -> m ()
+advanceTime :: (MonadAction m, MonadServerChan m) => ActorId -> m [Atomic]
 advanceTime aid = do
   Kind.COps{coactor} <- getsState scops
   b <- getsState $ getActorBody aid
   let speed = actorSpeed coactor b
       t = ticksPerMeter speed
-  cmdAtomicBroad $ Left $ AgeActorA aid t
+  return [Left $ AgeActorA aid t]
 
 -- | Continue or restart or exit the game.
 endOrLoop :: (MonadActionAbort m, MonadAction m, MonadServerChan m)

@@ -33,7 +33,7 @@ import Game.LambdaHack.Utils.Assert
 -- | Connection channels between server and a single client.
 data ConnCli = ConnCli
   { toClient :: Chan (Either CmdCli CmdUI)
-  , toServer :: Chan [CmdSer]
+  , toServer :: Chan CmdSer
   }
 
 instance Show ConnCli where

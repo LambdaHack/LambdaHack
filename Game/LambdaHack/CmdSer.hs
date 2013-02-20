@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 -- | Abstract syntax of server commands.
 module Game.LambdaHack.CmdSer
-  ( CmdSer(..), timedCmdSer
+  ( CmdSer(..), timedCmdSer, aidCmdSer
   ) where
 
 import Data.Typeable
@@ -26,7 +26,6 @@ data CmdSer =
   | ClearPathSer ActorId
   | SetPathSer ActorId Vector [Vector]
   | GameRestartSer
-  | LeaderSer ActorId
   | GameExitSer
   | GameSaveSer
   | CfgDumpSer
@@ -38,8 +37,26 @@ timedCmdSer cmd = case cmd of
   ClearPathSer{} -> False
   SetPathSer{} -> False
   GameRestartSer -> False
-  LeaderSer{} -> False
   GameExitSer -> False
   GameSaveSer -> False
   CfgDumpSer -> False
   _ -> True
+
+-- | The actor performing the command, if still alive afterwards.
+aidCmdSer :: CmdSer -> Maybe ActorId
+aidCmdSer cmd = case cmd of
+  DieSer _ -> Nothing
+  MoveSer aid _ -> Just aid
+  RunSer aid _ -> Just aid
+  WaitSer aid -> Just aid
+  PickupSer aid _ _ _ -> Just aid
+  DropSer aid _ -> Just aid
+  ProjectSer aid _ _ _ _ -> Just aid
+  ApplySer aid _ _ -> Just aid
+  TriggerSer aid _ -> Just aid
+  ClearPathSer aid -> Just aid
+  SetPathSer aid _ _ -> Just aid
+  GameRestartSer -> Nothing
+  GameExitSer -> Nothing
+  GameSaveSer -> Nothing
+  CfgDumpSer -> Nothing
