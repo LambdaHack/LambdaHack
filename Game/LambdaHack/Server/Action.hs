@@ -10,9 +10,8 @@ module Game.LambdaHack.Server.Action
   , executorSer, tryRestore, connServer, launchClients
   , waitForChildren, speedupCOps
     -- * Communication
-  , sendUpdateUI, sendQueryUI
+  , sendUpdateUI, sendQueryUI, broadcastUI
   , sendUpdateCli, sendUpdateCliAI, sendQueryCli, sendQueryCliAI
-  , broadcastUI, funBroadcastUI
   , broadcastCli, funBroadcastCli
     -- * Assorted primitives
   , saveGameSer, saveGameBkp, dumpCfg, mkConfigRules, handleScores
@@ -128,16 +127,16 @@ withAI m = do
   putDict d
   return a
 
-connSendUpdateCli :: MonadServerChan m => CmdUpdateCli -> ConnCli -> m ()
+connSendUpdateCli :: MonadServerChan m => CmdCli -> ConnCli -> m ()
 connSendUpdateCli cmd ConnCli{toClient} =
-  liftIO $ writeChan toClient $ Left $ CmdUpdateCli cmd
+  liftIO $ writeChan toClient $ Left cmd
 
-sendUpdateCli :: MonadServerChan m => FactionId -> CmdUpdateCli -> m ()
+sendUpdateCli :: MonadServerChan m => FactionId -> CmdCli -> m ()
 sendUpdateCli fid cmd = do
   conn <- getsDict (fst . (EM.! fid))
   maybe (return ()) (connSendUpdateCli cmd) conn
 
-sendUpdateCliAI :: MonadServerChan m => FactionId -> CmdUpdateCli -> m ()
+sendUpdateCliAI :: MonadServerChan m => FactionId -> CmdCli -> m ()
 sendUpdateCliAI fid cmd = withAI $ sendUpdateCli fid cmd
 
 connSendQueryCli :: MonadServerChan m => ActorId -> ConnCli -> m CmdSer
@@ -153,14 +152,14 @@ sendQueryCli fid aid = do
 sendQueryCliAI :: MonadServerChan m => FactionId -> ActorId -> m CmdSer
 sendQueryCliAI fid aid = withAI $ sendQueryCli fid aid
 
-broadcastCli :: MonadServerChan m => CmdUpdateCli -> m ()
+broadcastCli :: MonadServerChan m => CmdCli -> m ()
 broadcastCli cmd = do
   faction <- getsState sfaction
   let broad = mapM_ (flip sendUpdateCli cmd) $ EM.keys faction
   broad
   withAI broad
 
-funBroadcastCli :: MonadServerChan m => (FactionId -> CmdUpdateCli) -> m ()
+funBroadcastCli :: MonadServerChan m => (FactionId -> CmdCli) -> m ()
 funBroadcastCli cmd = do
   faction <- getsState sfaction
   let f fid = sendUpdateCli fid (cmd fid)
@@ -168,11 +167,11 @@ funBroadcastCli cmd = do
   broad
   withAI broad
 
-connSendUpdateUI :: MonadServerChan m => CmdUpdateUI -> ConnCli -> m ()
+connSendUpdateUI :: MonadServerChan m => CmdUI -> ConnCli -> m ()
 connSendUpdateUI cmd ConnCli{toClient} =
-  liftIO $ writeChan toClient $ Right $ CmdUpdateUI cmd
+  liftIO $ writeChan toClient $ Right cmd
 
-sendUpdateUI :: MonadServerChan m => FactionId -> CmdUpdateUI -> m ()
+sendUpdateUI :: MonadServerChan m => FactionId -> CmdUI -> m ()
 sendUpdateUI fid cmd = do
   conn <- getsDict (fst . (EM.! fid))
   maybe (return ()) (connSendUpdateUI cmd) conn
@@ -187,16 +186,10 @@ sendQueryUI fid aid = do
   conn <- getsDict (fst . (EM.! fid))
   maybe (assert `failure` (fid, aid)) (connSendQueryUI aid) conn
 
-broadcastUI :: MonadServerChan m => CmdUpdateUI -> m ()
+broadcastUI :: MonadServerChan m => CmdUI -> m ()
 broadcastUI cmd = do
   faction <- getsState sfaction
   mapM_ (flip sendUpdateUI cmd) $ EM.keys faction
-
-funBroadcastUI :: MonadServerChan m => (FactionId -> CmdUpdateUI) -> m ()
-funBroadcastUI cmd = do
-  faction <- getsState sfaction
-  let f fid = sendUpdateUI fid (cmd fid)
-  mapM_ f $ EM.keys faction
 
 -- | Create a server config file. Warning: when it's use, the game state
 -- may still be undefined, hence the content ops are given as an argument.

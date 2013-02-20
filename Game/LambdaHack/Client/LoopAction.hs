@@ -36,12 +36,12 @@ initCli cmdCliSem = do
   -- State and client state are now valid.
 
 expectCmd :: MonadClientChan m
-           => (CmdCli -> m ()) -> (CmdUpdateCli -> Bool) -> m ()
+           => (CmdCli -> m ()) -> (CmdCli -> Bool) -> m ()
 expectCmd cmdCliSem expected = do
   side <- getsClient sside
   cmd1 <- readChanFromSer
   case cmd1 of
-    Left (CmdUpdateCli cmd) | expected cmd -> cmdCliSem (CmdUpdateCli cmd)
+    Left cmd | expected cmd -> cmdCliSem cmd
     _ -> assert `failure` (side, cmd1)
 
 loopCli :: (MonadAction m, MonadClientChan m)

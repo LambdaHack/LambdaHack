@@ -508,8 +508,6 @@ restartGame loopServer = do
   funBroadcastCli (\fid -> RestartCli (pers EM.! fid) defLoc)
   populateDungeon
   saveGameBkp
-  broadcastUI $ ShowMsgUI "This time for real."
-  broadcastUI DisplayPushUI
   loopServer
 
 createFactions :: Kind.COps -> Config -> Rnd FactionDict
