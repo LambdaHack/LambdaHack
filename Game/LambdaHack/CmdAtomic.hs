@@ -76,7 +76,7 @@ data CmdAtomic =
   -- Assorted.
   | DiscoverA LevelId Point ItemId (Kind.Id ItemKind)
   | CoverA LevelId Point ItemId (Kind.Id ItemKind)
-  | PerceptionA LevelId Perception
+  | PerceptionA LevelId PActors PActors
   deriving (Show, Eq)
 
 data DescAtomic =
@@ -123,7 +123,7 @@ undoCmdAtomic cmd = case cmd of
   AlterSmellA lid diffL -> AlterSmellA lid $ map (second swap) diffL
   DiscoverA lid p iid ik -> CoverA lid p iid ik
   CoverA lid p iid ik -> DiscoverA lid p iid ik
-  PerceptionA lid per -> PerceptionA lid per  -- does not change State, anyway
+  PerceptionA lid outPer inPer -> PerceptionA lid inPer outPer
 
 undoDescAtomic :: DescAtomic -> DescAtomic
 undoDescAtomic cmd = case cmd of

@@ -54,7 +54,7 @@ cmdAtomicSem cmd = case cmd of
   AlterSmellA lid diffL -> alterSmellA lid diffL
   DiscoverA lid p iid ik -> discoverA lid p iid ik
   CoverA lid p iid ik -> coverA lid p iid ik
-  PerceptionA _ _ -> return ()
+  PerceptionA _ _ _ -> return ()
 
 -- All functions here that take an atomic action are executed
 -- in the state just before the action is executed.
@@ -137,7 +137,7 @@ posCmdAtomic cmd = case cmd of
   AlterSmellA _ _ ->  return $ Left $ Left True
   DiscoverA lid p _ _ -> return $ Right (lid, [p])
   CoverA lid p _ _ -> return $ Right (lid, [p])
-  PerceptionA _ _ -> return $ Left $ Left False
+  PerceptionA _ _ _ -> return $ Left $ Left False
 
 posDescAtomic :: MonadActionRO m
               => DescAtomic

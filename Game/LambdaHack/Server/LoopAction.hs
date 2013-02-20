@@ -171,13 +171,11 @@ cmdAtomicBroad atomic = do
           if resetsFid then do
             resetFidPerception fid arena
             perNew <- getPerFid fid arena
-            let inFov =
-                  ES.elems $ totalVisible perNew ES.\\ totalVisible perOld
-                outFov =
-                  ES.elems $ totalVisible perOld ES.\\ totalVisible perNew
-            mapM_ (sendA fid) $ atomicRemember arena inFov outFov sOld
+            let inPer = diffPer perNew perOld
+                outPer = diffPer perOld perNew
+            mapM_ (sendA fid) $ atomicRemember arena inPer outPer sOld
             anySend fid perOld perNew
-            sendA fid $ PerceptionA arena perNew
+            sendA fid $ PerceptionA arena (pactors outPer) (pactors inPer)
           else anySend fid perOld perOld
         Left mfid ->
           -- @resets@ is false here and broken atomic has the same mfid
@@ -185,9 +183,11 @@ cmdAtomicBroad atomic = do
   faction <- getsState sfaction
   mapM_ send $ EM.keys faction
 
-atomicRemember :: LevelId -> [Point] -> [Point] -> State -> [CmdAtomic]
-atomicRemember lid inFov outFov s =
-  let lvl = sdungeon s EM.! lid
+atomicRemember :: LevelId -> Perception -> Perception -> State -> [CmdAtomic]
+atomicRemember lid inPer outPer s =
+  let inFov = ES.elems $ totalVisible inPer
+      outFov = ES.elems $ totalVisible outPer
+      lvl = sdungeon s EM.! lid
       actorD = sactorD s
       itemD = sitemD s
       pMaybe p = maybe Nothing (\x -> Just (p, x))

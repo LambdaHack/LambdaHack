@@ -6,6 +6,7 @@ module Game.LambdaHack.Client.CmdAtomicUI
 
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import Data.Maybe
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
@@ -27,6 +28,7 @@ import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
+import Game.LambdaHack.Perception
 import Game.LambdaHack.State
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
@@ -44,12 +46,19 @@ cmdAtomicSemCli cmd = case cmd of
     side <- getsClient sside
     when (side == fid) $
       modifyClient $ \cli -> cli {_sleader = target}
-  PerceptionA lid per -> do
+  PerceptionA lid outPA inPA -> do
     -- Clients can't compute FOV on their own, because they don't know
     -- if unknown tiles are clear or not. Server would need to send
     -- info about properties of unknown tiles, which complicates
     -- and makes heavier the most bulky data set in the game: tile maps.
-    let f = EM.adjust (const per) lid
+    let paToPer pa = Perception
+          { pactors = pa
+          , ptotal = PerceptionVisible
+                     $ ES.unions $ map pvisible $ EM.elems $ pa }
+        outPer = paToPer outPA
+        inPer = paToPer inPA
+        adj per = addPer (diffPer per outPer) inPer
+        f sfper = EM.adjust adj lid sfper
     modifyClient $ \cli -> cli {sfper = f (sfper cli)}
   _ -> return ()
 
