@@ -6,7 +6,7 @@ module Game.LambdaHack.State
     -- * State components
   , sdungeon, sdepth, sactorD, sitemD, sdisco, sfaction, scops
     -- * State operations
-  , defStateGlobal, defStateLocal, localFromGlobal
+  , defStateGlobal, emptyState, localFromGlobal
   , updateDungeon, updateDepth, updateActorD, updateItemD, updateDisco
   , updateFaction, updateCOps, updateTime
   , getTime, isHumanFaction, isSpawningFaction
@@ -83,9 +83,9 @@ defStateGlobal _sdungeon _sdepth _sdisco _sfaction _scops =
     , ..
     }
 
--- | Initial per-faction local game state.
-defStateLocal :: Kind.COps -> State
-defStateLocal _scops =
+-- | Initial, empty state.
+emptyState :: State
+emptyState =
   State
     { _sdungeon = EM.empty
     , _sdepth = 0
@@ -93,7 +93,7 @@ defStateLocal _scops =
     , _sitemD = EM.empty
     , _sdisco = EM.empty
     , _sfaction = EM.empty
-    , _scops
+    , _scops = undefined
     }
 
 -- TODO: make lstair secret until discovered; use this later on for

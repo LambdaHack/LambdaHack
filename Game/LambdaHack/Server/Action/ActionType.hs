@@ -9,17 +9,17 @@ module Game.LambdaHack.Server.Action.ActionType
 
 import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.State.Strict hiding (State)
+import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Server.Action.ActionClass
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.State
 
--- TODO: make all fields strict
 data SerState = SerState
-  { serState  :: State        -- ^ current global state
-  , serServer :: StateServer  -- ^ current server state
-  , serDict   :: ConnDict     -- ^ client-server connection information
+  { serState  :: !State        -- ^ current global state
+  , serServer :: !StateServer  -- ^ current server state
+  , serDict   :: !ConnDict     -- ^ client-server connection information
   }
 
 -- | Server state transformation monad.
@@ -55,7 +55,8 @@ instance MonadServerChan ActionSer where
 
 -- | Run an action in the @IO@ monad, with undefined state.
 executorSer :: ActionSer () -> IO ()
-executorSer m = evalStateT (runActionSer m) SerState { serState = undefined
-                                                     , serServer = undefined
-                                                     , serDict = undefined
-                                                     }
+executorSer m = evalStateT (runActionSer m)
+                  SerState { serState = emptyState
+                           , serServer = emptyStateServer
+                           , serDict = EM.empty
+                           }

@@ -551,19 +551,19 @@ gameReset cops@Kind.COps{coitem, corule, cotile} = do
   -- Rules config reloaded at each new game start.
   -- Taking the original config from config file, to reroll RNG, if needed
   -- (the current config file has the RNG rolled for the previous game).
-  (sconfig, dungeonSeed, random) <- mkConfigRules corule
+  (sconfig, dungeonSeed, srandom) <- mkConfigRules corule
   let rnd :: Rnd (FactionDict, FlavourMap, Discovery, DiscoRev,
                   DungeonGen.FreshDungeon)
       rnd = do
         faction <- createFactions cops sconfig
-        flavour <- dungeonFlavourMap coitem
-        (discoS, discoRev) <- serverDiscos coitem
+        sflavour <- dungeonFlavourMap coitem
+        (discoS, sdiscoRev) <- serverDiscos coitem
         freshDng <- DungeonGen.dungeonGen cops sconfig
-        return (faction, flavour, discoS, discoRev, freshDng)
-  let (faction, flavour, discoS, discoRev, DungeonGen.FreshDungeon{..}) =
+        return (faction, sflavour, discoS, sdiscoRev, freshDng)
+  let (faction, sflavour, discoS, sdiscoRev, DungeonGen.FreshDungeon{..}) =
         St.evalState rnd dungeonSeed
       defState = defStateGlobal freshDungeon freshDepth discoS faction cops
-      defSer = defStateServer discoRev flavour random sconfig
+      defSer = emptyStateServer {sdiscoRev, sflavour, srandom, sconfig}
   putState defState
   putServer defSer
   -- Clients have no business noticing initial item creation, so we can

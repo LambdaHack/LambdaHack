@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable, OverloadedStrings #-}
 -- | Server and client game state types and operations.
 module Game.LambdaHack.Server.State
-  ( StateServer(..), defStateServer
+  ( StateServer(..), emptyStateServer
   , DebugModeSer(..), cycleTryFov
   ) where
 
@@ -26,7 +26,7 @@ data StateServer = StateServer
   , sicounter :: !ItemId        -- ^ stores next item index
   , sper      :: !Pers          -- ^ perception of all factions
   , srandom   :: !R.StdGen      -- ^ current random generator
-  , sconfig   :: !Config        -- ^ this game's config (including initial RNG)
+  , sconfig   :: Config        -- ^ this game's config (including initial RNG)
   , squit     :: !(Maybe Bool)  -- ^ will save and possibly exit the game soon
   , sdebugSer :: !DebugModeSer  -- ^ debugging mode
   }
@@ -36,17 +36,20 @@ data DebugModeSer = DebugModeSer
   { stryFov :: !(Maybe FovMode) }
   deriving Show
 
--- | Initial game server state.
-defStateServer :: DiscoRev -> FlavourMap -> R.StdGen -> Config -> StateServer
-defStateServer sdiscoRev sflavour srandom sconfig =
+-- | Initial, empty game server state.
+emptyStateServer :: StateServer
+emptyStateServer =
   StateServer
-    { sitemRev = HM.empty
+    { sdiscoRev = EM.empty
+    , sitemRev = HM.empty
+    , sflavour = emptyFlavourMap
     , sacounter = toEnum 0
     , sicounter = toEnum 0
     , sper = EM.empty
+    , srandom = R.mkStdGen 42
+    , sconfig = undefined
     , squit = Nothing
     , sdebugSer = defDebugModeSer
-    , ..
     }
 
 defDebugModeSer :: DebugModeSer

@@ -352,7 +352,7 @@ exeFrontend cops@Kind.COps{corule} exeClient exeServer = do
       font = configFont sconfigUI
   defHist <- defHistory
   let cli = defStateClient defHist sconfigUI
-      loc = defStateLocal cops
+      loc = updateCOps (const cops) emptyState
       executorC sfs fid chanCli isAI =
         -- This is correct, because the implicit contract ensures
         -- @MonadClientChan@ never tries to access the client UI session

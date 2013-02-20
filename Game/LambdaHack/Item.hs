@@ -13,7 +13,7 @@ module Game.LambdaHack.Item
    -- * The item discovery types
   , ItemKindIx, Discovery, DiscoRev, serverDiscos
     -- * The @FlavourMap@ type
-  , FlavourMap, dungeonFlavourMap
+  , FlavourMap, emptyFlavourMap, dungeonFlavourMap
     -- * Textual description
   , partItem, partItemNWs, partItemAW
   ) where
@@ -164,6 +164,9 @@ newtype FlavourMap = FlavourMap (EM.EnumMap (Kind.Id ItemKind) Flavour)
 instance Binary FlavourMap where
   put (FlavourMap m) = put m
   get = fmap FlavourMap get
+
+emptyFlavourMap :: FlavourMap
+emptyFlavourMap = FlavourMap EM.empty
 
 -- | Assigns flavours to item kinds. Assures no flavor is repeated,
 -- except for items with only one permitted flavour.
