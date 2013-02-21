@@ -334,61 +334,41 @@ effectAscend target power = do
 
 effLvlGoUp :: MonadServer m => ActorId -> Int -> WriterT [Atomic] m ()
 effLvlGoUp aid k = do
-  pbodyCurrent <- getsState $ getActorBody aid
-  let arena = blid pbodyCurrent
-  glo <- getState
-  case whereTo glo arena k of
-    Nothing -> fleeDungeon (bfaction pbodyCurrent) (blid pbodyCurrent)
-               -- We are at the "end" of the dungeon.
-    Just (nln, npos) ->
-      assert (nln /= arena `blame` (nln, "stairs looped")) $ do
-        timeCurrent <- getsState $ getTime arena
+  bOld <- getsState $ getActorBody aid
+  let arenaOld = blid bOld
+  whereto <- getsState $ \s -> whereTo s arenaOld k
+  case whereto of
+    Nothing -> -- We are at the "end" of the dungeon.
+               fleeDungeon (bfaction bOld) arenaOld
+    Just (arenaNew, posNew) ->
+      assert (arenaNew /= arenaOld `blame` (arenaNew, "stairs looped")) $ do
+        timeOld <- getsState $ getTime arenaOld
         -- Remove the actor from the old level.
         -- Onlookers see somebody uses a staircase.
         -- No need to report that he disappears.
-        tellCmdAtomic $ LoseActorA aid pbodyCurrent
-        -- Remember the level (e.g., when teleporting via scroll on the floor,
-        -- register the scroll vanished, also let the other factions register
-        -- the actor vanished in case they switch to this level from another
-        -- level). Perception is unchanged, so for one turn (this level turn)
-        -- there will be visibility left on the old actor location.
-        -- remember
-        -- TODO: wipe out smell on save instead, based on timeLastVisited
-        -- -- Only spawning factions left on the level, so no new smell generated.
-        -- -- Cancel smell. Reduces memory load and savefile size.
-        -- hs <- getsState $ actorList (not . isSpawningFaction glo) . getArena
-        -- when (null hs) $ do
-        --   oldSmell <- getsState $ lsmell . getArena
-        --   setSmellAtomic oldSmell EM.empty
-        -- Change arena, but not the leader yet. The actor will become
-        -- a leader, but he is not inserted into the new level yet.
--- TODO:        modifyState $ updateSelectedArena nln
+        tellCmdAtomic $ LoseActorA aid bOld
         -- Sync the actor time with the level time.
-        timeLastVisited <- getsState $ getTime nln
-        let diff = timeAdd (btime pbodyCurrent) (timeNegate timeCurrent)
-            pbody = pbodyCurrent { blid = nln
-                                 , btime = timeAdd timeLastVisited diff
-                                 , bpos = npos }
-        -- The actor is added to the new level, but there can be other actors
-        -- at his old position or at his new position.
+        timeLastVisited <- getsState $ getTime arenaNew
+        let delta = timeAdd (btime bOld) (timeNegate timeOld)
+            bNew = bOld { blid = arenaNew
+                        , btime = timeAdd timeLastVisited delta
+                        , bpos = posNew }
         -- Onlookers see somebody appear suddenly. The actor himself
         -- sees new surroundings and has to reset his perception.
-        tellCmdAtomic $ CreateActorA aid pbody
-        -- Checking actors at the new posiiton of the aid.
-        inhabitants <- getsState $ posToActor npos nln
+        tellCmdAtomic $ CreateActorA aid bNew
+        -- The actor is added to the new level, but there can be other actors
+        -- at his new position.
+        inhabitants <- getsState $ posToActor posNew arenaNew
         case inhabitants of
           Nothing -> return ()
--- Broken if the effect happens, e.g. via a scroll and abort is not enough.
---          Just h | isAHero gloh ->
---            -- Bail out if a party member blocks the staircase.
---            abortWith "somebody blocks the staircase"
+                     -- TODO: Bail out if a friend blocks the staircase.
           Just m ->
             -- Aquash an actor blocking the staircase.
             -- This is not a duplication with the other calls to squashActor,
             -- because here an inactive actor is squashed.
             squashActor aid m
         -- Verify the monster on the staircase died.
-        inhabitants2 <- getsState $ posToActor npos nln
+        inhabitants2 <- getsState $ posToActor posNew arenaNew
         when (isJust inhabitants2) $ assert `failure` inhabitants2
         -- The property of at most one actor on a tile is restored.
         -- Create a backup of the savegame.
@@ -404,31 +384,26 @@ fleeDungeon fid lid = do
     then tellCmdAtomic $ QuitFactionA fid oldSt $ Just (False, Victor)
     else tellCmdAtomic $ QuitFactionA fid oldSt $ Just (True, Victor)
 
--- TODO: refactor with actorAttackActor or perhaps displace the other
+-- TODO: refactor with actorAttackActor or perhaps move aside the other
 -- actor or swap positions with it, instead of squashing.
 squashActor :: MonadServer m
             => ActorId -> ActorId -> WriterT [Atomic] m ()
 squashActor source target = do
-  Kind.COps{{-coactor,-} coitem=Kind.Ops{okind, ouniqGroup}} <- getsState scops
---  sm <- getsState (getActorBody source)
---  tm <- getsState (getActorBody target)
+  Kind.COps{coitem=Kind.Ops{okind, ouniqGroup}} <- getsState scops
   flavour <- getsServer sflavour
   discoRev <- getsServer sdiscoRev
   let h2hKind = ouniqGroup "weight"
       kind = okind h2hKind
       power = maxDeep $ ipower kind
-      h2h = buildItem flavour discoRev h2hKind kind power
+      item = buildItem flavour discoRev h2hKind kind power
+  itemEffect source target Nothing item
+  tellDescAtomic $ StrikeD source target item HitD
 --      verb = iverbApply kind
---      msg = makeSentence
---        [ MU.SubjectVerbSg (partActor coactor sm) verb
---        , partActor coactor tm
 --        , "in a staircase accident" ]
---  msgAdd msg
-  itemEffect source target Nothing h2h
-  s <- getState
+  actorD <- getsState sactorD
   -- The monster has to be killed first, before we step there (same turn!).
-  assert (not (target `EM.member` sactorD s) `blame` (source, target, "not killed")) $
-    return ()
+  assert (not (target `EM.member` actorD)
+          `blame` (source, target, "not killed")) $ return ()
 
 -- ** Descend
 
