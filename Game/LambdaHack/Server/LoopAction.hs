@@ -159,7 +159,12 @@ cmdAtomicBroad atomic = do
       breakSend fid perNew = do
         let send2 (atomic2, ps2) = do
               let seen2 = either (isOurs fid) (vis perNew) ps2
-              when seen2 $ sendUpdate fid $ Left atomic2
+              if seen2
+                then sendUpdate fid $ Left atomic2
+                else do
+                  loud <- loudCmdAtomic atomic2
+                  when loud $ sendUpdate fid
+                            $ Right $ BroadcastD "You hear some noises."
         mapM_ send2 atomicPsBroken
       anySend fid perOld perNew = do
         let startSeen = either (isOurs fid) (vis perOld) ps

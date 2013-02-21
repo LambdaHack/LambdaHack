@@ -1,6 +1,7 @@
 -- | Semantics of atomic commands shared by client and server.
 module Game.LambdaHack.CmdAtomicSem
-  ( cmdAtomicSem, resetsFovAtomic, posCmdAtomic, posDescAtomic, breakCmdAtomic
+  ( cmdAtomicSem, resetsFovAtomic, posCmdAtomic, posDescAtomic
+  , breakCmdAtomic, loudCmdAtomic
   ) where
 
 import qualified Data.EnumMap.Strict as EM
@@ -166,6 +167,7 @@ posDescAtomic cmd = case cmd of
     return $ Right (lid, [pa, p])
   EffectD aid _ -> singleAid aid
   FailureD fid _ -> return $ Left $ Right fid  -- failures are secret
+  BroadcastD _ -> return $ Left $ Left True
   DisplayPushD fid -> return $ Left $ Right fid
   DisplayDelayD fid -> return $ Left $ Right fid
   FlushFramesD fid -> return $ Left $ Right fid
@@ -216,6 +218,12 @@ breakCmdAtomic cmd = case cmd of
     item <- getsState $ getItemBody iid
     return [LoseItemA iid item k c1, SpotItemA iid item k c2]
   _ -> return [cmd]
+
+loudCmdAtomic :: MonadActionRO m => CmdAtomic -> m Bool
+loudCmdAtomic cmd = case cmd of
+  DestroyActorA _ body -> return $ not $ bproj body
+  AlterTileA{} -> return True
+  _ -> return False
 
 -- TODO: assert that the actor's items belong to sitemD.
 createActorA :: MonadAction m => ActorId -> Actor -> m ()

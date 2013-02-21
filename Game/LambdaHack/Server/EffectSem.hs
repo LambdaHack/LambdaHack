@@ -344,7 +344,9 @@ effLvlGoUp aid k = do
       assert (nln /= arena `blame` (nln, "stairs looped")) $ do
         timeCurrent <- getsState $ getTime arena
         -- Remove the actor from the old level.
-        tellCmdAtomic $ DestroyActorA aid pbodyCurrent
+        -- Onlookers see somebody uses a staircase.
+        -- No need to report that he disappears.
+        tellCmdAtomic $ LoseActorA aid pbodyCurrent
         -- Remember the level (e.g., when teleporting via scroll on the floor,
         -- register the scroll vanished, also let the other factions register
         -- the actor vanished in case they switch to this level from another
@@ -369,6 +371,8 @@ effLvlGoUp aid k = do
                                  , bpos = npos }
         -- The actor is added to the new level, but there can be other actors
         -- at his old position or at his new position.
+        -- Onlookers see somebody appear suddenly. The actor himself
+        -- sees new surroundings and has to reset his perception.
         tellCmdAtomic $ CreateActorA aid pbody
         -- Checking actors at the new posiiton of the aid.
         inhabitants <- getsState $ posToActor npos nln

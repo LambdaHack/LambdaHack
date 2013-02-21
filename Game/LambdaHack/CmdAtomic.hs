@@ -93,6 +93,7 @@ data DescAtomic =
   | ShunD ActorId Point F.Feature Bool
   | EffectD ActorId Effect.Effect
   | FailureD FactionId Msg
+  | BroadcastD Msg
   | DisplayPushD FactionId
   | DisplayDelayD FactionId
   | FlushFramesD FactionId
@@ -145,6 +146,7 @@ undoDescAtomic cmd = case cmd of
   ShunD aid p feat b -> TriggerD aid p feat b
   EffectD _ _ -> cmd  -- not ideal?
   FailureD _ _ -> cmd
+  BroadcastD _ -> cmd
   DisplayPushD _ -> cmd
   DisplayDelayD _ -> cmd
   FlushFramesD _ -> cmd

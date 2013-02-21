@@ -299,6 +299,7 @@ drawDescAtomicUI verbose desc = case desc of
     side <- getsClient sside
     assert (fid == side) $ return ()
     msgAdd msg
+  BroadcastD msg -> msgAdd msg
   DisplayPushD _ -> displayPush
   DisplayDelayD _ -> displayFramesPush [Nothing]
   FlushFramesD _ -> do
