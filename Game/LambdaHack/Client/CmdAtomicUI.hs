@@ -270,7 +270,15 @@ drawDescAtomicUI verbose desc = case desc of
     if bhp b > 0
       then case effect of
         Effect.NoEffect -> msgAdd "Nothing happens."
-        Effect.Heal -> aVerbMU aid "feel better"
+        Effect.Heal -> do
+          cli <- getClient
+          loc <- getState
+          per <- askPerception
+          aVerbMU aid "feel better"
+          let ps = (bpos b, bpos b)
+              animFrs = animate cli loc per
+                        $ twirlSplash ps Color.BrBlue Color.Blue
+          displayFramesPush $ Nothing : animFrs
         Effect.Wound _ -> aVerbMU aid "feel wounded"
         Effect.Mindprobe nEnemy -> do
           -- TODO: NWs with spelled cardinal would be handy
