@@ -18,7 +18,6 @@ module Game.LambdaHack.Server.Action
   , rndToAction, resetFidPerception, getPerFid
   ) where
 
-import Control.Concurrent
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
@@ -27,6 +26,8 @@ import System.IO.Unsafe (unsafePerformIO)
 import Control.Exception (finally)
 import qualified System.Random as R
 import qualified Control.Monad.State as St
+import Control.Concurrent.STM
+import Control.Concurrent
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -129,7 +130,7 @@ withAI m = do
 
 connSendUpdateCli :: MonadServerChan m => CmdCli -> ConnCli -> m ()
 connSendUpdateCli cmd ConnCli{toClient} =
-  liftIO $ writeChan toClient $ Left cmd
+ liftIO $ atomically $ writeTQueue toClient $ Left cmd
 
 sendUpdateCli :: MonadServerChan m => FactionId -> CmdCli -> m ()
 sendUpdateCli fid cmd = do
@@ -141,8 +142,8 @@ sendUpdateCliAI fid cmd = withAI $ sendUpdateCli fid cmd
 
 connSendQueryCli :: MonadServerChan m => ActorId -> ConnCli -> m CmdSer
 connSendQueryCli aid ConnCli{toClient, toServer} = do
-  liftIO $ writeChan toClient $ Left $ CmdHandleAICli aid
-  liftIO $ readChan toServer
+  liftIO $ atomically $ writeTQueue toClient $ Left $ CmdHandleAICli aid
+  liftIO $ atomically $ readTQueue toServer
 
 sendQueryCli :: MonadServerChan m => FactionId -> ActorId -> m CmdSer
 sendQueryCli fid aid = do
@@ -169,7 +170,7 @@ funBroadcastCli cmd = do
 
 connSendUpdateUI :: MonadServerChan m => CmdUI -> ConnCli -> m ()
 connSendUpdateUI cmd ConnCli{toClient} =
-  liftIO $ writeChan toClient $ Right cmd
+  liftIO $ atomically $ writeTQueue toClient $ Right cmd
 
 sendUpdateUI :: MonadServerChan m => FactionId -> CmdUI -> m ()
 sendUpdateUI fid cmd = do
@@ -178,8 +179,8 @@ sendUpdateUI fid cmd = do
 
 connSendQueryUI :: MonadServerChan m => ActorId -> ConnCli -> m CmdSer
 connSendQueryUI aid ConnCli{toClient, toServer} = do
-  liftIO $ writeChan toClient $ Right $ CmdHandleHumanUI aid
-  liftIO $ readChan toServer
+  liftIO $ atomically $ writeTQueue toClient $ Right $ CmdHandleHumanUI aid
+  liftIO $ atomically $ readTQueue toServer
 
 sendQueryUI :: MonadServerChan m => FactionId -> ActorId -> m CmdSer
 sendQueryUI fid aid = do
@@ -213,8 +214,8 @@ connServer = do
   faction <- getsState sfaction
   -- Prepare connections based on factions.
   let mkConnCli = do
-        toClient <- newChan
-        toServer <- newChan
+        toClient <- newTQueueIO
+        toServer <- newTQueueIO
         return $ Just $ ConnCli{..}
       addChan (fid, fact) = do
         chanCli <- if isHumanFact fact

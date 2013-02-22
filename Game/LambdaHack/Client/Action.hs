@@ -29,6 +29,7 @@ module Game.LambdaHack.Client.Action
   ) where
 
 import Control.Concurrent
+import Control.Concurrent.STM
 import Control.Monad
 import qualified Control.Monad.State as St
 import Control.Monad.Writer.Strict (WriterT, lift, tell)
@@ -329,12 +330,12 @@ restoreGame = do
 readChanFromSer :: MonadClientChan m => m (Either CmdCli CmdUI)
 readChanFromSer = do
   toClient <- getsChan toClient
-  liftIO $ readChan toClient
+  liftIO $ atomically $ readTQueue toClient
 
 writeChanToSer :: MonadClientChan m => CmdSer -> m ()
 writeChanToSer cmd = do
   toServer <- getsChan toServer
-  liftIO $ writeChan toServer cmd
+  liftIO $ atomically $ writeTQueue toServer cmd
 
 -- | Wire together game content, the main loop of game clients,
 -- the main game loop assigned to this frontend (possibly containing

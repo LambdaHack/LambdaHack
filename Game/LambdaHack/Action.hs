@@ -16,7 +16,7 @@ module Game.LambdaHack.Action
   , updateLevel, getsLevel
   ) where
 
-import Control.Concurrent.Chan
+import Control.Concurrent.STM.TQueue
 import Control.Monad.Writer.Strict (WriterT (WriterT), lift, runWriterT)
 import qualified Data.EnumMap.Strict as EM
 import Data.Monoid
@@ -32,8 +32,8 @@ import Game.LambdaHack.Utils.Assert
 
 -- | Connection channels between server and a single client.
 data ConnCli = ConnCli
-  { toClient :: Chan (Either CmdCli CmdUI)
-  , toServer :: Chan CmdSer
+  { toClient :: TQueue (Either CmdCli CmdUI)
+  , toServer :: TQueue CmdSer
   }
 
 instance Show ConnCli where
