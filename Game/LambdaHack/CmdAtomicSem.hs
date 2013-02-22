@@ -113,8 +113,8 @@ posCmdAtomic cmd = case cmd of
   SpotItemA _ _ _ c -> singleContainer c
   LoseItemA _ _ _ c -> singleContainer c
   MoveActorA aid fromP toP -> do
-    (lid, p) <- posOfAid aid
-    return $ assert (fromP == p) $ Right (lid, [fromP, toP])
+    (lid, _) <- posOfAid aid
+    return $ Right (lid, [fromP, toP])
   WaitActorA aid _ _ -> singleAid aid
   DisplaceActorA source target -> do
     (slid, sp) <- posOfAid source
@@ -225,27 +225,37 @@ loudCmdAtomic cmd = case cmd of
   AlterTileA{} -> return True
   _ -> return False
 
--- TODO: assert that the actor's items belong to sitemD.
 createActorA :: MonadAction m => ActorId -> Actor -> m ()
 createActorA aid body = do
+  -- Assert that actor's items belong to @sitemD@.
+  itemD <- getsState sitemD
+  let is = EM.keys $ bbag body
+  assert (all (`EM.member` itemD) is `blame` (aid, body, itemD)) return ()
+  -- Add actor to @sactorD@.
   let f Nothing = Just body
-      f (Just b) = assert `failure` (aid, b, body)
+      f (Just b) = assert `failure` (aid, body, b)
   modifyState $ updateActorD $ EM.alter f aid
+  -- Add actor to @sprio@.
   let g Nothing = Just [aid]
-      g (Just l) = assert (not (aid `elem` l) `blame` (aid, l, body))
+      g (Just l) = assert (not (aid `elem` l) `blame` (aid, body, l))
                    $ Just $ aid : l
   updateLevel (blid body) $ updatePrio $ EM.alter g (btime body)
 
--- TODO: assert that the actor's items belong to sitemD.
 -- | Kills an actor. Note: after this command, usually a new leader
--- for the pa rty should be elected.
+-- for the party should be elected.
 destroyActorA :: MonadAction m => ActorId -> Actor -> m ()
 destroyActorA aid body = do
+  -- Assert that actor's items belong to @sitemD@.
+  itemD <- getsState sitemD
+  let is = EM.keys $ bbag body
+  assert (all (`EM.member` itemD) is `blame` (aid, body, itemD)) $ return ()
+  -- Remove actor from @sactorD@.
   let f Nothing = assert `failure` (aid, body)
-      f (Just b) = assert (b == body `blame` (aid, b, body)) $ Nothing
+      f (Just b) = assert (b == body `blame` (aid, body, b)) $ Nothing
   modifyState $ updateActorD $ EM.alter f aid
+  -- Remove actor from @sprio@.
   let g Nothing = assert `failure` (aid, body)
-      g (Just l) = assert (aid `elem` l `blame` (aid, l, body))
+      g (Just l) = assert (aid `elem` l `blame` (aid, body, l))
                    $ let l2 = delete aid l
                      in if null l2 then Nothing else Just l2
   updateLevel (blid body) $ updatePrio $ EM.alter g (btime body)
@@ -254,8 +264,9 @@ destroyActorA aid body = do
 -- (in @sitemRev@ field of @StateServer@).
 createItemA :: MonadAction m => ItemId -> Item -> Int -> Container -> m ()
 createItemA iid item k c = assert (k > 0) $ do
-  -- The item may or may not be already present in the dungeon.
-  let f item1 item2 = assert (item1 == item2) item1
+  -- The item may or may not be already present in @sitemD@,
+  -- regardless if it's actually present in the dungeon.
+  let f item1 item2 = assert (item1 == item2 `blame` (iid, item, k, c)) item1
   modifyState $ updateItemD $ EM.insertWith f iid item
   case c of
     CFloor lid pos -> insertItemFloor lid iid k pos
@@ -272,24 +283,26 @@ insertItemActor :: MonadAction m
                 => ItemId -> Int -> InvChar -> ActorId -> m ()
 insertItemActor iid k l aid = do
   let bag = EM.singleton iid k
-  let upd = EM.unionWith (+) bag
-  modifyState $ updateActorD
-    $ EM.adjust (\b -> b {bbag = upd (bbag b)}) aid
-  modifyState $ updateActorD
-    $ EM.adjust (\b -> b {binv = EM.insert l iid (binv b)}) aid
+      upd = EM.unionWith (+) bag
+  modifyState $ updateActorD $
+    EM.adjust (\b -> b {bbag = upd (bbag b)}) aid
+  modifyState $ updateActorD $
+    EM.adjust (\b -> b {binv = EM.insert l iid (binv b)}) aid
   modifyState $ updateActorBody aid $ \b ->
     b {bletter = max l (bletter b)}
 
 -- | Destroy some copies (possibly not all) of an item.
 destroyItemA :: MonadAction m => ItemId -> Item -> Int -> Container -> m ()
-destroyItemA iid _item k c = assert (k > 0) $ do
+destroyItemA iid item k c = assert (k > 0) $ do
   -- Do not remove the item from @sitemD@ nor from @sitemRev@,
-  -- This is behaviourally equivalent.
+  -- It doesn't matter and @createItemA@ permits that.
+  -- However, assert the item is registered in @sitemD@.
+  itemD <- getsState sitemD
+  assert (iid `EM.lookup` itemD == Just item `blame` (iid, item, itemD)) $
+    return ()
   case c of
     CFloor lid pos -> deleteItemFloor lid iid k pos
-    CActor aid _ -> deleteItemActor iid k aid
-                    -- Actor's @bletter@ for UI not reset.
-                    -- This is OK up to isomorphism.
+    CActor aid l -> deleteItemActor iid k l aid
 
 deleteItemFloor :: MonadAction m
                 => LevelId -> ItemId -> Int -> Point -> m ()
@@ -297,14 +310,19 @@ deleteItemFloor lid iid k pos =
   let rmFromFloor (Just bag) =
         let nbag = rmFromBag k iid bag
         in if EM.null nbag then Nothing else Just nbag
-      rmFromFloor Nothing = assert `failure` (iid, k, pos)
+      rmFromFloor Nothing = assert `failure` (lid, iid, k, pos)
   in updateLevel lid $ updateFloor $ EM.alter rmFromFloor pos
 
 deleteItemActor :: MonadAction m
-                => ItemId -> Int -> ActorId -> m ()
-deleteItemActor iid k aid =
-  modifyState $ updateActorD
-  $ EM.adjust (\b -> b {bbag = rmFromBag k iid (bbag b)}) aid
+                => ItemId -> Int -> InvChar -> ActorId -> m ()
+deleteItemActor iid k l aid = do
+  modifyState $ updateActorD $
+    EM.adjust (\b -> b {bbag = rmFromBag k iid (bbag b)}) aid
+  -- Do not remove from actor's @binv@, but assert it was there.
+  b <- getsState $ getActorBody aid
+  assert (l `EM.lookup` binv b == Just iid `blame` (iid, l, aid)) $ return ()
+  -- Actor's @bletter@ for UI not reset, but checked.
+  assert (bletter b >= l`blame` (iid, k, l, aid, bletter b)) $ return ()
 
 moveActorA :: MonadAction m => ActorId -> Point -> Point -> m ()
 moveActorA aid _fromP toP =
@@ -325,7 +343,7 @@ moveItemA :: MonadAction m => ItemId -> Int -> Container -> Container -> m ()
 moveItemA iid k c1 c2 = assert (k > 0) $ do
   case c1 of
     CFloor lid pos -> deleteItemFloor lid iid k pos
-    CActor aid _ -> deleteItemActor iid k aid
+    CActor aid l -> deleteItemActor iid k l aid
   case c2 of
     CFloor lid pos -> insertItemFloor lid iid k pos
     CActor aid l -> insertItemActor iid k l aid
