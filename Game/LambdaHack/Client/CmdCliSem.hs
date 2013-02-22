@@ -65,7 +65,7 @@ handleHuman aid = do
   -- the human player issue commands, until any of them takes time.
   -- First time, just after pushing frames, ask for commands in Push mode.
   Just leader <- getsClient sleader
-  assert (leader == aid `blame` (leader, aid)) $ return ()
+  assert (leader == aid `blame` (leader, aid)) end
   let inputHumanCmd msg = do
         stopRunning
         humanCommand msg

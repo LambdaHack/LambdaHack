@@ -7,7 +7,6 @@ module Game.LambdaHack.Client.CmdHumanSem
 import Control.Monad
 import Control.Monad.Writer.Strict (WriterT)
 import Data.Maybe
-import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Action
@@ -115,10 +114,9 @@ moveHuman v = do
         tb <- getsState $ getActorBody target
         if bfaction tb == bfaction sb && not (bproj tb) then do
           -- Select adjacent actor by bumping into him. Takes no time.
-          selectLeader target
-            >>= assert `trueM`
-                  (leader, target, "leader bumps into himself" :: Text)
-            >> return Nothing
+          success <- selectLeader target
+          assert (success `blame` (leader, target, tb)) end
+          return Nothing
         else fmap Just $ moveLeader dir
       _ -> fmap Just $ moveLeader dir
 

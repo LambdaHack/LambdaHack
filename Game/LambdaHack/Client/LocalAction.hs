@@ -214,8 +214,9 @@ memberCycleHuman = do
   hs <- partyAfterLeader leader
   case filter (\(_, b) -> blid b == blid body) hs of
     [] -> abortWith "Cannot select any other member on this level."
-    (np, b) : _ -> selectLeader np
-                   >>= assert `trueM` (leader, blid b, np, "member duplicated")
+    (np, b) : _ -> do
+      success <- selectLeader np
+      assert (success `blame` (leader, np, b)) end
 
 partyAfterLeader :: MonadActionRO m
                  => ActorId
@@ -265,8 +266,9 @@ memberBackHuman = do
   hs <- partyAfterLeader leader
   case reverse hs of
     [] -> abortWith "No other member in the party."
-    (np, b) : _ -> selectLeader np
-                   >>= assert `trueM` (leader, blid b, np, "member duplicated")
+    (np, b) : _ -> do
+      success <- selectLeader np
+      assert (success `blame` (leader, np, b)) end
 
 -- * Inventory
 

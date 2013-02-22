@@ -2,7 +2,7 @@
 -- Actually, a bunch of hacks wrapping the original @assert@ function,
 -- which is the only easy way of obtaining source positions.
 module Game.LambdaHack.Utils.Assert
-  ( assert, blame, failure, allB, checkM, trueM, falseM
+  ( assert, blame, failure, allB, end
   ) where
 
 import Control.Exception (assert)
@@ -46,23 +46,9 @@ allB predicate l =
   let s = show (filter (not . predicate) l) ++ " in the context of " ++ show l
   in blame (all predicate l) s
 
--- | Check that the value returned from a monad action satisfies a predicate.
--- Reports source position and the suspects. Drops the value.
-checkM :: (Show a, Monad m) =>
-          (Bool -> m () -> m ()) -> (c -> Bool) -> a -> c -> m ()
-checkM asrt predicate blamed value
-  | predicate value = return ()
-  | otherwise =
-    let s = "The returned value is wrong and the following is to blame:\n" ++
-            "  " ++ show blamed
-    in trace s $
-       asrt False
-         (error "Assert.checkM: no error position (upgrade to GHC >= 7.4)")
-
--- | Verifies that the returned value is true (respectively, false). Used as in:
+-- | To be used in place of @return ()@, as in:
 --
--- > open newValve >>= assert `trueM` (newValve, "is already opened, not new")
-trueM, falseM :: (Show a, Monad m) => (Bool -> m () -> m ()) -> a -> Bool
-              -> m ()
-trueM  asrt = checkM asrt id
-falseM asrt = checkM asrt not
+-- > do b <- getB a
+-- >    assert (b `blame` a) end
+end :: Monad m => m ()
+end = return ()

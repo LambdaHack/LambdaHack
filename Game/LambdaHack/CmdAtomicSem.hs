@@ -230,7 +230,7 @@ createActorA aid body = do
   -- Assert that actor's items belong to @sitemD@.
   itemD <- getsState sitemD
   let is = EM.keys $ bbag body
-  assert (all (`EM.member` itemD) is `blame` (aid, body, itemD)) return ()
+  assert (allB (`EM.member` itemD) is `blame` (aid, body, itemD)) end
   -- Add actor to @sactorD@.
   let f Nothing = Just body
       f (Just b) = assert `failure` (aid, body, b)
@@ -248,7 +248,7 @@ destroyActorA aid body = do
   -- Assert that actor's items belong to @sitemD@.
   itemD <- getsState sitemD
   let is = EM.keys $ bbag body
-  assert (all (`EM.member` itemD) is `blame` (aid, body, itemD)) $ return ()
+  assert (allB (`EM.member` itemD) is `blame` (aid, body, itemD)) end
   -- Remove actor from @sactorD@.
   let f Nothing = assert `failure` (aid, body)
       f (Just b) = assert (b == body `blame` (aid, body, b)) $ Nothing
@@ -298,8 +298,7 @@ destroyItemA iid item k c = assert (k > 0) $ do
   -- It doesn't matter and @createItemA@ permits that.
   -- However, assert the item is registered in @sitemD@.
   itemD <- getsState sitemD
-  assert (iid `EM.lookup` itemD == Just item `blame` (iid, item, itemD)) $
-    return ()
+  assert (iid `EM.lookup` itemD == Just item `blame` (iid, item, itemD)) end
   case c of
     CFloor lid pos -> deleteItemFloor lid iid k pos
     CActor aid l -> deleteItemActor iid k l aid
@@ -320,9 +319,9 @@ deleteItemActor iid k l aid = do
     EM.adjust (\b -> b {bbag = rmFromBag k iid (bbag b)}) aid
   -- Do not remove from actor's @binv@, but assert it was there.
   b <- getsState $ getActorBody aid
-  assert (l `EM.lookup` binv b == Just iid `blame` (iid, l, aid)) $ return ()
+  assert (l `EM.lookup` binv b == Just iid `blame` (iid, l, aid)) end
   -- Actor's @bletter@ for UI not reset, but checked.
-  assert (bletter b >= l`blame` (iid, k, l, aid, bletter b)) $ return ()
+  assert (bletter b >= l`blame` (iid, k, l, aid, bletter b)) end
 
 moveActorA :: MonadAction m => ActorId -> Point -> Point -> m ()
 moveActorA aid _fromP toP =

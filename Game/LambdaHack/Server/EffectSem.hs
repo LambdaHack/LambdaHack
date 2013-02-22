@@ -403,7 +403,7 @@ squashActor source target = do
   actorD <- getsState sactorD
   -- The monster has to be killed first, before we step there (same turn!).
   assert (not (target `EM.member` actorD)
-          `blame` (source, target, "not killed")) $ return ()
+          `blame` (source, target, "not killed")) end
 
 -- ** Descend
 
