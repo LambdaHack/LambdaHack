@@ -23,7 +23,7 @@ cmdCliSem cmd = case cmd of
   GameDisconnectCli -> clientDisconnect
   CmdHandleAICli aid -> do
     cmds <- handleAI aid
-    writeChanToSer [cmds]
+    writeChanToSer cmds
 
 cmdUISem :: ( MonadActionAbort m, MonadAction m
             , MonadClientUI m, MonadClientChan m )

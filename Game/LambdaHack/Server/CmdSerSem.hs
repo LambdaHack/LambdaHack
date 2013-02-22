@@ -2,6 +2,12 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 -- | Semantics of 'CmdSer' server commands.
 -- A couple of them do not take time, the rest does.
+-- Note that since the results are atomic commands, which are executed
+-- only later (on the server and some of the clients), all condition
+-- are checkd by the semantic functions in the context of the state
+-- before the server command. Even if one or more atomic actions
+-- are already issued by the point an expression is evaluated, they do not
+-- influence the outcome of the evaluation.
 -- TODO: document
 module Game.LambdaHack.Server.CmdSerSem where
 
@@ -416,8 +422,8 @@ clearPathSer aid = do
 -- * SetPathSer
 
 setPathSer :: MonadServer m
-           => ActorId -> Vector -> [Vector] -> WriterT [Atomic] m ()
-setPathSer aid dir path = do
+           => ActorId -> [Vector] -> WriterT [Atomic] m ()
+setPathSer aid path = do
   fromPath <- getsState $ bpath . getActorBody aid
   tellCmdAtomic $ PathActorA aid fromPath (Just path)
   when (length path < 3) $ do
@@ -425,7 +431,6 @@ setPathSer aid dir path = do
     let toColor = Just Color.BrBlack
     when (fromColor /= toColor) $
       tellCmdAtomic $ ColorActorA aid fromColor toColor
-  moveSer aid dir
 
 -- * GameRestart
 

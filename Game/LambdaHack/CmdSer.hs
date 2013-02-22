@@ -24,7 +24,7 @@ data CmdSer =
   | ApplySer ActorId ItemId Container
   | TriggerSer ActorId Point
   | ClearPathSer ActorId
-  | SetPathSer ActorId Vector [Vector]
+  | SetPathSer ActorId [Vector]
   | GameRestartSer
   | GameExitSer
   | GameSaveSer
@@ -55,7 +55,7 @@ aidCmdSer cmd = case cmd of
   ApplySer aid _ _ -> Just aid
   TriggerSer aid _ -> Just aid
   ClearPathSer aid -> Just aid
-  SetPathSer aid _ _ -> Just aid
+  SetPathSer aid _ -> Just aid
   GameRestartSer -> Nothing
   GameExitSer -> Nothing
   GameSaveSer -> Nothing

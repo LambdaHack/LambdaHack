@@ -345,10 +345,7 @@ handleActors cmdSerSem arena subclipStart = do
       isHuman <- getsState $ flip isHumanFaction side
       if Just actor == mleader && isHuman
         then do
-          -- TODO: check that the command is legal, that is, the leader
-          -- is acting, etc. Or perhaps instead have a separate type
-          -- of actions for humans. OTOH, AI is controlled by the servers
-          -- so the generated commands are assumed to be legal.
+          -- TODO: check that the command is legal, that is, correct side, etc.
           cmdS <- sendQueryUI side actor
           atoms <- cmdSerSem side cmdS
           let isFailure cmd = case cmd of Right FailureD{} -> True; _ -> False
@@ -394,18 +391,18 @@ handleActors cmdSerSem arena subclipStart = do
               aborted = all isFailure atoms
               mleaderNew = aidCmdSer cmdS
               timed = timedCmdSer cmdS
-              (leadAtoms, leaderNew) = assert timed $ case mleaderNew of
-                Nothing -> assert `failure` (actor, cmdS, atoms)
+              (leadAtoms, leaderNew) = case mleaderNew of
+                Nothing -> assert (not timed) $ ([], actor)
                 Just lNew | lNew /= actor ->
                   ([Left (LeadFactionA side mleader (Just lNew))], lNew)
                 Just _ -> ([], actor)
           advanceAtoms <- if aborted || not timed
-                          then assert `failure` (actor, cmdS, atoms)
+                          then return []
                           else advanceTime leaderNew
           mapM_ cmdAtomicBroad $ leadAtoms ++ atoms ++ advanceAtoms
 --          recordHistory
           let subclipStartDelta = timeAddFromSpeed coactor body subclipStart
-          if isHuman && not (bproj body)
+          if not aborted && isHuman && not (bproj body)
              || subclipStart == timeZero
              || btime body > subclipStartDelta
             then

@@ -31,7 +31,7 @@ import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 
-handleAI :: MonadClient m => ActorId -> m CmdSer
+handleAI :: MonadClient m => ActorId -> m [CmdSer]
 handleAI actor = do
   body <- getsState $ getActorBody actor
   side <- getsClient sside
@@ -55,8 +55,7 @@ handleAI actor = do
           <> "\nHandleAI move:"   <+> showT stratAction
     -- trace _debug $ return ()
     -- Run the AI: chose an action from those given by the AI strategy.
-    cmd <- rndToAction $ frequency $ bestVariant $ stratAction
-    return cmd
+    rndToAction $ frequency $ bestVariant $ stratAction
 
 -- | Handle the move of the hero.
 handleHuman :: (MonadActionAbort m, MonadClientUI m) => ActorId -> m CmdSer
