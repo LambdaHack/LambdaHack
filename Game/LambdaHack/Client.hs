@@ -22,8 +22,8 @@ cmdCliSem cmd = case cmd of
   GameSaveBkpCli -> clientGameSave True
   GameDisconnectCli -> clientDisconnect
   CmdHandleAICli aid -> do
-    a <- handleAI aid
-    writeChanToSer a
+    cmds <- handleAI aid
+    writeChanToSer [cmds]
 
 cmdUISem :: ( MonadActionAbort m, MonadAction m
             , MonadClientUI m, MonadClientChan m )
@@ -36,5 +36,5 @@ cmdUISem cmd = case cmd of
   DescAtomicUI desc ->
     drawDescAtomicUI False desc
   CmdHandleHumanUI aid -> do
-    a <- handleHuman aid
-    writeChanToSer a
+    cmdH <- handleHuman aid
+    writeChanToSer [cmdH]

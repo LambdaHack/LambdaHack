@@ -18,6 +18,7 @@ initCli :: (MonadAction m, MonadClientChan m) => (CmdCli -> m ()) -> m Msg
 initCli cmdCliSem = do
   -- Warning: state and client state are invalid here, e.g., sdungeon
   -- and sper are empty.
+  writeChanToSer []  -- tell the server the client is ready
   cops <- getsState scops
   restored <- restoreGame
   case restored of

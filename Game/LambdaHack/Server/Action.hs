@@ -141,9 +141,15 @@ sendUpdateCliAI :: MonadServerChan m => FactionId -> CmdCli -> m ()
 sendUpdateCliAI fid cmd = withAI $ sendUpdateCli fid cmd
 
 connSendQueryCli :: MonadServerChan m => ActorId -> ConnCli -> m CmdSer
-connSendQueryCli aid ConnCli{toClient, toServer} = do
-  liftIO $ atomically $ writeTQueue toClient $ Left $ CmdHandleAICli aid
-  liftIO $ atomically $ readTQueue toServer
+connSendQueryCli aid conn@ConnCli{toClient, toServer} = do
+  cmds <- liftIO $ atomically $ readTQueue toServer
+  case cmds of
+    [] -> do
+      liftIO $ atomically $ writeTQueue toClient $ Left $ CmdHandleAICli aid
+      connSendQueryCli aid conn
+    cmd : rest -> do
+      liftIO $ atomically $ unGetTQueue toServer rest
+      return cmd
 
 sendQueryCli :: MonadServerChan m => FactionId -> ActorId -> m CmdSer
 sendQueryCli fid aid = do
@@ -178,9 +184,15 @@ sendUpdateUI fid cmd = do
   maybe (return ()) (connSendUpdateUI cmd) conn
 
 connSendQueryUI :: MonadServerChan m => ActorId -> ConnCli -> m CmdSer
-connSendQueryUI aid ConnCli{toClient, toServer} = do
-  liftIO $ atomically $ writeTQueue toClient $ Right $ CmdHandleHumanUI aid
-  liftIO $ atomically $ readTQueue toServer
+connSendQueryUI aid conn@ConnCli{toClient, toServer} = do
+  cmds <- liftIO $ atomically $ readTQueue toServer
+  case cmds of
+    [] -> do
+      liftIO $ atomically $ writeTQueue toClient $ Right $ CmdHandleHumanUI aid
+      connSendQueryUI aid conn
+    cmd : rest -> do
+      liftIO $ atomically $ unGetTQueue toServer rest
+      return cmd
 
 sendQueryUI :: MonadServerChan m => FactionId -> ActorId -> m CmdSer
 sendQueryUI fid aid = do

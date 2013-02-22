@@ -332,10 +332,10 @@ readChanFromSer = do
   toClient <- getsChan toClient
   liftIO $ atomically $ readTQueue toClient
 
-writeChanToSer :: MonadClientChan m => CmdSer -> m ()
-writeChanToSer cmd = do
+writeChanToSer :: MonadClientChan m => [CmdSer] -> m ()
+writeChanToSer cmds = do
   toServer <- getsChan toServer
-  liftIO $ atomically $ writeTQueue toServer cmd
+  liftIO $ atomically $ writeTQueue toServer cmds
 
 -- | Wire together game content, the main loop of game clients,
 -- the main game loop assigned to this frontend (possibly containing
