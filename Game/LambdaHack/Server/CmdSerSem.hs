@@ -58,32 +58,31 @@ neverMind fid = abortWith fid "never mind"
 
 dieSer :: MonadActionRO m => ActorId -> WriterT [Atomic] m ()
 dieSer aid = do  -- TODO: explode if a projectile holdding a potion
-  dropAllItems aid
   body <- getsState $ getActorBody aid
-  tellCmdAtomic $ DestroyActorA aid body
-  electLeader (bfaction body) (blid body)
+  electLeader (bfaction body) (blid body) aid
+  dropAllItems aid body
+  tellCmdAtomic $ DestroyActorA aid body {bbag = EM.empty}
 --  Config{configFirstDeathEnds} <- getsServer sconfig
 
 -- | Drop all actor's items.
-dropAllItems :: MonadActionRO m => ActorId -> WriterT [Atomic] m ()
-dropAllItems aid = do
-  b <- getsState $ getActorBody aid
+dropAllItems :: MonadActionRO m => ActorId -> Actor -> WriterT [Atomic] m ()
+dropAllItems aid b = do
   let f (iid, k) = tellCmdAtomic
                    $ MoveItemA iid k (actorContainer aid (binv b) iid)
-                                              (CFloor (blid b) (bpos b))
+                                     (CFloor (blid b) (bpos b))
   mapM_ f $ EM.assocs $ bbag b
 
-electLeader :: MonadActionRO m => FactionId -> LevelId -> WriterT [Atomic] m ()
-electLeader fid lid = do
+electLeader :: MonadActionRO m
+            => FactionId -> LevelId -> ActorId -> WriterT [Atomic] m ()
+electLeader fid lid aidDead = do
   mleader <- getsState $ gleader . (EM.! fid) . sfaction
-  when (isNothing mleader) $ do
+  when (isNothing mleader || mleader == Just aidDead) $ do
     actorD <- getsState sactorD
-    let party = filter (\(_, b) ->
-                  bfaction b == fid && not (bproj b)) $ EM.assocs actorD
-    when (not $ null $ party) $ do
-      onLevel <- getsState $ actorNotProjAssocs (== fid) lid
-      let leader = fst $ head $ onLevel ++ party
-      tellCmdAtomic $ LeadFactionA fid Nothing (Just leader)
+    let alive (aid, b) = aid /= aidDead && bfaction b == fid && not (bproj b)
+        party = filter alive $ EM.assocs actorD
+    onLevel <- getsState $ actorNotProjAssocs (== fid) lid
+    let mleaderNew = listToMaybe $ map fst $ onLevel ++ party
+    tellCmdAtomic $ LeadFactionA fid mleader mleaderNew
 
 -- * MoveSer
 
@@ -134,7 +133,7 @@ actorAttackActor source target = do
     $ assert `failure` (source, target, "human AI bumps into friendlies")
   itemAssocs <- getsState $ getActorItem source
   (miid, item) <-
-    if bproj tm
+    if bproj sm
     then case itemAssocs of
       [(iid, item)] -> return (Just iid, item)  -- projectile
       _ -> assert `failure` itemAssocs
@@ -155,6 +154,12 @@ actorAttackActor source target = do
         -- Order reversed to anticipate death in the strike message.
         -- Note: this means actors should not be destroyed in @itemEffect@.
         tellDescAtomic $ StrikeD source target item hitA
+        -- Destroys attacking actor and item if a projectile.
+        when (bproj sm) $ do
+          let container iid = actorContainer source (binv sm) iid
+              fry iid = tellCmdAtomic $ DestroyItemA iid item 1 (container iid)
+          maybe end fry miid
+          tellCmdAtomic $ DestroyActorA source sm {bbag = EM.empty}
   -- Projectiles can't be blocked, can be sidestepped.
   if braced tm time && not (bproj sm)
     then do

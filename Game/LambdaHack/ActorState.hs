@@ -132,7 +132,8 @@ whereTo s lid k = assert (k /= 0) $
 
 -- | Gets actor body from the current level. Error if not found.
 getActorBody :: ActorId -> State -> Actor
-getActorBody aid s = sactorD s EM.! aid
+getActorBody aid s =
+  fromMaybe (assert `failure` (aid, s)) $ EM.lookup aid $ sactorD s
 
 updateActorBody :: ActorId -> (Actor -> Actor) -> State -> State
 updateActorBody aid f s = updateActorD (EM.adjust f aid) s
@@ -157,7 +158,8 @@ getActorItem aid s =
   in map f $ EM.keys $ getActorBag aid s
 
 getItemBody :: ItemId -> State -> Item
-getItemBody iid s = sitemD s EM.! iid
+getItemBody iid s =
+  fromMaybe (assert `failure` (iid, s)) $ EM.lookup iid $ sitemD s
 
 -- | Checks if the actor is present on the current level.
 -- The order of argument here and in other functions is set to allow

@@ -73,10 +73,7 @@ itemEffect :: MonadServer m
            -> WriterT [Atomic] m ()
 itemEffect source target miid item = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
-  sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  -- Destroys attacking actor: a hack for projectiles.
-  when (bproj sb) $ tellCmdAtomic $ DestroyActorA source sb
   discoS <- getsState sdisco
   let ik = fromJust $ jkind discoS item
       ef = ieffect $ okind ik

@@ -324,12 +324,16 @@ deleteItemActor iid k l aid = do
   assert (bletter b >= l`blame` (iid, k, l, aid, bletter b)) end
 
 moveActorA :: MonadAction m => ActorId -> Point -> Point -> m ()
-moveActorA aid _fromP toP =
-  modifyState $ updateActorBody aid $ \b -> b {bpos = toP}
+moveActorA aid fromP toP = do
+  b <- getsState $ getActorBody aid
+  assert (fromP == bpos b `blame` (aid, fromP, toP, bpos b)) end
+  modifyState $ updateActorBody aid $ \body -> body {bpos = toP}
 
 waitActorA :: MonadAction m => ActorId -> Time -> Time -> m ()
-waitActorA aid _fromWait toWait =
-  modifyState $ updateActorBody aid $ \b -> b {bwait = toWait}
+waitActorA aid fromWait toWait = do
+  b <- getsState $ getActorBody aid
+  assert (fromWait == bwait b `blame` (aid, fromWait, toWait, bwait b)) end
+  modifyState $ updateActorBody aid $ \body -> body {bwait = toWait}
 
 displaceActorA :: MonadAction m => ActorId -> ActorId -> m ()
 displaceActorA source target = do
@@ -340,6 +344,9 @@ displaceActorA source target = do
 
 moveItemA :: MonadAction m => ItemId -> Int -> Container -> Container -> m ()
 moveItemA iid k c1 c2 = assert (k > 0) $ do
+  (lid1, _) <- posOfContainer c1
+  (lid2, _) <- posOfContainer c2
+  assert (lid1 == lid2 `blame` (iid, k, c1, c2, lid1, lid2)) end
   case c1 of
     CFloor lid pos -> deleteItemFloor lid iid k pos
     CActor aid l -> deleteItemActor iid k l aid
@@ -348,7 +355,7 @@ moveItemA iid k c1 c2 = assert (k > 0) $ do
     CActor aid l -> insertItemActor iid k l aid
 
 ageActorA :: MonadAction m => ActorId -> Time -> m ()
-ageActorA aid t = assert (t /= timeZero) $ do
+ageActorA aid t = assert (t >= timeZero) $ do
   body <- getsState $ getActorBody aid
   destroyActorA aid body
   createActorA aid body {btime = timeAdd (btime body) t}
@@ -392,6 +399,7 @@ quitFactionA fid _fromSt toSt = do
   let adj fac = fac {gquit = toSt}
   modifyState $ updateFaction $ EM.adjust adj fid
 
+-- The previous leader is assumed to be alive.
 leadFactionA :: MonadAction m
              => FactionId -> (Maybe ActorId) -> (Maybe ActorId) -> m ()
 leadFactionA fid source target = assert (source /= target) $ do

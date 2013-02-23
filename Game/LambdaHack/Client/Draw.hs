@@ -98,7 +98,7 @@ draw dm cops per
             items = lvl `atI` pos0
             sml = EM.findWithDefault timeZero pos0 lsmell
             smlt = sml `timeAdd` timeNegate ltime
-            viewActor loc Actor{bkind, bsymbol, bcolor, bhp}
+            viewActor loc Actor{bkind, bsymbol, bcolor, bhp, bproj}
               | isJust mleader
                 && loc == bposL
                 && drawnLevelId == getArena cli s =
@@ -107,7 +107,7 @@ draw dm cops per
              where
               ActorKind{asymbol, acolor} = okind bkind
               color  = fromMaybe acolor bcolor
-              symbol | bhp <= 0 = '%'
+              symbol | bhp <= 0 && not bproj = '%'
                      | otherwise = fromMaybe asymbol bsymbol
             rainbow p = toEnum $ fromEnum p `rem` 14 + 1
             actorsHere = actorList (const True) drawnLevelId s
