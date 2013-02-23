@@ -72,7 +72,8 @@ data CmdAtomic =
   | LeadFactionA FactionId (Maybe ActorId) (Maybe ActorId)
   -- Alter map.
   | AlterTileA LevelId Point (Kind.Id TileKind) (Kind.Id TileKind)
-  | SpotTileA LevelId [(Point, (Kind.Id TileKind, Kind.Id TileKind))]
+  | SpotTileA LevelId [(Point, Kind.Id TileKind)]
+  | LoseTileA LevelId [(Point, Kind.Id TileKind)]
   | AlterSecretA LevelId (DiffEM Point Time)
   | AlterSmellA LevelId (DiffEM Point Time)
   -- Assorted.
@@ -126,7 +127,8 @@ undoCmdAtomic cmd = case cmd of
   QuitFactionA fid fromSt toSt -> QuitFactionA fid toSt fromSt
   LeadFactionA fid source target -> LeadFactionA fid target source
   AlterTileA lid p fromTile toTile -> AlterTileA lid p toTile fromTile
-  SpotTileA lid diff -> SpotTileA lid $ map (second swap) diff
+  SpotTileA lid ts -> LoseTileA lid ts
+  LoseTileA lid ts -> SpotTileA lid ts
   AlterSecretA lid diffL -> AlterSecretA lid $ map (second swap) diffL
   AlterSmellA lid diffL -> AlterSmellA lid $ map (second swap) diffL
   DiscoverA lid p iid ik -> CoverA lid p iid ik

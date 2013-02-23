@@ -1,9 +1,11 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | Semantics of atomic commands shared by client and server.
 module Game.LambdaHack.CmdAtomicSem
   ( cmdAtomicSem, resetsFovAtomic, posCmdAtomic, posDescAtomic
   , breakCmdAtomic, loudCmdAtomic
   ) where
 
+import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.List
 import Data.Maybe
@@ -51,7 +53,8 @@ cmdAtomicSem cmd = case cmd of
   QuitFactionA fid fromSt toSt -> quitFactionA fid fromSt toSt
   LeadFactionA fid source target -> leadFactionA fid source target
   AlterTileA lid p fromTile toTile -> alterTileA lid p fromTile toTile
-  SpotTileA lid diff -> spotTileA lid diff
+  SpotTileA lid ts -> spotTileA lid ts
+  LoseTileA lid ts -> loseTileA lid ts
   AlterSecretA lid diffL -> alterSecretA lid diffL
   AlterSmellA lid diffL -> alterSmellA lid diffL
   DiscoverA lid p iid ik -> discoverA lid p iid ik
@@ -134,8 +137,11 @@ posCmdAtomic cmd = case cmd of
   QuitFactionA _ _ _ -> return $ Left $ Left True  -- all always notice this
   LeadFactionA fid _ _ -> return $ Left $ Right fid  -- a faction's secret
   AlterTileA lid p _ _ -> return $ Right (lid, [p])
-  SpotTileA lid diffL -> do
-    let ps = map fst diffL
+  SpotTileA lid ts -> do
+    let ps = map fst ts
+    return $ Right (lid, ps)
+  LoseTileA lid ts -> do
+    let ps = map fst ts
     return $ Right (lid, ps)
   AlterSecretA _ _ -> return $ Left $ Left False  -- none of clients' business
   AlterSmellA _ _ -> return $ Left $ Left True
@@ -228,10 +234,6 @@ loudCmdAtomic cmd = case cmd of
 
 createActorA :: MonadAction m => ActorId -> Actor -> m ()
 createActorA aid body = do
-  -- Assert that actor's items belong to @sitemD@.
-  itemD <- getsState sitemD
-  let is = EM.keys $ bbag body
-  assert (allB (`EM.member` itemD) is `blame` (aid, body, itemD)) skip
   -- Add actor to @sactorD@.
   let f Nothing = Just body
       f (Just b) = assert `failure` (aid, body, b)
@@ -241,12 +243,21 @@ createActorA aid body = do
       g (Just l) = assert (not (aid `elem` l) `blame` (aid, body, l))
                    $ Just $ aid : l
   updateLevel (blid body) $ updatePrio $ EM.alter g (btime body)
+  -- Actor's items may or may not be already present in @sitemD@,
+  -- regardless if they are already present otherwie in the dungeon.
+  -- We re-add them all to save time determining which really need it.
+  actorItems <- getsState $ getActorItem aid
+  forM_ actorItems $ \(iid, item) -> do
+    let h item1 item2 =
+          assert (item1 == item2 `blame` (aid, body, iid, item1, item2)) item1
+    modifyState $ updateItemD $ EM.insertWith h iid item
 
 -- | Kills an actor. Note: after this command, usually a new leader
 -- for the party should be elected.
 destroyActorA :: MonadAction m => ActorId -> Actor -> m ()
 destroyActorA aid body = do
-  -- Assert that actor's items belong to @sitemD@.
+  -- Assert that actor's items belong to @sitemD@. Do not remove those
+  -- that do not appear anywhere else, for simplicity and speed.
   itemD <- getsState sitemD
   let is = EM.keys $ bbag body
   assert (allB (`EM.member` itemD) is `blame` (aid, body, itemD)) skip
@@ -415,8 +426,8 @@ leadFactionA fid source target = assert (source /= target) $ do
   let adj fa = fa {gleader = target}
   modifyState $ updateFaction $ EM.adjust adj fid
 
--- TODO: if to or from unknownId, update lseen (if to/from explorable,
--- update lclear)
+-- | Alter an attribute (actually, the only, the defining attribute)
+-- of a visible tile. This is similar to e.g., @PathActorA@.
 alterTileA :: MonadAction m
            => LevelId -> Point -> Kind.Id TileKind -> Kind.Id TileKind
            -> m ()
@@ -424,17 +435,27 @@ alterTileA lid p fromTile toTile = assert (fromTile /= toTile) $ do
   let adj ts = assert (ts Kind.! p == fromTile) $ ts Kind.// [(p, toTile)]
   updateLevel lid $ updateTile adj
 
--- TODO: if to or from unknownId, update lseen (if to/from explorable,
--- update lclear)
-spotTileA :: MonadAction m
-          => LevelId -> [(Point, (Kind.Id TileKind, Kind.Id TileKind))] -> m ()
-spotTileA lid diffL = do
-  let f (p, (ov, nv)) = assert (ov /= nv) $ ((p, ov), (p, nv))
-      diff2 = unzip $ map f diffL
+-- Notice a previously invisible tiles. This is similar to @SpotActorA@,
+-- but done in bulk, because it often involves dozens of tiles pers move.
+-- We don not check that the tiles at the positions in question are unknown
+-- to save computation, especially for actors that remember tiles
+-- at previously seen positions.
+spotTileA :: MonadAction m => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
+spotTileA lid ts = assert (not $ null ts) $ do
+  let adj tileMap = tileMap Kind.// ts
+  updateLevel lid $ updateTile adj
+
+-- Stop noticing a previously invisible tiles. Unlike @spotTileA@, it verifies
+-- the state of the tiles before changing them.
+loseTileA :: MonadAction m => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
+loseTileA lid ts = assert (not $ null ts) $ do
+  Kind.COps{cotile=Kind.Ops{ouniqGroup}} <- getsState scops
+  let unknownId = ouniqGroup "unknown space"
       matches _ [] = True
-      matches ts ((p, ov) : rest) = True ||  -- TODO: let client handle memory
-        ts Kind.! p == ov && matches ts rest
-      adj ts = assert (matches ts (fst diff2)) $ ts Kind.// snd diff2
+      matches tileMap ((p, ov) : rest) =
+        tileMap Kind.! p == ov && matches tileMap rest
+      tu = map (\(p, _) -> (p, unknownId)) ts
+      adj tileMap = assert (matches tileMap ts) $ tileMap Kind.// tu
   updateLevel lid $ updateTile adj
 
 alterSecretA :: MonadAction m => LevelId -> DiffEM Point Time -> m ()

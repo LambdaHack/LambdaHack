@@ -185,7 +185,7 @@ cmdAtomicBroad atomic = do
             if EM.null outPA && EM.null inPA
               then anySend fid perOld perOld
               else do
-                mapM_ (sendA fid) $ atomicRemember arena inPer outPer sOld
+                mapM_ (sendA fid) $ atomicRemember arena inPer sOld
                 anySend fid perOld perNew
                 sendA fid $ PerceptionA arena outPA inPA
           else anySend fid perOld perOld
@@ -195,11 +195,9 @@ cmdAtomicBroad atomic = do
   faction <- getsState sfaction
   mapM_ send $ EM.keys faction
 
-atomicRemember :: LevelId -> Perception -> Perception -> State -> [CmdAtomic]
-atomicRemember lid inPer outPer s =
-  let Kind.COps{cotile=Kind.Ops{ouniqGroup}} = scops s
-      inFov = ES.elems $ totalVisible inPer
-      outFov = ES.elems $ totalVisible outPer
+atomicRemember :: LevelId -> Perception -> State -> [CmdAtomic]
+atomicRemember lid inPer s =
+  let inFov = ES.elems $ totalVisible inPer
       lvl = sdungeon s EM.! lid
       actorD = sactorD s
       itemD = sitemD s
@@ -208,32 +206,20 @@ atomicRemember lid inPer outPer s =
       fItem p (iid, k) = SpotItemA iid (itemD EM.! iid) k (CFloor lid p)
       fBag (p, bag) = map (fItem p) $ EM.assocs bag
       inItem = concatMap fBag inFloor
-      -- No outItem, since items out of sight are not forgotten, unlike actors.
-      -- The client will create atomic actions that forget remembered items
-      -- that are revealed not to be there any more.
-      atomicItem = inItem
-      -- ++ items of actors; actually, we need to empty each actor,
-      -- then createItemA; moveItemA --- can be optimized for old items;
-      -- or add an atomic action that registers items and apply it to server s
-      inPrio = mapMaybe (\p -> posToActor p lid s) inFov
+      -- No @outItem@, for items that became out of sight. The client will
+      -- create these atomic actions based on @outPer@, if required.
+      -- Any client that remembers out of sight items, OTOH,
+      -- will create atomic actions that forget remembered items
+      -- that are revealed not to be there any more (no @SpotItemA@ for them).
       -- By this point the items of the actor are already registered in state.
+      inPrio = mapMaybe (\p -> posToActor p lid s) inFov
       fActor aid = SpotActorA aid (actorD EM.! aid)
       inActor = map fActor inPrio
-      outPrio = mapMaybe (\p -> posToActor p lid s) outFov
-      gActor aid = LoseActorA aid (actorD EM.! aid)
-      outActor = map gActor outPrio
-      atomicActor = inActor ++ outActor
+      -- No @outActor@, for the same reason as with @outItem@.
       inTileMap = map (\p -> (p, ltile lvl Kind.! p)) inFov
-      unknownId = ouniqGroup "unknown space"
-      fTile (p, nt) = (p, (unknownId, nt))
-      inTile = map fTile inTileMap
-      -- No outTlie, since tiles out of sight are not forgotten, unlike actors.
-      -- The client will create atomic actions that forget remembered tiles
-      -- that are revealed not to be there any more.
-      atomicTile = SpotTileA lid inTile
-      -- @SpotTileA@ needs to be last, since it triggers client computation
-      -- of a new FOV.
-  in atomicItem ++ atomicActor ++ [atomicTile]
+      -- No @outTlie@, for the same reason as above.
+      atomicTile = if null inTileMap then [] else [SpotTileA lid inTileMap]
+  in inItem ++ inActor ++ atomicTile
 
 -- TODO: switch levels alternating between player factions,
 -- if there are many and on distinct levels.
