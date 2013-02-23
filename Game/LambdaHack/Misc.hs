@@ -48,7 +48,7 @@ type DiffEM k v = [(k, (Maybe v, Maybe v))]
 applyDiffEM :: (Enum k, Eq v, Show k, Show v)
             => DiffEM k v -> EM.EnumMap k v -> EM.EnumMap k v
 applyDiffEM diffL em =
-  let f m (k, (ov, nv)) =
+  let f m (k, (ov, nv)) = assert (ov /= nv) $
         let g v = assert (v == ov `blame` (v, ov, nv, em, diffL)) nv
         in EM.alter g k m
   in foldl' f em diffL

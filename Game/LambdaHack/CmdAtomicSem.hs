@@ -56,7 +56,8 @@ cmdAtomicSem cmd = case cmd of
   AlterSmellA lid diffL -> alterSmellA lid diffL
   DiscoverA lid p iid ik -> discoverA lid p iid ik
   CoverA lid p iid ik -> coverA lid p iid ik
-  PerceptionA _ _ _ -> return ()
+  PerceptionA _ outPA inPA ->
+    assert (not (EM.null outPA && EM.null inPA)) $ return ()
   RestartA fid sfper s -> restartA fid sfper s
 
 -- All functions here that take an atomic action are executed
@@ -251,7 +252,7 @@ destroyActorA aid body = do
   assert (allB (`EM.member` itemD) is `blame` (aid, body, itemD)) skip
   -- Remove actor from @sactorD@.
   let f Nothing = assert `failure` (aid, body)
-      f (Just b) = assert (b == body `blame` (aid, body, b)) $ Nothing
+      f (Just b) = assert (b == body `blame` (aid, body, b)) Nothing
   modifyState $ updateActorD $ EM.alter f aid
   -- Remove actor from @sprio@.
   let g Nothing = assert `failure` (aid, body)
@@ -295,7 +296,7 @@ insertItemActor iid k l aid = do
 destroyItemA :: MonadAction m => ItemId -> Item -> Int -> Container -> m ()
 destroyItemA iid item k c = assert (k > 0) $ do
   -- Do not remove the item from @sitemD@ nor from @sitemRev@,
-  -- It doesn't matter and @createItemA@ permits that.
+  -- It's incredibly costly and not noticeable for the player.
   -- However, assert the item is registered in @sitemD@.
   itemD <- getsState sitemD
   assert (iid `EM.lookup` itemD == Just item `blame` (iid, item, itemD)) skip
@@ -324,26 +325,26 @@ deleteItemActor iid k l aid = do
   assert (bletter b >= l`blame` (iid, k, l, aid, bletter b)) skip
 
 moveActorA :: MonadAction m => ActorId -> Point -> Point -> m ()
-moveActorA aid fromP toP = do
+moveActorA aid fromP toP = assert (fromP /= toP) $ do
   b <- getsState $ getActorBody aid
   assert (fromP == bpos b `blame` (aid, fromP, toP, bpos b)) skip
   modifyState $ updateActorBody aid $ \body -> body {bpos = toP}
 
 waitActorA :: MonadAction m => ActorId -> Time -> Time -> m ()
-waitActorA aid fromWait toWait = do
+waitActorA aid fromWait toWait = assert (fromWait /= toWait) $ do
   b <- getsState $ getActorBody aid
   assert (fromWait == bwait b `blame` (aid, fromWait, toWait, bwait b)) skip
   modifyState $ updateActorBody aid $ \body -> body {bwait = toWait}
 
 displaceActorA :: MonadAction m => ActorId -> ActorId -> m ()
-displaceActorA source target = do
+displaceActorA source target = assert (source /= target) $ do
   spos <- getsState $ bpos . getActorBody source
   tpos <- getsState $ bpos . getActorBody target
   modifyState $ updateActorBody source $ \ b -> b {bpos = tpos}
   modifyState $ updateActorBody target $ \ b -> b {bpos = spos}
 
 moveItemA :: MonadAction m => ItemId -> Int -> Container -> Container -> m ()
-moveItemA iid k c1 c2 = assert (k > 0) $ do
+moveItemA iid k c1 c2 = assert (k > 0 && c1 /= c2) $ do
   (lid1, _) <- posOfContainer c1
   (lid2, _) <- posOfContainer c2
   assert (lid1 == lid2 `blame` (iid, k, c1, c2, lid1, lid2)) skip
@@ -377,33 +378,41 @@ hasteActorA aid delta = assert (delta /= speedZero) $ do
        else b {bspeed = Just newSpeed}
 
 dominateActorA :: MonadAction m => ActorId -> FactionId -> FactionId -> m ()
-dominateActorA target fromFid toFid = do
+dominateActorA target fromFid toFid = assert (fromFid /= toFid) $ do
   tb <- getsState $ getActorBody target
-  assert (fromFid == bfaction tb `blame` (fromFid, tb, toFid)) $
-    modifyState $ updateActorBody target $ \b -> b {bfaction = toFid}
+  assert (fromFid == bfaction tb `blame` (target, fromFid, toFid, tb)) skip
+  modifyState $ updateActorBody target $ \b -> b {bfaction = toFid}
 
 pathActorA :: MonadAction m
            => ActorId -> Maybe [Vector] -> Maybe [Vector] -> m ()
-pathActorA aid _fromPath toPath =
+pathActorA aid fromPath toPath = assert (fromPath /= toPath) $ do
+  body <- getsState $ getActorBody aid
+  assert (fromPath == bpath body `blame` (aid, fromPath, toPath, body)) skip
   modifyState $ updateActorBody aid $ \b -> b {bpath = toPath}
 
 colorActorA :: MonadAction m
             => ActorId -> Maybe Color.Color -> Maybe Color.Color -> m ()
-colorActorA aid _fromCol toCol =
+colorActorA aid fromCol toCol = assert (fromCol /= toCol) $ do
+  body <- getsState $ getActorBody aid
+  assert (fromCol == bcolor body `blame` (aid, fromCol, toCol, body)) skip
   modifyState $ updateActorBody aid $ \b -> b {bcolor = toCol}
 
 quitFactionA :: MonadAction m
              => FactionId -> Maybe (Bool, Status) -> Maybe (Bool, Status)
              -> m ()
-quitFactionA fid _fromSt toSt = do
-  let adj fac = fac {gquit = toSt}
+quitFactionA fid fromSt toSt = assert (fromSt /= toSt) $ do
+  fac <- getsState $ (EM.! fid) . sfaction
+  assert (fromSt == gquit fac `blame` (fid, fromSt, toSt, fac)) skip
+  let adj fa = fa {gquit = toSt}
   modifyState $ updateFaction $ EM.adjust adj fid
 
 -- The previous leader is assumed to be alive.
 leadFactionA :: MonadAction m
              => FactionId -> (Maybe ActorId) -> (Maybe ActorId) -> m ()
 leadFactionA fid source target = assert (source /= target) $ do
-  let adj fac = fac {gleader = target}
+  fac <- getsState $ (EM.! fid) . sfaction
+  assert (source == gleader fac `blame` (fid, source, target, fac)) skip
+  let adj fa = fa {gleader = target}
   modifyState $ updateFaction $ EM.adjust adj fid
 
 -- TODO: if to or from unknownId, update lseen (if to/from explorable,
@@ -411,18 +420,21 @@ leadFactionA fid source target = assert (source /= target) $ do
 alterTileA :: MonadAction m
            => LevelId -> Point -> Kind.Id TileKind -> Kind.Id TileKind
            -> m ()
-alterTileA lid p _fromTile toTile =
-  let adj = (Kind.// [(p, toTile)])
-  in updateLevel lid $ updateTile adj
+alterTileA lid p fromTile toTile = assert (fromTile /= toTile) $ do
+  let adj ts = assert (ts Kind.! p == fromTile) $ ts Kind.// [(p, toTile)]
+  updateLevel lid $ updateTile adj
 
 -- TODO: if to or from unknownId, update lseen (if to/from explorable,
 -- update lclear)
 spotTileA :: MonadAction m
           => LevelId -> [(Point, (Kind.Id TileKind, Kind.Id TileKind))] -> m ()
 spotTileA lid diffL = do
-  let f (p, (_, nv)) = (p, nv)
-      dif = map f diffL
-      adj = (Kind.// dif)
+  let f (p, (ov, nv)) = assert (ov /= nv) $ ((p, ov), (p, nv))
+      diff2 = unzip $ map f diffL
+      matches _ [] = True
+      matches ts ((p, ov) : rest) = True ||  -- TODO: let client handle memory
+        ts Kind.! p == ov && matches ts rest
+      adj ts = assert (matches ts (fst diff2)) $ ts Kind.// snd diff2
   updateLevel lid $ updateTile adj
 
 alterSecretA :: MonadAction m => LevelId -> DiffEM Point Time -> m ()
@@ -433,17 +445,21 @@ alterSmellA lid diffL = updateLevel lid $ updateSmell $ applyDiffEM diffL
 
 discoverA :: MonadAction m
           => LevelId -> Point -> ItemId -> (Kind.Id ItemKind) -> m ()
-discoverA _ _ iid ik = do
+discoverA lid p iid ik = do
   item <- getsState $ getItemBody iid
-  modifyState (updateDisco (EM.insert (jkindIx item) ik))
+  let f Nothing = Just ik
+      f (Just ik2) = assert `failure` (lid, p, iid, ik, ik2)
+  modifyState $ updateDisco $ EM.alter f (jkindIx item)
 
 -- TODO: as a result of undo, this will be wrong on the server,
 -- so it has to be filtered out from the server, just as from some clients.
 coverA :: MonadAction m
        => LevelId -> Point -> ItemId -> (Kind.Id ItemKind) -> m ()
-coverA _ _ iid _ = do
+coverA lid p iid ik = do
   item <- getsState $ getItemBody iid
-  modifyState (updateDisco (EM.delete (jkindIx item)))
+  let f Nothing = assert `failure` (lid, p, iid, ik)
+      f (Just ik2) = assert (ik == ik2 `blame` (ik, ik2)) Nothing
+  modifyState $ updateDisco $ EM.alter f (jkindIx item)
 
 -- TODO here, too, it would be disastrous for the server.
 -- Perhaps the server should have factionId -1, so that ocmparison

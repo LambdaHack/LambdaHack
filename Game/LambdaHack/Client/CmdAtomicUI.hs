@@ -52,14 +52,18 @@ cmdAtomicSemCli cmd = case cmd of
     -- if unknown tiles are clear or not. Server would need to send
     -- info about properties of unknown tiles, which complicates
     -- and makes heavier the most bulky data set in the game: tile maps.
+    -- Note we assume, but do not check that @outPA@ is contained
+    -- in current perseption and @inPA@ has no common part with it.
+    -- It would make the already very costly operation even more expensive.
     let paToPer pa = Perception
-          { pactors = pa
+          { perActor = pa
           , ptotal = PerceptionVisible
                      $ ES.unions $ map pvisible $ EM.elems $ pa }
         outPer = paToPer outPA
         inPer = paToPer inPA
-        adj per = addPer (diffPer per outPer) inPer
-        f sfper = EM.adjust adj lid sfper
+        adj Nothing = assert `failure` lid
+        adj (Just per) = Just $ addPer (diffPer per outPer) inPer
+        f sfper = EM.alter adj lid sfper
     modifyClient $ \cli -> cli {sfper = f (sfper cli)}
   RestartA _ sfper _ -> do
     -- TODO: here or elsewhere re-read RNG seed from config file
@@ -330,7 +334,7 @@ drawDescAtomicUI verbose desc = case desc of
 
 strikeD :: MonadClientUI m
         => ActorId -> ActorId -> Item -> HitAtomic -> m ()
-strikeD source target item b = do
+strikeD source target item b = assert (source /= target) $ do
   Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}} <- getsState scops
   disco <- getsState sdisco
   sb <- getsState $ getActorBody source

@@ -117,13 +117,13 @@ handleScores _fid write status total =
     curDate <- liftIO getClockTime
     _slides <-
       liftIO $ register config write total timeZero curDate status
-    go <- undefined -- sendQueryUI fid $ ShowSlidesUI slides
+    go <- error "handleScores" -- sendQueryUI fid $ ShowSlidesUI slides
     when (not go) abort
 
 withAI :: MonadServerChan m => m a -> m a
 withAI m = do
   d <- getDict
-  modifyDict $ EM.map $ \(_chanCli, chanAI) -> (chanAI, undefined)
+  modifyDict $ EM.map $ \(_chanCli, chanAI) -> (chanAI, assert `failure` d)
   a <- m
   putDict d
   return a

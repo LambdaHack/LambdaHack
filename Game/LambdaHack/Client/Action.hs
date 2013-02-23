@@ -358,7 +358,7 @@ exeFrontend cops@Kind.COps{corule} exeClient exeServer = do
         -- This is correct, because the implicit contract ensures
         -- @MonadClientChan@ never tries to access the client UI session
         -- (unlike @MonadClientUI@).
-        let sess | isAI = undefined
+        let sess | isAI = assert `failure` fid
                  | otherwise = SessionUI{..}
         in exeClient isAI sess loc (cli fid isAI) chanCli
   startup font $ \sfs -> exeServer (executorC sfs)

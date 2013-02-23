@@ -47,7 +47,7 @@ levelPerception cops@Kind.COps{cotile} s configFov fid lid lvl =
       lights = ES.fromList $ map (bpos . snd) hs
       totalVis = computeVisible cotile totalRea lvl lights
       f = PerceptionVisible . ES.intersection (pvisible totalVis) . preachable
-  in Perception { pactors = EM.map f $ EM.fromList reas  -- reas is not sorted
+  in Perception { perActor = EM.map f $ EM.fromList reas  -- reas is not sorted
                 , ptotal  = totalVis }
 
 -- | Calculate perception of a faction.

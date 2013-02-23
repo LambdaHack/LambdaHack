@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Actors perceiving other actors and the dungeon level.
 module Game.LambdaHack.Perception
-  ( Perception(..), PerceptionVisible(..), PActors
+  ( Perception(..), PerceptionVisible(..), PerActor
   , totalVisible, actorSeesLoc, nullPer, addPer, diffPer
   , FactionPers, Pers
   ) where
@@ -19,14 +19,14 @@ newtype PerceptionVisible = PerceptionVisible
   { pvisible :: ES.EnumSet Point}
   deriving (Show, Eq)
 
-type PActors = EM.EnumMap ActorId PerceptionVisible
+type PerActor = EM.EnumMap ActorId PerceptionVisible
 
 -- | The type representing the perception of a faction on a level.
 -- The total visibility holds the sum of FOVs of all actors
 -- of a given faction on the level and servers only as a speedup.
 data Perception = Perception
-  { pactors :: PActors -- ^ per actor
-  , ptotal  :: PerceptionVisible                     -- ^ sum for all actors
+  { perActor :: PerActor           -- ^ visible points for each actor
+  , ptotal   :: PerceptionVisible  -- ^ sum over all actors
   }
   deriving (Show, Eq)
 
@@ -42,17 +42,17 @@ totalVisible = pvisible . ptotal
 
 -- | Whether an actor can see a position.
 actorSeesLoc :: Perception -> ActorId -> Point -> Bool
-actorSeesLoc per aid pos = pos `ES.member` pvisible (pactors per EM.! aid)
+actorSeesLoc per aid pos = pos `ES.member` pvisible (perActor per EM.! aid)
 
 nullPer :: Perception -> Bool
-nullPer per = EM.null (pactors per) && ES.null (pvisible (ptotal per))
+nullPer per = EM.null (perActor per) && ES.null (pvisible (ptotal per))
 
 addPer :: Perception -> Perception -> Perception
 addPer per1 per2 =
   let f :: (PerceptionVisible -> PerceptionVisible -> PerceptionVisible)
       f pv1 pv2 = PerceptionVisible $ pvisible pv1 `ES.union` pvisible pv2
   in Perception
-       { pactors = EM.unionWith f (pactors per1) (pactors per2)
+       { perActor = EM.unionWith f (perActor per1) (perActor per2)
        , ptotal = PerceptionVisible
                   $ pvisible (ptotal per1) `ES.union` pvisible (ptotal per2)
        }
@@ -64,7 +64,7 @@ diffPer per1 per2 =
         let diff = pvisible pv1 ES.\\ pvisible pv2
         in if ES.null diff then Nothing else Just $ PerceptionVisible diff
   in Perception
-       { pactors = EM.differenceWith f (pactors per1) (pactors per2)
+       { perActor = EM.differenceWith f (perActor per1) (perActor per2)
        , ptotal = PerceptionVisible
                   $ pvisible (ptotal per1) ES.\\ pvisible (ptotal per2)
        }

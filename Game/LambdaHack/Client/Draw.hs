@@ -58,10 +58,10 @@ draw dm cops per
         case stgtMode of
           Nothing -> (getArena cli s, sdungeon s EM.! getArena cli s)
           Just tgtM -> (tgtLevelId tgtM, sdungeon s EM.! tgtLevelId tgtM)
-      mleader = sleader cli
+      mleader = sleader cli  -- TODO: show something else if no leader
       (bitems, bracedL, ahpS, asmellL, bhpS, bposL) =
         case mleader of
-          Nothing -> ([], False, "--", False, "--", undefined)
+          Nothing -> ([], False, "--", False, "--", error "draw: no leader")
           Just leader ->
             let mpl@Actor{bkind, bhp, bpos} = getActorBody leader s
                 ActorKind{ahp, asmell} = okind bkind

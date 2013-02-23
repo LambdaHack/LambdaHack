@@ -136,7 +136,10 @@ getActorBody aid s =
   fromMaybe (assert `failure` (aid, s)) $ EM.lookup aid $ sactorD s
 
 updateActorBody :: ActorId -> (Actor -> Actor) -> State -> State
-updateActorBody aid f s = updateActorD (EM.adjust f aid) s
+updateActorBody aid f s =
+  let alt Nothing = assert `failure` (aid, s)
+      alt (Just b) = Just $ f b
+  in updateActorD (EM.alter alt aid) s
 
 getActorBag :: ActorId -> State -> ItemBag
 getActorBag aid s = bbag $ getActorBody aid s

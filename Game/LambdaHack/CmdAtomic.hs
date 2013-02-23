@@ -78,7 +78,7 @@ data CmdAtomic =
   -- Assorted.
   | DiscoverA LevelId Point ItemId (Kind.Id ItemKind)
   | CoverA LevelId Point ItemId (Kind.Id ItemKind)
-  | PerceptionA LevelId PActors PActors
+  | PerceptionA LevelId PerActor PerActor
   | RestartA FactionId FactionPers State
   deriving (Show, Eq)
 
@@ -132,7 +132,7 @@ undoCmdAtomic cmd = case cmd of
   DiscoverA lid p iid ik -> CoverA lid p iid ik
   CoverA lid p iid ik -> DiscoverA lid p iid ik
   PerceptionA lid outPer inPer -> PerceptionA lid inPer outPer
-  RestartA _ _ _ -> cmd  -- here history ends; change direction
+  RestartA{} -> cmd  -- here history ends; change direction
 
 undoDescAtomic :: DescAtomic -> DescAtomic
 undoDescAtomic cmd = case cmd of
@@ -144,12 +144,12 @@ undoDescAtomic cmd = case cmd of
   CheckD aid iid -> ActivateD aid iid
   TriggerD aid p feat b -> ShunD aid p feat b
   ShunD aid p feat b -> TriggerD aid p feat b
-  EffectD _ _ -> cmd  -- not ideal?
-  FailureD _ _ -> cmd
-  BroadcastD _ -> cmd
-  DisplayPushD _ -> cmd
-  DisplayDelayD _ -> cmd
-  FlushFramesD _ -> cmd
+  EffectD{} -> cmd  -- not ideal?
+  FailureD{} -> cmd
+  BroadcastD{} -> cmd
+  DisplayPushD{} -> cmd
+  DisplayDelayD{} -> cmd
+  FlushFramesD{} -> cmd
 
 undoAtomic :: Atomic -> Atomic
 undoAtomic (Left cmd) = Left $ undoCmdAtomic cmd

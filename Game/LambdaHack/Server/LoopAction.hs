@@ -179,10 +179,15 @@ cmdAtomicBroad atomic = do
             resetFidPerception fid arena
             perNew <- getPerFid fid arena
             let inPer = diffPer perNew perOld
+                inPA = perActor inPer
                 outPer = diffPer perOld perNew
-            mapM_ (sendA fid) $ atomicRemember arena inPer outPer sOld
-            anySend fid perOld perNew
-            sendA fid $ PerceptionA arena (pactors outPer) (pactors inPer)
+                outPA = perActor outPer
+            if EM.null outPA && EM.null inPA
+              then anySend fid perOld perOld
+              else do
+                mapM_ (sendA fid) $ atomicRemember arena inPer outPer sOld
+                anySend fid perOld perNew
+                sendA fid $ PerceptionA arena outPA inPA
           else anySend fid perOld perOld
         Left mfid ->
           -- @resets@ is false here and broken atomic has the same mfid
@@ -192,7 +197,8 @@ cmdAtomicBroad atomic = do
 
 atomicRemember :: LevelId -> Perception -> Perception -> State -> [CmdAtomic]
 atomicRemember lid inPer outPer s =
-  let inFov = ES.elems $ totalVisible inPer
+  let Kind.COps{cotile=Kind.Ops{ouniqGroup}} = scops s
+      inFov = ES.elems $ totalVisible inPer
       outFov = ES.elems $ totalVisible outPer
       lvl = sdungeon s EM.! lid
       actorD = sactorD s
@@ -218,7 +224,8 @@ atomicRemember lid inPer outPer s =
       outActor = map gActor outPrio
       atomicActor = inActor ++ outActor
       inTileMap = map (\p -> (p, ltile lvl Kind.! p)) inFov
-      fTile (p, nt) = (p, (undefined, nt))
+      unknownId = ouniqGroup "unknown space"
+      fTile (p, nt) = (p, (unknownId, nt))
       inTile = map fTile inTileMap
       -- No outTlie, since tiles out of sight are not forgotten, unlike actors.
       -- The client will create atomic actions that forget remembered tiles
@@ -245,7 +252,7 @@ checkEndGame = do
   glo <- getState
   let aNotSp = filter (not . isSpawningFaction glo . bfaction) as
   case aNotSp of
-    [] -> gameOver undefined undefined True  -- TODO: should send to all factions
+    [] -> gameOver (error "checkEndGame") (error "checkEndGame") True  -- TODO: should send to all factions
     _ : _ -> return ()
 
 -- | End game, showing the ending screens, if requested.
@@ -259,7 +266,7 @@ gameOver fid arena showEndingScreens = do
     Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsState scops
     s <- getState
     depth <- getsState sdepth
-    time <- undefined  -- TODO: sum over all levels? getsState getTime
+    time <- error "TODO: sum over all levels? getsState getTime"
     let (bag, total) = calculateTotal fid arena s
         failMsg | timeFit time timeTurn < 300 =
           "That song shall be short."
