@@ -230,7 +230,7 @@ createActorA aid body = do
   -- Assert that actor's items belong to @sitemD@.
   itemD <- getsState sitemD
   let is = EM.keys $ bbag body
-  assert (allB (`EM.member` itemD) is `blame` (aid, body, itemD)) end
+  assert (allB (`EM.member` itemD) is `blame` (aid, body, itemD)) skip
   -- Add actor to @sactorD@.
   let f Nothing = Just body
       f (Just b) = assert `failure` (aid, body, b)
@@ -248,7 +248,7 @@ destroyActorA aid body = do
   -- Assert that actor's items belong to @sitemD@.
   itemD <- getsState sitemD
   let is = EM.keys $ bbag body
-  assert (allB (`EM.member` itemD) is `blame` (aid, body, itemD)) end
+  assert (allB (`EM.member` itemD) is `blame` (aid, body, itemD)) skip
   -- Remove actor from @sactorD@.
   let f Nothing = assert `failure` (aid, body)
       f (Just b) = assert (b == body `blame` (aid, body, b)) $ Nothing
@@ -298,7 +298,7 @@ destroyItemA iid item k c = assert (k > 0) $ do
   -- It doesn't matter and @createItemA@ permits that.
   -- However, assert the item is registered in @sitemD@.
   itemD <- getsState sitemD
-  assert (iid `EM.lookup` itemD == Just item `blame` (iid, item, itemD)) end
+  assert (iid `EM.lookup` itemD == Just item `blame` (iid, item, itemD)) skip
   case c of
     CFloor lid pos -> deleteItemFloor lid iid k pos
     CActor aid l -> deleteItemActor iid k l aid
@@ -319,20 +319,20 @@ deleteItemActor iid k l aid = do
     EM.adjust (\b -> b {bbag = rmFromBag k iid (bbag b)}) aid
   -- Do not remove from actor's @binv@, but assert it was there.
   b <- getsState $ getActorBody aid
-  assert (l `EM.lookup` binv b == Just iid `blame` (iid, l, aid)) end
+  assert (l `EM.lookup` binv b == Just iid `blame` (iid, l, aid)) skip
   -- Actor's @bletter@ for UI not reset, but checked.
-  assert (bletter b >= l`blame` (iid, k, l, aid, bletter b)) end
+  assert (bletter b >= l`blame` (iid, k, l, aid, bletter b)) skip
 
 moveActorA :: MonadAction m => ActorId -> Point -> Point -> m ()
 moveActorA aid fromP toP = do
   b <- getsState $ getActorBody aid
-  assert (fromP == bpos b `blame` (aid, fromP, toP, bpos b)) end
+  assert (fromP == bpos b `blame` (aid, fromP, toP, bpos b)) skip
   modifyState $ updateActorBody aid $ \body -> body {bpos = toP}
 
 waitActorA :: MonadAction m => ActorId -> Time -> Time -> m ()
 waitActorA aid fromWait toWait = do
   b <- getsState $ getActorBody aid
-  assert (fromWait == bwait b `blame` (aid, fromWait, toWait, bwait b)) end
+  assert (fromWait == bwait b `blame` (aid, fromWait, toWait, bwait b)) skip
   modifyState $ updateActorBody aid $ \body -> body {bwait = toWait}
 
 displaceActorA :: MonadAction m => ActorId -> ActorId -> m ()
@@ -346,7 +346,7 @@ moveItemA :: MonadAction m => ItemId -> Int -> Container -> Container -> m ()
 moveItemA iid k c1 c2 = assert (k > 0) $ do
   (lid1, _) <- posOfContainer c1
   (lid2, _) <- posOfContainer c2
-  assert (lid1 == lid2 `blame` (iid, k, c1, c2, lid1, lid2)) end
+  assert (lid1 == lid2 `blame` (iid, k, c1, c2, lid1, lid2)) skip
   case c1 of
     CFloor lid pos -> deleteItemFloor lid iid k pos
     CActor aid l -> deleteItemActor iid k l aid

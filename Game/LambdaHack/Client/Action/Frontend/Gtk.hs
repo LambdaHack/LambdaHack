@@ -345,7 +345,7 @@ setFrame sess@FrontendSession{slastFull, sframeState} rawFrame = do
       -- Update the last received frame with the processed frame.
       -- There is no race condition, because we are on the same thread
       -- as pushFrame.
-      maybe (return ()) (\ fr -> writeIORef slastFull (fr, False)) fsetFrame
+      maybe skip (\ fr -> writeIORef slastFull (fr, False)) fsetFrame
   -- Store the frame. Release the lock.
   putMVar sframeState FSet{..}
 
@@ -369,7 +369,7 @@ nextEvent sess@FrontendSession{schanKey, sframeState} (Just False) = do
   case fs of
     FSet{fsetFrame} -> do
       -- If the frame not repeated, draw it.
-      maybe (return ()) (postGUIAsync . output sess) fsetFrame
+      maybe skip (postGUIAsync . output sess) fsetFrame
     FPushed{} -> assert `failure` "nextEvent: FPushed, expecting FSet"
     FNone     -> assert `failure` "nextEvent: FNone, expecting FSet"
   -- Clear the stored frame. Release the lock.
@@ -395,7 +395,7 @@ nextEvent sess@FrontendSession{schanKey, sframeState} (Just True) = do
                 if frame == lastFrame
                 then Nothing  -- no sense repeating
                 else Just frame
-          maybe (return ()) (postGUIAsync . output sess) nextFrame
+          maybe skip (postGUIAsync . output sess) nextFrame
         Just (Nothing, _) ->  assert `failure` "nextEvent: trimmed queue"
         Nothing -> return ()
     FSet{} -> assert `failure` "nextEvent: FSet, expecting FPushed"

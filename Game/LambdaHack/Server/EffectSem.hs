@@ -80,7 +80,7 @@ itemEffect source target miid item = do
   b <- effectSem ef source target (jpower item)
   -- The effect is interesting so the item gets identified, if seen.
   let atomic iid = tellCmdAtomic $ DiscoverA (blid tb) (bpos tb) iid ik
-  when b $ maybe (return ()) atomic miid
+  when b $ maybe skip atomic miid
 
 -- + Individual semantic functions for effects
 
@@ -400,7 +400,7 @@ squashActor source target = do
   actorD <- getsState sactorD
   -- The monster has to be killed first, before we step there (same turn!).
   assert (not (target `EM.member` actorD)
-          `blame` (source, target, "not killed")) end
+          `blame` (source, target, "not killed")) skip
 
 -- ** Descend
 

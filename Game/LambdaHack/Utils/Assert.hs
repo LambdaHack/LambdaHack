@@ -2,7 +2,7 @@
 -- Actually, a bunch of hacks wrapping the original @assert@ function,
 -- which is the only easy way of obtaining source positions.
 module Game.LambdaHack.Utils.Assert
-  ( assert, blame, failure, allB, end
+  ( assert, blame, failure, allB, skip
   ) where
 
 import Control.Exception (assert)
@@ -46,9 +46,9 @@ allB predicate l =
   let s = show (filter (not . predicate) l) ++ " in the context of " ++ show l
   in blame (all predicate l) s
 
--- | To be used in place of @return ()@, as in:
+-- | To be used in place of the verbose @skip@, as in:
 --
 -- > do b <- getB a
--- >    assert (b `blame` a) end
-end :: Monad m => m ()
-end = return ()
+-- >    assert (b `blame` a) skip
+skip :: Monad m => m ()
+skip = return ()

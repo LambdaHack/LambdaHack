@@ -216,7 +216,7 @@ memberCycleHuman = do
     [] -> abortWith "Cannot select any other member on this level."
     (np, b) : _ -> do
       success <- selectLeader np
-      assert (success `blame` (leader, np, b)) end
+      assert (success `blame` (leader, np, b)) skip
 
 partyAfterLeader :: MonadActionRO m
                  => ActorId
@@ -268,7 +268,7 @@ memberBackHuman = do
     [] -> abortWith "No other member in the party."
     (np, b) : _ -> do
       success <- selectLeader np
-      assert (success `blame` (leader, np, b)) end
+      assert (success `blame` (leader, np, b)) skip
 
 -- * Inventory
 

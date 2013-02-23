@@ -115,7 +115,7 @@ moveHuman v = do
         if bfaction tb == bfaction sb && not (bproj tb) then do
           -- Select adjacent actor by bumping into him. Takes no time.
           success <- selectLeader target
-          assert (success `blame` (leader, target, tb)) end
+          assert (success `blame` (leader, target, tb)) skip
           return Nothing
         else fmap Just $ moveLeader dir
       _ -> fmap Just $ moveLeader dir

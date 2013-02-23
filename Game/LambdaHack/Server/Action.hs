@@ -135,7 +135,7 @@ connSendUpdateCli cmd ConnCli{toClient} =
 sendUpdateCli :: MonadServerChan m => FactionId -> CmdCli -> m ()
 sendUpdateCli fid cmd = do
   conn <- getsDict (fst . (EM.! fid))
-  maybe (return ()) (connSendUpdateCli cmd) conn
+  maybe skip (connSendUpdateCli cmd) conn
 
 sendUpdateCliAI :: MonadServerChan m => FactionId -> CmdCli -> m ()
 sendUpdateCliAI fid cmd = withAI $ sendUpdateCli fid cmd
@@ -181,7 +181,7 @@ connSendUpdateUI cmd ConnCli{toClient} =
 sendUpdateUI :: MonadServerChan m => FactionId -> CmdUI -> m ()
 sendUpdateUI fid cmd = do
   conn <- getsDict (fst . (EM.! fid))
-  maybe (return ()) (connSendUpdateUI cmd) conn
+  maybe skip (connSendUpdateUI cmd) conn
 
 connSendQueryUI :: MonadServerChan m => ActorId -> ConnCli -> m CmdSer
 connSendQueryUI aid conn@ConnCli{toClient, toServer} = do

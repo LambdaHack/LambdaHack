@@ -53,7 +53,7 @@ handleAI actor = do
           <>          ", loc:"    <+> showT (bpos body)
           <> "\nHandleAI target:" <+> showT stratTarget
           <> "\nHandleAI move:"   <+> showT stratAction
-    -- trace _debug $ return ()
+    -- trace _debug skip
     -- Run the AI: chose an action from those given by the AI strategy.
     rndToAction $ frequency $ bestVariant $ stratAction
 
@@ -64,7 +64,7 @@ handleHuman aid = do
   -- the human player issue commands, until any of them takes time.
   -- First time, just after pushing frames, ask for commands in Push mode.
   Just leader <- getsClient sleader
-  assert (leader == aid `blame` (leader, aid)) end
+  assert (leader == aid `blame` (leader, aid)) skip
   let inputHumanCmd msg = do
         stopRunning
         humanCommand msg

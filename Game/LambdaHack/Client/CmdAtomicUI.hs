@@ -45,7 +45,7 @@ cmdAtomicSemCli cmd = case cmd of
       mleader <- getsClient sleader
       assert (mleader == source     -- somebody changed the leader for us
               || mleader == target  -- we changed the leader originally
-              `blame` (cmd, mleader)) end
+              `blame` (cmd, mleader)) skip
       modifyClient $ \cli -> cli {_sleader = target}
   PerceptionA lid outPA inPA -> do
     -- Clients can't compute FOV on their own, because they don't know
@@ -305,16 +305,16 @@ drawDescAtomicUI verbose desc = case desc of
           msgAdd msg
         Effect.Ascend -> aVerbMU aid "find a way upstairs"
         Effect.Descend -> aVerbMU aid "find a way downstairs"
-        _ ->  return ()
+        _ -> return ()
       else case effect of
         Effect.Wound _ -> do
           -- Presumably the cause of death.
           let verbD = if bproj b then "break up" else "collapse"
           aVerbMU aid verbD
-        _ ->  return ()
+        _ -> return ()
   FailureD fid msg -> do
     side <- getsClient sside
-    assert (fid == side) end
+    assert (fid == side) skip
     msgAdd msg
   BroadcastD msg -> msgAdd msg
   DisplayPushD _ -> displayPush

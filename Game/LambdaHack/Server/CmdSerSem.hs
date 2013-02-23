@@ -397,7 +397,6 @@ triggerSer aid dpos = do
             tellDescAtomic $ TriggerD aid dpos feat {-TODO-}True
             -- No block against tile, hence @False@.
             void $ effectSem ef aid aid 0
-            return ()
           F.ChangeTo tgroup -> do
             tellDescAtomic $ TriggerD aid dpos feat {-TODO-}True
             as <- getsState $ actorList (const True) arena

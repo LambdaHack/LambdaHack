@@ -146,7 +146,7 @@ cmdAtomicBroad atomic = do
   assert (either (const $ resets == Just []
                           && (null atomicBroken
                              || fmap Left atomicBroken == [atomic]))
-                 (const True) ps) $ return ()
+                 (const True) ps) skip
   -- Perform the action on the server.
   atomicSem atomic
   -- Send some actions to the clients, one faction at a time.
