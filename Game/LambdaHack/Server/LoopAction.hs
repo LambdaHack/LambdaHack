@@ -185,9 +185,9 @@ cmdAtomicBroad atomic = do
             if EM.null outPA && EM.null inPA
               then anySend fid perOld perOld
               else do
+                sendA fid $ PerceptionA arena outPA inPA
                 mapM_ (sendA fid) $ atomicRemember arena inPer sOld
                 anySend fid perOld perNew
-                sendA fid $ PerceptionA arena outPA inPA
           else anySend fid perOld perOld
         Left mfid ->
           -- @resets@ is false here and broken atomic has the same mfid

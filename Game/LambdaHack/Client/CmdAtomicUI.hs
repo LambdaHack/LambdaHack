@@ -37,7 +37,7 @@ import Game.LambdaHack.Utils.Assert
 
 -- | Effect of atomic actions on client state is calculated
 -- in the global state before the command is executed.
-cmdAtomicSemCli :: MonadClient m => CmdAtomic -> m ()
+cmdAtomicSemCli :: MonadClient m => CmdAtomic -> m [CmdAtomic]
 cmdAtomicSemCli cmd = case cmd of
   LeadFactionA fid source target -> do
     side <- getsClient sside
@@ -47,6 +47,7 @@ cmdAtomicSemCli cmd = case cmd of
               || mleader == target  -- we changed the leader originally
               `blame` (cmd, mleader)) skip
       modifyClient $ \cli -> cli {_sleader = target}
+    return []
   PerceptionA lid outPA inPA -> do
     -- Clients can't compute FOV on their own, because they don't know
     -- if unknown tiles are clear or not. Server would need to send
@@ -55,16 +56,39 @@ cmdAtomicSemCli cmd = case cmd of
     -- Note we assume, but do not check that @outPA@ is contained
     -- in current perseption and @inPA@ has no common part with it.
     -- It would make the already very costly operation even more expensive.
-    let paToPer pa = Perception
-          { perActor = pa
+    perOld <- askPerception
+    let dummyToPer per = Perception
+          { perActor = perActor per
           , ptotal = PerceptionVisible
-                     $ ES.unions $ map pvisible $ EM.elems $ pa }
-        outPer = paToPer outPA
-        inPer = paToPer inPA
+                     $ ES.unions $ map pvisible $ EM.elems $ perActor per }
+        paToDummy pa = Perception
+          { perActor = pa
+          , ptotal = PerceptionVisible ES.empty }
+        outPer = paToDummy outPA
+        inPer = paToDummy inPA
         adj Nothing = assert `failure` lid
-        adj (Just per) = Just $ addPer (diffPer per outPer) inPer
+        adj (Just per) = Just $ dummyToPer $ addPer (diffPer per outPer) inPer
         f sfper = EM.alter adj lid sfper
     modifyClient $ \cli -> cli {sfper = f (sfper cli)}
+    perNew <- askPerception
+    -- Wipe out remembered items on tiles that now came into view.
+    itemD <- getsState sitemD
+    lfloor <- getsState $ lfloor . (EM.! lid) . sdungeon
+    let inFov = pvisible (ptotal perNew) ES.\\ pvisible (ptotal perOld)
+        pMaybe p = maybe Nothing (\x -> Just (p, x))
+        inFloor = mapMaybe (\p -> pMaybe p $ EM.lookup p lfloor)
+                           (ES.elems inFov)
+        fItem p (iid, k) = LoseItemA iid (itemD EM.! iid) k (CFloor lid p)
+        fBag (p, bag) = map (fItem p) $ EM.assocs bag
+        inItem = concatMap fBag inFloor
+    -- Wipe out actors that just became invisible due to changed FOV.
+    actorD <- getsState sactorD
+    s <- getState
+    let outFov = pvisible (ptotal perOld) ES.\\ pvisible (ptotal perNew)
+        outPrio = mapMaybe (\p -> posToActor p lid s) $ ES.elems outFov
+        fActor aid = LoseActorA aid (actorD EM.! aid)
+        outActor = map fActor outPrio
+    return $ inItem ++ outActor
   RestartA _ sfper _ -> do
     -- TODO: here or elsewhere re-read RNG seed from config file
     shistory <- getsClient shistory
@@ -74,7 +98,8 @@ cmdAtomicSemCli cmd = case cmd of
     let cli = defStateClient shistory sconfigUI side isAI
     putClient cli {sfper}
     -- TODO: Save ASAP in case of crashes and disconnects.
-  _ -> return ()
+    return []
+  _ -> return []
 
 -- * CmdAtomicUI
 
