@@ -23,7 +23,6 @@ data CmdSer =
   | ProjectSer ActorId Point Int ItemId Container
   | ApplySer ActorId ItemId Container
   | TriggerSer ActorId Point
-  | ClearPathSer ActorId
   | SetPathSer ActorId [Vector]
   | GameRestartSer
   | GameExitSer
@@ -34,7 +33,6 @@ data CmdSer =
 timedCmdSer :: CmdSer -> Bool
 timedCmdSer cmd = case cmd of
   DieSer{} -> False
-  ClearPathSer{} -> False
   SetPathSer{} -> False
   GameRestartSer -> False
   GameExitSer -> False
@@ -54,7 +52,6 @@ aidCmdSer cmd = case cmd of
   ProjectSer aid _ _ _ _ -> Just aid
   ApplySer aid _ _ -> Just aid
   TriggerSer aid _ -> Just aid
-  ClearPathSer aid -> Just aid
   SetPathSer aid _ -> Just aid
   GameRestartSer -> Nothing
   GameExitSer -> Nothing

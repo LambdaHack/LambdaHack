@@ -28,7 +28,6 @@ cmdSerWriterT fid cmd = case cmd of
   ProjectSer aid p eps iid container -> projectSer aid p eps iid container
   ApplySer aid iid container -> applySer aid iid container
   TriggerSer aid p -> triggerSer aid p
-  ClearPathSer aid -> clearPathSer aid
   SetPathSer aid path -> setPathSer aid path
   GameRestartSer -> gameRestartSer fid
   GameExitSer -> gameExitSer

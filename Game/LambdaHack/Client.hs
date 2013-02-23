@@ -16,8 +16,8 @@ import Game.LambdaHack.CmdCli
 cmdCliSem :: (MonadAction m, MonadClientChan m) => CmdCli -> m ()
 cmdCliSem cmd = case cmd of
   CmdAtomicCli cmdA -> do
-    cmdAtomicSem cmdA
     cmdAtomicSemCli cmdA
+    cmdAtomicSem cmdA
   ContinueSavedCli sfper -> modifyClient $ \cli -> cli {sfper}
   GameSaveBkpCli -> clientGameSave True
   GameDisconnectCli -> clientDisconnect
@@ -30,8 +30,8 @@ cmdUISem :: ( MonadActionAbort m, MonadAction m
          => CmdUI -> m ()
 cmdUISem cmd = case cmd of
   CmdAtomicUI cmdA -> do
-    cmdAtomicSem cmdA
     cmdAtomicSemCli cmdA
+    cmdAtomicSem cmdA
     drawCmdAtomicUI False cmdA
   DescAtomicUI desc ->
     drawDescAtomicUI False desc

@@ -59,7 +59,7 @@ reacquireTgt cops actor btarget glo per factionAbilities =
  where
   Kind.COps{coactor=coactor@Kind.Ops{okind}} = cops
   Level{lxsize} = sdungeon glo EM.! blid
-  actorBody@Actor{ bkind, bpos = me, bpath, bfaction, blid } =
+  actorBody@Actor{ bkind, bpos = me, bproj, bfaction, blid } =
     getActorBody actor glo
   mk = okind bkind
   enemyVisible l =
@@ -75,7 +75,7 @@ reacquireTgt cops actor btarget glo per factionAbilities =
             -- TODO: or only if another enemy adjacent? consider Flee?
             && Ability.Chase `elem` actorAbilities
   reacquire :: Maybe Target -> Strategy (Maybe Target)
-  reacquire tgt | isJust bpath = returN "TPath" tgt  -- don't animate missiles
+  reacquire tgt | bproj = returN "TPath" tgt  -- don't animate missiles
   reacquire tgt =
     case tgt of
       Just (TEnemy a ll) | focused
@@ -130,8 +130,8 @@ proposeAction cops actor btarget glo factionAbilities =
   .| waitBlockNow actor  -- wait until friends sidestep, ensures never empty
  where
   Kind.COps{coactor=Kind.Ops{okind}} = cops
-  Actor{ bkind, bpos, bpath } = getActorBody actor glo
-  (fpos, foeVisible) | isJust bpath = (bpos, False)  -- a missile
+  Actor{bkind, bpos, bproj} = getActorBody actor glo
+  (fpos, foeVisible) | bproj = (bpos, False)  -- a missile
                      | otherwise =
     case btarget of
       Just (TEnemy _ l) -> (l, True)
@@ -176,12 +176,12 @@ track cops actor glo =
   strat
  where
   lvl = sdungeon glo EM.! blid
-  Actor{bpos, bpath, bhp, blid} = getActorBody actor glo
-  dieOrReset | bhp <= 0  = returN "DieSer" [DieSer actor]
-             | otherwise = returN "ClearPathSer" [ClearPathSer actor]
+  b@Actor{bpos, bpath, blid} = getActorBody actor glo
+  clearPath = returN "ClearPathSer" [SetPathSer actor []]
   strat = case bpath of
-    Just [] -> dieOrReset
-    Just (d : _) | not $ accessible cops lvl bpos (shift bpos d) -> dieOrReset
+    Just [] -> assert `failure` (actor, b, glo)
+    -- TODO: instead let server do this in MoveSer, abort and handle in loop:
+    Just (d : _) | not $ accessible cops lvl bpos (shift bpos d) -> clearPath
     Just (d : lv) ->
       returN "SetPathSer; MoveSer" $ [SetPathSer actor lv, MoveSer actor d]
     Nothing -> reject

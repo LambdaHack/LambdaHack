@@ -154,13 +154,9 @@ actorAttackActor source target = do
         -- Order reversed to anticipate death in the strike message.
         -- Note: this means actors should not be destroyed in @itemEffect@.
         tellDescAtomic $ StrikeD source target item hitA
-        -- Destroys attacking actor and item if a projectile.
-        when (bproj sm) $ do
-          let container iid = actorContainer source (binv sm) iid
-              fry iid = tellCmdAtomic $ DestroyItemA iid item 1 (container iid)
-          maybe end fry miid
-          tellCmdAtomic $ DestroyActorA source sm {bbag = EM.empty}
-  -- Projectiles can't be blocked, can be sidestepped.
+        -- Deduct a hitpoint for a pierce of a projectile.
+        when (bproj sm) $ tellCmdAtomic $ HealActorA source (-1)
+  -- Projectiles can't be blocked (though can be sidestepped).
   if braced tm time && not (bproj sm)
     then do
       blocked <- rndToAction $ chance $ 1%2
@@ -416,13 +412,6 @@ triggerSer aid dpos = do
             else abortWith (bfaction b) "jammed"  -- by items
           _ -> return ()
   mapM_ f $ TileKind.tfeature $ okind $ lvl `at` dpos
-
--- * ClearPathSer
-
-clearPathSer :: MonadActionRO m => ActorId -> WriterT [Atomic] m ()
-clearPathSer aid = do
-  fromPath <- getsState $ bpath . getActorBody aid
-  tellCmdAtomic $ PathActorA aid fromPath Nothing
 
 -- * SetPathSer
 

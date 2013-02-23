@@ -35,11 +35,17 @@ import Game.LambdaHack.Utils.Assert
 
 -- * CmdAtomicCli
 
+-- | Effect of atomic actions on client state is calculated
+-- in the global state before the command is executed.
 cmdAtomicSemCli :: MonadClient m => CmdAtomic -> m ()
 cmdAtomicSemCli cmd = case cmd of
-  LeadFactionA fid _ target -> do
+  LeadFactionA fid source target -> do
     side <- getsClient sside
-    when (side == fid) $
+    when (side == fid) $ do
+      mleader <- getsClient sleader
+      assert (mleader == source     -- somebody changed the leader for us
+              || mleader == target  -- we changed the leader originally
+              `blame` (cmd, mleader)) end
       modifyClient $ \cli -> cli {_sleader = target}
   PerceptionA lid outPA inPA -> do
     -- Clients can't compute FOV on their own, because they don't know
@@ -70,6 +76,9 @@ cmdAtomicSemCli cmd = case cmd of
 
 -- TODO: let user configure which messages are not created, which are
 -- slightly hidden, which are shown and which flash and center screen.
+-- | Visualizationi of atomic actions for the client is perfomed
+-- in the global state after the command is executed and after
+-- the client state is modified by the command.
 drawCmdAtomicUI :: MonadClientUI m => Bool -> CmdAtomic -> m ()
 drawCmdAtomicUI verbose cmd = case cmd of
   CreateActorA _ body | verbose -> actorVerbMU body "appear"
@@ -82,8 +91,8 @@ drawCmdAtomicUI verbose cmd = case cmd of
       go <- displayMore ColorBW ""
       when go $ do
         actorD <- getsState sactorD
-        let party = filter (\(_, b) ->
-                      bfaction b == side && not (bproj b)) $ EM.assocs actorD
+        let alive (_, b) = bfaction b == side && not (bproj b)
+            party = filter alive $ EM.assocs actorD
         when (not $ null $ party) $ msgAdd "The survivors carry on."
     else when verbose $ actorVerbMU body "disappear"
   CreateItemA _ item k _ | verbose -> itemVerbMU item k "appear"

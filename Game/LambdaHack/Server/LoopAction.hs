@@ -128,18 +128,19 @@ cmdAtomicBroad atomic = do
   -- Gather data from the old state.
   sOld <- getState
   persOld <- getsServer sper
-  (ps, resets, atomicBroken, psBroken) <-
+  (ps, resets, atomicBroken, psBroken, psLoud) <-
     case atomic of
       Left cmd -> do
         ps <- posCmdAtomic cmd
         resets <- resetsFovAtomic cmd
         atomicBroken <- breakCmdAtomic cmd
         psBroken <- mapM posCmdAtomic atomicBroken
-        return (ps, resets, atomicBroken, psBroken)
+        psLoud <- mapM loudCmdAtomic atomicBroken
+        return (ps, resets, atomicBroken, psBroken, psLoud)
       Right desc -> do
         ps <- posDescAtomic desc
-        return (ps, Just [], [], [])
-  let atomicPsBroken = zip atomicBroken psBroken
+        return (ps, Just [], [], [], [])
+  let atomicPsBroken = zip3 atomicBroken psBroken psLoud
   -- TODO: assert also that the sum of psBroken is equal to ps
   -- TODO: with deep equality these assertions can be expensive. Optimize.
   assert (either (const $ resets == Just []
@@ -157,14 +158,12 @@ cmdAtomicBroad atomic = do
       vis per = all (`ES.member` totalVisible per) . snd
       isOurs fid = either id (== fid)
       breakSend fid perNew = do
-        let send2 (atomic2, ps2) = do
+        let send2 (atomic2, ps2, loud2) = do
               let seen2 = either (isOurs fid) (vis perNew) ps2
               if seen2
                 then sendUpdate fid $ Left atomic2
-                else do
-                  loud <- loudCmdAtomic atomic2
-                  when loud $ sendUpdate fid
-                            $ Right $ BroadcastD "You hear some noises."
+                else when loud2 $ sendUpdate fid
+                                $ Right $ BroadcastD "You hear some noises."
         mapM_ send2 atomicPsBroken
       anySend fid perOld perNew = do
         let startSeen = either (isOurs fid) (vis perOld) ps
@@ -331,14 +330,23 @@ handleActors cmdSerSem arena subclipStart = do
     Nothing -> do
       when (subclipStart == timeZero) $
         mapM_ cmdAtomicBroad $ map (Right . DisplayDelayD) $ EM.keys faction
-    Just (actor, body) | bhp body <= 0 && not (bproj body) -> do
-      atoms <- cmdSerSem (bfaction body) $ DieSer actor
+    Just (aid, body) | bhp body <= 0 && not (bproj body)
+                       || bhp body < 0
+                       || maybe False null (bpath body) -> do
+      atoms <-
+        if bhp body < 0  -- e.g., a projectile hitting an actor
+        then -- Items get destroyed, effectively.
+             return [Left $ DestroyActorA aid body]
+        else -- Items drop to the ground.
+             cmdSerSem (bfaction body) $ DieSer aid
       mapM_ cmdAtomicBroad atoms
-      -- Death is serious, new subclip.
+      -- Death or projectile impact is serious, new subclip.
       handleActors cmdSerSem arena (btime body)
     Just (actor, body) -> do
-      let allPush =
-            map (Right . DisplayPushD) $ EM.keys faction  -- TODO: too often
+      let hasLeader fid = isJust $ gleader $ faction EM.! fid
+          allPush =
+            map (Right . DisplayPushD) $ filter hasLeader $ EM.keys faction
+            -- TODO: too often
       mapM_ cmdAtomicBroad allPush  -- needs to be there before key presses
       let side = bfaction body
           mleader = gleader $ faction EM.! side
@@ -394,7 +402,9 @@ handleActors cmdSerSem arena subclipStart = do
               (leadAtoms, leaderNew) = case mleaderNew of
                 Nothing -> assert (not timed) $ ([], actor)
                 Just lNew | lNew /= actor ->
-                  ([Left (LeadFactionA side mleader (Just lNew))], lNew)
+                  -- Only leader can change leaders
+                  assert (mleader == Just actor)
+                  $ ([Left (LeadFactionA side mleader (Just lNew))], lNew)
                 Just _ -> ([], actor)
           advanceAtoms <- if aborted || not timed
                           then return []
@@ -405,14 +415,15 @@ handleActors cmdSerSem arena subclipStart = do
           if not aborted && isHuman && not (bproj body)
              || subclipStart == timeZero
              || btime body > subclipStartDelta
-            then
+            then do
               -- Start a new subclip if its our own faction moving
               -- or it's another faction, but it's the first move of
               -- this whole clip or the actor has already moved during
               -- this subclip, so his multiple moves would be collapsed.
     -- If the following action aborts, we just advance the time and continue.
     -- TODO: or just fail at each abort in AI code? or use tryWithFrame?
-              handleActors cmdSerSem arena (btime body)
+              bNew <- getsState $ getActorBody leaderNew
+              handleActors cmdSerSem arena (btime bNew)
             else
               -- No new subclip.
     -- If the following action aborts, we just advance the time and continue.
