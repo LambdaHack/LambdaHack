@@ -174,7 +174,7 @@ search aid = do
   lsecret <- getsLevel (blid b) lsecret
   lxsize <- getsLevel (blid b) lxsize
   itemAssocs <- getsState (getActorItem aid)
-  discoS <- getsState sdisco
+  discoS <- getsServer sdisco
   let delta = timeScale timeTurn $
                 case strongestSearch coitem discoS itemAssocs of
                   Just (_, i)  -> 1 + jpower i
@@ -334,7 +334,7 @@ addProjectile :: MonadServer m
               -> WriterT [Atomic] m ActorId
 addProjectile iid loc blid bfaction path btime = do
   Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}} <- getsState scops
-  disco <- getsState sdisco
+  disco <- getsServer sdisco
   item <- getsState $ getItemBody iid
   let ik = okind (fromJust $ jkind disco item)
       speed = speedFromWeight (iweight ik) (itoThrow ik)

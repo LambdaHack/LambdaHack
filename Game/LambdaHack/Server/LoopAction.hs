@@ -23,6 +23,8 @@ import Game.LambdaHack.CmdCli
 import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
+import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Item
@@ -53,7 +55,8 @@ loopSer :: forall m . (MonadAction m, MonadServerChan m)
         -> (FactionId -> ConnCli -> Bool -> IO ())
         -> Kind.COps
         -> m ()
-loopSer cmdSerSem executorC cops = do
+loopSer cmdSerSem executorC cops@Kind.COps{ coitem=Kind.Ops{okind}
+                                          , corule } = do
   -- Recover states.
   restored <- tryRestore cops
   -- TODO: use the _msg somehow
@@ -70,14 +73,18 @@ loopSer cmdSerSem executorC cops = do
   -- Send init messages.
   initPer
   pers <- getsServer sper
-  defLoc <- getsState localFromGlobal
   quit <- getsServer squit
   if isJust quit then do -- game restored from a savefile
     funBroadcastCli (\fid -> ContinueSavedCli (pers EM.! fid))
   else do  -- game restarted
     -- TODO: factor out common parts from restartGame and restoreOrRestart
+    defLoc <- getsState localFromGlobal
+    discoS <- getsServer sdisco
+    let sdisco = let f ik = isymbol (okind ik)
+                            `notElem` (ritemProject $ Kind.stdRuleset corule)
+                 in EM.filter f discoS
     funBroadcastCli
-       (\fid -> CmdAtomicCli (RestartA fid (pers EM.! fid) defLoc))
+       (\fid -> CmdAtomicCli (RestartA fid sdisco (pers EM.! fid) defLoc))
     populateDungeon
     -- Save ASAP in case of crashes and disconnects.
     saveGameBkp
@@ -505,7 +512,8 @@ endOrLoop loopServer = do
 
 restartGame :: (MonadAction m, MonadServerChan m) => m () -> m ()
 restartGame loopServer = do
-  cops <- getsState scops
+  cops@Kind.COps{ coitem=Kind.Ops{okind}
+                , corule } <- getsState scops
   gameReset cops
   initPer
   pers <- getsServer sper
@@ -513,8 +521,13 @@ restartGame loopServer = do
   -- The biggest part is content, which really needs to be updated
   -- at this point to keep clients in sync with server improvements.
   defLoc <- getsState localFromGlobal
+  discoS <- getsServer sdisco
+  let sdisco = let f ik = isymbol (okind ik)
+                          `notElem` (ritemProject $ Kind.stdRuleset corule)
+               in EM.filter f discoS
   -- TODO: this is too hacky still
-  funBroadcastCli (\fid -> CmdAtomicCli (RestartA fid (pers EM.! fid) defLoc))
+  funBroadcastCli (\fid ->
+    CmdAtomicCli (RestartA fid sdisco (pers EM.! fid) defLoc))
   populateDungeon
   saveGameBkp
   loopServer
@@ -564,13 +577,13 @@ gameReset cops@Kind.COps{coitem, corule, cotile} = do
       rnd = do
         faction <- createFactions cops sconfig
         sflavour <- dungeonFlavourMap coitem
-        (discoS, sdiscoRev) <- serverDiscos coitem
+        (sdisco, sdiscoRev) <- serverDiscos coitem
         freshDng <- DungeonGen.dungeonGen cops sconfig
-        return (faction, sflavour, discoS, sdiscoRev, freshDng)
-  let (faction, sflavour, discoS, sdiscoRev, DungeonGen.FreshDungeon{..}) =
+        return (faction, sflavour, sdisco, sdiscoRev, freshDng)
+  let (faction, sflavour, sdisco, sdiscoRev, DungeonGen.FreshDungeon{..}) =
         St.evalState rnd dungeonSeed
-      defState = defStateGlobal freshDungeon freshDepth discoS faction cops
-      defSer = emptyStateServer {sdiscoRev, sflavour, srandom, sconfig}
+      defState = defStateGlobal freshDungeon freshDepth faction cops
+      defSer = emptyStateServer {sdisco, sdiscoRev, sflavour, srandom, sconfig}
   putState defState
   putServer defSer
   -- Clients have no business noticing initial item creation, so we can
@@ -677,7 +690,7 @@ regenerateLevelHP arena = do
            , coactor=Kind.Ops{okind}
            } <- getsState scops
   time <- getsState $ getTime arena
-  discoS <- getsState sdisco
+  discoS <- getsServer sdisco
   s <- getState
   let pick (a, m) =
         let ak = okind $ bkind m

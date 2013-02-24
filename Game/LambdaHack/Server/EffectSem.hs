@@ -74,7 +74,7 @@ itemEffect :: MonadServer m
 itemEffect source target miid item = do
   Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   tb <- getsState $ getActorBody target
-  discoS <- getsState sdisco
+  discoS <- getsServer sdisco
   let ik = fromJust $ jkind discoS item
       ef = ieffect $ okind ik
   b <- effectSem ef source target (jpower item)

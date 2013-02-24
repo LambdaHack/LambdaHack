@@ -47,7 +47,7 @@ data ColorMode =
 draw :: ColorMode -> Kind.COps -> Perception -> StateClient -> State -> Overlay
      -> SingleFrame
 draw dm cops per
-     cli@StateClient{stgtMode, scursor, seps, sdebugCli}
+     cli@StateClient{stgtMode, scursor, seps, sdisco, sdebugCli}
      s overlay =
   let Kind.COps{ coactor=Kind.Ops{okind}
                , coitem=Kind.Ops{okind=iokind}
@@ -79,7 +79,7 @@ draw dm cops per
       (_, wealth) = calculateTotal (sside cli) drawnLevelId s
       damage  = case Item.strongestSword cops bitems of
                   Just (_, sw) ->
-                    case Item.jkind (sdisco s) sw of
+                    case Item.jkind sdisco sw of
                       Just swk ->
                         case ieffect $ iokind swk of
                           Wound dice ->

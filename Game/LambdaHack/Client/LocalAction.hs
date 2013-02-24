@@ -102,7 +102,7 @@ lookAt detailed canSee pos msg = do
   s <- getState
   let is = lvl `atI` pos
       prefixSee = MU.Text $ if canSee then "you see" else "you remember"
-  disco <- getsState sdisco
+  disco <- getsClient sdisco
   let nWs (iid, k) = partItemNWs coitem disco k (getItemBody iid s)
       isd = case detailed of
               _ | EM.size is == 0 -> ""
@@ -157,11 +157,11 @@ doLook = do
      tell slides
 
 -- | Create a list of item names.
-floorItemOverlay :: MonadActionRO m => ItemBag -> m Overlay
+floorItemOverlay :: MonadClient m => ItemBag -> m Overlay
 floorItemOverlay bag = do
   Kind.COps{coitem} <- getsState scops
   s <- getState
-  disco <- getsState sdisco
+  disco <- getsClient sdisco
   let is = zip (EM.assocs bag) (allLetters ++ repeat (InvChar ' '))
       pr ((iid, k), l) =
          makePhrase [ letterLabel l
@@ -170,11 +170,11 @@ floorItemOverlay bag = do
   return $ map pr is
 
 -- | Create a list of item names.
-itemOverlay :: MonadActionRO m => ItemBag -> ItemInv -> m Overlay
+itemOverlay :: MonadClient m => ItemBag -> ItemInv -> m Overlay
 itemOverlay bag inv = do
   Kind.COps{coitem} <- getsState scops
   s <- getState
-  disco <- getsState sdisco
+  disco <- getsClient sdisco
   let checkItem (l, iid) = fmap (\k -> (l, iid, k)) $ EM.lookup iid bag
       is = mapMaybe checkItem $ EM.assocs inv
       pr (l, iid, k) =

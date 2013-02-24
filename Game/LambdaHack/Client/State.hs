@@ -24,6 +24,7 @@ import Game.LambdaHack.Client.Animation
 import Game.LambdaHack.Client.Config
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Faction
+import Game.LambdaHack.Item
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
@@ -44,6 +45,7 @@ data StateClient = StateClient
   , srunning  :: !(Maybe (Vector, Int))  -- ^ direction and distance of running
   , sreport   :: !Report        -- ^ current messages
   , shistory  :: !History       -- ^ history of messages
+  , sdisco    :: !Discovery     -- ^ remembered item discoveries
   , sfper     :: !FactionPers   -- ^ faction perception indexed by levels
   , srandom   :: !R.StdGen      -- ^ current random generator
   , sconfigUI :: !ConfigUI      -- ^ this client config (including initial RNG)
@@ -79,7 +81,8 @@ data DebugModeCli = DebugModeCli
   deriving Show
 
 -- | Initial game client state.
-defStateClient :: History -> ConfigUI -> FactionId -> Bool -> StateClient
+defStateClient :: History -> ConfigUI -> FactionId -> Bool
+               -> StateClient
 defStateClient shistory sconfigUI _sside sisAI = do
   StateClient
     { stgtMode  = Nothing
@@ -89,6 +92,7 @@ defStateClient shistory sconfigUI _sside sisAI = do
     , srunning  = Nothing
     , sreport   = emptyReport
     , shistory
+    , sdisco    = EM.empty
     , sfper     = EM.empty
     , sconfigUI
     , srandom = R.mkStdGen 42  -- will be set later
@@ -177,6 +181,7 @@ instance Binary StateClient where
     put srunning
     put sreport
     put shistory
+    put sdisco
     put (show srandom)
     put sconfigUI
     put sframe
@@ -192,6 +197,7 @@ instance Binary StateClient where
     srunning <- get
     sreport <- get
     shistory <- get
+    sdisco <- get
     g <- get
     sconfigUI <- get
     sframe <- get

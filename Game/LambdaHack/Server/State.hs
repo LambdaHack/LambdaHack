@@ -19,7 +19,8 @@ import Game.LambdaHack.Server.Fov
 
 -- | Global, server state.
 data StateServer = StateServer
-  { sdiscoRev :: !DiscoRev      -- ^ reverse disco map, used for item creation
+  { sdisco    :: !Discovery     -- ^ full item discoveries data
+  , sdiscoRev :: !DiscoRev      -- ^ reverse disco map, used for item creation
   , sitemRev  :: !ItemRev       -- ^ reverse id map, used for item creation
   , sflavour  :: !FlavourMap    -- ^ association of flavour to items
   , sacounter :: !ActorId       -- ^ stores next actor index
@@ -40,7 +41,8 @@ data DebugModeSer = DebugModeSer
 emptyStateServer :: StateServer
 emptyStateServer =
   StateServer
-    { sdiscoRev = EM.empty
+    { sdisco = EM.empty
+    , sdiscoRev = EM.empty
     , sitemRev = HM.empty
     , sflavour = emptyFlavourMap
     , sacounter = toEnum 0
@@ -66,6 +68,7 @@ cycleTryFov s@StateServer{sdebugSer=sdebugSer@DebugModeSer{stryFov}} =
 
 instance Binary StateServer where
   put StateServer{..} = do
+    put sdisco
     put sdiscoRev
     put sitemRev
     put sflavour
@@ -75,6 +78,7 @@ instance Binary StateServer where
     put sconfig
     put squit
   get = do
+    sdisco <- get
     sdiscoRev <- get
     sitemRev <- get
     sflavour <- get

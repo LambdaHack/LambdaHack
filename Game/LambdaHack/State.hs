@@ -4,10 +4,10 @@ module Game.LambdaHack.State
   ( -- * Basic game state, local or global
     State
     -- * State components
-  , sdungeon, sdepth, sactorD, sitemD, sdisco, sfaction, scops
+  , sdungeon, sdepth, sactorD, sitemD, sfaction, scops
     -- * State operations
   , defStateGlobal, emptyState, localFromGlobal
-  , updateDungeon, updateDepth, updateActorD, updateItemD, updateDisco
+  , updateDungeon, updateDepth, updateActorD, updateItemD
   , updateFaction, updateCOps, updateTime
   , getTime, isHumanFaction, isSpawningFaction
   ) where
@@ -18,11 +18,8 @@ import Data.Text (Text)
 import Data.Typeable
 
 import Game.LambdaHack.Actor
-import Game.LambdaHack.Content.ItemKind
-import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Faction
-import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Point
@@ -39,7 +36,6 @@ data State = State
   , _sdepth   :: !Int          -- ^ remembered dungeon depth
   , _sactorD  :: !ActorDict    -- ^ remembered actors in the dungeon
   , _sitemD   :: !ItemDict     -- ^ remembered items in the dungeon
-  , _sdisco   :: !Discovery    -- ^ remembered item discoveries
   , _sfaction :: !FactionDict  -- ^ remembered sides still in game
   , _scops    :: Kind.COps     -- ^ remembered content
   }
@@ -73,10 +69,10 @@ unknownTileMap unknownId cxsize cysize =
   in Kind.listArray bounds (repeat unknownId)
 
 -- | Initial complete global game state.
-defStateGlobal :: Dungeon -> Int -> Discovery
+defStateGlobal :: Dungeon -> Int
                -> FactionDict -> Kind.COps
                -> State
-defStateGlobal _sdungeon _sdepth _sdisco _sfaction _scops =
+defStateGlobal _sdungeon _sdepth _sfaction _scops =
   State
     { _sactorD = EM.empty
     , _sitemD = EM.empty
@@ -91,7 +87,6 @@ emptyState =
     , _sdepth = 0
     , _sactorD = EM.empty
     , _sitemD = EM.empty
-    , _sdisco = EM.empty
     , _sfaction = EM.empty
     , _scops = undefined
     }
@@ -102,18 +97,12 @@ emptyState =
 -- | Local state created by removing secret information from global
 -- state components.
 localFromGlobal :: State -> State
-localFromGlobal State{ _scops=_scops@Kind.COps{ coitem=Kind.Ops{okind}
-                                              , corule
-                                              , cotile }
-                      , .. } =
+localFromGlobal State{_scops=_scops@Kind.COps{cotile}, .. } =
   State
     { _sdungeon =
       EM.map (\Level{ldepth, lxsize, lysize, ldesc, lstair, lclear} ->
               unknownLevel cotile ldepth lxsize lysize ldesc lstair lclear)
             _sdungeon
-    , _sdisco = let f ik = isymbol (okind ik)
-                           `notElem` (ritemProject $ Kind.stdRuleset corule)
-                in EM.filter f _sdisco
     , ..
     }
 
@@ -132,10 +121,6 @@ updateActorD f s = s {_sactorD = f (_sactorD s)}
 -- | Update the item dictionary.
 updateItemD :: (ItemDict -> ItemDict) -> State -> State
 updateItemD f s = s {_sitemD = f (_sitemD s)}
-
--- | Update item discoveries within state.
-updateDisco :: (Discovery -> Discovery) -> State -> State
-updateDisco f s = s {_sdisco = f (_sdisco s)}
 
 -- | Update faction data within state.
 updateFaction :: (FactionDict -> FactionDict) -> State -> State
@@ -175,9 +160,6 @@ sactorD = _sactorD
 sitemD :: State -> ItemDict
 sitemD = _sitemD
 
-sdisco :: State -> Discovery
-sdisco = _sdisco
-
 sfaction :: State -> FactionDict
 sfaction = _sfaction
 
@@ -190,14 +172,12 @@ instance Binary State where
     put _sdepth
     put _sactorD
     put _sitemD
-    put _sdisco
     put _sfaction
   get = do
     _sdungeon <- get
     _sdepth <- get
     _sactorD <- get
     _sitemD <- get
-    _sdisco <- get
     _sfaction <- get
     let _scops = undefined  -- overwritten by recreated cops
     return State{..}

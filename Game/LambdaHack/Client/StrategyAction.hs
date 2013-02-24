@@ -120,12 +120,13 @@ actionStrategy actor factionAbilities = do
   cops <- getsState scops
   glo <- getState
   btarget <- getsClient $ getTarget actor
-  return $! proposeAction cops actor btarget glo factionAbilities
+  disco <- getsClient sdisco
+  return $! proposeAction cops actor btarget disco glo factionAbilities
 
 proposeAction :: Kind.COps -> ActorId
-              -> Maybe Target -> State -> [Ability]
+              -> Maybe Target -> Discovery -> State -> [Ability]
               -> Strategy [CmdSer]
-proposeAction cops actor btarget glo factionAbilities =
+proposeAction cops actor btarget disco glo factionAbilities =
   sumS prefix .| combineDistant distant .| sumS suffix
   .| waitBlockNow actor  -- wait until friends sidestep, ensures never empty
  where
@@ -140,10 +141,10 @@ proposeAction cops actor btarget glo factionAbilities =
   combineDistant as = liftM (: []) $ liftFrequency $ sumF as
   aFrequency :: Ability -> Frequency CmdSer
   aFrequency Ability.Ranged = if foeVisible
-                              then rangedFreq cops actor glo fpos
+                              then rangedFreq cops actor disco glo fpos
                               else mzero
   aFrequency Ability.Tools  = if foeVisible
-                              then toolsFreq cops actor glo
+                              then toolsFreq cops actor disco glo
                               else mzero
   aFrequency Ability.Chase  = if (fpos /= bpos)
                               then chaseFreq
@@ -211,8 +212,9 @@ melee actor glo fpos =
   foeAdjacent = adjacent lxsize bpos fpos
   dir = displacement bpos fpos
 
-rangedFreq :: Kind.COps -> ActorId -> State -> Point -> Frequency CmdSer
-rangedFreq cops actor glo fpos =
+rangedFreq :: Kind.COps -> ActorId -> Discovery -> State -> Point
+           -> Frequency CmdSer
+rangedFreq cops actor disco glo fpos =
   toFreq "throwFreq" $
     if not foesAdj
        && asight mk
@@ -248,7 +250,7 @@ rangedFreq cops actor glo fpos =
     | (iid, i) <- map (\iid -> (iid, getItemBody iid glo))
                   $ EM.keys bag,
       let (ik, benefit) =
-            case jkind (sdisco glo) i of
+            case jkind disco i of
               Nothing -> (undefined, 0)
               Just ki ->
                 let kik = iokind ki
@@ -258,8 +260,8 @@ rangedFreq cops actor glo fpos =
       -- Wasting weapons and armour would be too cruel to the player.
       isymbol ik `elem` (ritemProject $ Kind.stdRuleset corule)]
 
-toolsFreq :: Kind.COps -> ActorId -> State -> Frequency CmdSer
-toolsFreq cops actor glo =
+toolsFreq :: Kind.COps -> ActorId -> Discovery -> State -> Frequency CmdSer
+toolsFreq cops actor disco glo =
   toFreq "quaffFreq"
   $ quaffFreq bbag 1 (actorContainer actor binv)
   ++ quaffFreq tis 2 (const $ CFloor blid bpos)
@@ -273,7 +275,7 @@ toolsFreq cops actor glo =
     | (iid, i) <- map (\iid -> (iid, getItemBody iid glo))
                   $ EM.keys bag,
       let (ik, benefit) =
-            case jkind (sdisco glo) i of
+            case jkind disco i of
               Nothing -> (undefined, 0)
               Just ki ->
                 let kik = iokind ki

@@ -16,7 +16,6 @@ import Game.LambdaHack.ActorState
 import Game.LambdaHack.CmdAtomic
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Content.ItemKind as ItemKind
 import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Faction
 import Game.LambdaHack.Item
@@ -57,11 +56,11 @@ cmdAtomicSem cmd = case cmd of
   LoseTileA lid ts -> loseTileA lid ts
   AlterSecretA lid diffL -> alterSecretA lid diffL
   AlterSmellA lid diffL -> alterSmellA lid diffL
-  DiscoverA lid p iid ik -> discoverA lid p iid ik
-  CoverA lid p iid ik -> coverA lid p iid ik
+  DiscoverA{} -> return ()
+  CoverA{} -> return ()
   PerceptionA _ outPA inPA ->
     assert (not (EM.null outPA && EM.null inPA)) $ return ()
-  RestartA fid sfper s -> restartA fid sfper s
+  RestartA fid sdisco sfper s -> restartA fid sdisco sfper s
 
 -- All functions here that take an atomic action are executed
 -- in the state just before the action is executed.
@@ -148,7 +147,7 @@ posCmdAtomic cmd = case cmd of
   DiscoverA lid p _ _ -> return $ Right (lid, [p])
   CoverA lid p _ _ -> return $ Right (lid, [p])
   PerceptionA _ _ _ -> return $ Left $ Left False
-  RestartA fid _ _ -> return $ Left $ Right fid
+  RestartA fid _ _ _ -> return $ Left $ Right fid
 
 posDescAtomic :: MonadActionRO m
               => DescAtomic
@@ -338,13 +337,13 @@ deleteItemActor iid k l aid = do
 moveActorA :: MonadAction m => ActorId -> Point -> Point -> m ()
 moveActorA aid fromP toP = assert (fromP /= toP) $ do
   b <- getsState $ getActorBody aid
-  assert (fromP == bpos b `blame` (aid, fromP, toP, bpos b)) skip
+  assert (fromP == bpos b `blame` (aid, fromP, toP, bpos b, b)) skip
   modifyState $ updateActorBody aid $ \body -> body {bpos = toP}
 
 waitActorA :: MonadAction m => ActorId -> Time -> Time -> m ()
 waitActorA aid fromWait toWait = assert (fromWait /= toWait) $ do
   b <- getsState $ getActorBody aid
-  assert (fromWait == bwait b `blame` (aid, fromWait, toWait, bwait b)) skip
+  assert (fromWait == bwait b `blame` (aid, fromWait, toWait, bwait b, b)) skip
   modifyState $ updateActorBody aid $ \body -> body {bwait = toWait}
 
 displaceActorA :: MonadAction m => ActorId -> ActorId -> m ()
@@ -464,26 +463,9 @@ alterSecretA lid diffL = updateLevel lid $ updateSecret $ applyDiffEM diffL
 alterSmellA :: MonadAction m => LevelId -> DiffEM Point Time -> m ()
 alterSmellA lid diffL = updateLevel lid $ updateSmell $ applyDiffEM diffL
 
-discoverA :: MonadAction m
-          => LevelId -> Point -> ItemId -> (Kind.Id ItemKind) -> m ()
-discoverA lid p iid ik = do
-  item <- getsState $ getItemBody iid
-  let f Nothing = Just ik
-      f (Just ik2) = assert `failure` (lid, p, iid, ik, ik2)
-  modifyState $ updateDisco $ EM.alter f (jkindIx item)
-
--- TODO: as a result of undo, this will be wrong on the server,
--- so it has to be filtered out from the server, just as from some clients.
-coverA :: MonadAction m
-       => LevelId -> Point -> ItemId -> (Kind.Id ItemKind) -> m ()
-coverA lid p iid ik = do
-  item <- getsState $ getItemBody iid
-  let f Nothing = assert `failure` (lid, p, iid, ik)
-      f (Just ik2) = assert (ik == ik2 `blame` (ik, ik2)) Nothing
-  modifyState $ updateDisco $ EM.alter f (jkindIx item)
-
 -- TODO here, too, it would be disastrous for the server.
 -- Perhaps the server should have factionId -1, so that ocmparison
 -- with fid below will be False.
-restartA :: MonadAction m => FactionId -> FactionPers -> State -> m ()
-restartA _ _ s = putState s
+restartA :: MonadAction m
+         => FactionId -> Discovery -> FactionPers -> State -> m ()
+restartA _ _ _ s = putState s

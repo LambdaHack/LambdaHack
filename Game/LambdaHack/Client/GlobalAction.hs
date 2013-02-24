@@ -98,7 +98,7 @@ dropHuman = do
   bag <- getsState $ getActorBag aid
   inv <- getsState $ getActorInv aid
   ((iid, item), _k) <- getAnyItem aid "What to drop?" bag inv "in inventory"
-  disco <- getsState sdisco
+  disco <- getsClient sdisco
   -- Do not advertise if an enemy drops an item. Probably junk.
   msgAdd $ makeSentence  -- TODO: "you" instead of partActor?
     [ MU.SubjectVerbSg (partActor coactor pbody) "drop"

@@ -29,6 +29,7 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
+import Game.LambdaHack.Point
 import Game.LambdaHack.State
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
@@ -48,6 +49,8 @@ cmdAtomicSemCli cmd = case cmd of
               `blame` (cmd, mleader)) skip
       modifyClient $ \cli -> cli {_sleader = target}
     return []
+  DiscoverA lid p iid ik -> discoverA lid p iid ik
+  CoverA lid p iid ik -> coverA lid p iid ik
   PerceptionA lid outPA inPA -> do
     -- Clients can't compute FOV on their own, because they don't know
     -- if unknown tiles are clear or not. Server would need to send
@@ -89,17 +92,35 @@ cmdAtomicSemCli cmd = case cmd of
         fActor aid = LoseActorA aid (actorD EM.! aid)
         outActor = map fActor outPrio
     return $ inItem ++ outActor
-  RestartA _ sfper _ -> do
+  RestartA _ sdisco sfper _ -> do
     -- TODO: here or elsewhere re-read RNG seed from config file
     shistory <- getsClient shistory
     sconfigUI <- getsClient sconfigUI
     side <- getsClient sside
     isAI <- getsClient sisAI
     let cli = defStateClient shistory sconfigUI side isAI
-    putClient cli {sfper}
+    putClient cli {sdisco, sfper}
     -- TODO: Save ASAP in case of crashes and disconnects.
     return []
   _ -> return []
+
+discoverA :: MonadClient m
+          => LevelId -> Point -> ItemId -> (Kind.Id ItemKind) -> m [CmdAtomic]
+discoverA lid p iid ik = do
+  item <- getsState $ getItemBody iid
+  let f Nothing = Just ik
+      f (Just ik2) = assert `failure` (lid, p, iid, ik, ik2)
+  modifyClient $ \cli -> cli {sdisco = EM.alter f (jkindIx item) (sdisco cli)}
+  return []
+
+coverA :: MonadClient m
+       => LevelId -> Point -> ItemId -> (Kind.Id ItemKind) -> m [CmdAtomic]
+coverA lid p iid ik = do
+  item <- getsState $ getItemBody iid
+  let f Nothing = assert `failure` (lid, p, iid, ik)
+      f (Just ik2) = assert (ik == ik2 `blame` (ik, ik2)) Nothing
+  modifyClient $ \cli -> cli {sdisco = EM.alter f (jkindIx item) (sdisco cli)}
+  return []
 
 -- * CmdAtomicUI
 
@@ -155,32 +176,33 @@ drawCmdAtomicUI verbose cmd = case cmd of
   AlterSecretA _ _ ->
     assert `failure` ("client learns secrets" :: Text, cmd)
   DiscoverA _ _ iid _ -> do
-    -- TODO: drop these commands if item already known
-    Kind.COps{coitem} <- getsState scops
+    disco <- getsClient sdisco
     item <- getsState $ getItemBody iid
-    disco <- getsState sdisco
     let ix = jkindIx item
-        discoUnknown = EM.delete ix disco
-        (objectUnkown1, objectUnkown2) = partItem coitem discoUnknown item
-        msg = makeSentence
-          [ "the", MU.SubjectVerbSg (MU.Phrase [objectUnkown1, objectUnkown2])
-                                    "turn out to be"
-          , partItemAW coitem disco item ]
-    msgAdd msg
+    unless (ix `EM.member` disco) $ do
+      Kind.COps{coitem} <- getsState scops
+      let discoUnknown = EM.delete ix disco
+          (objUnkown1, objUnkown2) = partItem coitem discoUnknown item
+          msg = makeSentence
+            [ "the", MU.SubjectVerbSg (MU.Phrase [objUnkown1, objUnkown2])
+                                      "turn out to be"
+            , partItemAW coitem disco item ]
+      msgAdd msg
   CoverA _ _ iid ik -> do
-    Kind.COps{coitem} <- getsState scops
+    discoUnknown <- getsClient sdisco
     item <- getsState $ getItemBody iid
-    discoUnknown <- getsState sdisco
     let ix = jkindIx item
-        disco = EM.insert ix ik discoUnknown
-        (objectUnkown1, objectUnkown2) = partItem coitem discoUnknown item
-        (object1, object2) = partItem coitem disco item
-        msg = makeSentence
-          [ "the", MU.SubjectVerbSg (MU.Phrase [object1, object2])
-                                    "look like an ordinary"
-          , objectUnkown1, objectUnkown2 ]
-    msgAdd msg
-  RestartA _ _ _ -> msgAdd "This time for real."
+    when (ix `EM.member` discoUnknown) $ do
+      Kind.COps{coitem} <- getsState scops
+      let disco = EM.insert ix ik discoUnknown
+          (objUnkown1, objUnkown2) = partItem coitem discoUnknown item
+          (obj1, obj2) = partItem coitem disco item
+          msg = makeSentence
+            [ "the", MU.SubjectVerbSg (MU.Phrase [obj1, obj2])
+                                      "look like an ordinary"
+            , objUnkown1, objUnkown2 ]
+      msgAdd msg
+  RestartA{} -> msgAdd "This time for real."
   _ -> return ()
 
 -- | Sentences such as \"Dog barks loudly.\".
@@ -198,7 +220,7 @@ aVerbMU aid verb = do
 itemVerbMU :: MonadClientUI m => Item -> Int -> MU.Part -> m ()
 itemVerbMU item k verb = do
   Kind.COps{coitem} <- getsState scops
-  disco <- getsState sdisco
+  disco <- getsClient sdisco
   let msg =
         makeSentence [MU.SubjectVerbSg (partItemNWs coitem disco k item) verb]
   msgAdd msg
@@ -211,7 +233,7 @@ _iVerbMU iid k verb = do
 aiVerbMU :: MonadClientUI m => ActorId -> MU.Part -> ItemId -> Int -> m ()
 aiVerbMU aid verb iid k = do
   Kind.COps{coactor, coitem} <- getsState scops
-  disco <- getsState sdisco
+  disco <- getsClient sdisco
   body <- getsState $ getActorBody aid
   item <- getsState $ getItemBody iid
   -- TODO: "you" instead of partActor? but keep partActor for other sides
@@ -226,7 +248,7 @@ moveItemA :: MonadClientUI m
 moveItemA verbose iid k c1 c2 = do
   Kind.COps{coitem} <- getsState scops
   item <- getsState $ getItemBody iid
-  disco <- getsState sdisco
+  disco <- getsClient sdisco
   case (c1, c2) of
     (CFloor _ _, CActor aid l) -> do
       b <- getsState $ getActorBody aid
@@ -361,7 +383,7 @@ strikeD :: MonadClientUI m
         => ActorId -> ActorId -> Item -> HitAtomic -> m ()
 strikeD source target item b = assert (source /= target) $ do
   Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}} <- getsState scops
-  disco <- getsState sdisco
+  disco <- getsClient sdisco
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   let (verb, withWhat) | bproj sb = ("hit", False)

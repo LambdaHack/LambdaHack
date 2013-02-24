@@ -80,7 +80,7 @@ data CmdAtomic =
   | DiscoverA LevelId Point ItemId (Kind.Id ItemKind)
   | CoverA LevelId Point ItemId (Kind.Id ItemKind)
   | PerceptionA LevelId PerActor PerActor
-  | RestartA FactionId FactionPers State
+  | RestartA FactionId Discovery FactionPers State
   deriving (Show, Eq)
 
 data DescAtomic =
