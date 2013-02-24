@@ -92,14 +92,16 @@ cmdAtomicSemCli cmd = case cmd of
         fActor aid = LoseActorA aid (actorD EM.! aid)
         outActor = map fActor outPrio
     return $ inItem ++ outActor
-  RestartA _ sdisco sfper _ -> do
+  RestartA _ sdisco sfper s -> do
     -- TODO: here or elsewhere re-read RNG seed from config file
+    -- TODO: stop running? or is it done elsewhere?
+    side <- getsClient sside
+    let fac = sfaction s EM.! side
     shistory <- getsClient shistory
     sconfigUI <- getsClient sconfigUI
-    side <- getsClient sside
     isAI <- getsClient sisAI
     let cli = defStateClient shistory sconfigUI side isAI
-    putClient cli {sdisco, sfper}
+    putClient cli {sdisco, sfper, _sleader = gleader fac}
     -- TODO: Save ASAP in case of crashes and disconnects.
     return []
   _ -> return []

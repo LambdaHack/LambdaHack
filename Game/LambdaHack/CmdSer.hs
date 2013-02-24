@@ -14,8 +14,7 @@ import Game.LambdaHack.Vector
 
 -- | Abstract syntax of server commands.
 data CmdSer =
-    DieSer ActorId
-  | MoveSer ActorId Vector
+   MoveSer ActorId Vector
   | RunSer ActorId Vector
   | WaitSer ActorId
   | PickupSer ActorId ItemId Int InvChar
@@ -24,36 +23,34 @@ data CmdSer =
   | ApplySer ActorId ItemId Container
   | TriggerSer ActorId Point
   | SetPathSer ActorId [Vector]
-  | GameRestartSer
-  | GameExitSer
-  | GameSaveSer
-  | CfgDumpSer
+  | GameRestartSer ActorId
+  | GameExitSer ActorId
+  | GameSaveSer ActorId
+  | CfgDumpSer ActorId
   deriving (Show, Typeable)
 
 timedCmdSer :: CmdSer -> Bool
 timedCmdSer cmd = case cmd of
-  DieSer{} -> False
   SetPathSer{} -> False
-  GameRestartSer -> False
-  GameExitSer -> False
-  GameSaveSer -> False
-  CfgDumpSer -> False
+  GameRestartSer{} -> False
+  GameExitSer{} -> False
+  GameSaveSer{} -> False
+  CfgDumpSer{} -> False
   _ -> True
 
 -- | The actor performing the command, if still alive afterwards.
-aidCmdSer :: CmdSer -> Maybe ActorId
+aidCmdSer :: CmdSer -> ActorId
 aidCmdSer cmd = case cmd of
-  DieSer _ -> Nothing
-  MoveSer aid _ -> Just aid
-  RunSer aid _ -> Just aid
-  WaitSer aid -> Just aid
-  PickupSer aid _ _ _ -> Just aid
-  DropSer aid _ -> Just aid
-  ProjectSer aid _ _ _ _ -> Just aid
-  ApplySer aid _ _ -> Just aid
-  TriggerSer aid _ -> Just aid
-  SetPathSer aid _ -> Just aid
-  GameRestartSer -> Nothing
-  GameExitSer -> Nothing
-  GameSaveSer -> Nothing
-  CfgDumpSer -> Nothing
+  MoveSer aid _ -> aid
+  RunSer aid _ -> aid
+  WaitSer aid -> aid
+  PickupSer aid _ _ _ -> aid
+  DropSer aid _ -> aid
+  ProjectSer aid _ _ _ _ -> aid
+  ApplySer aid _ _ -> aid
+  TriggerSer aid _ -> aid
+  SetPathSer aid _ -> aid
+  GameRestartSer aid -> aid
+  GameExitSer aid -> aid
+  GameSaveSer aid -> aid
+  CfgDumpSer aid -> aid

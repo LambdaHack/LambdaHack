@@ -54,36 +54,6 @@ abortWith fid msg = tellDescAtomic $ FailureD fid msg
 neverMind :: Monad m => FactionId -> WriterT [Atomic] m ()
 neverMind fid = abortWith fid "never mind"
 
--- * DieSer
-
-dieSer :: MonadActionRO m => ActorId -> WriterT [Atomic] m ()
-dieSer aid = do  -- TODO: explode if a projectile holdding a potion
-  body <- getsState $ getActorBody aid
-  electLeader (bfaction body) (blid body) aid
-  dropAllItems aid body
-  tellCmdAtomic $ DestroyActorA aid body {bbag = EM.empty}
---  Config{configFirstDeathEnds} <- getsServer sconfig
-
--- | Drop all actor's items.
-dropAllItems :: MonadActionRO m => ActorId -> Actor -> WriterT [Atomic] m ()
-dropAllItems aid b = do
-  let f (iid, k) = tellCmdAtomic
-                   $ MoveItemA iid k (actorContainer aid (binv b) iid)
-                                     (CFloor (blid b) (bpos b))
-  mapM_ f $ EM.assocs $ bbag b
-
-electLeader :: MonadActionRO m
-            => FactionId -> LevelId -> ActorId -> WriterT [Atomic] m ()
-electLeader fid lid aidDead = do
-  mleader <- getsState $ gleader . (EM.! fid) . sfaction
-  when (isNothing mleader || mleader == Just aidDead) $ do
-    actorD <- getsState sactorD
-    let alive (aid, b) = aid /= aidDead && bfaction b == fid && not (bproj b)
-        party = filter alive $ EM.assocs actorD
-    onLevel <- getsState $ actorNotProjAssocs (== fid) lid
-    let mleaderNew = listToMaybe $ map fst $ onLevel ++ party
-    tellCmdAtomic $ LeadFactionA fid mleader mleaderNew
-
 -- * MoveSer
 
 -- | Actor moves or attacks or searches or opens doors.
@@ -427,8 +397,10 @@ setPathSer aid path = do
 
 -- * GameRestart
 
-gameRestartSer :: MonadActionRO m => FactionId -> WriterT [Atomic] m ()
-gameRestartSer fid = do
+gameRestartSer :: MonadActionRO m => ActorId -> WriterT [Atomic] m ()
+gameRestartSer aid = do
+  b <- getsState $ getActorBody aid
+  let fid = bfaction b
   oldSt <- getsState $ gquit . (EM.! fid) . sfaction
   tellCmdAtomic $ QuitFactionA fid oldSt $ Just (False, Restart)
 
@@ -444,8 +416,10 @@ gameSaveSer = modifyServer $ \ser -> ser {squit = Just False}
 
 -- * CfgDumpSer
 
-cfgDumpSer :: MonadServer m => FactionId -> WriterT [Atomic] m ()
-cfgDumpSer fid = do
+cfgDumpSer :: MonadServer m => ActorId -> WriterT [Atomic] m ()
+cfgDumpSer aid = do
+  b <- getsState $ getActorBody aid
+  let fid = bfaction b
   Config{configRulesCfgFile} <- getsServer sconfig
   let fn = configRulesCfgFile ++ ".dump"
       msg = "Server dumped current game rules configuration to file"

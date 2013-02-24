@@ -379,15 +379,17 @@ gameRestartHuman = do
   when (not b1) $ neverMind True
   b2 <- displayYesNo "Current progress will be lost! Really restart the game?"
   when (not b2) $ abortWith "Yea, would be a pity to leave them to die."
-  return GameRestartSer
+  Just leader <- getsClient sleader
+  return $ GameRestartSer leader
 
 -- * GameExit; does not take time
 
 gameExitHuman :: (MonadActionAbort m, MonadClientUI m) => m CmdSer
 gameExitHuman = do
   b <- displayYesNo "Really save and exit?"
+  Just leader <- getsClient sleader
   if b
-    then return GameExitSer
+    then return $ GameExitSer leader
     else abortWith "Game resumed."
 
 -- * GameSave; does not take time
@@ -396,9 +398,12 @@ gameSaveHuman :: MonadClientUI m => m CmdSer
 gameSaveHuman = do
   msgAdd "Saving game to a backup file."
   -- Let the server save, while the client continues taking commands.
-  return GameSaveSer
+  Just leader <- getsClient sleader
+  return $ GameSaveSer leader
 
 -- * CfgDump; does not take time
 
 cfgDumpHuman :: MonadClient m => m CmdSer
-cfgDumpHuman = return CfgDumpSer
+cfgDumpHuman = do
+  Just leader <- getsClient sleader
+  return $ CfgDumpSer leader

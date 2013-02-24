@@ -51,7 +51,7 @@ import Game.LambdaHack.Utils.Assert
 -- Run the leader and other actors moves. Eventually advance the time
 -- and repeat.
 loopSer :: forall m . (MonadAction m, MonadServerChan m)
-        => (FactionId -> CmdSer -> m [Atomic])
+        => (CmdSer -> m [Atomic])
         -> (FactionId -> ConnCli -> Bool -> IO ())
         -> Kind.COps
         -> m ()
@@ -299,7 +299,7 @@ gameOver fid arena showEndingScreens = do
 -- has changed since last time (every change, whether by human or AI
 -- or @generateMonster@ is followd by a call to @handleActors@).
 handleActors :: (MonadAction m, MonadServerChan m)
-             => (FactionId -> CmdSer -> m [Atomic])
+             => (CmdSer -> m [Atomic])
              -> LevelId
              -> Time  -- ^ start time of current subclip, exclusive
              -> m ()
@@ -338,7 +338,7 @@ handleActors cmdSerSem arena subclipStart = do
         then -- Items get destroyed, effectively.
              return [Left $ DestroyActorA aid body]
         else -- Items drop to the ground.
-             cmdSerSem (bfaction body) $ DieSer aid
+             execWriterT $ dieSer aid
       mapM_ cmdAtomicBroad atoms
       -- Death or projectile impact is serious, new subclip.
       handleActors cmdSerSem arena (btime body)
@@ -355,16 +355,15 @@ handleActors cmdSerSem arena subclipStart = do
         then do
           -- TODO: check that the command is legal, that is, correct side, etc.
           cmdS <- sendQueryUI side actor
-          atoms <- cmdSerSem side cmdS
+          atoms <- cmdSerSem cmdS
           let isFailure cmd = case cmd of Right FailureD{} -> True; _ -> False
               aborted = all isFailure atoms
-              mleaderNew = aidCmdSer cmdS
               timed = timedCmdSer cmdS
-              (leadAtoms, leaderNew) = case mleaderNew of
-                Nothing -> assert (not timed) $ ([], actor)
-                Just lNew | lNew /= actor ->
-                  ([Left (LeadFactionA side mleader (Just lNew))], lNew)
-                Just _ -> ([], actor)
+              leaderNew = aidCmdSer cmdS
+              leadAtoms =
+                if leaderNew /= actor
+                then [Left (LeadFactionA side mleader (Just leaderNew))]
+                else []
           advanceAtoms <- if aborted || not timed
                           then return []
                           else advanceTime leaderNew
@@ -394,18 +393,17 @@ handleActors cmdSerSem arena subclipStart = do
             handleActors cmdSerSem arena (btime bNew)
         else do
           cmdS <- sendQueryCliAI side actor
-          atoms <- cmdSerSem side cmdS
+          atoms <- cmdSerSem cmdS
           let isFailure cmd = case cmd of Right FailureD{} -> True; _ -> False
               aborted = all isFailure atoms
-              mleaderNew = aidCmdSer cmdS
               timed = timedCmdSer cmdS
-              (leadAtoms, leaderNew) = case mleaderNew of
-                Nothing -> assert (not timed) $ ([], actor)
-                Just lNew | lNew /= actor ->
-                  -- Only leader can change leaders
-                  assert (mleader == Just actor)
-                  $ ([Left (LeadFactionA side mleader (Just lNew))], lNew)
-                Just _ -> ([], actor)
+              leaderNew = aidCmdSer cmdS
+              leadAtoms =
+                if leaderNew /= actor
+                then -- Only leader can change leaders
+                     assert (mleader == Just actor)
+                       [Left (LeadFactionA side mleader (Just leaderNew))]
+                else []
           advanceAtoms <- if aborted || not timed
                           then return []
                           else advanceTime leaderNew
@@ -429,6 +427,34 @@ handleActors cmdSerSem arena subclipStart = do
     -- If the following action aborts, we just advance the time and continue.
     -- TODO: or just fail at each abort in AI code? or use tryWithFrame?
               handleActors cmdSerSem arena subclipStart
+
+dieSer :: MonadActionRO m => ActorId -> WriterT [Atomic] m ()
+dieSer aid = do  -- TODO: explode if a projectile holdding a potion
+  body <- getsState $ getActorBody aid
+  electLeader (bfaction body) (blid body) aid
+  dropAllItems aid body
+  tellCmdAtomic $ DestroyActorA aid body {bbag = EM.empty}
+--  Config{configFirstDeathEnds} <- getsServer sconfig
+
+-- | Drop all actor's items.
+dropAllItems :: MonadActionRO m => ActorId -> Actor -> WriterT [Atomic] m ()
+dropAllItems aid b = do
+  let f (iid, k) = tellCmdAtomic
+                   $ MoveItemA iid k (actorContainer aid (binv b) iid)
+                                     (CFloor (blid b) (bpos b))
+  mapM_ f $ EM.assocs $ bbag b
+
+electLeader :: MonadActionRO m
+            => FactionId -> LevelId -> ActorId -> WriterT [Atomic] m ()
+electLeader fid lid aidDead = do
+  mleader <- getsState $ gleader . (EM.! fid) . sfaction
+  when (isNothing mleader || mleader == Just aidDead) $ do
+    actorD <- getsState sactorD
+    let alive (aid, b) = aid /= aidDead && bfaction b == fid && not (bproj b)
+        party = filter alive $ EM.assocs actorD
+    onLevel <- getsState $ actorNotProjAssocs (== fid) lid
+    let mleaderNew = listToMaybe $ map fst $ onLevel ++ party
+    tellCmdAtomic $ LeadFactionA fid mleader mleaderNew
 
 -- | Advance the move time for the given actor.
 advanceTime :: (MonadAction m, MonadServerChan m) => ActorId -> m [Atomic]
@@ -525,7 +551,7 @@ restartGame loopServer = do
   let sdisco = let f ik = isymbol (okind ik)
                           `notElem` (ritemProject $ Kind.stdRuleset corule)
                in EM.filter f discoS
-  -- TODO: this is too hacky still
+  -- TODO: this is too hacky still (funBroadcastCli instead of cmdAtomicBroad)
   funBroadcastCli (\fid ->
     CmdAtomicCli (RestartA fid sdisco (pers EM.! fid) defLoc))
   populateDungeon
