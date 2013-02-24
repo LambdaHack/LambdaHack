@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Semantics of client UI response to atomic commands.
 module Game.LambdaHack.Client.CmdAtomicUI
-  ( cmdAtomicSem, cmdAtomicSemCli, drawCmdAtomicUI, drawDescAtomicUI
+  ( cmdAtomicSem, cmdAtomicSemCli, cmdAtomicFilterCli
+  , drawCmdAtomicUI, drawDescAtomicUI
   ) where
 
 import Control.Monad
@@ -36,43 +37,28 @@ import Game.LambdaHack.Utils.Assert
 
 -- * CmdAtomicCli
 
--- | Effect of atomic actions on client state is calculated
--- in the global state before the command is executed.
-cmdAtomicSemCli :: MonadClient m => CmdAtomic -> m [CmdAtomic]
-cmdAtomicSemCli cmd = case cmd of
-  LeadFactionA fid source target -> do
-    side <- getsClient sside
-    when (side == fid) $ do
-      mleader <- getsClient sleader
-      assert (mleader == source     -- somebody changed the leader for us
-              || mleader == target  -- we changed the leader originally
-              `blame` (cmd, mleader)) skip
-      modifyClient $ \cli -> cli {_sleader = target}
-    return []
-  DiscoverA lid p iid ik -> discoverA lid p iid ik
-  CoverA lid p iid ik -> coverA lid p iid ik
+-- | Clients keep a subset of atomic commands sent by the server
+-- and add some of their own. The result of this function is the list
+-- of commands kept for each command received.
+cmdAtomicFilterCli :: MonadClient m => CmdAtomic -> m [CmdAtomic]
+cmdAtomicFilterCli cmd = case cmd of
+  DiscoverA _ _ iid _ -> do
+    disco <- getsClient sdisco
+    item <- getsState $ getItemBody iid
+    if jkindIx item `EM.member` disco
+      then return []
+      else return [cmd]
+  CoverA _ _ iid _ -> do
+    disco <- getsClient sdisco
+    item <- getsState $ getItemBody iid
+    if jkindIx item `EM.notMember` disco
+      then return []
+      else return [cmd]
   PerceptionA lid outPA inPA -> do
-    -- Clients can't compute FOV on their own, because they don't know
-    -- if unknown tiles are clear or not. Server would need to send
-    -- info about properties of unknown tiles, which complicates
-    -- and makes heavier the most bulky data set in the game: tile maps.
-    -- Note we assume, but do not check that @outPA@ is contained
-    -- in current perseption and @inPA@ has no common part with it.
-    -- It would make the already very costly operation even more expensive.
+    -- Here we cheat by setting a new perception outright instead of
+    -- in @cmdAtomicSemCli@, to avoid computing perception twice.
     perOld <- askPerception
-    let dummyToPer per = Perception
-          { perActor = perActor per
-          , ptotal = PerceptionVisible
-                     $ ES.unions $ map pvisible $ EM.elems $ perActor per }
-        paToDummy pa = Perception
-          { perActor = pa
-          , ptotal = PerceptionVisible ES.empty }
-        outPer = paToDummy outPA
-        inPer = paToDummy inPA
-        adj Nothing = assert `failure` lid
-        adj (Just per) = Just $ dummyToPer $ addPer (diffPer per outPer) inPer
-        f sfper = EM.alter adj lid sfper
-    modifyClient $ \cli -> cli {sfper = f (sfper cli)}
+    perceptionA lid outPA inPA
     perNew <- askPerception
     -- Wipe out remembered items on tiles that now came into view.
     itemD <- getsState sitemD
@@ -91,7 +77,27 @@ cmdAtomicSemCli cmd = case cmd of
         outPrio = mapMaybe (\p -> posToActor p lid s) $ ES.elems outFov
         fActor aid = LoseActorA aid (actorD EM.! aid)
         outActor = map fActor outPrio
-    return $ inItem ++ outActor
+    return $ cmd : inItem ++ outActor
+  _ -> return [cmd]
+
+-- | Effect of atomic actions on client state is calculated
+-- in the global state before the command is executed.
+-- Clients keep a subset of atomic commands sent by the server
+-- and add their own. The result of this function is the list of commands
+-- kept for each command received.
+cmdAtomicSemCli :: MonadClient m => CmdAtomic -> m ()
+cmdAtomicSemCli cmd = case cmd of
+  LeadFactionA fid source target -> do
+    side <- getsClient sside
+    when (side == fid) $ do
+      mleader <- getsClient sleader
+      assert (mleader == source     -- somebody changed the leader for us
+              || mleader == target  -- we changed the leader originally
+              `blame` (cmd, mleader)) skip
+      modifyClient $ \cli -> cli {_sleader = target}
+  DiscoverA lid p iid ik -> discoverA lid p iid ik
+  CoverA lid p iid ik -> coverA lid p iid ik
+  PerceptionA lid outPA inPA -> perceptionA lid outPA inPA
   RestartA _ sdisco sfper s -> do
     -- TODO: here or elsewhere re-read RNG seed from config file
     -- TODO: stop running? or is it done elsewhere?
@@ -103,26 +109,57 @@ cmdAtomicSemCli cmd = case cmd of
     let cli = defStateClient shistory sconfigUI side isAI
     putClient cli {sdisco, sfper, _sleader = gleader fac}
     -- TODO: Save ASAP in case of crashes and disconnects.
-    return []
-  _ -> return []
+  _ -> return ()
+
+perceptionA :: MonadClient m => LevelId -> PerActor -> PerActor -> m ()
+perceptionA lid outPA inPA = do
+  -- Clients can't compute FOV on their own, because they don't know
+  -- if unknown tiles are clear or not. Server would need to send
+  -- info about properties of unknown tiles, which complicates
+  -- and makes heavier the most bulky data set in the game: tile maps.
+  -- Note we assume, but do not check that @outPA@ is contained
+  -- in current perseption and @inPA@ has no common part with it.
+  -- It would make the already very costly operation even more expensive.
+  perOld <- askPerception
+  -- Check if new perception already set in @cmdAtomicFilterCli@
+  -- or if we are doing undo/redo, which does not involve filtering.
+  -- The data structure is strict, so the cheap check can't be simpler.
+  let interHead [] = Nothing
+      interHead ((a, vis) : _) =
+        Just $ pvisible vis `ES.intersection`
+                 maybe ES.empty pvisible (EM.lookup a (perActor perOld))
+      unset = maybe False ES.null (interHead (EM.assocs inPA))
+              || maybe False (not . ES.null) (interHead (EM.assocs outPA))
+  when unset $ do
+    let dummyToPer per = Perception
+          { perActor = perActor per
+          , ptotal = PerceptionVisible
+                     $ ES.unions $ map pvisible $ EM.elems $ perActor per }
+        paToDummy pa = Perception
+          { perActor = pa
+          , ptotal = PerceptionVisible ES.empty }
+        outPer = paToDummy outPA
+        inPer = paToDummy inPA
+        adj Nothing = assert `failure` lid
+        adj (Just per) = Just $ dummyToPer $ addPer (diffPer per outPer) inPer
+        f sfper = EM.alter adj lid sfper
+    modifyClient $ \cli -> cli {sfper = f (sfper cli)}
 
 discoverA :: MonadClient m
-          => LevelId -> Point -> ItemId -> (Kind.Id ItemKind) -> m [CmdAtomic]
+          => LevelId -> Point -> ItemId -> (Kind.Id ItemKind) -> m ()
 discoverA lid p iid ik = do
   item <- getsState $ getItemBody iid
   let f Nothing = Just ik
       f (Just ik2) = assert `failure` (lid, p, iid, ik, ik2)
   modifyClient $ \cli -> cli {sdisco = EM.alter f (jkindIx item) (sdisco cli)}
-  return []
 
 coverA :: MonadClient m
-       => LevelId -> Point -> ItemId -> (Kind.Id ItemKind) -> m [CmdAtomic]
+       => LevelId -> Point -> ItemId -> (Kind.Id ItemKind) -> m ()
 coverA lid p iid ik = do
   item <- getsState $ getItemBody iid
   let f Nothing = assert `failure` (lid, p, iid, ik)
       f (Just ik2) = assert (ik == ik2 `blame` (ik, ik2)) Nothing
   modifyClient $ \cli -> cli {sdisco = EM.alter f (jkindIx item) (sdisco cli)}
-  return []
 
 -- * CmdAtomicUI
 
@@ -181,29 +218,27 @@ drawCmdAtomicUI verbose cmd = case cmd of
     disco <- getsClient sdisco
     item <- getsState $ getItemBody iid
     let ix = jkindIx item
-    unless (ix `EM.member` disco) $ do
-      Kind.COps{coitem} <- getsState scops
-      let discoUnknown = EM.delete ix disco
-          (objUnkown1, objUnkown2) = partItem coitem discoUnknown item
-          msg = makeSentence
-            [ "the", MU.SubjectVerbSg (MU.Phrase [objUnkown1, objUnkown2])
-                                      "turn out to be"
-            , partItemAW coitem disco item ]
-      msgAdd msg
+    Kind.COps{coitem} <- getsState scops
+    let discoUnknown = EM.delete ix disco
+        (objUnkown1, objUnkown2) = partItem coitem discoUnknown item
+        msg = makeSentence
+          [ "the", MU.SubjectVerbSg (MU.Phrase [objUnkown1, objUnkown2])
+                                    "turn out to be"
+          , partItemAW coitem disco item ]
+    msgAdd msg
   CoverA _ _ iid ik -> do
     discoUnknown <- getsClient sdisco
     item <- getsState $ getItemBody iid
     let ix = jkindIx item
-    when (ix `EM.member` discoUnknown) $ do
-      Kind.COps{coitem} <- getsState scops
-      let disco = EM.insert ix ik discoUnknown
-          (objUnkown1, objUnkown2) = partItem coitem discoUnknown item
-          (obj1, obj2) = partItem coitem disco item
-          msg = makeSentence
-            [ "the", MU.SubjectVerbSg (MU.Phrase [obj1, obj2])
-                                      "look like an ordinary"
-            , objUnkown1, objUnkown2 ]
-      msgAdd msg
+    Kind.COps{coitem} <- getsState scops
+    let disco = EM.insert ix ik discoUnknown
+        (objUnkown1, objUnkown2) = partItem coitem discoUnknown item
+        (obj1, obj2) = partItem coitem disco item
+        msg = makeSentence
+          [ "the", MU.SubjectVerbSg (MU.Phrase [obj1, obj2])
+                                    "look like an ordinary"
+          , objUnkown1, objUnkown2 ]
+    msgAdd msg
   RestartA{} -> msgAdd "This time for real."
   _ -> return ()
 
@@ -345,7 +380,7 @@ drawDescAtomicUI verbose desc = case desc of
         Effect.Mindprobe nEnemy -> do
           -- TODO: NWs with spelled cardinal would be handy
           let msg = makeSentence
-                [MU.SubjectVerbSg (MU.NWs nEnemy "howl of anger") "be heard"]
+                [MU.NWs nEnemy "howl", "of anger", "can be heard"]
           msgAdd msg
         Effect.Dominate | verbose -> aVerbMU aid "be dominated"
         Effect.ApplyPerfume ->

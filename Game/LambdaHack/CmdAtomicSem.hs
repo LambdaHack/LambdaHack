@@ -56,8 +56,8 @@ cmdAtomicSem cmd = case cmd of
   LoseTileA lid ts -> loseTileA lid ts
   AlterSecretA lid diffL -> alterSecretA lid diffL
   AlterSmellA lid diffL -> alterSmellA lid diffL
-  DiscoverA{} -> return ()
-  CoverA{} -> return ()
+  DiscoverA{} -> return ()  -- Server keeps all atomic comands so the semantics
+  CoverA{} -> return ()     -- of inverses has to be reasonably inverse.
   PerceptionA _ outPA inPA ->
     assert (not (EM.null outPA && EM.null inPA)) $ return ()
   RestartA fid sdisco sfper s -> restartA fid sdisco sfper s
