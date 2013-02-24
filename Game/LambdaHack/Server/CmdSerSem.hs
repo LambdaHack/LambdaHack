@@ -213,7 +213,7 @@ runSer actor dir = do
 -- | When an actor runs (not walks) into another, they switch positions.
 displaceActor :: MonadActionRO m
               => ActorId -> ActorId -> WriterT [Atomic] m ()
-displaceActor source target =  tellCmdAtomic $ DisplaceActorA source target
+displaceActor source target = tellCmdAtomic $ DisplaceActorA source target
 --  leader <- getsClient getLeader
 --  if Just source == leader
 -- TODO: The actor will stop running due to the message as soon as running

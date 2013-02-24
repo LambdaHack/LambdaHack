@@ -206,11 +206,9 @@ atomicRemember :: LevelId -> Perception -> State -> [CmdAtomic]
 atomicRemember lid inPer s =
   let inFov = ES.elems $ totalVisible inPer
       lvl = sdungeon s EM.! lid
-      actorD = sactorD s
-      itemD = sitemD s
       pMaybe p = maybe Nothing (\x -> Just (p, x))
       inFloor = mapMaybe (\p -> pMaybe p $ EM.lookup p (lfloor lvl)) inFov
-      fItem p (iid, k) = SpotItemA iid (itemD EM.! iid) k (CFloor lid p)
+      fItem p (iid, k) = SpotItemA iid (getItemBody iid s) k (CFloor lid p)
       fBag (p, bag) = map (fItem p) $ EM.assocs bag
       inItem = concatMap fBag inFloor
       -- No @outItem@, for items that became out of sight. The client will
@@ -220,7 +218,7 @@ atomicRemember lid inPer s =
       -- that are revealed not to be there any more (no @SpotItemA@ for them).
       -- By this point the items of the actor are already registered in state.
       inPrio = mapMaybe (\p -> posToActor p lid s) inFov
-      fActor aid = SpotActorA aid (actorD EM.! aid)
+      fActor aid = SpotActorA aid (getActorBody aid s)
       inActor = map fActor inPrio
       -- No @outActor@, for the same reason as with @outItem@.
       inTileMap = map (\p -> (p, ltile lvl Kind.! p)) inFov

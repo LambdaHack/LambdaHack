@@ -42,7 +42,9 @@ totalVisible = pvisible . ptotal
 
 -- | Whether an actor can see a position.
 actorSeesLoc :: Perception -> ActorId -> Point -> Bool
-actorSeesLoc per aid pos = pos `ES.member` pvisible (perActor per EM.! aid)
+actorSeesLoc per aid pos =
+  let set = maybe ES.empty pvisible $ EM.lookup aid $ perActor per
+  in pos `ES.member` set
 
 nullPer :: Perception -> Bool
 nullPer per = EM.null (perActor per) && ES.null (pvisible (ptotal per))

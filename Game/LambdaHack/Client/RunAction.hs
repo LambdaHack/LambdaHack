@@ -155,10 +155,10 @@ continueRunDir :: (MonadActionAbort m, MonadClient m)
 continueRunDir leader (dirLast, distLast) = do
   cops@Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody leader
-  per <- askPerception
+  let arena = blid body
+  per <- getPerFid arena
   sreport <- getsClient sreport -- TODO: check the message before it goes into history
   genemy <- getsState $ genemy . (EM.! bfaction body) . sfaction
-  let arena = blid body
   ms <- getsState $ actorList (`elem` genemy) arena
   hs <- getsState $ actorList (not . (`elem` genemy)) arena
   lvl@Level{lxsize, lysize} <- getsLevel (blid body) id

@@ -57,25 +57,23 @@ cmdAtomicFilterCli cmd = case cmd of
   PerceptionA lid outPA inPA -> do
     -- Here we cheat by setting a new perception outright instead of
     -- in @cmdAtomicSemCli@, to avoid computing perception twice.
-    perOld <- askPerception
+    perOld <- getPerFid lid
     perceptionA lid outPA inPA
-    perNew <- askPerception
+    perNew <- getPerFid lid
     -- Wipe out remembered items on tiles that now came into view.
-    itemD <- getsState sitemD
-    lfloor <- getsState $ lfloor . (EM.! lid) . sdungeon
+    lfloor <- getsLevel lid lfloor
+    s <- getState
     let inFov = pvisible (ptotal perNew) ES.\\ pvisible (ptotal perOld)
         pMaybe p = maybe Nothing (\x -> Just (p, x))
         inFloor = mapMaybe (\p -> pMaybe p $ EM.lookup p lfloor)
                            (ES.elems inFov)
-        fItem p (iid, k) = LoseItemA iid (itemD EM.! iid) k (CFloor lid p)
+        fItem p (iid, k) = LoseItemA iid (getItemBody iid s) k (CFloor lid p)
         fBag (p, bag) = map (fItem p) $ EM.assocs bag
         inItem = concatMap fBag inFloor
     -- Wipe out actors that just became invisible due to changed FOV.
-    actorD <- getsState sactorD
-    s <- getState
     let outFov = pvisible (ptotal perOld) ES.\\ pvisible (ptotal perNew)
         outPrio = mapMaybe (\p -> posToActor p lid s) $ ES.elems outFov
-        fActor aid = LoseActorA aid (actorD EM.! aid)
+        fActor aid = LoseActorA aid (getActorBody aid s)
         outActor = map fActor outPrio
     return $ cmd : inItem ++ outActor
   _ -> return [cmd]
@@ -120,7 +118,7 @@ perceptionA lid outPA inPA = do
   -- Note we assume, but do not check that @outPA@ is contained
   -- in current perseption and @inPA@ has no common part with it.
   -- It would make the already very costly operation even more expensive.
-  perOld <- askPerception
+  perOld <- getPerFid lid
   -- Check if new perception already set in @cmdAtomicFilterCli@
   -- or if we are doing undo/redo, which does not involve filtering.
   -- The data structure is strict, so the cheap check can't be simpler.
@@ -303,9 +301,9 @@ moveItemA verbose iid k c1 c2 = do
 displaceActorA :: MonadClientUI m => ActorId -> ActorId -> m ()
 displaceActorA source target = do
   Kind.COps{coactor} <- getsState scops
-  per <- askPerception
   sm <- getsState (getActorBody source)
   tm <- getsState (getActorBody target)
+  per <- getPerFid (blid sm)
   let msg = makeSentence
         [ MU.SubjectVerbSg (partActor coactor sm) "displace"
         , partActor coactor tm ]
@@ -370,7 +368,7 @@ drawDescAtomicUI verbose desc = case desc of
         Effect.Heal -> do
           cli <- getClient
           loc <- getState
-          per <- askPerception
+          per <- getPerFid $ blid b
           aVerbMU aid "feel better"
           let ps = (bpos b, bpos b)
               animFrs = animate cli loc per
@@ -448,7 +446,7 @@ strikeD source target item b = assert (source /= target) $ do
            else []
   cli <- getClient
   loc <- getState
-  per <- askPerception
+  per <- getPerFid $ blid sb
   side <- getsClient sside
   let (msgDie, animDie) | bhp tb > 0 = ("", [])
                         | otherwise =

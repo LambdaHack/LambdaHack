@@ -46,7 +46,8 @@ targetStrategy :: MonadClient m
                -> m (Strategy (Maybe Target))
 targetStrategy actor factionAbilities = do
   cops <- getsState scops
-  per <- askPerception
+  b <- getsState $ getActorBody actor
+  per <- getPerFid $ blid b
   glo <- getState
   btarget <- getsClient $ getTarget actor
   return $! reacquireTgt cops actor btarget glo per factionAbilities

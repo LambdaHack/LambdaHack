@@ -44,20 +44,18 @@ data ColorMode =
 -- TODO: split up and generally rewrite.
 -- | Draw the whole screen: level map, status area and, at most,
 -- a single page overlay of text divided into lines.
-draw :: ColorMode -> Kind.COps -> Perception -> StateClient -> State -> Overlay
+draw :: ColorMode -> Kind.COps -> Perception -> LevelId
+     -> StateClient -> State -> Overlay
      -> SingleFrame
-draw dm cops per
+draw dm cops per drawnLevelId
      cli@StateClient{stgtMode, scursor, seps, sdisco, sdebugCli}
      s overlay =
   let Kind.COps{ coactor=Kind.Ops{okind}
                , coitem=Kind.Ops{okind=iokind}
                , cotile=Kind.Ops{okind=tokind, ouniqGroup} } = cops
       DebugModeCli{smarkVision, smarkSmell} = sdebugCli
-      (drawnLevelId, lvl@Level{ldepth, lxsize, lysize, lsmell,
-                               ldesc, ltime, lseen, lclear}) =
-        case stgtMode of
-          Nothing -> (getArena cli s, sdungeon s EM.! getArena cli s)
-          Just tgtM -> (tgtLevelId tgtM, sdungeon s EM.! tgtLevelId tgtM)
+      (lvl@Level{ ldepth, lxsize, lysize, lsmell
+                , ldesc, ltime, lseen, lclear }) = sdungeon s EM.! drawnLevelId
       mleader = sleader cli  -- TODO: show something else if no leader
       (bitems, bracedL, ahpS, asmellL, bhpS, bposL) =
         case mleader of
@@ -192,8 +190,9 @@ draw dm cops per
 animate :: StateClient -> State -> Perception -> Animation
         -> Frames
 animate cli@StateClient{sreport} s per anim =
-  let Level{lxsize, lysize} = sdungeon s EM.! getArena cli s
+  let arena = getArena cli s
+      Level{lxsize, lysize} = sdungeon s EM.! arena
       over = renderReport sreport
       topLineOnly = padMsg lxsize over
-      basicFrame = draw ColorFull (scops s) per cli s [topLineOnly]
+      basicFrame = draw ColorFull (scops s) per arena cli s [topLineOnly]
   in renderAnim lxsize lysize basicFrame anim

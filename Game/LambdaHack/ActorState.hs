@@ -169,4 +169,5 @@ getItemBody iid s =
 --
 -- > b <- getsState (memActor a)
 memActor :: ActorId -> LevelId -> State -> Bool
-memActor a lid s = lid == blid (getActorBody a s)
+memActor aid lid s =
+  maybe False ((== lid) . blid) $ EM.lookup aid $ sactorD s

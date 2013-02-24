@@ -12,7 +12,7 @@ module Game.LambdaHack.Client.Action
     -- * Abort exception handlers
   , tryWithSlide
     -- * Accessors to the game session Reader and the Perception Reader(-like)
-  , askBinding, askPerception
+  , askBinding, getPerFid
     -- * History and report
   , msgAdd, recordHistory
     -- * Key input
@@ -146,11 +146,8 @@ recordHistory = do
     modifyClient $ \cli -> cli {shistory = nhistory}
 
 -- | Get the current perception of a client.
-askPerception :: MonadClient m => m Perception
-askPerception = do
-  stgtMode <- getsClient stgtMode
-  arena <- getArenaCli
-  let lid = maybe arena tgtLevelId stgtMode
+getPerFid :: MonadClient m => LevelId -> m Perception
+getPerFid lid = do
   fper <- getsClient sfper
   return $! fromMaybe (assert `failure` lid) $ EM.lookup lid fper
 
@@ -267,10 +264,12 @@ overlayToSlideshow prompt overlay = do
 drawOverlay :: MonadClient m => ColorMode -> Overlay -> m SingleFrame
 drawOverlay dm over = do
   cops <- getsState scops
-  per <- askPerception
   cli <- getClient
   loc <- getState
-  return $! draw dm cops per cli loc over
+  stgtMode <- getsClient stgtMode
+  let lid = maybe (getArena cli loc) tgtLevelId stgtMode
+  per <- getPerFid lid
+  return $! draw dm cops per lid cli loc over
 
 -- -- | Draw the current level using server data, for debugging.
 -- drawOverlayDebug :: Monad m

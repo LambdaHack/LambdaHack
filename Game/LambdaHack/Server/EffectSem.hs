@@ -333,13 +333,17 @@ effLvlGoUp :: MonadServer m => ActorId -> Int -> WriterT [Atomic] m ()
 effLvlGoUp aid k = do
   bOld <- getsState $ getActorBody aid
   let arenaOld = blid bOld
+      side = bfaction bOld
   whereto <- getsState $ \s -> whereTo s arenaOld k
   case whereto of
     Nothing -> -- We are at the "end" of the dungeon.
-               fleeDungeon (bfaction bOld) arenaOld
+               fleeDungeon side arenaOld
     Just (arenaNew, posNew) ->
       assert (arenaNew /= arenaOld `blame` (arenaNew, "stairs looped")) $ do
         timeOld <- getsState $ getTime arenaOld
+        -- Leader always set to the actor changing levels.
+        mleader <- getsState $ gleader . (EM.! side) . sfaction
+        tellCmdAtomic $ LeadFactionA side mleader Nothing
         -- Remove the actor from the old level.
         -- Onlookers see somebody uses a staircase.
         -- No need to report that he disappears.
@@ -350,23 +354,21 @@ effLvlGoUp aid k = do
             bNew = bOld { blid = arenaNew
                         , btime = timeAdd timeLastVisited delta
                         , bpos = posNew }
-        -- Onlookers see somebody appear suddenly. The actor himself
-        -- sees new surroundings and has to reset his perception.
-        tellCmdAtomic $ CreateActorA aid bNew
         -- The actor is added to the new level, but there can be other actors
         -- at his new position.
         inhabitants <- getsState $ posToActor posNew arenaNew
+        -- Onlookers see somebody appear suddenly. The actor himself
+        -- sees new surroundings and has to reset his perception.
+        tellCmdAtomic $ CreateActorA aid bNew
+        tellCmdAtomic $ LeadFactionA side Nothing (Just aid)
         case inhabitants of
           Nothing -> return ()
                      -- TODO: Bail out if a friend blocks the staircase.
           Just m ->
-            -- Aquash an actor blocking the staircase.
-            -- This is not a duplication with the other calls to squashActor,
-            -- because here an inactive actor is squashed.
+            -- Squash the actor blocking the staircase.
             squashActor aid m
-        -- Verify the monster on the staircase died.
-        inhabitants2 <- getsState $ posToActor posNew arenaNew
-        when (isJust inhabitants2) $ assert `failure` inhabitants2
+        -- Verify the actor on the staircase died, so only one actor left.
+        void $ getsState $ posToActor posNew arenaNew
         -- The property of at most one actor on a tile is restored.
         -- Create a backup of the savegame.
         saveGameBkp

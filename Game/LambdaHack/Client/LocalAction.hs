@@ -121,11 +121,11 @@ doLook :: MonadClient m => WriterT Slideshow m ()
 doLook = do
   Kind.COps{coactor} <- getsState scops
   scursor <- getsClient scursor
-  per <- askPerception
+  (lid, lvl) <- viewedLevel
+  per <- getPerFid lid
   Just leader <- getsClient sleader
   lpos <- getsState $ bpos . getActorBody leader
   target <- getsClient $ getTarget leader
-  (lid, lvl) <- viewedLevel
   hms <- getsState $ actorList (const True) lid
   let p = fromMaybe lpos scursor
       canSee = ES.member p (totalVisible per)
@@ -334,11 +334,11 @@ tgtEnemyLeader :: MonadClient m => TgtMode -> WriterT Slideshow m ()
 tgtEnemyLeader stgtModeNew = do
   Just leader <- getsClient sleader
   ppos <- getsState (bpos . getActorBody leader)
-  per <- askPerception
+  (lid, Level{lxsize}) <- viewedLevel
+  per <- getPerFid lid
   target <- getsClient $ getTarget leader
   -- TODO: sort enemies by distance to the leader.
   stgtMode <- getsClient stgtMode
-  (lid, Level{lxsize}) <- viewedLevel
   side <- getsClient sside
   genemy <- getsState $ genemy . (EM.! side) . sfaction
   ms <- getsState $ actorNotProjAssocs (`elem` genemy) lid
