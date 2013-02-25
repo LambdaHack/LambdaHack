@@ -271,27 +271,13 @@ drawOverlay dm over = do
   per <- getPerFid lid
   return $! draw dm cops per lid cli loc over
 
--- -- | Draw the current level using server data, for debugging.
--- drawOverlayDebug :: Monad m
---                  => ColorMode -> Overlay -> m SingleFrame
--- drawOverlayDebug dm over = do
---   cops <- getsState scops
---   per <- askPerception
---   cli <- getClient
---   glo <- getState
---   return $! draw dm cops per cli glo over
-
 -- | Push the frame depicting the current level to the frame queue.
 -- Only one screenful of the report is shown, the rest is ignored.
 displayPush :: MonadClientUI m => m ()
 displayPush = do
   sls <- promptToSlideshow ""
   let slide = head $ runSlideshow sls
---  DebugModeCli{somniscient} <- getsClient sdebugCli
   frame <- drawOverlay ColorFull slide
---  frame <- if somniscient
---           then drawOverlayDebug ColorFull slide
---           else drawOverlay ColorFull slide
   -- Visually speed up (by remving all empty frames) the show of the sequence
   -- of the move frames if the player is running.
   srunning <- getsClient srunning

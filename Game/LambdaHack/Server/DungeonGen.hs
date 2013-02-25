@@ -4,7 +4,6 @@ module Game.LambdaHack.Server.DungeonGen
   ( FreshDungeon(..), dungeonGen
   ) where
 
-import Control.Arrow (second)
 import Control.Monad
 import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
@@ -58,8 +57,7 @@ placeStairs cotile@Kind.Ops{opick} cmap CaveKind{..} dplaces = do
   return (su, upId, sd, downId)
 
 -- | Create a level from a cave, from a cave kind.
-buildLevel :: Kind.COps -> Cave -> Int -> Int
-           -> Rnd (Level, RollDice)
+buildLevel :: Kind.COps -> Cave -> Int -> Int -> Rnd Level
 buildLevel Kind.COps{ cotile=cotile@Kind.Ops{opick}
                     , cocave=Kind.Ops{okind} }
            Cave{..} ldepth depth = do
@@ -67,6 +65,7 @@ buildLevel Kind.COps{ cotile=cotile@Kind.Ops{opick}
   cmap <- convertTileMaps (opick cdefTile (const True)) cxsize cysize dmap
   (su, upId, sd, downId) <-
     placeStairs cotile cmap kc dplaces
+  litemNum <- rollDice citemNum
   let stairs = (su, upId) : if ldepth == depth then [] else [(sd, downId)]
       ltile = cmap Kind.// stairs
       f !n !tk | Tile.isExplorable cotile tk = n + 1
@@ -86,15 +85,16 @@ buildLevel Kind.COps{ cotile=cotile@Kind.Ops{opick}
         , lseen = 0
         , lclear
         , ltime = timeTurn
+        , litemNum
         , lsecret = mapToIMap cxsize dsecret
         }
-  return (level, citemNum)
+  return level
 
 matchGenerator :: Kind.Ops CaveKind -> Maybe Text -> Rnd (Kind.Id CaveKind)
 matchGenerator Kind.Ops{opick} mname =
   opick (fromMaybe "dng" mname) (const True)
 
-findGenerator :: Kind.COps -> Config -> Int -> Int -> Rnd (Level, RollDice)
+findGenerator :: Kind.COps -> Config -> Int -> Int -> Rnd Level
 findGenerator cops Config{configCaves} k depth = do
   let ln = "LambdaCave_" <> showT k
       genName = lookup ln configCaves
@@ -106,21 +106,19 @@ findGenerator cops Config{configCaves} k depth = do
 data FreshDungeon = FreshDungeon
   { freshDungeon :: Dungeon  -- ^ maps for all levels
   , freshDepth   :: Int      -- ^ dungeon depth (can be different than size)
-  , itemCounts   :: [(LevelId, (Level, RollDice))]
   }
 
 -- | Generate the dungeon for a new game.
 dungeonGen :: Kind.COps -> Config -> Rnd FreshDungeon
 dungeonGen cops config@Config{configDepth} =
-  let gen :: R.StdGen -> Int -> (R.StdGen, (LevelId, (Level, RollDice)))
+  let gen :: R.StdGen -> Int -> (R.StdGen, (LevelId, Level))
       gen g k =
         let (g1, g2) = R.split g
             res = St.evalState (findGenerator cops config k configDepth) g1
         in (g2, (toEnum k, res))
       con :: R.StdGen -> (FreshDungeon, R.StdGen)
       con g = assert (configDepth >= 1 `blame` configDepth) $
-        let (gd, itemCounts) = mapAccumL gen g [1..configDepth]
-            levels = map (second fst) itemCounts
+        let (gd, levels) = mapAccumL gen g [1..configDepth]
             freshDungeon = EM.fromList levels
             freshDepth = configDepth
         in (FreshDungeon{..}, gd)

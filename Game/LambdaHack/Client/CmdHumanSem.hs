@@ -83,9 +83,7 @@ cmdAction cmd = case cmd of
   History -> historyHuman >> return Nothing
   Help -> helpHuman >> return Nothing
   DebugArea -> modifyClient toggleMarkVision >> return Nothing
-  DebugOmni -> modifyClient toggleOmniscient >> return Nothing  -- TODO: Server
   DebugSmell -> modifyClient toggleMarkSmell >> return Nothing
-  DebugVision -> error "modifyServer cycleTryFov"
 
 -- | If in targeting mode, check if the current level is the same
 -- as player level and refuse performing the action otherwise.

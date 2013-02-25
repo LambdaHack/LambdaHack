@@ -163,6 +163,8 @@ coverA lid p iid ik = do
 
 -- TODO: let user configure which messages are not created, which are
 -- slightly hidden, which are shown and which flash and center screen.
+-- TODO: for a start, flesh out the verbose variant and then add
+-- a single client debug option that flips verbosity
 -- | Visualizationi of atomic actions for the client is perfomed
 -- in the global state after the command is executed and after
 -- the client state is modified by the command.
@@ -398,10 +400,7 @@ drawDescAtomicUI verbose desc = case desc of
           let verbD = if bproj b then "break up" else "collapse"
           aVerbMU aid verbD
         _ -> return ()
-  FailureD fid msg -> do
-    side <- getsClient sside
-    assert (fid == side) skip
-    msgAdd msg
+  FailureD _ msg -> msgAdd msg
   BroadcastD msg -> msgAdd msg
   DisplayPushD _ -> displayPush
   DisplayDelayD _ -> displayFramesPush [Nothing]

@@ -47,9 +47,7 @@ stdBinding !config@ConfigUI{configMacros} =
         ++ K.moveBinding Move Run
         ++ fmap heroSelect [0..9]
         ++ [ ((K.Char 'a', K.Control), DebugArea)
-           , ((K.Char 'o', K.Control), DebugOmni)
            , ((K.Char 's', K.Control), DebugSmell)
-           , ((K.Char 'v', K.Control), DebugVision)
            ]
       mkDescribed cmd = (cmdDescription cmd, noRemoteCmdHuman cmd, cmd)
       mkCommand (km, def) = (km, mkDescribed def)

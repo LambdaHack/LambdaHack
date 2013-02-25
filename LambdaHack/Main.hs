@@ -3,6 +3,8 @@
 -- resulting in an executable game.
 module Main ( main ) where
 
+import System.Environment (getArgs)
+
 import qualified Content.ActorKind
 import qualified Content.CaveKind
 import qualified Content.FactionKind
@@ -15,6 +17,8 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Client
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Server
+import Game.LambdaHack.Server.Fov
+import Game.LambdaHack.Server.State
 
 -- | Fire up the frontend with the engine fueled by content.
 -- The action monad types to be used are determined by the 'executorSer'
@@ -24,6 +28,30 @@ import Game.LambdaHack.Server
 -- when compiling the engine library.
 main :: IO ()
 main = do
+  -- Debug arguments for the server. Gamplay is configured via config.rules.
+  args <- getArgs
+  let usage =
+        [ "Only debug options here. "
+          ++ "Gamplay is configured via config.rules.ini."
+        , "  -knowMap reveals map for all clients in the next game"
+        , "  -knowEvents makes all events visible to clients in the next game"
+        , "  -tryFov m sets a Field of View mode, where m can be"
+        , "    Digital r, r > 0"
+        , "    Permissive"
+        , "    Shadow"
+        , "    Blind"
+        ]
+      parseArgs [] = defDebugModeSer
+      parseArgs ("-knowMap" : rest) =
+        (parseArgs rest) {sknowMap = True}
+      parseArgs ("-knowEvents" : rest) =
+        (parseArgs rest) {sknowEvents = True}
+      parseArgs ("-tryFov" : "Digital" : r : rest) | (read r :: Int) > 0 =
+        (parseArgs rest) {stryFov = Just $ Digital $ read r}
+      parseArgs ("-tryFov" : fovMode : rest) =
+        (parseArgs rest) {stryFov = Just $ read fovMode}
+      parseArgs _ = error $ unlines usage
+      !sdebugNxt = parseArgs args
   let copsSlow = Kind.COps
         { coactor = Kind.createOps Content.ActorKind.cdefs
         , cocave  = Kind.createOps Content.CaveKind.cdefs
@@ -43,7 +71,7 @@ main = do
       loopComputer = loopCli cmdCliSem
       exeClient False = executorCli loopHuman
       exeClient True = executorCli loopComputer
-      loopServer = loopSer cmdSerSem
+      loopServer = loopSer sdebugNxt cmdSerSem
       exeServer executorC = executorSer (loopServer executorC cops)
   exeFrontend cops exeClient exeServer
   waitForChildren

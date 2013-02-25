@@ -60,6 +60,7 @@ unknownLevel Kind.Ops{ouniqGroup} ldepth lxsize lysize ldesc lstair lclear =
            , lseen = 0
            , lclear
            , ltime = timeZero
+           , litemNum = 0
            , lsecret = EM.empty
            }
 

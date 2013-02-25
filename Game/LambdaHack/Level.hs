@@ -66,19 +66,20 @@ type SecretMap = EM.EnumMap Point SecretTime
 -- | A view on single, inhabited dungeon level. "Remembered" fields
 -- carry a subset of the info in the client copies of levels.
 data Level = Level
-  { ldepth  :: !Int             -- ^ depth of the level
-  , lprio   :: !ActorPrio       -- ^ remembered actor times on the level
-  , lfloor  :: !ItemFloor       -- ^ remembered items lying on the floor
-  , ltile   :: !TileMap         -- ^ remembered level map
-  , lxsize  :: !X               -- ^ width of the level
-  , lysize  :: !Y               -- ^ height of the level
-  , lsmell  :: !SmellMap        -- ^ remembered smells on the level
-  , ldesc   :: !Text            -- ^ level description
-  , lstair  :: !(Point, Point)  -- ^ destination of (up, down) stairs
-  , lseen   :: !Int             -- ^ remembered number of tiles already seen
-  , lclear  :: !Int             -- ^ total number of clear tiles
-  , ltime   :: !Time            -- ^ date of the last activity on the level
-  , lsecret :: !SecretMap       -- ^ secrecy values; empty for clients
+  { ldepth   :: !Int             -- ^ depth of the level
+  , lprio    :: !ActorPrio       -- ^ remembered actor times on the level
+  , lfloor   :: !ItemFloor       -- ^ remembered items lying on the floor
+  , ltile    :: !TileMap         -- ^ remembered level map
+  , lxsize   :: !X               -- ^ width of the level
+  , lysize   :: !Y               -- ^ height of the level
+  , lsmell   :: !SmellMap        -- ^ remembered smells on the level
+  , ldesc    :: !Text            -- ^ level description
+  , lstair   :: !(Point, Point)  -- ^ destination of (up, down) stairs
+  , lseen    :: !Int             -- ^ remembered number of tiles already seen
+  , lclear   :: !Int             -- ^ total number of clear tiles
+  , ltime    :: !Time            -- ^ date of the last activity on the level
+  , litemNum :: !Int             -- ^ number of initial items of the level
+  , lsecret  :: !SecretMap       -- ^ secrecy values; empty for clients
   }
   deriving (Show, Eq)
 
@@ -120,6 +121,7 @@ instance Binary Level where
     put lseen
     put lclear
     put ltime
+    put litemNum
     put lsecret
   get = do
     ldepth <- get
@@ -134,6 +136,7 @@ instance Binary Level where
     lseen <- get
     lclear <- get
     ltime <- get
+    litemNum <- get
     lsecret <- get
     return Level{..}
 

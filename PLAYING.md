@@ -113,14 +113,13 @@ commands are listed below. None of them takes hero time.
                }         target 10 levels deeper
                0--9      select a hero anywhere in the dungeon
 
-There are also some debug and cheat keys, all entered with the CTRL
-key modifier. Use at your own peril!
+There are also some debug and cheat options, some enabled in-game,
+with the CTRL key modifier and a letter key, some specified
+on the command line. Use at your own peril!
 
                key     command
                CTRL-a  toggle visible area display
-               CTRL-o  toggle "omniscience" (effective next turn)
                CTRL-s  toggle smell display
-               CTRL-v  cycle vision modes (effective next turn)
 
 
 Monsters

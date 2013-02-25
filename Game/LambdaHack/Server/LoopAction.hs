@@ -51,21 +51,24 @@ import Game.LambdaHack.Utils.Assert
 -- Run the leader and other actors moves. Eventually advance the time
 -- and repeat.
 loopSer :: forall m . (MonadAction m, MonadServerChan m)
-        => (CmdSer -> m [Atomic])
+        => DebugModeSer
+        -> (CmdSer -> m [Atomic])
         -> (FactionId -> ConnCli -> Bool -> IO ())
         -> Kind.COps
         -> m ()
-loopSer cmdSerSem executorC cops@Kind.COps{ coitem=Kind.Ops{okind}
-                                          , corule } = do
+loopSer sdebugNxt cmdSerSem executorC cops@Kind.COps{ coitem=Kind.Ops{okind}
+                                                    , corule } = do
   -- Recover states.
   restored <- tryRestore cops
   -- TODO: use the _msg somehow
   case restored of
-    Right _msg ->  -- Starting a new game.
+    Right _msg -> do  -- Starting a new game.
+      -- Set up commandline debug mode
+      modifyServer $ \ser -> ser {sdebugNxt}
       gameReset cops
     Left (gloRaw, ser, _msg) -> do  -- Running a restored game.
       putState $ updateCOps (const cops) gloRaw
-      putServer ser
+      putServer ser {sdebugNxt}
   -- Set up connections
   connServer
   -- Launch clients.
@@ -78,7 +81,11 @@ loopSer cmdSerSem executorC cops@Kind.COps{ coitem=Kind.Ops{okind}
     funBroadcastCli (\fid -> ContinueSavedCli (pers EM.! fid))
   else do  -- game restarted
     -- TODO: factor out common parts from restartGame and restoreOrRestart
-    defLoc <- getsState localFromGlobal
+    knowMap <- getsServer $ sknowMap . sdebugSer
+    fromGlobal <- getsState localFromGlobal
+    glo <- getState
+    let defLoc | knowMap = glo
+               | otherwise = fromGlobal
     discoS <- getsServer sdisco
     let sdisco = let f ik = isymbol (okind ik)
                             `notElem` (ritemProject $ Kind.stdRuleset corule)
@@ -157,12 +164,13 @@ cmdAtomicBroad atomic = do
   -- Perform the action on the server.
   atomicSem atomic
   -- Send some actions to the clients, one faction at a time.
+  knowEvents <- getsServer $ sknowEvents . sdebugSer
   let sendA fid cmd = do
         sendUpdateUI fid $ CmdAtomicUI cmd
         sendUpdateCliAI fid $ CmdAtomicCli cmd
       sendUpdate fid (Left cmd) = sendA fid cmd
       sendUpdate fid (Right desc) = sendUpdateUI fid $ DescAtomicUI desc
-      vis per = all (`ES.member` totalVisible per) . snd
+      vis per (_, lp) = knowEvents || all (`ES.member` totalVisible per) lp
       isOurs fid = either id (== fid)
       breakSend fid perNew = do
         let send2 (atomic2, ps2, loud2) = do
@@ -544,7 +552,11 @@ restartGame loopServer = do
   -- This state is quite small, fit for transmition to the client.
   -- The biggest part is content, which really needs to be updated
   -- at this point to keep clients in sync with server improvements.
-  defLoc <- getsState localFromGlobal
+  knowMap <- getsServer $ sknowMap . sdebugSer
+  fromGlobal <- getsState localFromGlobal
+  glo <- getState
+  let defLoc | knowMap = glo
+             | otherwise = fromGlobal
   discoS <- getsServer sdisco
   let sdisco = let f ik = isymbol (okind ik)
                           `notElem` (ritemProject $ Kind.stdRuleset corule)
@@ -591,7 +603,7 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
   return $! EM.fromDistinctAscList $ map (second enemyAlly) rawFs
 
 gameReset :: (MonadAction m, MonadServer m) => Kind.COps -> m ()
-gameReset cops@Kind.COps{coitem, corule, cotile} = do
+gameReset cops@Kind.COps{coitem, corule} = do
   -- Rules config reloaded at each new game start.
   -- Taking the original config from config file, to reroll RNG, if needed
   -- (the current config file has the RNG rolled for the previous game).
@@ -609,17 +621,8 @@ gameReset cops@Kind.COps{coitem, corule, cotile} = do
       defState = defStateGlobal freshDungeon freshDepth faction cops
       defSer = emptyStateServer {sdisco, sdiscoRev, sflavour, srandom, sconfig}
   putState defState
-  putServer defSer
-  -- Clients have no business noticing initial item creation, so we can
-  -- do this here and evaluate with atomicSem, without notifying clients.
-  let initialItems (lid, (Level{ltile}, citemNum)) = do
-        nri <- rndToAction $ rollDice citemNum
-        replicateM nri $ do
-          pos <- rndToAction
-                 $ findPos ltile (const (Tile.hasFeature cotile F.Boring))
-          cmds <- execWriterT $ createItems 1 pos lid
-          mapM_ atomicSem cmds
-  mapM_ initialItems itemCounts
+  sdebugNxt <- getsServer sdebugNxt
+  putServer defSer {sdebugNxt, sdebugSer = sdebugNxt}
 
 -- TODO: use rollSpawnPos in the inner loop
 -- | Find starting postions for all factions. Try to make them distant
@@ -646,10 +649,18 @@ findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lstair} k =
 -- Spawn initial actors. Clients should notice that so that they elect leaders.
 populateDungeon :: (MonadAction m, MonadServerChan m) => m ()
 populateDungeon = do
+  cops@Kind.COps{cotile} <- getsState scops
+  let initialItems (lid, Level{ltile, litemNum}) = do
+        replicateM litemNum $ do
+          pos <- rndToAction
+                 $ findPos ltile (const (Tile.hasFeature cotile F.Boring))
+          cmds <- execWriterT $ createItems 1 pos lid
+          mapM_ cmdAtomicBroad cmds
+  dungeon <- getsState sdungeon
+  mapM_ initialItems $ EM.assocs dungeon
   -- TODO entryLevel should be defined per-faction in content
   let entryLevel = initialLevel
   lvl <- getsLevel entryLevel id
-  cops <- getsState scops
   faction <- getsState sfaction
   config <- getsServer sconfig
   let notSpawning (_, fact) = not $ isSpawningFact cops fact

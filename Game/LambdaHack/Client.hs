@@ -5,6 +5,9 @@ module Game.LambdaHack.Client
   , MonadClientChan, MonadClientUI
   ) where
 
+import Control.Monad
+import Data.Maybe
+
 import Game.LambdaHack.Action
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.CmdAtomicUI
@@ -34,9 +37,13 @@ cmdUISem cmd = case cmd of
     cmds <- cmdAtomicFilterCli cmdA
     mapM_ cmdAtomicSemCli cmds
     mapM_ cmdAtomicSem cmds
-    mapM_ (drawCmdAtomicUI False) cmds
-  DescAtomicUI desc ->
-    drawDescAtomicUI False desc
+    mleader <- getsClient sleader
+    when (isJust mleader) $
+      mapM_ (drawCmdAtomicUI False) cmds
+  DescAtomicUI desc -> do
+    mleader <- getsClient sleader
+    when (isJust mleader) $
+      drawDescAtomicUI False desc
   CmdHandleHumanUI aid -> do
     cmdH <- handleHuman aid
     writeChanToSer [cmdH]

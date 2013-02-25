@@ -46,9 +46,7 @@ data CmdHuman =
   | History
   | Help
   | DebugArea
-  | DebugOmni
   | DebugSmell
-  | DebugVision
   deriving (Show, Read, Eq, Ord)
 
 -- | Major commands land on the first page of command help.
@@ -137,6 +135,4 @@ cmdDescription cmd = case cmd of
   History   -> "display previous messages"
   Help      -> "display help"
   DebugArea    -> "debug visible area"
-  DebugOmni    -> "debug omniscience"
   DebugSmell   -> "debug smell"
-  DebugVision  -> "debug vision modes"

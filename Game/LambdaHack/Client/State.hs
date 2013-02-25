@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.State
   , updateTarget, getTarget, getArena
   , updateLeader, sleader, sside, targetToPos
   , TgtMode(..), Target(..)
-  , DebugModeCli(..), toggleMarkVision, toggleMarkSmell, toggleOmniscient
+  , DebugModeCli(..), toggleMarkVision, toggleMarkSmell
   ) where
 
 import Control.Monad
@@ -76,7 +76,6 @@ data Target =
 data DebugModeCli = DebugModeCli
   { smarkVision :: !Bool
   , smarkSmell  :: !Bool
-  , somniscient :: !Bool
   }
   deriving Show
 
@@ -109,7 +108,6 @@ defDebugModeCli :: DebugModeCli
 defDebugModeCli = DebugModeCli
   { smarkVision = False
   , smarkSmell  = False
-  , somniscient = False
   }
 
 defHistory :: IO History
@@ -167,10 +165,6 @@ toggleMarkVision s@StateClient{sdebugCli=sdebugCli@DebugModeCli{smarkVision}} =
 toggleMarkSmell :: StateClient -> StateClient
 toggleMarkSmell s@StateClient{sdebugCli=sdebugCli@DebugModeCli{smarkSmell}} =
   s {sdebugCli = sdebugCli {smarkSmell = not smarkSmell}}
-
-toggleOmniscient :: StateClient -> StateClient
-toggleOmniscient s@StateClient{sdebugCli=sdebugCli@DebugModeCli{somniscient}} =
-  s {sdebugCli = sdebugCli {somniscient = not somniscient}}
 
 instance Binary StateClient where
   put StateClient{..} = do
