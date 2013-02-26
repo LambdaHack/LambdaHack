@@ -78,7 +78,7 @@ loopSer sdebugNxt cmdSerSem executorC cops@Kind.COps{ coitem=Kind.Ops{okind}
   pers <- getsServer sper
   quit <- getsServer squit
   if isJust quit then do -- game restored from a savefile
-    funBroadcastCli (\fid -> ContinueSavedCli (pers EM.! fid))
+    funBroadcast $ \fid -> ResumeA fid (pers EM.! fid)
     modifyServer $ \ser1 -> ser1 {squit = Nothing}
   else do  -- game restarted
     -- TODO: factor out common parts from restartGame and restoreOrRestart
@@ -91,8 +91,7 @@ loopSer sdebugNxt cmdSerSem executorC cops@Kind.COps{ coitem=Kind.Ops{okind}
     let sdisco = let f ik = isymbol (okind ik)
                             `notElem` (ritemProject $ Kind.stdRuleset corule)
                  in EM.filter f discoS
-    funBroadcastCli
-       (\fid -> CmdAtomicCli (RestartA fid sdisco (pers EM.! fid) defLoc))
+    funBroadcast $ \fid -> RestartA fid sdisco (pers EM.! fid) defLoc
     populateDungeon
     -- Save ASAP in case of crashes and disconnects.
     saveBkpAll
@@ -125,7 +124,7 @@ loopSer sdebugNxt cmdSerSem executorC cops@Kind.COps{ coitem=Kind.Ops{okind}
 
 saveBkpAll :: MonadServerChan m => m ()
 saveBkpAll = do
-  broadcastCli GameSaveBkpCli
+  funBroadcast $ const SaveBkpA
   saveGameBkp
 
 initPer :: MonadServer m => m ()
@@ -497,7 +496,7 @@ endOrLoop loopServer = do
     --        handleScores False Camping total
     --        broadcastUI [] $ MoreFullCli "See you soon, stronger and braver!"
             -- TODO: show the above
-      broadcastCli GameDisconnectCli
+      funBroadcast $ const SaveExitA
     --      liftIO $ takeMVar mv  -- wait until saved
           -- Do nothing, that is, quit the game loop.
     (Just False, _) -> do
@@ -567,8 +566,7 @@ restartGame loopServer = do
                           `notElem` (ritemProject $ Kind.stdRuleset corule)
                in EM.filter f discoS
   -- TODO: this is too hacky still (funBroadcastCli instead of cmdAtomicBroad)
-  funBroadcastCli (\fid ->
-    CmdAtomicCli (RestartA fid sdisco (pers EM.! fid) defLoc))
+  funBroadcast $ \fid -> RestartA fid sdisco (pers EM.! fid) defLoc
   populateDungeon
   -- Save ASAP in case of crashes and disconnects.
   saveBkpAll

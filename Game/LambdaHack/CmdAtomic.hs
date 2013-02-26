@@ -81,6 +81,9 @@ data CmdAtomic =
   | CoverA LevelId Point ItemId (Kind.Id ItemKind)
   | PerceptionA LevelId PerActor PerActor
   | RestartA FactionId Discovery FactionPers State
+  | ResumeA FactionId FactionPers
+  | SaveExitA
+  | SaveBkpA
   deriving (Show, Eq)
 
 data DescAtomic =
@@ -104,37 +107,41 @@ data DescAtomic =
 data HitAtomic = HitD | HitBlockD | MissBlockD
   deriving (Show, Eq)
 
-undoCmdAtomic :: CmdAtomic -> CmdAtomic
+undoCmdAtomic :: CmdAtomic -> Maybe CmdAtomic
 undoCmdAtomic cmd = case cmd of
-  CreateActorA aid body -> DestroyActorA aid body
-  DestroyActorA aid body -> CreateActorA aid body
-  CreateItemA iid item k c -> DestroyItemA iid item k c
-  DestroyItemA iid item k c -> CreateItemA iid item k c
-  SpotActorA aid body -> LoseActorA aid body
-  LoseActorA aid body -> SpotActorA aid body
-  SpotItemA iid item k c -> LoseItemA iid item k c
-  LoseItemA iid item k c -> SpotItemA iid item k c
-  MoveActorA aid fromP toP -> MoveActorA aid toP fromP
-  WaitActorA aid fromWait toWait -> WaitActorA aid toWait fromWait
-  DisplaceActorA source target -> DisplaceActorA target source
-  MoveItemA iid k c1 c2 -> MoveItemA iid k c2 c1
-  AgeActorA aid t -> AgeActorA aid (timeNegate t)
-  HealActorA aid n -> HealActorA aid (-n)
-  HasteActorA aid delta -> HasteActorA aid (speedNegate delta)
-  DominateActorA target fromFid toFid -> DominateActorA target toFid fromFid
-  PathActorA aid fromPath toPath -> PathActorA aid toPath fromPath
-  ColorActorA aid fromCol toCol -> ColorActorA aid toCol fromCol
-  QuitFactionA fid fromSt toSt -> QuitFactionA fid toSt fromSt
-  LeadFactionA fid source target -> LeadFactionA fid target source
-  AlterTileA lid p fromTile toTile -> AlterTileA lid p toTile fromTile
-  SpotTileA lid ts -> LoseTileA lid ts
-  LoseTileA lid ts -> SpotTileA lid ts
-  AlterSecretA lid diffL -> AlterSecretA lid $ map (second swap) diffL
-  AlterSmellA lid diffL -> AlterSmellA lid $ map (second swap) diffL
-  DiscoverA lid p iid ik -> CoverA lid p iid ik
-  CoverA lid p iid ik -> DiscoverA lid p iid ik
-  PerceptionA lid outPer inPer -> PerceptionA lid inPer outPer
-  RestartA{} -> cmd  -- here history ends; change direction
+  CreateActorA aid body -> Just $ DestroyActorA aid body
+  DestroyActorA aid body -> Just $ CreateActorA aid body
+  CreateItemA iid item k c -> Just $ DestroyItemA iid item k c
+  DestroyItemA iid item k c -> Just $ CreateItemA iid item k c
+  SpotActorA aid body -> Just $ LoseActorA aid body
+  LoseActorA aid body -> Just $ SpotActorA aid body
+  SpotItemA iid item k c -> Just $ LoseItemA iid item k c
+  LoseItemA iid item k c -> Just $ SpotItemA iid item k c
+  MoveActorA aid fromP toP -> Just $ MoveActorA aid toP fromP
+  WaitActorA aid fromWait toWait -> Just $ WaitActorA aid toWait fromWait
+  DisplaceActorA source target -> Just $ DisplaceActorA target source
+  MoveItemA iid k c1 c2 ->Just $  MoveItemA iid k c2 c1
+  AgeActorA aid t -> Just $ AgeActorA aid (timeNegate t)
+  HealActorA aid n -> Just $ HealActorA aid (-n)
+  HasteActorA aid delta -> Just $ HasteActorA aid (speedNegate delta)
+  DominateActorA target fromFid toFid ->
+    Just $ DominateActorA target toFid fromFid
+  PathActorA aid fromPath toPath -> Just $ PathActorA aid toPath fromPath
+  ColorActorA aid fromCol toCol -> Just $ ColorActorA aid toCol fromCol
+  QuitFactionA fid fromSt toSt -> Just $ QuitFactionA fid toSt fromSt
+  LeadFactionA fid source target -> Just $ LeadFactionA fid target source
+  AlterTileA lid p fromTile toTile -> Just $ AlterTileA lid p toTile fromTile
+  SpotTileA lid ts -> Just $ LoseTileA lid ts
+  LoseTileA lid ts -> Just $ SpotTileA lid ts
+  AlterSecretA lid diffL -> Just $ AlterSecretA lid $ map (second swap) diffL
+  AlterSmellA lid diffL -> Just $ AlterSmellA lid $ map (second swap) diffL
+  DiscoverA lid p iid ik -> Just $ CoverA lid p iid ik
+  CoverA lid p iid ik -> Just $ DiscoverA lid p iid ik
+  PerceptionA lid outPer inPer -> Just $ PerceptionA lid inPer outPer
+  RestartA{} -> Just $ cmd  -- here history ends; change direction
+  ResumeA{} -> Nothing
+  SaveExitA -> Nothing
+  SaveBkpA -> Nothing
 
 undoDescAtomic :: DescAtomic -> DescAtomic
 undoDescAtomic cmd = case cmd of
@@ -153,6 +160,6 @@ undoDescAtomic cmd = case cmd of
   DisplayDelayD{} -> cmd
   FlushFramesD{} -> cmd
 
-undoAtomic :: Atomic -> Atomic
-undoAtomic (Left cmd) = Left $ undoCmdAtomic cmd
-undoAtomic (Right desc) = Right $ undoDescAtomic desc
+undoAtomic :: Atomic -> Maybe Atomic
+undoAtomic (Left cmd) = fmap Left $ undoCmdAtomic cmd
+undoAtomic (Right desc) = Just $ Right $ undoDescAtomic desc

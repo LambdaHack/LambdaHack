@@ -14,8 +14,9 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
 
-initCli :: (MonadAction m, MonadClientChan m) => (CmdCli -> m ()) -> m Msg
-initCli cmdCliSem = do
+initCli :: (MonadAction m, MonadClientChan m)
+        => (CmdCli -> m ()) -> (CmdUI -> m ()) -> m Msg
+initCli cmdCliSem cmdUISem = do
   -- Warning: state and client state are invalid here, e.g., sdungeon
   -- and sper are empty.
   writeChanToSer []  -- tell the server the client is ready
@@ -24,33 +25,34 @@ initCli cmdCliSem = do
   case restored of
     Right msg -> do  -- First visit ever, use the initial state.
       -- TODO: create or restore from config clients RNG seed
-      let expected cmd =
-            case cmd of CmdAtomicCli RestartA{} -> True; _ -> False
-      expectCmd cmdCliSem expected
+      let expected cmd = case cmd of RestartA{} -> True; _ -> False
+      expectCmd cmdCliSem cmdUISem expected
       return msg
     Left (s, cli, msg) -> do  -- Restore a game or at least history.
       let sCops = updateCOps (const cops) s
       putState sCops
       putClient cli
-      let expected cmd = case cmd of ContinueSavedCli{} -> True; _ -> False
-      expectCmd cmdCliSem expected
+      let expected cmd = case cmd of ResumeA{} -> True; _ -> False
+      expectCmd cmdCliSem cmdUISem expected
       modifyClient $ \cli2 -> cli2 {squit = False}
       return msg
   -- State and client state are now valid.
 
 expectCmd :: MonadClientChan m
-           => (CmdCli -> m ()) -> (CmdCli -> Bool) -> m ()
-expectCmd cmdCliSem expected = do
+           => (CmdCli -> m ()) -> (CmdUI -> m ()) -> (CmdAtomic -> Bool)
+           -> m ()
+expectCmd cmdCliSem cmdUISem expected = do
   side <- getsClient sside
   cmd1 <- readChanFromSer
   case cmd1 of
-    Left cmd | expected cmd -> cmdCliSem cmd
+    Left (CmdAtomicCli cmd) | expected cmd -> cmdCliSem $ CmdAtomicCli cmd
+    Right (CmdAtomicUI cmd) | expected cmd -> cmdUISem $ CmdAtomicUI cmd
     _ -> assert `failure` (side, cmd1)
 
 loopCli :: (MonadAction m, MonadClientChan m)
         => (CmdCli -> m ()) -> m ()
 loopCli cmdCliSem = do
-  void $ initCli cmdCliSem
+  void $ initCli cmdCliSem undefined
   loop
  where
   loop = do
@@ -65,7 +67,7 @@ loopCli cmdCliSem = do
 loopUI :: (MonadAction m, MonadClientUI m, MonadClientChan m)
        => (CmdCli -> m ()) -> (CmdUI -> m ()) -> m ()
 loopUI cmdCliSem cmdUISem = do
-  msg <- initCli cmdCliSem
+  msg <- initCli cmdCliSem cmdUISem
   msgAdd msg
   loop
  where

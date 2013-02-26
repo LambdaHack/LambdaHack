@@ -390,16 +390,14 @@ gameExitHuman = do
   if b
     then do
       Just leader <- getsClient sleader
-      msgAdd "Saving and exiting as soon as all factions move."
       return $ GameExitSer leader
     else abortWith "Save and exit canceled."
 
 -- * GameSave; does not take time
 
-gameSaveHuman :: MonadClientUI m => m CmdSer
+gameSaveHuman :: MonadClient m => m CmdSer
 gameSaveHuman = do
   Just leader <- getsClient sleader
-  msgAdd "Saving game to a backup file as soon as all factions move."
   -- Let the server save, while the client continues taking commands.
   return $ GameSaveSer leader
 

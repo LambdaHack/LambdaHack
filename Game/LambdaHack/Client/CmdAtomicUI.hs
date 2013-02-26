@@ -106,6 +106,9 @@ cmdAtomicSemCli cmd = case cmd of
     isAI <- getsClient sisAI
     let cli = defStateClient shistory sconfigUI side isAI
     putClient cli {sdisco, sfper, _sleader = gleader fac}
+  ResumeA _fid sfper -> modifyClient $ \cli -> cli {sfper}
+  SaveExitA -> saveExitCli
+  SaveBkpA -> clientGameSave True
   _ -> return ()
 
 perceptionA :: MonadClient m => LevelId -> PerActor -> PerActor -> m ()
@@ -239,6 +242,11 @@ drawCmdAtomicUI verbose cmd = case cmd of
           , objUnkown1, objUnkown2 ]
     msgAdd msg
   RestartA{} -> msgAdd "This time for real."
+  ResumeA{} -> msgAdd "All factions ready."
+  SaveExitA ->
+    msgAdd "Saving and exiting as soon as all factions move."
+  SaveBkpA ->
+    msgAdd "Saving backup."
   _ -> return ()
 
 -- | Sentences such as \"Dog barks loudly.\".

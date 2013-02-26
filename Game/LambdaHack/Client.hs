@@ -22,9 +22,6 @@ cmdCliSem cmd = case cmd of
     cmds <- cmdAtomicFilterCli cmdA
     mapM_ cmdAtomicSemCli cmds
     mapM_ cmdAtomicSem cmds
-  ContinueSavedCli sfper -> modifyClient $ \cli -> cli {sfper}
-  GameSaveBkpCli -> clientGameSave True
-  GameDisconnectCli -> clientDisconnect
   CmdHandleAICli aid -> do
     cmds <- handleAI aid
     writeChanToSer cmds

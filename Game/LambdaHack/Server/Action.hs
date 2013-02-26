@@ -12,7 +12,7 @@ module Game.LambdaHack.Server.Action
     -- * Communication
   , sendUpdateUI, sendQueryUI, broadcastUI
   , sendUpdateCli, sendUpdateCliAI, sendQueryCli, sendQueryCliAI
-  , broadcastCli, funBroadcastCli
+  , funBroadcast
     -- * Assorted primitives
   , saveGameSer, saveGameBkp, dumpCfg, mkConfigRules, handleScores
   , rndToAction, resetFidPerception, getPerFid
@@ -52,6 +52,7 @@ import Game.LambdaHack.Random
 import Game.LambdaHack.Level
 import Game.LambdaHack.Time
 import Game.LambdaHack.CmdSer
+import Game.LambdaHack.CmdAtomic
 
 -- | Update the cached perception for the selected level, for a faction.
 -- The assumption is the level, and only the level, has changed since
@@ -157,20 +158,13 @@ sendQueryCli fid aid = do
 sendQueryCliAI :: MonadServerChan m => FactionId -> ActorId -> m CmdSer
 sendQueryCliAI fid aid = withAI $ sendQueryCli fid aid
 
-broadcastCli :: MonadServerChan m => CmdCli -> m ()
-broadcastCli cmd = do
+funBroadcast :: MonadServerChan m => (FactionId -> CmdAtomic) -> m ()
+funBroadcast fcmd = do
   faction <- getsState sfaction
-  let broad = mapM_ (flip sendUpdateCli cmd) $ EM.keys faction
-  broad
-  withAI broad
-
-funBroadcastCli :: MonadServerChan m => (FactionId -> CmdCli) -> m ()
-funBroadcastCli cmd = do
-  faction <- getsState sfaction
-  let f fid = sendUpdateCli fid (cmd fid)
-  let broad = mapM_ f $ EM.keys faction
-  broad
-  withAI broad
+  let f fid = do
+        sendUpdateUI fid $ CmdAtomicUI $ fcmd fid
+        sendUpdateCliAI fid $ CmdAtomicCli $ fcmd fid
+  mapM_ f $ EM.keys faction
 
 connSendUpdateUI :: MonadServerChan m => CmdUI -> ConnCli -> m ()
 connSendUpdateUI cmd ConnCli{toClient} =

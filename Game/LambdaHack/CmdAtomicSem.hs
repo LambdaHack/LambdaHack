@@ -61,6 +61,9 @@ cmdAtomicSem cmd = case cmd of
   PerceptionA _ outPA inPA ->
     assert (not (EM.null outPA && EM.null inPA)) $ return ()
   RestartA fid sdisco sfper s -> restartA fid sdisco sfper s
+  ResumeA{} -> return ()
+  SaveExitA -> return ()
+  SaveBkpA -> return ()
 
 -- All functions here that take an atomic action are executed
 -- in the state just before the action is executed.
@@ -148,6 +151,9 @@ posCmdAtomic cmd = case cmd of
   CoverA lid p _ _ -> return $ Right (lid, [p])
   PerceptionA _ _ _ -> return $ Left $ Left False
   RestartA fid _ _ _ -> return $ Left $ Right fid
+  ResumeA fid _ -> return $ Left $ Right fid
+  SaveExitA -> return $ Left $ Left True
+  SaveBkpA -> return $ Left $ Left True
 
 posDescAtomic :: MonadActionRO m
               => DescAtomic
