@@ -77,9 +77,9 @@ loopSer sdebugNxt cmdSerSem executorC cops@Kind.COps{ coitem=Kind.Ops{okind}
   initPer
   pers <- getsServer sper
   quit <- getsServer squit
-  if isJust quit then do -- game restored from a savefile
+  if isJust quit then do  -- game restored from a savefile
     funBroadcast $ \fid -> ResumeA fid (pers EM.! fid)
-    modifyServer $ \ser1 -> ser1 {squit = Nothing}
+    modifyServer $ \ser -> ser {squit = Nothing}
   else do  -- game restarted
     -- TODO: factor out common parts from restartGame and restoreOrRestart
     knowMap <- getsServer $ sknowMap . sdebugSer
@@ -101,25 +101,30 @@ loopSer sdebugNxt cmdSerSem executorC cops@Kind.COps{ coitem=Kind.Ops{okind}
   -- Loop.
   let loop :: Int -> m ()
       loop clipN = do
-        let h arena = do
-              let clipMod = clipN `mod` cinT
-              -- Regenerate HP and add monsters each turn, not each clip.
-              when (clipMod == 1) $ generateMonster arena
-              when (clipMod == 2) $ regenerateLevelHP arena
-              handleActors cmdSerSem arena timeZero
-              modifyState $ updateTime arena $ timeAdd timeClip
-        let f fac = do
+        let clipMod = clipN `mod` cinT
+            run arena = handleActors cmdSerSem arena timeZero
+            age arena = modifyState $ updateTime arena $ timeAdd timeClip
+            factionArena fac =
               case gleader fac of
                 Nothing -> return Nothing
                 Just leader -> do
                   b <- getsState $ getActorBody leader
                   return $ Just $ blid b
         faction <- getsState sfaction
-        marenas <- mapM f $ EM.elems faction
+        marenas <- mapM factionArena $ EM.elems faction
         let arenas = ES.toList $ ES.fromList $ catMaybes marenas
-        mapM_ h arenas
-        when (clipN + 1 `mod` bkpFreq == 0) saveBkpAll
-        endOrLoop (loop (clipN + 1))
+        mapM_ run arenas
+        quitS <- getsServer squit
+        case quitS of
+          Just q ->
+            handleSave q (loop (clipN + 1))
+          Nothing -> do
+            when (clipN `mod` bkpFreq == 0) saveBkpAll
+            -- Regenerate HP and add monsters each turn, not each clip.
+            when (clipMod == 1) $ mapM_ generateMonster arenas
+            when (clipMod == 2) $ mapM_ regenerateLevelHP arenas
+            mapM_ age arenas
+            endOrLoop (loop (clipN + 1))
   loop 1
 
 saveBkpAll :: MonadServerChan m => m ()
@@ -319,6 +324,7 @@ handleActors cmdSerSem arena subclipStart = do
   Kind.COps{coactor} <- getsState scops
   time <- getsState $ getTime arena  -- the end time of this clip, inclusive
   prio <- getsLevel arena lprio
+  quitS <- getsServer squit
   faction <- getsState sfaction
   s <- getState
   let mnext =
@@ -337,6 +343,7 @@ handleActors cmdSerSem arena subclipStart = do
                 then Nothing  -- no actor is ready for another move
                 else Just (actor, m)
   case mnext of
+    _ | isJust quitS -> return ()
     Nothing -> do
       when (subclipStart == timeZero) $
         mapM_ cmdAtomicBroad $ map (Right . DisplayDelayD) $ EM.keys faction
@@ -475,20 +482,14 @@ advanceTime aid = do
       t = ticksPerMeter speed
   return [Left $ AgeActorA aid t]
 
--- | Continue or restart or exit the game.
-endOrLoop :: (MonadAction m, MonadServerChan m)
-          => m () -> m ()
-endOrLoop loopServer = do
-  checkEndGame
-  quitS <- getsServer squit
-  faction <- getsState sfaction
-  let f (_, Faction{gquit=Nothing}) = Nothing
-      f (fid, Faction{gquit=Just quit}) = Just (fid, quit)
-  case (quitS, mapMaybe f $ EM.assocs faction) of
-    (Just True, _) -> do
+-- | Save game and perhaps exit.
+handleSave :: (MonadAction m, MonadServerChan m)
+           => Bool -> m () -> m ()
+handleSave q loopServer = do
+  if q then do
       -- Save and display in parallel.
     --      mv <- liftIO newEmptyMVar
-      saveGameSer
+    saveGameSer
     --      liftIO $ void
     --        $ forkIO (Save.saveGameSer config s ser `finally` putMVar mv ())
     -- 7.6        $ forkFinally (Save.saveGameSer config s ser) (putMVar mv ())
@@ -496,15 +497,25 @@ endOrLoop loopServer = do
     --        handleScores False Camping total
     --        broadcastUI [] $ MoreFullCli "See you soon, stronger and braver!"
             -- TODO: show the above
-      funBroadcast $ const SaveExitA
+    funBroadcast $ const SaveExitA
     --      liftIO $ takeMVar mv  -- wait until saved
           -- Do nothing, that is, quit the game loop.
-    (Just False, _) -> do
-      saveBkpAll
-      modifyServer $ \ser1 -> ser1 {squit = Nothing}
-      loopServer
-    (_, []) -> loopServer  -- just continue
-    (_, (fid, quit) : _) -> do
+  else do
+    saveBkpAll
+    modifyServer $ \ser1 -> ser1 {squit = Nothing}
+    loopServer
+
+-- | Continue or restart or exit the game.
+endOrLoop :: (MonadAction m, MonadServerChan m)
+          => m () -> m ()
+endOrLoop loopServer = do
+  checkEndGame
+  faction <- getsState sfaction
+  let f (_, Faction{gquit=Nothing}) = Nothing
+      f (fid, Faction{gquit=Just quit}) = Just (fid, quit)
+  case mapMaybe f $ EM.assocs faction of
+    [] -> loopServer  -- just continue
+    (fid, quit) : _ -> do
       fac <- getsState $ (EM.! fid) . sfaction
       _total <- case gleader fac of
         Nothing -> return 0
@@ -579,7 +590,7 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
         gkind <- opick fType (const True)
         let fk = okind gkind
             genemy = []  -- fixed below
-            gally  = []  -- fixed below
+            gally = []  -- fixed below
             gquit = Nothing
         gAiLeader <-
           if isHuman

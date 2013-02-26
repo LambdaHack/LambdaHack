@@ -389,6 +389,7 @@ gameExitHuman = do
   b <- displayYesNo "Really save and exit?"
   if b
     then do
+      msgAdd "Saving and exiting game now."
       Just leader <- getsClient sleader
       return $ GameExitSer leader
     else abortWith "Save and exit canceled."
