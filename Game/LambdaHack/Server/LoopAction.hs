@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, RankNTypes #-}
 -- | The main loop of the server, processing human and computer player
 -- moves turn by turn.
 module Game.LambdaHack.Server.LoopAction (loopSer, cmdAtomicBroad) where
@@ -53,11 +53,13 @@ import Game.LambdaHack.Utils.Assert
 loopSer :: forall m . (MonadAction m, MonadServerChan m)
         => DebugModeSer
         -> (CmdSer -> m [Atomic])
-        -> (FactionId -> ConnCli -> Bool -> IO ())
+        -> (FactionId -> ConnCli CmdUI -> IO ())
+        -> (FactionId -> ConnCli CmdCli -> IO ())
         -> Kind.COps
         -> m ()
-loopSer sdebugNxt cmdSerSem executorC cops@Kind.COps{ coitem=Kind.Ops{okind}
-                                                    , corule } = do
+loopSer sdebugNxt cmdSerSem executorHuman executorComputer
+        cops@Kind.COps{ coitem=Kind.Ops{okind}
+                      , corule } = do
   -- Recover states.
   restored <- tryRestore cops
   -- TODO: use the _msg somehow
@@ -72,7 +74,7 @@ loopSer sdebugNxt cmdSerSem executorC cops@Kind.COps{ coitem=Kind.Ops{okind}
   -- Set up connections
   connServer
   -- Launch clients.
-  launchClients executorC
+  launchClients executorHuman executorComputer
   -- Send init messages.
   initPer
   pers <- getsServer sper
@@ -178,7 +180,7 @@ cmdAtomicBroad atomic = do
   knowEvents <- getsServer $ sknowEvents . sdebugSer
   let sendA fid cmd = do
         sendUpdateUI fid $ CmdAtomicUI cmd
-        sendUpdateCliAI fid $ CmdAtomicCli cmd
+        sendUpdateCli fid $ CmdAtomicCli cmd
       sendUpdate fid (Left cmd) = sendA fid cmd
       sendUpdate fid (Right desc) = sendUpdateUI fid $ DescAtomicUI desc
       vis per (_, lp) = knowEvents || all (`ES.member` totalVisible per) lp
@@ -409,7 +411,7 @@ handleActors cmdSerSem arena subclipStart = do
             -- abort, a turn may be lost. Investigate/fix.
             handleActors cmdSerSem arena (btime bNew)
         else do
-          cmdS <- sendQueryCliAI side actor
+          cmdS <- sendQueryCli side actor
           atoms <- cmdSerSem cmdS
           let isFailure cmd = case cmd of Right FailureD{} -> True; _ -> False
               aborted = all isFailure atoms

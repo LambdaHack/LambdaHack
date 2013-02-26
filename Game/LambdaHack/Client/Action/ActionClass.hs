@@ -1,5 +1,6 @@
+{-# LANGUAGE FlexibleContexts, FlexibleInstances, FunctionalDependencies,
+             MultiParamTypeClasses #-}
 {-# OPTIONS -fno-warn-orphans #-}
-{-# LANGUAGE FlexibleContexts, FlexibleInstances #-}
 -- | Basic type classes for game actions.
 -- This module should not be imported anywhere except in 'Action'
 -- and 'TypeAction'.
@@ -46,5 +47,5 @@ class MonadClient m => MonadClientUI m where
 instance (Monoid a, MonadClientUI m) => MonadClientUI (WriterT a m) where
   getsSession  = lift . getsSession
 
-class MonadClient m => MonadClientChan m where
-  getsChan     :: (ConnCli -> a) -> m a
+class MonadActionRO m => MonadClientChan c m | m -> c where
+  getsChan  :: (ConnCli c -> a) -> m a

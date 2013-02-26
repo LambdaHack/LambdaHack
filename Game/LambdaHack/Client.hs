@@ -2,7 +2,7 @@
 module Game.LambdaHack.Client
   ( cmdCliSem, cmdUISem
   , loopCli, loopUI, executorCli, exeFrontend
-  , MonadClientChan, MonadClientUI
+  , MonadClient, MonadClientUI, MonadClientChan
   ) where
 
 import Control.Monad
@@ -17,7 +17,9 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.CmdCli
 import Game.LambdaHack.Utils.Assert
 
-cmdCliSem :: (MonadAction m, MonadClientChan m) => CmdCli -> m ()
+cmdCliSem :: ( MonadAction m
+             , MonadClient m, MonadClientChan c m )
+          => CmdCli -> m ()
 cmdCliSem cmd = case cmd of
   CmdAtomicCli cmdA -> do
     cmds <- cmdAtomicFilterCli cmdA
@@ -28,7 +30,7 @@ cmdCliSem cmd = case cmd of
     writeChanToSer cmds
 
 cmdUISem :: ( MonadActionAbort m, MonadAction m
-            , MonadClientUI m, MonadClientChan m )
+            , MonadClientUI m, MonadClientChan c m )
          => CmdUI -> m ()
 cmdUISem cmd = do
   mleader <- getsClient _sleader

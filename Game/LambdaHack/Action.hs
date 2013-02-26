@@ -4,9 +4,7 @@
 -- player actions. Has no access to the the main action type.
 module Game.LambdaHack.Action
   ( -- * Action monads
-    MonadActionAbort(..)
-  , MonadActionRO(..)
-  , MonadAction(..)
+    MonadActionAbort(..), MonadActionRO(..), MonadAction(..)
   , ConnCli(..), ConnFaction, ConnDict
     -- * Various ways to abort action
   , abort, abortIfWith, neverMind
@@ -31,16 +29,16 @@ import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
 
 -- | Connection channels between server and a single client.
-data ConnCli = ConnCli
-  { toClient :: TQueue (Either CmdCli CmdUI)
+data ConnCli c = ConnCli
+  { toClient :: TQueue c
   , toServer :: TQueue [CmdSer]
   }
 
-instance Show ConnCli where
+instance Show (ConnCli c) where
   show _ = "client channels"
 
 -- | Human-controlled client, UI of the client, AI of the client.
-type ConnFaction = (Maybe ConnCli, Maybe ConnCli)
+type ConnFaction = (Maybe (ConnCli CmdUI), Maybe (ConnCli CmdCli))
 
 -- | Connection information for each client and an optional AI client
 -- for the same faction, indexed by faction identifier.

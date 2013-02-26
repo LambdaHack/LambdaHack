@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 -- | The main code file of LambdaHack. Here the knot of engine
 -- code pieces and the LambdaHack-specific content defintions is tied,
 -- resulting in an executable game.
@@ -15,6 +16,7 @@ import qualified Content.StrategyKind
 import qualified Content.TileKind
 import Game.LambdaHack.Action
 import Game.LambdaHack.Client
+import Game.LambdaHack.CmdCli
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Server
 import Game.LambdaHack.Server.Fov
@@ -28,11 +30,9 @@ import Game.LambdaHack.Server.State
 -- when compiling the engine library.
 main :: IO ()
 main = do
-  -- Debug arguments for the server. Gamplay is configured via config.rules.
   args <- getArgs
   let usage =
-        [ "Only debug options here. "
-          ++ "Gamplay is configured via config.rules.ini."
+        [ "Configure server debug options here, gamplay in config.rules.ini."
         , "  -knowMap reveals map for all clients in the next game"
         , "  -knowEvents makes all events visible to clients in the next game"
         , "  -tryFov m sets a Field of View mode, where m can be"
@@ -63,15 +63,16 @@ main = do
         , cotile  = Kind.createOps Content.TileKind.cdefs
         }
       cops = speedupCOps copsSlow
-      loopHuman :: (MonadActionAbort m, MonadAction m
-                   , MonadClientUI m, MonadClientChan m)
-                => m ()
-      loopHuman = loopUI cmdCliSem cmdUISem
-      loopComputer :: (MonadAction m, MonadClientChan m) => m ()
+      loopHuman :: ( MonadActionAbort m, MonadAction m
+                   , MonadClientUI m, MonadClientChan CmdUI m ) => m ()
+      loopHuman = loopUI cmdUISem
+      loopComputer :: ( MonadAction m
+                      , MonadClient m, MonadClientChan CmdCli m ) => m ()
       loopComputer = loopCli cmdCliSem
-      exeClient False = executorCli loopHuman
-      exeClient True = executorCli loopComputer
+      exeClientHuman = executorCli loopHuman
+      exeClientComputer = executorCli loopComputer
       loopServer = loopSer sdebugNxt cmdSerSem
-      exeServer executorC = executorSer (loopServer executorC cops)
-  exeFrontend cops exeClient exeServer
+      exeServer executorHuman executorComputer =
+        executorSer (loopServer executorHuman executorComputer cops)
+  exeFrontend cops exeClientHuman exeClientComputer exeServer
   waitForChildren

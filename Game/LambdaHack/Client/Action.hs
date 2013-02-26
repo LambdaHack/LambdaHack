@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, RankNTypes #-}
+{-# LANGUAGE OverloadedStrings #-}
 -- | Game action monads and basic building blocks for human and computer
 -- player actions. Has no access to the the main action type.
 -- Does not export the @liftIO@ operation nor a few other implementation
@@ -25,7 +25,8 @@ module Game.LambdaHack.Client.Action
   , drawOverlay, animate
     -- * Assorted primitives
   , flushFrames, clientGameSave, saveExitCli, restoreGame, displayPush
-  , readChanFromSer, writeChanToSer, rndToAction, getArenaUI, getLeaderUI
+  , readChanFromSer, writeChanToSer
+  , rndToAction, getArenaUI, getLeaderUI
   , targetToPos
   ) where
 
@@ -327,8 +328,8 @@ clientGameSave toBkp = do
 
 saveExitCli :: MonadClient m => m ()
 saveExitCli = do
-  modifyClient $ \cli -> cli {squit = True}
   clientGameSave False
+  modifyClient $ \cli -> cli {squit = True}
 
 restoreGame :: MonadClient m => m (Either (State, StateClient, Msg) Msg)
 restoreGame = do
@@ -341,12 +342,12 @@ restoreGame = do
   let sName = saveName side isAI
   liftIO $ Save.restoreGameCli sName configUI pathsDataFile title
 
-readChanFromSer :: MonadClientChan m => m (Either CmdCli CmdUI)
+readChanFromSer :: (MonadClient m, MonadClientChan c m) => m c
 readChanFromSer = do
   toClient <- getsChan toClient
   liftIO $ atomically $ readTQueue toClient
 
-writeChanToSer :: MonadClientChan m => [CmdSer] -> m ()
+writeChanToSer :: (MonadClient m, MonadClientChan c m) => [CmdSer] -> m ()
 writeChanToSer cmds = do
   toServer <- getsChan toServer
   liftIO $ atomically $ writeTQueue toServer cmds
@@ -356,10 +357,13 @@ writeChanToSer cmds = do
 -- the server loop, if the whole game runs in one process),
 -- UI config and the definitions of game commands.
 exeFrontend :: Kind.COps
-            -> (Bool -> SessionUI -> State -> StateClient -> ConnCli -> IO ())
-            -> ((FactionId -> ConnCli -> Bool -> IO ()) -> IO ())
+            -> (SessionUI -> State -> StateClient -> ConnCli CmdUI -> IO ())
+            -> (SessionUI -> State -> StateClient -> ConnCli CmdCli -> IO ())
+            -> ((FactionId -> ConnCli CmdUI -> IO ()) ->
+                (FactionId -> ConnCli CmdCli -> IO ()) -> IO ())
             -> IO ()
-exeFrontend cops@Kind.COps{corule} exeClient exeServer = do
+exeFrontend cops@Kind.COps{corule}
+            exeClientHuman exeClientComputer exeServer = do
   -- UI config reloaded at each client start.
   sconfigUI <- mkConfigUI corule
   smvarUI <- newEmptyMVar
@@ -368,14 +372,12 @@ exeFrontend cops@Kind.COps{corule} exeClient exeServer = do
   defHist <- defHistory
   let cli = defStateClient defHist sconfigUI
       loc = updateCOps (const cops) emptyState
-      executorC sfs fid chanCli isAI =
-        -- This is correct, because the implicit contract ensures
-        -- @MonadClientChan@ never tries to access the client UI session
-        -- (unlike @MonadClientUI@).
-        let sess | isAI = assert `failure` fid
-                 | otherwise = SessionUI{..}
-        in exeClient isAI sess loc (cli fid isAI) chanCli
-  startup font $ \sfs -> exeServer (executorC sfs)
+      executorComputer _sfs fid =
+        let noSession = assert `failure` fid
+        in exeClientComputer noSession loc (cli fid True)
+      executorHuman sfs fid =
+        exeClientHuman SessionUI{..} loc (cli fid False)
+  startup font $ \sfs -> exeServer (executorHuman sfs) (executorComputer sfs)
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: MonadClient m => Rnd a -> m a
