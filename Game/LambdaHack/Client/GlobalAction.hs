@@ -387,18 +387,20 @@ gameRestartHuman = do
 gameExitHuman :: (MonadActionAbort m, MonadClientUI m) => m CmdSer
 gameExitHuman = do
   b <- displayYesNo "Really save and exit?"
-  Just leader <- getsClient sleader
   if b
-    then return $ GameExitSer leader
-    else abortWith "Game resumed."
+    then do
+      Just leader <- getsClient sleader
+      msgAdd "Saving and exiting as soon as all factions move."
+      return $ GameExitSer leader
+    else abortWith "Save and exit canceled."
 
 -- * GameSave; does not take time
 
 gameSaveHuman :: MonadClientUI m => m CmdSer
 gameSaveHuman = do
-  msgAdd "Saving game to a backup file."
-  -- Let the server save, while the client continues taking commands.
   Just leader <- getsClient sleader
+  msgAdd "Saving game to a backup file as soon as all factions move."
+  -- Let the server save, while the client continues taking commands.
   return $ GameSaveSer leader
 
 -- * CfgDump; does not take time

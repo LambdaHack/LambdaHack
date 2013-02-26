@@ -105,9 +105,8 @@ loopSer sdebugNxt cmdSerSem executorC cops@Kind.COps{ coitem=Kind.Ops{okind}
         let h arena = do
               let clipMod = clipN `mod` cinT
               -- Regenerate HP and add monsters each turn, not each clip.
-              when (clipMod == 0) $ generateMonster arena
-              when (clipMod == 1) $ regenerateLevelHP arena
-              when (clipMod == 2) checkEndGame
+              when (clipMod == 1) $ generateMonster arena
+              when (clipMod == 2) $ regenerateLevelHP arena
               handleActors cmdSerSem arena timeZero
               modifyState $ updateTime arena $ timeAdd timeClip
         let f fac = do
@@ -321,7 +320,6 @@ handleActors cmdSerSem arena subclipStart = do
   Kind.COps{coactor} <- getsState scops
   time <- getsState $ getTime arena  -- the end time of this clip, inclusive
   prio <- getsLevel arena lprio
-  quitS <- getsServer squit
   faction <- getsState sfaction
   s <- getState
   let mnext =
@@ -340,7 +338,6 @@ handleActors cmdSerSem arena subclipStart = do
                 then Nothing  -- no actor is ready for another move
                 else Just (actor, m)
   case mnext of
-    _ | quitS == Just True -> return ()  -- SaveBkp waits for clip end
     Nothing -> do
       when (subclipStart == timeZero) $
         mapM_ cmdAtomicBroad $ map (Right . DisplayDelayD) $ EM.keys faction
@@ -483,6 +480,7 @@ advanceTime aid = do
 endOrLoop :: (MonadAction m, MonadServerChan m)
           => m () -> m ()
 endOrLoop loopServer = do
+  checkEndGame
   quitS <- getsServer squit
   faction <- getsState sfaction
   let f (_, Faction{gquit=Nothing}) = Nothing
