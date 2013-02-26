@@ -72,9 +72,11 @@ loopUI cmdCliSem cmdUISem = do
   loop
  where
   loop = do
+    side <- getsClient sside
     cmd4 <- readChanFromSer
+    -- TODO: in the light of the assert, have 2 kinds of channels
     case cmd4 of
-      Left cmd -> cmdCliSem cmd
+      Left _ -> assert `failure` (side, cmd4)
       Right cmd -> cmdUISem cmd
     quit <- getsClient squit
     when (not quit) loop

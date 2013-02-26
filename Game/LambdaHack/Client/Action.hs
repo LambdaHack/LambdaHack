@@ -22,10 +22,11 @@ module Game.LambdaHack.Client.Action
     -- * Generate slideshows
   , promptToSlideshow, overlayToSlideshow
     -- * Draw frames
-  , drawOverlay
+  , drawOverlay, animate
     -- * Assorted primitives
   , flushFrames, clientGameSave, saveExitCli, restoreGame, displayPush
-  , readChanFromSer, writeChanToSer, rndToAction, getArenaCli
+  , readChanFromSer, writeChanToSer, rndToAction, getArenaUI, getLeaderUI
+  , targetToPos
   ) where
 
 import Control.Concurrent
@@ -38,13 +39,15 @@ import qualified Data.Map.Strict as M
 import Data.Maybe
 
 import Game.LambdaHack.Action
+import Game.LambdaHack.Actor
+import Game.LambdaHack.ActorState
 import Game.LambdaHack.Client.Action.ActionClass
 import Game.LambdaHack.Client.Action.ActionType (executorCli)
 import Game.LambdaHack.Client.Action.ConfigIO
 import Game.LambdaHack.Client.Action.Frontend (frontendName, startup)
 import qualified Game.LambdaHack.Client.Action.Frontend as Frontend
 import qualified Game.LambdaHack.Client.Action.Save as Save
-import Game.LambdaHack.Client.Animation (Frames, SingleFrame)
+import Game.LambdaHack.Client.Animation
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.Draw
@@ -58,6 +61,7 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
+import Game.LambdaHack.Point
 import Game.LambdaHack.Random
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
@@ -103,7 +107,7 @@ promptGetKey keys frame = withUI $ do
 
 -- | Set the current exception handler. Apart of executing it,
 -- draw and pass along a slide with the abort message (even if message empty).
-tryWithSlide :: (MonadActionAbort m, MonadClient m)
+tryWithSlide :: (MonadActionAbort m, MonadClientUI m)
              => m a -> WriterT Slideshow m a -> WriterT Slideshow m a
 tryWithSlide exc h =
   let excMsg msg = do
@@ -113,11 +117,34 @@ tryWithSlide exc h =
         lift exc
   in tryWith excMsg h
 
-getArenaCli :: MonadClient m => m LevelId
-getArenaCli = do
+getLeaderUI :: MonadClientUI m => m ActorId
+getLeaderUI = do
   cli <- getClient
-  s <- getState
-  return $! getArena cli s
+  case _sleader cli of
+    Nothing -> assert `failure` cli
+    Just leader -> return leader
+
+getArenaUI :: MonadClientUI m => m LevelId
+getArenaUI = do
+  leader <- getLeaderUI
+  getsState $ blid . getActorBody leader
+
+-- | Calculate the position of leader's target.
+targetToPos :: MonadClientUI m => m (Maybe Point)
+targetToPos = do
+  scursor <- getsClient scursor
+  leader <- getLeaderUI
+  lid <- getsState $ blid . getActorBody leader
+  target <- getsClient $ getTarget leader
+  case target of
+    Just (TPos pos) -> return $ Just pos
+    Just (TEnemy a _ll) -> do
+      mem <- getsState $ memActor a lid  -- alive and visible?
+      if mem then do
+        pos <- getsState $ bpos . getActorBody a
+        return $ Just pos
+      else return Nothing
+    Nothing -> return scursor
 
 -- | Get the frontend session.
 askFrontendSession :: MonadClientUI m => m Frontend.FrontendSession
@@ -245,31 +272,33 @@ displayChoiceUI prompt ov keys = do
 
 -- | The prompt is shown after the current message, but not added to history.
 -- This is useful, e.g., in targeting mode, not to spam history.
-promptToSlideshow :: MonadClient m => Msg -> m Slideshow
+promptToSlideshow :: MonadClientUI m => Msg -> m Slideshow
 promptToSlideshow prompt = overlayToSlideshow prompt []
 
 -- | The prompt is shown after the current message at the top of each slide.
 -- Together they may take more than one line. The prompt is not added
 -- to history. The portions of overlay that fit on the the rest
 -- of the screen are displayed below. As many slides as needed are shown.
-overlayToSlideshow :: MonadClient m => Msg -> Overlay -> m Slideshow
+overlayToSlideshow :: MonadClientUI m => Msg -> Overlay -> m Slideshow
 overlayToSlideshow prompt overlay = do
-  lid <- getArenaCli
+  lid <- getArenaUI
   lysize <- getsLevel lid lysize  -- TODO: screen length or viewLevel
   sreport <- getsClient sreport
   let msg = splitReport (addMsg sreport prompt)
   return $! splitOverlay lysize msg overlay
 
 -- | Draw the current level with the overlay on top.
-drawOverlay :: MonadClient m => ColorMode -> Overlay -> m SingleFrame
+drawOverlay :: MonadClientUI m => ColorMode -> Overlay -> m SingleFrame
 drawOverlay dm over = do
   cops <- getsState scops
-  cli <- getClient
-  loc <- getState
   stgtMode <- getsClient stgtMode
-  let lid = maybe (getArena cli loc) tgtLevelId stgtMode
+  arena <- getArenaUI
+  let lid = maybe arena tgtLevelId stgtMode
+  leader <- getLeaderUI
+  loc <- getState
+  cli <- getClient
   per <- getPerFid lid
-  return $! draw dm cops per lid cli loc over
+  return $! draw dm cops per lid leader cli loc over
 
 -- | Push the frame depicting the current level to the frame queue.
 -- Only one screenful of the report is shown, the rest is ignored.
@@ -355,3 +384,20 @@ rndToAction r = do
   let (a, ng) = St.runState r g
   modifyClient $ \cli -> cli {srandom = ng}
   return a
+
+-- TODO: restrict the animation to 'per' before drawing.
+-- | Render animations on top of the current screen frame.
+animate :: MonadClientUI m => Animation -> m Frames
+animate anim = do
+  cops <- getsState scops
+  sreport <- getsClient sreport
+  arena <- getArenaUI
+  leader <- getLeaderUI
+  Level{lxsize, lysize} <- getsLevel arena id
+  cli <- getClient
+  s <- getState
+  per <- getPerFid arena
+  let over = renderReport sreport
+      topLineOnly = padMsg lxsize over
+      basicFrame = draw ColorFull cops per arena leader cli s [topLineOnly]
+  return $ renderAnim lxsize lysize basicFrame anim

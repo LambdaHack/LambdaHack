@@ -2,8 +2,7 @@
 -- | Server and client game state types and operations.
 module Game.LambdaHack.Client.State
   ( StateClient(..), defStateClient, defHistory
-  , updateTarget, getTarget, getArena
-  , updateLeader, sleader, sside, targetToPos
+  , updateTarget, getTarget, updateLeader, sside
   , TgtMode(..), Target(..)
   , DebugModeCli(..), toggleMarkVision, toggleMarkSmell
   ) where
@@ -126,12 +125,6 @@ updateTarget aid f cli = cli { starget = EM.alter f aid (starget cli) }
 getTarget :: ActorId -> StateClient -> Maybe Target
 getTarget aid cli = EM.lookup aid (starget cli)
 
-getArena :: StateClient -> State -> LevelId
-getArena cli s =
-  case sleader cli of
-    Nothing -> assert `failure` (cli, s)
-    Just leader -> blid $ getActorBody leader s
-
 -- | Update selected actor within state. Verify actor's faction.
 updateLeader :: ActorId -> State -> StateClient -> StateClient
 updateLeader leader s cli =
@@ -140,23 +133,8 @@ updateLeader leader s cli =
   in assert (side1 == side2 `blame` (side1, side2, leader, s))
      $ cli {_sleader = Just leader}
 
-sleader :: StateClient -> Maybe ActorId
-sleader = _sleader
-
 sside :: StateClient -> FactionId
 sside = _sside
-
--- | Calculate the position of leader's target.
-targetToPos :: StateClient -> State -> Maybe Point
-targetToPos cli@StateClient{scursor} s = do
-  leader <- sleader cli
-  let lid = blid $ getActorBody leader s
-  case getTarget leader cli of
-    Just (TPos pos) -> return pos
-    Just (TEnemy a _ll) -> do
-      guard $ memActor a lid s  -- alive and visible?
-      return $! bpos (getActorBody a s)
-    Nothing -> scursor
 
 toggleMarkVision :: StateClient -> StateClient
 toggleMarkVision s@StateClient{sdebugCli=sdebugCli@DebugModeCli{smarkVision}} =

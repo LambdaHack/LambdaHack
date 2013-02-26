@@ -15,6 +15,7 @@ import Game.LambdaHack.Client.CmdCliSem
 import Game.LambdaHack.Client.LoopAction
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.CmdCli
+import Game.LambdaHack.Utils.Assert
 
 cmdCliSem :: (MonadAction m, MonadClientChan m) => CmdCli -> m ()
 cmdCliSem cmd = case cmd of
@@ -29,18 +30,19 @@ cmdCliSem cmd = case cmd of
 cmdUISem :: ( MonadActionAbort m, MonadAction m
             , MonadClientUI m, MonadClientChan m )
          => CmdUI -> m ()
-cmdUISem cmd = case cmd of
-  CmdAtomicUI cmdA -> do
-    cmds <- cmdAtomicFilterCli cmdA
-    mapM_ cmdAtomicSemCli cmds
-    mapM_ cmdAtomicSem cmds
-    mleader <- getsClient sleader
-    when (isJust mleader) $
-      mapM_ (drawCmdAtomicUI False) cmds
-  DescAtomicUI desc -> do
-    mleader <- getsClient sleader
-    when (isJust mleader) $
-      drawDescAtomicUI False desc
-  CmdHandleHumanUI aid -> do
-    cmdH <- handleHuman aid
-    writeChanToSer [cmdH]
+cmdUISem cmd = do
+  mleader <- getsClient _sleader
+  case cmd of
+    CmdAtomicUI cmdA -> do
+      cmds <- cmdAtomicFilterCli cmdA
+      mapM_ cmdAtomicSemCli cmds
+      mapM_ cmdAtomicSem cmds
+      when (isJust mleader) $
+        mapM_ (drawCmdAtomicUI False) cmds
+    DescAtomicUI desc ->
+      when (isJust mleader) $
+        drawDescAtomicUI False desc
+    CmdHandleHumanUI aid -> do
+      assert (isJust mleader `blame` cmd) skip
+      cmdH <- handleHuman aid
+      writeChanToSer [cmdH]

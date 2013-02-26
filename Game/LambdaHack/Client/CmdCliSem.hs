@@ -37,7 +37,7 @@ handleAI actor = do
   side <- getsClient sside
   assert (bfaction body == side `blame` (actor, bfaction body, side)) $ do
     Kind.COps{costrat=Kind.Ops{okind}} <- getsState scops
-    leader <- getsClient sleader
+    leader <- getsClient _sleader
     fact <- getsState $ (EM.! bfaction body) . sfaction
     let factionAI | Just actor /= leader = gAiMember fact
                   | otherwise = fromJust $ gAiLeader fact
@@ -63,7 +63,7 @@ handleHuman aid = do
   -- When running, stop if aborted by a disturbance. Otherwise let
   -- the human player issue commands, until any of them takes time.
   -- First time, just after pushing frames, ask for commands in Push mode.
-  Just leader <- getsClient sleader
+  leader <- getLeaderUI
   assert (leader == aid `blame` (leader, aid)) skip
   let inputHumanCmd msg = do
         stopRunning

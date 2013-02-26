@@ -88,7 +88,7 @@ cmdAtomicSemCli cmd = case cmd of
   LeadFactionA fid source target -> do
     side <- getsClient sside
     when (side == fid) $ do
-      mleader <- getsClient sleader
+      mleader <- getsClient _sleader
       assert (mleader == source     -- somebody changed the leader for us
               || mleader == target  -- we changed the leader originally
               `blame` (cmd, mleader)) skip
@@ -310,15 +310,12 @@ displaceActorA source target = do
   Kind.COps{coactor} <- getsState scops
   sm <- getsState (getActorBody source)
   tm <- getsState (getActorBody target)
-  per <- getPerFid (blid sm)
   let msg = makeSentence
         [ MU.SubjectVerbSg (partActor coactor sm) "displace"
         , partActor coactor tm ]
   msgAdd msg
-  cli <- getClient
-  loc <- getState
   let ps = (bpos tm, bpos sm)
-      animFrs = animate cli loc per $ swapPlaces ps
+  animFrs <- animate $ swapPlaces ps
   displayFramesPush $ Nothing : animFrs
 
 quitFactionA :: MonadClientUI m => FactionId -> Maybe (Bool, Status) -> m ()
@@ -373,13 +370,9 @@ drawDescAtomicUI verbose desc = case desc of
       then case effect of
         Effect.NoEffect -> msgAdd "Nothing happens."
         Effect.Heal -> do
-          cli <- getClient
-          loc <- getState
-          per <- getPerFid $ blid b
           aVerbMU aid "feel better"
           let ps = (bpos b, bpos b)
-              animFrs = animate cli loc per
-                        $ twirlSplash ps Color.BrBlue Color.Blue
+          animFrs <- animate $ twirlSplash ps Color.BrBlue Color.Blue
           displayFramesPush $ Nothing : animFrs
         Effect.Wound _ -> aVerbMU aid "feel wounded"
         Effect.Mindprobe nEnemy -> do
@@ -448,23 +441,21 @@ strikeD source target item b = assert (source /= target) $ do
         ++ if withWhat
            then ["with", partItemAW coitem disco item]
            else []
-  cli <- getClient
-  loc <- getState
-  per <- getPerFid $ blid sb
   side <- getsClient sside
-  let (msgDie, animDie) | bhp tb > 0 = ("", [])
-                        | otherwise =
-        let verbD = if bproj tb then "drop down" else "fall down"
-            msgD = makeSentence
-                   [MU.SubjectVerbSg (partActor coactor tb) verbD]
-            animD = animate cli loc per $ deathBody $ bpos tb
-        in (msgD, animD)
+  (msgDie, animDie) <-
+    if bhp tb > 0 then return ("", [])
+    else do
+      let verbD = if bproj tb then "drop down" else "fall down"
+          msgD = makeSentence
+                 [MU.SubjectVerbSg (partActor coactor tb) verbD]
+      animD <- animate $ deathBody $ bpos tb
+      return (msgD, animD)
   msgAdd $ msg b <+> msgDie
   let ps = (bpos tb, bpos sb)
       anim HitD = twirlSplash ps Color.BrRed Color.Red
       anim HitBlockD = blockHit ps Color.BrRed Color.Red
       anim MissBlockD = blockMiss ps
-      animFrs = animate cli loc per (anim b)
+  animFrs <- animate $ anim b
   displayFramesPush $ Nothing : animFrs
   -- Animate only when the client's own actor dies.
   when (bfaction tb == side && not (bproj tb)) $ displayFramesPush animDie

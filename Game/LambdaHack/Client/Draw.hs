@@ -3,7 +3,7 @@
 -- (determined at compile time with cabal flags).
 {-# LANGUAGE CPP #-}
 module Game.LambdaHack.Client.Draw
-  ( ColorMode(..), draw, animate
+  ( ColorMode(..), draw
   ) where
 
 import qualified Data.EnumMap.Strict as EM
@@ -15,8 +15,7 @@ import qualified Data.Text as T
 
 import Game.LambdaHack.Actor as Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.Client.Animation (Animation, Frames, SingleFrame (..),
-                                         renderAnim)
+import Game.LambdaHack.Client.Animation (SingleFrame (..))
 import Game.LambdaHack.Client.State
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Content.ActorKind
@@ -44,10 +43,10 @@ data ColorMode =
 -- TODO: split up and generally rewrite.
 -- | Draw the whole screen: level map, status area and, at most,
 -- a single page overlay of text divided into lines.
-draw :: ColorMode -> Kind.COps -> Perception -> LevelId
+draw :: ColorMode -> Kind.COps -> Perception -> LevelId -> ActorId
      -> StateClient -> State -> Overlay
      -> SingleFrame
-draw dm cops per drawnLevelId
+draw dm cops per drawnLevelId leader
      cli@StateClient{stgtMode, scursor, seps, sdisco, sdebugCli}
      s overlay =
   let Kind.COps{ coactor=Kind.Ops{okind}
@@ -56,15 +55,11 @@ draw dm cops per drawnLevelId
       DebugModeCli{smarkVision, smarkSmell} = sdebugCli
       (lvl@Level{ ldepth, lxsize, lysize, lsmell
                 , ldesc, ltime, lseen, lclear }) = sdungeon s EM.! drawnLevelId
-      mleader = sleader cli  -- TODO: show something else if no leader
-      (bitems, bracedL, ahpS, asmellL, bhpS, bposL) =
-        case mleader of
-          Nothing -> ([], False, "--", False, "--", error "draw: no leader")
-          Just leader ->
-            let mpl@Actor{bkind, bhp, bpos} = getActorBody leader s
-                ActorKind{ahp, asmell} = okind bkind
-            in (getActorItem leader s, braced mpl ltime, showT (maxDice ahp),
-                asmell, showT bhp, bpos)
+      (bitems, bracedL, ahpS, asmellL, bhpS, bposL, blidL) =
+        let mpl@Actor{bkind, bhp, bpos, blid} = getActorBody leader s
+            ActorKind{ahp, asmell} = okind bkind
+        in (getActorItem leader s, braced mpl ltime, showT (maxDice ahp),
+            asmell, showT bhp, bpos, blid)
       (msgTop, over, msgBottom) = stringByLocation lxsize lysize overlay
       -- TODO:
       sVisBG = if smarkVision
@@ -85,8 +80,7 @@ draw dm cops per drawnLevelId
                           _ -> showT (Item.jpower sw)
                       Nothing -> "3d1"  -- TODO: ?
                   Nothing -> "3d1"  -- TODO; use the item 'fist'
-      bl | isNothing mleader = []
-         | otherwise = case scursor of
+      bl = case scursor of
         Nothing -> []
         Just cursor -> fromMaybe [] $ bla lxsize lysize seps bposL cursor
       dis pxy =
@@ -96,11 +90,8 @@ draw dm cops per drawnLevelId
             items = lvl `atI` pos0
             sml = EM.findWithDefault timeZero pos0 lsmell
             smlt = sml `timeAdd` timeNegate ltime
-            viewActor loc Actor{bkind, bsymbol, bcolor, bhp, bproj}
-              | isJust mleader
-                && loc == bposL
-                && drawnLevelId == getArena cli s =
-                  (symbol, Color.defBG)  -- highlight leader
+            viewActor aid Actor{bkind, bsymbol, bcolor, bhp, bproj}
+              | aid == leader = (symbol, Color.defBG)
               | otherwise = (symbol, color)
              where
               ActorKind{asymbol, acolor} = okind bkind
@@ -108,19 +99,19 @@ draw dm cops per drawnLevelId
               symbol | bhp <= 0 && not bproj = '%'
                      | otherwise = fromMaybe asymbol bsymbol
             rainbow p = toEnum $ fromEnum p `rem` 14 + 1
-            actorsHere = actorList (const True) drawnLevelId s
+            actorsHere = actorAssocs (const True) drawnLevelId s
             (char, fg0) =
-              case ( L.find (\ m -> pos0 == Actor.bpos m) actorsHere
-                   , L.find (\ m -> scursor == Just (Actor.bpos m))
+              case ( L.find (\ (_, m) -> pos0 == Actor.bpos m) actorsHere
+                   , L.find (\ (_, m) -> scursor == Just (Actor.bpos m))
                        actorsHere ) of
                 (_, actorTgt) | isJust stgtMode
-                                && (drawnLevelId == getArena cli s
+                                && (drawnLevelId == blidL
                                     && L.elem pos0 bl
                                     || (case actorTgt of
-                                           Just (Actor{ bpath=Just p
-                                                      , bpos=prPos }) ->
-                                             L.elem pos0 $ shiftPath prPos p
-                                           _ -> False))
+                                          Just (_, Actor{ bpath=Just p
+                                                        , bpos=prPos }) ->
+                                            L.elem pos0 $ shiftPath prPos p
+                                          _ -> False))
                     ->
                       let unknownId = ouniqGroup "unknown space"
                       in ('*', case (vis, F.Walkable `elem` tfeature tk) of
@@ -129,7 +120,7 @@ draw dm cops per drawnLevelId
                                  (True, False)  -> Color.BrRed
                                  (False, True)  -> Color.Green
                                  (False, False) -> Color.Red)
-                (Just m, _) -> viewActor pos0 m
+                (Just (aid, m), _) -> viewActor aid m
                 _ | (smarkSmell || asmellL) && smlt > timeZero ->
                   (timeToDigit smellTimeout smlt, rainbow pos0)
                   | otherwise ->
@@ -137,8 +128,7 @@ draw dm cops per drawnLevelId
                     [] -> (tsymbol tk, if vis then tcolor tk else tcolor2 tk)
                     i : _ -> Item.viewItem $ getItemBody i s
             vis = ES.member pos0 $ totalVisible per
-            visPl =
-              maybe False (\leader -> actorSeesLoc per leader pos0) mleader
+            visPl = actorSeesLoc per leader pos0
             bg0 = if isJust stgtMode && Just pos0 == scursor
                   then Color.defFG       -- highlight target cursor
                   else sVisBG vis visPl  -- FOV debug or standard bg
@@ -184,15 +174,3 @@ draw dm cops per drawnLevelId
       sfTop = toWidth lxsize $ msgTop
       sfBottom = toWidth (lxsize - 1) $ fromMaybe status $ msgBottom
   in SingleFrame{..}
-
--- TODO: restrict the animation to 'per' before drawing.
--- | Render animations on top of the current screen frame.
-animate :: StateClient -> State -> Perception -> Animation
-        -> Frames
-animate cli@StateClient{sreport} s per anim =
-  let arena = getArena cli s
-      Level{lxsize, lysize} = sdungeon s EM.! arena
-      over = renderReport sreport
-      topLineOnly = padMsg lxsize over
-      basicFrame = draw ColorFull (scops s) per arena cli s [topLineOnly]
-  in renderAnim lxsize lysize basicFrame anim

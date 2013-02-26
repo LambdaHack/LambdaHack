@@ -45,16 +45,16 @@ default (Text)
 
 -- * Move
 
-moveLeader :: MonadClient m => Vector -> m CmdSer
+moveLeader :: MonadClientUI m => Vector -> m CmdSer
 moveLeader dir = do
-  Just leader <- getsClient sleader
+  leader <- getLeaderUI
   return $! MoveSer leader dir
 
 -- * Run
 
-runLeader :: MonadClient m => Vector -> m CmdSer
+runLeader :: MonadClientUI m => Vector -> m CmdSer
 runLeader dir = do
-  Just leader <- getsClient sleader
+  leader <- getLeaderUI
   (dirR, distNew) <- runDir leader (dir, 0)
   modifyClient $ \cli -> cli {srunning = Just (dirR, distNew)}
   return $! RunSer leader dirR
@@ -62,17 +62,17 @@ runLeader dir = do
 -- * Wait
 
 -- | Leader waits a turn (and blocks, etc.).
-waitHuman :: MonadClient m => m CmdSer
+waitHuman :: MonadClientUI m => m CmdSer
 waitHuman = do
-  Just leader <- getsClient sleader
+  leader <- getLeaderUI
   return $ WaitSer leader
 
 -- * Pickup
 
-pickupHuman :: (MonadActionAbort m, MonadClient m) => m CmdSer
+pickupHuman :: (MonadActionAbort m, MonadClientUI m) => m CmdSer
 pickupHuman = do
-  Just aid <- getsClient sleader
-  body <- getsState $ getActorBody aid
+  leader <- getLeaderUI
+  body <- getsState $ getActorBody leader
   lvl <- getsLevel (blid body) id
   -- Check if something is here to pick up. Items are never invisible.
   case EM.minViewWithKey $ lvl `atI` bpos body of
@@ -81,7 +81,7 @@ pickupHuman = do
       item <- getsState $ getItemBody iid
       let l = if jsymbol item == '$' then Just $ InvChar '$' else Nothing
       case assignLetter iid l body of
-        Just l2 -> return $ PickupSer aid iid k l2
+        Just l2 -> return $ PickupSer leader iid k l2
         Nothing -> abortWith "cannot carry any more"
 
 -- * Drop
@@ -93,17 +93,17 @@ dropHuman :: (MonadActionAbort m, MonadClientUI m) => m CmdSer
 dropHuman = do
   -- TODO: allow dropping a given number of identical items.
   Kind.COps{coactor, coitem} <- getsState scops
-  Just aid <- getsClient sleader
-  pbody <- getsState $ getActorBody aid
-  bag <- getsState $ getActorBag aid
-  inv <- getsState $ getActorInv aid
-  ((iid, item), _k) <- getAnyItem aid "What to drop?" bag inv "in inventory"
+  leader <- getLeaderUI
+  pbody <- getsState $ getActorBody leader
+  bag <- getsState $ getActorBag leader
+  inv <- getsState $ getActorInv leader
+  ((iid, item), _k) <- getAnyItem leader "What to drop?" bag inv "in inventory"
   disco <- getsClient sdisco
   -- Do not advertise if an enemy drops an item. Probably junk.
   msgAdd $ makeSentence  -- TODO: "you" instead of partActor?
     [ MU.SubjectVerbSg (partActor coactor pbody) "drop"
     , partItemNWs coitem disco 1 item ]
-  return $ DropSer aid iid
+  return $ DropSer leader iid
 
 allObjectsName :: Text
 allObjectsName = "Objects"
@@ -132,7 +132,7 @@ getItem :: (MonadActionAbort m, MonadClientUI m)
         -> Text            -- ^ how to refer to the collection of items
         -> m ((ItemId, Item), (Int, Container))
 getItem aid prompt p ptext bag inv isn = do
-  Just leader <- getsClient sleader
+  leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   lvl <- getsLevel (blid b) id
   s <- getState
@@ -207,7 +207,7 @@ projectLeader :: (MonadActionAbort m, MonadClientUI m)
 projectLeader verb object syms = do
   side <- getsClient sside
   genemy <- getsState $ genemy . (EM.! side) . sfaction
-  Just leader <- getsClient sleader
+  leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   let arena = blid b
   ms <- getsState $ actorNotProjList (`elem` genemy) arena
@@ -221,10 +221,9 @@ actorProjectGI :: (MonadActionAbort m, MonadClientUI m)
                => ActorId -> MU.Part -> MU.Part -> [Char]
                -> m CmdSer
 actorProjectGI aid verb object syms = do
-  cli <- getClient
-  pos <- getState
   seps <- getsClient seps
-  case targetToPos cli pos of
+  target <- targetToPos
+  case target of
     Just p -> do
       bag <- getsState $ getActorBag aid
       inv <- getsState $ getActorInv aid
@@ -236,7 +235,7 @@ actorProjectGI aid verb object syms = do
         Just (TgtAuto _) -> endTargeting True
         _ -> return ()
       return $! ProjectSer aid p seps iid container
-    Nothing -> assert `failure` (pos, aid, "target unexpectedly invalid")
+    Nothing -> assert `failure` (aid, "target unexpectedly invalid")
 
 -- * Apply
 
@@ -244,7 +243,7 @@ applyHuman :: (MonadActionAbort m, MonadClientUI m)
            => MU.Part -> MU.Part -> [Char]
            -> m CmdSer
 applyHuman verb object syms = do
-  Just leader <- getsClient sleader
+  leader <- getLeaderUI
   bag <- getsState $ getActorBag leader
   inv <- getsState $ getActorInv leader
   ((iid, _), (_, container)) <-
@@ -278,7 +277,7 @@ triggerDirHuman feat verb = do
   let keys = zip K.dirAllMoveKey $ repeat K.NoModifier
       prompt = makePhrase ["What to", verb MU.:> "? [movement key"]
   e <- displayChoiceUI prompt [] keys
-  Just leader <- getsClient sleader
+  leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   lxsize <- getsLevel (blid b) lxsize
   K.handleDir lxsize e (leaderBumpDir feat) (neverMind True)
@@ -287,7 +286,7 @@ triggerDirHuman feat verb = do
 leaderBumpDir :: (MonadActionAbort m, MonadClientUI m)
               => F.Feature -> Vector -> m CmdSer
 leaderBumpDir feat dir = do
-  Just leader <- getsClient sleader
+  leader <- getLeaderUI
   body <- getsState $ getActorBody leader
   let dpos = bpos body `shift` dir
   bumpTile leader dpos feat
@@ -367,7 +366,7 @@ guessBump _ _ _ = neverMind True
 triggerTileHuman :: (MonadActionAbort m, MonadClientUI m)
                  => F.Feature -> m CmdSer
 triggerTileHuman feat = do
-  Just leader <- getsClient sleader
+  leader <- getLeaderUI
   ppos <- getsState (bpos . getActorBody leader)
   bumpTile leader ppos feat
 
@@ -379,7 +378,7 @@ gameRestartHuman = do
   when (not b1) $ neverMind True
   b2 <- displayYesNo "Current progress will be lost! Really restart the game?"
   when (not b2) $ abortWith "Yea, would be a pity to leave them to die."
-  Just leader <- getsClient sleader
+  leader <- getLeaderUI
   return $ GameRestartSer leader
 
 -- * GameExit; does not take time
@@ -390,21 +389,21 @@ gameExitHuman = do
   if b
     then do
       msgAdd "Saving and exiting game now."
-      Just leader <- getsClient sleader
+      leader <- getLeaderUI
       return $ GameExitSer leader
     else abortWith "Save and exit canceled."
 
 -- * GameSave; does not take time
 
-gameSaveHuman :: MonadClient m => m CmdSer
+gameSaveHuman :: MonadClientUI m => m CmdSer
 gameSaveHuman = do
-  Just leader <- getsClient sleader
+  leader <- getLeaderUI
   -- Let the server save, while the client continues taking commands.
   return $ GameSaveSer leader
 
 -- * CfgDump; does not take time
 
-cfgDumpHuman :: MonadClient m => m CmdSer
+cfgDumpHuman :: MonadClientUI m => m CmdSer
 cfgDumpHuman = do
-  Just leader <- getsClient sleader
+  leader <- getLeaderUI
   return $ CfgDumpSer leader

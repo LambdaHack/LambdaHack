@@ -59,9 +59,9 @@ default (Text)
 
 -- * Move and Run
 
-moveCursor :: MonadClient m => Vector -> Int -> WriterT Slideshow m ()
+moveCursor :: MonadClientUI m => Vector -> Int -> WriterT Slideshow m ()
 moveCursor dir n = do
-  Just leader <- getsClient sleader
+  leader <- getLeaderUI
   lpos <- getsState $ bpos . getActorBody leader
   scursor <- getsClient scursor
   let cpos = fromMaybe lpos scursor
@@ -78,9 +78,9 @@ cursorLevel = do
         maybe (assert `failure` "not targetting right now") tgtLevelId stgtMode
   return $! dungeon EM.! tgtId
 
-viewedLevel :: MonadClient m => m (LevelId, Level)
+viewedLevel :: MonadClientUI m => m (LevelId, Level)
 viewedLevel = do
-  arena <- getArenaCli
+  arena <- getArenaUI
   dungeon <- getsState sdungeon
   stgtMode <- getsClient stgtMode
   let tgtId = maybe arena tgtLevelId stgtMode
@@ -90,7 +90,7 @@ viewedLevel = do
 -- | Produces a textual description of the terrain and items at an already
 -- explored position. Mute for unknown positions.
 -- The detailed variant is for use in the targeting mode.
-lookAt :: MonadClient m
+lookAt :: MonadClientUI m
        => Bool       -- ^ detailed?
        -> Bool       -- ^ can be seen right now?
        -> Point      -- ^ position to describe
@@ -117,13 +117,13 @@ lookAt detailed canSee pos msg = do
 
 -- | Perform look around in the current position of the cursor.
 -- Assumes targeting mode and so assumes that a leader is selected.
-doLook :: MonadClient m => WriterT Slideshow m ()
+doLook :: MonadClientUI m => WriterT Slideshow m ()
 doLook = do
   Kind.COps{coactor} <- getsState scops
   scursor <- getsClient scursor
   (lid, lvl) <- viewedLevel
   per <- getPerFid lid
-  Just leader <- getsClient sleader
+  leader <- getLeaderUI
   lpos <- getsState $ bpos . getActorBody leader
   target <- getsClient $ getTarget leader
   hms <- getsState $ actorList (const True) lid
@@ -189,7 +189,7 @@ retargetLeader :: MonadClientUI m => WriterT Slideshow m ()
 retargetLeader = do
   stgtMode <- getsClient stgtMode
   assert (isNothing stgtMode) $ do
-    arena <- getArenaCli
+    arena <- getArenaUI
     msgAdd "Last target invalid."
     modifyClient $ \cli -> cli {scursor = Nothing, seps = 0}
     tgtEnemyLeader $ TgtAuto arena
@@ -209,7 +209,7 @@ selectHeroHuman k = do
 -- | Switches current member to the next on the level, if any, wrapping.
 memberCycleHuman :: (MonadActionAbort m, MonadClientUI m) => m ()
 memberCycleHuman = do
-  Just leader <- getsClient sleader
+  leader <- getLeaderUI
   body <- getsState $ getActorBody leader
   hs <- partyAfterLeader leader
   case filter (\(_, b) -> blid b == blid body) hs of
@@ -238,9 +238,9 @@ partyAfterLeader leader = do
 selectLeader :: MonadClientUI m => ActorId -> m Bool
 selectLeader actor = do
   Kind.COps{coactor} <- getsState scops
-  leader <- getsClient sleader
+  leader <- getLeaderUI
   stgtMode <- getsClient stgtMode
-  if Just actor == leader
+  if actor == leader
     then return False -- already selected
     else do
       loc <- getState
@@ -262,7 +262,7 @@ stopRunning = modifyClient (\ cli -> cli { srunning = Nothing })
 -- | Switches current member to the previous in the whole dungeon, wrapping.
 memberBackHuman :: (MonadActionAbort m, MonadClientUI m) => m ()
 memberBackHuman = do
-  Just leader <- getsClient sleader
+  leader <- getLeaderUI
   hs <- partyAfterLeader leader
   case reverse hs of
     [] -> abortWith "No other member in the party."
@@ -275,10 +275,11 @@ memberBackHuman = do
 -- TODO: When inventory is displayed, let TAB switch the leader (without
 -- announcing that) and show the inventory of the new leader.
 -- | Display inventory
-inventoryHuman :: (MonadActionAbort m, MonadClient m) => WriterT Slideshow m ()
+inventoryHuman :: (MonadActionAbort m, MonadClientUI m)
+               => WriterT Slideshow m ()
 inventoryHuman = do
   Kind.COps{coactor} <- getsState scops
-  Just leader <- getsClient sleader
+  leader <- getLeaderUI
   pbody <- getsState $ getActorBody leader
   bag <- getsState $ getActorBag leader
   inv <- getsState $ getActorInv leader
@@ -296,9 +297,9 @@ inventoryHuman = do
 -- * TgtFloor
 
 -- | Start floor targeting mode or reset the cursor position to the leader.
-tgtFloorLeader :: MonadClient m => TgtMode -> WriterT Slideshow m ()
+tgtFloorLeader :: MonadClientUI m => TgtMode -> WriterT Slideshow m ()
 tgtFloorLeader stgtModeNew = do
-  Just leader <- getsClient sleader
+  leader <- getLeaderUI
   ppos <- getsState (bpos . getActorBody leader)
   target <- getsClient $ getTarget leader
   stgtMode <- getsClient stgtMode
@@ -312,15 +313,13 @@ tgtFloorLeader stgtModeNew = do
   setCursor stgtModeNew
 
 -- | Set, activate and display cursor information.
-setCursor :: MonadClient m => TgtMode -> WriterT Slideshow m ()
+setCursor :: MonadClientUI m => TgtMode -> WriterT Slideshow m ()
 setCursor stgtModeNew = do
-  loc <- getState
-  cli <- getClient
   stgtModeOld <- getsClient stgtMode
   scursorOld <- getsClient scursor
   sepsOld <- getsClient seps
-  let scursor = targetToPos cli loc
-      seps = if scursor == scursorOld then sepsOld else 0
+  scursor <- targetToPos
+  let seps = if scursor == scursorOld then sepsOld else 0
       stgtMode = if isNothing stgtModeOld
                    then Just stgtModeNew
                    else stgtModeOld
@@ -330,9 +329,9 @@ setCursor stgtModeNew = do
 -- * TgtEnemy
 
 -- | Start the enemy targeting mode. Cycle between enemy targets.
-tgtEnemyLeader :: MonadClient m => TgtMode -> WriterT Slideshow m ()
+tgtEnemyLeader :: MonadClientUI m => TgtMode -> WriterT Slideshow m ()
 tgtEnemyLeader stgtModeNew = do
-  Just leader <- getsClient sleader
+  leader <- getLeaderUI
   ppos <- getsState (bpos . getActorBody leader)
   (lid, Level{lxsize}) <- viewedLevel
   per <- getPerFid lid
@@ -369,7 +368,7 @@ tgtEnemyLeader stgtModeNew = do
 
 -- | Change the displayed level in targeting mode to (at most)
 -- k levels shallower. Enters targeting mode, if not already in one.
-tgtAscendHuman :: (MonadActionAbort m, MonadClient m)
+tgtAscendHuman :: (MonadActionAbort m, MonadClientUI m)
                => Int -> WriterT Slideshow m ()
 tgtAscendHuman k = do
   Kind.COps{cotile} <- getsState scops
@@ -500,7 +499,7 @@ acceptHuman h = do
 endTargeting :: MonadClientUI m => Bool -> m ()
 endTargeting accept = do
   when accept $ do
-    Just leader <- getsClient sleader
+    leader <- getLeaderUI
     target <- getsClient $ getTarget leader
     scursor <- getsClient scursor
     (lid, _) <- viewedLevel
@@ -528,7 +527,7 @@ endTargeting accept = do
 endTargetingMsg :: MonadClientUI m => m ()
 endTargetingMsg = do
   Kind.COps{coactor} <- getsState scops
-  Just leader <- getsClient sleader
+  leader <- getLeaderUI
   pbody <- getsState $ getActorBody leader
   target <- getsClient $ getTarget leader
   loc <- getState
@@ -554,10 +553,10 @@ clearHuman = return ()
 
 -- TODO: add times from all levels. Also, show time spend on this level alone.
 -- "You survived for x turns (y turns on this level)"
-historyHuman :: MonadClient m => WriterT Slideshow m ()
+historyHuman :: MonadClientUI m => WriterT Slideshow m ()
 historyHuman = do
   history <- getsClient shistory
-  arena <- getArenaCli
+  arena <- getArenaUI
   time <- getsState $ getTime arena
   let turn = time `timeFit` timeTurn
       msg = makeSentence [ "You spent on this level"

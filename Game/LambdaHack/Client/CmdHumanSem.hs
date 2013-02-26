@@ -32,13 +32,13 @@ import Game.LambdaHack.VectorXY
 cmdHumanSem :: (MonadActionAbort m, MonadClientUI m)
             => CmdHuman -> WriterT Slideshow m (Maybe CmdSer)
 cmdHumanSem cmd = do
-  Just leaderOld <- getsClient sleader
+  leaderOld <- getLeaderUI
   bOld <- getsState $ getActorBody leaderOld
   let posOld = bpos bOld
       arenaOld = blid bOld
   when (noRemoteCmdHuman cmd) $ checkCursor arenaOld
   msem <- cmdAction cmd
-  Just leaderNew <- getsClient sleader
+  leaderNew <- getLeaderUI
   bNew <- getsState $ getActorBody leaderNew
   let pos = bpos bNew
       arena = blid bNew
@@ -87,7 +87,7 @@ cmdAction cmd = case cmd of
 
 -- | If in targeting mode, check if the current level is the same
 -- as player level and refuse performing the action otherwise.
-checkCursor :: (MonadActionAbort m, MonadClient m) => LevelId -> m ()
+checkCursor :: (MonadActionAbort m, MonadClientUI m) => LevelId -> m ()
 checkCursor arena = do
   (lid, _) <- viewedLevel
   when (arena /= lid) $
@@ -97,7 +97,7 @@ moveHuman :: MonadClientUI m => VectorXY -> WriterT Slideshow m (Maybe CmdSer)
 moveHuman v = do
   tgtMode <- getsClient stgtMode
   (arena, Level{lxsize}) <- viewedLevel
-  leader <- getsClient $ fromJust . sleader
+  leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
   if isJust tgtMode then do
     let dir = toDir lxsize v
@@ -118,7 +118,7 @@ moveHuman v = do
         else fmap Just $ moveLeader dir
       _ -> fmap Just $ moveLeader dir
 
-runHuman :: MonadClient m => VectorXY -> WriterT Slideshow m (Maybe CmdSer)
+runHuman :: MonadClientUI m => VectorXY -> WriterT Slideshow m (Maybe CmdSer)
 runHuman v = do
   tgtMode <- getsClient stgtMode
   (_, Level{lxsize}) <- viewedLevel
@@ -133,19 +133,16 @@ projectHuman :: (MonadActionAbort m, MonadClientUI m)
              => MU.Part -> MU.Part -> [Char]
              -> WriterT Slideshow m (Maybe CmdSer)
 projectHuman verb object syms = do
-  cli <- getClient
-  tgtLoc <- getsState $ targetToPos cli
+  tgtLoc <- targetToPos
   if isNothing tgtLoc then retargetLeader >> return Nothing
   else fmap Just $ projectLeader verb object syms
 
-tgtFloorHuman :: MonadClient m => WriterT Slideshow m (Maybe CmdSer)
+tgtFloorHuman :: MonadClientUI m => WriterT Slideshow m (Maybe CmdSer)
 tgtFloorHuman = do
-  leader <- getsClient $ fromJust . sleader
-  arena <- getsState $ blid . getActorBody leader
+  arena <- getArenaUI
   (tgtFloorLeader $ TgtExplicit arena) >> return Nothing
 
-tgtEnemyHuman :: MonadClient m => WriterT Slideshow m (Maybe CmdSer)
+tgtEnemyHuman :: MonadClientUI m => WriterT Slideshow m (Maybe CmdSer)
 tgtEnemyHuman = do
-  leader <- getsClient $ fromJust . sleader
-  arena <- getsState $ blid . getActorBody leader
+  arena <- getArenaUI
   (tgtEnemyLeader $ TgtExplicit arena) >> return Nothing
