@@ -370,8 +370,6 @@ effLvlGoUp aid k = do
         -- Verify the actor on the staircase died, so only one actor left.
         void $ getsState $ posToActor posNew arenaNew
         -- The property of at most one actor on a tile is restored.
-        -- Create a backup of the savegame.
-        saveGameBkp
 
 -- | The faction leaves the dungeon.
 fleeDungeon :: MonadActionRO m

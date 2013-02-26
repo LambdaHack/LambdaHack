@@ -79,6 +79,7 @@ loopSer sdebugNxt cmdSerSem executorC cops@Kind.COps{ coitem=Kind.Ops{okind}
   quit <- getsServer squit
   if isJust quit then do -- game restored from a savefile
     funBroadcastCli (\fid -> ContinueSavedCli (pers EM.! fid))
+    modifyServer $ \ser1 -> ser1 {squit = Nothing}
   else do  -- game restarted
     -- TODO: factor out common parts from restartGame and restoreOrRestart
     knowMap <- getsServer $ sknowMap . sdebugSer
@@ -94,18 +95,19 @@ loopSer sdebugNxt cmdSerSem executorC cops@Kind.COps{ coitem=Kind.Ops{okind}
        (\fid -> CmdAtomicCli (RestartA fid sdisco (pers EM.! fid) defLoc))
     populateDungeon
     -- Save ASAP in case of crashes and disconnects.
-    saveGameBkp
-  modifyServer $ \ser1 -> ser1 {squit = Nothing}
+    saveBkpAll
   let cinT = let r = timeTurn `timeFit` timeClip
              in assert (r > 2) r
+      bkpFreq = cinT * 100
   -- Loop.
   let loop :: Int -> m ()
       loop clipN = do
         let h arena = do
+              let clipMod = clipN `mod` cinT
               -- Regenerate HP and add monsters each turn, not each clip.
-              when (clipN `mod` cinT == 0) $ generateMonster arena
-              when (clipN `mod` cinT == 1) $ regenerateLevelHP arena
-              when (clipN `mod` cinT == 2) checkEndGame
+              when (clipMod == 0) $ generateMonster arena
+              when (clipMod == 1) $ regenerateLevelHP arena
+              when (clipMod == 2) checkEndGame
               handleActors cmdSerSem arena timeZero
               modifyState $ updateTime arena $ timeAdd timeClip
         let f fac = do
@@ -118,8 +120,14 @@ loopSer sdebugNxt cmdSerSem executorC cops@Kind.COps{ coitem=Kind.Ops{okind}
         marenas <- mapM f $ EM.elems faction
         let arenas = ES.toList $ ES.fromList $ catMaybes marenas
         mapM_ h arenas
+        when (clipN + 1 `mod` bkpFreq == 0) saveBkpAll
         endOrLoop (loop (clipN + 1))
   loop 1
+
+saveBkpAll :: MonadServerChan m => m ()
+saveBkpAll = do
+  broadcastCli GameSaveBkpCli
+  saveGameBkp
 
 initPer :: MonadServer m => m ()
 initPer = do
@@ -495,8 +503,7 @@ endOrLoop loopServer = do
     --      liftIO $ takeMVar mv  -- wait until saved
           -- Do nothing, that is, quit the game loop.
     (Just False, _) -> do
-      broadcastCli GameSaveBkpCli
-      saveGameBkp
+      saveBkpAll
       modifyServer $ \ser1 -> ser1 {squit = Nothing}
       loopServer
     (_, []) -> loopServer  -- just continue
@@ -565,7 +572,8 @@ restartGame loopServer = do
   funBroadcastCli (\fid ->
     CmdAtomicCli (RestartA fid sdisco (pers EM.! fid) defLoc))
   populateDungeon
-  saveGameBkp
+  -- Save ASAP in case of crashes and disconnects.
+  saveBkpAll
   loopServer
 
 createFactions :: Kind.COps -> Config -> Rnd FactionDict

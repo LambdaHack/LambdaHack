@@ -106,7 +106,6 @@ cmdAtomicSemCli cmd = case cmd of
     isAI <- getsClient sisAI
     let cli = defStateClient shistory sconfigUI side isAI
     putClient cli {sdisco, sfper, _sleader = gleader fac}
-    -- TODO: Save ASAP in case of crashes and disconnects.
   _ -> return ()
 
 perceptionA :: MonadClient m => LevelId -> PerActor -> PerActor -> m ()

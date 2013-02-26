@@ -78,8 +78,6 @@ getPerFid fid arena = do
 
 saveGameSer :: MonadServer m => m ()
 saveGameSer = do
---  broadcastCli [] $ GameSaveBkpCli False
---  withAI $ broadcastCli [] $ GameSaveBkpCli True
   glo <- getState
   ser <- getServer
   config <- getsServer sconfig
