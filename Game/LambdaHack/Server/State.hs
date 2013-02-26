@@ -37,7 +37,10 @@ data StateServer = StateServer
 data DebugModeSer = DebugModeSer
   { stryFov     :: !(Maybe FovMode)
   , sknowMap    :: !Bool
-  , sknowEvents :: !Bool }
+  , sknowEvents :: !Bool
+  , sniffIn     :: ! Bool
+  , sniffOut    :: ! Bool
+  }
   deriving Show
 
 -- | Initial, empty game server state.
@@ -61,7 +64,9 @@ emptyStateServer =
 defDebugModeSer :: DebugModeSer
 defDebugModeSer = DebugModeSer { stryFov = Nothing
                                , sknowMap = False
-                               , sknowEvents = False }
+                               , sknowEvents = False
+                               , sniffIn = False
+                               , sniffOut = False }
 
 instance Binary StateServer where
   put StateServer{..} = do
@@ -96,8 +101,12 @@ instance Binary DebugModeSer where
     put stryFov
     put sknowMap
     put sknowEvents
+    put sniffIn
+    put sniffOut
   get = do
     stryFov <- get
     sknowMap <- get
     sknowEvents <- get
+    sniffIn <- get
+    sniffOut <- get
     return DebugModeSer{..}

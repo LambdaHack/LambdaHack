@@ -71,6 +71,10 @@ loopSer sdebugNxt cmdSerSem executorHuman executorComputer
     Left (gloRaw, ser, _msg) -> do  -- Running a restored game.
       putState $ updateCOps (const cops) gloRaw
       putServer ser {sdebugNxt}
+  -- Apply debug options that don't need a new game.
+  modifyServer $ \ser ->
+    ser {sdebugSer = (sdebugSer ser) { sniffIn = sniffIn sdebugNxt
+                                     , sniffOut = sniffOut sdebugNxt }}
   -- Set up connections
   connServer
   -- Launch clients.

@@ -1,4 +1,5 @@
-{-# LANGUAGE OverloadedStrings, RankNTypes #-}
+{-# LANGUAGE ExtendedDefaultRules, OverloadedStrings, RankNTypes #-}
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 -- | Game action monads and basic building blocks for human and computer
 -- player actions. Has no access to the the main action type.
 -- Does not export the @liftIO@ operation nor a few other implementation
@@ -25,12 +26,17 @@ import System.IO.Unsafe (unsafePerformIO)
 import Control.Exception (finally)
 import qualified System.Random as R
 import qualified Control.Monad.State as St
-import Control.Concurrent.STM
+import Control.Concurrent.STM (TQueue, newTQueueIO, atomically)
+import qualified Control.Concurrent.STM as STM
 import Control.Concurrent
+import Data.Text (Text)
+import qualified Data.Text.IO as T
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
+import Game.LambdaHack.ActorState
 import Game.LambdaHack.CmdCli
+import Game.LambdaHack.CmdAtomicSem
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Kind as Kind
@@ -52,6 +58,8 @@ import Game.LambdaHack.Level
 import Game.LambdaHack.Time
 import Game.LambdaHack.CmdSer
 import Game.LambdaHack.CmdAtomic
+
+default (Text)
 
 -- | Update the cached perception for the selected level, for a faction.
 -- The assumption is the level, and only the level, has changed since
@@ -118,9 +126,51 @@ handleScores _fid write status total =
     go <- error "handleScores" -- sendQueryUI fid $ ShowSlidesUI slides
     when (not go) abort
 
+writeTQueueCli :: MonadServerChan m => TQueue CmdCli -> CmdCli -> m ()
+writeTQueueCli toClient cmd = do
+  debug <- getsServer $ sniffOut . sdebugSer
+  when debug $ case cmd of
+    CmdAtomicCli cmdA -> do
+      ps <- posCmdAtomic cmdA
+      liftIO $ T.putStrLn $ showT (ps, "CmdAtomicCli", cmdA)
+    CmdHandleAICli aid ->
+      debugAid aid "CmdHandleAICli"
+  liftIO $ atomically $ STM.writeTQueue toClient cmd
+
+writeTQueueUI :: MonadServerChan m => TQueue CmdUI -> CmdUI -> m ()
+writeTQueueUI toClient cmd = do
+  debug <- getsServer $ sniffOut . sdebugSer
+  when debug $ case cmd of
+    CmdAtomicUI cmdA -> do
+      ps <- posCmdAtomic cmdA
+      liftIO $ T.putStrLn $ showT (ps, "CmdAtomicUI", cmdA)
+    DescAtomicUI desc -> do
+      ps <- posDescAtomic desc
+      liftIO $ T.putStrLn $ showT (ps, "DescAtomicUI", desc)
+    CmdHandleHumanUI aid ->
+      debugAid aid "CmdHandleHumanUI"
+  liftIO $ atomically $ STM.writeTQueue toClient cmd
+
+readTQueue :: MonadServerChan m => TQueue [CmdSer] -> m [CmdSer]
+readTQueue toServer = do
+  cmds <- liftIO $ atomically $ STM.readTQueue toServer
+  debug <- getsServer $ sniffIn . sdebugSer
+  when debug $ case cmds of
+    [] -> return ()
+    cmd : _ -> do
+      let aid = aidCmdSer cmd
+      debugAid aid $ showT ("CmdSer", cmd)
+  return cmds
+
+debugAid :: MonadServerChan m => ActorId -> Text -> m ()
+debugAid aid s = do
+  b <- getsState $ getActorBody aid
+  time <- getsState $ getTime (blid b)
+  liftIO $ T.putStrLn $ showT  ( "lid", blid b, "time", time, "aid", aid
+                               , "faction", bfaction b, s)
+
 connSendUpdateCli :: MonadServerChan m => CmdCli -> ConnCli CmdCli -> m ()
-connSendUpdateCli cmd ConnCli{toClient} =
- liftIO $ atomically $ writeTQueue toClient cmd
+connSendUpdateCli cmd ConnCli{toClient} = writeTQueueCli toClient cmd
 
 sendUpdateCli :: MonadServerChan m => FactionId -> CmdCli -> m ()
 sendUpdateCli fid cmd = do
@@ -129,13 +179,13 @@ sendUpdateCli fid cmd = do
 
 connSendQueryCli :: MonadServerChan m => ActorId -> ConnCli CmdCli -> m CmdSer
 connSendQueryCli aid conn@ConnCli{toClient, toServer} = do
-  cmds <- liftIO $ atomically $ readTQueue toServer
+  cmds <- readTQueue toServer
   case cmds of
     [] -> do
-      liftIO $ atomically $ writeTQueue toClient $ CmdHandleAICli aid
+      writeTQueueCli toClient $ CmdHandleAICli aid
       connSendQueryCli aid conn
     cmd : rest -> do
-      liftIO $ atomically $ unGetTQueue toServer rest
+      liftIO $ atomically $ STM.unGetTQueue toServer rest
       return cmd
 
 sendQueryCli :: MonadServerChan m => FactionId -> ActorId -> m CmdSer
@@ -152,8 +202,7 @@ funBroadcast fcmd = do
   mapM_ f $ EM.keys faction
 
 connSendUpdateUI :: MonadServerChan m => CmdUI -> ConnCli CmdUI -> m ()
-connSendUpdateUI cmd ConnCli{toClient} =
-  liftIO $ atomically $ writeTQueue toClient cmd
+connSendUpdateUI cmd ConnCli{toClient} = writeTQueueUI toClient cmd
 
 sendUpdateUI :: MonadServerChan m => FactionId -> CmdUI -> m ()
 sendUpdateUI fid cmd = do
@@ -162,13 +211,13 @@ sendUpdateUI fid cmd = do
 
 connSendQueryUI :: MonadServerChan m => ActorId -> ConnCli CmdUI -> m CmdSer
 connSendQueryUI aid conn@ConnCli{toClient, toServer} = do
-  cmds <- liftIO $ atomically $ readTQueue toServer
+  cmds <- readTQueue toServer
   case cmds of
     [] -> do
-      liftIO $ atomically $ writeTQueue toClient $ CmdHandleHumanUI aid
+      writeTQueueUI toClient $ CmdHandleHumanUI aid
       connSendQueryUI aid conn
     cmd : rest -> do
-      liftIO $ atomically $ unGetTQueue toServer rest
+      liftIO $ atomically $ STM.unGetTQueue toServer rest
       return cmd
 
 sendQueryUI :: MonadServerChan m => FactionId -> ActorId -> m CmdSer

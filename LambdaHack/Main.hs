@@ -33,9 +33,11 @@ main = do
   args <- getArgs
   let usage =
         [ "Configure server debug options here, gamplay in config.rules.ini."
-        , "  -knowMap reveals map for all clients in the next game"
-        , "  -knowEvents makes all events visible to clients in the next game"
-        , "  -tryFov m sets a Field of View mode, where m can be"
+        , "  -knowMap reveal map for all clients in the next game"
+        , "  -knowMap reveal map for all clients in the next game"
+        , "  -sniffIn display on console all incoming commands"
+        , "  -sniffOut display on console all outgoing commands"
+        , "  -tryFov m set a Field of View mode, where m can be"
         , "    Digital r, r > 0"
         , "    Permissive"
         , "    Shadow"
@@ -46,6 +48,10 @@ main = do
         (parseArgs rest) {sknowMap = True}
       parseArgs ("-knowEvents" : rest) =
         (parseArgs rest) {sknowEvents = True}
+      parseArgs ("-sniffIn" : rest) =
+        (parseArgs rest) {sniffIn = True}
+      parseArgs ("-sniffOut" : rest) =
+        (parseArgs rest) {sniffOut = True}
       parseArgs ("-tryFov" : "Digital" : r : rest) | (read r :: Int) > 0 =
         (parseArgs rest) {stryFov = Just $ Digital $ read r}
       parseArgs ("-tryFov" : fovMode : rest) =
