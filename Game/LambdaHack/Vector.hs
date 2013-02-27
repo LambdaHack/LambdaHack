@@ -23,11 +23,15 @@ import Game.LambdaHack.VectorXY
 -- geographical directions, the representations are pairwise distinct
 -- if and only if the level width and height are at least 3.
 newtype Vector = Vector Int
-  deriving (Eq, Ord, Show, Read)
+  deriving (Eq, Ord, Read)
 
 instance Binary Vector where
   put (Vector dir) = put dir
   get = fmap Vector get
+
+-- For debugging.
+instance Show Vector where
+  show (Vector n) = show n
 
 -- | Converts a vector in cartesian representation into @Vector@.
 toVector :: X -> VectorXY -> Vector

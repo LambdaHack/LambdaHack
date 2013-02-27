@@ -351,8 +351,10 @@ handleActors cmdSerSem arena subclipStart = do
   case mnext of
     _ | isJust quitS -> return ()
     Nothing -> do
-      when (subclipStart == timeZero) $
-        mapM_ cmdAtomicBroad $ map (Right . DisplayDelayD) $ EM.keys faction
+-- Disabled until the code is stable, not to pollute commands debug logs:
+--      when (subclipStart == timeZero) $
+--        mapM_ cmdAtomicBroad $ map (Right . DisplayDelayD) $ EM.keys faction
+      return ()
     Just (aid, body) | bhp body <= 0 && not (bproj body)
                        || bhp body < 0
                        || maybe False null (bpath body) -> do

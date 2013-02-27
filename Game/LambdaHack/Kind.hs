@@ -147,7 +147,7 @@ instance Eq COps where
 -- (and so content of type @c@ can have at most 256 elements).
 -- The arrays are indexed by type @i@, e.g., a dungeon tile position.
 newtype Array i c = Array (A.UArray i Word.Word8)
-  deriving (Show, Eq)
+  deriving Eq
 
 -- TODO: save/restore is still too slow, but we are already past
 -- the point of diminishing returns. A dramatic change would be
@@ -155,6 +155,9 @@ newtype Array i c = Array (A.UArray i Word.Word8)
 instance (Ix.Ix i, Binary i) => Binary (Array i c) where
   put (Array a) = put a
   get = fmap Array get
+
+instance (Ix.Ix i, Show i) => Show (Array i c) where
+  show a = "Kind.Array with bounds " ++ show (bounds a)
 
 -- | Content identifiers array lookup.
 (!) :: Ix.Ix i => Array i c -> i -> Id c
