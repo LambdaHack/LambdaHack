@@ -145,18 +145,20 @@ effectDominate :: MonadActionRO m
                => ActorId -> ActorId -> WriterT [Atomic] m Bool
 effectDominate source target = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-  sm <- getsState (getActorBody source)
-  tm@Actor{bspeed, bkind} <- getsState (getActorBody target)
-  -- Halve the speed as a side-effect of domination.
-  let speed = fromMaybe (aspeed $ okind bkind) bspeed
-      delta = speedScale (1%2) speed
-  when (delta > speedZero) $
-    tellCmdAtomic $ HasteActorA target (speedNegate delta)
-  -- TODO: Perhaps insert a turn of delay here to allow countermeasures.
-  tellCmdAtomic $ DominateActorA target (bfaction tm) (bfaction sm)
-  leaderOld <- getsState $ gleader . (EM.! bfaction sm) . sfaction
-  tellCmdAtomic $ LeadFactionA (bfaction sm) leaderOld (Just target)
-  return True
+  sb <- getsState (getActorBody source)
+  tb <- getsState (getActorBody target)
+  if bfaction tb == bfaction sb then return False
+  else do
+    -- Halve the speed as a side-effect of domination.
+    let speed = fromMaybe (aspeed $ okind $ bkind tb) $ bspeed tb
+        delta = speedScale (1%2) speed
+    when (delta > speedZero) $
+      tellCmdAtomic $ HasteActorA target (speedNegate delta)
+    -- TODO: Perhaps insert a turn of delay here to allow countermeasures.
+    tellCmdAtomic $ DominateActorA target (bfaction tb) (bfaction sb)
+    leaderOld <- getsState $ gleader . (EM.! bfaction sb) . sfaction
+    tellCmdAtomic $ LeadFactionA (bfaction sb) leaderOld (Just target)
+    return True
 
 -- ** SummonFriend
 
