@@ -387,13 +387,17 @@ triggerSer aid dpos = do
 setPathSer :: MonadServer m
            => ActorId -> [Vector] -> WriterT [Atomic] m ()
 setPathSer aid path = do
-  fromPath <- getsState $ bpath . getActorBody aid
-  tellCmdAtomic $ PathActorA aid fromPath (Just path)
-  when (length path <= 1) $ do
+  when (length path <= 2) $ do
     fromColor <- getsState $ bcolor . getActorBody aid
     let toColor = Just Color.BrBlack
     when (fromColor /= toColor) $
       tellCmdAtomic $ ColorActorA aid fromColor toColor
+  fromPath <- getsState $ bpath . getActorBody aid
+  case path of
+    [] -> tellCmdAtomic $ PathActorA aid fromPath (Just [])
+    d : lv -> do
+      moveSer aid d
+      tellCmdAtomic $ PathActorA aid fromPath (Just lv)
 
 -- * GameRestart
 

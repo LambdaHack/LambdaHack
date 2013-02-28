@@ -31,7 +31,7 @@ data CmdSer =
 
 timedCmdSer :: CmdSer -> Bool
 timedCmdSer cmd = case cmd of
-  SetPathSer{} -> False
+  SetPathSer _ path -> length path > 1
   GameRestartSer{} -> False
   GameExitSer{} -> False
   GameSaveSer{} -> False

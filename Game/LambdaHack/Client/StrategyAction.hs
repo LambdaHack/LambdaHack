@@ -184,8 +184,8 @@ track cops actor glo =
     Just [] -> assert `failure` (actor, b, glo)
     -- TODO: instead let server do this in MoveSer, abort and handle in loop:
     Just (d : _) | not $ accessible cops lvl bpos (shift bpos d) -> clearPath
-    Just (d : lv) ->
-      returN "SetPathSer; MoveSer" [SetPathSer actor lv, MoveSer actor d]
+    Just lv ->
+      returN "SetPathSer; MoveSer" [SetPathSer actor lv]
     Nothing -> reject
 
 pickup :: ActorId -> State -> Strategy [CmdSer]
