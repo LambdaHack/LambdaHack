@@ -3,6 +3,7 @@ module Game.LambdaHack.Server.Config
   ( Config(..)
   ) where
 
+import Control.DeepSeq
 import Data.Binary
 import Data.Text (Text)
 
@@ -33,6 +34,8 @@ data Config = Config
     -- heroNames
   , configHeroNames      :: ![(Int, Text)]
   } deriving Show
+
+instance NFData Config
 
 instance Binary Config where
   put Config{..} = do

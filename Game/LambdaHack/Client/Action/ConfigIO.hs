@@ -3,6 +3,7 @@ module Game.LambdaHack.Client.Action.ConfigIO
   ( mkConfigUI
   ) where
 
+import Control.DeepSeq
 import qualified Data.Char as Char
 import qualified Data.ConfigFile as CF
 import System.Directory
@@ -93,8 +94,8 @@ parseConfigUI dataDir cp =
       configUICfgFile = dataDir </> "config.ui"
       configMacros =
         let trMacro (from, to) =
-              let !fromTr = mkKey from
-                  !toTr  = mkKey to
+              let fromTr = mkKey from
+                  toTr  = mkKey to
               in if fromTr == toTr
                  then assert `failure` "degenerate alias: " ++ show toTr
                  else (fromTr, toTr)
@@ -110,4 +111,6 @@ mkConfigUI corule = do
   let cpUIDefault = rcfgUIDefault $ Kind.stdRuleset corule
   appData <- appDataDir
   cpUI <- mkConfig cpUIDefault $ appData </> "config.ui.ini"
-  return $ parseConfigUI appData cpUI
+  let conf = parseConfigUI appData cpUI
+  -- Catch syntax errors ASAP,
+  return $! deepseq conf conf

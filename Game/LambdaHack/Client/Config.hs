@@ -3,6 +3,7 @@ module Game.LambdaHack.Client.Config
   ( ConfigUI(..)
   ) where
 
+import Control.DeepSeq
 import Data.Binary
 
 import qualified Game.LambdaHack.Client.Key as K
@@ -21,6 +22,8 @@ data ConfigUI = ConfigUI
   , configFont         :: !String
   , configHistoryMax   :: !Int
   } deriving Show
+
+instance NFData ConfigUI
 
 instance Binary ConfigUI where
   put ConfigUI{..} = do

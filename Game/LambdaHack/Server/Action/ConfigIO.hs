@@ -5,6 +5,7 @@ module Game.LambdaHack.Server.Action.ConfigIO
   ) where
 
 import Control.Arrow ((***))
+import Control.DeepSeq
 import qualified Data.Char as Char
 import qualified Data.ConfigFile as CF
 import Data.List
@@ -155,4 +156,7 @@ mkConfigRules corule = do
   cpRules <- mkConfig cpRulesDefault $ appData </> "config.rules.ini"
   (dungeonGen,  cp2) <- getSetGen cpRules "dungeonRandomGenerator"
   (startingGen, cp3) <- getSetGen cp2     "startingRandomGenerator"
-  return (parseConfigRules appData cp3, dungeonGen, startingGen)
+  let conf = parseConfigRules appData cp3
+      -- Catch syntax errors ASAP,
+      !res = deepseq conf (conf, dungeonGen, startingGen)
+  return res
