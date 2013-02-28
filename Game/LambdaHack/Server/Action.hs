@@ -151,16 +151,14 @@ writeTQueueUI toClient cmd = do
       debugAid aid "CmdHandleHumanUI"
   liftIO $ atomically $ STM.writeTQueue toClient cmd
 
-readTQueue :: MonadServerChan m => TQueue [CmdSer] -> m [CmdSer]
+readTQueue :: MonadServerChan m => TQueue CmdSer -> m CmdSer
 readTQueue toServer = do
-  cmds <- liftIO $ atomically $ STM.readTQueue toServer
+  cmd <- liftIO $ atomically $ STM.readTQueue toServer
   debug <- getsServer $ sniffIn . sdebugSer
-  when debug $ case cmds of
-    [] -> return ()
-    cmd : _ -> do
-      let aid = aidCmdSer cmd
-      debugAid aid $ showT ("CmdSer", cmd)
-  return cmds
+  when debug $ do
+    let aid = aidCmdSer cmd
+    debugAid aid $ showT ("CmdSer", cmd)
+  return cmd
 
 debugAid :: MonadServerChan m => ActorId -> Text -> m ()
 debugAid aid s = do
@@ -178,15 +176,9 @@ sendUpdateCli fid cmd = do
   maybe skip (connSendUpdateCli cmd) conn
 
 connSendQueryCli :: MonadServerChan m => ActorId -> ConnCli CmdCli -> m CmdSer
-connSendQueryCli aid conn@ConnCli{toClient, toServer} = do
-  cmds <- readTQueue toServer
-  case cmds of
-    [] -> do
-      writeTQueueCli toClient $ CmdHandleAICli aid
-      connSendQueryCli aid conn
-    cmd : rest -> do
-      liftIO $ atomically $ STM.unGetTQueue toServer rest
-      return cmd
+connSendQueryCli aid ConnCli{toClient, toServer} = do
+  writeTQueueCli toClient $ CmdHandleAICli aid
+  readTQueue toServer
 
 sendQueryCli :: MonadServerChan m => FactionId -> ActorId -> m CmdSer
 sendQueryCli fid aid = do
@@ -210,15 +202,9 @@ sendUpdateUI fid cmd = do
   maybe skip (connSendUpdateUI cmd) conn
 
 connSendQueryUI :: MonadServerChan m => ActorId -> ConnCli CmdUI -> m CmdSer
-connSendQueryUI aid conn@ConnCli{toClient, toServer} = do
-  cmds <- readTQueue toServer
-  case cmds of
-    [] -> do
-      writeTQueueUI toClient $ CmdHandleHumanUI aid
-      connSendQueryUI aid conn
-    cmd : rest -> do
-      liftIO $ atomically $ STM.unGetTQueue toServer rest
-      return cmd
+connSendQueryUI aid ConnCli{toClient, toServer} = do
+  writeTQueueUI toClient $ CmdHandleHumanUI aid
+  readTQueue toServer
 
 sendQueryUI :: MonadServerChan m => FactionId -> ActorId -> m CmdSer
 sendQueryUI fid aid = do

@@ -347,7 +347,7 @@ readChanFromSer = do
   toClient <- getsChan toClient
   liftIO $ atomically $ readTQueue toClient
 
-writeChanToSer :: (MonadClient m, MonadClientChan c m) => [CmdSer] -> m ()
+writeChanToSer :: (MonadClient m, MonadClientChan c m) => CmdSer -> m ()
 writeChanToSer cmds = do
   toServer <- getsChan toServer
   liftIO $ atomically $ writeTQueue toServer cmds

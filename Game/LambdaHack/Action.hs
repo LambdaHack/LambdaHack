@@ -31,7 +31,7 @@ import Game.LambdaHack.Utils.Assert
 -- | Connection channels between server and a single client.
 data ConnCli c = ConnCli
   { toClient :: TQueue c
-  , toServer :: TQueue [CmdSer]
+  , toServer :: TQueue CmdSer
   }
 
 instance Show (ConnCli c) where

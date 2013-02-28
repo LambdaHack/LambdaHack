@@ -31,7 +31,7 @@ import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 
-handleAI :: MonadClient m => ActorId -> m [CmdSer]
+handleAI :: MonadClient m => ActorId -> m CmdSer
 handleAI actor = do
   body <- getsState $ getActorBody actor
   side <- getsClient sside

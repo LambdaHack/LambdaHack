@@ -116,7 +116,7 @@ reacquireTgt cops actor btarget glo per factionAbilities =
 -- | AI strategy based on actor's sight, smell, intelligence, etc. Never empty.
 actionStrategy :: MonadClient m
                => ActorId -> [Ability]
-               -> m (Strategy [CmdSer])
+               -> m (Strategy CmdSer)
 actionStrategy actor factionAbilities = do
   cops <- getsState scops
   glo <- getState
@@ -126,7 +126,7 @@ actionStrategy actor factionAbilities = do
 
 proposeAction :: Kind.COps -> ActorId
               -> Maybe Target -> Discovery -> State -> [Ability]
-              -> Strategy [CmdSer]
+              -> Strategy CmdSer
 proposeAction cops actor btarget disco glo factionAbilities =
   sumS prefix .| combineDistant distant .| sumS suffix
   .| waitBlockNow actor  -- wait until friends sidestep, ensures never empty
@@ -139,7 +139,7 @@ proposeAction cops actor btarget disco glo factionAbilities =
       Just (TEnemy _ l) -> (l, True)
       Just (TPos l) -> (l, False)
       Nothing -> (bpos, False)  -- an actor blocked by friends
-  combineDistant as = liftM (: []) $ liftFrequency $ sumF as
+  combineDistant as = liftFrequency $ sumF as
   aFrequency :: Ability -> Frequency CmdSer
   aFrequency Ability.Ranged = if foeVisible
                               then rangedFreq cops actor disco glo fpos
@@ -153,7 +153,7 @@ proposeAction cops actor btarget disco glo factionAbilities =
   aFrequency _              = assert `failure` distant
   chaseFreq =
     scaleFreq 30 $ bestVariant $ chase cops actor glo (fpos, foeVisible)
-  aStrategy :: Ability -> Strategy [CmdSer]
+  aStrategy :: Ability -> Strategy CmdSer
   aStrategy Ability.Track  = track cops actor glo
   aStrategy Ability.Heal   = mzero  -- TODO
   aStrategy Ability.Flee   = mzero  -- TODO
@@ -169,26 +169,26 @@ proposeAction cops actor btarget disco glo factionAbilities =
   sumF = msum . map aFrequency
 
 -- | A strategy to always just wait.
-waitBlockNow :: ActorId -> Strategy [CmdSer]
-waitBlockNow actor = returN "wait" [WaitSer actor]
+waitBlockNow :: ActorId -> Strategy CmdSer
+waitBlockNow actor = returN "wait" $ WaitSer actor
 
 -- | Strategy for dumb missiles.
-track :: Kind.COps -> ActorId -> State -> Strategy [CmdSer]
+track :: Kind.COps -> ActorId -> State -> Strategy CmdSer
 track cops actor glo =
   strat
  where
   lvl = sdungeon glo EM.! blid
   b@Actor{bpos, bpath, blid} = getActorBody actor glo
-  clearPath = returN "ClearPathSer" [SetPathSer actor []]
+  clearPath = returN "ClearPathSer" $ SetPathSer actor []
   strat = case bpath of
     Just [] -> assert `failure` (actor, b, glo)
     -- TODO: instead let server do this in MoveSer, abort and handle in loop:
     Just (d : _) | not $ accessible cops lvl bpos (shift bpos d) -> clearPath
     Just lv ->
-      returN "SetPathSer; MoveSer" [SetPathSer actor lv]
+      returN "SetPathSer; MoveSer" $ SetPathSer actor lv
     Nothing -> reject
 
-pickup :: ActorId -> State -> Strategy [CmdSer]
+pickup :: ActorId -> State -> Strategy CmdSer
 pickup actor glo =
   lootHere bpos .=> actionPickup
  where
@@ -201,12 +201,12 @@ pickup actor glo =
       let item = getItemBody iid glo
           l = if jsymbol item == '$' then Just $ InvChar '$' else Nothing
       in case assignLetter iid l body of
-        Just l2 -> returN "pickup" [PickupSer actor iid k l2]
-        Nothing -> returN "pickup" [WaitSer actor]
+        Just l2 -> returN "pickup" $ PickupSer actor iid k l2
+        Nothing -> returN "pickup" $ WaitSer actor
 
-melee :: ActorId -> State -> Point -> Strategy [CmdSer]
+melee :: ActorId -> State -> Point -> Strategy CmdSer
 melee actor glo fpos =
-  foeAdjacent .=> (returN "melee" [MoveSer actor dir])
+  foeAdjacent .=> (returN "melee" $ MoveSer actor dir)
  where
   Level{lxsize} = sdungeon glo EM.! blid
   Actor{bpos, blid} = getActorBody actor glo
@@ -382,9 +382,9 @@ chase cops actor glo foe@(_, foeVisible) =
      then MoveSer actor `liftM` moveStrategy cops actor glo mFoe
      else RunSer actor `liftM` moveStrategy cops actor glo mFoe
 
-wander :: Kind.COps -> ActorId -> State -> Strategy [CmdSer]
+wander :: Kind.COps -> ActorId -> State -> Strategy CmdSer
 wander cops actor glo =
   -- Target set, but we don't chase the foe, e.g., because we are blocked
   -- or we cannot chase at all.
   let mFoe = Nothing
-  in liftM (: []) $ MoveSer actor `liftM` moveStrategy cops actor glo mFoe
+  in MoveSer actor `liftM` moveStrategy cops actor glo mFoe

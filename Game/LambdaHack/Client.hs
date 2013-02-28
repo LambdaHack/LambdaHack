@@ -47,4 +47,4 @@ cmdUISem cmd = do
     CmdHandleHumanUI aid -> do
       assert (isJust mleader `blame` cmd) skip
       cmdH <- handleHuman aid
-      writeChanToSer [cmdH]
+      writeChanToSer cmdH
