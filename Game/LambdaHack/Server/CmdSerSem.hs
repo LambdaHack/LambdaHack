@@ -119,13 +119,11 @@ actorAttackActor source target = do
                  , buildItem flavour discoRev h2hKind (okind h2hKind) 0 )
   let performHit block = do
         let hitA = if block then HitBlockD else HitD
-        -- Msgs inside itemEffectSem describe the target part.
-        itemEffect source target miid item
-        -- Order reversed to anticipate death in the strike message.
-        -- Note: this means actors should not be destroyed in @itemEffect@.
         tellDescAtomic $ StrikeD source target item hitA
         -- Deduct a hitpoint for a pierce of a projectile.
         when (bproj sm) $ tellCmdAtomic $ HealActorA source (-1)
+        -- Msgs inside itemEffectSem describe the target part.
+        itemEffect source target miid item
   -- Projectiles can't be blocked (though can be sidestepped).
   if braced tm time && not (bproj sm)
     then do

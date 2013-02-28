@@ -356,18 +356,17 @@ handleActors cmdSerSem arena subclipStart = do
 --      when (subclipStart == timeZero) $
 --        mapM_ cmdAtomicBroad $ map (Right . DisplayDelayD) $ EM.keys faction
       return ()
-    Just (aid, body) | bhp body <= 0 && not (bproj body)
-                       || bhp body < 0
-                       || maybe False null (bpath body) -> do
+    Just (aid, tb) | bhp tb <= 0 && not (bproj tb) || bhp tb < 0
+                     || maybe False null (bpath tb) -> do
       atoms <-
-        if bhp body < 0  -- e.g., a projectile hitting an actor
+        if bhp tb < 0  -- e.g., a projectile hitting an actor
         then -- Items get destroyed, effectively.
-             return [Left $ DestroyActorA aid body]
+             return [Left $ DestroyActorA aid tb]
         else -- Items drop to the ground.
              execWriterT $ dieSer aid
       mapM_ cmdAtomicBroad atoms
       -- Death or projectile impact are serious, new subclip.
-      handleActors cmdSerSem arena (btime body)
+      handleActors cmdSerSem arena (btime tb)
     Just (actor, body) -> do
       let hasLeader fid = isJust $ gleader $ faction EM.! fid
           allPush =

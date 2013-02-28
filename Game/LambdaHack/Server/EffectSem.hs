@@ -2,7 +2,12 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 -- | Effect semantics.
 -- TODO: document
-module Game.LambdaHack.Server.EffectSem where
+module Game.LambdaHack.Server.EffectSem
+  ( -- + Semantics of effects
+    itemEffect, effectSem
+    -- * Assorted operations
+  , createItems, addHero, spawnMonsters
+  ) where
 
 import Control.Monad
 import Control.Monad.Writer.Strict (WriterT)
@@ -40,6 +45,25 @@ default (Text)
 
 -- + Semantics of effects
 
+-- TODO: when h2h items have ItemId, replace Item with ItemId
+-- | The source actor affects the target actor, with a given item.
+-- If the event is seen, the item may get identified. This function
+-- is mutually recursive with @effect@ and so it's a part of @Effect@
+-- semantics.
+itemEffect :: MonadServer m
+           => ActorId -> ActorId -> Maybe ItemId -> Item
+           -> WriterT [Atomic] m ()
+itemEffect source target miid item = do
+  Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
+  tb <- getsState $ getActorBody target
+  discoS <- getsServer sdisco
+  let ik = fromJust $ jkind discoS item
+      ef = ieffect $ okind ik
+  b <- effectSem ef source target (jpower item)
+  -- The effect is interesting so the item gets identified, if seen.
+  let atomic iid = tellCmdAtomic $ DiscoverA (blid tb) (bpos tb) iid ik
+  when b $ maybe skip atomic miid
+
 -- | The source actor affects the target actor, with a given effect and power.
 -- Both actors are on the current level and can be the same actor.
 -- The boolean result indicates if the effect was spectacular enough
@@ -63,25 +87,6 @@ effectSem effect source target power = case effect of
   Effect.Ascend -> effectAscend target power
   Effect.Descend -> effectDescend target power
 
--- TODO: when h2h items have ItemId, replace Item with ItemId
--- | The source actor affects the target actor, with a given item.
--- If the event is seen, the item may get identified. This function
--- is mutually recursive with @effect@ and so it's a part of @Effect@
--- semantics.
-itemEffect :: MonadServer m
-           => ActorId -> ActorId -> Maybe ItemId -> Item
-           -> WriterT [Atomic] m ()
-itemEffect source target miid item = do
-  Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
-  tb <- getsState $ getActorBody target
-  discoS <- getsServer sdisco
-  let ik = fromJust $ jkind discoS item
-      ef = ieffect $ okind ik
-  b <- effectSem ef source target (jpower item)
-  -- The effect is interesting so the item gets identified, if seen.
-  let atomic iid = tellCmdAtomic $ DiscoverA (blid tb) (bpos tb) iid ik
-  when b $ maybe skip atomic miid
-
 -- + Individual semantic functions for effects
 
 -- ** NoEffect
@@ -98,7 +103,9 @@ effectHeal target power = do
   tm <- getsState $ getActorBody target
   let bhpMax = maxDice (ahp $ okind $ bkind tm)
   if bhp tm >= bhpMax || power <= 0
-    then effectNoEffect
+    then do
+      tellDescAtomic $ EffectD target Effect.NoEffect
+      return False
     else do
       let deltaHP = min power (bhpMax - bhp tm)
       tellCmdAtomic $ HealActorA target deltaHP
@@ -114,12 +121,11 @@ effectWound nDm source target power = do
   n <- rndToAction $ rollDice nDm
   let deltaHP = - (n + power)
   if deltaHP >= 0
-    then effectNoEffect
+    then return False
     else do
       -- Damage the target.
       tellCmdAtomic $ HealActorA target deltaHP
-      when (source == target) $
-        tellDescAtomic $ EffectD source $ Effect.Wound nDm
+      tellDescAtomic $ EffectD target $ Effect.Wound nDm
       return True
 
 -- ** Mindprobe
@@ -147,7 +153,9 @@ effectDominate source target = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   sb <- getsState (getActorBody source)
   tb <- getsState (getActorBody target)
-  if bfaction tb == bfaction sb then return False
+  if bfaction tb == bfaction sb then do
+    tellDescAtomic $ EffectD target Effect.NoEffect
+    return False
   else do
     -- Halve the speed as a side-effect of domination.
     let speed = fromMaybe (aspeed $ okind $ bkind tb) $ bspeed tb
@@ -304,7 +312,9 @@ effectApplyPerfume :: MonadActionRO m
                    => ActorId -> ActorId -> WriterT [Atomic] m Bool
 effectApplyPerfume source target =
   if source == target
-  then return False
+  then do
+    tellDescAtomic $ EffectD target Effect.NoEffect
+    return False
   else do
     tm <- getsState $ getActorBody target
     oldSmell <- getsLevel (blid tm) lsmell

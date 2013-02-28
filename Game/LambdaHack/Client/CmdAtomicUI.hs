@@ -364,39 +364,52 @@ drawDescAtomicUI verbose desc = case desc of
     aVerbMU aid $ "trigger"  -- TODO: opens door
   ShunD aid _p _ _ | verbose ->
     aVerbMU aid $ "shun"  -- TODO: shuns stairs down
-  EffectD aid effect -> do
-    b <- getsState $ getActorBody aid
-    if bhp b > 0
+  EffectD target effect -> do
+    tb <- getsState $ getActorBody target
+    dies <- if bhp tb <= 0 && not (bproj tb) || bhp tb < 0
       then case effect of
+        Effect.Wound _ -> do
+          Kind.COps{coactor} <- getsState scops
+          -- We assume the Wound is the cause of incapacitation.
+          side <- getsClient sside
+          if bfaction tb == side then do
+            let verbDie = if bproj tb then "drop down" else "fall down"
+                msgDie = makeSentence
+                     [MU.SubjectVerbSg (partActor coactor tb) verbDie]
+            msgAdd msgDie
+            animDie <- animate $ deathBody $ bpos tb
+            when (not (bproj tb)) $ displayFramesPush animDie
+          else do
+            let verbD = if bproj tb then "break up" else "collapse"
+            aVerbMU target verbD
+          return True
+        _ -> return False
+      else return False
+    when (not dies) $
+      case effect of
         Effect.NoEffect -> msgAdd "Nothing happens."
         Effect.Heal -> do
-          aVerbMU aid "feel better"
-          let ps = (bpos b, bpos b)
+          aVerbMU target "feel better"
+          let ps = (bpos tb, bpos tb)
           animFrs <- animate $ twirlSplash ps Color.BrBlue Color.Blue
           displayFramesPush $ Nothing : animFrs
-        Effect.Wound _ -> aVerbMU aid "feel wounded"
+        Effect.Wound _ -> aVerbMU target "feel wounded"
         Effect.Mindprobe nEnemy -> do
           -- TODO: NWs with spelled cardinal would be handy
           let msg = makeSentence
                 [MU.NWs nEnemy "howl", "of anger", "can be heard"]
           msgAdd msg
-        Effect.Dominate | verbose -> aVerbMU aid "be dominated"
+        Effect.Dominate | verbose -> aVerbMU target "be dominated"
         Effect.ApplyPerfume ->
           msgAdd "The fragrance quells all scents in the vicinity."
         Effect.Searching -> do
           Kind.COps{coactor} <- getsState scops
           let msg = makeSentence
                 [ "It gets lost and"
-                , MU.SubjectVerbSg (partActor coactor b) "search in vain" ]
+                , MU.SubjectVerbSg (partActor coactor tb) "search in vain" ]
           msgAdd msg
-        Effect.Ascend -> aVerbMU aid "find a way upstairs"
-        Effect.Descend -> aVerbMU aid "find a way downstairs"
-        _ -> return ()
-      else case effect of
-        Effect.Wound _ -> do
-          -- Presumably the cause of death.
-          let verbD = if bproj b then "break up" else "collapse"
-          aVerbMU aid verbD
+        Effect.Ascend -> aVerbMU target "find a way upstairs"
+        Effect.Descend -> aVerbMU target "find a way downstairs"
         _ -> return ()
   FailureD _ msg -> msgAdd msg
   BroadcastD msg -> msgAdd msg
@@ -441,21 +454,10 @@ strikeD source target item b = assert (source /= target) $ do
         ++ if withWhat
            then ["with", partItemAW coitem disco item]
            else []
-  side <- getsClient sside
-  (msgDie, animDie) <-
-    if bhp tb > 0 then return ("", [])
-    else do
-      let verbD = if bproj tb then "drop down" else "fall down"
-          msgD = makeSentence
-                 [MU.SubjectVerbSg (partActor coactor tb) verbD]
-      animD <- animate $ deathBody $ bpos tb
-      return (msgD, animD)
-  msgAdd $ msg b <+> msgDie
+  msgAdd $ msg b
   let ps = (bpos tb, bpos sb)
       anim HitD = twirlSplash ps Color.BrRed Color.Red
       anim HitBlockD = blockHit ps Color.BrRed Color.Red
       anim MissBlockD = blockMiss ps
   animFrs <- animate $ anim b
   displayFramesPush $ Nothing : animFrs
-  -- Animate only when the client's own actor dies.
-  when (bfaction tb == side && not (bproj tb)) $ displayFramesPush animDie
