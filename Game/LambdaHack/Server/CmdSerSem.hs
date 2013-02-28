@@ -116,7 +116,7 @@ actorAttackActor source target = do
         flavour <- getsServer sflavour
         discoRev <- getsServer sdiscoRev
         return $ ( Nothing
-                 , buildItem flavour discoRev h2hKind (okind h2hKind) 0 )
+                 , buildItem flavour discoRev h2hKind (okind h2hKind) )
   let performHit block = do
         let hitA = if block then HitBlockD else HitD
         tellDescAtomic $ StrikeD source target item hitA
@@ -145,7 +145,7 @@ search aid = do
   discoS <- getsServer sdisco
   let delta = timeScale timeTurn $
                 case strongestSearch coitem discoS itemAssocs of
-                  Just (_, i)  -> 1 + jpower i
+                  Just (_, _i)  -> 1 {-+ jpower i-} -- TODO: use effect
                   Nothing -> 1
       searchTile diffL mv =
         let loc = shift (bpos b) mv
@@ -364,7 +364,7 @@ triggerSer aid dpos = do
           F.Cause ef -> do
             tellDescAtomic $ TriggerD aid dpos feat {-TODO-}True
             -- No block against tile, hence @False@.
-            void $ effectSem ef aid aid 0
+            void $ effectSem ef aid aid
           F.ChangeTo tgroup -> do
             tellDescAtomic $ TriggerD aid dpos feat {-TODO-}True
             as <- getsState $ actorList (const True) arena

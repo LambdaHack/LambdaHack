@@ -380,8 +380,10 @@ tgtAscendHuman k = do
         Nothing -> False
         Just cpos ->
           let tile = lvl `at` cpos
-          in k ==  1 && Tile.hasFeature cotile (F.Cause Effect.Ascend)  tile
-          || k == -1 && Tile.hasFeature cotile (F.Cause Effect.Descend) tile
+          in k ==  1
+             && Tile.hasFeature cotile (F.Cause $ Effect.Ascend 1)  tile
+             || k == -1
+             && Tile.hasFeature cotile (F.Cause $ Effect.Descend 1) tile
   if rightStairs  -- stairs, in the right direction
     then case whereTo loc tgtId k of
       Nothing ->  -- we are at the "end" of the dungeon

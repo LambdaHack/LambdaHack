@@ -368,7 +368,7 @@ drawDescAtomicUI verbose desc = case desc of
     tb <- getsState $ getActorBody target
     dies <- if bhp tb <= 0 && not (bproj tb) || bhp tb < 0
       then case effect of
-        Effect.Wound _ -> do
+        Effect.Hurt{} -> do
           Kind.COps{coactor} <- getsState scops
           -- We assume the Wound is the cause of incapacitation.
           side <- getsClient sside
@@ -388,12 +388,16 @@ drawDescAtomicUI verbose desc = case desc of
     when (not dies) $
       case effect of
         Effect.NoEffect -> msgAdd "Nothing happens."
-        Effect.Heal -> do
+        Effect.Heal p | p > 0 -> do
           aVerbMU target "feel better"
           let ps = (bpos tb, bpos tb)
           animFrs <- animate $ twirlSplash ps Color.BrBlue Color.Blue
           displayFramesPush $ Nothing : animFrs
-        Effect.Wound _ -> aVerbMU target "feel wounded"
+        Effect.Heal _ -> do
+          aVerbMU target "feel wounded"
+          let ps = (bpos tb, bpos tb)
+          animFrs <- animate $ twirlSplash ps Color.BrRed Color.Red
+          displayFramesPush $ Nothing : animFrs
         Effect.Mindprobe nEnemy -> do
           -- TODO: NWs with spelled cardinal would be handy
           let msg = makeSentence
@@ -402,14 +406,14 @@ drawDescAtomicUI verbose desc = case desc of
         Effect.Dominate | verbose -> aVerbMU target "be dominated"
         Effect.ApplyPerfume ->
           msgAdd "The fragrance quells all scents in the vicinity."
-        Effect.Searching -> do
+        Effect.Searching{}-> do
           Kind.COps{coactor} <- getsState scops
           let msg = makeSentence
                 [ "It gets lost and"
                 , MU.SubjectVerbSg (partActor coactor tb) "search in vain" ]
           msgAdd msg
-        Effect.Ascend -> aVerbMU target "find a way upstairs"
-        Effect.Descend -> aVerbMU target "find a way downstairs"
+        Effect.Ascend{} -> aVerbMU target "find a way upstairs"
+        Effect.Descend{} -> aVerbMU target "find a way downstairs"
         _ -> return ()
   FailureD _ msg -> msgAdd msg
   BroadcastD msg -> msgAdd msg

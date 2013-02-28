@@ -2,11 +2,11 @@
 -- | Terrain tiles for LambdaHack.
 module Content.TileKind ( cdefs ) where
 
-import Game.LambdaHack.Color
 import Game.LambdaHack.CDefs
+import Game.LambdaHack.Color
+import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Effect as Effect
 import Game.LambdaHack.Feature
-import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Random as Random
 
 cdefs :: CDefs TileKind
@@ -113,7 +113,7 @@ stairsUpDark = TileKind
 -- Dark room interior, OTOH, is fine:
   , tcolor   = BrWhite
   , tcolor2  = BrBlack
-  , tfeature = [Walkable, Clear, Exit, Ascendable, Cause Effect.Ascend]
+  , tfeature = [Walkable, Clear, Exit, Ascendable, Cause $ Effect.Ascend 1]
   }
 stairsUpLit = stairsUpDark
   { tfreq    = [("litLegend", 100)]
@@ -130,7 +130,7 @@ stairsDownDark = TileKind
 -- Dark room interior, OTOH, is fine:
   , tcolor   = BrWhite
   , tcolor2  = BrBlack
-  , tfeature = [Walkable, Clear, Exit, Descendable, Cause Effect.Descend]
+  , tfeature = [Walkable, Clear, Exit, Descendable, Cause $ Effect.Descend 1]
   }
 stairsDownLit = stairsDownDark
   { tfreq    = [("litLegend", 100)]

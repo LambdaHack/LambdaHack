@@ -68,7 +68,6 @@ type Discovery = EM.EnumMap ItemKindIx (Kind.Id ItemKind)
 -- | The reverse map to @Discovery@, needed for item creation.
 type DiscoRev    = EM.EnumMap (Kind.Id ItemKind) ItemKindIx
 
--- TODO: see the TODO about ipower in ItemKind.
 -- TODO: define type InvSymbol = Char and move all ops to another file.
 -- TODO: the list resulting from joinItem can contain items
 -- with the same letter.
@@ -82,7 +81,6 @@ data Item = Item
   , jsymbol  :: !Char          -- ^ individual map symbol
   , jname    :: !Text          -- ^ individual generic name
   , jflavour :: !Flavour       -- ^ individual flavour
-  , jpower   :: !Int           -- ^ power of the item
   }
   deriving (Show, Eq, Generic)
 
@@ -94,13 +92,11 @@ instance Binary Item where
     put jsymbol
     put jname
     put jflavour
-    put jpower
   get = do
     jkindIx <- get
     jsymbol <- get
     jname <- get
     jflavour <- get
-    jpower <- get
     return Item{..}
 
 -- | Recover a kind id of an item, if identified.
@@ -126,8 +122,8 @@ serverDiscos Kind.Ops{obounds, ofoldrWithKey} = do
 
 -- | Build an item with the given stats.
 buildItem :: FlavourMap -> DiscoRev
-          -> Kind.Id ItemKind -> ItemKind -> Int -> Item
-buildItem (FlavourMap flavour) discoRev ikChosen kind jpower =
+          -> Kind.Id ItemKind -> ItemKind -> Item
+buildItem (FlavourMap flavour) discoRev ikChosen kind =
   let jkindIx  = discoRev EM.! ikChosen
       jsymbol  = isymbol kind
       jname    = iname kind
@@ -148,8 +144,7 @@ newItem cops@Kind.Ops{opick, okind} flavour discoRev lvl depth = do
     then  -- Rare item; beware of inifite loops.
       newItem cops flavour discoRev lvl depth
     else do
-      jpower <- rollDeep lvl depth (ipower kind)
-      return ( buildItem flavour discoRev ikChosen kind jpower
+      return ( buildItem flavour discoRev ikChosen kind
              , jcount
              , kind )
 
@@ -191,7 +186,7 @@ dungeonFlavourMap Kind.Ops{ofoldrWithKey} =
 
 strongestItem :: [(ItemId, Item)] -> (Item -> Bool) -> Maybe (ItemId, Item)
 strongestItem is p =
-  let cmp = comparing $ jpower . snd
+  let cmp = comparing $ fst{-jpower . snd -}  -- TODO compare on effect power * level
       igs = filter (p . snd) is
   in case igs of
     [] -> Nothing
@@ -203,7 +198,7 @@ strongestSearch Kind.Ops{okind} disco is =
   strongestItem is $ \ i ->
     case jkind disco i of
       Nothing -> False
-      Just ik -> ieffect (okind ik) == Searching
+      Just ik -> case ieffect (okind ik) of Searching{} -> True; _ -> False
 
 -- TODO: generalise, in particular take base damage into account
 strongestSword :: Kind.COps -> [(ItemId, Item)] -> Maybe (ItemId, Item)
@@ -217,7 +212,7 @@ strongestRegen Kind.Ops{okind} disco is =
   strongestItem is $ \ i ->
     case jkind disco i of
       Nothing -> False
-      Just ik -> ieffect (okind ik) == Regeneration
+      Just ik -> case ieffect (okind ik) of Regeneration{} -> True; _ -> False
 
 -- | The part of speech describing the item.
 partItem :: Kind.Ops ItemKind -> Discovery -> Item -> (MU.Part, MU.Part)
@@ -229,10 +224,7 @@ partItem Kind.Ops{okind} disco i =
     Just ik ->
       let kind = okind ik
           eff = effectToSuffix (ieffect kind)
-          pwr = if jpower i == 0
-                then ""
-                else "(+" <> showT (jpower i) <> ")"
-      in (MU.Text genericName, MU.Text $ eff <+> pwr)
+      in (MU.Text genericName, MU.Text eff)
 
 partItemNWs :: Kind.Ops ItemKind -> Discovery -> Int -> Item -> MU.Part
 partItemNWs coitem disco jcount i =

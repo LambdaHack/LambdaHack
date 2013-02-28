@@ -16,8 +16,8 @@
 ; r: Apply { verb = "read", object = "scroll", syms = "?" }
 ; c: TriggerDir { verb = "close", object = "door", feature = Closable }
 ; o: TriggerDir { verb = "open", object = "door", feature = Openable }
-; less:    TriggerTile { verb = "ascend", object = "level", feature = Cause Ascend }
-; greater: TriggerTile { verb = "descend", object = "level", feature = Cause Descend }
+; less:    TriggerTile { verb = "ascend", object = "level", feature = Cause (Ascend 1) }
+; greater: TriggerTile { verb = "descend", object = "level", feature = Cause (Descend 1) }
 ; R: GameRestart
 ; X: GameExit
 ; S: GameSave

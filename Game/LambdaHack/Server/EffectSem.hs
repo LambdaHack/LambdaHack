@@ -59,7 +59,7 @@ itemEffect source target miid item = do
   discoS <- getsServer sdisco
   let ik = fromJust $ jkind discoS item
       ef = ieffect $ okind ik
-  b <- effectSem ef source target (jpower item)
+  b <- effectSem ef source target
   -- The effect is interesting so the item gets identified, if seen.
   let atomic iid = tellCmdAtomic $ DiscoverA (blid tb) (bpos tb) iid ik
   when b $ maybe skip atomic miid
@@ -69,23 +69,23 @@ itemEffect source target miid item = do
 -- The boolean result indicates if the effect was spectacular enough
 -- for the actors to identify it (and the item that caused it, if any).
 effectSem :: MonadServer m
-          => Effect.Effect -> ActorId -> ActorId -> Int
+          => Effect.Effect -> ActorId -> ActorId
           -> WriterT [Atomic] m Bool
-effectSem effect source target power = case effect of
+effectSem effect source target = case effect of
   Effect.NoEffect -> effectNoEffect
-  Effect.Heal -> effectHeal target power
-  Effect.Wound nDm -> effectWound nDm source target power
+  Effect.Heal p -> effectHeal p target
+  Effect.Hurt nDm p -> effectWound nDm p source target
   Effect.Mindprobe _ -> effectMindprobe target
   Effect.Dominate | source /= target -> effectDominate source target
-  Effect.Dominate -> effectSem (Effect.Mindprobe undefined) source target power
-  Effect.SummonFriend -> effectSummonFriend source target power
-  Effect.SpawnMonster -> effectSpawnMonster target power
-  Effect.CreateItem -> effectCreateItem target power
+  Effect.Dominate -> effectSem (Effect.Mindprobe undefined) source target
+  Effect.SummonFriend p -> effectSummonFriend p source target
+  Effect.SpawnMonster p -> effectSpawnMonster p target
+  Effect.CreateItem p -> effectCreateItem p target
   Effect.ApplyPerfume -> effectApplyPerfume source target
-  Effect.Regeneration -> effectSem Effect.Heal source target power
-  Effect.Searching -> effectSearching source
-  Effect.Ascend -> effectAscend target power
-  Effect.Descend -> effectDescend target power
+  Effect.Regeneration p -> effectSem (Effect.Heal p) source target
+  Effect.Searching p -> effectSearching p source
+  Effect.Ascend p -> effectAscend p target
+  Effect.Descend p -> effectDescend p target
 
 -- + Individual semantic functions for effects
 
@@ -97,27 +97,27 @@ effectNoEffect = return False
 -- ** Heal
 
 effectHeal :: MonadActionRO m
-           => ActorId -> Int -> WriterT [Atomic] m Bool
-effectHeal target power = do
+           => Int -> ActorId -> WriterT [Atomic] m Bool
+effectHeal power target = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   tm <- getsState $ getActorBody target
   let bhpMax = maxDice (ahp $ okind $ bkind tm)
-  if bhp tm >= bhpMax || power <= 0
+  if power > 0 && bhp tm >= bhpMax
     then do
       tellDescAtomic $ EffectD target Effect.NoEffect
       return False
     else do
       let deltaHP = min power (bhpMax - bhp tm)
       tellCmdAtomic $ HealActorA target deltaHP
-      tellDescAtomic $ EffectD target Effect.Heal
+      tellDescAtomic $ EffectD target $ Effect.Heal deltaHP
       return True
 
 -- ** Wound
 
 effectWound :: MonadServer m
-            => RollDice -> ActorId -> ActorId -> Int
+            => RollDice -> Int -> ActorId -> ActorId
             -> WriterT [Atomic] m Bool
-effectWound nDm source target power = do
+effectWound nDm power source target = do
   n <- rndToAction $ rollDice nDm
   let deltaHP = - (n + power)
   if deltaHP >= 0
@@ -125,7 +125,10 @@ effectWound nDm source target power = do
     else do
       -- Damage the target.
       tellCmdAtomic $ HealActorA target deltaHP
-      tellDescAtomic $ EffectD target $ Effect.Wound nDm
+      if source == target then
+        tellDescAtomic $ EffectD target $ Effect.Heal deltaHP
+      else
+        tellDescAtomic $ EffectD target $ Effect.Hurt nDm power
       return True
 
 -- ** Mindprobe
@@ -171,9 +174,9 @@ effectDominate source target = do
 -- ** SummonFriend
 
 effectSummonFriend :: MonadServer m
-                   => ActorId -> ActorId -> Int
+                   => Int -> ActorId -> ActorId
                    -> WriterT [Atomic] m Bool
-effectSummonFriend source target power = do
+effectSummonFriend power source target = do
   sm <- getsState (getActorBody source)
   tm <- getsState (getActorBody target)
   summonFriends (bfaction sm) (1 + power) (bpos tm) (blid tm)
@@ -235,8 +238,8 @@ findHeroName configHeroNames n =
 -- ** SpawnMonster
 
 effectSpawnMonster :: MonadServer m
-                   => ActorId -> Int -> WriterT [Atomic] m Bool
-effectSpawnMonster target power = do
+                   => Int -> ActorId -> WriterT [Atomic] m Bool
+effectSpawnMonster power target = do
   tm <- getsState (getActorBody target)
   void $ spawnMonsters (1 + power) (bpos tm) (blid tm)
   return True
@@ -278,8 +281,8 @@ addMonster mk bfaction ppos lid = do
 -- ** CreateItem
 
 effectCreateItem :: MonadServer m
-                 => ActorId -> Int -> WriterT [Atomic] m Bool
-effectCreateItem target power = do
+                 => Int -> ActorId -> WriterT [Atomic] m Bool
+effectCreateItem power target = do
   tm <- getsState $ getActorBody target
   void $ createItems (1 + power) (bpos tm) (blid tm)
   return True
@@ -327,18 +330,18 @@ effectApplyPerfume source target =
 
 -- ** Searching
 
-effectSearching :: Monad m => ActorId -> WriterT [Atomic] m Bool
-effectSearching source = do
-  tellDescAtomic $ EffectD source Effect.Searching
+effectSearching :: Monad m => Int -> ActorId -> WriterT [Atomic] m Bool
+effectSearching power source = do
+  tellDescAtomic $ EffectD source $ Effect.Searching power
   return True
 
 -- ** Ascend
 
 effectAscend :: MonadServer m
-             => ActorId -> Int -> WriterT [Atomic] m Bool
-effectAscend target power = do
+             => Int -> ActorId -> WriterT [Atomic] m Bool
+effectAscend power target = do
   effLvlGoUp target (power + 1)
-  tellDescAtomic $ EffectD target Effect.Ascend
+  tellDescAtomic $ EffectD target $ Effect.Ascend power
   return True
 
 effLvlGoUp :: MonadServer m => ActorId -> Int -> WriterT [Atomic] m ()
@@ -403,8 +406,7 @@ squashActor source target = do
   discoRev <- getsServer sdiscoRev
   let h2hKind = ouniqGroup "weight"
       kind = okind h2hKind
-      power = maxDeep $ ipower kind
-      item = buildItem flavour discoRev h2hKind kind power
+      item = buildItem flavour discoRev h2hKind kind
   itemEffect source target Nothing item
   tellDescAtomic $ StrikeD source target item HitD
 --      verb = iverbApply kind
@@ -417,8 +419,8 @@ squashActor source target = do
 -- ** Descend
 
 effectDescend :: MonadServer m
-              => ActorId -> Int -> WriterT [Atomic] m Bool
-effectDescend target power = do
+              => Int -> ActorId -> WriterT [Atomic] m Bool
+effectDescend power target = do
   effLvlGoUp target (- (power + 1))
-  tellDescAtomic $ EffectD target Effect.Descend
+  tellDescAtomic $ EffectD target $ Effect.Descend power
   return True

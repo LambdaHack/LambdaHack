@@ -75,9 +75,9 @@ draw dm cops per drawnLevelId leader
                     case Item.jkind sdisco sw of
                       Just swk ->
                         case ieffect $ iokind swk of
-                          Wound dice ->
-                            showT dice <> "+" <> showT (Item.jpower sw)
-                          _ -> showT (Item.jpower sw)
+                          Hurt dice p ->
+                            showT dice <> "+" <> showT p
+                          _ -> ""
                       Nothing -> "3d1"  -- TODO: ?
                   Nothing -> "3d1"  -- TODO; use the item 'fist'
       bl = case scursor of

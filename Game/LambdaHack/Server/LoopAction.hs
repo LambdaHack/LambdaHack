@@ -758,7 +758,7 @@ regenerateLevelHP arena = do
             regen = max 1 $
                       aregen ak `div`
                       case strongestRegen coitem discoS itemAssocs of
-                        Just (_, i)  -> 5 * jpower i
+                        Just (_, _i)  -> 5 {-* jpower i-} -- TODO: use effect
                         Nothing -> 1
             bhpMax = maxDice (ahp ak)
             deltaHP = min 1 (bhpMax - bhp m)
