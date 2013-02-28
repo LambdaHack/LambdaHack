@@ -113,7 +113,9 @@ tryFindHeroK s fact k =
   let c | k == 0          = '@'
         | k > 0 && k < 10 = Char.intToDigit k
         | otherwise       = assert `failure` k
-  in tryFindActor s (\body -> bsymbol body == Just c && bfaction body == fact)
+  in tryFindActor s (\body -> bsymbol body == Just c
+                              && not (bproj body)
+                              && bfaction body == fact)
 
 -- | Compute the level identifier and starting position on the level,
 -- after a level change.

@@ -340,8 +340,9 @@ handleActors cmdSerSem arena subclipStart = do
                  -- TODO: insert wrt order, instead of sorting
                  isLeader (a1, b1) =
                    not $ Just a1 == gleader (faction EM.! bfaction b1)
-                 order = Ord.comparing
-                   (bfaction . snd &&& isLeader &&& bsymbol . snd)
+                 order = Ord.comparing $
+                   ((>= 0) . bhp . snd) &&& bfaction . snd
+                   &&& isLeader &&& bsymbol . snd
                  (atime, as) = EM.findMin prio
                  ams = map (\a -> (a, getActorBody a s)) as
                  (actor, m) = head $ sortBy order ams
@@ -365,7 +366,7 @@ handleActors cmdSerSem arena subclipStart = do
         else -- Items drop to the ground.
              execWriterT $ dieSer aid
       mapM_ cmdAtomicBroad atoms
-      -- Death or projectile impact is serious, new subclip.
+      -- Death or projectile impact are serious, new subclip.
       handleActors cmdSerSem arena (btime body)
     Just (actor, body) -> do
       let hasLeader fid = isJust $ gleader $ faction EM.! fid
@@ -486,9 +487,11 @@ advanceTime :: (MonadAction m, MonadServerChan m) => ActorId -> m [Atomic]
 advanceTime aid = do
   Kind.COps{coactor} <- getsState scops
   b <- getsState $ getActorBody aid
-  let speed = actorSpeed coactor b
-      t = ticksPerMeter speed
-  return [Left $ AgeActorA aid t]
+  -- TODO: Add an option to block this for non-projectiles too.
+  if bhp b < 0 && bproj b then return [] else do
+    let speed = actorSpeed coactor b
+        t = ticksPerMeter speed
+    return [Left $ AgeActorA aid t]
 
 -- | Save game and perhaps exit.
 handleSave :: (MonadAction m, MonadServerChan m)

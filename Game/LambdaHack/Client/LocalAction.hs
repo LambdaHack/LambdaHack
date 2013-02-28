@@ -226,15 +226,14 @@ partyAfterLeader leader = do
   allA <- getsState $ EM.assocs . sactorD
   s <- getState
   let hs9 = catMaybes $ map (tryFindHeroK s faction) [0..9]
-      factionA = filter (\(_, body) -> bfaction body == faction) allA
+      factionA = filter (\(_, body) ->
+        not (bproj body) && bfaction body == faction) allA
       hs = hs9 ++ (deleteFirstsBy ((==) `on` fst) factionA hs9)
       i = fromMaybe (-1) $ findIndex ((== leader) . fst) hs
       (lt, gt) = (take i hs, drop (i + 1) hs)
   return $ gt ++ lt
 
--- | Select a faction leader. Switch level, if needed.
--- False, if nothing to do. Should only be invoked as a direct result
--- of a human player action (leader death just sets sleader to Nothing).
+-- | Select a faction leader. False, if nothing to do.
 selectLeader :: MonadClientUI m => ActorId -> m Bool
 selectLeader actor = do
   Kind.COps{coactor} <- getsState scops
@@ -246,6 +245,7 @@ selectLeader actor = do
       loc <- getState
       modifyClient $ updateLeader actor loc
       pbody <- getsState $ getActorBody actor
+      assert (not (bproj pbody) `blame` (actor, pbody)) skip
       -- Move the cursor, if active, to the new level.
       when (isJust stgtMode) $ setTgtId $ blid pbody
       -- Don't continue an old run, if any.

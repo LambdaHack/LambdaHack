@@ -389,7 +389,7 @@ setPathSer :: MonadServer m
 setPathSer aid path = do
   fromPath <- getsState $ bpath . getActorBody aid
   tellCmdAtomic $ PathActorA aid fromPath (Just path)
-  when (length path < 3) $ do
+  when (length path <= 1) $ do
     fromColor <- getsState $ bcolor . getActorBody aid
     let toColor = Just Color.BrBlack
     when (fromColor /= toColor) $
