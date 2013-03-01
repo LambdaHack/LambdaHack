@@ -241,9 +241,8 @@ atomicRemember lid inPer s =
       -- Any client that remembers out of sight items, OTOH,
       -- will create atomic actions that forget remembered items
       -- that are revealed not to be there any more (no @SpotItemA@ for them).
-      -- By this point the items of the actor are already registered in state.
       inPrio = mapMaybe (\p -> posToActor p lid s) inFov
-      fActor aid = SpotActorA aid (getActorBody aid s)
+      fActor aid = SpotActorA aid (getActorBody aid s) (getActorItem aid s)
       inActor = map fActor inPrio
       -- No @outActor@, for the same reason as with @outItem@.
       inTileMap = map (\p -> (p, ltile lvl Kind.! p)) inFov
@@ -356,17 +355,19 @@ handleActors cmdSerSem arena subclipStart = do
 --      when (subclipStart == timeZero) $
 --        mapM_ cmdAtomicBroad $ map (Right . DisplayDelayD) $ EM.keys faction
       return ()
-    Just (aid, tb) | bhp tb <= 0 && not (bproj tb) || bhp tb < 0
-                     || maybe False null (bpath tb) -> do
+    Just (aid, b) | bhp b <= 0 && not (bproj b) || bhp b < 0
+                     || maybe False null (bpath b) -> do
       atoms <-
-        if bhp tb < 0  -- e.g., a projectile hitting an actor
-        then -- Items get destroyed, effectively.
-             return [Left $ DestroyActorA aid tb]
-        else -- Items drop to the ground.
-             execWriterT $ dieSer aid
+        if bhp b < 0  -- e.g., a projectile hitting an actor
+        then do -- Items get destroyed, effectively.
+          ais <- getsState $ getActorItem aid
+          return [Left $ DestroyActorA aid b ais]
+        else
+          -- Items drop to the ground.
+          execWriterT $ dieSer aid
       mapM_ cmdAtomicBroad atoms
       -- Death or projectile impact are serious, new subclip.
-      handleActors cmdSerSem arena (btime tb)
+      handleActors cmdSerSem arena (btime b)
     Just (actor, body) -> do
       let hasLeader fid = isJust $ gleader $ faction EM.! fid
           allPush =
@@ -458,7 +459,7 @@ dieSer aid = do  -- TODO: explode if a projectile holdding a potion
   body <- getsState $ getActorBody aid
   electLeader (bfaction body) (blid body) aid
   dropAllItems aid body
-  tellCmdAtomic $ DestroyActorA aid body {bbag = EM.empty}
+  tellCmdAtomic $ DestroyActorA aid body {bbag = EM.empty} []
 --  Config{configFirstDeathEnds} <- getsServer sconfig
 
 -- | Drop all actor's items.

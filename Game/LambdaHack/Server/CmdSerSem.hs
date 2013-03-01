@@ -333,7 +333,7 @@ addProjectile iid loc blid bfaction path btime = do
         }
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
-  tellCmdAtomic $ CreateActorA acounter m
+  tellCmdAtomic $ CreateActorA acounter m [(iid, item)]
   return acounter
 
 -- * ApplySer

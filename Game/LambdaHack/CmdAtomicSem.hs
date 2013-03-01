@@ -31,12 +31,12 @@ import Game.LambdaHack.Vector
 
 cmdAtomicSem :: MonadAction m => CmdAtomic -> m ()
 cmdAtomicSem cmd = case cmd of
-  CreateActorA aid body -> createActorA aid body
-  DestroyActorA aid body -> destroyActorA aid body
+  CreateActorA aid body ais -> createActorA aid body ais
+  DestroyActorA aid body ais -> destroyActorA aid body ais
   CreateItemA iid item k c -> createItemA iid item k c
   DestroyItemA iid item k c -> destroyItemA iid item k c
-  SpotActorA aid body -> createActorA aid body
-  LoseActorA aid body -> destroyActorA aid body
+  SpotActorA aid body ais -> createActorA aid body ais
+  LoseActorA aid body ais -> destroyActorA aid body ais
   SpotItemA iid item k c -> createItemA iid item k c
   LoseItemA iid item k c -> destroyItemA iid item k c
   MoveActorA aid fromP toP -> moveActorA aid fromP toP
@@ -70,8 +70,8 @@ cmdAtomicSem cmd = case cmd of
 
 resetsFovAtomic :: MonadActionRO m => CmdAtomic -> m (Maybe [FactionId])
 resetsFovAtomic cmd = case cmd of
-  CreateActorA _ body -> return $ Just [bfaction body]
-  DestroyActorA _ _ -> return $ Just []  -- FOV kept for a bit to see aftermath
+  CreateActorA _ body _ -> return $ Just [bfaction body]
+  DestroyActorA _ _ _ -> return $ Just []  -- FOV kept a bit to see aftermath
   CreateItemA _ _ _ _ -> return $ Just []  -- unless shines
   DestroyItemA _ _ _ _ -> return $ Just []  -- ditto
   MoveActorA aid _ _ -> fmap Just $ fidOfAid aid  -- assumption: has no light
@@ -110,12 +110,12 @@ posCmdAtomic :: MonadActionRO m
              => CmdAtomic
              -> m (Either (Either Bool FactionId) (LevelId, [Point]))
 posCmdAtomic cmd = case cmd of
-  CreateActorA _ body -> return $ Right (blid body, [bpos body])
-  DestroyActorA _ body -> return $ Right (blid body, [bpos body])
+  CreateActorA _ body _ -> return $ Right (blid body, [bpos body])
+  DestroyActorA _ body _ -> return $ Right (blid body, [bpos body])
   CreateItemA _ _ _ c -> singleContainer c
   DestroyItemA _ _ _ c -> singleContainer c
-  SpotActorA _ body -> return $ Right (blid body, [bpos body])
-  LoseActorA _ body -> return $ Right (blid body, [bpos body])
+  SpotActorA _ body _ -> return $ Right (blid body, [bpos body])
+  LoseActorA _ body _ -> return $ Right (blid body, [bpos body])
   SpotItemA _ _ _ c -> singleContainer c
   LoseItemA _ _ _ c -> singleContainer c
   MoveActorA aid fromP toP -> do
@@ -220,12 +220,18 @@ breakCmdAtomic :: MonadActionRO m => CmdAtomic -> m [CmdAtomic]
 breakCmdAtomic cmd = case cmd of
   MoveActorA aid _ toP -> do
     b <- getsState $ getActorBody aid
-    return [LoseActorA aid b, SpotActorA aid b {bpos = toP}]
+    ais <- getsState $ getActorItem aid
+    return [LoseActorA aid b ais, SpotActorA aid b {bpos = toP} ais]
   DisplaceActorA source target -> do
     sb <- getsState $ getActorBody source
+    sais <- getsState $ getActorItem source
     tb <- getsState $ getActorBody target
-    return [ LoseActorA source sb, SpotActorA source sb {bpos = bpos tb}
-           , LoseActorA target tb, SpotActorA target tb {bpos = bpos sb}]
+    tais <- getsState $ getActorItem target
+    return [ LoseActorA source sb sais
+           , SpotActorA source sb {bpos = bpos tb} sais
+           , LoseActorA target tb tais
+           , SpotActorA target tb {bpos = bpos sb} tais
+           ]
   MoveItemA iid k c1 c2 -> do
     item <- getsState $ getItemBody iid
     return [LoseItemA iid item k c1, SpotItemA iid item k c2]
@@ -233,12 +239,12 @@ breakCmdAtomic cmd = case cmd of
 
 loudCmdAtomic :: MonadActionRO m => CmdAtomic -> m Bool
 loudCmdAtomic cmd = case cmd of
-  DestroyActorA _ body -> return $ not $ bproj body
+  DestroyActorA _ body _ -> return $ not $ bproj body
   AlterTileA{} -> return True
   _ -> return False
 
-createActorA :: MonadAction m => ActorId -> Actor -> m ()
-createActorA aid body = do
+createActorA :: MonadAction m => ActorId -> Actor -> [(ItemId, Item)] -> m ()
+createActorA aid body ais = do
   -- Add actor to @sactorD@.
   let f Nothing = Just body
       f (Just b) = assert `failure` (aid, body, b)
@@ -249,23 +255,22 @@ createActorA aid body = do
                    $ Just $ aid : l
   updateLevel (blid body) $ updatePrio $ EM.alter g (btime body)
   -- Actor's items may or may not be already present in @sitemD@,
-  -- regardless if they are already present otherwie in the dungeon.
+  -- regardless if they are already present otherwise in the dungeon.
   -- We re-add them all to save time determining which really need it.
-  actorItems <- getsState $ getActorItem aid
-  forM_ actorItems $ \(iid, item) -> do
+  forM_ ais $ \(iid, item) -> do
     let h item1 item2 =
           assert (item1 == item2 `blame` (aid, body, iid, item1, item2)) item1
     modifyState $ updateItemD $ EM.insertWith h iid item
 
 -- | Kills an actor. Note: after this command, usually a new leader
 -- for the party should be elected.
-destroyActorA :: MonadAction m => ActorId -> Actor -> m ()
-destroyActorA aid body = do
+destroyActorA :: MonadAction m => ActorId -> Actor -> [(ItemId, Item)] -> m ()
+destroyActorA aid body ais = do
   -- Assert that actor's items belong to @sitemD@. Do not remove those
   -- that do not appear anywhere else, for simplicity and speed.
   itemD <- getsState sitemD
-  let is = EM.keys $ bbag body
-  assert (allB (`EM.member` itemD) is `blame` (aid, body, itemD)) skip
+  let match (iid, item) = itemD EM.! iid == item
+  assert (allB match ais `blame` (aid, body, ais, itemD)) skip
   -- Remove actor from @sactorD@.
   let f Nothing = assert `failure` (aid, body)
       f (Just b) = assert (b == body `blame` (aid, body, b)) Nothing
@@ -374,8 +379,9 @@ moveItemA iid k c1 c2 = assert (k > 0 && c1 /= c2) $ do
 ageActorA :: MonadAction m => ActorId -> Time -> m ()
 ageActorA aid t = assert (t >= timeZero) $ do
   body <- getsState $ getActorBody aid
-  destroyActorA aid body
-  createActorA aid body {btime = timeAdd (btime body) t}
+  ais <- getsState $ getActorItem aid
+  destroyActorA aid body ais
+  createActorA aid body {btime = timeAdd (btime body) t} ais
 
 healActorA :: MonadAction m => ActorId -> Int -> m ()
 healActorA aid n = assert (n /= 0) $

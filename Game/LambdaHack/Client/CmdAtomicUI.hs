@@ -73,7 +73,7 @@ cmdAtomicFilterCli cmd = case cmd of
     -- Wipe out actors that just became invisible due to changed FOV.
     let outFov = pvisible (ptotal perOld) ES.\\ pvisible (ptotal perNew)
         outPrio = mapMaybe (\p -> posToActor p lid s) $ ES.elems outFov
-        fActor aid = LoseActorA aid (getActorBody aid s)
+        fActor aid = LoseActorA aid (getActorBody aid s) (getActorItem aid s)
         outActor = map fActor outPrio
     return $ cmd : inItem ++ outActor
   _ -> return [cmd]
@@ -172,8 +172,8 @@ coverA lid p iid ik = do
 -- the client state is modified by the command.
 drawCmdAtomicUI :: MonadClientUI m => Bool -> CmdAtomic -> m ()
 drawCmdAtomicUI verbose cmd = case cmd of
-  CreateActorA _ body | verbose -> actorVerbMU body "appear"
-  DestroyActorA _ body -> do
+  CreateActorA _ body _ | verbose -> actorVerbMU body "appear"
+  DestroyActorA _ body _ -> do
     side <- getsClient sside
     if bhp body <= 0 && not (bproj body) && bfaction body == side then do
       actorVerbMU body "die"
@@ -364,24 +364,24 @@ drawDescAtomicUI verbose desc = case desc of
     aVerbMU aid $ "trigger"  -- TODO: opens door
   ShunD aid _p _ _ | verbose ->
     aVerbMU aid $ "shun"  -- TODO: shuns stairs down
-  EffectD target effect -> do
-    tb <- getsState $ getActorBody target
-    dies <- if bhp tb <= 0 && not (bproj tb) || bhp tb < 0
+  EffectD aid effect -> do
+    b <- getsState $ getActorBody aid
+    dies <- if bhp b <= 0 && not (bproj b) || bhp b < 0
       then case effect of
         Effect.Hurt{} -> do
           Kind.COps{coactor} <- getsState scops
           -- We assume the Wound is the cause of incapacitation.
           side <- getsClient sside
-          if bfaction tb == side then do
-            let verbDie = if bproj tb then "drop down" else "fall down"
+          if bfaction b == side then do
+            let verbDie = if bproj b then "drop down" else "fall down"
                 msgDie = makeSentence
-                     [MU.SubjectVerbSg (partActor coactor tb) verbDie]
+                     [MU.SubjectVerbSg (partActor coactor b) verbDie]
             msgAdd msgDie
-            animDie <- animate $ deathBody $ bpos tb
-            when (not (bproj tb)) $ displayFramesPush animDie
+            animDie <- animate $ deathBody $ bpos b
+            when (not (bproj b)) $ displayFramesPush animDie
           else do
-            let verbD = if bproj tb then "break up" else "collapse"
-            aVerbMU target verbD
+            let verbD = if bproj b then "break up" else "collapse"
+            aVerbMU aid verbD
           return True
         _ -> return False
       else return False
@@ -389,13 +389,13 @@ drawDescAtomicUI verbose desc = case desc of
       case effect of
         Effect.NoEffect -> msgAdd "Nothing happens."
         Effect.Heal p | p > 0 -> do
-          aVerbMU target "feel better"
-          let ps = (bpos tb, bpos tb)
+          aVerbMU aid "feel better"
+          let ps = (bpos b, bpos b)
           animFrs <- animate $ twirlSplash ps Color.BrBlue Color.Blue
           displayFramesPush $ Nothing : animFrs
         Effect.Heal _ -> do
-          aVerbMU target "feel wounded"
-          let ps = (bpos tb, bpos tb)
+          aVerbMU aid "feel wounded"
+          let ps = (bpos b, bpos b)
           animFrs <- animate $ twirlSplash ps Color.BrRed Color.Red
           displayFramesPush $ Nothing : animFrs
         Effect.Mindprobe nEnemy -> do
@@ -403,17 +403,17 @@ drawDescAtomicUI verbose desc = case desc of
           let msg = makeSentence
                 [MU.NWs nEnemy "howl", "of anger", "can be heard"]
           msgAdd msg
-        Effect.Dominate | verbose -> aVerbMU target "be dominated"
+        Effect.Dominate | verbose -> aVerbMU aid "be dominated"
         Effect.ApplyPerfume ->
           msgAdd "The fragrance quells all scents in the vicinity."
         Effect.Searching{}-> do
           Kind.COps{coactor} <- getsState scops
           let msg = makeSentence
                 [ "It gets lost and"
-                , MU.SubjectVerbSg (partActor coactor tb) "search in vain" ]
+                , MU.SubjectVerbSg (partActor coactor b) "search in vain" ]
           msgAdd msg
-        Effect.Ascend{} -> aVerbMU target "find a way upstairs"
-        Effect.Descend{} -> aVerbMU target "find a way downstairs"
+        Effect.Ascend{} -> aVerbMU aid "find a way upstairs"
+        Effect.Descend{} -> aVerbMU aid "find a way downstairs"
         _ -> return ()
   FailureD _ msg -> msgAdd msg
   BroadcastD msg -> msgAdd msg

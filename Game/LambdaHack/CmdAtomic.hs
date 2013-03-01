@@ -47,12 +47,12 @@ type Atomic = Either CmdAtomic DescAtomic
 -- | Abstract syntax of atomic commands.
 data CmdAtomic =
   -- Create/destroy actors and items.
-    CreateActorA ActorId Actor
-  | DestroyActorA ActorId Actor
+    CreateActorA ActorId Actor [(ItemId, Item)]
+  | DestroyActorA ActorId Actor [(ItemId, Item)]
   | CreateItemA ItemId Item Int Container
   | DestroyItemA ItemId Item Int Container
-  | SpotActorA ActorId Actor
-  | LoseActorA ActorId Actor
+  | SpotActorA ActorId Actor [(ItemId, Item)]
+  | LoseActorA ActorId Actor [(ItemId, Item)]
   | SpotItemA ItemId Item Int Container
   | LoseItemA ItemId Item Int Container
   -- Move actors and items.
@@ -109,12 +109,12 @@ data HitAtomic = HitD | HitBlockD | MissBlockD
 
 undoCmdAtomic :: CmdAtomic -> Maybe CmdAtomic
 undoCmdAtomic cmd = case cmd of
-  CreateActorA aid body -> Just $ DestroyActorA aid body
-  DestroyActorA aid body -> Just $ CreateActorA aid body
+  CreateActorA aid body ais -> Just $ DestroyActorA aid body ais
+  DestroyActorA aid body ais -> Just $ CreateActorA aid body ais
   CreateItemA iid item k c -> Just $ DestroyItemA iid item k c
   DestroyItemA iid item k c -> Just $ CreateItemA iid item k c
-  SpotActorA aid body -> Just $ LoseActorA aid body
-  LoseActorA aid body -> Just $ SpotActorA aid body
+  SpotActorA aid body ais -> Just $ LoseActorA aid body ais
+  LoseActorA aid body ais -> Just $ SpotActorA aid body ais
   SpotItemA iid item k c -> Just $ LoseItemA iid item k c
   LoseItemA iid item k c -> Just $ SpotItemA iid item k c
   MoveActorA aid fromP toP -> Just $ MoveActorA aid toP fromP

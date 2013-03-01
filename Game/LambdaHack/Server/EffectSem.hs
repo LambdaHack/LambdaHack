@@ -207,7 +207,7 @@ addActor mk bfaction ppos lid hp msymbol mname = do
   let m = actorTemplate mk msymbol mname hp pos lid time bfaction False
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
-  tellCmdAtomic $ CreateActorA acounter m
+  tellCmdAtomic $ CreateActorA acounter m []
   mleader <- getsState $ gleader . (EM.! bfaction) . sfaction
   when (mleader == Nothing) $
     tellCmdAtomic $ LeadFactionA bfaction Nothing (Just acounter)
@@ -347,6 +347,7 @@ effectAscend power target = do
 effLvlGoUp :: MonadServer m => ActorId -> Int -> WriterT [Atomic] m ()
 effLvlGoUp aid k = do
   bOld <- getsState $ getActorBody aid
+  ais <- getsState $ getActorItem aid
   let arenaOld = blid bOld
       side = bfaction bOld
   whereto <- getsState $ \s -> whereTo s arenaOld k
@@ -362,7 +363,7 @@ effLvlGoUp aid k = do
         -- Remove the actor from the old level.
         -- Onlookers see somebody uses a staircase.
         -- No need to report that he disappears.
-        tellCmdAtomic $ LoseActorA aid bOld
+        tellCmdAtomic $ LoseActorA aid bOld ais
         -- Sync the actor time with the level time.
         timeLastVisited <- getsState $ getTime arenaNew
         let delta = timeAdd (btime bOld) (timeNegate timeOld)
@@ -374,7 +375,7 @@ effLvlGoUp aid k = do
         inhabitants <- getsState $ posToActor posNew arenaNew
         -- Onlookers see somebody appear suddenly. The actor himself
         -- sees new surroundings and has to reset his perception.
-        tellCmdAtomic $ CreateActorA aid bNew
+        tellCmdAtomic $ CreateActorA aid bNew ais
         tellCmdAtomic $ LeadFactionA side Nothing (Just aid)
         case inhabitants of
           Nothing -> return ()
