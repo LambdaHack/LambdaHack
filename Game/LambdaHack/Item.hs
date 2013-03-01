@@ -44,29 +44,19 @@ import Game.LambdaHack.Utils.Assert
 
 -- | A unique identifier of an item in the dungeon.
 newtype ItemId = ItemId Int
-  deriving (Show, Eq, Ord, Enum, Typeable)
-
-instance Binary ItemId where
-  put (ItemId n) = put n
-  get = fmap ItemId get
+  deriving (Show, Eq, Ord, Enum, Typeable, Generic, Binary)
 
 -- | An index of the kind id of an item. Clients have partial knowledge
 -- how these idexes map to kind ids. They gain knowledge by identifying items.
 newtype ItemKindIx = ItemKindIx Int
-  deriving (Show, Eq, Ord, Enum, Ix.Ix, Generic)
-
-instance Hashable.Hashable ItemKindIx
-
-instance Binary ItemKindIx where
-  put (ItemKindIx i) = put i
-  get = fmap ItemKindIx get
+  deriving (Show, Eq, Ord, Enum, Ix.Ix, Generic, Hashable.Hashable, Binary)
 
 -- | The map of item kind indexes to item kind ids.
 -- The full map, as known by the server, is a bijection.
 type Discovery = EM.EnumMap ItemKindIx (Kind.Id ItemKind)
 
 -- | The reverse map to @Discovery@, needed for item creation.
-type DiscoRev    = EM.EnumMap (Kind.Id ItemKind) ItemKindIx
+type DiscoRev = EM.EnumMap (Kind.Id ItemKind) ItemKindIx
 
 -- TODO: define type InvSymbol = Char and move all ops to another file.
 -- TODO: the list resulting from joinItem can contain items
@@ -77,27 +67,17 @@ type DiscoRev    = EM.EnumMap (Kind.Id ItemKind) ItemKindIx
 -- and draw an unidentified item. Full information about item is available
 -- through the @jkindIx@ index as soon as the item is identified.
 data Item = Item
-  { jkindIx  :: !ItemKindIx    -- ^ index pointing to the kind of the item
-  , jsymbol  :: !Char          -- ^ individual map symbol
-  , jname    :: !Text          -- ^ individual generic name
-  , jflavour :: !Flavour       -- ^ individual flavour
-  }
+  { jkindIx  :: !ItemKindIx  -- ^ index pointing to the kind of the item
+  , jsymbol  :: !Char        -- ^ individual map symbol
+  , jname    :: !Text        -- ^ individual generic name
+  , jflavour :: !Flavour     -- ^ individual flavour
+  , jeffect  :: !Effect      -- ^ the effect when activated
+ }
   deriving (Show, Eq, Generic)
 
 instance Hashable.Hashable Item
 
-instance Binary Item where
-  put (Item{..} ) = do
-    put jkindIx
-    put jsymbol
-    put jname
-    put jflavour
-  get = do
-    jkindIx <- get
-    jsymbol <- get
-    jname <- get
-    jflavour <- get
-    return Item{..}
+instance Binary Item
 
 -- | Recover a kind id of an item, if identified.
 jkind :: Discovery -> Item -> Maybe (Kind.Id ItemKind)
@@ -122,8 +102,8 @@ serverDiscos Kind.Ops{obounds, ofoldrWithKey} = do
 
 -- | Build an item with the given stats.
 buildItem :: FlavourMap -> DiscoRev
-          -> Kind.Id ItemKind -> ItemKind -> Item
-buildItem (FlavourMap flavour) discoRev ikChosen kind =
+          -> Kind.Id ItemKind -> ItemKind -> Effect -> Item
+buildItem (FlavourMap flavour) discoRev ikChosen kind jeffect =
   let jkindIx  = discoRev EM.! ikChosen
       jsymbol  = isymbol kind
       jname    = iname kind
@@ -144,7 +124,7 @@ newItem cops@Kind.Ops{opick, okind} flavour discoRev lvl depth = do
     then  -- Rare item; beware of inifite loops.
       newItem cops flavour discoRev lvl depth
     else do
-      return ( buildItem flavour discoRev ikChosen kind
+      return ( buildItem flavour discoRev ikChosen kind (ieffect kind)
              , jcount
              , kind )
 
@@ -154,11 +134,7 @@ viewItem i = (jsymbol i, flavourToColor $ jflavour i)
 
 -- | Flavours assigned by the server to item kinds, in this particular game.
 newtype FlavourMap = FlavourMap (EM.EnumMap (Kind.Id ItemKind) Flavour)
-  deriving Show
-
-instance Binary FlavourMap where
-  put (FlavourMap m) = put m
-  get = fmap FlavourMap get
+  deriving (Show, Generic, Binary)
 
 emptyFlavourMap :: FlavourMap
 emptyFlavourMap = FlavourMap EM.empty
@@ -194,11 +170,9 @@ strongestItem is p =
 
 strongestSearch :: Kind.Ops ItemKind -> Discovery -> [(ItemId, Item)]
                 -> Maybe (ItemId, Item)
-strongestSearch Kind.Ops{okind} disco is =
+strongestSearch _cops _disco is =
   strongestItem is $ \ i ->
-    case jkind disco i of
-      Nothing -> False
-      Just ik -> case ieffect (okind ik) of Searching{} -> True; _ -> False
+    case jeffect i of Searching{} -> True; _ -> False
 
 -- TODO: generalise, in particular take base damage into account
 strongestSword :: Kind.COps -> [(ItemId, Item)] -> Maybe (ItemId, Item)
@@ -208,22 +182,23 @@ strongestSword Kind.COps{corule} is =
 
 strongestRegen :: Kind.Ops ItemKind -> Discovery -> [(ItemId, Item)]
                -> Maybe (ItemId, Item)
-strongestRegen Kind.Ops{okind} disco is =
+strongestRegen _cops _disco is =
   strongestItem is $ \ i ->
-    case jkind disco i of
-      Nothing -> False
-      Just ik -> case ieffect (okind ik) of Regeneration{} -> True; _ -> False
+    case jeffect i of Regeneration{} -> True; _ -> False
 
 -- | The part of speech describing the item.
 partItem :: Kind.Ops ItemKind -> Discovery -> Item -> (MU.Part, MU.Part)
-partItem Kind.Ops{okind} disco i =
+partItem _cops disco i =
   let genericName = jname i
       flav = flavourToName $ jflavour i
   in case jkind disco i of
-    Nothing -> (MU.Text $ flav <+> genericName, "")
-    Just ik ->
-      let kind = okind ik
-          eff = effectToSuffix (ieffect kind)
+    Nothing ->
+      -- TODO: really hide jeffect from a client that has not discovered
+      -- that individual item's properties (nor item kind, if there's only
+      -- one effect possible for the kind (plus effect deduction))
+      (MU.Text $ flav <+> genericName, "")
+    Just _ ->
+      let eff = effectToSuffix $ jeffect i
       in (MU.Text genericName, MU.Text eff)
 
 partItemNWs :: Kind.Ops ItemKind -> Discovery -> Int -> Item -> MU.Part

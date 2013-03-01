@@ -25,7 +25,6 @@ import Game.LambdaHack.ActorState
 import Game.LambdaHack.CmdAtomic
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
-import Game.LambdaHack.Content.ItemKind
 import qualified Game.LambdaHack.Effect as Effect
 import Game.LambdaHack.Faction
 import Game.LambdaHack.Item
@@ -54,11 +53,10 @@ itemEffect :: MonadServer m
            => ActorId -> ActorId -> Maybe ItemId -> Item
            -> WriterT [Atomic] m ()
 itemEffect source target miid item = do
-  Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
   tb <- getsState $ getActorBody target
   discoS <- getsServer sdisco
   let ik = fromJust $ jkind discoS item
-      ef = ieffect $ okind ik
+      ef = jeffect item
   b <- effectSem ef source target
   -- The effect is interesting so the item gets identified, if seen.
   let atomic iid = tellCmdAtomic $ DiscoverA (blid tb) (bpos tb) iid ik
@@ -408,6 +406,7 @@ squashActor source target = do
   let h2hKind = ouniqGroup "weight"
       kind = okind h2hKind
       item = buildItem flavour discoRev h2hKind kind
+             $ Effect.Hurt (RollDice 99 99) 42
   itemEffect source target Nothing item
   tellDescAtomic $ StrikeD source target item HitD
 --      verb = iverbApply kind

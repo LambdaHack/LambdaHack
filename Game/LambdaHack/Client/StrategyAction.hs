@@ -255,7 +255,7 @@ rangedFreq cops actor disco glo fpos =
               Nothing -> (undefined, 0)
               Just ki ->
                 let kik = iokind ki
-                in (kik, Effect.effectToBenefit (ieffect kik)),
+                in (kik, Effect.effectToBenefit (jeffect i)),
       benefit > 0,
       -- Wasting weapons and armour would be too cruel to the player.
       isymbol ik `elem` (ritemProject $ Kind.stdRuleset corule)]
@@ -279,7 +279,7 @@ toolsFreq cops actor disco glo =
               Nothing -> (undefined, 0)
               Just ki ->
                 let kik = iokind ki
-                in (kik, Effect.effectToBenefit (ieffect kik)),
+                in (kik, Effect.effectToBenefit (jeffect i)),
       benefit > 0, isymbol ik == '!']
 
 -- | AI finds interesting moves in the absense of visible foes.

@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 -- | Representation of probabilities and random computations.
 module Game.LambdaHack.Random
   ( -- * The @Rng@ monad
@@ -14,12 +15,15 @@ module Game.LambdaHack.Random
   , Chance, chance
   ) where
 
-import qualified Data.Binary as Binary
-import Data.Ratio
-import qualified System.Random as R
 import Control.Monad
-import qualified Data.List as L
 import qualified Control.Monad.State as St
+import Data.Binary
+import qualified Data.Binary as Binary
+import qualified Data.Hashable as Hashable
+import qualified Data.List as L
+import Data.Ratio
+import GHC.Generics (Generic)
+import qualified System.Random as R
 
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.Frequency
@@ -48,7 +52,7 @@ roll x = if x <= 0 then return 0 else randomR (1, x)
 -- | Dice: 1d7, 3d3, 1d0, etc.
 -- @RollDice a b@ represents @a@ rolls of @b@-sided die.
 data RollDice = RollDice Binary.Word8 Binary.Word8
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Generic)
 
 instance Show RollDice where
   show (RollDice a b) = show a ++ "d" ++ show b
@@ -60,6 +64,10 @@ instance Read RollDice where
     in case db of
       'd' : b -> [ (RollDice av bv, rest) | (bv, rest) <- readsPrec d b ]
       _ -> []
+
+instance Hashable.Hashable RollDice
+
+instance Binary RollDice
 
 -- | Roll dice and sum the results.
 rollDice :: RollDice -> Rnd Int

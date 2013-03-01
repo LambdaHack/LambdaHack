@@ -115,8 +115,9 @@ actorAttackActor source target = do
         h2hKind <- rndToAction $ opick h2hGroup (const True)
         flavour <- getsServer sflavour
         discoRev <- getsServer sdiscoRev
+        let kind = okind h2hKind
         return $ ( Nothing
-                 , buildItem flavour discoRev h2hKind (okind h2hKind) )
+                 , buildItem flavour discoRev h2hKind kind (ieffect kind) )
   let performHit block = do
         let hitA = if block then HitBlockD else HitD
         tellDescAtomic $ StrikeD source target item hitA

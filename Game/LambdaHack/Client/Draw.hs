@@ -19,10 +19,10 @@ import Game.LambdaHack.Client.Animation (SingleFrame (..))
 import Game.LambdaHack.Client.State
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Effect
 import qualified Game.LambdaHack.Feature as F
+import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Item as Item
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
@@ -50,7 +50,6 @@ draw dm cops per drawnLevelId leader
      cli@StateClient{stgtMode, scursor, seps, sdisco, sdebugCli}
      s overlay =
   let Kind.COps{ coactor=Kind.Ops{okind}
-               , coitem=Kind.Ops{okind=iokind}
                , cotile=Kind.Ops{okind=tokind, ouniqGroup} } = cops
       DebugModeCli{smarkVision, smarkSmell} = sdebugCli
       (lvl@Level{ ldepth, lxsize, lysize, lsmell
@@ -73,8 +72,8 @@ draw dm cops per drawnLevelId leader
       damage  = case Item.strongestSword cops bitems of
                   Just (_, sw) ->
                     case Item.jkind sdisco sw of
-                      Just swk ->
-                        case ieffect $ iokind swk of
+                      Just _ ->
+                        case jeffect sw of
                           Hurt dice p ->
                             showT dice <> "+" <> showT p
                           _ -> ""

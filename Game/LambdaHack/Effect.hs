@@ -1,11 +1,14 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 -- | Effects of content on other content. No operation in this module
 -- involves the 'State' or 'Action' type.
 module Game.LambdaHack.Effect
   ( Effect(..), effectToSuffix, effectToBenefit
   ) where
 
+import Data.Binary
+import qualified Data.Hashable as Hashable
 import Data.Text (Text)
+import GHC.Generics (Generic)
 
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Random
@@ -25,7 +28,11 @@ data Effect =
   | Searching Int
   | Ascend Int
   | Descend Int
-  deriving (Show, Read, Eq, Ord)
+  deriving (Show, Read, Eq, Ord, Generic)
+
+instance Hashable.Hashable Effect
+
+instance Binary Effect
 
 -- | Suffix to append to a basic content name, if the content causes the effect.
 effectToSuffix :: Effect -> Text
