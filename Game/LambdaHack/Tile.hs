@@ -60,8 +60,7 @@ isLit :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 isLit Kind.Ops{ospeedup = Kind.TileSpeedup{isLitTab}} = isLitTab
 
 -- | Whether a tile can be explored, possibly yielding a treasure
--- or a hidden message. We exclude doors and hidden features
--- (TODO: and features created by actors, e.g., dug out).
+-- or a hidden message. We exclude doors and hidden features.
 isExplorable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 isExplorable cops tk =
   not (hasFeature cops F.Closable tk)

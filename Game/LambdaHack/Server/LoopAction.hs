@@ -356,10 +356,11 @@ handleActors cmdSerSem arena subclipStart = do
 --        mapM_ cmdAtomicBroad $ map (Right . DisplayDelayD) $ EM.keys faction
       return ()
     Just (aid, b) | bhp b <= 0 && not (bproj b) || bhp b < 0
-                     || maybe False null (bpath b) -> do
+                    || maybe False null (bpath b) -> do
       atoms <-
         if bhp b < 0  -- e.g., a projectile hitting an actor
-        then do -- Items get destroyed, effectively.
+        then do
+          -- Items are destroyed.
           ais <- getsState $ getActorItem aid
           return [Left $ DestroyActorA aid b ais]
         else

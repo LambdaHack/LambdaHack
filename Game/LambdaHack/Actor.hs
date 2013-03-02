@@ -125,8 +125,7 @@ braced m time = time < bwait m
 -- | Checks for the presence of actors in a position.
 -- Does not check if the tile is walkable.
 unoccupied :: [Actor] -> Point -> Bool
-unoccupied actors pos =
-  all (\ body -> bpos body /= pos) actors
+unoccupied actors pos = all (\body -> bpos body /= pos) actors
 
 -- | The unique kind of heroes.
 heroKindId :: Kind.Ops ActorKind -> Kind.Id ActorKind

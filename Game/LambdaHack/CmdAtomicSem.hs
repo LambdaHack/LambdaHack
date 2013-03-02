@@ -25,6 +25,7 @@ import Game.LambdaHack.Misc
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import Game.LambdaHack.State
+import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
@@ -443,24 +444,39 @@ alterTileA :: MonadAction m
            => LevelId -> Point -> Kind.Id TileKind -> Kind.Id TileKind
            -> m ()
 alterTileA lid p fromTile toTile = assert (fromTile /= toTile) $ do
+  Kind.COps{cotile} <- getsState scops
   let adj ts = assert (ts Kind.! p == fromTile) $ ts Kind.// [(p, toTile)]
   updateLevel lid $ updateTile adj
+  case (Tile.isExplorable cotile fromTile, Tile.isExplorable cotile toTile) of
+    (False, True) -> updateLevel lid $ \lvl -> lvl {lseen = lseen lvl + 1}
+    (True, False) -> updateLevel lid $ \lvl -> lvl {lseen = lseen lvl - 1}
+    _ -> return ()
 
 -- Notice a previously invisible tiles. This is similar to @SpotActorA@,
 -- but done in bulk, because it often involves dozens of tiles pers move.
--- We don not check that the tiles at the positions in question are unknown
--- to save computation, especially for actors that remember tiles
--- at previously seen positions.
+-- We don't check that the tiles at the positions in question are unknown
+-- to save computation, especially for clients that remember tiles
+-- at previously seen positions. Similarly, when updating the @lseen@
+-- field we don't assume the tiles were unknown previously.
 spotTileA :: MonadAction m => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
 spotTileA lid ts = assert (not $ null ts) $ do
+  Kind.COps{cotile} <- getsState scops
+  tileM <- getsLevel lid ltile
   let adj tileMap = tileMap Kind.// ts
   updateLevel lid $ updateTile adj
+  let f (p, t2) = do
+        let t1 = tileM Kind.! p
+        case (Tile.isExplorable cotile t1, Tile.isExplorable cotile t2) of
+          (False, True) -> updateLevel lid $ \lvl -> lvl {lseen = lseen lvl+1}
+          (True, False) -> updateLevel lid $ \lvl -> lvl {lseen = lseen lvl-1}
+          _ -> return ()
+  mapM_ f ts
 
 -- Stop noticing a previously invisible tiles. Unlike @spotTileA@, it verifies
 -- the state of the tiles before changing them.
 loseTileA :: MonadAction m => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
 loseTileA lid ts = assert (not $ null ts) $ do
-  Kind.COps{cotile=Kind.Ops{ouniqGroup}} <- getsState scops
+  Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getsState scops
   let unknownId = ouniqGroup "unknown space"
       matches _ [] = True
       matches tileMap ((p, ov) : rest) =
@@ -468,6 +484,11 @@ loseTileA lid ts = assert (not $ null ts) $ do
       tu = map (\(p, _) -> (p, unknownId)) ts
       adj tileMap = assert (matches tileMap ts) $ tileMap Kind.// tu
   updateLevel lid $ updateTile adj
+  let f (_, t1) =
+        case Tile.isExplorable cotile t1 of
+          True -> updateLevel lid $ \lvl -> lvl {lseen = lseen lvl - 1}
+          _ -> return ()
+  mapM_ f ts
 
 alterSecretA :: MonadAction m => LevelId -> DiffEM Point Time -> m ()
 alterSecretA lid diffL = updateLevel lid $ updateSecret $ applyDiffEM diffL
