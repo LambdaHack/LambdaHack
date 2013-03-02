@@ -77,6 +77,7 @@ data CmdAtomic =
   | AlterSecretA LevelId (DiffEM Point Time)
   | AlterSmellA LevelId (DiffEM Point Time)
   -- Assorted.
+  | AgeLevelA LevelId Time
   | DiscoverA LevelId Point ItemId (Kind.Id ItemKind)
   | CoverA LevelId Point ItemId (Kind.Id ItemKind)
   | PerceptionA LevelId PerActor PerActor
@@ -135,6 +136,7 @@ undoCmdAtomic cmd = case cmd of
   LoseTileA lid ts -> Just $ SpotTileA lid ts
   AlterSecretA lid diffL -> Just $ AlterSecretA lid $ map (second swap) diffL
   AlterSmellA lid diffL -> Just $ AlterSmellA lid $ map (second swap) diffL
+  AgeLevelA lid t -> Just $ AgeLevelA lid (timeNegate t)
   DiscoverA lid p iid ik -> Just $ CoverA lid p iid ik
   CoverA lid p iid ik -> Just $ DiscoverA lid p iid ik
   PerceptionA lid outPer inPer -> Just $ PerceptionA lid inPer outPer

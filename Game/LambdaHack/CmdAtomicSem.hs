@@ -57,6 +57,7 @@ cmdAtomicSem cmd = case cmd of
   LoseTileA lid ts -> loseTileA lid ts
   AlterSecretA lid diffL -> alterSecretA lid diffL
   AlterSmellA lid diffL -> alterSmellA lid diffL
+  AgeLevelA lid t -> ageLevelA lid t
   DiscoverA{} -> return ()  -- Server keeps all atomic comands so the semantics
   CoverA{} -> return ()     -- of inverses has to be reasonably inverse.
   PerceptionA _ outPA inPA ->
@@ -148,6 +149,7 @@ posCmdAtomic cmd = case cmd of
     return $ Right (lid, ps)
   AlterSecretA _ _ -> return $ Left $ Left False  -- none of clients' business
   AlterSmellA _ _ -> return $ Left $ Left True
+  AgeLevelA lid _ ->  return $ Right (lid, [])
   DiscoverA lid p _ _ -> return $ Right (lid, [p])
   CoverA lid p _ _ -> return $ Right (lid, [p])
   PerceptionA _ _ _ -> return $ Left $ Left False
@@ -495,6 +497,10 @@ alterSecretA lid diffL = updateLevel lid $ updateSecret $ applyDiffEM diffL
 
 alterSmellA :: MonadAction m => LevelId -> DiffEM Point Time -> m ()
 alterSmellA lid diffL = updateLevel lid $ updateSmell $ applyDiffEM diffL
+
+ageLevelA :: MonadAction m => LevelId -> Time -> m ()
+ageLevelA lid t = assert (t >= timeZero) $
+  updateLevel lid $ \lvl -> lvl {ltime = timeAdd (ltime lvl) t}
 
 -- TODO here, too, it would be disastrous for the server.
 -- Perhaps the server should have factionId -1, so that ocmparison

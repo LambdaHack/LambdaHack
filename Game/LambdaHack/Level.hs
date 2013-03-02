@@ -78,7 +78,7 @@ data Level = Level
   , lseen    :: !Int             -- ^ currently remembered clear tiles
   , lclear   :: !Int             -- ^ total number of initially clear tiles
   , ltime    :: !Time            -- ^ date of the last activity on the level
-  , litemNum :: !Int             -- ^ number of initial items of the level
+  , litemNum :: !Int             -- ^ number of initial items, 0 for clients
   , lsecret  :: !SecretMap       -- ^ secrecy values; empty for clients
   }
   deriving (Show, Eq)

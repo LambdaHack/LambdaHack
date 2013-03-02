@@ -8,7 +8,7 @@ module Game.LambdaHack.State
     -- * State operations
   , defStateGlobal, emptyState, localFromGlobal
   , updateDungeon, updateDepth, updateActorD, updateItemD
-  , updateFaction, updateCOps, updateTime
+  , updateFaction, updateCOps
   , getTime, isHumanFaction, isSpawningFaction
   ) where
 
@@ -130,12 +130,6 @@ updateFaction f s = s {_sfaction = f (_sfaction s)}
 -- | Update content data within state.
 updateCOps :: (Kind.COps -> Kind.COps) -> State -> State
 updateCOps f s = s {_scops = f (_scops s)}
-
--- | Update time within state.
-updateTime :: LevelId -> (Time -> Time) -> State -> State
-updateTime lid f s =
-  let adj lvl@Level{ltime} = lvl {ltime = f ltime}
-  in updateDungeon (EM.adjust adj lid) s
 
 -- | Get current time from the dungeon data.
 getTime :: LevelId -> State -> Time

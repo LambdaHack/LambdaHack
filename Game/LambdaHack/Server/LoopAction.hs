@@ -109,7 +109,6 @@ loopSer sdebugNxt cmdSerSem executorHuman executorComputer
       loop clipN = do
         let clipMod = clipN `mod` cinT
             run arena = handleActors cmdSerSem arena timeZero
-            age arena = modifyState $ updateTime arena $ timeAdd timeClip
             factionArena fac =
               case gleader fac of
                 Nothing -> return Nothing
@@ -129,9 +128,12 @@ loopSer sdebugNxt cmdSerSem executorHuman executorComputer
             -- Regenerate HP and add monsters each turn, not each clip.
             when (clipMod == 1) $ mapM_ generateMonster arenas
             when (clipMod == 2) $ mapM_ regenerateLevelHP arenas
-            mapM_ age arenas
+            mapM_ ageLevel arenas
             endOrLoop (loop (clipN + 1))
   loop 1
+
+ageLevel :: (MonadAction m, MonadServerChan m) => LevelId -> m ()
+ageLevel lid = cmdAtomicBroad $ Left $ AgeLevelA lid timeClip
 
 saveBkpAll :: MonadServerChan m => m ()
 saveBkpAll = do
@@ -205,22 +207,24 @@ cmdAtomicBroad atomic = do
           else breakSend fid perNew
       send fid = case ps of
         Right (arena, _) -> do
-          let perOld = persOld EM.! fid EM.! arena
-              resetsFid = maybe True (fid `elem`) resets
-          if resetsFid then do
-            resetFidPerception fid arena
-            perNew <- getPerFid fid arena
-            let inPer = diffPer perNew perOld
-                inPA = perActor inPer
-                outPer = diffPer perOld perNew
-                outPA = perActor outPer
-            if EM.null outPA && EM.null inPA
-              then anySend fid perOld perOld
-              else do
-                sendA fid $ PerceptionA arena outPA inPA
-                mapM_ (sendA fid) $ atomicRemember arena inPer sOld
-                anySend fid perOld perNew
-          else anySend fid perOld perOld
+          bs <- getsState $ actorNotProjList (== fid) arena
+          unless (null bs) $ do
+            let perOld = persOld EM.! fid EM.! arena
+                resetsFid = maybe True (fid `elem`) resets
+            if resetsFid then do
+              resetFidPerception fid arena
+              perNew <- getPerFid fid arena
+              let inPer = diffPer perNew perOld
+                  inPA = perActor inPer
+                  outPer = diffPer perOld perNew
+                  outPA = perActor outPer
+              if EM.null outPA && EM.null inPA
+                then anySend fid perOld perOld
+                else do
+                  sendA fid $ PerceptionA arena outPA inPA
+                  mapM_ (sendA fid) $ atomicRemember arena inPer sOld
+                  anySend fid perOld perNew
+            else anySend fid perOld perOld
         Left mfid ->
           -- @resets@ is false here and broken atomic has the same mfid
           when (isOurs fid mfid) $ sendUpdate fid atomic
