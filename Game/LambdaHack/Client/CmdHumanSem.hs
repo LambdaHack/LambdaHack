@@ -32,23 +32,9 @@ import Game.LambdaHack.VectorXY
 cmdHumanSem :: (MonadActionAbort m, MonadClientUI m)
             => CmdHuman -> WriterT Slideshow m (Maybe CmdSer)
 cmdHumanSem cmd = do
-  leaderOld <- getLeaderUI
-  bOld <- getsState $ getActorBody leaderOld
-  let posOld = bpos bOld
-      arenaOld = blid bOld
-  when (noRemoteCmdHuman cmd) $ checkCursor arenaOld
-  msem <- cmdAction cmd
-  leaderNew <- getLeaderUI
-  bNew <- getsState $ getActorBody leaderNew
-  let pos = bpos bNew
-      arena = blid bNew
-  tgtMode <- getsClient stgtMode
-  when (isNothing tgtMode  -- targeting performs a more extensive look
-        && (posOld /= pos
-            || arenaOld /= arena)) $ do
-    lookMsg <- lookAt False True pos ""
-    msgAdd lookMsg
-  return msem
+  arena <- getArenaUI
+  when (noRemoteCmdHuman cmd) $ checkCursor arena
+  cmdAction cmd
 
 -- | The basic action for a command and whether it takes time.
 cmdAction :: (MonadActionAbort m, MonadClientUI m)

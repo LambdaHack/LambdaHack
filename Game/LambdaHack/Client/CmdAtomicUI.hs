@@ -18,6 +18,7 @@ import Game.LambdaHack.ActorState
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Animation
 import Game.LambdaHack.Client.Draw
+import Game.LambdaHack.Client.LocalAction
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.CmdAtomic
 import Game.LambdaHack.CmdAtomicSem
@@ -172,7 +173,9 @@ coverA lid p iid ik = do
 -- the client state is modified by the command.
 drawCmdAtomicUI :: MonadClientUI m => Bool -> CmdAtomic -> m ()
 drawCmdAtomicUI verbose cmd = case cmd of
-  CreateActorA _ body _ | verbose -> actorVerbMU body "appear"
+  CreateActorA _ body _ -> do
+    when verbose $ actorVerbMU body "appear"
+    lookAtMove body
   DestroyActorA _ body _ -> do
     side <- getsClient sside
     if bhp body <= 0 && not (bproj body) && bfaction body == side then do
@@ -188,7 +191,9 @@ drawCmdAtomicUI verbose cmd = case cmd of
     else when verbose $ actorVerbMU body "disappear"
   CreateItemA _ item k _ | verbose -> itemVerbMU item k "appear"
   DestroyItemA _ item k _ | verbose -> itemVerbMU item k "disappear"
-  MoveActorA _ _ _ -> return ()  -- too boring even for verbose mode
+  MoveActorA aid _ _ -> do
+    body <- getsState $ getActorBody aid
+    lookAtMove body
   WaitActorA aid _ _| verbose -> aVerbMU aid "wait"
   DisplaceActorA source target -> displaceActorA source target
   MoveItemA iid k c1 c2 -> moveItemA verbose iid k c1 c2
@@ -203,7 +208,8 @@ drawCmdAtomicUI verbose cmd = case cmd of
   DominateActorA target _ toFid -> do
     side <- getsClient sside
     if toFid == side then do
-      return ()
+      tb <- getsState $ getActorBody target
+      lookAtMove tb
 --    -- Display status line and FOV for the new actor.
 --    sli <- promptToSlideshow ""
 --    fr <- drawOverlay ColorBW $ head $ runSlideshow sli
@@ -246,6 +252,16 @@ drawCmdAtomicUI verbose cmd = case cmd of
   SaveBkpA ->
     msgAdd "Saving backup."
   _ -> return ()
+
+lookAtMove :: MonadClientUI m => Actor -> m ()
+lookAtMove body = do
+    side <- getsClient sside
+    tgtMode <- getsClient stgtMode
+    when (not (bproj body)
+          && bfaction body == side
+          && isNothing tgtMode) $ do  -- targeting does a more extensive look
+      lookMsg <- lookAt False True (bpos body) ""
+      msgAdd lookMsg
 
 -- | Sentences such as \"Dog barks loudly.\".
 actorVerbMU :: MonadClientUI m => Actor -> MU.Part -> m ()
@@ -314,6 +330,9 @@ displaceActorA source target = do
         [ MU.SubjectVerbSg (partActor coactor sm) "displace"
         , partActor coactor tm ]
   msgAdd msg
+  when (bfaction sm /= bfaction tm) $ do
+    lookAtMove sm
+    lookAtMove tm
   let ps = (bpos tm, bpos sm)
   animFrs <- animate $ swapPlaces ps
   displayFramesPush $ Nothing : animFrs
