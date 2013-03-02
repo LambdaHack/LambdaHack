@@ -98,9 +98,6 @@ actorAttackActor source target = do
   tm <- getsState (getActorBody target)
   time <- getsState $ getTime (blid tm)
   s <- getState
-  when (bfaction sm == bfaction tm && isHumanFaction s (bfaction sm)
-        && not (bproj sm) && not (bproj tm))
-    $ assert `failure` (source, target, "human AI bumps into friendlies")
   itemAssocs <- getsState $ getActorItem source
   (miid, item) <-
     if bproj sm
