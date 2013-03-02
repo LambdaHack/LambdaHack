@@ -29,4 +29,5 @@ data Feature =
   | Exit               -- ^ is a (not hidden) door, stair, etc.
   | Path               -- ^ used for visible paths throughout the level
   | Secret !RollDice   -- ^ discovering the secret will require this many turns
+  | Impenetrable       -- ^ can never be excavated nor seen through
   deriving (Show, Read, Eq, Ord)

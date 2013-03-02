@@ -298,9 +298,9 @@ forkChild io = do
 -- | Compute and insert auxiliary optimized components into game content,
 -- to be used in time-critical sections of the code. Also, evaluate content
 -- to check consistency.
-speedupCOps :: Kind.COps -> Kind.COps
-speedupCOps !copsSlow@Kind.COps{cotile=tile} =
-  let ospeedup = Tile.speedup tile
+speedupCOps :: Bool -> Kind.COps -> Kind.COps
+speedupCOps allClear !copsSlow@Kind.COps{cotile=tile} =
+  let ospeedup = Tile.speedup allClear tile
       cotile = tile {Kind.ospeedup}
   in copsSlow {Kind.cotile}
 

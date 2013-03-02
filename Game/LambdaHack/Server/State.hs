@@ -35,11 +35,12 @@ data StateServer = StateServer
   deriving (Show, Typeable)
 
 data DebugModeSer = DebugModeSer
-  { stryFov     :: !(Maybe FovMode)
-  , sknowMap    :: !Bool
+  { sknowMap    :: !Bool
   , sknowEvents :: !Bool
-  , sniffIn     :: ! Bool
-  , sniffOut    :: ! Bool
+  , sniffIn     :: !Bool
+  , sniffOut    :: !Bool
+  , sallClear   :: !Bool
+  , stryFov     :: !(Maybe FovMode)
   }
   deriving Show
 
@@ -62,11 +63,13 @@ emptyStateServer =
     }
 
 defDebugModeSer :: DebugModeSer
-defDebugModeSer = DebugModeSer { stryFov = Nothing
-                               , sknowMap = False
+defDebugModeSer = DebugModeSer { sknowMap = False
                                , sknowEvents = False
                                , sniffIn = False
-                               , sniffOut = False }
+                               , sniffOut = False
+                               , sallClear = False
+                               , stryFov = Nothing
+                               }
 
 instance Binary StateServer where
   put StateServer{..} = do
@@ -98,15 +101,17 @@ instance Binary StateServer where
 
 instance Binary DebugModeSer where
   put DebugModeSer{..} = do
-    put stryFov
     put sknowMap
     put sknowEvents
     put sniffIn
     put sniffOut
+    put sallClear
+    put stryFov
   get = do
-    stryFov <- get
     sknowMap <- get
     sknowEvents <- get
     sniffIn <- get
     sniffOut <- get
+    sallClear <- get
+    stryFov <- get
     return DebugModeSer{..}

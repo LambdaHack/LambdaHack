@@ -93,7 +93,7 @@ createOps CDefs{getSymbol, getName, getFreq, content, validate} =
       correct a = not (T.null (getName a)) && L.all ((> 0) . snd) (getFreq a)
       offenders = validate content
   in assert (allB correct content) $
-     assert (L.null offenders `blame` ("content not validated: " :: Text,
+     assert (L.null offenders `blame` ("content failed validation: " :: Text,
                                        offenders)) $
      Ops
        { osymbol = getSymbol . okind

@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | Generation of caves (not yet inhabited dungeon levels) from cave kinds.
 module Game.LambdaHack.Server.DungeonGen.Cave
   ( TileMapXY, SecretMapXY, ItemFloorXY, Cave(..), buildCave
@@ -43,7 +44,7 @@ data Cave = Cave
   { dkind   :: !(Kind.Id CaveKind)  -- ^ the kind of the cave
   , dmap    :: TileMapXY            -- ^ tile kinds in the cave
   , dsecret :: SecretMapXY          -- ^ secrecy strength of cave tiles
-  , ditem   :: ItemFloorXY            -- ^ starting items in the cave
+  , ditem   :: ItemFloorXY          -- ^ starting items in the cave
   , dplaces :: [Place]              -- ^ places generated in the cave
   }
   deriving Show
@@ -77,7 +78,9 @@ buildCave :: Kind.COps         -- ^ content definitions
           -> Int               -- ^ maximum depth of the dungeon
           -> Kind.Id CaveKind  -- ^ cave kind to use for generation
           -> Rnd Cave
-buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick}
+buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ okind=tokind
+                                                , opick
+                                                , ouniqGroup }
                         , cocave=Kind.Ops{okind} }
           ln depth ci = do
   let kc@CaveKind{..} = okind ci
@@ -106,9 +109,9 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{okind=tokind, opick}
                  let r0 = places EM.! p0
                      r1 = places EM.! p1
                  connectPlaces r0 r1) allConnects
-  wallId <- opick cfillerTile (const True)
-  let fenceBounds = (1, 1, cxsize - 2, cysize - 2)
-      fence = buildFence wallId fenceBounds
+  let hardRockId = ouniqGroup "hard rock"
+      fenceBounds = (1, 1, cxsize - 2, cysize - 2)
+      fence = buildFence hardRockId fenceBounds
   pickedCorTile <- opick ccorridorTile (const True)
   let addPl (m, pls) (_, (x0, _, x1, _)) | x0 == x1 = return (m, pls)
       addPl (m, pls) (_, r) = do

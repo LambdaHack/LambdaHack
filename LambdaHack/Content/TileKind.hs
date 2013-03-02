@@ -16,9 +16,9 @@ cdefs = CDefs
   , getFreq = tfreq
   , validate = tvalidate
   , content =
-      [wall, pillar, wallV, doorHiddenV, doorClosedV, doorOpenV, wallH, doorHiddenH, doorClosedH, doorOpenH, stairsUpDark, stairsUpLit, stairsDownDark, stairsDownLit, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown]
+      [wall, hardRock, pillar, wallV, doorHiddenV, doorClosedV, doorOpenV, wallH, doorHiddenH, doorClosedH, doorOpenH, stairsUpDark, stairsUpLit, stairsDownDark, stairsDownLit, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown]
   }
-wall,        pillar, wallV, doorHiddenV, doorClosedV, doorOpenV, wallH, doorHiddenH, doorClosedH, doorOpenH, stairsUpDark, stairsUpLit, stairsDownDark, stairsDownLit, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown :: TileKind
+wall,        hardRock, pillar, wallV, doorHiddenV, doorClosedV, doorOpenV, wallH, doorHiddenH, doorClosedH, doorOpenH, stairsUpDark, stairsUpLit, stairsDownDark, stairsDownLit, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown :: TileKind
 
 wall = TileKind
   { tsymbol  = ' '
@@ -27,6 +27,14 @@ wall = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfeature = []
+  }
+hardRock = TileKind
+  { tsymbol  = ' '
+  , tname    = "hard rock"
+  , tfreq    = [("hard rock", 1)]
+  , tcolor   = BrBlack
+  , tcolor2  = BrBlack
+  , tfeature = [Impenetrable]
   }
 pillar = TileKind
   { tsymbol  = 'O'

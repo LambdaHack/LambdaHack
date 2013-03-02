@@ -33,28 +33,31 @@ main = do
   args <- getArgs
   let usage =
         [ "Configure server debug options here, gamplay in config.rules.ini."
-        , "  -knowMap reveal map for all clients in the next game"
-        , "  -knowMap reveal map for all clients in the next game"
-        , "  -sniffIn display on console all incoming commands"
-        , "  -sniffOut display on console all outgoing commands"
-        , "  -tryFov m set a Field of View mode, where m can be"
+        , "  --knowMap reveal map for all clients in the next game"
+        , "  --knowEvents show all events to all clients in the next game"
+        , "  --sniffIn display all incoming commands on console "
+        , "  --sniffOut display all outgoing commands on console "
+        , "  --allClear let all map tiles be translucent"
+        , "  --tryFov m set a Field of View mode, where m can be"
         , "    Digital r, r > 0"
         , "    Permissive"
         , "    Shadow"
         , "    Blind"
         ]
       parseArgs [] = defDebugModeSer
-      parseArgs ("-knowMap" : rest) =
+      parseArgs ("--knowMap" : rest) =
         (parseArgs rest) {sknowMap = True}
-      parseArgs ("-knowEvents" : rest) =
+      parseArgs ("--knowEvents" : rest) =
         (parseArgs rest) {sknowEvents = True}
-      parseArgs ("-sniffIn" : rest) =
+      parseArgs ("--sniffIn" : rest) =
         (parseArgs rest) {sniffIn = True}
-      parseArgs ("-sniffOut" : rest) =
+      parseArgs ("--sniffOut" : rest) =
         (parseArgs rest) {sniffOut = True}
-      parseArgs ("-tryFov" : "Digital" : r : rest) | (read r :: Int) > 0 =
+      parseArgs ("--allClear" : rest) =
+        (parseArgs rest) {sallClear = True}
+      parseArgs ("--tryFov" : "Digital" : r : rest) | (read r :: Int) > 0 =
         (parseArgs rest) {stryFov = Just $ Digital $ read r}
-      parseArgs ("-tryFov" : fovMode : rest) =
+      parseArgs ("--tryFov" : fovMode : rest) =
         (parseArgs rest) {stryFov = Just $ read fovMode}
       parseArgs _ = error $ unlines usage
       !sdebugNxt = parseArgs args
@@ -68,7 +71,7 @@ main = do
         , costrat = Kind.createOps Content.StrategyKind.cdefs
         , cotile  = Kind.createOps Content.TileKind.cdefs
         }
-      cops = speedupCOps copsSlow
+      cops = speedupCOps False copsSlow
       loopHuman :: ( MonadActionAbort m, MonadAction m
                    , MonadClientUI m, MonadClientChan CmdUI m ) => m ()
       loopHuman = loopUI cmdUISem

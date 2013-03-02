@@ -71,16 +71,24 @@ loopSer sdebugNxt cmdSerSem executorHuman executorComputer
     Left (gloRaw, ser, _msg) -> do  -- Running a restored game.
       putState $ updateCOps (const cops) gloRaw
       putServer ser {sdebugNxt}
-  -- Apply debug options that don't need a new game.
-  modifyServer $ \ser ->
-    ser {sdebugSer = (sdebugSer ser) { sniffIn = sniffIn sdebugNxt
-                                     , sniffOut = sniffOut sdebugNxt }}
   -- Set up connections
   connServer
   -- Launch clients.
   launchClients executorHuman executorComputer
-  -- Send init messages.
+  -- Init COps and perception according to debug from savegame.
+  debugSerOld <- getsServer sdebugSer
+  modifyState $ updateCOps $ speedupCOps (sallClear debugSerOld)
   initPer
+  -- Apply debug options that don't need a new game.
+  modifyServer $ \ser ->
+    ser {sdebugSer = (sdebugSer ser) { sniffIn = sniffIn sdebugNxt
+                                     , sniffOut = sniffOut sdebugNxt
+                                     , sallClear = sallClear sdebugNxt
+                                     , stryFov = stryFov sdebugNxt }}
+  -- Set up COps according to new debug.
+  debugSerNew <- getsServer sdebugSer
+  modifyState $ updateCOps $ speedupCOps (sallClear debugSerNew)
+  -- Detect if it's resume or fresh start.
   pers <- getsServer sper
   quit <- getsServer squit
   if isJust quit then do  -- game restored from a savefile

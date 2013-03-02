@@ -81,8 +81,8 @@ canBeHidden Kind.Ops{ofoldrWithKey} t =
   let sim _ s acc = acc || kindHasFeature F.Hidden s && similar t s
   in ofoldrWithKey sim False
 
-speedup :: Kind.Ops TileKind -> Kind.Speedup TileKind
-speedup Kind.Ops{ofoldrWithKey, obounds} =
+speedup :: Bool -> Kind.Ops TileKind -> Kind.Speedup TileKind
+speedup allClear Kind.Ops{ofoldrWithKey, obounds} =
   let createTab :: (TileKind -> Bool) -> A.UArray (Kind.Id TileKind) Bool
       createTab p =
         let f _ k acc = p k : acc
@@ -90,6 +90,7 @@ speedup Kind.Ops{ofoldrWithKey, obounds} =
         in A.listArray obounds clearAssocs
       tabulate :: (TileKind -> Bool) -> Kind.Id TileKind -> Bool
       tabulate p = (createTab p A.!)
-      isClearTab = tabulate $ kindHasFeature F.Clear
+      isClearTab | allClear = tabulate $ not . kindHasFeature F.Impenetrable
+                 | otherwise = tabulate $ kindHasFeature F.Clear
       isLitTab   = tabulate $ kindHasFeature F.Lit
   in Kind.TileSpeedup {isClearTab, isLitTab}
