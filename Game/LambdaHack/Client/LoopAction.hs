@@ -4,6 +4,7 @@
 module Game.LambdaHack.Client.LoopAction (loopCli, loopUI) where
 
 import Control.Monad
+import qualified Data.Text as T
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Client.Action
@@ -38,9 +39,13 @@ loopCli cmdCliSem = do
   msg <- initCli
   cmd1 <- readChanFromSer
   case (msg, cmd1) of
-    (Left _ , CmdAtomicCli ResumeA{}) -> cmdCliSem cmd1
-    (Right _, CmdAtomicCli RestartA{}) -> cmdCliSem cmd1
+    (Left _, CmdAtomicCli ResumeA{}) -> return ()
+    (Left _, CmdAtomicCli RestartA{}) -> return ()  -- server savegame faulty
+    (Right msg1, CmdAtomicCli ResumeA{}) ->
+      error $ T.unpack $ "Savefile of client " <> showT side <> " not usable. Can't join the party. Please remove all savefiles manually and restart. Savefile subsystem said: " <> msg1
+    (Right _, CmdAtomicCli RestartA{}) -> return ()
     _ -> assert `failure` (side, msg, cmd1)
+  cmdCliSem cmd1
   -- State and client state now valid.
   loop
  where
@@ -57,9 +62,14 @@ loopUI cmdUISem = do
   msg <- initCli
   cmd1 <- readChanFromSer
   case (msg, cmd1) of
-    (Left msg1, CmdAtomicUI ResumeA{}) -> cmdUISem cmd1 >> msgAdd msg1
-    (Right msg1, CmdAtomicUI RestartA{}) -> cmdUISem cmd1 >> msgAdd msg1
+    (Left _, CmdAtomicUI ResumeA{}) -> return ()
+    (Left _, CmdAtomicUI RestartA{}) -> return ()  -- server savegame faulty
+    (Right msg1, CmdAtomicUI ResumeA{}) ->
+      error $ T.unpack $ "Savefile of client " <> showT side <> " not usable. Can't join the party. Please remove all savefiles manually and restart. Savefile subsystem said: " <> msg1
+    (Right _, CmdAtomicUI RestartA{}) -> return ()
     _ -> assert `failure` (side, msg, cmd1)
+  cmdUISem cmd1
+  either msgAdd msgAdd msg
   -- State and client state now valid.
   loop
  where

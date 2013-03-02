@@ -81,15 +81,16 @@ restoreGameSer Config{ configAppDataDir
          if bb
            then do
              (s, ser) <- strictDecodeEOF saveFileBkp
-             let msg = "No savefile found. Restoring from a backup savefile."
+             let msg = "No server savefile found. Restoring from a backup savefile."
              return $ Left (s, ser {squit = Just True}, msg)
            else do
              let msg = "Welcome to" <+> title <> "!"
              return $ Right msg
     )
     (\ e -> case e :: Ex.SomeException of
-              _ -> let msg = "Starting a new game, because restore failed."
-                             <+> "The error message was:"
-                             <+> (T.unwords . T.lines) (showT e)
+              _ -> let msg =
+                         "Starting a new game, because server restore failed."
+                         <+> "The error message was:"
+                         <+> (T.unwords . T.lines) (showT e)
                    in return $ Right msg
     )

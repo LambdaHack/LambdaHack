@@ -80,15 +80,17 @@ restoreGameCli saveName ConfigUI{ configAppDataDirUI
        if bb
        then do
          (s, cli) <- strictDecodeEOF saveFileBkp
-         let msg = "No savefile found. Restoring from a backup savefile."
+         let msg =
+               "No client savefile found. Restoring from a backup savefile."
          return $ Left (s, cli, msg)
        else do
          let msg = "Welcome to" <+> title <> "!"
          return $ Right msg
     )
     (\ e -> case e :: Ex.SomeException of
-              _ -> let msg = "Starting a new game, because restore failed."
-                             <+> "The error message was:"
-                             <+> (T.unwords . T.lines) (showT e)
+              _ -> let msg =
+                         "Starting a new game, because client restore failed."
+                         <+> "The error message was:"
+                         <+> (T.unwords . T.lines) (showT e)
                    in return $ Right msg
     )
