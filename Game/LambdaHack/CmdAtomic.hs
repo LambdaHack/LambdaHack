@@ -95,7 +95,7 @@ data DescAtomic =
   | CheckD ActorId ItemId
   | TriggerD ActorId Point F.Feature Bool
   | ShunD ActorId Point F.Feature Bool
-  | EffectD ActorId Effect.Effect
+  | EffectD ActorId (Effect.Effect Int)
   | FailureD FactionId Msg
   | BroadcastD Msg
   | DisplayPushD FactionId

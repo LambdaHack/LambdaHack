@@ -1,10 +1,11 @@
-{-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
+{-# LANGUAGE DeriveFunctor, DeriveGeneric, OverloadedStrings #-}
 -- | Effects of content on other content. No operation in this module
 -- involves the 'State' or 'Action' type.
 module Game.LambdaHack.Effect
-  ( Effect(..), effectToSuffix, effectToBenefit
+  ( Effect(..), effectTrav, effectToSuffix, effectToBenefit
   ) where
 
+import qualified Control.Monad.State as St
 import Data.Binary
 import qualified Data.Hashable as Hashable
 import Data.Text (Text)
@@ -12,48 +13,85 @@ import GHC.Generics (Generic)
 
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Random
+import Game.LambdaHack.Utils.Assert
 
 -- TODO: document each constructor
-data Effect =
+-- Effects of items, tiles, etc. The type argument represents power.
+-- either as a random formula dependent on level, or as a final rolled value.
+data Effect a =
     NoEffect
   | Heal Int
-  | Hurt !RollDice Int
+  | Hurt !RollDice a
   | Mindprobe Int       -- the @Int@ is a hack to send the result to clients
   | Dominate
   | SummonFriend Int
   | SpawnMonster Int
   | CreateItem Int
   | ApplyPerfume
-  | Regeneration Int
-  | Searching Int
+  | Regeneration a
+  | Searching a
   | Ascend Int
   | Descend Int
-  deriving (Show, Read, Eq, Ord, Generic)
+  deriving (Show, Read, Eq, Ord, Generic, Functor)
 
-instance Hashable.Hashable Effect
+instance Hashable.Hashable a => Hashable.Hashable (Effect a)
 
-instance Binary Effect
+instance Binary a => Binary (Effect a)
 
--- | Suffix to append to a basic content name, if the content causes the effect.
-effectToSuffix :: Effect -> Text
-effectToSuffix NoEffect = ""
-effectToSuffix (Heal p) | p > 0 = "of healing" <> affixPower p
-effectToSuffix (Heal 0) = "of bloodletting"
-effectToSuffix (Heal p) = "of wounding" <> affixPower p
-effectToSuffix (Hurt dice p) = "(" <> showT dice <> ")" <> affixPower p
-effectToSuffix Mindprobe{} = "of soul searching"
-effectToSuffix Dominate = "of domination"
-effectToSuffix (SummonFriend p) = "of aid calling" <> affixPower p
-effectToSuffix (SpawnMonster p) = "of spawning" <> affixPower p
-effectToSuffix (CreateItem p) = "of item creation" <> affixPower p
-effectToSuffix ApplyPerfume = "of rose water"
-effectToSuffix (Regeneration p) = "of regeneration" <> affixPower p
-effectToSuffix (Searching p) = "of searching" <> affixPower p
-effectToSuffix (Ascend p) = "of ascending" <> affixPower p
-effectToSuffix (Descend p) = "of descending" <> affixPower p
+-- TODO: Traversable?
+-- | Transform an effect using a stateful function.
+effectTrav :: Effect a -> (a -> St.State s b) -> St.State s (Effect b)
+effectTrav NoEffect _ = return NoEffect
+effectTrav (Heal p) _ = return $ Heal p
+effectTrav (Hurt dice a) f = do
+  b <- f a
+  return $ Hurt dice b
+effectTrav (Mindprobe x) _ = return $ Mindprobe x
+effectTrav Dominate _ = return Dominate
+effectTrav (SummonFriend p) _ = return $ SummonFriend p
+effectTrav (SpawnMonster p) _ = return $ SpawnMonster p
+effectTrav (CreateItem p) _ = return $ CreateItem p
+effectTrav ApplyPerfume _ = return $ ApplyPerfume
+effectTrav (Regeneration a) f = do
+  b <- f a
+  return $ Regeneration b
+effectTrav (Searching a) f = do
+  b <- f a
+  return $ Searching b
+effectTrav (Ascend p) _ = return $ Ascend p
+effectTrav (Descend p) _ = return $ Descend p
+
+-- | Suffix to append to a basic content name if the content causes the effect.
+effectToSuff :: Effect a -> (a -> Text) -> Text
+effectToSuff effect f =
+  case St.evalState (effectTrav effect $ return . f) () of
+    NoEffect -> ""
+    Heal p | p > 0 -> "of healing" <> affixBonus p
+    Heal 0 -> "of bloodletting"
+    Heal p -> "of wounding" <> affixBonus p
+    Hurt dice t -> "(" <> showT dice <> ")" <> t
+    Mindprobe{} -> "of soul searching"
+    Dominate -> "of domination"
+    SummonFriend p -> "of aid calling" <> affixPower p
+    SpawnMonster p -> "of spawning" <> affixPower p
+    CreateItem p -> "of item creation" <> affixPower p
+    ApplyPerfume -> "of rose water"
+    Regeneration t -> "of regeneration" <> t
+    Searching t -> "of searching" <> t
+    Ascend p -> "of ascending" <> affixPower p
+    Descend p -> "of descending" <> affixPower p
+
+effectToSuffix :: Effect Int -> Text
+effectToSuffix effect = effectToSuff effect affixBonus
 
 affixPower :: Int -> Text
-affixPower p = case compare p 0 of
+affixPower p = case compare p 1 of
+  EQ -> ""
+  LT -> assert `failure` p
+  GT -> " (+" <> showT p <> ")"
+
+affixBonus :: Int -> Text
+affixBonus p = case compare p 0 of
   EQ -> ""
   LT -> " (" <> showT p <> ")"
   GT -> " (+" <> showT p <> ")"
@@ -61,7 +99,7 @@ affixPower p = case compare p 0 of
 -- | How much AI benefits from applying the effect. Multipllied by item p.
 -- Negative means harm to the enemy when thrown at him. Effects with zero
 -- benefit won't ever be used, neither actively nor passively.
-effectToBenefit :: Effect -> Int
+effectToBenefit :: Effect Int -> Int
 effectToBenefit NoEffect = 0
 effectToBenefit (Heal p) = p * 10         -- TODO: depends on (maxhp - hp)
 effectToBenefit (Hurt _ p) = -(p * 10)  -- TODO: dice ignored for now

@@ -67,7 +67,7 @@ itemEffect source target miid item = do
 -- The boolean result indicates if the effect was spectacular enough
 -- for the actors to identify it (and the item that caused it, if any).
 effectSem :: MonadServer m
-          => Effect.Effect -> ActorId -> ActorId
+          => Effect.Effect Int -> ActorId -> ActorId
           -> WriterT [Atomic] m Bool
 effectSem effect source target = case effect of
   Effect.NoEffect -> effectNoEffect

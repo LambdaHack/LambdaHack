@@ -71,7 +71,7 @@ data Item = Item
   , jsymbol  :: !Char        -- ^ individual map symbol
   , jname    :: !Text        -- ^ individual generic name
   , jflavour :: !Flavour     -- ^ individual flavour
-  , jeffect  :: !Effect      -- ^ the effect when activated
+  , jeffect  :: !(Effect Int)  -- ^ the effect when activated
  }
   deriving (Show, Eq, Generic)
 
@@ -102,7 +102,7 @@ serverDiscos Kind.Ops{obounds, ofoldrWithKey} = do
 
 -- | Build an item with the given stats.
 buildItem :: FlavourMap -> DiscoRev
-          -> Kind.Id ItemKind -> ItemKind -> Effect -> Item
+          -> Kind.Id ItemKind -> ItemKind -> Effect Int -> Item
 buildItem (FlavourMap flavour) discoRev ikChosen kind jeffect =
   let jkindIx  = discoRev EM.! ikChosen
       jsymbol  = isymbol kind
@@ -124,7 +124,8 @@ newItem cops@Kind.Ops{opick, okind} flavour discoRev lvl depth = do
     then  -- Rare item; beware of inifite loops.
       newItem cops flavour discoRev lvl depth
     else do
-      return ( buildItem flavour discoRev ikChosen kind (ieffect kind)
+      effect <- effectTrav (ieffect kind) (rollDeep lvl depth)
+      return ( buildItem flavour discoRev ikChosen kind effect
              , jcount
              , kind )
 

@@ -29,7 +29,7 @@ amulet = ItemKind
   , iname    = "amulet"
   , ifreq    = [("dng", 6)]
   , iflavour = zipFancy [BrGreen]
-  , ieffect  = Regeneration 7 -- TODO
+  , ieffect  = Regeneration (RollDice 2 3, RollDice 1 10)
   , icount   = intToDeep 1
   , iverbApply   = "tear down"
   , iverbProject = "cast"
@@ -41,7 +41,7 @@ dart = ItemKind
   , iname    = "dart"
   , ifreq    = [("dng", 30)]
   , iflavour = zipPlain [Cyan]
-  , ieffect  = Hurt (RollDice 1 1) 7 -- TODO
+  , ieffect  = Hurt (RollDice 1 1) (RollDice 1 2, RollDice 1 2)
   , icount   = (RollDice 3 3, RollDice 0 0)
   , iverbApply   = "snap"
   , iverbProject = "hurl"
@@ -86,7 +86,7 @@ harpoon = ItemKind
   , iname    = "harpoon"
   , ifreq    = [("dng", 30)]
   , iflavour = zipPlain [Brown]
-  , ieffect  = Hurt (RollDice 1 2) 7 -- TODO
+  , ieffect  = Hurt (RollDice 1 2) (RollDice 1 2, RollDice 2 2)
   , icount   = (RollDice 0 0, RollDice 2 2)
   , iverbApply   = "break up"
   , iverbProject = "hurl"
@@ -110,18 +110,18 @@ potion1 = potion
   , ieffect  = ApplyPerfume
   }
 potion2 = potion
-  { ieffect  = Heal 7  -- TODO
+  { ieffect  = Heal 5
   }
 potion3 = potion
   { ifreq    = [("dng", 5)]
-  , ieffect  = Heal (-7) -- TODO
+  , ieffect  = Heal (-5)
   }
 ring = ItemKind
   { isymbol  = '='
   , iname    = "ring"
   , ifreq    = [("dng", 10)]
   , iflavour = zipPlain [White]
-  , ieffect  = Searching 1
+  , ieffect  = Searching (RollDice 1 6, RollDice 3 2)
   , icount   = intToDeep 1
   , iverbApply   = "squeeze down"
   , iverbProject = "toss"
@@ -154,7 +154,7 @@ sword = ItemKind
   , iname    = "sword"
   , ifreq    = [("dng", 60)]
   , iflavour = zipPlain [BrCyan]
-  , ieffect  = Hurt (RollDice 3 1) 7 -- TODO
+  , ieffect  = Hurt (RollDice 3 1) (RollDice 1 2, RollDice 4 2)
   , icount   = intToDeep 1
   , iverbApply   = "hit"
   , iverbProject = "heave"
@@ -178,7 +178,7 @@ wand1 = wand
   }
 wand2 = wand
   { ifreq    = [("dng", 3)]
-  , ieffect  = Heal (-7)  -- TODO
+  , ieffect  = Heal (-25)
   }
 fist = sword
   { isymbol  = '@'
@@ -205,7 +205,7 @@ weight = sword
   { isymbol  = '@'
   , iname    = "power jump"
   , ifreq    = [("weight", 100)]
-  , ieffect  = Hurt (RollDice 99 99) 42 --TODO
+  , ieffect  = Hurt (RollDice 99 99) (intToDeep 999)
   , iverbApply   = "squash"
   , iverbProject = "ERROR, please report: iverbProject weight"
   }

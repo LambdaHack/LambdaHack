@@ -18,7 +18,7 @@ data ItemKind = ItemKind
   , iname        :: !Text         -- ^ generic name
   , ifreq        :: !Freqs        -- ^ frequency within groups
   , iflavour     :: ![Flavour]    -- ^ possible flavours
-  , ieffect      :: !Effect       -- ^ the effect when activated
+  , ieffect      :: !(Effect RollDeep)  -- ^ the effect when activated
   , icount       :: !RollDeep     -- ^ created in that quantify
   , iverbApply   :: !MU.Part  -- ^ the verb for applying and possibly combat
   , iverbProject :: !MU.Part  -- ^ the verb for projecting
