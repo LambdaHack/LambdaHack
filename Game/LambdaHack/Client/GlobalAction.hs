@@ -378,6 +378,7 @@ gameRestartHuman = do
   when (not b1) $ neverMind True
   b2 <- displayYesNo "Current progress will be lost! Really restart the game?"
   when (not b2) $ abortWith "Yea, would be a pity to leave them to die."
+  msgAdd "Restarting the game now."
   leader <- getLeaderUI
   return $ GameRestartSer leader
 

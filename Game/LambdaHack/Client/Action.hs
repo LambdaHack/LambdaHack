@@ -328,6 +328,7 @@ clientGameSave toBkp = do
 
 saveExitCli :: MonadClient m => m ()
 saveExitCli = do
+  recordHistory
   clientGameSave False
   modifyClient $ \cli -> cli {squit = True}
 

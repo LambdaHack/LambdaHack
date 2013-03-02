@@ -151,7 +151,6 @@ instance Binary StateClient where
     put seps
     put starget
     put srunning
-    put sreport
     put shistory
     put sdisco
     put (show srandom)
@@ -167,7 +166,6 @@ instance Binary StateClient where
     seps <- get
     starget <- get
     srunning <- get
-    sreport <- get
     shistory <- get
     sdisco <- get
     g <- get
@@ -177,7 +175,8 @@ instance Binary StateClient where
     _sside <- get
     squit <- get
     sisAI <- get
-    let sfper = EM.empty
+    let sreport = emptyReport
+        sfper = EM.empty
         srandom = read g
         slastKey = Nothing
         sdebugCli = defDebugModeCli

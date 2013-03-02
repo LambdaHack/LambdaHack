@@ -439,7 +439,6 @@ handleActors cmdSerSem arena subclipStart = do
                           then return []
                           else advanceTime leaderNew
           mapM_ cmdAtomicBroad $ leadAtoms ++ atoms ++ advanceAtoms
---          recordHistory
           let subclipStartDelta = timeAddFromSpeed coactor body subclipStart
           if not aborted && isHuman && not (bproj body)
              || subclipStart == timeZero
