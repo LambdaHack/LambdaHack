@@ -81,14 +81,14 @@ displayFrame isRunning mf = do
   faction <- getsState sfaction
   case filter isHumanFact $ EM.elems faction of
     _ : _ : _ ->
-      -- More than one human player; don't mix the output
+      -- More than one human players, don't mix their output.
       modifyClient $ \cli -> cli {sframe = (mf, isRunning) : sframe cli}
     _ ->
       -- At most one human player, display everything at once.
       withUI $ liftIO $ Frontend.displayFrame fs isRunning mf
 
-flushFrames :: MonadClientUI m => m ()
-flushFrames = do
+flushFramesNoMVar :: MonadClientUI m => m ()
+flushFramesNoMVar = do
   fs <- askFrontendSession
   sframe <- getsClient sframe
   liftIO $ mapM_ (\(mf, b) -> Frontend.displayFrame fs b mf) $ reverse sframe
@@ -97,14 +97,17 @@ flushFrames = do
 nextEvent :: MonadClientUI m => Maybe Bool -> m K.KM
 nextEvent mb = withUI $ do
   fs <- askFrontendSession
-  flushFrames
+  flushFramesNoMVar
   liftIO $ Frontend.nextEvent fs mb
 
 promptGetKey :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
 promptGetKey keys frame = withUI $ do
   fs <- askFrontendSession
-  flushFrames
+  flushFramesNoMVar
   liftIO $ Frontend.promptGetKey fs keys frame
+
+flushFrames :: MonadClientUI m => m ()
+flushFrames = withUI flushFramesNoMVar
 
 -- | Set the current exception handler. Apart of executing it,
 -- draw and pass along a slide with the abort message (even if message empty).
@@ -388,6 +391,7 @@ rndToAction r = do
   modifyClient $ \cli -> cli {srandom = ng}
   return a
 
+-- TODO: perhaps draw viewed level, not arena
 -- TODO: restrict the animation to 'per' before drawing.
 -- | Render animations on top of the current screen frame.
 animate :: MonadClientUI m => Animation -> m Frames
