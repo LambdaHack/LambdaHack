@@ -403,11 +403,17 @@ handleActors cmdSerSem arena subclipStart = do
                 if leaderNew /= actor
                 then [Left (LeadFactionA side mleader (Just leaderNew))]
                 else []
+          let flush = case filter isHumanFact $ EM.elems faction of
+                _ : _ : _ ->
+                  -- More than one human player, mark end of turn.
+                  [Right $ FadeoutD side]
+                _ ->
+                  -- At most one human player, no need to send anything.
+                  []
           advanceAtoms <- if aborted || not timed
                           then return []
-                          else advanceTime leaderNew
-          let flush = [Right $ FlushFramesD side]
-          mapM_ cmdAtomicBroad $ leadAtoms ++ atoms ++ advanceAtoms ++ flush
+                          else fmap (++ flush) $ advanceTime leaderNew
+          mapM_ cmdAtomicBroad $ leadAtoms ++ atoms ++ advanceAtoms
           if aborted then handleActors cmdSerSem arena subclipStart
           else do
             -- Advance time once, after the leader switched perhaps many times.
@@ -600,6 +606,7 @@ restartGame loopServer = do
                           `notElem` (ritemProject $ Kind.stdRuleset corule)
                in EM.filter f discoS
   -- TODO: this is too hacky still (funBroadcastCli instead of cmdAtomicBroad)
+  funBroadcastUI $ \fid -> DescAtomicUI $ FadeoutD fid
   funBroadcast $ \fid -> RestartA fid sdisco (pers EM.! fid) defLoc
   populateDungeon
   -- Save ASAP in case of crashes and disconnects.

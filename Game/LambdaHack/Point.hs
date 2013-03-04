@@ -23,9 +23,9 @@ import Game.LambdaHack.VectorXY
 --
 -- We represent the (level map on the) screen as a linear framebuffer,
 -- where @Point@ is an @Int@ offset counted from the first cell.
--- We do bounds check for the X size whenever we convert between
--- representations and each subsequent
--- array access performs another check, effectively for Y size.
+-- We do bounds check for the X size whenever we convert
+-- between representations and each subsequent array access
+-- performs another check, effectively for Y size.
 -- After dungeon is generated (using @PointXY@, not @Point@),
 -- and converted to the @Point@ representation, points are used
 -- mainly as keys and not constructed often, so the performance will improve

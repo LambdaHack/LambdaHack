@@ -185,7 +185,7 @@ posDescAtomic cmd = case cmd of
   BroadcastD _ -> return $ Left $ Left True
   DisplayPushD fid -> return $ Left $ Right fid
   DisplayDelayD fid -> return $ Left $ Right fid
-  FlushFramesD fid -> return $ Left $ Right fid
+  FadeoutD fid -> return $ Left $ Right fid
 
 posOfAid :: MonadActionRO m => ActorId -> m (LevelId, Point)
 posOfAid aid = do

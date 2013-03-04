@@ -54,7 +54,7 @@ startup _ k = do
   C.end
 
 -- | Output to the screen via the frontend.
-display :: FrontendSession          -- ^ frontend session data
+display :: FrontendSession    -- ^ frontend session data
         -> Bool
         -> Bool
         -> Maybe SingleFrame  -- ^ the screen frame to draw

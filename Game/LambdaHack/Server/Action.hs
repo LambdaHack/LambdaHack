@@ -12,7 +12,7 @@ module Game.LambdaHack.Server.Action
   , waitForChildren, speedupCOps
     -- * Communication
   , sendUpdateUI, sendQueryUI, sendUpdateCli, sendQueryCli
-  , broadcastUI, funBroadcast
+  , broadcastUI, funBroadcastUI, funBroadcast
     -- * Assorted primitives
   , saveGameSer, saveGameBkp, dumpCfg, mkConfigRules, handleScores
   , rndToAction, resetFidPerception, getPerFid
@@ -215,6 +215,12 @@ broadcastUI :: MonadServerChan m => CmdUI -> m ()
 broadcastUI cmd = do
   faction <- getsState sfaction
   mapM_ (flip sendUpdateUI cmd) $ EM.keys faction
+
+funBroadcastUI :: MonadServerChan m => (FactionId -> CmdUI) -> m ()
+funBroadcastUI fcmd = do
+  faction <- getsState sfaction
+  let f fid = sendUpdateUI fid $ fcmd fid
+  mapM_ f $ EM.keys faction
 
 -- | Create a server config file. Warning: when it's use, the game state
 -- may still be undefined, hence the content ops are given as an argument.

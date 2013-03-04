@@ -3,9 +3,10 @@
 module Game.LambdaHack.Client.Animation
   ( Attr(..), defAttr, AttrChar(..)
   , SingleFrame(..), Animation, Frames, renderAnim, restrictAnim
-  , twirlSplash, blockHit, blockMiss, deathBody, swapPlaces
+  , twirlSplash, blockHit, blockMiss, deathBody, swapPlaces, fadeout
   ) where
 
+import Control.Monad
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
@@ -15,8 +16,11 @@ import Data.Monoid
 import Data.Text (Text)
 
 import Game.LambdaHack.Color
+import Game.LambdaHack.Misc
+import Game.LambdaHack.Point
 import Game.LambdaHack.Point
 import Game.LambdaHack.PointXY
+import Game.LambdaHack.Random
 
 -- | The data sufficent to draw a single game screen frame.
 data SingleFrame = SingleFrame
@@ -146,3 +150,38 @@ swapPlaces poss = Animation $ map (EM.fromList . mzipPairs poss)
   , (coloredSymbol Magenta   'p', coloredSymbol BrMagenta 'd')
   , (coloredSymbol Magenta   'o', blank)
   ]
+
+fadeout :: X -> Y -> Rnd Animation
+fadeout lxsize lysize = do
+  let section n =
+        case n of
+          0 -> ' '
+          1 -> '.'
+          2 -> '.'
+          3 -> '%'
+          4 -> '%'
+          5 -> ':'
+          6 -> ':'
+          7 -> '.'
+          _ -> ' '
+      fadeChar n x y =
+        let l = [ 2 * (y - lysize + 1) + n - x
+--              , 2 * (y - lysize + 1) + n - lxsize + 1 + x
+--              , n - x - 2 * y
+                , n - lxsize + 1 + x - 2 * y
+                ]
+        in case filter (> 0) l of
+          [] -> ' '
+          nz -> section $ minimum nz
+      rollFrame n = do
+--        dirs <- replicateM density $ randomR (1, 6)
+        let l = [(toPoint lxsize (PointXY (x, y)), fadeChar n x y)
+                | x <- [0..lxsize - 1]
+                , y <- [max 0 (lysize - 1 - (n - x) `div` 2)..lysize - 1]
+--                  ++ [max 0 (lysize - 1 - (n - lxsize + 1 + x) `div` 2)..lysize - 1]
+--                  ++ [0..min (lysize - 1) ((n - x) `div` 2)]
+                    ++ [0..min (lysize - 1) ((n - lxsize + 1 + x) `div` 2)]]
+        return $ EM.fromList l
+  fs <- mapM rollFrame [0..3 * lxsize `divUp` 4 + 2]
+  let as = map (EM.map (AttrChar (Attr White defBG))) fs
+  return $ Animation as

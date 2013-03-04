@@ -344,7 +344,7 @@ setFrame sess@FrontendSession{slastFull, sframeState} rawFrame = do
     FNone -> do
       -- Update the last received frame with the processed frame.
       -- There is no race condition, because we are on the same thread
-      -- as pushFrame.
+      -- as pushFrame.  -- TODO: probably no longer the case, but mvarUI helps
       maybe skip (\ fr -> writeIORef slastFull (fr, False)) fsetFrame
   -- Store the frame. Release the lock.
   putMVar sframeState FSet{..}

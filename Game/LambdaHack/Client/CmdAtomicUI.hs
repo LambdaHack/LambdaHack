@@ -438,12 +438,16 @@ drawDescAtomicUI verbose desc = case desc of
   BroadcastD msg -> msgAdd msg
   DisplayPushD _ -> displayPush
   DisplayDelayD _ -> displayFramesPush [Nothing]
-  FlushFramesD _ -> do
+  FadeoutD _ -> do
     srunning <- getsClient srunning
     case srunning of
       Just (_, k) | k > 1 -> return ()
       _ -> do
-        displayPush
+        arena <- getArenaUI
+        lvl <- getsLevel arena id
+        animMap <- rndToAction $ fadeout (lxsize lvl) (lysize lvl)
+        animFrs <- animate animMap
+        displayFramesPush $ Nothing : animFrs
         flushFrames
   _ -> return ()
 
