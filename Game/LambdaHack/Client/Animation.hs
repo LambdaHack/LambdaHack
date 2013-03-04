@@ -18,7 +18,6 @@ import Data.Text (Text)
 import Game.LambdaHack.Color
 import Game.LambdaHack.Misc
 import Game.LambdaHack.Point
-import Game.LambdaHack.Point
 import Game.LambdaHack.PointXY
 import Game.LambdaHack.Random
 
@@ -153,34 +152,22 @@ swapPlaces poss = Animation $ map (EM.fromList . mzipPairs poss)
 
 fadeout :: X -> Y -> Rnd Animation
 fadeout lxsize lysize = do
-  let section n =
-        case n of
-          0 -> ' '
-          1 -> '.'
-          2 -> '.'
-          3 -> '%'
-          4 -> '%'
-          5 -> ':'
-          6 -> ':'
-          7 -> '.'
-          _ -> ' '
+  let edge = EM.fromDistinctAscList $ zip [1..] ".%%:;:,."
       fadeChar n x y =
-        let l = [ 2 * (y - lysize + 1) + n - x
---              , 2 * (y - lysize + 1) + n - lxsize + 1 + x
---              , n - x - 2 * y
-                , n - lxsize + 1 + x - 2 * y
+        let l = [ n - (x - 2 * y) - 2 * lysize + 1  -- not +2, for asymmetry
+                , n + (x - 2 * y) - lxsize + 1
                 ]
         in case filter (> 0) l of
           [] -> ' '
-          nz -> section $ minimum nz
+          nz -> EM.findWithDefault ' ' (minimum nz) edge
       rollFrame n = do
+-- TODO: roll one Int, in 'nz ->' xor it with x (and y?) and add -1..2 to key
 --        dirs <- replicateM density $ randomR (1, 6)
-        let l = [(toPoint lxsize (PointXY (x, y)), fadeChar n x y)
+        let l = [ (toPoint lxsize (PointXY (x, y)), fadeChar n x y)
                 | x <- [0..lxsize - 1]
                 , y <- [max 0 (lysize - 1 - (n - x) `div` 2)..lysize - 1]
---                  ++ [max 0 (lysize - 1 - (n - lxsize + 1 + x) `div` 2)..lysize - 1]
---                  ++ [0..min (lysize - 1) ((n - x) `div` 2)]
-                    ++ [0..min (lysize - 1) ((n - lxsize + 1 + x) `div` 2)]]
+                    ++ [0..min (lysize - 1) ((n - lxsize + 1 + x) `div` 2)]
+                ]
         return $ EM.fromList l
   fs <- mapM rollFrame [0..3 * lxsize `divUp` 4 + 2]
   let as = map (EM.map (AttrChar (Attr White defBG))) fs
