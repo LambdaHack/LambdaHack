@@ -6,8 +6,8 @@ module Game.LambdaHack.Client.Animation
   , twirlSplash, blockHit, blockMiss, deathBody, swapPlaces, fadeout
   ) where
 
-import Control.Monad
 import Data.Binary
+import Data.Bits
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.List as L
@@ -152,23 +152,31 @@ swapPlaces poss = Animation $ map (EM.fromList . mzipPairs poss)
 
 fadeout :: X -> Y -> Rnd Animation
 fadeout lxsize lysize = do
-  let edge = EM.fromDistinctAscList $ zip [1..] ".%%:;:,."
-      fadeChar n x y =
-        let l = [ n - (x - 2 * y) - 2 * lysize + 1  -- not +2, for asymmetry
-                , n + (x - 2 * y) - lxsize + 1
-                ]
-        in case filter (> 0) l of
-          [] -> ' '
-          nz -> EM.findWithDefault ' ' (minimum nz) edge
+  let xbound = lxsize - 1
+      ybound = lysize - 1
+      edge = EM.fromDistinctAscList $ zip [1..] ".%&%;:,."
+      fadeChar r n x y =
+        let d = x - 2 * y
+            ndy = n - d - 2 * ybound
+            ndx = n + d - xbound - 1  -- @-1@ for asymmetry
+            mnx = if ndy > 0 && ndx > 0
+                  then min ndy ndx
+                  else max ndy ndx
+            v3 = (r `xor` (x * y)) `mod` 3
+            k | mnx < 3 || mnx > 10 = mnx
+              | (min x (xbound - x - y) + n + v3) `mod` 15 < 11
+                && mnx > 6 = mnx - v3
+              | (x + 3 * y + v3) `mod` 30 < 19 = mnx + 1
+              | otherwise = mnx
+        in EM.findWithDefault ' ' k edge
       rollFrame n = do
--- TODO: roll one Int, in 'nz ->' xor it with x (and y?) and add -1..2 to key
---        dirs <- replicateM density $ randomR (1, 6)
-        let l = [ (toPoint lxsize (PointXY (x, y)), fadeChar n x y)
-                | x <- [0..lxsize - 1]
-                , y <- [max 0 (lysize - 1 - (n - x) `div` 2)..lysize - 1]
-                    ++ [0..min (lysize - 1) ((n - lxsize + 1 + x) `div` 2)]
+        r <- random
+        let l = [ (toPoint lxsize (PointXY (x, y)), fadeChar r n x y)
+                | x <- [0..xbound]
+                , y <- [max 0 (ybound - (n - x) `div` 2)..ybound]
+                    ++ [0..min ybound ((n - xbound + x) `div` 2)]
                 ]
         return $ EM.fromList l
   fs <- mapM rollFrame [0..3 * lxsize `divUp` 4 + 2]
-  let as = map (EM.map (AttrChar (Attr White defBG))) fs
+  let as = map (EM.map (AttrChar defAttr)) fs
   return $ Animation as

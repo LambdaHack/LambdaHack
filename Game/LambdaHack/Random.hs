@@ -4,7 +4,7 @@ module Game.LambdaHack.Random
   ( -- * The @Rng@ monad
     Rnd
     -- * Random operations
-  , randomR, oneOf, frequency, roll
+  , randomR, random, oneOf, frequency, roll
     -- * Rolling dice
   , RollDice(..), rollDice, maxDice, minDice, meanDice
     -- * Rolling 2D coordinates
@@ -34,6 +34,10 @@ type Rnd a = St.State R.StdGen a
 -- | Get a random object within a range with a uniform distribution.
 randomR :: (R.Random a) => (a, a) -> Rnd a
 randomR range = St.state $ R.randomR range
+
+-- | Get a random object of a given type with a uniform distribution.
+random :: (R.Random a) => Rnd a
+random = St.state R.random
 
 -- | Get any element of a list with equal probability.
 oneOf :: [a] -> Rnd a
