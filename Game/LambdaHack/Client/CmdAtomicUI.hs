@@ -438,17 +438,13 @@ drawDescAtomicUI verbose desc = case desc of
   BroadcastD msg -> msgAdd msg
   DisplayPushD _ -> displayPush
   DisplayDelayD _ -> displayFramesPush [Nothing]
-  FadeoutD _ -> do
+  FlushFramesD _ -> do
     srunning <- getsClient srunning
     case srunning of
       Just (_, k) | k > 1 -> return ()
-      _ -> do
-        arena <- getArenaUI
-        lvl <- getsLevel arena id
-        animMap <- rndToAction $ fadeout (lxsize lvl) (lysize lvl)
-        animFrs <- animate animMap
-        displayFramesPush $ Nothing : animFrs
-        flushFrames
+      _ -> flushFrames
+  FadeoutD _ topRight -> fadeD True topRight
+  FadeinD _ topRight -> fadeD False topRight
   _ -> return ()
 
 strikeD :: MonadClientUI m
@@ -488,3 +484,20 @@ strikeD source target item b = assert (source /= target) $ do
       anim MissBlockD = blockMiss ps
   animFrs <- animate $ anim b
   displayFramesPush $ Nothing : animFrs
+
+fadeD :: MonadClientUI m => Bool -> Bool -> m ()
+fadeD out topRight = do
+  srunning <- getsClient srunning
+  case srunning of
+    Just (_, k) | k > 1 -> return ()
+    _ -> do
+      side <- getsClient sside
+      fac <- getsState $ (EM.! side) . sfaction
+      arena <- getArenaUI
+      lvl <- getsLevel arena id
+      report <- getsClient sreport
+      unless out $ msgReset $ gname fac <> ", get ready!"
+      animMap <- rndToAction $ fadeout out topRight (lxsize lvl) (lysize lvl)
+      animFrs <- animate animMap
+      modifyClient $ \d -> d {sreport = report}
+      displayFramesPush animFrs

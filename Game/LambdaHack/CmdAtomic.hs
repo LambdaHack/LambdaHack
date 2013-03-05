@@ -101,7 +101,9 @@ data DescAtomic =
   | BroadcastD Msg
   | DisplayPushD FactionId
   | DisplayDelayD FactionId
-  | FadeoutD FactionId
+  | FlushFramesD FactionId
+  | FadeoutD FactionId Bool
+  | FadeinD FactionId Bool
 -- TODO: SearchA
   deriving (Show, Eq)
 
@@ -160,7 +162,9 @@ undoDescAtomic cmd = case cmd of
   BroadcastD{} -> cmd
   DisplayPushD{} -> cmd
   DisplayDelayD{} -> cmd
+  FlushFramesD{} -> cmd
   FadeoutD{} -> cmd
+  FadeinD{} -> cmd
 
 undoAtomic :: Atomic -> Maybe Atomic
 undoAtomic (Left cmd) = fmap Left $ undoCmdAtomic cmd

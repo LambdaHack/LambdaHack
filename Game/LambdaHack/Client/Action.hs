@@ -14,7 +14,7 @@ module Game.LambdaHack.Client.Action
     -- * Accessors to the game session Reader and the Perception Reader(-like)
   , askBinding, getPerFid
     -- * History and report
-  , msgAdd, recordHistory
+  , msgAdd, msgReset, recordHistory
     -- * Key input
   , getKeyCommand, getKeyOverlayCommand, getManyConfirms
     -- * Display and key input
@@ -78,14 +78,13 @@ withUI m = do
 displayFrame :: MonadClientUI m => Bool -> Maybe SingleFrame -> m ()
 displayFrame isRunning mf = do
   fs <- askFrontendSession
-  faction <- getsState sfaction
-  case filter isHumanFact $ EM.elems faction of
-    _ : _ : _ ->
-      -- More than one human players, don't mix their output.
-      modifyClient $ \cli -> cli {sframe = (mf, isRunning) : sframe cli}
-    _ ->
-      -- At most one human player, display everything at once.
-      withUI $ liftIO $ Frontend.displayFrame fs isRunning mf
+  nH <- nHumans
+  if nH > 1 then do
+    -- More than one human players, don't mix their output.
+    modifyClient $ \cli -> cli {sframe = (mf, isRunning) : sframe cli}
+  else do
+    -- At most one human player, display everything at once.
+    withUI $ liftIO $ Frontend.displayFrame fs isRunning mf
 
 flushFramesNoMVar :: MonadClientUI m => m ()
 flushFramesNoMVar = do

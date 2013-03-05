@@ -6,6 +6,7 @@ module Game.LambdaHack.Client.Animation
   , twirlSplash, blockHit, blockMiss, deathBody, swapPlaces, fadeout
   ) where
 
+import Control.Arrow ((***))
 import Data.Binary
 import Data.Bits
 import qualified Data.EnumMap.Strict as EM
@@ -150,8 +151,8 @@ swapPlaces poss = Animation $ map (EM.fromList . mzipPairs poss)
   , (coloredSymbol Magenta   'o', blank)
   ]
 
-fadeout :: X -> Y -> Rnd Animation
-fadeout lxsize lysize = do
+fadeout :: Bool -> Bool -> X -> Y -> Rnd Animation
+fadeout out topRight lxsize lysize = do
   let xbound = lxsize - 1
       ybound = lysize - 1
       edge = EM.fromDistinctAscList $ zip [1..] ".%&%;:,."
@@ -171,12 +172,13 @@ fadeout lxsize lysize = do
         in EM.findWithDefault ' ' k edge
       rollFrame n = do
         r <- random
-        let l = [ (toPoint lxsize (PointXY (x, y)), fadeChar r n x y)
+        let l = [ ( PointXY ( (if topRight then id else (xbound -)) x, y)
+                  , fadeChar r n x y)
                 | x <- [0..xbound]
                 , y <- [max 0 (ybound - (n - x) `div` 2)..ybound]
                     ++ [0..min ybound ((n - xbound + x) `div` 2)]
                 ]
-        return $ EM.fromList l
-  fs <- mapM rollFrame [0..3 * lxsize `divUp` 4 + 2]
-  let as = map (EM.map (AttrChar defAttr)) fs
+        return $ EM.fromList $ map (toPoint lxsize *** AttrChar defAttr) l
+      fs = (if out then id else reverse) [3..3 * lxsize `divUp` 4 + 2]
+  as <- mapM rollFrame fs
   return $ Animation as

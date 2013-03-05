@@ -109,6 +109,7 @@ loopSer sdebugNxt cmdSerSem executorHuman executorComputer
     populateDungeon
     -- Save ASAP in case of crashes and disconnects.
     saveBkpAll
+    funBroadcastUI $ \fid -> DescAtomicUI $ FadeinD fid False
   let cinT = let r = timeTurn `timeFit` timeClip
              in assert (r > 2) r
       bkpFreq = cinT * 100
@@ -345,21 +346,18 @@ handleActors cmdSerSem arena subclipStart = do
   faction <- getsState sfaction
   s <- getState
   let mnext =
-        if EM.null prio  -- wait until any actor spawned
-        then Nothing
-        else let -- Actors of the same faction move together.
-                 -- TODO: insert wrt order, instead of sorting
-                 isLeader (a1, b1) =
-                   not $ Just a1 == gleader (faction EM.! bfaction b1)
-                 order = Ord.comparing $
-                   ((>= 0) . bhp . snd) &&& bfaction . snd
-                   &&& isLeader &&& bsymbol . snd
-                 (atime, as) = EM.findMin prio
-                 ams = map (\a -> (a, getActorBody a s)) as
-                 (actor, m) = head $ sortBy order ams
-             in if atime > time
-                then Nothing  -- no actor is ready for another move
-                else Just (actor, m)
+        let -- Actors of the same faction move together.
+            -- TODO: insert wrt order, instead of sorting
+            isLeader (a1, b1) =
+              not $ Just a1 == gleader (faction EM.! bfaction b1)
+            order = Ord.comparing $ ((>= 0) . bhp . snd) &&& bfaction . snd
+                                    &&& isLeader &&& bsymbol . snd
+            (atime, as) = EM.findMin prio
+            ams = map (\a -> (a, getActorBody a s)) as
+            (actor, m) = head $ sortBy order ams
+        in if atime > time
+           then Nothing  -- no actor is ready for another move
+           else Just (actor, m)
   case mnext of
     _ | isJust quitS -> return ()
     Nothing -> do
@@ -385,8 +383,8 @@ handleActors cmdSerSem arena subclipStart = do
       let hasLeader fid = isJust $ gleader $ faction EM.! fid
           allPush =
             map (Right . DisplayPushD) $ filter hasLeader $ EM.keys faction
-            -- TODO: too often
-      mapM_ cmdAtomicBroad allPush  -- needs to be there before key presses
+            -- TODO: too often, at least in multiplayer
+      mapM_ cmdAtomicBroad allPush
       let side = bfaction body
           mleader = gleader $ faction EM.! side
       isHuman <- getsState $ flip isHumanFaction side
@@ -403,16 +401,20 @@ handleActors cmdSerSem arena subclipStart = do
                 if leaderNew /= actor
                 then [Left (LeadFactionA side mleader (Just leaderNew))]
                 else []
-          let flush = case filter isHumanFact $ EM.elems faction of
-                _ : _ : _ ->
-                  -- More than one human player, mark end of turn.
-                  [Right $ FadeoutD side]
-                _ ->
-                  -- At most one human player, no need to send anything.
-                  []
+          nH <- nHumans
+          -- TODO: do not fade out if all other are running (so the previous
+          -- move was of the same actor)
+          let fadeOut | nH > 1 =
+                -- More than one human player, mark end of turn.
+                [ Right $ FadeoutD side True
+                , Right $ FlushFramesD side
+                , Right $ FadeinD side True ]
+                   | otherwise =
+                -- At most one human player, no need to send anything.
+                []
           advanceAtoms <- if aborted || not timed
                           then return []
-                          else fmap (++ flush) $ advanceTime leaderNew
+                          else fmap (++ fadeOut) $ advanceTime leaderNew
           mapM_ cmdAtomicBroad $ leadAtoms ++ atoms ++ advanceAtoms
           if aborted then handleActors cmdSerSem arena subclipStart
           else do
@@ -606,11 +608,13 @@ restartGame loopServer = do
                           `notElem` (ritemProject $ Kind.stdRuleset corule)
                in EM.filter f discoS
   -- TODO: this is too hacky still (funBroadcastCli instead of cmdAtomicBroad)
-  funBroadcastUI $ \fid -> DescAtomicUI $ FadeoutD fid
+  nH <- nHumans
+  when (nH <= 1) $ funBroadcastUI $ \fid -> DescAtomicUI $ FadeoutD fid False
   funBroadcast $ \fid -> RestartA fid sdisco (pers EM.! fid) defLoc
   populateDungeon
   -- Save ASAP in case of crashes and disconnects.
   saveBkpAll
+  funBroadcastUI $ \fid -> DescAtomicUI $ FadeinD fid False
   loopServer
 
 createFactions :: Kind.COps -> Config -> Rnd FactionDict
@@ -720,6 +724,9 @@ populateDungeon = do
 
 -- * Assorted helper functions
 
+-- TODO: send this to a faction, whenever a monster is generated
+-- and the faction was empty before: DescAtomicUI $ FadeinD fid False
+--
 -- | Generate a monster, possibly.
 generateMonster :: (MonadAction m, MonadServerChan m) => LevelId -> m ()
 generateMonster arena = do

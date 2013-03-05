@@ -13,9 +13,9 @@
 
 ; [computerPlayers]
 ; ; faction "playable" means a random choice
-; computer_monster: monster
-; computer_hero: hero
-; computer_playable: playable
+; Computer_monster: monster
+; Computer_hero: hero
+; Computer_playable: playable
 
 ; [dungeon]
 ; depth: 10
@@ -36,9 +36,9 @@
 ; firstDeathEnds: False
 
 ; [humanPlayers]
-; human_hero_1: hero
-; human_monster: monster
-; human_hero_2: hero
+; Human_hero_1: hero
+; Human_monster: monster
+; Human_hero_2: hero
 
 ; [heroNames]
 ; HeroName_0: Haskell Alvin

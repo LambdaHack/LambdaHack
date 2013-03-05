@@ -11,7 +11,7 @@ module Game.LambdaHack.Action
     -- * Abort exception handlers
   , tryRepeatedlyWith, tryIgnore
     -- * Shorthands
-  , updateLevel, getsLevel
+  , updateLevel, getsLevel, nHumans
   ) where
 
 import Control.Concurrent.STM.TQueue
@@ -109,3 +109,8 @@ updateLevel lid f = modifyState $ updateDungeon $ EM.adjust f lid
 
 getsLevel :: MonadActionRO m => LevelId -> (Level -> a) -> m a
 getsLevel lid f = getsState $ f . (EM.! lid) . sdungeon
+
+nHumans :: MonadActionRO m => m Int
+nHumans = do
+  faction <- getsState sfaction
+  return $ length $ filter isHumanFact $ EM.elems faction
