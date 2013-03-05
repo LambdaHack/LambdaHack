@@ -4,7 +4,7 @@
 -- | Game messages displayed on top of the screen for the player to read.
 module Game.LambdaHack.Msg
   ( makePhrase, makeSentence
-  , Msg, (<>), (<+>), showT, moreMsg, yesnoMsg, padMsg
+  , Msg, (<>), (<+>), showT, moreMsg, yesnoMsg, truncateMsg
   , Report, emptyReport, nullReport, singletonReport, addMsg
   , splitReport, renderReport
   , History, emptyHistory, singletonHistory, mergeHistory
@@ -16,6 +16,7 @@ module Game.LambdaHack.Msg
 import Data.Binary
 import qualified Data.ByteString.Char8 as BS
 import Data.Char
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.List as L
 import Data.Monoid hiding ((<>))
 import Data.Text (Text)
@@ -25,7 +26,6 @@ import Data.Typeable
 import Game.LambdaHack.Utils.Assert
 import NLP.Miniutter.English (showT, (<+>), (<>))
 import qualified NLP.Miniutter.English as MU
-import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Misc
 import Game.LambdaHack.PointXY
@@ -51,11 +51,16 @@ moreMsg = "--more--  "
 yesnoMsg :: Msg
 yesnoMsg = "[yn]"
 
--- | Add spaces at the message end, for display overlayed over the level map.
--- Also trims (does not wrap!) too long lines.
-padMsg :: X -> Text -> Text
-padMsg w xs =
-  let len = T.length xs
+-- | Add a space at the message end, for display overlayed over the level map.
+-- Also trims (does not wrap!) too long lines. In case of newlines,
+-- displays only the first line, but marks the message as partial.
+truncateMsg :: X -> Text -> Text
+truncateMsg w xsRaw =
+  let xs = case T.lines xsRaw of
+        [] -> xsRaw
+        [line] -> line
+        line : _ -> line <> T.replicate (w + 1) " "
+      len = T.length xs
   in case compare w len of
        LT -> T.snoc (T.take (w - 1) xs) '$'
        EQ -> xs
@@ -180,14 +185,14 @@ stringByLocation :: X -> Y -> Overlay
                  -> (Text, PointXY -> Maybe Char, Maybe Text)
 stringByLocation _ _ [] = (T.empty, const Nothing, Nothing)
 stringByLocation lxsize lysize (msgTop : ls) =
-  let (over, bottom) = splitAt lysize $ map (padMsg lxsize) ls
+  let (over, bottom) = splitAt lysize $ map (truncateMsg lxsize) ls
       m = EM.fromDistinctAscList $
             zip [0..] (L.map (EM.fromList . zip [0..] . T.unpack) over)
       msgBottom = case bottom of
                   [] -> Nothing
                   [s] -> Just s
                   _ -> Just "--a portion of the text trimmed--"
-  in (padMsg lxsize msgTop,
+  in (truncateMsg lxsize msgTop,
       \ (PointXY (x, y)) -> EM.lookup y m >>= \ n -> EM.lookup x n,
       msgBottom)
 

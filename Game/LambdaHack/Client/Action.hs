@@ -404,6 +404,6 @@ animate anim = do
   s <- getState
   per <- getPerFid arena
   let over = renderReport sreport
-      topLineOnly = padMsg lxsize over
+      topLineOnly = truncateMsg lxsize over
       basicFrame = draw ColorFull cops per arena leader cli s [topLineOnly]
   return $ renderAnim lxsize lysize basicFrame anim
