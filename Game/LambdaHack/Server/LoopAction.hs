@@ -389,7 +389,7 @@ handleActors cmdSerSem arena subclipStart = do
       if Just actor == mleader && isHuman
         then do
           -- TODO: check that the command is legal, that is, correct side, etc.
-          cmdS <- sendQueryUI side actor
+          cmdS <- sendQueryHumanUI side actor
           atoms <- cmdSerSem cmdS
           let isFailure cmd = case cmd of Right FailureD{} -> True; _ -> False
               aborted = all isFailure atoms
@@ -437,7 +437,7 @@ handleActors cmdSerSem arena subclipStart = do
             -- abort, a turn may be lost. Investigate/fix.
             handleActors cmdSerSem arena (btime bNew)
         else do
-          cmdS <- sendQueryCli side actor
+          cmdS <- sendQueryAICli side actor
           atoms <- cmdSerSem cmdS
           let isFailure cmd = case cmd of Right FailureD{} -> True; _ -> False
               aborted = all isFailure atoms

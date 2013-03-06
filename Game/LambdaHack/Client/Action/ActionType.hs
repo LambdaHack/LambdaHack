@@ -13,6 +13,7 @@ import qualified Data.Text as T
 import Game.LambdaHack.Action
 import Game.LambdaHack.Client.Action.ActionClass
 import Game.LambdaHack.Client.State
+import Game.LambdaHack.CmdCli
 import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 

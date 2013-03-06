@@ -11,7 +11,7 @@ module Game.LambdaHack.Server.Action
   , executorSer, tryRestore, connServer, launchClients
   , waitForChildren, speedupCOps
     -- * Communication
-  , sendUpdateUI, sendQueryUI, sendUpdateCli, sendQueryCli
+  , sendUpdateUI, sendQueryHumanUI, sendUpdateCli, sendQueryAICli
   , broadcastUI, funBroadcastUI, funBroadcast
     -- * Assorted primitives
   , saveGameSer, saveGameBkp, dumpCfg, mkConfigRules, handleScores
@@ -31,18 +31,17 @@ import qualified Control.Concurrent.STM as STM
 import Control.Concurrent
 import Data.Text (Text)
 import qualified Data.Text.IO as T
+import System.IO (stderr)
 
-import Game.LambdaHack.Action
+import Game.LambdaHack.Action hiding (MonadActionAbort)
 import Game.LambdaHack.Actor
-import Game.LambdaHack.ActorState
 import Game.LambdaHack.CmdCli
-import Game.LambdaHack.CmdAtomicSem
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
-import Game.LambdaHack.Server.Action.ActionClass (MonadServer(..), MonadServerChan(..))
+import Game.LambdaHack.Server.Action.ActionClass
 import Game.LambdaHack.Server.Action.ActionType (executorSer)
 import qualified Game.LambdaHack.Server.Action.ConfigIO as ConfigIO
 import Game.LambdaHack.Server.Action.HighScore (register)
@@ -114,8 +113,7 @@ dumpCfg fn = do
 -- Warning: scores are shown during the game,
 -- so we should be careful not to leak secret information through them
 -- (e.g., the nature of the items through the total worth of inventory).
-handleScores :: (MonadActionAbort m, MonadServerChan m)
-             => FactionId -> Bool -> Status -> Int -> m ()
+handleScores :: MonadServer m => FactionId -> Bool -> Status -> Int -> m ()
 handleScores _fid write status total =
   when (total /= 0) $ do
     config <- getsServer sconfig
@@ -124,31 +122,22 @@ handleScores _fid write status total =
     _slides <-
       liftIO $ register config write total timeZero curDate status
     go <- error "handleScores" -- sendQueryUI fid $ ShowSlidesUI slides
-    when (not go) abort
+    when (not go) skip  -- abort
 
-writeTQueueCli :: MonadServerChan m => TQueue CmdCli -> CmdCli -> m ()
-writeTQueueCli toClient cmd = do
+writeTQueueCli :: MonadServerChan m => CmdCli -> TQueue CmdCli -> m ()
+writeTQueueCli cmd toClient = do
   debug <- getsServer $ sniffOut . sdebugSer
-  when debug $ case cmd of
-    CmdAtomicCli cmdA -> do
-      ps <- posCmdAtomic cmdA
-      liftIO $ T.putStrLn $ showT (ps, "CmdAtomicCli", cmdA)
-    CmdHandleAICli aid ->
-      debugAid aid "CmdHandleAICli"
+  when debug $ do
+    d <- debugCli cmd
+    liftIO $ T.hPutStrLn stderr d
   liftIO $ atomically $ STM.writeTQueue toClient cmd
 
-writeTQueueUI :: MonadServerChan m => TQueue CmdUI -> CmdUI -> m ()
-writeTQueueUI toClient cmd = do
+writeTQueueUI :: MonadServerChan m => CmdUI -> TQueue CmdUI -> m ()
+writeTQueueUI cmd toClient = do
   debug <- getsServer $ sniffOut . sdebugSer
-  when debug $ case cmd of
-    CmdAtomicUI cmdA -> do
-      ps <- posCmdAtomic cmdA
-      liftIO $ T.putStrLn $ showT (ps, "CmdAtomicUI", cmdA)
-    DescAtomicUI desc -> do
-      ps <- posDescAtomic desc
-      liftIO $ T.putStrLn $ showT (ps, "DescAtomicUI", desc)
-    CmdHandleHumanUI aid ->
-      debugAid aid "CmdHandleHumanUI"
+  when debug $ do
+    d <- debugUI cmd
+    liftIO $ T.hPutStrLn stderr d
   liftIO $ atomically $ STM.writeTQueue toClient cmd
 
 readTQueue :: MonadServerChan m => TQueue CmdSer -> m CmdSer
@@ -157,33 +146,22 @@ readTQueue toServer = do
   debug <- getsServer $ sniffIn . sdebugSer
   when debug $ do
     let aid = aidCmdSer cmd
-    debugAid aid $ showT ("CmdSer", cmd)
+    d <- debugAid aid (showT ("CmdSer", cmd))
+    liftIO $ T.hPutStrLn stderr d
   return cmd
-
-debugAid :: MonadServerChan m => ActorId -> Text -> m ()
-debugAid aid s = do
-  b <- getsState $ getActorBody aid
-  time <- getsState $ getTime (blid b)
-  liftIO $ T.putStrLn $ showT  ( "lid", blid b, "time", time, "aid", aid
-                               , "faction", bfaction b, s)
-
-connSendUpdateCli :: MonadServerChan m => CmdCli -> ConnCli CmdCli -> m ()
-connSendUpdateCli cmd ConnCli{toClient} = writeTQueueCli toClient cmd
 
 sendUpdateCli :: MonadServerChan m => FactionId -> CmdCli -> m ()
 sendUpdateCli fid cmd = do
   conn <- getsDict $ snd . (EM.! fid)
-  maybe skip (connSendUpdateCli cmd) conn
+  maybe skip (writeTQueueCli cmd . toClient) conn
 
-connSendQueryCli :: MonadServerChan m => ActorId -> ConnCli CmdCli -> m CmdSer
-connSendQueryCli aid ConnCli{toClient, toServer} = do
-  writeTQueueCli toClient $ CmdHandleAICli aid
-  readTQueue toServer
-
-sendQueryCli :: MonadServerChan m => FactionId -> ActorId -> m CmdSer
-sendQueryCli fid aid = do
-  conn <- getsDict (snd . (EM.! fid))
-  maybe (assert `failure` (fid, aid)) (connSendQueryCli aid) conn
+sendQueryAICli :: MonadServerChan m => FactionId -> ActorId -> m CmdSer
+sendQueryAICli fid aid = do
+  mconn <- getsDict (snd . (EM.! fid))
+  let connSend conn = do
+        writeTQueueCli (CmdQueryAICli aid) $ toClient conn
+        readTQueue $ toServer conn
+  maybe (assert `failure` (fid, aid)) connSend mconn
 
 funBroadcast :: MonadServerChan m => (FactionId -> CmdAtomic) -> m ()
 funBroadcast fcmd = do
@@ -193,23 +171,18 @@ funBroadcast fcmd = do
         sendUpdateCli fid $ CmdAtomicCli $ fcmd fid
   mapM_ f $ EM.keys faction
 
-connSendUpdateUI :: MonadServerChan m => CmdUI -> ConnCli CmdUI -> m ()
-connSendUpdateUI cmd ConnCli{toClient} = writeTQueueUI toClient cmd
-
 sendUpdateUI :: MonadServerChan m => FactionId -> CmdUI -> m ()
 sendUpdateUI fid cmd = do
   conn <- getsDict (fst . (EM.! fid))
-  maybe skip (connSendUpdateUI cmd) conn
+  maybe skip (writeTQueueUI cmd . toClient) conn
 
-connSendQueryUI :: MonadServerChan m => ActorId -> ConnCli CmdUI -> m CmdSer
-connSendQueryUI aid ConnCli{toClient, toServer} = do
-  writeTQueueUI toClient $ CmdHandleHumanUI aid
-  readTQueue toServer
-
-sendQueryUI :: MonadServerChan m => FactionId -> ActorId -> m CmdSer
-sendQueryUI fid aid = do
-  conn <- getsDict (fst . (EM.! fid))
-  maybe (assert `failure` (fid, aid)) (connSendQueryUI aid) conn
+sendQueryHumanUI :: MonadServerChan m => FactionId -> ActorId -> m CmdSer
+sendQueryHumanUI fid aid = do
+  mconn <- getsDict (fst . (EM.! fid))
+  let connSend conn = do
+        writeTQueueUI (CmdQueryHumanUI aid) $ toClient conn
+        readTQueue $ toServer conn
+  maybe (assert `failure` (fid, aid)) connSend mconn
 
 broadcastUI :: MonadServerChan m => CmdUI -> m ()
 broadcastUI cmd = do

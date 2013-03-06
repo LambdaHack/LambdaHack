@@ -25,7 +25,7 @@ module Game.LambdaHack.Client.Action
   , drawOverlay, animate
     -- * Assorted primitives
   , flushFrames, clientGameSave, saveExitCli, restoreGame, displayPush
-  , readChanFromSer, writeChanToSer
+  , readChanToClient, writeChanFromClient
   , rndToAction, getArenaUI, getLeaderUI
   , targetToPos
   ) where
@@ -345,13 +345,13 @@ restoreGame = do
   let sName = saveName side isAI
   liftIO $ Save.restoreGameCli sName configUI pathsDataFile title
 
-readChanFromSer :: (MonadClient m, MonadClientChan c m) => m c
-readChanFromSer = do
+readChanToClient :: (MonadClient m, MonadClientChan c m) => m c
+readChanToClient = do
   toClient <- getsChan toClient
   liftIO $ atomically $ readTQueue toClient
 
-writeChanToSer :: (MonadClient m, MonadClientChan c m) => CmdSer -> m ()
-writeChanToSer cmds = do
+writeChanFromClient :: (MonadClient m, MonadClientChan c m) => CmdSer -> m ()
+writeChanFromClient cmds = do
   toServer <- getsChan toServer
   liftIO $ atomically $ writeTQueue toServer cmds
 

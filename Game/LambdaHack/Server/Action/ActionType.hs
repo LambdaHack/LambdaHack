@@ -12,6 +12,7 @@ import Control.Monad.Trans.State.Strict hiding (State)
 import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Action
+import Game.LambdaHack.CmdCli
 import Game.LambdaHack.Server.Action.ActionClass
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.State

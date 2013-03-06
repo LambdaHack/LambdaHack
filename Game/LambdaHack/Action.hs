@@ -5,7 +5,6 @@
 module Game.LambdaHack.Action
   ( -- * Action monads
     MonadActionAbort(..), MonadActionRO(..), MonadAction(..)
-  , ConnCli(..), ConnFaction, ConnDict
     -- * Various ways to abort action
   , abort, abortIfWith, neverMind
     -- * Abort exception handlers
@@ -14,35 +13,16 @@ module Game.LambdaHack.Action
   , updateLevel, getsLevel, nHumans
   ) where
 
-import Control.Concurrent.STM.TQueue
 import Control.Monad.Writer.Strict (WriterT (WriterT), lift, runWriterT)
 import qualified Data.EnumMap.Strict as EM
 import Data.Monoid
 import qualified Data.Text as T
 
-import Game.LambdaHack.CmdCli
-import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Faction
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
-
--- | Connection channels between server and a single client.
-data ConnCli c = ConnCli
-  { toClient :: TQueue c
-  , toServer :: TQueue CmdSer
-  }
-
-instance Show (ConnCli c) where
-  show _ = "client channels"
-
--- | Human-controlled client, UI of the client, AI of the client.
-type ConnFaction = (Maybe (ConnCli CmdUI), Maybe (ConnCli CmdCli))
-
--- | Connection information for each client and an optional AI client
--- for the same faction, indexed by faction identifier.
-type ConnDict = EM.EnumMap FactionId ConnFaction
 
 -- | The bottom of the action monads class semilattice.
 class (Monad m, Functor m) => MonadActionAbort m where

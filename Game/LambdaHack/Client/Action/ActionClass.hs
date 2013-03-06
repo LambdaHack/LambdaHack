@@ -14,6 +14,7 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Client.Action.Frontend
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.State
+import Game.LambdaHack.CmdCli
 
 -- | The information that is constant across a client playing session,
 -- including many consecutive games in a single session,

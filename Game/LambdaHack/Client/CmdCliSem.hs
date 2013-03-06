@@ -31,8 +31,8 @@ import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 
-handleAI :: MonadClient m => ActorId -> m CmdSer
-handleAI actor = do
+queryAI :: MonadClient m => ActorId -> m CmdSer
+queryAI actor = do
   body <- getsState $ getActorBody actor
   side <- getsClient sside
   assert (bfaction body == side `blame` (actor, bfaction body, side)) $ do
@@ -58,8 +58,8 @@ handleAI actor = do
     rndToAction $ frequency $ bestVariant $ stratAction
 
 -- | Handle the move of the hero.
-handleHuman :: (MonadActionAbort m, MonadClientUI m) => ActorId -> m CmdSer
-handleHuman aid = do
+queryHuman :: (MonadActionAbort m, MonadClientUI m) => ActorId -> m CmdSer
+queryHuman aid = do
   -- When running, stop if aborted by a disturbance. Otherwise let
   -- the human player issue commands, until any of them takes time.
   -- First time, just after pushing frames, ask for commands in Push mode.

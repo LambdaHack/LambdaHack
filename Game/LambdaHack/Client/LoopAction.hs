@@ -37,7 +37,7 @@ loopCli :: (MonadAction m, MonadClient m, MonadClientChan CmdCli m)
 loopCli cmdCliSem = do
   side <- getsClient sside
   msg <- initCli
-  cmd1 <- readChanFromSer
+  cmd1 <- readChanToClient
   case (msg, cmd1) of
     (Left _, CmdAtomicCli ResumeA{}) -> return ()
     (Left _, CmdAtomicCli RestartA{}) -> return ()  -- server savegame faulty
@@ -50,7 +50,7 @@ loopCli cmdCliSem = do
   loop
  where
   loop = do
-    cmd <- readChanFromSer
+    cmd <- readChanToClient
     cmdCliSem cmd
     quit <- getsClient squit
     when (not quit) loop
@@ -60,7 +60,7 @@ loopUI :: (MonadAction m, MonadClientUI m, MonadClientChan CmdUI m)
 loopUI cmdUISem = do
   side <- getsClient sside
   msg <- initCli
-  cmd1 <- readChanFromSer
+  cmd1 <- readChanToClient
   case (msg, cmd1) of
     (Left _, CmdAtomicUI ResumeA{}) -> return ()
     (Left _, CmdAtomicUI RestartA{}) -> return ()  -- server savegame faulty
@@ -74,7 +74,7 @@ loopUI cmdUISem = do
   loop
  where
   loop = do
-    cmd <- readChanFromSer
+    cmd <- readChanToClient
     cmdUISem cmd
     quit <- getsClient squit
     when (not quit) loop

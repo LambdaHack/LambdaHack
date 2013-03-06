@@ -25,9 +25,9 @@ cmdCliSem cmd = case cmd of
     cmds <- cmdAtomicFilterCli cmdA
     mapM_ cmdAtomicSemCli cmds
     mapM_ cmdAtomicSem cmds
-  CmdHandleAICli aid -> do
-    cmds <- handleAI aid
-    writeChanToSer cmds
+  CmdQueryAICli aid -> do
+    cmds <- queryAI aid
+    writeChanFromClient cmds
 
 cmdUISem :: ( MonadActionAbort m, MonadAction m
             , MonadClientUI m, MonadClientChan c m )
@@ -44,7 +44,7 @@ cmdUISem cmd = do
     DescAtomicUI desc ->
       when (isJust mleader) $
         drawDescAtomicUI False desc
-    CmdHandleHumanUI aid -> do
+    CmdQueryHumanUI aid -> do
       assert (isJust mleader `blame` cmd) skip
-      cmdH <- handleHuman aid
-      writeChanToSer cmdH
+      cmdH <- queryHuman aid
+      writeChanFromClient cmdH
