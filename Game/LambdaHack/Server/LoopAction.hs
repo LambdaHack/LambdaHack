@@ -216,24 +216,22 @@ cmdAtomicBroad atomic = do
           else breakSend fid perNew
       send fid = case ps of
         Right (arena, _) -> do
-          bs <- getsState $ actorNotProjList (== fid) arena
-          unless (null bs) $ do
-            let perOld = persOld EM.! fid EM.! arena
-                resetsFid = maybe True (fid `elem`) resets
-            if resetsFid then do
-              resetFidPerception fid arena
-              perNew <- getPerFid fid arena
-              let inPer = diffPer perNew perOld
-                  inPA = perActor inPer
-                  outPer = diffPer perOld perNew
-                  outPA = perActor outPer
-              if EM.null outPA && EM.null inPA
-                then anySend fid perOld perOld
-                else do
-                  sendA fid $ PerceptionA arena outPA inPA
-                  mapM_ (sendA fid) $ atomicRemember arena inPer sOld
-                  anySend fid perOld perNew
-            else anySend fid perOld perOld
+          let perOld = persOld EM.! fid EM.! arena
+              resetsFid = maybe True (fid `elem`) resets
+          if resetsFid then do
+            resetFidPerception fid arena
+            perNew <- getPerFid fid arena
+            let inPer = diffPer perNew perOld
+                inPA = perActor inPer
+                outPer = diffPer perOld perNew
+                outPA = perActor outPer
+            if EM.null outPA && EM.null inPA
+              then anySend fid perOld perOld
+              else do
+                sendA fid $ PerceptionA arena outPA inPA
+                mapM_ (sendA fid) $ atomicRemember arena inPer sOld
+                anySend fid perOld perNew
+          else anySend fid perOld perOld
         Left mfid ->
           -- @resets@ is false here and broken atomic has the same mfid
           when (isOurs fid mfid) $ sendUpdate fid atomic
@@ -368,13 +366,13 @@ handleActors cmdSerSem arena subclipStart = do
     Just (aid, b) | bhp b <= 0 && not (bproj b) || bhp b < 0
                     || maybe False null (bpath b) -> do
       atoms <-
-        if bhp b < 0  -- e.g., a projectile hitting an actor
+        if bproj b && bhp b < 0  -- a projectile hitting an actor
         then do
           -- Items are destroyed.
           ais <- getsState $ getActorItem aid
           return [Left $ DestroyActorA aid b ais]
         else
-          -- Items drop to the ground.
+          -- Items drop to the ground and new leader elected.
           execWriterT $ dieSer aid
       mapM_ cmdAtomicBroad atoms
       -- Death or projectile impact are serious, new subclip.
@@ -477,6 +475,8 @@ handleActors cmdSerSem arena subclipStart = do
 dieSer :: MonadActionRO m => ActorId -> WriterT [Atomic] m ()
 dieSer aid = do  -- TODO: explode if a projectile holdding a potion
   body <- getsState $ getActorBody aid
+  -- TODO: clients don't see the death of their last standing actor;
+  --       modify Draw.hs and Client.hs to handle that
   electLeader (bfaction body) (blid body) aid
   dropAllItems aid body
   tellCmdAtomic $ DestroyActorA aid body {bbag = EM.empty} []
@@ -496,10 +496,11 @@ electLeader fid lid aidDead = do
   mleader <- getsState $ gleader . (EM.! fid) . sfaction
   when (isNothing mleader || mleader == Just aidDead) $ do
     actorD <- getsState sactorD
-    let alive (aid, b) = aid /= aidDead && bfaction b == fid && not (bproj b)
-        party = filter alive $ EM.assocs actorD
+    let ours (_, b) = bfaction b == fid && not (bproj b)
+        party = filter ours $ EM.assocs actorD
     onLevel <- getsState $ actorNotProjAssocs (== fid) lid
-    let mleaderNew = listToMaybe $ map fst $ onLevel ++ party
+    let mleaderNew =
+          listToMaybe $ filter (/= aidDead) $ map fst $ onLevel ++ party
     tellCmdAtomic $ LeadFactionA fid mleader mleaderNew
 
 -- | Advance the move time for the given actor.

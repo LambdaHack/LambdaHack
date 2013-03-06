@@ -184,6 +184,7 @@ fist = sword
   { isymbol  = '@'
   , iname    = "fist"
   , ifreq    = [("hth", 1), ("unarmed", 100)]
+  , ieffect  = Hurt (RollDice 3 1) (intToDeep 0)
   , iverbApply   = "punch"
   , iverbProject = "ERROR, please report: iverbProject fist"
   }
@@ -191,6 +192,7 @@ foot = sword
   { isymbol  = '@'
   , iname    = "foot"
   , ifreq    = [("hth", 1), ("unarmed", 50)]
+  , ieffect  = Hurt (RollDice 3 1) (intToDeep 0)
   , iverbApply   = "kick"
   , iverbProject = "ERROR, please report: iverbProject foot"
   }
@@ -198,6 +200,7 @@ tentacle = sword
   { isymbol  = 'S'
   , iname    = "tentacle"
   , ifreq    = [("hth", 1), ("monstrous", 100)]
+  , ieffect  = Hurt (RollDice 3 1) (intToDeep 0)
   , iverbApply   = "hit"
   , iverbProject = "ERROR, please report: iverbProject tentacle"
   }
