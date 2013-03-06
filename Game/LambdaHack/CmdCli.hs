@@ -3,8 +3,8 @@
 -- | Abstract syntax of client commands.
 module Game.LambdaHack.CmdCli
   ( CmdCli(..), CmdUI(..)
-  , ConnCli(..), ConnFaction, ConnDict
   , debugCli, debugUI, debugAid
+  , Conn(..), ConnFaction, ConnDict
   ) where
 
 import Control.Concurrent.STM.TQueue
@@ -34,22 +34,6 @@ data CmdUI =
   | CmdQueryHumanUI ActorId
   deriving Show
 
--- | Connection channels between server and a single client.
-data ConnCli c = ConnCli
-  { toClient :: TQueue c
-  , toServer :: TQueue CmdSer
-  }
-
-instance Show (ConnCli c) where
-  show _ = "client channels"
-
--- | Human-controlled client, UI of the client, AI of the client.
-type ConnFaction = (Maybe (ConnCli CmdUI), Maybe (ConnCli CmdCli))
-
--- | Connection information for each client and an optional AI client
--- for the same faction, indexed by faction identifier.
-type ConnDict = EM.EnumMap FactionId ConnFaction
-
 debugCli :: MonadActionRO m => CmdCli -> m Text
 debugCli cmd = case cmd of
   CmdAtomicCli cmdA -> do
@@ -75,3 +59,19 @@ debugAid aid s = do
   time <- getsState $ getTime (blid b)
   return $ showT ( "lid", blid b, "time", time, "aid", aid
                                , "faction", bfaction b, s)
+
+-- | Connection channels between the server and a single client.
+data Conn c = Conn
+  { toClient :: TQueue c
+  , toServer :: TQueue CmdSer
+  }
+
+instance Show (Conn c) where
+  show _ = "client-server connection channels"
+
+-- | Connection to the human-controlled client of a faction and/or
+-- to the AI client for the same faction.
+type ConnFaction = (Maybe (Conn CmdUI), Maybe (Conn CmdCli))
+
+-- | Connection information for all factions, indexed by faction identifier.
+type ConnDict = EM.EnumMap FactionId ConnFaction

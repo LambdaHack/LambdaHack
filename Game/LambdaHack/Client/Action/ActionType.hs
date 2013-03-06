@@ -20,7 +20,7 @@ import Game.LambdaHack.State
 -- | The type of the function inside any client action.
 type FunActionCli c a =
    SessionUI                          -- ^ client UI setup data
-   -> ConnCli c                       -- ^ this client connection information
+   -> Conn c                       -- ^ this client connection information
    -> (State -> StateClient -> a -> IO ())
                                       -- ^ continuation
    -> (Msg -> IO ())                  -- ^ failure/reset continuation
@@ -86,7 +86,7 @@ instance MonadClientChan c (ActionCli c) where
   getsChan f  = ActionCli (\_c d k _a s cli -> k s cli (f d))
 
 -- | Run an action, with a given session, state and history, in the @IO@ monad.
-executorCli :: ActionCli c () -> SessionUI -> State -> StateClient -> ConnCli c
+executorCli :: ActionCli c () -> SessionUI -> State -> StateClient -> Conn c
             -> IO ()
 executorCli m sess s cli d =
   runActionCli m

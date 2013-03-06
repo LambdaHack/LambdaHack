@@ -360,10 +360,10 @@ writeChanFromClient cmds = do
 -- the server loop, if the whole game runs in one process),
 -- UI config and the definitions of game commands.
 exeFrontend :: Kind.COps
-            -> (SessionUI -> State -> StateClient -> ConnCli CmdUI -> IO ())
-            -> (SessionUI -> State -> StateClient -> ConnCli CmdCli -> IO ())
-            -> ((FactionId -> ConnCli CmdUI -> IO ()) ->
-                (FactionId -> ConnCli CmdCli -> IO ()) -> IO ())
+            -> (SessionUI -> State -> StateClient -> Conn CmdUI -> IO ())
+            -> (SessionUI -> State -> StateClient -> Conn CmdCli -> IO ())
+            -> ((FactionId -> Conn CmdUI -> IO ()) ->
+                (FactionId -> Conn CmdCli -> IO ()) -> IO ())
             -> IO ()
 exeFrontend cops@Kind.COps{corule}
             exeClientHuman exeClientComputer exeServer = do

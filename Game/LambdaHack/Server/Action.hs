@@ -216,16 +216,16 @@ connServer :: MonadServerChan m => m ()
 connServer = do
   faction <- getsState sfaction
   -- Prepare connections based on factions.
-  let mkConnCli :: IO (Maybe (ConnCli c))
-      mkConnCli = do
+  let mkConn :: IO (Maybe (Conn c))
+      mkConn = do
         toClient <- newTQueueIO
         toServer <- newTQueueIO
-        return $ Just $ ConnCli{..}
+        return $ Just $ Conn{..}
       addChan (fid, fact) = do
         chanUI <- if isHumanFact fact
-                  then mkConnCli
+                  then mkConn
                   else return Nothing
-        chanCli <- mkConnCli
+        chanCli <- mkConn
         return (fid, (chanUI, chanCli))
   chanAssocs <- liftIO $ mapM addChan $ EM.assocs faction
   putDict $ EM.fromDistinctAscList chanAssocs
@@ -233,8 +233,8 @@ connServer = do
 -- | Connect to clients by starting them in spawned threads that read
 -- and write directly to the channels.
 launchClients :: MonadServerChan m
-              => (FactionId -> ConnCli CmdUI -> IO ())
-              -> (FactionId -> ConnCli CmdCli -> IO ())
+              => (FactionId -> Conn CmdUI -> IO ())
+              -> (FactionId -> Conn CmdCli -> IO ())
               -> m ()
 launchClients executorHuman executorComputer = do
   let forkClient (fid, (chanUI, chanCli)) = do

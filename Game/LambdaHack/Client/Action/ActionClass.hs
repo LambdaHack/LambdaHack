@@ -49,4 +49,4 @@ instance (Monoid a, MonadClientUI m) => MonadClientUI (WriterT a m) where
   getsSession  = lift . getsSession
 
 class MonadActionRO m => MonadClientChan c m | m -> c where
-  getsChan  :: (ConnCli c -> a) -> m a
+  getsChan  :: (Conn c -> a) -> m a
