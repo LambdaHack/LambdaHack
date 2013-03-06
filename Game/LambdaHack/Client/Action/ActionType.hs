@@ -82,8 +82,8 @@ instance MonadClient (ActionCli c) where
 instance MonadClientUI (ActionCli c) where
   getsSession f  = ActionCli (\c _d k _a s cli -> k s cli (f c))
 
-instance MonadClientChan c (ActionCli c) where
-  getsChan f  = ActionCli (\_c d k _a s cli -> k s cli (f d))
+instance MonadClientConn c (ActionCli c) where
+  getsConn f  = ActionCli (\_c d k _a s cli -> k s cli (f d))
 
 -- | Run an action, with a given session, state and history, in the @IO@ monad.
 executorCli :: ActionCli c () -> SessionUI -> State -> StateClient -> Conn c

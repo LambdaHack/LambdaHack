@@ -28,13 +28,13 @@ instance (Monoid a, MonadServer m) => MonadServer (WriterT a m) where
   putServer    = lift . putServer
   liftIO       = lift . liftIO
 
-class MonadServer m => MonadServerChan m where
+class MonadServer m => MonadServerConn m where
   getDict      :: m ConnDict
   getsDict     :: (ConnDict -> a) -> m a
   modifyDict   :: (ConnDict -> ConnDict) -> m ()
   putDict      :: ConnDict -> m ()
 
-instance (Monoid a, MonadServerChan m) => MonadServerChan (WriterT a m) where
+instance (Monoid a, MonadServerConn m) => MonadServerConn (WriterT a m) where
   getDict      = lift getDict
   getsDict     = lift . getsDict
   modifyDict   = lift . modifyDict

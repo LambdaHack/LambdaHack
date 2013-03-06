@@ -15,7 +15,7 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
 
-initCli :: (MonadAction m, MonadClient m, MonadClientChan c m)
+initCli :: (MonadAction m, MonadClient m, MonadClientConn c m)
         => m (Either Msg Msg)
 initCli = do
   -- Warning: state and client state are invalid here, e.g., sdungeon
@@ -32,12 +32,12 @@ initCli = do
       -- TODO: create or restore from config clients RNG seed
       return $ Right msg
 
-loopCli :: (MonadAction m, MonadClient m, MonadClientChan CmdCli m)
+loopCli :: (MonadAction m, MonadClient m, MonadClientConn CmdCli m)
         => (CmdCli -> m ()) -> m ()
 loopCli cmdCliSem = do
   side <- getsClient sside
   msg <- initCli
-  cmd1 <- readChanToClient
+  cmd1 <- readConnToClient
   case (msg, cmd1) of
     (Left _, CmdAtomicCli ResumeA{}) -> return ()
     (Left _, CmdAtomicCli RestartA{}) -> return ()  -- server savegame faulty
@@ -50,17 +50,17 @@ loopCli cmdCliSem = do
   loop
  where
   loop = do
-    cmd <- readChanToClient
+    cmd <- readConnToClient
     cmdCliSem cmd
     quit <- getsClient squit
     when (not quit) loop
 
-loopUI :: (MonadAction m, MonadClientUI m, MonadClientChan CmdUI m)
+loopUI :: (MonadAction m, MonadClientUI m, MonadClientConn CmdUI m)
        => (CmdUI -> m ()) -> m ()
 loopUI cmdUISem = do
   side <- getsClient sside
   msg <- initCli
-  cmd1 <- readChanToClient
+  cmd1 <- readConnToClient
   case (msg, cmd1) of
     (Left _, CmdAtomicUI ResumeA{}) -> return ()
     (Left _, CmdAtomicUI RestartA{}) -> return ()  -- server savegame faulty
@@ -74,7 +74,7 @@ loopUI cmdUISem = do
   loop
  where
   loop = do
-    cmd <- readChanToClient
+    cmd <- readConnToClient
     cmdUISem cmd
     quit <- getsClient squit
     when (not quit) loop

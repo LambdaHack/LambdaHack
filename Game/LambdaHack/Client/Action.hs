@@ -7,7 +7,7 @@ module Game.LambdaHack.Client.Action
   ( -- * Action monads
     MonadClient( getClient, getsClient, putClient, modifyClient )
   , MonadClientUI
-  , MonadClientChan
+  , MonadClientConn
   , executorCli, exeFrontend, frontendName
     -- * Abort exception handlers
   , tryWithSlide
@@ -25,7 +25,7 @@ module Game.LambdaHack.Client.Action
   , drawOverlay, animate
     -- * Assorted primitives
   , flushFrames, clientGameSave, saveExitCli, restoreGame, displayPush
-  , readChanToClient, writeChanFromClient
+  , readConnToClient, writeConnFromClient
   , rndToAction, getArenaUI, getLeaderUI
   , targetToPos
   ) where
@@ -345,14 +345,14 @@ restoreGame = do
   let sName = saveName side isAI
   liftIO $ Save.restoreGameCli sName configUI pathsDataFile title
 
-readChanToClient :: (MonadClient m, MonadClientChan c m) => m c
-readChanToClient = do
-  toClient <- getsChan toClient
+readConnToClient :: (MonadClient m, MonadClientConn c m) => m c
+readConnToClient = do
+  toClient <- getsConn toClient
   liftIO $ atomically $ readTQueue toClient
 
-writeChanFromClient :: (MonadClient m, MonadClientChan c m) => CmdSer -> m ()
-writeChanFromClient cmds = do
-  toServer <- getsChan toServer
+writeConnFromClient :: (MonadClient m, MonadClientConn c m) => CmdSer -> m ()
+writeConnFromClient cmds = do
+  toServer <- getsConn toServer
   liftIO $ atomically $ writeTQueue toServer cmds
 
 -- | Wire together game content, the main loop of game clients,

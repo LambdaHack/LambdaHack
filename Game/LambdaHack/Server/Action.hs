@@ -7,7 +7,7 @@
 module Game.LambdaHack.Server.Action
   ( -- * Action monads
     MonadServer( getServer, getsServer, putServer, modifyServer )
-  , MonadServerChan
+  , MonadServerConn
   , executorSer, tryRestore, connServer, launchClients
   , waitForChildren, speedupCOps
     -- * Communication
@@ -124,7 +124,7 @@ handleScores _fid write status total =
     go <- error "handleScores" -- sendQueryUI fid $ ShowSlidesUI slides
     when (not go) skip  -- abort
 
-writeTQueueCli :: MonadServerChan m => CmdCli -> TQueue CmdCli -> m ()
+writeTQueueCli :: MonadServerConn m => CmdCli -> TQueue CmdCli -> m ()
 writeTQueueCli cmd toClient = do
   debug <- getsServer $ sniffOut . sdebugSer
   when debug $ do
@@ -132,7 +132,7 @@ writeTQueueCli cmd toClient = do
     liftIO $ T.hPutStrLn stderr d
   liftIO $ atomically $ STM.writeTQueue toClient cmd
 
-writeTQueueUI :: MonadServerChan m => CmdUI -> TQueue CmdUI -> m ()
+writeTQueueUI :: MonadServerConn m => CmdUI -> TQueue CmdUI -> m ()
 writeTQueueUI cmd toClient = do
   debug <- getsServer $ sniffOut . sdebugSer
   when debug $ do
@@ -140,7 +140,7 @@ writeTQueueUI cmd toClient = do
     liftIO $ T.hPutStrLn stderr d
   liftIO $ atomically $ STM.writeTQueue toClient cmd
 
-readTQueue :: MonadServerChan m => TQueue CmdSer -> m CmdSer
+readTQueue :: MonadServerConn m => TQueue CmdSer -> m CmdSer
 readTQueue toServer = do
   cmd <- liftIO $ atomically $ STM.readTQueue toServer
   debug <- getsServer $ sniffIn . sdebugSer
@@ -150,12 +150,12 @@ readTQueue toServer = do
     liftIO $ T.hPutStrLn stderr d
   return cmd
 
-sendUpdateCli :: MonadServerChan m => FactionId -> CmdCli -> m ()
+sendUpdateCli :: MonadServerConn m => FactionId -> CmdCli -> m ()
 sendUpdateCli fid cmd = do
   conn <- getsDict $ snd . (EM.! fid)
   maybe skip (writeTQueueCli cmd . toClient) conn
 
-sendQueryAICli :: MonadServerChan m => FactionId -> ActorId -> m CmdSer
+sendQueryAICli :: MonadServerConn m => FactionId -> ActorId -> m CmdSer
 sendQueryAICli fid aid = do
   mconn <- getsDict (snd . (EM.! fid))
   let connSend conn = do
@@ -163,7 +163,7 @@ sendQueryAICli fid aid = do
         readTQueue $ toServer conn
   maybe (assert `failure` (fid, aid)) connSend mconn
 
-funBroadcast :: MonadServerChan m => (FactionId -> CmdAtomic) -> m ()
+funBroadcast :: MonadServerConn m => (FactionId -> CmdAtomic) -> m ()
 funBroadcast fcmd = do
   faction <- getsState sfaction
   let f fid = do
@@ -171,12 +171,12 @@ funBroadcast fcmd = do
         sendUpdateCli fid $ CmdAtomicCli $ fcmd fid
   mapM_ f $ EM.keys faction
 
-sendUpdateUI :: MonadServerChan m => FactionId -> CmdUI -> m ()
+sendUpdateUI :: MonadServerConn m => FactionId -> CmdUI -> m ()
 sendUpdateUI fid cmd = do
   conn <- getsDict (fst . (EM.! fid))
   maybe skip (writeTQueueUI cmd . toClient) conn
 
-sendQueryHumanUI :: MonadServerChan m => FactionId -> ActorId -> m CmdSer
+sendQueryHumanUI :: MonadServerConn m => FactionId -> ActorId -> m CmdSer
 sendQueryHumanUI fid aid = do
   mconn <- getsDict (fst . (EM.! fid))
   let connSend conn = do
@@ -184,12 +184,12 @@ sendQueryHumanUI fid aid = do
         readTQueue $ toServer conn
   maybe (assert `failure` (fid, aid)) connSend mconn
 
-broadcastUI :: MonadServerChan m => CmdUI -> m ()
+broadcastUI :: MonadServerConn m => CmdUI -> m ()
 broadcastUI cmd = do
   faction <- getsState sfaction
   mapM_ (flip sendUpdateUI cmd) $ EM.keys faction
 
-funBroadcastUI :: MonadServerChan m => (FactionId -> CmdUI) -> m ()
+funBroadcastUI :: MonadServerConn m => (FactionId -> CmdUI) -> m ()
 funBroadcastUI fcmd = do
   faction <- getsState sfaction
   let f fid = sendUpdateUI fid $ fcmd fid
@@ -212,7 +212,7 @@ tryRestore Kind.COps{corule} = do
   liftIO $ Save.restoreGameSer sconfig pathsDataFile title
 
 -- | Prepare connections based on factions.
-connServer :: MonadServerChan m => m ()
+connServer :: MonadServerConn m => m ()
 connServer = do
   faction <- getsState sfaction
   -- Prepare connections based on factions.
@@ -221,28 +221,28 @@ connServer = do
         toClient <- newTQueueIO
         toServer <- newTQueueIO
         return $ Just $ Conn{..}
-      addChan (fid, fact) = do
-        chanUI <- if isHumanFact fact
+      addConn (fid, fact) = do
+        connUI <- if isHumanFact fact
                   then mkConn
                   else return Nothing
-        chanCli <- mkConn
-        return (fid, (chanUI, chanCli))
-  chanAssocs <- liftIO $ mapM addChan $ EM.assocs faction
-  putDict $ EM.fromDistinctAscList chanAssocs
+        connCli <- mkConn
+        return (fid, (connUI, connCli))
+  connAssocs <- liftIO $ mapM addConn $ EM.assocs faction
+  putDict $ EM.fromDistinctAscList connAssocs
 
 -- | Connect to clients by starting them in spawned threads that read
 -- and write directly to the channels.
-launchClients :: MonadServerChan m
+launchClients :: MonadServerConn m
               => (FactionId -> Conn CmdUI -> IO ())
               -> (FactionId -> Conn CmdCli -> IO ())
               -> m ()
 launchClients executorHuman executorComputer = do
-  let forkClient (fid, (chanUI, chanCli)) = do
-        let forkAI = case chanCli of
+  let forkClient (fid, (connUI, connCli)) = do
+        let forkAI = case connCli of
               -- TODO: for a screensaver, try True
               Just ch -> void $ forkChild $ executorComputer fid ch
               Nothing -> return ()
-        case chanUI of
+        case connUI of
           Just ch -> do
             void $ forkChild $ executorHuman fid ch
             forkAI

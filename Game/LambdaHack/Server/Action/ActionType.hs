@@ -46,7 +46,7 @@ instance MonadServer ActionSer where
     ActionSer $ modify $ \serS -> serS {serServer = s}
   liftIO         = ActionSer . IO.liftIO
 
-instance MonadServerChan ActionSer where
+instance MonadServerConn ActionSer where
   getDict      = ActionSer $ gets $ serDict
   getsDict   f = ActionSer $ gets $ f . serDict
   modifyDict f =

@@ -2,7 +2,7 @@
 module Game.LambdaHack.Client
   ( cmdCliSem, cmdUISem
   , loopCli, loopUI, executorCli, exeFrontend
-  , MonadClient, MonadClientUI, MonadClientChan
+  , MonadClient, MonadClientUI, MonadClientConn
   ) where
 
 import Control.Monad
@@ -18,7 +18,7 @@ import Game.LambdaHack.CmdCli
 import Game.LambdaHack.Utils.Assert
 
 cmdCliSem :: ( MonadAction m
-             , MonadClient m, MonadClientChan c m )
+             , MonadClient m, MonadClientConn c m )
           => CmdCli -> m ()
 cmdCliSem cmd = case cmd of
   CmdAtomicCli cmdA -> do
@@ -27,10 +27,10 @@ cmdCliSem cmd = case cmd of
     mapM_ cmdAtomicSem cmds
   CmdQueryAICli aid -> do
     cmds <- queryAI aid
-    writeChanFromClient cmds
+    writeConnFromClient cmds
 
 cmdUISem :: ( MonadActionAbort m, MonadAction m
-            , MonadClientUI m, MonadClientChan c m )
+            , MonadClientUI m, MonadClientConn c m )
          => CmdUI -> m ()
 cmdUISem cmd = do
   mleader <- getsClient _sleader
@@ -47,4 +47,4 @@ cmdUISem cmd = do
     CmdQueryHumanUI aid -> do
       assert (isJust mleader `blame` cmd) skip
       cmdH <- queryHuman aid
-      writeChanFromClient cmdH
+      writeConnFromClient cmdH

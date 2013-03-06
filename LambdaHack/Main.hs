@@ -73,10 +73,10 @@ main = do
         }
       cops = speedupCOps False copsSlow
       loopHuman :: ( MonadActionAbort m, MonadAction m
-                   , MonadClientUI m, MonadClientChan CmdUI m ) => m ()
+                   , MonadClientUI m, MonadClientConn CmdUI m ) => m ()
       loopHuman = loopUI cmdUISem
       loopComputer :: ( MonadAction m
-                      , MonadClient m, MonadClientChan CmdCli m ) => m ()
+                      , MonadClient m, MonadClientConn CmdCli m ) => m ()
       loopComputer = loopCli cmdCliSem
       exeClientHuman = executorCli loopHuman
       exeClientComputer = executorCli loopComputer

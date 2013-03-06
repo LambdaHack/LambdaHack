@@ -50,7 +50,7 @@ import Game.LambdaHack.Utils.Assert
 -- every fixed number of time units, e.g., monster generation.
 -- Run the leader and other actors moves. Eventually advance the time
 -- and repeat.
-loopSer :: forall m . (MonadAction m, MonadServerChan m)
+loopSer :: forall m . (MonadAction m, MonadServerConn m)
         => DebugModeSer
         -> (CmdSer -> m [Atomic])
         -> (FactionId -> Conn CmdUI -> IO ())
@@ -141,10 +141,10 @@ loopSer sdebugNxt cmdSerSem executorHuman executorComputer
             endOrLoop (loop (clipN + 1))
   loop 1
 
-ageLevel :: (MonadAction m, MonadServerChan m) => LevelId -> m ()
+ageLevel :: (MonadAction m, MonadServerConn m) => LevelId -> m ()
 ageLevel lid = cmdAtomicBroad $ Left $ AgeLevelA lid timeClip
 
-saveBkpAll :: MonadServerChan m => m ()
+saveBkpAll :: MonadServerConn m => m ()
 saveBkpAll = do
   funBroadcast $ const SaveBkpA
   saveGameBkp
@@ -165,7 +165,7 @@ atomicSem atomic = case atomic of
   Left cmd -> cmdAtomicSem cmd
   Right _ -> return ()
 
-cmdAtomicBroad :: (MonadAction m, MonadServerChan m) => Atomic -> m ()
+cmdAtomicBroad :: (MonadAction m, MonadServerConn m) => Atomic -> m ()
 cmdAtomicBroad atomic = do
   -- Gather data from the old state.
   sOld <- getState
@@ -270,7 +270,7 @@ atomicRemember lid inPer s =
 -- | If no actor of a non-spawning faction on the level,
 -- switch levels. If no level to switch to, end game globally.
 -- TODO: instead check if a non-spawn faction has Nothing leader. Equivalent.
-checkEndGame :: (MonadAction m, MonadServerChan m) => m ()
+checkEndGame :: (MonadAction m, MonadServerConn m) => m ()
 checkEndGame = do
   -- Actors on the current level go first so that we don't switch levels
   -- unnecessarily.
@@ -282,7 +282,7 @@ checkEndGame = do
     _ : _ -> return ()
 
 -- | End game, showing the ending screens, if requested.
-gameOver :: (MonadAction m, MonadServerChan m)
+gameOver :: (MonadAction m, MonadServerConn m)
          => FactionId -> LevelId -> Bool -> m ()
 gameOver fid arena showEndingScreens = do
   deepest <- getsLevel arena ldepth  -- TODO: use deepest visited instead of current
@@ -331,7 +331,7 @@ gameOver fid arena showEndingScreens = do
 -- We start by updating perception, because the selected level of dungeon
 -- has changed since last time (every change, whether by human or AI
 -- or @generateMonster@ is followd by a call to @handleActors@).
-handleActors :: (MonadAction m, MonadServerChan m)
+handleActors :: (MonadAction m, MonadServerConn m)
              => (CmdSer -> m [Atomic])
              -> LevelId
              -> Time  -- ^ start time of current subclip, exclusive
@@ -504,7 +504,7 @@ electLeader fid lid aidDead = do
     tellCmdAtomic $ LeadFactionA fid mleader mleaderNew
 
 -- | Advance the move time for the given actor.
-advanceTime :: (MonadAction m, MonadServerChan m) => ActorId -> m [Atomic]
+advanceTime :: (MonadAction m, MonadServerConn m) => ActorId -> m [Atomic]
 advanceTime aid = do
   Kind.COps{coactor} <- getsState scops
   b <- getsState $ getActorBody aid
@@ -515,7 +515,7 @@ advanceTime aid = do
     return [Left $ AgeActorA aid t]
 
 -- | Save game and perhaps exit.
-handleSave :: (MonadAction m, MonadServerChan m)
+handleSave :: (MonadAction m, MonadServerConn m)
            => Bool -> m () -> m ()
 handleSave q loopServer = do
   if q then do
@@ -538,7 +538,7 @@ handleSave q loopServer = do
     loopServer
 
 -- | Continue or restart or exit the game.
-endOrLoop :: (MonadAction m, MonadServerChan m)
+endOrLoop :: (MonadAction m, MonadServerConn m)
           => m () -> m ()
 endOrLoop loopServer = do
   checkEndGame
@@ -589,7 +589,7 @@ endOrLoop loopServer = do
         (_, Restart) -> restartGame loopServer
         (_, Camping) -> assert `failure` (fid, quit)
 
-restartGame :: (MonadAction m, MonadServerChan m) => m () -> m ()
+restartGame :: (MonadAction m, MonadServerConn m) => m () -> m ()
 restartGame loopServer = do
   cops@Kind.COps{ coitem=Kind.Ops{okind}
                 , corule } <- getsState scops
@@ -697,7 +697,7 @@ findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lstair} k =
   in tryFind stairPoss k
 
 -- Spawn initial actors. Clients should notice that so that they elect leaders.
-populateDungeon :: (MonadAction m, MonadServerChan m) => m ()
+populateDungeon :: (MonadAction m, MonadServerConn m) => m ()
 populateDungeon = do
   cops@Kind.COps{cotile} <- getsState scops
   let initialItems (lid, Level{ltile, litemNum}) = do
@@ -729,7 +729,7 @@ populateDungeon = do
 -- and the faction was empty before: DescAtomicUI $ FadeinD fid False
 --
 -- | Generate a monster, possibly.
-generateMonster :: (MonadAction m, MonadServerChan m) => LevelId -> m ()
+generateMonster :: (MonadAction m, MonadServerConn m) => LevelId -> m ()
 generateMonster arena = do
   cops@Kind.COps{cofact=Kind.Ops{okind}} <- getsState scops
   pers <- getsServer sper
@@ -772,7 +772,7 @@ rollSpawnPos Kind.COps{cotile} visible lid lvl s = do
 -- Only the heroes on the current level regenerate (others are frozen
 -- in time together with their level). This prevents cheating
 -- via sending one hero to a safe level and waiting there.
-regenerateLevelHP :: (MonadAction m, MonadServerChan m) => LevelId -> m ()
+regenerateLevelHP :: (MonadAction m, MonadServerConn m) => LevelId -> m ()
 regenerateLevelHP arena = do
   Kind.COps{ coitem
            , coactor=Kind.Ops{okind}
