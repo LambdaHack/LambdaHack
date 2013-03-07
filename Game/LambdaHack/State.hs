@@ -9,7 +9,7 @@ module Game.LambdaHack.State
   , defStateGlobal, emptyState, localFromGlobal
   , updateDungeon, updateDepth, updateActorD, updateItemD
   , updateFaction, updateCOps
-  , getTime, isHumanFaction, isSpawningFaction
+  , getTime, isHumanFaction, usesAIFaction, isSpawningFaction
   ) where
 
 import Data.Binary
@@ -135,9 +135,13 @@ updateCOps f s = s {_scops = f (_scops s)}
 getTime :: LevelId -> State -> Time
 getTime lid s = ltime $ _sdungeon s EM.! lid
 
--- | Tell whether the faction is human player-controlled.
+-- | Tell whether the faction is controlled (at least partially) by a human.
 isHumanFaction :: State -> FactionId -> Bool
 isHumanFaction s fid = isHumanFact $ _sfaction s EM.! fid
+
+-- | Tell whether the faction uses AI to control any of its actors.
+usesAIFaction :: State -> FactionId -> Bool
+usesAIFaction s fid = usesAIFact $ _sfaction s EM.! fid
 
 -- | Tell whether the faction can spawn actors.
 isSpawningFaction :: State -> FactionId -> Bool

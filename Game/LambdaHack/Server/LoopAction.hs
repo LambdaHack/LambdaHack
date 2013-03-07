@@ -385,9 +385,12 @@ handleActors cmdSerSem arena subclipStart = do
             -- TODO: too often, at least in multiplayer
       mapM_ cmdAtomicBroad allPush
       let side = bfaction body
-          mleader = gleader $ faction EM.! side
-      isHuman <- getsState $ flip isHumanFaction side
-      if Just actor == mleader && isHuman
+          fac = faction EM.! side
+          mleader = gleader fac
+          isHuman = isHumanFact fac
+          usesAI = usesAIFact fac
+          hasHumanLeader = isNothing $ gAiLeader fac
+      if not usesAI || hasHumanLeader && Just actor == mleader
         then do
           -- TODO: check that the command is legal, that is, correct side, etc.
           cmdS <- sendQueryUI side actor
@@ -634,7 +637,7 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
           if isHuman
           then return Nothing
           else fmap Just $ sopick (fAiLeader fk) (const True)
-        gAiMember <- sopick (fAiMember fk) (const True)
+        gAiMember <- fmap Just $ sopick (fAiMember fk) (const True)
         let gleader = Nothing
         return Faction{..}
   lHuman <- mapM (g True) (configHuman config)

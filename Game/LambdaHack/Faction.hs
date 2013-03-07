@@ -3,7 +3,7 @@
 -- the hero faction battling the monster and the animal factions.
 module Game.LambdaHack.Faction
   ( FactionId, FactionDict, Faction(..), Status(..)
-  , isHumanFact, isSpawningFact
+  , isHumanFact, usesAIFact, isSpawningFact
   ) where
 
 import Data.Binary
@@ -26,7 +26,9 @@ data Faction = Faction
   , gAiLeader :: !(Maybe (Kind.Id StrategyKind))
                                           -- ^ AI for the leaders;
                                           -- Nothing means human-controlled
-  , gAiMember :: !(Kind.Id StrategyKind)  -- ^ AI to use for other actors
+  , gAiMember :: !(Maybe (Kind.Id StrategyKind))
+                                          -- ^ AI to use for other actors
+                                          -- Nothing means human-controlled
   , genemy    :: ![FactionId]  -- ^ currently in war with these factions
   , gally     :: ![FactionId]  -- ^ currently allied with these factions
   , gquit     :: !(Maybe (Bool, Status))  -- ^ cause of game end/exit
@@ -42,9 +44,13 @@ data Status =
   | Restart          -- ^ the player quits and starts a new game
   deriving (Show, Eq, Ord)
 
--- | Tell whether the faction is human player-controlled.
+-- | Tell whether the faction is controlled (at least partially) by a human.
 isHumanFact :: Faction -> Bool
-isHumanFact fact = isNothing $ gAiLeader fact
+isHumanFact fact = isNothing (gAiLeader fact) || isNothing (gAiMember fact)
+
+-- | Tell whether the faction uses AI to control any of its actors.
+usesAIFact :: Faction -> Bool
+usesAIFact fact = isJust (gAiLeader fact) || isJust (gAiMember fact)
 
 -- | Tell whether the faction can spawn actors.
 isSpawningFact :: Kind.COps -> Faction -> Bool

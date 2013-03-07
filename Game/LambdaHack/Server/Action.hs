@@ -225,7 +225,9 @@ connServer = do
         connUI <- if isHumanFact fact
                   then mkConn
                   else return Nothing
-        connAI <- mkConn
+        connAI <- if usesAIFact fact
+                  then mkConn
+                  else return Nothing
         return (fid, (connUI, connAI))
   connAssocs <- liftIO $ mapM addConn $ EM.assocs faction
   putDict $ EM.fromDistinctAscList connAssocs
@@ -238,16 +240,8 @@ launchClients :: MonadServerConn m
               -> m ()
 launchClients executorUI executorAI = do
   let forkClient (fid, (connUI, connAI)) = do
-        let forkAI = case connAI of
-              -- TODO: for a screensaver, try True
-              Just ch -> void $ forkChild $ executorAI fid ch
-              Nothing -> return ()
-        case connUI of
-          Just ch -> do
-            void $ forkChild $ executorUI fid ch
-            forkAI
-          Nothing ->
-            forkAI
+        maybe skip (void . forkChild . executorUI fid) connUI
+        maybe skip (void . forkChild . executorAI fid) connAI
   d <- getDict
   liftIO $ mapM_ forkClient $ EM.assocs d
 
