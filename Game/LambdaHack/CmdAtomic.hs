@@ -10,7 +10,7 @@
 -- way to affect the basic game state (@State@).
 module Game.LambdaHack.CmdAtomic
   ( tellCmdAtomic, tellDescAtomic
-  , Atomic, CmdAtomic(..), DescAtomic(..), HitAtomic(..)
+  , Atomic(..), CmdAtomic(..), DescAtomic(..), HitAtomic(..)
   , undoCmdAtomic, undoDescAtomic, undoAtomic
   ) where
 
@@ -37,12 +37,15 @@ import Game.LambdaHack.Time
 import Game.LambdaHack.Vector
 
 tellCmdAtomic :: Monad m => CmdAtomic -> WriterT [Atomic] m ()
-tellCmdAtomic cmd = tell [Left cmd]
+tellCmdAtomic cmd = tell [CmdAtomic cmd]
 
 tellDescAtomic :: Monad m => DescAtomic -> WriterT [Atomic] m ()
-tellDescAtomic desc = tell [Right desc]
+tellDescAtomic desc = tell [DescAtomic desc]
 
-type Atomic = Either CmdAtomic DescAtomic
+data Atomic =
+    CmdAtomic CmdAtomic
+  | DescAtomic DescAtomic
+  deriving (Show, Eq)
 
 -- | Abstract syntax of atomic commands.
 data CmdAtomic =
@@ -167,5 +170,5 @@ undoDescAtomic cmd = case cmd of
   FadeinD{} -> cmd
 
 undoAtomic :: Atomic -> Maybe Atomic
-undoAtomic (Left cmd) = fmap Left $ undoCmdAtomic cmd
-undoAtomic (Right desc) = Just $ Right $ undoDescAtomic desc
+undoAtomic (CmdAtomic cmd) = fmap CmdAtomic $ undoCmdAtomic cmd
+undoAtomic (DescAtomic desc) = Just $ DescAtomic $ undoDescAtomic desc

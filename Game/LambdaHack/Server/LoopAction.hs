@@ -142,7 +142,7 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI
   loop 1
 
 ageLevel :: (MonadAction m, MonadServerConn m) => LevelId -> m ()
-ageLevel lid = cmdAtomicBroad $ Left $ AgeLevelA lid timeClip
+ageLevel lid = cmdAtomicBroad $ CmdAtomic $ AgeLevelA lid timeClip
 
 saveBkpAll :: MonadServerConn m => m ()
 saveBkpAll = do
@@ -162,8 +162,8 @@ initPer = do
 
 atomicSem :: MonadAction m => Atomic -> m ()
 atomicSem atomic = case atomic of
-  Left cmd -> cmdAtomicSem cmd
-  Right _ -> return ()
+  CmdAtomic cmd -> cmdAtomicSem cmd
+  DescAtomic _ -> return ()
 
 cmdAtomicBroad :: (MonadAction m, MonadServerConn m) => Atomic -> m ()
 cmdAtomicBroad atomic = do
@@ -172,14 +172,14 @@ cmdAtomicBroad atomic = do
   persOld <- getsServer sper
   (ps, resets, atomicBroken, psBroken, psLoud) <-
     case atomic of
-      Left cmd -> do
+      CmdAtomic cmd -> do
         ps <- posCmdAtomic cmd
         resets <- resetsFovAtomic cmd
         atomicBroken <- breakCmdAtomic cmd
         psBroken <- mapM posCmdAtomic atomicBroken
         psLoud <- mapM loudCmdAtomic atomicBroken
         return (ps, resets, atomicBroken, psBroken, psLoud)
-      Right desc -> do
+      DescAtomic desc -> do
         ps <- posDescAtomic desc
         return (ps, Just [], [], [], [])
   let atomicPsBroken = zip3 atomicBroken psBroken psLoud
@@ -187,7 +187,7 @@ cmdAtomicBroad atomic = do
   -- TODO: with deep equality these assertions can be expensive. Optimize.
   assert (either (const $ resets == Just []
                           && (null atomicBroken
-                             || fmap Left atomicBroken == [atomic]))
+                             || fmap CmdAtomic atomicBroken == [atomic]))
                  (const True) ps) skip
   -- Perform the action on the server.
   atomicSem atomic
@@ -196,17 +196,18 @@ cmdAtomicBroad atomic = do
   let sendA fid cmd = do
         sendUpdateUI fid $ CmdAtomicUI cmd
         sendUpdateAI fid $ CmdAtomicAI cmd
-      sendUpdate fid (Left cmd) = sendA fid cmd
-      sendUpdate fid (Right desc) = sendUpdateUI fid $ DescAtomicUI desc
+      sendUpdate fid (CmdAtomic cmd) = sendA fid cmd
+      sendUpdate fid (DescAtomic desc) = sendUpdateUI fid $ DescAtomicUI desc
       vis per (_, lp) = knowEvents || all (`ES.member` totalVisible per) lp
       isOurs fid = either id (== fid)
       breakSend fid perNew = do
         let send2 (atomic2, ps2, loud2) = do
               let seen2 = either (isOurs fid) (vis perNew) ps2
               if seen2
-                then sendUpdate fid $ Left atomic2
-                else when loud2 $ sendUpdate fid
-                                $ Right $ BroadcastD "You hear some noises."
+                then sendUpdate fid $ CmdAtomic atomic2
+                else when loud2 $
+                       sendUpdate fid
+                       $ DescAtomic $ BroadcastD "You hear some noises."
         mapM_ send2 atomicPsBroken
       anySend fid perOld perNew = do
         let startSeen = either (isOurs fid) (vis perOld) ps
@@ -370,7 +371,7 @@ handleActors cmdSerSem arena subclipStart = do
         then do
           -- Items are destroyed.
           ais <- getsState $ getActorItem aid
-          return [Left $ DestroyActorA aid b ais]
+          return [CmdAtomic $ DestroyActorA aid b ais]
         else
           -- Items drop to the ground and new leader elected.
           execWriterT $ dieSer aid
@@ -379,8 +380,8 @@ handleActors cmdSerSem arena subclipStart = do
       handleActors cmdSerSem arena (btime b)
     Just (actor, body) -> do
       let hasLeader fid = isJust $ gleader $ faction EM.! fid
-          allPush =
-            map (Right . DisplayPushD) $ filter hasLeader $ EM.keys faction
+          allPush = map (DescAtomic . DisplayPushD)
+                    $ filter hasLeader $ EM.keys faction
             -- TODO: too often, at least in multiplayer
       mapM_ cmdAtomicBroad allPush
       let side = bfaction body
@@ -391,22 +392,23 @@ handleActors cmdSerSem arena subclipStart = do
           -- TODO: check that the command is legal, that is, correct side, etc.
           cmdS <- sendQueryUI side actor
           atoms <- cmdSerSem cmdS
-          let isFailure cmd = case cmd of Right FailureD{} -> True; _ -> False
+          let isFailure cmd =
+                case cmd of DescAtomic FailureD{} -> True; _ -> False
               aborted = all isFailure atoms
               timed = timedCmdSer cmdS
               leaderNew = aidCmdSer cmdS
               leadAtoms =
                 if leaderNew /= actor
-                then [Left (LeadFactionA side mleader (Just leaderNew))]
+                then [CmdAtomic (LeadFactionA side mleader (Just leaderNew))]
                 else []
           nH <- nHumans
           -- TODO: do not fade out if all other are running (so the previous
           -- move was of the same actor)
           let fadeOut | nH > 1 =
                 -- More than one human player, mark end of turn.
-                [ Right $ FadeoutD side True
-                , Right $ FlushFramesD side
-                , Right $ FadeinD side True ]
+                [ DescAtomic $ FadeoutD side True
+                , DescAtomic $ FlushFramesD side
+                , DescAtomic $ FadeinD side True ]
                    | otherwise =
                 -- At most one human player, no need to send anything.
                 []
@@ -439,7 +441,8 @@ handleActors cmdSerSem arena subclipStart = do
         else do
           cmdS <- sendQueryAI side actor
           atoms <- cmdSerSem cmdS
-          let isFailure cmd = case cmd of Right FailureD{} -> True; _ -> False
+          let isFailure cmd =
+                case cmd of DescAtomic FailureD{} -> True; _ -> False
               aborted = all isFailure atoms
               timed = timedCmdSer cmdS
               leaderNew = aidCmdSer cmdS
@@ -447,7 +450,7 @@ handleActors cmdSerSem arena subclipStart = do
                 if leaderNew /= actor
                 then -- Only leader can change leaders
                      assert (mleader == Just actor)
-                       [Left (LeadFactionA side mleader (Just leaderNew))]
+                       [CmdAtomic (LeadFactionA side mleader (Just leaderNew))]
                 else []
           advanceAtoms <- if aborted || not timed
                           then return []
@@ -512,7 +515,7 @@ advanceTime aid = do
   if bhp b < 0 && bproj b then return [] else do
     let speed = actorSpeed coactor b
         t = ticksPerMeter speed
-    return [Left $ AgeActorA aid t]
+    return [CmdAtomic $ AgeActorA aid t]
 
 -- | Save game and perhaps exit.
 handleSave :: (MonadAction m, MonadServerConn m)
@@ -795,7 +798,7 @@ regenerateLevelHP arena = do
            else Just a
   toRegen <-
     getsState $ catMaybes . map pick .actorNotProjAssocs (const True) arena
-  mapM_ (\aid -> cmdAtomicBroad $ Left $ HealActorA aid 1) toRegen
+  mapM_ (\aid -> cmdAtomicBroad $ CmdAtomic $ HealActorA aid 1) toRegen
 
 -- TODO: let only some actors/items leave smell, e.g., a Smelly Hide Armour.
 -- | Add a smell trace for the actor to the level.
