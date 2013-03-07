@@ -49,7 +49,7 @@ import Game.LambdaHack.Vector
 default (Text)
 
 abortWith :: Monad m => FactionId -> Msg -> WriterT [Atomic] m ()
-abortWith fid msg = tellDescAtomic $ FailureD fid msg
+abortWith fid msg = tellSfxAtomic $ FailureD fid msg
 
 neverMind :: Monad m => FactionId -> WriterT [Atomic] m ()
 neverMind fid = abortWith fid "never mind"
@@ -118,7 +118,7 @@ actorAttackActor source target = do
                  , buildItem flavour discoRev h2hKind kind effect )
   let performHit block = do
         let hitA = if block then HitBlockD else HitD
-        tellDescAtomic $ StrikeD source target item hitA
+        tellSfxAtomic $ StrikeD source target item hitA
         -- Deduct a hitpoint for a pierce of a projectile.
         when (bproj sm) $ tellCmdAtomic $ HealActorA source (-1)
         -- Msgs inside itemEffectSem describe the target part.
@@ -128,7 +128,7 @@ actorAttackActor source target = do
     then do
       blocked <- rndToAction $ chance $ 1%2
       if blocked
-        then tellDescAtomic $ StrikeD source target item MissBlockD
+        then tellSfxAtomic $ StrikeD source target item MissBlockD
         else performHit True
     else performHit False
 
@@ -288,7 +288,7 @@ projectSer source tpos eps iid container = do
       inhabitants <- getsState (posToActor pos arena)
       if accessible cops lvl spos pos && isNothing inhabitants
         then do
-          tellDescAtomic $ ProjectD source iid
+          tellSfxAtomic $ ProjectD source iid
           projId <- addProjectile iid pos (blid sm) (bfaction sm) path time
           tellCmdAtomic
             $ MoveItemA iid 1 container (CActor projId (InvChar 'a'))
@@ -344,7 +344,7 @@ applySer :: MonadServer m
          -> WriterT [Atomic] m ()
 applySer actor iid container = do
   item <- getsState $ getItemBody iid
-  tellDescAtomic $ ActivateD actor iid
+  tellSfxAtomic $ ActivateD actor iid
   itemEffect actor actor (Just iid) item
   tellCmdAtomic $ DestroyItemA iid item 1 container
 
@@ -361,11 +361,11 @@ triggerSer aid dpos = do
   let f feat = do
         case feat of
           F.Cause ef -> do
-            tellDescAtomic $ TriggerD aid dpos feat {-TODO-}True
+            tellSfxAtomic $ TriggerD aid dpos feat {-TODO-}True
             -- No block against tile, hence @False@.
             void $ effectSem ef aid aid
           F.ChangeTo tgroup -> do
-            tellDescAtomic $ TriggerD aid dpos feat {-TODO-}True
+            tellSfxAtomic $ TriggerD aid dpos feat {-TODO-}True
             as <- getsState $ actorList (const True) arena
             if EM.null $ lvl `atI` dpos
               then if unoccupied as dpos

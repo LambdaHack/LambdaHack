@@ -41,9 +41,9 @@ cmdClientUISem cmd = do
       mapM_ cmdAtomicSem cmds
       when (isJust mleader) $
         mapM_ (drawCmdAtomicUI False) cmds
-    DescAtomicUI desc ->
+    SfxAtomicUI sfx ->
       when (isJust mleader) $
-        drawDescAtomicUI False desc
+        drawSfxAtomicUI False sfx
     CmdQueryUI aid -> do
       assert (isJust mleader `blame` cmd) skip
       cmdH <- queryUI aid

@@ -102,12 +102,12 @@ effectHeal power target = do
   let bhpMax = maxDice (ahp $ okind $ bkind tm)
   if power > 0 && bhp tm >= bhpMax
     then do
-      tellDescAtomic $ EffectD target Effect.NoEffect
+      tellSfxAtomic $ EffectD target Effect.NoEffect
       return False
     else do
       let deltaHP = min power (bhpMax - bhp tm)
       tellCmdAtomic $ HealActorA target deltaHP
-      tellDescAtomic $ EffectD target $ Effect.Heal deltaHP
+      tellSfxAtomic $ EffectD target $ Effect.Heal deltaHP
       return True
 
 -- ** Wound
@@ -124,9 +124,9 @@ effectWound nDm power source target = do
       -- Damage the target.
       tellCmdAtomic $ HealActorA target deltaHP
       if source == target then
-        tellDescAtomic $ EffectD target $ Effect.Heal deltaHP
+        tellSfxAtomic $ EffectD target $ Effect.Heal deltaHP
       else
-        tellDescAtomic $ EffectD target $ Effect.Hurt nDm power
+        tellSfxAtomic $ EffectD target $ Effect.Hurt nDm power
       return True
 
 -- ** Mindprobe
@@ -140,10 +140,10 @@ effectMindprobe target = do
   lb <- getsState $ actorNotProjList (`elem` genemy) arena
   let nEnemy = length lb
   if nEnemy == 0 then do
-    tellDescAtomic $ EffectD target Effect.NoEffect
+    tellSfxAtomic $ EffectD target Effect.NoEffect
     return False
   else do
-    tellDescAtomic $ EffectD target $ Effect.Mindprobe nEnemy
+    tellSfxAtomic $ EffectD target $ Effect.Mindprobe nEnemy
     return True
 
 -- ** Dominate
@@ -155,7 +155,7 @@ effectDominate source target = do
   sb <- getsState (getActorBody source)
   tb <- getsState (getActorBody target)
   if bfaction tb == bfaction sb then do
-    tellDescAtomic $ EffectD target Effect.NoEffect
+    tellSfxAtomic $ EffectD target Effect.NoEffect
     return False
   else do
     -- Halve the speed as a side-effect of domination.
@@ -314,14 +314,14 @@ effectApplyPerfume :: MonadActionRO m
 effectApplyPerfume source target =
   if source == target
   then do
-    tellDescAtomic $ EffectD target Effect.NoEffect
+    tellSfxAtomic $ EffectD target Effect.NoEffect
     return False
   else do
     tm <- getsState $ getActorBody target
     oldSmell <- getsLevel (blid tm) lsmell
     let diffL = map (\(p, sm) -> (p, (Just sm, Nothing))) $ EM.assocs oldSmell
     tellCmdAtomic $ AlterSmellA (blid tm) diffL
-    tellDescAtomic $ EffectD target Effect.ApplyPerfume
+    tellSfxAtomic $ EffectD target Effect.ApplyPerfume
     return True
 
 -- ** Regeneration
@@ -330,7 +330,7 @@ effectApplyPerfume source target =
 
 effectSearching :: Monad m => Int -> ActorId -> WriterT [Atomic] m Bool
 effectSearching power source = do
-  tellDescAtomic $ EffectD source $ Effect.Searching power
+  tellSfxAtomic $ EffectD source $ Effect.Searching power
   return True
 
 -- ** Ascend
@@ -339,7 +339,7 @@ effectAscend :: MonadServer m
              => Int -> ActorId -> WriterT [Atomic] m Bool
 effectAscend power target = do
   effLvlGoUp target (power + 1)
-  tellDescAtomic $ EffectD target $ Effect.Ascend power
+  tellSfxAtomic $ EffectD target $ Effect.Ascend power
   return True
 
 effLvlGoUp :: MonadServer m => ActorId -> Int -> WriterT [Atomic] m ()
@@ -408,7 +408,7 @@ squashActor source target = do
       item = buildItem flavour discoRev h2hKind kind
              $ Effect.Hurt (RollDice 99 99) 42
   itemEffect source target Nothing item
-  tellDescAtomic $ StrikeD source target item HitD
+  tellSfxAtomic $ StrikeD source target item HitD
 --      verb = iverbApply kind
 --        , "in a staircase accident" ]
   actorD <- getsState sactorD
@@ -422,5 +422,5 @@ effectDescend :: MonadServer m
               => Int -> ActorId -> WriterT [Atomic] m Bool
 effectDescend power target = do
   effLvlGoUp target (- (power + 1))
-  tellDescAtomic $ EffectD target $ Effect.Descend power
+  tellSfxAtomic $ EffectD target $ Effect.Descend power
   return True

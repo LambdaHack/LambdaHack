@@ -30,7 +30,7 @@ data CmdClientAI =
 -- | Abstract syntax of client commands that use the UI.
 data CmdClientUI =
     CmdAtomicUI CmdAtomic
-  | DescAtomicUI DescAtomic
+  | SfxAtomicUI SfxAtomic
   | CmdQueryUI ActorId
   deriving Show
 
@@ -46,8 +46,8 @@ debugCmdClientUI cmd = case cmd of
   CmdAtomicUI cmdA -> do
     ps <- posCmdAtomic cmdA
     return $ showT (showT cmd, ps)
-  DescAtomicUI desc -> do
-    ps <- posDescAtomic desc
+  SfxAtomicUI sfx -> do
+    ps <- posSfxAtomic sfx
     return $ showT (showT cmd, ps)
   CmdQueryUI aid -> debugAid aid $ showT cmd
 

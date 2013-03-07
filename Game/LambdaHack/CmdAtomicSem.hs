@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Semantics of atomic commands shared by client and server.
 module Game.LambdaHack.CmdAtomicSem
-  ( cmdAtomicSem, resetsFovAtomic, posCmdAtomic, posDescAtomic
+  ( cmdAtomicSem, resetsFovAtomic, posCmdAtomic, posSfxAtomic
   , breakCmdAtomic, loudCmdAtomic
   ) where
 
@@ -158,10 +158,10 @@ posCmdAtomic cmd = case cmd of
   SaveExitA -> return $ Left $ Left True
   SaveBkpA -> return $ Left $ Left True
 
-posDescAtomic :: MonadActionRO m
-              => DescAtomic
+posSfxAtomic :: MonadActionRO m
+              => SfxAtomic
               -> m (Either (Either Bool FactionId) (LevelId, [Point]))
-posDescAtomic cmd = case cmd of
+posSfxAtomic cmd = case cmd of
   StrikeD source target _ _ -> do
     (slid, sp) <- posOfAid source
     (tlid, tp) <- posOfAid target

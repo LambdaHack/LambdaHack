@@ -9,9 +9,9 @@
 -- it easier to undo the commands. In principle, the commands are the only
 -- way to affect the basic game state (@State@).
 module Game.LambdaHack.CmdAtomic
-  ( tellCmdAtomic, tellDescAtomic
-  , Atomic(..), CmdAtomic(..), DescAtomic(..), HitAtomic(..)
-  , undoCmdAtomic, undoDescAtomic, undoAtomic
+  ( tellCmdAtomic, tellSfxAtomic
+  , Atomic(..), CmdAtomic(..), SfxAtomic(..), HitAtomic(..)
+  , undoCmdAtomic, undoSfxAtomic, undoAtomic
   ) where
 
 import Control.Arrow (second)
@@ -39,12 +39,12 @@ import Game.LambdaHack.Vector
 tellCmdAtomic :: Monad m => CmdAtomic -> WriterT [Atomic] m ()
 tellCmdAtomic cmd = tell [CmdAtomic cmd]
 
-tellDescAtomic :: Monad m => DescAtomic -> WriterT [Atomic] m ()
-tellDescAtomic desc = tell [DescAtomic desc]
+tellSfxAtomic :: Monad m => SfxAtomic -> WriterT [Atomic] m ()
+tellSfxAtomic sfx = tell [SfxAtomic sfx]
 
 data Atomic =
     CmdAtomic CmdAtomic
-  | DescAtomic DescAtomic
+  | SfxAtomic SfxAtomic
   deriving (Show, Eq)
 
 -- | Abstract syntax of atomic commands.
@@ -90,7 +90,7 @@ data CmdAtomic =
   | SaveBkpA
   deriving (Show, Eq)
 
-data DescAtomic =
+data SfxAtomic =
     StrikeD ActorId ActorId Item HitAtomic
   | RecoilD ActorId ActorId Item HitAtomic
   | ProjectD ActorId ItemId
@@ -150,8 +150,8 @@ undoCmdAtomic cmd = case cmd of
   SaveExitA -> Nothing
   SaveBkpA -> Nothing
 
-undoDescAtomic :: DescAtomic -> DescAtomic
-undoDescAtomic cmd = case cmd of
+undoSfxAtomic :: SfxAtomic -> SfxAtomic
+undoSfxAtomic cmd = case cmd of
   StrikeD source target item b -> RecoilD source target item b
   RecoilD source target item b -> StrikeD source target item b
   ProjectD aid iid -> CatchD aid iid
@@ -171,4 +171,4 @@ undoDescAtomic cmd = case cmd of
 
 undoAtomic :: Atomic -> Maybe Atomic
 undoAtomic (CmdAtomic cmd) = fmap CmdAtomic $ undoCmdAtomic cmd
-undoAtomic (DescAtomic desc) = Just $ DescAtomic $ undoDescAtomic desc
+undoAtomic (SfxAtomic sfx) = Just $ SfxAtomic $ undoSfxAtomic sfx

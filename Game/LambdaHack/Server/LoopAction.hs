@@ -109,7 +109,7 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI
     populateDungeon
     -- Save ASAP in case of crashes and disconnects.
     saveBkpAll
-    funBroadcastUI $ \fid -> DescAtomicUI $ FadeinD fid False
+    funBroadcastUI $ \fid -> SfxAtomicUI $ FadeinD fid False
   let cinT = let r = timeTurn `timeFit` timeClip
              in assert (r > 2) r
       bkpFreq = cinT * 100
@@ -163,7 +163,7 @@ initPer = do
 atomicSem :: MonadAction m => Atomic -> m ()
 atomicSem atomic = case atomic of
   CmdAtomic cmd -> cmdAtomicSem cmd
-  DescAtomic _ -> return ()
+  SfxAtomic _ -> return ()
 
 cmdAtomicBroad :: (MonadAction m, MonadServerConn m) => Atomic -> m ()
 cmdAtomicBroad atomic = do
@@ -179,8 +179,8 @@ cmdAtomicBroad atomic = do
         psBroken <- mapM posCmdAtomic atomicBroken
         psLoud <- mapM loudCmdAtomic atomicBroken
         return (ps, resets, atomicBroken, psBroken, psLoud)
-      DescAtomic desc -> do
-        ps <- posDescAtomic desc
+      SfxAtomic sfx -> do
+        ps <- posSfxAtomic sfx
         return (ps, Just [], [], [], [])
   let atomicPsBroken = zip3 atomicBroken psBroken psLoud
   -- TODO: assert also that the sum of psBroken is equal to ps
@@ -197,7 +197,7 @@ cmdAtomicBroad atomic = do
         sendUpdateUI fid $ CmdAtomicUI cmd
         sendUpdateAI fid $ CmdAtomicAI cmd
       sendUpdate fid (CmdAtomic cmd) = sendA fid cmd
-      sendUpdate fid (DescAtomic desc) = sendUpdateUI fid $ DescAtomicUI desc
+      sendUpdate fid (SfxAtomic sfx) = sendUpdateUI fid $ SfxAtomicUI sfx
       vis per (_, lp) = knowEvents || all (`ES.member` totalVisible per) lp
       isOurs fid = either id (== fid)
       breakSend fid perNew = do
@@ -207,7 +207,7 @@ cmdAtomicBroad atomic = do
                 then sendUpdate fid $ CmdAtomic atomic2
                 else when loud2 $
                        sendUpdate fid
-                       $ DescAtomic $ BroadcastD "You hear some noises."
+                       $ SfxAtomic $ BroadcastD "You hear some noises."
         mapM_ send2 atomicPsBroken
       anySend fid perOld perNew = do
         let startSeen = either (isOurs fid) (vis perOld) ps
@@ -380,7 +380,7 @@ handleActors cmdSerSem arena subclipStart = do
       handleActors cmdSerSem arena (btime b)
     Just (actor, body) -> do
       let hasLeader fid = isJust $ gleader $ faction EM.! fid
-          allPush = map (DescAtomic . DisplayPushD)
+          allPush = map (SfxAtomic . DisplayPushD)
                     $ filter hasLeader $ EM.keys faction
             -- TODO: too often, at least in multiplayer
       mapM_ cmdAtomicBroad allPush
@@ -396,7 +396,7 @@ handleActors cmdSerSem arena subclipStart = do
           cmdS <- sendQueryUI side actor
           atoms <- cmdSerSem cmdS
           let isFailure cmd =
-                case cmd of DescAtomic FailureD{} -> True; _ -> False
+                case cmd of SfxAtomic FailureD{} -> True; _ -> False
               aborted = all isFailure atoms
               timed = timedCmdSer cmdS
               leaderNew = aidCmdSer cmdS
@@ -409,9 +409,9 @@ handleActors cmdSerSem arena subclipStart = do
           -- move was of the same actor)
           let fadeOut | nH > 1 =
                 -- More than one human player, mark end of turn.
-                [ DescAtomic $ FadeoutD side True
-                , DescAtomic $ FlushFramesD side
-                , DescAtomic $ FadeinD side True ]
+                [ SfxAtomic $ FadeoutD side True
+                , SfxAtomic $ FlushFramesD side
+                , SfxAtomic $ FadeinD side True ]
                    | otherwise =
                 -- At most one human player, no need to send anything.
                 []
@@ -445,7 +445,7 @@ handleActors cmdSerSem arena subclipStart = do
           cmdS <- sendQueryAI side actor
           atoms <- cmdSerSem cmdS
           let isFailure cmd =
-                case cmd of DescAtomic FailureD{} -> True; _ -> False
+                case cmd of SfxAtomic FailureD{} -> True; _ -> False
               aborted = all isFailure atoms
               timed = timedCmdSer cmdS
               leaderNew = aidCmdSer cmdS
@@ -616,12 +616,12 @@ restartGame loopServer = do
                in EM.filter f discoS
   -- TODO: this is too hacky still (funBroadcastCli instead of cmdAtomicBroad)
   nH <- nHumans
-  when (nH <= 1) $ funBroadcastUI $ \fid -> DescAtomicUI $ FadeoutD fid False
+  when (nH <= 1) $ funBroadcastUI $ \fid -> SfxAtomicUI $ FadeoutD fid False
   funBroadcast $ \fid -> RestartA fid sdisco (pers EM.! fid) defLoc
   populateDungeon
   -- Save ASAP in case of crashes and disconnects.
   saveBkpAll
-  funBroadcastUI $ \fid -> DescAtomicUI $ FadeinD fid False
+  funBroadcastUI $ \fid -> SfxAtomicUI $ FadeinD fid False
   loopServer
 
 createFactions :: Kind.COps -> Config -> Rnd FactionDict
@@ -732,7 +732,7 @@ populateDungeon = do
 -- * Assorted helper functions
 
 -- TODO: send this to a faction, whenever a monster is generated
--- and the faction was empty before: DescAtomicUI $ FadeinD fid False
+-- and the faction was empty before: SfxAtomicUI $ FadeinD fid False
 --
 -- | Generate a monster, possibly.
 generateMonster :: (MonadAction m, MonadServerConn m) => LevelId -> m ()

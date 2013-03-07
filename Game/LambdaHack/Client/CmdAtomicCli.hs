@@ -2,7 +2,7 @@
 -- | Semantics of client UI response to atomic commands.
 module Game.LambdaHack.Client.CmdAtomicCli
   ( cmdAtomicSem, cmdAtomicSemCli, cmdAtomicFilterCli
-  , drawCmdAtomicUI, drawDescAtomicUI
+  , drawCmdAtomicUI, drawSfxAtomicUI
   ) where
 
 import Control.Monad
@@ -362,10 +362,10 @@ quitFactionA fid toSt = do
             [MU.SubjectVerbSg fidName "cancel all requests"]
       msgAdd msg
 
--- * DescAtomicUI
+-- * SfxAtomicUI
 
-drawDescAtomicUI :: MonadClientUI m => Bool -> DescAtomic -> m ()
-drawDescAtomicUI verbose desc = case desc of
+drawSfxAtomicUI :: MonadClientUI m => Bool -> SfxAtomic -> m ()
+drawSfxAtomicUI verbose sfx = case sfx of
   StrikeD source target item b -> strikeD source target item b
   RecoilD source target _ _ -> do
     Kind.COps{coactor} <- getsState scops
