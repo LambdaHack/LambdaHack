@@ -72,16 +72,18 @@ main = do
         , cotile  = Kind.createOps Content.TileKind.cdefs
         }
       cops = speedupCOps False copsSlow
-      loopHuman :: ( MonadActionAbort m, MonadAction m
-                   , MonadClientUI m, MonadClientConn CmdUI m ) => m ()
-      loopHuman = loopUI cmdUISem
-      loopComputer :: ( MonadAction m
-                      , MonadClient m, MonadClientConn CmdCli m ) => m ()
-      loopComputer = loopCli cmdCliSem
-      exeClientHuman = executorCli loopHuman
-      exeClientComputer = executorCli loopComputer
+      loopClientUI :: ( MonadActionAbort m, MonadAction m
+                      , MonadClientUI m, MonadClientConn CmdClientUI m )
+                   => m ()
+      loopClientUI = loopUI cmdClientUISem
+      loopClientAI :: ( MonadAction m
+                      , MonadClient m, MonadClientConn CmdClientAI m )
+                   => m ()
+      loopClientAI = loopAI cmdClientAISem
+      exeClientUI = executorCli loopClientUI
+      exeClientAI = executorCli loopClientAI
       loopServer = loopSer sdebugNxt cmdSerSem
-      exeServer executorHuman executorComputer =
-        executorSer (loopServer executorHuman executorComputer cops)
-  exeFrontend cops exeClientHuman exeClientComputer exeServer
+      exeServer executorUI executorAI =
+        executorSer (loopServer executorUI executorAI cops)
+  exeFrontend cops exeClientUI exeClientAI exeServer
   waitForChildren

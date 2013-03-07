@@ -360,13 +360,12 @@ writeConnFromClient cmds = do
 -- the server loop, if the whole game runs in one process),
 -- UI config and the definitions of game commands.
 exeFrontend :: Kind.COps
-            -> (SessionUI -> State -> StateClient -> Conn CmdUI -> IO ())
-            -> (SessionUI -> State -> StateClient -> Conn CmdCli -> IO ())
-            -> ((FactionId -> Conn CmdUI -> IO ()) ->
-                (FactionId -> Conn CmdCli -> IO ()) -> IO ())
+            -> (SessionUI -> State -> StateClient -> Conn CmdClientUI -> IO ())
+            -> (SessionUI -> State -> StateClient -> Conn CmdClientAI -> IO ())
+            -> ((FactionId -> Conn CmdClientUI -> IO ()) ->
+                (FactionId -> Conn CmdClientAI -> IO ()) -> IO ())
             -> IO ()
-exeFrontend cops@Kind.COps{corule}
-            exeClientHuman exeClientComputer exeServer = do
+exeFrontend cops@Kind.COps{corule} exeClientUI exeClientAI exeServer = do
   -- UI config reloaded at each client start.
   sconfigUI <- mkConfigUI corule
   smvarUI <- newEmptyMVar
@@ -375,12 +374,12 @@ exeFrontend cops@Kind.COps{corule}
   defHist <- defHistory
   let cli = defStateClient defHist sconfigUI
       loc = updateCOps (const cops) emptyState
-      executorComputer _sfs fid =
+      executorAI _sfs fid =
         let noSession = assert `failure` fid
-        in exeClientComputer noSession loc (cli fid True)
-      executorHuman sfs fid =
-        exeClientHuman SessionUI{..} loc (cli fid False)
-  startup font $ \sfs -> exeServer (executorHuman sfs) (executorComputer sfs)
+        in exeClientAI noSession loc (cli fid True)
+      executorUI sfs fid =
+        exeClientUI SessionUI{..} loc (cli fid False)
+  startup font $ \sfs -> exeServer (executorUI sfs) (executorAI sfs)
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: MonadClient m => Rnd a -> m a

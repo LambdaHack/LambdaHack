@@ -1,7 +1,7 @@
 -- | Semantics of client commands.
 module Game.LambdaHack.Client
-  ( cmdCliSem, cmdUISem
-  , loopCli, loopUI, executorCli, exeFrontend
+  ( cmdClientAISem, cmdClientUISem
+  , loopAI, loopUI, executorCli, exeFrontend
   , MonadClient, MonadClientUI, MonadClientConn
   ) where
 
@@ -17,22 +17,22 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.CmdCli
 import Game.LambdaHack.Utils.Assert
 
-cmdCliSem :: ( MonadAction m
-             , MonadClient m, MonadClientConn c m )
-          => CmdCli -> m ()
-cmdCliSem cmd = case cmd of
-  CmdAtomicCli cmdA -> do
+cmdClientAISem :: ( MonadAction m
+                  , MonadClient m, MonadClientConn c m )
+               => CmdClientAI -> m ()
+cmdClientAISem cmd = case cmd of
+  CmdAtomicAI cmdA -> do
     cmds <- cmdAtomicFilterCli cmdA
     mapM_ cmdAtomicSemCli cmds
     mapM_ cmdAtomicSem cmds
-  CmdQueryAICli aid -> do
+  CmdQueryAI aid -> do
     cmds <- queryAI aid
     writeConnFromClient cmds
 
-cmdUISem :: ( MonadActionAbort m, MonadAction m
-            , MonadClientUI m, MonadClientConn c m )
-         => CmdUI -> m ()
-cmdUISem cmd = do
+cmdClientUISem :: ( MonadActionAbort m, MonadAction m
+                  , MonadClientUI m, MonadClientConn c m )
+               => CmdClientUI -> m ()
+cmdClientUISem cmd = do
   mleader <- getsClient _sleader
   case cmd of
     CmdAtomicUI cmdA -> do
@@ -44,7 +44,7 @@ cmdUISem cmd = do
     DescAtomicUI desc ->
       when (isJust mleader) $
         drawDescAtomicUI False desc
-    CmdQueryHumanUI aid -> do
+    CmdQueryUI aid -> do
       assert (isJust mleader `blame` cmd) skip
-      cmdH <- queryHuman aid
+      cmdH <- queryUI aid
       writeConnFromClient cmdH

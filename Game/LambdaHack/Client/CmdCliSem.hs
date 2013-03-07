@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
--- | Semantics of most 'CmdCli' client commands.
+-- | Semantics of most 'CmdClientAI' client commands.
 module Game.LambdaHack.Client.CmdCliSem where
 
 import Control.Monad.Writer.Strict (WriterT, runWriterT)
@@ -58,8 +58,8 @@ queryAI actor = do
     rndToAction $ frequency $ bestVariant $ stratAction
 
 -- | Handle the move of the hero.
-queryHuman :: (MonadActionAbort m, MonadClientUI m) => ActorId -> m CmdSer
-queryHuman aid = do
+queryUI :: (MonadActionAbort m, MonadClientUI m) => ActorId -> m CmdSer
+queryUI aid = do
   -- When running, stop if aborted by a disturbance. Otherwise let
   -- the human player issue commands, until any of them takes time.
   -- First time, just after pushing frames, ask for commands in Push mode.

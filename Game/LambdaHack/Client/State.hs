@@ -54,7 +54,7 @@ data StateClient = StateClient
   , _sside    :: !FactionId     -- ^ faction controlled by the client
   , squit     :: !Bool          -- ^ will finish listening and exit
   , sisAI     :: !Bool          -- ^ whether it's an AI client
-  , sdebugCli :: !DebugModeCli  -- ^ debugging mode
+  , sdebugCmdClientAI :: !DebugModeCli  -- ^ debugging mode
   }
   deriving (Show, Typeable)
 
@@ -100,7 +100,7 @@ defStateClient shistory sconfigUI _sside sisAI = do
     , _sside
     , squit = False
     , sisAI
-    , sdebugCli = defDebugModeCli
+    , sdebugCmdClientAI = defDebugModeCli
     }
 
 defDebugModeCli :: DebugModeCli
@@ -137,12 +137,12 @@ sside :: StateClient -> FactionId
 sside = _sside
 
 toggleMarkVision :: StateClient -> StateClient
-toggleMarkVision s@StateClient{sdebugCli=sdebugCli@DebugModeCli{smarkVision}} =
-  s {sdebugCli = sdebugCli {smarkVision = not smarkVision}}
+toggleMarkVision s@StateClient{sdebugCmdClientAI=sdebugCmdClientAI@DebugModeCli{smarkVision}} =
+  s {sdebugCmdClientAI = sdebugCmdClientAI {smarkVision = not smarkVision}}
 
 toggleMarkSmell :: StateClient -> StateClient
-toggleMarkSmell s@StateClient{sdebugCli=sdebugCli@DebugModeCli{smarkSmell}} =
-  s {sdebugCli = sdebugCli {smarkSmell = not smarkSmell}}
+toggleMarkSmell s@StateClient{sdebugCmdClientAI=sdebugCmdClientAI@DebugModeCli{smarkSmell}} =
+  s {sdebugCmdClientAI = sdebugCmdClientAI {smarkSmell = not smarkSmell}}
 
 instance Binary StateClient where
   put StateClient{..} = do
@@ -179,7 +179,7 @@ instance Binary StateClient where
         sfper = EM.empty
         srandom = read g
         slastKey = Nothing
-        sdebugCli = defDebugModeCli
+        sdebugCmdClientAI = defDebugModeCli
     return StateClient{..}
 
 instance Binary TgtMode where

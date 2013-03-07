@@ -36,7 +36,7 @@ import Game.LambdaHack.State
 import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
 
--- * CmdAtomicCli
+-- * CmdAtomicAI
 
 -- | Clients keep a subset of atomic commands sent by the server
 -- and add some of their own. The result of this function is the list

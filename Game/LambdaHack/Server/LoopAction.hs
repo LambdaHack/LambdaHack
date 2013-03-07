@@ -53,11 +53,11 @@ import Game.LambdaHack.Utils.Assert
 loopSer :: forall m . (MonadAction m, MonadServerConn m)
         => DebugModeSer
         -> (CmdSer -> m [Atomic])
-        -> (FactionId -> Conn CmdUI -> IO ())
-        -> (FactionId -> Conn CmdCli -> IO ())
+        -> (FactionId -> Conn CmdClientUI -> IO ())
+        -> (FactionId -> Conn CmdClientAI -> IO ())
         -> Kind.COps
         -> m ()
-loopSer sdebugNxt cmdSerSem executorHuman executorComputer
+loopSer sdebugNxt cmdSerSem executorUI executorAI
         cops@Kind.COps{ coitem=Kind.Ops{okind}
                       , corule } = do
   -- Recover states.
@@ -74,7 +74,7 @@ loopSer sdebugNxt cmdSerSem executorHuman executorComputer
   -- Set up connections
   connServer
   -- Launch clients.
-  launchClients executorHuman executorComputer
+  launchClients executorUI executorAI
   -- Init COps and perception according to debug from savegame.
   debugSerOld <- getsServer sdebugSer
   modifyState $ updateCOps $ speedupCOps (sallClear debugSerOld)
@@ -195,7 +195,7 @@ cmdAtomicBroad atomic = do
   knowEvents <- getsServer $ sknowEvents . sdebugSer
   let sendA fid cmd = do
         sendUpdateUI fid $ CmdAtomicUI cmd
-        sendUpdateCli fid $ CmdAtomicCli cmd
+        sendUpdateAI fid $ CmdAtomicAI cmd
       sendUpdate fid (Left cmd) = sendA fid cmd
       sendUpdate fid (Right desc) = sendUpdateUI fid $ DescAtomicUI desc
       vis per (_, lp) = knowEvents || all (`ES.member` totalVisible per) lp
@@ -389,7 +389,7 @@ handleActors cmdSerSem arena subclipStart = do
       if Just actor == mleader && isHuman
         then do
           -- TODO: check that the command is legal, that is, correct side, etc.
-          cmdS <- sendQueryHumanUI side actor
+          cmdS <- sendQueryUI side actor
           atoms <- cmdSerSem cmdS
           let isFailure cmd = case cmd of Right FailureD{} -> True; _ -> False
               aborted = all isFailure atoms
@@ -437,7 +437,7 @@ handleActors cmdSerSem arena subclipStart = do
             -- abort, a turn may be lost. Investigate/fix.
             handleActors cmdSerSem arena (btime bNew)
         else do
-          cmdS <- sendQueryAICli side actor
+          cmdS <- sendQueryAI side actor
           atoms <- cmdSerSem cmdS
           let isFailure cmd = case cmd of Right FailureD{} -> True; _ -> False
               aborted = all isFailure atoms

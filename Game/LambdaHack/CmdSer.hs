@@ -14,7 +14,7 @@ import Game.LambdaHack.Vector
 
 -- | Abstract syntax of server commands.
 data CmdSer =
-   MoveSer ActorId Vector
+    MoveSer ActorId Vector
   | RunSer ActorId Vector
   | WaitSer ActorId
   | PickupSer ActorId ItemId Int InvChar

@@ -47,11 +47,11 @@ draw :: ColorMode -> Kind.COps -> Perception -> LevelId -> ActorId
      -> StateClient -> State -> Overlay
      -> SingleFrame
 draw dm cops per drawnLevelId leader
-     cli@StateClient{stgtMode, scursor, seps, sdisco, sdebugCli}
+     cli@StateClient{stgtMode, scursor, seps, sdisco, sdebugCmdClientAI}
      s overlay =
   let Kind.COps{ coactor=Kind.Ops{okind}
                , cotile=Kind.Ops{okind=tokind, ouniqGroup} } = cops
-      DebugModeCli{smarkVision, smarkSmell} = sdebugCli
+      DebugModeCli{smarkVision, smarkSmell} = sdebugCmdClientAI
       (lvl@Level{ ldepth, lxsize, lysize, lsmell
                 , ldesc, ltime, lseen, lclear }) = sdungeon s EM.! drawnLevelId
       (bitems, bracedL, ahpS, asmellL, bhpS, bposL, blidL) =
