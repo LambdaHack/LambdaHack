@@ -10,7 +10,7 @@ import Data.Maybe
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Client.Action
-import Game.LambdaHack.Client.CmdAtomicUI
+import Game.LambdaHack.Client.CmdAtomicCli
 import Game.LambdaHack.Client.CmdCliSem
 import Game.LambdaHack.Client.LoopAction
 import Game.LambdaHack.Client.State

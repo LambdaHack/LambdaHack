@@ -3,7 +3,7 @@
 -- | Semantics of 'Command.Cmd' client commands that return server commands.
 -- A couple of them do not take time, the rest does.
 -- TODO: document
-module Game.LambdaHack.Client.GlobalAction
+module Game.LambdaHack.Client.HumanGlobal
   ( moveLeader, runLeader, waitHuman, pickupHuman, dropHuman
   , projectLeader, applyHuman, triggerDirHuman, triggerTileHuman
   , gameRestartHuman, gameExitHuman, gameSaveHuman, cfgDumpHuman
@@ -23,8 +23,8 @@ import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Draw
+import Game.LambdaHack.Client.HumanLocal
 import qualified Game.LambdaHack.Client.Key as K
-import Game.LambdaHack.Client.LocalAction
 import Game.LambdaHack.Client.RunAction
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.CmdSer

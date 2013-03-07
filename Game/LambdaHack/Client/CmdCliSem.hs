@@ -14,9 +14,9 @@ import Game.LambdaHack.ActorState
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.CmdHuman
-import Game.LambdaHack.Client.CmdHumanSem
+import Game.LambdaHack.Client.HumanLocal
+import Game.LambdaHack.Client.HumanSem
 import qualified Game.LambdaHack.Client.Key as K
-import Game.LambdaHack.Client.LocalAction
 import Game.LambdaHack.Client.RunAction
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.Strategy

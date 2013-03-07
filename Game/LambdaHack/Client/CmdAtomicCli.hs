@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Semantics of client UI response to atomic commands.
-module Game.LambdaHack.Client.CmdAtomicUI
+module Game.LambdaHack.Client.CmdAtomicCli
   ( cmdAtomicSem, cmdAtomicSemCli, cmdAtomicFilterCli
   , drawCmdAtomicUI, drawDescAtomicUI
   ) where
@@ -18,7 +18,7 @@ import Game.LambdaHack.ActorState
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Animation
 import Game.LambdaHack.Client.Draw
-import Game.LambdaHack.Client.LocalAction
+import Game.LambdaHack.Client.HumanLocal
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.CmdAtomic
 import Game.LambdaHack.CmdAtomicSem

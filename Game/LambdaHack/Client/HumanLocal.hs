@@ -3,7 +3,7 @@
 -- | Semantics of 'CmdHuman.Cmd' client commands that do not return
 -- server commands. None of such commands takes game time.
 -- TODO: document
-module Game.LambdaHack.Client.LocalAction
+module Game.LambdaHack.Client.HumanLocal
   ( -- * Semantics of serverl-less human commands
     moveCursor, retargetLeader
   , selectHeroHuman, memberCycleHuman, memberBackHuman

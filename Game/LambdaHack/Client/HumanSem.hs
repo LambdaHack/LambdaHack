@@ -1,6 +1,6 @@
 {-# LANGUAGE GADTs, OverloadedStrings #-}
 -- | Semantics of human player commands.
-module Game.LambdaHack.Client.CmdHumanSem
+module Game.LambdaHack.Client.HumanSem
   ( cmdHumanSem
   ) where
 
@@ -14,8 +14,8 @@ import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.CmdHuman
-import Game.LambdaHack.Client.GlobalAction
-import Game.LambdaHack.Client.LocalAction
+import Game.LambdaHack.Client.HumanGlobal
+import Game.LambdaHack.Client.HumanLocal
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Level
