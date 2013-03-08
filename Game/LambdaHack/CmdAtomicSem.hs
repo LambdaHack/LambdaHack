@@ -248,6 +248,8 @@ loudCmdAtomic cmd = case cmd of
   AlterTileA{} -> return True
   _ -> return False
 
+-- | Creates an actor. Note: after this command, usually a new leader
+-- for the party should be elected (in case this actor is the only one alive).
 createActorA :: MonadAction m => ActorId -> Actor -> [(ItemId, Item)] -> m ()
 createActorA aid body ais = do
   -- Add actor to @sactorD@.

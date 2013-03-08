@@ -175,53 +175,53 @@ effectSummonFriend :: MonadServer m
                    => Int -> ActorId -> ActorId
                    -> WriterT [Atomic] m Bool
 effectSummonFriend power source target = do
+  Kind.COps{cotile} <- getsState scops
   sm <- getsState (getActorBody source)
   tm <- getsState (getActorBody target)
-  summonFriends (bfaction sm) (1 + power) (bpos tm) (blid tm)
+  ps <- getsState $ nearbyFreePoints cotile (bpos tm) (blid tm)
+  summonFriends (bfaction sm) (take (1 + power) ps) (blid tm)
   return True
 
 summonFriends :: MonadServer m
-              => FactionId -> Int -> Point -> LevelId
+              => FactionId -> [Point] -> LevelId
               -> WriterT [Atomic] m ()
-summonFriends bfaction n pos arena = assert (n > 0) $ do
+summonFriends bfaction ps arena = do
   Kind.COps{ coactor=coactor@Kind.Ops{opick}
            , cofact=Kind.Ops{okind} } <- getsState scops
   faction <- getsState sfaction
   let fact = okind $ gkind $ faction EM.! bfaction
-  replicateM_ n $ do
+  forM_ ps $ \ p -> do
     mk <- rndToAction $ opick (fname fact) (const True)
     if mk == heroKindId coactor
-      then addHero bfaction pos arena []
-      else addMonster mk bfaction pos arena
+      then addHero bfaction p arena [] Nothing
+      else addMonster mk bfaction p arena
+  -- No leader election needed, bebause an alive actor of the same faction
+  -- causes the effect, so there is already a leader.
 
 addActor :: MonadServer m
          => Kind.Id ActorKind -> FactionId -> Point -> LevelId -> Int
          -> Maybe Char -> Maybe Text
-         -> WriterT [Atomic] m ()
-addActor mk bfaction ppos lid hp msymbol mname = do
-  Kind.COps{cotile} <- getsState scops
+         -> WriterT [Atomic] m ActorId
+addActor mk bfaction pos lid hp msymbol mname = do
   time <- getsState $ getTime lid
-  pos <- getsState $ nearbyFreePos cotile ppos lid
   let m = actorTemplate mk msymbol mname hp pos lid time bfaction False
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
   tellCmdAtomic $ CreateActorA acounter m []
-  mleader <- getsState $ gleader . (EM.! bfaction) . sfaction
-  when (mleader == Nothing) $
-    tellCmdAtomic $ LeadFactionA bfaction Nothing (Just acounter)
+  return acounter
 
 -- TODO: apply this special treatment only to actors with symbol '@'.
 -- | Create a new hero on the current level, close to the given position.
 addHero :: MonadServer m
-        => FactionId -> Point -> LevelId -> [(Int, Text)]
-        -> WriterT [Atomic] m ()
-addHero bfaction ppos arena configHeroNames = do
+        => FactionId -> Point -> LevelId -> [(Int, Text)] -> Maybe Int
+        -> WriterT [Atomic] m ActorId
+addHero bfaction ppos arena configHeroNames mNumber = do
   Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
   let mk = heroKindId coactor
   hp <- rndToAction $ rollDice $ ahp $ okind mk
   mhs <- mapM (\n -> getsState $ \s -> tryFindHeroK s bfaction n) [0..9]
   let freeHeroK = elemIndex Nothing mhs
-      n = fromMaybe 100 freeHeroK
+      n = fromMaybe (fromMaybe 100 freeHeroK) mNumber
       symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
       name = findHeroName configHeroNames n
       startHP = hp - (hp `div` 5) * min 3 n
@@ -238,16 +238,18 @@ findHeroName configHeroNames n =
 effectSpawnMonster :: MonadServer m
                    => Int -> ActorId -> WriterT [Atomic] m Bool
 effectSpawnMonster power target = do
+  Kind.COps{cotile} <- getsState scops
   tm <- getsState (getActorBody target)
-  void $ spawnMonsters (1 + power) (bpos tm) (blid tm)
+  ps <- getsState $ nearbyFreePoints cotile (bpos tm) (blid tm)
+  spawnMonsters (take (1 + power) ps) (blid tm)
   return True
 
 -- | Spawn monsters of any spawning faction, friendly or not.
 -- To be used for spontaneous spawning of monsters and for the spawning effect.
 spawnMonsters :: MonadServer m
-              => Int -> Point -> LevelId
-              -> WriterT [Atomic] m (Maybe FactionId)
-spawnMonsters n pos arena = do
+              => [Point] -> LevelId
+              -> WriterT [Atomic] m ()
+spawnMonsters ps arena = assert (not $ null ps) $ do
   Kind.COps{ coactor=Kind.Ops{opick}
            , cofact=Kind.Ops{okind} } <- getsState scops
   faction <- getsState sfaction
@@ -257,20 +259,22 @@ spawnMonsters n pos arena = do
            then Nothing
            else Just (fspawn kind, (kind, fid))
   case catMaybes $ map f $ EM.assocs faction of
-    [] -> return Nothing  -- no faction spawns
+    [] -> return ()  -- no faction spawns
     spawnList -> do
       let freq = toFreq "spawn" spawnList
       (spawnKind, bfaction) <- rndToAction $ frequency freq
-      replicateM_ n $ do
+      laid <- forM ps $ \ p -> do
         mk <- rndToAction $ opick (fname spawnKind) (const True)
-        addMonster mk bfaction pos arena
-      return $ Just bfaction
+        addMonster mk bfaction p arena
+      mleader <- getsState $ gleader . (EM.! bfaction) . sfaction
+      when (mleader == Nothing) $
+        tellCmdAtomic $ LeadFactionA bfaction Nothing (Just $ head laid)
 
 -- | Create a new monster on the level, at a given position
 -- and with a given actor kind and HP.
 addMonster :: MonadServer m
            => Kind.Id ActorKind -> FactionId -> Point -> LevelId
-           -> WriterT [Atomic] m ()
+           -> WriterT [Atomic] m ActorId
 addMonster mk bfaction ppos lid = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   hp <- rndToAction $ rollDice $ ahp $ okind mk

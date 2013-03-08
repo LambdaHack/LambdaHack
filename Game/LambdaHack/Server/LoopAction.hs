@@ -6,7 +6,7 @@ module Game.LambdaHack.Server.LoopAction (loopSer, cmdAtomicBroad) where
 import Control.Arrow (second, (&&&))
 import Control.Monad
 import qualified Control.Monad.State as St
-import Control.Monad.Writer.Strict (WriterT, execWriterT, runWriterT)
+import Control.Monad.Writer.Strict (WriterT, execWriterT)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.List
@@ -57,9 +57,7 @@ loopSer :: forall m . (MonadAction m, MonadServerConn m)
         -> (FactionId -> Conn CmdClientAI -> IO ())
         -> Kind.COps
         -> m ()
-loopSer sdebugNxt cmdSerSem executorUI executorAI
-        cops@Kind.COps{ coitem=Kind.Ops{okind}
-                      , corule } = do
+loopSer sdebugNxt cmdSerSem executorUI executorAI cops = do
   -- Recover states.
   restored <- tryRestore cops
   -- TODO: use the _msg somehow
@@ -78,7 +76,6 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI
   -- Init COps and perception according to debug from savegame.
   debugSerOld <- getsServer sdebugSer
   modifyState $ updateCOps $ speedupCOps (sallClear debugSerOld)
-  initPer
   -- Apply debug options that don't need a new game.
   modifyServer $ \ser ->
     ser {sdebugSer = (sdebugSer ser) { sniffIn = sniffIn sdebugNxt
@@ -89,27 +86,14 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI
   debugSerNew <- getsServer sdebugSer
   modifyState $ updateCOps $ speedupCOps (sallClear debugSerNew)
   -- Detect if it's resume or fresh start.
-  pers <- getsServer sper
   quit <- getsServer squit
   if isJust quit then do  -- game restored from a savefile
+    initPer
+    pers <- getsServer sper
     funBroadcast $ \fid -> ResumeA fid (pers EM.! fid)
     modifyServer $ \ser -> ser {squit = Nothing}
-  else do  -- game restarted
-    -- TODO: factor out common parts from restartGame and restoreOrRestart
-    knowMap <- getsServer $ sknowMap . sdebugSer
-    fromGlobal <- getsState localFromGlobal
-    glo <- getState
-    let defLoc | knowMap = glo
-               | otherwise = fromGlobal
-    discoS <- getsServer sdisco
-    let sdisco = let f ik = isymbol (okind ik)
-                            `notElem` (ritemProject $ Kind.stdRuleset corule)
-                 in EM.filter f discoS
-    funBroadcast $ \fid -> RestartA fid sdisco (pers EM.! fid) defLoc
-    populateDungeon
-    -- Save ASAP in case of crashes and disconnects.
-    saveBkpAll
-    funBroadcastUI $ \fid -> SfxAtomicUI $ FadeinD fid False
+  else  -- game restarted
+    reinitGame
   let cinT = let r = timeTurn `timeFit` timeClip
              in assert (r > 2) r
       bkpFreq = cinT * 100
@@ -160,8 +144,8 @@ initPer = do
       pers = dungeonPerception cops fovMode glo
   modifyServer $ \ser1 -> ser1 {sper = pers}
 
-atomicSem :: MonadAction m => Atomic -> m ()
-atomicSem atomic = case atomic of
+atomicServerSem :: MonadAction m => Atomic -> m ()
+atomicServerSem atomic = case atomic of
   CmdAtomic cmd -> cmdAtomicSem cmd
   SfxAtomic _ -> return ()
 
@@ -190,7 +174,7 @@ cmdAtomicBroad atomic = do
                              || fmap CmdAtomic atomicBroken == [atomic]))
                  (const True) ps) skip
   -- Perform the action on the server.
-  atomicSem atomic
+  atomicServerSem atomic
   -- Send some actions to the clients, one faction at a time.
   knowEvents <- getsServer $ sknowEvents . sdebugSer
   let sendA fid cmd = do
@@ -479,7 +463,7 @@ handleActors cmdSerSem arena subclipStart = do
               handleActors cmdSerSem arena subclipStart
 
 dieSer :: MonadActionRO m => ActorId -> WriterT [Atomic] m ()
-dieSer aid = do  -- TODO: explode if a projectile holdding a potion
+dieSer aid = do  -- TODO: explode if a projectile holding a potion
   body <- getsState $ getActorBody aid
   -- TODO: clients don't see the death of their last standing actor;
   --       modify Draw.hs and Client.hs to handle that
@@ -505,12 +489,12 @@ electLeader fid lid aidDead = do
     let ours (_, b) = bfaction b == fid && not (bproj b)
         party = filter ours $ EM.assocs actorD
     onLevel <- getsState $ actorNotProjAssocs (== fid) lid
-    let mleaderNew =
-          listToMaybe $ filter (/= aidDead) $ map fst $ onLevel ++ party
+    let mleaderNew = listToMaybe $ filter (/= aidDead)
+                     $ map fst $ onLevel ++ party
     tellCmdAtomic $ LeadFactionA fid mleader mleaderNew
 
 -- | Advance the move time for the given actor.
-advanceTime :: (MonadAction m, MonadServerConn m) => ActorId -> m [Atomic]
+advanceTime :: MonadActionRO m => ActorId -> m [Atomic]
 advanceTime aid = do
   Kind.COps{coactor} <- getsState scops
   b <- getsState $ getActorBody aid
@@ -597,32 +581,38 @@ endOrLoop loopServer = do
 
 restartGame :: (MonadAction m, MonadServerConn m) => m () -> m ()
 restartGame loopServer = do
-  cops@Kind.COps{ coitem=Kind.Ops{okind}
-                , corule } <- getsState scops
+  cops <- getsState scops
+  -- TODO: this is too hacky still (funBroadcastCli instead of cmdAtomicBroad)
+  nH <- nHumans
+  when (nH <= 1) $ funBroadcastUI $ \fid -> SfxAtomicUI $ FadeoutD fid False
   gameReset cops
+  reinitGame
+  loopServer
+
+reinitGame :: (MonadAction m, MonadServerConn m) => m ()
+reinitGame = do
+  Kind.COps{ coitem=Kind.Ops{okind}
+           , corule } <- getsState scops
   initPer
   pers <- getsServer sper
+  knowMap <- getsServer $ sknowMap . sdebugSer
   -- This state is quite small, fit for transmition to the client.
   -- The biggest part is content, which really needs to be updated
   -- at this point to keep clients in sync with server improvements.
-  knowMap <- getsServer $ sknowMap . sdebugSer
   fromGlobal <- getsState localFromGlobal
   glo <- getState
   let defLoc | knowMap = glo
              | otherwise = fromGlobal
   discoS <- getsServer sdisco
-  let sdisco = let f ik = isymbol (okind ik)
-                          `notElem` (ritemProject $ Kind.stdRuleset corule)
+  let misteriousSymbols = ritemProject $ Kind.stdRuleset corule
+      sdisco = let f ik = isymbol (okind ik) `notElem` misteriousSymbols
                in EM.filter f discoS
-  -- TODO: this is too hacky still (funBroadcastCli instead of cmdAtomicBroad)
-  nH <- nHumans
-  when (nH <= 1) $ funBroadcastUI $ \fid -> SfxAtomicUI $ FadeoutD fid False
   funBroadcast $ \fid -> RestartA fid sdisco (pers EM.! fid) defLoc
-  populateDungeon
+  cmds <- execWriterT populateDungeon
+  mapM_ cmdAtomicBroad cmds
+  funBroadcastUI $ \fid -> SfxAtomicUI $ FadeinD fid False
   -- Save ASAP in case of crashes and disconnects.
   saveBkpAll
-  funBroadcastUI $ \fid -> SfxAtomicUI $ FadeinD fid False
-  loopServer
 
 createFactions :: Kind.COps -> Config -> Rnd FactionDict
 createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
@@ -703,15 +693,14 @@ findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lstair} k =
   in tryFind stairPoss k
 
 -- Spawn initial actors. Clients should notice that so that they elect leaders.
-populateDungeon :: (MonadAction m, MonadServerConn m) => m ()
+populateDungeon :: MonadServer m => WriterT [Atomic] m ()
 populateDungeon = do
   cops@Kind.COps{cotile} <- getsState scops
-  let initialItems (lid, Level{ltile, litemNum}) = do
+  let initialItems (lid, Level{ltile, litemNum}) =
         replicateM litemNum $ do
           pos <- rndToAction
                  $ findPos ltile (const (Tile.hasFeature cotile F.Boring))
-          cmds <- execWriterT $ createItems 1 pos lid
-          mapM_ cmdAtomicBroad cmds
+          createItems 1 pos lid
   dungeon <- getsState sdungeon
   mapM_ initialItems $ EM.assocs dungeon
   -- TODO entryLevel should be defined per-faction in content
@@ -723,9 +712,13 @@ populateDungeon = do
       needInitialCrew = map fst $ filter notSpawning $ EM.assocs faction
       heroNames = configHeroNames config : repeat []
       initialHeroes (side, ppos, heroName) = do
-        replicateM_ (1 + configExtraHeroes config) $ do
-          cmds <- execWriterT $ addHero side ppos entryLevel heroName
-          mapM_ cmdAtomicBroad cmds
+        psFree <- getsState $ nearbyFreePoints cotile ppos entryLevel
+        let ps = take (1 + configExtraHeroes config) $ zip [1..] psFree
+        laid <- forM ps $ \ (n, p) ->
+          addHero side p entryLevel heroName (Just n)
+        mleader <- getsState $ gleader . (EM.! side) . sfaction
+        when (mleader == Nothing) $
+          tellCmdAtomic $ LeadFactionA side Nothing (Just $ head laid)
   entryPoss <- rndToAction $ findEntryPoss cops lvl (length needInitialCrew)
   mapM_ initialHeroes $ zip3 needInitialCrew entryPoss heroNames
 
@@ -749,7 +742,7 @@ generateMonster arena = do
     let allPers =
           ES.unions $ map (totalVisible . (EM.! arena)) $ EM.elems pers
     pos <- rndToAction $ rollSpawnPos cops allPers arena lvl s
-    (_, cmds) <- runWriterT $ spawnMonsters 1 pos arena
+    cmds <- execWriterT $ spawnMonsters [pos] arena
     mapM_ cmdAtomicBroad cmds
 
 -- | Create a new monster on the level, at a random position.

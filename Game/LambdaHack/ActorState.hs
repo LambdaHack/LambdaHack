@@ -4,7 +4,7 @@
 -- TODO: Document an export list after it's rewritten according to #17.
 module Game.LambdaHack.ActorState
   ( actorAssocs, actorList, actorNotProjAssocs, actorNotProjList
-  , calculateTotal, nearbyFreePos, whereTo
+  , calculateTotal, nearbyFreePoints, whereTo
   , posToActor, getItemBody, memActor, getActorBody, updateActorBody
   , getActorItem, getActorBag, actorContainer, getActorInv
   , tryFindHeroK, foesAdjacent
@@ -15,7 +15,6 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.List
 import Data.Maybe
-import Data.Text (Text)
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Content.TileKind
@@ -69,14 +68,13 @@ posToActors pos lid s =
       apos = filter (\(_, b) -> bpos b == pos) as
   in fmap fst apos
 
-nearbyFreePos :: Kind.Ops TileKind -> Point -> LevelId -> State -> Point
-nearbyFreePos cotile start lid s =
+nearbyFreePoints :: Kind.Ops TileKind -> Point -> LevelId -> State -> [Point]
+nearbyFreePoints cotile start lid s =
   let lvl@Level{lxsize, lysize} = sdungeon s EM.! lid
-      poss = start : nub (concatMap (vicinity lxsize lysize) poss)
-      good loc = Tile.hasFeature cotile F.Walkable (lvl `at` loc)
-                 && unoccupied (actorList (const True) lid s) loc
-  in fromMaybe (assert `failure` ("too crowded map" :: Text))
-     $ find good poss
+      good p = Tile.hasFeature cotile F.Walkable (lvl `at` p)
+               && unoccupied (actorList (const True) lid s) p
+      ps = start : (filter good $ nub $ concatMap (vicinity lxsize lysize) ps)
+  in ps
 
 -- | Calculate loot's worth for heroes on the current level.
 calculateTotal :: FactionId -> LevelId -> State -> (ItemBag, Int)
