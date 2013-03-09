@@ -100,14 +100,10 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI cops = do
     mapM_ atomicSendSem cmds
     -- Save ASAP in case of crashes and disconnects.
     saveBkpAll
-  let cinT = let r = timeTurn `timeFit` timeClip
-             in assert (r > 2) r
-      bkpFreq = cinT * 100
   -- Loop.
   let loop :: Int -> m ()
       loop clipN = do
-        let clipMod = clipN `mod` cinT
-            run arena = handleActors cmdSerSem arena timeZero
+        let run arena = handleActors cmdSerSem arena timeZero
             factionArena fac =
               case gleader fac of
                 Nothing -> return Nothing
@@ -118,21 +114,29 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI cops = do
         marenas <- mapM factionArena $ EM.elems faction
         let arenas = ES.toList $ ES.fromList $ catMaybes marenas
         mapM_ run arenas
-        quitS <- getsServer squit
-        case quitS of
-          Just q ->
-            handleSave q (loop (clipN + 1))
-          Nothing -> do
-            when (clipN `mod` bkpFreq == 0) saveBkpAll
-            -- Regenerate HP and add monsters each turn, not each clip.
-            when (clipMod == 1) $ mapM_ generateMonster arenas
-            when (clipMod == 2) $ mapM_ regenerateLevelHP arenas
-            mapM_ ageLevel arenas
-            endOrLoop (loop (clipN + 1))
+        cmds <- execWriterT $ endClip clipN arenas
+        mapM_ atomicSendSem cmds
+        endOrLoop (loop (clipN + 1))
   loop 1
 
-ageLevel :: (MonadAction m, MonadServerConn m) => LevelId -> m ()
-ageLevel lid = atomicSendSem $ CmdAtomic $ AgeLevelA lid timeClip
+endClip :: MonadServer m => Int -> [LevelId] -> WriterT [Atomic] m ()
+endClip clipN arenas = do
+  quitS <- getsServer squit
+  if quitS == Just True then
+    handleSave True
+  else do
+    let cinT = let r = timeTurn `timeFit` timeClip
+               in assert (r > 2) r
+        bkpFreq = cinT * 100
+        clipMod = clipN `mod` cinT
+    when (quitS == Just False || clipN `mod` bkpFreq == 0) $ do
+      tellCmdAtomic SaveBkpA
+      saveGameBkp
+      modifyServer $ \ser1 -> ser1 {squit = Nothing}
+    -- Regenerate HP and add monsters each turn, not each clip.
+    when (clipMod == 1) $ mapM_ generateMonster arenas
+    when (clipMod == 2) $ mapM_ regenerateLevelHP arenas
+    mapM_ (\lid -> tellCmdAtomic $ AgeLevelA lid timeClip) arenas
 
 saveBkpAll :: (MonadAction m, MonadServerConn m) => m ()
 saveBkpAll = do
@@ -407,14 +411,11 @@ advanceTime aid = do
         t = ticksPerMeter speed
     return [CmdAtomic $ AgeActorA aid t]
 
--- | Save game and perhaps exit.
-handleSave :: (MonadAction m, MonadServerConn m)
-           => Bool -> m () -> m ()
-handleSave q loopServer = do
-  if q then do
+-- | Save game, perhaps display final screens, exit.
+handleSave :: MonadServer m => Bool -> WriterT [Atomic] m ()
+handleSave _q = do
       -- Save and display in parallel.
     --      mv <- liftIO newEmptyMVar
-    saveGameSer
     --      liftIO $ void
     --        $ forkIO (Save.saveGameSer config s ser `finally` putMVar mv ())
     -- 7.6        $ forkFinally (Save.saveGameSer config s ser) (putMVar mv ())
@@ -422,13 +423,10 @@ handleSave q loopServer = do
     --        handleScores False Camping total
     --        broadcastUI [] $ MoreFullCli "See you soon, stronger and braver!"
             -- TODO: show the above
-    atomicSendSem $ CmdAtomic SaveExitA
+    tellCmdAtomic SaveExitA
+    saveGameSer
     --      liftIO $ takeMVar mv  -- wait until saved
           -- Do nothing, that is, quit the game loop.
-  else do
-    saveBkpAll
-    modifyServer $ \ser1 -> ser1 {squit = Nothing}
-    loopServer
 
 -- | Continue or restart or exit the game.
 endOrLoop :: (MonadAction m, MonadServerConn m)
@@ -436,9 +434,11 @@ endOrLoop :: (MonadAction m, MonadServerConn m)
 endOrLoop loopServer = do
   checkEndGame
   faction <- getsState sfaction
+  quitS <- getsServer squit
   let f (_, Faction{gquit=Nothing}) = Nothing
       f (fid, Faction{gquit=Just quit}) = Just (fid, quit)
   case mapMaybe f $ EM.assocs faction of
+    _ | quitS == Just True -> return ()  -- save and exit
     [] -> loopServer  -- just continue
     (fid, quit) : _ -> do
       fac <- getsState $ (EM.! fid) . sfaction
@@ -632,7 +632,7 @@ populateDungeon = do
 -- and the faction was empty before: SfxAtomicUI $ FadeinD fid False
 --
 -- | Generate a monster, possibly.
-generateMonster :: (MonadAction m, MonadServerConn m) => LevelId -> m ()
+generateMonster :: MonadServer m => LevelId -> WriterT [Atomic] m ()
 generateMonster arena = do
   cops@Kind.COps{cofact=Kind.Ops{okind}} <- getsState scops
   pers <- getsServer sper
@@ -646,8 +646,7 @@ generateMonster arena = do
     let allPers =
           ES.unions $ map (totalVisible . (EM.! arena)) $ EM.elems pers
     pos <- rndToAction $ rollSpawnPos cops allPers arena lvl s
-    cmds <- execWriterT $ spawnMonsters [pos] arena
-    mapM_ atomicSendSem cmds
+    spawnMonsters [pos] arena
 
 -- | Create a new monster on the level, at a random position.
 rollSpawnPos :: Kind.COps -> ES.EnumSet Point -> LevelId -> Level -> State
@@ -675,7 +674,7 @@ rollSpawnPos Kind.COps{cotile} visible lid lvl s = do
 -- Only the heroes on the current level regenerate (others are frozen
 -- in time together with their level). This prevents cheating
 -- via sending one hero to a safe level and waiting there.
-regenerateLevelHP :: (MonadAction m, MonadServerConn m) => LevelId -> m ()
+regenerateLevelHP :: MonadServer m => LevelId -> WriterT [Atomic] m ()
 regenerateLevelHP arena = do
   Kind.COps{ coitem
            , coactor=Kind.Ops{okind}
@@ -698,7 +697,7 @@ regenerateLevelHP arena = do
            else Just a
   toRegen <-
     getsState $ catMaybes . map pick .actorNotProjAssocs (const True) arena
-  mapM_ (\aid -> atomicSendSem $ CmdAtomic $ HealActorA aid 1) toRegen
+  mapM_ (\aid -> tellCmdAtomic $ HealActorA aid 1) toRegen
 
 -- TODO: let only some actors/items leave smell, e.g., a Smelly Hide Armour.
 -- | Add a smell trace for the actor to the level.
