@@ -149,6 +149,7 @@ library
                       Game.LambdaHack.Server.Fov.Permissive,
                       Game.LambdaHack.Server.Fov.Shadow,
                       Game.LambdaHack.Server.LoopAction,
+                      Game.LambdaHack.Server.CmdAtomicSend,
                       Game.LambdaHack.Server.CmdSerSem,
                       Game.LambdaHack.Server.State,
                       Game.LambdaHack.State,

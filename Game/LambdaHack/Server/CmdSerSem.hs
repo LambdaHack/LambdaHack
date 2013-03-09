@@ -36,7 +36,8 @@ import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Point
 import Game.LambdaHack.Random
-import Game.LambdaHack.Server.Action
+import Game.LambdaHack.Server.Action hiding (sendQueryAI, sendQueryUI,
+                                      sendUpdateAI, sendUpdateUI)
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.State
