@@ -91,13 +91,10 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI cops = do
   if isJust quit then do  -- game restored from a savefile
     initPer
     pers <- getsServer sper
-    cmds <- execWriterT $ broadcastCmdAtomic $ \fid ->
-      ResumeA fid (pers EM.! fid)
-    mapM_ atomicSendSem cmds
+    execAtomic $ broadcastCmdAtomic $ \fid -> ResumeA fid (pers EM.! fid)
     modifyServer $ \ser -> ser {squit = Nothing}
   else do  -- game restarted
-    cmds <- execWriterT reinitGame
-    mapM_ atomicSendSem cmds
+    execAtomic reinitGame
     -- Save ASAP in case of crashes and disconnects.
     saveBkpAll
   -- Loop.
@@ -114,8 +111,7 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI cops = do
         marenas <- mapM factionArena $ EM.elems faction
         let arenas = ES.toList $ ES.fromList $ catMaybes marenas
         mapM_ run arenas
-        cmds <- execWriterT $ endClip clipN arenas
-        mapM_ atomicSendSem cmds
+        execAtomic $ endClip clipN arenas
         endOrLoop (loop (clipN + 1))
   loop 1
 
@@ -137,6 +133,12 @@ endClip clipN arenas = do
     when (clipMod == 1) $ mapM_ generateMonster arenas
     when (clipMod == 2) $ mapM_ regenerateLevelHP arenas
     mapM_ (\lid -> tellCmdAtomic $ AgeLevelA lid timeClip) arenas
+
+execAtomic :: (MonadAction m, MonadServerConn m)
+           => WriterT [Atomic] m () -> m ()
+execAtomic m = do
+ cmds <- execWriterT m
+ mapM_ atomicSendSem cmds
 
 saveBkpAll :: (MonadAction m, MonadServerConn m) => m ()
 saveBkpAll = do
@@ -257,24 +259,20 @@ handleActors cmdSerSem arena subclipStart = do
       return ()
     Just (aid, b) | bhp b <= 0 && not (bproj b) || bhp b < 0
                     || maybe False null (bpath b) -> do
-      atoms <-
+      execAtomic $
         if bproj b && bhp b < 0  -- a projectile hitting an actor
         then do
           -- Items are destroyed.
           ais <- getsState $ getActorItem aid
-          return [CmdAtomic $ DestroyActorA aid b ais]
+          tellCmdAtomic $ DestroyActorA aid b ais
         else
           -- Items drop to the ground and new leader elected.
-          execWriterT $ dieSer aid
-      mapM_ atomicSendSem atoms
+          dieSer aid
       -- Death or projectile impact are serious, new subclip.
       handleActors cmdSerSem arena (btime b)
     Just (actor, body) -> do
-      let hasLeader fid = isJust $ gleader $ faction EM.! fid
-          allPush = map (SfxAtomic . DisplayPushD)
-                    $ filter hasLeader $ EM.keys faction
-            -- TODO: too often, at least in multiplayer
-      mapM_ atomicSendSem allPush
+      -- TODO: too often, at least in multiplayer
+      execAtomic $ broadcastSfxAtomic DisplayPushD
       let side = bfaction body
           fac = faction EM.! side
           mleader = gleader fac
@@ -487,12 +485,9 @@ restartGame loopServer = do
   cops <- getsState scops
   -- TODO: this is too hacky still (funBroadcastCli instead of atomicSendSem)
   nH <- nHumans
-  when (nH <= 1) $ do
-    cmds <- execWriterT $ broadcastSfxAtomic $ \fid -> FadeoutD fid False
-    mapM_ atomicSendSem cmds
+  when (nH <= 1) $ execAtomic $ broadcastSfxAtomic $ \fid -> FadeoutD fid False
   gameReset cops
-  cmds <- execWriterT reinitGame
-  mapM_ atomicSendSem cmds
+  execAtomic reinitGame
   -- Save ASAP in case of crashes and disconnects.
   saveBkpAll
   loopServer
