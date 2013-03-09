@@ -12,7 +12,6 @@ module Game.LambdaHack.Server.Action
   , waitForChildren, speedupCOps
     -- * Communication
   , sendUpdateUI, sendQueryUI, sendUpdateAI, sendQueryAI
-  , broadcastUI, funBroadcastUI, funBroadcast
     -- * Assorted primitives
   , saveGameSer, saveGameBkp, dumpCfg, mkConfigRules, handleScores
   , rndToAction, resetFidPerception, getPerFid
@@ -56,7 +55,6 @@ import Game.LambdaHack.Random
 import Game.LambdaHack.Level
 import Game.LambdaHack.Time
 import Game.LambdaHack.CmdSer
-import Game.LambdaHack.CmdAtomic
 
 default (Text)
 
@@ -163,14 +161,6 @@ sendQueryAI fid aid = do
         readTQueue $ toServer conn
   maybe (assert `failure` (fid, aid)) connSend mconn
 
-funBroadcast :: MonadServerConn m => (FactionId -> CmdAtomic) -> m ()
-funBroadcast fcmd = do
-  faction <- getsState sfaction
-  let f fid = do
-        sendUpdateUI fid $ CmdAtomicUI $ fcmd fid
-        sendUpdateAI fid $ CmdAtomicAI $ fcmd fid
-  mapM_ f $ EM.keys faction
-
 sendUpdateUI :: MonadServerConn m => FactionId -> CmdClientUI -> m ()
 sendUpdateUI fid cmd = do
   conn <- getsDict (fst . (EM.! fid))
@@ -183,17 +173,6 @@ sendQueryUI fid aid = do
         writeTQueueUI (CmdQueryUI aid) $ toClient conn
         readTQueue $ toServer conn
   maybe (assert `failure` (fid, aid)) connSend mconn
-
-broadcastUI :: MonadServerConn m => CmdClientUI -> m ()
-broadcastUI cmd = do
-  faction <- getsState sfaction
-  mapM_ (flip sendUpdateUI cmd) $ EM.keys faction
-
-funBroadcastUI :: MonadServerConn m => (FactionId -> CmdClientUI) -> m ()
-funBroadcastUI fcmd = do
-  faction <- getsState sfaction
-  let f fid = sendUpdateUI fid $ fcmd fid
-  mapM_ f $ EM.keys faction
 
 -- | Create a server config file. Warning: when it's use, the game state
 -- may still be undefined, hence the content ops are given as an argument.

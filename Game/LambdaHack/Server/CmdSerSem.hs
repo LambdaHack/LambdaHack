@@ -54,6 +54,18 @@ abortWith fid msg = tellSfxAtomic $ FailureD fid msg
 neverMind :: Monad m => FactionId -> WriterT [Atomic] m ()
 neverMind fid = abortWith fid "never mind"
 
+broadcastCmdAtomic :: MonadActionRO m
+                   => (FactionId -> CmdAtomic) -> WriterT [Atomic] m ()
+broadcastCmdAtomic fcmd = do
+  faction <- getsState sfaction
+  mapM_ (tellCmdAtomic . fcmd) $ EM.keys faction
+
+broadcastSfxAtomic :: MonadActionRO m
+                   => (FactionId -> SfxAtomic) -> WriterT [Atomic] m ()
+broadcastSfxAtomic fcmd = do
+  faction <- getsState sfaction
+  mapM_ (tellSfxAtomic . fcmd) $ EM.keys faction
+
 -- * MoveSer
 
 -- | Actor moves or attacks or searches or opens doors.

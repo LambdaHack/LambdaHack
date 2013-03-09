@@ -156,7 +156,7 @@ posCmdAtomic cmd = case cmd of
   AlterSecretA _ _ -> assert `failure` cmd  -- never broadcasted
   AlterSmellA _ _ -> return PosAll
   AgeLevelA lid _ ->  return $ PosLevel lid []
-  DiscoverA lid p _ _ -> return $PosLevel lid [p]
+  DiscoverA lid p _ _ -> return $ PosLevel lid [p]
   CoverA lid p _ _ -> return $ PosLevel lid [p]
   PerceptionA _ _ _ -> assert `failure` cmd  -- never broadcasted
   RestartA fid _ _ _ -> return $ PosOnly fid

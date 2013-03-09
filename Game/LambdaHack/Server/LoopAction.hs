@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings, RankNTypes #-}
 -- | The main loop of the server, processing human and computer player
 -- moves turn by turn.
-module Game.LambdaHack.Server.LoopAction (loopSer, cmdAtomicBroad) where
+module Game.LambdaHack.Server.LoopAction (loopSer) where
 
 import Control.Arrow (second, (&&&))
 import Control.Monad
@@ -35,6 +35,7 @@ import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import Game.LambdaHack.Random
 import Game.LambdaHack.Server.Action
+import Game.LambdaHack.Server.CmdSerSem
 import Game.LambdaHack.Server.Config
 import qualified Game.LambdaHack.Server.DungeonGen as DungeonGen
 import Game.LambdaHack.Server.EffectSem
@@ -90,10 +91,15 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI cops = do
   if isJust quit then do  -- game restored from a savefile
     initPer
     pers <- getsServer sper
-    funBroadcast $ \fid -> ResumeA fid (pers EM.! fid)
+    cmds <- execWriterT $ broadcastCmdAtomic $ \fid ->
+      ResumeA fid (pers EM.! fid)
+    mapM_ atomicSendSem cmds
     modifyServer $ \ser -> ser {squit = Nothing}
-  else  -- game restarted
-    reinitGame
+  else do  -- game restarted
+    cmds <- execWriterT reinitGame
+    mapM_ atomicSendSem cmds
+    -- Save ASAP in case of crashes and disconnects.
+    saveBkpAll
   let cinT = let r = timeTurn `timeFit` timeClip
              in assert (r > 2) r
       bkpFreq = cinT * 100
@@ -126,11 +132,11 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI cops = do
   loop 1
 
 ageLevel :: (MonadAction m, MonadServerConn m) => LevelId -> m ()
-ageLevel lid = cmdAtomicBroad $ CmdAtomic $ AgeLevelA lid timeClip
+ageLevel lid = atomicSendSem $ CmdAtomic $ AgeLevelA lid timeClip
 
-saveBkpAll :: MonadServerConn m => m ()
+saveBkpAll :: (MonadAction m, MonadServerConn m) => m ()
 saveBkpAll = do
-  funBroadcast $ const SaveBkpA
+  atomicSendSem $ CmdAtomic SaveBkpA
   saveGameBkp
 
 initPer :: MonadServer m => m ()
@@ -166,8 +172,8 @@ atomicServerSem posAtomic atomic =
       SfxAtomic _ -> return ()
 
 -- | Send an atomic action to all clients that can see it.
-cmdAtomicBroad :: (MonadAction m, MonadServerConn m) => Atomic -> m ()
-cmdAtomicBroad atomic = do
+atomicSendSem :: (MonadAction m, MonadServerConn m) => Atomic -> m ()
+atomicSendSem atomic = do
   -- Gather data from the old state.
   sOld <- getState
   persOld <- getsServer sper
@@ -284,8 +290,7 @@ checkEndGame = do
     _ : _ -> return ()
 
 -- | End game, showing the ending screens, if requested.
-gameOver :: (MonadAction m, MonadServerConn m)
-         => FactionId -> LevelId -> Bool -> m ()
+gameOver :: MonadAction m => FactionId -> LevelId -> Bool -> m ()
 gameOver fid arena showEndingScreens = do
   deepest <- getsLevel arena ldepth  -- TODO: use deepest visited instead of current
   let upd f = f {gquit = Just (False, Killed arena)}
@@ -363,7 +368,7 @@ handleActors cmdSerSem arena subclipStart = do
     Nothing -> do
 -- Disabled until the code is stable, not to pollute commands debug logs:
 --      when (subclipStart == timeZero) $
---        mapM_ cmdAtomicBroad $ map (Right . DisplayDelayD) $ EM.keys faction
+--        mapM_ atomicSendSem $ map (Right . DisplayDelayD) $ EM.keys faction
       return ()
     Just (aid, b) | bhp b <= 0 && not (bproj b) || bhp b < 0
                     || maybe False null (bpath b) -> do
@@ -376,7 +381,7 @@ handleActors cmdSerSem arena subclipStart = do
         else
           -- Items drop to the ground and new leader elected.
           execWriterT $ dieSer aid
-      mapM_ cmdAtomicBroad atoms
+      mapM_ atomicSendSem atoms
       -- Death or projectile impact are serious, new subclip.
       handleActors cmdSerSem arena (btime b)
     Just (actor, body) -> do
@@ -384,7 +389,7 @@ handleActors cmdSerSem arena subclipStart = do
           allPush = map (SfxAtomic . DisplayPushD)
                     $ filter hasLeader $ EM.keys faction
             -- TODO: too often, at least in multiplayer
-      mapM_ cmdAtomicBroad allPush
+      mapM_ atomicSendSem allPush
       let side = bfaction body
           fac = faction EM.! side
           mleader = gleader fac
@@ -419,7 +424,7 @@ handleActors cmdSerSem arena subclipStart = do
           advanceAtoms <- if aborted || not timed
                           then return []
                           else fmap (++ fadeOut) $ advanceTime leaderNew
-          mapM_ cmdAtomicBroad $ leadAtoms ++ atoms ++ advanceAtoms
+          mapM_ atomicSendSem $ leadAtoms ++ atoms ++ advanceAtoms
           if aborted then handleActors cmdSerSem arena subclipStart
           else do
             -- Advance time once, after the leader switched perhaps many times.
@@ -459,7 +464,7 @@ handleActors cmdSerSem arena subclipStart = do
           advanceAtoms <- if aborted || not timed
                           then return []
                           else advanceTime leaderNew
-          mapM_ cmdAtomicBroad $ leadAtoms ++ atoms ++ advanceAtoms
+          mapM_ atomicSendSem $ leadAtoms ++ atoms ++ advanceAtoms
           let subclipStartDelta = timeAddFromSpeed coactor body subclipStart
           if not aborted && isHuman && not (bproj body)
              || subclipStart == timeZero
@@ -536,7 +541,7 @@ handleSave q loopServer = do
     --        handleScores False Camping total
     --        broadcastUI [] $ MoreFullCli "See you soon, stronger and braver!"
             -- TODO: show the above
-    funBroadcast $ const SaveExitA
+    atomicSendSem $ CmdAtomic SaveExitA
     --      liftIO $ takeMVar mv  -- wait until saved
           -- Do nothing, that is, quit the game loop.
   else do
@@ -599,17 +604,21 @@ endOrLoop loopServer = do
 restartGame :: (MonadAction m, MonadServerConn m) => m () -> m ()
 restartGame loopServer = do
   cops <- getsState scops
-  -- TODO: this is too hacky still (funBroadcastCli instead of cmdAtomicBroad)
+  -- TODO: this is too hacky still (funBroadcastCli instead of atomicSendSem)
   nH <- nHumans
-  when (nH <= 1) $ funBroadcastUI $ \fid -> SfxAtomicUI $ FadeoutD fid False
+  when (nH <= 1) $ do
+    cmds <- execWriterT $ broadcastSfxAtomic $ \fid -> FadeoutD fid False
+    mapM_ atomicSendSem cmds
   gameReset cops
-  reinitGame
+  cmds <- execWriterT reinitGame
+  mapM_ atomicSendSem cmds
+  -- Save ASAP in case of crashes and disconnects.
+  saveBkpAll
   loopServer
 
-reinitGame :: (MonadAction m, MonadServerConn m) => m ()
+reinitGame :: MonadServer m => WriterT [Atomic] m ()
 reinitGame = do
-  Kind.COps{ coitem=Kind.Ops{okind}
-           , corule } <- getsState scops
+  Kind.COps{ coitem=Kind.Ops{okind}, corule } <- getsState scops
   initPer
   pers <- getsServer sper
   knowMap <- getsServer $ sknowMap . sdebugSer
@@ -624,12 +633,9 @@ reinitGame = do
   let misteriousSymbols = ritemProject $ Kind.stdRuleset corule
       sdisco = let f ik = isymbol (okind ik) `notElem` misteriousSymbols
                in EM.filter f discoS
-  funBroadcast $ \fid -> RestartA fid sdisco (pers EM.! fid) defLoc
-  cmds <- execWriterT populateDungeon
-  mapM_ cmdAtomicBroad cmds
-  funBroadcastUI $ \fid -> SfxAtomicUI $ FadeinD fid False
-  -- Save ASAP in case of crashes and disconnects.
-  saveBkpAll
+  broadcastCmdAtomic $ \fid -> RestartA fid sdisco (pers EM.! fid) defLoc
+  populateDungeon
+  broadcastSfxAtomic $ \fid -> FadeinD fid False
 
 createFactions :: Kind.COps -> Config -> Rnd FactionDict
 createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
@@ -760,7 +766,7 @@ generateMonster arena = do
           ES.unions $ map (totalVisible . (EM.! arena)) $ EM.elems pers
     pos <- rndToAction $ rollSpawnPos cops allPers arena lvl s
     cmds <- execWriterT $ spawnMonsters [pos] arena
-    mapM_ cmdAtomicBroad cmds
+    mapM_ atomicSendSem cmds
 
 -- | Create a new monster on the level, at a random position.
 rollSpawnPos :: Kind.COps -> ES.EnumSet Point -> LevelId -> Level -> State
@@ -811,7 +817,7 @@ regenerateLevelHP arena = do
            else Just a
   toRegen <-
     getsState $ catMaybes . map pick .actorNotProjAssocs (const True) arena
-  mapM_ (\aid -> cmdAtomicBroad $ CmdAtomic $ HealActorA aid 1) toRegen
+  mapM_ (\aid -> atomicSendSem $ CmdAtomic $ HealActorA aid 1) toRegen
 
 -- TODO: let only some actors/items leave smell, e.g., a Smelly Hide Armour.
 -- | Add a smell trace for the actor to the level.
