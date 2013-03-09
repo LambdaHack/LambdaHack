@@ -144,11 +144,28 @@ initPer = do
       pers = dungeonPerception cops fovMode glo
   modifyServer $ \ser1 -> ser1 {sper = pers}
 
-atomicServerSem :: MonadAction m => Atomic -> m ()
-atomicServerSem atomic = case atomic of
-  CmdAtomic cmd -> cmdAtomicSem cmd
-  SfxAtomic _ -> return ()
+seenAtomicCli :: Bool -> FactionId -> Perception -> PosAtomic -> Bool
+seenAtomicCli knowEvents fid per posAtomic =
+  case posAtomic of
+    PosLevel _ ps -> knowEvents || all (`ES.member` totalVisible per) ps
+    PosOnly fid2 -> fid == fid2
+    PosAndSer fid2 -> fid == fid2
+    PosAll -> True
 
+seenAtomicSer :: PosAtomic -> Bool
+seenAtomicSer posAtomic =
+  case posAtomic of
+    PosOnly _ -> False
+    _ -> True
+
+atomicServerSem :: MonadAction m => PosAtomic -> Atomic -> m ()
+atomicServerSem posAtomic atomic =
+  when (seenAtomicSer posAtomic) $
+    case atomic of
+      CmdAtomic cmd -> cmdAtomicSem cmd
+      SfxAtomic _ -> return ()
+
+-- | Send an atomic action to all clients that can see it.
 cmdAtomicBroad :: (MonadAction m, MonadServerConn m) => Atomic -> m ()
 cmdAtomicBroad atomic = do
   -- Gather data from the old state.
@@ -169,12 +186,13 @@ cmdAtomicBroad atomic = do
   let atomicPsBroken = zip3 atomicBroken psBroken psLoud
   -- TODO: assert also that the sum of psBroken is equal to ps
   -- TODO: with deep equality these assertions can be expensive. Optimize.
-  assert (either (const $ resets == Just []
-                          && (null atomicBroken
-                             || fmap CmdAtomic atomicBroken == [atomic]))
-                 (const True) ps) skip
+  assert (case ps of
+            PosLevel{} -> True
+            _ -> resets == Just []
+                 && (null atomicBroken
+                     || fmap CmdAtomic atomicBroken == [atomic])) skip
   -- Perform the action on the server.
-  atomicServerSem atomic
+  atomicServerSem ps atomic
   -- Send some actions to the clients, one faction at a time.
   knowEvents <- getsServer $ sknowEvents . sdebugSer
   let sendA fid cmd = do
@@ -182,25 +200,22 @@ cmdAtomicBroad atomic = do
         sendUpdateAI fid $ CmdAtomicAI cmd
       sendUpdate fid (CmdAtomic cmd) = sendA fid cmd
       sendUpdate fid (SfxAtomic sfx) = sendUpdateUI fid $ SfxAtomicUI sfx
-      vis per (_, lp) = knowEvents || all (`ES.member` totalVisible per) lp
-      isOurs fid = either id (== fid)
       breakSend fid perNew = do
-        let send2 (atomic2, ps2, loud2) = do
-              let seen2 = either (isOurs fid) (vis perNew) ps2
-              if seen2
+        let send2 (atomic2, ps2, loud2) =
+              if seenAtomicCli knowEvents fid perNew ps2
                 then sendUpdate fid $ CmdAtomic atomic2
                 else when loud2 $
                        sendUpdate fid
                        $ SfxAtomic $ BroadcastD "You hear some noises."
         mapM_ send2 atomicPsBroken
       anySend fid perOld perNew = do
-        let startSeen = either (isOurs fid) (vis perOld) ps
-            endSeen = either (isOurs fid) (vis perNew) ps
+        let startSeen = seenAtomicCli knowEvents fid perOld ps
+            endSeen = seenAtomicCli knowEvents fid perNew ps
         if startSeen && endSeen
           then sendUpdate fid atomic
           else breakSend fid perNew
       send fid = case ps of
-        Right (arena, _) -> do
+        PosLevel arena _ -> do
           let perOld = persOld EM.! fid EM.! arena
               resetsFid = maybe True (fid `elem`) resets
           if resetsFid then do
@@ -217,9 +232,11 @@ cmdAtomicBroad atomic = do
                 mapM_ (sendA fid) $ atomicRemember arena inPer sOld
                 anySend fid perOld perNew
           else anySend fid perOld perOld
-        Left mfid ->
-          -- @resets@ is false here and broken atomic has the same mfid
-          when (isOurs fid mfid) $ sendUpdate fid atomic
+        -- In the following cases, from the assertion above,
+        -- @resets@ is false here and broken atomic has the same ps.
+        PosOnly fid2 -> when (fid == fid2) $ sendUpdate fid atomic
+        PosAndSer fid2 -> when (fid == fid2) $ sendUpdate fid atomic
+        PosAll -> sendUpdate fid atomic
   faction <- getsState sfaction
   mapM_ send $ EM.keys faction
 

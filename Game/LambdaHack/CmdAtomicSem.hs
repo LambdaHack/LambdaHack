@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Semantics of atomic commands shared by client and server.
 module Game.LambdaHack.CmdAtomicSem
-  ( cmdAtomicSem, resetsFovAtomic, posCmdAtomic, posSfxAtomic
+  ( cmdAtomicSem, resetsFovAtomic
+  , PosAtomic(..), posCmdAtomic, posSfxAtomic
   , breakCmdAtomic, loudCmdAtomic
   ) where
 
@@ -92,6 +93,13 @@ resetsFovAtomic cmd = case cmd of
 fidOfAid :: MonadActionRO m => ActorId -> m [FactionId]
 fidOfAid aid = getsState $ (: []) . bfaction . getActorBody aid
 
+data PosAtomic =
+    PosLevel LevelId [Point]  -- ^ whoever seens all the positions, notices
+  | PosOnly FactionId       -- ^ only the faction notices
+  | PosAndSer FactionId     -- ^ faction and server notices
+  | PosAll                  -- ^ everybody notices
+  deriving (Show, Eq)
+
 -- | Produces the positions where the action takes place. If a faction
 -- is returned, the action is visible only for that faction, if Nothing
 -- is returned, it's never visible. Empty list of positions implies
@@ -108,86 +116,82 @@ fidOfAid aid = getsState $ (: []) . bfaction . getActorBody aid
 -- requirements to @MoveActorA@ as to @DisplaceActorA@ and fall back
 -- to @SpotActorA@ (which provides minimal information that does not
 -- contradict state) if the visibility is lower.
-posCmdAtomic :: MonadActionRO m
-             => CmdAtomic
-             -> m (Either (Either Bool FactionId) (LevelId, [Point]))
+posCmdAtomic :: MonadActionRO m => CmdAtomic -> m PosAtomic
 posCmdAtomic cmd = case cmd of
-  CreateActorA _ body _ -> return $ Right (blid body, [bpos body])
-  DestroyActorA _ body _ -> return $ Right (blid body, [bpos body])
+  CreateActorA _ body _ -> return $ PosLevel (blid body) [bpos body]
+  DestroyActorA _ body _ -> return $ PosLevel (blid body) [bpos body]
   CreateItemA _ _ _ c -> singleContainer c
   DestroyItemA _ _ _ c -> singleContainer c
-  SpotActorA _ body _ -> return $ Right (blid body, [bpos body])
-  LoseActorA _ body _ -> return $ Right (blid body, [bpos body])
+  SpotActorA _ body _ -> return $ PosLevel (blid body) [bpos body]
+  LoseActorA _ body _ -> return $ PosLevel (blid body) [bpos body]
   SpotItemA _ _ _ c -> singleContainer c
   LoseItemA _ _ _ c -> singleContainer c
   MoveActorA aid fromP toP -> do
     (lid, _) <- posOfAid aid
-    return $ Right (lid, [fromP, toP])
+    return $ PosLevel lid [fromP, toP]
   WaitActorA aid _ _ -> singleAid aid
   DisplaceActorA source target -> do
     (slid, sp) <- posOfAid source
     (tlid, tp) <- posOfAid target
-    return $ assert (slid == tlid) $ Right (slid, [sp, tp])
+    return $ assert (slid == tlid) $ PosLevel slid [sp, tp]
   MoveItemA _ _ c1 c2 -> do  -- works even if moved between positions
     (lid1, p1) <- posOfContainer c1
     (lid2, p2) <- posOfContainer c2
-    return $ assert (lid1 == lid2) $ Right (lid1, [p1, p2])
+    return $ assert (lid1 == lid2) $ PosLevel lid1 [p1, p2]
   AgeActorA aid _ -> singleAid aid
   HealActorA aid _ -> singleAid aid
   HasteActorA aid _ -> singleAid aid
   DominateActorA target _ _ -> singleAid target
   PathActorA aid _ _ -> singleAid aid
   ColorActorA aid _ _ -> singleAid aid
-  QuitFactionA _ _ _ -> return $ Left $ Left True  -- all always notice this
-  LeadFactionA fid _ _ -> return $ Left $ Right fid  -- a faction's secret
-  AlterTileA lid p _ _ -> return $ Right (lid, [p])
+  QuitFactionA _ _ _ -> return PosAll
+  LeadFactionA fid _ _ -> return $ PosAndSer fid
+  AlterTileA lid p _ _ -> return $ PosLevel lid [p]
   SpotTileA lid ts -> do
     let ps = map fst ts
-    return $ Right (lid, ps)
+    return $ PosLevel lid ps
   LoseTileA lid ts -> do
     let ps = map fst ts
-    return $ Right (lid, ps)
-  AlterSecretA _ _ -> return $ Left $ Left False  -- none of clients' business
-  AlterSmellA _ _ -> return $ Left $ Left True
-  AgeLevelA lid _ ->  return $ Right (lid, [])
-  DiscoverA lid p _ _ -> return $ Right (lid, [p])
-  CoverA lid p _ _ -> return $ Right (lid, [p])
-  PerceptionA _ _ _ -> return $ Left $ Left False
-  RestartA fid _ _ _ -> return $ Left $ Right fid
-  ResumeA fid _ -> return $ Left $ Right fid
-  SaveExitA -> return $ Left $ Left True
-  SaveBkpA -> return $ Left $ Left True
+    return $ PosLevel lid ps
+  AlterSecretA _ _ -> assert `failure` cmd  -- never broadcasted
+  AlterSmellA _ _ -> return PosAll
+  AgeLevelA lid _ ->  return $ PosLevel lid []
+  DiscoverA lid p _ _ -> return $PosLevel lid [p]
+  CoverA lid p _ _ -> return $ PosLevel lid [p]
+  PerceptionA _ _ _ -> assert `failure` cmd  -- never broadcasted
+  RestartA fid _ _ _ -> return $ PosOnly fid
+  ResumeA fid _ -> return $ PosOnly fid
+  SaveExitA -> return $ PosAll
+  SaveBkpA -> return $ PosAll
 
-posSfxAtomic :: MonadActionRO m
-              => SfxAtomic
-              -> m (Either (Either Bool FactionId) (LevelId, [Point]))
+posSfxAtomic :: MonadActionRO m => SfxAtomic -> m PosAtomic
 posSfxAtomic cmd = case cmd of
   StrikeD source target _ _ -> do
     (slid, sp) <- posOfAid source
     (tlid, tp) <- posOfAid target
-    return $ assert (slid == tlid) $ Right (slid, [sp, tp])
+    return $ assert (slid == tlid) $ PosLevel slid [sp, tp]
   RecoilD source target _ _ -> do
     (slid, sp) <- posOfAid source
     (tlid, tp) <- posOfAid target
-    return $ assert (slid == tlid) $ Right (slid, [sp, tp])
+    return $ assert (slid == tlid) $ PosLevel slid [sp, tp]
   ProjectD aid _ -> singleAid aid
   CatchD aid _ -> singleAid aid
   ActivateD aid _ -> singleAid aid
   CheckD aid _ -> singleAid aid
   TriggerD aid p _ _ -> do
     (lid, pa) <- posOfAid aid
-    return $ Right (lid, [pa, p])
+    return $ PosLevel lid [pa, p]
   ShunD aid p _ _ -> do
     (lid, pa) <- posOfAid aid
-    return $ Right (lid, [pa, p])
+    return $ PosLevel lid [pa, p]
   EffectD aid _ -> singleAid aid
-  FailureD fid _ -> return $ Left $ Right fid  -- failures are secret
-  BroadcastD _ -> return $ Left $ Left True
-  DisplayPushD fid -> return $ Left $ Right fid
-  DisplayDelayD fid -> return $ Left $ Right fid
-  FlushFramesD fid -> return $ Left $ Right fid
-  FadeoutD fid _ -> return $ Left $ Right fid
-  FadeinD fid _ -> return $ Left $ Right fid
+  FailureD fid _ -> return $ PosOnly fid  -- failures are secret
+  BroadcastD _ -> return $ PosAll
+  DisplayPushD fid -> return $ PosOnly fid
+  DisplayDelayD fid -> return $ PosOnly fid
+  FlushFramesD fid -> return $ PosOnly fid
+  FadeoutD fid _ -> return $ PosOnly fid
+  FadeinD fid _ -> return $ PosOnly fid
 
 posOfAid :: MonadActionRO m => ActorId -> m (LevelId, Point)
 posOfAid aid = do
@@ -198,18 +202,15 @@ posOfContainer :: MonadActionRO m => Container -> m (LevelId, Point)
 posOfContainer (CFloor lid p) = return (lid, p)
 posOfContainer (CActor aid _) = posOfAid aid
 
-singleAid :: MonadActionRO m
-          => ActorId -> m (Either (Either Bool FactionId) (LevelId, [Point]))
+singleAid :: MonadActionRO m => ActorId -> m PosAtomic
 singleAid aid = do
   (lid, p) <- posOfAid aid
-  return $ Right (lid, [p])
+  return $ PosLevel lid [p]
 
-singleContainer :: MonadActionRO m
-                => Container
-                -> m (Either (Either Bool FactionId) (LevelId, [Point]))
+singleContainer :: MonadActionRO m => Container -> m PosAtomic
 singleContainer c = do
   (lid, p) <- posOfContainer c
-  return $ Right (lid, [p])
+  return $ PosLevel lid [p]
 
 -- | Decompose an atomic action. The original action is visible
 -- if it's positions are visible both before and after the action
