@@ -7,7 +7,7 @@
 module Game.LambdaHack.Client.Action.ActionClass where
 
 import Control.Concurrent
-import Control.Monad.Writer.Strict (WriterT, lift)
+import Control.Monad.Writer.Strict (WriterT (WriterT), lift, runWriterT)
 import Data.Monoid
 
 import Game.LambdaHack.Action
@@ -15,6 +15,7 @@ import Game.LambdaHack.Client.Action.Frontend
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.CmdCli
+import Game.LambdaHack.Msg
 
 -- | The information that is constant across a client playing session,
 -- including many consecutive games in a single session,
@@ -50,3 +51,16 @@ instance (Monoid a, MonadClientUI m) => MonadClientUI (WriterT a m) where
 
 class MonadActionRO m => MonadClientConn c m | m -> c where
   getsConn  :: (Conn c -> a) -> m a
+
+-- | The bottom of the action monads class semilattice.
+class (Monad m, Functor m) => MonadActionAbort m where
+  -- Set the current exception handler. First argument is the handler,
+  -- second is the computation the handler scopes over.
+  tryWith      :: (Msg -> m a) -> m a -> m a
+  -- Abort with the given message.
+  abortWith    :: Msg -> m a
+
+instance (Monoid a, MonadActionAbort m) => MonadActionAbort (WriterT a m) where
+  tryWith exc m =
+    WriterT $ tryWith (\msg -> runWriterT (exc msg)) (runWriterT m)
+  abortWith   = lift . abortWith

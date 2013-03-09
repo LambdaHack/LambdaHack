@@ -32,7 +32,7 @@ import Data.Text (Text)
 import qualified Data.Text.IO as T
 import System.IO (stderr)
 
-import Game.LambdaHack.Action hiding (MonadActionAbort)
+import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.CmdCli
 import Game.LambdaHack.Content.RuleKind

@@ -16,6 +16,7 @@ import qualified Content.StrategyKind
 import qualified Content.TileKind
 import Game.LambdaHack.Action
 import Game.LambdaHack.Client
+import Game.LambdaHack.Client.Action
 import Game.LambdaHack.CmdCli
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Server

@@ -8,9 +8,13 @@ module Game.LambdaHack.Client.Action
     MonadClient( getClient, getsClient, putClient, modifyClient )
   , MonadClientUI
   , MonadClientConn
-  , executorCli, exeFrontend, frontendName
+  , MonadActionAbort( abortWith, tryWith )
+    -- * Various ways to abort action
+  , abort, abortIfWith, neverMind
     -- * Abort exception handlers
-  , tryWithSlide
+  , tryRepeatedlyWith, tryIgnore, tryWithSlide
+    -- * Executing actions
+  , executorCli, exeFrontend
     -- * Accessors to the game session Reader and the Perception Reader(-like)
   , askBinding, getPerFid
     -- * History and report
@@ -27,7 +31,7 @@ module Game.LambdaHack.Client.Action
   , flushFrames, clientGameSave, saveExitCli, restoreGame, displayPush
   , readConnToClient, writeConnFromClient
   , rndToAction, getArenaUI, getLeaderUI
-  , targetToPos
+  , targetToPos, frontendName
   ) where
 
 import Control.Concurrent
@@ -38,6 +42,7 @@ import Control.Monad.Writer.Strict (WriterT, lift, tell)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
 import Data.Maybe
+import qualified Data.Text as T
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -66,6 +71,45 @@ import Game.LambdaHack.Point
 import Game.LambdaHack.Random
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
+
+-- | Reset the state and resume from the last backup point, i.e., invoke
+-- the failure continuation.
+abort :: MonadActionAbort m => m a
+abort = abortWith ""
+
+-- | Abort and print the given msg if the condition is true.
+abortIfWith :: MonadActionAbort m => Bool -> Msg -> m a
+abortIfWith True msg = abortWith msg
+abortIfWith False _  = abortWith ""
+
+-- | Abort and conditionally print the fixed message.
+neverMind :: MonadActionAbort m => Bool -> m a
+neverMind b = abortIfWith b "never mind"
+
+-- | Take a handler and a computation. If the computation fails, the
+-- handler is invoked and then the computation is retried.
+tryRepeatedlyWith :: MonadActionAbort m => (Msg -> m ()) -> m () -> m ()
+tryRepeatedlyWith exc m =
+  tryWith (\msg -> exc msg >> tryRepeatedlyWith exc m) m
+
+-- | Try the given computation and silently catch failure.
+tryIgnore :: MonadActionAbort m => m () -> m ()
+tryIgnore =
+  tryWith (\msg -> if T.null msg
+                   then return ()
+                   else assert `failure` msg <+> "in tryIgnore")
+
+-- | Set the current exception handler. Apart of executing it,
+-- draw and pass along a slide with the abort message (even if message empty).
+tryWithSlide :: (MonadActionAbort m, MonadClientUI m)
+             => m a -> WriterT Slideshow m a -> WriterT Slideshow m a
+tryWithSlide exc h =
+  let excMsg msg = do
+        msgReset ""
+        slides <- promptToSlideshow msg
+        tell slides
+        lift exc
+  in tryWith excMsg h
 
 withUI :: MonadClientUI m => m a -> m a
 withUI m = do
@@ -107,18 +151,6 @@ promptGetKey keys frame = withUI $ do
 
 flushFrames :: MonadClientUI m => m ()
 flushFrames = withUI flushFramesNoMVar
-
--- | Set the current exception handler. Apart of executing it,
--- draw and pass along a slide with the abort message (even if message empty).
-tryWithSlide :: (MonadActionAbort m, MonadClientUI m)
-             => m a -> WriterT Slideshow m a -> WriterT Slideshow m a
-tryWithSlide exc h =
-  let excMsg msg = do
-        msgReset ""
-        slides <- promptToSlideshow msg
-        tell slides
-        lift exc
-  in tryWith excMsg h
 
 getLeaderUI :: MonadClientUI m => m ActorId
 getLeaderUI = do
