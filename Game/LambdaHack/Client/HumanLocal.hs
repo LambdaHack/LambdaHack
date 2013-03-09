@@ -559,11 +559,14 @@ historyHuman :: MonadClientUI m => WriterT Slideshow m ()
 historyHuman = do
   history <- getsClient shistory
   arena <- getArenaUI
-  time <- getsState $ getTime arena
-  let turn = time `timeFit` timeTurn
-      msg = makeSentence [ "You spent on this level"
-                         , MU.NWs turn "half-second turn" ]
-            <+> "Past messages:"
+  local <- getsState $ getLocalTime arena
+  global <- getsState stime
+  let  msg = makeSentence
+        [ "You survived for"
+        , MU.NWs (global `timeFit` timeTurn) "half-second turn"
+        , "(this level:"
+        , MU.Text (showT (local `timeFit` timeTurn)) MU.:> ")" ]
+        <+> "Past messages:"
   slides <- overlayToSlideshow msg $ renderHistory history
   tell slides
 

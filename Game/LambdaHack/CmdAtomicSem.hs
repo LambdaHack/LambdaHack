@@ -58,6 +58,7 @@ cmdAtomicSem cmd = case cmd of
   AlterSecretA lid diffL -> alterSecretA lid diffL
   AlterSmellA lid diffL -> alterSmellA lid diffL
   AgeLevelA lid t -> ageLevelA lid t
+  AgeGameA t -> ageGameA t
   DiscoverA{} -> return ()  -- Server keeps all atomic comands so the semantics
   CoverA{} -> return ()     -- of inverses has to be reasonably inverse.
   PerceptionA _ outPA inPA ->
@@ -203,7 +204,7 @@ moveItemA iid k c1 c2 = assert (k > 0 && c1 /= c2) $ do
     CActor aid l -> insertItemActor iid k l aid
 
 ageActorA :: MonadAction m => ActorId -> Time -> m ()
-ageActorA aid t = assert (t >= timeZero) $ do
+ageActorA aid t = assert (t /= timeZero) $ do
   body <- getsState $ getActorBody aid
   ais <- getsState $ getActorItem aid
   destroyActorA aid body ais
@@ -322,8 +323,12 @@ alterSmellA :: MonadAction m => LevelId -> DiffEM Point Time -> m ()
 alterSmellA lid diffL = updateLevel lid $ updateSmell $ applyDiffEM diffL
 
 ageLevelA :: MonadAction m => LevelId -> Time -> m ()
-ageLevelA lid t = assert (t >= timeZero) $
-  updateLevel lid $ \lvl -> lvl {ltime = timeAdd (ltime lvl) t}
+ageLevelA lid delta = assert (delta /= timeZero) $
+  updateLevel lid $ \lvl -> lvl {ltime = timeAdd (ltime lvl) delta}
+
+ageGameA :: MonadAction m => Time -> m ()
+ageGameA delta = assert (delta /= timeZero) $
+  modifyState $ updateTime $ timeAdd delta
 
 -- TODO here, too, it would be disastrous for the server.
 -- Perhaps the server should have factionId -1, so that ocmparison
@@ -337,9 +342,10 @@ restartA _ _ _ s = putState s
 
 data PosAtomic =
     PosLevel LevelId [Point]  -- ^ whoever seens all the positions, notices
-  | PosOnly FactionId       -- ^ only the faction notices
-  | PosAndSer FactionId     -- ^ faction and server notices
-  | PosAll                  -- ^ everybody notices
+  | PosOnly FactionId         -- ^ only the faction notices
+  | PosAndSer FactionId       -- ^ faction and server notices
+  | PosAll                    -- ^ everybody notices
+  | PosNone                   -- ^ never broadcasted
   deriving (Show, Eq)
 
 -- | Produces the positions where the action takes place. If a faction
@@ -395,12 +401,13 @@ posCmdAtomic cmd = case cmd of
   LoseTileA lid ts -> do
     let ps = map fst ts
     return $ PosLevel lid ps
-  AlterSecretA _ _ -> assert `failure` cmd  -- never broadcasted
+  AlterSecretA _ _ -> return PosNone
   AlterSmellA _ _ -> return PosAll
   AgeLevelA lid _ ->  return $ PosLevel lid []
+  AgeGameA _ ->  return PosAll
   DiscoverA lid p _ _ -> return $ PosLevel lid [p]
   CoverA lid p _ _ -> return $ PosLevel lid [p]
-  PerceptionA _ _ _ -> assert `failure` cmd  -- never broadcasted
+  PerceptionA _ _ _ -> return PosNone
   RestartA fid _ _ _ -> return $ PosOnly fid
   ResumeA fid _ -> return $ PosOnly fid
   SaveExitA -> return $ PosAll

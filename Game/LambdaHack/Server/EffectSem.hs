@@ -203,7 +203,7 @@ addActor :: MonadServer m
          -> Maybe Char -> Maybe Text
          -> WriterT [Atomic] m ActorId
 addActor mk bfaction pos lid hp msymbol mname = do
-  time <- getsState $ getTime lid
+  time <- getsState $ getLocalTime lid
   let m = actorTemplate mk msymbol mname hp pos lid time bfaction False
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
@@ -358,7 +358,7 @@ effLvlGoUp aid k = do
                fleeDungeon side arenaOld
     Just (arenaNew, posNew) ->
       assert (arenaNew /= arenaOld `blame` (arenaNew, "stairs looped")) $ do
-        timeOld <- getsState $ getTime arenaOld
+        timeOld <- getsState $ getLocalTime arenaOld
         -- Leader always set to the actor changing levels.
         mleader <- getsState $ gleader . (EM.! side) . sfaction
         tellCmdAtomic $ LeadFactionA side mleader Nothing
@@ -367,7 +367,7 @@ effLvlGoUp aid k = do
         -- No need to report that he disappears.
         tellCmdAtomic $ LoseActorA aid bOld ais
         -- Sync the actor time with the level time.
-        timeLastVisited <- getsState $ getTime arenaNew
+        timeLastVisited <- getsState $ getLocalTime arenaNew
         let delta = timeAdd (btime bOld) (timeNegate timeOld)
             bNew = bOld { blid = arenaNew
                         , btime = timeAdd timeLastVisited delta

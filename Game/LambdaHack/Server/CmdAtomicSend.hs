@@ -8,6 +8,7 @@ import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Maybe
+import Data.Text (Text)
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -93,11 +94,13 @@ seenAtomicCli knowEvents fid per posAtomic =
     PosOnly fid2 -> fid == fid2
     PosAndSer fid2 -> fid == fid2
     PosAll -> True
+    PosNone -> assert `failure` fid
 
 seenAtomicSer :: PosAtomic -> Bool
 seenAtomicSer posAtomic =
   case posAtomic of
     PosOnly _ -> False
+    PosNone -> assert `failure` ("PosNone considered for the server" :: Text)
     _ -> True
 
 atomicServerSem :: MonadAction m => PosAtomic -> Atomic -> m ()
@@ -179,6 +182,7 @@ atomicSendSem atomic = do
         PosOnly fid2 -> when (fid == fid2) $ sendUpdate fid atomic
         PosAndSer fid2 -> when (fid == fid2) $ sendUpdate fid atomic
         PosAll -> sendUpdate fid atomic
+        PosNone -> assert `failure` (atomic, fid)
   faction <- getsState sfaction
   mapM_ send $ EM.keys faction
 

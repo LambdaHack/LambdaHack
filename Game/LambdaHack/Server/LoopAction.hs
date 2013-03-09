@@ -98,8 +98,8 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI cops = do
     -- Save ASAP in case of crashes and disconnects.
     saveBkpAll
   -- Loop.
-  let loop :: Int -> m ()
-      loop clipN = do
+  let loop :: m ()
+      loop = do
         let run arena = handleActors cmdSerSem arena timeZero
             factionArena fac =
               case gleader fac of
@@ -111,17 +111,19 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI cops = do
         marenas <- mapM factionArena $ EM.elems faction
         let arenas = ES.toList $ ES.fromList $ catMaybes marenas
         mapM_ run arenas
-        execAtomic $ endClip clipN arenas
-        endOrLoop (loop (clipN + 1))
-  loop 1
+        execAtomic $ endClip arenas
+        endOrLoop loop
+  loop
 
-endClip :: MonadServer m => Int -> [LevelId] -> WriterT [Atomic] m ()
-endClip clipN arenas = do
+endClip :: MonadServer m => [LevelId] -> WriterT [Atomic] m ()
+endClip arenas = do
   quitS <- getsServer squit
   if quitS == Just True then
     handleSave True
   else do
-    let cinT = let r = timeTurn `timeFit` timeClip
+    time <- getsState stime
+    let clipN = time `timeFit` timeClip
+        cinT = let r = timeTurn `timeFit` timeClip
                in assert (r > 2) r
         bkpFreq = cinT * 100
         clipMod = clipN `mod` cinT
@@ -132,7 +134,9 @@ endClip clipN arenas = do
     -- Regenerate HP and add monsters each turn, not each clip.
     when (clipMod == 1) $ mapM_ generateMonster arenas
     when (clipMod == 2) $ mapM_ regenerateLevelHP arenas
+    -- TODO: a couple messages each clip to many clients is too costly
     mapM_ (\lid -> tellCmdAtomic $ AgeLevelA lid timeClip) arenas
+    tellCmdAtomic $ AgeGameA timeClip
 
 execAtomic :: (MonadAction m, MonadServerConn m)
            => WriterT [Atomic] m () -> m ()
@@ -186,7 +190,7 @@ gameOver fid arena showEndingScreens = do
     Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsState scops
     s <- getState
     depth <- getsState sdepth
-    time <- error "TODO: sum over all levels? getsState getTime"
+    time <- error "TODO: sum over all levels? getsState getLocalTime"
     let (bag, total) = calculateTotal fid arena s
         failMsg | timeFit time timeTurn < 300 =
           "That song shall be short."
@@ -232,7 +236,7 @@ handleActors :: (MonadAction m, MonadServerConn m)
              -> m ()
 handleActors cmdSerSem arena subclipStart = do
   Kind.COps{coactor} <- getsState scops
-  time <- getsState $ getTime arena  -- the end time of this clip, inclusive
+  time <- getsState $ getLocalTime arena  -- the end time of this clip, inclusive
   prio <- getsLevel arena lprio
   quitS <- getsServer squit
   faction <- getsState sfaction
@@ -483,7 +487,6 @@ endOrLoop loopServer = do
 restartGame :: (MonadAction m, MonadServerConn m) => m () -> m ()
 restartGame loopServer = do
   cops <- getsState scops
-  -- TODO: this is too hacky still (funBroadcastCli instead of atomicSendSem)
   nH <- nHumans
   when (nH <= 1) $ execAtomic $ broadcastSfxAtomic $ \fid -> FadeoutD fid False
   gameReset cops
@@ -674,7 +677,7 @@ regenerateLevelHP arena = do
   Kind.COps{ coitem
            , coactor=Kind.Ops{okind}
            } <- getsState scops
-  time <- getsState $ getTime arena
+  time <- getsState $ getLocalTime arena
   discoS <- getsServer sdisco
   s <- getState
   let pick (a, m) =
@@ -699,7 +702,7 @@ regenerateLevelHP arena = do
 _addSmell :: MonadActionRO m => ActorId -> WriterT [Atomic] m ()
 _addSmell aid = do
   b <- getsState $ getActorBody aid
-  time <- getsState $ getTime $ blid b
+  time <- getsState $ getLocalTime $ blid b
   oldS <- getsLevel (blid b) $ (EM.lookup $ bpos b) . lsmell
   let newTime = timeAdd time smellTimeout
   tellCmdAtomic $ AlterSmellA (blid b) [(bpos b, (oldS, Just newTime))]

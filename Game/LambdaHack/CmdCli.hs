@@ -54,7 +54,7 @@ debugCmdClientUI cmd = case cmd of
 debugAid :: MonadActionRO m => ActorId -> Text -> m Text
 debugAid aid s = do
   b <- getsState $ getActorBody aid
-  time <- getsState $ getTime (blid b)
+  time <- getsState $ getLocalTime (blid b)
   return $
     showT (s, "lid", blid b, "time", time, "aid", aid, "faction", bfaction b)
 

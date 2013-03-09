@@ -4,12 +4,12 @@ module Game.LambdaHack.State
   ( -- * Basic game state, local or global
     State
     -- * State components
-  , sdungeon, sdepth, sactorD, sitemD, sfaction, scops
+  , sdungeon, sdepth, sactorD, sitemD, sfaction, stime, scops
     -- * State operations
   , defStateGlobal, emptyState, localFromGlobal
   , updateDungeon, updateDepth, updateActorD, updateItemD
-  , updateFaction, updateCOps
-  , getTime, isHumanFaction, usesAIFaction, isSpawningFaction
+  , updateFaction, updateTime, updateCOps
+  , getLocalTime, isHumanFaction, usesAIFaction, isSpawningFaction
   ) where
 
 import Data.Binary
@@ -37,6 +37,7 @@ data State = State
   , _sactorD  :: !ActorDict    -- ^ remembered actors in the dungeon
   , _sitemD   :: !ItemDict     -- ^ remembered items in the dungeon
   , _sfaction :: !FactionDict  -- ^ remembered sides still in game
+  , _stime    :: !Time         -- ^ global game time
   , _scops    :: Kind.COps     -- ^ remembered content
   }
   deriving (Show, Typeable, Eq)
@@ -77,10 +78,11 @@ defStateGlobal _sdungeon _sdepth _sfaction _scops =
   State
     { _sactorD = EM.empty
     , _sitemD = EM.empty
+    , _stime = timeZero
     , ..
     }
 
--- | Initial, empty state.
+-- | Initial empty state.
 emptyState :: State
 emptyState =
   State
@@ -89,6 +91,7 @@ emptyState =
     , _sactorD = EM.empty
     , _sitemD = EM.empty
     , _sfaction = EM.empty
+    , _stime = timeZero
     , _scops = undefined
     }
 
@@ -127,13 +130,17 @@ updateItemD f s = s {_sitemD = f (_sitemD s)}
 updateFaction :: (FactionDict -> FactionDict) -> State -> State
 updateFaction f s = s {_sfaction = f (_sfaction s)}
 
+-- | Update global time within state.
+updateTime :: (Time -> Time) -> State -> State
+updateTime f s = s {_stime = f (_stime s)}
+
 -- | Update content data within state.
 updateCOps :: (Kind.COps -> Kind.COps) -> State -> State
 updateCOps f s = s {_scops = f (_scops s)}
 
 -- | Get current time from the dungeon data.
-getTime :: LevelId -> State -> Time
-getTime lid s = ltime $ _sdungeon s EM.! lid
+getLocalTime :: LevelId -> State -> Time
+getLocalTime lid s = ltime $ _sdungeon s EM.! lid
 
 -- | Tell whether the faction is controlled (at least partially) by a human.
 isHumanFaction :: State -> FactionId -> Bool
@@ -162,6 +169,9 @@ sitemD = _sitemD
 sfaction :: State -> FactionDict
 sfaction = _sfaction
 
+stime :: State -> Time
+stime = _stime
+
 scops :: State -> Kind.COps
 scops = _scops
 
@@ -172,11 +182,13 @@ instance Binary State where
     put _sactorD
     put _sitemD
     put _sfaction
+    put _stime
   get = do
     _sdungeon <- get
     _sdepth <- get
     _sactorD <- get
     _sitemD <- get
     _sfaction <- get
+    _stime <- get
     let _scops = undefined  -- overwritten by recreated cops
     return State{..}

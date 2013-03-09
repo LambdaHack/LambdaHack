@@ -109,7 +109,7 @@ actorAttackActor source target = do
   cops@Kind.COps{coitem=Kind.Ops{opick, okind}} <- getsState scops
   sm <- getsState (getActorBody source)
   tm <- getsState (getActorBody target)
-  time <- getsState $ getTime (blid tm)
+  time <- getsState $ getLocalTime (blid tm)
   s <- getState
   itemAssocs <- getsState $ getActorItem source
   (miid, item) <-
@@ -233,12 +233,13 @@ displaceActor source target = tellCmdAtomic $ DisplaceActorA source target
 
 -- * WaitSer
 
--- | Update the wait/block count.
+-- | Update the wait/block count. Uses local, per-level time,
+-- to remain correct even if the level is frozen for some global time turns.
 waitSer :: MonadActionRO m => ActorId -> WriterT [Atomic] m ()
 waitSer aid = do
   Kind.COps{coactor} <- getsState scops
   body <- getsState $ getActorBody aid
-  time <- getsState $ getTime $ blid body
+  time <- getsState $ getLocalTime $ blid body
   let fromWait = bwait body
       toWait = timeAddFromSpeed coactor body time
   tellCmdAtomic $ WaitActorA aid fromWait toWait
