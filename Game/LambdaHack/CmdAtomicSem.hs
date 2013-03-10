@@ -56,7 +56,7 @@ cmdAtomicSem cmd = case cmd of
   SpotTileA lid ts -> spotTileA lid ts
   LoseTileA lid ts -> loseTileA lid ts
   AlterSecretA lid diffL -> alterSecretA lid diffL
-  AlterSmellA lid diffL -> alterSmellA lid diffL
+  AlterSmellA lid p fromSm toSm -> alterSmellA lid p fromSm toSm
   AgeLevelA lid t -> ageLevelA lid t
   AgeGameA t -> ageGameA t
   DiscoverA{} -> return ()  -- Server keeps all atomic comands so the semantics
@@ -319,8 +319,11 @@ loseTileA lid ts = assert (not $ null ts) $ do
 alterSecretA :: MonadAction m => LevelId -> DiffEM Point Time -> m ()
 alterSecretA lid diffL = updateLevel lid $ updateSecret $ applyDiffEM diffL
 
-alterSmellA :: MonadAction m => LevelId -> DiffEM Point Time -> m ()
-alterSmellA lid diffL = updateLevel lid $ updateSmell $ applyDiffEM diffL
+alterSmellA :: MonadAction m
+            => LevelId -> Point -> Maybe Time -> Maybe Time -> m ()
+alterSmellA lid p fromSm toSm = do
+  let alt sm = assert (sm == fromSm `blame` (lid, p, fromSm, toSm, sm)) toSm
+  updateLevel lid $ updateSmell $ EM.alter alt p
 
 ageLevelA :: MonadAction m => LevelId -> Time -> m ()
 ageLevelA lid delta = assert (delta /= timeZero) $
@@ -402,7 +405,7 @@ posCmdAtomic cmd = case cmd of
     let ps = map fst ts
     return $ PosLevel lid ps
   AlterSecretA _ _ -> return PosNone
-  AlterSmellA _ _ -> return PosAll
+  AlterSmellA lid p _ _ -> return $ PosLevel lid [p]
   AgeLevelA lid _ ->  return $ PosLevel lid []
   AgeGameA _ ->  return PosAll
   DiscoverA lid p _ _ -> return $ PosLevel lid [p]

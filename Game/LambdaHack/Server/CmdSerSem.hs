@@ -110,7 +110,7 @@ addSmell aid = do
     time <- getsState $ getLocalTime $ blid b
     oldS <- getsLevel (blid b) $ (EM.lookup $ bpos b) . lsmell
     let newTime = timeAdd time smellTimeout
-    tellCmdAtomic $ AlterSmellA (blid b) [(bpos b, (oldS, Just newTime))]
+    tellCmdAtomic $ AlterSmellA (blid b) (bpos b) oldS (Just newTime)
 
 -- | Resolves the result of an actor moving into another.
 -- Actors on blocked positions can be attacked without any restrictions.

@@ -78,7 +78,7 @@ data CmdAtomic =
   | SpotTileA LevelId [(Point, Kind.Id TileKind)]
   | LoseTileA LevelId [(Point, Kind.Id TileKind)]
   | AlterSecretA LevelId (DiffEM Point Time)
-  | AlterSmellA LevelId (DiffEM Point Time)
+  | AlterSmellA LevelId Point (Maybe Time) (Maybe Time)
   -- Assorted.
   | AgeLevelA LevelId Time
   | AgeGameA Time
@@ -141,7 +141,7 @@ undoCmdAtomic cmd = case cmd of
   SpotTileA lid ts -> Just $ LoseTileA lid ts
   LoseTileA lid ts -> Just $ SpotTileA lid ts
   AlterSecretA lid diffL -> Just $ AlterSecretA lid $ map (second swap) diffL
-  AlterSmellA lid diffL -> Just $ AlterSmellA lid $ map (second swap) diffL
+  AlterSmellA lid p fromSm toSm -> Just $ AlterSmellA lid p toSm fromSm
   AgeLevelA lid t -> Just $ AgeLevelA lid (timeNegate t)
   AgeGameA t -> Just $ AgeGameA (timeNegate t)
   DiscoverA lid p iid ik -> Just $ CoverA lid p iid ik

@@ -28,6 +28,8 @@ import Game.LambdaHack.Utils.Assert
 -- All functions here that take an atomic action are executed
 -- in the state just before the action is executed.
 
+-- Determines is a command resets FOV. @Nothing@ means it always does.
+-- A list of faction means it does for each of the factions.
 resetsFovAtomic :: MonadActionRO m => CmdAtomic -> m (Maybe [FactionId])
 resetsFovAtomic cmd = case cmd of
   CreateActorA _ body _ -> return $ Just [bfaction body]
@@ -35,7 +37,7 @@ resetsFovAtomic cmd = case cmd of
   CreateItemA _ _ _ _ -> return $ Just []  -- unless shines
   DestroyItemA _ _ _ _ -> return $ Just []  -- ditto
   MoveActorA aid _ _ -> fmap Just $ fidOfAid aid  -- assumption: has no light
--- TODO: MoveActorCarryingLIghtA _ _ _ -> True
+-- TODO: MoveActorCarryingLIghtA _ _ _ -> return Nothing
   DisplaceActorA source target -> do
     sfid <- fidOfAid source
     tfid <- fidOfAid target

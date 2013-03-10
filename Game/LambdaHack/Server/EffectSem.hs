@@ -323,8 +323,9 @@ effectApplyPerfume source target =
   else do
     tm <- getsState $ getActorBody target
     oldSmell <- getsLevel (blid tm) lsmell
-    let diffL = map (\(p, sm) -> (p, (Just sm, Nothing))) $ EM.assocs oldSmell
-    tellCmdAtomic $ AlterSmellA (blid tm) diffL
+    let f (p, fromSm) =
+          tellCmdAtomic $ AlterSmellA (blid tm) p (Just fromSm) Nothing
+    mapM_ f $ EM.assocs oldSmell
     tellSfxAtomic $ EffectD target Effect.ApplyPerfume
     return True
 
