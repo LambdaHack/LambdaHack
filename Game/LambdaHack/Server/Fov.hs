@@ -45,10 +45,11 @@ levelPerception cops@Kind.COps{cotile} s configFov fid lid lvl =
       totalRea = PerceptionReachable $ ES.unions lreas
       -- TODO: Instead of giving the actor a light source, alter vision.
       lights = ES.fromList $ map (bpos . snd) hs
-      totalVis = computeVisible cotile totalRea lvl lights
-      f = PerceptionVisible . ES.intersection (pvisible totalVis) . preachable
-  in Perception { perActor = EM.map f $ EM.fromList reas  -- reas is not sorted
-                , ptotal  = totalVis }
+      ptotal = computeVisible cotile totalRea lvl lights
+      f = PerceptionVisible . ES.intersection (pvisible ptotal) . preachable
+      perActor = EM.map f $ EM.fromList reas  -- reas is not sorted
+      psmell = smellFromActors cops s perActor
+  in Perception {..}
 
 -- | Calculate perception of a faction.
 factionPerception :: Kind.COps -> FovMode -> State -> FactionId

@@ -114,15 +114,17 @@ cmdAtomicSemCli cmd = case cmd of
 
 perceptionA :: MonadClient m => LevelId -> PerActor -> PerActor -> m ()
 perceptionA lid outPA inPA = do
+  cops <- getsState scops
+  s <- getState
   -- Clients can't compute FOV on their own, because they don't know
   -- if unknown tiles are clear or not. Server would need to send
   -- info about properties of unknown tiles, which complicates
   -- and makes heavier the most bulky data set in the game: tile maps.
   -- Note we assume, but do not check that @outPA@ is contained
-  -- in current perseption and @inPA@ has no common part with it.
+  -- in current perception and @inPA@ has no common part with it.
   -- It would make the already very costly operation even more expensive.
   perOld <- getPerFid lid
-  -- Check if new perception already set in @cmdAtomicFilterCli@
+  -- Check if new perception is already set in @cmdAtomicFilterCli@
   -- or if we are doing undo/redo, which does not involve filtering.
   -- The data structure is strict, so the cheap check can't be simpler.
   let interHead [] = Nothing
@@ -135,10 +137,12 @@ perceptionA lid outPA inPA = do
     let dummyToPer per = Perception
           { perActor = perActor per
           , ptotal = PerceptionVisible
-                     $ ES.unions $ map pvisible $ EM.elems $ perActor per }
+                     $ ES.unions $ map pvisible $ EM.elems $ perActor per
+          , psmell = smellFromActors cops s $ perActor per }
         paToDummy pa = Perception
           { perActor = pa
-          , ptotal = PerceptionVisible ES.empty }
+          , ptotal = PerceptionVisible ES.empty
+          , psmell = PerceptionVisible ES.empty }
         outPer = paToDummy outPA
         inPer = paToDummy inPA
         adj Nothing = assert `failure` lid

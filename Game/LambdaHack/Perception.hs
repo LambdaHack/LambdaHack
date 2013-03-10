@@ -2,7 +2,7 @@
 -- | Actors perceiving other actors and the dungeon level.
 module Game.LambdaHack.Perception
   ( Perception(..), PerceptionVisible(..), PerActor
-  , totalVisible, actorSeesLoc, nullPer, addPer, diffPer
+  , totalVisible, actorSeesLoc, nullPer, addPer, diffPer, smellFromActors
   , FactionPers, Pers
   ) where
 
@@ -10,9 +10,13 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 
 import Game.LambdaHack.Actor
+import Game.LambdaHack.ActorState
+import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Faction
+import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Point
+import Game.LambdaHack.State
 
 -- TOOD: if really needed, optimize by representing as a set of intervals.
 newtype PerceptionVisible = PerceptionVisible
@@ -27,6 +31,7 @@ type PerActor = EM.EnumMap ActorId PerceptionVisible
 data Perception = Perception
   { perActor :: PerActor           -- ^ visible points for each actor
   , ptotal   :: PerceptionVisible  -- ^ sum over all actors
+  , psmell   :: PerceptionVisible  -- ^ sum over actors that can smell
   }
   deriving (Show, Eq)
 
@@ -57,6 +62,8 @@ addPer per1 per2 =
        { perActor = EM.unionWith f (perActor per1) (perActor per2)
        , ptotal = PerceptionVisible
                   $ pvisible (ptotal per1) `ES.union` pvisible (ptotal per2)
+       , psmell = PerceptionVisible
+                  $ pvisible (psmell per1) `ES.union` pvisible (psmell per2)
        }
 
 diffPer :: Perception -> Perception -> Perception
@@ -69,4 +76,14 @@ diffPer per1 per2 =
        { perActor = EM.differenceWith f (perActor per1) (perActor per2)
        , ptotal = PerceptionVisible
                   $ pvisible (ptotal per1) ES.\\ pvisible (ptotal per2)
+       , psmell = PerceptionVisible
+                  $ pvisible (psmell per1) ES.\\ pvisible (psmell per2)
        }
+
+smellFromActors :: Kind.COps -> State -> PerActor -> PerceptionVisible
+smellFromActors Kind.COps{coactor=Kind.Ops{okind}} s perActor =
+  let actorCanSmell aid = let b = getActorBody aid s
+                          in asmell $ okind $ bkind b
+      visSmell = filter (actorCanSmell . fst) $ EM.assocs perActor
+      setSmell = map (pvisible . snd) visSmell
+  in PerceptionVisible $ ES.unions setSmell
