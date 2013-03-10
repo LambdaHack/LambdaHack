@@ -57,6 +57,8 @@ cmdAtomicSem cmd = case cmd of
   LoseTileA lid ts -> loseTileA lid ts
   AlterSecretA lid diffL -> alterSecretA lid diffL
   AlterSmellA lid p fromSm toSm -> alterSmellA lid p fromSm toSm
+  SpotSmellA lid sms -> spotSmellA lid sms
+  LoseSmellA lid sms -> loseSmellA lid sms
   AgeLevelA lid t -> ageLevelA lid t
   AgeGameA t -> ageGameA t
   DiscoverA{} -> return ()  -- Server keeps all atomic comands so the semantics
@@ -325,6 +327,23 @@ alterSmellA lid p fromSm toSm = do
   let alt sm = assert (sm == fromSm `blame` (lid, p, fromSm, toSm, sm)) toSm
   updateLevel lid $ updateSmell $ EM.alter alt p
 
+spotSmellA :: MonadAction m => LevelId -> [(Point, Time)] -> m ()
+spotSmellA lid sms = assert (not $ null sms) $ do
+  let alt sm Nothing = Just sm
+      alt sm (Just oldSm) = assert `failure` (lid, sms, sm, oldSm)
+      f (p, sm) = EM.alter (alt sm) p
+      upd m = foldr f m sms
+  updateLevel lid $ updateSmell upd
+
+loseSmellA :: MonadAction m => LevelId -> [(Point, Time)] -> m ()
+loseSmellA lid sms = assert (not $ null sms) $ do
+  let alt sm Nothing = assert `failure` (lid, sms, sm)
+      alt sm (Just oldSm) =
+        assert (sm == oldSm `blame` (lid, sms, sm, oldSm)) Nothing
+      f (p, sm) = EM.alter (alt sm) p
+      upd m = foldr f m sms
+  updateLevel lid $ updateSmell upd
+
 ageLevelA :: MonadAction m => LevelId -> Time -> m ()
 ageLevelA lid delta = assert (delta /= timeZero) $
   updateLevel lid $ \lvl -> lvl {ltime = timeAdd (ltime lvl) delta}
@@ -406,6 +425,12 @@ posCmdAtomic cmd = case cmd of
     return $ PosLevel lid ps
   AlterSecretA _ _ -> return PosNone
   AlterSmellA lid p _ _ -> return $ PosLevel lid [p]
+  SpotSmellA lid sms -> do
+    let ps = map fst sms
+    return $ PosLevel lid ps
+  LoseSmellA lid sms -> do
+    let ps = map fst sms
+    return $ PosLevel lid ps
   AgeLevelA lid _ ->  return $ PosLevel lid []
   AgeGameA _ ->  return PosAll
   DiscoverA lid p _ _ -> return $ PosLevel lid [p]
