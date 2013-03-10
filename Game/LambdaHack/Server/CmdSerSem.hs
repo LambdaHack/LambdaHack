@@ -91,12 +91,26 @@ moveSer aid dir = do
       -- Attacking does not require full access, adjacency is enough.
       actorAttackActor aid target
     Nothing
-      | accessible cops lvl spos tpos ->
+      | accessible cops lvl spos tpos -> do
           tellCmdAtomic $ MoveActorA aid spos tpos
+          addSmell aid
       | Tile.canBeHidden cotile (okind $ lvl `at` tpos) ->
           search aid
       | otherwise ->
           actorOpenDoor aid dir
+
+-- TODO: let only some actors/items leave smell, e.g., a Smelly Hide Armour.
+-- | Add a smell trace for the actor to the level. For, all and only
+-- actors from non-spawnig factions leave smell.
+addSmell :: MonadActionRO m => ActorId -> WriterT [Atomic] m ()
+addSmell aid = do
+  b <- getsState $ getActorBody aid
+  spawning <- getsState $ flip isSpawningFaction (bfaction b)
+  when (not spawning) $ do
+    time <- getsState $ getLocalTime $ blid b
+    oldS <- getsLevel (blid b) $ (EM.lookup $ bpos b) . lsmell
+    let newTime = timeAdd time smellTimeout
+    tellCmdAtomic $ AlterSmellA (blid b) [(bpos b, (oldS, Just newTime))]
 
 -- | Resolves the result of an actor moving into another.
 -- Actors on blocked positions can be attacked without any restrictions.
@@ -199,9 +213,9 @@ actorOpenDoor actor dir = do
 
 -- | Actor moves or swaps position with others or opens doors.
 runSer :: MonadServer m => ActorId -> Vector -> WriterT [Atomic] m ()
-runSer actor dir = do
+runSer aid dir = do
   cops <- getsState scops
-  sm <- getsState $ getActorBody actor
+  sm <- getsState $ getActorBody aid
   lvl <- getsLevel (blid sm) id
   let spos = bpos sm           -- source position
       tpos = spos `shift` dir  -- target position
@@ -212,18 +226,21 @@ runSer actor dir = do
     Just target
       | accessible cops lvl spos tpos ->
           -- Switching positions requires full access.
-          displaceActor actor target
+          displaceActor aid target
       | otherwise -> abortWith (bfaction sm) "blocked"
     Nothing
-      | accessible cops lvl spos tpos ->
-          tellCmdAtomic $ MoveActorA actor spos tpos
+      | accessible cops lvl spos tpos -> do
+          tellCmdAtomic $ MoveActorA aid spos tpos
+          addSmell aid
       | otherwise ->
-          actorOpenDoor actor dir
+          actorOpenDoor aid dir
 
 -- | When an actor runs (not walks) into another, they switch positions.
 displaceActor :: MonadActionRO m
               => ActorId -> ActorId -> WriterT [Atomic] m ()
-displaceActor source target = tellCmdAtomic $ DisplaceActorA source target
+displaceActor source target = do
+  tellCmdAtomic $ DisplaceActorA source target
+  addSmell source
 --  leader <- getsClient getLeader
 --  if Just source == leader
 -- TODO: The actor will stop running due to the message as soon as running

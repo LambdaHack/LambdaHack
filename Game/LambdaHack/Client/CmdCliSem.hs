@@ -71,7 +71,6 @@ queryUI aid = do
   tryWith inputHumanCmd $ do
     srunning <- getsClient srunning
     maybe abort (continueRun leader) srunning
---  addSmell leader  -- TODO: instead do for all non-spawning factions
 
 -- | Continue running in the given direction.
 continueRun :: (MonadActionAbort m, MonadClient m)

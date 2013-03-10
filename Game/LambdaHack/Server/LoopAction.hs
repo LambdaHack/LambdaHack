@@ -696,13 +696,3 @@ regenerateLevelHP arena = do
   toRegen <-
     getsState $ catMaybes . map pick .actorNotProjAssocs (const True) arena
   mapM_ (\aid -> tellCmdAtomic $ HealActorA aid 1) toRegen
-
--- TODO: let only some actors/items leave smell, e.g., a Smelly Hide Armour.
--- | Add a smell trace for the actor to the level.
-_addSmell :: MonadActionRO m => ActorId -> WriterT [Atomic] m ()
-_addSmell aid = do
-  b <- getsState $ getActorBody aid
-  time <- getsState $ getLocalTime $ blid b
-  oldS <- getsLevel (blid b) $ (EM.lookup $ bpos b) . lsmell
-  let newTime = timeAdd time smellTimeout
-  tellCmdAtomic $ AlterSmellA (blid b) [(bpos b, (oldS, Just newTime))]
