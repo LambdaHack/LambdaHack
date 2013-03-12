@@ -1,4 +1,5 @@
 -- | Semantics of server commands.
+-- See https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture.
 module Game.LambdaHack.Server
   ( cmdSerSem
   , loopSer, executorSer, waitForChildren, speedupCOps

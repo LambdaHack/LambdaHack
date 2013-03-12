@@ -8,6 +8,8 @@
 -- but item dropped from the inventory to the ground is. This makes
 -- it easier to undo the commands. In principle, the commands are the only
 -- way to affect the basic game state (@State@).
+--
+-- See https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture.
 module Game.LambdaHack.CmdAtomic
   ( tellCmdAtomic, tellSfxAtomic
   , Atomic(..), CmdAtomic(..), SfxAtomic(..), HitAtomic(..)

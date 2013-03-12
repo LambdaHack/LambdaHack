@@ -1,4 +1,5 @@
 -- | Semantics of client commands.
+-- See https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture.
 module Game.LambdaHack.Client
   ( cmdClientAISem, cmdClientUISem
   , loopAI, loopUI, executorCli, exeFrontend
