@@ -2,7 +2,8 @@
 -- | Actors perceiving other actors and the dungeon level.
 module Game.LambdaHack.Perception
   ( Perception(..), PerceptionVisible(..), PerActor
-  , totalVisible, actorSeesLoc, nullPer, addPer, diffPer, smellFromActors
+  , totalVisible, smellVisible
+  , actorSeesLoc, nullPer, addPer, diffPer, smellFromActors
   , FactionPers, Pers
   ) where
 
@@ -45,6 +46,10 @@ type Pers = EM.EnumMap FactionId FactionPers
 totalVisible :: Perception -> ES.EnumSet Point
 totalVisible = pvisible . ptotal
 
+-- | The set of tiles smelled by at least one hero.
+smellVisible :: Perception -> ES.EnumSet Point
+smellVisible = pvisible . psmell
+
 -- | Whether an actor can see a position.
 actorSeesLoc :: Perception -> ActorId -> Point -> Bool
 actorSeesLoc per aid pos =
@@ -52,7 +57,7 @@ actorSeesLoc per aid pos =
   in pos `ES.member` set
 
 nullPer :: Perception -> Bool
-nullPer per = EM.null (perActor per) && ES.null (pvisible (ptotal per))
+nullPer per = ES.null (totalVisible per)
 
 addPer :: Perception -> Perception -> Perception
 addPer per1 per2 =
@@ -61,9 +66,9 @@ addPer per1 per2 =
   in Perception
        { perActor = EM.unionWith f (perActor per1) (perActor per2)
        , ptotal = PerceptionVisible
-                  $ pvisible (ptotal per1) `ES.union` pvisible (ptotal per2)
+                  $ totalVisible per1 `ES.union` totalVisible per2
        , psmell = PerceptionVisible
-                  $ pvisible (psmell per1) `ES.union` pvisible (psmell per2)
+                  $ smellVisible per1 `ES.union` smellVisible per2
        }
 
 diffPer :: Perception -> Perception -> Perception
@@ -75,15 +80,21 @@ diffPer per1 per2 =
   in Perception
        { perActor = EM.differenceWith f (perActor per1) (perActor per2)
        , ptotal = PerceptionVisible
-                  $ pvisible (ptotal per1) ES.\\ pvisible (ptotal per2)
+                  $ totalVisible per1 ES.\\ totalVisible per2
        , psmell = PerceptionVisible
-                  $ pvisible (psmell per1) ES.\\ pvisible (psmell per2)
+                  $ smellVisible per1 ES.\\ smellVisible per2
        }
 
 smellFromActors :: Kind.COps -> State -> PerActor -> PerceptionVisible
 smellFromActors Kind.COps{coactor=Kind.Ops{okind}} s perActor =
-  let actorCanSmell aid = let b = getActorBody aid s
-                          in asmell $ okind $ bkind b
+  let actorCanSmell aid =
+        if EM.notMember aid $ sactorD s
+        then -- If actor is just created, it can already be in Perception
+             -- sent to the client, but not in the client's state.
+             -- We assume the actor's nose doesn't work yet on first turn.
+             False
+        else let b = getActorBody aid s
+             in asmell $ okind $ bkind b
       visSmell = filter (actorCanSmell . fst) $ EM.assocs perActor
       setSmell = map (pvisible . snd) visSmell
   in PerceptionVisible $ ES.unions setSmell

@@ -93,6 +93,7 @@ seenAtomicCli :: Bool -> FactionId -> Perception -> PosAtomic -> Bool
 seenAtomicCli knowEvents fid per posAtomic =
   case posAtomic of
     PosLevel _ ps -> knowEvents || all (`ES.member` totalVisible per) ps
+    PosSmell _ ps -> knowEvents || all (`ES.member` smellVisible per) ps
     PosOnly fid2 -> fid == fid2
     PosAndSer fid2 -> fid == fid2
     PosAll -> True
@@ -181,6 +182,9 @@ atomicSendSem atomic = do
           else anySend fid perOld perOld
         -- In the following cases, from the assertion above,
         -- @resets@ is false here and broken atomic has the same ps.
+        PosSmell arena _ -> do
+          let perOld = persOld EM.! fid EM.! arena
+          anySend fid perOld perOld
         PosOnly fid2 -> when (fid == fid2) $ sendUpdate fid atomic
         PosAndSer fid2 -> when (fid == fid2) $ sendUpdate fid atomic
         PosAll -> sendUpdate fid atomic
@@ -197,16 +201,20 @@ atomicRemember lid inPer s =
       fItem p (iid, k) = SpotItemA iid (getItemBody iid s) k (CFloor lid p)
       fBag (p, bag) = map (fItem p) $ EM.assocs bag
       inItem = concatMap fBag inFloor
-      -- No @outItem@, for items that became out of sight. The client will
-      -- create these atomic actions based on @outPer@, if required.
-      -- Any client that remembers out of sight items, OTOH,
+      -- No @outItem@ with @ LoseItemA@ for items that became out of sight.
+      -- The client will create these atomic actions based on @outPer@,
+      -- if required. Any client that remembers out of sight items, OTOH,
       -- will create atomic actions that forget remembered items
       -- that are revealed not to be there any more (no @SpotItemA@ for them).
       inPrio = mapMaybe (\p -> posToActor p lid s) inFov
       fActor aid = SpotActorA aid (getActorBody aid s) (getActorItem aid s)
       inActor = map fActor inPrio
-      -- No @outActor@, for the same reason as with @outItem@.
+      -- No @LoseActorA@, for the same reason as with @outItem@.
       inTileMap = map (\p -> (p, ltile lvl Kind.! p)) inFov
-      -- No @outTlie@, for the same reason as above.
+      -- No @LoseTileA@, for the same reason as above.
       atomicTile = if null inTileMap then [] else [SpotTileA lid inTileMap]
-  in inItem ++ inActor ++ atomicTile
+      inSmellFov = ES.elems $ smellVisible inPer
+      inSm = mapMaybe (\p -> pMaybe p $ EM.lookup p (lsmell lvl)) inSmellFov
+      -- No @LoseSmellA@, for the same reason as above.
+      atomicSmell = if null inSm then [] else [SpotSmellA lid inSm]
+  in inItem ++ inActor ++ atomicTile ++ atomicSmell

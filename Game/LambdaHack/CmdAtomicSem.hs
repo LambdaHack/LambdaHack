@@ -363,7 +363,8 @@ restartA _ _ _ s = putState s
 -- in the state just before the action is executed.
 
 data PosAtomic =
-    PosLevel LevelId [Point]  -- ^ whoever seens all the positions, notices
+    PosLevel LevelId [Point]  -- ^ whomever sees all the positions, notices
+  | PosSmell LevelId [Point]  -- ^ whomever smells all the positions, notices
   | PosOnly FactionId         -- ^ only the faction notices
   | PosAndSer FactionId       -- ^ faction and server notices
   | PosAll                    -- ^ everybody notices
@@ -424,13 +425,13 @@ posCmdAtomic cmd = case cmd of
     let ps = map fst ts
     return $ PosLevel lid ps
   AlterSecretA _ _ -> return PosNone
-  AlterSmellA lid p _ _ -> return $ PosLevel lid [p]
+  AlterSmellA lid p _ _ -> return $ PosSmell lid [p]
   SpotSmellA lid sms -> do
     let ps = map fst sms
-    return $ PosLevel lid ps
+    return $ PosSmell lid ps
   LoseSmellA lid sms -> do
     let ps = map fst sms
-    return $ PosLevel lid ps
+    return $ PosSmell lid ps
   AgeLevelA lid _ ->  return $ PosLevel lid []
   AgeGameA _ ->  return PosAll
   DiscoverA lid p _ _ -> return $ PosLevel lid [p]
