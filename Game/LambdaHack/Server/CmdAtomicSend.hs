@@ -177,7 +177,8 @@ atomicSendSem atomic = do
               then anySend fid perOld perOld
               else do
                 sendA fid $ PerceptionA arena outPA inPA
-                mapM_ (sendA fid) $ atomicRemember arena inPer sOld
+                unless knowEvents $  -- inconsistencies would quickly manifest
+                  mapM_ (sendA fid) $ atomicRemember arena inPer sOld
                 anySend fid perOld perNew
           else anySend fid perOld perOld
         -- In the following cases, from the assertion above,
@@ -194,27 +195,29 @@ atomicSendSem atomic = do
 
 atomicRemember :: LevelId -> Perception -> State -> [CmdAtomic]
 atomicRemember lid inPer s =
+  -- No @LoseItemA@ is sent for items that became out of sight.
+  -- The client will create these atomic actions based on @outPer@,
+  -- if required. Any client that remembers out of sight items, OTOH,
+  -- will create atomic actions that forget remembered items
+  -- that are revealed not to be there any more (no @SpotItemA@ for them).
+  -- Similarly no @LoseActorA@, @LoseTileA@ nor  @LoseSmellA@.
   let inFov = ES.elems $ totalVisible inPer
       lvl = sdungeon s EM.! lid
+      -- Actors.
+      inPrio = mapMaybe (\p -> posToActor p lid s) inFov
+      fActor aid = SpotActorA aid (getActorBody aid s) (getActorItem aid s)
+      inActor = map fActor inPrio
+      -- Items.
       pMaybe p = maybe Nothing (\x -> Just (p, x))
       inFloor = mapMaybe (\p -> pMaybe p $ EM.lookup p (lfloor lvl)) inFov
       fItem p (iid, k) = SpotItemA iid (getItemBody iid s) k (CFloor lid p)
       fBag (p, bag) = map (fItem p) $ EM.assocs bag
       inItem = concatMap fBag inFloor
-      -- No @outItem@ with @ LoseItemA@ for items that became out of sight.
-      -- The client will create these atomic actions based on @outPer@,
-      -- if required. Any client that remembers out of sight items, OTOH,
-      -- will create atomic actions that forget remembered items
-      -- that are revealed not to be there any more (no @SpotItemA@ for them).
-      inPrio = mapMaybe (\p -> posToActor p lid s) inFov
-      fActor aid = SpotActorA aid (getActorBody aid s) (getActorItem aid s)
-      inActor = map fActor inPrio
-      -- No @LoseActorA@, for the same reason as with @outItem@.
+      -- Tiles.
       inTileMap = map (\p -> (p, ltile lvl Kind.! p)) inFov
-      -- No @LoseTileA@, for the same reason as above.
       atomicTile = if null inTileMap then [] else [SpotTileA lid inTileMap]
+      -- Smells.
       inSmellFov = ES.elems $ smellVisible inPer
       inSm = mapMaybe (\p -> pMaybe p $ EM.lookup p (lsmell lvl)) inSmellFov
-      -- No @LoseSmellA@, for the same reason as above.
       atomicSmell = if null inSm then [] else [SpotSmellA lid inSm]
   in inItem ++ inActor ++ atomicTile ++ atomicSmell

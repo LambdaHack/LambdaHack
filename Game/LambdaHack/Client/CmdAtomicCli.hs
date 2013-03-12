@@ -61,9 +61,14 @@ cmdAtomicFilterCli cmd = case cmd of
     perOld <- getPerFid lid
     perceptionA lid outPA inPA
     perNew <- getPerFid lid
+    s <- getState
+    -- Wipe out actors that just became invisible due to changed FOV.
+    let outFov = totalVisible perOld ES.\\ totalVisible perNew
+        outPrio = mapMaybe (\p -> posToActor p lid s) $ ES.elems outFov
+        fActor aid = LoseActorA aid (getActorBody aid s) (getActorItem aid s)
+        outActor = map fActor outPrio
     -- Wipe out remembered items on tiles that now came into view.
     lfloor <- getsLevel lid lfloor
-    s <- getState
     let inFov = totalVisible perNew ES.\\ totalVisible perOld
         pMaybe p = maybe Nothing (\x -> Just (p, x))
         inFloor = mapMaybe (\p -> pMaybe p $ EM.lookup p lfloor)
@@ -71,11 +76,7 @@ cmdAtomicFilterCli cmd = case cmd of
         fItem p (iid, k) = LoseItemA iid (getItemBody iid s) k (CFloor lid p)
         fBag (p, bag) = map (fItem p) $ EM.assocs bag
         inItem = concatMap fBag inFloor
-    -- Wipe out actors that just became invisible due to changed FOV.
-    let outFov = totalVisible perOld ES.\\ totalVisible perNew
-        outPrio = mapMaybe (\p -> posToActor p lid s) $ ES.elems outFov
-        fActor aid = LoseActorA aid (getActorBody aid s) (getActorItem aid s)
-        outActor = map fActor outPrio
+    -- Remembered map tiles not wiped out, due to optimization in @spotTileA@.
     -- Wipe out remembered smell on tiles that now came into smell Fov.
     lsmell <- getsLevel lid lsmell
     let inSmellFov = smellVisible perNew ES.\\ smellVisible perOld

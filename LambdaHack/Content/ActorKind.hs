@@ -3,8 +3,8 @@
 module Content.ActorKind ( cdefs ) where
 
 import Game.LambdaHack.Ability
-import Game.LambdaHack.Color
 import Game.LambdaHack.CDefs
+import Game.LambdaHack.Color
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Random
 import Game.LambdaHack.Time

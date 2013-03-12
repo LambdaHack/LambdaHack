@@ -35,7 +35,7 @@ main = do
   let usage =
         [ "Configure server debug options here, gamplay in config.rules.ini."
         , "  --knowMap reveal map for all clients in the next game"
-        , "  --knowEvents show all events to all clients in the next game"
+        , "  --knowEvents show all events in the next game (needs --knowMap)"
         , "  --sniffIn display all incoming commands on console "
         , "  --sniffOut display all outgoing commands on console "
         , "  --allClear let all map tiles be translucent"
