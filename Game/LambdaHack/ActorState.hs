@@ -73,8 +73,8 @@ nearbyFreePoints cotile start lid s =
   let lvl@Level{lxsize, lysize} = sdungeon s EM.! lid
       good p = Tile.hasFeature cotile F.Walkable (lvl `at` p)
                && unoccupied (actorList (const True) lid s) p
-      ps = start : (filter good $ nub $ concatMap (vicinity lxsize lysize) ps)
-  in ps
+      ps = nub $ start : concatMap (vicinity lxsize lysize) ps
+  in filter good ps
 
 -- | Calculate loot's worth for heroes on the current level.
 calculateTotal :: FactionId -> LevelId -> State -> (ItemBag, Int)

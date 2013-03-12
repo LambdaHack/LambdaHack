@@ -179,7 +179,7 @@ effectSummonFriend power source target = do
   sm <- getsState (getActorBody source)
   tm <- getsState (getActorBody target)
   ps <- getsState $ nearbyFreePoints cotile (bpos tm) (blid tm)
-  summonFriends (bfaction sm) (take (1 + power) ps) (blid tm)
+  summonFriends (bfaction sm) (take power ps) (blid tm)
   return True
 
 summonFriends :: MonadServer m
@@ -241,7 +241,7 @@ effectSpawnMonster power target = do
   Kind.COps{cotile} <- getsState scops
   tm <- getsState (getActorBody target)
   ps <- getsState $ nearbyFreePoints cotile (bpos tm) (blid tm)
-  spawnMonsters (take (1 + power) ps) (blid tm)
+  spawnMonsters (take power ps) (blid tm)
   return True
 
 -- | Spawn monsters of any spawning faction, friendly or not.
@@ -286,7 +286,7 @@ effectCreateItem :: MonadServer m
                  => Int -> ActorId -> WriterT [Atomic] m Bool
 effectCreateItem power target = do
   tm <- getsState $ getActorBody target
-  void $ createItems (1 + power) (bpos tm) (blid tm)
+  void $ createItems power (bpos tm) (blid tm)
   return True
 
 createItems :: MonadServer m
@@ -343,7 +343,7 @@ effectSearching power source = do
 effectAscend :: MonadServer m
              => Int -> ActorId -> WriterT [Atomic] m Bool
 effectAscend power target = do
-  effLvlGoUp target (power + 1)
+  effLvlGoUp target power
   tellSfxAtomic $ EffectD target $ Effect.Ascend power
   return True
 
@@ -426,6 +426,6 @@ squashActor source target = do
 effectDescend :: MonadServer m
               => Int -> ActorId -> WriterT [Atomic] m Bool
 effectDescend power target = do
-  effLvlGoUp target (- (power + 1))
+  effLvlGoUp target (-power)
   tellSfxAtomic $ EffectD target $ Effect.Descend power
   return True
