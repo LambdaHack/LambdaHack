@@ -70,7 +70,7 @@ draw dm cops per drawnLevelId leader
                else \ _vis _visPl -> Color.defBG
       (_, wealth) = calculateTotal (sside cli) drawnLevelId s
       damage  = case Item.strongestSword cops bitems of
-                  Just (_, sw) ->
+                  Just (_, (_, sw)) ->
                     case Item.jkind sdisco sw of
                       Just _ ->
                         case jeffect sw of

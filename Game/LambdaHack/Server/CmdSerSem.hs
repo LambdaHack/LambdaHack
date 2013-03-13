@@ -132,7 +132,7 @@ actorAttackActor source target = do
       [(iid, item)] -> return (Just iid, item)  -- projectile
       _ -> assert `failure` itemAssocs
     else case strongestSword cops itemAssocs of
-      Just (iid, w) -> return (Just iid, w)
+      Just (_, (iid, w)) -> return (Just iid, w)
       Nothing -> do  -- hand to hand combat
         let h2hGroup | isSpawningFaction s (bfaction sm) = "monstrous"
                      | otherwise = "unarmed"
@@ -162,16 +162,15 @@ actorAttackActor source target = do
 -- | Search for hidden doors.
 search :: MonadServer m => ActorId -> WriterT [Atomic] m ()
 search aid = do
-  Kind.COps{coitem, cotile} <- getsState scops
+  Kind.COps{cotile} <- getsState scops
   b <- getsState $ getActorBody aid
   lvl <- getsLevel (blid b) id
   lsecret <- getsLevel (blid b) lsecret
   lxsize <- getsLevel (blid b) lxsize
   itemAssocs <- getsState (getActorItem aid)
-  discoS <- getsServer sdisco
   let delta = timeScale timeTurn $
-                case strongestSearch coitem discoS itemAssocs of
-                  Just (_, _i)  -> 1 {-+ jpower i-} -- TODO: use effect
+                case strongestSearch itemAssocs of
+                  Just (k, _)  -> k + 1
                   Nothing -> 1
       searchTile diffL mv =
         let loc = shift (bpos b) mv

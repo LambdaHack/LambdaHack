@@ -665,28 +665,27 @@ rollSpawnPos Kind.COps{cotile} visible lid lvl s = do
                && unoccupied (actorList (const True) lid s) l
     ]
 
+-- TODO: use itemEffect or at least effectSem to get from Regeneration
+-- to HealActorA. Also, Applying an item with Regeneration should do the same
+-- thing, but immediately (and destroy the item).
 -- | Possibly regenerate HP for all actors on the current level.
 --
--- We really want hero selection to be a purely UI distinction,
--- so all heroes need to regenerate, not just the leader.
--- Only the heroes on the current level regenerate (others are frozen
--- in time together with their level). This prevents cheating
--- via sending one hero to a safe level and waiting there.
+-- We really want leader selection to be a purely UI distinction,
+-- so all actors need to regenerate, not just the leaders.
+-- Actors on frozen levels don't regenerate. This prevents cheating
+-- via sending an actor to a safe level and letting him regenerate there.
 regenerateLevelHP :: MonadServer m => LevelId -> WriterT [Atomic] m ()
 regenerateLevelHP arena = do
-  Kind.COps{ coitem
-           , coactor=Kind.Ops{okind}
-           } <- getsState scops
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   time <- getsState $ getLocalTime arena
-  discoS <- getsServer sdisco
   s <- getState
   let pick (a, m) =
         let ak = okind $ bkind m
             itemAssocs = getActorItem a s
             regen = max 1 $
                       aregen ak `div`
-                      case strongestRegen coitem discoS itemAssocs of
-                        Just (_, _i)  -> 5 {-* jpower i-} -- TODO: use effect
+                      case strongestRegen itemAssocs of
+                        Just (k, _)  -> k + 1
                         Nothing -> 1
             bhpMax = maxDice (ahp ak)
             deltaHP = min 1 (bhpMax - bhp m)
@@ -694,5 +693,5 @@ regenerateLevelHP arena = do
            then Nothing
            else Just a
   toRegen <-
-    getsState $ catMaybes . map pick .actorNotProjAssocs (const True) arena
+    getsState $ catMaybes . map pick . actorNotProjAssocs (const True) arena
   mapM_ (\aid -> tellCmdAtomic $ HealActorA aid 1) toRegen

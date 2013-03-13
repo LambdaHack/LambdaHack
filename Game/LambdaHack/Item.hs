@@ -24,7 +24,6 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.Hashable as Hashable
 import qualified Data.Ix as Ix
 import Data.List
-import Data.Ord
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -58,10 +57,7 @@ type Discovery = EM.EnumMap ItemKindIx (Kind.Id ItemKind)
 -- | The reverse map to @Discovery@, needed for item creation.
 type DiscoRev = EM.EnumMap (Kind.Id ItemKind) ItemKindIx
 
--- TODO: define type InvSymbol = Char and move all ops to another file.
--- TODO: the list resulting from joinItem can contain items
--- with the same letter.
--- TODO: name [Item] Inventory and have some invariants, e.g. no equal letters.
+-- TODO: somehow hide from clients jeffect of unidentified items.
 -- | Game items in inventories or strewn around the dungeon.
 -- The fields @jsymbol@, @jname@ and @jflavour@ make it possible to refer to
 -- and draw an unidentified item. Full information about item is available
@@ -72,8 +68,8 @@ data Item = Item
   , jname    :: !Text        -- ^ individual generic name
   , jflavour :: !Flavour     -- ^ individual flavour
   , jeffect  :: !(Effect Int)  -- ^ the effect when activated
- }
-  deriving (Show, Eq, Generic)
+  }
+  deriving (Show, Eq, Ord, Generic)
 
 instance Hashable.Hashable Item
 
@@ -161,31 +157,33 @@ dungeonFlavourMap Kind.Ops{ofoldrWithKey} =
   liftM (FlavourMap . fst) $
     ofoldrWithKey rollFlavourMap (return (EM.empty, S.fromList stdFlav))
 
-strongestItem :: [(ItemId, Item)] -> (Item -> Bool) -> Maybe (ItemId, Item)
+strongestItem :: [(ItemId, Item)] -> (Item -> Maybe Int)
+              -> Maybe (Int, (ItemId, Item))
 strongestItem is p =
-  let cmp = comparing $ fst{-jpower . snd -}  -- TODO compare on effect power * level
-      igs = filter (p . snd) is
-  in case igs of
+  let ks = map (p . snd) is
+  in case zip ks is of
     [] -> Nothing
-    _  -> Just $ maximumBy cmp igs
+    kis -> case maximum kis of
+      (Nothing, _) -> Nothing
+      (Just k, iki) -> Just (k, iki)
 
-strongestSearch :: Kind.Ops ItemKind -> Discovery -> [(ItemId, Item)]
-                -> Maybe (ItemId, Item)
-strongestSearch _cops _disco is =
+strongestSearch :: [(ItemId, Item)] -> Maybe (Int, (ItemId, Item))
+strongestSearch is =
   strongestItem is $ \ i ->
-    case jeffect i of Searching{} -> True; _ -> False
+    case jeffect i of Searching k -> Just k; _ -> Nothing
 
--- TODO: generalise, in particular take base damage into account
-strongestSword :: Kind.COps -> [(ItemId, Item)] -> Maybe (ItemId, Item)
+strongestSword :: Kind.COps -> [(ItemId, Item)] -> Maybe (Int, (ItemId, Item))
 strongestSword Kind.COps{corule} is =
   strongestItem is $ \ i ->
-    jsymbol i `elem` (ritemMelee $ Kind.stdRuleset corule)
+    case jeffect i of
+      Hurt d k | jsymbol i `elem` (ritemMelee $ Kind.stdRuleset corule)
+        -> Just $ floor (meanDice d) + k
+      _ -> Nothing
 
-strongestRegen :: Kind.Ops ItemKind -> Discovery -> [(ItemId, Item)]
-               -> Maybe (ItemId, Item)
-strongestRegen _cops _disco is =
+strongestRegen :: [(ItemId, Item)] -> Maybe (Int, (ItemId, Item))
+strongestRegen is =
   strongestItem is $ \ i ->
-    case jeffect i of Regeneration{} -> True; _ -> False
+    case jeffect i of Regeneration k -> Just k; _ -> Nothing
 
 -- | The part of speech describing the item.
 partItem :: Kind.Ops ItemKind -> Discovery -> Item -> (MU.Part, MU.Part)
