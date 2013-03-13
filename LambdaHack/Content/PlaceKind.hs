@@ -37,7 +37,7 @@ pillar = PlaceKind
                , "|.O.."
                , "|...."
                , "|...."
-              ]
+               ]
   }
 pillarC = pillar
   { ptopLeft = [ "-----"
@@ -45,7 +45,7 @@ pillarC = pillar
                , "|...."
                , "|...."
                , "|...."
-              ]
+               ]
   }
 pillar3 = pillar
   { pfreq    = [("rogue", 100)]  -- Feels a bit intrusive with so many pillars.
@@ -54,7 +54,7 @@ pillar3 = pillar
                , "|...."
                , "|O..."
                , "|...."
-              ]
+               ]
   }
 colonnade = PlaceKind
   { psymbol  = 'c'
