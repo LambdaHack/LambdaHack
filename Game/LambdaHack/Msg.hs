@@ -6,7 +6,7 @@ module Game.LambdaHack.Msg
   ( makePhrase, makeSentence
   , Msg, (<>), (<+>), showT, moreMsg, yesnoMsg, truncateMsg
   , Report, emptyReport, nullReport, singletonReport, addMsg
-  , splitReport, renderReport
+  , splitReport, renderReport, findInReport
   , History, emptyHistory, singletonHistory, mergeHistory
   , addReport, renderHistory, takeHistory
   , Overlay, stringByLocation
@@ -17,7 +17,7 @@ import Data.Binary
 import qualified Data.ByteString.Char8 as BS
 import Data.Char
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.List as L
+import Data.List
 import Data.Monoid hiding ((<>))
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -105,7 +105,7 @@ splitReport r =
   in splitText w $ renderReport r
 
 -- | Render a report as a (possibly very long) string.
-renderReport ::Report  -> Text
+renderReport :: Report  -> Text
 renderReport (Report []) = T.empty
 renderReport (Report (xn : xs)) =
   renderReport (Report xs) <+> renderRepetition xn
@@ -113,6 +113,9 @@ renderReport (Report (xn : xs)) =
 renderRepetition :: (BS.ByteString, Int) -> Text
 renderRepetition (s, 1) = decodeUtf8 s
 renderRepetition (s, n) = decodeUtf8 s <> "<x" <> showT n <> ">"
+
+findInReport :: (BS.ByteString -> Bool) -> Report -> Maybe BS.ByteString
+findInReport f (Report xns) = find f $ map fst xns
 
 -- | Split a string into lines. Avoids ending the line with a character
 -- other than whitespace or punctuation. Space characters are removed
@@ -156,7 +159,7 @@ mergeHistory l =
 
 -- | Render history as many lines of text, wrapping if necessary.
 renderHistory :: History -> Overlay
-renderHistory (History h) = L.concatMap splitReport h
+renderHistory (History h) = concatMap splitReport h
 
 -- | Add a report to history, handling repetitions.
 addReport :: Report -> History -> History
@@ -187,7 +190,7 @@ stringByLocation _ _ [] = (T.empty, const Nothing, Nothing)
 stringByLocation lxsize lysize (msgTop : ls) =
   let (over, bottom) = splitAt lysize $ map (truncateMsg lxsize) ls
       m = EM.fromDistinctAscList $
-            zip [0..] (L.map (EM.fromList . zip [0..] . T.unpack) over)
+            zip [0..] (map (EM.fromList . zip [0..] . T.unpack) over)
       msgBottom = case bottom of
                   [] -> Nothing
                   [s] -> Just s

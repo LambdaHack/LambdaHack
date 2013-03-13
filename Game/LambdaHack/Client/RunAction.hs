@@ -3,10 +3,11 @@ module Game.LambdaHack.Client.RunAction
   ( runDir, continueRunDir
   ) where
 
+import qualified Data.ByteString.Char8 as BS
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.List as L
-import Data.Maybe (isNothing)
+import Data.Maybe
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -88,9 +89,12 @@ runDisturbance :: Point -> Int -> Report
                -> [Actor] -> [Actor] -> Perception -> Point
                -> (F.Feature -> Point -> Bool) -> (Point -> Bool) -> X -> Y
                -> (Vector, Int) -> Maybe (Vector, Int)
-runDisturbance locLast distLast msg hs ms per posHere
+runDisturbance locLast distLast report hs ms per posHere
                posHasFeature posHasItems lxsize lysize (dirNew, distNew) =
-  let msgShown  = not $ nullReport msg
+  let boringMsgs = map BS.pack [ "Saving backup."
+                               , "You hear some noises." ]
+      -- TODO: use a regexp from the UI config instead
+      msgShown  = isJust $ findInReport (`notElem` boringMsgs) report
       msposs    = ES.delete posHere $ ES.fromList (L.map bpos ms)
       enemySeen =
         not (ES.null (msposs `ES.intersection` totalVisible per))

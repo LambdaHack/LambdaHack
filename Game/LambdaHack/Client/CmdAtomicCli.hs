@@ -261,8 +261,7 @@ drawCmdAtomicUI verbose cmd = case cmd of
     msgAdd msg
   RestartA{} -> msgAdd "This time for real."
   ResumeA{} -> msgAdd "All factions ready."
-  SaveBkpA ->
-    msgAdd "Saving backup."
+  SaveBkpA -> msgAdd "Saving backup."
   _ -> return ()
 
 lookAtMove :: MonadClientUI m => Actor -> m ()
