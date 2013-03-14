@@ -267,8 +267,9 @@ spawnMonsters ps arena = assert (not $ null ps) $ do
         mk <- rndToAction $ opick (fname spawnKind) (const True)
         addMonster mk bfaction p arena
       mleader <- getsState $ gleader . (EM.! bfaction) . sfaction
-      when (mleader == Nothing) $
+      when (mleader == Nothing) $ do
         tellCmdAtomic $ LeadFactionA bfaction Nothing (Just $ head laid)
+        tellSfxAtomic $ FadeinD bfaction True
 
 -- | Create a new monster on the level, at a given position
 -- and with a given actor kind and HP.

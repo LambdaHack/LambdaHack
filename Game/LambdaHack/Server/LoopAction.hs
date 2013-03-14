@@ -626,9 +626,6 @@ populateDungeon = do
 
 -- * Assorted helper functions
 
--- TODO: send this to a faction, whenever a monster is generated
--- and the faction was empty before: SfxAtomicUI $ FadeinD fid False
---
 -- | Generate a monster, possibly.
 generateMonster :: MonadServer m => LevelId -> WriterT [Atomic] m ()
 generateMonster arena = do
