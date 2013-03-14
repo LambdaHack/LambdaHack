@@ -572,28 +572,6 @@ gameReset cops@Kind.COps{coitem, corule} = do
   sdebugNxt <- getsServer sdebugNxt
   putServer defSer {sdebugNxt, sdebugSer = sdebugNxt}
 
--- TODO: use rollSpawnPos in the inner loop
--- | Find starting postions for all factions. Try to make them distant
--- from each other and from any stairs.
-findEntryPoss :: Kind.COps -> Level -> Int -> Rnd [Point]
-findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lstair} k =
-  let cminStairDist = chessDist lxsize (fst lstair) (snd lstair)
-      dist l poss cmin =
-        all (\pos -> chessDist lxsize l pos > cmin) poss
-      tryFind _ 0 = return []
-      tryFind ps n = do
-        np <- findPosTry 20 ltile  -- 20 only, for unpredictability
-                [ \ l _ -> dist l ps $ 2 * cminStairDist
-                , \ l _ -> dist l ps cminStairDist
-                , \ l _ -> dist l ps $ cminStairDist `div` 2
-                , \ l _ -> dist l ps $ cminStairDist `div` 4
-                , const (Tile.hasFeature cotile F.Walkable)
-                ]
-        nps <- tryFind (np : ps) (n - 1)
-        return $ np : nps
-      stairPoss = [fst lstair, snd lstair]
-  in tryFind stairPoss k
-
 -- Spawn initial actors. Clients should notice this, to set their leaders.
 populateDungeon :: MonadServer m => WriterT [Atomic] m ()
 populateDungeon = do
@@ -648,24 +626,44 @@ generateMonster arena = do
     pos <- rndToAction $ rollSpawnPos cops allPers arena lvl s
     spawnMonsters [pos] arena
 
--- | Create a new monster on the level, at a random position.
 rollSpawnPos :: Kind.COps -> ES.EnumSet Point -> LevelId -> Level -> State
              -> Rnd Point
-rollSpawnPos Kind.COps{cotile} visible lid lvl s = do
-  let inhabitants = actorNotProjList (const True) lid s
+rollSpawnPos Kind.COps{cotile} visible lid Level{ltile, lxsize, lstair} s = do
+  let cminStairDist = chessDist lxsize (fst lstair) (snd lstair)
+      inhabitants = actorNotProjList (const True) lid s
       isLit = Tile.isLit cotile
-      distantAtLeast d =
-        \ l _ -> all (\ h -> chessDist (lxsize lvl) (bpos h) l > d) inhabitants
-  findPosTry 40 (ltile lvl)
-    [ \ _ t -> not (isLit t)
-    , distantAtLeast 15
-    , \ l t -> not (isLit t) || distantAtLeast 15 l t
-    , distantAtLeast 10
+      distantAtLeast d l _ =
+        all (\b -> chessDist lxsize (bpos b) l > d) inhabitants
+  findPosTry 40 ltile
+    [ distantAtLeast cminStairDist
+    , \ _ t -> not (isLit t)
+    , distantAtLeast $ cminStairDist `div` 2
     , \ l _ -> not $ l `ES.member` visible
-    , distantAtLeast 5
+    , distantAtLeast $ cminStairDist `div` 4
     , \ l t -> Tile.hasFeature cotile F.Walkable t
                && unoccupied (actorList (const True) lid s) l
     ]
+
+-- | Find starting postions for all factions. Try to make them distant
+-- from each other and from any stairs.
+findEntryPoss :: Kind.COps -> Level -> Int -> Rnd [Point]
+findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lstair} k =
+  let cminStairDist = chessDist lxsize (fst lstair) (snd lstair)
+      dist poss cmin l _ =
+        all (\pos -> chessDist lxsize l pos > cmin) poss
+      tryFind _ 0 = return []
+      tryFind ps n = do
+        np <- findPosTry 20 ltile  -- 20 only, for unpredictability
+                [ dist ps $ 2 * cminStairDist
+                , dist ps cminStairDist
+                , dist ps $ cminStairDist `div` 2
+                , dist ps $ cminStairDist `div` 4
+                , const (Tile.hasFeature cotile F.Walkable)
+                ]
+        nps <- tryFind (np : ps) (n - 1)
+        return $ np : nps
+      stairPoss = [fst lstair, snd lstair]
+  in tryFind stairPoss k
 
 -- TODO: use itemEffect or at least effectSem to get from Regeneration
 -- to HealActorA. Also, Applying an item with Regeneration should do the same
