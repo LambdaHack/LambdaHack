@@ -55,7 +55,7 @@ usesAIFact fact = isJust (gAiLeader fact) || isJust (gAiMember fact)
 -- | Tell whether the faction can spawn actors.
 isSpawningFact :: Kind.COps -> Faction -> Bool
 isSpawningFact Kind.COps{cofact=Kind.Ops{okind}} fact =
-  fspawn (okind $ gkind $ fact) > 0
+  fspawn (okind $ gkind fact) > 0
 
 instance Binary Status where
   put (Killed ln) = putWord8 0 >> put ln

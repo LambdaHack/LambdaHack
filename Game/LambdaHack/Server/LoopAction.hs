@@ -594,10 +594,11 @@ findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lstair} k =
       stairPoss = [fst lstair, snd lstair]
   in tryFind stairPoss k
 
--- Spawn initial actors. Clients should notice that so that they elect leaders.
+-- Spawn initial actors. Clients should notice this, to set their leaders.
 populateDungeon :: MonadServer m => WriterT [Atomic] m ()
 populateDungeon = do
-  cops@Kind.COps{cotile} <- getsState scops
+  cops@Kind.COps{ cotile
+                , cofact=Kind.Ops{okind} } <- getsState scops
   let initialItems (lid, Level{ltile, litemNum}) =
         replicateM litemNum $ do
           pos <- rndToAction
@@ -605,24 +606,28 @@ populateDungeon = do
           createItems 1 pos lid
   dungeon <- getsState sdungeon
   mapM_ initialItems $ EM.assocs dungeon
-  -- TODO entryLevel should be defined per-faction in content
-  let entryLevel = initialLevel
-  lvl <- getsLevel entryLevel id
   faction <- getsState sfaction
   config <- getsServer sconfig
-  let notSpawning (_, fact) = not $ isSpawningFact cops fact
-      needInitialCrew = map fst $ filter notSpawning $ EM.assocs faction
-      heroNames = configHeroNames config : repeat []
-      initialHeroes (side, ppos, heroName) = do
-        psFree <- getsState $ nearbyFreePoints cotile ppos entryLevel
+  let heroNames = configHeroNames config : repeat []
+      notSpawning (_, fact) = not $ isSpawningFact cops fact
+      needInitialCrew = filter notSpawning $ EM.assocs faction
+      getEntryLevel (_, fact) = fentry $ okind $ gkind fact
+      arenas = ES.toList $ ES.fromList $ map getEntryLevel needInitialCrew
+      initialHeroes arena = do
+        lvl <- getsLevel arena id
+        let arenaFactions = filter ((== arena) . getEntryLevel) needInitialCrew
+        entryPoss <- rndToAction
+                     $ findEntryPoss cops lvl (length arenaFactions)
+        mapM_ (arenaHeroes arena) $ zip3 arenaFactions entryPoss heroNames
+      arenaHeroes arena ((side, _), ppos, heroName) = do
+        psFree <- getsState $ nearbyFreePoints cotile ppos arena
         let ps = take (1 + configExtraHeroes config) $ zip [1..] psFree
         laid <- forM ps $ \ (n, p) ->
-          addHero side p entryLevel heroName (Just n)
+          addHero side p arena heroName (Just n)
         mleader <- getsState $ gleader . (EM.! side) . sfaction
         when (mleader == Nothing) $
           tellCmdAtomic $ LeadFactionA side Nothing (Just $ head laid)
-  entryPoss <- rndToAction $ findEntryPoss cops lvl (length needInitialCrew)
-  mapM_ initialHeroes $ zip3 needInitialCrew entryPoss heroNames
+  mapM_ initialHeroes arenas
 
 -- * Assorted helper functions
 

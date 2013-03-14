@@ -3,7 +3,7 @@
 -- as the game progresses.
 module Game.LambdaHack.Level
   ( -- * Dungeon
-    LevelId, Dungeon, initialLevel, ascendInBranch
+    LevelId, Dungeon, ascendInBranch
     -- * The @Level@ type and its components
   , SmellMap, SecretMap, ItemFloor, TileMap
   , Level(..)
@@ -36,9 +36,6 @@ import Game.LambdaHack.Utils.Assert
 
 -- | The complete dungeon is a map from level names to levels.
 type Dungeon = EM.EnumMap LevelId Level
-
-initialLevel :: LevelId
-initialLevel = toEnum 1
 
 -- | Levels in the current branch @k@ shallower than the current.
 ascendInBranch :: Dungeon -> LevelId -> Int -> [LevelId]
