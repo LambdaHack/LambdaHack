@@ -457,5 +457,4 @@ cfgDumpSer aid = do
             <+> T.pack fn <> "."
   dumpCfg fn
   -- Wait with confirmation until saved; tell where the file is.
-  -- TODO: show abort message to the current client, not all clients
   abortWith fid msg

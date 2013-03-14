@@ -129,7 +129,7 @@ splitText' w xs
   | w >= T.length xs = [xs]  -- no problem, everything fits
   | otherwise =
       let (pre, post) = T.splitAt w xs
-          (ppre, ppost) = T.break (`elem` " .,:;!?") $ T.reverse pre
+          (ppre, ppost) = T.break (== ' ') $ T.reverse pre
           testPost = T.dropWhile isSpace ppost
       in if T.null testPost
          then pre : splitText w post
