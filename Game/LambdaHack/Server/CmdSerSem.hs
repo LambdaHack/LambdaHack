@@ -49,11 +49,8 @@ import Game.LambdaHack.Vector
 
 default (Text)
 
-abortWith :: Monad m => FactionId -> Msg -> WriterT [Atomic] m ()
-abortWith fid msg = tellSfxAtomic $ FailureD fid msg
-
-neverMind :: Monad m => FactionId -> WriterT [Atomic] m ()
-neverMind fid = abortWith fid "never mind"
+tellFailure :: Monad m => FactionId -> Msg -> WriterT [Atomic] m ()
+tellFailure fid msg = tellSfxAtomic $ FailureD fid msg
 
 broadcastCmdAtomic :: MonadActionRO m
                    => (FactionId -> CmdAtomic) -> WriterT [Atomic] m ()
@@ -198,14 +195,15 @@ actorOpenDoor actor dir = do
   lvl <- getsLevel (blid body) id
   let dpos = shift (bpos body) dir  -- the position we act upon
       t = lvl `at` dpos
-  if not (openable cotile lvl dpos) then neverMind (bfaction body)
+  if not (openable cotile lvl dpos) then
+    tellFailure (bfaction body) "never mind"
   else do
     if Tile.hasFeature cotile F.Closable t
-      then abortWith (bfaction body) "already open"
+      then tellFailure (bfaction body) "already open"
       else if not (Tile.hasFeature cotile F.Closable t ||
                    Tile.hasFeature cotile F.Openable t ||
                    Tile.hasFeature cotile F.Hidden t)
-           then neverMind (bfaction body)  -- not doors at all
+           then tellFailure (bfaction body) "never mind"  -- not doors at all
            else triggerSer actor dpos
 
 -- * RunSer
@@ -226,7 +224,7 @@ runSer aid dir = do
       | accessible cops lvl spos tpos ->
           -- Switching positions requires full access.
           displaceActor aid target
-      | otherwise -> abortWith (bfaction sm) "blocked"
+      | otherwise -> tellFailure (bfaction sm) "blocked"
     Nothing
       | accessible cops lvl spos tpos -> do
           tellCmdAtomic $ MoveActorA aid spos tpos
@@ -312,7 +310,7 @@ projectSer source tpos eps iid container = do
       time = btimeDelta `timeAdd` timeNegate timeClip
       bl = bla lxsize lysize eps spos tpos
   case bl of
-    Nothing -> abortWith (bfaction sm) "cannot zap oneself"
+    Nothing -> tellFailure (bfaction sm) "cannot zap oneself"
     Just [] -> assert `failure` (spos, tpos, "project from the edge of level")
     Just path@(pos:_) -> do
       inhabitants <- getsState (posToActor pos arena)
@@ -323,7 +321,7 @@ projectSer source tpos eps iid container = do
           tellCmdAtomic
             $ MoveItemA iid 1 container (CActor projId (InvChar 'a'))
         else
-          abortWith (bfaction sm) "blocked"
+          tellFailure (bfaction sm) "blocked"
 
 -- | Create a projectile actor containing the given missile.
 addProjectile :: MonadServer m
@@ -404,8 +402,8 @@ triggerSer aid dpos = do
                    toTile <- rndToAction $ opick tgroup (const True)
                    tellCmdAtomic $ AlterTileA (blid b) dpos fromTile toTile
 -- TODO: take care of AI using this function (aborts, etc.).
-                 else abortWith (bfaction b) "blocked"  -- by actors
-            else abortWith (bfaction b) "jammed"  -- by items
+                 else tellFailure (bfaction b) "blocked"  -- by actors
+            else tellFailure (bfaction b) "jammed"  -- by items
           _ -> return ()
   mapM_ f $ TileKind.tfeature $ okind $ lvl `at` dpos
 
@@ -457,4 +455,4 @@ cfgDumpSer aid = do
             <+> T.pack fn <> "."
   dumpCfg fn
   -- Wait with confirmation until saved; tell where the file is.
-  abortWith fid msg
+  tellFailure fid msg
