@@ -51,7 +51,7 @@ import Game.LambdaHack.Utils.Assert
 -- every fixed number of time units, e.g., monster generation.
 -- Run the leader and other actors moves. Eventually advance the time
 -- and repeat.
-loopSer :: forall m . (MonadAction m, MonadServerConn m)
+loopSer :: (MonadAction m, MonadServerConn m)
         => DebugModeSer
         -> (CmdSer -> m [Atomic])
         -> (FactionId -> Conn CmdClientUI -> IO ())
@@ -67,39 +67,18 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI cops = do
       -- Set up commandline debug mode
       modifyServer $ \ser -> ser {sdebugNxt}
       gameReset cops
+      initConn sdebugNxt executorUI executorAI
+      execAtomic reinitGame
+      -- Save ASAP in case of crashes and disconnects.
+      saveBkpAll
     Left (gloRaw, ser, _msg) -> do  -- Running a restored game.
       putState $ updateCOps (const cops) gloRaw
       putServer ser {sdebugNxt}
-  -- Set up connections
-  connServer
-  -- Launch clients.
-  launchClients executorUI executorAI
-  -- Init COps and perception according to debug from savegame.
-  debugSerOld <- getsServer sdebugSer
-  modifyState $ updateCOps $ speedupCOps (sallClear debugSerOld)
-  -- Apply debug options that don't need a new game.
-  modifyServer $ \ser ->
-    ser {sdebugSer = (sdebugSer ser) { sniffIn = sniffIn sdebugNxt
-                                     , sniffOut = sniffOut sdebugNxt
-                                     , sallClear = sallClear sdebugNxt
-                                     , stryFov = stryFov sdebugNxt }}
-  -- Set up COps according to new debug.
-  debugSerNew <- getsServer sdebugSer
-  modifyState $ updateCOps $ speedupCOps (sallClear debugSerNew)
-  -- Detect if it's resume or fresh start.
-  quit <- getsServer squit
-  if isJust quit then do  -- game restored from a savefile
-    initPer
-    pers <- getsServer sper
-    execAtomic $ broadcastCmdAtomic $ \fid -> ResumeA fid (pers EM.! fid)
-    modifyServer $ \ser -> ser {squit = Nothing}
-  else do  -- game restarted
-    execAtomic reinitGame
-    -- Save ASAP in case of crashes and disconnects.
-    saveBkpAll
+      initConn sdebugNxt executorUI executorAI
+      pers <- getsServer sper
+      execAtomic $ broadcastCmdAtomic $ \fid -> ResumeA fid (pers EM.! fid)
   -- Loop.
-  let loop :: m ()
-      loop = do
+  let loop = do
         let run arena = handleActors cmdSerSem arena timeZero
             factionArena fac =
               case gleader fac of
@@ -114,6 +93,27 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI cops = do
         execAtomic $ endClip arenas
         endOrLoop loop
   loop
+
+-- | Init connections, clients, debug and perception.
+initConn :: (MonadAction m, MonadServerConn m)
+         => DebugModeSer
+         -> (FactionId -> Conn CmdClientUI -> IO ())
+         -> (FactionId -> Conn CmdClientAI -> IO ())
+         -> m ()
+initConn sdebugNxt executorUI executorAI = do
+  -- Set up connections.
+  connServer
+  -- Launch clients.
+  launchClients executorUI executorAI
+  -- Apply debug options that don't need a new game.
+  modifyServer $ \ser ->
+    ser {sdebugSer = (sdebugSer ser) { sniffIn = sniffIn sdebugNxt
+                                     , sniffOut = sniffOut sdebugNxt
+                                     , sallClear = sallClear sdebugNxt
+                                     , stryFov = stryFov sdebugNxt }}
+  -- Set up COps according to new debug.
+  modifyState $ updateCOps $ speedupCOps (sallClear sdebugNxt)
+  initPer
 
 endClip :: MonadServer m => [LevelId] -> WriterT [Atomic] m ()
 endClip arenas = do
@@ -490,6 +490,7 @@ restartGame loopServer = do
   nH <- nHumans
   when (nH <= 1) $ execAtomic $ broadcastSfxAtomic $ \fid -> FadeoutD fid False
   gameReset cops
+  initPer
   execAtomic reinitGame
   -- Save ASAP in case of crashes and disconnects.
   saveBkpAll
@@ -498,7 +499,6 @@ restartGame loopServer = do
 reinitGame :: MonadServer m => WriterT [Atomic] m ()
 reinitGame = do
   Kind.COps{ coitem=Kind.Ops{okind}, corule } <- getsState scops
-  initPer
   pers <- getsServer sper
   knowMap <- getsServer $ sknowMap . sdebugSer
   -- This state is quite small, fit for transmition to the client.
@@ -607,8 +607,6 @@ populateDungeon = do
           tellCmdAtomic $ LeadFactionA side Nothing (Just $ head laid)
   mapM_ initialHeroes arenas
 
--- * Assorted helper functions
-
 -- | Generate a monster, possibly.
 generateMonster :: MonadServer m => LevelId -> WriterT [Atomic] m ()
 generateMonster arena = do
@@ -665,6 +663,8 @@ findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lstair} k =
       stairPoss = [fst lstair, snd lstair]
   in tryFind stairPoss k
 
+-- TODO: generalize to any list of items (or effects) applied to all actors
+-- every turn. Specify the list per level in config.
 -- TODO: use itemEffect or at least effectSem to get from Regeneration
 -- to HealActorA. Also, Applying an item with Regeneration should do the same
 -- thing, but immediately (and destroy the item).

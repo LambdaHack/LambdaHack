@@ -81,7 +81,6 @@ instance Binary StateServer where
     put sicounter
     put (show srandom)
     put sconfig
-    put squit
     put sdebugSer
   get = do
     sdisco <- get
@@ -92,10 +91,10 @@ instance Binary StateServer where
     sicounter <- get
     g <- get
     sconfig <- get
-    squit <- get
     sdebugSer <- get
     let srandom = read g
         sper = EM.empty
+        squit = Nothing
         sdebugNxt = defDebugModeSer
     return StateServer{..}
 

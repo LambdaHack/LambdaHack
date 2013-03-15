@@ -104,8 +104,8 @@ findGenerator cops Config{configCaves} k depth = do
 
 -- | Freshly generated and not yet populated dungeon.
 data FreshDungeon = FreshDungeon
-  { freshDungeon :: Dungeon  -- ^ maps for all levels
-  , freshDepth   :: Int      -- ^ dungeon depth (can be different than size)
+  { freshDungeon :: !Dungeon  -- ^ maps for all levels
+  , freshDepth   :: !Int      -- ^ dungeon depth (can be different than size)
   }
 
 -- | Generate the dungeon for a new game.
