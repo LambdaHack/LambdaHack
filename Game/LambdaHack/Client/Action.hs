@@ -9,12 +9,13 @@ module Game.LambdaHack.Client.Action
   , MonadClientUI
   , MonadClientConn
   , MonadActionAbort( abortWith, tryWith )
+  , SessionUI(..)
     -- * Various ways to abort action
   , abort, abortIfWith, neverMind
     -- * Abort exception handlers
   , tryRepeatedlyWith, tryIgnore, tryWithSlide
     -- * Executing actions
-  , executorCli, exeFrontend
+  , executorCli, startup, mkConfigUI
     -- * Accessors to the game session Reader and the Perception Reader(-like)
   , askBinding, getPerFid
     -- * History and report
@@ -386,32 +387,6 @@ writeConnFromClient :: (MonadClient m, MonadClientConn c m) => CmdSer -> m ()
 writeConnFromClient cmds = do
   toServer <- getsConn toServer
   liftIO $ atomically $ writeTQueue toServer cmds
-
--- | Wire together game content, the main loop of game clients,
--- the main game loop assigned to this frontend (possibly containing
--- the server loop, if the whole game runs in one process),
--- UI config and the definitions of game commands.
-exeFrontend :: Kind.COps
-            -> (SessionUI -> State -> StateClient -> Conn CmdClientUI -> IO ())
-            -> (SessionUI -> State -> StateClient -> Conn CmdClientAI -> IO ())
-            -> ((FactionId -> Conn CmdClientUI -> IO ()) ->
-                (FactionId -> Conn CmdClientAI -> IO ()) -> IO ())
-            -> IO ()
-exeFrontend cops@Kind.COps{corule} exeClientUI exeClientAI exeServer = do
-  -- UI config reloaded at each client start.
-  sconfigUI <- mkConfigUI corule
-  smvarUI <- newEmptyMVar
-  let !sbinding = stdBinding sconfigUI  -- evaluate to check for errors
-      font = configFont sconfigUI
-  defHist <- defHistory
-  let cli = defStateClient defHist sconfigUI
-      loc = updateCOps (const cops) emptyState
-      executorAI _sfs fid =
-        let noSession = assert `failure` fid
-        in exeClientAI noSession loc (cli fid True)
-      executorUI sfs fid =
-        exeClientUI SessionUI{..} loc (cli fid False)
-  startup font $ \sfs -> exeServer (executorUI sfs) (executorAI sfs)
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: MonadClient m => Rnd a -> m a
