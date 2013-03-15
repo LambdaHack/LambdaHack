@@ -151,6 +151,7 @@ library
                       Game.LambdaHack.Server.LoopAction,
                       Game.LambdaHack.Server.CmdAtomicSend,
                       Game.LambdaHack.Server.CmdSerSem,
+                      Game.LambdaHack.Server.StartAction,
                       Game.LambdaHack.Server.State,
                       Game.LambdaHack.State,
                       Game.LambdaHack.Tile,

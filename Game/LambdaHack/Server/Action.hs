@@ -17,29 +17,32 @@ module Game.LambdaHack.Server.Action
   , rndToAction, resetFidPerception, getPerFid
   ) where
 
+import Control.Concurrent
+import Control.Concurrent.STM (TQueue, atomically, newTQueueIO)
+import qualified Control.Concurrent.STM as STM
+import Control.Exception (finally)
 import Control.Monad
+import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
-import System.Time
-import System.IO.Unsafe (unsafePerformIO)
-import Control.Exception (finally)
-import qualified System.Random as R
-import qualified Control.Monad.State as St
-import Control.Concurrent.STM (TQueue, newTQueueIO, atomically)
-import qualified Control.Concurrent.STM as STM
-import Control.Concurrent
 import Data.Text (Text)
 import qualified Data.Text.IO as T
 import System.IO (stderr)
+import System.IO.Unsafe (unsafePerformIO)
+import qualified System.Random as R
+import System.Time
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.CmdCli
+import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
+import Game.LambdaHack.Random
 import Game.LambdaHack.Server.Action.ActionClass
 import Game.LambdaHack.Server.Action.ActionType (executorSer)
 import qualified Game.LambdaHack.Server.Action.ConfigIO as ConfigIO
@@ -49,12 +52,9 @@ import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.State
-import Game.LambdaHack.Utils.Assert
 import qualified Game.LambdaHack.Tile as Tile
-import Game.LambdaHack.Random
-import Game.LambdaHack.Level
 import Game.LambdaHack.Time
-import Game.LambdaHack.CmdSer
+import Game.LambdaHack.Utils.Assert
 
 default (Text)
 
@@ -248,10 +248,9 @@ forkChild io = do
 -- 7.6  forkFinally io (\_ -> putMVar mvar ())
 
 -- | Compute and insert auxiliary optimized components into game content,
--- to be used in time-critical sections of the code. Also, evaluate content
--- to check consistency.
+-- to be used in time-critical sections of the code.
 speedupCOps :: Bool -> Kind.COps -> Kind.COps
-speedupCOps allClear !copsSlow@Kind.COps{cotile=tile} =
+speedupCOps allClear copsSlow@Kind.COps{cotile=tile} =
   let ospeedup = Tile.speedup allClear tile
       cotile = tile {Kind.ospeedup}
   in copsSlow {Kind.cotile}
