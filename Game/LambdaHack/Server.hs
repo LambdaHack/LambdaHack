@@ -9,9 +9,9 @@ import Control.Monad.Writer.Strict (WriterT, execWriterT)
 import System.Environment (getArgs)
 
 import Game.LambdaHack.Action
+import Game.LambdaHack.AtomicCmd
 import Game.LambdaHack.Client
 import Game.LambdaHack.Client.Action
-import Game.LambdaHack.CmdAtomic
 import Game.LambdaHack.CmdCli
 import Game.LambdaHack.CmdSer
 import qualified Game.LambdaHack.Kind as Kind

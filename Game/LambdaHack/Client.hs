@@ -12,8 +12,8 @@ import Data.Maybe
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Client.Action
+import Game.LambdaHack.Client.AtomicSemCli
 import Game.LambdaHack.Client.Binding
-import Game.LambdaHack.Client.CmdAtomicCli
 import Game.LambdaHack.Client.CmdCliSem
 import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.LoopAction

@@ -16,7 +16,7 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.CmdAtomic
+import Game.LambdaHack.AtomicCmd
 import Game.LambdaHack.CmdCli
 import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Content.ActorKind
@@ -31,7 +31,7 @@ import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import Game.LambdaHack.Random
 import Game.LambdaHack.Server.Action hiding (sendUpdateAI, sendUpdateUI)
-import Game.LambdaHack.Server.CmdAtomicSend
+import Game.LambdaHack.Server.AtomicSemSer
 import Game.LambdaHack.Server.CmdSerSem
 import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.StartAction

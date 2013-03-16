@@ -15,8 +15,8 @@ import Data.Text (Text)
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.CmdAtomic
-import Game.LambdaHack.CmdAtomicSem
+import Game.LambdaHack.AtomicCmd
+import Game.LambdaHack.AtomicSem
 import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Faction
 import Game.LambdaHack.Msg

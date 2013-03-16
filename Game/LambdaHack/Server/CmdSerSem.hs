@@ -24,7 +24,7 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.CmdAtomic
+import Game.LambdaHack.AtomicCmd
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind as TileKind

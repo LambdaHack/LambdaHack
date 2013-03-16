@@ -10,7 +10,7 @@
 -- way to affect the basic game state (@State@).
 --
 -- See https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture.
-module Game.LambdaHack.CmdAtomic
+module Game.LambdaHack.AtomicCmd
   ( tellCmdAtomic, tellSfxAtomic
   , Atomic(..), CmdAtomic(..), SfxAtomic(..), HitAtomic(..)
   , undoCmdAtomic, undoSfxAtomic, undoAtomic

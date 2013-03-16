@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Semantics of atomic commands shared by client and server.
 -- See https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture.
-module Game.LambdaHack.CmdAtomicSem
+module Game.LambdaHack.AtomicSem
   ( cmdAtomicSem
   , PosAtomic(..), posCmdAtomic, posSfxAtomic  -- for debug, defined here
   ) where
@@ -14,7 +14,7 @@ import Data.Maybe
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.CmdAtomic
+import Game.LambdaHack.AtomicCmd
 import qualified Game.LambdaHack.Color as Color
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind as TileKind

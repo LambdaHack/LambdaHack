@@ -14,7 +14,7 @@ import Data.Maybe
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.CmdAtomic
+import Game.LambdaHack.AtomicCmd
 import Game.LambdaHack.CmdCli
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind

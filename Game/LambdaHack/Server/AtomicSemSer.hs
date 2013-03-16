@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings, RankNTypes #-}
 -- | Sending atomic commands to clients and executing them on the server.
 -- See https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture.
-module Game.LambdaHack.Server.CmdAtomicSend
+module Game.LambdaHack.Server.AtomicSemSer
   ( atomicSendSem
   ) where
 
@@ -14,8 +14,8 @@ import Data.Text (Text)
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.CmdAtomic
-import Game.LambdaHack.CmdAtomicSem
+import Game.LambdaHack.AtomicCmd
+import Game.LambdaHack.AtomicSem
 import Game.LambdaHack.CmdCli
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Kind as Kind

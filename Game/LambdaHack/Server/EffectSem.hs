@@ -22,7 +22,7 @@ import Data.Text (Text)
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
-import Game.LambdaHack.CmdAtomic
+import Game.LambdaHack.AtomicCmd
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
 import qualified Game.LambdaHack.Effect as Effect
