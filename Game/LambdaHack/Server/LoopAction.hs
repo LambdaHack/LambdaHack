@@ -92,9 +92,8 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
 endClip :: MonadServer m => [LevelId] -> WriterT [Atomic] m ()
 endClip arenas = do
   quitS <- getsServer squit
-  if quitS == Just True then
-    handleSave True
-  else do
+  -- If saving, don't age levels, since possibly not all actors have moved.
+  unless (quitS == Just True) $ do
     time <- getsState stime
     let clipN = time `timeFit` timeClip
         cinT = let r = timeTurn `timeFit` timeClip
@@ -376,23 +375,6 @@ advanceTime aid = do
         t = ticksPerMeter speed
     return [CmdAtomic $ AgeActorA aid t]
 
--- | Save game, perhaps display final screens, exit.
-handleSave :: MonadServer m => Bool -> WriterT [Atomic] m ()
-handleSave _q = do
-      -- Save and display in parallel.
-    --      mv <- liftIO newEmptyMVar
-    --      liftIO $ void
-    --        $ forkIO (Save.saveGameSer config s ser `finally` putMVar mv ())
-    -- 7.6        $ forkFinally (Save.saveGameSer config s ser) (putMVar mv ())
-    --      tryIgnore $ do
-    --        handleScores False Camping total
-    --        broadcastUI [] $ MoreFullCli "See you soon, stronger and braver!"
-            -- TODO: show the above
-    tellCmdAtomic SaveExitA
-    saveGameSer
-    --      liftIO $ takeMVar mv  -- wait until saved
-          -- Do nothing, that is, quit the game loop.
-
 -- | Continue or restart or exit the game.
 endOrLoop :: (MonadAction m, MonadServerConn m)
           => m () -> m ()
@@ -403,7 +385,20 @@ endOrLoop loopServer = do
   let f (_, Faction{gquit=Nothing}) = Nothing
       f (fid, Faction{gquit=Just quit}) = Just (fid, quit)
   case mapMaybe f $ EM.assocs faction of
-    _ | quitS == Just True -> return ()  -- save and exit
+    _ | quitS == Just True -> do  -- save and exit
+    -- Save and display in parallel.
+    --      mv <- liftIO newEmptyMVar
+    --      liftIO $ void
+    --        $ forkIO (Save.saveGameSer config s ser `finally` putMVar mv ())
+    -- 7.6        $ forkFinally (Save.saveGameSer config s ser) (putMVar mv ())
+    --      tryIgnore $ do
+    --        handleScores False Camping total
+    --        broadcastUI [] $ MoreFullCli "See you soon, stronger and braver!"
+            -- TODO: show the above
+      execAtomic $ tellCmdAtomic SaveExitA
+      saveGameSer
+    --      liftIO $ takeMVar mv  -- wait until saved
+          -- Do nothing, that is, quit the game loop.
     [] -> loopServer  -- just continue
     (fid, quit) : _ -> do
       fac <- getsState $ (EM.! fid) . sfaction
