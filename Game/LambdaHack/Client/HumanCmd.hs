@@ -1,9 +1,9 @@
 {-# LANGUAGE DeriveDataTypeable, GADTs, OverloadedStrings, StandaloneDeriving
              #-}
 -- | Abstract syntax human player commands.
-module Game.LambdaHack.Client.CmdHuman
-  ( CmdHuman(..)
-  , majorCmdHuman, minorCmdHuman, noRemoteCmdHuman, cmdDescription
+module Game.LambdaHack.Client.HumanCmd
+  ( HumanCmd(..)
+  , majorHumanCmd, minorHumanCmd, noRemoteHumanCmd, cmdDescription
   ) where
 
 import Data.Text (Text)
@@ -15,7 +15,7 @@ import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.VectorXY
 
 -- | Abstract syntax of player commands.
-data CmdHuman =
+data HumanCmd =
     -- These usually take time.
     Move VectorXY
   | Run VectorXY
@@ -50,8 +50,8 @@ data CmdHuman =
   deriving (Show, Read, Eq, Ord)
 
 -- | Major commands land on the first page of command help.
-majorCmdHuman :: CmdHuman -> Bool
-majorCmdHuman cmd = case cmd of
+majorHumanCmd :: HumanCmd -> Bool
+majorHumanCmd cmd = case cmd of
   Pickup        -> True
   Drop          -> True
   Project{}     -> True
@@ -66,8 +66,8 @@ majorCmdHuman cmd = case cmd of
   _             -> False
 
 -- | Minor commands land on the second page of command help.
-minorCmdHuman :: CmdHuman -> Bool
-minorCmdHuman cmd = case cmd of
+minorHumanCmd :: HumanCmd -> Bool
+minorHumanCmd cmd = case cmd of
   CfgDump     -> True
   MemberCycle -> True
   MemberBack  -> True
@@ -86,8 +86,8 @@ minorCmdHuman cmd = case cmd of
 -- Not that movement commands are not included, because they take time
 -- on normal levels, but don't take time on remote levels, that is,
 -- in targeting mode.
-noRemoteCmdHuman :: CmdHuman -> Bool
-noRemoteCmdHuman cmd = case cmd of
+noRemoteHumanCmd :: HumanCmd -> Bool
+noRemoteHumanCmd cmd = case cmd of
   Wait          -> True
   Pickup        -> True
   Drop          -> True
@@ -98,7 +98,7 @@ noRemoteCmdHuman cmd = case cmd of
   _             -> False
 
 -- | Description of player commands.
-cmdDescription :: CmdHuman -> Text
+cmdDescription :: HumanCmd -> Text
 cmdDescription cmd = case cmd of
   Move{}      -> "move"
   Run{}       -> "run"

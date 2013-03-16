@@ -13,7 +13,7 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Client.Action
-import Game.LambdaHack.Client.CmdHuman
+import Game.LambdaHack.Client.HumanCmd
 import Game.LambdaHack.Client.HumanGlobal
 import Game.LambdaHack.Client.HumanLocal
 import Game.LambdaHack.Client.State
@@ -30,15 +30,15 @@ import Game.LambdaHack.VectorXY
 -- invoked in targeting mode on a remote level (level different than
 -- the level of the selected hero).
 cmdHumanSem :: (MonadActionAbort m, MonadClientUI m)
-            => CmdHuman -> WriterT Slideshow m (Maybe CmdSer)
+            => HumanCmd -> WriterT Slideshow m (Maybe CmdSer)
 cmdHumanSem cmd = do
   arena <- getArenaUI
-  when (noRemoteCmdHuman cmd) $ checkCursor arena
+  when (noRemoteHumanCmd cmd) $ checkCursor arena
   cmdAction cmd
 
 -- | The basic action for a command and whether it takes time.
 cmdAction :: (MonadActionAbort m, MonadClientUI m)
-          => CmdHuman -> WriterT Slideshow m (Maybe CmdSer)
+          => HumanCmd -> WriterT Slideshow m (Maybe CmdSer)
 cmdAction cmd = case cmd of
   Move v -> moveHuman v
   Run v -> runHuman v

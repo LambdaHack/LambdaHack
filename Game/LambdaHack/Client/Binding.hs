@@ -14,25 +14,25 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Tuple (swap)
 
-import Game.LambdaHack.Client.CmdHuman
 import Game.LambdaHack.Client.Config
+import Game.LambdaHack.Client.HumanCmd
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Msg
 
 -- | Bindings and other information about human player commands.
 data Binding = Binding
-  { kcmd    :: M.Map K.KM (Text, Bool, CmdHuman)
+  { kcmd    :: M.Map K.KM (Text, Bool, HumanCmd)
                                      -- ^ binding keys to commands
   , kmacro  :: M.Map K.Key K.Key     -- ^ macro map
   , kmajor  :: [K.KM]                -- ^ major commands
   , kminor  :: [K.KM]                -- ^ minor commands
-  , krevMap :: M.Map CmdHuman K.KM  -- ^ from cmds to their main keys
+  , krevMap :: M.Map HumanCmd K.KM  -- ^ from cmds to their main keys
   }
 
 -- | The associaction of commands to keys defined in config.
-configCmds :: ConfigUI -> [(K.KM, CmdHuman)]
+configCmds :: ConfigUI -> [(K.KM, HumanCmd)]
 configCmds ConfigUI{configCommands} =
-  let mkCommand (key, def) = ((key, K.NoModifier), read def :: CmdHuman)
+  let mkCommand (key, def) = ((key, K.NoModifier), read def :: HumanCmd)
   in map mkCommand configCommands
 
 -- | Binding of keys to movement and other standard commands,
@@ -49,14 +49,14 @@ stdBinding !config@ConfigUI{configMacros} =
         ++ [ ((K.Char 'a', K.Control), DebugArea)
            , ((K.Char 's', K.Control), DebugSmell)
            ]
-      mkDescribed cmd = (cmdDescription cmd, noRemoteCmdHuman cmd, cmd)
+      mkDescribed cmd = (cmdDescription cmd, noRemoteHumanCmd cmd, cmd)
       mkCommand (km, def) = (km, mkDescribed def)
       semList = L.map mkCommand cmdList
   in Binding
   { kcmd = M.fromList semList
   , kmacro
-  , kmajor = L.map fst $ L.filter (majorCmdHuman . snd) cmdList
-  , kminor = L.map fst $ L.filter (minorCmdHuman . snd) cmdList
+  , kmajor = L.map fst $ L.filter (majorHumanCmd . snd) cmdList
+  , kminor = L.map fst $ L.filter (minorHumanCmd . snd) cmdList
   , krevMap = M.fromList $ map swap cmdList
   }
 

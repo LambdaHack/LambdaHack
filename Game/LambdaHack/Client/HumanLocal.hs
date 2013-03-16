@@ -1,6 +1,6 @@
 {-# LANGUAGE ExtendedDefaultRules, OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
--- | Semantics of 'CmdHuman.Cmd' client commands that do not return
+-- | Semantics of 'HumanCmd' client commands that do not return
 -- server commands. None of such commands takes game time.
 -- TODO: document
 module Game.LambdaHack.Client.HumanLocal
@@ -37,7 +37,7 @@ import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Binding
-import qualified Game.LambdaHack.Client.CmdHuman as CmdHuman
+import qualified Game.LambdaHack.Client.HumanCmd as HumanCmd
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Effect as Effect
@@ -451,15 +451,15 @@ displayMainMenu = do
             versionLen = length version
         in init art ++ [take (80 - versionLen) (last art) ++ version]
       kds =  -- key-description pairs
-        let showKD cmd key = (showT key, CmdHuman.cmdDescription cmd)
+        let showKD cmd key = (showT key, HumanCmd.cmdDescription cmd)
             revLookup cmd =
               maybe ("", "") (showKD cmd . fst) $ M.lookup cmd krevMap
-            cmds = [ CmdHuman.GameSave,
-                     CmdHuman.GameExit,
-                     CmdHuman.GameRestart,
-                     CmdHuman.Help
+            cmds = [ HumanCmd.GameSave,
+                     HumanCmd.GameExit,
+                     HumanCmd.GameRestart,
+                     HumanCmd.Help
                    ]
-        in map revLookup cmds ++ [(fst (revLookup CmdHuman.Clear), "continue")]
+        in map revLookup cmds ++ [(fst (revLookup HumanCmd.Clear), "continue")]
       bindings =  -- key bindings to display
         let bindingLen = 25
             fmt (k, d) =
