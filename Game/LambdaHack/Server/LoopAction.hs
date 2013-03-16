@@ -17,8 +17,7 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.AtomicCmd
-import Game.LambdaHack.CmdCli
-import Game.LambdaHack.CmdSer
+import Game.LambdaHack.ClientCmd
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Faction
@@ -32,10 +31,11 @@ import Game.LambdaHack.Point
 import Game.LambdaHack.Random
 import Game.LambdaHack.Server.Action hiding (sendUpdateAI, sendUpdateUI)
 import Game.LambdaHack.Server.AtomicSemSer
-import Game.LambdaHack.Server.CmdSerSem
 import Game.LambdaHack.Server.EffectSem
+import Game.LambdaHack.Server.ServerSem
 import Game.LambdaHack.Server.StartAction
 import Game.LambdaHack.Server.State
+import Game.LambdaHack.ServerCmd
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Time

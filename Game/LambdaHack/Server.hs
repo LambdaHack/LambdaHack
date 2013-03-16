@@ -12,14 +12,14 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.AtomicCmd
 import Game.LambdaHack.Client
 import Game.LambdaHack.Client.Action
-import Game.LambdaHack.CmdCli
-import Game.LambdaHack.CmdSer
+import Game.LambdaHack.ClientCmd
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Server.Action
-import Game.LambdaHack.Server.CmdSerSem
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.LoopAction
+import Game.LambdaHack.Server.ServerSem
 import Game.LambdaHack.Server.State
+import Game.LambdaHack.ServerCmd
 
 -- | The semantics of server commands.
 cmdSerSem :: MonadServer m => CmdSer -> m [Atomic]

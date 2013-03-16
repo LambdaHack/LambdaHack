@@ -10,7 +10,7 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.AtomicCmd
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.CmdCli
+import Game.LambdaHack.ClientCmd
 import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert

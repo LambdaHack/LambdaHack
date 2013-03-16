@@ -17,9 +17,9 @@ import Game.LambdaHack.Client.CmdHuman
 import Game.LambdaHack.Client.HumanGlobal
 import Game.LambdaHack.Client.HumanLocal
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
+import Game.LambdaHack.ServerCmd
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 import Game.LambdaHack.VectorXY

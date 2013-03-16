@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Semantics of most 'CmdClientAI' client commands.
-module Game.LambdaHack.Client.CmdCliSem where
+module Game.LambdaHack.Client.ClientSem where
 
 import Control.Monad.Writer.Strict (WriterT, runWriterT)
 import qualified Data.EnumMap.Strict as EM
@@ -21,12 +21,12 @@ import Game.LambdaHack.Client.RunAction
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.Strategy
 import Game.LambdaHack.Client.StrategyAction
-import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Content.StrategyKind
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Random
+import Game.LambdaHack.ServerCmd
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector

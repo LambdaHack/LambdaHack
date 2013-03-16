@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 -- | Abstract syntax of client commands.
 -- See https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture.
-module Game.LambdaHack.CmdCli
+module Game.LambdaHack.ClientCmd
   ( CmdClientAI(..), CmdClientUI(..)
   , debugCmdClientAI, debugCmdClientUI, debugAid
   , Conn(..), ConnFaction, ConnDict
@@ -17,9 +17,9 @@ import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.AtomicCmd
 import Game.LambdaHack.AtomicSem
-import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Faction
 import Game.LambdaHack.Msg
+import Game.LambdaHack.ServerCmd
 import Game.LambdaHack.State
 
 -- | Abstract syntax of client commands that don't use the UI.

@@ -16,7 +16,7 @@ import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.AtomicCmd
 import Game.LambdaHack.AtomicSem
-import Game.LambdaHack.CmdCli
+import Game.LambdaHack.ClientCmd
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level

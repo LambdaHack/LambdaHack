@@ -14,11 +14,11 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.AtomicSemCli
 import Game.LambdaHack.Client.Binding
-import Game.LambdaHack.Client.CmdCliSem
+import Game.LambdaHack.Client.ClientSem
 import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.LoopAction
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.CmdCli
+import Game.LambdaHack.ClientCmd
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.State

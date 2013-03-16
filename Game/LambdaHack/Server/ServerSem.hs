@@ -9,7 +9,7 @@
 -- are already issued by the point an expression is evaluated, they do not
 -- influence the outcome of the evaluation.
 -- TODO: document
-module Game.LambdaHack.Server.CmdSerSem where
+module Game.LambdaHack.Server.ServerSem where
 
 import Control.Monad
 import Control.Monad.Writer.Strict (WriterT)

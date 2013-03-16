@@ -27,7 +27,6 @@ import Game.LambdaHack.Client.HumanLocal
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.RunAction
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.CmdSer
 import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Feature as F
@@ -36,6 +35,7 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Point
+import Game.LambdaHack.ServerCmd
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert

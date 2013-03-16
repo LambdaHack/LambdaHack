@@ -60,8 +60,7 @@ import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.Draw
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.CmdCli
-import Game.LambdaHack.CmdSer
+import Game.LambdaHack.ClientCmd
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Kind as Kind
@@ -70,6 +69,7 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import Game.LambdaHack.Random
+import Game.LambdaHack.ServerCmd
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
 

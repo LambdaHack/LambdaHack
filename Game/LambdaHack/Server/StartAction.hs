@@ -15,7 +15,7 @@ import Data.Maybe
 import Game.LambdaHack.Action
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.AtomicCmd
-import Game.LambdaHack.CmdCli
+import Game.LambdaHack.ClientCmd
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
@@ -27,11 +27,11 @@ import Game.LambdaHack.Level
 import Game.LambdaHack.Point
 import Game.LambdaHack.Random
 import Game.LambdaHack.Server.Action hiding (sendUpdateAI, sendUpdateUI)
-import Game.LambdaHack.Server.CmdSerSem
 import Game.LambdaHack.Server.Config
 import qualified Game.LambdaHack.Server.DungeonGen as DungeonGen
 import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.Fov
+import Game.LambdaHack.Server.ServerSem
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile

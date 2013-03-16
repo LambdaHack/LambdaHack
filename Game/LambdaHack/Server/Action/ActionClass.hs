@@ -9,7 +9,7 @@ import Control.Monad.Writer.Strict (WriterT, lift)
 import Data.Monoid
 
 import Game.LambdaHack.Action
-import Game.LambdaHack.CmdCli
+import Game.LambdaHack.ClientCmd
 import Game.LambdaHack.Server.State
 
 class MonadActionRO m => MonadServer m where

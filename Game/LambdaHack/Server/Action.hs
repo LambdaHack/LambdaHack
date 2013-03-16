@@ -34,8 +34,8 @@ import System.Time
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
-import Game.LambdaHack.CmdCli
-import Game.LambdaHack.CmdSer
+import Game.LambdaHack.ClientCmd
+import Game.LambdaHack.ServerCmd
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Faction
 import qualified Game.LambdaHack.Kind as Kind
