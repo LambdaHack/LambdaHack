@@ -2,15 +2,15 @@
 -- | Terrain tiles for LambdaHack.
 module Content.TileKind ( cdefs ) where
 
-import Game.LambdaHack.CDefs
 import Game.LambdaHack.Color
 import Game.LambdaHack.Content.TileKind
+import Game.LambdaHack.ContentDef
 import qualified Game.LambdaHack.Effect as Effect
 import Game.LambdaHack.Feature
 import qualified Game.LambdaHack.Random as Random
 
-cdefs :: CDefs TileKind
-cdefs = CDefs
+cdefs :: ContentDef TileKind
+cdefs = ContentDef
   { getSymbol = tsymbol
   , getName = tname
   , getFreq = tfreq

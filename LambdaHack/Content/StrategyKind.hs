@@ -3,11 +3,11 @@
 module Content.StrategyKind ( cdefs ) where
 
 import Game.LambdaHack.Ability
-import Game.LambdaHack.CDefs
 import Game.LambdaHack.Content.StrategyKind
+import Game.LambdaHack.ContentDef
 
-cdefs :: CDefs StrategyKind
-cdefs = CDefs
+cdefs :: ContentDef StrategyKind
+cdefs = ContentDef
   { getSymbol = ssymbol
   , getName = sname
   , getFreq = sfreq

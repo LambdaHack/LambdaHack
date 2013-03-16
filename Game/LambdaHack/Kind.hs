@@ -20,7 +20,6 @@ import qualified Data.Text as T
 import qualified Data.Word as Word
 import Game.LambdaHack.Msg
 
-import Game.LambdaHack.CDefs
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.FactionKind
@@ -29,6 +28,7 @@ import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.StrategyKind
 import Game.LambdaHack.Content.TileKind
+import Game.LambdaHack.ContentDef
 import Game.LambdaHack.Misc
 import Game.LambdaHack.Random
 import Game.LambdaHack.Utils.Assert
@@ -72,8 +72,8 @@ data Ops a = Ops
 
 -- | Create content operations for type @a@ from definition of content
 -- of type @a@.
-createOps :: forall a. Show a => CDefs a -> Ops a
-createOps CDefs{getSymbol, getName, getFreq, content, validate} =
+createOps :: forall a. Show a => ContentDef a -> Ops a
+createOps ContentDef{getSymbol, getName, getFreq, content, validate} =
   assert (Id (fromIntegral $ length content) < sentinelId) $
   let kindAssocs :: [(Word.Word8, a)]
       kindAssocs = L.zip [0..] content

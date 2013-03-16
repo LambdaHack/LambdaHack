@@ -2,15 +2,15 @@
 -- | Weapons and treasure for LambdaHack.
 module Content.ItemKind ( cdefs ) where
 
-import Game.LambdaHack.CDefs
 import Game.LambdaHack.Color
 import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.ContentDef
 import Game.LambdaHack.Effect
 import Game.LambdaHack.Flavour
 import Game.LambdaHack.Random
 
-cdefs :: CDefs ItemKind
-cdefs = CDefs
+cdefs :: ContentDef ItemKind
+cdefs = ContentDef
   { getSymbol = isymbol
   , getName = iname
   , getFreq = ifreq

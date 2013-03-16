@@ -3,14 +3,14 @@
 module Content.ActorKind ( cdefs ) where
 
 import Game.LambdaHack.Ability
-import Game.LambdaHack.CDefs
 import Game.LambdaHack.Color
 import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.ContentDef
 import Game.LambdaHack.Random
 import Game.LambdaHack.Time
 
-cdefs :: CDefs ActorKind
-cdefs = CDefs
+cdefs :: ContentDef ActorKind
+cdefs = ContentDef
   { getSymbol = asymbol
   , getName = aname
   , getFreq = afreq

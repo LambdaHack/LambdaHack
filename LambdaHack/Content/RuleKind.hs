@@ -1,20 +1,19 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE CPP, QuasiQuotes #-}
+{-# LANGUAGE CPP, OverloadedStrings, QuasiQuotes #-}
 -- | Game rules and assorted game setup data for LambdaHack.
 module Content.RuleKind ( cdefs ) where
 
 -- Cabal
 import qualified Paths_LambdaHack as Self (getDataFileName, version)
 
-import Game.LambdaHack.Vector
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
+import Game.LambdaHack.ContentDef
 import qualified Game.LambdaHack.Feature as F
-import Game.LambdaHack.CDefs
+import Game.LambdaHack.Vector
 import Multiline
 
-cdefs :: CDefs RuleKind
-cdefs = CDefs
+cdefs :: ContentDef RuleKind
+cdefs = ContentDef
   { getSymbol = rsymbol
   , getName = rname
   , getFreq = rfreq

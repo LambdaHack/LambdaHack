@@ -2,11 +2,11 @@
 -- | Game factions (heroes, enemies, NPCs, etc.) for LambdaHack.
 module Content.FactionKind ( cdefs ) where
 
-import Game.LambdaHack.CDefs
 import Game.LambdaHack.Content.FactionKind
+import Game.LambdaHack.ContentDef
 
-cdefs :: CDefs FactionKind
-cdefs = CDefs
+cdefs :: ContentDef FactionKind
+cdefs = ContentDef
   { getSymbol = fsymbol
   , getName = fname
   , getFreq = ffreq
