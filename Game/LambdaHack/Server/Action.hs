@@ -13,7 +13,7 @@ module Game.LambdaHack.Server.Action
     -- * Communication
   , sendUpdateUI, sendQueryUI, sendUpdateAI, sendQueryAI
     -- * Assorted primitives
-  , saveGameSer, saveGameBkp, dumpCfg, mkConfigRules, handleScores
+  , saveGameSer, saveGameBkp, dumpCfg, mkConfigRules, registerScore
   , rndToAction, resetFidPerception, getPerFid
   ) where
 
@@ -30,7 +30,6 @@ import qualified Data.Text.IO as T
 import System.IO (stderr)
 import System.IO.Unsafe (unsafePerformIO)
 import qualified System.Random as R
-import System.Time
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -46,14 +45,13 @@ import Game.LambdaHack.Random
 import Game.LambdaHack.Server.Action.ActionClass
 import Game.LambdaHack.Server.Action.ActionType (executorSer)
 import qualified Game.LambdaHack.Server.Action.ConfigIO as ConfigIO
-import Game.LambdaHack.Server.Action.HighScore (register)
+import Game.LambdaHack.HighScore
 import qualified Game.LambdaHack.Server.Action.Save as Save
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
-import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
 
 default (Text)
@@ -104,23 +102,16 @@ dumpCfg fn = do
   config <- getsServer sconfig
   liftIO $ ConfigIO.dump config fn
 
--- TODO: show this for all humans and only humans.
--- | Handle current score and display it with the high scores.
--- Aborts if display of the scores was interrupted by the user.
---
--- Warning: scores are shown during the game,
--- so we should be careful not to leak secret information through them
--- (e.g., the nature of the items through the total worth of inventory).
-handleScores :: MonadServer m => FactionId -> Bool -> Status -> Int -> m ()
-handleScores _fid write status total =
-  when (total /= 0) $ do
-    config <- getsServer sconfig
--- TODO: sum over all levels?    time <- getsState getTime
-    curDate <- liftIO getClockTime
-    _slides <-
-      liftIO $ register config write total timeZero curDate status
-    go <- error "handleScores" -- sendQueryUI fid $ ShowSlidesUI slides
-    when (not go) skip  -- abort
+-- | Generate a new score and possibly save it.
+registerScore :: MonadServer m
+              => Bool -> Status -> Int -> m (Maybe (ScoreTable, Int))
+registerScore write status total =
+  if total == 0 then return Nothing
+  else do
+    configScoresFile <- getsServer $ configScoresFile . sconfig
+    time <- getsState stime
+    (table, pos) <- liftIO $ register configScoresFile write total time status
+    return $ Just (table, pos)
 
 writeTQueueAI :: MonadServerConn m => CmdClientAI -> TQueue CmdClientAI -> m ()
 writeTQueueAI cmd toClient = do

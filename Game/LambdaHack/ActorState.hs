@@ -77,6 +77,10 @@ nearbyFreePoints cotile start lid s =
   in filter good ps
 
 -- | Calculate loot's worth for heroes on the current level.
+--
+-- Warning: scores are shown during the game, so when the server calculates
+-- then, we should be careful not to leak secret information
+-- (e.g., the nature of the items through the total worth of inventory).
 calculateTotal :: FactionId -> LevelId -> State -> (ItemBag, Int)
 calculateTotal fid lid s =
   let bag = EM.unionsWith (+)

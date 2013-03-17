@@ -176,7 +176,7 @@ coverA lid p iid ik = do
 
 -- TODO: show "X requests gave save and exit" and/or
 -- "See you soon, stronger and braver!", when standalone clients are there.
--- Then also show scores for all clients, not only for X.
+-- Then also show current and high scores to all clients.
 saveExitA :: MonadClient m => m ()
 saveExitA = do
   recordHistory

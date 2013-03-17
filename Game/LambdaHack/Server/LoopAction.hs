@@ -438,13 +438,14 @@ endOrLoop loopServer = do
       f (fid, Faction{gquit=Just quit}) = Just (fid, quit)
   case mapMaybe f $ EM.assocs faction of
     _ | quitS == Just True -> do  -- save and exit
+--        _mtablePos <- registerScore True status total
       execAtomic $ tellCmdAtomic SaveExitA
       saveGameSer
       -- Do nothing, that is, quit the game loop.
     [] -> loopServer  -- just continue
-    (fid, quit) : _ -> do
+    (fid, quit) : _ -> do  -- TODO: process also the rest of quits
       fac <- getsState $ (EM.! fid) . sfaction
-      _total <- case gleader fac of
+      total <- case gleader fac of
         Nothing -> return 0
         Just leader -> do
           b <- getsState $ getActorBody leader
@@ -453,7 +454,7 @@ endOrLoop loopServer = do
       -- if ending screens should be shown, the other argument describes
       -- the cause of the disruption of game flow.
       case quit of
-        (_showScreens, _status@Killed{}) -> do
+        (_showScreens, status@Killed{}) -> do
 --           -- TODO: rewrite; handle killed faction, if human, mostly ignore if not
 --           nullR <- undefined -- sendQueryCli fid NullReportCli
 --           unless nullR $ do
@@ -466,20 +467,19 @@ endOrLoop loopServer = do
 --               in broadcastUI $ MoreBWUI msg
 --               -- Do nothing, that is, quit the game loop.
 --             )
---             (do
---                when showScreens $ handleScores fid True status total
+          _mtablePos <- registerScore True status total
 --                go <- undefined  -- sendQueryUI fid
 -- --                     $ ConfirmMoreBWUI "Next time will be different."
 --                when (not go) $ abortWith "You could really win this time."
-               restartGame loopServer
-        (_showScreens, _status@Victor) -> do
+          restartGame loopServer
+        (_showScreens, status@Victor) -> do
           -- nullR <- undefined -- sendQueryCli fid NullReportCli
           -- unless nullR $ do
           --   -- Display any leftover report. Suggest it could be the master move.
           --   broadcastUI $ MoreFullUI "Brilliant, wasn't it?"
           -- when showScreens $ do
-          --   tryIgnore $ handleScores fid True status total
           --   broadcastUI $ MoreFullUI "Can it be done better, though?"
+          _mtablePos <- registerScore True status total
           restartGame loopServer
         (_, Restart) -> restartGame loopServer
         (_, Camping) -> assert `failure` (fid, quit)

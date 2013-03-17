@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | High score table operations.
-module Game.LambdaHack.Server.Action.HighScore
-  ( register
+module Game.LambdaHack.HighScore
+  ( ScoreTable, register, slideshow
   ) where
 
 import Control.Monad
@@ -14,7 +14,6 @@ import System.Directory
 import System.Time
 import Text.Printf
 
-import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Faction
 import Game.LambdaHack.Misc
 import Game.LambdaHack.Msg
@@ -30,21 +29,6 @@ data ScoreRecord = ScoreRecord
   , status  :: !Status     -- ^ reason of the game interruption
   }
   deriving (Eq, Ord)
-
-instance Binary ScoreRecord where
-  put (ScoreRecord p n (TOD cs cp) s) = do
-    put p
-    put n
-    put cs
-    put cp
-    put s
-  get = do
-    p <- get
-    n <- get
-    cs <- get
-    cp <- get
-    s <- get
-    return (ScoreRecord p n (TOD cs cp) s)
 
 -- | Show a single high score, from the given ranking in the high score table.
 showScore :: (Int, ScoreRecord) -> [Text]
@@ -75,13 +59,13 @@ type ScoreTable = [ScoreRecord]
 empty :: ScoreTable
 empty = []
 
--- | Save a simple serialized version of the high scores table.
-save :: Config -> ScoreTable -> IO ()
-save Config{configScoresFile} scores = encodeEOF configScoresFile scores
+-- | Save a serialized version of the high scores table.
+save :: FilePath -> ScoreTable -> IO ()
+save configScoresFile scores = encodeEOF configScoresFile $ take 100 scores
 
 -- | Read the high scores table. Return the empty table if no file.
-restore :: Config -> IO ScoreTable
-restore Config{configScoresFile} = do
+restore :: FilePath -> IO ScoreTable
+restore configScoresFile = do
   b <- doesFileExist configScoresFile
   if not b
     then return empty
@@ -91,7 +75,27 @@ restore Config{configScoresFile} = do
 insertPos :: ScoreRecord -> ScoreTable -> (ScoreTable, Int)
 insertPos s h =
   let (prefix, suffix) = L.span (> s) h
+
   in (prefix ++ [s] ++ suffix, L.length prefix + 1)
+
+-- | Generate a new score and possibly save it.
+register :: FilePath   -- ^ the config file
+         -> Bool       -- ^ whether to write or only render
+         -> Int        -- ^ the total score. not halved yet
+         -> Time       -- ^ game time spent
+         -> Status     -- ^ reason of the game interruption
+         -> IO (ScoreTable, Int)
+register configScoresFile write total time status = do
+  date <- getClockTime
+  table <- restore configScoresFile
+  let points = case status of
+                 Killed _ -> (total + 1) `div` 2
+                 _        -> total
+      negTime = timeNegate time
+      score = ScoreRecord{..}
+      (ntable, pos) = insertPos score table
+  when write $ save configScoresFile ntable
+  return (ntable, pos)
 
 -- | Show a screenful of the high scores table.
 -- Parameter height is the number of (3-line) scores to be shown.
@@ -109,24 +113,13 @@ showCloseScores pos h height =
   else [showTable h 1 height,
         showTable h (max (height + 1) (pos - height `div` 2)) height]
 
--- | Take care of saving a new score to the table
--- and return a list of messages to display.
-register :: Config     -- ^ the config file
-         -> Bool       -- ^ whether to write or only render
-         -> Int        -- ^ the total score. not halved yet
-         -> Time       -- ^ game time spent
-         -> ClockTime  -- ^ date of the last game interruption
-         -> Status     -- ^ reason of the game interruption
-         -> IO Slideshow
-register config write total time date status = do
-  h <- restore config
-  let points = case status of
-                 Killed _ -> (total + 1) `div` 2
-                 _        -> total
-      negTime = timeNegate time
-      score = ScoreRecord{..}
-      (h', pos) = insertPos score h
-      (_, nlines) = normalLevelBound  -- TODO: query terminal size instead
+-- | Generate a slideshow with the current and previous scores.
+slideshow :: ScoreTable -- ^ current score table
+          -> Int        -- ^ position of the current high score in the table
+          -> Status     -- ^ reason of the game interruption
+          -> Slideshow
+slideshow table pos status =
+  let (_, nlines) = normalLevelBound  -- TODO: query terminal size instead
       height = nlines `div` 3
       (subject, person, msgUnless) =
         case status of
@@ -147,5 +140,19 @@ register config write total time date status = do
         [ MU.SubjectVerb person MU.Yes subject "award you"
         , MU.Ordinal pos, "place"
         , msgUnless ]
-  when write $ save config h'
-  return $! toSlideshow $ map ([msg] ++) $ showCloseScores pos h' height
+  in toSlideshow $ map ([msg] ++) $ showCloseScores pos table height
+
+instance Binary ScoreRecord where
+  put (ScoreRecord p n (TOD cs cp) s) = do
+    put p
+    put n
+    put cs
+    put cp
+    put s
+  get = do
+    p <- get
+    n <- get
+    cs <- get
+    cp <- get
+    s <- get
+    return (ScoreRecord p n (TOD cs cp) s)
