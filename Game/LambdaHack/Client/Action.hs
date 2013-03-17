@@ -29,7 +29,7 @@ module Game.LambdaHack.Client.Action
     -- * Draw frames
   , drawOverlay, animate
     -- * Assorted primitives
-  , flushFrames, clientGameSave, restoreGame, displayPush
+  , flushFrames, clientGameSave, restoreGame, displayPush, scoreToSlideshow
   , readConnToClient, writeConnFromClient
   , rndToAction, getArenaUI, getLeaderUI
   , targetToPos, frontendName
@@ -43,7 +43,9 @@ import Control.Monad.Writer.Strict (WriterT, lift, tell)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
 import Data.Maybe
+import qualified Data.Monoid as Monoid
 import qualified Data.Text as T
+import System.Time
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -63,6 +65,7 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.ClientCmd
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Faction
+import qualified Game.LambdaHack.HighScore as HighScore
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
@@ -347,6 +350,19 @@ displayPush = do
   -- of the move frames if the player is running.
   srunning <- getsClient srunning
   displayFrame (isJust srunning) $ Just frame
+
+scoreToSlideshow :: MonadClientUI m => Status -> m Slideshow
+scoreToSlideshow status = do
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  total <- getsState $ snd . calculateTotal (bfaction b) (blid b)
+  if total == 0 then return Monoid.mempty
+  else do
+    table <- getsState shigh
+    time <- getsState stime
+    date <- liftIO $ getClockTime
+    let (ntable, pos) = HighScore.register table total time status date
+    return $! HighScore.slideshow ntable pos status
 
 saveName :: FactionId -> Bool -> String
 saveName side isAI = show (fromEnum side)

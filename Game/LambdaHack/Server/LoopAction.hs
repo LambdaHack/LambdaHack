@@ -393,7 +393,7 @@ defeat fid arena showEndingScreens = do
     Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsState scops
     s <- getState
     depth <- getsState sdepth
-    time <- error "TODO: sum over all levels? getsState getLocalTime"
+    time <- getsState stime
     let (bag, total) = calculateTotal fid arena s
         failMsg | timeFit time timeTurn < 300 =
           "That song shall be short."
@@ -449,39 +449,15 @@ endOrLoop loopServer = do
         Just leader -> do
           b <- getsState $ getActorBody leader
           getsState $ snd . calculateTotal fid (blid b)
-      -- The first, boolean component of quit determines
-      -- if ending screens should be shown, the other argument describes
-      -- the cause of the disruption of game flow.
-      case quit of
-        (_showScreens, status@Killed{}) -> do
---           -- TODO: rewrite; handle killed faction, if human, mostly ignore if not
---           nullR <- undefined -- sendQueryCli fid NullReportCli
---           unless nullR $ do
---             -- Display any leftover report. Suggest it could be the death cause.
---             broadcastUI $ MoreBWUI "Who would have thought?"
---           tryWith
---             (\ finalMsg ->
---               let highScoreMsg = "Let's hope another party can save the day!"
---                   msg = if T.null finalMsg then highScoreMsg else finalMsg
---               in broadcastUI $ MoreBWUI msg
---               -- Do nothing, that is, quit the game loop.
---             )
---                go <- undefined  -- sendQueryUI fid
--- --                     $ ConfirmMoreBWUI "Next time will be different."
---                when (not go) $ abortWith "You could really win this time."
+      case snd quit of
+        status@Killed{} -> do
           registerScore status total
           restartGame loopServer
-        (_showScreens, status@Victor) -> do
-          -- nullR <- undefined -- sendQueryCli fid NullReportCli
-          -- unless nullR $ do
-          --   -- Display any leftover report. Suggest it could be the master move.
-          --   broadcastUI $ MoreFullUI "Brilliant, wasn't it?"
-          -- when showScreens $ do
-          --   broadcastUI $ MoreFullUI "Can it be done better, though?"
+        status@Victor -> do
           registerScore status total
           restartGame loopServer
-        (_, Restart) -> restartGame loopServer
-        (_, Camping) -> assert `failure` (fid, quit)
+        Restart -> restartGame loopServer
+        Camping -> assert `failure` (fid, quit)
 
 restartGame :: (MonadAction m, MonadServerConn m) => m () -> m ()
 restartGame loopServer = do

@@ -183,8 +183,9 @@ registerScore status total = do
     table <- restoreScore config
     time <- getsState stime
     date <- liftIO $ getClockTime
-    let ntable = HighScore.register table total time status date
-    liftIO $ encodeEOF (configScoresFile config) ntable
+    let (ntable, _) = HighScore.register table total time status date
+    liftIO $
+      encodeEOF (configScoresFile config) (ntable :: HighScore.ScoreTable)
 
 tryRestore :: MonadServer m
            => Kind.COps -> m (Either (State, StateServer, Msg) Msg)

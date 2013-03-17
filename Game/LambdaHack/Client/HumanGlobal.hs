@@ -14,6 +14,7 @@ import qualified Data.EnumMap.Strict as EM
 import Data.Function
 import Data.List
 import Data.Maybe
+import qualified Data.Monoid as Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
@@ -387,12 +388,14 @@ gameRestartHuman = do
 gameExitHuman :: (MonadActionAbort m, MonadClientUI m) => m CmdSer
 gameExitHuman = do
   b <- displayYesNo "Really save and exit?"
-  if b
-    then do
-      msgAdd "Saving and exiting game now."
-      leader <- getLeaderUI
-      return $ GameExitSer leader
-    else abortWith "Save and exit canceled."
+  if b then do
+    slides <- scoreToSlideshow Camping
+    braver <- promptToSlideshow
+              $ "See you soon, stronger and braver!" <+> moreMsg
+    void $ getManyConfirms [] $ slides Monoid.<> braver
+    leader <- getLeaderUI
+    return $ GameExitSer leader
+  else abortWith "Save and exit canceled."
 
 -- * GameSave; does not take time
 

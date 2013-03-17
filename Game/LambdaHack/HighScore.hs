@@ -74,14 +74,14 @@ register :: ScoreTable  -- ^ old table
          -> Time        -- ^ game time spent
          -> Status      -- ^ reason of the game interruption
          -> ClockTime   -- ^ current date
-         -> ScoreTable
+         -> (ScoreTable, Int)
 register table total time status date =
   let points = case status of
                  Killed _ -> (total + 1) `div` 2
                  _        -> total
       negTime = timeNegate time
       score = ScoreRecord{..}
-  in fst $ insertPos score table
+  in insertPos score table
 
 -- | Show a screenful of the high scores table.
 -- Parameter height is the number of (3-line) scores to be shown.
@@ -89,7 +89,7 @@ showTable :: ScoreTable -> Int -> Int -> Overlay
 showTable (ScoreTable table) start height =
   let zipped    = zip [1..] table
       screenful = take height . drop (start - 1) $ zipped
-  in concatMap showScore screenful
+  in concatMap showScore screenful ++ [moreMsg]
 
 -- | Produce a couple of renderings of the high scores table.
 showCloseScores :: Int -> ScoreTable -> Int -> [Overlay]

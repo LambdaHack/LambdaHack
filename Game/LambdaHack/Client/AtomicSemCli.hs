@@ -216,8 +216,8 @@ drawCmdAtomicUI verbose cmd = case cmd of
     body <- getsState $ getActorBody aid
     lookAtMove body
   WaitActorA aid _ _| verbose -> aVerbMU aid "wait"
-  DisplaceActorA source target -> displaceActorA source target
-  MoveItemA iid k c1 c2 -> moveItemA verbose iid k c1 c2
+  DisplaceActorA source target -> displaceActorUI source target
+  MoveItemA iid k c1 c2 -> moveItemUI verbose iid k c1 c2
   HealActorA aid n | verbose ->
     if n > 0
     then aVerbMU aid $ MU.Text $ "heal"  <+> showT n <> "HP"
@@ -238,7 +238,7 @@ drawCmdAtomicUI verbose cmd = case cmd of
     else do
       fidName <- getsState $ gname . (EM.! toFid) . sfaction
       aVerbMU target $ MU.Text $ "fall under the influence of" <+> fidName
-  QuitFactionA fid _ toSt -> quitFactionA fid toSt
+  QuitFactionA fid _ toSt -> quitFactionUI fid toSt
   AlterTileA _ _ _ _ | verbose ->
     return ()  -- TODO: door opens
   AlterSecretA _ _ ->
@@ -321,9 +321,9 @@ aiVerbMU aid verb iid k = do
         , partItemNWs coitem disco k item ]
   msgAdd msg
 
-moveItemA :: MonadClientUI m
+moveItemUI :: MonadClientUI m
           => Bool -> ItemId -> Int -> Container -> Container -> m ()
-moveItemA verbose iid k c1 c2 = do
+moveItemUI verbose iid k c1 c2 = do
   Kind.COps{coitem} <- getsState scops
   item <- getsState $ getItemBody iid
   disco <- getsClient sdisco
@@ -341,8 +341,8 @@ moveItemA verbose iid k c1 c2 = do
       aiVerbMU aid "drop" iid k
     _ -> return ()
 
-displaceActorA :: MonadClientUI m => ActorId -> ActorId -> m ()
-displaceActorA source target = do
+displaceActorUI :: MonadClientUI m => ActorId -> ActorId -> m ()
+displaceActorUI source target = do
   Kind.COps{coactor} <- getsState scops
   sm <- getsState (getActorBody source)
   tm <- getsState (getActorBody target)
@@ -357,8 +357,8 @@ displaceActorA source target = do
   animFrs <- animate $ swapPlaces ps
   displayFramesPush $ Nothing : animFrs
 
-quitFactionA :: MonadClientUI m => FactionId -> Maybe (Bool, Status) -> m ()
-quitFactionA fid toSt = do
+quitFactionUI :: MonadClientUI m => FactionId -> Maybe (Bool, Status) -> m ()
+quitFactionUI fid toSt = do
   fidName <- getsState $ MU.Text . gname . (EM.! fid) . sfaction
   case toSt of
     Just (_, Killed _) -> do
