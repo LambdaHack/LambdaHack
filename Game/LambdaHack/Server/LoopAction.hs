@@ -84,15 +84,27 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
         faction <- getsState sfaction
         marenas <- mapM factionArena $ EM.elems faction
         let arenas = ES.toList $ ES.fromList $ catMaybes marenas
+        assert (not $ null arenas) skip
         mapM_ run arenas
         execAtomic $ endClip arenas
         endOrLoop loop
   loop
 
+execAtomic :: (MonadAction m, MonadServerConn m)
+           => WriterT [Atomic] m () -> m ()
+execAtomic m = do
+ cmds <- execWriterT m
+ mapM_ atomicSendSem cmds
+
+saveBkpAll :: (MonadAction m, MonadServerConn m) => m ()
+saveBkpAll = do
+  atomicSendSem $ CmdAtomic SaveBkpA
+  saveGameBkp
+
 endClip :: MonadServer m => [LevelId] -> WriterT [Atomic] m ()
 endClip arenas = do
   quitS <- getsServer squit
-  -- If saving, don't age levels, since possibly not all actors have moved.
+  -- If save&exit, don't age levels, since possibly not all actors have moved.
   unless (quitS == Just True) $ do
     time <- getsState stime
     let clipN = time `timeFit` timeClip
@@ -110,78 +122,6 @@ endClip arenas = do
     -- TODO: a couple messages each clip to many clients is too costly
     mapM_ (\lid -> tellCmdAtomic $ AgeLevelA lid timeClip) arenas
     tellCmdAtomic $ AgeGameA timeClip
-
-execAtomic :: (MonadAction m, MonadServerConn m)
-           => WriterT [Atomic] m () -> m ()
-execAtomic m = do
- cmds <- execWriterT m
- mapM_ atomicSendSem cmds
-
-saveBkpAll :: (MonadAction m, MonadServerConn m) => m ()
-saveBkpAll = do
-  atomicSendSem $ CmdAtomic SaveBkpA
-  saveGameBkp
-
--- TODO: switch levels alternating between player factions,
--- if there are many and on distinct levels.
--- TODO: If a faction has no actors left in the dungeon,
--- announce game end for this faction. Not sure if here's the right place.
--- TODO: Let the spawning factions that remain duke it out somehow,
--- if the player requests to see it.
--- | If no actor of a non-spawning faction on the level,
--- switch levels. If no level to switch to, end game globally.
--- TODO: instead check if a non-spawn faction has Nothing leader. Equivalent.
-checkEndGame :: (MonadAction m, MonadServerConn m) => m ()
-checkEndGame = do
-  -- Actors on the current level go first so that we don't switch levels
-  -- unnecessarily.
-  as <- getsState $ EM.elems . sactorD
-  glo <- getState
-  let aNotSp = filter (not . isSpawningFaction glo . bfaction) as
-  case aNotSp of
-    [] -> gameOver (error "checkEndGame") (error "checkEndGame") True  -- TODO: should send to all factions
-    _ : _ -> return ()
-
--- | End game, showing the ending screens, if requested.
-gameOver :: MonadAction m => FactionId -> LevelId -> Bool -> m ()
-gameOver fid arena showEndingScreens = do
-  deepest <- getsLevel arena ldepth  -- TODO: use deepest visited instead of current
-  let upd f = f {gquit = Just (False, Killed arena)}
-  modifyState $ updateFaction (EM.adjust upd fid)
-  when showEndingScreens $ do
-    Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsState scops
-    s <- getState
-    depth <- getsState sdepth
-    time <- error "TODO: sum over all levels? getsState getLocalTime"
-    let (bag, total) = calculateTotal fid arena s
-        failMsg | timeFit time timeTurn < 300 =
-          "That song shall be short."
-                | total < 100 =
-          "Born poor, dies poor."
-                | deepest < 4 && total < 500 =
-          "This should end differently."
-                | deepest < depth - 1 =
-          "This defeat brings no dishonour."
-                | deepest < depth =
-          "That is your name. 'Almost'."
-                | otherwise =
-          "Dead heroes make better legends."
-        currencyName = MU.Text $ oname $ ouniqGroup "currency"
-        _loseMsg = makePhrase
-          [ failMsg
-          , "You left"
-          , MU.NWs total currencyName
-          , "and some junk." ]
-    if EM.null bag
-      then do
-        let upd2 f = f {gquit = Just (True, Killed arena)}
-        modifyState $ updateFaction (EM.adjust upd2 fid)
-      else do
-        -- TODO: do this for the killed factions, not for side
---        go <- sendQueryUI fid $ ConfirmShowItemsFloorCli loseMsg bag
---        when go $ do
-          let upd2 f = f {gquit = Just (True, Killed arena)}
-          modifyState $ updateFaction (EM.adjust upd2 fid)
 
 -- | Perform moves for individual actors, as long as there are actors
 -- with the next move time less than or equal to the current time.
@@ -375,85 +315,6 @@ advanceTime aid = do
         t = ticksPerMeter speed
     return [CmdAtomic $ AgeActorA aid t]
 
--- | Continue or restart or exit the game.
-endOrLoop :: (MonadAction m, MonadServerConn m)
-          => m () -> m ()
-endOrLoop loopServer = do
-  checkEndGame
-  faction <- getsState sfaction
-  quitS <- getsServer squit
-  let f (_, Faction{gquit=Nothing}) = Nothing
-      f (fid, Faction{gquit=Just quit}) = Just (fid, quit)
-  case mapMaybe f $ EM.assocs faction of
-    _ | quitS == Just True -> do  -- save and exit
-    -- Save and display in parallel.
-    --      mv <- liftIO newEmptyMVar
-    --      liftIO $ void
-    --        $ forkIO (Save.saveGameSer config s ser `finally` putMVar mv ())
-    -- 7.6        $ forkFinally (Save.saveGameSer config s ser) (putMVar mv ())
-    --      tryIgnore $ do
-    --        handleScores False Camping total
-    --        broadcastUI [] $ MoreFullCli "See you soon, stronger and braver!"
-            -- TODO: show the above
-      execAtomic $ tellCmdAtomic SaveExitA
-      saveGameSer
-    --      liftIO $ takeMVar mv  -- wait until saved
-          -- Do nothing, that is, quit the game loop.
-    [] -> loopServer  -- just continue
-    (fid, quit) : _ -> do
-      fac <- getsState $ (EM.! fid) . sfaction
-      _total <- case gleader fac of
-        Nothing -> return 0
-        Just leader -> do
-          b <- getsState $ getActorBody leader
-          getsState $ snd . calculateTotal fid (blid b)
-      -- The first, boolean component of quit determines
-      -- if ending screens should be shown, the other argument describes
-      -- the cause of the disruption of game flow.
-      case quit of
-        (_showScreens, _status@Killed{}) -> do
---           -- TODO: rewrite; handle killed faction, if human, mostly ignore if not
---           nullR <- undefined -- sendQueryCli fid NullReportCli
---           unless nullR $ do
---             -- Display any leftover report. Suggest it could be the death cause.
---             broadcastUI $ MoreBWUI "Who would have thought?"
---           tryWith
---             (\ finalMsg ->
---               let highScoreMsg = "Let's hope another party can save the day!"
---                   msg = if T.null finalMsg then highScoreMsg else finalMsg
---               in broadcastUI $ MoreBWUI msg
---               -- Do nothing, that is, quit the game loop.
---             )
---             (do
---                when showScreens $ handleScores fid True status total
---                go <- undefined  -- sendQueryUI fid
--- --                     $ ConfirmMoreBWUI "Next time will be different."
---                when (not go) $ abortWith "You could really win this time."
-               restartGame loopServer
-        (_showScreens, _status@Victor) -> do
-          -- nullR <- undefined -- sendQueryCli fid NullReportCli
-          -- unless nullR $ do
-          --   -- Display any leftover report. Suggest it could be the master move.
-          --   broadcastUI $ MoreFullUI "Brilliant, wasn't it?"
-          -- when showScreens $ do
-          --   tryIgnore $ handleScores fid True status total
-          --   broadcastUI $ MoreFullUI "Can it be done better, though?"
-          restartGame loopServer
-        (_, Restart) -> restartGame loopServer
-        (_, Camping) -> assert `failure` (fid, quit)
-
-restartGame :: (MonadAction m, MonadServerConn m) => m () -> m ()
-restartGame loopServer = do
-  cops <- getsState scops
-  nH <- nHumans
-  when (nH <= 1) $ execAtomic $ broadcastSfxAtomic $ \fid -> FadeoutD fid False
-  gameReset cops
-  initPer
-  execAtomic reinitGame
-  -- Save ASAP in case of crashes and disconnects.
-  saveBkpAll
-  loopServer
-
 -- | Generate a monster, possibly.
 generateMonster :: MonadServer m => LevelId -> WriterT [Atomic] m ()
 generateMonster arena = do
@@ -521,3 +382,116 @@ regenerateLevelHP arena = do
   toRegen <-
     getsState $ catMaybes . map pick . actorNotProjAssocs (const True) arena
   mapM_ (\aid -> tellCmdAtomic $ HealActorA aid 1) toRegen
+
+-- | Announce defeat, showing the ending screens, if requested.
+defeat :: MonadAction m => FactionId -> LevelId -> Bool -> m ()
+defeat fid arena showEndingScreens = do
+  deepest <- getsLevel arena ldepth  -- TODO: use deepest visited instead of current
+  let upd f = f {gquit = Just (False, Killed arena)}
+  modifyState $ updateFaction (EM.adjust upd fid)
+  when showEndingScreens $ do
+    Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsState scops
+    s <- getState
+    depth <- getsState sdepth
+    time <- error "TODO: sum over all levels? getsState getLocalTime"
+    let (bag, total) = calculateTotal fid arena s
+        failMsg | timeFit time timeTurn < 300 =
+          "That song shall be short."
+                | total < 100 =
+          "Born poor, dies poor."
+                | deepest < 4 && total < 500 =
+          "This should end differently."
+                | deepest < depth - 1 =
+          "This defeat brings no dishonour."
+                | deepest < depth =
+          "That is your name. 'Almost'."
+                | otherwise =
+          "Dead heroes make better legends."
+        currencyName = MU.Text $ oname $ ouniqGroup "currency"
+        _loseMsg = makePhrase
+          [ failMsg
+          , "You left"
+          , MU.NWs total currencyName
+          , "and some junk." ]
+    if EM.null bag
+      then do
+        let upd2 f = f {gquit = Just (True, Killed arena)}
+        modifyState $ updateFaction (EM.adjust upd2 fid)
+      else do
+        -- TODO: do this for the killed factions, not for side
+--        go <- sendQueryUI fid $ ConfirmShowItemsFloorCli loseMsg bag
+--        when go $ do
+          let upd2 f = f {gquit = Just (True, Killed arena)}
+          modifyState $ updateFaction (EM.adjust upd2 fid)
+
+-- | Announce victory, showing the ending screens, if requested.
+victory :: MonadAction m => FactionId -> LevelId -> Bool -> m ()
+victory fid arena showEndingScreens = undefined
+
+-- | Continue or restart or exit the game.
+endOrLoop :: (MonadAction m, MonadServerConn m)
+          => m () -> m ()
+endOrLoop loopServer = do
+  faction <- getsState sfaction
+  quitS <- getsServer squit
+  let f (_, Faction{gquit=Nothing}) = Nothing
+      f (fid, Faction{gquit=Just quit}) = Just (fid, quit)
+  case mapMaybe f $ EM.assocs faction of
+    _ | quitS == Just True -> do  -- save and exit
+      execAtomic $ tellCmdAtomic SaveExitA
+      saveGameSer
+      -- Do nothing, that is, quit the game loop.
+    [] -> loopServer  -- just continue
+    (fid, quit) : _ -> do
+      fac <- getsState $ (EM.! fid) . sfaction
+      _total <- case gleader fac of
+        Nothing -> return 0
+        Just leader -> do
+          b <- getsState $ getActorBody leader
+          getsState $ snd . calculateTotal fid (blid b)
+      -- The first, boolean component of quit determines
+      -- if ending screens should be shown, the other argument describes
+      -- the cause of the disruption of game flow.
+      case quit of
+        (_showScreens, _status@Killed{}) -> do
+--           -- TODO: rewrite; handle killed faction, if human, mostly ignore if not
+--           nullR <- undefined -- sendQueryCli fid NullReportCli
+--           unless nullR $ do
+--             -- Display any leftover report. Suggest it could be the death cause.
+--             broadcastUI $ MoreBWUI "Who would have thought?"
+--           tryWith
+--             (\ finalMsg ->
+--               let highScoreMsg = "Let's hope another party can save the day!"
+--                   msg = if T.null finalMsg then highScoreMsg else finalMsg
+--               in broadcastUI $ MoreBWUI msg
+--               -- Do nothing, that is, quit the game loop.
+--             )
+--             (do
+--                when showScreens $ handleScores fid True status total
+--                go <- undefined  -- sendQueryUI fid
+-- --                     $ ConfirmMoreBWUI "Next time will be different."
+--                when (not go) $ abortWith "You could really win this time."
+               restartGame loopServer
+        (_showScreens, _status@Victor) -> do
+          -- nullR <- undefined -- sendQueryCli fid NullReportCli
+          -- unless nullR $ do
+          --   -- Display any leftover report. Suggest it could be the master move.
+          --   broadcastUI $ MoreFullUI "Brilliant, wasn't it?"
+          -- when showScreens $ do
+          --   tryIgnore $ handleScores fid True status total
+          --   broadcastUI $ MoreFullUI "Can it be done better, though?"
+          restartGame loopServer
+        (_, Restart) -> restartGame loopServer
+        (_, Camping) -> assert `failure` (fid, quit)
+
+restartGame :: (MonadAction m, MonadServerConn m) => m () -> m ()
+restartGame loopServer = do
+  cops <- getsState scops
+  nH <- nHumans
+  when (nH <= 1) $ execAtomic $ broadcastSfxAtomic $ \fid -> FadeoutD fid False
+  gameReset cops
+  initPer
+  execAtomic reinitGame
+  -- Save ASAP in case of crashes and disconnects.
+  saveBkpAll
+  loopServer

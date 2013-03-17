@@ -29,7 +29,7 @@ module Game.LambdaHack.Client.Action
     -- * Draw frames
   , drawOverlay, animate
     -- * Assorted primitives
-  , flushFrames, clientGameSave, saveExitCli, restoreGame, displayPush
+  , flushFrames, clientGameSave, restoreGame, displayPush
   , readConnToClient, writeConnFromClient
   , rndToAction, getArenaUI, getLeaderUI
   , targetToPos, frontendName
@@ -360,12 +360,6 @@ clientGameSave toBkp = do
   side <- getsClient sside
   isAI <- getsClient sisAI
   liftIO $ Save.saveGameCli (saveName side isAI) toBkp configUI s cli
-
-saveExitCli :: MonadClient m => m ()
-saveExitCli = do
-  recordHistory
-  clientGameSave False
-  modifyClient $ \cli -> cli {squit = True}
 
 restoreGame :: MonadClient m => m (Either (State, StateClient, Msg) Msg)
 restoreGame = do

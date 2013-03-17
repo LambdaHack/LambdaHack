@@ -116,7 +116,7 @@ cmdAtomicSemCli cmd = case cmd of
     let cli = defStateClient shistory sconfigUI side isAI
     putClient cli {sdisco, sfper, _sleader = gleader fac}
   ResumeA _fid sfper -> modifyClient $ \cli -> cli {sfper}
-  SaveExitA -> saveExitCli
+  SaveExitA -> saveExitA
   SaveBkpA -> clientGameSave True
   _ -> return ()
 
@@ -173,6 +173,15 @@ coverA lid p iid ik = do
   let f Nothing = assert `failure` (lid, p, iid, ik)
       f (Just ik2) = assert (ik == ik2 `blame` (ik, ik2)) Nothing
   modifyClient $ \cli -> cli {sdisco = EM.alter f (jkindIx item) (sdisco cli)}
+
+-- TODO: show "X requests gave save and exit" and/or
+-- "See you soon, stronger and braver!", when standalone clients are there.
+-- Then also show scores for all clients, not only for X.
+saveExitA :: MonadClient m => m ()
+saveExitA = do
+  recordHistory
+  clientGameSave False
+  modifyClient $ \cli -> cli {squit = True}
 
 -- * CmdAtomicUI
 
