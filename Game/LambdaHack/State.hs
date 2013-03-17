@@ -1,10 +1,10 @@
-{-# LANGUAGE DeriveDataTypeable, OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
 -- | Server and client game state types and operations.
 module Game.LambdaHack.State
   ( -- * Basic game state, local or global
     State
     -- * State components
-  , sdungeon, sdepth, sactorD, sitemD, sfaction, stime, scops
+  , sdungeon, sdepth, sactorD, sitemD, sfaction, stime, scops, shigh
     -- * State operations
   , defStateGlobal, emptyState, localFromGlobal
   , updateDungeon, updateDepth, updateActorD, updateItemD
@@ -15,11 +15,11 @@ module Game.LambdaHack.State
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import Data.Text (Text)
-import Data.Typeable
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Faction
+import qualified Game.LambdaHack.HighScore as HighScore
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
 import Game.LambdaHack.Point
@@ -39,8 +39,9 @@ data State = State
   , _sfaction :: !FactionDict  -- ^ remembered sides still in game
   , _stime    :: !Time         -- ^ global game time
   , _scops    :: Kind.COps     -- ^ remembered content
+  , _shigh    :: !HighScore.ScoreTable  -- ^ high score table
   }
-  deriving (Show, Typeable, Eq)
+  deriving (Show, Eq)
 
 -- TODO: add a flag 'fresh' and when saving levels, don't save
 -- and when loading regenerate this level.
@@ -72,9 +73,9 @@ unknownTileMap unknownId cxsize cysize =
 
 -- | Initial complete global game state.
 defStateGlobal :: Dungeon -> Int
-               -> FactionDict -> Kind.COps
+               -> FactionDict -> Kind.COps -> HighScore.ScoreTable
                -> State
-defStateGlobal _sdungeon _sdepth _sfaction _scops =
+defStateGlobal _sdungeon _sdepth _sfaction _scops _shigh =
   State
     { _sactorD = EM.empty
     , _sitemD = EM.empty
@@ -93,6 +94,7 @@ emptyState =
     , _sfaction = EM.empty
     , _stime = timeZero
     , _scops = undefined
+    , _shigh = HighScore.empty
     }
 
 -- TODO: make lstair secret until discovered; use this later on for
@@ -175,6 +177,9 @@ stime = _stime
 scops :: State -> Kind.COps
 scops = _scops
 
+shigh :: State -> HighScore.ScoreTable
+shigh = _shigh
+
 instance Binary State where
   put State{..} = do
     put _sdungeon
@@ -183,6 +188,7 @@ instance Binary State where
     put _sitemD
     put _sfaction
     put _stime
+    put _shigh
   get = do
     _sdungeon <- get
     _sdepth <- get
@@ -190,5 +196,6 @@ instance Binary State where
     _sitemD <- get
     _sfaction <- get
     _stime <- get
+    _shigh <- get
     let _scops = undefined  -- overwritten by recreated cops
     return State{..}

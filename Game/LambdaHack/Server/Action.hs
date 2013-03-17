@@ -13,7 +13,8 @@ module Game.LambdaHack.Server.Action
     -- * Communication
   , sendUpdateUI, sendQueryUI, sendUpdateAI, sendQueryAI
     -- * Assorted primitives
-  , saveGameSer, saveGameBkp, dumpCfg, mkConfigRules, registerScore
+  , saveGameSer, saveGameBkp, dumpCfg
+  , mkConfigRules, restoreScore, registerScore
   , rndToAction, resetFidPerception, getPerFid
   ) where
 
@@ -30,6 +31,8 @@ import qualified Data.Text.IO as T
 import System.IO (stderr)
 import System.IO.Unsafe (unsafePerformIO)
 import qualified System.Random as R
+import System.Directory
+import System.Time
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -45,7 +48,7 @@ import Game.LambdaHack.Random
 import Game.LambdaHack.Server.Action.ActionClass
 import Game.LambdaHack.Server.Action.ActionType (executorSer)
 import qualified Game.LambdaHack.Server.Action.ConfigIO as ConfigIO
-import Game.LambdaHack.HighScore
+import qualified Game.LambdaHack.HighScore as HighScore
 import qualified Game.LambdaHack.Server.Action.Save as Save
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.Fov
@@ -53,6 +56,7 @@ import Game.LambdaHack.Server.State
 import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Utils.File
 
 default (Text)
 
@@ -101,17 +105,6 @@ dumpCfg :: MonadServer m => FilePath -> m ()
 dumpCfg fn = do
   config <- getsServer sconfig
   liftIO $ ConfigIO.dump config fn
-
--- | Generate a new score and possibly save it.
-registerScore :: MonadServer m
-              => Bool -> Status -> Int -> m (Maybe (ScoreTable, Int))
-registerScore write status total =
-  if total == 0 then return Nothing
-  else do
-    configScoresFile <- getsServer $ configScoresFile . sconfig
-    time <- getsState stime
-    (table, pos) <- liftIO $ register configScoresFile write total time status
-    return $ Just (table, pos)
 
 writeTQueueAI :: MonadServerConn m => CmdClientAI -> TQueue CmdClientAI -> m ()
 writeTQueueAI cmd toClient = do
@@ -165,11 +158,33 @@ sendQueryUI fid aid = do
         readTQueue $ toServer conn
   maybe (assert `failure` (fid, aid)) connSend mconn
 
--- | Create a server config file. Warning: when it's use, the game state
+-- | Create a server config file. Warning: when it's used, the game state
 -- may still be undefined, hence the content ops are given as an argument.
 mkConfigRules :: MonadServer m
               => Kind.Ops RuleKind -> m (Config, R.StdGen, R.StdGen)
 mkConfigRules = liftIO . ConfigIO.mkConfigRules
+
+-- | Read the high scores table. Return the empty table if no file.
+-- Warning: when it's used, the game state
+-- may still be undefined, hence the config is given as an argument.
+restoreScore :: MonadServer m => Config -> m HighScore.ScoreTable
+restoreScore Config{configScoresFile} = do
+  b <- liftIO $ doesFileExist configScoresFile
+  if not b
+    then return HighScore.empty
+    else liftIO $ strictDecodeEOF configScoresFile
+
+-- | Generate a new score, register it and save.
+registerScore :: MonadServer m => Status -> Int -> m ()
+registerScore status total = do
+  when (total /= 0) $ do
+    config <- getsServer sconfig
+    -- Re-read the table in case it's changed by a concurrent game.
+    table <- restoreScore config
+    time <- getsState stime
+    date <- liftIO $ getClockTime
+    let ntable = HighScore.register table total time status date
+    liftIO $ encodeEOF (configScoresFile config) ntable
 
 tryRestore :: MonadServer m
            => Kind.COps -> m (Either (State, StateServer, Msg) Msg)

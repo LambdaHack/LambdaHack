@@ -1,16 +1,14 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, OverloadedStrings #-}
 -- | High score table operations.
 module Game.LambdaHack.HighScore
-  ( ScoreTable, register, slideshow
+  ( ScoreTable, empty, register, slideshow
   ) where
 
-import Control.Monad
 import Data.Binary
 import qualified Data.List as L
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
-import System.Directory
 import System.Time
 import Text.Printf
 
@@ -18,7 +16,6 @@ import Game.LambdaHack.Faction
 import Game.LambdaHack.Misc
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Time
-import Game.LambdaHack.Utils.File
 
 -- | A single score record. Records are ordered in the highscore table,
 -- from the best to the worst, in lexicographic ordering wrt the fields below.
@@ -53,55 +50,44 @@ showScore (pos, score) =
        ]
 
 -- | The list of scores, in decreasing order.
-type ScoreTable = [ScoreRecord]
+newtype ScoreTable = ScoreTable [ScoreRecord]
+  deriving (Eq, Binary)
+
+instance Show ScoreTable where
+  show _ = "a score table"
 
 -- | Empty score table
 empty :: ScoreTable
-empty = []
-
--- | Save a serialized version of the high scores table.
-save :: FilePath -> ScoreTable -> IO ()
-save configScoresFile scores = encodeEOF configScoresFile $ take 100 scores
-
--- | Read the high scores table. Return the empty table if no file.
-restore :: FilePath -> IO ScoreTable
-restore configScoresFile = do
-  b <- doesFileExist configScoresFile
-  if not b
-    then return empty
-    else strictDecodeEOF configScoresFile
+empty = ScoreTable []
 
 -- | Insert a new score into the table, Return new table and the ranking.
+-- Make sure the table doesn't grow too large.
 insertPos :: ScoreRecord -> ScoreTable -> (ScoreTable, Int)
-insertPos s h =
-  let (prefix, suffix) = L.span (> s) h
+insertPos s (ScoreTable table) =
+  let (prefix, suffix) = L.span (> s) table
+      pos = L.length prefix + 1
+  in (ScoreTable $ prefix ++ [s] ++ take (100 - pos) suffix, pos)
 
-  in (prefix ++ [s] ++ suffix, L.length prefix + 1)
-
--- | Generate a new score and possibly save it.
-register :: FilePath   -- ^ the config file
-         -> Bool       -- ^ whether to write or only render
-         -> Int        -- ^ the total score. not halved yet
-         -> Time       -- ^ game time spent
-         -> Status     -- ^ reason of the game interruption
-         -> IO (ScoreTable, Int)
-register configScoresFile write total time status = do
-  date <- getClockTime
-  table <- restore configScoresFile
+-- | Register a new score in a score table.
+register :: ScoreTable  -- ^ old table
+         -> Int         -- ^ the total score. not halved yet
+         -> Time        -- ^ game time spent
+         -> Status      -- ^ reason of the game interruption
+         -> ClockTime   -- ^ current date
+         -> ScoreTable
+register table total time status date =
   let points = case status of
                  Killed _ -> (total + 1) `div` 2
                  _        -> total
       negTime = timeNegate time
       score = ScoreRecord{..}
-      (ntable, pos) = insertPos score table
-  when write $ save configScoresFile ntable
-  return (ntable, pos)
+  in fst $ insertPos score table
 
 -- | Show a screenful of the high scores table.
 -- Parameter height is the number of (3-line) scores to be shown.
 showTable :: ScoreTable -> Int -> Int -> Overlay
-showTable h start height =
-  let zipped    = zip [1..] h
+showTable (ScoreTable table) start height =
+  let zipped    = zip [1..] table
       screenful = take height . drop (start - 1) $ zipped
   in concatMap showScore screenful
 

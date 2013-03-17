@@ -128,6 +128,7 @@ gameReset cops@Kind.COps{coitem, corule} = do
   -- Taking the original config from config file, to reroll RNG, if needed
   -- (the current config file has the RNG rolled for the previous game).
   (sconfig, dungeonSeed, srandom) <- mkConfigRules corule
+  scoreTable <- restoreScore sconfig
   let rnd :: Rnd (FactionDict, FlavourMap, Discovery, DiscoRev,
                   DungeonGen.FreshDungeon)
       rnd = do
@@ -138,7 +139,7 @@ gameReset cops@Kind.COps{coitem, corule} = do
         return (faction, sflavour, sdisco, sdiscoRev, freshDng)
   let (faction, sflavour, sdisco, sdiscoRev, DungeonGen.FreshDungeon{..}) =
         St.evalState rnd dungeonSeed
-      defState = defStateGlobal freshDungeon freshDepth faction cops
+      defState = defStateGlobal freshDungeon freshDepth faction cops scoreTable
       defSer = emptyStateServer {sdisco, sdiscoRev, sflavour, srandom, sconfig}
   putState defState
   sdebugNxt <- getsServer sdebugNxt

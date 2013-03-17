@@ -438,7 +438,6 @@ endOrLoop loopServer = do
       f (fid, Faction{gquit=Just quit}) = Just (fid, quit)
   case mapMaybe f $ EM.assocs faction of
     _ | quitS == Just True -> do  -- save and exit
---        _mtablePos <- registerScore True status total
       execAtomic $ tellCmdAtomic SaveExitA
       saveGameSer
       -- Do nothing, that is, quit the game loop.
@@ -467,10 +466,10 @@ endOrLoop loopServer = do
 --               in broadcastUI $ MoreBWUI msg
 --               -- Do nothing, that is, quit the game loop.
 --             )
-          _mtablePos <- registerScore True status total
 --                go <- undefined  -- sendQueryUI fid
 -- --                     $ ConfirmMoreBWUI "Next time will be different."
 --                when (not go) $ abortWith "You could really win this time."
+          registerScore status total
           restartGame loopServer
         (_showScreens, status@Victor) -> do
           -- nullR <- undefined -- sendQueryCli fid NullReportCli
@@ -479,7 +478,7 @@ endOrLoop loopServer = do
           --   broadcastUI $ MoreFullUI "Brilliant, wasn't it?"
           -- when showScreens $ do
           --   broadcastUI $ MoreFullUI "Can it be done better, though?"
-          _mtablePos <- registerScore True status total
+          registerScore status total
           restartGame loopServer
         (_, Restart) -> restartGame loopServer
         (_, Camping) -> assert `failure` (fid, quit)
