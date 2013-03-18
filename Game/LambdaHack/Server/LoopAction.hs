@@ -11,7 +11,6 @@ import qualified Data.EnumSet as ES
 import Data.List
 import Data.Maybe
 import qualified Data.Ord as Ord
-import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -25,7 +24,6 @@ import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
-import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import Game.LambdaHack.Random
@@ -383,54 +381,8 @@ regenerateLevelHP arena = do
     getsState $ catMaybes . map pick . actorNotProjAssocs (const True) arena
   mapM_ (\aid -> tellCmdAtomic $ HealActorA aid 1) toRegen
 
--- | Announce defeat, showing the ending screens, if requested.
-defeat :: MonadAction m => FactionId -> LevelId -> Bool -> m ()
-defeat fid arena showEndingScreens = do
-  deepest <- getsLevel arena ldepth  -- TODO: use deepest visited instead of current
-  let upd f = f {gquit = Just (False, Killed arena)}
-  modifyState $ updateFaction (EM.adjust upd fid)
-  when showEndingScreens $ do
-    Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsState scops
-    s <- getState
-    depth <- getsState sdepth
-    time <- getsState stime
-    let (bag, total) = calculateTotal fid arena s
-        failMsg | timeFit time timeTurn < 300 =
-          "That song shall be short."
-                | total < 100 =
-          "Born poor, dies poor."
-                | deepest < 4 && total < 500 =
-          "This should end differently."
-                | deepest < depth - 1 =
-          "This defeat brings no dishonour."
-                | deepest < depth =
-          "That is your name. 'Almost'."
-                | otherwise =
-          "Dead heroes make better legends."
-        currencyName = MU.Text $ oname $ ouniqGroup "currency"
-        _loseMsg = makePhrase
-          [ failMsg
-          , "You left"
-          , MU.NWs total currencyName
-          , "and some junk." ]
-    if EM.null bag
-      then do
-        let upd2 f = f {gquit = Just (True, Killed arena)}
-        modifyState $ updateFaction (EM.adjust upd2 fid)
-      else do
-        -- TODO: do this for the killed factions, not for side
---        go <- sendQueryUI fid $ ConfirmShowItemsFloorCli loseMsg bag
---        when go $ do
-          let upd2 f = f {gquit = Just (True, Killed arena)}
-          modifyState $ updateFaction (EM.adjust upd2 fid)
-
--- | Announce victory, showing the ending screens, if requested.
-victory :: MonadAction m => FactionId -> LevelId -> Bool -> m ()
-victory fid arena showEndingScreens = undefined
-
 -- | Continue or restart or exit the game.
-endOrLoop :: (MonadAction m, MonadServerConn m)
-          => m () -> m ()
+endOrLoop :: (MonadAction m, MonadServerConn m) => m () -> m ()
 endOrLoop loopServer = do
   faction <- getsState sfaction
   quitS <- getsServer squit
@@ -441,23 +393,49 @@ endOrLoop loopServer = do
       execAtomic $ tellCmdAtomic SaveExitA
       saveGameSer
       -- Do nothing, that is, quit the game loop.
-    [] -> loopServer  -- just continue
-    (fid, quit) : _ -> do  -- TODO: process also the rest of quits
-      fac <- getsState $ (EM.! fid) . sfaction
-      total <- case gleader fac of
-        Nothing -> return 0
-        Just leader -> do
-          b <- getsState $ getActorBody leader
-          getsState $ snd . calculateTotal fid (blid b)
-      case snd quit of
-        status@Killed{} -> do
-          registerScore status total
-          restartGame loopServer
-        status@Victor -> do
-          registerScore status total
-          restartGame loopServer
-        Restart -> restartGame loopServer
-        Camping -> assert `failure` (fid, quit)
+    quits -> processQuits loopServer quits
+
+processQuits :: (MonadAction m, MonadServerConn m)
+             => m () -> [(FactionId, (Bool, Status))] -> m ()
+processQuits loopServer [] = loopServer  -- just continue
+processQuits loopServer ((fid, quit) : quits) = do
+  cops <- getsState scops
+  faction <- getsState sfaction
+  let fac = faction EM.! fid
+  total <- case gleader fac of
+    Nothing -> return 0
+    Just leader -> do
+      b <- getsState $ getActorBody leader
+      getsState $ snd . calculateTotal fid (blid b)
+  case snd quit of
+    status@Killed{} -> do
+      let inGame fact = case gquit fact of
+            Just (_, Killed{}) -> False
+            Just (_, Victor) -> False
+            _ -> True
+          notSpawning fact = not $ isSpawningFact cops fact
+          isActive fact = inGame fact && notSpawning fact
+          isAllied fid1 fact = fid1 `elem` gally fact
+          inGameHuman fact = inGame fact && isHumanFact fact
+          gameHuman = filter inGameHuman $ EM.elems faction
+          gameOver = case filter (isActive . snd) $ EM.assocs faction of
+            _ | null gameHuman -> True  -- no screensaver mode for now
+            [] -> True
+            (fid1, fact1) : rest ->
+              -- Competitive game ends when only one allied team remains.
+              all (isAllied fid1 . snd) rest
+              -- Cooperative game continues until the last ally dies.
+              && not (isAllied fid fact1)
+      if gameOver then do
+        registerScore status total
+        restartGame loopServer
+      else
+        processQuits loopServer quits
+    status@Victor -> do
+      registerScore status total
+      restartGame loopServer
+    Restart -> restartGame loopServer
+    Camping -> assert `failure` (fid, quit)
 
 restartGame :: (MonadAction m, MonadServerConn m) => m () -> m ()
 restartGame loopServer = do
