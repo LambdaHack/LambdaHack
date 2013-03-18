@@ -391,7 +391,10 @@ data PosAtomic =
 posCmdAtomic :: MonadActionRO m => CmdAtomic -> m PosAtomic
 posCmdAtomic cmd = case cmd of
   CreateActorA _ body _ -> return $ PosLevel (blid body) [bpos body]
-  DestroyActorA _ body _ -> return $ PosLevel (blid body) [bpos body]
+  DestroyActorA _ body _ ->
+    -- The faction of the actor sometimes does not see his death
+    -- (if none of the other actors is observing it).
+    return $ PosLevel (blid body) [bpos body]
   CreateItemA _ _ _ c -> singleContainer c
   DestroyItemA _ _ _ c -> singleContainer c
   SpotActorA _ body _ -> return $ PosLevel (blid body) [bpos body]

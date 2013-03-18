@@ -134,21 +134,21 @@ perceptionA lid outPA inPA = do
   perOld <- getPerFid lid
   -- Check if new perception is already set in @cmdAtomicFilterCli@
   -- or if we are doing undo/redo, which does not involve filtering.
-  -- The data structure is strict, so the cheap check can't be simpler.
+  -- The data structure is strict, so the cheap check can't be any simpler.
   let interHead [] = Nothing
-      interHead ((a, vis) : _) =
+      interHead ((aid, vis) : _) =
         Just $ pvisible vis `ES.intersection`
-                 maybe ES.empty pvisible (EM.lookup a (perActor perOld))
+                 maybe ES.empty pvisible (EM.lookup aid (perActor perOld))
       unset = maybe False ES.null (interHead (EM.assocs inPA))
               || maybe False (not . ES.null) (interHead (EM.assocs outPA))
   when unset $ do
-    let dummyToPer per = Perception
-          { perActor = perActor per
+    let dummyToPer Perception{perActor} = Perception
+          { perActor
           , ptotal = PerceptionVisible
-                     $ ES.unions $ map pvisible $ EM.elems $ perActor per
-          , psmell = smellFromActors cops s $ perActor per }
-        paToDummy pa = Perception
-          { perActor = pa
+                     $ ES.unions $ map pvisible $ EM.elems perActor
+          , psmell = smellFromActors cops s perActor }
+        paToDummy perActor = Perception
+          { perActor
           , ptotal = PerceptionVisible ES.empty
           , psmell = PerceptionVisible ES.empty }
         outPer = paToDummy outPA
@@ -205,6 +205,13 @@ drawCmdAtomicUI verbose cmd = case cmd of
     else when verbose $ actorVerbMU body "disappear"
   CreateItemA _ item k _ | verbose -> itemVerbMU item k "appear"
   DestroyItemA _ item k _ | verbose -> itemVerbMU item k "disappear"
+  LoseActorA _ body _ -> do
+    side <- getsClient sside
+    -- If no other faction actor is looking, death is invisible and
+    -- so is domination, time-freeze, etc. Then, this command appears instead.
+    when (not (bproj body) && bfaction body == side) $ do
+      actorVerbMU body "be missing in action"
+      void $ displayMore ColorFull ""
   MoveActorA aid _ _ -> do
     body <- getsState $ getActorBody aid
     lookAtMove body
@@ -273,13 +280,13 @@ drawCmdAtomicUI verbose cmd = case cmd of
 
 lookAtMove :: MonadClientUI m => Actor -> m ()
 lookAtMove body = do
-    side <- getsClient sside
-    tgtMode <- getsClient stgtMode
-    when (not (bproj body)
-          && bfaction body == side
-          && isNothing tgtMode) $ do  -- targeting does a more extensive look
-      lookMsg <- lookAt False True (bpos body) ""
-      msgAdd lookMsg
+  side <- getsClient sside
+  tgtMode <- getsClient stgtMode
+  when (not (bproj body)
+        && bfaction body == side
+        && isNothing tgtMode) $ do  -- targeting does a more extensive look
+    lookMsg <- lookAt False True (bpos body) ""
+    msgAdd lookMsg
 
 -- | Sentences such as \"Dog barks loudly.\".
 actorVerbMU :: MonadClientUI m => Actor -> MU.Part -> m ()

@@ -31,10 +31,16 @@ import Game.LambdaHack.Utils.Assert
 
 -- Determines is a command resets FOV. @Nothing@ means it always does.
 -- A list of faction means it does for each of the factions.
+-- This is only an optimization to save perception and spot/lose computation.
+--
+-- Invariant: if @resetsFovAtomic@ determines a faction does not need
+-- to reset Fov, perception (@perActor@ to be precise, @psmell@ is irrelevant)
+-- of that faction does not change upon recomputation. Otherwise,
+-- save/restore would change game state.
 resetsFovAtomic :: MonadActionRO m => CmdAtomic -> m (Maybe [FactionId])
 resetsFovAtomic cmd = case cmd of
   CreateActorA _ body _ -> return $ Just [bfaction body]
-  DestroyActorA _ _ _ -> return $ Just []  -- FOV kept a bit to see aftermath
+  DestroyActorA _ body _ -> return $ Just [bfaction body]
   CreateItemA _ _ _ _ -> return $ Just []  -- unless shines
   DestroyItemA _ _ _ _ -> return $ Just []  -- ditto
   MoveActorA aid _ _ -> fmap Just $ fidOfAid aid  -- assumption: has no light
@@ -163,25 +169,26 @@ atomicSendSem atomic = do
         if startSeen && endSeen
           then sendUpdate fid atomic
           else breakSend fid perNew
+      posLevel fid arena = do
+        let perOld = persOld EM.! fid EM.! arena
+            resetsFid = maybe True (fid `elem`) resets
+        if resetsFid then do
+          resetFidPerception fid arena
+          perNew <- getPerFid fid arena
+          let inPer = diffPer perNew perOld
+              inPA = perActor inPer
+              outPer = diffPer perOld perNew
+              outPA = perActor outPer
+          if EM.null outPA && EM.null inPA
+            then anySend fid perOld perOld
+            else do
+              sendA fid $ PerceptionA arena outPA inPA
+              unless knowEvents $  -- inconsistencies would quickly manifest
+                mapM_ (sendA fid) $ atomicRemember arena inPer sOld
+              anySend fid perOld perNew
+        else anySend fid perOld perOld
       send fid = case ps of
-        PosLevel arena _ -> do
-          let perOld = persOld EM.! fid EM.! arena
-              resetsFid = maybe True (fid `elem`) resets
-          if resetsFid then do
-            resetFidPerception fid arena
-            perNew <- getPerFid fid arena
-            let inPer = diffPer perNew perOld
-                inPA = perActor inPer
-                outPer = diffPer perOld perNew
-                outPA = perActor outPer
-            if EM.null outPA && EM.null inPA
-              then anySend fid perOld perOld
-              else do
-                sendA fid $ PerceptionA arena outPA inPA
-                unless knowEvents $  -- inconsistencies would quickly manifest
-                  mapM_ (sendA fid) $ atomicRemember arena inPer sOld
-                anySend fid perOld perNew
-          else anySend fid perOld perOld
+        PosLevel arena _ -> posLevel fid arena
         -- In the following cases, from the assertion above,
         -- @resets@ is false here and broken atomic has the same ps.
         PosSmell arena _ -> do

@@ -28,7 +28,8 @@ type PerActor = EM.EnumMap ActorId PerceptionVisible
 
 -- | The type representing the perception of a faction on a level.
 -- The total visibility holds the sum of FOVs of all actors
--- of a given faction on the level and servers only as a speedup.
+-- of a given faction on the level and serves only as a speedup.
+-- The fields are not strict because often not all are used.
 data Perception = Perception
   { perActor :: PerActor           -- ^ visible points for each actor
   , ptotal   :: PerceptionVisible  -- ^ sum over all actors
