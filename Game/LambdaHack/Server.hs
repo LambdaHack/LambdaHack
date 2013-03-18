@@ -37,7 +37,7 @@ cmdSerWriterT cmd = case cmd of
   TriggerSer aid p -> triggerSer aid p
   SetPathSer aid path -> setPathSer aid path
   GameRestartSer aid -> gameRestartSer aid
-  GameExitSer _ -> gameExitSer
+  GameExitSer aid -> gameExitSer aid
   GameSaveSer _ -> gameSaveSer
   CfgDumpSer aid -> cfgDumpSer aid
 

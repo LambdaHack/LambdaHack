@@ -28,7 +28,8 @@ data StateServer = StateServer
   , sper      :: !Pers          -- ^ perception of all factions
   , srandom   :: !R.StdGen      -- ^ current random generator
   , sconfig   :: Config         -- ^ this game's config (including initial RNG)
-  , squit     :: !(Maybe Bool)  -- ^ will save and possibly exit the game soon
+  , squit     :: !Bool          -- ^ exit the game loop
+  , sbkpSave  :: !Bool          -- ^ make backup savefile now
   , sdebugSer :: !DebugModeSer  -- ^ current debugging mode
   , sdebugNxt :: !DebugModeSer  -- ^ debugging mode for the next game
   }
@@ -57,7 +58,8 @@ emptyStateServer =
     , sper = EM.empty
     , srandom = R.mkStdGen 42
     , sconfig = undefined
-    , squit = Nothing
+    , squit = False
+    , sbkpSave = False
     , sdebugSer = defDebugModeSer
     , sdebugNxt = defDebugModeSer
     }
@@ -94,7 +96,8 @@ instance Binary StateServer where
     sdebugSer <- get
     let srandom = read g
         sper = EM.empty
-        squit = Nothing
+        squit = False
+        sbkpSave = False
         sdebugNxt = defDebugModeSer
     return StateServer{..}
 

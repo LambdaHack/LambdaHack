@@ -426,22 +426,28 @@ setPathSer aid path = do
 
 -- * GameRestart
 
-gameRestartSer :: MonadActionRO m => ActorId -> WriterT [Atomic] m ()
+gameRestartSer ::MonadServer m => ActorId -> WriterT [Atomic] m ()
 gameRestartSer aid = do
   b <- getsState $ getActorBody aid
   let fid = bfaction b
   oldSt <- getsState $ gquit . (EM.! fid) . sfaction
+  modifyServer $ \ser -> ser {squit = True}  -- do this at once
   tellCmdAtomic $ QuitFactionA fid oldSt $ Just (False, Restart)
 
 -- * GameExit
 
-gameExitSer :: MonadServer m => m ()
-gameExitSer = modifyServer $ \ser -> ser {squit = Just True}
+gameExitSer :: MonadServer m => ActorId -> WriterT [Atomic] m ()
+gameExitSer aid = do
+  b <- getsState $ getActorBody aid
+  let fid = bfaction b
+  oldSt <- getsState $ gquit . (EM.! fid) . sfaction
+  modifyServer $ \ser -> ser {squit = True}  -- do this at once
+  tellCmdAtomic $ QuitFactionA fid oldSt $ Just (True, Camping)
 
 -- * GameSaveSer
 
 gameSaveSer :: MonadServer m => m ()
-gameSaveSer = modifyServer $ \ser -> ser {squit = Just False}
+gameSaveSer = modifyServer $ \ser -> ser {sbkpSave = True}  -- don't rush it
 
 -- * CfgDumpSer
 

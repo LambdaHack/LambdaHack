@@ -365,20 +365,17 @@ quitFactionUI fid toSt = do
       msgAdd msg
     Just (_, Camping) -> do
       let msg = makeSentence
-            [MU.SubjectVerbSg fidName "saved his game and left"]
+            [MU.SubjectVerbSg fidName "order save and exit"]
       msgAdd msg
     Just (_, Victor) -> do
       let msg = makeSentence
-            [MU.SubjectVerbSg fidName "complete the mission"]
+            [MU.SubjectVerbSg fidName "achieve victory"]
       msgAdd msg
     Just (_, Restart) -> do
       let msg = makeSentence
-            [MU.SubjectVerbSg fidName "request a mission restart"]
+            [MU.SubjectVerbSg fidName "order mission restart"]
       msgAdd msg
-    Nothing -> do
-      let msg = makeSentence
-            [MU.SubjectVerbSg fidName "cancel all requests"]
-      msgAdd msg
+    Nothing -> return ()
 
 -- * SfxAtomicUI
 

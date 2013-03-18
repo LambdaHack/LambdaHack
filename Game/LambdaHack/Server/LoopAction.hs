@@ -102,19 +102,23 @@ saveBkpAll = do
 
 endClip :: MonadServer m => [LevelId] -> WriterT [Atomic] m ()
 endClip arenas = do
-  quitS <- getsServer squit
-  -- If save&exit, don't age levels, since possibly not all actors have moved.
-  unless (quitS == Just True) $ do
+  quit <- getsServer squit
+  if quit then
+    -- In case of save and exit, don't age levels, since possibly
+    -- not all actors have moved yet.
+    modifyServer $ \ser -> ser {squit = False}
+  else do
     time <- getsState stime
     let clipN = time `timeFit` timeClip
         cinT = let r = timeTurn `timeFit` timeClip
                in assert (r > 2) r
         bkpFreq = cinT * 100
         clipMod = clipN `mod` cinT
-    when (quitS == Just False || clipN `mod` bkpFreq == 0) $ do
+    bkpSave <- getsServer sbkpSave
+    when (bkpSave || clipN `mod` bkpFreq == 0) $ do
+      modifyServer $ \ser -> ser {sbkpSave = False}
       tellCmdAtomic SaveBkpA
       saveGameBkp
-      modifyServer $ \ser1 -> ser1 {squit = Nothing}
     -- Regenerate HP and add monsters each turn, not each clip.
     when (clipMod == 1) $ mapM_ generateMonster arenas
     when (clipMod == 2) $ mapM_ regenerateLevelHP arenas
@@ -139,7 +143,7 @@ handleActors cmdSerSem arena subclipStart = do
   Kind.COps{coactor} <- getsState scops
   time <- getsState $ getLocalTime arena  -- the end time of this clip, inclusive
   prio <- getsLevel arena lprio
-  quitS <- getsServer squit
+  quit <- getsServer squit
   faction <- getsState sfaction
   s <- getState
   let mnext =
@@ -156,7 +160,7 @@ handleActors cmdSerSem arena subclipStart = do
            then Nothing  -- no actor is ready for another move
            else Just (actor, m)
   case mnext of
-    _ | isJust quitS -> return ()
+    _ | quit -> return ()
     Nothing -> do
 -- Disabled until the code is stable, not to pollute commands debug logs:
 --      when (subclipStart == timeZero) $
@@ -396,15 +400,9 @@ regenerateLevelHP arena = do
 endOrLoop :: (MonadAction m, MonadServerConn m) => m () -> m ()
 endOrLoop loopServer = do
   faction <- getsState sfaction
-  quitS <- getsServer squit
   let f (_, Faction{gquit=Nothing}) = Nothing
       f (fid, Faction{gquit=Just quit}) = Just (fid, quit)
-  case mapMaybe f $ EM.assocs faction of
-    _ | quitS == Just True -> do  -- save and exit
-      execAtomic $ tellCmdAtomic SaveExitA
-      saveGameSer
-      -- Do nothing, that is, quit the game loop.
-    quits -> processQuits loopServer quits
+  processQuits loopServer $ mapMaybe f $ EM.assocs faction
 
 processQuits :: (MonadAction m, MonadServerConn m)
              => m () -> [(FactionId, (Bool, Status))] -> m ()
@@ -446,7 +444,12 @@ processQuits loopServer ((fid, quit) : quits) = do
       registerScore status total
       restartGame loopServer
     Restart -> restartGame loopServer
-    Camping -> assert `failure` (fid, quit)
+    Camping -> do
+      execAtomic $ do
+        tellCmdAtomic $ QuitFactionA fid (Just quit) Nothing
+        tellCmdAtomic SaveExitA
+      saveGameSer
+      -- Con't call @loopServer@, that is, quit the game loop.
 
 restartGame :: (MonadAction m, MonadServerConn m) => m () -> m ()
 restartGame loopServer = do

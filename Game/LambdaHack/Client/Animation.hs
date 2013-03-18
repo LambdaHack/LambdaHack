@@ -172,8 +172,8 @@ fadeout out topRight lxsize lysize = do
         in EM.findWithDefault ' ' k edge
       rollFrame n = do
         r <- random
-        let l = [ ( PointXY ( (if topRight then id else (xbound -)) x, y)
-                  , fadeChar r n x y)
+        let l = [ ( PointXY (if topRight then x else xbound - x, y)
+                  , fadeChar r n x y )
                 | x <- [0..xbound]
                 , y <- [max 0 (ybound - (n - x) `div` 2)..ybound]
                     ++ [0..min ybound ((n - xbound + x) `div` 2)]

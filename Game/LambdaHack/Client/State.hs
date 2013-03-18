@@ -52,9 +52,9 @@ data StateClient = StateClient
   , sframe    :: ![(Maybe SingleFrame, Bool)]  -- ^ accumulated frames
   , _sleader  :: !(Maybe ActorId)  -- ^ selected actor
   , _sside    :: !FactionId     -- ^ faction controlled by the client
-  , squit     :: !Bool          -- ^ will finish listening and exit
+  , squit     :: !Bool          -- ^ exit the game loop
   , sisAI     :: !Bool          -- ^ whether it's an AI client
-  , sdebugCmdClientAI :: !DebugModeCli  -- ^ debugging mode
+  , sdebugCli :: !DebugModeCli  -- ^ debugging mode
   }
   deriving (Show, Typeable)
 
@@ -100,7 +100,7 @@ defStateClient shistory sconfigUI _sside sisAI = do
     , _sside
     , squit = False
     , sisAI
-    , sdebugCmdClientAI = defDebugModeCli
+    , sdebugCli = defDebugModeCli
     }
 
 defDebugModeCli :: DebugModeCli
@@ -137,12 +137,12 @@ sside :: StateClient -> FactionId
 sside = _sside
 
 toggleMarkVision :: StateClient -> StateClient
-toggleMarkVision s@StateClient{sdebugCmdClientAI=sdebugCmdClientAI@DebugModeCli{smarkVision}} =
-  s {sdebugCmdClientAI = sdebugCmdClientAI {smarkVision = not smarkVision}}
+toggleMarkVision s@StateClient{sdebugCli=sdebugCli@DebugModeCli{smarkVision}} =
+  s {sdebugCli = sdebugCli {smarkVision = not smarkVision}}
 
 toggleMarkSmell :: StateClient -> StateClient
-toggleMarkSmell s@StateClient{sdebugCmdClientAI=sdebugCmdClientAI@DebugModeCli{smarkSmell}} =
-  s {sdebugCmdClientAI = sdebugCmdClientAI {smarkSmell = not smarkSmell}}
+toggleMarkSmell s@StateClient{sdebugCli=sdebugCli@DebugModeCli{smarkSmell}} =
+  s {sdebugCli = sdebugCli {smarkSmell = not smarkSmell}}
 
 instance Binary StateClient where
   put StateClient{..} = do
@@ -158,7 +158,6 @@ instance Binary StateClient where
     put sframe
     put _sleader
     put _sside
-    put squit
     put sisAI
   get = do
     stgtMode <- get
@@ -173,13 +172,13 @@ instance Binary StateClient where
     sframe <- get
     _sleader <- get
     _sside <- get
-    squit <- get
     sisAI <- get
     let sreport = emptyReport
         sfper = EM.empty
         srandom = read g
         slastKey = Nothing
-        sdebugCmdClientAI = defDebugModeCli
+        squit = False
+        sdebugCli = defDebugModeCli
     return StateClient{..}
 
 instance Binary TgtMode where

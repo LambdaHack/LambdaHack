@@ -402,6 +402,7 @@ gameExitHuman = do
 gameSaveHuman :: MonadClientUI m => m CmdSer
 gameSaveHuman = do
   leader <- getLeaderUI
+  msgAdd "Game backup will be saved at the end of the turn."
   -- Let the server save, while the client continues taking commands.
   return $ GameSaveSer leader
 
