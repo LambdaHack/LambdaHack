@@ -201,14 +201,7 @@ drawCmdAtomicUI verbose cmd = case cmd of
     side <- getsClient sside
     if bhp body <= 0 && not (bproj body) && bfaction body == side then do
       actorVerbMU body "die"
-      --  Config{configFirstDeathEnds} <- getsServer sconfig
-      -- if isHuman then sendQueryUI fid CarryOnCli else return False
-      go <- displayMore ColorBW ""
-      when go $ do
-        actorD <- getsState sactorD
-        let alive (_, b) = bfaction b == side && not (bproj b)
-            party = filter alive $ EM.assocs actorD
-        when (not $ null $ party) $ msgAdd "The survivors carry on."
+      void $ displayMore ColorBW ""
     else when verbose $ actorVerbMU body "disappear"
   CreateItemA _ item k _ | verbose -> itemVerbMU item k "appear"
   DestroyItemA _ item k _ | verbose -> itemVerbMU item k "disappear"
@@ -238,6 +231,11 @@ drawCmdAtomicUI verbose cmd = case cmd of
     else do
       fidName <- getsState $ gname . (EM.! toFid) . sfaction
       aVerbMU target $ MU.Text $ "fall under the influence of" <+> fidName
+  LeadFactionA _ source target -> do
+    actorD <- getsState sactorD
+    let sourceDead = maybe True (isNothing . flip EM.lookup actorD) source
+        targetAlive = isJust target
+    when (sourceDead && targetAlive) $ msgAdd "The survivors carry on."
   QuitFactionA fid _ toSt -> quitFactionUI fid toSt
   AlterTileA _ _ _ _ | verbose ->
     return ()  -- TODO: door opens

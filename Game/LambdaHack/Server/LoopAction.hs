@@ -29,6 +29,7 @@ import Game.LambdaHack.Point
 import Game.LambdaHack.Random
 import Game.LambdaHack.Server.Action hiding (sendUpdateAI, sendUpdateUI)
 import Game.LambdaHack.Server.AtomicSemSer
+import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.ServerSem
 import Game.LambdaHack.Server.StartAction
@@ -271,15 +272,19 @@ handleActors cmdSerSem arena subclipStart = do
     -- TODO: or just fail at each abort in AI code? or use tryWithFrame?
               handleActors cmdSerSem arena subclipStart
 
-dieSer :: MonadActionRO m => ActorId -> WriterT [Atomic] m ()
+dieSer :: MonadServer m => ActorId -> WriterT [Atomic] m ()
 dieSer aid = do  -- TODO: explode if a projectile holding a potion
   body <- getsState $ getActorBody aid
+  let fid = bfaction body
   -- TODO: clients don't see the death of their last standing actor;
   --       modify Draw.hs and Client.hs to handle that
-  electLeader (bfaction body) (blid body) aid
+  mleader <- electLeader fid (blid body) aid
   dropAllItems aid body
   tellCmdAtomic $ DestroyActorA aid body {bbag = EM.empty} []
---  Config{configFirstDeathEnds} <- getsServer sconfig
+  spawning <- getsState $ flip isSpawningFaction fid
+  when (not spawning && isNothing mleader) $ do
+    oldSt <- getsState $ gquit . (EM.! fid) . sfaction
+    tellCmdAtomic $ QuitFactionA fid oldSt $ Just (True, Killed $ blid body)
 
 -- | Drop all actor's items.
 dropAllItems :: MonadActionRO m => ActorId -> Actor -> WriterT [Atomic] m ()
@@ -289,18 +294,24 @@ dropAllItems aid b = do
                                      (CFloor (blid b) (bpos b))
   mapM_ f $ EM.assocs $ bbag b
 
-electLeader :: MonadActionRO m
-            => FactionId -> LevelId -> ActorId -> WriterT [Atomic] m ()
+electLeader :: MonadServer m
+            => FactionId -> LevelId -> ActorId
+            -> WriterT [Atomic] m (Maybe ActorId)
 electLeader fid lid aidDead = do
   mleader <- getsState $ gleader . (EM.! fid) . sfaction
-  when (isNothing mleader || mleader == Just aidDead) $ do
+  if isNothing mleader || mleader == Just aidDead then do
     actorD <- getsState sactorD
     let ours (_, b) = bfaction b == fid && not (bproj b)
         party = filter ours $ EM.assocs actorD
     onLevel <- getsState $ actorNotProjAssocs (== fid) lid
-    let mleaderNew = listToMaybe $ filter (/= aidDead)
-                     $ map fst $ onLevel ++ party
+    Config{configFirstDeathEnds} <- getsServer sconfig
+    spawning <- getsState $ flip isSpawningFaction fid
+    let mleaderNew | configFirstDeathEnds && not spawning = Nothing
+                   | otherwise = listToMaybe $ filter (/= aidDead)
+                                 $ map fst $ onLevel ++ party
     tellCmdAtomic $ LeadFactionA fid mleader mleaderNew
+    return mleaderNew
+  else return mleader
 
 -- | Advance the move time for the given actor.
 advanceTime :: MonadActionRO m => ActorId -> m [Atomic]
