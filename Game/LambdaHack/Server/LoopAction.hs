@@ -55,9 +55,8 @@ loopSer :: (MonadAction m, MonadServerConn m)
 loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
   -- Recover states.
   restored <- tryRestore cops
-  -- TODO: use the _msg somehow
   case restored of
-    Right _msg -> do  -- Starting a new game.
+    Nothing -> do  -- Starting a new game.
       -- Set up commandline debug mode
       modifyServer $ \ser -> ser {sdebugNxt}
       gameReset cops
@@ -65,7 +64,7 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
       execAtomic reinitGame
       -- Save ASAP in case of crashes and disconnects.
       saveBkpAll
-    Left (gloRaw, ser, _msg) -> do  -- Running a restored game.
+    Just (gloRaw, ser) -> do  -- Running a restored game.
       putState $ updateCOps (const cops) gloRaw
       putServer ser {sdebugNxt}
       initConn sdebugNxt executorUI executorAI
@@ -340,8 +339,7 @@ generateMonster arena = do
       spawns = actorNotProjList f arena s
   rc <- rndToAction $ monsterGenChance ldepth (length spawns)
   when rc $ do
-    let allPers =
-          ES.unions $ map (totalVisible . (EM.! arena)) $ EM.elems pers
+    let allPers = ES.unions $ map (totalVisible . (EM.! arena)) $ EM.elems pers
     pos <- rndToAction $ rollSpawnPos cops allPers arena lvl s
     spawnMonsters [pos] arena
 

@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 -- | Saving and restoring server game state.
 module Game.LambdaHack.Server.Action.Save
   ( saveGameBkpSer, saveGameSer, restoreGameSer
@@ -7,13 +6,11 @@ module Game.LambdaHack.Server.Action.Save
 import Control.Concurrent
 import qualified Control.Exception as Ex hiding (handle)
 import Control.Monad
-import Data.Text (Text)
-import qualified Data.Text as T
 import System.Directory
 import System.FilePath
+import System.IO
 import System.IO.Unsafe (unsafePerformIO)
 
-import Game.LambdaHack.Msg
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.State
@@ -50,12 +47,12 @@ saveGameSer Config{configAppDataDir} s ser = do
 
 -- | Restore a saved game, if it exists. Initialize directory structure
 -- and cope over data files, if needed.
-restoreGameSer :: Config -> (FilePath -> IO FilePath) -> Text
-               -> IO (Either (State, StateServer, Msg) Msg)
+restoreGameSer :: Config -> (FilePath -> IO FilePath)
+               -> IO (Maybe (State, StateServer))
 restoreGameSer Config{ configAppDataDir
                      , configRulesCfgFile
                      , configScoresFile }
-               pathsDataFile title = do
+               pathsDataFile = do
   -- Create user data directory and copy files, if not already there.
   tryCreateDir configAppDataDir
   tryCopyDataFiles pathsDataFile
@@ -75,22 +72,23 @@ restoreGameSer Config{ configAppDataDir
     (if sb
        then do
          (s, ser) <- strictDecodeEOF saveFileBkp
-         let msg = "Welcome back to" <+> title <> "."
-         return $ Left (s, ser, msg)
+         return $ Just (s, ser)
        else
          if bb
            then do
              (s, ser) <- strictDecodeEOF saveFileBkp
-             let msg = "No server savefile found. Restoring from a backup savefile."
-             return $ Left (s, ser, msg)
-           else do
-             let msg = "Welcome to" <+> title <> "!"
-             return $ Right msg
+             let msg = "No server savefile found. "
+                       ++ "Restoring from a backup savefile."
+             hPutStrLn stderr msg
+             return $ Just (s, ser)
+           else return Nothing
     )
     (\ e -> case e :: Ex.SomeException of
-              _ -> let msg =
-                         "Starting a new game, because server restore failed."
-                         <+> "The error message was:"
-                         <+> (T.unwords . T.lines) (showT e)
-                   in return $ Right msg
+              _ -> do
+                let msg =
+                      "Starting a new game, because server restore failed. "
+                      ++ "The error message was: "
+                      ++ (unwords . lines) (show e)
+                hPutStrLn stderr msg
+                return Nothing
     )

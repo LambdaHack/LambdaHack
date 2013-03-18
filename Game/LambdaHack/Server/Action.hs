@@ -188,14 +188,13 @@ registerScore status total = do
       encodeEOF (configScoresFile config) (ntable :: HighScore.ScoreTable)
 
 tryRestore :: MonadServer m
-           => Kind.COps -> m (Either (State, StateServer, Msg) Msg)
+           => Kind.COps -> m (Maybe (State, StateServer))
 tryRestore Kind.COps{corule} = do
-  let title = rtitle $ Kind.stdRuleset corule
-      pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
+  let pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
   -- A throw-away copy of rules config, to be used until the old
   -- version of the config can be read from the savefile.
   (sconfig, _, _) <- mkConfigRules corule
-  liftIO $ Save.restoreGameSer sconfig pathsDataFile title
+  liftIO $ Save.restoreGameSer sconfig pathsDataFile
 
 -- | Prepare connections based on factions.
 connServer :: MonadServerConn m => m ()
