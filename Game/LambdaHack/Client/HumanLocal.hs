@@ -196,7 +196,7 @@ retargetLeader = do
 
 -- * SelectHero
 
-selectHeroHuman :: (MonadActionAbort m, MonadClientUI m) => Int -> m ()
+selectHeroHuman :: (MonadClientAbort m, MonadClientUI m) => Int -> m ()
 selectHeroHuman k = do
   side <- getsClient sside
   loc <- getState
@@ -207,7 +207,7 @@ selectHeroHuman k = do
 -- * MemberCycle
 
 -- | Switches current member to the next on the level, if any, wrapping.
-memberCycleHuman :: (MonadActionAbort m, MonadClientUI m) => m ()
+memberCycleHuman :: (MonadClientAbort m, MonadClientUI m) => m ()
 memberCycleHuman = do
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
@@ -260,7 +260,7 @@ stopRunning = modifyClient (\ cli -> cli { srunning = Nothing })
 -- * MemberBack
 
 -- | Switches current member to the previous in the whole dungeon, wrapping.
-memberBackHuman :: (MonadActionAbort m, MonadClientUI m) => m ()
+memberBackHuman :: (MonadClientAbort m, MonadClientUI m) => m ()
 memberBackHuman = do
   leader <- getLeaderUI
   hs <- partyAfterLeader leader
@@ -275,7 +275,7 @@ memberBackHuman = do
 -- TODO: When inventory is displayed, let TAB switch the leader (without
 -- announcing that) and show the inventory of the new leader.
 -- | Display inventory
-inventoryHuman :: (MonadActionAbort m, MonadClientUI m)
+inventoryHuman :: (MonadClientAbort m, MonadClientUI m)
                => WriterT Slideshow m ()
 inventoryHuman = do
   Kind.COps{coactor} <- getsState scops
@@ -368,7 +368,7 @@ tgtEnemyLeader stgtModeNew = do
 
 -- | Change the displayed level in targeting mode to (at most)
 -- k levels shallower. Enters targeting mode, if not already in one.
-tgtAscendHuman :: (MonadActionAbort m, MonadClientUI m)
+tgtAscendHuman :: (MonadClientAbort m, MonadClientUI m)
                => Int -> WriterT Slideshow m ()
 tgtAscendHuman k = do
   Kind.COps{cotile} <- getsState scops
@@ -415,7 +415,7 @@ setTgtId nln = do
 -- * EpsIncr
 
 -- | Tweak the @eps@ parameter of the targeting digital line.
-epsIncrHuman :: (MonadActionAbort m, MonadClient m) => Bool -> m ()
+epsIncrHuman :: MonadClientAbort m => Bool -> m ()
 epsIncrHuman b = do
   stgtMode <- getsClient stgtMode
   if isJust stgtMode

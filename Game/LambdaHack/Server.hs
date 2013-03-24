@@ -85,7 +85,7 @@ mainSer :: Kind.COps -> IO ()
 mainSer copsSlow = do
   sdebugNxt <- debugArgs
   let cops = speedupCOps False copsSlow
-      loopClientUI :: ( MonadActionAbort m, MonadAction m
+      loopClientUI :: ( MonadClientAbort m, MonadAction m
                       , MonadClientUI m, MonadClientConn CmdClientUI m )
                    => m ()
       loopClientUI = loopUI cmdClientUISem

@@ -8,7 +8,7 @@ module Game.LambdaHack.Client.Action
     MonadClient( getClient, getsClient, putClient, modifyClient )
   , MonadClientUI
   , MonadClientConn
-  , MonadActionAbort( abortWith, tryWith )
+  , MonadClientAbort( abortWith, tryWith )
   , SessionUI(..)
     -- * Various ways to abort action
   , abort, abortIfWith, neverMind
@@ -78,26 +78,26 @@ import Game.LambdaHack.Utils.Assert
 
 -- | Reset the state and resume from the last backup point, i.e., invoke
 -- the failure continuation.
-abort :: MonadActionAbort m => m a
+abort :: MonadClientAbort m => m a
 abort = abortWith ""
 
 -- | Abort and print the given msg if the condition is true.
-abortIfWith :: MonadActionAbort m => Bool -> Msg -> m a
+abortIfWith :: MonadClientAbort m => Bool -> Msg -> m a
 abortIfWith True msg = abortWith msg
 abortIfWith False _  = abortWith ""
 
 -- | Abort and conditionally print the fixed message.
-neverMind :: MonadActionAbort m => Bool -> m a
+neverMind :: MonadClientAbort m => Bool -> m a
 neverMind b = abortIfWith b "never mind"
 
 -- | Take a handler and a computation. If the computation fails, the
 -- handler is invoked and then the computation is retried.
-tryRepeatedlyWith :: MonadActionAbort m => (Msg -> m ()) -> m () -> m ()
+tryRepeatedlyWith :: MonadClientAbort m => (Msg -> m ()) -> m () -> m ()
 tryRepeatedlyWith exc m =
   tryWith (\msg -> exc msg >> tryRepeatedlyWith exc m) m
 
 -- | Try the given computation and silently catch failure.
-tryIgnore :: MonadActionAbort m => m () -> m ()
+tryIgnore :: MonadClientAbort m => m () -> m ()
 tryIgnore =
   tryWith (\msg -> if T.null msg
                    then return ()
@@ -105,7 +105,7 @@ tryIgnore =
 
 -- | Set the current exception handler. Apart of executing it,
 -- draw and pass along a slide with the abort message (even if message empty).
-tryWithSlide :: (MonadActionAbort m, MonadClientUI m)
+tryWithSlide :: (MonadClientAbort m, MonadClientUI m)
              => m a -> WriterT Slideshow m a -> WriterT Slideshow m a
 tryWithSlide exc h =
   let excMsg msg = do
@@ -294,7 +294,7 @@ displayYesNo prompt = do
 -- | Print a prompt and an overlay and wait for a player keypress.
 -- If many overlays, scroll screenfuls with SPACE. Do not wrap screenfuls
 -- (in some menus @?@ cycles views, so the user can restart from the top).
-displayChoiceUI :: (MonadActionAbort m, MonadClientUI m)
+displayChoiceUI :: (MonadClientAbort m, MonadClientUI m)
                 => Msg -> Overlay -> [K.KM] -> m K.KM
 displayChoiceUI prompt ov keys = do
   slides <- fmap runSlideshow $ overlayToSlideshow (prompt <> ", ESC]") ov

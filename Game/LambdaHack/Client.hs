@@ -38,7 +38,7 @@ cmdClientAISem cmd = case cmd of
     cmdC <- queryAI aid
     writeConnFromClient cmdC
 
-cmdClientUISem :: ( MonadActionAbort m, MonadAction m
+cmdClientUISem :: ( MonadClientAbort m, MonadAction m
                   , MonadClientUI m, MonadClientConn c m )
                => CmdClientUI -> m ()
 cmdClientUISem cmd = do

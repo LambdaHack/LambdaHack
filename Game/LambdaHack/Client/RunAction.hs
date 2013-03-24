@@ -153,7 +153,7 @@ runDisturbance locLast distLast report hs ms per posHere
 -- it ajusts the direction given by the vector if we reached
 -- a corridor's corner (we never change direction except in corridors)
 -- and it increments the counter of traversed tiles.
-continueRunDir :: (MonadActionAbort m, MonadClient m)
+continueRunDir :: MonadClientAbort m
                => ActorId -> (Vector, Int)
                -> m (Vector, Int)
 continueRunDir leader (dirLast, distLast) = do

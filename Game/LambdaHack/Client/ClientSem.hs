@@ -58,7 +58,7 @@ queryAI actor = do
     rndToAction $ frequency $ bestVariant $ stratAction
 
 -- | Handle the move of the hero.
-queryUI :: (MonadActionAbort m, MonadClientUI m) => ActorId -> m CmdSer
+queryUI :: (MonadClientAbort m, MonadClientUI m) => ActorId -> m CmdSer
 queryUI aid = do
   -- When running, stop if aborted by a disturbance. Otherwise let
   -- the human player issue commands, until any of them takes time.
@@ -73,8 +73,7 @@ queryUI aid = do
     maybe abort (continueRun leader) srunning
 
 -- | Continue running in the given direction.
-continueRun :: (MonadActionAbort m, MonadClient m)
-            => ActorId -> (Vector, Int) -> m CmdSer
+continueRun :: MonadClientAbort m => ActorId -> (Vector, Int) -> m CmdSer
 continueRun leader dd = do
   (dir, distNew) <- continueRunDir leader dd
   modifyClient $ \cli -> cli {srunning = Just (dir, distNew)}
@@ -83,7 +82,7 @@ continueRun leader dd = do
 
 -- | Determine and process the next human player command. The argument is
 -- the last abort message due to running, if any.
-humanCommand :: forall m. (MonadActionAbort m, MonadClientUI m)
+humanCommand :: forall m. (MonadClientAbort m, MonadClientUI m)
              => Msg
              -> m CmdSer
 humanCommand msgRunAbort = do

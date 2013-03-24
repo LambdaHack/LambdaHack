@@ -70,7 +70,7 @@ waitHuman = do
 
 -- * Pickup
 
-pickupHuman :: (MonadActionAbort m, MonadClientUI m) => m CmdSer
+pickupHuman :: (MonadClientAbort m, MonadClientUI m) => m CmdSer
 pickupHuman = do
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
@@ -90,7 +90,7 @@ pickupHuman = do
 -- TODO: you can drop an item already on the floor, which works correctly,
 -- but is weird and useless.
 -- | Drop a single item.
-dropHuman :: (MonadActionAbort m, MonadClientUI m) => m CmdSer
+dropHuman :: (MonadClientAbort m, MonadClientUI m) => m CmdSer
 dropHuman = do
   -- TODO: allow dropping a given number of identical items.
   Kind.COps{coactor, coitem} <- getsState scops
@@ -110,7 +110,7 @@ allObjectsName :: Text
 allObjectsName = "Objects"
 
 -- | Let the human player choose any item from a list of items.
-getAnyItem :: (MonadActionAbort m, MonadClientUI m)
+getAnyItem :: (MonadClientAbort m, MonadClientUI m)
            => ActorId
            -> Text     -- ^ prompt
            -> ItemBag  -- ^ all items in question
@@ -123,7 +123,7 @@ data ItemDialogState = INone | ISuitable | IAll deriving Eq
 
 -- | Let the human player choose a single, preferably suitable,
 -- item from a list of items.
-getItem :: (MonadActionAbort m, MonadClientUI m)
+getItem :: (MonadClientAbort m, MonadClientUI m)
         => ActorId
         -> Text            -- ^ prompt message
         -> (Item -> Bool)  -- ^ which items to consider suitable
@@ -203,7 +203,7 @@ getItem aid prompt p ptext bag inv isn = do
 
 -- * Project
 
-projectLeader :: (MonadActionAbort m, MonadClientUI m)
+projectLeader :: (MonadClientAbort m, MonadClientUI m)
               => MU.Part -> MU.Part -> [Char] -> m CmdSer
 projectLeader verb object syms = do
   side <- getsClient sside
@@ -218,7 +218,7 @@ projectLeader verb object syms = do
     then abortWith "You can't aim in melee."
     else actorProjectGI leader verb object syms
 
-actorProjectGI :: (MonadActionAbort m, MonadClientUI m)
+actorProjectGI :: (MonadClientAbort m, MonadClientUI m)
                => ActorId -> MU.Part -> MU.Part -> [Char]
                -> m CmdSer
 actorProjectGI aid verb object syms = do
@@ -240,7 +240,7 @@ actorProjectGI aid verb object syms = do
 
 -- * Apply
 
-applyHuman :: (MonadActionAbort m, MonadClientUI m)
+applyHuman :: (MonadClientAbort m, MonadClientUI m)
            => MU.Part -> MU.Part -> [Char]
            -> m CmdSer
 applyHuman verb object syms = do
@@ -255,7 +255,7 @@ applyHuman verb object syms = do
 -- | Let a human player choose any item with a given group name.
 -- Note that this does not guarantee the chosen item belongs to the group,
 -- as the player can override the choice.
-getGroupItem :: (MonadActionAbort m, MonadClientUI m)
+getGroupItem :: (MonadClientAbort m, MonadClientUI m)
              => ActorId
              -> ItemBag  -- ^ all objects in question
              -> ItemInv  -- ^ inventory characters
@@ -272,7 +272,7 @@ getGroupItem leader is inv object syms prompt packName = do
 -- * TriggerDir
 
 -- | Ask for a direction and trigger a tile, if possible.
-triggerDirHuman :: (MonadActionAbort m, MonadClientUI m)
+triggerDirHuman :: (MonadClientAbort m, MonadClientUI m)
                 => F.Feature -> MU.Part -> m CmdSer
 triggerDirHuman feat verb = do
   let keys = zip K.dirAllMoveKey $ repeat K.NoModifier
@@ -284,7 +284,7 @@ triggerDirHuman feat verb = do
   K.handleDir lxsize e (leaderBumpDir feat) (neverMind True)
 
 -- | Leader tries to trigger a tile in a given direction.
-leaderBumpDir :: (MonadActionAbort m, MonadClientUI m)
+leaderBumpDir :: (MonadClientAbort m, MonadClientUI m)
               => F.Feature -> Vector -> m CmdSer
 leaderBumpDir feat dir = do
   leader <- getLeaderUI
@@ -294,7 +294,7 @@ leaderBumpDir feat dir = do
 
 -- | Player tries to trigger a tile using a feature.
 -- To help the player, only visible features can be triggered.
-bumpTile :: (MonadActionAbort m, MonadClientUI m)
+bumpTile :: (MonadClientAbort m, MonadClientUI m)
          => ActorId -> Point -> F.Feature -> m CmdSer
 bumpTile leader dpos feat = do
   Kind.COps{cotile} <- getsState scops
@@ -309,7 +309,7 @@ bumpTile leader dpos feat = do
   else guessBump cotile feat t
 
 -- | Verify important feature triggers, such as fleeing the dungeon.
-verifyTrigger :: (MonadActionAbort m, MonadClientUI m)
+verifyTrigger :: (MonadClientAbort m, MonadClientUI m)
               => ActorId -> F.Feature -> m ()
 verifyTrigger leader feat = case feat of
   F.Ascendable -> do
@@ -342,7 +342,7 @@ verifyTrigger leader feat = case feat of
   _ -> return ()
 
 -- | Guess and report why the bump command failed.
-guessBump :: MonadActionAbort m => Kind.Ops TileKind -> F.Feature -> Kind.Id TileKind -> m a
+guessBump :: MonadClientAbort m => Kind.Ops TileKind -> F.Feature -> Kind.Id TileKind -> m a
 guessBump cotile F.Openable t | Tile.hasFeature cotile F.Closable t =
   abortWith "already open"
 guessBump _ F.Openable _ =
@@ -364,7 +364,7 @@ guessBump _ _ _ = neverMind True
 -- * TriggerTile
 
 -- | Leader tries to trigger the tile he's standing on.
-triggerTileHuman :: (MonadActionAbort m, MonadClientUI m)
+triggerTileHuman :: (MonadClientAbort m, MonadClientUI m)
                  => F.Feature -> m CmdSer
 triggerTileHuman feat = do
   leader <- getLeaderUI
@@ -373,7 +373,7 @@ triggerTileHuman feat = do
 
 -- * GameRestart; does not take time
 
-gameRestartHuman :: (MonadActionAbort m, MonadClientUI m) => m CmdSer
+gameRestartHuman :: (MonadClientAbort m, MonadClientUI m) => m CmdSer
 gameRestartHuman = do
   b1 <- displayMore ColorFull "You just requested a new game."
   when (not b1) $ neverMind True
@@ -385,7 +385,7 @@ gameRestartHuman = do
 
 -- * GameExit; does not take time
 
-gameExitHuman :: (MonadActionAbort m, MonadClientUI m) => m CmdSer
+gameExitHuman :: (MonadClientAbort m, MonadClientUI m) => m CmdSer
 gameExitHuman = do
   b <- displayYesNo "Really save and exit?"
   if b then do

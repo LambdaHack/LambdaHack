@@ -57,7 +57,7 @@ instance Functor (ActionCli c) where
 instance Show (ActionCli c a) where
   show _ = "an action"
 
-instance MonadActionAbort (ActionCli c) where
+instance MonadClientAbort (ActionCli c) where
   tryWith exc m  =
     ActionCli (\c d k a s cli ->
              let runA msg = runActionCli (exc msg) c d k a s cli

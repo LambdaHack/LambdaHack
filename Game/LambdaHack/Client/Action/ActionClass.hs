@@ -53,14 +53,14 @@ class MonadActionRO m => MonadClientConn c m | m -> c where
   getsConn  :: (Conn c -> a) -> m a
 
 -- | The bottom of the action monads class semilattice.
-class (Monad m, Functor m) => MonadActionAbort m where
+class MonadClient m => MonadClientAbort m where
   -- Set the current exception handler. First argument is the handler,
   -- second is the computation the handler scopes over.
   tryWith      :: (Msg -> m a) -> m a -> m a
   -- Abort with the given message.
   abortWith    :: Msg -> m a
 
-instance (Monoid a, MonadActionAbort m) => MonadActionAbort (WriterT a m) where
+instance (Monoid a, MonadClientAbort m) => MonadClientAbort (WriterT a m) where
   tryWith exc m =
     WriterT $ tryWith (\msg -> runWriterT (exc msg)) (runWriterT m)
   abortWith   = lift . abortWith

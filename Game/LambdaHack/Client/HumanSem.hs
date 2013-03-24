@@ -29,7 +29,7 @@ import Game.LambdaHack.VectorXY
 -- Time cosuming commands are marked as such in help and cannot be
 -- invoked in targeting mode on a remote level (level different than
 -- the level of the selected hero).
-cmdHumanSem :: (MonadActionAbort m, MonadClientUI m)
+cmdHumanSem :: (MonadClientAbort m, MonadClientUI m)
             => HumanCmd -> WriterT Slideshow m (Maybe CmdSer)
 cmdHumanSem cmd = do
   arena <- getArenaUI
@@ -37,7 +37,7 @@ cmdHumanSem cmd = do
   cmdAction cmd
 
 -- | The basic action for a command and whether it takes time.
-cmdAction :: (MonadActionAbort m, MonadClientUI m)
+cmdAction :: (MonadClientAbort m, MonadClientUI m)
           => HumanCmd -> WriterT Slideshow m (Maybe CmdSer)
 cmdAction cmd = case cmd of
   Move v -> moveHuman v
@@ -73,7 +73,7 @@ cmdAction cmd = case cmd of
 
 -- | If in targeting mode, check if the current level is the same
 -- as player level and refuse performing the action otherwise.
-checkCursor :: (MonadActionAbort m, MonadClientUI m) => LevelId -> m ()
+checkCursor :: (MonadClientAbort m, MonadClientUI m) => LevelId -> m ()
 checkCursor arena = do
   (lid, _) <- viewedLevel
   when (arena /= lid) $
@@ -115,7 +115,7 @@ runHuman v = do
     let dir = toDir lxsize v
     in fmap Just $ runLeader dir
 
-projectHuman :: (MonadActionAbort m, MonadClientUI m)
+projectHuman :: (MonadClientAbort m, MonadClientUI m)
              => MU.Part -> MU.Part -> [Char]
              -> WriterT Slideshow m (Maybe CmdSer)
 projectHuman verb object syms = do
