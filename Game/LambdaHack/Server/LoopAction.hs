@@ -72,7 +72,7 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
       execAtomic $ broadcastCmdAtomic $ \fid -> ResumeA fid (pers EM.! fid)
   -- Loop.
   let loop = do
-        let run arena = handleActors cmdSerSem arena timeZero
+        let run arena = handleActors cmdSerSem arena
             factionArena fac =
               case gleader fac of
                 Nothing -> return Nothing
@@ -126,154 +126,106 @@ endClip arenas = do
     tellCmdAtomic $ AgeGameA timeClip
 
 -- | Perform moves for individual actors, as long as there are actors
--- with the next move time less than or equal to the current time.
+-- with the next move time less than or equal to the current level time.
 -- Some very fast actors may move many times a clip and then
 -- we introduce subclips and produce many frames per clip to avoid
--- jerky movement. Otherwise we push exactly one frame or frame delay.
--- We start by updating perception, because the selected level of dungeon
--- has changed since last time (every change, whether by human or AI
--- or @generateMonster@ is followd by a call to @handleActors@).
+-- jerky movement. But most often we push exactly one frame or frame delay.
 handleActors :: (MonadAction m, MonadServerConn m)
              => (CmdSer -> m [Atomic])
              -> LevelId
-             -> Time  -- ^ start time of current subclip, exclusive
              -> m ()
-handleActors cmdSerSem arena subclipStart = do
+handleActors cmdSerSem arena = do
   Kind.COps{coactor} <- getsState scops
-  time <- getsState $ getLocalTime arena  -- the end time of this clip, inclusive
+  time <- getsState $ getLocalTime arena  -- the end of this clip, inclusive
   prio <- getsLevel arena lprio
   quit <- getsServer squit
   faction <- getsState sfaction
   s <- getState
-  let mnext =
-        let -- Actors of the same faction move together.
-            -- TODO: insert wrt order, instead of sorting
-            isLeader (a1, b1) =
-              not $ Just a1 == gleader (faction EM.! bfaction b1)
-            order = Ord.comparing $ ((>= 0) . bhp . snd) &&& bfaction . snd
-                                    &&& isLeader &&& bsymbol . snd
-            (atime, as) = EM.findMin prio
-            ams = map (\a -> (a, getActorBody a s)) as
-            (actor, m) = head $ sortBy order ams
-        in if atime > time
-           then Nothing  -- no actor is ready for another move
-           else Just (actor, m)
+  let -- Actors of the same faction move together.
+      -- TODO: insert wrt the order, instead of sorting
+      isLeader (aid, b) = not $ Just aid == gleader (faction EM.! bfaction b)
+      order = Ord.comparing $
+        ((>= 0) . bhp . snd) &&& bfaction . snd &&& isLeader &&& bsymbol . snd
+      (atime, as) = EM.findMin prio
+      ams = map (\a -> (a, getActorBody a s)) as
+      mnext | EM.null prio = Nothing  -- no actor alive, wait until it spawns
+            | otherwise = if atime > time
+                          then Nothing  -- no actor is ready for another move
+                          else Just $ head $ sortBy order ams
   case mnext of
     _ | quit -> return ()
-    Nothing -> do
--- Disabled until the code is stable, not to pollute commands debug logs:
---      when (subclipStart == timeZero) $
---        mapM_ atomicSendSem $ map (Right . DisplayDelayD) $ EM.keys faction
-      return ()
-    Just (aid, b) | bhp b <= 0 && not (bproj b) || bhp b < 0
+    Nothing -> return ()
+      -- TODO: let clients insert DisplayDelayD once per clip based on time
+    Just (aid, b) | bproj b && bhp b < 0 -> do
+      -- A projectile hits an actor. The carried item is destroyed.
+      ais <- getsState $ getActorItem aid
+      execAtomic $ tellCmdAtomic $ DestroyActorA aid b ais
+      -- The attack animation for the projectile hit subsumes @DisplayPushD@,
+      -- so not sending an extra @DisplayPushD@ here.
+      handleActors cmdSerSem arena
+    Just (aid, b) | bhp b <= 0 && not (bproj b)
                     || maybe False null (bpath b) -> do
-      execAtomic $
-        if bproj b && bhp b < 0  -- a projectile hitting an actor
-        then do
-          -- Items are destroyed.
-          ais <- getsState $ getActorItem aid
-          tellCmdAtomic $ DestroyActorA aid b ais
-        else
-          -- Items drop to the ground and new leader elected.
-          dieSer aid
-      -- Death or projectile impact are serious, new subclip.
-      handleActors cmdSerSem arena (btime b)
-    Just (actor, body) -> do
-      -- TODO: too often, at least in multiplayer
+      -- An actor (projectile or not) ceases to exist.
+      -- Items drop to the ground and possibly a new leader is elected.
+      execAtomic $ dieSer aid
+      -- If it's a death, not a projectile drop, the death animation
+      -- subsumes @DisplayPushD@, so not sending it here. ProjectileProjectile
+      -- destruction is not important enough for an extra @DisplayPushD@.
+      handleActors cmdSerSem arena
+    Just (aid, body) -> do
+      -- TODO: let clients insert this once per clip based on time
       execAtomic $ broadcastSfxAtomic DisplayPushD
       let side = bfaction body
           fac = faction EM.! side
           mleader = gleader fac
-          isHuman = isHumanFact fac
           usesAI = usesAIFact fac
           hasHumanLeader = isNothing $ gAiLeader fac
-      if not usesAI || hasHumanLeader && Just actor == mleader
-        then do
-          -- TODO: check that the command is legal, that is, correct side, etc.
-          cmdS <- sendQueryUI side actor
-          atoms <- cmdSerSem cmdS
-          let isFailure cmd =
-                case cmd of SfxAtomic FailureD{} -> True; _ -> False
-              aborted = all isFailure atoms
-              timed = timedCmdSer cmdS
-              leaderNew = aidCmdSer cmdS
-              leadAtoms =
-                if leaderNew /= actor
-                then [CmdAtomic (LeadFactionA side mleader (Just leaderNew))]
-                else []
-          nH <- nHumans
-          -- TODO: do not fade out if all other are running (so the previous
-          -- move was of the same actor)
-          let fadeOut | nH > 1 =
-                -- More than one human player, mark end of turn.
-                [ SfxAtomic $ FadeoutD side True
-                , SfxAtomic $ FlushFramesD side
-                , SfxAtomic $ FadeinD side True ]
-                   | otherwise =
-                -- At most one human player, no need to send anything.
-                []
-          advanceAtoms <- if aborted || not timed
-                          then return []
-                          else fmap (++ fadeOut) $ advanceTime leaderNew
-          mapM_ atomicSendSem $ leadAtoms ++ atoms ++ advanceAtoms
-          if aborted then handleActors cmdSerSem arena subclipStart
-          else do
-            -- Advance time once, after the leader switched perhaps many times.
-            -- TODO: this is correct only when all heroes have the same
-            -- speed and can't switch leaders by, e.g., aiming a wand
-            -- of domination. We need to generalize by displaying
-            -- "(next move in .3s [RET]" when switching leaders.
-            -- RET waits .3s and gives back control,
-            -- Any other key does the .3s wait and the action form the key
-            -- at once. This requires quite a bit of refactoring
-            -- and is perhaps better done when the other factions have
-            -- selected leaders as well.
-            bNew <- getsState $ getActorBody leaderNew
-            -- Human moves always start a new subclip.
-            -- TODO: send messages with time (or at least DisplayPushCli)
-            -- and then send DisplayPushCli only to actors that see _pos.
-            -- Right now other need it too, to notice the delay.
-            -- This will also be more accurate since now unseen
-            -- simultaneous moves also generate delays.
-            -- TODO: when changing leaders of different levels, if there's
-            -- abort, a turn may be lost. Investigate/fix.
-            handleActors cmdSerSem arena (btime bNew)
-        else do
-          cmdS <- sendQueryAI side actor
-          atoms <- cmdSerSem cmdS
-          let isFailure cmd =
-                case cmd of SfxAtomic FailureD{} -> True; _ -> False
-              aborted = all isFailure atoms
-              timed = timedCmdSer cmdS
-              leaderNew = aidCmdSer cmdS
-              leadAtoms =
-                if leaderNew /= actor
-                then -- Only leader can change leaders
-                     assert (mleader == Just actor)
-                       [CmdAtomic (LeadFactionA side mleader (Just leaderNew))]
-                else []
-          advanceAtoms <- if aborted || not timed
-                          then return []
-                          else advanceTime leaderNew
-          mapM_ atomicSendSem $ leadAtoms ++ atoms ++ advanceAtoms
-          let subclipStartDelta = timeAddFromSpeed coactor body subclipStart
-          if not aborted && isHuman && not (bproj body)
-             || subclipStart == timeZero
-             || btime body > subclipStartDelta
-            then do
-              -- Start a new subclip if its our own faction moving
-              -- or it's another faction, but it's the first move of
-              -- this whole clip or the actor has already moved during
-              -- this subclip, so his multiple moves would be collapsed.
-    -- If the following action aborts, we just advance the time and continue.
-    -- TODO: or just fail at each abort in AI code? or use tryWithFrame?
-              bNew <- getsState $ getActorBody leaderNew
-              handleActors cmdSerSem arena (btime bNew)
-            else
-              -- No new subclip.
-    -- If the following action aborts, we just advance the time and continue.
-    -- TODO: or just fail at each abort in AI code? or use tryWithFrame?
-              handleActors cmdSerSem arena subclipStart
+          queryUI = not usesAI || hasHumanLeader && Just aid == mleader
+      -- TODO: check that the command is legal
+      cmdS <- (if queryUI then sendQueryUI else sendQueryAI) side aid
+      let timed = timedCmdSer cmdS
+          leaderNew = aidCmdSer cmdS
+          leadAtoms =
+            if leaderNew /= aid
+            then -- Only leader can change leaders  -- TODO: effLvlGoUp changes
+                 assert (mleader == Just aid)
+                   [CmdAtomic (LeadFactionA side mleader (Just leaderNew))]
+            else []
+      bPre <- getsState $ getActorBody leaderNew
+      -- Check if the client cheats, trying to move other faction actors.
+      assert (bfaction bPre == side `blame` (bPre, side)) skip
+      atoms <- cmdSerSem cmdS
+      nH <- nHumans
+      -- TODO: do not fade out if all other are running (so the previous
+      -- move was of the same actor) or if 2 moves in a row of a fast actor
+      let fadeOut
+            -- No UI, no time taken or at most one human player,
+            -- so no need to visually mark the end of the move.
+            | not queryUI || not timed || nH <= 1 = []
+            | otherwise = [ SfxAtomic $ FadeoutD side True
+                          , SfxAtomic $ FlushFramesD side
+                          , SfxAtomic $ FadeinD side True ]
+      -- Advance time once, after the leader switched perhaps many times.
+      -- TODO: this is correct only when all heroes have the same
+      -- speed and can't switch leaders by, e.g., aiming a wand
+      -- of domination. We need to generalize by displaying
+      -- "(next move in .3s [RET]" when switching leaders.
+      -- RET waits .3s and gives back control,
+      -- Any other key does the .3s wait and the action form the key
+      -- at once.
+      advanceAtoms <- if timed
+                      then advanceTime leaderNew
+                      else return []
+      mapM_ atomicSendSem $ leadAtoms ++ atoms ++ fadeOut ++ advanceAtoms
+      -- Generate extra frames if the actor has already moved during
+      -- this clip, so his multiple moves would be collapsed in one frame.
+      -- If the actor just change his speed this turn, the test can fail,
+      -- but it's a minor UI issue, so let it be.
+      let previousClipEnd = timeAdd time $ timeNegate timeClip
+          lastSingleMove = timeAddFromSpeed coactor bPre previousClipEnd
+      when (btime bPre > lastSingleMove) $
+        execAtomic $ broadcastSfxAtomic DisplayPushD
+      handleActors cmdSerSem arena
 
 dieSer :: MonadServer m => ActorId -> WriterT [Atomic] m ()
 dieSer aid = do  -- TODO: explode if a projectile holding a potion
@@ -349,16 +301,18 @@ rollSpawnPos Kind.COps{cotile} visible lid Level{ltile, lxsize, lstair} s = do
   let cminStairDist = chessDist lxsize (fst lstair) (snd lstair)
       inhabitants = actorNotProjList (const True) lid s
       isLit = Tile.isLit cotile
-      distantAtLeast d l _ =
-        all (\b -> chessDist lxsize (bpos b) l > d) inhabitants
+      distantAtLeast d p _ =
+        all (\b -> chessDist lxsize (bpos b) p > d) inhabitants
   findPosTry 40 ltile
-    [ distantAtLeast cminStairDist
-    , \ _ t -> not (isLit t)
+    [ \ _ t -> not (isLit t)  -- no such tiles on some maps
+    , distantAtLeast cminStairDist
     , distantAtLeast $ cminStairDist `div` 2
-    , \ l _ -> not $ l `ES.member` visible
+    , \ p _ -> not $ p `ES.member` visible
+    , distantAtLeast $ cminStairDist `div` 3
     , distantAtLeast $ cminStairDist `div` 4
-    , \ l t -> Tile.hasFeature cotile F.Walkable t
-               && unoccupied (actorList (const True) lid s) l
+    , distantAtLeast 3  -- otherwise a fast actor can walk and hit in one turn
+    , \ p t -> Tile.hasFeature cotile F.Walkable t
+               && unoccupied (actorList (const True) lid s) p
     ]
 
 -- TODO: generalize to any list of items (or effects) applied to all actors
