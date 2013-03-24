@@ -7,7 +7,6 @@ module Game.LambdaHack.Server.StartAction
 import Control.Arrow (second)
 import Control.Monad
 import qualified Control.Monad.State as St
-import Control.Monad.Writer.Strict (WriterT)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Maybe
@@ -68,7 +67,7 @@ initPer = do
       pers = dungeonPerception cops fovMode glo
   modifyServer $ \ser1 -> ser1 {sper = pers}
 
-reinitGame :: MonadServer m => WriterT [Atomic] m ()
+reinitGame :: MonadServerAtomic m => m ()
 reinitGame = do
   Kind.COps{ coitem=Kind.Ops{okind}, corule } <- getsState scops
   pers <- getsServer sper
@@ -146,7 +145,7 @@ gameReset cops@Kind.COps{coitem, corule} = do
   putServer defSer {sdebugNxt, sdebugSer = sdebugNxt}
 
 -- Spawn initial actors. Clients should notice this, to set their leaders.
-populateDungeon :: MonadServer m => WriterT [Atomic] m ()
+populateDungeon :: MonadServerAtomic m => m ()
 populateDungeon = do
   cops@Kind.COps{ cotile
                 , cofact=Kind.Ops{okind} } <- getsState scops
@@ -177,7 +176,7 @@ populateDungeon = do
           addHero side p arena heroName (Just n)
         mleader <- getsState $ gleader . (EM.! side) . sfaction
         when (mleader == Nothing) $
-          tellCmdAtomic $ LeadFactionA side Nothing (Just $ head laid)
+          execCmdAtomic $ LeadFactionA side Nothing (Just $ head laid)
   mapM_ initialHeroes arenas
 
 -- | Find starting postions for all factions. Try to make them distant

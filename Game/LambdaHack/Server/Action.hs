@@ -8,7 +8,8 @@ module Game.LambdaHack.Server.Action
   ( -- * Action monads
     MonadServer( getServer, getsServer, putServer, modifyServer )
   , MonadServerConn
-  , executorSer, tryRestore, connServer, launchClients
+  , MonadServerAtomic (..)
+  , tryRestore, connServer, launchClients
   , waitForChildren, speedupCOps
     -- * Communication
   , sendUpdateUI, sendQueryUI, sendUpdateAI, sendQueryAI
@@ -46,7 +47,6 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Random
 import Game.LambdaHack.Server.Action.ActionClass
-import Game.LambdaHack.Server.Action.ActionType (executorSer)
 import qualified Game.LambdaHack.Server.Action.ConfigIO as ConfigIO
 import qualified Game.LambdaHack.HighScore as HighScore
 import qualified Game.LambdaHack.Server.Action.Save as Save

@@ -12,13 +12,11 @@
 --
 -- See https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture.
 module Game.LambdaHack.AtomicCmd
-  ( tellCmdAtomic, tellSfxAtomic
-  , Atomic(..), CmdAtomic(..), SfxAtomic(..), HitAtomic(..)
+  ( Atomic(..), CmdAtomic(..), SfxAtomic(..), HitAtomic(..)
   , undoCmdAtomic, undoSfxAtomic, undoAtomic
   ) where
 
 import Control.Arrow (second)
-import Control.Monad.Writer.Strict (WriterT, tell)
 import Data.Binary
 import Data.Tuple (swap)
 import GHC.Generics (Generic)
@@ -40,12 +38,6 @@ import Game.LambdaHack.Point
 import Game.LambdaHack.State
 import Game.LambdaHack.Time
 import Game.LambdaHack.Vector
-
-tellCmdAtomic :: Monad m => CmdAtomic -> WriterT [Atomic] m ()
-tellCmdAtomic cmd = tell [CmdAtomic cmd]
-
-tellSfxAtomic :: Monad m => SfxAtomic -> WriterT [Atomic] m ()
-tellSfxAtomic sfx = tell [SfxAtomic sfx]
 
 data Atomic =
     CmdAtomic CmdAtomic

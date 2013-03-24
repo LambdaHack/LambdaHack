@@ -5,7 +5,6 @@ module Game.LambdaHack.Server.LoopAction (loopSer) where
 
 import Control.Arrow ((&&&))
 import Control.Monad
-import Control.Monad.Writer.Strict (WriterT, execWriterT)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.List
@@ -45,9 +44,9 @@ import Game.LambdaHack.Utils.Assert
 -- every fixed number of time units, e.g., monster generation.
 -- Run the leader and other actors moves. Eventually advance the time
 -- and repeat.
-loopSer :: (MonadAction m, MonadServerConn m)
+loopSer :: (MonadAction m, MonadServerAtomic m, MonadServerConn m)
         => DebugModeSer
-        -> (CmdSer -> m [Atomic])
+        -> (CmdSer -> m ())
         -> (FactionId -> Conn CmdClientUI -> IO ())
         -> (FactionId -> Conn CmdClientAI -> IO ())
         -> Kind.COps
@@ -61,7 +60,7 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
       modifyServer $ \ser -> ser {sdebugNxt}
       gameReset cops
       initConn sdebugNxt executorUI executorAI
-      execAtomic reinitGame
+      reinitGame
       -- Save ASAP in case of crashes and disconnects.
       saveBkpAll
     Just (gloRaw, ser) -> do  -- Running a restored game.
@@ -69,7 +68,7 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
       putServer ser {sdebugNxt}
       initConn sdebugNxt executorUI executorAI
       pers <- getsServer sper
-      execAtomic $ broadcastCmdAtomic $ \fid -> ResumeA fid (pers EM.! fid)
+      broadcastCmdAtomic $ \fid -> ResumeA fid (pers EM.! fid)
   -- Loop.
   let loop = do
         let run arena = handleActors cmdSerSem arena
@@ -84,22 +83,16 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
         let arenas = ES.toList $ ES.fromList $ catMaybes marenas
         assert (not $ null arenas) skip
         mapM_ run arenas
-        execAtomic $ endClip arenas
+        endClip arenas
         endOrLoop loop
   loop
-
-execAtomic :: (MonadAction m, MonadServerConn m)
-           => WriterT [Atomic] m () -> m ()
-execAtomic m = do
- cmds <- execWriterT m
- mapM_ atomicSendSem cmds
 
 saveBkpAll :: (MonadAction m, MonadServerConn m) => m ()
 saveBkpAll = do
   atomicSendSem $ CmdAtomic SaveBkpA
   saveGameBkp
 
-endClip :: MonadServer m => [LevelId] -> WriterT [Atomic] m ()
+endClip :: MonadServerAtomic m => [LevelId] -> m ()
 endClip arenas = do
   quit <- getsServer squit
   if quit then
@@ -116,22 +109,22 @@ endClip arenas = do
     bkpSave <- getsServer sbkpSave
     when (bkpSave || clipN `mod` bkpFreq == 0) $ do
       modifyServer $ \ser -> ser {sbkpSave = False}
-      tellCmdAtomic SaveBkpA
+      execCmdAtomic SaveBkpA
       saveGameBkp
     -- Regenerate HP and add monsters each turn, not each clip.
     when (clipMod == 1) $ mapM_ generateMonster arenas
     when (clipMod == 2) $ mapM_ regenerateLevelHP arenas
     -- TODO: a couple messages each clip to many clients is too costly
-    mapM_ (\lid -> tellCmdAtomic $ AgeLevelA lid timeClip) arenas
-    tellCmdAtomic $ AgeGameA timeClip
+    mapM_ (\lid -> execCmdAtomic $ AgeLevelA lid timeClip) arenas
+    execCmdAtomic $ AgeGameA timeClip
 
 -- | Perform moves for individual actors, as long as there are actors
 -- with the next move time less than or equal to the current level time.
 -- Some very fast actors may move many times a clip and then
 -- we introduce subclips and produce many frames per clip to avoid
 -- jerky movement. But most often we push exactly one frame or frame delay.
-handleActors :: (MonadAction m, MonadServerConn m)
-             => (CmdSer -> m [Atomic])
+handleActors :: (MonadAction m, MonadServerAtomic m, MonadServerConn m)
+             => (CmdSer -> m ())
              -> LevelId
              -> m ()
 handleActors cmdSerSem arena = do
@@ -159,7 +152,7 @@ handleActors cmdSerSem arena = do
     Just (aid, b) | bproj b && bhp b < 0 -> do
       -- A projectile hits an actor. The carried item is destroyed.
       ais <- getsState $ getActorItem aid
-      execAtomic $ tellCmdAtomic $ DestroyActorA aid b ais
+      execCmdAtomic $ DestroyActorA aid b ais
       -- The attack animation for the projectile hit subsumes @DisplayPushD@,
       -- so not sending an extra @DisplayPushD@ here.
       handleActors cmdSerSem arena
@@ -167,14 +160,14 @@ handleActors cmdSerSem arena = do
                     || maybe False null (bpath b) -> do
       -- An actor (projectile or not) ceases to exist.
       -- Items drop to the ground and possibly a new leader is elected.
-      execAtomic $ dieSer aid
+      dieSer aid
       -- If it's a death, not a projectile drop, the death animation
       -- subsumes @DisplayPushD@, so not sending it here. ProjectileProjectile
       -- destruction is not important enough for an extra @DisplayPushD@.
       handleActors cmdSerSem arena
     Just (aid, body) -> do
       -- TODO: let clients insert this once per clip based on time
-      execAtomic $ broadcastSfxAtomic DisplayPushD
+      broadcastSfxAtomic DisplayPushD
       let side = bfaction body
           fac = faction EM.! side
           mleader = gleader fac
@@ -191,10 +184,11 @@ handleActors cmdSerSem arena = do
                  assert (mleader == Just aid)
                    [CmdAtomic (LeadFactionA side mleader (Just leaderNew))]
             else []
+      mapM_ atomicSendSem leadAtoms
       bPre <- getsState $ getActorBody leaderNew
       -- Check if the client cheats, trying to move other faction actors.
       assert (bfaction bPre == side `blame` (bPre, side)) skip
-      atoms <- cmdSerSem cmdS
+      cmdSerSem cmdS
       nH <- nHumans
       -- TODO: do not fade out if all other are running (so the previous
       -- move was of the same actor) or if 2 moves in a row of a fast actor
@@ -216,7 +210,7 @@ handleActors cmdSerSem arena = do
       advanceAtoms <- if timed
                       then advanceTime leaderNew
                       else return []
-      mapM_ atomicSendSem $ leadAtoms ++ atoms ++ fadeOut ++ advanceAtoms
+      mapM_ atomicSendSem $ fadeOut ++ advanceAtoms
       -- Generate extra frames if the actor has already moved during
       -- this clip, so his multiple moves would be collapsed in one frame.
       -- If the actor just change his speed this turn, the test can fail,
@@ -224,10 +218,10 @@ handleActors cmdSerSem arena = do
       let previousClipEnd = timeAdd time $ timeNegate timeClip
           lastSingleMove = timeAddFromSpeed coactor bPre previousClipEnd
       when (btime bPre > lastSingleMove) $
-        execAtomic $ broadcastSfxAtomic DisplayPushD
+        broadcastSfxAtomic DisplayPushD
       handleActors cmdSerSem arena
 
-dieSer :: MonadServer m => ActorId -> WriterT [Atomic] m ()
+dieSer :: MonadServerAtomic m => ActorId -> m ()
 dieSer aid = do  -- TODO: explode if a projectile holding a potion
   body <- getsState $ getActorBody aid
   let fid = bfaction body
@@ -235,23 +229,23 @@ dieSer aid = do  -- TODO: explode if a projectile holding a potion
   --       modify Draw.hs and Client.hs to handle that
   mleader <- electLeader fid (blid body) aid
   dropAllItems aid body
-  tellCmdAtomic $ DestroyActorA aid body {bbag = EM.empty} []
+  execCmdAtomic $ DestroyActorA aid body {bbag = EM.empty} []
   spawning <- getsState $ flip isSpawningFaction fid
   when (not spawning && isNothing mleader) $ do
     oldSt <- getsState $ gquit . (EM.! fid) . sfaction
-    tellCmdAtomic $ QuitFactionA fid oldSt $ Just (True, Killed $ blid body)
+    execCmdAtomic $ QuitFactionA fid oldSt $ Just (True, Killed $ blid body)
 
 -- | Drop all actor's items.
-dropAllItems :: MonadActionRO m => ActorId -> Actor -> WriterT [Atomic] m ()
+dropAllItems :: MonadServerAtomic m => ActorId -> Actor -> m ()
 dropAllItems aid b = do
-  let f (iid, k) = tellCmdAtomic
+  let f (iid, k) = execCmdAtomic
                    $ MoveItemA iid k (actorContainer aid (binv b) iid)
                                      (CFloor (blid b) (bpos b))
   mapM_ f $ EM.assocs $ bbag b
 
-electLeader :: MonadServer m
+electLeader :: MonadServerAtomic m
             => FactionId -> LevelId -> ActorId
-            -> WriterT [Atomic] m (Maybe ActorId)
+            -> m (Maybe ActorId)
 electLeader fid lid aidDead = do
   mleader <- getsState $ gleader . (EM.! fid) . sfaction
   if isNothing mleader || mleader == Just aidDead then do
@@ -264,7 +258,7 @@ electLeader fid lid aidDead = do
     let mleaderNew | configFirstDeathEnds && not spawning = Nothing
                    | otherwise = listToMaybe $ filter (/= aidDead)
                                  $ map fst $ onLevel ++ party
-    tellCmdAtomic $ LeadFactionA fid mleader mleaderNew
+    execCmdAtomic $ LeadFactionA fid mleader mleaderNew
     return mleaderNew
   else return mleader
 
@@ -280,7 +274,7 @@ advanceTime aid = do
     return [CmdAtomic $ AgeActorA aid t]
 
 -- | Generate a monster, possibly.
-generateMonster :: MonadServer m => LevelId -> WriterT [Atomic] m ()
+generateMonster :: MonadServerAtomic m => LevelId -> m ()
 generateMonster arena = do
   cops@Kind.COps{cofact=Kind.Ops{okind}} <- getsState scops
   pers <- getsServer sper
@@ -326,7 +320,7 @@ rollSpawnPos Kind.COps{cotile} visible lid Level{ltile, lxsize, lstair} s = do
 -- so all actors need to regenerate, not just the leaders.
 -- Actors on frozen levels don't regenerate. This prevents cheating
 -- via sending an actor to a safe level and letting him regenerate there.
-regenerateLevelHP :: MonadServer m => LevelId -> WriterT [Atomic] m ()
+regenerateLevelHP :: MonadServerAtomic m => LevelId -> m ()
 regenerateLevelHP arena = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   time <- getsState $ getLocalTime arena
@@ -346,17 +340,17 @@ regenerateLevelHP arena = do
            else Just a
   toRegen <-
     getsState $ catMaybes . map pick . actorNotProjAssocs (const True) arena
-  mapM_ (\aid -> tellCmdAtomic $ HealActorA aid 1) toRegen
+  mapM_ (\aid -> execCmdAtomic $ HealActorA aid 1) toRegen
 
 -- | Continue or restart or exit the game.
-endOrLoop :: (MonadAction m, MonadServerConn m) => m () -> m ()
+endOrLoop :: (MonadAction m, MonadServerAtomic m, MonadServerConn m) => m () -> m ()
 endOrLoop loopServer = do
   faction <- getsState sfaction
   let f (_, Faction{gquit=Nothing}) = Nothing
       f (fid, Faction{gquit=Just quit}) = Just (fid, quit)
   processQuits loopServer $ mapMaybe f $ EM.assocs faction
 
-processQuits :: (MonadAction m, MonadServerConn m)
+processQuits :: (MonadAction m, MonadServerAtomic m, MonadServerConn m)
              => m () -> [(FactionId, (Bool, Status))] -> m ()
 processQuits loopServer [] = loopServer  -- just continue
 processQuits loopServer ((fid, quit) : quits) = do
@@ -397,20 +391,19 @@ processQuits loopServer ((fid, quit) : quits) = do
       restartGame loopServer
     Restart -> restartGame loopServer
     Camping -> do
-      execAtomic $ do
-        tellCmdAtomic $ QuitFactionA fid (Just quit) Nothing
-        tellCmdAtomic SaveExitA
+      execCmdAtomic $ QuitFactionA fid (Just quit) Nothing
+      execCmdAtomic SaveExitA
       saveGameSer
       -- Con't call @loopServer@, that is, quit the game loop.
 
-restartGame :: (MonadAction m, MonadServerConn m) => m () -> m ()
+restartGame :: (MonadAction m, MonadServerAtomic m, MonadServerConn m) => m () -> m ()
 restartGame loopServer = do
   cops <- getsState scops
   nH <- nHumans
-  when (nH <= 1) $ execAtomic $ broadcastSfxAtomic $ \fid -> FadeoutD fid False
+  when (nH <= 1) $ broadcastSfxAtomic $ \fid -> FadeoutD fid False
   gameReset cops
   initPer
-  execAtomic reinitGame
+  reinitGame
   -- Save ASAP in case of crashes and disconnects.
   saveBkpAll
   loopServer

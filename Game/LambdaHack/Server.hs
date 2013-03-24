@@ -5,11 +5,9 @@ module Game.LambdaHack.Server
   ( mainSer
   ) where
 
-import Control.Monad.Writer.Strict (WriterT, execWriterT)
 import System.Environment (getArgs)
 
 import Game.LambdaHack.Action
-import Game.LambdaHack.AtomicCmd
 import Game.LambdaHack.Client
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.ClientCmd
@@ -22,11 +20,8 @@ import Game.LambdaHack.Server.State
 import Game.LambdaHack.ServerCmd
 
 -- | The semantics of server commands.
-cmdSerSem :: MonadServer m => CmdSer -> m [Atomic]
-cmdSerSem cmd = execWriterT $ cmdSerWriterT cmd
-
-cmdSerWriterT :: MonadServer m => CmdSer -> WriterT [Atomic] m ()
-cmdSerWriterT cmd = case cmd of
+cmdSerSem :: MonadServerAtomic m => CmdSer -> m ()
+cmdSerSem cmd = case cmd of
   MoveSer aid dir -> moveSer aid dir
   RunSer aid dir -> runSer aid dir
   WaitSer aid -> waitSer aid
@@ -81,8 +76,9 @@ debugArgs = do
 -- the types are different and so the whole pattern of computation
 -- is different. Which of the frontends is run depends on the flags supplied
 -- when compiling the engine library.
-mainSer :: Kind.COps -> IO ()
-mainSer copsSlow = do
+mainSer :: (MonadAction m, MonadServerAtomic m, MonadServerConn m)
+        => Kind.COps -> (m () -> IO ()) -> IO ()
+mainSer copsSlow executorSer = do
   sdebugNxt <- debugArgs
   let cops = speedupCOps False copsSlow
       loopClientUI :: ( MonadClientAbort m, MonadAction m

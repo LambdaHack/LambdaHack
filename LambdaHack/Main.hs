@@ -1,3 +1,4 @@
+{-# OPTIONS -fno-warn-orphans #-}
 -- | The main code file of LambdaHack. Here the knot of engine
 -- code pieces and the LambdaHack-specific content defintions is tied,
 -- resulting in an executable game.
@@ -13,6 +14,12 @@ import qualified Content.StrategyKind
 import qualified Content.TileKind
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Server
+import Game.LambdaHack.Server.Action (MonadServerAtomic (..))
+import Game.LambdaHack.Server.Action.ActionType (ActionSer, executorSer)
+import Game.LambdaHack.Server.AtomicSemSer (atomicSendSem)
+
+instance MonadServerAtomic ActionSer where
+  execAtomic atomic = atomicSendSem atomic
 
 main :: IO ()
 main =
@@ -26,4 +33,4 @@ main =
         , costrat = Kind.createOps Content.StrategyKind.cdefs
         , cotile  = Kind.createOps Content.TileKind.cdefs
         }
-  in mainSer copsSlow
+  in mainSer copsSlow executorSer
