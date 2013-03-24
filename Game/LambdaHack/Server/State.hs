@@ -12,6 +12,7 @@ import Data.Typeable
 import qualified System.Random as R
 
 import Game.LambdaHack.Actor
+import Game.LambdaHack.AtomicCmd
 import Game.LambdaHack.Item
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Server.Config
@@ -25,6 +26,7 @@ data StateServer = StateServer
   , sflavour  :: !FlavourMap    -- ^ association of flavour to items
   , sacounter :: !ActorId       -- ^ stores next actor index
   , sicounter :: !ItemId        -- ^ stores next item index
+  , sundo     :: ![Atomic]      -- ^ atomic commands performed to date
   , sper      :: !Pers          -- ^ perception of all factions
   , srandom   :: !R.StdGen      -- ^ current random generator
   , sconfig   :: Config         -- ^ this game's config (including initial RNG)
@@ -55,6 +57,7 @@ emptyStateServer =
     , sflavour = emptyFlavourMap
     , sacounter = toEnum 0
     , sicounter = toEnum 0
+    , sundo = []
     , sper = EM.empty
     , srandom = R.mkStdGen 42
     , sconfig = undefined
@@ -81,6 +84,7 @@ instance Binary StateServer where
     put sflavour
     put sacounter
     put sicounter
+    put sundo
     put (show srandom)
     put sconfig
     put sdebugSer
@@ -91,6 +95,7 @@ instance Binary StateServer where
     sflavour <- get
     sacounter <- get
     sicounter <- get
+    sundo <- get
     g <- get
     sconfig <- get
     sdebugSer <- get

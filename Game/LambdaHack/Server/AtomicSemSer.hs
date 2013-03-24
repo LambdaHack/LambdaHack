@@ -113,9 +113,11 @@ seenAtomicSer posAtomic =
     PosNone -> assert `failure` ("PosNone considered for the server" :: Text)
     _ -> True
 
-atomicServerSem :: MonadAction m => PosAtomic -> Atomic -> m ()
+atomicServerSem :: (MonadAction m, MonadServer m)
+                => PosAtomic -> Atomic -> m ()
 atomicServerSem posAtomic atomic =
-  when (seenAtomicSer posAtomic) $
+  when (seenAtomicSer posAtomic) $ do
+    modifyServer $ \ser -> ser {sundo = atomic : sundo ser}
     case atomic of
       CmdAtomic cmd -> cmdAtomicSem cmd
       SfxAtomic _ -> return ()
