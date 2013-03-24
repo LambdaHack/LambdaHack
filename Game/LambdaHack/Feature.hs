@@ -1,9 +1,12 @@
+{-# LANGUAGE DeriveGeneric #-}
 -- | Terrain tile features.
 module Game.LambdaHack.Feature
   ( Feature(..)
   ) where
 
+import Data.Binary
 import Data.Text (Text)
+import GHC.Generics (Generic)
 
 import Game.LambdaHack.Effect
 import Game.LambdaHack.Random
@@ -30,4 +33,6 @@ data Feature =
   | Path               -- ^ used for visible paths throughout the level
   | Secret !RollDice   -- ^ discovering the secret will require this many turns
   | Impenetrable       -- ^ can never be excavated nor seen through
-  deriving (Show, Read, Eq, Ord)
+  deriving (Show, Read, Eq, Ord, Generic)
+
+instance Binary Feature

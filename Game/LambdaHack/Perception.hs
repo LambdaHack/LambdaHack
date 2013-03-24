@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, OverloadedStrings #-}
 -- | Actors perceiving other actors and the dungeon level.
 module Game.LambdaHack.Perception
   ( Perception(..), PerceptionVisible(..), PerActor
@@ -7,8 +7,10 @@ module Game.LambdaHack.Perception
   , FactionPers, Pers
   ) where
 
+import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import GHC.Generics (Generic)
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
@@ -22,7 +24,7 @@ import Game.LambdaHack.State
 -- TOOD: if really needed, optimize by representing as a set of intervals.
 newtype PerceptionVisible = PerceptionVisible
   { pvisible :: ES.EnumSet Point}
-  deriving (Show, Eq)
+  deriving (Show, Eq, Binary)
 
 type PerActor = EM.EnumMap ActorId PerceptionVisible
 
@@ -35,7 +37,9 @@ data Perception = Perception
   , ptotal   :: PerceptionVisible  -- ^ sum over all actors
   , psmell   :: PerceptionVisible  -- ^ sum over actors that can smell
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
+
+instance Binary Perception
 
 -- | Perception of a single faction, indexed by level identifier.
 type FactionPers = EM.EnumMap LevelId Perception

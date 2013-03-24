@@ -10,6 +10,7 @@ module Game.LambdaHack.Misc
 import Control.Monad
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import Data.List
 import Data.Text (Text)
 import Data.Typeable
@@ -42,6 +43,10 @@ breturn False _ = mzero
 instance (Enum k, Binary k, Binary e) => Binary (EM.EnumMap k e) where
   put m = put (EM.size m) >> mapM_ put (EM.toAscList m)
   get = liftM EM.fromDistinctAscList get
+
+instance (Enum k, Binary k) => Binary (ES.EnumSet k) where
+  put m = put (ES.size m) >> mapM_ put (ES.toAscList m)
+  get = liftM ES.fromDistinctAscList get
 
 type DiffEM k v = [(k, (Maybe v, Maybe v))]
 

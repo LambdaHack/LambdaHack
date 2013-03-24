@@ -19,6 +19,7 @@ import System.Time
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
+import Game.LambdaHack.AtomicCmd
 import Game.LambdaHack.Client.Animation
 import Game.LambdaHack.Client.Config
 import qualified Game.LambdaHack.Client.Key as K
@@ -44,6 +45,7 @@ data StateClient = StateClient
   , srunning  :: !(Maybe (Vector, Int))  -- ^ direction and distance of running
   , sreport   :: !Report        -- ^ current messages
   , shistory  :: !History       -- ^ history of messages
+  , sundo     :: ![Atomic]      -- ^ atomic commands performed to date
   , sdisco    :: !Discovery     -- ^ remembered item discoveries
   , sfper     :: !FactionPers   -- ^ faction perception indexed by levels
   , srandom   :: !R.StdGen      -- ^ current random generator
@@ -90,6 +92,7 @@ defStateClient shistory sconfigUI _sside sisAI = do
     , srunning  = Nothing
     , sreport   = emptyReport
     , shistory
+    , sundo     = []
     , sdisco    = EM.empty
     , sfper     = EM.empty
     , sconfigUI
@@ -152,6 +155,7 @@ instance Binary StateClient where
     put starget
     put srunning
     put shistory
+    put sundo
     put sdisco
     put (show srandom)
     put sconfigUI
@@ -166,6 +170,7 @@ instance Binary StateClient where
     starget <- get
     srunning <- get
     shistory <- get
+    sundo <- get
     sdisco <- get
     g <- get
     sconfigUI <- get

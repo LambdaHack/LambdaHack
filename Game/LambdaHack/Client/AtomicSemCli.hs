@@ -107,14 +107,16 @@ cmdAtomicSemCli cmd = case cmd of
   PerceptionA lid outPA inPA -> perceptionA lid outPA inPA
   RestartA _ sdisco sfper s -> do
     -- TODO: here or elsewhere re-read RNG seed from config file
-    -- TODO: stop running? or is it done elsewhere?
     side <- getsClient sside
     let fac = sfaction s EM.! side
     shistory <- getsClient shistory
     sconfigUI <- getsClient sconfigUI
     isAI <- getsClient sisAI
     let cli = defStateClient shistory sconfigUI side isAI
-    putClient cli {sdisco, sfper, _sleader = gleader fac}
+    putClient cli { sdisco
+                  , sfper
+                  , _sleader = gleader fac
+                  , sundo = [CmdAtomic cmd] }
   ResumeA _fid sfper -> modifyClient $ \cli -> cli {sfper}
   SaveExitA -> saveExitA
   SaveBkpA -> clientGameSave True

@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveGeneric #-}
 -- | A set of atomic commands shared by client and server.
 -- These are the largest building blocks that have no components
 -- that can be observed in isolation.
@@ -18,7 +19,9 @@ module Game.LambdaHack.AtomicCmd
 
 import Control.Arrow (second)
 import Control.Monad.Writer.Strict (WriterT, tell)
+import Data.Binary
 import Data.Tuple (swap)
+import GHC.Generics (Generic)
 
 import Game.LambdaHack.Actor
 import qualified Game.LambdaHack.Color as Color
@@ -47,7 +50,9 @@ tellSfxAtomic sfx = tell [SfxAtomic sfx]
 data Atomic =
     CmdAtomic CmdAtomic
   | SfxAtomic SfxAtomic
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
+
+instance Binary Atomic
 
 -- | Abstract syntax of atomic commands.
 data CmdAtomic =
@@ -93,7 +98,9 @@ data CmdAtomic =
   | ResumeA FactionId FactionPers
   | SaveExitA
   | SaveBkpA
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
+
+instance Binary CmdAtomic
 
 data SfxAtomic =
     StrikeD ActorId ActorId Item HitAtomic
@@ -113,10 +120,14 @@ data SfxAtomic =
   | FadeoutD FactionId Bool
   | FadeinD FactionId Bool
 -- TODO: SearchA
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
+
+instance Binary SfxAtomic
 
 data HitAtomic = HitD | HitBlockD | MissBlockD
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
+
+instance Binary HitAtomic
 
 undoCmdAtomic :: CmdAtomic -> Maybe CmdAtomic
 undoCmdAtomic cmd = case cmd of
