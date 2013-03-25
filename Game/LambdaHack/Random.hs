@@ -29,6 +29,7 @@ import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.Frequency
 
 -- | The monad of computations with random generator state.
+-- The lazy state monad is OK here: the state is small and regularly forced.
 type Rnd a = St.State R.StdGen a
 
 -- | Get a random object within a range with a uniform distribution.

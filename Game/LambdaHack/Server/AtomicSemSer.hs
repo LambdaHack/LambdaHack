@@ -114,11 +114,16 @@ seenAtomicSer posAtomic =
     PosNone -> assert `failure` ("PosNone considered for the server" :: Text)
     _ -> True
 
+storeUndo :: MonadServer m => Atomic -> m ()
+storeUndo atomic = do
+  maybe skip (\a -> modifyServer $ \ser -> ser {sundo = a : sundo ser})
+    $ undoAtomic atomic
+
 atomicServerSem :: (MonadAction m, MonadServer m)
                 => PosAtomic -> Atomic -> m ()
 atomicServerSem posAtomic atomic =
   when (seenAtomicSer posAtomic) $ do
-    modifyServer $ \ser -> ser {sundo = atomic : sundo ser}
+    storeUndo atomic
     case atomic of
       CmdAtomic cmd -> cmdAtomicSem cmd
       SfxAtomic _ -> return ()

@@ -25,6 +25,11 @@ import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
 
+storeUndo :: MonadClient m => Atomic -> m ()
+storeUndo atomic = do
+  maybe skip (\a -> modifyClient $ \cli -> cli {sundo = a : sundo cli})
+    $ undoAtomic atomic
+
 cmdClientAISem :: ( MonadAction m
                   , MonadClient m, MonadClientConn c m )
                => CmdClientAI -> m ()
@@ -33,7 +38,7 @@ cmdClientAISem cmd = case cmd of
     cmds <- cmdAtomicFilterCli cmdA
     mapM_ cmdAtomicSemCli cmds
     mapM_ cmdAtomicSem cmds
-    modifyClient $ \cli -> cli {sundo = map CmdAtomic cmds ++ sundo cli}
+    mapM_ (storeUndo . CmdAtomic) cmds
   CmdQueryAI aid -> do
     cmdC <- queryAI aid
     writeConnFromClient cmdC
@@ -50,11 +55,11 @@ cmdClientUISem cmd = do
       mapM_ cmdAtomicSem cmds
       when (isJust mleader) $
         mapM_ (drawCmdAtomicUI False) cmds
-      modifyClient $ \cli -> cli {sundo = map CmdAtomic cmds ++ sundo cli}
+      mapM_ (storeUndo . CmdAtomic) cmds
     SfxAtomicUI sfx -> do
       when (isJust mleader) $
         drawSfxAtomicUI False sfx
-      modifyClient $ \cli -> cli {sundo = SfxAtomic sfx : sundo cli}
+      storeUndo $ SfxAtomic sfx
     CmdQueryUI aid -> do
       assert (isJust mleader `blame` cmd) skip
       cmdH <- queryUI aid

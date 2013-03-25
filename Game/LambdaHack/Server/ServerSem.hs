@@ -400,7 +400,7 @@ triggerSer aid dpos = do
                    fromTile <- getsLevel (blid b) (`at` dpos)
                    toTile <- rndToAction $ opick tgroup (const True)
                    execCmdAtomic $ AlterTileA (blid b) dpos fromTile toTile
--- TODO: take care of AI using this function (aborts, etc.).
+-- TODO: take care of AI using this function (aborts on some of the features, succes on others, etc.).
                  else tellFailure (bfaction b) "blocked"  -- by actors
             else tellFailure (bfaction b) "jammed"  -- by items
           _ -> return ()
