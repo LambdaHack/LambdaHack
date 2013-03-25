@@ -6,7 +6,7 @@ module Game.LambdaHack.Action
   ( -- * Action monads
     MonadActionRO(..), MonadAction(..), MonadAtomic(..)
     -- * Shorthands
-  , updateLevel, getsLevel, nHumans
+  , getsLevel, nHumans
   ) where
 
 import Control.Monad.Writer.Strict (WriterT, lift)
@@ -33,20 +33,12 @@ class MonadActionRO m => MonadAction m where
   modifyState :: (State -> State) -> m ()
   putState    :: State -> m ()
 
-instance (Monoid a, MonadAction m) => MonadAction (WriterT a m) where
-  modifyState = lift . modifyState
-  putState    = lift . putState
-
 class MonadActionRO m => MonadAtomic m where
   execAtomic    :: Atomic -> m ()
   execCmdAtomic :: CmdAtomic -> m ()
   execCmdAtomic = execAtomic . CmdAtomic
   execSfxAtomic :: SfxAtomic -> m ()
   execSfxAtomic = execAtomic . SfxAtomic
-
--- | Update a given level data within state.
-updateLevel :: MonadAction m => LevelId -> (Level -> Level) -> m ()
-updateLevel lid f = modifyState $ updateDungeon $ EM.adjust f lid
 
 getsLevel :: MonadActionRO m => LevelId -> (Level -> a) -> m a
 getsLevel lid f = getsState $ f . (EM.! lid) . sdungeon

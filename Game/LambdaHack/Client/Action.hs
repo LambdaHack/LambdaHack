@@ -15,7 +15,7 @@ module Game.LambdaHack.Client.Action
     -- * Abort exception handlers
   , tryRepeatedlyWith, tryIgnore, tryWithSlide
     -- * Executing actions
-  , executorCli, startup, mkConfigUI
+  , ActionCli, executorCli, startup, mkConfigUI
     -- * Accessors to the game session Reader and the Perception Reader(-like)
   , askBinding, getPerFid
     -- * History and report
@@ -51,7 +51,7 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Client.Action.ActionClass
-import Game.LambdaHack.Client.Action.ActionType (executorCli)
+import Game.LambdaHack.Client.Action.ActionType (ActionCli, executorCli)
 import Game.LambdaHack.Client.Action.ConfigIO
 import Game.LambdaHack.Client.Action.Frontend (frontendName, startup)
 import qualified Game.LambdaHack.Client.Action.Frontend as Frontend

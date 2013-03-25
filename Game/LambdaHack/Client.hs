@@ -2,7 +2,7 @@
 -- See https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture.
 module Game.LambdaHack.Client
   ( cmdClientAISem, cmdClientUISem
-  , loopAI, loopUI, executorCli, exeFrontend
+  , loopAI, loopUI, ActionCli, executorCli, exeFrontend
   , MonadClient, MonadClientUI, MonadClientConn
   ) where
 
@@ -30,20 +30,20 @@ storeUndo atomic = do
   maybe skip (\a -> modifyClient $ \cli -> cli {sundo = a : sundo cli})
     $ undoAtomic atomic
 
-cmdClientAISem :: ( MonadAction m
+cmdClientAISem :: ( MonadAtomic m
                   , MonadClient m, MonadClientConn c m )
                => CmdClientAI -> m ()
 cmdClientAISem cmd = case cmd of
   CmdAtomicAI cmdA -> do
     cmds <- cmdAtomicFilterCli cmdA
     mapM_ cmdAtomicSemCli cmds
-    mapM_ cmdAtomicSem cmds
+    mapM_ execCmdAtomic cmds
     mapM_ (storeUndo . CmdAtomic) cmds
   CmdQueryAI aid -> do
     cmdC <- queryAI aid
     writeConnFromClient cmdC
 
-cmdClientUISem :: ( MonadClientAbort m, MonadAction m
+cmdClientUISem :: ( MonadAtomic m, MonadClientAbort m
                   , MonadClientUI m, MonadClientConn c m )
                => CmdClientUI -> m ()
 cmdClientUISem cmd = do
@@ -52,7 +52,7 @@ cmdClientUISem cmd = do
     CmdAtomicUI cmdA -> do
       cmds <- cmdAtomicFilterCli cmdA
       mapM_ cmdAtomicSemCli cmds
-      mapM_ cmdAtomicSem cmds
+      mapM_ execCmdAtomic cmds
       when (isJust mleader) $
         mapM_ (drawCmdAtomicUI False) cmds
       mapM_ (storeUndo . CmdAtomic) cmds

@@ -1,18 +1,22 @@
+{-# OPTIONS -fno-warn-orphans #-}
 {-# LANGUAGE FlexibleContexts #-}
 -- | Semantics of server commands.
 -- See https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture.
 module Game.LambdaHack.Server
-  ( mainSer
+  ( mainSer, ActionSer, executorSer, atomicSendSem
   ) where
 
 import System.Environment (getArgs)
 
 import Game.LambdaHack.Action
+import Game.LambdaHack.AtomicCmd
+import Game.LambdaHack.AtomicSem
 import Game.LambdaHack.Client
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.ClientCmd
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Server.Action
+import Game.LambdaHack.Server.AtomicSemSer (atomicSendSem)
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.LoopAction
 import Game.LambdaHack.Server.ServerSem
@@ -70,22 +74,26 @@ debugArgs = do
       parseArgs _ = error $ unlines usage
   return $! parseArgs args
 
+instance MonadAtomic (ActionCli c) where
+  execAtomic (CmdAtomic cmd) = cmdAtomicSem cmd
+  execAtomic (SfxAtomic _) = return ()
+
 -- | Fire up the frontend with the engine fueled by content.
--- The action monad types to be used are determined by the 'executorSer'
+-- The action monad types to be used are determined by the 'exeSer'
 -- and 'executorCli' calls. If other functions are used in their place
 -- the types are different and so the whole pattern of computation
 -- is different. Which of the frontends is run depends on the flags supplied
 -- when compiling the engine library.
-mainSer :: (MonadAction m, MonadAtomic m, MonadServerConn m)
+mainSer :: (MonadAtomic m, MonadServerConn m)
         => Kind.COps -> (m () -> IO ()) -> IO ()
-mainSer copsSlow executorSer = do
+mainSer copsSlow exeSer = do
   sdebugNxt <- debugArgs
   let cops = speedupCOps False copsSlow
-      loopClientUI :: ( MonadClientAbort m, MonadAction m
+      loopClientUI :: ( MonadAtomic m, MonadClientAbort m
                       , MonadClientUI m, MonadClientConn CmdClientUI m )
                    => m ()
       loopClientUI = loopUI cmdClientUISem
-      loopClientAI :: ( MonadAction m
+      loopClientAI :: ( MonadAtomic m
                       , MonadClient m, MonadClientConn CmdClientAI m )
                    => m ()
       loopClientAI = loopAI cmdClientAISem
@@ -93,6 +101,6 @@ mainSer copsSlow executorSer = do
       exeClientAI = executorCli loopClientAI
       loopServer = loopSer sdebugNxt cmdSerSem
       exeServer executorUI executorAI =
-        executorSer (loopServer executorUI executorAI cops)
+        exeSer (loopServer executorUI executorAI cops)
   exeFrontend cops exeClientUI exeClientAI exeServer
   waitForChildren

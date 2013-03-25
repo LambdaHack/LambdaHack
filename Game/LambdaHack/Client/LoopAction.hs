@@ -15,9 +15,8 @@ import Game.LambdaHack.Msg
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
 
-initCli :: (MonadAction m, MonadClient m, MonadClientConn c m)
-        => m (Either Msg Msg)
-initCli = do
+initCli :: MonadClient m => (State -> m ()) -> m (Either Msg Msg)
+initCli putSt = do
   -- Warning: state and client state are invalid here, e.g., sdungeon
   -- and sper are empty.
   cops <- getsState scops
@@ -25,18 +24,18 @@ initCli = do
   case restored of
     Left (s, cli, msg) -> do  -- Restore a game or at least history.
       let sCops = updateCOps (const cops) s
-      putState sCops  -- express as an atomic action
+      putSt sCops
       putClient cli
       return $ Left msg
     Right msg -> do  -- First visit ever, use the initial state.
       -- TODO: create or restore from config clients RNG seed
       return $ Right msg
 
-loopAI :: (MonadAction m, MonadClient m, MonadClientConn CmdClientAI m)
+loopAI :: (MonadClient m, MonadClientConn CmdClientAI m)
        => (CmdClientAI -> m ()) -> m ()
 loopAI cmdClientAISem = do
   side <- getsClient sside
-  msg <- initCli
+  msg <- initCli $ \s -> cmdClientAISem $ CmdAtomicAI $ ResumeServerA s
   cmd1 <- readConnToClient
   case (msg, cmd1) of
     (Left _, CmdAtomicAI ResumeA{}) -> return ()
@@ -55,11 +54,11 @@ loopAI cmdClientAISem = do
     quit <- getsClient squit
     when (not quit) loop
 
-loopUI :: (MonadAction m, MonadClientUI m, MonadClientConn CmdClientUI m)
+loopUI :: (MonadClientUI m, MonadClientConn CmdClientUI m)
        => (CmdClientUI -> m ()) -> m ()
 loopUI cmdClientUISem = do
   side <- getsClient sside
-  msg <- initCli
+  msg <- initCli $ \s -> cmdClientUISem $ CmdAtomicUI $ ResumeServerA s
   cmd1 <- readConnToClient
   case (msg, cmd1) of
     (Left _, CmdAtomicUI ResumeA{}) -> return ()

@@ -94,6 +94,10 @@ createActorA aid body ais = do
           assert (item1 == item2 `blame` (aid, body, iid, item1, item2)) item1
     modifyState $ updateItemD $ EM.insertWith h iid item
 
+-- | Update a given level data within state.
+updateLevel :: MonadAction m => LevelId -> (Level -> Level) -> m ()
+updateLevel lid f = modifyState $ updateDungeon $ EM.adjust f lid
+
 -- | Kills an actor. Note: after this command, usually a new leader
 -- for the party should be elected.
 destroyActorA :: MonadAction m => ActorId -> Actor -> [(ItemId, Item)] -> m ()
