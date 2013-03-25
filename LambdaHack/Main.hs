@@ -12,13 +12,13 @@ import qualified Content.PlaceKind
 import qualified Content.RuleKind
 import qualified Content.StrategyKind
 import qualified Content.TileKind
+import Game.LambdaHack.Action (MonadAtomic (..))
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Server
-import Game.LambdaHack.Server.Action (MonadServerAtomic (..))
 import Game.LambdaHack.Server.Action.ActionType (ActionSer, executorSer)
 import Game.LambdaHack.Server.AtomicSemSer (atomicSendSem)
 
-instance MonadServerAtomic ActionSer where
+instance MonadAtomic ActionSer where
   execAtomic atomic = atomicSendSem atomic
 
 main :: IO ()

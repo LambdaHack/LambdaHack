@@ -20,7 +20,7 @@ import Game.LambdaHack.Server.State
 import Game.LambdaHack.ServerCmd
 
 -- | The semantics of server commands.
-cmdSerSem :: MonadServerAtomic m => CmdSer -> m ()
+cmdSerSem :: (MonadAtomic m, MonadServer m) => CmdSer -> m ()
 cmdSerSem cmd = case cmd of
   MoveSer aid dir -> moveSer aid dir
   RunSer aid dir -> runSer aid dir
@@ -76,7 +76,7 @@ debugArgs = do
 -- the types are different and so the whole pattern of computation
 -- is different. Which of the frontends is run depends on the flags supplied
 -- when compiling the engine library.
-mainSer :: (MonadAction m, MonadServerAtomic m, MonadServerConn m)
+mainSer :: (MonadAction m, MonadAtomic m, MonadServerConn m)
         => Kind.COps -> (m () -> IO ()) -> IO ()
 mainSer copsSlow executorSer = do
   sdebugNxt <- debugArgs

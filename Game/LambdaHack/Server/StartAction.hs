@@ -65,7 +65,7 @@ initPer = do
       pers = dungeonPerception cops fovMode glo
   modifyServer $ \ser1 -> ser1 {sper = pers}
 
-reinitGame :: MonadServerAtomic m => m ()
+reinitGame :: (MonadAtomic m, MonadServer m) => m ()
 reinitGame = do
   Kind.COps{ coitem=Kind.Ops{okind}, corule } <- getsState scops
   pers <- getsServer sper
@@ -143,7 +143,7 @@ gameReset cops@Kind.COps{coitem, corule} = do
   return defState
 
 -- Spawn initial actors. Clients should notice this, to set their leaders.
-populateDungeon :: MonadServerAtomic m => m ()
+populateDungeon :: (MonadAtomic m, MonadServer m) => m ()
 populateDungeon = do
   cops@Kind.COps{ cotile
                 , cofact=Kind.Ops{okind} } <- getsState scops

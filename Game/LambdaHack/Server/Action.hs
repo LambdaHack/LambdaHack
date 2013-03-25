@@ -8,7 +8,6 @@ module Game.LambdaHack.Server.Action
   ( -- * Action monads
     MonadServer( getServer, getsServer, putServer, modifyServer )
   , MonadServerConn
-  , MonadServerAtomic (..)
   , tryRestore, connServer, launchClients
   , waitForChildren, speedupCOps
     -- * Communication

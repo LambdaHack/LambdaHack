@@ -4,7 +4,7 @@
 -- player actions. Has no access to the the main action type.
 module Game.LambdaHack.Action
   ( -- * Action monads
-    MonadActionRO(..), MonadAction(..)
+    MonadActionRO(..), MonadAction(..), MonadAtomic(..)
     -- * Shorthands
   , updateLevel, getsLevel, nHumans
   ) where
@@ -13,6 +13,7 @@ import Control.Monad.Writer.Strict (WriterT, lift)
 import qualified Data.EnumMap.Strict as EM
 import Data.Monoid
 
+import Game.LambdaHack.AtomicCmd
 import Game.LambdaHack.Faction
 import Game.LambdaHack.Level
 import Game.LambdaHack.State
@@ -35,6 +36,13 @@ class MonadActionRO m => MonadAction m where
 instance (Monoid a, MonadAction m) => MonadAction (WriterT a m) where
   modifyState = lift . modifyState
   putState    = lift . putState
+
+class MonadActionRO m => MonadAtomic m where
+  execAtomic    :: Atomic -> m ()
+  execCmdAtomic :: CmdAtomic -> m ()
+  execCmdAtomic = execAtomic . CmdAtomic
+  execSfxAtomic :: SfxAtomic -> m ()
+  execSfxAtomic = execAtomic . SfxAtomic
 
 -- | Update a given level data within state.
 updateLevel :: MonadAction m => LevelId -> (Level -> Level) -> m ()

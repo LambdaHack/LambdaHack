@@ -5,7 +5,6 @@
 module Game.LambdaHack.Server.Action.ActionClass where
 
 import Game.LambdaHack.Action
-import Game.LambdaHack.AtomicCmd
 import Game.LambdaHack.ClientCmd
 import Game.LambdaHack.Server.State
 
@@ -23,10 +22,3 @@ class MonadServer m => MonadServerConn m where
   getsDict     :: (ConnDict -> a) -> m a
   modifyDict   :: (ConnDict -> ConnDict) -> m ()
   putDict      :: ConnDict -> m ()
-
-class MonadServer m => MonadServerAtomic m where
-  execAtomic    :: Atomic -> m ()
-  execCmdAtomic :: CmdAtomic -> m ()
-  execCmdAtomic = execAtomic . CmdAtomic
-  execSfxAtomic :: SfxAtomic -> m ()
-  execSfxAtomic = execAtomic . SfxAtomic

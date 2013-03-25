@@ -43,7 +43,7 @@ import Game.LambdaHack.Utils.Assert
 -- every fixed number of time units, e.g., monster generation.
 -- Run the leader and other actors moves. Eventually advance the time
 -- and repeat.
-loopSer :: (MonadServerAtomic m, MonadServerConn m)
+loopSer :: (MonadAtomic m, MonadServerConn m)
         => DebugModeSer
         -> (CmdSer -> m ())
         -> (FactionId -> Conn CmdClientUI -> IO ())
@@ -89,12 +89,12 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
         endOrLoop loop
   loop
 
-saveBkpAll :: MonadServerAtomic m => m ()
+saveBkpAll :: (MonadAtomic m, MonadServer m) => m ()
 saveBkpAll = do
   execCmdAtomic SaveBkpA
   saveGameBkp
 
-endClip :: MonadServerAtomic m => [LevelId] -> m ()
+endClip :: (MonadAtomic m, MonadServer m) => [LevelId] -> m ()
 endClip arenas = do
   quit <- getsServer squit
   if quit then
@@ -125,7 +125,7 @@ endClip arenas = do
 -- Some very fast actors may move many times a clip and then
 -- we introduce subclips and produce many frames per clip to avoid
 -- jerky movement. But most often we push exactly one frame or frame delay.
-handleActors :: (MonadServerAtomic m, MonadServerConn m)
+handleActors :: (MonadAtomic m, MonadServerConn m)
              => (CmdSer -> m ())
              -> LevelId
              -> m ()
@@ -221,7 +221,7 @@ handleActors cmdSerSem arena = do
         broadcastSfxAtomic DisplayPushD
       handleActors cmdSerSem arena
 
-dieSer :: MonadServerAtomic m => ActorId -> m ()
+dieSer :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 dieSer aid = do  -- TODO: explode if a projectile holding a potion
   body <- getsState $ getActorBody aid
   let fid = bfaction body
@@ -236,14 +236,14 @@ dieSer aid = do  -- TODO: explode if a projectile holding a potion
     execCmdAtomic $ QuitFactionA fid oldSt $ Just (True, Killed $ blid body)
 
 -- | Drop all actor's items.
-dropAllItems :: MonadServerAtomic m => ActorId -> Actor -> m ()
+dropAllItems :: MonadAtomic m => ActorId -> Actor -> m ()
 dropAllItems aid b = do
   let f (iid, k) = execCmdAtomic
                    $ MoveItemA iid k (actorContainer aid (binv b) iid)
                                      (CFloor (blid b) (bpos b))
   mapM_ f $ EM.assocs $ bbag b
 
-electLeader :: MonadServerAtomic m
+electLeader :: (MonadAtomic m, MonadServer m)
             => FactionId -> LevelId -> ActorId
             -> m (Maybe ActorId)
 electLeader fid lid aidDead = do
@@ -263,7 +263,7 @@ electLeader fid lid aidDead = do
   else return mleader
 
 -- | Advance the move time for the given actor.
-advanceTime :: MonadServerAtomic m => ActorId -> m ()
+advanceTime :: MonadAtomic m => ActorId -> m ()
 advanceTime aid = do
   Kind.COps{coactor} <- getsState scops
   b <- getsState $ getActorBody aid
@@ -275,7 +275,7 @@ advanceTime aid = do
     execCmdAtomic $ AgeActorA aid t
 
 -- | Generate a monster, possibly.
-generateMonster :: MonadServerAtomic m => LevelId -> m ()
+generateMonster :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
 generateMonster arena = do
   cops@Kind.COps{cofact=Kind.Ops{okind}} <- getsState scops
   pers <- getsServer sper
@@ -321,7 +321,7 @@ rollSpawnPos Kind.COps{cotile} visible lid Level{ltile, lxsize, lstair} s = do
 -- so all actors need to regenerate, not just the leaders.
 -- Actors on frozen levels don't regenerate. This prevents cheating
 -- via sending an actor to a safe level and letting him regenerate there.
-regenerateLevelHP :: MonadServerAtomic m => LevelId -> m ()
+regenerateLevelHP :: MonadAtomic m => LevelId -> m ()
 regenerateLevelHP arena = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   time <- getsState $ getLocalTime arena
@@ -344,14 +344,14 @@ regenerateLevelHP arena = do
   mapM_ (\aid -> execCmdAtomic $ HealActorA aid 1) toRegen
 
 -- | Continue or restart or exit the game.
-endOrLoop :: (MonadServerAtomic m, MonadServerConn m) => m () -> m ()
+endOrLoop :: (MonadAtomic m, MonadServerConn m) => m () -> m ()
 endOrLoop loopServer = do
   faction <- getsState sfaction
   let f (_, Faction{gquit=Nothing}) = Nothing
       f (fid, Faction{gquit=Just quit}) = Just (fid, quit)
   processQuits loopServer $ mapMaybe f $ EM.assocs faction
 
-processQuits :: (MonadServerAtomic m, MonadServerConn m)
+processQuits :: (MonadAtomic m, MonadServerConn m)
              => m () -> [(FactionId, (Bool, Status))] -> m ()
 processQuits loopServer [] = loopServer  -- just continue
 processQuits loopServer ((fid, quit) : quits) = do
@@ -397,7 +397,7 @@ processQuits loopServer ((fid, quit) : quits) = do
       saveGameSer
       -- Con't call @loopServer@, that is, quit the game loop.
 
-restartGame :: (MonadServerAtomic m, MonadServerConn m) => m () -> m ()
+restartGame :: (MonadAtomic m, MonadServerConn m) => m () -> m ()
 restartGame loopServer = do
   cops <- getsState scops
   nH <- nHumans

@@ -25,7 +25,7 @@ initCli = do
   case restored of
     Left (s, cli, msg) -> do  -- Restore a game or at least history.
       let sCops = updateCOps (const cops) s
-      putState sCops
+      putState sCops  -- express as an atomic action
       putClient cli
       return $ Left msg
     Right msg -> do  -- First visit ever, use the initial state.

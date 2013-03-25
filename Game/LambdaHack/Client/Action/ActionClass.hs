@@ -49,7 +49,7 @@ class MonadClient m => MonadClientUI m where
 instance (Monoid a, MonadClientUI m) => MonadClientUI (WriterT a m) where
   getsSession  = lift . getsSession
 
-class MonadActionRO m => MonadClientConn c m | m -> c where
+class MonadClient m => MonadClientConn c m | m -> c where
   getsConn  :: (Conn c -> a) -> m a
 
 -- | The bottom of the action monads class semilattice.
