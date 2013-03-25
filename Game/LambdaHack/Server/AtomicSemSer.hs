@@ -103,6 +103,7 @@ seenAtomicCli knowEvents fid per posAtomic =
     PosSmell _ ps -> knowEvents || all (`ES.member` smellVisible per) ps
     PosOnly fid2 -> fid == fid2
     PosAndSer fid2 -> fid == fid2
+    PosServer -> False
     PosAll -> True
     PosNone -> assert `failure` fid
 
@@ -198,6 +199,7 @@ atomicSendSem atomic = do
           anySend fid perOld perOld
         PosOnly fid2 -> when (fid == fid2) $ sendUpdate fid atomic
         PosAndSer fid2 -> when (fid == fid2) $ sendUpdate fid atomic
+        PosServer -> return ()
         PosAll -> sendUpdate fid atomic
         PosNone -> assert `failure` (atomic, fid)
   faction <- getsState sfaction

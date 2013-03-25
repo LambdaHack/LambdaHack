@@ -67,7 +67,9 @@ cmdAtomicSem cmd = case cmd of
   PerceptionA _ outPA inPA ->
     assert (not (EM.null outPA && EM.null inPA)) $ return ()
   RestartA fid sdisco sfper s -> restartA fid sdisco sfper s
+  RestartServerA s -> restartServerA s
   ResumeA{} -> return ()
+  ResumeServerA s -> resumeServerA s
   SaveExitA -> return ()
   SaveBkpA -> return ()
 
@@ -353,12 +355,15 @@ ageGameA :: MonadAction m => Time -> m ()
 ageGameA delta = assert (delta /= timeZero) $
   modifyState $ updateTime $ timeAdd delta
 
--- TODO here, too, it would be disastrous for the server.
--- Perhaps the server should have factionId -1, so that ocmparison
--- with fid below will be False.
 restartA :: MonadAction m
          => FactionId -> Discovery -> FactionPers -> State -> m ()
 restartA _ _ _ s = putState s
+
+restartServerA :: MonadAction m =>  State -> m ()
+restartServerA s = putState s
+
+resumeServerA :: MonadAction m =>  State -> m ()
+resumeServerA s = putState s
 
 -- All functions below that take an atomic action are executed
 -- in the state just before the action is executed.
@@ -368,8 +373,9 @@ data PosAtomic =
   | PosSmell LevelId [Point]  -- ^ whomever smells all the positions, notices
   | PosOnly FactionId         -- ^ only the faction notices
   | PosAndSer FactionId       -- ^ faction and server notices
+  | PosServer                 -- ^ only the server notices
   | PosAll                    -- ^ everybody notices
-  | PosNone                   -- ^ never broadcasted
+  | PosNone                   -- ^ never broadcasted, but sent manually
   deriving (Show, Eq)
 
 -- | Produces the positions where the action takes place. If a faction
@@ -442,7 +448,9 @@ posCmdAtomic cmd = case cmd of
   CoverA lid p _ _ -> return $ PosLevel lid [p]
   PerceptionA _ _ _ -> return PosNone
   RestartA fid _ _ _ -> return $ PosOnly fid
+  RestartServerA _ -> return PosServer
   ResumeA fid _ -> return $ PosOnly fid
+  ResumeServerA _ -> return PosServer
   SaveExitA -> return $ PosAll
   SaveBkpA -> return $ PosAll
 

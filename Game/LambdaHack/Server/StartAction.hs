@@ -36,7 +36,7 @@ import Game.LambdaHack.State
 import qualified Game.LambdaHack.Tile as Tile
 
 -- | Init connections, clients, debug and perception.
-initConn :: (MonadAction m, MonadServerConn m)
+initConn :: MonadServerConn m
          => DebugModeSer
          -> (FactionId -> Conn CmdClientUI -> IO ())
          -> (FactionId -> Conn CmdClientAI -> IO ())
@@ -52,8 +52,6 @@ initConn sdebugNxt executorUI executorAI = do
                                      , sniffOut = sniffOut sdebugNxt
                                      , sallClear = sallClear sdebugNxt
                                      , stryFov = stryFov sdebugNxt }}
-  -- Set up COps according to new debug.
-  modifyState $ updateCOps $ speedupCOps (sallClear sdebugNxt)
   initPer
 
 initPer :: MonadServer m => m ()
@@ -121,7 +119,7 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
         in fact {genemy, gally}
   return $! EM.fromDistinctAscList $ map (second enemyAlly) rawFs
 
-gameReset :: (MonadAction m, MonadServer m) => Kind.COps -> m ()
+gameReset :: MonadServer m => Kind.COps -> m State
 gameReset cops@Kind.COps{coitem, corule} = do
   -- Rules config reloaded at each new game start.
   -- Taking the original config from config file, to reroll RNG, if needed
@@ -140,9 +138,9 @@ gameReset cops@Kind.COps{coitem, corule} = do
         St.evalState rnd dungeonSeed
       defState = defStateGlobal freshDungeon freshDepth faction cops scoreTable
       defSer = emptyStateServer {sdisco, sdiscoRev, sflavour, srandom, sconfig}
-  putState defState
   sdebugNxt <- getsServer sdebugNxt
   putServer defSer {sdebugNxt, sdebugSer = sdebugNxt}
+  return defState
 
 -- Spawn initial actors. Clients should notice this, to set their leaders.
 populateDungeon :: MonadServerAtomic m => m ()

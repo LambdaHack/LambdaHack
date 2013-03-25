@@ -87,7 +87,9 @@ data CmdAtomic =
   | CoverA LevelId Point ItemId (Kind.Id ItemKind)
   | PerceptionA LevelId PerActor PerActor
   | RestartA FactionId Discovery FactionPers State
+  | RestartServerA State
   | ResumeA FactionId FactionPers
+  | ResumeServerA State
   | SaveExitA
   | SaveBkpA
   deriving (Show, Eq, Generic)
@@ -156,8 +158,10 @@ undoCmdAtomic cmd = case cmd of
   DiscoverA lid p iid ik -> Just $ CoverA lid p iid ik
   CoverA lid p iid ik -> Just $ DiscoverA lid p iid ik
   PerceptionA lid outPer inPer -> Just $ PerceptionA lid inPer outPer
-  RestartA{} -> Just $ cmd  -- here history ends; change direction
+  RestartA{} -> Just cmd  -- here history ends; change direction
+  RestartServerA{} -> Just cmd  -- here history ends; change direction
   ResumeA{} -> Nothing
+  ResumeServerA{} -> Nothing
   SaveExitA -> Nothing
   SaveBkpA -> Nothing
 
