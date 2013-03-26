@@ -12,9 +12,9 @@ import Data.Maybe
 import Data.Text (Text)
 
 import Game.LambdaHack.Action
-import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.AtomicCmd
+import Game.LambdaHack.AtomicPos
 import Game.LambdaHack.AtomicSem
 import Game.LambdaHack.ClientCmd
 import Game.LambdaHack.Faction
@@ -25,76 +25,6 @@ import Game.LambdaHack.Server.Action
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
-
--- All functions here that take an atomic action are executed
--- in the state just before the action is executed.
-
--- Determines is a command resets FOV. @Nothing@ means it always does.
--- A list of faction means it does for each of the factions.
--- This is only an optimization to save perception and spot/lose computation.
---
--- Invariant: if @resetsFovAtomic@ determines a faction does not need
--- to reset Fov, perception (@perActor@ to be precise, @psmell@ is irrelevant)
--- of that faction does not change upon recomputation. Otherwise,
--- save/restore would change game state.
-resetsFovAtomic :: MonadActionRO m => CmdAtomic -> m (Maybe [FactionId])
-resetsFovAtomic cmd = case cmd of
-  CreateActorA _ body _ -> return $ Just [bfaction body]
-  DestroyActorA _ body _ -> return $ Just [bfaction body]
-  CreateItemA _ _ _ _ -> return $ Just []  -- unless shines
-  DestroyItemA _ _ _ _ -> return $ Just []  -- ditto
-  MoveActorA aid _ _ -> fmap Just $ fidOfAid aid  -- assumption: has no light
--- TODO: MoveActorCarryingLIghtA _ _ _ -> return Nothing
-  DisplaceActorA source target -> do
-    sfid <- fidOfAid source
-    tfid <- fidOfAid target
-    if source == target
-      then return $ Just []
-      else return $ Just $ sfid ++ tfid
-  DominateActorA _ fromFid toFid -> return $ Just [fromFid, toFid]
-  MoveItemA _ _ _ _ -> return $ Just []  -- unless shiny
-  AlterTileA _ _ _ _ -> return Nothing  -- even if pos not visible initially
-  _ -> return $ Just []
-
-fidOfAid :: MonadActionRO m => ActorId -> m [FactionId]
-fidOfAid aid = getsState $ (: []) . bfaction . getActorBody aid
-
--- | Decompose an atomic action. The original action is visible
--- if it's positions are visible both before and after the action
--- (in between the FOV might have changed). The decomposed actions
--- are only tested vs the FOV after the action and they give reduced
--- information that still modifies client's state to match the server state
--- wrt the current FOV and the subset of @posCmdAtomic@ that is visible.
--- The original actions give more information not only due to spanning
--- potentially more positions than those visible. E.g., @MoveActorA@
--- informs about the continued existence of the actor between
--- moves, v.s., popping out of existence and then back in.
-breakCmdAtomic :: MonadActionRO m => CmdAtomic -> m [CmdAtomic]
-breakCmdAtomic cmd = case cmd of
-  MoveActorA aid _ toP -> do
-    b <- getsState $ getActorBody aid
-    ais <- getsState $ getActorItem aid
-    return [LoseActorA aid b ais, SpotActorA aid b {bpos = toP} ais]
-  DisplaceActorA source target -> do
-    sb <- getsState $ getActorBody source
-    sais <- getsState $ getActorItem source
-    tb <- getsState $ getActorBody target
-    tais <- getsState $ getActorItem target
-    return [ LoseActorA source sb sais
-           , SpotActorA source sb {bpos = bpos tb} sais
-           , LoseActorA target tb tais
-           , SpotActorA target tb {bpos = bpos sb} tais
-           ]
-  MoveItemA iid k c1 c2 -> do
-    item <- getsState $ getItemBody iid
-    return [LoseItemA iid item k c1, SpotItemA iid item k c2]
-  _ -> return [cmd]
-
-loudCmdAtomic :: MonadActionRO m => CmdAtomic -> m Bool
-loudCmdAtomic cmd = case cmd of
-  DestroyActorA _ body _ -> return $ not $ bproj body
-  AlterTileA{} -> return True
-  _ -> return False
 
 seenAtomicCli :: Bool -> FactionId -> Perception -> PosAtomic -> Bool
 seenAtomicCli knowEvents fid per posAtomic =

@@ -80,6 +80,7 @@ library
                       Game.LambdaHack.ActorState,
                       Game.LambdaHack.Area,
                       Game.LambdaHack.AtomicCmd,
+                      Game.LambdaHack.AtomicPos,
                       Game.LambdaHack.AtomicSem,
                       Game.LambdaHack.Client,
                       Game.LambdaHack.Client.Action,

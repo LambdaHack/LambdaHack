@@ -16,7 +16,7 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.AtomicCmd
-import Game.LambdaHack.AtomicSem
+import Game.LambdaHack.AtomicPos
 import Game.LambdaHack.Faction
 import Game.LambdaHack.Msg
 import Game.LambdaHack.ServerCmd
