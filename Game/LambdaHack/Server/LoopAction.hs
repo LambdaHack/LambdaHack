@@ -116,7 +116,10 @@ endClip arenas = do
     -- Regenerate HP and add monsters each turn, not each clip.
     when (clipMod == 1) $ mapM_ generateMonster arenas
     when (clipMod == 2) $ mapM_ regenerateLevelHP arenas
-    -- TODO: a couple messages each clip to many clients is too costly
+    -- TODO: a couple messages each clip to many clients is too costly.
+    -- Store these on a queue and sum times instead of sending,
+    -- until a different command needs to be sent. Include HealActorA
+    -- from regenerateLevelHP, but keep it before AgeGameA.
     mapM_ (\lid -> execCmdAtomic $ AgeLevelA lid timeClip) arenas
     execCmdAtomic $ AgeGameA timeClip
 
@@ -150,7 +153,6 @@ handleActors cmdSerSem arena = do
   case mnext of
     _ | quit -> return ()
     Nothing -> return ()
-      -- TODO: let clients insert DisplayDelayD once per clip based on time
     Just (aid, b) | bproj b && bhp b < 0 -> do
       -- A projectile hits an actor. The carried item is destroyed.
       ais <- getsState $ getActorItem aid
@@ -168,14 +170,15 @@ handleActors cmdSerSem arena = do
       -- destruction is not important enough for an extra @DisplayPushD@.
       handleActors cmdSerSem arena
     Just (aid, body) -> do
-      -- TODO: let clients insert this once per clip based on time
-      broadcastSfxAtomic DisplayPushD
       let side = bfaction body
           fac = faction EM.! side
           mleader = gleader fac
           usesAI = usesAIFact fac
           hasHumanLeader = isNothing $ gAiLeader fac
           queryUI = not usesAI || hasHumanLeader && Just aid == mleader
+      -- Display a new frame so that player does not see moves of all his
+      -- AI party members cumulated in a single frame, but one by one.
+      execSfxAtomic $ DisplayPushD side
       -- TODO: check that the command is legal
       cmdS <- (if queryUI then sendQueryUI else sendQueryAI) side aid
       let timed = timedCmdSer cmdS

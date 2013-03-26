@@ -250,6 +250,9 @@ drawCmdAtomicUI verbose cmd = case cmd of
     return ()  -- TODO: door opens
   AlterSecretA _ _ ->
     assert `failure` ("client learns secrets" :: Text, cmd)
+  AgeGameA t -> do
+    when (t > timeClip) $ displayFramesPush [Nothing]  -- show delay
+    displayPush
   DiscoverA _ _ iid _ -> do
     disco <- getsClient sdisco
     item <- getsState $ getItemBody iid
