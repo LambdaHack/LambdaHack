@@ -1,8 +1,9 @@
+{-# LANGUAGE FlexibleContexts #-}
 -- | Semantics of client commands.
 -- See https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture.
 module Game.LambdaHack.Client
   ( cmdClientAISem, cmdClientUISem
-  , loopAI, loopUI, ActionCli, executorCli, exeFrontend
+  , loopAI, loopUI, exeFrontend
   , MonadClient, MonadClientUI, MonadClientConn
   ) where
 
@@ -30,8 +31,7 @@ storeUndo atomic = do
   maybe skip (\a -> modifyClient $ \cli -> cli {sundo = a : sundo cli})
     $ undoAtomic atomic
 
-cmdClientAISem :: ( MonadAtomic m
-                  , MonadClient m, MonadClientConn c m )
+cmdClientAISem :: (MonadAtomic m, MonadClientConn c m)
                => CmdClientAI -> m ()
 cmdClientAISem cmd = case cmd of
   CmdAtomicAI cmdA -> do
@@ -65,17 +65,14 @@ cmdClientUISem cmd = do
       cmdH <- queryUI aid
       writeConnFromClient cmdH
 
--- | Wire together game content, the main loop of game clients,
--- the main game loop assigned to this frontend (possibly containing
--- the server loop, if the whole game runs in one process),
--- UI config and the definitions of game commands.
-exeFrontend :: Kind.COps
-            -> (SessionUI -> State -> StateClient -> Conn CmdClientUI -> IO ())
+wireSession :: (SessionUI -> State -> StateClient -> Conn CmdClientUI -> IO ())
             -> (SessionUI -> State -> StateClient -> Conn CmdClientAI -> IO ())
-            -> ((FactionId -> Conn CmdClientUI -> IO ()) ->
-                (FactionId -> Conn CmdClientAI -> IO ()) -> IO ())
+            -> Kind.COps
+            -> ((FactionId -> Conn CmdClientUI -> IO ())
+                -> (FactionId -> Conn CmdClientAI -> IO ())
+                -> IO ())
             -> IO ()
-exeFrontend cops@Kind.COps{corule} exeClientUI exeClientAI exeServer = do
+wireSession exeClientUI exeClientAI cops@Kind.COps{corule} exeServer = do
   -- UI config reloaded at each client start.
   sconfigUI <- mkConfigUI corule
   smvarUI <- newEmptyMVar
@@ -90,3 +87,27 @@ exeFrontend cops@Kind.COps{corule} exeClientUI exeClientAI exeServer = do
       executorUI sfs fid =
         exeClientUI SessionUI{..} loc (cli fid False)
   startup font $ \sfs -> exeServer (executorUI sfs) (executorAI sfs)
+
+-- | Wire together game content, the main loop of game clients,
+-- the main game loop assigned to this frontend (possibly containing
+-- the server loop, if the whole game runs in one process),
+-- UI config and the definitions of game commands.
+exeFrontend :: ( MonadAtomic m, MonadClientAbort m, MonadClientUI m
+               , MonadClientConn CmdClientUI m
+               , MonadAtomic n
+               , MonadClientConn CmdClientAI n )
+            => (m () -> SessionUI -> State -> StateClient -> Conn CmdClientUI
+                -> IO ())
+            -> (n () -> SessionUI -> State -> StateClient -> Conn CmdClientAI
+                -> IO ())
+            -> Kind.COps
+            -> ((FactionId -> Conn CmdClientUI -> IO ())
+               -> (FactionId -> Conn CmdClientAI -> IO ())
+               -> IO ())
+            -> IO ()
+exeFrontend executorUI executorAI cops exeServer = do
+  let loopClientUI = loopUI cmdClientUISem
+      loopClientAI = loopAI cmdClientAISem
+      exeClientUI = executorUI loopClientUI
+      exeClientAI = executorAI loopClientAI
+  wireSession exeClientUI exeClientAI cops exeServer

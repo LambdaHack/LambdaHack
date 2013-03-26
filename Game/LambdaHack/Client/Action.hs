@@ -15,7 +15,7 @@ module Game.LambdaHack.Client.Action
     -- * Abort exception handlers
   , tryRepeatedlyWith, tryIgnore, tryWithSlide
     -- * Executing actions
-  , ActionCli, executorCli, startup, mkConfigUI
+  , startup, mkConfigUI
     -- * Accessors to the game session Reader and the Perception Reader(-like)
   , askBinding, getPerFid
     -- * History and report
@@ -51,7 +51,6 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.Client.Action.ActionClass
-import Game.LambdaHack.Client.Action.ActionType (ActionCli, executorCli)
 import Game.LambdaHack.Client.Action.ConfigIO
 import Game.LambdaHack.Client.Action.Frontend (frontendName, startup)
 import qualified Game.LambdaHack.Client.Action.Frontend as Frontend
@@ -388,12 +387,12 @@ restoreGame = do
   let sName = saveName side isAI
   liftIO $ Save.restoreGameCli sName configUI pathsDataFile title
 
-readConnToClient :: (MonadClient m, MonadClientConn c m) => m c
+readConnToClient :: (MonadClientConn c m) => m c
 readConnToClient = do
   toClient <- getsConn toClient
   liftIO $ atomically $ readTQueue toClient
 
-writeConnFromClient :: (MonadClient m, MonadClientConn c m) => CmdSer -> m ()
+writeConnFromClient :: (MonadClientConn c m) => CmdSer -> m ()
 writeConnFromClient cmds = do
   toServer <- getsConn toServer
   liftIO $ atomically $ writeTQueue toServer cmds

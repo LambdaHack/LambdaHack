@@ -8,7 +8,6 @@ module Game.LambdaHack.Server.Action
   ( -- * Action monads
     MonadServer( getServer, getsServer, putServer, modifyServer )
   , MonadServerConn
-  , ActionSer, executorSer
   , tryRestore, connServer, launchClients
   , waitForChildren, speedupCOps
     -- * Communication
@@ -36,7 +35,6 @@ import System.Directory
 import System.Time
 
 import Game.LambdaHack.Action
-import Game.LambdaHack.Server.Action.ActionType (ActionSer, executorSer)
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ClientCmd
 import Game.LambdaHack.ServerCmd

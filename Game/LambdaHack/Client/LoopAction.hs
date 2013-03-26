@@ -31,7 +31,7 @@ initCli putSt = do
       -- TODO: create or restore from config clients RNG seed
       return $ Right msg
 
-loopAI :: (MonadClient m, MonadClientConn CmdClientAI m)
+loopAI :: (MonadClientConn CmdClientAI m)
        => (CmdClientAI -> m ()) -> m ()
 loopAI cmdClientAISem = do
   side <- getsClient sside

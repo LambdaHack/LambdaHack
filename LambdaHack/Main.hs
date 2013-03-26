@@ -13,11 +13,21 @@ import qualified Content.RuleKind
 import qualified Content.StrategyKind
 import qualified Content.TileKind
 import Game.LambdaHack.Action (MonadAtomic (..))
+import Game.LambdaHack.AtomicCmd
+import Game.LambdaHack.AtomicSem
+import Game.LambdaHack.Client
+import Game.LambdaHack.Client.Action.ActionType
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Server
+import Game.LambdaHack.Server.Action.ActionType
+import Game.LambdaHack.Server.AtomicSemSer
 
 instance MonadAtomic ActionSer where
   execAtomic = atomicSendSem
+
+instance MonadAtomic (ActionCli c) where
+  execAtomic (CmdAtomic cmd) = cmdAtomicSem cmd
+  execAtomic (SfxAtomic _) = return ()
 
 main :: IO ()
 main =
@@ -31,4 +41,4 @@ main =
         , costrat = Kind.createOps Content.StrategyKind.cdefs
         , cotile  = Kind.createOps Content.TileKind.cdefs
         }
-  in mainSer copsSlow executorSer
+  in mainSer copsSlow executorSer $ exeFrontend executorCli executorCli
