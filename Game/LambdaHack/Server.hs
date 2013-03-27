@@ -19,21 +19,21 @@ import Game.LambdaHack.Server.State
 import Game.LambdaHack.ServerCmd
 
 -- | The semantics of server commands.
-cmdSerSem :: (MonadAtomic m, MonadServer m) => CmdSer -> m ()
+cmdSerSem :: (MonadAtomic m, MonadServer m) => CmdSer -> m Bool
 cmdSerSem cmd = case cmd of
   MoveSer aid dir -> moveSer aid dir
   RunSer aid dir -> runSer aid dir
-  WaitSer aid -> waitSer aid
-  PickupSer aid i k l -> pickupSer aid i k l
-  DropSer aid iid -> dropSer aid iid
+  WaitSer aid -> waitSer aid >> return True
+  PickupSer aid i k l -> pickupSer aid i k l >> return True
+  DropSer aid iid -> dropSer aid iid >> return True
   ProjectSer aid p eps iid container -> projectSer aid p eps iid container
-  ApplySer aid iid container -> applySer aid iid container
+  ApplySer aid iid container -> applySer aid iid container >> return True
   TriggerSer aid p -> triggerSer aid p
-  SetPathSer aid path -> setPathSer aid path
-  GameRestartSer aid -> gameRestartSer aid
-  GameExitSer aid -> gameExitSer aid
-  GameSaveSer _ -> gameSaveSer
-  CfgDumpSer aid -> cfgDumpSer aid
+  SetPathSer aid path -> setPathSer aid path >> return True
+  GameRestartSer aid -> gameRestartSer aid >> return True
+  GameExitSer aid -> gameExitSer aid >> return True
+  GameSaveSer _ -> gameSaveSer >> return True
+  CfgDumpSer aid -> cfgDumpSer aid >> return True
 
 debugArgs :: IO DebugModeSer
 debugArgs = do

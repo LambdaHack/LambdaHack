@@ -45,7 +45,7 @@ import Game.LambdaHack.Utils.Assert
 -- and repeat.
 loopSer :: (MonadAtomic m, MonadServerConn m)
         => DebugModeSer
-        -> (CmdSer -> m ())
+        -> (CmdSer -> m Bool)
         -> (FactionId -> Conn CmdClientUI -> IO ())
         -> (FactionId -> Conn CmdClientAI -> IO ())
         -> Kind.COps
@@ -129,7 +129,7 @@ endClip arenas = do
 -- we introduce subclips and produce many frames per clip to avoid
 -- jerky movement. But most often we push exactly one frame or frame delay.
 handleActors :: (MonadAtomic m, MonadServerConn m)
-             => (CmdSer -> m ())
+             => (CmdSer -> m Bool)
              -> LevelId
              -> m ()
 handleActors cmdSerSem arena = do
@@ -193,14 +193,14 @@ handleActors cmdSerSem arena = do
       bPre <- getsState $ getActorBody leaderNew
       -- Check if the client cheats, trying to move other faction actors.
       assert (bfaction bPre == side `blame` (bPre, side)) skip
-      cmdSerSem cmdS
+      notAborted <- cmdSerSem cmdS
       nH <- nHumans
       -- TODO: do not fade out if all other are running (so the previous
       -- move was of the same actor) or if 2 moves in a row of a fast actor
       let fadeOut
             -- No UI, no time taken or at most one human player,
             -- so no need to visually mark the end of the move.
-            | not queryUI || not timed || nH <= 1 = []
+            | not queryUI || not timed || not notAborted || nH <= 1 = []
             | otherwise = [ FadeoutD side True
                           , FlushFramesD side
                           , FadeinD side True ]
@@ -213,7 +213,7 @@ handleActors cmdSerSem arena = do
       -- RET waits .3s and gives back control,
       -- Any other key does the .3s wait and the action form the key
       -- at once.
-      when timed $ advanceTime leaderNew
+      when (timed && notAborted) $ advanceTime leaderNew
       -- Generate extra frames if the actor has already moved during
       -- this clip, so his multiple moves would be collapsed in one frame.
       -- If the actor just change his speed this turn, the test can fail,
