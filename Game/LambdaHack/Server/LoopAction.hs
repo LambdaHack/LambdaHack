@@ -29,6 +29,7 @@ import Game.LambdaHack.Random
 import Game.LambdaHack.Server.Action hiding (sendUpdateAI, sendUpdateUI)
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.EffectSem
+import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.ServerSem
 import Game.LambdaHack.Server.StartAction
 import Game.LambdaHack.Server.State
@@ -398,6 +399,12 @@ processQuits loopServer ((fid, quit) : quits) = do
       execCmdAtomic $ QuitFactionA fid (Just quit) Nothing
       execCmdAtomic SaveExitA
       saveGameSer
+      -- Verify that the saved perception is equal to future reconstructed.
+      persSaved <- getsServer sper
+      configFov <- fovMode
+      s <- getState
+      let pers = dungeonPerception cops configFov s
+      assert (persSaved == pers `blame` (persSaved, pers)) skip
       -- Con't call @loopServer@, that is, quit the game loop.
 
 restartGame :: (MonadAtomic m, MonadServerConn m) => m () -> m ()
