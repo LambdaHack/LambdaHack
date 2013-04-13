@@ -169,7 +169,7 @@ populateDungeon = do
         mapM_ (arenaHeroes arena) $ zip3 arenaFactions entryPoss heroNames
       arenaHeroes arena ((side, _), ppos, heroName) = do
         psFree <- getsState $ nearbyFreePoints cotile ppos arena
-        let ps = take (1 + configExtraHeroes config) $ zip [1..] psFree
+        let ps = take (1 + configExtraHeroes config) $ zip [0..] psFree
         laid <- forM ps $ \ (n, p) ->
           addHero side p arena heroName (Just n)
         mleader <- getsState $ gleader . (EM.! side) . sfaction
