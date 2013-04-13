@@ -15,7 +15,7 @@ module Game.LambdaHack.Server.Action
     -- * Assorted primitives
   , saveGameSer, saveGameBkp, dumpCfg
   , mkConfigRules, restoreScore, registerScore
-  , rndToAction, resetFidPerception, getPerFid
+  , rndToAction, fovMode, resetFidPerception, getPerFid
   ) where
 
 import Control.Concurrent
@@ -59,19 +59,22 @@ import Game.LambdaHack.Utils.File
 
 default (Text)
 
+fovMode :: MonadServer m => m FovMode
+fovMode = do
+  configFovMode <- getsServer (configFovMode . sconfig)
+  sdebugSer <- getsServer sdebugSer
+  return $ fromMaybe configFovMode $ stryFov sdebugSer
+
 -- | Update the cached perception for the selected level, for a faction.
 -- The assumption is the level, and only the level, has changed since
 -- the previous perception calculation.
 resetFidPerception :: MonadServer m => FactionId -> LevelId -> m ()
 resetFidPerception fid arena = do
   cops <- getsState scops
-  configFovMode <- getsServer (configFovMode . sconfig)
-  sdebugSer <- getsServer sdebugSer
   lvl <- getsLevel arena id
+  configFov <- fovMode
   s <- getState
-  let tryFov = stryFov sdebugSer
-      fovMode = fromMaybe configFovMode tryFov
-      per = levelPerception cops s fovMode fid arena lvl
+  let per = levelPerception cops s configFov fid arena lvl
       upd = EM.adjust (EM.adjust (const per) arena) fid
   modifyServer $ \ser -> ser {sper = upd (sper ser)}
 

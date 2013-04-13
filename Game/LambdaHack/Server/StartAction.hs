@@ -9,7 +9,6 @@ import Control.Monad
 import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.Maybe
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.ActorState
@@ -57,12 +56,9 @@ initConn sdebugNxt executorUI executorAI = do
 initPer :: MonadServer m => m ()
 initPer = do
   cops <- getsState scops
-  glo <- getState
-  ser <- getServer
-  config <- getsServer sconfig
-  let tryFov = stryFov $ sdebugSer ser
-      fovMode = fromMaybe (configFovMode config) tryFov
-      pers = dungeonPerception cops fovMode glo
+  configFov <- fovMode
+  s <- getState
+  let pers = dungeonPerception cops configFov s
   modifyServer $ \ser1 -> ser1 {sper = pers}
 
 reinitGame :: (MonadAtomic m, MonadServer m) => m ()

@@ -432,7 +432,7 @@ setPathSer aid path = do
   case path of
     [] -> execCmdAtomic $ PathActorA aid fromPath (Just [])
     d : lv -> do
-      moveSer aid d
+      void $ moveSer aid d
       execCmdAtomic $ PathActorA aid fromPath (Just lv)
 
 -- * GameRestart

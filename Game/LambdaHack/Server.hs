@@ -64,8 +64,8 @@ debugArgs = do
         (parseArgs rest) {sallClear = True}
       parseArgs ("--tryFov" : "Digital" : r : rest) | (read r :: Int) > 0 =
         (parseArgs rest) {stryFov = Just $ Digital $ read r}
-      parseArgs ("--tryFov" : fovMode : rest) =
-        (parseArgs rest) {stryFov = Just $ read fovMode}
+      parseArgs ("--tryFov" : mode : rest) =
+        (parseArgs rest) {stryFov = Just $ read mode}
       parseArgs _ = error $ unlines usage
   return $! parseArgs args
 
