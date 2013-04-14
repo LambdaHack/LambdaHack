@@ -364,8 +364,8 @@ effLvlGoUp aid k = do
         mleader <- getsState $ gleader . (EM.! side) . sfaction
         execCmdAtomic $ LeadFactionA side mleader Nothing
         -- Remove the actor from the old level.
-        -- Onlookers see somebody uses a staircase.
-        -- No need to report that he disappears.
+        -- Onlookers see somebody disappear suddenly.
+        -- @DestroyActorA@ is too loud, so use @LoseActorA@ instead.
         execCmdAtomic $ LoseActorA aid bOld ais
         -- Sync the actor time with the level time.
         timeLastVisited <- getsState $ getLocalTime arenaNew

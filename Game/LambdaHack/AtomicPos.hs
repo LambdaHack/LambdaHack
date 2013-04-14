@@ -157,6 +157,8 @@ resetsFovAtomic :: MonadActionRO m => CmdAtomic -> m (Maybe [FactionId])
 resetsFovAtomic cmd = case cmd of
   CreateActorA _ body _ -> return $ Just [bfaction body]
   DestroyActorA _ body _ -> return $ Just [bfaction body]
+  SpotActorA _ body _ -> return $ Just [bfaction body]
+  LoseActorA _ body _ -> return $ Just [bfaction body]
   CreateItemA _ _ _ _ -> return $ Just []  -- unless shines
   DestroyItemA _ _ _ _ -> return $ Just []  -- ditto
   MoveActorA aid _ _ -> fmap Just $ fidOfAid aid  -- assumption: has no light
