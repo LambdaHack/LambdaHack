@@ -1,15 +1,16 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | Factions taking part in the game: e.g., two human players controlling
 -- the hero faction battling the monster and the animal factions.
 module Game.LambdaHack.Faction
-  ( FactionId, FactionDict, Faction(..), Status(..)
-  , isHumanFact, usesAIFact, isSpawningFact
+  ( FactionId, FactionDict, Faction(..), Diplomacy(..), Status(..)
+  , isHumanFact, usesAIFact, isSpawningFact, isAtWar, isAllied
   ) where
 
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 import Data.Text (Text)
+import GHC.Generics (Generic)
 
 import Game.LambdaHack.Actor
 import Game.LambdaHack.Content.FactionKind
@@ -29,12 +30,20 @@ data Faction = Faction
   , gAiMember :: !(Maybe (Kind.Id StrategyKind))
                                           -- ^ AI to use for other actors
                                           -- Nothing means human-controlled
-  , genemy    :: ![FactionId]  -- ^ currently in war with these factions
-  , gally     :: ![FactionId]  -- ^ currently allied with these factions
+  , gdipl     :: !Dipl                    -- ^ diplomatic state
   , gquit     :: !(Maybe (Bool, Status))  -- ^ cause of game end/exit
   , gleader   :: !(Maybe ActorId)
   }
   deriving (Show, Eq)
+
+data Diplomacy =
+    Unknown
+  | War
+  | Neutral
+  | Alliance
+  deriving (Show, Eq, Ord, Generic)
+
+type Dipl = EM.EnumMap FactionId Diplomacy
 
 -- | Current result of the game.
 data Status =
@@ -57,6 +66,15 @@ isSpawningFact :: Kind.COps -> Faction -> Bool
 isSpawningFact Kind.COps{cofact=Kind.Ops{okind}} fact =
   fspawn (okind $ gkind fact) > 0
 
+-- TODO: here and elsewhere, check symmetry
+isAtWar :: Faction -> FactionId -> Bool
+isAtWar fact fid = War == EM.findWithDefault Unknown fid (gdipl fact)
+
+isAllied :: Faction -> FactionId -> Bool
+isAllied fact fid = Alliance == EM.findWithDefault Unknown fid (gdipl fact)
+
+instance Binary Diplomacy
+
 instance Binary Status where
   put (Killed ln) = putWord8 0 >> put ln
   put Camping     = putWord8 1
@@ -77,8 +95,7 @@ instance Binary Faction where
     put gname
     put gAiLeader
     put gAiMember
-    put genemy
-    put gally
+    put gdipl
     put gquit
     put gleader
   get = do
@@ -86,8 +103,7 @@ instance Binary Faction where
     gname <- get
     gAiLeader <- get
     gAiMember <- get
-    genemy <- get
-    gally <- get
+    gdipl <- get
     gquit <- get
     gleader <- get
     return Faction{..}

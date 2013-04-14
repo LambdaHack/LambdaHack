@@ -207,11 +207,11 @@ projectLeader :: (MonadClientAbort m, MonadClientUI m)
               => MU.Part -> MU.Part -> [Char] -> m CmdSer
 projectLeader verb object syms = do
   side <- getsClient sside
-  genemy <- getsState $ genemy . (EM.! side) . sfaction
+  fact <- getsState $ (EM.! side) . sfaction
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   let arena = blid b
-  ms <- getsState $ actorNotProjList (`elem` genemy) arena
+  ms <- getsState $ actorNotProjList (isAtWar fact) arena
   lxsize <- getsLevel arena lxsize
   lysize <- getsLevel arena lysize
   if foesAdjacent lxsize lysize (bpos b) ms

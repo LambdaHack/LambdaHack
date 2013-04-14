@@ -162,9 +162,9 @@ continueRunDir leader (dirLast, distLast) = do
   let arena = blid body
   per <- getPerFid arena
   sreport <- getsClient sreport -- TODO: check the message before it goes into history
-  genemy <- getsState $ genemy . (EM.! bfaction body) . sfaction
-  ms <- getsState $ actorList (`elem` genemy) arena
-  hs <- getsState $ actorList (not . (`elem` genemy)) arena
+  fact <- getsState $ (EM.! bfaction body) . sfaction
+  ms <- getsState $ actorList (isAtWar fact) arena
+  hs <- getsState $ actorList (not . (isAtWar fact)) arena
   lvl@Level{lxsize, lysize} <- getsLevel (blid body) id
   let posHere = bpos body
       posHasFeature f loc = Tile.hasFeature cotile f (lvl `at` loc)

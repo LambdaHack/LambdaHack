@@ -375,17 +375,16 @@ processQuits loopServer ((fid, quit) : quits) = do
             _ -> True
           notSpawning fact = not $ isSpawningFact cops fact
           isActive fact = inGame fact && notSpawning fact
-          isAllied fid1 fact = fid1 `elem` gally fact
           inGameHuman fact = inGame fact && isHumanFact fact
           gameHuman = filter inGameHuman $ EM.elems faction
           gameOver = case filter (isActive . snd) $ EM.assocs faction of
             _ | null gameHuman -> True  -- no screensaver mode for now
-            [] -> True
+            [] -> True  -- last ally dies, so cooperative game ends
             (fid1, fact1) : rest ->
               -- Competitive game ends when only one allied team remains.
-              all (isAllied fid1 . snd) rest
-              -- Cooperative game continues until the last ally dies.
-              && not (isAllied fid fact1)
+              all (\(_, factRest) -> isAllied factRest fid1) rest
+              -- Verify this was not a cooperative game.
+              && not (isAllied fact1 fid)
       if gameOver then do
         registerScore status total
         restartGame loopServer

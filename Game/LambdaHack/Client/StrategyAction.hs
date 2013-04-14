@@ -95,8 +95,8 @@ reacquireTgt cops actor btarget glo per factionAbilities =
                                        -- nothing visible, go to pos
       Just TPos{} -> closest                -- prefer visible foes
       Nothing -> closest
-  lenemy = genemy . (EM.! bfaction) . sfaction $ glo
-  foes = actorNotProjAssocs (`elem` lenemy) blid glo
+  fact = sfaction glo EM.! bfaction
+  foes = actorNotProjAssocs (isAtWar fact) blid glo
   visibleFoes = L.filter (enemyVisible . snd) (L.map (second bpos) foes)
   closest :: Strategy (Maybe Target)
   closest =
@@ -233,8 +233,8 @@ rangedFreq cops actor disco glo fpos =
   Actor{bkind, bpos, bfaction, blid, bbag, binv} = getActorBody actor glo
   mk = okind bkind
   tis = lvl `atI` bpos
-  lenemy = genemy . (EM.! bfaction) . sfaction $ glo
-  foes = actorNotProjAssocs (`elem` lenemy) blid glo
+  fact = sfaction glo EM.! bfaction
+  foes = actorNotProjAssocs (isAtWar fact) blid glo
   foesAdj = foesAdjacent lxsize lysize bpos (map snd foes)
   -- TODO: also don't throw if any pos on path is visibly not accessible
   -- from previous (and tweak eps in bla to make it accessible).
@@ -363,8 +363,8 @@ moveStrategy cops actor glo mFoe =
   moveRandomly = liftFrequency $ uniformFreq "moveRandomly" sensible
   openableHere   = openable cotile lvl
   accessibleHere = accessible cops lvl bpos
-  lenemy = genemy . (EM.! bfaction) . sfaction $ glo
-  friends = actorList (not . (`elem` lenemy)) blid $ glo
+  fact = sfaction glo EM.! bfaction
+  friends = actorList (not . (isAtWar fact)) blid glo
   noFriends | asight mk = unoccupied friends
             | otherwise = const True
   isSensible l = noFriends l && (accessibleHere l || openableHere l)

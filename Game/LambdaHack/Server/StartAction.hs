@@ -87,8 +87,7 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
   let g isHuman (gname, fType) = do
         gkind <- opick fType (const True)
         let fk = okind gkind
-            genemy = []  -- fixed below
-            gally = []  -- fixed below
+            gdipl = EM.empty  -- fixed below
             gquit = Nothing
         gAiLeader <-
           if isHuman
@@ -108,11 +107,13 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
       enemyAlly fact =
         let f fType = filter (isOfType fType . snd) rawFs
             fk = okind $ gkind fact
-            setEnemy = ES.fromList $ map fst $ concatMap f $ fenemy fk
-            setAlly  = ES.fromList $ map fst $ concatMap f $ fally fk
-            genemy = ES.toList setEnemy
-            gally = ES.toList $ setAlly ES.\\ setEnemy
-        in fact {genemy, gally}
+            lalliance = map (\(fid, _) -> (fid, Alliance))
+                        $ concatMap f $ fally fk
+            lwar = map (\(fid, _) -> (fid, War))
+                   $ concatMap f $ fenemy fk
+            -- War overrides alliance, so 'lwar' second.
+            gdipl = EM.fromList $ lalliance ++ lwar
+        in fact {gdipl}
   return $! EM.fromDistinctAscList $ map (second enemyAlly) rawFs
 
 gameReset :: MonadServer m => Kind.COps -> m State

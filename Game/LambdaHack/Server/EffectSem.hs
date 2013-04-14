@@ -135,8 +135,8 @@ effectMindprobe :: MonadAtomic m
 effectMindprobe target = do
   tb <- getsState (getActorBody target)
   let arena = blid tb
-  genemy <- getsState $ genemy . (EM.! bfaction tb) . sfaction
-  lb <- getsState $ actorNotProjList (`elem` genemy) arena
+  fact <- getsState $ (EM.! bfaction tb) . sfaction
+  lb <- getsState $ actorNotProjList (isAtWar fact) arena
   let nEnemy = length lb
   if nEnemy == 0 then do
     execSfxAtomic $ EffectD target Effect.NoEffect

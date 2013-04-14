@@ -339,8 +339,8 @@ tgtEnemyLeader stgtModeNew = do
   -- TODO: sort enemies by distance to the leader.
   stgtMode <- getsClient stgtMode
   side <- getsClient sside
-  genemy <- getsState $ genemy . (EM.! side) . sfaction
-  ms <- getsState $ actorNotProjAssocs (`elem` genemy) lid
+  fact <- getsState $ (EM.! side) . sfaction
+  ms <- getsState $ actorNotProjAssocs (isAtWar fact) lid
   let plms = filter ((/= leader) . fst) ms  -- don't target yourself
       ordPos (_, m) = (chessDist lxsize ppos $ bpos m, bpos m)
       dms = sortBy (comparing ordPos) plms
@@ -506,8 +506,8 @@ endTargeting accept = do
     scursor <- getsClient scursor
     (lid, _) <- viewedLevel
     side <- getsClient sside
-    genemy <- getsState $ genemy . (EM.! side) . sfaction
-    ms <- getsState $ actorNotProjAssocs (`elem` genemy) lid
+    fact <- getsState $ (EM.! side) . sfaction
+    ms <- getsState $ actorNotProjAssocs (isAtWar fact) lid
     case target of
       Just TEnemy{} -> do
         -- If in enemy targeting mode, switch to the enemy under
