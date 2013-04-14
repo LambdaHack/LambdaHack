@@ -6,6 +6,7 @@ module Game.LambdaHack.Client.HumanSem
 
 import Control.Monad
 import Control.Monad.Writer.Strict (WriterT)
+import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 import qualified NLP.Miniutter.English as MU
 
@@ -17,9 +18,11 @@ import Game.LambdaHack.Client.HumanCmd
 import Game.LambdaHack.Client.HumanGlobal
 import Game.LambdaHack.Client.HumanLocal
 import Game.LambdaHack.Client.State
+import Game.LambdaHack.Faction
 import Game.LambdaHack.Level
 import Game.LambdaHack.Msg
 import Game.LambdaHack.ServerCmd
+import Game.LambdaHack.State
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Vector
 import Game.LambdaHack.VectorXY
@@ -79,7 +82,8 @@ checkCursor arena = do
   when (arena /= lid) $
     abortWith "[targeting] command disabled on a remote level, press ESC to switch back"
 
-moveHuman :: MonadClientUI m => VectorXY -> WriterT Slideshow m (Maybe CmdSer)
+moveHuman :: (MonadClientAbort m, MonadClientUI m)
+          => VectorXY -> WriterT Slideshow m (Maybe CmdSer)
 moveHuman v = do
   tgtMode <- getsClient stgtMode
   (arena, Level{lxsize}) <- viewedLevel
@@ -96,12 +100,20 @@ moveHuman v = do
     case tgt of
       Just target -> do
         tb <- getsState $ getActorBody target
+        sfact <- getsState $ (EM.! bfaction sb) . sfaction
         if bfaction tb == bfaction sb && not (bproj tb) then do
           -- Select adjacent actor by bumping into him. Takes no time.
           success <- selectLeader target
           assert (success `blame` (leader, target, tb)) skip
           return Nothing
-        else fmap Just $ moveLeader dir
+        else do
+          unless (isAtWar sfact $ bfaction tb) $ do
+            go <- displayYesNo "This attack will start a war. Are you sure?"
+            unless go $ abortWith "Attack canceled."
+          when (isAllied sfact $ bfaction tb) $ do
+            go <- displayYesNo "You are bound by an alliance. Really attack?"
+            unless go $ abortWith "Attack canceled."
+          fmap Just $ moveLeader dir
       _ -> fmap Just $ moveLeader dir
 
 runHuman :: MonadClientUI m => VectorXY -> WriterT Slideshow m (Maybe CmdSer)
