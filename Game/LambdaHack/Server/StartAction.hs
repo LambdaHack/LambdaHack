@@ -114,7 +114,17 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
             -- War overrides alliance, so 'lwar' second.
             gdipl = EM.fromList $ lalliance ++ lwar
         in fact {gdipl}
-  return $! EM.fromDistinctAscList $ map (second enemyAlly) rawFs
+      diplFs = EM.fromDistinctAscList $ map (second enemyAlly) rawFs
+      -- Only symmetry is ensured, everything else is permitted, e.g.,
+      -- a faction in alliance with two others that are at war.
+      mkSym fid1 fid2 dipl1 =
+        let d1 = EM.findWithDefault Unknown fid2 dipl1
+            dipl2 = gdipl $ diplFs EM.! fid2
+            d2 = EM.findWithDefault Unknown fid1 dipl2
+        in EM.insert fid1 (max d1 d2) dipl1
+      makeSym fid1 fact1 =
+        fact1 {gdipl = foldr (mkSym fid1) (gdipl fact1) (EM.keys diplFs)}
+  return $! EM.mapWithKey makeSym diplFs
 
 gameReset :: MonadServer m => Kind.COps -> m State
 gameReset cops@Kind.COps{coitem, corule} = do

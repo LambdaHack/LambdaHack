@@ -36,11 +36,12 @@ data Faction = Faction
   }
   deriving (Show, Eq)
 
+-- | Diplomacy states. Higher overwrite lower in case of assymetric content.
 data Diplomacy =
     Unknown
-  | War
   | Neutral
   | Alliance
+  | War
   deriving (Show, Eq, Ord, Generic)
 
 type Dipl = EM.EnumMap FactionId Diplomacy
@@ -66,10 +67,11 @@ isSpawningFact :: Kind.COps -> Faction -> Bool
 isSpawningFact Kind.COps{cofact=Kind.Ops{okind}} fact =
   fspawn (okind $ gkind fact) > 0
 
--- TODO: here and elsewhere, check symmetry
+-- | Check if factions are at war. Assumes symmetry.
 isAtWar :: Faction -> FactionId -> Bool
 isAtWar fact fid = War == EM.findWithDefault Unknown fid (gdipl fact)
 
+-- | Check if factions are allied. Assumes symmetry.
 isAllied :: Faction -> FactionId -> Bool
 isAllied fact fid = Alliance == EM.findWithDefault Unknown fid (gdipl fact)
 

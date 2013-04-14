@@ -249,9 +249,9 @@ drawCmdAtomicUI verbose cmd = case cmd of
     name1 <- getsState $ gname . (EM.! fid1) . sfaction
     name2 <- getsState $ gname . (EM.! fid2) . sfaction
     let showDipl Unknown = "unknown to each other"
-        showDipl War = "at war"
         showDipl Neutral = "in neutral diplomatic relations"
         showDipl Alliance = "allied"
+        showDipl War = "at war"
     msgAdd $ name1 <+> "and" <+> name2 <+> "are now" <+> showDipl toDipl <> "."
   QuitFactionA fid _ toSt -> quitFactionUI fid toSt
   AlterTileA _ _ _ _ | verbose ->
