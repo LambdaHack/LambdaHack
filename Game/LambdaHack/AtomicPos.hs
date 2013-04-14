@@ -208,8 +208,10 @@ breakCmdAtomic cmd = case cmd of
     return [LoseItemA iid item k c1, SpotItemA iid item k c2]
   _ -> return [cmd]
 
-loudCmdAtomic :: MonadActionRO m => CmdAtomic -> m Bool
-loudCmdAtomic cmd = case cmd of
-  DestroyActorA _ body _ -> return $ not $ bproj body
-  AlterTileA{} -> return True
-  _ -> return False
+loudCmdAtomic :: FactionId -> CmdAtomic -> Bool
+loudCmdAtomic fid cmd = case cmd of
+  DestroyActorA _ body _ ->
+    -- Death of a party member does not need to be heard, because it's seen.
+    not $ fid == bfaction body || bproj body
+  AlterTileA{} -> True
+  _ -> False

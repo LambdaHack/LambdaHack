@@ -64,19 +64,18 @@ atomicSendSem atomic = do
   -- Gather data from the old state.
   sOld <- getState
   persOld <- getsServer sper
-  (ps, resets, atomicBroken, psBroken, psLoud) <-
+  (ps, resets, atomicBroken, psBroken) <-
     case atomic of
       CmdAtomic cmd -> do
         ps <- posCmdAtomic cmd
         resets <- resetsFovAtomic cmd
         atomicBroken <- breakCmdAtomic cmd
         psBroken <- mapM posCmdAtomic atomicBroken
-        psLoud <- mapM loudCmdAtomic atomicBroken
-        return (ps, resets, atomicBroken, psBroken, psLoud)
+        return (ps, resets, atomicBroken, psBroken)
       SfxAtomic sfx -> do
         ps <- posSfxAtomic sfx
-        return (ps, Just [], [], [], [])
-  let atomicPsBroken = zip3 atomicBroken psBroken psLoud
+        return (ps, Just [], [], [])
+  let atomicPsBroken = zip atomicBroken psBroken
   -- TODO: assert also that the sum of psBroken is equal to ps
   -- TODO: with deep equality these assertions can be expensive. Optimize.
   assert (case ps of
@@ -94,10 +93,10 @@ atomicSendSem atomic = do
       sendUpdate fid (CmdAtomic cmd) = sendA fid cmd
       sendUpdate fid (SfxAtomic sfx) = sendUpdateUI fid $ SfxAtomicUI sfx
       breakSend fid perNew = do
-        let send2 (atomic2, ps2, loud2) =
+        let send2 (atomic2, ps2) =
               if seenAtomicCli knowEvents fid perNew ps2
                 then sendUpdate fid $ CmdAtomic atomic2
-                else when loud2 $
+                else when (loudCmdAtomic fid atomic2) $
                        sendUpdate fid
                        $ SfxAtomic $ BroadcastD "You hear some noises."
         mapM_ send2 atomicPsBroken
