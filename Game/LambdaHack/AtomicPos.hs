@@ -78,6 +78,7 @@ posCmdAtomic cmd = case cmd of
   ColorActorA aid _ _ -> singleAid aid
   QuitFactionA _ _ _ -> return PosAll
   LeadFactionA fid _ _ -> return $ PosAndSer fid
+  DiplFactionA _ _ _ _ -> return PosAll
   AlterTileA lid p _ _ -> return $ PosLevel lid [p]
   SpotTileA lid ts -> do
     let ps = map fst ts

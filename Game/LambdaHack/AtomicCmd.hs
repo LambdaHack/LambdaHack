@@ -72,6 +72,7 @@ data CmdAtomic =
   -- Change faction attributes.
   | QuitFactionA FactionId (Maybe (Bool, Status)) (Maybe (Bool, Status))
   | LeadFactionA FactionId (Maybe ActorId) (Maybe ActorId)
+  | DiplFactionA FactionId FactionId Diplomacy Diplomacy
   -- Alter map.
   | AlterTileA LevelId Point (Kind.Id TileKind) (Kind.Id TileKind)
   | SpotTileA LevelId [(Point, Kind.Id TileKind)]
@@ -146,6 +147,8 @@ undoCmdAtomic cmd = case cmd of
   ColorActorA aid fromCol toCol -> Just $ ColorActorA aid toCol fromCol
   QuitFactionA fid fromSt toSt -> Just $ QuitFactionA fid toSt fromSt
   LeadFactionA fid source target -> Just $ LeadFactionA fid target source
+  DiplFactionA fid1 fid2 fromDipl toDipl ->
+    Just $ DiplFactionA fid1 fid2 toDipl fromDipl
   AlterTileA lid p fromTile toTile -> Just $ AlterTileA lid p toTile fromTile
   SpotTileA lid ts -> Just $ LoseTileA lid ts
   LoseTileA lid ts -> Just $ SpotTileA lid ts

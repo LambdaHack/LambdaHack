@@ -53,6 +53,8 @@ cmdAtomicSem cmd = case cmd of
   ColorActorA aid fromCol toCol -> colorActorA aid fromCol toCol
   QuitFactionA fid fromSt toSt -> quitFactionA fid fromSt toSt
   LeadFactionA fid source target -> leadFactionA fid source target
+  DiplFactionA fid1 fid2 fromDipl toDipl ->
+    diplFactionA fid1 fid2 fromDipl toDipl
   AlterTileA lid p fromTile toTile -> alterTileA lid p fromTile toTile
   SpotTileA lid ts -> spotTileA lid ts
   LoseTileA lid ts -> loseTileA lid ts
@@ -281,6 +283,19 @@ leadFactionA fid source target = assert (source /= target) $ do
   assert (source == gleader fac `blame` (fid, source, target, fac)) skip
   let adj fa = fa {gleader = target}
   modifyState $ updateFaction $ EM.adjust adj fid
+
+diplFactionA :: MonadAction m
+             => FactionId -> FactionId -> Diplomacy -> Diplomacy -> m ()
+diplFactionA fid1 fid2 fromDipl toDipl =
+  assert (fid1 /= fid2 && fromDipl /= toDipl) $ do
+    fac1 <- getsState $ (EM.! fid1) . sfaction
+    fac2 <- getsState $ (EM.! fid2) . sfaction
+    assert (fromDipl == EM.findWithDefault Unknown fid2 (gdipl fac1)
+            && fromDipl == EM.findWithDefault Unknown fid1 (gdipl fac2)
+            `blame` (fid1, fid2, fromDipl, toDipl, fac1, fac2)) skip
+    let adj fid fact = fact {gdipl = EM.insert fid toDipl (gdipl fact)}
+    modifyState $ updateFaction $ EM.adjust (adj fid2) fid1
+    modifyState $ updateFaction $ EM.adjust (adj fid1) fid2
 
 -- | Alter an attribute (actually, the only, the defining attribute)
 -- of a visible tile. This is similar to e.g., @PathActorA@.

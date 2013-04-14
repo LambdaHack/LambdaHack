@@ -123,6 +123,8 @@ actorAttackActor source target = do
   cops@Kind.COps{coitem=Kind.Ops{opick, okind}} <- getsState scops
   sm <- getsState (getActorBody source)
   tm <- getsState (getActorBody target)
+  let sfid = bfaction sm
+      tfid = bfaction tm
   time <- getsState $ getLocalTime (blid tm)
   s <- getState
   itemAssocs <- getsState $ getActorItem source
@@ -134,7 +136,7 @@ actorAttackActor source target = do
     else case strongestSword cops itemAssocs of
       Just (_, (iid, w)) -> return (Just iid, w)
       Nothing -> do  -- hand to hand combat
-        let h2hGroup | isSpawningFaction s (bfaction sm) = "monstrous"
+        let h2hGroup | isSpawningFaction s sfid = "monstrous"
                      | otherwise = "unarmed"
         h2hKind <- rndToAction $ opick h2hGroup (const True)
         flavour <- getsServer sflavour
@@ -158,6 +160,10 @@ actorAttackActor source target = do
         then execSfxAtomic $ StrikeD source target item MissBlockD
         else performHit True
     else performHit False
+  sfact <- getsState $ (EM.! sfid) . sfaction
+  let fromDipl = EM.findWithDefault Unknown tfid (gdipl sfact)
+  unless (isAtWar sfact tfid) $
+    execCmdAtomic $ DiplFactionA sfid tfid fromDipl War
 
 -- | Search for hidden doors.
 search :: (MonadAtomic m, MonadServer m) => ActorId -> m Bool

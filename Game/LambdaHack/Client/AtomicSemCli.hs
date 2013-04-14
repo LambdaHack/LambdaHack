@@ -245,6 +245,14 @@ drawCmdAtomicUI verbose cmd = case cmd of
     let sourceDead = maybe True (isNothing . flip EM.lookup actorD) source
         targetAlive = isJust target
     when (sourceDead && targetAlive) $ msgAdd "The survivors carry on."
+  DiplFactionA fid1 fid2 _ toDipl -> do
+    name1 <- getsState $ gname . (EM.! fid1) . sfaction
+    name2 <- getsState $ gname . (EM.! fid2) . sfaction
+    let showDipl Unknown = "unknown to each other"
+        showDipl War = "at war"
+        showDipl Neutral = "in neutral diplomatic relations"
+        showDipl Alliance = "allied"
+    msgAdd $ name1 <+> "and" <+> name2 <+> "are now" <+> showDipl toDipl <> "."
   QuitFactionA fid _ toSt -> quitFactionUI fid toSt
   AlterTileA _ _ _ _ | verbose ->
     return ()  -- TODO: door opens
