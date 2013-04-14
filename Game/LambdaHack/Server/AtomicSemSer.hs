@@ -121,8 +121,17 @@ atomicSendSem atomic = do
             then anySend fid perOld perOld
             else do
               sendA fid $ PerceptionA arena outPA inPA
-              unless knowEvents $  -- inconsistencies would quickly manifest
-                mapM_ (sendA fid) $ atomicRemember arena inPer sOld
+              unless knowEvents $ do  -- inconsistencies would quickly manifest
+                let remember = atomicRemember arena inPer sOld
+                    seenNew = seenAtomicCli False fid perNew
+                    seenOld = seenAtomicCli False fid perOld
+                -- TODO: these assertions are probably expensive
+                psRem <- mapM posCmdAtomic remember
+                -- Verify that we remember only currently seen things.
+                assert (allB seenNew psRem) skip
+                -- Verify that we remember only new things.
+                assert (allB (not . seenOld) psRem) skip
+                mapM_ (sendA fid) remember
               anySend fid perOld perNew
         else anySend fid perOld perOld
       send fid = case ps of
@@ -147,7 +156,7 @@ atomicRemember lid inPer s =
   -- if required. Any client that remembers out of sight items, OTOH,
   -- will create atomic actions that forget remembered items
   -- that are revealed not to be there any more (no @SpotItemA@ for them).
-  -- Similarly no @LoseActorA@, @LoseTileA@ nor  @LoseSmellA@.
+  -- Similarly no @LoseActorA@, @LoseTileA@ nor @LoseSmellA@.
   let inFov = ES.elems $ totalVisible inPer
       lvl = sdungeon s EM.! lid
       -- Actors.
