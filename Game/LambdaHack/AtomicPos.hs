@@ -4,7 +4,11 @@
 module Game.LambdaHack.AtomicPos
   ( PosAtomic(..), posCmdAtomic, posSfxAtomic
   , resetsFovAtomic, breakCmdAtomic, loudCmdAtomic
+  , seenAtomicCli, seenAtomicSer
   ) where
+
+import qualified Data.EnumSet as ES
+import Data.Text (Text)
 
 import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
@@ -13,6 +17,7 @@ import Game.LambdaHack.AtomicCmd
 import Game.LambdaHack.AtomicSem (posOfAid, posOfContainer)
 import Game.LambdaHack.Faction
 import Game.LambdaHack.Level
+import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import Game.LambdaHack.Utils.Assert
 
@@ -215,3 +220,21 @@ loudCmdAtomic fid cmd = case cmd of
     not $ fid == bfaction body || bproj body
   AlterTileA{} -> True
   _ -> False
+
+seenAtomicCli :: Bool -> FactionId -> Perception -> PosAtomic -> Bool
+seenAtomicCli knowEvents fid per posAtomic =
+  case posAtomic of
+    PosLevel _ ps -> knowEvents || all (`ES.member` totalVisible per) ps
+    PosSmell _ ps -> knowEvents || all (`ES.member` smellVisible per) ps
+    PosOnly fid2 -> fid == fid2
+    PosAndSer fid2 -> fid == fid2
+    PosServer -> False
+    PosAll -> True
+    PosNone -> assert `failure` fid
+
+seenAtomicSer :: PosAtomic -> Bool
+seenAtomicSer posAtomic =
+  case posAtomic of
+    PosOnly _ -> False
+    PosNone -> assert `failure` ("PosNone considered for the server" :: Text)
+    _ -> True

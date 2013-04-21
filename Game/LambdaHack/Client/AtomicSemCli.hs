@@ -17,6 +17,7 @@ import Game.LambdaHack.Action
 import Game.LambdaHack.Actor
 import Game.LambdaHack.ActorState
 import Game.LambdaHack.AtomicCmd
+import Game.LambdaHack.AtomicPos
 import Game.LambdaHack.AtomicSem
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Animation
@@ -87,7 +88,17 @@ cmdAtomicFilterCli cmd = case cmd of
         inSm = mapMaybe (\p -> pMaybe p $ EM.lookup p lsmell)
                         (ES.elems inSmellFov)
         atomicSmell = if null inSm then [] else [LoseSmellA lid inSm]
-    return $ cmd : inItem ++ outActor ++ atomicSmell
+    fid <- getsClient sside
+    let forget = inItem ++ outActor ++ atomicSmell
+        seenNew = seenAtomicCli False fid perNew
+        seenOld = seenAtomicCli False fid perOld
+    -- TODO: these assertions are probably expensive
+    psForget <- mapM posCmdAtomic forget
+    -- Verify that we forget only previously seen things.
+    assert (allB seenOld psForget) skip
+    -- Verify that we forget only currently invisible things.
+    assert (allB (not . seenNew) psForget) skip
+    return $ cmd : forget
   _ -> return [cmd]
 
 -- | Effect of atomic actions on client state is calculated
