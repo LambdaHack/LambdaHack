@@ -60,6 +60,7 @@ atomicSendSem atomic = do
   -- TODO: with deep equality these assertions can be expensive. Optimize.
   assert (case ps of
             PosSight{} -> True
+            PosFidAndSight{} -> True
             _ -> resets == Just []
                  && (null atomicBroken
                      || fmap CmdAtomic atomicBroken == [atomic])) skip
@@ -115,6 +116,7 @@ atomicSendSem atomic = do
         else anySend fid perOld perOld
       send fid = case ps of
         PosSight arena _ -> posLevel fid arena
+        PosFidAndSight _ arena _ -> posLevel fid arena
         -- In the following cases, from the assertion above,
         -- @resets@ is false here and broken atomic has the same ps.
         PosSmell arena _ -> do

@@ -26,6 +26,8 @@ import Game.LambdaHack.Utils.Assert
 
 data PosAtomic =
     PosSight LevelId [Point]  -- ^ whomever sees all the positions, notices
+  | PosFidAndSight FactionId LevelId [Point]
+                              -- ^ observers and the faction notice
   | PosSmell LevelId [Point]  -- ^ whomever smells all the positions, notices
   | PosFid FactionId          -- ^ only the faction notices
   | PosFidAndSer FactionId    -- ^ faction and server notices
@@ -52,15 +54,18 @@ data PosAtomic =
 -- contradict state) if the visibility is lower.
 posCmdAtomic :: MonadActionRO m => CmdAtomic -> m PosAtomic
 posCmdAtomic cmd = case cmd of
-  CreateActorA _ body _ -> return $ PosSight (blid body) [bpos body]
+  CreateActorA _ body _ ->
+    return $ PosFidAndSight (bfaction body) (blid body) [bpos body]
   DestroyActorA _ body _ ->
     -- The faction of the actor sometimes does not see his death
     -- (if none of the other actors is observing it).
-    return $ PosSight (blid body) [bpos body]
+    return $ PosFidAndSight (bfaction body) (blid body) [bpos body]
   CreateItemA _ _ _ c -> singleContainer c
   DestroyItemA _ _ _ c -> singleContainer c
-  SpotActorA _ body _ -> return $ PosSight (blid body) [bpos body]
-  LoseActorA _ body _ -> return $ PosSight (blid body) [bpos body]
+  SpotActorA _ body _ ->
+    return $ PosFidAndSight (bfaction body) (blid body) [bpos body]
+  LoseActorA _ body _ ->
+    return $ PosFidAndSight (bfaction body) (blid body) [bpos body]
   SpotItemA _ _ _ c -> singleContainer c
   LoseItemA _ _ _ c -> singleContainer c
   MoveActorA aid fromP toP -> do
@@ -142,8 +147,8 @@ posSfxAtomic cmd = case cmd of
 
 singleAid :: MonadActionRO m => ActorId -> m PosAtomic
 singleAid aid = do
-  (lid, p) <- posOfAid aid
-  return $ PosSight lid [p]
+  b <- getsState $ getActorBody aid
+  return $ PosFidAndSight (bfaction b) (blid b) [bpos b]
 
 singleContainer :: MonadActionRO m => Container -> m PosAtomic
 singleContainer c = do
@@ -225,6 +230,8 @@ seenAtomicCli :: Bool -> FactionId -> Perception -> PosAtomic -> Bool
 seenAtomicCli knowEvents fid per posAtomic =
   case posAtomic of
     PosSight _ ps -> knowEvents || all (`ES.member` totalVisible per) ps
+    PosFidAndSight fid2 _ ps ->
+      knowEvents || fid == fid2 || all (`ES.member` totalVisible per) ps
     PosSmell _ ps -> knowEvents || all (`ES.member` smellVisible per) ps
     PosFid fid2 -> fid == fid2
     PosFidAndSer fid2 -> fid == fid2
