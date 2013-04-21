@@ -59,7 +59,7 @@ atomicSendSem atomic = do
   -- TODO: assert also that the sum of psBroken is equal to ps
   -- TODO: with deep equality these assertions can be expensive. Optimize.
   assert (case ps of
-            PosLevel{} -> True
+            PosSight{} -> True
             _ -> resets == Just []
                  && (null atomicBroken
                      || fmap CmdAtomic atomicBroken == [atomic])) skip
@@ -114,15 +114,15 @@ atomicSendSem atomic = do
               anySend fid perOld perNew
         else anySend fid perOld perOld
       send fid = case ps of
-        PosLevel arena _ -> posLevel fid arena
+        PosSight arena _ -> posLevel fid arena
         -- In the following cases, from the assertion above,
         -- @resets@ is false here and broken atomic has the same ps.
         PosSmell arena _ -> do
           let perOld = persOld EM.! fid EM.! arena
           anySend fid perOld perOld
-        PosOnly fid2 -> when (fid == fid2) $ sendUpdate fid atomic
-        PosAndSer fid2 -> when (fid == fid2) $ sendUpdate fid atomic
-        PosServer -> return ()
+        PosFid fid2 -> when (fid == fid2) $ sendUpdate fid atomic
+        PosFidAndSer fid2 -> when (fid == fid2) $ sendUpdate fid atomic
+        PosSer -> return ()
         PosAll -> sendUpdate fid atomic
         PosNone -> assert `failure` (atomic, fid)
   faction <- getsState sfaction

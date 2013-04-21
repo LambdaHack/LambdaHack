@@ -25,11 +25,11 @@ import Game.LambdaHack.Utils.Assert
 -- in the state just before the action is executed.
 
 data PosAtomic =
-    PosLevel LevelId [Point]  -- ^ whomever sees all the positions, notices
+    PosSight LevelId [Point]  -- ^ whomever sees all the positions, notices
   | PosSmell LevelId [Point]  -- ^ whomever smells all the positions, notices
-  | PosOnly FactionId         -- ^ only the faction notices
-  | PosAndSer FactionId       -- ^ faction and server notices
-  | PosServer                 -- ^ only the server notices
+  | PosFid FactionId          -- ^ only the faction notices
+  | PosFidAndSer FactionId    -- ^ faction and server notices
+  | PosSer                    -- ^ only the server notices
   | PosAll                    -- ^ everybody notices
   | PosNone                   -- ^ never broadcasted, but sent manually
   deriving (Show, Eq)
@@ -52,29 +52,29 @@ data PosAtomic =
 -- contradict state) if the visibility is lower.
 posCmdAtomic :: MonadActionRO m => CmdAtomic -> m PosAtomic
 posCmdAtomic cmd = case cmd of
-  CreateActorA _ body _ -> return $ PosLevel (blid body) [bpos body]
+  CreateActorA _ body _ -> return $ PosSight (blid body) [bpos body]
   DestroyActorA _ body _ ->
     -- The faction of the actor sometimes does not see his death
     -- (if none of the other actors is observing it).
-    return $ PosLevel (blid body) [bpos body]
+    return $ PosSight (blid body) [bpos body]
   CreateItemA _ _ _ c -> singleContainer c
   DestroyItemA _ _ _ c -> singleContainer c
-  SpotActorA _ body _ -> return $ PosLevel (blid body) [bpos body]
-  LoseActorA _ body _ -> return $ PosLevel (blid body) [bpos body]
+  SpotActorA _ body _ -> return $ PosSight (blid body) [bpos body]
+  LoseActorA _ body _ -> return $ PosSight (blid body) [bpos body]
   SpotItemA _ _ _ c -> singleContainer c
   LoseItemA _ _ _ c -> singleContainer c
   MoveActorA aid fromP toP -> do
     (lid, _) <- posOfAid aid
-    return $ PosLevel lid [fromP, toP]
+    return $ PosSight lid [fromP, toP]
   WaitActorA aid _ _ -> singleAid aid
   DisplaceActorA source target -> do
     (slid, sp) <- posOfAid source
     (tlid, tp) <- posOfAid target
-    return $ assert (slid == tlid) $ PosLevel slid [sp, tp]
+    return $ assert (slid == tlid) $ PosSight slid [sp, tp]
   MoveItemA _ _ c1 c2 -> do  -- works even if moved between positions
     (lid1, p1) <- posOfContainer c1
     (lid2, p2) <- posOfContainer c2
-    return $ assert (lid1 == lid2) $ PosLevel lid1 [p1, p2]
+    return $ assert (lid1 == lid2) $ PosSight lid1 [p1, p2]
   AgeActorA aid _ -> singleAid aid
   HealActorA aid _ -> singleAid aid
   HasteActorA aid _ -> singleAid aid
@@ -82,15 +82,15 @@ posCmdAtomic cmd = case cmd of
   PathActorA aid _ _ -> singleAid aid
   ColorActorA aid _ _ -> singleAid aid
   QuitFactionA _ _ _ -> return PosAll
-  LeadFactionA fid _ _ -> return $ PosAndSer fid
+  LeadFactionA fid _ _ -> return $ PosFidAndSer fid
   DiplFactionA _ _ _ _ -> return PosAll
-  AlterTileA lid p _ _ -> return $ PosLevel lid [p]
+  AlterTileA lid p _ _ -> return $ PosSight lid [p]
   SpotTileA lid ts -> do
     let ps = map fst ts
-    return $ PosLevel lid ps
+    return $ PosSight lid ps
   LoseTileA lid ts -> do
     let ps = map fst ts
-    return $ PosLevel lid ps
+    return $ PosSight lid ps
   AlterSecretA _ _ -> return PosNone
   AlterSmellA lid p _ _ -> return $ PosSmell lid [p]
   SpotSmellA lid sms -> do
@@ -99,15 +99,15 @@ posCmdAtomic cmd = case cmd of
   LoseSmellA lid sms -> do
     let ps = map fst sms
     return $ PosSmell lid ps
-  AgeLevelA lid _ ->  return $ PosLevel lid []
+  AgeLevelA lid _ ->  return $ PosSight lid []
   AgeGameA _ ->  return PosAll
-  DiscoverA lid p _ _ -> return $ PosLevel lid [p]
-  CoverA lid p _ _ -> return $ PosLevel lid [p]
+  DiscoverA lid p _ _ -> return $ PosSight lid [p]
+  CoverA lid p _ _ -> return $ PosSight lid [p]
   PerceptionA _ _ _ -> return PosNone
-  RestartA fid _ _ _ -> return $ PosOnly fid
-  RestartServerA _ -> return PosServer
-  ResumeA fid _ -> return $ PosOnly fid
-  ResumeServerA _ -> return PosServer
+  RestartA fid _ _ _ -> return $ PosFid fid
+  RestartServerA _ -> return PosSer
+  ResumeA fid _ -> return $ PosFid fid
+  ResumeServerA _ -> return PosSer
   SaveExitA -> return $ PosAll
   SaveBkpA -> return $ PosAll
 
@@ -116,39 +116,39 @@ posSfxAtomic cmd = case cmd of
   StrikeD source target _ _ -> do
     (slid, sp) <- posOfAid source
     (tlid, tp) <- posOfAid target
-    return $ assert (slid == tlid) $ PosLevel slid [sp, tp]
+    return $ assert (slid == tlid) $ PosSight slid [sp, tp]
   RecoilD source target _ _ -> do
     (slid, sp) <- posOfAid source
     (tlid, tp) <- posOfAid target
-    return $ assert (slid == tlid) $ PosLevel slid [sp, tp]
+    return $ assert (slid == tlid) $ PosSight slid [sp, tp]
   ProjectD aid _ -> singleAid aid
   CatchD aid _ -> singleAid aid
   ActivateD aid _ -> singleAid aid
   CheckD aid _ -> singleAid aid
   TriggerD aid p _ _ -> do
     (lid, pa) <- posOfAid aid
-    return $ PosLevel lid [pa, p]
+    return $ PosSight lid [pa, p]
   ShunD aid p _ _ -> do
     (lid, pa) <- posOfAid aid
-    return $ PosLevel lid [pa, p]
+    return $ PosSight lid [pa, p]
   EffectD aid _ -> singleAid aid
-  FailureD fid _ -> return $ PosOnly fid  -- failures are secret
+  FailureD fid _ -> return $ PosFid fid  -- failures are secret
   BroadcastD _ -> return $ PosAll
-  DisplayPushD fid -> return $ PosOnly fid
-  DisplayDelayD fid -> return $ PosOnly fid
-  FlushFramesD fid -> return $ PosOnly fid
-  FadeoutD fid _ -> return $ PosOnly fid
-  FadeinD fid _ -> return $ PosOnly fid
+  DisplayPushD fid -> return $ PosFid fid
+  DisplayDelayD fid -> return $ PosFid fid
+  FlushFramesD fid -> return $ PosFid fid
+  FadeoutD fid _ -> return $ PosFid fid
+  FadeinD fid _ -> return $ PosFid fid
 
 singleAid :: MonadActionRO m => ActorId -> m PosAtomic
 singleAid aid = do
   (lid, p) <- posOfAid aid
-  return $ PosLevel lid [p]
+  return $ PosSight lid [p]
 
 singleContainer :: MonadActionRO m => Container -> m PosAtomic
 singleContainer c = do
   (lid, p) <- posOfContainer c
-  return $ PosLevel lid [p]
+  return $ PosSight lid [p]
 
 -- Determines is a command resets FOV. @Nothing@ means it always does.
 -- A list of faction means it does for each of the factions.
@@ -224,17 +224,17 @@ loudCmdAtomic fid cmd = case cmd of
 seenAtomicCli :: Bool -> FactionId -> Perception -> PosAtomic -> Bool
 seenAtomicCli knowEvents fid per posAtomic =
   case posAtomic of
-    PosLevel _ ps -> knowEvents || all (`ES.member` totalVisible per) ps
+    PosSight _ ps -> knowEvents || all (`ES.member` totalVisible per) ps
     PosSmell _ ps -> knowEvents || all (`ES.member` smellVisible per) ps
-    PosOnly fid2 -> fid == fid2
-    PosAndSer fid2 -> fid == fid2
-    PosServer -> False
+    PosFid fid2 -> fid == fid2
+    PosFidAndSer fid2 -> fid == fid2
+    PosSer -> False
     PosAll -> True
     PosNone -> assert `failure` fid
 
 seenAtomicSer :: PosAtomic -> Bool
 seenAtomicSer posAtomic =
   case posAtomic of
-    PosOnly _ -> False
+    PosFid _ -> False
     PosNone -> assert `failure` ("PosNone considered for the server" :: Text)
     _ -> True
