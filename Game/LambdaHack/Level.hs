@@ -5,10 +5,10 @@ module Game.LambdaHack.Level
   ( -- * Dungeon
     LevelId, Dungeon, ascendInBranch
     -- * The @Level@ type and its components
-  , SmellMap, SecretMap, ItemFloor, TileMap
+  , SmellMap, ItemFloor, TileMap
   , Level(..)
     -- * Level update
-  , updatePrio, updateSmell, updateSecret, updateFloor, updateTile
+  , updatePrio, updateSmell, updateFloor, updateTile
     -- * Level query
   , at, atI, accessible, openable, findPos, findPosTry
     -- * Item containers
@@ -58,9 +58,6 @@ type TileMap = Kind.Array Point TileKind
 -- | Current smell on map tiles.
 type SmellMap = EM.EnumMap Point SmellTime
 
--- | Current secrecy value on map tiles.
-type SecretMap = EM.EnumMap Point SecretTime
-
 -- | A view on single, inhabited dungeon level. "Remembered" fields
 -- carry a subset of the info in the client copies of levels.
 data Level = Level
@@ -77,7 +74,7 @@ data Level = Level
   , lclear   :: !Int             -- ^ total number of initially clear tiles
   , ltime    :: !Time            -- ^ date of the last activity on the level
   , litemNum :: !Int             -- ^ number of initial items, 0 for clients
-  , lsecret  :: !SecretMap       -- ^ secrecy values; empty for clients
+  , lsecret  :: !Int             -- ^ secret level seed, unknown by clients
   }
   deriving (Show, Eq)
 
@@ -88,10 +85,6 @@ updatePrio f lvl = lvl {lprio = f (lprio lvl)}
 -- | Update the smell map.
 updateSmell :: (SmellMap -> SmellMap) -> Level -> Level
 updateSmell f lvl = lvl {lsmell = f (lsmell lvl)}
-
--- | Update the secret map.
-updateSecret :: (SecretMap -> SecretMap) -> Level -> Level
-updateSecret f lvl = lvl {lsecret = f (lsecret lvl)}
 
 -- | Update the items on the ground map.
 updateFloor :: (ItemFloor -> ItemFloor) -> Level -> Level

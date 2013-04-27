@@ -17,8 +17,6 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Word as Word
-import Game.LambdaHack.Msg
 
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.CaveKind
@@ -30,6 +28,7 @@ import Game.LambdaHack.Content.StrategyKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.ContentDef
 import Game.LambdaHack.Misc
+import Game.LambdaHack.Msg
 import Game.LambdaHack.Random
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.Frequency
@@ -75,7 +74,7 @@ data Ops a = Ops
 createOps :: forall a. Show a => ContentDef a -> Ops a
 createOps ContentDef{getSymbol, getName, getFreq, content, validate} =
   assert (Id (fromIntegral $ length content) < sentinelId) $
-  let kindAssocs :: [(Word.Word8, a)]
+  let kindAssocs :: [(Word8, a)]
       kindAssocs = L.zip [0..] content
       kindMap :: EM.EnumMap (Id a) a
       kindMap = EM.fromDistinctAscList $ L.zip [Id 0..] content
@@ -146,7 +145,7 @@ instance Eq COps where
 -- where the identifiers are represented as @Word8@
 -- (and so content of type @c@ can have at most 256 elements).
 -- The arrays are indexed by type @i@, e.g., a dungeon tile position.
-newtype Array i c = Array (A.UArray i Word.Word8)
+newtype Array i c = Array (A.UArray i Word8)
   deriving Eq
 
 -- TODO: save/restore is still too slow, but we are already past

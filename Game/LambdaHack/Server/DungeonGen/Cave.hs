@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Generation of caves (not yet inhabited dungeon levels) from cave kinds.
 module Game.LambdaHack.Server.DungeonGen.Cave
-  ( TileMapXY, SecretMapXY, ItemFloorXY, Cave(..), buildCave
+  ( TileMapXY, ItemFloorXY, Cave(..), buildCave
   ) where
 
 import Control.Monad
@@ -23,17 +23,12 @@ import Game.LambdaHack.Server.DungeonGen.AreaRnd
 import Game.LambdaHack.Server.DungeonGen.Place hiding (TileMapXY)
 import qualified Game.LambdaHack.Server.DungeonGen.Place as Place
 import qualified Game.LambdaHack.Tile as Tile
-import Game.LambdaHack.Time
 import Game.LambdaHack.Utils.Assert
 
 -- | The map of tile kinds in a cave.
 -- The map is sparse. The default tile that eventually fills the empty spaces
 -- is specified in the cave kind specification with @cdefTile@.
 type TileMapXY = Place.TileMapXY
-
--- | The map of starting secrecy strength of tiles in a cave.
--- The map is sparse. Unspecified tiles have secrecy strength of 0.
-type SecretMapXY = EM.EnumMap PointXY Tile.SecretTime
 
 -- | The map of starting items in tiles of a cave. The map is sparse.
 -- Unspecified tiles have no starting items.
@@ -43,7 +38,6 @@ type ItemFloorXY = EM.EnumMap PointXY (Item, Int)
 data Cave = Cave
   { dkind   :: !(Kind.Id CaveKind)  -- ^ the kind of the cave
   , dmap    :: TileMapXY            -- ^ tile kinds in the cave
-  , dsecret :: SecretMapXY          -- ^ secrecy strength of cave tiles
   , ditem   :: ItemFloorXY          -- ^ starting items in the cave
   , dplaces :: [Place]              -- ^ places generated in the cave
   }
@@ -78,8 +72,7 @@ buildCave :: Kind.COps         -- ^ content definitions
           -> Int               -- ^ maximum depth of the dungeon
           -> Kind.Id CaveKind  -- ^ cave kind to use for generation
           -> Rnd Cave
-buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ okind=tokind
-                                                , opick
+buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ opick
                                                 , ouniqGroup }
                         , cocave=Kind.Ops{okind} }
           ln depth ci = do
@@ -122,8 +115,8 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ okind=tokind
   hiddenMap <- mapToHidden cotile chiddenTile
   let lm = EM.unionWith (mergeCorridor cotile hiddenMap) lcorridors lplaces
   -- Convert openings into doors, possibly.
-  (dmap, secretMap) <-
-    let f (l, le) (p, t) =
+  dmap <-
+    let f l (p, t) =
           if Tile.hasFeature cotile F.Hidden t
           then do
             -- Openings have a certain chance to be doors;
@@ -131,39 +124,27 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ okind=tokind
             -- closed doors have a certain chance to be hidden
             rd <- chance cdoorChance
             if not rd
-              then return (EM.insert p pickedCorTile l, le)
+              then return $ EM.insert p pickedCorTile l
               else do
                 doorClosedId <- trigger cotile t
                 doorOpenId   <- trigger cotile doorClosedId
                 ro <- chance copenChance
                 if ro
-                  then return (EM.insert p doorOpenId l, le)
+                  then return $ EM.insert p doorOpenId l
                   else do
                     rs <- chance chiddenChance
                     if not rs
-                      then return (EM.insert p doorClosedId l, le)
-                      else do
-                        secret <- rollSecret (tokind t)
-                        return (l, EM.insert p secret le)
-          else return (l, le)
-    in foldM f (lm, EM.empty) (EM.assocs lm)
+                      then return $ EM.insert p doorClosedId l
+                      else return l  -- secret kept
+          else return l  -- no secret to start with
+    in foldM f lm (EM.assocs lm)
   let cave = Cave
         { dkind = ci
-        , dsecret = secretMap
         , ditem = EM.empty
         , dmap
         , dplaces
         }
   return cave
-
-rollSecret :: TileKind -> Rnd Tile.SecretTime
-rollSecret t = do
-  let getDice (F.Secret dice) _ = dice
-      getDice _ acc = acc
-      defDice = RollDice 5 2
-      d = foldr getDice defDice (tfeature t)
-  secretTurns <- rollDice d
-  return $ timeScale timeTurn secretTurns
 
 trigger :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
 trigger Kind.Ops{okind, opick} t =

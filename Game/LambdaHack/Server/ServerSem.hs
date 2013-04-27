@@ -13,7 +13,6 @@ module Game.LambdaHack.Server.ServerSem where
 
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
-import Data.List
 import Data.Maybe
 import Data.Ratio
 import Data.Text (Text)
@@ -95,7 +94,7 @@ moveSer aid dir = do
           addSmell aid
           return True
       | Tile.canBeHidden cotile (okind $ lvl `at` tpos) ->
-          search aid
+          search aid tpos
       | otherwise ->
           actorOpenDoor aid dir
 
@@ -165,36 +164,16 @@ actorAttackActor source target = do
   unless (isAtWar sfact tfid) $
     execCmdAtomic $ DiplFactionA sfid tfid fromDipl War
 
--- | Search for hidden doors.
-search :: (MonadAtomic m, MonadServer m) => ActorId -> m Bool
-search aid = do
+-- | Search for hidden doors, traps, etc.
+search :: (MonadAtomic m, MonadServer m) => ActorId -> Point -> m Bool
+search aid pos = do
   Kind.COps{cotile} <- getsState scops
   b <- getsState $ getActorBody aid
   lvl <- getsLevel (blid b) id
-  lsecret <- getsLevel (blid b) lsecret
-  lxsize <- getsLevel (blid b) lxsize
-  itemAssocs <- getsState (getActorItem aid)
-  let delta = timeScale timeTurn $
-                case strongestSearch itemAssocs of
-                  Just (k, _)  -> k + 1
-                  Nothing -> 1
-      searchTile diffL mv =
-        let loc = shift (bpos b) mv
-            t = lvl `at` loc
-            (ok, k) = case EM.lookup loc lsecret of
-              Nothing -> assert `failure` (loc, lsecret)
-              Just ti -> (ti, timeAdd ti $ timeNegate delta)
-        in if Tile.hasFeature cotile F.Hidden t
-           then if k > timeZero
-                then (loc, (Just ok, Just k)) : diffL
-                else (loc, (Just ok, Nothing)) : diffL
-           else diffL
-  let diffL = foldl' searchTile [] (moves lxsize)
-  execCmdAtomic $ AlterSecretA (blid b) diffL
-  let triggerHidden (_, (_, Just _)) = return False -- TODO
-      triggerHidden (dpos, (_, Nothing)) = triggerSer aid dpos
-  mapM_ triggerHidden diffL
-  return True -- TODO
+  let t = lvl `at` pos
+  if Tile.hasFeature cotile F.Hidden t
+  then triggerSer aid pos
+  else execFailure (bfaction b) "nothing found"  -- "never mind"
 
 -- TODO: bumpTile tpos F.Openable
 -- | An actor opens a door.

@@ -3,7 +3,6 @@
 -- | Hacks that haven't found their home yet.
 module Game.LambdaHack.Misc
   ( normalLevelBound, maxLevelDim, divUp, Freqs, breturn
-  , DiffEM, applyDiffEM
   , FactionId, LevelId
   ) where
 
@@ -11,11 +10,8 @@ import Control.Monad
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.List
 import Data.Text (Text)
 import Data.Typeable
-
-import Game.LambdaHack.Utils.Assert
 
 -- | Level bounds. TODO: query terminal size instead and scroll view.
 normalLevelBound :: (Int, Int)
@@ -47,16 +43,6 @@ instance (Enum k, Binary k, Binary e) => Binary (EM.EnumMap k e) where
 instance (Enum k, Binary k) => Binary (ES.EnumSet k) where
   put m = put (ES.size m) >> mapM_ put (ES.toAscList m)
   get = liftM ES.fromDistinctAscList get
-
-type DiffEM k v = [(k, (Maybe v, Maybe v))]
-
-applyDiffEM :: (Enum k, Eq v, Show k, Show v)
-            => DiffEM k v -> EM.EnumMap k v -> EM.EnumMap k v
-applyDiffEM diffL em =
-  let f m (k, (ov, nv)) = assert (ov /= nv) $
-        let g v = assert (v == ov `blame` (v, ov, nv, em, diffL)) nv
-        in EM.alter g k m
-  in foldl' f em diffL
 
 -- | A unique identifier of a faction in a game.
 newtype FactionId = FactionId Int

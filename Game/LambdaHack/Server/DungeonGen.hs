@@ -36,10 +36,6 @@ convertTileMaps cdefTile cxsize cysize ltile = do
   pickedTiles <- replicateM (cxsize * cysize) cdefTile
   return $ Kind.listArray bounds pickedTiles Kind.// assocs
 
-mapToIMap :: X -> EM.EnumMap PointXY a -> EM.EnumMap Point a
-mapToIMap cxsize m =
-  EM.fromList $ map (\ (xy, a) -> (toPoint cxsize xy, a)) (EM.assocs m)
-
 placeStairs :: Kind.Ops TileKind -> TileMap -> CaveKind -> [Place]
             -> Rnd (Point, Kind.Id TileKind, Point, Kind.Id TileKind)
 placeStairs cotile@Kind.Ops{opick} cmap CaveKind{..} dplaces = do
@@ -66,6 +62,7 @@ buildLevel Kind.COps{ cotile=cotile@Kind.Ops{opick}
   (su, upId, sd, downId) <-
     placeStairs cotile cmap kc dplaces
   litemNum <- rollDice citemNum
+  lsecret <- random
   let stairs = (su, upId) : if ldepth == depth then [] else [(sd, downId)]
       ltile = cmap Kind.// stairs
       f !n !tk | Tile.isExplorable cotile tk = n + 1
@@ -86,7 +83,7 @@ buildLevel Kind.COps{ cotile=cotile@Kind.Ops{opick}
         , lclear
         , ltime = timeTurn
         , litemNum
-        , lsecret = mapToIMap cxsize dsecret
+        , lsecret
         }
   return level
 

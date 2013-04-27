@@ -22,7 +22,6 @@ import Game.LambdaHack.Faction
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
-import Game.LambdaHack.Misc
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
 import Game.LambdaHack.State
@@ -58,7 +57,6 @@ cmdAtomicSem cmd = case cmd of
   AlterTileA lid p fromTile toTile -> alterTileA lid p fromTile toTile
   SpotTileA lid ts -> spotTileA lid ts
   LoseTileA lid ts -> loseTileA lid ts
-  AlterSecretA lid diffL -> alterSecretA lid diffL
   AlterSmellA lid p fromSm toSm -> alterSmellA lid p fromSm toSm
   SpotSmellA lid sms -> spotSmellA lid sms
   LoseSmellA lid sms -> loseSmellA lid sms
@@ -348,9 +346,6 @@ loseTileA lid ts = assert (not $ null ts) $ do
           True -> updateLevel lid $ \lvl -> lvl {lseen = lseen lvl - 1}
           _ -> return ()
   mapM_ f ts
-
-alterSecretA :: MonadAction m => LevelId -> DiffEM Point Time -> m ()
-alterSecretA lid diffL = updateLevel lid $ updateSecret $ applyDiffEM diffL
 
 alterSmellA :: MonadAction m
             => LevelId -> Point -> Maybe Time -> Maybe Time -> m ()

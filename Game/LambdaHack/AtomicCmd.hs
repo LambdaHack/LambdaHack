@@ -16,9 +16,7 @@ module Game.LambdaHack.AtomicCmd
   , undoCmdAtomic, undoSfxAtomic, undoAtomic
   ) where
 
-import Control.Arrow (second)
 import Data.Binary
-import Data.Tuple (swap)
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Actor
@@ -31,7 +29,6 @@ import qualified Game.LambdaHack.Feature as F
 import Game.LambdaHack.Item
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Level
-import Game.LambdaHack.Misc
 import Game.LambdaHack.Msg
 import Game.LambdaHack.Perception
 import Game.LambdaHack.Point
@@ -77,7 +74,6 @@ data CmdAtomic =
   | AlterTileA LevelId Point (Kind.Id TileKind) (Kind.Id TileKind)
   | SpotTileA LevelId [(Point, Kind.Id TileKind)]
   | LoseTileA LevelId [(Point, Kind.Id TileKind)]
-  | AlterSecretA LevelId (DiffEM Point Time)
   | AlterSmellA LevelId Point (Maybe Time) (Maybe Time)
   | SpotSmellA LevelId [(Point, Time)]
   | LoseSmellA LevelId [(Point, Time)]
@@ -114,7 +110,6 @@ data SfxAtomic =
   | FlushFramesD FactionId
   | FadeoutD FactionId Bool
   | FadeinD FactionId Bool
--- TODO: SearchA
   deriving (Show, Eq, Generic)
 
 instance Binary SfxAtomic
@@ -152,7 +147,6 @@ undoCmdAtomic cmd = case cmd of
   AlterTileA lid p fromTile toTile -> Just $ AlterTileA lid p toTile fromTile
   SpotTileA lid ts -> Just $ LoseTileA lid ts
   LoseTileA lid ts -> Just $ SpotTileA lid ts
-  AlterSecretA lid diffL -> Just $ AlterSecretA lid $ map (second swap) diffL
   AlterSmellA lid p fromSm toSm -> Just $ AlterSmellA lid p toSm fromSm
   SpotSmellA lid sms -> Just $ LoseSmellA lid sms
   LoseSmellA lid sms -> Just $ SpotSmellA lid sms

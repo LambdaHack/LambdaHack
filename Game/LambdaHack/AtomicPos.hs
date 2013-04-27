@@ -96,7 +96,6 @@ posCmdAtomic cmd = case cmd of
   LoseTileA lid ts -> do
     let ps = map fst ts
     return $ PosSight lid ps
-  AlterSecretA _ _ -> return PosNone
   AlterSmellA lid p _ _ -> return $ PosSmell lid [p]
   SpotSmellA lid sms -> do
     let ps = map fst sms

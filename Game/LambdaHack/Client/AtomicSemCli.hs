@@ -10,7 +10,6 @@ import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Maybe
-import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Action
@@ -270,8 +269,6 @@ drawCmdAtomicUI verbose cmd = case cmd of
   QuitFactionA fid _ toSt -> quitFactionUI fid toSt
   AlterTileA _ _ _ _ | verbose ->
     return ()  -- TODO: door opens
-  AlterSecretA _ _ ->
-    assert `failure` ("client learns secrets" :: Text, cmd)
   AgeGameA t -> do
     when (t > timeClip) $ displayFramesPush [Nothing]  -- show delay
     displayPush

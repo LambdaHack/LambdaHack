@@ -13,7 +13,7 @@
 --
 -- Actors at normal speed (2 m/s) take one turn to move one tile (1 m by 1 m).
 module Game.LambdaHack.Tile
-  (SecretTime, SmellTime
+  ( SmellTime
   , kindHasFeature, kindHas, hasFeature
   , isClear, isLit, isExplorable, similar, canBeHidden, speedup
   ) where
@@ -25,10 +25,6 @@ import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Feature as F
 import qualified Game.LambdaHack.Kind as Kind
 import Game.LambdaHack.Time
-
--- | The time interval needed to discover a given secret,
--- e.g., a hidden terrain tile, e.g., a hidden door.
-type SecretTime = Time
 
 -- | The last time a hero left a smell in a given tile. To be used
 -- by monsters that hunt by smell.
