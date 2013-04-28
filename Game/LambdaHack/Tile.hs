@@ -15,7 +15,8 @@
 module Game.LambdaHack.Tile
   ( SmellTime
   , kindHasFeature, kindHas, hasFeature
-  , isClear, isLit, isExplorable, similar, canBeHidden, speedup
+  , isClear, isLit, isExplorable, similar, speedup
+  , changeTo, hiddenAs
   ) where
 
 import qualified Data.Array.Unboxed as A
@@ -24,6 +25,7 @@ import qualified Data.List as L
 import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Feature as F
 import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Random
 import Game.LambdaHack.Time
 
 -- | The last time a hero left a smell in a given tile. To be used
@@ -71,12 +73,6 @@ similar t u =
   tcolor  t == tcolor  u &&
   tcolor2 t == tcolor2 u
 
--- | The player can't tell if the tile is hidden or not.
-canBeHidden :: Kind.Ops TileKind -> TileKind -> Bool
-canBeHidden Kind.Ops{ofoldrWithKey} t =
-  let sim _ s acc = acc || kindHasFeature F.Hidden s && similar t s
-  in ofoldrWithKey sim False
-
 speedup :: Bool -> Kind.Ops TileKind -> Kind.Speedup TileKind
 speedup allClear Kind.Ops{ofoldrWithKey, obounds} =
   let createTab :: (TileKind -> Bool) -> A.UArray (Kind.Id TileKind) Bool
@@ -90,3 +86,19 @@ speedup allClear Kind.Ops{ofoldrWithKey, obounds} =
                  | otherwise = tabulate $ kindHasFeature F.Clear
       isLitTab   = tabulate $ kindHasFeature F.Lit
   in Kind.TileSpeedup {isClearTab, isLitTab}
+
+changeTo :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
+changeTo Kind.Ops{okind, opick} t =
+  let getTo (F.ChangeTo group) _ = Just group
+      getTo _ acc = acc
+  in case foldr getTo Nothing (tfeature (okind t)) of
+       Nothing    -> return t
+       Just group -> opick group (const True)
+
+hiddenAs :: Kind.Ops TileKind -> Kind.Id TileKind -> Kind.Id TileKind
+hiddenAs Kind.Ops{okind, ouniqGroup} t =
+  let getTo (F.HiddenAs group) _ = Just group
+      getTo _ acc = acc
+  in case foldr getTo Nothing (tfeature (okind t)) of
+       Nothing    -> t
+       Just group -> ouniqGroup group

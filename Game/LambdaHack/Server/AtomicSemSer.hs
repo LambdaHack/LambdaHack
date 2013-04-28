@@ -6,6 +6,7 @@ module Game.LambdaHack.Server.AtomicSemSer
   ) where
 
 import Control.Monad
+import Data.Bits
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Maybe
@@ -22,6 +23,7 @@ import Game.LambdaHack.Perception
 import Game.LambdaHack.Server.Action
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.State
+import qualified Game.LambdaHack.Tile as Tile
 import Game.LambdaHack.Utils.Assert
 
 storeUndo :: MonadServer m => Atomic -> m ()
@@ -151,8 +153,28 @@ atomicRemember lid inPer s =
       fBag (p, bag) = map (fItem p) $ EM.assocs bag
       inItem = concatMap fBag inFloor
       -- Tiles.
-      inTileMap = map (\p -> (p, ltile lvl Kind.! p)) inFov
+      cotile = Kind.cotile (scops s)
+      hideTile p t =
+        let ht = Tile.hiddenAs cotile t
+        in if ht == t
+              || (lsecret lvl `rotateR` fromEnum p `xor` fromEnum p)
+                 `mod` lhidden lvl == 0
+           then ht
+           else t
+      inTileMap = map (\p -> (p, hideTile p $ ltile lvl Kind.! p)) inFov
       atomicTile = if null inTileMap then [] else [SpotTileA lid inTileMap]
+      -- TODO: somehow also use this
+      -- bonus = case strongestSearch itemAssocs of
+      --          Just (k, _)  -> k + 1
+      --          Nothing -> 1
+      -- TODO: add 'search' that rescans FOV, perhaps with a bonus
+      -- TODO: add 'explore' that tells a tile is a hidden door, etc.
+      -- TODO: when explored tile is boring, display tips, monster scratches,
+      -- old inscriptions and other flavour, as in UnAngband
+      -- TODO: make floor paths from hidden tiles
+      -- TODO: perhaps decrease secrecy as lseen, ltime or lsmell increases
+      -- or a per-party counter increases
+      -- TODO: give spawning factions a bonus to searching
       -- Smells.
       inSmellFov = ES.elems $ smellVisible inPer
       inSm = mapMaybe (\p -> pMaybe p $ EM.lookup p (lsmell lvl)) inSmellFov

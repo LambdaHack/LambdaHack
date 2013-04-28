@@ -29,7 +29,7 @@ hero = ActorKind
   , aspeed  = toSpeed 2
   , asight  = True
   , asmell  = False
-  , aiq     = 13  -- Can see hidden doors, when he is under alien control.
+  , aiq     = 13
   , aregen  = 500
   , acanDo  = [minBound..maxBound]
   }

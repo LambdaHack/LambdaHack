@@ -75,6 +75,7 @@ data Level = Level
   , ltime    :: !Time            -- ^ date of the last activity on the level
   , litemNum :: !Int             -- ^ number of initial items, 0 for clients
   , lsecret  :: !Int             -- ^ secret level seed, unknown by clients
+  , lhidden  :: !Int             -- ^ secret tile density, unknown by clients
   }
   deriving (Show, Eq)
 
@@ -114,6 +115,7 @@ instance Binary Level where
     put ltime
     put litemNum
     put lsecret
+    put lhidden
   get = do
     ldepth <- get
     lprio <- get
@@ -129,6 +131,7 @@ instance Binary Level where
     ltime <- get
     litemNum <- get
     lsecret <- get
+    lhidden <- get
     return Level{..}
 
 -- | Query for tile kinds on the map.

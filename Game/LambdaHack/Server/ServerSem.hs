@@ -75,7 +75,7 @@ broadcastSfxAtomic fcmd = do
 -- does not try to reach to a distant tile.
 moveSer :: (MonadAtomic m, MonadServer m) => ActorId -> Vector -> m Bool
 moveSer aid dir = do
-  cops@Kind.COps{cotile = cotile@Kind.Ops{okind}} <- getsState scops
+  cops <- getsState scops
   sm <- getsState $ getActorBody aid
   lvl <- getsLevel (blid sm) id
   let spos = bpos sm           -- source position
@@ -93,9 +93,7 @@ moveSer aid dir = do
           execCmdAtomic $ MoveActorA aid spos tpos
           addSmell aid
           return True
-      | Tile.canBeHidden cotile (okind $ lvl `at` tpos) ->
-          search aid tpos
-      | otherwise ->
+      | otherwise ->  -- try to open a door, even if not visible
           actorOpenDoor aid dir
 
 -- TODO: let only some actors/items leave smell, e.g., a Smelly Hide Armour.
@@ -164,17 +162,6 @@ actorAttackActor source target = do
   unless (isAtWar sfact tfid) $
     execCmdAtomic $ DiplFactionA sfid tfid fromDipl War
 
--- | Search for hidden doors, traps, etc.
-search :: (MonadAtomic m, MonadServer m) => ActorId -> Point -> m Bool
-search aid pos = do
-  Kind.COps{cotile} <- getsState scops
-  b <- getsState $ getActorBody aid
-  lvl <- getsLevel (blid b) id
-  let t = lvl `at` pos
-  if Tile.hasFeature cotile F.Hidden t
-  then triggerSer aid pos
-  else execFailure (bfaction b) "nothing found"  -- "never mind"
-
 -- TODO: bumpTile tpos F.Openable
 -- | An actor opens a door.
 actorOpenDoor :: (MonadAtomic m, MonadServer m) => ActorId -> Vector -> m Bool
@@ -190,8 +177,7 @@ actorOpenDoor actor dir = do
     if Tile.hasFeature cotile F.Closable t
       then execFailure (bfaction body) "already open"
       else if not (Tile.hasFeature cotile F.Closable t ||
-                   Tile.hasFeature cotile F.Openable t ||
-                   Tile.hasFeature cotile F.Hidden t)
+                   Tile.hasFeature cotile F.Openable t)
            then execFailure (bfaction body) "never mind"  -- not doors at all
            else triggerSer actor dpos
 

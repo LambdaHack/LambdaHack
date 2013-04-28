@@ -64,6 +64,7 @@ unknownLevel Kind.Ops{ouniqGroup} ldepth lxsize lysize ldesc lstair lclear =
            , ltime = timeZero
            , litemNum = 0
            , lsecret = 0  -- unkown by clients
+           , lhidden = 0  -- unkown by clients
            }
 
 unknownTileMap :: Kind.Id TileKind -> Int -> Int -> TileMap

@@ -7,10 +7,10 @@ import qualified Data.List as L
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
 
-import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Color
 import Game.LambdaHack.Feature
 import Game.LambdaHack.Misc
+import Game.LambdaHack.Utils.Assert
 
 -- | The type of kinds of terrain tiles. See @Tile.hs@ for explanation
 -- of the absence of a corresponding type @Tile@ that would hold
@@ -36,8 +36,12 @@ data TileKind = TileKind
 -- wrt dungeon generation, AI preferences, etc.).
 tvalidate :: [TileKind] -> [TileKind]
 tvalidate lt =
-  let listFov f = L.map (\ kt -> ((tsymbol kt, f kt), [kt])) lt
-      mapFov :: (TileKind -> Color) -> M.Map (Char, Color) [TileKind]
+  let listFov f = L.map (\ kt -> ( ( tsymbol kt
+                                   , Suspect `elem` tfeature kt
+                                   , f kt
+                                   )
+                                 , [kt] )) lt
+      mapFov :: (TileKind -> Color) -> M.Map (Char, Bool, Color) [TileKind]
       mapFov f = M.fromListWith (++) $ listFov f
       namesUnequal [] = assert `failure` lt
       namesUnequal (hd : tl) = let name = tname hd

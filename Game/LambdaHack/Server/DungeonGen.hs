@@ -62,7 +62,7 @@ buildLevel Kind.COps{ cotile=cotile@Kind.Ops{opick}
   (su, upId, sd, downId) <-
     placeStairs cotile cmap kc dplaces
   litemNum <- rollDice citemNum
-  lsecret <- random
+  secret <- random
   let stairs = (su, upId) : if ldepth == depth then [] else [(sd, downId)]
       ltile = cmap Kind.// stairs
       f !n !tk | Tile.isExplorable cotile tk = n + 1
@@ -83,7 +83,8 @@ buildLevel Kind.COps{ cotile=cotile@Kind.Ops{opick}
         , lclear
         , ltime = timeTurn
         , litemNum
-        , lsecret
+        , lsecret = secret
+        , lhidden = chidden
         }
   return level
 

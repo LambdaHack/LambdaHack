@@ -282,6 +282,8 @@ toolsFreq cops actor disco glo =
                 in (kik, Effect.effectToBenefit (jeffect i)),
       benefit > 0, isymbol ik == '!']
 
+-- TODO: also close doors; then stupid members of the party won't see them,
+-- but it's assymetric warfare: rather harm humans than help party members
 -- | AI finds interesting moves in the absense of visible foes.
 -- This strategy can be null (e.g., if the actor is blocked by friends).
 moveStrategy :: Kind.COps -> ActorId -> State -> Maybe (Point, Bool)

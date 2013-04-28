@@ -7,8 +7,6 @@ module Game.LambdaHack.Server.DungeonGen.Cave
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.List as L
-import Data.Maybe
-import Data.Text (Text)
 
 import Game.LambdaHack.Area
 import Game.LambdaHack.Content.CaveKind
@@ -23,7 +21,6 @@ import Game.LambdaHack.Server.DungeonGen.AreaRnd
 import Game.LambdaHack.Server.DungeonGen.Place hiding (TileMapXY)
 import qualified Game.LambdaHack.Server.DungeonGen.Place as Place
 import qualified Game.LambdaHack.Tile as Tile
-import Game.LambdaHack.Utils.Assert
 
 -- | The map of tile kinds in a cave.
 -- The map is sparse. The default tile that eventually fills the empty spaces
@@ -112,31 +109,25 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ opick
         return (EM.union tmap m, place : pls)
   (lplaces, dplaces) <- foldM addPl (fence, []) places0
   let lcorridors = EM.unions (L.map (digCorridors pickedCorTile) cs)
-  hiddenMap <- mapToHidden cotile chiddenTile
-  let lm = EM.unionWith (mergeCorridor cotile hiddenMap) lcorridors lplaces
-  -- Convert openings into doors, possibly.
+  let lm = EM.unionWith (mergeCorridor cotile) lcorridors lplaces
+  -- Convert wall openings into doors, possibly.
   dmap <-
     let f l (p, t) =
-          if Tile.hasFeature cotile F.Hidden t
-          then do
-            -- Openings have a certain chance to be doors;
-            -- doors have a certain chance to be open; and
-            -- closed doors have a certain chance to be hidden
+          if not $ Tile.hasFeature cotile F.Suspect t
+          then return l  -- no opening to start with
+          else do
+            -- Openings have a certain chance to be doors
+            -- and doors have a certain chance to be open.
             rd <- chance cdoorChance
             if not rd
-              then return $ EM.insert p pickedCorTile l
+              then return $ EM.insert p pickedCorTile l  -- opening kept
               else do
-                doorClosedId <- trigger cotile t
-                doorOpenId   <- trigger cotile doorClosedId
+                doorClosedId <- Tile.changeTo cotile t
+                doorOpenId   <- Tile.changeTo cotile doorClosedId
                 ro <- chance copenChance
-                if ro
-                  then return $ EM.insert p doorOpenId l
-                  else do
-                    rs <- chance chiddenChance
-                    if not rs
-                      then return $ EM.insert p doorClosedId l
-                      else return l  -- secret kept
-          else return l  -- no secret to start with
+                if not ro
+                  then return $ EM.insert p doorClosedId l
+                  else return $ EM.insert p doorOpenId l
     in foldM f lm (EM.assocs lm)
   let cave = Cave
         { dkind = ci
@@ -146,14 +137,6 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ opick
         }
   return cave
 
-trigger :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
-trigger Kind.Ops{okind, opick} t =
-  let getTo (F.ChangeTo group) _ = Just group
-      getTo _ acc = acc
-  in case foldr getTo Nothing (tfeature (okind t)) of
-       Nothing    -> return t
-       Just group -> opick group (const True)
-
 digCorridors :: Kind.Id TileKind -> Corridor -> TileMapXY
 digCorridors tile (p1:p2:ps) =
   EM.union corPos (digCorridors tile (p2:ps))
@@ -162,26 +145,6 @@ digCorridors tile (p1:p2:ps) =
   corPos = EM.fromList $ L.zip corXY (repeat tile)
 digCorridors _ _ = EM.empty
 
-passable :: [F.Feature]
-passable = [F.Walkable, F.Openable, F.Hidden]
-
-mapToHidden :: Kind.Ops TileKind -> Text
-            -> Rnd (EM.EnumMap (Kind.Id TileKind) (Kind.Id TileKind))
-mapToHidden cotile@Kind.Ops{ofoldrWithKey, opick} chiddenTile =
-  let getHidden ti tk acc =
-        if Tile.canBeHidden cotile tk
-        then do
-          ti2 <- opick chiddenTile $ \ k -> Tile.kindHasFeature F.Hidden k
-                                            && Tile.similar k tk
-          fmap (EM.insert ti ti2) acc
-        else acc
-  in ofoldrWithKey getHidden (return EM.empty)
-
-mergeCorridor :: Kind.Ops TileKind
-              -> EM.EnumMap (Kind.Id TileKind) (Kind.Id TileKind)
-              -> Kind.Id TileKind -> Kind.Id TileKind -> Kind.Id TileKind
-mergeCorridor cotile _    _ t
-  | L.any (\ f -> Tile.hasFeature cotile f t) passable = t
-mergeCorridor _ hiddenMap u t =
-  fromMaybe (assert `failure` (u, hiddenMap, t)) $
-    EM.lookup t hiddenMap
+mergeCorridor :: Kind.Ops TileKind -> Kind.Id TileKind -> Kind.Id TileKind
+              -> Kind.Id TileKind
+mergeCorridor cotile _ t = Tile.hiddenAs cotile t

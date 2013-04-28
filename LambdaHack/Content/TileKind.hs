@@ -7,7 +7,6 @@ import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.ContentDef
 import qualified Game.LambdaHack.Effect as Effect
 import Game.LambdaHack.Feature
-import qualified Game.LambdaHack.Random as Random
 
 cdefs :: ContentDef TileKind
 cdefs = ContentDef
@@ -16,9 +15,9 @@ cdefs = ContentDef
   , getFreq = tfreq
   , validate = tvalidate
   , content =
-      [wall, hardRock, pillar, wallV, doorHiddenV, doorClosedV, doorOpenV, wallH, doorHiddenH, doorClosedH, doorOpenH, stairsUpDark, stairsUpLit, stairsDownDark, stairsDownLit, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown]
+      [wall, hardRock, pillar, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpDark, stairsUpLit, stairsDownDark, stairsDownLit, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown]
   }
-wall,        hardRock, pillar, wallV, doorHiddenV, doorClosedV, doorOpenV, wallH, doorHiddenH, doorClosedH, doorOpenH, stairsUpDark, stairsUpLit, stairsDownDark, stairsDownLit, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown :: TileKind
+wall,        hardRock, pillar, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpDark, stairsUpLit, stairsDownDark, stairsDownLit, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown :: TileKind
 
 wall = TileKind
   { tsymbol  = ' '
@@ -50,12 +49,16 @@ wallV = TileKind
   , tfreq    = [("litLegend", 100), ("darkLegend", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = []
+  , tfeature = [HiddenAs "suspect vertical wall"]
   }
-doorHiddenV = wallV
-  { tfreq    = [("hidden", 100)]
-  , tfeature = [ Hidden, Secret (Random.RollDice 7 2)
-               , ChangeTo "vertical closed door"
+wallSuspectV = TileKind
+  { tsymbol  = '|'
+  , tname    = "suspect wall"
+  , tfreq    = [("suspect vertical wall", 1)]
+  , tcolor   = BrCyan
+  , tcolor2  = defFG
+  , tfeature = [ Suspect
+               , HiddenAs "vertical closed door"  -- hack
                ]
   }
 doorClosedV = TileKind
@@ -66,6 +69,7 @@ doorClosedV = TileKind
   , tcolor2  = BrBlack
   , tfeature = [ Exit, Openable
                , ChangeTo "vertical open door"
+               , HiddenAs "suspect vertical wall"
                ]
   }
 doorOpenV = TileKind
@@ -84,12 +88,16 @@ wallH = TileKind
   , tfreq    = [("litLegend", 100), ("darkLegend", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = []
+  , tfeature = [HiddenAs "suspect horizontal wall"]
   }
-doorHiddenH = wallH
-  { tfreq    = [("hidden", 100)]
-  , tfeature = [ Hidden, Secret (Random.RollDice 7 2)
-               , ChangeTo "horizontal closed door"
+wallSuspectH = TileKind
+  { tsymbol  = '-'
+  , tname    = "suspect wall"
+  , tfreq    = [("suspect horizontal wall", 1)]
+  , tcolor   = BrCyan
+  , tcolor2  = defFG
+  , tfeature = [ Suspect
+               , HiddenAs "horizontal closed door"  -- hack
                ]
   }
 doorClosedH = TileKind
@@ -100,6 +108,7 @@ doorClosedH = TileKind
   , tcolor2  = BrBlack
   , tfeature = [ Exit, Openable
                , ChangeTo "horizontal open door"
+               , HiddenAs "suspect horizontal wall"
                ]
   }
 doorOpenH = TileKind
