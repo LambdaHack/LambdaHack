@@ -66,11 +66,19 @@ cmdAtomicFilterCli cmd = case cmd of
     perceptionA lid outPA inPA
     perNew <- getPerFid lid
     s <- getState
+    fid <- getsClient sside
     -- Wipe out actors that just became invisible due to changed FOV.
+    -- TODO: perhaps instead create LoseActorA for all actors in lprio,
+    -- and keep only those where seenAtomicCli is True; this is even
+    -- cheaper than repeated posToActor (until it's optimized).
     let outFov = totalVisible perOld ES.\\ totalVisible perNew
         outPrio = mapMaybe (\p -> posToActor p lid s) $ ES.elems outFov
-        fActor aid = LoseActorA aid (getActorBody aid s) (getActorItem aid s)
-        outActor = map fActor outPrio
+        fActor aid =
+          let b = getActorBody aid s
+          in if bfaction b == fid
+             then Nothing
+             else Just $ LoseActorA aid b (getActorItem aid s)
+        outActor = mapMaybe fActor outPrio
     -- Wipe out remembered items on tiles that now came into view.
     lfloor <- getsLevel lid lfloor
     let inFov = totalVisible perNew ES.\\ totalVisible perOld
@@ -87,7 +95,6 @@ cmdAtomicFilterCli cmd = case cmd of
         inSm = mapMaybe (\p -> pMaybe p $ EM.lookup p lsmell)
                         (ES.elems inSmellFov)
         inSmell = if null inSm then [] else [LoseSmellA lid inSm]
-    fid <- getsClient sside
     let seenNew = seenAtomicCli False fid perNew
         seenOld = seenAtomicCli False fid perOld
     -- TODO: these assertions are probably expensive
