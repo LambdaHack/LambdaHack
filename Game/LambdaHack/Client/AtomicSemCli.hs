@@ -86,18 +86,22 @@ cmdAtomicFilterCli cmd = case cmd of
     let inSmellFov = smellVisible perNew ES.\\ smellVisible perOld
         inSm = mapMaybe (\p -> pMaybe p $ EM.lookup p lsmell)
                         (ES.elems inSmellFov)
-        atomicSmell = if null inSm then [] else [LoseSmellA lid inSm]
+        inSmell = if null inSm then [] else [LoseSmellA lid inSm]
     fid <- getsClient sside
-    let forget = inItem ++ outActor ++ atomicSmell
-        seenNew = seenAtomicCli False fid perNew
+    let seenNew = seenAtomicCli False fid perNew
         seenOld = seenAtomicCli False fid perOld
     -- TODO: these assertions are probably expensive
-    psForget <- mapM posCmdAtomic forget
-    -- Verify that we forget only previously seen things.
-    assert (allB seenOld psForget) skip
-    -- Verify that we forget only currently invisible things.
-    assert (allB (not . seenNew) psForget) skip
-    return $ cmd : forget
+    psActor <- mapM posCmdAtomic outActor
+    -- Verify that we forget only previously seen actors.
+    assert (allB seenOld psActor) skip
+    -- Verify that we forget only currently invisible actors.
+    assert (allB (not . seenNew) psActor) skip
+    psItemSmell <- mapM posCmdAtomic $ inItem ++ inSmell
+    -- Verify that we forget only previously invisible items and smell.
+    assert (allB (not . seenOld) psItemSmell) skip
+    -- Verify that we forget only currently seen items and smell.
+    assert (allB seenNew psItemSmell) skip
+    return $ cmd : outActor ++ inItem ++ inSmell
   _ -> return [cmd]
 
 -- | Effect of atomic actions on client state is calculated
