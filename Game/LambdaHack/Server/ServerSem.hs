@@ -24,8 +24,6 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.AtomicCmd
 import qualified Game.LambdaHack.Common.Color as Color
-import Game.LambdaHack.Content.ItemKind
-import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
@@ -34,16 +32,18 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Common.Tile as Tile
+import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Server.Action hiding (sendQueryAI, sendQueryUI,
                                       sendUpdateAI, sendUpdateUI)
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.State
-import Game.LambdaHack.Common.State
-import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Common.Vector
 
 default (Text)
 
@@ -166,20 +166,29 @@ actorAttackActor source target = do
 -- | An actor opens a door.
 actorOpenDoor :: (MonadAtomic m, MonadServer m) => ActorId -> Vector -> m Bool
 actorOpenDoor actor dir = do
-  Kind.COps{cotile} <- getsState scops
+  Kind.COps{cotile = cotile@Kind.Ops{oname}} <- getsState scops
   body <- getsState $ getActorBody actor
-  lvl <- getsLevel (blid body) id
   let dpos = shift (bpos body) dir  -- the position we act upon
-      t = lvl `at` dpos
-  if not (openable cotile lvl dpos) then
-    execFailure (bfaction body) "never mind"
-  else do
-    if Tile.hasFeature cotile F.Closable t
-      then execFailure (bfaction body) "already open"
-      else if not (Tile.hasFeature cotile F.Closable t ||
-                   Tile.hasFeature cotile F.Openable t)
-           then execFailure (bfaction body) "never mind"  -- not doors at all
-           else triggerSer actor dpos
+      arena = blid body
+  lvl <- getsLevel arena id
+  -- Search the tile.
+  let t = lvl `at` dpos
+      clientTile = hideTile cotile dpos lvl  -- TODO: use actor's search bonus
+      potentiallySearchable = t /= clientTile
+  when potentiallySearchable $
+    execCmdAtomic $ SearchTileA arena dpos clientTile t
+  -- Actually open the door.
+  if Tile.hasFeature cotile F.Openable t
+    then triggerSer actor dpos
+    else if potentiallySearchable then do
+           let msg = makeSentence
+                 [ "the", MU.SubjectVerbSg (MU.Text $ oname t) "look"
+                 , "mildly suspect, but can't be opened" ]
+           execSfxAtomic $ FailureD (bfaction body) msg
+           return True  -- searching costs
+         else if Tile.hasFeature cotile F.Closable t
+              then execFailure (bfaction body) "already open"
+              else execFailure (bfaction body) "never mind"  -- not doors
 
 -- * RunSer
 
@@ -378,11 +387,11 @@ triggerSer aid dpos = do
             if EM.null $ lvl `atI` dpos
               then if unoccupied as dpos
                  then do
-                   fromTile <- getsLevel (blid b) (`at` dpos)
+                   let fromTile = lvl `at` dpos
                    toTile <- rndToAction $ opick tgroup (const True)
-                   execCmdAtomic $ AlterTileA (blid b) dpos fromTile toTile
+                   execCmdAtomic $ AlterTileA arena dpos fromTile toTile
                    return True
--- TODO: take care of AI using this function (aborts on some of the features, succes on others, etc.).o
+-- TODO: take care of AI using this function (aborts on some of the features, succes on others, etc.)
                  else execFailure (bfaction b) "blocked"  -- by actors
             else execFailure (bfaction b) "jammed"  -- by items
           _ -> return True

@@ -45,6 +45,13 @@ import Game.LambdaHack.Utils.Assert
 -- of commands kept for each command received.
 cmdAtomicFilterCli :: MonadClient m => CmdAtomic -> m [CmdAtomic]
 cmdAtomicFilterCli cmd = case cmd of
+  SearchTileA lid p fromTile toTile -> do
+    t <- getsLevel lid (`at` p)
+    if t /= fromTile
+      then return []  -- either already aware, or totally misguided
+      else return [ cmd  -- for the message
+                  , AlterTileA lid p fromTile toTile   -- for dungeon change
+                  ]
   DiscoverA _ _ iid _ -> do
     disco <- getsClient sdisco
     item <- getsState $ getItemBody iid
@@ -281,6 +288,12 @@ drawCmdAtomicUI verbose cmd = case cmd of
   QuitFactionA fid _ toSt -> quitFactionUI fid toSt
   AlterTileA _ _ _ _ | verbose ->
     return ()  -- TODO: door opens
+  SearchTileA _ _ fromTile toTile -> do
+    Kind.COps{cotile = Kind.Ops{oname}} <- getsState scops
+    let msg = makeSentence
+          [ "the", MU.SubjectVerbSg (MU.Text $ oname fromTile) "turn out to be"
+          , MU.AW $ MU.Text $ oname toTile ]
+    msgAdd msg
   AgeGameA t -> do
     when (t > timeClip) $ displayFramesPush [Nothing]  -- show delay
     displayPush

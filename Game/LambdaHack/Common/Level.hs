@@ -10,12 +10,13 @@ module Game.LambdaHack.Common.Level
     -- * Level update
   , updatePrio, updateSmell, updateFloor, updateTile
     -- * Level query
-  , at, atI, accessible, openable, findPos, findPosTry
+  , at, atI, accessible, findPos, findPosTry, hideTile
     -- * Item containers
   , Container(..)
  ) where
 
 import Data.Binary
+import Data.Bits
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.List as L
 import Data.Text (Text)
@@ -23,16 +24,16 @@ import Data.Typeable
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Content.TileKind
-import qualified Game.LambdaHack.Common.Feature as F
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Tile
+import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Utils.Assert
 
 -- | The complete dungeon is a map from level names to levels.
@@ -136,7 +137,7 @@ instance Binary Level where
 
 -- | Query for tile kinds on the map.
 at :: Level -> Point -> Kind.Id TileKind
-at Level{ltile}  p = ltile Kind.! p
+at Level{ltile} p = ltile Kind.! p
 
 -- | Query for items on the ground.
 atI :: Level -> Point -> ItemBag
@@ -151,12 +152,6 @@ accessible Kind.COps{ cotile=Kind.Ops{okind=okind}, corule}
       src = okind $ lvl `at` spos
       tgt = okind $ lvl `at` tpos
   in check lxsize spos src tpos tgt
-
--- | Check whether the position contains an openable tile.
-openable :: Kind.Ops TileKind -> Level ->  Point -> Bool
-openable cops lvl tpos =
-  let tgt = lvl `at` tpos
-  in hasFeature cops F.Openable tgt
 
 -- | Find a random position on the map satisfying a predicate.
 findPos :: TileMap -> (Point -> Kind.Id TileKind -> Bool) -> Rnd Point
@@ -190,6 +185,16 @@ findPosTry numTries ltile l@(_ : tl) = assert (numTries > 0) $
           then return loc
           else search (k - 1)
   in search numTries
+
+hideTile :: Kind.Ops TileKind -> Point -> Level -> Kind.Id TileKind
+hideTile cotile p lvl =
+  let t = lvl `at` p
+      ht = Tile.hiddenAs cotile t  -- TODO; tabulate with Speedup?
+  in if ht == t
+        || (lsecret lvl `rotateR` fromEnum p `xor` fromEnum p)
+           `mod` lhidden lvl == 0
+     then ht
+     else t
 
 data Container =
     CFloor LevelId Point

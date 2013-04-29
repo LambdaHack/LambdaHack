@@ -91,6 +91,7 @@ posCmdAtomic cmd = case cmd of
   LeadFactionA fid _ _ -> return $ PosFidAndSer fid
   DiplFactionA _ _ _ _ -> return PosAll
   AlterTileA lid p _ _ -> return $ PosSight lid [p]
+  SearchTileA lid p _ _ -> return $ PosSight lid [p]
   SpotTileA lid ts -> do
     let ps = map fst ts
     return $ PosSight lid ps

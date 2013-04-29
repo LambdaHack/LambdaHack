@@ -7,7 +7,6 @@ module Game.LambdaHack.Server.AtomicSemSer
   ) where
 
 import Control.Monad
-import Data.Bits
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Maybe
@@ -21,10 +20,9 @@ import Game.LambdaHack.Common.ClientCmd
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Perception
+import Game.LambdaHack.Common.State
 import Game.LambdaHack.Server.Action
 import Game.LambdaHack.Server.State
-import Game.LambdaHack.Common.State
-import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Utils.Assert
 
 storeUndo :: MonadServer m => Atomic -> m ()
@@ -155,14 +153,7 @@ atomicRemember lid inPer s =
       inItem = concatMap fBag inFloor
       -- Tiles.
       cotile = Kind.cotile (scops s)
-      hideTile p t =
-        let ht = Tile.hiddenAs cotile t
-        in if ht == t
-              || (lsecret lvl `rotateR` fromEnum p `xor` fromEnum p)
-                 `mod` lhidden lvl == 0
-           then ht
-           else t
-      inTileMap = map (\p -> (p, hideTile p $ ltile lvl Kind.! p)) inFov
+      inTileMap = map (\p -> (p, hideTile cotile p lvl)) inFov
       atomicTile = if null inTileMap then [] else [SpotTileA lid inTileMap]
       -- TODO: somehow also use this
       -- bonus = case strongestSearch itemAssocs of

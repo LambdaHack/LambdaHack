@@ -3,10 +3,10 @@
 module Content.TileKind ( cdefs ) where
 
 import Game.LambdaHack.Common.Color
-import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Common.ContentDef
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Feature
+import Game.LambdaHack.Content.TileKind
 
 cdefs :: ContentDef TileKind
 cdefs = ContentDef
@@ -58,7 +58,7 @@ wallSuspectV = TileKind
   , tcolor   = BrCyan
   , tcolor2  = defFG
   , tfeature = [ Suspect
-               , HiddenAs "vertical closed door"  -- hack
+               , ChangeTo "vertical closed door"  -- never triggered, hack 47
                ]
   }
 doorClosedV = TileKind
@@ -97,7 +97,7 @@ wallSuspectH = TileKind
   , tcolor   = BrCyan
   , tcolor2  = defFG
   , tfeature = [ Suspect
-               , HiddenAs "horizontal closed door"  -- hack
+               , ChangeTo "horizontal closed door"  -- never triggered, hack 47
                ]
   }
 doorClosedH = TileKind

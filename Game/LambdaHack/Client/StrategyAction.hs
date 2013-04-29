@@ -11,17 +11,14 @@ import Data.Function
 import qualified Data.List as L
 import Data.Maybe
 
+import Game.LambdaHack.Client.Action
+import Game.LambdaHack.Client.State
+import Game.LambdaHack.Client.Strategy
 import Game.LambdaHack.Common.Ability (Ability)
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Client.Action
-import Game.LambdaHack.Client.State
-import Game.LambdaHack.Client.Strategy
-import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Content.ItemKind
-import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
@@ -34,9 +31,12 @@ import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.Frequency
-import Game.LambdaHack.Common.Vector
 
 -- TODO: extress many (all?) functions as MonadActionRO
 
@@ -363,7 +363,7 @@ moveStrategy cops actor glo mFoe =
   onlyMoves p l = only (\ x -> p (l `shift` x))
   moveRandomly :: Strategy Vector
   moveRandomly = liftFrequency $ uniformFreq "moveRandomly" sensible
-  openableHere   = openable cotile lvl
+  openableHere pos = Tile.hasFeature cotile F.Openable $ lvl `at` pos
   accessibleHere = accessible cops lvl bpos
   fact = sfaction glo EM.! bfaction
   friends = actorList (not . (isAtWar fact)) blid glo

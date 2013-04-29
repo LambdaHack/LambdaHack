@@ -56,6 +56,8 @@ cmdAtomicSem cmd = case cmd of
   DiplFactionA fid1 fid2 fromDipl toDipl ->
     diplFactionA fid1 fid2 fromDipl toDipl
   AlterTileA lid p fromTile toTile -> alterTileA lid p fromTile toTile
+  SearchTileA _ _ fromTile toTile ->
+    assert (fromTile /= toTile) $ return ()  -- only for clients
   SpotTileA lid ts -> spotTileA lid ts
   LoseTileA lid ts -> loseTileA lid ts
   AlterSmellA lid p fromSm toSm -> alterSmellA lid p fromSm toSm
@@ -303,7 +305,9 @@ alterTileA :: MonadAction m
            -> m ()
 alterTileA lid p fromTile toTile = assert (fromTile /= toTile) $ do
   Kind.COps{cotile} <- getsState scops
-  let adj ts = assert (ts Kind.! p == fromTile) $ ts Kind.// [(p, toTile)]
+  let adj ts = assert (ts Kind.! p == fromTile
+                       `blame` (lid, p, fromTile, toTile, ts Kind.! p))
+               $ ts Kind.// [(p, toTile)]
   updateLevel lid $ updateTile adj
   case (Tile.isExplorable cotile fromTile, Tile.isExplorable cotile toTile) of
     (False, True) -> updateLevel lid $ \lvl -> lvl {lseen = lseen lvl + 1}
