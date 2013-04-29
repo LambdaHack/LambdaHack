@@ -4,10 +4,10 @@ module Content.CaveKind ( cdefs ) where
 
 import Data.Ratio
 
-import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Random as Random
+import Game.LambdaHack.Content.CaveKind
 
 cdefs :: ContentDef CaveKind
 cdefs = ContentDef
@@ -35,7 +35,7 @@ rogue = CaveKind
   , cminStairDist = 30
   , cdoorChance   = 1%2
   , copenChance   = 1%10
-  , chidden       = 9
+  , chidden       = 8
   , citemNum      = RollDice 7 2
   , cdefTile        = "fillerWall"
   , ccorridorTile   = "darkCorridor"
@@ -52,7 +52,7 @@ arena = rogue
   , cdarkChance   = (RollDice 1 80, RollDice 1 60)
   , cvoidChance   = 1%3
   , cnonVoidMin   = 2
-  , chidden       = 10
+  , chidden       = 9
   , citemNum      = RollDice 4 2  -- few rooms
   , cdefTile      = "floorArenaLit"
   , ccorridorTile = "path"
@@ -68,7 +68,7 @@ empty = rogue
   , cvoidChance   = 3%4
   , cnonVoidMin   = 1
   , cminStairDist = 50
-  , chidden       = 12
+  , chidden       = 10
   , citemNum      = RollDice 8 2  -- whole floor strewn with treasure
   , cdefTile      = "floorRoomLit"
   , ccorridorTile = "floorRoomLit"
@@ -82,7 +82,7 @@ noise = rogue
   , cdarkChance   = (RollDice 1 80, RollDice 1 40)
   , cvoidChance   = 0
   , cnonVoidMin   = 0
-  , chidden       = 8
+  , chidden       = 6
   , citemNum      = RollDice 4 2  -- few rooms
   , cdefTile      = "noiseSet"
   , ccorridorTile = "path"
