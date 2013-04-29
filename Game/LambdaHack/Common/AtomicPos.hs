@@ -109,7 +109,7 @@ posCmdAtomic cmd = case cmd of
   DiscoverA lid p _ _ -> return $ PosSight lid [p]
   CoverA lid p _ _ -> return $ PosSight lid [p]
   PerceptionA _ _ _ -> return PosNone
-  RestartA fid _ _ _ -> return $ PosFid fid
+  RestartA fid _ _ _ _ -> return $ PosFid fid
   RestartServerA _ -> return PosSer
   ResumeA fid _ -> return $ PosFid fid
   ResumeServerA _ -> return PosSer

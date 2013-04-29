@@ -17,8 +17,6 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.AtomicCmd
 import qualified Game.LambdaHack.Common.Color as Color
-import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -28,8 +26,10 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.Content.TileKind as TileKind
+import Game.LambdaHack.Utils.Assert
 
 cmdAtomicSem :: MonadAction m => CmdAtomic -> m ()
 cmdAtomicSem cmd = case cmd of
@@ -67,7 +67,7 @@ cmdAtomicSem cmd = case cmd of
   CoverA{} -> return ()     -- of inverses has to be reasonably inverse.
   PerceptionA _ outPA inPA ->
     assert (not (EM.null outPA && EM.null inPA)) $ return ()
-  RestartA fid sdisco sfper s -> restartA fid sdisco sfper s
+  RestartA fid sdisco sfper s _ -> restartA fid sdisco sfper s
   RestartServerA s -> restartServerA s
   ResumeA{} -> return ()
   ResumeServerA s -> resumeServerA s

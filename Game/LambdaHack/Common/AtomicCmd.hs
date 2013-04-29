@@ -22,8 +22,6 @@ import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Color as Color
-import Game.LambdaHack.Content.ItemKind as ItemKind
-import Game.LambdaHack.Content.TileKind as TileKind
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
@@ -36,6 +34,8 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.ItemKind as ItemKind
+import Game.LambdaHack.Content.TileKind as TileKind
 
 data Atomic =
     CmdAtomic CmdAtomic
@@ -84,7 +84,7 @@ data CmdAtomic =
   | DiscoverA LevelId Point ItemId (Kind.Id ItemKind)
   | CoverA LevelId Point ItemId (Kind.Id ItemKind)
   | PerceptionA LevelId PerActor PerActor
-  | RestartA FactionId Discovery FactionPers State
+  | RestartA FactionId Discovery FactionPers State Bool
   | RestartServerA State
   | ResumeA FactionId FactionPers
   | ResumeServerA State

@@ -61,8 +61,8 @@ initPer = do
   let pers = dungeonPerception cops configFov s
   modifyServer $ \ser1 -> ser1 {sper = pers}
 
-reinitGame :: (MonadAtomic m, MonadServer m) => m ()
-reinitGame = do
+reinitGame :: (MonadAtomic m, MonadServer m) => Bool -> m ()
+reinitGame quitter = do
   Kind.COps{ coitem=Kind.Ops{okind}, corule } <- getsState scops
   pers <- getsServer sper
   knowMap <- getsServer $ sknowMap . sdebugSer
@@ -77,7 +77,8 @@ reinitGame = do
   let misteriousSymbols = ritemProject $ Kind.stdRuleset corule
       sdisco = let f ik = isymbol (okind ik) `notElem` misteriousSymbols
                in EM.filter f discoS
-  broadcastCmdAtomic $ \fid -> RestartA fid sdisco (pers EM.! fid) defLoc
+  broadcastCmdAtomic
+    $ \fid -> RestartA fid sdisco (pers EM.! fid) defLoc quitter
   populateDungeon
   broadcastSfxAtomic $ \fid -> FadeinD fid False
 

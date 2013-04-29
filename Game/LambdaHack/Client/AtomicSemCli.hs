@@ -13,19 +13,18 @@ import qualified Data.EnumSet as ES
 import Data.Maybe
 import qualified NLP.Miniutter.English as MU
 
+import Game.LambdaHack.Client.Action
+import Game.LambdaHack.Client.Animation
+import Game.LambdaHack.Client.Draw
+import Game.LambdaHack.Client.HumanLocal
+import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.AtomicPos
 import Game.LambdaHack.Common.AtomicSem
-import Game.LambdaHack.Client.Action
-import Game.LambdaHack.Client.Animation
-import Game.LambdaHack.Client.Draw
-import Game.LambdaHack.Client.HumanLocal
-import Game.LambdaHack.Client.State
 import qualified Game.LambdaHack.Common.Color as Color
-import Game.LambdaHack.Content.ItemKind
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
@@ -36,6 +35,7 @@ import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Utils.Assert
 
 -- * CmdAtomicAI
@@ -130,7 +130,7 @@ cmdAtomicSemCli cmd = case cmd of
   DiscoverA lid p iid ik -> discoverA lid p iid ik
   CoverA lid p iid ik -> coverA lid p iid ik
   PerceptionA lid outPA inPA -> perceptionA lid outPA inPA
-  RestartA _ sdisco sfper s -> do
+  RestartA _ sdisco sfper s _ -> do
     -- TODO: here or elsewhere re-read RNG seed from config file
     side <- getsClient sside
     let fac = sfaction s EM.! side
@@ -309,7 +309,7 @@ drawCmdAtomicUI verbose cmd = case cmd of
                                     "look like an ordinary"
           , objUnkown1, objUnkown2 ]
     msgAdd msg
-  RestartA{} -> msgAdd "This time for real."
+  RestartA _ _ _ _ quitter -> when quitter $ msgAdd "This time for real."
   ResumeA{} -> msgAdd "All factions ready."
   SaveBkpA -> msgAdd "Saving backup."
   _ -> return ()

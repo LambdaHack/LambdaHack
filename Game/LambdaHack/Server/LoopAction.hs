@@ -16,8 +16,6 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.ClientCmd
-import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
@@ -26,6 +24,12 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Common.ServerCmd
+import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Common.Tile as Tile
+import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Server.Action hiding (sendUpdateAI, sendUpdateUI)
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.EffectSem
@@ -33,10 +37,6 @@ import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.ServerSem
 import Game.LambdaHack.Server.StartAction
 import Game.LambdaHack.Server.State
-import Game.LambdaHack.Common.ServerCmd
-import Game.LambdaHack.Common.State
-import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Utils.Assert
 
 -- | Start a clip (a part of a turn for which one or more frames
@@ -62,7 +62,7 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
       let speedup = speedupCOps (sallClear sdebugNxt)
       execCmdAtomic $ RestartServerA $ updateCOps speedup s
       initConn sdebugNxt executorUI executorAI
-      reinitGame
+      reinitGame False
       -- Save ASAP in case of crashes and disconnects.
       saveBkpAll
     Just (sRaw, ser) -> do  -- Running a restored game.
@@ -387,13 +387,13 @@ processQuits loopServer ((fid, quit) : quits) = do
               && not (isAllied fact1 fid)
       if gameOver then do
         registerScore status total
-        restartGame loopServer
+        restartGame False loopServer
       else
         processQuits loopServer quits
     status@Victor -> do
       registerScore status total
-      restartGame loopServer
-    Restart -> restartGame loopServer
+      restartGame False loopServer
+    Restart -> restartGame True loopServer
     Camping -> do
       execCmdAtomic $ QuitFactionA fid (Just quit) Nothing
       execCmdAtomic SaveExitA
@@ -406,15 +406,15 @@ processQuits loopServer ((fid, quit) : quits) = do
       assert (persSaved == pers `blame` (persSaved, pers)) skip
       -- Con't call @loopServer@, that is, quit the game loop.
 
-restartGame :: (MonadAtomic m, MonadServerConn m) => m () -> m ()
-restartGame loopServer = do
+restartGame :: (MonadAtomic m, MonadServerConn m) => Bool -> m () -> m ()
+restartGame quitter loopServer = do
   cops <- getsState scops
   nH <- nHumans
   when (nH <= 1) $ broadcastSfxAtomic $ \fid -> FadeoutD fid False
   s <- gameReset cops
   execCmdAtomic $ RestartServerA s
   initPer
-  reinitGame
+  reinitGame quitter
   -- Save ASAP in case of crashes and disconnects.
   saveBkpAll
   loopServer
