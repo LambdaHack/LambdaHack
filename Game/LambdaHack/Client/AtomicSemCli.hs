@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Semantics of client UI response to atomic commands.
--- See https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture.
+-- See
+-- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Client.AtomicSemCli
   ( cmdAtomicSem, cmdAtomicSemCli, cmdAtomicFilterCli
   , drawCmdAtomicUI, drawSfxAtomicUI

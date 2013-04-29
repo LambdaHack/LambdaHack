@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Semantics of atomic commands shared by client and server.
--- See https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture.
+-- See
+-- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.AtomicPos
   ( PosAtomic(..), posCmdAtomic, posSfxAtomic
   , resetsFovAtomic, breakCmdAtomic, loudCmdAtomic

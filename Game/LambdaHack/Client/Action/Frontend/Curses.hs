@@ -112,7 +112,7 @@ keyTranslate e =
     C.KeyBeg         -> (K.Begin,   K.NoModifier)
     C.KeyB2          -> (K.Begin,   K.NoModifier)
     C.KeyClear       -> (K.Begin,   K.NoModifier)
-    -- No KP_ keys; see https://github.com/skogsbaer/hscurses/issues/10
+    -- No KP_ keys; see <https://github.com/skogsbaer/hscurses/issues/10>
     -- TODO: try to get the Control modifier for keypad keys from the escape
     -- gibberish and use Control-keypad for KP_ movement.
     C.KeyChar c

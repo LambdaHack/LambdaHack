@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 -- | Abstract syntax of client commands.
--- See https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture.
+-- See
+-- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.ClientCmd
   ( CmdClientAI(..), CmdClientUI(..)
   , debugCmdClientAI, debugCmdClientUI, debugAid

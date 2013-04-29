@@ -1,6 +1,7 @@
 {-# OPTIONS -fno-warn-orphans #-}
 -- | Semantics of server commands.
--- See https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture.
+-- See
+-- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Server
   ( mainSer
   ) where

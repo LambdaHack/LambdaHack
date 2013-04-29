@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 -- | Abstract syntax of server commands.
--- See https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture.
+-- See
+-- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.ServerCmd
   ( CmdSer(..), timedCmdSer, aidCmdSer
   ) where
