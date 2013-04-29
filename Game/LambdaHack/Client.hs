@@ -12,8 +12,8 @@ import Control.Concurrent
 import Control.Monad
 import Data.Maybe
 
-import Game.LambdaHack.Action
-import Game.LambdaHack.AtomicCmd
+import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.AtomicSemCli
 import Game.LambdaHack.Client.Binding
@@ -21,10 +21,10 @@ import Game.LambdaHack.Client.ClientSem
 import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.LoopAction
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.ClientCmd
-import Game.LambdaHack.Faction
-import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.State
+import Game.LambdaHack.Common.ClientCmd
+import Game.LambdaHack.Common.Faction
+import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.State
 import Game.LambdaHack.Utils.Assert
 
 storeUndo :: MonadClient m => Atomic -> m ()

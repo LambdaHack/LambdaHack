@@ -12,10 +12,10 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Prelude hiding (Left, Right)
 
-import Game.LambdaHack.Msg
-import Game.LambdaHack.PointXY
-import Game.LambdaHack.Vector
-import Game.LambdaHack.VectorXY
+import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.PointXY
+import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Common.VectorXY
 
 -- TODO: if the file grows much larger, split it and move a part to Utils/
 

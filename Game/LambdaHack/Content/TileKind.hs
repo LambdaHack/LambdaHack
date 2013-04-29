@@ -7,9 +7,9 @@ import qualified Data.List as L
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
 
-import Game.LambdaHack.Color
-import Game.LambdaHack.Feature
-import Game.LambdaHack.Misc
+import Game.LambdaHack.Common.Color
+import Game.LambdaHack.Common.Feature
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Utils.Assert
 
 -- | The type of kinds of terrain tiles. See @Tile.hs@ for explanation

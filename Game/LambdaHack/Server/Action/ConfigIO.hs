@@ -16,7 +16,7 @@ import System.FilePath
 import qualified System.Random as R
 
 import Game.LambdaHack.Content.RuleKind
-import qualified Game.LambdaHack.Kind as Kind
+import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Utils.Assert
 

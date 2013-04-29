@@ -15,7 +15,7 @@ import qualified Graphics.Vty as Vty
 
 import Game.LambdaHack.Client.Animation (SingleFrame (..))
 import qualified Game.LambdaHack.Client.Key as K (KM, Key (..), Modifier (..))
-import qualified Game.LambdaHack.Color as Color
+import qualified Game.LambdaHack.Common.Color as Color
 
 -- | Session data maintained by the frontend.
 type FrontendSession = Vty

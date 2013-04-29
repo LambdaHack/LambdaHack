@@ -13,7 +13,7 @@ import System.FilePath
 import Game.LambdaHack.Client.Config
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Content.RuleKind
-import qualified Game.LambdaHack.Kind as Kind
+import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Utils.Assert
 
 overrideCP :: CP -> FilePath -> IO CP

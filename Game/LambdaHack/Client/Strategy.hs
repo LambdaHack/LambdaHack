@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.Strategy
 import Control.Monad
 import Data.Text (Text)
 
-import Game.LambdaHack.Msg
+import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Utils.Frequency
 
 -- | A strategy is a choice of (non-empty) frequency tables

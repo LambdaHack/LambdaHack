@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveFunctor, DeriveGeneric, OverloadedStrings #-}
 -- | Effects of content on other content. No operation in this module
 -- involves the 'State' or 'Action' type.
-module Game.LambdaHack.Effect
+module Game.LambdaHack.Common.Effect
   ( Effect(..), effectTrav, effectToSuffix, effectToBenefit
   ) where
 
@@ -11,8 +11,8 @@ import qualified Data.Hashable as Hashable
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
-import Game.LambdaHack.Msg
-import Game.LambdaHack.Random
+import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Utils.Assert
 
 -- TODO: document each constructor

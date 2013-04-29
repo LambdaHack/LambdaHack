@@ -3,7 +3,7 @@
 -- | Abstract syntax of client commands.
 -- See
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
-module Game.LambdaHack.ClientCmd
+module Game.LambdaHack.Common.ClientCmd
   ( CmdClientAI(..), CmdClientUI(..)
   , debugCmdClientAI, debugCmdClientUI, debugAid
   , Conn(..), ConnFaction, ConnDict
@@ -13,15 +13,15 @@ import Control.Concurrent.STM.TQueue
 import qualified Data.EnumMap.Strict as EM
 import Data.Text (Text)
 
-import Game.LambdaHack.Action
-import Game.LambdaHack.Actor
-import Game.LambdaHack.ActorState
-import Game.LambdaHack.AtomicCmd
-import Game.LambdaHack.AtomicPos
-import Game.LambdaHack.Faction
-import Game.LambdaHack.Msg
-import Game.LambdaHack.ServerCmd
-import Game.LambdaHack.State
+import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
+import Game.LambdaHack.Common.AtomicCmd
+import Game.LambdaHack.Common.AtomicPos
+import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.ServerCmd
+import Game.LambdaHack.Common.State
 
 -- | Abstract syntax of client commands that don't use the UI.
 data CmdClientAI =

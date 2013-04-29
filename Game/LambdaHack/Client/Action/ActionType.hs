@@ -10,12 +10,12 @@ module Game.LambdaHack.Client.Action.ActionType
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 
-import Game.LambdaHack.Action
+import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Client.Action.ActionClass
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.ClientCmd
-import Game.LambdaHack.Msg
-import Game.LambdaHack.State
+import Game.LambdaHack.Common.ClientCmd
+import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.State
 
 -- | The type of the function inside any client action.
 type FunActionCli c a =

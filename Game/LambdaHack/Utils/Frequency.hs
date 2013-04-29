@@ -16,7 +16,7 @@ import qualified System.Random as R
 import Data.Text (Text)
 
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Msg
+import Game.LambdaHack.Common.Msg
 
 -- TODO: do not expose runFrequency
 -- | The frequency distribution type.

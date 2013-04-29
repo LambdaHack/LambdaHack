@@ -3,7 +3,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | Actors in the game: heroes, monsters, etc. No operation in this module
 -- involves the 'State' or 'Action' type.
-module Game.LambdaHack.Actor
+module Game.LambdaHack.Common.Actor
   ( -- * Actor identifiers and related operations
     ActorId, monsterGenChance, partActor
     -- * The@ Acto@r type
@@ -31,17 +31,17 @@ import Data.Tuple
 import Data.Typeable
 import qualified NLP.Miniutter.English as MU
 
-import qualified Game.LambdaHack.Color as Color
+import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Item
-import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Misc
-import Game.LambdaHack.Msg
-import Game.LambdaHack.Point
-import Game.LambdaHack.Random
-import Game.LambdaHack.Time
+import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Vector
+import Game.LambdaHack.Common.Vector
 
 -- | A unique identifier of an actor in the dungeon.
 newtype ActorId = ActorId Int

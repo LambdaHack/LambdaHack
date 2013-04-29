@@ -13,27 +13,27 @@ import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import Game.LambdaHack.Actor as Actor
-import Game.LambdaHack.ActorState
+import Game.LambdaHack.Common.Actor as Actor
+import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Client.Animation (SingleFrame (..))
 import Game.LambdaHack.Client.State
-import qualified Game.LambdaHack.Color as Color
+import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.Effect
-import qualified Game.LambdaHack.Feature as F
-import Game.LambdaHack.Item
-import qualified Game.LambdaHack.Item as Item
-import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Level
-import Game.LambdaHack.Msg
-import Game.LambdaHack.Perception
-import Game.LambdaHack.Point
-import Game.LambdaHack.PointXY
-import Game.LambdaHack.Random
-import Game.LambdaHack.State
-import Game.LambdaHack.Time
-import Game.LambdaHack.Vector
+import Game.LambdaHack.Common.Effect
+import qualified Game.LambdaHack.Common.Feature as F
+import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.Item as Item
+import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Perception
+import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.PointXY
+import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Common.State
+import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Common.Vector
 
 -- | Color mode for the display.
 data ColorMode =

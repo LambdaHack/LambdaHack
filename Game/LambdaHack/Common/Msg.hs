@@ -2,7 +2,7 @@
              #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | Game messages displayed on top of the screen for the player to read.
-module Game.LambdaHack.Msg
+module Game.LambdaHack.Common.Msg
   ( makePhrase, makeSentence
   , Msg, (<>), (<+>), showT, moreMsg, yesnoMsg, truncateMsg
   , Report, emptyReport, nullReport, singletonReport, addMsg
@@ -27,8 +27,8 @@ import Game.LambdaHack.Utils.Assert
 import NLP.Miniutter.English (showT, (<+>), (<>))
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Misc
-import Game.LambdaHack.PointXY
+import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.PointXY
 
 -- | Re-exported English phrase creation functions, applied to default
 -- irregular word sets.

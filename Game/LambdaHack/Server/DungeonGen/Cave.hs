@@ -8,19 +8,19 @@ import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.List as L
 
-import Game.LambdaHack.Area
+import Game.LambdaHack.Common.Area
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.TileKind
-import qualified Game.LambdaHack.Feature as F
-import Game.LambdaHack.Item
-import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Misc
-import Game.LambdaHack.PointXY
-import Game.LambdaHack.Random
+import qualified Game.LambdaHack.Common.Feature as F
+import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.PointXY
+import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Server.DungeonGen.AreaRnd
 import Game.LambdaHack.Server.DungeonGen.Place hiding (TileMapXY)
 import qualified Game.LambdaHack.Server.DungeonGen.Place as Place
-import qualified Game.LambdaHack.Tile as Tile
+import qualified Game.LambdaHack.Common.Tile as Tile
 
 -- | The map of tile kinds in a cave.
 -- The map is sparse. The default tile that eventually fills the empty spaces

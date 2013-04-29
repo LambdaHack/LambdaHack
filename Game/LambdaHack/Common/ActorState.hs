@@ -2,7 +2,7 @@
 -- | Operations on the 'Actor' type that need the 'State' type,
 -- but not the 'Action' type.
 -- TODO: Document an export list after it's rewritten according to #17.
-module Game.LambdaHack.ActorState
+module Game.LambdaHack.Common.ActorState
   ( actorAssocs, actorList, actorNotProjAssocs, actorNotProjList
   , calculateTotal, nearbyFreePoints, whereTo
   , posToActor, getItemBody, memActor, getActorBody, updateActorBody
@@ -16,17 +16,17 @@ import qualified Data.EnumSet as ES
 import Data.List
 import Data.Maybe
 
-import Game.LambdaHack.Actor
+import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.Faction
-import qualified Game.LambdaHack.Feature as F
-import Game.LambdaHack.Item
-import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Level
-import Game.LambdaHack.Point
-import Game.LambdaHack.PointXY
-import Game.LambdaHack.State
-import qualified Game.LambdaHack.Tile as Tile
+import Game.LambdaHack.Common.Faction
+import qualified Game.LambdaHack.Common.Feature as F
+import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.PointXY
+import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Utils.Assert
 
 actorAssocs :: (FactionId -> Bool) -> LevelId -> State

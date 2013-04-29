@@ -7,11 +7,11 @@
 -- directory. On the other hand, game content, that is all elements
 -- of @ContentDef@ instances, are defined in a directory
 -- of the game code proper, with names corresponding to their kinds.
-module Game.LambdaHack.ContentDef (ContentDef(..)) where
+module Game.LambdaHack.Common.ContentDef (ContentDef(..)) where
 
 import Data.Text (Text)
 
-import Game.LambdaHack.Misc
+import Game.LambdaHack.Common.Misc
 
 -- | The general type of a particular game content, e.g., item kinds.
 data ContentDef a = ContentDef

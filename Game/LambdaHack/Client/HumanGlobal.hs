@@ -19,9 +19,9 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Action
-import Game.LambdaHack.Actor
-import Game.LambdaHack.ActorState
+import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.HumanLocal
@@ -29,18 +29,18 @@ import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.RunAction
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Content.TileKind as TileKind
-import Game.LambdaHack.Faction
-import qualified Game.LambdaHack.Feature as F
-import Game.LambdaHack.Item
-import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Level
-import Game.LambdaHack.Msg
-import Game.LambdaHack.Point
-import Game.LambdaHack.ServerCmd
-import Game.LambdaHack.State
-import qualified Game.LambdaHack.Tile as Tile
+import Game.LambdaHack.Common.Faction
+import qualified Game.LambdaHack.Common.Feature as F
+import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.ServerCmd
+import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Vector
+import Game.LambdaHack.Common.Vector
 
 default (Text)
 

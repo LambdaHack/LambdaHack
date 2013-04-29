@@ -4,7 +4,7 @@ module Game.LambdaHack.Content.FactionKind
   ) where
 
 import Data.Text (Text)
-import Game.LambdaHack.Misc
+import Game.LambdaHack.Common.Misc
 
 -- | Faction properties that are fixed for a given kind of factions.
 data FactionKind = FactionKind

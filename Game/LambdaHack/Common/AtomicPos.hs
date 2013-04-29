@@ -2,7 +2,7 @@
 -- | Semantics of atomic commands shared by client and server.
 -- See
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
-module Game.LambdaHack.AtomicPos
+module Game.LambdaHack.Common.AtomicPos
   ( PosAtomic(..), posCmdAtomic, posSfxAtomic
   , resetsFovAtomic, breakCmdAtomic, loudCmdAtomic
   , seenAtomicCli, seenAtomicSer
@@ -11,15 +11,15 @@ module Game.LambdaHack.AtomicPos
 import qualified Data.EnumSet as ES
 import Data.Text (Text)
 
-import Game.LambdaHack.Action
-import Game.LambdaHack.Actor
-import Game.LambdaHack.ActorState
-import Game.LambdaHack.AtomicCmd
-import Game.LambdaHack.AtomicSem (posOfAid, posOfContainer)
-import Game.LambdaHack.Faction
-import Game.LambdaHack.Level
-import Game.LambdaHack.Perception
-import Game.LambdaHack.Point
+import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
+import Game.LambdaHack.Common.AtomicCmd
+import Game.LambdaHack.Common.AtomicSem (posOfAid, posOfContainer)
+import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Perception
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Utils.Assert
 
 -- All functions here that take an atomic action are executed

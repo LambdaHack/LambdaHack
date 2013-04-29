@@ -25,7 +25,7 @@ import System.Time
 import Game.LambdaHack.Client.Animation (SingleFrame (..))
 import qualified Game.LambdaHack.Client.Key as K (KM, Modifier (..),
                                                   keyTranslate)
-import qualified Game.LambdaHack.Color as Color
+import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.LQueue
 

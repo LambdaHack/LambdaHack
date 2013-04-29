@@ -7,9 +7,9 @@ import Data.Text (Text)
 import Data.Version
 
 import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.Misc
-import Game.LambdaHack.Point
-import Game.LambdaHack.PointXY
+import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.PointXY
 
 -- TODO: very few rules are configurable yet, extend as needed.
 

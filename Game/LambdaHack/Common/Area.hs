@@ -1,11 +1,11 @@
 -- | Rectangular areas of levels and their basic operations.
-module Game.LambdaHack.Area
+module Game.LambdaHack.Common.Area
   ( Area, vicinityXY, vicinityCardinalXY, insideXY
   , normalizeArea, grid, validArea, trivialArea, expand
   ) where
 
-import Game.LambdaHack.PointXY
-import Game.LambdaHack.VectorXY
+import Game.LambdaHack.Common.PointXY
+import Game.LambdaHack.Common.VectorXY
 
 -- | The type of areas. The bottom left and the top right points.
 type Area = (X, Y, X, Y)

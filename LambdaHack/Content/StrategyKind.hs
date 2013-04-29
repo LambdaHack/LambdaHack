@@ -2,9 +2,9 @@
 -- | AI strategies for LambdaHack.
 module Content.StrategyKind ( cdefs ) where
 
-import Game.LambdaHack.Ability
+import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Content.StrategyKind
-import Game.LambdaHack.ContentDef
+import Game.LambdaHack.Common.ContentDef
 
 cdefs :: ContentDef StrategyKind
 cdefs = ContentDef

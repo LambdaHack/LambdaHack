@@ -1,11 +1,11 @@
 -- | Basic cartesian geometry operations on 2D points.
-module Game.LambdaHack.PointXY
+module Game.LambdaHack.Common.PointXY
   ( X, Y, PointXY(..), fromTo, sortPointXY, blaXY
   ) where
 
 import qualified Data.List as L
 
-import Game.LambdaHack.Misc
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Utils.Assert
 
 -- | Spacial dimension for points and vectors.

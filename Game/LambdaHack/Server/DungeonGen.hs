@@ -14,18 +14,18 @@ import qualified System.Random as R
 
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.TileKind
-import qualified Game.LambdaHack.Feature as F
-import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Level
-import Game.LambdaHack.Msg
-import Game.LambdaHack.Point
-import Game.LambdaHack.PointXY
-import Game.LambdaHack.Random
+import qualified Game.LambdaHack.Common.Feature as F
+import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.PointXY
+import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.DungeonGen.Cave hiding (TileMapXY)
 import Game.LambdaHack.Server.DungeonGen.Place
-import qualified Game.LambdaHack.Tile as Tile
-import Game.LambdaHack.Time
+import qualified Game.LambdaHack.Common.Tile as Tile
+import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Utils.Assert
 
 convertTileMaps :: Rnd (Kind.Id TileKind) -> Int -> Int -> TileMapXY

@@ -7,9 +7,9 @@ import qualified Data.List as L
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import Game.LambdaHack.Misc
-import Game.LambdaHack.PointXY
-import Game.LambdaHack.Random
+import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.PointXY
+import Game.LambdaHack.Common.Random
 
 -- | Parameters for the generation of dungeon levels.
 data CaveKind = CaveKind

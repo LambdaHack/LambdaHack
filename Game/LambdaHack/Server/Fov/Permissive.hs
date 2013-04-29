@@ -8,7 +8,7 @@ module Game.LambdaHack.Server.Fov.Permissive
   ) where
 
 import Game.LambdaHack.Server.Fov.Common
-import Game.LambdaHack.Misc
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Utils.Assert
 
 -- TODO: Scanning squares on horizontal lines in octants, not squares

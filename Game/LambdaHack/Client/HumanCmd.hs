@@ -9,10 +9,10 @@ module Game.LambdaHack.Client.HumanCmd
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
-import qualified Game.LambdaHack.Feature as F
-import Game.LambdaHack.Msg
+import qualified Game.LambdaHack.Common.Feature as F
+import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.VectorXY
+import Game.LambdaHack.Common.VectorXY
 
 -- | Abstract syntax of player commands.
 data HumanCmd =

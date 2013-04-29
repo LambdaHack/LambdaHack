@@ -15,7 +15,7 @@ import qualified System.IO as SIO
 
 import Game.LambdaHack.Client.Animation (SingleFrame (..))
 import qualified Game.LambdaHack.Client.Key as K (KM, Key (..), Modifier (..))
-import qualified Game.LambdaHack.Color as Color
+import qualified Game.LambdaHack.Common.Color as Color
 
 -- | No session data needs to be maintained by this frontend.
 type FrontendSession = ()

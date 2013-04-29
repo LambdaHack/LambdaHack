@@ -12,7 +12,7 @@
 -- of concrete tiles by arrays or sparse EnumMaps, as appropriate.
 --
 -- Actors at normal speed (2 m/s) take one turn to move one tile (1 m by 1 m).
-module Game.LambdaHack.Tile
+module Game.LambdaHack.Common.Tile
   ( SmellTime
   , kindHasFeature, kindHas, hasFeature
   , isClear, isLit, isExplorable, similar, speedup
@@ -23,10 +23,10 @@ import qualified Data.Array.Unboxed as A
 import qualified Data.List as L
 
 import Game.LambdaHack.Content.TileKind
-import qualified Game.LambdaHack.Feature as F
-import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Random
-import Game.LambdaHack.Time
+import qualified Game.LambdaHack.Common.Feature as F
+import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Common.Time
 
 -- | The last time a hero left a smell in a given tile. To be used
 -- by monsters that hunt by smell.

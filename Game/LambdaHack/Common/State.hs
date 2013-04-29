@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Server and client game state types and operations.
-module Game.LambdaHack.State
+module Game.LambdaHack.Common.State
   ( -- * Basic game state, local or global
     State
     -- * State components
@@ -16,15 +16,15 @@ import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import Data.Text (Text)
 
-import Game.LambdaHack.Actor
+import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.Faction
-import qualified Game.LambdaHack.HighScore as HighScore
-import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Level
-import Game.LambdaHack.Point
-import Game.LambdaHack.PointXY
-import Game.LambdaHack.Time
+import Game.LambdaHack.Common.Faction
+import qualified Game.LambdaHack.Common.HighScore as HighScore
+import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.PointXY
+import Game.LambdaHack.Common.Time
 
 -- | View on game state. "Remembered" fields carry a subset of the info
 -- in the client copies of the state. Clients never directly change

@@ -12,12 +12,12 @@ import qualified Content.PlaceKind
 import qualified Content.RuleKind
 import qualified Content.StrategyKind
 import qualified Content.TileKind
-import Game.LambdaHack.Action (MonadAtomic (..))
-import Game.LambdaHack.AtomicCmd
-import Game.LambdaHack.AtomicSem
+import Game.LambdaHack.Common.Action (MonadAtomic (..))
+import Game.LambdaHack.Common.AtomicCmd
+import Game.LambdaHack.Common.AtomicSem
 import Game.LambdaHack.Client
 import Game.LambdaHack.Client.Action.ActionType
-import qualified Game.LambdaHack.Kind as Kind
+import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Server
 import Game.LambdaHack.Server.Action.ActionType
 import Game.LambdaHack.Server.AtomicSemSer

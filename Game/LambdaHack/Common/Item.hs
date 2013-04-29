@@ -5,7 +5,7 @@
 -- involves the 'State' or 'Action' type.
 -- TODO: Document after it's rethought and rewritten wrt separating
 -- inventory manangement and items proper.
-module Game.LambdaHack.Item
+module Game.LambdaHack.Common.Item
   ( -- * Teh @Item@ type
     ItemId, Item(..), jkind, buildItem, newItem, viewItem
     -- * Inventory search
@@ -31,14 +31,14 @@ import Data.Typeable
 import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
-import qualified Game.LambdaHack.Color as Color
+import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Effect
-import Game.LambdaHack.Flavour
-import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Msg
-import Game.LambdaHack.Random
+import Game.LambdaHack.Common.Effect
+import Game.LambdaHack.Common.Flavour
+import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Utils.Assert
 
 -- | A unique identifier of an item in the dungeon.

@@ -1,6 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Game time and speed.
-module Game.LambdaHack.Time
+module Game.LambdaHack.Common.Time
   ( Time, timeZero, timeClip, timeTurn
   , timeAdd, timeFit, timeNegate, timeScale
   , timeToDigit

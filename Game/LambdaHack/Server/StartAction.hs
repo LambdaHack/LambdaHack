@@ -10,20 +10,20 @@ import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 
-import Game.LambdaHack.Action
-import Game.LambdaHack.ActorState
-import Game.LambdaHack.AtomicCmd
-import Game.LambdaHack.ClientCmd
+import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.ActorState
+import Game.LambdaHack.Common.AtomicCmd
+import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Faction
-import qualified Game.LambdaHack.Feature as F
-import Game.LambdaHack.Item
-import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Level
-import Game.LambdaHack.Point
-import Game.LambdaHack.Random
+import Game.LambdaHack.Common.Faction
+import qualified Game.LambdaHack.Common.Feature as F
+import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Server.Action hiding (sendUpdateAI, sendUpdateUI)
 import Game.LambdaHack.Server.Config
 import qualified Game.LambdaHack.Server.DungeonGen as DungeonGen
@@ -31,8 +31,8 @@ import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.ServerSem
 import Game.LambdaHack.Server.State
-import Game.LambdaHack.State
-import qualified Game.LambdaHack.Tile as Tile
+import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Common.Tile as Tile
 
 -- | Init connections, clients, debug and perception.
 initConn :: MonadServerConn m

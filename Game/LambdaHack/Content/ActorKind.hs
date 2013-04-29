@@ -7,11 +7,11 @@ import qualified Data.List as L
 import qualified Data.Ord as Ord
 import Data.Text (Text)
 
-import Game.LambdaHack.Ability
-import Game.LambdaHack.Color
-import qualified Game.LambdaHack.Random as Random
-import Game.LambdaHack.Misc
-import Game.LambdaHack.Time
+import Game.LambdaHack.Common.Ability
+import Game.LambdaHack.Common.Color
+import qualified Game.LambdaHack.Common.Random as Random
+import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Time
 
 -- TODO: make all but a few fields optional in some way, so that, a.g.,
 -- a game content with no regeneration does not ever need to mention aregen.

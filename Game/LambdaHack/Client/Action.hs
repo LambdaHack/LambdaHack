@@ -47,9 +47,9 @@ import qualified Data.Monoid as Monoid
 import qualified Data.Text as T
 import System.Time
 
-import Game.LambdaHack.Action
-import Game.LambdaHack.Actor
-import Game.LambdaHack.ActorState
+import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Client.Action.ActionClass
 import Game.LambdaHack.Client.Action.ConfigIO
 import Game.LambdaHack.Client.Action.Frontend (frontendName, startup)
@@ -61,18 +61,18 @@ import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.Draw
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.ClientCmd
+import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Faction
-import qualified Game.LambdaHack.HighScore as HighScore
-import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Level
-import Game.LambdaHack.Msg
-import Game.LambdaHack.Perception
-import Game.LambdaHack.Point
-import Game.LambdaHack.Random
-import Game.LambdaHack.ServerCmd
-import Game.LambdaHack.State
+import Game.LambdaHack.Common.Faction
+import qualified Game.LambdaHack.Common.HighScore as HighScore
+import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Perception
+import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Common.ServerCmd
+import Game.LambdaHack.Common.State
 import Game.LambdaHack.Utils.Assert
 
 -- | Reset the state and resume from the last backup point, i.e., invoke

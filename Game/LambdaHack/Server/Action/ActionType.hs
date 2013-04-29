@@ -11,11 +11,11 @@ import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.State.Strict hiding (State)
 import qualified Data.EnumMap.Strict as EM
 
-import Game.LambdaHack.Action
-import Game.LambdaHack.ClientCmd
+import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Server.Action.ActionClass
 import Game.LambdaHack.Server.State
-import Game.LambdaHack.State
+import Game.LambdaHack.Common.State
 
 data SerState = SerState
   { serState  :: !State        -- ^ current global state

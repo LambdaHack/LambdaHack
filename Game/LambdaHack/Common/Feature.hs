@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | Terrain tile features.
-module Game.LambdaHack.Feature
+module Game.LambdaHack.Common.Feature
   ( Feature(..)
   ) where
 
@@ -8,7 +8,7 @@ import Data.Binary
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
-import Game.LambdaHack.Effect
+import Game.LambdaHack.Common.Effect
 
 -- | All possible terrain tile features, some of them parameterized
 -- or dependent on outside coefficients, e.g., on the tile secrecy value.

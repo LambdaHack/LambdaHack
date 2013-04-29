@@ -10,9 +10,9 @@ module Game.LambdaHack.Server.DungeonGen.AreaRnd
 
 import qualified Data.EnumSet as ES
 
-import Game.LambdaHack.Area
-import Game.LambdaHack.PointXY
-import Game.LambdaHack.Random
+import Game.LambdaHack.Common.Area
+import Game.LambdaHack.Common.PointXY
+import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Utils.Assert
 
 -- Picking random points inside areas

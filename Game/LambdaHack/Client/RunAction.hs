@@ -9,23 +9,23 @@ import qualified Data.EnumSet as ES
 import qualified Data.List as L
 import Data.Maybe
 
-import Game.LambdaHack.Action
-import Game.LambdaHack.Actor
-import Game.LambdaHack.ActorState
+import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Faction
-import qualified Game.LambdaHack.Feature as F
-import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Level
-import Game.LambdaHack.Msg
-import Game.LambdaHack.Perception
-import Game.LambdaHack.Point
-import Game.LambdaHack.PointXY
-import Game.LambdaHack.State
-import qualified Game.LambdaHack.Tile as Tile
+import Game.LambdaHack.Common.Faction
+import qualified Game.LambdaHack.Common.Feature as F
+import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Perception
+import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.PointXY
+import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Vector
+import Game.LambdaHack.Common.Vector
 
 -- | Start running in the given direction and with the given number
 -- of tiles already traversed (usually 0). The first turn of running

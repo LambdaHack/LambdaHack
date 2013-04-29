@@ -11,32 +11,32 @@ import Data.Function
 import qualified Data.List as L
 import Data.Maybe
 
-import Game.LambdaHack.Ability (Ability)
-import qualified Game.LambdaHack.Ability as Ability
-import Game.LambdaHack.Action
-import Game.LambdaHack.Actor
-import Game.LambdaHack.ActorState
+import Game.LambdaHack.Common.Ability (Ability)
+import qualified Game.LambdaHack.Common.Ability as Ability
+import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.Strategy
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
-import qualified Game.LambdaHack.Effect as Effect
-import Game.LambdaHack.Faction
-import qualified Game.LambdaHack.Feature as F
-import Game.LambdaHack.Item
-import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Level
-import Game.LambdaHack.Perception
-import Game.LambdaHack.Point
-import Game.LambdaHack.ServerCmd
-import Game.LambdaHack.State
-import qualified Game.LambdaHack.Tile as Tile
-import Game.LambdaHack.Time
+import qualified Game.LambdaHack.Common.Effect as Effect
+import Game.LambdaHack.Common.Faction
+import qualified Game.LambdaHack.Common.Feature as F
+import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Perception
+import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.ServerCmd
+import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Common.Tile as Tile
+import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.Frequency
-import Game.LambdaHack.Vector
+import Game.LambdaHack.Common.Vector
 
 -- TODO: extress many (all?) functions as MonadActionRO
 

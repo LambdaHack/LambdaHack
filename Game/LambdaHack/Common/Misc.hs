@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | Hacks that haven't found their home yet.
-module Game.LambdaHack.Misc
+module Game.LambdaHack.Common.Misc
   ( normalLevelBound, maxLevelDim, divUp, Freqs, breturn
   , FactionId, LevelId
   ) where

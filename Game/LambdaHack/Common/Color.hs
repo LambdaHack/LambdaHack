@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | Colours and text attributes.
-module Game.LambdaHack.Color
+module Game.LambdaHack.Common.Color
   ( -- * Colours
     Color(..), defBG, defFG, isBright, legalBG, colorToRGB
     -- * Text attributes and the screen

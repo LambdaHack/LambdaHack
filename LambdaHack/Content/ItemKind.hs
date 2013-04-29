@@ -2,12 +2,12 @@
 -- | Weapons and treasure for LambdaHack.
 module Content.ItemKind ( cdefs ) where
 
-import Game.LambdaHack.Color
+import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Content.ItemKind
-import Game.LambdaHack.ContentDef
-import Game.LambdaHack.Effect
-import Game.LambdaHack.Flavour
-import Game.LambdaHack.Random
+import Game.LambdaHack.Common.ContentDef
+import Game.LambdaHack.Common.Effect
+import Game.LambdaHack.Common.Flavour
+import Game.LambdaHack.Common.Random
 
 cdefs :: ContentDef ItemKind
 cdefs = ContentDef

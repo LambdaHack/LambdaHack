@@ -2,17 +2,17 @@
 -- | Abstract syntax of server commands.
 -- See
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
-module Game.LambdaHack.ServerCmd
+module Game.LambdaHack.Common.ServerCmd
   ( CmdSer(..), timedCmdSer, aidCmdSer
   ) where
 
 import Data.Typeable
 
-import Game.LambdaHack.Actor
-import Game.LambdaHack.Item
-import Game.LambdaHack.Level
-import Game.LambdaHack.Point
-import Game.LambdaHack.Vector
+import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.Vector
 
 -- | Abstract syntax of server commands.
 data CmdSer =

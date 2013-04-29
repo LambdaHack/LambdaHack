@@ -8,16 +8,16 @@ module Game.LambdaHack.Server
 
 import System.Environment (getArgs)
 
-import Game.LambdaHack.Action
-import Game.LambdaHack.ClientCmd
-import Game.LambdaHack.Faction
-import qualified Game.LambdaHack.Kind as Kind
+import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.ClientCmd
+import Game.LambdaHack.Common.Faction
+import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Server.Action
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.LoopAction
 import Game.LambdaHack.Server.ServerSem
 import Game.LambdaHack.Server.State
-import Game.LambdaHack.ServerCmd
+import Game.LambdaHack.Common.ServerCmd
 
 -- | The semantics of server commands.
 cmdSerSem :: (MonadAtomic m, MonadServer m) => CmdSer -> m Bool

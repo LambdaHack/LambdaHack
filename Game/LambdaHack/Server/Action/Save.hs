@@ -13,7 +13,7 @@ import System.IO.Unsafe (unsafePerformIO)
 
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.State
-import Game.LambdaHack.State
+import Game.LambdaHack.Common.State
 import Game.LambdaHack.Utils.File
 
 saveLock :: MVar ()

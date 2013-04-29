@@ -13,29 +13,29 @@ import qualified Data.EnumSet as ES
 import Data.Maybe
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Action
-import Game.LambdaHack.Actor
-import Game.LambdaHack.ActorState
-import Game.LambdaHack.AtomicCmd
-import Game.LambdaHack.AtomicPos
-import Game.LambdaHack.AtomicSem
+import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
+import Game.LambdaHack.Common.AtomicCmd
+import Game.LambdaHack.Common.AtomicPos
+import Game.LambdaHack.Common.AtomicSem
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Animation
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.HumanLocal
 import Game.LambdaHack.Client.State
-import qualified Game.LambdaHack.Color as Color
+import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Content.ItemKind
-import qualified Game.LambdaHack.Effect as Effect
-import Game.LambdaHack.Faction
-import Game.LambdaHack.Item
-import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Level
-import Game.LambdaHack.Msg
-import Game.LambdaHack.Perception
-import Game.LambdaHack.Point
-import Game.LambdaHack.State
-import Game.LambdaHack.Time
+import qualified Game.LambdaHack.Common.Effect as Effect
+import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Perception
+import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.State
+import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Utils.Assert
 
 -- * CmdAtomicAI

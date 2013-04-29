@@ -6,7 +6,7 @@ module Game.LambdaHack.Server.Fov.Digital
   ) where
 
 import Game.LambdaHack.Server.Fov.Common
-import Game.LambdaHack.Misc
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Utils.Assert
 
 -- | Calculates the list of tiles, in @Bump@ coordinates, visible from (0, 0),

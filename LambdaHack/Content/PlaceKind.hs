@@ -3,7 +3,7 @@
 module Content.PlaceKind ( cdefs ) where
 
 import Game.LambdaHack.Content.PlaceKind
-import Game.LambdaHack.ContentDef
+import Game.LambdaHack.Common.ContentDef
 
 cdefs :: ContentDef PlaceKind
 cdefs = ContentDef

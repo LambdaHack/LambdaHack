@@ -1,6 +1,6 @@
 -- | Basic operations on 2D vectors represented in an efficient,
 -- but not unique, way.
-module Game.LambdaHack.Vector
+module Game.LambdaHack.Common.Vector
   ( Vector, toVector, toDir, shift, shiftBounded, moves
   , isUnit, euclidDistSq, diagonal, neg, towards, displacement
   , displacePath, shiftPath
@@ -8,11 +8,11 @@ module Game.LambdaHack.Vector
 
 import Data.Binary
 
-import Game.LambdaHack.Area
-import Game.LambdaHack.Point
-import Game.LambdaHack.PointXY
+import Game.LambdaHack.Common.Area
+import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.VectorXY
+import Game.LambdaHack.Common.VectorXY
 
 -- | 2D vectors  represented as offsets in the linear framebuffer
 -- indexed by 'Point'.

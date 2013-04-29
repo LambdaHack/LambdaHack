@@ -3,7 +3,7 @@
 module Content.FactionKind ( cdefs ) where
 
 import Game.LambdaHack.Content.FactionKind
-import Game.LambdaHack.ContentDef
+import Game.LambdaHack.Common.ContentDef
 
 cdefs :: ContentDef FactionKind
 cdefs = ContentDef

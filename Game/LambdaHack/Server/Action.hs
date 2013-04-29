@@ -34,26 +34,26 @@ import qualified System.Random as R
 import System.Directory
 import System.Time
 
-import Game.LambdaHack.Action
-import Game.LambdaHack.Actor
-import Game.LambdaHack.ClientCmd
-import Game.LambdaHack.ServerCmd
+import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ClientCmd
+import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Faction
-import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Level
-import Game.LambdaHack.Msg
-import Game.LambdaHack.Perception
-import Game.LambdaHack.Random
+import Game.LambdaHack.Common.Faction
+import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Perception
+import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Server.Action.ActionClass
 import qualified Game.LambdaHack.Server.Action.ConfigIO as ConfigIO
-import qualified Game.LambdaHack.HighScore as HighScore
+import qualified Game.LambdaHack.Common.HighScore as HighScore
 import qualified Game.LambdaHack.Server.Action.Save as Save
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.State
-import Game.LambdaHack.State
-import qualified Game.LambdaHack.Tile as Tile
+import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.File
 

@@ -32,28 +32,28 @@ import qualified Data.Text as T
 import Data.Version
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Action
-import Game.LambdaHack.Actor
-import Game.LambdaHack.ActorState
+import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Binding
 import qualified Game.LambdaHack.Client.HumanCmd as HumanCmd
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Content.RuleKind
-import qualified Game.LambdaHack.Effect as Effect
-import Game.LambdaHack.Faction
-import qualified Game.LambdaHack.Feature as F
-import Game.LambdaHack.Item
-import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Level
-import Game.LambdaHack.Msg
-import Game.LambdaHack.Perception
-import Game.LambdaHack.Point
-import Game.LambdaHack.State
-import qualified Game.LambdaHack.Tile as Tile
-import Game.LambdaHack.Time
+import qualified Game.LambdaHack.Common.Effect as Effect
+import Game.LambdaHack.Common.Faction
+import qualified Game.LambdaHack.Common.Feature as F
+import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Perception
+import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Common.Tile as Tile
+import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Vector
+import Game.LambdaHack.Common.Vector
 
 default (Text)
 

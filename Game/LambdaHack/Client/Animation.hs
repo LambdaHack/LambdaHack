@@ -16,11 +16,11 @@ import Data.Maybe
 import Data.Monoid
 import Data.Text (Text)
 
-import Game.LambdaHack.Color
-import Game.LambdaHack.Misc
-import Game.LambdaHack.Point
-import Game.LambdaHack.PointXY
-import Game.LambdaHack.Random
+import Game.LambdaHack.Common.Color
+import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.PointXY
+import Game.LambdaHack.Common.Random
 
 -- | The data sufficent to draw a single game screen frame.
 data SingleFrame = SingleFrame

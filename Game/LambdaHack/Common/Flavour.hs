@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 -- | The appearance of in-game items, as communicated to the player.
-module Game.LambdaHack.Flavour
+module Game.LambdaHack.Common.Flavour
   ( -- * The @Flavour@ type
     Flavour
   , -- * Constructors
@@ -15,7 +15,7 @@ import qualified Data.List as L
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
-import Game.LambdaHack.Color
+import Game.LambdaHack.Common.Color
 
 -- TODO: add more variety, as the number of items increases
 -- | The type of item flavours.

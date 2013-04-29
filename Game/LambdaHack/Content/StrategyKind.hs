@@ -5,8 +5,8 @@ module Game.LambdaHack.Content.StrategyKind
 
 import Data.Text (Text)
 
-import Game.LambdaHack.Ability
-import Game.LambdaHack.Misc
+import Game.LambdaHack.Common.Ability
+import Game.LambdaHack.Common.Misc
 
 -- | Strategy properties that are fixed for a given kind of strategies.
 data StrategyKind = StrategyKind

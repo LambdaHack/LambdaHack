@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, OverloadedStrings, RankNTypes,
              TypeFamilies #-}
 -- | General content types and operations.
-module Game.LambdaHack.Kind
+module Game.LambdaHack.Common.Kind
   ( -- * General content types
     Id, sentinelId, Speedup(..), Ops(..), COps(..), createOps, stdRuleset
     -- * Arrays of content identifiers
@@ -26,10 +26,10 @@ import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.StrategyKind
 import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.ContentDef
-import Game.LambdaHack.Misc
-import Game.LambdaHack.Msg
-import Game.LambdaHack.Random
+import Game.LambdaHack.Common.ContentDef
+import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.Frequency
 

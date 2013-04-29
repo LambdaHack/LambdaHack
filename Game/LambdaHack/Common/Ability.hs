@@ -1,5 +1,5 @@
 -- | AI strategy abilities.
-module Game.LambdaHack.Ability
+module Game.LambdaHack.Common.Ability
   ( Ability(..)
   ) where
 

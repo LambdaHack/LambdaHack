@@ -2,7 +2,7 @@
 -- | Semantics of atomic commands shared by client and server.
 -- See
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
-module Game.LambdaHack.AtomicSem
+module Game.LambdaHack.Common.AtomicSem
   ( cmdAtomicSem
   , posOfAid, posOfContainer
   ) where
@@ -12,24 +12,24 @@ import qualified Data.EnumMap.Strict as EM
 import Data.List
 import Data.Maybe
 
-import Game.LambdaHack.Action
-import Game.LambdaHack.Actor
-import Game.LambdaHack.ActorState
-import Game.LambdaHack.AtomicCmd
-import qualified Game.LambdaHack.Color as Color
+import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
+import Game.LambdaHack.Common.AtomicCmd
+import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind as TileKind
-import Game.LambdaHack.Faction
-import Game.LambdaHack.Item
-import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Level
-import Game.LambdaHack.Perception
-import Game.LambdaHack.Point
-import Game.LambdaHack.State
-import qualified Game.LambdaHack.Tile as Tile
-import Game.LambdaHack.Time
+import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Perception
+import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Common.Tile as Tile
+import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Vector
+import Game.LambdaHack.Common.Vector
 
 cmdAtomicSem :: MonadAction m => CmdAtomic -> m ()
 cmdAtomicSem cmd = case cmd of

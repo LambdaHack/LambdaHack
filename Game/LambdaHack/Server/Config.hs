@@ -7,7 +7,7 @@ import Control.DeepSeq
 import Data.Binary
 import Data.Text (Text)
 
-import Game.LambdaHack.Msg ()
+import Game.LambdaHack.Common.Msg ()
 import Game.LambdaHack.Server.Fov
 
 -- | Fully typed contents of the rules config file. This config

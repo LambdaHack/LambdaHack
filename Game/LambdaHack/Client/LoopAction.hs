@@ -6,13 +6,13 @@ module Game.LambdaHack.Client.LoopAction (loopAI, loopUI) where
 import Control.Monad
 import qualified Data.Text as T
 
-import Game.LambdaHack.Action
-import Game.LambdaHack.AtomicCmd
+import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.ClientCmd
-import Game.LambdaHack.Msg
-import Game.LambdaHack.State
+import Game.LambdaHack.Common.ClientCmd
+import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.State
 import Game.LambdaHack.Utils.Assert
 
 initCli :: MonadClient m => (State -> m ()) -> m (Either Msg Msg)

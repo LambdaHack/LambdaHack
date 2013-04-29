@@ -11,23 +11,23 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.List as L
 
-import Game.LambdaHack.Actor
-import Game.LambdaHack.ActorState
+import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.Faction
-import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Level
-import Game.LambdaHack.Perception
-import Game.LambdaHack.Point
+import Game.LambdaHack.Common.Faction
+import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Perception
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Server.Fov.Common
 import qualified Game.LambdaHack.Server.Fov.Digital as Digital
 import qualified Game.LambdaHack.Server.Fov.Permissive as Permissive
 import qualified Game.LambdaHack.Server.Fov.Shadow as Shadow
-import Game.LambdaHack.State
-import qualified Game.LambdaHack.Tile as Tile
-import Game.LambdaHack.Vector
-import Game.LambdaHack.VectorXY
+import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Common.Tile as Tile
+import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Common.VectorXY
 
 newtype PerceptionReachable = PerceptionReachable
   { preachable :: ES.EnumSet Point }

@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, OverloadedStrings #-}
 -- | Actors perceiving other actors and the dungeon level.
-module Game.LambdaHack.Perception
+module Game.LambdaHack.Common.Perception
   ( Perception(..), PerceptionVisible(..), PerActor
   , totalVisible, smellVisible
   , actorSeesLoc, nullPer, addPer, diffPer, smellFromActors
@@ -12,14 +12,14 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import GHC.Generics (Generic)
 
-import Game.LambdaHack.Actor
-import Game.LambdaHack.ActorState
+import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Faction
-import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Level
-import Game.LambdaHack.Point
-import Game.LambdaHack.State
+import Game.LambdaHack.Common.Faction
+import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.State
 
 -- TOOD: if really needed, optimize by representing as a set of intervals.
 newtype PerceptionVisible = PerceptionVisible

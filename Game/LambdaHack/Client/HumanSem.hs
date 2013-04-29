@@ -10,22 +10,22 @@ import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Action
-import Game.LambdaHack.Actor
-import Game.LambdaHack.ActorState
+import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.HumanCmd
 import Game.LambdaHack.Client.HumanGlobal
 import Game.LambdaHack.Client.HumanLocal
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Faction
-import Game.LambdaHack.Level
-import Game.LambdaHack.Msg
-import Game.LambdaHack.ServerCmd
-import Game.LambdaHack.State
+import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.ServerCmd
+import Game.LambdaHack.Common.State
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.Vector
-import Game.LambdaHack.VectorXY
+import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Common.VectorXY
 
 -- | The semantics of human player commands in terms of the @Action@ monad.
 -- Decides if the action takes time and what action to perform.

@@ -2,12 +2,12 @@
 -- | Monsters and heroes for LambdaHack.
 module Content.ActorKind ( cdefs ) where
 
-import Game.LambdaHack.Ability
-import Game.LambdaHack.Color
+import Game.LambdaHack.Common.Ability
+import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.ContentDef
-import Game.LambdaHack.Random
-import Game.LambdaHack.Time
+import Game.LambdaHack.Common.ContentDef
+import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Common.Time
 
 cdefs :: ContentDef ActorKind
 cdefs = ContentDef

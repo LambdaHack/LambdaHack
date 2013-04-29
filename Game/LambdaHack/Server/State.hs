@@ -11,10 +11,10 @@ import qualified Data.HashMap.Strict as HM
 import Data.Typeable
 import qualified System.Random as R
 
-import Game.LambdaHack.Actor
-import Game.LambdaHack.AtomicCmd
-import Game.LambdaHack.Item
-import Game.LambdaHack.Perception
+import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.AtomicCmd
+import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.Fov
 

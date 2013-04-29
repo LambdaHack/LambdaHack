@@ -7,9 +7,9 @@ import qualified Paths_LambdaHack as Self (getDataFileName, version)
 
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.ContentDef
-import qualified Game.LambdaHack.Feature as F
-import Game.LambdaHack.Vector
+import Game.LambdaHack.Common.ContentDef
+import qualified Game.LambdaHack.Common.Feature as F
+import Game.LambdaHack.Common.Vector
 import Multiline
 
 cdefs :: ContentDef RuleKind

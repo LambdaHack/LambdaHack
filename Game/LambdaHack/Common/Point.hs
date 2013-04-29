@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
 -- | Basic operations on 2D points represented as linear offsets.
-module Game.LambdaHack.Point
+module Game.LambdaHack.Common.Point
   ( Point, toPoint, showPoint
   , origin, chessDist, adjacent, vicinity, vicinityCardinal
   , inside, displacementXYZ, bla
@@ -13,11 +13,11 @@ import Data.Text (Text)
 import Data.Typeable
 import qualified System.Random as R
 
-import Game.LambdaHack.Area
-import Game.LambdaHack.Msg
-import Game.LambdaHack.PointXY
+import Game.LambdaHack.Common.Area
+import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Utils.Assert
-import Game.LambdaHack.VectorXY
+import Game.LambdaHack.Common.VectorXY
 
 -- | The type of positions on the 2D level map, heavily optimized.
 --

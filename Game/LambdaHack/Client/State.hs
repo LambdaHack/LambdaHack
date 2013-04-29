@@ -12,24 +12,24 @@ import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 import Data.Typeable
-import Game.LambdaHack.Vector
+import Game.LambdaHack.Common.Vector
 import qualified NLP.Miniutter.English as MU
 import qualified System.Random as R
 import System.Time
 
-import Game.LambdaHack.Actor
-import Game.LambdaHack.ActorState
-import Game.LambdaHack.AtomicCmd
+import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
+import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Client.Animation
 import Game.LambdaHack.Client.Config
 import qualified Game.LambdaHack.Client.Key as K
-import Game.LambdaHack.Faction
-import Game.LambdaHack.Item
-import Game.LambdaHack.Level
-import Game.LambdaHack.Msg
-import Game.LambdaHack.Perception
-import Game.LambdaHack.Point
-import Game.LambdaHack.State
+import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Perception
+import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.State
 import Game.LambdaHack.Utils.Assert
 
 -- | Client state, belonging to a single faction.

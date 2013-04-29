@@ -12,7 +12,7 @@
 --
 -- See
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
-module Game.LambdaHack.AtomicCmd
+module Game.LambdaHack.Common.AtomicCmd
   ( Atomic(..), CmdAtomic(..), SfxAtomic(..), HitAtomic(..)
   , undoCmdAtomic, undoSfxAtomic, undoAtomic
   ) where
@@ -20,22 +20,22 @@ module Game.LambdaHack.AtomicCmd
 import Data.Binary
 import GHC.Generics (Generic)
 
-import Game.LambdaHack.Actor
-import qualified Game.LambdaHack.Color as Color
+import Game.LambdaHack.Common.Actor
+import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Content.ItemKind as ItemKind
 import Game.LambdaHack.Content.TileKind as TileKind
-import qualified Game.LambdaHack.Effect as Effect
-import Game.LambdaHack.Faction
-import qualified Game.LambdaHack.Feature as F
-import Game.LambdaHack.Item
-import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Level
-import Game.LambdaHack.Msg
-import Game.LambdaHack.Perception
-import Game.LambdaHack.Point
-import Game.LambdaHack.State
-import Game.LambdaHack.Time
-import Game.LambdaHack.Vector
+import qualified Game.LambdaHack.Common.Effect as Effect
+import Game.LambdaHack.Common.Faction
+import qualified Game.LambdaHack.Common.Feature as F
+import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Perception
+import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.State
+import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Common.Vector
 
 data Atomic =
     CmdAtomic CmdAtomic

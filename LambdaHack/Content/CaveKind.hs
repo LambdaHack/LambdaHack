@@ -5,9 +5,9 @@ module Content.CaveKind ( cdefs ) where
 import Data.Ratio
 
 import Game.LambdaHack.Content.CaveKind
-import Game.LambdaHack.ContentDef
-import Game.LambdaHack.Misc
-import Game.LambdaHack.Random as Random
+import Game.LambdaHack.Common.ContentDef
+import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Random as Random
 
 cdefs :: ContentDef CaveKind
 cdefs = ContentDef

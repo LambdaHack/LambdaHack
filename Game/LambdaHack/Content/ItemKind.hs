@@ -7,10 +7,10 @@ module Game.LambdaHack.Content.ItemKind
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Effect
-import Game.LambdaHack.Flavour
-import Game.LambdaHack.Misc
-import Game.LambdaHack.Random
+import Game.LambdaHack.Common.Effect
+import Game.LambdaHack.Common.Flavour
+import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Random
 
 -- | Item properties that are fixed for a given kind of items.
 data ItemKind = ItemKind

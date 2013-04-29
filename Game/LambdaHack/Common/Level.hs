@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveDataTypeable, DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | Inhabited dungeon levels and the operations to query and change them
 -- as the game progresses.
-module Game.LambdaHack.Level
+module Game.LambdaHack.Common.Level
   ( -- * Dungeon
     LevelId, Dungeon, ascendInBranch
     -- * The @Level@ type and its components
@@ -22,17 +22,17 @@ import Data.Text (Text)
 import Data.Typeable
 import GHC.Generics (Generic)
 
-import Game.LambdaHack.Actor
+import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
-import qualified Game.LambdaHack.Feature as F
-import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Misc
-import Game.LambdaHack.Point
-import Game.LambdaHack.PointXY
-import Game.LambdaHack.Random
-import Game.LambdaHack.Tile
-import Game.LambdaHack.Time
+import qualified Game.LambdaHack.Common.Feature as F
+import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.PointXY
+import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Common.Tile
+import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Utils.Assert
 
 -- | The complete dungeon is a map from level names to levels.

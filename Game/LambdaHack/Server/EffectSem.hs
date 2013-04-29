@@ -18,24 +18,24 @@ import Data.Maybe
 import Data.Ratio ((%))
 import Data.Text (Text)
 
-import Game.LambdaHack.Action
-import Game.LambdaHack.Actor
-import Game.LambdaHack.ActorState
-import Game.LambdaHack.AtomicCmd
+import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
+import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
-import qualified Game.LambdaHack.Effect as Effect
-import Game.LambdaHack.Faction
-import Game.LambdaHack.Item
-import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Level
-import Game.LambdaHack.Msg
-import Game.LambdaHack.Point
-import Game.LambdaHack.Random
+import qualified Game.LambdaHack.Common.Effect as Effect
+import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Server.Action
 import Game.LambdaHack.Server.State
-import Game.LambdaHack.State
-import Game.LambdaHack.Time
+import Game.LambdaHack.Common.State
+import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.Frequency
 

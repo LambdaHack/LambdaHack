@@ -1,10 +1,10 @@
 -- | Basic cartesian geometry operations on 2D vectors.
-module Game.LambdaHack.VectorXY
+module Game.LambdaHack.Common.VectorXY
   ( VectorXY(..), shiftXY, movesXY, movesCardinalXY
   , chessDistXY, euclidDistSqXY, negXY
   ) where
 
-import Game.LambdaHack.PointXY
+import Game.LambdaHack.Common.PointXY
 
 -- | 2D vectors in cartesian representation.
 newtype VectorXY = VectorXY (X, Y)

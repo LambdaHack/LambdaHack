@@ -7,7 +7,7 @@ import qualified Data.List as L
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import Game.LambdaHack.Misc
+import Game.LambdaHack.Common.Misc
 
 -- | Parameters for the generation of small areas within a dungeon level.
 data PlaceKind = PlaceKind

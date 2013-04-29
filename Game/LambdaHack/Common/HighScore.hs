@@ -1,6 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, OverloadedStrings #-}
 -- | High score table operations.
-module Game.LambdaHack.HighScore
+module Game.LambdaHack.Common.HighScore
   ( ScoreTable, empty, register, slideshow
   ) where
 
@@ -12,10 +12,10 @@ import qualified NLP.Miniutter.English as MU
 import System.Time
 import Text.Printf
 
-import Game.LambdaHack.Faction
-import Game.LambdaHack.Misc
-import Game.LambdaHack.Msg
-import Game.LambdaHack.Time
+import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Time
 
 -- | A single score record. Records are ordered in the highscore table,
 -- from the best to the worst, in lexicographic ordering wrt the fields below.

@@ -15,8 +15,8 @@ import System.IO.Unsafe (unsafePerformIO)
 
 import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Msg
-import Game.LambdaHack.State
+import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.State
 import Game.LambdaHack.Utils.File
 
 _saveLock :: MVar ()

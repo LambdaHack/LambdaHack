@@ -12,19 +12,19 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Maybe
 
-import Game.LambdaHack.Action
-import Game.LambdaHack.ActorState
-import Game.LambdaHack.AtomicCmd
-import Game.LambdaHack.AtomicPos
-import Game.LambdaHack.AtomicSem
-import Game.LambdaHack.ClientCmd
-import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Level
-import Game.LambdaHack.Perception
+import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.ActorState
+import Game.LambdaHack.Common.AtomicCmd
+import Game.LambdaHack.Common.AtomicPos
+import Game.LambdaHack.Common.AtomicSem
+import Game.LambdaHack.Common.ClientCmd
+import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Server.Action
 import Game.LambdaHack.Server.State
-import Game.LambdaHack.State
-import qualified Game.LambdaHack.Tile as Tile
+import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Utils.Assert
 
 storeUndo :: MonadServer m => Atomic -> m ()

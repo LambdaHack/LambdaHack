@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | Factions taking part in the game: e.g., two human players controlling
 -- the hero faction battling the monster and the animal factions.
-module Game.LambdaHack.Faction
+module Game.LambdaHack.Common.Faction
   ( FactionId, FactionDict, Faction(..), Diplomacy(..), Status(..)
   , isHumanFact, usesAIFact, isSpawningFact, isAtWar, isAllied
   ) where
@@ -12,11 +12,11 @@ import Data.Maybe
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
-import Game.LambdaHack.Actor
+import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.StrategyKind
-import qualified Game.LambdaHack.Kind as Kind
-import Game.LambdaHack.Misc
+import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Misc
 
 -- | All factions in the game, indexed by faction identifier.
 type FactionDict = EM.EnumMap FactionId Faction
