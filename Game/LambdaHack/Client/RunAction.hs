@@ -9,11 +9,11 @@ import qualified Data.EnumSet as ES
 import qualified Data.List as L
 import Data.Maybe
 
+import Game.LambdaHack.Client.Action
+import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Client.Action
-import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -24,8 +24,8 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Utils.Assert
 
 -- | Start running in the given direction and with the given number
 -- of tiles already traversed (usually 0). The first turn of running
@@ -39,9 +39,10 @@ runDir leader (dir, dist) = do
   lvl <- getsLevel (blid b) id
   stgtMode <- getsClient stgtMode
   assert (isNothing stgtMode `blame` (dir, dist, stgtMode, "not off")) $ do
-    let accessibleDir loc d = accessible cops lvl loc (loc `shift` d)
-        -- Do not count distance if we just open a door.
-        distNew = if accessibleDir (bpos b) dir then dist + 1 else dist
+    let -- Do not count distance if we just open a door.
+        distNew = if accessibleDir cops lvl (bpos b) dir
+                  then dist + 1
+                  else dist
     return (dir, distNew)
 
 -- | Human running mode, determined from the nearby cave layout.
@@ -171,7 +172,7 @@ continueRunDir leader (dirLast, distLast) = do
       posHasItems loc = not $ EM.null $ lvl `atI` loc
       locLast = if distLast == 0 then posHere else posHere `shift` neg dirLast
       tryRunDist (dir, distNew)
-        | accessibleDir posHere dir =
+        | accessibleDir cops lvl posHere dir =
           -- TODO: perhaps @abortWith report2?
           maybe abort (runDir leader) $
             runDisturbance locLast distLast sreport hs ms per posHere
@@ -179,10 +180,9 @@ continueRunDir leader (dirLast, distLast) = do
         | otherwise = abort  -- do not open doors in the middle of a run
       tryRun dir = tryRunDist (dir, distLast)
       tryRunAndStop dir = tryRunDist (dir, 1000)
-      accessibleDir loc dir = accessible cops lvl loc (loc `shift` dir)
-      openableDir loc dir   = Tile.hasFeature cotile F.Openable
-                                (lvl `at` (loc `shift` dir))
-      dirEnterable loc d = accessibleDir loc d || openableDir loc d
+      openableDir loc dir = Tile.hasFeature cotile F.Openable
+                              (lvl `at` (loc `shift` dir))
+      dirEnterable loc d = accessibleDir cops lvl loc d || openableDir loc d
   case runMode posHere dirLast dirEnterable lxsize of
     RunDeadEnd -> abort                   -- we don't run backwards
     RunOpen    -> tryRun dirLast          -- run forward into the open space

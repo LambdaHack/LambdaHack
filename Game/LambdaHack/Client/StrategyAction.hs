@@ -183,7 +183,7 @@ track cops actor glo =
   strat = case bpath of
     Just [] -> assert `failure` (actor, b, glo)
     -- TODO: instead let server do this in MoveSer, abort and handle in loop:
-    Just (d : _) | not $ accessible cops lvl bpos (shift bpos d) -> clearPath
+    Just (d : _) | not $ accessibleDir cops lvl bpos d -> clearPath
     Just lv ->
       returN "SetPathSer; MoveSer" $ SetPathSer actor lv
     Nothing -> reject
@@ -217,13 +217,16 @@ rangedFreq :: Kind.COps -> ActorId -> Discovery -> State -> Point
            -> Frequency CmdSer
 rangedFreq cops actor disco glo fpos =
   toFreq "throwFreq" $
-    if not foesAdj
-       && asight mk
-       && accessible cops lvl bpos pos1    -- first accessible
-       && isNothing (posToActor pos1 blid glo)  -- no friends on first
-    then throwFreq bbag 3 (actorContainer actor binv)
-         ++ throwFreq tis 6 (const $ CFloor blid bpos)
-    else []
+    case bl of
+      Just (pos1 : _) ->
+        if not foesAdj
+           && asight mk
+           && accessible cops lvl bpos pos1         -- first accessible
+           && isNothing (posToActor pos1 blid glo)  -- no friends on first
+        then throwFreq bbag 3 (actorContainer actor binv)
+             ++ throwFreq tis 6 (const $ CFloor blid bpos)
+        else []
+      _ -> []
  where
   Kind.COps{ coactor=Kind.Ops{okind}
            , coitem=Kind.Ops{okind=iokind}
@@ -241,10 +244,6 @@ rangedFreq cops actor disco glo fpos =
   -- Also don't throw if target not in range.
   eps = 0
   bl = bla lxsize lysize eps bpos fpos  -- TODO:make an arg of projectGroupItem
-  pos1 = case bl of
-    Nothing -> bpos  -- TODO
-    Just [] -> bpos  -- TODO
-    Just (lbl:_) -> lbl
   throwFreq bag multi container =
     [ (benefit * multi,
        ProjectSer actor fpos eps iid (container iid))

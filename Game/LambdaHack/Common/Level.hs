@@ -10,13 +10,13 @@ module Game.LambdaHack.Common.Level
     -- * Level update
   , updatePrio, updateSmell, updateFloor, updateTile
     -- * Level query
-  , at, atI, accessible, findPos, findPosTry, hideTile
+  , at, atI, accessible, accessibleDir, findPos, findPosTry, hideTile
     -- * Item containers
   , Container(..)
  ) where
 
 import Data.Binary
-import Data.Bits
+import qualified Data.Bits as Bits
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.List as L
 import Data.Text (Text)
@@ -32,6 +32,7 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Tile
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Utils.Assert
@@ -145,13 +146,20 @@ atI Level{lfloor} p = EM.findWithDefault EM.empty p lfloor
 
 -- | Check whether one position is accessible from another,
 -- using the formula from the standard ruleset.
+-- Precondition: the two positions are next to each other.
 accessible :: Kind.COps -> Level -> Point -> Point -> Bool
-accessible Kind.COps{ cotile=Kind.Ops{okind=okind}, corule}
+accessible Kind.COps{cotile=Kind.Ops{okind=okind}, corule}
            lvl@Level{lxsize} spos tpos =
+  assert (chessDist lxsize spos tpos == 1) $
   let check = raccessible $ Kind.stdRuleset corule
       src = okind $ lvl `at` spos
       tgt = okind $ lvl `at` tpos
   in check lxsize spos src tpos tgt
+
+-- | Check whether actors can move from a position along a unit vector,
+-- using the formula from the standard ruleset.
+accessibleDir :: Kind.COps -> Level -> Point -> Vector -> Bool
+accessibleDir cops lvl spos dir = accessible cops lvl spos $ spos `shift` dir
 
 -- | Find a random position on the map satisfying a predicate.
 findPos :: TileMap -> (Point -> Kind.Id TileKind -> Bool) -> Rnd Point
@@ -191,7 +199,7 @@ hideTile cotile p lvl =
   let t = lvl `at` p
       ht = Tile.hiddenAs cotile t  -- TODO; tabulate with Speedup?
   in if ht == t
-        || (lsecret lvl `rotateR` fromEnum p `xor` fromEnum p)
+        || (lsecret lvl `Bits.rotateR` fromEnum p `Bits.xor` fromEnum p)
            `mod` lhidden lvl == 0
      then ht
      else t

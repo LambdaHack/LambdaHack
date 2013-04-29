@@ -11,8 +11,8 @@ import Data.Binary
 import Game.LambdaHack.Common.Area
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.PointXY
-import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Common.VectorXY
+import Game.LambdaHack.Utils.Assert
 
 -- | 2D vectors  represented as offsets in the linear framebuffer
 -- indexed by 'Point'.
@@ -92,7 +92,8 @@ euclidDistSq lxsize dir0 dir1
   euclidDistSqXY $ VectorXY (x1 - x0, y1 - y0)
 
 -- | Checks whether a unit vector is a diagonal direction,
--- as opposed to cardinal.
+-- as opposed to cardinal. If the vector is not unit,
+-- it reject horizontal and vertical vectors.
 diagonal :: X -> Vector -> Bool
 diagonal lxsize dir | VectorXY (x, y) <- fromDir lxsize dir =
   x * y /= 0

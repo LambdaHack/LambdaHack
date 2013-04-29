@@ -5,11 +5,11 @@ module Content.RuleKind ( cdefs ) where
 -- Cabal
 import qualified Paths_LambdaHack as Self (getDataFileName, version)
 
-import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Common.ContentDef
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.Content.TileKind
 import Multiline
 
 cdefs :: ContentDef RuleKind
@@ -35,7 +35,7 @@ standard = RuleKind
       F.Walkable `elem` tfeature tgt
       && not ((F.Closable `elem` tfeature src ||
                F.Closable `elem` tfeature tgt)
-              && diagonal lxsize (towards lxsize spos tpos))
+              && diagonal lxsize (displacement spos tpos))
   , rtitle         = "LambdaHack"
   , rpathsDataFile = Self.getDataFileName
   , rpathsVersion  = Self.version
