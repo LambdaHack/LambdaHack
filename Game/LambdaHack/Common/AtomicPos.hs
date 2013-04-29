@@ -224,7 +224,6 @@ loudCmdAtomic fid cmd = case cmd of
   DestroyActorA _ body _ ->
     -- Death of a party member does not need to be heard, because it's seen.
     not $ fid == bfaction body || bproj body
-  AlterTileA{} -> True
   _ -> False
 
 seenAtomicCli :: Bool -> FactionId -> Perception -> PosAtomic -> Bool
