@@ -45,7 +45,7 @@ pillar = TileKind
   }
 wallV = TileKind
   { tsymbol  = '|'
-  , tname    = "wall"
+  , tname    = "granite wall"
   , tfreq    = [("litLegend", 100), ("darkLegend", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
@@ -53,7 +53,7 @@ wallV = TileKind
   }
 wallSuspectV = TileKind
   { tsymbol  = '|'
-  , tname    = "suspect wall"
+  , tname    = "moldy wall"
   , tfreq    = [("suspect vertical wall", 1)]
   , tcolor   = BrCyan
   , tcolor2  = defFG
@@ -84,7 +84,7 @@ doorOpenV = TileKind
   }
 wallH = TileKind
   { tsymbol  = '-'
-  , tname    = "wall"
+  , tname    = "granite wall"
   , tfreq    = [("litLegend", 100), ("darkLegend", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
@@ -92,7 +92,7 @@ wallH = TileKind
   }
 wallSuspectH = TileKind
   { tsymbol  = '-'
-  , tname    = "suspect wall"
+  , tname    = "scratched wall"
   , tfreq    = [("suspect horizontal wall", 1)]
   , tcolor   = BrCyan
   , tcolor2  = defFG
