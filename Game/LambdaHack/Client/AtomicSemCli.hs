@@ -456,27 +456,37 @@ drawSfxAtomicUI verbose sfx = case sfx of
     aVerbMU aid $ "shun"  -- TODO: shuns stairs down
   EffectD aid effect -> do
     b <- getsState $ getActorBody aid
-    dies <- if bhp b <= 0 && not (bproj b) || bhp b < 0
-      then case effect of
-        Effect.Hurt{} -> do
-          Kind.COps{coactor} <- getsState scops
-          -- We assume the Wound is the cause of incapacitation.
-          side <- getsClient sside
-          if bfaction b == side then do
-            let verbDie = if bproj b then "drop down" else "fall down"
-                msgDie = makeSentence
-                     [MU.SubjectVerbSg (partActor coactor b) verbDie]
-            msgAdd msgDie
-            animDie <- animate $ deathBody $ bpos b
-            when (not (bproj b)) $ displayFramesPush animDie
-          else do
-            let verbD = if bproj b then "break up" else "collapse"
-            aVerbMU aid verbD
-          return True
-        _ -> return False
-      else return False
-    when (not dies) $
-      case effect of
+    if bhp b <= 0 && not (bproj b) || bhp b < 0 then do
+      Kind.COps{coactor} <- getsState scops
+      -- We assume the Wound is the cause of incapacitation.
+      side <- getsClient sside
+      if bfaction b == side then do
+        let firstFall = if bproj b then "drop down" else "fall down"
+            verbDie =
+              case effect of
+                Effect.Hurt _ p | p < 0 -> do
+                  if bhp b <= p  -- was already dead previous turn
+                  then if bproj b then "be stomped flat"
+                                  else "be ground into the floor"
+                  else firstFall
+                _ -> "be damaged even more"
+            msgDie = makeSentence
+                       [MU.SubjectVerbSg (partActor coactor b) verbDie]
+        msgAdd msgDie
+        animDie <- animate $ deathBody $ bpos b
+        when (not (bproj b)) $ displayFramesPush animDie
+      else do
+        let firstFall = if bproj b then "break up" else "collapse"
+            verbDie =
+              case effect of
+                Effect.Hurt _ p | p < 0 -> do
+                  if bhp b <= p  -- was already dead previous turn
+                  then if bproj b then "be shattered into little pieces"
+                                  else "be reduced to a blody pulp"
+                  else firstFall
+                _ -> "be ruined further"
+        aVerbMU aid verbDie
+    else case effect of
         Effect.NoEffect -> msgAdd "Nothing happens."
         Effect.Heal p | p > 0 -> do
           aVerbMU aid "feel better"

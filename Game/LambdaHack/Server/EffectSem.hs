@@ -22,8 +22,6 @@ import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.AtomicCmd
-import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Content.FactionKind
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
@@ -32,10 +30,12 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Server.Action
-import Game.LambdaHack.Server.State
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.Content.FactionKind
+import Game.LambdaHack.Server.Action
+import Game.LambdaHack.Server.State
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.Frequency
 
@@ -125,7 +125,7 @@ effectWound nDm power source target = do
       if source == target then
         execSfxAtomic $ EffectD target $ Effect.Heal deltaHP
       else
-        execSfxAtomic $ EffectD target $ Effect.Hurt nDm power
+        execSfxAtomic $ EffectD target $ Effect.Hurt nDm deltaHP{-hack-}
       return True
 
 -- ** Mindprobe

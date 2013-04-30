@@ -80,7 +80,7 @@ reacquireTgt cops actor btarget glo per factionAbilities =
   reacquire tgt =
     case tgt of
       Just (TEnemy a ll) | focused
-                    && memActor a blid glo ->  -- present on this level
+                           && memActor a blid glo ->  -- present on this level
         let l = bpos $ getActorBody a glo
         in if enemyVisible l           -- prefer visible foes
            then returN "TEnemy" $ Just $ TEnemy a l
@@ -89,11 +89,11 @@ reacquireTgt cops actor btarget glo per factionAbilities =
                 then returN "last known" $ Just $ TPos ll
                                        -- chase the last known pos
                 else closest
-      Just TEnemy{} -> closest            -- foe is gone and we forget
+      Just TEnemy{} -> closest         -- foe is gone and we forget
       Just (TPos pos) | me == pos -> closest  -- already reached the pos
       Just TPos{} | null visibleFoes -> returN "TPos" tgt
                                        -- nothing visible, go to pos
-      Just TPos{} -> closest                -- prefer visible foes
+      Just TPos{} -> closest           -- prefer visible foes
       Nothing -> closest
   fact = sfaction glo EM.! bfaction
   foes = actorNotProjAssocs (isAtWar fact) blid glo

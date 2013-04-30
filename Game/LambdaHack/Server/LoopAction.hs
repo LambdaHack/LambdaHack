@@ -196,7 +196,7 @@ handleActors cmdSerSem arena = do
       assert (bfaction bPre == side `blame` (bPre, side)) skip
       notAborted <-
         if bhp bPre <= 0
-        then execFailure side "You are almost dead; you can't do that."
+        then execFailure side "You strain, fumble and faint from the exertion."
         else cmdSerSem cmdS
       nH <- nHumans
       -- TODO: do not fade out if all other are running (so the previous
