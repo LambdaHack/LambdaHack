@@ -194,7 +194,10 @@ handleActors cmdSerSem arena = do
       bPre <- getsState $ getActorBody leaderNew
       -- Check if the client cheats, trying to move other faction actors.
       assert (bfaction bPre == side `blame` (bPre, side)) skip
-      notAborted <- cmdSerSem cmdS
+      notAborted <-
+        if bhp bPre <= 0
+        then execFailure side "You are almost dead; you can't do that."
+        else cmdSerSem cmdS
       nH <- nHumans
       -- TODO: do not fade out if all other are running (so the previous
       -- move was of the same actor) or if 2 moves in a row of a fast actor
