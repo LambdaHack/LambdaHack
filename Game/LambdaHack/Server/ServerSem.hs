@@ -73,8 +73,9 @@ broadcastSfxAtomic fcmd = do
 -- is authorized to check if a move is legal and it needs full context
 -- for that, e.g., the initial actor position to check if melee attack
 -- does not try to reach to a distant tile.
-moveSer :: (MonadAtomic m, MonadServer m) => ActorId -> Vector -> m Bool
-moveSer aid dir = do
+moveSer :: (MonadAtomic m, MonadServer m)
+        => ActorId -> Vector -> Bool -> m Bool
+moveSer aid dir exploration = do
   cops <- getsState scops
   sm <- getsState $ getActorBody aid
   lvl <- getsLevel (blid sm) id
@@ -93,8 +94,8 @@ moveSer aid dir = do
           execCmdAtomic $ MoveActorA aid spos tpos
           addSmell aid
           return True
-      | otherwise ->  -- try to open a door, even if not visible
-          actorOpenDoor aid dir
+      | otherwise ->  -- try to open a door or explore a possible door
+          actorOpenDoor aid dir exploration
 
 -- TODO: let only some actors/items leave smell, e.g., a Smelly Hide Armour.
 -- | Add a smell trace for the actor to the level. For, all and only
@@ -164,31 +165,29 @@ actorAttackActor source target = do
 
 -- TODO: bumpTile tpos F.Openable
 -- | An actor opens a door.
-actorOpenDoor :: (MonadAtomic m, MonadServer m) => ActorId -> Vector -> m Bool
-actorOpenDoor actor dir = do
-  Kind.COps{cotile = cotile@Kind.Ops{oname}} <- getsState scops
+actorOpenDoor :: (MonadAtomic m, MonadServer m)
+              => ActorId -> Vector -> Bool -> m Bool
+actorOpenDoor actor dir exploration = do
+  Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody actor
   let dpos = shift (bpos body) dir  -- the position we act upon
       arena = blid body
   lvl <- getsLevel arena id
-  -- Search the tile.
-  let t = lvl `at` dpos
-      clientTile = hideTile cotile dpos lvl  -- TODO: use actor's search bonus
-      potentiallySearchable = t /= clientTile
-  when potentiallySearchable $
-    execCmdAtomic $ SearchTileA arena dpos clientTile t
-  -- Actually open the door.
+  let serverTile = lvl `at` dpos
+      freshClientTile = hideTile cotile dpos lvl
+  t <- if exploration && serverTile /= freshClientTile then do
+         -- Search the tile.
+         execCmdAtomic $ SearchTileA arena dpos freshClientTile serverTile
+         return serverTile  -- found
+       else return freshClientTile  -- not searched
+  -- Try to open the door.
   if Tile.hasFeature cotile F.Openable t
     then triggerSer actor dpos
-    else if potentiallySearchable then do
-           let msg = makeSentence
-                 [ "the", MU.SubjectVerbSg (MU.Text $ oname t) "look"
-                 , "mildly suspect, but can't be opened" ]
-           execSfxAtomic $ FailureD (bfaction body) msg
-           return True  -- searching costs
-         else if Tile.hasFeature cotile F.Closable t
-              then execFailure (bfaction body) "already open"
-              else execFailure (bfaction body) "never mind"  -- not doors
+    else if Tile.hasFeature cotile F.Closable t
+         then execFailure (bfaction body) "already open"
+         else if exploration && serverTile /= freshClientTile
+              then return True  -- searching costs
+              else execFailure (bfaction body) "never mind"  -- free bump
 
 -- * RunSer
 
@@ -217,7 +216,7 @@ runSer aid dir = do
           addSmell aid
           return True
       | otherwise ->
-          actorOpenDoor aid dir
+          actorOpenDoor aid dir False  -- no exploration when running
 
 -- | When an actor runs (not walks) into another, they switch positions.
 displaceActor :: MonadAtomic m
@@ -412,7 +411,7 @@ setPathSer aid path = do
   case path of
     [] -> execCmdAtomic $ PathActorA aid fromPath (Just [])
     d : lv -> do
-      void $ moveSer aid d
+      void $ moveSer aid d False
       execCmdAtomic $ PathActorA aid fromPath (Just lv)
 
 -- * GameRestart

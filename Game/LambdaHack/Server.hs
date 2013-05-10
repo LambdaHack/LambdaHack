@@ -12,17 +12,18 @@ import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Server.Action
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.LoopAction
 import Game.LambdaHack.Server.ServerSem
 import Game.LambdaHack.Server.State
-import Game.LambdaHack.Common.ServerCmd
 
 -- | The semantics of server commands.
 cmdSerSem :: (MonadAtomic m, MonadServer m) => CmdSer -> m Bool
 cmdSerSem cmd = case cmd of
-  MoveSer aid dir -> moveSer aid dir
+  MoveSer aid dir -> moveSer aid dir False
+  ExploreSer aid dir -> moveSer aid dir True
   RunSer aid dir -> runSer aid dir
   WaitSer aid -> waitSer aid >> return True
   PickupSer aid i k l -> pickupSer aid i k l >> return True

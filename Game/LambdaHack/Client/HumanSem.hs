@@ -10,22 +10,25 @@ import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Common.Action
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.HumanCmd
 import Game.LambdaHack.Client.HumanGlobal
 import Game.LambdaHack.Client.HumanLocal
 import Game.LambdaHack.Client.State
+import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
+import qualified Game.LambdaHack.Common.Feature as F
+import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
-import Game.LambdaHack.Utils.Assert
+import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Common.VectorXY
+import Game.LambdaHack.Utils.Assert
 
 -- | The semantics of human player commands in terms of the @Action@ monad.
 -- Decides if the action takes time and what action to perform.
@@ -85,8 +88,9 @@ checkCursor arena = do
 moveHuman :: (MonadClientAbort m, MonadClientUI m)
           => VectorXY -> WriterT Slideshow m (Maybe CmdSer)
 moveHuman v = do
+  Kind.COps{cotile} <- getsState scops
   tgtMode <- getsClient stgtMode
-  (arena, Level{lxsize}) <- viewedLevel
+  (arena, lvl@Level{lxsize}) <- viewedLevel
   leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
   if isJust tgtMode then do
@@ -95,6 +99,7 @@ moveHuman v = do
   else do
     let dir = toDir lxsize v
         tpos = bpos sb `shift` dir
+        t = lvl `at` tpos
     -- We always see actors from our own faction.
     tgt <- getsState $ posToActor tpos arena
     case tgt of
@@ -114,7 +119,14 @@ moveHuman v = do
             go <- displayYesNo "You are bound by an alliance. Really attack?"
             unless go $ abortWith "Attack canceled."
           fmap Just $ moveLeader dir
-      _ -> fmap Just $ moveLeader dir
+      _ -> fmap Just $
+        if Tile.hasFeature cotile F.Suspect t
+           || Tile.hasFeature cotile F.Openable t
+        then -- Explore, because the suspect feature is not yet revealed
+             -- or because we want to act on the feature.
+             exploreLeader dir
+        else -- Don't explore, because the suspect feature is known boring.
+             moveLeader dir
 
 runHuman :: MonadClientUI m => VectorXY -> WriterT Slideshow m (Maybe CmdSer)
 runHuman v = do

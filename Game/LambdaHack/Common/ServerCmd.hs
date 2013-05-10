@@ -17,6 +17,7 @@ import Game.LambdaHack.Common.Vector
 -- | Abstract syntax of server commands.
 data CmdSer =
     MoveSer ActorId Vector
+  | ExploreSer ActorId Vector
   | RunSer ActorId Vector
   | WaitSer ActorId
   | PickupSer ActorId ItemId Int InvChar
@@ -44,6 +45,7 @@ timedCmdSer cmd = case cmd of
 aidCmdSer :: CmdSer -> ActorId
 aidCmdSer cmd = case cmd of
   MoveSer aid _ -> aid
+  ExploreSer aid _ -> aid
   RunSer aid _ -> aid
   WaitSer aid -> aid
   PickupSer aid _ _ _ -> aid

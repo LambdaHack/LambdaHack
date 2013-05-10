@@ -4,7 +4,7 @@
 -- A couple of them do not take time, the rest does.
 -- TODO: document
 module Game.LambdaHack.Client.HumanGlobal
-  ( moveLeader, runLeader, waitHuman, pickupHuman, dropHuman
+  ( moveLeader, exploreLeader, runLeader, waitHuman, pickupHuman, dropHuman
   , projectLeader, applyHuman, triggerDirHuman, triggerTileHuman
   , gameRestartHuman, gameExitHuman, gameSaveHuman, cfgDumpHuman
   ) where
@@ -19,16 +19,15 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Common.Action
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.HumanLocal
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.RunAction
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Content.TileKind as TileKind
+import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
@@ -39,8 +38,9 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.TileKind as TileKind
+import Game.LambdaHack.Utils.Assert
 
 default (Text)
 
@@ -50,6 +50,13 @@ moveLeader :: MonadClientUI m => Vector -> m CmdSer
 moveLeader dir = do
   leader <- getLeaderUI
   return $! MoveSer leader dir
+
+-- * Explore
+
+exploreLeader :: MonadClientUI m => Vector -> m CmdSer
+exploreLeader dir = do
+  leader <- getLeaderUI
+  return $! ExploreSer leader dir
 
 -- * Run
 

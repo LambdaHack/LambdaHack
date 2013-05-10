@@ -375,6 +375,7 @@ chase :: Kind.COps -> ActorId -> State -> (Point, Bool) -> Strategy CmdSer
 chase cops actor glo foe@(_, foeVisible) =
   -- Target set and we chase the foe or offer null strategy if we can't.
   -- The foe is visible, or we remember his last position.
+  -- TODO: explore if a possible secret
   let mFoe = Just foe
       fight = not foeVisible  -- don't pick fights if the real foe is close
   in if fight
@@ -385,5 +386,6 @@ wander :: Kind.COps -> ActorId -> State -> Strategy CmdSer
 wander cops actor glo =
   -- Target set, but we don't chase the foe, e.g., because we are blocked
   -- or we cannot chase at all.
+  -- TODO: explore if a possible secret
   let mFoe = Nothing
   in MoveSer actor `liftM` moveStrategy cops actor glo mFoe
