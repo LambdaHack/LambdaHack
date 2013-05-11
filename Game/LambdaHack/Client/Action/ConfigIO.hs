@@ -86,8 +86,8 @@ parseConfigUI dataDir cp =
           K.Unknown _ ->
             assert `failure` ("unknown config file key <" ++ s ++ ">")
           key -> key
-      mkKM ('C':'T':'R':'L':'-':s) = K.KM (mkKey s, K.Control)
-      mkKM s = K.KM (mkKey s, K.NoModifier)
+      mkKM ('C':'T':'R':'L':'-':s) = K.KM {key=mkKey s, modifier=K.Control}
+      mkKM s = K.KM {key=mkKey s, modifier=K.NoModifier}
       configCommands =
         let mkCommand (key, def) = (mkKM key, def)
             section = getItems cp "commands"

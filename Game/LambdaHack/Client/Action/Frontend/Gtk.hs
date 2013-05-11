@@ -127,7 +127,7 @@ runGtk configFont k = do
         -- Drop all the old frames. Some more may be arriving at the same time.
         trimQueue sess
         -- Store the key in the channel.
-        writeChan schanKey $ K.KM (key, modifier)
+        writeChan schanKey $ K.KM {key, modifier}
       return True
   -- Set the font specified in config, if any.
   f <- fontDescriptionFromString configFont

@@ -234,12 +234,12 @@ getKeyOverlayCommand overlay = do
 -- | Ignore unexpected kestrokes until a SPACE or ESC is pressed.
 getConfirm :: MonadClientUI m => [K.KM] -> SingleFrame -> m Bool
 getConfirm clearKeys frame = do
-  let keys = [ K.KM (K.Space, K.NoModifier)
-             , K.KM (K.Esc, K.NoModifier) ]
+  let keys = [ K.KM {key=K.Space, modifier=K.NoModifier}
+             , K.KM {key=K.Esc, modifier=K.NoModifier}]
              ++ clearKeys
   km <- promptGetKey keys frame
   case km of
-    K.KM (K.Space, K.NoModifier) -> return True
+    K.KM {key=K.Space, modifier=K.NoModifier} -> return True
     _ | km `elem` clearKeys -> return True
     _ -> return False
 
@@ -262,12 +262,12 @@ displayFramesPush frames = mapM_ (displayFrame False) frames
 -- | A yes-no confirmation.
 getYesNo :: MonadClientUI m => SingleFrame -> m Bool
 getYesNo frame = do
-  let keys = [ K.KM (K.Char 'y', K.NoModifier)
-             , K.KM (K.Char 'n', K.NoModifier)
-             , K.KM (K.Esc, K.NoModifier)
+  let keys = [ K.KM {key=K.Char 'y', modifier=K.NoModifier}
+             , K.KM {key=K.Char 'n', modifier=K.NoModifier}
+             , K.KM {key=K.Esc, modifier=K.NoModifier}
              ]
-  K.KM (k, _) <- promptGetKey keys frame
-  case k of
+  K.KM {key} <- promptGetKey keys frame
+  case key of
     K.Char 'y' -> return True
     _          -> return False
 
@@ -296,15 +296,17 @@ displayChoiceUI :: (MonadClientAbort m, MonadClientUI m)
 displayChoiceUI prompt ov keys = do
   slides <- fmap runSlideshow $ overlayToSlideshow (prompt <> ", ESC]") ov
   let legalKeys =
-        K.KM (K.Space, K.NoModifier) : K.KM (K.Esc, K.NoModifier) : keys
+        [ K.KM {key=K.Space, modifier=K.NoModifier}
+        , K.KM {key=K.Esc, modifier=K.NoModifier} ]
+        ++ keys
       loop [] = neverMind True
       loop (x : xs) = do
         frame <- drawOverlay ColorFull x
-        K.KM (key, modifier) <- promptGetKey legalKeys frame
+        km@K.KM {..} <- promptGetKey legalKeys frame
         case key of
           K.Esc -> neverMind True
           K.Space -> loop xs
-          _ -> return $ K.KM (key, modifier)
+          _ -> return km
   loop slides
 
 -- | The prompt is shown after the current message, but not added to history.

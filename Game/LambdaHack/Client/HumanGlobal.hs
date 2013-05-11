@@ -164,7 +164,7 @@ getItem aid prompt p ptext bag inv isn = do
         let mls = map (snd . snd) ims
             ks = bestKey ++ floorKey ++ [K.Char '?']
                  ++ map (K.Char . invChar) mls
-        in map K.KM $ zip ks $ repeat K.NoModifier
+        in zipWith K.KM (repeat K.NoModifier) ks
       choice ims =
         if null ims
         then "[?" <> floorMsg
@@ -182,10 +182,10 @@ getItem aid prompt p ptext bag inv isn = do
               ISuitable -> (isp, invP, ptext <+> isn <> ".")
               IAll      -> (is0, inv, allObjectsName <+> isn <> ".")
         io <- itemOverlay bag invOver
-        km@(K.KM (command, modifier)) <-
+        km@K.KM {..} <-
           displayChoiceUI (msg <+> choice ims) io (keys ims)
         assert (modifier == K.NoModifier) $
-          case command of
+          case key of
             K.Char '?' -> case itemDialogState of
               INone -> perform ISuitable
               ISuitable | ptext /= allObjectsName -> perform IAll
@@ -282,7 +282,7 @@ getGroupItem leader is inv object syms prompt packName = do
 triggerDirHuman :: (MonadClientAbort m, MonadClientUI m)
                 => F.Feature -> MU.Part -> m CmdSer
 triggerDirHuman feat verb = do
-  let keys = map K.KM $ zip K.dirAllMoveKey $ repeat K.NoModifier
+  let keys = zipWith K.KM (repeat K.NoModifier) K.dirAllMoveKey
       prompt = makePhrase ["What to", verb MU.:> "? [movement key"]
   e <- displayChoiceUI prompt [] keys
   leader <- getLeaderUI

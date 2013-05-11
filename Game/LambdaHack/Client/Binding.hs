@@ -41,14 +41,15 @@ stdBinding :: ConfigUI  -- ^ game config
            -> Binding   -- ^ concrete binding
 stdBinding !config@ConfigUI{configMacros} =
   let kmacro = M.fromList $ configMacros
-      heroSelect k = ( K.KM (K.Char (Char.intToDigit k), K.NoModifier)
+      heroSelect k = ( K.KM { key=K.Char (Char.intToDigit k)
+                            , modifier=K.NoModifier }
                      , SelectHero k )
       cmdList =
         configCmds config
         ++ K.moveBinding Move Run
         ++ fmap heroSelect [0..9]
-        ++ [ (K.KM (K.Char 'a', K.Control), DebugArea)
-           , (K.KM (K.Char 's', K.Control), DebugSmell)
+        ++ [ (K.KM {key=K.Char 'a', modifier=K.Control}, DebugArea)
+           , (K.KM {key=K.Char 's', modifier=K.Control}, DebugSmell)
            ]
       mkDescribed cmd = (cmdDescription cmd, noRemoteHumanCmd cmd, cmd)
       mkCommand (km, def) = (km, mkDescribed def)

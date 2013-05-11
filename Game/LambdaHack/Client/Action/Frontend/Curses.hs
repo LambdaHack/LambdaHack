@@ -90,7 +90,7 @@ promptGetAnyKey sess frame = do
   nextEvent sess Nothing
 
 keyTranslate :: C.Key -> K.KM
-keyTranslate e = KM $
+keyTranslate e = (\(key, modifier) -> KM.KM {..}) $
   case e of
     C.KeyChar '\ESC' -> (K.Esc,     K.NoModifier)
     C.KeyExit        -> (K.Esc,     K.NoModifier)

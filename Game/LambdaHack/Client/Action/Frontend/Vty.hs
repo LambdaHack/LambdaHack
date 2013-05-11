@@ -59,7 +59,7 @@ nextEvent sess mb = do
     EvKey n mods -> do
       let key = keyTranslate n
           modifier = modifierTranslate mods
-      return $ KM (key, modifier)
+      return $ K.KM {key, modifier}
     _ -> nextEvent sess mb
 
 -- | Display a prompt, wait for any key.

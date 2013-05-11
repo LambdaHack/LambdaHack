@@ -82,34 +82,34 @@ instance Binary Key where
 
 -- | Our own encoding of modifiers. Incomplete.
 data Modifier =
-    Control
-  | NoModifier
+    NoModifier
+  | Control
   deriving (Ord, Eq)
 
 instance Binary Modifier where
-  put Control    = putWord8 0
-  put NoModifier = putWord8 1
+  put NoModifier = putWord8 0
+  put Control    = putWord8 1
   get = do
     tag <- getWord8
     case tag of
-      0  -> return Control
-      1  -> return NoModifier
+      0  -> return NoModifier
+      1  -> return Control
       _ -> fail "no parse (Modifier)"
 
-newtype KM = KM (Key, Modifier)
+data KM = KM {modifier :: !Modifier, key :: !Key}
   deriving (Ord, Eq)
 
 instance Show KM where
   show = T.unpack . showKM
 
 instance Binary KM where
-  put (KM (key, modifier)) = do
+  put KM {..} = do
     put key
     put modifier
   get = do
     key <- get
     modifier <- get
-    return $ KM (key, modifier)
+    return $ KM {..}
 
 -- Common and terse names for keys.
 showKey :: Key -> Text
@@ -133,8 +133,8 @@ showKey (Unknown s) = T.pack s
 
 -- | Show a key with a modifier, if any.
 showKM :: KM -> Text
-showKM (KM (key, Control)) = "CTRL-" <> showKey key
-showKM (KM (key, NoModifier)) = showKey key
+showKM KM{modifier=Control, key} = "CTRL-" <> showKey key
+showKM KM{modifier=NoModifier, key} = showKey key
 
 dirViChar :: [Char]
 dirViChar = ['y', 'k', 'u', 'l', 'n', 'j', 'b', 'h']
@@ -166,7 +166,7 @@ dirHeroKey = map Char dirNums
 -- | Configurable event handler for the direction keys.
 -- Used for directed commands such as close door.
 handleDir :: X -> KM -> (Vector -> a) -> a -> a
-handleDir lxsize (KM (key, NoModifier)) h k =
+handleDir lxsize KM{modifier=NoModifier, key} h k =
   let mvs = moves lxsize
       assocs = zip dirAllMoveKey $ mvs ++ mvs
   in maybe k h (L.lookup key assocs)
@@ -180,14 +180,13 @@ moveBinding move run =
   let assign f (km, dir) = (km, f dir)
       rNoModifier = repeat NoModifier
       rControl = repeat Control
-      zipKM l = map KM . zip l
-  in map (assign move) (zip (zipKM dirViMoveKey rNoModifier) movesXY) ++
-     map (assign move) (zip (zipKM dirMoveKey rNoModifier) movesXY) ++
-     map (assign run)  (zip (zipKM dirViRunKey rNoModifier) movesXY) ++
-     map (assign run)  (zip (zipKM dirRunKey rNoModifier) movesXY) ++
-     map (assign run)  (zip (zipKM dirMoveKey rControl) movesXY) ++
-     map (assign run)  (zip (zipKM dirRunKey rControl) movesXY) ++
-     map (assign run)  (zip (zipKM dirHeroKey rControl) movesXY)
+  in map (assign move) (zip (zipWith KM rNoModifier dirViMoveKey) movesXY) ++
+     map (assign move) (zip (zipWith KM rNoModifier dirMoveKey) movesXY) ++
+     map (assign run)  (zip (zipWith KM rNoModifier dirViRunKey) movesXY) ++
+     map (assign run)  (zip (zipWith KM rNoModifier dirRunKey) movesXY) ++
+     map (assign run)  (zip (zipWith KM rControl dirMoveKey) movesXY) ++
+     map (assign run)  (zip (zipWith KM rControl dirRunKey) movesXY) ++
+     map (assign run)  (zip (zipWith KM rControl dirHeroKey ) movesXY)
 
 -- | Translate key from a GTK string description to our internal key type.
 -- To be used, in particular, for the command bindings and macros
