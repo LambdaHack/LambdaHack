@@ -12,12 +12,12 @@ import qualified Game.LambdaHack.Client.Key as K
 -- is a part of a game client.
 data ConfigUI = ConfigUI
   { -- commands
-    configCommands     :: ![(K.Key, String)]  -- TODO: define Binary Cmd
+    configCommands     :: ![(K.KM, String)]  -- TODO: define Binary Cmd
     -- files
   , configAppDataDirUI :: !FilePath
   , configUICfgFile    :: !FilePath
     -- macros
-  , configMacros       :: ![(K.Key, K.Key)]
+  , configMacros       :: ![(K.KM, K.KM)]
     -- ui
   , configFont         :: !String
   , configHistoryMax   :: !Int

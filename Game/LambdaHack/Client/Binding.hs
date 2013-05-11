@@ -23,7 +23,7 @@ import Game.LambdaHack.Common.Msg
 data Binding = Binding
   { kcmd    :: M.Map K.KM (Text, Bool, HumanCmd)
                                      -- ^ binding keys to commands
-  , kmacro  :: M.Map K.Key K.Key     -- ^ macro map
+  , kmacro  :: M.Map K.KM K.KM       -- ^ macro map
   , kmajor  :: [K.KM]                -- ^ major commands
   , kminor  :: [K.KM]                -- ^ minor commands
   , krevMap :: M.Map HumanCmd K.KM  -- ^ from cmds to their main keys
@@ -32,7 +32,7 @@ data Binding = Binding
 -- | The associaction of commands to keys defined in config.
 configCmds :: ConfigUI -> [(K.KM, HumanCmd)]
 configCmds ConfigUI{configCommands} =
-  let mkCommand (key, def) = ((key, K.NoModifier), read def :: HumanCmd)
+  let mkCommand (km, def) = (km, read def :: HumanCmd)
   in map mkCommand configCommands
 
 -- | Binding of keys to movement and other standard commands,
@@ -41,13 +41,14 @@ stdBinding :: ConfigUI  -- ^ game config
            -> Binding   -- ^ concrete binding
 stdBinding !config@ConfigUI{configMacros} =
   let kmacro = M.fromList $ configMacros
-      heroSelect k = ((K.Char (Char.intToDigit k), K.NoModifier), SelectHero k)
+      heroSelect k = ( K.KM (K.Char (Char.intToDigit k), K.NoModifier)
+                     , SelectHero k )
       cmdList =
         configCmds config
         ++ K.moveBinding Move Run
         ++ fmap heroSelect [0..9]
-        ++ [ ((K.Char 'a', K.Control), DebugArea)
-           , ((K.Char 's', K.Control), DebugSmell)
+        ++ [ (K.KM (K.Char 'a', K.Control), DebugArea)
+           , (K.KM (K.Char 's', K.Control), DebugSmell)
            ]
       mkDescribed cmd = (cmdDescription cmd, noRemoteHumanCmd cmd, cmd)
       mkCommand (km, def) = (km, mkDescribed def)
@@ -60,7 +61,7 @@ stdBinding !config@ConfigUI{configMacros} =
   , krevMap = M.fromList $ map swap cmdList
   }
 
-coImage :: M.Map K.Key K.Key -> K.Key -> [K.Key]
+coImage :: M.Map K.KM K.KM -> K.KM -> [K.KM]
 coImage kmacro k =
   let domain = M.keysSet kmacro
   in if k `S.member` domain
@@ -108,9 +109,9 @@ keyHelp Binding{kcmd, kmacro, kmajor, kminor} =
     major   = map fmts majorBlurb
     minor   = map fmts minorBlurb
     keyCaption = fmt "keys" "command"
-    disp k  = T.concat $ map showT $ coImage kmacro k
+    disp k  = T.concat $ map K.showKM $ coImage kmacro k
     keys l  = [ fmt (disp k) (h <> if timed then "*" else "")
-              | ((k, K.NoModifier), (h, timed, _)) <- l, h /= "" ]
+              | (k, (h, timed, _)) <- l, h /= "" ]
     (kcMajor, kcRest) =
       L.partition ((`elem` kmajor) . fst) (M.toAscList kcmd)
     (kcMinor, _) =

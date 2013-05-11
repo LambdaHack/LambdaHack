@@ -32,14 +32,14 @@ import qualified Data.Text as T
 import Data.Version
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Common.Action
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Binding
 import qualified Game.LambdaHack.Client.HumanCmd as HumanCmd
+import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
@@ -52,8 +52,9 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.Utils.Assert
 
 default (Text)
 
@@ -451,9 +452,8 @@ displayMainMenu = do
             versionLen = length version
         in init art ++ [take (80 - versionLen) (last art) ++ version]
       kds =  -- key-description pairs
-        let showKD cmd key = (showT key, HumanCmd.cmdDescription cmd)
-            revLookup cmd =
-              maybe ("", "") (showKD cmd . fst) $ M.lookup cmd krevMap
+        let showKD cmd km = (K.showKM km, HumanCmd.cmdDescription cmd)
+            revLookup cmd = maybe ("", "") (showKD cmd) $ M.lookup cmd krevMap
             cmds = [ HumanCmd.GameSave,
                      HumanCmd.GameExit,
                      HumanCmd.GameRestart,

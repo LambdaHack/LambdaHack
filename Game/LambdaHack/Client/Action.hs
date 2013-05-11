@@ -47,9 +47,6 @@ import qualified Data.Monoid as Monoid
 import qualified Data.Text as T
 import System.Time
 
-import Game.LambdaHack.Common.Action
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Client.Action.ActionClass
 import Game.LambdaHack.Client.Action.ConfigIO
 import Game.LambdaHack.Client.Action.Frontend (frontendName, startup)
@@ -61,8 +58,10 @@ import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.Draw
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.State
+import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientCmd
-import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -73,6 +72,7 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Utils.Assert
 
 -- | Reset the state and resume from the last backup point, i.e., invoke
@@ -220,28 +220,26 @@ getPerFid lid = do
 getKeyCommand :: MonadClientUI m => Maybe Bool -> m K.KM
 getKeyCommand doPush = do
   keyb <- askBinding
-  (nc, modifier) <- nextEvent doPush
-  return $! case modifier of
-    K.NoModifier -> (fromMaybe nc $ M.lookup nc $ kmacro keyb, modifier)
-    _ -> (nc, modifier)
+  km <- nextEvent doPush
+  return $! fromMaybe km $ M.lookup km $ kmacro keyb
 
 -- | Display an overlay and wait for a human player command.
 getKeyOverlayCommand :: MonadClientUI m => Overlay -> m K.KM
 getKeyOverlayCommand overlay = do
   frame <- drawOverlay ColorFull overlay
   keyb <- askBinding
-  (nc, modifier) <- promptGetKey [] frame
-  return $! case modifier of
-    K.NoModifier -> (fromMaybe nc $ M.lookup nc $ kmacro keyb, modifier)
-    _ -> (nc, modifier)
+  km <- promptGetKey [] frame
+  return $! fromMaybe km $ M.lookup km $ kmacro keyb
 
 -- | Ignore unexpected kestrokes until a SPACE or ESC is pressed.
 getConfirm :: MonadClientUI m => [K.KM] -> SingleFrame -> m Bool
 getConfirm clearKeys frame = do
-  let keys = [(K.Space, K.NoModifier), (K.Esc, K.NoModifier)] ++ clearKeys
+  let keys = [ K.KM (K.Space, K.NoModifier)
+             , K.KM (K.Esc, K.NoModifier) ]
+             ++ clearKeys
   km <- promptGetKey keys frame
   case km of
-    (K.Space, K.NoModifier) -> return True
+    K.KM (K.Space, K.NoModifier) -> return True
     _ | km `elem` clearKeys -> return True
     _ -> return False
 
@@ -264,11 +262,11 @@ displayFramesPush frames = mapM_ (displayFrame False) frames
 -- | A yes-no confirmation.
 getYesNo :: MonadClientUI m => SingleFrame -> m Bool
 getYesNo frame = do
-  let keys = [ (K.Char 'y', K.NoModifier)
-             , (K.Char 'n', K.NoModifier)
-             , (K.Esc, K.NoModifier)
+  let keys = [ K.KM (K.Char 'y', K.NoModifier)
+             , K.KM (K.Char 'n', K.NoModifier)
+             , K.KM (K.Esc, K.NoModifier)
              ]
-  (k, _) <- promptGetKey keys frame
+  K.KM (k, _) <- promptGetKey keys frame
   case k of
     K.Char 'y' -> return True
     _          -> return False
@@ -297,15 +295,16 @@ displayChoiceUI :: (MonadClientAbort m, MonadClientUI m)
                 => Msg -> Overlay -> [K.KM] -> m K.KM
 displayChoiceUI prompt ov keys = do
   slides <- fmap runSlideshow $ overlayToSlideshow (prompt <> ", ESC]") ov
-  let legalKeys = (K.Space, K.NoModifier) : (K.Esc, K.NoModifier) : keys
+  let legalKeys =
+        K.KM (K.Space, K.NoModifier) : K.KM (K.Esc, K.NoModifier) : keys
       loop [] = neverMind True
       loop (x : xs) = do
         frame <- drawOverlay ColorFull x
-        (key, modifier) <- promptGetKey legalKeys frame
+        K.KM (key, modifier) <- promptGetKey legalKeys frame
         case key of
           K.Esc -> neverMind True
           K.Space -> loop xs
-          _ -> return (key, modifier)
+          _ -> return $ K.KM (key, modifier)
   loop slides
 
 -- | The prompt is shown after the current message, but not added to history.

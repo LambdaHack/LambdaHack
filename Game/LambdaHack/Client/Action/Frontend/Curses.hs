@@ -17,7 +17,8 @@ import qualified UI.HSCurses.Curses as C
 import qualified UI.HSCurses.CursesHelper as C
 
 import Game.LambdaHack.Client.Animation (SingleFrame (..))
-import qualified Game.LambdaHack.Client.Key as K (KM, Key (..), Modifier (..))
+import qualified Game.LambdaHack.Client.Key as K (KM (..), Key (..),
+                                                  Modifier (..))
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Utils.Assert
 
@@ -89,7 +90,7 @@ promptGetAnyKey sess frame = do
   nextEvent sess Nothing
 
 keyTranslate :: C.Key -> K.KM
-keyTranslate e =
+keyTranslate e = KM $
   case e of
     C.KeyChar '\ESC' -> (K.Esc,     K.NoModifier)
     C.KeyExit        -> (K.Esc,     K.NoModifier)

@@ -12,8 +12,8 @@ import System.FilePath
 
 import Game.LambdaHack.Client.Config
 import qualified Game.LambdaHack.Client.Key as K
-import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Utils.Assert
 
 overrideCP :: CP -> FilePath -> IO CP
@@ -86,16 +86,18 @@ parseConfigUI dataDir cp =
           K.Unknown _ ->
             assert `failure` ("unknown config file key <" ++ s ++ ">")
           key -> key
+      mkKM ('C':'T':'R':'L':'-':s) = K.KM (mkKey s, K.Control)
+      mkKM s = K.KM (mkKey s, K.NoModifier)
       configCommands =
-        let mkCommand (key, def) = (mkKey key, def)
+        let mkCommand (key, def) = (mkKM key, def)
             section = getItems cp "commands"
         in map mkCommand section
       configAppDataDirUI = dataDir
       configUICfgFile = dataDir </> "config.ui"
       configMacros =
         let trMacro (from, to) =
-              let fromTr = mkKey from
-                  toTr  = mkKey to
+              let fromTr = mkKM from
+                  toTr  = mkKM to
               in if fromTr == toTr
                  then assert `failure` "degenerate alias: " ++ show toTr
                  else (fromTr, toTr)

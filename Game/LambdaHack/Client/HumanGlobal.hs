@@ -164,7 +164,7 @@ getItem aid prompt p ptext bag inv isn = do
         let mls = map (snd . snd) ims
             ks = bestKey ++ floorKey ++ [K.Char '?']
                  ++ map (K.Char . invChar) mls
-        in zip ks $ repeat K.NoModifier
+        in map K.KM $ zip ks $ repeat K.NoModifier
       choice ims =
         if null ims
         then "[?" <> floorMsg
@@ -182,7 +182,7 @@ getItem aid prompt p ptext bag inv isn = do
               ISuitable -> (isp, invP, ptext <+> isn <> ".")
               IAll      -> (is0, inv, allObjectsName <+> isn <> ".")
         io <- itemOverlay bag invOver
-        (command, modifier) <-
+        km@(K.KM (command, modifier)) <-
           displayChoiceUI (msg <+> choice ims) io (keys ims)
         assert (modifier == K.NoModifier) $
           case command of
@@ -205,7 +205,7 @@ getItem aid prompt p ptext bag inv isn = do
             K.Return | bestFull ->
               let (iidItem, (k, l2)) = maximumBy (compare `on` snd . snd) isp
               in return (iidItem, (k, CActor aid l2))
-            k -> assert `failure` "perform: unexpected key:" <+> showT k
+            _ -> assert `failure` "perform: unexpected key:" <+> K.showKM km
   ask
 
 -- * Project
@@ -282,7 +282,7 @@ getGroupItem leader is inv object syms prompt packName = do
 triggerDirHuman :: (MonadClientAbort m, MonadClientUI m)
                 => F.Feature -> MU.Part -> m CmdSer
 triggerDirHuman feat verb = do
-  let keys = zip K.dirAllMoveKey $ repeat K.NoModifier
+  let keys = map K.KM $ zip K.dirAllMoveKey $ repeat K.NoModifier
       prompt = makePhrase ["What to", verb MU.:> "? [movement key"]
   e <- displayChoiceUI prompt [] keys
   leader <- getLeaderUI
