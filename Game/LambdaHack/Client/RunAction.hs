@@ -87,10 +87,10 @@ runMode loc dir dirEnterable lxsize =
 -- TODO: express as MonadActionRO
 -- | Check for disturbances to running such as newly visible items, monsters.
 runDisturbance :: Point -> Int -> Report
-               -> [Actor] -> [Actor] -> Perception -> Point
+               -> [Actor] -> [Actor] -> Perception -> Bool -> Point
                -> (F.Feature -> Point -> Bool) -> (Point -> Bool) -> X -> Y
                -> (Vector, Int) -> Maybe (Vector, Int)
-runDisturbance locLast distLast report hs ms per posHere
+runDisturbance locLast distLast report hs ms per markSuspect posHere
                posHasFeature posHasItems lxsize lysize (dirNew, distNew) =
   let boringMsgs = map BS.pack [ "Saving backup."
                                , "You hear some noises." ]
@@ -117,6 +117,8 @@ runDisturbance locLast distLast report hs ms per posHere
       -- TODO: perhaps in open areas change direction to follow lit and paths.
       firstList = [ posHasFeature F.Lit
                   , not . posHasFeature F.Path
+                  , \t -> markSuspect && posHasFeature F.Suspect t
+                    -- TODO: refine for suspect floors (e.g., traps)
                   ]
       -- TODO: stop when walls vanish from cardinal directions or when any
       -- walls re-appear again. Actually stop one tile before that happens.
@@ -163,6 +165,7 @@ continueRunDir leader (dirLast, distLast) = do
   let arena = blid body
   per <- getPerFid arena
   sreport <- getsClient sreport -- TODO: check the message before it goes into history
+  smarkSuspect <- getsClient smarkSuspect
   fact <- getsState $ (EM.! bfaction body) . sfaction
   ms <- getsState $ actorList (isAtWar fact) arena
   hs <- getsState $ actorList (not . (isAtWar fact)) arena
@@ -175,7 +178,8 @@ continueRunDir leader (dirLast, distLast) = do
         | accessibleDir cops lvl posHere dir =
           -- TODO: perhaps @abortWith report2?
           maybe abort (runDir leader) $
-            runDisturbance locLast distLast sreport hs ms per posHere
+            runDisturbance
+              locLast distLast sreport hs ms per smarkSuspect posHere
               posHasFeature posHasItems lxsize lysize (dir, distNew)
         | otherwise = abort  -- do not open doors in the middle of a run
       tryRun dir = tryRunDist (dir, distLast)
