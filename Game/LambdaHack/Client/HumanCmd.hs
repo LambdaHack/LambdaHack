@@ -11,8 +11,8 @@ import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Msg
-import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Common.VectorXY
+import Game.LambdaHack.Utils.Assert
 
 -- | Abstract syntax of player commands.
 data HumanCmd =
@@ -44,9 +44,9 @@ data HumanCmd =
   | Accept
   | Clear
   | History
+  | MarkVision
+  | MarkSmell
   | Help
-  | DebugArea
-  | DebugSmell
   deriving (Show, Read, Eq, Ord)
 
 -- | Major commands land on the first page of command help.
@@ -68,7 +68,7 @@ majorHumanCmd cmd = case cmd of
 -- | Minor commands land on the second page of command help.
 minorHumanCmd :: HumanCmd -> Bool
 minorHumanCmd cmd = case cmd of
-  CfgDump     -> True
+--  CfgDump     -> True
   MemberCycle -> True
   MemberBack  -> True
   TgtFloor    -> True
@@ -77,8 +77,10 @@ minorHumanCmd cmd = case cmd of
   EpsIncr{}   -> True
   Cancel      -> True
   Accept      -> True
-  Clear       -> True
+--  Clear       -> True
   History     -> True
+  MarkVision -> True
+  MarkSmell   -> True
   _           -> False
 
 -- | Commands that are forbidden on a remote level, because they
@@ -116,7 +118,7 @@ cmdDescription cmd = case cmd of
   CfgDump     -> "dump current configuration"
 
   SelectHero{} -> "select hero"
-  MemberCycle -> "cycle among heroes on level"
+  MemberCycle -> "cycle among heroes on the level"
   MemberBack  -> "cycle among heroes in the dungeon"
   Inventory   -> "display inventory"
   TgtFloor    -> "target position"
@@ -129,10 +131,10 @@ cmdDescription cmd = case cmd of
     assert `failure` ("void level change in targeting in config file" :: Text)
   EpsIncr True  -> "swerve targeting line"
   EpsIncr False -> "unswerve targeting line"
-  Cancel    -> "cancel action"
-  Accept    -> "accept choice"
-  Clear     -> "clear messages"
-  History   -> "display previous messages"
-  Help      -> "display help"
-  DebugArea    -> "debug visible area"
-  DebugSmell   -> "debug smell"
+  Cancel     -> "cancel action"
+  Accept     -> "accept choice"
+  Clear      -> "clear messages"
+  History    -> "display previous messages"
+  MarkVision -> "mark visible area"
+  MarkSmell  -> "mark smell"
+  Help       -> "display help"

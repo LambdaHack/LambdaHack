@@ -22,10 +22,10 @@ import Game.LambdaHack.Common.Msg
 -- | Bindings and other information about human player commands.
 data Binding = Binding
   { kcmd    :: M.Map K.KM (Text, Bool, HumanCmd)
-                                     -- ^ binding keys to commands
-  , kmacro  :: M.Map K.KM K.KM       -- ^ macro map
-  , kmajor  :: [K.KM]                -- ^ major commands
-  , kminor  :: [K.KM]                -- ^ minor commands
+                                    -- ^ binding keys to commands
+  , kmacro  :: M.Map K.KM K.KM      -- ^ macro map
+  , kmajor  :: [K.KM]               -- ^ major commands
+  , kminor  :: [K.KM]               -- ^ minor commands
   , krevMap :: M.Map HumanCmd K.KM  -- ^ from cmds to their main keys
   }
 
@@ -48,9 +48,6 @@ stdBinding !config@ConfigUI{configMacros} =
         configCmds config
         ++ K.moveBinding Move Run
         ++ fmap heroSelect [0..9]
-        ++ [ (K.KM {key=K.Char 'a', modifier=K.Control}, DebugArea)
-           , (K.KM {key=K.Char 's', modifier=K.Control}, DebugSmell)
-           ]
       mkDescribed cmd = (cmdDescription cmd, noRemoteHumanCmd cmd, cmd)
       mkCommand (km, def) = (km, mkDescribed def)
       semList = L.map mkCommand cmdList

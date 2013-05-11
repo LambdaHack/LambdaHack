@@ -71,18 +71,18 @@ hero time are marked with a *.
                <       ascend a level*
                >       descend a level*
                ?       display help
-               R       restart game*
-               S       save game
-               X       save and exit*
+               I       display inventory
                c       close a door*
                d       drop an object*
                g       get an object*
-               i       display inventory
                o       open a door*
                q       quaff a potion*
                r       read a scroll*
                t       throw a dart*
                z       zap a wand*
+               CTRL-r  restart game
+               CTRL-s  save game
+               CTRL-x  save and exit
 
 To make a ranged attack, you need to set your target first, using
 targeting mode. Note that the target, for the few commands that require any,
@@ -99,27 +99,24 @@ commands are listed below. None of them takes hero time.
                ESC       cancel action
                RET       accept choice
                SPACE     clear messages
-               TAB       cycle among heroes on level
+               TAB       cycle among heroes on the level
                SHIFT-TAB cycle among heroes in the dungeon
                *         target monster
                +         swerve targeting line
                -         unswerve targeting line
                /         target position
-               D         dump current configuration
+               A         mark visible area
                P         display previous messages
+               S         mark smell
                [         target next shallower level
                ]         target next deeper level
                {         target 10 levels shallower
                }         target 10 levels deeper
                0--9      select a hero anywhere in the dungeon
+               CTRL-d    dump current configuration
 
-There are also some debug and cheat options, some enabled in-game,
-with the CTRL key modifier and a letter key, some specified
-on the command line. Use at your own peril!
-
-               key     command
-               CTRL-a  toggle visible area display
-               CTRL-s  toggle smell display
+There are also some debug and cheat options that can be specified
+on the command line when starting the game server. Use at your own peril!
 
 
 Monsters

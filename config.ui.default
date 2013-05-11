@@ -18,13 +18,13 @@
 ; o: TriggerDir { verb = "open", object = "door", feature = Openable }
 ; less:    TriggerTile { verb = "ascend", object = "level", feature = Cause (Ascend 1) }
 ; greater: TriggerTile { verb = "descend", object = "level", feature = Cause (Descend 1) }
-; R: GameRestart
-; X: GameExit
-; S: GameSave
-; D: CfgDump
+; CTRL-r: GameRestart
+; CTRL-x: GameExit
+; CTRL-s: GameSave
+; CTRL-d: CfgDump
 ; Tab: MemberCycle
 ; ISO_Left_Tab: MemberBack
-; i: Inventory
+; I: Inventory
 ; slash: TgtFloor
 ; asterisk: TgtEnemy
 ; bracketleft:  TgtAscend 1
@@ -37,6 +37,8 @@
 ; Return: Accept
 ; space: Clear
 ; P: History
+; V: MarkVision
+; S: MarkSmell
 ; question: Help
 
 ; [macros]

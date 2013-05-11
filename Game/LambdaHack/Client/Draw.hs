@@ -13,13 +13,11 @@ import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import Game.LambdaHack.Common.Actor as Actor
-import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Client.Animation (SingleFrame (..))
 import Game.LambdaHack.Client.State
+import Game.LambdaHack.Common.Actor as Actor
+import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
-import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Common.Effect
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
@@ -34,6 +32,8 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.Content.TileKind
 
 -- | Color mode for the display.
 data ColorMode =
@@ -47,11 +47,10 @@ draw :: ColorMode -> Kind.COps -> Perception -> LevelId -> ActorId
      -> StateClient -> State -> Overlay
      -> SingleFrame
 draw dm cops per drawnLevelId leader
-     cli@StateClient{stgtMode, scursor, seps, sdisco, sdebugCli}
+     cli@StateClient{stgtMode, scursor, seps, sdisco, smarkVision, smarkSmell}
      s overlay =
   let Kind.COps{ coactor=Kind.Ops{okind}
                , cotile=Kind.Ops{okind=tokind, ouniqGroup} } = cops
-      DebugModeCli{smarkVision, smarkSmell} = sdebugCli
       (lvl@Level{ ldepth, lxsize, lysize, lsmell
                 , ldesc, ltime, lseen, lclear }) = sdungeon s EM.! drawnLevelId
       (bitems, bracedL, ahpS, asmellL, bhpS, bposL, blidL) =

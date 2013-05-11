@@ -73,9 +73,9 @@ cmdAction cmd = case cmd of
   Accept -> acceptHuman helpHuman >> return Nothing
   Clear -> clearHuman >> return Nothing
   History -> historyHuman >> return Nothing
+  MarkVision -> modifyClient toggleMarkVision >> return Nothing
+  MarkSmell -> modifyClient toggleMarkSmell >> return Nothing
   Help -> helpHuman >> return Nothing
-  DebugArea -> modifyClient toggleMarkVision >> return Nothing
-  DebugSmell -> modifyClient toggleMarkSmell >> return Nothing
 
 -- | If in targeting mode, check if the current level is the same
 -- as player level and refuse performing the action otherwise.

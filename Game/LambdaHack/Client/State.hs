@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.State
   ( StateClient(..), defStateClient, defHistory
   , updateTarget, getTarget, updateLeader, sside
   , TgtMode(..), Target(..)
-  , DebugModeCli(..), toggleMarkVision, toggleMarkSmell
+  , toggleMarkVision, toggleMarkSmell
   ) where
 
 import Control.Monad
@@ -17,12 +17,12 @@ import qualified NLP.Miniutter.English as MU
 import qualified System.Random as R
 import System.Time
 
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Client.Animation
 import Game.LambdaHack.Client.Config
 import qualified Game.LambdaHack.Client.Key as K
+import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
+import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Level
@@ -37,26 +37,27 @@ import Game.LambdaHack.Utils.Assert
 -- from game to game, even across playing sessions.
 -- Data invariant: if @_sleader@ is @Nothing@ then so is @srunning@.
 data StateClient = StateClient
-  { stgtMode  :: !(Maybe TgtMode)  -- ^ targeting mode
-  , scursor   :: !(Maybe Point)    -- ^ cursor coordinates
-  , seps      :: !Int           -- ^ a parameter of the tgt digital line
-  , starget   :: !(EM.EnumMap ActorId Target)
+  { stgtMode    :: !(Maybe TgtMode)  -- ^ targeting mode
+  , scursor     :: !(Maybe Point)    -- ^ cursor coordinates
+  , seps        :: !Int           -- ^ a parameter of the tgt digital line
+  , starget     :: !(EM.EnumMap ActorId Target)
                                 -- ^ targets of all our actors in the dungeon
-  , srunning  :: !(Maybe (Vector, Int))  -- ^ direction and distance of running
-  , sreport   :: !Report        -- ^ current messages
-  , shistory  :: !History       -- ^ history of messages
-  , sundo     :: ![Atomic]      -- ^ atomic commands performed to date
-  , sdisco    :: !Discovery     -- ^ remembered item discoveries
-  , sfper     :: !FactionPers   -- ^ faction perception indexed by levels
-  , srandom   :: !R.StdGen      -- ^ current random generator
-  , sconfigUI :: !ConfigUI      -- ^ this client config (including initial RNG)
-  , slastKey  :: !(Maybe K.KM)  -- ^ last command key pressed
-  , sframe    :: ![(Maybe SingleFrame, Bool)]  -- ^ accumulated frames
-  , _sleader  :: !(Maybe ActorId)  -- ^ selected actor
-  , _sside    :: !FactionId     -- ^ faction controlled by the client
-  , squit     :: !Bool          -- ^ exit the game loop
-  , sisAI     :: !Bool          -- ^ whether it's an AI client
-  , sdebugCli :: !DebugModeCli  -- ^ debugging mode
+  , srunning    :: !(Maybe (Vector, Int))  -- ^ direction and distance of running
+  , sreport     :: !Report        -- ^ current messages
+  , shistory    :: !History       -- ^ history of messages
+  , sundo       :: ![Atomic]      -- ^ atomic commands performed to date
+  , sdisco      :: !Discovery     -- ^ remembered item discoveries
+  , sfper       :: !FactionPers   -- ^ faction perception indexed by levels
+  , srandom     :: !R.StdGen      -- ^ current random generator
+  , sconfigUI   :: !ConfigUI      -- ^ this client config (including initial RNG)
+  , slastKey    :: !(Maybe K.KM)  -- ^ last command key pressed
+  , sframe      :: ![(Maybe SingleFrame, Bool)]  -- ^ accumulated frames
+  , _sleader    :: !(Maybe ActorId)  -- ^ selected actor
+  , _sside      :: !FactionId     -- ^ faction controlled by the client
+  , squit       :: !Bool          -- ^ exit the game loop
+  , sisAI       :: !Bool          -- ^ whether it's an AI client
+  , smarkVision :: !Bool        -- ^ mark leader and party FOV
+  , smarkSmell  :: !Bool        -- ^ mark smell, if the leader can smell
   }
   deriving (Show, Typeable)
 
@@ -73,12 +74,6 @@ data Target =
     TEnemy ActorId Point  -- ^ target an actor with its last seen position
   | TPos Point            -- ^ target a given position
   deriving (Show, Eq)
-
-data DebugModeCli = DebugModeCli
-  { smarkVision :: !Bool
-  , smarkSmell  :: !Bool
-  }
-  deriving Show
 
 -- | Initial game client state.
 defStateClient :: History -> ConfigUI -> FactionId -> Bool
@@ -103,14 +98,9 @@ defStateClient shistory sconfigUI _sside sisAI = do
     , _sside
     , squit = False
     , sisAI
-    , sdebugCli = defDebugModeCli
+    , smarkVision = False
+    , smarkSmell  = False
     }
-
-defDebugModeCli :: DebugModeCli
-defDebugModeCli = DebugModeCli
-  { smarkVision = False
-  , smarkSmell  = False
-  }
 
 defHistory :: IO History
 defHistory = do
@@ -140,12 +130,10 @@ sside :: StateClient -> FactionId
 sside = _sside
 
 toggleMarkVision :: StateClient -> StateClient
-toggleMarkVision s@StateClient{sdebugCli=sdebugCli@DebugModeCli{smarkVision}} =
-  s {sdebugCli = sdebugCli {smarkVision = not smarkVision}}
+toggleMarkVision s@StateClient{smarkVision} = s {smarkVision = not smarkVision}
 
 toggleMarkSmell :: StateClient -> StateClient
-toggleMarkSmell s@StateClient{sdebugCli=sdebugCli@DebugModeCli{smarkSmell}} =
-  s {sdebugCli = sdebugCli {smarkSmell = not smarkSmell}}
+toggleMarkSmell s@StateClient{smarkSmell} = s {smarkSmell = not smarkSmell}
 
 instance Binary StateClient where
   put StateClient{..} = do
@@ -163,6 +151,8 @@ instance Binary StateClient where
     put _sleader
     put _sside
     put sisAI
+    put smarkVision
+    put smarkSmell
   get = do
     stgtMode <- get
     scursor <- get
@@ -178,12 +168,13 @@ instance Binary StateClient where
     _sleader <- get
     _sside <- get
     sisAI <- get
+    smarkVision <- get
+    smarkSmell <- get
     let sreport = emptyReport
         sfper = EM.empty
         srandom = read g
         slastKey = Nothing
         squit = False
-        sdebugCli = defDebugModeCli
     return StateClient{..}
 
 instance Binary TgtMode where
