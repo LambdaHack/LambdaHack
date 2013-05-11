@@ -46,6 +46,7 @@ data HumanCmd =
   | History
   | MarkVision
   | MarkSmell
+  | MarkSuspect
   | Help
   deriving (Show, Read, Eq, Ord)
 
@@ -79,8 +80,9 @@ minorHumanCmd cmd = case cmd of
   Accept      -> True
 --  Clear       -> True
   History     -> True
-  MarkVision -> True
+  MarkVision  -> True
   MarkSmell   -> True
+  MarkSuspect -> True
   _           -> False
 
 -- | Commands that are forbidden on a remote level, because they
@@ -131,10 +133,11 @@ cmdDescription cmd = case cmd of
     assert `failure` ("void level change in targeting in config file" :: Text)
   EpsIncr True  -> "swerve targeting line"
   EpsIncr False -> "unswerve targeting line"
-  Cancel     -> "cancel action"
-  Accept     -> "accept choice"
-  Clear      -> "clear messages"
-  History    -> "display previous messages"
-  MarkVision -> "mark visible area"
-  MarkSmell  -> "mark smell"
-  Help       -> "display help"
+  Cancel      -> "cancel action"
+  Accept      -> "accept choice"
+  Clear       -> "clear messages"
+  History     -> "display previous messages"
+  MarkVision  -> "mark visible area"
+  MarkSmell   -> "mark smell"
+  MarkSuspect -> "mark suspect terrain"
+  Help        -> "display help"

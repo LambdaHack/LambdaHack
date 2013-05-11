@@ -55,7 +55,7 @@ wallSuspectV = TileKind
   { tsymbol  = '|'
   , tname    = "moldy wall"
   , tfreq    = [("suspect vertical wall", 1)]
-  , tcolor   = BrCyan
+  , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfeature = [ Suspect
                , ChangeTo "vertical closed door"  -- never triggered, hack 47
@@ -94,7 +94,7 @@ wallSuspectH = TileKind
   { tsymbol  = '-'
   , tname    = "scratched wall"
   , tfreq    = [("suspect horizontal wall", 1)]
-  , tcolor   = BrCyan
+  , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfeature = [ Suspect
                , ChangeTo "horizontal closed door"  -- never triggered, hack 47

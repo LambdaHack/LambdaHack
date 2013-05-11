@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.State
   ( StateClient(..), defStateClient, defHistory
   , updateTarget, getTarget, updateLeader, sside
   , TgtMode(..), Target(..)
-  , toggleMarkVision, toggleMarkSmell
+  , toggleMarkVision, toggleMarkSmell, toggleMarkSuspect
   ) where
 
 import Control.Monad
@@ -37,27 +37,28 @@ import Game.LambdaHack.Utils.Assert
 -- from game to game, even across playing sessions.
 -- Data invariant: if @_sleader@ is @Nothing@ then so is @srunning@.
 data StateClient = StateClient
-  { stgtMode    :: !(Maybe TgtMode)  -- ^ targeting mode
-  , scursor     :: !(Maybe Point)    -- ^ cursor coordinates
-  , seps        :: !Int           -- ^ a parameter of the tgt digital line
-  , starget     :: !(EM.EnumMap ActorId Target)
+  { stgtMode     :: !(Maybe TgtMode)  -- ^ targeting mode
+  , scursor      :: !(Maybe Point)    -- ^ cursor coordinates
+  , seps         :: !Int           -- ^ a parameter of the tgt digital line
+  , starget      :: !(EM.EnumMap ActorId Target)
                                 -- ^ targets of all our actors in the dungeon
-  , srunning    :: !(Maybe (Vector, Int))  -- ^ direction and distance of running
-  , sreport     :: !Report        -- ^ current messages
-  , shistory    :: !History       -- ^ history of messages
-  , sundo       :: ![Atomic]      -- ^ atomic commands performed to date
-  , sdisco      :: !Discovery     -- ^ remembered item discoveries
-  , sfper       :: !FactionPers   -- ^ faction perception indexed by levels
-  , srandom     :: !R.StdGen      -- ^ current random generator
-  , sconfigUI   :: !ConfigUI      -- ^ this client config (including initial RNG)
-  , slastKey    :: !(Maybe K.KM)  -- ^ last command key pressed
-  , sframe      :: ![(Maybe SingleFrame, Bool)]  -- ^ accumulated frames
-  , _sleader    :: !(Maybe ActorId)  -- ^ selected actor
-  , _sside      :: !FactionId     -- ^ faction controlled by the client
-  , squit       :: !Bool          -- ^ exit the game loop
-  , sisAI       :: !Bool          -- ^ whether it's an AI client
-  , smarkVision :: !Bool        -- ^ mark leader and party FOV
-  , smarkSmell  :: !Bool        -- ^ mark smell, if the leader can smell
+  , srunning     :: !(Maybe (Vector, Int))  -- ^ direction and distance of running
+  , sreport      :: !Report        -- ^ current messages
+  , shistory     :: !History       -- ^ history of messages
+  , sundo        :: ![Atomic]      -- ^ atomic commands performed to date
+  , sdisco       :: !Discovery     -- ^ remembered item discoveries
+  , sfper        :: !FactionPers   -- ^ faction perception indexed by levels
+  , srandom      :: !R.StdGen      -- ^ current random generator
+  , sconfigUI    :: !ConfigUI      -- ^ this client config (including initial RNG)
+  , slastKey     :: !(Maybe K.KM)  -- ^ last command key pressed
+  , sframe       :: ![(Maybe SingleFrame, Bool)]  -- ^ accumulated frames
+  , _sleader     :: !(Maybe ActorId)  -- ^ selected actor
+  , _sside       :: !FactionId     -- ^ faction controlled by the client
+  , squit        :: !Bool          -- ^ exit the game loop
+  , sisAI        :: !Bool          -- ^ whether it's an AI client
+  , smarkVision  :: !Bool        -- ^ mark leader and party FOV
+  , smarkSmell   :: !Bool        -- ^ mark smell, if the leader can smell
+  , smarkSuspect :: !Bool        -- ^ mark suspect features
   }
   deriving (Show, Typeable)
 
@@ -100,6 +101,7 @@ defStateClient shistory sconfigUI _sside sisAI = do
     , sisAI
     , smarkVision = False
     , smarkSmell  = False
+    , smarkSuspect = False
     }
 
 defHistory :: IO History
@@ -135,6 +137,10 @@ toggleMarkVision s@StateClient{smarkVision} = s {smarkVision = not smarkVision}
 toggleMarkSmell :: StateClient -> StateClient
 toggleMarkSmell s@StateClient{smarkSmell} = s {smarkSmell = not smarkSmell}
 
+toggleMarkSuspect :: StateClient -> StateClient
+toggleMarkSuspect s@StateClient{smarkSuspect} =
+  s {smarkSuspect = not smarkSuspect}
+
 instance Binary StateClient where
   put StateClient{..} = do
     put stgtMode
@@ -153,6 +159,7 @@ instance Binary StateClient where
     put sisAI
     put smarkVision
     put smarkSmell
+    put smarkSuspect
   get = do
     stgtMode <- get
     scursor <- get
@@ -170,6 +177,7 @@ instance Binary StateClient where
     sisAI <- get
     smarkVision <- get
     smarkSmell <- get
+    smarkSuspect <- get
     let sreport = emptyReport
         sfper = EM.empty
         srandom = read g

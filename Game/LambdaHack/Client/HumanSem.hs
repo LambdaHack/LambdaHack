@@ -75,6 +75,7 @@ cmdAction cmd = case cmd of
   History -> historyHuman >> return Nothing
   MarkVision -> modifyClient toggleMarkVision >> return Nothing
   MarkSmell -> modifyClient toggleMarkSmell >> return Nothing
+  MarkSuspect -> modifyClient toggleMarkSuspect >> return Nothing
   Help -> helpHuman >> return Nothing
 
 -- | If in targeting mode, check if the current level is the same

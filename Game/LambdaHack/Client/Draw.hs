@@ -47,7 +47,8 @@ draw :: ColorMode -> Kind.COps -> Perception -> LevelId -> ActorId
      -> StateClient -> State -> Overlay
      -> SingleFrame
 draw dm cops per drawnLevelId leader
-     cli@StateClient{stgtMode, scursor, seps, sdisco, smarkVision, smarkSmell}
+     cli@StateClient{ stgtMode, scursor, seps, sdisco
+                    , smarkVision, smarkSmell, smarkSuspect }
      s overlay =
   let Kind.COps{ coactor=Kind.Ops{okind}
                , cotile=Kind.Ops{okind=tokind, ouniqGroup} } = cops
@@ -98,6 +99,11 @@ draw dm cops per drawnLevelId leader
                      | otherwise = fromMaybe asymbol bsymbol
             rainbow p = toEnum $ fromEnum p `rem` 14 + 1
             actorsHere = actorAssocs (const True) drawnLevelId s
+            vcolor t = if vis
+                       then if smarkSuspect && F.Suspect `elem` tfeature t
+                            then Color.BrCyan
+                            else tcolor t
+                       else tcolor2 t
             (char, fg0) =
               case ( L.find (\ (_, m) -> pos0 == Actor.bpos m) actorsHere
                    , L.find (\ (_, m) -> scursor == Just (Actor.bpos m))
@@ -123,7 +129,7 @@ draw dm cops per drawnLevelId leader
                   (timeToDigit smellTimeout smlt, rainbow pos0)
                   | otherwise ->
                   case EM.keys items of
-                    [] -> (tsymbol tk, if vis then tcolor tk else tcolor2 tk)
+                    [] -> (tsymbol tk, vcolor tk)
                     i : _ -> Item.viewItem $ getItemBody i s
             vis = ES.member pos0 $ totalVisible per
             visPl = actorSeesLoc per leader pos0
