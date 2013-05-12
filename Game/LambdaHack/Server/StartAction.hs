@@ -71,8 +71,8 @@ reinitGame quitter = do
   -- The biggest part is content, which really needs to be updated
   -- at this point to keep clients in sync with server improvements.
   fromGlobal <- getsState localFromGlobal
-  glo <- getState
-  let defLoc | knowMap = glo
+  s <- getState
+  let defLoc | knowMap = s
              | otherwise = fromGlobal
   discoS <- getsServer sdisco
   let misteriousSymbols = ritemProject $ Kind.stdRuleset corule

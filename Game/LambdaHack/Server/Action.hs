@@ -87,20 +87,20 @@ getPerFid fid arena = do
 
 saveGameSer :: MonadServer m => m ()
 saveGameSer = do
-  glo <- getState
+  s <- getState
   ser <- getServer
   config <- getsServer sconfig
-  liftIO $ Save.saveGameSer config glo ser
+  liftIO $ Save.saveGameSer config s ser
 
 -- | Save a backup of the save game file, in case of crashes.
 --
 -- See 'Save.saveGameBkp'.
 saveGameBkp :: MonadServer m => m ()
 saveGameBkp = do
-  glo <- getState
+  s <- getState
   ser <- getServer
   config <- getsServer sconfig
-  liftIO $ Save.saveGameBkpSer config glo ser
+  liftIO $ Save.saveGameBkpSer config s ser
 
 -- | Dumps the current game rules configuration to a file.
 dumpCfg :: MonadServer m => FilePath -> m ()
