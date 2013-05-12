@@ -14,6 +14,7 @@ import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.ClientCmd
+import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
@@ -85,7 +86,7 @@ reinitGame quitter = do
 createFactions :: Kind.COps -> Config -> Rnd FactionDict
 createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
                         , costrat=Kind.Ops{opick=sopick} } config = do
-  let g isHuman (gname, fType) = do
+  let rawCreate isHuman ((gname, fType), gcolor) = do
         gkind <- opick fType (const True)
         let fk = okind gkind
             gdipl = EM.empty  -- fixed below
@@ -97,8 +98,12 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
         gAiMember <- fmap Just $ sopick (fAiMember fk) (const True)
         let gleader = Nothing
         return Faction{..}
-  lHuman <- mapM (g True) (configHuman config)
-  lComputer <- mapM (g False) (configComputer config)
+      actorColors = cycle Color.brightCol
+      humanColors = [Color.BrWhite] ++ actorColors
+      computerColors = drop (length (configHuman config) - 1) actorColors
+  lHuman <- mapM (rawCreate True) $ zip (configHuman config) humanColors
+  lComputer <- mapM (rawCreate False)
+               $ zip (configComputer config) computerColors
   let rawFs = zip [toEnum 1..] $ lHuman ++ lComputer
       isOfType fType fact =
         let fk = okind $ gkind fact

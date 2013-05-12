@@ -22,6 +22,7 @@ import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.AtomicCmd
+import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
@@ -199,11 +200,11 @@ summonFriends bfaction ps arena = do
 
 addActor :: (MonadAtomic m, MonadServer m)
          => Kind.Id ActorKind -> FactionId -> Point -> LevelId -> Int
-         -> Maybe Char -> Maybe Text
+         -> Maybe Char -> Maybe Text -> Maybe Color.Color
          -> m ActorId
-addActor mk bfaction pos lid hp msymbol mname = do
+addActor mk bfaction pos lid hp bsymbol bname bcolor = do
   time <- getsState $ getLocalTime lid
-  let m = actorTemplate mk msymbol mname hp pos lid time bfaction False
+  let m = actorTemplate mk bsymbol bname bcolor hp pos lid time bfaction False
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
   execCmdAtomic $ CreateActorA acounter m []
@@ -216,15 +217,18 @@ addHero :: (MonadAtomic m, MonadServer m)
         -> m ActorId
 addHero bfaction ppos arena configHeroNames mNumber = do
   Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
-  let mk = heroKindId coactor
-  hp <- rndToAction $ rollDice $ ahp $ okind mk
+  fact <- getsState $ (EM.! bfaction) . sfaction
+  let kId = heroKindId coactor
+  hp <- rndToAction $ rollDice $ ahp $ okind kId
   mhs <- mapM (\n -> getsState $ \s -> tryFindHeroK s bfaction n) [0..9]
   let freeHeroK = elemIndex Nothing mhs
       n = fromMaybe (fromMaybe 100 freeHeroK) mNumber
       symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
       name = findHeroName configHeroNames n
+      color = gcolor fact
       startHP = hp - (hp `div` 5) * min 3 n
-  addActor mk bfaction ppos arena startHP (Just symbol) (Just name)
+  addActor
+    kId bfaction ppos arena startHP (Just symbol) (Just name) (Just color)
 
 -- | Find a hero name in the config file, or create a stock name.
 findHeroName :: [(Int, Text)] -> Int -> Text
@@ -278,7 +282,7 @@ addMonster :: (MonadAtomic m, MonadServer m)
 addMonster mk bfaction ppos lid = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   hp <- rndToAction $ rollDice $ ahp $ okind mk
-  addActor mk bfaction ppos lid hp Nothing Nothing
+  addActor mk bfaction ppos lid hp Nothing Nothing Nothing
 
 -- ** CreateItem
 

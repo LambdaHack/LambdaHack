@@ -32,7 +32,6 @@ import Data.Typeable
 import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Common.Color as Color
-import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
@@ -40,8 +39,9 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.Utils.Assert
 
 -- | A unique identifier of an actor in the dungeon.
 newtype ActorId = ActorId Int
@@ -93,11 +93,11 @@ partActor Kind.Ops{oname} a = MU.Text $ fromMaybe (oname $ bkind a) (bname a)
 -- Actor operations
 
 -- | A template for a new non-projectile actor.
-actorTemplate :: Kind.Id ActorKind -> Maybe Char -> Maybe Text -> Int
-              -> Point -> LevelId -> Time -> FactionId -> Bool -> Actor
-actorTemplate bkind bsymbol bname bhp bpos blid btime bfaction bproj =
-  let bcolor  = Nothing
-      bspeed  = Nothing
+actorTemplate :: Kind.Id ActorKind -> Maybe Char -> Maybe Text
+              -> Maybe Color.Color -> Int -> Point -> LevelId -> Time
+              -> FactionId -> Bool -> Actor
+actorTemplate bkind bsymbol bname bcolor bhp bpos blid btime bfaction bproj =
+  let bspeed  = Nothing
       bpath   = Nothing
       bbag    = EM.empty
       binv    = EM.empty

@@ -4,7 +4,7 @@ module Game.LambdaHack.Common.Flavour
   ( -- * The @Flavour@ type
     Flavour
   , -- * Constructors
-    zipPlain, zipFancy, darkCol, brightCol, stdCol, stdFlav
+    zipPlain, zipFancy, stdFlav
   , -- * Accessors
     flavourToColor, flavourToName
   ) where
@@ -40,12 +40,6 @@ instance Binary Flavour where
 zipPlain, zipFancy :: [Color] -> [Flavour]
 zipPlain = L.map (Flavour False)
 zipFancy = L.map (Flavour True)
-
--- | Colour sets.
-darkCol, brightCol, stdCol :: [Color]
-darkCol   = [Red .. Cyan]
-brightCol = [BrRed .. BrCyan]  -- BrBlack is not really that bright
-stdCol    = darkCol ++ brightCol
 
 -- | The standard full set of flavours.
 stdFlav :: [Flavour]

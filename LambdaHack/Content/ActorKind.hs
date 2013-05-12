@@ -4,10 +4,10 @@ module Content.ActorKind ( cdefs ) where
 
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Color
-import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Content.ActorKind
 
 cdefs :: ContentDef ActorKind
 cdefs = ContentDef
@@ -24,7 +24,7 @@ hero = ActorKind
   { asymbol = '@'
   , aname   = "hero"
   , afreq   = [("hero", 1)]
-  , acolor  = BrWhite  -- Heroes white, monsters colorful.
+  , acolor  = BrWhite  -- modified if many hero factions
   , ahp     = RollDice 50 1
   , aspeed  = toSpeed 2
   , asight  = True

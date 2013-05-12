@@ -2,7 +2,8 @@
 -- | Colours and text attributes.
 module Game.LambdaHack.Common.Color
   ( -- * Colours
-    Color(..), defBG, defFG, isBright, legalBG, colorToRGB
+    Color(..), defBG, defFG, isBright, legalBG, darkCol, brightCol, stdCol
+  , colorToRGB
     -- * Text attributes and the screen
   , Attr(..), defAttr, AttrChar(..)
   ) where
@@ -90,6 +91,12 @@ isBright c = c >= BrBlack
 -- only these are legal backgrounds.
 legalBG :: [Color]
 legalBG = [Black, White, Blue, Magenta]
+
+-- | Colour sets.
+darkCol, brightCol, stdCol :: [Color]
+darkCol   = [Red .. Cyan]
+brightCol = [BrRed .. BrCyan]  -- BrBlack is not really that bright
+stdCol    = darkCol ++ brightCol
 
 -- | Translationg to heavily modified Linux console color RGB values.
 colorToRGB :: Color -> String

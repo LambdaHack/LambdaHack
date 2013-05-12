@@ -13,10 +13,11 @@ import Data.Text (Text)
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Content.FactionKind
-import Game.LambdaHack.Content.StrategyKind
+import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Content.FactionKind
+import Game.LambdaHack.Content.StrategyKind
 
 -- | All factions in the game, indexed by faction identifier.
 type FactionDict = EM.EnumMap FactionId Faction
@@ -33,6 +34,7 @@ data Faction = Faction
   , gdipl     :: !Dipl                    -- ^ diplomatic state
   , gquit     :: !(Maybe (Bool, Status))  -- ^ cause of game end/exit
   , gleader   :: !(Maybe ActorId)
+  , gcolor    :: !Color.Color             -- ^ color of actors or their frames
   }
   deriving (Show, Eq)
 
@@ -100,6 +102,7 @@ instance Binary Faction where
     put gdipl
     put gquit
     put gleader
+    put gcolor
   get = do
     gkind <- get
     gname <- get
@@ -108,4 +111,5 @@ instance Binary Faction where
     gdipl <- get
     gquit <- get
     gleader <- get
+    gcolor <- get
     return Faction{..}
