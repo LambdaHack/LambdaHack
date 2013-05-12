@@ -38,12 +38,12 @@ runDir leader (dir, dist) = do
   b <- getsState $ getActorBody leader
   lvl <- getsLevel (blid b) id
   stgtMode <- getsClient stgtMode
-  assert (isNothing stgtMode `blame` (dir, dist, stgtMode, "not off")) $ do
-    let -- Do not count distance if we just open a door.
-        distNew = if accessibleDir cops lvl (bpos b) dir
-                  then dist + 1
-                  else dist
-    return (dir, distNew)
+  assert (isNothing stgtMode `blame` (dir, dist, stgtMode)) skip
+  let -- Do not count distance if we just open a door.
+      distNew = if accessibleDir cops lvl (bpos b) dir
+                then dist + 1
+                else dist
+  return (dir, distNew)
 
 -- | Human running mode, determined from the nearby cave layout.
 data RunMode =
@@ -183,7 +183,7 @@ continueRunDir leader (dirLast, distLast) = do
               posHasFeature posHasItems lxsize lysize (dir, distNew)
         | otherwise = abort  -- do not open doors in the middle of a run
       tryRun dir = tryRunDist (dir, distLast)
-      tryRunAndStop dir = tryRunDist (dir, 1000)
+      _tryRunAndStop dir = tryRunDist (dir, 1000)
       openableDir loc dir = Tile.hasFeature cotile F.Openable
                               (lvl `at` (loc `shift` dir))
       dirEnterable loc d = accessibleDir cops lvl loc d || openableDir loc d
@@ -191,11 +191,15 @@ continueRunDir leader (dirLast, distLast) = do
     RunDeadEnd -> abort                   -- we don't run backwards
     RunOpen    -> tryRun dirLast          -- run forward into the open space
     RunHub     -> abort                   -- stop and decide where to go
-    RunCorridor (dirNext, turn) ->        -- look ahead
-      case runMode (posHere `shift` dirNext) dirNext dirEnterable lxsize of
-        RunDeadEnd     -> tryRun dirNext  -- explore the dead end
-        RunCorridor _  -> tryRun dirNext  -- follow the corridor
-        RunOpen | turn -> abort           -- stop and decide when to turn
-        RunHub  | turn -> abort           -- stop and decide when to turn
-        RunOpen -> tryRunAndStop dirNext  -- no turn, get closer and stop
-        RunHub  -> tryRunAndStop dirNext  -- no turn, get closer and stop
+    RunCorridor (dirNext, _turn) ->       -- look ahead
+      tryRun dirNext
+      -- TODO: instead of a lookahead (does not work, since clients have
+      -- limited knowledge), pass _turn similarly as in (dir, 1000)
+      -- and decide next turn.
+      -- case runMode (posHere `shift` dirNext) dirNext dirEnterable lxsize of
+      --   RunDeadEnd     -> tryRun dirNext  -- explore the dead end
+      --   RunCorridor _  -> tryRun dirNext  -- follow the corridor
+      --   RunOpen | turn -> abort           -- stop and decide when to turn
+      --   RunHub  | turn -> abort           -- stop and decide when to turn
+      --   RunOpen -> tryRunAndStop dirNext  -- no turn, get closer and stop
+      --   RunHub  -> tryRunAndStop dirNext  -- no turn, get closer and stop
