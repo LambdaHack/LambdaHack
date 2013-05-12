@@ -12,8 +12,6 @@ import Control.Concurrent
 import Control.Monad
 import Data.Maybe
 
-import Game.LambdaHack.Common.Action
-import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.AtomicSemCli
 import Game.LambdaHack.Client.Binding
@@ -21,6 +19,8 @@ import Game.LambdaHack.Client.ClientSem
 import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.LoopAction
 import Game.LambdaHack.Client.State
+import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -81,12 +81,12 @@ wireSession exeClientUI exeClientAI cops@Kind.COps{corule} exeServer = do
       font = configFont sconfigUI
   defHist <- defHistory
   let cli = defStateClient defHist sconfigUI
-      loc = updateCOps (const cops) emptyState
+      pos = updateCOps (const cops) emptyState
       executorAI _sfs fid =
         let noSession = assert `failure` fid
-        in exeClientAI noSession loc (cli fid True)
+        in exeClientAI noSession pos (cli fid True)
       executorUI sfs fid =
-        exeClientUI SessionUI{..} loc (cli fid False)
+        exeClientUI SessionUI{..} pos (cli fid False)
   startup font $ \sfs -> exeServer (executorUI sfs) (executorAI sfs)
 
 -- | Wire together game content, the main loop of game clients,

@@ -317,7 +317,7 @@ projectSer source tpos eps iid container = do
 addProjectile :: (MonadAtomic m, MonadServer m)
               => ItemId -> Point -> LevelId -> FactionId -> [Point] -> Time
               -> m ActorId
-addProjectile iid loc blid bfaction path btime = do
+addProjectile iid bpos blid bfaction path btime = do
   Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}} <- getsState scops
   disco <- getsServer sdisco
   item <- getsState $ getItemBody iid
@@ -338,7 +338,7 @@ addProjectile iid loc blid bfaction path btime = do
         , bspeed  = Just speed
         , bhp     = 0
         , bpath   = Just dirPath
-        , bpos    = loc
+        , bpos
         , blid
         , bbag    = EM.empty
         , binv    = EM.empty

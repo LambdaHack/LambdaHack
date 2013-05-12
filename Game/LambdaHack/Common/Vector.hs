@@ -76,9 +76,9 @@ shift p (Vector dir) = toEnum $ fromEnum p + dir
 
 -- | Translate a point by a vector, but only if the result fits in an area.
 shiftBounded :: X -> Area -> Point -> Vector -> Point
-shiftBounded lxsize area loc dir =
-  let res = shift loc dir
-  in if inside lxsize res area then res else loc
+shiftBounded lxsize area pos dir =
+  let res = shift pos dir
+  in if inside lxsize res area then res else pos
 
 -- | Vectors of all unit moves, clockwise, starting north-west.
 moves :: X -> [Vector]

@@ -13,21 +13,21 @@ import qualified Data.List as L
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Server.Fov.Common
-import qualified Game.LambdaHack.Server.Fov.Digital as Digital
-import qualified Game.LambdaHack.Server.Fov.Permissive as Permissive
-import qualified Game.LambdaHack.Server.Fov.Shadow as Shadow
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Common.VectorXY
+import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.Content.TileKind
+import Game.LambdaHack.Server.Fov.Common
+import qualified Game.LambdaHack.Server.Fov.Digital as Digital
+import qualified Game.LambdaHack.Server.Fov.Permissive as Permissive
+import qualified Game.LambdaHack.Server.Fov.Shadow as Shadow
 
 newtype PerceptionReachable = PerceptionReachable
   { preachable :: ES.EnumSet Point }
@@ -90,9 +90,9 @@ isVisible :: Kind.Ops TileKind -> PerceptionReachable
           -> Level -> ES.EnumSet Point -> Point -> Bool
 isVisible cotile PerceptionReachable{preachable}
           lvl@Level{lxsize, lysize} lights pos0 =
-  let litDirectly loc = Tile.isLit cotile (lvl `at` loc)
-                        || loc `ES.member` lights
-      l_and_R loc = litDirectly loc && loc `ES.member` preachable
+  let litDirectly pos = Tile.isLit cotile (lvl `at` pos)
+                        || pos `ES.member` lights
+      l_and_R pos = litDirectly pos && pos `ES.member` preachable
   in litDirectly pos0 || L.any l_and_R (vicinity lxsize lysize pos0)
 
 -- | Reachable are all fields on an unblocked path from the hero position.

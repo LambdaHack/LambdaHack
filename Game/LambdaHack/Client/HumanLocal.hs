@@ -200,8 +200,8 @@ retargetLeader = do
 selectHeroHuman :: (MonadClientAbort m, MonadClientUI m) => Int -> m ()
 selectHeroHuman k = do
   side <- getsClient sside
-  loc <- getState
-  case tryFindHeroK loc side k of
+  pos <- getState
+  case tryFindHeroK pos side k of
     Nothing  -> abortWith "No such member of the party."
     Just (aid, _) -> void $ selectLeader aid
 
@@ -243,8 +243,8 @@ selectLeader actor = do
   if actor == leader
     then return False -- already selected
     else do
-      loc <- getState
-      modifyClient $ updateLeader actor loc
+      pos <- getState
+      modifyClient $ updateLeader actor pos
       pbody <- getsState $ getActorBody actor
       assert (not (bproj pbody) `blame` (actor, pbody)) skip
       -- Move the cursor, if active, to the new level.
@@ -374,7 +374,7 @@ tgtAscendHuman :: (MonadClientAbort m, MonadClientUI m)
 tgtAscendHuman k = do
   Kind.COps{cotile} <- getsState scops
   dungeon <- getsState sdungeon
-  loc <- getState
+  pos <- getState
   cursor <- getsClient scursor
   (tgtId, lvl) <- viewedLevel
   let rightStairs = case cursor of
@@ -386,7 +386,7 @@ tgtAscendHuman k = do
              || k == -1
              && Tile.hasFeature cotile (F.Cause $ Effect.Descend 1) tile
   if rightStairs  -- stairs, in the right direction
-    then case whereTo loc tgtId k of
+    then case whereTo pos tgtId k of
       Nothing ->  -- we are at the "end" of the dungeon
         abortWith "no more levels in this direction"
       Just (nln, npos) ->
@@ -532,15 +532,15 @@ endTargetingMsg = do
   leader <- getLeaderUI
   pbody <- getsState $ getActorBody leader
   target <- getsClient $ getTarget leader
-  loc <- getState
+  pos <- getState
   Level{lxsize} <- cursorLevel
   let targetMsg = case target of
                     Just (TEnemy a _ll) ->
-                      if memActor a (blid pbody) loc
-                      then partActor coactor $ getActorBody a loc
+                      if memActor a (blid pbody) pos
+                      then partActor coactor $ getActorBody a pos
                       else "a fear of the past"
-                    Just (TPos pos) ->
-                      MU.Text $ "position" <+> showPoint lxsize pos
+                    Just (TPos tpos) ->
+                      MU.Text $ "position" <+> showPoint lxsize tpos
                     Nothing -> "current cursor position continuously"
   msgAdd $ makeSentence
     [MU.SubjectVerbSg (partActor coactor pbody) "target", targetMsg]

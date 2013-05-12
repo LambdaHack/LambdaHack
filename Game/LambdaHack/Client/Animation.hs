@@ -56,8 +56,8 @@ renderAnim lxsize lysize basicFrame (Animation anim) =
   let modifyFrame SingleFrame{sfLevel = levelOld, ..} am =
         let fLine y lineOld =
               let f l (x, acOld) =
-                    let loc = toPoint lxsize (PointXY (x, y))
-                        !ac = fromMaybe acOld $ EM.lookup loc am
+                    let pos = toPoint lxsize (PointXY (x, y))
+                        !ac = fromMaybe acOld $ EM.lookup pos am
                     in ac : l
               in L.foldl' f [] (zip [lxsize-1,lxsize-2..0] (reverse lineOld))
             sfLevel =  -- Fully evaluated.
@@ -128,7 +128,7 @@ blockMiss poss = Animation $ map (EM.fromList . mzipPairs poss)
 
 -- | Death animation for an organic body.
 deathBody :: Point -> Animation
-deathBody loc = Animation $ map (maybe EM.empty (EM.singleton loc))
+deathBody pos = Animation $ map (maybe EM.empty (EM.singleton pos))
   [ coloredSymbol BrRed '\\'
   , coloredSymbol BrRed '\\'
   , coloredSymbol BrRed '|'

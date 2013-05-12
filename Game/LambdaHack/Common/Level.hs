@@ -187,10 +187,10 @@ findPosTry _        ltile [p]       = findPos ltile p
 findPosTry numTries ltile l@(_ : tl) = assert (numTries > 0) $
   let search 0 = findPosTry numTries ltile tl
       search k = do
-        loc <- randomR $ Kind.bounds ltile
-        let tile = ltile Kind.! loc
-        if L.all (\ p -> p loc tile) l
-          then return loc
+        pos <- randomR $ Kind.bounds ltile
+        let tile = ltile Kind.! pos
+        if L.all (\ p -> p pos tile) l
+          then return pos
           else search (k - 1)
   in search numTries
 

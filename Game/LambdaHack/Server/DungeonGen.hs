@@ -12,8 +12,6 @@ import Data.Maybe
 import Data.Text (Text)
 import qualified System.Random as R
 
-import Game.LambdaHack.Content.CaveKind
-import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Common.Feature as F
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -21,11 +19,13 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Random
+import qualified Game.LambdaHack.Common.Tile as Tile
+import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Content.CaveKind
+import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.DungeonGen.Cave hiding (TileMapXY)
 import Game.LambdaHack.Server.DungeonGen.Place
-import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Utils.Assert
 
 convertTileMaps :: Rnd (Kind.Id TileKind) -> Int -> Int -> TileMapXY
@@ -45,9 +45,9 @@ placeStairs cotile@Kind.Ops{opick} cmap CaveKind{..} dplaces = do
           , \ l _ -> chessDist cxsize su l >= cminStairDist `div` 2
           , \ l t -> l /= su && Tile.hasFeature cotile F.Boring t
           ]
-  let fitArea loc = inside cxsize loc . qarea
-      findLegend loc =
-        maybe clitLegendTile qlegend $ find (fitArea loc) dplaces
+  let fitArea pos = inside cxsize pos . qarea
+      findLegend pos =
+        maybe clitLegendTile qlegend $ find (fitArea pos) dplaces
   upId   <- opick (findLegend su) $ Tile.kindHasFeature F.Ascendable
   downId <- opick (findLegend sd) $ Tile.kindHasFeature F.Descendable
   return (su, upId, sd, downId)

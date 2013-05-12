@@ -53,7 +53,7 @@ queryAI actor = do
           $ "HandleAI abilities:" <+> showT factionAbilities
           <>          ", symbol:" <+> showT (bsymbol body)
           <>          ", aid:"    <+> showT actor
-          <>          ", loc:"    <+> showT (bpos body)
+          <>          ", pos:"    <+> showT (bpos body)
           <> "\nHandleAI target:" <+> showT stratTarget
           <> "\nHandleAI btgt:"   <+> showT btarget
           <> "\nHandleAI move:"   <+> showT stratAction

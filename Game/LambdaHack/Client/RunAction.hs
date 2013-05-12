@@ -55,7 +55,7 @@ data RunMode =
 -- | Determine the running mode. For corridors, pick the running direction
 -- trying to explore all corners, by prefering cardinal to diagonal moves.
 runMode :: Point -> Vector -> (Point -> Vector -> Bool) -> X -> RunMode
-runMode loc dir dirEnterable lxsize =
+runMode pos dir dirEnterable lxsize =
   let dirNearby dir1 dir2 = euclidDistSq lxsize dir1 dir2 == 1
       dirBackward d = euclidDistSq lxsize (neg dir) d <= 1
       dirAhead d = euclidDistSq lxsize dir d <= 2
@@ -67,9 +67,9 @@ runMode loc dir dirEnterable lxsize =
                 [_] -> []  -- a turning corridor, two tiles wide
                 l   -> dirC : l  -- too wide
         in L.foldr f []
-      dirsEnterable = L.filter (dirEnterable loc) (moves lxsize)
+      dirsEnterable = L.filter (dirEnterable pos) (moves lxsize)
   in case dirsEnterable of
-    [] -> assert `failure` (loc, dir)
+    [] -> assert `failure` (pos, dir)
     [negdir] -> assert (negdir == neg dir) $ RunDeadEnd
     _ ->
       let dirsOpen = findOpen dirsEnterable
@@ -90,7 +90,7 @@ runDisturbance :: Point -> Int -> Report
                -> [Actor] -> [Actor] -> Perception -> Bool -> Point
                -> (F.Feature -> Point -> Bool) -> (Point -> Bool) -> X -> Y
                -> (Vector, Int) -> Maybe (Vector, Int)
-runDisturbance locLast distLast report hs ms per markSuspect posHere
+runDisturbance posLast distLast report hs ms per markSuspect posHere
                posHasFeature posHasItems lxsize lysize (dirNew, distNew) =
   let boringMsgs = map BS.pack [ "Saving backup."
                                , "You hear some noises." ]
@@ -99,7 +99,7 @@ runDisturbance locLast distLast report hs ms per markSuspect posHere
       msposs    = ES.delete posHere $ ES.fromList (L.map bpos ms)
       enemySeen =
         not (ES.null (msposs `ES.intersection` totalVisible per))
-      surrLast  = locLast : vicinity lxsize lysize locLast
+      surrLast  = posLast : vicinity lxsize lysize posLast
       surrHere  = posHere : vicinity lxsize lysize posHere
       posThere  = posHere `shift` dirNew
       heroThere = posThere `elem` L.map bpos hs
@@ -130,8 +130,8 @@ runDisturbance locLast distLast report hs ms per markSuspect posHere
         in touchHere L.\\ touchLast
       touchExplore fun = touchNew fun == [posThere]
       touchStop fun = touchNew fun /= []
-      standNew fun = L.filter (\ loc -> posHasFeature F.Walkable loc ||
-                                        posHasFeature F.Openable loc)
+      standNew fun = L.filter (\pos -> posHasFeature F.Walkable pos ||
+                                       posHasFeature F.Openable pos)
                        (touchNew fun)
       standExplore fun = not (fun posHere) && standNew fun == [posThere]
       standStop fun = not (fun posHere) && standNew fun /= []
@@ -171,22 +171,22 @@ continueRunDir leader (dirLast, distLast) = do
   hs <- getsState $ actorList (not . (isAtWar fact)) arena
   lvl@Level{lxsize, lysize} <- getsLevel (blid body) id
   let posHere = bpos body
-      posHasFeature f loc = Tile.hasFeature cotile f (lvl `at` loc)
-      posHasItems loc = not $ EM.null $ lvl `atI` loc
-      locLast = if distLast == 0 then posHere else posHere `shift` neg dirLast
+      posHasFeature f pos = Tile.hasFeature cotile f (lvl `at` pos)
+      posHasItems pos = not $ EM.null $ lvl `atI` pos
+      posLast = if distLast == 0 then posHere else posHere `shift` neg dirLast
       tryRunDist (dir, distNew)
         | accessibleDir cops lvl posHere dir =
           -- TODO: perhaps @abortWith report2?
           maybe abort (runDir leader) $
             runDisturbance
-              locLast distLast sreport hs ms per smarkSuspect posHere
+              posLast distLast sreport hs ms per smarkSuspect posHere
               posHasFeature posHasItems lxsize lysize (dir, distNew)
         | otherwise = abort  -- do not open doors in the middle of a run
       tryRun dir = tryRunDist (dir, distLast)
       _tryRunAndStop dir = tryRunDist (dir, 1000)
-      openableDir loc dir = Tile.hasFeature cotile F.Openable
-                              (lvl `at` (loc `shift` dir))
-      dirEnterable loc d = accessibleDir cops lvl loc d || openableDir loc d
+      openableDir pos dir = Tile.hasFeature cotile F.Openable
+                              (lvl `at` (pos `shift` dir))
+      dirEnterable pos d = accessibleDir cops lvl pos d || openableDir pos d
   case runMode posHere dirLast dirEnterable lxsize of
     RunDeadEnd -> abort                   -- we don't run backwards
     RunOpen    -> tryRun dirLast          -- run forward into the open space

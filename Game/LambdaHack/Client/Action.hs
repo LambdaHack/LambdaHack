@@ -334,10 +334,10 @@ drawOverlay dm over = do
   arena <- getArenaUI
   let lid = maybe arena tgtLevelId stgtMode
   leader <- getLeaderUI
-  loc <- getState
+  pos <- getState
   cli <- getClient
   per <- getPerFid lid
-  return $! draw dm cops per lid leader cli loc over
+  return $! draw dm cops per lid leader cli pos over
 
 -- | Push the frame depicting the current level to the frame queue.
 -- Only one screenful of the report is shown, the rest is ignored.

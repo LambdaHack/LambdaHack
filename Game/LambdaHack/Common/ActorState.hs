@@ -17,7 +17,6 @@ import Data.List
 import Data.Maybe
 
 import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
@@ -27,6 +26,7 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
+import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Utils.Assert
 
 actorAssocs :: (FactionId -> Bool) -> LevelId -> State
@@ -98,8 +98,8 @@ itemPrice (item, jcount) =
     _   -> 0
 
 foesAdjacent :: X -> Y -> Point -> [Actor] -> Bool
-foesAdjacent lxsize lysize loc foes =
-  let vic = ES.fromList $ vicinity lxsize lysize loc
+foesAdjacent lxsize lysize pos foes =
+  let vic = ES.fromList $ vicinity lxsize lysize pos
       lfs = ES.fromList $ map bpos foes
   in not $ ES.null $ ES.intersection vic lfs
 
