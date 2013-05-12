@@ -159,8 +159,11 @@ actorAttackActor source target = do
         else performHit True
     else performHit False
   sfact <- getsState $ (EM.! sfid) . sfaction
-  let fromDipl = EM.findWithDefault Unknown tfid (gdipl sfact)
-  unless (isAtWar sfact tfid) $
+  -- The only way to start a war is to slap an enemy. Being hit by
+  -- and hitting projectiles count as unintentional friendly fire.
+  let friendlyFire = bproj sm || bproj tm
+      fromDipl = EM.findWithDefault Unknown tfid (gdipl sfact)
+  unless (friendlyFire || isAtWar sfact tfid) $
     execCmdAtomic $ DiplFactionA sfid tfid fromDipl War
 
 -- TODO: bumpTile tpos F.Openable

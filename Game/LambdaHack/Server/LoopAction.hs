@@ -195,7 +195,7 @@ handleActors cmdSerSem arena = do
       -- Check if the client cheats, trying to move other faction actors.
       assert (bfaction bPre == side `blame` (bPre, side)) skip
       notAborted <-
-        if bhp bPre <= 0
+        if bhp bPre <= 0 && not (bproj bPre)
         then execFailure side "You strain, fumble and faint from the exertion."
         else cmdSerSem cmdS
       nH <- nHumans
