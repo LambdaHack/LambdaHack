@@ -96,8 +96,9 @@ reacquireTgt cops actor btarget glo per factionAbilities =
       Just TPos{} -> closest           -- prefer visible foes
       Nothing -> closest
   fact = sfaction glo EM.! bfaction
-  foes = actorNotProjAssocs (isAtWar fact) blid glo
-  visibleFoes = L.filter (enemyVisible . snd) (L.map (second bpos) foes)
+  rawFoes = actorNotProjAssocs (isAtWar fact) blid glo
+  foes = filter (\(aid, _) -> aid /= actor) rawFoes
+  visibleFoes = filter (enemyVisible . snd) (L.map (second bpos) foes)
   closest :: Strategy (Maybe Target)
   closest =
     let foeDist = L.map (\ (_, l) -> chessDist lxsize me l) visibleFoes
