@@ -11,12 +11,6 @@
 ; LambdaCave_3: caveEmpty
 ; LambdaCave_10: caveNoise
 
-; [computerPlayers]
-; ; faction "playable" means a random choice
-; Computer_monster: monster
-; Computer_hero: hero
-; Computer_playable: playable
-
 ; [dungeon]
 ; depth: 10
 
@@ -35,14 +29,14 @@
 ; extraHeroes: 2
 ; firstDeathEnds: False
 
-; [humanPlayers]
-; Human_hero_1: hero
-; Human_monster: monster
-; Human_hero_2: hero
-
 ; [heroNames]
 ; HeroName_0: Haskell Alvin
 ; HeroName_1: Alonzo Barkley
 ; HeroName_2: Ernst Abraham
 ; HeroName_3: Samuel Saunders
 ; HeroName_4: Roger Robin
+
+; [players]
+; ; faction "playable" means a random choice
+; computer : [("Computer_monster", "monster"), ("Computer_hero", "hero"), ("Computer_playable", "playable")]
+; human: [("Human_hero_1", "hero"), ("Human_monster", "monster"), ("Human_hero_2", "hero")]

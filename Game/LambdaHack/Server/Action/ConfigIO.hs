@@ -129,9 +129,10 @@ parseConfigRules :: FilePath -> CP -> Config
 parseConfigRules dataDir cp =
   let configSelfString = let CP conf = cp in CF.to_string conf
       configCaves = map (\(n, t) -> (T.pack n, T.pack t)) $ getItems cp "caves"
-      configComputer =
-        let section = getItems cp "computerPlayers"
-        in map (T.pack *** T.pack) section
+      configComputer = map (T.pack *** T.pack)
+                       $ read $ get cp "players" "computer"
+      configHuman = map (T.pack *** T.pack)
+                    $ read $ get cp "players" "human"
       configDepth = get cp "dungeon" "depth"
       configFovMode = get cp "engine" "fovMode"
       configAppDataDir = dataDir
@@ -139,9 +140,6 @@ parseConfigRules dataDir cp =
       configRulesCfgFile = dataDir </> "config.rules"
       configExtraHeroes = get cp "heroes" "extraHeroes"
       configFirstDeathEnds = get cp "heroes" "firstDeathEnds"
-      configHuman =
-        let section = getItems cp "humanPlayers"
-        in map (T.pack *** T.pack) section
       configHeroNames =
         let toNumber (ident, name) =
               case stripPrefix "HeroName_" ident of
