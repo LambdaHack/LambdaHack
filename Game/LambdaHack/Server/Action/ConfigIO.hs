@@ -15,10 +15,13 @@ import System.Environment
 import System.FilePath
 import qualified System.Random as R
 
-import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Utils.Assert
+
+-- TODO: Refactor the client and server ConfigIO.hs, after
+-- https://github.com/kosmikus/LambdaHack/issues/45.
 
 overrideCP :: CP -> FilePath -> IO CP
 overrideCP cp@(CP defCF) cfile = do

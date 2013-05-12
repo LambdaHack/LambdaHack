@@ -19,11 +19,13 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Utils.File
 
+-- TODO: Refactor the client and server Save.hs, after
+-- https://github.com/kosmikus/LambdaHack/issues/37.
+
 _saveLock :: MVar ()
 {-# NOINLINE _saveLock #-}
 _saveLock = unsafePerformIO newEmptyMVar
 
--- TODO: make sure it's executed eagerly.
 -- | Save game to the backup savefile, in case of crashes.
 -- This is only a backup, so no problem is the game is shut down
 -- before saving finishes, so we don't wait on the mvar. However,
