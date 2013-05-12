@@ -147,7 +147,7 @@ proposeAction cops actor btarget disco glo factionAbilities =
   aFrequency Ability.Tools  = if foeVisible
                               then toolsFreq cops actor disco glo
                               else mzero
-  aFrequency Ability.Chase  = if (fpos /= bpos)
+  aFrequency Ability.Chase  = if fpos /= bpos
                               then chaseFreq
                               else mzero
   aFrequency _              = assert `failure` distant

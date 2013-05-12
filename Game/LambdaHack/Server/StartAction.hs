@@ -14,9 +14,6 @@ import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.ClientCmd
-import Game.LambdaHack.Content.FactionKind
-import Game.LambdaHack.Content.ItemKind
-import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
@@ -24,6 +21,11 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Common.Tile as Tile
+import Game.LambdaHack.Content.FactionKind
+import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.Action hiding (sendUpdateAI, sendUpdateUI)
 import Game.LambdaHack.Server.Config
 import qualified Game.LambdaHack.Server.DungeonGen as DungeonGen
@@ -31,8 +33,6 @@ import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.ServerSem
 import Game.LambdaHack.Server.State
-import Game.LambdaHack.Common.State
-import qualified Game.LambdaHack.Common.Tile as Tile
 
 -- | Init connections, clients, debug and perception.
 initConn :: MonadServerConn m
@@ -106,12 +106,12 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
           Just n | n > 0 -> True
           _ -> False
       enemyAlly fact =
-        let f fType = filter (isOfType fType . snd) rawFs
+        let fi fType = filter (isOfType fType . snd) rawFs
             fk = okind $ gkind fact
             lalliance = map (\(fid, _) -> (fid, Alliance))
-                        $ concatMap f $ fally fk
+                        $ concatMap fi $ fally fk
             lwar = map (\(fid, _) -> (fid, War))
-                   $ concatMap f $ fenemy fk
+                   $ concatMap fi $ fenemy fk
             -- War overrides alliance, so 'lwar' second.
             gdipl = EM.fromList $ lalliance ++ lwar
         in fact {gdipl}
@@ -122,7 +122,7 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
         let d1 = EM.findWithDefault Unknown fid2 dipl1
             dipl2 = gdipl $ diplFs EM.! fid2
             d2 = EM.findWithDefault Unknown fid1 dipl2
-        in EM.insert fid1 (max d1 d2) dipl1
+        in EM.insert fid2 (max d1 d2) dipl1
       makeSym fid1 fact1 =
         fact1 {gdipl = foldr (mkSym fid1) (gdipl fact1) (EM.keys diplFs)}
   return $! EM.mapWithKey makeSym diplFs

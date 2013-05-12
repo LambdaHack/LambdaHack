@@ -8,9 +8,6 @@ import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Text as T
 
-import Game.LambdaHack.Common.Action
-import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.HumanCmd
@@ -21,15 +18,18 @@ import Game.LambdaHack.Client.RunAction
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.Strategy
 import Game.LambdaHack.Client.StrategyAction
-import Game.LambdaHack.Content.StrategyKind
+import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
-import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.StrategyKind
+import Game.LambdaHack.Utils.Assert
 
 queryAI :: MonadClient m => ActorId -> m CmdSer
 queryAI actor = do
@@ -47,15 +47,19 @@ queryAI actor = do
     btarget <- rndToAction $ frequency $ bestVariant stratTarget
     modifyClient $ updateTarget actor (const btarget)
     stratAction <- actionStrategy actor factionAbilities
+    -- Run the AI: chose an action from those given by the AI strategy.
+    action <- rndToAction $ frequency $ bestVariant $ stratAction
     let _debug = T.unpack
           $ "HandleAI abilities:" <+> showT factionAbilities
           <>          ", symbol:" <+> showT (bsymbol body)
+          <>          ", aid:"    <+> showT actor
           <>          ", loc:"    <+> showT (bpos body)
           <> "\nHandleAI target:" <+> showT stratTarget
+          <> "\nHandleAI btgt:"   <+> showT btarget
           <> "\nHandleAI move:"   <+> showT stratAction
+          <> "\nHandleAI bmv:"    <+> showT action
     -- trace _debug skip
-    -- Run the AI: chose an action from those given by the AI strategy.
-    rndToAction $ frequency $ bestVariant $ stratAction
+    return action
 
 -- | Handle the move of the hero.
 queryUI :: (MonadClientAbort m, MonadClientUI m) => ActorId -> m CmdSer
