@@ -142,9 +142,9 @@ handleActors cmdSerSem lid = do
   s <- getState
   let -- Actors of the same faction move together.
       -- TODO: insert wrt the order, instead of sorting
-      isLeader (aid, b) = not $ Just aid == gleader (factionD EM.! bfaction b)
+      isLeader (aid, b) = not $ Just aid == gleader (factionD EM.! bfid b)
       order = Ord.comparing $
-        ((>= 0) . bhp . snd) &&& bfaction . snd &&& isLeader &&& bsymbol . snd
+        ((>= 0) . bhp . snd) &&& bfid . snd &&& isLeader &&& bsymbol . snd
       (atime, as) = EM.findMin prio
       ams = map (\a -> (a, getActorBody a s)) as
       mnext | EM.null prio = Nothing  -- no actor alive, wait until it spawns
@@ -171,7 +171,7 @@ handleActors cmdSerSem lid = do
       -- destruction is not important enough for an extra @DisplayPushD@.
       handleActors cmdSerSem lid
     Just (aid, body) -> do
-      let side = bfaction body
+      let side = bfid body
           fact = factionD EM.! side
           mleader = gleader fact
           usesAI = usesAIFact fact
@@ -193,7 +193,7 @@ handleActors cmdSerSem lid = do
       mapM_ execCmdAtomic leadAtoms
       bPre <- getsState $ getActorBody leaderNew
       -- Check if the client cheats, trying to move other faction actors.
-      assert (bfaction bPre == side `blame` (bPre, side)) skip
+      assert (bfid bPre == side `blame` (bPre, side)) skip
       notAborted <-
         if bhp bPre <= 0 && not (bproj bPre)
         then execFailure side "You strain, fumble and faint from the exertion."
@@ -231,7 +231,7 @@ handleActors cmdSerSem lid = do
 dieSer :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 dieSer aid = do  -- TODO: explode if a projectile holding a potion
   body <- getsState $ getActorBody aid
-  let fid = bfaction body
+  let fid = bfid body
   -- TODO: clients don't see the death of their last standing actor;
   --       modify Draw.hs and Client.hs to handle that
   mleader <- electLeader fid (blid body) aid
@@ -257,7 +257,7 @@ electLeader fid lid aidDead = do
   mleader <- getsState $ gleader . (EM.! fid) . sfactionD
   if isNothing mleader || mleader == Just aidDead then do
     actorD <- getsState sactorD
-    let ours (_, b) = bfaction b == fid && not (bproj b)
+    let ours (_, b) = bfid b == fid && not (bproj b)
         party = filter ours $ EM.assocs actorD
     onLevel <- getsState $ actorNotProjAssocs (== fid) lid
     Config{configFirstDeathEnds} <- getsServer sconfig

@@ -60,7 +60,7 @@ reacquireTgt cops actor btarget s per factionAbilities =
  where
   Kind.COps{coactor=coactor@Kind.Ops{okind}} = cops
   Level{lxsize} = sdungeon s EM.! blid
-  actorBody@Actor{ bkind, bpos = me, bproj, bfaction, blid } =
+  actorBody@Actor{ bkind, bpos = me, bproj, bfid, blid } =
     getActorBody actor s
   mk = okind bkind
   enemyVisible l =
@@ -95,7 +95,7 @@ reacquireTgt cops actor btarget s per factionAbilities =
                                        -- nothing visible, go to pos
       Just TPos{} -> closest           -- prefer visible foes
       Nothing -> closest
-  fact = sfactionD s EM.! bfaction
+  fact = sfactionD s EM.! bfid
   rawFoes = actorNotProjAssocs (isAtWar fact) blid s
   foes = filter (\(aid, _) -> aid /= actor) rawFoes
   visibleFoes = filter (enemyVisible . snd) (L.map (second bpos) foes)
@@ -234,10 +234,10 @@ rangedFreq cops actor disco s fpos =
            , corule
            } = cops
   lvl@Level{lxsize, lysize} = sdungeon s EM.! blid
-  Actor{bkind, bpos, bfaction, blid, bbag, binv} = getActorBody actor s
+  Actor{bkind, bpos, bfid, blid, bbag, binv} = getActorBody actor s
   mk = okind bkind
   tis = lvl `atI` bpos
-  fact = sfactionD s EM.! bfaction
+  fact = sfactionD s EM.! bfid
   foes = actorNotProjAssocs (isAtWar fact) blid s
   foesAdj = foesAdjacent lxsize lysize bpos (map snd foes)
   -- TODO: also don't throw if any pos on path is visibly not accessible
@@ -326,7 +326,7 @@ moveStrategy cops actor s mFoe =
            , coactor=Kind.Ops{okind}
            } = cops
   lvl@Level{lsmell, lxsize, lysize, ltime} = sdungeon s EM.! blid
-  Actor{bkind, bpos, bfaction, blid} = getActorBody actor s
+  Actor{bkind, bpos, bfid, blid} = getActorBody actor s
   mk = okind bkind
   lootHere x = not $ EM.null $ lvl `atI` x
   onlyLoot   = onlyMoves lootHere bpos
@@ -365,7 +365,7 @@ moveStrategy cops actor s mFoe =
   moveRandomly = liftFrequency $ uniformFreq "moveRandomly" sensible
   openableHere pos = Tile.hasFeature cotile F.Openable $ lvl `at` pos
   accessibleHere = accessible cops lvl bpos
-  fact = sfactionD s EM.! bfaction
+  fact = sfactionD s EM.! bfid
   friends = actorList (not . (isAtWar fact)) blid s
   noFriends | asight mk = unoccupied friends
             | otherwise = const True

@@ -124,7 +124,7 @@ getTarget aid cli = EM.lookup aid (stargetD cli)
 -- | Update selected actor within state. Verify actor's faction.
 updateLeader :: ActorId -> State -> StateClient -> StateClient
 updateLeader leader s cli =
-  let side1 = bfaction $ getActorBody leader s
+  let side1 = bfid $ getActorBody leader s
       side2 = sside cli
   in assert (side1 == side2 `blame` (side1, side2, leader, s))
      $ cli {_sleader = Just leader}

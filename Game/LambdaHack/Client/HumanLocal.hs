@@ -223,12 +223,12 @@ partyAfterLeader :: MonadActionRO m
                  => ActorId
                  -> m [(ActorId, Actor)]
 partyAfterLeader leader = do
-  faction <- getsState $ bfaction . getActorBody leader
+  faction <- getsState $ bfid . getActorBody leader
   allA <- getsState $ EM.assocs . sactorD
   s <- getState
   let hs9 = catMaybes $ map (tryFindHeroK s faction) [0..9]
       factionA = filter (\(_, body) ->
-        not (bproj body) && bfaction body == faction) allA
+        not (bproj body) && bfid body == faction) allA
       hs = hs9 ++ (deleteFirstsBy ((==) `on` fst) factionA hs9)
       i = fromMaybe (-1) $ findIndex ((== leader) . fst) hs
       (lt, gt) = (take i hs, drop (i + 1) hs)

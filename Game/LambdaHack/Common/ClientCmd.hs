@@ -58,7 +58,7 @@ debugAid aid s = do
   b <- getsState $ getActorBody aid
   time <- getsState $ getLocalTime (blid b)
   return $
-    showT (s, "lid", blid b, "time", time, "aid", aid, "faction", bfaction b)
+    showT (s, "lid", blid b, "time", time, "aid", aid, "faction", bfid b)
 
 -- | Connection channels between the server and a single client.
 data Conn c = Conn

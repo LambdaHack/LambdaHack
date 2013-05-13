@@ -136,7 +136,7 @@ effectMindprobe :: MonadAtomic m
 effectMindprobe target = do
   tb <- getsState (getActorBody target)
   let lid = blid tb
-  fact <- getsState $ (EM.! bfaction tb) . sfactionD
+  fact <- getsState $ (EM.! bfid tb) . sfactionD
   lb <- getsState $ actorNotProjList (isAtWar fact) lid
   let nEnemy = length lb
   if nEnemy == 0 then do
@@ -154,7 +154,7 @@ effectDominate source target = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   sb <- getsState (getActorBody source)
   tb <- getsState (getActorBody target)
-  if bfaction tb == bfaction sb then do
+  if bfid tb == bfid sb then do
     execSfxAtomic $ EffectD target Effect.NoEffect
     return False
   else do
@@ -164,9 +164,9 @@ effectDominate source target = do
     when (delta > speedZero) $
       execCmdAtomic $ HasteActorA target (speedNegate delta)
     -- TODO: Perhaps insert a turn of delay here to allow countermeasures.
-    execCmdAtomic $ DominateActorA target (bfaction tb) (bfaction sb)
-    leaderOld <- getsState $ gleader . (EM.! bfaction sb) . sfactionD
-    execCmdAtomic $ LeadFactionA (bfaction sb) leaderOld (Just target)
+    execCmdAtomic $ DominateActorA target (bfid tb) (bfid sb)
+    leaderOld <- getsState $ gleader . (EM.! bfid sb) . sfactionD
+    execCmdAtomic $ LeadFactionA (bfid sb) leaderOld (Just target)
     return True
 
 -- ** SummonFriend
@@ -179,22 +179,22 @@ effectSummonFriend power source target = do
   sm <- getsState (getActorBody source)
   tm <- getsState (getActorBody target)
   ps <- getsState $ nearbyFreePoints cotile (bpos tm) (blid tm)
-  summonFriends (bfaction sm) (take power ps) (blid tm)
+  summonFriends (bfid sm) (take power ps) (blid tm)
   return True
 
 summonFriends :: (MonadAtomic m, MonadServer m)
               => FactionId -> [Point] -> LevelId
               -> m ()
-summonFriends bfaction ps lid = do
+summonFriends bfid ps lid = do
   Kind.COps{ coactor=coactor@Kind.Ops{opick}
            , cofact=Kind.Ops{okind} } <- getsState scops
   factionD <- getsState sfactionD
-  let fact = okind $ gkind $ factionD EM.! bfaction
+  let fact = okind $ gkind $ factionD EM.! bfid
   forM_ ps $ \ p -> do
     mk <- rndToAction $ opick (fname fact) (const True)
     if mk == heroKindId coactor
-      then addHero bfaction p lid [] Nothing
-      else addMonster mk bfaction p lid
+      then addHero bfid p lid [] Nothing
+      else addMonster mk bfid p lid
   -- No leader election needed, bebause an alive actor of the same faction
   -- causes the effect, so there is already a leader.
 
@@ -202,9 +202,9 @@ addActor :: (MonadAtomic m, MonadServer m)
          => Kind.Id ActorKind -> FactionId -> Point -> LevelId -> Int
          -> Maybe Char -> Maybe Text -> Maybe Color.Color
          -> m ActorId
-addActor mk bfaction pos lid hp bsymbol bname bcolor = do
+addActor mk bfid pos lid hp bsymbol bname bcolor = do
   time <- getsState $ getLocalTime lid
-  let m = actorTemplate mk bsymbol bname bcolor hp pos lid time bfaction False
+  let m = actorTemplate mk bsymbol bname bcolor hp pos lid time bfid False
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
   execCmdAtomic $ CreateActorA acounter m []
@@ -215,12 +215,12 @@ addActor mk bfaction pos lid hp bsymbol bname bcolor = do
 addHero :: (MonadAtomic m, MonadServer m)
         => FactionId -> Point -> LevelId -> [(Int, Text)] -> Maybe Int
         -> m ActorId
-addHero bfaction ppos lid configHeroNames mNumber = do
+addHero bfid ppos lid configHeroNames mNumber = do
   Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
-  fact <- getsState $ (EM.! bfaction) . sfactionD
+  fact <- getsState $ (EM.! bfid) . sfactionD
   let kId = heroKindId coactor
   hp <- rndToAction $ rollDice $ ahp $ okind kId
-  mhs <- mapM (\n -> getsState $ \s -> tryFindHeroK s bfaction n) [0..9]
+  mhs <- mapM (\n -> getsState $ \s -> tryFindHeroK s bfid n) [0..9]
   let freeHeroK = elemIndex Nothing mhs
       n = fromMaybe (fromMaybe 100 freeHeroK) mNumber
       symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
@@ -228,7 +228,7 @@ addHero bfaction ppos lid configHeroNames mNumber = do
       color = gcolor fact
       startHP = hp - (hp `div` 5) * min 3 n
   addActor
-    kId bfaction ppos lid startHP (Just symbol) (Just name) (Just color)
+    kId bfid ppos lid startHP (Just symbol) (Just name) (Just color)
 
 -- | Find a hero name in the config file, or create a stock name.
 findHeroName :: [(Int, Text)] -> Int -> Text
@@ -265,24 +265,24 @@ spawnMonsters ps lid = assert (not $ null ps) $ do
     [] -> return ()  -- no faction spawns
     spawnList -> do
       let freq = toFreq "spawn" spawnList
-      (spawnKind, bfaction) <- rndToAction $ frequency freq
+      (spawnKind, bfid) <- rndToAction $ frequency freq
       laid <- forM ps $ \ p -> do
         mk <- rndToAction $ opick (fname spawnKind) (const True)
-        addMonster mk bfaction p lid
-      mleader <- getsState $ gleader . (EM.! bfaction) . sfactionD
+        addMonster mk bfid p lid
+      mleader <- getsState $ gleader . (EM.! bfid) . sfactionD
       when (mleader == Nothing) $ do
-        execCmdAtomic $ LeadFactionA bfaction Nothing (Just $ head laid)
-        execSfxAtomic $ FadeinD bfaction True
+        execCmdAtomic $ LeadFactionA bfid Nothing (Just $ head laid)
+        execSfxAtomic $ FadeinD bfid True
 
 -- | Create a new monster on the level, at a given position
 -- and with a given actor kind and HP.
 addMonster :: (MonadAtomic m, MonadServer m)
            => Kind.Id ActorKind -> FactionId -> Point -> LevelId
            -> m ActorId
-addMonster mk bfaction ppos lid = do
+addMonster mk bfid ppos lid = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   hp <- rndToAction $ rollDice $ ahp $ okind mk
-  addActor mk bfaction ppos lid hp Nothing Nothing Nothing
+  addActor mk bfid ppos lid hp Nothing Nothing Nothing
 
 -- ** CreateItem
 
@@ -356,7 +356,7 @@ effLvlGoUp aid k = do
   bOld <- getsState $ getActorBody aid
   ais <- getsState $ getActorItem aid
   let lidOld = blid bOld
-      side = bfaction bOld
+      side = bfid bOld
   whereto <- getsState $ \s -> whereTo s lidOld k
   case whereto of
     Nothing -> -- We are at the "end" of the dungeon.

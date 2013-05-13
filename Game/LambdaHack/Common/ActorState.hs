@@ -33,7 +33,7 @@ actorAssocs :: (FactionId -> Bool) -> LevelId -> State
             -> [(ActorId, Actor)]
 actorAssocs p lid s =
   mapMaybe (\aid -> let actor = sactorD s EM.! aid
-                    in if p (bfaction actor)
+                    in if p (bfid actor)
                        then Just (aid, actor)
                        else Nothing)
   $ concat $ EM.elems $ lprio $ sdungeon s EM.! lid
@@ -46,7 +46,7 @@ actorNotProjAssocs :: (FactionId -> Bool) -> LevelId -> State
                    -> [(ActorId, Actor)]
 actorNotProjAssocs p lid s =
   mapMaybe (\aid -> let actor = sactorD s EM.! aid
-                    in if not (bproj actor) && p (bfaction actor)
+                    in if not (bproj actor) && p (bfid actor)
                        then Just (aid, actor)
                        else Nothing)
   $ concat $ EM.elems $ lprio $ sdungeon s EM.! lid
@@ -117,7 +117,7 @@ tryFindHeroK s fact k =
         | otherwise       = assert `failure` k
   in tryFindActor s (\body -> bsymbol body == Just c
                               && not (bproj body)
-                              && bfaction body == fact)
+                              && bfid body == fact)
 
 -- | Compute the level identifier and starting position on the level,
 -- after a level change.

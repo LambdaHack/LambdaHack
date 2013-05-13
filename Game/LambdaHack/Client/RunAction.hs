@@ -166,7 +166,7 @@ continueRunDir leader (dirLast, distLast) = do
   per <- getPerFid lid
   sreport <- getsClient sreport -- TODO: check the message before it goes into history
   smarkSuspect <- getsClient smarkSuspect
-  fact <- getsState $ (EM.! bfaction body) . sfactionD
+  fact <- getsState $ (EM.! bfid body) . sfactionD
   ms <- getsState $ actorList (isAtWar fact) lid
   hs <- getsState $ actorList (not . (isAtWar fact)) lid
   lvl@Level{lxsize, lysize} <- getsLevel (blid body) id

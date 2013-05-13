@@ -35,10 +35,10 @@ queryAI :: MonadClient m => ActorId -> m CmdSer
 queryAI actor = do
   body <- getsState $ getActorBody actor
   side <- getsClient sside
-  assert (bfaction body == side `blame` (actor, bfaction body, side)) $ do
+  assert (bfid body == side `blame` (actor, bfid body, side)) $ do
     Kind.COps{costrat=Kind.Ops{okind}} <- getsState scops
     leader <- getsClient _sleader
-    fact <- getsState $ (EM.! bfaction body) . sfactionD
+    fact <- getsState $ (EM.! bfid body) . sfactionD
     let factionAI | Just actor /= leader = fromJust $ gAiMember fact
                   | otherwise = fromJust $ gAiLeader fact
         factionAbilities = sabilities (okind factionAI)

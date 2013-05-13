@@ -103,7 +103,7 @@ moveSer aid dir exploration = do
 addSmell :: MonadAtomic m => ActorId -> m ()
 addSmell aid = do
   b <- getsState $ getActorBody aid
-  spawning <- getsState $ flip isSpawningFaction (bfaction b)
+  spawning <- getsState $ flip isSpawningFaction (bfid b)
   when (not spawning) $ do
     time <- getsState $ getLocalTime $ blid b
     oldS <- getsLevel (blid b) $ (EM.lookup $ bpos b) . lsmell
@@ -121,8 +121,8 @@ actorAttackActor source target = do
   cops@Kind.COps{coitem=Kind.Ops{opick, okind}} <- getsState scops
   sm <- getsState (getActorBody source)
   tm <- getsState (getActorBody target)
-  let sfid = bfaction sm
-      tfid = bfaction tm
+  let sfid = bfid sm
+      tfid = bfid tm
   time <- getsState $ getLocalTime (blid tm)
   s <- getState
   itemAssocs <- getsState $ getActorItem source
@@ -187,10 +187,10 @@ actorOpenDoor actor dir exploration = do
   if Tile.hasFeature cotile F.Openable t
     then triggerSer actor dpos
     else if Tile.hasFeature cotile F.Closable t
-         then execFailure (bfaction body) "already open"
+         then execFailure (bfid body) "already open"
          else if exploration && serverTile /= freshClientTile
               then return True  -- searching costs
-              else execFailure (bfaction body) "never mind"  -- free bump
+              else execFailure (bfid body) "never mind"  -- free bump
 
 -- * RunSer
 
@@ -212,7 +212,7 @@ runSer aid dir = do
           displaceActor aid target
           return True
       | otherwise ->
-          execFailure (bfaction sm) "blocked"
+          execFailure (bfid sm) "blocked"
     Nothing
       | accessible cops lvl spos tpos -> do
           execCmdAtomic $ MoveActorA aid spos tpos
@@ -299,25 +299,25 @@ projectSer source tpos eps iid container = do
       time = btimeDelta `timeAdd` timeNegate timeClip
       bl = bla lxsize lysize eps spos tpos
   case bl of
-    Nothing -> execFailure (bfaction sm) "cannot zap oneself"
+    Nothing -> execFailure (bfid sm) "cannot zap oneself"
     Just [] -> assert `failure` (spos, tpos, "project from the edge of level")
     Just path@(pos:_) -> do
       inhabitants <- getsState (posToActor pos lid)
       if accessible cops lvl spos pos && isNothing inhabitants
         then do
           execSfxAtomic $ ProjectD source iid
-          projId <- addProjectile iid pos (blid sm) (bfaction sm) path time
+          projId <- addProjectile iid pos (blid sm) (bfid sm) path time
           execCmdAtomic
             $ MoveItemA iid 1 container (CActor projId (InvChar 'a'))
           return True
         else
-          execFailure (bfaction sm) "blocked"
+          execFailure (bfid sm) "blocked"
 
 -- | Create a projectile actor containing the given missile.
 addProjectile :: (MonadAtomic m, MonadServer m)
               => ItemId -> Point -> LevelId -> FactionId -> [Point] -> Time
               -> m ActorId
-addProjectile iid bpos blid bfaction path btime = do
+addProjectile iid bpos blid bfid path btime = do
   Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}} <- getsState scops
   disco <- getsServer sdisco
   item <- getsState $ getItemBody iid
@@ -345,7 +345,7 @@ addProjectile iid bpos blid bfaction path btime = do
         , bletter = InvChar 'a'
         , btime
         , bwait   = timeZero
-        , bfaction
+        , bfid
         , bproj   = True
         }
   acounter <- getsServer sacounter
@@ -394,8 +394,8 @@ triggerSer aid dpos = do
                    execCmdAtomic $ AlterTileA lid dpos fromTile toTile
                    return True
 -- TODO: take care of AI using this function (aborts on some of the features, succes on others, etc.)
-                 else execFailure (bfaction b) "blocked"  -- by actors
-            else execFailure (bfaction b) "jammed"  -- by items
+                 else execFailure (bfid b) "blocked"  -- by actors
+            else execFailure (bfid b) "jammed"  -- by items
           _ -> return True
   bs <- mapM f $ TileKind.tfeature $ okind $ lvl `at` dpos
   return $! or bs  -- TODO: stop after first failure, probably
@@ -422,7 +422,7 @@ setPathSer aid path = do
 gameRestartSer :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 gameRestartSer aid = do
   b <- getsState $ getActorBody aid
-  let fid = bfaction b
+  let fid = bfid b
   oldSt <- getsState $ gquit . (EM.! fid) . sfactionD
   modifyServer $ \ser -> ser {squit = True}  -- do this at once
   execCmdAtomic $ QuitFactionA fid oldSt $ Just (False, Restart)
@@ -432,7 +432,7 @@ gameRestartSer aid = do
 gameExitSer :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 gameExitSer aid = do
   b <- getsState $ getActorBody aid
-  let fid = bfaction b
+  let fid = bfid b
   oldSt <- getsState $ gquit . (EM.! fid) . sfactionD
   modifyServer $ \ser -> ser {squit = True}  -- do this at once
   execCmdAtomic $ QuitFactionA fid oldSt $ Just (True, Camping)
@@ -447,7 +447,7 @@ gameSaveSer = modifyServer $ \ser -> ser {sbkpSave = True}  -- don't rush it
 cfgDumpSer :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 cfgDumpSer aid = do
   b <- getsState $ getActorBody aid
-  let fid = bfaction b
+  let fid = bfid b
   Config{configRulesCfgFile} <- getsServer sconfig
   let fn = configRulesCfgFile ++ ".dump"
       msg = "Server dumped current game rules configuration to file"

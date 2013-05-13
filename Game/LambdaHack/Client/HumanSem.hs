@@ -106,17 +106,17 @@ moveHuman v = do
     case tgt of
       Just target -> do
         tb <- getsState $ getActorBody target
-        sfact <- getsState $ (EM.! bfaction sb) . sfactionD
-        if bfaction tb == bfaction sb && not (bproj tb) then do
+        sfact <- getsState $ (EM.! bfid sb) . sfactionD
+        if bfid tb == bfid sb && not (bproj tb) then do
           -- Select adjacent actor by bumping into him. Takes no time.
           success <- selectLeader target
           assert (success `blame` (leader, target, tb)) skip
           return Nothing
         else do
-          unless (isAtWar sfact $ bfaction tb) $ do
+          unless (isAtWar sfact $ bfid tb) $ do
             go <- displayYesNo "This attack will start a war. Are you sure?"
             unless go $ abortWith "Attack canceled."
-          when (isAllied sfact $ bfaction tb) $ do
+          when (isAllied sfact $ bfid tb) $ do
             go <- displayYesNo "You are bound by an alliance. Really attack?"
             unless go $ abortWith "Attack canceled."
           fmap Just $ moveLeader dir

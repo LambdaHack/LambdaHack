@@ -83,7 +83,7 @@ cmdAtomicFilterCli cmd = case cmd of
         outPrio = mapMaybe (\p -> posToActor p lid s) $ ES.elems outFov
         fActor aid =
           let b = getActorBody aid s
-          in if bfaction b == fid
+          in if bfid b == fid
              then Nothing
              else Just $ LoseActorA aid b (getActorItem aid s)
         outActor = mapMaybe fActor outPrio
@@ -233,7 +233,7 @@ drawCmdAtomicUI verbose cmd = case cmd of
     lookAtMove body
   DestroyActorA _ body _ -> do
     side <- getsClient sside
-    if bhp body <= 0 && not (bproj body) && bfaction body == side then do
+    if bhp body <= 0 && not (bproj body) && bfid body == side then do
       actorVerbMU body "die"
       void $ displayMore ColorBW ""
     else when verbose $ actorVerbMU body "disappear"
@@ -243,7 +243,7 @@ drawCmdAtomicUI verbose cmd = case cmd of
     side <- getsClient sside
     -- If no other faction actor is looking, death is invisible and
     -- so is domination, time-freeze, etc. Then, this command appears instead.
-    when (not (bproj body) && bfaction body == side) $ do
+    when (not (bproj body) && bfid body == side) $ do
       actorVerbMU body "be missing in action"
       void $ displayMore ColorFull ""
   MoveActorA aid _ _ -> do
@@ -332,7 +332,7 @@ lookAtMove body = do
   side <- getsClient sside
   tgtMode <- getsClient stgtMode
   when (not (bproj body)
-        && bfaction body == side
+        && bfid body == side
         && isNothing tgtMode) $ do  -- targeting does a more extensive look
     lookMsg <- lookAt False True (bpos body) ""
     msgAdd lookMsg
@@ -386,7 +386,7 @@ moveItemUI verbose iid k c1 c2 = do
       b <- getsState $ getActorBody aid
       let n = bbag b EM.! iid
       side <- getsClient sside
-      if bfaction b == side then
+      if bfid b == side then
         msgAdd $ makePhrase [ letterLabel l
                             , partItemNWs coitem disco n item
                             , "\n" ]
@@ -404,7 +404,7 @@ displaceActorUI source target = do
         [ MU.SubjectVerbSg (partActor coactor sm) "displace"
         , partActor coactor tm ]
   msgAdd msg
-  when (bfaction sm /= bfaction tm) $ do
+  when (bfid sm /= bfid tm) $ do
     lookAtMove sm
     lookAtMove tm
   let ps = (bpos tm, bpos sm)
@@ -460,7 +460,7 @@ drawSfxAtomicUI verbose sfx = case sfx of
       Kind.COps{coactor} <- getsState scops
       -- We assume the Wound is the cause of incapacitation.
       side <- getsClient sside
-      if bfaction b == side then do
+      if bfid b == side then do
         let firstFall = if bproj b then "drop down" else "fall down"
             verbDie =
               case effect of

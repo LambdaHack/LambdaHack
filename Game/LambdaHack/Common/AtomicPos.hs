@@ -56,17 +56,17 @@ data PosAtomic =
 posCmdAtomic :: MonadActionRO m => CmdAtomic -> m PosAtomic
 posCmdAtomic cmd = case cmd of
   CreateActorA _ body _ ->
-    return $ PosFidAndSight (bfaction body) (blid body) [bpos body]
+    return $ PosFidAndSight (bfid body) (blid body) [bpos body]
   DestroyActorA _ body _ ->
     -- The faction of the actor sometimes does not see his death
     -- (if none of the other actors is observing it).
-    return $ PosFidAndSight (bfaction body) (blid body) [bpos body]
+    return $ PosFidAndSight (bfid body) (blid body) [bpos body]
   CreateItemA _ _ _ c -> singleContainer c
   DestroyItemA _ _ _ c -> singleContainer c
   SpotActorA _ body _ ->
-    return $ PosFidAndSight (bfaction body) (blid body) [bpos body]
+    return $ PosFidAndSight (bfid body) (blid body) [bpos body]
   LoseActorA _ body _ ->
-    return $ PosFidAndSight (bfaction body) (blid body) [bpos body]
+    return $ PosFidAndSight (bfid body) (blid body) [bpos body]
   SpotItemA _ _ _ c -> singleContainer c
   LoseItemA _ _ _ c -> singleContainer c
   MoveActorA aid fromP toP -> do
@@ -149,7 +149,7 @@ posSfxAtomic cmd = case cmd of
 singleAid :: MonadActionRO m => ActorId -> m PosAtomic
 singleAid aid = do
   b <- getsState $ getActorBody aid
-  return $ PosFidAndSight (bfaction b) (blid b) [bpos b]
+  return $ PosFidAndSight (bfid b) (blid b) [bpos b]
 
 singleContainer :: MonadActionRO m => Container -> m PosAtomic
 singleContainer c = do
@@ -166,10 +166,10 @@ singleContainer c = do
 -- save/restore would change game state.
 resetsFovAtomic :: MonadActionRO m => CmdAtomic -> m (Maybe [FactionId])
 resetsFovAtomic cmd = case cmd of
-  CreateActorA _ body _ -> return $ Just [bfaction body]
-  DestroyActorA _ body _ -> return $ Just [bfaction body]
-  SpotActorA _ body _ -> return $ Just [bfaction body]
-  LoseActorA _ body _ -> return $ Just [bfaction body]
+  CreateActorA _ body _ -> return $ Just [bfid body]
+  DestroyActorA _ body _ -> return $ Just [bfid body]
+  SpotActorA _ body _ -> return $ Just [bfid body]
+  LoseActorA _ body _ -> return $ Just [bfid body]
   CreateItemA _ _ _ _ -> return $ Just []  -- unless shines
   DestroyItemA _ _ _ _ -> return $ Just []  -- ditto
   MoveActorA aid _ _ -> fmap Just $ fidOfAid aid  -- assumption: has no light
@@ -186,7 +186,7 @@ resetsFovAtomic cmd = case cmd of
   _ -> return $ Just []
 
 fidOfAid :: MonadActionRO m => ActorId -> m [FactionId]
-fidOfAid aid = getsState $ (: []) . bfaction . getActorBody aid
+fidOfAid aid = getsState $ (: []) . bfid . getActorBody aid
 
 -- | Decompose an atomic action. The original action is visible
 -- if it's positions are visible both before and after the action
@@ -223,7 +223,7 @@ loudCmdAtomic :: FactionId -> CmdAtomic -> Bool
 loudCmdAtomic fid cmd = case cmd of
   DestroyActorA _ body _ ->
     -- Death of a party member does not need to be heard, because it's seen.
-    not $ fid == bfaction body || bproj body
+    not $ fid == bfid body || bproj body
   _ -> False
 
 seenAtomicCli :: Bool -> FactionId -> Perception -> PosAtomic -> Bool

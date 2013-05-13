@@ -250,8 +250,8 @@ hasteActorA aid delta = assert (delta /= speedZero) $ do
 dominateActorA :: MonadAction m => ActorId -> FactionId -> FactionId -> m ()
 dominateActorA target fromFid toFid = assert (fromFid /= toFid) $ do
   tb <- getsState $ getActorBody target
-  assert (fromFid == bfaction tb `blame` (target, fromFid, toFid, tb)) skip
-  modifyState $ updateActorBody target $ \b -> b {bfaction = toFid}
+  assert (fromFid == bfid tb `blame` (target, fromFid, toFid, tb)) skip
+  modifyState $ updateActorBody target $ \b -> b {bfid = toFid}
 
 pathActorA :: MonadAction m
            => ActorId -> Maybe [Vector] -> Maybe [Vector] -> m ()

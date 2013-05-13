@@ -355,7 +355,7 @@ scoreToSlideshow :: MonadClientUI m => Status -> m Slideshow
 scoreToSlideshow status = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  total <- getsState $ snd . calculateTotal (bfaction b) (blid b)
+  total <- getsState $ snd . calculateTotal (bfid b) (blid b)
   if total == 0 then return Monoid.mempty
   else do
     table <- getsState shigh
