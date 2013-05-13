@@ -88,12 +88,12 @@ atomicSendSem atomic = do
         if startSeen && endSeen
           then sendUpdate fid atomic
           else breakSend fid perNew
-      posLevel fid arena = do
-        let perOld = persOld EM.! fid EM.! arena
+      posLevel fid lid = do
+        let perOld = persOld EM.! fid EM.! lid
             resetsFid = maybe True (fid `elem`) resets
         if resetsFid then do
-          resetFidPerception fid arena
-          perNew <- getPerFid fid arena
+          resetFidPerception fid lid
+          perNew <- getPerFid fid lid
           let inPer = diffPer perNew perOld
               inPA = perActor inPer
               outPer = diffPer perOld perNew
@@ -101,9 +101,9 @@ atomicSendSem atomic = do
           if EM.null outPA && EM.null inPA
             then anySend fid perOld perOld
             else do
-              sendA fid $ PerceptionA arena outPA inPA
+              sendA fid $ PerceptionA lid outPA inPA
               unless knowEvents $ do  -- inconsistencies would quickly manifest
-                let remember = atomicRemember arena inPer sOld
+                let remember = atomicRemember lid inPer sOld
                     seenNew = seenAtomicCli False fid perNew
                     seenOld = seenAtomicCli False fid perOld
                 -- TODO: these assertions are probably expensive
@@ -116,20 +116,20 @@ atomicSendSem atomic = do
               anySend fid perOld perNew
         else anySend fid perOld perOld
       send fid = case ps of
-        PosSight arena _ -> posLevel fid arena
-        PosFidAndSight _ arena _ -> posLevel fid arena
+        PosSight lid _ -> posLevel fid lid
+        PosFidAndSight _ lid _ -> posLevel fid lid
         -- In the following cases, from the assertion above,
         -- @resets@ is false here and broken atomic has the same ps.
-        PosSmell arena _ -> do
-          let perOld = persOld EM.! fid EM.! arena
+        PosSmell lid _ -> do
+          let perOld = persOld EM.! fid EM.! lid
           anySend fid perOld perOld
         PosFid fid2 -> when (fid == fid2) $ sendUpdate fid atomic
         PosFidAndSer fid2 -> when (fid == fid2) $ sendUpdate fid atomic
         PosSer -> return ()
         PosAll -> sendUpdate fid atomic
         PosNone -> assert `failure` (atomic, fid)
-  faction <- getsState sfaction
-  mapM_ send $ EM.keys faction
+  factionD <- getsState sfactionD
+  mapM_ send $ EM.keys factionD
 
 atomicRemember :: LevelId -> Perception -> State -> [CmdAtomic]
 atomicRemember lid inPer s =

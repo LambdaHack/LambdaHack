@@ -214,13 +214,13 @@ projectLeader :: (MonadClientAbort m, MonadClientUI m)
               => MU.Part -> MU.Part -> [Char] -> m CmdSer
 projectLeader verb object syms = do
   side <- getsClient sside
-  fact <- getsState $ (EM.! side) . sfaction
+  fact <- getsState $ (EM.! side) . sfactionD
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  let arena = blid b
-  ms <- getsState $ actorNotProjList (isAtWar fact) arena
-  lxsize <- getsLevel arena lxsize
-  lysize <- getsLevel arena lysize
+  let lid = blid b
+  ms <- getsState $ actorNotProjList (isAtWar fact) lid
+  lxsize <- getsLevel lid lxsize
+  lysize <- getsLevel lid lysize
   if foesAdjacent lxsize lysize (bpos b) ms
     then abortWith "You can't aim in melee."
     else actorProjectGI leader verb object syms

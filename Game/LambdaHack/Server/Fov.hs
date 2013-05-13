@@ -61,7 +61,7 @@ factionPerception cops configFov s fid =
 dungeonPerception :: Kind.COps -> FovMode -> State -> Pers
 dungeonPerception cops configFov s =
   let f fid _ = factionPerception cops configFov s fid
-  in EM.mapWithKey f $ sfaction s
+  in EM.mapWithKey f $ sfactionD s
 
 -- | A position can be directly lit by an ambient shine or a weak, portable
 -- light source, e.g,, carried by a hero. (Only lights of radius 0

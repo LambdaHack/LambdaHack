@@ -162,13 +162,13 @@ continueRunDir :: MonadClientAbort m
 continueRunDir leader (dirLast, distLast) = do
   cops@Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody leader
-  let arena = blid body
-  per <- getPerFid arena
+  let lid = blid body
+  per <- getPerFid lid
   sreport <- getsClient sreport -- TODO: check the message before it goes into history
   smarkSuspect <- getsClient smarkSuspect
-  fact <- getsState $ (EM.! bfaction body) . sfaction
-  ms <- getsState $ actorList (isAtWar fact) arena
-  hs <- getsState $ actorList (not . (isAtWar fact)) arena
+  fact <- getsState $ (EM.! bfaction body) . sfactionD
+  ms <- getsState $ actorList (isAtWar fact) lid
+  hs <- getsState $ actorList (not . (isAtWar fact)) lid
   lvl@Level{lxsize, lysize} <- getsLevel (blid body) id
   let posHere = bpos body
       posHasFeature f pos = Tile.hasFeature cotile f (lvl `at` pos)

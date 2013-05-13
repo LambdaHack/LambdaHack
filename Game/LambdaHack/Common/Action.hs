@@ -45,5 +45,5 @@ getsLevel lid f = getsState $ f . (EM.! lid) . sdungeon
 
 nHumans :: MonadActionRO m => m Int
 nHumans = do
-  faction <- getsState sfaction
-  return $ length $ filter isHumanFact $ EM.elems faction
+  factionD <- getsState sfactionD
+  return $ length $ filter isHumanFact $ EM.elems factionD

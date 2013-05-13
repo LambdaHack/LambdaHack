@@ -33,7 +33,8 @@ data Config = Config
   , configHuman          :: ![(Text, Text)]
     -- heroNames
   , configHeroNames      :: ![(Int, Text)]
-  } deriving Show
+  }
+  deriving Show
 
 instance NFData Config
 

@@ -69,20 +69,20 @@ fovMode = do
 -- The assumption is the level, and only the level, has changed since
 -- the previous perception calculation.
 resetFidPerception :: MonadServer m => FactionId -> LevelId -> m ()
-resetFidPerception fid arena = do
+resetFidPerception fid lid = do
   cops <- getsState scops
-  lvl <- getsLevel arena id
+  lvl <- getsLevel lid id
   configFov <- fovMode
   s <- getState
-  let per = levelPerception cops s configFov fid arena lvl
-      upd = EM.adjust (EM.adjust (const per) arena) fid
+  let per = levelPerception cops s configFov fid lid lvl
+      upd = EM.adjust (EM.adjust (const per) lid) fid
   modifyServer $ \ser -> ser {sper = upd (sper ser)}
 
 getPerFid :: MonadServer m => FactionId -> LevelId -> m Perception
-getPerFid fid arena = do
+getPerFid fid lid = do
   pers <- getsServer sper
-  let fper = fromMaybe (assert `failure` (arena, fid)) $ EM.lookup fid pers
-      per = fromMaybe (assert `failure` (arena, fid)) $ EM.lookup arena fper
+  let fper = fromMaybe (assert `failure` (lid, fid)) $ EM.lookup fid pers
+      per = fromMaybe (assert `failure` (lid, fid)) $ EM.lookup lid fper
   return $! per
 
 saveGameSer :: MonadServer m => m ()
@@ -201,7 +201,7 @@ tryRestore Kind.COps{corule} = do
 -- | Prepare connections based on factions.
 connServer :: MonadServerConn m => m ()
 connServer = do
-  faction <- getsState sfaction
+  factionD <- getsState sfactionD
   -- Prepare connections based on factions.
   let mkConn :: IO (Maybe (Conn c))
       mkConn = do
@@ -216,7 +216,7 @@ connServer = do
                   then mkConn
                   else return Nothing
         return (fid, (connUI, connAI))
-  connAssocs <- liftIO $ mapM addConn $ EM.assocs faction
+  connAssocs <- liftIO $ mapM addConn $ EM.assocs factionD
   putDict $ EM.fromDistinctAscList connAssocs
 
 -- | Connect to clients by starting them in spawned threads that read

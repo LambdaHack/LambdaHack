@@ -39,26 +39,27 @@ import Game.LambdaHack.Utils.Assert
 data StateClient = StateClient
   { stgtMode     :: !(Maybe TgtMode)  -- ^ targeting mode
   , scursor      :: !(Maybe Point)    -- ^ cursor coordinates
-  , seps         :: !Int           -- ^ a parameter of the tgt digital line
-  , starget      :: !(EM.EnumMap ActorId Target)
-                                -- ^ targets of all our actors in the dungeon
-  , srunning     :: !(Maybe (Vector, Int))  -- ^ direction and distance of running
+  , seps         :: !Int              -- ^ a parameter of the tgt digital line
+  , stargetD     :: !(EM.EnumMap ActorId Target)
+                                   -- ^ targets of our actors in the dungeon
+  , srunning     :: !(Maybe (Vector, Int))
+                                   -- ^ direction and distance of running
   , sreport      :: !Report        -- ^ current messages
   , shistory     :: !History       -- ^ history of messages
   , sundo        :: ![Atomic]      -- ^ atomic commands performed to date
   , sdisco       :: !Discovery     -- ^ remembered item discoveries
   , sfper        :: !FactionPers   -- ^ faction perception indexed by levels
   , srandom      :: !R.StdGen      -- ^ current random generator
-  , sconfigUI    :: !ConfigUI      -- ^ this client config (including initial RNG)
+  , sconfigUI    :: !ConfigUI      -- ^ client config (including initial RNG)
   , slastKey     :: !(Maybe K.KM)  -- ^ last command key pressed
   , sframe       :: ![(Maybe SingleFrame, Bool)]  -- ^ accumulated frames
   , _sleader     :: !(Maybe ActorId)  -- ^ selected actor
   , _sside       :: !FactionId     -- ^ faction controlled by the client
   , squit        :: !Bool          -- ^ exit the game loop
   , sisAI        :: !Bool          -- ^ whether it's an AI client
-  , smarkVision  :: !Bool        -- ^ mark leader and party FOV
-  , smarkSmell   :: !Bool        -- ^ mark smell, if the leader can smell
-  , smarkSuspect :: !Bool        -- ^ mark suspect features
+  , smarkVision  :: !Bool          -- ^ mark leader and party FOV
+  , smarkSmell   :: !Bool          -- ^ mark smell, if the leader can smell
+  , smarkSuspect :: !Bool          -- ^ mark suspect features
   }
   deriving (Show, Typeable)
 
@@ -81,26 +82,26 @@ defStateClient :: History -> ConfigUI -> FactionId -> Bool
                -> StateClient
 defStateClient shistory sconfigUI _sside sisAI = do
   StateClient
-    { stgtMode  = Nothing
-    , scursor   = Nothing
-    , seps      = 0
-    , starget   = EM.empty
-    , srunning  = Nothing
-    , sreport   = emptyReport
+    { stgtMode = Nothing
+    , scursor = Nothing
+    , seps = 0
+    , stargetD = EM.empty
+    , srunning= Nothing
+    , sreport = emptyReport
     , shistory
-    , sundo     = []
-    , sdisco    = EM.empty
-    , sfper     = EM.empty
+    , sundo = []
+    , sdisco = EM.empty
+    , sfper = EM.empty
     , sconfigUI
     , srandom = R.mkStdGen 42  -- will be set later
-    , slastKey  = Nothing
-    , sframe    = []
-    , _sleader  = Nothing  -- no heroes yet alive
+    , slastKey = Nothing
+    , sframe = []
+    , _sleader = Nothing  -- no heroes yet alive
     , _sside
     , squit = False
     , sisAI
     , smarkVision = False
-    , smarkSmell  = False
+    , smarkSmell = False
     , smarkSuspect = False
     }
 
@@ -114,11 +115,11 @@ defHistory = do
 -- | Update target parameters within client state.
 updateTarget :: ActorId -> (Maybe Target -> Maybe Target) -> StateClient
              -> StateClient
-updateTarget aid f cli = cli { starget = EM.alter f aid (starget cli) }
+updateTarget aid f cli = cli { stargetD = EM.alter f aid (stargetD cli) }
 
 -- | Get target parameters from client state.
 getTarget :: ActorId -> StateClient -> Maybe Target
-getTarget aid cli = EM.lookup aid (starget cli)
+getTarget aid cli = EM.lookup aid (stargetD cli)
 
 -- | Update selected actor within state. Verify actor's faction.
 updateLeader :: ActorId -> State -> StateClient -> StateClient
@@ -146,7 +147,7 @@ instance Binary StateClient where
     put stgtMode
     put scursor
     put seps
-    put starget
+    put stargetD
     put srunning
     put shistory
     put sundo
@@ -164,7 +165,7 @@ instance Binary StateClient where
     stgtMode <- get
     scursor <- get
     seps <- get
-    starget <- get
+    stargetD <- get
     srunning <- get
     shistory <- get
     sundo <- get

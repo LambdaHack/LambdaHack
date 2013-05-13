@@ -271,8 +271,8 @@ quitFactionA :: MonadAction m
              => FactionId -> Maybe (Bool, Status) -> Maybe (Bool, Status)
              -> m ()
 quitFactionA fid fromSt toSt = assert (fromSt /= toSt) $ do
-  fac <- getsState $ (EM.! fid) . sfaction
-  assert (fromSt == gquit fac `blame` (fid, fromSt, toSt, fac)) skip
+  fact <- getsState $ (EM.! fid) . sfactionD
+  assert (fromSt == gquit fact `blame` (fid, fromSt, toSt, fact)) skip
   let adj fa = fa {gquit = toSt}
   modifyState $ updateFaction $ EM.adjust adj fid
 
@@ -280,8 +280,8 @@ quitFactionA fid fromSt toSt = assert (fromSt /= toSt) $ do
 leadFactionA :: MonadAction m
              => FactionId -> (Maybe ActorId) -> (Maybe ActorId) -> m ()
 leadFactionA fid source target = assert (source /= target) $ do
-  fac <- getsState $ (EM.! fid) . sfaction
-  assert (source == gleader fac `blame` (fid, source, target, fac)) skip
+  fact <- getsState $ (EM.! fid) . sfactionD
+  assert (source == gleader fact `blame` (fid, source, target, fact)) skip
   let adj fa = fa {gleader = target}
   modifyState $ updateFaction $ EM.adjust adj fid
 
@@ -289,11 +289,11 @@ diplFactionA :: MonadAction m
              => FactionId -> FactionId -> Diplomacy -> Diplomacy -> m ()
 diplFactionA fid1 fid2 fromDipl toDipl =
   assert (fid1 /= fid2 && fromDipl /= toDipl) $ do
-    fac1 <- getsState $ (EM.! fid1) . sfaction
-    fac2 <- getsState $ (EM.! fid2) . sfaction
-    assert (fromDipl == EM.findWithDefault Unknown fid2 (gdipl fac1)
-            && fromDipl == EM.findWithDefault Unknown fid1 (gdipl fac2)
-            `blame` (fid1, fid2, fromDipl, toDipl, fac1, fac2)) skip
+    fact1 <- getsState $ (EM.! fid1) . sfactionD
+    fact2 <- getsState $ (EM.! fid2) . sfactionD
+    assert (fromDipl == EM.findWithDefault Unknown fid2 (gdipl fact1)
+            && fromDipl == EM.findWithDefault Unknown fid1 (gdipl fact2)
+            `blame` (fid1, fid2, fromDipl, toDipl, fact1, fact2)) skip
     let adj fid fact = fact {gdipl = EM.insert fid toDipl (gdipl fact)}
     modifyState $ updateFaction $ EM.adjust (adj fid2) fid1
     modifyState $ updateFaction $ EM.adjust (adj fid1) fid2

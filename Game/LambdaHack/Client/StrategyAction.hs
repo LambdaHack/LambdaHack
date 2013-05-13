@@ -95,7 +95,7 @@ reacquireTgt cops actor btarget s per factionAbilities =
                                        -- nothing visible, go to pos
       Just TPos{} -> closest           -- prefer visible foes
       Nothing -> closest
-  fact = sfaction s EM.! bfaction
+  fact = sfactionD s EM.! bfaction
   rawFoes = actorNotProjAssocs (isAtWar fact) blid s
   foes = filter (\(aid, _) -> aid /= actor) rawFoes
   visibleFoes = filter (enemyVisible . snd) (L.map (second bpos) foes)
@@ -237,7 +237,7 @@ rangedFreq cops actor disco s fpos =
   Actor{bkind, bpos, bfaction, blid, bbag, binv} = getActorBody actor s
   mk = okind bkind
   tis = lvl `atI` bpos
-  fact = sfaction s EM.! bfaction
+  fact = sfactionD s EM.! bfaction
   foes = actorNotProjAssocs (isAtWar fact) blid s
   foesAdj = foesAdjacent lxsize lysize bpos (map snd foes)
   -- TODO: also don't throw if any pos on path is visibly not accessible
@@ -365,7 +365,7 @@ moveStrategy cops actor s mFoe =
   moveRandomly = liftFrequency $ uniformFreq "moveRandomly" sensible
   openableHere pos = Tile.hasFeature cotile F.Openable $ lvl `at` pos
   accessibleHere = accessible cops lvl bpos
-  fact = sfaction s EM.! bfaction
+  fact = sfactionD s EM.! bfaction
   friends = actorList (not . (isAtWar fact)) blid s
   noFriends | asight mk = unoccupied friends
             | otherwise = const True

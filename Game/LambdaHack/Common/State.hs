@@ -4,7 +4,7 @@ module Game.LambdaHack.Common.State
   ( -- * Basic game state, local or global
     State
     -- * State components
-  , sdungeon, sdepth, sactorD, sitemD, sfaction, stime, scops, shigh
+  , sdungeon, sdepth, sactorD, sitemD, sfactionD, stime, scops, shigh
     -- * State operations
   , defStateGlobal, emptyState, localFromGlobal
   , updateDungeon, updateDepth, updateActorD, updateItemD
@@ -17,7 +17,6 @@ import qualified Data.EnumMap.Strict as EM
 import Data.Text (Text)
 
 import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -25,6 +24,7 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Content.TileKind
 
 -- | View on game state. "Remembered" fields carry a subset of the info
 -- in the client copies of the state. Clients never directly change
@@ -32,14 +32,14 @@ import Game.LambdaHack.Common.Time
 -- Note: we use @_sdepth@ instead of computing maximal depth whenever needed,
 -- to keep the dungeon (which can be huge) lazy.
 data State = State
-  { _sdungeon :: !Dungeon      -- ^ remembered dungeon
-  , _sdepth   :: !Int          -- ^ remembered dungeon depth
-  , _sactorD  :: !ActorDict    -- ^ remembered actors in the dungeon
-  , _sitemD   :: !ItemDict     -- ^ remembered items in the dungeon
-  , _sfaction :: !FactionDict  -- ^ remembered sides still in game
-  , _stime    :: !Time         -- ^ global game time
-  , _scops    :: Kind.COps     -- ^ remembered content
-  , _shigh    :: !HighScore.ScoreTable  -- ^ high score table
+  { _sdungeon  :: !Dungeon      -- ^ remembered dungeon
+  , _sdepth    :: !Int          -- ^ remembered dungeon depth
+  , _sactorD   :: !ActorDict    -- ^ remembered actors in the dungeon
+  , _sitemD    :: !ItemDict     -- ^ remembered items in the dungeon
+  , _sfactionD :: !FactionDict  -- ^ remembered sides still in game
+  , _stime     :: !Time         -- ^ global game time
+  , _scops     :: Kind.COps     -- ^ remembered content
+  , _shigh     :: !HighScore.ScoreTable  -- ^ high score table
   }
   deriving (Show, Eq)
 
@@ -76,7 +76,7 @@ unknownTileMap unknownId cxsize cysize =
 defStateGlobal :: Dungeon -> Int
                -> FactionDict -> Kind.COps -> HighScore.ScoreTable
                -> State
-defStateGlobal _sdungeon _sdepth _sfaction _scops _shigh =
+defStateGlobal _sdungeon _sdepth _sfactionD _scops _shigh =
   State
     { _sactorD = EM.empty
     , _sitemD = EM.empty
@@ -92,7 +92,7 @@ emptyState =
     , _sdepth = 0
     , _sactorD = EM.empty
     , _sitemD = EM.empty
-    , _sfaction = EM.empty
+    , _sfactionD = EM.empty
     , _stime = timeZero
     , _scops = undefined
     , _shigh = HighScore.empty
@@ -131,7 +131,7 @@ updateItemD f s = s {_sitemD = f (_sitemD s)}
 
 -- | Update faction data within state.
 updateFaction :: (FactionDict -> FactionDict) -> State -> State
-updateFaction f s = s {_sfaction = f (_sfaction s)}
+updateFaction f s = s {_sfactionD = f (_sfactionD s)}
 
 -- | Update global time within state.
 updateTime :: (Time -> Time) -> State -> State
@@ -147,15 +147,15 @@ getLocalTime lid s = ltime $ _sdungeon s EM.! lid
 
 -- | Tell whether the faction is controlled (at least partially) by a human.
 isHumanFaction :: State -> FactionId -> Bool
-isHumanFaction s fid = isHumanFact $ _sfaction s EM.! fid
+isHumanFaction s fid = isHumanFact $ _sfactionD s EM.! fid
 
 -- | Tell whether the faction uses AI to control any of its actors.
 usesAIFaction :: State -> FactionId -> Bool
-usesAIFaction s fid = usesAIFact $ _sfaction s EM.! fid
+usesAIFaction s fid = usesAIFact $ _sfactionD s EM.! fid
 
 -- | Tell whether the faction can spawn actors.
 isSpawningFaction :: State -> FactionId -> Bool
-isSpawningFaction s fid = isSpawningFact (_scops s) $ _sfaction s EM.! fid
+isSpawningFaction s fid = isSpawningFact (_scops s) $ _sfactionD s EM.! fid
 
 sdungeon :: State -> Dungeon
 sdungeon = _sdungeon
@@ -169,8 +169,8 @@ sactorD = _sactorD
 sitemD :: State -> ItemDict
 sitemD = _sitemD
 
-sfaction :: State -> FactionDict
-sfaction = _sfaction
+sfactionD :: State -> FactionDict
+sfactionD = _sfactionD
 
 stime :: State -> Time
 stime = _stime
@@ -187,7 +187,7 @@ instance Binary State where
     put _sdepth
     put _sactorD
     put _sitemD
-    put _sfaction
+    put _sfactionD
     put _stime
     put _shigh
   get = do
@@ -195,7 +195,7 @@ instance Binary State where
     _sdepth <- get
     _sactorD <- get
     _sitemD <- get
-    _sfaction <- get
+    _sfactionD <- get
     _stime <- get
     _shigh <- get
     let _scops = undefined  -- overwritten by recreated cops

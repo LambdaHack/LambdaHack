@@ -135,9 +135,9 @@ effectMindprobe :: MonadAtomic m
                 => ActorId -> m Bool
 effectMindprobe target = do
   tb <- getsState (getActorBody target)
-  let arena = blid tb
-  fact <- getsState $ (EM.! bfaction tb) . sfaction
-  lb <- getsState $ actorNotProjList (isAtWar fact) arena
+  let lid = blid tb
+  fact <- getsState $ (EM.! bfaction tb) . sfactionD
+  lb <- getsState $ actorNotProjList (isAtWar fact) lid
   let nEnemy = length lb
   if nEnemy == 0 then do
     execSfxAtomic $ EffectD target Effect.NoEffect
@@ -165,7 +165,7 @@ effectDominate source target = do
       execCmdAtomic $ HasteActorA target (speedNegate delta)
     -- TODO: Perhaps insert a turn of delay here to allow countermeasures.
     execCmdAtomic $ DominateActorA target (bfaction tb) (bfaction sb)
-    leaderOld <- getsState $ gleader . (EM.! bfaction sb) . sfaction
+    leaderOld <- getsState $ gleader . (EM.! bfaction sb) . sfactionD
     execCmdAtomic $ LeadFactionA (bfaction sb) leaderOld (Just target)
     return True
 
@@ -185,16 +185,16 @@ effectSummonFriend power source target = do
 summonFriends :: (MonadAtomic m, MonadServer m)
               => FactionId -> [Point] -> LevelId
               -> m ()
-summonFriends bfaction ps arena = do
+summonFriends bfaction ps lid = do
   Kind.COps{ coactor=coactor@Kind.Ops{opick}
            , cofact=Kind.Ops{okind} } <- getsState scops
-  faction <- getsState sfaction
-  let fact = okind $ gkind $ faction EM.! bfaction
+  factionD <- getsState sfactionD
+  let fact = okind $ gkind $ factionD EM.! bfaction
   forM_ ps $ \ p -> do
     mk <- rndToAction $ opick (fname fact) (const True)
     if mk == heroKindId coactor
-      then addHero bfaction p arena [] Nothing
-      else addMonster mk bfaction p arena
+      then addHero bfaction p lid [] Nothing
+      else addMonster mk bfaction p lid
   -- No leader election needed, bebause an alive actor of the same faction
   -- causes the effect, so there is already a leader.
 
@@ -215,9 +215,9 @@ addActor mk bfaction pos lid hp bsymbol bname bcolor = do
 addHero :: (MonadAtomic m, MonadServer m)
         => FactionId -> Point -> LevelId -> [(Int, Text)] -> Maybe Int
         -> m ActorId
-addHero bfaction ppos arena configHeroNames mNumber = do
+addHero bfaction ppos lid configHeroNames mNumber = do
   Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
-  fact <- getsState $ (EM.! bfaction) . sfaction
+  fact <- getsState $ (EM.! bfaction) . sfactionD
   let kId = heroKindId coactor
   hp <- rndToAction $ rollDice $ ahp $ okind kId
   mhs <- mapM (\n -> getsState $ \s -> tryFindHeroK s bfaction n) [0..9]
@@ -228,7 +228,7 @@ addHero bfaction ppos arena configHeroNames mNumber = do
       color = gcolor fact
       startHP = hp - (hp `div` 5) * min 3 n
   addActor
-    kId bfaction ppos arena startHP (Just symbol) (Just name) (Just color)
+    kId bfaction ppos lid startHP (Just symbol) (Just name) (Just color)
 
 -- | Find a hero name in the config file, or create a stock name.
 findHeroName :: [(Int, Text)] -> Int -> Text
@@ -252,24 +252,24 @@ effectSpawnMonster power target = do
 spawnMonsters :: (MonadAtomic m, MonadServer m)
               => [Point] -> LevelId
               -> m ()
-spawnMonsters ps arena = assert (not $ null ps) $ do
+spawnMonsters ps lid = assert (not $ null ps) $ do
   Kind.COps{ coactor=Kind.Ops{opick}
            , cofact=Kind.Ops{okind} } <- getsState scops
-  faction <- getsState sfaction
+  factionD <- getsState sfactionD
   let f (fid, fa) =
         let kind = okind (gkind fa)
         in if fspawn kind <= 0
            then Nothing
            else Just (fspawn kind, (kind, fid))
-  case catMaybes $ map f $ EM.assocs faction of
+  case catMaybes $ map f $ EM.assocs factionD of
     [] -> return ()  -- no faction spawns
     spawnList -> do
       let freq = toFreq "spawn" spawnList
       (spawnKind, bfaction) <- rndToAction $ frequency freq
       laid <- forM ps $ \ p -> do
         mk <- rndToAction $ opick (fname spawnKind) (const True)
-        addMonster mk bfaction p arena
-      mleader <- getsState $ gleader . (EM.! bfaction) . sfaction
+        addMonster mk bfaction p lid
+      mleader <- getsState $ gleader . (EM.! bfaction) . sfactionD
       when (mleader == Nothing) $ do
         execCmdAtomic $ LeadFactionA bfaction Nothing (Just $ head laid)
         execSfxAtomic $ FadeinD bfaction True
@@ -355,31 +355,31 @@ effLvlGoUp :: (MonadAtomic m, MonadServer m) => ActorId -> Int -> m ()
 effLvlGoUp aid k = do
   bOld <- getsState $ getActorBody aid
   ais <- getsState $ getActorItem aid
-  let arenaOld = blid bOld
+  let lidOld = blid bOld
       side = bfaction bOld
-  whereto <- getsState $ \s -> whereTo s arenaOld k
+  whereto <- getsState $ \s -> whereTo s lidOld k
   case whereto of
     Nothing -> -- We are at the "end" of the dungeon.
-               fleeDungeon side arenaOld
-    Just (arenaNew, posNew) ->
-      assert (arenaNew /= arenaOld `blame` (arenaNew, "stairs looped")) $ do
-        timeOld <- getsState $ getLocalTime arenaOld
+               fleeDungeon side lidOld
+    Just (lidNew, posNew) ->
+      assert (lidNew /= lidOld `blame` (lidNew, "stairs looped")) $ do
+        timeOld <- getsState $ getLocalTime lidOld
         -- Leader always set to the actor changing levels.
-        mleader <- getsState $ gleader . (EM.! side) . sfaction
+        mleader <- getsState $ gleader . (EM.! side) . sfactionD
         execCmdAtomic $ LeadFactionA side mleader Nothing
         -- Remove the actor from the old level.
         -- Onlookers see somebody disappear suddenly.
         -- @DestroyActorA@ is too loud, so use @LoseActorA@ instead.
         execCmdAtomic $ LoseActorA aid bOld ais
         -- Sync the actor time with the level time.
-        timeLastVisited <- getsState $ getLocalTime arenaNew
+        timeLastVisited <- getsState $ getLocalTime lidNew
         let delta = timeAdd (btime bOld) (timeNegate timeOld)
-            bNew = bOld { blid = arenaNew
+            bNew = bOld { blid = lidNew
                         , btime = timeAdd timeLastVisited delta
                         , bpos = posNew }
         -- The actor is added to the new level, but there can be other actors
         -- at his new position.
-        inhabitants <- getsState $ posToActor posNew arenaNew
+        inhabitants <- getsState $ posToActor posNew lidNew
         -- Onlookers see somebody appear suddenly. The actor himself
         -- sees new surroundings and has to reset his perception.
         execCmdAtomic $ CreateActorA aid bNew ais
@@ -391,7 +391,7 @@ effLvlGoUp aid k = do
             -- Squash the actor blocking the staircase.
             squashActor aid m
         -- Verify the actor on the staircase died, so only one actor left.
-        void $ getsState $ posToActor posNew arenaNew
+        void $ getsState $ posToActor posNew lidNew
         -- The property of at most one actor on a tile is restored.
 
 -- | The faction leaves the dungeon.
@@ -399,7 +399,7 @@ fleeDungeon :: MonadAtomic m
             => FactionId -> LevelId -> m ()
 fleeDungeon fid lid = do
   (_, total) <- getsState $ calculateTotal fid lid
-  oldSt <- getsState $ gquit . (EM.! fid) . sfaction
+  oldSt <- getsState $ gquit . (EM.! fid) . sfactionD
   if total == 0
     then execCmdAtomic $ QuitFactionA fid oldSt $ Just (False, Victor)
     else execCmdAtomic $ QuitFactionA fid oldSt $ Just (True, Victor)

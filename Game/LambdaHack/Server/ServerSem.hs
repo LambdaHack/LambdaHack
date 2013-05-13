@@ -55,14 +55,14 @@ execFailure fid msg = do
 broadcastCmdAtomic :: MonadAtomic m
                    => (FactionId -> CmdAtomic) -> m ()
 broadcastCmdAtomic fcmd = do
-  faction <- getsState sfaction
-  mapM_ (execCmdAtomic . fcmd) $ EM.keys faction
+  factionD <- getsState sfactionD
+  mapM_ (execCmdAtomic . fcmd) $ EM.keys factionD
 
 broadcastSfxAtomic :: MonadAtomic m
                    => (FactionId -> SfxAtomic) -> m ()
 broadcastSfxAtomic fcmd = do
-  faction <- getsState sfaction
-  mapM_ (execSfxAtomic . fcmd) $ EM.keys faction
+  factionD <- getsState sfactionD
+  mapM_ (execSfxAtomic . fcmd) $ EM.keys factionD
 
 -- * MoveSer
 
@@ -82,8 +82,8 @@ moveSer aid dir exploration = do
   let spos = bpos sm           -- source position
       tpos = spos `shift` dir  -- target position
   -- We start by looking at the target position.
-  let arena = blid sm
-  tgt <- getsState (posToActor tpos arena)
+  let lid = blid sm
+  tgt <- getsState (posToActor tpos lid)
   case tgt of
     Just target -> do
       -- Attacking does not require full access, adjacency is enough.
@@ -158,7 +158,7 @@ actorAttackActor source target = do
         then execSfxAtomic $ StrikeD source target item MissBlockD
         else performHit True
     else performHit False
-  sfact <- getsState $ (EM.! sfid) . sfaction
+  sfact <- getsState $ (EM.! sfid) . sfactionD
   -- The only way to start a war is to slap an enemy. Being hit by
   -- and hitting projectiles count as unintentional friendly fire.
   let friendlyFire = bproj sm || bproj tm
@@ -174,13 +174,13 @@ actorOpenDoor actor dir exploration = do
   Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody actor
   let dpos = shift (bpos body) dir  -- the position we act upon
-      arena = blid body
-  lvl <- getsLevel arena id
+      lid = blid body
+  lvl <- getsLevel lid id
   let serverTile = lvl `at` dpos
       freshClientTile = hideTile cotile dpos lvl
   t <- if exploration && serverTile /= freshClientTile then do
          -- Search the tile.
-         execCmdAtomic $ SearchTileA arena dpos freshClientTile serverTile
+         execCmdAtomic $ SearchTileA lid dpos freshClientTile serverTile
          return serverTile  -- found
        else return freshClientTile  -- not searched
   -- Try to open the door.
@@ -203,8 +203,8 @@ runSer aid dir = do
   let spos = bpos sm           -- source position
       tpos = spos `shift` dir  -- target position
   -- We start by looking at the target position.
-  let arena = blid sm
-  tgt <- getsState (posToActor tpos arena)
+  let lid = blid sm
+  tgt <- getsState (posToActor tpos lid)
   case tgt of
     Just target
       | accessible cops lvl spos tpos -> do
@@ -281,7 +281,7 @@ projectSer source tpos eps iid container = do
   lxsize <- getsLevel (blid sm) lxsize
   lysize <- getsLevel (blid sm) lysize
   let spos = bpos sm
-      arena = blid sm
+      lid = blid sm
       -- When projecting, the first turn is spent aiming.
       -- The projectile is seen one tile from the actor, giving a hint
       -- about the aim and letting the target evade.
@@ -302,7 +302,7 @@ projectSer source tpos eps iid container = do
     Nothing -> execFailure (bfaction sm) "cannot zap oneself"
     Just [] -> assert `failure` (spos, tpos, "project from the edge of level")
     Just path@(pos:_) -> do
-      inhabitants <- getsState (posToActor pos arena)
+      inhabitants <- getsState (posToActor pos lid)
       if accessible cops lvl spos pos && isNothing inhabitants
         then do
           execSfxAtomic $ ProjectD source iid
@@ -374,8 +374,8 @@ triggerSer :: (MonadAtomic m, MonadServer m)
 triggerSer aid dpos = do
   Kind.COps{cotile=Kind.Ops{okind, opick}} <- getsState scops
   b <- getsState $ getActorBody aid
-  let arena = blid b
-  lvl <- getsLevel arena id
+  let lid = blid b
+  lvl <- getsLevel lid id
   let f feat = do
         case feat of
           F.Cause ef -> do
@@ -385,13 +385,13 @@ triggerSer aid dpos = do
             return True
           F.ChangeTo tgroup -> do
             execSfxAtomic $ TriggerD aid dpos feat {-TODO-}True
-            as <- getsState $ actorList (const True) arena
+            as <- getsState $ actorList (const True) lid
             if EM.null $ lvl `atI` dpos
               then if unoccupied as dpos
                  then do
                    let fromTile = lvl `at` dpos
                    toTile <- rndToAction $ opick tgroup (const True)
-                   execCmdAtomic $ AlterTileA arena dpos fromTile toTile
+                   execCmdAtomic $ AlterTileA lid dpos fromTile toTile
                    return True
 -- TODO: take care of AI using this function (aborts on some of the features, succes on others, etc.)
                  else execFailure (bfaction b) "blocked"  -- by actors
@@ -423,7 +423,7 @@ gameRestartSer :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 gameRestartSer aid = do
   b <- getsState $ getActorBody aid
   let fid = bfaction b
-  oldSt <- getsState $ gquit . (EM.! fid) . sfaction
+  oldSt <- getsState $ gquit . (EM.! fid) . sfactionD
   modifyServer $ \ser -> ser {squit = True}  -- do this at once
   execCmdAtomic $ QuitFactionA fid oldSt $ Just (False, Restart)
 
@@ -433,7 +433,7 @@ gameExitSer :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 gameExitSer aid = do
   b <- getsState $ getActorBody aid
   let fid = bfaction b
-  oldSt <- getsState $ gquit . (EM.! fid) . sfaction
+  oldSt <- getsState $ gquit . (EM.! fid) . sfactionD
   modifyServer $ \ser -> ser {squit = True}  -- do this at once
   execCmdAtomic $ QuitFactionA fid oldSt $ Just (True, Camping)
 

@@ -106,7 +106,7 @@ moveHuman v = do
     case tgt of
       Just target -> do
         tb <- getsState $ getActorBody target
-        sfact <- getsState $ (EM.! bfaction sb) . sfaction
+        sfact <- getsState $ (EM.! bfaction sb) . sfactionD
         if bfaction tb == bfaction sb && not (bproj tb) then do
           -- Select adjacent actor by bumping into him. Takes no time.
           success <- selectLeader target

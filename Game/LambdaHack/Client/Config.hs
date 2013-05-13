@@ -21,7 +21,8 @@ data ConfigUI = ConfigUI
     -- ui
   , configFont         :: !String
   , configHistoryMax   :: !Int
-  } deriving Show
+  }
+  deriving Show
 
 instance NFData ConfigUI
 

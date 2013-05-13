@@ -140,14 +140,14 @@ cmdAtomicSemCli cmd = case cmd of
   RestartA _ sdisco sfper s _ -> do
     -- TODO: here or elsewhere re-read RNG seed from config file
     side <- getsClient sside
-    let fac = sfaction s EM.! side
+    let fact = sfactionD s EM.! side
     shistory <- getsClient shistory
     sconfigUI <- getsClient sconfigUI
     isAI <- getsClient sisAI
     let cli = defStateClient shistory sconfigUI side isAI
     putClient cli { sdisco
                   , sfper
-                  , _sleader = gleader fac
+                  , _sleader = gleader fact
                   , sundo = [CmdAtomic cmd] }
   ResumeA _fid sfper -> modifyClient $ \cli -> cli {sfper}
   SaveExitA -> saveExitA
@@ -270,7 +270,7 @@ drawCmdAtomicUI verbose cmd = case cmd of
 --    fr <- drawOverlay ColorBW $ head $ runSlideshow sli
 --    displayFramesPush [Nothing, Just fr, Nothing]
     else do
-      fidName <- getsState $ gname . (EM.! toFid) . sfaction
+      fidName <- getsState $ gname . (EM.! toFid) . sfactionD
       aVerbMU target $ MU.Text $ "fall under the influence of" <+> fidName
   LeadFactionA _ source target -> do
     actorD <- getsState sactorD
@@ -278,8 +278,8 @@ drawCmdAtomicUI verbose cmd = case cmd of
         targetAlive = isJust target
     when (sourceDead && targetAlive) $ msgAdd "The survivors carry on."
   DiplFactionA fid1 fid2 _ toDipl -> do
-    name1 <- getsState $ gname . (EM.! fid1) . sfaction
-    name2 <- getsState $ gname . (EM.! fid2) . sfaction
+    name1 <- getsState $ gname . (EM.! fid1) . sfactionD
+    name2 <- getsState $ gname . (EM.! fid2) . sfactionD
     let showDipl Unknown = "unknown to each other"
         showDipl Neutral = "in neutral diplomatic relations"
         showDipl Alliance = "allied"
@@ -413,7 +413,7 @@ displaceActorUI source target = do
 
 quitFactionUI :: MonadClientUI m => FactionId -> Maybe (Bool, Status) -> m ()
 quitFactionUI fid toSt = do
-  fidName <- getsState $ MU.Text . gname . (EM.! fid) . sfaction
+  fidName <- getsState $ MU.Text . gname . (EM.! fid) . sfactionD
   case toSt of
     Just (_, Killed _) -> do
       let msg = makeSentence
@@ -573,11 +573,11 @@ fadeD out topRight = do
     Just (_, k) | k > 1 -> return ()
     _ -> do
       side <- getsClient sside
-      fac <- getsState $ (EM.! side) . sfaction
+      fact <- getsState $ (EM.! side) . sfactionD
       arena <- getArenaUI
       lvl <- getsLevel arena id
       report <- getsClient sreport
-      unless out $ msgReset $ gname fac <> ", get ready!"
+      unless out $ msgReset $ gname fact <> ", get ready!"
       animMap <- rndToAction $ fadeout out topRight (lxsize lvl) (lysize lvl)
       animFrs <- animate animMap
       modifyClient $ \d -> d {sreport = report}

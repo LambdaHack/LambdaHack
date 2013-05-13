@@ -1,9 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
--- | Game factions (heroes, enemies, NPCs, etc.) for LambdaHack.
+-- | The type of kinds of game factions (heroes, enemies, NPCs, etc.)
+-- for LambdaHack.
 module Content.FactionKind ( cdefs ) where
 
-import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Common.ContentDef
+import Game.LambdaHack.Content.FactionKind
 
 cdefs :: ContentDef FactionKind
 cdefs = ContentDef

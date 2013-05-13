@@ -74,15 +74,15 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
       broadcastCmdAtomic $ \fid -> ResumeA fid (pers EM.! fid)
   -- Loop.
   let loop = do
-        let run arena = handleActors cmdSerSem arena
-            factionArena fac =
-              case gleader fac of
+        let run lid = handleActors cmdSerSem lid
+            factionArena fact =
+              case gleader fact of
                 Nothing -> return Nothing
                 Just leader -> do
                   b <- getsState $ getActorBody leader
                   return $ Just $ blid b
-        faction <- getsState sfaction
-        marenas <- mapM factionArena $ EM.elems faction
+        factionD <- getsState sfactionD
+        marenas <- mapM factionArena $ EM.elems factionD
         let arenas = ES.toList $ ES.fromList $ catMaybes marenas
         assert (not $ null arenas) skip
         mapM_ run arenas
@@ -115,8 +115,8 @@ endClip arenas = do
       execCmdAtomic SaveBkpA
       saveGameBkp
     -- Regenerate HP and add monsters each turn, not each clip.
-    when (clipMod == 1) $ mapM_ generateMonster arenas
-    when (clipMod == 2) $ mapM_ regenerateLevelHP arenas
+    when (clipMod == 1) $ mapM_ regenerateLevelHP arenas
+    when (clipMod == 2) $ mapM_ generateMonster arenas
     -- TODO: a couple messages each clip to many clients is too costly.
     -- Store these on a queue and sum times instead of sending,
     -- until a different command needs to be sent. Include HealActorA
@@ -133,16 +133,16 @@ handleActors :: (MonadAtomic m, MonadServerConn m)
              => (CmdSer -> m Bool)
              -> LevelId
              -> m ()
-handleActors cmdSerSem arena = do
+handleActors cmdSerSem lid = do
   Kind.COps{coactor} <- getsState scops
-  time <- getsState $ getLocalTime arena  -- the end of this clip, inclusive
-  prio <- getsLevel arena lprio
+  time <- getsState $ getLocalTime lid  -- the end of this clip, inclusive
+  prio <- getsLevel lid lprio
   quit <- getsServer squit
-  faction <- getsState sfaction
+  factionD <- getsState sfactionD
   s <- getState
   let -- Actors of the same faction move together.
       -- TODO: insert wrt the order, instead of sorting
-      isLeader (aid, b) = not $ Just aid == gleader (faction EM.! bfaction b)
+      isLeader (aid, b) = not $ Just aid == gleader (factionD EM.! bfaction b)
       order = Ord.comparing $
         ((>= 0) . bhp . snd) &&& bfaction . snd &&& isLeader &&& bsymbol . snd
       (atime, as) = EM.findMin prio
@@ -160,7 +160,7 @@ handleActors cmdSerSem arena = do
       execCmdAtomic $ DestroyActorA aid b ais
       -- The attack animation for the projectile hit subsumes @DisplayPushD@,
       -- so not sending an extra @DisplayPushD@ here.
-      handleActors cmdSerSem arena
+      handleActors cmdSerSem lid
     Just (aid, b) | bhp b <= 0 && not (bproj b)
                     || maybe False null (bpath b) -> do
       -- An actor (projectile or not) ceases to exist.
@@ -169,13 +169,13 @@ handleActors cmdSerSem arena = do
       -- If it's a death, not a projectile drop, the death animation
       -- subsumes @DisplayPushD@, so not sending it here. ProjectileProjectile
       -- destruction is not important enough for an extra @DisplayPushD@.
-      handleActors cmdSerSem arena
+      handleActors cmdSerSem lid
     Just (aid, body) -> do
       let side = bfaction body
-          fac = faction EM.! side
-          mleader = gleader fac
-          usesAI = usesAIFact fac
-          hasHumanLeader = isNothing $ gAiLeader fac
+          fact = factionD EM.! side
+          mleader = gleader fact
+          usesAI = usesAIFact fact
+          hasHumanLeader = isNothing $ gAiLeader fact
           queryUI = not usesAI || hasHumanLeader && Just aid == mleader
       -- Display a new frame so that player does not see moves of all his
       -- AI party members cumulated in a single frame, but one by one.
@@ -226,7 +226,7 @@ handleActors cmdSerSem arena = do
           lastSingleMove = timeAddFromSpeed coactor bPre previousClipEnd
       when (btime bPre > lastSingleMove) $
         broadcastSfxAtomic DisplayPushD
-      handleActors cmdSerSem arena
+      handleActors cmdSerSem lid
 
 dieSer :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 dieSer aid = do  -- TODO: explode if a projectile holding a potion
@@ -239,7 +239,7 @@ dieSer aid = do  -- TODO: explode if a projectile holding a potion
   execCmdAtomic $ DestroyActorA aid body {bbag = EM.empty} []
   spawning <- getsState $ flip isSpawningFaction fid
   when (not spawning && isNothing mleader) $ do
-    oldSt <- getsState $ gquit . (EM.! fid) . sfaction
+    oldSt <- getsState $ gquit . (EM.! fid) . sfactionD
     execCmdAtomic $ QuitFactionA fid oldSt $ Just (True, Killed $ blid body)
 
 -- | Drop all actor's items.
@@ -254,7 +254,7 @@ electLeader :: (MonadAtomic m, MonadServer m)
             => FactionId -> LevelId -> ActorId
             -> m (Maybe ActorId)
 electLeader fid lid aidDead = do
-  mleader <- getsState $ gleader . (EM.! fid) . sfaction
+  mleader <- getsState $ gleader . (EM.! fid) . sfactionD
   if isNothing mleader || mleader == Just aidDead then do
     actorD <- getsState sactorD
     let ours (_, b) = bfaction b == fid && not (bproj b)
@@ -283,19 +283,19 @@ advanceTime aid = do
 
 -- | Generate a monster, possibly.
 generateMonster :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
-generateMonster arena = do
+generateMonster lid = do
   cops@Kind.COps{cofact=Kind.Ops{okind}} <- getsState scops
   pers <- getsServer sper
-  lvl@Level{ldepth} <- getsLevel arena id
-  faction <- getsState sfaction
+  lvl@Level{ldepth} <- getsLevel lid id
+  factionD <- getsState sfactionD
   s <- getState
-  let f fid = fspawn (okind (gkind (faction EM.! fid))) > 0
-      spawns = actorNotProjList f arena s
+  let f fid = fspawn (okind (gkind (factionD EM.! fid))) > 0
+      spawns = actorNotProjList f lid s
   rc <- rndToAction $ monsterGenChance ldepth (length spawns)
   when rc $ do
-    let allPers = ES.unions $ map (totalVisible . (EM.! arena)) $ EM.elems pers
-    pos <- rndToAction $ rollSpawnPos cops allPers arena lvl s
-    spawnMonsters [pos] arena
+    let allPers = ES.unions $ map (totalVisible . (EM.! lid)) $ EM.elems pers
+    pos <- rndToAction $ rollSpawnPos cops allPers lid lvl s
+    spawnMonsters [pos] lid
 
 rollSpawnPos :: Kind.COps -> ES.EnumSet Point -> LevelId -> Level -> State
              -> Rnd Point
@@ -329,9 +329,9 @@ rollSpawnPos Kind.COps{cotile} visible lid Level{ltile, lxsize, lstair} s = do
 -- Actors on frozen levels don't regenerate. This prevents cheating
 -- via sending an actor to a safe level and letting him regenerate there.
 regenerateLevelHP :: MonadAtomic m => LevelId -> m ()
-regenerateLevelHP arena = do
+regenerateLevelHP lid = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-  time <- getsState $ getLocalTime arena
+  time <- getsState $ getLocalTime lid
   s <- getState
   let pick (a, m) =
         let ak = okind $ bkind m
@@ -347,25 +347,25 @@ regenerateLevelHP arena = do
            then Nothing
            else Just a
   toRegen <-
-    getsState $ catMaybes . map pick . actorNotProjAssocs (const True) arena
+    getsState $ catMaybes . map pick . actorNotProjAssocs (const True) lid
   mapM_ (\aid -> execCmdAtomic $ HealActorA aid 1) toRegen
 
 -- | Continue or restart or exit the game.
 endOrLoop :: (MonadAtomic m, MonadServerConn m) => m () -> m ()
 endOrLoop loopServer = do
-  faction <- getsState sfaction
+  factionD <- getsState sfactionD
   let f (_, Faction{gquit=Nothing}) = Nothing
       f (fid, Faction{gquit=Just quit}) = Just (fid, quit)
-  processQuits loopServer $ mapMaybe f $ EM.assocs faction
+  processQuits loopServer $ mapMaybe f $ EM.assocs factionD
 
 processQuits :: (MonadAtomic m, MonadServerConn m)
              => m () -> [(FactionId, (Bool, Status))] -> m ()
 processQuits loopServer [] = loopServer  -- just continue
 processQuits loopServer ((fid, quit) : quits) = do
   cops <- getsState scops
-  faction <- getsState sfaction
-  let fac = faction EM.! fid
-  total <- case gleader fac of
+  factionD <- getsState sfactionD
+  let faction = factionD EM.! fid
+  total <- case gleader faction of
     Nothing -> return 0
     Just leader -> do
       b <- getsState $ getActorBody leader
@@ -379,8 +379,8 @@ processQuits loopServer ((fid, quit) : quits) = do
           notSpawning fact = not $ isSpawningFact cops fact
           isActive fact = inGame fact && notSpawning fact
           inGameHuman fact = inGame fact && isHumanFact fact
-          gameHuman = filter inGameHuman $ EM.elems faction
-          gameOver = case filter (isActive . snd) $ EM.assocs faction of
+          gameHuman = filter inGameHuman $ EM.elems factionD
+          gameOver = case filter (isActive . snd) $ EM.assocs factionD of
             _ | null gameHuman -> True  -- no screensaver mode for now
             [] -> True  -- last ally dies, so cooperative game ends
             (fid1, fact1) : rest ->

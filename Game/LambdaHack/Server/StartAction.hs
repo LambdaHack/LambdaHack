@@ -167,25 +167,25 @@ populateDungeon = do
           createItems 1 pos lid
   dungeon <- getsState sdungeon
   mapM_ initialItems $ EM.assocs dungeon
-  faction <- getsState sfaction
+  factionD <- getsState sfactionD
   config <- getsServer sconfig
   let heroNames = configHeroNames config : repeat []
       notSpawning (_, fact) = not $ isSpawningFact cops fact
-      needInitialCrew = filter notSpawning $ EM.assocs faction
+      needInitialCrew = filter notSpawning $ EM.assocs factionD
       getEntryLevel (_, fact) = fentry $ okind $ gkind fact
       arenas = ES.toList $ ES.fromList $ map getEntryLevel needInitialCrew
-      initialHeroes arena = do
-        lvl <- getsLevel arena id
-        let arenaFactions = filter ((== arena) . getEntryLevel) needInitialCrew
+      initialHeroes lid = do
+        lvl <- getsLevel lid id
+        let arenaFactions = filter ((== lid) . getEntryLevel) needInitialCrew
         entryPoss <- rndToAction
                      $ findEntryPoss cops lvl (length arenaFactions)
-        mapM_ (arenaHeroes arena) $ zip3 arenaFactions entryPoss heroNames
-      arenaHeroes arena ((side, _), ppos, heroName) = do
-        psFree <- getsState $ nearbyFreePoints cotile ppos arena
+        mapM_ (arenaHeroes lid) $ zip3 arenaFactions entryPoss heroNames
+      arenaHeroes lid ((side, _), ppos, heroName) = do
+        psFree <- getsState $ nearbyFreePoints cotile ppos lid
         let ps = take (1 + configExtraHeroes config) $ zip [0..] psFree
         laid <- forM ps $ \ (n, p) ->
-          addHero side p arena heroName (Just n)
-        mleader <- getsState $ gleader . (EM.! side) . sfaction
+          addHero side p lid heroName (Just n)
+        mleader <- getsState $ gleader . (EM.! side) . sfactionD
         when (mleader == Nothing) $
           execCmdAtomic $ LeadFactionA side Nothing (Just $ head laid)
   mapM_ initialHeroes arenas
