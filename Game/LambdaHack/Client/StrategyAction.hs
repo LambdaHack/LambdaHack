@@ -79,16 +79,15 @@ reacquireTgt cops actor btarget s per factionAbilities =
   reacquire tgt | bproj = returN "TPath" tgt  -- don't animate missiles
   reacquire tgt =
     case tgt of
-      Just (TEnemy a ll) | focused
-                           && memActor a blid s ->  -- present on this level
-        let l = bpos $ getActorBody a s
-        in if enemyVisible l           -- prefer visible foes
-           then returN "TEnemy" $ Just $ TEnemy a l
-           else if null visibleFoes    -- prefer visible foes
-                   && me /= ll         -- not yet reached the last enemy pos
-                then returN "last known" $ Just $ TPos ll
+      Just (TEnemy a ll) | focused ->  -- chases even if enemy dead, to loot
+        case fmap bpos $ EM.lookup a $ sactorD s of
+          Just l | enemyVisible l ->  -- prefer visible (and alive) foes
+            returN "TEnemy" $ Just $ TEnemy a l
+          _ -> if null visibleFoes     -- prefer visible foes
+                  && me /= ll          -- not yet reached the last enemy pos
+               then returN "last known" $ Just $ TPos ll
                                        -- chase the last known pos
-                else closest
+               else closest
       Just TEnemy{} -> closest         -- foe is gone and we forget
       Just (TPos pos) | me == pos -> closest  -- already reached the pos
       Just TPos{} | null visibleFoes -> returN "TPos" tgt
