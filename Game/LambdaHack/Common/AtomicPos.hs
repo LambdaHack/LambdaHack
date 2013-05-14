@@ -203,16 +203,17 @@ breakCmdAtomic cmd = case cmd of
   MoveActorA aid _ toP -> do
     b <- getsState $ getActorBody aid
     ais <- getsState $ getActorItem aid
-    return [LoseActorA aid b ais, SpotActorA aid b {bpos = toP} ais]
+    return [ LoseActorA aid b ais
+           , SpotActorA aid b {bpos = toP, boldpos = bpos b} ais ]
   DisplaceActorA source target -> do
     sb <- getsState $ getActorBody source
     sais <- getsState $ getActorItem source
     tb <- getsState $ getActorBody target
     tais <- getsState $ getActorItem target
     return [ LoseActorA source sb sais
-           , SpotActorA source sb {bpos = bpos tb} sais
+           , SpotActorA source sb {bpos = bpos tb, boldpos = bpos sb} sais
            , LoseActorA target tb tais
-           , SpotActorA target tb {bpos = bpos sb} tais
+           , SpotActorA target tb {bpos = bpos sb, boldpos = bpos tb} tais
            ]
   MoveItemA iid k c1 c2 -> do
     item <- getsState $ getItemBody iid

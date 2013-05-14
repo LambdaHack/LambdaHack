@@ -376,7 +376,8 @@ effLvlGoUp aid k = do
         let delta = timeAdd (btime bOld) (timeNegate timeOld)
             bNew = bOld { blid = lidNew
                         , btime = timeAdd timeLastVisited delta
-                        , bpos = posNew }
+                        , bpos = posNew
+                        , boldpos = posNew}  -- new level, new direction
         -- The actor is added to the new level, but there can be other actors
         -- at his new position.
         inhabitants <- getsState $ posToActor posNew lidNew

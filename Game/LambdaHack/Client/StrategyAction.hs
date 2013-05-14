@@ -326,22 +326,22 @@ moveStrategy cops actor s mFoe =
            , coactor=Kind.Ops{okind}
            } = cops
   lvl@Level{lsmell, lxsize, lysize, ltime} = sdungeon s EM.! blid
-  Actor{bkind, bpos, bfid, blid} = getActorBody actor s
+  Actor{bkind, bpos, boldpos, bfid, blid} = getActorBody actor s
   mk = okind bkind
   lootHere x = not $ EM.null $ lvl `atI` x
-  onlyLoot   = onlyMoves lootHere bpos
+  onlyLoot = onlyMoves lootHere bpos
   interestHere x = let t = lvl `at` x
                        ts = map (lvl `at`) $ vicinity lxsize lysize x
                    in Tile.hasFeature cotile F.Exit t
                       -- Lit indirectly. E.g., a room entrance.
                       || (not (Tile.hasFeature cotile F.Lit t)
                           && L.any (Tile.hasFeature cotile F.Lit) ts)
-  onlyInterest   = onlyMoves interestHere bpos
-  onlyKeepsDir k = let _ = k :: Int in id
-    -- only (\ x -> maybe True (\ (d, _) -> euclidDistSq lxsize d x <= k) bdirAI)
-  -- TODO: use old target instead of bdirAI
-  onlyKeepsDir_9 = id
-    -- only (\ x -> maybe True (\ (d, _) -> neg x /= d) bdirAI)
+  onlyInterest = onlyMoves interestHere bpos
+  bdirAI | bpos == boldpos = Nothing
+         | otherwise = Just $ towards lxsize boldpos bpos
+  onlyKeepsDir k =
+    only (\ x -> maybe True (\d -> euclidDistSq lxsize d x <= k) bdirAI)
+  onlyKeepsDir_9 = only (\ x -> maybe True (\d -> neg x /= d) bdirAI)
   moveIQ = aiq mk > 15 .=> onlyKeepsDir 0 moveRandomly
         .| aiq mk > 10 .=> onlyKeepsDir 1 moveRandomly
         .| aiq mk > 5  .=> onlyKeepsDir 2 moveRandomly

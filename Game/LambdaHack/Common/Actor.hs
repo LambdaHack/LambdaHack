@@ -56,23 +56,24 @@ instance Binary ActorId where
 -- they are usually modified temporarily, but tend to return
 -- to the original value from @ActorKind@ over time. E.g., HP.
 data Actor = Actor
-  { bkind   :: !(Kind.Id ActorKind)    -- ^ the kind of the actor
-  , bsymbol :: !(Maybe Char)           -- ^ individual map symbol
-  , bname   :: !(Maybe Text)           -- ^ individual name
-  , bcolor  :: !(Maybe Color.Color)    -- ^ individual map color
-  , bspeed  :: !(Maybe Speed)          -- ^ individual speed
-  , bhp     :: !Int                    -- ^ current hit points
-  , bpath   :: !(Maybe [Vector])       -- ^ path the actor is forced to travel
-  , bpos    :: !Point                  -- ^ current position
-  , blid    :: !LevelId                -- ^ current level
-  , bbag    :: !ItemBag                -- ^ items carried
-  , binv    :: !ItemInv                -- ^ map from letters to items
-  , bletter :: !InvChar                -- ^ next inventory letter
-  , btime   :: !Time                   -- ^ absolute time of next action
-  , bwait   :: !Time                   -- ^ last bracing expires at this time
-  , bfid    :: !FactionId              -- ^ to which faction the actor belongs
-  , bproj   :: !Bool                   -- ^ is a projectile? (shorthand only,
-                                       -- this can be deduced from bkind)
+  { bkind   :: !(Kind.Id ActorKind)  -- ^ the kind of the actor
+  , bsymbol :: !(Maybe Char)         -- ^ individual map symbol
+  , bname   :: !(Maybe Text)         -- ^ individual name
+  , bcolor  :: !(Maybe Color.Color)  -- ^ individual map color
+  , bspeed  :: !(Maybe Speed)        -- ^ individual speed
+  , bhp     :: !Int                  -- ^ current hit points
+  , bpath   :: !(Maybe [Vector])     -- ^ path the actor is forced to travel
+  , bpos    :: !Point                -- ^ current position
+  , boldpos :: !Point                -- ^ previous position
+  , blid    :: !LevelId              -- ^ current level
+  , bbag    :: !ItemBag              -- ^ items carried
+  , binv    :: !ItemInv              -- ^ map from letters to items
+  , bletter :: !InvChar              -- ^ next inventory letter
+  , btime   :: !Time                 -- ^ absolute time of next action
+  , bwait   :: !Time                 -- ^ last bracing expires at this time
+  , bfid    :: !FactionId            -- ^ to which faction the actor belongs
+  , bproj   :: !Bool                 -- ^ is a projectile? (shorthand only,
+                                     --   this can be deduced from bkind)
   }
   deriving (Show, Eq)
 
@@ -99,6 +100,7 @@ actorTemplate :: Kind.Id ActorKind -> Maybe Char -> Maybe Text
 actorTemplate bkind bsymbol bname bcolor bhp bpos blid btime bfid bproj =
   let bspeed  = Nothing
       bpath   = Nothing
+      boldpos = bpos
       bbag    = EM.empty
       binv    = EM.empty
       bletter = InvChar 'a'
@@ -235,6 +237,7 @@ instance Binary Actor where
     put bhp
     put bpath
     put bpos
+    put boldpos
     put blid
     put bbag
     put binv
@@ -244,20 +247,21 @@ instance Binary Actor where
     put bfid
     put bproj
   get = do
-    bkind   <- get
+    bkind <- get
     bsymbol <- get
-    bname   <- get
-    bcolor  <- get
-    bspeed  <- get
-    bhp     <- get
-    bpath   <- get
-    bpos    <- get
-    blid    <- get
+    bname <- get
+    bcolor <- get
+    bspeed <- get
+    bhp <- get
+    bpath <- get
+    bpos <- get
+    boldpos <- get
+    blid <- get
     bbag <- get
-    binv    <- get
+    binv <- get
     bletter <- get
-    btime   <- get
-    bwait   <- get
+    btime <- get
+    bwait <- get
     bfid <- get
-    bproj    <- get
+    bproj <- get
     return Actor{..}

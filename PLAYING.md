@@ -60,7 +60,7 @@ the vi text editor keys (also known as "Rogue-like keys").
 
 SHIFT (or CTRL) and a movement key make the selected hero run in the indicated
 direction, until anything of interest is spotted. '5' and '.' use a turn
-to brace for combat, which gives a chance to bposk blows next turn.
+to brace for combat, which gives a chance to block blows next turn.
 Melee, searching for secret doors and opening closed doors can be done
 by bumping into a monster, a wall and a door, respectively.
 
@@ -90,7 +90,7 @@ is indicated by the targeting cursor. The origin of a command
 --- the  hero that performs it --- is unaffected by targeting. For example,
 not the targeted door, but one adjacent to the selected hero is closed by him.
 
-To avoid confusion, commands that take time are bposked when targeting
+To avoid confusion, commands that take time are blocked when targeting
 at a remote level (when the cursor is on a different level
 than the selected hero). The targeting commands and all the less used
 commands are listed below. None of them takes hero time.

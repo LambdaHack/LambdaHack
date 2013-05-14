@@ -196,6 +196,7 @@ continueRunDir leader (dirLast, distLast) = do
       -- TODO: instead of a lookahead (does not work, since clients have
       -- limited knowledge), pass _turn similarly as in (dir, 1000)
       -- and decide next turn.
+      -- TODO: perhaps boldpos can be handy here
       -- case runMode (posHere `shift` dirNext) dirNext dirEnterable lxsize of
       --   RunDeadEnd     -> tryRun dirNext  -- explore the dead end
       --   RunCorridor _  -> tryRun dirNext  -- follow the corridor

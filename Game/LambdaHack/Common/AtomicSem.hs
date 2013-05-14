@@ -188,7 +188,8 @@ moveActorA :: MonadAction m => ActorId -> Point -> Point -> m ()
 moveActorA aid fromP toP = assert (fromP /= toP) $ do
   b <- getsState $ getActorBody aid
   assert (fromP == bpos b `blame` (aid, fromP, toP, bpos b, b)) skip
-  modifyState $ updateActorBody aid $ \body -> body {bpos = toP}
+  modifyState $ updateActorBody aid
+              $ \body -> body {bpos = toP, boldpos = fromP}
 
 waitActorA :: MonadAction m => ActorId -> Time -> Time -> m ()
 waitActorA aid fromWait toWait = assert (fromWait /= toWait) $ do
@@ -200,8 +201,8 @@ displaceActorA :: MonadAction m => ActorId -> ActorId -> m ()
 displaceActorA source target = assert (source /= target) $ do
   spos <- getsState $ bpos . getActorBody source
   tpos <- getsState $ bpos . getActorBody target
-  modifyState $ updateActorBody source $ \ b -> b {bpos = tpos}
-  modifyState $ updateActorBody target $ \ b -> b {bpos = spos}
+  modifyState $ updateActorBody source $ \ b -> b {bpos = tpos, boldpos = spos}
+  modifyState $ updateActorBody target $ \ b -> b {bpos = spos, boldpos = tpos}
 
 moveItemA :: MonadAction m => ItemId -> Int -> Container -> Container -> m ()
 moveItemA iid k c1 c2 = assert (k > 0 && c1 /= c2) $ do

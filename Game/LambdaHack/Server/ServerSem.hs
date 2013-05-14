@@ -339,6 +339,7 @@ addProjectile iid bpos blid bfid path btime = do
         , bhp     = 0
         , bpath   = Just dirPath
         , bpos
+        , boldpos = bpos
         , blid
         , bbag    = EM.empty
         , binv    = EM.empty

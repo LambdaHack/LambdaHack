@@ -134,7 +134,7 @@ normalize lxsize v@(VectorXY (dx, dy)) =
 -- to the second. Ignores obstacles. Of several equally good directions
 -- (in the chessboard metric) it picks one of those that visually
 -- (in the euclidean metric) maximally align with the vector between
--- the two points..
+-- the two points.
 towards :: X -> Point -> Point -> Vector
 towards lxsize pos0 pos1 =
   assert (pos0 /= pos1 `blame` (pos0, pos1)) $
