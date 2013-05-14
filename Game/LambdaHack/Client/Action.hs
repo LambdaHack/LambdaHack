@@ -21,7 +21,7 @@ module Game.LambdaHack.Client.Action
     -- * History and report
   , msgAdd, msgReset, recordHistory
     -- * Key input
-  , getKeyCommand, getKeyOverlayCommand, getManyConfirms
+  , getKeyCommand, getKeyOverlayCommand, getAllConfirms, getInitConfirms
     -- * Display and key input
   , displayFramesPush, displayMore, displayYesNo, displayChoiceUI
     -- * Generate slideshows
@@ -244,15 +244,31 @@ getConfirm clearKeys frame = do
     _ -> return False
 
 -- | Display a slideshow, awaiting confirmation for each slide.
-getManyConfirms :: MonadClientUI m => [K.KM] -> Slideshow -> m Bool
-getManyConfirms clearKeys slides =
+getAllConfirms :: MonadClientUI m => [K.KM] -> Slideshow -> m Bool
+getAllConfirms clearKeys slides =
   case runSlideshow slides of
     [] -> return True
     x : xs -> do
       frame <- drawOverlay ColorFull x
       b <- getConfirm clearKeys frame
       if b
-        then getManyConfirms clearKeys (toSlideshow xs)
+        then getAllConfirms clearKeys (toSlideshow xs)
+        else return False
+
+-- | Display a slideshow, awaiting confirmation for each slide except the last.
+getInitConfirms :: MonadClientUI m => [K.KM] -> Slideshow -> m Bool
+getInitConfirms clearKeys slides =
+  case runSlideshow slides of
+    [] -> return True
+    [x] -> do
+      frame <- drawOverlay ColorFull x
+      displayFrame False $ Just frame
+      return True
+    x : xs -> do
+      frame <- drawOverlay ColorFull x
+      b <- getConfirm clearKeys frame
+      if b
+        then getInitConfirms clearKeys (toSlideshow xs)
         else return False
 
 -- | Push frames or frame's worth of delay to the frame queue.
@@ -287,7 +303,7 @@ displayYesNo prompt = do
   frame <- drawOverlay ColorBW $ head $ runSlideshow sli
   getYesNo frame
 
--- TODO: generalize getManyConfirms and displayChoiceUI to a single op
+-- TODO: generalize getAllConfirms and displayChoiceUI to a single op
 -- | Print a prompt and an overlay and wait for a player keypress.
 -- If many overlays, scroll screenfuls with SPACE. Do not wrap screenfuls
 -- (in some menus @?@ cycles views, so the user can restart from the top).

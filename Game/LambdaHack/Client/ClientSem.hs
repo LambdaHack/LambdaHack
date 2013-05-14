@@ -144,7 +144,7 @@ humanCommand msgRunAbort = do
                 -- Show, one by one, all but the last slide.
                 -- Note: the code that generates the slides is responsible
                 -- for inserting the @more@ prompt.
-                b <- getManyConfirms [km] $ toSlideshow $ reverse sls
+                b <- getAllConfirms [km] $ toSlideshow $ reverse sls
                 -- Display the last slide while waiting for the next key,
                 -- or display current state if slideshow interrupted.
                 kmNext <- if b

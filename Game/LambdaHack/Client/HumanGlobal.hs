@@ -344,7 +344,9 @@ verifyTrigger leader feat = case feat of
               , MU.NWs total currencyName ]
         io <- floorItemOverlay bag
         slides <- overlayToSlideshow winMsg io
-        void $ getManyConfirms [] slides
+        partingSlide <- promptToSlideshow "Can it be done better, though?"
+        void $ getInitConfirms [] $ slides Monoid.<> partingSlide
+        flushFrames
     else return ()
   _ -> return ()
 
@@ -397,9 +399,9 @@ gameExitHuman = do
   b <- displayYesNo "Really save and exit?"
   if b then do
     slides <- scoreToSlideshow Camping
-    braver <- promptToSlideshow
-              $ "See you soon, stronger and braver!" <+> moreMsg
-    void $ getManyConfirms [] $ slides Monoid.<> braver
+    partingSlide <- promptToSlideshow "See you soon, stronger and braver!"
+    void $ getInitConfirms [] $ slides Monoid.<> partingSlide
+    flushFrames
     leader <- getLeaderUI
     return $ GameExitSer leader
   else abortWith "Save and exit canceled."
