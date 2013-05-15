@@ -287,11 +287,10 @@ pushFrame :: FrontendSession -> Bool -> Maybe SingleFrame -> IO ()
 pushFrame sess@FrontendSession{sframeState, slastFull} noDelay rawFrame = do
   -- Full evaluation and comparison is done outside the mvar lock.
   (lastFrame, anyFollowed) <- readIORef slastFull
-  let frame = maybe Nothing (Just . evalFrame sess) rawFrame
-      nextFrame =
-        if frame == Just lastFrame
-        then Nothing  -- no sense repeating
-        else frame
+  let frame = fmap (evalFrame sess) rawFrame
+      nextFrame = if frame == Just lastFrame
+                  then Nothing  -- no sense repeating
+                  else frame
   -- Now we take the lock.
   fs <- takeMVar sframeState
   case fs of

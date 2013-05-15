@@ -4,9 +4,11 @@ module Game.LambdaHack.Client.Animation
   ( Attr(..), defAttr, AttrChar(..)
   , SingleFrame(..), Animation, Frames, renderAnim, restrictAnim
   , twirlSplash, blockHit, blockMiss, deathBody, swapPlaces, fadeout
+  , AcFrame(..)
   ) where
 
 import Control.Arrow ((***))
+import Control.Monad
 import Data.Binary
 import Data.Bits
 import qualified Data.EnumMap.Strict as EM
@@ -182,3 +184,24 @@ fadeout out topRight lxsize lysize = do
       fs = (if out then id else reverse) [3..3 * lxsize `divUp` 4 + 2]
   as <- mapM rollFrame fs
   return $ Animation as
+
+data AcFrame =
+    AcConfirm SingleFrame
+  | AcRunning SingleFrame
+  | AcNormal SingleFrame
+  | AcDelay
+  deriving (Show, Eq)
+
+instance Binary AcFrame where
+  put (AcConfirm fr) = putWord8 0 >> put fr
+  put (AcRunning fr) = putWord8 1 >> put fr
+  put (AcNormal fr)  = putWord8 2 >> put fr
+  put AcDelay        = putWord8 3
+  get = do
+    tag <- getWord8
+    case tag of
+      0 -> liftM AcConfirm get
+      1 -> liftM AcRunning get
+      2 -> liftM AcNormal get
+      3 -> return AcDelay
+      _ -> fail "no parse (AcFrame)"

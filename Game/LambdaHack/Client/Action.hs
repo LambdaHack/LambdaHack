@@ -128,7 +128,11 @@ displayFrame isRunning mf = do
   nH <- nHumans
   if nH > 1 then do
     -- More than one human players, don't mix their output.
-    modifyClient $ \cli -> cli {sframe = (mf, isRunning) : sframe cli}
+    let frame = case mf of
+          Nothing -> AcDelay
+          Just fr | isRunning -> AcRunning fr
+          Just fr -> AcNormal fr
+    modifyClient $ \cli -> cli {sframe = frame : sframe cli}
   else do
     -- At most one human player, display everything at once.
     withUI $ liftIO $ Frontend.displayFrame fs isRunning mf
@@ -137,7 +141,16 @@ flushFramesNoMVar :: MonadClientUI m => m ()
 flushFramesNoMVar = do
   fs <- askFrontendSession
   sframe <- getsClient sframe
-  liftIO $ mapM_ (\(mf, b) -> Frontend.displayFrame fs b mf) $ reverse sframe
+  let pGetKey keys frame = liftIO $ Frontend.promptGetKey fs keys frame
+      displayAc (AcConfirm fr) =
+        void $ getConfirmGeneric pGetKey [] fr
+      displayAc (AcRunning fr) =
+        liftIO $ Frontend.displayFrame fs True (Just fr)
+      displayAc (AcNormal fr) =
+        liftIO $ Frontend.displayFrame fs False (Just fr)
+      displayAc AcDelay =
+        liftIO $ Frontend.displayFrame fs False Nothing
+  mapM_ displayAc $ reverse sframe
   modifyClient $ \cli -> cli {sframe = []}
 
 nextEvent :: MonadClientUI m => Maybe Bool -> m K.KM
@@ -231,17 +244,22 @@ getKeyOverlayCommand overlay = do
   km <- promptGetKey [] frame
   return $! fromMaybe km $ M.lookup km $ kmacro keyb
 
--- | Ignore unexpected kestrokes until a SPACE or ESC is pressed.
-getConfirm :: MonadClientUI m => [K.KM] -> SingleFrame -> m Bool
-getConfirm clearKeys frame = do
+-- | Ignore unexpected kestrokes until a SPACE or ESC or others are pressed.
+getConfirmGeneric :: MonadClientUI m
+                  => ([K.KM] -> SingleFrame -> m K.KM)
+                  -> [K.KM] -> SingleFrame -> m Bool
+getConfirmGeneric pGetKey clearKeys frame = do
   let keys = [ K.KM {key=K.Space, modifier=K.NoModifier}
              , K.KM {key=K.Esc, modifier=K.NoModifier}]
              ++ clearKeys
-  km <- promptGetKey keys frame
+  km <- pGetKey keys frame
   case km of
     K.KM {key=K.Space, modifier=K.NoModifier} -> return True
     _ | km `elem` clearKeys -> return True
     _ -> return False
+
+getConfirm :: MonadClientUI m => [K.KM] -> SingleFrame -> m Bool
+getConfirm = getConfirmGeneric promptGetKey
 
 -- | Display a slideshow, awaiting confirmation for each slide.
 getAllConfirms :: MonadClientUI m => [K.KM] -> Slideshow -> m Bool

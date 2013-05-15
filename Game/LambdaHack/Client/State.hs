@@ -52,7 +52,7 @@ data StateClient = StateClient
   , srandom      :: !R.StdGen      -- ^ current random generator
   , sconfigUI    :: !ConfigUI      -- ^ client config (including initial RNG)
   , slastKey     :: !(Maybe K.KM)  -- ^ last command key pressed
-  , sframe       :: ![(Maybe SingleFrame, Bool)]  -- ^ accumulated frames
+  , sframe       :: ![AcFrame]     -- ^ accumulated frames
   , _sleader     :: !(Maybe ActorId)  -- ^ selected actor
   , _sside       :: !FactionId     -- ^ faction controlled by the client
   , squit        :: !Bool          -- ^ exit the game loop

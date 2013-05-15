@@ -4,7 +4,6 @@
 module Game.LambdaHack.Client.LoopAction (loopAI, loopUI) where
 
 import Control.Monad
-import Data.Maybe
 import qualified Data.Text as T
 
 import Game.LambdaHack.Client.Action
@@ -66,12 +65,18 @@ loopUI cmdClientUISem = do
     (Left msg1, CmdAtomicUI ResumeA{}) -> do
       cmdClientUISem cmd1
       savedFs <- getsClient sframe
-      case catMaybes $ map fst savedFs of
-        f1 : _ -> do
-          let fmsg = f1 {sfTop = msg1 <+> "In the last episode:"}
-              sframe = (Just fmsg, False) : (Nothing, False) : savedFs
+      let firstFrame [] = Nothing
+          firstFrame (AcConfirm fr : _) = Just fr
+          firstFrame (AcRunning fr : _) = Just fr
+          firstFrame (AcNormal fr : _) = Just fr
+          firstFrame (AcDelay : fs) = firstFrame fs
+      case firstFrame savedFs of
+        Just f1 -> do
+          let fstart = f1 {sfTop = "In the last episode:" <+> moreMsg}
+              fend = f1 {sfTop = msg1 <+> moreMsg}
+              sframe = [AcConfirm fend] ++ savedFs ++ [AcConfirm fstart]
           modifyClient $ \cli -> cli {sframe}
-        _ -> return ()
+        Nothing -> return ()
     (Left _, CmdAtomicUI RestartA{}) -> do
       cmdClientUISem cmd1
       msgAdd $ "Server savefile is corrupted."
