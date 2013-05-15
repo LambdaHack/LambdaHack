@@ -89,7 +89,7 @@ restoreGameSer Config{ configAppDataDir
               _ -> do
                 let msg =
                       "Starting a new game, because server restore failed. "
-                      ++ "The error message was: "
+                      ++ "The error message is: "
                       ++ (unwords . lines) (show e)
                 hPutStrLn stderr msg
                 return Nothing

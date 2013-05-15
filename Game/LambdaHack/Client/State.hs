@@ -149,6 +149,7 @@ instance Binary StateClient where
     put seps
     put stargetD
     put srunning
+    put sreport
     put shistory
     put sundo
     put sdisco
@@ -167,6 +168,7 @@ instance Binary StateClient where
     seps <- get
     stargetD <- get
     srunning <- get
+    sreport <- get
     shistory <- get
     sundo <- get
     sdisco <- get
@@ -179,8 +181,7 @@ instance Binary StateClient where
     smarkVision <- get
     smarkSmell <- get
     smarkSuspect <- get
-    let sreport = emptyReport
-        sfper = EM.empty
+    let sfper = EM.empty
         srandom = read g
         slastKey = Nothing
         squit = False

@@ -4,12 +4,14 @@
 module Game.LambdaHack.Client.LoopAction (loopAI, loopUI) where
 
 import Control.Monad
+import Data.Maybe
 import qualified Data.Text as T
 
+import Game.LambdaHack.Client.Action
+import Game.LambdaHack.Client.Animation
+import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.AtomicCmd
-import Game.LambdaHack.Client.Action
-import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.State
@@ -39,7 +41,7 @@ loopAI cmdClientAISem = do
   cmd1 <- readConnToClient
   case (msg, cmd1) of
     (Left _, CmdAtomicAI ResumeA{}) -> return ()
-    (Left _, CmdAtomicAI RestartA{}) -> return ()  -- server savegame faulty
+    (Left _, CmdAtomicAI RestartA{}) -> return ()  -- server savefile faulty
     (Right msg1, CmdAtomicAI ResumeA{}) ->
       error $ T.unpack $ "Savefile of client " <> showT side <> " not usable. Can't join the party. Please remove all savefiles manually and restart. Savefile subsystem said: " <> msg1
     (Right _, CmdAtomicAI RestartA{}) -> return ()
@@ -61,14 +63,25 @@ loopUI cmdClientUISem = do
   msg <- initCli $ \s -> cmdClientUISem $ CmdAtomicUI $ ResumeServerA s
   cmd1 <- readConnToClient
   case (msg, cmd1) of
-    (Left _, CmdAtomicUI ResumeA{}) -> return ()
-    (Left _, CmdAtomicUI RestartA{}) -> return ()  -- server savegame faulty
+    (Left msg1, CmdAtomicUI ResumeA{}) -> do
+      cmdClientUISem cmd1
+      savedFs <- getsClient sframe
+      case catMaybes $ map fst savedFs of
+        f1 : _ -> do
+          let fmsg = f1 {sfTop = msg1 <+> "In the last episode:"}
+              sframe = (Just fmsg, False) : (Nothing, False) : savedFs
+          modifyClient $ \cli -> cli {sframe}
+        _ -> return ()
+    (Left _, CmdAtomicUI RestartA{}) -> do
+      cmdClientUISem cmd1
+      msgAdd $ "Server savefile is corrupted."
+               <+> "Dropping the client savefile and starting a new game."
     (Right msg1, CmdAtomicUI ResumeA{}) ->
       error $ T.unpack $ "Savefile of client " <> showT side <> " not usable. Can't join the party. Please remove all savefiles manually and restart. Savefile subsystem said: " <> msg1
-    (Right _, CmdAtomicUI RestartA{}) -> return ()
+    (Right msg1, CmdAtomicUI RestartA{}) -> do
+      cmdClientUISem cmd1
+      msgAdd msg1
     _ -> assert `failure` (side, msg, cmd1)
-  cmdClientUISem cmd1
-  either msgAdd msgAdd msg
   -- State and client state now valid.
   loop
  where

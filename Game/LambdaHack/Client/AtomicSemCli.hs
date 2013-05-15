@@ -213,7 +213,6 @@ coverA lid p iid ik = do
 -- Then also show current and high scores to all clients.
 saveExitA :: MonadClient m => m ()
 saveExitA = do
-  recordHistory
   clientGameSave False
   modifyClient $ \cli -> cli {squit = True}
 
@@ -323,7 +322,6 @@ drawCmdAtomicUI verbose cmd = case cmd of
           , objUnkown1, objUnkown2 ]
     msgAdd msg
   RestartA _ _ _ _ quitter -> when quitter $ msgAdd "This time for real."
-  ResumeA{} -> msgAdd "All factions ready."
   SaveBkpA -> msgAdd "Saving backup."
   _ -> return ()
 
