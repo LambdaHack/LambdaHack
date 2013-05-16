@@ -24,6 +24,7 @@ module Game.LambdaHack.Client.Action
   , getKeyCommand, getKeyOverlayCommand, getAllConfirms, getInitConfirms
     -- * Display and key input
   , displayFramesPush, displayMore, displayYesNo, displayChoiceUI
+  , displayFadeFrames
     -- * Generate slideshows
   , promptToSlideshow, overlayToSlideshow
     -- * Draw frames
@@ -137,10 +138,17 @@ displayFrame isRunning mf = do
     -- At most one human player, display everything at once.
     withUI $ liftIO $ Frontend.displayFrame fs isRunning mf
 
+displayFadeFrames :: MonadClient m => Frames -> m ()
+displayFadeFrames frames = do
+  let translateFr frame = case frame of
+        Nothing -> AcDelay
+        Just fr -> AcNormal fr
+      fades = reverse $ map translateFr frames
+  modifyClient $ \cli -> cli {sfade = fades ++ sfade cli}
+
 flushFramesNoMVar :: MonadClientUI m => m ()
 flushFramesNoMVar = do
   fs <- askFrontendSession
-  sframe <- getsClient sframe
   let pGetKey keys frame = liftIO $ Frontend.promptGetKey fs keys frame
       displayAc (AcConfirm fr) =
         void $ getConfirmGeneric pGetKey [] fr
@@ -150,8 +158,11 @@ flushFramesNoMVar = do
         liftIO $ Frontend.displayFrame fs False (Just fr)
       displayAc AcDelay =
         liftIO $ Frontend.displayFrame fs False Nothing
+  sfade <- getsClient sfade
+  sframe <- getsClient sframe
+  mapM_ displayAc $ reverse sfade
   mapM_ displayAc $ reverse sframe
-  modifyClient $ \cli -> cli {sframe = []}
+  modifyClient $ \cli -> cli {sfade = [], sframe = []}
 
 nextEvent :: MonadClientUI m => Maybe Bool -> m K.KM
 nextEvent mb = withUI $ do

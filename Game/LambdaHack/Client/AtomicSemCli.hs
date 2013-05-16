@@ -579,4 +579,4 @@ fadeD out topRight = do
       animMap <- rndToAction $ fadeout out topRight (lxsize lvl) (lysize lvl)
       animFrs <- animate animMap
       modifyClient $ \d -> d {sreport = report}
-      displayFramesPush animFrs
+      displayFadeFrames animFrs

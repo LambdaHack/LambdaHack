@@ -53,6 +53,7 @@ data StateClient = StateClient
   , sconfigUI    :: !ConfigUI      -- ^ client config (including initial RNG)
   , slastKey     :: !(Maybe K.KM)  -- ^ last command key pressed
   , sframe       :: ![AcFrame]     -- ^ accumulated frames
+  , sfade        :: ![AcFrame]     -- ^ accumulated fade out/in frames
   , _sleader     :: !(Maybe ActorId)  -- ^ selected actor
   , _sside       :: !FactionId     -- ^ faction controlled by the client
   , squit        :: !Bool          -- ^ exit the game loop
@@ -96,6 +97,7 @@ defStateClient shistory sconfigUI _sside sisAI = do
     , srandom = R.mkStdGen 42  -- will be set later
     , slastKey = Nothing
     , sframe = []
+    , sfade = []
     , _sleader = Nothing  -- no heroes yet alive
     , _sside
     , squit = False
@@ -156,6 +158,7 @@ instance Binary StateClient where
     put (show srandom)
     put sconfigUI
     put sframe
+    put sfade
     put _sleader
     put _sside
     put sisAI
@@ -175,6 +178,7 @@ instance Binary StateClient where
     g <- get
     sconfigUI <- get
     sframe <- get
+    sfade <- get
     _sleader <- get
     _sside <- get
     sisAI <- get

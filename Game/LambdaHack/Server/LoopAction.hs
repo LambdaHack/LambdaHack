@@ -198,17 +198,6 @@ handleActors cmdSerSem lid = do
         if bhp bPre <= 0 && not (bproj bPre)
         then execFailure side "You strain, fumble and faint from the exertion."
         else cmdSerSem cmdS
-      nH <- nHumans
-      -- TODO: do not fade out if all other are running (so the previous
-      -- move was of the same actor) or if 2 moves in a row of a fast actor
-      let fadeOut
-            -- No UI, no time taken or at most one human player,
-            -- so no need to visually mark the end of the move.
-            | not queryUI || not timed || not notAborted || nH <= 1 = []
-            | otherwise = [ FadeoutD side True
-                          , FlushFramesD side
-                          , FadeinD side True ]
-      mapM_ execSfxAtomic $ fadeOut
       -- Advance time once, after the leader switched perhaps many times.
       -- TODO: this is correct only when all heroes have the same
       -- speed and can't switch leaders by, e.g., aiming a wand
@@ -220,12 +209,23 @@ handleActors cmdSerSem lid = do
       when (timed && notAborted) $ advanceTime leaderNew
       -- Generate extra frames if the actor has already moved during
       -- this clip, so his multiple moves would be collapsed in one frame.
-      -- If the actor just change his speed this turn, the test can fail,
+      -- If the actor changes his speed this very turn, the test can fail,
       -- but it's a minor UI issue, so let it be.
       let previousClipEnd = timeAdd time $ timeNegate timeClip
           lastSingleMove = timeAddFromSpeed coactor bPre previousClipEnd
       when (btime bPre > lastSingleMove) $
         broadcastSfxAtomic DisplayPushD
+      nH <- nHumans
+      -- TODO: do not fade out if all others are running (so the previous
+      -- move was of the same faction) or if 2 moves in a row of a fast actor
+      let fadeOut
+            -- No UI, no time taken or at most one human player,
+            -- so no need to visually mark the end of the move.
+            | not queryUI || not timed || not notAborted || nH <= 1 = []
+            | otherwise = [ FadeoutD side True
+                          , FlushFramesD side
+                          , FadeinD side True ]
+      mapM_ execSfxAtomic $ fadeOut
       handleActors cmdSerSem lid
 
 dieSer :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
