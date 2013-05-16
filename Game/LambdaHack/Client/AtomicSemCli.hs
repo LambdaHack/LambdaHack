@@ -322,7 +322,7 @@ drawCmdAtomicUI verbose cmd = case cmd of
           , objUnkown1, objUnkown2 ]
     msgAdd msg
   RestartA _ _ _ _ quitter -> when quitter $ msgAdd "This time for real."
-  SaveBkpA -> msgAdd "Saving backup."
+  SaveBkpA | verbose -> msgAdd "Saving backup."
   _ -> return ()
 
 lookAtMove :: MonadClientUI m => Actor -> m ()

@@ -191,6 +191,7 @@ retargetLeader = do
   stgtMode <- getsClient stgtMode
   assert (isNothing stgtMode) $ do
     arena <- getArenaUI
+    -- TODO: do not save to history:
     msgAdd "Last target invalid."
     modifyClient $ \cli -> cli {scursor = Nothing, seps = 0}
     tgtEnemyLeader $ TgtAuto arena
@@ -523,6 +524,7 @@ endTargeting accept = do
           modifyClient $ updateTarget leader (const $ Just $ TPos cpos)
   if accept
     then endTargetingMsg
+    -- TODO: do not save to history:
     else msgAdd "targeting canceled"
   modifyClient $ \cli -> cli { stgtMode = Nothing }
 

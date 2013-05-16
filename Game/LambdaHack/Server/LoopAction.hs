@@ -204,7 +204,7 @@ handleActors cmdSerSem lid = do
       -- of domination. We need to generalize by displaying
       -- "(next move in .3s [RET]" when switching leaders.
       -- RET waits .3s and gives back control,
-      -- Any other key does the .3s wait and the action form the key
+      -- Any other key does the .3s wait and the action from the key
       -- at once.
       when (timed && notAborted) $ advanceTime leaderNew
       -- Generate extra frames if the actor has already moved during

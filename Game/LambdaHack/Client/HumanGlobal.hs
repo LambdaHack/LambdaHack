@@ -402,6 +402,7 @@ gameExitHuman = do
     partingSlide <- promptToSlideshow "See you soon, stronger and braver!"
     void $ getInitConfirms [] $ slides Monoid.<> partingSlide
     flushFrames
+    displayPush  -- save one slide to match other factions
     leader <- getLeaderUI
     return $ GameExitSer leader
   else abortWith "Save and exit canceled."
@@ -411,6 +412,7 @@ gameExitHuman = do
 gameSaveHuman :: MonadClientUI m => m CmdSer
 gameSaveHuman = do
   leader <- getLeaderUI
+  -- TODO: do not save to history:
   msgAdd "Game backup will be saved at the end of the turn."
   -- Let the server save, while the client continues taking commands.
   return $ GameSaveSer leader

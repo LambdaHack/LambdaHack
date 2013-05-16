@@ -66,17 +66,27 @@ loopUI cmdClientUISem = do
       cmdClientUISem cmd1
       savedFs <- getsClient sframe
       let firstFrame [] = Nothing
-          firstFrame (AcConfirm fr : _) = Just fr
+          firstFrame (AcConfirm _ : _) = Nothing  -- too many confirms
           firstFrame (AcRunning fr : _) = Just fr
           firstFrame (AcNormal fr : _) = Just fr
           firstFrame (AcDelay : fs) = firstFrame fs
-      case firstFrame savedFs of
-        Just f1 -> do
-          let fstart = f1 {sfTop = "In the last episode:" <+> moreMsg}
+          theSame _ AcConfirm{} = False  -- we need distinct confirmations
+          theSame f1 (AcNormal fr) = f1 == fr
+          theSame f1 (AcRunning fr) = f1 == fr
+          theSame _ AcDelay = True
+      case (firstFrame savedFs, firstFrame $ reverse savedFs) of
+        (Just f1, Just _) | all (theSame f1) savedFs -> do
+          -- These are usually just the AgeGameA frames.
+          -- TODO: addMsg, no confirm, but don't add to history
+          let fend = f1 {sfTop = msg1 <+> moreMsg}
+              sframe = [AcConfirm fend] ++ savedFs
+          modifyClient $ \cli -> cli {sframe}
+        (Just f1, Just fk) -> do
+          let fstart = fk {sfTop = "In the last episode:" <+> moreMsg}
               fend = f1 {sfTop = msg1 <+> moreMsg}
               sframe = [AcConfirm fend] ++ savedFs ++ [AcConfirm fstart]
           modifyClient $ \cli -> cli {sframe}
-        Nothing -> return ()
+        _ -> return ()  -- possible only with multiple consecutive saves
     (Left _, CmdAtomicUI RestartA{}) -> do
       cmdClientUISem cmd1
       msgAdd $ "Server savefile is corrupted."
