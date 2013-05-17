@@ -181,8 +181,9 @@ fadeout out topRight lxsize lysize = do
                     ++ [0..min ybound ((n - xbound + x) `div` 2)]
                 ]
         return $ EM.fromList $ map (toPoint lxsize *** AttrChar defAttr) l
-      fs = (if out then id else reverse) [3..3 * lxsize `divUp` 4 + 2]
-  as <- mapM rollFrame fs
+      startN = if out then 3 else 1
+      fs = [startN..3 * lxsize `divUp` 4 + 2]
+  as <- mapM rollFrame $ if out then fs else reverse fs
   return $ Animation as
 
 data AcFrame =

@@ -484,4 +484,8 @@ fadeD out topRight = do
       animMap <- rndToAction $ fadeout out topRight (lxsize lvl) (lysize lvl)
       animFrs <- animate animMap
       modifyClient $ \d -> d {sreport = report}
-      displayFadeFrames animFrs
+      let frs | out = animFrs
+                -- Empty frame to mark the fade-in end,
+                -- to trim only to here if SPACE pressed.
+              | otherwise = animFrs ++ [Nothing]
+      displayFadeFrames frs

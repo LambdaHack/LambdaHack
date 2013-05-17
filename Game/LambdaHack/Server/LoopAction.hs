@@ -222,8 +222,9 @@ handleActors cmdSerSem lid = do
             -- No UI, no time taken or at most one human player,
             -- so no need to visually mark the end of the move.
             | not queryUI || not timed || not notAborted || nH <= 1 = []
-            | otherwise = [ FadeoutD side True
-                          , FlushFramesD side
+            | otherwise = [ FlushFramesD side  -- flush animations before fade
+                          , FadeoutD side True
+                          , FlushFramesD side  -- flush fade-out, keep fade-in
                           , FadeinD side True ]
       mapM_ execSfxAtomic $ fadeOut
       handleActors cmdSerSem lid

@@ -61,14 +61,22 @@ dummyFrame = GtkFrame BS.empty []
 
 -- | Remove all but the last element of the frame queue.
 -- The kept last element ensures that slastFull is not invalidated.
-trimQueue :: FrontendSession -> IO ()
-trimQueue FrontendSession{sframeState} = do
+onQueue :: (LQueue (Maybe GtkFrame) -> LQueue (Maybe GtkFrame))
+        -> FrontendSession -> IO ()
+onQueue f FrontendSession{sframeState} = do
   fs <- takeMVar sframeState
   case fs of
     FPushed{..} ->
-      putMVar sframeState FPushed{fpushed = trimLQueue fpushed, ..}
+      putMVar sframeState FPushed{fpushed = f fpushed, ..}
     _ ->
       putMVar sframeState fs
+
+lengthQueue :: FrontendSession -> IO Int
+lengthQueue FrontendSession{sframeState} = do
+  fs <- readMVar sframeState
+  case fs of
+    FPushed{..} -> return $ lengthLQueue fpushed
+    _ -> return 0
 
 -- | The name of the frontend.
 frontendName :: String
@@ -124,10 +132,19 @@ runGtk configFont k = do
         !modifier = modifierTranslate mods
     liftIO $ do
       unless (deadKey n) $ do
-        -- Drop all the old frames. Some more may be arriving at the same time.
-        trimQueue sess
-        -- Store the key in the channel.
-        writeChan schanKey $ K.KM {key, modifier}
+        len <- lengthQueue sess
+        if n == "space" && len > 1 then
+          -- Only drop frames up to the first empty frame.
+          -- Some new frames may be arriving at the same time
+          -- or being displayed and removed, but we don't care.
+          onQueue dropStartLQueue sess
+        else do
+          -- Drop all the old frames.
+          -- Some new frames may be arriving at the same time
+          -- or being displayed and removed, but we don't care.
+          onQueue trimLQueue sess
+          -- Store the key in the channel.
+          writeChan schanKey $ K.KM {key, modifier}
       return True
   -- Set the font specified in config, if any.
   f <- fontDescriptionFromString configFont
@@ -380,7 +397,7 @@ nextEvent sess@FrontendSession{schanKey, sframeState} (Just True) = do
   -- Wait for a keypress.
   km <- readChan schanKey
   -- Trim the queue.
-  trimQueue sess
+  onQueue trimLQueue sess
   -- Take the lock to wipe out the frame queue, unless it's empty already.
   fs <- takeMVar sframeState
   case fs of

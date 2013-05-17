@@ -1,6 +1,8 @@
 -- | Queues implemented with two stacks to ensure fast writes.
 module Game.LambdaHack.Utils.LQueue
-  ( LQueue, newLQueue, nullLQueue, trimLQueue, tryReadLQueue, writeLQueue
+  ( LQueue
+  , newLQueue, nullLQueue, lengthLQueue, tryReadLQueue, writeLQueue
+  , trimLQueue, dropStartLQueue
   ) where
 
 import Data.Maybe
@@ -16,13 +18,9 @@ newLQueue = ([], [])
 nullLQueue :: LQueue a -> Bool
 nullLQueue (rs, ws) = null rs && null ws
 
--- | Remove all but the last written non-@Nothing@ element of the queue.
-trimLQueue :: LQueue (Maybe a) -> LQueue (Maybe a)
-trimLQueue (rs, ws) =
-  let trim (_, w:_) = ([w], [])
-      trim ([], []) = ([], [])
-      trim (rsj, []) = ([last rsj], [])
-  in trim (filter isJust rs, filter isJust ws)
+-- | The length of the queue.
+lengthLQueue :: LQueue a -> Int
+lengthLQueue (rs, ws) = length rs + length ws
 
 -- | Try reading a queue. Return @Nothing@ if empty.
 tryReadLQueue :: LQueue a -> Maybe (a, LQueue a)
@@ -33,3 +31,18 @@ tryReadLQueue ([], ws) = tryReadLQueue (reverse ws, [])
 -- | Write to the queue. Faster than reading.
 writeLQueue :: LQueue a -> a -> LQueue a
 writeLQueue (rs, ws) w = (rs, w : ws)
+
+-- | Remove all but the last written non-@Nothing@ element of the queue.
+trimLQueue :: LQueue (Maybe a) -> LQueue (Maybe a)
+trimLQueue (rs, ws) =
+  let trim (_, w:_) = ([w], [])
+      trim ([], []) = ([], [])
+      trim (rsj, []) = ([last rsj], [])
+  in trim (filter isJust rs, filter isJust ws)
+
+-- | Remove frames up to and including the first segment of @Nothing@ frames.
+-- | If the resulting queue is empty, apply trimLQueue instead.
+dropStartLQueue :: LQueue (Maybe a) -> LQueue (Maybe a)
+dropStartLQueue (rs, ws) =
+  let dq = (dropWhile isNothing $ dropWhile isJust $ rs ++ reverse ws, [])
+  in if nullLQueue dq then trimLQueue (rs, ws) else dq
