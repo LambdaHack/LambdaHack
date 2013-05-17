@@ -403,6 +403,7 @@ gameExitHuman = do
     void $ getInitConfirms [] $ slides Monoid.<> partingSlide
     flushFrames
     displayPush  -- save one slide to match other factions
+    fadeD False True
     leader <- getLeaderUI
     return $ GameExitSer leader
   else abortWith "Save and exit canceled."

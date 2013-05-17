@@ -33,7 +33,7 @@ module Game.LambdaHack.Client.Action
   , flushFrames, clientGameSave, restoreGame, displayPush, scoreToSlideshow
   , readConnToClient, writeConnFromClient
   , rndToAction, getArenaUI, getLeaderUI
-  , targetToPos, frontendName
+  , targetToPos, frontendName, fadeD
   ) where
 
 import Control.Concurrent
@@ -468,3 +468,20 @@ animate anim = do
       topLineOnly = truncateMsg lxsize over
       basicFrame = draw ColorFull cops per arena leader cli s [topLineOnly]
   return $ renderAnim lxsize lysize basicFrame anim
+
+fadeD :: MonadClientUI m => Bool -> Bool -> m ()
+fadeD out topRight = do
+  srunning <- getsClient srunning
+  case srunning of
+    Just (_, k) | k > 1 -> return ()
+    _ -> do
+      side <- getsClient sside
+      fact <- getsState $ (EM.! side) . sfactionD
+      arena <- getArenaUI
+      lvl <- getsLevel arena id
+      report <- getsClient sreport
+      unless out $ msgReset $ gname fact <> ", get ready!"
+      animMap <- rndToAction $ fadeout out topRight (lxsize lvl) (lysize lvl)
+      animFrs <- animate animMap
+      modifyClient $ \d -> d {sreport = report}
+      displayFadeFrames animFrs

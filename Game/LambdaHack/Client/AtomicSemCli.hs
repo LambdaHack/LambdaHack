@@ -563,20 +563,3 @@ strikeD source target item b = assert (source /= target) $ do
       anim MissBlockD = blockMiss ps
   animFrs <- animate $ anim b
   displayFramesPush $ Nothing : animFrs
-
-fadeD :: MonadClientUI m => Bool -> Bool -> m ()
-fadeD out topRight = do
-  srunning <- getsClient srunning
-  case srunning of
-    Just (_, k) | k > 1 -> return ()
-    _ -> do
-      side <- getsClient sside
-      fact <- getsState $ (EM.! side) . sfactionD
-      arena <- getArenaUI
-      lvl <- getsLevel arena id
-      report <- getsClient sreport
-      unless out $ msgReset $ gname fact <> ", get ready!"
-      animMap <- rndToAction $ fadeout out topRight (lxsize lvl) (lysize lvl)
-      animFrs <- animate animMap
-      modifyClient $ \d -> d {sreport = report}
-      displayFadeFrames animFrs
