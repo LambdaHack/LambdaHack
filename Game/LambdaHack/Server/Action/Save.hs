@@ -70,27 +70,25 @@ restoreGameSer Config{ configAppDataDir
   -- If the savefile was randomly corrupted or made read-only,
   -- that should solve the problem. Serious IO problems (e.g. failure
   -- to create a user data directory) terminate the program with an exception.
-  Ex.catch
-    (if sb
-       then do
-         (s, ser) <- strictDecodeEOF saveFileBkp
-         return $ Just (s, ser)
-       else
-         if bb
-           then do
-             (s, ser) <- strictDecodeEOF saveFileBkp
-             let msg = "No server savefile found. "
-                       ++ "Restoring from a backup savefile."
-             hPutStrLn stderr msg
-             return $ Just (s, ser)
-           else return Nothing
-    )
-    (\ e -> case e :: Ex.SomeException of
-              _ -> do
-                let msg =
-                      "Starting a new game, because server restore failed. "
-                      ++ "The error message is: "
-                      ++ (unwords . lines) (show e)
-                hPutStrLn stderr msg
-                return Nothing
-    )
+  res <- Ex.try $
+    if sb
+      then do
+        (s, ser) <- strictDecodeEOF saveFileBkp
+        return $ Just (s, ser)
+      else
+        if bb
+          then do
+            (s, ser) <- strictDecodeEOF saveFileBkp
+            let msg = "No server savefile found. "
+                      ++ "Restoring from a backup savefile."
+            hPutStrLn stderr msg
+            return $ Just (s, ser)
+          else return Nothing
+  let handler :: Ex.SomeException -> IO (Maybe (State, StateServer))
+      handler e = do
+        let msg = "Starting a new game, because server restore failed. "
+                  ++ "The error message is: "
+                  ++ (unwords . lines) (show e)
+        hPutStrLn stderr msg
+        return Nothing
+  either handler return res

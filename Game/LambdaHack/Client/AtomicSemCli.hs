@@ -219,7 +219,11 @@ saveExitA = do
 -- * CmdAtomicUI
 
 -- TODO: let user configure which messages are not created, which are
--- slightly hidden, which are shown and which flash and center screen.
+-- slightly hidden, which are shown and which flash and center screen
+-- and perhaps highligh the related location/actor. Perhaps even
+-- switch to the actor, changing HP displayed on screen, etc.
+-- but it's too short a clip to read the numbers, so probably
+-- highlighing should be enough.
 -- TODO: for a start, flesh out the verbose variant and then add
 -- a single client debug option that flips verbosity
 -- | Visualizationi of atomic actions for the client is perfomed

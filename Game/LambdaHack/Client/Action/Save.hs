@@ -72,26 +72,24 @@ restoreGameCli saveName ConfigUI{ configAppDataDirUI
   -- If the savefile was randomly corrupted or made read-only,
   -- that should solve the problem. Serious IO problems (e.g. failure
   -- to create a user data directory) terminate the program with an exception.
-  Ex.catch
-    (if sb
-     then do
-       (s, cli) <- strictDecodeEOF saveFileBkp
-       let msg = "Welcome back to" <+> title <> "."
-       return $ Left (s, cli, msg)
-     else
-       if bb
-       then do
-         (s, cli) <- strictDecodeEOF saveFileBkp
-         let msg = "No client savefile found."
-                   <+> "Restoring from a backup savefile."
-         return $ Left (s, cli, msg)
-       else do
-         let msg = "Welcome to" <+> title <> "!"
-         return $ Right msg
-    )
-    (\ e -> case e :: Ex.SomeException of
-              _ -> let msg =
-                         "Client restore failed. The error message is:"
-                         <+> (T.unwords . T.lines) (showT e)
-                   in return $ Right msg
-    )
+  res <- Ex.try $
+    if sb
+    then do
+      (s, cli) <- strictDecodeEOF saveFileBkp
+      let msg = "Welcome back to" <+> title <> "."
+      return $ Left (s, cli, msg)
+    else
+      if bb
+      then do
+        (s, cli) <- strictDecodeEOF saveFileBkp
+        let msg = "No client savefile found."
+                  <+> "Restoring from a backup savefile."
+        return $ Left (s, cli, msg)
+      else do
+        let msg = "Welcome to" <+> title <> "!"
+        return $ Right msg
+  let handler :: Ex.SomeException -> IO (Either (State, StateClient, Msg) Msg)
+      handler e = let msg = "Client restore failed. The error message is:"
+                            <+> (T.unwords . T.lines) (showT e)
+                  in return $ Right msg
+  either handler return res
