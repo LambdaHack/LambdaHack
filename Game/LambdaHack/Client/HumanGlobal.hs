@@ -100,16 +100,16 @@ pickupHuman = do
 dropHuman :: (MonadClientAbort m, MonadClientUI m) => m CmdSer
 dropHuman = do
   -- TODO: allow dropping a given number of identical items.
-  Kind.COps{coactor, coitem} <- getsState scops
+  Kind.COps{coitem} <- getsState scops
   leader <- getLeaderUI
-  pbody <- getsState $ getActorBody leader
   bag <- getsState $ getActorBag leader
   inv <- getsState $ getActorInv leader
   ((iid, item), _k) <- getAnyItem leader "What to drop?" bag inv "in inventory"
   disco <- getsClient sdisco
   -- Do not advertise if an enemy drops an item. Probably junk.
-  msgAdd $ makeSentence  -- TODO: "you" instead of partActor?
-    [ MU.SubjectVerbSg (partActor coactor pbody) "drop"
+  subject <- partActorLeader leader
+  msgAdd $ makeSentence
+    [ MU.SubjectVerbSg subject "drop"
     , partItemNWs coitem disco 1 item ]
   return $ DropSer leader iid
 

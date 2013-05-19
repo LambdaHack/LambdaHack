@@ -33,7 +33,7 @@ module Game.LambdaHack.Client.Action
   , flushFrames, clientGameSave, restoreGame, displayPush, scoreToSlideshow
   , readConnToClient, writeConnFromClient
   , rndToAction, getArenaUI, getLeaderUI
-  , targetToPos, frontendName, fadeD
+  , targetToPos, frontendName, fadeD, partActorLeader
   ) where
 
 import Control.Concurrent
@@ -46,6 +46,7 @@ import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Monoid as Monoid
 import qualified Data.Text as T
+import qualified NLP.Miniutter.English as MU
 import System.Time
 
 import Game.LambdaHack.Client.Action.ActionClass
@@ -379,10 +380,10 @@ drawOverlay dm over = do
   arena <- getArenaUI
   let lid = maybe arena tgtLevelId stgtMode
   leader <- getLeaderUI
-  pos <- getState
+  s <- getState
   cli <- getClient
   per <- getPerFid lid
-  return $! draw dm cops per lid leader cli pos over
+  return $! draw dm cops per lid leader cli s over
 
 -- | Push the frame depicting the current level to the frame queue.
 -- Only one screenful of the report is shown, the rest is ignored.
@@ -489,3 +490,14 @@ fadeD out topRight = do
                 -- to trim only to here if SPACE pressed.
               | otherwise = animFrs ++ [Nothing]
       displayFadeFrames frs
+
+-- | The part of speech describing the actor or a special name if a leader
+-- of the observer's faction.
+partActorLeader :: MonadClient m => ActorId -> m MU.Part
+partActorLeader aid = do
+  Kind.COps{coactor} <- getsState scops
+  b <- getsState $ getActorBody aid
+  mleader <- getsClient _sleader
+  return $! case mleader of
+    Just leader | aid == leader -> "you"
+    _ -> partActor coactor b

@@ -231,23 +231,23 @@ saveExitA = do
 -- the client state is modified by the command.
 drawCmdAtomicUI :: MonadClientUI m => Bool -> CmdAtomic -> m ()
 drawCmdAtomicUI verbose cmd = case cmd of
-  CreateActorA _ body _ -> do
-    when verbose $ actorVerbMU body "appear"
+  CreateActorA aid body _ -> do
+    when verbose $ aVerbMU aid "appear"
     lookAtMove body
-  DestroyActorA _ body _ -> do
+  DestroyActorA aid body _ -> do
     side <- getsClient sside
     if bhp body <= 0 && not (bproj body) && bfid body == side then do
-      actorVerbMU body "die"
+      aVerbMU aid "die"
       void $ displayMore ColorBW ""
-    else when verbose $ actorVerbMU body "disappear"
+    else when verbose $ aVerbMU aid "disappear"
   CreateItemA _ item k _ | verbose -> itemVerbMU item k "appear"
   DestroyItemA _ item k _ | verbose -> itemVerbMU item k "disappear"
-  LoseActorA _ body _ -> do
+  LoseActorA aid body _ -> do
     side <- getsClient sside
     -- If no other faction actor is looking, death is invisible and
     -- so is domination, time-freeze, etc. Then, this command appears instead.
     when (not (bproj body) && bfid body == side) $ do
-      actorVerbMU body "be missing in action"
+      aVerbMU aid "be missing in action"
       void $ displayMore ColorFull ""
   MoveActorA aid _ _ -> do
     body <- getsState $ getActorBody aid
@@ -340,16 +340,11 @@ lookAtMove body = do
     msgAdd lookMsg
 
 -- | Sentences such as \"Dog barks loudly.\".
-actorVerbMU :: MonadClientUI m => Actor -> MU.Part -> m ()
-actorVerbMU body verb = do
-  Kind.COps{coactor} <- getsState scops
-  let msg = makeSentence [MU.SubjectVerbSg (partActor coactor body) verb]
-  msgAdd msg
-
 aVerbMU :: MonadClientUI m => ActorId -> MU.Part -> m ()
 aVerbMU aid verb = do
-  body <- getsState $ getActorBody aid
-  actorVerbMU body verb
+  subject <- partActorLeader aid
+  let msg = makeSentence [MU.SubjectVerbSg subject verb]
+  msgAdd msg
 
 itemVerbMU :: MonadClientUI m => Item -> Int -> MU.Part -> m ()
 itemVerbMU item k verb = do
@@ -366,15 +361,12 @@ _iVerbMU iid k verb = do
 
 aiVerbMU :: MonadClientUI m => ActorId -> MU.Part -> ItemId -> Int -> m ()
 aiVerbMU aid verb iid k = do
-  Kind.COps{coactor, coitem} <- getsState scops
+  Kind.COps{coitem} <- getsState scops
   disco <- getsClient sdisco
-  body <- getsState $ getActorBody aid
   item <- getsState $ getItemBody iid
-  -- TODO: "you" instead of partActor? but keep partActor for other sides
-  -- TODO: perhaps automate you/partActor depending on side
-  let msg = makeSentence
-        [ MU.SubjectVerbSg (partActor coactor body) verb
-        , partItemNWs coitem disco k item ]
+  subject <- partActorLeader aid
+  let msg = makeSentence [ MU.SubjectVerbSg subject verb
+                         , partItemNWs coitem disco k item ]
   msgAdd msg
 
 moveItemUI :: MonadClientUI m
@@ -399,12 +391,11 @@ moveItemUI verbose iid k c1 c2 = do
 
 displaceActorUI :: MonadClientUI m => ActorId -> ActorId -> m ()
 displaceActorUI source target = do
-  Kind.COps{coactor} <- getsState scops
   sm <- getsState (getActorBody source)
   tm <- getsState (getActorBody target)
-  let msg = makeSentence
-        [ MU.SubjectVerbSg (partActor coactor sm) "displace"
-        , partActor coactor tm ]
+  spart <- partActorLeader source
+  tpart <- partActorLeader target
+  let msg = makeSentence [MU.SubjectVerbSg spart "displace", tpart]
   msgAdd msg
   when (bfid sm /= bfid tm) $ do
     lookAtMove sm
@@ -441,13 +432,9 @@ drawSfxAtomicUI :: MonadClientUI m => Bool -> SfxAtomic -> m ()
 drawSfxAtomicUI verbose sfx = case sfx of
   StrikeD source target item b -> strikeD source target item b
   RecoilD source target _ _ -> do
-    Kind.COps{coactor} <- getsState scops
-    sb <- getsState $ getActorBody source
-    tb <- getsState $ getActorBody target
-    let msg = makeSentence
-          [ MU.SubjectVerbSg (partActor coactor sb) "shrink back from"
-          , partActor coactor tb ]
-    msgAdd msg
+    spart <- partActorLeader source
+    tpart <- partActorLeader target
+    msgAdd $ makeSentence [MU.SubjectVerbSg spart "shrink back from", tpart]
   ProjectD aid iid -> aiVerbMU aid "aim" iid 1
   CatchD aid iid -> aiVerbMU aid "catch" iid 1
   ActivateD aid iid -> aiVerbMU aid "activate"{-TODO-} iid 1
@@ -459,10 +446,10 @@ drawSfxAtomicUI verbose sfx = case sfx of
   EffectD aid effect -> do
     b <- getsState $ getActorBody aid
     if bhp b <= 0 && not (bproj b) || bhp b < 0 then do
-      Kind.COps{coactor} <- getsState scops
       -- We assume the Wound is the cause of incapacitation.
       side <- getsClient sside
       if bfid b == side then do
+        subject <- partActorLeader aid
         let firstFall = if bproj b then "drop down" else "fall down"
             verbDie =
               case effect of
@@ -472,8 +459,7 @@ drawSfxAtomicUI verbose sfx = case sfx of
                                   else "be ground into the floor"
                   else firstFall
                 _ -> "be damaged even more"
-            msgDie = makeSentence
-                       [MU.SubjectVerbSg (partActor coactor b) verbDie]
+            msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
         msgAdd msgDie
         animDie <- animate $ deathBody $ bpos b
         when (not (bproj b)) $ displayFramesPush animDie
@@ -509,10 +495,10 @@ drawSfxAtomicUI verbose sfx = case sfx of
         Effect.ApplyPerfume ->
           msgAdd "The fragrance quells all scents in the vicinity."
         Effect.Searching{}-> do
-          Kind.COps{coactor} <- getsState scops
+          subject <- partActorLeader aid
           let msg = makeSentence
                 [ "It gets lost and"
-                , MU.SubjectVerbSg (partActor coactor b) "search in vain" ]
+                , MU.SubjectVerbSg subject "search in vain" ]
           msgAdd msg
         Effect.Ascend{} -> aVerbMU aid "find a way upstairs"
         Effect.Descend{} -> aVerbMU aid "find a way downstairs"
@@ -533,10 +519,12 @@ drawSfxAtomicUI verbose sfx = case sfx of
 strikeD :: MonadClientUI m
         => ActorId -> ActorId -> Item -> HitAtomic -> m ()
 strikeD source target item b = assert (source /= target) $ do
-  Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}} <- getsState scops
+  Kind.COps{coitem=coitem@Kind.Ops{okind}} <- getsState scops
   disco <- getsClient sdisco
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
+  spart <- partActorLeader source
+  tpart <- partActorLeader target
   let (verb, withWhat) | bproj sb = ("hit", False)
                        | otherwise =
         case jkind disco item of
@@ -550,13 +538,12 @@ strikeD source target item b = assert (source /= target) $ do
               then ("swing", partItemAW coitem disco item)
               else ("try to", verb)
         in makeSentence
-          [ MU.SubjectVerbSg (partActor coactor sb) partBlock1
+          [ MU.SubjectVerbSg spart partBlock1
           , partBlock2 MU.:> ", but"
-          , MU.SubjectVerbSg (partActor coactor tb) "block"
+          , MU.SubjectVerbSg tpart "block"
           ]
       msg _ = makeSentence $
-        [ MU.SubjectVerbSg (partActor coactor sb) verb
-        , partActor coactor tb ]
+        [MU.SubjectVerbSg spart verb, tpart]
         ++ if withWhat
            then ["with", partItemAW coitem disco item]
            else []
