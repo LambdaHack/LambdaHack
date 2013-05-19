@@ -334,7 +334,7 @@ regenerateLevelHP lid = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   time <- getsState $ getLocalTime lid
   s <- getState
-  let pick (a, m) =
+  let approve (a, m) =
         let ak = okind $ bkind m
             itemAssocs = getActorItem a s
             regen = max 1 $
@@ -344,11 +344,13 @@ regenerateLevelHP lid = do
                         Nothing -> 1
             bhpMax = maxDice (ahp ak)
             deltaHP = min 1 (bhpMax - bhp m)
-        in if (time `timeFit` timeTurn) `mod` regen /= 0 || deltaHP <= 0
+        in if (time `timeFit` timeTurn) `mod` regen /= 0
+              || deltaHP <= 0
+              || bhp m <= 0
            then Nothing
            else Just a
   toRegen <-
-    getsState $ catMaybes . map pick . actorNotProjAssocs (const True) lid
+    getsState $ catMaybes . map approve . actorNotProjAssocs (const True) lid
   mapM_ (\aid -> execCmdAtomic $ HealActorA aid 1) toRegen
 
 -- | Continue or restart or exit the game.
