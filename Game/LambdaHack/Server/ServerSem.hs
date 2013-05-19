@@ -330,25 +330,8 @@ addProjectile iid bpos blid bfid path btime = do
       (object1, object2) = partItem coitem EM.empty item
       name = makePhrase [MU.AW $ MU.Text adj, object1, object2]
       dirPath = take range $ displacePath path
-      m = Actor
-        { bkind   = projectileKindId coactor
-        , bsymbol = Nothing
-        , bname   = Just name
-        , bcolor  = Nothing
-        , bspeed  = Just speed
-        , bhp     = 0
-        , bpath   = Just dirPath
-        , bpos
-        , boldpos = bpos
-        , blid
-        , bbag    = EM.empty
-        , binv    = EM.empty
-        , bletter = InvChar 'a'
-        , btime
-        , bwait   = timeZero
-        , bfid
-        , bproj   = True
-        }
+      m = actorTemplate (projectileKindId coactor) Nothing (Just name) Nothing
+                        (Just speed) 0 (Just dirPath) bpos blid btime bfid True
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
   execCmdAtomic $ CreateActorA acounter m [(iid, item)]

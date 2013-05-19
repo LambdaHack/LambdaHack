@@ -58,7 +58,7 @@ instance Binary ActorId where
 data Actor = Actor
   { bkind   :: !(Kind.Id ActorKind)  -- ^ the kind of the actor
   , bsymbol :: !(Maybe Char)         -- ^ individual map symbol
-  , bname   :: !(Maybe Text)         -- ^ individual name
+  , _bname  :: !(Maybe Text)         -- ^ individual name
   , bcolor  :: !(Maybe Color.Color)  -- ^ individual map color
   , bspeed  :: !(Maybe Speed)        -- ^ individual speed
   , bhp     :: !Int                  -- ^ current hit points
@@ -89,18 +89,20 @@ monsterGenChance depth numMonsters =
 
 -- | The part of speech describing the actor.
 partActor :: Kind.Ops ActorKind -> Actor -> MU.Part
-partActor Kind.Ops{oname} a = MU.Text $ fromMaybe (oname $ bkind a) (bname a)
+partActor Kind.Ops{oname} a =
+  case _bname a of
+    Nothing -> MU.AW $ MU.Text $ oname $ bkind a
+    Just properName -> MU.Text properName
 
 -- Actor operations
 
 -- | A template for a new non-projectile actor.
 actorTemplate :: Kind.Id ActorKind -> Maybe Char -> Maybe Text
-              -> Maybe Color.Color -> Int -> Point -> LevelId -> Time
-              -> FactionId -> Bool -> Actor
-actorTemplate bkind bsymbol bname bcolor bhp bpos blid btime bfid bproj =
-  let bspeed  = Nothing
-      bpath   = Nothing
-      boldpos = bpos
+              -> Maybe Color.Color -> (Maybe Speed) -> Int -> (Maybe [Vector])
+              -> Point -> LevelId -> Time -> FactionId -> Bool -> Actor
+actorTemplate bkind bsymbol _bname bcolor bspeed bhp bpath bpos blid btime
+              bfid bproj =
+  let boldpos = bpos
       bbag    = EM.empty
       binv    = EM.empty
       bletter = InvChar 'a'
@@ -231,7 +233,7 @@ instance Binary Actor where
   put Actor{..} = do
     put bkind
     put bsymbol
-    put bname
+    put _bname
     put bcolor
     put bspeed
     put bhp
@@ -249,7 +251,7 @@ instance Binary Actor where
   get = do
     bkind <- get
     bsymbol <- get
-    bname <- get
+    _bname <- get
     bcolor <- get
     bspeed <- get
     bhp <- get

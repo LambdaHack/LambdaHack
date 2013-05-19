@@ -204,7 +204,8 @@ addActor :: (MonadAtomic m, MonadServer m)
          -> m ActorId
 addActor mk bfid pos lid hp bsymbol bname bcolor = do
   time <- getsState $ getLocalTime lid
-  let m = actorTemplate mk bsymbol bname bcolor hp pos lid time bfid False
+  let m = actorTemplate mk bsymbol bname bcolor Nothing hp Nothing pos lid time
+                        bfid False
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
   execCmdAtomic $ CreateActorA acounter m []
