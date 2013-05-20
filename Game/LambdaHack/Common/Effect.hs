@@ -101,7 +101,7 @@ affixBonus p = case compare p 0 of
 -- benefit won't ever be used, neither actively nor passively.
 effectToBenefit :: Effect Int -> Int
 effectToBenefit NoEffect = 0
-effectToBenefit (Heal p) = p * 10         -- TODO: depends on (maxhp - hp)
+effectToBenefit (Heal p) = p * 10       -- TODO: depends on (maxhp - hp)
 effectToBenefit (Hurt _ p) = -(p * 10)  -- TODO: dice ignored for now
 effectToBenefit Mindprobe{} = 0         -- AI can't benefit yet
 effectToBenefit Dominate = 1            -- hard to use; TODO: limit by IQ

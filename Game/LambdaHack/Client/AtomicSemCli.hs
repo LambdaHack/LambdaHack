@@ -513,7 +513,11 @@ drawSfxAtomicUI verbose sfx = case sfx of
       Just (_, k) | k > 1 -> return ()
       _ -> flushFrames
   FadeoutD _ topRight -> fadeD True topRight
-  FadeinD _ topRight -> fadeD False topRight
+  FadeinD _ topRight -> do
+    sfade <- getsClient sfade
+    when (null sfade) $  -- a hack to avoid double FadeinD for spawners
+      fadeD False topRight
+    unlockUI  -- a hack to force proper order of fades among clients
   _ -> return ()
 
 strikeD :: MonadClientUI m

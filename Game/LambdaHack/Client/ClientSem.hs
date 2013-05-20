@@ -64,6 +64,7 @@ queryAI actor = do
 -- | Handle the move of the hero.
 queryUI :: (MonadClientAbort m, MonadClientUI m) => ActorId -> m CmdSer
 queryUI aid = do
+  lockUI
   -- When running, stop if aborted by a disturbance. Otherwise let
   -- the human player issue commands, until any of them takes time.
   -- First time, just after pushing frames, ask for commands in Push mode.

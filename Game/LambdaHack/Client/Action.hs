@@ -24,7 +24,7 @@ module Game.LambdaHack.Client.Action
   , getKeyCommand, getKeyOverlayCommand, getAllConfirms, getInitConfirms
     -- * Display and key input
   , displayFramesPush, displayMore, displayYesNo, displayChoiceUI
-  , displayFadeFrames
+  , displayFadeFrames, lockUI, unlockUI
     -- * Generate slideshows
   , promptToSlideshow, overlayToSlideshow
     -- * Draw frames
@@ -116,13 +116,19 @@ tryWithSlide exc h =
         lift exc
   in tryWith excMsg h
 
-withUI :: MonadClientUI m => m a -> m a
-withUI m = do
-  mvarUI <- getsSession smvarUI
-  liftIO $ putMVar mvarUI ()
-  a <- m
-  liftIO $ takeMVar mvarUI
-  return a
+lockUI :: MonadClientUI m => m ()
+lockUI = do
+  nH <- nHumans
+  when (nH > 1) $ do
+    mvarUI <- getsSession smvarUI
+    liftIO $ putMVar mvarUI ()
+
+unlockUI :: MonadClientUI m => m ()
+unlockUI = do
+  nH <- nHumans
+  when (nH > 1) $ do
+    mvarUI <- getsSession smvarUI
+    liftIO $ void $ tryTakeMVar mvarUI
 
 displayFrame :: MonadClientUI m => Bool -> Maybe SingleFrame -> m ()
 displayFrame isRunning mf = do
@@ -137,7 +143,7 @@ displayFrame isRunning mf = do
     modifyClient $ \cli -> cli {sframe = frame : sframe cli}
   else do
     -- At most one human player, display everything at once.
-    withUI $ liftIO $ Frontend.displayFrame fs isRunning mf
+    liftIO $ Frontend.displayFrame fs isRunning mf
 
 displayFadeFrames :: MonadClient m => Frames -> m ()
 displayFadeFrames frames = do
@@ -147,8 +153,8 @@ displayFadeFrames frames = do
       fades = reverse $ map translateFr frames
   modifyClient $ \cli -> cli {sfade = fades ++ sfade cli}
 
-flushFramesNoMVar :: MonadClientUI m => m ()
-flushFramesNoMVar = do
+flushFrames :: MonadClientUI m => m ()
+flushFrames = do
   fs <- askFrontendSession
   let pGetKey keys frame = liftIO $ Frontend.promptGetKey fs keys frame
       displayAc (AcConfirm fr) =
@@ -166,19 +172,16 @@ flushFramesNoMVar = do
   modifyClient $ \cli -> cli {sfade = [], sframe = []}
 
 nextEvent :: MonadClientUI m => Maybe Bool -> m K.KM
-nextEvent mb = withUI $ do
+nextEvent mb = do
   fs <- askFrontendSession
-  flushFramesNoMVar
+  flushFrames
   liftIO $ Frontend.nextEvent fs mb
 
 promptGetKey :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
-promptGetKey keys frame = withUI $ do
+promptGetKey keys frame = do
   fs <- askFrontendSession
-  flushFramesNoMVar
+  flushFrames
   liftIO $ Frontend.promptGetKey fs keys frame
-
-flushFrames :: MonadClientUI m => m ()
-flushFrames = withUI flushFramesNoMVar
 
 getLeaderUI :: MonadClientUI m => m ActorId
 getLeaderUI = do
