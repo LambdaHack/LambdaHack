@@ -190,8 +190,10 @@ library
   default-extensions: MonoLocalBinds, ScopedTypeVariables,
                       BangPatterns, RecordWildCards, NamedFieldPuns
   other-extensions:   CPP, MultiParamTypeClasses, RankNTypes, TypeFamilies,
-                      OverloadedStrings, ExtendedDefaultRules,
-                      FlexibleContexts, FlexibleInstances
+                      OverloadedStrings, FlexibleContexts, FlexibleInstances,
+                      FunctionalDependencies, GeneralizedNewtypeDeriving,
+                      DeriveFunctor
+--                    DeriveGeneric
   ghc-options:        -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-monomorphism-restriction -fwarn-unrecognised-pragmas
   ghc-options:        -fno-warn-auto-orphans -fno-warn-implicit-prelude
   ghc-options:        -fno-ignore-asserts -funbox-strict-fields
@@ -257,7 +259,7 @@ executable LambdaHack
   default-language:   Haskell2010
   default-extensions: MonoLocalBinds, ScopedTypeVariables,
                       BangPatterns, RecordWildCards, NamedFieldPuns
-  other-extensions:   CPP, QuasiQuotes, OverloadedStrings, ExtendedDefaultRules
+  other-extensions:   CPP, QuasiQuotes, OverloadedStrings
   ghc-options:        -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-monomorphism-restriction -fwarn-unrecognised-pragmas
   ghc-options:        -fno-warn-auto-orphans -fno-warn-implicit-prelude
   ghc-options:        -fno-ignore-asserts -funbox-strict-fields

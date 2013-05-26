@@ -27,14 +27,7 @@ data Flavour = Flavour
 
 instance Hashable.Hashable Flavour
 
-instance Binary Flavour where
-  put Flavour{..} = do
-    put fancyName
-    put baseColor
-  get = do
-    fancyName <- get
-    baseColor <- get
-    return Flavour{..}
+instance Binary Flavour
 
 -- | Turn a colour set into a flavour set.
 zipPlain, zipFancy :: [Color] -> [Flavour]

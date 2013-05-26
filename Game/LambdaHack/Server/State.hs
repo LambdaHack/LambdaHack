@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveDataTypeable, OverloadedStrings #-}
 -- | Server and client game state types and operations.
 module Game.LambdaHack.Server.State
   ( StateServer(..), emptyStateServer
@@ -8,7 +7,6 @@ module Game.LambdaHack.Server.State
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.HashMap.Strict as HM
-import Data.Typeable
 import qualified System.Random as R
 
 import Game.LambdaHack.Common.Actor
@@ -35,7 +33,7 @@ data StateServer = StateServer
   , sdebugSer :: !DebugModeSer  -- ^ current debugging mode
   , sdebugNxt :: !DebugModeSer  -- ^ debugging mode for the next game
   }
-  deriving (Show, Typeable)
+  deriving (Show)
 
 data DebugModeSer = DebugModeSer
   { sknowMap    :: !Bool

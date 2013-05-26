@@ -1,5 +1,4 @@
-{-# LANGUAGE ExtendedDefaultRules, OverloadedStrings #-}
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
+{-# LANGUAGE OverloadedStrings #-}
 -- | Effect semantics.
 -- TODO: document
 module Game.LambdaHack.Server.EffectSem
@@ -39,8 +38,6 @@ import Game.LambdaHack.Server.Action
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.Frequency
-
-default (Text)
 
 -- + Semantics of effects
 
@@ -363,7 +360,7 @@ effLvlGoUp aid k = do
     Nothing -> -- We are at the "end" of the dungeon.
                fleeDungeon side lidOld
     Just (lidNew, posNew) ->
-      assert (lidNew /= lidOld `blame` (lidNew, "stairs looped")) $ do
+      assert (lidNew /= lidOld `blame` (lidNew, "stairs looped" :: Text)) $ do
         timeOld <- getsState $ getLocalTime lidOld
         -- Leader always set to the actor changing levels.
         mleader <- getsState $ gleader . (EM.! side) . sfactionD
@@ -425,7 +422,7 @@ squashActor source target = do
   actorD <- getsState sactorD
   -- The monster has to be killed first, before we step there (same turn!).
   assert (not (target `EM.member` actorD)
-          `blame` (source, target, "not killed")) skip
+          `blame` (source, target, "not killed" :: Text)) skip
 
 -- ** Descend
 

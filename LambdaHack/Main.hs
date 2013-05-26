@@ -1,4 +1,4 @@
-{-# OPTIONS -fno-warn-orphans #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | The main code file of LambdaHack. Here the knot of engine
 -- code pieces and the LambdaHack-specific content defintions is tied,
 -- resulting in an executable game.
@@ -12,11 +12,11 @@ import qualified Content.PlaceKind
 import qualified Content.RuleKind
 import qualified Content.StrategyKind
 import qualified Content.TileKind
+import Game.LambdaHack.Client
+import Game.LambdaHack.Client.Action.ActionType
 import Game.LambdaHack.Common.Action (MonadAtomic (..))
 import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.AtomicSem
-import Game.LambdaHack.Client
-import Game.LambdaHack.Client.Action.ActionType
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Server
 import Game.LambdaHack.Server.Action.ActionType

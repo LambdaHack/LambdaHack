@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, RankNTypes #-}
+{-# LANGUAGE OverloadedStrings #-}
 -- | The main loop of the server, processing human and computer player
 -- moves turn by turn.
 module Game.LambdaHack.Server.LoopAction (loopSer) where

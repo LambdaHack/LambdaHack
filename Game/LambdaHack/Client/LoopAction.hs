@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, OverloadedStrings, RankNTypes #-}
+{-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
 -- | The main loop of the client, processing human and computer player
 -- moves turn by turn.
 module Game.LambdaHack.Client.LoopAction (loopAI, loopUI) where

@@ -1,5 +1,5 @@
--- | Generation of places from place kinds.
 {-# LANGUAGE RankNTypes #-}
+-- | Generation of places from place kinds.
 module Game.LambdaHack.Server.DungeonGen.Place
   ( TileMapXY, Place(..), placeValid, buildFence, buildPlace
   ) where
@@ -12,14 +12,13 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 import Game.LambdaHack.Common.Area
+import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.PointXY
+import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.TileKind
-import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Msg ()
-import Game.LambdaHack.Common.PointXY
-import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Utils.Assert
 
 -- TODO: use more, rewrite as needed, document each field.

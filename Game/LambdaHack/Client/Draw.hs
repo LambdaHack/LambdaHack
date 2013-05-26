@@ -1,7 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Display game data on the screen using one of the available frontends
 -- (determined at compile time with cabal flags).
-{-# LANGUAGE CPP #-}
 module Game.LambdaHack.Client.Draw
   ( ColorMode(..), draw
   ) where

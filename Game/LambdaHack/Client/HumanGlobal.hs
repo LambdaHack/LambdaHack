@@ -1,4 +1,4 @@
-{-# LANGUAGE ExtendedDefaultRules, OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 -- | Semantics of 'Command.Cmd' client commands that return server commands.
 -- A couple of them do not take time, the rest does.
@@ -41,8 +41,6 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Utils.Assert
-
-default (Text)
 
 -- * Move
 

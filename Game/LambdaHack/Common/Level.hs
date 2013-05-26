@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, DeriveGeneric, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveGeneric #-}
 -- | Inhabited dungeon levels and the operations to query and change them
 -- as the game progresses.
 module Game.LambdaHack.Common.Level
@@ -20,7 +20,6 @@ import qualified Data.Bits as Bits
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.List as L
 import Data.Text (Text)
-import Data.Typeable
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Actor
@@ -207,6 +206,6 @@ hideTile cotile p lvl =
 data Container =
     CFloor LevelId Point
   | CActor ActorId InvChar
-  deriving (Show, Eq, Ord, Typeable, Generic)
+  deriving (Show, Eq, Ord, Generic)
 
 instance Binary Container

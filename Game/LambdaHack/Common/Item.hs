@@ -1,5 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, DeriveGeneric, GeneralizedNewtypeDeriving,
-             OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, OverloadedStrings #-}
 -- | Weapons, treasure and all the other items in the game.
 -- No operation in this module
 -- involves the 'State' or 'Action' type.
@@ -27,28 +26,27 @@ import Data.List
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Typeable
 import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Common.Color as Color
-import Game.LambdaHack.Content.ItemKind
-import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Flavour
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Utils.Assert
 
 -- | A unique identifier of an item in the dungeon.
 newtype ItemId = ItemId Int
-  deriving (Show, Eq, Ord, Enum, Typeable, Generic, Binary)
+  deriving (Show, Eq, Ord, Enum, Binary)
 
 -- | An index of the kind id of an item. Clients have partial knowledge
 -- how these idexes map to kind ids. They gain knowledge by identifying items.
 newtype ItemKindIx = ItemKindIx Int
-  deriving (Show, Eq, Ord, Enum, Ix.Ix, Generic, Hashable.Hashable, Binary)
+  deriving (Show, Eq, Ord, Enum, Ix.Ix, Hashable.Hashable, Binary)
 
 -- | The map of item kind indexes to item kind ids.
 -- The full map, as known by the server, is a bijection.
@@ -131,7 +129,7 @@ viewItem i = (jsymbol i, flavourToColor $ jflavour i)
 
 -- | Flavours assigned by the server to item kinds, in this particular game.
 newtype FlavourMap = FlavourMap (EM.EnumMap (Kind.Id ItemKind) Flavour)
-  deriving (Show, Generic, Binary)
+  deriving (Show, Binary)
 
 emptyFlavourMap :: FlavourMap
 emptyFlavourMap = FlavourMap EM.empty

@@ -1,5 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving, OverloadedStrings
-             #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | Actors in the game: heroes, monsters, etc. No operation in this module
 -- involves the 'State' or 'Action' type.
@@ -28,7 +27,6 @@ import Data.Ratio
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Tuple
-import Data.Typeable
 import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Common.Color as Color
@@ -45,7 +43,7 @@ import Game.LambdaHack.Utils.Assert
 
 -- | A unique identifier of an actor in the dungeon.
 newtype ActorId = ActorId Int
-  deriving (Show, Eq, Ord, Enum, Typeable)
+  deriving (Show, Eq, Ord, Enum)
 
 instance Binary ActorId where
   put (ActorId n) = put n

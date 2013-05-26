@@ -1,5 +1,3 @@
-{-# LANGUAGE ExtendedDefaultRules, OverloadedStrings, RankNTypes #-}
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 -- | Game action monads and basic building blocks for human and computer
 -- player actions. Has no access to the the main action type.
 -- Does not export the @liftIO@ operation nor a few other implementation
@@ -26,7 +24,6 @@ import Control.Monad
 import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
-import Data.Text (Text)
 import qualified Data.Text.IO as T
 import System.IO (stderr)
 import System.IO.Unsafe (unsafePerformIO)
@@ -56,8 +53,6 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.File
-
-default (Text)
 
 fovMode :: MonadServer m => m FovMode
 fovMode = do

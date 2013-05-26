@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Basic operations on 2D points represented as linear offsets.
 module Game.LambdaHack.Common.Point
   ( Point, toPoint, showPoint
@@ -10,14 +10,13 @@ import Data.Binary
 import qualified Data.Ix as Ix
 import qualified Data.List as L
 import Data.Text (Text)
-import Data.Typeable
 import qualified System.Random as R
 
 import Game.LambdaHack.Common.Area
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.PointXY
-import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Common.VectorXY
+import Game.LambdaHack.Utils.Assert
 
 -- | The type of positions on the 2D level map, heavily optimized.
 --
@@ -32,7 +31,7 @@ import Game.LambdaHack.Common.VectorXY
 -- due to smaller save files, the use of @EnumMap@ and cheaper array indexing,
 -- including cheaper bounds checks.
 newtype Point = Point Int
-  deriving (Eq, Ord, Ix.Ix, Enum, Typeable, R.Random)
+  deriving (Eq, Ord, Ix.Ix, Enum, R.Random)
 
 instance Binary Point where
   put (Point n) = put n

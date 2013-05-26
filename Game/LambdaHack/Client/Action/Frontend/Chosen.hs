@@ -1,6 +1,6 @@
+{-# LANGUAGE CPP #-}
 -- | Re-export the operations of the chosen raw frontend
 -- (determined at compile time with cabal flags).
-{-# LANGUAGE CPP #-}
 module Game.LambdaHack.Client.Action.Frontend.Chosen
   ( -- * Re-exported raw frontend
     FrontendSession, startup, frontendName, nextEvent, promptGetAnyKey, display

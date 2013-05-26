@@ -18,6 +18,10 @@ import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 
+import Game.LambdaHack.Common.ContentDef
+import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.FactionKind
@@ -26,10 +30,6 @@ import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.StrategyKind
 import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.Common.ContentDef
-import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Msg
-import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.Frequency
 

@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings, RankNTypes #-}
 -- | Operations for starting and restarting the game.
 module Game.LambdaHack.Server.StartAction
   ( initConn, gameReset, reinitGame, initPer

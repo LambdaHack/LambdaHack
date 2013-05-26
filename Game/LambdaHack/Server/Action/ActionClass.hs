@@ -1,4 +1,3 @@
-{-# LANGUAGE FlexibleContexts, FlexibleInstances #-}
 -- | Basic type classes for server game actions.
 -- This module should not be imported anywhere except in 'Action'
 -- and 'TypeAction'.

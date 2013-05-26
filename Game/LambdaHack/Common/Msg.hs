@@ -1,6 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving, OverloadedStrings
-             #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, OverloadedStrings #-}
 -- | Game messages displayed on top of the screen for the player to read.
 module Game.LambdaHack.Common.Msg
   ( makePhrase, makeSentence
@@ -22,7 +20,6 @@ import Data.Monoid hiding ((<>))
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
-import Data.Typeable
 import Game.LambdaHack.Utils.Assert
 import NLP.Miniutter.English (showT, (<+>), (<>))
 import qualified NLP.Miniutter.English as MU
@@ -38,10 +35,6 @@ makeSentence = MU.makeSentence MU.defIrregular
 
 -- | The type of a single message.
 type Msg = Text
-
-instance Binary Text where
-   put = put . encodeUtf8
-   get = decodeUtf8 `fmap` get
 
 -- | The \"press something to see more\" mark.
 moreMsg :: Msg
@@ -70,7 +63,7 @@ truncateMsg w xsRaw =
 
 -- | The type of a set of messages to show at the screen at once.
 newtype Report = Report [(BS.ByteString, Int)]
-  deriving (Show, Typeable)
+  deriving (Show)
 
 instance Binary Report where
   put (Report x) = put x

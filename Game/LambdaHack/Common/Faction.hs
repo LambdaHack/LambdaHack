@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | Factions taking part in the game: e.g., two human players controlling
 -- the hero faction battling the monster and the animal factions.
 module Game.LambdaHack.Common.Faction
@@ -10,7 +9,6 @@ import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 import Data.Text (Text)
-import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Color as Color
@@ -44,7 +42,7 @@ data Diplomacy =
   | Neutral
   | Alliance
   | War
-  deriving (Show, Eq, Ord, Generic)
+  deriving (Show, Eq, Ord)
 
 type Dipl = EM.EnumMap FactionId Diplomacy
 
@@ -77,7 +75,19 @@ isAtWar fact fid = War == EM.findWithDefault Unknown fid (gdipl fact)
 isAllied :: Faction -> FactionId -> Bool
 isAllied fact fid = Alliance == EM.findWithDefault Unknown fid (gdipl fact)
 
-instance Binary Diplomacy
+instance Binary Diplomacy where
+  put Unknown  = putWord8 0
+  put Neutral  = putWord8 1
+  put Alliance = putWord8 2
+  put War      = putWord8 3
+  get = do
+    tag <- getWord8
+    case tag of
+      0 -> return Unknown
+      1 -> return Neutral
+      2 -> return Alliance
+      3 -> return War
+      _ -> fail "no parse (Diplomacy)"
 
 instance Binary Status where
   put (Killed ln) = putWord8 0 >> put ln

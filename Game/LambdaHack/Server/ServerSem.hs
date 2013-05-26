@@ -1,5 +1,4 @@
-{-# LANGUAGE ExtendedDefaultRules, OverloadedStrings #-}
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
+{-# LANGUAGE OverloadedStrings #-}
 -- | Semantics of 'CmdSer' server commands.
 -- A couple of them do not take time, the rest does.
 -- Note that since the results are atomic commands, which are executed
@@ -44,8 +43,6 @@ import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.Utils.Assert
-
-default (Text)
 
 execFailure :: MonadAtomic m => FactionId -> Msg -> m Bool
 execFailure fid msg = do
@@ -300,7 +297,8 @@ projectSer source tpos eps iid container = do
       bl = bla lxsize lysize eps spos tpos
   case bl of
     Nothing -> execFailure (bfid sm) "cannot zap oneself"
-    Just [] -> assert `failure` (spos, tpos, "project from the edge of level")
+    Just [] -> assert `failure`
+                 (spos, tpos, "project from the edge of level" :: Text)
     Just path@(pos:_) -> do
       inhabitants <- getsState (posToActor pos lid)
       if accessible cops lvl spos pos && isNothing inhabitants

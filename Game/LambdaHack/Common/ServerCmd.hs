@@ -1,12 +1,9 @@
-{-# LANGUAGE DeriveDataTypeable #-}
 -- | Abstract syntax of server commands.
 -- See
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Common.ServerCmd
   ( CmdSer(..), timedCmdSer, aidCmdSer
   ) where
-
-import Data.Typeable
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Item
@@ -30,7 +27,7 @@ data CmdSer =
   | GameExitSer ActorId
   | GameSaveSer ActorId
   | CfgDumpSer ActorId
-  deriving (Show, Typeable)
+  deriving (Show)
 
 timedCmdSer :: CmdSer -> Bool
 timedCmdSer cmd = case cmd of

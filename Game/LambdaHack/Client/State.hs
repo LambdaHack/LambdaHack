@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
 -- | Server and client game state types and operations.
 module Game.LambdaHack.Client.State
   ( StateClient(..), defStateClient, defHistory
@@ -11,7 +11,6 @@ import Control.Monad
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
-import Data.Typeable
 import Game.LambdaHack.Common.Vector
 import qualified NLP.Miniutter.English as MU
 import qualified System.Random as R
@@ -62,7 +61,7 @@ data StateClient = StateClient
   , smarkSmell   :: !Bool          -- ^ mark smell, if the leader can smell
   , smarkSuspect :: !Bool          -- ^ mark suspect features
   }
-  deriving (Show, Typeable)
+  deriving (Show)
 
 -- | Current targeting mode of a client.
 data TgtMode =

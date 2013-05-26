@@ -1,5 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, GADTs, OverloadedStrings, StandaloneDeriving
-             #-}
+{-# LANGUAGE OverloadedStrings #-}
 -- | Abstract syntax human player commands.
 module Game.LambdaHack.Client.HumanCmd
   ( HumanCmd(..)

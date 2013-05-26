@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | Hacks that haven't found their home yet.
 module Game.LambdaHack.Common.Misc
@@ -11,7 +11,7 @@ import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Text (Text)
-import Data.Typeable
+import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 
 -- | Level bounds. TODO: query terminal size instead and scroll view.
 normalLevelBound :: (Int, Int)
@@ -54,8 +54,12 @@ instance Binary FactionId where
 
 -- | Abstract level identifiers.
 newtype LevelId = LevelId Int
-  deriving (Show, Eq, Ord,  Enum, Typeable)
+  deriving (Show, Eq, Ord, Enum)
 
 instance Binary LevelId where
   put (LevelId n) = put n
   get = fmap LevelId get
+
+instance Binary Text where
+   put = put . encodeUtf8
+   get = decodeUtf8 `fmap` get
