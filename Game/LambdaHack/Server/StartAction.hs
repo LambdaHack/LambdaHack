@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | Operations for starting and restarting the game.
 module Game.LambdaHack.Server.StartAction
   ( initConn, gameReset, reinitGame, initPer
@@ -81,6 +82,9 @@ reinitGame quitter = do
     $ \fid -> RestartA fid sdisco (pers EM.! fid) defLoc quitter
   populateDungeon
   broadcastSfxAtomic $ \fid -> FadeinD fid False
+  broadcastSfxAtomic $ \fid -> FlushFramesD fid
+  when quitter $
+    broadcastSfxAtomic $ \fid -> FailureD fid "This time for real."
 
 createFactions :: Kind.COps -> Config -> Rnd FactionDict
 createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}

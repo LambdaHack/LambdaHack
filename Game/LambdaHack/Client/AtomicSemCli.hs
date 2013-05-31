@@ -325,7 +325,6 @@ drawCmdAtomicUI verbose cmd = case cmd of
                                     "look like an ordinary"
           , objUnkown1, objUnkown2 ]
     msgAdd msg
-  RestartA _ _ _ _ quitter -> when quitter $ msgAdd "This time for real."
   SaveBkpA | verbose -> msgAdd "Saving backup."
   _ -> return ()
 

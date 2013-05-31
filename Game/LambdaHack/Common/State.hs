@@ -29,11 +29,9 @@ import Game.LambdaHack.Content.TileKind
 -- | View on game state. "Remembered" fields carry a subset of the info
 -- in the client copies of the state. Clients never directly change
 -- their @State@, but apply atomic actions sent by the server to do so.
--- Note: we use @_sdepth@ instead of computing maximal depth whenever needed,
--- to keep the dungeon (which can be huge) lazy.
 data State = State
   { _sdungeon  :: !Dungeon      -- ^ remembered dungeon
-  , _sdepth    :: !Int          -- ^ remembered dungeon depth
+  , _sdepth    :: !Int          -- ^ max dungeon depth, for item creation, etc.
   , _sactorD   :: !ActorDict    -- ^ remembered actors in the dungeon
   , _sitemD    :: !ItemDict     -- ^ remembered items in the dungeon
   , _sfactionD :: !FactionDict  -- ^ remembered sides still in game

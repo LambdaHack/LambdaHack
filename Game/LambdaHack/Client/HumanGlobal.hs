@@ -399,9 +399,11 @@ gameExitHuman = do
     slides <- scoreToSlideshow Camping
     partingSlide <- promptToSlideshow "See you soon, stronger and braver!"
     void $ getInitConfirms [] $ slides Monoid.<> partingSlide
-    flushFrames
-    displayPush  -- save one slide to match other factions
-    fadeD False True
+    nH <- nHumans
+    when (nH > 1) $ do
+      flushFrames
+      displayPush  -- save one slide to match other factions
+      fadeD False True
     leader <- getLeaderUI
     return $ GameExitSer leader
   else abortWith "Save and exit canceled."

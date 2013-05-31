@@ -5,5 +5,4 @@
 depth: 100
 
 [heroes]
-baseHP: 999999
 extraHeroes: 1

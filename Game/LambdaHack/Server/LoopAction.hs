@@ -156,6 +156,7 @@ handleActors cmdSerSem lid = do
     Nothing -> return ()
     Just (aid, b) | bproj b && bhp b < 0 -> do
       -- A projectile hits an actor. The carried item is destroyed.
+      -- TODO: perhaps don't destroy if no effect (NoEffect).
       ais <- getsState $ getActorItem aid
       execCmdAtomic $ DestroyActorA aid b ais
       -- The attack animation for the projectile hit subsumes @DisplayPushD@,
@@ -415,8 +416,8 @@ processQuits loopServer ((fid, quit) : quits) = do
 restartGame :: (MonadAtomic m, MonadServerConn m) => Bool -> m () -> m ()
 restartGame quitter loopServer = do
   cops <- getsState scops
-  nH <- nHumans
-  when (nH <= 1) $ broadcastSfxAtomic $ \fid -> FadeoutD fid False
+  broadcastSfxAtomic $ \fid -> FadeoutD fid False
+  broadcastSfxAtomic $ \fid -> FlushFramesD fid
   s <- gameReset cops
   execCmdAtomic $ RestartServerA s
   initPer
