@@ -275,11 +275,20 @@ drawCmdAtomicUI verbose cmd = case cmd of
     else do
       fidName <- getsState $ gname . (EM.! toFid) . sfactionD
       aVerbMU target $ MU.Text $ "fall under the influence of" <+> fidName
-  LeadFactionA _ source target -> do
-    actorD <- getsState sactorD
-    let sourceDead = maybe True (isNothing . flip EM.lookup actorD) source
-        targetAlive = isJust target
-    when (sourceDead && targetAlive) $ msgAdd "The survivors carry on."
+  LeadFactionA fid (Just source) (Just target) -> do
+    Kind.COps{coactor} <- getsState scops
+    side <- getsClient sside
+    when (fid == side) $ do
+      actorD <- getsState sactorD
+      case EM.lookup source actorD of
+        Just sb | bhp sb <= 0 -> assert (not $ bproj sb) $ do
+          -- Regardless who is the leader, give proper names here, not 'you'.
+          tb <- getsState $ getActorBody target
+          let subject = partActor coactor tb
+              object  = partActor coactor sb
+          msgAdd $ makeSentence [ MU.SubjectVerbSg subject "take command"
+                                , "from", object ]
+        _ -> skip
   DiplFactionA fid1 fid2 _ toDipl -> do
     name1 <- getsState $ gname . (EM.! fid1) . sfactionD
     name2 <- getsState $ gname . (EM.! fid2) . sfactionD
@@ -394,16 +403,16 @@ moveItemUI verbose iid k c1 c2 = do
 
 displaceActorUI :: MonadClientUI m => ActorId -> ActorId -> m ()
 displaceActorUI source target = do
-  sm <- getsState (getActorBody source)
-  tm <- getsState (getActorBody target)
-  spart <- partActorLeader source sm
-  tpart <- partActorLeader target tm
+  sb <- getsState $ getActorBody source
+  tb <- getsState $ getActorBody target
+  spart <- partActorLeader source sb
+  tpart <- partActorLeader target tb
   let msg = makeSentence [MU.SubjectVerbSg spart "displace", tpart]
   msgAdd msg
-  when (bfid sm /= bfid tm) $ do
-    lookAtMove sm
-    lookAtMove tm
-  let ps = (bpos tm, bpos sm)
+  when (bfid sb /= bfid tb) $ do
+    lookAtMove sb
+    lookAtMove tb
+  let ps = (bpos tb, bpos sb)
   animFrs <- animate $ swapPlaces ps
   displayFramesPush $ Nothing : animFrs
 

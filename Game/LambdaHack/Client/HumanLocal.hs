@@ -237,18 +237,19 @@ partyAfterLeader leader = do
 -- | Select a faction leader. False, if nothing to do.
 selectLeader :: MonadClientUI m => ActorId -> m Bool
 selectLeader actor = do
+  Kind.COps{coactor} <- getsState scops
   leader <- getLeaderUI
   stgtMode <- getsClient stgtMode
   if actor == leader
     then return False -- already selected
     else do
-      -- Announce.
-      subject <- partAidLeader actor
+      pbody <- getsState $ getActorBody actor
+      -- Even if it's already the leader, give his proper name, not 'you'.
+      let subject = partActor coactor pbody
       msgAdd $ makeSentence [subject, "selected"]
       -- Update client state.
       s <- getState
       modifyClient $ updateLeader actor s
-      pbody <- getsState $ getActorBody actor
       assert (not (bproj pbody) `blame` (actor, pbody)) skip
       -- Move the cursor, if active, to the new level.
       when (isJust stgtMode) $ setTgtId $ blid pbody
