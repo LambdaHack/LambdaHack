@@ -232,14 +232,14 @@ saveExitA = do
 drawCmdAtomicUI :: MonadClientUI m => Bool -> CmdAtomic -> m ()
 drawCmdAtomicUI verbose cmd = case cmd of
   CreateActorA aid body _ -> do
-    when verbose $ aVerbMU aid "appear"
+    when verbose $ actorVerbMU aid body "appear"
     lookAtMove body
   DestroyActorA aid body _ -> do
     side <- getsClient sside
     if bhp body <= 0 && not (bproj body) && bfid body == side then do
-      aVerbMU aid "die"
+      actorVerbMU aid body "die"
       void $ displayMore ColorBW ""
-    else when verbose $ aVerbMU aid "disappear"
+    else when verbose $ actorVerbMU aid body "disappear"
   CreateItemA _ item k _ | verbose -> itemVerbMU item k "appear"
   DestroyItemA _ item k _ | verbose -> itemVerbMU item k "disappear"
   LoseActorA aid body _ -> do
@@ -247,7 +247,7 @@ drawCmdAtomicUI verbose cmd = case cmd of
     -- If no other faction actor is looking, death is invisible and
     -- so is domination, time-freeze, etc. Then, this command appears instead.
     when (not (bproj body) && bfid body == side) $ do
-      aVerbMU aid "be missing in action"
+      actorVerbMU aid body "be missing in action"
       void $ displayMore ColorFull ""
   MoveActorA aid _ _ -> do
     body <- getsState $ getActorBody aid
@@ -339,11 +339,15 @@ lookAtMove body = do
     msgAdd lookMsg
 
 -- | Sentences such as \"Dog barks loudly.\".
+actorVerbMU :: MonadClientUI m => ActorId -> Actor -> MU.Part -> m ()
+actorVerbMU aid b verb = do
+  subject <- partActorLeader aid b
+  msgAdd $ makeSentence [MU.SubjectVerbSg subject verb]
+
 aVerbMU :: MonadClientUI m => ActorId -> MU.Part -> m ()
 aVerbMU aid verb = do
-  subject <- partActorLeader aid
-  let msg = makeSentence [MU.SubjectVerbSg subject verb]
-  msgAdd msg
+  b <- getsState $ getActorBody aid
+  actorVerbMU aid b verb
 
 itemVerbMU :: MonadClientUI m => Item -> Int -> MU.Part -> m ()
 itemVerbMU item k verb = do
@@ -363,7 +367,7 @@ aiVerbMU aid verb iid k = do
   Kind.COps{coitem} <- getsState scops
   disco <- getsClient sdisco
   item <- getsState $ getItemBody iid
-  subject <- partActorLeader aid
+  subject <- partAidLeader aid
   let msg = makeSentence [ MU.SubjectVerbSg subject verb
                          , partItemNWs coitem disco k item ]
   msgAdd msg
@@ -392,8 +396,8 @@ displaceActorUI :: MonadClientUI m => ActorId -> ActorId -> m ()
 displaceActorUI source target = do
   sm <- getsState (getActorBody source)
   tm <- getsState (getActorBody target)
-  spart <- partActorLeader source
-  tpart <- partActorLeader target
+  spart <- partActorLeader source sm
+  tpart <- partActorLeader target tm
   let msg = makeSentence [MU.SubjectVerbSg spart "displace", tpart]
   msgAdd msg
   when (bfid sm /= bfid tm) $ do
@@ -431,8 +435,8 @@ drawSfxAtomicUI :: MonadClientUI m => Bool -> SfxAtomic -> m ()
 drawSfxAtomicUI verbose sfx = case sfx of
   StrikeD source target item b -> strikeD source target item b
   RecoilD source target _ _ -> do
-    spart <- partActorLeader source
-    tpart <- partActorLeader target
+    spart <- partAidLeader source
+    tpart <- partAidLeader target
     msgAdd $ makeSentence [MU.SubjectVerbSg spart "shrink back from", tpart]
   ProjectD aid iid -> aiVerbMU aid "aim" iid 1
   CatchD aid iid -> aiVerbMU aid "catch" iid 1
@@ -448,7 +452,7 @@ drawSfxAtomicUI verbose sfx = case sfx of
       -- We assume the Wound is the cause of incapacitation.
       side <- getsClient sside
       if bfid b == side then do
-        subject <- partActorLeader aid
+        subject <- partActorLeader aid b
         let firstFall = if bproj b then "drop down" else "fall down"
             verbDie =
               case effect of
@@ -469,19 +473,19 @@ drawSfxAtomicUI verbose sfx = case sfx of
                 Effect.Hurt _ p | p < 0 -> do
                   if bhp b <= p  -- was already dead previous turn
                   then if bproj b then "be shattered into little pieces"
-                                  else "be reduced to a blody pulp"
+                                  else "be reduced to a bloody pulp"
                   else firstFall
                 _ -> "be ruined further"
-        aVerbMU aid verbDie
+        actorVerbMU aid b verbDie
     else case effect of
         Effect.NoEffect -> msgAdd "Nothing happens."
         Effect.Heal p | p > 0 -> do
-          aVerbMU aid "feel better"
+          actorVerbMU aid b "feel better"
           let ps = (bpos b, bpos b)
           animFrs <- animate $ twirlSplash ps Color.BrBlue Color.Blue
           displayFramesPush $ Nothing : animFrs
         Effect.Heal _ -> do
-          aVerbMU aid "feel wounded"
+          actorVerbMU aid b "feel wounded"
           let ps = (bpos b, bpos b)
           animFrs <- animate $ twirlSplash ps Color.BrRed Color.Red
           displayFramesPush $ Nothing : animFrs
@@ -490,17 +494,17 @@ drawSfxAtomicUI verbose sfx = case sfx of
           let msg = makeSentence
                 [MU.NWs nEnemy "howl", "of anger", "can be heard"]
           msgAdd msg
-        Effect.Dominate | verbose -> aVerbMU aid "be dominated"
+        Effect.Dominate | verbose -> actorVerbMU aid b "be dominated"
         Effect.ApplyPerfume ->
           msgAdd "The fragrance quells all scents in the vicinity."
         Effect.Searching{}-> do
-          subject <- partActorLeader aid
+          subject <- partActorLeader aid b
           let msg = makeSentence
                 [ "It gets lost and"
                 , MU.SubjectVerbSg subject "search in vain" ]
           msgAdd msg
-        Effect.Ascend{} -> aVerbMU aid "find a way upstairs"
-        Effect.Descend{} -> aVerbMU aid "find a way downstairs"
+        Effect.Ascend{} -> actorVerbMU aid b "find a way upstairs"
+        Effect.Descend{} -> actorVerbMU aid b "find a way downstairs"
         _ -> return ()
   FailureD _ msg -> msgAdd msg
   BroadcastD msg -> msgAdd msg
@@ -526,8 +530,8 @@ strikeD source target item b = assert (source /= target) $ do
   disco <- getsClient sdisco
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  spart <- partActorLeader source
-  tpart <- partActorLeader target
+  spart <- partActorLeader source sb
+  tpart <- partActorLeader target tb
   let (verb, withWhat) | bproj sb = ("hit", False)
                        | otherwise =
         case jkind disco item of

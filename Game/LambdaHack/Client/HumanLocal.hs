@@ -243,7 +243,7 @@ selectLeader actor = do
     then return False -- already selected
     else do
       -- Announce.
-      subject <- partActorLeader actor
+      subject <- partAidLeader actor
       msgAdd $ makeSentence [subject, "selected"]
       -- Update client state.
       s <- getState
@@ -281,7 +281,7 @@ inventoryHuman :: (MonadClientAbort m, MonadClientUI m)
                => WriterT Slideshow m ()
 inventoryHuman = do
   leader <- getLeaderUI
-  subject <- partActorLeader leader
+  subject <- partAidLeader leader
   bag <- getsState $ getActorBag leader
   inv <- getsState $ getActorInv leader
   if EM.null bag
@@ -544,7 +544,7 @@ endTargetingMsg = do
                     Just (TPos tpos) ->
                       MU.Text $ "position" <+> showPoint lxsize tpos
                     Nothing -> "current cursor position continuously"
-  subject <- partActorLeader leader
+  subject <- partAidLeader leader
   msgAdd $ makeSentence [MU.SubjectVerbSg subject "target", targetMsg]
 
 -- * Clear

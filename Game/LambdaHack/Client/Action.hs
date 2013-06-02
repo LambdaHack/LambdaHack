@@ -33,7 +33,7 @@ module Game.LambdaHack.Client.Action
   , flushFrames, clientGameSave, restoreGame, displayPush, scoreToSlideshow
   , readConnToClient, writeConnFromClient
   , rndToAction, getArenaUI, getLeaderUI
-  , targetToPos, frontendName, fadeD, partActorLeader
+  , targetToPos, frontendName, fadeD, partAidLeader, partActorLeader
   ) where
 
 import Control.Concurrent
@@ -495,12 +495,19 @@ fadeD out topRight = do
       displayFadeFrames frs
 
 -- | The part of speech describing the actor or a special name if a leader
--- of the observer's faction.
-partActorLeader :: MonadClient m => ActorId -> m MU.Part
-partActorLeader aid = do
+-- of the observer's faction. The actor may not be present in the dungeon.
+partActorLeader :: MonadClient m => ActorId -> Actor -> m MU.Part
+partActorLeader aid b = do
   Kind.COps{coactor} <- getsState scops
-  b <- getsState $ getActorBody aid
   mleader <- getsClient _sleader
   return $! case mleader of
     Just leader | aid == leader -> "you"
     _ -> partActor coactor b
+
+-- | The part of speech describing the actor (designated by actor id
+-- and present in the dungeon) or a special name if a leader
+-- of the observer's faction.
+partAidLeader :: MonadClient m => ActorId -> m MU.Part
+partAidLeader aid = do
+  b <- getsState $ getActorBody aid
+  partActorLeader aid b

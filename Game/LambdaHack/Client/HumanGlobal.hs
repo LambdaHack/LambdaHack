@@ -105,7 +105,7 @@ dropHuman = do
   ((iid, item), _k) <- getAnyItem leader "What to drop?" bag inv "in inventory"
   disco <- getsClient sdisco
   -- Do not advertise if an enemy drops an item. Probably junk.
-  subject <- partActorLeader leader
+  subject <- partAidLeader leader
   msgAdd $ makeSentence
     [ MU.SubjectVerbSg subject "drop"
     , partItemNWs coitem disco 1 item ]
