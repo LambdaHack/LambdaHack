@@ -12,7 +12,7 @@ module Game.LambdaHack.Common.Actor
   , ItemBag, ItemInv, InvChar(..), ItemDict, ItemRev
   , allLetters, assignLetter, letterLabel, letterRange, rmFromBag
     -- * Assorted
-  , ActorDict, smellTimeout
+  , ActorDict, smellTimeout, mapActorItems_
   ) where
 
 import Data.Binary
@@ -226,6 +226,11 @@ rmFromBag k iid bag =
         EQ -> Nothing
         GT -> Just (n - k)
   in EM.alter rib iid bag
+
+mapActorItems_ :: Monad m => (ItemId -> Int -> m a) -> Actor -> m ()
+mapActorItems_ f Actor{bbag} = do
+  let is = EM.assocs bbag
+  mapM_ (uncurry f) is
 
 instance Binary Actor where
   put Actor{..} = do

@@ -4,15 +4,16 @@
 module Game.LambdaHack.Common.Level
   ( -- * Dungeon
     LevelId, Dungeon, ascendInBranch
+    -- * Item containers
+  , Container(..)
     -- * The @Level@ type and its components
   , SmellMap, ItemFloor, TileMap
   , Level(..)
     -- * Level update
   , updatePrio, updateSmell, updateFloor, updateTile
     -- * Level query
-  , at, atI, accessible, accessibleDir, findPos, findPosTry, hideTile
-    -- * Item containers
-  , Container(..)
+  , at, atI, accessible, accessibleDir, hideTile
+  , findPos, findPosTry, mapLevelActors_, mapDungeonActors_
  ) where
 
 import Data.Binary
@@ -46,6 +47,14 @@ ascendInBranch dungeon lid k =
   in case EM.lookup ln dungeon of
     Nothing -> []
     Just _ -> [ln]
+
+-- | Item container type.
+data Container =
+    CFloor LevelId Point
+  | CActor ActorId InvChar
+  deriving (Show, Eq, Ord, Generic)
+
+instance Binary Container
 
 -- | Actor time priority queue.
 type ActorPrio = EM.EnumMap Time [ActorId]
@@ -160,6 +169,16 @@ accessible Kind.COps{cotile=Kind.Ops{okind=okind}, corule}
 accessibleDir :: Kind.COps -> Level -> Point -> Vector -> Bool
 accessibleDir cops lvl spos dir = accessible cops lvl spos $ spos `shift` dir
 
+hideTile :: Kind.Ops TileKind -> Point -> Level -> Kind.Id TileKind
+hideTile cotile p lvl =
+  let t = lvl `at` p
+      ht = Tile.hiddenAs cotile t  -- TODO; tabulate with Speedup?
+  in if ht == t
+        || (lsecret lvl `Bits.rotateR` fromEnum p `Bits.xor` fromEnum p)
+           `mod` lhidden lvl == 0
+     then ht
+     else t
+
 -- | Find a random position on the map satisfying a predicate.
 findPos :: TileMap -> (Point -> Kind.Id TileKind -> Bool) -> Rnd Point
 findPos ltile p =
@@ -193,19 +212,12 @@ findPosTry numTries ltile l@(_ : tl) = assert (numTries > 0) $
           else search (k - 1)
   in search numTries
 
-hideTile :: Kind.Ops TileKind -> Point -> Level -> Kind.Id TileKind
-hideTile cotile p lvl =
-  let t = lvl `at` p
-      ht = Tile.hiddenAs cotile t  -- TODO; tabulate with Speedup?
-  in if ht == t
-        || (lsecret lvl `Bits.rotateR` fromEnum p `Bits.xor` fromEnum p)
-           `mod` lhidden lvl == 0
-     then ht
-     else t
+mapLevelActors_ :: Monad m => (ActorId -> m a) -> Level -> m ()
+mapLevelActors_ f Level{lprio} = do
+  let as = concat $ EM.elems lprio
+  mapM_ f as
 
-data Container =
-    CFloor LevelId Point
-  | CActor ActorId InvChar
-  deriving (Show, Eq, Ord, Generic)
-
-instance Binary Container
+mapDungeonActors_ :: Monad m => (ActorId -> m a) -> Dungeon -> m ()
+mapDungeonActors_ f dungeon = do
+  let ls = EM.elems dungeon
+  mapM_ (mapLevelActors_ f) ls

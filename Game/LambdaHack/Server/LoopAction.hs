@@ -247,10 +247,10 @@ dieSer aid = do  -- TODO: explode if a projectile holding a potion
 -- | Drop all actor's items.
 dropAllItems :: MonadAtomic m => ActorId -> Actor -> m ()
 dropAllItems aid b = do
-  let f (iid, k) = execCmdAtomic
-                   $ MoveItemA iid k (actorContainer aid (binv b) iid)
-                                     (CFloor (blid b) (bpos b))
-  mapM_ f $ EM.assocs $ bbag b
+  let f iid k = execCmdAtomic
+                $ MoveItemA iid k (actorContainer aid (binv b) iid)
+                            (CFloor (blid b) (bpos b))
+  mapActorItems_ f b
 
 electLeader :: (MonadAtomic m, MonadServer m)
             => FactionId -> LevelId -> ActorId
@@ -394,11 +394,13 @@ processQuits loopServer ((fid, quit) : quits) = do
               && not (isAllied fact1 fid)
       if gameOver then do
         registerScore status total
+        revealItems
         restartGame False loopServer
       else
         processQuits loopServer quits
     status@Victor -> do
       registerScore status total
+      revealItems
       restartGame False loopServer
     Restart -> restartGame True loopServer
     Camping -> do
@@ -411,7 +413,20 @@ processQuits loopServer ((fid, quit) : quits) = do
       s <- getState
       let pers = dungeonPerception cops configFov s
       assert (persSaved == pers `blame` (persSaved, pers)) skip
-      -- Con't call @loopServer@, that is, quit the game loop.
+      -- Don't call @loopServer@, that is, quit the game loop.
+
+revealItems :: (MonadAtomic m, MonadServer m) => m ()
+revealItems = do
+  dungeon <- getsState sdungeon
+  discoS <- getsServer sdisco
+  let discover b iid _numPieces = do
+        item <- getsState $ getItemBody iid
+        let ik = fromJust $ jkind discoS item
+        execCmdAtomic $ DiscoverA (blid b) (bpos b) iid ik
+      f aid = do
+        b <- getsState $ getActorBody aid
+        mapActorItems_ (discover b) b
+  mapDungeonActors_ f dungeon
 
 restartGame :: (MonadAtomic m, MonadServerConn m) => Bool -> m () -> m ()
 restartGame quitter loopServer = do
