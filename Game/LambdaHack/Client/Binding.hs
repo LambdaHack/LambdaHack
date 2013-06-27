@@ -29,12 +29,6 @@ data Binding = Binding
   , krevMap :: M.Map HumanCmd K.KM  -- ^ from cmds to their main keys
   }
 
--- | The associaction of commands to keys defined in config.
-configCmds :: ConfigUI -> [(K.KM, HumanCmd)]
-configCmds ConfigUI{configCommands} =
-  let mkCommand (km, def) = (km, read def :: HumanCmd)
-  in map mkCommand configCommands
-
 -- | Binding of keys to movement and other standard commands,
 -- as well as commands defined in the config file.
 stdBinding :: ConfigUI  -- ^ game config
@@ -45,7 +39,7 @@ stdBinding !config@ConfigUI{configMacros} =
                             , modifier=K.NoModifier }
                      , SelectHero k )
       cmdList =
-        configCmds config
+        configCommands config
         ++ K.moveBinding Move Run
         ++ fmap heroSelect [0..9]
       mkDescribed cmd = (cmdDescription cmd, noRemoteHumanCmd cmd, cmd)

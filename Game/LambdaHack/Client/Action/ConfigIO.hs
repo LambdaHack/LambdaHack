@@ -11,6 +11,7 @@ import System.Environment
 import System.FilePath
 
 import Game.LambdaHack.Client.Config
+import Game.LambdaHack.Client.HumanCmd
 import qualified Game.LambdaHack.Client.Key as K
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Content.RuleKind
@@ -92,7 +93,7 @@ parseConfigUI dataDir cp =
       mkKM ('C':'T':'R':'L':'-':s) = K.KM {key=mkKey s, modifier=K.Control}
       mkKM s = K.KM {key=mkKey s, modifier=K.NoModifier}
       configCommands =
-        let mkCommand (key, def) = (mkKM key, def)
+        let mkCommand (key, def) = (mkKM key, read def :: HumanCmd)
             section = getItems cp "commands"
         in map mkCommand section
       configAppDataDirUI = dataDir

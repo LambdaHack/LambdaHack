@@ -6,13 +6,14 @@ module Game.LambdaHack.Client.Config
 import Control.DeepSeq
 import Data.Binary
 
+import Game.LambdaHack.Client.HumanCmd
 import qualified Game.LambdaHack.Client.Key as K
 
 -- | Fully typed contents of the UI config file. This config
 -- is a part of a game client.
 data ConfigUI = ConfigUI
   { -- commands
-    configCommands     :: ![(K.KM, String)]  -- TODO: define Binary Cmd
+    configCommands     :: ![(K.KM, HumanCmd)]
     -- files
   , configAppDataDirUI :: !FilePath
   , configUICfgFile    :: !FilePath
