@@ -1,14 +1,17 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Basic cartesian geometry operations on 2D vectors.
 module Game.LambdaHack.Common.VectorXY
   ( VectorXY(..), shiftXY, movesXY, movesCardinalXY
   , chessDistXY, euclidDistSqXY, negXY
   ) where
 
+import Data.Binary
+
 import Game.LambdaHack.Common.PointXY
 
 -- | 2D vectors in cartesian representation.
 newtype VectorXY = VectorXY (X, Y)
-  deriving (Eq, Ord, Show, Read)
+  deriving (Eq, Ord, Show, Read, Binary)
 
 -- | Shift a point by a vector.
 shiftXY :: PointXY -> VectorXY -> PointXY

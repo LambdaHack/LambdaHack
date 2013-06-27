@@ -1,11 +1,13 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 -- | Abstract syntax human player commands.
 module Game.LambdaHack.Client.HumanCmd
   ( HumanCmd(..)
   , majorHumanCmd, minorHumanCmd, noRemoteHumanCmd, cmdDescription
   ) where
 
+import Data.Binary
 import Data.Text (Text)
+import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Common.Feature as F
@@ -47,7 +49,9 @@ data HumanCmd =
   | MarkSmell
   | MarkSuspect
   | Help
-  deriving (Show, Read, Eq, Ord)
+  deriving (Show, Read, Eq, Ord, Generic)
+
+instance Binary HumanCmd
 
 -- | Major commands land on the first page of command help.
 majorHumanCmd :: HumanCmd -> Bool
