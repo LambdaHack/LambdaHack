@@ -14,7 +14,7 @@ module Game.LambdaHack.Common.Item
     -- * The @FlavourMap@ type
   , FlavourMap, emptyFlavourMap, dungeonFlavourMap
     -- * Textual description
-  , partItem, partItemNWs, partItemAW
+  , partItem, partItemWs, partItemAW
   ) where
 
 import Control.Monad
@@ -198,10 +198,10 @@ partItem _cops disco i =
       let eff = effectToSuffix $ jeffect i
       in (MU.Text genericName, MU.Text eff)
 
-partItemNWs :: Kind.Ops ItemKind -> Discovery -> Int -> Item -> MU.Part
-partItemNWs coitem disco jcount i =
+partItemWs :: Kind.Ops ItemKind -> Discovery -> Int -> Item -> MU.Part
+partItemWs coitem disco jcount i =
   let (name, stats) = partItem coitem disco i
-  in MU.Phrase [MU.NWs jcount name, stats]
+  in MU.Phrase [MU.CarWs jcount name, stats]
 
 partItemAW :: Kind.Ops ItemKind -> Discovery -> Item -> MU.Part
 partItemAW coitem disco i =

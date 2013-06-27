@@ -38,7 +38,7 @@ import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.Frequency
 
--- TODO: extress many (all?) functions as MonadActionRO
+-- TODO: express many (all?) functions as MonadActionRO
 
 -- | AI proposes possible targets for the actor. Never empty.
 targetStrategy :: MonadClient m

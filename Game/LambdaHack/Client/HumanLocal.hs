@@ -102,7 +102,7 @@ lookAt detailed canSee pos msg = do
   let is = lvl `atI` pos
       prefixSee = MU.Text $ if canSee then "you see" else "you remember"
   disco <- getsClient sdisco
-  let nWs (iid, k) = partItemNWs coitem disco k (getItemBody iid s)
+  let nWs (iid, k) = partItemWs coitem disco k (getItemBody iid s)
       isd = case detailed of
               _ | EM.size is == 0 -> ""
               _ | EM.size is <= 2 ->
@@ -165,7 +165,7 @@ floorItemOverlay bag = do
   let is = zip (EM.assocs bag) (allLetters ++ repeat (InvChar ' '))
       pr ((iid, k), l) =
          makePhrase [ letterLabel l
-                    , partItemNWs coitem disco k (getItemBody iid s) ]
+                    , partItemWs coitem disco k (getItemBody iid s) ]
          <> " "
   return $ map pr is
 
@@ -179,7 +179,7 @@ itemOverlay bag inv = do
       is = mapMaybe checkItem $ EM.assocs inv
       pr (l, iid, k) =
          makePhrase [ letterLabel l
-                    , partItemNWs coitem disco k (getItemBody iid s) ]
+                    , partItemWs coitem disco k (getItemBody iid s) ]
          <> " "
   return $ map pr is
 
@@ -556,8 +556,6 @@ clearHuman = return ()
 
 -- * History
 
--- TODO: add times from all levels. Also, show time spend on this level alone.
--- "You survived for x turns (y turns on this level)"
 historyHuman :: MonadClientUI m => WriterT Slideshow m ()
 historyHuman = do
   history <- getsClient shistory
@@ -566,7 +564,7 @@ historyHuman = do
   global <- getsState stime
   let  msg = makeSentence
         [ "You survived for"
-        , MU.NWs (global `timeFit` timeTurn) "half-second turn"
+        , MU.CarWs (global `timeFit` timeTurn) "half-second turn"
         , "(this level:"
         , MU.Text (showT (local `timeFit` timeTurn)) MU.:> ")" ]
         <+> "Past messages:"

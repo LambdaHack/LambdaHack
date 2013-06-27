@@ -108,7 +108,7 @@ dropHuman = do
   subject <- partAidLeader leader
   msgAdd $ makeSentence
     [ MU.SubjectVerbSg subject "drop"
-    , partItemNWs coitem disco 1 item ]
+    , partItemWs coitem disco 1 item ]
   return $ DropSer leader iid
 
 allObjectsName :: Text
@@ -339,7 +339,7 @@ verifyTrigger leader feat = case feat of
             winMsg = makeSentence
               [ "Congratulations, you won!"
               , "Here's your loot, worth"
-              , MU.NWs total currencyName ]
+              , MU.CarWs total currencyName ]
         io <- floorItemOverlay bag
         slides <- overlayToSlideshow winMsg io
         partingSlide <- promptToSlideshow "Can it be done better, though?"

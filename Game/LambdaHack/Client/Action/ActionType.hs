@@ -47,7 +47,7 @@ instance Monad (ActionCli c) where
   return = returnActionCli
   (>>=)  = bindActionCli
 
--- TODO: make sure fmap is inlinded and all else is inlined in this file
+-- TODO: make sure fmap is inlined and all else is inlined here and elsewhere
 instance Functor (ActionCli c) where
   fmap f m =
     ActionCli (\c d k a s cli ->

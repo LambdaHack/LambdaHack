@@ -138,7 +138,6 @@ cmdAtomicSemCli cmd = case cmd of
   CoverA lid p iid ik -> coverA lid p iid ik
   PerceptionA lid outPA inPA -> perceptionA lid outPA inPA
   RestartA _ sdisco sfper s _ -> do
-    -- TODO: here or elsewhere re-read RNG seed from config file
     side <- getsClient sside
     let fact = sfactionD s EM.! side
     shistory <- getsClient shistory
@@ -226,7 +225,8 @@ saveExitA = do
 -- highlighing should be enough.
 -- TODO: for a start, flesh out the verbose variant and then add
 -- a single client debug option that flips verbosity
--- | Visualizationi of atomic actions for the client is perfomed
+--
+-- | Visualization of atomic actions for the client is perfomed
 -- in the global state after the command is executed and after
 -- the client state is modified by the command.
 drawCmdAtomicUI :: MonadClientUI m => Bool -> CmdAtomic -> m ()
@@ -363,7 +363,7 @@ itemVerbMU item k verb = do
   Kind.COps{coitem} <- getsState scops
   disco <- getsClient sdisco
   let msg =
-        makeSentence [MU.SubjectVerbSg (partItemNWs coitem disco k item) verb]
+        makeSentence [MU.SubjectVerbSg (partItemWs coitem disco k item) verb]
   msgAdd msg
 
 _iVerbMU :: MonadClientUI m => ItemId -> Int -> MU.Part -> m ()
@@ -378,7 +378,7 @@ aiVerbMU aid verb iid k = do
   item <- getsState $ getItemBody iid
   subject <- partAidLeader aid
   let msg = makeSentence [ MU.SubjectVerbSg subject verb
-                         , partItemNWs coitem disco k item ]
+                         , partItemWs coitem disco k item ]
   msgAdd msg
 
 moveItemUI :: MonadClientUI m
@@ -394,7 +394,7 @@ moveItemUI verbose iid k c1 c2 = do
       side <- getsClient sside
       if bfid b == side then
         msgAdd $ makePhrase [ letterLabel l
-                            , partItemNWs coitem disco n item
+                            , partItemWs coitem disco n item
                             , "\n" ]
       else aiVerbMU aid "pick up" iid k
     (CActor aid _, CFloor _ _) | verbose -> do
@@ -499,9 +499,8 @@ drawSfxAtomicUI verbose sfx = case sfx of
           animFrs <- animate $ twirlSplash ps Color.BrRed Color.Red
           displayFramesPush $ Nothing : animFrs
         Effect.Mindprobe nEnemy -> do
-          -- TODO: NWs with spelled cardinal would be handy
           let msg = makeSentence
-                [MU.NWs nEnemy "howl", "of anger", "can be heard"]
+                [MU.CardinalWs nEnemy "howl", "of anger", "can be heard"]
           msgAdd msg
         Effect.Dominate | verbose -> actorVerbMU aid b "be dominated"
         Effect.ApplyPerfume ->

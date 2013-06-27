@@ -29,7 +29,6 @@ initCli putSt = do
       putClient cli
       return $ Left msg
     Right msg -> do  -- First visit ever, use the initial state.
-      -- TODO: create or restore from config clients RNG seed
       return $ Right msg
 
 loopAI :: (MonadClientConn CmdClientAI m)

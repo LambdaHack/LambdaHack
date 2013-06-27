@@ -361,8 +361,8 @@ triggerSer aid dpos = do
   let f feat = do
         case feat of
           F.Cause ef -> do
+            -- No block against tile, hence unconditional.
             execSfxAtomic $ TriggerD aid dpos feat {-TODO-}True
-            -- No block against tile, hence @False@.
             void $ effectSem ef aid aid
             return True
           F.ChangeTo tgroup -> do
