@@ -81,7 +81,7 @@ reacquireTgt cops actor btarget s per factionAbilities =
     case tgt of
       Just (TEnemy a ll) | focused ->  -- chases even if enemy dead, to loot
         case fmap bpos $ EM.lookup a $ sactorD s of
-          Just l | enemyVisible l ->  -- prefer visible (and alive) foes
+          Just l | enemyVisible l ->   -- prefer visible (and alive) foes
             returN "TEnemy" $ Just $ TEnemy a l
           _ -> if null visibleFoes     -- prefer visible foes
                   && me /= ll          -- not yet reached the last enemy pos

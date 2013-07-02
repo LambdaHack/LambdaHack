@@ -187,13 +187,11 @@ itemOverlay bag inv = do
 
 retargetLeader :: MonadClientUI m => WriterT Slideshow m ()
 retargetLeader = do
-  stgtMode <- getsClient stgtMode
-  assert (isNothing stgtMode) $ do
-    arena <- getArenaUI
-    -- TODO: do not save to history:
-    msgAdd "Last target invalid."
-    modifyClient $ \cli -> cli {scursor = Nothing, seps = 0}
-    tgtEnemyLeader $ TgtAuto arena
+  arena <- getArenaUI
+  -- TODO: do not save to history:
+  msgAdd "Last target invalid."
+  modifyClient $ \cli -> cli {scursor = Nothing, seps = 0}
+  tgtEnemyLeader $ TgtAuto arena
 
 -- * SelectHero
 

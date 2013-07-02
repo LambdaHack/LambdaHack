@@ -86,7 +86,7 @@ defStateClient shistory sconfigUI _sside sisAI = do
     , scursor = Nothing
     , seps = 0
     , stargetD = EM.empty
-    , srunning= Nothing
+    , srunning = Nothing
     , sreport = emptyReport
     , shistory
     , sundo = []

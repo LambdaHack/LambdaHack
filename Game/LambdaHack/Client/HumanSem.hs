@@ -145,8 +145,9 @@ projectHuman :: (MonadClientAbort m, MonadClientUI m)
              -> WriterT Slideshow m (Maybe CmdSer)
 projectHuman verb object syms = do
   tgtLoc <- targetToPos
-  if isNothing tgtLoc then retargetLeader >> return Nothing
-  else fmap Just $ projectLeader verb object syms
+  if isNothing tgtLoc
+    then retargetLeader >> return Nothing
+    else fmap Just $ projectLeader verb object syms
 
 tgtFloorHuman :: MonadClientUI m => WriterT Slideshow m (Maybe CmdSer)
 tgtFloorHuman = do
