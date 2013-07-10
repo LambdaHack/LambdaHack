@@ -98,11 +98,13 @@ draw dm cops per drawnLevelId leader
                      | otherwise = fromMaybe asymbol bsymbol
             rainbow p = toEnum $ fromEnum p `rem` 14 + 1
             actorsHere = actorAssocs (const True) drawnLevelId s
-            vcolor t = if vis
-                       then if smarkSuspect && F.Suspect `elem` tfeature t
-                            then Color.BrCyan
-                            else tcolor t
-                       else tcolor2 t
+            -- smarkSuspect is an optional overlay, so let's overlay it
+            -- over both visible and invisible tiles.
+            vcolor t = if smarkSuspect && F.Suspect `elem` tfeature t
+                       then Color.BrCyan
+                       else if vis
+                            then tcolor t
+                            else tcolor2 t
             (char, fg0) =
               case ( L.find (\ (_, m) -> pos0 == Actor.bpos m) actorsHere
                    , L.find (\ (_, m) -> scursor == Just (Actor.bpos m))
