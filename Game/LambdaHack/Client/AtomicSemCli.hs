@@ -308,7 +308,12 @@ drawCmdAtomicUI verbose cmd = case cmd of
     msgAdd msg
   AgeGameA t -> do
     when (t > timeClip) $ displayFramesPush [Nothing]  -- show delay
-    displayPush
+    -- TODO: shows messages on leader level, instead of recently shown
+    -- level (e.g., between animations); perhaps draw messages separately
+    -- from level (but on the same text window) or keep last level frame
+    -- and only overlay messages on it when needed; or store the level
+    -- of last shown
+    -- displayPush
   DiscoverA _ _ iid _ -> do
     disco <- getsClient sdisco
     item <- getsState $ getItemBody iid
@@ -516,7 +521,13 @@ drawSfxAtomicUI verbose sfx = case sfx of
         _ -> return ()
   FailureD _ msg -> msgAdd msg
   BroadcastD msg -> msgAdd msg
-  DisplayPushD _ -> displayPush
+  DisplayPushD _ ->
+    -- TODO: shows messages on leader level, instead of recently shown
+    -- level (e.g., between animations); perhaps draw messages separately
+    -- from level (but on the same text window) or keep last level frame
+    -- and only overlay messages on it when needed; or store the level
+    -- of last shown
+    displayPush
   DisplayDelayD _ -> displayFramesPush [Nothing]
   FlushFramesD _ -> do
     srunning <- getsClient srunning
