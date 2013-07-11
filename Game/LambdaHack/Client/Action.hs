@@ -458,11 +458,10 @@ rndToAction r = do
 -- TODO: perhaps draw viewed level, not arena
 -- TODO: restrict the animation to 'per' before drawing.
 -- | Render animations on top of the current screen frame.
-animate :: MonadClientUI m => Animation -> m Frames
-animate anim = do
+animate :: MonadClientUI m => LevelId -> Animation -> m Frames
+animate arena anim = do
   cops <- getsState scops
   sreport <- getsClient sreport
-  arena <- getArenaUI
   leader <- getLeaderUI
   Level{lxsize, lysize} <- getsLevel arena id
   cli <- getClient
@@ -486,7 +485,7 @@ fadeD out topRight = do
       report <- getsClient sreport
       unless out $ msgReset $ gname fact <> ", get ready!"
       animMap <- rndToAction $ fadeout out topRight (lxsize lvl) (lysize lvl)
-      animFrs <- animate animMap
+      animFrs <- animate arena animMap
       modifyClient $ \d -> d {sreport = report}
       let frs | out = animFrs
                 -- Empty frame to mark the fade-in end,

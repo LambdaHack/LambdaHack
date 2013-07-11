@@ -52,8 +52,7 @@ newtype Animation = Animation [EM.EnumMap Point AttrChar]
 type Frames = [Maybe SingleFrame]
 
 -- | Render animations on top of a screen frame.
-renderAnim :: X -> Y -> SingleFrame -> Animation
-          -> Frames
+renderAnim :: X -> Y -> SingleFrame -> Animation -> Frames
 renderAnim lxsize lysize basicFrame (Animation anim) =
   let modifyFrame SingleFrame{sfLevel = levelOld, ..} am =
         let fLine y lineOld =

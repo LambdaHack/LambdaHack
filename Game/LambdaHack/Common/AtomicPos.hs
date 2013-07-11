@@ -25,6 +25,8 @@ import Game.LambdaHack.Utils.Assert
 -- All functions here that take an atomic action are executed
 -- in the state just before the action is executed.
 
+-- | The type representing visibility of actions to factions,
+-- based on the position of the action, etc.
 data PosAtomic =
     PosSight LevelId [Point]  -- ^ whomever sees all the positions, notices
   | PosFidAndSight FactionId LevelId [Point]

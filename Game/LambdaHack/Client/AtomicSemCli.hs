@@ -413,7 +413,7 @@ displaceActorUI source target = do
     lookAtMove sb
     lookAtMove tb
   let ps = (bpos tb, bpos sb)
-  animFrs <- animate $ swapPlaces ps
+  animFrs <- animate (blid sb) $ swapPlaces ps
   displayFramesPush $ Nothing : animFrs
 
 quitFactionUI :: MonadClientUI m => FactionId -> Maybe (Bool, Status) -> m ()
@@ -473,7 +473,7 @@ drawSfxAtomicUI verbose sfx = case sfx of
                 _ -> "be damaged even more"
             msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
         msgAdd msgDie
-        animDie <- animate $ deathBody $ bpos b
+        animDie <- animate (blid b) $ deathBody $ bpos b
         when (not (bproj b)) $ displayFramesPush animDie
       else do
         let firstFall = if bproj b then "break up" else "collapse"
@@ -491,12 +491,12 @@ drawSfxAtomicUI verbose sfx = case sfx of
         Effect.Heal p | p > 0 -> do
           actorVerbMU aid b "feel better"
           let ps = (bpos b, bpos b)
-          animFrs <- animate $ twirlSplash ps Color.BrBlue Color.Blue
+          animFrs <- animate (blid b) $ twirlSplash ps Color.BrBlue Color.Blue
           displayFramesPush $ Nothing : animFrs
         Effect.Heal _ -> do
           actorVerbMU aid b "feel wounded"
           let ps = (bpos b, bpos b)
-          animFrs <- animate $ twirlSplash ps Color.BrRed Color.Red
+          animFrs <- animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
           displayFramesPush $ Nothing : animFrs
         Effect.Mindprobe nEnemy -> do
           let msg = makeSentence
@@ -567,5 +567,5 @@ strikeD source target item b = assert (source /= target) $ do
       anim HitD = twirlSplash ps Color.BrRed Color.Red
       anim HitBlockD = blockHit ps Color.BrRed Color.Red
       anim MissBlockD = blockMiss ps
-  animFrs <- animate $ anim b
+  animFrs <- animate (blid sb) $ anim b
   displayFramesPush $ Nothing : animFrs
