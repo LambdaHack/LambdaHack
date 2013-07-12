@@ -3,7 +3,7 @@
 -- for discussion.
 module Game.LambdaHack.Server.Fov
   ( dungeonPerception, levelPerception
-  , fullscan,  FovMode(..)
+  , fullscan, FovMode(..)
   ) where
 
 import Data.Binary
@@ -39,8 +39,7 @@ levelPerception :: Kind.COps -> State -> FovMode -> FactionId
                 -> Perception
 levelPerception cops@Kind.COps{cotile} s configFov fid lid lvl =
   let hs = actorNotProjAssocs (== fid) lid s
-      reas =
-        map (\(aid, b) -> (aid, computeReachable cops configFov b lvl)) hs
+      reas = map (\(aid, b) -> (aid, computeReachable cops configFov b lvl)) hs
       lreas = map (preachable . snd) reas
       totalRea = PerceptionReachable $ ES.unions lreas
       -- TODO: Instead of giving the actor a light source, alter vision.

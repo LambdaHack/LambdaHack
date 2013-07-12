@@ -45,6 +45,7 @@ instance Binary Perception
 type FactionPers = EM.EnumMap LevelId Perception
 
 -- | Perception indexed by faction identifier.
+-- This can't be added to @FactionDict@, because clients can't see it.
 type Pers = EM.EnumMap FactionId FactionPers
 
 -- | The set of tiles visible by at least one hero.

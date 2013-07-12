@@ -414,8 +414,12 @@ scoreToSlideshow status = do
     return $! HighScore.slideshow ntable pos status
 
 saveName :: FactionId -> Bool -> String
-saveName side isAI = show (fromEnum side)
-                     ++ if isAI then ".ai.sav" else ".human.sav"
+saveName side isAI =
+  let n = fromEnum side
+  in (if n > 0
+      then "human_" ++ show n
+      else "computer_" ++ show (-n))
+     ++ if isAI then ".ai.sav" else ".ui.sav"
 
 clientGameSave :: MonadClient m => Bool -> m ()
 clientGameSave toBkp = do

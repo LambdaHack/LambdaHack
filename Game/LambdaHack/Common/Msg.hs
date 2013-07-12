@@ -182,8 +182,9 @@ stringByLocation :: X -> Y -> Overlay
 stringByLocation _ _ [] = (T.empty, const Nothing, Nothing)
 stringByLocation lxsize lysize (msgTop : ls) =
   let (over, bottom) = splitAt lysize $ map (truncateMsg lxsize) ls
-      m = EM.fromDistinctAscList $
-            zip [0..] (map (EM.fromList . zip [0..] . T.unpack) over)
+      m = EM.fromDistinctAscList
+          $ zip [0..]
+                (map (EM.fromDistinctAscList . zip [0..] . T.unpack) over)
       msgBottom = case bottom of
                   [] -> Nothing
                   [s] -> Just s

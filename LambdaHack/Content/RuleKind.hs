@@ -21,8 +21,8 @@ cdefs = ContentDef
   , content =
       [standard]
   }
-standard :: RuleKind
 
+standard :: RuleKind
 standard = RuleKind
   { rsymbol        = 's'
   , rname          = "standard LambdaHack ruleset"

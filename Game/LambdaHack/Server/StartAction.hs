@@ -107,7 +107,8 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
   lHuman <- mapM (rawCreate True) $ zip (configHuman config) humanColors
   lComputer <- mapM (rawCreate False)
                $ zip (configComputer config) computerColors
-  let rawFs = zip [toEnum 1..] $ lHuman ++ lComputer
+  let rawFs = reverse (zip [toEnum (-1), toEnum (-2)..] lComputer)  -- sorted
+              ++ zip [toEnum 1..] lHuman
       isOfType fType fact =
         let fk = okind $ gkind fact
         in case lookup fType $ ffreq fk of
