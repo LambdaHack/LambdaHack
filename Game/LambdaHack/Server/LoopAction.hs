@@ -52,7 +52,7 @@ loopSer :: (MonadAtomic m, MonadServerConn m)
         -> Kind.COps
         -> m ()
 loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
-  -- Recover states.
+  -- Recover states and launch clients.
   restored <- tryRestore cops
   case restored of
     Nothing -> do  -- Starting a new game.
@@ -61,7 +61,9 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
       s <- gameReset cops
       let speedup = speedupCOps (sallClear sdebugNxt)
       execCmdAtomic $ RestartServerA $ updateCOps speedup s
-      initConn sdebugNxt executorUI executorAI
+      applyDebug sdebugNxt
+      updateConn executorUI executorAI
+      initPer
       reinitGame False
       -- Save ASAP in case of crashes and disconnects.
       saveBkpAll
@@ -69,10 +71,12 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
       let setCops = const (speedupCOps (sallClear sdebugNxt) cops)
       execCmdAtomic $ ResumeServerA $ updateCOps setCops sRaw
       putServer ser {sdebugNxt}
-      initConn sdebugNxt executorUI executorAI
+      applyDebug sdebugNxt
+      updateConn executorUI executorAI
+      initPer
       pers <- getsServer sper
       broadcastCmdAtomic $ \fid -> ResumeA fid (pers EM.! fid)
-  -- Loop.
+  -- Loop, communicating with clients.
   let loop = do
         let run lid = handleActors cmdSerSem lid
             factionArena fact =
@@ -87,7 +91,7 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
         assert (not $ null arenas) skip
         mapM_ run arenas
         endClip arenas
-        endOrLoop loop
+        endOrLoop (updateConn executorUI executorAI) loop
   loop
 
 saveBkpAll :: (MonadAtomic m, MonadServer m) => m ()
@@ -355,17 +359,17 @@ regenerateLevelHP lid = do
   mapM_ (\aid -> execCmdAtomic $ HealActorA aid 1) toRegen
 
 -- | Continue or restart or exit the game.
-endOrLoop :: (MonadAtomic m, MonadServerConn m) => m () -> m ()
-endOrLoop loopServer = do
+endOrLoop :: (MonadAtomic m, MonadServerConn m) => m () -> m () -> m ()
+endOrLoop updConn loopServer = do
   factionD <- getsState sfactionD
   let f (_, Faction{gquit=Nothing}) = Nothing
       f (fid, Faction{gquit=Just quit}) = Just (fid, quit)
-  processQuits loopServer $ mapMaybe f $ EM.assocs factionD
+  processQuits updConn loopServer $ mapMaybe f $ EM.assocs factionD
 
 processQuits :: (MonadAtomic m, MonadServerConn m)
-             => m () -> [(FactionId, (Bool, Status))] -> m ()
-processQuits loopServer [] = loopServer  -- just continue
-processQuits loopServer ((fid, quit) : quits) = do
+             => m () -> m () -> [(FactionId, (Bool, Status))] -> m ()
+processQuits _ loopServer [] = loopServer  -- just continue
+processQuits updConn loopServer ((fid, quit) : quits) = do
   cops <- getsState scops
   factionD <- getsState sfactionD
   let faction = factionD EM.! fid
@@ -395,14 +399,14 @@ processQuits loopServer ((fid, quit) : quits) = do
       if gameOver then do
         registerScore status total
         revealItems
-        restartGame False loopServer
+        restartGame updConn False loopServer
       else
-        processQuits loopServer quits
+        processQuits updConn loopServer quits
     status@Victor -> do
       registerScore status total
       revealItems
-      restartGame False loopServer
-    Restart -> restartGame True loopServer
+      restartGame updConn False loopServer
+    Restart -> restartGame updConn True loopServer
     Camping -> do
       execCmdAtomic $ QuitFactionA fid (Just quit) Nothing
       execCmdAtomic SaveExitA
@@ -428,13 +432,15 @@ revealItems = do
         mapActorItems_ (discover b) b
   mapDungeonActors_ f dungeon
 
-restartGame :: (MonadAtomic m, MonadServerConn m) => Bool -> m () -> m ()
-restartGame quitter loopServer = do
+restartGame :: (MonadAtomic m, MonadServerConn m)
+            => m () -> Bool -> m () -> m ()
+restartGame updConn quitter loopServer = do
   cops <- getsState scops
   broadcastSfxAtomic $ \fid -> FadeoutD fid False
   broadcastSfxAtomic $ \fid -> FlushFramesD fid
   s <- gameReset cops
   execCmdAtomic $ RestartServerA s
+  updConn
   initPer
   reinitGame quitter
   -- Save ASAP in case of crashes and disconnects.

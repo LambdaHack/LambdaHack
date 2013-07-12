@@ -6,8 +6,7 @@ module Game.LambdaHack.Server.Action
   ( -- * Action monads
     MonadServer( getServer, getsServer, putServer, modifyServer )
   , MonadServerConn
-  , tryRestore, connServer, launchClients
-  , waitForChildren, speedupCOps
+  , tryRestore, updateConn, waitForChildren, speedupCOps
     -- * Communication
   , sendUpdateUI, sendQueryUI, sendUpdateAI, sendQueryAI
     -- * Assorted primitives
@@ -32,6 +31,7 @@ import System.Directory
 import System.Time
 
 import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Common.ServerCmd
@@ -193,39 +193,45 @@ tryRestore Kind.COps{corule} = do
   (sconfig, _, _) <- mkConfigRules corule
   liftIO $ Save.restoreGameSer sconfig pathsDataFile
 
--- | Prepare connections based on factions.
-connServer :: MonadServerConn m => m ()
-connServer = do
-  factionD <- getsState sfactionD
+-- | Update connections to the new definition of factions.
+-- Connect to clients in old or newly spawned threads
+-- that read and write directly to the channels.
+updateConn :: (MonadAtomic m, MonadServerConn m)
+           => (FactionId -> Conn CmdClientUI -> IO ())
+           -> (FactionId -> Conn CmdClientAI -> IO ())
+           -> m ()
+updateConn executorUI executorAI = do
   -- Prepare connections based on factions.
+  oldD <- getDict
   let mkConn :: IO (Maybe (Conn c))
       mkConn = do
         toClient <- newTQueueIO
         toServer <- newTQueueIO
         return $ Just $ Conn{..}
-      addConn (fid, fact) = do
-        connUI <- if isHumanFact fact
-                  then mkConn
-                  else return Nothing
-        connAI <- if usesAIFact fact
-                  then mkConn
-                  else return Nothing
-        return (fid, (connUI, connAI))
+      addConn (fid, fact) = case EM.lookup fid oldD of
+        Just conns -> return (fid, conns)  -- share old conns and threads
+        Nothing -> do
+          connUI <- if isHumanFact fact
+                    then mkConn
+                    else return Nothing
+          connAI <- mkConn
+          -- TODO, when net clients, etc., are included:
+          -- connAI <- if usesAIFact fact
+          --           then mkConn
+          --           else return Nothing
+          return (fid, (connUI, connAI))
+  factionD <- getsState sfactionD
   connAssocs <- liftIO $ mapM addConn $ EM.assocs factionD
-  putDict $ EM.fromDistinctAscList connAssocs
-
--- | Connect to clients by starting them in spawned threads that read
--- and write directly to the channels.
-launchClients :: MonadServerConn m
-              => (FactionId -> Conn CmdClientUI -> IO ())
-              -> (FactionId -> Conn CmdClientAI -> IO ())
-              -> m ()
-launchClients executorUI executorAI = do
+  let d = EM.fromDistinctAscList connAssocs
+  putDict d
+  -- Spawn or kill client threads.
+  let toSpawn = d EM.\\ oldD
+      toKill  = oldD EM.\\ d  -- don't kill all, share old threads
+  mapM_ (execCmdAtomic . KillExitA) $ EM.keys toKill
   let forkClient (fid, (connUI, connAI)) = do
         maybe skip (void . forkChild . executorUI fid) connUI
         maybe skip (void . forkChild . executorAI fid) connAI
-  d <- getDict
-  liftIO $ mapM_ forkClient $ EM.assocs d
+  liftIO $ mapM_ forkClient $ EM.assocs toSpawn
 
 -- Swiped from http://www.haskell.org/ghc/docs/latest/html/libraries/base-4.6.0.0/Control-Concurrent.html
 children :: MVar [MVar ()]

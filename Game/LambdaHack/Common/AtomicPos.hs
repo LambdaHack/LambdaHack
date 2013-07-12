@@ -116,6 +116,7 @@ posCmdAtomic cmd = case cmd of
   RestartServerA _ -> return PosSer
   ResumeA fid _ -> return $ PosFid fid
   ResumeServerA _ -> return PosSer
+  KillExitA fid -> return $ PosFid fid
   SaveExitA -> return $ PosAll
   SaveBkpA -> return $ PosAll
 

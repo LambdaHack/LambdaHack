@@ -149,6 +149,7 @@ cmdAtomicSemCli cmd = case cmd of
                   , _sleader = gleader fact
                   , sundo = [CmdAtomic cmd] }
   ResumeA _fid sfper -> modifyClient $ \cli -> cli {sfper}
+  KillExitA _fid -> killExitA
   SaveExitA -> saveExitA
   SaveBkpA -> clientGameSave True
   _ -> return ()
@@ -206,6 +207,9 @@ coverA lid p iid ik = do
   let f Nothing = assert `failure` (lid, p, iid, ik)
       f (Just ik2) = assert (ik == ik2 `blame` (ik, ik2)) Nothing
   modifyClient $ \cli -> cli {sdisco = EM.alter f (jkindIx item) (sdisco cli)}
+
+killExitA :: MonadClient m => m ()
+killExitA = modifyClient $ \cli -> cli {squit = True}
 
 -- TODO: show "X requests gave save and exit" and/or
 -- "See you soon, stronger and braver!", when standalone clients are there.

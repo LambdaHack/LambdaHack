@@ -98,6 +98,7 @@ loopUI cmdClientUISem = do
     _ -> assert `failure` (side, msg, cmd1)
   -- State and client state now valid.
   loop
+  unlockUI
  where
   loop = do
     cmd <- readConnToClient

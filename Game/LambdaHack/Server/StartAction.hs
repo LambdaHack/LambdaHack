@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Operations for starting and restarting the game.
 module Game.LambdaHack.Server.StartAction
-  ( initConn, gameReset, reinitGame, initPer
+  ( applyDebug, gameReset, reinitGame, initPer
   ) where
 
 import Control.Arrow (second)
@@ -13,7 +13,6 @@ import qualified Data.EnumSet as ES
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.AtomicCmd
-import Game.LambdaHack.Common.ClientCmd
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
@@ -35,24 +34,14 @@ import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.ServerSem
 import Game.LambdaHack.Server.State
 
--- | Init connections, clients, debug and perception.
-initConn :: MonadServerConn m
-         => DebugModeSer
-         -> (FactionId -> Conn CmdClientUI -> IO ())
-         -> (FactionId -> Conn CmdClientAI -> IO ())
-         -> m ()
-initConn sdebugNxt executorUI executorAI = do
-  -- Set up connections.
-  connServer
-  -- Launch clients.
-  launchClients executorUI executorAI
-  -- Apply debug options that don't need a new game.
+-- | Apply debug options that don't need a new game.
+applyDebug :: MonadServer m => DebugModeSer -> m ()
+applyDebug sdebugNxt =
   modifyServer $ \ser ->
     ser {sdebugSer = (sdebugSer ser) { sniffIn = sniffIn sdebugNxt
                                      , sniffOut = sniffOut sdebugNxt
                                      , sallClear = sallClear sdebugNxt
                                      , stryFov = stryFov sdebugNxt }}
-  initPer
 
 initPer :: MonadServer m => m ()
 initPer = do

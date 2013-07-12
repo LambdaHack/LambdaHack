@@ -89,6 +89,7 @@ data CmdAtomic =
   | RestartServerA State
   | ResumeA FactionId FactionPers
   | ResumeServerA State
+  | KillExitA FactionId
   | SaveExitA
   | SaveBkpA
   deriving (Show, Eq, Generic)
@@ -162,6 +163,7 @@ undoCmdAtomic cmd = case cmd of
   RestartServerA{} -> Just cmd  -- here history ends; change direction
   ResumeA{} -> Nothing
   ResumeServerA{} -> Nothing
+  KillExitA{} -> Nothing
   SaveExitA -> Nothing
   SaveBkpA -> Nothing
 
