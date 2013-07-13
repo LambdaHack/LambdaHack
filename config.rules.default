@@ -5,11 +5,10 @@
 ; ; Warning: options are case-sensitive and only ';' for comments is permitted.
 
 ; [caves]
+; ; cave "dng" means a random choice from caves that can randomly appear
 ; ; Fixed caves for the first levels, then randomly picked caves.
-; LambdaCave_1: caveRogue
-; LambdaCave_2: caveRogue
-; LambdaCave_3: caveEmpty
-; LambdaCave_10: caveNoise
+; campaign: [(1, "caveRogue"), (2, "caveRogue"), (3, "caveEmpty"), (10, "caveNoise")]
+; arena: [(1, "caveArena")]
 
 ; [dungeon]
 ; depth: 10
@@ -37,7 +36,7 @@
 ; firstDeathEnds: False
 
 ; [players]
-; ; faction "playable" means a random choice
+; ; faction "playable" means a random choice from playable factions
 ; campaign: Players { playersHuman = [("Human Player", "hero")], playersComputer = [("Computer Player", "monster")] }
 ; skirmish: Players { playersHuman = [("Human Player", "hero")], playersComputer = [("Computer Player", "hero")] }
 ; PvP: Players { playersHuman = [("Human Player 1", "hero"), ("Human Player 2", "hero")], playersComputer = [] }

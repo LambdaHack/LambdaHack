@@ -8,6 +8,7 @@ import Control.Monad
 import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
 import Data.List
+import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Text (Text)
 import qualified System.Random as R
@@ -15,7 +16,6 @@ import qualified System.Random as R
 import qualified Game.LambdaHack.Common.Feature as F
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Random
@@ -94,8 +94,7 @@ matchGenerator Kind.Ops{opick} mname =
 
 findGenerator :: Kind.COps -> Config -> Int -> Int -> Rnd Level
 findGenerator cops Config{configCaves} k depth = do
-  let ln = "LambdaCave_" <> showT k
-      genName = lookup ln configCaves
+  let genName = EM.lookup (toEnum k) $ configCaves M.! "campaign"
   ci <- matchGenerator (Kind.cocave cops) genName
   cave <- buildCave cops k depth ci
   buildLevel cops cave k depth

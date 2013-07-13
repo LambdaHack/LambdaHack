@@ -5,9 +5,11 @@ module Game.LambdaHack.Server.Config
 
 import Control.DeepSeq
 import Data.Binary
-import Data.Map (Map)
+import qualified Data.EnumMap.Strict as EM
+import Data.Map.Strict (Map)
 import Data.Text (Text)
 
+import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Server.Fov
 
 -- | Fully typed contents of the rules config file. This config
@@ -15,7 +17,7 @@ import Game.LambdaHack.Server.Fov
 data Config = Config
   { configSelfString     :: !String
     -- caves
-  , configCaves          :: ![(Text, Text)]
+  , configCaves          :: !(Map Text Caves)
     -- players
   , configPlayers        :: !(Map Text Players)
     -- dungeon
@@ -33,6 +35,8 @@ data Config = Config
   , configHeroNames      :: ![(Int, Text)]
   }
   deriving Show
+
+type Caves = EM.EnumMap LevelId Text
 
 data Players = Players
   { playersHuman    :: [(Text, Text)]

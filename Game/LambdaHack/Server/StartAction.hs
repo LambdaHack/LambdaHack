@@ -9,7 +9,7 @@ import Control.Monad
 import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import Data.Text (Text)
 
 import Game.LambdaHack.Common.Action

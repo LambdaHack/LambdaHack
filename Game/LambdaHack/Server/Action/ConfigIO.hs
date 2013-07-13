@@ -8,8 +8,9 @@ import Control.Arrow ((***))
 import Control.DeepSeq
 import qualified Data.Char as Char
 import qualified Data.ConfigFile as CF
+import qualified Data.EnumMap.Strict as EM
 import Data.List
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import System.Directory
 import System.Environment
@@ -129,7 +130,10 @@ getItems (CP conf) s =
 parseConfigRules :: FilePath -> CP -> Config
 parseConfigRules dataDir cp =
   let configSelfString = let CP conf = cp in CF.to_string conf
-      configCaves = map (\(n, t) -> (T.pack n, T.pack t)) $ getItems cp "caves"
+      configCaves =
+        let section = getItems cp "caves"
+            readCaves = EM.fromList . map (toEnum *** T.pack)
+        in M.fromList $ map (T.pack *** (readCaves . read)) section
       configPlayers =
         let section = getItems cp "players"
         in M.fromList $ map (T.pack *** read) section
@@ -158,6 +162,6 @@ mkConfigRules corule = do
   (dungeonGen,  cp2) <- getSetGen cpRules "dungeonRandomGenerator"
   (startingGen, cp3) <- getSetGen cp2     "startingRandomGenerator"
   let conf = parseConfigRules appData cp3
-      -- Catch syntax errors ASAP,
+      -- Catch syntax errors ASAP.
       !res = deepseq conf (conf, dungeonGen, startingGen)
   return res
