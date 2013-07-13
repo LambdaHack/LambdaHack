@@ -38,6 +38,6 @@
 
 ; [players]
 ; ; faction "playable" means a random choice
-; standard: Players { playersHuman = [("Human", "hero")], playersComputer = [("Computer", "monster")] }
+; standard: Players { playersHuman = [("Human Player", "hero")], playersComputer = [("Computer Player", "monster")] }
 ; PvP: Players { playersHuman = [("Human Player 1", "hero"), ("Human Player 2", "hero")], playersComputer = [] }
-; cooperative: Players { playersHuman = [("Human Player 1", "hero"), ("Human Player 2", "hero")], playersComputer = [("Computer", "monster")] }
+; cooperative: Players { playersHuman = [("Human Player 1", "hero"), ("Human Player 2", "hero")], playersComputer = [("Computer Player", "monster")] }

@@ -390,7 +390,7 @@ gameRestartHuman t = do
   when (not b2) $ abortWith "Yea, would be a pity to leave them to die."
   msgAdd "Restarting the game now."
   leader <- getLeaderUI
-  return $ GameRestartSer leader -- TODO t
+  return $ GameRestartSer leader t
 
 -- * GameExit; does not take time
 

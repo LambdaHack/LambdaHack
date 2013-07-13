@@ -401,13 +401,13 @@ setPathSer aid path = do
 
 -- * GameRestart
 
-gameRestartSer :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
-gameRestartSer aid = do
+gameRestartSer :: (MonadAtomic m, MonadServer m) => ActorId -> Text -> m ()
+gameRestartSer aid t = do
   b <- getsState $ getActorBody aid
   let fid = bfid b
   oldSt <- getsState $ gquit . (EM.! fid) . sfactionD
   modifyServer $ \ser -> ser {squit = True}  -- do this at once
-  execCmdAtomic $ QuitFactionA fid oldSt $ Just (False, Restart)
+  execCmdAtomic $ QuitFactionA fid oldSt $ Just (False, Restart t)
 
 -- * GameExit
 

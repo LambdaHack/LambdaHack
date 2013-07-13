@@ -34,7 +34,7 @@ showScore (pos, score) =
         Killed lvl -> "perished on level " ++ show (fromEnum lvl) ++ ","
         Camping -> "is camping somewhere,"
         Victor -> "emerged victorious"
-        Restart -> "resigned prematurely"
+        Restart _ -> "resigned prematurely"
       curDate = calendarTimeToString . toUTCTime . date $ score
       big, lil :: String
       big = "                                                 "
@@ -120,7 +120,7 @@ slideshow table pos status =
              if pos <= height
              then "among the greatest heroes"
              else "")
-          Restart ->
+          Restart _ ->
             ("your abortive attempt", MU.Sg3rd, "(score halved)")
       msg = makeSentence
         [ MU.SubjectVerb person MU.Yes subject "award you"

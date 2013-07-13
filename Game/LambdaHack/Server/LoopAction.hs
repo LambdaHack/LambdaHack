@@ -10,6 +10,7 @@ import qualified Data.EnumSet as ES
 import Data.List
 import Data.Maybe
 import qualified Data.Ord as Ord
+import Data.Text (Text)
 
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
@@ -58,7 +59,7 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
     Nothing -> do  -- Starting a new game.
       -- Set up commandline debug mode
       modifyServer $ \ser -> ser {sdebugNxt}
-      s <- gameReset cops
+      s <- gameReset cops "standard"
       let speedup = speedupCOps (sallClear sdebugNxt)
       execCmdAtomic $ RestartServerA $ updateCOps speedup s
       applyDebug sdebugNxt
@@ -399,14 +400,14 @@ processQuits updConn loopServer ((fid, quit) : quits) = do
       if gameOver then do
         registerScore status total
         revealItems
-        restartGame updConn False loopServer
+        restartGame "standard" updConn False loopServer
       else
         processQuits updConn loopServer quits
     status@Victor -> do
       registerScore status total
       revealItems
-      restartGame updConn False loopServer
-    Restart -> restartGame updConn True loopServer
+      restartGame "standard" updConn False loopServer
+    Restart t -> restartGame t updConn True loopServer
     Camping -> do
       execCmdAtomic $ QuitFactionA fid (Just quit) Nothing
       execCmdAtomic SaveExitA
@@ -433,12 +434,12 @@ revealItems = do
   mapDungeonActors_ f dungeon
 
 restartGame :: (MonadAtomic m, MonadServerConn m)
-            => m () -> Bool -> m () -> m ()
-restartGame updConn quitter loopServer = do
+            => Text -> m () -> Bool -> m () -> m ()
+restartGame t updConn quitter loopServer = do
   cops <- getsState scops
   broadcastSfxAtomic $ \fid -> FadeoutD fid False
   broadcastSfxAtomic $ \fid -> FlushFramesD fid
-  s <- gameReset cops
+  s <- gameReset cops t
   execCmdAtomic $ RestartServerA s
   updConn
   initPer

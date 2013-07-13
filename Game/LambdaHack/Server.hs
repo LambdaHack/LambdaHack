@@ -31,7 +31,7 @@ cmdSerSem cmd = case cmd of
   ApplySer aid iid container -> applySer aid iid container >> return True
   TriggerSer aid p -> triggerSer aid p
   SetPathSer aid path -> setPathSer aid path >> return True
-  GameRestartSer aid -> gameRestartSer aid >> return True
+  GameRestartSer aid t -> gameRestartSer aid t >> return True
   GameExitSer aid -> gameExitSer aid >> return True
   GameSaveSer _ -> gameSaveSer >> return True
   CfgDumpSer aid -> cfgDumpSer aid >> return True

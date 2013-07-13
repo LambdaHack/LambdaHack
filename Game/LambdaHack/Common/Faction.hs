@@ -51,7 +51,7 @@ data Status =
     Killed !LevelId  -- ^ the player lost the game on the given level
   | Camping          -- ^ game is supended
   | Victor           -- ^ the player won
-  | Restart          -- ^ the player quits and starts a new game
+  | Restart Text     -- ^ the player quits and starts a new game
   deriving (Show, Eq, Ord)
 
 -- | Tell whether the faction is controlled (at least partially) by a human.
@@ -93,14 +93,14 @@ instance Binary Status where
   put (Killed ln) = putWord8 0 >> put ln
   put Camping     = putWord8 1
   put Victor      = putWord8 2
-  put Restart     = putWord8 3
+  put (Restart t) = putWord8 3 >> put t
   get = do
     tag <- getWord8
     case tag of
       0 -> fmap Killed get
       1 -> return Camping
       2 -> return Victor
-      3 -> return Restart
+      3 -> fmap Restart get
       _ -> fail "no parse (Status)"
 
 instance Binary Faction where

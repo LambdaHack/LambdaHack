@@ -10,6 +10,7 @@ import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map as M
+import Data.Text (Text)
 
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.ActorState
@@ -76,9 +77,9 @@ reinitGame quitter = do
   when quitter $
     broadcastSfxAtomic $ \fid -> FailureD fid "This time for real."
 
-createFactions :: Kind.COps -> Config -> Rnd FactionDict
+createFactions :: Kind.COps -> Players -> Rnd FactionDict
 createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
-                        , costrat=Kind.Ops{opick=sopick} } config = do
+                        , costrat=Kind.Ops{opick=sopick} } players = do
   let rawCreate isHuman ((gname, fType), gcolor) = do
         gkind <- opick fType (const True)
         let fk = okind gkind
@@ -91,7 +92,6 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
         gAiMember <- fmap Just $ sopick (fAiMember fk) (const True)
         let gleader = Nothing
         return Faction{..}
-      players = configPlayers config M.! "standard"
       actorColors = cycle Color.brightCol
       humanColors = [Color.BrWhite] ++ actorColors
       computerColors = drop (length (playersHuman players) - 1) actorColors
@@ -128,8 +128,8 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
         fact1 {gdipl = foldr (mkSym fid1) (gdipl fact1) (EM.keys diplFs)}
   return $! EM.mapWithKey makeSym diplFs
 
-gameReset :: MonadServer m => Kind.COps -> m State
-gameReset cops@Kind.COps{coitem, corule} = do
+gameReset :: MonadServer m => Kind.COps -> Text -> m State
+gameReset cops@Kind.COps{coitem, corule} t = do
   -- Rules config reloaded at each new game start.
   -- Taking the original config from config file, to reroll RNG, if needed
   -- (the current config file has the RNG rolled for the previous game).
@@ -138,7 +138,8 @@ gameReset cops@Kind.COps{coitem, corule} = do
   let rnd :: Rnd (FactionDict, FlavourMap, Discovery, DiscoRev,
                   DungeonGen.FreshDungeon)
       rnd = do
-        faction <- createFactions cops sconfig
+        let players = configPlayers sconfig M.! t
+        faction <- createFactions cops players
         sflavour <- dungeonFlavourMap coitem
         (sdisco, sdiscoRev) <- serverDiscos coitem
         freshDng <- DungeonGen.dungeonGen cops sconfig

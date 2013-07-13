@@ -441,9 +441,9 @@ quitFactionUI fid toSt = do
       let msg = makeSentence
             [MU.SubjectVerbSg fidName "achieve victory"]
       msgAdd msg
-    Just (_, Restart) -> do
-      let msg = makeSentence
-            [MU.SubjectVerbSg fidName "order mission restart"]
+    Just (_, Restart t) -> do
+      let part = MU.Text $ "order mission restart in" <+> t <+> "mode"
+          msg = makeSentence [MU.SubjectVerbSg fidName part]
       msgAdd msg
     Nothing -> return ()
 

@@ -5,6 +5,8 @@ module Game.LambdaHack.Common.ServerCmd
   ( CmdSer(..), timedCmdSer, aidCmdSer
   ) where
 
+import Data.Text (Text)
+
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Level
@@ -23,7 +25,7 @@ data CmdSer =
   | ApplySer ActorId ItemId Container
   | TriggerSer ActorId Point
   | SetPathSer ActorId [Vector]
-  | GameRestartSer ActorId
+  | GameRestartSer ActorId Text
   | GameExitSer ActorId
   | GameSaveSer ActorId
   | CfgDumpSer ActorId
@@ -51,7 +53,7 @@ aidCmdSer cmd = case cmd of
   ApplySer aid _ _ -> aid
   TriggerSer aid _ -> aid
   SetPathSer aid _ -> aid
-  GameRestartSer aid -> aid
+  GameRestartSer aid _ -> aid
   GameExitSer aid -> aid
   GameSaveSer aid -> aid
   CfgDumpSer aid -> aid
