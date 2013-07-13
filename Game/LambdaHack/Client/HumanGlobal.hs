@@ -382,8 +382,7 @@ triggerTileHuman feat = do
 
 gameRestartHuman :: (MonadClientAbort m, MonadClientUI m) => Text -> m CmdSer
 gameRestartHuman t = do
-  let nt = if t == "standard" then "" else t
-      msg = "You just requested a new" <+> nt <+> "game."
+  let msg = "You just requested a new" <+> t <+> "game."
   b1 <- displayMore ColorFull msg
   when (not b1) $ neverMind True
   b2 <- displayYesNo "Current progress will be lost! Really restart the game?"

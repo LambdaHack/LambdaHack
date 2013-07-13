@@ -21,6 +21,7 @@ import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
@@ -35,6 +36,7 @@ import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.ServerSem
 import Game.LambdaHack.Server.State
+import Game.LambdaHack.Utils.Assert
 
 -- | Apply debug options that don't need a new game.
 applyDebug :: MonadServer m => DebugModeSer -> m ()
@@ -138,7 +140,9 @@ gameReset cops@Kind.COps{coitem, corule} t = do
   let rnd :: Rnd (FactionDict, FlavourMap, Discovery, DiscoRev,
                   DungeonGen.FreshDungeon)
       rnd = do
-        let players = configPlayers sconfig M.! t
+        let players = case M.lookup t $ configPlayers sconfig of
+              Just pl -> pl
+              Nothing -> assert `failure` "no game mode configuration:" <+> t
         faction <- createFactions cops players
         sflavour <- dungeonFlavourMap coitem
         (sdisco, sdiscoRev) <- serverDiscos coitem

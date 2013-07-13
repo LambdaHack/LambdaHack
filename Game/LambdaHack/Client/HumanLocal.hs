@@ -453,12 +453,15 @@ displayMainMenu = do
       kds =  -- key-description pairs
         let showKD cmd km = (K.showKM km, HumanCmd.cmdDescription cmd)
             revLookup cmd = maybe ("", "") (showKD cmd) $ M.lookup cmd krevMap
-            cmds = [ HumanCmd.GameSave,
-                     HumanCmd.GameExit,
-                     HumanCmd.GameRestart "standard",
-                     HumanCmd.Help
+            cmds = [ HumanCmd.GameSave
+                   , HumanCmd.GameExit
+                   , HumanCmd.GameRestart "campaign"
+                   , HumanCmd.GameRestart "skirmish"
+                   , HumanCmd.GameRestart "PvP"
+                   , HumanCmd.GameRestart "Coop"
+                   , HumanCmd.Help
                    ]
-        in map revLookup cmds ++ [(fst (revLookup HumanCmd.Clear), "continue")]
+        in [(fst (revLookup HumanCmd.Clear), "continue")] ++ map revLookup cmds
       bindings =  -- key bindings to display
         let bindingLen = 25
             fmt (k, d) =

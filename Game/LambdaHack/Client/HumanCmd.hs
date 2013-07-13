@@ -62,7 +62,6 @@ majorHumanCmd cmd = case cmd of
   Apply{}       -> True
   TriggerDir{}  -> True
   TriggerTile{} -> True
-  GameRestart{} -> True
   GameExit      -> True
   GameSave      -> True
   Inventory     -> True
@@ -117,8 +116,7 @@ cmdDescription cmd = case cmd of
   TriggerDir{..}  -> makePhrase [verb, MU.AW object]
   TriggerTile{..} -> makePhrase [verb, MU.AW object]
 
-  GameRestart "standard" -> "start new game"
-  GameRestart t -> "start new" <+> t <+> "game"
+  GameRestart t -> "new" <+> t <+> "game"
   GameExit    -> "save and exit"
   GameSave    -> "save game"
   CfgDump     -> "dump current configuration"

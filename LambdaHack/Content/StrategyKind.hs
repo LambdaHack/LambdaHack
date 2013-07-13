@@ -3,8 +3,8 @@
 module Content.StrategyKind ( cdefs ) where
 
 import Game.LambdaHack.Common.Ability
-import Game.LambdaHack.Content.StrategyKind
 import Game.LambdaHack.Common.ContentDef
+import Game.LambdaHack.Content.StrategyKind
 
 cdefs :: ContentDef StrategyKind
 cdefs = ContentDef
@@ -35,14 +35,14 @@ meleeAdjacent = StrategyKind
   { ssymbol    = '@'
   , sname      = "meleeAdjacent"
   , sfreq      = [("meleeAdjacent", 1)]
-  , sabilities = [Melee, Track]
+  , sabilities = [Track, Melee]
   }
 
 meleeAndRanged = StrategyKind  -- melee and reaction fire
   { ssymbol    = '@'
   , sname      = "meleeAndRanged"
   , sfreq      = [("meleeAndRanged", 1)]
-  , sabilities = [Melee, Ranged, Track]
+  , sabilities = [Track, Melee, Ranged]
   }
 
 fullAbility = StrategyKind

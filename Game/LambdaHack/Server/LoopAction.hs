@@ -59,7 +59,7 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
     Nothing -> do  -- Starting a new game.
       -- Set up commandline debug mode
       modifyServer $ \ser -> ser {sdebugNxt}
-      s <- gameReset cops "standard"
+      s <- gameReset cops "campaign"
       let speedup = speedupCOps (sallClear sdebugNxt)
       execCmdAtomic $ RestartServerA $ updateCOps speedup s
       applyDebug sdebugNxt
@@ -400,13 +400,13 @@ processQuits updConn loopServer ((fid, quit) : quits) = do
       if gameOver then do
         registerScore status total
         revealItems
-        restartGame "standard" updConn False loopServer
+        restartGame "campaign" updConn False loopServer
       else
         processQuits updConn loopServer quits
     status@Victor -> do
       registerScore status total
       revealItems
-      restartGame "standard" updConn False loopServer
+      restartGame "campaign" updConn False loopServer
     Restart t -> restartGame t updConn True loopServer
     Camping -> do
       execCmdAtomic $ QuitFactionA fid (Just quit) Nothing

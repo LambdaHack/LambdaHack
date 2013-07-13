@@ -25,10 +25,6 @@
 ; ; Names of various game files. They reside in ~/.LambdaHack or similar.
 ; scoresFile: scores
 
-; [heroes]
-; extraHeroes: 2
-; firstDeathEnds: False
-
 ; [heroNames]
 ; HeroName_0: Haskell Alvin
 ; HeroName_1: Alonzo Barkley
@@ -36,8 +32,13 @@
 ; HeroName_3: Samuel Saunders
 ; HeroName_4: Roger Robin
 
+; [heroes]
+; extraHeroes: 2
+; firstDeathEnds: False
+
 ; [players]
 ; ; faction "playable" means a random choice
-; standard: Players { playersHuman = [("Human Player", "hero")], playersComputer = [("Computer Player", "monster")] }
+; campaign: Players { playersHuman = [("Human Player", "hero")], playersComputer = [("Computer Player", "monster")] }
+; skirmish: Players { playersHuman = [("Human Player", "hero")], playersComputer = [("Computer Player", "hero")] }
 ; PvP: Players { playersHuman = [("Human Player 1", "hero"), ("Human Player 2", "hero")], playersComputer = [] }
-; cooperative: Players { playersHuman = [("Human Player 1", "hero"), ("Human Player 2", "hero")], playersComputer = [("Computer Player", "monster")] }
+; Coop: Players { playersHuman = [("Human Player 1", "hero"), ("Human Player 2", "hero")], playersComputer = [("Computer Player", "monster")] }
