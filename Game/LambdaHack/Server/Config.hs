@@ -1,10 +1,11 @@
 -- | Personal game configuration file type definitions.
 module Game.LambdaHack.Server.Config
-  ( Config(..)
+  ( Config(..), Players(..)
   ) where
 
 import Control.DeepSeq
 import Data.Binary
+import Data.Map (Map)
 import Data.Text (Text)
 
 import Game.LambdaHack.Server.Fov
@@ -15,8 +16,8 @@ data Config = Config
   { configSelfString     :: !String
     -- caves
   , configCaves          :: ![(Text, Text)]
-    -- computerPlayers
-  , configComputer       :: ![(Text, Text)]
+    -- players
+  , configPlayers        :: !(Map Text Players)
     -- dungeon
   , configDepth          :: !Int
     -- engine
@@ -28,12 +29,27 @@ data Config = Config
     -- heroes
   , configExtraHeroes    :: !Int
   , configFirstDeathEnds :: !Bool
-    -- humanPlayers
-  , configHuman          :: ![(Text, Text)]
     -- heroNames
   , configHeroNames      :: ![(Int, Text)]
   }
   deriving Show
+
+data Players = Players
+  { playersHuman    :: [(Text, Text)]
+  , playersComputer :: [(Text, Text)]
+  }
+  deriving (Show, Read)
+
+instance NFData Players
+
+instance Binary Players where
+  put Players{..} = do
+    put playersHuman
+    put playersComputer
+  get = do
+    playersHuman <- get
+    playersComputer <- get
+    return Players{..}
 
 instance NFData Config
 
@@ -41,7 +57,7 @@ instance Binary Config where
   put Config{..} = do
     put configSelfString
     put configCaves
-    put configComputer
+    put configPlayers
     put configDepth
     put configFovMode
     put configAppDataDir
@@ -49,12 +65,11 @@ instance Binary Config where
     put configRulesCfgFile
     put configExtraHeroes
     put configFirstDeathEnds
-    put configHuman
     put configHeroNames
   get = do
     configSelfString     <- get
     configCaves          <- get
-    configComputer       <- get
+    configPlayers        <- get
     configDepth          <- get
     configFovMode        <- get
     configAppDataDir     <- get
@@ -62,6 +77,5 @@ instance Binary Config where
     configRulesCfgFile   <- get
     configExtraHeroes    <- get
     configFirstDeathEnds <- get
-    configHuman          <- get
     configHeroNames      <- get
     return Config{..}

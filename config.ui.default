@@ -18,7 +18,7 @@
 ; o: TriggerDir { verb = "open", object = "door", feature = Openable }
 ; less:    TriggerTile { verb = "ascend", object = "level", feature = Cause (Ascend 1) }
 ; greater: TriggerTile { verb = "descend", object = "level", feature = Cause (Descend 1) }
-; CTRL-r: GameRestart
+; CTRL-r: GameRestart "standard"
 ; CTRL-x: GameExit
 ; CTRL-s: GameSave
 ; CTRL-d: CfgDump

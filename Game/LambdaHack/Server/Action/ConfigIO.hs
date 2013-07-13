@@ -9,6 +9,7 @@ import Control.DeepSeq
 import qualified Data.Char as Char
 import qualified Data.ConfigFile as CF
 import Data.List
+import qualified Data.Map as M
 import qualified Data.Text as T
 import System.Directory
 import System.Environment
@@ -129,10 +130,9 @@ parseConfigRules :: FilePath -> CP -> Config
 parseConfigRules dataDir cp =
   let configSelfString = let CP conf = cp in CF.to_string conf
       configCaves = map (\(n, t) -> (T.pack n, T.pack t)) $ getItems cp "caves"
-      configComputer = map (T.pack *** T.pack)
-                       $ read $ get cp "players" "computer"
-      configHuman = map (T.pack *** T.pack)
-                    $ read $ get cp "players" "human"
+      configPlayers =
+        let section = getItems cp "players"
+        in M.fromList $ map (T.pack *** read) section
       configDepth = get cp "dungeon" "depth"
       configFovMode = get cp "engine" "fovMode"
       configAppDataDir = dataDir

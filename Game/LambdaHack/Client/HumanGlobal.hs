@@ -380,15 +380,17 @@ triggerTileHuman feat = do
 
 -- * GameRestart; does not take time
 
-gameRestartHuman :: (MonadClientAbort m, MonadClientUI m) => m CmdSer
-gameRestartHuman = do
-  b1 <- displayMore ColorFull "You just requested a new game."
+gameRestartHuman :: (MonadClientAbort m, MonadClientUI m) => Text -> m CmdSer
+gameRestartHuman t = do
+  let nt = if t == "standard" then "" else t
+      msg = "You just requested a new" <+> nt <+> "game."
+  b1 <- displayMore ColorFull msg
   when (not b1) $ neverMind True
   b2 <- displayYesNo "Current progress will be lost! Really restart the game?"
   when (not b2) $ abortWith "Yea, would be a pity to leave them to die."
   msgAdd "Restarting the game now."
   leader <- getLeaderUI
-  return $ GameRestartSer leader
+  return $ GameRestartSer leader -- TODO t
 
 -- * GameExit; does not take time
 

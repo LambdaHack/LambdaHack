@@ -28,7 +28,7 @@ data HumanCmd =
   | TriggerDir  { verb :: MU.Part, object :: MU.Part, feature :: F.Feature }
   | TriggerTile { verb :: MU.Part, object :: MU.Part, feature :: F.Feature }
     -- These do not take time.
-  | GameRestart
+  | GameRestart Text
   | GameExit
   | GameSave
   | CfgDump
@@ -62,7 +62,7 @@ majorHumanCmd cmd = case cmd of
   Apply{}       -> True
   TriggerDir{}  -> True
   TriggerTile{} -> True
-  GameRestart   -> True
+  GameRestart{} -> True
   GameExit      -> True
   GameSave      -> True
   Inventory     -> True
@@ -117,7 +117,8 @@ cmdDescription cmd = case cmd of
   TriggerDir{..}  -> makePhrase [verb, MU.AW object]
   TriggerTile{..} -> makePhrase [verb, MU.AW object]
 
-  GameRestart -> "restart game"
+  GameRestart "standard" -> "start new game"
+  GameRestart t -> "start new" <+> t <+> "game"
   GameExit    -> "save and exit"
   GameSave    -> "save game"
   CfgDump     -> "dump current configuration"

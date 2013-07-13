@@ -455,7 +455,7 @@ displayMainMenu = do
             revLookup cmd = maybe ("", "") (showKD cmd) $ M.lookup cmd krevMap
             cmds = [ HumanCmd.GameSave,
                      HumanCmd.GameExit,
-                     HumanCmd.GameRestart,
+                     HumanCmd.GameRestart "standard",
                      HumanCmd.Help
                    ]
         in map revLookup cmds ++ [(fst (revLookup HumanCmd.Clear), "continue")]

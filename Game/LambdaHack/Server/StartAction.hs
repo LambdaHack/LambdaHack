@@ -9,6 +9,7 @@ import Control.Monad
 import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import qualified Data.Map as M
 
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.ActorState
@@ -90,12 +91,14 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
         gAiMember <- fmap Just $ sopick (fAiMember fk) (const True)
         let gleader = Nothing
         return Faction{..}
+      players = configPlayers config M.! "standard"
       actorColors = cycle Color.brightCol
       humanColors = [Color.BrWhite] ++ actorColors
-      computerColors = drop (length (configHuman config) - 1) actorColors
-  lHuman <- mapM (rawCreate True) $ zip (configHuman config) humanColors
+      computerColors = drop (length (playersHuman players) - 1) actorColors
+  lHuman <- mapM (rawCreate True)
+            $ zip (playersHuman players) humanColors
   lComputer <- mapM (rawCreate False)
-               $ zip (configComputer config) computerColors
+               $ zip (playersComputer players) computerColors
   let rawFs = reverse (zip [toEnum (-1), toEnum (-2)..] lComputer)  -- sorted
               ++ zip [toEnum 1..] lHuman
       isOfType fType fact =

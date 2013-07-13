@@ -56,7 +56,7 @@ cmdAction cmd = case cmd of
   TriggerDir{..} -> fmap Just $ triggerDirHuman feature verb
   TriggerTile{..} -> fmap Just $ triggerTileHuman feature
 
-  GameRestart -> fmap Just $ gameRestartHuman
+  GameRestart t -> fmap Just $ gameRestartHuman t
   GameExit -> fmap Just $ gameExitHuman
   GameSave -> fmap Just $ gameSaveHuman
   CfgDump -> fmap Just $ cfgDumpHuman
