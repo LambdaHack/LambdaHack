@@ -8,7 +8,6 @@ import Control.Monad
 import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
 import Data.List
-import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Text (Text)
 import qualified System.Random as R
@@ -16,6 +15,7 @@ import qualified System.Random as R
 import qualified Game.LambdaHack.Common.Feature as F
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Random
@@ -92,9 +92,9 @@ matchGenerator :: Kind.Ops CaveKind -> Maybe Text -> Rnd (Kind.Id CaveKind)
 matchGenerator Kind.Ops{opick} mname =
   opick (fromMaybe "dng" mname) (const True)
 
-findGenerator :: Kind.COps -> Config -> Int -> Int -> Rnd Level
-findGenerator cops Config{configCaves} k depth = do
-  let genName = EM.lookup (toEnum k) $ configCaves M.! "campaign"
+findGenerator :: Kind.COps -> Caves -> Int -> Int -> Rnd Level
+findGenerator cops caves k depth = do
+  let genName = EM.lookup (toEnum k) caves
   ci <- matchGenerator (Kind.cocave cops) genName
   cave <- buildCave cops k depth ci
   buildLevel cops cave k depth
@@ -106,17 +106,21 @@ data FreshDungeon = FreshDungeon
   }
 
 -- | Generate the dungeon for a new game.
-dungeonGen :: Kind.COps -> Config -> Rnd FreshDungeon
-dungeonGen cops config@Config{configDepth} =
-  let gen :: R.StdGen -> Int -> (R.StdGen, (LevelId, Level))
+dungeonGen :: Kind.COps -> Caves -> Rnd FreshDungeon
+dungeonGen cops caves =
+  let depth = case EM.maxViewWithKey caves of
+        Just ((d, _), _) -> fromEnum d
+        Nothing ->
+          assert `failure` "empty caves configuration:" <+> showT caves
+      gen :: R.StdGen -> Int -> (R.StdGen, (LevelId, Level))
       gen g k =
         let (g1, g2) = R.split g
-            res = St.evalState (findGenerator cops config k configDepth) g1
+            res = St.evalState (findGenerator cops caves k depth) g1
         in (g2, (toEnum k, res))
       con :: R.StdGen -> (FreshDungeon, R.StdGen)
-      con g = assert (configDepth >= 1 `blame` configDepth) $
-        let (gd, levels) = mapAccumL gen g [1..configDepth]
+      con g = assert (depth >= 1 `blame` depth) $
+        let (gd, levels) = mapAccumL gen g [1..depth]
             freshDungeon = EM.fromList levels
-            freshDepth = configDepth
+            freshDepth = depth
         in (FreshDungeon{..}, gd)
   in St.state con

@@ -137,7 +137,6 @@ parseConfigRules dataDir cp =
       configPlayers =
         let section = getItems cp "players"
         in M.fromList $ map (T.pack *** read) section
-      configDepth = get cp "dungeon" "depth"
       configFovMode = get cp "engine" "fovMode"
       configAppDataDir = dataDir
       configScoresFile = dataDir </> get cp "files" "scoresFile"

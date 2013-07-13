@@ -10,9 +10,6 @@
 ; campaign: [(1, "caveRogue"), (2, "caveRogue"), (3, "caveEmpty"), (10, "caveNoise")]
 ; arena: [(1, "caveArena")]
 
-; [dungeon]
-; depth: 10
-
 ; [engine]
 ; ;dungeonRandomGenerator: 42
 ; fovMode: Digital 12
@@ -37,7 +34,7 @@
 
 ; [players]
 ; ; faction "playable" means a random choice from playable factions
-; campaign: Players { playersHuman = [("Human Player", "hero")], playersComputer = [("Computer Player", "monster")] }
-; skirmish: Players { playersHuman = [("Human Player", "hero")], playersComputer = [("Computer Player", "hero")] }
-; PvP: Players { playersHuman = [("Human Player 1", "hero"), ("Human Player 2", "hero")], playersComputer = [] }
-; Coop: Players { playersHuman = [("Human Player 1", "hero"), ("Human Player 2", "hero")], playersComputer = [("Computer Player", "monster")] }
+; campaign: Players { playersHuman = [("Human Player", "hero")], playersComputer = [("Computer Player", "monster")], playersDungeon = "campaign"}
+; skirmish: Players { playersHuman = [("Human Player", "hero")], playersComputer = [("Computer Player", "hero")], playersDungeon = "arena" }
+; PvP: Players { playersHuman = [("Human Player 1", "hero"), ("Human Player 2", "hero")], playersComputer = [], playersDungeon = "arena" }
+; Coop: Players { playersHuman = [("Human Player 1", "hero"), ("Human Player 2", "hero")], playersComputer = [("Computer Player", "monster")], playersDungeon = "campaign" }

@@ -143,10 +143,14 @@ gameReset cops@Kind.COps{coitem, corule} t = do
         let players = case M.lookup t $ configPlayers sconfig of
               Just pl -> pl
               Nothing -> assert `failure` "no game mode configuration:" <+> t
+            dng = playersDungeon players
+            caves = case M.lookup dng $ configCaves sconfig of
+              Just cv -> cv
+              Nothing -> assert `failure` "no caves configuration:" <+> dng
         faction <- createFactions cops players
         sflavour <- dungeonFlavourMap coitem
         (sdisco, sdiscoRev) <- serverDiscos coitem
-        freshDng <- DungeonGen.dungeonGen cops sconfig
+        freshDng <- DungeonGen.dungeonGen cops caves
         return (faction, sflavour, sdisco, sdiscoRev, freshDng)
   let (faction, sflavour, sdisco, sdiscoRev, DungeonGen.FreshDungeon{..}) =
         St.evalState rnd dungeonSeed
