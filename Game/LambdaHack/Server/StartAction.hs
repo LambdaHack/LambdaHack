@@ -133,13 +133,17 @@ gameReset cops@Kind.COps{coitem, corule} t = do
   let rnd :: Rnd (FactionDict, FlavourMap, Discovery, DiscoRev,
                   DungeonGen.FreshDungeon)
       rnd = do
-        let players = case M.lookup t $ configPlayers sconfig of
+        let scenario = case M.lookup t $ configScenario sconfig of
               Just pl -> pl
-              Nothing -> assert `failure` "no players configuration:" <+> t
-            dng = playersDungeon players
+              Nothing -> assert `failure` "no scenario configuration:" <+> t
+            dng = scenarioDungeon scenario
             caves = case M.lookup dng $ configCaves sconfig of
               Just cv -> cv
               Nothing -> assert `failure` "no caves configuration:" <+> dng
+            plr = scenarioPlayers scenario
+            players = case M.lookup plr $ configPlayers sconfig of
+              Just pl -> pl
+              Nothing -> assert `failure` "no players configuration:" <+> plr
         faction <- createFactions cops players
         sflavour <- dungeonFlavourMap coitem
         (sdisco, sdiscoRev) <- serverDiscos coitem

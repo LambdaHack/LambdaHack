@@ -1,6 +1,6 @@
 -- | Personal game configuration file type definitions.
 module Game.LambdaHack.Server.Config
-  ( Config(..), Caves, Players(..)
+  ( Config(..), Caves, Players(..), Scenario(..)
   ) where
 
 import Control.DeepSeq
@@ -20,6 +20,8 @@ data Config = Config
   , configCaves          :: !(Map Text Caves)
     -- players
   , configPlayers        :: !(Map Text Players)
+    -- scenario
+  , configScenario       :: !(Map Text Scenario)
     -- engine
   , configFovMode        :: !FovMode
     -- files
@@ -39,7 +41,6 @@ type Caves = EM.EnumMap LevelId Text
 data Players = Players
   { playersHuman    :: [(Text, Text)]
   , playersComputer :: [(Text, Text)]
-  , playersDungeon  :: Text
   , playersEnemy    :: [(Text, Text)]
   , playersAlly     :: [(Text, Text)]
   }
@@ -51,16 +52,31 @@ instance Binary Players where
   put Players{..} = do
     put playersHuman
     put playersComputer
-    put playersDungeon
     put playersEnemy
     put playersAlly
   get = do
     playersHuman <- get
     playersComputer <- get
-    playersDungeon <- get
     playersEnemy <- get
     playersAlly <- get
     return Players{..}
+
+data Scenario = Scenario
+  { scenarioPlayers :: Text
+  , scenarioDungeon :: Text
+  }
+  deriving (Show, Read)
+
+instance NFData Scenario
+
+instance Binary Scenario where
+  put Scenario{..} = do
+    put scenarioPlayers
+    put scenarioDungeon
+  get = do
+    scenarioPlayers <- get
+    scenarioDungeon <- get
+    return Scenario{..}
 
 instance NFData Config
 
@@ -69,6 +85,7 @@ instance Binary Config where
     put configSelfString
     put configCaves
     put configPlayers
+    put configScenario
     put configFovMode
     put configAppDataDir
     put configScoresFile
@@ -80,6 +97,7 @@ instance Binary Config where
     configSelfString     <- get
     configCaves          <- get
     configPlayers        <- get
+    configScenario       <- get
     configFovMode        <- get
     configAppDataDir     <- get
     configScoresFile     <- get

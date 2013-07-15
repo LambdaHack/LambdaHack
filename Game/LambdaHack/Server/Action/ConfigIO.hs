@@ -137,18 +137,21 @@ parseConfigRules dataDir cp =
       configPlayers =
         let section = getItems cp "players"
         in M.fromList $ map (T.pack *** read) section
+      configScenario =
+        let section = getItems cp "scenario"
+        in M.fromList $ map (T.pack *** read) section
       configFovMode = get cp "engine" "fovMode"
       configAppDataDir = dataDir
-      configScoresFile = dataDir </> get cp "files" "scoresFile"
+      configScoresFile = dataDir </> get cp "file" "scoresFile"
       configRulesCfgFile = dataDir </> "config.rules"
-      configExtraHeroes = get cp "heroes" "extraHeroes"
-      configFirstDeathEnds = get cp "heroes" "firstDeathEnds"
+      configExtraHeroes = get cp "hero" "extraHeroes"
+      configFirstDeathEnds = get cp "hero" "firstDeathEnds"
       configHeroNames =
         let toNumber (ident, name) =
               case stripPrefix "HeroName_" ident of
                 Just n -> (read n, T.pack name)
                 Nothing -> assert `failure` ("wrong hero name id " ++ ident)
-            section = getItems cp "heroNames"
+            section = getItems cp "heroName"
         in map toNumber section
   in Config{..}
 

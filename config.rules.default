@@ -17,24 +17,30 @@
 ; ;fovMode: Shadow
 ; ;startingRandomGenerator: 42
 
-; [files]
+; [file]
 ; ; Names of various game files. They reside in ~/.LambdaHack or similar.
 ; scoresFile: scores
 
-; [heroNames]
+; [heroName]
 ; HeroName_0: Haskell Alvin
 ; HeroName_1: Alonzo Barkley
 ; HeroName_2: Ernst Abraham
 ; HeroName_3: Samuel Saunders
 ; HeroName_4: Roger Robin
 
-; [heroes]
+; [hero]
 ; extraHeroes: 2
 ; firstDeathEnds: False
 
 ; [players]
 ; ; faction "playable" means a random choice from playable factions
-; campaign: Players { playersHuman = [("Human Player", "hero")], playersComputer = [("Computer Player", "monster")], playersDungeon = "campaign", playersEnemy = [("Human Player", "Computer Player")], playersAlly = [] }
-; skirmish: Players { playersHuman = [("Human Player", "hero")], playersComputer = [("Computer Player", "hero")], playersDungeon = "arena", playersEnemy = [("Human Player", "Computer Player")], playersAlly = [] }
-; PvP: Players { playersHuman = [("Human Player 1", "hero"), ("Human Player 2", "hero")], playersComputer = [], playersDungeon = "arena", playersEnemy = [("Human Player 1", "Human Player 2")], playersAlly = [] }
-; Coop: Players { playersHuman = [("Human Player 1", "hero"), ("Human Player 2", "hero")], playersComputer = [("Computer Player", "monster")], playersDungeon = "campaign", playersEnemy = [("Human Player 1", "Computer Player"), ("Human Player 2", "Computer Player")], playersAlly = [("Human Player 1", "Human Player 2")] }
+; campaign: Players { playersHuman = [("Human Player", "hero")], playersComputer = [("Computer Player", "monster")], playersEnemy = [("Human Player", "Computer Player")], playersAlly = [] }
+; skirmish: Players { playersHuman = [("Human Player", "hero")], playersComputer = [("Computer Player", "hero")], playersEnemy = [("Human Player", "Computer Player")], playersAlly = [] }
+; PvP: Players { playersHuman = [("Human Player 1", "hero"), ("Human Player 2", "hero")], playersComputer = [], playersEnemy = [("Human Player 1", "Human Player 2")], playersAlly = [] }
+; Coop: Players { playersHuman = [("Human Player 1", "hero"), ("Human Player 2", "hero")], playersComputer = [("Computer Player", "monster")], playersEnemy = [("Human Player 1", "Computer Player"), ("Human Player 2", "Computer Player")], playersAlly = [("Human Player 1", "Human Player 2")] }
+
+; [scenario]
+; campaign: Scenario { scenarioPlayers = "campaign", scenarioDungeon = "campaign" }
+; skirmish: Scenario { scenarioPlayers = "skirmish", scenarioDungeon = "arena" }
+; PvP: Scenario { scenarioPlayers = "PvP", scenarioDungeon = "arena" }
+; Coop: Scenario { scenarioPlayers = "Coop", scenarioDungeon = "campaign" }
