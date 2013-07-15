@@ -160,7 +160,7 @@ actorAttackActor source target = do
   -- and hitting projectiles count as unintentional friendly fire.
   let friendlyFire = bproj sm || bproj tm
       fromDipl = EM.findWithDefault Unknown tfid (gdipl sfact)
-  unless (friendlyFire || isAtWar sfact tfid) $
+  unless (friendlyFire || isAtWar sfact tfid || sfid == tfid) $
     execCmdAtomic $ DiplFactionA sfid tfid fromDipl War
 
 -- TODO: bumpTile tpos F.Openable

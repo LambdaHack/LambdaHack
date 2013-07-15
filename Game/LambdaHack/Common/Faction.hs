@@ -29,7 +29,7 @@ data Faction = Faction
   , gAiMember :: !(Maybe (Kind.Id StrategyKind))
                                           -- ^ AI to use for other actors
                                           -- Nothing means human-controlled
-  , gdipl     :: !Dipl                    -- ^ diplomatic state
+  , gdipl     :: !Dipl                    -- ^ diplomatic mode
   , gquit     :: !(Maybe (Bool, Status))  -- ^ cause of game end/exit
   , gleader   :: !(Maybe ActorId)
   , gcolor    :: !Color.Color             -- ^ color of actors or their frames

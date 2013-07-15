@@ -4,13 +4,13 @@ module Game.LambdaHack.Server.StartAction
   ( applyDebug, gameReset, reinitGame, initPer
   ) where
 
-import Control.Arrow (second)
 import Control.Monad
 import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
+import Data.Tuple (swap)
 
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.ActorState
@@ -101,34 +101,27 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
             $ zip (playersHuman players) humanColors
   lComputer <- mapM (rawCreate False)
                $ zip (playersComputer players) computerColors
-  let rawFs = reverse (zip [toEnum (-1), toEnum (-2)..] lComputer)  -- sorted
-              ++ zip [toEnum 1..] lHuman
-      isOfType fType fact =
-        let fk = okind $ gkind fact
-        in case lookup fType $ ffreq fk of
-          Just n | n > 0 -> True
-          _ -> False
-      enemyAlly fact =
-        let fi fType = filter (isOfType fType . snd) rawFs
-            fk = okind $ gkind fact
-            lalliance = map (\(fid, _) -> (fid, Alliance))
-                        $ concatMap fi $ fally fk
-            lwar = map (\(fid, _) -> (fid, War))
-                   $ concatMap fi $ fenemy fk
-            -- War overrides alliance, so 'lwar' second.
-            gdipl = EM.fromList $ lalliance ++ lwar
-        in fact {gdipl}
-      diplFs = EM.fromDistinctAscList $ map (second enemyAlly) rawFs
-      -- Only symmetry is ensured, everything else is permitted, e.g.,
-      -- a faction in alliance with two others that are at war.
-      mkSym fid1 fid2 dipl1 =
-        let d1 = EM.findWithDefault Unknown fid2 dipl1
-            dipl2 = gdipl $ diplFs EM.! fid2
-            d2 = EM.findWithDefault Unknown fid1 dipl2
-        in EM.insert fid2 (max d1 d2) dipl1
-      makeSym fid1 fact1 =
-        fact1 {gdipl = foldr (mkSym fid1) (gdipl fact1) (EM.keys diplFs)}
-  return $! EM.mapWithKey makeSym diplFs
+  let lFs = reverse (zip [toEnum (-1), toEnum (-2)..] lComputer)  -- sorted
+            ++ zip [toEnum 1..] lHuman
+      swapIx l =
+        let ixs =
+              let f (name1, name2) =
+                    [ (ix1, ix2) | (ix1, fact1) <- lFs, gname fact1 == name1
+                                 , (ix2, fact2) <- lFs, gname fact2 == name2]
+              in concatMap f l
+        -- Only symmetry is ensured, everything else is permitted, e.g.,
+        -- a faction in alliance with two others that are at war.
+        in ixs ++ map swap ixs
+      mkDipl diplMode =
+        let f (ix1, ix2) =
+              let adj fact = fact {gdipl = EM.insert ix2 diplMode (gdipl fact)}
+              in EM.adjust adj ix1
+        in foldr f
+      rawFs = EM.fromDistinctAscList lFs
+      -- War overrides alliance, so 'warFs' second.
+      allianceFs = mkDipl Alliance rawFs (swapIx (playersAlly players))
+      warFs = mkDipl War allianceFs (swapIx (playersEnemy players))
+  return warFs
 
 gameReset :: MonadServer m => Kind.COps -> Text -> m State
 gameReset cops@Kind.COps{coitem, corule} t = do
@@ -142,7 +135,7 @@ gameReset cops@Kind.COps{coitem, corule} t = do
       rnd = do
         let players = case M.lookup t $ configPlayers sconfig of
               Just pl -> pl
-              Nothing -> assert `failure` "no game mode configuration:" <+> t
+              Nothing -> assert `failure` "no players configuration:" <+> t
             dng = playersDungeon players
             caves = case M.lookup dng $ configCaves sconfig of
               Just cv -> cv

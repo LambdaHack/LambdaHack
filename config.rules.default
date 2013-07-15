@@ -34,7 +34,7 @@
 
 ; [players]
 ; ; faction "playable" means a random choice from playable factions
-; campaign: Players { playersHuman = [("Human Player", "hero")], playersComputer = [("Computer Player", "monster")], playersDungeon = "campaign"}
-; skirmish: Players { playersHuman = [("Human Player", "hero")], playersComputer = [("Computer Player", "hero")], playersDungeon = "arena" }
-; PvP: Players { playersHuman = [("Human Player 1", "hero"), ("Human Player 2", "hero")], playersComputer = [], playersDungeon = "arena" }
-; Coop: Players { playersHuman = [("Human Player 1", "hero"), ("Human Player 2", "hero")], playersComputer = [("Computer Player", "monster")], playersDungeon = "campaign" }
+; campaign: Players { playersHuman = [("Human Player", "hero")], playersComputer = [("Computer Player", "monster")], playersDungeon = "campaign", playersEnemy = [("Human Player", "Computer Player")], playersAlly = [] }
+; skirmish: Players { playersHuman = [("Human Player", "hero")], playersComputer = [("Computer Player", "hero")], playersDungeon = "arena", playersEnemy = [("Human Player", "Computer Player")], playersAlly = [] }
+; PvP: Players { playersHuman = [("Human Player 1", "hero"), ("Human Player 2", "hero")], playersComputer = [], playersDungeon = "arena", playersEnemy = [("Human Player 1", "Human Player 2")], playersAlly = [] }
+; Coop: Players { playersHuman = [("Human Player 1", "hero"), ("Human Player 2", "hero")], playersComputer = [("Computer Player", "monster")], playersDungeon = "campaign", playersEnemy = [("Human Player 1", "Computer Player"), ("Human Player 2", "Computer Player")], playersAlly = [("Human Player 1", "Human Player 2")] }

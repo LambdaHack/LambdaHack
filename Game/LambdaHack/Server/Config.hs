@@ -40,6 +40,8 @@ data Players = Players
   { playersHuman    :: [(Text, Text)]
   , playersComputer :: [(Text, Text)]
   , playersDungeon  :: Text
+  , playersEnemy    :: [(Text, Text)]
+  , playersAlly     :: [(Text, Text)]
   }
   deriving (Show, Read)
 
@@ -50,10 +52,14 @@ instance Binary Players where
     put playersHuman
     put playersComputer
     put playersDungeon
+    put playersEnemy
+    put playersAlly
   get = do
     playersHuman <- get
     playersComputer <- get
     playersDungeon <- get
+    playersEnemy <- get
+    playersAlly <- get
     return Players{..}
 
 instance NFData Config

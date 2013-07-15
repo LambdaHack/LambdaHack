@@ -23,8 +23,6 @@ hero = FactionKind
   , ffreq     = [("hero", 1), ("playable", 50)]
   , fAiLeader = "fullAbility"
   , fAiMember = "meleeAdjacent"
-  , fenemy    = ["monster"]
-  , fally     = []
   , fspawn    = 0
   , fentry    = toEnum 1
   }
@@ -35,8 +33,6 @@ monster = FactionKind
   , ffreq     = [("monster", 1), ("playable", 50)]
   , fAiLeader = "fullAbility"
   , fAiMember = "fullAbility"
-  , fenemy    = ["hero"]
-  , fally     = []
   , fspawn    = 50
   , fentry    = toEnum 3  -- doesn't matter
   }
