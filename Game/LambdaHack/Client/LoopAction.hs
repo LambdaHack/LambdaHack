@@ -46,7 +46,9 @@ loopAI cmdClientAISem = do
     _ -> assert `failure` (side, msg, cmd1)
   cmdClientAISem cmd1
   -- State and client state now valid.
+  debugPrint $ "AI client" <+> showT side <+> "started."
   loop
+  debugPrint $ "AI client" <+> showT side <+> "stopped."
  where
   loop = do
     cmd <- readConnToClient
@@ -97,7 +99,9 @@ loopUI cmdClientUISem = do
       msgAdd msg1
     _ -> assert `failure` (side, msg, cmd1)
   -- State and client state now valid.
+  debugPrint $ "UI client" <+> showT side <+> "started."
   loop
+  debugPrint $ "UI client" <+> showT side <+> "stopped."
   unlockUI
  where
   loop = do

@@ -69,7 +69,7 @@ cmdAtomicSem cmd = case cmd of
   CoverA{} -> return ()     -- of inverses has to be reasonably inverse.
   PerceptionA _ outPA inPA ->
     assert (not (EM.null outPA && EM.null inPA)) $ return ()
-  RestartA fid sdisco sfper s _ -> restartA fid sdisco sfper s
+  RestartA fid sdisco sfper s _ _ -> restartA fid sdisco sfper s
   RestartServerA s -> restartServerA s
   ResumeA{} -> return ()
   ResumeServerA s -> resumeServerA s

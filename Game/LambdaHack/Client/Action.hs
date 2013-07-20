@@ -34,6 +34,7 @@ module Game.LambdaHack.Client.Action
   , readConnToClient, writeConnFromClient
   , rndToAction, getArenaUI, getLeaderUI
   , targetToPos, frontendName, fadeD, partAidLeader, partActorLeader
+  , debugPrint
   ) where
 
 import Control.Concurrent
@@ -45,8 +46,12 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Monoid as Monoid
+import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import qualified NLP.Miniutter.English as MU
+import System.IO (hFlush, stderr)
+import qualified System.Random as R
 import System.Time
 
 import Game.LambdaHack.Client.Action.ActionClass
@@ -76,6 +81,15 @@ import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Utils.Assert
+
+debugPrint :: MonadClient m => Text -> m ()
+debugPrint t = do
+  debug <- getsClient sdebugCli
+  when debug $ liftIO $ do
+    delay <- R.randomRIO (0, 1000000)
+    threadDelay delay
+    T.hPutStrLn stderr t
+    hFlush stderr
 
 -- | Reset the state and resume from the last backup point, i.e., invoke
 -- the failure continuation.

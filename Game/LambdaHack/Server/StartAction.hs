@@ -71,8 +71,9 @@ reinitGame quitter = do
   let misteriousSymbols = ritemProject $ Kind.stdRuleset corule
       sdisco = let f ik = isymbol (okind ik) `notElem` misteriousSymbols
                in EM.filter f discoS
+  sdebugCli <- getsServer $ sdebugCli . sdebugSer
   broadcastCmdAtomic
-    $ \fid -> RestartA fid sdisco (pers EM.! fid) defLoc quitter
+    $ \fid -> RestartA fid sdisco (pers EM.! fid) defLoc quitter sdebugCli
   populateDungeon
   broadcastSfxAtomic $ \fid -> FadeinD fid False
   broadcastSfxAtomic $ \fid -> FlushFramesD fid

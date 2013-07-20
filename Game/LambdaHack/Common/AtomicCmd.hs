@@ -85,7 +85,7 @@ data CmdAtomic =
   | DiscoverA LevelId Point ItemId (Kind.Id ItemKind)
   | CoverA LevelId Point ItemId (Kind.Id ItemKind)
   | PerceptionA LevelId PerActor PerActor
-  | RestartA FactionId Discovery FactionPers State Bool
+  | RestartA FactionId Discovery FactionPers State Bool Bool
   | RestartServerA State
   | ResumeA FactionId FactionPers
   | ResumeServerA State

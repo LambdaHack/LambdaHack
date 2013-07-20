@@ -60,6 +60,7 @@ data StateClient = StateClient
   , smarkVision  :: !Bool          -- ^ mark leader and party FOV
   , smarkSmell   :: !Bool          -- ^ mark smell, if the leader can smell
   , smarkSuspect :: !Bool          -- ^ mark suspect features
+  , sdebugCli    :: !Bool          -- ^ show client debug messages
   }
   deriving (Show)
 
@@ -104,6 +105,7 @@ defStateClient shistory sconfigUI _sside sisAI = do
     , smarkVision = False
     , smarkSmell = False
     , smarkSuspect = False
+    , sdebugCli = False
     }
 
 defHistory :: IO History
@@ -164,6 +166,7 @@ instance Binary StateClient where
     put smarkVision
     put smarkSmell
     put smarkSuspect
+    put sdebugCli
   get = do
     stgtMode <- get
     scursor <- get
@@ -184,6 +187,7 @@ instance Binary StateClient where
     smarkVision <- get
     smarkSmell <- get
     smarkSuspect <- get
+    sdebugCli <- get
     let sfper = EM.empty
         srandom = read g
         slastKey = Nothing
