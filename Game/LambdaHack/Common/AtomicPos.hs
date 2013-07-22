@@ -141,8 +141,8 @@ posSfxAtomic cmd = case cmd of
     (lid, pa) <- posOfAid aid
     return $ PosSight lid [pa, p]
   EffectD aid _ -> singleAid aid
-  FailureD fid _ -> return $ PosFid fid  -- failures are secret
-  BroadcastD _ -> return $ PosAll
+  MsgFidD fid _ -> return $ PosFid fid
+  MsgAllD _ -> return $ PosAll
   DisplayPushD fid -> return $ PosFid fid
   DisplayDelayD fid -> return $ PosFid fid
   FlushFramesD fid -> return $ PosFid fid

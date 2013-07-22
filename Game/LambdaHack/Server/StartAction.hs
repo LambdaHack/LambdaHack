@@ -78,7 +78,7 @@ reinitGame quitter = do
   broadcastSfxAtomic $ \fid -> FadeinD fid False
   broadcastSfxAtomic $ \fid -> FlushFramesD fid
   when quitter $
-    broadcastSfxAtomic $ \fid -> FailureD fid "This time for real."
+    broadcastSfxAtomic $ \fid -> MsgFidD fid "This time for real."
 
 createFactions :: Kind.COps -> Players -> Rnd FactionDict
 createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}

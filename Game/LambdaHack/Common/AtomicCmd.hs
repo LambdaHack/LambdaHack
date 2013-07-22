@@ -106,8 +106,8 @@ data SfxAtomic =
   | TriggerD ActorId Point F.Feature Bool
   | ShunD ActorId Point F.Feature Bool
   | EffectD ActorId (Effect.Effect Int)
-  | FailureD FactionId Msg
-  | BroadcastD Msg
+  | MsgFidD FactionId Msg
+  | MsgAllD Msg
   | DisplayPushD FactionId
   | DisplayDelayD FactionId
   | FlushFramesD FactionId
@@ -178,8 +178,8 @@ undoSfxAtomic cmd = case cmd of
   TriggerD aid p feat b -> ShunD aid p feat b
   ShunD aid p feat b -> TriggerD aid p feat b
   EffectD{} -> cmd  -- not ideal?
-  FailureD{} -> cmd
-  BroadcastD{} -> cmd
+  MsgFidD{} -> cmd
+  MsgAllD{} -> cmd
   DisplayPushD{} -> cmd
   DisplayDelayD{} -> cmd
   FlushFramesD{} -> cmd

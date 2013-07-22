@@ -46,7 +46,7 @@ import Game.LambdaHack.Utils.Assert
 
 execFailure :: MonadAtomic m => FactionId -> Msg -> m Bool
 execFailure fid msg = do
-  execSfxAtomic $ FailureD fid msg
+  execSfxAtomic $ MsgFidD fid msg
   return False
 
 broadcastCmdAtomic :: MonadAtomic m
@@ -436,4 +436,4 @@ cfgDumpSer aid = do
             <+> T.pack fn <> "."
   dumpCfg fn
   -- Wait with confirmation until saved; tell where the file is.
-  execSfxAtomic $ FailureD fid msg -- TODO: it's not a failure
+  execSfxAtomic $ MsgFidD fid msg

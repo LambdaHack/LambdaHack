@@ -80,7 +80,7 @@ atomicSendSem atomic = do
                 then sendUpdate fid $ CmdAtomic atomic2
                 else when (loudCmdAtomic fid atomic2) $
                        sendUpdate fid
-                       $ SfxAtomic $ BroadcastD "You hear some noises."
+                       $ SfxAtomic $ MsgAllD "You hear some noises."
         mapM_ send2 atomicPsBroken
       anySend fid perOld perNew = do
         let startSeen = seenAtomicCli knowEvents fid perOld ps

@@ -524,8 +524,8 @@ drawSfxAtomicUI verbose sfx = case sfx of
         Effect.Ascend{} -> actorVerbMU aid b "find a way upstairs"
         Effect.Descend{} -> actorVerbMU aid b "find a way downstairs"
         _ -> return ()
-  FailureD _ msg -> msgAdd msg
-  BroadcastD msg -> msgAdd msg
+  MsgFidD _ msg -> msgAdd msg
+  MsgAllD msg -> msgAdd msg
   DisplayPushD _ ->
     -- TODO: shows messages on leader level, instead of recently shown
     -- level (e.g., between animations); perhaps draw messages separately
