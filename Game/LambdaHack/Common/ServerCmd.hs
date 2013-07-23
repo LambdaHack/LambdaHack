@@ -2,7 +2,7 @@
 -- See
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Common.ServerCmd
-  ( CmdSer(..), timedCmdSer, aidCmdSer
+  ( CmdSer(..), aidCmdSer
   ) where
 
 import Data.Text (Text)
@@ -30,15 +30,6 @@ data CmdSer =
   | GameSaveSer ActorId
   | CfgDumpSer ActorId
   deriving (Show)
-
-timedCmdSer :: CmdSer -> Bool
-timedCmdSer cmd = case cmd of
-  SetPathSer _ path -> length path > 1
-  GameRestartSer{} -> False
-  GameExitSer{} -> False
-  GameSaveSer{} -> False
-  CfgDumpSer{} -> False
-  _ -> True
 
 -- | The actor performing the command, if still alive afterwards.
 aidCmdSer :: CmdSer -> ActorId

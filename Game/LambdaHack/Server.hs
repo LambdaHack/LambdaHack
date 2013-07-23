@@ -18,7 +18,8 @@ import Game.LambdaHack.Server.LoopAction
 import Game.LambdaHack.Server.ServerSem
 import Game.LambdaHack.Server.State
 
--- | The semantics of server commands.
+-- | The semantics of server commands. The resulting boolean value
+-- indicates if the command took some time.
 cmdSerSem :: (MonadAtomic m, MonadServer m) => CmdSer -> m Bool
 cmdSerSem cmd = case cmd of
   MoveSer aid dir -> moveSer aid dir False
@@ -30,11 +31,11 @@ cmdSerSem cmd = case cmd of
   ProjectSer aid p eps iid container -> projectSer aid p eps iid container
   ApplySer aid iid container -> applySer aid iid container >> return True
   TriggerSer aid p -> triggerSer aid p
-  SetPathSer aid path -> setPathSer aid path >> return True
-  GameRestartSer aid t -> gameRestartSer aid t >> return True
-  GameExitSer aid -> gameExitSer aid >> return True
-  GameSaveSer _ -> gameSaveSer >> return True
-  CfgDumpSer aid -> cfgDumpSer aid >> return True
+  SetPathSer aid path -> setPathSer aid path >> return (not $ null path)
+  GameRestartSer aid t -> gameRestartSer aid t >> return False
+  GameExitSer aid -> gameExitSer aid >> return False
+  GameSaveSer _ -> gameSaveSer >> return False
+  CfgDumpSer aid -> cfgDumpSer aid >> return False
 
 debugArgs :: IO DebugModeSer
 debugArgs = do

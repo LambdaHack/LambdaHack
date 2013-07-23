@@ -188,8 +188,7 @@ handleActors cmdSerSem lid = do
       execSfxAtomic $ DisplayPushD side
       -- TODO: check that the command is legal
       cmdS <- (if queryUI then sendQueryUI else sendQueryAI) side aid
-      let timed = timedCmdSer cmdS
-          leaderNew = aidCmdSer cmdS
+      let leaderNew = aidCmdSer cmdS
           leadAtoms =
             if leaderNew /= aid
             then -- Only leader can change leaders  -- TODO: effLvlGoUp changes
@@ -200,7 +199,7 @@ handleActors cmdSerSem lid = do
       bPre <- getsState $ getActorBody leaderNew
       -- Check if the client cheats, trying to move other faction actors.
       assert (bfid bPre == side `blame` (bPre, side)) skip
-      notAborted <-
+      timed <-
         if bhp bPre <= 0 && not (bproj bPre)
         then execFailure side "You strain, fumble and faint from the exertion."
         else cmdSerSem cmdS
@@ -212,7 +211,7 @@ handleActors cmdSerSem lid = do
       -- RET waits .3s and gives back control,
       -- Any other key does the .3s wait and the action from the key
       -- at once.
-      when (timed && notAborted) $ advanceTime leaderNew
+      when timed $ advanceTime leaderNew
       -- Generate extra frames if the actor has already moved during
       -- this clip, so his multiple moves would be collapsed in one frame.
       -- If the actor changes his speed this very turn, the test can fail,
@@ -227,7 +226,7 @@ handleActors cmdSerSem lid = do
       let fadeOut
             -- No UI, no time taken or at most one human player,
             -- so no need to visually mark the end of the move.
-            | not queryUI || not timed || not notAborted || nH <= 1 = []
+            | not queryUI || not timed || nH <= 1 = []
             | otherwise = [ FlushFramesD side  -- flush animations before fade
                           , FadeoutD side True
                           , FlushFramesD side  -- flush fade-out, keep fade-in
