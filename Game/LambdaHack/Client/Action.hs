@@ -135,7 +135,7 @@ lockUI = do
   nH <- nHumans
   when (nH > 1) $ do
     mvarUI <- getsSession smvarUI
-    liftIO $ putMVar mvarUI ()
+    liftIO $ void $ tryPutMVar mvarUI ()
 
 unlockUI :: MonadClientUI m => m ()
 unlockUI = do
