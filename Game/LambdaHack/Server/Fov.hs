@@ -11,6 +11,7 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.List as L
 
+import Control.Arrow (second)
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
@@ -39,7 +40,7 @@ levelPerception :: Kind.COps -> State -> FovMode -> FactionId
                 -> Perception
 levelPerception cops@Kind.COps{cotile} s configFov fid lid lvl =
   let hs = actorNotProjAssocs (== fid) lid s
-      reas = map (\(aid, b) -> (aid, computeReachable cops configFov b lvl)) hs
+      reas = map (second $ computeReachable cops configFov lvl) hs
       lreas = map (preachable . snd) reas
       totalRea = PerceptionReachable $ ES.unions lreas
       -- TODO: Instead of giving the actor a light source, alter vision.
@@ -96,10 +97,10 @@ isVisible cotile PerceptionReachable{preachable}
 
 -- | Reachable are all fields on an unblocked path from the hero position.
 -- Actor's own position is considred reachable by him.
-computeReachable :: Kind.COps -> FovMode -> Actor -> Level
+computeReachable :: Kind.COps -> FovMode -> Level -> Actor
                  -> PerceptionReachable
 computeReachable Kind.COps{cotile, coactor=Kind.Ops{okind}}
-                 configFov actor lvl =
+                 configFov lvl actor =
   let fovMode m =
         if not $ asight $ okind $ bkind m
         then Blind

@@ -8,6 +8,7 @@ import Control.Monad
 import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import Data.Key (mapWithKeyM_)
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
 import Data.Tuple (swap)
@@ -83,7 +84,7 @@ reinitGame quitter = do
 createFactions :: Kind.COps -> Players -> Rnd FactionDict
 createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
                         , costrat=Kind.Ops{opick=sopick} } players = do
-  let rawCreate isHuman ((gname, fType), gcolor) = do
+  let rawCreate isHuman (gname, fType) gcolor = do
         gkind <- opick fType (const True)
         let fk = okind gkind
             gdipl = EM.empty  -- fixed below
@@ -98,10 +99,10 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
       actorColors = cycle Color.brightCol
       humanColors = [Color.BrWhite] ++ actorColors
       computerColors = drop (length (playersHuman players) - 1) actorColors
-  lHuman <- mapM (rawCreate True)
-            $ zip (playersHuman players) humanColors
-  lComputer <- mapM (rawCreate False)
-               $ zip (playersComputer players) computerColors
+  lHuman <-
+    zipWithM (rawCreate True) (playersHuman players) humanColors
+  lComputer <-
+    zipWithM (rawCreate False) (playersComputer players) computerColors
   let lFs = reverse (zip [toEnum (-1), toEnum (-2)..] lComputer)  -- sorted
             ++ zip [toEnum 1..] lHuman
       swapIx l =
@@ -163,13 +164,13 @@ populateDungeon :: (MonadAtomic m, MonadServer m) => m ()
 populateDungeon = do
   cops@Kind.COps{ cotile
                 , cofact=Kind.Ops{okind} } <- getsState scops
-  let initialItems (lid, Level{ltile, litemNum}) =
+  let initialItems lid (Level{ltile, litemNum}) =
         replicateM litemNum $ do
           pos <- rndToAction
                  $ findPos ltile (const (Tile.hasFeature cotile F.Boring))
           createItems 1 pos lid
   dungeon <- getsState sdungeon
-  mapM_ initialItems $ EM.assocs dungeon
+  mapWithKeyM_ initialItems dungeon
   factionD <- getsState sfactionD
   config <- getsServer sconfig
   let heroNames = configHeroNames config : repeat []

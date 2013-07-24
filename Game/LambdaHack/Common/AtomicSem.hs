@@ -7,6 +7,7 @@ module Game.LambdaHack.Common.AtomicSem
   , posOfAid, posOfContainer
   ) where
 
+import Control.Arrow (second)
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.List
@@ -345,7 +346,7 @@ loseTileA lid ts = assert (not $ null ts) $ do
       matches _ [] = True
       matches tileMap ((p, ov) : rest) =
         tileMap Kind.! p == ov && matches tileMap rest
-      tu = map (\(p, _) -> (p, unknownId)) ts
+      tu = map (second (const unknownId)) ts
       adj tileMap = assert (matches tileMap ts) $ tileMap Kind.// tu
   updateLevel lid $ updateTile adj
   let f (_, t1) =

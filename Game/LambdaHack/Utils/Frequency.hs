@@ -11,12 +11,13 @@ module Game.LambdaHack.Utils.Frequency
   , rollFreq, nullFreq, runFrequency, nameFrequency
   ) where
 
+import Control.Arrow (second)
 import Control.Monad
-import qualified System.Random as R
 import Data.Text (Text)
+import qualified System.Random as R
 
-import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Utils.Assert
 
 -- TODO: do not expose runFrequency
 -- | The frequency distribution type.
@@ -44,7 +45,7 @@ instance MonadPlus Frequency where
   mzero = Frequency "[]" []
 
 instance Functor Frequency where
-  fmap f (Frequency name xs) = Frequency name (map (\ (p, x) -> (p, f x)) xs)
+  fmap f (Frequency name xs) = Frequency name (map (second f) xs)
 
 -- | Uniform discrete frequency distribution.
 uniformFreq :: Text -> [a] -> Frequency a

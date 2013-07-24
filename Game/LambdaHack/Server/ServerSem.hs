@@ -12,6 +12,7 @@ module Game.LambdaHack.Server.ServerSem where
 
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
+import Data.Key (mapWithKeyM_)
 import Data.Maybe
 import Data.Ratio
 import Data.Text (Text)
@@ -53,13 +54,13 @@ broadcastCmdAtomic :: MonadAtomic m
                    => (FactionId -> CmdAtomic) -> m ()
 broadcastCmdAtomic fcmd = do
   factionD <- getsState sfactionD
-  mapM_ (execCmdAtomic . fcmd) $ EM.keys factionD
+  mapWithKeyM_ (\fid _ -> execCmdAtomic $ fcmd fid) factionD
 
 broadcastSfxAtomic :: MonadAtomic m
                    => (FactionId -> SfxAtomic) -> m ()
 broadcastSfxAtomic fcmd = do
   factionD <- getsState sfactionD
-  mapM_ (execSfxAtomic . fcmd) $ EM.keys factionD
+  mapWithKeyM_ (\fid _ -> execSfxAtomic $ fcmd fid) factionD
 
 -- * MoveSer
 

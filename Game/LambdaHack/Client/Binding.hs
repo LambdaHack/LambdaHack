@@ -6,6 +6,7 @@ module Game.LambdaHack.Client.Binding
   ( Binding(..), stdBinding, keyHelp,
   ) where
 
+import Control.Arrow (second)
 import qualified Data.Char as Char
 import qualified Data.List as L
 import qualified Data.Map.Strict as M
@@ -43,7 +44,7 @@ stdBinding !config@ConfigUI{configMacros} =
         ++ K.moveBinding Move Run
         ++ fmap heroSelect [0..9]
       mkDescribed cmd = (cmdDescription cmd, noRemoteHumanCmd cmd, cmd)
-      mkCommand (km, def) = (km, mkDescribed def)
+      mkCommand = second mkDescribed
       semList = L.map mkCommand cmdList
   in Binding
   { kcmd = M.fromList semList

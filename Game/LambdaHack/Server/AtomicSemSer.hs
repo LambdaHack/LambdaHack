@@ -9,6 +9,7 @@ module Game.LambdaHack.Server.AtomicSemSer
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import Data.Key (mapWithKeyM_)
 import Data.Maybe
 
 import Game.LambdaHack.Common.Action
@@ -129,7 +130,7 @@ atomicSendSem atomic = do
         PosAll -> sendUpdate fid atomic
         PosNone -> assert `failure` (atomic, fid)
   factionD <- getsState sfactionD
-  mapM_ send $ EM.keys factionD
+  mapWithKeyM_ (\fid _ -> send fid) factionD
 
 atomicRemember :: LevelId -> Perception -> State -> [CmdAtomic]
 atomicRemember lid inPer s =

@@ -15,6 +15,7 @@ module Game.LambdaHack.Server.Action
   , rndToAction, fovMode, resetFidPerception, getPerFid
   ) where
 
+import Data.Key (mapWithKeyM, mapWithKeyM_)
 import Control.Concurrent
 import Control.Concurrent.STM (TQueue, atomically, newTQueueIO)
 import qualified Control.Concurrent.STM as STM
@@ -208,8 +209,8 @@ updateConn executorUI executorAI = do
         toClient <- newTQueueIO
         toServer <- newTQueueIO
         return $ Just $ Conn{..}
-      addConn (fid, fact) = case EM.lookup fid oldD of
-        Just conns -> return (fid, conns)  -- share old conns and threads
+      addConn fid fact = case EM.lookup fid oldD of
+        Just conns -> return conns  -- share old conns and threads
         Nothing -> do
           connUI <- if isHumanFact fact
                     then mkConn
@@ -219,19 +220,18 @@ updateConn executorUI executorAI = do
           -- connAI <- if usesAIFact fact
           --           then mkConn
           --           else return Nothing
-          return (fid, (connUI, connAI))
+          return (connUI, connAI)
   factionD <- getsState sfactionD
-  connAssocs <- liftIO $ mapM addConn $ EM.assocs factionD
-  let d = EM.fromDistinctAscList connAssocs
+  d <- liftIO $ mapWithKeyM addConn factionD
   putDict d
   -- Spawn or kill client threads.
   let toSpawn = d EM.\\ oldD
       toKill  = oldD EM.\\ d  -- don't kill all, share old threads
-  mapM_ (execCmdAtomic . KillExitA) $ EM.keys toKill
-  let forkClient (fid, (connUI, connAI)) = do
+  mapWithKeyM_ (\fid _ -> execCmdAtomic $ KillExitA fid) toKill
+  let forkClient fid (connUI, connAI) = do
         maybe skip (void . forkChild . executorUI fid) connUI
         maybe skip (void . forkChild . executorAI fid) connAI
-  liftIO $ mapM_ forkClient $ EM.assocs toSpawn
+  liftIO $ mapWithKeyM_ forkClient toSpawn
 
 -- Swiped from http://www.haskell.org/ghc/docs/latest/html/libraries/base-4.6.0.0/Control-Concurrent.html
 children :: MVar [MVar ()]

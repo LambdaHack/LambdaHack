@@ -12,6 +12,7 @@ import Control.Monad
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.HashMap.Strict as HM
+import Data.Key (mapWithKeyM_)
 import Data.List
 import Data.Maybe
 import Data.Ratio ((%))
@@ -325,9 +326,9 @@ effectApplyPerfume source target =
   else do
     tm <- getsState $ getActorBody target
     oldSmell <- getsLevel (blid tm) lsmell
-    let f (p, fromSm) =
+    let f p fromSm =
           execCmdAtomic $ AlterSmellA (blid tm) p (Just fromSm) Nothing
-    mapM_ f $ EM.assocs oldSmell
+    mapWithKeyM_ f oldSmell
     execSfxAtomic $ EffectD target Effect.ApplyPerfume
     return True
 
