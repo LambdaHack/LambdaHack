@@ -69,14 +69,16 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
       -- Save ASAP in case of crashes and disconnects.
       saveBkpAll
     Just (sRaw, ser) -> do  -- Running a restored game.
-      let setCops = const (speedupCOps (sallClear sdebugNxt) cops)
-      execCmdAtomic $ ResumeServerA $ updateCOps setCops sRaw
+      execCmdAtomic $ ResumeServerA $ updateCOps (const cops) sRaw
       putServer ser {sdebugNxt}
       applyDebug sdebugNxt
       updateConn executorUI executorAI
       initPer
       pers <- getsServer sper
       broadcastCmdAtomic $ \fid -> ResumeA fid (pers EM.! fid)
+      let setCops = const (speedupCOps (sallClear sdebugNxt) cops)
+      -- @sRaw is correct here, because none of the above changes State.
+      execCmdAtomic $ ResumeServerA $ updateCOps setCops sRaw
   -- Loop, communicating with clients.
   let loop = do
         let run lid = handleActors cmdSerSem lid
