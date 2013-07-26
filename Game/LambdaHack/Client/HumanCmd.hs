@@ -62,8 +62,6 @@ majorHumanCmd cmd = case cmd of
   Apply{}       -> True
   TriggerDir{}  -> True
   TriggerTile{} -> True
-  GameExit      -> True
-  GameSave      -> True
   Inventory     -> True
   Help          -> True
   _             -> False

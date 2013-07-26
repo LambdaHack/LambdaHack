@@ -434,6 +434,7 @@ cancelHuman h = do
     then endTargeting False
     else h  -- nothing to cancel right now, treat this as a command invocation
 
+-- TODO: merge with the help screens better
 -- | Display the main menu.
 displayMainMenu :: MonadClientUI m => WriterT Slideshow m ()
 displayMainMenu = do
@@ -459,9 +460,10 @@ displayMainMenu = do
                    , HumanCmd.GameRestart "skirmish"
                    , HumanCmd.GameRestart "PvP"
                    , HumanCmd.GameRestart "Coop"
-                   , HumanCmd.Help
                    ]
-        in [(fst (revLookup HumanCmd.Clear), "continue")] ++ map revLookup cmds
+        in [ (fst (revLookup HumanCmd.Cancel), "back to playing")
+           , (fst (revLookup HumanCmd.Accept), "see more help") ]
+           ++ map revLookup cmds
       bindings =  -- key bindings to display
         let bindingLen = 25
             fmt (k, d) =
@@ -484,7 +486,7 @@ displayMainMenu = do
   case menuOverlay of
     [] -> assert `failure` "empty Main Menu overlay"
     hd : tl -> do
-      slides <- overlayToSlideshow hd tl
+      slides <- overlayToSlideshow hd tl  -- TODO: keys don't work if tl/=[]
       tell slides
 
 -- * Accept
