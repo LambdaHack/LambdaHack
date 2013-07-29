@@ -38,7 +38,8 @@ hardRock = TileKind
 pillar = TileKind
   { tsymbol  = 'O'
   , tname    = "pillar"
-  , tfreq    = [("litLegend", 100), ("darkLegend", 100), ("noiseSet", 55)]
+  , tfreq    = [ ("litLegend", 100), ("darkLegend", 100)
+               , ("noiseSet", 55), ("combatSet", 5) ]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfeature = []
@@ -181,7 +182,7 @@ floorCorridorDark = floorCorridorLit
 floorArenaLit = floorCorridorLit
   { tsymbol  = '.'
   , tname    = "stone floor"
-  , tfreq    = [("noiseSet", 100), ("floorArenaLit", 1)]
+  , tfreq    = [ ("floorArenaLit", 1), ("noiseSet", 100)]
   }
 floorArenaDark = floorCorridorDark
   { tsymbol  = '.'
@@ -193,7 +194,8 @@ floorArenaDark = floorCorridorDark
   , tcolor2  = BrBlack
   }
 floorRoomLit = floorArenaLit
-  { tfreq    = [("litLegend", 100), ("floorRoomLit", 1)]
+  { tfreq    = [ ("litLegend", 100), ("floorRoomLit", 1)
+               , ("combatSet", 100) ]
   , tfeature = Boring : tfeature floorArenaLit
   }
 floorRoomDark = floorArenaDark

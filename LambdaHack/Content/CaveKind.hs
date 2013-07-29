@@ -16,9 +16,9 @@ cdefs = ContentDef
   , getFreq = cfreq
   , validate = cvalidate
   , content =
-      [rogue, arena, empty, noise]
+      [rogue, arena, empty, noise, combat]
   }
-rogue,        arena, empty, noise :: CaveKind
+rogue,        arena, empty, noise, combat :: CaveKind
 
 rogue = CaveKind
   { csymbol       = '$'
@@ -85,5 +85,18 @@ noise = rogue
   , chidden       = 6
   , citemNum      = RollDice 4 2  -- few rooms
   , cdefTile      = "noiseSet"
+  , ccorridorTile = "path"
+  }
+combat = rogue
+  { csymbol       = 'C'
+  , cname         = "Combat arena"
+  , cfreq         = [("caveCombat", 1)]
+  , cgrid         = RollDiceXY (RollDice 5 2, RollDice 2 2)
+  , cminPlaceSize = RollDiceXY (RollDice 1 1, RollDice 1 1)
+  , cvoidChance   = 1%10
+  , cnonVoidMin   = 8
+  , chidden       = 100
+  , citemNum      = RollDice 12 2
+  , cdefTile      = "combatSet"
   , ccorridorTile = "path"
   }

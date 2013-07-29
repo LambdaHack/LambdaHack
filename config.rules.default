@@ -8,7 +8,7 @@
 ; ; cave "dng" means a random choice from caves that can randomly appear
 ; ; Fixed caves for the first levels, then randomly picked caves.
 ; campaign: [(1, "caveRogue"), (2, "caveRogue"), (3, "caveEmpty"), (10, "caveNoise")]
-; arena: [(1, "caveArena")]
+; combat: [(1, "caveCombat")]
 
 ; [engine]
 ; ;dungeonRandomGenerator: 42
@@ -41,6 +41,6 @@
 
 ; [scenario]
 ; campaign: Scenario { scenarioPlayers = "campaign", scenarioDungeon = "campaign" }
-; skirmish: Scenario { scenarioPlayers = "skirmish", scenarioDungeon = "arena" }
-; PvP: Scenario { scenarioPlayers = "PvP", scenarioDungeon = "arena" }
+; skirmish: Scenario { scenarioPlayers = "skirmish", scenarioDungeon = "combat" }
+; PvP: Scenario { scenarioPlayers = "PvP", scenarioDungeon = "combat" }
 ; Coop: Scenario { scenarioPlayers = "Coop", scenarioDungeon = "campaign" }
