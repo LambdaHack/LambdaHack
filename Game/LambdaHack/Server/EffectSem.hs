@@ -82,6 +82,7 @@ effectSem effect source target = case effect of
   Effect.Searching p -> effectSearching p source
   Effect.Ascend p -> effectAscend p target
   Effect.Descend p -> effectDescend p target
+  Effect.Quit -> effectQuit target
 
 -- + Individual semantic functions for effects
 
@@ -396,16 +397,6 @@ effLvlGoUp aid k = do
       -- The property of at most one actor on a tile is restored.
       return True
 
--- | The faction leaves the dungeon.
-fleeDungeon :: MonadAtomic m
-            => FactionId -> LevelId -> m ()
-fleeDungeon fid lid = do
-  (_, total) <- getsState $ calculateTotal fid lid
-  oldSt <- getsState $ gquit . (EM.! fid) . sfactionD
-  if total == 0
-    then execCmdAtomic $ QuitFactionA fid oldSt $ Just (False, Victor)
-    else execCmdAtomic $ QuitFactionA fid oldSt $ Just (True, Victor)
-
 -- TODO: refactor with actorAttackActor or perhaps move aside the other
 -- actor or swap positions with it, instead of squashing.
 squashActor :: (MonadAtomic m, MonadServer m)
@@ -435,3 +426,18 @@ effectDescend power target = do
   b <- effLvlGoUp target (-power)
   when b $ execSfxAtomic $ EffectD target $ Effect.Descend power
   return b
+
+-- ** Quit
+
+-- | The faction leaves the dungeon.
+effectQuit :: MonadAtomic m => ActorId -> m Bool
+effectQuit aid = do
+  b <- getsState $ getActorBody aid
+  let fid = bfid b
+      lid = blid b
+  (_, total) <- getsState $ calculateTotal fid lid
+  oldSt <- getsState $ gquit . (EM.! fid) . sfactionD
+  if total == 0
+    then execCmdAtomic $ QuitFactionA fid oldSt $ Just (False, Victor)
+    else execCmdAtomic $ QuitFactionA fid oldSt $ Just (True, Victor)
+  return True

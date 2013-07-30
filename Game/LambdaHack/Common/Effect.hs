@@ -32,6 +32,7 @@ data Effect a =
   | Searching a
   | Ascend Int
   | Descend Int
+  | Quit
   deriving (Show, Read, Eq, Ord, Generic, Functor)
 
 instance Hashable.Hashable a => Hashable.Hashable (Effect a)
@@ -60,6 +61,7 @@ effectTrav (Searching a) f = do
   return $ Searching b
 effectTrav (Ascend p) _ = return $ Ascend p
 effectTrav (Descend p) _ = return $ Descend p
+effectTrav Quit _ = return Quit
 
 -- | Suffix to append to a basic content name if the content causes the effect.
 effectToSuff :: Effect a -> (a -> Text) -> Text
@@ -80,6 +82,7 @@ effectToSuff effect f =
     Searching t -> "of searching" <> t
     Ascend p -> "of ascending" <> affixPower p
     Descend p -> "of descending" <> affixPower p
+    Quit -> "of quitting"
 
 effectToSuffix :: Effect Int -> Text
 effectToSuffix effect = effectToSuff effect affixBonus
@@ -113,3 +116,4 @@ effectToBenefit Regeneration{} = 0      -- bigger benefit from carrying around
 effectToBenefit Searching{} = 0         -- AI doesn't search yet
 effectToBenefit Ascend{} = 1            -- AI can't choose levels smartly yet
 effectToBenefit Descend{} = 1
+effectToBenefit Quit = 0                -- AI stays to punish the player
