@@ -347,6 +347,7 @@ applySer actor iid container = do
   item <- getsState $ getItemBody iid
   execSfxAtomic $ ActivateD actor iid
   itemEffect actor actor (Just iid) item
+  -- TODO: don't destroy if not really used up; also, don't take time?
   execCmdAtomic $ DestroyItemA iid item 1 container
 
 -- * TriggerSer

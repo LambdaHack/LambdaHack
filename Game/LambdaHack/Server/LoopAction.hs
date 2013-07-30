@@ -416,8 +416,7 @@ processQuits updConn loopServer ((fid, quit) : quits) = do
       -- Verify that the saved perception is equal to future reconstructed.
       persSaved <- getsServer sper
       configFov <- fovMode
-      s <- getState
-      let pers = dungeonPerception cops configFov s
+      pers <- getsState $ dungeonPerception cops configFov
       assert (persSaved == pers `blame` (persSaved, pers)) skip
       -- Don't call @loopServer@, that is, quit the game loop.
 

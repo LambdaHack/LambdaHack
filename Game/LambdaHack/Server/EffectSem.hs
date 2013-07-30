@@ -346,11 +346,11 @@ effectSearching power source = do
 effectAscend :: (MonadAtomic m, MonadServer m)
              => Int -> ActorId -> m Bool
 effectAscend power target = do
-  effLvlGoUp target power
-  execSfxAtomic $ EffectD target $ Effect.Ascend power
-  return True
+  b <- effLvlGoUp target power
+  when b $ execSfxAtomic $ EffectD target $ Effect.Ascend power
+  return b
 
-effLvlGoUp :: (MonadAtomic m, MonadServer m) => ActorId -> Int -> m ()
+effLvlGoUp :: (MonadAtomic m, MonadServer m) => ActorId -> Int -> m Bool
 effLvlGoUp aid k = do
   bOld <- getsState $ getActorBody aid
   ais <- getsState $ getActorItem aid
@@ -359,40 +359,42 @@ effLvlGoUp aid k = do
   whereto <- getsState $ \s -> whereTo s lidOld k
   case whereto of
     Nothing -> -- We are at the "end" of the dungeon.
-               fleeDungeon side lidOld
-    Just (lidNew, posNew) ->
-      assert (lidNew /= lidOld `blame` (lidNew, "stairs looped" :: Text)) $ do
-        timeOld <- getsState $ getLocalTime lidOld
-        -- Leader always set to the actor changing levels.
-        mleader <- getsState $ gleader . (EM.! side) . sfactionD
-        execCmdAtomic $ LeadFactionA side mleader Nothing
-        -- Remove the actor from the old level.
-        -- Onlookers see somebody disappear suddenly.
-        -- @DestroyActorA@ is too loud, so use @LoseActorA@ instead.
-        execCmdAtomic $ LoseActorA aid bOld ais
-        -- Sync the actor time with the level time.
-        timeLastVisited <- getsState $ getLocalTime lidNew
-        let delta = timeAdd (btime bOld) (timeNegate timeOld)
-            bNew = bOld { blid = lidNew
-                        , btime = timeAdd timeLastVisited delta
-                        , bpos = posNew
-                        , boldpos = posNew}  -- new level, new direction
-        -- The actor is added to the new level, but there can be other actors
-        -- at his new position.
-        inhabitants <- getsState $ posToActor posNew lidNew
-        -- Onlookers see somebody appear suddenly. The actor himself
-        -- sees new surroundings and has to reset his perception.
-        execCmdAtomic $ CreateActorA aid bNew ais
-        execCmdAtomic $ LeadFactionA side Nothing (Just aid)
-        case inhabitants of
-          Nothing -> return ()
-                     -- TODO: Bail out if a friend blocks the staircase.
-          Just m ->
-            -- Squash the actor blocking the staircase.
-            squashActor aid m
-        -- Verify the actor on the staircase died, so only one actor left.
-        void $ getsState $ posToActor posNew lidNew
-        -- The property of at most one actor on a tile is restored.
+      -- TODO: perhaps return Maybe Text explaining why it failed, instead?
+      return False
+    Just (lidNew, posNew) -> do
+      assert (lidNew /= lidOld `blame` (lidNew, "stairs looped" :: Text)) skip
+      timeOld <- getsState $ getLocalTime lidOld
+      -- Leader always set to the actor changing levels.
+      mleader <- getsState $ gleader . (EM.! side) . sfactionD
+      execCmdAtomic $ LeadFactionA side mleader Nothing
+      -- Remove the actor from the old level.
+      -- Onlookers see somebody disappear suddenly.
+      -- @DestroyActorA@ is too loud, so use @LoseActorA@ instead.
+      execCmdAtomic $ LoseActorA aid bOld ais
+      -- Sync the actor time with the level time.
+      timeLastVisited <- getsState $ getLocalTime lidNew
+      let delta = timeAdd (btime bOld) (timeNegate timeOld)
+          bNew = bOld { blid = lidNew
+                      , btime = timeAdd timeLastVisited delta
+                      , bpos = posNew
+                      , boldpos = posNew}  -- new level, new direction
+      -- The actor is added to the new level, but there can be other actors
+      -- at his new position.
+      inhabitants <- getsState $ posToActor posNew lidNew
+      -- Onlookers see somebody appear suddenly. The actor himself
+      -- sees new surroundings and has to reset his perception.
+      execCmdAtomic $ CreateActorA aid bNew ais
+      execCmdAtomic $ LeadFactionA side Nothing (Just aid)
+      case inhabitants of
+        Nothing -> return ()
+                   -- TODO: Bail out if a friend blocks the staircase.
+        Just m ->
+          -- Squash the actor blocking the staircase.
+          squashActor aid m
+      -- Verify the actor on the staircase died, so only one actor left.
+      void $ getsState $ posToActor posNew lidNew
+      -- The property of at most one actor on a tile is restored.
+      return True
 
 -- | The faction leaves the dungeon.
 fleeDungeon :: MonadAtomic m
@@ -430,6 +432,6 @@ squashActor source target = do
 effectDescend :: (MonadAtomic m, MonadServer m)
               => Int -> ActorId -> m Bool
 effectDescend power target = do
-  effLvlGoUp target (-power)
-  execSfxAtomic $ EffectD target $ Effect.Descend power
-  return True
+  b <- effLvlGoUp target (-power)
+  when b $ execSfxAtomic $ EffectD target $ Effect.Descend power
+  return b
