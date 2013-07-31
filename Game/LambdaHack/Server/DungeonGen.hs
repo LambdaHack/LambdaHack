@@ -12,6 +12,7 @@ import Data.Maybe
 import Data.Text (Text)
 import qualified System.Random as R
 
+import qualified Game.LambdaHack.Common.Effect as Effect
 import qualified Game.LambdaHack.Common.Feature as F
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -37,7 +38,9 @@ convertTileMaps cdefTile cxsize cysize ltile = do
   return $ Kind.listArray bounds pickedTiles Kind.// assocs
 
 placeStairs :: Kind.Ops TileKind -> TileMap -> CaveKind -> [Place]
-            -> Rnd (Point, Kind.Id TileKind, Point, Kind.Id TileKind)
+            -> Rnd ( Kind.Id TileKind
+                   , Point, Kind.Id TileKind
+                   , Point, Kind.Id TileKind )
 placeStairs cotile@Kind.Ops{opick} cmap CaveKind{..} dplaces = do
   su <- findPos cmap (const (Tile.hasFeature cotile F.Boring))
   sd <- findPosTry 1000 cmap
@@ -48,9 +51,10 @@ placeStairs cotile@Kind.Ops{opick} cmap CaveKind{..} dplaces = do
   let fitArea pos = inside cxsize pos . qarea
       findLegend pos =
         maybe clitLegendTile qlegend $ find (fitArea pos) dplaces
+  upQuit <- opick (findLegend su) $ Tile.kindHasFeature $ F.Cause Effect.Quit
   upId   <- opick (findLegend su) $ Tile.kindHasFeature F.Ascendable
   downId <- opick (findLegend sd) $ Tile.kindHasFeature F.Descendable
-  return (su, upId, sd, downId)
+  return (upQuit, su, upId, sd, downId)
 
 -- | Create a level from a cave, from a cave kind.
 buildLevel :: Kind.COps -> Cave -> Int -> Int -> Rnd Level
@@ -59,11 +63,13 @@ buildLevel Kind.COps{ cotile=cotile@Kind.Ops{opick}
            Cave{..} ldepth depth = do
   let kc@CaveKind{..} = okind dkind
   cmap <- convertTileMaps (opick cdefTile (const True)) cxsize cysize dmap
-  (su, upId, sd, downId) <-
+  (upQuit, su, upId, sd, downId) <-
     placeStairs cotile cmap kc dplaces
   litemNum <- rollDice citemNum
   secret <- random
-  let stairs = (su, upId) : if ldepth == depth then [] else [(sd, downId)]
+  let stairs = (if ldepth == 1 then [] else [(su, upId)])
+               ++ (if ldepth == depth then [] else [(sd, downId)])
+               ++ (if ldepth == 1 && depth > 1 then [(su, upQuit)] else [])
       ltile = cmap Kind.// stairs
       f !n !tk | Tile.isExplorable cotile tk = n + 1
                | otherwise = n
