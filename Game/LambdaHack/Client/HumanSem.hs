@@ -8,7 +8,6 @@ import Control.Monad
 import Control.Monad.Writer.Strict (WriterT)
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
-import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.HumanCmd
@@ -51,10 +50,10 @@ cmdAction cmd = case cmd of
   Wait -> fmap Just $ waitHuman
   Pickup -> fmap Just $ pickupHuman
   Drop -> fmap Just $ dropHuman
-  Project{..} -> projectHuman verb object syms
-  Apply{..} -> fmap Just $ applyHuman verb object syms
-  TriggerDir{..} -> fmap Just $ triggerDirHuman feature verb
-  TriggerTile{..} -> fmap Just $ triggerTileHuman feature
+  Project ts -> projectHuman ts
+  Apply ts -> fmap Just $ applyHuman ts
+  TriggerDir ts -> fmap Just $ triggerDirHuman ts
+  TriggerTile ts -> fmap Just $ triggerTileHuman ts
 
   GameRestart t -> fmap Just $ gameRestartHuman t
   GameExit -> fmap Just $ gameExitHuman
@@ -141,13 +140,12 @@ runHuman v = do
     in fmap Just $ runLeader dir
 
 projectHuman :: (MonadClientAbort m, MonadClientUI m)
-             => MU.Part -> MU.Part -> [Char]
-             -> WriterT Slideshow m (Maybe CmdSer)
-projectHuman verb object syms = do
+             => [Trigger] -> WriterT Slideshow m (Maybe CmdSer)
+projectHuman ts = do
   tgtLoc <- targetToPos
   if isNothing tgtLoc
     then retargetLeader >> return Nothing
-    else fmap Just $ projectLeader verb object syms
+    else fmap Just $ projectLeader ts
 
 tgtFloorHuman :: MonadClientUI m => WriterT Slideshow m (Maybe CmdSer)
 tgtFloorHuman = do

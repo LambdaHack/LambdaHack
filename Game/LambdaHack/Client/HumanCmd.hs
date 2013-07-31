@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
 -- | Abstract syntax human player commands.
 module Game.LambdaHack.Client.HumanCmd
-  ( HumanCmd(..)
+  ( HumanCmd(..), Trigger(..)
   , majorHumanCmd, minorHumanCmd, noRemoteHumanCmd, cmdDescription
   ) where
 
@@ -23,10 +23,10 @@ data HumanCmd =
   | Wait
   | Pickup
   | Drop
-  | Project     { verb :: MU.Part, object :: MU.Part, syms :: [Char] }
-  | Apply       { verb :: MU.Part, object :: MU.Part, syms :: [Char] }
-  | TriggerDir  { verb :: MU.Part, object :: MU.Part, feature :: F.Feature }
-  | TriggerTile { verb :: MU.Part, object :: MU.Part, feature :: F.Feature }
+  | Project     [Trigger]
+  | Apply       [Trigger]
+  | TriggerDir  [Trigger]
+  | TriggerTile [Trigger]
     -- These do not take time.
   | GameRestart Text
   | GameExit
@@ -52,6 +52,13 @@ data HumanCmd =
   deriving (Show, Read, Eq, Ord, Generic)
 
 instance Binary HumanCmd
+
+data Trigger =
+    ApplyItem {verb :: MU.Part, object :: MU.Part, symbol :: Char}
+  | BumpFeature {verb :: MU.Part, object :: MU.Part, feature :: F.Feature}
+  deriving (Show, Read, Eq, Ord, Generic)
+
+instance Binary Trigger
 
 -- | Major commands land on the first page of command help.
 majorHumanCmd :: HumanCmd -> Bool
@@ -109,10 +116,10 @@ cmdDescription cmd = case cmd of
   Wait        -> "wait"
   Pickup      -> "get an object"
   Drop        -> "drop an object"
-  Project{..}     -> makePhrase [verb, MU.AW object]
-  Apply{..}       -> makePhrase [verb, MU.AW object]
-  TriggerDir{..}  -> makePhrase [verb, MU.AW object]
-  TriggerTile{..} -> makePhrase [verb, MU.AW object]
+  Project ts     -> triggerDescription ts
+  Apply ts       -> triggerDescription ts
+  TriggerDir ts  -> triggerDescription ts
+  TriggerTile ts -> triggerDescription ts
 
   GameRestart t -> "new" <+> t <+> "game"
   GameExit    -> "save and exit"
@@ -141,3 +148,7 @@ cmdDescription cmd = case cmd of
   MarkSmell   -> "mark smell"
   MarkSuspect -> "mark suspect terrain"
   Help        -> "display help"
+
+triggerDescription :: [Trigger] -> Text
+triggerDescription [] = "trigger a thing"
+triggerDescription (t : _) = makePhrase [verb t, MU.AW $ object t]

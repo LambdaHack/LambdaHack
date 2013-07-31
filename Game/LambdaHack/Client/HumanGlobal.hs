@@ -21,6 +21,7 @@ import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Draw
+import Game.LambdaHack.Client.HumanCmd (Trigger (..))
 import Game.LambdaHack.Client.HumanLocal
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.RunAction
@@ -28,6 +29,7 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
@@ -209,8 +211,8 @@ getItem aid prompt p ptext bag inv isn = do
 -- * Project
 
 projectLeader :: (MonadClientAbort m, MonadClientUI m)
-              => MU.Part -> MU.Part -> [Char] -> m CmdSer
-projectLeader verb object syms = do
+              => [Trigger] -> m CmdSer
+projectLeader ts = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   leader <- getLeaderUI
@@ -221,21 +223,24 @@ projectLeader verb object syms = do
   lysize <- getsLevel lid lysize
   if foesAdjacent lxsize lysize (bpos b) ms
     then abortWith "You can't aim in melee."
-    else actorProjectGI leader verb object syms
+    else actorProjectGI leader ts
 
 actorProjectGI :: (MonadClientAbort m, MonadClientUI m)
-               => ActorId -> MU.Part -> MU.Part -> [Char]
-               -> m CmdSer
-actorProjectGI aid verb object syms = do
+               => ActorId -> [Trigger] -> m CmdSer
+actorProjectGI aid ts = do
   seps <- getsClient seps
   target <- targetToPos
+  let (verb1, object1) = case ts of
+        [] -> ("aim", "object")
+        tr : _ -> (verb tr, object tr)
+      triggerSyms = triggerSymbols ts
   case target of
     Just p -> do
       bag <- getsState $ getActorBag aid
       inv <- getsState $ getActorInv aid
       ((iid, _), (_, container)) <-
-        getGroupItem aid bag inv object syms
-          (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
+        getGroupItem aid bag inv object1 triggerSyms
+          (makePhrase ["What to", verb1 MU.:> "?"]) "in inventory"
       stgtMode <- getsClient stgtMode
       case stgtMode of
         Just (TgtAuto _) -> endTargeting True
@@ -243,18 +248,26 @@ actorProjectGI aid verb object syms = do
       return $! ProjectSer aid p seps iid container
     Nothing -> assert `failure` (aid, "target unexpectedly invalid")
 
+triggerSymbols :: [Trigger] -> [Char]
+triggerSymbols [] = []
+triggerSymbols (ApplyItem{..} : ts) = symbol : triggerSymbols ts
+triggerSymbols (_ : ts) = triggerSymbols ts
+
 -- * Apply
 
 applyHuman :: (MonadClientAbort m, MonadClientUI m)
-           => MU.Part -> MU.Part -> [Char]
-           -> m CmdSer
-applyHuman verb object syms = do
+           => [Trigger] -> m CmdSer
+applyHuman ts = do
   leader <- getLeaderUI
   bag <- getsState $ getActorBag leader
   inv <- getsState $ getActorInv leader
+  let (verb1, object1) = case ts of
+        [] -> ("activate", "object")
+        tr : _ -> (verb tr, object tr)
+      triggerSyms = triggerSymbols ts
   ((iid, _), (_, container)) <-
-    getGroupItem leader bag inv object syms
-                 (makePhrase ["What to", verb MU.:> "?"]) "in inventory"
+    getGroupItem leader bag inv object1 triggerSyms
+                 (makePhrase ["What to", verb1 MU.:> "?"]) "in inventory"
   return $! ApplySer leader iid container
 
 -- | Let a human player choose any item with a given group name.
@@ -278,40 +291,42 @@ getGroupItem leader is inv object syms prompt packName = do
 
 -- | Ask for a direction and trigger a tile, if possible.
 triggerDirHuman :: (MonadClientAbort m, MonadClientUI m)
-                => F.Feature -> MU.Part -> m CmdSer
-triggerDirHuman feat verb = do
-  let keys = zipWith K.KM (repeat K.NoModifier) K.dirAllMoveKey
-      prompt = makePhrase ["What to", verb MU.:> "? [movement key"]
+                => [Trigger] -> m CmdSer
+triggerDirHuman ts = do
+  let verb1 = case ts of
+        [] -> "trigger"
+        tr : _ -> verb tr
+      keys = zipWith K.KM (repeat K.NoModifier) K.dirAllMoveKey
+      prompt = makePhrase ["What to", verb1 MU.:> "? [movement key"]
   e <- displayChoiceUI prompt [] keys
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
+  let dpos dir = bpos b `shift` dir
   lxsize <- getsLevel (blid b) lxsize
-  K.handleDir lxsize e (leaderBumpDir feat) (neverMind True)
-
--- | Leader tries to trigger a tile in a given direction.
-leaderBumpDir :: (MonadClientAbort m, MonadClientUI m)
-              => F.Feature -> Vector -> m CmdSer
-leaderBumpDir feat dir = do
-  leader <- getLeaderUI
-  body <- getsState $ getActorBody leader
-  let dpos = bpos body `shift` dir
-  bumpTile leader dpos feat
+  K.handleDir lxsize e (bumpTile leader ts . dpos) (neverMind True)
 
 -- | Player tries to trigger a tile using a feature.
 -- To help the player, only visible features can be triggered.
 bumpTile :: (MonadClientAbort m, MonadClientUI m)
-         => ActorId -> Point -> F.Feature -> m CmdSer
-bumpTile leader dpos feat = do
+         => ActorId -> [Trigger] -> Point -> m CmdSer
+bumpTile leader ts dpos = do
   Kind.COps{cotile} <- getsState scops
   b <- getsState $ getActorBody leader
   lvl <- getsLevel (blid b) id
   let t = lvl `at` dpos
+      triggerFeats = triggerFeatures ts
   -- A tile can be triggered even if an invisible monster occupies it.
   -- TODO: let the user choose whether to attack or activate.
-  if Tile.hasFeature cotile feat t then do
-    verifyTrigger leader feat
-    return $ TriggerSer leader dpos
-  else guessBump cotile feat t
+  case filter (\feat -> Tile.hasFeature cotile feat t) triggerFeats of
+    [] -> guessBump cotile triggerFeats t
+    feat : _ -> do  -- trigger the first that matches
+      verifyTrigger leader feat
+      return $ TriggerSer leader dpos
+
+triggerFeatures :: [Trigger] -> [F.Feature]
+triggerFeatures [] = []
+triggerFeatures (BumpFeature{..} : ts) = feature : triggerFeatures ts
+triggerFeatures (_ : ts) = triggerFeatures ts
 
 -- | Verify important feature triggers, such as fleeing the dungeon.
 verifyTrigger :: (MonadClientAbort m, MonadClientUI m)
@@ -349,22 +364,24 @@ verifyTrigger leader feat = case feat of
   _ -> return ()
 
 -- | Guess and report why the bump command failed.
-guessBump :: MonadClientAbort m => Kind.Ops TileKind -> F.Feature -> Kind.Id TileKind -> m a
-guessBump cotile F.Openable t | Tile.hasFeature cotile F.Closable t =
+guessBump :: MonadClientAbort m => Kind.Ops TileKind -> [F.Feature] -> Kind.Id TileKind -> m a
+guessBump cotile (F.Openable : _) t | Tile.hasFeature cotile F.Closable t =
   abortWith "already open"
-guessBump _ F.Openable _ =
+guessBump _ (F.Openable : _) _ =
   abortWith "not a door"
-guessBump cotile F.Closable t | Tile.hasFeature cotile F.Openable t =
+guessBump cotile (F.Closable : _) t | Tile.hasFeature cotile F.Openable t =
   abortWith "already closed"
-guessBump _ F.Closable _ =
+guessBump _ (F.Closable : _) _ =
   abortWith "not a door"
-guessBump cotile F.Ascendable t | Tile.hasFeature cotile F.Descendable t =
-  abortWith "the way goes down, not up"
-guessBump _ F.Ascendable _ =
+guessBump cotile (F.Cause (Effect.Ascend _) : _) t
+  | Tile.hasFeature cotile F.Descendable t =
+    abortWith "the way goes down, not up"
+guessBump _ (F.Cause (Effect.Ascend _) : _) _ =
   abortWith "no stairs up"
-guessBump cotile F.Descendable t | Tile.hasFeature cotile F.Ascendable t =
-  abortWith "the way goes up, not down"
-guessBump _ F.Descendable _ =
+guessBump cotile (F.Cause (Effect.Descend _) : _) t
+  | Tile.hasFeature cotile F.Ascendable t =
+    abortWith "the way goes up, not down"
+guessBump _ (F.Cause (Effect.Descend _) : _) _ =
   abortWith "no stairs down"
 guessBump _ _ _ = neverMind True
 
@@ -372,11 +389,11 @@ guessBump _ _ _ = neverMind True
 
 -- | Leader tries to trigger the tile he's standing on.
 triggerTileHuman :: (MonadClientAbort m, MonadClientUI m)
-                 => F.Feature -> m CmdSer
-triggerTileHuman feat = do
+                 => [Trigger] -> m CmdSer
+triggerTileHuman ts = do
   leader <- getLeaderUI
   ppos <- getsState (bpos . getActorBody leader)
-  bumpTile leader ppos feat
+  bumpTile leader ts ppos
 
 -- * GameRestart; does not take time
 
