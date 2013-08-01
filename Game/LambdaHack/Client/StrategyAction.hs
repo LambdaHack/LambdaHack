@@ -27,7 +27,6 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -50,27 +49,14 @@ targetStrategy actor factionAbilities = do
   fper <- getsClient sfper
   reacquireTgt fper actor btarget factionAbilities
 
-enemyVisible :: X -> Perception
-             -> ActorKind -> ActorId -> Actor -> Point
-             -> Bool
-enemyVisible lxsize per mk aid b l =
-  l /= bpos b
-  && (asight mk && actorSeesLoc per aid l
-      -- Enemy can be felt if adjacent, even if invisible or disguised.
-      -- TODO: can 'disguised' be replaced by setting 'lights' to [me]?
-      || adjacent lxsize (bpos b) l && (asmell mk || asight mk))
-
 visibleFoes :: MonadActionRO m
             => FactionPers -> ActorId -> m [(ActorId, Point)]
 visibleFoes fper aid = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   b <- getsState $ getActorBody aid
-  Level{lxsize} <- getsState $ \s -> sdungeon s EM.! blid b
   let per = fper EM.! blid b
-      mk = okind $ bkind b
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
   foes <- getsState $ actorNotProjAssocs (isAtWar fact) (blid b)
-  return $! filter (enemyVisible lxsize per mk aid b . snd)
+  return $! filter (actorSeesLoc per aid . snd)
                    (L.map (second bpos) foes)
 
 reacquireTgt :: MonadActionRO m
@@ -109,7 +95,7 @@ reacquireTgt fper aid btarget factionAbilities = do
         case tgt of
           Just (TEnemy a ll) | focused ->  -- chase even if enemy dead, to loot
             case fmap bpos $ EM.lookup a actorD of
-              Just l | enemyVisible lxsize per mk aid b l ->
+              Just l | actorSeesLoc per aid l ->
                 -- prefer visible (and alive) foes
                 returN "TEnemy" $ Just $ TEnemy a l
               _ -> if null visFoes         -- prefer visible foes

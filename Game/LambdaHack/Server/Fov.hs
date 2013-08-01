@@ -125,7 +125,7 @@ fullscan cotile fovMode spectatorPos Level{lxsize, ltile} =
       L.concatMap (\ tr -> map tr (Permissive.scan (isCl . tr))) tr4
     Digital r ->
       L.concatMap (\ tr -> map tr (Digital.scan r (isCl . tr))) tr4
-    Blind ->
+    Blind ->  -- all actors feel adjacent positions (for easy exploration)
       let radiusOne = 1
       in L.concatMap (\ tr -> map tr (Digital.scan radiusOne (isCl . tr))) tr4
  where
