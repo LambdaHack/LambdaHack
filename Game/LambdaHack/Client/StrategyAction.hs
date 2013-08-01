@@ -27,6 +27,7 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -45,73 +46,84 @@ targetStrategy :: MonadClient m
                => ActorId -> [Ability]
                -> m (Strategy (Maybe Target))
 targetStrategy actor factionAbilities = do
-  cops <- getsState scops
-  b <- getsState $ getActorBody actor
-  per <- getPerFid $ blid b
-  s <- getState
   btarget <- getsClient $ getTarget actor
-  return $! reacquireTgt cops actor btarget s per factionAbilities
+  fper <- getsClient sfper
+  reacquireTgt fper actor btarget factionAbilities
 
-reacquireTgt :: Kind.COps -> ActorId -> Maybe Target -> State
-             -> Perception -> [Ability]
-             -> Strategy (Maybe Target)
-reacquireTgt cops actor btarget s per factionAbilities =
-  reacquire btarget
- where
-  Kind.COps{coactor=coactor@Kind.Ops{okind}} = cops
-  Level{lxsize} = sdungeon s EM.! blid
-  actorBody@Actor{ bkind, bpos = me, bproj, bfid, blid } =
-    getActorBody actor s
-  mk = okind bkind
-  enemyVisible l =
-    asight mk
-    && actorSeesLoc per actor l
-    -- Enemy can be felt if adjacent, even if invisible or disguise.
-    -- TODO: can this be replaced by setting 'lights' to [me]?
-    || adjacent lxsize me l
-       && (asmell mk || asight mk)
-  actorAbilities = acanDo (okind bkind) `L.intersect` factionAbilities
-  focused = actorSpeed coactor actorBody <= speedNormal
-            -- Don't focus on a distant enemy, when you can't chase him.
-            -- TODO: or only if another enemy adjacent? consider Flee?
-            && Ability.Chase `elem` actorAbilities
-  reacquire :: Maybe Target -> Strategy (Maybe Target)
-  reacquire tgt | bproj = returN "TPath" tgt  -- don't animate missiles
-  reacquire tgt =
-    case tgt of
-      Just (TEnemy a ll) | focused ->  -- chases even if enemy dead, to loot
-        case fmap bpos $ EM.lookup a $ sactorD s of
-          Just l | enemyVisible l ->   -- prefer visible (and alive) foes
-            returN "TEnemy" $ Just $ TEnemy a l
-          _ -> if null visibleFoes     -- prefer visible foes
-                  && me /= ll          -- not yet reached the last enemy pos
-               then returN "last known" $ Just $ TPos ll
-                                       -- chase the last known pos
-               else closest
-      Just TEnemy{} -> closest         -- foe is gone and we forget
-      Just (TPos pos) | me == pos -> closest  -- already reached the pos
-      Just TPos{} | null visibleFoes -> returN "TPos" tgt
-                                       -- nothing visible, go to pos
-      Just TPos{} -> closest           -- prefer visible foes
-      Nothing -> closest
-  fact = sfactionD s EM.! bfid
-  rawFoes = actorNotProjAssocs (isAtWar fact) blid s
-  foes = filter (\(aid, _) -> aid /= actor) rawFoes
-  visibleFoes = filter (enemyVisible . snd) (L.map (second bpos) foes)
-  closest :: Strategy (Maybe Target)
-  closest =
-    let foeDist = L.map (\ (_, l) -> chessDist lxsize me l) visibleFoes
-        minDist = L.minimum foeDist
-        minFoes =
-          L.filter (\ (_, l) -> chessDist lxsize me l == minDist) visibleFoes
-        minTargets = map (\ (a, l) -> Just $ TEnemy a l) minFoes
-        minTgtS = liftFrequency $ uniformFreq "closest" minTargets
-    in minTgtS .| noFoes .| returN "TCursor" Nothing  -- never empty
+enemyVisible :: X -> Perception
+             -> ActorKind -> ActorId -> Actor -> Point
+             -> Bool
+enemyVisible lxsize per mk aid b l =
+  l /= bpos b
+  && (asight mk && actorSeesLoc per aid l
+      -- Enemy can be felt if adjacent, even if invisible or disguised.
+      -- TODO: can 'disguised' be replaced by setting 'lights' to [me]?
+      || adjacent lxsize (bpos b) l && (asmell mk || asight mk))
+
+visibleFoes :: MonadActionRO m
+            => FactionPers -> ActorId -> m [(ActorId, Point)]
+visibleFoes fper aid = do
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  b <- getsState $ getActorBody aid
+  Level{lxsize} <- getsState $ \s -> sdungeon s EM.! blid b
+  let per = fper EM.! blid b
+      mk = okind $ bkind b
+  fact <- getsState $ \s -> sfactionD s EM.! bfid b
+  foes <- getsState $ actorNotProjAssocs (isAtWar fact) (blid b)
+  return $! filter (enemyVisible lxsize per mk aid b . snd)
+                   (L.map (second bpos) foes)
+
+reacquireTgt :: MonadActionRO m
+             => FactionPers -> ActorId -> Maybe Target -> [Ability]
+             -> m (Strategy (Maybe Target))
+reacquireTgt fper aid btarget factionAbilities = do
+  cops@Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
+  b <- getsState $ getActorBody aid
+  Level{lxsize} <- getsState $ \s -> sdungeon s EM.! blid b
+  visFoes <- visibleFoes fper aid
+  actorD <- getsState sactorD
   -- TODO: set distant targets so that monsters behave as if they have
   -- a plan. We need pathfinding for that.
-  noFoes :: Strategy (Maybe Target)
-  noFoes =
-    (Just . TPos . (me `shift`)) `liftM` moveStrategy cops actor s Nothing
+  noFoes :: Strategy (Maybe Target) <- getsState $ \s ->
+    (Just . TPos . (bpos b `shift`)) `liftM` moveStrategy cops aid s Nothing
+  let per = fper EM.! blid b
+      mk = okind $ bkind b
+      actorAbilities = acanDo mk `L.intersect` factionAbilities
+      focused = actorSpeed coactor b <= speedNormal
+                -- Don't focus on a distant enemy, when you can't chase him.
+                -- TODO: or only if another enemy adjacent? consider Flee?
+                && Ability.Chase `elem` actorAbilities
+      closest :: Strategy (Maybe Target)
+      closest =
+        let foeDist = L.map (\(_, l) -> chessDist lxsize (bpos b) l) visFoes
+            minDist = L.minimum foeDist
+            minFoes =
+              L.filter (\ (_, l) -> chessDist lxsize (bpos b) l == minDist)
+              $ visFoes
+            minTargets = map (\(a, l) -> Just $ TEnemy a l) minFoes
+            minTgtS = liftFrequency $ uniformFreq "closest" minTargets
+        in minTgtS .| noFoes .| returN "TCursor" Nothing  -- never empty
+      reacquire :: Maybe Target -> Strategy (Maybe Target)
+      reacquire tgt | bproj b = returN "TPath" tgt  -- don't animate missiles
+      reacquire tgt =
+        case tgt of
+          Just (TEnemy a ll) | focused ->  -- chase even if enemy dead, to loot
+            case fmap bpos $ EM.lookup a actorD of
+              Just l | enemyVisible lxsize per mk aid b l ->
+                -- prefer visible (and alive) foes
+                returN "TEnemy" $ Just $ TEnemy a l
+              _ -> if null visFoes         -- prefer visible foes
+                      && bpos b /= ll      -- not yet reached the last pos
+                   then returN "last known" $ Just $ TPos ll
+                                           -- chase the last known pos
+                   else closest
+          Just TEnemy{} -> closest         -- foe is gone and we forget
+          Just (TPos pos) | bpos b == pos -> closest  -- already reached pos
+          Just TPos{} | null visFoes -> returN "TPos" tgt
+                                           -- nothing visible, go to pos
+          Just TPos{} -> closest           -- prefer visible foes
+          Nothing -> closest
+  return $! reacquire btarget
 
 -- | AI strategy based on actor's sight, smell, intelligence, etc. Never empty.
 actionStrategy :: MonadClient m
