@@ -332,35 +332,33 @@ triggerFeatures (_ : ts) = triggerFeatures ts
 verifyTrigger :: (MonadClientAbort m, MonadClientUI m)
               => ActorId -> F.Feature -> m ()
 verifyTrigger leader feat = case feat of
-  F.Ascendable -> do
+  F.Cause Effect.Quit -> do
     s <- getState
     b <- getsState $ getActorBody leader
-    if isNothing $ whereTo s (blid b) 1 then do -- TODO: consider power > 1
-      Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsState scops
-      go <- displayYesNo "This is the way out. Really leave now?"
-      when (not go) $ abortWith "Game resumed."
-      side <- getsClient sside
-      let (bag, total) = calculateTotal side (blid b) s
-      if total == 0 then do
-        -- The player can back off at each of these steps.
-        go1 <- displayMore ColorBW
-                 "Afraid of the challenge? Leaving so soon and empty-handed?"
-        when (not go1) $ abortWith "Brave soul!"
-        go2 <- displayMore ColorBW
-                 "This time try to grab some loot before escape!"
-        when (not go2) $ abortWith "Here's your chance!"
-      else do
-        let currencyName = MU.Text $ oname $ ouniqGroup "currency"
-            winMsg = makeSentence
-              [ "Congratulations, you won!"
-              , "Here's your loot, worth"
-              , MU.CarWs total currencyName ]
-        io <- floorItemOverlay bag
-        slides <- overlayToSlideshow winMsg io
-        partingSlide <- promptToSlideshow "Can it be done better, though?"
-        void $ getInitConfirms [] $ slides Monoid.<> partingSlide
-        flushFrames
-    else return ()
+    Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsState scops
+    go <- displayYesNo "This is the way out. Really leave now?"
+    when (not go) $ abortWith "Game resumed."
+    side <- getsClient sside
+    let (bag, total) = calculateTotal side (blid b) s
+    if total == 0 then do
+      -- The player can back off at each of these steps.
+      go1 <- displayMore ColorBW
+               "Afraid of the challenge? Leaving so soon and empty-handed?"
+      when (not go1) $ abortWith "Brave soul!"
+      go2 <- displayMore ColorBW
+               "This time try to grab some loot before escape!"
+      when (not go2) $ abortWith "Here's your chance!"
+    else do
+      let currencyName = MU.Text $ oname $ ouniqGroup "currency"
+          winMsg = makeSentence
+            [ "Congratulations, you won!"
+            , "Here's your loot, worth"
+            , MU.CarWs total currencyName ]
+      io <- floorItemOverlay bag
+      slides <- overlayToSlideshow winMsg io
+      partingSlide <- promptToSlideshow "Can it be done better, though?"
+      void $ getInitConfirms [] $ slides Monoid.<> partingSlide
+      flushFrames
   _ -> return ()
 
 -- | Guess and report why the bump command failed.
