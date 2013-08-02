@@ -333,12 +333,15 @@ verifyTrigger :: (MonadClientAbort m, MonadClientUI m)
               => ActorId -> F.Feature -> m ()
 verifyTrigger leader feat = case feat of
   F.Cause Effect.Quit -> do
+    Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsState scops
     s <- getState
     b <- getsState $ getActorBody leader
-    Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsState scops
+    side <- getsClient sside
+    spawning <- getsState $ flip isSpawningFaction side
+    when spawning $ abortWith
+      "This is the way out, but where would you go in this alien world?"
     go <- displayYesNo "This is the way out. Really leave now?"
     when (not go) $ abortWith "Game resumed."
-    side <- getsClient sside
     let (bag, total) = calculateTotal side (blid b) s
     if total == 0 then do
       -- The player can back off at each of these steps.
