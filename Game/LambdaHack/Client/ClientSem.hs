@@ -18,48 +18,103 @@ import Game.LambdaHack.Client.RunAction
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.Strategy
 import Game.LambdaHack.Client.StrategyAction
+import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.StrategyKind
 import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Utils.Frequency
 
 queryAI :: MonadClient m => ActorId -> m CmdSer
-queryAI actor = do
-  body <- getsState $ getActorBody actor
+queryAI oldAid = do
+  Kind.COps{costrat=Kind.Ops{okind}} <- getsState scops
   side <- getsClient sside
-  assert (bfid body == side `blame` (actor, bfid body, side)) $ do
-    Kind.COps{costrat=Kind.Ops{okind}} <- getsState scops
-    leader <- getsClient _sleader
-    fact <- getsState $ (EM.! bfid body) . sfactionD
-    let factionAI | Just actor /= leader = fromJust $ gAiMember fact
-                  | otherwise = fromJust $ gAiLeader fact
-        factionAbilities = sabilities (okind factionAI)
-    stratTarget <- targetStrategy actor factionAbilities
-    -- Choose a target from those proposed by AI for the actor.
-    btarget <- rndToAction $ frequency $ bestVariant stratTarget
-    modifyClient $ updateTarget actor (const btarget)
-    stratAction <- actionStrategy actor factionAbilities
-    -- Run the AI: chose an action from those given by the AI strategy.
-    action <- rndToAction $ frequency $ bestVariant $ stratAction
-    let _debug = T.unpack
-          $ "HandleAI abilities:" <+> showT factionAbilities
-          <>          ", symbol:" <+> showT (bsymbol body)
-          <>          ", aid:"    <+> showT actor
-          <>          ", pos:"    <+> showT (bpos body)
-          <> "\nHandleAI target:" <+> showT stratTarget
-          <> "\nHandleAI btgt:"   <+> showT btarget
-          <> "\nHandleAI move:"   <+> showT stratAction
-          <> "\nHandleAI bmv:"    <+> showT action
-    -- trace _debug skip
-    return action
+  fact <- getsState $ \s -> sfactionD s EM.! side
+  let aiMember = fmap okind $ gAiMember fact
+  mleader <- getsClient _sleader
+  if -- Keep the leader: only a leader is allowed to pick another leader.
+     mleader /= Just oldAid
+     -- Keep the leader: AIs are the same.
+     || gAiLeader fact == gAiMember fact
+     -- Keep the leader: other members can't melee.
+     || Ability.Melee `notElem` maybe [] sabilities aiMember
+    then queryAIPick oldAid
+    else do
+      fper <- getsClient sfper
+      visFoes <- visibleFoes fper oldAid
+      oldBody <- getsState $ getActorBody oldAid
+      btarget <- getsClient $ getTarget oldAid
+      let arena = blid oldBody
+      ours <- getsState $ actorNotProjAssocs (== side) arena
+      Level{lxsize} <- getsState $ \s -> sdungeon s EM.! arena
+      if -- Keep the leader: he is alone on the level.
+         length ours == 1
+         -- Keep the leader: it still has an enemy target (even if not visible)
+         || case btarget of Just TEnemy{} -> True; _ -> False
+            -- ... and he is not yet adjacent to any foe.
+            && all (not . adjacent lxsize (bpos oldBody))
+                   (map (bpos . snd) visFoes)
+        then queryAIPick oldAid
+        else do
+          -- Visibility ignored --- every foe is visible by somebody.
+          foes <- getsState $ actorNotProjAssocs (isAtWar fact) arena
+          let f (aid, b) =
+                let distB p = chessDist lxsize (bpos b) p
+                    foeDist = map (\(_, body) -> distB (bpos body)) foes
+                    minDist | null foeDist = maxBound
+                            | otherwise = minimum foeDist
+                    maxChaseDist = 30
+                    maxProximity = max 1 $ maxChaseDist - minDist
+                in if aid == oldAid || minDist == 1
+                   then Nothing  -- ignore, leader or already in melee range
+                   else Just (maxProximity, aid)
+              candidates = mapMaybe f ours
+              freq | null candidates = toFreq "old leader" [(1, oldAid)]
+                   | otherwise = toFreq "candidates for AI leader" candidates
+          aid <- rndToAction $ frequency freq
+          s <- getState
+          modifyClient $ updateLeader aid s
+          queryAIPick aid
+
+queryAIPick :: MonadClient m => ActorId -> m CmdSer
+queryAIPick aid = do
+  side <- getsClient sside
+  body <- getsState $ getActorBody aid
+  assert (bfid body == side `blame` (aid, bfid body, side)) skip
+  Kind.COps{costrat=Kind.Ops{okind}} <- getsState scops
+  leader <- getsClient _sleader
+  fact <- getsState $ (EM.! bfid body) . sfactionD
+  let factionAI | Just aid /= leader = fromJust $ gAiMember fact
+                | otherwise = fromJust $ gAiLeader fact
+      factionAbilities = sabilities (okind factionAI)
+  stratTarget <- targetStrategy aid factionAbilities
+  -- Choose a target from those proposed by AI for the actor.
+  btarget <- rndToAction $ frequency $ bestVariant stratTarget
+  modifyClient $ updateTarget aid (const btarget)
+  stratAction <- actionStrategy aid factionAbilities
+  -- Run the AI: chose an action from those given by the AI strategy.
+  action <- rndToAction $ frequency $ bestVariant $ stratAction
+  let _debug = T.unpack
+        $ "HandleAI abilities:"  <+> showT factionAbilities
+        <>          ", symbol:"  <+> showT (bsymbol body)
+        <>          ", aid:"     <+> showT aid
+        <>          ", pos:"     <+> showT (bpos body)
+        <> "\nHandleAI starget:" <+> showT stratTarget
+        <> "\nHandleAI target:"  <+> showT btarget
+        <> "\nHandleAI saction:" <+> showT stratAction
+        <> "\nHandleAI action:"  <+> showT action
+  -- trace _debug skip
+  return action
 
 -- | Handle the move of the hero.
 queryUI :: (MonadClientAbort m, MonadClientUI m) => ActorId -> m CmdSer

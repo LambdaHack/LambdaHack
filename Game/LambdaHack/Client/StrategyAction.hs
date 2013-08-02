@@ -1,14 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | AI strategy operations implemented with the 'Action' monad.
 module Game.LambdaHack.Client.StrategyAction
-  ( targetStrategy, actionStrategy
+  ( targetStrategy, actionStrategy, visibleFoes
   ) where
 
-import Control.Arrow
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.Function
-import qualified Data.List as L
+import Data.List
 import Data.Maybe
 
 import Game.LambdaHack.Client.Action
@@ -50,14 +49,13 @@ targetStrategy actor factionAbilities = do
   reacquireTgt fper actor btarget factionAbilities
 
 visibleFoes :: MonadActionRO m
-            => FactionPers -> ActorId -> m [(ActorId, Point)]
+            => FactionPers -> ActorId -> m [(ActorId, Actor)]
 visibleFoes fper aid = do
   b <- getsState $ getActorBody aid
   let per = fper EM.! blid b
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
   foes <- getsState $ actorNotProjAssocs (isAtWar fact) (blid b)
-  return $! filter (actorSeesLoc per aid . snd)
-                   (L.map (second bpos) foes)
+  return $! filter (actorSeesLoc per aid . bpos . snd) foes
 
 reacquireTgt :: MonadActionRO m
              => FactionPers -> ActorId -> Maybe Target -> [Ability]
@@ -74,23 +72,25 @@ reacquireTgt fper aid btarget factionAbilities = do
     (Just . TPos . (bpos b `shift`)) `liftM` moveStrategy cops aid s Nothing
   let per = fper EM.! blid b
       mk = okind $ bkind b
-      actorAbilities = acanDo mk `L.intersect` factionAbilities
+      actorAbilities = acanDo mk `intersect` factionAbilities
       focused = actorSpeed coactor b <= speedNormal
                 -- Don't focus on a distant enemy, when you can't chase him.
                 -- TODO: or only if another enemy adjacent? consider Flee?
                 && Ability.Chase `elem` actorAbilities
       closest :: Strategy (Maybe Target)
       closest =
-        let foeDist = L.map (\(_, l) -> chessDist lxsize (bpos b) l) visFoes
-            minDist = L.minimum foeDist
+        let distB p = chessDist lxsize (bpos b) p
+            foeDist = map (\(_, body) -> distB (bpos body)) visFoes
+            minDist | null foeDist = maxBound
+                    | otherwise = minimum foeDist
             minFoes =
-              L.filter (\ (_, l) -> chessDist lxsize (bpos b) l == minDist)
-              $ visFoes
-            minTargets = map (\(a, l) -> Just $ TEnemy a l) minFoes
+              filter (\(_, body) -> distB (bpos body) == minDist) visFoes
+            minTargets = map (\(a, body) ->
+                                Just $ TEnemy a $ bpos body) minFoes
             minTgtS = liftFrequency $ uniformFreq "closest" minTargets
         in minTgtS .| noFoes .| returN "TCursor" Nothing  -- never empty
       reacquire :: Maybe Target -> Strategy (Maybe Target)
-      reacquire tgt | bproj b = returN "TPath" tgt  -- don't animate missiles
+      reacquire tgt | bproj b = returN "TPath" tgt  -- don't swerve missiles
       reacquire tgt =
         case tgt of
           Just (TEnemy a ll) | focused ->  -- chase even if enemy dead, to loot
@@ -98,12 +98,12 @@ reacquireTgt fper aid btarget factionAbilities = do
               Just l | actorSeesLoc per aid l ->
                 -- prefer visible (and alive) foes
                 returN "TEnemy" $ Just $ TEnemy a l
-              _ -> if null visFoes         -- prefer visible foes
+              _ -> if null visFoes         -- prefer visible foes to positions
                       && bpos b /= ll      -- not yet reached the last pos
                    then returN "last known" $ Just $ TPos ll
                                            -- chase the last known pos
                    else closest
-          Just TEnemy{} -> closest         -- foe is gone and we forget
+          Just TEnemy{} -> closest         -- just pick the closest foe
           Just (TPos pos) | bpos b == pos -> closest  -- already reached pos
           Just TPos{} | null visFoes -> returN "TPos" tgt
                                            -- nothing visible, go to pos
@@ -159,10 +159,10 @@ proposeAction cops actor btarget disco s factionAbilities =
   aStrategy Ability.Pickup = not foeVisible .=> pickup actor s
   aStrategy Ability.Wander = wander cops actor s
   aStrategy _              = assert `failure` actorAbilities
-  actorAbilities = acanDo (okind bkind) `L.intersect` factionAbilities
+  actorAbilities = acanDo (okind bkind) `intersect` factionAbilities
   isDistant = (`elem` [Ability.Ranged, Ability.Tools, Ability.Chase])
-  (prefix, rest)    = L.break isDistant actorAbilities
-  (distant, suffix) = L.partition isDistant rest
+  (prefix, rest)    = break isDistant actorAbilities
+  (distant, suffix) = partition isDistant rest
   sumS = msum . map aStrategy
   sumF = msum . map aFrequency
 
@@ -219,7 +219,7 @@ rangedFreq cops actor disco s fpos =
       Just (pos1 : _) ->
         if not foesAdj
            && asight mk
-           && accessible cops lvl bpos pos1         -- first accessible
+           && accessible cops lvl bpos pos1       -- first accessible
            && isNothing (posToActor pos1 blid s)  -- no friends on first
         then throwFreq bbag 3 (actorContainer actor binv)
              ++ throwFreq tis 6 (const $ CFloor blid bpos)
@@ -305,15 +305,15 @@ moveStrategy cops actor s mFoe =
     Nothing ->
       let smells =
             map (map fst)
-            $ L.groupBy ((==) `on` snd)
-            $ L.sortBy (flip compare `on` snd)
-            $ L.filter (\ (_, sm) -> sm > timeZero)
-            $ L.map (\ x ->
+            $ groupBy ((==) `on` snd)
+            $ sortBy (flip compare `on` snd)
+            $ filter (\ (_, sm) -> sm > timeZero)
+            $ map (\ x ->
                       let sml = EM.findWithDefault
                                   timeZero (bpos `shift` x) lsmell
                       in (x, sml `timeAdd` timeNegate ltime))
                 sensible
-      in asmell mk .=> L.foldr ((.|)
+      in asmell mk .=> foldr ((.|)
                                 . liftFrequency
                                 . uniformFreq "smell k") reject smells
          .| moveOpenable  -- no enemy in sight, explore doors
@@ -332,7 +332,7 @@ moveStrategy cops actor s mFoe =
                    in Tile.hasFeature cotile F.Exit t
                       -- Lit indirectly. E.g., a room entrance.
                       || (not (Tile.hasFeature cotile F.Lit t)
-                          && L.any (Tile.hasFeature cotile F.Lit) ts)
+                          && any (Tile.hasFeature cotile F.Lit) ts)
   onlyInterest = onlyMoves interestHere bpos
   bdirAI | bpos == boldpos = Nothing
          | otherwise = Just $ towards lxsize boldpos bpos
