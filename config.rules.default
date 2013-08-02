@@ -5,10 +5,12 @@
 ; ; Warning: options are case-sensitive and only ';' for comments is permitted.
 
 ; [caves]
-; ; cave "dng" means a random choice from caves that can randomly appear
+; ; Cave "dng" means a random choice from caves that can randomly appear;
+; ; this is the default and the lack of the Quit feature is the default.
 ; ; Fixed caves for the first levels, then randomly picked caves.
-; campaign: [(1, "caveRogue"), (2, "caveRogue"), (3, "caveEmpty"), (10, "caveNoise")]
-; combat: [(1, "caveCombat")]
+; campaign: [(1, ("caveRogue", True)), (2, ("caveRogue", False)), (3, ("caveEmpty", False)), (10, ("caveNoise", False))]
+; combat: [(1, ("caveCombat", False))]
+; defense: [(1, ("dng", False)), (5, ("caveEmpty", True))]
 
 ; [engine]
 ; ;dungeonRandomGenerator: 42
@@ -33,7 +35,7 @@
 ; firstDeathEnds: False
 
 ; [players]
-; ; faction "playable" means a random choice from playable factions
+; ; Faction "playable" means a random choice from playable factions.
 ; campaign: Players { playersHuman = [("Human Player", "hero")], playersComputer = [("Computer Player", "monster")], playersEnemy = [("Human Player", "Computer Player")], playersAlly = [] }
 ; skirmish: Players { playersHuman = [("Human Player", "hero")], playersComputer = [("Computer Player", "hero")], playersEnemy = [("Human Player", "Computer Player")], playersAlly = [] }
 ; PvP: Players { playersHuman = [("Human Player 1", "hero"), ("Human Player 2", "hero")], playersComputer = [], playersEnemy = [("Human Player 1", "Human Player 2")], playersAlly = [] }
@@ -45,4 +47,4 @@
 ; skirmish: Scenario { scenarioPlayers = "skirmish", scenarioDungeon = "combat" }
 ; PvP: Scenario { scenarioPlayers = "PvP", scenarioDungeon = "combat" }
 ; Coop: Scenario { scenarioPlayers = "Coop", scenarioDungeon = "campaign" }
-; defense: Scenario { scenarioPlayers = "defense", scenarioDungeon = "campaign" }
+; defense: Scenario { scenarioPlayers = "defense", scenarioDungeon = "defense" }

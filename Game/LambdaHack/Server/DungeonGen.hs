@@ -9,7 +9,6 @@ import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
 import Data.List
 import Data.Maybe
-import Data.Text (Text)
 import qualified System.Random as R
 
 import qualified Game.LambdaHack.Common.Effect as Effect
@@ -38,7 +37,7 @@ convertTileMaps cdefTile cxsize cysize ltile = do
   return $ Kind.listArray bounds pickedTiles Kind.// assocs
 
 placeStairs :: Kind.Ops TileKind -> TileMap -> CaveKind -> [Place]
-            -> Rnd ( Kind.Id TileKind
+            -> Rnd ( Point, Kind.Id TileKind
                    , Point, Kind.Id TileKind
                    , Point, Kind.Id TileKind )
 placeStairs cotile@Kind.Ops{opick} cmap CaveKind{..} dplaces = do
@@ -48,28 +47,29 @@ placeStairs cotile@Kind.Ops{opick} cmap CaveKind{..} dplaces = do
           , \ l _ -> chessDist cxsize su l >= cminStairDist `div` 2
           , \ l t -> l /= su && Tile.hasFeature cotile F.Boring t
           ]
+  sq <- findPos cmap (const (Tile.hasFeature cotile F.Boring))
   let fitArea pos = inside cxsize pos . qarea
       findLegend pos =
         maybe clitLegendTile qlegend $ find (fitArea pos) dplaces
   upQuit <- opick (findLegend su) $ Tile.kindHasFeature $ F.Cause Effect.Quit
   upId   <- opick (findLegend su) $ Tile.kindHasFeature F.Ascendable
   downId <- opick (findLegend sd) $ Tile.kindHasFeature F.Descendable
-  return (upQuit, su, upId, sd, downId)
+  return (sq, upQuit, su, upId, sd, downId)
 
 -- | Create a level from a cave, from a cave kind.
-buildLevel :: Kind.COps -> Cave -> Int -> Int -> Rnd Level
+buildLevel :: Kind.COps -> Cave -> Int -> Int -> Bool -> Rnd Level
 buildLevel Kind.COps{ cotile=cotile@Kind.Ops{opick}
                     , cocave=Kind.Ops{okind} }
-           Cave{..} ldepth depth = do
+           Cave{..} ldepth depth quitFeature = do
   let kc@CaveKind{..} = okind dkind
   cmap <- convertTileMaps (opick cdefTile (const True)) cxsize cysize dmap
-  (upQuit, su, upId, sd, downId) <-
+  (sq, upQuit, su, upId, sd, downId) <-
     placeStairs cotile cmap kc dplaces
   litemNum <- rollDice citemNum
   secret <- random
   let stairs = (if ldepth == 1 then [] else [(su, upId)])
                ++ (if ldepth == depth then [] else [(sd, downId)])
-               ++ (if ldepth == 1 && depth > 1 then [(su, upQuit)] else [])
+               ++ (if not quitFeature then [] else [(sq, upQuit)])
       ltile = cmap Kind.// stairs
       f !n !tk | Tile.isExplorable cotile tk = n + 1
                | otherwise = n
@@ -94,16 +94,13 @@ buildLevel Kind.COps{ cotile=cotile@Kind.Ops{opick}
         }
   return level
 
-matchGenerator :: Kind.Ops CaveKind -> Maybe Text -> Rnd (Kind.Id CaveKind)
-matchGenerator Kind.Ops{opick} mname =
-  opick (fromMaybe "dng" mname) (const True)
-
 findGenerator :: Kind.COps -> Caves -> Int -> Int -> Rnd Level
-findGenerator cops caves k depth = do
-  let genName = EM.lookup (toEnum k) caves
-  ci <- matchGenerator (Kind.cocave cops) genName
+findGenerator cops@Kind.COps{cocave=Kind.Ops{opick}} caves k depth = do
+  let (genName, quitFeature) =
+        fromMaybe ("dng", False) $ EM.lookup (toEnum k) caves
+  ci <- opick genName (const True)
   cave <- buildCave cops k depth ci
-  buildLevel cops cave k depth
+  buildLevel cops cave k depth quitFeature
 
 -- | Freshly generated and not yet populated dungeon.
 data FreshDungeon = FreshDungeon

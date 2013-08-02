@@ -36,7 +36,7 @@ data Config = Config
   }
   deriving Show
 
-type Caves = EM.EnumMap LevelId Text
+type Caves = EM.EnumMap LevelId (Text, Bool)
 
 data Players = Players
   { playersHuman    :: [(Text, Text)]

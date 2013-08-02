@@ -4,7 +4,7 @@ module Game.LambdaHack.Server.Action.ConfigIO
   ( mkConfigRules, dump
   ) where
 
-import Control.Arrow ((***))
+import Control.Arrow (first, (***))
 import Control.DeepSeq
 import qualified Data.Char as Char
 import qualified Data.ConfigFile as CF
@@ -132,7 +132,7 @@ parseConfigRules dataDir cp =
   let configSelfString = let CP conf = cp in CF.to_string conf
       configCaves =
         let section = getItems cp "caves"
-            readCaves = EM.fromList . map (toEnum *** T.pack)
+            readCaves = EM.fromList . map (toEnum *** (first T.pack))
         in M.fromList $ map (T.pack *** (readCaves . read)) section
       configPlayers =
         let section = getItems cp "players"
