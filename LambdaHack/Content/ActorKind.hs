@@ -29,7 +29,7 @@ hero = ActorKind
   , aspeed  = toSpeed 2
   , asight  = True
   , asmell  = False
-  , aiq     = 13
+  , aiq     = 16
   , aregen  = 500
   , acanDo  = [minBound..maxBound]
   }
