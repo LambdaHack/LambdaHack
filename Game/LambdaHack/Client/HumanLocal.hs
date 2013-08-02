@@ -460,6 +460,7 @@ displayMainMenu = do
                    , HumanCmd.GameRestart "skirmish"
                    , HumanCmd.GameRestart "PvP"
                    , HumanCmd.GameRestart "Coop"
+                   , HumanCmd.GameRestart "defense"
                    ]
         in [ (fst (revLookup HumanCmd.Cancel), "back to playing")
            , (fst (revLookup HumanCmd.Accept), "see more help") ]

@@ -23,6 +23,7 @@
 ; CTRL-k: GameRestart "skirmish"
 ; CTRL-p: GameRestart "PvP"
 ; CTRL-o: GameRestart "Coop"
+; CTRL-e: GameRestart "defense"
 ; CTRL-x: GameExit
 ; CTRL-s: GameSave
 ; CTRL-d: CfgDump
