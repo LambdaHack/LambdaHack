@@ -3,7 +3,7 @@ module Game.LambdaHack.Client.Action.Frontend.Curses
   ( -- * Session data type for the frontend
     FrontendSession
     -- * The output and input operations
-  , display, nextEvent, promptGetAnyKey
+  , display, promptGetAnyKey
     -- * Frontend administration tools
   , frontendName, startup
   ) where
@@ -57,11 +57,10 @@ startup _ k = do
 -- | Output to the screen via the frontend.
 display :: FrontendSession    -- ^ frontend session data
         -> Bool
-        -> Bool
         -> Maybe SingleFrame  -- ^ the screen frame to draw
         -> IO ()
-display _ _ _ Nothing = return ()
-display FrontendSession{..}  _ _ (Just SingleFrame{..}) = do
+display _ _ Nothing = return ()
+display FrontendSession{..}  _ (Just SingleFrame{..}) = do
   -- let defaultStyle = C.defaultCursesStyle
   -- Terminals with white background require this:
   let defaultStyle = sstyles M.! Color.defAttr
@@ -86,7 +85,7 @@ nextEvent _sess _ = keyTranslate `fmap` C.getKey C.refresh
 promptGetAnyKey :: FrontendSession -> SingleFrame
              -> IO K.KM
 promptGetAnyKey sess frame = do
-  display sess True True $ Just frame
+  display sess True $ Just frame
   nextEvent sess Nothing
 
 keyTranslate :: C.Key -> K.KM

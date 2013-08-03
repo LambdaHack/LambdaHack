@@ -122,7 +122,6 @@ queryUI aid = do
   lockUI
   -- When running, stop if aborted by a disturbance. Otherwise let
   -- the human player issue commands, until any of them takes time.
-  -- First time, just after pushing frames, ask for commands in Push mode.
   leader <- getLeaderUI
   assert (leader == aid `blame` (leader, aid)) skip
   let inputHumanCmd msg = do
@@ -146,16 +145,9 @@ humanCommand :: forall m. (MonadClientAbort m, MonadClientUI m)
              => Msg
              -> m CmdSer
 humanCommand msgRunAbort = do
-  -- The frame state is now Push.
-  kmPush <- case msgRunAbort of
-    "" -> getKeyCommand (Just True)
-    _  -> do
-      slides <- promptToSlideshow msgRunAbort
-      getKeyOverlayCommand $ head $ runSlideshow slides
-  -- The frame state is now None and remains so between each pair
-  -- of lines of @loop@ (but can change within called actions).
-  let loop :: K.KM -> m CmdSer
-      loop km = do
+  let loop :: Overlay -> m CmdSer
+      loop overlay = do
+        km <- getKeyOverlayCommand overlay
         -- Messages shown, so update history and reset current report.
         recordHistory
         -- On abort, just reset state and call loop again below.
@@ -194,8 +186,8 @@ humanCommand msgRunAbort = do
                 -- Nothing special to be shown; by default draw current state.
                 modifyClient (\st -> st {slastKey = Nothing})
                 sli <- promptToSlideshow ""
-                kmNext <- getKeyOverlayCommand $ head $ runSlideshow sli
-                loop kmNext
+                let overlayNext = head $ runSlideshow sli
+                loop overlayNext
               sLast : sls -> do
                 -- Show, one by one, all but the last slide.
                 -- Note: the code that generates the slides is responsible
@@ -203,12 +195,15 @@ humanCommand msgRunAbort = do
                 b <- getAllConfirms [km] $ toSlideshow $ reverse sls
                 -- Display the last slide while waiting for the next key,
                 -- or display current state if slideshow interrupted.
-                kmNext <- if b
-                          then getKeyOverlayCommand sLast
-                          else do
-                            modifyClient (\st -> st {slastKey = Nothing})
-                            sli <- promptToSlideshow ""
-                            getKeyOverlayCommand $ head $ runSlideshow sli
+                overlayNext <-
+                  if b
+                  then return sLast
+                  else do
+                    modifyClient (\st -> st {slastKey = Nothing})
+                    sli <- promptToSlideshow ""
+                    return $! head $ runSlideshow sli
                 -- Look up and perform the next command.
-                loop kmNext
-  loop kmPush
+                loop overlayNext
+  sli <- promptToSlideshow msgRunAbort
+  let overlayInitial = head $ runSlideshow sli
+  loop overlayInitial

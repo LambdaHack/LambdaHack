@@ -276,7 +276,7 @@ drawCmdAtomicUI verbose cmd = case cmd of
 --    -- Display status line and FOV for the new actor.
 --    sli <- promptToSlideshow ""
 --    fr <- drawOverlay ColorBW $ head $ runSlideshow sli
---    displayFramesPush [Nothing, Just fr, Nothing]
+--    displayFrames [Nothing, Just fr, Nothing]
     else do
       fidName <- getsState $ gname . (EM.! toFid) . sfactionD
       aVerbMU target $ MU.Text $ "fall under the influence of" <+> fidName
@@ -312,7 +312,7 @@ drawCmdAtomicUI verbose cmd = case cmd of
           , MU.AW $ MU.Text $ oname toTile ]
     msgAdd msg
   AgeGameA t -> do
-    when (t > timeClip) $ displayFramesPush [Nothing]  -- show delay
+    when (t > timeClip) $ displayFrames [Nothing]  -- show delay
     -- TODO: shows messages on leader level, instead of recently shown
     -- level (e.g., between animations); perhaps draw messages separately
     -- from level (but on the same text window) or keep last level frame
@@ -424,7 +424,7 @@ displaceActorUI source target = do
     lookAtMove tb
   let ps = (bpos tb, bpos sb)
   animFrs <- animate (blid sb) $ swapPlaces ps
-  displayFramesPush $ Nothing : animFrs
+  displayFrames $ Nothing : animFrs
 
 quitFactionUI :: MonadClientUI m => FactionId -> Maybe (Bool, Status) -> m ()
 quitFactionUI fid toSt = do
@@ -484,7 +484,7 @@ drawSfxAtomicUI verbose sfx = case sfx of
             msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
         msgAdd msgDie
         animDie <- animate (blid b) $ deathBody $ bpos b
-        when (not (bproj b)) $ displayFramesPush animDie
+        when (not (bproj b)) $ displayFrames animDie
       else do
         let firstFall = if bproj b then "break up" else "collapse"
             verbDie =
@@ -502,12 +502,12 @@ drawSfxAtomicUI verbose sfx = case sfx of
           actorVerbMU aid b "feel better"
           let ps = (bpos b, bpos b)
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrBlue Color.Blue
-          displayFramesPush $ Nothing : animFrs
+          displayFrames $ Nothing : animFrs
         Effect.Heal _ -> do
           actorVerbMU aid b "feel wounded"
           let ps = (bpos b, bpos b)
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
-          displayFramesPush $ Nothing : animFrs
+          displayFrames $ Nothing : animFrs
         Effect.Mindprobe nEnemy -> do
           let msg = makeSentence
                 [MU.CardinalWs nEnemy "howl", "of anger", "can be heard"]
@@ -533,7 +533,7 @@ drawSfxAtomicUI verbose sfx = case sfx of
     -- and only overlay messages on it when needed; or store the level
     -- of last shown
     displayPush
-  DisplayDelayD _ -> displayFramesPush [Nothing]
+  DisplayDelayD _ -> displayFrames [Nothing]
   FlushFramesD _ -> do
     srunning <- getsClient srunning
     case srunning of
@@ -584,4 +584,4 @@ strikeD source target item b = assert (source /= target) $ do
       anim HitBlockD = blockHit ps Color.BrRed Color.Red
       anim MissBlockD = blockMiss ps
   animFrs <- animate (blid sb) $ anim b
-  displayFramesPush $ Nothing : animFrs
+  displayFrames $ Nothing : animFrs

@@ -3,7 +3,7 @@ module Game.LambdaHack.Client.Action.Frontend.Std
   ( -- * Session data type for the frontend
     FrontendSession
     -- * The output and input operations
-  , display, nextEvent, promptGetAnyKey
+  , display, promptGetAnyKey
     -- * Frontend administration tools
   , frontendName, startup
   ) where
@@ -31,11 +31,10 @@ startup _ k = k ()
 -- | Output to the screen via the frontend.
 display :: FrontendSession          -- ^ frontend session data
         -> Bool
-        -> Bool
         -> Maybe SingleFrame  -- ^ the screen frame to draw
         -> IO ()
-display _ _ _ Nothing = return ()
-display _ _ _ (Just SingleFrame{..}) =
+display _ _ Nothing = return ()
+display _ _ (Just SingleFrame{..}) =
   let chars = L.map (BS.pack . L.map Color.acChar) sfLevel
       bs = [encodeUtf8 sfTop, BS.empty] ++ chars ++ [encodeUtf8 sfBottom, BS.empty]
   in mapM_ BS.putStrLn bs
@@ -53,7 +52,7 @@ nextEvent sess mb = do
 promptGetAnyKey :: FrontendSession -> SingleFrame
              -> IO K.KM
 promptGetAnyKey sess frame = do
-  display sess True True $ Just frame
+  display sess True $ Just frame
   nextEvent sess Nothing
 
 -- HACK: Special translation that block commands the bots should not use

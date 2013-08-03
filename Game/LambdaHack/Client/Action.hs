@@ -21,9 +21,9 @@ module Game.LambdaHack.Client.Action
     -- * History and report
   , msgAdd, msgReset, recordHistory
     -- * Key input
-  , getKeyCommand, getKeyOverlayCommand, getAllConfirms, getInitConfirms
+  , getKeyOverlayCommand, getAllConfirms, getInitConfirms
     -- * Display and key input
-  , displayFramesPush, displayMore, displayYesNo, displayChoiceUI
+  , displayFrames, displayMore, displayYesNo, displayChoiceUI
   , displayFadeFrames, lockUI, unlockUI
     -- * Generate slideshows
   , promptToSlideshow, overlayToSlideshow
@@ -157,7 +157,7 @@ displayFrame isRunning mf = do
     modifyClient $ \cli -> cli {sframe = frame : sframe cli}
   else do
     -- At most one human player, display everything at once.
-    liftIO $ Frontend.displayFrame fs isRunning mf
+    liftIO $ Frontend.display fs isRunning mf
 
 displayFadeFrames :: MonadClient m => Frames -> m ()
 displayFadeFrames frames = do
@@ -174,22 +174,16 @@ flushFrames = do
       displayAc (AcConfirm fr) =
         void $ getConfirmGeneric pGetKey [] fr
       displayAc (AcRunning fr) =
-        liftIO $ Frontend.displayFrame fs True (Just fr)
+        liftIO $ Frontend.display fs True (Just fr)
       displayAc (AcNormal fr) =
-        liftIO $ Frontend.displayFrame fs False (Just fr)
+        liftIO $ Frontend.display fs False (Just fr)
       displayAc AcDelay =
-        liftIO $ Frontend.displayFrame fs False Nothing
+        liftIO $ Frontend.display fs False Nothing
   sfade <- getsClient sfade
   sframe <- getsClient sframe
   mapM_ displayAc $ reverse sfade
   mapM_ displayAc $ reverse sframe
   modifyClient $ \cli -> cli {sfade = [], sframe = []}
-
-nextEvent :: MonadClientUI m => Maybe Bool -> m K.KM
-nextEvent mb = do
-  fs <- askFrontendSession
-  flushFrames
-  liftIO $ Frontend.nextEvent fs mb
 
 promptGetKey :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
 promptGetKey keys frame = do
@@ -258,13 +252,6 @@ getPerFid lid = do
   fper <- getsClient sfper
   return $! fromMaybe (assert `failure` lid) $ EM.lookup lid fper
 
--- | Wait for a human player command.
-getKeyCommand :: MonadClientUI m => Maybe Bool -> m K.KM
-getKeyCommand doPush = do
-  keyb <- askBinding
-  km <- nextEvent doPush
-  return $! fromMaybe km $ M.lookup km $ kmacro keyb
-
 -- | Display an overlay and wait for a human player command.
 getKeyOverlayCommand :: MonadClientUI m => Overlay -> m K.KM
 getKeyOverlayCommand overlay = do
@@ -318,9 +305,9 @@ getInitConfirms clearKeys slides =
         then getInitConfirms clearKeys (toSlideshow xs)
         else return False
 
--- | Push frames or frame's worth of delay to the frame queue.
-displayFramesPush :: MonadClientUI m => Frames -> m ()
-displayFramesPush frames = mapM_ (displayFrame False) frames
+-- | Push frames or delays to the frame queue.
+displayFrames :: MonadClientUI m => Frames -> m ()
+displayFrames frames = mapM_ (displayFrame False) frames
 
 -- | A yes-no confirmation.
 getYesNo :: MonadClientUI m => SingleFrame -> m Bool

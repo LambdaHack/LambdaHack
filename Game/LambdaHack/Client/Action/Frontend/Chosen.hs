@@ -3,7 +3,7 @@
 -- (determined at compile time with cabal flags).
 module Game.LambdaHack.Client.Action.Frontend.Chosen
   ( -- * Re-exported raw frontend
-    FrontendSession, startup, frontendName, nextEvent, promptGetAnyKey, display
+    FrontendSession, startup, frontendName, promptGetAnyKey, display
   ) where
 
 -- Wrapper for selected Display frontend.

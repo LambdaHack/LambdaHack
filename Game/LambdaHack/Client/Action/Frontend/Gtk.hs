@@ -4,7 +4,7 @@ module Game.LambdaHack.Client.Action.Frontend.Gtk
   ( -- * Session data type for the frontend
     FrontendSession
     -- * The output and input operations
-  , display, nextEvent, promptGetAnyKey
+  , display, promptGetAnyKey
     -- * Frontend administration tools
   , frontendName, startup
   ) where
@@ -294,10 +294,14 @@ pollFrames sess@FrontendSession{sframeState} Nothing = do
       pollFrames sess Nothing
 
 -- | Add a frame to be drawn.
-display :: FrontendSession -> Bool -> Bool -> Maybe SingleFrame -> IO ()
-display sess True noDelay rawFrame = pushFrame sess noDelay rawFrame
-display sess False _ (Just rawFrame) = setFrame sess rawFrame
-display _ _ _ _ = assert `failure` "display: empty frame to be set"
+displayWithState :: FrontendSession -> Bool -> Bool -> Maybe SingleFrame
+                 -> IO ()
+displayWithState sess True noDelay rawFrame = pushFrame sess noDelay rawFrame
+displayWithState sess False _ (Just rawFrame) = setFrame sess rawFrame
+displayWithState _ _ _ _ = assert `failure` "display: empty frame to be set"
+
+display :: FrontendSession -> Bool -> Maybe SingleFrame -> IO ()
+display sess noDelay rawFrame = displayWithState sess True noDelay rawFrame
 
 -- | Add a game screen frame to the frame drawing channel.
 pushFrame :: FrontendSession -> Bool -> Maybe SingleFrame -> IO ()
@@ -434,9 +438,9 @@ promptGetAnyKey sess@FrontendSession{sframeState} frame = do
   let doPush = case fs of
         FPushed{} -> True
         FSet{}    ->
-          assert `failure` "promptGetKey: FSet, expecting FPushed or FNone"
+          assert `failure` "promptGetAnyKey: FSet, expecting FPushed or FNone"
         FNone     -> False
-  display sess doPush True $ Just frame
+  displayWithState sess doPush True $ Just frame
   nextEvent sess (Just doPush)
 
 -- | Tells a dead key.

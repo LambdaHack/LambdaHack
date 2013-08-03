@@ -189,11 +189,17 @@ handleActors cmdSerSem lid = do
           usesAI = usesAIFact fact
           hasHumanLeader = isNothing $ gAiLeader fact
           queryUI = not usesAI || hasHumanLeader && Just aid == mleader
-      -- Display a new frame so that player does not see moves of all his
-      -- AI party members cumulated in a single frame, but one by one.
-      execSfxAtomic $ DisplayPushD side
       -- TODO: check that the command is legal
-      cmdS <- (if queryUI then sendQueryUI else sendQueryAI) side aid
+      cmdS <- if queryUI then
+                -- The client always displays a frame in this case.
+                sendQueryUI side aid
+              else do
+                -- Order the UI client (if any) corresponding to the AI client
+                -- to display a new frame so that player does not see moves
+                -- of all his AI party members cumulated in a single frame,
+                -- but one by one.
+                execSfxAtomic $ DisplayPushD side
+                sendQueryAI side aid
       let leaderNew = aidCmdSer cmdS
           leadAtoms =
             if leaderNew /= aid

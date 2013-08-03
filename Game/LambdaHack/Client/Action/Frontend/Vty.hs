@@ -3,7 +3,7 @@ module Game.LambdaHack.Client.Action.Frontend.Vty
   ( -- * Session data type for the frontend
     FrontendSession
     -- * The output and input operations
-  , display, nextEvent, promptGetAnyKey
+  , display, promptGetAnyKey
     -- * Frontend administration tools
   , frontendName, startup
   ) where
@@ -34,12 +34,12 @@ startup _ k = do
 
 -- | Output to the screen via the frontend.
 display :: FrontendSession          -- ^ frontend session data
-        -> Bool
+
         -> Bool
         -> Maybe SingleFrame  -- ^ the screen frame to draw
         -> IO ()
-display _ _ _ Nothing = return ()
-display vty _ _ (Just SingleFrame{..}) =
+display _ _ Nothing = return ()
+display vty _ (Just SingleFrame{..}) =
   let img = (foldr (<->) empty_image
              . L.map (foldr (<|>) empty_image
                       . L.map (\ Color.AttrChar{..} ->
@@ -66,7 +66,7 @@ nextEvent sess mb = do
 promptGetAnyKey :: FrontendSession -> SingleFrame
              -> IO K.KM
 promptGetAnyKey sess frame = do
-  display sess True True $ Just frame
+  display sess True $ Just frame
   nextEvent sess Nothing
 
 keyTranslate :: Key -> K.Key

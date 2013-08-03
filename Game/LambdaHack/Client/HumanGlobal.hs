@@ -184,28 +184,28 @@ getItem aid prompt p ptext bag inv isn = do
         io <- itemOverlay bag invOver
         km@K.KM {..} <-
           displayChoiceUI (msg <+> choice ims) io (keys ims)
-        assert (modifier == K.NoModifier) $
-          case key of
-            K.Char '?' -> case itemDialogState of
-              INone -> perform ISuitable
-              ISuitable | ptext /= allObjectsName -> perform IAll
-              _ -> perform INone
-            K.Char '-' | floorFull ->
-              -- TODO: let player select item
-              return $ maximumBy (compare `on` fst . fst)
-                     $ map (\(iid, k) ->
-                             ((iid, getItemBody iid s),
-                              (k, CFloor (blid b) pos)))
-                     $ EM.assocs tis
-            K.Char l | InvChar l `elem` map (snd . snd) ims ->
-              case find ((InvChar l ==) . snd . snd) ims of
-                Nothing -> assert `failure` (l,  ims)
-                Just (iidItem, (k, l2)) ->
-                  return (iidItem, (k, CActor aid l2))
-            K.Return | bestFull ->
-              let (iidItem, (k, l2)) = maximumBy (compare `on` snd . snd) isp
-              in return (iidItem, (k, CActor aid l2))
-            _ -> assert `failure` "perform: unexpected key:" <+> K.showKM km
+        assert (modifier == K.NoModifier) skip
+        case key of
+          K.Char '?' -> case itemDialogState of
+            INone -> perform ISuitable
+            ISuitable | ptext /= allObjectsName -> perform IAll
+            _ -> perform INone
+          K.Char '-' | floorFull ->
+            -- TODO: let player select item
+            return $ maximumBy (compare `on` fst . fst)
+                   $ map (\(iid, k) ->
+                           ((iid, getItemBody iid s),
+                            (k, CFloor (blid b) pos)))
+                   $ EM.assocs tis
+          K.Char l | InvChar l `elem` map (snd . snd) ims ->
+            case find ((InvChar l ==) . snd . snd) ims of
+              Nothing -> assert `failure` (l,  ims)
+              Just (iidItem, (k, l2)) ->
+                return (iidItem, (k, CActor aid l2))
+          K.Return | bestFull ->
+            let (iidItem, (k, l2)) = maximumBy (compare `on` snd . snd) isp
+            in return (iidItem, (k, CActor aid l2))
+          _ -> assert `failure` "perform: unexpected key:" <+> K.showKM km
   ask
 
 -- * Project
