@@ -2,7 +2,7 @@
 module Game.LambdaHack.Utils.LQueue
   ( LQueue
   , newLQueue, nullLQueue, lengthLQueue, tryReadLQueue, writeLQueue
-  , trimLQueue, dropStartLQueue
+  , trimLQueue, dropStartLQueue, lastLQueue
   ) where
 
 import Data.Maybe
@@ -46,3 +46,11 @@ dropStartLQueue :: LQueue (Maybe a) -> LQueue (Maybe a)
 dropStartLQueue (rs, ws) =
   let dq = (dropWhile isNothing $ dropWhile isJust $ rs ++ reverse ws, [])
   in if nullLQueue dq then trimLQueue (rs, ws) else dq
+
+-- | Dump all but the last written non-@Nothing@ element of the queue, if any.
+lastLQueue :: LQueue (Maybe a) -> Maybe a
+lastLQueue (rs, ws) =
+  let lst (_, w:_) = Just w
+      lst ([], []) = Nothing
+      lst (rsj, []) = Just $ last rsj
+  in lst (catMaybes rs, catMaybes ws)

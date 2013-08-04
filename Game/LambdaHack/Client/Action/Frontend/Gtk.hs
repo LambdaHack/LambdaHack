@@ -14,7 +14,7 @@ import Control.Monad
 import Control.Monad.Reader
 import qualified Data.ByteString.Char8 as BS
 import Data.IORef
-import qualified Data.List as L
+import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Text as T
@@ -41,10 +41,18 @@ data FrontendSession = FrontendSession
   { sview       :: !TextView                    -- ^ the widget to draw to
   , stags       :: !(M.Map Color.Attr TextTag)  -- ^ text color tags for fg/bg
   , schanKey    :: !(Chan K.KM)                 -- ^ channel for keyboard input
-  , sframeState :: !(MVar FrameState)           -- ^ state of the frame machine
-  , slastFull   :: !(IORef (GtkFrame, Bool))
+  , sframeState :: !(MVar FrameState)
+      -- ^ state of the frame finite machine; this mvar is locked
+      -- for a short time only, because it's needed, among others,
+      -- to display frames, which is done by a single polling thread,
+      -- in real time
+  , slastFull   :: !(MVar (GtkFrame, Bool))
       -- ^ most recent full (not empty, not repeated) frame received
-      -- and if any empty frame followed it
+      -- and if any empty frame followed it; this mvar is locked
+      -- for longer intervals to ensure that threads (possibly many)
+      -- add frames in an orderly manner, which is not done in real time,
+      -- though sometimes the frame display subsystem has to poll
+      -- for a frame, in which case the locking interval becomes meaningful
   }
 
 data GtkFrame = GtkFrame
@@ -113,7 +121,7 @@ runGtk configFont k = do
   let frameState = FNone
   -- Create the session record.
   sframeState <- newMVar frameState
-  slastFull <- newIORef (dummyFrame, False)
+  slastFull <- newMVar (dummyFrame, False)
   let sess = FrontendSession{..}
   -- Fork the game logic thread. When logic ends, game exits.
   -- TODO: is postGUIAsync needed here?
@@ -134,12 +142,12 @@ runGtk configFont k = do
           -- Some new frames may be arriving at the same time
           -- or being displayed and removed, but we don't care.
           onQueue dropStartLQueue sess
-        else do
-          -- Drop all the old frames.
-          -- Some new frames may be arriving at the same time
-          -- or being displayed and removed, but we don't care.
-          onQueue trimLQueue sess
-          -- Store the key in the channel.
+        else
+          -- Store the key in the channel. All but last frame will be dropped
+          -- as soon as the channel is read. Use SPACE repeatedly to step
+          -- through some intermediate frames of an animation --- other keys
+          -- are not meant to be pressed many times before the engine
+          -- is ready to recognize and process them.
           writeChan schanKey $ K.KM {key, modifier}
       return True
   -- Set the font specified in config, if any.
@@ -188,7 +196,7 @@ output :: FrontendSession  -- ^ frontend session data
        -> IO ()
 output FrontendSession{sview, stags} GtkFrame{..} = do  -- new frame
   tb <- textViewGetBuffer sview
-  let attrs = L.zip [0..] gfAttr
+  let attrs = zip [0..] gfAttr
       defAttr = stags M.! Color.defAttr
   textBufferSetByteString tb gfChar
   mapM_ (setTo tb defAttr 0) attrs
@@ -254,7 +262,7 @@ pollFrames sess (Just setTime) = do
       -- Don't delay, because time is up!
       pollFrames sess Nothing
 pollFrames sess@FrontendSession{sframeState} Nothing = do
-  -- Time time is up, check if we actually wait for anyting.
+  -- Time is up, check if we actually wait for anyting.
   fs <- takeMVar sframeState
   case fs of
     FPushed{..} ->
@@ -289,18 +297,22 @@ pollFrames sess@FrontendSession{sframeState} Nothing = do
       threadDelay $ 1000000 `div` (maxFps * 2)
       pollFrames sess Nothing
 
--- | Add a game screen frame to the frame drawing channel.
-pushFrame :: FrontendSession -> Bool -> Maybe SingleFrame -> IO ()
-pushFrame sess@FrontendSession{sframeState, slastFull} noDelay rawFrame = do
-  -- Full evaluation and comparison is done outside the mvar lock.
-  -- At worst, hmm, at worst the frames are mixed up.
-  -- TODO: make sure it's full eval.
-  let frame = fmap (evalFrame sess) rawFrame
-  (lastFrame, anyFollowed) <- readIORef slastFull
+-- | Add a game screen frame to the frame drawing channel, or show
+-- it ASAP if @immediate@ display is requested and the channel is empty.
+pushFrame :: FrontendSession -> Bool -> Bool -> Maybe SingleFrame -> IO ()
+pushFrame sess noDelay immediate rawFrame = do
+  let FrontendSession{sframeState, slastFull} = sess
+  -- Full evaluation is done outside the mvar locks.
+  let !frame = case rawFrame of
+        Nothing -> Nothing
+        Just fr -> Just $! evalFrame sess fr
+  -- Lock frame addition.
+  (lastFrame, anyFollowed) <- takeMVar slastFull
+  -- Comparison of frames is done outside the frame queue mvar lock.
   let nextFrame = if frame == Just lastFrame
                   then Nothing  -- no sense repeating
                   else frame
-  -- Now we take the lock.
+  -- Lock frame queue.
   fs <- takeMVar sframeState
   case fs of
     FPushed{..} ->
@@ -308,6 +320,10 @@ pushFrame sess@FrontendSession{sframeState, slastFull} noDelay rawFrame = do
       then putMVar sframeState fs  -- old news
       else putMVar sframeState
              FPushed{fpushed = writeLQueue fpushed nextFrame, ..}
+    FNone | immediate -> do
+      -- If the frame not repeated, draw it.
+      maybe skip (postGUIAsync . output sess) nextFrame
+      putMVar sframeState FNone
     FNone ->
       -- Never start playing with an empty frame.
       let fpushed = if isJust nextFrame
@@ -315,98 +331,58 @@ pushFrame sess@FrontendSession{sframeState, slastFull} noDelay rawFrame = do
                     else newLQueue
           fshown = dummyFrame
       in putMVar sframeState FPushed{..}
-  -- TODO: put this under the lock and re-read the IORef first  or perhaps have 2 locks, for write and for read from queue?
-  yield  -- drawing has priority
   case nextFrame of
-    Nothing -> writeIORef slastFull (lastFrame, True)
-    Just f  -> writeIORef slastFull (f, noDelay)
+    Nothing -> putMVar slastFull (lastFrame, True)
+    Just f  -> putMVar slastFull (f, noDelay)
 
 evalFrame :: FrontendSession -> SingleFrame -> GtkFrame
 evalFrame FrontendSession{stags} SingleFrame{..} =
-  let levelChar = L.map (T.pack . L.map Color.acChar) sfLevel
+  let levelChar = map (T.pack . map Color.acChar) sfLevel
       gfChar = encodeUtf8 $ T.intercalate (T.singleton '\n')
                $ sfTop : levelChar ++ [sfBottom]
-      -- Strict version of @L.map (L.map ((stags M.!) . fst)) sfLevel@.
-      gfAttr  = L.reverse $ L.foldl' ff [] sfLevel
-      ff ll l = (L.reverse $ L.foldl' f [] l) : ll
+      -- Strict version of @map (map ((stags M.!) . fst)) sfLevel@.
+      gfAttr  = reverse $ foldl' ff [] sfLevel
+      ff ll l = (reverse $ foldl' f [] l) : ll
       f l ac  = let !tag = stags M.! Color.acAttr ac in tag : l
   in GtkFrame{..}
 
--- | Draw a frame for the next wait for a keypress.
--- Don't show the frame if it's unchanged vs the previous.
-setFrame :: FrontendSession -> SingleFrame -> IO ()
-setFrame sess@FrontendSession{slastFull, sframeState} rawFrame = do
-  -- Full evaluation and comparison is done outside the mvar lock.
-  (lastFrame, _) <- readIORef slastFull
-  let frame = evalFrame sess rawFrame
-      fsetFrame =
-        if frame == lastFrame
-        then Nothing  -- no sense repeating
-        else Just frame
-  -- Now we take the lock.  -- TODO: do we need it?
-  fs <- takeMVar sframeState
-  case fs of
-    FPushed{} -> assert `failure` "setFrame: FPushed, expecting FNone"
-    FNone -> return ()
-  -- If the frame not repeated, draw it.
-  maybe skip (postGUIAsync . output sess) fsetFrame
-  -- Update the last received frame with the processed frame.
-  -- There is no race condition, because we are on the same thread
-  -- as pushFrame.  -- TODO: probably no longer the case, but mvarUI helps
-  maybe skip (\ fr -> writeIORef slastFull (fr, False)) fsetFrame
-  -- Release the lock.
-  putMVar sframeState fs
-
--- | Input key via the frontend. Fail if there is no frame to show
--- to the player as a prompt for the keypress.
-nextEventPush :: FrontendSession -> IO K.KM
-nextEventPush sess@FrontendSession{schanKey, sframeState} = do
-  -- Wait for a keypress.
-  km <- readChan schanKey
-  -- Remove all but the last element of the frame queue.
-  -- The kept last element ensures that slastFull is not invalidated.
-  onQueue trimLQueue sess
+-- | Trim current frame queue and display the most recent frame, if any.
+trimFrameState :: FrontendSession -> IO ()
+trimFrameState sess@FrontendSession{sframeState} = do
   -- Take the lock to wipe out the frame queue, unless it's empty already.
   fs <- takeMVar sframeState
   case fs of
     FPushed{..} -> do
-      -- Draw the last frame ASAP.
-      case tryReadLQueue fpushed of
-        Just (Just frame, queue) -> assert (nullLQueue queue) $ do
-          -- Comparison is done inside the mvar lock, this time, but it's OK.
+      -- Remove all but the last element of the frame queue.
+      -- The kept (and displayed) last element ensures that
+      -- @slastFull@ is not invalidated.
+      case lastLQueue fpushed of
+        Just frame -> do
+          -- Comparison is done inside the mvar lock, this time, but it's OK,
+          -- since we wipe out the queue anyway, not draw it concurrently.
           let lastFrame = fshown
-              nextFrame =
-                if frame == lastFrame
-                then Nothing  -- no sense repeating
-                else Just frame
+              nextFrame = if frame == lastFrame
+                          then Nothing  -- no sense repeating
+                          else Just frame
+          -- Draw the last frame ASAP.
           maybe skip (postGUIAsync . output sess) nextFrame
-        Just (Nothing, _) -> assert `failure` "nextEvent: trimmed queue"
         Nothing -> return ()
-    FNone  -> assert `failure` "nextEvent: FNone, expecting FPushed"
-  -- Wipe out the frame queue. No more frames will arrive, because we are
-  -- on the same thread as pushFrame. Release the lock.
+    FNone -> return ()
+  -- Wipe out the frame queue. Release the lock.
   putMVar sframeState FNone
-  return km
 
 -- | Add a frame to be drawn.
 display :: FrontendSession -> Bool -> Maybe SingleFrame -> IO ()
-display sess noDelay rawFrame = pushFrame sess noDelay rawFrame
+display sess noDelay rawFrame = pushFrame sess noDelay False rawFrame
 
 -- | Display a prompt, wait for any key.
 -- Starts in Push or None mode, stop in None mode.
--- Spends most time waiting for a key, so not performance critical,
--- so does not need optimization.
-promptGetAnyKey :: FrontendSession -> SingleFrame
-                -> IO K.KM
-promptGetAnyKey sess@FrontendSession{schanKey, sframeState} frame = do
-  fs <- readMVar sframeState
-  case fs of
-    FPushed{} -> do
-      pushFrame sess True $ Just frame
-      nextEventPush sess
-    FNone -> do
-      setFrame sess frame
-      readChan schanKey
+promptGetAnyKey :: FrontendSession -> SingleFrame -> IO K.KM
+promptGetAnyKey sess@FrontendSession{schanKey} frame = do
+  pushFrame sess True True $ Just frame
+  km <- readChan schanKey
+  trimFrameState sess
+  return km
 
 -- | Tells a dead key.
 deadKey :: String -> Bool
