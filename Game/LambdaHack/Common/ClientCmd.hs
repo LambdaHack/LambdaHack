@@ -22,6 +22,7 @@ import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Frontend
 
 -- | Abstract syntax of client commands that don't use the UI.
 data CmdClientAI =
@@ -71,7 +72,8 @@ instance Show (Conn c) where
 
 -- | Connection to the human-controlled client of a faction and/or
 -- to the AI client for the same faction.
-type ConnFaction = (Maybe (Conn CmdClientUI), Maybe (Conn CmdClientAI))
+type ConnFaction = ( Maybe (FrontendConn, Conn CmdClientUI)
+                   , Maybe (Conn CmdClientAI) )
 
 -- | Connection information for all factions, indexed by faction identifier.
 type ConnDict = EM.EnumMap FactionId ConnFaction

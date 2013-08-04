@@ -31,6 +31,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
+import Game.LambdaHack.Frontend
 import Game.LambdaHack.Server.Action hiding (sendUpdateAI, sendUpdateUI)
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.EffectSem
@@ -48,7 +49,7 @@ import Game.LambdaHack.Utils.Assert
 loopSer :: (MonadAtomic m, MonadServerConn m)
         => DebugModeSer
         -> (CmdSer -> m Bool)
-        -> (FactionId -> Conn CmdClientUI -> IO ())
+        -> (FactionId -> FrontendConn -> Conn CmdClientUI -> IO ())
         -> (FactionId -> Conn CmdClientAI -> IO ())
         -> Kind.COps
         -> m ()

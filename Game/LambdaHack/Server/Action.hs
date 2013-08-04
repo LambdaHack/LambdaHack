@@ -54,6 +54,7 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.File
+import Game.LambdaHack.Frontend
 
 fovMode :: MonadServer m => m FovMode
 fovMode = do
@@ -145,8 +146,8 @@ sendQueryAI fid aid = do
 
 sendUpdateUI :: MonadServerConn m => FactionId -> CmdClientUI -> m ()
 sendUpdateUI fid cmd = do
-  conn <- getsDict (fst . (EM.! fid))
-  maybe skip (writeTQueueUI cmd . toClient) conn
+  mconn <- getsDict (fst . (EM.! fid))
+  maybe skip (writeTQueueUI cmd . toClient . snd) mconn
 
 sendQueryUI :: MonadServerConn m => FactionId -> ActorId -> m CmdSer
 sendQueryUI fid aid = do
@@ -154,7 +155,7 @@ sendQueryUI fid aid = do
   let connSend conn = do
         writeTQueueUI (CmdQueryUI aid) $ toClient conn
         readTQueue $ toServer conn
-  maybe (assert `failure` (fid, aid)) connSend mconn
+  maybe (assert `failure` (fid, aid)) (connSend . snd) mconn
 
 -- | Create a server config file. Warning: when it's used, the game state
 -- may still be undefined, hence the content ops are given as an argument.
@@ -198,24 +199,32 @@ tryRestore Kind.COps{corule} = do
 -- Connect to clients in old or newly spawned threads
 -- that read and write directly to the channels.
 updateConn :: (MonadAtomic m, MonadServerConn m)
-           => (FactionId -> Conn CmdClientUI -> IO ())
+           => (FactionId -> FrontendConn -> Conn CmdClientUI -> IO ())
            -> (FactionId -> Conn CmdClientAI -> IO ())
            -> m ()
 updateConn executorUI executorAI = do
   -- Prepare connections based on factions.
   oldD <- getDict
-  let mkConn :: IO (Maybe (Conn c))
+  let mkConn :: IO (Conn c)
       mkConn = do
         toClient <- newTQueueIO
         toServer <- newTQueueIO
-        return $ Just $ Conn{..}
+        return Conn{..}
+      mkfConn :: IO FrontendConn
+      mkfConn = do
+        ftoClient <- newTQueueIO
+        ftoFrontend <- newTQueueIO
+        return FrontendConn{..}
       addConn fid fact = case EM.lookup fid oldD of
         Just conns -> return conns  -- share old conns and threads
         Nothing -> do
           connUI <- if isHumanFact fact
-                    then mkConn
+                    then do
+                      cUI <- mkConn
+                      cf <- mkfConn
+                      return $ Just (cf, cUI)
                     else return Nothing
-          connAI <- mkConn
+          connAI <- fmap Just mkConn
           -- TODO, when net clients, etc., are included:
           -- connAI <- if usesAIFact fact
           --           then mkConn
@@ -229,7 +238,7 @@ updateConn executorUI executorAI = do
       toKill  = oldD EM.\\ d  -- don't kill all, share old threads
   mapWithKeyM_ (\fid _ -> execCmdAtomic $ KillExitA fid) toKill
   let forkClient fid (connUI, connAI) = do
-        maybe skip (void . forkChild . executorUI fid) connUI
+        maybe skip (void . forkChild . uncurry (executorUI fid)) connUI
         maybe skip (void . forkChild . executorAI fid) connAI
   liftIO $ mapWithKeyM_ forkClient toSpawn
 

@@ -544,7 +544,6 @@ drawSfxAtomicUI verbose sfx = case sfx of
     sfade <- getsClient sfade
     when (null sfade) $  -- a hack to avoid double FadeinD for spawners
       fadeD False topRight
-    unlockUI  -- a hack to force proper order of fades among clients
   _ -> return ()
 
 strikeD :: MonadClientUI m

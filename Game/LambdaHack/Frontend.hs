@@ -5,11 +5,26 @@ module Game.LambdaHack.Frontend
     FrontendSession, startup, frontendName, display
     -- * Derived operation
   , promptGetKey
+    -- * Connection channels
+  , FrontendConn (..)
   ) where
 
-import Game.LambdaHack.Client.Animation (SingleFrame (..))
+import Control.Concurrent.STM.TQueue
+import qualified Data.EnumMap.Strict as EM
+
+import Game.LambdaHack.Client.Animation (AcFrame (..), SingleFrame (..))
 import qualified Game.LambdaHack.Client.Key as K (KM)
+import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Frontend.Chosen
+
+-- | Connection channels between a client and a frontend.
+data FrontendConn = FrontendConn
+  { ftoClient   :: TQueue K.KM
+  , ftoFrontend :: TQueue AcFrame
+  }
+
+instance Show FrontendConn where
+  show _ = "client-frontend connection channels"
 
 -- | Display a prompt, wait for any of the specified keys (for any key,
 -- if the list is empty). Repeat if an unexpected key received.

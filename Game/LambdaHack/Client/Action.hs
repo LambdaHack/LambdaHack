@@ -24,7 +24,7 @@ module Game.LambdaHack.Client.Action
   , getKeyOverlayCommand, getAllConfirms, getInitConfirms
     -- * Display and key input
   , displayFrames, displayMore, displayYesNo, displayChoiceUI
-  , displayFadeFrames, lockUI, unlockUI
+  , displayFadeFrames
     -- * Generate slideshows
   , promptToSlideshow, overlayToSlideshow
     -- * Draw frames
@@ -86,7 +86,7 @@ debugPrint t = do
   debug <- getsClient sdebugCli
   when debug $ liftIO $ do
     delay <- R.randomRIO (0, 1000000)
-    threadDelay delay
+    threadDelay delay  -- try not to interleave letters with other clients
     T.hPutStrLn stderr t
     hFlush stderr
 
@@ -128,20 +128,6 @@ tryWithSlide exc h =
         tell slides
         lift exc
   in tryWith excMsg h
-
-lockUI :: MonadClientUI m => m ()
-lockUI = do
-  nH <- nHumans
-  when (nH > 1) $ do
-    mvarUI <- getsSession smvarUI
-    liftIO $ void $ tryPutMVar mvarUI ()
-
-unlockUI :: MonadClientUI m => m ()
-unlockUI = do
-  nH <- nHumans
-  when (nH > 1) $ do
-    mvarUI <- getsSession smvarUI
-    liftIO $ void $ tryTakeMVar mvarUI
 
 displayFrame :: MonadClientUI m => Bool -> Maybe SingleFrame -> m ()
 displayFrame isRunning mf = do
@@ -221,7 +207,7 @@ targetToPos = do
 
 -- | Get the frontend session.
 askFrontendSession :: MonadClientUI m => m Frontend.FrontendSession
-askFrontendSession = getsSession sfs
+askFrontendSession = getsSession sfsess
 
 -- | Get the key binding.
 askBinding :: MonadClientUI m => m Binding

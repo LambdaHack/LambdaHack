@@ -8,7 +8,6 @@ module Game.LambdaHack.Client
   , MonadClient, MonadClientUI, MonadClientConn
   ) where
 
-import Control.Concurrent
 import Control.Monad
 import Data.Maybe
 
@@ -25,7 +24,7 @@ import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.State
-import Game.LambdaHack.Frontend (startup)
+import Game.LambdaHack.Frontend
 import Game.LambdaHack.Utils.Assert
 
 storeUndo :: MonadClient m => Atomic -> m ()
@@ -67,28 +66,31 @@ cmdClientUISem cmd = do
       cmdH <- queryUI aid
       writeConnFromClient cmdH
 
-wireSession :: (SessionUI -> State -> StateClient -> Conn CmdClientUI -> IO ())
-            -> (SessionUI -> State -> StateClient -> Conn CmdClientAI -> IO ())
+wireSession :: (SessionUI -> State -> StateClient
+                -> FrontendConn -> Conn CmdClientUI -> IO ())
+            -> (SessionUI -> State -> StateClient
+                -> FrontendConn -> Conn CmdClientAI -> IO ())
             -> Kind.COps
-            -> ((FactionId -> Conn CmdClientUI -> IO ())
+            -> ((FactionId -> FrontendConn -> Conn CmdClientUI -> IO ())
                 -> (FactionId -> Conn CmdClientAI -> IO ())
                 -> IO ())
             -> IO ()
 wireSession exeClientUI exeClientAI cops@Kind.COps{corule} exeServer = do
   -- UI config reloaded at each client start.
   sconfigUI <- mkConfigUI corule
-  smvarUI <- newEmptyMVar
   let !sbinding = stdBinding sconfigUI  -- evaluate to check for errors
       font = configFont sconfigUI
   defHist <- defHistory
   let cli = defStateClient defHist sconfigUI
       pos = updateCOps (const cops) emptyState
-      executorAI _sfs fid =
+      executorAI _sfsess fid =
         let noSession = assert `failure` fid
-        in exeClientAI noSession pos (cli fid True)
-      executorUI sfs fid =
-        exeClientUI SessionUI{..} pos (cli fid False)
-  startup font $ \sfs -> exeServer (executorUI sfs) (executorAI sfs)
+            sfconn = assert `failure` fid  -- TODO: hackish
+        in exeClientAI noSession pos (cli fid True) sfconn
+      executorUI sfsess fid =
+        let sfconn = assert `failure` fid  -- TODO: hackish
+        in exeClientUI SessionUI{..} pos (cli fid False)
+  startup font $ \sfsess -> exeServer (executorUI sfsess) (executorAI sfsess)
 
 -- | Wire together game content, the main loop of game clients,
 -- the main game loop assigned to this frontend (possibly containing
@@ -98,12 +100,14 @@ exeFrontend :: ( MonadAtomic m, MonadClientAbort m, MonadClientUI m
                , MonadClientConn CmdClientUI m
                , MonadAtomic n
                , MonadClientConn CmdClientAI n )
-            => (m () -> SessionUI -> State -> StateClient -> Conn CmdClientUI
+            => (m () -> SessionUI -> State -> StateClient
+                -> FrontendConn -> Conn CmdClientUI
                 -> IO ())
-            -> (n () -> SessionUI -> State -> StateClient -> Conn CmdClientAI
+            -> (n () -> SessionUI -> State -> StateClient
+                -> FrontendConn -> Conn CmdClientAI
                 -> IO ())
             -> Kind.COps
-            -> ((FactionId -> Conn CmdClientUI -> IO ())
+            -> ((FactionId -> FrontendConn -> Conn CmdClientUI -> IO ())
                -> (FactionId -> Conn CmdClientAI -> IO ())
                -> IO ())
             -> IO ()

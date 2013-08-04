@@ -16,11 +16,12 @@ import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Frontend
 
 -- | The type of the function inside any client action.
 type FunActionCli c a =
    SessionUI                          -- ^ client UI setup data
-   -> Conn c                       -- ^ this client connection information
+   -> Conn c                          -- ^ this client connection information
    -> (State -> StateClient -> a -> IO ())
                                       -- ^ continuation
    -> (Msg -> IO ())                  -- ^ failure/reset continuation
@@ -86,11 +87,12 @@ instance MonadClientConn c (ActionCli c) where
   getsConn f  = ActionCli (\_c d k _a s cli -> k s cli (f d))
 
 -- | Run an action, with a given session, state and history, in the @IO@ monad.
-executorCli :: ActionCli c () -> SessionUI -> State -> StateClient -> Conn c
+executorCli :: ActionCli c () -> SessionUI -> State -> StateClient
+            -> FrontendConn -> Conn c
             -> IO ()
-executorCli m sess s cli d =
+executorCli m sess s cli sfconn d =
   runActionCli m
-    sess
+    sess {sfconn}  -- TODO: hackish
     d
     (\_ _ _ -> return ())
     (\msg -> let err = "unhandled abort for client"

@@ -4,7 +4,6 @@
 -- and 'TypeAction'.
 module Game.LambdaHack.Client.Action.ActionClass where
 
-import Control.Concurrent
 import Control.Monad.Writer.Strict (WriterT (WriterT), lift, runWriterT)
 import Data.Monoid
 
@@ -20,8 +19,8 @@ import Game.LambdaHack.Frontend
 -- but is completely disregarded and reset when a new playing session starts.
 -- Auxiliary AI and computer player clients have no @sfs@ nor @sbinding@.
 data SessionUI = SessionUI
-  { sfs      :: !FrontendSession  -- ^ frontend session information
-  , smvarUI  :: !(MVar ())        -- ^ locks the UI sybsystem
+  { sfsess   :: !FrontendSession  -- ^ frontend session information
+  , sfconn   :: FrontendConn      -- ^ connection with the frontend
   , sbinding :: !Binding          -- ^ binding of keys to commands
   }
 

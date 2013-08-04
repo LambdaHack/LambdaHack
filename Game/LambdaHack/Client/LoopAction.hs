@@ -102,7 +102,6 @@ loopUI cmdClientUISem = do
   debugPrint $ "UI client" <+> showT side <+> "started."
   loop
   debugPrint $ "UI client" <+> showT side <+> "stopped."
-  unlockUI
  where
   loop = do
     cmd <- readConnToClient

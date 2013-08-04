@@ -12,6 +12,7 @@ import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.ServerCmd
+import Game.LambdaHack.Frontend
 import Game.LambdaHack.Server.Action
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.LoopAction
@@ -84,7 +85,7 @@ mainSer :: (MonadAtomic m, MonadServerConn m)
         => Kind.COps
         -> (m () -> IO ())
         -> (Kind.COps
-            -> ((FactionId -> Conn CmdClientUI -> IO ())
+            -> ((FactionId -> FrontendConn -> Conn CmdClientUI -> IO ())
                 -> (FactionId -> Conn CmdClientAI -> IO ())
                 -> IO ())
             -> IO ())
