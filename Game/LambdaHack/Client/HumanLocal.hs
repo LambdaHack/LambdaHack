@@ -30,6 +30,7 @@ import Data.Ord
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Version
+import Game.LambdaHack.Frontend (frontendName)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.Action

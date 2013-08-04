@@ -8,12 +8,12 @@ import Control.Concurrent
 import Control.Monad.Writer.Strict (WriterT (WriterT), lift, runWriterT)
 import Data.Monoid
 
-import Game.LambdaHack.Client.Action.Frontend
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Frontend
 
 -- | The information that is constant across a client playing session,
 -- including many consecutive games in a single session,

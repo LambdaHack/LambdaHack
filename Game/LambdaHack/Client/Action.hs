@@ -15,7 +15,7 @@ module Game.LambdaHack.Client.Action
     -- * Abort exception handlers
   , tryRepeatedlyWith, tryIgnore, tryWithSlide
     -- * Executing actions
-  , startup, mkConfigUI
+  , mkConfigUI
     -- * Accessors to the game session Reader and the Perception Reader(-like)
   , askBinding, getPerFid
     -- * History and report
@@ -33,7 +33,7 @@ module Game.LambdaHack.Client.Action
   , flushFrames, clientGameSave, restoreGame, displayPush, scoreToSlideshow
   , readConnToClient, writeConnFromClient
   , rndToAction, getArenaUI, getLeaderUI
-  , targetToPos, frontendName, fadeD, partAidLeader, partActorLeader
+  , targetToPos, fadeD, partAidLeader, partActorLeader
   , debugPrint
   ) where
 
@@ -56,8 +56,6 @@ import System.Time
 
 import Game.LambdaHack.Client.Action.ActionClass
 import Game.LambdaHack.Client.Action.ConfigIO
-import Game.LambdaHack.Client.Action.Frontend (frontendName, startup)
-import qualified Game.LambdaHack.Client.Action.Frontend as Frontend
 import qualified Game.LambdaHack.Client.Action.Save as Save
 import Game.LambdaHack.Client.Animation
 import Game.LambdaHack.Client.Binding
@@ -80,6 +78,7 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.RuleKind
+import qualified Game.LambdaHack.Frontend as Frontend
 import Game.LambdaHack.Utils.Assert
 
 debugPrint :: MonadClient m => Text -> m ()

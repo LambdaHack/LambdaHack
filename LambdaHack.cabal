@@ -87,8 +87,6 @@ library
                       Game.LambdaHack.Client.Action.ActionClass,
                       Game.LambdaHack.Client.Action.ActionType,
                       Game.LambdaHack.Client.Action.ConfigIO,
-                      Game.LambdaHack.Client.Action.Frontend,
-                      Game.LambdaHack.Client.Action.Frontend.Chosen,
                       Game.LambdaHack.Client.Action.Save,
                       Game.LambdaHack.Client.Animation,
                       Game.LambdaHack.Client.AtomicSemCli,
@@ -131,6 +129,8 @@ library
                       Game.LambdaHack.Common.Point,
                       Game.LambdaHack.Common.PointXY,
                       Game.LambdaHack.Common.Random,
+                      Game.LambdaHack.Frontend,
+                      Game.LambdaHack.Frontend.Chosen,
                       Game.LambdaHack.Server,
                       Game.LambdaHack.Server.Action,
                       Game.LambdaHack.Server.Action.ActionClass,
@@ -200,22 +200,22 @@ library
   ghc-options:        -fno-ignore-asserts -funbox-strict-fields
 
   if flag(gtk) {
-    other-modules:    Game.LambdaHack.Client.Action.Frontend.Gtk
+    other-modules:    Game.LambdaHack.Frontend.Gtk
     build-depends:    gtk >= 0.12.1 && < 0.13
     cpp-options:      -DGTK
   } else { if flag(vty) {
-    other-modules:    Game.LambdaHack.Client.Action.Frontend.Vty
+    other-modules:    Game.LambdaHack.Frontend.Vty
     build-depends:    vty >= 4.7.0.6
     cpp-options:      -DVTY
   } else { if flag(curses) {
-    other-modules:    Game.LambdaHack.Client.Action.Frontend.Curses
+    other-modules:    Game.LambdaHack.Frontend.Curses
     build-depends:    hscurses >= 1.4.1 && < 2
     cpp-options:      -DCURSES
   } else { if flag(std) {
-    other-modules:    Game.LambdaHack.Client.Action.Frontend.Std
+    other-modules:    Game.LambdaHack.Frontend.Std
     cpp-options:      -DSTD
   } else {
-    other-modules:    Game.LambdaHack.Client.Action.Frontend.Gtk
+    other-modules:    Game.LambdaHack.Frontend.Gtk
     build-depends:    gtk >= 0.12.1 && < 0.13
   } } } }
 

@@ -1,5 +1,5 @@
 -- | Text frontend based on stdin/stdout, intended for bots.
-module Game.LambdaHack.Client.Action.Frontend.Std
+module Game.LambdaHack.Frontend.Std
   ( -- * Session data type for the frontend
     FrontendSession
     -- * The output and input operations

@@ -25,6 +25,7 @@ import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Frontend (startup)
 import Game.LambdaHack.Utils.Assert
 
 storeUndo :: MonadClient m => Atomic -> m ()

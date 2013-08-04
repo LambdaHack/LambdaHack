@@ -1,5 +1,5 @@
 -- | Text frontend based on HSCurses.
-module Game.LambdaHack.Client.Action.Frontend.Curses
+module Game.LambdaHack.Frontend.Curses
   ( -- * Session data type for the frontend
     FrontendSession
     -- * The output and input operations
