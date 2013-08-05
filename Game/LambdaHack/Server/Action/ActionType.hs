@@ -13,14 +13,14 @@ import qualified Data.EnumMap.Strict as EM
 
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.ClientCmd
+import Game.LambdaHack.Common.State
 import Game.LambdaHack.Server.Action.ActionClass
 import Game.LambdaHack.Server.State
-import Game.LambdaHack.Common.State
 
 data SerState = SerState
   { serState  :: !State        -- ^ current global state
   , serServer :: !StateServer  -- ^ current server state
-  , serDict   :: !ConnDict     -- ^ client-server connection information
+  , serDict   :: !ConnServerDict     -- ^ client-server connection information
   }
 
 -- | Server state transformation monad.
@@ -46,7 +46,7 @@ instance MonadServer ActionSer where
     ActionSer $ modify $ \serS -> serS {serServer = s}
   liftIO         = ActionSer . IO.liftIO
 
-instance MonadServerConn ActionSer where
+instance MonadConnServer ActionSer where
   getDict      = ActionSer $ gets $ serDict
   getsDict   f = ActionSer $ gets $ f . serDict
   modifyDict f =

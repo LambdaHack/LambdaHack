@@ -7,7 +7,7 @@ module Game.LambdaHack.Client.Action
   ( -- * Action monads
     MonadClient( getClient, getsClient, putClient, modifyClient )
   , MonadClientUI
-  , MonadClientConn
+  , MonadConnClient
   , MonadClientAbort( abortWith, tryWith )
   , SessionUI(..)
     -- * Various ways to abort action
@@ -31,7 +31,7 @@ module Game.LambdaHack.Client.Action
   , drawOverlay, animate
     -- * Assorted primitives
   , flushFrames, clientGameSave, restoreGame, displayPush, scoreToSlideshow
-  , readConnToClient, writeConnFromClient
+  , readConnServer, writeConnServer
   , rndToAction, getArenaUI, getLeaderUI
   , targetToPos, fadeD, partAidLeader, partActorLeader
   , debugPrint
@@ -427,13 +427,13 @@ restoreGame = do
   let sName = saveName side isAI
   liftIO $ Save.restoreGameCli sName configUI pathsDataFile title
 
-readConnToClient :: (MonadClientConn c m) => m c
-readConnToClient = do
-  toClient <- getsConn toClient
-  liftIO $ atomically $ readTQueue toClient
+readConnServer :: (MonadConnClient c m) => m c
+readConnServer = do
+  fromServer <- getsConn fromServer
+  liftIO $ atomically $ readTQueue fromServer
 
-writeConnFromClient :: (MonadClientConn c m) => CmdSer -> m ()
-writeConnFromClient cmds = do
+writeConnServer :: (MonadConnClient c m) => CmdSer -> m ()
+writeConnServer cmds = do
   toServer <- getsConn toServer
   liftIO $ atomically $ writeTQueue toServer cmds
 

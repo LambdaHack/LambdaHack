@@ -81,12 +81,12 @@ debugArgs = do
 -- the types are different and so the whole pattern of computation
 -- is different. Which of the frontends is run depends on the flags supplied
 -- when compiling the engine library.
-mainSer :: (MonadAtomic m, MonadServerConn m)
+mainSer :: (MonadAtomic m, MonadConnServer m)
         => Kind.COps
         -> (m () -> IO ())
         -> (Kind.COps
-            -> ((FactionId -> FrontendConn -> Conn CmdClientUI -> IO ())
-                -> (FactionId -> Conn CmdClientAI -> IO ())
+            -> ((FactionId -> ConnFrontend -> ConnServer CmdClientUI -> IO ())
+                -> (FactionId -> ConnServer CmdClientAI -> IO ())
                 -> IO ())
             -> IO ())
         -> IO ()

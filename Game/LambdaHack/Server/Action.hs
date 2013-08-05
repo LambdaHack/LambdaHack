@@ -5,7 +5,7 @@
 module Game.LambdaHack.Server.Action
   ( -- * Action monads
     MonadServer( getServer, getsServer, putServer, modifyServer )
-  , MonadServerConn
+  , MonadConnServer
   , tryRestore, updateConn, waitForChildren, speedupCOps
     -- * Communication
   , sendUpdateUI, sendQueryUI, sendUpdateAI, sendQueryAI
@@ -105,23 +105,23 @@ dumpCfg fn = do
   config <- getsServer sconfig
   liftIO $ ConfigIO.dump config fn
 
-writeTQueueAI :: MonadServerConn m => CmdClientAI -> TQueue CmdClientAI -> m ()
-writeTQueueAI cmd toClient = do
+writeTQueueAI :: MonadConnServer m => CmdClientAI -> TQueue CmdClientAI -> m ()
+writeTQueueAI cmd fromServer = do
   debug <- getsServer $ sniffOut . sdebugSer
   when debug $ do
     d <- debugCmdClientAI cmd
     liftIO $ T.hPutStrLn stderr d
-  liftIO $ atomically $ STM.writeTQueue toClient cmd
+  liftIO $ atomically $ STM.writeTQueue fromServer cmd
 
-writeTQueueUI :: MonadServerConn m => CmdClientUI -> TQueue CmdClientUI -> m ()
-writeTQueueUI cmd toClient = do
+writeTQueueUI :: MonadConnServer m => CmdClientUI -> TQueue CmdClientUI -> m ()
+writeTQueueUI cmd fromServer = do
   debug <- getsServer $ sniffOut . sdebugSer
   when debug $ do
     d <- debugCmdClientUI cmd
     liftIO $ T.hPutStrLn stderr d
-  liftIO $ atomically $ STM.writeTQueue toClient cmd
+  liftIO $ atomically $ STM.writeTQueue fromServer cmd
 
-readTQueue :: MonadServerConn m => TQueue CmdSer -> m CmdSer
+readTQueue :: MonadConnServer m => TQueue CmdSer -> m CmdSer
 readTQueue toServer = do
   cmd <- liftIO $ atomically $ STM.readTQueue toServer
   debug <- getsServer $ sniffIn . sdebugSer
@@ -131,29 +131,29 @@ readTQueue toServer = do
     liftIO $ T.hPutStrLn stderr d
   return cmd
 
-sendUpdateAI :: MonadServerConn m => FactionId -> CmdClientAI -> m ()
+sendUpdateAI :: MonadConnServer m => FactionId -> CmdClientAI -> m ()
 sendUpdateAI fid cmd = do
   conn <- getsDict $ snd . (EM.! fid)
-  maybe skip (writeTQueueAI cmd . toClient) conn
+  maybe skip (writeTQueueAI cmd . fromServer) conn
 
-sendQueryAI :: MonadServerConn m => FactionId -> ActorId -> m CmdSer
+sendQueryAI :: MonadConnServer m => FactionId -> ActorId -> m CmdSer
 sendQueryAI fid aid = do
   mconn <- getsDict (snd . (EM.! fid))
   let connSend conn = do
-        writeTQueueAI (CmdQueryAI aid) $ toClient conn
+        writeTQueueAI (CmdQueryAI aid) $ fromServer conn
         readTQueue $ toServer conn
   maybe (assert `failure` (fid, aid)) connSend mconn
 
-sendUpdateUI :: MonadServerConn m => FactionId -> CmdClientUI -> m ()
+sendUpdateUI :: MonadConnServer m => FactionId -> CmdClientUI -> m ()
 sendUpdateUI fid cmd = do
   mconn <- getsDict (fst . (EM.! fid))
-  maybe skip (writeTQueueUI cmd . toClient . snd) mconn
+  maybe skip (writeTQueueUI cmd . fromServer . snd) mconn
 
-sendQueryUI :: MonadServerConn m => FactionId -> ActorId -> m CmdSer
+sendQueryUI :: MonadConnServer m => FactionId -> ActorId -> m CmdSer
 sendQueryUI fid aid = do
   mconn <- getsDict (fst . (EM.! fid))
   let connSend conn = do
-        writeTQueueUI (CmdQueryUI aid) $ toClient conn
+        writeTQueueUI (CmdQueryUI aid) $ fromServer conn
         readTQueue $ toServer conn
   maybe (assert `failure` (fid, aid)) (connSend . snd) mconn
 
@@ -198,36 +198,36 @@ tryRestore Kind.COps{corule} = do
 -- | Update connections to the new definition of factions.
 -- Connect to clients in old or newly spawned threads
 -- that read and write directly to the channels.
-updateConn :: (MonadAtomic m, MonadServerConn m)
-           => (FactionId -> FrontendConn -> Conn CmdClientUI -> IO ())
-           -> (FactionId -> Conn CmdClientAI -> IO ())
+updateConn :: (MonadAtomic m, MonadConnServer m)
+           => (FactionId -> ConnFrontend -> ConnServer CmdClientUI -> IO ())
+           -> (FactionId -> ConnServer CmdClientAI -> IO ())
            -> m ()
 updateConn executorUI executorAI = do
   -- Prepare connections based on factions.
   oldD <- getDict
-  let mkConn :: IO (Conn c)
-      mkConn = do
-        toClient <- newTQueueIO
+  let mkConnServer :: IO (ConnServer c)
+      mkConnServer = do
+        fromServer <- newTQueueIO
         toServer <- newTQueueIO
-        return Conn{..}
-      mkfConn :: IO FrontendConn
-      mkfConn = do
-        ftoClient <- newTQueueIO
-        ftoFrontend <- newTQueueIO
-        return FrontendConn{..}
+        return ConnServer{..}
+      mkConnFrontend :: IO ConnFrontend
+      mkConnFrontend = do
+        fromFrontend <- newTQueueIO
+        toFrontend <- newTQueueIO
+        return ConnFrontend{..}
       addConn fid fact = case EM.lookup fid oldD of
         Just conns -> return conns  -- share old conns and threads
         Nothing -> do
           connUI <- if isHumanFact fact
                     then do
-                      cUI <- mkConn
-                      cf <- mkfConn
-                      return $ Just (cf, cUI)
+                      connS <- mkConnServer
+                      connF <- mkConnFrontend
+                      return $ Just (connF, connS)
                     else return Nothing
-          connAI <- fmap Just mkConn
+          connAI <- fmap Just mkConnServer
           -- TODO, when net clients, etc., are included:
           -- connAI <- if usesAIFact fact
-          --           then mkConn
+          --           then mkConnServer
           --           else return Nothing
           return (connUI, connAI)
   factionD <- getsState sfactionD
@@ -240,9 +240,9 @@ updateConn executorUI executorAI = do
   -- TODO: kill multiplex threads for toKill, perhaps the client should
   -- send its multiplex thread a message inviting it to exit
   liftIO $ void $ forkIO $ loopFrontend multiFrontendTQueue
-  let forkUI fid (fconn, conn) = do
-        void $ forkIO $ multiplex (ftoFrontend fconn) fid multiFrontendTQueue
-        void $ forkChild $ executorUI fid fconn conn
+  let forkUI fid (connF, connS) = do
+        void $ forkIO $ multiplex (toFrontend connF) fid multiFrontendTQueue
+        void $ forkChild $ executorUI fid connF connS
       forkClient fid (connUI, connAI) = do
         maybe skip (forkUI fid) connUI
         maybe skip (void . forkChild . executorAI fid) connAI

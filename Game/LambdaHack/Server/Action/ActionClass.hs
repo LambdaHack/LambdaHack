@@ -16,8 +16,8 @@ class MonadActionRO m => MonadServer m where
   -- nobody can subvert the action monads by invoking arbitrary IO.
   liftIO       :: IO a -> m a
 
-class MonadServer m => MonadServerConn m where
-  getDict      :: m ConnDict
-  getsDict     :: (ConnDict -> a) -> m a
-  modifyDict   :: (ConnDict -> ConnDict) -> m ()
-  putDict      :: ConnDict -> m ()
+class MonadServer m => MonadConnServer m where
+  getDict      :: m ConnServerDict
+  getsDict     :: (ConnServerDict -> a) -> m a
+  modifyDict   :: (ConnServerDict -> ConnServerDict) -> m ()
+  putDict      :: ConnServerDict -> m ()

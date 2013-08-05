@@ -46,11 +46,11 @@ import Game.LambdaHack.Utils.Assert
 -- every fixed number of time units, e.g., monster generation.
 -- Run the leader and other actors moves. Eventually advance the time
 -- and repeat.
-loopSer :: (MonadAtomic m, MonadServerConn m)
+loopSer :: (MonadAtomic m, MonadConnServer m)
         => DebugModeSer
         -> (CmdSer -> m Bool)
-        -> (FactionId -> FrontendConn -> Conn CmdClientUI -> IO ())
-        -> (FactionId -> Conn CmdClientAI -> IO ())
+        -> (FactionId -> ConnFrontend -> ConnServer CmdClientUI -> IO ())
+        -> (FactionId -> ConnServer CmdClientAI -> IO ())
         -> Kind.COps
         -> m ()
 loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
@@ -141,7 +141,7 @@ endClip arenas = do
 -- Some very fast actors may move many times a clip and then
 -- we introduce subclips and produce many frames per clip to avoid
 -- jerky movement. But most often we push exactly one frame or frame delay.
-handleActors :: (MonadAtomic m, MonadServerConn m)
+handleActors :: (MonadAtomic m, MonadConnServer m)
              => (CmdSer -> m Bool)
              -> LevelId
              -> m ()
@@ -372,14 +372,14 @@ regenerateLevelHP lid = do
   mapM_ (\aid -> execCmdAtomic $ HealActorA aid 1) toRegen
 
 -- | Continue or restart or exit the game.
-endOrLoop :: (MonadAtomic m, MonadServerConn m) => m () -> m () -> m ()
+endOrLoop :: (MonadAtomic m, MonadConnServer m) => m () -> m () -> m ()
 endOrLoop updConn loopServer = do
   factionD <- getsState sfactionD
   let f (_, Faction{gquit=Nothing}) = Nothing
       f (fid, Faction{gquit=Just quit}) = Just (fid, quit)
   processQuits updConn loopServer $ mapMaybe f $ EM.assocs factionD
 
-processQuits :: (MonadAtomic m, MonadServerConn m)
+processQuits :: (MonadAtomic m, MonadConnServer m)
              => m () -> m () -> [(FactionId, (Bool, Status))] -> m ()
 processQuits _ loopServer [] = loopServer  -- just continue
 processQuits updConn loopServer ((fid, quit) : quits) = do
@@ -444,7 +444,7 @@ revealItems = do
         mapActorItems_ (discover b) b
   mapDungeonActors_ f dungeon
 
-restartGame :: (MonadAtomic m, MonadServerConn m)
+restartGame :: (MonadAtomic m, MonadConnServer m)
             => Text -> m () -> Bool -> m () -> m ()
 restartGame t updConn quitter loopServer = do
   cops <- getsState scops

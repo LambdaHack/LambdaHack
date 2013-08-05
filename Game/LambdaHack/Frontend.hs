@@ -6,7 +6,7 @@ module Game.LambdaHack.Frontend
     -- * Derived operation
   , promptGetKey
     -- * Connection channels
-  , FrontendConn (..), multiFrontendTQueue, multiplex, loopFrontend
+  , ConnFrontend (..), multiFrontendTQueue, multiplex, loopFrontend
   ) where
 
 import Control.Concurrent.STM (TQueue, atomically, newTQueueIO)
@@ -22,12 +22,12 @@ import Game.LambdaHack.Frontend.Chosen
 import Game.LambdaHack.Utils.LQueue
 
 -- | Connection channels between a client and a frontend.
-data FrontendConn = FrontendConn
-  { ftoClient   :: TQueue K.KM
-  , ftoFrontend :: TQueue AcFrame
+data ConnFrontend = ConnFrontend
+  { fromFrontend :: TQueue K.KM
+  , toFrontend   :: TQueue AcFrame
   }
 
-instance Show FrontendConn where
+instance Show ConnFrontend where
   show _ = "client-frontend connection channels"
 
 -- | Display a prompt, wait for any of the specified keys (for any key,

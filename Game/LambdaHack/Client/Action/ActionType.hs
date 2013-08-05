@@ -21,7 +21,7 @@ import Game.LambdaHack.Frontend
 -- | The type of the function inside any client action.
 type FunActionCli c a =
    SessionUI                          -- ^ client UI setup data
-   -> Conn c                          -- ^ this client connection information
+   -> ConnServer c                          -- ^ this client connection information
    -> (State -> StateClient -> a -> IO ())
                                       -- ^ continuation
    -> (Msg -> IO ())                  -- ^ failure/reset continuation
@@ -83,12 +83,12 @@ instance MonadClient (ActionCli c) where
 instance MonadClientUI (ActionCli c) where
   getsSession f  = ActionCli (\c _d k _a s cli -> k s cli (f c))
 
-instance MonadClientConn c (ActionCli c) where
+instance MonadConnClient c (ActionCli c) where
   getsConn f  = ActionCli (\_c d k _a s cli -> k s cli (f d))
 
 -- | Run an action, with a given session, state and history, in the @IO@ monad.
 executorCli :: ActionCli c () -> SessionUI -> State -> StateClient
-            -> FrontendConn -> Conn c
+            -> ConnFrontend -> ConnServer c
             -> IO ()
 executorCli m sess s cli sfconn d =
   runActionCli m

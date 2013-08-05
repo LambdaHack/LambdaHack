@@ -20,7 +20,7 @@ import Game.LambdaHack.Frontend
 -- Auxiliary AI and computer player clients have no @sfs@ nor @sbinding@.
 data SessionUI = SessionUI
   { sfsess   :: !FrontendSession  -- ^ frontend session information
-  , sfconn   :: FrontendConn      -- ^ connection with the frontend
+  , sfconn   :: ConnFrontend      -- ^ connection with the frontend
   , sbinding :: !Binding          -- ^ binding of keys to commands
   }
 
@@ -46,8 +46,8 @@ class MonadClient m => MonadClientUI m where
 instance (Monoid a, MonadClientUI m) => MonadClientUI (WriterT a m) where
   getsSession  = lift . getsSession
 
-class MonadClient m => MonadClientConn c m | m -> c where
-  getsConn  :: (Conn c -> a) -> m a
+class MonadClient m => MonadConnClient c m | m -> c where
+  getsConn  :: (ConnServer c -> a) -> m a
 
 -- | The bottom of the action monads class semilattice.
 class MonadClient m => MonadClientAbort m where

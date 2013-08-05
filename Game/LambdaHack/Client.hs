@@ -5,7 +5,7 @@
 module Game.LambdaHack.Client
   ( cmdClientAISem, cmdClientUISem
   , loopAI, loopUI, exeFrontend
-  , MonadClient, MonadClientUI, MonadClientConn
+  , MonadClient, MonadClientUI, MonadConnClient
   ) where
 
 import Control.Monad
@@ -32,7 +32,7 @@ storeUndo atomic = do
   maybe skip (\a -> modifyClient $ \cli -> cli {sundo = a : sundo cli})
     $ undoAtomic atomic
 
-cmdClientAISem :: (MonadAtomic m, MonadClientConn c m)
+cmdClientAISem :: (MonadAtomic m, MonadConnClient c m)
                => CmdClientAI -> m ()
 cmdClientAISem cmd = case cmd of
   CmdAtomicAI cmdA -> do
@@ -42,10 +42,10 @@ cmdClientAISem cmd = case cmd of
     mapM_ (storeUndo . CmdAtomic) cmds
   CmdQueryAI aid -> do
     cmdC <- queryAI aid
-    writeConnFromClient cmdC
+    writeConnServer cmdC
 
 cmdClientUISem :: ( MonadAtomic m, MonadClientAbort m
-                  , MonadClientUI m, MonadClientConn c m )
+                  , MonadClientUI m, MonadConnClient c m )
                => CmdClientUI -> m ()
 cmdClientUISem cmd = do
   mleader <- getsClient _sleader
@@ -64,15 +64,15 @@ cmdClientUISem cmd = do
     CmdQueryUI aid -> do
       assert (isJust mleader `blame` cmd) skip
       cmdH <- queryUI aid
-      writeConnFromClient cmdH
+      writeConnServer cmdH
 
 wireSession :: (SessionUI -> State -> StateClient
-                -> FrontendConn -> Conn CmdClientUI -> IO ())
+                -> ConnFrontend -> ConnServer CmdClientUI -> IO ())
             -> (SessionUI -> State -> StateClient
-                -> FrontendConn -> Conn CmdClientAI -> IO ())
+                -> ConnFrontend -> ConnServer CmdClientAI -> IO ())
             -> Kind.COps
-            -> ((FactionId -> FrontendConn -> Conn CmdClientUI -> IO ())
-                -> (FactionId -> Conn CmdClientAI -> IO ())
+            -> ((FactionId -> ConnFrontend -> ConnServer CmdClientUI -> IO ())
+                -> (FactionId -> ConnServer CmdClientAI -> IO ())
                 -> IO ())
             -> IO ()
 wireSession exeClientUI exeClientAI cops@Kind.COps{corule} exeServer = do
@@ -97,18 +97,18 @@ wireSession exeClientUI exeClientAI cops@Kind.COps{corule} exeServer = do
 -- the server loop, if the whole game runs in one process),
 -- UI config and the definitions of game commands.
 exeFrontend :: ( MonadAtomic m, MonadClientAbort m, MonadClientUI m
-               , MonadClientConn CmdClientUI m
+               , MonadConnClient CmdClientUI m
                , MonadAtomic n
-               , MonadClientConn CmdClientAI n )
+               , MonadConnClient CmdClientAI n )
             => (m () -> SessionUI -> State -> StateClient
-                -> FrontendConn -> Conn CmdClientUI
+                -> ConnFrontend -> ConnServer CmdClientUI
                 -> IO ())
             -> (n () -> SessionUI -> State -> StateClient
-                -> FrontendConn -> Conn CmdClientAI
+                -> ConnFrontend -> ConnServer CmdClientAI
                 -> IO ())
             -> Kind.COps
-            -> ((FactionId -> FrontendConn -> Conn CmdClientUI -> IO ())
-               -> (FactionId -> Conn CmdClientAI -> IO ())
+            -> ((FactionId -> ConnFrontend -> ConnServer CmdClientUI -> IO ())
+               -> (FactionId -> ConnServer CmdClientAI -> IO ())
                -> IO ())
             -> IO ()
 exeFrontend executorUI executorAI cops exeServer = do

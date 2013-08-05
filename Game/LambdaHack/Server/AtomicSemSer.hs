@@ -41,7 +41,7 @@ atomicServerSem posAtomic atomic =
       SfxAtomic _ -> return ()
 
 -- | Send an atomic action to all clients that can see it.
-atomicSendSem :: (MonadAction m, MonadServerConn m) => Atomic -> m ()
+atomicSendSem :: (MonadAction m, MonadConnServer m) => Atomic -> m ()
 atomicSendSem atomic = do
   -- Gather data from the old state.
   sOld <- getState
