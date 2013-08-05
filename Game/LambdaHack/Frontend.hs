@@ -6,11 +6,12 @@ module Game.LambdaHack.Frontend
     -- * Derived operation
   , promptGetKey
     -- * Connection channels
-  , FrontendConn (..)
+  , FrontendConn (..), multiFrontendTQueue, multiplex
   ) where
 
-import Control.Concurrent.STM.TQueue
-import qualified Data.EnumMap.Strict as EM
+import Control.Concurrent.STM (TQueue, atomically, newTQueueIO)
+import qualified Control.Concurrent.STM as STM
+import System.IO.Unsafe (unsafePerformIO)
 
 import Game.LambdaHack.Client.Animation (AcFrame (..), SingleFrame (..))
 import qualified Game.LambdaHack.Client.Key as K (KM)
@@ -34,3 +35,17 @@ promptGetKey sess keys frame = do
   if null keys || km `elem` keys
     then return km
     else promptGetKey sess keys frame
+
+-- TODO: avoid unsafePerformIO; but server state is a wrong idea, too
+multiFrontendTQueue :: TQueue (FactionId, AcFrame)
+{-# NOINLINE multiFrontendTQueue #-}
+multiFrontendTQueue = unsafePerformIO newTQueueIO
+
+multiplex :: TQueue AcFrame -> FactionId -> TQueue (FactionId, AcFrame)
+          -> IO ()
+multiplex toFrontend side multiFrontend = loop
+ where
+  loop = do
+    fr <- atomically $ STM.readTQueue toFrontend
+    atomically $ STM.writeTQueue multiFrontend (side, fr)
+    loop

@@ -237,8 +237,13 @@ updateConn executorUI executorAI = do
   let toSpawn = d EM.\\ oldD
       toKill  = oldD EM.\\ d  -- don't kill all, share old threads
   mapWithKeyM_ (\fid _ -> execCmdAtomic $ KillExitA fid) toKill
-  let forkClient fid (connUI, connAI) = do
-        maybe skip (void . forkChild . uncurry (executorUI fid)) connUI
+  -- TODO: kill multiplex threads for toKill, perhaps the client should
+  -- send its multiplex thread a message inviting it to exit
+  let forkUI fid (fconn, conn) = do
+        void $ forkIO $ multiplex (ftoFrontend fconn) fid multiFrontendTQueue
+        void $ forkChild $ executorUI fid fconn conn
+      forkClient fid (connUI, connAI) = do
+        maybe skip (forkUI fid) connUI
         maybe skip (void . forkChild . executorAI fid) connAI
   liftIO $ mapWithKeyM_ forkClient toSpawn
 
