@@ -6,17 +6,20 @@ module Game.LambdaHack.Frontend
     -- * Derived operation
   , promptGetKey
     -- * Connection channels
-  , FrontendConn (..), multiFrontendTQueue, multiplex
+  , FrontendConn (..), multiFrontendTQueue, multiplex, loopFrontend
   ) where
 
 import Control.Concurrent.STM (TQueue, atomically, newTQueueIO)
 import qualified Control.Concurrent.STM as STM
+import qualified Data.EnumMap.Strict as EM
+import Data.Maybe (fromMaybe)
 import System.IO.Unsafe (unsafePerformIO)
 
 import Game.LambdaHack.Client.Animation (AcFrame (..), SingleFrame (..))
 import qualified Game.LambdaHack.Client.Key as K (KM)
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Frontend.Chosen
+import Game.LambdaHack.Utils.LQueue
 
 -- | Connection channels between a client and a frontend.
 data FrontendConn = FrontendConn
@@ -49,3 +52,19 @@ multiplex toFrontend side multiFrontend = loop
     fr <- atomically $ STM.readTQueue toFrontend
     atomically $ STM.writeTQueue multiFrontend (side, fr)
     loop
+
+loopFrontend :: TQueue (FactionId, AcFrame) -> IO ()
+loopFrontend multiFrontend = loop EM.empty
+ where
+  insertFr :: FactionId -> AcFrame
+           -> EM.EnumMap FactionId (LQueue AcFrame)
+           -> EM.EnumMap FactionId (LQueue AcFrame)
+  insertFr side fr frMap =
+    let queue = fromMaybe newLQueue $ EM.lookup side frMap
+    in EM.insert side (writeLQueue queue fr) frMap
+  loop :: EM.EnumMap FactionId (LQueue AcFrame) -> IO ()
+  loop frMap = do
+    (side, fr) <- atomically $ STM.readTQueue multiFrontend
+    let frMap2 = insertFr side fr frMap
+    -- TODO: display something
+    loop frMap2

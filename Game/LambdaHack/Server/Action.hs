@@ -239,6 +239,7 @@ updateConn executorUI executorAI = do
   mapWithKeyM_ (\fid _ -> execCmdAtomic $ KillExitA fid) toKill
   -- TODO: kill multiplex threads for toKill, perhaps the client should
   -- send its multiplex thread a message inviting it to exit
+  liftIO $ void $ forkIO $ loopFrontend multiFrontendTQueue
   let forkUI fid (fconn, conn) = do
         void $ forkIO $ multiplex (ftoFrontend fconn) fid multiFrontendTQueue
         void $ forkChild $ executorUI fid fconn conn
