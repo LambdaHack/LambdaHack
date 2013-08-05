@@ -2,7 +2,7 @@
 module Game.LambdaHack.Utils.LQueue
   ( LQueue
   , newLQueue, nullLQueue, lengthLQueue, tryReadLQueue, writeLQueue
-  , trimLQueue, dropStartLQueue, lastLQueue
+  , trimLQueue, dropStartLQueue, lastLQueue, toListLQueue
   ) where
 
 import Data.Maybe
@@ -54,3 +54,6 @@ lastLQueue (rs, ws) =
       lst ([], []) = Nothing
       lst (rsj, []) = Just $ last rsj
   in lst (catMaybes rs, catMaybes ws)
+
+toListLQueue :: LQueue a -> [a]
+toListLQueue (rs, ws) = rs ++ reverse ws

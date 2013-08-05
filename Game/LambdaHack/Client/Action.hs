@@ -31,7 +31,7 @@ module Game.LambdaHack.Client.Action
   , drawOverlay, animate
     -- * Assorted primitives
   , flushFrames, clientGameSave, restoreGame, displayPush, scoreToSlideshow
-  , readConnServer, writeConnServer
+  , readConnServer, writeConnServer, readConnFrontend, writeConnFrontend
   , rndToAction, getArenaUI, getLeaderUI
   , targetToPos, fadeD, partAidLeader, partActorLeader
   , debugPrint
@@ -139,7 +139,7 @@ displayFrame isRunning mf = do
           Nothing -> AcDelay
           Just fr | isRunning -> AcRunning fr
           Just fr -> AcNormal fr
-    modifyClient $ \cli -> cli {sframe = frame : sframe cli}
+    writeConnFrontend $ Left frame
   else do
     -- At most one human player, display everything at once.
     liftIO $ Frontend.display fs isRunning mf
@@ -157,7 +157,7 @@ flushFrames = do
   fs <- askFrontendSession
   let pGetKey keys frame = liftIO $ Frontend.promptGetKey fs keys frame
       displayAc (AcConfirm fr) =
-        void $ getConfirmGeneric pGetKey [] fr
+        void $ Frontend.getConfirmGeneric pGetKey [] fr
       displayAc (AcRunning fr) =
         liftIO $ Frontend.display fs True (Just fr)
       displayAc (AcNormal fr) =
@@ -173,8 +173,13 @@ flushFrames = do
 promptGetKey :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
 promptGetKey keys frame = do
   fs <- askFrontendSession
-  flushFrames
-  liftIO $ Frontend.promptGetKey fs keys frame
+  nH <- nHumans
+  if nH > 1 then do
+    writeConnFrontend $ Right (keys, frame)
+    readConnFrontend
+  else do
+    flushFrames
+    liftIO $ Frontend.promptGetKey fs keys frame
 
 getLeaderUI :: MonadClientUI m => m ActorId
 getLeaderUI = do
@@ -245,22 +250,8 @@ getKeyOverlayCommand overlay = do
   km <- promptGetKey [] frame
   return $! fromMaybe km $ M.lookup km $ kmacro keyb
 
--- | Ignore unexpected kestrokes until a SPACE or ESC or others are pressed.
-getConfirmGeneric :: MonadClientUI m
-                  => ([K.KM] -> SingleFrame -> m K.KM)
-                  -> [K.KM] -> SingleFrame -> m Bool
-getConfirmGeneric pGetKey clearKeys frame = do
-  let keys = [ K.KM {key=K.Space, modifier=K.NoModifier}
-             , K.KM {key=K.Esc, modifier=K.NoModifier}]
-             ++ clearKeys
-  km <- pGetKey keys frame
-  case km of
-    K.KM {key=K.Space, modifier=K.NoModifier} -> return True
-    _ | km `elem` clearKeys -> return True
-    _ -> return False
-
 getConfirm :: MonadClientUI m => [K.KM] -> SingleFrame -> m Bool
-getConfirm = getConfirmGeneric promptGetKey
+getConfirm = Frontend.getConfirmGeneric promptGetKey
 
 -- | Display a slideshow, awaiting confirmation for each slide.
 getAllConfirms :: MonadClientUI m => [K.KM] -> Slideshow -> m Bool
@@ -436,6 +427,17 @@ writeConnServer :: (MonadConnClient c m) => CmdSer -> m ()
 writeConnServer cmds = do
   toServer <- getsConn toServer
   liftIO $ atomically $ writeTQueue toServer cmds
+
+readConnFrontend :: MonadClientUI m => m K.KM
+readConnFrontend = do
+  fromF <- getsSession $ Frontend.fromFrontend . sfconn
+  liftIO $ atomically $ readTQueue fromF
+
+writeConnFrontend :: MonadClientUI m
+                  => Either AcFrame ([K.KM], SingleFrame) -> m ()
+writeConnFrontend efr = do
+  toF <- getsSession $ Frontend.toFrontend . sfconn
+  liftIO $ atomically $ writeTQueue toF efr
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: MonadClient m => Rnd a -> m a

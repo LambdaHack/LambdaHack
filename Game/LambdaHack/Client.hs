@@ -90,7 +90,7 @@ wireSession exeClientUI exeClientAI cops@Kind.COps{corule} exeServer = do
       executorUI sfsess fid =
         let sfconn = assert `failure` fid  -- TODO: hackish
         in exeClientUI SessionUI{..} pos (cli fid False)
-  startup font $ \sfsess -> exeServer (executorUI sfsess) (executorAI sfsess)
+  startupF font $ \sfsess -> exeServer (executorUI sfsess) (executorAI sfsess)
 
 -- | Wire together game content, the main loop of game clients,
 -- the main game loop assigned to this frontend (possibly containing
