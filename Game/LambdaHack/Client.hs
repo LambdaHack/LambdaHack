@@ -83,14 +83,14 @@ wireSession exeClientUI exeClientAI cops@Kind.COps{corule} exeServer = do
   defHist <- defHistory
   let cli = defStateClient defHist sconfigUI
       pos = updateCOps (const cops) emptyState
-      executorAI _sfsess fid =
+      executorAI fid =
         let noSession = assert `failure` fid
             sfconn = assert `failure` fid  -- TODO: hackish
         in exeClientAI noSession pos (cli fid True) sfconn
-      executorUI sfsess fid =
+      executorUI fid =
         let sfconn = assert `failure` fid  -- TODO: hackish
         in exeClientUI SessionUI{..} pos (cli fid False)
-  startupF font $ \sfsess -> exeServer (executorUI sfsess) (executorAI sfsess)
+  startupF font $ exeServer executorUI executorAI
 
 -- | Wire together game content, the main loop of game clients,
 -- the main game loop assigned to this frontend (possibly containing

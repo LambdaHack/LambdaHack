@@ -131,55 +131,22 @@ tryWithSlide exc h =
 
 displayFrame :: MonadClientUI m => Bool -> Maybe SingleFrame -> m ()
 displayFrame isRunning mf = do
-  fs <- askFrontendSession
-  nH <- nHumans
-  if nH > 1 then do
-    -- More than one human players, don't mix their output.
-    let frame = case mf of
-          Nothing -> AcDelay
-          Just fr | isRunning -> AcRunning fr
-          Just fr -> AcNormal fr
-    writeConnFrontend $ Left frame
-  else do
-    -- At most one human player, display everything at once.
-    liftIO $ Frontend.display fs isRunning mf
-
-displayFadeFrames :: MonadClient m => Frames -> m ()
-displayFadeFrames frames = do
-  let translateFr frame = case frame of
+  let frame = case mf of
         Nothing -> AcDelay
+        Just fr | isRunning -> AcRunning fr
         Just fr -> AcNormal fr
-      fades = reverse $ map translateFr frames
-  modifyClient $ \cli -> cli {sfade = fades ++ sfade cli}
+  writeConnFrontend $ Left frame
+
+displayFadeFrames :: MonadClientUI m => Frames -> m ()
+displayFadeFrames frames = return ()
 
 flushFrames :: MonadClientUI m => m ()
-flushFrames = do
-  fs <- askFrontendSession
-  let pGetKey keys frame = liftIO $ Frontend.promptGetKey fs keys frame
-      displayAc (AcConfirm fr) =
-        void $ Frontend.getConfirmGeneric pGetKey [] fr
-      displayAc (AcRunning fr) =
-        liftIO $ Frontend.display fs True (Just fr)
-      displayAc (AcNormal fr) =
-        liftIO $ Frontend.display fs False (Just fr)
-      displayAc AcDelay =
-        liftIO $ Frontend.display fs False Nothing
-  sfade <- getsClient sfade
-  sframe <- getsClient sframe
-  mapM_ displayAc $ reverse sfade
-  mapM_ displayAc $ reverse sframe
-  modifyClient $ \cli -> cli {sfade = [], sframe = []}
+flushFrames = return ()  -- TODO
 
 promptGetKey :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
 promptGetKey keys frame = do
-  fs <- askFrontendSession
-  nH <- nHumans
-  if nH > 1 then do
-    writeConnFrontend $ Right (keys, frame)
-    readConnFrontend
-  else do
-    flushFrames
-    liftIO $ Frontend.promptGetKey fs keys frame
+  writeConnFrontend $ Right (keys, frame)
+  readConnFrontend
 
 getLeaderUI :: MonadClientUI m => m ActorId
 getLeaderUI = do
@@ -209,10 +176,6 @@ targetToPos = do
         return $ Just pos
       else return Nothing
     Nothing -> return scursor
-
--- | Get the frontend session.
-askFrontendSession :: MonadClientUI m => m Frontend.FrontendSession
-askFrontendSession = getsSession sfsess
 
 -- | Get the key binding.
 askBinding :: MonadClientUI m => m Binding

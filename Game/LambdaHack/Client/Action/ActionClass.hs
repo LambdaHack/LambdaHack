@@ -19,8 +19,7 @@ import Game.LambdaHack.Frontend
 -- but is completely disregarded and reset when a new playing session starts.
 -- Auxiliary AI and computer player clients have no @sfs@ nor @sbinding@.
 data SessionUI = SessionUI
-  { sfsess   :: !FrontendSession  -- ^ frontend session information
-  , sfconn   :: ConnFrontend      -- ^ connection with the frontend
+  { sfconn   :: ConnFrontend      -- ^ connection with the frontend
   , sbinding :: !Binding          -- ^ binding of keys to commands
   }
 

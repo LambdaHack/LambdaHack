@@ -2,9 +2,9 @@
 -- using one of the available raw frontends and derived  operations.
 module Game.LambdaHack.Frontend
   ( -- * Re-exported part of the raw frontend
-    FrontendSession, frontendName, display
+    frontendName
     -- * Derived operation
-  , startupF, promptGetKey, getConfirmGeneric
+  , startupF, getConfirmGeneric
     -- * Connection channels
   , ConnFrontend(..), ConnMulti(..)
   , connMulti, multiplex, unmultiplex, loopFrontend
@@ -44,10 +44,10 @@ data ConnMulti = ConnMulti
   , toMulti   :: ToMulti
   }
 
-startupF :: String -> (FrontendSession -> IO ()) -> IO ()
+startupF :: String -> IO () -> IO ()
 startupF s k = startup s $ \fs -> do
   void $ forkIO $ loopFrontend fs connMulti
-  k fs
+  k
 
 -- | Display a prompt, wait for any of the specified keys (for any key,
 -- if the list is empty). Repeat if an unexpected key received.
@@ -68,19 +68,19 @@ connMulti = unsafePerformIO $ do
 
 multiplex :: TQueue (Either AcFrame ([K.KM], SingleFrame))
           -> FactionId -> ToMulti -> IO ()
-multiplex toFrontend side toMulti = loop
+multiplex toFrontend fid toMulti = loop
  where
   loop = do
     fr <- atomically $ STM.readTQueue toFrontend
-    atomically $ STM.writeTQueue toMulti (side, fr)
+    atomically $ STM.writeTQueue toMulti (fid, fr)
     loop
 
 unmultiplex :: (FactionId -> ConnFrontend) -> FromMulti -> IO ()
 unmultiplex fdict fromMulti = loop
  where
   loop = do
-    (side, km) <- atomically $ STM.readTQueue fromMulti
-    let fromF = fromFrontend $ fdict side
+    (fid, km) <- atomically $ STM.readTQueue fromMulti
+    let fromF = fromFrontend $ fdict fid
     atomically $ STM.writeTQueue fromF km
     loop
 
@@ -101,7 +101,7 @@ getConfirmGeneric pGetKey clearKeys frame = do
 flushFrames :: FrontendSession -> FactionId
             -> EM.EnumMap FactionId (LQueue AcFrame)
             -> IO (EM.EnumMap FactionId (LQueue AcFrame))
-flushFrames fs side frMap = do
+flushFrames fs fid frMap = do
   let pGetKey keys frame = promptGetKey fs keys frame
       displayAc (AcConfirm fr) =
         void $ getConfirmGeneric pGetKey [] fr
@@ -111,29 +111,29 @@ flushFrames fs side frMap = do
         display fs False (Just fr)
       displayAc AcDelay =
         display fs False Nothing
-      queue = fromMaybe newLQueue $ EM.lookup side frMap
-      frMap2 = EM.delete side frMap
+      queue = fromMaybe newLQueue $ EM.lookup fid frMap
+      frMap2 = EM.delete fid frMap
   mapM_ displayAc $ toListLQueue queue
   return frMap2
 
 loopFrontend :: FrontendSession -> ConnMulti -> IO ()
-loopFrontend fs ConnMulti{..} = loop EM.empty
+loopFrontend fs ConnMulti{..} = loop (toEnum 1) EM.empty
  where
   insertFr :: FactionId -> AcFrame
            -> EM.EnumMap FactionId (LQueue AcFrame)
            -> EM.EnumMap FactionId (LQueue AcFrame)
-  insertFr side fr frMap =
-    let queue = fromMaybe newLQueue $ EM.lookup side frMap
-    in EM.insert side (writeLQueue queue fr) frMap
-  loop :: EM.EnumMap FactionId (LQueue AcFrame) -> IO ()
-  loop frMap = do
-    (side, efr) <- atomically $ STM.readTQueue toMulti
+  insertFr fid fr frMap =
+    let queue = fromMaybe newLQueue $ EM.lookup fid frMap
+    in EM.insert fid (writeLQueue queue fr) frMap
+  loop :: FactionId -> EM.EnumMap FactionId (LQueue AcFrame) -> IO ()
+  loop oldFid frMap = do
+    (fid, efr) <- atomically $ STM.readTQueue toMulti
     case efr of
       Right (keys, frame) -> do
-        frMap2 <- flushFrames fs side frMap
+        frMap2 <- flushFrames fs fid frMap
         km <- promptGetKey fs keys frame
-        atomically $ STM.writeTQueue fromMulti (side, km)
-        loop frMap2
+        atomically $ STM.writeTQueue fromMulti (fid, km)
+        loop fid frMap2
       Left fr -> do
-        let frMap2 = insertFr side fr frMap
-        loop frMap2
+        let frMap2 = insertFr fid fr frMap
+        loop fid frMap2
