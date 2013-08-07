@@ -1,8 +1,9 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, OverloadedStrings #-}
 -- | Screen frames and animations.
 module Game.LambdaHack.Client.Animation
   ( Attr(..), defAttr, AttrChar(..)
-  , SingleFrame(..), Animation, Frames, renderAnim, restrictAnim
+  , SingleFrame(..), emptySingleFrame, xsizeSingleFrame, ysizeSingleFrame
+  , Animation, Frames, renderAnim, restrictAnim
   , twirlSplash, blockHit, blockMiss, deathBody, swapPlaces, fadeout
   , AcFrame(..)
   ) where
@@ -50,6 +51,16 @@ newtype Animation = Animation [EM.EnumMap Point AttrChar]
 
 -- | Sequences of screen frames, including delays.
 type Frames = [Maybe SingleFrame]
+
+emptySingleFrame :: SingleFrame
+emptySingleFrame = SingleFrame{sfLevel = [], sfTop = "", sfBottom = ""}
+
+xsizeSingleFrame :: SingleFrame -> X
+xsizeSingleFrame SingleFrame{sfLevel=[]} = 0
+xsizeSingleFrame SingleFrame{sfLevel=line : _} = length line
+
+ysizeSingleFrame :: SingleFrame -> X
+ysizeSingleFrame SingleFrame{sfLevel} = length sfLevel
 
 -- | Render animations on top of a screen frame.
 renderAnim :: X -> Y -> SingleFrame -> Animation -> Frames

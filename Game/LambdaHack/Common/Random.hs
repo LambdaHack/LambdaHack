@@ -13,6 +13,8 @@ module Game.LambdaHack.Common.Random
   , RollDeep, rollDeep, chanceDeep, intToDeep, maxDeep
     -- * Fractional chance
   , Chance, chance
+    -- * Run using the IO RNG
+  , rndToIO
   ) where
 
 import Control.Monad
@@ -154,3 +156,10 @@ chance r = do
       d = denominator r
   k <- randomR (1, d)
   return (k <= n)
+
+rndToIO :: Rnd a -> IO a
+rndToIO r = do
+  g <- R.getStdGen
+  let (x, ng) = St.runState r g
+  R.setStdGen ng
+  return x

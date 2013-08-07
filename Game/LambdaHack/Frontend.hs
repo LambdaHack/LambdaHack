@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | Display game data on the screen and receive user input
 -- using one of the available raw frontends and derived  operations.
 module Game.LambdaHack.Frontend
@@ -15,12 +16,14 @@ import Control.Concurrent.STM (TQueue, atomically, newTQueueIO)
 import qualified Control.Concurrent.STM as STM
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
-import Data.Maybe (fromMaybe)
+import Data.Maybe
 import System.IO.Unsafe (unsafePerformIO)
 
-import Game.LambdaHack.Client.Animation (AcFrame (..), SingleFrame (..))
+import Game.LambdaHack.Client.Animation
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Frontend.Chosen
 import Game.LambdaHack.Utils.LQueue
 
@@ -102,38 +105,89 @@ flushFrames :: FrontendSession -> FactionId
             -> EM.EnumMap FactionId (LQueue AcFrame)
             -> IO (EM.EnumMap FactionId (LQueue AcFrame))
 flushFrames fs fid frMap = do
-  let pGetKey keys frame = promptGetKey fs keys frame
-      displayAc (AcConfirm fr) =
-        void $ getConfirmGeneric pGetKey [] fr
-      displayAc (AcRunning fr) =
-        display fs True (Just fr)
-      displayAc (AcNormal fr) =
-        display fs False (Just fr)
-      displayAc AcDelay =
-        display fs False Nothing
-      queue = fromMaybe newLQueue $ EM.lookup fid frMap
+  let queue = toListLQueue $ fromMaybe newLQueue $ EM.lookup fid frMap
       frMap2 = EM.delete fid frMap
-  mapM_ displayAc $ toListLQueue queue
+  mapM_ (displayAc fs) queue
   return frMap2
 
+displayAc :: FrontendSession -> AcFrame -> IO ()
+displayAc fs (AcConfirm fr) = void $ getConfirmGeneric (promptGetKey fs) [] fr
+displayAc fs (AcRunning fr) = display fs True (Just fr)
+displayAc fs (AcNormal fr) = display fs False (Just fr)
+displayAc fs AcDelay = display fs False Nothing
+
+getSingleFrame :: AcFrame -> Maybe SingleFrame
+getSingleFrame (AcConfirm fr) = Just fr
+getSingleFrame (AcRunning fr) = Just fr
+getSingleFrame (AcNormal fr) = Just fr
+getSingleFrame AcDelay = Nothing
+
+toSingles :: FactionId -> EM.EnumMap FactionId (LQueue AcFrame)
+          -> [SingleFrame]
+toSingles fid frMap =
+  let queue = toListLQueue $ fromMaybe newLQueue $ EM.lookup fid frMap
+  in mapMaybe getSingleFrame queue
+
+fadeF :: FrontendSession -> Bool -> FactionId -> SingleFrame -> IO ()
+fadeF fs out side frame = do
+  let topRight = True
+      lxsize = xsizeSingleFrame frame
+      lysize = ysizeSingleFrame frame
+      msg | out = ""
+          | otherwise = "Player" <+> showT (fromEnum side) <> ", get ready!"
+  animMap <- rndToIO $ fadeout out topRight lxsize lysize
+  let sfTop = truncateMsg lxsize msg
+      basicFrame = frame {sfTop}
+      animFrs = renderAnim lxsize lysize basicFrame animMap
+      frs | out = animFrs
+            -- Empty frame to mark the fade-in end,
+            -- to trim only to here if SPACE pressed.
+          | otherwise = animFrs ++ [Nothing]
+  mapM_ (display fs False) frs
+
+insertFr :: FactionId -> AcFrame
+         -> EM.EnumMap FactionId (LQueue AcFrame)
+         -> EM.EnumMap FactionId (LQueue AcFrame)
+insertFr fid fr frMap =
+  let queue = fromMaybe newLQueue $ EM.lookup fid frMap
+  in EM.insert fid (writeLQueue queue fr) frMap
+
+-- TODO: save or display all at game save
 loopFrontend :: FrontendSession -> ConnMulti -> IO ()
-loopFrontend fs ConnMulti{..} = loop (toEnum 1) EM.empty
+loopFrontend fs ConnMulti{..} = loop Nothing EM.empty
  where
-  insertFr :: FactionId -> AcFrame
-           -> EM.EnumMap FactionId (LQueue AcFrame)
-           -> EM.EnumMap FactionId (LQueue AcFrame)
-  insertFr fid fr frMap =
-    let queue = fromMaybe newLQueue $ EM.lookup fid frMap
-    in EM.insert fid (writeLQueue queue fr) frMap
-  loop :: FactionId -> EM.EnumMap FactionId (LQueue AcFrame) -> IO ()
-  loop oldFid frMap = do
+  loop :: Maybe (FactionId, SingleFrame)
+       -> EM.EnumMap FactionId (LQueue AcFrame)
+       -> IO ()
+  loop oldFidFrame frMap = do
     (fid, efr) <- atomically $ STM.readTQueue toMulti
     case efr of
       Right (keys, frame) -> do
-        frMap2 <- flushFrames fs fid frMap
+        frMap2 <-
+          if Just fid == fmap fst oldFidFrame then
+            return frMap
+          else do
+            frMap2 <- case oldFidFrame of
+              Nothing -> return frMap  -- TODO: don't display fadein if nH == 1
+              Just (oldFid, oldFrame) -> do
+                frMap2 <- flushFrames fs oldFid frMap
+                let singles = toSingles oldFid frMap  -- not @frMap2@!
+                    lastFrame =
+                      fromMaybe oldFrame $ listToMaybe $ reverse singles
+                fadeF fs True oldFid lastFrame
+                return frMap2
+            let singles = toSingles fid frMap2
+                firstFrame = fromMaybe frame $ listToMaybe singles
+            fadeF fs False fid firstFrame
+            return frMap2
+        frMap3 <- flushFrames fs fid frMap2
         km <- promptGetKey fs keys frame
         atomically $ STM.writeTQueue fromMulti (fid, km)
-        loop fid frMap2
+        loop (Just (fid, frame)) frMap3
+      Left fr | Just (oldFid, oldFrame) <- oldFidFrame, fid == oldFid -> do
+        displayAc fs fr
+        let frame = fromMaybe oldFrame $ getSingleFrame fr
+        loop (Just (fid, frame)) frMap
       Left fr -> do
         let frMap2 = insertFr fid fr frMap
-        loop fid frMap2
+        loop oldFidFrame frMap2
