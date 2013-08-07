@@ -167,7 +167,7 @@ loopFrontend fs ConnMulti{..} = loop Nothing EM.empty
           if Just fid == fmap fst oldFidFrame then
             return frMap
           else do
-            frMap2 <- case oldFidFrame of
+            case oldFidFrame of
               Nothing -> return frMap  -- TODO: don't display fadein if nH == 1
               Just (oldFid, oldFrame) -> do
                 frMap2 <- flushFrames fs oldFid frMap
@@ -175,11 +175,10 @@ loopFrontend fs ConnMulti{..} = loop Nothing EM.empty
                     lastFrame =
                       fromMaybe oldFrame $ listToMaybe $ reverse singles
                 fadeF fs True oldFid lastFrame
+                let singles2 = toSingles fid frMap2
+                    firstFrame = fromMaybe frame $ listToMaybe singles2
+                fadeF fs False fid firstFrame
                 return frMap2
-            let singles = toSingles fid frMap2
-                firstFrame = fromMaybe frame $ listToMaybe singles
-            fadeF fs False fid firstFrame
-            return frMap2
         frMap3 <- flushFrames fs fid frMap2
         km <- promptGetKey fs keys frame
         atomically $ STM.writeTQueue fromMulti (fid, km)

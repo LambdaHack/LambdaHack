@@ -24,7 +24,6 @@ module Game.LambdaHack.Client.Action
   , getKeyOverlayCommand, getAllConfirms, getInitConfirms
     -- * Display and key input
   , displayFrames, displayMore, displayYesNo, displayChoiceUI
-  , displayFadeFrames
     -- * Generate slideshows
   , promptToSlideshow, overlayToSlideshow
     -- * Draw frames
@@ -136,9 +135,6 @@ displayFrame isRunning mf = do
         Just fr | isRunning -> AcRunning fr
         Just fr -> AcNormal fr
   writeConnFrontend $ Left frame
-
-displayFadeFrames :: MonadClientUI m => Frames -> m ()
-displayFadeFrames frames = return ()
 
 flushFrames :: MonadClientUI m => m ()
 flushFrames = return ()  -- TODO
@@ -446,7 +442,7 @@ fadeD out topRight = do
                 -- Empty frame to mark the fade-in end,
                 -- to trim only to here if SPACE pressed.
               | otherwise = animFrs ++ [Nothing]
-      displayFadeFrames frs
+      mapM_ (displayFrame False) frs
 
 -- | The part of speech describing the actor or a special name if a leader
 -- of the observer's faction. The actor may not be present in the dungeon.

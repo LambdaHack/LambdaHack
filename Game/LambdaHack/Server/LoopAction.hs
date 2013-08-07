@@ -233,18 +233,6 @@ handleActors cmdSerSem lid = do
           lastSingleMove = timeAddFromSpeed coactor bPre previousClipEnd
       when (btime bPre > lastSingleMove) $
         broadcastSfxAtomic DisplayPushD
-      nH <- nHumans
-      -- TODO: do not fade out if all others are running (so the previous
-      -- move was of the same faction) or if 2 moves in a row of a fast actor
-      let fadeOut
-            -- No UI, no time taken or at most one human player,
-            -- so no need to visually mark the end of the move.
-            | not queryUI || not timed || nH <= 1 = []
-            | otherwise = [ FlushFramesD side  -- flush animations before fade
-                          , FadeoutD side True
-                          , FlushFramesD side  -- flush fade-out, keep fade-in
-                          , FadeinD side True ]
-      mapM_ execSfxAtomic $ fadeOut
       handleActors cmdSerSem lid
 
 dieSer :: (MonadAtomic m, MonadServer m) => ActorId -> m ()

@@ -16,7 +16,6 @@ import qualified NLP.Miniutter.English as MU
 import qualified System.Random as R
 import System.Time
 
-import Game.LambdaHack.Client.Animation
 import Game.LambdaHack.Client.Config
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Common.Actor
@@ -51,8 +50,6 @@ data StateClient = StateClient
   , srandom      :: !R.StdGen      -- ^ current random generator
   , sconfigUI    :: !ConfigUI      -- ^ client config (including initial RNG)
   , slastKey     :: !(Maybe K.KM)  -- ^ last command key pressed
-  , sframe       :: ![AcFrame]     -- ^ accumulated frames
-  , sfade        :: ![AcFrame]     -- ^ accumulated fade out/in frames
   , _sleader     :: !(Maybe ActorId)  -- ^ selected actor
   , _sside       :: !FactionId     -- ^ faction controlled by the client
   , squit        :: !Bool          -- ^ exit the game loop
@@ -96,8 +93,6 @@ defStateClient shistory sconfigUI _sside sisAI = do
     , sconfigUI
     , srandom = R.mkStdGen 42  -- will be set later
     , slastKey = Nothing
-    , sframe = []
-    , sfade = []
     , _sleader = Nothing  -- no heroes yet alive
     , _sside
     , squit = False
@@ -158,8 +153,6 @@ instance Binary StateClient where
     put sdisco
     put (show srandom)
     put sconfigUI
-    put sframe
-    put sfade
     put _sleader
     put _sside
     put sisAI
@@ -179,8 +172,6 @@ instance Binary StateClient where
     sdisco <- get
     g <- get
     sconfigUI <- get
-    sframe <- get
-    sfade <- get
     _sleader <- get
     _sside <- get
     sisAI <- get

@@ -422,7 +422,6 @@ gameExitHuman = do
     when (nH > 1) $ do
       flushFrames
       displayPush  -- save one slide to match other factions
-      fadeD False True
     leader <- getLeaderUI
     return $ GameExitSer leader
   else abortWith "Save and exit canceled."

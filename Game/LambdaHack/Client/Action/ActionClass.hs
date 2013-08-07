@@ -59,4 +59,4 @@ class MonadClient m => MonadClientAbort m where
 instance (Monoid a, MonadClientAbort m) => MonadClientAbort (WriterT a m) where
   tryWith exc m =
     WriterT $ tryWith (\msg -> runWriterT (exc msg)) (runWriterT m)
-  abortWith   = lift . abortWith
+  abortWith = lift . abortWith

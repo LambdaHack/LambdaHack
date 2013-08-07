@@ -7,7 +7,6 @@ import Control.Monad
 import qualified Data.Text as T
 
 import Game.LambdaHack.Client.Action
-import Game.LambdaHack.Client.Animation
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.AtomicCmd
@@ -63,31 +62,9 @@ loopUI cmdClientUISem = do
   msg <- initCli $ \s -> cmdClientUISem $ CmdAtomicUI $ ResumeServerA s
   cmd1 <- readConnServer
   case (msg, cmd1) of
-    (Left msg1, CmdAtomicUI ResumeA{}) -> do
+    (Left _msg1, CmdAtomicUI ResumeA{}) -> do
       cmdClientUISem cmd1
-      savedFs <- getsClient sframe
-      let firstFrame [] = Nothing
-          firstFrame (AcConfirm _ : _) = Nothing  -- too many confirms
-          firstFrame (AcRunning fr : _) = Just fr
-          firstFrame (AcNormal fr : _) = Just fr
-          firstFrame (AcDelay : fs) = firstFrame fs
-          theSame _ AcConfirm{} = False  -- we need distinct confirmations
-          theSame f1 (AcNormal fr) = f1 == fr
-          theSame f1 (AcRunning fr) = f1 == fr
-          theSame _ AcDelay = True
-      case (firstFrame savedFs, firstFrame $ reverse savedFs) of
-        (Just f1, Just _) | all (theSame f1) savedFs -> do
-          -- These are usually just the AgeGameA frames.
-          -- TODO: addMsg, no confirm, but don't add to history
-          let fend = f1 {sfTop = msg1 <+> moreMsg}
-              sframe = [AcConfirm fend] ++ savedFs
-          modifyClient $ \cli -> cli {sframe}
-        (Just f1, Just fk) -> do
-          let fstart = fk {sfTop = "In the last episode:" <+> moreMsg}
-              fend = f1 {sfTop = msg1 <+> moreMsg}
-              sframe = [AcConfirm fend] ++ savedFs ++ [AcConfirm fstart]
-          modifyClient $ \cli -> cli {sframe}
-        _ -> return ()  -- possible only with multiple consecutive saves
+      -- TODO: use msg1
     (Left _, CmdAtomicUI RestartA{}) -> do
       cmdClientUISem cmd1
       msgAdd $ "Server savefile is corrupted."
