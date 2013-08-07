@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.Action
   , MonadClientUI
   , MonadConnClient
   , MonadClientAbort( abortWith, tryWith )
-  , SessionUI(..)
+  , SessionUI(..), ConnFrontend(..), connFrontend
     -- * Various ways to abort action
   , abort, abortIfWith, neverMind
     -- * Abort exception handlers
@@ -30,7 +30,7 @@ module Game.LambdaHack.Client.Action
   , drawOverlay, animate
     -- * Assorted primitives
   , flushFrames, clientGameSave, restoreGame, displayPush, scoreToSlideshow
-  , readConnServer, writeConnServer, readConnFrontend, writeConnFrontend
+  , readConnServer, writeConnServer
   , rndToAction, getArenaUI, getLeaderUI
   , targetToPos, fadeD, partAidLeader, partActorLeader
   , debugPrint
@@ -89,6 +89,15 @@ debugPrint t = do
     T.hPutStrLn stderr t
     hFlush stderr
 
+connFrontend :: FactionId -> Frontend.ChanFrontend -> ConnFrontend
+connFrontend fid fromF = ConnFrontend
+  { readConnFrontend =
+      liftIO $ atomically $ readTQueue fromF
+  , writeConnFrontend = \efr -> do
+      let toF = Frontend.toMulti Frontend.connMulti
+      liftIO $ atomically $ writeTQueue toF (fid, efr)
+  }
+
 -- | Reset the state and resume from the last backup point, i.e., invoke
 -- the failure continuation.
 abort :: MonadClientAbort m => m a
@@ -130,6 +139,7 @@ tryWithSlide exc h =
 
 displayFrame :: MonadClientUI m => Bool -> Maybe SingleFrame -> m ()
 displayFrame isRunning mf = do
+  ConnFrontend{writeConnFrontend} <- getsSession sfconn
   let frame = case mf of
         Nothing -> AcDelay
         Just fr | isRunning -> AcRunning fr
@@ -141,6 +151,7 @@ flushFrames = return ()  -- TODO
 
 promptGetKey :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
 promptGetKey keys frame = do
+  ConnFrontend{..} <- getsSession sfconn
   writeConnFrontend $ Right (keys, frame)
   readConnFrontend
 
@@ -386,18 +397,6 @@ writeConnServer :: (MonadConnClient c m) => CmdSer -> m ()
 writeConnServer cmds = do
   toServer <- getsConn toServer
   liftIO $ atomically $ writeTQueue toServer cmds
-
-readConnFrontend :: MonadClientUI m => m K.KM
-readConnFrontend = do
-  fromF <- getsSession $ Frontend.fromFrontend . sfconn
-  liftIO $ atomically $ readTQueue fromF
-
-writeConnFrontend :: MonadClientUI m
-                  => Either AcFrame ([K.KM], SingleFrame) -> m ()
-writeConnFrontend efr = do
-  fid <- getsClient sside
-  let toF = Frontend.toMulti Frontend.connMulti
-  liftIO $ atomically $ writeTQueue toF (fid, efr)
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: MonadClient m => Rnd a -> m a

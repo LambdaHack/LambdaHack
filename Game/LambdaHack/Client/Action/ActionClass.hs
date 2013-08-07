@@ -1,4 +1,4 @@
-{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE FunctionalDependencies, RankNTypes #-}
 -- | Basic type classes for game actions.
 -- This module should not be imported anywhere except in 'Action'
 -- and 'TypeAction'.
@@ -6,21 +6,31 @@ module Game.LambdaHack.Client.Action.ActionClass where
 
 import Control.Monad.Writer.Strict (WriterT (WriterT), lift, runWriterT)
 import Data.Monoid
+import qualified Game.LambdaHack.Client.Key as K
 
+import Game.LambdaHack.Client.Animation (AcFrame, SingleFrame)
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Common.Msg
-import Game.LambdaHack.Frontend
 
 -- | The information that is constant across a client playing session,
 -- including many consecutive games in a single session,
 -- but is completely disregarded and reset when a new playing session starts.
 -- Auxiliary AI and computer player clients have no @sfs@ nor @sbinding@.
 data SessionUI = SessionUI
-  { sfconn   :: ConnFrontend      -- ^ connection with the frontend
-  , sbinding :: !Binding          -- ^ binding of keys to commands
+  { sfconn   :: !ConnFrontend  -- ^ connection with the frontend
+  , sbinding :: !Binding       -- ^ binding of keys to commands
+  }
+
+-- | Connection method between a client and a frontend.
+data ConnFrontend = ConnFrontend
+  { readConnFrontend  :: MonadClientUI m => m K.KM
+                                  -- ^ read a keystroke from the Frontend
+  , writeConnFrontend :: MonadClientUI m
+                      => Either AcFrame ([K.KM], SingleFrame) -> m ()
+                                  -- ^ write a frame to the Frontend
   }
 
 class MonadActionRO m => MonadClient m where

@@ -72,7 +72,7 @@ instance Show (ConnServer c) where
 
 -- | Connection to the human-controlled client of a faction and/or
 -- to the AI client for the same faction.
-type ConnServerFaction = ( Maybe (ConnFrontend, ConnServer CmdClientUI)
+type ConnServerFaction = ( Maybe (ChanFrontend, ConnServer CmdClientUI)
                          , Maybe (ConnServer CmdClientAI) )
 
 -- | Connection information for all factions, indexed by faction identifier.

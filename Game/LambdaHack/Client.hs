@@ -67,11 +67,11 @@ cmdClientUISem cmd = do
       writeConnServer cmdH
 
 wireSession :: (SessionUI -> State -> StateClient
-                -> ConnFrontend -> ConnServer CmdClientUI -> IO ())
+                -> ConnServer CmdClientUI -> IO ())
             -> (SessionUI -> State -> StateClient
-                -> ConnFrontend -> ConnServer CmdClientAI -> IO ())
+                -> ConnServer CmdClientAI -> IO ())
             -> Kind.COps
-            -> ((FactionId -> ConnFrontend -> ConnServer CmdClientUI -> IO ())
+            -> ((FactionId -> ChanFrontend -> ConnServer CmdClientUI -> IO ())
                 -> (FactionId -> ConnServer CmdClientAI -> IO ())
                 -> IO ())
             -> IO ()
@@ -82,14 +82,13 @@ wireSession exeClientUI exeClientAI cops@Kind.COps{corule} exeServer = do
       font = configFont sconfigUI
   defHist <- defHistory
   let cli = defStateClient defHist sconfigUI
-      pos = updateCOps (const cops) emptyState
+      s = updateCOps (const cops) emptyState
       executorAI fid =
         let noSession = assert `failure` fid
-            sfconn = assert `failure` fid  -- TODO: hackish
-        in exeClientAI noSession pos (cli fid True) sfconn
-      executorUI fid =
-        let sfconn = assert `failure` fid  -- TODO: hackish
-        in exeClientUI SessionUI{..} pos (cli fid False)
+        in exeClientAI noSession s (cli fid True)
+      executorUI fid fromF =
+        let sfconn = connFrontend fid fromF
+        in exeClientUI SessionUI{..} s (cli fid False)
   startupF font $ exeServer executorUI executorAI
 
 -- | Wire together game content, the main loop of game clients,
@@ -101,13 +100,13 @@ exeFrontend :: ( MonadAtomic m, MonadClientAbort m, MonadClientUI m
                , MonadAtomic n
                , MonadConnClient CmdClientAI n )
             => (m () -> SessionUI -> State -> StateClient
-                -> ConnFrontend -> ConnServer CmdClientUI
+                -> ConnServer CmdClientUI
                 -> IO ())
             -> (n () -> SessionUI -> State -> StateClient
-                -> ConnFrontend -> ConnServer CmdClientAI
+                -> ConnServer CmdClientAI
                 -> IO ())
             -> Kind.COps
-            -> ((FactionId -> ConnFrontend -> ConnServer CmdClientUI -> IO ())
+            -> ((FactionId -> ChanFrontend -> ConnServer CmdClientUI -> IO ())
                -> (FactionId -> ConnServer CmdClientAI -> IO ())
                -> IO ())
             -> IO ()

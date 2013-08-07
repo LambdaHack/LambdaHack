@@ -49,7 +49,7 @@ import Game.LambdaHack.Utils.Assert
 loopSer :: (MonadAtomic m, MonadConnServer m)
         => DebugModeSer
         -> (CmdSer -> m Bool)
-        -> (FactionId -> ConnFrontend -> ConnServer CmdClientUI -> IO ())
+        -> (FactionId -> ChanFrontend -> ConnServer CmdClientUI -> IO ())
         -> (FactionId -> ConnServer CmdClientAI -> IO ())
         -> Kind.COps
         -> m ()

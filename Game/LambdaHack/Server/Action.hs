@@ -199,7 +199,7 @@ tryRestore Kind.COps{corule} = do
 -- Connect to clients in old or newly spawned threads
 -- that read and write directly to the channels.
 updateConn :: (MonadAtomic m, MonadConnServer m)
-           => (FactionId -> ConnFrontend -> ConnServer CmdClientUI -> IO ())
+           => (FactionId -> ChanFrontend -> ConnServer CmdClientUI -> IO ())
            -> (FactionId -> ConnServer CmdClientAI -> IO ())
            -> m ()
 updateConn executorUI executorAI = do
@@ -210,17 +210,15 @@ updateConn executorUI executorAI = do
         fromServer <- newTQueueIO
         toServer <- newTQueueIO
         return ConnServer{..}
-      mkConnFrontend :: IO ConnFrontend
-      mkConnFrontend = do
-        fromFrontend <- newTQueueIO
-        return ConnFrontend{..}
+      mkChanFrontend :: IO ChanFrontend
+      mkChanFrontend = newTQueueIO
       addConn fid fact = case EM.lookup fid oldD of
         Just conns -> return conns  -- share old conns and threads
         Nothing -> do
           connUI <- if isHumanFact fact
                     then do
+                      connF <- mkChanFrontend
                       connS <- mkConnServer
-                      connF <- mkConnFrontend
                       return $ Just (connF, connS)
                     else return Nothing
           connAI <- fmap Just mkConnServer

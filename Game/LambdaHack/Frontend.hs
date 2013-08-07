@@ -7,8 +7,7 @@ module Game.LambdaHack.Frontend
     -- * Derived operation
   , startupF, getConfirmGeneric
     -- * Connection channels
-  , ConnFrontend(..), ConnMulti(..)
-  , connMulti, unmultiplex, loopFrontend
+  , ChanFrontend, ConnMulti(..), connMulti, unmultiplex, loopFrontend
   ) where
 
 import Control.Concurrent
@@ -27,13 +26,7 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Frontend.Chosen
 import Game.LambdaHack.Utils.LQueue
 
--- | Connection channels between a client and a frontend.
-data ConnFrontend = ConnFrontend
-  { fromFrontend :: TQueue K.KM
-  }
-
-instance Show ConnFrontend where
-  show _ = "client-frontend connection channels"
+type ChanFrontend = TQueue K.KM
 
 type FromMulti = TQueue (FactionId, K.KM)
 
@@ -68,12 +61,12 @@ connMulti = unsafePerformIO $ do
   toMulti <- newTQueueIO
   return ConnMulti{..}
 
-unmultiplex :: (FactionId -> ConnFrontend) -> FromMulti -> IO ()
+unmultiplex :: (FactionId -> ChanFrontend) -> FromMulti -> IO ()
 unmultiplex fdict fromMulti = loop
  where
   loop = do
     (fid, km) <- atomically $ STM.readTQueue fromMulti
-    let fromF = fromFrontend $ fdict fid
+    let fromF = fdict fid
     atomically $ STM.writeTQueue fromF km
     loop
 
