@@ -8,7 +8,7 @@ module Game.LambdaHack.Frontend
   , startupF, getConfirmGeneric
     -- * Connection channels
   , ConnFrontend(..), ConnMulti(..)
-  , connMulti, multiplex, unmultiplex, loopFrontend
+  , connMulti, unmultiplex, loopFrontend
   ) where
 
 import Control.Concurrent
@@ -30,7 +30,6 @@ import Game.LambdaHack.Utils.LQueue
 -- | Connection channels between a client and a frontend.
 data ConnFrontend = ConnFrontend
   { fromFrontend :: TQueue K.KM
-  , toFrontend   :: TQueue (Either AcFrame ([K.KM], SingleFrame))
   }
 
 instance Show ConnFrontend where
@@ -68,15 +67,6 @@ connMulti = unsafePerformIO $ do
   fromMulti <- newTQueueIO
   toMulti <- newTQueueIO
   return ConnMulti{..}
-
-multiplex :: TQueue (Either AcFrame ([K.KM], SingleFrame))
-          -> FactionId -> ToMulti -> IO ()
-multiplex toFrontend fid toMulti = loop
- where
-  loop = do
-    fr <- atomically $ STM.readTQueue toFrontend
-    atomically $ STM.writeTQueue toMulti (fid, fr)
-    loop
 
 unmultiplex :: (FactionId -> ConnFrontend) -> FromMulti -> IO ()
 unmultiplex fdict fromMulti = loop

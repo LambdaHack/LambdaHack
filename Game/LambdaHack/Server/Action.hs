@@ -213,7 +213,6 @@ updateConn executorUI executorAI = do
       mkConnFrontend :: IO ConnFrontend
       mkConnFrontend = do
         fromFrontend <- newTQueueIO
-        toFrontend <- newTQueueIO
         return ConnFrontend{..}
       addConn fid fact = case EM.lookup fid oldD of
         Just conns -> return conns  -- share old conns and threads
@@ -242,7 +241,6 @@ updateConn executorUI executorAI = do
   let fdict fid = fst $ fromMaybe (assert `failure` fid) $ fst $ d EM.! fid
   liftIO $ void $ forkIO $ unmultiplex fdict (fromMulti connMulti)
   let forkUI fid (connF, connS) = do
-        void $ forkIO $ multiplex (toFrontend connF) fid (toMulti connMulti)
         void $ forkChild $ executorUI fid connF connS
       forkClient fid (connUI, connAI) = do
         maybe skip (forkUI fid) connUI

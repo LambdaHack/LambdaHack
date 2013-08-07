@@ -395,8 +395,9 @@ readConnFrontend = do
 writeConnFrontend :: MonadClientUI m
                   => Either AcFrame ([K.KM], SingleFrame) -> m ()
 writeConnFrontend efr = do
-  toF <- getsSession $ Frontend.toFrontend . sfconn
-  liftIO $ atomically $ writeTQueue toF efr
+  fid <- getsClient sside
+  let toF = Frontend.toMulti Frontend.connMulti
+  liftIO $ atomically $ writeTQueue toF (fid, efr)
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: MonadClient m => Rnd a -> m a
