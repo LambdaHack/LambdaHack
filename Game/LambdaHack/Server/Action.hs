@@ -199,17 +199,17 @@ tryRestore Kind.COps{corule} = do
 -- Connect to clients in old or newly spawned threads
 -- that read and write directly to the channels.
 updateConn :: (MonadAtomic m, MonadConnServer m)
-           => (FactionId -> ChanFrontend -> ConnServer CmdClientUI -> IO ())
-           -> (FactionId -> ConnServer CmdClientAI -> IO ())
+           => (FactionId -> ChanFrontend -> ChanServer CmdClientUI -> IO ())
+           -> (FactionId -> ChanServer CmdClientAI -> IO ())
            -> m ()
 updateConn executorUI executorAI = do
   -- Prepare connections based on factions.
   oldD <- getDict
-  let mkConnServer :: IO (ConnServer c)
-      mkConnServer = do
+  let mkChanServer :: IO (ChanServer c)
+      mkChanServer = do
         fromServer <- newTQueueIO
         toServer <- newTQueueIO
-        return ConnServer{..}
+        return ChanServer{..}
       mkChanFrontend :: IO ChanFrontend
       mkChanFrontend = newTQueueIO
       addConn fid fact = case EM.lookup fid oldD of
@@ -218,13 +218,13 @@ updateConn executorUI executorAI = do
           connUI <- if isHumanFact fact
                     then do
                       connF <- mkChanFrontend
-                      connS <- mkConnServer
+                      connS <- mkChanServer
                       return $ Just (connF, connS)
                     else return Nothing
-          connAI <- fmap Just mkConnServer
+          connAI <- fmap Just mkChanServer
           -- TODO, when net clients, etc., are included:
           -- connAI <- if usesAIFact fact
-          --           then mkConnServer
+          --           then mkChanServer
           --           else return Nothing
           return (connUI, connAI)
   factionD <- getsState sfactionD

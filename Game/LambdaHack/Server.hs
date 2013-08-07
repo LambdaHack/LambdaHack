@@ -85,8 +85,8 @@ mainSer :: (MonadAtomic m, MonadConnServer m)
         => Kind.COps
         -> (m () -> IO ())
         -> (Kind.COps
-            -> ((FactionId -> ChanFrontend -> ConnServer CmdClientUI -> IO ())
-                -> (FactionId -> ConnServer CmdClientAI -> IO ())
+            -> ((FactionId -> ChanFrontend -> ChanServer CmdClientUI -> IO ())
+                -> (FactionId -> ChanServer CmdClientAI -> IO ())
                 -> IO ())
             -> IO ())
         -> IO ()

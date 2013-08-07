@@ -34,6 +34,7 @@ loopAI :: (MonadConnClient CmdClientAI m)
        => (CmdClientAI -> m ()) -> m ()
 loopAI cmdClientAISem = do
   side <- getsClient sside
+  ConnServer{readConnServer} <- getConn
   msg <- initCli $ \s -> cmdClientAISem $ CmdAtomicAI $ ResumeServerA s
   cmd1 <- readConnServer
   case (msg, cmd1) of
@@ -50,6 +51,7 @@ loopAI cmdClientAISem = do
   debugPrint $ "AI client" <+> showT side <+> "stopped."
  where
   loop = do
+    ConnServer{readConnServer} <- getConn
     cmd <- readConnServer
     cmdClientAISem cmd
     quit <- getsClient squit
@@ -59,6 +61,7 @@ loopUI :: (MonadClientUI m, MonadConnClient CmdClientUI m)
        => (CmdClientUI -> m ()) -> m ()
 loopUI cmdClientUISem = do
   side <- getsClient sside
+  ConnServer{readConnServer} <- getConn
   msg <- initCli $ \s -> cmdClientUISem $ CmdAtomicUI $ ResumeServerA s
   cmd1 <- readConnServer
   case (msg, cmd1) of
@@ -81,6 +84,7 @@ loopUI cmdClientUISem = do
   debugPrint $ "UI client" <+> showT side <+> "stopped."
  where
   loop = do
+    ConnServer{readConnServer} <- getConn
     cmd <- readConnServer
     cmdClientUISem cmd
     quit <- getsClient squit

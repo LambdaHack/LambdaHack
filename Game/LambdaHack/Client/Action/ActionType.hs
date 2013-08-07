@@ -13,7 +13,6 @@ import qualified Data.Text as T
 import Game.LambdaHack.Client.Action.ActionClass
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
-import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.State
 
@@ -83,7 +82,7 @@ instance MonadClientUI (ActionCli c) where
   getsSession f  = ActionCli (\c _d k _a s cli -> k s cli (f c))
 
 instance MonadConnClient c (ActionCli c) where
-  getsConn f  = ActionCli (\_c d k _a s cli -> k s cli (f d))
+  getConn        = ActionCli (\_c d k _a s cli -> k s cli d)
 
 -- | Run an action, with a given session, state and history, in the @IO@ monad.
 executorCli :: ActionCli c ()

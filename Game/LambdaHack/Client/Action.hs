@@ -7,9 +7,10 @@ module Game.LambdaHack.Client.Action
   ( -- * Action monads
     MonadClient( getClient, getsClient, putClient, modifyClient )
   , MonadClientUI
-  , MonadConnClient
+  , MonadConnClient( getConn )
   , MonadClientAbort( abortWith, tryWith )
   , SessionUI(..), ConnFrontend(..), connFrontend
+  , ConnServer(..), connServer
     -- * Various ways to abort action
   , abort, abortIfWith, neverMind
     -- * Abort exception handlers
@@ -30,7 +31,6 @@ module Game.LambdaHack.Client.Action
   , drawOverlay, animate
     -- * Assorted primitives
   , flushFrames, clientGameSave, restoreGame, displayPush, scoreToSlideshow
-  , readConnServer, writeConnServer
   , rndToAction, getArenaUI, getLeaderUI
   , targetToPos, fadeD, partAidLeader, partActorLeader
   , debugPrint
@@ -74,7 +74,6 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Frontend as Frontend
@@ -96,6 +95,14 @@ connFrontend fid fromF = ConnFrontend
   , writeConnFrontend = \efr -> do
       let toF = Frontend.toMulti Frontend.connMulti
       liftIO $ atomically $ writeTQueue toF (fid, efr)
+  }
+
+connServer :: ChanServer c -> ConnServer c
+connServer ChanServer{..} = ConnServer
+  { readConnServer =
+      liftIO $ atomically $ readTQueue fromServer
+  , writeConnServer = \cmds ->
+      liftIO $ atomically $ writeTQueue toServer cmds
   }
 
 -- | Reset the state and resume from the last backup point, i.e., invoke
@@ -387,16 +394,6 @@ restoreGame = do
   isAI <- getsClient sisAI
   let sName = saveName side isAI
   liftIO $ Save.restoreGameCli sName configUI pathsDataFile title
-
-readConnServer :: (MonadConnClient c m) => m c
-readConnServer = do
-  fromServer <- getsConn fromServer
-  liftIO $ atomically $ readTQueue fromServer
-
-writeConnServer :: (MonadConnClient c m) => CmdSer -> m ()
-writeConnServer cmds = do
-  toServer <- getsConn toServer
-  liftIO $ atomically $ writeTQueue toServer cmds
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: MonadClient m => Rnd a -> m a

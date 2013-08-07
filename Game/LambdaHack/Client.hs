@@ -42,6 +42,7 @@ cmdClientAISem cmd = case cmd of
     mapM_ (storeUndo . CmdAtomic) cmds
   CmdQueryAI aid -> do
     cmdC <- queryAI aid
+    ConnServer{writeConnServer} <- getConn
     writeConnServer cmdC
 
 cmdClientUISem :: ( MonadAtomic m, MonadClientAbort m
@@ -63,6 +64,7 @@ cmdClientUISem cmd = do
       storeUndo $ SfxAtomic sfx
     CmdQueryUI aid -> do
       assert (isJust mleader `blame` cmd) skip
+      ConnServer{writeConnServer} <- getConn
       cmdH <- queryUI aid
       writeConnServer cmdH
 
@@ -71,8 +73,8 @@ wireSession :: (SessionUI -> State -> StateClient
             -> (SessionUI -> State -> StateClient
                 -> ConnServer CmdClientAI -> IO ())
             -> Kind.COps
-            -> ((FactionId -> ChanFrontend -> ConnServer CmdClientUI -> IO ())
-                -> (FactionId -> ConnServer CmdClientAI -> IO ())
+            -> ((FactionId -> ChanFrontend -> ChanServer CmdClientUI -> IO ())
+                -> (FactionId -> ChanServer CmdClientAI -> IO ())
                 -> IO ())
             -> IO ()
 wireSession exeClientUI exeClientAI cops@Kind.COps{corule} exeServer = do
@@ -83,12 +85,12 @@ wireSession exeClientUI exeClientAI cops@Kind.COps{corule} exeServer = do
   defHist <- defHistory
   let cli = defStateClient defHist sconfigUI
       s = updateCOps (const cops) emptyState
-      executorAI fid =
+      executorAI fid chanS =
         let noSession = assert `failure` fid
-        in exeClientAI noSession s (cli fid True)
-      executorUI fid fromF =
+        in exeClientAI noSession s (cli fid True) (connServer chanS)
+      executorUI fid fromF chanS =
         let sfconn = connFrontend fid fromF
-        in exeClientUI SessionUI{..} s (cli fid False)
+        in exeClientUI SessionUI{..} s (cli fid False) (connServer chanS)
   startupF font $ exeServer executorUI executorAI
 
 -- | Wire together game content, the main loop of game clients,
@@ -106,8 +108,8 @@ exeFrontend :: ( MonadAtomic m, MonadClientAbort m, MonadClientUI m
                 -> ConnServer CmdClientAI
                 -> IO ())
             -> Kind.COps
-            -> ((FactionId -> ChanFrontend -> ConnServer CmdClientUI -> IO ())
-               -> (FactionId -> ConnServer CmdClientAI -> IO ())
+            -> ((FactionId -> ChanFrontend -> ChanServer CmdClientUI -> IO ())
+               -> (FactionId -> ChanServer CmdClientAI -> IO ())
                -> IO ())
             -> IO ()
 exeFrontend executorUI executorAI cops exeServer = do

@@ -6,7 +6,7 @@
 module Game.LambdaHack.Common.ClientCmd
   ( CmdClientAI(..), CmdClientUI(..)
   , debugCmdClientAI, debugCmdClientUI, debugAid
-  , ConnServer(..), ConnServerFaction, ConnServerDict
+  , ChanServer(..), ConnServerFaction, ConnServerDict
   ) where
 
 import Control.Concurrent.STM.TQueue
@@ -62,18 +62,18 @@ debugAid aid s = do
     showT (s, "lid", blid b, "time", time, "aid", aid, "faction", bfid b)
 
 -- | Connection channels between the server and a single client.
-data ConnServer c = ConnServer
+data ChanServer c = ChanServer
   { fromServer :: TQueue c
   , toServer   :: TQueue CmdSer
   }
 
-instance Show (ConnServer c) where
+instance Show (ChanServer c) where
   show _ = "client-server connection channels"
 
 -- | Connection to the human-controlled client of a faction and/or
 -- to the AI client for the same faction.
-type ConnServerFaction = ( Maybe (ChanFrontend, ConnServer CmdClientUI)
-                         , Maybe (ConnServer CmdClientAI) )
+type ConnServerFaction = ( Maybe (ChanFrontend, ChanServer CmdClientUI)
+                         , Maybe (ChanServer CmdClientAI) )
 
 -- | Connection information for all factions, indexed by faction identifier.
 type ConnServerDict = EM.EnumMap FactionId ConnServerFaction

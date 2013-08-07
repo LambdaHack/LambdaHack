@@ -12,8 +12,8 @@ import Game.LambdaHack.Client.Animation (AcFrame, SingleFrame)
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
-import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.ServerCmd
 
 -- | The information that is constant across a client playing session,
 -- including many consecutive games in a single session,
@@ -31,6 +31,11 @@ data ConnFrontend = ConnFrontend
   , writeConnFrontend :: MonadClientUI m
                       => Either AcFrame ([K.KM], SingleFrame) -> m ()
                                   -- ^ write a frame to the Frontend
+  }
+
+data ConnServer c = ConnServer
+  { readConnServer  :: MonadConnClient c m => m c
+  , writeConnServer :: MonadConnClient c m => CmdSer -> m ()
   }
 
 class MonadActionRO m => MonadClient m where
@@ -56,7 +61,7 @@ instance (Monoid a, MonadClientUI m) => MonadClientUI (WriterT a m) where
   getsSession  = lift . getsSession
 
 class MonadClient m => MonadConnClient c m | m -> c where
-  getsConn  :: (ConnServer c -> a) -> m a
+  getConn  :: m (ConnServer c)
 
 -- | The bottom of the action monads class semilattice.
 class MonadClient m => MonadClientAbort m where
