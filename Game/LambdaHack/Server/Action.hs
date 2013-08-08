@@ -54,7 +54,7 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.File
-import Game.LambdaHack.Frontend
+import qualified Game.LambdaHack.Frontend as Frontend
 
 fovMode :: MonadServer m => m FovMode
 fovMode = do
@@ -199,7 +199,8 @@ tryRestore Kind.COps{corule} = do
 -- Connect to clients in old or newly spawned threads
 -- that read and write directly to the channels.
 updateConn :: (MonadAtomic m, MonadConnServer m)
-           => (FactionId -> ChanFrontend -> ChanServer CmdClientUI -> IO ())
+           => (FactionId -> Frontend.ChanFrontend -> ChanServer CmdClientUI
+               -> IO ())
            -> (FactionId -> ChanServer CmdClientAI -> IO ())
            -> m ()
 updateConn executorUI executorAI = do
@@ -210,7 +211,7 @@ updateConn executorUI executorAI = do
         fromServer <- newTQueueIO
         toServer <- newTQueueIO
         return ChanServer{..}
-      mkChanFrontend :: IO ChanFrontend
+      mkChanFrontend :: IO Frontend.ChanFrontend
       mkChanFrontend = newTQueueIO
       addConn fid fact = case EM.lookup fid oldD of
         Just conns -> return conns  -- share old conns and threads
@@ -230,20 +231,22 @@ updateConn executorUI executorAI = do
   factionD <- getsState sfactionD
   d <- liftIO $ mapWithKeyM addConn factionD
   putDict d
-  -- Spawn or kill client threads.
+  -- Spawn and kill client threads.
   let toSpawn = d EM.\\ oldD
       toKill  = oldD EM.\\ d  -- don't kill all, share old threads
+      fdict fid = fst $ (fromMaybe (assert `failure` fid))
+                $ fst $ (fromMaybe (assert `failure` fid))
+                $ EM.lookup fid d
+      fromM = Frontend.fromMulti Frontend.connMulti
+  liftIO $ void $ takeMVar fromM  -- stop Frontend
   mapWithKeyM_ (\fid _ -> execCmdAtomic $ KillExitA fid) toKill
-  -- TODO: kill multiplex threads for toKill, perhaps the client should
-  -- send its multiplex thread a message inviting it to exit
-  let fdict fid = fst $ fromMaybe (assert `failure` fid) $ fst $ d EM.! fid
-  liftIO $ void $ forkIO $ unmultiplex fdict (fromMulti connMulti)
-  let forkUI fid (connF, connS) = do
-        void $ forkChild $ executorUI fid connF connS
+  let forkUI fid (connF, connS) = void $ forkChild $ executorUI fid connF connS
+      forkAI fid connS = void $ forkChild $ executorAI fid connS
       forkClient fid (connUI, connAI) = do
         maybe skip (forkUI fid) connUI
-        maybe skip (void . forkChild . executorAI fid) connAI
+        maybe skip (forkAI fid) connAI
   liftIO $ mapWithKeyM_ forkClient toSpawn
+  liftIO $ putMVar fromM fdict  -- restart Frontend
 
 -- Swiped from http://www.haskell.org/ghc/docs/latest/html/libraries/base-4.6.0.0/Control-Concurrent.html
 children :: MVar [MVar ()]

@@ -7,7 +7,7 @@ module Game.LambdaHack.Frontend
     -- * Derived operation
   , startupF, getConfirmGeneric
     -- * Connection channels
-  , ChanFrontend, ConnMulti(..), connMulti, unmultiplex, loopFrontend
+  , ChanFrontend, ConnMulti(..), connMulti, loopFrontend
   ) where
 
 import Control.Concurrent
@@ -28,7 +28,7 @@ import Game.LambdaHack.Utils.LQueue
 
 type ChanFrontend = TQueue K.KM
 
-type FromMulti = TQueue (FactionId, K.KM)
+type FromMulti = MVar (FactionId -> ChanFrontend)
 
 type ToMulti = TQueue (FactionId, Either AcFrame ([K.KM], SingleFrame))
 
@@ -57,18 +57,9 @@ promptGetKey sess keys frame = do
 connMulti :: ConnMulti
 {-# NOINLINE connMulti #-}
 connMulti = unsafePerformIO $ do
-  fromMulti <- newTQueueIO
+  fromMulti <- newMVar undefined
   toMulti <- newTQueueIO
   return ConnMulti{..}
-
-unmultiplex :: (FactionId -> ChanFrontend) -> FromMulti -> IO ()
-unmultiplex fdict fromMulti = loop
- where
-  loop = do
-    (fid, km) <- atomically $ STM.readTQueue fromMulti
-    let fromF = fdict fid
-    atomically $ STM.writeTQueue fromF km
-    loop
 
 -- | Ignore unexpected kestrokes until a SPACE or ESC or others are pressed.
 getConfirmGeneric :: Monad m
@@ -164,7 +155,10 @@ loopFrontend fs ConnMulti{..} = loop Nothing EM.empty
                 return frMap2
         frMap3 <- flushFrames fs fid frMap2
         km <- promptGetKey fs keys frame
-        atomically $ STM.writeTQueue fromMulti (fid, km)
+        fdict <- takeMVar fromMulti
+        let chanFrontend = fdict fid
+        atomically $ STM.writeTQueue chanFrontend km
+        putMVar fromMulti fdict
         loop (Just (fid, frame)) frMap3
       Left fr | Just (oldFid, oldFrame) <- oldFidFrame, fid == oldFid -> do
         displayAc fs fr
