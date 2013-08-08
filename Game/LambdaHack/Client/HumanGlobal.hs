@@ -361,7 +361,6 @@ verifyTrigger leader feat = case feat of
       slides <- overlayToSlideshow winMsg io
       partingSlide <- promptToSlideshow "Can it be done better, though?"
       void $ getInitConfirms [] $ slides Monoid.<> partingSlide
-      flushFrames
   _ -> return ()
 
 -- | Guess and report why the bump command failed.
@@ -418,10 +417,6 @@ gameExitHuman = do
     slides <- scoreToSlideshow Camping
     partingSlide <- promptToSlideshow "See you soon, stronger and braver!"
     void $ getInitConfirms [] $ slides Monoid.<> partingSlide
-    nH <- nHumans
-    when (nH > 1) $ do
-      flushFrames
-      displayPush  -- save one slide to match other factions
     leader <- getLeaderUI
     return $ GameExitSer leader
   else abortWith "Save and exit canceled."

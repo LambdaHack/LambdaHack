@@ -70,8 +70,7 @@ loopUI cmdClientUISem = do
       -- TODO: use msg1
     (Left _, CmdAtomicUI RestartA{}) -> do
       cmdClientUISem cmd1
-      msgAdd $ "Server savefile is corrupted."
-               <+> "Dropping the client savefile and starting a new game."
+      msgAdd $ "Starting a new game (and ignoring an old client savefile)."
     (Right msg1, CmdAtomicUI ResumeA{}) ->
       error $ T.unpack $ "Savefile of client " <> showT side <> " not usable. Can't join the party. Please remove all savefiles manually and restart. Savefile subsystem said: " <> msg1
     (Right msg1, CmdAtomicUI RestartA{}) -> do

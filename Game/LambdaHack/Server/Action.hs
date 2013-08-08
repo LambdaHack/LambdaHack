@@ -238,6 +238,7 @@ updateConn executorUI executorAI = do
                 $ fst $ (fromMaybe (assert `failure` fid))
                 $ EM.lookup fid d
       fromM = Frontend.fromMulti Frontend.connMulti
+  nH <- nHumans
   liftIO $ void $ takeMVar fromM  -- stop Frontend
   mapWithKeyM_ (\fid _ -> execCmdAtomic $ KillExitA fid) toKill
   let forkUI fid (connF, connS) = void $ forkChild $ executorUI fid connF connS
@@ -246,7 +247,7 @@ updateConn executorUI executorAI = do
         maybe skip (forkUI fid) connUI
         maybe skip (forkAI fid) connAI
   liftIO $ mapWithKeyM_ forkClient toSpawn
-  liftIO $ putMVar fromM fdict  -- restart Frontend
+  liftIO $ putMVar fromM (nH, fdict)  -- restart Frontend
 
 -- Swiped from http://www.haskell.org/ghc/docs/latest/html/libraries/base-4.6.0.0/Control-Concurrent.html
 children :: MVar [MVar ()]

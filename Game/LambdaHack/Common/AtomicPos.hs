@@ -145,7 +145,6 @@ posSfxAtomic cmd = case cmd of
   MsgAllD _ -> return $ PosAll
   DisplayPushD fid -> return $ PosFid fid
   DisplayDelayD fid -> return $ PosFid fid
-  FlushFramesD fid -> return $ PosFid fid
   FadeoutD fid _ -> return $ PosFid fid
   FadeinD fid _ -> return $ PosFid fid
 

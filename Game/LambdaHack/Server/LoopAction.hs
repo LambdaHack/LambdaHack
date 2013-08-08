@@ -66,7 +66,7 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
       applyDebug sdebugNxt
       updateConn executorUI executorAI
       initPer
-      reinitGame False
+      reinitGame False False
       -- Save ASAP in case of crashes and disconnects.
       saveBkpAll
     Just (sRaw, ser) -> do  -- Running a restored game.
@@ -81,7 +81,7 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
       broadcastCmdAtomic $ \fid -> ResumeA fid (pers EM.! fid)
       -- Second, set the current cops and reinit perception.
       let setCurrentCops = const (speedupCOps (sallClear sdebugNxt) cops)
-      -- @sRaw is correct here, because none of the above changes State.
+      -- @sRaw@ is correct here, because none of the above changes State.
       execCmdAtomic $ ResumeServerA $ updateCOps setCurrentCops sRaw
       initPer
   -- Loop, communicating with clients.
@@ -437,12 +437,11 @@ restartGame :: (MonadAtomic m, MonadConnServer m)
 restartGame t updConn quitter loopServer = do
   cops <- getsState scops
   broadcastSfxAtomic $ \fid -> FadeoutD fid False
-  broadcastSfxAtomic $ \fid -> FlushFramesD fid
   s <- gameReset cops t
   execCmdAtomic $ RestartServerA s
   updConn
   initPer
-  reinitGame quitter
+  reinitGame quitter True
   -- Save ASAP in case of crashes and disconnects.
   saveBkpAll
   loopServer

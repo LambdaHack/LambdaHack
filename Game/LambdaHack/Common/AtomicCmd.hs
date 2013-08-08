@@ -110,7 +110,6 @@ data SfxAtomic =
   | MsgAllD Msg
   | DisplayPushD FactionId
   | DisplayDelayD FactionId
-  | FlushFramesD FactionId
   | FadeoutD FactionId Bool
   | FadeinD FactionId Bool
   deriving (Show, Eq, Generic)
@@ -182,7 +181,6 @@ undoSfxAtomic cmd = case cmd of
   MsgAllD{} -> cmd
   DisplayPushD{} -> cmd
   DisplayDelayD{} -> cmd
-  FlushFramesD{} -> cmd
   FadeoutD{} -> cmd
   FadeinD{} -> cmd
 

@@ -28,7 +28,7 @@ import Game.LambdaHack.Utils.LQueue
 
 type ChanFrontend = TQueue K.KM
 
-type FromMulti = MVar (FactionId -> ChanFrontend)
+type FromMulti = MVar (Int, FactionId -> ChanFrontend)
 
 type ToMulti = TQueue (FactionId, Either AcFrame ([K.KM], SingleFrame))
 
@@ -90,14 +90,14 @@ displayAc fs (AcRunning fr) = display fs True (Just fr)
 displayAc fs (AcNormal fr) = display fs False (Just fr)
 displayAc fs AcDelay = display fs False Nothing
 
-getSingleFrame :: AcFrame -> Maybe SingleFrame
-getSingleFrame (AcConfirm fr) = Just fr
-getSingleFrame (AcRunning fr) = Just fr
-getSingleFrame (AcNormal fr) = Just fr
+getSingleFrame :: AcFrame -> Maybe (Bool, SingleFrame)
+getSingleFrame (AcConfirm fr) = Just (False, fr)
+getSingleFrame (AcRunning fr) = Just (True, fr)
+getSingleFrame (AcNormal fr) = Just (False, fr)
 getSingleFrame AcDelay = Nothing
 
 toSingles :: FactionId -> EM.EnumMap FactionId (LQueue AcFrame)
-          -> [SingleFrame]
+          -> [(Bool, SingleFrame)]
 toSingles fid frMap =
   let queue = toListLQueue $ fromMaybe newLQueue $ EM.lookup fid frMap
   in mapMaybe getSingleFrame queue
@@ -107,8 +107,7 @@ fadeF fs out side frame = do
   let topRight = True
       lxsize = xsizeSingleFrame frame
       lysize = ysizeSingleFrame frame
-      msg | out = ""
-          | otherwise = "Player" <+> showT (fromEnum side) <> ", get ready!"
+      msg = "Player" <+> showT (fromEnum side) <> ", get ready!"
   animMap <- rndToIO $ fadeout out topRight lxsize lysize
   let sfTop = truncateMsg lxsize msg
       basicFrame = frame {sfTop}
@@ -141,28 +140,33 @@ loopFrontend fs ConnMulti{..} = loop Nothing EM.empty
           if Just fid == fmap fst oldFidFrame then
             return frMap
           else do
-            case oldFidFrame of
-              Nothing -> return frMap  -- TODO: don't display fadein if nH == 1
+            (nH, _) <- readMVar fromMulti
+            frMap2 <- case oldFidFrame of
+              Nothing -> return frMap
               Just (oldFid, oldFrame) -> do
                 frMap2 <- flushFrames fs oldFid frMap
                 let singles = toSingles oldFid frMap  -- not @frMap2@!
-                    lastFrame =
-                      fromMaybe oldFrame $ listToMaybe $ reverse singles
-                fadeF fs True oldFid lastFrame
-                let singles2 = toSingles fid frMap2
-                    firstFrame = fromMaybe frame $ listToMaybe singles2
-                fadeF fs False fid firstFrame
+                    (_, lastFrame) = fromMaybe (undefined, oldFrame)
+                                     $ listToMaybe $ reverse singles
+                    (running, _) = fromMaybe (False, undefined)
+                                   $ listToMaybe singles
+                unless (running || nH < 2) $ fadeF fs True fid lastFrame
                 return frMap2
+            let singles = toSingles fid frMap2
+                (running, firstFrame) = fromMaybe (False, frame)
+                                        $ listToMaybe singles
+            unless (running || nH < 2) $ fadeF fs False fid firstFrame
+            return frMap2
         frMap3 <- flushFrames fs fid frMap2
         km <- promptGetKey fs keys frame
-        fdict <- takeMVar fromMulti
+        (nH, fdict) <- takeMVar fromMulti
         let chanFrontend = fdict fid
         atomically $ STM.writeTQueue chanFrontend km
-        putMVar fromMulti fdict
+        putMVar fromMulti (nH, fdict)
         loop (Just (fid, frame)) frMap3
       Left fr | Just (oldFid, oldFrame) <- oldFidFrame, fid == oldFid -> do
         displayAc fs fr
-        let frame = fromMaybe oldFrame $ getSingleFrame fr
+        let frame = maybe oldFrame snd $ getSingleFrame fr
         loop (Just (fid, frame)) frMap
       Left fr -> do
         let frMap2 = insertFr fid fr frMap

@@ -30,7 +30,7 @@ module Game.LambdaHack.Client.Action
     -- * Draw frames
   , drawOverlay, animate
     -- * Assorted primitives
-  , flushFrames, clientGameSave, restoreGame, displayPush, scoreToSlideshow
+  , clientGameSave, restoreGame, displayPush, scoreToSlideshow
   , rndToAction, getArenaUI, getLeaderUI
   , targetToPos, fadeD, partAidLeader, partActorLeader
   , debugPrint
@@ -152,9 +152,6 @@ displayFrame isRunning mf = do
         Just fr | isRunning -> AcRunning fr
         Just fr -> AcNormal fr
   writeConnFrontend $ Left frame
-
-flushFrames :: MonadClientUI m => m ()
-flushFrames = return ()  -- TODO
 
 promptGetKey :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
 promptGetKey keys frame = do
@@ -431,7 +428,7 @@ fadeD out topRight = do
       arena <- getArenaUI
       lvl <- getsLevel arena id
       report <- getsClient sreport
-      unless out $ msgReset $ gname fact <> ", get ready!"
+      unless out $ msgReset $ gname fact <> ", prepare for your move!"
       animMap <- rndToAction $ fadeout out topRight (lxsize lvl) (lysize lvl)
       animFrs <- animate arena animMap
       modifyClient $ \d -> d {sreport = report}
@@ -439,7 +436,12 @@ fadeD out topRight = do
                 -- Empty frame to mark the fade-in end,
                 -- to trim only to here if SPACE pressed.
               | otherwise = animFrs ++ [Nothing]
-      mapM_ (displayFrame False) frs
+      -- Mark the first frame, to disable fade in loopFrontend.
+      case frs of
+        [] -> assert `failure` out
+        hd : tl -> do
+          displayFrame True hd
+          mapM_ (displayFrame False) tl
 
 -- | The part of speech describing the actor or a special name if a leader
 -- of the observer's faction. The actor may not be present in the dungeon.

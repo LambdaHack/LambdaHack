@@ -272,7 +272,7 @@ spawnMonsters ps lid = assert (not $ null ps) $ do
       mleader <- getsState $ gleader . (EM.! bfid) . sfactionD
       when (mleader == Nothing) $ do
         execCmdAtomic $ LeadFactionA bfid Nothing (Just $ head laid)
-        execSfxAtomic $ FadeinD bfid True
+        execSfxAtomic $ FadeinD bfid False
 
 -- | Create a new monster on the level, at a given position
 -- and with a given actor kind and HP.

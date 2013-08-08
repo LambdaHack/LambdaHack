@@ -534,11 +534,6 @@ drawSfxAtomicUI verbose sfx = case sfx of
     -- of last shown
     displayPush
   DisplayDelayD _ -> displayFrames [Nothing]
-  FlushFramesD _ -> do
-    srunning <- getsClient srunning
-    case srunning of
-      Just (_, k) | k > 1 -> return ()
-      _ -> flushFrames
   FadeoutD _ topRight -> fadeD True topRight
   FadeinD _ topRight -> fadeD False topRight
   _ -> return ()
