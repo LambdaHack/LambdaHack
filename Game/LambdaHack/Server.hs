@@ -94,7 +94,7 @@ mainSer copsSlow exeSer exeFront = do
   sdebugNxt <- debugArgs
   let cops = speedupCOps False copsSlow
       loopServer = loopSer sdebugNxt cmdSerSem
-      exeServer executorUI executorAI =
+      exeServer executorUI executorAI = do
         exeSer (loopServer executorUI executorAI cops)
+        waitForChildren
   exeFront cops exeServer
-  waitForChildren
