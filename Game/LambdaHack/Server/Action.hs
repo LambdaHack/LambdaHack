@@ -55,6 +55,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.File
 import qualified Game.LambdaHack.Frontend as Frontend
+import Game.LambdaHack.Common.ActorState
 
 fovMode :: MonadServer m => m FovMode
 fovMode = do
@@ -174,17 +175,27 @@ restoreScore Config{configScoresFile} = do
     else liftIO $ strictDecodeEOF configScoresFile
 
 -- | Generate a new score, register it and save.
-registerScore :: MonadServer m => Status -> Int -> m ()
-registerScore status total = do
-  when (total /= 0) $ do
-    config <- getsServer sconfig
-    -- Re-read the table in case it's changed by a concurrent game.
-    table <- restoreScore config
-    time <- getsState stime
-    date <- liftIO $ getClockTime
-    let (ntable, _) = HighScore.register table total time status date
-    liftIO $
-      encodeEOF (configScoresFile config) (ntable :: HighScore.ScoreTable)
+registerScore :: MonadServer m => FactionId -> m ()
+registerScore fid = do
+  factionD <- getsState sfactionD
+  let faction = factionD EM.! fid
+      mstatus = fmap snd $ gquit faction
+  total <- case gleader faction of
+    Nothing -> return 0
+    Just leader -> do
+      b <- getsState $ getActorBody leader
+      getsState $ snd . calculateTotal fid (blid b)
+  case mstatus of
+    Just status | total /= 0 -> do
+      config <- getsServer sconfig
+      -- Re-read the table in case it's changed by a concurrent game.
+      table <- restoreScore config
+      time <- getsState stime
+      date <- liftIO $ getClockTime
+      let (ntable, _) = HighScore.register table total time status date
+      liftIO $
+        encodeEOF (configScoresFile config) (ntable :: HighScore.ScoreTable)
+    _ -> return ()
 
 tryRestore :: MonadServer m
            => Kind.COps -> m (Maybe (State, StateServer))

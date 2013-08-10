@@ -374,41 +374,44 @@ processQuits updConn loopServer ((fid, quit) : quits) = do
   cops <- getsState scops
   factionD <- getsState sfactionD
   let faction = factionD EM.! fid
-  total <- case gleader faction of
-    Nothing -> return 0
-    Just leader -> do
-      b <- getsState $ getActorBody leader
-      getsState $ snd . calculateTotal fid (blid b)
+      inGame fact = case gquit fact of
+        Just (_, Killed{}) -> False
+        _ -> True
+      notSpawning fact = not $ isSpawningFact cops fact
+      inGameNotSpawn fact = inGame fact && notSpawning fact
+      inGameHuman fact = inGame fact && isHumanFact fact
   case snd quit of
-    status@Killed{} -> do
-      let inGame fact = case gquit fact of
-            Just (_, Killed{}) -> False
-            Just (_, Victor) -> False
-            _ -> True
-          notSpawning fact = not $ isSpawningFact cops fact
-          isActive fact = inGame fact && notSpawning fact
-          inGameHuman fact = inGame fact && isHumanFact fact
-          gameHuman = filter inGameHuman $ EM.elems factionD
-          gameOver = case filter (isActive . snd) $ EM.assocs factionD of
-            _ | null gameHuman -> True  -- no screensaver mode for now
-            [] -> True  -- last ally dies, so cooperative game ends
-            (fid1, fact1) : rest ->
-              -- Competitive game ends when only one allied team remains.
+    Killed{} -> do
+      let elemsSpawner = filter (isSpawningFact cops) $ EM.elems factionD
+          assocsHuman = filter (inGameHuman . snd) $ EM.assocs factionD
+          assocsNotSpawn = filter (inGameNotSpawn . snd) $ EM.assocs factionD
+          gameOver = case assocsNotSpawn of
+            _ | null assocsHuman -> True  -- no screensaver mode for now
+            [] -> True  -- all spawners win, human or not, allied or not
+            (fid1, _) : rest | null elemsSpawner ->
+              -- Only one allied team remains in a no-spawners game.
               all (\(_, factRest) -> isAllied factRest fid1) rest
-              -- Verify this was not a cooperative game.
-              && not (isAllied fact1 fid)
+            _ -> False  -- In a spawners game only complete Victory matters.
       if gameOver then do
-        registerScore status total
+        -- Killed before others achieved victory, so deserves highscore.
+        when (isHumanFact faction) $ registerScore fid
+        -- Award highscores to all human winners: human spawners or heroes.
+        mapM_ (registerScore . fst) assocsHuman
         revealItems
         restartGame "campaign" updConn False loopServer
       else
+        -- Killed and it even didn't end the game, so no highscore.
         processQuits updConn loopServer quits
-    status@Victor -> do
-      registerScore status total
+    Victor -> do
+      -- Complete victory, no other scores matter, except those of allies.
+      -- Here we assume that spawners can't achieve complete Victory.
+      let assocsHuman = filter (inGameHuman . snd) $ EM.assocs factionD
+      mapM_ (registerScore . fst) assocsHuman
       revealItems
       restartGame "campaign" updConn False loopServer
     Restart t -> restartGame t updConn True loopServer
     Camping -> do
+      -- Wipe out the quit flag for the savegame files.
       execCmdAtomic $ QuitFactionA fid (Just quit) Nothing
       execCmdAtomic SaveExitA
       saveGameSer
