@@ -7,7 +7,7 @@ module Game.LambdaHack.Frontend
     -- * Derived operation
   , startupF, getConfirmGeneric
     -- * Connection channels
-  , ChanFrontend, ConnMulti(..), connMulti, loopFrontend
+  , ChanFrontend, FrontReq(..), ConnMulti(..), connMulti, loopFrontend
   ) where
 
 import Control.Concurrent
@@ -24,13 +24,24 @@ import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Frontend.Chosen
+import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.LQueue
 
 type ChanFrontend = TQueue K.KM
 
 type FromMulti = MVar (Int, FactionId -> ChanFrontend)
 
-type ToMulti = TQueue (FactionId, Either AcFrame ([K.KM], SingleFrame))
+type ToMulti = TQueue (FactionId, FrontReq)
+
+data FrontReq =
+    FrontFrame {frontAc :: !AcFrame}
+      -- ^ show a frame, if the fid acitve, or save it to the client's queue
+  | FrontKey {frontKM :: ![K.KM], frontFr :: !SingleFrame}
+      -- ^ flush frames, possibly show fadeout/fadein and ask for a keypress
+  | FrontSlides {frontClear :: [K.KM], frontSlides :: [SingleFrame]}
+      -- ^ show a whole slideshow without interleaving with other clients
+
+type ReqMap = EM.EnumMap FactionId (LQueue AcFrame)
 
 -- | Multiplex connection channels, for the case of a frontend shared
 -- among clients. This is transparent to the clients themselves.
@@ -61,28 +72,34 @@ connMulti = unsafePerformIO $ do
   toMulti <- newTQueueIO
   return ConnMulti{..}
 
--- | Ignore unexpected kestrokes until a SPACE or ESC or others are pressed.
-getConfirmGeneric :: Monad m
-                  => ([K.KM] -> SingleFrame -> m K.KM)
-                  -> [K.KM] -> SingleFrame -> m Bool
-getConfirmGeneric pGetKey clearKeys frame = do
+getKeyGeneric :: Monad m
+              => ([K.KM] -> a -> m b)
+              -> [K.KM] -> a -> m b
+getKeyGeneric pGetKey clearKeys x = do
   let keys = [ K.KM {key=K.Space, modifier=K.NoModifier}
              , K.KM {key=K.Esc, modifier=K.NoModifier} ]
              ++ clearKeys
-  km <- pGetKey keys frame
-  case km of
-    K.KM {key=K.Space, modifier=K.NoModifier} -> return True
-    _ | km `elem` clearKeys -> return True
-    _ -> return False
+  pGetKey keys x
 
-flushFrames :: FrontendSession -> FactionId
-            -> EM.EnumMap FactionId (LQueue AcFrame)
-            -> IO (EM.EnumMap FactionId (LQueue AcFrame))
-flushFrames fs fid frMap = do
-  let queue = toListLQueue $ fromMaybe newLQueue $ EM.lookup fid frMap
-      frMap2 = EM.delete fid frMap
+isConfirm :: [K.KM] -> K.KM -> Bool
+isConfirm clearKeys km =
+  km == K.KM {key=K.Space, modifier=K.NoModifier}
+  || km `elem` clearKeys
+
+-- | Augment a function that takes and retuerns kyes.
+getConfirmGeneric :: Monad m
+                  => ([K.KM] -> a -> m K.KM)
+                  -> [K.KM] -> a -> m Bool
+getConfirmGeneric pGetKey clearKeys x = do
+  km <- getKeyGeneric pGetKey clearKeys x
+  return $! isConfirm clearKeys km
+
+flushFrames :: FrontendSession -> FactionId -> ReqMap -> IO ReqMap
+flushFrames fs fid reqMap = do
+  let queue = toListLQueue $ fromMaybe newLQueue $ EM.lookup fid reqMap
+      reqMap2 = EM.delete fid reqMap
   mapM_ (displayAc fs) queue
-  return frMap2
+  return reqMap2
 
 displayAc :: FrontendSession -> AcFrame -> IO ()
 displayAc fs (AcConfirm fr) = void $ getConfirmGeneric (promptGetKey fs) [] fr
@@ -96,10 +113,9 @@ getSingleFrame (AcRunning fr) = Just (True, fr)
 getSingleFrame (AcNormal fr) = Just (False, fr)
 getSingleFrame AcDelay = Nothing
 
-toSingles :: FactionId -> EM.EnumMap FactionId (LQueue AcFrame)
-          -> [(Bool, SingleFrame)]
-toSingles fid frMap =
-  let queue = toListLQueue $ fromMaybe newLQueue $ EM.lookup fid frMap
+toSingles :: FactionId -> ReqMap -> [(Bool, SingleFrame)]
+toSingles fid reqMap =
+  let queue = toListLQueue $ fromMaybe newLQueue $ EM.lookup fid reqMap
   in mapMaybe getSingleFrame queue
 
 fadeF :: FrontendSession -> Bool -> FactionId -> SingleFrame -> IO ()
@@ -118,56 +134,87 @@ fadeF fs out side frame = do
           | otherwise = animFrs ++ [Nothing]
   mapM_ (display fs False) frs
 
-insertFr :: FactionId -> AcFrame
-         -> EM.EnumMap FactionId (LQueue AcFrame)
-         -> EM.EnumMap FactionId (LQueue AcFrame)
-insertFr fid fr frMap =
-  let queue = fromMaybe newLQueue $ EM.lookup fid frMap
-  in EM.insert fid (writeLQueue queue fr) frMap
+insertFr :: FactionId -> AcFrame -> ReqMap -> ReqMap
+insertFr fid fr reqMap =
+  let queue = fromMaybe newLQueue $ EM.lookup fid reqMap
+  in EM.insert fid (writeLQueue queue fr) reqMap
 
 -- TODO: save or display all at game save
+-- Read UI requests from clients and send them to the frontend,
+-- separated by fadeout/fadein frame sequences, if needed.
+-- There may be many UI clients, but this function is only ever
+-- executed on one thread, so the frontend receives requests
+-- in a sequential way, without any random interleaving.
 loopFrontend :: FrontendSession -> ConnMulti -> IO ()
 loopFrontend fs ConnMulti{..} = loop Nothing EM.empty
  where
-  loop :: Maybe (FactionId, SingleFrame)
-       -> EM.EnumMap FactionId (LQueue AcFrame)
-       -> IO ()
-  loop oldFidFrame frMap = do
+  writeKM :: FactionId -> K.KM -> IO ()
+  writeKM fid km = do
+    fM <- takeMVar fromMulti
+    let chanFrontend = snd fM fid
+    atomically $ STM.writeTQueue chanFrontend km
+    putMVar fromMulti fM
+
+  flushFade :: SingleFrame -> Maybe (FactionId, SingleFrame)
+            -> ReqMap -> FactionId
+            -> IO ReqMap
+  flushFade frontFr oldFidFrame reqMap fid = do
+    if Just fid == fmap fst oldFidFrame then
+      return reqMap
+    else do
+      (nH, _) <- readMVar fromMulti
+      reqMap2 <- case oldFidFrame of
+        Nothing -> return reqMap
+        Just (oldFid, oldFrame) -> do
+          reqMap2 <- flushFrames fs oldFid reqMap
+          let singles = toSingles oldFid reqMap  -- not @reqMap2@!
+              (_, lastFrame) = fromMaybe (undefined, oldFrame)
+                               $ listToMaybe $ reverse singles
+              (running, _) = fromMaybe (False, undefined)
+                             $ listToMaybe singles
+          unless (running || nH < 2) $ fadeF fs True fid lastFrame
+          return reqMap2
+      let singles = toSingles fid reqMap2
+          (running, firstFrame) = fromMaybe (False, frontFr)
+                                  $ listToMaybe singles
+      unless (running || nH < 2) $ fadeF fs False fid firstFrame
+      flushFrames fs fid reqMap2
+
+  loop :: Maybe (FactionId, SingleFrame) -> ReqMap -> IO ()
+  loop oldFidFrame reqMap = do
     (fid, efr) <- atomically $ STM.readTQueue toMulti
     case efr of
-      Right (keys, frame) -> do
-        frMap2 <-
-          if Just fid == fmap fst oldFidFrame then
-            return frMap
-          else do
-            (nH, _) <- readMVar fromMulti
-            frMap2 <- case oldFidFrame of
-              Nothing -> return frMap
-              Just (oldFid, oldFrame) -> do
-                frMap2 <- flushFrames fs oldFid frMap
-                let singles = toSingles oldFid frMap  -- not @frMap2@!
-                    (_, lastFrame) = fromMaybe (undefined, oldFrame)
-                                     $ listToMaybe $ reverse singles
-                    (running, _) = fromMaybe (False, undefined)
-                                   $ listToMaybe singles
-                unless (running || nH < 2) $ fadeF fs True fid lastFrame
-                return frMap2
-            let singles = toSingles fid frMap2
-                (running, firstFrame) = fromMaybe (False, frame)
-                                        $ listToMaybe singles
-            unless (running || nH < 2) $ fadeF fs False fid firstFrame
-            return frMap2
-        frMap3 <- flushFrames fs fid frMap2
-        km <- promptGetKey fs keys frame
-        (nH, fdict) <- takeMVar fromMulti
-        let chanFrontend = fdict fid
-        atomically $ STM.writeTQueue chanFrontend km
-        putMVar fromMulti (nH, fdict)
-        loop (Just (fid, frame)) frMap3
-      Left fr | Just (oldFid, oldFrame) <- oldFidFrame, fid == oldFid -> do
-        displayAc fs fr
-        let frame = maybe oldFrame snd $ getSingleFrame fr
-        loop (Just (fid, frame)) frMap
-      Left fr -> do
-        let frMap2 = insertFr fid fr frMap
-        loop oldFidFrame frMap2
+      FrontFrame{..} | Just (oldFid, oldFrame) <- oldFidFrame
+                     , fid == oldFid -> do
+        displayAc fs frontAc
+        let frame = maybe oldFrame snd $ getSingleFrame frontAc
+        loop (Just (fid, frame)) reqMap
+      FrontFrame{..} -> do
+        let reqMap2 = insertFr fid frontAc reqMap
+        loop oldFidFrame reqMap2
+      FrontKey{..} -> do
+        reqMap2 <- flushFade frontFr oldFidFrame reqMap fid
+        km <- promptGetKey fs frontKM frontFr
+        writeKM fid km
+        loop (Just (fid, frontFr)) reqMap2
+      FrontSlides{frontSlides = []} -> return ()
+      FrontSlides{frontSlides = frontSlides@(fr1 : _), ..} -> do
+        reqMap2 <- flushFade fr1 oldFidFrame reqMap fid
+        let writeSpace =
+              writeKM fid $ K.KM {key=K.Space, modifier=K.NoModifier}
+            go frs = do
+              case frs of
+                [] -> assert `failure` fid
+                [x] -> do
+                  display fs False (Just x)
+                  writeSpace
+                  return x
+                x : xs -> do
+                  km <- getKeyGeneric (promptGetKey fs) frontClear x
+                  if isConfirm frontClear km
+                    then go xs
+                    else do
+                      writeKM fid km
+                      return x
+        frLast <- go frontSlides
+        loop (Just (fid, frLast)) reqMap2

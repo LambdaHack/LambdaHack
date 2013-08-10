@@ -22,7 +22,7 @@ module Game.LambdaHack.Client.Action
     -- * History and report
   , msgAdd, msgReset, recordHistory
     -- * Key input
-  , getKeyOverlayCommand, getAllConfirms, getInitConfirms
+  , getKeyOverlayCommand, getInitConfirms
     -- * Display and key input
   , displayFrames, displayMore, displayYesNo, displayChoiceUI
     -- * Generate slideshows
@@ -151,13 +151,30 @@ displayFrame isRunning mf = do
         Nothing -> AcDelay
         Just fr | isRunning -> AcRunning fr
         Just fr -> AcNormal fr
-  writeConnFrontend $ Left frame
+  writeConnFrontend $ Frontend.FrontFrame frame
 
 promptGetKey :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
-promptGetKey keys frame = do
+promptGetKey frontKM frontFr = do
   ConnFrontend{..} <- getsSession sfconn
-  writeConnFrontend $ Right (keys, frame)
+  writeConnFrontend $ Frontend.FrontKey{..}
   readConnFrontend
+
+-- | Display a slideshow, awaiting confirmation for each slide except the last.
+getInitConfirms :: MonadClientUI m => [K.KM] -> Slideshow -> m Bool
+getInitConfirms clearKeys slides = do
+  ConnFrontend{..} <- getsSession sfconn
+  frs <- mapM (drawOverlay ColorFull) $ runSlideshow slides
+  -- The first two cases are optimizations:
+  case frs of
+    [] -> return True
+    [x] -> do
+      displayFrame False $ Just x
+      return True
+    _ -> do
+      let pGetKey frontClear frontSlides = do
+            writeConnFrontend $ Frontend.FrontSlides{..}
+            readConnFrontend
+      Frontend.getConfirmGeneric pGetKey clearKeys frs
 
 getLeaderUI :: MonadClientUI m => m ActorId
 getLeaderUI = do
@@ -227,34 +244,6 @@ getKeyOverlayCommand overlay = do
 getConfirm :: MonadClientUI m => [K.KM] -> SingleFrame -> m Bool
 getConfirm = Frontend.getConfirmGeneric promptGetKey
 
--- | Display a slideshow, awaiting confirmation for each slide.
-getAllConfirms :: MonadClientUI m => [K.KM] -> Slideshow -> m Bool
-getAllConfirms clearKeys slides =
-  case runSlideshow slides of
-    [] -> return True
-    x : xs -> do
-      frame <- drawOverlay ColorFull x
-      b <- getConfirm clearKeys frame
-      if b
-        then getAllConfirms clearKeys (toSlideshow xs)
-        else return False
-
--- | Display a slideshow, awaiting confirmation for each slide except the last.
-getInitConfirms :: MonadClientUI m => [K.KM] -> Slideshow -> m Bool
-getInitConfirms clearKeys slides =
-  case runSlideshow slides of
-    [] -> return True
-    [x] -> do
-      frame <- drawOverlay ColorFull x
-      displayFrame False $ Just frame
-      return True
-    x : xs -> do
-      frame <- drawOverlay ColorFull x
-      b <- getConfirm clearKeys frame
-      if b
-        then getInitConfirms clearKeys (toSlideshow xs)
-        else return False
-
 -- | Push frames or delays to the frame queue.
 displayFrames :: MonadClientUI m => Frames -> m ()
 displayFrames frames = mapM_ (displayFrame False) frames
@@ -287,7 +276,7 @@ displayYesNo prompt = do
   frame <- drawOverlay ColorBW $ head $ runSlideshow sli
   getYesNo frame
 
--- TODO: generalize getAllConfirms and displayChoiceUI to a single op
+-- TODO: generalize getInitConfirms and displayChoiceUI to a single op
 -- | Print a prompt and an overlay and wait for a player keypress.
 -- If many overlays, scroll screenfuls with SPACE. Do not wrap screenfuls
 -- (in some menus @?@ cycles views, so the user can restart from the top).

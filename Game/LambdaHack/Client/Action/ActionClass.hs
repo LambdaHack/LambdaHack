@@ -8,12 +8,12 @@ import Control.Monad.Writer.Strict (WriterT (WriterT), lift, runWriterT)
 import Data.Monoid
 import qualified Game.LambdaHack.Client.Key as K
 
-import Game.LambdaHack.Client.Animation (AcFrame, SingleFrame)
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.ServerCmd
+import Game.LambdaHack.Frontend (FrontReq)
 
 -- | The information that is constant across a client playing session,
 -- including many consecutive games in a single session,
@@ -27,10 +27,9 @@ data SessionUI = SessionUI
 -- | Connection method between a client and a frontend.
 data ConnFrontend = ConnFrontend
   { readConnFrontend  :: MonadClientUI m => m K.KM
-                                  -- ^ read a keystroke from the Frontend
-  , writeConnFrontend :: MonadClientUI m
-                      => Either AcFrame ([K.KM], SingleFrame) -> m ()
-                                  -- ^ write a frame to the Frontend
+      -- ^ read a keystroke received from the frontend
+  , writeConnFrontend :: MonadClientUI m => FrontReq -> m ()
+      -- ^ write a UI request to the frontend
   }
 
 data ConnServer c = ConnServer
