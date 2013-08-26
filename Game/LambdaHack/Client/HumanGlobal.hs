@@ -14,7 +14,6 @@ import qualified Data.EnumMap.Strict as EM
 import Data.Function
 import Data.List
 import Data.Maybe
-import qualified Data.Monoid as Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
@@ -333,8 +332,6 @@ verifyTrigger :: (MonadClientAbort m, MonadClientUI m)
               => ActorId -> F.Feature -> m ()
 verifyTrigger leader feat = case feat of
   F.Cause Effect.Quit -> do
-    Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsState scops
-    s <- getState
     b <- getsState $ getActorBody leader
     side <- getsClient sside
     spawning <- getsState $ flip isSpawningFaction side
@@ -342,8 +339,8 @@ verifyTrigger leader feat = case feat of
       "This is the way out, but where would you go in this alien world?"
     go <- displayYesNo "This is the way out. Really leave now?"
     when (not go) $ abortWith "Game resumed."
-    let (bag, total) = calculateTotal side (blid b) s
-    if total == 0 then do
+    (_, total) <- getsState $ calculateTotal side (blid b)
+    when (total == 0) $ do
       -- The player can back off at each of these steps.
       go1 <- displayMore ColorBW
                "Afraid of the challenge? Leaving so soon and empty-handed?"
@@ -351,16 +348,6 @@ verifyTrigger leader feat = case feat of
       go2 <- displayMore ColorBW
                "This time try to grab some loot before escape!"
       when (not go2) $ abortWith "Here's your chance!"
-    else do
-      let currencyName = MU.Text $ oname $ ouniqGroup "currency"
-          winMsg = makeSentence
-            [ "Congratulations, you won!"
-            , "Here's your loot, worth"
-            , MU.CarWs total currencyName ]
-      io <- floorItemOverlay bag
-      slides <- overlayToSlideshow winMsg io
-      partingSlide <- promptToSlideshow "Can it be done better, though?"
-      void $ getInitConfirms [] $ slides Monoid.<> partingSlide
   _ -> return ()
 
 -- | Guess and report why the bump command failed.
@@ -414,9 +401,6 @@ gameExitHuman :: (MonadClientAbort m, MonadClientUI m) => m CmdSer
 gameExitHuman = do
   b <- displayYesNo "Really save and exit?"
   if b then do
-    slides <- scoreToSlideshow Camping
-    partingSlide <- promptToSlideshow "See you soon, stronger and braver!"
-    void $ getInitConfirms [] $ slides Monoid.<> partingSlide
     leader <- getLeaderUI
     return $ GameExitSer leader
   else abortWith "Save and exit canceled."

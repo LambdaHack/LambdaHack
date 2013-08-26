@@ -11,7 +11,7 @@ module Game.LambdaHack.Server.Action
   , sendUpdateUI, sendQueryUI, sendUpdateAI, sendQueryAI
     -- * Assorted primitives
   , saveGameSer, saveGameBkp, dumpCfg
-  , mkConfigRules, restoreScore, registerScore
+  , mkConfigRules, restoreScore, registerScore, deduceQuits
   , rndToAction, fovMode, resetFidPerception, getPerFid
   ) where
 
@@ -23,6 +23,7 @@ import Control.Exception (finally)
 import Control.Monad
 import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
+import Data.List
 import Data.Maybe
 import qualified Data.Text.IO as T
 import System.IO (stderr)
@@ -180,21 +181,73 @@ registerScore fid = do
   factionD <- getsState sfactionD
   let faction = factionD EM.! fid
       mstatus = fmap snd $ gquit faction
-  total <- case gleader faction of
-    Nothing -> return 0
-    Just leader -> do
-      b <- getsState $ getActorBody leader
-      getsState $ snd . calculateTotal fid (blid b)
-  case mstatus of
-    Just status | total /= 0 -> do
-      config <- getsServer sconfig
-      -- Re-read the table in case it's changed by a concurrent game.
-      table <- restoreScore config
-      time <- getsState stime
-      date <- liftIO $ getClockTime
-      let (ntable, _) = HighScore.register table total time status date
-      liftIO $
-        encodeEOF (configScoresFile config) (ntable :: HighScore.ScoreTable)
+  when (isHumanFact faction) $ do
+    total <- case gleader faction of
+      Nothing -> return 0
+      Just leader -> do
+        b <- getsState $ getActorBody leader
+        getsState $ snd . calculateTotal fid (blid b)
+    case mstatus of
+      Just status | total /= 0 -> do
+        config <- getsServer sconfig
+        -- Re-read the table in case it's changed by a concurrent game.
+        table <- restoreScore config
+        time <- getsState stime
+        date <- liftIO $ getClockTime
+        let (ntable, _) = HighScore.register table total time status date
+        liftIO $
+          encodeEOF (configScoresFile config) (ntable :: HighScore.ScoreTable)
+      _ -> return ()
+
+-- Send any QuitFactionA actions that can be deduced from their current state.
+deduceQuits :: (MonadAtomic m, MonadServer m) => FactionId -> Status -> m ()
+deduceQuits fid Defeated = assert `failure` fid
+deduceQuits fid Camping = assert `failure` fid
+deduceQuits fid Restart{} = assert `failure` fid
+deduceQuits fid Conquer = assert `failure` fid
+deduceQuits fid status = do
+  cops <- getsState scops
+  let quitF statusQ fidQ = do
+        oldSt <- getsState $ gquit . (EM.! fidQ) . sfactionD
+        case oldSt of
+          Just (_, Killed{}) -> return ()  -- Do not overwrite in case
+          Just (_, Defeated) -> return ()  -- many things happen in 1 turn.
+          Just (_, Conquer) -> return ()
+          Just (_, Escape) -> return ()
+          _ -> do
+            -- TODO: only send to fidQ: revealItems
+            execCmdAtomic $ QuitFactionA fidQ oldSt $ Just (True, statusQ)
+            registerScore fidQ
+            modifyServer $ \ser -> ser {squit = True}  -- end turn ASAP
+      mapQuitF statusQ fids = mapM_ (quitF statusQ) $ delete fid fids
+  quitF status fid
+  factionD <- getsState sfactionD
+  let inGame fact = case gquit fact of
+        Just (_, Killed{}) -> False
+        Just (_, Defeated{}) -> False
+        Just (_, Restart{}) -> False  -- effectively, commits suicide
+        _ -> True
+  let assocsInGame = filter (inGame . snd) $ EM.assocs factionD
+      keysInGame = map fst assocsInGame
+      assocsSpawn = filter (isSpawningFact cops . snd) assocsInGame
+      assocsNotSpawn = filter (not . isSpawningFact cops . snd) assocsInGame
+      assocsHuman = filter (isHumanFact . snd) assocsInGame
+  case assocsNotSpawn of
+    _ | null assocsHuman ->
+      -- No screensaver mode for now --- all non-human players win.
+      mapQuitF Conquer keysInGame
+    [] ->
+      -- Only spawners remain so all win, human or not, allied or not.
+      mapQuitF Conquer keysInGame
+    (_, fact1) : rest | null assocsSpawn && all (isAllied fact1 . fst) rest ->
+      -- Only one allied team remains in a no-spawners game.
+      mapQuitF Conquer keysInGame
+    _ | status == Escape -> do
+      -- Otherwise, in a spawners game or a game with many teams alive,
+      -- only complete Victory matters.
+      let (victors, losers) = partition (flip isAllied fid . snd) assocsInGame
+      mapQuitF Escape $ map fst victors
+      mapQuitF Defeated $ map fst losers
     _ -> return ()
 
 tryRestore :: MonadServer m

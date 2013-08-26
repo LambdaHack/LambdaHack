@@ -32,8 +32,10 @@ showScore :: (Int, ScoreRecord) -> [Text]
 showScore (pos, score) =
   let died = case status score of
         Killed lvl -> "perished on level " ++ show (fromEnum lvl) ++ ","
+        Defeated -> "was defeated"
         Camping -> "is camping somewhere,"
-        Victor -> "emerged victorious"
+        Conquer -> "eliminated all opposition"
+        Escape -> "emerged victorious"
         Restart _ -> "resigned prematurely"
       curDate = calendarTimeToString . toUTCTime . date $ score
       big, lil :: String
@@ -113,10 +115,17 @@ slideshow table pos status =
             ("your short-lived struggle", MU.Sg3rd, "(score halved)")
           Killed _ ->
             ("your heroic deeds", MU.PlEtc, "(score halved)")
+          Defeated ->
+            ("your futile efforts", MU.PlEtc, "(score halved)")
           Camping ->
             ("your valiant exploits", MU.PlEtc, "(unless you are slain)")
-          Victor ->
-            ("your glorious victory", MU.Sg3rd,
+          Conquer ->
+            ("your ruthless victory", MU.Sg3rd,
+             if pos <= height
+             then "among the greatest heroes"
+             else "")
+          Escape ->
+            ("your dashing coup", MU.Sg3rd,
              if pos <= height
              then "among the greatest heroes"
              else "")

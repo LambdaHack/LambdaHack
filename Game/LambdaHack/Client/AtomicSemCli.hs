@@ -11,6 +11,7 @@ import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Maybe
+import qualified Data.Monoid as Monoid
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.Action
@@ -428,25 +429,65 @@ displaceActorUI source target = do
 
 quitFactionUI :: MonadClientUI m => FactionId -> Maybe (Bool, Status) -> m ()
 quitFactionUI fid toSt = do
+  Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsState scops
+  side <- getsClient sside
   fidName <- getsState $ MU.Text . gname . (EM.! fid) . sfactionD
-  case toSt of
-    Just (_, Killed _) -> do
-      let msg = makeSentence
-            [MU.SubjectVerbSg fidName "be decisively defeated"]
-      msgAdd msg
-    Just (_, Camping) -> do
-      let msg = makeSentence
-            [MU.SubjectVerbSg fidName "order save and exit"]
-      msgAdd msg
-    Just (_, Victor) -> do
-      let msg = makeSentence
-            [MU.SubjectVerbSg fidName "achieve victory"]
-      msgAdd msg
-    Just (_, Restart t) -> do
-      let part = MU.Text $ "order mission restart in" <+> t <+> "mode"
-          msg = makeSentence [MU.SubjectVerbSg fidName part]
-      msgAdd msg
+  let msgIfSide _ | fid /= side = Nothing
+      msgIfSide s = Just s
+      (startingPart, partingPart) = case toSt of
+        Just (_, Killed _) ->
+          ( Just "be eliminated"
+          , msgIfSide "Let's hope another party can save the day!" )
+        Just (_, Defeated) ->
+          ( Just "be decisively defeated"
+          , msgIfSide "Let's hope your new overlords let you live." )
+        Just (_, Camping) ->
+          ( Just "order save and exit"
+          , Just $ if fid == side
+                   then "See you soon, stronger and braver!"
+                   else "See you soon, stalwart warrior!")
+        Just (_, Conquer) ->
+          ( Just "vanquish all foes"
+          , msgIfSide "Can it be done in a better style, though?" )
+        Just (_, Escape) ->
+          ( Just "achieve victory"
+          , msgIfSide "Can it be done better, though?" )
+        Just (_, Restart t) ->
+          ( Just $ MU.Text $ "order mission restart in" <+> t <+> "mode"
+          , Nothing )  -- TODO: "this time for real"?
+        Nothing ->
+          (Nothing, Nothing)  -- Wipe out the quit flag for the savegame files.
+  case startingPart of
     Nothing -> return ()
+    Just sp -> do
+      let msg = makeSentence [MU.SubjectVerbSg fidName sp]
+      msgAdd msg
+  case (toSt, partingPart) of
+    (Just (_, status), Just pp) -> do
+      leader <- getLeaderUI
+      b <- getsState $ getActorBody leader
+      (bag, total) <- getsState $ calculateTotal side (blid b)
+      let currencyName = MU.Text $ oname $ ouniqGroup "currency"
+          winMsg = makeSentence [ "Your loot is worth"
+                                , MU.CarWs total currencyName ]
+                   <+> moreMsg
+      startingSlide <- promptToSlideshow moreMsg
+      recordHistory  -- we are going to exit or restart, so record
+      io <- floorItemOverlay bag
+      itemSlides <- overlayToSlideshow winMsg io
+      scoreSlides <- scoreToSlideshow status
+      blankSlide <- promptToSlideshow ""  -- a brief pause
+      partingSlide <- promptToSlideshow $ pp <+> moreMsg
+      shutdownSlide <- promptToSlideshow pp
+      -- First ESC cancels items display.
+      void $ getInitConfirms []
+        $ startingSlide Monoid.<> itemSlides Monoid.<> blankSlide
+      -- Second ESC cancels high score and parting message display.
+      void $ getInitConfirms []
+        $ scoreSlides Monoid.<> partingSlide Monoid.<> blankSlide
+      -- This partingSlide stays onscreen during shutdown, etc.
+      void $ getInitConfirms [] shutdownSlide
+    _ -> return ()
 
 -- * SfxAtomicUI
 

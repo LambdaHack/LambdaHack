@@ -430,17 +430,12 @@ effectDescend power target = do
 -- ** Quit
 
 -- | The faction leaves the dungeon.
-effectQuit :: MonadAtomic m => ActorId -> m Bool
+effectQuit :: (MonadAtomic m, MonadServer m) => ActorId -> m Bool
 effectQuit aid = do
   b <- getsState $ getActorBody aid
   let fid = bfid b
-      lid = blid b
   spawning <- getsState $ flip isSpawningFaction fid
   if spawning then return False
   else do
-    (_, total) <- getsState $ calculateTotal fid lid
-    oldSt <- getsState $ gquit . (EM.! fid) . sfactionD
-    if total == 0
-      then execCmdAtomic $ QuitFactionA fid oldSt $ Just (False, Victor)
-      else execCmdAtomic $ QuitFactionA fid oldSt $ Just (True, Victor)
+    deduceQuits fid Escape
     return True

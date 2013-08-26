@@ -48,10 +48,12 @@ type Dipl = EM.EnumMap FactionId Diplomacy
 
 -- | Current result of the game.
 data Status =
-    Killed !LevelId  -- ^ the player lost the game on the given level
+    Killed !LevelId  -- ^ the faction was eliminated on the given level
+  | Defeated         -- ^ the faction otherwise lost the game
   | Camping          -- ^ game is supended
-  | Victor           -- ^ the player won
-  | Restart Text     -- ^ the player quits and starts a new game
+  | Conquer          -- ^ the player won by eliminating all rivals
+  | Escape           -- ^ the player escaped the dungeon alive
+  | Restart Text     -- ^ game is restarted
   deriving (Show, Eq, Ord)
 
 -- | Tell whether the faction is controlled (at least partially) by a human.
@@ -91,16 +93,20 @@ instance Binary Diplomacy where
 
 instance Binary Status where
   put (Killed ln) = putWord8 0 >> put ln
-  put Camping     = putWord8 1
-  put Victor      = putWord8 2
-  put (Restart t) = putWord8 3 >> put t
+  put Defeated    = putWord8 1
+  put Camping     = putWord8 2
+  put Conquer     = putWord8 3
+  put Escape      = putWord8 4
+  put (Restart t) = putWord8 5 >> put t
   get = do
     tag <- getWord8
     case tag of
       0 -> fmap Killed get
-      1 -> return Camping
-      2 -> return Victor
-      3 -> fmap Restart get
+      1 -> return Defeated
+      2 -> return Camping
+      3 -> return Conquer
+      4 -> return Escape
+      5 -> fmap Restart get
       _ -> fail "no parse (Status)"
 
 instance Binary Faction where

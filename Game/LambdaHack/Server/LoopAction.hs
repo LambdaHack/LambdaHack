@@ -98,8 +98,15 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
         let arenas = ES.toList $ ES.fromList $ catMaybes marenas
         assert (not $ null arenas) skip
         mapM_ run arenas
-        endClip arenas
-        endOrLoop (updateConn executorUI executorAI) loop
+        quit <- getsServer squit
+        if quit then do
+          -- In case of game save+exit or restart, don't age levels (endClip)
+          -- since possibly not all actors have moved yet.
+          modifyServer $ \ser -> ser {squit = False}
+          endOrLoop (updateConn executorUI executorAI) loop
+        else do
+          endClip arenas
+          loop
   loop
 
 saveBkpAll :: (MonadAtomic m, MonadServer m) => m ()
@@ -109,32 +116,26 @@ saveBkpAll = do
 
 endClip :: (MonadAtomic m, MonadServer m) => [LevelId] -> m ()
 endClip arenas = do
-  quit <- getsServer squit
-  if quit then
-    -- In case of save and exit, don't age levels, since possibly
-    -- not all actors have moved yet.
-    modifyServer $ \ser -> ser {squit = False}
-  else do
-    time <- getsState stime
-    let clipN = time `timeFit` timeClip
-        cinT = let r = timeTurn `timeFit` timeClip
-               in assert (r > 2) r
-        bkpFreq = cinT * 100
-        clipMod = clipN `mod` cinT
-    bkpSave <- getsServer sbkpSave
-    when (bkpSave || clipN `mod` bkpFreq == 0) $ do
-      modifyServer $ \ser -> ser {sbkpSave = False}
-      execCmdAtomic SaveBkpA
-      saveGameBkp
-    -- Regenerate HP and add monsters each turn, not each clip.
-    when (clipMod == 1) $ mapM_ regenerateLevelHP arenas
-    when (clipMod == 2) $ mapM_ generateMonster arenas
-    -- TODO: a couple messages each clip to many clients is too costly.
-    -- Store these on a queue and sum times instead of sending,
-    -- until a different command needs to be sent. Include HealActorA
-    -- from regenerateLevelHP, but keep it before AgeGameA.
-    mapM_ (\lid -> execCmdAtomic $ AgeLevelA lid timeClip) arenas
-    execCmdAtomic $ AgeGameA timeClip
+  time <- getsState stime
+  let clipN = time `timeFit` timeClip
+      cinT = let r = timeTurn `timeFit` timeClip
+             in assert (r > 2) r
+      bkpFreq = cinT * 100
+      clipMod = clipN `mod` cinT
+  bkpSave <- getsServer sbkpSave
+  when (bkpSave || clipN `mod` bkpFreq == 0) $ do
+    modifyServer $ \ser -> ser {sbkpSave = False}
+    execCmdAtomic SaveBkpA
+    saveGameBkp
+  -- Regenerate HP and add monsters each turn, not each clip.
+  when (clipMod == 1) $ mapM_ regenerateLevelHP arenas
+  when (clipMod == 2) $ mapM_ generateMonster arenas
+  -- TODO: a couple messages each clip to many clients is too costly.
+  -- Store these on a queue and sum times instead of sending,
+  -- until a different command needs to be sent. Include HealActorA
+  -- from regenerateLevelHP, but keep it before AgeGameA.
+  mapM_ (\lid -> execCmdAtomic $ AgeLevelA lid timeClip) arenas
+  execCmdAtomic $ AgeGameA timeClip
 
 -- | Perform moves for individual actors, as long as there are actors
 -- with the next move time less than or equal to the current level time.
@@ -245,9 +246,9 @@ dieSer aid = do  -- TODO: explode if a projectile holding a potion
   dropAllItems aid body
   execCmdAtomic $ DestroyActorA aid body {bbag = EM.empty} []
   spawning <- getsState $ flip isSpawningFaction fid
-  when (not spawning && isNothing mleader) $ do
-    oldSt <- getsState $ gquit . (EM.! fid) . sfactionD
-    execCmdAtomic $ QuitFactionA fid oldSt $ Just (True, Killed $ blid body)
+  Config{configFirstDeathEnds} <- getsServer sconfig
+  when (not spawning && (isNothing mleader || configFirstDeathEnds)) $
+    deduceQuits fid $ Killed $ blid body
 
 -- | Drop all actor's items.
 dropAllItems :: MonadAtomic m => ActorId -> Actor -> m ()
@@ -267,11 +268,8 @@ electLeader fid lid aidDead = do
     let ours (_, b) = bfid b == fid && not (bproj b)
         party = filter ours $ EM.assocs actorD
     onLevel <- getsState $ actorNotProjAssocs (== fid) lid
-    Config{configFirstDeathEnds} <- getsServer sconfig
-    spawning <- getsState $ flip isSpawningFaction fid
-    let mleaderNew | configFirstDeathEnds && not spawning = Nothing
-                   | otherwise = listToMaybe $ filter (/= aidDead)
-                                 $ map fst $ onLevel ++ party
+    let mleaderNew = listToMaybe $ filter (/= aidDead)
+                     $ map fst $ onLevel ++ party
     execCmdAtomic $ LeadFactionA fid mleader mleaderNew
     return mleaderNew
   else return mleader
@@ -359,71 +357,46 @@ regenerateLevelHP lid = do
     getsState $ catMaybes . map approve . actorNotProjAssocs (const True) lid
   mapM_ (\aid -> execCmdAtomic $ HealActorA aid 1) toRegen
 
--- | Continue or restart or exit the game.
+-- | Continue or exit or restart the game.
 endOrLoop :: (MonadAtomic m, MonadConnServer m) => m () -> m () -> m ()
 endOrLoop updConn loopServer = do
-  factionD <- getsState sfactionD
-  let f (_, Faction{gquit=Nothing}) = Nothing
-      f (fid, Faction{gquit=Just quit}) = Just (fid, quit)
-  processQuits updConn loopServer $ mapMaybe f $ EM.assocs factionD
-
-processQuits :: (MonadAtomic m, MonadConnServer m)
-             => m () -> m () -> [(FactionId, (Bool, Status))] -> m ()
-processQuits _ loopServer [] = loopServer  -- just continue
-processQuits updConn loopServer ((fid, quit) : quits) = do
   cops <- getsState scops
   factionD <- getsState sfactionD
-  let faction = factionD EM.! fid
-      inGame fact = case gquit fact of
-        Just (_, Killed{}) -> False
-        _ -> True
-      notSpawning fact = not $ isSpawningFact cops fact
-      inGameNotSpawn fact = inGame fact && notSpawning fact
-      inGameHuman fact = inGame fact && isHumanFact fact
-  case snd quit of
-    Killed{} -> do
-      let elemsSpawner = filter (isSpawningFact cops) $ EM.elems factionD
-          assocsHuman = filter (inGameHuman . snd) $ EM.assocs factionD
-          assocsNotSpawn = filter (inGameNotSpawn . snd) $ EM.assocs factionD
-          gameOver = case assocsNotSpawn of
-            _ | null assocsHuman -> True  -- no screensaver mode for now
-            [] -> True  -- all spawners win, human or not, allied or not
-            (fid1, _) : rest | null elemsSpawner ->
-              -- Only one allied team remains in a no-spawners game.
-              all (\(_, factRest) -> isAllied factRest fid1) rest
-            _ -> False  -- In a spawners game only complete Victory matters.
-      if gameOver then do
-        -- Killed before others achieved victory, so deserves highscore.
-        when (isHumanFact faction) $ registerScore fid
-        -- Award highscores to all human winners: human spawners or heroes.
-        mapM_ (registerScore . fst) assocsHuman
-        revealItems
-        restartGame "campaign" updConn False loopServer
-      else
-        -- Killed and it even didn't end the game, so no highscore.
-        processQuits updConn loopServer quits
-    Victor -> do
-      -- Complete victory, no other scores matter, except those of allies.
-      -- Here we assume that spawners can't achieve complete Victory.
-      let assocsHuman = filter (inGameHuman . snd) $ EM.assocs factionD
-      mapM_ (registerScore . fst) assocsHuman
-      revealItems
-      restartGame "campaign" updConn False loopServer
-    Restart t -> restartGame t updConn True loopServer
-    Camping -> do
-      -- Wipe out the quit flag for the savegame files.
-      execCmdAtomic $ QuitFactionA fid (Just quit) Nothing
-      execCmdAtomic SaveExitA
-      saveGameSer
-      -- Verify that the saved perception is equal to future reconstructed.
-      persSaved <- getsServer sper
-      configFov <- fovMode
-      pers <- getsState $ dungeonPerception cops configFov
-      assert (persSaved == pers `blame` (persSaved, pers)) skip
-      -- Don't call @loopServer@, that is, quit the game loop.
+  let inGame fact = case gquit fact of
+        Nothing -> True
+        Just (_, Camping) -> True
+        _ -> False
+      gameOver = not $ any inGame $ EM.elems factionD
+  let getQuitter fact = case gquit fact of
+        Just (_, Restart t) -> Just t
+        _ -> Nothing
+      mquitter = listToMaybe $ mapMaybe getQuitter $ EM.elems factionD
+  let isCamper fact = case gquit fact of
+        Just (_, Camping) -> True
+        _ -> False
+      campers = filter (isCamper . snd) $ EM.assocs factionD
+  case mquitter of
+    Just t -> restartGame t updConn True loopServer
+    _ | gameOver -> restartGame "campaign" updConn False loopServer
+    _ -> case campers of
+      [] -> loopServer  -- continue current game
+      _ -> do
+        -- Wipe out the quit flag for the savegame files.
+        mapM_ (\(fid, _) -> execCmdAtomic
+                            $ QuitFactionA fid (Just (True, Camping)) Nothing) campers
+        -- Save client and server data.
+        execCmdAtomic SaveExitA
+        saveGameSer
+        -- Verify that the saved perception is equal to future reconstructed.
+        persSaved <- getsServer sper
+        configFov <- fovMode
+        pers <- getsState $ dungeonPerception cops configFov
+        assert (persSaved == pers `blame` (persSaved, pers)) skip
+        -- Don't call @loopServer@, that is, quit the game loop.
 
-revealItems :: (MonadAtomic m, MonadServer m) => m ()
-revealItems = do
+-- TODO: see deduceQuits
+_revealItems :: (MonadAtomic m, MonadServer m) => m ()
+_revealItems = do
   dungeon <- getsState sdungeon
   discoS <- getsServer sdisco
   let discover b iid _numPieces = do
