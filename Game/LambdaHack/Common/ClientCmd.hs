@@ -72,8 +72,8 @@ instance Show (ChanServer c) where
 
 -- | Connection to the human-controlled client of a faction and/or
 -- to the AI client for the same faction.
-type ConnServerFaction = ( Maybe (ChanFrontend, ChanServer CmdClientUI)
-                         , Maybe (ChanServer CmdClientAI) )
+type ConnServerFaction = ( (ChanFrontend, ChanServer CmdClientUI)
+                         , ChanServer CmdClientAI )
 
 -- | Connection information for all factions, indexed by faction identifier.
 type ConnServerDict = EM.EnumMap FactionId ConnServerFaction

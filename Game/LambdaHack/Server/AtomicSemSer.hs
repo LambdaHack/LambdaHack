@@ -18,6 +18,7 @@ import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.AtomicPos
 import Game.LambdaHack.Common.AtomicSem
 import Game.LambdaHack.Common.ClientCmd
+import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Perception
@@ -45,6 +46,7 @@ atomicSendSem :: (MonadAction m, MonadConnServer m) => Atomic -> m ()
 atomicSendSem atomic = do
   -- Gather data from the old state.
   sOld <- getState
+  factionD <- getsState sfactionD
   persOld <- getsServer sper
   (ps, resets, atomicBroken, psBroken) <-
     case atomic of
@@ -70,11 +72,15 @@ atomicSendSem atomic = do
   atomicServerSem ps atomic
   -- Send some actions to the clients, one faction at a time.
   knowEvents <- getsServer $ sknowEvents . sdebugSer
-  let sendA fid cmd = do
-        sendUpdateUI fid $ CmdAtomicUI cmd
-        sendUpdateAI fid $ CmdAtomicAI cmd
+  let sendUI fid cmdUI =
+        when (isHumanFact $ factionD EM.! fid) $ sendUpdateUI fid cmdUI
+      sendAI fid cmdAI =
+        when (usesAIFact $ factionD EM.! fid) $ sendUpdateAI fid cmdAI
+      sendA fid cmd = do
+        sendUI fid $ CmdAtomicUI cmd
+        sendAI fid $ CmdAtomicAI cmd
       sendUpdate fid (CmdAtomic cmd) = sendA fid cmd
-      sendUpdate fid (SfxAtomic sfx) = sendUpdateUI fid $ SfxAtomicUI sfx
+      sendUpdate fid (SfxAtomic sfx) = sendUI fid $ SfxAtomicUI sfx
       breakSend fid perNew = do
         let send2 (atomic2, ps2) =
               if seenAtomicCli knowEvents fid perNew ps2
@@ -129,7 +135,6 @@ atomicSendSem atomic = do
         PosSer -> return ()
         PosAll -> sendUpdate fid atomic
         PosNone -> assert `failure` (atomic, fid)
-  factionD <- getsState sfactionD
   mapWithKeyM_ (\fid _ -> send fid) factionD
 
 atomicRemember :: LevelId -> Perception -> State -> [CmdAtomic]

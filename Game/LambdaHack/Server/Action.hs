@@ -136,28 +136,24 @@ readTQueue toServer = do
 sendUpdateAI :: MonadConnServer m => FactionId -> CmdClientAI -> m ()
 sendUpdateAI fid cmd = do
   conn <- getsDict $ snd . (EM.! fid)
-  maybe skip (writeTQueueAI cmd . fromServer) conn
+  writeTQueueAI cmd $ fromServer conn
 
 sendQueryAI :: MonadConnServer m => FactionId -> ActorId -> m CmdSer
 sendQueryAI fid aid = do
-  mconn <- getsDict (snd . (EM.! fid))
-  let connSend conn = do
-        writeTQueueAI (CmdQueryAI aid) $ fromServer conn
-        readTQueue $ toServer conn
-  maybe (assert `failure` (fid, aid)) connSend mconn
+  conn <- getsDict $ snd . (EM.! fid)
+  writeTQueueAI (CmdQueryAI aid) $ fromServer conn
+  readTQueue $ toServer conn
 
 sendUpdateUI :: MonadConnServer m => FactionId -> CmdClientUI -> m ()
 sendUpdateUI fid cmd = do
-  mconn <- getsDict (fst . (EM.! fid))
-  maybe skip (writeTQueueUI cmd . fromServer . snd) mconn
+  conn <- getsDict $ snd . fst . (EM.! fid)
+  writeTQueueUI cmd $ fromServer conn
 
 sendQueryUI :: MonadConnServer m => FactionId -> ActorId -> m CmdSer
 sendQueryUI fid aid = do
-  mconn <- getsDict (fst . (EM.! fid))
-  let connSend conn = do
-        writeTQueueUI (CmdQueryUI aid) $ fromServer conn
-        readTQueue $ toServer conn
-  maybe (assert `failure` (fid, aid)) (connSend . snd) mconn
+  conn <- getsDict $ snd . fst . (EM.! fid)
+  writeTQueueUI (CmdQueryUI aid) $ fromServer conn
+  readTQueue $ toServer conn
 
 -- | Create a server config file. Warning: when it's used, the game state
 -- may still be undefined, hence the content ops are given as an argument.
@@ -277,30 +273,22 @@ updateConn executorUI executorAI = do
         return ChanServer{..}
       mkChanFrontend :: IO Frontend.ChanFrontend
       mkChanFrontend = newTQueueIO
-      addConn fid fact = case EM.lookup fid oldD of
+      addConn fid _ = case EM.lookup fid oldD of
         Just conns -> return conns  -- share old conns and threads
         Nothing -> do
-          connUI <- if isHumanFact fact
-                    then do
-                      connF <- mkChanFrontend
-                      connS <- mkChanServer
-                      return $ Just (connF, connS)
-                    else return Nothing
-          connAI <- fmap Just mkChanServer
-          -- TODO, when net clients, etc., are included:
-          -- connAI <- if usesAIFact fact
-          --           then mkChanServer
-          --           else return Nothing
-          return (connUI, connAI)
+          connF <- mkChanFrontend
+          connS <- mkChanServer
+          connAI <- mkChanServer
+          return ((connF, connS), connAI)
   factionD <- getsState sfactionD
   d <- liftIO $ mapWithKeyM addConn factionD
   putDict d
   -- Spawn and kill client threads.
   let toSpawn = d EM.\\ oldD
       toKill  = oldD EM.\\ d  -- don't kill all, share old threads
-      fdict fid = fst $ (fromMaybe (assert `failure` fid))
-                $ fst $ (fromMaybe (assert `failure` fid))
-                $ EM.lookup fid d
+      fdict fid = fst $ fst
+                  $ (fromMaybe (assert `failure` fid))
+                  $ EM.lookup fid d
       fromM = Frontend.fromMulti Frontend.connMulti
   nH <- nHumans
   liftIO $ void $ takeMVar fromM  -- stop Frontend
@@ -308,8 +296,8 @@ updateConn executorUI executorAI = do
   let forkUI fid (connF, connS) = void $ forkChild $ executorUI fid connF connS
       forkAI fid connS = void $ forkChild $ executorAI fid connS
       forkClient fid (connUI, connAI) = do
-        maybe skip (forkUI fid) connUI
-        maybe skip (forkAI fid) connAI
+        when (isHumanFact $ factionD EM.! fid) $ forkUI fid connUI
+        when (usesAIFact $ factionD EM.! fid) $ forkAI fid connAI
   liftIO $ mapWithKeyM_ forkClient toSpawn
   liftIO $ putMVar fromM (nH, fdict)  -- restart Frontend
 
