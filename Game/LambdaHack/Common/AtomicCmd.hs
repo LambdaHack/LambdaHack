@@ -68,7 +68,7 @@ data CmdAtomic =
   | PathActorA ActorId (Maybe [Vector]) (Maybe [Vector])
   | ColorActorA ActorId (Maybe Color.Color) (Maybe Color.Color)
   -- Change faction attributes.
-  | QuitFactionA FactionId (Maybe (Bool, Status)) (Maybe (Bool, Status))
+  | QuitFactionA FactionId (Maybe Status) (Maybe Status)
   | LeadFactionA FactionId (Maybe ActorId) (Maybe ActorId)
   | DiplFactionA FactionId FactionId Diplomacy Diplomacy
   -- Alter map.
@@ -85,7 +85,7 @@ data CmdAtomic =
   | DiscoverA LevelId Point ItemId (Kind.Id ItemKind)
   | CoverA LevelId Point ItemId (Kind.Id ItemKind)
   | PerceptionA LevelId PerActor PerActor
-  | RestartA FactionId Discovery FactionPers State Bool Bool
+  | RestartA FactionId Discovery FactionPers State Bool
   | RestartServerA State
   | ResumeA FactionId FactionPers
   | ResumeServerA State

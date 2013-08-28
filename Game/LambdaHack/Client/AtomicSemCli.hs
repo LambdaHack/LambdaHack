@@ -138,7 +138,7 @@ cmdAtomicSemCli cmd = case cmd of
   DiscoverA lid p iid ik -> discoverA lid p iid ik
   CoverA lid p iid ik -> coverA lid p iid ik
   PerceptionA lid outPA inPA -> perceptionA lid outPA inPA
-  RestartA _ sdisco sfper s _ sdebugCli -> do
+  RestartA _ sdisco sfper s sdebugCli -> do
     side <- getsClient sside
     let fact = sfactionD s EM.! side
     shistory <- getsClient shistory
@@ -427,7 +427,7 @@ displaceActorUI source target = do
   animFrs <- animate (blid sb) $ swapPlaces ps
   displayFrames $ Nothing : animFrs
 
-quitFactionUI :: MonadClientUI m => FactionId -> Maybe (Bool, Status) -> m ()
+quitFactionUI :: MonadClientUI m => FactionId -> Maybe Status -> m ()
 quitFactionUI fid toSt = do
   Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsState scops
   side <- getsClient sside
@@ -435,24 +435,24 @@ quitFactionUI fid toSt = do
   let msgIfSide _ | fid /= side = Nothing
       msgIfSide s = Just s
       (startingPart, partingPart) = case toSt of
-        Just (_, Killed _) ->
+        Just Killed{} ->
           ( Just "be eliminated"
           , msgIfSide "Let's hope another party can save the day!" )
-        Just (_, Defeated) ->
+        Just Defeated ->
           ( Just "be decisively defeated"
           , msgIfSide "Let's hope your new overlords let you live." )
-        Just (_, Camping) ->
+        Just Camping ->
           ( Just "order save and exit"
           , Just $ if fid == side
                    then "See you soon, stronger and braver!"
                    else "See you soon, stalwart warrior!")
-        Just (_, Conquer) ->
+        Just Conquer ->
           ( Just "vanquish all foes"
           , msgIfSide "Can it be done in a better style, though?" )
-        Just (_, Escape) ->
+        Just Escape ->
           ( Just "achieve victory"
           , msgIfSide "Can it be done better, though?" )
-        Just (_, Restart t) ->
+        Just (Restart t) ->
           ( Just $ MU.Text $ "order mission restart in" <+> t <+> "mode"
           , Nothing )  -- TODO: "this time for real"?
         Nothing ->
@@ -463,7 +463,7 @@ quitFactionUI fid toSt = do
       let msg = makeSentence [MU.SubjectVerbSg fidName sp]
       msgAdd msg
   case (toSt, partingPart) of
-    (Just (_, status), Just pp) -> do
+    (Just status, Just pp) -> do
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
       (bag, total) <- getsState $ calculateTotal side (blid b)

@@ -70,7 +70,7 @@ cmdAtomicSem cmd = case cmd of
   CoverA{} -> return ()     -- of inverses has to be reasonably inverse.
   PerceptionA _ outPA inPA ->
     assert (not (EM.null outPA && EM.null inPA)) $ return ()
-  RestartA fid sdisco sfper s _ _ -> restartA fid sdisco sfper s
+  RestartA fid sdisco sfper s _ -> restartA fid sdisco sfper s
   RestartServerA s -> restartServerA s
   ResumeA{} -> return ()
   ResumeServerA s -> resumeServerA s
@@ -271,7 +271,7 @@ colorActorA aid fromCol toCol = assert (fromCol /= toCol) $ do
   modifyState $ updateActorBody aid $ \b -> b {bcolor = toCol}
 
 quitFactionA :: MonadAction m
-             => FactionId -> Maybe (Bool, Status) -> Maybe (Bool, Status)
+             => FactionId -> Maybe Status -> Maybe Status
              -> m ()
 quitFactionA fid fromSt toSt = assert (fromSt /= toSt) $ do
   fact <- getsState $ (EM.! fid) . sfactionD

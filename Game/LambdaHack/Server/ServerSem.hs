@@ -409,7 +409,7 @@ gameRestartSer aid t = do
   let fid = bfid b
   oldSt <- getsState $ gquit . (EM.! fid) . sfactionD
   modifyServer $ \ser -> ser {squit = True}  -- do this at once
-  execCmdAtomic $ QuitFactionA fid oldSt $ Just (False, Restart t)
+  execCmdAtomic $ QuitFactionA fid oldSt $ Just $ Restart t
 
 -- * GameExit
 
@@ -419,7 +419,7 @@ gameExitSer aid = do
   let fid = bfid b
   oldSt <- getsState $ gquit . (EM.! fid) . sfactionD
   modifyServer $ \ser -> ser {squit = True}  -- do this at once
-  execCmdAtomic $ QuitFactionA fid oldSt $ Just (True, Camping)
+  execCmdAtomic $ QuitFactionA fid oldSt $ Just Camping
 
 -- * GameSaveSer
 

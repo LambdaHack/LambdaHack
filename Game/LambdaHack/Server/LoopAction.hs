@@ -364,15 +364,15 @@ endOrLoop updConn loopServer = do
   factionD <- getsState sfactionD
   let inGame fact = case gquit fact of
         Nothing -> True
-        Just (_, Camping) -> True
+        Just Camping -> True
         _ -> False
       gameOver = not $ any inGame $ EM.elems factionD
   let getQuitter fact = case gquit fact of
-        Just (_, Restart t) -> Just t
+        Just (Restart t) -> Just t
         _ -> Nothing
       mquitter = listToMaybe $ mapMaybe getQuitter $ EM.elems factionD
   let isCamper fact = case gquit fact of
-        Just (_, Camping) -> True
+        Just Camping -> True
         _ -> False
       campers = filter (isCamper . snd) $ EM.assocs factionD
   case mquitter of
@@ -383,7 +383,7 @@ endOrLoop updConn loopServer = do
       _ -> do
         -- Wipe out the quit flag for the savegame files.
         mapM_ (\(fid, _) -> execCmdAtomic
-                            $ QuitFactionA fid (Just (True, Camping)) Nothing) campers
+                            $ QuitFactionA fid (Just Camping) Nothing) campers
         -- Save client and server data.
         execCmdAtomic SaveExitA
         saveGameSer

@@ -176,7 +176,7 @@ registerScore :: MonadServer m => FactionId -> m ()
 registerScore fid = do
   factionD <- getsState sfactionD
   let faction = factionD EM.! fid
-      mstatus = fmap snd $ gquit faction
+      mstatus = gquit faction
   when (isHumanFact faction) $ do
     total <- case gleader faction of
       Nothing -> return 0
@@ -206,22 +206,22 @@ deduceQuits fid status = do
   let quitF statusQ fidQ = do
         oldSt <- getsState $ gquit . (EM.! fidQ) . sfactionD
         case oldSt of
-          Just (_, Killed{}) -> return ()  -- Do not overwrite in case
-          Just (_, Defeated) -> return ()  -- many things happen in 1 turn.
-          Just (_, Conquer) -> return ()
-          Just (_, Escape) -> return ()
+          Just Killed{} -> return ()  -- Do not overwrite in case
+          Just Defeated -> return ()  -- many things happen in 1 turn.
+          Just Conquer -> return ()
+          Just Escape -> return ()
           _ -> do
             -- TODO: only send to fidQ: revealItems
-            execCmdAtomic $ QuitFactionA fidQ oldSt $ Just (True, statusQ)
+            execCmdAtomic $ QuitFactionA fidQ oldSt $ Just statusQ
             registerScore fidQ
             modifyServer $ \ser -> ser {squit = True}  -- end turn ASAP
       mapQuitF statusQ fids = mapM_ (quitF statusQ) $ delete fid fids
   quitF status fid
   factionD <- getsState sfactionD
   let inGame fact = case gquit fact of
-        Just (_, Killed{}) -> False
-        Just (_, Defeated{}) -> False
-        Just (_, Restart{}) -> False  -- effectively, commits suicide
+        Just Killed{} -> False
+        Just Defeated{} -> False
+        Just Restart{} -> False  -- effectively, commits suicide
         _ -> True
   let assocsInGame = filter (inGame . snd) $ EM.assocs factionD
       keysInGame = map fst assocsInGame

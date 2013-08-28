@@ -73,7 +73,7 @@ reinitGame quitter restarter = do
                in EM.filter f discoS
   sdebugCli <- getsServer $ sdebugCli . sdebugSer
   broadcastCmdAtomic
-    $ \fid -> RestartA fid sdisco (pers EM.! fid) defLoc quitter sdebugCli
+    $ \fid -> RestartA fid sdisco (pers EM.! fid) defLoc sdebugCli
   populateDungeon
   when restarter $ broadcastSfxAtomic $ \fid -> FadeinD fid False
   when quitter $ broadcastSfxAtomic $ \fid -> MsgFidD fid "This time for real."
