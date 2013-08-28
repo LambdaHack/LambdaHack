@@ -66,7 +66,7 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
       applyDebug sdebugNxt
       updateConn executorUI executorAI
       initPer
-      reinitGame False False
+      reinitGame
       -- Save ASAP in case of crashes and disconnects.
       saveBkpAll
     Just (sRaw, ser) -> do  -- Running a restored game.
@@ -370,33 +370,32 @@ endOrLoop updConn loopServer = do
   let getQuitter fact = case gquit fact of
         Just (Restart t) -> Just t
         _ -> Nothing
-      mquitter = listToMaybe $ mapMaybe getQuitter $ EM.elems factionD
+      quitters = mapMaybe getQuitter $ EM.elems factionD
   let isCamper fact = case gquit fact of
         Just Camping -> True
         _ -> False
       campers = filter (isCamper . snd) $ EM.assocs factionD
-  case mquitter of
-    Just t -> restartGame t updConn True loopServer
-    _ | gameOver -> restartGame "campaign" updConn False loopServer
-    _ -> case campers of
-      [] -> loopServer  -- continue current game
-      _ -> do
-        -- Wipe out the quit flag for the savegame files.
-        mapM_ (\(fid, _) -> execCmdAtomic
-                            $ QuitFactionA fid (Just Camping) Nothing) campers
-        -- Save client and server data.
-        execCmdAtomic SaveExitA
-        saveGameSer
-        -- Kill all clients, including those that did not take part
-        -- in the current game.
-        -- Clients exit not now, but after they print all ending screens.
-        killAllClients
-        -- Verify that the saved perception is equal to future reconstructed.
-        persSaved <- getsServer sper
-        configFov <- fovMode
-        pers <- getsState $ dungeonPerception cops configFov
-        assert (persSaved == pers `blame` (persSaved, pers)) skip
-        -- Don't call @loopServer@, that is, quit the game loop.
+  case (quitters, campers) of
+    (t : _, _) -> restartGame t updConn loopServer
+    _ | gameOver -> restartGame "campaign" updConn loopServer
+    (_, []) -> loopServer  -- continue current game
+    (_, _ : _) -> do  -- save game and exit
+      -- Wipe out the quit flag for the savegame files.
+      mapM_ (\(fid, _) -> execCmdAtomic
+                          $ QuitFactionA fid (Just Camping) Nothing) campers
+      -- Save client and server data.
+      execCmdAtomic SaveExitA
+      saveGameSer
+      -- Kill all clients, including those that did not take part
+      -- in the current game.
+      -- Clients exit not now, but after they print all ending screens.
+      killAllClients
+      -- Verify that the saved perception is equal to future reconstructed.
+      persSaved <- getsServer sper
+      configFov <- fovMode
+      pers <- getsState $ dungeonPerception cops configFov
+      assert (persSaved == pers `blame` (persSaved, pers)) skip
+      -- Don't call @loopServer@, that is, quit the game loop.
 
 -- TODO: see deduceQuits
 _revealItems :: (MonadAtomic m, MonadServer m) => m ()
@@ -413,15 +412,14 @@ _revealItems = do
   mapDungeonActors_ f dungeon
 
 restartGame :: (MonadAtomic m, MonadConnServer m)
-            => Text -> m () -> Bool -> m () -> m ()
-restartGame t updConn quitter loopServer = do
+            => Text -> m () -> m () -> m ()
+restartGame t updConn loopServer = do
   cops <- getsState scops
-  broadcastSfxAtomic $ \fid -> FadeoutD fid False
   s <- gameReset cops t
   execCmdAtomic $ RestartServerA s
   updConn
   initPer
-  reinitGame quitter True
+  reinitGame
   -- Save ASAP in case of crashes and disconnects.
   saveBkpAll
   loopServer

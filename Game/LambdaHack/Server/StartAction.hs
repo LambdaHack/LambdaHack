@@ -55,8 +55,8 @@ initPer = do
   pers <- getsState $ dungeonPerception cops configFov
   modifyServer $ \ser1 -> ser1 {sper = pers}
 
-reinitGame :: (MonadAtomic m, MonadServer m) => Bool -> Bool -> m ()
-reinitGame quitter restarter = do
+reinitGame :: (MonadAtomic m, MonadServer m) => m ()
+reinitGame = do
   Kind.COps{ coitem=Kind.Ops{okind}, corule } <- getsState scops
   pers <- getsServer sper
   knowMap <- getsServer $ sknowMap . sdebugSer
@@ -75,8 +75,6 @@ reinitGame quitter restarter = do
   broadcastCmdAtomic
     $ \fid -> RestartA fid sdisco (pers EM.! fid) defLoc sdebugCli
   populateDungeon
-  when restarter $ broadcastSfxAtomic $ \fid -> FadeinD fid False
-  when quitter $ broadcastSfxAtomic $ \fid -> MsgFidD fid "This time for real."
 
 createFactions :: Kind.COps -> Players -> Rnd FactionDict
 createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}

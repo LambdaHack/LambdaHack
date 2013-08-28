@@ -32,7 +32,7 @@ module Game.LambdaHack.Client.Action
     -- * Assorted primitives
   , clientGameSave, restoreGame, displayPush, scoreToSlideshow
   , rndToAction, getArenaUI, getLeaderUI
-  , targetToPos, fadeD, partAidLeader, partActorLeader
+  , targetToPos, partAidLeader, partActorLeader
   , debugPrint
   ) where
 
@@ -404,32 +404,6 @@ animate arena anim = do
       topLineOnly = truncateMsg lxsize over
       basicFrame = draw ColorFull cops per arena leader cli s [topLineOnly]
   return $ renderAnim lxsize lysize basicFrame anim
-
-fadeD :: MonadClientUI m => Bool -> Bool -> m ()
-fadeD out topRight = do
-  srunning <- getsClient srunning
-  case srunning of
-    Just (_, k) | k > 1 -> return ()
-    _ -> do
-      side <- getsClient sside
-      fact <- getsState $ (EM.! side) . sfactionD
-      arena <- getArenaUI
-      lvl <- getsLevel arena id
-      report <- getsClient sreport
-      unless out $ msgReset $ gname fact <> ", prepare for your move!"
-      animMap <- rndToAction $ fadeout out topRight (lxsize lvl) (lysize lvl)
-      animFrs <- animate arena animMap
-      modifyClient $ \d -> d {sreport = report}
-      let frs | out = animFrs
-                -- Empty frame to mark the fade-in end,
-                -- to trim only to here if SPACE pressed.
-              | otherwise = animFrs ++ [Nothing]
-      -- Mark the first frame, to disable fade in loopFrontend.
-      case frs of
-        [] -> assert `failure` out
-        hd : tl -> do
-          displayFrame True hd
-          mapM_ (displayFrame False) tl
 
 -- | The part of speech describing the actor or a special name if a leader
 -- of the observer's faction. The actor may not be present in the dungeon.

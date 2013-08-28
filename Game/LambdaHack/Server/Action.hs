@@ -290,7 +290,6 @@ updateConn executorUI executorAI = do
                   $ (fromMaybe (assert `failure` fid))
                   $ EM.lookup fid newD
       fromM = Frontend.fromMulti Frontend.connMulti
-  nH <- nHumans
   liftIO $ void $ takeMVar fromM  -- stop Frontend
   let forkUI fid (connF, connS) = void $ forkChild $ executorUI fid connF connS
       forkAI fid connS = void $ forkChild $ executorAI fid connS
@@ -302,6 +301,7 @@ updateConn executorUI executorAI = do
         when (isHumanFact $ factionD EM.! fid) $ forkUI fid connUI
         when (usesAIFact $ factionD EM.! fid) $ forkAI fid connAI
   liftIO $ mapWithKeyM_ forkClient toSpawn
+  nH <- nHumans
   liftIO $ putMVar fromM (nH, fdict)  -- restart Frontend
 
 killAllClients :: (MonadAtomic m, MonadConnServer m) => m ()

@@ -445,7 +445,7 @@ quitFactionUI fid toSt = do
           ( Just "order save and exit"
           , Just $ if fid == side
                    then "See you soon, stronger and braver!"
-                   else "See you soon, stalwart warrior!")
+                   else "See you soon, stalwart warrior!" )
         Just Conquer ->
           ( Just "vanquish all foes"
           , msgIfSide "Can it be done in a better style, though?" )
@@ -454,7 +454,9 @@ quitFactionUI fid toSt = do
           , msgIfSide "Can it be done better, though?" )
         Just (Restart t) ->
           ( Just $ MU.Text $ "order mission restart in" <+> t <+> "mode"
-          , Nothing )  -- TODO: "this time for real"?
+          , Just $ if fid == side
+                   then "This time for real."
+                   else "Somebody couldn't stand the heat." )
         Nothing ->
           (Nothing, Nothing)  -- Wipe out the quit flag for the savegame files.
   case startingPart of
@@ -572,8 +574,6 @@ drawSfxAtomicUI verbose sfx = case sfx of
     -- of last shown
     displayPush
   DisplayDelayD _ -> displayFrames [Nothing]
-  FadeoutD _ topRight -> fadeD True topRight
-  FadeinD _ topRight -> fadeD False topRight
   _ -> return ()
 
 strikeD :: MonadClientUI m

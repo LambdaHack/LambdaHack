@@ -95,13 +95,13 @@ displayAc fs (AcRunning fr) = display fs True (Just fr)
 displayAc fs (AcNormal fr) = display fs False (Just fr)
 displayAc fs AcDelay = display fs False Nothing
 
-getSingleFrame :: AcFrame -> Maybe (Bool, SingleFrame)
-getSingleFrame (AcConfirm fr) = Just (False, fr)
-getSingleFrame (AcRunning fr) = Just (True, fr)
-getSingleFrame (AcNormal fr) = Just (False, fr)
+getSingleFrame :: AcFrame -> Maybe SingleFrame
+getSingleFrame (AcConfirm fr) = Just fr
+getSingleFrame (AcRunning fr) = Just fr
+getSingleFrame (AcNormal fr) = Just fr
 getSingleFrame AcDelay = Nothing
 
-toSingles :: FactionId -> ReqMap -> [(Bool, SingleFrame)]
+toSingles :: FactionId -> ReqMap -> [SingleFrame]
 toSingles fid reqMap =
   let queue = toListLQueue $ fromMaybe newLQueue $ EM.lookup fid reqMap
   in mapMaybe getSingleFrame queue
@@ -150,22 +150,19 @@ loopFrontend fs ConnMulti{..} = loop Nothing EM.empty
     if Just fid == fmap fst oldFidFrame then
       return reqMap
     else do
-      (nH, _) <- readMVar fromMulti
       reqMap2 <- case oldFidFrame of
         Nothing -> return reqMap
         Just (oldFid, oldFrame) -> do
           reqMap2 <- flushFrames fs oldFid reqMap
           let singles = toSingles oldFid reqMap  -- not @reqMap2@!
-              (_, lastFrame) = fromMaybe (undefined, oldFrame)
-                               $ listToMaybe $ reverse singles
-              (running, _) = fromMaybe (False, undefined)
-                             $ listToMaybe singles
-          unless (running || nH < 2) $ fadeF fs True fid lastFrame
+              lastFrame = fromMaybe oldFrame $ listToMaybe $ reverse singles
+          fadeF fs True fid lastFrame
           return reqMap2
+      (nH, _) <- readMVar fromMulti
       let singles = toSingles fid reqMap2
-          (running, firstFrame) = fromMaybe (False, frontFr)
-                                  $ listToMaybe singles
-      unless (running || nH < 2) $ fadeF fs False fid firstFrame
+          firstFrame = fromMaybe frontFr $ listToMaybe singles
+      -- @nH@ is unreliable, except at the game start.
+      unless (isNothing oldFidFrame && nH < 2) $ fadeF fs False fid firstFrame
       flushFrames fs fid reqMap2
 
   loop :: Maybe (FactionId, SingleFrame) -> ReqMap -> IO ()
@@ -175,7 +172,7 @@ loopFrontend fs ConnMulti{..} = loop Nothing EM.empty
       FrontFrame{..} | Just (oldFid, oldFrame) <- oldFidFrame
                      , fid == oldFid -> do
         displayAc fs frontAc
-        let frame = maybe oldFrame snd $ getSingleFrame frontAc
+        let frame = fromMaybe oldFrame $ getSingleFrame frontAc
         loop (Just (fid, frame)) reqMap
       FrontFrame{..} -> do
         let reqMap2 = insertFr fid frontAc reqMap
