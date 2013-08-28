@@ -468,25 +468,22 @@ quitFactionUI fid toSt = do
       b <- getsState $ getActorBody leader
       (bag, total) <- getsState $ calculateTotal side (blid b)
       let currencyName = MU.Text $ oname $ ouniqGroup "currency"
-          winMsg = makeSentence [ "Your loot is worth"
-                                , MU.CarWs total currencyName ]
-                   <+> moreMsg
+          itemMsg = makeSentence [ "Your loot is worth"
+                                 , MU.CarWs total currencyName ]
+                    <+> moreMsg
       startingSlide <- promptToSlideshow moreMsg
       recordHistory  -- we are going to exit or restart, so record
       io <- floorItemOverlay bag
-      itemSlides <- overlayToSlideshow winMsg io
+      itemSlides <- overlayToSlideshow itemMsg io
       scoreSlides <- scoreToSlideshow status
-      blankSlide <- promptToSlideshow ""  -- a brief pause
       partingSlide <- promptToSlideshow $ pp <+> moreMsg
       shutdownSlide <- promptToSlideshow pp
-      -- First ESC cancels items display.
+      -- TODO: First ESC cancels items display.
       void $ getInitConfirms []
-        $ startingSlide Monoid.<> itemSlides Monoid.<> blankSlide
-      -- Second ESC cancels high score and parting message display.
-      void $ getInitConfirms []
-        $ scoreSlides Monoid.<> partingSlide Monoid.<> blankSlide
-      -- This partingSlide stays onscreen during shutdown, etc.
-      void $ getInitConfirms [] shutdownSlide
+        $ startingSlide Monoid.<> itemSlides
+      -- TODO: Second ESC cancels high score and parting message display.
+      -- The last slide stays onscreen during shutdown, etc.
+          Monoid.<> scoreSlides Monoid.<> partingSlide Monoid.<> shutdownSlide
     _ -> return ()
 
 -- * SfxAtomicUI
