@@ -6,7 +6,7 @@ module Game.LambdaHack.Server.Action
   ( -- * Action monads
     MonadServer( getServer, getsServer, putServer, modifyServer )
   , MonadConnServer
-  , tryRestore, updateConn, waitForChildren, speedupCOps
+  , tryRestore, updateConn, killAllClients, waitForChildren, speedupCOps
     -- * Communication
   , sendUpdateUI, sendQueryUI, sendUpdateAI, sendQueryAI
     -- * Assorted primitives
@@ -282,24 +282,35 @@ updateConn executorUI executorAI = do
           return ((connF, connS), connAI)
   factionD <- getsState sfactionD
   d <- liftIO $ mapWithKeyM addConn factionD
-  putDict d
+  let newD = d `EM.union` oldD  -- never kill old clients
+  putDict newD
   -- Spawn and kill client threads.
-  let toSpawn = d EM.\\ oldD
-      toKill  = oldD EM.\\ d  -- don't kill all, share old threads
+  let toSpawn = newD EM.\\ oldD
       fdict fid = fst $ fst
                   $ (fromMaybe (assert `failure` fid))
-                  $ EM.lookup fid d
+                  $ EM.lookup fid newD
       fromM = Frontend.fromMulti Frontend.connMulti
   nH <- nHumans
   liftIO $ void $ takeMVar fromM  -- stop Frontend
-  mapWithKeyM_ (\fid _ -> execCmdAtomic $ KillExitA fid) toKill
   let forkUI fid (connF, connS) = void $ forkChild $ executorUI fid connF connS
       forkAI fid connS = void $ forkChild $ executorAI fid connS
       forkClient fid (connUI, connAI) = do
+        -- This is fragile: when a connection is reused, clients are not
+        -- respawned, even if AI or UI usage changes (it does not, currently,
+        -- thanks to faction numbering, etc.).
+        -- TODO: perhaps spawn both AI and UI clients always.
         when (isHumanFact $ factionD EM.! fid) $ forkUI fid connUI
         when (usesAIFact $ factionD EM.! fid) $ forkAI fid connAI
   liftIO $ mapWithKeyM_ forkClient toSpawn
   liftIO $ putMVar fromM (nH, fdict)  -- restart Frontend
+
+killAllClients :: (MonadAtomic m, MonadConnServer m) => m ()
+killAllClients = do
+  d <- getDict
+  let sendKill fid _ = do
+        sendUpdateUI fid $ CmdAtomicUI $ KillExitA fid
+        sendUpdateAI fid $ CmdAtomicAI $ KillExitA fid
+  mapWithKeyM_ sendKill d
 
 -- Swiped from http://www.haskell.org/ghc/docs/latest/html/libraries/base-4.6.0.0/Control-Concurrent.html
 children :: MVar [MVar ()]

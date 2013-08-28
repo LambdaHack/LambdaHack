@@ -387,6 +387,10 @@ endOrLoop updConn loopServer = do
         -- Save client and server data.
         execCmdAtomic SaveExitA
         saveGameSer
+        -- Kill all clients, including those that did not take part
+        -- in the current game.
+        -- Clients exit not now, but after they print all ending screens.
+        killAllClients
         -- Verify that the saved perception is equal to future reconstructed.
         persSaved <- getsServer sper
         configFov <- fovMode
