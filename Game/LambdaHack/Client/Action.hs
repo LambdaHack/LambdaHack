@@ -161,20 +161,19 @@ promptGetKey frontKM frontFr = do
 
 -- | Display a slideshow, awaiting confirmation for each slide except the last.
 getInitConfirms :: MonadClientUI m => [K.KM] -> Slideshow -> m Bool
-getInitConfirms clearKeys slides = do
+getInitConfirms frontClear slides = do
   ConnFrontend{..} <- getsSession sfconn
-  frs <- mapM (drawOverlay ColorFull) $ runSlideshow slides
+  frontSlides <- mapM (drawOverlay ColorFull) $ runSlideshow slides
   -- The first two cases are optimizations:
-  case frs of
+  case frontSlides of
     [] -> return True
     [x] -> do
       displayFrame False $ Just x
       return True
     _ -> do
-      let pGetKey frontClear frontSlides = do
-            writeConnFrontend $ Frontend.FrontSlides{..}
-            readConnFrontend
-      Frontend.getConfirmGeneric pGetKey clearKeys frs
+      writeConnFrontend $ Frontend.FrontSlides{..}
+      km <- readConnFrontend
+      return $! km /= K.KM {key=K.Esc, modifier=K.NoModifier}
 
 getLeaderUI :: MonadClientUI m => m ActorId
 getLeaderUI = do

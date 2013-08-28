@@ -72,27 +72,15 @@ connMulti = unsafePerformIO $ do
   toMulti <- newTQueueIO
   return ConnMulti{..}
 
-getKeyGeneric :: Monad m
-              => ([K.KM] -> a -> m b)
-              -> [K.KM] -> a -> m b
-getKeyGeneric pGetKey clearKeys x = do
-  let keys = [ K.KM {key=K.Space, modifier=K.NoModifier}
-             , K.KM {key=K.Esc, modifier=K.NoModifier} ]
-             ++ clearKeys
-  pGetKey keys x
-
-isConfirm :: [K.KM] -> K.KM -> Bool
-isConfirm clearKeys km =
-  km == K.KM {key=K.Space, modifier=K.NoModifier}
-  || km `elem` clearKeys
-
--- | Augment a function that takes and retuerns kyes.
+-- | Augment a function that takes and returns keys.
 getConfirmGeneric :: Monad m
                   => ([K.KM] -> a -> m K.KM)
                   -> [K.KM] -> a -> m Bool
 getConfirmGeneric pGetKey clearKeys x = do
-  km <- getKeyGeneric pGetKey clearKeys x
-  return $! isConfirm clearKeys km
+  let extraKeys = [ K.KM {key=K.Space, modifier=K.NoModifier}
+                  , K.KM {key=K.Esc, modifier=K.NoModifier} ]
+  km <- pGetKey (clearKeys ++ extraKeys) x
+  return $! km /= K.KM {key=K.Esc, modifier=K.NoModifier}
 
 flushFrames :: FrontendSession -> FactionId -> ReqMap -> IO ReqMap
 flushFrames fs fid reqMap = do
@@ -200,21 +188,18 @@ loopFrontend fs ConnMulti{..} = loop Nothing EM.empty
       FrontSlides{frontSlides = []} -> return ()
       FrontSlides{frontSlides = frontSlides@(fr1 : _), ..} -> do
         reqMap2 <- flushFade fr1 oldFidFrame reqMap fid
-        let writeSpace =
-              writeKM fid $ K.KM {key=K.Space, modifier=K.NoModifier}
-            go frs = do
+        let go frs = do
               case frs of
                 [] -> assert `failure` fid
                 [x] -> do
                   display fs False (Just x)
-                  writeSpace
+                  writeKM fid $ K.KM {key=K.Space, modifier=K.NoModifier}
                   return x
                 x : xs -> do
-                  km <- getKeyGeneric (promptGetKey fs) frontClear x
-                  if isConfirm frontClear km
-                    then go xs
-                    else do
-                      writeKM fid km
-                      return x
+                  b <- getConfirmGeneric (promptGetKey fs) frontClear x
+                  if b then go xs
+                  else do
+                    writeKM fid $ K.KM {key=K.Esc, modifier=K.NoModifier}
+                    return x
         frLast <- go frontSlides
         loop (Just (fid, frLast)) reqMap2
