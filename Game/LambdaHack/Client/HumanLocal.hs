@@ -36,7 +36,7 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Binding
 import qualified Game.LambdaHack.Client.HumanCmd as HumanCmd
-import qualified Game.LambdaHack.Client.Key as K
+import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor

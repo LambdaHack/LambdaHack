@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.Action.ActionClass where
 
 import Control.Monad.Writer.Strict (WriterT (WriterT), lift, runWriterT)
 import Data.Monoid
-import qualified Game.LambdaHack.Client.Key as K
+import qualified Game.LambdaHack.Common.Key as K
 
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.State

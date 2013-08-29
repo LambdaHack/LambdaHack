@@ -13,8 +13,8 @@ import qualified Data.List as L
 import Data.Text.Encoding (encodeUtf8)
 import qualified System.IO as SIO
 
-import Game.LambdaHack.Client.Animation (SingleFrame (..))
-import qualified Game.LambdaHack.Client.Key as K (KM, Key (..), Modifier (..))
+import Game.LambdaHack.Common.Animation (SingleFrame (..))
+import qualified Game.LambdaHack.Common.Key as K (KM, Key (..), Modifier (..))
 import qualified Game.LambdaHack.Common.Color as Color
 
 -- | No session data needs to be maintained by this frontend.

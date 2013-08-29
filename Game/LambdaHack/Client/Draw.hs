@@ -12,7 +12,7 @@ import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import Game.LambdaHack.Client.Animation (SingleFrame (..))
+import Game.LambdaHack.Common.Animation (SingleFrame (..))
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Actor as Actor
 import Game.LambdaHack.Common.ActorState

@@ -22,7 +22,7 @@ import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.HumanCmd (Trigger (..))
 import Game.LambdaHack.Client.HumanLocal
-import qualified Game.LambdaHack.Client.Key as K
+import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Client.RunAction
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action

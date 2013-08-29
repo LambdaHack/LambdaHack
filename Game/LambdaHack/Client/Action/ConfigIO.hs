@@ -12,7 +12,7 @@ import System.FilePath
 
 import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.HumanCmd
-import qualified Game.LambdaHack.Client.Key as K
+import qualified Game.LambdaHack.Common.Key as K
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Utils.Assert

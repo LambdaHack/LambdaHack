@@ -7,7 +7,7 @@ import Control.DeepSeq
 import Data.Binary
 
 import Game.LambdaHack.Client.HumanCmd
-import qualified Game.LambdaHack.Client.Key as K
+import qualified Game.LambdaHack.Common.Key as K
 
 -- | Fully typed contents of the UI config file. This config
 -- is a part of a game client.

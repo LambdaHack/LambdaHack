@@ -18,8 +18,8 @@ import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 import System.IO.Unsafe (unsafePerformIO)
 
-import Game.LambdaHack.Client.Animation
-import qualified Game.LambdaHack.Client.Key as K
+import Game.LambdaHack.Common.Animation
+import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Random

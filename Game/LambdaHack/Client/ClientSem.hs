@@ -13,7 +13,7 @@ import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.HumanCmd
 import Game.LambdaHack.Client.HumanLocal
 import Game.LambdaHack.Client.HumanSem
-import qualified Game.LambdaHack.Client.Key as K
+import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Client.RunAction
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.Strategy

@@ -15,7 +15,7 @@ import qualified Data.Monoid as Monoid
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.Action
-import Game.LambdaHack.Client.Animation
+import Game.LambdaHack.Common.Animation
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.HumanLocal
 import Game.LambdaHack.Client.State

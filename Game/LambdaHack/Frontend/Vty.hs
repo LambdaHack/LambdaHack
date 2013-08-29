@@ -13,8 +13,8 @@ import Data.Text.Encoding (encodeUtf8)
 import Graphics.Vty
 import qualified Graphics.Vty as Vty
 
-import Game.LambdaHack.Client.Animation (SingleFrame (..))
-import qualified Game.LambdaHack.Client.Key as K (KM (..), Key (..),
+import Game.LambdaHack.Common.Animation (SingleFrame (..))
+import qualified Game.LambdaHack.Common.Key as K (KM (..), Key (..),
                                                   Modifier (..))
 import qualified Game.LambdaHack.Common.Color as Color
 

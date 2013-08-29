@@ -17,7 +17,7 @@ import qualified System.Random as R
 import System.Time
 
 import Game.LambdaHack.Client.Config
-import qualified Game.LambdaHack.Client.Key as K
+import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.AtomicCmd

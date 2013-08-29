@@ -56,11 +56,11 @@ import System.Time
 import Game.LambdaHack.Client.Action.ActionClass
 import Game.LambdaHack.Client.Action.ConfigIO
 import qualified Game.LambdaHack.Client.Action.Save as Save
-import Game.LambdaHack.Client.Animation
+import Game.LambdaHack.Common.Animation
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.Draw
-import qualified Game.LambdaHack.Client.Key as K
+import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor

@@ -1,6 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, OverloadedStrings #-}
 -- | Screen frames and animations.
-module Game.LambdaHack.Client.Animation
+module Game.LambdaHack.Common.Animation
   ( Attr(..), defAttr, AttrChar(..)
   , SingleFrame(..), emptySingleFrame, xsizeSingleFrame, ysizeSingleFrame
   , Animation, Frames, renderAnim, restrictAnim
