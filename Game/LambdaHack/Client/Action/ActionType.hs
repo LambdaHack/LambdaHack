@@ -32,7 +32,7 @@ newtype ActionCli c a = ActionCli {runActionCli :: FunActionCli c a}
 
 -- | Invokes the action continuation on the provided argument.
 returnActionCli :: a -> ActionCli c a
-returnActionCli x = ActionCli (\_c _d k _a s cli  -> k s cli x)
+returnActionCli x = ActionCli (\_c _d k _a s cli -> k s cli x)
 
 -- | Distributes the session and shutdown continuation,
 -- threads the state and history.

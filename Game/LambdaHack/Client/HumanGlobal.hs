@@ -103,14 +103,18 @@ dropHuman = do
   leader <- getLeaderUI
   bag <- getsState $ getActorBag leader
   inv <- getsState $ getActorInv leader
-  ((iid, item), _k) <- getAnyItem leader "What to drop?" bag inv "in inventory"
-  disco <- getsClient sdisco
-  -- Do not advertise if an enemy drops an item. Probably junk.
-  subject <- partAidLeader leader
-  msgAdd $ makeSentence
-    [ MU.SubjectVerbSg subject "drop"
-    , partItemWs coitem disco 1 item ]
-  return $ DropSer leader iid
+  ((iid, item), (_, container)) <-
+    getAnyItem leader "What to drop?" bag inv "in inventory"
+  case container of
+    CFloor{} -> neverMind True
+    CActor aid _ -> do
+      assert (aid == leader) skip
+      disco <- getsClient sdisco
+      subject <- partAidLeader leader
+      msgAdd $ makeSentence
+        [ MU.SubjectVerbSg subject "drop"
+        , partItemWs coitem disco 1 item ]
+      return $ DropSer leader iid
 
 allObjectsName :: Text
 allObjectsName = "Objects"

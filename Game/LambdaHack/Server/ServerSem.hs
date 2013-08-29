@@ -188,6 +188,7 @@ actorOpenDoor actor dir exploration = do
          then execFailure (bfid body) "already open"
          else if exploration && serverTile /= freshClientTile
               then return True  -- searching costs
+                   -- TODO: don't add to history (add a flag to report msgs)
               else execFailure (bfid body) "never mind"  -- free bump
 
 -- * RunSer
@@ -260,7 +261,7 @@ dropSer aid iid = do
   b <- getsState $ getActorBody aid
   let k = 1
   execCmdAtomic $ MoveItemA iid k (actorContainer aid (binv b) iid)
-                                           (CFloor (blid b) (bpos b))
+                                  (CFloor (blid b) (bpos b))
 
 -- * ProjectSer
 
