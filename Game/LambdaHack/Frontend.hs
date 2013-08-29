@@ -127,7 +127,6 @@ insertFr fid fr reqMap =
   let queue = fromMaybe newLQueue $ EM.lookup fid reqMap
   in EM.insert fid (writeLQueue queue fr) reqMap
 
--- TODO: save or display all at game save
 -- Read UI requests from clients and send them to the frontend,
 -- separated by fadeout/fadein frame sequences, if needed.
 -- There may be many UI clients, but this function is only ever

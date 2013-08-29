@@ -11,7 +11,7 @@ module Game.LambdaHack.Server.Action
   , sendUpdateUI, sendQueryUI, sendUpdateAI, sendQueryAI
     -- * Assorted primitives
   , saveGameSer, saveGameBkp, dumpCfg
-  , mkConfigRules, restoreScore, registerScore, deduceQuits
+  , mkConfigRules, restoreScore, registerScore, revealItems, deduceQuits
   , rndToAction, fovMode, resetFidPerception, getPerFid
   ) where
 
@@ -57,6 +57,7 @@ import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.File
 import qualified Game.LambdaHack.Frontend as Frontend
 import Game.LambdaHack.Common.ActorState
+import Game.LambdaHack.Common.Item
 
 fovMode :: MonadServer m => m FovMode
 fovMode = do
@@ -195,6 +196,19 @@ registerScore fid = do
           encodeEOF (configScoresFile config) (ntable :: HighScore.ScoreTable)
       _ -> return ()
 
+revealItems :: (MonadAtomic m, MonadServer m) => Maybe FactionId -> m ()
+revealItems mfid = do
+  dungeon <- getsState sdungeon
+  discoS <- getsServer sdisco
+  let discover b iid _numPieces = do
+        item <- getsState $ getItemBody iid
+        let ik = fromJust $ jkind discoS item
+        execCmdAtomic $ DiscoverA (blid b) (bpos b) iid ik
+      f aid = do
+        b <- getsState $ getActorBody aid
+        when (maybe True (== bfid b) mfid) $ mapActorItems_ (discover b) b
+  mapDungeonActors_ f dungeon
+
 -- Send any QuitFactionA actions that can be deduced from their current state.
 deduceQuits :: (MonadAtomic m, MonadServer m) => FactionId -> Status -> m ()
 deduceQuits fid Defeated = assert `failure` fid
@@ -211,7 +225,7 @@ deduceQuits fid status = do
           Just Conquer -> return ()
           Just Escape -> return ()
           _ -> do
-            -- TODO: only send to fidQ: revealItems
+            revealItems $ Just fidQ
             execCmdAtomic $ QuitFactionA fidQ oldSt $ Just statusQ
             registerScore fidQ
             modifyServer $ \ser -> ser {squit = True}  -- end turn ASAP
@@ -297,7 +311,9 @@ updateConn executorUI executorAI = do
         -- This is fragile: when a connection is reused, clients are not
         -- respawned, even if AI or UI usage changes (it does not, currently,
         -- thanks to faction numbering, etc.).
-        -- TODO: perhaps spawn both AI and UI clients always.
+        -- TODO: perhaps spawn both AI and UI clients always, but then
+        -- the UI client should not display a welcome message, until
+        -- the server tells it to.
         when (isHumanFact $ factionD EM.! fid) $ forkUI fid connUI
         when (usesAIFact $ factionD EM.! fid) $ forkAI fid connAI
   liftIO $ mapWithKeyM_ forkClient toSpawn

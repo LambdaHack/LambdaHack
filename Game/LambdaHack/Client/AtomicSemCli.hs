@@ -213,9 +213,6 @@ coverA lid p iid ik = do
 killExitA :: MonadClient m => m ()
 killExitA = modifyClient $ \cli -> cli {squit = True}
 
--- TODO: show "X requests gave save and exit" and/or
--- "See you soon, stronger and braver!", when standalone clients are there.
--- Then also show current and high scores to all clients.
 saveExitA :: MonadClient m => m ()
 saveExitA = do
   clientGameSave False
@@ -319,7 +316,7 @@ drawCmdAtomicUI verbose cmd = case cmd of
     -- from level (but on the same text window) or keep last level frame
     -- and only overlay messages on it when needed; or store the level
     -- of last shown
-    -- displayPush
+    displayPush  -- TODO: is this really needed? write why
   DiscoverA _ _ iid _ -> do
     disco <- getsClient sdisco
     item <- getsState $ getItemBody iid
@@ -475,8 +472,11 @@ quitFactionUI fid toSt = do
                     <+> moreMsg
       startingSlide <- promptToSlideshow moreMsg
       recordHistory  -- we are going to exit or restart, so record
-      io <- floorItemOverlay bag
-      itemSlides <- overlayToSlideshow itemMsg io
+      itemSlides <-
+        if EM.null bag then return Monoid.mempty
+        else do
+          io <- floorItemOverlay bag
+          overlayToSlideshow itemMsg io
       scoreSlides <- scoreToSlideshow status
       partingSlide <- promptToSlideshow $ pp <+> moreMsg
       shutdownSlide <- promptToSlideshow pp

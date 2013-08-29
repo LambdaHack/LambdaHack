@@ -397,20 +397,6 @@ endOrLoop updConn loopServer = do
       assert (persSaved == pers `blame` (persSaved, pers)) skip
       -- Don't call @loopServer@, that is, quit the game loop.
 
--- TODO: see deduceQuits
-_revealItems :: (MonadAtomic m, MonadServer m) => m ()
-_revealItems = do
-  dungeon <- getsState sdungeon
-  discoS <- getsServer sdisco
-  let discover b iid _numPieces = do
-        item <- getsState $ getItemBody iid
-        let ik = fromJust $ jkind discoS item
-        execCmdAtomic $ DiscoverA (blid b) (bpos b) iid ik
-      f aid = do
-        b <- getsState $ getActorBody aid
-        mapActorItems_ (discover b) b
-  mapDungeonActors_ f dungeon
-
 restartGame :: (MonadAtomic m, MonadConnServer m)
             => Text -> m () -> m () -> m ()
 restartGame t updConn loopServer = do

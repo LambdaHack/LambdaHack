@@ -409,6 +409,7 @@ gameRestartSer aid t = do
   let fid = bfid b
   oldSt <- getsState $ gquit . (EM.! fid) . sfactionD
   modifyServer $ \ser -> ser {squit = True}  -- do this at once
+  revealItems Nothing
   execCmdAtomic $ QuitFactionA fid oldSt $ Just $ Restart t
 
 -- * GameExit
