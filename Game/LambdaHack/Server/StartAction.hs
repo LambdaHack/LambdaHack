@@ -162,7 +162,7 @@ populateDungeon = do
   let initialItems lid (Level{ltile, litemNum}) =
         replicateM litemNum $ do
           pos <- rndToAction
-                 $ findPos ltile (const (Tile.hasFeature cotile F.Boring))
+                 $ findPos ltile (const (Tile.hasFeature cotile F.CanItem))
           createItems 1 pos lid
   dungeon <- getsState sdungeon
   mapWithKeyM_ initialItems dungeon
@@ -181,8 +181,8 @@ populateDungeon = do
         mapM_ (arenaHeroes lid) $ zip3 arenaFactions entryPoss heroNames
       arenaHeroes lid ((side, _), ppos, heroName) = do
         psFree <-
-          getsState
-          $ nearbyFreePoints cotile (Tile.hasFeature cotile F.Boring) ppos lid
+          getsState $ nearbyFreePoints
+                        cotile (Tile.hasFeature cotile F.CanActor) ppos lid
         let ps = take (1 + configExtraHeroes config) $ zip [0..] psFree
         laid <- forM ps $ \ (n, p) ->
           addHero side p lid heroName (Just n)
@@ -205,7 +205,7 @@ findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lstair} k =
                 , dist ps cminStairDist
                 , dist ps $ cminStairDist `div` 2
                 , dist ps $ cminStairDist `div` 4
-                , const (Tile.hasFeature cotile F.Boring)
+                , const (Tile.hasFeature cotile F.CanActor)
                 ]
         nps <- tryFind (np : ps) (n - 1)
         return $ np : nps

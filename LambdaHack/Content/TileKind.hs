@@ -15,9 +15,9 @@ cdefs = ContentDef
   , getFreq = tfreq
   , validate = tvalidate
   , content =
-      [wall, hardRock, pillar, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpDark, stairsUpLit, stairsDownDark, stairsDownLit, quitUpDark, quitUpLit, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown]
+      [wall, hardRock, pillar, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpDark, stairsUpLit, stairsDownDark, stairsDownLit, quitUpDark, quitUpLit, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorItemLit, floorItemDark, floorActorItemLit, floorActorItemDark, floorRed, floorBlue, floorGreen, floorBrown]
   }
-wall,        hardRock, pillar, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpDark, stairsUpLit, stairsDownDark, stairsDownLit, quitUpDark, quitUpLit, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorRoomLit, floorRoomDark, floorRed, floorBlue, floorGreen, floorBrown :: TileKind
+wall,        hardRock, pillar, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpDark, stairsUpLit, stairsDownDark, stairsDownLit, quitUpDark, quitUpLit, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorItemLit, floorItemDark, floorActorItemLit, floorActorItemDark, floorRed, floorBlue, floorGreen, floorBrown :: TileKind
 
 wall = TileKind
   { tsymbol  = ' '
@@ -205,13 +205,21 @@ floorArenaDark = floorCorridorDark
 -- Dark room interior, OTOH, is fine:
   , tcolor2  = BrBlack
   }
-floorRoomLit = floorArenaLit
-  { tfreq    = [("litLegend", 100), ("floorRoomLit", 1)]
-  , tfeature = Boring : tfeature floorArenaLit
+floorItemLit = floorArenaLit
+  { tfreq    = [("combatSet", 100)]
+  , tfeature = CanItem : tfeature floorCorridorLit
   }
-floorRoomDark = floorArenaDark
+floorItemDark = floorArenaDark
+  { tfreq    = []
+  , tfeature = CanItem : tfeature floorCorridorDark
+  }
+floorActorItemLit = floorItemLit
+  { tfreq    = [("litLegend", 100), ("floorRoomLit", 1)]
+  , tfeature = CanActor : tfeature floorItemLit
+  }
+floorActorItemDark = floorItemDark
   { tfreq    = [("darkLegend", 100)]
-  , tfeature = Boring : tfeature floorArenaDark
+  , tfeature = CanActor : tfeature floorItemDark
   }
 floorRed = floorArenaLit
   { tname    = "brick pavement"

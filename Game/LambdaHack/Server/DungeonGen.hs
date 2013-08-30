@@ -41,13 +41,13 @@ placeStairs :: Kind.Ops TileKind -> TileMap -> CaveKind -> [Place]
                    , Point, Kind.Id TileKind
                    , Point, Kind.Id TileKind )
 placeStairs cotile@Kind.Ops{opick} cmap CaveKind{..} dplaces = do
-  su <- findPos cmap (const (Tile.hasFeature cotile F.Boring))
+  su <- findPos cmap (const (Tile.hasFeature cotile F.CanActor))
   sd <- findPosTry 1000 cmap
           [ \ l _ -> chessDist cxsize su l >= cminStairDist
           , \ l _ -> chessDist cxsize su l >= cminStairDist `div` 2
-          , \ l t -> l /= su && Tile.hasFeature cotile F.Boring t
+          , \ l t -> l /= su && Tile.hasFeature cotile F.CanActor t
           ]
-  sq <- findPos cmap (const (Tile.hasFeature cotile F.Boring))
+  sq <- findPos cmap (const (Tile.hasFeature cotile F.CanActor))
   let fitArea pos = inside cxsize pos . qarea
       findLegend pos =
         maybe clitLegendTile qlegend $ find (fitArea pos) dplaces

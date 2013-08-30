@@ -29,7 +29,8 @@ data Feature =
   | Aura !(Effect Int)   -- ^ sustains the effect continuously, TODO
   | Impenetrable         -- ^ can never be excavated nor seen through
 
-  | Boring               -- ^ items and stairs can be generated there
+  | CanItem              -- ^ items can be generated there
+  | CanActor             -- ^ actors and stairs can be generated there
   | Exit                 -- ^ is a (not hidden) door, stair, etc.
   | Path                 -- ^ used for visible paths throughout the level
   | HiddenAs !Text       -- ^ when hidden, looks as a tile of the group
