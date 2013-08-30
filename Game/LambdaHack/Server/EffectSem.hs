@@ -177,7 +177,7 @@ effectSummonFriend power source target = do
   Kind.COps{cotile} <- getsState scops
   sm <- getsState (getActorBody source)
   tm <- getsState (getActorBody target)
-  ps <- getsState $ nearbyFreePoints cotile (bpos tm) (blid tm)
+  ps <- getsState $ nearbyFreePoints cotile (const True) (bpos tm) (blid tm)
   summonFriends (bfid sm) (take power ps) (blid tm)
   return True
 
@@ -243,7 +243,7 @@ effectSpawnMonster :: (MonadAtomic m, MonadServer m)
 effectSpawnMonster power target = do
   Kind.COps{cotile} <- getsState scops
   tm <- getsState (getActorBody target)
-  ps <- getsState $ nearbyFreePoints cotile (bpos tm) (blid tm)
+  ps <- getsState $ nearbyFreePoints cotile (const True) (bpos tm) (blid tm)
   spawnMonsters (take power ps) (blid tm)
   return True
 

@@ -68,10 +68,13 @@ posToActors pos lid s =
       apos = filter (\(_, b) -> bpos b == pos) as
   in fmap fst apos
 
-nearbyFreePoints :: Kind.Ops TileKind -> Point -> LevelId -> State -> [Point]
-nearbyFreePoints cotile start lid s =
+nearbyFreePoints :: Kind.Ops TileKind
+                 -> (Kind.Id TileKind -> Bool) -> Point -> LevelId -> State
+                 -> [Point]
+nearbyFreePoints cotile f start lid s =
   let lvl@Level{lxsize, lysize} = sdungeon s EM.! lid
-      good p = Tile.hasFeature cotile F.Walkable (lvl `at` p)
+      good p = f (lvl `at` p)
+               && Tile.hasFeature cotile F.Walkable (lvl `at` p)
                && unoccupied (actorList (const True) lid s) p
       ps = nub $ start : concatMap (vicinity lxsize lysize) ps
   in filter good ps

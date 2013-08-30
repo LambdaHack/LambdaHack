@@ -180,7 +180,9 @@ populateDungeon = do
                      $ findEntryPoss cops lvl (length arenaFactions)
         mapM_ (arenaHeroes lid) $ zip3 arenaFactions entryPoss heroNames
       arenaHeroes lid ((side, _), ppos, heroName) = do
-        psFree <- getsState $ nearbyFreePoints cotile ppos lid
+        psFree <-
+          getsState
+          $ nearbyFreePoints cotile (Tile.hasFeature cotile F.Boring) ppos lid
         let ps = take (1 + configExtraHeroes config) $ zip [0..] psFree
         laid <- forM ps $ \ (n, p) ->
           addHero side p lid heroName (Just n)
@@ -203,7 +205,7 @@ findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lstair} k =
                 , dist ps cminStairDist
                 , dist ps $ cminStairDist `div` 2
                 , dist ps $ cminStairDist `div` 4
-                , const (Tile.hasFeature cotile F.Walkable)
+                , const (Tile.hasFeature cotile F.Boring)
                 ]
         nps <- tryFind (np : ps) (n - 1)
         return $ np : nps

@@ -194,7 +194,7 @@ floorCorridorDark = floorCorridorLit
 floorArenaLit = floorCorridorLit
   { tsymbol  = '.'
   , tname    = "stone floor"
-  , tfreq    = [ ("floorArenaLit", 1), ("noiseSet", 100)]
+  , tfreq    = [("floorArenaLit", 1), ("noiseSet", 100), ("combatSet", 100)]
   }
 floorArenaDark = floorCorridorDark
   { tsymbol  = '.'
@@ -206,8 +206,7 @@ floorArenaDark = floorCorridorDark
   , tcolor2  = BrBlack
   }
 floorRoomLit = floorArenaLit
-  { tfreq    = [ ("litLegend", 100), ("floorRoomLit", 1)
-               , ("combatSet", 100) ]
+  { tfreq    = [("litLegend", 100), ("floorRoomLit", 1)]
   , tfeature = Boring : tfeature floorArenaLit
   }
 floorRoomDark = floorArenaDark

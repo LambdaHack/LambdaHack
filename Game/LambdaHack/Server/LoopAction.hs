@@ -316,6 +316,7 @@ rollSpawnPos Kind.COps{cotile} visible lid Level{ltile, lxsize, lstair} s = do
     , distantAtLeast $ cminStairDist `div` 2
     , \ p _ -> not $ p `ES.member` visible
     , distantAtLeast $ cminStairDist `div` 3
+    , \ _ t -> Tile.hasFeature cotile F.Boring t  -- in reachable area
     , distantAtLeast $ cminStairDist `div` 4
     , distantAtLeast 3  -- otherwise a fast actor can walk and hit in one turn
     , \ p t -> Tile.hasFeature cotile F.Walkable t
