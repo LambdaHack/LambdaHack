@@ -1,4 +1,4 @@
-LambdaHack [![Build Status](https://secure.travis-ci.org/Mikolaj/LambdaHack.png)](http://travis-ci.org/Mikolaj/LambdaHack)
+LambdaHack [![Build Status](https://secure.travis-ci.org/kosmikus/LambdaHack.png)](http://travis-ci.org/kosmikus/LambdaHack)
 ==========
 
 This is an alpha release of LambdaHack, a [Haskell] [1] game engine
