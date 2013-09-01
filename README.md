@@ -10,10 +10,11 @@ and compile a ready-to-play game binary, using either the supplied
 or a custom-made main loop. Several frontends are available
 (GTK is the default) and many other generic engine components
 are easily overridden, but the fundamental source of flexibility lies
-in the strict and type-safe separation of code and content.
-Long-term goals for LambdaHack include support for tactical squad combat,
-in-game content creation, auto-balancing and persistent content
-modification based on player behaviour.
+in the strict and type-safe separation of code and content and of clients
+(human and AI-controlled) and server. Long-term goals for LambdaHack include
+support for multiplayer tactical squad combat, in-game content creation,
+auto-balancing and persistent content modification based
+on player behaviour.
 
 The engine comes with a sample code for a little dungeon crawler,
 called LambdaHack and described in PLAYING.md. The engine and the example
@@ -25,8 +26,7 @@ to help us exchange ideas and share improvements to the common code.
 
 Games known to use the LambdaHack library:
 
-* Allure of the Stars, a near-future Sci-Fi game in early development,
-see http://hackage.haskell.org/package/Allure
+* [Allure of the Stars] [6], a near-future Sci-Fi game in early development
 
 
 Compilation and installation
@@ -43,29 +43,18 @@ at [github] [5] and run Cabal from the main directory
 
     cabal install
 
-For the example game, the best frontend (keyboard support and colours) is gtk.
-To compile with one of the terminal frontends, use Cabal flags, e.g,
+For the example game, the best frontend (wrt keyboard support and colours)
+is the default gtk. To compile with one of the terminal frontends,
+use Cabal flags, e.g,
 
     cabal install -fvty
-
-To use a crude bot for testing the game, you have to compile with
-the standard input/output frontend, as follows
-
-    cabal install -fstd
-
-and run the bot, for instance storing the output in a log
-
-    DumbBot 42 20000000 | LambdaHack > /tmp/log
-
-You may wish to tweak the game configuration file for the bot,
-e.g., by helping it play longer, as in the supplied config.rules.bot.
 
 
 Compatibility notes
 -------------------
 
-The current code was tested with GHC 7.6.1, but probably works with GHC > 7.2.
-A [few tweaks] [6] are needed to compile with 7.0.
+The current code was tested with GHC 7.4.2, but should work with
+later GHC versions as well.
 
 If you are using the curses or vty frontends,
 numerical keypad may not work correctly depending on the versions
@@ -92,4 +81,4 @@ Have fun!
 [3]: http://hackage.haskell.org/package/LambdaHack
 [4]: https://github.com/kosmikus/LambdaHack/wiki
 [5]: http://github.com/kosmikus/LambdaHack
-[6]: https://github.com/Mikolaj/Allure/commit/3d0aa5bef7a0ef39e7611d4e12229224f4cead75
+[6]: http://hackage.haskell.org/package/Allure
