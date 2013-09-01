@@ -15,13 +15,13 @@ import qualified Data.Monoid as Monoid
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.Action
-import Game.LambdaHack.Common.Animation
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.HumanLocal
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import Game.LambdaHack.Common.Animation
 import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.AtomicPos
 import Game.LambdaHack.Common.AtomicSem
@@ -555,7 +555,7 @@ drawSfxAtomicUI verbose sfx = case sfx of
         Effect.Dominate | verbose -> actorVerbMU aid b "be dominated"
         Effect.ApplyPerfume ->
           msgAdd "The fragrance quells all scents in the vicinity."
-        Effect.Searching{}-> do
+        Effect.Searching{} -> do
           subject <- partActorLeader aid b
           let msg = makeSentence
                 [ "It gets lost and"

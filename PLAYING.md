@@ -13,7 +13,8 @@ by smell and sight.
 Once the few basic command keys and on-screen symbols are learned,
 mastery and enjoyment of the game is the matter of tactical skill
 and literary imagination. To be honest, a lot of imagination is required
-for this simple game, but it's playable and winnable.
+for this simple game, but it's playable and winnable. The game also has
+an experimental support for multiplayer cooperative and competitive games.
 
 
 Dungeon
@@ -22,8 +23,8 @@ Dungeon
 The heroes are marked on the map with symbol '@' and with '1', '2', ..., '9'.
 Their goal is to explore the dungeon, battle the horrors within,
 gather as much gold and gems as possible, and escape to tell the tale.
-The dungeon consists of 10 levels and each level consists of 80 by 21 tiles.
-The basic tiles are as follows.
+The dungeon of the campaign mode game consists of 10 levels and each level
+consists of 80 by 21 tiles. The basic tiles are as follows.
 
                dungeon terrain type               on-screen symbol
                floor                              .
@@ -37,13 +38,7 @@ The basic tiles are as follows.
                rock                               blank
 
 The game world is persistent, i.e., every time the player visits a level
-during a single game, the level layout is the same. Some items
-aid in dungeon exploration, e.g., a ring of searching improves the speed
-of finding hidden doors by heroes and monsters. The higher the ability
-bonus displayed for this and other dungeon items, the more effective it is.
-Only the best item carried in a hero's or monster's inventory counts.
-You can throw the rest away, but beware that your adversaries may pick it up
-and use it against your party.
+during a single game, the level layout is the same.
 
 
 Keys
@@ -67,53 +62,64 @@ by bumping into a monster, a wall and a door, respectively.
 Below are the default keys for major commands. Those of them that take
 hero time are marked with a *.
 
-               key     command
-               <       ascend a level*
-               >       descend a level*
-               ?       display help
-               I       display inventory
-               c       close a door*
-               d       drop an object*
-               g       get an object*
-               o       open a door*
-               q       quaff a potion*
-               r       read a scroll*
-               t       throw a dart*
-               z       zap a wand*
-               CTRL-r  restart game
-               CTRL-s  save game
-               CTRL-x  save and exit
+               key       command
+               <         ascend a level*
+               >         descend a level*
+               ?         display help
+               I         display inventory
+               c         close a door*
+               d         drop an object*
+               g         get an object*
+               o         open a door*
+               q         quaff a potion*
+               r         read a scroll*
+               t         throw a dart*
+               z         zap a wand*
 
-To make a ranged attack, you need to set your target first, using
-targeting mode. Note that the target, for the few commands that require any,
+To make a ranged attack, you need to set your target first, using targeting
+mode ('*' or '/' key). The target, for the few commands that require any,
 is indicated by the targeting cursor. The origin of a command
---- the  hero that performs it --- is unaffected by targeting. For example,
+--- the hero that performs it --- is unaffected by targeting. For example,
 not the targeted door, but one adjacent to the selected hero is closed by him.
 
 To avoid confusion, commands that take time are blocked when targeting
-at a remote level (when the cursor is on a different level
+at a remote level (when the cursor is displayed on a different level
 than the selected hero). The targeting commands and all the less used
 commands are listed below. None of them takes hero time.
 
                key       command
-               ESC       cancel action
+               ESC       cancel action or bring up the Main Menu
                RET       accept choice
-               SPACE     clear messages
                TAB       cycle among heroes on the level
                SHIFT-TAB cycle among heroes in the dungeon
                *         target monster
                +         swerve targeting line
                -         unswerve targeting line
                /         target position
-               A         mark visible area
                P         display previous messages
                S         mark smell
+               T         mark suspect terrain
+               V         mark visible area
                [         target next shallower level
                ]         target next deeper level
                {         target 10 levels shallower
                }         target 10 levels deeper
                0--9      select a hero anywhere in the dungeon
-               CTRL-d    dump current configuration
+
+Commands for saving the current game, starting a new game, etc.,
+are listed in the Main Menu, brough up by the ESC key.
+Some of the game modes are multiplayer or feature multiple computer
+players (allied or not). The setup of the modes can be modified
+via a configuration file.
+
+               key       command
+               CTRL-s    save game
+               CTRL-x    save and exit
+               CTRL-r    new campaign game
+               CTRL-k    new skirmish game
+               CTRL-p    new PvP game
+               CTRL-o    new Coop game
+               CTRL-e    new defense game
 
 There are also some debug and cheat options that can be specified
 on the command line when starting the game server. Use at your own peril!
@@ -150,7 +156,8 @@ When the last hero dies, the game ends.
 On Winning and Dying
 --------------------
 
-You win the game if you escape the dungeon alive. Your score is
+You win the game if you escape the dungeon alive (or eliminate
+all opposition, in some game modes). Your score is
 the sum of all gold you've plundered plus 100 gold pieces for each gem.
 Only the loot in possession of the party members on the current level
 counts (the rest of the party is considered MIA).
