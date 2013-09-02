@@ -2,6 +2,7 @@
 -- | Semantics of most 'CmdClientAI' client commands.
 module Game.LambdaHack.Client.ClientSem where
 
+import Control.Monad
 import Control.Monad.Writer.Strict (WriterT, runWriterT)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
@@ -13,7 +14,6 @@ import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.HumanCmd
 import Game.LambdaHack.Client.HumanLocal
 import Game.LambdaHack.Client.HumanSem
-import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Client.RunAction
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.Strategy
@@ -23,6 +23,7 @@ import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
+import qualified Game.LambdaHack.Common.Key as K
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
@@ -97,10 +98,11 @@ queryAIPick aid = do
   let factionAI | Just aid /= leader = fromJust $ gAiMember fact
                 | otherwise = fromJust $ gAiLeader fact
       factionAbilities = sabilities (okind factionAI)
-  stratTarget <- targetStrategy aid factionAbilities
-  -- Choose a target from those proposed by AI for the actor.
-  btarget <- rndToAction $ frequency $ bestVariant stratTarget
-  modifyClient $ updateTarget aid (const btarget)
+  unless (bproj body) $ do
+    stratTarget <- targetStrategy aid factionAbilities
+    -- Choose a target from those proposed by AI for the actor.
+    btarget <- rndToAction $ frequency $ bestVariant stratTarget
+    modifyClient $ updateTarget aid (const btarget)
   stratAction <- actionStrategy aid factionAbilities
   -- Run the AI: chose an action from those given by the AI strategy.
   action <- rndToAction $ frequency $ bestVariant $ stratAction
@@ -109,8 +111,8 @@ queryAIPick aid = do
         <>          ", symbol:"  <+> showT (bsymbol body)
         <>          ", aid:"     <+> showT aid
         <>          ", pos:"     <+> showT (bpos body)
-        <> "\nHandleAI starget:" <+> showT stratTarget
-        <> "\nHandleAI target:"  <+> showT btarget
+--        <> "\nHandleAI starget:" <+> showT stratTarget
+--        <> "\nHandleAI target:"  <+> showT btarget
         <> "\nHandleAI saction:" <+> showT stratAction
         <> "\nHandleAI action:"  <+> showT action
   -- trace _debug skip

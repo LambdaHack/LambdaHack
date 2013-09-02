@@ -523,8 +523,9 @@ drawSfxAtomicUI verbose sfx = case sfx of
                 _ -> "be damaged even more"
             msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
         msgAdd msgDie
-        animDie <- animate (blid b) $ deathBody $ bpos b
-        when (not (bproj b)) $ displayFrames animDie
+        unless (bproj b) $ do
+          animDie <- animate (blid b) $ deathBody $ bpos b
+          displayFrames animDie
       else do
         let firstFall = if bproj b then "break up" else "collapse"
             verbDie =

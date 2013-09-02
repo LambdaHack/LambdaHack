@@ -52,6 +52,7 @@ visibleFoes :: MonadActionRO m
             => FactionPers -> ActorId -> m [(ActorId, Actor)]
 visibleFoes fper aid = do
   b <- getsState $ getActorBody aid
+  assert (not $ bproj b) skip  -- would work, but is probably a bug
   let per = fper EM.! blid b
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
   foes <- getsState $ actorNotProjAssocs (isAtWar fact) (blid b)
@@ -63,6 +64,7 @@ reacquireTgt :: MonadActionRO m
 reacquireTgt fper aid btarget factionAbilities = do
   cops@Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
   b <- getsState $ getActorBody aid
+  assert (not $ bproj b) skip  -- would work, but is probably a bug
   Level{lxsize} <- getsState $ \s -> sdungeon s EM.! blid b
   visFoes <- visibleFoes fper aid
   actorD <- getsState sactorD
@@ -90,7 +92,6 @@ reacquireTgt fper aid btarget factionAbilities = do
             minTgtS = liftFrequency $ uniformFreq "closest" minTargets
         in minTgtS .| noFoes .| returN "TCursor" Nothing  -- never empty
       reacquire :: Maybe Target -> Strategy (Maybe Target)
-      reacquire tgt | bproj b = returN "TPath" tgt  -- don't swerve missiles
       reacquire tgt =
         case tgt of
           Just (TEnemy a ll) | focused ->  -- chase even if enemy dead, to loot
@@ -130,13 +131,12 @@ proposeAction cops actor btarget disco s factionAbilities =
   .| waitBlockNow actor  -- wait until friends sidestep, ensures never empty
  where
   Kind.COps{coactor=Kind.Ops{okind}} = cops
-  Actor{bkind, bpos, bproj} = getActorBody actor s
-  (fpos, foeVisible) | bproj = (bpos, False)  -- a missile
-                     | otherwise =
+  Actor{bkind, bpos} = getActorBody actor s
+  (fpos, foeVisible) =
     case btarget of
       Just (TEnemy _ l) -> (l, True)
       Just (TPos l) -> (l, False)
-      Nothing -> (bpos, False)  -- an actor blocked by friends
+      Nothing -> (bpos, False)  -- an actor blocked by friends or a missile
   combineDistant as = liftFrequency $ sumF as
   aFrequency :: Ability -> Frequency CmdSer
   aFrequency Ability.Ranged = if foeVisible

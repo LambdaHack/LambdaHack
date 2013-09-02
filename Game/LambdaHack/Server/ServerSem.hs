@@ -102,7 +102,7 @@ addSmell :: MonadAtomic m => ActorId -> m ()
 addSmell aid = do
   b <- getsState $ getActorBody aid
   spawning <- getsState $ flip isSpawningFaction (bfid b)
-  when (not spawning) $ do
+  unless spawning $ do
     time <- getsState $ getLocalTime $ blid b
     oldS <- getsLevel (blid b) $ (EM.lookup $ bpos b) . lsmell
     let newTime = timeAdd time smellTimeout

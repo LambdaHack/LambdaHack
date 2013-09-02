@@ -20,7 +20,6 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Utils.Assert
 
 -- TOOD: if really needed, optimize by representing as a set of intervals.
 newtype PerceptionVisible = PerceptionVisible
@@ -60,10 +59,9 @@ smellVisible = pvisible . psmell
 -- | Whether an actor can see a position.
 actorSeesLoc :: Perception -> ActorId -> Point -> Bool
 actorSeesLoc per aid pos =
-  -- Even blind actors see their own position.
-  let missingActor = assert `failure` (per, aid, pos)
-      set = maybe missingActor pvisible $ EM.lookup aid $ perActor per
-  in pos `ES.member` set
+  let isIn = (pos `ES.member`) . pvisible
+     -- Blind and non-smelling actors don't see their own pos, hence False.
+  in maybe False isIn $ EM.lookup aid $ perActor per
 
 nullPer :: Perception -> Bool
 nullPer per = ES.null (totalVisible per)

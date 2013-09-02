@@ -342,16 +342,16 @@ verifyTrigger leader feat = case feat of
     when spawning $ abortWith
       "This is the way out, but where would you go in this alien world?"
     go <- displayYesNo "This is the way out. Really leave now?"
-    when (not go) $ abortWith "Game resumed."
+    unless go $ abortWith "Game resumed."
     (_, total) <- getsState $ calculateTotal side (blid b)
     when (total == 0) $ do
       -- The player can back off at each of these steps.
       go1 <- displayMore ColorBW
                "Afraid of the challenge? Leaving so soon and empty-handed?"
-      when (not go1) $ abortWith "Brave soul!"
+      unless go1 $ abortWith "Brave soul!"
       go2 <- displayMore ColorBW
                "Next time try to grab some loot before escape!"
-      when (not go2) $ abortWith "Here's your chance!"
+      unless go2 $ abortWith "Here's your chance!"
   _ -> return ()
 
 -- | Guess and report why the bump command failed.
@@ -392,9 +392,9 @@ gameRestartHuman :: (MonadClientAbort m, MonadClientUI m) => Text -> m CmdSer
 gameRestartHuman t = do
   let msg = "You just requested a new" <+> t <+> "game."
   b1 <- displayMore ColorFull msg
-  when (not b1) $ neverMind True
+  unless b1 $ neverMind True
   b2 <- displayYesNo "Current progress will be lost! Really restart the game?"
-  when (not b2) $ abortWith "Yea, would be a pity to leave them to die."
+  unless b2 $ abortWith "Yea, would be a pity to leave them to die."
   leader <- getLeaderUI
   return $ GameRestartSer leader t
 

@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 -- | Field Of View scanning with a variety of algorithms.
 -- See <https://github.com/kosmikus/LambdaHack/wiki/Fov-and-los>
 -- for discussion.
@@ -10,8 +11,8 @@ import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.List as L
+import Data.Maybe
 
-import Control.Arrow (second)
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
@@ -39,15 +40,17 @@ levelPerception :: Kind.COps -> State -> FovMode -> FactionId
                 -> LevelId -> Level
                 -> Perception
 levelPerception cops@Kind.COps{cotile} s configFov fid lid lvl =
-  let hs = actorNotProjAssocs (== fid) lid s
-      reas = map (second $ computeReachable cops configFov lvl) hs
+  let hs = actorAssocs (== fid) lid s
+      f (aid, actor) = fmap (aid,) $ computeReachable cops configFov lvl actor
+      reas = mapMaybe f hs
       lreas = map (preachable . snd) reas
       totalRea = PerceptionReachable $ ES.unions lreas
-      -- TODO: Instead of giving the actor a light source, alter vision.
-      lights = ES.fromList $ map (bpos . snd) hs
+      -- TODO: give actors light sources explicitly or alter vision.
+      hasLight = filter (not . bproj . snd) hs
+      lights = ES.fromList $ map (bpos . snd) hasLight
       ptotal = computeVisible cotile totalRea lvl lights
-      f = PerceptionVisible . ES.intersection (pvisible ptotal) . preachable
-      perActor = EM.map f $ EM.fromList reas  -- reas is not sorted
+      g = PerceptionVisible . ES.intersection (pvisible ptotal) . preachable
+      perActor = EM.map g $ EM.fromList reas  -- reas is not sorted
       psmell = smellFromActors cops s perActor
   in Perception {..}
 
@@ -96,28 +99,29 @@ isVisible cotile PerceptionReachable{preachable}
   in litDirectly pos0 || L.any l_and_R (vicinity lxsize lysize pos0)
 
 -- | Reachable are all fields on an unblocked path from the hero position.
--- Actor's own position is considred reachable by him.
 computeReachable :: Kind.COps -> FovMode -> Level -> Actor
-                 -> PerceptionReachable
+                 -> Maybe PerceptionReachable
 computeReachable Kind.COps{cotile, coactor=Kind.Ops{okind}}
                  configFov lvl actor =
-  let fovMode m =
-        if not $ asight $ okind $ bkind m
-        then Blind
-        else configFov
-      ppos = bpos actor
-  in PerceptionReachable $
-       ES.insert ppos $ ES.fromList $ fullscan cotile (fovMode actor) ppos lvl
+  let sight = asight $ okind $ bkind actor
+      smell = asmell $ okind $ bkind actor
+  in if sight || smell
+     then let fovMode = if sight then configFov else Blind
+              ppos = bpos actor
+              scan = fullscan cotile fovMode ppos lvl
+          in Just $ PerceptionReachable $ ES.fromList scan
+     else Nothing
 
 -- | Perform a full scan for a given position. Returns the positions
 -- that are currently in the field of view. The Field of View
 -- algorithm to use, passed in the second argument, is set in the config file.
+-- The actor's own position is considred reachable by him.
 fullscan :: Kind.Ops TileKind  -- ^ tile content, determines clear tiles
          -> FovMode            -- ^ scanning mode
          -> Point              -- ^ position of the spectator
          -> Level              -- ^ the map that is scanned
          -> [Point]
-fullscan cotile fovMode spectatorPos Level{lxsize, ltile} =
+fullscan cotile fovMode spectatorPos Level{lxsize, ltile} = spectatorPos :
   case fovMode of
     Shadow ->
       L.concatMap (\ tr -> map tr (Shadow.scan (isCl . tr) 1 (0, 1))) tr8

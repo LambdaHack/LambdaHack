@@ -55,7 +55,7 @@ loopAI cmdClientAISem = do
     cmd <- readConnServer
     cmdClientAISem cmd
     quit <- getsClient squit
-    when (not quit) loop
+    unless quit loop
 
 loopUI :: (MonadClientUI m, MonadConnClient CmdClientUI m)
        => (CmdClientUI -> m ()) -> m ()
@@ -87,4 +87,4 @@ loopUI cmdClientUISem = do
     cmd <- readConnServer
     cmdClientUISem cmd
     quit <- getsClient squit
-    when (not quit) loop
+    unless quit loop

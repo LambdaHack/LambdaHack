@@ -198,7 +198,7 @@ library
   other-extensions:   CPP, MultiParamTypeClasses, RankNTypes, TypeFamilies,
                       OverloadedStrings, FlexibleContexts, FlexibleInstances,
                       FunctionalDependencies, GeneralizedNewtypeDeriving,
-                      DeriveFunctor
+                      DeriveFunctor, TupleSections
 --, DeriveGeneric
   ghc-options:        -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-monomorphism-restriction -fwarn-unrecognised-pragmas
   ghc-options:        -fno-warn-auto-orphans -fno-warn-implicit-prelude
