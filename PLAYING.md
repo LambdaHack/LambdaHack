@@ -13,18 +13,19 @@ by smell and sight.
 Once the few basic command keys and on-screen symbols are learned,
 mastery and enjoyment of the game is the matter of tactical skill
 and literary imagination. To be honest, a lot of imagination is required
-for this simple game, but it's playable and winnable. The game also has
-an experimental support for multiplayer cooperative and competitive games.
+for this simple game, but it's playable and winnable.
+The game also features multiplayer cooperative and competitive modes,
+though only a shared-screen interface is provided at this time.
 
 
 Dungeon
 -------
 
-The heroes are marked on the map with symbol '@' and with '1', '2', ..., '9'.
+The heroes are marked on the map with symbols '@' and '1' through '9'.
 Their goal is to explore the dungeon, battle the horrors within,
 gather as much gold and gems as possible, and escape to tell the tale.
 The dungeon of the campaign mode game consists of 10 levels and each level
-consists of 80 by 21 tiles. The basic tiles are as follows.
+consists of large number of tiles. The basic tiles are as follows.
 
                dungeon terrain type               on-screen symbol
                floor                              .
@@ -54,13 +55,13 @@ the vi text editor keys (also known as "Rogue-like keys").
                1 2 3     b j n
 
 SHIFT (or CTRL) and a movement key make the selected hero run in the indicated
-direction, until anything of interest is spotted. '5' and '.' use a turn
-to brace for combat, which gives a chance to block blows next turn.
+direction, until anything of interest is spotted. The '5' and '.' keys take
+a turn to brace for combat, which gives a chance to block blows next turn.
 Melee, searching for secret doors and opening closed doors can be done
 by bumping into a monster, a wall and a door, respectively.
 
 Below are the default keys for major commands. Those of them that take
-hero time are marked with a *.
+hero time are marked with a star.
 
                key       command
                <         ascend a level*
@@ -76,12 +77,9 @@ hero time are marked with a *.
                t         throw a dart*
                z         zap a wand*
 
-To make a ranged attack, you need to set your target first, using targeting
-mode ('*' or '/' key). The target, for the few commands that require any,
-is indicated by the targeting cursor. The origin of a command
---- the hero that performs it --- is unaffected by targeting. For example,
-not the targeted door, but one adjacent to the selected hero is closed by him.
-
+To make a ranged attack, you need to set your target first,
+using targeting mode ('*' and '/' keys). The target, for the few
+commands that require any, is indicated by the targeting cursor.
 To avoid confusion, commands that take time are blocked when targeting
 at a remote level (when the cursor is displayed on a different level
 than the selected hero). The targeting commands and all the less used
@@ -139,8 +137,8 @@ melee combat occurs. The best weapon carried by each opponent
 is taken into account for calculating bonus damage. The total damage
 the current hero can potentially inflict is displayed at the bottom
 of the screen. The total damage potential of a monster may change
-as it finds and picks up new weapons. Heroes and monsters running
-into another (with the Shift key) do not inflict damage, but change places.
+as it finds and picks up new weapons. Heroes and monsters running into
+one another (with the Shift key) do not inflict damage, but change places.
 This gives the opponent a free blow, but can improve the tactical situation
 or aid escape.
 

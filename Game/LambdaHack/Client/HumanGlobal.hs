@@ -22,7 +22,6 @@ import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.HumanCmd (Trigger (..))
 import Game.LambdaHack.Client.HumanLocal
-import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Client.RunAction
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
@@ -32,6 +31,7 @@ import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.Key as K
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
@@ -350,7 +350,7 @@ verifyTrigger leader feat = case feat of
                "Afraid of the challenge? Leaving so soon and empty-handed?"
       when (not go1) $ abortWith "Brave soul!"
       go2 <- displayMore ColorBW
-               "This time try to grab some loot before escape!"
+               "Next time try to grab some loot before escape!"
       when (not go2) $ abortWith "Here's your chance!"
   _ -> return ()
 

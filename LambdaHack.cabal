@@ -1,5 +1,5 @@
 name:          LambdaHack
-version:       0.2.7
+version:       0.2.8
 synopsis:      A roguelike game engine in early and active development
 description:   This is an alpha release of LambdaHack,
                a game engine library for roguelike games
@@ -13,16 +13,21 @@ description:   This is an alpha release of LambdaHack,
                Several frontends are available (GTK is the default)
                and many other generic engine components are easily overridden,
                but the fundamental source of flexibility lies
-               in the strict and type-safe separation of code and content.
+               in the strict and type-safe separation of code and content
+               and of clients (human and AI-controlled) and server.
                .
-               New in this release are ...
-               Upcoming new features: playable monsters faction, more than
-               two factions inhabiting the dungeon, AIvAI, PvP, improved
-               ranged combat AI, dynamic light sources, explosions
-               player action undo/redo, completely redesigned UI. Long term
-               goals are focused around procedural content generation
-               and include in-game content creation, auto-balancing
-               and persistent content modification based on player behaviour.
+               New in this release are cooperative and competitive multiplayer
+               (shared-screen only in this version), overhauled searching
+               and a code rewrite where a single server sends restricted
+               game state updates to many fat clients and a thin frontend
+               layer multiplex visuals from a subset of the clients.
+               Upcoming new features: new and improved frontends, improved AI
+               (better leader switching and ranged combat), dynamic light
+               sources, explosions, player action undo/redo, completely
+               redesigned UI. Long term goals are focused around procedural
+               content generation and include in-game content creation,
+               auto-balancing and persistent content modification
+               based on player behaviour.
                .
                A larger game that depends on the LambdaHack library
                is Allure of the Stars, available from

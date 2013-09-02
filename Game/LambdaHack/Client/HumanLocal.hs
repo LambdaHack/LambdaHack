@@ -36,7 +36,6 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Binding
 import qualified Game.LambdaHack.Client.HumanCmd as HumanCmd
-import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
@@ -45,6 +44,7 @@ import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.Key as K
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
@@ -298,6 +298,9 @@ inventoryHuman = do
 -- * TgtFloor
 
 -- | Start floor targeting mode or reset the cursor position to the leader.
+-- Note that the origin of a command (the hero that performs it) is unaffected
+-- by targeting. For example, not the targeted door, but one adjacent
+-- to the selected hero is closed by him.
 tgtFloorLeader :: MonadClientUI m => TgtMode -> WriterT Slideshow m ()
 tgtFloorLeader stgtModeNew = do
   leader <- getLeaderUI
