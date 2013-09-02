@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections #-}
 -- | Field Of View scanning with a variety of algorithms.
 -- See <https://github.com/kosmikus/LambdaHack/wiki/Fov-and-los>
 -- for discussion.
@@ -7,11 +6,11 @@ module Game.LambdaHack.Server.Fov
   , fullscan, FovMode(..)
   ) where
 
+import Control.Arrow (second)
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.List as L
-import Data.Maybe
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -41,13 +40,11 @@ levelPerception :: Kind.COps -> State -> FovMode -> FactionId
                 -> Perception
 levelPerception cops@Kind.COps{cotile} s configFov fid lid lvl =
   let hs = actorAssocs (== fid) lid s
-      f (aid, body) = fmap (aid,) $ computeReachable cops configFov lvl body
-      reas = mapMaybe f hs
+      reas = map (second $ computeReachable cops configFov lvl) hs
       lreas = map (preachable . snd) reas
       totalRea = PerceptionReachable $ ES.unions lreas
       -- TODO: give actors light sources explicitly or alter vision.
-      hasLight = filter (not . bproj . snd) hs
-      lights = ES.fromList $ map (bpos . snd) hasLight
+      lights = ES.fromList $ map (bpos . snd) hs
       ptotal = computeVisible cotile totalRea lvl lights
       g = PerceptionVisible . ES.intersection (pvisible ptotal) . preachable
       perActor = EM.map g $ EM.fromList reas  -- reas is not sorted
@@ -100,17 +97,14 @@ isVisible cotile PerceptionReachable{preachable}
 
 -- | Reachable are all fields on an unblocked path from the hero position.
 computeReachable :: Kind.COps -> FovMode -> Level -> Actor
-                 -> Maybe PerceptionReachable
+                 -> PerceptionReachable
 computeReachable Kind.COps{cotile, coactor=Kind.Ops{okind}}
                  configFov lvl body =
   let sight = asight $ okind $ bkind body
-      smell = asmell $ okind $ bkind body
-  in if sight || smell
-     then let fovMode = if sight then configFov else Blind
-              ppos = bpos body
-              scan = fullscan cotile fovMode ppos lvl
-          in Just $ PerceptionReachable $ ES.fromList scan
-     else Nothing
+      fovMode = if sight then configFov else Blind
+      ppos = bpos body
+      scan = fullscan cotile fovMode ppos lvl
+  in PerceptionReachable $ ES.fromList scan
 
 -- | Perform a full scan for a given position. Returns the positions
 -- that are currently in the field of view. The Field of View
