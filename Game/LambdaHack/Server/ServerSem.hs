@@ -282,20 +282,13 @@ projectSer source tpos eps iid container = do
   let spos = bpos sm
       lid = blid sm
       -- When projecting, the first turn is spent aiming.
-      -- The projectile is seen one tile from the actor, giving a hint
-      -- about the aim and letting the target evade.
+      -- The projectile is seen one or two tiles from the actor,
+      -- giving a hint about the aim and letting the target evade.
       -- TODO: AI should choose the best eps.
-      -- Setting monster's projectiles time to player time ensures
-      -- the projectile covers the whole normal distance already the first
-      -- turn that the player observes it moving. This removes
-      -- the possibility of micromanagement by, e.g.,  waiting until
-      -- the first distance is short.
-      -- When the monster faction has its leader, player's
-      -- projectiles should be set to the time of the opposite party as well.
-      -- Both parties would see their own projectiles move part of the way
-      -- and the opposite party's projectiles waiting one turn.
-      btimeDelta = timeAddFromSpeed coactor sm btime
-      time = btimeDelta `timeAdd` timeNegate timeClip
+      timeDelta = timeAddFromSpeed coactor sm btime
+      -- We give a time just before the projecting actor time,
+      -- to avoid the actor bumping into the projectile, when he follows it.
+      time = timeDelta `timeAdd` timeNegate timeEpsilon
       bl = bla lxsize lysize eps spos tpos
   case bl of
     Nothing -> execFailure (bfid sm) "cannot zap oneself"

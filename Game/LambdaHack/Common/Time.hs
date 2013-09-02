@@ -2,7 +2,7 @@
 -- | Game time and speed.
 module Game.LambdaHack.Common.Time
   ( Time, timeZero, timeClip, timeTurn
-  , timeAdd, timeFit, timeNegate, timeScale
+  , timeAdd, timeFit, timeNegate, timeScale, timeEpsilon
   , timeToDigit
   , Speed, toSpeed, speedZero, speedNormal, speedScale, speedAdd, speedNegate
   , ticksPerMeter, traveled, speedFromWeight, rangeFromSpeed
@@ -32,6 +32,10 @@ timeZero = Time 0
 -- of the time dimension.
 _timeTick :: Time
 _timeTick = Time 1
+
+-- | An infinitesimal time period.
+timeEpsilon :: Time
+timeEpsilon = _timeTick
 
 -- TODO: don't have a fixed time, but instead set it at 1/3 or 1/4
 -- of timeTurn depending on level. Clips are a UI feature
