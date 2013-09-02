@@ -41,7 +41,7 @@ levelPerception :: Kind.COps -> State -> FovMode -> FactionId
                 -> Perception
 levelPerception cops@Kind.COps{cotile} s configFov fid lid lvl =
   let hs = actorAssocs (== fid) lid s
-      f (aid, actor) = fmap (aid,) $ computeReachable cops configFov lvl actor
+      f (aid, body) = fmap (aid,) $ computeReachable cops configFov lvl body
       reas = mapMaybe f hs
       lreas = map (preachable . snd) reas
       totalRea = PerceptionReachable $ ES.unions lreas
@@ -102,12 +102,12 @@ isVisible cotile PerceptionReachable{preachable}
 computeReachable :: Kind.COps -> FovMode -> Level -> Actor
                  -> Maybe PerceptionReachable
 computeReachable Kind.COps{cotile, coactor=Kind.Ops{okind}}
-                 configFov lvl actor =
-  let sight = asight $ okind $ bkind actor
-      smell = asmell $ okind $ bkind actor
+                 configFov lvl body =
+  let sight = asight $ okind $ bkind body
+      smell = asmell $ okind $ bkind body
   in if sight || smell
      then let fovMode = if sight then configFov else Blind
-              ppos = bpos actor
+              ppos = bpos body
               scan = fullscan cotile fovMode ppos lvl
           in Just $ PerceptionReachable $ ES.fromList scan
      else Nothing

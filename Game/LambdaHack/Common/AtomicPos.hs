@@ -60,8 +60,6 @@ posCmdAtomic cmd = case cmd of
   CreateActorA _ body _ ->
     return $ PosFidAndSight (bfid body) (blid body) [bpos body]
   DestroyActorA _ body _ ->
-    -- The faction of the actor sometimes does not see his death
-    -- (if none of the other actors is observing it).
     return $ PosFidAndSight (bfid body) (blid body) [bpos body]
   CreateItemA _ _ _ c -> singleContainer c
   DestroyItemA _ _ _ c -> singleContainer c

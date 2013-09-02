@@ -255,7 +255,7 @@ dropAllItems :: MonadAtomic m => ActorId -> Actor -> m ()
 dropAllItems aid b = do
   let f iid k = execCmdAtomic
                 $ MoveItemA iid k (actorContainer aid (binv b) iid)
-                            (CFloor (blid b) (bpos b))
+                                  (CFloor (blid b) (bpos b))
   mapActorItems_ f b
 
 electLeader :: (MonadAtomic m, MonadServer m)

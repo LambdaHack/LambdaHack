@@ -227,6 +227,7 @@ posOfContainer :: MonadActionRO m => Container -> m (LevelId, Point)
 posOfContainer (CFloor lid p) = return (lid, p)
 posOfContainer (CActor aid _) = posOfAid aid
 
+-- TODO: optimize (a single call to updatePrio is enough)
 ageActorA :: MonadAction m => ActorId -> Time -> m ()
 ageActorA aid t = assert (t /= timeZero) $ do
   body <- getsState $ getActorBody aid

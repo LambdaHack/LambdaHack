@@ -516,8 +516,9 @@ drawSfxAtomicUI verbose sfx = case sfx of
             verbDie =
               case effect of
                 Effect.Hurt _ p | p < 0 -> do
-                  if bhp b <= p  -- was already dead previous turn
-                  then if bproj b then "be stomped flat"
+                  if bhp b <= p && not (bproj b) || bhp b < p
+                  then -- was already dead previous turn
+                       if bproj b then "be stomped flat"
                                   else "be ground into the floor"
                   else firstFall
                 _ -> "be damaged even more"
@@ -531,8 +532,9 @@ drawSfxAtomicUI verbose sfx = case sfx of
             verbDie =
               case effect of
                 Effect.Hurt _ p | p < 0 -> do
-                  if bhp b <= p  -- was already dead previous turn
-                  then if bproj b then "be shattered into little pieces"
+                  if bhp b <= p && not (bproj b) || bhp b < p
+                  then -- was already dead previous turn
+                       if bproj b then "be shattered into little pieces"
                                   else "be reduced to a bloody pulp"
                   else firstFall
                 _ -> "be ruined further"
