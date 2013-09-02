@@ -112,10 +112,10 @@ moveHuman v = do
           assert (success `blame` (leader, target, tb)) skip
           return Nothing
         else do
-          unless (isAtWar sfact $ bfid tb) $ do
+          unless (bproj tb || isAtWar sfact (bfid tb)) $ do
             go <- displayYesNo "This attack will start a war. Are you sure?"
             unless go $ abortWith "Attack canceled."
-          when (isAllied sfact $ bfid tb) $ do
+          when (not (bproj tb) && isAllied sfact (bfid tb)) $ do
             go <- displayYesNo "You are bound by an alliance. Really attack?"
             unless go $ abortWith "Attack canceled."
           fmap Just $ moveLeader dir
