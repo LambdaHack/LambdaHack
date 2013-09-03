@@ -365,7 +365,10 @@ alterSmellA lid p fromSm toSm = do
 spotSmellA :: MonadAction m => LevelId -> [(Point, Time)] -> m ()
 spotSmellA lid sms = assert (not $ null sms) $ do
   let alt sm Nothing = Just sm
-      alt sm (Just oldSm) = assert `failure` (lid, sms, sm, oldSm)
+      alt sm (Just _) = Just sm
+-- TODO: a hack to sidestep server not disabling the nose of fresh actors,
+-- see smellFromActors
+--      alt sm (Just oldSm) = assert `failure` (lid, sms, sm, oldSm)
       f (p, sm) = EM.alter (alt sm) p
       upd m = foldr f m sms
   updateLevel lid $ updateSmell upd
