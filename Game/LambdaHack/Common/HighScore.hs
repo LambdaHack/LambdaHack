@@ -12,6 +12,7 @@ import qualified NLP.Miniutter.English as MU
 import System.Time
 import Text.Printf
 
+import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
@@ -31,7 +32,8 @@ data ScoreRecord = ScoreRecord
 showScore :: (Int, ScoreRecord) -> [Text]
 showScore (pos, score) =
   let died = case status score of
-        Killed lvl -> "perished on level " ++ show (fromEnum lvl) ++ ","
+        Killed body -> "perished on level "
+                       ++ show (fromEnum $ blid body) ++ ","
         Defeated -> "was defeated"
         Camping -> "is camping somewhere,"
         Conquer -> "eliminated all opposition"
@@ -79,7 +81,7 @@ register :: ScoreTable  -- ^ old table
          -> (ScoreTable, Int)
 register table total time status date =
   let points = case status of
-                 Killed _ -> (total + 1) `div` 2
+                 Killed{} -> (total + 1) `div` 2
                  _        -> total
       negTime = timeNegate time
       score = ScoreRecord{..}
@@ -111,9 +113,9 @@ slideshow table pos status =
       height = nlines `div` 3
       (subject, person, msgUnless) =
         case status of
-          Killed lvl | fromEnum lvl <= 1 ->
+          Killed body | fromEnum (blid body) <= 1 ->
             ("your short-lived struggle", MU.Sg3rd, "(score halved)")
-          Killed _ ->
+          Killed{} ->
             ("your heroic deeds", MU.PlEtc, "(score halved)")
           Defeated ->
             ("your futile efforts", MU.PlEtc, "(score halved)")

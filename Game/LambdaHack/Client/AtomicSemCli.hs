@@ -463,9 +463,14 @@ quitFactionUI fid toSt = do
       msgAdd msg
   case (toSt, partingPart) of
     (Just status, Just pp) -> do
-      leader <- getLeaderUI
-      b <- getsState $ getActorBody leader
-      (bag, total) <- getsState $ calculateTotal side (blid b)
+      mleader <- getsClient _sleader
+      (bag, total) <- case (mleader, toSt) of
+        (Just leader, _) -> do
+          b <- getsState $ getActorBody leader
+          getsState $ calculateTotal side (blid b)
+        (Nothing, Just (Killed b)) | fid == side ->
+          getsState $ calculateTotal side (blid b)
+        _ -> return (EM.empty, 0)
       let currencyName = MU.Text $ oname $ ouniqGroup "currency"
           itemMsg = makeSentence [ "Your loot is worth"
                                  , MU.CarWs total currencyName ]

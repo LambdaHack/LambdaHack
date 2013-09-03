@@ -184,25 +184,30 @@ getLeaderUI = do
 
 getArenaUI :: MonadClientUI m => m LevelId
 getArenaUI = do
-  leader <- getLeaderUI
-  getsState $ blid . getActorBody leader
+  mleader <- getsClient _sleader
+  case mleader of
+    Just leader -> getsState $ blid . getActorBody leader
+    Nothing -> return $ toEnum 1
 
 -- | Calculate the position of leader's target.
 targetToPos :: MonadClientUI m => m (Maybe Point)
 targetToPos = do
-  scursor <- getsClient scursor
-  leader <- getLeaderUI
-  lid <- getsState $ blid . getActorBody leader
-  target <- getsClient $ getTarget leader
-  case target of
-    Just (TPos pos) -> return $ Just pos
-    Just (TEnemy a _ll) -> do
-      mem <- getsState $ memActor a lid  -- alive and visible?
-      if mem then do
-        pos <- getsState $ bpos . getActorBody a
-        return $ Just pos
-      else return Nothing
-    Nothing -> return scursor
+  mleader <- getsClient _sleader
+  case mleader of
+    Nothing -> return Nothing
+    Just leader -> do
+      scursor <- getsClient scursor
+      lid <- getsState $ blid . getActorBody leader
+      target <- getsClient $ getTarget leader
+      case target of
+        Just (TPos pos) -> return $ Just pos
+        Just (TEnemy a _ll) -> do
+          mem <- getsState $ memActor a lid  -- alive and visible?
+          if mem then do
+            pos <- getsState $ bpos . getActorBody a
+            return $ Just pos
+          else return Nothing
+        Nothing -> return scursor
 
 -- | Get the key binding.
 askBinding :: MonadClientUI m => m Binding
@@ -341,9 +346,14 @@ displayPush = do
 
 scoreToSlideshow :: MonadClientUI m => Status -> m Slideshow
 scoreToSlideshow status = do
-  leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
-  total <- getsState $ snd . calculateTotal (bfid b) (blid b)
+  mleader <- getsClient _sleader
+  total <- case (mleader, status) of
+    (Just leader, _) -> do
+      b <- getsState $ getActorBody leader
+      getsState $ snd . calculateTotal (bfid b) (blid b)
+    (Nothing, Killed b) ->
+      getsState $ snd . calculateTotal (bfid b) (blid b)
+    _ -> return 0
   if total == 0 then return Monoid.mempty
   else do
     table <- getsState shigh

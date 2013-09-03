@@ -248,7 +248,7 @@ dieSer aid = do  -- TODO: explode if a projectile holding a potion
   spawning <- getsState $ flip isSpawningFaction fid
   Config{configFirstDeathEnds} <- getsServer sconfig
   when (not spawning && (isNothing mleader || configFirstDeathEnds)) $
-    deduceQuits fid $ Killed $ blid body
+    deduceQuits fid $ Killed body
 
 -- | Drop all actor's items.
 dropAllItems :: MonadAtomic m => ActorId -> Actor -> m ()

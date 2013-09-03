@@ -73,7 +73,7 @@ data Actor = Actor
   , bproj   :: !Bool                 -- ^ is a projectile? (shorthand only,
                                      --   this can be deduced from bkind)
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 -- | Chance that a new monster is generated. Currently depends on the
 -- number of monsters already present, and on the level. In the future,

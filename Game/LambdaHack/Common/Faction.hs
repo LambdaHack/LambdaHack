@@ -27,7 +27,7 @@ data Faction = Faction
                                           -- ^ AI for the leaders;
                                           -- Nothing means human-controlled
   , gAiMember :: !(Maybe (Kind.Id StrategyKind))
-                                          -- ^ AI to use for other actors
+                                          -- ^ AI to use for other actors;
                                           -- Nothing means human-controlled
   , gdipl     :: !Dipl                    -- ^ diplomatic mode
   , gquit     :: !(Maybe Status)          -- ^ cause of game end/exit
@@ -48,12 +48,12 @@ type Dipl = EM.EnumMap FactionId Diplomacy
 
 -- | Current result of the game.
 data Status =
-    Killed !LevelId  -- ^ the faction was eliminated on the given level
-  | Defeated         -- ^ the faction otherwise lost the game
-  | Camping          -- ^ game is supended
-  | Conquer          -- ^ the player won by eliminating all rivals
-  | Escape           -- ^ the player escaped the dungeon alive
-  | Restart Text     -- ^ game is restarted
+    Killed !Actor  -- ^ the faction was eliminated; this is the last actor
+  | Defeated       -- ^ the faction otherwise lost the game
+  | Camping        -- ^ game is supended
+  | Conquer        -- ^ the player won by eliminating all rivals
+  | Escape         -- ^ the player escaped the dungeon alive
+  | Restart !Text  -- ^ game is restarted
   deriving (Show, Eq, Ord)
 
 -- | Tell whether the faction is controlled (at least partially) by a human.
@@ -92,11 +92,11 @@ instance Binary Diplomacy where
       _ -> fail "no parse (Diplomacy)"
 
 instance Binary Status where
-  put (Killed ln) = putWord8 0 >> put ln
-  put Defeated    = putWord8 1
-  put Camping     = putWord8 2
-  put Conquer     = putWord8 3
-  put Escape      = putWord8 4
+  put (Killed body) = putWord8 0 >> put body
+  put Defeated = putWord8 1
+  put Camping = putWord8 2
+  put Conquer = putWord8 3
+  put Escape = putWord8 4
   put (Restart t) = putWord8 5 >> put t
   get = do
     tag <- getWord8

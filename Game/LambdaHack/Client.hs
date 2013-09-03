@@ -8,7 +8,6 @@ module Game.LambdaHack.Client
   , MonadClient, MonadClientUI, MonadConnClient
   ) where
 
-import Control.Monad
 import Data.Maybe
 
 import Game.LambdaHack.Client.Action
@@ -48,21 +47,19 @@ cmdClientAISem cmd = case cmd of
 cmdClientUISem :: ( MonadAtomic m, MonadClientAbort m
                   , MonadClientUI m, MonadConnClient c m )
                => CmdClientUI -> m ()
-cmdClientUISem cmd = do
-  mleader <- getsClient _sleader
+cmdClientUISem cmd =
   case cmd of
     CmdAtomicUI cmdA -> do
       cmds <- cmdAtomicFilterCli cmdA
       mapM_ cmdAtomicSemCli cmds
       mapM_ execCmdAtomic cmds
-      when (isJust mleader) $
-        mapM_ (drawCmdAtomicUI False) cmds
+      mapM_ (drawCmdAtomicUI False) cmds
       mapM_ (storeUndo . CmdAtomic) cmds
     SfxAtomicUI sfx -> do
-      when (isJust mleader) $
-        drawSfxAtomicUI False sfx
+      drawSfxAtomicUI False sfx
       storeUndo $ SfxAtomic sfx
     CmdQueryUI aid -> do
+      mleader <- getsClient _sleader
       assert (isJust mleader `blame` cmd) skip
       ConnServer{writeConnServer} <- getConn
       cmdH <- queryUI aid
