@@ -12,10 +12,10 @@ import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import Game.LambdaHack.Common.Animation (SingleFrame (..))
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Actor as Actor
 import Game.LambdaHack.Common.ActorState
+import Game.LambdaHack.Common.Animation (SingleFrame (..))
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Effect
 import qualified Game.LambdaHack.Common.Feature as F
@@ -42,10 +42,10 @@ data ColorMode =
 -- TODO: split up and generally rewrite.
 -- | Draw the whole screen: level map, status area and, at most,
 -- a single page overlay of text divided into lines.
-draw :: ColorMode -> Kind.COps -> Perception -> LevelId -> ActorId
+draw :: ColorMode -> Kind.COps -> Perception -> LevelId -> Maybe ActorId
      -> StateClient -> State -> Overlay
      -> SingleFrame
-draw dm cops per drawnLevelId leader
+draw dm cops per drawnLevelId mleader
      cli@StateClient{ stgtMode, scursor, seps, sdisco
                     , smarkVision, smarkSmell, smarkSuspect }
      s overlay =
@@ -53,11 +53,6 @@ draw dm cops per drawnLevelId leader
                , cotile=Kind.Ops{okind=tokind, ouniqGroup} } = cops
       (lvl@Level{ ldepth, lxsize, lysize, lsmell
                 , ldesc, ltime, lseen, lclear }) = sdungeon s EM.! drawnLevelId
-      (bitems, bracedL, ahpS, asmellL, bhpS, bposL, blidL) =
-        let mpl@Actor{bkind, bhp, bpos, blid} = getActorBody leader s
-            ActorKind{ahp, asmell} = okind bkind
-        in (getActorItem leader s, braced mpl ltime, showT (maxDice ahp),
-            asmell, showT bhp, bpos, blid)
       (msgTop, over, msgBottom) = stringByLocation lxsize lysize overlay
       -- TODO:
       sVisBG = if smarkVision
@@ -68,19 +63,13 @@ draw dm cops per drawnLevelId leader
                                         else Color.defBG
                else \ _vis _visPl -> Color.defBG
       (_, wealth) = calculateTotal (sside cli) drawnLevelId s
-      damage  = case Item.strongestSword cops bitems of
-                  Just (_, (_, sw)) ->
-                    case Item.jkind sdisco sw of
-                      Just _ ->
-                        case jeffect sw of
-                          Hurt dice p ->
-                            showT dice <> "+" <> showT p
-                          _ -> ""
-                      Nothing -> "3d1"  -- TODO: ?
-                  Nothing -> "3d1"  -- TODO; use the item 'fist'
-      bl = case scursor of
-        Nothing -> []
-        Just cursor -> fromMaybe [] $ bla lxsize lysize seps bposL cursor
+      bl = case (scursor, mleader) of
+        (Just cursor, Just leader) ->
+          let Actor{bpos, blid} = getActorBody leader s
+          in if blid /= drawnLevelId
+             then []
+             else fromMaybe [] $ bla lxsize lysize seps bpos cursor
+        _ -> []
       dis pxy =
         let pos0 = toPoint lxsize pxy
             tile = lvl `at` pos0
@@ -89,7 +78,7 @@ draw dm cops per drawnLevelId leader
             sml = EM.findWithDefault timeZero pos0 lsmell
             smlt = sml `timeAdd` timeNegate ltime
             viewActor aid Actor{bkind, bsymbol, bcolor, bhp, bproj}
-              | aid == leader = (symbol, Color.defBG)
+              | Just aid == mleader = (symbol, Color.defBG)
               | otherwise = (symbol, color)
              where
               ActorKind{asymbol, acolor} = okind bkind
@@ -110,8 +99,7 @@ draw dm cops per drawnLevelId leader
                    , L.find (\ (_, m) -> scursor == Just (Actor.bpos m))
                        actorsHere ) of
                 (_, actorTgt) | isJust stgtMode
-                                && (drawnLevelId == blidL
-                                    && L.elem pos0 bl
+                                && (L.elem pos0 bl
                                     || (case actorTgt of
                                           Just (_, Actor{ bpath=Just p
                                                         , bpos=prPos }) ->
@@ -126,14 +114,15 @@ draw dm cops per drawnLevelId leader
                                  (False, True)  -> Color.Green
                                  (False, False) -> Color.Red)
                 (Just (aid, m), _) -> viewActor aid m
-                _ | (smarkSmell || asmellL) && smlt > timeZero ->
+                _ | smarkSmell && smlt > timeZero ->
                   (timeToDigit smellTimeout smlt, rainbow pos0)
                   | otherwise ->
                   case EM.keys items of
                     [] -> (tsymbol tk, vcolor tk)
                     i : _ -> Item.viewItem $ getItemBody i s
             vis = ES.member pos0 $ totalVisible per
-            visPl = actorSeesLoc per leader pos0
+            visPl =
+              maybe False (\leader -> actorSeesLoc per leader pos0) mleader
             bg0 = if isJust stgtMode && Just pos0 == scursor
                   then Color.defFG       -- highlight target cursor
                   else sVisBG vis visPl  -- FOV debug or standard bg
@@ -151,21 +140,15 @@ draw dm cops per drawnLevelId leader
         in case over pxy of
              Just c -> Color.AttrChar Color.defAttr c
              _      -> Color.AttrChar a char
+      leaderStatus = drawLeaderStatus cops s sdisco ltime mleader
       seenN = 100 * lseen `div` lclear
       seenTxt | seenN == 100 = "all"
               | otherwise = T.justifyRight 2 ' ' (showT seenN) <> "%"
-      -- Indicate the actor is braced (was waiting last move).
-      -- It's a useful feedback for the otherwise hard to observe
-      -- 'wait' command.
-      braceSign | bracedL   = "{"
-                | otherwise = " "
       lvlN = T.justifyLeft 2 ' ' (showT ldepth)
       stats =
         T.justifyLeft 11 ' ' ("[" <> seenTxt <+> "seen]") <+>
         T.justifyLeft 9 ' ' ("$:" <+> showT wealth) <+>
-        T.justifyLeft 11 ' ' ("Dmg:" <+> damage) <+>
-        T.justifyLeft 13 ' ' (braceSign <> "HP:" <+> bhpS
-                              <+> "(" <> ahpS <> ")")
+        leaderStatus
       widthForDesc = lxsize - T.length stats - T.length lvlN - 3
       status = lvlN <+> T.justifyLeft widthForDesc ' ' ldesc <+> stats
       toWidth :: Int -> Text -> Text
@@ -179,3 +162,36 @@ draw dm cops per drawnLevelId leader
       sfTop = toWidth lxsize $ msgTop
       sfBottom = toWidth (lxsize - 1) $ fromMaybe status $ msgBottom
   in SingleFrame{..}
+
+drawLeaderStatus :: Kind.COps -> State -> Discovery -> Time -> Maybe ActorId
+                 -> Text
+drawLeaderStatus cops s sdisco ltime mleader =
+  case mleader of
+    Just leader ->
+      let Kind.COps{coactor=Kind.Ops{okind}} = cops
+          (bitems, bracedL, ahpS, bhpS) =
+            let mpl@Actor{bkind, bhp} = getActorBody leader s
+                ActorKind{ahp} = okind bkind
+            in (getActorItem leader s, braced mpl ltime,
+                showT (maxDice ahp), showT bhp)
+          damage = case Item.strongestSword cops bitems of
+            Just (_, (_, sw)) ->
+              case Item.jkind sdisco sw of
+                Just _ ->
+                  case jeffect sw of
+                    Hurt dice p -> showT dice <> "+" <> showT p
+                    _ -> ""
+                Nothing -> "3d1"  -- TODO: ?
+            Nothing -> "3d1"  -- TODO; use the item 'fist'
+          -- Indicate the actor is braced (was waiting last move).
+          -- It's a useful feedback for the otherwise hard to observe
+          -- 'wait' command.
+          braceSign | bracedL   = "{"
+                    | otherwise = " "
+      in T.justifyLeft 11 ' ' ("Dmg:" <+> damage) <+>
+         T.justifyLeft 13 ' ' (braceSign <> "HP:" <+> bhpS
+                               <+> "(" <> ahpS <> ")")
+    Nothing ->
+         T.justifyLeft 11 ' ' ("Dmg:" <+> "---") <+>
+         T.justifyLeft 13 ' ' (" " <> "HP:" <+> "--"
+                               <+> "(" <> "--" <> ")")

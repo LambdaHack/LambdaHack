@@ -56,18 +56,18 @@ import System.Time
 import Game.LambdaHack.Client.Action.ActionClass
 import Game.LambdaHack.Client.Action.ConfigIO
 import qualified Game.LambdaHack.Client.Action.Save as Save
-import Game.LambdaHack.Common.Animation
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.Draw
-import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import Game.LambdaHack.Common.Animation
 import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
+import qualified Game.LambdaHack.Common.Key as K
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
@@ -321,11 +321,11 @@ drawOverlay dm over = do
   stgtMode <- getsClient stgtMode
   arena <- getArenaUI
   let lid = maybe arena tgtLevelId stgtMode
-  leader <- getLeaderUI
+  mleader <- getsClient _sleader
   s <- getState
   cli <- getClient
   per <- getPerFid lid
-  return $! draw dm cops per lid leader cli s over
+  return $! draw dm cops per lid mleader cli s over
 
 -- | Push the frame depicting the current level to the frame queue.
 -- Only one screenful of the report is shown, the rest is ignored.
@@ -395,14 +395,14 @@ animate :: MonadClientUI m => LevelId -> Animation -> m Frames
 animate arena anim = do
   cops <- getsState scops
   sreport <- getsClient sreport
-  leader <- getLeaderUI
+  mleader <- getsClient _sleader
   Level{lxsize, lysize} <- getsLevel arena id
   cli <- getClient
   s <- getState
   per <- getPerFid arena
   let over = renderReport sreport
       topLineOnly = truncateMsg lxsize over
-      basicFrame = draw ColorFull cops per arena leader cli s [topLineOnly]
+      basicFrame = draw ColorFull cops per arena mleader cli s [topLineOnly]
   return $ renderAnim lxsize lysize basicFrame anim
 
 -- | The part of speech describing the actor or a special name if a leader
