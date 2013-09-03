@@ -513,15 +513,17 @@ drawSfxAtomicUI verbose sfx = case sfx of
       if bfid b == side then do
         subject <- partActorLeader aid b
         let firstFall = if bproj b then "drop down" else "fall down"
+            hurtExtra p = if bhp b <= p && not (bproj b) || bhp b < p
+                          then -- was already dead previous turn
+                               if bproj b
+                               then "be stomped flat"
+                               else "be ground into the floor"
+                          else firstFall
             verbDie =
               case effect of
-                Effect.Hurt _ p | p < 0 -> do
-                  if bhp b <= p && not (bproj b) || bhp b < p
-                  then -- was already dead previous turn
-                       if bproj b then "be stomped flat"
-                                  else "be ground into the floor"
-                  else firstFall
-                _ -> "be damaged even more"
+                Effect.Hurt _ p | p < 0 -> hurtExtra p
+                Effect.Heal p | p < 0 -> hurtExtra p
+                _ -> firstFall
             msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
         msgAdd msgDie
         unless (bproj b) $ do
@@ -529,15 +531,17 @@ drawSfxAtomicUI verbose sfx = case sfx of
           displayFrames animDie
       else do
         let firstFall = if bproj b then "break up" else "collapse"
+            hurtExtra p = if bhp b <= p && not (bproj b) || bhp b < p
+                          then -- was already dead previous turn
+                               if bproj b
+                               then "be shattered into little pieces"
+                               else "be reduced to a bloody pulp"
+                          else firstFall
             verbDie =
               case effect of
-                Effect.Hurt _ p | p < 0 -> do
-                  if bhp b <= p && not (bproj b) || bhp b < p
-                  then -- was already dead previous turn
-                       if bproj b then "be shattered into little pieces"
-                                  else "be reduced to a bloody pulp"
-                  else firstFall
-                _ -> "be ruined further"
+                Effect.Hurt _ p | p < 0 -> hurtExtra p
+                Effect.Heal p | p < 0 -> hurtExtra p
+                _ -> firstFall
         actorVerbMU aid b verbDie
     else case effect of
         Effect.NoEffect -> msgAdd "Nothing happens."

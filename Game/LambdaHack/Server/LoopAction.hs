@@ -279,12 +279,15 @@ advanceTime :: MonadAtomic m => ActorId -> m ()
 advanceTime aid = do
   Kind.COps{coactor} <- getsState scops
   b <- getsState $ getActorBody aid
-  -- TODO: Add an option to block this for non-projectiles too.
-  if bhp b < 0 && bproj b then return ()
-  else do
-    let speed = actorSpeed coactor b
-        t = ticksPerMeter speed
-    execCmdAtomic $ AgeActorA aid t
+  if bhp b < 0 && bproj b
+    then
+      -- Don't update move time, so move ASAP, so the projectile
+      -- corpse vanishes ASAP.
+      return ()
+    else do
+      let speed = actorSpeed coactor b
+          t = ticksPerMeter speed
+      execCmdAtomic $ AgeActorA aid t
 
 -- | Generate a monster, possibly.
 generateMonster :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
