@@ -374,7 +374,7 @@ triggerSer aid dpos = do
 -- TODO: take care of AI using this function (aborts on some of the features, succes on others, etc.)
                  else execFailure (bfid b) "blocked"  -- by actors
             else execFailure (bfid b) "jammed"  -- by items
-          _ -> return True
+          _ -> return False
   bs <- mapM f $ TileKind.tfeature $ okind $ lvl `at` dpos
   return $! or bs  -- TODO: stop after first failure, probably
 

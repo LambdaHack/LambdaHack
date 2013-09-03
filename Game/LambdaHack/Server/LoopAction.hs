@@ -217,6 +217,8 @@ handleActors cmdSerSem lid = do
         if bhp bPre <= 0 && not (bproj bPre)
         then execFailure side "You strain, fumble and faint from the exertion."
         else cmdSerSem cmdS
+      -- AI has to take time, otherwise it'd loop.
+      assert (queryUI || timed `blame` (cmdS, timed, bPre)) skip
       -- Advance time once, after the leader switched perhaps many times.
       -- TODO: this is correct only when all heroes have the same
       -- speed and can't switch leaders by, e.g., aiming a wand

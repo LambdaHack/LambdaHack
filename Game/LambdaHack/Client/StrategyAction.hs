@@ -377,7 +377,7 @@ chase cops actor s foe@(_, foeVisible) =
   let mFoe = Just foe
       fight = not foeVisible  -- don't pick fights if the real foe is close
   in if fight
-     then MoveSer actor `liftM` moveStrategy cops actor s mFoe
+     then ExploreSer actor `liftM` moveStrategy cops actor s mFoe
      else RunSer actor `liftM` moveStrategy cops actor s mFoe
 
 wander :: Kind.COps -> ActorId -> State -> Strategy CmdSer
@@ -386,4 +386,4 @@ wander cops actor s =
   -- or we cannot chase at all.
   -- TODO: explore if a possible secret
   let mFoe = Nothing
-  in MoveSer actor `liftM` moveStrategy cops actor s mFoe
+  in ExploreSer actor `liftM` moveStrategy cops actor s mFoe
