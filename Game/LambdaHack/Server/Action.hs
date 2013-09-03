@@ -11,7 +11,7 @@ module Game.LambdaHack.Server.Action
   , sendUpdateUI, sendQueryUI, sendUpdateAI, sendQueryAI
     -- * Assorted primitives
   , saveGameSer, saveGameBkp, dumpCfg
-  , mkConfigRules, restoreScore, registerScore, revealItems, deduceQuits
+  , mkConfigRules, restoreScore, revealItems, deduceQuits
   , rndToAction, fovMode, resetFidPerception, getPerFid
   ) where
 
@@ -173,28 +173,29 @@ restoreScore Config{configScoresFile} = do
     else liftIO $ strictDecodeEOF configScoresFile
 
 -- | Generate a new score, register it and save.
-registerScore :: MonadServer m => FactionId -> m ()
-registerScore fid = do
+registerScore :: MonadServer m => Status -> FactionId -> m ()
+registerScore status fid = do
   factionD <- getsState sfactionD
   let faction = factionD EM.! fid
-      mstatus = gquit faction
   when (isHumanFact faction) $ do
-    total <- case gleader faction of
-      Nothing -> return 0
-      Just leader -> do
+    -- TODO: refactor vs scoreToSlideshow
+    total <- case (gleader faction, status) of
+      (Just leader, _) -> do
         b <- getsState $ getActorBody leader
-        getsState $ snd . calculateTotal fid (blid b)
-    case mstatus of
-      Just status | total /= 0 -> do
-        config <- getsServer sconfig
-        -- Re-read the table in case it's changed by a concurrent game.
-        table <- restoreScore config
-        time <- getsState stime
-        date <- liftIO $ getClockTime
-        let (ntable, _) = HighScore.register table total time status date
-        liftIO $
-          encodeEOF (configScoresFile config) (ntable :: HighScore.ScoreTable)
-      _ -> return ()
+        getsState $ snd . calculateTotal (bfid b) (blid b) Nothing
+      (Nothing, Killed b) ->
+        getsState $ snd . calculateTotal (bfid b) (blid b) (Just b)
+      _ -> return 0
+    if total == 0 then return ()
+    else do
+      config <- getsServer sconfig
+      -- Re-read the table in case it's changed by a concurrent game.
+      table <- restoreScore config
+      time <- getsState stime
+      date <- liftIO $ getClockTime
+      let (ntable, _) = HighScore.register table total time status date
+      liftIO $
+        encodeEOF (configScoresFile config) (ntable :: HighScore.ScoreTable)
 
 revealItems :: (MonadAtomic m, MonadServer m) => Maybe FactionId -> m ()
 revealItems mfid = do
@@ -227,7 +228,7 @@ deduceQuits fid status = do
           _ -> do
             revealItems $ Just fidQ
             execCmdAtomic $ QuitFactionA fidQ oldSt $ Just statusQ
-            registerScore fidQ
+            registerScore statusQ fidQ
             modifyServer $ \ser -> ser {squit = True}  -- end turn ASAP
       mapQuitF statusQ fids = mapM_ (quitF statusQ) $ delete fid fids
   quitF status fid

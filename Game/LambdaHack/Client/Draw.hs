@@ -62,7 +62,7 @@ draw dm cops per drawnLevelId mleader
                                         then Color.Blue
                                         else Color.defBG
                else \ _vis _visPl -> Color.defBG
-      (_, wealth) = calculateTotal (sside cli) drawnLevelId s
+      (_, wealth) = calculateTotal (sside cli) drawnLevelId Nothing s
       bl = case (scursor, mleader) of
         (Just cursor, Just leader) ->
           let Actor{bpos, blid} = getActorBody leader s

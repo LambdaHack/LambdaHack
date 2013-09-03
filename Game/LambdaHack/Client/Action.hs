@@ -350,9 +350,9 @@ scoreToSlideshow status = do
   total <- case (mleader, status) of
     (Just leader, _) -> do
       b <- getsState $ getActorBody leader
-      getsState $ snd . calculateTotal (bfid b) (blid b)
+      getsState $ snd . calculateTotal (bfid b) (blid b) Nothing
     (Nothing, Killed b) ->
-      getsState $ snd . calculateTotal (bfid b) (blid b)
+      getsState $ snd . calculateTotal (bfid b) (blid b) (Just b)
     _ -> return 0
   if total == 0 then return Monoid.mempty
   else do

@@ -57,6 +57,7 @@ tryCopyDataFiles :: (FilePath -> IO FilePath) -> [(FilePath, FilePath)]
 tryCopyDataFiles pathsDataFile files =
   let cpFile (fin, fout) = do
         pathsDataIn <- pathsDataFile $ takeFileName fin
-        b <- doesFileExist fout
-        unless b $ copyFile pathsDataIn fout
+        bIn <- doesFileExist fin
+        bOut <- doesFileExist fout
+        when (bIn && not bOut) $ copyFile pathsDataIn fout
   in mapM_ cpFile files
