@@ -249,7 +249,7 @@ drawCmdAtomicUI verbose cmd = case cmd of
     side <- getsClient sside
     -- If no other faction actor is looking, death is invisible and
     -- so is domination, time-freeze, etc. Then, this command appears instead.
-    when (not (bproj body) && bfid body == side) $ do
+    when (bfid body == side && bhp body <= 0 && not (bproj body)) $ do
       actorVerbMU aid body "be missing in action"
       void $ displayMore ColorFull ""
   MoveActorA aid _ _ -> do
