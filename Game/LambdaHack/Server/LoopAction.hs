@@ -265,7 +265,7 @@ advanceTime :: MonadAtomic m => ActorId -> m ()
 advanceTime aid = do
   Kind.COps{coactor} <- getsState scops
   b <- getsState $ getActorBody aid
-  if bhp b < 0 && bproj b
+  if bhp b < 0 && bproj b || maybe False null (bpath b)
     then
       -- Don't update move time, so move ASAP, so the projectile
       -- corpse vanishes ASAP.

@@ -32,7 +32,7 @@ cmdSerSem cmd = case cmd of
   ProjectSer aid p eps iid container -> projectSer aid p eps iid container
   ApplySer aid iid container -> applySer aid iid container >> return True
   TriggerSer aid p -> triggerSer aid p
-  SetPathSer aid path -> setPathSer aid path >> return (not $ null path)
+  SetPathSer aid path -> setPathSer aid path >> return True
   GameRestartSer aid t -> gameRestartSer aid t >> return False
   GameExitSer aid -> gameExitSer aid >> return False
   GameSaveSer _ -> gameSaveSer >> return False
