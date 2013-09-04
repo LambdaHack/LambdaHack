@@ -370,84 +370,71 @@ effectSearching power source = do
 
 -- ** Ascend
 
-effectAscend :: (MonadAtomic m, MonadServer m)
-             => Int -> ActorId -> m Bool
+effectAscend :: MonadAtomic m => Int -> ActorId -> m Bool
 effectAscend power target = do
   b <- effLvlGoUp target power
   when b $ execSfxAtomic $ EffectD target $ Effect.Ascend power
   return b
 
-effLvlGoUp :: (MonadAtomic m, MonadServer m) => ActorId -> Int -> m Bool
+effLvlGoUp :: MonadAtomic m => ActorId -> Int -> m Bool
 effLvlGoUp aid k = do
   bOld <- getsState $ getActorBody aid
-  ais <- getsState $ getActorItem aid
   let lidOld = blid bOld
-      side = bfid bOld
+      posOld = bpos bOld
   whereto <- getsState $ \s -> whereTo s lidOld k
   case whereto of
     Nothing -> -- We are at the "end" of the dungeon.
       -- TODO: perhaps return Maybe Text explaining why it failed, instead?
       return False
     Just (lidNew, posNew) -> do
-      assert (lidNew /= lidOld `blame` (lidNew, "stairs looped" :: Text)) skip
-      timeOld <- getsState $ getLocalTime lidOld
-      -- Leader always set to the actor changing levels.
-      mleader <- getsState $ gleader . (EM.! side) . sfactionD
-      execCmdAtomic $ LeadFactionA side mleader Nothing
-      -- Remove the actor from the old level.
-      -- Onlookers see somebody disappear suddenly.
-      -- @DestroyActorA@ is too loud, so use @LoseActorA@ instead.
-      execCmdAtomic $ LoseActorA aid bOld ais
-      -- Sync the actor time with the level time.
-      timeLastVisited <- getsState $ getLocalTime lidNew
-      let delta = timeAdd (btime bOld) (timeNegate timeOld)
-          bNew = bOld { blid = lidNew
-                      , btime = timeAdd timeLastVisited delta
-                      , bpos = posNew
-                      , boldpos = posNew}  -- new level, new direction
       -- The actor is added to the new level, but there can be other actors
       -- at his new position.
       inhabitants <- getsState $ posToActor posNew lidNew
-      -- Onlookers see somebody appear suddenly. The actor himself
-      -- sees new surroundings and has to reset his perception.
-      execCmdAtomic $ CreateActorA aid bNew ais
-      execCmdAtomic $ LeadFactionA side Nothing (Just aid)
       case inhabitants of
         Nothing -> return ()
-                   -- TODO: Bail out if a friend blocks the staircase.
-        Just m ->
-          -- Squash the actor blocking the staircase.
-          squashActor aid m
-      -- Verify the actor on the staircase died, so only one actor left.
-      void $ getsState $ posToActor posNew lidNew
+        Just aid2 ->
+          -- Start switching places. Move the inhabitant to where the actor is.
+          switchLevels aid2 lidOld posOld
+          -- There are now two actors at @posOld@.
+      switchLevels aid lidNew posNew
       -- The property of at most one actor on a tile is restored.
+      void $ getsState $ posToActor posOld lidOld  -- assertion is inside
       return True
 
--- TODO: refactor with actorAttackActor or perhaps move aside the other
--- actor or swap positions with it, instead of squashing.
-squashActor :: (MonadAtomic m, MonadServer m)
-            => ActorId -> ActorId -> m ()
-squashActor source target = do
-  Kind.COps{coitem=Kind.Ops{okind, ouniqGroup}} <- getsState scops
-  flavour <- getsServer sflavour
-  discoRev <- getsServer sdiscoRev
-  let h2hKind = ouniqGroup "weight"
-      kind = okind h2hKind
-      item = buildItem flavour discoRev h2hKind kind
-             $ Effect.Hurt (RollDice 99 99) 42
-  itemEffect source target Nothing item
-  execSfxAtomic $ StrikeD source target item HitD
---      verb = iverbApply kind
---        , "in a staircase accident" ]
-  actorD <- getsState sactorD
-  -- The monster has to be killed first, before we step there (same turn!).
-  assert (not (target `EM.member` actorD)
-          `blame` (source, target, "not killed" :: Text)) skip
+switchLevels :: MonadAtomic m => ActorId -> LevelId -> Point -> m ()
+switchLevels aid lidNew posNew = do
+  bOld <- getsState $ getActorBody aid
+  ais <- getsState $ getActorItem aid
+  let lidOld = blid bOld
+      side = bfid bOld
+  assert (lidNew /= lidOld `blame` (lidNew, "stairs looped" :: Text)) skip
+  -- Sync the actor time with the level time.
+  timeOld <- getsState $ getLocalTime lidOld
+  timeLastVisited <- getsState $ getLocalTime lidNew
+  let delta = timeAdd (btime bOld) (timeNegate timeOld)
+      bNew = bOld { blid = lidNew
+                  , btime = timeAdd timeLastVisited delta
+                  , bpos = posNew
+                  , boldpos = posNew}  -- new level, new direction
+  -- Prevent leader pointing to a non-existing actor.
+  mleader <- getsState $ gleader . (EM.! side) . sfactionD
+  execCmdAtomic $ LeadFactionA side mleader Nothing
+  -- Remove the actor from the old level.
+  -- Onlookers see somebody disappear suddenly.
+  -- @DestroyActorA@ is too loud, so use @LoseActorA@ instead.
+  execCmdAtomic $ LoseActorA aid bOld ais
+  -- but this will be fixed just below.
+  -- Onlookers see somebody appear suddenly. The actor himself
+  -- sees new surroundings and has to reset his perception.
+  execCmdAtomic $ CreateActorA aid bNew ais
+  -- Inhabitants of the new location not checked, so there may be
+  -- two actors at the same position at this point. Beware.
+  -- Changing levels is so important, that the leader changes.
+  execCmdAtomic $ LeadFactionA side Nothing (Just aid)
 
 -- ** Descend
 
-effectDescend :: (MonadAtomic m, MonadServer m)
-              => Int -> ActorId -> m Bool
+effectDescend :: MonadAtomic m => Int -> ActorId -> m Bool
 effectDescend power target = do
   b <- effLvlGoUp target (-power)
   when b $ execSfxAtomic $ EffectD target $ Effect.Descend power
