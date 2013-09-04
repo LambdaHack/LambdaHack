@@ -84,7 +84,7 @@ cmdAtomicFilterCli cmd = case cmd of
         outPrio = mapMaybe (\p -> posToActor p lid s) $ ES.elems outFov
         fActor aid =
           let b = getActorBody aid s
-          in if bfid b == fid
+          in if bfid b == fid  -- optimization; precludes DominateActorA
              then Nothing
              else Just $ LoseActorA aid b (getActorItem aid s)
         outActor = mapMaybe fActor outPrio
@@ -266,18 +266,6 @@ drawCmdAtomicUI verbose cmd = case cmd of
     if delta > speedZero
     then aVerbMU aid "speeds up"
     else aVerbMU aid "slows down"
-  DominateActorA target _ toFid -> do
-    side <- getsClient sside
-    if toFid == side then do
-      tb <- getsState $ getActorBody target
-      lookAtMove tb
---    -- Display status line and FOV for the new actor.
---    sli <- promptToSlideshow ""
---    fr <- drawOverlay ColorBW $ head $ runSlideshow sli
---    displayFrames [Nothing, Just fr, Nothing]
-    else do
-      fidName <- getsState $ gname . (EM.! toFid) . sfactionD
-      aVerbMU target $ MU.Text $ "fall under the influence of" <+> fidName
   LeadFactionA fid (Just source) (Just target) -> do
     Kind.COps{coactor} <- getsState scops
     side <- getsClient sside
@@ -512,9 +500,9 @@ drawSfxAtomicUI verbose sfx = case sfx of
     aVerbMU aid $ "shun"  -- TODO: shuns stairs down
   EffectD aid effect -> do
     b <- getsState $ getActorBody aid
+    side <- getsClient sside
     if bhp b <= 0 && not (bproj b) || bhp b < 0 then do
       -- We assume the Wound is the cause of incapacitation.
-      side <- getsClient sside
       if bfid b == side then do
         subject <- partActorLeader aid b
         let firstFall = if bproj b then "drop down" else "fall down"
@@ -564,7 +552,11 @@ drawSfxAtomicUI verbose sfx = case sfx of
           let msg = makeSentence
                 [MU.CardinalWs nEnemy "howl", "of anger", "can be heard"]
           msgAdd msg
-        Effect.Dominate | verbose -> actorVerbMU aid b "be dominated"
+        Effect.Dominate -> do
+          if bfid b == side then lookAtMove b
+          else do
+            fidName <- getsState $ gname . (EM.! bfid b) . sfactionD
+            aVerbMU aid $ MU.Text $ "fall under the influence of" <+> fidName
         Effect.ApplyPerfume ->
           msgAdd "The fragrance quells all scents in the vicinity."
         Effect.Searching{} -> do

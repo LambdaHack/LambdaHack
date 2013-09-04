@@ -64,7 +64,6 @@ data CmdAtomic =
   | AgeActorA ActorId Time
   | HealActorA ActorId Int
   | HasteActorA ActorId Speed
-  | DominateActorA ActorId FactionId FactionId
   | PathActorA ActorId (Maybe [Vector]) (Maybe [Vector])
   | ColorActorA ActorId (Maybe Color.Color) (Maybe Color.Color)
   -- Change faction attributes.
@@ -136,8 +135,6 @@ undoCmdAtomic cmd = case cmd of
   AgeActorA aid t -> Just $ AgeActorA aid (timeNegate t)
   HealActorA aid n -> Just $ HealActorA aid (-n)
   HasteActorA aid delta -> Just $ HasteActorA aid (speedNegate delta)
-  DominateActorA target fromFid toFid ->
-    Just $ DominateActorA target toFid fromFid
   PathActorA aid fromPath toPath -> Just $ PathActorA aid toPath fromPath
   ColorActorA aid fromCol toCol -> Just $ ColorActorA aid toCol fromCol
   QuitFactionA fid fromSt toSt -> Just $ QuitFactionA fid toSt fromSt

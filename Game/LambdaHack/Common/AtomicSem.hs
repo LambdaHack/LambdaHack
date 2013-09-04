@@ -49,7 +49,6 @@ cmdAtomicSem cmd = case cmd of
   AgeActorA aid t -> ageActorA aid t
   HealActorA aid n -> healActorA aid n
   HasteActorA aid delta -> hasteActorA aid delta
-  DominateActorA target fromFid toFid -> dominateActorA target fromFid toFid
   PathActorA aid fromPath toPath -> pathActorA aid fromPath toPath
   ColorActorA aid fromCol toCol -> colorActorA aid fromCol toCol
   QuitFactionA fid fromSt toSt -> quitFactionA fid fromSt toSt
@@ -250,12 +249,6 @@ hasteActorA aid delta = assert (delta /= speedZero) $ do
        if curSpeed == innateSpeed
        then b {bspeed = Nothing}
        else b {bspeed = Just newSpeed}
-
-dominateActorA :: MonadAction m => ActorId -> FactionId -> FactionId -> m ()
-dominateActorA target fromFid toFid = assert (fromFid /= toFid) $ do
-  tb <- getsState $ getActorBody target
-  assert (fromFid == bfid tb `blame` (target, fromFid, toFid, tb)) skip
-  modifyState $ updateActorBody target $ \b -> b {bfid = toFid}
 
 pathActorA :: MonadAction m
            => ActorId -> Maybe [Vector] -> Maybe [Vector] -> m ()

@@ -5,7 +5,7 @@ module Game.LambdaHack.Server.EffectSem
   ( -- + Semantics of effects
     itemEffect, effectSem
     -- * Assorted operations
-  , createItems, addHero, spawnMonsters
+  , createItems, addHero, spawnMonsters, electLeader, deduceKilled
   ) where
 
 import Control.Monad
@@ -36,6 +36,7 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Server.Action
+import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.Frequency
@@ -147,7 +148,7 @@ effectMindprobe target = do
 
 -- ** Dominate
 
-effectDominate :: MonadAtomic m
+effectDominate :: (MonadAtomic m, MonadServer m)
                => ActorId -> ActorId -> m Bool
 effectDominate source target = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
@@ -163,10 +164,36 @@ effectDominate source target = do
     when (delta > speedZero) $
       execCmdAtomic $ HasteActorA target (speedNegate delta)
     -- TODO: Perhaps insert a turn of delay here to allow countermeasures.
-    execCmdAtomic $ DominateActorA target (bfid tb) (bfid sb)
+    electLeader (bfid tb) (blid tb) target
+    ais <- getsState $ getActorItem target
+    execCmdAtomic $ LoseActorA target tb ais
+    let bNew = tb {bfid = bfid sb}
+    execCmdAtomic $ CreateActorA target bNew ais
     leaderOld <- getsState $ gleader . (EM.! bfid sb) . sfactionD
     execCmdAtomic $ LeadFactionA (bfid sb) leaderOld (Just target)
+    deduceKilled (bfid tb) tb
     return True
+
+electLeader :: MonadAtomic m => FactionId -> LevelId -> ActorId -> m ()
+electLeader fid lid aidDead = do
+  mleader <- getsState $ gleader . (EM.! fid) . sfactionD
+  when (isNothing mleader || mleader == Just aidDead) $ do
+    actorD <- getsState sactorD
+    let ours (_, b) = bfid b == fid && not (bproj b)
+        party = filter ours $ EM.assocs actorD
+    onLevel <- getsState $ actorNotProjAssocs (== fid) lid
+    let mleaderNew = listToMaybe $ filter (/= aidDead)
+                     $ map fst $ onLevel ++ party
+    execCmdAtomic $ LeadFactionA fid mleader mleaderNew
+
+deduceKilled :: (MonadAtomic m, MonadServer m) => FactionId -> Actor -> m ()
+deduceKilled fid body = do
+  spawning <- getsState $ flip isSpawningFaction fid
+  Config{configFirstDeathEnds} <- getsServer sconfig
+  mleader <- getsState $ gleader . (EM.! fid) . sfactionD
+  when (not spawning && (isNothing mleader || configFirstDeathEnds)) $
+    deduceQuits fid $ Killed body
+
 
 -- ** SummonFriend
 

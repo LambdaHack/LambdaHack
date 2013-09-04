@@ -84,7 +84,6 @@ posCmdAtomic cmd = case cmd of
   AgeActorA aid _ -> singleAid aid
   HealActorA aid _ -> singleAid aid
   HasteActorA aid _ -> singleAid aid
-  DominateActorA target _ _ -> singleAid target
   PathActorA aid _ _ -> singleAid aid
   ColorActorA aid _ _ -> singleAid aid
   QuitFactionA _ _ _ -> return PosAll
@@ -178,7 +177,6 @@ resetsFovAtomic cmd = case cmd of
     if source == target
       then return $ Just []
       else return $ Just $ sfid ++ tfid
-  DominateActorA _ fromFid toFid -> return $ Just [fromFid, toFid]
   MoveItemA _ _ _ _ -> return $ Just []  -- unless shiny
   AlterTileA _ _ _ _ -> return Nothing  -- even if pos not visible initially
   _ -> return $ Just []

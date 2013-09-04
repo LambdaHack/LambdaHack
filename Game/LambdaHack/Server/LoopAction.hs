@@ -33,7 +33,6 @@ import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Frontend
 import Game.LambdaHack.Server.Action hiding (sendUpdateAI, sendUpdateUI)
-import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.ServerSem
@@ -244,13 +243,10 @@ dieSer aid = do  -- TODO: explode if a projectile holding a potion
   let fid = bfid body
   -- TODO: clients don't see the death of their last standing actor;
   --       modify Draw.hs and Client.hs to handle that
-  mleader <- electLeader fid (blid body) aid
+  electLeader fid (blid body) aid
   dropAllItems aid body
   execCmdAtomic $ DestroyActorA aid body {bbag = EM.empty} []
-  spawning <- getsState $ flip isSpawningFaction fid
-  Config{configFirstDeathEnds} <- getsServer sconfig
-  when (not spawning && (isNothing mleader || configFirstDeathEnds)) $
-    deduceQuits fid $ Killed body
+  deduceKilled fid body
 
 -- | Drop all actor's items.
 dropAllItems :: MonadAtomic m => ActorId -> Actor -> m ()
@@ -259,22 +255,6 @@ dropAllItems aid b = do
                 $ MoveItemA iid k (actorContainer aid (binv b) iid)
                                   (CFloor (blid b) (bpos b))
   mapActorItems_ f b
-
-electLeader :: (MonadAtomic m, MonadServer m)
-            => FactionId -> LevelId -> ActorId
-            -> m (Maybe ActorId)
-electLeader fid lid aidDead = do
-  mleader <- getsState $ gleader . (EM.! fid) . sfactionD
-  if isNothing mleader || mleader == Just aidDead then do
-    actorD <- getsState sactorD
-    let ours (_, b) = bfid b == fid && not (bproj b)
-        party = filter ours $ EM.assocs actorD
-    onLevel <- getsState $ actorNotProjAssocs (== fid) lid
-    let mleaderNew = listToMaybe $ filter (/= aidDead)
-                     $ map fst $ onLevel ++ party
-    execCmdAtomic $ LeadFactionA fid mleader mleaderNew
-    return mleaderNew
-  else return mleader
 
 -- | Advance the move time for the given actor.
 advanceTime :: MonadAtomic m => ActorId -> m ()
