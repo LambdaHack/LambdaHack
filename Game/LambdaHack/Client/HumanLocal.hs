@@ -133,9 +133,11 @@ doLook = do
                 | otherwise = Nothing
       enemyMsg =
         -- Even if it's the leader, give his proper name, not 'you'.
-        maybe "" (\ m -> makeSentence
-                         [MU.SubjectVerbSg (partActor coactor m) "be here"])
-                 ihabitant
+        maybe "" (\m -> let noun = partActor coactor m
+                            verb | bhp m <= 0 = "lie here"
+                                 | otherwise = "be here"
+                        in makeSentence [MU.SubjectVerbSg noun verb])
+              ihabitant
       vis | not $ p `ES.member` totalVisible per = " (not visible)"
           | actorSeesLoc per leader p = ""
           | otherwise = " (not visible by you)"
@@ -148,14 +150,13 @@ doLook = do
   -- Show general info about current p.
   lookMsg <- lookAt True canSee p enemyMsg
   modifyClient (\st -> st {slastKey = Nothing})
-  if EM.size is <= 2
-    then do
-      slides <- promptToSlideshow (mode <+> lookMsg)
-      tell slides
-    else do
-     io <- floorItemOverlay is
-     slides <- overlayToSlideshow (mode <+> lookMsg) io
-     tell slides
+  if EM.size is <= 2 then do
+    slides <- promptToSlideshow (mode <+> lookMsg)
+    tell slides
+  else do
+    io <- floorItemOverlay is
+    slides <- overlayToSlideshow (mode <+> lookMsg) io
+    tell slides
 
 -- | Create a list of item names.
 floorItemOverlay :: MonadClient m => ItemBag -> m Overlay
