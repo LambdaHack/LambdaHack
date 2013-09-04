@@ -158,11 +158,6 @@ effectDominate source target = do
     execSfxAtomic $ EffectD target Effect.NoEffect
     return False
   else do
-    -- Halve the speed as a side-effect of domination.
-    let speed = fromMaybe (aspeed $ okind $ bkind tb) $ bspeed tb
-        delta = speedScale (1%2) speed
-    when (delta > speedZero) $
-      execCmdAtomic $ HasteActorA target (speedNegate delta)
     -- TODO: Perhaps insert a turn of delay here to allow countermeasures.
     electLeader (bfid tb) (blid tb) target
     ais <- getsState $ getActorItem target
@@ -170,8 +165,13 @@ effectDominate source target = do
     let bNew = tb {bfid = bfid sb}
     execCmdAtomic $ CreateActorA target bNew ais
     leaderOld <- getsState $ gleader . (EM.! bfid sb) . sfactionD
+    -- Halve the speed as a side-effect of domination.
+    let speed = fromMaybe (aspeed $ okind $ bkind bNew) $ bspeed bNew
+        delta = speedScale (1%2) speed
+    when (delta > speedZero) $
+      execCmdAtomic $ HasteActorA target (speedNegate delta)
     execCmdAtomic $ LeadFactionA (bfid sb) leaderOld (Just target)
-    deduceKilled (bfid tb) tb
+    deduceKilled tb  -- tb (not bNew), because that's how we saw him last
     return True
 
 electLeader :: MonadAtomic m => FactionId -> LevelId -> ActorId -> m ()
@@ -186,14 +186,14 @@ electLeader fid lid aidDead = do
                      $ map fst $ onLevel ++ party
     execCmdAtomic $ LeadFactionA fid mleader mleaderNew
 
-deduceKilled :: (MonadAtomic m, MonadServer m) => FactionId -> Actor -> m ()
-deduceKilled fid body = do
+deduceKilled :: (MonadAtomic m, MonadServer m) => Actor -> m ()
+deduceKilled body = do
+  let fid = bfid body
   spawning <- getsState $ flip isSpawningFaction fid
   Config{configFirstDeathEnds} <- getsServer sconfig
   mleader <- getsState $ gleader . (EM.! fid) . sfactionD
   when (not spawning && (isNothing mleader || configFirstDeathEnds)) $
     deduceQuits fid $ Killed body
-
 
 -- ** SummonFriend
 

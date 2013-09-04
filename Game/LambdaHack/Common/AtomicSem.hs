@@ -246,7 +246,7 @@ hasteActorA aid delta = assert (delta /= speedZero) $ do
         curSpeed = fromMaybe innateSpeed (bspeed b)
         newSpeed = speedAdd curSpeed delta
     in assert (newSpeed >= speedZero `blame` (aid, curSpeed, delta)) $
-       if curSpeed == innateSpeed
+       if newSpeed == innateSpeed
        then b {bspeed = Nothing}
        else b {bspeed = Just newSpeed}
 

@@ -240,13 +240,12 @@ handleActors cmdSerSem lid = do
 dieSer :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 dieSer aid = do  -- TODO: explode if a projectile holding a potion
   body <- getsState $ getActorBody aid
-  let fid = bfid body
   -- TODO: clients don't see the death of their last standing actor;
   --       modify Draw.hs and Client.hs to handle that
-  electLeader fid (blid body) aid
+  electLeader (bfid body) (blid body) aid
   dropAllItems aid body
   execCmdAtomic $ DestroyActorA aid body {bbag = EM.empty} []
-  deduceKilled fid body
+  deduceKilled body
 
 -- | Drop all actor's items.
 dropAllItems :: MonadAtomic m => ActorId -> Actor -> m ()

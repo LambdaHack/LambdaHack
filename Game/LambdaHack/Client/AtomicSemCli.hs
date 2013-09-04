@@ -262,10 +262,10 @@ drawCmdAtomicUI verbose cmd = case cmd of
     if n > 0
     then aVerbMU aid $ MU.Text $ "heal"  <+> showT n <> "HP"
     else aVerbMU aid $ MU.Text $ "be about to lose" <+> showT n <> "HP"
-  HasteActorA aid delta | verbose ->
+  HasteActorA aid delta ->
     if delta > speedZero
-    then aVerbMU aid "speeds up"
-    else aVerbMU aid "slows down"
+    then aVerbMU aid "speed up"
+    else aVerbMU aid "slow down"
   LeadFactionA fid (Just source) (Just target) -> do
     Kind.COps{coactor} <- getsState scops
     side <- getsClient sside
