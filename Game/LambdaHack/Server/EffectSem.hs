@@ -17,6 +17,7 @@ import Data.List
 import Data.Maybe
 import Data.Ratio ((%))
 import Data.Text (Text)
+import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
@@ -378,6 +379,7 @@ effectAscend power target = do
 
 effLvlGoUp :: MonadAtomic m => ActorId -> Int -> m Bool
 effLvlGoUp aid k = do
+  Kind.COps{coactor} <- getsState scops
   bOld <- getsState $ getActorBody aid
   let lidOld = blid bOld
       posOld = bpos bOld
@@ -392,9 +394,15 @@ effLvlGoUp aid k = do
       inhabitants <- getsState $ posToActor posNew lidNew
       case inhabitants of
         Nothing -> return ()
-        Just aid2 ->
+        Just aid2 -> do
           -- Start switching places. Move the inhabitant to where the actor is.
           switchLevels aid2 lidOld posOld
+          -- Alert about the switch.
+          b2 <- getsState $ getActorBody aid2
+          let part2 = partActor coactor b2
+              verb = "be pushed to another level"
+              msg2 = makeSentence [MU.SubjectVerbSg part2 verb]
+          execSfxAtomic $ MsgFidD (bfid b2) msg2
           -- There are now two actors at @posOld@.
       switchLevels aid lidNew posNew
       -- The property of at most one actor on a tile is restored.
