@@ -96,7 +96,7 @@ partActor Kind.Ops{oname} a =
 
 -- | A template for a new non-projectile actor.
 actorTemplate :: Kind.Id ActorKind -> Maybe Char -> Maybe Text
-              -> Maybe Color.Color -> (Maybe Speed) -> Int -> (Maybe [Vector])
+              -> Maybe Color.Color -> Maybe Speed -> Int -> Maybe [Vector]
               -> Point -> LevelId -> Time -> FactionId -> Bool -> Actor
 actorTemplate bkind bsymbol _bname bcolor bspeed bhp bpath bpos blid btime
               bfid bproj =
@@ -191,10 +191,10 @@ assignLetter iid r body =
  where
   c = bletter body
   candidates = take (length allLetters)
-               $ drop (fromJust (findIndex (== c) allLetters))
+               $ drop (fromJust (elemIndex c allLetters))
                $ cycle allLetters
   inBag = EM.keysSet $ bbag body
-  f l = maybe True (\i -> i `ES.notMember` inBag) $ EM.lookup l $ binv body
+  f l = maybe True (`ES.notMember` inBag) $ EM.lookup l $ binv body
   free = filter f candidates
   allowed = InvChar '$' : free
 
@@ -212,8 +212,8 @@ letterRange ls =
     | otherwise                  = finish (c,d) <> sectionBy xs (Just (x, x))
 
   finish (c, d) | c == d         = T.pack [invChar c]
-                | succLetter c d = T.pack $ [invChar c, invChar d]
-                | otherwise      = T.pack $ [invChar c, '-', invChar d]
+                | succLetter c d = T.pack [invChar c, invChar d]
+                | otherwise      = T.pack [invChar c, '-', invChar d]
 
 letterLabel :: InvChar -> MU.Part
 letterLabel c = MU.Text $ T.pack $ invChar c : " -"

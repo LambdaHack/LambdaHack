@@ -68,6 +68,6 @@ blaXY eps (PointXY (x0, y0)) (PointXY (x1, y1)) =
       yxStep b (x, y) = (x + signum dx * b, y + signum dy)
       (p, q, step) | abs dx > abs dy = (abs dy, abs dx, xyStep)
                    | otherwise       = (abs dx, abs dy, yxStep)
-      bw = balancedWord p q (eps `mod` (max 1 q))
+      bw = balancedWord p q (eps `mod` max 1 q)
       walk w xy = xy : walk (tail w) (step (head w) xy)
   in L.map PointXY $ walk bw (x0, y0)

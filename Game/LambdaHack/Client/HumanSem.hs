@@ -47,18 +47,18 @@ cmdAction :: (MonadClientAbort m, MonadClientUI m)
 cmdAction cmd = case cmd of
   Move v -> moveHuman v
   Run v -> runHuman v
-  Wait -> fmap Just $ waitHuman
-  Pickup -> fmap Just $ pickupHuman
-  Drop -> fmap Just $ dropHuman
+  Wait -> fmap Just waitHuman
+  Pickup -> fmap Just pickupHuman
+  Drop -> fmap Just dropHuman
   Project ts -> projectHuman ts
   Apply ts -> fmap Just $ applyHuman ts
   TriggerDir ts -> fmap Just $ triggerDirHuman ts
   TriggerTile ts -> fmap Just $ triggerTileHuman ts
 
   GameRestart t -> fmap Just $ gameRestartHuman t
-  GameExit -> fmap Just $ gameExitHuman
-  GameSave -> fmap Just $ gameSaveHuman
-  CfgDump -> fmap Just $ cfgDumpHuman
+  GameExit -> fmap Just gameExitHuman
+  GameSave -> fmap Just gameSaveHuman
+  CfgDump -> fmap Just cfgDumpHuman
 
   SelectHero k -> selectHeroHuman k >> return Nothing
   MemberCycle -> memberCycleHuman >> return Nothing
@@ -150,9 +150,9 @@ projectHuman ts = do
 tgtFloorHuman :: MonadClientUI m => WriterT Slideshow m (Maybe CmdSer)
 tgtFloorHuman = do
   arena <- getArenaUI
-  (tgtFloorLeader $ TgtExplicit arena) >> return Nothing
+  tgtFloorLeader (TgtExplicit arena) >> return Nothing
 
 tgtEnemyHuman :: MonadClientUI m => WriterT Slideshow m (Maybe CmdSer)
 tgtEnemyHuman = do
   arena <- getArenaUI
-  (tgtEnemyLeader $ TgtExplicit arena) >> return Nothing
+  tgtEnemyLeader (TgtExplicit arena) >> return Nothing

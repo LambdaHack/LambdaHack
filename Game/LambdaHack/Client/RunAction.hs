@@ -70,7 +70,7 @@ runMode pos dir dirEnterable lxsize =
       dirsEnterable = L.filter (dirEnterable pos) (moves lxsize)
   in case dirsEnterable of
     [] -> assert `failure` (pos, dir)
-    [negdir] -> assert (negdir == neg dir) $ RunDeadEnd
+    [negdir] -> assert (negdir == neg dir) RunDeadEnd
     _ ->
       let dirsOpen = findOpen dirsEnterable
           dirsCorridor = dirsEnterable L.\\ dirsOpen
@@ -168,7 +168,7 @@ continueRunDir leader (dirLast, distLast) = do
   smarkSuspect <- getsClient smarkSuspect
   fact <- getsState $ (EM.! bfid body) . sfactionD
   ms <- getsState $ actorList (isAtWar fact) lid
-  hs <- getsState $ actorList (not . (isAtWar fact)) lid
+  hs <- getsState $ actorList (not . isAtWar fact) lid
   lvl@Level{lxsize, lysize} <- getsLevel (blid body) id
   let posHere = bpos body
       posHasFeature f pos = Tile.hasFeature cotile f (lvl `at` pos)

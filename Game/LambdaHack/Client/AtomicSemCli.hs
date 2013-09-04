@@ -191,11 +191,11 @@ perceptionA lid outPA inPA = do
         inPer = paToDummy inPA
         adj Nothing = assert `failure` lid
         adj (Just per) = Just $ dummyToPer $ addPer (diffPer per outPer) inPer
-        f sfper = EM.alter adj lid sfper
+        f = EM.alter adj lid
     modifyClient $ \cli -> cli {sfper = f (sfper cli)}
 
 discoverA :: MonadClient m
-          => LevelId -> Point -> ItemId -> (Kind.Id ItemKind) -> m ()
+          => LevelId -> Point -> ItemId -> Kind.Id ItemKind -> m ()
 discoverA lid p iid ik = do
   item <- getsState $ getItemBody iid
   let f Nothing = Just ik
@@ -203,7 +203,7 @@ discoverA lid p iid ik = do
   modifyClient $ \cli -> cli {sdisco = EM.alter f (jkindIx item) (sdisco cli)}
 
 coverA :: MonadClient m
-       => LevelId -> Point -> ItemId -> (Kind.Id ItemKind) -> m ()
+       => LevelId -> Point -> ItemId -> Kind.Id ItemKind -> m ()
 coverA lid p iid ik = do
   item <- getsState $ getItemBody iid
   let f Nothing = assert `failure` (lid, p, iid, ik)
@@ -259,13 +259,13 @@ drawCmdAtomicUI verbose cmd = case cmd of
   DisplaceActorA source target -> displaceActorUI source target
   MoveItemA iid k c1 c2 -> moveItemUI verbose iid k c1 c2
   HealActorA aid n | verbose ->
-    if n > 0
-    then aVerbMU aid $ MU.Text $ "heal"  <+> showT n <> "HP"
-    else aVerbMU aid $ MU.Text $ "be about to lose" <+> showT n <> "HP"
+    aVerbMU aid $ MU.Text $ if n > 0
+                            then "heal"  <+> showT n <> "HP"
+                            else "be about to lose" <+> showT n <> "HP"
   HasteActorA aid delta ->
-    if delta > speedZero
-    then aVerbMU aid "speed up"
-    else aVerbMU aid "slow down"
+    aVerbMU aid $ if delta > speedZero
+                  then "speed up"
+                  else "slow down"
   LeadFactionA fid (Just source) (Just target) -> do
     Kind.COps{coactor} <- getsState scops
     side <- getsClient sside
@@ -289,7 +289,7 @@ drawCmdAtomicUI verbose cmd = case cmd of
         showDipl War = "at war"
     msgAdd $ name1 <+> "and" <+> name2 <+> "are now" <+> showDipl toDipl <> "."
   QuitFactionA fid _ toSt -> quitFactionUI fid toSt
-  AlterTileA _ _ _ _ | verbose ->
+  AlterTileA{} | verbose ->
     return ()  -- TODO: door opens
   SearchTileA _ _ fromTile toTile -> do
     Kind.COps{cotile = Kind.Ops{oname}} <- getsState scops
@@ -393,7 +393,7 @@ moveItemUI verbose iid k c1 c2 = do
                             , partItemWs coitem disco n item
                             , "\n" ]
       else aiVerbMU aid "pick up" iid k
-    (CActor aid _, CFloor _ _) | verbose -> do
+    (CActor aid _, CFloor _ _) | verbose ->
       aiVerbMU aid "drop" iid k
     _ -> return ()
 
@@ -495,13 +495,13 @@ drawSfxAtomicUI verbose sfx = case sfx of
   ActivateD aid iid -> aiVerbMU aid "activate"{-TODO-} iid 1
   CheckD aid iid -> aiVerbMU aid "check" iid 1
   TriggerD aid _p _feat _ | verbose ->
-    aVerbMU aid $ "trigger"  -- TODO: opens door
+    aVerbMU aid "trigger"  -- TODO: opens door
   ShunD aid _p _ _ | verbose ->
-    aVerbMU aid $ "shun"  -- TODO: shuns stairs down
+    aVerbMU aid "shun"  -- TODO: shuns stairs down
   EffectD aid effect -> do
     b <- getsState $ getActorBody aid
     side <- getsClient sside
-    if bhp b <= 0 && not (bproj b) || bhp b < 0 then do
+    if bhp b <= 0 && not (bproj b) || bhp b < 0 then
       -- We assume the Wound is the cause of incapacitation.
       if bfid b == side then do
         subject <- partActorLeader aid b
@@ -552,7 +552,7 @@ drawSfxAtomicUI verbose sfx = case sfx of
           let msg = makeSentence
                 [MU.CardinalWs nEnemy "howl", "of anger", "can be heard"]
           msgAdd msg
-        Effect.Dominate -> do
+        Effect.Dominate ->
           if bfid b == side then lookAtMove b
           else do
             fidName <- getsState $ gname . (EM.! bfid b) . sfactionD

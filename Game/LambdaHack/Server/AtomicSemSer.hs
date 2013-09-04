@@ -28,7 +28,7 @@ import Game.LambdaHack.Server.State
 import Game.LambdaHack.Utils.Assert
 
 storeUndo :: MonadServer m => Atomic -> m ()
-storeUndo atomic = do
+storeUndo atomic =
   maybe skip (\a -> modifyServer $ \ser -> ser {sundo = a : sundo ser})
     $ undoAtomic atomic
 

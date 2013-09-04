@@ -99,10 +99,8 @@ connFrontend fid fromF = ConnFrontend
 
 connServer :: ChanServer c -> ConnServer c
 connServer ChanServer{..} = ConnServer
-  { readConnServer =
-      liftIO $ atomically $ readTQueue fromServer
-  , writeConnServer = \cmds ->
-      liftIO $ atomically $ writeTQueue toServer cmds
+  { readConnServer =  liftIO . atomically . readTQueue $ fromServer
+  , writeConnServer = liftIO . atomically . writeTQueue toServer
   }
 
 -- | Reset the state and resume from the last backup point, i.e., invoke
@@ -128,9 +126,8 @@ tryRepeatedlyWith exc m =
 -- | Try the given computation and silently catch failure.
 tryIgnore :: MonadClientAbort m => m () -> m ()
 tryIgnore =
-  tryWith (\msg -> if T.null msg
-                   then return ()
-                   else assert `failure` msg <+> "in tryIgnore")
+  tryWith (\msg -> unless (T.null msg)
+                   $ assert `failure` msg <+> "in tryIgnore")
 
 -- | Set the current exception handler. Apart of executing it,
 -- draw and pass along a slide with the abort message (even if message empty).
@@ -156,7 +153,7 @@ displayFrame isRunning mf = do
 promptGetKey :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
 promptGetKey frontKM frontFr = do
   ConnFrontend{..} <- getsSession sfconn
-  writeConnFrontend $ Frontend.FrontKey{..}
+  writeConnFrontend Frontend.FrontKey {..}
   readConnFrontend
 
 -- | Display a slideshow, awaiting confirmation for each slide except the last.
@@ -171,7 +168,7 @@ getInitConfirms frontClear slides = do
       displayFrame False $ Just x
       return True
     _ -> do
-      writeConnFrontend $ Frontend.FrontSlides{..}
+      writeConnFrontend Frontend.FrontSlides{..}
       km <- readConnFrontend
       return $! km /= K.KM {key=K.Esc, modifier=K.NoModifier}
 
@@ -250,7 +247,7 @@ getConfirm = Frontend.getConfirmGeneric promptGetKey
 
 -- | Push frames or delays to the frame queue.
 displayFrames :: MonadClientUI m => Frames -> m ()
-displayFrames frames = mapM_ (displayFrame False) frames
+displayFrames = mapM_ (displayFrame False)
 
 -- | A yes-no confirmation.
 getYesNo :: MonadClientUI m => SingleFrame -> m Bool
@@ -358,7 +355,7 @@ scoreToSlideshow status = do
   else do
     table <- getsState shigh
     time <- getsState stime
-    date <- liftIO $ getClockTime
+    date <- liftIO getClockTime
     let (ntable, pos) = HighScore.register table total time status date
     return $! HighScore.slideshow ntable pos status
 

@@ -23,9 +23,9 @@ import Graphics.UI.Gtk hiding (Point)
 import System.Time
 
 import Game.LambdaHack.Common.Animation (SingleFrame (..))
+import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Key as K (KM (..), Modifier (..),
                                                   keyTranslate)
-import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.LQueue
 
@@ -92,7 +92,7 @@ frontendName = "gtk"
 -- on a bound thread, so we can't avoid the communication overhead
 -- of bound threads, so there's no point spawning a separate thread for GTK.
 startup :: String -> (FrontendSession -> IO ()) -> IO ()
-startup configFont k = runGtk configFont k
+startup = runGtk
 
 -- | Sets up and starts the main GTK loop providing input and output.
 runGtk :: String ->  (FrontendSession -> IO ()) -> IO ()
@@ -148,7 +148,7 @@ runGtk configFont k = do
           -- through some intermediate frames of an animation --- other keys
           -- are not meant to be pressed many times before the engine
           -- is ready to recognize and process them.
-          writeChan schanKey $ K.KM {key, modifier}
+          writeChan schanKey K.KM {key, modifier}
       return True
   -- Set the font specified in config, if any.
   f <- fontDescriptionFromString configFont
@@ -234,8 +234,7 @@ maxFps = 15
 -- | Maximal polls per second.
 maxPolls :: Int
 maxPolls = let maxP = 120
-           in assert (maxP >= 2 * maxFps `blame` (maxP, maxFps)) $
-              maxP
+           in assert (maxP >= 2 * maxFps `blame` (maxP, maxFps)) maxP
 
 -- | Add a given number of microseconds to time.
 addTime :: ClockTime -> Int -> ClockTime
@@ -244,8 +243,8 @@ addTime (TOD s p) ms = TOD s (p + fromIntegral (ms * 1000000))
 -- | The difference between the first and the second time, in microseconds.
 diffTime :: ClockTime -> ClockTime -> Int
 diffTime (TOD s1 p1) (TOD s2 p2) =
-  (fromIntegral $ s1 - s2) * 1000000 +
-  (fromIntegral $ p1 - p2) `div` 1000000
+  fromIntegral (s1 - s2) * 1000000 +
+  fromIntegral (p1 - p2) `div` 1000000
 
 -- | Poll the frame queue often and draw frames at fixed intervals.
 pollFrames :: FrontendSession -> Maybe ClockTime -> IO ()
@@ -316,10 +315,10 @@ pushFrame sess noDelay immediate rawFrame = do
   fs <- takeMVar sframeState
   case fs of
     FPushed{..} ->
-      if (isNothing nextFrame && anyFollowed)
-      then putMVar sframeState fs  -- old news
-      else putMVar sframeState
-             FPushed{fpushed = writeLQueue fpushed nextFrame, ..}
+      putMVar sframeState
+      $ if isNothing nextFrame && anyFollowed
+        then fs  -- old news
+        else FPushed{fpushed = writeLQueue fpushed nextFrame, ..}
     FNone | immediate -> do
       -- If the frame not repeated, draw it.
       maybe skip (postGUIAsync . output sess) nextFrame
@@ -342,7 +341,7 @@ evalFrame FrontendSession{stags} SingleFrame{..} =
                $ sfTop : levelChar ++ [sfBottom]
       -- Strict version of @map (map ((stags M.!) . fst)) sfLevel@.
       gfAttr  = reverse $ foldl' ff [] sfLevel
-      ff ll l = (reverse $ foldl' f [] l) : ll
+      ff ll l = reverse (foldl' f [] l) : ll
       f l ac  = let !tag = stags M.! Color.acAttr ac in tag : l
   in GtkFrame{..}
 
@@ -352,7 +351,7 @@ trimFrameState sess@FrontendSession{sframeState} = do
   -- Take the lock to wipe out the frame queue, unless it's empty already.
   fs <- takeMVar sframeState
   case fs of
-    FPushed{..} -> do
+    FPushed{..} ->
       -- Remove all but the last element of the frame queue.
       -- The kept (and displayed) last element ensures that
       -- @slastFull@ is not invalidated.
@@ -373,7 +372,7 @@ trimFrameState sess@FrontendSession{sframeState} = do
 
 -- | Add a frame to be drawn.
 display :: FrontendSession -> Bool -> Maybe SingleFrame -> IO ()
-display sess noDelay rawFrame = pushFrame sess noDelay False rawFrame
+display sess noDelay = pushFrame sess noDelay False
 
 -- | Display a prompt, wait for any key.
 -- Starts in Push or None mode, stop in None mode.

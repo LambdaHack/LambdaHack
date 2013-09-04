@@ -58,7 +58,7 @@ fromDir :: X -> Vector -> VectorXY
 fromDir lxsize (Vector dir) =
   assert (lxsize >= 3 && isUnitXY res &&
           fst len1 + snd len1 * lxsize == dir
-          `blame` (lxsize, dir, res)) $
+          `blame` (lxsize, dir, res))
   res
  where
   (x, y) = (dir `mod` lxsize, dir `div` lxsize)
@@ -121,8 +121,7 @@ normalize lxsize v@(VectorXY (dx, dy)) =
       rxy = if dx >= 0
             then VectorXY dxy
             else negXY $ VectorXY dxy
-  in assert ((if isUnitXY v then v == rxy else True)
-             `blame` (v, rxy))
+  in assert (not (isUnitXY v) || v == rxy `blame` (v, rxy))
      $ toDir lxsize rxy
 
 -- TODO: Perhaps produce all acceptable directions and let AI choose.
@@ -152,8 +151,7 @@ displacement pos1 pos2 = Vector $ fromEnum pos2 - fromEnum pos1
 -- | A list of vectors between a list of points.
 displacePath :: [Point] -> [Vector]
 displacePath []  = []
-displacePath lp1@(_ : lp2) =
-  map (uncurry displacement) $ zip lp1 lp2
+displacePath lp1@(_ : lp2) = zipWith displacement lp1 lp2
 
 -- | A list of points that a list of vectors leads to.
 shiftPath :: Point -> [Vector] -> [Point]

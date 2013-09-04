@@ -11,7 +11,7 @@ module Game.LambdaHack.Utils.Frequency
   , rollFreq, nullFreq, runFrequency, nameFrequency
   ) where
 
-import Control.Arrow (second)
+import Control.Arrow (first, second)
 import Control.Monad
 import Data.Text (Text)
 import qualified System.Random as R
@@ -61,7 +61,7 @@ toFreq = Frequency
 scaleFreq :: Show a => Int -> Frequency a -> Frequency a
 scaleFreq n (Frequency name xs) =
   assert (n > 0 `blame` ("non-positive scale for" <+> name, n, xs)) $
-  Frequency name (map (\ (p, x) -> (n * p, x)) xs)
+  Frequency name (map (first (* n)) xs)
 
 -- | Change the description of the frequency.
 renameFreq :: Text -> Frequency a -> Frequency a
@@ -75,8 +75,8 @@ rollFreq (Frequency name [(n, x)]) _ | n <= 0 =
   assert `failure` ("singleton frequency with nothing to pick:" <+> name, n, x)
 rollFreq (Frequency _ [(_, x)]) g = (x, g)  -- speedup
 rollFreq (Frequency name fs) g =
-  assert (sumf > 0 `blame` ("frequency with nothing to pick:" <+> name, fs)) $
-  (frec r fs, ng)
+  assert (sumf > 0 `blame` ("frequency with nothing to pick:" <+> name, fs))
+    (frec r fs, ng)
  where
   sumf = sum (map fst fs)
   (r, ng) = R.randomR (1, sumf) g

@@ -14,9 +14,9 @@ import Graphics.Vty
 import qualified Graphics.Vty as Vty
 
 import Game.LambdaHack.Common.Animation (SingleFrame (..))
+import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Key as K (KM (..), Key (..),
                                                   Modifier (..))
-import qualified Game.LambdaHack.Common.Color as Color
 
 -- | Session data maintained by the frontend.
 type FrontendSession = Vty
@@ -59,7 +59,7 @@ nextEvent sess mb = do
     EvKey n mods -> do
       let key = keyTranslate n
           modifier = modifierTranslate mods
-      return $ K.KM {key, modifier}
+      return K.KM {key, modifier}
     _ -> nextEvent sess mb
 
 -- | Display a prompt, wait for any key.

@@ -19,8 +19,8 @@ import Data.Maybe
 import System.IO.Unsafe (unsafePerformIO)
 
 import Game.LambdaHack.Common.Animation
-import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Common.Faction
+import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Frontend.Chosen
@@ -145,7 +145,7 @@ loopFrontend fs ConnMulti{..} = loop Nothing EM.empty
   flushFade :: SingleFrame -> Maybe (FactionId, SingleFrame)
             -> ReqMap -> FactionId
             -> IO ReqMap
-  flushFade frontFr oldFidFrame reqMap fid = do
+  flushFade frontFr oldFidFrame reqMap fid =
     if Just fid == fmap fst oldFidFrame then
       return reqMap
     else do
@@ -184,18 +184,18 @@ loopFrontend fs ConnMulti{..} = loop Nothing EM.empty
       FrontSlides{frontSlides = []} -> return ()
       FrontSlides{frontSlides = frontSlides@(fr1 : _), ..} -> do
         reqMap2 <- flushFade fr1 oldFidFrame reqMap fid
-        let go frs = do
+        let go frs =
               case frs of
                 [] -> assert `failure` fid
                 [x] -> do
                   display fs False (Just x)
-                  writeKM fid $ K.KM {key=K.Space, modifier=K.NoModifier}
+                  writeKM fid K.KM {key=K.Space, modifier=K.NoModifier}
                   return x
                 x : xs -> do
                   b <- getConfirmGeneric (promptGetKey fs) frontClear x
                   if b then go xs
                   else do
-                    writeKM fid $ K.KM {key=K.Esc, modifier=K.NoModifier}
+                    writeKM fid K.KM {key=K.Esc, modifier=K.NoModifier}
                     return x
         frLast <- go frontSlides
         loop (Just (fid, frLast)) reqMap2

@@ -147,4 +147,4 @@ digCorridors _ _ = EM.empty
 
 mergeCorridor :: Kind.Ops TileKind -> Kind.Id TileKind -> Kind.Id TileKind
               -> Kind.Id TileKind
-mergeCorridor cotile _ t = Tile.hiddenAs cotile t
+mergeCorridor cotile _ = Tile.hiddenAs cotile

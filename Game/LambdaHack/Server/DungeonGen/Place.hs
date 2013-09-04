@@ -105,8 +105,7 @@ buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
       qlegend = if dark then cdarkLegendTile else clitLegendTile
       qseen = False
       qarea = expandFence (pfence kr) r
-      place = assert (validArea qarea `blame` qarea) $
-              Place{..}
+      place = assert (validArea qarea `blame` qarea) Place {..}
   legend <- olegend cotile qlegend
   let xlegend = EM.insert 'X' qhollowFence legend
   return (digPlace place kr xlegend, place)

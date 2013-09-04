@@ -104,7 +104,7 @@ addSmell aid = do
   spawning <- getsState $ flip isSpawningFaction (bfid b)
   unless spawning $ do
     time <- getsState $ getLocalTime $ blid b
-    oldS <- getsLevel (blid b) $ (EM.lookup $ bpos b) . lsmell
+    oldS <- getsLevel (blid b) $ EM.lookup (bpos b) . lsmell
     let newTime = timeAdd time smellTimeout
     execCmdAtomic $ AlterSmellA (blid b) (bpos b) oldS (Just newTime)
 
@@ -139,8 +139,8 @@ actorAttackActor source target = do
         discoRev <- getsServer sdiscoRev
         let kind = okind h2hKind
             effect = fmap (maxDice . fst) (ieffect kind)
-        return $ ( Nothing
-                 , buildItem flavour discoRev h2hKind kind effect )
+        return ( Nothing
+               , buildItem flavour discoRev h2hKind kind effect )
   let performHit block = do
         let hitA = if block then HitBlockD else HitD
         execSfxAtomic $ StrikeD source target item hitA
@@ -354,7 +354,7 @@ triggerSer aid dpos = do
   b <- getsState $ getActorBody aid
   let lid = blid b
   lvl <- getsLevel lid id
-  let f feat = do
+  let f feat =
         case feat of
           F.Cause ef -> do
             -- No block against tile, hence unconditional.

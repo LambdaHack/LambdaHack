@@ -89,11 +89,10 @@ draw dm cops per drawnLevelId mleader
             actorsHere = actorAssocs (const True) drawnLevelId s
             -- smarkSuspect is an optional overlay, so let's overlay it
             -- over both visible and invisible tiles.
-            vcolor t = if smarkSuspect && F.Suspect `elem` tfeature t
-                       then Color.BrCyan
-                       else if vis
-                            then tcolor t
-                            else tcolor2 t
+            vcolor t
+              | smarkSuspect && F.Suspect `elem` tfeature t = Color.BrCyan
+              | vis = tcolor t
+              | otherwise = tcolor2 t
             (char, fg0) =
               case ( L.find (\ (_, m) -> pos0 == Actor.bpos m) actorsHere
                    , L.find (\ (_, m) -> scursor == Just (Actor.bpos m))
@@ -159,8 +158,8 @@ draw dm cops per drawnLevelId mleader
       sfLevel =  -- Fully evaluated.
         let f l y = let !line = fLine y in line : l
         in L.foldl' f [] [lysize-1,lysize-2..0]
-      sfTop = toWidth lxsize $ msgTop
-      sfBottom = toWidth (lxsize - 1) $ fromMaybe status $ msgBottom
+      sfTop = toWidth lxsize msgTop
+      sfBottom = toWidth (lxsize - 1) $ fromMaybe status msgBottom
   in SingleFrame{..}
 
 drawLeaderStatus :: Kind.COps -> State -> Discovery -> Time -> Maybe ActorId

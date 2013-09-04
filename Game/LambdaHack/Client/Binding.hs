@@ -35,7 +35,7 @@ data Binding = Binding
 stdBinding :: ConfigUI  -- ^ game config
            -> Binding   -- ^ concrete binding
 stdBinding !config@ConfigUI{configMacros} =
-  let kmacro = M.fromList $ configMacros
+  let kmacro = M.fromList configMacros
       heroSelect k = ( K.KM { key=K.Char (Char.intToDigit k)
                             , modifier=K.NoModifier }
                      , SelectHero k )
@@ -109,7 +109,7 @@ keyHelp Binding{kcmd, kmacro, kmajor, kminor} =
       L.partition ((`elem` kmajor) . fst) (M.toAscList kcmd)
     (kcMinor, _) =
       L.partition ((`elem` kminor) . fst) kcRest
-  in toSlideshow $
+  in toSlideshow
     [ ["Basic keys. [press SPACE to advance]"] ++ [blank]
       ++ mov ++ [moreMsg]
     , ["Basic keys. [press SPACE to advance]"] ++ [blank]

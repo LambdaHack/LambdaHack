@@ -174,7 +174,7 @@ strongestSword :: Kind.COps -> [(ItemId, Item)] -> Maybe (Int, (ItemId, Item))
 strongestSword Kind.COps{corule} is =
   strongestItem is $ \ i ->
     case jeffect i of
-      Hurt d k | jsymbol i `elem` (ritemMelee $ Kind.stdRuleset corule)
+      Hurt d k | jsymbol i `elem` ritemMelee (Kind.stdRuleset corule)
         -> Just $ floor (meanDice d) + k
       _ -> Nothing
 

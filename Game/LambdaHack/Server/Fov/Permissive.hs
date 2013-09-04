@@ -7,8 +7,8 @@ module Game.LambdaHack.Server.Fov.Permissive
   ( scan, dline, dsteeper, intersect, debugSteeper, debugLine
   ) where
 
-import Game.LambdaHack.Server.Fov.Common
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Server.Fov.Common
 import Game.LambdaHack.Utils.Assert
 
 -- TODO: Scanning squares on horizontal lines in octants, not squares
@@ -28,8 +28,8 @@ scan isClear =
             `blame` (d,s0,e,ps0,pe)) $
     if illegal then [] else inside ++ outside
    where
-    (ns, ks) = intersect sl d
-    (ne, ke) = intersect el d
+    (ns, ks) = sl `intersect` d
+    (ne, ke) = el `intersect` d
     -- Corners are translucent, so they are invisible, so if intersection
     -- is at a corner, choose pe that creates the smaller view.
     (ps0, pe) = (ns `div` ks, ne `divUp` ke - 1)  -- progress interval to check
@@ -75,24 +75,22 @@ scan isClear =
 -- | Create a line from two points. Debug: check if well-defined.
 dline :: Bump -> Bump -> Line
 dline p1 p2 =
-  assert (uncurry blame $ debugLine (p1, p2)) $
-  (p1, p2)
+  assert (uncurry blame $ debugLine (p1, p2)) (p1, p2)
 
 -- | Compare steepness of @(p1, f)@ and @(p2, f)@.
 -- Debug: Verify that the results of 2 independent checks are equal.
 dsteeper :: Bump ->  Bump -> Bump -> Bool
 dsteeper f p1 p2 =
-  assert (res == debugSteeper f p1 p2) $
-  res
-   where res = steeper f p1 p2
+  assert (res == debugSteeper f p1 p2) res
+ where res = steeper f p1 p2
 
 -- | The Y coordinate, represented as a fraction, of the intersection of
 -- a given line and the line of diagonals of squares at distance
 -- @d@ from (0, 0).
 intersect :: Line -> Distance -> (Int, Int)
 intersect (B(x, y), B(xf, yf)) d =
-  assert (allB (>= 0) [x, y, xf, yf]) $
-  ((1 + d)*(yf - y) + y*xf - x*yf, (xf - x) + (yf - y))
+  assert (allB (>= 0) [x, y, xf, yf])
+    ((1 + d)*(yf - y) + y*xf - x*yf, (xf - x) + (yf - y))
 {-
 Derivation of the formula:
 The intersection point (xt, yt) satisfies the following equalities:
@@ -148,7 +146,7 @@ debugLine line@(B(x1, y1), B(x2, y2))
       (False, "crosses diagonal above 1: " ++ show line)
   | otherwise = (True, "")
  where
-  (n, k)  = intersect line 0
+  (n, k)  = line `intersect` 0
   (q, r)  = if k == 0 then (0, 0) else n `divMod` k
   crossL0 = q < 0  -- q truncated toward negative infinity
   crossG1 = q >= 1 && (q > 1 || r /= 0)

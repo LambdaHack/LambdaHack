@@ -93,7 +93,7 @@ createOps ContentDef{getSymbol, getName, getFreq, content, validate} =
       offenders = validate content
   in assert (allB correct content) $
      assert (L.null offenders `blame` ("content failed validation: " :: Text,
-                                       offenders)) $
+                                       offenders))
      Ops
        { osymbol = getSymbol . okind
        , oname = getName . okind

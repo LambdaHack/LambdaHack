@@ -79,7 +79,7 @@ nullReport (Report l) = null l
 
 -- | Construct a singleton set of messages.
 singletonReport :: Msg -> Report
-singletonReport m = addMsg emptyReport m
+singletonReport = addMsg emptyReport
 
 -- TODO: Differentiate from msgAdd. Generally, invent more informative names.
 -- | Add message to the end of report.

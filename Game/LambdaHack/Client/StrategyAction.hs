@@ -81,7 +81,7 @@ reacquireTgt fper aid btarget factionAbilities = do
                 && Ability.Chase `elem` actorAbilities
       closest :: Strategy (Maybe Target)
       closest =
-        let distB p = chessDist lxsize (bpos b) p
+        let distB = chessDist lxsize (bpos b)
             foeDist = map (\(_, body) -> distB (bpos body)) visFoes
             minDist | null foeDist = maxBound
                     | otherwise = minimum foeDist
@@ -203,7 +203,7 @@ pickup actor s =
 
 melee :: ActorId -> State -> Point -> Strategy CmdSer
 melee actor s fpos =
-  foeAdjacent .=> (returN "melee" $ MoveSer actor dir)
+  foeAdjacent .=> returN "melee" (MoveSer actor dir)
  where
   Level{lxsize} = sdungeon s EM.! blid
   Actor{bpos, blid} = getActorBody actor s
@@ -254,7 +254,7 @@ rangedFreq cops actor disco s fpos =
                 in (kik, Effect.effectToBenefit (jeffect i)),
       benefit > 0,
       -- Wasting weapons and armour would be too cruel to the player.
-      isymbol ik `elem` (ritemProject $ Kind.stdRuleset corule)]
+      isymbol ik `elem` ritemProject (Kind.stdRuleset corule)]
 
 toolsFreq :: Kind.COps -> ActorId -> Discovery -> State -> Frequency CmdSer
 toolsFreq cops actor disco s =
@@ -362,7 +362,7 @@ moveStrategy cops actor s mFoe =
   openableHere pos = Tile.hasFeature cotile F.Openable $ lvl `at` pos
   accessibleHere = accessible cops lvl bpos
   fact = sfactionD s EM.! bfid
-  friends = actorList (not . (isAtWar fact)) blid s
+  friends = actorList (not . isAtWar fact) blid s
   noFriends | asight mk = unoccupied friends
             | otherwise = const True
   isSensible l = noFriends l && (accessibleHere l || openableHere l)

@@ -10,6 +10,7 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Key (mapWithKeyM_)
 import qualified Data.Map.Strict as M
+import Data.Maybe
 import Data.Text (Text)
 import Data.Tuple (swap)
 
@@ -92,7 +93,7 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
         let gleader = Nothing
         return Faction{..}
       actorColors = cycle Color.brightCol
-      humanColors = [Color.BrWhite] ++ actorColors
+      humanColors = Color.BrWhite : actorColors
       computerColors = drop (length (playersHuman players) - 1) actorColors
   lHuman <-
     zipWithM (rawCreate True) (playersHuman players) humanColors
@@ -187,7 +188,7 @@ populateDungeon = do
         laid <- forM ps $ \ (n, p) ->
           addHero side p lid heroName (Just n)
         mleader <- getsState $ gleader . (EM.! side) . sfactionD
-        when (mleader == Nothing) $
+        when (isNothing mleader) $
           execCmdAtomic $ LeadFactionA side Nothing (Just $ head laid)
   mapM_ initialHeroes arenas
 
@@ -195,7 +196,7 @@ populateDungeon = do
 -- from each other and from any stairs.
 findEntryPoss :: Kind.COps -> Level -> Int -> Rnd [Point]
 findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lstair} k =
-  let cminStairDist = chessDist lxsize (fst lstair) (snd lstair)
+  let cminStairDist = uncurry (chessDist lxsize) lstair
       dist poss cmin l _ =
         all (\pos -> chessDist lxsize l pos > cmin) poss
       tryFind _ 0 = return []

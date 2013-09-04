@@ -86,9 +86,9 @@ posCmdAtomic cmd = case cmd of
   HasteActorA aid _ -> singleAid aid
   PathActorA aid _ _ -> singleAid aid
   ColorActorA aid _ _ -> singleAid aid
-  QuitFactionA _ _ _ -> return PosAll
+  QuitFactionA{} -> return PosAll
   LeadFactionA fid _ _ -> return $ PosFidAndSer fid
-  DiplFactionA _ _ _ _ -> return PosAll
+  DiplFactionA{} -> return PosAll
   AlterTileA lid p _ _ -> return $ PosSight lid [p]
   SearchTileA lid p _ _ -> return $ PosSight lid [p]
   SpotTileA lid ts -> do
@@ -108,14 +108,14 @@ posCmdAtomic cmd = case cmd of
   AgeGameA _ ->  return PosAll
   DiscoverA lid p _ _ -> return $ PosSight lid [p]
   CoverA lid p _ _ -> return $ PosSight lid [p]
-  PerceptionA _ _ _ -> return PosNone
+  PerceptionA{} -> return PosNone
   RestartA fid _ _ _ _ -> return $ PosFid fid
   RestartServerA _ -> return PosSer
   ResumeA fid _ -> return $ PosFid fid
   ResumeServerA _ -> return PosSer
   KillExitA fid -> return $ PosFid fid
-  SaveExitA -> return $ PosAll
-  SaveBkpA -> return $ PosAll
+  SaveExitA -> return PosAll
+  SaveBkpA -> return PosAll
 
 posSfxAtomic :: MonadActionRO m => SfxAtomic -> m PosAtomic
 posSfxAtomic cmd = case cmd of
@@ -139,7 +139,7 @@ posSfxAtomic cmd = case cmd of
     return $ PosSight lid [pa, p]
   EffectD aid _ -> singleAid aid
   MsgFidD fid _ -> return $ PosFid fid
-  MsgAllD _ -> return $ PosAll
+  MsgAllD _ -> return PosAll
   DisplayPushD fid -> return $ PosFid fid
   DisplayDelayD fid -> return $ PosFid fid
 
@@ -167,18 +167,18 @@ resetsFovAtomic cmd = case cmd of
   DestroyActorA _ body _ -> return $ Just [bfid body]
   SpotActorA _ body _ -> return $ Just [bfid body]
   LoseActorA _ body _ -> return $ Just [bfid body]
-  CreateItemA _ _ _ _ -> return $ Just []  -- unless shines
-  DestroyItemA _ _ _ _ -> return $ Just []  -- ditto
+  CreateItemA{} -> return $ Just []  -- unless shines
+  DestroyItemA{} -> return $ Just []  -- ditto
   MoveActorA aid _ _ -> fmap Just $ fidOfAid aid  -- assumption: has no light
 -- TODO: MoveActorCarryingLIghtA _ _ _ -> return Nothing
   DisplaceActorA source target -> do
     sfid <- fidOfAid source
     tfid <- fidOfAid target
-    if source == target
-      then return $ Just []
-      else return $ Just $ sfid ++ tfid
-  MoveItemA _ _ _ _ -> return $ Just []  -- unless shiny
-  AlterTileA _ _ _ _ -> return Nothing  -- even if pos not visible initially
+    return $ Just $ if source == target
+                    then []
+                    else sfid ++ tfid
+  MoveItemA{} -> return $ Just []  -- unless shiny
+  AlterTileA{} -> return Nothing  -- even if pos not visible initially
   _ -> return $ Just []
 
 fidOfAid :: MonadActionRO m => ActorId -> m [FactionId]

@@ -88,17 +88,18 @@ mzipPairs :: (Point, Point) -> (Maybe AttrChar, Maybe AttrChar)
           -> [(Point, AttrChar)]
 mzipPairs (p1, p2) (mattr1, mattr2) =
   let mzip (pos, mattr) = fmap (\x -> (pos, x)) mattr
-  in if p1 /= p2
-     then catMaybes [mzip (p1, mattr1), mzip (p2, mattr2)]
-     else -- If actor affects himself, show only the effect, not the action.
-          catMaybes [mzip (p1, mattr1)]
+  in catMaybes $ if p1 /= p2
+                 then [mzip (p1, mattr1), mzip (p2, mattr2)]
+                 else -- If actor affects himself, show only the effect,
+                      -- not the action.
+                      [mzip (p1, mattr1)]
 
 restrictAnim :: ES.EnumSet Point -> Animation -> Animation
 restrictAnim vis (Animation as) =
   let f imap =
         let common = EM.intersection imap $ EM.fromSet (const ()) vis
           in if EM.null common then Nothing else Just common
-  in Animation $ catMaybes $ map f as
+  in Animation $ mapMaybe f as
 
 -- | Attack animation. A part of it also reused for self-damage and healing.
 twirlSplash :: (Point, Point) -> Color -> Color -> Animation

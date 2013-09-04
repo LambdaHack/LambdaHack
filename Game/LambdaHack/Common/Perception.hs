@@ -95,14 +95,13 @@ diffPer per1 per2 =
 smellFromActors :: Kind.COps -> State -> PerActor -> PerceptionVisible
 smellFromActors Kind.COps{coactor=Kind.Ops{okind}} s perActor =
   let actorCanSmell aid =
-        if EM.notMember aid $ sactorD s
-        then -- If actor is just created, it can already be in Perception
-             -- sent to the client, but not in the client's state.
-             -- We assume the actor's nose doesn't work yet on first turn.
-             -- TODO: assume so on the server, too, or overhaul smelling again.
-             False
-        else let b = getActorBody aid s
-             in asmell $ okind $ bkind b
+        -- If actor is just created, it can already be in Perception
+        -- sent to the client, but not in the client's state.
+        -- We assume the actor's nose doesn't work yet on first turn.
+        -- TODO: assume so on the server, too, or overhaul smelling again.
+        not (EM.notMember aid $ sactorD s)
+        && let b = getActorBody aid s
+           in asmell $ okind $ bkind b
       visSmell = filter (actorCanSmell . fst) $ EM.assocs perActor
       setSmell = map (pvisible . snd) visSmell
   in PerceptionVisible $ ES.unions setSmell

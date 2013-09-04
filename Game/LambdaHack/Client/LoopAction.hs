@@ -27,7 +27,7 @@ initCli putSt = do
       putSt sCops
       putClient cli
       return $ Left msg
-    Right msg -> do  -- First visit ever, use the initial state.
+    Right msg ->  -- First visit ever, use the initial state.
       return $ Right msg
 
 loopAI :: (MonadConnClient CmdClientAI m)
@@ -65,12 +65,12 @@ loopUI cmdClientUISem = do
   msg <- initCli $ \s -> cmdClientUISem $ CmdAtomicUI $ ResumeServerA s
   cmd1 <- readConnServer
   case (msg, cmd1) of
-    (Left _msg1, CmdAtomicUI ResumeA{}) -> do
+    (Left _msg1, CmdAtomicUI ResumeA{}) ->
       cmdClientUISem cmd1
       -- TODO: use msg1
     (Left _, CmdAtomicUI RestartA{}) -> do
       cmdClientUISem cmd1
-      msgAdd $ "Starting a new game (and ignoring an old client savefile)."
+      msgAdd "Starting a new game (and ignoring an old client savefile)."
     (Right msg1, CmdAtomicUI ResumeA{}) ->
       error $ T.unpack $ "Savefile of client " <> showT side <> " not usable. Can't join the party. Please remove all savefiles manually and restart. Savefile subsystem said: " <> msg1
     (Right msg1, CmdAtomicUI RestartA{}) -> do

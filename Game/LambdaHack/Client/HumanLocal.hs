@@ -84,7 +84,7 @@ viewedLevel = do
   dungeon <- getsState sdungeon
   stgtMode <- getsClient stgtMode
   let tgtId = maybe arena tgtLevelId stgtMode
-  return $! (tgtId, dungeon EM.! tgtId)
+  return (tgtId, dungeon EM.! tgtId)
 
 -- TODO: probably move somewhere (Level?)
 -- | Produces a textual description of the terrain and items at an already
@@ -226,10 +226,10 @@ partyAfterLeader leader = do
   faction <- getsState $ bfid . getActorBody leader
   allA <- getsState $ EM.assocs . sactorD
   s <- getState
-  let hs9 = catMaybes $ map (tryFindHeroK s faction) [0..9]
+  let hs9 = mapMaybe (tryFindHeroK s faction) [0..9]
       factionA = filter (\(_, body) ->
         not (bproj body) && bfid body == faction) allA
-      hs = hs9 ++ (deleteFirstsBy ((==) `on` fst) factionA hs9)
+      hs = hs9 ++ deleteFirstsBy ((==) `on` fst) factionA hs9
       i = fromMaybe (-1) $ findIndex ((== leader) . fst) hs
       (lt, gt) = (take i hs, drop (i + 1) hs)
   return $ gt ++ lt
@@ -488,7 +488,7 @@ displayMainMenu = do
         in snd . mapAccumL over bindings
       mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule
       menuOverlay =  -- TODO: switch to Text and use T.justifyLeft
-        overwrite $ pasteVersion $ map T.unpack $ stripFrame $ mainMenuArt
+        overwrite $ pasteVersion $ map T.unpack $ stripFrame mainMenuArt
   case menuOverlay of
     [] -> assert `failure` "empty Main Menu overlay"
     hd : tl -> do
@@ -519,13 +519,13 @@ endTargeting accept = do
     fact <- getsState $ (EM.! side) . sfactionD
     ms <- getsState $ actorNotProjAssocs (isAtWar fact) lid
     case target of
-      Just TEnemy{} -> do
+      Just TEnemy{} ->
         -- If in enemy targeting mode, switch to the enemy under
         -- the current cursor position, if any.
         case find (\ (_im, m) -> Just (bpos m) == scursor) ms of
           Just (im, m)  ->
             let tgt = Just $ TEnemy im (bpos m)
-            in modifyClient $ updateTarget leader (const $ tgt)
+            in modifyClient $ updateTarget leader (const tgt)
           Nothing -> return ()
       _ -> case scursor of
         Nothing -> return ()

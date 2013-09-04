@@ -70,7 +70,7 @@ queryAI oldAid = do
           -- Visibility ignored --- every foe is visible by somebody.
           foes <- getsState $ actorNotProjAssocs (isAtWar fact) arena
           let f (aid, b) =
-                let distB p = chessDist lxsize (bpos b) p
+                let distB = chessDist lxsize (bpos b)
                     foeDist = map (\(_, body) -> distB (bpos body)) foes
                     minDist | null foeDist = maxBound
                             | otherwise = minimum foeDist
@@ -105,7 +105,7 @@ queryAIPick aid = do
     modifyClient $ updateTarget aid (const btarget)
   stratAction <- actionStrategy aid factionAbilities
   -- Run the AI: chose an action from those given by the AI strategy.
-  action <- rndToAction $ frequency $ bestVariant $ stratAction
+  action <- rndToAction $ frequency $ bestVariant stratAction
   let _debug = T.unpack
         $ "HandleAI abilities:"  <+> showT factionAbilities
         <>          ", symbol:"  <+> showT (bsymbol body)
@@ -166,9 +166,9 @@ humanCommand msgRunAbort = do
               -- Depends on whether slastKey
               -- is needed in other parts of code.
               modifyClient (\st -> st {slastKey = Just km})
-              if (Just km == lastKey)
-                then cmdHumanSem Clear
-                else cmdHumanSem cmd
+              cmdHumanSem $ if Just km == lastKey
+                            then Clear
+                            else cmd
             Nothing -> let msgKey = "unknown command <" <> K.showKM km <> ">"
                        in abortWith msgKey
         -- The command was aborted or successful and if the latter,

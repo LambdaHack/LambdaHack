@@ -85,7 +85,7 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
       initPer
   -- Loop, communicating with clients.
   let loop = do
-        let run lid = handleActors cmdSerSem lid
+        let run = handleActors cmdSerSem
             factionArena fact = do
               let isSpawning = isSpawningFact cops fact
                   -- TODO; This is a significant advantage of human spawners;
@@ -159,7 +159,7 @@ handleActors cmdSerSem lid = do
   s <- getState
   let -- Actors of the same faction move together.
       -- TODO: insert wrt the order, instead of sorting
-      isLeader (aid, b) = not $ Just aid == gleader (factionD EM.! bfid b)
+      isLeader (aid, b) = Just aid /= gleader (factionD EM.! bfid b)
       order = Ord.comparing $
         ((>= 0) . bhp . snd) &&& bfid . snd &&& isLeader &&& bsymbol . snd
       (atime, as) = EM.findMin prio
@@ -167,7 +167,7 @@ handleActors cmdSerSem lid = do
       mnext | EM.null prio = Nothing  -- no actor alive, wait until it spawns
             | otherwise = if atime > time
                           then Nothing  -- no actor is ready for another move
-                          else Just $ head $ sortBy order ams
+                          else Just $ minimumBy order ams
   case mnext of
     _ | quit -> return ()
     Nothing -> return ()
@@ -265,15 +265,12 @@ advanceTime :: MonadAtomic m => ActorId -> m ()
 advanceTime aid = do
   Kind.COps{coactor} <- getsState scops
   b <- getsState $ getActorBody aid
-  if bhp b < 0 && bproj b || maybe False null (bpath b)
-    then
-      -- Don't update move time, so move ASAP, so the projectile
-      -- corpse vanishes ASAP.
-      return ()
-    else do
-      let speed = actorSpeed coactor b
-          t = ticksPerMeter speed
-      execCmdAtomic $ AgeActorA aid t
+  -- Don't update move time, so move ASAP, so the projectile
+  -- corpse vanishes ASAP.
+  unless (bhp b < 0 && bproj b || maybe False null (bpath b)) $ do
+    let speed = actorSpeed coactor b
+        t = ticksPerMeter speed
+    execCmdAtomic $ AgeActorA aid t
 
 -- | Generate a monster, possibly.
 generateMonster :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
@@ -294,7 +291,7 @@ generateMonster lid = do
 rollSpawnPos :: Kind.COps -> ES.EnumSet Point -> LevelId -> Level -> State
              -> Rnd Point
 rollSpawnPos Kind.COps{cotile} visible lid Level{ltile, lxsize, lstair} s = do
-  let cminStairDist = chessDist lxsize (fst lstair) (snd lstair)
+  let cminStairDist = uncurry (chessDist lxsize) lstair
       inhabitants = actorNotProjList (const True) lid s
       isLit = Tile.isLit cotile
       distantAtLeast d p _ =
@@ -344,7 +341,7 @@ regenerateLevelHP lid = do
            then Nothing
            else Just a
   toRegen <-
-    getsState $ catMaybes . map approve . actorNotProjAssocs (const True) lid
+    getsState $ mapMaybe approve . actorNotProjAssocs (const True) lid
   mapM_ (\aid -> execCmdAtomic $ HealActorA aid 1) toRegen
 
 -- | Continue or exit or restart the game.

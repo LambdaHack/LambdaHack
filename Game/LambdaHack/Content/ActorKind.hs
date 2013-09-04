@@ -3,14 +3,15 @@ module Game.LambdaHack.Content.ActorKind
   ( ActorKind(..), avalidate
   ) where
 
+import Control.Arrow ((&&&))
 import qualified Data.List as L
 import qualified Data.Ord as Ord
 import Data.Text (Text)
 
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Color
-import qualified Game.LambdaHack.Common.Random as Random
 import Game.LambdaHack.Common.Misc
+import qualified Game.LambdaHack.Common.Random as Random
 import Game.LambdaHack.Common.Time
 
 -- TODO: make all but a few fields optional in some way, so that, a.g.,
@@ -36,7 +37,7 @@ data ActorKind = ActorKind
 -- Make sure actor kinds can be told apart on the level map.
 avalidate :: [ActorKind] -> [ActorKind]
 avalidate l =
-  let cmp = Ord.comparing (\ ka -> (asymbol ka, acolor ka))
+  let cmp = Ord.comparing $ asymbol &&& acolor
       eq ka1 ka2 = cmp ka1 ka2 == Ord.EQ
       sorted = L.sortBy cmp l
       nubbed = L.nubBy eq sorted

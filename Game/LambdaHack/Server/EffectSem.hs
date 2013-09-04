@@ -124,10 +124,10 @@ effectWound nDm power source target = do
     else do
       -- Damage the target.
       execCmdAtomic $ HealActorA target deltaHP
-      if source == target then
-        execSfxAtomic $ EffectD target $ Effect.Heal deltaHP
-      else
-        execSfxAtomic $ EffectD target $ Effect.Hurt nDm deltaHP{-hack-}
+      execSfxAtomic $ EffectD target $
+        if source == target
+        then Effect.Heal deltaHP
+        else Effect.Hurt nDm deltaHP{-hack-}
       return True
 
 -- ** Mindprobe
@@ -289,7 +289,7 @@ spawnMonsters ps lid = assert (not $ null ps) $ do
         in if fspawn kind <= 0
            then Nothing
            else Just (fspawn kind, (kind, fid))
-  case catMaybes $ map f $ EM.assocs factionD of
+  case mapMaybe f $ EM.assocs factionD of
     [] -> return ()  -- no faction spawns
     spawnList -> do
       let freq = toFreq "spawn" spawnList
@@ -298,7 +298,7 @@ spawnMonsters ps lid = assert (not $ null ps) $ do
         mk <- rndToAction $ opick (fname spawnKind) (const True)
         addMonster mk bfid p lid
       mleader <- getsState $ gleader . (EM.! bfid) . sfactionD
-      when (mleader == Nothing) $
+      when (isNothing mleader) $
         execCmdAtomic $ LeadFactionA bfid Nothing (Just $ head laid)
 
 -- | Create a new monster on the level, at a given position

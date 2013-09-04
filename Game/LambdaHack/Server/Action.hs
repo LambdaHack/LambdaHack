@@ -15,7 +15,6 @@ module Game.LambdaHack.Server.Action
   , rndToAction, fovMode, resetFidPerception, getPerFid
   ) where
 
-import Data.Key (mapWithKeyM, mapWithKeyM_)
 import Control.Concurrent
 import Control.Concurrent.STM (TQueue, atomically, newTQueueIO)
 import qualified Control.Concurrent.STM as STM
@@ -23,41 +22,42 @@ import Control.Exception (finally)
 import Control.Monad
 import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
+import Data.Key (mapWithKeyM, mapWithKeyM_)
 import Data.List
 import Data.Maybe
 import qualified Data.Text.IO as T
+import System.Directory
 import System.IO (stderr)
 import System.IO.Unsafe (unsafePerformIO)
 import qualified System.Random as R
-import System.Directory
 import System.Time
 
 import Game.LambdaHack.Common.Action
-import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
+import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.ClientCmd
-import Game.LambdaHack.Common.ServerCmd
-import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Common.Faction
+import qualified Game.LambdaHack.Common.HighScore as HighScore
+import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Common.ServerCmd
+import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Common.Tile as Tile
+import Game.LambdaHack.Content.RuleKind
+import qualified Game.LambdaHack.Frontend as Frontend
 import Game.LambdaHack.Server.Action.ActionClass
 import qualified Game.LambdaHack.Server.Action.ConfigIO as ConfigIO
-import qualified Game.LambdaHack.Common.HighScore as HighScore
 import qualified Game.LambdaHack.Server.Action.Save as Save
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.State
-import Game.LambdaHack.Common.State
-import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.File
-import qualified Game.LambdaHack.Frontend as Frontend
-import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.Item
 
 fovMode :: MonadServer m => m FovMode
 fovMode = do
@@ -186,13 +186,12 @@ registerScore status fid = do
       (Nothing, Killed b) ->
         getsState $ snd . calculateTotal (bfid b) (blid b) (Just b)
       _ -> return 0
-    if total == 0 then return ()
-    else do
+    unless (total == 0) $ do
       config <- getsServer sconfig
       -- Re-read the table in case it's changed by a concurrent game.
       table <- restoreScore config
       time <- getsState stime
-      date <- liftIO $ getClockTime
+      date <- liftIO getClockTime
       let (ntable, _) = HighScore.register table total time status date
       liftIO $
         encodeEOF (configScoresFile config) (ntable :: HighScore.ScoreTable)
@@ -302,7 +301,7 @@ updateConn executorUI executorAI = do
   -- Spawn and kill client threads.
   let toSpawn = newD EM.\\ oldD
       fdict fid = fst $ fst
-                  $ (fromMaybe (assert `failure` fid))
+                  $ fromMaybe (assert `failure` fid)
                   $ EM.lookup fid newD
       fromM = Frontend.fromMulti Frontend.connMulti
   liftIO $ void $ takeMVar fromM  -- stop Frontend
@@ -357,8 +356,8 @@ forkChild io = do
 speedupCOps :: Bool -> Kind.COps -> Kind.COps
 speedupCOps allClear copsSlow@Kind.COps{cotile=tile} =
   let ospeedup = Tile.speedup allClear tile
-      cotile = tile {Kind.ospeedup}
-  in copsSlow {Kind.cotile}
+      cotile = tile {Kind.ospeedup = ospeedup}
+  in copsSlow {Kind.cotile = cotile}
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: MonadServer m => Rnd a -> m a

@@ -17,12 +17,12 @@ import qualified System.Random as R
 import System.Time
 
 import Game.LambdaHack.Client.Config
-import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
@@ -78,7 +78,7 @@ data Target =
 -- | Initial game client state.
 defStateClient :: History -> ConfigUI -> FactionId -> Bool
                -> StateClient
-defStateClient shistory sconfigUI _sside sisAI = do
+defStateClient shistory sconfigUI _sside sisAI =
   StateClient
     { stgtMode = Nothing
     , scursor = Nothing

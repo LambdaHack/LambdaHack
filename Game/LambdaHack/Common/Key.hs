@@ -109,7 +109,7 @@ instance Binary KM where
   get = do
     key <- get
     modifier <- get
-    return $ KM {..}
+    return KM {..}
 
 -- Common and terse names for keys.
 showKey :: Key -> Text

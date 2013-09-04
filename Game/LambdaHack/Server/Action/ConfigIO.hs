@@ -132,7 +132,7 @@ parseConfigRules dataDir cp =
   let configSelfString = let CP conf = cp in CF.to_string conf
       configCaves =
         let section = getItems cp "caves"
-            readCaves = EM.fromList . map (toEnum *** (first T.pack))
+            readCaves = EM.fromList . map (toEnum *** first T.pack)
         in M.fromList $ map (T.pack *** (readCaves . read)) section
       configPlayers =
         let section = getItems cp "players"

@@ -38,7 +38,7 @@ instance MonadAction ActionSer where
     ActionSer $ modify $ \serS -> serS {serState = s}
 
 instance MonadServer ActionSer where
-  getServer      = ActionSer $ gets $ serServer
+  getServer      = ActionSer $ gets serServer
   getsServer   f = ActionSer $ gets $ f . serServer
   modifyServer f =
     ActionSer $ modify $ \serS -> serS {serServer = f $ serServer serS}
@@ -47,7 +47,7 @@ instance MonadServer ActionSer where
   liftIO         = ActionSer . IO.liftIO
 
 instance MonadConnServer ActionSer where
-  getDict      = ActionSer $ gets $ serDict
+  getDict      = ActionSer $ gets serDict
   getsDict   f = ActionSer $ gets $ f . serDict
   modifyDict f =
     ActionSer $ modify $ \serS -> serS {serDict = f $ serDict serS}

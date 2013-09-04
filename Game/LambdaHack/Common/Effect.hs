@@ -52,7 +52,7 @@ effectTrav Dominate _ = return Dominate
 effectTrav (SummonFriend p) _ = return $ SummonFriend p
 effectTrav (SpawnMonster p) _ = return $ SpawnMonster p
 effectTrav (CreateItem p) _ = return $ CreateItem p
-effectTrav ApplyPerfume _ = return $ ApplyPerfume
+effectTrav ApplyPerfume _ = return ApplyPerfume
 effectTrav (Regeneration a) f = do
   b <- f a
   return $ Regeneration b

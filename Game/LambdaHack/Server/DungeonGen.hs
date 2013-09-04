@@ -4,6 +4,7 @@ module Game.LambdaHack.Server.DungeonGen
   ( FreshDungeon(..), dungeonGen
   ) where
 
+import Control.Arrow (first)
 import Control.Monad
 import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
@@ -32,7 +33,7 @@ convertTileMaps :: Rnd (Kind.Id TileKind) -> Int -> Int -> TileMapXY
                 -> Rnd TileMap
 convertTileMaps cdefTile cxsize cysize ltile = do
   let bounds = (origin, toPoint cxsize $ PointXY (cxsize - 1, cysize - 1))
-      assocs = map (\ (xy, t) -> (toPoint cxsize xy, t)) (EM.assocs ltile)
+      assocs = map (first (toPoint cxsize)) (EM.assocs ltile)
   pickedTiles <- replicateM (cxsize * cysize) cdefTile
   return $ Kind.listArray bounds pickedTiles Kind.// assocs
 

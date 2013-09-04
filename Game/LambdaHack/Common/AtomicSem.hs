@@ -87,7 +87,7 @@ createActorA aid body ais = do
   modifyState $ updateActorD $ EM.alter f aid
   -- Add actor to @sprio@.
   let g Nothing = Just [aid]
-      g (Just l) = assert (not (aid `elem` l) `blame` (aid, body, l))
+      g (Just l) = assert (aid `notElem` l `blame` (aid, body, l))
                    $ Just $ aid : l
   updateLevel (blid body) $ updatePrio $ EM.alter g (btime body)
   -- Actor's items may or may not be already present in @sitemD@,
@@ -275,7 +275,7 @@ quitFactionA fid fromSt toSt = assert (fromSt /= toSt) $ do
 
 -- The previous leader is assumed to be alive.
 leadFactionA :: MonadAction m
-             => FactionId -> (Maybe ActorId) -> (Maybe ActorId) -> m ()
+             => FactionId -> Maybe ActorId -> Maybe ActorId -> m ()
 leadFactionA fid source target = assert (source /= target) $ do
   fact <- getsState $ (EM.! fid) . sfactionD
   assert (source == gleader fact `blame` (fid, source, target, fact)) skip
@@ -344,9 +344,8 @@ loseTileA lid ts = assert (not $ null ts) $ do
       adj tileMap = assert (matches tileMap ts) $ tileMap Kind.// tu
   updateLevel lid $ updateTile adj
   let f (_, t1) =
-        case Tile.isExplorable cotile t1 of
-          True -> updateLevel lid $ \lvl -> lvl {lseen = lseen lvl - 1}
-          _ -> return ()
+        when (Tile.isExplorable cotile t1) $
+          updateLevel lid $ \lvl -> lvl {lseen = lseen lvl - 1}
   mapM_ f ts
 
 alterSmellA :: MonadAction m
@@ -385,10 +384,10 @@ ageGameA delta = assert (delta /= timeZero) $
 
 restartA :: MonadAction m
          => FactionId -> Discovery -> FactionPers -> State -> m ()
-restartA _ _ _ s = putState s
+restartA _ _ _ = putState
 
 restartServerA :: MonadAction m =>  State -> m ()
-restartServerA s = putState s
+restartServerA = putState
 
 resumeServerA :: MonadAction m =>  State -> m ()
-resumeServerA s = putState s
+resumeServerA = putState
