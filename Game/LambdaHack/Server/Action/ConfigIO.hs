@@ -140,12 +140,11 @@ parseConfigRules dataDir cp =
       configScenario =
         let section = getItems cp "scenario"
         in M.fromList $ map (T.pack *** read) section
+      configFirstDeathEnds = get cp "engine" "firstDeathEnds"
       configFovMode = get cp "engine" "fovMode"
       configAppDataDir = dataDir
       configScoresFile = dataDir </> get cp "file" "scoresFile"
       configRulesCfgFile = dataDir </> "config.rules"
-      configExtraHeroes = get cp "hero" "extraHeroes"
-      configFirstDeathEnds = get cp "hero" "firstDeathEnds"
       configHeroNames =
         let toNumber (ident, name) =
               case stripPrefix "HeroName_" ident of

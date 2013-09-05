@@ -33,6 +33,7 @@ data Faction = Faction
   , gquit     :: !(Maybe Status)          -- ^ cause of game end/exit
   , gleader   :: !(Maybe ActorId)
   , gcolor    :: !Color.Color             -- ^ color of actors or their frames
+  , ginitial  :: !Int                     -- ^ number of initial actors
   }
   deriving (Show, Eq)
 
@@ -119,6 +120,7 @@ instance Binary Faction where
     put gquit
     put gleader
     put gcolor
+    put ginitial
   get = do
     gkind <- get
     gname <- get
@@ -128,4 +130,5 @@ instance Binary Faction where
     gquit <- get
     gleader <- get
     gcolor <- get
+    ginitial <- get
     return Faction{..}

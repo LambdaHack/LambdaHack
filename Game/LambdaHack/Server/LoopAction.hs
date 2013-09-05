@@ -100,7 +100,7 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
         factionD <- getsState sfactionD
         marenas <- mapM factionArena $ EM.elems factionD
         let arenas = ES.toList $ ES.fromList $ catMaybes marenas
-        assert (not $ null arenas) skip
+        assert (not $ null arenas) skip  -- no 2 solo spawners scenario
         mapM_ run arenas
         quit <- getsServer squit
         if quit then do
@@ -286,7 +286,7 @@ generateMonster lid = do
   when rc $ do
     let allPers = ES.unions $ map (totalVisible . (EM.! lid)) $ EM.elems pers
     pos <- rndToAction $ rollSpawnPos cops allPers lid lvl s
-    spawnMonsters [pos] lid
+    spawnMonsters [pos] lid (const True)
 
 rollSpawnPos :: Kind.COps -> ES.EnumSet Point -> LevelId -> Level -> State
              -> Rnd Point

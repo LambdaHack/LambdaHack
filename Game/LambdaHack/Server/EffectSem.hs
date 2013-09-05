@@ -272,15 +272,15 @@ effectSpawnMonster power target = do
   Kind.COps{cotile} <- getsState scops
   tm <- getsState (getActorBody target)
   ps <- getsState $ nearbyFreePoints cotile (const True) (bpos tm) (blid tm)
-  spawnMonsters (take power ps) (blid tm)
+  spawnMonsters (take power ps) (blid tm) (const True)
   return True
 
 -- | Spawn monsters of any spawning faction, friendly or not.
 -- To be used for spontaneous spawning of monsters and for the spawning effect.
 spawnMonsters :: (MonadAtomic m, MonadServer m)
-              => [Point] -> LevelId
+              => [Point] -> LevelId -> ((FactionId, Faction) -> Bool)
               -> m ()
-spawnMonsters ps lid = assert (not $ null ps) $ do
+spawnMonsters ps lid filt = assert (not $ null ps) $ do
   Kind.COps{ coactor=Kind.Ops{opick}
            , cofact=Kind.Ops{okind} } <- getsState scops
   factionD <- getsState sfactionD
@@ -289,7 +289,7 @@ spawnMonsters ps lid = assert (not $ null ps) $ do
         in if fspawn kind <= 0
            then Nothing
            else Just (fspawn kind, (kind, fid))
-  case mapMaybe f $ EM.assocs factionD of
+  case mapMaybe f $ filter filt $ EM.assocs factionD of
     [] -> return ()  -- no faction spawns
     spawnList -> do
       let freq = toFreq "spawn" spawnList

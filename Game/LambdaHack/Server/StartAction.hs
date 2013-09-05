@@ -80,7 +80,7 @@ reinitGame = do
 createFactions :: Kind.COps -> Players -> Rnd FactionDict
 createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
                         , costrat=Kind.Ops{opick=sopick} } players = do
-  let rawCreate isHuman (gname, fType) gcolor = do
+  let rawCreate isHuman (gname, fType, ginitial) gcolor = do
         gkind <- opick fType (const True)
         let fk = okind gkind
             gdipl = EM.empty  -- fixed below
@@ -170,27 +170,30 @@ populateDungeon = do
   factionD <- getsState sfactionD
   config <- getsServer sconfig
   let heroNames = configHeroNames config : repeat []
-      notSpawning (_, fact) = not $ isSpawningFact cops fact
-      needInitialCrew = filter notSpawning $ EM.assocs factionD
+      needInitialCrew = EM.assocs factionD
       getEntryLevel (_, fact) = fentry $ okind $ gkind fact
       arenas = ES.toList $ ES.fromList $ map getEntryLevel needInitialCrew
-      initialHeroes lid = do
+      initialActors lid = do
         lvl <- getsLevel lid id
         let arenaFactions = filter ((== lid) . getEntryLevel) needInitialCrew
         entryPoss <- rndToAction
                      $ findEntryPoss cops lvl (length arenaFactions)
-        mapM_ (arenaHeroes lid) $ zip3 arenaFactions entryPoss heroNames
-      arenaHeroes lid ((side, _), ppos, heroName) = do
+        mapM_ (arenaActors lid) $ zip3 arenaFactions entryPoss heroNames
+      arenaActors _ ((_, Faction{ginitial = 0}), _, _) = return ()
+      arenaActors lid ((side, fact@Faction{ginitial}), ppos, heroName) = do
         psFree <-
           getsState $ nearbyFreePoints
                         cotile (Tile.hasFeature cotile F.CanActor) ppos lid
-        let ps = take (1 + configExtraHeroes config) $ zip [0..] psFree
-        laid <- forM ps $ \ (n, p) ->
-          addHero side p lid heroName (Just n)
-        mleader <- getsState $ gleader . (EM.! side) . sfactionD
-        when (isNothing mleader) $
-          execCmdAtomic $ LeadFactionA side Nothing (Just $ head laid)
-  mapM_ initialHeroes arenas
+        let ps = take ginitial $ zip [0..] psFree
+        forM_ ps $ \ (n, p) ->
+          if isSpawningFact cops fact
+          then spawnMonsters [p] lid ((== side) . fst)
+          else do
+            aid <- addHero side p lid heroName (Just n)
+            mleader <- getsState $ gleader . (EM.! side) . sfactionD
+            when (isNothing mleader) $
+              execCmdAtomic $ LeadFactionA side Nothing (Just aid)
+  mapM_ initialActors arenas
 
 -- | Find starting postions for all factions. Try to make them distant
 -- from each other and from any stairs.

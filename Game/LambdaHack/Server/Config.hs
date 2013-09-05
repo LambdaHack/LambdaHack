@@ -23,14 +23,12 @@ data Config = Config
     -- scenario
   , configScenario       :: !(Map Text Scenario)
     -- engine
+  , configFirstDeathEnds :: !Bool
   , configFovMode        :: !FovMode
     -- files
   , configAppDataDir     :: !FilePath
   , configScoresFile     :: !FilePath
   , configRulesCfgFile   :: !FilePath
-    -- heroes
-  , configExtraHeroes    :: !Int
-  , configFirstDeathEnds :: !Bool
     -- heroNames
   , configHeroNames      :: ![(Int, Text)]
   }
@@ -39,8 +37,8 @@ data Config = Config
 type Caves = EM.EnumMap LevelId (Text, Bool)
 
 data Players = Players
-  { playersHuman    :: [(Text, Text)]
-  , playersComputer :: [(Text, Text)]
+  { playersHuman    :: [(Text, Text, Int)]
+  , playersComputer :: [(Text, Text, Int)]
   , playersEnemy    :: [(Text, Text)]
   , playersAlly     :: [(Text, Text)]
   }
@@ -90,7 +88,6 @@ instance Binary Config where
     put configAppDataDir
     put configScoresFile
     put configRulesCfgFile
-    put configExtraHeroes
     put configFirstDeathEnds
     put configHeroNames
   get = do
@@ -102,7 +99,6 @@ instance Binary Config where
     configAppDataDir     <- get
     configScoresFile     <- get
     configRulesCfgFile   <- get
-    configExtraHeroes    <- get
     configFirstDeathEnds <- get
     configHeroNames      <- get
     return Config{..}
