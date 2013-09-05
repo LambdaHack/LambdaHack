@@ -27,6 +27,7 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
+import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
@@ -182,15 +183,17 @@ populateDungeon = do
         mapM_ (arenaActors lid) $ zip3 arenaFactions entryPoss heroNames
       arenaActors _ ((_, Faction{ginitial = 0}), _, _) = return ()
       arenaActors lid ((side, fact@Faction{ginitial}), ppos, heroName) = do
+        time <- getsState $ getLocalTime lid
+        let ntime = timeAdd time (timeScale timeClip (fromEnum side))
         psFree <-
           getsState $ nearbyFreePoints
                         cotile (Tile.hasFeature cotile F.CanActor) ppos lid
         let ps = take ginitial $ zip [0..] psFree
         forM_ ps $ \ (n, p) ->
           if isSpawningFact cops fact
-          then spawnMonsters [p] lid ((== side) . fst)
+          then spawnMonsters [p] lid ((== side) . fst) ntime
           else do
-            aid <- addHero side p lid heroName (Just n)
+            aid <- addHero side p lid heroName (Just n) ntime
             mleader <- getsState $ gleader . (EM.! side) . sfactionD
             when (isNothing mleader) $
               execCmdAtomic $ LeadFactionA side Nothing (Just aid)

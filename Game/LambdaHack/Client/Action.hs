@@ -239,6 +239,8 @@ getKeyOverlayCommand :: MonadClientUI m => Overlay -> m K.KM
 getKeyOverlayCommand overlay = do
   frame <- drawOverlay ColorFull overlay
   keyb <- askBinding
+  -- Give the previous client time to display his frames.
+  liftIO $ threadDelay 1000
   km <- promptGetKey [] frame
   return $! fromMaybe km $ M.lookup km $ kmacro keyb
 

@@ -215,22 +215,22 @@ summonFriends :: (MonadAtomic m, MonadServer m)
 summonFriends bfid ps lid = do
   Kind.COps{ coactor=coactor@Kind.Ops{opick}
            , cofact=Kind.Ops{okind} } <- getsState scops
+  time <- getsState $ getLocalTime lid
   factionD <- getsState sfactionD
   let fact = okind $ gkind $ factionD EM.! bfid
   forM_ ps $ \ p -> do
     mk <- rndToAction $ opick (fname fact) (const True)
     if mk == heroKindId coactor
-      then addHero bfid p lid [] Nothing
-      else addMonster mk bfid p lid
+      then addHero bfid p lid [] Nothing time
+      else addMonster mk bfid p lid time
   -- No leader election needed, bebause an alive actor of the same faction
   -- causes the effect, so there is already a leader.
 
 addActor :: (MonadAtomic m, MonadServer m)
          => Kind.Id ActorKind -> FactionId -> Point -> LevelId -> Int
-         -> Maybe Char -> Maybe Text -> Maybe Color.Color
+         -> Maybe Char -> Maybe Text -> Maybe Color.Color -> Time
          -> m ActorId
-addActor mk bfid pos lid hp bsymbol bname bcolor = do
-  time <- getsState $ getLocalTime lid
+addActor mk bfid pos lid hp bsymbol bname bcolor time = do
   let m = actorTemplate mk bsymbol bname bcolor Nothing hp Nothing pos lid time
                         bfid False
   acounter <- getsServer sacounter
@@ -241,9 +241,9 @@ addActor mk bfid pos lid hp bsymbol bname bcolor = do
 -- TODO: apply this special treatment only to actors with symbol '@'.
 -- | Create a new hero on the current level, close to the given position.
 addHero :: (MonadAtomic m, MonadServer m)
-        => FactionId -> Point -> LevelId -> [(Int, Text)] -> Maybe Int
+        => FactionId -> Point -> LevelId -> [(Int, Text)] -> Maybe Int -> Time
         -> m ActorId
-addHero bfid ppos lid configHeroNames mNumber = do
+addHero bfid ppos lid configHeroNames mNumber time = do
   Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
   fact <- getsState $ (EM.! bfid) . sfactionD
   let kId = heroKindId coactor
@@ -256,7 +256,7 @@ addHero bfid ppos lid configHeroNames mNumber = do
       color = gcolor fact
       startHP = hp - (hp `div` 5) * min 3 n
   addActor
-    kId bfid ppos lid startHP (Just symbol) (Just name) (Just color)
+    kId bfid ppos lid startHP (Just symbol) (Just name) (Just color) time
 
 -- | Find a hero name in the config file, or create a stock name.
 findHeroName :: [(Int, Text)] -> Int -> Text
@@ -272,15 +272,16 @@ effectSpawnMonster power target = do
   Kind.COps{cotile} <- getsState scops
   tm <- getsState (getActorBody target)
   ps <- getsState $ nearbyFreePoints cotile (const True) (bpos tm) (blid tm)
-  spawnMonsters (take power ps) (blid tm) (const True)
+  time <- getsState $ getLocalTime (blid tm)
+  spawnMonsters (take power ps) (blid tm) (const True) time
   return True
 
 -- | Spawn monsters of any spawning faction, friendly or not.
 -- To be used for spontaneous spawning of monsters and for the spawning effect.
 spawnMonsters :: (MonadAtomic m, MonadServer m)
-              => [Point] -> LevelId -> ((FactionId, Faction) -> Bool)
+              => [Point] -> LevelId -> ((FactionId, Faction) -> Bool) -> Time
               -> m ()
-spawnMonsters ps lid filt = assert (not $ null ps) $ do
+spawnMonsters ps lid filt time = assert (not $ null ps) $ do
   Kind.COps{ coactor=Kind.Ops{opick}
            , cofact=Kind.Ops{okind} } <- getsState scops
   factionD <- getsState sfactionD
@@ -296,7 +297,7 @@ spawnMonsters ps lid filt = assert (not $ null ps) $ do
       (spawnKind, bfid) <- rndToAction $ frequency freq
       laid <- forM ps $ \ p -> do
         mk <- rndToAction $ opick (fname spawnKind) (const True)
-        addMonster mk bfid p lid
+        addMonster mk bfid p lid time
       mleader <- getsState $ gleader . (EM.! bfid) . sfactionD
       when (isNothing mleader) $
         execCmdAtomic $ LeadFactionA bfid Nothing (Just $ head laid)
@@ -304,12 +305,12 @@ spawnMonsters ps lid filt = assert (not $ null ps) $ do
 -- | Create a new monster on the level, at a given position
 -- and with a given actor kind and HP.
 addMonster :: (MonadAtomic m, MonadServer m)
-           => Kind.Id ActorKind -> FactionId -> Point -> LevelId
+           => Kind.Id ActorKind -> FactionId -> Point -> LevelId -> Time
            -> m ActorId
-addMonster mk bfid ppos lid = do
+addMonster mk bfid ppos lid time = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   hp <- rndToAction $ rollDice $ ahp $ okind mk
-  addActor mk bfid ppos lid hp Nothing Nothing Nothing
+  addActor mk bfid ppos lid hp Nothing Nothing Nothing time
 
 -- ** CreateItem
 

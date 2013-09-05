@@ -285,7 +285,8 @@ generateMonster lid = do
   when rc $ do
     let allPers = ES.unions $ map (totalVisible . (EM.! lid)) $ EM.elems pers
     pos <- rndToAction $ rollSpawnPos cops allPers lid lvl s
-    spawnMonsters [pos] lid (const True)
+    time <- getsState $ getLocalTime lid
+    spawnMonsters [pos] lid (const True) time
 
 rollSpawnPos :: Kind.COps -> ES.EnumSet Point -> LevelId -> Level -> State
              -> Rnd Point
