@@ -34,5 +34,5 @@ monster = FactionKind
   , fAiLeader = "fullAbility"
   , fAiMember = "fullAbility"
   , fspawn    = 50
-  , fentry    = toEnum 3  -- doesn't matter
+  , fentry    = toEnum 3
   }

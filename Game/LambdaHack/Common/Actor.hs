@@ -83,7 +83,7 @@ data Actor = Actor
 -- will also depend on the cave kind used to build the level.
 monsterGenChance :: Int -> Int -> Rnd Bool
 monsterGenChance depth numMonsters =
-  chance $ 1%(fromIntegral (30 * (numMonsters - depth)) `max` 5)
+  chance $ 1%(fromIntegral (50 * (numMonsters - depth)) `max` 5)
 
 -- | The part of speech describing the actor.
 partActor :: Kind.Ops ActorKind -> Actor -> MU.Part

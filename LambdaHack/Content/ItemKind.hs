@@ -3,11 +3,11 @@
 module Content.ItemKind ( cdefs ) where
 
 import Game.LambdaHack.Common.Color
-import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Content.ItemKind
 
 cdefs :: ContentDef ItemKind
 cdefs = ContentDef
@@ -16,9 +16,9 @@ cdefs = ContentDef
   , getFreq = ifreq
   , validate = ivalidate
   , content =
-      [amulet, dart, gem1, gem2, gem3, currency, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand1, wand2, fist, foot, tentacle, weight]
+      [amulet, dart, gem1, gem2, gem3, currency, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand1, wand2, fist, foot, tentacle]
   }
-amulet,        dart, gem1, gem2, gem3, currency, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand1, wand2, fist, foot, tentacle, weight :: ItemKind
+amulet,        dart, gem1, gem2, gem3, currency, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand1, wand2, fist, foot, tentacle :: ItemKind
 
 gem, potion, scroll, wand :: ItemKind  -- generic templates
 
@@ -72,7 +72,7 @@ gem3 = gem
 currency = ItemKind
   { isymbol  = '$'
   , iname    = "gold piece"
-  , ifreq    = [("dng", 80), ("currency", 1)]
+  , ifreq    = [("dng", 50), ("currency", 1)]
   , iflavour = zipPlain [BrYellow]
   , ieffect  = NoEffect
   , icount   = (RollDice 0 0, RollDice 10 10)
@@ -119,7 +119,7 @@ potion3 = potion
 ring = ItemKind
   { isymbol  = '='
   , iname    = "ring"
-  , ifreq    = [("dng", 10)]
+  , ifreq    = []  -- [("dng", 10)]  -- TODO: make it useful
   , iflavour = zipPlain [White]
   , ieffect  = Searching (RollDice 1 6, RollDice 3 2)
   , icount   = intToDeep 1
@@ -142,6 +142,7 @@ scroll = ItemKind
   }
 scroll1 = scroll
   { ieffect  = SummonFriend 1
+  , ifreq    = [("dng", 2)]
   }
 scroll2 = scroll
   { ieffect  = SpawnMonster 1
@@ -164,7 +165,7 @@ sword = ItemKind
 wand = ItemKind
   { isymbol  = '/'
   , iname    = "wand"
-  , ifreq    = [("dng", 15)]
+  , ifreq    = [("dng", 10)]
   , iflavour = zipFancy brightCol
   , ieffect  = NoEffect
   , icount   = intToDeep 1
@@ -203,12 +204,4 @@ tentacle = sword
   , ieffect  = Hurt (RollDice 3 1) (intToDeep 0)
   , iverbApply   = "hit"
   , iverbProject = "ERROR, please report: iverbProject tentacle"
-  }
-weight = sword
-  { isymbol  = '@'
-  , iname    = "power jump"
-  , ifreq    = [("weight", 100)]
-  , ieffect  = Hurt (RollDice 99 99) (intToDeep 999)
-  , iverbApply   = "squash"
-  , iverbProject = "ERROR, please report: iverbProject weight"
   }
