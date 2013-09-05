@@ -62,9 +62,10 @@ exploreLeader dir = do
 runLeader :: MonadClientUI m => Vector -> m CmdSer
 runLeader dir = do
   leader <- getLeaderUI
-  (dirR, distNew) <- runDir leader (dir, 0)
-  modifyClient $ \cli -> cli {srunning = Just (dirR, distNew)}
-  return $! RunSer leader dirR
+  canR <- canRun leader (dir, 0)
+  when canR $ modifyClient $ \cli -> cli {srunning = Just (dir, 1)}
+  -- Run even if blocked (and then stop), e.g., to open a door.
+  return $! RunSer leader dir
 
 -- * Wait
 

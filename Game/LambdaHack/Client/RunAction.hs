@@ -1,6 +1,6 @@
 -- | Running and disturbance.
 module Game.LambdaHack.Client.RunAction
-  ( runDir, continueRunDir
+  ( canRun, continueRunDir
   ) where
 
 import qualified Data.ByteString.Char8 as BS
@@ -32,17 +32,20 @@ import Game.LambdaHack.Utils.Assert
 -- succeeds much more often than subsequent turns, because most
 -- of the disturbances are ignored, since the player is aware of them
 -- and still explicitly requests a run.
-runDir :: MonadClient m => ActorId -> (Vector, Int) -> m (Vector, Int)
-runDir leader (dir, dist) = do
+canRun :: MonadClient m => ActorId -> (Vector, Int) -> m Bool
+canRun leader (dir, dist) = do
   cops <- getsState scops
   b <- getsState $ getActorBody leader
   lvl <- getsLevel (blid b) id
   stgtMode <- getsClient stgtMode
   assert (isNothing stgtMode `blame` (dir, dist, stgtMode)) skip
+  return $ accessibleDir cops lvl (bpos b) dir
+
+runDir :: MonadClient m => ActorId -> (Vector, Int) -> m (Vector, Int)
+runDir leader (dir, dist) = do
+  canR <- canRun leader (dir, dist)
   let -- Do not count distance if we just open a door.
-      distNew = if accessibleDir cops lvl (bpos b) dir
-                then dist + 1
-                else dist
+      distNew = if canR then dist + 1 else dist
   return (dir, distNew)
 
 -- | Human running mode, determined from the nearby cave layout.
