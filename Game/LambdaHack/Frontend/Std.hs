@@ -14,8 +14,9 @@ import Data.Text.Encoding (encodeUtf8)
 import qualified System.IO as SIO
 
 import Game.LambdaHack.Common.Animation (SingleFrame (..))
-import qualified Game.LambdaHack.Common.Key as K (KM, Key (..), Modifier (..))
 import qualified Game.LambdaHack.Common.Color as Color
+import qualified Game.LambdaHack.Common.Key as K (KM (..), Key (..),
+                                                  Modifier (..))
 
 -- | No session data needs to be maintained by this frontend.
 type FrontendSession = ()
@@ -46,7 +47,7 @@ nextEvent sess mb = do
   let c = BS.head e
   if c == '\n'  -- let \n mark the end of input, for human players
     then nextEvent sess mb
-    else return (keyTranslate c, K.NoModifier)
+    else return K.KM {key = keyTranslate c, modifier = K.NoModifier}
 
 -- | Display a prompt, wait for any key.
 promptGetAnyKey :: FrontendSession -> SingleFrame
