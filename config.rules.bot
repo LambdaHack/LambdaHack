@@ -1,8 +1,0 @@
-; Overriding config file options to help the bot.
-; DumbBot 42 20000000 | LambdaHack > /tmp/log
-
-[dungeon]
-depth: 100
-
-[heroes]
-extraHeroes: 1
