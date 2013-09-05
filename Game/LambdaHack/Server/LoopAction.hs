@@ -10,7 +10,6 @@ import qualified Data.EnumSet as ES
 import Data.List
 import Data.Maybe
 import qualified Data.Ord as Ord
-import Data.Text (Text)
 
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
@@ -59,7 +58,7 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
     Nothing -> do  -- Starting a new game.
       -- Set up commandline debug mode
       modifyServer $ \ser -> ser {sdebugNxt}
-      s <- gameReset cops "campaign"
+      s <- gameReset cops
       let speedup = speedupCOps (sallClear sdebugNxt)
       execCmdAtomic $ RestartServerA $ updateCOps speedup s
       applyDebug sdebugNxt
@@ -363,8 +362,10 @@ endOrLoop updConn loopServer = do
         _ -> False
       campers = filter (isCamper . snd) $ EM.assocs factionD
   case (quitters, campers) of
-    (t : _, _) -> restartGame t updConn loopServer
-    _ | gameOver -> restartGame "campaign" updConn loopServer
+    (t : _, _) -> do
+      modifyServer $ \ser -> ser {scenario = t}
+      restartGame updConn loopServer
+    _ | gameOver -> restartGame updConn loopServer
     (_, []) -> loopServer  -- continue current game
     (_, _ : _) -> do  -- save game and exit
       -- Wipe out the quit flag for the savegame files.
@@ -385,10 +386,10 @@ endOrLoop updConn loopServer = do
       -- Don't call @loopServer@, that is, quit the game loop.
 
 restartGame :: (MonadAtomic m, MonadConnServer m)
-            => Text -> m () -> m () -> m ()
-restartGame t updConn loopServer = do
+            => m () -> m () -> m ()
+restartGame updConn loopServer = do
   cops <- getsState scops
-  s <- gameReset cops t
+  s <- gameReset cops
   execCmdAtomic $ RestartServerA s
   updConn
   initPer

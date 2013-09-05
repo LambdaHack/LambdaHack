@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | Server and client game state types and operations.
 module Game.LambdaHack.Server.State
   ( StateServer(..), emptyStateServer
@@ -7,6 +8,7 @@ module Game.LambdaHack.Server.State
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.HashMap.Strict as HM
+import Data.Text (Text)
 import qualified System.Random as R
 
 import Game.LambdaHack.Common.Actor
@@ -27,6 +29,7 @@ data StateServer = StateServer
   , sundo     :: ![Atomic]      -- ^ atomic commands performed to date
   , sper      :: !Pers          -- ^ perception of all factions
   , srandom   :: !R.StdGen      -- ^ current random generator
+  , scenario  :: !Text          -- ^ current game mode
   , sconfig   :: Config         -- ^ this game's config (including initial RNG)
   , squit     :: !Bool          -- ^ exit the game loop
   , sbkpSave  :: !Bool          -- ^ make backup savefile now
@@ -59,6 +62,7 @@ emptyStateServer =
     , sundo = []
     , sper = EM.empty
     , srandom = R.mkStdGen 42
+    , scenario = "campaign"
     , sconfig = undefined
     , squit = False
     , sbkpSave = False
@@ -86,6 +90,7 @@ instance Binary StateServer where
     put sicounter
     put sundo
     put (show srandom)
+    put scenario
     put sconfig
     put sdebugSer
   get = do
@@ -97,6 +102,7 @@ instance Binary StateServer where
     sicounter <- get
     sundo <- get
     g <- get
+    scenario <- get
     sconfig <- get
     sdebugSer <- get
     let srandom = read g

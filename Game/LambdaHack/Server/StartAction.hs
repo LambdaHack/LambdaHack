@@ -11,7 +11,6 @@ import qualified Data.EnumSet as ES
 import Data.Key (mapWithKeyM_)
 import qualified Data.Map.Strict as M
 import Data.Maybe
-import Data.Text (Text)
 import Data.Tuple (swap)
 
 import Game.LambdaHack.Common.Action
@@ -121,18 +120,19 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
       warFs = mkDipl War allianceFs (swapIx (playersEnemy players))
   return warFs
 
-gameReset :: MonadServer m => Kind.COps -> Text -> m State
-gameReset cops@Kind.COps{coitem, corule} t = do
+gameReset :: MonadServer m => Kind.COps -> m State
+gameReset cops@Kind.COps{coitem, corule} = do
   -- Rules config reloaded at each new game start.
   -- Taking the original config from config file, to reroll RNG, if needed
   -- (the current config file has the RNG rolled for the previous game).
   (sconfig, dungeonSeed, srandom) <- mkConfigRules corule
+  t <- getsServer scenario
   scoreTable <- restoreScore sconfig
   let rnd :: Rnd (FactionDict, FlavourMap, Discovery, DiscoRev,
                   DungeonGen.FreshDungeon)
       rnd = do
         let scenario = case M.lookup t $ configScenario sconfig of
-              Just pl -> pl
+              Just sc -> sc
               Nothing -> assert `failure` "no scenario configuration:" <+> t
             dng = scenarioDungeon scenario
             caves = case M.lookup dng $ configCaves sconfig of
@@ -150,7 +150,8 @@ gameReset cops@Kind.COps{coitem, corule} t = do
   let (faction, sflavour, sdisco, sdiscoRev, DungeonGen.FreshDungeon{..}) =
         St.evalState rnd dungeonSeed
       defState = defStateGlobal freshDungeon freshDepth faction cops scoreTable
-      defSer = emptyStateServer {sdisco, sdiscoRev, sflavour, srandom, sconfig}
+      defSer = emptyStateServer
+                 {sdisco, sdiscoRev, sflavour, srandom, scenario = t, sconfig}
   sdebugNxt <- getsServer sdebugNxt
   putServer defSer {sdebugNxt, sdebugSer = sdebugNxt}
   return defState
