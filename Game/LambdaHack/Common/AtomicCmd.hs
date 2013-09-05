@@ -18,6 +18,7 @@ module Game.LambdaHack.Common.AtomicCmd
   ) where
 
 import Data.Binary
+import Data.Text (Text)
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Actor
@@ -84,7 +85,7 @@ data CmdAtomic =
   | DiscoverA LevelId Point ItemId (Kind.Id ItemKind)
   | CoverA LevelId Point ItemId (Kind.Id ItemKind)
   | PerceptionA LevelId PerActor PerActor
-  | RestartA FactionId Discovery FactionPers State Bool
+  | RestartA FactionId Discovery FactionPers State Bool Text
   | RestartServerA State
   | ResumeA FactionId FactionPers
   | ResumeServerA State

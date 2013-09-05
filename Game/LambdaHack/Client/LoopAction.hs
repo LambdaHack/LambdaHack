@@ -65,9 +65,9 @@ loopUI cmdClientUISem = do
   msg <- initCli $ \s -> cmdClientUISem $ CmdAtomicUI $ ResumeServerA s
   cmd1 <- readConnServer
   case (msg, cmd1) of
-    (Left _msg1, CmdAtomicUI ResumeA{}) ->
+    (Left msg1, CmdAtomicUI ResumeA{}) -> do
       cmdClientUISem cmd1
-      -- TODO: use msg1
+      msgAdd msg1
     (Left _, CmdAtomicUI RestartA{}) -> do
       cmdClientUISem cmd1
       msgAdd "Starting a new game (and ignoring an old client savefile)."

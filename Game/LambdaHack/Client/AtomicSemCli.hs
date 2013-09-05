@@ -138,7 +138,7 @@ cmdAtomicSemCli cmd = case cmd of
   DiscoverA lid p iid ik -> discoverA lid p iid ik
   CoverA lid p iid ik -> coverA lid p iid ik
   PerceptionA lid outPA inPA -> perceptionA lid outPA inPA
-  RestartA _ sdisco sfper s sdebugCli -> do
+  RestartA _ sdisco sfper s sdebugCli _ -> do
     side <- getsClient sside
     let fact = sfactionD s EM.! side
     shistory <- getsClient shistory
@@ -330,6 +330,8 @@ drawCmdAtomicUI verbose cmd = case cmd of
                                     "look like an ordinary"
           , objUnkown1, objUnkown2 ]
     msgAdd msg
+  RestartA _ _ _ _ _ t ->
+    msgAdd $ "New game started in" <+> t <+> "mode."
   SaveBkpA | verbose -> msgAdd "Saving backup."
   _ -> return ()
 

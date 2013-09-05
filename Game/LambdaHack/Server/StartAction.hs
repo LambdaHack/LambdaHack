@@ -73,8 +73,9 @@ reinitGame = do
       sdisco = let f ik = isymbol (okind ik) `notElem` misteriousSymbols
                in EM.filter f discoS
   sdebugCli <- getsServer $ sdebugCli . sdebugSer
+  t <- getsServer scenario
   broadcastCmdAtomic
-    $ \fid -> RestartA fid sdisco (pers EM.! fid) defLoc sdebugCli
+    $ \fid -> RestartA fid sdisco (pers EM.! fid) defLoc sdebugCli t
   populateDungeon
 
 createFactions :: Kind.COps -> Players -> Rnd FactionDict
