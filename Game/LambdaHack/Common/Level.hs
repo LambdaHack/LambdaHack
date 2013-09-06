@@ -40,10 +40,14 @@ import Game.LambdaHack.Utils.Assert
 -- | The complete dungeon is a map from level names to levels.
 type Dungeon = EM.EnumMap LevelId Level
 
--- | Levels in the current branch @k@ shallower than the current.
+-- | Levels in the current branch, @k@ levels shallower than the current.
 ascendInBranch :: Dungeon -> LevelId -> Int -> [LevelId]
 ascendInBranch dungeon lid k =
-  let ln = toEnum $ fromEnum lid - k  -- currently just one branch
+  -- Currently there is just one branch, so the computation is simple.
+  let depth = case EM.maxViewWithKey dungeon of
+        Just ((d, _), _) -> fromEnum d
+        Nothing -> assert `failure` (lid, k)
+      ln = toEnum $ max 1 $ min depth $ fromEnum lid - k
   in case EM.lookup ln dungeon of
     Nothing -> []
     Just _ -> [ln]
