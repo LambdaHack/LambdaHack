@@ -72,9 +72,9 @@ cmdAction cmd = case cmd of
   Accept -> acceptHuman helpHuman >> return Nothing
   Clear -> clearHuman >> return Nothing
   History -> historyHuman >> return Nothing
-  MarkVision -> modifyClient toggleMarkVision >> return Nothing
-  MarkSmell -> modifyClient toggleMarkSmell >> return Nothing
-  MarkSuspect -> modifyClient toggleMarkSuspect >> return Nothing
+  MarkVision -> humanMarkVision >> return Nothing
+  MarkSmell -> humanMarkSmell >> return Nothing
+  MarkSuspect -> humanMarkSuspect >> return Nothing
   Help -> displayMainMenu >> return Nothing
 
 -- | If in targeting mode, check if the current level is the same

@@ -9,7 +9,8 @@ module Game.LambdaHack.Client.HumanLocal
   , selectHeroHuman, memberCycleHuman, memberBackHuman
   , inventoryHuman, tgtFloorLeader, tgtEnemyLeader, tgtAscendHuman
   , epsIncrHuman, cancelHuman, displayMainMenu, acceptHuman, clearHuman
-  , historyHuman, helpHuman
+  , historyHuman, humanMarkVision, humanMarkSmell, humanMarkSuspect
+  , helpHuman
     -- * Helper functions useful also elsewhere
   , endTargeting, floorItemOverlay, itemOverlay, viewedLevel, selectLeader
   , stopRunning, lookAt
@@ -579,6 +580,26 @@ historyHuman = do
         <+> "Past messages:"
   slides <- overlayToSlideshow msg $ renderHistory history
   tell slides
+
+-- * MarkVision, MarkSmell, MarkSuspect
+
+humanMarkVision :: MonadClientUI m => m ()
+humanMarkVision = do
+  modifyClient toggleMarkVision
+  cur <- getsClient smarkVision
+  msgAdd $ "Visible area display toggled" <+> if cur then "on." else "off."
+
+humanMarkSmell :: MonadClientUI m => m ()
+humanMarkSmell = do
+  modifyClient toggleMarkSmell
+  cur <- getsClient smarkSmell
+  msgAdd $ "Smell display toggled" <+> if cur then "on." else "off."
+
+humanMarkSuspect :: MonadClientUI m => m ()
+humanMarkSuspect = do
+  modifyClient toggleMarkSuspect
+  cur <- getsClient smarkSuspect
+  msgAdd $ "Suspect terrain display toggled" <+> if cur then "on." else "off."
 
 -- * Help
 
