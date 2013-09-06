@@ -33,11 +33,11 @@
 
 ; [players]
 ; ; Faction "playable" means a random choice from playable factions.
-; campaign: Players { playersHuman = [("Human Player", "hero", 1)], playersComputer = [("Computer Player", "monster", 5)], playersEnemy = [("Human Player", "Computer Player")], playersAlly = [] }
-; skirmish: Players { playersHuman = [("Human Player", "hero", 5)], playersComputer = [("Computer Player", "hero", 5)], playersEnemy = [("Human Player", "Computer Player")], playersAlly = [] }
-; PvP: Players { playersHuman = [("Human Player 1", "hero", 5), ("Human Player 2", "hero", 5)], playersComputer = [], playersEnemy = [("Human Player 1", "Human Player 2")], playersAlly = [] }
-; Coop: Players { playersHuman = [("Human Player 1", "hero", 1), ("Human Player 2", "hero", 1)], playersComputer = [("Computer Player", "monster", 5)], playersEnemy = [("Human Player 1", "Computer Player"), ("Human Player 2", "Computer Player")], playersAlly = [("Human Player 1", "Human Player 2")] }
-; defense: Players { playersHuman = [("Human Player", "monster", 1)], playersComputer = [("Computer Player 1", "hero", 1), ("Computer Player 2", "hero", 2), ("Computer Player 3", "hero", 3)], playersEnemy = [("Human Player", "Computer Player 1"), ("Human Player", "Computer Player 2"), ("Human Player", "Computer Player 3")], playersAlly = [("Computer Player 1", "Computer Player 2"), ("Computer Player 1", "Computer Player 3"), ("Computer Player 2", "Computer Player 3")] }
+; campaign: Players { playersHuman = [("Human Hero", "hero", 1)], playersComputer = [("Computer Monster", "monster", 5)], playersEnemy = [("Human Hero", "Computer Monster")], playersAlly = [] }
+; skirmish: Players { playersHuman = [("Human Hero", "hero", 5)], playersComputer = [("Computer Hero", "hero", 5)], playersEnemy = [("Human Hero", "Computer Hero")], playersAlly = [] }
+; PvP: Players { playersHuman = [("Human Hero 1", "hero", 5), ("Human Hero 2", "hero", 5)], playersComputer = [], playersEnemy = [("Human Hero 1", "Human Hero 2")], playersAlly = [] }
+; Coop: Players { playersHuman = [("Human Hero 1", "hero", 1), ("Human Hero 2", "hero", 1)], playersComputer = [("Computer Monster", "monster", 5)], playersEnemy = [("Human Hero 1", "Computer Monster"), ("Human Hero 2", "Computer Monster")], playersAlly = [("Human Hero 1", "Human Hero 2")] }
+; defense: Players { playersHuman = [("Human Monster", "monster", 1)], playersComputer = [("Computer Hero 1", "hero", 1), ("Computer Hero 2", "hero", 2), ("Computer Hero 3", "hero", 3)], playersEnemy = [("Human Monster", "Computer Hero 1"), ("Human Monster", "Computer Hero 2"), ("Human Monster", "Computer Hero 3")], playersAlly = [("Computer Hero 1", "Computer Hero 2"), ("Computer Hero 1", "Computer Hero 3"), ("Computer Hero 2", "Computer Hero 3")] }
 
 ; [scenario]
 ; campaign: Scenario { scenarioPlayers = "campaign", scenarioDungeon = "campaign" }
