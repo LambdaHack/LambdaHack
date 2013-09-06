@@ -176,11 +176,10 @@ actorOpenDoor actor dir exploration = do
   lvl <- getsLevel lid id
   let serverTile = lvl `at` dpos
       freshClientTile = hideTile cotile dpos lvl
-  t <- if exploration && serverTile /= freshClientTile then do
-         -- Search the tile.
-         execCmdAtomic $ SearchTileA lid dpos freshClientTile serverTile
-         return serverTile  -- found
-       else return freshClientTile  -- not searched
+      -- TODO: running doesn't open doors if they are hidden,
+      -- even if known to the actor. No apparent way to solve that.
+      t | exploration = serverTile  -- will be found
+        | otherwise   = freshClientTile  -- won't be searched
   -- Try to open the door.
   if Tile.hasFeature cotile F.Openable t
     then triggerSer actor dpos
@@ -350,10 +349,15 @@ applySer actor iid container = do
 triggerSer :: (MonadAtomic m, MonadServer m)
            => ActorId -> Point -> m Bool
 triggerSer aid dpos = do
-  Kind.COps{cotile=Kind.Ops{okind, opick}} <- getsState scops
+  Kind.COps{cotile=cotile@Kind.Ops{okind, opick}} <- getsState scops
   b <- getsState $ getActorBody aid
   let lid = blid b
   lvl <- getsLevel lid id
+  let serverTile = lvl `at` dpos
+      freshClientTile = hideTile cotile dpos lvl
+  when (serverTile /= freshClientTile) $ do
+    -- Search, in case some actors (of other factions?) don't know this tile.
+    execCmdAtomic $ SearchTileA lid dpos freshClientTile serverTile
   let f feat =
         case feat of
           F.Cause ef -> do
@@ -367,15 +371,14 @@ triggerSer aid dpos = do
             if EM.null $ lvl `atI` dpos
               then if unoccupied as dpos
                  then do
-                   let fromTile = lvl `at` dpos
                    toTile <- rndToAction $ opick tgroup (const True)
-                   execCmdAtomic $ AlterTileA lid dpos fromTile toTile
+                   execCmdAtomic $ AlterTileA lid dpos serverTile toTile
                    return True
 -- TODO: take care of AI using this function (aborts on some of the features, succes on others, etc.)
                  else execFailure (bfid b) "blocked"  -- by actors
             else execFailure (bfid b) "jammed"  -- by items
           _ -> return False
-  bs <- mapM f $ TileKind.tfeature $ okind $ lvl `at` dpos
+  bs <- mapM f $ TileKind.tfeature $ okind serverTile
   return $! or bs  -- TODO: stop after first failure, probably
 
 -- * SetPathSer

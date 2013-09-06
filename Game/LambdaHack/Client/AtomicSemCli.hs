@@ -51,7 +51,7 @@ cmdAtomicFilterCli cmd = case cmd of
     if t /= fromTile
       then return []  -- either already aware, or totally misguided
       else return [ cmd  -- for the message
-                  , AlterTileA lid p fromTile toTile   -- for dungeon change
+                  , AlterTileA lid p fromTile toTile  -- to reveal the tile
                   ]
   DiscoverA _ _ iid _ -> do
     disco <- getsClient sdisco

@@ -323,8 +323,8 @@ bumpTile leader ts dpos = do
   -- TODO: let the user choose whether to attack or activate.
   case filter (\feat -> Tile.hasFeature cotile feat t) triggerFeats of
     [] -> guessBump cotile triggerFeats t
-    feat : _ -> do  -- trigger the first that matches
-      verifyTrigger leader feat
+    fs -> do
+      mapM_ (verifyTrigger leader) fs
       return $ TriggerSer leader dpos
 
 triggerFeatures :: [Trigger] -> [F.Feature]
