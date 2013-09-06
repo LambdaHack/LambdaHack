@@ -33,7 +33,7 @@
 
 ; [players]
 ; ; Faction "playable" means a random choice from playable factions.
-; campaign: Players { playersHuman = [("Human Player", "hero", 1)], playersComputer = [("Computer Player", "monster", 0)], playersEnemy = [("Human Player", "Computer Player")], playersAlly = [] }
+; campaign: Players { playersHuman = [("Human Player", "hero", 1)], playersComputer = [("Computer Player", "monster", 5)], playersEnemy = [("Human Player", "Computer Player")], playersAlly = [] }
 ; skirmish: Players { playersHuman = [("Human Player", "hero", 5)], playersComputer = [("Computer Player", "hero", 5)], playersEnemy = [("Human Player", "Computer Player")], playersAlly = [] }
 ; PvP: Players { playersHuman = [("Human Player 1", "hero", 5), ("Human Player 2", "hero", 5)], playersComputer = [], playersEnemy = [("Human Player 1", "Human Player 2")], playersAlly = [] }
 ; Coop: Players { playersHuman = [("Human Player 1", "hero", 1), ("Human Player 2", "hero", 1)], playersComputer = [("Computer Player", "monster", 5)], playersEnemy = [("Human Player 1", "Computer Player"), ("Human Player 2", "Computer Player")], playersAlly = [("Human Player 1", "Human Player 2")] }
