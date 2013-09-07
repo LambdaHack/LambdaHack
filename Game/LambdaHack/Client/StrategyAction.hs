@@ -242,7 +242,7 @@ rangedFreq cops actor disco s fpos =
   eps = 0
   bl = bla lxsize lysize eps bpos fpos  -- TODO:make an arg of projectGroupItem
   throwFreq bag multi container =
-    [ (benefit * multi,
+    [ (- benefit * multi,
        ProjectSer actor fpos eps iid (container iid))
     | (iid, i) <- map (\iid -> (iid, getItemBody iid s))
                   $ EM.keys bag,
