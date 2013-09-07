@@ -148,7 +148,7 @@ doLook = do
                Nothing       -> "[targeting current" <> vis <> "]"
       -- Check if there's something lying around at current position.
       is = lvl `atI` p
-  -- Show general info about current p.
+  -- Show general info about current position.
   lookMsg <- lookAt True canSee p enemyMsg
   modifyClient (\st -> st {slastKey = Nothing})
   if EM.size is <= 2 then do
@@ -254,6 +254,9 @@ selectLeader actor = do
       assert (not (bproj pbody) `blame` (actor, pbody)) skip
       -- Move the cursor, if active, to the new level.
       when (isJust stgtMode) $ setTgtId $ blid pbody
+      -- Inform about items, etc.
+      lookMsg <- lookAt False True (bpos pbody) ""
+      msgAdd lookMsg
       -- Don't continue an old run, if any.
       stopRunning
       return True
