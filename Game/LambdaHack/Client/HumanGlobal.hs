@@ -342,7 +342,7 @@ verifyTrigger leader feat = case feat of
     spawning <- getsState $ flip isSpawningFaction side
     when spawning $ abortWith
       "This is the way out, but where would you go in this alien world?"
-    go <- displayYesNo "This is the way out. Really leave now?"
+    go <- displayYesNo ColorFull "This is the way out. Really leave now?"
     unless go $ abortWith "Game resumed."
     (_, total) <- getsState $ calculateTotal side (blid b) Nothing
     when (total == 0) $ do
@@ -394,7 +394,8 @@ gameRestartHuman t = do
   let msg = "You just requested a new" <+> t <+> "game."
   b1 <- displayMore ColorFull msg
   unless b1 $ neverMind True
-  b2 <- displayYesNo "Current progress will be lost! Really restart the game?"
+  b2 <- displayYesNo ColorBW
+          "Current progress will be lost! Really restart the game?"
   unless b2 $ abortWith "Yea, would be a pity to leave them to die."
   leader <- getLeaderUI
   return $ GameRestartSer leader t
@@ -403,7 +404,7 @@ gameRestartHuman t = do
 
 gameExitHuman :: (MonadClientAbort m, MonadClientUI m) => m CmdSer
 gameExitHuman = do
-  b <- displayYesNo "Really save and exit?"
+  b <- displayYesNo ColorFull "Really save and exit?"
   if b then do
     leader <- getLeaderUI
     return $ GameExitSer leader

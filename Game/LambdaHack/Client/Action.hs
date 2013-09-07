@@ -273,10 +273,10 @@ displayMore dm prompt = do
 
 -- | Print a yes/no question and return the player's answer. Use black
 -- and white colours to turn player's attention to the choice.
-displayYesNo :: MonadClientUI m => Msg -> m Bool
-displayYesNo prompt = do
+displayYesNo :: MonadClientUI m => ColorMode -> Msg -> m Bool
+displayYesNo dm prompt = do
   sli <- promptToSlideshow $ prompt <+> yesnoMsg
-  frame <- drawOverlay ColorBW $ head $ runSlideshow sli
+  frame <- drawOverlay dm $ head $ runSlideshow sli
   getYesNo frame
 
 -- TODO: generalize getInitConfirms and displayChoiceUI to a single op

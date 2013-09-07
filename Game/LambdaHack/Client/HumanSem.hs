@@ -10,6 +10,7 @@ import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 
 import Game.LambdaHack.Client.Action
+import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.HumanCmd
 import Game.LambdaHack.Client.HumanGlobal
 import Game.LambdaHack.Client.HumanLocal
@@ -113,10 +114,12 @@ moveHuman v = do
           return Nothing
         else do
           unless (bproj tb || isAtWar sfact (bfid tb)) $ do
-            go <- displayYesNo "This attack will start a war. Are you sure?"
+            go <- displayYesNo ColorBW
+                    "This attack will start a war. Are you sure?"
             unless go $ abortWith "Attack canceled."
           when (not (bproj tb) && isAllied sfact (bfid tb)) $ do
-            go <- displayYesNo "You are bound by an alliance. Really attack?"
+            go <- displayYesNo ColorBW
+                    "You are bound by an alliance. Really attack?"
             unless go $ abortWith "Attack canceled."
           fmap Just $ moveLeader dir
       _ -> fmap Just $
