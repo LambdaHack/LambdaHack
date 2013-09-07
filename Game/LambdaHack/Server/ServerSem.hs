@@ -182,13 +182,16 @@ actorOpenDoor actor dir exploration = do
         | otherwise   = freshClientTile  -- won't be searched
   -- Try to open the door.
   if Tile.hasFeature cotile F.Openable t
-    then triggerSer actor dpos
-    else if Tile.hasFeature cotile F.Closable t
-         then execFailure (bfid body) "already open"
-         else if exploration && serverTile /= freshClientTile
-              then return True  -- searching costs
-                   -- TODO: don't add to history (add a flag to report msgs)
-              else execFailure (bfid body) "never mind"  -- free bump
+    then triggerSer actor dpos  -- searches, too
+    else do
+      when (exploration && serverTile /= freshClientTile) $
+        execCmdAtomic $ SearchTileA lid dpos freshClientTile serverTile
+      if Tile.hasFeature cotile F.Closable t
+        then execFailure (bfid body) "already open"
+        else if exploration && serverTile /= freshClientTile
+             then return True  -- searching costs
+                  -- TODO: don't add to history (add a flag to report msgs)
+             else execFailure (bfid body) "never mind"  -- free bump
 
 -- * RunSer
 
@@ -355,7 +358,7 @@ triggerSer aid dpos = do
   lvl <- getsLevel lid id
   let serverTile = lvl `at` dpos
       freshClientTile = hideTile cotile dpos lvl
-  when (serverTile /= freshClientTile) $ do
+  when (serverTile /= freshClientTile) $
     -- Search, in case some actors (of other factions?) don't know this tile.
     execCmdAtomic $ SearchTileA lid dpos freshClientTile serverTile
   let f feat =
