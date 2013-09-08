@@ -201,22 +201,25 @@ populateDungeon = do
   mapM_ initialActors arenas
 
 -- | Find starting postions for all factions. Try to make them distant
--- from each other and from any stairs.
+-- from each other. If only one faction, also move it away from any stairs.
 findEntryPoss :: Kind.COps -> Level -> Int -> Rnd [Point]
-findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lstair} k =
-  let cminStairDist = uncurry (chessDist lxsize) lstair
+findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lysize, lstair} k =
+  let factionDist = max lxsize lysize - 5
       dist poss cmin l _ =
         all (\pos -> chessDist lxsize l pos > cmin) poss
       tryFind _ 0 = return []
       tryFind ps n = do
-        np <- findPosTry 20 ltile  -- 20 only, for unpredictability
-                [ dist ps $ 2 * cminStairDist
-                , dist ps cminStairDist
-                , dist ps $ cminStairDist `div` 2
-                , dist ps $ cminStairDist `div` 4
+        np <- findPosTry 40 ltile
+                [ dist ps factionDist
+                , dist ps $ 2 * factionDist `div` 3
+                , dist ps $ factionDist `div` 2
+                , dist ps $ factionDist `div` 3
+                , dist ps $ factionDist `div` 4
+                , dist ps $ factionDist `div` 6
                 , const (Tile.hasFeature cotile F.CanActor)
                 ]
         nps <- tryFind (np : ps) (n - 1)
         return $ np : nps
-      stairPoss = [fst lstair, snd lstair]
+      stairPoss | k == 1 = [fst lstair, snd lstair]
+                | otherwise = []
   in tryFind stairPoss k

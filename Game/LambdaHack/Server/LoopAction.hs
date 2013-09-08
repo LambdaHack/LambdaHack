@@ -290,20 +290,20 @@ generateMonster lid = do
 
 rollSpawnPos :: Kind.COps -> ES.EnumSet Point -> LevelId -> Level -> State
              -> Rnd Point
-rollSpawnPos Kind.COps{cotile} visible lid Level{ltile, lxsize, lstair} s = do
-  let cminStairDist = uncurry (chessDist lxsize) lstair
+rollSpawnPos Kind.COps{cotile} visible lid Level{ltile, lxsize, lysize} s = do
+  let factionDist = max lxsize lysize - 5
       inhabitants = actorNotProjList (const True) lid s
       isLit = Tile.isLit cotile
       distantAtLeast d p _ =
         all (\b -> chessDist lxsize (bpos b) p > d) inhabitants
   findPosTry 40 ltile
     [ \ _ t -> not (isLit t)  -- no such tiles on some maps
-    , distantAtLeast cminStairDist
-    , distantAtLeast $ cminStairDist `div` 2
+    , distantAtLeast factionDist
+    , distantAtLeast $ factionDist `div` 2
     , \ p _ -> not $ p `ES.member` visible
-    , distantAtLeast $ cminStairDist `div` 3
+    , distantAtLeast $ factionDist `div` 3
     , \ _ t -> Tile.hasFeature cotile F.CanActor t  -- in reachable area
-    , distantAtLeast $ cminStairDist `div` 4
+    , distantAtLeast $ factionDist `div` 4
     , distantAtLeast 3  -- otherwise a fast actor can walk and hit in one turn
     , \ p t -> Tile.hasFeature cotile F.Walkable t
                && unoccupied (actorList (const True) lid s) p
