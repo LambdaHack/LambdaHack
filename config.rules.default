@@ -33,11 +33,11 @@
 
 ; [players]
 ; ; Faction "playable" means a random choice from playable factions.
-; campaign: Players { playersHuman = [("Human Hero", "hero", 1)], playersComputer = [("Computer Monster", "monster", 5)], playersEnemy = [("Human Hero", "Computer Monster")], playersAlly = [] }
-; skirmish: Players { playersHuman = [("Human Hero", "hero", 3)], playersComputer = [("Computer Hero", "hero", 3)], playersEnemy = [("Human Hero", "Computer Hero")], playersAlly = [] }
-; PvP: Players { playersHuman = [("Human Hero 1", "hero", 3), ("Human Hero 2", "hero", 3)], playersComputer = [], playersEnemy = [("Human Hero 1", "Human Hero 2")], playersAlly = [] }
-; Coop: Players { playersHuman = [("Human Hero 1", "hero", 1), ("Human Hero 2", "hero", 1)], playersComputer = [("Computer Monster", "monster", 5)], playersEnemy = [("Human Hero 1", "Computer Monster"), ("Human Hero 2", "Computer Monster")], playersAlly = [("Human Hero 1", "Human Hero 2")] }
-; defense: Players { playersHuman = [("Human Monster", "monster", 1)], playersComputer = [("Computer Hero 1", "hero", 1), ("Computer Hero 2", "hero", 2), ("Computer Hero 3", "hero", 3)], playersEnemy = [("Human Monster", "Computer Hero 1"), ("Human Monster", "Computer Hero 2"), ("Human Monster", "Computer Hero 3")], playersAlly = [("Computer Hero 1", "Computer Hero 2"), ("Computer Hero 1", "Computer Hero 3"), ("Computer Hero 2", "Computer Hero 3")] }
+; campaign: Players { playersHuman = [("Human Hero Party", "hero", 1)], playersComputer = [("Computer Monster Hive", "monster", 5)], playersEnemy = [("Human Hero Party", "Computer Monster Hive")], playersAlly = [] }
+; skirmish: Players { playersHuman = [("Human Hero Team", "hero", 3)], playersComputer = [("Computer Hero Team", "hero", 3)], playersEnemy = [("Human Hero Team", "Computer Hero Team")], playersAlly = [] }
+; PvP: Players { playersHuman = [("Human Hero Team 1", "hero", 3), ("Human Hero Team 2", "hero", 3)], playersComputer = [], playersEnemy = [("Human Hero Team 1", "Human Hero Team 2")], playersAlly = [] }
+; Coop: Players { playersHuman = [("Human Hero Party 1", "hero", 1), ("Human Hero Party 2", "hero", 1)], playersComputer = [("Computer Monster Hive", "monster", 5)], playersEnemy = [("Human Hero Party 1", "Computer Monster Hive"), ("Human Hero Party 2", "Computer Monster Hive")], playersAlly = [("Human Hero Party 1", "Human Hero Party 2")] }
+; defense: Players { playersHuman = [("Human Monster Hive", "monster", 1)], playersComputer = [("Computer Hero Party 1", "hero", 1), ("Computer Hero Party 2", "hero", 2), ("Computer Hero Party 3", "hero", 3)], playersEnemy = [("Human Monster Hive", "Computer Hero Party 1"), ("Human Monster Hive", "Computer Hero Party 2"), ("Human Monster Hive", "Computer Hero Party 3")], playersAlly = [("Computer Hero Party 1", "Computer Hero Party 2"), ("Computer Hero Party 1", "Computer Hero Party 3"), ("Computer Hero Party 2", "Computer Hero Party 3")] }
 
 ; [scenario]
 ; campaign: Scenario { scenarioPlayers = "campaign", scenarioDungeon = "campaign" }
