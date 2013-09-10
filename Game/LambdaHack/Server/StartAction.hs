@@ -173,7 +173,7 @@ populateDungeon = do
   factionD <- getsState sfactionD
   config <- getsServer sconfig
   let heroNames = configHeroNames config : repeat []
-      needInitialCrew = EM.assocs factionD
+      needInitialCrew = reverse $ EM.assocs factionD
       getEntryLevel (_, fact) = fentry $ okind $ gkind fact
       arenas = ES.toList $ ES.fromList $ map getEntryLevel needInitialCrew
       initialActors lid = do
