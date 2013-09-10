@@ -236,7 +236,7 @@ drawCmdAtomicUI :: MonadClientUI m => Bool -> CmdAtomic -> m ()
 drawCmdAtomicUI verbose cmd = case cmd of
   CreateActorA aid body _ -> do
     when verbose $ actorVerbMU aid body "appear"
-    lookAtMove body
+    lookAtMove aid
   DestroyActorA aid body _ -> do
     side <- getsClient sside
     if bhp body <= 0 && not (bproj body) && bfid body == side then do
@@ -252,9 +252,7 @@ drawCmdAtomicUI verbose cmd = case cmd of
     when (bfid body == side && bhp body <= 0 && not (bproj body)) $ do
       actorVerbMU aid body "be missing in action"
       void $ displayMore ColorFull ""
-  MoveActorA aid _ _ -> do
-    body <- getsState $ getActorBody aid
-    lookAtMove body
+  MoveActorA aid _ _ -> lookAtMove aid
   WaitActorA aid _ _| verbose -> aVerbMU aid "wait"
   DisplaceActorA source target -> displaceActorUI source target
   MoveItemA iid k c1 c2 -> moveItemUI verbose iid k c1 c2
@@ -273,7 +271,7 @@ drawCmdAtomicUI verbose cmd = case cmd of
       actorD <- getsState sactorD
       case EM.lookup source actorD of
         Just sb | bhp sb <= 0 -> assert (not $ bproj sb) $ do
-          -- Regardless who is the leader, give proper names here, not 'you'.
+          -- Regardless who the leader is, give proper names here, not 'you'.
           tb <- getsState $ getActorBody target
           let subject = partActor coactor tb
               object  = partActor coactor sb
@@ -335,14 +333,15 @@ drawCmdAtomicUI verbose cmd = case cmd of
   SaveBkpA | verbose -> msgAdd "Saving backup."
   _ -> return ()
 
-lookAtMove :: MonadClientUI m => Actor -> m ()
-lookAtMove body = do
+lookAtMove :: MonadClientUI m => ActorId -> m ()
+lookAtMove aid = do
+  body <- getsState $ getActorBody aid
   side <- getsClient sside
   tgtMode <- getsClient stgtMode
   when (not (bproj body)
         && bfid body == side
         && isNothing tgtMode) $ do  -- targeting does a more extensive look
-    lookMsg <- lookAt False True (bpos body) ""
+    lookMsg <- lookAt False True (bpos body) aid ""
     msgAdd lookMsg
 
 -- | Sentences such as \"Dog barks loudly.\".
@@ -408,8 +407,8 @@ displaceActorUI source target = do
   let msg = makeSentence [MU.SubjectVerbSg spart "displace", tpart]
   msgAdd msg
   when (bfid sb /= bfid tb) $ do
-    lookAtMove sb
-    lookAtMove tb
+    lookAtMove source
+    lookAtMove target
   let ps = (bpos tb, bpos sb)
   animFrs <- animate (blid sb) $ swapPlaces ps
   displayFrames $ Nothing : animFrs
@@ -555,7 +554,7 @@ drawSfxAtomicUI verbose sfx = case sfx of
                 [MU.CardinalWs nEnemy "howl", "of anger", "can be heard"]
           msgAdd msg
         Effect.Dominate ->
-          if bfid b == side then lookAtMove b
+          if bfid b == side then lookAtMove aid
           else do
             fidName <- getsState $ gname . (EM.! bfid b) . sfactionD
             aVerbMU aid $ MU.Text $ "fall under the influence of" <+> fidName

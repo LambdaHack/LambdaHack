@@ -95,20 +95,23 @@ lookAt :: MonadClientUI m
        => Bool       -- ^ detailed?
        -> Bool       -- ^ can be seen right now?
        -> Point      -- ^ position to describe
+       -> ActorId    -- ^ the actor that looks
        -> Text       -- ^ an extra sentence to print
        -> m Text
-lookAt detailed canSee pos msg = do
+lookAt detailed canSee pos aid msg = do
   Kind.COps{coitem, cotile=Kind.Ops{oname}} <- getsState scops
   (_, lvl) <- viewedLevel
+  subject <- partAidLeader aid
   s <- getState
   let is = lvl `atI` pos
-      prefixSee = MU.Text $ if canSee then "you see" else "you remember"
+      verb = MU.Text $ if canSee then "see" else "remember"
   disco <- getsClient sdisco
   let nWs (iid, k) = partItemWs coitem disco k (getItemBody iid s)
       isd = case detailed of
               _ | EM.size is == 0 -> ""
               _ | EM.size is <= 2 ->
-                makeSentence [prefixSee, MU.WWandW $ map nWs $ EM.assocs is]
+                makeSentence [ MU.SubjectVerbSg subject verb
+                             , MU.WWandW $ map nWs $ EM.assocs is]
               True -> "Objects:"
               _ -> "Objects here."
   if detailed
@@ -141,7 +144,7 @@ doLook = do
               ihabitant
       vis | not $ p `ES.member` totalVisible per = " (not visible)"
           | actorSeesLoc per leader p = ""
-          | otherwise = " (not visible by you)"
+          | otherwise = " (not visible)"
       mode = case target of
                Just TEnemy{} -> "[targeting foe" <> vis <> "]"
                Just TPos{}   -> "[targeting position" <> vis <> "]"
@@ -149,7 +152,7 @@ doLook = do
       -- Check if there's something lying around at current position.
       is = lvl `atI` p
   -- Show general info about current position.
-  lookMsg <- lookAt True canSee p enemyMsg
+  lookMsg <- lookAt True canSee p leader enemyMsg
   modifyClient (\st -> st {slastKey = Nothing})
   if EM.size is <= 2 then do
     slides <- promptToSlideshow (mode <+> lookMsg)
@@ -241,7 +244,7 @@ selectLeader actor = do
   Kind.COps{coactor} <- getsState scops
   leader <- getLeaderUI
   stgtMode <- getsClient stgtMode
-  if actor == leader
+  if leader == actor
     then return False -- already selected
     else do
       pbody <- getsState $ getActorBody actor
@@ -255,7 +258,7 @@ selectLeader actor = do
       -- Move the cursor, if active, to the new level.
       when (isJust stgtMode) $ setTgtId $ blid pbody
       -- Inform about items, etc.
-      lookMsg <- lookAt False True (bpos pbody) ""
+      lookMsg <- lookAt False True (bpos pbody) actor ""
       msgAdd lookMsg
       -- Don't continue an old run, if any.
       stopRunning
