@@ -99,7 +99,7 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
         factionD <- getsState sfactionD
         marenas <- mapM factionArena $ EM.elems factionD
         let arenas = ES.toList $ ES.fromList $ catMaybes marenas
-        assert (not $ null arenas) skip  -- no 2 solo spawners scenario
+        assert (not $ null arenas) skip  -- no 2 solo AI spawners scenario
         mapM_ run arenas
         quit <- getsServer squit
         if quit then do
@@ -131,12 +131,17 @@ endClip arenas = do
     execCmdAtomic SaveBkpA
     saveGameBkp
   -- Regenerate HP and add monsters each turn, not each clip.
-  when (clipMod == 1) $ mapM_ regenerateLevelHP arenas
-  when (clipMod == 2) $ mapM_ generateMonster arenas
+  -- Do this on only one of the arenas to prevent micromanagement,
+  -- e.g., spreading leaders across levels to bump monster generation.
+  when (clipMod == 1) $ do
+    arena <- rndToAction $ oneOf arenas
+    regenerateLevelHP arena
+    generateMonster arena
   -- TODO: a couple messages each clip to many clients is too costly.
   -- Store these on a queue and sum times instead of sending,
   -- until a different command needs to be sent. Include HealActorA
   -- from regenerateLevelHP, but keep it before AgeGameA.
+  -- TODO: this is also needed to keep savefiles small (undo info).
   mapM_ (\lid -> execCmdAtomic $ AgeLevelA lid timeClip) arenas
   execCmdAtomic $ AgeGameA timeClip
 
