@@ -49,8 +49,8 @@ ascendInBranch dungeon lid k =
         Nothing -> assert `failure` (lid, k)
       ln = toEnum $ max 1 $ min depth $ fromEnum lid - k
   in case EM.lookup ln dungeon of
-    Nothing -> []
-    Just _ -> [ln]
+    Just _ | ln /= lid -> [ln]
+    _ -> []
 
 -- | Item container type.
 data Container =
