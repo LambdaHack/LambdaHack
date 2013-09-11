@@ -9,6 +9,7 @@ module Game.LambdaHack.Client.Action.ActionType
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
+import qualified System.Random as R
 
 import Game.LambdaHack.Client.Action.ActionClass
 import Game.LambdaHack.Client.State
@@ -22,7 +23,7 @@ type FunActionCli c a =
    -> ConnServer c                          -- ^ this client connection information
    -> (State -> StateClient -> a -> IO ())
                                       -- ^ continuation
-   -> (Msg -> IO ())                  -- ^ failure/reset continuation
+   -> (R.StdGen -> Msg -> IO ())      -- ^ failure/reset continuation
    -> State                           -- ^ current local state
    -> StateClient                     -- ^ current client state
    -> IO ()
@@ -59,9 +60,10 @@ instance Show (ActionCli c a) where
 instance MonadClientAbort (ActionCli c) where
   tryWith exc m  =
     ActionCli (\c d k a s cli ->
-             let runA msg = runActionCli (exc msg) c d k a s cli
+             let runA srandom msg =
+                   runActionCli (exc msg) c d k a s cli {srandom}
              in runActionCli m c d k runA s cli)
-  abortWith msg  = ActionCli (\_c _d _k a _s _cli -> a msg)
+  abortWith msg  = ActionCli (\_c _d _k a _s cli -> a (srandom cli) msg)
 
 instance MonadActionRO (ActionCli c) where
   getState       = ActionCli (\_c _d k _a s cli -> k s cli s)
@@ -93,9 +95,9 @@ executorCli m sess s cli d =
     sess
     d
     (\_ _ _ -> return ())
-    (\msg -> let err = "unhandled abort for client"
-                       <+> showT (sfactionD s EM.! sside cli)
-                       <+> ":" <+> msg
-             in fail $ T.unpack err)
+    (\_ msg -> let err = "unhandled abort for client"
+                         <+> showT (sfactionD s EM.! sside cli)
+                         <+> ":" <+> msg
+               in fail $ T.unpack err)
     s
     cli

@@ -36,6 +36,7 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -396,7 +397,10 @@ gameRestartHuman t = do
   unless b1 $ neverMind True
   b2 <- displayYesNo ColorBW
           "Current progress will be lost! Really restart the game?"
-  unless b2 $ abortWith "Yea, would be a pity to leave them to die."
+  msg2 <- rndToAction $ oneOf
+            [ "Yea, would be a pity to leave them all to die."
+            , "Yea, a shame to get your own team stranded." ]
+  unless b2 $ abortWith msg2
   leader <- getLeaderUI
   return $ GameRestartSer leader t
 
