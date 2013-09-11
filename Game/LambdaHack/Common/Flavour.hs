@@ -7,6 +7,8 @@ module Game.LambdaHack.Common.Flavour
     zipPlain, zipFancy, stdFlav
   , -- * Accessors
     flavourToColor, flavourToName
+    -- * Assorted
+  , colorToTeamName, colorToPlainName, colorToFancyName
   ) where
 
 import Data.Binary
@@ -68,19 +70,30 @@ colorToPlainName BrWhite   = "white"
 
 -- | Human-readable names, for item colors. The fancy set.
 colorToFancyName :: Color -> Text
-colorToFancyName Black     = "smoky black"
-colorToFancyName Red       = "apple red"
-colorToFancyName Green     = "forest green"
+colorToFancyName Black     = "smoky-black"
+colorToFancyName Red       = "apple-red"
+colorToFancyName Green     = "forest-green"
 colorToFancyName Brown     = "mahogany"
-colorToFancyName Blue      = "royal blue"
+colorToFancyName Blue      = "royal-blue"
 colorToFancyName Magenta   = "indigo"
 colorToFancyName Cyan      = "teal"
-colorToFancyName White     = "silver gray"
+colorToFancyName White     = "silver-gray"
 colorToFancyName BrBlack   = "charcoal"
 colorToFancyName BrRed     = "salmon"
 colorToFancyName BrGreen   = "emerald"
 colorToFancyName BrYellow  = "amber"
-colorToFancyName BrBlue    = "sky blue"
+colorToFancyName BrBlue    = "sky-blue"
 colorToFancyName BrMagenta = "magenta"
 colorToFancyName BrCyan    = "turquoise"
-colorToFancyName BrWhite   = "ghost white"
+colorToFancyName BrWhite   = "ghost-white"
+
+-- | Simple names for team colors (bright colours preferred).
+colorToTeamName :: Color -> Text
+colorToTeamName BrRed     = "red"
+colorToTeamName BrGreen   = "green"
+colorToTeamName BrYellow  = "yellow"
+colorToTeamName BrBlue    = "blue"
+colorToTeamName BrMagenta = "pink"
+colorToTeamName BrCyan    = "cyan"
+colorToTeamName BrWhite   = "white"
+colorToTeamName c = colorToFancyName c

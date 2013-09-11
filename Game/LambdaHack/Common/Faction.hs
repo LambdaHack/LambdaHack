@@ -23,6 +23,7 @@ type FactionDict = EM.EnumMap FactionId Faction
 data Faction = Faction
   { gkind     :: !(Kind.Id FactionKind)   -- ^ the kind of the faction
   , gname     :: !Text                    -- ^ individual name
+  , gconfig   :: !Text                    -- ^ raw name specified in config
   , gAiLeader :: !(Maybe (Kind.Id StrategyKind))
                                           -- ^ AI for the leaders;
                                           -- Nothing means human-controlled
@@ -114,6 +115,7 @@ instance Binary Faction where
   put Faction{..} = do
     put gkind
     put gname
+    put gconfig
     put gAiLeader
     put gAiMember
     put gdipl
@@ -124,6 +126,7 @@ instance Binary Faction where
   get = do
     gkind <- get
     gname <- get
+    gconfig <- get
     gAiLeader <- get
     gAiMember <- get
     gdipl <- get

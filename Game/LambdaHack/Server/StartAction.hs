@@ -6,11 +6,14 @@ module Game.LambdaHack.Server.StartAction
 
 import Control.Monad
 import qualified Control.Monad.State as St
+import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Key (mapWithKeyM_)
 import qualified Data.Map.Strict as M
 import Data.Maybe
+import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Tuple (swap)
 
 import Game.LambdaHack.Common.Action
@@ -19,6 +22,7 @@ import Game.LambdaHack.Common.AtomicCmd
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
+import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -78,10 +82,29 @@ reinitGame = do
     $ \fid -> RestartA fid sdisco (pers EM.! fid) defLoc sdebugCli t
   populateDungeon
 
+mapFromInvFuns :: (Bounded a, Enum a, Ord b) => [a -> b] -> M.Map b a
+mapFromInvFuns =
+  let fromFun f m1 =
+        let invAssocs = map (\c -> (f c, c)) [minBound..maxBound]
+            m2 = M.fromList invAssocs
+        in m2 `M.union` m1
+  in foldr fromFun M.empty
+
+lowercase :: Text -> Text
+lowercase = T.pack . map Char.toLower . T.unpack
+
 createFactions :: Kind.COps -> Players -> Rnd FactionDict
 createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
                         , costrat=Kind.Ops{opick=sopick} } players = do
-  let rawCreate isHuman (gname, fType, ginitial) gcolor = do
+  let rawCreate isHuman (gconfig, fType, ginitial) = do
+        let cmap = mapFromInvFuns
+                     [colorToTeamName, colorToPlainName, colorToFancyName]
+            nameoc = lowercase gconfig
+            prefix | isHuman = "Human"
+                   | otherwise = "Autonomous"
+            (gcolor, gname) = case M.lookup nameoc cmap of
+              Nothing -> (Color.BrWhite, prefix <+> gconfig)
+              Just c -> (c, prefix <+> gconfig <+> "Team")
         gkind <- opick fType (const True)
         let fk = okind gkind
             gdipl = EM.empty  -- fixed below
@@ -93,20 +116,15 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
         gAiMember <- fmap Just $ sopick (fAiMember fk) (const True)
         let gleader = Nothing
         return Faction{..}
-      actorColors = cycle Color.brightCol
-      humanColors = Color.BrWhite : actorColors
-      computerColors = drop (length (playersHuman players) - 1) actorColors
-  lHuman <-
-    zipWithM (rawCreate True) (playersHuman players) humanColors
-  lComputer <-
-    zipWithM (rawCreate False) (playersComputer players) computerColors
+  lHuman <- mapM (rawCreate True) (playersHuman players)
+  lComputer <- mapM (rawCreate False) (playersComputer players)
   let lFs = reverse (zip [toEnum (-1), toEnum (-2)..] lComputer)  -- sorted
             ++ zip [toEnum 1..] lHuman
       swapIx l =
         let ixs =
               let f (name1, name2) =
-                    [ (ix1, ix2) | (ix1, fact1) <- lFs, gname fact1 == name1
-                                 , (ix2, fact2) <- lFs, gname fact2 == name2]
+                    [ (ix1, ix2) | (ix1, fact1) <- lFs, gconfig fact1 == name1
+                                 , (ix2, fact2) <- lFs, gconfig fact2 == name2]
               in concatMap f l
         -- Only symmetry is ensured, everything else is permitted, e.g.,
         -- a faction in alliance with two others that are at war.
