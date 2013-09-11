@@ -245,24 +245,19 @@ addHero :: (MonadAtomic m, MonadServer m)
         -> m ActorId
 addHero bfid ppos lid configHeroNames mNumber time = do
   Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
-  fact <- getsState $ (EM.! bfid) . sfactionD
+  Faction{gcolor, gconfig} <- getsState $ (EM.! bfid) . sfactionD
   let kId = heroKindId coactor
   hp <- rndToAction $ rollDice $ ahp $ okind kId
   mhs <- mapM (\n -> getsState $ \s -> tryFindHeroK s bfid n) [0..9]
   let freeHeroK = elemIndex Nothing mhs
       n = fromMaybe (fromMaybe 100 freeHeroK) mNumber
       symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
-      name = findHeroName configHeroNames n
-      color = gcolor fact
+      name | gcolor == Color.BrWhite =
+        fromMaybe ("Hero" <+> showT n) $ lookup n configHeroNames
+           | otherwise = gconfig <+> "Hero" <+> showT n
       startHP = hp - (hp `div` 5) * min 3 n
   addActor
-    kId bfid ppos lid startHP (Just symbol) (Just name) (Just color) time
-
--- | Find a hero name in the config file, or create a stock name.
-findHeroName :: [(Int, Text)] -> Int -> Text
-findHeroName configHeroNames n =
-  let heroName = lookup n configHeroNames
-  in fromMaybe ("hero number" <+> showT n) heroName
+    kId bfid ppos lid startHP (Just symbol) (Just name) (Just gcolor) time
 
 -- ** SpawnMonster
 
