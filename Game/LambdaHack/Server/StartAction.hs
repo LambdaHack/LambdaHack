@@ -190,8 +190,7 @@ populateDungeon = do
   mapWithKeyM_ initialItems dungeon
   factionD <- getsState sfactionD
   config <- getsServer sconfig
-  let heroNames = configHeroNames config : repeat []
-      needInitialCrew = reverse $ EM.assocs factionD
+  let needInitialCrew = EM.assocs factionD
       getEntryLevel (_, fact) = fentry $ okind $ gkind fact
       arenas = ES.toList $ ES.fromList $ map getEntryLevel needInitialCrew
       initialActors lid = do
@@ -199,11 +198,13 @@ populateDungeon = do
         let arenaFactions = filter ((== lid) . getEntryLevel) needInitialCrew
         entryPoss <- rndToAction
                      $ findEntryPoss cops lvl (length arenaFactions)
-        mapM_ (arenaActors lid) $ zip3 arenaFactions entryPoss heroNames
-      arenaActors _ ((_, Faction{ginitial = 0}), _, _) = return ()
-      arenaActors lid ((side, fact@Faction{ginitial}), ppos, heroName) = do
+        mapM_ (arenaActors lid) $ zip arenaFactions entryPoss
+      arenaActors _ ((_, Faction{ginitial = 0}), _) = return ()
+      arenaActors lid ((side, fact@Faction{ginitial, gcolor}), ppos) = do
         time <- getsState $ getLocalTime lid
         let ntime = timeAdd time (timeScale timeClip (fromEnum side))
+            heroNames | gcolor == Color.BrWhite = configHeroNames config
+                      | otherwise = []
         psFree <-
           getsState $ nearbyFreePoints
                         cotile (Tile.hasFeature cotile F.CanActor) ppos lid
@@ -212,7 +213,7 @@ populateDungeon = do
           if isSpawningFact cops fact
           then spawnMonsters [p] lid ((== side) . fst) ntime
           else do
-            aid <- addHero side p lid heroName (Just n) ntime
+            aid <- addHero side p lid heroNames (Just n) ntime
             mleader <- getsState $ gleader . (EM.! side) . sfactionD
             when (isNothing mleader) $
               execCmdAtomic $ LeadFactionA side Nothing (Just aid)
