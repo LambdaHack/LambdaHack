@@ -540,12 +540,18 @@ drawSfxAtomicUI verbose sfx = case sfx of
     else case effect of
         Effect.NoEffect -> msgAdd "Nothing happens."
         Effect.Heal p | p > 0 -> do
-          actorVerbMU aid b "feel better"
+          if bfid b == side then
+            actorVerbMU aid b "feel healthier"
+          else
+            actorVerbMU aid b "look healthier"
           let ps = (bpos b, bpos b)
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrBlue Color.Blue
           displayFrames $ Nothing : animFrs
         Effect.Heal _ -> do
-          actorVerbMU aid b "feel wounded"
+          if bfid b == side then
+            actorVerbMU aid b "feel wounded"
+          else
+            actorVerbMU aid b "look wounded"
           let ps = (bpos b, bpos b)
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
           displayFrames $ Nothing : animFrs
