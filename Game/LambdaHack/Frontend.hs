@@ -16,6 +16,8 @@ import qualified Control.Concurrent.STM as STM
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
+import Data.Text (Text)
+import qualified Data.Text as T
 import System.IO.Unsafe (unsafePerformIO)
 
 import Game.LambdaHack.Common.Animation
@@ -29,7 +31,7 @@ import Game.LambdaHack.Utils.LQueue
 
 type ChanFrontend = TQueue K.KM
 
-type FromMulti = MVar (Int, FactionId -> ChanFrontend)
+type FromMulti = MVar (Int, FactionId -> (ChanFrontend, Text))
 
 type ToMulti = TQueue (FactionId, FrontReq)
 
@@ -106,12 +108,14 @@ toSingles fid reqMap =
   let queue = toListLQueue $ fromMaybe newLQueue $ EM.lookup fid reqMap
   in mapMaybe getSingleFrame queue
 
-fadeF :: FrontendSession -> Bool -> FactionId -> SingleFrame -> IO ()
-fadeF fs out side frame = do
+fadeF :: FrontendSession -> Bool -> FactionId -> Text -> SingleFrame -> IO ()
+fadeF fs out side pname frame = do
   let topRight = True
       lxsize = xsizeSingleFrame frame
       lysize = ysizeSingleFrame frame
-      msg = "Player" <+> showT (fromEnum side) <> ", get ready!"
+      msg = "Player" <+> showT (fromEnum side) <> ","
+            <+> pname <> (if T.null pname then "" else ",")
+            <+> "get ready!"
   animMap <- rndToIO $ fadeout out topRight lxsize lysize
   let sfTop = truncateMsg lxsize msg
       basicFrame = frame {sfTop}
@@ -138,7 +142,7 @@ loopFrontend fs ConnMulti{..} = loop Nothing EM.empty
   writeKM :: FactionId -> K.KM -> IO ()
   writeKM fid km = do
     fM <- takeMVar fromMulti
-    let chanFrontend = snd fM fid
+    let chanFrontend = fst $ snd fM fid
     atomically $ STM.writeTQueue chanFrontend km
     putMVar fromMulti fM
 
@@ -149,19 +153,21 @@ loopFrontend fs ConnMulti{..} = loop Nothing EM.empty
     if Just fid == fmap fst oldFidFrame then
       return reqMap
     else do
+      (nH, fCT) <- readMVar fromMulti
+      let pname = snd $ fCT fid
       reqMap2 <- case oldFidFrame of
         Nothing -> return reqMap
         Just (oldFid, oldFrame) -> do
           reqMap2 <- flushFrames fs oldFid reqMap
           let singles = toSingles oldFid reqMap  -- not @reqMap2@!
               lastFrame = fromMaybe oldFrame $ listToMaybe $ reverse singles
-          fadeF fs True fid lastFrame
+          fadeF fs True fid pname lastFrame
           return reqMap2
-      (nH, _) <- readMVar fromMulti
       let singles = toSingles fid reqMap2
           firstFrame = fromMaybe frontFr $ listToMaybe singles
       -- @nH@ is unreliable, except at the game start.
-      unless (isNothing oldFidFrame && nH < 2) $ fadeF fs False fid firstFrame
+      unless (isNothing oldFidFrame && nH < 2) $
+        fadeF fs False fid pname firstFrame
       flushFrames fs fid reqMap2
 
   loop :: Maybe (FactionId, SingleFrame) -> ReqMap -> IO ()

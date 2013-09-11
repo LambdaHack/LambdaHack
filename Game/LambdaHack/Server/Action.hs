@@ -25,6 +25,7 @@ import qualified Data.EnumMap.Strict as EM
 import Data.Key (mapWithKeyM, mapWithKeyM_)
 import Data.List
 import Data.Maybe
+import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import System.Directory
 import System.IO (stderr)
@@ -300,9 +301,12 @@ updateConn executorUI executorAI = do
   putDict newD
   -- Spawn and kill client threads.
   let toSpawn = newD EM.\\ oldD
-      fdict fid = fst $ fst
-                  $ fromMaybe (assert `failure` fid)
-                  $ EM.lookup fid newD
+      fdict fid = ( fst $ fst
+                    $ fromMaybe (assert `failure` fid)
+                    $ EM.lookup fid newD
+                  , maybe T.empty gname  -- a faction can go inactive
+                    $ EM.lookup fid factionD
+                  )
       fromM = Frontend.fromMulti Frontend.connMulti
   liftIO $ void $ takeMVar fromM  -- stop Frontend
   let forkUI fid (connF, connS) = void $ forkChild $ executorUI fid connF connS
