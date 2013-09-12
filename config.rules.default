@@ -33,11 +33,11 @@
 
 ; [players]
 ; ; Faction "playable" means a random choice from playable factions.
-; campaign: Players { playersHuman = [("Hero Party", "hero", 1)], playersComputer = [("Monster Hive", "monster", 5)], playersEnemy = [("Hero Party", "Monster Hive")], playersAlly = [] }
+; campaign: Players { playersHuman = [("Adventuring Party", "hero", 1)], playersComputer = [("Monster Hive", "monster", 5)], playersEnemy = [("Adventuring Party", "Monster Hive")], playersAlly = [] }
 ; skirmish: Players { playersHuman = [("White", "hero", 3)], playersComputer = [("Green", "hero", 3)], playersEnemy = [("White", "Green")], playersAlly = [] }
 ; PvP: Players { playersHuman = [("Red", "hero", 3), ("Blue", "hero", 3)], playersComputer = [], playersEnemy = [("Red", "Blue")], playersAlly = [] }
 ; Coop: Players { playersHuman = [("Coral", "hero", 1), ("Amber", "hero", 1)], playersComputer = [("Monster Hive", "monster", 5)], playersEnemy = [("Coral", "Monster Hive"), ("Amber", "Monster Hive")], playersAlly = [("Coral", "Amber")] }
-; defense: Players { playersHuman = [("Monster Hive", "monster", 1)], playersComputer = [("Green", "hero", 1), ("Yellow", "hero", 2), ("Cyan", "hero", 3)], playersEnemy = [("Monster Hive", "Green"), ("Monster Hive", "Yellow"), ("Monster Hive", "Cyan")], playersAlly = [("Green", "Yellow"), ("Green", "Cyan"), ("Yellow", "Cyan")] }
+; defense: Players { playersHuman = [("Monster Hive", "monster", 1)], playersComputer = [("Green", "hero", 1), ("Yellow", "hero", 2), ("Cyan", "hero", 3)], playersEnemy = [("Green", "Monster Hive"), ("Yellow", "Monster Hive"), ("Cyan", "Monster Hive")], playersAlly = [("Green", "Yellow"), ("Green", "Cyan"), ("Yellow", "Cyan")] }
 
 ; [scenario]
 ; campaign: Scenario { scenarioPlayers = "campaign", scenarioDungeon = "campaign" }
