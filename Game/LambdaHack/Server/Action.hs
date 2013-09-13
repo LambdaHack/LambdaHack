@@ -197,8 +197,9 @@ registerScore status mbody fid = do
     liftIO $
       encodeEOF (configScoresFile config) (ntable :: HighScore.ScoreTable)
 
-revealItems :: (MonadAtomic m, MonadServer m) => Maybe FactionId -> m ()
-revealItems mfid = do
+revealItems :: (MonadAtomic m, MonadServer m)
+            => Maybe FactionId -> Maybe Actor -> m ()
+revealItems mfid mbody = do
   dungeon <- getsState sdungeon
   discoS <- getsServer sdisco
   let discover b iid _numPieces = do
@@ -207,8 +208,10 @@ revealItems mfid = do
         execCmdAtomic $ DiscoverA (blid b) (bpos b) iid ik
       f aid = do
         b <- getsState $ getActorBody aid
-        when (maybe True (== bfid b) mfid) $ mapActorItems_ (discover b) b
+        let ourSide = maybe True (== bfid b) mfid
+        when (ourSide && Just b /= mbody) $ mapActorItems_ (discover b) b
   mapDungeonActors_ f dungeon
+  maybe skip (\b -> mapActorItems_ (discover b) b) mbody
 
 quitF :: (MonadAtomic m, MonadServer m)
       => Maybe Actor -> Status -> FactionId -> m ()
@@ -223,7 +226,7 @@ quitF mbody status fid = do
     Just Escape -> return ()
     _ -> do
       when (isHumanFact fact) $ do
-        revealItems $ Just fid
+        revealItems (Just fid) mbody
         registerScore status mbody fid
       execCmdAtomic $ QuitFactionA fid mbody oldSt $ Just status
       modifyServer $ \ser -> ser {squit = True}  -- end turn ASAP
