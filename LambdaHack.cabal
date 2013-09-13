@@ -16,15 +16,16 @@ description:   This is an alpha release of LambdaHack,
                in the strict and type-safe separation of code and content
                and of clients (human and AI-controlled) and server.
                .
-               New in this release are cooperative and competitive multiplayer
-               (shared-screen only in this version), overhauled searching
-               and a code rewrite where a single server sends restricted
-               game state updates to many fat clients and a thin frontend
-               layer multiplex visuals from a subset of the clients.
-               Upcoming new features: new and improved frontends, improved AI
+               New, in this release, is cooperative and competitive multiplayer
+               (shared-screen only in this version) and overhauled searching.
+               The code has been rewritten to have a single server
+               that sends restricted game state updates to many
+               fat clients, while a thin frontend layer multiplexes
+               visuals from a subset of the clients.
+               Upcoming features: new and improved frontends, improved AI
                (better leader switching and ranged combat), dynamic light
                sources, explosions, player action undo/redo, completely
-               redesigned UI. Long term goals are focused around procedural
+               redesigned UI. Long term goals are focused on procedural
                content generation and include in-game content creation,
                auto-balancing and persistent content modification
                based on player behaviour.
@@ -33,15 +34,15 @@ description:   This is an alpha release of LambdaHack,
                is Allure of the Stars, available from
                <http://hackage.haskell.org/package/Allure>.
                .
-               Note: All modules in the library are kept visible,
-               to let games override each, but reuse as many as possible.
+               Note: All modules in this library are kept visible,
+               to let games override and reuse them.
                OTOH, to reflect that some modules are implementation details
                relative to others, the source code adheres to the following
                convention. If a module has the same name as a directory,
                the module is the exclusive interface to the directory.
                No references to the modules in the directory are allowed
                except from the interface module. This policy is only binding
-               inside the library. The users are free to do whatever they
+               inside the library --- users are free to do whatever they
                please, since the library authors are in no position to guess
                their particular needs.
 homepage:      http://github.com/kosmikus/LambdaHack
