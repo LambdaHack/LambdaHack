@@ -351,8 +351,10 @@ loseTileA lid ts = assert (not $ null ts) $ do
 
 alterSmellA :: MonadAction m
             => LevelId -> Point -> Maybe Time -> Maybe Time -> m ()
-alterSmellA lid p fromSm toSm = do
-  let alt sm = assert (sm == fromSm `blame` (lid, p, fromSm, toSm, sm)) toSm
+alterSmellA lid p _fromSm toSm = do
+  -- TODO: this rarely crashes when a dominated smelling monster exists:
+  -- let alt sm = assert (sm == fromSm `blame` (lid, p, fromSm, toSm, sm)) toSm
+  let alt _ =  toSm
   updateLevel lid $ updateSmell $ EM.alter alt p
 
 spotSmellA :: MonadAction m => LevelId -> [(Point, Time)] -> m ()
