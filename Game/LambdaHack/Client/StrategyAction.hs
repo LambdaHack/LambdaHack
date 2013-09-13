@@ -138,6 +138,7 @@ proposeAction cops actor btarget disco s factionAbilities =
       Just (TPos l) -> (l, False)
       Nothing -> (bpos, False)  -- an actor blocked by friends or a missile
   combineDistant as = liftFrequency $ sumF as
+  -- TODO: Ranged and Tools should only be triggered in some situations.
   aFrequency :: Ability -> Frequency CmdSer
   aFrequency Ability.Ranged = if foeVisible
                               then rangedFreq cops actor disco s fpos
@@ -289,10 +290,10 @@ moveStrategy cops actor s mFoe =
     -- Target set and we chase the foe or his last position or another target.
     Just (fpos, foeVisible) ->
       let towardsFoe =
-            let foeDir = towards lxsize bpos fpos
-                tolerance | isUnit lxsize foeDir = 0
+            let tolerance | adjacent lxsize bpos fpos = 0
                           | otherwise = 1
-            in only (\ x -> euclidDistSq lxsize foeDir x <= tolerance)
+                foeDir = towards lxsize bpos fpos
+            in only (\x -> euclidDistSq lxsize foeDir x <= tolerance)
       in if fpos == bpos
          then reject
          else towardsFoe
@@ -306,15 +307,15 @@ moveStrategy cops actor s mFoe =
             map (map fst)
             $ groupBy ((==) `on` snd)
             $ sortBy (flip compare `on` snd)
-            $ filter (\ (_, sm) -> sm > timeZero)
-            $ map (\ x ->
+            $ filter (\(_, sm) -> sm > timeZero)
+            $ map (\x ->
                       let sml = EM.findWithDefault
                                   timeZero (bpos `shift` x) lsmell
                       in (x, sml `timeAdd` timeNegate ltime))
                 sensible
       in asmell mk .=> foldr ((.|)
-                                . liftFrequency
-                                . uniformFreq "smell k") reject smells
+                              . liftFrequency
+                              . uniformFreq "smell k") reject smells
          .| moveOpenable  -- no enemy in sight, explore doors
          .| moveClear
  where
@@ -325,23 +326,25 @@ moveStrategy cops actor s mFoe =
   Actor{bkind, bpos, boldpos, bfid, blid} = getActorBody actor s
   mk = okind bkind
   lootHere x = not $ EM.null $ lvl `atI` x
-  onlyLoot = onlyMoves lootHere bpos
+  onlyLoot = onlyMoves lootHere
   interestHere x = let t = lvl `at` x
                        ts = map (lvl `at`) $ vicinity lxsize lysize x
                    in Tile.hasFeature cotile F.Exit t
                       -- Lit indirectly. E.g., a room entrance.
                       || (not (Tile.hasFeature cotile F.Lit t)
                           && any (Tile.hasFeature cotile F.Lit) ts)
-  onlyInterest = onlyMoves interestHere bpos
+  onlyInterest = onlyMoves interestHere
   bdirAI | bpos == boldpos = Nothing
          | otherwise = Just $ towards lxsize boldpos bpos
   onlyKeepsDir k =
     only (\ x -> maybe True (\d -> euclidDistSq lxsize d x <= k) bdirAI)
   onlyKeepsDir_9 = only (\ x -> maybe True (\d -> neg x /= d) bdirAI)
-  moveIQ = aiq mk > 15 .=> onlyKeepsDir 0 moveRandomly
-        .| aiq mk > 10 .=> onlyKeepsDir 1 moveRandomly
-        .| aiq mk > 5  .=> onlyKeepsDir 2 moveRandomly
-        .| onlyKeepsDir_9 moveRandomly
+  moveIQ | isJust mFoe = onlyKeepsDir_9 moveRandomly  -- danger, be flexible
+         | otherwise =
+       aiq mk > 15 .=> onlyKeepsDir 0 moveRandomly
+    .| aiq mk > 10 .=> onlyKeepsDir 1 moveRandomly
+    .| aiq mk > 5  .=> onlyKeepsDir 2 moveRandomly
+    .| onlyKeepsDir_9 moveRandomly
   interestFreq | interestHere bpos =
     -- Don't detour towards an interest if already on one.
     mzero
@@ -349,14 +352,16 @@ moveStrategy cops actor s mFoe =
     -- Prefer interests, but don't exclude other focused moves.
     scaleFreq 5 $ bestVariant $ onlyInterest $ onlyKeepsDir 2 moveRandomly
   interestIQFreq = interestFreq `mplus` bestVariant moveIQ
-  moveClear    = onlyMoves (not . openableHere) bpos moveFreely
-  moveOpenable = onlyMoves openableHere bpos moveFreely
-  moveFreely = onlyLoot moveRandomly
+  moveClear    = onlyMoves (not . openableHere) moveFreely
+  moveOpenable = onlyMoves openableHere moveFreely
+  -- Ignore previously ignored loot, to prevent repetition.
+  moveNewLoot = onlyLoot (onlyKeepsDir 2 moveRandomly)
+  moveFreely = moveNewLoot
                .| liftFrequency interestIQFreq
-               .| moveIQ  -- sometimes interestIQFreq is excluded later on
+               .| moveIQ  -- @bestVariant moveIQ@ may be excluded elsewhere
                .| moveRandomly
-  onlyMoves :: (Point -> Bool) -> Point -> Strategy Vector -> Strategy Vector
-  onlyMoves p l = only (\ x -> p (l `shift` x))
+  onlyMoves :: (Point -> Bool) -> Strategy Vector -> Strategy Vector
+  onlyMoves p = only (\x -> p (bpos `shift` x))
   moveRandomly :: Strategy Vector
   moveRandomly = liftFrequency $ uniformFreq "moveRandomly" sensible
   openableHere pos = Tile.hasFeature cotile F.Openable $ lvl `at` pos
