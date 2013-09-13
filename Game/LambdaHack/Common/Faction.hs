@@ -1,7 +1,7 @@
 -- | Factions taking part in the game: e.g., two human players controlling
 -- the hero faction battling the monster and the animal factions.
 module Game.LambdaHack.Common.Faction
-  ( FactionId, FactionDict, Faction(..), Diplomacy(..), Status(..)
+  ( FactionId, FactionDict, Faction(..), Diplomacy(..), Outcome(..), Status(..)
   , isHumanFact, usesAIFact, isSpawningFact, isAtWar, isAllied
   ) where
 
@@ -48,14 +48,22 @@ data Diplomacy =
 
 type Dipl = EM.EnumMap FactionId Diplomacy
 
--- | Current result of the game.
-data Status =
-    Killed !Actor  -- ^ the faction was eliminated; this is the last actor
-  | Defeated       -- ^ the faction otherwise lost the game
-  | Camping        -- ^ game is supended
-  | Conquer        -- ^ the player won by eliminating all rivals
-  | Escape         -- ^ the player escaped the dungeon alive
-  | Restart !Text  -- ^ game is restarted
+-- | Outcome of a game.
+data Outcome =
+    Killed    -- ^ the faction was eliminated
+  | Defeated  -- ^ the faction lost the game in another way
+  | Camping   -- ^ game is supended
+  | Conquer   -- ^ the player won by eliminating all rivals
+  | Escape    -- ^ the player escaped the dungeon alive
+  | Restart   -- ^ game is restarted
+  deriving (Show, Eq, Ord)
+
+-- | Current game status.
+data Status = Status
+  { stOutcome :: Outcome  -- ^ current game outcome
+  , stDepth   :: Int      -- ^ depth of the final encounter
+  , stInfo    :: Text     -- ^ extra information
+  }
   deriving (Show, Eq, Ord)
 
 -- | Tell whether the faction is controlled (at least partially) by a human.
@@ -78,38 +86,6 @@ isAtWar fact fid = War == EM.findWithDefault Unknown fid (gdipl fact)
 -- | Check if factions are allied. Assumes symmetry.
 isAllied :: Faction -> FactionId -> Bool
 isAllied fact fid = Alliance == EM.findWithDefault Unknown fid (gdipl fact)
-
-instance Binary Diplomacy where
-  put Unknown  = putWord8 0
-  put Neutral  = putWord8 1
-  put Alliance = putWord8 2
-  put War      = putWord8 3
-  get = do
-    tag <- getWord8
-    case tag of
-      0 -> return Unknown
-      1 -> return Neutral
-      2 -> return Alliance
-      3 -> return War
-      _ -> fail "no parse (Diplomacy)"
-
-instance Binary Status where
-  put (Killed body) = putWord8 0 >> put body
-  put Defeated = putWord8 1
-  put Camping = putWord8 2
-  put Conquer = putWord8 3
-  put Escape = putWord8 4
-  put (Restart t) = putWord8 5 >> put t
-  get = do
-    tag <- getWord8
-    case tag of
-      0 -> fmap Killed get
-      1 -> return Defeated
-      2 -> return Camping
-      3 -> return Conquer
-      4 -> return Escape
-      5 -> fmap Restart get
-      _ -> fail "no parse (Status)"
 
 instance Binary Faction where
   put Faction{..} = do
@@ -135,3 +111,46 @@ instance Binary Faction where
     gcolor <- get
     ginitial <- get
     return Faction{..}
+
+instance Binary Diplomacy where
+  put Unknown  = putWord8 0
+  put Neutral  = putWord8 1
+  put Alliance = putWord8 2
+  put War      = putWord8 3
+  get = do
+    tag <- getWord8
+    case tag of
+      0 -> return Unknown
+      1 -> return Neutral
+      2 -> return Alliance
+      3 -> return War
+      _ -> fail "no parse (Diplomacy)"
+
+instance Binary Outcome where
+  put Killed = putWord8 0
+  put Defeated = putWord8 1
+  put Camping = putWord8 2
+  put Conquer = putWord8 3
+  put Escape = putWord8 4
+  put Restart = putWord8 5
+  get = do
+    tag <- getWord8
+    case tag of
+      0 -> return Killed
+      1 -> return Defeated
+      2 -> return Camping
+      3 -> return Conquer
+      4 -> return Escape
+      5 -> return Restart
+      _ -> fail "no parse (Outcome)"
+
+instance Binary Status where
+  put Status{..} = do
+    put stOutcome
+    put stDepth
+    put stInfo
+  get = do
+    stOutcome <- get
+    stDepth <- get
+    stInfo <- get
+    return Status{..}

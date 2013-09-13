@@ -345,7 +345,7 @@ verifyTrigger leader feat = case feat of
       "This is the way out, but where would you go in this alien world?"
     go <- displayYesNo ColorFull "This is the way out. Really leave now?"
     unless go $ abortWith "Game resumed."
-    (_, total) <- getsState $ calculateTotal side (blid b) Nothing
+    (_, total) <- getsState $ calculateTotal b
     when (total == 0) $ do
       -- The player can back off at each of these steps.
       go1 <- displayMore ColorBW

@@ -12,7 +12,6 @@ import qualified NLP.Miniutter.English as MU
 import System.Time
 import Text.Printf
 
-import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
@@ -31,14 +30,14 @@ data ScoreRecord = ScoreRecord
 -- | Show a single high score, from the given ranking in the high score table.
 showScore :: (Int, ScoreRecord) -> [Text]
 showScore (pos, score) =
-  let died = case status score of
-        Killed body -> "perished on level "
-                       ++ show (fromEnum $ blid body) ++ ","
+  let Status{stOutcome, stDepth} = status score
+      died = case stOutcome of
+        Killed -> "perished on level " ++ show stDepth ++ ","
         Defeated -> "was defeated"
         Camping -> "is camping somewhere,"
         Conquer -> "eliminated all opposition"
         Escape -> "emerged victorious"
-        Restart _ -> "resigned prematurely"
+        Restart -> "resigned prematurely"
       curDate = calendarTimeToString . toUTCTime . date $ score
       big, lil :: String
       big = "                                                 "
@@ -80,8 +79,8 @@ register :: ScoreTable  -- ^ old table
          -> ClockTime   -- ^ current date
          -> (ScoreTable, Int)
 register table total time status date =
-  let points = case status of
-                 Killed{} -> (total + 1) `div` 2
+  let points = case stOutcome status of
+                 Killed -> (total + 1) `div` 2
                  _        -> total
       negTime = timeNegate time
       score = ScoreRecord{..}
@@ -112,10 +111,10 @@ slideshow table pos status =
   let (_, nlines) = normalLevelBound  -- TODO: query terminal size instead
       height = nlines `div` 3
       (subject, person, msgUnless) =
-        case status of
-          Killed body | fromEnum (blid body) <= 1 ->
+        case stOutcome status of
+          Killed | stDepth status <= 1 ->
             ("your short-lived struggle", MU.Sg3rd, "(score halved)")
-          Killed{} ->
+          Killed ->
             ("your heroic deeds", MU.PlEtc, "(score halved)")
           Defeated ->
             ("your futile efforts", MU.PlEtc, "(score halved)")
@@ -131,7 +130,7 @@ slideshow table pos status =
              if pos <= height
              then "among the greatest heroes"
              else "")
-          Restart _ ->
+          Restart ->
             ("your abortive attempt", MU.Sg3rd, "(score halved)")
       msg = makeSentence
         [ MU.SubjectVerb person MU.Yes subject "award you"

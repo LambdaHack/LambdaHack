@@ -84,11 +84,10 @@ nearbyFreePoints cotile f start lid s =
 -- Warning: scores are shown during the game, so when the server calculates
 -- then, we should be careful not to leak secret information
 -- (e.g., the nature of the items through the total worth of inventory).
-calculateTotal :: FactionId -> LevelId -> Maybe Actor -> State
-               -> (ItemBag, Int)
-calculateTotal fid lid mleader s =
-  let bag = EM.unionsWith (+)
-            $ map bbag $ actorList (== fid) lid s ++ maybeToList mleader
+calculateTotal :: Actor -> State -> (ItemBag, Int)
+calculateTotal body s =
+  let bs = actorList (== bfid body) (blid body) s
+      bag = EM.unionsWith (+) $ map bbag $ if null bs then [body] else bs
       heroItem = map (\(iid, k) -> (getItemBody iid s, k))
                  $ EM.assocs bag
   in (bag, sum $ map itemPrice heroItem)

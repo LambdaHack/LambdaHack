@@ -84,8 +84,7 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
       initPer
   -- Loop, communicating with clients.
   let loop = do
-        let run = handleActors cmdSerSem
-            factionArena fact = do
+        let factionArena fact = do
               let isSpawning = isSpawningFact cops fact
                   -- TODO; This is a significant advantage of human spawners;
                   -- perhaps we could instead auto-switch leaders
@@ -100,7 +99,7 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
         marenas <- mapM factionArena $ EM.elems factionD
         let arenas = ES.toList $ ES.fromList $ catMaybes marenas
         assert (not $ null arenas) skip  -- no 2 solo AI spawners scenario
-        mapM_ run arenas
+        mapM_ (handleActors cmdSerSem) arenas
         quit <- getsServer squit
         if quit then do
           -- In case of game save+exit or restart, don't age levels (endClip)
@@ -356,15 +355,15 @@ endOrLoop updConn loopServer = do
   factionD <- getsState sfactionD
   let inGame fact = case gquit fact of
         Nothing -> True
-        Just Camping -> True
+        Just Status{stOutcome=Camping} -> True
         _ -> False
       gameOver = not $ any inGame $ EM.elems factionD
   let getQuitter fact = case gquit fact of
-        Just (Restart t) -> Just t
+        Just Status{stOutcome=Restart, stInfo} -> Just stInfo
         _ -> Nothing
       quitters = mapMaybe getQuitter $ EM.elems factionD
   let isCamper fact = case gquit fact of
-        Just Camping -> True
+        Just Status{stOutcome=Camping} -> True
         _ -> False
       campers = filter (isCamper . snd) $ EM.assocs factionD
   case (quitters, campers) of
@@ -375,8 +374,9 @@ endOrLoop updConn loopServer = do
     (_, []) -> loopServer  -- continue current game
     (_, _ : _) -> do  -- save game and exit
       -- Wipe out the quit flag for the savegame files.
-      mapM_ (\(fid, _) -> execCmdAtomic
-                          $ QuitFactionA fid (Just Camping) Nothing) campers
+      mapM_ (\(fid, fact) ->
+              execCmdAtomic
+              $ QuitFactionA fid Nothing (gquit fact) Nothing) campers
       -- Save client and server data.
       execCmdAtomic SaveExitA
       saveGameSer

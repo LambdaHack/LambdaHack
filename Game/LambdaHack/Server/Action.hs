@@ -174,28 +174,28 @@ restoreScore Config{configScoresFile} = do
     else liftIO $ strictDecodeEOF configScoresFile
 
 -- | Generate a new score, register it and save.
-registerScore :: MonadServer m => Status -> FactionId -> m ()
-registerScore status fid = do
+registerScore :: MonadServer m => Status -> Maybe Actor -> FactionId -> m ()
+registerScore status mbody fid = do
+  assert (maybe True ((fid ==) . bfid) mbody) skip
   factionD <- getsState sfactionD
-  let faction = factionD EM.! fid
-  when (isHumanFact faction) $ do
-    -- TODO: refactor vs scoreToSlideshow
-    total <- case (gleader faction, status) of
-      (Just leader, _) -> do
-        b <- getsState $ getActorBody leader
-        getsState $ snd . calculateTotal (bfid b) (blid b) Nothing
-      (Nothing, Killed b) ->
-        getsState $ snd . calculateTotal (bfid b) (blid b) (Just b)
-      _ -> return 0
-    unless (total == 0) $ do
-      config <- getsServer sconfig
-      -- Re-read the table in case it's changed by a concurrent game.
-      table <- restoreScore config
-      time <- getsState stime
-      date <- liftIO getClockTime
-      let (ntable, _) = HighScore.register table total time status date
-      liftIO $
-        encodeEOF (configScoresFile config) (ntable :: HighScore.ScoreTable)
+  let fact = factionD EM.! fid
+  assert (isHumanFact fact) skip
+  total <- case mbody of
+    Just body -> getsState $ snd . calculateTotal body
+    Nothing -> case gleader fact of
+      Nothing -> return 0
+      Just aid -> do
+        b <- getsState $ getActorBody aid
+        getsState $ snd . calculateTotal b
+  unless (total == 0) $ do
+    config <- getsServer sconfig
+    -- Re-read the table in case it's changed by a concurrent game.
+    table <- restoreScore config
+    time <- getsState stime
+    date <- liftIO getClockTime
+    let (ntable, _) = HighScore.register table total time status date
+    liftIO $
+      encodeEOF (configScoresFile config) (ntable :: HighScore.ScoreTable)
 
 revealItems :: (MonadAtomic m, MonadServer m) => Maybe FactionId -> m ()
 revealItems mfid = do
@@ -210,34 +210,41 @@ revealItems mfid = do
         when (maybe True (== bfid b) mfid) $ mapActorItems_ (discover b) b
   mapDungeonActors_ f dungeon
 
+quitF :: (MonadAtomic m, MonadServer m)
+      => Maybe Actor -> Status -> FactionId -> m ()
+quitF mbody status fid = do
+  assert (maybe True ((fid ==) . bfid) mbody) skip
+  fact <- getsState $ (EM.! fid) . sfactionD
+  let oldSt = gquit fact
+  case fmap stOutcome $ oldSt of
+    Just Killed -> return ()    -- Do not overwrite in case
+    Just Defeated -> return ()  -- many things happen in 1 turn.
+    Just Conquer -> return ()
+    Just Escape -> return ()
+    _ -> do
+      when (isHumanFact fact) $ do
+        revealItems $ Just fid
+        registerScore status mbody fid
+      execCmdAtomic $ QuitFactionA fid mbody oldSt $ Just status
+      modifyServer $ \ser -> ser {squit = True}  -- end turn ASAP
+
 -- Send any QuitFactionA actions that can be deduced from their current state.
-deduceQuits :: (MonadAtomic m, MonadServer m) => FactionId -> Status -> m ()
-deduceQuits fid Defeated = assert `failure` fid
-deduceQuits fid Camping = assert `failure` fid
-deduceQuits fid Restart{} = assert `failure` fid
-deduceQuits fid Conquer = assert `failure` fid
-deduceQuits fid status = do
+deduceQuits :: (MonadAtomic m, MonadServer m) => Actor -> Status -> m ()
+deduceQuits body Status{stOutcome=Defeated} = assert `failure` body
+deduceQuits body Status{stOutcome=Camping} = assert `failure` body
+deduceQuits body Status{stOutcome=Restart} = assert `failure` body
+deduceQuits body Status{stOutcome=Conquer} = assert `failure` body
+deduceQuits body status = do
   cops <- getsState scops
-  let quitF statusQ fidQ = do
-        oldSt <- getsState $ gquit . (EM.! fidQ) . sfactionD
-        case oldSt of
-          Just Killed{} -> return ()  -- Do not overwrite in case
-          Just Defeated -> return ()  -- many things happen in 1 turn.
-          Just Conquer -> return ()
-          Just Escape -> return ()
-          _ -> do
-            revealItems $ Just fidQ
-            execCmdAtomic $ QuitFactionA fidQ oldSt $ Just statusQ
-            registerScore statusQ fidQ
-            modifyServer $ \ser -> ser {squit = True}  -- end turn ASAP
-      mapQuitF statusQ fids = mapM_ (quitF statusQ) $ delete fid fids
-  quitF status fid
-  factionD <- getsState sfactionD
-  let inGame fact = case gquit fact of
-        Just Killed{} -> False
-        Just Defeated{} -> False
-        Just Restart{} -> False  -- effectively, commits suicide
+  let fid = bfid body
+      mapQuitF statusF fids = mapM_ (quitF Nothing statusF) $ delete fid fids
+  quitF (Just body) status fid
+  let inGame fact = case fmap stOutcome $ gquit fact of
+        Just Killed -> False
+        Just Defeated -> False
+        Just Restart -> False  -- effectively, commits suicide
         _ -> True
+  factionD <- getsState sfactionD
   let assocsInGame = filter (inGame . snd) $ EM.assocs factionD
       keysInGame = map fst assocsInGame
       assocsSpawn = filter (isSpawningFact cops . snd) assocsInGame
@@ -246,19 +253,19 @@ deduceQuits fid status = do
   case assocsNotSpawn of
     _ | null assocsHuman ->
       -- No screensaver mode for now --- all non-human players win.
-      mapQuitF Conquer keysInGame
+      mapQuitF status{stOutcome=Conquer} keysInGame
     [] ->
       -- Only spawners remain so all win, human or not, allied or not.
-      mapQuitF Conquer keysInGame
+      mapQuitF status{stOutcome=Conquer} keysInGame
     (_, fact1) : rest | null assocsSpawn && all (isAllied fact1 . fst) rest ->
       -- Only one allied team remains in a no-spawners game.
-      mapQuitF Conquer keysInGame
-    _ | status == Escape -> do
+      mapQuitF status{stOutcome=Conquer} keysInGame
+    _ | stOutcome status == Escape -> do
       -- Otherwise, in a spawners game or a game with many teams alive,
       -- only complete Victory matters.
       let (victors, losers) = partition (flip isAllied fid . snd) assocsInGame
-      mapQuitF Escape $ map fst victors
-      mapQuitF Defeated $ map fst losers
+      mapQuitF status{stOutcome=Escape} $ map fst victors
+      mapQuitF status{stOutcome=Defeated} $ map fst losers
     _ -> return ()
 
 tryRestore :: MonadServer m

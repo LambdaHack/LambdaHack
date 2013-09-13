@@ -51,7 +51,7 @@ cmdAtomicSem cmd = case cmd of
   HasteActorA aid delta -> hasteActorA aid delta
   PathActorA aid fromPath toPath -> pathActorA aid fromPath toPath
   ColorActorA aid fromCol toCol -> colorActorA aid fromCol toCol
-  QuitFactionA fid fromSt toSt -> quitFactionA fid fromSt toSt
+  QuitFactionA fid mbody fromSt toSt -> quitFactionA fid mbody fromSt toSt
   LeadFactionA fid source target -> leadFactionA fid source target
   DiplFactionA fid1 fid2 fromDipl toDipl ->
     diplFactionA fid1 fid2 fromDipl toDipl
@@ -265,9 +265,10 @@ colorActorA aid fromCol toCol = assert (fromCol /= toCol) $ do
   modifyState $ updateActorBody aid $ \b -> b {bcolor = toCol}
 
 quitFactionA :: MonadAction m
-             => FactionId -> Maybe Status -> Maybe Status
+             => FactionId -> Maybe Actor -> Maybe Status -> Maybe Status
              -> m ()
-quitFactionA fid fromSt toSt = assert (fromSt /= toSt) $ do
+quitFactionA fid mbody fromSt toSt = assert (fromSt /= toSt) $ do
+  assert (maybe True ((fid ==) . bfid) mbody) skip
   fact <- getsState $ (EM.! fid) . sfactionD
   assert (fromSt == gquit fact `blame` (fid, fromSt, toSt, fact)) skip
   let adj fa = fa {gquit = toSt}

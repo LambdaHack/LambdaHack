@@ -46,8 +46,8 @@ draw :: ColorMode -> Kind.COps -> Perception -> LevelId -> Maybe ActorId
      -> StateClient -> State -> Overlay
      -> SingleFrame
 draw dm cops per drawnLevelId mleader
-     cli@StateClient{ stgtMode, scursor, seps, sdisco
-                    , smarkVision, smarkSmell, smarkSuspect }
+     StateClient{ stgtMode, scursor, seps, sdisco
+                , smarkVision, smarkSmell, smarkSuspect }
      s overlay =
   let Kind.COps{ coactor=Kind.Ops{okind}
                , cotile=Kind.Ops{okind=tokind, ouniqGroup} } = cops
@@ -62,7 +62,9 @@ draw dm cops per drawnLevelId mleader
                                         then Color.Blue
                                         else Color.defBG
                else \ _vis _visPl -> Color.defBG
-      (_, wealth) = calculateTotal (sside cli) drawnLevelId Nothing s
+      wealth = case mleader of
+        Nothing -> 0
+        Just leader -> snd $ calculateTotal (getActorBody leader s) s
       bl = case (scursor, mleader) of
         (Just cursor, Just leader) ->
           let Actor{bpos, blid} = getActorBody leader s

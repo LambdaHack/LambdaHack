@@ -286,7 +286,7 @@ drawCmdAtomicUI verbose cmd = case cmd of
         showDipl Alliance = "allied"
         showDipl War = "at war"
     msgAdd $ name1 <+> "and" <+> name2 <+> "are now" <+> showDipl toDipl <> "."
-  QuitFactionA fid _ toSt -> quitFactionUI fid toSt
+  QuitFactionA fid mbody _ toSt -> quitFactionUI fid mbody toSt
   AlterTileA{} | verbose ->
     return ()  -- TODO: door opens
   SearchTileA _ _ fromTile toTile -> do
@@ -413,33 +413,36 @@ displaceActorUI source target = do
   animFrs <- animate (blid sb) $ swapPlaces ps
   displayFrames $ Nothing : animFrs
 
-quitFactionUI :: MonadClientUI m => FactionId -> Maybe Status -> m ()
-quitFactionUI fid toSt = do
+quitFactionUI :: MonadClientUI m
+              => FactionId -> Maybe Actor -> Maybe Status -> m ()
+quitFactionUI fid mbody toSt = do
   Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsState scops
+  factionD <- getsState sfactionD
+  let fact = factionD EM.! fid
+      fidName = MU.Text $ gname fact
   side <- getsClient sside
-  fidName <- getsState $ MU.Text . gname . (EM.! fid) . sfactionD
   let msgIfSide _ | fid /= side = Nothing
       msgIfSide s = Just s
       (startingPart, partingPart) = case toSt of
-        Just Killed{} ->
+        Just Status{stOutcome=Killed} ->
           ( Just "be eliminated"
           , msgIfSide "Let's hope another party can save the day!" )
-        Just Defeated ->
+        Just Status{stOutcome=Defeated} ->
           ( Just "be decisively defeated"
           , msgIfSide "Let's hope your new overlords let you live." )
-        Just Camping ->
+        Just Status{stOutcome=Camping} ->
           ( Just "order save and exit"
           , Just $ if fid == side
                    then "See you soon, stronger and braver!"
                    else "See you soon, stalwart warrior!" )
-        Just Conquer ->
+        Just Status{stOutcome=Conquer} ->
           ( Just "vanquish all foes"
           , msgIfSide "Can it be done in a better style, though?" )
-        Just Escape ->
+        Just Status{stOutcome=Escape} ->
           ( Just "achieve victory"
           , msgIfSide "Can it be done better, though?" )
-        Just (Restart t) ->
-          ( Just $ MU.Text $ "order mission restart in" <+> t <+> "mode"
+        Just Status{stOutcome=Restart, stInfo} ->
+          ( Just $ MU.Text $ "order mission restart in" <+> stInfo <+> "mode"
           , Just $ if fid == side
                    then "This time for real."
                    else "Somebody couldn't stand the heat." )
@@ -452,14 +455,13 @@ quitFactionUI fid toSt = do
       msgAdd msg
   case (toSt, partingPart) of
     (Just status, Just pp) -> do
-      mleader <- getsClient _sleader
-      (bag, total) <- case (mleader, toSt) of
-        (Just leader, _) -> do
-          b <- getsState $ getActorBody leader
-          getsState $ calculateTotal side (blid b) Nothing
-        (Nothing, Just (Killed b)) | fid == side ->
-          getsState $ calculateTotal side (blid b) (Just b)
-        _ -> return (EM.empty, 0)
+      (bag, total) <- case mbody of
+        Just body | fid == side -> getsState $ calculateTotal body
+        _ -> case gleader fact of
+          Nothing -> return (EM.empty, 0)
+          Just aid -> do
+            b <- getsState $ getActorBody aid
+            getsState $ calculateTotal b
       let currencyName = MU.Text $ oname $ ouniqGroup "currency"
           itemMsg = makeSentence [ "Your loot is worth"
                                  , MU.CarWs total currencyName ]
@@ -471,7 +473,7 @@ quitFactionUI fid toSt = do
         else do
           io <- floorItemOverlay bag
           overlayToSlideshow itemMsg io
-      scoreSlides <- scoreToSlideshow status
+      scoreSlides <- scoreToSlideshow total status
       partingSlide <- promptToSlideshow $ pp <+> moreMsg
       shutdownSlide <- promptToSlideshow pp
       -- TODO: First ESC cancels items display.

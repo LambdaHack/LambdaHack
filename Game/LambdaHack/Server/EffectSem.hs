@@ -194,7 +194,7 @@ deduceKilled body = do
   Config{configFirstDeathEnds} <- getsServer sconfig
   mleader <- getsState $ gleader . (EM.! fid) . sfactionD
   when (not spawning && (isNothing mleader || configFirstDeathEnds)) $
-    deduceQuits fid $ Killed body
+    deduceQuits body $ Status Killed (fromEnum $ blid body) ""
 
 -- ** SummonFriend
 
@@ -454,5 +454,5 @@ effectQuit aid = do
   spawning <- getsState $ flip isSpawningFaction fid
   if spawning then return False
   else do
-    deduceQuits fid Escape
+    deduceQuits b $ Status Escape (fromEnum $ blid b) ""
     return True

@@ -68,7 +68,7 @@ data CmdAtomic =
   | PathActorA ActorId (Maybe [Vector]) (Maybe [Vector])
   | ColorActorA ActorId (Maybe Color.Color) (Maybe Color.Color)
   -- Change faction attributes.
-  | QuitFactionA FactionId (Maybe Status) (Maybe Status)
+  | QuitFactionA FactionId (Maybe Actor) (Maybe Status) (Maybe Status)
   | LeadFactionA FactionId (Maybe ActorId) (Maybe ActorId)
   | DiplFactionA FactionId FactionId Diplomacy Diplomacy
   -- Alter map.
@@ -138,7 +138,7 @@ undoCmdAtomic cmd = case cmd of
   HasteActorA aid delta -> Just $ HasteActorA aid (speedNegate delta)
   PathActorA aid fromPath toPath -> Just $ PathActorA aid toPath fromPath
   ColorActorA aid fromCol toCol -> Just $ ColorActorA aid toCol fromCol
-  QuitFactionA fid fromSt toSt -> Just $ QuitFactionA fid toSt fromSt
+  QuitFactionA fid mb fromSt toSt -> Just $ QuitFactionA fid mb toSt fromSt
   LeadFactionA fid source target -> Just $ LeadFactionA fid target source
   DiplFactionA fid1 fid2 fromDipl toDipl ->
     Just $ DiplFactionA fid1 fid2 toDipl fromDipl

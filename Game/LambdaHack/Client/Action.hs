@@ -343,23 +343,14 @@ displayPush = do
   srunning <- getsClient srunning
   displayFrame (isJust srunning) $ Just frame
 
-scoreToSlideshow :: MonadClientUI m => Status -> m Slideshow
-scoreToSlideshow status = do
-  mleader <- getsClient _sleader
-  total <- case (mleader, status) of
-    (Just leader, _) -> do
-      b <- getsState $ getActorBody leader
-      getsState $ snd . calculateTotal (bfid b) (blid b) Nothing
-    (Nothing, Killed b) ->
-      getsState $ snd . calculateTotal (bfid b) (blid b) (Just b)
-    _ -> return 0
-  if total == 0 then return Monoid.mempty
-  else do
-    table <- getsState shigh
-    time <- getsState stime
-    date <- liftIO getClockTime
-    let (ntable, pos) = HighScore.register table total time status date
-    return $! HighScore.slideshow ntable pos status
+scoreToSlideshow :: MonadClientUI m => Int -> Status -> m Slideshow
+scoreToSlideshow 0 _ = return Monoid.mempty
+scoreToSlideshow total status = do
+  table <- getsState shigh
+  time <- getsState stime
+  date <- liftIO getClockTime
+  let (ntable, pos) = HighScore.register table total time status date
+  return $! HighScore.slideshow ntable pos status
 
 saveName :: FactionId -> Bool -> String
 saveName side isAI =
