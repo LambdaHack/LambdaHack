@@ -509,21 +509,25 @@ drawSfxAtomicUI verbose sfx = case sfx of
       if bfid b == side then do
         subject <- partActorLeader aid b
         let firstFall = if bproj b then "drop down" else "fall down"
-            hurtExtra p = if bhp b <= p && not (bproj b) || bhp b < p
-                          then -- was already dead previous turn
-                               if bproj b
-                               then "be stomped flat"
-                               else "be ground into the floor"
-                          else firstFall
-            verbDie =
+            hurtExtra = if bproj b
+                        then "be stomped flat"
+                        else "be ground into the floor"
+            deadPreviousTurn p = p < 0
+                                 && (bhp b <= p && not (bproj b)
+                                     || bhp b < p)
+            (deadBefore, verbDie) =
               case effect of
-                Effect.Hurt _ p | p < 0 -> hurtExtra p
-                Effect.Heal p | p < 0 -> hurtExtra p
-                _ -> firstFall
+                Effect.Hurt _ p | deadPreviousTurn p -> (True, hurtExtra)
+                Effect.Heal p | deadPreviousTurn p -> (True, hurtExtra)
+                _ -> (False, firstFall)
             msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
         msgAdd msgDie
         unless (bproj b) $ do
-          animDie <- animate (blid b) $ deathBody $ bpos b
+          animDie <-
+            if deadBefore
+              then animate (blid b)
+                   $ twirlSplash (bpos b, bpos b) Color.Red Color.Red
+              else animate (blid b) $ deathBody $ bpos b
           displayFrames animDie
       else do
         let firstFall = if bproj b then "break up" else "collapse"
