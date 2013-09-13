@@ -16,8 +16,8 @@
 ; r: Apply [ApplyItem {verb = "read", object = "scroll", symbol = '?'}]
 ; c: TriggerDir [BumpFeature {verb = "close", object = "door", feature = Closable}]
 ; o: TriggerDir [BumpFeature {verb = "open", object = "door", feature = Openable}]
-; less: TriggerTile [BumpFeature {verb = "ascend", object = "level", feature = Cause (Ascend 1)}, BumpFeature {verb = "quit", object = "dungeon", feature = Cause Quit}]
-; greater: TriggerTile [BumpFeature {verb = "descend", object = "level", feature = Cause (Descend 1)}, BumpFeature {verb = "quit", object = "dungeon", feature = Cause Quit}]
+; less: TriggerTile [BumpFeature {verb = "ascend", object = "level", feature = Cause (Ascend 1)}, BumpFeature {verb = "escape", object = "dungeon", feature = Cause Escape}]
+; greater: TriggerTile [BumpFeature {verb = "descend", object = "level", feature = Cause (Descend 1)}, BumpFeature {verb = "escape", object = "dungeon", feature = Cause Escape}]
 ; CTRL-r: GameRestart "campaign"
 ; ; TODO: pick game modes via arrow keys, not special keys
 ; CTRL-k: GameRestart "skirmish"

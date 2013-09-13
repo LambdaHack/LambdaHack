@@ -52,25 +52,26 @@ placeStairs cotile@Kind.Ops{opick} cmap CaveKind{..} dplaces = do
   let fitArea pos = inside cxsize pos . qarea
       findLegend pos =
         maybe clitLegendTile qlegend $ find (fitArea pos) dplaces
-  upQuit <- opick (findLegend su) $ Tile.kindHasFeature $ F.Cause Effect.Quit
+  upEscape <-
+    opick (findLegend su) $ Tile.kindHasFeature $ F.Cause Effect.Escape
   upId   <- opick (findLegend su) $ Tile.kindHasFeature F.Ascendable
   downId <- opick (findLegend sd) $ Tile.kindHasFeature F.Descendable
-  return (sq, upQuit, su, upId, sd, downId)
+  return (sq, upEscape, su, upId, sd, downId)
 
 -- | Create a level from a cave, from a cave kind.
 buildLevel :: Kind.COps -> Cave -> Int -> Int -> Bool -> Rnd Level
 buildLevel Kind.COps{ cotile=cotile@Kind.Ops{opick}
                     , cocave=Kind.Ops{okind} }
-           Cave{..} ldepth depth quitFeature = do
+           Cave{..} ldepth depth escapeFeature = do
   let kc@CaveKind{..} = okind dkind
   cmap <- convertTileMaps (opick cdefTile (const True)) cxsize cysize dmap
-  (sq, upQuit, su, upId, sd, downId) <-
+  (sq, upEscape, su, upId, sd, downId) <-
     placeStairs cotile cmap kc dplaces
   litemNum <- rollDice citemNum
   secret <- random
   let stairs = (if ldepth == 1 then [] else [(su, upId)])
                ++ (if ldepth == depth then [] else [(sd, downId)])
-               ++ (if not quitFeature then [] else [(sq, upQuit)])
+               ++ (if not escapeFeature then [] else [(sq, upEscape)])
       ltile = cmap Kind.// stairs
       f !n !tk | Tile.isExplorable cotile tk = n + 1
                | otherwise = n
@@ -97,11 +98,11 @@ buildLevel Kind.COps{ cotile=cotile@Kind.Ops{opick}
 
 findGenerator :: Kind.COps -> Caves -> Int -> Int -> Rnd Level
 findGenerator cops@Kind.COps{cocave=Kind.Ops{opick}} caves k depth = do
-  let (genName, quitFeature) =
+  let (genName, escapeFeature) =
         fromMaybe ("dng", False) $ EM.lookup (toEnum k) caves
   ci <- opick genName (const True)
   cave <- buildCave cops k depth ci
-  buildLevel cops cave k depth quitFeature
+  buildLevel cops cave k depth escapeFeature
 
 -- | Freshly generated and not yet populated dungeon.
 data FreshDungeon = FreshDungeon

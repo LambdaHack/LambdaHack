@@ -15,7 +15,7 @@ import Game.LambdaHack.Common.Effect
 data Feature =
     Ascendable           -- ^ triggered by ascending
   | Descendable          -- ^ triggered by descending
-  | Quittable            -- ^ triggered by quitting
+  | Escapable            -- ^ triggered by escaping
   | Openable             -- ^ triggered by opening
   | Closable             -- ^ triggered by closing
 

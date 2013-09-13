@@ -337,7 +337,7 @@ triggerFeatures (_ : ts) = triggerFeatures ts
 verifyTrigger :: (MonadClientAbort m, MonadClientUI m)
               => ActorId -> F.Feature -> m ()
 verifyTrigger leader feat = case feat of
-  F.Cause Effect.Quit -> do
+  F.Cause Effect.Escape -> do
     b <- getsState $ getActorBody leader
     side <- getsClient sside
     spawning <- getsState $ flip isSpawningFaction side

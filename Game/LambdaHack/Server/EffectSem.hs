@@ -84,7 +84,7 @@ effectSem effect source target = case effect of
   Effect.Searching p -> effectSearching p source
   Effect.Ascend p -> effectAscend p target
   Effect.Descend p -> effectDescend p target
-  Effect.Quit -> effectQuit target
+  Effect.Escape -> effectEscape target
 
 -- + Individual semantic functions for effects
 
@@ -444,11 +444,11 @@ effectDescend power target = do
   when b $ execSfxAtomic $ EffectD target $ Effect.Descend power
   return b
 
--- ** Quit
+-- ** Escape
 
 -- | The faction leaves the dungeon.
-effectQuit :: (MonadAtomic m, MonadServer m) => ActorId -> m Bool
-effectQuit aid = do
+effectEscape :: (MonadAtomic m, MonadServer m) => ActorId -> m Bool
+effectEscape aid = do
   b <- getsState $ getActorBody aid
   let fid = bfid b
   spawning <- getsState $ flip isSpawningFaction fid

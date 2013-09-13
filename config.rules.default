@@ -6,7 +6,7 @@
 
 ; [caves]
 ; ; Cave "dng" means a random choice from caves that can randomly appear;
-; ; this is the default and the lack of the Quit feature is the default.
+; ; this is the default and the lack of the Escape feature is the default.
 ; ; Fixed caves for the first levels, then randomly picked caves.
 ; campaign: [(1, ("caveRogue", True)), (2, ("caveRogue", False)), (3, ("caveEmpty", False)), (10, ("caveNoise", False))]
 ; combat: [(1, ("caveCombat", False))]
