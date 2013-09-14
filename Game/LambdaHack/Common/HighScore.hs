@@ -83,7 +83,7 @@ register table total time status@Status{stOutcome} date =
                then (total + 1) `div` 2
                else if stOutcome == Conquer
                     then let turnsSpent = timeFit time timeTurn
-                             speedup = 10000 - turnsSpent
+                             speedup = 10000 - 5 * turnsSpent
                              bonus = sqrt $ fromIntegral speedup :: Double
                          in 10 + floor bonus
                     else total
