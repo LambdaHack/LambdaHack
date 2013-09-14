@@ -79,9 +79,9 @@ register :: ScoreTable  -- ^ old table
          -> ClockTime   -- ^ current date
          -> (ScoreTable, Int)
 register table total time status date =
-  let points = case stOutcome status of
-                 Killed -> (total + 1) `div` 2
-                 _        -> total
+  let points = if stOutcome status `elem` [Killed, Defeated, Restart]
+               then (total + 1) `div` 2
+               else total
       negTime = timeNegate time
       score = ScoreRecord{..}
   in insertPos score table
