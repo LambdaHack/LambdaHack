@@ -93,6 +93,7 @@ combat = rogue
   , cfreq         = [("caveCombat", 1)]
   , cgrid         = RollDiceXY (RollDice 5 2, RollDice 2 2)
   , cminPlaceSize = RollDiceXY (RollDice 1 1, RollDice 1 1)
+  , cdarkChance   = (RollDice 1 100, RollDice 1 100)
   , cvoidChance   = 1%10
   , cnonVoidMin   = 8
   , chidden       = 100

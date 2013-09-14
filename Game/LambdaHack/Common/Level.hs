@@ -44,10 +44,11 @@ type Dungeon = EM.EnumMap LevelId Level
 ascendInBranch :: Dungeon -> LevelId -> Int -> [LevelId]
 ascendInBranch dungeon lid k =
   -- Currently there is just one branch, so the computation is simple.
-  let depth = case EM.maxViewWithKey dungeon of
-        Just ((d, _), _) -> fromEnum d
-        Nothing -> assert `failure` (lid, k)
-      ln = toEnum $ max 1 $ min depth $ fromEnum lid - k
+  let (start, depth) =
+        case (EM.minViewWithKey dungeon, EM.maxViewWithKey dungeon) of
+          (Just ((s, _), _), Just ((d, _), _)) -> (s, d)
+          _ -> assert `failure` dungeon
+      ln = max start $ min depth $ toEnum $ fromEnum lid - k
   in case EM.lookup ln dungeon of
     Just _ | ln /= lid -> [ln]
     _ -> []

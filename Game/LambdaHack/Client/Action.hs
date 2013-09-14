@@ -184,7 +184,11 @@ getArenaUI = do
   mleader <- getsClient _sleader
   case mleader of
     Just leader -> getsState $ blid . getActorBody leader
-    Nothing -> return $ toEnum 1
+    Nothing -> do
+      dungeon <- getsState sdungeon
+      case EM.minViewWithKey dungeon of
+        Just ((s, _), _) -> return s
+        Nothing -> assert `failure` dungeon
 
 -- | Calculate the position of leader's target.
 targetToPos :: MonadClientUI m => m (Maybe Point)

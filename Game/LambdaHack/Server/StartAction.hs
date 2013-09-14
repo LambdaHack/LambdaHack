@@ -190,8 +190,13 @@ populateDungeon = do
   mapWithKeyM_ initialItems dungeon
   factionD <- getsState sfactionD
   Config{configHeroNames} <- getsServer sconfig
-  let needInitialCrew = EM.assocs factionD
-      getEntryLevel (_, fact) = fentry $ okind $ gkind fact
+  let (start, depth) =
+        case (EM.minViewWithKey dungeon, EM.maxViewWithKey dungeon) of
+          (Just ((s, _), _), Just ((d, _), _)) -> (s, d)
+          _ -> assert `failure` dungeon
+      needInitialCrew = EM.assocs factionD
+      getEntryLevel (_, fact) =
+        max start $ min depth $ fentry $ okind $ gkind fact
       arenas = ES.toList $ ES.fromList $ map getEntryLevel needInitialCrew
       initialActors lid = do
         lvl <- getsLevel lid id
