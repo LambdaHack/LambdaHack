@@ -36,6 +36,7 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Server.Action hiding (sendQueryAI, sendQueryUI,
@@ -96,13 +97,15 @@ moveSer aid dir exploration = do
           actorOpenDoor aid dir exploration
 
 -- TODO: let only some actors/items leave smell, e.g., a Smelly Hide Armour.
--- | Add a smell trace for the actor to the level. For, all and only
+-- | Add a smell trace for the actor to the level. For now, all and only
 -- actors from non-spawnig factions leave smell.
 addSmell :: MonadAtomic m => ActorId -> m ()
 addSmell aid = do
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   b <- getsState $ getActorBody aid
   spawning <- getsState $ flip isSpawningFaction (bfid b)
-  unless spawning $ do
+  let canSmell = asmell $ okind $ bkind b
+  unless (bproj b || spawning || canSmell) $ do
     time <- getsState $ getLocalTime $ blid b
     oldS <- getsLevel (blid b) $ EM.lookup (bpos b) . lsmell
     let newTime = timeAdd time smellTimeout
