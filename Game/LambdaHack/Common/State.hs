@@ -31,7 +31,7 @@ import Game.LambdaHack.Content.TileKind
 -- their @State@, but apply atomic actions sent by the server to do so.
 data State = State
   { _sdungeon  :: !Dungeon      -- ^ remembered dungeon
-  , _sdepth    :: !Int          -- ^ max dungeon depth, for item creation, etc.
+  , _sdepth    :: !Int          -- ^ dungeon \'depth\' for items creation, etc.
   , _sactorD   :: !ActorDict    -- ^ remembered actors in the dungeon
   , _sitemD    :: !ItemDict     -- ^ remembered items in the dungeon
   , _sfactionD :: !FactionDict  -- ^ remembered sides still in game

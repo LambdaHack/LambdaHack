@@ -58,18 +58,17 @@ placeStairs cotile@Kind.Ops{opick} cmap CaveKind{..} dplaces = do
   return (sq, upEscape, su, upId, sd, downId)
 
 -- | Create a level from a cave, from a cave kind.
-buildLevel :: Kind.COps -> Cave -> Int -> Int -> Bool -> Rnd Level
+buildLevel :: Kind.COps -> Cave -> Int -> Int -> Int -> Bool -> Rnd Level
 buildLevel Kind.COps{ cotile=cotile@Kind.Ops{opick}
                     , cocave=Kind.Ops{okind} }
-           Cave{..} ldepth depth escapeFeature = do
+           Cave{..} ldepth minD maxD escapeFeature = do
   let kc@CaveKind{..} = okind dkind
   cmap <- convertTileMaps (opick cdefTile (const True)) cxsize cysize dmap
-  (sq, upEscape, su, upId, sd, downId) <-
-    placeStairs cotile cmap kc dplaces
+  (sq, upEscape, su, upId, sd, downId) <- placeStairs cotile cmap kc dplaces
   litemNum <- rollDice citemNum
   secret <- random
-  let stairs = (if ldepth == 1 then [] else [(su, upId)])
-               ++ (if ldepth == depth then [] else [(sd, downId)])
+  let stairs = (if ldepth == minD then [] else [(su, upId)])
+               ++ (if ldepth == maxD then [] else [(sd, downId)])
                ++ (if not escapeFeature then [] else [(sq, upEscape)])
       ltile = cmap Kind.// stairs
       f !n !tk | Tile.isExplorable cotile tk = n + 1
@@ -95,13 +94,18 @@ buildLevel Kind.COps{ cotile=cotile@Kind.Ops{opick}
         }
   return level
 
-findGenerator :: Kind.COps -> Caves -> LevelId -> LevelId -> Rnd Level
-findGenerator cops@Kind.COps{cocave=Kind.Ops{opick}} caves k depth = do
-  let (genName, escapeFeature) =
-        fromMaybe ("dng", False) $ EM.lookup k caves
+findGenerator :: Kind.COps -> Caves -> LevelId -> LevelId -> LevelId
+              -> Rnd Level
+findGenerator cops caves ldepth minD maxD = do
+  let Kind.COps{cocave=Kind.Ops{opick}} = cops
+      (genName, escapeFeature) =
+        fromMaybe ("dng", False) $ EM.lookup ldepth caves
   ci <- opick genName (const True)
-  cave <- buildCave cops (fromEnum k) (fromEnum depth) ci
-  buildLevel cops cave (fromEnum k) (fromEnum depth) escapeFeature
+  let maxDepth = if minD == maxD then 10 else fromEnum maxD
+  cave <- buildCave cops (fromEnum ldepth) maxDepth ci
+  buildLevel cops cave
+             (fromEnum ldepth) (fromEnum minD) (fromEnum maxD)
+             escapeFeature
 
 -- | Freshly generated and not yet populated dungeon.
 data FreshDungeon = FreshDungeon
@@ -112,19 +116,20 @@ data FreshDungeon = FreshDungeon
 -- | Generate the dungeon for a new game.
 dungeonGen :: Kind.COps -> Caves -> Rnd FreshDungeon
 dungeonGen cops caves = do
-  let (start, depth) =
+  let (minD, maxD) =
         case (EM.minViewWithKey caves, EM.maxViewWithKey caves) of
-          (Just ((s, _), _), Just ((d, _), _)) -> (s, d)
+          (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
           _ -> assert `failure` caves
-  assert (start <= depth && fromEnum start >= 1 `blame` caves) skip
+  assert (minD <= maxD && fromEnum minD >= 1 `blame` caves) skip
   let gen :: R.StdGen -> LevelId -> (R.StdGen, (LevelId, Level))
-      gen g k =
+      gen g ldepth =
         let (g1, g2) = R.split g
-            res = St.evalState (findGenerator cops caves k depth) g1
-        in (g2, (k, res))
+            findG = findGenerator cops caves ldepth minD maxD
+            res = St.evalState findG g1
+        in (g2, (ldepth, res))
       con :: R.StdGen -> (FreshDungeon, R.StdGen)
-      con g = let (gd, levels) = mapAccumL gen g [start..depth]
+      con g = let (gd, levels) = mapAccumL gen g [minD..maxD]
                   freshDungeon = EM.fromList levels
-                  freshDepth = fromEnum depth
+                  freshDepth = if minD == maxD then 10 else fromEnum maxD
               in (FreshDungeon{..}, gd)
   St.state con

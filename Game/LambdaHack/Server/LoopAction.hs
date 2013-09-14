@@ -285,7 +285,8 @@ generateMonster lid = do
   s <- getState
   let f fid = fspawn (okind (gkind (factionD EM.! fid))) > 0
       spawns = actorNotProjList f lid s
-  rc <- rndToAction $ monsterGenChance ldepth (length spawns)
+  depth <- getsState sdepth
+  rc <- rndToAction $ monsterGenChance ldepth depth (length spawns)
   when rc $ do
     let allPers = ES.unions $ map (totalVisible . (EM.! lid)) $ EM.elems pers
     pos <- rndToAction $ rollSpawnPos cops allPers lid lvl s

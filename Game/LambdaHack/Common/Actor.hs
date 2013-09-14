@@ -81,9 +81,11 @@ data Actor = Actor
 -- could further influence the chance, and the chance could also affect
 -- which monster is generated. How many and which monsters are generated
 -- will also depend on the cave kind used to build the level.
-monsterGenChance :: Int -> Int -> Rnd Bool
-monsterGenChance depth numMonsters =
-  chance $ 1%(fromIntegral (50 * (numMonsters - depth)) `max` 5)
+monsterGenChance :: Int -> Int -> Int -> Rnd Bool
+monsterGenChance ldepth depth numMonsters =
+  -- Mimics @rollDeep2.
+  let scaledDepth = 10 * (ldepth - 1) `div` max 1 (depth - 1)
+  in chance $ 1%(fromIntegral (50 * (numMonsters - scaledDepth)) `max` 5)
 
 -- | The part of speech describing the actor.
 partActor :: Kind.Ops ActorKind -> Actor -> MU.Part

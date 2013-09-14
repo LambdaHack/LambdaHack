@@ -115,8 +115,8 @@ newItem cops@Kind.Ops{opick, okind} flavour discoRev lvl depth = do
   let kind = okind ikChosen
   jcount <- rollDeep lvl depth (icount kind)
   if jcount == 0
-    then  -- Rare item; beware of inifite loops.
-      newItem cops flavour discoRev lvl depth
+    then -- Rare item; beware of inifite loops.
+         newItem cops flavour discoRev lvl depth
     else do
       effect <- effectTrav (ieffect kind) (rollDeep lvl depth)
       return ( buildItem flavour discoRev ikChosen kind effect
