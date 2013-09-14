@@ -144,16 +144,16 @@ getLocalTime :: LevelId -> State -> Time
 getLocalTime lid s = ltime $ _sdungeon s EM.! lid
 
 -- | Tell whether the faction is controlled (at least partially) by a human.
-isHumanFaction :: State -> FactionId -> Bool
-isHumanFaction s fid = isHumanFact $ _sfactionD s EM.! fid
+isHumanFaction :: FactionId -> State -> Bool
+isHumanFaction fid s = isHumanFact $ _sfactionD s EM.! fid
 
 -- | Tell whether the faction uses AI to control any of its actors.
-usesAIFaction :: State -> FactionId -> Bool
-usesAIFaction s fid = usesAIFact $ _sfactionD s EM.! fid
+usesAIFaction :: FactionId -> State -> Bool
+usesAIFaction fid s = usesAIFact $ _sfactionD s EM.! fid
 
 -- | Tell whether the faction can spawn actors.
-isSpawningFaction :: State -> FactionId -> Bool
-isSpawningFaction s fid = isSpawningFact (_scops s) $ _sfactionD s EM.! fid
+isSpawningFaction :: FactionId -> State -> Bool
+isSpawningFaction fid s = isSpawningFact (_scops s) $ _sfactionD s EM.! fid
 
 sdungeon :: State -> Dungeon
 sdungeon = _sdungeon

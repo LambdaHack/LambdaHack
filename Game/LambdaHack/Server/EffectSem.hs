@@ -190,7 +190,7 @@ electLeader fid lid aidDead = do
 deduceKilled :: (MonadAtomic m, MonadServer m) => Actor -> m ()
 deduceKilled body = do
   let fid = bfid body
-  spawning <- getsState $ flip isSpawningFaction fid
+  spawning <- getsState $ isSpawningFaction fid
   Config{configFirstDeathEnds} <- getsServer sconfig
   mleader <- getsState $ gleader . (EM.! fid) . sfactionD
   when (not spawning && (isNothing mleader || configFirstDeathEnds)) $
@@ -268,27 +268,27 @@ effectSpawnMonster power target = do
   tm <- getsState (getActorBody target)
   ps <- getsState $ nearbyFreePoints cotile (const True) (bpos tm) (blid tm)
   time <- getsState $ getLocalTime (blid tm)
-  spawnMonsters (take power ps) (blid tm) (const True) time
+  spawnMonsters (take power ps) (blid tm) (const True) time "summon"
   return True
 
--- | Spawn monsters of any spawning faction, friendly or not.
+-- | Spawn monsters of any spawn or summon faction, friendly or not.
 -- To be used for spontaneous spawning of monsters and for the spawning effect.
 spawnMonsters :: (MonadAtomic m, MonadServer m)
-              => [Point] -> LevelId -> ((FactionId, Faction) -> Bool) -> Time
+              => [Point] -> LevelId -> ((FactionId, Faction) -> Bool)
+              -> Time -> Text
               -> m ()
-spawnMonsters ps lid filt time = assert (not $ null ps) $ do
+spawnMonsters ps lid filt time freqChoice = assert (not $ null ps) $ do
   Kind.COps{ coactor=Kind.Ops{opick}
            , cofact=Kind.Ops{okind} } <- getsState scops
   factionD <- getsState sfactionD
-  let f (fid, fa) =
-        let kind = okind (gkind fa)
-        in if fspawn kind <= 0
-           then Nothing
-           else Just (fspawn kind, (kind, fid))
+  -- TODO: rewrite with opick?
+  let f (fid, fact) = let kind = okind (gkind fact)
+                          g n = (n, (kind, fid))
+                      in fmap g $ lookup freqChoice $ ffreq kind
   case mapMaybe f $ filter filt $ EM.assocs factionD of
     [] -> return ()  -- no faction spawns
     spawnList -> do
-      let freq = toFreq "spawn" spawnList
+      let freq = toFreq "spawnMonsters" spawnList
       (spawnKind, bfid) <- rndToAction $ frequency freq
       laid <- forM ps $ \ p -> do
         mk <- rndToAction $ opick (fname spawnKind) (const True)
@@ -451,7 +451,7 @@ effectEscape :: (MonadAtomic m, MonadServer m) => ActorId -> m Bool
 effectEscape aid = do
   b <- getsState $ getActorBody aid
   let fid = bfid b
-  spawning <- getsState $ flip isSpawningFaction fid
+  spawning <- getsState $ isSpawningFaction fid
   if spawning then return False
   else do
     deduceQuits b $ Status Escape (fromEnum $ blid b) ""

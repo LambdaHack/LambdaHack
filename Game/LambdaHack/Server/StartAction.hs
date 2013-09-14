@@ -214,7 +214,7 @@ populateDungeon = do
         let ps = take ginitial $ zip [0..] psFree
         forM_ ps $ \ (n, p) ->
           if isSpawningFact cops fact
-          then spawnMonsters [p] lid ((== side) . fst) ntime
+          then spawnMonsters [p] lid ((== side) . fst) ntime "spawn"
           else do
             aid <- addHero side p lid configHeroNames (Just n) ntime
             mleader <- getsState $ gleader . (EM.! side) . sfactionD

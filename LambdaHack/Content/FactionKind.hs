@@ -13,26 +13,33 @@ cdefs = ContentDef
   , getFreq = ffreq
   , validate = fvalidate
   , content =
-      [hero, monster]
+      [hero, monster, horror]
   }
-hero,        monster :: FactionKind
+hero,        monster, horror :: FactionKind
 
 hero = FactionKind
   { fsymbol   = '@'
   , fname     = "hero"
-  , ffreq     = [("hero", 1), ("playable", 50)]
+  , ffreq     = [("hero", 1)]
   , fAiLeader = "fullAbility"
   , fAiMember = "meleeAdjacent"
-  , fspawn    = 0
   , fentry    = toEnum 1
   }
 
 monster = FactionKind
   { fsymbol   = 'm'
   , fname     = "monster"
-  , ffreq     = [("monster", 1), ("playable", 50)]
+  , ffreq     = [("monster", 1), ("spawn", 50), ("summon", 50)]
   , fAiLeader = "fullAbility"
   , fAiMember = "fullAbility"
-  , fspawn    = 50
   , fentry    = toEnum 3
+  }
+
+horror = FactionKind
+  { fsymbol   = 'h'
+  , fname     = "horror"
+  , ffreq     = [("horror", 1), ("summon", 50)]
+  , fAiLeader = "fullAbility"
+  , fAiMember = "fullAbility"
+  , fentry    = toEnum 1
   }

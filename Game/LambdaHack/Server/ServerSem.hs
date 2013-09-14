@@ -103,7 +103,7 @@ addSmell :: MonadAtomic m => ActorId -> m ()
 addSmell aid = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   b <- getsState $ getActorBody aid
-  spawning <- getsState $ flip isSpawningFaction (bfid b)
+  spawning <- getsState $ isSpawningFaction (bfid b)
   let canSmell = asmell $ okind $ bkind b
   unless (bproj b || spawning || canSmell) $ do
     time <- getsState $ getLocalTime $ blid b
@@ -135,7 +135,7 @@ actorAttackActor source target = do
     else case strongestSword cops itemAssocs of
       Just (_, (iid, w)) -> return (Just iid, w)
       Nothing -> do  -- hand to hand combat
-        let h2hGroup | isSpawningFaction s sfid = "monstrous"
+        let h2hGroup | isSpawningFaction sfid s = "monstrous"
                      | otherwise = "unarmed"
         h2hKind <- rndToAction $ opick h2hGroup (const True)
         flavour <- getsServer sflavour

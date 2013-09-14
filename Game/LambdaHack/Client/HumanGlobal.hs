@@ -340,7 +340,7 @@ verifyTrigger leader feat = case feat of
   F.Cause Effect.Escape -> do
     b <- getsState $ getActorBody leader
     side <- getsClient sside
-    spawning <- getsState $ flip isSpawningFaction side
+    spawning <- getsState $ isSpawningFaction side
     when spawning $ abortWith
       "This is the way out, but where would you go in this alien world?"
     go <- displayYesNo ColorFull "This is the way out. Really leave now?"

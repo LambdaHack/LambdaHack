@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | Factions taking part in the game: e.g., two human players controlling
 -- the hero faction battling the monster and the animal factions.
 module Game.LambdaHack.Common.Faction
@@ -77,7 +78,8 @@ usesAIFact fact = isJust (gAiLeader fact) || isJust (gAiMember fact)
 -- | Tell whether the faction can spawn actors.
 isSpawningFact :: Kind.COps -> Faction -> Bool
 isSpawningFact Kind.COps{cofact=Kind.Ops{okind}} fact =
-  fspawn (okind $ gkind fact) > 0
+  let kind = okind (gkind fact)
+  in maybe False (> 0) $ lookup "spawn" $ ffreq kind
 
 -- | Check if factions are at war. Assumes symmetry.
 isAtWar :: Faction -> FactionId -> Bool

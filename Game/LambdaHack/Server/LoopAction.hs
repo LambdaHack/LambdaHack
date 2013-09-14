@@ -29,7 +29,6 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Frontend
 import Game.LambdaHack.Server.Action hiding (sendUpdateAI, sendUpdateUI)
 import Game.LambdaHack.Server.EffectSem
@@ -278,12 +277,11 @@ advanceTime aid = do
 -- | Generate a monster, possibly.
 generateMonster :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
 generateMonster lid = do
-  cops@Kind.COps{cofact=Kind.Ops{okind}} <- getsState scops
+  cops <- getsState scops
   pers <- getsServer sper
   lvl@Level{ldepth} <- getsLevel lid id
-  factionD <- getsState sfactionD
   s <- getState
-  let f fid = fspawn (okind (gkind (factionD EM.! fid))) > 0
+  let f fid = isSpawningFaction fid s
       spawns = actorNotProjList f lid s
   depth <- getsState sdepth
   rc <- rndToAction $ monsterGenChance ldepth depth (length spawns)
@@ -291,7 +289,7 @@ generateMonster lid = do
     let allPers = ES.unions $ map (totalVisible . (EM.! lid)) $ EM.elems pers
     pos <- rndToAction $ rollSpawnPos cops allPers lid lvl s
     time <- getsState $ getLocalTime lid
-    spawnMonsters [pos] lid (const True) time
+    spawnMonsters [pos] lid (const True) time "spawn"
 
 rollSpawnPos :: Kind.COps -> ES.EnumSet Point -> LevelId -> Level -> State
              -> Rnd Point
