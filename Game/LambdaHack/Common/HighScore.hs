@@ -77,14 +77,19 @@ register :: ScoreTable  -- ^ old table
          -> Time        -- ^ game time spent
          -> Status      -- ^ reason of the game interruption
          -> ClockTime   -- ^ current date
-         -> (ScoreTable, Int)
-register table total time status date =
-  let points = if stOutcome status `elem` [Killed, Defeated, Restart]
+         -> Maybe (ScoreTable, Int)
+register table total time status@Status{stOutcome} date =
+  let points = if stOutcome `elem` [Killed, Defeated, Restart]
                then (total + 1) `div` 2
-               else total
+               else if stOutcome == Conquer
+                    then let turnsSpent = timeFit time timeTurn
+                             speedup = 10000 - turnsSpent
+                             bonus = sqrt $ fromIntegral speedup :: Double
+                         in 10 + floor bonus
+                    else total
       negTime = timeNegate time
       score = ScoreRecord{..}
-  in insertPos score table
+  in if points > 0 then Just $ insertPos score table else Nothing
 
 -- | Show a screenful of the high scores table.
 -- Parameter height is the number of (3-line) scores to be shown.
@@ -124,7 +129,7 @@ slideshow table pos status =
             ("your ruthless victory", MU.Sg3rd,
              if pos <= height
              then "among the greatest heroes"
-             else "")
+             else "(score based on time)")
           Escape ->
             ("your dashing coup", MU.Sg3rd,
              if pos <= height

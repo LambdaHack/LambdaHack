@@ -187,15 +187,15 @@ registerScore status mbody fid = do
       Just aid -> do
         b <- getsState $ getActorBody aid
         getsState $ snd . calculateTotal b
-  unless (total == 0) $ do
-    config <- getsServer sconfig
-    -- Re-read the table in case it's changed by a concurrent game.
-    table <- restoreScore config
-    time <- getsState stime
-    date <- liftIO getClockTime
-    let (ntable, _) = HighScore.register table total time status date
-    liftIO $
-      encodeEOF (configScoresFile config) (ntable :: HighScore.ScoreTable)
+  config <- getsServer sconfig
+  -- Re-read the table in case it's changed by a concurrent game.
+  table <- restoreScore config
+  time <- getsState stime
+  date <- liftIO getClockTime
+  let saveScore (ntable, _) =
+        liftIO $ encodeEOF (configScoresFile config)
+                           (ntable :: HighScore.ScoreTable)
+  maybe skip saveScore $ HighScore.register table total time status date
 
 revealItems :: (MonadAtomic m, MonadServer m)
             => Maybe FactionId -> Maybe Actor -> m ()

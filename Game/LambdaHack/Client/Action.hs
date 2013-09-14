@@ -348,13 +348,13 @@ displayPush = do
   displayFrame (isJust srunning) $ Just frame
 
 scoreToSlideshow :: MonadClientUI m => Int -> Status -> m Slideshow
-scoreToSlideshow 0 _ = return Monoid.mempty
 scoreToSlideshow total status = do
   table <- getsState shigh
   time <- getsState stime
   date <- liftIO getClockTime
-  let (ntable, pos) = HighScore.register table total time status date
-  return $! HighScore.slideshow ntable pos status
+  let showScore (ntable, pos) = HighScore.slideshow ntable pos status
+  return $! maybe Monoid.mempty showScore
+            $ HighScore.register table total time status date
 
 saveName :: FactionId -> Bool -> String
 saveName side isAI =
