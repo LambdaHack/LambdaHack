@@ -152,7 +152,8 @@ actorAttackActor source target = do
         -- Msgs inside itemEffectSem describe the target part.
         itemEffect source target miid item
   -- Projectiles can't be blocked (though can be sidestepped).
-  if braced tm time && not (bproj sm)
+  -- Incapacitated actors can't block
+  if braced tm time && not (bproj sm) && bhp tm > 0
     then do
       blocked <- rndToAction $ chance $ 1%2
       if blocked
