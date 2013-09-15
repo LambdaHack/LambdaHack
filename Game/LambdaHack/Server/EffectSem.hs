@@ -76,8 +76,8 @@ effectSem effect source target = case effect of
   Effect.Mindprobe _ -> effectMindprobe target
   Effect.Dominate | source /= target -> effectDominate source target
   Effect.Dominate -> effectSem (Effect.Mindprobe undefined) source target
-  Effect.SummonFriend p -> effectSummonFriend p source target
-  Effect.SpawnMonster p -> effectSpawnMonster p target
+  Effect.CallFriend p -> effectCallFriend p source target
+  Effect.Summon p -> effectSummon p target
   Effect.CreateItem p -> effectCreateItem p target
   Effect.ApplyPerfume -> effectApplyPerfume source target
   Effect.Regeneration p -> effectSem (Effect.Heal p) source target
@@ -200,10 +200,10 @@ deduceKilled body = do
 
 -- ** SummonFriend
 
-effectSummonFriend :: (MonadAtomic m, MonadServer m)
+effectCallFriend :: (MonadAtomic m, MonadServer m)
                    => Int -> ActorId -> ActorId
                    -> m Bool
-effectSummonFriend power source target = do
+effectCallFriend power source target = do
   Kind.COps{cotile} <- getsState scops
   sm <- getsState (getActorBody source)
   tm <- getsState (getActorBody target)
@@ -263,9 +263,9 @@ addHero bfid ppos lid configHeroNames mNumber time = do
 
 -- ** SpawnMonster
 
-effectSpawnMonster :: (MonadAtomic m, MonadServer m)
-                   => Int -> ActorId -> m Bool
-effectSpawnMonster power target = do
+effectSummon :: (MonadAtomic m, MonadServer m)
+             => Int -> ActorId -> m Bool
+effectSummon power target = do
   Kind.COps{cotile} <- getsState scops
   tm <- getsState (getActorBody target)
   ps <- getsState $ nearbyFreePoints cotile (const True) (bpos tm) (blid tm)

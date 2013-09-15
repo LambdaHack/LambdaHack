@@ -24,8 +24,8 @@ data Effect a =
   | Hurt !RollDice a
   | Mindprobe Int       -- the @Int@ is a hack to send the result to clients
   | Dominate
-  | SummonFriend Int
-  | SpawnMonster Int
+  | CallFriend Int
+  | Summon Int
   | CreateItem Int
   | ApplyPerfume
   | Regeneration a
@@ -49,8 +49,8 @@ effectTrav (Hurt dice a) f = do
   return $ Hurt dice b
 effectTrav (Mindprobe x) _ = return $ Mindprobe x
 effectTrav Dominate _ = return Dominate
-effectTrav (SummonFriend p) _ = return $ SummonFriend p
-effectTrav (SpawnMonster p) _ = return $ SpawnMonster p
+effectTrav (CallFriend p) _ = return $ CallFriend p
+effectTrav (Summon p) _ = return $ Summon p
 effectTrav (CreateItem p) _ = return $ CreateItem p
 effectTrav ApplyPerfume _ = return ApplyPerfume
 effectTrav (Regeneration a) f = do
@@ -74,8 +74,8 @@ effectToSuff effect f =
     Hurt dice t -> "(" <> showT dice <> ")" <> t
     Mindprobe{} -> "of soul searching"
     Dominate -> "of domination"
-    SummonFriend p -> "of aid calling" <> affixPower p
-    SpawnMonster p -> "of spawning" <> affixPower p
+    CallFriend p -> "of aid calling" <> affixPower p
+    Summon p -> "of summoning" <> affixPower p
     CreateItem p -> "of item creation" <> affixPower p
     ApplyPerfume -> "of rose water"
     Regeneration t -> "of regeneration" <> t
@@ -108,8 +108,8 @@ effectToBenefit (Heal p) = p * 10       -- TODO: depends on (maxhp - hp)
 effectToBenefit (Hurt _ p) = -(p * 10)  -- TODO: dice ignored for now
 effectToBenefit Mindprobe{} = 0         -- AI can't benefit yet
 effectToBenefit Dominate = 1            -- hard to use; TODO: limit by IQ
-effectToBenefit (SummonFriend p) = p * 100
-effectToBenefit SpawnMonster{} = 5      -- may or may not spawn a friendly
+effectToBenefit (CallFriend p) = p * 100
+effectToBenefit Summon{} = 5            -- may or may not spawn a friendly
 effectToBenefit (CreateItem p) = p * 20
 effectToBenefit ApplyPerfume = 0
 effectToBenefit Regeneration{} = 0      -- bigger benefit from carrying around

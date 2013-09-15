@@ -141,11 +141,11 @@ scroll = ItemKind
   , itoThrow = -75  -- bad shape, even rolled up
   }
 scroll1 = scroll
-  { ieffect  = SummonFriend 1
+  { ieffect  = CallFriend 1
   , ifreq    = [("dng", 2)]
   }
 scroll2 = scroll
-  { ieffect  = SpawnMonster 1
+  { ieffect  = Summon 1
   }
 scroll3 = scroll
   { ieffect  = Descend 1
