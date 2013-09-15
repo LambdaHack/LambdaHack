@@ -250,15 +250,15 @@ deduceQuits body status = do
   factionD <- getsState sfactionD
   let assocsInGame = filter (inGame . snd) $ EM.assocs factionD
       keysInGame = map fst assocsInGame
-      assocsSpawn = filter (isSpawningFact cops . snd) assocsInGame
-      assocsNotSpawn = filter (not . isSpawningFact cops . snd) assocsInGame
+      assocsSpawn = filter (isSpawnFact cops . snd) assocsInGame
+      assocsNotSummon = filter (not . isSummonFact cops . snd) assocsInGame
       assocsHuman = filter (isHumanFact . snd) assocsInGame
-  case assocsNotSpawn of
+  case assocsNotSummon of
     _ | null assocsHuman ->
       -- No screensaver mode for now --- all non-human players win.
       mapQuitF status{stOutcome=Conquer} keysInGame
     [] ->
-      -- Only spawners remain so all win, human or not, allied or not.
+      -- Only summons remain so all win, human or not, allied or not.
       mapQuitF status{stOutcome=Conquer} keysInGame
     (_, fact1) : rest | null assocsSpawn && all (isAllied fact1 . fst) rest ->
       -- Only one allied team remains in a no-spawners game.

@@ -3,7 +3,8 @@
 -- the hero faction battling the monster and the animal factions.
 module Game.LambdaHack.Common.Faction
   ( FactionId, FactionDict, Faction(..), Diplomacy(..), Outcome(..), Status(..)
-  , isHumanFact, usesAIFact, isSpawningFact, isAtWar, isAllied
+  , isHumanFact, usesAIFact, isSpawnFact, isSummonFact
+  , isAtWar, isAllied
   ) where
 
 import Data.Binary
@@ -76,10 +77,16 @@ usesAIFact :: Faction -> Bool
 usesAIFact fact = isJust (gAiLeader fact) || isJust (gAiMember fact)
 
 -- | Tell whether the faction can spawn actors.
-isSpawningFact :: Kind.COps -> Faction -> Bool
-isSpawningFact Kind.COps{cofact=Kind.Ops{okind}} fact =
+isSpawnFact :: Kind.COps -> Faction -> Bool
+isSpawnFact Kind.COps{cofact=Kind.Ops{okind}} fact =
   let kind = okind (gkind fact)
   in maybe False (> 0) $ lookup "spawn" $ ffreq kind
+
+-- | Tell whether actors of the faction can be summoned by items, etc..
+isSummonFact :: Kind.COps -> Faction -> Bool
+isSummonFact Kind.COps{cofact=Kind.Ops{okind}} fact =
+  let kind = okind (gkind fact)
+  in maybe False (> 0) $ lookup "summon" $ ffreq kind
 
 -- | Check if factions are at war. Assumes symmetry.
 isAtWar :: Faction -> FactionId -> Bool

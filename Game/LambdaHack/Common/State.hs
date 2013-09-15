@@ -8,8 +8,8 @@ module Game.LambdaHack.Common.State
     -- * State operations
   , defStateGlobal, emptyState, localFromGlobal
   , updateDungeon, updateDepth, updateActorD, updateItemD
-  , updateFaction, updateTime, updateCOps
-  , getLocalTime, isHumanFaction, usesAIFaction, isSpawningFaction
+  , updateFaction, updateTime, updateCOps, getLocalTime
+  , isHumanFaction, usesAIFaction, isSpawnFaction, isSummonFaction
   ) where
 
 import Data.Binary
@@ -152,8 +152,12 @@ usesAIFaction :: FactionId -> State -> Bool
 usesAIFaction fid s = usesAIFact $ _sfactionD s EM.! fid
 
 -- | Tell whether the faction can spawn actors.
-isSpawningFaction :: FactionId -> State -> Bool
-isSpawningFaction fid s = isSpawningFact (_scops s) $ _sfactionD s EM.! fid
+isSpawnFaction :: FactionId -> State -> Bool
+isSpawnFaction fid s = isSpawnFact (_scops s) $ _sfactionD s EM.! fid
+
+-- | Tell whether actors of the faction can be summoned by items, etc..
+isSummonFaction :: FactionId -> State -> Bool
+isSummonFaction fid s = isSummonFact (_scops s) $ _sfactionD s EM.! fid
 
 sdungeon :: State -> Dungeon
 sdungeon = _sdungeon

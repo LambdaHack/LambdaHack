@@ -190,10 +190,12 @@ electLeader fid lid aidDead = do
 deduceKilled :: (MonadAtomic m, MonadServer m) => Actor -> m ()
 deduceKilled body = do
   let fid = bfid body
-  spawning <- getsState $ isSpawningFaction fid
+  spawn <- getsState $ isSpawnFaction fid
+  summon <- getsState $ isSummonFaction fid
   Config{configFirstDeathEnds} <- getsServer sconfig
   mleader <- getsState $ gleader . (EM.! fid) . sfactionD
-  when (not spawning && (isNothing mleader || configFirstDeathEnds)) $
+  when (not spawn && not summon
+        && (isNothing mleader || configFirstDeathEnds)) $
     deduceQuits body $ Status Killed (fromEnum $ blid body) ""
 
 -- ** SummonFriend
@@ -272,7 +274,7 @@ effectSpawnMonster power target = do
   return True
 
 -- | Spawn monsters of any spawn or summon faction, friendly or not.
--- To be used for spontaneous spawning of monsters and for the spawning effect.
+-- To be used for spontaneous spawning of monsters and for the summon effect.
 spawnMonsters :: (MonadAtomic m, MonadServer m)
               => [Point] -> LevelId -> ((FactionId, Faction) -> Bool)
               -> Time -> Text
@@ -451,8 +453,9 @@ effectEscape :: (MonadAtomic m, MonadServer m) => ActorId -> m Bool
 effectEscape aid = do
   b <- getsState $ getActorBody aid
   let fid = bfid b
-  spawning <- getsState $ isSpawningFaction fid
-  if spawning then return False
+  spawn <- getsState $ isSpawnFaction fid
+  summon <- getsState $ isSummonFaction fid
+  if spawn || summon then return False
   else do
     deduceQuits b $ Status Escape (fromEnum $ blid b) ""
     return True

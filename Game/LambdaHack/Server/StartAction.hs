@@ -213,7 +213,7 @@ populateDungeon = do
                         cotile (Tile.hasFeature cotile F.CanActor) ppos lid
         let ps = take ginitial $ zip [0..] psFree
         forM_ ps $ \ (n, p) ->
-          if isSpawningFact cops fact
+          if isSpawnFact cops fact
           then spawnMonsters [p] lid ((== side) . fst) ntime "spawn"
           else do
             aid <- addHero side p lid configHeroNames (Just n) ntime

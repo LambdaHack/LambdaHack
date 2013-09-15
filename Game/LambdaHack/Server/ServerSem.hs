@@ -98,14 +98,14 @@ moveSer aid dir exploration = do
 
 -- TODO: let only some actors/items leave smell, e.g., a Smelly Hide Armour.
 -- | Add a smell trace for the actor to the level. For now, all and only
--- actors from non-spawnig factions leave smell.
+-- actors from non-spawning factions leave smell.
 addSmell :: MonadAtomic m => ActorId -> m ()
 addSmell aid = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   b <- getsState $ getActorBody aid
-  spawning <- getsState $ isSpawningFaction (bfid b)
+  spawn <- getsState $ isSpawnFaction (bfid b)
   let canSmell = asmell $ okind $ bkind b
-  unless (bproj b || spawning || canSmell) $ do
+  unless (bproj b || spawn || canSmell) $ do
     time <- getsState $ getLocalTime $ blid b
     oldS <- getsLevel (blid b) $ EM.lookup (bpos b) . lsmell
     let newTime = timeAdd time smellTimeout
@@ -135,7 +135,7 @@ actorAttackActor source target = do
     else case strongestSword cops itemAssocs of
       Just (_, (iid, w)) -> return (Just iid, w)
       Nothing -> do  -- hand to hand combat
-        let h2hGroup | isSpawningFaction sfid s = "monstrous"
+        let h2hGroup | isSpawnFaction sfid s = "monstrous"
                      | otherwise = "unarmed"
         h2hKind <- rndToAction $ opick h2hGroup (const True)
         flavour <- getsServer sflavour

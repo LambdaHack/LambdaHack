@@ -84,13 +84,13 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
   -- Loop, communicating with clients.
   let loop = do
         let factionArena fact = do
-              let isSpawning = isSpawningFact cops fact
+              let spawn = isSpawnFact cops fact
                   -- TODO; This is a significant advantage of human spawners;
                   -- perhaps we could instead auto-switch leaders
                   -- to the fist level non-spawner factions act on.
                   isHuman = isHumanFact fact
               case gleader fact of
-                Just leader | isHuman || not isSpawning -> do
+                Just leader | isHuman || not spawn -> do
                   b <- getsState $ getActorBody leader
                   return $ Just $ blid b
                 _ -> return Nothing
@@ -281,7 +281,7 @@ generateMonster lid = do
   pers <- getsServer sper
   lvl@Level{ldepth} <- getsLevel lid id
   s <- getState
-  let f fid = isSpawningFaction fid s
+  let f fid = isSpawnFaction fid s
       spawns = actorNotProjList f lid s
   depth <- getsState sdepth
   rc <- rndToAction $ monsterGenChance ldepth depth (length spawns)
