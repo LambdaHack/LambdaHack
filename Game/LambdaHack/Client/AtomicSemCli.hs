@@ -421,9 +421,13 @@ quitFactionUI fid mbody toSt = do
   let fact = factionD EM.! fid
       fidName = MU.Text $ gname fact
   side <- getsClient sside
+  spawn <- getsState $ isSpawnFaction fid
+  summon <- getsState $ isSummonFaction fid
   let msgIfSide _ | fid /= side = Nothing
       msgIfSide s = Just s
       (startingPart, partingPart) = case toSt of
+        _ | summon && not spawn ->
+          (Nothing, Nothing)  -- Ignore summoned actors factions.
         Just Status{stOutcome=Killed} ->
           ( Just "be eliminated"
           , msgIfSide "Let's hope another party can save the day!" )
