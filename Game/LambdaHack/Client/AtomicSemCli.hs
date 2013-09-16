@@ -46,13 +46,27 @@ import Game.LambdaHack.Utils.Assert
 -- of commands kept for each command received.
 cmdAtomicFilterCli :: MonadClient m => CmdAtomic -> m [CmdAtomic]
 cmdAtomicFilterCli cmd = case cmd of
+  AlterTileA lid p fromTile _toTile -> do
+    t <- getsLevel lid (`at` p)
+    if t == fromTile
+      then return [cmd]
+      else -- from alterTileA@ we know @t == freshClientTile@,
+           -- which is uncanny, so will produce a message
+           return [ cmd  -- reveal the tile
+                  , SearchTileA lid p t fromTile  -- show the message
+                  ]
   SearchTileA lid p fromTile toTile -> do
     t <- getsLevel lid (`at` p)
-    if t /= fromTile
-      then return []  -- either already aware, or totally misguided
-      else return [ cmd  -- for the message
-                  , AlterTileA lid p fromTile toTile  -- to reveal the tile
-                  ]
+    if t == toTile
+      then -- Already knows the tile fully.
+           return []
+      else if t == fromTile
+           then -- Fully ignorant. (No intermediate knowledge possible.)
+                return [ AlterTileA lid p fromTile toTile  -- reveal the tile
+                       , cmd  -- show the message
+                       ]
+           else -- Misguided. Should never happen, LoseTile resets memory.
+                assert `failure` (t, cmd)
   DiscoverA _ _ iid _ -> do
     disco <- getsClient sdisco
     item <- getsState $ getItemBody iid
@@ -289,11 +303,30 @@ drawCmdAtomicUI verbose cmd = case cmd of
   QuitFactionA fid mbody _ toSt -> quitFactionUI fid mbody toSt
   AlterTileA{} | verbose ->
     return ()  -- TODO: door opens
-  SearchTileA _ _ fromTile toTile -> do
+  SearchTileA lid p fromTile toTile -> do
     Kind.COps{cotile = Kind.Ops{oname}} <- getsState scops
-    let msg = makeSentence
-          [ "the", MU.SubjectVerbSg (MU.Text $ oname fromTile) "turn out to be"
-          , MU.AW $ MU.Text $ oname toTile ]
+    lxsize <- getsLevel lid lxsize
+    tileAfterAlterTileA <- getsLevel lid (`at` p)
+    let msg =
+          if tileAfterAlterTileA /= toTile
+          then -- From @alterTileA@ we know @fromTile == freshClientTile@.
+               -- The case produced by @cmdAtomicFilterCli@.
+               -- It happens when a client thinks the tile is @fromTile@,
+               -- but it's @toTile@, and @AlterTileA@ changes it
+               -- to @tileAfterAlterTileA@. See @alterTileA@.
+               let noun = ""  -- a hack, we we don't handle adverbs well
+                   verb = "turn into"
+               in makeSentence [ "the", MU.Text $ oname fromTile
+                               , "at position", MU.Text $ showPoint lxsize p
+                               , "suddenly"  -- adverb
+                               , MU.SubjectVerbSg noun verb
+                               , MU.AW $ MU.Text $ oname tileAfterAlterTileA ]
+          else -- The normal case, sent by the server.
+               let noun = MU.Text $ oname fromTile
+                   verb = "turn out to be"
+               in makeSentence [ "the"
+                               , MU.SubjectVerbSg noun verb
+                               , MU.AW $ MU.Text $ oname toTile ]
     msgAdd msg
   AgeGameA t -> do
     when (t > timeClip) $ displayFrames [Nothing]  -- show delay

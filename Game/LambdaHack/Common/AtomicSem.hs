@@ -303,7 +303,14 @@ alterTileA :: MonadAction m
            -> m ()
 alterTileA lid p fromTile toTile = assert (fromTile /= toTile) $ do
   Kind.COps{cotile} <- getsState scops
+  freshClientTile <- getsLevel lid $ hideTile cotile p
+  -- The second alternative can happen if, e.g., a client remembers,
+  -- but does not see the tile (so does not notice the SearchTileA action),
+  -- and it suddenly changes into another tile,
+  -- which at the same time becomes visible (e.g., an open door).
+  -- See 'AtomicSemCli' for how this is reported to the client.
   let adj ts = assert (ts Kind.! p == fromTile
+                       || ts Kind.! p == freshClientTile
                        `blame` (lid, p, fromTile, toTile, ts Kind.! p))
                $ ts Kind.// [(p, toTile)]
   updateLevel lid $ updateTile adj
