@@ -279,7 +279,7 @@ projectSer :: (MonadAtomic m, MonadServer m)
            -> Container  -- ^ whether the items comes from floor or inventory
            -> m Bool
 projectSer source tpos eps iid container = do
-  cops@Kind.COps{coactor} <- getsState scops
+  cops <- getsState scops
   sm <- getsState (getActorBody source)
   Actor{btime} <- getsState $ getActorBody source
   lvl <- getsLevel (blid sm) id
@@ -287,14 +287,9 @@ projectSer source tpos eps iid container = do
   lysize <- getsLevel (blid sm) lysize
   let spos = bpos sm
       lid = blid sm
-      -- When projecting, the first turn is spent aiming.
-      -- The projectile is seen one or two tiles from the actor,
-      -- giving a hint about the aim and letting the target evade.
+      -- A bit later than actor time, to prevent a move this turn.
+      time = btime `timeAdd` timeEpsilon
       -- TODO: AI should choose the best eps.
-      timeDelta = timeAddFromSpeed coactor sm btime
-      -- We give a time just before the projecting actor time,
-      -- to avoid the actor bumping into the projectile, when he follows it.
-      time = timeDelta `timeAdd` timeNegate timeEpsilon
       bl = bla lxsize lysize eps spos tpos
   case bl of
     Nothing -> execFailure (bfid sm) "cannot zap oneself"
