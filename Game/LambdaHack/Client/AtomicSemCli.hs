@@ -58,24 +58,25 @@ cmdAtomicFilterCli cmd = case cmd of
         -- It happens when a client thinks the tile is @t@,
         -- but it's @fromTile@, and @AlterTileA@ changes it
         -- to @toTile@. See @alterTileA@.
-        let noun = ""  -- a hack, we we don't handle adverbs well
+        let subject = ""  -- a hack, we we don't handle adverbs well
             verb = "turn into"
             msg = makeSentence [ "the", MU.Text $ oname t
                                , "at position", MU.Text $ showPoint lxsize p
                                , "suddenly"  -- adverb
-                               , MU.SubjectVerbSg noun verb
+                               , MU.SubjectVerbSg subject verb
                                , MU.AW $ MU.Text $ oname toTile ]
         return [ cmd  -- reveal the tile
                , MsgAllA msg  -- show the message
                ]
-  SearchTileA lid p fromTile toTile -> do
-    t <- getsLevel lid (`at` p)
+  SearchTileA aid p fromTile toTile -> do
+    b <- getsState $ getActorBody aid
+    t <- getsLevel (blid b) (`at` p)
     if t == toTile
       then -- Already knows the tile fully.
            return []
       else if t == fromTile
            then -- Fully ignorant. (No intermediate knowledge possible.)
-                return [ AlterTileA lid p fromTile toTile  -- reveal the tile
+                return [ AlterTileA (blid b) p fromTile toTile  -- reveal tile
                        , cmd  -- show the message
                        ]
            else -- Misguided. Should never happen, LoseTile resets memory.
@@ -316,13 +317,16 @@ drawCmdAtomicUI verbose cmd = case cmd of
   QuitFactionA fid mbody _ toSt -> quitFactionUI fid mbody toSt
   AlterTileA{} | verbose ->
     return ()  -- TODO: door opens
-  SearchTileA _ _ fromTile toTile -> do
+  SearchTileA aid _ fromTile toTile -> do
     Kind.COps{cotile = Kind.Ops{oname}} <- getsState scops
-    let noun = MU.Text $ oname fromTile
-        verb = "turn out to be"
-    let msg = makeSentence [ "the"
-                           , MU.SubjectVerbSg noun verb
-                           , MU.AW $ MU.Text $ oname toTile ]
+    subject <- partAidLeader aid
+    let verb = "reveal that the"
+        subject2 = MU.Text $ oname fromTile
+        verb2 = "be"
+    let msg = makeSentence [ MU.SubjectVerbSg subject verb
+                           , MU.SubjectVerbSg subject2 verb2
+                           , "a hidden"
+                           , MU.Text $ oname toTile ]
     msgAdd msg
   AgeGameA t -> do
     when (t > timeClip) $ displayFrames [Nothing]  -- show delay

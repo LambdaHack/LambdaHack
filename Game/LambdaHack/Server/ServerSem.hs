@@ -172,9 +172,9 @@ actorAttackActor source target = do
 -- | An actor opens a door.
 actorOpenDoor :: (MonadAtomic m, MonadServer m)
               => ActorId -> Vector -> Bool -> m Bool
-actorOpenDoor actor dir exploration = do
+actorOpenDoor aid dir exploration = do
   Kind.COps{cotile} <- getsState scops
-  body <- getsState $ getActorBody actor
+  body <- getsState $ getActorBody aid
   let dpos = shift (bpos body) dir  -- the position we act upon
       lid = blid body
   lvl <- getsLevel lid id
@@ -186,10 +186,10 @@ actorOpenDoor actor dir exploration = do
         | otherwise   = freshClientTile  -- won't be searched
   -- Try to open the door.
   if Tile.hasFeature cotile F.Openable t
-    then triggerSer actor dpos  -- searches, too
+    then triggerSer aid dpos  -- searches, too
     else do
       when (exploration && serverTile /= freshClientTile) $
-        execCmdAtomic $ SearchTileA lid dpos freshClientTile serverTile
+        execCmdAtomic $ SearchTileA aid dpos freshClientTile serverTile
       if Tile.hasFeature cotile F.Closable t
         then execFailure (bfid body) "already open"
         else if exploration && serverTile /= freshClientTile
@@ -364,7 +364,7 @@ triggerSer aid dpos = do
       freshClientTile = hideTile cotile dpos lvl
   when (serverTile /= freshClientTile) $
     -- Search, in case some actors (of other factions?) don't know this tile.
-    execCmdAtomic $ SearchTileA lid dpos freshClientTile serverTile
+    execCmdAtomic $ SearchTileA aid dpos freshClientTile serverTile
   let f feat =
         case feat of
           F.Cause ef -> do

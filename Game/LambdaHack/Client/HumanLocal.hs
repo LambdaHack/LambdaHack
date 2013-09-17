@@ -137,9 +137,9 @@ doLook = do
                 | otherwise = Nothing
       enemyMsg =
         -- Even if it's the leader, give his proper name, not 'you'.
-        maybe "" (\m -> let noun = partActor coactor m
+        maybe "" (\m -> let subject = partActor coactor m
                             verb = "be here"
-                        in makeSentence [MU.SubjectVerbSg noun verb])
+                        in makeSentence [MU.SubjectVerbSg subject verb])
               ihabitant
       vis | not $ p `ES.member` totalVisible per = " (not visible)"
           | actorSeesLoc per leader p = ""

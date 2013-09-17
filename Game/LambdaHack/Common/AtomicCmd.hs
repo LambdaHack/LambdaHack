@@ -73,7 +73,7 @@ data CmdAtomic =
   | DiplFactionA FactionId FactionId Diplomacy Diplomacy
   -- Alter map.
   | AlterTileA LevelId Point (Kind.Id TileKind) (Kind.Id TileKind)
-  | SearchTileA LevelId Point (Kind.Id TileKind) (Kind.Id TileKind)
+  | SearchTileA ActorId Point (Kind.Id TileKind) (Kind.Id TileKind)
   | SpotTileA LevelId [(Point, Kind.Id TileKind)]
   | LoseTileA LevelId [(Point, Kind.Id TileKind)]
   | AlterSmellA LevelId Point (Maybe Time) (Maybe Time)
@@ -144,7 +144,7 @@ undoCmdAtomic cmd = case cmd of
   DiplFactionA fid1 fid2 fromDipl toDipl ->
     Just $ DiplFactionA fid1 fid2 toDipl fromDipl
   AlterTileA lid p fromTile toTile -> Just $ AlterTileA lid p toTile fromTile
-  SearchTileA lid p fromTile toTile -> Just $ SearchTileA lid p toTile fromTile
+  SearchTileA aid p fromTile toTile -> Just $ SearchTileA aid p toTile fromTile
   SpotTileA lid ts -> Just $ LoseTileA lid ts
   LoseTileA lid ts -> Just $ SpotTileA lid ts
   AlterSmellA lid p fromSm toSm -> Just $ AlterSmellA lid p toSm fromSm
