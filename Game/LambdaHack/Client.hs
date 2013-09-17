@@ -54,7 +54,7 @@ cmdClientUISem cmd =
       mapM_ cmdAtomicSemCli cmds
       mapM_ execCmdAtomic cmds
       mapM_ (drawCmdAtomicUI False) cmds
-      mapM_ (storeUndo . CmdAtomic) cmds
+      mapM_ (storeUndo . CmdAtomic) cmds  -- TODO: only store cmdA?
     SfxAtomicUI sfx -> do
       drawSfxAtomicUI False sfx
       storeUndo $ SfxAtomic sfx

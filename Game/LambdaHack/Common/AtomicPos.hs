@@ -116,6 +116,7 @@ posCmdAtomic cmd = case cmd of
   KillExitA fid -> return $ PosFid fid
   SaveExitA -> return PosAll
   SaveBkpA -> return PosAll
+  MsgAllA{} -> return PosAll
 
 posSfxAtomic :: MonadActionRO m => SfxAtomic -> m PosAtomic
 posSfxAtomic cmd = case cmd of
