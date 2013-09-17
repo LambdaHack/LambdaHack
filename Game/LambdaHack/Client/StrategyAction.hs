@@ -331,7 +331,8 @@ moveStrategy cops actor s mFoe =
   interestHere x = let t = lvl `at` x
                        ts = map (lvl `at`) $ vicinity lxsize lysize x
                    in Tile.hasFeature cotile F.Exit t
-                      || Tile.hasFeature cotile F.Suspect t
+                      -- Blind actors tend to reveal/forget repeatedly.
+                      || asight mk && Tile.hasFeature cotile F.Suspect t
                       -- Lit indirectly. E.g., a room entrance.
                       || (not (Tile.hasFeature cotile F.Lit t)
                           && any (Tile.hasFeature cotile F.Lit) ts)
