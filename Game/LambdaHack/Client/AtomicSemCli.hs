@@ -420,13 +420,14 @@ moveItemUI verbose iid k c1 c2 = do
   case (c1, c2) of
     (CFloor _ _, CActor aid l) -> do
       b <- getsState $ getActorBody aid
-      let n = bbag b EM.! iid
-      side <- getsClient sside
-      if bfid b == side then
-        msgAdd $ makePhrase [ letterLabel l
-                            , partItemWs coitem disco n item
-                            , "\n" ]
-      else aiVerbMU aid "pick up" iid k
+      unless (bproj b) $ do
+        let n = bbag b EM.! iid
+        side <- getsClient sside
+        if bfid b == side then
+          msgAdd $ makePhrase [ letterLabel l
+                              , partItemWs coitem disco n item
+                              , "\n" ]
+        else aiVerbMU aid "pick up" iid k
     (CActor aid _, CFloor _ _) | verbose ->
       aiVerbMU aid "drop" iid k
     _ -> return ()
