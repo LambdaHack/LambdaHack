@@ -246,16 +246,16 @@ rangedFreq cops actor disco s fpos =
     [ (- benefit * multi,
       ProjectSer actor fpos eps iid (container iid))
     | (iid, i) <- map (\iid -> (iid, getItemBody iid s))
-                  $ EM.keys bag,
-      let (ik, benefit) =
+                  $ EM.keys bag
+    , let (ik, benefit) =
             case jkind disco i of
               Nothing -> (undefined, 0)
               Just ki ->
                 let kik = iokind ki
-                in (kik, Effect.effectToBenefit (jeffect i)),
-      benefit > 0,
+                in (kik, Effect.effectToBenefit (jeffect i))
+    , benefit > 0
       -- Wasting weapons and armour would be too cruel to the player.
-      isymbol ik `elem` ritemProject (Kind.stdRuleset corule)]
+    , isymbol ik `elem` ritemProject (Kind.stdRuleset corule) ]
 
 toolsFreq :: Kind.COps -> ActorId -> Discovery -> State -> Frequency CmdSer
 toolsFreq cops actor disco s =
@@ -263,21 +263,20 @@ toolsFreq cops actor disco s =
   $ quaffFreq bbag 1 (actorContainer actor binv)
   ++ quaffFreq tis 2 (const $ CFloor blid bpos)
  where
-  Kind.COps{coitem=Kind.Ops{okind=iokind}} = cops
+  Kind.COps{coitem=Kind.Ops{okind=_iokind}} = cops
   Actor{bpos, blid, bbag, binv} = getActorBody actor s
   lvl = sdungeon s EM.! blid
   tis = lvl `atI` bpos
   quaffFreq bag multi container =
     [ (benefit * multi, ApplySer actor iid (container iid))
     | (iid, i) <- map (\iid -> (iid, getItemBody iid s))
-                  $ EM.keys bag,
-      let (ik, benefit) =
+                  $ EM.keys bag
+    , let benefit =
             case jkind disco i of
-              Nothing -> (undefined, 0)
-              Just ki ->
-                let kik = iokind ki
-                in (kik, Effect.effectToBenefit (jeffect i)),
-      benefit > 0, isymbol ik == '!']
+              Nothing -> 30  -- experimenting is fun
+              Just _ki -> Effect.effectToBenefit $ jeffect i
+    , benefit > 0
+    , jsymbol i == '!' ]
 
 -- TODO: also close doors; then stupid members of the party won't see them,
 -- but it's assymetric warfare: rather harm humans than help party members
