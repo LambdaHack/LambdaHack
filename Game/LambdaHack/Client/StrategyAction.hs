@@ -369,7 +369,8 @@ moveStrategy cops actor s mFoe =
   bumpableHere pos =
     let t = lvl `at` pos
     in Tile.hasFeature cotile F.Openable t
-       || Tile.hasFeature cotile F.Suspect t
+       || -- Try to find hidden doors only if no foe in sight.
+          isNothing mFoe && Tile.hasFeature cotile F.Suspect t
   accessibleHere = accessible cops lvl bpos
   fact = sfactionD s EM.! bfid
   friends = actorList (not . isAtWar fact) blid s
