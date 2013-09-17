@@ -19,7 +19,7 @@ on player behaviour.
 The engine comes with a sample code for a little dungeon crawler,
 called LambdaHack and described in PLAYING.md. The engine and the example
 game are bundled together in a single [Hackage] [3] package.
-You are welcome to create your own game by modifying the sample game
+You are welcome to create your own games by modifying the sample game
 and the engine code, but please consider eventually splitting your changes
 into a separate Hackage package that depends on the upstream library,
 to help us exchange ideas and share improvements to the common code.

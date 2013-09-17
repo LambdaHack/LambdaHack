@@ -330,6 +330,7 @@ moveStrategy cops actor s mFoe =
   interestHere x = let t = lvl `at` x
                        ts = map (lvl `at`) $ vicinity lxsize lysize x
                    in Tile.hasFeature cotile F.Exit t
+                      || Tile.hasFeature cotile F.Suspect t
                       -- Lit indirectly. E.g., a room entrance.
                       || (not (Tile.hasFeature cotile F.Lit t)
                           && any (Tile.hasFeature cotile F.Lit) ts)
@@ -352,8 +353,8 @@ moveStrategy cops actor s mFoe =
     -- Prefer interests, but don't exclude other focused moves.
     scaleFreq 5 $ bestVariant $ onlyInterest $ onlyKeepsDir 2 moveRandomly
   interestIQFreq = interestFreq `mplus` bestVariant moveIQ
-  moveClear    = onlyMoves (not . openableHere) moveFreely
-  moveOpenable = onlyMoves openableHere moveFreely
+  moveClear    = onlyMoves (not . bumpableHere) moveFreely
+  moveOpenable = onlyMoves bumpableHere moveFreely
   -- Ignore previously ignored loot, to prevent repetition.
   moveNewLoot = onlyLoot (onlyKeepsDir 2 moveRandomly)
   moveFreely = moveNewLoot
@@ -364,13 +365,16 @@ moveStrategy cops actor s mFoe =
   onlyMoves p = only (\x -> p (bpos `shift` x))
   moveRandomly :: Strategy Vector
   moveRandomly = liftFrequency $ uniformFreq "moveRandomly" sensible
-  openableHere pos = Tile.hasFeature cotile F.Openable $ lvl `at` pos
+  bumpableHere pos =
+    let t = lvl `at` pos
+    in Tile.hasFeature cotile F.Openable t
+       || Tile.hasFeature cotile F.Suspect t
   accessibleHere = accessible cops lvl bpos
   fact = sfactionD s EM.! bfid
   friends = actorList (not . isAtWar fact) blid s
   noFriends | asight mk = unoccupied friends
             | otherwise = const True
-  isSensible l = noFriends l && (accessibleHere l || openableHere l)
+  isSensible l = noFriends l && (accessibleHere l || bumpableHere l)
   sensible = filter (isSensible . (bpos `shift`)) (moves lxsize)
 
 chase :: Kind.COps -> ActorId -> State -> (Point, Bool) -> Strategy CmdSer
