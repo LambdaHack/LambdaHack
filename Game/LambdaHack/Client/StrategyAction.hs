@@ -247,15 +247,17 @@ rangedFreq cops actor disco s fpos =
       ProjectSer actor fpos eps iid (container iid))
     | (iid, i) <- map (\iid -> (iid, getItemBody iid s))
                   $ EM.keys bag
-    , let (ik, benefit) =
+    , let benefit =
             case jkind disco i of
-              Nothing -> (undefined, 0)
-              Just ki ->
-                let kik = iokind ki
-                in (kik, Effect.effectToBenefit (jeffect i))
-    , benefit > 0
+              Nothing -> -- TODO: (undefined, 0)   --- for now, cheating
+                Effect.effectToBenefit (jeffect i)
+              Just _ki ->
+                let _kik = iokind _ki
+                    _unneeded = isymbol _kik
+                in Effect.effectToBenefit (jeffect i)
+    , benefit < 0
       -- Wasting weapons and armour would be too cruel to the player.
-    , isymbol ik `elem` ritemProject (Kind.stdRuleset corule) ]
+    , jsymbol i `elem` ritemProject (Kind.stdRuleset corule) ]
 
 toolsFreq :: Kind.COps -> ActorId -> Discovery -> State -> Frequency CmdSer
 toolsFreq cops actor disco s =
