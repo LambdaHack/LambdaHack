@@ -541,49 +541,38 @@ drawSfxAtomicUI verbose sfx = case sfx of
   EffectD aid effect -> do
     b <- getsState $ getActorBody aid
     side <- getsClient sside
-    if bhp b <= 0 && not (bproj b) || bhp b < 0 then
-      -- We assume the Wound is the cause of incapacitation.
-      if bfid b == side then do
-        subject <- partActorLeader aid b
-        let firstFall = if bproj b then "drop down" else "fall down"
-            hurtExtra = if bproj b
-                        then "be stomped flat"
-                        else "be ground into the floor"
-            deadPreviousTurn p = p < 0
-                                 && (bhp b <= p && not (bproj b)
-                                     || bhp b < p)
-            (deadBefore, verbDie) =
-              case effect of
-                Effect.Hurt _ p | deadPreviousTurn p -> (True, hurtExtra)
-                Effect.Heal p | deadPreviousTurn p -> (True, hurtExtra)
-                _ -> (False, firstFall)
-            msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
-        msgAdd msgDie
-        unless (bproj b) $ do
-          animDie <-
-            if deadBefore
-              then animate (blid b)
-                   $ twirlSplash (bpos b, bpos b) Color.Red Color.Red
-              else animate (blid b) $ deathBody $ bpos b
-          displayFrames animDie
-      else do
-        let firstFall = if bproj b then "break up" else "collapse"
-            hurtExtra p = if bhp b <= p && not (bproj b) || bhp b < p
-                          then -- was already dead previous turn
-                               if bproj b
-                               then "be shattered into little pieces"
-                               else "be reduced to a bloody pulp"
-                          else firstFall
-            verbDie =
-              case effect of
-                Effect.Hurt _ p | p < 0 -> hurtExtra p
-                Effect.Heal p | p < 0 -> hurtExtra p
-                _ -> firstFall
-        actorVerbMU aid b verbDie
+    let fid = bfid b
+    if bhp b <= 0 && not (bproj b) || bhp b < 0 then do
+      -- We assume the effect is the cause of incapacitation.
+      let firstFall | fid == side && bproj b = "fall apart"
+                    | fid == side =  "fall down"
+                    | bproj b = "break up"
+                    | otherwise =  "collapse"
+          hurtExtra | fid == side && bproj b = "be stomped flat"
+                    | fid == side = "be ground into the floor"
+                    | bproj b = "be shattered into little pieces"
+                    | otherwise = "be reduced to a bloody pulp"
+      subject <- partActorLeader aid b
+      let deadPreviousTurn p = p < 0
+                               && (bhp b <= p && not (bproj b)
+                                   || bhp b < p)
+          (deadBefore, verbDie) =
+            case effect of
+              Effect.Hurt _ p | deadPreviousTurn p -> (True, hurtExtra)
+              Effect.Heal p | deadPreviousTurn p -> (True, hurtExtra)
+              _ -> (False, firstFall)
+          msgDie = makeSentence [MU.SubjectVerbSg subject verbDie]
+      msgAdd msgDie
+      when (fid == side && not (bproj b)) $ do
+        animDie <- if deadBefore
+                   then animate (blid b)
+                        $ twirlSplash (bpos b, bpos b) Color.Red Color.Red
+                   else animate (blid b) $ deathBody $ bpos b
+        displayFrames animDie
     else case effect of
         Effect.NoEffect -> msgAdd "Nothing happens."
         Effect.Heal p | p > 0 -> do
-          if bfid b == side then
+          if fid == side then
             actorVerbMU aid b "feel healthier"
           else
             actorVerbMU aid b "look healthier"
@@ -591,7 +580,7 @@ drawSfxAtomicUI verbose sfx = case sfx of
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrBlue Color.Blue
           displayFrames $ Nothing : animFrs
         Effect.Heal _ -> do
-          if bfid b == side then
+          if fid == side then
             actorVerbMU aid b "feel wounded"
           else
             actorVerbMU aid b "look wounded"
@@ -603,9 +592,9 @@ drawSfxAtomicUI verbose sfx = case sfx of
                 [MU.CardinalWs nEnemy "howl", "of anger", "can be heard"]
           msgAdd msg
         Effect.Dominate ->
-          if bfid b == side then lookAtMove aid
+          if fid == side then lookAtMove aid
           else do
-            fidName <- getsState $ gname . (EM.! bfid b) . sfactionD
+            fidName <- getsState $ gname . (EM.! fid) . sfactionD
             aVerbMU aid $ MU.Text $ "fall under the influence of" <+> fidName
         Effect.ApplyPerfume ->
           msgAdd "The fragrance quells all scents in the vicinity."
