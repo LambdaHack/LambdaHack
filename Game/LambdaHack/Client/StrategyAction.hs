@@ -65,7 +65,7 @@ reacquireTgt fper aid btarget factionAbilities = do
   cops@Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
   b <- getsState $ getActorBody aid
   assert (not $ bproj b) skip  -- would work, but is probably a bug
-  Level{lxsize} <- getsState $ \s -> sdungeon s EM.! blid b
+  lvl@Level{lxsize} <- getsState $ \s -> sdungeon s EM.! blid b
   visFoes <- visibleFoes fper aid
   actorD <- getsState sactorD
   -- TODO: set distant targets so that monsters behave as if they have
@@ -106,6 +106,8 @@ reacquireTgt fper aid btarget factionAbilities = do
                    else closest
           Just TEnemy{} -> closest         -- just pick the closest foe
           Just (TPos pos) | bpos b == pos -> closest  -- already reached pos
+          Just (TPos pos) | not $ bumpableHere cops lvl False pos ->
+            closest  -- no longer bumpable, even assuming no foes
           Just TPos{} | null visFoes -> returN "TPos" tgt
                                            -- nothing visible, go to pos
           Just TPos{} -> closest           -- prefer visible foes
@@ -289,7 +291,7 @@ moveStrategy :: Kind.COps -> ActorId -> State -> Maybe (Point, Bool)
 moveStrategy cops actor s mFoe =
   case mFoe of
     -- Target set and we chase the foe or his last position or another target.
-    Just (fpos, foeVisible) ->
+    Just (fpos, _) ->
       let towardsFoe =
             let tolerance | adjacent lxsize bpos fpos = 0
                           | otherwise = 1
@@ -320,9 +322,7 @@ moveStrategy cops actor s mFoe =
          .| moveOpenable  -- no enemy in sight, explore doors
          .| moveClear
  where
-  Kind.COps{ cotile
-           , coactor=Kind.Ops{okind}
-           } = cops
+  Kind.COps{cotile, coactor=Kind.Ops{okind}} = cops
   lvl@Level{lsmell, lxsize, lysize, ltime} = sdungeon s EM.! blid
   Actor{bkind, bpos, boldpos, bfid, blid} = getActorBody actor s
   mk = okind bkind
@@ -335,14 +335,16 @@ moveStrategy cops actor s mFoe =
                       || asight mk && Tile.hasFeature cotile F.Suspect t
                       -- Lit indirectly. E.g., a room entrance.
                       || (not (Tile.hasFeature cotile F.Lit t)
+                          && (x == bpos || accessible cops lvl x bpos)
                           && any (Tile.hasFeature cotile F.Lit) ts)
   onlyInterest = onlyMoves interestHere
   bdirAI | bpos == boldpos = Nothing
          | otherwise = Just $ towards lxsize boldpos bpos
   onlyKeepsDir k =
-    only (\ x -> maybe True (\d -> euclidDistSq lxsize d x <= k) bdirAI)
-  onlyKeepsDir_9 = only (\ x -> maybe True (\d -> neg x /= d) bdirAI)
-  moveIQ | isJust mFoe = onlyKeepsDir_9 moveRandomly  -- danger, be flexible
+    only (\x -> maybe True (\d -> euclidDistSq lxsize d x <= k) bdirAI)
+  onlyKeepsDir_9 = only (\x -> maybe True (\d -> neg x /= d) bdirAI)
+  foeVisible = fmap snd mFoe == Just True
+  moveIQ | foeVisible = onlyKeepsDir_9 moveRandomly  -- danger, be flexible
          | otherwise =
        aiq mk > 15 .=> onlyKeepsDir 0 moveRandomly
     .| aiq mk > 10 .=> onlyKeepsDir 1 moveRandomly
@@ -355,8 +357,8 @@ moveStrategy cops actor s mFoe =
     -- Prefer interests, but don't exclude other focused moves.
     scaleFreq 5 $ bestVariant $ onlyInterest $ onlyKeepsDir 2 moveRandomly
   interestIQFreq = interestFreq `mplus` bestVariant moveIQ
-  moveClear    = onlyMoves (not . bumpableHere) moveFreely
-  moveOpenable = onlyMoves bumpableHere moveFreely
+  moveClear    = onlyMoves (not . bumpableHere cops lvl foeVisible) moveFreely
+  moveOpenable = onlyMoves (bumpableHere cops lvl foeVisible) moveFreely
   -- Ignore previously ignored loot, to prevent repetition.
   moveNewLoot = onlyLoot (onlyKeepsDir 2 moveRandomly)
   moveFreely = moveNewLoot
@@ -367,18 +369,21 @@ moveStrategy cops actor s mFoe =
   onlyMoves p = only (\x -> p (bpos `shift` x))
   moveRandomly :: Strategy Vector
   moveRandomly = liftFrequency $ uniformFreq "moveRandomly" sensible
-  bumpableHere pos =
-    let t = lvl `at` pos
-    in Tile.hasFeature cotile F.Openable t
-       || -- Try to find hidden doors only if no foe in sight.
-          isNothing mFoe && Tile.hasFeature cotile F.Suspect t
   accessibleHere = accessible cops lvl bpos
   fact = sfactionD s EM.! bfid
   friends = actorList (not . isAtWar fact) blid s
   noFriends | asight mk = unoccupied friends
             | otherwise = const True
-  isSensible l = noFriends l && (accessibleHere l || bumpableHere l)
+  isSensible l = noFriends l && (accessibleHere l
+                                 || bumpableHere cops lvl foeVisible l)
   sensible = filter (isSensible . (bpos `shift`)) (moves lxsize)
+
+bumpableHere :: Kind.COps -> Level -> Bool ->  Point -> Bool
+bumpableHere Kind.COps{cotile} lvl foeVisible pos  =
+  let t = lvl `at` pos
+  in Tile.hasFeature cotile F.Openable t
+     || -- Try to find hidden doors only if no foe in sight.
+        not foeVisible && Tile.hasFeature cotile F.Suspect t
 
 chase :: Kind.COps -> ActorId -> State -> (Point, Bool) -> Strategy CmdSer
 chase cops actor s foe@(_, foeVisible) =
