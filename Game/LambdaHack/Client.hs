@@ -27,9 +27,9 @@ import Game.LambdaHack.Frontend
 import Game.LambdaHack.Utils.Assert
 
 storeUndo :: MonadClient m => Atomic -> m ()
-storeUndo atomic =
+storeUndo _atomic =
   maybe skip (\a -> modifyClient $ \cli -> cli {sundo = a : sundo cli})
-    $ undoAtomic atomic
+    $ Nothing   -- TODO: undoAtomic atomic
 
 cmdClientAISem :: (MonadAtomic m, MonadConnClient c m)
                => CmdClientAI -> m ()
