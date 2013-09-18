@@ -18,19 +18,20 @@ data Config = Config
   { configSelfString     :: !String
     -- caves
   , configCaves          :: !(Map Text Caves)
-    -- players
-  , configPlayers        :: !(Map Text Players)
-    -- scenario
-  , configScenario       :: !(Map Text Scenario)
     -- engine
   , configFirstDeathEnds :: !Bool
   , configFovMode        :: !FovMode
+  , configSaveBkpClips   :: !Int
     -- files
   , configAppDataDir     :: !FilePath
   , configScoresFile     :: !FilePath
   , configRulesCfgFile   :: !FilePath
     -- heroNames
   , configHeroNames      :: ![(Int, Text)]
+    -- players
+  , configPlayers        :: !(Map Text Players)
+    -- scenario
+  , configScenario       :: !(Map Text Scenario)
   }
   deriving Show
 
@@ -82,23 +83,25 @@ instance Binary Config where
   put Config{..} = do
     put configSelfString
     put configCaves
-    put configPlayers
-    put configScenario
+    put configFirstDeathEnds
     put configFovMode
+    put configSaveBkpClips
     put configAppDataDir
     put configScoresFile
     put configRulesCfgFile
-    put configFirstDeathEnds
     put configHeroNames
+    put configPlayers
+    put configScenario
   get = do
     configSelfString     <- get
     configCaves          <- get
-    configPlayers        <- get
-    configScenario       <- get
+    configFirstDeathEnds <- get
     configFovMode        <- get
+    configSaveBkpClips <- get
     configAppDataDir     <- get
     configScoresFile     <- get
     configRulesCfgFile   <- get
-    configFirstDeathEnds <- get
     configHeroNames      <- get
+    configPlayers        <- get
+    configScenario       <- get
     return Config{..}

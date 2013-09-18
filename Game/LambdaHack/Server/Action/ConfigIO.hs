@@ -134,14 +134,9 @@ parseConfigRules dataDir cp =
         let section = getItems cp "caves"
             readCaves = EM.fromList . map (toEnum *** first T.pack)
         in M.fromList $ map (T.pack *** (readCaves . read)) section
-      configPlayers =
-        let section = getItems cp "players"
-        in M.fromList $ map (T.pack *** read) section
-      configScenario =
-        let section = getItems cp "scenario"
-        in M.fromList $ map (T.pack *** read) section
       configFirstDeathEnds = get cp "engine" "firstDeathEnds"
       configFovMode = get cp "engine" "fovMode"
+      configSaveBkpClips = get cp "engine" "saveBkpClips"
       configAppDataDir = dataDir
       configScoresFile = dataDir </> get cp "file" "scoresFile"
       configRulesCfgFile = dataDir </> "config.rules"
@@ -152,6 +147,12 @@ parseConfigRules dataDir cp =
                 Nothing -> assert `failure` ("wrong hero name id " ++ ident)
             section = getItems cp "heroName"
         in map toNumber section
+      configPlayers =
+        let section = getItems cp "players"
+        in M.fromList $ map (T.pack *** read) section
+      configScenario =
+        let section = getItems cp "scenario"
+        in M.fromList $ map (T.pack *** read) section
   in Config{..}
 
 -- | Read and parse rules config file and supplement it with random seeds.

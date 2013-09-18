@@ -426,7 +426,9 @@ gameExitSer aid = do
 -- * GameSaveSer
 
 gameSaveSer :: MonadServer m => m ()
-gameSaveSer = modifyServer $ \ser -> ser {sbkpSave = True}  -- don't rush it
+gameSaveSer = do
+  modifyServer $ \ser -> ser {sbkpSave = True}
+  modifyServer $ \ser -> ser {squit = True}  -- do this at once
 
 -- * CfgDumpSer
 

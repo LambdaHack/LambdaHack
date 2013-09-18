@@ -31,6 +31,7 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Frontend
 import Game.LambdaHack.Server.Action hiding (sendUpdateAI, sendUpdateUI)
+import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.ServerSem
@@ -118,10 +119,11 @@ saveBkpAll = do
 endClip :: (MonadAtomic m, MonadServer m) => [LevelId] -> m ()
 endClip arenas = do
   time <- getsState stime
+  Config{configSaveBkpClips} <- getsServer sconfig
   let clipN = time `timeFit` timeClip
       cinT = let r = timeTurn `timeFit` timeClip
              in assert (r > 2) r
-      bkpFreq = cinT * 100
+      bkpFreq = cinT * configSaveBkpClips
       clipMod = clipN `mod` cinT
   bkpSave <- getsServer sbkpSave
   when (bkpSave || clipN `mod` bkpFreq == 0) $ do

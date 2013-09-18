@@ -19,6 +19,7 @@
 ; ;fovMode: Permissive
 ; ;fovMode: Shadow
 ; ;startingRandomGenerator: 42
+; saveBkpClips: 100
 
 ; [file]
 ; ; Names of various game files. They reside in ~/.LambdaHack or similar.
