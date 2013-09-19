@@ -13,7 +13,6 @@ data FactionKind = FactionKind
   , ffreq     :: !Freqs    -- ^ frequency within groups
   , fAiLeader :: !Text     -- ^ AI to use for the selected actor
   , fAiMember :: !Text     -- ^ AI to use for idle actors
-  , fentry    :: !LevelId  -- ^ starting dungeon level (for non-spawn)
   }
   deriving Show
 

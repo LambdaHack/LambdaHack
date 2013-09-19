@@ -96,7 +96,10 @@ lowercase = T.pack . map Char.toLower . T.unpack
 createFactions :: Kind.COps -> Players -> Rnd FactionDict
 createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
                         , costrat=Kind.Ops{opick=sopick} } players = do
-  let rawCreate isHuman (gconfig, fType, ginitial) = do
+  let rawCreate isHuman Player{ playerName = gconfig
+                              , playerKind
+                              , playerInitial = ginitial
+                              , playerEntry = gentry } = do
         let cmap = mapFromInvFuns
                      [colorToTeamName, colorToPlainName, colorToFancyName]
             nameoc = lowercase gconfig
@@ -105,7 +108,7 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
             (gcolor, gname) = case M.lookup nameoc cmap of
               Nothing -> (Color.BrWhite, prefix <+> gconfig)
               Just c -> (c, prefix <+> gconfig <+> "Team")
-        gkind <- opick fType (const True)
+        gkind <- opick playerKind (const True)
         let fk = okind gkind
             gdipl = EM.empty  -- fixed below
             gquit = Nothing
@@ -179,8 +182,7 @@ gameReset cops@Kind.COps{coitem, corule} = do
 -- Spawn initial actors. Clients should notice this, to set their leaders.
 populateDungeon :: (MonadAtomic m, MonadServer m) => m ()
 populateDungeon = do
-  cops@Kind.COps{ cotile
-                , cofact=Kind.Ops{okind} } <- getsState scops
+  cops@Kind.COps{cotile} <- getsState scops
   let initialItems lid (Level{ltile, litemNum}) =
         replicateM litemNum $ do
           pos <- rndToAction
@@ -195,8 +197,7 @@ populateDungeon = do
           (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
           _ -> assert `failure` dungeon
       needInitialCrew = EM.assocs factionD
-      getEntryLevel (_, fact) =
-        max minD $ min maxD $ fentry $ okind $ gkind fact
+      getEntryLevel (_, fact) = max minD $ min maxD $ gentry fact
       arenas = ES.toList $ ES.fromList $ map getEntryLevel needInitialCrew
       initialActors lid = do
         lvl <- getsLevel lid id

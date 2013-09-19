@@ -23,7 +23,6 @@ hero = FactionKind
   , ffreq     = [("hero", 1)]
   , fAiLeader = "fullAbility"
   , fAiMember = "meleeAdjacent"
-  , fentry    = toEnum 1
   }
 
 monster = FactionKind
@@ -32,7 +31,6 @@ monster = FactionKind
   , ffreq     = [("monster", 1), ("spawn", 50), ("summon", 50)]
   , fAiLeader = "fullAbility"
   , fAiMember = "fullAbility"
-  , fentry    = toEnum 3
   }
 
 horror = FactionKind
@@ -41,5 +39,4 @@ horror = FactionKind
   , ffreq     = [("horror", 1), ("summon", 50)]
   , fAiLeader = "fullAbility"
   , fAiMember = "fullAbility"
-  , fentry    = toEnum 1
   }

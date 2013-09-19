@@ -1,6 +1,6 @@
 -- | Personal game configuration file type definitions.
 module Game.LambdaHack.Server.Config
-  ( Config(..), Caves, Players(..), Scenario(..)
+  ( Config(..), Caves, Players(..), Player(..), Scenario(..)
   ) where
 
 import Control.DeepSeq
@@ -38,12 +38,35 @@ data Config = Config
 type Caves = EM.EnumMap LevelId (Text, Bool)
 
 data Players = Players
-  { playersHuman    :: [(Text, Text, Int)]
-  , playersComputer :: [(Text, Text, Int)]
+  { playersHuman    :: [Player]
+  , playersComputer :: [Player]
   , playersEnemy    :: [(Text, Text)]
   , playersAlly     :: [(Text, Text)]
   }
   deriving (Show, Read)
+
+data Player = Player
+  { playerName    :: Text
+  , playerKind    :: Text
+  , playerInitial :: Int
+  , playerEntry   :: LevelId
+  }
+  deriving (Show, Read)
+
+instance NFData Player
+
+instance Binary Player where
+  put Player{..} = do
+    put playerName
+    put playerKind
+    put playerInitial
+    put playerEntry
+  get = do
+    playerName <- get
+    playerKind <- get
+    playerInitial <- get
+    playerEntry <- get
+    return Player{..}
 
 instance NFData Players
 

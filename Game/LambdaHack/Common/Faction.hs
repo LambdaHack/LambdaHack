@@ -37,6 +37,7 @@ data Faction = Faction
   , gleader   :: !(Maybe ActorId)
   , gcolor    :: !Color.Color             -- ^ color of actors or their frames
   , ginitial  :: !Int                     -- ^ number of initial actors
+  , gentry    :: !LevelId                 -- ^ level where initial actors start
   }
   deriving (Show, Eq)
 
@@ -108,6 +109,7 @@ instance Binary Faction where
     put gleader
     put gcolor
     put ginitial
+    put gentry
   get = do
     gkind <- get
     gname <- get
@@ -119,6 +121,7 @@ instance Binary Faction where
     gleader <- get
     gcolor <- get
     ginitial <- get
+    gentry <- get
     return Faction{..}
 
 instance Binary Diplomacy where
