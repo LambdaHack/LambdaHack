@@ -53,13 +53,14 @@ itemEffect :: (MonadAtomic m, MonadServer m)
            => ActorId -> ActorId -> Maybe ItemId -> Item
            -> m ()
 itemEffect source target miid item = do
-  tb <- getsState $ getActorBody target
+  sb <- getsState $ getActorBody source
   discoS <- getsServer sdisco
   let ik = fromJust $ jkind discoS item
       ef = jeffect item
   b <- effectSem ef source target
-  -- The effect is interesting so the item gets identified, if seen.
-  let atomic iid = execCmdAtomic $ DiscoverA (blid tb) (bpos tb) iid ik
+  -- The effect is interesting so the item gets identified, if seen
+  -- (the item is in source actor's inventory, so his position is given).
+  let atomic iid = execCmdAtomic $ DiscoverA (blid sb) (bpos sb) iid ik
   when b $ maybe skip atomic miid
 
 -- | The source actor affects the target actor, with a given effect and power.

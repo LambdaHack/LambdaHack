@@ -385,6 +385,11 @@ loseSmellA lid sms = assert (not $ null sms) $ do
       upd m = foldr f m sms
   updateLevel lid $ updateSmell upd
 
+-- | Age the level.
+--
+-- Not aging the game here, since not all factions see the level,
+-- so not all get this command (it would lead information that
+-- there is somebody's leader on the level).
 ageLevelA :: MonadAction m => LevelId -> Time -> m ()
 ageLevelA lid delta = assert (delta /= timeZero) $
   updateLevel lid $ \lvl -> lvl {ltime = timeAdd (ltime lvl) delta}
