@@ -7,6 +7,7 @@ module Game.LambdaHack.Client.Action.ActionType
   ( FunActionCli, ActionCli, executorCli
   ) where
 
+import Control.Concurrent.STM
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 import qualified System.Random as R
@@ -14,13 +15,14 @@ import qualified System.Random as R
 import Game.LambdaHack.Client.Action.ActionClass
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.State
 
 -- | The type of the function inside any client action.
 type FunActionCli c a =
    SessionUI                          -- ^ client UI setup data
-   -> ConnServer c                          -- ^ this client connection information
+   -> ChanServer c                    -- ^ this client connection information
    -> (State -> StateClient -> a -> IO ())
                                       -- ^ continuation
    -> (R.StdGen -> Msg -> IO ())      -- ^ failure/reset continuation
@@ -83,12 +85,21 @@ instance MonadClient (ActionCli c) where
 instance MonadClientUI (ActionCli c) where
   getsSession f  = ActionCli (\c _d k _a s cli -> k s cli (f c))
 
-instance MonadConnClient c (ActionCli c) where
-  getConn        = ActionCli (\_c d k _a s cli -> k s cli d)
+instance MonadClientReadServer c (ActionCli c) where
+  readServer     =
+    ActionCli (\_c ChanServer{..} k _a s cli -> do
+                  ccmd <- atomically . readTQueue $ fromServer
+                  k s cli ccmd)
+
+instance MonadClientWriteServer (ActionCli c) where
+  writeServer scmd =
+    ActionCli (\_c ChanServer{..} k _a s cli -> do
+                  atomically . writeTQueue toServer $ scmd
+                  k s cli ())
 
 -- | Run an action, with a given session, state and history, in the @IO@ monad.
 executorCli :: ActionCli c ()
-            -> SessionUI -> State -> StateClient -> ConnServer c
+            -> SessionUI -> State -> StateClient -> ChanServer c
             -> IO ()
 executorCli m sess s cli d =
   runActionCli m

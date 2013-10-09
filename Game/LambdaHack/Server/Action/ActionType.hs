@@ -18,9 +18,9 @@ import Game.LambdaHack.Server.Action.ActionClass
 import Game.LambdaHack.Server.State
 
 data SerState = SerState
-  { serState  :: !State        -- ^ current global state
-  , serServer :: !StateServer  -- ^ current server state
-  , serDict   :: !ConnServerDict     -- ^ client-server connection information
+  { serState  :: !State           -- ^ current global state
+  , serServer :: !StateServer     -- ^ current server state
+  , serDict   :: !ConnServerDict  -- ^ client-server connection information
   }
 
 -- | Server state transformation monad.

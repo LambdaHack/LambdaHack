@@ -7,10 +7,9 @@ module Game.LambdaHack.Client.Action
   ( -- * Action monads
     MonadClient( getClient, getsClient, putClient, modifyClient )
   , MonadClientUI
-  , MonadConnClient( getConn )
+  , MonadClientReadServer(..), MonadClientWriteServer(..)
   , MonadClientAbort( abortWith, tryWith )
   , SessionUI(..), ConnFrontend(..), connFrontend
-  , ConnServer(..), connServer
     -- * Various ways to abort action
   , abort, abortIfWith, neverMind
     -- * Abort exception handlers
@@ -64,7 +63,6 @@ import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Animation
-import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import qualified Game.LambdaHack.Common.Key as K
@@ -95,12 +93,6 @@ connFrontend fid fromF = ConnFrontend
   , writeConnFrontend = \efr -> do
       let toF = Frontend.toMulti Frontend.connMulti
       liftIO $ atomically $ writeTQueue toF (fid, efr)
-  }
-
-connServer :: ChanServer c -> ConnServer c
-connServer ChanServer{..} = ConnServer
-  { readConnServer =  liftIO . atomically . readTQueue $ fromServer
-  , writeConnServer = liftIO . atomically . writeTQueue toServer
   }
 
 -- | Reset the state and resume from the last backup point, i.e., invoke

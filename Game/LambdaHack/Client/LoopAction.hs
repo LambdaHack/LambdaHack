@@ -30,13 +30,12 @@ initCli putSt = do
     Right msg ->  -- First visit ever, use the initial state.
       return $ Right msg
 
-loopAI :: (MonadConnClient CmdClientAI m)
+loopAI :: (MonadClientReadServer CmdClientAI m)
        => (CmdClientAI -> m ()) -> m ()
 loopAI cmdClientAISem = do
   side <- getsClient sside
-  ConnServer{readConnServer} <- getConn
   msg <- initCli $ \s -> cmdClientAISem $ CmdAtomicAI $ ResumeServerA s
-  cmd1 <- readConnServer
+  cmd1 <- readServer
   case (msg, cmd1) of
     (Left _, CmdAtomicAI ResumeA{}) -> return ()
     (Left _, CmdAtomicAI RestartA{}) -> return ()  -- server savefile faulty
@@ -51,19 +50,17 @@ loopAI cmdClientAISem = do
   debugPrint $ "AI client" <+> showT side <+> "stopped."
  where
   loop = do
-    ConnServer{readConnServer} <- getConn
-    cmd <- readConnServer
+    cmd <- readServer
     cmdClientAISem cmd
     quit <- getsClient squit
     unless quit loop
 
-loopUI :: (MonadClientUI m, MonadConnClient CmdClientUI m)
+loopUI :: (MonadClientUI m, MonadClientReadServer CmdClientUI m)
        => (CmdClientUI -> m ()) -> m ()
 loopUI cmdClientUISem = do
   side <- getsClient sside
-  ConnServer{readConnServer} <- getConn
   msg <- initCli $ \s -> cmdClientUISem $ CmdAtomicUI $ ResumeServerA s
-  cmd1 <- readConnServer
+  cmd1 <- readServer
   case (msg, cmd1) of
     (Left msg1, CmdAtomicUI ResumeA{}) -> do
       cmdClientUISem cmd1
@@ -83,8 +80,7 @@ loopUI cmdClientUISem = do
   debugPrint $ "UI client" <+> showT side <+> "stopped."
  where
   loop = do
-    ConnServer{readConnServer} <- getConn
-    cmd <- readConnServer
+    cmd <- readServer
     cmdClientUISem cmd
     quit <- getsClient squit
     unless quit loop

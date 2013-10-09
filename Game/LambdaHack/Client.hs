@@ -5,7 +5,7 @@
 module Game.LambdaHack.Client
   ( cmdClientAISem, cmdClientUISem
   , loopAI, loopUI, exeFrontend
-  , MonadClient, MonadClientUI, MonadConnClient
+  , MonadClient, MonadClientUI, MonadClientReadServer, MonadClientWriteServer
   ) where
 
 import Data.Maybe
@@ -31,7 +31,7 @@ storeUndo _atomic =
   maybe skip (\a -> modifyClient $ \cli -> cli {sundo = a : sundo cli})
     $ Nothing   -- TODO: undoAtomic atomic
 
-cmdClientAISem :: (MonadAtomic m, MonadConnClient c m)
+cmdClientAISem :: (MonadAtomic m, MonadClientWriteServer m)
                => CmdClientAI -> m ()
 cmdClientAISem cmd = case cmd of
   CmdAtomicAI cmdA -> do
@@ -41,11 +41,10 @@ cmdClientAISem cmd = case cmd of
     mapM_ (storeUndo . CmdAtomic) cmds
   CmdQueryAI aid -> do
     cmdC <- queryAI aid
-    ConnServer{writeConnServer} <- getConn
-    writeConnServer cmdC
+    writeServer cmdC
 
 cmdClientUISem :: ( MonadAtomic m, MonadClientAbort m
-                  , MonadClientUI m, MonadConnClient c m )
+                  , MonadClientUI m, MonadClientWriteServer m )
                => CmdClientUI -> m ()
 cmdClientUISem cmd =
   case cmd of
@@ -61,14 +60,13 @@ cmdClientUISem cmd =
     CmdQueryUI aid -> do
       mleader <- getsClient _sleader
       assert (isJust mleader `blame` cmd) skip
-      ConnServer{writeConnServer} <- getConn
       cmdH <- queryUI aid
-      writeConnServer cmdH
+      writeServer cmdH
 
 wireSession :: (SessionUI -> State -> StateClient
-                -> ConnServer CmdClientUI -> IO ())
+                -> ChanServer CmdClientUI -> IO ())
             -> (SessionUI -> State -> StateClient
-                -> ConnServer CmdClientAI -> IO ())
+                -> ChanServer CmdClientAI -> IO ())
             -> Kind.COps
             -> ((FactionId -> ChanFrontend -> ChanServer CmdClientUI -> IO ())
                 -> (FactionId -> ChanServer CmdClientAI -> IO ())
@@ -82,12 +80,12 @@ wireSession exeClientUI exeClientAI cops@Kind.COps{corule} exeServer = do
   defHist <- defHistory
   let cli = defStateClient defHist sconfigUI
       s = updateCOps (const cops) emptyState
-      executorAI fid chanS =
+      executorAI fid =
         let noSession = assert `failure` fid
-        in exeClientAI noSession s (cli fid True) (connServer chanS)
-      executorUI fid fromF chanS =
+        in exeClientAI noSession s (cli fid True)
+      executorUI fid fromF =
         let sfconn = connFrontend fid fromF
-        in exeClientUI SessionUI{..} s (cli fid False) (connServer chanS)
+        in exeClientUI SessionUI{..} s (cli fid False)
   startupF font $ exeServer executorUI executorAI
 
 -- | Wire together game content, the main loop of game clients,
@@ -95,14 +93,16 @@ wireSession exeClientUI exeClientAI cops@Kind.COps{corule} exeServer = do
 -- the server loop, if the whole game runs in one process),
 -- UI config and the definitions of game commands.
 exeFrontend :: ( MonadAtomic m, MonadClientAbort m, MonadClientUI m
-               , MonadConnClient CmdClientUI m
+               , MonadClientReadServer CmdClientUI m
+               , MonadClientWriteServer m
                , MonadAtomic n
-               , MonadConnClient CmdClientAI n )
+               , MonadClientReadServer CmdClientAI n
+               , MonadClientWriteServer n )
             => (m () -> SessionUI -> State -> StateClient
-                -> ConnServer CmdClientUI
+                -> ChanServer CmdClientUI
                 -> IO ())
             -> (n () -> SessionUI -> State -> StateClient
-                -> ConnServer CmdClientAI
+                -> ChanServer CmdClientAI
                 -> IO ())
             -> Kind.COps
             -> ((FactionId -> ChanFrontend -> ChanServer CmdClientUI -> IO ())
@@ -110,8 +110,6 @@ exeFrontend :: ( MonadAtomic m, MonadClientAbort m, MonadClientUI m
                -> IO ())
             -> IO ()
 exeFrontend executorUI executorAI cops exeServer = do
-  let loopClientUI = loopUI cmdClientUISem
-      loopClientAI = loopAI cmdClientAISem
-      exeClientUI = executorUI loopClientUI
-      exeClientAI = executorAI loopClientAI
+  let exeClientUI = executorUI $ loopUI cmdClientUISem
+      exeClientAI = executorAI $ loopAI cmdClientAISem
   wireSession exeClientUI exeClientAI cops exeServer

@@ -32,11 +32,6 @@ data ConnFrontend = ConnFrontend
       -- ^ write a UI request to the frontend
   }
 
-data ConnServer c = ConnServer
-  { readConnServer  :: MonadConnClient c m => m c
-  , writeConnServer :: MonadConnClient c m => CmdSer -> m ()
-  }
-
 class MonadActionRO m => MonadClient m where
   getClient    :: m StateClient
   getsClient   :: (StateClient -> a) -> m a
@@ -59,8 +54,11 @@ class MonadClient m => MonadClientUI m where
 instance (Monoid a, MonadClientUI m) => MonadClientUI (WriterT a m) where
   getsSession  = lift . getsSession
 
-class MonadClient m => MonadConnClient c m | m -> c where
-  getConn  :: m (ConnServer c)
+class MonadClient m => MonadClientReadServer c m | m -> c where
+  readServer  :: m c
+
+class MonadClient m => MonadClientWriteServer m where
+  writeServer  :: CmdSer -> m ()
 
 -- | The bottom of the action monads class semilattice.
 class MonadClient m => MonadClientAbort m where

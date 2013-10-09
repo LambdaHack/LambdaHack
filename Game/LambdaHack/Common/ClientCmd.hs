@@ -70,7 +70,7 @@ data ChanServer c = ChanServer
 instance Show (ChanServer c) where
   show _ = "client-server connection channels"
 
--- | Connection to the human-controlled client of a faction and/or
+-- | Connections to the human-controlled client of a faction and
 -- to the AI client for the same faction.
 type ConnServerFaction = ( (ChanFrontend, ChanServer CmdClientUI)
                          , ChanServer CmdClientAI )
