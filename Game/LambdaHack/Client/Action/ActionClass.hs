@@ -40,6 +40,7 @@ class MonadActionRO m => MonadClient m where
   -- We do not provide a MonadIO instance, so that outside of Action/
   -- nobody can subvert the action monads by invoking arbitrary IO.
   liftIO       :: IO a -> m a
+  saveClient   :: m ()
 
 instance (Monoid a, MonadClient m) => MonadClient (WriterT a m) where
   getClient    = lift getClient
@@ -47,6 +48,7 @@ instance (Monoid a, MonadClient m) => MonadClient (WriterT a m) where
   modifyClient = lift . modifyClient
   putClient    = lift . putClient
   liftIO       = lift . liftIO
+  saveClient   = lift saveClient
 
 class MonadClient m => MonadClientUI m where
   getsSession  :: (SessionUI -> a) -> m a

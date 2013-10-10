@@ -181,7 +181,7 @@ cmdAtomicSemCli cmd = case cmd of
   ResumeA _fid sfper -> modifyClient $ \cli -> cli {sfper}
   KillExitA _fid -> killExitA
   SaveExitA -> saveExitA
-  SaveBkpA -> clientGameSave True
+  SaveBkpA -> saveClient
   _ -> return ()
 
 perceptionA :: MonadClient m => LevelId -> PerActor -> PerActor -> m ()
@@ -243,7 +243,7 @@ killExitA = modifyClient $ \cli -> cli {squit = True}
 
 saveExitA :: MonadClient m => m ()
 saveExitA = do
-  clientGameSave False
+  saveClient
   modifyClient $ \cli -> cli {squit = True}
 
 -- * CmdAtomicUI

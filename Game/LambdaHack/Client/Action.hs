@@ -5,7 +5,7 @@
 -- details.
 module Game.LambdaHack.Client.Action
   ( -- * Action monads
-    MonadClient( getClient, getsClient, putClient, modifyClient )
+    MonadClient( getClient, getsClient, putClient, modifyClient, saveClient )
   , MonadClientUI
   , MonadClientReadServer(..), MonadClientWriteServer(..)
   , MonadClientAbort( abortWith, tryWith )
@@ -29,7 +29,7 @@ module Game.LambdaHack.Client.Action
     -- * Draw frames
   , drawOverlay, animate
     -- * Assorted primitives
-  , clientGameSave, restoreGame, displayPush, scoreToSlideshow
+  , restoreGame, displayPush, scoreToSlideshow
   , rndToAction, getArenaUI, getLeaderUI
   , targetToPos, partAidLeader, partActorLeader
   , debugPrint
@@ -348,23 +348,6 @@ scoreToSlideshow total status = do
   return $! maybe Monoid.mempty showScore
             $ HighScore.register table total time status date
 
-saveName :: FactionId -> Bool -> String
-saveName side isAI =
-  let n = fromEnum side
-  in (if n > 0
-      then "human_" ++ show n
-      else "computer_" ++ show (-n))
-     ++ if isAI then ".ai.sav" else ".ui.sav"
-
-clientGameSave :: MonadClient m => Bool -> m ()
-clientGameSave toBkp = do
-  s <- getState
-  cli <- getClient
-  configUI <- getsClient sconfigUI
-  side <- getsClient sside
-  isAI <- getsClient sisAI
-  liftIO $ Save.saveGameCli (saveName side isAI) toBkp configUI s cli
-
 restoreGame :: MonadClient m => m (Either (State, StateClient, Msg) Msg)
 restoreGame = do
   Kind.COps{corule} <- getsState scops
@@ -373,7 +356,7 @@ restoreGame = do
       title = rtitle $ Kind.stdRuleset corule
   side <- getsClient sside
   isAI <- getsClient sisAI
-  let sName = saveName side isAI
+  let sName = Save.saveName side isAI
   liftIO $ Save.restoreGameCli sName configUI pathsDataFile title
 
 -- | Invoke pseudo-random computation with the generator kept in the state.

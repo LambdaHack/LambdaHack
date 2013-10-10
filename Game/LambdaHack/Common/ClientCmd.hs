@@ -67,9 +67,6 @@ data ChanServer c = ChanServer
   , toServer   :: TQueue CmdSer
   }
 
-instance Show (ChanServer c) where
-  show _ = "client-server connection channels"
-
 -- | Connections to the human-controlled client of a faction and
 -- to the AI client for the same faction.
 type ConnServerFaction = ( (ChanFrontend, ChanServer CmdClientUI)
