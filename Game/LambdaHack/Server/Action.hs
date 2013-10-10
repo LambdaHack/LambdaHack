@@ -6,7 +6,7 @@ module Game.LambdaHack.Server.Action
   ( -- * Action monads
     MonadServer( getServer, getsServer, putServer, modifyServer )
   , MonadConnServer
-  , tryRestore, updateConn, killAllClients, waitForChildren, speedupCOps
+  , tryRestore, updateConn, killAllClients, speedupCOps
     -- * Communication
   , sendUpdateUI, sendQueryUI, sendUpdateAI, sendQueryAI
     -- * Assorted primitives
@@ -16,9 +16,8 @@ module Game.LambdaHack.Server.Action
   ) where
 
 import Control.Concurrent
-import Control.Concurrent.STM (TQueue, atomically, newTQueueIO)
+import Control.Concurrent.STM (TQueue, atomically)
 import qualified Control.Concurrent.STM as STM
-import Control.Exception (finally)
 import Control.Monad
 import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
@@ -27,9 +26,9 @@ import Data.List
 import Data.Maybe
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import Game.LambdaHack.Utils.Thread
 import System.Directory
 import System.IO (stderr)
-import System.IO.Unsafe (unsafePerformIO)
 import qualified System.Random as R
 import System.Time
 
@@ -293,11 +292,11 @@ updateConn executorUI executorAI = do
   oldD <- getDict
   let mkChanServer :: IO (ChanServer c)
       mkChanServer = do
-        fromServer <- newTQueueIO
-        toServer <- newTQueueIO
+        fromServer <- STM.newTQueueIO
+        toServer <- STM.newTQueueIO
         return ChanServer{..}
       mkChanFrontend :: IO Frontend.ChanFrontend
-      mkChanFrontend = newTQueueIO
+      mkChanFrontend = STM.newTQueueIO
       addConn fid _ = case EM.lookup fid oldD of
         Just conns -> return conns  -- share old conns and threads
         Nothing -> do
@@ -341,29 +340,6 @@ killAllClients = do
         sendUpdateUI fid $ CmdAtomicUI $ KillExitA fid
         sendUpdateAI fid $ CmdAtomicAI $ KillExitA fid
   mapWithKeyM_ sendKill d
-
--- Swiped from http://www.haskell.org/ghc/docs/latest/html/libraries/base-4.6.0.0/Control-Concurrent.html
-children :: MVar [MVar ()]
-{-# NOINLINE children #-}
-children = unsafePerformIO (newMVar [])
-
-waitForChildren :: IO ()
-waitForChildren = do
-  cs <- takeMVar children
-  case cs of
-    [] -> return ()
-    m : ms -> do
-      putMVar children ms
-      takeMVar m
-      waitForChildren
-
-forkChild :: IO () -> IO ThreadId
-forkChild io = do
-  mvar <- newEmptyMVar
-  childs <- takeMVar children
-  putMVar children (mvar : childs)
-  forkIO (io `finally` putMVar mvar ())
--- 7.6  forkFinally io (\_ -> putMVar mvar ())
 
 -- | Compute and insert auxiliary optimized components into game content,
 -- to be used in time-critical sections of the code.

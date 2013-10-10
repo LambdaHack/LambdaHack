@@ -18,6 +18,7 @@ import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.LoopAction
 import Game.LambdaHack.Server.ServerSem
 import Game.LambdaHack.Server.State
+import Game.LambdaHack.Utils.Thread
 
 -- | The semantics of server commands. The resulting boolean value
 -- indicates if the command took some time.

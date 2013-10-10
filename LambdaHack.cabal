@@ -167,7 +167,8 @@ library
                       Game.LambdaHack.Utils.Assert,
                       Game.LambdaHack.Utils.File,
                       Game.LambdaHack.Utils.Frequency,
-                      Game.LambdaHack.Utils.LQueue
+                      Game.LambdaHack.Utils.LQueue,
+                      Game.LambdaHack.Utils.Thread
   other-modules:      Paths_LambdaHack
   build-depends:      ConfigFile >= 1.1.1   && < 2,
                       array      >= 0.3.0.3 && < 1,
