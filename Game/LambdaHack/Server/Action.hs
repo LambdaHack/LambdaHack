@@ -13,6 +13,7 @@ module Game.LambdaHack.Server.Action
   , saveGameSer, saveGameBkp, dumpCfg
   , mkConfigRules, restoreScore, revealItems, deduceQuits
   , rndToAction, fovMode, resetFidPerception, getPerFid
+  , childrenServer
   ) where
 
 import Control.Concurrent
@@ -29,6 +30,7 @@ import qualified Data.Text.IO as T
 import Game.LambdaHack.Utils.Thread
 import System.Directory
 import System.IO (stderr)
+import System.IO.Unsafe (unsafePerformIO)
 import qualified System.Random as R
 import System.Time
 
@@ -279,6 +281,11 @@ tryRestore Kind.COps{corule} = do
   (sconfig, _, _) <- mkConfigRules corule
   liftIO $ Save.restoreGameSer sconfig pathsDataFile
 
+-- Global variable for all children threads of the server.
+childrenServer :: MVar [MVar ()]
+{-# NOINLINE childrenServer #-}
+childrenServer = unsafePerformIO (newMVar [])
+
 -- | Update connections to the new definition of factions.
 -- Connect to clients in old or newly spawned threads
 -- that read and write directly to the channels.
@@ -318,8 +325,10 @@ updateConn executorUI executorAI = do
                   )
       fromM = Frontend.fromMulti Frontend.connMulti
   liftIO $ void $ takeMVar fromM  -- stop Frontend
-  let forkUI fid (connF, connS) = void $ forkChild $ executorUI fid connF connS
-      forkAI fid connS = void $ forkChild $ executorAI fid connS
+  let forkUI fid (connF, connS) =
+        void $ forkChild childrenServer $ executorUI fid connF connS
+      forkAI fid connS =
+        void $ forkChild childrenServer $ executorAI fid connS
       forkClient fid (connUI, connAI) = do
         -- This is fragile: when a connection is reused, clients are not
         -- respawned, even if AI or UI usage changes (it does not, currently,

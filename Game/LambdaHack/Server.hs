@@ -97,5 +97,5 @@ mainSer copsSlow exeSer exeFront = do
       loopServer = loopSer sdebugNxt cmdSerSem
       exeServer executorUI executorAI = do
         exeSer (loopServer executorUI executorAI cops)
-        waitForChildren
+        waitForChildren childrenServer
   exeFront cops exeServer
