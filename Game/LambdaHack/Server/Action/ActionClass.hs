@@ -15,6 +15,7 @@ class MonadActionRO m => MonadServer m where
   -- We do not provide a MonadIO instance, so that outside of Action/
   -- nobody can subvert the action monads by invoking arbitrary IO.
   liftIO       :: IO a -> m a
+  saveServer   :: m ()
 
 class MonadServer m => MonadConnServer m where
   getDict      :: m ConnServerDict

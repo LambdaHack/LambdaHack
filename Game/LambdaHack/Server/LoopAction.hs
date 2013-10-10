@@ -114,7 +114,7 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
 saveBkpAll :: (MonadAtomic m, MonadServer m) => m ()
 saveBkpAll = do
   execCmdAtomic SaveBkpA
-  saveGameBkp
+  saveServer
 
 endClip :: (MonadAtomic m, MonadServer m) => [LevelId] -> m ()
 endClip arenas = do
@@ -129,7 +129,7 @@ endClip arenas = do
   when (bkpSave || clipN `mod` bkpFreq == 0) $ do
     modifyServer $ \ser -> ser {sbkpSave = False}
     execCmdAtomic SaveBkpA
-    saveGameBkp
+    saveServer
   -- Regenerate HP and add monsters each turn, not each clip.
   -- Do this on only one of the arenas to prevent micromanagement,
   -- e.g., spreading leaders across levels to bump monster generation.
@@ -380,7 +380,7 @@ endOrLoop updConn loopServer = do
               $ QuitFactionA fid Nothing (gquit fact) Nothing) campers
       -- Save client and server data.
       execCmdAtomic SaveExitA
-      saveGameSer
+      saveServer
       -- Kill all clients, including those that did not take part
       -- in the current game.
       -- Clients exit not now, but after they print all ending screens.

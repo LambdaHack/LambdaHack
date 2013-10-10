@@ -18,8 +18,7 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Utils.File
 
--- TODO: Refactor the client and server Save.hs, after
--- https://github.com/kosmikus/LambdaHack/issues/37.
+-- TODO: Refactor the client and server Save.hs.
 
 type ChanSave = MVar (Maybe (State, StateClient))
 

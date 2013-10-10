@@ -1,6 +1,6 @@
 -- | Saving and restoring server game state.
 module Game.LambdaHack.Server.Action.Save
-  ( saveGameBkpSer, saveGameSer, restoreGameSer
+  ( ChanSave, restoreGameSer, loopSave
   ) where
 
 import Control.Concurrent
@@ -9,43 +9,36 @@ import Control.Monad
 import System.Directory
 import System.FilePath
 import System.IO
-import System.IO.Unsafe (unsafePerformIO)
 
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.Utils.File
 
--- TODO: Refactor the client and server Save.hs, after
--- https://github.com/kosmikus/LambdaHack/issues/37.
+-- TODO: Refactor the client and server Save.hs.
 
-saveLock :: MVar ()
-{-# NOINLINE saveLock #-}
-saveLock = unsafePerformIO newEmptyMVar
+type ChanSave = MVar (Maybe (State, StateServer))
 
--- | Save game to the backup savefile, in case of crashes.
--- This is only a backup, so no problem is the game is shut down
--- before saving finishes, so we don't wait on the mvar. However,
--- if a previous save is already in progress, we skip this save.
-saveGameBkpSer :: Config -> State -> StateServer -> IO ()
-saveGameBkpSer Config{configAppDataDir} s ser = do
-  b <- tryPutMVar saveLock ()
-  when b $
-    void $ forkIO $ do
-      let saveFile = configAppDataDir </> "server.sav"
-          saveFileBkp = saveFile <.> ".bkp"
-      encodeEOF saveFile (s, ser)
-      renameFile saveFile saveFileBkp
-      takeMVar saveLock
+loopSave :: ChanSave -> IO ()
+loopSave toSave =
+  loop
+ where
+  loop = do
+    -- Wait until anyting to save.
+    ms <- takeMVar toSave
+    case ms of
+      Just (s, ser) -> do
+        saveGameSer s ser
+        -- Wait until the save finished. During that time, the mvar
+        -- is continually updated to newest state values.
+        loop
+      Nothing -> return ()  -- exit
 
 -- | Save a simple serialized version of the current state.
--- Protected by a lock to avoid corrupting the file.
-saveGameSer :: Config -> State -> StateServer -> IO ()
-saveGameSer Config{configAppDataDir} s ser = do
-  putMVar saveLock ()
-  let saveFile = configAppDataDir </> "server.sav"
+saveGameSer :: State -> StateServer -> IO ()
+saveGameSer s ser = do
+  let saveFile = configAppDataDir (sconfig ser) </> "server.sav"
   encodeEOF saveFile (s, ser)
-  takeMVar saveLock
 
 -- | Restore a saved game, if it exists. Initialize directory structure
 -- and cope over data files, if needed.

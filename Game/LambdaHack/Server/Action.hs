@@ -4,13 +4,13 @@
 -- details.
 module Game.LambdaHack.Server.Action
   ( -- * Action monads
-    MonadServer( getServer, getsServer, putServer, modifyServer )
+    MonadServer( getServer, getsServer, putServer, modifyServer, saveServer )
   , MonadConnServer
   , tryRestore, updateConn, killAllClients, speedupCOps
     -- * Communication
   , sendUpdateUI, sendQueryUI, sendUpdateAI, sendQueryAI
     -- * Assorted primitives
-  , saveGameSer, saveGameBkp, dumpCfg
+  , dumpCfg
   , mkConfigRules, restoreScore, revealItems, deduceQuits
   , rndToAction, fovMode, resetFidPerception, getPerFid
   , childrenServer
@@ -86,23 +86,6 @@ getPerFid fid lid = do
   let fper = fromMaybe (assert `failure` (lid, fid)) $ EM.lookup fid pers
       per = fromMaybe (assert `failure` (lid, fid)) $ EM.lookup lid fper
   return $! per
-
-saveGameSer :: MonadServer m => m ()
-saveGameSer = do
-  s <- getState
-  ser <- getServer
-  config <- getsServer sconfig
-  liftIO $ Save.saveGameSer config s ser
-
--- | Save a backup of the save game file, in case of crashes.
---
--- See 'Save.saveGameBkp'.
-saveGameBkp :: MonadServer m => m ()
-saveGameBkp = do
-  s <- getState
-  ser <- getServer
-  config <- getsServer sconfig
-  liftIO $ Save.saveGameBkpSer config s ser
 
 -- | Dumps the current game rules configuration to a file.
 dumpCfg :: MonadServer m => FilePath -> m ()
