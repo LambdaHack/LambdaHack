@@ -21,6 +21,7 @@ import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Utils.Thread
 
 -- | The type of the function inside any client action.
 type FunActionCli c a =
@@ -84,7 +85,7 @@ instance MonadClient (ActionCli c) where
   saveClient     = ActionCli (\_c (_, toSave) k _a s cli -> do
                                  -- Wipe out previous candidates for saving.
                                  void $ tryTakeMVar toSave
-                                 putMVar toSave (s, cli)
+                                 putMVar toSave $ Just (s, cli)
                                  k s cli ())
 
 instance MonadClientUI (ActionCli c) where
@@ -108,8 +109,9 @@ executorCli :: ActionCli c ()
             -> SessionUI -> State -> StateClient -> ChanServer c
             -> IO ()
 executorCli m sess s cli d = do
+  childrenClient <- newMVar []
   toSave <- newEmptyMVar
-  Save.spawnSave toSave
+  void $ forkChild childrenClient $ Save.loopSave toSave
   runActionCli m
     sess
     (d, toSave)
@@ -120,3 +122,7 @@ executorCli m sess s cli d = do
                in fail $ T.unpack err)
     s
     cli
+  -- Wait until the last save starts and tell the save thread to end.
+  putMVar toSave Nothing
+  -- Wait until the save thread ends.
+  waitForChildren childrenClient

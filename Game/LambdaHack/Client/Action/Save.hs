@@ -1,12 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | Saving and restoring client game state.
 module Game.LambdaHack.Client.Action.Save
-  ( ChanSave, restoreGameCli, saveName, spawnSave
+  ( ChanSave, restoreGameCli, saveName, loopSave
   ) where
 
 import Control.Concurrent
 import qualified Control.Exception as Ex hiding (handle)
-import Control.Monad
 import Data.Text (Text)
 import qualified Data.Text as T
 import System.Directory
@@ -22,7 +21,7 @@ import Game.LambdaHack.Utils.File
 -- TODO: Refactor the client and server Save.hs, after
 -- https://github.com/kosmikus/LambdaHack/issues/37.
 
-type ChanSave = MVar (State, StateClient)
+type ChanSave = MVar (Maybe (State, StateClient))
 
 saveName :: FactionId -> Bool -> String
 saveName side isAI =
@@ -37,14 +36,15 @@ loopSave toSave =
   loop
  where
   loop = do
-    (s, cli) <- takeMVar toSave
-    saveGameCli s cli
-    -- Wait until the save finished. During that time, the mvar
-    -- is continually updated to newest state values.
-    loop
-
-spawnSave :: ChanSave -> IO ()
-spawnSave toSave = void $ forkIO $ loopSave toSave
+    -- Wait until anyting to save.
+    ms <- takeMVar toSave
+    case ms of
+      Just (s, cli) -> do
+        saveGameCli s cli
+        -- Wait until the save finished. During that time, the mvar
+        -- is continually updated to newest state values.
+        loop
+      Nothing -> return ()  -- exit
 
 -- | Save a simple serialized version of the current state.
 saveGameCli :: State -> StateClient -> IO ()
