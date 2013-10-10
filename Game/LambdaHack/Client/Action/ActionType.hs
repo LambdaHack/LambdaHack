@@ -9,6 +9,7 @@ module Game.LambdaHack.Client.Action.ActionType
 
 import Control.Concurrent
 import Control.Concurrent.STM
+import Control.Exception (finally)
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
@@ -112,17 +113,27 @@ executorCli m sess s cli d = do
   childrenClient <- newMVar []
   toSave <- newEmptyMVar
   void $ forkChild childrenClient $ Save.loopSave toSave
-  runActionCli m
-    sess
-    (d, toSave)
-    (\_ _ _ -> return ())
-    (\_ msg -> let err = "unhandled abort for client"
-                         <+> showT (sfactionD s EM.! sside cli)
-                         <+> ":" <+> msg
-               in fail $ T.unpack err)
-    s
-    cli
-  -- Wait until the last save starts and tell the save thread to end.
-  putMVar toSave Nothing
-  -- Wait until the save thread ends.
-  waitForChildren childrenClient
+  let exe =
+        runActionCli m
+          sess
+          (d, toSave)
+          (\_ _ _ -> return ())
+          (\_ msg -> let err = "unhandled abort for client"
+                               <+> showT (sfactionD s EM.! sside cli)
+                               <+> ":" <+> msg
+                     in fail $ T.unpack err)
+          s
+          cli
+      fin = do
+        -- Wait until the last save starts and tell the save thread to end.
+        putMVar toSave Nothing
+        -- Wait until the save thread ends.
+        waitForChildren childrenClient
+  exe `finally` fin
+  -- The creation of the initial client state, etc., are outside the 'finally'
+  -- clause, but this is OK, since no saves are ordered until 'runActionCli'.
+  -- We save often, not only in the 'finally' section, in case of
+  -- power outages, kill -9, GHC runtime crashes, etc. For internal game
+  -- crashes, C-c, etc., the finalizer would be enough.
+  -- If we implement incremental saves, saving often will help
+  -- to spread the cost, to avoid a long pause at game exit.
