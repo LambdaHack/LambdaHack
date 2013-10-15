@@ -126,6 +126,7 @@ library
                       Game.LambdaHack.Common.Point,
                       Game.LambdaHack.Common.PointXY,
                       Game.LambdaHack.Common.Random,
+                      Game.LambdaHack.Common.Save,
                       Game.LambdaHack.Common.ServerCmd,
                       Game.LambdaHack.Common.State,
                       Game.LambdaHack.Common.Tile,

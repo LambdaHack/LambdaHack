@@ -1,6 +1,6 @@
 -- | Saving and restoring server game state.
 module Game.LambdaHack.Server.Action.Save
-  ( ChanSave, restoreGameSer, loopSave
+  ( restoreGameSer
   ) where
 
 import Control.Concurrent
@@ -14,31 +14,6 @@ import Game.LambdaHack.Common.State
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.Utils.File
-
--- TODO: Refactor the client and server Save.hs.
-
-type ChanSave = MVar (Maybe (State, StateServer))
-
-loopSave :: ChanSave -> IO ()
-loopSave toSave =
-  loop
- where
-  loop = do
-    -- Wait until anyting to save.
-    ms <- takeMVar toSave
-    case ms of
-      Just (s, ser) -> do
-        saveGameSer s ser
-        -- Wait until the save finished. During that time, the mvar
-        -- is continually updated to newest state values.
-        loop
-      Nothing -> return ()  -- exit
-
--- | Save a simple serialized version of the current state.
-saveGameSer :: State -> StateServer -> IO ()
-saveGameSer s ser = do
-  let saveFile = configAppDataDir (sconfig ser) </> "server.sav"
-  encodeEOF saveFile (s, ser)
 
 -- | Restore a saved game, if it exists. Initialize directory structure
 -- and cope over data files, if needed.

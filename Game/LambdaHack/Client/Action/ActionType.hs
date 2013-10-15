@@ -7,27 +7,27 @@ module Game.LambdaHack.Client.Action.ActionType
   ( FunActionCli, ActionCli, executorCli
   ) where
 
-import Control.Concurrent
 import Control.Concurrent.STM
-import Control.Exception (finally)
-import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
+import System.FilePath
 import qualified System.Random as R
 
 import Game.LambdaHack.Client.Action.ActionClass
 import qualified Game.LambdaHack.Client.Action.Save as Save
+import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Common.Msg
+import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
-import Game.LambdaHack.Utils.Thread
 
 -- | The type of the function inside any client action.
 type FunActionCli c a =
    SessionUI                          -- ^ client UI setup data
-   -> (ChanServer c, Save.ChanSave)   -- ^ this client connection information
+   -> (ChanServer c, Save.ChanSave (State, StateClient))
+                                      -- ^ this client connection information
    -> (State -> StateClient -> a -> IO ())
                                       -- ^ continuation
    -> (R.StdGen -> Msg -> IO ())      -- ^ failure/reset continuation
@@ -84,9 +84,7 @@ instance MonadClient (ActionCli c) where
   putClient      = modifyClient . const
   liftIO x       = ActionCli (\_c _d k _a s cli -> x >>= k s cli)
   saveClient     = ActionCli (\_c (_, toSave) k _a s cli -> do
-                                 -- Wipe out previous candidates for saving.
-                                 void $ tryTakeMVar toSave
-                                 putMVar toSave $ Just (s, cli)
+                                 Save.saveToChan toSave (s, cli)
                                  k s cli ())
 
 instance MonadClientUI (ActionCli c) where
@@ -109,11 +107,11 @@ instance MonadClientWriteServer (ActionCli c) where
 executorCli :: ActionCli c ()
             -> SessionUI -> State -> StateClient -> ChanServer c
             -> IO ()
-executorCli m sess s cli d = do
-  childrenClient <- newMVar []
-  toSave <- newEmptyMVar
-  void $ forkChild childrenClient $ Save.loopSave toSave
-  let exe =
+executorCli m sess s cli d =
+  let saveFile (_, cli2) =
+        let name = Save.saveName (sside cli2) (sisAI cli2)
+        in configAppDataDirUI (sconfigUI cli2) </> name
+      exe toSave =
         runActionCli m
           sess
           (d, toSave)
@@ -124,16 +122,4 @@ executorCli m sess s cli d = do
                      in fail $ T.unpack err)
           s
           cli
-      fin = do
-        -- Wait until the last save starts and tell the save thread to end.
-        putMVar toSave Nothing
-        -- Wait until the save thread ends.
-        waitForChildren childrenClient
-  exe `finally` fin
-  -- The creation of the initial client state, etc., are outside the 'finally'
-  -- clause, but this is OK, since no saves are ordered until 'runActionCli'.
-  -- We save often, not only in the 'finally' section, in case of
-  -- power outages, kill -9, GHC runtime crashes, etc. For internal game
-  -- crashes, C-c, etc., the finalizer would be enough.
-  -- If we implement incremental saves, saving often will help
-  -- to spread the cost, to avoid a long pause at game exit.
+  in Save.wrapInSaves saveFile exe
