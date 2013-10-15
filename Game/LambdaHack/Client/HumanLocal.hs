@@ -465,8 +465,7 @@ displayMainMenu = do
       kds =  -- key-description pairs
         let showKD cmd km = (K.showKM km, HumanCmd.cmdDescription cmd)
             revLookup cmd = maybe ("", "") (showKD cmd) $ M.lookup cmd krevMap
-            cmds = [ HumanCmd.GameSave
-                   , HumanCmd.GameExit
+            cmds = [ HumanCmd.GameExit
                    , HumanCmd.GameRestart "campaign"
                    , HumanCmd.GameRestart "skirmish"
                    , HumanCmd.GameRestart "PvP"

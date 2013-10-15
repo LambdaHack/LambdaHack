@@ -104,14 +104,13 @@ commands are listed below. None of them takes hero time.
                }         target 10 levels deeper
                0--9      select a hero anywhere in the dungeon
 
-Commands for saving the current game, starting a new game, etc.,
+Commands for saving and exiting the current game, starting a new game, etc.,
 are listed in the Main Menu, brough up by the ESC key.
 Some of the game modes are multiplayer or feature multiple computer
 players (allied or not). The setup of the modes can be modified
 via a configuration file.
 
                key       command
-               CTRL-s    save game
                CTRL-x    save and exit
                CTRL-r    new campaign game
                CTRL-k    new skirmish game
