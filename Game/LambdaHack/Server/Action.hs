@@ -268,7 +268,7 @@ tryRestore Kind.COps{corule} = do
   let copies =
         [ (configRulesCfgFile <.> ".default", configRulesCfgFile <.> ".ini")
         , (configScoresFile, configScoresFile) ]
-  liftIO $ Save.restoreGame "server.sav" configAppDataDir copies pathsDataFile
+  liftIO $ Save.restoreGame saveName configAppDataDir copies pathsDataFile
 
 -- Global variable for all children threads of the server.
 childrenServer :: MVar [MVar ()]

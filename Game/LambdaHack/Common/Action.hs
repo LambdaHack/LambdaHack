@@ -7,6 +7,8 @@ module Game.LambdaHack.Common.Action
     MonadActionRO(..), MonadAction(..), MonadAtomic(..)
     -- * Shorthands
   , getsLevel, nHumans
+    -- * Assorted
+  , serverSaveName
   ) where
 
 import Control.Monad.Writer.Strict (WriterT, lift)
@@ -47,3 +49,6 @@ nHumans :: MonadActionRO m => m Int
 nHumans = do
   factionD <- getsState sfactionD
   return $ length $ filter isHumanFact $ EM.elems factionD
+
+serverSaveName :: String
+serverSaveName = "server.sav"

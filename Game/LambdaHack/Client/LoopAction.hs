@@ -40,9 +40,10 @@ loopAI cmdClientAISem = do
   cmd1 <- readServer
   case (restored, cmd1) of
     (True, CmdAtomicAI ResumeA{}) -> return ()
-    (True, CmdAtomicAI RestartA{}) -> return ()  -- server savefile faulty
-    (False, CmdAtomicAI ResumeA{}) ->
-      error $ T.unpack $ "Savefile of client " <> showT side <> " not usable. Please remove all savefiles manually and restart. "
+    (True, CmdAtomicAI RestartA{}) -> return ()  -- ignoring old savefile
+    (False, CmdAtomicAI ResumeA{}) -> do
+      removeServerSave
+      error $ T.unpack $ "Savefile of client" <+> showT side <+> "not usable. Removing server savefile. Please restart now."
     (False, CmdAtomicAI RestartA{}) -> return ()
     _ -> assert `failure` (side, restored, cmd1)
   cmdClientAISem cmd1
@@ -72,9 +73,10 @@ loopUI cmdClientUISem = do
       msgAdd msg
     (True, CmdAtomicUI RestartA{}) -> do
       cmdClientUISem cmd1
-      msgAdd "Starting a new game (and ignoring an old client savefile)."
-    (False, CmdAtomicUI ResumeA{}) ->
-      error $ T.unpack $ "Savefile of client " <> showT side <> " not usable. Please remove all savefiles manually and restart. "
+      msgAdd $ "Starting a new" <+> title <+> "game."  -- ignoring old savefile
+    (False, CmdAtomicUI ResumeA{}) -> do
+      removeServerSave
+      error $ T.unpack $ "Savefile of client" <+> showT side <+> "not usable. Removing server savefile. Please restart now."
     (False, CmdAtomicUI RestartA{}) -> do
       let msg = "Welcome to" <+> title <> "!"
       cmdClientUISem cmd1

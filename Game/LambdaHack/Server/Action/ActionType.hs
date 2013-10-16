@@ -67,7 +67,7 @@ instance MonadConnServer ActionSer where
 -- | Run an action in the @IO@ monad, with undefined state.
 executorSer :: ActionSer () -> IO ()
 executorSer m =
-  let saveFile (_, ser) = configAppDataDir (sconfig ser) </> "server.sav"
+  let saveFile (_, ser) = configAppDataDir (sconfig ser) </> saveName
       exe toSave =
         evalStateT (runActionSer m)
           SerState { serState = emptyState

@@ -29,7 +29,7 @@ module Game.LambdaHack.Client.Action
     -- * Draw frames
   , drawOverlay, animate
     -- * Assorted primitives
-  , restoreGame, displayPush, scoreToSlideshow
+  , restoreGame, removeServerSave, displayPush, scoreToSlideshow
   , rndToAction, getArenaUI, getLeaderUI
   , targetToPos, partAidLeader, partActorLeader
   , debugPrint
@@ -48,6 +48,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified NLP.Miniutter.English as MU
+import System.Directory
 import System.FilePath
 import System.IO (hFlush, stderr)
 import qualified System.Random as R
@@ -360,6 +361,14 @@ restoreGame = do
           , configUICfgFile } <- getsClient sconfigUI
   let copies = [(configUICfgFile <.> ".default", configUICfgFile <.> ".ini")]
   liftIO $ Save.restoreGame sName configAppDataDirUI copies pathsDataFile
+
+-- | Assuming the client runs on the same machine and for the same
+-- user as the server, move the server savegame out of the way.
+removeServerSave :: MonadClient m => m ()
+removeServerSave = do
+  ConfigUI{configAppDataDirUI} <- getsClient sconfigUI
+  let serverSaveFile = configAppDataDirUI </> serverSaveName
+  liftIO $ renameFile serverSaveFile (serverSaveFile ++ ".bkp")
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: MonadClient m => Rnd a -> m a

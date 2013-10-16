@@ -22,3 +22,6 @@ class MonadServer m => MonadConnServer m where
   getsDict     :: (ConnServerDict -> a) -> m a
   modifyDict   :: (ConnServerDict -> ConnServerDict) -> m ()
   putDict      :: ConnServerDict -> m ()
+
+saveName :: String
+saveName = serverSaveName
