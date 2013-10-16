@@ -74,7 +74,6 @@ cmdAtomicSem cmd = case cmd of
   ResumeA{} -> return ()
   ResumeServerA s -> resumeServerA s
   KillExitA{} -> return ()
-  SaveExitA -> return ()
   SaveBkpA -> return ()
   MsgAllA{} -> return ()
 

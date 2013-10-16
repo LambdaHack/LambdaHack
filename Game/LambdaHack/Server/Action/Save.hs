@@ -3,7 +3,6 @@ module Game.LambdaHack.Server.Action.Save
   ( restoreGameSer
   ) where
 
-import Control.Concurrent
 import qualified Control.Exception as Ex hiding (handle)
 import Control.Monad
 import System.Directory

@@ -180,7 +180,6 @@ cmdAtomicSemCli cmd = case cmd of
                   , sdebugCli}
   ResumeA _fid sfper -> modifyClient $ \cli -> cli {sfper}
   KillExitA _fid -> killExitA
-  SaveExitA -> saveExitA
   SaveBkpA -> saveClient
   _ -> return ()
 
@@ -240,11 +239,6 @@ coverA lid p iid ik = do
 
 killExitA :: MonadClient m => m ()
 killExitA = modifyClient $ \cli -> cli {squit = True}
-
-saveExitA :: MonadClient m => m ()
-saveExitA = do
-  saveClient
-  modifyClient $ \cli -> cli {squit = True}
 
 -- * CmdAtomicUI
 
