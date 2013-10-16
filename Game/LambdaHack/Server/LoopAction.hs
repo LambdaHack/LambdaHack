@@ -126,10 +126,9 @@ endClip arenas = do
   let clipN = time `timeFit` timeClip
       cinT = let r = timeTurn `timeFit` timeClip
              in assert (r > 2) r
-      bkpFreq = cinT * configSaveBkpClips
       clipMod = clipN `mod` cinT
   bkpSave <- getsServer sbkpSave
-  when (bkpSave || clipN `mod` bkpFreq == 0) $ do
+  when (bkpSave || clipN `mod` configSaveBkpClips == 0) $ do
     modifyServer $ \ser -> ser {sbkpSave = False}
     saveBkpAll
   -- Regenerate HP and add monsters each turn, not each clip.
