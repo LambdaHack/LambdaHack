@@ -52,7 +52,8 @@ wrapInSaves saveFile exe = do
   toSave <- newEmptyMVar
   void $ forkChild children $ loopSave saveFile toSave
   let fin = do
-        -- Wait until the last save starts and tell the save thread to end.
+        -- Wait until the last save (if any) starts
+        -- and tell the save thread to end.
         putMVar toSave Nothing
         -- Wait until the save thread ends.
         waitForChildren children

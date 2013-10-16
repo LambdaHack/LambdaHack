@@ -5,6 +5,7 @@ module Game.LambdaHack.Server
   ( mainSer
   ) where
 
+import qualified Control.Exception as Ex hiding (handle)
 import System.Environment (getArgs)
 
 import Game.LambdaHack.Common.Action
@@ -95,7 +96,12 @@ mainSer copsSlow exeSer exeFront = do
   sdebugNxt <- debugArgs
   let cops = speedupCOps False copsSlow
       loopServer = loopSer sdebugNxt cmdSerSem
-      exeServer executorUI executorAI = do
-        exeSer (loopServer executorUI executorAI cops)
-        waitForChildren childrenServer
+      exeServer executorUI executorAI =
+        -- Wait for clients to exit even in case of server crash,
+        -- which gives them time to save.
+        -- TODO: send them a message to tell users "server crashed"
+        -- and then let them exit.
+        Ex.finally
+          (exeSer (loopServer executorUI executorAI cops))
+          (waitForChildren childrenServer)
   exeFront cops exeServer
