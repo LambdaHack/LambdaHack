@@ -14,7 +14,6 @@ import System.FilePath
 import qualified System.Random as R
 
 import Game.LambdaHack.Client.Action.ActionClass
-import qualified Game.LambdaHack.Client.Action.Save as Save
 import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
@@ -109,7 +108,7 @@ executorCli :: ActionCli c ()
             -> IO ()
 executorCli m sess s cli d =
   let saveFile (_, cli2) =
-        let name = Save.saveName (sside cli2) (sisAI cli2)
+        let name = saveName (sside cli2) (sisAI cli2)
         in configAppDataDirUI (sconfigUI cli2) </> name
       exe toSave =
         runActionCli m

@@ -11,6 +11,7 @@ import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Frontend (FrontReq)
@@ -73,3 +74,11 @@ class MonadClient m => MonadClientAbort m where
 instance (Monoid a, MonadClientAbort m) => MonadClientAbort (WriterT a m) where
   tryWith exc m = WriterT $ tryWith (runWriterT . exc) (runWriterT m)
   abortWith = lift . abortWith
+
+saveName :: FactionId -> Bool -> String
+saveName side isAI =
+  let n = fromEnum side
+  in (if n > 0
+      then "human_" ++ show n
+      else "computer_" ++ show (-n))
+     ++ if isAI then ".ai.sav" else ".ui.sav"

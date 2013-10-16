@@ -1,12 +1,15 @@
 -- | Saving and restoring server game state.
 module Game.LambdaHack.Common.Save
-  ( ChanSave, saveToChan, wrapInSaves
+  ( ChanSave, saveToChan, wrapInSaves, restoreGame
   ) where
 
 import Control.Concurrent
 import qualified Control.Exception as Ex hiding (handle)
 import Control.Monad
 import Data.Binary
+import System.Directory
+import System.FilePath
+import System.IO
 
 import Game.LambdaHack.Utils.File
 import Game.LambdaHack.Utils.Thread
@@ -65,3 +68,33 @@ wrapInSaves saveFile exe = do
   -- crashes, C-c, etc., the finalizer would be enough.
   -- If we implement incremental saves, saving often will help
   -- to spread the cost, to avoid a long pause at game exit.
+
+-- | Restore a saved game, if it exists. Initialize directory structure
+-- and cope over data files, if needed.
+restoreGame :: Binary a
+            => String -> FilePath
+            -> [(FilePath, FilePath)] -> (FilePath -> IO FilePath)
+            -> IO (Maybe a)
+restoreGame name configAppDataDir copies pathsDataFile = do
+  -- Create user data directory and copy files, if not already there.
+  tryCreateDir configAppDataDir
+  tryCopyDataFiles pathsDataFile copies
+  let saveFile = configAppDataDir </> name
+  sb <- doesFileExist saveFile
+  -- If the savefile exists but we get IO or decoding errors,
+  -- we show them and start a new game. If the savefile was randomly
+  -- corrupted or made read-only, that should solve the problem.
+  -- OTOH, serious IO problems (e.g. failure to create a user data directory)
+  -- terminate the program with an exception.
+  res <- Ex.try $
+    if sb then do
+      s <- strictDecodeEOF saveFile
+      return $ Just s
+    else return Nothing
+  let handler :: Ex.SomeException -> IO (Maybe a)
+      handler e = do
+        let msg = "Restore failed. The error message is: "
+                  ++ (unwords . lines) (show e)
+        hPutStrLn stderr msg
+        return Nothing
+  either handler return res

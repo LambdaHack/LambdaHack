@@ -48,13 +48,13 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified NLP.Miniutter.English as MU
+import System.FilePath
 import System.IO (hFlush, stderr)
 import qualified System.Random as R
 import System.Time
 
 import Game.LambdaHack.Client.Action.ActionClass
 import Game.LambdaHack.Client.Action.ConfigIO
-import qualified Game.LambdaHack.Client.Action.Save as Save
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.Draw
@@ -72,6 +72,7 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
+import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Frontend as Frontend
@@ -348,16 +349,17 @@ scoreToSlideshow total status = do
   return $! maybe Monoid.mempty showScore
             $ HighScore.register table total time status date
 
-restoreGame :: MonadClient m => m (Either (State, StateClient, Msg) Msg)
+restoreGame :: MonadClient m => m (Maybe (State, StateClient))
 restoreGame = do
   Kind.COps{corule} <- getsState scops
-  configUI <- getsClient sconfigUI
   let pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
-      title = rtitle $ Kind.stdRuleset corule
   side <- getsClient sside
   isAI <- getsClient sisAI
-  let sName = Save.saveName side isAI
-  liftIO $ Save.restoreGameCli sName configUI pathsDataFile title
+  let sName = saveName side isAI
+  ConfigUI{ configAppDataDirUI
+          , configUICfgFile } <- getsClient sconfigUI
+  let copies = [(configUICfgFile <.> ".default", configUICfgFile <.> ".ini")]
+  liftIO $ Save.restoreGame sName configAppDataDirUI copies pathsDataFile
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: MonadClient m => Rnd a -> m a

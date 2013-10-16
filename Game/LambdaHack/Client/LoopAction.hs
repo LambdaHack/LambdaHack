@@ -11,38 +11,40 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.ClientCmd
+import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Utils.Assert
 
-initCli :: MonadClient m => (State -> m ()) -> m (Either Msg Msg)
+initCli :: MonadClient m => (State -> m ()) -> m Bool
 initCli putSt = do
   -- Warning: state and client state are invalid here, e.g., sdungeon
   -- and sper are empty.
   cops <- getsState scops
   restored <- restoreGame
   case restored of
-    Left (s, cli, msg) -> do  -- Restore a game or at least history.
+    Just (s, cli) -> do  -- Restore the game.
       let sCops = updateCOps (const cops) s
       putSt sCops
       putClient cli
-      return $ Left msg
-    Right msg ->  -- First visit ever, use the initial state.
-      return $ Right msg
+      return True
+    Nothing ->  -- First visit ever, use the initial state.
+      return False
 
 loopAI :: (MonadClientReadServer CmdClientAI m)
        => (CmdClientAI -> m ()) -> m ()
 loopAI cmdClientAISem = do
   side <- getsClient sside
-  msg <- initCli $ \s -> cmdClientAISem $ CmdAtomicAI $ ResumeServerA s
+  restored <- initCli $ \s -> cmdClientAISem $ CmdAtomicAI $ ResumeServerA s
   cmd1 <- readServer
-  case (msg, cmd1) of
-    (Left _, CmdAtomicAI ResumeA{}) -> return ()
-    (Left _, CmdAtomicAI RestartA{}) -> return ()  -- server savefile faulty
-    (Right msg1, CmdAtomicAI ResumeA{}) ->
-      error $ T.unpack $ "Savefile of client " <> showT side <> " not usable. Can't join the party. Please remove all savefiles manually and restart. Savefile subsystem said: " <> msg1
-    (Right _, CmdAtomicAI RestartA{}) -> return ()
-    _ -> assert `failure` (side, msg, cmd1)
+  case (restored, cmd1) of
+    (True, CmdAtomicAI ResumeA{}) -> return ()
+    (True, CmdAtomicAI RestartA{}) -> return ()  -- server savefile faulty
+    (False, CmdAtomicAI ResumeA{}) ->
+      error $ T.unpack $ "Savefile of client " <> showT side <> " not usable. Please remove all savefiles manually and restart. "
+    (False, CmdAtomicAI RestartA{}) -> return ()
+    _ -> assert `failure` (side, restored, cmd1)
   cmdClientAISem cmd1
   -- State and client state now valid.
   debugPrint $ "AI client" <+> showT side <+> "started."
@@ -58,22 +60,26 @@ loopAI cmdClientAISem = do
 loopUI :: (MonadClientUI m, MonadClientReadServer CmdClientUI m)
        => (CmdClientUI -> m ()) -> m ()
 loopUI cmdClientUISem = do
+  Kind.COps{corule} <- getsState scops
+  let title = rtitle $ Kind.stdRuleset corule
   side <- getsClient sside
-  msg <- initCli $ \s -> cmdClientUISem $ CmdAtomicUI $ ResumeServerA s
+  restored <- initCli $ \s -> cmdClientUISem $ CmdAtomicUI $ ResumeServerA s
   cmd1 <- readServer
-  case (msg, cmd1) of
-    (Left msg1, CmdAtomicUI ResumeA{}) -> do
+  case (restored, cmd1) of
+    (True, CmdAtomicUI ResumeA{}) -> do
+      let msg = "Welcome back to" <+> title <> "."
       cmdClientUISem cmd1
-      msgAdd msg1
-    (Left _, CmdAtomicUI RestartA{}) -> do
+      msgAdd msg
+    (True, CmdAtomicUI RestartA{}) -> do
       cmdClientUISem cmd1
       msgAdd "Starting a new game (and ignoring an old client savefile)."
-    (Right msg1, CmdAtomicUI ResumeA{}) ->
-      error $ T.unpack $ "Savefile of client " <> showT side <> " not usable. Can't join the party. Please remove all savefiles manually and restart. Savefile subsystem said: " <> msg1
-    (Right msg1, CmdAtomicUI RestartA{}) -> do
+    (False, CmdAtomicUI ResumeA{}) ->
+      error $ T.unpack $ "Savefile of client " <> showT side <> " not usable. Please remove all savefiles manually and restart. "
+    (False, CmdAtomicUI RestartA{}) -> do
+      let msg = "Welcome to" <+> title <> "!"
       cmdClientUISem cmd1
-      msgAdd msg1
-    _ -> assert `failure` (side, msg, cmd1)
+      msgAdd msg
+    _ -> assert `failure` (side, restored, cmd1)
   -- State and client state now valid.
   debugPrint $ "UI client" <+> showT side <+> "started."
   loop

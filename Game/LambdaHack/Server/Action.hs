@@ -29,6 +29,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Game.LambdaHack.Utils.Thread
 import System.Directory
+import System.FilePath
 import System.IO (stderr)
 import System.IO.Unsafe (unsafePerformIO)
 import qualified System.Random as R
@@ -47,6 +48,7 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Random
+import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -54,7 +56,6 @@ import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Frontend as Frontend
 import Game.LambdaHack.Server.Action.ActionClass
 import qualified Game.LambdaHack.Server.Action.ConfigIO as ConfigIO
-import qualified Game.LambdaHack.Server.Action.Save as Save
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.State
@@ -261,8 +262,13 @@ tryRestore Kind.COps{corule} = do
   let pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
   -- A throw-away copy of rules config, to be used until the old
   -- version of the config can be read from the savefile.
-  (sconfig, _, _) <- mkConfigRules corule
-  liftIO $ Save.restoreGameSer sconfig pathsDataFile
+  (Config{ configAppDataDir
+         , configRulesCfgFile
+         , configScoresFile }, _, _) <- mkConfigRules corule
+  let copies =
+        [ (configRulesCfgFile <.> ".default", configRulesCfgFile <.> ".ini")
+        , (configScoresFile, configScoresFile) ]
+  liftIO $ Save.restoreGame "server.sav" configAppDataDir copies pathsDataFile
 
 -- Global variable for all children threads of the server.
 childrenServer :: MVar [MVar ()]
