@@ -197,9 +197,8 @@ handleActors cmdSerSem lid = do
       let side = bfid body
           fact = factionD EM.! side
           mleader = gleader fact
-          usesAI = usesAIFact fact
-          hasHumanLeader = isNothing $ gAiLeader fact
-          queryUI = not usesAI || hasHumanLeader && Just aid == mleader
+          queryUI | Just aid == mleader = isNothing $ gAiLeader fact
+                  | otherwise = isNothing $ gAiMember fact
       -- TODO: check that the command is legal
       cmdS <- if queryUI then
                 -- The client always displays a frame in this case.

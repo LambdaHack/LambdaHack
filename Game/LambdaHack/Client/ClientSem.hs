@@ -95,8 +95,8 @@ queryAIPick aid = do
   Kind.COps{costrat=Kind.Ops{okind}} <- getsState scops
   leader <- getsClient _sleader
   fact <- getsState $ (EM.! bfid body) . sfactionD
-  let factionAI | Just aid /= leader = fromJust $ gAiMember fact
-                | otherwise = fromJust $ gAiLeader fact
+  let factionAI | Just aid == leader = fromJust $ gAiLeader fact
+                | otherwise = fromJust $ gAiMember fact
       factionAbilities = sabilities (okind factionAI)
   unless (bproj body) $ do
     stratTarget <- targetStrategy aid factionAbilities
@@ -104,9 +104,9 @@ queryAIPick aid = do
     btarget <- rndToAction $ frequency $ bestVariant stratTarget
     let _debug = T.unpack
           $ "\nHandleAI abilities:" <+> showT factionAbilities
-          <>          ", symbol:"   <+> showT (bsymbol body)
-          <>          ", aid:"      <+> showT aid
-          <>          ", pos:"      <+> showT (bpos body)
+          <> ", symbol:"            <+> showT (bsymbol body)
+          <> ", aid:"               <+> showT aid
+          <> ", pos:"               <+> showT (bpos body)
           <> "\nHandleAI starget:"  <+> showT stratTarget
           <> "\nHandleAI target:"   <+> showT btarget
 --    trace _debug skip
@@ -115,8 +115,8 @@ queryAIPick aid = do
   -- Run the AI: chose an action from those given by the AI strategy.
   action <- rndToAction $ frequency $ bestVariant stratAction
   let _debug = T.unpack
-          $    "HandleAI saction:"  <+> showT stratAction
-          <> "\nHandleAI action:"   <+> showT action
+          $ "HandleAI saction:"   <+> showT stratAction
+          <> "\nHandleAI action:" <+> showT action
 --  trace _debug skip
   return action
 
