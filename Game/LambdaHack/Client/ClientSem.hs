@@ -24,7 +24,6 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Key as K
-import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
@@ -32,23 +31,21 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.StrategyKind
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.Frequency
 
 queryAI :: MonadClient m => ActorId -> m CmdSer
 queryAI oldAid = do
-  Kind.COps{costrat=Kind.Ops{okind}} <- getsState scops
   side <- getsClient sside
   fact <- getsState $ \s -> sfactionD s EM.! side
-  let aiMember = fmap okind $ gAiMember fact
+  let aiMember = fromMaybe [] $ gAiMember fact
   mleader <- getsClient _sleader
   if -- Keep the leader: only a leader is allowed to pick another leader.
      mleader /= Just oldAid
      -- Keep the leader: AIs are the same.
      || gAiLeader fact == gAiMember fact
      -- Keep the leader: other members can't melee.
-     || Ability.Melee `notElem` maybe [] sabilities aiMember
+     || Ability.Melee `notElem` aiMember
     then queryAIPick oldAid
     else do
       fper <- getsClient sfper
@@ -92,12 +89,11 @@ queryAIPick aid = do
   side <- getsClient sside
   body <- getsState $ getActorBody aid
   assert (bfid body == side `blame` (aid, bfid body, side)) skip
-  Kind.COps{costrat=Kind.Ops{okind}} <- getsState scops
   leader <- getsClient _sleader
   fact <- getsState $ (EM.! bfid body) . sfactionD
   let factionAI | Just aid == leader = fromJust $ gAiLeader fact
                 | otherwise = fromJust $ gAiMember fact
-      factionAbilities = sabilities (okind factionAI)
+      factionAbilities = factionAI
   unless (bproj body) $ do
     stratTarget <- targetStrategy aid factionAbilities
     -- Choose a target from those proposed by AI for the actor.

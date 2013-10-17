@@ -138,7 +138,6 @@ library
                       Game.LambdaHack.Content.ItemKind,
                       Game.LambdaHack.Content.PlaceKind,
                       Game.LambdaHack.Content.RuleKind,
-                      Game.LambdaHack.Content.StrategyKind,
                       Game.LambdaHack.Content.TileKind,
                       Game.LambdaHack.Frontend,
                       Game.LambdaHack.Frontend.Chosen,
@@ -233,7 +232,6 @@ executable LambdaHack
                       Content.ItemKind,
                       Content.PlaceKind,
                       Content.RuleKind,
-                      Content.StrategyKind,
                       Content.TileKind,
                       Paths_LambdaHack
   build-depends:      LambdaHack,

@@ -94,8 +94,7 @@ lowercase :: Text -> Text
 lowercase = T.pack . map Char.toLower . T.unpack
 
 createFactions :: Kind.COps -> Players -> Rnd FactionDict
-createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
-                        , costrat=Kind.Ops{opick=sopick} } players = do
+createFactions Kind.COps{cofact=Kind.Ops{opick, okind}} players = do
   let rawCreate isHuman Player{ playerName = gconfig
                               , playerKind
                               , playerInitial = ginitial
@@ -112,11 +111,10 @@ createFactions Kind.COps{ cofact=Kind.Ops{opick, okind}
         let fk = okind gkind
             gdipl = EM.empty  -- fixed below
             gquit = Nothing
-        gAiLeader <-
-          if isHuman
-          then return Nothing
-          else fmap Just $ sopick (fAiLeader fk) (const True)
-        gAiMember <- fmap Just $ sopick (fAiMember fk) (const True)
+        let gAiLeader = if isHuman
+                        then Nothing
+                        else Just $ fAiLeader fk
+            gAiMember = Just $ fAiMember fk
         let gleader = Nothing
         return Faction{..}
   lHuman <- mapM (rawCreate True) (playersHuman players)

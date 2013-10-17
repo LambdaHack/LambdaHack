@@ -4,15 +4,16 @@ module Game.LambdaHack.Content.FactionKind
   ) where
 
 import Data.Text (Text)
+import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Misc
 
 -- | Faction properties that are fixed for a given kind of factions.
 data FactionKind = FactionKind
-  { fsymbol   :: !Char     -- ^ a symbol
-  , fname     :: !Text     -- ^ short description
-  , ffreq     :: !Freqs    -- ^ frequency within groups
-  , fAiLeader :: !Text     -- ^ AI to use for the selected actor
-  , fAiMember :: !Text     -- ^ AI to use for idle actors
+  { fsymbol   :: !Char       -- ^ a symbol
+  , fname     :: !Text       -- ^ short description
+  , ffreq     :: !Freqs      -- ^ frequency within groups
+  , fAiLeader :: ![Ability]  -- ^ abilities to use for the selected actor
+  , fAiMember :: ![Ability]  -- ^ abilities to use for other actors
   }
   deriving Show
 

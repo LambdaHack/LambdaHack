@@ -12,12 +12,12 @@ import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 import Data.Text (Text)
 
+import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Content.FactionKind
-import Game.LambdaHack.Content.StrategyKind
 
 -- | All factions in the game, indexed by faction identifier.
 type FactionDict = EM.EnumMap FactionId Faction
@@ -26,11 +26,9 @@ data Faction = Faction
   { gkind     :: !(Kind.Id FactionKind)   -- ^ the kind of the faction
   , gname     :: !Text                    -- ^ individual name
   , gconfig   :: !Text                    -- ^ raw name specified in config
-  , gAiLeader :: !(Maybe (Kind.Id StrategyKind))
-                                          -- ^ AI for the leaders;
+  , gAiLeader :: !(Maybe [Ability])       -- ^ AI for the leaders;
                                           -- Nothing means human-controlled
-  , gAiMember :: !(Maybe (Kind.Id StrategyKind))
-                                          -- ^ AI to use for other actors;
+  , gAiMember :: !(Maybe [Ability])       -- ^ AI to use for other actors;
                                           -- Nothing means human-controlled
   , gdipl     :: !Dipl                    -- ^ diplomatic mode
   , gquit     :: !(Maybe Status)          -- ^ cause of game end/exit

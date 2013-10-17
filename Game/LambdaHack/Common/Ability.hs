@@ -3,6 +3,8 @@ module Game.LambdaHack.Common.Ability
   ( Ability(..)
   ) where
 
+import Data.Binary
+
 -- | All possible AI actor abilities. AI chooses among these when considering
 -- the next action to perform. The ability descriptions refer to the target
 -- that any actor picks each turn, depending on the actor's characteristics
@@ -19,7 +21,6 @@ data Ability =
   | Wander  -- ^ wander around, meleeing any opponents on the way
   deriving (Show, Eq, Ord, Enum, Bounded)
 
-  -- A note for when we let AI change levels:
-  -- A faction that spawns cannot switch levels (nor move between levels).
-  -- Otherwise it would constantly go to a distant level, spawn actors there
-  -- and swarm any opponent arriving on the level.
+instance Binary Ability where
+  put = putWord8 . toEnum . fromEnum
+  get = fmap (toEnum . fromEnum) getWord8
