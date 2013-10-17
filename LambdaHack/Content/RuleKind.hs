@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, QuasiQuotes, TemplateHaskell #-}
+{-# LANGUAGE OverloadedStrings, TemplateHaskell #-}
 -- | Game rules and assorted game setup data for LambdaHack.
 module Content.RuleKind ( cdefs ) where
 
@@ -12,7 +12,6 @@ import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
-import Multiline
 
 cdefs :: ContentDef RuleKind
 cdefs = ContentDef
@@ -66,37 +65,14 @@ standard = RuleKind
   -- The game version string begins and ends with a space and is placed
   -- in the very bottom right corner. The keybindings overwrite places
   -- marked with 25 left curly brace signs '{' in a row. The sign is forbidden
-  -- everywhere else. Exactly five such places with 25 left braces
+  -- everywhere else. A specific number of such places with 25 left braces
   -- are required, at most one per row, and all are overwritten
   -- with text that is flushed left and padded with spaces.
   -- The Main Menu is displayed dull white on black.
-  -- TODO: Highlighted keybinding is in inverse video or bright white on grey
+  -- TODO: Show highlighted keybinding in inverse video or bright white on grey
   -- background. The spaces that pad keybindings are not highlighted.
-  , rmainMenuArt = [multiline|
-----------------------------------------------------------------------------------
-|                                                                                |
-|                      >> LambdaHack <<                                          |
-|                                                                                |
-|                                                                                |
-|                                                                                |
-|                      {{{{{{{{{{{{{{{{{{{{{{{{{                                 |
-|                                                                                |
-|                      {{{{{{{{{{{{{{{{{{{{{{{{{                                 |
-|                                                                                |
-|                      {{{{{{{{{{{{{{{{{{{{{{{{{                                 |
-|                                                                                |
-|                      {{{{{{{{{{{{{{{{{{{{{{{{{                                 |
-|                                                                                |
-|                      {{{{{{{{{{{{{{{{{{{{{{{{{                                 |
-|                                                                                |
-|                      {{{{{{{{{{{{{{{{{{{{{{{{{                                 |
-|                                                                                |
-|                      {{{{{{{{{{{{{{{{{{{{{{{{{                                 |
-|                                                                                |
-|                      {{{{{{{{{{{{{{{{{{{{{{{{{                                 |
-|                                                                                |
-|                                                                                |
-|                                                                                |
-|                        Version X.X.X (frontend: gtk, engine: LambdaHack X.X.X) |
-----------------------------------------------------------------------------------
-|]}
+  , rmainMenuArt = $(do
+      qAddDependentFile "MainMenu.ascii"
+      x <- qRunIO (readFile "MainMenu.ascii")
+      lift x)
+  }
