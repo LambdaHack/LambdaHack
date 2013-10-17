@@ -235,7 +235,6 @@ executable LambdaHack
                       Content.RuleKind,
                       Content.StrategyKind,
                       Content.TileKind,
-                      Multiline,
                       Paths_LambdaHack
   build-depends:      LambdaHack,
                       template-haskell >= 2.6 && < 3,
