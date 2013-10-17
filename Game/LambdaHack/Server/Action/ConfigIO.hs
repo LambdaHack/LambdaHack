@@ -37,7 +37,7 @@ overrideCP cp@(CP defCF) cfile = do
 -- | Read a player configuration file and use it to override
 -- options from a default config. Currently we can't unset options,
 -- only override. The default config, passed in argument @configDefault@,
--- is expected to come from a default configuration file included via CPP.
+-- is expected to come from a default configuration file included via TH.
 -- The player configuration comes from file @cfile@.
 mkConfig :: String -> FilePath -> IO CP
 mkConfig configDefault cfile = do

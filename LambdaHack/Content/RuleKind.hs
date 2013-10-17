@@ -1,6 +1,8 @@
-{-# LANGUAGE CPP, OverloadedStrings, QuasiQuotes #-}
+{-# LANGUAGE OverloadedStrings, QuasiQuotes, TemplateHaskell #-}
 -- | Game rules and assorted game setup data for LambdaHack.
 module Content.RuleKind ( cdefs ) where
+
+import Language.Haskell.TH.Syntax
 
 -- Cabal
 import qualified Paths_LambdaHack as Self (getDataFileName, version)
@@ -47,15 +49,17 @@ standard = RuleKind
   -- so touching them is needed to reinclude configs and recompile.
   -- Note: consider code.haskell.org/~dons/code/compiled-constants
   -- as soon as the config file grows very big.
-  , rcfgRulesDefault = [multiline|
-#include "../../config.rules.default"
-|]
-  , rcfgUIDefault = [multiline|
-#include "../../config.ui.default"
-|]
+  , rcfgRulesDefault = $(do
+      qAddDependentFile "config.rules.default"
+      x <- qRunIO (readFile "config.rules.default")
+      lift x)
+  , rcfgUIDefault = $(do
+      qAddDependentFile "config.ui.default"
+      x <- qRunIO (readFile "config.ui.default")
+      lift x)
   -- ASCII art for the Main Menu. Only pure 7-bit ASCII characters are
   -- allowed. The picture should be exactly 24 rows by 80 columns,
-  -- plus an extra frame of any charecters that is ignored for all purposes.
+  -- plus an extra frame (of any characters) that is ignored.
   -- For a different screen size, the picture is centered and the outermost
   -- rows and columns cloned. When displayed in the Main Menu screen,
   -- it's overwritten with the game version string and keybinding strings.
