@@ -1,15 +1,19 @@
 -- | Saving and restoring server game state.
 module Game.LambdaHack.Common.Save
-  ( ChanSave, saveToChan, wrapInSaves, restoreGame
+  ( ChanSave, saveToChan, wrapInSaves, restoreGame, delayPrint
   ) where
 
 import Control.Concurrent
 import qualified Control.Exception as Ex hiding (handle)
 import Control.Monad
 import Data.Binary
+import Data.Text (Text)
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import System.Directory
 import System.FilePath
 import System.IO
+import qualified System.Random as R
 
 import Game.LambdaHack.Utils.File
 import Game.LambdaHack.Utils.Thread
@@ -95,6 +99,13 @@ restoreGame name configAppDataDir copies pathsDataFile = do
       handler e = do
         let msg = "Restore failed. The error message is: "
                   ++ (unwords . lines) (show e)
-        hPutStrLn stderr msg
+        delayPrint $ T.pack msg
         return Nothing
   either handler return res
+
+delayPrint :: Text -> IO ()
+delayPrint t = do
+  delay <- R.randomRIO (0, 1000000)
+  threadDelay delay  -- try not to interleave letters with other clients
+  T.hPutStrLn stderr t
+  hFlush stderr

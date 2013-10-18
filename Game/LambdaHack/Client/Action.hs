@@ -46,12 +46,9 @@ import Data.Maybe
 import qualified Data.Monoid as Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.IO as T
 import qualified NLP.Miniutter.English as MU
 import System.Directory
 import System.FilePath
-import System.IO (hFlush, stderr)
-import qualified System.Random as R
 import System.Time
 
 import Game.LambdaHack.Client.Action.ActionClass
@@ -82,11 +79,7 @@ import Game.LambdaHack.Utils.Assert
 debugPrint :: MonadClient m => Text -> m ()
 debugPrint t = do
   debug <- getsClient sdebugCli
-  when debug $ liftIO $ do
-    delay <- R.randomRIO (0, 1000000)
-    threadDelay delay  -- try not to interleave letters with other clients
-    T.hPutStrLn stderr t
-    hFlush stderr
+  when debug $ liftIO $ Save.delayPrint t
 
 connFrontend :: FactionId -> Frontend.ChanFrontend -> ConnFrontend
 connFrontend fid fromF = ConnFrontend
