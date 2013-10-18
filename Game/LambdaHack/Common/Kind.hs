@@ -26,6 +26,7 @@ import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
@@ -124,6 +125,7 @@ data COps = COps
   , cocave  :: !(Ops CaveKind)
   , cofact  :: !(Ops FactionKind)
   , coitem  :: !(Ops ItemKind)
+  , comode  :: !(Ops ModeKind)
   , coplace :: !(Ops PlaceKind)
   , corule  :: !(Ops RuleKind)
   , cotile  :: !(Ops TileKind)

@@ -29,7 +29,7 @@ data StateServer = StateServer
   , sundo     :: ![Atomic]      -- ^ atomic commands performed to date
   , sper      :: !Pers          -- ^ perception of all factions
   , srandom   :: !R.StdGen      -- ^ current random generator
-  , scenario  :: !Text          -- ^ current game mode
+  , smode     :: !Text          -- ^ current game mode name
   , sconfig   :: Config         -- ^ this game's config (including initial RNG)
   , squit     :: !Bool          -- ^ exit the game loop
   , sbkpSave  :: !Bool          -- ^ make backup savefile now
@@ -62,7 +62,7 @@ emptyStateServer =
     , sundo = []
     , sper = EM.empty
     , srandom = R.mkStdGen 42
-    , scenario = "campaign"
+    , smode = "campaign"
     , sconfig = undefined
     , squit = False
     , sbkpSave = False
@@ -90,7 +90,7 @@ instance Binary StateServer where
     put sicounter
     put sundo
     put (show srandom)
-    put scenario
+    put smode
     put sconfig
     put sdebugSer
   get = do
@@ -102,7 +102,7 @@ instance Binary StateServer where
     sicounter <- get
     sundo <- get
     g <- get
-    scenario <- get
+    smode <- get
     sconfig <- get
     sdebugSer <- get
     let srandom = read g

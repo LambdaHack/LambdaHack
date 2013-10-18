@@ -368,8 +368,8 @@ endOrLoop updConn loopServer = do
         _ -> False
       campers = filter (isCamper . snd) $ EM.assocs factionD
   case (quitters, campers) of
-    (t : _, _) -> do
-      modifyServer $ \ser -> ser {scenario = t}
+    (modeName : _, _) -> do
+      modifyServer $ \ser -> ser {smode = modeName}
       restartGame updConn loopServer
     _ | gameOver -> restartGame updConn loopServer
     (_, []) -> loopServer  -- continue current game

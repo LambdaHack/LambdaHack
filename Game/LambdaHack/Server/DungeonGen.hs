@@ -22,8 +22,8 @@ import Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.CaveKind
+import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.DungeonGen.Cave hiding (TileMapXY)
 import Game.LambdaHack.Server.DungeonGen.Place
 import Game.LambdaHack.Utils.Assert

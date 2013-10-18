@@ -34,6 +34,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.Action hiding (sendUpdateAI, sendUpdateUI)
 import Game.LambdaHack.Server.Config
@@ -77,9 +78,9 @@ reinitGame = do
       sdisco = let f ik = isymbol (okind ik) `notElem` misteriousSymbols
                in EM.filter f discoS
   sdebugCli <- getsServer $ sdebugCli . sdebugSer
-  t <- getsServer scenario
+  modeName <- getsServer smode
   broadcastCmdAtomic
-    $ \fid -> RestartA fid sdisco (pers EM.! fid) defLoc sdebugCli t
+    $ \fid -> RestartA fid sdisco (pers EM.! fid) defLoc sdebugCli modeName
   populateDungeon
 
 mapFromInvFuns :: (Bounded a, Enum a, Ord b) => [a -> b] -> M.Map b a
@@ -142,37 +143,28 @@ createFactions Kind.COps{cofact=Kind.Ops{opick, okind}} players = do
   return warFs
 
 gameReset :: MonadServer m => Kind.COps -> m State
-gameReset cops@Kind.COps{coitem, corule} = do
+gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}, corule} = do
   -- Rules config reloaded at each new game start.
   -- Taking the original config from config file, to reroll RNG, if needed
   -- (the current config file has the RNG rolled for the previous game).
   (sconfig, dungeonSeed, srandom) <- mkConfigRules corule
-  t <- getsServer scenario
+  smode <- getsServer smode
   scoreTable <- restoreScore sconfig
   let rnd :: Rnd (FactionDict, FlavourMap, Discovery, DiscoRev,
                   DungeonGen.FreshDungeon)
       rnd = do
-        let scenario = case M.lookup t $ configScenario sconfig of
-              Just sc -> sc
-              Nothing -> assert `failure` "no scenario configuration:" <+> t
-            dng = scenarioDungeon scenario
-            caves = case M.lookup dng $ configCaves sconfig of
-              Just cv -> cv
-              Nothing -> assert `failure` "no caves configuration:" <+> dng
-            plr = scenarioPlayers scenario
-            players = case M.lookup plr $ configPlayers sconfig of
-              Just pl -> pl
-              Nothing -> assert `failure` "no players configuration:" <+> plr
-        faction <- createFactions cops players
+        modeKind <- opick smode (const True)
+        let mode = okind modeKind
+        faction <- createFactions cops $ mplayers mode
         sflavour <- dungeonFlavourMap coitem
         (sdisco, sdiscoRev) <- serverDiscos coitem
-        freshDng <- DungeonGen.dungeonGen cops caves
+        freshDng <- DungeonGen.dungeonGen cops $ mcaves mode
         return (faction, sflavour, sdisco, sdiscoRev, freshDng)
   let (faction, sflavour, sdisco, sdiscoRev, DungeonGen.FreshDungeon{..}) =
         St.evalState rnd dungeonSeed
       defState = defStateGlobal freshDungeon freshDepth faction cops scoreTable
       defSer = emptyStateServer
-                 {sdisco, sdiscoRev, sflavour, srandom, scenario = t, sconfig}
+                 {sdisco, sdiscoRev, sflavour, srandom, smode, sconfig}
   sdebugNxt <- getsServer sdebugNxt
   putServer defSer {sdebugNxt, sdebugSer = sdebugNxt}
   return defState

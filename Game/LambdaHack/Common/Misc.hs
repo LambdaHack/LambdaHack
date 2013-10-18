@@ -87,7 +87,7 @@ instance Binary FactionId where
 
 -- | Abstract level identifiers.
 newtype LevelId = LevelId Int
-  deriving (Show, Eq, Ord, Enum, Read)
+  deriving (Show, Eq, Ord, Enum)
 
 instance Binary LevelId where
   put (LevelId n) = put n

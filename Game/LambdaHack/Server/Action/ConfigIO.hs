@@ -4,13 +4,10 @@ module Game.LambdaHack.Server.Action.ConfigIO
   ( mkConfigRules, dump
   ) where
 
-import Control.Arrow (first, (***))
 import Control.DeepSeq
 import qualified Data.Char as Char
 import qualified Data.ConfigFile as CF
-import qualified Data.EnumMap.Strict as EM
 import Data.List
-import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import System.Directory
 import System.Environment
@@ -132,10 +129,6 @@ getItems (CP conf) s =
 parseConfigRules :: FilePath -> CP -> Config
 parseConfigRules dataDir cp =
   let configSelfString = let CP conf = cp in CF.to_string conf
-      configCaves =
-        let section = getItems cp "caves"
-            readCaves = EM.fromList . map (toEnum *** first T.pack)
-        in M.fromList $ map (T.pack *** (readCaves . read)) section
       configFirstDeathEnds = get cp "engine" "firstDeathEnds"
       configFovMode = get cp "engine" "fovMode"
       configSaveBkpClips = get cp "engine" "saveBkpClips"
@@ -149,12 +142,6 @@ parseConfigRules dataDir cp =
                 Nothing -> assert `failure` ("wrong hero name id " ++ ident)
             section = getItems cp "heroName"
         in map toNumber section
-      configPlayers =
-        let section = getItems cp "players"
-        in M.fromList $ map (T.pack *** read) section
-      configScenario =
-        let section = getItems cp "scenario"
-        in M.fromList $ map (T.pack *** read) section
   in Config{..}
 
 -- | Read and parse rules config file and supplement it with random seeds.

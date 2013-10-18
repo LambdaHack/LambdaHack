@@ -4,14 +4,6 @@
 ; ; ~/.LambdaHack/config.rules.ini (or a similar path, depending on the OS).
 ; ; Warning: options are case-sensitive and only ';' for comments is permitted.
 
-; [caves]
-; ; Cave "dng" means a random choice from caves that can randomly appear;
-; ; this is the default and the lack of the Escape feature is the default.
-; ; Fixed caves for the first levels, then randomly picked caves.
-; campaign: [(1, ("caveRogue", True)), (2, ("caveRogue", False)), (3, ("caveEmpty", False)), (10, ("caveNoise", False))]
-; combat: [(3, ("caveCombat", False))]
-; defense: [(1, ("dng", False)), (5, ("caveEmpty", True))]
-
 ; [engine]
 ; ;dungeonRandomGenerator: 42
 ; firstDeathEnds: False
@@ -32,17 +24,3 @@
 ; HeroName_3: Ernst Abraham
 ; HeroName_4: Samuel Saunders
 ; HeroName_5: Roger Robin
-
-; [players]
-; campaign: Players { playersHuman = [Player {playerName = "Adventuring Party", playerKind = "hero", playerInitial = 1, playerEntry = LevelId 1}], playersComputer = [Player {playerName = "Monster Hive", playerKind = "monster", playerInitial = 5, playerEntry = LevelId 3}], playersEnemy = [("Adventuring Party", "Monster Hive")], playersAlly = [] }
-; skirmish: Players { playersHuman = [Player {playerName = "White", playerKind = "hero", playerInitial = 3, playerEntry = LevelId 1}], playersComputer = [Player {playerName = "Green", playerKind = "hero", playerInitial = 3, playerEntry = LevelId 1}, Player {playerName = "Horror Den", playerKind = "horror", playerInitial = 0, playerEntry = LevelId 1}], playersEnemy = [("White", "Green"), ("White", "Horror Den"), ("Green", "Horror Den")], playersAlly = [] }
-; PvP: Players { playersHuman = [Player {playerName = "Red", playerKind = "hero", playerInitial = 3, playerEntry = LevelId 1}, Player {playerName = "Blue", playerKind = "hero", playerInitial = 3, playerEntry = LevelId 1}], playersComputer = [Player {playerName = "Horror Den", playerKind = "horror", playerInitial = 0, playerEntry = LevelId 1}], playersEnemy = [("Red", "Blue"), ("Red", "Horror Den"), ("Blue", "Horror Den")], playersAlly = [] }
-; Coop: Players { playersHuman = [Player {playerName = "Coral", playerKind = "hero", playerInitial = 1, playerEntry = LevelId 1}, Player {playerName = "Amber", playerKind = "hero", playerInitial = 1, playerEntry = LevelId 1}], playersComputer = [Player {playerName = "Monster Hive", playerKind = "monster", playerInitial = 5, playerEntry = LevelId 3}], playersEnemy = [("Coral", "Monster Hive"), ("Amber", "Monster Hive")], playersAlly = [("Coral", "Amber")] }
-; defense: Players { playersHuman = [Player {playerName = "Monster Hive", playerKind = "monster", playerInitial = 1, playerEntry = LevelId 1}], playersComputer = [Player {playerName = "Green", playerKind = "hero", playerInitial = 1, playerEntry = LevelId 1}, Player {playerName = "Yellow", playerKind = "hero", playerInitial = 2, playerEntry = LevelId 1}, Player {playerName = "Cyan", playerKind = "hero", playerInitial = 3, playerEntry = LevelId 1}], playersEnemy = [("Green", "Monster Hive"), ("Yellow", "Monster Hive"), ("Cyan", "Monster Hive")], playersAlly = [("Green", "Yellow"), ("Green", "Cyan"), ("Yellow", "Cyan")] }
-
-; [scenario]
-; campaign: Scenario { scenarioPlayers = "campaign", scenarioDungeon = "campaign" }
-; skirmish: Scenario { scenarioPlayers = "skirmish", scenarioDungeon = "combat" }
-; PvP: Scenario { scenarioPlayers = "PvP", scenarioDungeon = "combat" }
-; Coop: Scenario { scenarioPlayers = "Coop", scenarioDungeon = "campaign" }
-; defense: Scenario { scenarioPlayers = "defense", scenarioDungeon = "defense" }
