@@ -48,7 +48,7 @@ getsLevel lid f = getsState $ f . (EM.! lid) . sdungeon
 nHumans :: MonadActionRO m => m Int
 nHumans = do
   factionD <- getsState sfactionD
-  return $ length $ filter isHumanFact $ EM.elems factionD
+  return $ length $ filter ghasUI $ EM.elems factionD
 
 serverSaveName :: String
 serverSaveName = "server.sav"

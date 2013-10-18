@@ -29,6 +29,7 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Frontend
 import Game.LambdaHack.Server.Action hiding (sendUpdateAI, sendUpdateUI)
 import Game.LambdaHack.Server.Config
@@ -89,7 +90,7 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
                   -- TODO; This is a significant advantage of human spawners;
                   -- perhaps we could instead auto-switch leaders
                   -- to the fist level non-spawner factions act on.
-                  isHuman = isHumanFact fact
+                  isHuman = ghasUI fact
               case gleader fact of
                 Just leader | isHuman || not spawn -> do
                   b <- getsState $ getActorBody leader
@@ -197,8 +198,8 @@ handleActors cmdSerSem lid = do
       let side = bfid body
           fact = factionD EM.! side
           mleader = gleader fact
-          queryUI | Just aid == mleader = isNothing $ gAiLeader fact
-                  | otherwise = isNothing $ gAiMember fact
+          queryUI | Just aid == mleader = not $ playerAiLeader $ gplayer fact
+                  | otherwise = not $ playerAiOther $ gplayer fact
       -- TODO: check that the command is legal
       cmdS <- if queryUI then
                 -- The client always displays a frame in this case.

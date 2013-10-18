@@ -19,27 +19,27 @@ cdefs = ContentDef
 hero,        monster, horror :: FactionKind
 
 hero = FactionKind
-  { fsymbol   = '@'
-  , fname     = "hero"
-  , ffreq     = [("hero", 1)]
-  , fAiLeader = allAbilities
-  , fAiMember = meleeAdjacent
+  { fsymbol        = '@'
+  , fname          = "hero"
+  , ffreq          = [("hero", 1)]
+  , fAbilityLeader = allAbilities
+  , fAbilityOther  = meleeAdjacent
   }
 
 monster = FactionKind
-  { fsymbol   = 'm'
-  , fname     = "monster"
-  , ffreq     = [("monster", 1), ("spawn", 50), ("summon", 50)]
-  , fAiLeader = allAbilities
-  , fAiMember = allAbilities
+  { fsymbol        = 'm'
+  , fname          = "monster"
+  , ffreq          = [("monster", 1), ("spawn", 50), ("summon", 50)]
+  , fAbilityLeader = allAbilities
+  , fAbilityOther  = allAbilities
   }
 
 horror = FactionKind
-  { fsymbol   = 'h'
-  , fname     = "horror"
-  , ffreq     = [("horror", 1), ("summon", 50)]
-  , fAiLeader = allAbilities
-  , fAiMember = allAbilities
+  { fsymbol        = 'h'
+  , fname          = "horror"
+  , ffreq          = [("horror", 1), ("summon", 50)]
+  , fAbilityLeader = allAbilities
+  , fAbilityOther  = allAbilities
   }
 
 

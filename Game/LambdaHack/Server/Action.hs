@@ -164,7 +164,7 @@ registerScore status mbody fid = do
   assert (maybe True ((fid ==) . bfid) mbody) skip
   factionD <- getsState sfactionD
   let fact = factionD EM.! fid
-  assert (isHumanFact fact) skip
+  assert (ghasUI fact) skip
   total <- case mbody of
     Just body -> getsState $ snd . calculateTotal body
     Nothing -> case gleader fact of
@@ -210,7 +210,7 @@ quitF mbody status fid = do
     Just Conquer -> return ()
     Just Escape -> return ()
     _ -> do
-      when (isHumanFact fact) $ do
+      when (ghasUI fact) $ do
         revealItems (Just fid) mbody
         registerScore status mbody fid
       execCmdAtomic $ QuitFactionA fid mbody oldSt $ Just status
@@ -237,7 +237,7 @@ deduceQuits body status = do
       keysInGame = map fst assocsInGame
       assocsSpawn = filter (isSpawnFact cops . snd) assocsInGame
       assocsNotSummon = filter (not . isSummonFact cops . snd) assocsInGame
-      assocsHuman = filter (isHumanFact . snd) assocsInGame
+      assocsHuman = filter (ghasUI . snd) assocsInGame
   case assocsNotSummon of
     _ | null assocsHuman ->
       -- No screensaver mode for now --- all non-human players win.
@@ -325,8 +325,8 @@ updateConn executorUI executorAI = do
         -- TODO: perhaps spawn both AI and UI clients always, but then
         -- the UI client should not display a welcome message, until
         -- the server tells it to.
-        when (isHumanFact $ factionD EM.! fid) $ forkUI fid connUI
-        when (usesAIFact $ factionD EM.! fid) $ forkAI fid connAI
+        when (ghasUI $ factionD EM.! fid) $ forkUI fid connUI
+        when (ghasAI $ factionD EM.! fid) $ forkAI fid connAI
   liftIO $ mapWithKeyM_ forkClient toSpawn
   nH <- nHumans
   liftIO $ putMVar fromM (nH, fdict)  -- restart Frontend

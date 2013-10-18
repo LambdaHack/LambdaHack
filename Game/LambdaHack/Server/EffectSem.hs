@@ -36,6 +36,7 @@ import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
+import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.Action
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.State
@@ -248,7 +249,7 @@ addHero :: (MonadAtomic m, MonadServer m)
         -> m ActorId
 addHero bfid ppos lid configHeroNames mNumber time = do
   Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
-  Faction{gcolor, gconfig} <- getsState $ (EM.! bfid) . sfactionD
+  Faction{gcolor, gplayer} <- getsState $ (EM.! bfid) . sfactionD
   let kId = heroKindId coactor
   hp <- rndToAction $ rollDice $ ahp $ okind kId
   mhs <- mapM (\n -> getsState $ \s -> tryFindHeroK s bfid n) [0..9]
@@ -257,7 +258,7 @@ addHero bfid ppos lid configHeroNames mNumber time = do
       symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
       name | gcolor == Color.BrWhite =
         fromMaybe ("Hero" <+> showT n) $ lookup n configHeroNames
-           | otherwise = gconfig <+> "Hero" <+> showT n
+           | otherwise = playerName gplayer <+> "Hero" <+> showT n
       startHP = hp - (hp `div` 5) * min 3 n
   addActor
     kId bfid ppos lid startHP (Just symbol) (Just name) (Just gcolor) time

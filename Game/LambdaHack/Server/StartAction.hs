@@ -32,7 +32,6 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
@@ -95,28 +94,20 @@ lowercase :: Text -> Text
 lowercase = T.pack . map Char.toLower . T.unpack
 
 createFactions :: Kind.COps -> Players -> Rnd FactionDict
-createFactions Kind.COps{cofact=Kind.Ops{opick, okind}} players = do
-  let rawCreate isHuman Player{ playerName = gconfig
-                              , playerKind
-                              , playerInitial = ginitial
-                              , playerEntry = gentry } = do
+createFactions Kind.COps{cofact=Kind.Ops{opick}} players = do
+  let rawCreate ghasUI gplayer@Player{playerName, playerFaction} = do
         let cmap = mapFromInvFuns
                      [colorToTeamName, colorToPlainName, colorToFancyName]
-            nameoc = lowercase gconfig
-            prefix | isHuman = "Human"
+            nameoc = lowercase playerName
+            prefix | ghasUI = "Human"
                    | otherwise = "Autonomous"
             (gcolor, gname) = case M.lookup nameoc cmap of
-              Nothing -> (Color.BrWhite, prefix <+> gconfig)
-              Just c -> (c, prefix <+> gconfig <+> "Team")
-        gkind <- opick playerKind (const True)
-        let fk = okind gkind
-            gdipl = EM.empty  -- fixed below
+              Nothing -> (Color.BrWhite, prefix <+> playerName)
+              Just c -> (c, prefix <+> playerName <+> "Team")
+        gkind <- opick playerFaction (const True)
+        let gdipl = EM.empty  -- fixed below
             gquit = Nothing
-        let gAiLeader = if isHuman
-                        then Nothing
-                        else Just $ fAiLeader fk
-            gAiMember = Just $ fAiMember fk
-        let gleader = Nothing
+            gleader = Nothing
         return Faction{..}
   lHuman <- mapM (rawCreate True) (playersHuman players)
   lComputer <- mapM (rawCreate False) (playersComputer players)
@@ -125,8 +116,10 @@ createFactions Kind.COps{cofact=Kind.Ops{opick, okind}} players = do
       swapIx l =
         let ixs =
               let f (name1, name2) =
-                    [ (ix1, ix2) | (ix1, fact1) <- lFs, gconfig fact1 == name1
-                                 , (ix2, fact2) <- lFs, gconfig fact2 == name2]
+                    [ (ix1, ix2) | (ix1, fact1) <- lFs
+                                 , playerName (gplayer fact1) == name1
+                                 , (ix2, fact2) <- lFs
+                                 , playerName (gplayer fact2) == name2]
               in concatMap f l
         -- Only symmetry is ensured, everything else is permitted, e.g.,
         -- a faction in alliance with two others that are at war.
@@ -187,7 +180,8 @@ populateDungeon = do
           (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
           _ -> assert `failure` dungeon
       needInitialCrew = EM.assocs factionD
-      getEntryLevel (_, fact) = max minD $ min maxD $ gentry fact
+      getEntryLevel (_, fact) =
+        max minD $ min maxD $ playerEntry $ gplayer fact
       arenas = ES.toList $ ES.fromList $ map getEntryLevel needInitialCrew
       initialActors lid = do
         lvl <- getsLevel lid id
@@ -195,14 +189,15 @@ populateDungeon = do
         entryPoss <- rndToAction
                      $ findEntryPoss cops lvl (length arenaFactions)
         mapM_ (arenaActors lid) $ zip arenaFactions entryPoss
-      arenaActors _ ((_, Faction{ginitial = 0}), _) = return ()
-      arenaActors lid ((side, fact@Faction{ginitial}), ppos) = do
+      arenaActors _ ((_, Faction{gplayer = Player{playerInitial = 0}}), _) =
+        return ()
+      arenaActors lid ((side, fact@Faction{gplayer}), ppos) = do
         time <- getsState $ getLocalTime lid
         let ntime = timeAdd time (timeScale timeClip (fromEnum side))
         psFree <-
           getsState $ nearbyFreePoints
                         cotile (Tile.hasFeature cotile F.CanActor) ppos lid
-        let ps = take ginitial $ zip [0..] psFree
+        let ps = take (playerInitial gplayer) $ zip [0..] psFree
         forM_ ps $ \ (n, p) ->
           if isSpawnFact cops fact
           then spawnMonsters [p] lid ((== side) . fst) ntime "spawn"

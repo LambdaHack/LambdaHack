@@ -73,9 +73,9 @@ atomicSendSem atomic = do
   -- Send some actions to the clients, one faction at a time.
   knowEvents <- getsServer $ sknowEvents . sdebugSer
   let sendUI fid cmdUI =
-        when (isHumanFact $ factionD EM.! fid) $ sendUpdateUI fid cmdUI
+        when (ghasUI $ factionD EM.! fid) $ sendUpdateUI fid cmdUI
       sendAI fid cmdAI =
-        when (usesAIFact $ factionD EM.! fid) $ sendUpdateAI fid cmdAI
+        when (ghasAI $ factionD EM.! fid) $ sendUpdateAI fid cmdAI
       sendA fid cmd = do
         sendUI fid $ CmdAtomicUI cmd
         sendAI fid $ CmdAtomicAI cmd

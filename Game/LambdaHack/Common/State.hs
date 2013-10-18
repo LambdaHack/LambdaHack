@@ -9,7 +9,7 @@ module Game.LambdaHack.Common.State
   , defStateGlobal, emptyState, localFromGlobal
   , updateDungeon, updateDepth, updateActorD, updateItemD
   , updateFaction, updateTime, updateCOps, getLocalTime
-  , isHumanFaction, usesAIFaction, isSpawnFaction, isSummonFaction
+  , isSpawnFaction, isSummonFaction
   ) where
 
 import Data.Binary
@@ -142,14 +142,6 @@ updateCOps f s = s {_scops = f (_scops s)}
 -- | Get current time from the dungeon data.
 getLocalTime :: LevelId -> State -> Time
 getLocalTime lid s = ltime $ _sdungeon s EM.! lid
-
--- | Tell whether the faction is controlled (at least partially) by a human.
-isHumanFaction :: FactionId -> State -> Bool
-isHumanFaction fid s = isHumanFact $ _sfactionD s EM.! fid
-
--- | Tell whether the faction uses AI to control any of its actors.
-usesAIFaction :: FactionId -> State -> Bool
-usesAIFaction fid s = usesAIFact $ _sfactionD s EM.! fid
 
 -- | Tell whether the faction can spawn actors.
 isSpawnFaction :: FactionId -> State -> Bool

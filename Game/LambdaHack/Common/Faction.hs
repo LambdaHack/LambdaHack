@@ -3,39 +3,32 @@
 -- the hero faction battling the monster and the animal factions.
 module Game.LambdaHack.Common.Faction
   ( FactionId, FactionDict, Faction(..), Diplomacy(..), Outcome(..), Status(..)
-  , isHumanFact, usesAIFact, isSpawnFact, isSummonFact
-  , isAtWar, isAllied
+  , ghasAI, isSpawnFact, isSummonFact, isAtWar, isAllied
   ) where
 
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
-import Data.Maybe
 import Data.Text (Text)
 
-import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Content.FactionKind
+import Game.LambdaHack.Content.ModeKind
 
 -- | All factions in the game, indexed by faction identifier.
 type FactionDict = EM.EnumMap FactionId Faction
 
 data Faction = Faction
-  { gkind     :: !(Kind.Id FactionKind)   -- ^ the kind of the faction
-  , gname     :: !Text                    -- ^ individual name
-  , gconfig   :: !Text                    -- ^ raw name specified in config
-  , gAiLeader :: !(Maybe [Ability])       -- ^ AI for the leaders;
-                                          -- Nothing means human-controlled
-  , gAiMember :: !(Maybe [Ability])       -- ^ AI to use for other actors;
-                                          -- Nothing means human-controlled
-  , gdipl     :: !Dipl                    -- ^ diplomatic mode
-  , gquit     :: !(Maybe Status)          -- ^ cause of game end/exit
-  , gleader   :: !(Maybe ActorId)
-  , gcolor    :: !Color.Color             -- ^ color of actors or their frames
-  , ginitial  :: !Int                     -- ^ number of initial actors
-  , gentry    :: !LevelId                 -- ^ level where initial actors start
+  { gkind   :: !(Kind.Id FactionKind)  -- ^ the kind of the faction
+  , gname   :: !Text                   -- ^ individual name
+  , gcolor  :: !Color.Color            -- ^ color of actors or their frames
+  , gplayer :: !Player                 -- ^ the player spec for this faction
+  , ghasUI  :: !Bool                   -- ^ has a UI client
+  , gdipl   :: !Dipl                   -- ^ diplomatic mode
+  , gquit   :: !(Maybe Status)         -- ^ cause of game end/exit
+  , gleader :: !(Maybe ActorId)        -- ^ the leader of the faction, if any
   }
   deriving (Show, Eq)
 
@@ -67,13 +60,9 @@ data Status = Status
   }
   deriving (Show, Eq, Ord)
 
--- | Tell whether the faction is controlled (at least partially) by a human.
-isHumanFact :: Faction -> Bool
-isHumanFact fact = isNothing (gAiLeader fact) || isNothing (gAiMember fact)
-
--- | Tell whether the faction uses AI to control any of its actors.
-usesAIFact :: Faction -> Bool
-usesAIFact fact = isJust (gAiLeader fact) || isJust (gAiMember fact)
+-- | Tell whether the faction has an AI client.
+ghasAI :: Faction -> Bool
+ghasAI fact = playerAiLeader (gplayer fact) || playerAiOther (gplayer fact)
 
 -- | Tell whether the faction can spawn actors.
 isSpawnFact :: Kind.COps -> Faction -> Bool
@@ -81,7 +70,7 @@ isSpawnFact Kind.COps{cofact=Kind.Ops{okind}} fact =
   let kind = okind (gkind fact)
   in maybe False (> 0) $ lookup "spawn" $ ffreq kind
 
--- | Tell whether actors of the faction can be summoned by items, etc..
+-- | Tell whether actors of the faction can be summoned by items, etc.
 isSummonFact :: Kind.COps -> Faction -> Bool
 isSummonFact Kind.COps{cofact=Kind.Ops{okind}} fact =
   let kind = okind (gkind fact)
@@ -99,27 +88,21 @@ instance Binary Faction where
   put Faction{..} = do
     put gkind
     put gname
-    put gconfig
-    put gAiLeader
-    put gAiMember
+    put gcolor
+    put gplayer
+    put ghasUI
     put gdipl
     put gquit
     put gleader
-    put gcolor
-    put ginitial
-    put gentry
   get = do
     gkind <- get
     gname <- get
-    gconfig <- get
-    gAiLeader <- get
-    gAiMember <- get
+    gcolor <- get
+    gplayer <- get
+    ghasUI <- get
     gdipl <- get
     gquit <- get
     gleader <- get
-    gcolor <- get
-    ginitial <- get
-    gentry <- get
     return Faction{..}
 
 instance Binary Diplomacy where

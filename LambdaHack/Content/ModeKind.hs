@@ -69,7 +69,8 @@ playersCampaign = Players
 
 playersSkirmish = Players
   { playersHuman = [playerHero {playerName = "White"}]
-  , playersComputer = [ playerHero {playerName = "Green"}
+  , playersComputer = [ playerHero { playerName = "Green"
+                                   , playerAiLeader = True }
                       , playerHorror ]
   , playersEnemy = [ ("White", "Green")
                    , ("White", "Horror Den")
@@ -86,18 +87,25 @@ playersPvP = Players
   , playersAlly = [] }
 
 playersCoop = Players
-  { playersHuman = [ playerHero {playerName = "Coral", playerInitial = 1}
-                   , playerHero {playerName = "Amber", playerInitial = 1}]
+  { playersHuman = [ playerHero { playerName = "Coral"
+                                , playerInitial = 1 }
+                   , playerHero { playerName = "Amber"
+                                , playerInitial = 1 }]
   , playersComputer = [playerMonster]
   , playersEnemy = [ ("Coral", "Monster Hive")
                    , ("Amber", "Monster Hive") ]
   , playersAlly = [("Coral", "Amber")] }
 
 playersDefense = Players
-  { playersHuman = [playerMonster {playerInitial = 1, playerEntry = toEnum 1}]
-  , playersComputer = [ playerHero {playerName = "Green"}
-                      , playerHero {playerName = "Yellow"}
-                      , playerHero {playerName = "Cyan"} ]
+  { playersHuman = [playerMonster { playerInitial = 1
+                                  , playerEntry = toEnum 1
+                                  , playerAiLeader = False }]
+  , playersComputer = [ playerHero { playerName = "Green"
+                                   , playerAiLeader = True }
+                      , playerHero { playerName = "Yellow"
+                                   , playerAiLeader = True }
+                      , playerHero { playerName = "Cyan"
+                                   , playerAiLeader = True } ]
   , playersEnemy = [ ("Green", "Monster Hive")
                    , ("Yellow", "Monster Hive")
                    , ("Cyan", "Monster Hive") ]
@@ -108,11 +116,32 @@ playersDefense = Players
 
 playerHero, playerMonster, playerHorror :: Player
 
-playerHero = Player {playerName = "Adventuring Party", playerKind = "hero", playerInitial = 3, playerEntry = toEnum 1}
+playerHero = Player
+  { playerName = "Adventuring Party"
+  , playerFaction = "hero"
+  , playerEntry = toEnum 1
+  , playerInitial = 3
+  , playerAiLeader = False
+  , playerAiOther = True
+  }
 
-playerMonster = Player {playerName = "Monster Hive", playerKind = "monster", playerInitial = 5, playerEntry = toEnum 3}
+playerMonster = Player
+  { playerName = "Monster Hive"
+  , playerFaction = "monster"
+  , playerEntry = toEnum 3
+  , playerInitial = 5
+  , playerAiLeader = True
+  , playerAiOther = True
+  }
 
-playerHorror = Player {playerName = "Horror Den", playerKind = "horror", playerInitial = 0, playerEntry = toEnum 1}
+playerHorror = Player
+  { playerName = "Horror Den"
+  , playerFaction = "horror"
+  , playerEntry = toEnum 1
+  , playerInitial = 0
+  , playerAiLeader = True
+  , playerAiOther = True
+  }
 
 cavesCampaign, cavesCombat, cavesDefense :: Caves
 
