@@ -14,9 +14,9 @@ cdefs = ContentDef
   , getFreq = mfreq
   , validate = mvalidate
   , content =
-      [campaign, skirmish, pvp, coop, defense]
+      [campaign, skirmish, pvp, coop, defense, screenserver]
   }
-campaign,        skirmish, pvp, coop, defense :: ModeKind
+campaign,        skirmish, pvp, coop, defense, screenserver :: ModeKind
 
 campaign = ModeKind
   { msymbol  = 'r'  -- matches the keypress (with C-)
@@ -58,8 +58,16 @@ defense = ModeKind
   , mcaves   = cavesDefense
   }
 
+screenserver = ModeKind
+  { msymbol  = 'n'
+  , mname    = "screenserver"
+  , mfreq    = [("screenserver", 1)]
+  , mplayers = playersScreensaver
+  , mcaves   = cavesCampaign
+  }
 
-playersCampaign, playersSkirmish, playersPvP, playersCoop, playersDefense :: Players
+
+playersCampaign, playersSkirmish, playersPvP, playersCoop, playersDefense, playersScreensaver :: Players
 
 playersCampaign = Players
   { playersList = [ playerHero {playerInitial = 1}
@@ -111,6 +119,14 @@ playersDefense = Players
                   , ("Green", "Cyan")
                   , ("Yellow", "Cyan") ] }
 
+playersScreensaver = Players
+  { playersList = [ playerHero { playerInitial = 5
+                               , playerAiLeader = True
+                               , playerHuman = False }
+                  , playerMonster ]
+  , playersEnemy = [("Adventuring Party", "Monster Hive")]
+  , playersAlly = [] }
+
 
 playerHero, playerAntiHero, playerMonster, playerHorror :: Player
 
@@ -152,6 +168,7 @@ playerHorror = Player
   , playerHuman = False
   , playerUI = False
   }
+
 
 cavesCampaign, cavesCombat, cavesDefense :: Caves
 
