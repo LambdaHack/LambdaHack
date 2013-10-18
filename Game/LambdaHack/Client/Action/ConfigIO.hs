@@ -36,7 +36,7 @@ overrideCP cp@(CP defCF) cfile = do
 -- The player configuration comes from file @cfile@.
 mkConfig :: String -> FilePath -> IO CP
 mkConfig configDefault cfile = do
-  let delComment = map (drop 2) $ init . drop 3 $ lines configDefault
+  let delComment = map (drop 2) $ lines configDefault
       unConfig = unlines delComment
       -- Evaluate, to catch config errors ASAP.
       !defCF = forceEither $ CF.readstring CF.emptyCP unConfig
@@ -75,6 +75,7 @@ get (CP conf) s o =
   if CF.has_option conf s o
   then forceEither $ CF.get conf s o
   else assert `failure` "Unknown config option: " ++ s ++ "." ++ o
+                        ++ " in\n" ++ CF.to_string conf
 
 -- | An association list corresponding to a section. Fails if no such section.
 getItems :: CP -> CF.SectionSpec -> [(String, String)]
@@ -82,6 +83,7 @@ getItems (CP conf) s =
   if CF.has_section conf s
   then forceEither $ CF.items conf s
   else assert `failure` "Unknown config section: " ++ s
+                        ++ " in\n" ++ CF.to_string conf
 
 parseConfigUI :: FilePath -> CP -> ConfigUI
 parseConfigUI dataDir cp =
