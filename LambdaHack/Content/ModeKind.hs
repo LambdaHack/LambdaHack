@@ -62,50 +62,48 @@ defense = ModeKind
 playersCampaign, playersSkirmish, playersPvP, playersCoop, playersDefense :: Players
 
 playersCampaign = Players
-  { playersHuman = [playerHero {playerInitial = 1}]
-  , playersComputer = [playerMonster]
+  { playersList = [ playerHero {playerInitial = 1}
+                  , playerMonster ]
   , playersEnemy = [("Adventuring Party", "Monster Hive")]
   , playersAlly = [] }
 
 playersSkirmish = Players
-  { playersHuman = [playerHero {playerName = "White"}]
-  , playersComputer = [ playerHero { playerName = "Green"
-                                   , playerAiLeader = True }
-                      , playerHorror ]
+  { playersList = [ playerHero {playerName = "White"}
+                  , playerAntiHero {playerName = "Green"}
+                  , playerHorror ]
   , playersEnemy = [ ("White", "Green")
                    , ("White", "Horror Den")
                    , ("Green", "Horror Den") ]
   , playersAlly = [] }
 
 playersPvP = Players
-  { playersHuman = [ playerHero {playerName = "Red"}
-                   , playerHero {playerName = "Blue"} ]
-  , playersComputer = [playerHorror]
+  { playersList = [ playerHero {playerName = "Red"}
+                  , playerHero {playerName = "Blue"}
+                  , playerHorror ]
   , playersEnemy = [ ("Red", "Blue")
                    , ("Red", "Horror Den")
                    , ("Blue", "Horror Den") ]
   , playersAlly = [] }
 
 playersCoop = Players
-  { playersHuman = [ playerHero { playerName = "Coral"
-                                , playerInitial = 1 }
-                   , playerHero { playerName = "Amber"
-                                , playerInitial = 1 }]
-  , playersComputer = [playerMonster]
+  { playersList = [ playerHero { playerName = "Coral"
+                               , playerInitial = 1 }
+                  , playerHero { playerName = "Amber"
+                               , playerInitial = 1 }
+                  , playerMonster ]
   , playersEnemy = [ ("Coral", "Monster Hive")
                    , ("Amber", "Monster Hive") ]
   , playersAlly = [("Coral", "Amber")] }
 
 playersDefense = Players
-  { playersHuman = [playerMonster { playerInitial = 1
+  { playersList = [ playerMonster { playerInitial = 1
                                   , playerEntry = toEnum 1
-                                  , playerAiLeader = False }]
-  , playersComputer = [ playerHero { playerName = "Green"
-                                   , playerAiLeader = True }
-                      , playerHero { playerName = "Yellow"
-                                   , playerAiLeader = True }
-                      , playerHero { playerName = "Cyan"
-                                   , playerAiLeader = True } ]
+                                  , playerAiLeader = False
+                                  , playerHuman = True
+                                  , playerUI = True }
+                  , playerAntiHero {playerName = "Green"}
+                  , playerAntiHero {playerName = "Yellow"}
+                  , playerAntiHero {playerName = "Cyan"} ]
   , playersEnemy = [ ("Green", "Monster Hive")
                    , ("Yellow", "Monster Hive")
                    , ("Cyan", "Monster Hive") ]
@@ -114,7 +112,7 @@ playersDefense = Players
                   , ("Yellow", "Cyan") ] }
 
 
-playerHero, playerMonster, playerHorror :: Player
+playerHero, playerAntiHero, playerMonster, playerHorror :: Player
 
 playerHero = Player
   { playerName = "Adventuring Party"
@@ -123,7 +121,14 @@ playerHero = Player
   , playerInitial = 3
   , playerAiLeader = False
   , playerAiOther = True
-  , playerForceUI = Nothing
+  , playerHuman = True
+  , playerUI = True
+  }
+
+playerAntiHero = playerHero
+  { playerAiLeader = True
+  , playerHuman = False
+  , playerUI = False
   }
 
 playerMonster = Player
@@ -133,7 +138,8 @@ playerMonster = Player
   , playerInitial = 5
   , playerAiLeader = True
   , playerAiOther = True
-  , playerForceUI = Nothing
+  , playerHuman = False
+  , playerUI = False
   }
 
 playerHorror = Player
@@ -143,7 +149,8 @@ playerHorror = Player
   , playerInitial = 0
   , playerAiLeader = True
   , playerAiOther = True
-  , playerForceUI = Nothing
+  , playerHuman = False
+  , playerUI = False
   }
 
 cavesCampaign, cavesCombat, cavesDefense :: Caves

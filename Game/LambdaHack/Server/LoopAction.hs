@@ -91,7 +91,7 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
                -- TODO; This is a significant advantage of human spawners;
                -- perhaps we could instead auto-switch leaders
                -- to the fist level non-spawner factions act on.
-               Just leader | ghuman fact || not spawn -> do
+               Just leader | playerHuman (gplayer fact) || not spawn -> do
                   b <- getsState $ getActorBody leader
                   return $ Just $ blid b
                _ -> return Nothing

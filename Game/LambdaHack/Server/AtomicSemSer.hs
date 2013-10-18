@@ -23,6 +23,7 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.Action
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.Utils.Assert
@@ -73,7 +74,7 @@ atomicSendSem atomic = do
   -- Send some actions to the clients, one faction at a time.
   knowEvents <- getsServer $ sknowEvents . sdebugSer
   let sendUI fid cmdUI =
-        when (ghasUI $ factionD EM.! fid) $ sendUpdateUI fid cmdUI
+        when (playerUI $ gplayer $ factionD EM.! fid) $ sendUpdateUI fid cmdUI
       sendAI fid cmdAI = sendUpdateAI fid cmdAI
       sendA fid cmd = do
         sendUI fid $ CmdAtomicUI cmd

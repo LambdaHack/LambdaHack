@@ -12,21 +12,20 @@ import Game.LambdaHack.Common.Misc (Freqs, LevelId)
 
 -- | Faction properties that are fixed for a given kind of factions.
 data ModeKind = ModeKind
-  { msymbol  :: !Char       -- ^ a symbol
-  , mname    :: !Text       -- ^ short description
-  , mfreq    :: !Freqs      -- ^ frequency within groups
-  , mplayers :: !Players    -- ^ players taking part in the game
-  , mcaves   :: !Caves      -- ^ arena of the game
+  { msymbol  :: !Char     -- ^ a symbol
+  , mname    :: !Text     -- ^ short description
+  , mfreq    :: !Freqs    -- ^ frequency within groups
+  , mplayers :: !Players  -- ^ players taking part in the game
+  , mcaves   :: !Caves    -- ^ arena of the game
   }
   deriving Show
 
 type Caves = EM.EnumMap LevelId (Text, Bool)
 
 data Players = Players
-  { playersHuman    :: ![Player]        -- ^ players with UI
-  , playersComputer :: ![Player]        -- ^ players without UI
-  , playersEnemy    :: ![(Text, Text)]  -- ^ the initial enmity matrix
-  , playersAlly     :: ![(Text, Text)]  -- ^ the initial aliance matrix
+  { playersList  :: ![Player]        -- ^ players, both human and computer
+  , playersEnemy :: ![(Text, Text)]  -- ^ the initial enmity matrix
+  , playersAlly  :: ![(Text, Text)]  -- ^ the initial aliance matrix
   }
   deriving (Show, Eq)
 
@@ -37,9 +36,9 @@ data Player = Player
   , playerInitial  :: !Int      -- ^ number of initial members
   , playerAiLeader :: !Bool     -- ^ is the leader under AI control?
   , playerAiOther  :: !Bool     -- ^ are the others under AI control?
-  , playerForceUI  :: !(Maybe Bool)
-                                -- ^ force creation of the UI client,
-                                -- regardless whether a Human or Computer
+  , playerHuman    :: !Bool     -- ^ is the player controlled by human?
+  , playerUI       :: !Bool     -- ^ does the faction have a UI client
+                                -- (for control or passive observation)
   }
   deriving (Show, Eq)
 
@@ -57,7 +56,8 @@ instance Binary Player where
     put playerInitial
     put playerAiLeader
     put playerAiOther
-    put playerForceUI
+    put playerHuman
+    put playerUI
   get = do
     playerName <- get
     playerFaction <- get
@@ -65,5 +65,6 @@ instance Binary Player where
     playerInitial <- get
     playerAiLeader <- get
     playerAiOther <- get
-    playerForceUI <- get
+    playerHuman <- get
+    playerUI <- get
     return Player{..}

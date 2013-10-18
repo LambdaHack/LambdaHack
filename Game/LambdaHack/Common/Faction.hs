@@ -25,8 +25,6 @@ data Faction = Faction
   , gname   :: !Text                   -- ^ individual name
   , gcolor  :: !Color.Color            -- ^ color of actors or their frames
   , gplayer :: !Player                 -- ^ the player spec for this faction
-  , ghuman  :: !Bool                   -- ^ is a Human player
-  , ghasUI  :: !Bool                   -- ^ has a UI client
   , gdipl   :: !Dipl                   -- ^ diplomatic mode
   , gquit   :: !(Maybe Status)         -- ^ cause of game end/exit
   , gleader :: !(Maybe ActorId)        -- ^ the leader of the faction, if any
@@ -87,8 +85,6 @@ instance Binary Faction where
     put gname
     put gcolor
     put gplayer
-    put ghuman
-    put ghasUI
     put gdipl
     put gquit
     put gleader
@@ -97,8 +93,6 @@ instance Binary Faction where
     gname <- get
     gcolor <- get
     gplayer <- get
-    ghuman <- get
-    ghasUI <- get
     gdipl <- get
     gquit <- get
     gleader <- get

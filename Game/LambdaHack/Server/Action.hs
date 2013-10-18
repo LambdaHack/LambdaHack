@@ -52,6 +52,7 @@ import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
+import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Frontend as Frontend
 import Game.LambdaHack.Server.Action.ActionClass
@@ -164,7 +165,7 @@ registerScore status mbody fid = do
   assert (maybe True ((fid ==) . bfid) mbody) skip
   factionD <- getsState sfactionD
   let fact = factionD EM.! fid
-  assert (ghuman fact) skip
+  assert (playerHuman $ gplayer fact) skip
   total <- case mbody of
     Just body -> getsState $ snd . calculateTotal body
     Nothing -> case gleader fact of
@@ -210,9 +211,9 @@ quitF mbody status fid = do
     Just Conquer -> return ()
     Just Escape -> return ()
     _ -> do
-      when (ghasUI fact) $ do
+      when (playerUI $ gplayer fact) $ do
         revealItems (Just fid) mbody
-      when (ghuman fact) $ do
+      when (playerHuman $ gplayer fact) $ do
         registerScore status mbody fid
       execCmdAtomic $ QuitFactionA fid mbody oldSt $ Just status
       modifyServer $ \ser -> ser {squit = True}  -- end turn ASAP
@@ -238,7 +239,7 @@ deduceQuits body status = do
       keysInGame = map fst assocsInGame
       assocsSpawn = filter (isSpawnFact cops . snd) assocsInGame
       assocsNotSummon = filter (not . isSummonFact cops . snd) assocsInGame
-      assocsHuman = filter (ghuman . snd) assocsInGame
+      assocsHuman = filter (playerHuman . gplayer . snd) assocsInGame
   case assocsNotSummon of
     _ | null assocsHuman ->
       -- No screensaver mode for now --- all non-human players win.
@@ -324,7 +325,7 @@ updateConn executorUI executorAI = do
         -- even if UI usage changes, but it works OK thanks to UI faction
         -- clients distinguished by positive FactionId numbers.
         forkAI fid connAI  -- AI clients always needed, e.g., for auto-explore
-        when (ghasUI $ factionD EM.! fid) $ forkUI fid connUI
+        when (playerUI $ gplayer $ factionD EM.! fid) $ forkUI fid connUI
   liftIO $ mapWithKeyM_ forkClient toSpawn
   nU <- nUI
   liftIO $ putMVar fromM (nU, fdict)  -- restart Frontend

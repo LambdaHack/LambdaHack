@@ -77,7 +77,7 @@ instance (Monoid a, MonadClientAbort m) => MonadClientAbort (WriterT a m) where
 
 saveName :: FactionId -> Bool -> String
 saveName side isAI =
-  let n = fromEnum side
+  let n = fromEnum side  -- we depend on the numbering hack to number saves
   in (if n > 0
       then "human_" ++ show n
       else "computer_" ++ show (-n))

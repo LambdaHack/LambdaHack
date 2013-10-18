@@ -19,6 +19,7 @@ import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Content.ModeKind
 
 class (Monad m, Functor m) => MonadActionRO m where
   getState    :: m State
@@ -48,7 +49,7 @@ getsLevel lid f = getsState $ f . (EM.! lid) . sdungeon
 nUI :: MonadActionRO m => m Int
 nUI = do
   factionD <- getsState sfactionD
-  return $ length $ filter ghasUI $ EM.elems factionD
+  return $ length $ filter (playerUI . gplayer) $ EM.elems factionD
 
 serverSaveName :: String
 serverSaveName = "server.sav"

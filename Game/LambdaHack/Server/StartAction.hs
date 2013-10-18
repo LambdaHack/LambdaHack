@@ -95,13 +95,12 @@ lowercase = T.pack . map Char.toLower . T.unpack
 
 createFactions :: Kind.COps -> Players -> Rnd FactionDict
 createFactions Kind.COps{cofact=Kind.Ops{opick}} players = do
-  let rawCreate ghuman gplayer@Player{..} = do
+  let rawCreate gplayer@Player{..} = do
         let cmap = mapFromInvFuns
                      [colorToTeamName, colorToPlainName, colorToFancyName]
             nameoc = lowercase playerName
-            prefix | ghuman = "Human"
+            prefix | playerHuman = "Human"
                    | otherwise = "Autonomous"
-            ghasUI = fromMaybe ghuman playerForceUI
             (gcolor, gname) = case M.lookup nameoc cmap of
               Nothing -> (Color.BrWhite, prefix <+> playerName)
               Just c -> (c, prefix <+> playerName <+> "Team")
@@ -110,10 +109,10 @@ createFactions Kind.COps{cofact=Kind.Ops{opick}} players = do
             gquit = Nothing
             gleader = Nothing
         return Faction{..}
-  lHuman <- mapM (rawCreate True) (playersHuman players)
-  lComputer <- mapM (rawCreate False) (playersComputer players)
-  let lFs = reverse (zip [toEnum (-1), toEnum (-2)..] lComputer)  -- sorted
-            ++ zip [toEnum 1..] lHuman
+  lUI <- mapM rawCreate $ filter playerUI $ playersList players
+  lnoUI <- mapM rawCreate $ filter (not . playerUI) $ playersList players
+  let lFs = reverse (zip [toEnum (-1), toEnum (-2)..] lnoUI)  -- sorted
+            ++ zip [toEnum 1..] lUI
       swapIx l =
         let ixs =
               let f (name1, name2) =
@@ -194,7 +193,8 @@ populateDungeon = do
         return ()
       arenaActors lid ((side, fact@Faction{gplayer}), ppos) = do
         time <- getsState $ getLocalTime lid
-        let ntime = timeAdd time (timeScale timeClip (fromEnum side))
+        let nmult = fromEnum side `mod` 5  -- always positive
+            ntime = timeAdd time (timeScale timeClip nmult)
         psFree <-
           getsState $ nearbyFreePoints
                         cotile (Tile.hasFeature cotile F.CanActor) ppos lid
