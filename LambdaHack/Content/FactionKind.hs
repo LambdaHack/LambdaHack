@@ -42,6 +42,7 @@ horror = FactionKind
   , fAiMember = allAbilities
   }
 
+
 _noAbility, _onlyFollowTrack, meleeAdjacent, _meleeAndRanged, allAbilities :: [Ability]
 
 _noAbility = []  -- not even projectiles will fly

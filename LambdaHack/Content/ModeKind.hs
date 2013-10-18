@@ -58,46 +58,61 @@ defense = ModeKind
   , mcaves   = cavesDefense
   }
 
+
 playersCampaign, playersSkirmish, playersPvP, playersCoop, playersDefense :: Players
 
 playersCampaign = Players
-  { playersHuman = [Player {playerName = "Adventuring Party", playerKind = "hero", playerInitial = 1, playerEntry = toEnum 1}]
-  , playersComputer = [Player {playerName = "Monster Hive", playerKind = "monster", playerInitial = 5, playerEntry = toEnum 3}]
+  { playersHuman = [playerHero {playerInitial = 1}]
+  , playersComputer = [playerMonster]
   , playersEnemy = [("Adventuring Party", "Monster Hive")]
   , playersAlly = [] }
 
 playersSkirmish = Players
-  { playersHuman = [Player {playerName = "White", playerKind = "hero", playerInitial = 3, playerEntry = toEnum 1}]
-  , playersComputer = [Player {playerName = "Green", playerKind = "hero", playerInitial = 3, playerEntry = toEnum 1}, Player {playerName = "Horror Den", playerKind = "horror", playerInitial = 0, playerEntry = toEnum 1}]
+  { playersHuman = [playerHero {playerName = "White"}]
+  , playersComputer = [ playerHero {playerName = "Green"}
+                      , playerHorror ]
   , playersEnemy = [ ("White", "Green")
                    , ("White", "Horror Den")
                    , ("Green", "Horror Den") ]
   , playersAlly = [] }
 
 playersPvP = Players
-  { playersHuman = [Player {playerName = "Red", playerKind = "hero", playerInitial = 3, playerEntry = toEnum 1}, Player {playerName = "Blue", playerKind = "hero", playerInitial = 3, playerEntry = toEnum 1}]
-  , playersComputer = [Player {playerName = "Horror Den", playerKind = "horror", playerInitial = 0, playerEntry = toEnum 1}]
+  { playersHuman = [ playerHero {playerName = "Red"}
+                   , playerHero {playerName = "Blue"} ]
+  , playersComputer = [playerHorror]
   , playersEnemy = [ ("Red", "Blue")
                    , ("Red", "Horror Den")
                    , ("Blue", "Horror Den") ]
   , playersAlly = [] }
 
 playersCoop = Players
-  { playersHuman = [Player {playerName = "Coral", playerKind = "hero", playerInitial = 1, playerEntry = toEnum 1}, Player {playerName = "Amber", playerKind = "hero", playerInitial = 1, playerEntry = toEnum 1}]
-  , playersComputer = [Player {playerName = "Monster Hive", playerKind = "monster", playerInitial = 5, playerEntry = toEnum 3}]
+  { playersHuman = [ playerHero {playerName = "Coral", playerInitial = 1}
+                   , playerHero {playerName = "Amber", playerInitial = 1}]
+  , playersComputer = [playerMonster]
   , playersEnemy = [ ("Coral", "Monster Hive")
                    , ("Amber", "Monster Hive") ]
   , playersAlly = [("Coral", "Amber")] }
 
 playersDefense = Players
-  { playersHuman = [Player {playerName = "Monster Hive", playerKind = "monster", playerInitial = 1, playerEntry = toEnum 1}]
-  , playersComputer = [Player {playerName = "Green", playerKind = "hero", playerInitial = 1, playerEntry = toEnum 1}, Player {playerName = "Yellow", playerKind = "hero", playerInitial = 2, playerEntry = toEnum 1}, Player {playerName = "Cyan", playerKind = "hero", playerInitial = 3, playerEntry = toEnum 1}]
+  { playersHuman = [playerMonster {playerInitial = 1, playerEntry = toEnum 1}]
+  , playersComputer = [ playerHero {playerName = "Green"}
+                      , playerHero {playerName = "Yellow"}
+                      , playerHero {playerName = "Cyan"} ]
   , playersEnemy = [ ("Green", "Monster Hive")
                    , ("Yellow", "Monster Hive")
                    , ("Cyan", "Monster Hive") ]
   , playersAlly = [ ("Green", "Yellow")
                   , ("Green", "Cyan")
                   , ("Yellow", "Cyan") ] }
+
+
+playerHero, playerMonster, playerHorror :: Player
+
+playerHero = Player {playerName = "Adventuring Party", playerKind = "hero", playerInitial = 3, playerEntry = toEnum 1}
+
+playerMonster = Player {playerName = "Monster Hive", playerKind = "monster", playerInitial = 5, playerEntry = toEnum 3}
+
+playerHorror = Player {playerName = "Horror Den", playerKind = "horror", playerInitial = 0, playerEntry = toEnum 1}
 
 cavesCampaign, cavesCombat, cavesDefense :: Caves
 
