@@ -37,10 +37,13 @@ data Player = Player
   , playerInitial  :: !Int      -- ^ number of initial members
   , playerAiLeader :: !Bool     -- ^ is the leader under AI control?
   , playerAiOther  :: !Bool     -- ^ are the others under AI control?
-  , playerForceUI  :: !(Maybe Bool)  -- ^ force creation of the UI client
+  , playerForceUI  :: !(Maybe Bool)
+                                -- ^ force creation of the UI client,
+                                -- regardless whether a Human or Computer
   }
   deriving (Show, Eq)
 
+-- TODO: assert if no UI, both Ai are on.
 -- | No specific possible problems for the content of this kind, so far,
 -- so the validation function always returns the empty list of offending kinds.
 mvalidate :: [ModeKind] -> [ModeKind]

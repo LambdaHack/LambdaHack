@@ -153,7 +153,7 @@ loopFrontend fs ConnMulti{..} = loop Nothing EM.empty
     if Just fid == fmap fst oldFidFrame then
       return reqMap
     else do
-      (nH, fCT) <- readMVar fromMulti
+      (nU, fCT) <- readMVar fromMulti
       let pname = snd $ fCT fid
       reqMap2 <- case oldFidFrame of
         Nothing -> return reqMap
@@ -165,8 +165,8 @@ loopFrontend fs ConnMulti{..} = loop Nothing EM.empty
           return reqMap2
       let singles = toSingles fid reqMap2
           firstFrame = fromMaybe frontFr $ listToMaybe singles
-      -- @nH@ is unreliable, except at the game start.
-      unless (isNothing oldFidFrame && nH < 2) $
+      -- @nU@ is unreliable, except at the game start.
+      unless (isNothing oldFidFrame && nU < 2) $
         fadeF fs False fid pname firstFrame
       flushFrames fs fid reqMap2
 

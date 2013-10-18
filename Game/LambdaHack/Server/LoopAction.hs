@@ -87,15 +87,14 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
   let loop = do
         let factionArena fact = do
               let spawn = isSpawnFact cops fact
-                  -- TODO; This is a significant advantage of human spawners;
-                  -- perhaps we could instead auto-switch leaders
-                  -- to the fist level non-spawner factions act on.
-                  isHuman = ghasUI fact
               case gleader fact of
-                Just leader | isHuman || not spawn -> do
+               -- TODO; This is a significant advantage of human spawners;
+               -- perhaps we could instead auto-switch leaders
+               -- to the fist level non-spawner factions act on.
+               Just leader | ghuman fact || not spawn -> do
                   b <- getsState $ getActorBody leader
                   return $ Just $ blid b
-                _ -> return Nothing
+               _ -> return Nothing
         factionD <- getsState sfactionD
         marenas <- mapM factionArena $ EM.elems factionD
         let arenas = ES.toList $ ES.fromList $ catMaybes marenas

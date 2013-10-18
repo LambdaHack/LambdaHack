@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.Action
   ( -- * Action monads
     MonadActionRO(..), MonadAction(..), MonadAtomic(..)
     -- * Shorthands
-  , getsLevel, nHumans
+  , getsLevel, nUI
     -- * Assorted
   , serverSaveName
   ) where
@@ -45,8 +45,8 @@ class MonadActionRO m => MonadAtomic m where
 getsLevel :: MonadActionRO m => LevelId -> (Level -> a) -> m a
 getsLevel lid f = getsState $ f . (EM.! lid) . sdungeon
 
-nHumans :: MonadActionRO m => m Int
-nHumans = do
+nUI :: MonadActionRO m => m Int
+nUI = do
   factionD <- getsState sfactionD
   return $ length $ filter ghasUI $ EM.elems factionD
 

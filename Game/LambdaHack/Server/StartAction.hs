@@ -95,13 +95,13 @@ lowercase = T.pack . map Char.toLower . T.unpack
 
 createFactions :: Kind.COps -> Players -> Rnd FactionDict
 createFactions Kind.COps{cofact=Kind.Ops{opick}} players = do
-  let rawCreate isHuman gplayer@Player{..} = do
+  let rawCreate ghuman gplayer@Player{..} = do
         let cmap = mapFromInvFuns
                      [colorToTeamName, colorToPlainName, colorToFancyName]
             nameoc = lowercase playerName
-            prefix | isHuman = "Human"
+            prefix | ghuman = "Human"
                    | otherwise = "Autonomous"
-            ghasUI = fromMaybe isHuman playerForceUI
+            ghasUI = fromMaybe ghuman playerForceUI
             (gcolor, gname) = case M.lookup nameoc cmap of
               Nothing -> (Color.BrWhite, prefix <+> playerName)
               Just c -> (c, prefix <+> playerName <+> "Team")

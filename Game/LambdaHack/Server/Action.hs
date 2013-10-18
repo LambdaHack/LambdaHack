@@ -164,7 +164,7 @@ registerScore status mbody fid = do
   assert (maybe True ((fid ==) . bfid) mbody) skip
   factionD <- getsState sfactionD
   let fact = factionD EM.! fid
-  assert (ghasUI fact) skip
+  assert (ghuman fact) skip
   total <- case mbody of
     Just body -> getsState $ snd . calculateTotal body
     Nothing -> case gleader fact of
@@ -212,6 +212,7 @@ quitF mbody status fid = do
     _ -> do
       when (ghasUI fact) $ do
         revealItems (Just fid) mbody
+      when (ghuman fact) $ do
         registerScore status mbody fid
       execCmdAtomic $ QuitFactionA fid mbody oldSt $ Just status
       modifyServer $ \ser -> ser {squit = True}  -- end turn ASAP
@@ -237,7 +238,7 @@ deduceQuits body status = do
       keysInGame = map fst assocsInGame
       assocsSpawn = filter (isSpawnFact cops . snd) assocsInGame
       assocsNotSummon = filter (not . isSummonFact cops . snd) assocsInGame
-      assocsHuman = filter (ghasUI . snd) assocsInGame
+      assocsHuman = filter (ghuman . snd) assocsInGame
   case assocsNotSummon of
     _ | null assocsHuman ->
       -- No screensaver mode for now --- all non-human players win.
@@ -328,8 +329,8 @@ updateConn executorUI executorAI = do
         when (ghasUI $ factionD EM.! fid) $ forkUI fid connUI
         when (ghasAI $ factionD EM.! fid) $ forkAI fid connAI
   liftIO $ mapWithKeyM_ forkClient toSpawn
-  nH <- nHumans
-  liftIO $ putMVar fromM (nH, fdict)  -- restart Frontend
+  nU <- nUI
+  liftIO $ putMVar fromM (nU, fdict)  -- restart Frontend
 
 killAllClients :: (MonadAtomic m, MonadConnServer m) => m ()
 killAllClients = do
