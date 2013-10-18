@@ -37,6 +37,7 @@ data Player = Player
   , playerInitial  :: !Int      -- ^ number of initial members
   , playerAiLeader :: !Bool     -- ^ is the leader under AI control?
   , playerAiOther  :: !Bool     -- ^ are the others under AI control?
+  , playerForceUI  :: !(Maybe Bool)  -- ^ force creation of the UI client
   }
   deriving (Show, Eq)
 
@@ -53,6 +54,7 @@ instance Binary Player where
     put playerInitial
     put playerAiLeader
     put playerAiOther
+    put playerForceUI
   get = do
     playerName <- get
     playerFaction <- get
@@ -60,4 +62,5 @@ instance Binary Player where
     playerInitial <- get
     playerAiLeader <- get
     playerAiOther <- get
+    playerForceUI <- get
     return Player{..}

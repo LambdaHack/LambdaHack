@@ -123,6 +123,7 @@ playerHero = Player
   , playerInitial = 3
   , playerAiLeader = False
   , playerAiOther = True
+  , playerForceUI = Nothing
   }
 
 playerMonster = Player
@@ -132,6 +133,7 @@ playerMonster = Player
   , playerInitial = 5
   , playerAiLeader = True
   , playerAiOther = True
+  , playerForceUI = Nothing
   }
 
 playerHorror = Player
@@ -141,6 +143,7 @@ playerHorror = Player
   , playerInitial = 0
   , playerAiLeader = True
   , playerAiOther = True
+  , playerForceUI = Nothing
   }
 
 cavesCampaign, cavesCombat, cavesDefense :: Caves
