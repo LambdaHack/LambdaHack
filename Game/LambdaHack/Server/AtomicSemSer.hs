@@ -74,8 +74,7 @@ atomicSendSem atomic = do
   knowEvents <- getsServer $ sknowEvents . sdebugSer
   let sendUI fid cmdUI =
         when (ghasUI $ factionD EM.! fid) $ sendUpdateUI fid cmdUI
-      sendAI fid cmdAI =
-        when (ghasAI $ factionD EM.! fid) $ sendUpdateAI fid cmdAI
+      sendAI fid cmdAI = sendUpdateAI fid cmdAI
       sendA fid cmd = do
         sendUI fid $ CmdAtomicUI cmd
         sendAI fid $ CmdAtomicAI cmd

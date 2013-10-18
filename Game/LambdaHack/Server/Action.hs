@@ -320,14 +320,11 @@ updateConn executorUI executorAI = do
       forkAI fid connS =
         void $ forkChild childrenServer $ executorAI fid connS
       forkClient fid (connUI, connAI) = do
-        -- This is fragile: when a connection is reused, clients are not
-        -- respawned, even if AI or UI usage changes (it does not, currently,
-        -- thanks to faction numbering, etc.).
-        -- TODO: perhaps spawn both AI and UI clients always, but then
-        -- the UI client should not display a welcome message, until
-        -- the server tells it to.
+        -- When a connection is reused, clients are not respawned,
+        -- even if UI usage changes, but it works OK thanks to UI faction
+        -- clients distinguished by positive FactionId numbers.
+        forkAI fid connAI  -- AI clients always needed, e.g., for auto-explore
         when (ghasUI $ factionD EM.! fid) $ forkUI fid connUI
-        when (ghasAI $ factionD EM.! fid) $ forkAI fid connAI
   liftIO $ mapWithKeyM_ forkClient toSpawn
   nU <- nUI
   liftIO $ putMVar fromM (nU, fdict)  -- restart Frontend

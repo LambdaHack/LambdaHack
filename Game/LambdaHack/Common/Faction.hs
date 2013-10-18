@@ -3,7 +3,7 @@
 -- the hero faction battling the monster and the animal factions.
 module Game.LambdaHack.Common.Faction
   ( FactionId, FactionDict, Faction(..), Diplomacy(..), Outcome(..), Status(..)
-  , ghasAI, isSpawnFact, isSummonFact, isAtWar, isAllied
+  , isSpawnFact, isSummonFact, isAtWar, isAllied
   ) where
 
 import Data.Binary
@@ -60,10 +60,6 @@ data Status = Status
   , stInfo    :: Text     -- ^ extra information
   }
   deriving (Show, Eq, Ord)
-
--- | Tell whether the faction has an AI client.
-ghasAI :: Faction -> Bool
-ghasAI fact = playerAiLeader (gplayer fact) || playerAiOther (gplayer fact)
 
 -- | Tell whether the faction can spawn actors.
 isSpawnFact :: Kind.COps -> Faction -> Bool
