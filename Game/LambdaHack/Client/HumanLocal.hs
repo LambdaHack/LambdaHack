@@ -451,9 +451,7 @@ displayMainMenu :: MonadClientUI m => WriterT Slideshow m ()
 displayMainMenu = do
   Kind.COps{corule} <- getsState scops
   Binding{krevMap} <- askBinding
-  let stripFrame t = case T.uncons t of
-        Just ('\n', art) -> map (T.tail . T.init) $ tail . init $ T.lines art
-        _ -> assert `failure` "displayMainMenu:" <+> t
+  let stripFrame t = map (T.tail . T.init) $ tail . init $ T.lines t
       pasteVersion art =
         let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
             version = " Version " ++ showVersion pathsVersion
