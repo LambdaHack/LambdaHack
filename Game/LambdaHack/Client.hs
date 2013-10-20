@@ -22,6 +22,7 @@ import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Frontend
 import Game.LambdaHack.Utils.Assert
@@ -41,7 +42,7 @@ cmdClientAISem cmd = case cmd of
     mapM_ (storeUndo . CmdAtomic) cmds
   CmdQueryAI aid -> do
     cmdC <- queryAI aid
-    writeServer cmdC
+    writeServer $ TakeTimeSer cmdC
 
 cmdClientUISem :: ( MonadAtomic m, MonadClientAbort m
                   , MonadClientUI m, MonadClientWriteServer m )

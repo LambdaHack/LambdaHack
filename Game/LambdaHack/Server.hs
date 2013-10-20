@@ -26,21 +26,24 @@ import Game.LambdaHack.Utils.Thread
 -- indicates if the command took some time.
 cmdSerSem :: (MonadAtomic m, MonadServer m) => CmdSer -> m Bool
 cmdSerSem cmd = case cmd of
-  MoveSer aid dir -> moveSer aid dir False >> return True
-  ExploreSer aid dir -> moveSer aid dir True >> return True
-  RunSer aid dir -> runSer aid dir >> return True
-  WaitSer aid -> waitSer aid >> return True
-  PickupSer aid i k l -> pickupSer aid i k l >> return True
-  DropSer aid iid -> dropSer aid iid >> return True
-  ProjectSer aid p eps iid container ->
-    projectSer aid p eps iid container >> return True
-  ApplySer aid iid container -> applySer aid iid container >> return True
-  TriggerSer aid p -> triggerSer aid p >> return True
-  SetPathSer aid path -> setPathSer aid path >> return True
+  TakeTimeSer cmd2 -> cmdSerSemTakeTime cmd2 >> return True
   GameRestartSer aid t -> gameRestartSer aid t >> return False
   GameExitSer aid -> gameExitSer aid >> return False
   GameSaveSer _ -> gameSaveSer >> return False
   CfgDumpSer aid -> cfgDumpSer aid >> return False
+
+cmdSerSemTakeTime :: (MonadAtomic m, MonadServer m) => CmdSerTakeTime -> m ()
+cmdSerSemTakeTime cmd = case cmd of
+  MoveSer aid dir -> moveSer aid dir False
+  ExploreSer aid dir -> moveSer aid dir True
+  RunSer aid dir -> runSer aid dir
+  WaitSer aid -> waitSer aid
+  PickupSer aid i k l -> pickupSer aid i k l
+  DropSer aid iid -> dropSer aid iid
+  ProjectSer aid p eps iid container -> projectSer aid p eps iid container
+  ApplySer aid iid container -> applySer aid iid container
+  TriggerSer aid p -> triggerSer aid p
+  SetPathSer aid path -> setPathSer aid path
 
 debugArgs :: IO DebugModeSer
 debugArgs = do

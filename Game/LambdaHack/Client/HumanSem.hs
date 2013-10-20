@@ -48,13 +48,13 @@ cmdAction :: (MonadClientAbort m, MonadClientUI m)
 cmdAction cmd = case cmd of
   Move v -> moveHuman v
   Run v -> runHuman v
-  Wait -> fmap Just waitHuman
-  Pickup -> fmap Just pickupHuman
-  Drop -> fmap Just dropHuman
+  Wait -> fmap (Just . TakeTimeSer) waitHuman
+  Pickup -> fmap (Just . TakeTimeSer) pickupHuman
+  Drop -> fmap (Just . TakeTimeSer) dropHuman
   Project ts -> projectHuman ts
-  Apply ts -> fmap Just $ applyHuman ts
-  TriggerDir ts -> fmap Just $ triggerDirHuman ts
-  TriggerTile ts -> fmap Just $ triggerTileHuman ts
+  Apply ts -> fmap (Just . TakeTimeSer) $ applyHuman ts
+  TriggerDir ts -> fmap (Just . TakeTimeSer) $ triggerDirHuman ts
+  TriggerTile ts -> fmap (Just . TakeTimeSer) $ triggerTileHuman ts
 
   GameRestart t -> fmap Just $ gameRestartHuman t
   GameExit -> fmap Just gameExitHuman
@@ -121,8 +121,8 @@ moveHuman v = do
             go <- displayYesNo ColorBW
                     "You are bound by an alliance. Really attack?"
             unless go $ abortWith "Attack canceled."
-          fmap Just $ moveLeader dir
-      _ -> fmap Just $
+          fmap (Just . TakeTimeSer) $ moveLeader dir
+      _ -> fmap (Just . TakeTimeSer) $
         if Tile.hasFeature cotile F.Suspect t
            || Tile.hasFeature cotile F.Openable t
         then -- Explore, because the suspect feature is not yet revealed
@@ -140,7 +140,7 @@ runHuman v = do
     in moveCursor dir 10 >> return Nothing
   else
     let dir = toDir lxsize v
-    in fmap Just $ runLeader dir
+    in fmap (Just . TakeTimeSer) $ runLeader dir
 
 projectHuman :: (MonadClientAbort m, MonadClientUI m)
              => [Trigger] -> WriterT Slideshow m (Maybe CmdSer)
@@ -148,7 +148,7 @@ projectHuman ts = do
   tgtLoc <- targetToPos
   if isNothing tgtLoc
     then retargetLeader >> return Nothing
-    else fmap Just $ projectLeader ts
+    else fmap (Just . TakeTimeSer) $ projectLeader ts
 
 tgtFloorHuman :: MonadClientUI m => WriterT Slideshow m (Maybe CmdSer)
 tgtFloorHuman = do

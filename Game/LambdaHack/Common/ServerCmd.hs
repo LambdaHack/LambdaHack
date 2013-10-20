@@ -2,7 +2,7 @@
 -- See
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Common.ServerCmd
-  ( CmdSer(..), aidCmdSer
+  ( CmdSer(..), CmdSerTakeTime(..), aidCmdSer
   ) where
 
 import Data.Text (Text)
@@ -15,6 +15,14 @@ import Game.LambdaHack.Common.Vector
 
 -- | Abstract syntax of server commands.
 data CmdSer =
+    TakeTimeSer CmdSerTakeTime
+  | GameRestartSer ActorId Text
+  | GameExitSer ActorId
+  | GameSaveSer ActorId
+  | CfgDumpSer ActorId
+  deriving (Show)
+
+data CmdSerTakeTime =
     MoveSer ActorId Vector
   | ExploreSer ActorId Vector
   | RunSer ActorId Vector
@@ -25,15 +33,20 @@ data CmdSer =
   | ApplySer ActorId ItemId Container
   | TriggerSer ActorId Point
   | SetPathSer ActorId [Vector]
-  | GameRestartSer ActorId Text
-  | GameExitSer ActorId
-  | GameSaveSer ActorId
-  | CfgDumpSer ActorId
   deriving (Show)
 
--- | The actor performing the command, if still alive afterwards.
+-- | The actor that start performing the command (may be dead, after
+-- the command is performed).
 aidCmdSer :: CmdSer -> ActorId
 aidCmdSer cmd = case cmd of
+  TakeTimeSer cmd2 -> aidCmdSerTakeTime cmd2
+  GameRestartSer aid _ -> aid
+  GameExitSer aid -> aid
+  GameSaveSer aid -> aid
+  CfgDumpSer aid -> aid
+
+aidCmdSerTakeTime :: CmdSerTakeTime -> ActorId
+aidCmdSerTakeTime cmd = case cmd of
   MoveSer aid _ -> aid
   ExploreSer aid _ -> aid
   RunSer aid _ -> aid
@@ -44,7 +57,3 @@ aidCmdSer cmd = case cmd of
   ApplySer aid _ _ -> aid
   TriggerSer aid _ -> aid
   SetPathSer aid _ -> aid
-  GameRestartSer aid _ -> aid
-  GameExitSer aid -> aid
-  GameSaveSer aid -> aid
-  CfgDumpSer aid -> aid

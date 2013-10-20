@@ -46,21 +46,21 @@ import Game.LambdaHack.Utils.Assert
 
 -- * Move
 
-moveLeader :: MonadClientUI m => Vector -> m CmdSer
+moveLeader :: MonadClientUI m => Vector -> m CmdSerTakeTime
 moveLeader dir = do
   leader <- getLeaderUI
   return $! MoveSer leader dir
 
 -- * Explore
 
-exploreLeader :: MonadClientUI m => Vector -> m CmdSer
+exploreLeader :: MonadClientUI m => Vector -> m CmdSerTakeTime
 exploreLeader dir = do
   leader <- getLeaderUI
   return $! ExploreSer leader dir
 
 -- * Run
 
-runLeader :: MonadClientUI m => Vector -> m CmdSer
+runLeader :: MonadClientUI m => Vector -> m CmdSerTakeTime
 runLeader dir = do
   leader <- getLeaderUI
   canR <- canRun leader (dir, 0)
@@ -71,14 +71,14 @@ runLeader dir = do
 -- * Wait
 
 -- | Leader waits a turn (and blocks, etc.).
-waitHuman :: MonadClientUI m => m CmdSer
+waitHuman :: MonadClientUI m => m CmdSerTakeTime
 waitHuman = do
   leader <- getLeaderUI
   return $ WaitSer leader
 
 -- * Pickup
 
-pickupHuman :: (MonadClientAbort m, MonadClientUI m) => m CmdSer
+pickupHuman :: (MonadClientAbort m, MonadClientUI m) => m CmdSerTakeTime
 pickupHuman = do
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
@@ -98,7 +98,7 @@ pickupHuman = do
 -- TODO: you can drop an item already on the floor, which works correctly,
 -- but is weird and useless.
 -- | Drop a single item.
-dropHuman :: (MonadClientAbort m, MonadClientUI m) => m CmdSer
+dropHuman :: (MonadClientAbort m, MonadClientUI m) => m CmdSerTakeTime
 dropHuman = do
   -- TODO: allow dropping a given number of identical items.
   Kind.COps{coitem} <- getsState scops
@@ -216,7 +216,7 @@ getItem aid prompt p ptext bag inv isn = do
 -- * Project
 
 projectLeader :: (MonadClientAbort m, MonadClientUI m)
-              => [Trigger] -> m CmdSer
+              => [Trigger] -> m CmdSerTakeTime
 projectLeader ts = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
@@ -231,7 +231,7 @@ projectLeader ts = do
     else actorProjectGI leader ts
 
 actorProjectGI :: (MonadClientAbort m, MonadClientUI m)
-               => ActorId -> [Trigger] -> m CmdSer
+               => ActorId -> [Trigger] -> m CmdSerTakeTime
 actorProjectGI aid ts = do
   seps <- getsClient seps
   target <- targetToPos
@@ -261,7 +261,7 @@ triggerSymbols (_ : ts) = triggerSymbols ts
 -- * Apply
 
 applyHuman :: (MonadClientAbort m, MonadClientUI m)
-           => [Trigger] -> m CmdSer
+           => [Trigger] -> m CmdSerTakeTime
 applyHuman ts = do
   leader <- getLeaderUI
   bag <- getsState $ getActorBag leader
@@ -296,7 +296,7 @@ getGroupItem leader is inv object syms prompt packName = do
 
 -- | Ask for a direction and trigger a tile, if possible.
 triggerDirHuman :: (MonadClientAbort m, MonadClientUI m)
-                => [Trigger] -> m CmdSer
+                => [Trigger] -> m CmdSerTakeTime
 triggerDirHuman ts = do
   let verb1 = case ts of
         [] -> "trigger"
@@ -313,7 +313,7 @@ triggerDirHuman ts = do
 -- | Player tries to trigger a tile using a feature.
 -- To help the player, only visible features can be triggered.
 bumpTile :: (MonadClientAbort m, MonadClientUI m)
-         => ActorId -> [Trigger] -> Point -> m CmdSer
+         => ActorId -> [Trigger] -> Point -> m CmdSerTakeTime
 bumpTile leader ts dpos = do
   Kind.COps{cotile} <- getsState scops
   b <- getsState $ getActorBody leader
@@ -383,7 +383,7 @@ guessBump _ _ _ = neverMind True
 
 -- | Leader tries to trigger the tile he's standing on.
 triggerTileHuman :: (MonadClientAbort m, MonadClientUI m)
-                 => [Trigger] -> m CmdSer
+                 => [Trigger] -> m CmdSerTakeTime
 triggerTileHuman ts = do
   leader <- getLeaderUI
   ppos <- getsState (bpos . getActorBody leader)

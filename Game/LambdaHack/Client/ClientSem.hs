@@ -36,7 +36,7 @@ import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.Frequency
 
-queryAI :: MonadClient m => ActorId -> m CmdSer
+queryAI :: MonadClient m => ActorId -> m CmdSerTakeTime
 queryAI oldAid = do
   Kind.COps{cofact=Kind.Ops{okind}} <- getsState scops
   side <- getsClient sside
@@ -89,7 +89,7 @@ queryAI oldAid = do
           modifyClient $ updateLeader aid s
           queryAIPick aid
 
-queryAIPick :: MonadClient m => ActorId -> m CmdSer
+queryAIPick :: MonadClient m => ActorId -> m CmdSerTakeTime
 queryAIPick aid = do
   Kind.COps{cofact=Kind.Ops{okind}} <- getsState scops
   side <- getsClient sside
@@ -142,7 +142,7 @@ continueRun leader dd = do
   (dir, distNew) <- continueRunDir leader dd
   modifyClient $ \cli -> cli {srunning = Just (dir, distNew)}
   -- Attacks and opening doors disallowed when continuing to run.
-  return $ RunSer leader dir
+  return $ TakeTimeSer $ RunSer leader dir
 
 -- | Determine and process the next human player command. The argument is
 -- the last abort message due to running, if any.

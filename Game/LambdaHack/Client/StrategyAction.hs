@@ -117,7 +117,7 @@ reacquireTgt fper aid btarget factionAbilities = do
 -- | AI strategy based on actor's sight, smell, intelligence, etc. Never empty.
 actionStrategy :: MonadClient m
                => ActorId -> [Ability]
-               -> m (Strategy CmdSer)
+               -> m (Strategy CmdSerTakeTime)
 actionStrategy actor factionAbilities = do
   cops <- getsState scops
   s <- getState
@@ -127,7 +127,7 @@ actionStrategy actor factionAbilities = do
 
 proposeAction :: Kind.COps -> ActorId
               -> Maybe Target -> Discovery -> State -> [Ability]
-              -> Strategy CmdSer
+              -> Strategy CmdSerTakeTime
 proposeAction cops actor btarget disco s factionAbilities =
   sumS prefix .| combineDistant distant .| sumS suffix
   .| waitBlockNow actor  -- wait until friends sidestep, ensures never empty
@@ -141,7 +141,7 @@ proposeAction cops actor btarget disco s factionAbilities =
       Nothing -> (bpos, False)  -- an actor blocked by friends or a missile
   combineDistant as = liftFrequency $ sumF as
   -- TODO: Ranged and Tools should only be triggered in some situations.
-  aFrequency :: Ability -> Frequency CmdSer
+  aFrequency :: Ability -> Frequency CmdSerTakeTime
   aFrequency Ability.Ranged = if foeVisible
                               then rangedFreq cops actor disco s fpos
                               else mzero
@@ -154,7 +154,7 @@ proposeAction cops actor btarget disco s factionAbilities =
   aFrequency _              = assert `failure` distant
   chaseFreq =
     scaleFreq 30 $ bestVariant $ chase cops actor s (fpos, foeVisible)
-  aStrategy :: Ability -> Strategy CmdSer
+  aStrategy :: Ability -> Strategy CmdSerTakeTime
   aStrategy Ability.Track  = track cops actor s
   aStrategy Ability.Heal   = mzero  -- TODO
   aStrategy Ability.Flee   = mzero  -- TODO
@@ -170,11 +170,11 @@ proposeAction cops actor btarget disco s factionAbilities =
   sumF = msum . map aFrequency
 
 -- | A strategy to always just wait.
-waitBlockNow :: ActorId -> Strategy CmdSer
+waitBlockNow :: ActorId -> Strategy CmdSerTakeTime
 waitBlockNow actor = returN "wait" $ WaitSer actor
 
 -- | Strategy for dumb missiles.
-track :: Kind.COps -> ActorId -> State -> Strategy CmdSer
+track :: Kind.COps -> ActorId -> State -> Strategy CmdSerTakeTime
 track cops actor s =
   strat
  where
@@ -188,7 +188,7 @@ track cops actor s =
     Just lv -> returN "SetPathSer" $ SetPathSer actor lv
     Nothing -> reject
 
-pickup :: ActorId -> State -> Strategy CmdSer
+pickup :: ActorId -> State -> Strategy CmdSerTakeTime
 pickup actor s =
   lootHere bpos .=> actionPickup
  where
@@ -204,7 +204,7 @@ pickup actor s =
         Just l2 -> returN "pickup" $ PickupSer actor iid k l2
         Nothing -> returN "pickup" $ WaitSer actor
 
-melee :: ActorId -> State -> Point -> Strategy CmdSer
+melee :: ActorId -> State -> Point -> Strategy CmdSerTakeTime
 melee actor s fpos =
   foeAdjacent .=> returN "melee" (MoveSer actor dir)
  where
@@ -214,7 +214,7 @@ melee actor s fpos =
   dir = displacement bpos fpos
 
 rangedFreq :: Kind.COps -> ActorId -> Discovery -> State -> Point
-           -> Frequency CmdSer
+           -> Frequency CmdSerTakeTime
 rangedFreq cops actor disco s fpos =
   toFreq "throwFreq" $
     case bl of
@@ -261,7 +261,7 @@ rangedFreq cops actor disco s fpos =
       -- Wasting weapons and armour would be too cruel to the player.
     , jsymbol i `elem` ritemProject (Kind.stdRuleset corule) ]
 
-toolsFreq :: Kind.COps -> ActorId -> Discovery -> State -> Frequency CmdSer
+toolsFreq :: Kind.COps -> ActorId -> Discovery -> State -> Frequency CmdSerTakeTime
 toolsFreq cops actor disco s =
   toFreq "quaffFreq"
   $ quaffFreq bbag 1 (actorContainer actor binv)
@@ -385,7 +385,7 @@ bumpableHere Kind.COps{cotile} lvl foeVisible pos  =
      || -- Try to find hidden doors only if no foe in sight.
         not foeVisible && Tile.hasFeature cotile F.Suspect t
 
-chase :: Kind.COps -> ActorId -> State -> (Point, Bool) -> Strategy CmdSer
+chase :: Kind.COps -> ActorId -> State -> (Point, Bool) -> Strategy CmdSerTakeTime
 chase cops actor s foe@(_, foeVisible) =
   -- Target set and we chase the foe or offer null strategy if we can't.
   -- The foe is visible, or we remember his last position.
@@ -396,7 +396,7 @@ chase cops actor s foe@(_, foeVisible) =
      then ExploreSer actor `liftM` moveStrategy cops actor s mFoe
      else RunSer actor `liftM` moveStrategy cops actor s mFoe
 
-wander :: Kind.COps -> ActorId -> State -> Strategy CmdSer
+wander :: Kind.COps -> ActorId -> State -> Strategy CmdSerTakeTime
 wander cops actor s =
   -- Target set, but we don't chase the foe, e.g., because we are blocked
   -- or we cannot chase at all.
