@@ -10,7 +10,7 @@ module Game.LambdaHack.Server.Action
     -- * Communication
   , sendUpdateUI, sendQueryUI, sendUpdateAI, sendQueryAI
     -- * Assorted primitives
-  , dumpCfg
+  , debugPrint, dumpCfg
   , mkConfigRules, restoreScore, revealItems, deduceQuits
   , rndToAction, fovMode, resetFidPerception, getPerFid
   , childrenServer
@@ -25,12 +25,13 @@ import qualified Data.EnumMap.Strict as EM
 import Data.Key (mapWithKeyM, mapWithKeyM_)
 import Data.List
 import Data.Maybe
+import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Game.LambdaHack.Utils.Thread
 import System.Directory
 import System.FilePath
-import System.IO (stderr)
+import System.IO
 import System.IO.Unsafe (unsafePerformIO)
 import qualified System.Random as R
 import System.Time
@@ -62,6 +63,13 @@ import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.File
+
+debugPrint :: MonadServer m => Text -> m ()
+debugPrint t = do
+  debug <- getsServer $ sinternal . sdebugSer
+  when debug $ liftIO $ do
+    T.hPutStrLn stderr t
+    hFlush stderr
 
 fovMode :: MonadServer m => m FovMode
 fovMode = do

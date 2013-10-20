@@ -51,7 +51,8 @@ applyDebug sdebugNxt =
     ser {sdebugSer = (sdebugSer ser) { sniffIn = sniffIn sdebugNxt
                                      , sniffOut = sniffOut sdebugNxt
                                      , sallClear = sallClear sdebugNxt
-                                     , stryFov = stryFov sdebugNxt }}
+                                     , stryFov = stryFov sdebugNxt
+                                     , sinternal = sinternal sdebugNxt }}
 
 initPer :: MonadServer m => m ()
 initPer = do

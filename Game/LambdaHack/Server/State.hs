@@ -46,6 +46,7 @@ data DebugModeSer = DebugModeSer
   , sallClear   :: !Bool
   , stryFov     :: !(Maybe FovMode)
   , sdebugCli   :: !Bool
+  , sinternal   :: !Bool
   }
   deriving Show
 
@@ -78,6 +79,7 @@ defDebugModeSer = DebugModeSer { sknowMap = False
                                , sallClear = False
                                , stryFov = Nothing
                                , sdebugCli = False
+                               , sinternal = False
                                }
 
 instance Binary StateServer where
@@ -121,6 +123,7 @@ instance Binary DebugModeSer where
     put sallClear
     put stryFov
     put sdebugCli
+    put sinternal
   get = do
     sknowMap <- get
     sknowEvents <- get
@@ -129,4 +132,5 @@ instance Binary DebugModeSer where
     sallClear <- get
     stryFov <- get
     sdebugCli <- get
+    sinternal <- get
     return DebugModeSer{..}

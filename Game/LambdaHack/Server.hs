@@ -53,6 +53,7 @@ debugArgs = do
         , "  --sniffOut display all outgoing commands on console "
         , "  --allClear let all map tiles be translucent"
         , "  --debugCli let clients emit their debug messages"
+        , "  --internal let the server emit its internal debug messages"
         , "  --tryFov m set a Field of View mode, where m can be"
         , "    Digital r, r > 0"
         , "    Permissive"
@@ -76,6 +77,8 @@ debugArgs = do
         (parseArgs rest) {stryFov = Just $ read mode}
       parseArgs ("--debugCli" : rest) =
         (parseArgs rest) {sdebugCli = True}
+      parseArgs ("--internal" : rest) =
+        (parseArgs rest) {sinternal = True}
       parseArgs _ = error $ unlines usage
   return $! parseArgs args
 

@@ -46,8 +46,10 @@ import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.Utils.Assert
 
-execFailure :: MonadAtomic m => FactionId -> Msg -> m ()
-execFailure fid msg = execSfxAtomic $ MsgFidD fid msg
+execFailure :: (MonadAtomic m, MonadServer m) => FactionId -> Msg -> m ()
+execFailure fid msg = do
+  debugPrint $ "execFailure:" <+> showT fid <+> ":" <+> msg
+  execSfxAtomic $ MsgFidD fid msg
 
 broadcastCmdAtomic :: MonadAtomic m
                    => (FactionId -> CmdAtomic) -> m ()
