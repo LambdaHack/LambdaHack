@@ -46,10 +46,8 @@ import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.Utils.Assert
 
-execFailure :: MonadAtomic m => FactionId -> Msg -> m Bool
-execFailure fid msg = do
-  execSfxAtomic $ MsgFidD fid msg
-  return False
+execFailure :: MonadAtomic m => FactionId -> Msg -> m ()
+execFailure fid msg = execSfxAtomic $ MsgFidD fid msg
 
 broadcastCmdAtomic :: MonadAtomic m
                    => (FactionId -> CmdAtomic) -> m ()
@@ -73,7 +71,7 @@ broadcastSfxAtomic fcmd = do
 -- for that, e.g., the initial actor position to check if melee attack
 -- does not try to reach to a distant tile.
 moveSer :: (MonadAtomic m, MonadServer m)
-        => ActorId -> Vector -> Bool -> m Bool
+        => ActorId -> Vector -> Bool -> m ()
 moveSer aid dir exploration = do
   cops <- getsState scops
   sm <- getsState $ getActorBody aid
@@ -84,15 +82,13 @@ moveSer aid dir exploration = do
   let lid = blid sm
   tgt <- getsState (posToActor tpos lid)
   case tgt of
-    Just target -> do
+    Just target ->
       -- Attacking does not require full access, adjacency is enough.
       actorAttackActor aid target
-      return True
     Nothing
       | accessible cops lvl spos tpos -> do
           execCmdAtomic $ MoveActorA aid spos tpos
           addSmell aid
-          return True
       | otherwise ->  -- try to open a door or explore a possible door
           actorOpenDoor aid dir exploration
 
@@ -171,7 +167,7 @@ actorAttackActor source target = do
 -- TODO: bumpTile tpos F.Openable
 -- | An actor opens a door.
 actorOpenDoor :: (MonadAtomic m, MonadServer m)
-              => ActorId -> Vector -> Bool -> m Bool
+              => ActorId -> Vector -> Bool -> m ()
 actorOpenDoor aid dir exploration = do
   Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody aid
@@ -193,14 +189,14 @@ actorOpenDoor aid dir exploration = do
       if Tile.hasFeature cotile F.Closable t
         then execFailure (bfid body) "already open"
         else if exploration && serverTile /= freshClientTile
-             then return True  -- searching costs
+             then return ()  -- searching
                   -- TODO: don't add to history (add a flag to report msgs)
-             else execFailure (bfid body) "never mind"  -- free bump
+             else execFailure (bfid body) "never mind"  -- useless bump
 
 -- * RunSer
 
 -- | Actor moves or swaps position with others or opens doors.
-runSer :: (MonadAtomic m, MonadServer m) => ActorId -> Vector -> m Bool
+runSer :: (MonadAtomic m, MonadServer m) => ActorId -> Vector -> m ()
 runSer aid dir = do
   cops <- getsState scops
   sm <- getsState $ getActorBody aid
@@ -212,17 +208,15 @@ runSer aid dir = do
   tgt <- getsState (posToActor tpos lid)
   case tgt of
     Just target
-      | accessible cops lvl spos tpos -> do
+      | accessible cops lvl spos tpos ->
           -- Switching positions requires full access.
           displaceActor aid target
-          return True
       | otherwise ->
           execFailure (bfid sm) "blocked"
     Nothing
       | accessible cops lvl spos tpos -> do
           execCmdAtomic $ MoveActorA aid spos tpos
           addSmell aid
-          return True
       | otherwise ->
           actorOpenDoor aid dir False  -- no exploration when running
 
@@ -277,7 +271,7 @@ projectSer :: (MonadAtomic m, MonadServer m)
            -> Int        -- ^ digital line parameter
            -> ItemId     -- ^ the item to be projected
            -> Container  -- ^ whether the items comes from floor or inventory
-           -> m Bool
+           -> m ()
 projectSer source tpos eps iid container = do
   cops <- getsState scops
   sm <- getsState (getActorBody source)
@@ -303,7 +297,6 @@ projectSer source tpos eps iid container = do
           projId <- addProjectile iid pos (blid sm) (bfid sm) path time
           execCmdAtomic
             $ MoveItemA iid 1 container (CActor projId (InvChar 'a'))
-          return True
         else
           execFailure (bfid sm) "blocked"
 
@@ -349,7 +342,7 @@ applySer actor iid container = do
 
 -- | Perform the action specified for the tile in case it's triggered.
 triggerSer :: (MonadAtomic m, MonadServer m)
-           => ActorId -> Point -> m Bool
+           => ActorId -> Point -> m ()
 triggerSer aid dpos = do
   Kind.COps{cotile=cotile@Kind.Ops{okind, opick}} <- getsState scops
   b <- getsState $ getActorBody aid
@@ -366,7 +359,6 @@ triggerSer aid dpos = do
             -- No block against tile, hence unconditional.
             execSfxAtomic $ TriggerD aid dpos feat {-TODO-}True
             void $ effectSem ef aid aid
-            return True
           F.ChangeTo tgroup -> do
             execSfxAtomic $ TriggerD aid dpos feat {-TODO-}True
             as <- getsState $ actorList (const True) lid
@@ -375,13 +367,12 @@ triggerSer aid dpos = do
                  then do
                    toTile <- rndToAction $ opick tgroup (const True)
                    execCmdAtomic $ AlterTileA lid dpos serverTile toTile
-                   return True
 -- TODO: take care of AI using this function (aborts on some of the features, succes on others, etc.)
                  else execFailure (bfid b) "blocked"  -- by actors
             else execFailure (bfid b) "jammed"  -- by items
-          _ -> return False
-  bs <- mapM f $ TileKind.tfeature $ okind serverTile
-  return $! or bs  -- TODO: stop after first failure, probably
+          _ -> return ()
+  mapM_ f $ TileKind.tfeature $ okind serverTile
+  return ()  -- TODO: stop after first failure, probably
 
 -- * SetPathSer
 

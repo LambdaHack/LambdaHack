@@ -26,15 +26,16 @@ import Game.LambdaHack.Utils.Thread
 -- indicates if the command took some time.
 cmdSerSem :: (MonadAtomic m, MonadServer m) => CmdSer -> m Bool
 cmdSerSem cmd = case cmd of
-  MoveSer aid dir -> moveSer aid dir False
-  ExploreSer aid dir -> moveSer aid dir True
-  RunSer aid dir -> runSer aid dir
+  MoveSer aid dir -> moveSer aid dir False >> return True
+  ExploreSer aid dir -> moveSer aid dir True >> return True
+  RunSer aid dir -> runSer aid dir >> return True
   WaitSer aid -> waitSer aid >> return True
   PickupSer aid i k l -> pickupSer aid i k l >> return True
   DropSer aid iid -> dropSer aid iid >> return True
-  ProjectSer aid p eps iid container -> projectSer aid p eps iid container
+  ProjectSer aid p eps iid container ->
+    projectSer aid p eps iid container >> return True
   ApplySer aid iid container -> applySer aid iid container >> return True
-  TriggerSer aid p -> triggerSer aid p
+  TriggerSer aid p -> triggerSer aid p >> return True
   SetPathSer aid path -> setPathSer aid path >> return True
   GameRestartSer aid t -> gameRestartSer aid t >> return False
   GameExitSer aid -> gameExitSer aid >> return False

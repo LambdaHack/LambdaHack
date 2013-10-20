@@ -223,7 +223,10 @@ handleActors cmdSerSem lid = do
       assert (bfid bPre == side `blame` (bPre, side)) skip
       timed <-
         if bhp bPre <= 0 && not (bproj bPre)
-        then execFailure side "You strain, fumble and faint from the exertion."
+        then do
+          execSfxAtomic
+            $ MsgFidD side "You strain, fumble and faint from the exertion."
+          return False
         else cmdSerSem cmdS
       -- AI has to take time, otherwise it'd loop.
       assert (queryUI || timed `blame` (cmdS, timed, bPre)) skip
