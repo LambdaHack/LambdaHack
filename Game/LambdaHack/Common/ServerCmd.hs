@@ -2,7 +2,7 @@
 -- See
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Common.ServerCmd
-  ( CmdSer(..), CmdSerTakeTime(..), aidCmdSer
+  ( CmdSer(..), CmdSerTakeTime(..), aidCmdSer, aidCmdSerTakeTime
   ) where
 
 import Data.Text (Text)

@@ -32,7 +32,7 @@ storeUndo _atomic =
   maybe skip (\a -> modifyClient $ \cli -> cli {sundo = a : sundo cli})
     $ Nothing   -- TODO: undoAtomic atomic
 
-cmdClientAISem :: (MonadAtomic m, MonadClientWriteServer m)
+cmdClientAISem :: (MonadAtomic m, MonadClientWriteServer CmdSerTakeTime m)
                => CmdClientAI -> m ()
 cmdClientAISem cmd = case cmd of
   CmdAtomicAI cmdA -> do
@@ -42,10 +42,10 @@ cmdClientAISem cmd = case cmd of
     mapM_ (storeUndo . CmdAtomic) cmds
   CmdQueryAI aid -> do
     cmdC <- queryAI aid
-    writeServer $ TakeTimeSer cmdC
+    writeServer cmdC
 
 cmdClientUISem :: ( MonadAtomic m, MonadClientAbort m
-                  , MonadClientUI m, MonadClientWriteServer m )
+                  , MonadClientUI m, MonadClientWriteServer CmdSer m )
                => CmdClientUI -> m ()
 cmdClientUISem cmd =
   case cmd of
@@ -65,12 +65,14 @@ cmdClientUISem cmd =
       writeServer cmdH
 
 wireSession :: (SessionUI -> State -> StateClient
-                -> ChanServer CmdClientUI -> IO ())
+                -> ChanServer CmdClientUI CmdSer -> IO ())
             -> (SessionUI -> State -> StateClient
-                -> ChanServer CmdClientAI -> IO ())
+                -> ChanServer CmdClientAI CmdSerTakeTime -> IO ())
             -> Kind.COps
-            -> ((FactionId -> ChanFrontend -> ChanServer CmdClientUI -> IO ())
-                -> (FactionId -> ChanServer CmdClientAI -> IO ())
+            -> ((FactionId -> ChanFrontend -> ChanServer CmdClientUI CmdSer
+                 -> IO ())
+                -> (FactionId -> ChanServer CmdClientAI CmdSerTakeTime
+                    -> IO ())
                 -> IO ())
             -> IO ()
 wireSession exeClientUI exeClientAI cops@Kind.COps{corule} exeServer = do
@@ -95,19 +97,21 @@ wireSession exeClientUI exeClientAI cops@Kind.COps{corule} exeServer = do
 -- UI config and the definitions of game commands.
 exeFrontend :: ( MonadAtomic m, MonadClientAbort m, MonadClientUI m
                , MonadClientReadServer CmdClientUI m
-               , MonadClientWriteServer m
+               , MonadClientWriteServer CmdSer m
                , MonadAtomic n
                , MonadClientReadServer CmdClientAI n
-               , MonadClientWriteServer n )
+               , MonadClientWriteServer CmdSerTakeTime n )
             => (m () -> SessionUI -> State -> StateClient
-                -> ChanServer CmdClientUI
+                -> ChanServer CmdClientUI CmdSer
                 -> IO ())
             -> (n () -> SessionUI -> State -> StateClient
-                -> ChanServer CmdClientAI
+                -> ChanServer CmdClientAI CmdSerTakeTime
                 -> IO ())
             -> Kind.COps
-            -> ((FactionId -> ChanFrontend -> ChanServer CmdClientUI -> IO ())
-               -> (FactionId -> ChanServer CmdClientAI -> IO ())
+            -> ((FactionId -> ChanFrontend -> ChanServer CmdClientUI CmdSer
+                 -> IO ())
+               -> (FactionId -> ChanServer CmdClientAI CmdSerTakeTime
+                   -> IO ())
                -> IO ())
             -> IO ()
 exeFrontend executorUI executorAI cops exeServer = do

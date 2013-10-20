@@ -60,8 +60,8 @@ instance (Monoid a, MonadClientUI m) => MonadClientUI (WriterT a m) where
 class MonadClient m => MonadClientReadServer c m | m -> c where
   readServer  :: m c
 
-class MonadClient m => MonadClientWriteServer m where
-  writeServer  :: CmdSer -> m ()
+class MonadClient m => MonadClientWriteServer d m | m -> d where
+  writeServer  :: d -> m ()
 
 -- | The bottom of the action monads class semilattice.
 class MonadClient m => MonadClientAbort m where

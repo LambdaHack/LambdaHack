@@ -119,8 +119,18 @@ writeTQueueUI cmd fromServer = do
     liftIO $ T.hPutStrLn stderr d
   liftIO $ atomically $ STM.writeTQueue fromServer cmd
 
-readTQueue :: MonadConnServer m => TQueue CmdSer -> m CmdSer
-readTQueue toServer = do
+readTQueueAI :: MonadConnServer m => TQueue CmdSerTakeTime -> m CmdSerTakeTime
+readTQueueAI toServer = do
+  cmd <- liftIO $ atomically $ STM.readTQueue toServer
+  debug <- getsServer $ sniffIn . sdebugSer
+  when debug $ do
+    let aid = aidCmdSerTakeTime cmd
+    d <- debugAid aid (showT ("CmdSerTakeTime", cmd))
+    liftIO $ T.hPutStrLn stderr d
+  return cmd
+
+readTQueueUI :: MonadConnServer m => TQueue CmdSer -> m CmdSer
+readTQueueUI toServer = do
   cmd <- liftIO $ atomically $ STM.readTQueue toServer
   debug <- getsServer $ sniffIn . sdebugSer
   when debug $ do
@@ -134,11 +144,11 @@ sendUpdateAI fid cmd = do
   conn <- getsDict $ snd . (EM.! fid)
   writeTQueueAI cmd $ fromServer conn
 
-sendQueryAI :: MonadConnServer m => FactionId -> ActorId -> m CmdSer
+sendQueryAI :: MonadConnServer m => FactionId -> ActorId -> m CmdSerTakeTime
 sendQueryAI fid aid = do
   conn <- getsDict $ snd . (EM.! fid)
   writeTQueueAI (CmdQueryAI aid) $ fromServer conn
-  readTQueue $ toServer conn
+  readTQueueAI $ toServer conn
 
 sendUpdateUI :: MonadConnServer m => FactionId -> CmdClientUI -> m ()
 sendUpdateUI fid cmd = do
@@ -149,7 +159,7 @@ sendQueryUI :: MonadConnServer m => FactionId -> ActorId -> m CmdSer
 sendQueryUI fid aid = do
   conn <- getsDict $ snd . fst . (EM.! fid)
   writeTQueueUI (CmdQueryUI aid) $ fromServer conn
-  readTQueue $ toServer conn
+  readTQueueUI $ toServer conn
 
 -- | Create a server config file. Warning: when it's used, the game state
 -- may still be undefined, hence the content ops are given as an argument.
@@ -289,14 +299,18 @@ childrenServer = unsafePerformIO (newMVar [])
 -- Connect to clients in old or newly spawned threads
 -- that read and write directly to the channels.
 updateConn :: (MonadAtomic m, MonadConnServer m)
-           => (FactionId -> Frontend.ChanFrontend -> ChanServer CmdClientUI
+           => (FactionId
+               -> Frontend.ChanFrontend
+               -> ChanServer CmdClientUI CmdSer
                -> IO ())
-           -> (FactionId -> ChanServer CmdClientAI -> IO ())
+           -> (FactionId
+               -> ChanServer CmdClientAI CmdSerTakeTime
+               -> IO ())
            -> m ()
 updateConn executorUI executorAI = do
   -- Prepare connections based on factions.
   oldD <- getDict
-  let mkChanServer :: IO (ChanServer c)
+  let mkChanServer :: IO (ChanServer c d)
       mkChanServer = do
         fromServer <- STM.newTQueueIO
         toServer <- STM.newTQueueIO

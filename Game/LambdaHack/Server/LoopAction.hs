@@ -48,8 +48,10 @@ import Game.LambdaHack.Utils.Assert
 loopSer :: (MonadAtomic m, MonadConnServer m)
         => DebugModeSer
         -> (CmdSer -> m Bool)
-        -> (FactionId -> ChanFrontend -> ChanServer CmdClientUI -> IO ())
-        -> (FactionId -> ChanServer CmdClientAI -> IO ())
+        -> (FactionId -> ChanFrontend -> ChanServer CmdClientUI CmdSer
+            -> IO ())
+        -> (FactionId -> ChanServer CmdClientAI CmdSerTakeTime
+            -> IO ())
         -> Kind.COps
         -> m ()
 loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
@@ -199,54 +201,67 @@ handleActors cmdSerSem lid = do
           mleader = gleader fact
           queryUI | Just aid == mleader = not $ playerAiLeader $ gplayer fact
                   | otherwise = not $ playerAiOther $ gplayer fact
-      -- TODO: check that the command is legal
-      cmdS <- if queryUI then
-                -- The client always displays a frame in this case.
-                sendQueryUI side aid
-              else do
-                -- Order the UI client (if any) corresponding to the AI client
-                -- to display a new frame so that player does not see moves
-                -- of all his AI party members cumulated in a single frame,
-                -- but one by one.
-                execSfxAtomic $ DisplayPushD side
-                sendQueryAI side aid
-      let leaderNew = aidCmdSer cmdS
-          leadAtoms =
-            if leaderNew /= aid
-            then -- Only leader can change leaders  -- TODO: effLvlGoUp changes
-                 assert (mleader == Just aid)
-                   [LeadFactionA side mleader (Just leaderNew)]
-            else []
-      mapM_ execCmdAtomic leadAtoms
-      bPre <- getsState $ getActorBody leaderNew
-      -- Check if the client cheats, trying to move other faction actors.
-      assert (bfid bPre == side `blame` (bPre, side)) skip
-      timed <-
-        if bhp bPre <= 0 && not (bproj bPre)
-        then do
-          execSfxAtomic
-            $ MsgFidD side "You strain, fumble and faint from the exertion."
-          return False
-        else cmdSerSem cmdS
-      -- AI has to take time, otherwise it'd loop.
-      assert (queryUI || timed `blame` (cmdS, timed, bPre)) skip
-      -- Advance time once, after the leader switched perhaps many times.
-      -- TODO: this is correct only when all heroes have the same
-      -- speed and can't switch leaders by, e.g., aiming a wand
-      -- of domination. We need to generalize by displaying
-      -- "(next move in .3s [RET]" when switching leaders.
-      -- RET waits .3s and gives back control,
-      -- Any other key does the .3s wait and the action from the key
-      -- at once.
-      when timed $ advanceTime leaderNew
-      -- Generate extra frames if the actor has already moved during
-      -- this clip, so his multiple moves would be collapsed in one frame.
-      -- If the actor changes his speed this very turn, the test can fail,
-      -- but it's a minor UI issue, so let it be.
-      let previousClipEnd = timeAdd time $ timeNegate timeClip
-          lastSingleMove = timeAddFromSpeed coactor bPre previousClipEnd
-      when (btime bPre > lastSingleMove) $
-        broadcastSfxAtomic DisplayPushD
+          switchLeader cmdS = do
+            -- TODO: check that the command is legal first
+            let leaderNew = aidCmdSer cmdS
+                leadAtoms =
+                  if leaderNew /= aid
+                  then -- Only leader can change leaders
+                       -- TODO: effLvlGoUp changes
+                       assert (mleader == Just aid)
+                         [LeadFactionA side mleader (Just leaderNew)]
+                  else []
+            mapM_ execCmdAtomic leadAtoms
+            bPre <- getsState $ getActorBody leaderNew
+            -- Check if the client cheats, trying to move other faction actors.
+            assert (bfid bPre == side `blame` (bPre, side)) skip
+            return (leaderNew, bPre)
+          extraFrames bPre = do
+            -- Generate extra frames if the actor has already moved during
+            -- this clip, so his multiple moves would be collapsed
+            -- in one frame.
+            -- If the actor changes his speed this very turn,
+            -- the test can fail, but it's a minor UI issue, so let it be.
+            let previousClipEnd = timeAdd time $ timeNegate timeClip
+                lastSingleMove = timeAddFromSpeed coactor bPre previousClipEnd
+            when (btime bPre > lastSingleMove) $
+              broadcastSfxAtomic DisplayPushD
+      if queryUI then do
+        -- The client always displays a frame in this case.
+        cmdS <- sendQueryUI side aid
+        (leaderNew, bPre) <- switchLeader cmdS
+        timed <-
+          if bhp bPre <= 0 && not (bproj bPre) then do
+            execSfxAtomic
+              $ MsgFidD side "You strain, fumble and faint from the exertion."
+            return False
+          else cmdSerSem cmdS
+        -- Advance time once, after the leader switched perhaps many times.
+        -- TODO: this is correct only when all heroes have the same
+        -- speed and can't switch leaders by, e.g., aiming a wand
+        -- of domination. We need to generalize by displaying
+        -- "(next move in .3s [RET]" when switching leaders.
+        -- RET waits .3s and gives back control,
+        -- Any other key does the .3s wait and the action from the key
+        -- at once.
+        when timed $ advanceTime leaderNew
+        extraFrames bPre
+      else do
+        -- Order the UI client (if any) corresponding to the AI client
+        -- to display a new frame so that player does not see moves
+        -- of all his AI party members cumulated in a single frame,
+        -- but one by one.
+        execSfxAtomic $ DisplayPushD side
+        cmdT <- sendQueryAI side aid
+        let cmdS = TakeTimeSer cmdT
+        (leaderNew, bPre) <- switchLeader cmdS
+        -- AI never switches to an incapacitated actor.
+        assert (not (bhp bPre <= 0 && not (bproj bPre))
+                `blame` (cmdS, bPre, side)) skip
+        void $ cmdSerSem cmdS
+        -- AI always takes time and so doesn't loop.
+        advanceTime leaderNew
+        extraFrames bPre
       handleActors cmdSerSem lid
 
 dieSer :: (MonadAtomic m, MonadServer m) => ActorId -> m ()

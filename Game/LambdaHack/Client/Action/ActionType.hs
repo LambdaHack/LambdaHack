@@ -23,9 +23,9 @@ import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 
 -- | The type of the function inside any client action.
-type FunActionCli c a =
+type FunActionCli c d a =
    SessionUI                          -- ^ client UI setup data
-   -> (ChanServer c, Save.ChanSave (State, StateClient))
+   -> (ChanServer c d, Save.ChanSave (State, StateClient))
                                       -- ^ this client connection information
    -> (State -> StateClient -> a -> IO ())
                                       -- ^ continuation
@@ -35,32 +35,32 @@ type FunActionCli c a =
    -> IO ()
 
 -- | Client parts of actions of human and computer player characters.
-newtype ActionCli c a = ActionCli {runActionCli :: FunActionCli c a}
+newtype ActionCli c d a = ActionCli {runActionCli :: FunActionCli c d a}
 
 -- | Invokes the action continuation on the provided argument.
-returnActionCli :: a -> ActionCli c a
+returnActionCli :: a -> ActionCli c d a
 returnActionCli x = ActionCli (\_c _d k _a s cli -> k s cli x)
 
 -- | Distributes the session and shutdown continuation,
 -- threads the state and history.
-bindActionCli :: ActionCli c a -> (a -> ActionCli c b) -> ActionCli c b
+bindActionCli :: ActionCli c d a -> (a -> ActionCli c d b) -> ActionCli c d b
 bindActionCli m f = ActionCli (\c d k a s cli ->
                           let next ns ncli x =
                                 runActionCli (f x) c d k a ns ncli
                           in runActionCli m c d next a s cli)
 
-instance Monad (ActionCli c) where
+instance Monad (ActionCli c d) where
   return = returnActionCli
   (>>=)  = bindActionCli
 
 -- TODO: make sure fmap is inlined and all else is inlined here and elsewhere
-instance Functor (ActionCli c) where
+instance Functor (ActionCli c d) where
   fmap f m =
     ActionCli (\c d k a s cli ->
                runActionCli m c d (\s' cli' ->
                                  k s' cli' . f) a s cli)
 
-instance MonadClientAbort (ActionCli c) where
+instance MonadClientAbort (ActionCli c d) where
   tryWith exc m  =
     ActionCli (\c d k a s cli ->
              let runA srandom msg =
@@ -68,15 +68,15 @@ instance MonadClientAbort (ActionCli c) where
              in runActionCli m c d k runA s cli)
   abortWith msg  = ActionCli (\_c _d _k a _s cli -> a (srandom cli) msg)
 
-instance MonadActionRO (ActionCli c) where
+instance MonadActionRO (ActionCli c d) where
   getState       = ActionCli (\_c _d k _a s cli -> k s cli s)
   getsState      = (`fmap` getState)
 
-instance MonadAction (ActionCli c) where
+instance MonadAction (ActionCli c d) where
   modifyState f  = ActionCli (\_c _d k _a s cli -> k (f s) cli ())
   putState       = modifyState . const
 
-instance MonadClient (ActionCli c) where
+instance MonadClient (ActionCli c d) where
   getClient      = ActionCli (\_c _d k _a s cli -> k s cli cli)
   getsClient     = (`fmap` getClient)
   modifyClient f = ActionCli (\_c _d k _a s cli -> k s (f cli) ())
@@ -86,16 +86,16 @@ instance MonadClient (ActionCli c) where
                                  Save.saveToChan toSave (s, cli)
                                  k s cli ())
 
-instance MonadClientUI (ActionCli c) where
+instance MonadClientUI (ActionCli c d) where
   getsSession f  = ActionCli (\c _d k _a s cli -> k s cli (f c))
 
-instance MonadClientReadServer c (ActionCli c) where
+instance MonadClientReadServer c (ActionCli c d) where
   readServer     =
     ActionCli (\_c (ChanServer{..}, _) k _a s cli -> do
                   ccmd <- atomically . readTQueue $ fromServer
                   k s cli ccmd)
 
-instance MonadClientWriteServer (ActionCli c) where
+instance MonadClientWriteServer d (ActionCli c d) where
   writeServer scmd =
     ActionCli (\_c (ChanServer{..}, _) k _a s cli -> do
                   atomically . writeTQueue toServer $ scmd
@@ -103,8 +103,8 @@ instance MonadClientWriteServer (ActionCli c) where
 
 -- | Init the client, then run an action, with a given session,
 -- state and history, in the @IO@ monad.
-executorCli :: ActionCli c ()
-            -> SessionUI -> State -> StateClient -> ChanServer c
+executorCli :: ActionCli c d ()
+            -> SessionUI -> State -> StateClient -> ChanServer c d
             -> IO ()
 executorCli m sess s cli d =
   let saveFile (_, cli2) =

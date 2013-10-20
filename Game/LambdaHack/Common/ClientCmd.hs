@@ -62,15 +62,15 @@ debugAid aid s = do
     showT (s, "lid", blid b, "time", time, "aid", aid, "faction", bfid b)
 
 -- | Connection channels between the server and a single client.
-data ChanServer c = ChanServer
+data ChanServer c d = ChanServer
   { fromServer :: TQueue c
-  , toServer   :: TQueue CmdSer
+  , toServer   :: TQueue d
   }
 
 -- | Connections to the human-controlled client of a faction and
 -- to the AI client for the same faction.
-type ConnServerFaction = ( (ChanFrontend, ChanServer CmdClientUI)
-                         , ChanServer CmdClientAI )
+type ConnServerFaction = ( (ChanFrontend, ChanServer CmdClientUI CmdSer)
+                         , ChanServer CmdClientAI CmdSerTakeTime )
 
 -- | Connection information for all factions, indexed by faction identifier.
 type ConnServerDict = EM.EnumMap FactionId ConnServerFaction

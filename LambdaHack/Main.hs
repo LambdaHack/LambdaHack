@@ -25,7 +25,7 @@ import Game.LambdaHack.Server.AtomicSemSer
 instance MonadAtomic ActionSer where
   execAtomic = atomicSendSem
 
-instance MonadAtomic (ActionCli c) where
+instance MonadAtomic (ActionCli c d) where
   execAtomic (CmdAtomic cmd) = cmdAtomicSem cmd
   execAtomic (SfxAtomic _) = return ()
 
