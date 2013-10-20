@@ -78,8 +78,10 @@ queryAI oldAid = do
                             | otherwise = minimum foeDist
                     maxChaseDist = 30
                     maxProximity = max 1 $ maxChaseDist - minDist
-                in if aid == oldAid || minDist == 1
-                   then Nothing  -- ignore, leader or already in melee range
+                in if aid == oldAid || minDist == 1 || bhp b <= 0
+                   then -- Ignore: leader or already in melee range
+                        -- or incapacitated.
+                        Nothing
                    else Just (maxProximity, aid)
               candidates = mapMaybe f ours
               freq | null candidates = toFreq "old leader" [(1, oldAid)]
