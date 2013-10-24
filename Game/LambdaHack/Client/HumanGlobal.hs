@@ -4,8 +4,8 @@
 -- A couple of them do not take time, the rest does.
 -- TODO: document
 module Game.LambdaHack.Client.HumanGlobal
-  ( moveLeader, exploreLeader, runLeader, waitHuman, pickupHuman, dropHuman
-  , projectLeader, applyHuman, triggerDirHuman, triggerTileHuman
+  ( moveAid, exploreAid, runAid, waitHuman, pickupHuman, dropHuman
+  , projectAid, applyHuman, triggerDirHuman, triggerTileHuman
   , gameRestartHuman, gameExitHuman, gameSaveHuman, cfgDumpHuman
   ) where
 
@@ -46,27 +46,24 @@ import Game.LambdaHack.Utils.Assert
 
 -- * Move
 
-moveLeader :: MonadClientUI m => Vector -> m CmdSerTakeTime
-moveLeader dir = do
-  leader <- getLeaderUI
-  return $! MoveSer leader dir
+moveAid :: MonadClientUI m => ActorId -> Vector -> m CmdSerTakeTime
+moveAid aid dir =
+  return $! MoveSer aid dir
 
 -- * Explore
 
-exploreLeader :: MonadClientUI m => Vector -> m CmdSerTakeTime
-exploreLeader dir = do
-  leader <- getLeaderUI
-  return $! ExploreSer leader dir
+exploreAid :: MonadClientUI m => ActorId -> Vector -> m CmdSerTakeTime
+exploreAid aid dir =
+  return $! ExploreSer aid dir
 
 -- * Run
 
-runLeader :: MonadClientUI m => Vector -> m CmdSerTakeTime
-runLeader dir = do
-  leader <- getLeaderUI
-  canR <- canRun leader (dir, 0)
+runAid :: MonadClientUI m => ActorId -> Vector -> m CmdSerTakeTime
+runAid aid dir = do
+  canR <- canRun aid (dir, 0)
   when canR $ modifyClient $ \cli -> cli {srunning = Just (dir, 1)}
   -- Run even if blocked (and then stop), e.g., to open a door.
-  return $! RunSer leader dir
+  return $! RunSer aid dir
 
 -- * Wait
 
@@ -215,20 +212,19 @@ getItem aid prompt p ptext bag inv isn = do
 
 -- * Project
 
-projectLeader :: (MonadClientAbort m, MonadClientUI m)
-              => [Trigger] -> m CmdSerTakeTime
-projectLeader ts = do
+projectAid :: (MonadClientAbort m, MonadClientUI m)
+              => ActorId -> [Trigger] -> m CmdSerTakeTime
+projectAid aid ts = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
+  b <- getsState $ getActorBody aid
   let lid = blid b
   ms <- getsState $ actorNotProjList (isAtWar fact) lid
   lxsize <- getsLevel lid lxsize
   lysize <- getsLevel lid lysize
   if foesAdjacent lxsize lysize (bpos b) ms
     then abortWith "You can't aim in melee."
-    else actorProjectGI leader ts
+    else actorProjectGI aid ts
 
 actorProjectGI :: (MonadClientAbort m, MonadClientUI m)
                => ActorId -> [Trigger] -> m CmdSerTakeTime

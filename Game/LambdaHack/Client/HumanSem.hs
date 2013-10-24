@@ -121,26 +121,27 @@ moveHuman v = do
             go <- displayYesNo ColorBW
                     "You are bound by an alliance. Really attack?"
             unless go $ abortWith "Attack canceled."
-          fmap (Just . TakeTimeSer) $ moveLeader dir
+          fmap (Just . TakeTimeSer) $ moveAid leader dir
       _ -> fmap (Just . TakeTimeSer) $
         if Tile.hasFeature cotile F.Suspect t
            || Tile.hasFeature cotile F.Openable t
         then -- Explore, because the suspect feature is not yet revealed
              -- or because we want to act on the feature.
-             exploreLeader dir
+             exploreAid leader dir
         else -- Don't explore, because the suspect feature is known boring.
-             moveLeader dir
+             moveAid leader dir
 
 runHuman :: MonadClientUI m => VectorXY -> WriterT Slideshow m (Maybe CmdSer)
 runHuman v = do
   tgtMode <- getsClient stgtMode
   (_, Level{lxsize}) <- viewedLevel
-  if isJust tgtMode then
+  if isJust tgtMode then do
     let dir = toDir lxsize v
-    in moveCursor dir 10 >> return Nothing
-  else
+    moveCursor dir 10 >> return Nothing
+  else do
     let dir = toDir lxsize v
-    in fmap (Just . TakeTimeSer) $ runLeader dir
+    leader <- getLeaderUI
+    fmap (Just . TakeTimeSer) $ runAid leader dir
 
 projectHuman :: (MonadClientAbort m, MonadClientUI m)
              => [Trigger] -> WriterT Slideshow m (Maybe CmdSer)
@@ -148,7 +149,9 @@ projectHuman ts = do
   tgtLoc <- targetToPos
   if isNothing tgtLoc
     then retargetLeader >> return Nothing
-    else fmap (Just . TakeTimeSer) $ projectLeader ts
+    else do
+      leader <- getLeaderUI
+      fmap (Just . TakeTimeSer) $ projectAid leader ts
 
 tgtFloorHuman :: MonadClientUI m => WriterT Slideshow m (Maybe CmdSer)
 tgtFloorHuman = do
