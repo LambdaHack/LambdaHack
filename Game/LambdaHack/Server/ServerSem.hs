@@ -32,6 +32,7 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
@@ -46,10 +47,13 @@ import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.Utils.Assert
 
-execFailure :: (MonadAtomic m, MonadServer m) => FactionId -> Msg -> m ()
-execFailure fid msg = do
+execFailure :: (MonadAtomic m, MonadServer m)
+            => Actor -> FailureSer -> m ()
+execFailure body failureSer = do
   -- Clients should not normally do that, so we report it, but not crash
   -- (server should work OK with stupid clients, too).
+  let fid = bfid body
+      msg = showFailureSer failureSer
   debugPrint $ "execFailure:" <+> showT fid <+> ":" <+> msg
   execSfxAtomic $ MsgFidD fid msg
 
@@ -187,7 +191,7 @@ runSer aid dir = do
           -- Switching positions requires full access.
           displaceActor aid target
       | otherwise ->
-          execFailure (bfid sm) "changing places without access"
+          execFailure sm RunDisplaceAccess
     Nothing
       | accessible cops lvl spos tpos -> do
           execCmdAtomic $ MoveActorA aid spos tpos
@@ -261,16 +265,16 @@ projectSer source tpos eps iid container = do
       -- TODO: AI should choose the best eps.
       bl = bla lxsize lysize eps spos tpos
   case bl of
-    Nothing -> execFailure (bfid sm) "cannot aim at oneself"
+    Nothing -> execFailure sm ProjectAimOnself
     Just [] -> assert `failure`
                  (spos, tpos, "project from the edge of level" :: Text)
     Just path@(pos:_) -> do
       let t = lvl `at` pos
       inhabitants <- getsState (posToActor pos lid)
       if not $ Tile.hasFeature cotile F.Clear t
-        then execFailure (bfid sm) "obstructed by terrain"
+        then execFailure sm ProjectBlockTerrain
         else if isJust inhabitants
-             then execFailure (bfid sm) "blocked by an actor"
+             then execFailure sm ProjectBlockActor
              else do
                execSfxAtomic $ ProjectD source iid
                projId <- addProjectile iid pos (blid sm) (bfid sm) path time
@@ -342,8 +346,8 @@ triggerSer aid dpos exploration = do
                  then do
                    toTile <- rndToAction $ opick tgroup (const True)
                    execCmdAtomic $ AlterTileA lid dpos serverTile toTile
-                 else execFailure (bfid b) "blocked by an actor"
-            else execFailure (bfid b) "jammed by items"
+                 else execFailure b TriggerBlockActor
+            else execFailure b TriggerBlockItem
             return True  -- altered tile or sent a failure message
           _ -> return False
   bs <- mapM f $ TileKind.tfeature $ okind serverTile
@@ -353,7 +357,7 @@ triggerSer aid dpos exploration = do
       execCmdAtomic $ SearchTileA aid dpos freshClientTile serverTile
       -- Even if no effect, at least we explored something.
       mapM_ f $ TileKind.tfeature $ okind serverTile
-    else execFailure (bfid b) "wasting time on triggering nothing"
+    else execFailure b TriggerNothing
 
 -- * SetPathSer
 

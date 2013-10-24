@@ -1,8 +1,10 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | Abstract syntax of server commands.
 -- See
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Common.ServerCmd
   ( CmdSer(..), CmdSerTakeTime(..), aidCmdSer, aidCmdSerTakeTime
+  , FailureSer(..), showFailureSer
   ) where
 
 import Data.Text (Text)
@@ -10,6 +12,7 @@ import Data.Text (Text)
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Vector
 
@@ -57,3 +60,22 @@ aidCmdSerTakeTime cmd = case cmd of
   ApplySer aid _ _ -> aid
   TriggerSer aid _ -> aid
   SetPathSer aid _ -> aid
+
+data FailureSer =
+    RunDisplaceAccess
+  | ProjectAimOnself
+  | ProjectBlockTerrain
+  | ProjectBlockActor
+  | TriggerBlockActor
+  | TriggerBlockItem
+  | TriggerNothing
+
+showFailureSer :: FailureSer -> Msg
+showFailureSer failureSer = case failureSer of
+  RunDisplaceAccess -> "changing places without access"
+  ProjectAimOnself -> "cannot aim at oneself"
+  ProjectBlockTerrain -> "obstructed by terrain"
+  ProjectBlockActor -> "blocked by an actor"
+  TriggerBlockActor -> "blocked by an actor"
+  TriggerBlockItem -> "jammed by an item"
+  TriggerNothing -> "wasting time on triggering nothing"

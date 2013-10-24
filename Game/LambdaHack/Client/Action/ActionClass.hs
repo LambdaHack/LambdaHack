@@ -13,7 +13,6 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Msg
-import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Frontend (FrontReq)
 
 -- | The information that is constant across a client playing session,
