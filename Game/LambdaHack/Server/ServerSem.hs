@@ -48,6 +48,8 @@ import Game.LambdaHack.Utils.Assert
 
 execFailure :: (MonadAtomic m, MonadServer m) => FactionId -> Msg -> m ()
 execFailure fid msg = do
+  -- Clients should not normally do that, so we report it, but not crash
+  -- (server should work OK with stupid clients, too).
   debugPrint $ "execFailure:" <+> showT fid <+> ":" <+> msg
   execSfxAtomic $ MsgFidD fid msg
 
@@ -80,7 +82,7 @@ moveSer aid dir exploration = do
   lvl <- getsLevel (blid sm) id
   let spos = bpos sm           -- source position
       tpos = spos `shift` dir  -- target position
-  -- We start by looking at the target position.
+  -- We start by checking the target position.
   let lid = blid sm
   tgt <- getsState (posToActor tpos lid)
   case tgt of
@@ -91,8 +93,8 @@ moveSer aid dir exploration = do
       | accessible cops lvl spos tpos -> do
           execCmdAtomic $ MoveActorA aid spos tpos
           addSmell aid
-      | otherwise ->  -- try to open a door or explore a possible door
-          actorOpenDoor aid dir exploration
+      | otherwise ->  -- try to trigger the tile, exploring it, if needed
+          triggerSer aid tpos exploration
 
 -- TODO: let only some actors/items leave smell, e.g., a Smelly Hide Armour.
 -- | Add a smell trace for the actor to the level. For now, all and only
@@ -166,35 +168,6 @@ actorAttackActor source target = do
   unless (friendlyFire || isAtWar sfact tfid || sfid == tfid) $
     execCmdAtomic $ DiplFactionA sfid tfid fromDipl War
 
--- TODO: bumpTile tpos F.Openable
--- | An actor opens a door.
-actorOpenDoor :: (MonadAtomic m, MonadServer m)
-              => ActorId -> Vector -> Bool -> m ()
-actorOpenDoor aid dir exploration = do
-  Kind.COps{cotile} <- getsState scops
-  body <- getsState $ getActorBody aid
-  let dpos = shift (bpos body) dir  -- the position we act upon
-      lid = blid body
-  lvl <- getsLevel lid id
-  let serverTile = lvl `at` dpos
-      freshClientTile = hideTile cotile dpos lvl
-      -- TODO: running doesn't open doors if they are hidden,
-      -- even if known to the actor. No apparent way to solve that.
-      t | exploration = serverTile  -- will be found
-        | otherwise   = freshClientTile  -- won't be searched
-  -- Try to open the door.
-  if Tile.hasFeature cotile F.Openable t
-    then triggerSer aid dpos  -- searches, too
-    else do
-      when (exploration && serverTile /= freshClientTile) $
-        execCmdAtomic $ SearchTileA aid dpos freshClientTile serverTile
-      if Tile.hasFeature cotile F.Closable t
-        then execFailure (bfid body) "already open"
-        else if exploration && serverTile /= freshClientTile
-             then return ()  -- searching
-                  -- TODO: don't add to history (add a flag to report msgs)
-             else execFailure (bfid body) "never mind"  -- useless bump
-
 -- * RunSer
 
 -- | Actor moves or swaps position with others or opens doors.
@@ -205,7 +178,7 @@ runSer aid dir = do
   lvl <- getsLevel (blid sm) id
   let spos = bpos sm           -- source position
       tpos = spos `shift` dir  -- target position
-  -- We start by looking at the target position.
+  -- We start by checking the target position.
   let lid = blid sm
   tgt <- getsState (posToActor tpos lid)
   case tgt of
@@ -214,13 +187,13 @@ runSer aid dir = do
           -- Switching positions requires full access.
           displaceActor aid target
       | otherwise ->
-          execFailure (bfid sm) "blocked"
+          execFailure (bfid sm) "changing places without access"
     Nothing
       | accessible cops lvl spos tpos -> do
           execCmdAtomic $ MoveActorA aid spos tpos
           addSmell aid
-      | otherwise ->
-          actorOpenDoor aid dir False  -- no exploration when running
+      | otherwise ->  -- try to trigger the tile, do not search when running
+          triggerSer aid tpos False
 
 -- | When an actor runs (not walks) into another, they switch positions.
 displaceActor :: MonadAtomic m
@@ -275,7 +248,7 @@ projectSer :: (MonadAtomic m, MonadServer m)
            -> Container  -- ^ whether the items comes from floor or inventory
            -> m ()
 projectSer source tpos eps iid container = do
-  cops <- getsState scops
+  Kind.COps{cotile} <- getsState scops
   sm <- getsState (getActorBody source)
   Actor{btime} <- getsState $ getActorBody source
   lvl <- getsLevel (blid sm) id
@@ -288,19 +261,21 @@ projectSer source tpos eps iid container = do
       -- TODO: AI should choose the best eps.
       bl = bla lxsize lysize eps spos tpos
   case bl of
-    Nothing -> execFailure (bfid sm) "cannot zap oneself"
+    Nothing -> execFailure (bfid sm) "cannot aim at oneself"
     Just [] -> assert `failure`
                  (spos, tpos, "project from the edge of level" :: Text)
     Just path@(pos:_) -> do
+      let t = lvl `at` pos
       inhabitants <- getsState (posToActor pos lid)
-      if accessible cops lvl spos pos && isNothing inhabitants
-        then do
-          execSfxAtomic $ ProjectD source iid
-          projId <- addProjectile iid pos (blid sm) (bfid sm) path time
-          execCmdAtomic
-            $ MoveItemA iid 1 container (CActor projId (InvChar 'a'))
-        else
-          execFailure (bfid sm) "blocked"
+      if not $ Tile.hasFeature cotile F.Clear t
+        then execFailure (bfid sm) "obstructed by terrain"
+        else if isJust inhabitants
+             then execFailure (bfid sm) "blocked by an actor"
+             else do
+               execSfxAtomic $ ProjectD source iid
+               projId <- addProjectile iid pos (blid sm) (bfid sm) path time
+               execCmdAtomic
+                 $ MoveItemA iid 1 container (CActor projId (InvChar 'a'))
 
 -- | Create a projectile actor containing the given missile.
 addProjectile :: (MonadAtomic m, MonadServer m)
@@ -344,23 +319,21 @@ applySer actor iid container = do
 
 -- | Perform the action specified for the tile in case it's triggered.
 triggerSer :: (MonadAtomic m, MonadServer m)
-           => ActorId -> Point -> m ()
-triggerSer aid dpos = do
+           => ActorId -> Point -> Bool -> m ()
+triggerSer aid dpos exploration = do
   Kind.COps{cotile=cotile@Kind.Ops{okind, opick}} <- getsState scops
   b <- getsState $ getActorBody aid
   let lid = blid b
   lvl <- getsLevel lid id
   let serverTile = lvl `at` dpos
       freshClientTile = hideTile cotile dpos lvl
-  when (serverTile /= freshClientTile) $
-    -- Search, in case some actors (of other factions?) don't know this tile.
-    execCmdAtomic $ SearchTileA aid dpos freshClientTile serverTile
   let f feat =
         case feat of
           F.Cause ef -> do
             -- No block against tile, hence unconditional.
             execSfxAtomic $ TriggerD aid dpos feat {-TODO-}True
             void $ effectSem ef aid aid
+            return True
           F.ChangeTo tgroup -> do
             execSfxAtomic $ TriggerD aid dpos feat {-TODO-}True
             as <- getsState $ actorList (const True) lid
@@ -369,12 +342,18 @@ triggerSer aid dpos = do
                  then do
                    toTile <- rndToAction $ opick tgroup (const True)
                    execCmdAtomic $ AlterTileA lid dpos serverTile toTile
--- TODO: take care of AI using this function (aborts on some of the features, succes on others, etc.)
-                 else execFailure (bfid b) "blocked"  -- by actors
-            else execFailure (bfid b) "jammed"  -- by items
-          _ -> return ()
-  mapM_ f $ TileKind.tfeature $ okind serverTile
-  return ()  -- TODO: stop after first failure, probably
+                 else execFailure (bfid b) "blocked by an actor"
+            else execFailure (bfid b) "jammed by items"
+            return True  -- altered tile or sent a failure message
+          _ -> return False
+  bs <- mapM f $ TileKind.tfeature $ okind serverTile
+  when (not $ or bs) $ do
+    if exploration && serverTile /= freshClientTile then do
+      -- Search, in case some actors (of other factions?) don't know this tile.
+      execCmdAtomic $ SearchTileA aid dpos freshClientTile serverTile
+      -- Even if no effect, at least we explored something.
+      mapM_ f $ TileKind.tfeature $ okind serverTile
+    else execFailure (bfid b) "wasting time on triggering nothing"
 
 -- * SetPathSer
 

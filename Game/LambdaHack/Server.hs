@@ -42,7 +42,7 @@ cmdSerSemTakeTime cmd = case cmd of
   DropSer aid iid -> dropSer aid iid
   ProjectSer aid p eps iid container -> projectSer aid p eps iid container
   ApplySer aid iid container -> applySer aid iid container
-  TriggerSer aid p -> triggerSer aid p
+  TriggerSer aid p -> triggerSer aid p False  -- no searching
   SetPathSer aid path -> setPathSer aid path
 
 debugArgs :: IO DebugModeSer
