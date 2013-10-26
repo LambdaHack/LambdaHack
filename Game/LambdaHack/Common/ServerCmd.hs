@@ -68,6 +68,7 @@ data FailureSer =
   | ProjectAimOnself
   | ProjectBlockTerrain
   | ProjectBlockActor
+  | ProjectBlockFoes
   | AlterBlockActor
   | AlterBlockItem
   | AlterNothing
@@ -79,8 +80,9 @@ showFailureSer failureSer = case failureSer of
   RunNothing -> "switching places with non-existent actor"
   RunDisplaceAccess -> "switching places without access"
   ProjectAimOnself -> "cannot aim at oneself"
-  ProjectBlockTerrain -> "obstructed by terrain"
-  ProjectBlockActor -> "blocked by an actor"
+  ProjectBlockTerrain -> "aiming obstructed by terrain"
+  ProjectBlockActor -> "aiming blocked by an actor"
+  ProjectBlockFoes -> "aiming interrupted by foes"
   AlterBlockActor -> "blocked by an actor"
   AlterBlockItem -> "jammed by an item"
   AlterNothing -> "wasting time on altering nothing"

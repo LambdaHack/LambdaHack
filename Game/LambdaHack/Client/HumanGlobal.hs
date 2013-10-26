@@ -267,41 +267,55 @@ getItem aid prompt p ptext bag inv isn = do
 -- * Project
 
 projectAid :: (MonadClientAbort m, MonadClientUI m)
-              => ActorId -> [Trigger] -> m CmdSerTakeTime
-projectAid aid ts = do
-  side <- getsClient sside
-  fact <- getsState $ (EM.! side) . sfactionD
-  b <- getsState $ getActorBody aid
-  let lid = blid b
-  ms <- getsState $ actorNotProjList (isAtWar fact) lid
+           => ActorId -> [Trigger] -> m CmdSerTakeTime
+projectAid source ts = do
+  Kind.COps{cotile} <- getsState scops
+  target <- targetToPos
+  let tpos = case target of
+        Just p -> p
+        Nothing -> assert `failure` (source, "target unexpectedly invalid")
+  eps <- getsClient seps
+  sb <- getsState $ getActorBody source
+  let lid = blid sb
+      spos = bpos sb
+  fact <- getsState $ (EM.! bfid sb) . sfactionD
+  bs <- getsState $ actorNotProjList (isAtWar fact) lid
   lxsize <- getsLevel lid lxsize
   lysize <- getsLevel lid lysize
-  if foesAdjacent lxsize lysize (bpos b) ms
-    then abortWith "You can't aim in melee."
-    else actorProjectGI aid ts
+  if foesAdjacent lxsize lysize spos bs
+    then abortFailure ProjectBlockFoes
+    else do
+      case bla lxsize lysize eps spos tpos of
+        Nothing -> abortFailure ProjectAimOnself
+        Just [] -> assert `failure`
+                     (spos, tpos, "project from the edge of level" :: Text)
+        Just (pos : rest) -> do
+          inhabitants <- getsState (posToActor pos lid)
+          lvl <- getsLevel lid id
+          let t = lvl `at` pos
+          if not $ Tile.hasFeature cotile F.Clear t
+            then abortFailure ProjectBlockTerrain
+            else if isJust inhabitants
+                 then abortFailure ProjectBlockActor
+                 else projectBla source tpos eps ts
 
-actorProjectGI :: (MonadClientAbort m, MonadClientUI m)
-               => ActorId -> [Trigger] -> m CmdSerTakeTime
-actorProjectGI aid ts = do
-  seps <- getsClient seps
-  target <- targetToPos
+projectBla :: (MonadClientAbort m, MonadClientUI m)
+           => ActorId -> Point -> Int -> [Trigger] -> m CmdSerTakeTime
+projectBla source tpos eps ts = do
   let (verb1, object1) = case ts of
         [] -> ("aim", "object")
         tr : _ -> (verb tr, object tr)
-      triggerSyms = triggerSymbols ts
-  case target of
-    Just p -> do
-      bag <- getsState $ getActorBag aid
-      inv <- getsState $ getActorInv aid
-      ((iid, _), (_, container)) <-
-        getGroupItem aid bag inv object1 triggerSyms
-          (makePhrase ["What to", verb1 MU.:> "?"]) "in inventory"
-      stgtMode <- getsClient stgtMode
-      case stgtMode of
-        Just (TgtAuto _) -> endTargeting True
-        _ -> return ()
-      return $! ProjectSer aid p seps iid container
-    Nothing -> assert `failure` (aid, "target unexpectedly invalid")
+  triggerSyms = triggerSymbols ts
+  bag <- getsState $ getActorBag source
+  inv <- getsState $ getActorInv source
+  ((iid, _), (_, container)) <-
+    getGroupItem source bag inv object1 triggerSyms
+      (makePhrase ["What to", verb1 MU.:> "?"]) "in inventory"
+  stgtMode <- getsClient stgtMode
+  case stgtMode of
+    Just (TgtAuto _) -> endTargeting True
+    _ -> return ()
+  return $! ProjectSer source tpos eps iid container
 
 triggerSymbols :: [Trigger] -> [Char]
 triggerSymbols [] = []

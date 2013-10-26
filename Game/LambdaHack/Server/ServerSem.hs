@@ -282,39 +282,51 @@ projectSer :: (MonadAtomic m, MonadServer m)
            -> m ()
 projectSer source tpos eps iid container = do
   Kind.COps{cotile} <- getsState scops
-  sb <- getsState (getActorBody source)
-  Actor{btime} <- getsState $ getActorBody source
-  lvl <- getsLevel (blid sb) id
-  lxsize <- getsLevel (blid sb) lxsize
-  lysize <- getsLevel (blid sb) lysize
-  let spos = bpos sb
-      lid = blid sb
+  sb <- getsState $ getActorBody source
+  let lid = blid sb
+      spos = bpos sb
+  fact <- getsState $ (EM.! bfid sb) . sfactionD
+  bs <- getsState $ actorNotProjList (isAtWar fact) lid
+  lxsize <- getsLevel lid lxsize
+  lysize <- getsLevel lid lysize
+  if foesAdjacent lxsize lysize spos bs
+    then execFailure sb ProjectBlockFoes
+    else do
+      case bla lxsize lysize eps spos tpos of
+        Nothing -> execFailure sb ProjectAimOnself
+        Just [] -> assert `failure`
+                     (spos, tpos, "project from the edge of level" :: Text)
+        Just (pos : rest) -> do
+          inhabitants <- getsState (posToActor pos lid)
+          lvl <- getsLevel lid id
+          let t = lvl `at` pos
+          if not $ Tile.hasFeature cotile F.Clear t
+            then execFailure sb ProjectBlockTerrain
+            else if isJust inhabitants
+                 then execFailure sb ProjectBlockActor
+                 else projectBla source pos rest iid container
+
+projectBla :: (MonadAtomic m, MonadServer m)
+           => ActorId    -- ^ actor projecting the item (is on current lvl)
+           -> Point      -- ^ starting point of the projectile
+           -> [Point]    -- ^ rest of the path of the projectile
+           -> ItemId     -- ^ the item to be projected
+           -> Container  -- ^ whether the items comes from floor or inventory
+           -> m ()
+projectBla source pos rest iid container = do
+  sb <- getsState $ getActorBody source
+  let lid = blid sb
       -- A bit later than actor time, to prevent a move this turn.
-      time = btime `timeAdd` timeEpsilon
-      -- TODO: AI should choose the best eps.
-      bl = bla lxsize lysize eps spos tpos
-  case bl of
-    Nothing -> execFailure sb ProjectAimOnself
-    Just [] -> assert `failure`
-                 (spos, tpos, "project from the edge of level" :: Text)
-    Just path@(pos:_) -> do
-      let t = lvl `at` pos
-      inhabitants <- getsState (posToActor pos lid)
-      if not $ Tile.hasFeature cotile F.Clear t
-        then execFailure sb ProjectBlockTerrain
-        else if isJust inhabitants
-             then execFailure sb ProjectBlockActor
-             else do
-               execSfxAtomic $ ProjectD source iid
-               projId <- addProjectile iid pos (blid sb) (bfid sb) path time
-               execCmdAtomic
-                 $ MoveItemA iid 1 container (CActor projId (InvChar 'a'))
+      time = btime sb `timeAdd` timeEpsilon
+  execSfxAtomic $ ProjectD source iid
+  projId <- addProjectile pos rest iid lid (bfid sb) time
+  execCmdAtomic $ MoveItemA iid 1 container (CActor projId (InvChar 'a'))
 
 -- | Create a projectile actor containing the given missile.
 addProjectile :: (MonadAtomic m, MonadServer m)
-              => ItemId -> Point -> LevelId -> FactionId -> [Point] -> Time
+              => Point -> [Point] -> ItemId -> LevelId -> FactionId -> Time
               -> m ActorId
-addProjectile iid bpos blid bfid path btime = do
+addProjectile bpos rest iid blid bfid btime = do
   Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}} <- getsState scops
   disco <- getsServer sdisco
   item <- getsState $ getItemBody iid
@@ -326,7 +338,7 @@ addProjectile iid bpos blid bfid path btime = do
       -- Not much details about a fast flying object.
       (object1, object2) = partItem coitem EM.empty item
       name = makePhrase [MU.AW $ MU.Text adj, object1, object2]
-      dirPath = take range $ displacePath path
+      dirPath = take range $ displacePath (bpos : rest)
       m = actorTemplate (projectileKindId coactor) Nothing (Just name) Nothing
                         (Just speed) 0 (Just dirPath) bpos blid btime bfid True
   acounter <- getsServer sacounter
