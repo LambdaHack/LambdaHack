@@ -6,11 +6,9 @@ module Game.LambdaHack.Client.HumanSem
 
 import Control.Monad
 import Control.Monad.Writer.Strict (WriterT)
-import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 
 import Game.LambdaHack.Client.Action
-import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.HumanCmd
 import Game.LambdaHack.Client.HumanGlobal
 import Game.LambdaHack.Client.HumanLocal
@@ -18,14 +16,9 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.Faction
-import qualified Game.LambdaHack.Common.Feature as F
-import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.ServerCmd
-import Game.LambdaHack.Common.State
-import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Common.VectorXY
 import Game.LambdaHack.Utils.Assert
@@ -46,14 +39,14 @@ cmdHumanSem cmd = do
 cmdAction :: (MonadClientAbort m, MonadClientUI m)
           => HumanCmd -> WriterT Slideshow m (Maybe CmdSer)
 cmdAction cmd = case cmd of
-  Move v -> moveHuman v
-  Run v -> runHuman v
+  Move v -> moveRunHuman False v
+  Run v -> moveRunHuman True v
   Wait -> fmap (Just . TakeTimeSer) waitHuman
   Pickup -> fmap (Just . TakeTimeSer) pickupHuman
   Drop -> fmap (Just . TakeTimeSer) dropHuman
   Project ts -> projectHuman ts
   Apply ts -> fmap (Just . TakeTimeSer) $ applyHuman ts
-  TriggerDir ts -> fmap (Just . TakeTimeSer) $ triggerDirHuman ts
+  AlterDir ts -> fmap (Just . TakeTimeSer) $ alterDirHuman ts
   TriggerTile ts -> fmap (Just . TakeTimeSer) $ triggerTileHuman ts
 
   GameRestart t -> fmap Just $ gameRestartHuman t
@@ -86,62 +79,47 @@ checkCursor arena = do
   when (arena /= lid) $
     abortWith "[targeting] command disabled on a remote level, press ESC to switch back"
 
-moveHuman :: (MonadClientAbort m, MonadClientUI m)
-          => VectorXY -> WriterT Slideshow m (Maybe CmdSer)
-moveHuman v = do
-  Kind.COps{cotile} <- getsState scops
+moveRunHuman :: (MonadClientAbort m, MonadClientUI m)
+             => Bool -> VectorXY -> WriterT Slideshow m (Maybe CmdSer)
+moveRunHuman run v = do
   tgtMode <- getsClient stgtMode
-  (arena, lvl@Level{lxsize}) <- viewedLevel
+  (arena, Level{lxsize}) <- viewedLevel
   leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
   if isJust tgtMode then do
     let dir = toDir lxsize v
-    moveCursor dir 1 >> return Nothing
+    moveCursor dir (if run then 10 else 1) >> return Nothing
   else do
     let dir = toDir lxsize v
         tpos = bpos sb `shift` dir
-        t = lvl `at` tpos
-    -- We always see actors from our own faction.
+    -- We start by checking actors at the the target position,
+    -- which gives a partial information (actors can be invisible),
+    -- as opposed to accessibility (and items) which are always accurate
+    -- (tiles can't be invisible).
     tgt <- getsState $ posToActor tpos arena
     case tgt of
+      Nothing -> do  -- move or search or alter
+        when run $ modifyClient $ \cli -> cli {srunning = Just (dir, 1)}
+        fmap (Just . TakeTimeSer) $ moveRunAid leader dir
+        -- When running, the invisible actor is hit (not displaced!),
+        -- so that running in the presence of roving invisible
+        -- actors is equivalent to moving (with visible actors
+        -- this is not a problem, since runnning stops early enough).
+        -- TODO: stop running at invisible actor
+      Just _target | run ->
+        -- Displacing requires accessibility, but it's checked later on.
+        fmap (Just . TakeTimeSer) $ displaceAid leader dir
       Just target -> do
         tb <- getsState $ getActorBody target
-        sfact <- getsState $ (EM.! bfid sb) . sfactionD
+        -- We always see actors from our own faction.
         if bfid tb == bfid sb && not (bproj tb) then do
           -- Select adjacent actor by bumping into him. Takes no time.
           success <- selectLeader target
           assert (success `blame` (leader, target, tb)) skip
           return Nothing
-        else do
-          unless (bproj tb || isAtWar sfact (bfid tb)) $ do
-            go <- displayYesNo ColorBW
-                    "This attack will start a war. Are you sure?"
-            unless go $ abortWith "Attack canceled."
-          when (not (bproj tb) && isAllied sfact (bfid tb)) $ do
-            go <- displayYesNo ColorBW
-                    "You are bound by an alliance. Really attack?"
-            unless go $ abortWith "Attack canceled."
-          fmap (Just . TakeTimeSer) $ moveAid leader dir
-      _ -> fmap (Just . TakeTimeSer) $
-        if Tile.hasFeature cotile F.Suspect t
-           || Tile.hasFeature cotile F.Openable t
-        then -- Explore, because the suspect feature is not yet revealed
-             -- or because we want to act on the feature.
-             exploreAid leader dir
-        else -- Don't explore, because the suspect feature is known boring.
-             moveAid leader dir
-
-runHuman :: MonadClientUI m => VectorXY -> WriterT Slideshow m (Maybe CmdSer)
-runHuman v = do
-  tgtMode <- getsClient stgtMode
-  (_, Level{lxsize}) <- viewedLevel
-  if isJust tgtMode then do
-    let dir = toDir lxsize v
-    moveCursor dir 10 >> return Nothing
-  else do
-    let dir = toDir lxsize v
-    leader <- getLeaderUI
-    fmap (Just . TakeTimeSer) $ runAid leader dir
+        else
+          -- Attacking does not require full access, adjacency is enough.
+          fmap (Just . TakeTimeSer) $ attackAid leader dir target
 
 projectHuman :: (MonadClientAbort m, MonadClientUI m)
              => [Trigger] -> WriterT Slideshow m (Maybe CmdSer)

@@ -143,8 +143,8 @@ continueRun :: MonadClientAbort m => ActorId -> (Vector, Int) -> m CmdSer
 continueRun leader dd = do
   (dir, distNew) <- continueRunDir leader dd
   modifyClient $ \cli -> cli {srunning = Just (dir, distNew)}
-  -- Attacks and opening doors disallowed when continuing to run.
-  return $ TakeTimeSer $ RunSer leader dir
+  -- The potential invisible actor is hit. War is started without asking.
+  return $ TakeTimeSer $ MoveSer leader dir
 
 -- | Determine and process the next human player command. The argument is
 -- the last abort message due to running, if any.

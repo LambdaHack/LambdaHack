@@ -27,14 +27,14 @@ data CmdSer =
 
 data CmdSerTakeTime =
     MoveSer ActorId Vector
-  | ExploreSer ActorId Vector
-  | RunSer ActorId Vector
+  | DisplaceSer ActorId Vector
+  | AlterSer ActorId Vector
   | WaitSer ActorId
   | PickupSer ActorId ItemId Int InvChar
   | DropSer ActorId ItemId
   | ProjectSer ActorId Point Int ItemId Container
   | ApplySer ActorId ItemId Container
-  | TriggerSer ActorId Point
+  | TriggerSer ActorId
   | SetPathSer ActorId [Vector]
   deriving (Show)
 
@@ -51,31 +51,37 @@ aidCmdSer cmd = case cmd of
 aidCmdSerTakeTime :: CmdSerTakeTime -> ActorId
 aidCmdSerTakeTime cmd = case cmd of
   MoveSer aid _ -> aid
-  ExploreSer aid _ -> aid
-  RunSer aid _ -> aid
+  DisplaceSer aid _ -> aid
+  AlterSer aid _ -> aid
   WaitSer aid -> aid
   PickupSer aid _ _ _ -> aid
   DropSer aid _ -> aid
   ProjectSer aid _ _ _ _ -> aid
   ApplySer aid _ _ -> aid
-  TriggerSer aid _ -> aid
+  TriggerSer aid -> aid
   SetPathSer aid _ -> aid
 
 data FailureSer =
-    RunDisplaceAccess
+    MoveNothing
+  | RunNothing
+  | RunDisplaceAccess
   | ProjectAimOnself
   | ProjectBlockTerrain
   | ProjectBlockActor
-  | TriggerBlockActor
-  | TriggerBlockItem
+  | AlterBlockActor
+  | AlterBlockItem
+  | AlterNothing
   | TriggerNothing
 
 showFailureSer :: FailureSer -> Msg
 showFailureSer failureSer = case failureSer of
-  RunDisplaceAccess -> "changing places without access"
+  MoveNothing -> "wasting time on moving into obstacle"
+  RunNothing -> "switching places with non-existent actor"
+  RunDisplaceAccess -> "switching places without access"
   ProjectAimOnself -> "cannot aim at oneself"
   ProjectBlockTerrain -> "obstructed by terrain"
   ProjectBlockActor -> "blocked by an actor"
-  TriggerBlockActor -> "blocked by an actor"
-  TriggerBlockItem -> "jammed by an item"
+  AlterBlockActor -> "blocked by an actor"
+  AlterBlockItem -> "jammed by an item"
+  AlterNothing -> "wasting time on altering nothing"
   TriggerNothing -> "wasting time on triggering nothing"

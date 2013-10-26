@@ -34,15 +34,15 @@ cmdSerSem cmd = case cmd of
 
 cmdSerSemTakeTime :: (MonadAtomic m, MonadServer m) => CmdSerTakeTime -> m ()
 cmdSerSemTakeTime cmd = case cmd of
-  MoveSer aid dir -> moveSer aid dir False
-  ExploreSer aid dir -> moveSer aid dir True
-  RunSer aid dir -> runSer aid dir
+  MoveSer aid dir -> moveSer aid dir
+  DisplaceSer aid dir -> displaceSer aid dir
+  AlterSer aid dir -> alterSer aid dir
   WaitSer aid -> waitSer aid
   PickupSer aid i k l -> pickupSer aid i k l
   DropSer aid iid -> dropSer aid iid
   ProjectSer aid p eps iid container -> projectSer aid p eps iid container
   ApplySer aid iid container -> applySer aid iid container
-  TriggerSer aid p -> triggerSer aid p False  -- no searching
+  TriggerSer aid -> triggerSer aid
   SetPathSer aid path -> setPathSer aid path
 
 debugArgs :: IO DebugModeSer

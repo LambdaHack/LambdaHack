@@ -4,8 +4,8 @@
 -- A couple of them do not take time, the rest does.
 -- TODO: document
 module Game.LambdaHack.Client.HumanGlobal
-  ( moveAid, exploreAid, runAid, waitHuman, pickupHuman, dropHuman
-  , projectAid, applyHuman, triggerDirHuman, triggerTileHuman
+  ( moveRunAid, displaceAid, attackAid, waitHuman, pickupHuman, dropHuman
+  , projectAid, applyHuman, alterDirHuman, triggerTileHuman
   , gameRestartHuman, gameExitHuman, gameSaveHuman, cfgDumpHuman
   ) where
 
@@ -22,7 +22,6 @@ import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.HumanCmd (Trigger (..))
 import Game.LambdaHack.Client.HumanLocal
-import Game.LambdaHack.Client.RunAction
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
@@ -44,26 +43,81 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Utils.Assert
 
--- * Move
+abortFailure :: MonadClientAbort m => FailureSer -> m a
+abortFailure = abortWith . showFailureSer
 
-moveAid :: MonadClientUI m => ActorId -> Vector -> m CmdSerTakeTime
-moveAid aid dir =
-  return $! MoveSer aid dir
+-- * Move and Run
 
--- * Explore
+-- | Actor atttacks an enemy actor or his own projectile.
+attackAid :: (MonadClientAbort m, MonadClientUI m)
+          => ActorId -> Vector -> ActorId -> m CmdSerTakeTime
+attackAid aid dir target = do
+  sb <- getsState $ getActorBody aid
+  tb <- getsState $ getActorBody target
+  sfact <- getsState $ (EM.! bfid sb) . sfactionD
+  unless (bproj tb || isAtWar sfact (bfid tb)) $ do
+    go <- displayYesNo ColorBW
+            "This attack will start a war. Are you sure?"
+    unless go $ abortWith "Attack canceled."
+  unless (bproj tb || not (isAllied sfact (bfid tb))) $ do
+    go <- displayYesNo ColorBW
+            "You are bound by an alliance. Really attack?"
+    unless go $ abortWith "Attack canceled."
+  return $ MoveSer aid dir
+  -- Seeing the actor prevents altering a tile under it, but that
+  -- does not limit the player, he just doesn't waste a turn
+  -- on a failed altering. We don't use AttackSer, because we attack
+  -- both visible and invisible actors.
 
-exploreAid :: MonadClientUI m => ActorId -> Vector -> m CmdSerTakeTime
-exploreAid aid dir =
-  return $! ExploreSer aid dir
+-- | Actor swaps position with another.
+displaceAid :: (MonadClientAbort m, MonadClientUI m)
+            => ActorId -> Vector -> m CmdSerTakeTime
+displaceAid aid dir = do
+  cops <- getsState scops
+  sb <- getsState $ getActorBody aid
+  let lid = blid sb
+  lvl <- getsLevel lid id
+  let spos = bpos sb           -- source position
+      tpos = spos `shift` dir  -- target position
+  if accessible cops lvl spos tpos then
+    -- Displacing requires full access.
+    return $ DisplaceSer aid dir
+  else abortFailure RunDisplaceAccess
 
--- * Run
-
-runAid :: MonadClientUI m => ActorId -> Vector -> m CmdSerTakeTime
-runAid aid dir = do
-  canR <- canRun aid (dir, 0)
-  when canR $ modifyClient $ \cli -> cli {srunning = Just (dir, 1)}
-  -- Run even if blocked (and then stop), e.g., to open a door.
-  return $! RunSer aid dir
+-- | Actor moves or searches or alters. No visible actor at the position.
+moveRunAid :: (MonadClientAbort m, MonadClientUI m)
+           => ActorId -> Vector -> m CmdSerTakeTime
+moveRunAid aid dir = do
+  cops@Kind.COps{cotile} <- getsState scops
+  sb <- getsState $ getActorBody aid
+  let lid = blid sb
+  lvl <- getsLevel lid id
+  let spos = bpos sb           -- source position
+      tpos = spos `shift` dir  -- target position
+      t = lvl `at` tpos
+  if accessible cops lvl spos tpos then
+    -- Movement requires full access.
+    return $ MoveSer aid dir
+    -- The potential invisible actor is hit. War is started without asking.
+  else if not $ EM.null $ lvl `atI` tpos then
+    abortFailure AlterBlockItem
+  else if Tile.hasFeature cotile F.Suspect t
+          || Tile.hasFeature cotile F.Openable t then  -- TODO: ChangeTo=Alter
+    -- No access, so search and/or alter the tile.
+    return $ AlterSer aid dir
+    -- We don't use MoveSer, because we don't hit invisible actors here.
+    -- The potential invisible actor, e.g., in a wall or in
+    -- an inaccessible doorway, is made known, taking a turn.
+    -- If server performed an attack for free on the invisible actor anyway,
+    -- the player (or AI) would be tempted to repeatedly
+    -- hit random walls in hopes of killing a monster lurking within.
+    -- If the action had a cost, misclicks would incur the cost, too.
+    -- Right now the player may repeatedly alter tiles trying to learn
+    -- about invisible pass-wall actors, but it costs a turn
+    -- and does not harm the invisible actors, so it's not tempting.
+  else
+    -- Ignore a known boring, not accessible tile.
+    abortWith "never mind"
 
 -- * Wait
 
@@ -288,14 +342,14 @@ getGroupItem leader is inv object syms prompt packName = do
       header = makePhrase [MU.Capitalize (MU.Ws object)]
   getItem leader prompt choice header is inv packName
 
--- * TriggerDir
+-- * AlterDir
 
--- | Ask for a direction and trigger a tile, if possible.
-triggerDirHuman :: (MonadClientAbort m, MonadClientUI m)
+-- | Ask for a direction and alter a tile, if possible.
+alterDirHuman :: (MonadClientAbort m, MonadClientUI m)
                 => [Trigger] -> m CmdSerTakeTime
-triggerDirHuman ts = do
+alterDirHuman ts = do
   let verb1 = case ts of
-        [] -> "trigger"
+        [] -> "alter"
         tr : _ -> verb tr
       keys = zipWith K.KM (repeat K.NoModifier) K.dirAllMoveKey
       prompt = makePhrase ["What to", verb1 MU.:> "? [movement key"]
@@ -307,7 +361,6 @@ triggerDirHuman ts = do
   K.handleDir lxsize e (bumpTile leader ts . dpos) (neverMind True)
 
 -- | Player tries to trigger a tile using a feature.
--- To help the player, only visible features can be triggered.
 bumpTile :: (MonadClientAbort m, MonadClientUI m)
          => ActorId -> [Trigger] -> Point -> m CmdSerTakeTime
 bumpTile leader ts dpos = do
@@ -316,13 +369,11 @@ bumpTile leader ts dpos = do
   lvl <- getsLevel (blid b) id
   let t = lvl `at` dpos
       triggerFeats = triggerFeatures ts
-  -- A tile can be triggered even if an invisible monster occupies it.
-  -- TODO: let the user choose whether to attack or activate.
   case filter (\feat -> Tile.hasFeature cotile feat t) triggerFeats of
     [] -> guessBump cotile triggerFeats t
     fs -> do
       mapM_ (verifyTrigger leader) fs
-      return $ TriggerSer leader dpos
+      return $ TriggerSer leader
 
 triggerFeatures :: [Trigger] -> [F.Feature]
 triggerFeatures [] = []

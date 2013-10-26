@@ -202,7 +202,8 @@ handleActors cmdSerSem lid = do
           queryUI | Just aid == mleader = not $ playerAiLeader $ gplayer fact
                   | otherwise = not $ playerAiOther $ gplayer fact
           switchLeader cmdS = do
-            -- TODO: check that the command is legal first
+            -- TODO: check that the command is legal first, report and reject,
+            -- but do not crash (currently server asserts things and crashes)
             let leaderNew = aidCmdSer cmdS
                 leadAtoms =
                   if leaderNew /= aid

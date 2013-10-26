@@ -25,7 +25,7 @@ data HumanCmd =
   | Drop
   | Project     [Trigger]
   | Apply       [Trigger]
-  | TriggerDir  [Trigger]
+  | AlterDir    [Trigger]
   | TriggerTile [Trigger]
     -- These do not take time.
   | GameRestart Text
@@ -67,7 +67,7 @@ majorHumanCmd cmd = case cmd of
   Drop          -> True
   Project{}     -> True
   Apply{}       -> True
-  TriggerDir{}  -> True
+  AlterDir{}    -> True
   TriggerTile{} -> True
   Inventory     -> True
   Help          -> True
@@ -104,7 +104,7 @@ noRemoteHumanCmd cmd = case cmd of
   Drop          -> True
   Project{}     -> True
   Apply{}       -> True
-  TriggerDir{}  -> True
+  AlterDir{}    -> True
   TriggerTile{} -> True
   _             -> False
 
@@ -118,7 +118,7 @@ cmdDescription cmd = case cmd of
   Drop        -> "drop an object"
   Project ts     -> triggerDescription ts
   Apply ts       -> triggerDescription ts
-  TriggerDir ts  -> triggerDescription ts
+  AlterDir ts -> triggerDescription ts
   TriggerTile ts -> triggerDescription ts
 
   GameRestart t -> "new" <+> t <+> "game"

@@ -1,6 +1,6 @@
 -- | Running and disturbance.
 module Game.LambdaHack.Client.RunAction
-  ( canRun, continueRunDir
+  ( continueRunDir
   ) where
 
 import qualified Data.ByteString.Char8 as BS
