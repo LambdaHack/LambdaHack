@@ -109,26 +109,26 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ opick
         return (EM.union tmap m, place : pls)
   (lplaces, dplaces) <- foldM addPl (fence, []) places0
   let lcorridors = EM.unions (L.map (digCorridors pickedCorTile) cs)
-  let lm = EM.unionWith (mergeCorridor cotile) lcorridors lplaces
+      lm = EM.unionWith (mergeCorridor cotile) lcorridors lplaces
   -- Convert wall openings into doors, possibly.
-  dmap <-
-    let f l (p, t) =
-          if not $ Tile.hasFeature cotile F.Suspect t
-          then return l  -- no opening to start with
+  let f l (p, t) =
+        if not $ Tile.hasFeature cotile F.Suspect t
+        then return l  -- no opening to start with
+        else do
+          -- Openings have a certain chance to be doors
+          -- and doors have a certain chance to be open.
+          rd <- chance cdoorChance
+          if not rd then
+            return $ EM.insert p pickedCorTile l  -- opening kept
           else do
-            -- Openings have a certain chance to be doors
-            -- and doors have a certain chance to be open.
-            rd <- chance cdoorChance
-            if not rd
-              then return $ EM.insert p pickedCorTile l  -- opening kept
-              else do
-                doorClosedId <- Tile.changeTo cotile t  -- hack 47
-                doorOpenId   <- Tile.changeTo cotile doorClosedId
-                ro <- chance copenChance
-                if not ro
-                  then return $ EM.insert p doorClosedId l
-                  else return $ EM.insert p doorOpenId l
-    in foldM f lm (EM.assocs lm)
+            ro <- chance copenChance
+            doorClosedId <- Tile.revealAs cotile t
+            if not ro then
+              return $ EM.insert p doorClosedId l
+            else do
+              doorOpenId <- Tile.changeTo cotile doorClosedId
+              return $ EM.insert p doorOpenId l
+  dmap <- foldM f lm (EM.assocs lm)
   let cave = Cave
         { dkind = ci
         , ditem = EM.empty

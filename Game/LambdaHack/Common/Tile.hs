@@ -16,17 +16,17 @@ module Game.LambdaHack.Common.Tile
   ( SmellTime
   , kindHasFeature, kindHas, hasFeature
   , isClear, isLit, isExplorable, similar, speedup
-  , changeTo, hiddenAs
+  , changeTo, revealAs, hiddenAs
   ) where
 
 import qualified Data.Array.Unboxed as A
 import qualified Data.List as L
 
-import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Common.Feature as F
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Content.TileKind
 
 -- | The last time a hero left a smell in a given tile. To be used
 -- by monsters that hunt by smell.
@@ -88,12 +88,24 @@ speedup allClear Kind.Ops{ofoldrWithKey, obounds} =
   in Kind.TileSpeedup {isClearTab, isLitTab}
 
 changeTo :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
-changeTo Kind.Ops{okind, opick} t =
-  let getTo (F.ChangeTo group) _ = Just group
+changeTo Kind.Ops{okind, opick} t = do
+  let getTo (F.ChangeTo group) acc = group : acc
       getTo _ acc = acc
-  in case foldr getTo Nothing (tfeature (okind t)) of
-       Nothing    -> return t
-       Just group -> opick group (const True)
+  case foldr getTo [] $ tfeature $ okind t of
+    [] -> return t
+    groups -> do
+      group <- oneOf groups
+      opick group (const True)
+
+revealAs :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
+revealAs Kind.Ops{okind, opick} t = do
+  let getTo (F.RevealAs group) acc = group : acc
+      getTo _ acc = acc
+  case foldr getTo [] $ tfeature $ okind t of
+    [] -> return t
+    groups -> do
+      group <- oneOf groups
+      opick group (const True)
 
 hiddenAs :: Kind.Ops TileKind -> Kind.Id TileKind -> Kind.Id TileKind
 hiddenAs Kind.Ops{okind, ouniqGroup} t =

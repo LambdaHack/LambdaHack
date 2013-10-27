@@ -34,6 +34,7 @@ data Feature =
   | Exit                 -- ^ is a (not hidden) door, stair, etc.
   | Path                 -- ^ used for visible paths throughout the level
   | HiddenAs !Text       -- ^ when hidden, looks as a tile of the group
+  | RevealAs !Text       -- ^ if secret, can be revealed to belong to the group
   deriving (Show, Read, Eq, Ord, Generic)
 
 instance Binary Feature

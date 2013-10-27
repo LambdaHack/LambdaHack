@@ -59,7 +59,7 @@ wallSuspectV = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfeature = [ Suspect
-               , ChangeTo "vertical closed door"  -- never triggered, hack 47
+               , RevealAs "vertical closed door"
                ]
   }
 doorClosedV = TileKind
@@ -98,7 +98,7 @@ wallSuspectH = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfeature = [ Suspect
-               , ChangeTo "horizontal closed door"  -- never triggered, hack 47
+               , RevealAs "horizontal closed door"
                ]
   }
 doorClosedH = TileKind
