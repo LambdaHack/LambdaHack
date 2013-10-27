@@ -55,7 +55,8 @@ instance Binary HumanCmd
 
 data Trigger =
     ApplyItem {verb :: MU.Part, object :: MU.Part, symbol :: Char}
-  | BumpFeature {verb :: MU.Part, object :: MU.Part, feature :: F.Feature}
+  | AlterFeature {verb :: MU.Part, object :: MU.Part, feature :: F.Feature}
+  | TriggerFeature {verb :: MU.Part, object :: MU.Part, feature :: F.Feature}
   deriving (Show, Read, Eq, Ord, Generic)
 
 instance Binary Trigger

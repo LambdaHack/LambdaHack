@@ -289,7 +289,7 @@ projectAid source ts = do
         Nothing -> abortFailure ProjectAimOnself
         Just [] -> assert `failure`
                      (spos, tpos, "project from the edge of level" :: Text)
-        Just (pos : rest) -> do
+        Just (pos : _) -> do
           inhabitants <- getsState (posToActor pos lid)
           lvl <- getsLevel lid id
           let t = lvl `at` pos
@@ -305,7 +305,7 @@ projectBla source tpos eps ts = do
   let (verb1, object1) = case ts of
         [] -> ("aim", "object")
         tr : _ -> (verb tr, object tr)
-  triggerSyms = triggerSymbols ts
+      triggerSyms = triggerSymbols ts
   bag <- getsState $ getActorBag source
   inv <- getsState $ getActorInv source
   ((iid, _), (_, container)) <-
@@ -370,28 +370,68 @@ alterDirHuman ts = do
   e <- displayChoiceUI prompt [] keys
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  let dpos dir = bpos b `shift` dir
   lxsize <- getsLevel (blid b) lxsize
-  K.handleDir lxsize e (bumpTile leader ts . dpos) (neverMind True)
+  K.handleDir lxsize e (flip (alterTile leader) ts) (neverMind True)
+
+-- | Player tries to alter a tile using a feature.
+alterTile :: (MonadClientAbort m, MonadClientUI m)
+         => ActorId -> Vector -> [Trigger] -> m CmdSerTakeTime
+alterTile leader dir ts = do
+  Kind.COps{cotile} <- getsState scops
+  b <- getsState $ getActorBody leader
+  lvl <- getsLevel (blid b) id
+  let dpos = bpos b `shift` dir
+      t = lvl `at` dpos
+      alterFeats = alterFeatures ts
+  case filter (\feat -> Tile.hasFeature cotile feat t) alterFeats of
+    [] -> guessAlter cotile alterFeats t
+    _fs -> return $! AlterSer leader dir
+
+alterFeatures :: [Trigger] -> [F.Feature]
+alterFeatures [] = []
+alterFeatures (AlterFeature{..} : ts) = feature : alterFeatures ts
+alterFeatures (_ : ts) = alterFeatures ts
+
+-- | Guess and report why the bump command failed.
+guessAlter :: MonadClientAbort m => Kind.Ops TileKind -> [F.Feature] -> Kind.Id TileKind -> m a
+guessAlter cotile (F.Openable : _) t | Tile.hasFeature cotile F.Closable t =
+  abortWith "already open"
+guessAlter _ (F.Openable : _) _ =
+  abortWith "not a door"
+guessAlter cotile (F.Closable : _) t | Tile.hasFeature cotile F.Openable t =
+  abortWith "already closed"
+guessAlter _ (F.Closable : _) _ =
+  abortWith "not a door"
+guessAlter _ _ _ = neverMind True
+
+-- * TriggerTile
+
+-- | Leader tries to trigger the tile he's standing on.
+triggerTileHuman :: (MonadClientAbort m, MonadClientUI m)
+                 => [Trigger] -> m CmdSerTakeTime
+triggerTileHuman ts = do
+  leader <- getLeaderUI
+  dpos <- getsState (bpos . getActorBody leader)
+  triggerTile leader dpos ts
 
 -- | Player tries to trigger a tile using a feature.
-bumpTile :: (MonadClientAbort m, MonadClientUI m)
-         => ActorId -> [Trigger] -> Point -> m CmdSerTakeTime
-bumpTile leader ts dpos = do
+triggerTile :: (MonadClientAbort m, MonadClientUI m)
+            => ActorId -> Point -> [Trigger] -> m CmdSerTakeTime
+triggerTile leader dpos ts = do
   Kind.COps{cotile} <- getsState scops
   b <- getsState $ getActorBody leader
   lvl <- getsLevel (blid b) id
   let t = lvl `at` dpos
       triggerFeats = triggerFeatures ts
   case filter (\feat -> Tile.hasFeature cotile feat t) triggerFeats of
-    [] -> guessBump cotile triggerFeats t
+    [] -> guessTrigger cotile triggerFeats t
     fs -> do
       mapM_ (verifyTrigger leader) fs
       return $ TriggerSer leader
 
 triggerFeatures :: [Trigger] -> [F.Feature]
 triggerFeatures [] = []
-triggerFeatures (BumpFeature{..} : ts) = feature : triggerFeatures ts
+triggerFeatures (TriggerFeature{..} : ts) = feature : triggerFeatures ts
 triggerFeatures (_ : ts) = triggerFeatures ts
 
 -- | Verify important feature triggers, such as fleeing the dungeon.
@@ -419,36 +459,18 @@ verifyTrigger leader feat = case feat of
   _ -> return ()
 
 -- | Guess and report why the bump command failed.
-guessBump :: MonadClientAbort m => Kind.Ops TileKind -> [F.Feature] -> Kind.Id TileKind -> m a
-guessBump cotile (F.Openable : _) t | Tile.hasFeature cotile F.Closable t =
-  abortWith "already open"
-guessBump _ (F.Openable : _) _ =
-  abortWith "not a door"
-guessBump cotile (F.Closable : _) t | Tile.hasFeature cotile F.Openable t =
-  abortWith "already closed"
-guessBump _ (F.Closable : _) _ =
-  abortWith "not a door"
-guessBump cotile (F.Cause (Effect.Ascend _) : _) t
+guessTrigger :: MonadClientAbort m => Kind.Ops TileKind -> [F.Feature] -> Kind.Id TileKind -> m a
+guessTrigger cotile (F.Cause (Effect.Ascend _) : _) t
   | Tile.hasFeature cotile F.Descendable t =
     abortWith "the way goes down, not up"
-guessBump _ (F.Cause (Effect.Ascend _) : _) _ =
+guessTrigger _ (F.Cause (Effect.Ascend _) : _) _ =
   abortWith "no stairs up"
-guessBump cotile (F.Cause (Effect.Descend _) : _) t
+guessTrigger cotile (F.Cause (Effect.Descend _) : _) t
   | Tile.hasFeature cotile F.Ascendable t =
     abortWith "the way goes up, not down"
-guessBump _ (F.Cause (Effect.Descend _) : _) _ =
+guessTrigger _ (F.Cause (Effect.Descend _) : _) _ =
   abortWith "no stairs down"
-guessBump _ _ _ = neverMind True
-
--- * TriggerTile
-
--- | Leader tries to trigger the tile he's standing on.
-triggerTileHuman :: (MonadClientAbort m, MonadClientUI m)
-                 => [Trigger] -> m CmdSerTakeTime
-triggerTileHuman ts = do
-  leader <- getLeaderUI
-  ppos <- getsState (bpos . getActorBody leader)
-  bumpTile leader ts ppos
+guessTrigger _ _ _ = neverMind True
 
 -- * GameRestart; does not take time
 
