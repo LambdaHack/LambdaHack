@@ -50,7 +50,7 @@ wallV = TileKind
   , tfreq    = [("litLegend", 100), ("darkLegend", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = [HiddenAs "suspect vertical wall"]
+  , tfeature = [HideAs "suspect vertical wall"]
   }
 wallSuspectV = TileKind
   { tsymbol  = '|'
@@ -70,7 +70,7 @@ doorClosedV = TileKind
   , tcolor2  = BrBlack
   , tfeature = [ Exit, Openable
                , ChangeTo "vertical open door"
-               , HiddenAs "suspect vertical wall"
+               , HideAs "suspect vertical wall"
                ]
   }
 doorOpenV = TileKind
@@ -89,7 +89,7 @@ wallH = TileKind
   , tfreq    = [("litLegend", 100), ("darkLegend", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = [HiddenAs "suspect horizontal wall"]
+  , tfeature = [HideAs "suspect horizontal wall"]
   }
 wallSuspectH = TileKind
   { tsymbol  = '-'
@@ -109,7 +109,7 @@ doorClosedH = TileKind
   , tcolor2  = BrBlack
   , tfeature = [ Exit, Openable
                , ChangeTo "horizontal open door"
-               , HiddenAs "suspect horizontal wall"
+               , HideAs "suspect horizontal wall"
                ]
   }
 doorOpenH = TileKind
@@ -131,7 +131,7 @@ stairsUpDark = TileKind
 -- Dark room interior, OTOH, is fine:
   , tcolor   = BrWhite
   , tcolor2  = BrBlack
-  , tfeature = [Walkable, Clear, Exit, Ascendable, Cause $ Effect.Ascend 1]
+  , tfeature = [Walkable, Clear, Exit, Cause $ Effect.Ascend 1]
   }
 stairsUpLit = stairsUpDark
   { tfreq    = [("litLegend", 100)]
@@ -148,7 +148,7 @@ stairsDownDark = TileKind
 -- Dark room interior, OTOH, is fine:
   , tcolor   = BrWhite
   , tcolor2  = BrBlack
-  , tfeature = [Walkable, Clear, Exit, Descendable, Cause $ Effect.Descend 1]
+  , tfeature = [Walkable, Clear, Exit, Cause $ Effect.Descend 1]
   }
 stairsDownLit = stairsDownDark
   { tfreq    = [("litLegend", 100)]

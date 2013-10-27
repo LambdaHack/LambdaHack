@@ -58,12 +58,9 @@ isLit :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 isLit Kind.Ops{ospeedup = Kind.TileSpeedup{isLitTab}} = isLitTab
 
 -- | Whether a tile can be explored, possibly yielding a treasure
--- or a hidden message. We exclude doors and hidden features.
+-- or a hidden message.
 isExplorable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
-isExplorable cops tk =
-  not (hasFeature cops F.Closable tk)
-  && (isClear cops tk
-      || hasFeature cops F.Walkable tk)
+isExplorable cops tk = isClear cops tk || hasFeature cops F.Walkable tk
 
 -- | The player can't tell one tile from the other.
 similar :: TileKind -> TileKind -> Bool
@@ -109,7 +106,7 @@ revealAs Kind.Ops{okind, opick} t = do
 
 hiddenAs :: Kind.Ops TileKind -> Kind.Id TileKind -> Kind.Id TileKind
 hiddenAs Kind.Ops{okind, ouniqGroup} t =
-  let getTo (F.HiddenAs group) _ = Just group
+  let getTo (F.HideAs group) _ = Just group
       getTo _ acc = acc
   in case foldr getTo Nothing (tfeature (okind t)) of
        Nothing    -> t

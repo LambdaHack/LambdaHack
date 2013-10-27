@@ -53,8 +53,14 @@ placeStairs cotile@Kind.Ops{opick} cmap CaveKind{..} dplaces = do
         maybe clitLegendTile qlegend $ find (fitArea pos) dplaces
   upEscape <-
     opick (findLegend su) $ Tile.kindHasFeature $ F.Cause Effect.Escape
-  upId   <- opick (findLegend su) $ Tile.kindHasFeature F.Ascendable
-  downId <- opick (findLegend sd) $ Tile.kindHasFeature F.Descendable
+  let ascendable tk =
+        any (\f -> case f of F.Cause (Effect.Ascend _) -> True; _ -> False
+            ) $ tfeature tk
+      descendable tk =
+        any (\f -> case f of F.Cause (Effect.Descend _) -> True; _ -> False
+            ) $ tfeature tk
+  upId   <- opick (findLegend su) ascendable
+  downId <- opick (findLegend sd) descendable
   return (sq, upEscape, su, upId, sd, downId)
 
 -- | Create a level from a cave, from a cave kind.

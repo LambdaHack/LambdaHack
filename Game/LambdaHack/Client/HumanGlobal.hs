@@ -117,7 +117,7 @@ moveRunAid aid dir = do
     -- and does not harm the invisible actors, so it's not tempting.
   else
     -- Ignore a known boring, not accessible tile.
-    abortWith "never mind"
+    neverMind True
 
 -- * Wait
 
@@ -459,14 +459,15 @@ verifyTrigger leader feat = case feat of
   _ -> return ()
 
 -- | Guess and report why the bump command failed.
-guessTrigger :: MonadClientAbort m => Kind.Ops TileKind -> [F.Feature] -> Kind.Id TileKind -> m a
+guessTrigger :: MonadClientAbort m
+             => Kind.Ops TileKind -> [F.Feature] -> Kind.Id TileKind -> m a
 guessTrigger cotile (F.Cause (Effect.Ascend _) : _) t
-  | Tile.hasFeature cotile F.Descendable t =
+  | Tile.hasFeature cotile (F.Cause (Effect.Descend 1)) t =
     abortWith "the way goes down, not up"
 guessTrigger _ (F.Cause (Effect.Ascend _) : _) _ =
   abortWith "no stairs up"
 guessTrigger cotile (F.Cause (Effect.Descend _) : _) t
-  | Tile.hasFeature cotile F.Ascendable t =
+  | Tile.hasFeature cotile (F.Cause (Effect.Ascend 1)) t =
     abortWith "the way goes up, not down"
 guessTrigger _ (F.Cause (Effect.Descend _) : _) _ =
   abortWith "no stairs down"
