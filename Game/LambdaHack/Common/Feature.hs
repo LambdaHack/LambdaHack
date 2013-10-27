@@ -14,8 +14,9 @@ import Game.LambdaHack.Common.Effect
 -- or dependent on outside coefficients, e.g., on the tile secrecy value.
 data Feature =
     Cause !(Effect Int)  -- ^ causes the effect when triggered
-  | OpenTo !Text         -- ^ transitions to a tile of the group when altered
-  | CloseTo !Text        -- ^ transitions to a tile of the group when altered
+  | OpenTo !Text         -- ^ goes from an open to a closed tile when altered
+  | CloseTo !Text        -- ^ goes from a close to an open tile when altered
+  | ChangeTo !Text       -- ^ alters tile, but does not change walkability
   | HideAs !Text         -- ^ when hidden, looks as a tile of the group
   | RevealAs !Text       -- ^ if secret, can be revealed to belong to the group
 

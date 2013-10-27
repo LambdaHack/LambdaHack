@@ -103,7 +103,8 @@ moveRunAid aid dir = do
     abortFailure AlterBlockItem
   else if Tile.hasFeature cotile F.Suspect t
           || Tile.openable cotile t
-          || Tile.closable cotile t then
+          || Tile.closable cotile t
+          || Tile.changeable cotile t then
     -- No access, so search and/or alter the tile.
     return $ AlterSer aid dir
     -- We don't use MoveSer, because we don't hit invisible actors here.

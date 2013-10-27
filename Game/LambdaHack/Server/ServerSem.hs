@@ -224,6 +224,7 @@ alterSer aid dir = do
         case feat of
           F.OpenTo tgroup -> changeTo tgroup
           F.CloseTo tgroup -> changeTo tgroup
+          F.ChangeTo tgroup -> changeTo tgroup
           _ -> return False
   as <- getsState $ actorList (const True) lid
   if EM.null $ lvl `atI` tpos then

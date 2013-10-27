@@ -16,7 +16,7 @@ module Game.LambdaHack.Common.Tile
   ( SmellTime
   , kindHasFeature, kindHas, hasFeature
   , isClear, isLit, isExplorable, similar, speedup
-  , openTo, closeTo, revealAs, hiddenAs, openable, closable
+  , openTo, closeTo, revealAs, hiddenAs, openable, closable, changeable
   ) where
 
 import qualified Data.Array.Unboxed as A
@@ -133,5 +133,12 @@ openable Kind.Ops{okind} t =
 closable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 closable Kind.Ops{okind} t =
   let getTo F.CloseTo{} = True
+      getTo _ = False
+  in any getTo $ tfeature $ okind t
+
+-- | Whether a tile kind (specified by its id) has a ChangeTo feature.
+changeable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+changeable Kind.Ops{okind} t =
+  let getTo F.ChangeTo{} = True
       getTo _ = False
   in any getTo $ tfeature $ okind t

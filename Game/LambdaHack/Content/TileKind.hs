@@ -26,6 +26,7 @@ data TileKind = TileKind
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 
 -- TODO: check that all posible solid place fences have hidden counterparts.
+-- TODO: verify that OpenTo, CloseTo and ChangeTo are assigned as specified.
 -- | Filter a list of kinds, passing through only the incorrect ones, if any.
 --
 -- If tiles look the same on the map, the description should be the same, too.
