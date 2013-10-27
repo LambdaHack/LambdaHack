@@ -10,6 +10,7 @@ module Game.LambdaHack.Common.ServerCmd
 import Data.Text (Text)
 
 import Game.LambdaHack.Common.Actor
+import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
@@ -28,7 +29,7 @@ data CmdSer =
 data CmdSerTakeTime =
     MoveSer ActorId Vector
   | DisplaceSer ActorId Vector
-  | AlterSer ActorId Vector
+  | AlterSer ActorId Vector (Maybe F.Feature)
   | WaitSer ActorId
   | PickupSer ActorId ItemId Int InvChar
   | DropSer ActorId ItemId
@@ -52,7 +53,7 @@ aidCmdSerTakeTime :: CmdSerTakeTime -> ActorId
 aidCmdSerTakeTime cmd = case cmd of
   MoveSer aid _ -> aid
   DisplaceSer aid _ -> aid
-  AlterSer aid _ -> aid
+  AlterSer aid _ _ -> aid
   WaitSer aid -> aid
   PickupSer aid _ _ _ -> aid
   DropSer aid _ -> aid

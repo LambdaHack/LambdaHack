@@ -205,8 +205,9 @@ displaceSer aid dir = do
 --
 -- Note that if @serverTile /= freshClientTile@, @freshClientTile@
 -- should not be alterable (but @serverTile@ may be).
-alterSer :: (MonadAtomic m, MonadServer m) => ActorId -> Vector -> m ()
-alterSer aid dir = do
+alterSer :: (MonadAtomic m, MonadServer m)
+         => ActorId -> Vector -> Maybe F.Feature -> m ()
+alterSer aid dir mfeat = do
   Kind.COps{cotile=cotile@Kind.Ops{okind, opick}} <- getsState scops
   sb <- getsState $ getActorBody aid
   let lid = blid sb
@@ -220,12 +221,16 @@ alterSer aid dir = do
         toTile <- rndToAction $ opick tgroup (const True)
         execCmdAtomic $ AlterTileA lid tpos serverTile toTile
         return True
-  let f feat =
+      alterFeat feat =
         case feat of
           F.OpenTo tgroup -> changeTo tgroup
           F.CloseTo tgroup -> changeTo tgroup
           F.ChangeTo tgroup -> changeTo tgroup
           _ -> return False
+      feats = case mfeat of
+        Nothing -> TileKind.tfeature $ okind serverTile
+        Just feat2 | Tile.hasFeature cotile feat2 serverTile -> [feat2]
+        Just _ -> []
   as <- getsState $ actorList (const True) lid
   if EM.null $ lvl `atI` tpos then
     if unoccupied as tpos then do
@@ -233,11 +238,11 @@ alterSer aid dir = do
         -- Search, in case some actors (of other factions?)
         -- don't know this tile.
         execCmdAtomic $ SearchTileA aid tpos freshClientTile serverTile
-        mapM_ f $ TileKind.tfeature $ okind serverTile
-        -- Even if no effect, at least we searched something,
+        mapM_ alterFeat feats
+        -- Even if no effect, at least we possibly searched something,
         -- so we don't report Failure.
       else do
-        bs <- mapM f $ TileKind.tfeature $ okind freshClientTile
+        bs <- mapM alterFeat feats
         when (not $ or bs) $
           -- Neither searching nor altering possible; silly client.
           execFailure sb AlterNothing

@@ -107,7 +107,7 @@ moveRunAid aid dir = do
               || Tile.closable cotile t
               || Tile.changeable cotile t) then
     -- No access, so search and/or alter the tile.
-    return $ AlterSer aid dir
+    return $ AlterSer aid dir Nothing
     -- We don't use MoveSer, because we don't hit invisible actors here.
     -- The potential invisible actor, e.g., in a wall or in
     -- an inaccessible doorway, is made known, taking a turn.
@@ -322,7 +322,7 @@ projectBla source tpos eps ts = do
 
 triggerSymbols :: [Trigger] -> [Char]
 triggerSymbols [] = []
-triggerSymbols (ApplyItem{..} : ts) = symbol : triggerSymbols ts
+triggerSymbols (ApplyItem{symbol} : ts) = symbol : triggerSymbols ts
 triggerSymbols (_ : ts) = triggerSymbols ts
 
 -- * Apply
@@ -388,11 +388,11 @@ alterTile leader dir ts = do
       alterFeats = alterFeatures ts
   case filter (\feat -> Tile.hasFeature cotile feat t) alterFeats of
     [] -> guessAlter cotile alterFeats t
-    _fs -> return $! AlterSer leader dir
+    feat : _ -> return $! AlterSer leader dir $ Just feat
 
 alterFeatures :: [Trigger] -> [F.Feature]
 alterFeatures [] = []
-alterFeatures (AlterFeature{..} : ts) = feature : alterFeatures ts
+alterFeatures (AlterFeature{feature} : ts) = feature : alterFeatures ts
 alterFeatures (_ : ts) = alterFeatures ts
 
 -- | Guess and report why the bump command failed.
@@ -401,11 +401,11 @@ guessAlter :: MonadClientAbort m
 guessAlter cotile (F.OpenTo _ : _) t | Tile.closable cotile t =
   abortWith "already open"
 guessAlter _ (F.OpenTo _ : _) _ =
-  abortWith "not a door"
+  abortWith "can't be opened"
 guessAlter cotile (F.CloseTo _ : _) t | Tile.openable cotile t =
   abortWith "already closed"
 guessAlter _ (F.CloseTo _ : _) _ =
-  abortWith "not a door"
+  abortWith "can't be closed"
 guessAlter _ _ _ = neverMind True
 
 -- * TriggerTile
@@ -435,7 +435,7 @@ triggerTile leader dpos ts = do
 
 triggerFeatures :: [Trigger] -> [F.Feature]
 triggerFeatures [] = []
-triggerFeatures (TriggerFeature{..} : ts) = feature : triggerFeatures ts
+triggerFeatures (TriggerFeature{feature} : ts) = feature : triggerFeatures ts
 triggerFeatures (_ : ts) = triggerFeatures ts
 
 -- | Verify important feature triggers, such as fleeing the dungeon.
