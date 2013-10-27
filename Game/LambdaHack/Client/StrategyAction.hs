@@ -381,7 +381,7 @@ moveStrategy cops actor s mFoe =
 bumpableHere :: Kind.COps -> Level -> Bool ->  Point -> Bool
 bumpableHere Kind.COps{cotile} lvl foeVisible pos  =
   let t = lvl `at` pos
-  in Tile.hasFeature cotile F.Openable t
+  in Tile.openable cotile t
      || -- Try to find hidden doors only if no foe in sight.
         not foeVisible && Tile.hasFeature cotile F.Suspect t
 

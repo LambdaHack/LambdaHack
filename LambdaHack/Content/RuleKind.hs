@@ -33,10 +33,12 @@ standard = RuleKind
   -- Apart of checking the target tile, we forbid diagonal movement
   -- to and from doors.
   , raccessible    = \ lxsize spos src tpos tgt ->
-      F.Walkable `elem` tfeature tgt
-      && not ((F.Closable `elem` tfeature src ||
-               F.Closable `elem` tfeature tgt)
-              && diagonal lxsize (displacement spos tpos))
+      let getTo F.CloseTo{} = True
+          getTo _ = False
+      in F.Walkable `elem` tfeature tgt
+         && not ((any getTo (tfeature  src) ||
+                  any getTo (tfeature tgt))
+                 && diagonal lxsize (displacement spos tpos))
   , rtitle         = "LambdaHack"
   , rpathsDataFile = Self.getDataFileName
   , rpathsVersion  = Self.version

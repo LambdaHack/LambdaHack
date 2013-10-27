@@ -215,13 +215,15 @@ alterSer aid dir = do
       tpos = spos `shift` dir  -- target position
       serverTile = lvl `at` tpos
       freshClientTile = hideTile cotile tpos lvl
+      changeTo tgroup = do
+        -- No AlterD, because the effect is obvious (e.g., opened door).
+        toTile <- rndToAction $ opick tgroup (const True)
+        execCmdAtomic $ AlterTileA lid tpos serverTile toTile
+        return True
   let f feat =
         case feat of
-          F.ChangeTo tgroup -> do
-            -- No AlterD, because the effect is obvious (e.g., opened door).
-            toTile <- rndToAction $ opick tgroup (const True)
-            execCmdAtomic $ AlterTileA lid tpos serverTile toTile
-            return True
+          F.OpenTo tgroup -> changeTo tgroup
+          F.CloseTo tgroup -> changeTo tgroup
           _ -> return False
   as <- getsState $ actorList (const True) lid
   if EM.null $ lvl `atI` tpos then

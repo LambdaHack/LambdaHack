@@ -25,6 +25,7 @@ import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Utils.Assert
 
 -- | Start running in the given direction and with the given number
@@ -91,10 +92,12 @@ runMode pos dir dirEnterable lxsize =
 -- | Check for disturbances to running such as newly visible items, monsters.
 runDisturbance :: Point -> Int -> Report
                -> [Actor] -> [Actor] -> Perception -> Bool -> Point
-               -> (F.Feature -> Point -> Bool) -> (Point -> Bool) -> X -> Y
+               -> (F.Feature -> Point -> Bool) -> (Point -> Bool)
+               -> Kind.Ops TileKind -> Level -> X -> Y
                -> (Vector, Int) -> Maybe (Vector, Int)
 runDisturbance posLast distLast report hs ms per markSuspect posHere
-               posHasFeature posHasItems lxsize lysize (dirNew, distNew) =
+               posHasFeature posHasItems
+               cotile lvl lxsize lysize (dirNew, distNew) =
   let boringMsgs = map BS.pack [ "Saving backup."
                                , "You hear some noises." ]
       -- TODO: use a regexp from the UI config instead
@@ -134,7 +137,7 @@ runDisturbance posLast distLast report hs ms per markSuspect posHere
       touchExplore fun = touchNew fun == [posThere]
       touchStop fun = touchNew fun /= []
       standNew fun = L.filter (\pos -> posHasFeature F.Walkable pos ||
-                                       posHasFeature F.Openable pos)
+                                       Tile.openable cotile (lvl `at` pos))
                        (touchNew fun)
       standExplore fun = not (fun posHere) && standNew fun == [posThere]
       standStop fun = not (fun posHere) && standNew fun /= []
@@ -183,12 +186,11 @@ continueRunDir leader (dirLast, distLast) = do
           maybe abort (runDir leader) $
             runDisturbance
               posLast distLast sreport hs ms per smarkSuspect posHere
-              posHasFeature posHasItems lxsize lysize (dir, distNew)
+              posHasFeature posHasItems cotile lvl lxsize lysize (dir, distNew)
         | otherwise = abort  -- do not open doors in the middle of a run
       tryRun dir = tryRunDist (dir, distLast)
       _tryRunAndStop dir = tryRunDist (dir, 1000)
-      openableDir pos dir = Tile.hasFeature cotile F.Openable
-                              (lvl `at` (pos `shift` dir))
+      openableDir pos dir = Tile.openable cotile (lvl `at` (pos `shift` dir))
       dirEnterable pos d = accessibleDir cops lvl pos d || openableDir pos d
   case runMode posHere dirLast dirEnterable lxsize of
     RunDeadEnd -> abort                   -- we don't run backwards

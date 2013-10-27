@@ -16,7 +16,7 @@ module Game.LambdaHack.Common.Tile
   ( SmellTime
   , kindHasFeature, kindHas, hasFeature
   , isClear, isLit, isExplorable, similar, speedup
-  , changeTo, revealAs, hiddenAs
+  , openTo, closeTo, revealAs, hiddenAs, openable, closable
   ) where
 
 import qualified Data.Array.Unboxed as A
@@ -84,9 +84,19 @@ speedup allClear Kind.Ops{ofoldrWithKey, obounds} =
       isLitTab   = tabulate $ kindHasFeature F.Lit
   in Kind.TileSpeedup {isClearTab, isLitTab}
 
-changeTo :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
-changeTo Kind.Ops{okind, opick} t = do
-  let getTo (F.ChangeTo group) acc = group : acc
+openTo :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
+openTo Kind.Ops{okind, opick} t = do
+  let getTo (F.OpenTo group) acc = group : acc
+      getTo _ acc = acc
+  case foldr getTo [] $ tfeature $ okind t of
+    [] -> return t
+    groups -> do
+      group <- oneOf groups
+      opick group (const True)
+
+closeTo :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
+closeTo Kind.Ops{okind, opick} t = do
+  let getTo (F.CloseTo group) acc = group : acc
       getTo _ acc = acc
   case foldr getTo [] $ tfeature $ okind t of
     [] -> return t
@@ -111,3 +121,17 @@ hiddenAs Kind.Ops{okind, ouniqGroup} t =
   in case foldr getTo Nothing (tfeature (okind t)) of
        Nothing    -> t
        Just group -> ouniqGroup group
+
+-- | Whether a tile kind (specified by its id) has a OpenTo feature.
+openable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+openable Kind.Ops{okind} t =
+  let getTo F.OpenTo{} = True
+      getTo _ = False
+  in any getTo $ tfeature $ okind t
+
+-- | Whether a tile kind (specified by its id) has a CloseTo feature.
+closable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+closable Kind.Ops{okind} t =
+  let getTo F.CloseTo{} = True
+      getTo _ = False
+  in any getTo $ tfeature $ okind t

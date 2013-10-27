@@ -126,7 +126,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ opick
             if not ro then
               return $ EM.insert p doorClosedId l
             else do
-              doorOpenId <- Tile.changeTo cotile doorClosedId
+              doorOpenId <- Tile.openTo cotile doorClosedId
               return $ EM.insert p doorOpenId l
   dmap <- foldM f lm (EM.assocs lm)
   let cave = Cave

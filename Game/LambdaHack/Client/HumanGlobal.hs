@@ -102,7 +102,8 @@ moveRunAid aid dir = do
   else if not $ EM.null $ lvl `atI` tpos then
     abortFailure AlterBlockItem
   else if Tile.hasFeature cotile F.Suspect t
-          || Tile.hasFeature cotile F.Openable t then  -- TODO: ChangeTo=Alter
+          || Tile.openable cotile t
+          || Tile.closable cotile t then
     -- No access, so search and/or alter the tile.
     return $ AlterSer aid dir
     -- We don't use MoveSer, because we don't hit invisible actors here.
@@ -393,14 +394,15 @@ alterFeatures (AlterFeature{..} : ts) = feature : alterFeatures ts
 alterFeatures (_ : ts) = alterFeatures ts
 
 -- | Guess and report why the bump command failed.
-guessAlter :: MonadClientAbort m => Kind.Ops TileKind -> [F.Feature] -> Kind.Id TileKind -> m a
-guessAlter cotile (F.Openable : _) t | Tile.hasFeature cotile F.Closable t =
+guessAlter :: MonadClientAbort m
+           => Kind.Ops TileKind -> [F.Feature] -> Kind.Id TileKind -> m a
+guessAlter cotile (F.OpenTo _ : _) t | Tile.closable cotile t =
   abortWith "already open"
-guessAlter _ (F.Openable : _) _ =
+guessAlter _ (F.OpenTo _ : _) _ =
   abortWith "not a door"
-guessAlter cotile (F.Closable : _) t | Tile.hasFeature cotile F.Openable t =
+guessAlter cotile (F.CloseTo _ : _) t | Tile.openable cotile t =
   abortWith "already closed"
-guessAlter _ (F.Closable : _) _ =
+guessAlter _ (F.CloseTo _ : _) _ =
   abortWith "not a door"
 guessAlter _ _ _ = neverMind True
 

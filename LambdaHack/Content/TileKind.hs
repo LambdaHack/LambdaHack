@@ -68,8 +68,8 @@ doorClosedV = TileKind
   , tfreq    = [("vertical closed door", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
-  , tfeature = [ Exit, Openable
-               , ChangeTo "vertical open door"
+  , tfeature = [ Exit
+               , OpenTo "vertical open door"
                , HideAs "suspect vertical wall"
                ]
   }
@@ -79,8 +79,8 @@ doorOpenV = TileKind
   , tfreq    = [("vertical open door", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
-  , tfeature = [ Walkable, Clear, Exit, Closable
-               , ChangeTo "vertical closed door"
+  , tfeature = [ Walkable, Clear, Exit
+               , CloseTo "vertical closed door"
                ]
   }
 wallH = TileKind
@@ -107,8 +107,8 @@ doorClosedH = TileKind
   , tfreq    = [("horizontal closed door", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
-  , tfeature = [ Exit, Openable
-               , ChangeTo "horizontal open door"
+  , tfeature = [ Exit
+               , OpenTo "horizontal open door"
                , HideAs "suspect horizontal wall"
                ]
   }
@@ -118,8 +118,8 @@ doorOpenH = TileKind
   , tfreq    = [("horizontal open door", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
-  , tfeature = [ Walkable, Clear, Exit, Closable
-               , ChangeTo "horizontal closed door"
+  , tfeature = [ Walkable, Clear, Exit
+               , CloseTo "horizontal closed door"
                ]
   }
 stairsUpDark = TileKind
