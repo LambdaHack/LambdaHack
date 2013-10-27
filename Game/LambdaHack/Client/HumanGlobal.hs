@@ -101,10 +101,11 @@ moveRunAid aid dir = do
     -- The potential invisible actor is hit. War is started without asking.
   else if not $ EM.null $ lvl `atI` tpos then
     abortFailure AlterBlockItem
-  else if Tile.hasFeature cotile F.Suspect t
-          || Tile.openable cotile t
-          || Tile.closable cotile t
-          || Tile.changeable cotile t then
+  else if not (Tile.hasFeature cotile F.Walkable t)  -- not implied by access
+          && (Tile.hasFeature cotile F.Suspect t
+              || Tile.openable cotile t
+              || Tile.closable cotile t
+              || Tile.changeable cotile t) then
     -- No access, so search and/or alter the tile.
     return $ AlterSer aid dir
     -- We don't use MoveSer, because we don't hit invisible actors here.
