@@ -28,8 +28,9 @@ data CmdSer =
 
 data CmdSerTakeTime =
     MoveSer ActorId Vector
-  | DisplaceSer ActorId Vector
-  | AlterSer ActorId Vector (Maybe F.Feature)
+  | MeleeSer ActorId ActorId
+  | DisplaceSer ActorId ActorId
+  | AlterSer ActorId Point (Maybe F.Feature)
   | WaitSer ActorId
   | PickupSer ActorId ItemId Int InvChar
   | DropSer ActorId ItemId
@@ -52,6 +53,7 @@ aidCmdSer cmd = case cmd of
 aidCmdSerTakeTime :: CmdSerTakeTime -> ActorId
 aidCmdSerTakeTime cmd = case cmd of
   MoveSer aid _ -> aid
+  MeleeSer aid _ -> aid
   DisplaceSer aid _ -> aid
   AlterSer aid _ _ -> aid
   WaitSer aid -> aid
@@ -64,27 +66,31 @@ aidCmdSerTakeTime cmd = case cmd of
 
 data FailureSer =
     MoveNothing
-  | RunNothing
-  | RunDisplaceAccess
+  | MeleeDistant
+  | DisplaceDistant
+  | DisplaceAccess
+  | AlterDistant
+  | AlterBlockActor
+  | AlterBlockItem
+  | AlterNothing
   | ProjectAimOnself
   | ProjectBlockTerrain
   | ProjectBlockActor
   | ProjectBlockFoes
-  | AlterBlockActor
-  | AlterBlockItem
-  | AlterNothing
   | TriggerNothing
 
 showFailureSer :: FailureSer -> Msg
 showFailureSer failureSer = case failureSer of
   MoveNothing -> "wasting time on moving into obstacle"
-  RunNothing -> "switching places with non-existent actor"
-  RunDisplaceAccess -> "switching places without access"
+  MeleeDistant -> "trying to melee a distant foe"
+  DisplaceDistant -> "trying to switch places with a distant actor"
+  DisplaceAccess -> "switching places without access"
+  AlterDistant -> "trying to alter a distant tile"
+  AlterBlockActor -> "blocked by an actor"
+  AlterBlockItem -> "jammed by an item"
+  AlterNothing -> "wasting time on altering nothing"
   ProjectAimOnself -> "cannot aim at oneself"
   ProjectBlockTerrain -> "aiming obstructed by terrain"
   ProjectBlockActor -> "aiming blocked by an actor"
   ProjectBlockFoes -> "aiming interrupted by foes"
-  AlterBlockActor -> "blocked by an actor"
-  AlterBlockItem -> "jammed by an item"
-  AlterNothing -> "wasting time on altering nothing"
   TriggerNothing -> "wasting time on triggering nothing"

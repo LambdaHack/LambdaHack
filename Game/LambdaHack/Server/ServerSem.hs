@@ -72,6 +72,11 @@ broadcastSfxAtomic fcmd = do
 
 -- * MoveSer
 
+checkAdjacent :: MonadActionRO m => Actor -> Actor -> m Bool
+checkAdjacent sb tb = do
+  lxsize <- getsLevel (blid sb) lxsize
+  return $ blid sb == blid tb && adjacent lxsize (bpos sb) (bpos tb)
+
 -- TODO: let only some actors/items leave smell, e.g., a Smelly Hide Armour.
 -- | Add a smell trace for the actor to the level. For now, all and only
 -- actors from non-spawning factions leave smell.
@@ -87,63 +92,6 @@ addSmell aid = do
     let newTime = timeAdd time smellTimeout
     execCmdAtomic $ AlterSmellA (blid b) (bpos b) oldS (Just newTime)
 
--- | Resolves the result of an actor moving into another.
--- Actors on blocked positions can be attacked without any restrictions.
--- For instance, an actor embedded in a wall can be attacked from
--- an adjacent position. This function is analogous to projectGroupItem,
--- but for melee and not using up the weapon.
-actorAttackActor :: (MonadAtomic m, MonadServer m)
-                 => ActorId -> ActorId -> m ()
-actorAttackActor source target = do
-  cops@Kind.COps{coitem=Kind.Ops{opick, okind}} <- getsState scops
-  sb <- getsState (getActorBody source)
-  tb <- getsState (getActorBody target)
-  let sfid = bfid sb
-      tfid = bfid tb
-  time <- getsState $ getLocalTime (blid tb)
-  s <- getState
-  itemAssocs <- getsState $ getActorItem source
-  (miid, item) <-
-    if bproj sb
-    then case itemAssocs of
-      [(iid, item)] -> return (Just iid, item)  -- projectile
-      _ -> assert `failure` itemAssocs
-    else case strongestSword cops itemAssocs of
-      Just (_, (iid, w)) -> return (Just iid, w)
-      Nothing -> do  -- hand to hand combat
-        let h2hGroup | isSpawnFaction sfid s = "monstrous"
-                     | otherwise = "unarmed"
-        h2hKind <- rndToAction $ opick h2hGroup (const True)
-        flavour <- getsServer sflavour
-        discoRev <- getsServer sdiscoRev
-        let kind = okind h2hKind
-            effect = fmap (maxDice . fst) (ieffect kind)
-        return ( Nothing
-               , buildItem flavour discoRev h2hKind kind effect )
-  let performHit block = do
-        let hitA = if block then HitBlockD else HitD
-        execSfxAtomic $ StrikeD source target item hitA
-        -- Deduct a hitpoint for a pierce of a projectile.
-        when (bproj sb) $ execCmdAtomic $ HealActorA source (-1)
-        -- Msgs inside itemEffectSem describe the target part.
-        itemEffect source target miid item
-  -- Projectiles can't be blocked (though can be sidestepped).
-  -- Incapacitated actors can't block
-  if braced tb time && not (bproj sb) && bhp tb > 0
-    then do
-      blocked <- rndToAction $ chance $ 1%2
-      if blocked
-        then execSfxAtomic $ StrikeD source target item MissBlockD
-        else performHit True
-    else performHit False
-  sfact <- getsState $ (EM.! sfid) . sfactionD
-  -- The only way to start a war is to slap an enemy. Being hit by
-  -- and hitting projectiles count as unintentional friendly fire.
-  let friendlyFire = bproj sb || bproj tb
-      fromDipl = EM.findWithDefault Unknown tfid (gdipl sfact)
-  unless (friendlyFire || isAtWar sfact tfid || sfid == tfid) $
-    execCmdAtomic $ DiplFactionA sfid tfid fromDipl War
-
 -- | Actor moves or attacks.
 -- Note that client may not be able to see an invisible monster
 -- so it's the server that determines if melee took place, etc.
@@ -151,9 +99,9 @@ actorAttackActor source target = do
 -- and it needs full context for that, e.g., the initial actor position
 -- to check if melee attack does not try to reach to a distant tile.
 moveSer :: (MonadAtomic m, MonadServer m) => ActorId -> Vector -> m ()
-moveSer aid dir = do
+moveSer source dir = do
   cops <- getsState scops
-  sb <- getsState $ getActorBody aid
+  sb <- getsState $ getActorBody source
   let lid = blid sb
   lvl <- getsLevel lid id
   let spos = bpos sb           -- source position
@@ -163,41 +111,99 @@ moveSer aid dir = do
   case tgt of
     Just target ->  -- visible or not
       -- Attacking does not require full access, adjacency is enough.
-      actorAttackActor aid target
+      meleeSer source target
     Nothing
       | accessible cops lvl spos tpos -> do
           -- Movement requires full access.
-          execCmdAtomic $ MoveActorA aid spos tpos
-          addSmell aid
+          execCmdAtomic $ MoveActorA source spos tpos
+          addSmell source
       | otherwise ->
           -- Client foolishly tries to move into blocked, boring tile.
           execFailure sb MoveNothing
 
+-- * MeleeSer
+
+-- | Resolves the result of an actor moving into another.
+-- Actors on blocked positions can be attacked without any restrictions.
+-- For instance, an actor embedded in a wall can be attacked from
+-- an adjacent position. This function is analogous to projectGroupItem,
+-- but for melee and not using up the weapon.
+meleeSer :: (MonadAtomic m, MonadServer m) => ActorId -> ActorId -> m ()
+meleeSer source target = do
+  cops@Kind.COps{coitem=Kind.Ops{opick, okind}} <- getsState scops
+  sb <- getsState $ getActorBody source
+  tb <- getsState $ getActorBody target
+  adj <- checkAdjacent sb tb
+  if not adj then execFailure sb MeleeDistant
+  else do
+    let sfid = bfid sb
+        tfid = bfid tb
+    time <- getsState $ getLocalTime (blid tb)
+    itemAssocs <- getsState $ getActorItem source
+    (miid, item) <-
+      if bproj sb
+      then case itemAssocs of
+        [(iid, item)] -> return (Just iid, item)  -- projectile
+        _ -> assert `failure` itemAssocs
+      else case strongestSword cops itemAssocs of
+        Just (_, (iid, w)) -> return (Just iid, w)
+        Nothing -> do  -- hand to hand combat
+          isSp <- getsState $ isSpawnFaction sfid
+          let h2hGroup | isSp = "monstrous"
+                       | otherwise = "unarmed"
+          h2hKind <- rndToAction $ opick h2hGroup (const True)
+          flavour <- getsServer sflavour
+          discoRev <- getsServer sdiscoRev
+          let kind = okind h2hKind
+              effect = fmap (maxDice . fst) (ieffect kind)
+          return ( Nothing
+                 , buildItem flavour discoRev h2hKind kind effect )
+    let performHit block = do
+          let hitA = if block then HitBlockD else HitD
+          execSfxAtomic $ StrikeD source target item hitA
+          -- Deduct a hitpoint for a pierce of a projectile.
+          when (bproj sb) $ execCmdAtomic $ HealActorA source (-1)
+          -- Msgs inside itemEffectSem describe the target part.
+          itemEffect source target miid item
+    -- Projectiles can't be blocked (though can be sidestepped).
+    -- Incapacitated actors can't block
+    if braced tb time && not (bproj sb) && bhp tb > 0
+      then do
+        blocked <- rndToAction $ chance $ 1%2
+        if blocked
+          then execSfxAtomic $ StrikeD source target item MissBlockD
+          else performHit True
+      else performHit False
+    sfact <- getsState $ (EM.! sfid) . sfactionD
+    -- The only way to start a war is to slap an enemy. Being hit by
+    -- and hitting projectiles count as unintentional friendly fire.
+    let friendlyFire = bproj sb || bproj tb
+        fromDipl = EM.findWithDefault Unknown tfid (gdipl sfact)
+    unless (friendlyFire || isAtWar sfact tfid || sfid == tfid) $
+      execCmdAtomic $ DiplFactionA sfid tfid fromDipl War
+
 -- * DisplaceSer
 
 -- | Actor tries to swap positions with another.
-displaceSer :: (MonadAtomic m, MonadServer m) => ActorId -> Vector -> m ()
-displaceSer aid dir = do
+displaceSer :: (MonadAtomic m, MonadServer m) => ActorId -> ActorId -> m ()
+displaceSer source target = do
   cops <- getsState scops
-  sb <- getsState $ getActorBody aid
-  let lid = blid sb
-  lvl <- getsLevel lid id
-  let spos = bpos sb           -- source position
-      tpos = spos `shift` dir  -- target position
-  -- We start by checking actors at the the target position.
-  tgt <- getsState $ posToActor tpos lid
-  case tgt of
-    Just target
-      | accessible cops lvl spos tpos -> do
-          -- Displacing requires full access.
-          execCmdAtomic $ DisplaceActorA aid target
-          addSmell aid
-      | otherwise ->
-          -- Client foolishly tries to displace an actor without access.
-          execFailure sb RunDisplaceAccess
-    Nothing ->
-      -- Client foolishly tries to displace an empty tile.
-      execFailure sb RunNothing
+  sb <- getsState $ getActorBody source
+  tb <- getsState $ getActorBody target
+  adj <- checkAdjacent sb tb
+  if not adj then execFailure sb MeleeDistant
+  else do
+    let lid = blid sb
+    lvl <- getsLevel lid id
+    let spos = bpos sb
+        tpos = bpos tb
+    if accessible cops lvl spos tpos then do
+      -- Displacing requires full access.
+      execCmdAtomic $ DisplaceActorA source target
+      addSmell source
+    else do
+      -- Client foolishly tries to displace an actor without access.
+      execFailure sb DisplaceAccess
 
 -- * AlterSer
 
@@ -206,48 +212,50 @@ displaceSer aid dir = do
 -- Note that if @serverTile /= freshClientTile@, @freshClientTile@
 -- should not be alterable (but @serverTile@ may be).
 alterSer :: (MonadAtomic m, MonadServer m)
-         => ActorId -> Vector -> Maybe F.Feature -> m ()
-alterSer aid dir mfeat = do
+         => ActorId -> Point -> Maybe F.Feature -> m ()
+alterSer source tpos mfeat = do
   Kind.COps{cotile=cotile@Kind.Ops{okind, opick}} <- getsState scops
-  sb <- getsState $ getActorBody aid
+  sb <- getsState $ getActorBody source
   let lid = blid sb
-  lvl <- getsLevel lid id
-  let spos = bpos sb           -- source position
-      tpos = spos `shift` dir  -- target position
-      serverTile = lvl `at` tpos
-      freshClientTile = hideTile cotile tpos lvl
-      changeTo tgroup = do
-        -- No AlterD, because the effect is obvious (e.g., opened door).
-        toTile <- rndToAction $ opick tgroup (const True)
-        execCmdAtomic $ AlterTileA lid tpos serverTile toTile
-        return True
-      alterFeat feat =
-        case feat of
-          F.OpenTo tgroup -> changeTo tgroup
-          F.CloseTo tgroup -> changeTo tgroup
-          F.ChangeTo tgroup -> changeTo tgroup
-          _ -> return False
-      feats = case mfeat of
-        Nothing -> TileKind.tfeature $ okind serverTile
-        Just feat2 | Tile.hasFeature cotile feat2 serverTile -> [feat2]
-        Just _ -> []
-  as <- getsState $ actorList (const True) lid
-  if EM.null $ lvl `atI` tpos then
-    if unoccupied as tpos then do
-      if serverTile /= freshClientTile then do
-        -- Search, in case some actors (of other factions?)
-        -- don't know this tile.
-        execCmdAtomic $ SearchTileA aid tpos freshClientTile serverTile
-        mapM_ alterFeat feats
-        -- Even if no effect, at least we possibly searched something,
-        -- so we don't report Failure.
-      else do
-        bs <- mapM alterFeat feats
-        when (not $ or bs) $
-          -- Neither searching nor altering possible; silly client.
-          execFailure sb AlterNothing
-    else execFailure sb AlterBlockActor
-  else execFailure sb AlterBlockItem
+      spos = bpos sb
+  lxsize <- getsLevel lid lxsize
+  if not $ adjacent lxsize spos tpos then execFailure sb AlterDistant
+  else do
+    lvl <- getsLevel lid id
+    let serverTile = lvl `at` tpos
+        freshClientTile = hideTile cotile tpos lvl
+        changeTo tgroup = do
+          -- No AlterD, because the effect is obvious (e.g., opened door).
+          toTile <- rndToAction $ opick tgroup (const True)
+          execCmdAtomic $ AlterTileA lid tpos serverTile toTile
+          return True
+        alterFeat feat =
+          case feat of
+            F.OpenTo tgroup -> changeTo tgroup
+            F.CloseTo tgroup -> changeTo tgroup
+            F.ChangeTo tgroup -> changeTo tgroup
+            _ -> return False
+        feats = case mfeat of
+          Nothing -> TileKind.tfeature $ okind serverTile
+          Just feat2 | Tile.hasFeature cotile feat2 serverTile -> [feat2]
+          Just _ -> []
+    as <- getsState $ actorList (const True) lid
+    if EM.null $ lvl `atI` tpos then
+      if unoccupied as tpos then do
+        if serverTile /= freshClientTile then do
+          -- Search, in case some actors (of other factions?)
+          -- don't know this tile.
+          execCmdAtomic $ SearchTileA source tpos freshClientTile serverTile
+          mapM_ alterFeat feats
+          -- Even if no effect, at least we possibly searched something,
+          -- so we don't report Failure.
+        else do
+          bs <- mapM alterFeat feats
+          when (not $ or bs) $
+            -- Neither searching nor altering possible; silly client.
+            execFailure sb AlterNothing
+      else execFailure sb AlterBlockActor
+    else execFailure sb AlterBlockItem
 
 -- * WaitSer
 

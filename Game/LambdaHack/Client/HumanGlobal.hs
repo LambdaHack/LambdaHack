@@ -4,7 +4,7 @@
 -- A couple of them do not take time, the rest does.
 -- TODO: document
 module Game.LambdaHack.Client.HumanGlobal
-  ( moveRunAid, displaceAid, attackAid, waitHuman, pickupHuman, dropHuman
+  ( moveRunAid, displaceAid, meleeAid, waitHuman, pickupHuman, dropHuman
   , projectAid, applyHuman, alterDirHuman, triggerTileHuman
   , gameRestartHuman, gameExitHuman, gameSaveHuman, cfgDumpHuman
   ) where
@@ -49,10 +49,10 @@ abortFailure = abortWith . showFailureSer
 -- * Move and Run
 
 -- | Actor atttacks an enemy actor or his own projectile.
-attackAid :: (MonadClientAbort m, MonadClientUI m)
-          => ActorId -> Vector -> ActorId -> m CmdSerTakeTime
-attackAid aid dir target = do
-  sb <- getsState $ getActorBody aid
+meleeAid :: (MonadClientAbort m, MonadClientUI m)
+          => ActorId -> ActorId -> m CmdSerTakeTime
+meleeAid source target = do
+  sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   sfact <- getsState $ (EM.! bfid sb) . sfactionD
   unless (bproj tb || isAtWar sfact (bfid tb)) $ do
@@ -63,33 +63,33 @@ attackAid aid dir target = do
     go <- displayYesNo ColorBW
             "You are bound by an alliance. Really attack?"
     unless go $ abortWith "Attack canceled."
-  return $ MoveSer aid dir
+  return $ MeleeSer source target
   -- Seeing the actor prevents altering a tile under it, but that
   -- does not limit the player, he just doesn't waste a turn
-  -- on a failed altering. We don't use AttackSer, because we attack
-  -- both visible and invisible actors.
+  -- on a failed altering.
 
 -- | Actor swaps position with another.
 displaceAid :: (MonadClientAbort m, MonadClientUI m)
-            => ActorId -> Vector -> m CmdSerTakeTime
-displaceAid aid dir = do
+            => ActorId -> ActorId -> m CmdSerTakeTime
+displaceAid source target = do
   cops <- getsState scops
-  sb <- getsState $ getActorBody aid
+  sb <- getsState $ getActorBody source
+  tb <- getsState $ getActorBody target
   let lid = blid sb
   lvl <- getsLevel lid id
-  let spos = bpos sb           -- source position
-      tpos = spos `shift` dir  -- target position
+  let spos = bpos sb
+      tpos = bpos tb
   if accessible cops lvl spos tpos then
     -- Displacing requires full access.
-    return $ DisplaceSer aid dir
-  else abortFailure RunDisplaceAccess
+    return $ DisplaceSer source target
+  else abortFailure DisplaceAccess
 
 -- | Actor moves or searches or alters. No visible actor at the position.
 moveRunAid :: (MonadClientAbort m, MonadClientUI m)
            => ActorId -> Vector -> m CmdSerTakeTime
-moveRunAid aid dir = do
+moveRunAid source dir = do
   cops@Kind.COps{cotile} <- getsState scops
-  sb <- getsState $ getActorBody aid
+  sb <- getsState $ getActorBody source
   let lid = blid sb
   lvl <- getsLevel lid id
   let spos = bpos sb           -- source position
@@ -97,7 +97,7 @@ moveRunAid aid dir = do
       t = lvl `at` tpos
   if accessible cops lvl spos tpos then
     -- Movement requires full access.
-    return $ MoveSer aid dir
+    return $ MoveSer source dir
     -- The potential invisible actor is hit. War is started without asking.
   else if not $ EM.null $ lvl `atI` tpos then
     abortFailure AlterBlockItem
@@ -107,7 +107,7 @@ moveRunAid aid dir = do
               || Tile.closable cotile t
               || Tile.changeable cotile t) then
     -- No access, so search and/or alter the tile.
-    return $ AlterSer aid dir Nothing
+    return $ AlterSer source tpos Nothing
     -- We don't use MoveSer, because we don't hit invisible actors here.
     -- The potential invisible actor, e.g., in a wall or in
     -- an inaccessible doorway, is made known, taking a turn.
@@ -363,7 +363,7 @@ getGroupItem leader is inv object syms prompt packName = do
 
 -- | Ask for a direction and alter a tile, if possible.
 alterDirHuman :: (MonadClientAbort m, MonadClientUI m)
-                => [Trigger] -> m CmdSerTakeTime
+              => [Trigger] -> m CmdSerTakeTime
 alterDirHuman ts = do
   let verb1 = case ts of
         [] -> "alter"
@@ -378,17 +378,17 @@ alterDirHuman ts = do
 
 -- | Player tries to alter a tile using a feature.
 alterTile :: (MonadClientAbort m, MonadClientUI m)
-         => ActorId -> Vector -> [Trigger] -> m CmdSerTakeTime
-alterTile leader dir ts = do
+          => ActorId -> Vector -> [Trigger] -> m CmdSerTakeTime
+alterTile source dir ts = do
   Kind.COps{cotile} <- getsState scops
-  b <- getsState $ getActorBody leader
+  b <- getsState $ getActorBody source
   lvl <- getsLevel (blid b) id
-  let dpos = bpos b `shift` dir
-      t = lvl `at` dpos
+  let tpos = bpos b `shift` dir
+      t = lvl `at` tpos
       alterFeats = alterFeatures ts
   case filter (\feat -> Tile.hasFeature cotile feat t) alterFeats of
     [] -> guessAlter cotile alterFeats t
-    feat : _ -> return $! AlterSer leader dir $ Just feat
+    feat : _ -> return $! AlterSer source tpos $ Just feat
 
 alterFeatures :: [Trigger] -> [F.Feature]
 alterFeatures [] = []

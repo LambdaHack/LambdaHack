@@ -84,14 +84,13 @@ moveRunHuman :: (MonadClientAbort m, MonadClientUI m)
 moveRunHuman run v = do
   tgtMode <- getsClient stgtMode
   (arena, Level{lxsize}) <- viewedLevel
-  leader <- getLeaderUI
-  sb <- getsState $ getActorBody leader
+  source <- getLeaderUI
+  sb <- getsState $ getActorBody source
+  let dir = toDir lxsize v
   if isJust tgtMode then do
-    let dir = toDir lxsize v
     moveCursor dir (if run then 10 else 1) >> return Nothing
   else do
-    let dir = toDir lxsize v
-        tpos = bpos sb `shift` dir
+    let tpos = bpos sb `shift` dir
     -- We start by checking actors at the the target position,
     -- which gives a partial information (actors can be invisible),
     -- as opposed to accessibility (and items) which are always accurate
@@ -100,26 +99,26 @@ moveRunHuman run v = do
     case tgt of
       Nothing -> do  -- move or search or alter
         when run $ modifyClient $ \cli -> cli {srunning = Just (dir, 1)}
-        fmap (Just . TakeTimeSer) $ moveRunAid leader dir
+        fmap (Just . TakeTimeSer) $ moveRunAid source dir
         -- When running, the invisible actor is hit (not displaced!),
         -- so that running in the presence of roving invisible
         -- actors is equivalent to moving (with visible actors
         -- this is not a problem, since runnning stops early enough).
         -- TODO: stop running at invisible actor
-      Just _target | run ->
+      Just target | run ->
         -- Displacing requires accessibility, but it's checked later on.
-        fmap (Just . TakeTimeSer) $ displaceAid leader dir
+        fmap (Just . TakeTimeSer) $ displaceAid source target
       Just target -> do
         tb <- getsState $ getActorBody target
         -- We always see actors from our own faction.
         if bfid tb == bfid sb && not (bproj tb) then do
           -- Select adjacent actor by bumping into him. Takes no time.
           success <- selectLeader target
-          assert (success `blame` (leader, target, tb)) skip
+          assert (success `blame` (source, target, tb)) skip
           return Nothing
         else
           -- Attacking does not require full access, adjacency is enough.
-          fmap (Just . TakeTimeSer) $ attackAid leader dir target
+          fmap (Just . TakeTimeSer) $ meleeAid source target
 
 projectHuman :: (MonadClientAbort m, MonadClientUI m)
              => [Trigger] -> WriterT Slideshow m (Maybe CmdSer)

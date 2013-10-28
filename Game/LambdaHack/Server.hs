@@ -34,9 +34,10 @@ cmdSerSem cmd = case cmd of
 
 cmdSerSemTakeTime :: (MonadAtomic m, MonadServer m) => CmdSerTakeTime -> m ()
 cmdSerSemTakeTime cmd = case cmd of
-  MoveSer aid dir -> moveSer aid dir
-  DisplaceSer aid dir -> displaceSer aid dir
-  AlterSer aid dir mfeat -> alterSer aid dir mfeat
+  MoveSer source target -> moveSer source target
+  MeleeSer source target -> meleeSer source target
+  DisplaceSer source target -> displaceSer source target
+  AlterSer source tpos mfeat -> alterSer source tpos mfeat
   WaitSer aid -> waitSer aid
   PickupSer aid i k l -> pickupSer aid i k l
   DropSer aid iid -> dropSer aid iid
