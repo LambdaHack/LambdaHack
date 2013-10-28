@@ -73,9 +73,10 @@ nearbyFreePoints :: Kind.Ops TileKind
                  -> [Point]
 nearbyFreePoints cotile f start lid s =
   let lvl@Level{lxsize, lysize} = sdungeon s EM.! lid
+      as = actorList (const True) lid s
       good p = f (lvl `at` p)
                && Tile.hasFeature cotile F.Walkable (lvl `at` p)
-               && unoccupied (actorList (const True) lid s) p
+               && unoccupied as p
       ps = nub $ start : concatMap (vicinity lxsize lysize) ps
   in filter good ps
 

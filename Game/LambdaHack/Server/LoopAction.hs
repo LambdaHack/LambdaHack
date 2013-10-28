@@ -317,6 +317,7 @@ rollSpawnPos :: Kind.COps -> ES.EnumSet Point -> LevelId -> Level -> State
 rollSpawnPos Kind.COps{cotile} visible lid Level{ltile, lxsize, lysize} s = do
   let factionDist = max lxsize lysize - 5
       inhabitants = actorNotProjList (const True) lid s
+      as = actorList (const True) lid s
       isLit = Tile.isLit cotile
       distantAtLeast d p _ =
         all (\b -> chessDist lxsize (bpos b) p > d) inhabitants
@@ -330,7 +331,7 @@ rollSpawnPos Kind.COps{cotile} visible lid Level{ltile, lxsize, lysize} s = do
     , distantAtLeast $ factionDist `div` 4
     , distantAtLeast 3  -- otherwise a fast actor can walk and hit in one turn
     , \ p t -> Tile.hasFeature cotile F.Walkable t
-               && unoccupied (actorList (const True) lid s) p
+               && unoccupied as p
     ]
 
 -- TODO: generalize to any list of items (or effects) applied to all actors

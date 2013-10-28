@@ -202,7 +202,7 @@ pickup actor s =
           l = if jsymbol item == '$' then Just $ InvChar '$' else Nothing
       in case assignLetter iid l body of
         Just l2 -> returN "pickup" $ PickupSer actor iid k l2
-        Nothing -> returN "pickup" $ WaitSer actor
+        Nothing -> returN "pickup" $ WaitSer actor  -- TODO
 
 melee :: ActorId -> State -> Point -> Strategy CmdSerTakeTime
 melee actor s fpos =

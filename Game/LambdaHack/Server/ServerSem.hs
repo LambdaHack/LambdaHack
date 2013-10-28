@@ -159,7 +159,7 @@ moveSer aid dir = do
   let spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
   -- We start by checking actors at the the target position.
-  tgt <- getsState (posToActor tpos lid)
+  tgt <- getsState $ posToActor tpos lid
   case tgt of
     Just target ->  -- visible or not
       -- Attacking does not require full access, adjacency is enough.
@@ -185,7 +185,7 @@ displaceSer aid dir = do
   let spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
   -- We start by checking actors at the the target position.
-  tgt <- getsState (posToActor tpos lid)
+  tgt <- getsState $ posToActor tpos lid
   case tgt of
     Just target
       | accessible cops lvl spos tpos -> do
@@ -305,14 +305,14 @@ projectSer source tpos eps iid container = do
         Just [] -> assert `failure`
                      (spos, tpos, "project from the edge of level" :: Text)
         Just (pos : rest) -> do
-          inhabitants <- getsState (posToActor pos lid)
+          as <- getsState $ actorList (const True) lid
           lvl <- getsLevel lid id
           let t = lvl `at` pos
           if not $ Tile.hasFeature cotile F.Clear t
             then execFailure sb ProjectBlockTerrain
-            else if isJust inhabitants
-                 then execFailure sb ProjectBlockActor
-                 else projectBla source pos rest iid container
+            else if unoccupied as pos
+                 then projectBla source pos rest iid container
+                 else execFailure sb ProjectBlockActor
 
 projectBla :: (MonadAtomic m, MonadServer m)
            => ActorId    -- ^ actor projecting the item (is on current lvl)

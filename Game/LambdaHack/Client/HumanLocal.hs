@@ -351,18 +351,17 @@ tgtEnemyLeader stgtModeNew = do
   stgtMode <- getsClient stgtMode
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  ms <- getsState $ actorNotProjAssocs (isAtWar fact) lid
-  let plms = filter ((/= leader) . fst) ms  -- don't target yourself
-      ordPos (_, m) = (chessDist lxsize ppos $ bpos m, bpos m)
-      dms = sortBy (comparing ordPos) plms
+  bs <- getsState $ actorNotProjAssocs (isAtWar fact) lid
+  let ordPos (_, m) = (chessDist lxsize ppos $ bpos m, bpos m)
+      dbs = sortBy (comparing ordPos) bs
       (lt, gt) = case target of
             Just (TEnemy n _) | isJust stgtMode ->  -- pick next enemy
-              let i = fromMaybe (-1) $ findIndex ((== n) . fst) dms
-              in splitAt (i + 1) dms
+              let i = fromMaybe (-1) $ findIndex ((== n) . fst) dbs
+              in splitAt (i + 1) dbs
             Just (TEnemy n _) ->  -- try to retarget the old enemy
-              let i = fromMaybe (-1) $ findIndex ((== n) . fst) dms
-              in splitAt i dms
-            _ -> (dms, [])  -- target first enemy (e.g., number 0)
+              let i = fromMaybe (-1) $ findIndex ((== n) . fst) dbs
+              in splitAt i dbs
+            _ -> (dbs, [])  -- target first enemy (e.g., number 0)
       gtlt = gt ++ lt
       seen (_, m) =
         let mpos = bpos m            -- it is remembered by faction
@@ -520,12 +519,12 @@ endTargeting accept = do
     (lid, _) <- viewedLevel
     side <- getsClient sside
     fact <- getsState $ (EM.! side) . sfactionD
-    ms <- getsState $ actorNotProjAssocs (isAtWar fact) lid
+    bs <- getsState $ actorNotProjAssocs (isAtWar fact) lid
     case target of
       Just TEnemy{} ->
         -- If in enemy targeting mode, switch to the enemy under
         -- the current cursor position, if any.
-        case find (\ (_im, m) -> Just (bpos m) == scursor) ms of
+        case find (\ (_im, m) -> Just (bpos m) == scursor) bs of
           Just (im, m)  ->
             let tgt = Just $ TEnemy im (bpos m)
             in modifyClient $ updateTarget leader (const tgt)
