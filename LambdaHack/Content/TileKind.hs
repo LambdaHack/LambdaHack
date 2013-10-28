@@ -15,9 +15,9 @@ cdefs = ContentDef
   , getFreq = tfreq
   , validate = tvalidate
   , content =
-      [wall, hardRock, pillar, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpDark, stairsUpLit, stairsDownDark, stairsDownLit, escapeUpDark, escapeUpLit, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorItemLit, floorItemDark, floorActorItemLit, floorActorItemDark, floorRed, floorBlue, floorGreen, floorBrown]
+      [wall, hardRock, pillar, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpDark, stairsUpLit, stairsDownDark, stairsDownLit, escapeUpDark, escapeUpLit, escapeDownDark, escapeDownLit, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorItemLit, floorItemDark, floorActorItemLit, floorActorItemDark, floorRed, floorBlue, floorGreen, floorBrown]
   }
-wall,        hardRock, pillar, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpDark, stairsUpLit, stairsDownDark, stairsDownLit, escapeUpDark, escapeUpLit, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorItemLit, floorItemDark, floorActorItemLit, floorActorItemDark, floorRed, floorBlue, floorGreen, floorBrown :: TileKind
+wall,        hardRock, pillar, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpDark, stairsUpLit, stairsDownDark, stairsDownLit, escapeUpDark, escapeUpLit, escapeDownDark, escapeDownLit, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorItemLit, floorItemDark, floorActorItemLit, floorActorItemDark, floorRed, floorBlue, floorGreen, floorBrown :: TileKind
 
 wall = TileKind
   { tsymbol  = ' '
@@ -167,6 +167,18 @@ escapeUpDark = TileKind
 escapeUpLit = escapeUpDark
   { tfreq    = [("litLegend", 100)]
   , tfeature = Lit : tfeature escapeUpDark
+  }
+escapeDownDark = TileKind
+  { tsymbol  = '>'
+  , tname    = "exit trapdoor down"
+  , tfreq    = [("darkLegend", 100)]
+  , tcolor   = BrYellow
+  , tcolor2  = BrYellow
+  , tfeature = [Walkable, Clear, Exit, Cause Effect.Escape]
+  }
+escapeDownLit = escapeDownDark
+  { tfreq    = [("litLegend", 100)]
+  , tfeature = Lit : tfeature escapeDownDark
   }
 unknown = TileKind
   { tsymbol  = ' '

@@ -37,7 +37,7 @@ convertTileMaps cdefTile cxsize cysize ltile = do
   return $ Kind.listArray bounds pickedTiles Kind.// assocs
 
 placeStairs :: Kind.Ops TileKind -> TileMap -> CaveKind -> [Place]
-            -> Rnd ( Point, Kind.Id TileKind
+            -> Rnd ( Point, Kind.Id TileKind, Kind.Id TileKind
                    , Point, Kind.Id TileKind
                    , Point, Kind.Id TileKind )
 placeStairs cotile@Kind.Ops{opick} cmap CaveKind{..} dplaces = do
@@ -51,8 +51,13 @@ placeStairs cotile@Kind.Ops{opick} cmap CaveKind{..} dplaces = do
   let fitArea pos = inside cxsize pos . qarea
       findLegend pos =
         maybe clitLegendTile qlegend $ find (fitArea pos) dplaces
+      hasEscapeAndSymbol sym t =
+        Tile.kindHasFeature (F.Cause Effect.Escape) t
+        && tsymbol t == sym
   upEscape <-
-    opick (findLegend su) $ Tile.kindHasFeature $ F.Cause Effect.Escape
+    opick (findLegend su) $ hasEscapeAndSymbol '<'
+  downEscape <-
+    opick (findLegend su) $ hasEscapeAndSymbol '>'
   let ascendable tk =
         any (\f -> case f of F.Cause (Effect.Ascend _) -> True; _ -> False
             ) $ tfeature tk
@@ -61,21 +66,25 @@ placeStairs cotile@Kind.Ops{opick} cmap CaveKind{..} dplaces = do
             ) $ tfeature tk
   upId   <- opick (findLegend su) ascendable
   downId <- opick (findLegend sd) descendable
-  return (sq, upEscape, su, upId, sd, downId)
+  return (sq, upEscape, downEscape, su, upId, sd, downId)
 
 -- | Create a level from a cave, from a cave kind.
-buildLevel :: Kind.COps -> Cave -> Int -> Int -> Int -> Bool -> Rnd Level
+buildLevel :: Kind.COps -> Cave -> Int -> Int -> Int -> Maybe Bool -> Rnd Level
 buildLevel Kind.COps{ cotile=cotile@Kind.Ops{opick}
                     , cocave=Kind.Ops{okind} }
            Cave{..} ldepth minD maxD escapeFeature = do
   let kc@CaveKind{..} = okind dkind
   cmap <- convertTileMaps (opick cdefTile (const True)) cxsize cysize dmap
-  (sq, upEscape, su, upId, sd, downId) <- placeStairs cotile cmap kc dplaces
+  (sq, upEscape, downEscape, su, upId, sd, downId)
+     <- placeStairs cotile cmap kc dplaces
   litemNum <- rollDice citemNum
   secret <- random
   let stairs = (if ldepth == minD then [] else [(su, upId)])
                ++ (if ldepth == maxD then [] else [(sd, downId)])
-               ++ (if not escapeFeature then [] else [(sq, upEscape)])
+               ++ (case escapeFeature of
+                     Nothing -> []
+                     Just True -> [(sq, upEscape)]
+                     Just False -> [(sq, downEscape)])
       ltile = cmap Kind.// stairs
       f !n !tk | Tile.isExplorable cotile tk = n + 1
                | otherwise = n
@@ -105,7 +114,7 @@ findGenerator :: Kind.COps -> Caves -> LevelId -> LevelId -> LevelId
 findGenerator cops caves ldepth minD maxD = do
   let Kind.COps{cocave=Kind.Ops{opick}} = cops
       (genName, escapeFeature) =
-        fromMaybe ("dng", False) $ EM.lookup ldepth caves
+        fromMaybe ("dng", Nothing) $ EM.lookup ldepth caves
   ci <- opick genName (const True)
   let maxDepth = if minD == maxD then 10 else fromEnum maxD
   cave <- buildCave cops (fromEnum ldepth) maxDepth ci

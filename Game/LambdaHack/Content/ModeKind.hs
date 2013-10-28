@@ -20,7 +20,7 @@ data ModeKind = ModeKind
   }
   deriving Show
 
-type Caves = EM.EnumMap LevelId (Text, Bool)
+type Caves = EM.EnumMap LevelId (Text, Maybe Bool)
 
 data Players = Players
   { playersList  :: ![Player]        -- ^ players, both human and computer
