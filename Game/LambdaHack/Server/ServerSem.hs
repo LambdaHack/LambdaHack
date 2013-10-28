@@ -302,10 +302,10 @@ projectSer source tpos eps iid container = do
   let lid = blid sb
       spos = bpos sb
   fact <- getsState $ (EM.! bfid sb) . sfactionD
-  bs <- getsState $ actorNotProjList (isAtWar fact) lid
   lxsize <- getsLevel lid lxsize
   lysize <- getsLevel lid lysize
-  if foesAdjacent lxsize lysize spos bs
+  foes <- getsState $ actorNotProjList (isAtWar fact) lid
+  if foesAdjacent lxsize lysize spos foes
     then execFailure sb ProjectBlockFoes
     else do
       case bla lxsize lysize eps spos tpos of

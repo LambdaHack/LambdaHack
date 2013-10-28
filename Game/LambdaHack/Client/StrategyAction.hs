@@ -43,10 +43,10 @@ import Game.LambdaHack.Utils.Frequency
 targetStrategy :: MonadClient m
                => ActorId -> [Ability]
                -> m (Strategy (Maybe Target))
-targetStrategy actor factionAbilities = do
-  btarget <- getsClient $ getTarget actor
+targetStrategy aid factionAbilities = do
+  btarget <- getsClient $ getTarget aid
   fper <- getsClient sfper
-  reacquireTgt fper actor btarget factionAbilities
+  reacquireTgt fper aid btarget factionAbilities
 
 visibleFoes :: MonadActionRO m
             => FactionPers -> ActorId -> m [(ActorId, Actor)]
@@ -118,49 +118,51 @@ reacquireTgt fper aid btarget factionAbilities = do
 actionStrategy :: MonadClient m
                => ActorId -> [Ability]
                -> m (Strategy CmdSerTakeTime)
-actionStrategy actor factionAbilities = do
+actionStrategy aid factionAbilities = do
   cops <- getsState scops
   s <- getState
-  btarget <- getsClient $ getTarget actor
+  btarget <- getsClient $ getTarget aid
   disco <- getsClient sdisco
-  return $! proposeAction cops actor btarget disco s factionAbilities
+  return $! proposeAction cops aid btarget disco s factionAbilities
 
 proposeAction :: Kind.COps -> ActorId
               -> Maybe Target -> Discovery -> State -> [Ability]
               -> Strategy CmdSerTakeTime
-proposeAction cops actor btarget disco s factionAbilities =
+proposeAction cops aid btarget disco s factionAbilities =
   sumS prefix .| combineDistant distant .| sumS suffix
-  .| waitBlockNow actor  -- wait until friends sidestep, ensures never empty
+  .| waitBlockNow aid  -- wait until friends sidestep, ensures never empty
  where
   Kind.COps{coactor=Kind.Ops{okind}} = cops
-  Actor{bkind, bpos} = getActorBody actor s
-  (fpos, foeVisible) =
+  Actor{bkind, bpos} = getActorBody aid s
+  (fpos, mfAid) =
     case btarget of
-      Just (TEnemy _ l) -> (l, True)
-      Just (TPos l) -> (l, False)
-      Nothing -> (bpos, False)  -- an actor blocked by friends or a missile
+      Just (TEnemy foeAid l) -> (l, Just foeAid)
+      Just (TPos l) -> (l, Nothing)
+      Nothing -> (bpos, Nothing)  -- an actor blocked by friends or a missile
+  foeVisible = isJust mfAid
   combineDistant as = liftFrequency $ sumF as
   -- TODO: Ranged and Tools should only be triggered in some situations.
   aFrequency :: Ability -> Frequency CmdSerTakeTime
   aFrequency Ability.Ranged = if foeVisible
-                              then rangedFreq cops actor disco s fpos
+                              then rangedFreq cops aid disco s fpos
                               else mzero
   aFrequency Ability.Tools  = if foeVisible
-                              then toolsFreq cops actor disco s
+                              then toolsFreq cops aid disco s
                               else mzero
   aFrequency Ability.Chase  = if fpos /= bpos
                               then chaseFreq
                               else mzero
   aFrequency _              = assert `failure` distant
   chaseFreq =
-    scaleFreq 30 $ bestVariant $ chase cops actor s (fpos, foeVisible)
+    scaleFreq 30 $ bestVariant $ chase cops aid s (fpos, foeVisible)
   aStrategy :: Ability -> Strategy CmdSerTakeTime
-  aStrategy Ability.Track  = track cops actor s
+  aStrategy Ability.Track  = track cops aid s
   aStrategy Ability.Heal   = mzero  -- TODO
   aStrategy Ability.Flee   = mzero  -- TODO
-  aStrategy Ability.Melee  = foeVisible .=> melee actor s fpos
-  aStrategy Ability.Pickup = not foeVisible .=> pickup actor s
-  aStrategy Ability.Wander = wander cops actor s
+  aStrategy Ability.Melee | Just foeAid <- mfAid = melee aid s fpos foeAid
+  aStrategy Ability.Melee  = mzero
+  aStrategy Ability.Pickup = not foeVisible .=> pickup aid s
+  aStrategy Ability.Wander = wander cops aid s
   aStrategy _              = assert `failure` actorAbilities
   actorAbilities = acanDo (okind bkind) `intersect` factionAbilities
   isDistant = (`elem` [Ability.Ranged, Ability.Tools, Ability.Chase])
@@ -171,74 +173,76 @@ proposeAction cops actor btarget disco s factionAbilities =
 
 -- | A strategy to always just wait.
 waitBlockNow :: ActorId -> Strategy CmdSerTakeTime
-waitBlockNow actor = returN "wait" $ WaitSer actor
+waitBlockNow aid = returN "wait" $ WaitSer aid
 
 -- | Strategy for dumb missiles.
 track :: Kind.COps -> ActorId -> State -> Strategy CmdSerTakeTime
-track cops actor s =
+track cops aid s =
   strat
  where
   lvl = sdungeon s EM.! blid
-  b@Actor{bpos, bpath, blid} = getActorBody actor s
-  clearPath = returN "ClearPathSer" $ SetPathSer actor []
+  b@Actor{bpos, bpath, blid} = getActorBody aid s
+  clearPath = returN "ClearPathSer" $ SetPathSer aid []
   strat = case bpath of
-    Just [] -> assert `failure` (actor, b, s)
+    Nothing -> reject
+    Just [] -> assert `failure` (aid, b, s)
     -- TODO: instead let server do this in MoveSer, abort and handle in loop:
     Just (d : _) | not $ accessibleDir cops lvl bpos d -> clearPath
-    Just lv -> returN "SetPathSer" $ SetPathSer actor lv
-    Nothing -> reject
+    Just lv -> returN "SetPathSer" $ SetPathSer aid lv
 
 pickup :: ActorId -> State -> Strategy CmdSerTakeTime
-pickup actor s =
+pickup aid s =
   lootHere bpos .=> actionPickup
  where
   lvl = sdungeon s EM.! blid
-  body@Actor{bpos, blid} = getActorBody actor s
+  body@Actor{bpos, blid} = getActorBody aid s
   lootHere x = not $ EM.null $ lvl `atI` x
   actionPickup = case EM.minViewWithKey $ lvl `atI` bpos of
-    Nothing -> assert `failure` (actor, bpos, lvl)
+    Nothing -> assert `failure` (aid, bpos, lvl)
     Just ((iid, k), _) ->  -- pick up first item
       let item = getItemBody iid s
           l = if jsymbol item == '$' then Just $ InvChar '$' else Nothing
       in case assignLetter iid l body of
-        Just l2 -> returN "pickup" $ PickupSer actor iid k l2
-        Nothing -> returN "pickup" $ WaitSer actor  -- TODO
+        Just l2 -> returN "pickup" $ PickupSer aid iid k l2
+        Nothing -> returN "pickup" $ WaitSer aid  -- TODO
 
-melee :: ActorId -> State -> Point -> Strategy CmdSerTakeTime
-melee actor s fpos =
-  foeAdjacent .=> returN "melee" (MoveSer actor dir)
+melee :: ActorId -> State -> Point -> ActorId -> Strategy CmdSerTakeTime
+melee aid s fpos foeAid =
+  foeAdjacent .=> returN "melee" (MeleeSer aid foeAid)
  where
   Level{lxsize} = sdungeon s EM.! blid
-  Actor{bpos, blid} = getActorBody actor s
+  Actor{bpos, blid} = getActorBody aid s
   foeAdjacent = adjacent lxsize bpos fpos
-  dir = displacement bpos fpos
 
 rangedFreq :: Kind.COps -> ActorId -> Discovery -> State -> Point
            -> Frequency CmdSerTakeTime
-rangedFreq cops actor disco s fpos =
+rangedFreq cops aid disco s fpos =
   toFreq "throwFreq" $
     case bl of
       Just (pos1 : _) ->
-        if not foesAdj
+        if not foesAdj  -- ProjectBlockFoes
            && asight mk
-           && accessible cops lvl bpos pos1       -- first accessible
-           && isNothing (posToActor pos1 blid s)  -- no friends on first
-        then throwFreq bbag 3 (actorContainer actor binv)
+           && posClear pos1  -- ProjectBlockTerrain
+           && unoccupied as pos1  -- ProjectBlockActor
+        then throwFreq bbag 3 (actorContainer aid binv)
              ++ throwFreq tis 6 (const $ CFloor blid bpos)
         else []
-      _ -> []
+      _ -> []  -- ProjectAimOnself
  where
   Kind.COps{ coactor=Kind.Ops{okind}
            , coitem=Kind.Ops{okind=iokind}
            , corule
+           , cotile
            } = cops
   lvl@Level{lxsize, lysize} = sdungeon s EM.! blid
-  Actor{bkind, bpos, bfid, blid, bbag, binv} = getActorBody actor s
+  Actor{bkind, bpos, bfid, blid, bbag, binv} = getActorBody aid s
   mk = okind bkind
   tis = lvl `atI` bpos
   fact = sfactionD s EM.! bfid
-  foes = actorNotProjAssocs (isAtWar fact) blid s
-  foesAdj = foesAdjacent lxsize lysize bpos (map snd foes)
+  foes = actorNotProjList (isAtWar fact) blid s
+  foesAdj = foesAdjacent lxsize lysize bpos foes
+  posClear pos1 = Tile.hasFeature cotile F.Clear (lvl `at` pos1)
+  as = actorList (const True) blid s
   -- TODO: also don't throw if any pos on path is visibly not accessible
   -- from previous (and tweak eps in bla to make it accessible).
   -- Also don't throw if target not in range.
@@ -246,7 +250,7 @@ rangedFreq cops actor disco s fpos =
   bl = bla lxsize lysize eps bpos fpos  -- TODO:make an arg of projectGroupItem
   throwFreq bag multi container =
     [ (- benefit * multi,
-      ProjectSer actor fpos eps iid (container iid))
+      ProjectSer aid fpos eps iid (container iid))
     | (iid, i) <- map (\iid -> (iid, getItemBody iid s))
                   $ EM.keys bag
     , let benefit =
@@ -262,17 +266,17 @@ rangedFreq cops actor disco s fpos =
     , jsymbol i `elem` ritemProject (Kind.stdRuleset corule) ]
 
 toolsFreq :: Kind.COps -> ActorId -> Discovery -> State -> Frequency CmdSerTakeTime
-toolsFreq cops actor disco s =
+toolsFreq cops aid disco s =
   toFreq "quaffFreq"
-  $ quaffFreq bbag 1 (actorContainer actor binv)
+  $ quaffFreq bbag 1 (actorContainer aid binv)
   ++ quaffFreq tis 2 (const $ CFloor blid bpos)
  where
   Kind.COps{coitem=Kind.Ops{okind=_iokind}} = cops
-  Actor{bpos, blid, bbag, binv} = getActorBody actor s
+  Actor{bpos, blid, bbag, binv} = getActorBody aid s
   lvl = sdungeon s EM.! blid
   tis = lvl `atI` bpos
   quaffFreq bag multi container =
-    [ (benefit * multi, ApplySer actor iid (container iid))
+    [ (benefit * multi, ApplySer aid iid (container iid))
     | (iid, i) <- map (\iid -> (iid, getItemBody iid s))
                   $ EM.keys bag
     , let benefit =
@@ -282,13 +286,14 @@ toolsFreq cops actor disco s =
     , benefit > 0
     , jsymbol i == '!' ]
 
+-- TODO: separate out bumping into solid tiles
 -- TODO: also close doors; then stupid members of the party won't see them,
 -- but it's assymetric warfare: rather harm humans than help party members
 -- | AI finds interesting moves in the absense of visible foes.
 -- This strategy can be null (e.g., if the actor is blocked by friends).
 moveStrategy :: Kind.COps -> ActorId -> State -> Maybe (Point, Bool)
              -> Strategy Vector
-moveStrategy cops actor s mFoe =
+moveStrategy cops aid s mFoe =
   case mFoe of
     -- Target set and we chase the foe or his last position or another target.
     Just (fpos, _) ->
@@ -324,7 +329,7 @@ moveStrategy cops actor s mFoe =
  where
   Kind.COps{cotile, coactor=Kind.Ops{okind}} = cops
   lvl@Level{lsmell, lxsize, lysize, ltime} = sdungeon s EM.! blid
-  Actor{bkind, bpos, boldpos, bfid, blid} = getActorBody actor s
+  Actor{bkind, bpos, boldpos, bfid, blid} = getActorBody aid s
   mk = okind bkind
   lootHere x = not $ EM.null $ lvl `atI` x
   onlyLoot = onlyMoves lootHere
@@ -385,21 +390,20 @@ bumpableHere Kind.COps{cotile} lvl foeVisible pos  =
      || -- Try to find hidden doors only if no foe in sight.
         not foeVisible && Tile.hasFeature cotile F.Suspect t
 
-chase :: Kind.COps -> ActorId -> State -> (Point, Bool) -> Strategy CmdSerTakeTime
-chase cops actor s foe@(_, foeVisible) =
+chase :: Kind.COps -> ActorId -> State -> (Point, Bool)
+      -> Strategy CmdSerTakeTime
+chase cops aid s foe@(_, foeVisible) =
   -- Target set and we chase the foe or offer null strategy if we can't.
   -- The foe is visible, or we remember his last position.
-  -- TODO: explore if a possible secret
   let mFoe = Just foe
       fight = not foeVisible  -- don't pick fights if the real foe is close
   in if fight
-     then MoveSer {-TODO: ExploreSer-} actor `liftM` moveStrategy cops actor s mFoe
-     else MoveSer {-TODO: RunSer-} actor `liftM` moveStrategy cops actor s mFoe
+     then MoveSer {-TODO: ExploreSer-} aid `liftM` moveStrategy cops aid s mFoe
+     else MoveSer {-TODO: RunSer-} aid `liftM` moveStrategy cops aid s mFoe
 
 wander :: Kind.COps -> ActorId -> State -> Strategy CmdSerTakeTime
-wander cops actor s =
+wander cops aid s =
   -- Target set, but we don't chase the foe, e.g., because we are blocked
   -- or we cannot chase at all.
-  -- TODO: explore if a possible secret
   let mFoe = Nothing
-  in MoveSer {-TODO: ExploreSer-} actor `liftM` moveStrategy cops actor s mFoe
+  in MoveSer {-TODO: ExploreSer-} aid `liftM` moveStrategy cops aid s mFoe
