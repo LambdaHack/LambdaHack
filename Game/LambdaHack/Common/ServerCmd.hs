@@ -35,7 +35,7 @@ data CmdSerTakeTime =
   | DropSer ActorId ItemId
   | ProjectSer ActorId Point Int ItemId Container
   | ApplySer ActorId ItemId Container
-  | TriggerSer ActorId
+  | TriggerSer ActorId (Maybe F.Feature)
   | SetPathSer ActorId [Vector]
   deriving (Show)
 
@@ -59,7 +59,7 @@ aidCmdSerTakeTime cmd = case cmd of
   DropSer aid _ -> aid
   ProjectSer aid _ _ _ _ -> aid
   ApplySer aid _ _ -> aid
-  TriggerSer aid -> aid
+  TriggerSer aid _ -> aid
   SetPathSer aid _ -> aid
 
 data FailureSer =

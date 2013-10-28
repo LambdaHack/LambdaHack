@@ -415,23 +415,22 @@ triggerTileHuman :: (MonadClientAbort m, MonadClientUI m)
                  => [Trigger] -> m CmdSerTakeTime
 triggerTileHuman ts = do
   leader <- getLeaderUI
-  dpos <- getsState (bpos . getActorBody leader)
-  triggerTile leader dpos ts
+  triggerTile leader ts
 
 -- | Player tries to trigger a tile using a feature.
 triggerTile :: (MonadClientAbort m, MonadClientUI m)
-            => ActorId -> Point -> [Trigger] -> m CmdSerTakeTime
-triggerTile leader dpos ts = do
+            => ActorId -> [Trigger] -> m CmdSerTakeTime
+triggerTile leader ts = do
   Kind.COps{cotile} <- getsState scops
   b <- getsState $ getActorBody leader
   lvl <- getsLevel (blid b) id
-  let t = lvl `at` dpos
+  let t = lvl `at` bpos b
       triggerFeats = triggerFeatures ts
   case filter (\feat -> Tile.hasFeature cotile feat t) triggerFeats of
     [] -> guessTrigger cotile triggerFeats t
-    fs -> do
-      mapM_ (verifyTrigger leader) fs
-      return $ TriggerSer leader
+    feat : _ -> do
+      verifyTrigger leader feat
+      return $! TriggerSer leader $ Just feat
 
 triggerFeatures :: [Trigger] -> [F.Feature]
 triggerFeatures [] = []
@@ -465,16 +464,16 @@ verifyTrigger leader feat = case feat of
 -- | Guess and report why the bump command failed.
 guessTrigger :: MonadClientAbort m
              => Kind.Ops TileKind -> [F.Feature] -> Kind.Id TileKind -> m a
-guessTrigger cotile (F.Cause (Effect.Ascend _) : _) t
-  | Tile.hasFeature cotile (F.Cause (Effect.Descend 1)) t =
+guessTrigger cotile (F.Cause (Effect.Ascend k) : _) t
+  | Tile.hasFeature cotile (F.Cause (Effect.Descend k)) t =
     abortWith "the way goes down, not up"
 guessTrigger _ (F.Cause (Effect.Ascend _) : _) _ =
-  abortWith "no stairs up"
-guessTrigger cotile (F.Cause (Effect.Descend _) : _) t
-  | Tile.hasFeature cotile (F.Cause (Effect.Ascend 1)) t =
+  abortWith "can't ascend"
+guessTrigger cotile (F.Cause (Effect.Descend k) : _) t
+  | Tile.hasFeature cotile (F.Cause (Effect.Ascend k)) t =
     abortWith "the way goes up, not down"
 guessTrigger _ (F.Cause (Effect.Descend _) : _) _ =
-  abortWith "no stairs down"
+  abortWith "can't descend"
 guessTrigger _ _ _ = neverMind True
 
 -- * GameRestart; does not take time

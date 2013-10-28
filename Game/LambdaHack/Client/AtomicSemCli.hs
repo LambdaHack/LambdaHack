@@ -530,9 +530,9 @@ drawSfxAtomicUI verbose sfx = case sfx of
   CatchD aid iid -> aiVerbMU aid "catch" iid 1
   ActivateD aid iid -> aiVerbMU aid "activate"{-TODO-} iid 1
   CheckD aid iid -> aiVerbMU aid "check" iid 1
-  TriggerD aid _p _feat _ | verbose ->
+  TriggerD aid _p _feat | verbose ->
     aVerbMU aid "trigger"  -- TODO: opens door
-  ShunD aid _p _ _ | verbose ->
+  ShunD aid _p _ | verbose ->
     aVerbMU aid "shun"  -- TODO: shuns stairs down
   EffectD aid effect -> do
     b <- getsState $ getActorBody aid

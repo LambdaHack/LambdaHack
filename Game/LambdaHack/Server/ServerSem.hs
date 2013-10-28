@@ -371,23 +371,28 @@ applySer actor iid container = do
 -- * TriggerSer
 
 -- | Perform the action specified for the tile in case it's triggered.
-triggerSer :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
-triggerSer aid = do
-  Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
+triggerSer :: (MonadAtomic m, MonadServer m)
+           => ActorId -> Maybe F.Feature -> m ()
+triggerSer aid mfeat = do
+  Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
   sb <- getsState $ getActorBody aid
   let lid = blid sb
   lvl <- getsLevel lid id
-  let tpos = bpos sb           -- source and target position
-  let serverTile = lvl `at` tpos
-  let f feat =
+  let tpos = bpos sb
+      serverTile = lvl `at` tpos
+      triggerFeat feat =
         case feat of
           F.Cause ef -> do
             -- No block against tile, hence unconditional.
-            execSfxAtomic $ TriggerD aid tpos feat {-TODO-}True
+            execSfxAtomic $ TriggerD aid tpos feat
             void $ effectSem ef aid aid
             return True
           _ -> return False
-  bs <- mapM f $ TileKind.tfeature $ okind serverTile
+      feats = case mfeat of
+        Nothing -> TileKind.tfeature $ okind serverTile
+        Just feat2 | Tile.hasFeature cotile feat2 serverTile -> [feat2]
+        Just _ -> []
+  bs <- mapM triggerFeat feats
   when (not $ or bs) $ execFailure sb TriggerNothing
 
 -- * SetPathSer

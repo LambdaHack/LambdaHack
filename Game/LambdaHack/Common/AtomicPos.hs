@@ -133,10 +133,10 @@ posSfxAtomic cmd = case cmd of
   CatchD aid _ -> singleAid aid
   ActivateD aid _ -> singleAid aid
   CheckD aid _ -> singleAid aid
-  TriggerD aid p _ _ -> do
+  TriggerD aid p _ -> do
     (lid, pa) <- posOfAid aid
     return $ PosSight lid [pa, p]
-  ShunD aid p _ _ -> do
+  ShunD aid p _ -> do
     (lid, pa) <- posOfAid aid
     return $ PosSight lid [pa, p]
   EffectD aid _ -> singleAid aid
