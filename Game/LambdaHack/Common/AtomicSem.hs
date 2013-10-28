@@ -303,7 +303,8 @@ alterTileA :: MonadAction m
            -> m ()
 alterTileA lid p fromTile toTile = assert (fromTile /= toTile) $ do
   Kind.COps{cotile} <- getsState scops
-  freshClientTile <- getsLevel lid $ hideTile cotile p
+  lvl <- getLevel lid
+  let freshClientTile = hideTile cotile p lvl
   -- The second alternative can happen if, e.g., a client remembers,
   -- but does not see the tile (so does not notice the SearchTileA action),
   -- and it suddenly changes into another tile,
@@ -315,8 +316,8 @@ alterTileA lid p fromTile toTile = assert (fromTile /= toTile) $ do
                $ ts Kind.// [(p, toTile)]
   updateLevel lid $ updateTile adj
   case (Tile.isExplorable cotile fromTile, Tile.isExplorable cotile toTile) of
-    (False, True) -> updateLevel lid $ \lvl -> lvl {lseen = lseen lvl + 1}
-    (True, False) -> updateLevel lid $ \lvl -> lvl {lseen = lseen lvl - 1}
+    (False, True) -> updateLevel lid $ \lvl2 -> lvl2 {lseen = lseen lvl + 1}
+    (True, False) -> updateLevel lid $ \lvl2 -> lvl2 {lseen = lseen lvl - 1}
     _ -> return ()
 
 -- Notice a previously invisible tiles. This is similar to @SpotActorA@,
@@ -328,11 +329,11 @@ alterTileA lid p fromTile toTile = assert (fromTile /= toTile) $ do
 spotTileA :: MonadAction m => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
 spotTileA lid ts = assert (not $ null ts) $ do
   Kind.COps{cotile} <- getsState scops
-  tileM <- getsLevel lid ltile
+  Level{ltile} <- getLevel lid
   let adj tileMap = tileMap Kind.// ts
   updateLevel lid $ updateTile adj
   let f (p, t2) = do
-        let t1 = tileM Kind.! p
+        let t1 = ltile Kind.! p
         case (Tile.isExplorable cotile t1, Tile.isExplorable cotile t2) of
           (False, True) -> updateLevel lid $ \lvl -> lvl {lseen = lseen lvl+1}
           (True, False) -> updateLevel lid $ \lvl -> lvl {lseen = lseen lvl-1}

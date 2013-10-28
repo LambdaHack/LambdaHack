@@ -48,8 +48,8 @@ cmdAtomicFilterCli :: MonadClient m => CmdAtomic -> m [CmdAtomic]
 cmdAtomicFilterCli cmd = case cmd of
   AlterTileA lid p fromTile toTile -> do
     Kind.COps{cotile = Kind.Ops{oname}} <- getsState scops
-    lxsize <- getsLevel lid lxsize
-    t <- getsLevel lid (`at` p)
+    lvl@Level{lxsize} <- getLevel lid
+    let t = lvl `at` p
     if t == fromTile
       then return [cmd]
       else do
@@ -70,7 +70,8 @@ cmdAtomicFilterCli cmd = case cmd of
                ]
   SearchTileA aid p fromTile toTile -> do
     b <- getsState $ getActorBody aid
-    t <- getsLevel (blid b) (`at` p)
+    lvl <- getLevel $ blid b
+    let t = lvl `at` p
     if t == toTile
       then -- Already knows the tile fully.
            return []
@@ -117,7 +118,7 @@ cmdAtomicFilterCli cmd = case cmd of
              else Just $ LoseActorA aid b (getActorItem aid s)
         outActor = mapMaybe fActor outPrio
     -- Wipe out remembered items on tiles that now came into view.
-    lfloor <- getsLevel lid lfloor
+    Level{lfloor, lsmell} <- getLevel lid
     let inFov = totalVisible perNew ES.\\ totalVisible perOld
         pMaybe p = maybe Nothing (\x -> Just (p, x))
         inFloor = mapMaybe (\p -> pMaybe p $ EM.lookup p lfloor)
@@ -127,7 +128,6 @@ cmdAtomicFilterCli cmd = case cmd of
         inItem = concatMap fBag inFloor
     -- Remembered map tiles not wiped out, due to optimization in @spotTileA@.
     -- Wipe out remembered smell on tiles that now came into smell Fov.
-    lsmell <- getsLevel lid lsmell
     let inSmellFov = smellVisible perNew ES.\\ smellVisible perOld
         inSm = mapMaybe (\p -> pMaybe p $ EM.lookup p lsmell)
                         (ES.elems inSmellFov)

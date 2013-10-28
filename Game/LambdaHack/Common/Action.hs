@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.Action
   ( -- * Action monads
     MonadActionRO(..), MonadAction(..), MonadAtomic(..)
     -- * Shorthands
-  , getsLevel, nUI
+  , getLevel, nUI
     -- * Assorted
   , serverSaveName
   ) where
@@ -43,8 +43,8 @@ class MonadActionRO m => MonadAtomic m where
   execSfxAtomic :: SfxAtomic -> m ()
   execSfxAtomic = execAtomic . SfxAtomic
 
-getsLevel :: MonadActionRO m => LevelId -> (Level -> a) -> m a
-getsLevel lid f = getsState $ f . (EM.! lid) . sdungeon
+getLevel :: MonadActionRO m => LevelId -> m Level
+getLevel lid = getsState $ (EM.! lid) . sdungeon
 
 nUI :: MonadActionRO m => m Int
 nUI = do

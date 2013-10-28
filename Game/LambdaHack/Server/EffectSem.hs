@@ -326,7 +326,7 @@ createItems n pos lid = do
   Kind.COps{coitem} <- getsState scops
   flavour <- getsServer sflavour
   discoRev <- getsServer sdiscoRev
-  ldepth <- getsLevel lid ldepth
+  Level{ldepth} <- getLevel lid
   depth <- getsState sdepth
   replicateM_ n $ do
     (item, k, _) <- rndToAction $ newItem coitem flavour discoRev ldepth depth
@@ -353,10 +353,10 @@ effectApplyPerfume source target =
     return False
   else do
     tm <- getsState $ getActorBody target
-    oldSmell <- getsLevel (blid tm) lsmell
+    Level{lsmell} <- getLevel $ blid tm
     let f p fromSm =
           execCmdAtomic $ AlterSmellA (blid tm) p (Just fromSm) Nothing
-    mapWithKeyM_ f oldSmell
+    mapWithKeyM_ f lsmell
     execSfxAtomic $ EffectD target Effect.ApplyPerfume
     return True
 

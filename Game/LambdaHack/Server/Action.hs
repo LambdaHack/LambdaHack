@@ -83,7 +83,7 @@ fovMode = do
 resetFidPerception :: MonadServer m => FactionId -> LevelId -> m ()
 resetFidPerception fid lid = do
   cops <- getsState scops
-  lvl <- getsLevel lid id
+  lvl <- getLevel lid
   configFov <- fovMode
   s <- getState
   let per = levelPerception cops s configFov fid lid lvl

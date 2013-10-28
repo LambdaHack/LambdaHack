@@ -76,7 +76,7 @@ displaceAid source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   let lid = blid sb
-  lvl <- getsLevel lid id
+  lvl <- getLevel lid
   let spos = bpos sb
       tpos = bpos tb
   if accessible cops lvl spos tpos then
@@ -91,7 +91,7 @@ moveRunAid source dir = do
   cops@Kind.COps{cotile} <- getsState scops
   sb <- getsState $ getActorBody source
   let lid = blid sb
-  lvl <- getsLevel lid id
+  lvl <- getLevel lid
   let spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
       t = lvl `at` tpos
@@ -136,7 +136,7 @@ pickupHuman :: (MonadClientAbort m, MonadClientUI m) => m CmdSerTakeTime
 pickupHuman = do
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
-  lvl <- getsLevel (blid body) id
+  lvl <- getLevel $ blid body
   -- Check if something is here to pick up. Items are never invisible.
   case EM.minViewWithKey $ lvl `atI` bpos body of
     Nothing -> abortWith "nothing here"
@@ -201,7 +201,7 @@ getItem :: (MonadClientAbort m, MonadClientUI m)
 getItem aid prompt p ptext bag inv isn = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  lvl <- getsLevel (blid b) id
+  lvl <- getLevel $ blid b
   s <- getState
   body <- getsState $ getActorBody aid
   let checkItem (l, iid) =
@@ -282,8 +282,7 @@ projectAid source ts = do
   let lid = blid sb
       spos = bpos sb
   fact <- getsState $ (EM.! bfid sb) . sfactionD
-  lxsize <- getsLevel lid lxsize
-  lysize <- getsLevel lid lysize
+  Level{lxsize, lysize} <- getLevel lid
   foes <- getsState $ actorNotProjList (isAtWar fact) lid
   if foesAdjacent lxsize lysize spos foes
     then abortFailure ProjectBlockFoes
@@ -294,7 +293,7 @@ projectAid source ts = do
                      (spos, tpos, "project from the edge of level" :: Text)
         Just (pos : _) -> do
           as <- getsState $ actorList (const True) lid
-          lvl <- getsLevel lid id
+          lvl <- getLevel lid
           let t = lvl `at` pos
           if not $ Tile.hasFeature cotile F.Clear t
             then abortFailure ProjectBlockTerrain
@@ -373,7 +372,7 @@ alterDirHuman ts = do
   e <- displayChoiceUI prompt [] keys
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  lxsize <- getsLevel (blid b) lxsize
+  Level{lxsize} <- getLevel $ blid b
   K.handleDir lxsize e (flip (alterTile leader) ts) (neverMind True)
 
 -- | Player tries to alter a tile using a feature.
@@ -382,7 +381,7 @@ alterTile :: (MonadClientAbort m, MonadClientUI m)
 alterTile source dir ts = do
   Kind.COps{cotile} <- getsState scops
   b <- getsState $ getActorBody source
-  lvl <- getsLevel (blid b) id
+  lvl <- getLevel $ blid b
   let tpos = bpos b `shift` dir
       t = lvl `at` tpos
       alterFeats = alterFeatures ts
@@ -423,7 +422,7 @@ triggerTile :: (MonadClientAbort m, MonadClientUI m)
 triggerTile leader ts = do
   Kind.COps{cotile} <- getsState scops
   b <- getsState $ getActorBody leader
-  lvl <- getsLevel (blid b) id
+  lvl <- getLevel $ blid b
   let t = lvl `at` bpos b
       triggerFeats = triggerFeatures ts
   case filter (\feat -> Tile.hasFeature cotile feat t) triggerFeats of

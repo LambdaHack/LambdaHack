@@ -304,7 +304,7 @@ promptToSlideshow prompt = overlayToSlideshow prompt []
 overlayToSlideshow :: MonadClientUI m => Msg -> Overlay -> m Slideshow
 overlayToSlideshow prompt overlay = do
   lid <- getArenaUI
-  lysize <- getsLevel lid lysize  -- TODO: screen length or viewLevel
+  Level{lysize} <- getLevel lid  -- TODO: screen length or viewLevel
   sreport <- getsClient sreport
   let msg = splitReport (addMsg sreport prompt)
   return $! splitOverlay lysize msg overlay
@@ -379,7 +379,7 @@ animate arena anim = do
   cops <- getsState scops
   sreport <- getsClient sreport
   mleader <- getsClient _sleader
-  Level{lxsize, lysize} <- getsLevel arena id
+  Level{lxsize, lysize} <- getLevel arena
   cli <- getClient
   s <- getState
   per <- getPerFid arena

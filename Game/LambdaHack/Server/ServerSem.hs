@@ -74,7 +74,7 @@ broadcastSfxAtomic fcmd = do
 
 checkAdjacent :: MonadActionRO m => Actor -> Actor -> m Bool
 checkAdjacent sb tb = do
-  lxsize <- getsLevel (blid sb) lxsize
+  Level{lxsize} <- getLevel $ blid sb
   return $ blid sb == blid tb && adjacent lxsize (bpos sb) (bpos tb)
 
 -- TODO: let only some actors/items leave smell, e.g., a Smelly Hide Armour.
@@ -88,8 +88,9 @@ addSmell aid = do
   let canSmell = asmell $ okind $ bkind b
   unless (bproj b || spawn || canSmell) $ do
     time <- getsState $ getLocalTime $ blid b
-    oldS <- getsLevel (blid b) $ EM.lookup (bpos b) . lsmell
-    let newTime = timeAdd time smellTimeout
+    lvl <- getLevel $ blid b
+    let oldS = EM.lookup (bpos b) . lsmell $ lvl
+        newTime = timeAdd time smellTimeout
     execCmdAtomic $ AlterSmellA (blid b) (bpos b) oldS (Just newTime)
 
 -- | Actor moves or attacks.
@@ -103,7 +104,7 @@ moveSer source dir = do
   cops <- getsState scops
   sb <- getsState $ getActorBody source
   let lid = blid sb
-  lvl <- getsLevel lid id
+  lvl <- getLevel lid
   let spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
   -- We start by checking actors at the the target position.
@@ -194,7 +195,7 @@ displaceSer source target = do
   if not adj then execFailure sb MeleeDistant
   else do
     let lid = blid sb
-    lvl <- getsLevel lid id
+    lvl <- getLevel lid
     let spos = bpos sb
         tpos = bpos tb
     if accessible cops lvl spos tpos then do
@@ -218,10 +219,10 @@ alterSer source tpos mfeat = do
   sb <- getsState $ getActorBody source
   let lid = blid sb
       spos = bpos sb
-  lxsize <- getsLevel lid lxsize
+  Level{lxsize} <- getLevel lid
   if not $ adjacent lxsize spos tpos then execFailure sb AlterDistant
   else do
-    lvl <- getsLevel lid id
+    lvl <- getLevel lid
     let serverTile = lvl `at` tpos
         freshClientTile = hideTile cotile tpos lvl
         changeTo tgroup = do
@@ -302,8 +303,7 @@ projectSer source tpos eps iid container = do
   let lid = blid sb
       spos = bpos sb
   fact <- getsState $ (EM.! bfid sb) . sfactionD
-  lxsize <- getsLevel lid lxsize
-  lysize <- getsLevel lid lysize
+  Level{lxsize, lysize} <- getLevel lid
   foes <- getsState $ actorNotProjList (isAtWar fact) lid
   if foesAdjacent lxsize lysize spos foes
     then execFailure sb ProjectBlockFoes
@@ -314,7 +314,7 @@ projectSer source tpos eps iid container = do
                      (spos, tpos, "project from the edge of level" :: Text)
         Just (pos : rest) -> do
           as <- getsState $ actorList (const True) lid
-          lvl <- getsLevel lid id
+          lvl <- getLevel lid
           let t = lvl `at` pos
           if not $ Tile.hasFeature cotile F.Clear t
             then execFailure sb ProjectBlockTerrain
@@ -385,7 +385,7 @@ triggerSer aid mfeat = do
   Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
   sb <- getsState $ getActorBody aid
   let lid = blid sb
-  lvl <- getsLevel lid id
+  lvl <- getLevel lid
   let tpos = bpos sb
       serverTile = lvl `at` tpos
       triggerFeat feat =

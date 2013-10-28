@@ -125,7 +125,7 @@ proposeAction :: MonadActionRO m
 proposeAction disco aid factionAbilities btarget = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   Actor{bkind, bpos, blid} <- getsState $ getActorBody aid
-  lvl <- getsLevel blid id
+  lvl <- getLevel blid
   let (fpos, mfAid) =
         case btarget of
           Just (TEnemy foeAid l) -> (l, Just foeAid)
@@ -182,7 +182,7 @@ track :: MonadActionRO m => ActorId -> m (Strategy CmdSerTakeTime)
 track aid = do
   cops <- getsState scops
   b@Actor{bpos, bpath, blid} <- getsState $ getActorBody aid
-  lvl <- getsLevel blid id
+  lvl <- getLevel blid
   let clearPath = returN "ClearPathSer" $ SetPathSer aid []
       strat = case bpath of
         Nothing -> reject
@@ -195,7 +195,7 @@ track aid = do
 pickup :: MonadActionRO m => ActorId -> m (Strategy CmdSerTakeTime)
 pickup aid = do
   body@Actor{bpos, blid} <- getsState $ getActorBody aid
-  lvl <- getsLevel blid id
+  lvl <- getLevel blid
   actionPickup <- case EM.minViewWithKey $ lvl `atI` bpos of
     Nothing -> assert `failure` (aid, bpos, lvl)
     Just ((iid, k), _) -> do  -- pick up first item
@@ -210,7 +210,7 @@ melee :: MonadActionRO m
       => ActorId -> Point -> ActorId -> m (Strategy CmdSerTakeTime)
 melee aid fpos foeAid = do
   Actor{bpos, blid} <- getsState $ getActorBody aid
-  lxsize <- getsLevel blid lxsize
+  Level{lxsize} <- getLevel blid
   let foeAdjacent = adjacent lxsize bpos fpos
   return $ foeAdjacent .=> returN "melee" (MeleeSer aid foeAid)
 
@@ -223,7 +223,7 @@ rangedFreq disco aid fpos = do
            , cotile
            } <- getsState scops
   Actor{bkind, bpos, bfid, blid, bbag, binv} <- getsState $ getActorBody aid
-  lvl@Level{lxsize, lysize} <- getsLevel blid id
+  lvl@Level{lxsize, lysize} <- getLevel blid
   let mk = okind bkind
       tis = lvl `atI` bpos
   fact <- getsState $ \s -> sfactionD s EM.! bfid
@@ -270,7 +270,7 @@ toolsFreq :: MonadActionRO m
 toolsFreq disco aid = do
   Kind.COps{coitem=Kind.Ops{okind=_iokind}} <- getsState scops
   Actor{bpos, blid, bbag, binv} <- getsState $ getActorBody aid
-  lvl <- getsLevel blid id
+  lvl <- getLevel blid
   s <- getState
   let tis = lvl `atI` bpos
       quaffFreq bag multi container =

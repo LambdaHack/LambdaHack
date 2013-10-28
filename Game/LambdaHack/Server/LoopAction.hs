@@ -160,7 +160,7 @@ handleActors :: (MonadAtomic m, MonadConnServer m)
 handleActors cmdSerSem lid = do
   Kind.COps{coactor} <- getsState scops
   time <- getsState $ getLocalTime lid  -- the end of this clip, inclusive
-  prio <- getsLevel lid lprio
+  Level{lprio} <- getLevel lid
   quit <- getsServer squit
   factionD <- getsState sfactionD
   s <- getState
@@ -169,9 +169,9 @@ handleActors cmdSerSem lid = do
       isLeader (aid, b) = Just aid /= gleader (factionD EM.! bfid b)
       order = Ord.comparing $
         ((>= 0) . bhp . snd) &&& bfid . snd &&& isLeader &&& bsymbol . snd
-      (atime, as) = EM.findMin prio
+      (atime, as) = EM.findMin lprio
       ams = map (\a -> (a, getActorBody a s)) as
-      mnext | EM.null prio = Nothing  -- no actor alive, wait until it spawns
+      mnext | EM.null lprio = Nothing  -- no actor alive, wait until it spawns
             | otherwise = if atime > time
                           then Nothing  -- no actor is ready for another move
                           else Just $ minimumBy order ams
@@ -300,7 +300,7 @@ generateMonster :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
 generateMonster lid = do
   cops <- getsState scops
   pers <- getsServer sper
-  lvl@Level{ldepth} <- getsLevel lid id
+  lvl@Level{ldepth} <- getLevel lid
   s <- getState
   let f fid = isSpawnFaction fid s
       spawns = actorNotProjList f lid s

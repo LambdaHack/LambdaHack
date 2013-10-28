@@ -37,7 +37,7 @@ canRun :: MonadClient m => ActorId -> (Vector, Int) -> m Bool
 canRun leader (dir, dist) = do
   cops <- getsState scops
   b <- getsState $ getActorBody leader
-  lvl <- getsLevel (blid b) id
+  lvl <- getLevel $ blid b
   stgtMode <- getsClient stgtMode
   assert (isNothing stgtMode `blame` (dir, dist, stgtMode)) skip
   return $ accessibleDir cops lvl (bpos b) dir
@@ -175,7 +175,7 @@ continueRunDir leader (dirLast, distLast) = do
   fact <- getsState $ (EM.! bfid body) . sfactionD
   ms <- getsState $ actorList (isAtWar fact) lid
   hs <- getsState $ actorList (not . isAtWar fact) lid
-  lvl@Level{lxsize, lysize} <- getsLevel (blid body) id
+  lvl@Level{lxsize, lysize} <- getLevel $ blid body
   let posHere = bpos body
       posHasFeature f pos = Tile.hasFeature cotile f (lvl `at` pos)
       posHasItems pos = not $ EM.null $ lvl `atI` pos

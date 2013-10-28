@@ -185,7 +185,7 @@ populateDungeon = do
         max minD $ min maxD $ playerEntry $ gplayer fact
       arenas = ES.toList $ ES.fromList $ map getEntryLevel needInitialCrew
       initialActors lid = do
-        lvl <- getsLevel lid id
+        lvl <- getLevel lid
         let arenaFactions = filter ((== lid) . getEntryLevel) needInitialCrew
         entryPoss <- rndToAction
                      $ findEntryPoss cops lvl (length arenaFactions)
