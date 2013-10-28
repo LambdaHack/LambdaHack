@@ -54,7 +54,7 @@ queryAI oldAid = do
     then queryAIPick oldAid
     else do
       fper <- getsClient sfper
-      visFoes <- visibleFoes fper oldAid
+      visFoes <- visibleFoes oldAid fper
       oldBody <- getsState $ getActorBody oldAid
       btarget <- getsClient $ getTarget oldAid
       let arena = blid oldBody
