@@ -192,7 +192,7 @@ displaceSer source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   adj <- checkAdjacent sb tb
-  if not adj then execFailure sb MeleeDistant
+  if not adj then execFailure sb DisplaceDistant
   else do
     let lid = blid sb
     lvl <- getLevel lid

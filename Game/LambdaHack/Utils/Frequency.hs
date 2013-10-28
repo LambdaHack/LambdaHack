@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveFoldable, DeriveTraversable, OverloadedStrings #-}
 -- | A list of items with relative frequencies of appearance.
 module Game.LambdaHack.Utils.Frequency
   ( -- * The @Frequency@ type
@@ -13,7 +13,9 @@ module Game.LambdaHack.Utils.Frequency
 
 import Control.Arrow (first, second)
 import Control.Monad
+import Data.Foldable (Foldable)
 import Data.Text (Text)
+import Data.Traversable (Traversable)
 import qualified System.Random as R
 
 import Game.LambdaHack.Common.Msg
@@ -25,7 +27,7 @@ data Frequency a = Frequency
   { nameFrequency :: Text        -- ^ short description for debug, etc.
   , runFrequency  :: [(Int, a)]  -- ^ give acces to raw frequency values
   }
-  deriving Show
+  deriving (Show, Foldable, Traversable)
 
 instance Monad Frequency where
   return x = Frequency "return" [(1, x)]

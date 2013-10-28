@@ -9,6 +9,7 @@ import qualified Data.EnumMap.Strict as EM
 import Data.Function
 import Data.List
 import Data.Maybe
+import qualified Data.Traversable as Traversable
 
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.State
@@ -67,8 +68,10 @@ reacquireTgt aid factionAbilities btarget fper = do
   actorD <- getsState sactorD
   -- TODO: set distant targets so that monsters behave as if they have
   -- a plan. We need pathfinding for that.
-  noFoes :: Strategy (Maybe Target) <- getsState $ \s ->
-    (Just . TPos . (bpos b `shift`)) `liftM` moveStrategy cops aid s Nothing
+  noFoes :: Strategy (Maybe Target) <- do
+    s <- getState
+    str <- moveStrategy cops aid s Nothing
+    return $ (Just . TPos . (bpos b `shift`)) `liftM` str
   let per = fper EM.! blid b
       mk = okind $ bkind b
       actorAbilities = acanDo mk `intersect` factionAbilities
@@ -211,7 +214,7 @@ melee :: MonadActionRO m
 melee aid fpos foeAid = do
   Actor{bpos, blid} <- getsState $ getActorBody aid
   Level{lxsize} <- getLevel blid
-  let foeAdjacent = adjacent lxsize bpos fpos
+  let foeAdjacent = adjacent lxsize bpos fpos  -- MeleeDistant
   return $ foeAdjacent .=> returN "melee" (MeleeSer aid foeAid)
 
 rangedFreq :: MonadActionRO m
@@ -287,16 +290,17 @@ toolsFreq disco aid = do
     quaffFreq bbag 1 (actorContainer aid binv)
     ++ quaffFreq tis 2 (const $ CFloor blid bpos)
 
--- TODO: express as MonadActionRO
+-- TODO: express fully in MonadActionRO
 -- TODO: separate out bumping into solid tiles
 -- TODO: also close doors; then stupid members of the party won't see them,
 -- but it's assymetric warfare: rather harm humans than help party members
 -- | AI finds interesting moves in the absense of visible foes.
 -- This strategy can be null (e.g., if the actor is blocked by friends).
-moveStrategy :: Kind.COps -> ActorId -> State -> Maybe (Point, Bool)
-             -> Strategy Vector
+moveStrategy :: MonadActionRO m
+             => Kind.COps -> ActorId -> State -> Maybe (Point, Bool)
+             -> m (Strategy Vector)
 moveStrategy cops aid s mFoe =
-  case mFoe of
+  return $ case mFoe of
     -- Target set and we chase the foe or his last position or another target.
     Just (fpos, _) ->
       let towardsFoe =
@@ -387,7 +391,7 @@ moveStrategy cops aid s mFoe =
 
 bumpableHere :: Kind.COps -> Level -> Bool ->  Point -> Bool
 bumpableHere Kind.COps{cotile} lvl foeVisible pos  =
-  let t = lvl `at` pos
+  let t = lvl `at` pos  -- cannot hold items, so OK
   in Tile.openable cotile t
      || -- Try to find hidden doors only if no foe in sight.
         not foeVisible && Tile.hasFeature cotile F.Suspect t
@@ -401,9 +405,10 @@ chase aid foe@(_, foeVisible) = do
   let mFoe = Just foe
       fight = not foeVisible  -- don't pick fights if the real foe is close
   s <- getState
-  return $ if fight
-           then MoveSer {-TODO: ExploreSer-} aid `liftM` moveStrategy cops aid s mFoe
-           else MoveSer {-TODO: RunSer-} aid `liftM` moveStrategy cops aid s mFoe
+  str <- moveStrategy cops aid s mFoe
+  if fight
+    then Traversable.mapM (moveRunAid False aid) str
+    else Traversable.mapM (moveRunAid True aid) str
 
 wander :: MonadActionRO m
        => ActorId -> m (Strategy CmdSerTakeTime)
@@ -413,4 +418,51 @@ wander aid = do
   -- or we cannot chase at all.
   let mFoe = Nothing
   s <- getState
-  return $ MoveSer {-TODO: ExploreSer-} aid `liftM` moveStrategy cops aid s mFoe
+  str <- moveStrategy cops aid s mFoe
+  Traversable.mapM (moveRunAid False aid) str
+
+-- | Actor moves or searches or alters or attacks. Displaces if @run@.
+moveRunAid :: MonadActionRO m
+           => Bool -> ActorId -> Vector -> m CmdSerTakeTime
+moveRunAid run source dir = do
+  cops@Kind.COps{cotile} <- getsState scops
+  sb <- getsState $ getActorBody source
+  let lid = blid sb
+  lvl <- getLevel lid
+  let spos = bpos sb           -- source position
+      tpos = spos `shift` dir  -- target position
+      t = lvl `at` tpos
+  -- We start by checking actors at the the target position,
+  -- which gives a partial information (actors can be invisible),
+  -- as opposed to accessibility (and items) which are always accurate
+  -- (tiles can't be invisible).
+  tgt <- getsState $ posToActor tpos lid
+  case tgt of
+    Just target | run ->  -- can be a foe, as well as a friend
+      if accessible cops lvl spos tpos then
+        -- Displacing requires accessibility.
+        return $ DisplaceSer source target
+      else
+        -- If cannot displace, hit. No DisplaceAccess.
+        return $ MeleeSer source target
+    Just target ->  -- can be a foe, as well as a friend
+      -- Attacking does not require full access, adjacency is enough.
+      return $ MeleeSer source target
+    Nothing -> do  -- move or search or alter
+      if accessible cops lvl spos tpos then
+        -- Movement requires full access.
+        return $ MoveSer source dir
+        -- The potential invisible actor is hit.
+      else if not $ EM.null $ lvl `atI` tpos then  -- AlterBlockItem
+        -- This is, e.g., inaccessible open door with an item in it.
+        assert `failure` (run, source, dir)
+      else if not (Tile.hasFeature cotile F.Walkable t)  -- not implied
+              && (Tile.hasFeature cotile F.Suspect t
+                  || Tile.openable cotile t
+                  || Tile.closable cotile t
+                  || Tile.changeable cotile t) then
+        -- No access, so search and/or alter the tile.
+        return $ AlterSer source tpos Nothing
+      else
+        -- Boring tile, no point bumping into it, do WaitSer if really idle.
+        assert `failure` (run, source, dir)  -- MoveNothing, AlterNothing

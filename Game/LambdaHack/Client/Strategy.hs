@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveFoldable, DeriveTraversable, OverloadedStrings #-}
 -- | AI strategies to direct actors not controlled directly by human players.
 -- No operation in this module involves the 'State' or 'Action' type.
 module Game.LambdaHack.Client.Strategy
@@ -7,15 +7,17 @@ module Game.LambdaHack.Client.Strategy
   ) where
 
 import Control.Monad
+import Data.Foldable (Foldable)
 import Data.Text (Text)
+import Data.Traversable (Traversable)
 
 import Game.LambdaHack.Common.Msg
-import Game.LambdaHack.Utils.Frequency
+import Game.LambdaHack.Utils.Frequency as Frequency
 
 -- | A strategy is a choice of (non-empty) frequency tables
 -- of possible actions.
 newtype Strategy a = Strategy { runStrategy :: [Frequency a] }
-  deriving Show
+  deriving (Show, Foldable, Traversable)
 
 -- | Strategy is a monad. TODO: Can we write this as a monad transformer?
 instance Monad Strategy where
@@ -32,6 +34,9 @@ instance Monad Strategy where
 instance MonadPlus Strategy where
   mzero = Strategy []
   mplus (Strategy xs) (Strategy ys) = Strategy (xs ++ ys)
+
+instance Functor Strategy where
+  fmap f (Strategy fs) = Strategy (map (fmap f) fs)
 
 normalizeStrategy :: Strategy a -> Strategy a
 normalizeStrategy (Strategy fs) = Strategy $ filter (not . nullFreq) fs
