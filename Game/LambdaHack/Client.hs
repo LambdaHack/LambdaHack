@@ -18,6 +18,7 @@ import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.LoopAction
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.Animation (FSConfig (..))
 import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Common.Faction
@@ -79,7 +80,8 @@ wireSession exeClientUI exeClientAI cops@Kind.COps{corule} exeServer = do
   -- UI config reloaded at each client start.
   sconfigUI <- mkConfigUI corule
   let !sbinding = stdBinding sconfigUI  -- evaluate to check for errors
-      font = configFont sconfigUI
+      fsfont = configFont sconfigUI
+      fsmaxFps = configMaxFps sconfigUI
   defHist <- defHistory
   let cli = defStateClient defHist sconfigUI
       s = updateCOps (const cops) emptyState
@@ -89,7 +91,7 @@ wireSession exeClientUI exeClientAI cops@Kind.COps{corule} exeServer = do
       executorUI fid fromF =
         let sfconn = connFrontend fid fromF
         in exeClientUI SessionUI{..} s (cli fid False)
-  startupF font $ exeServer executorUI executorAI
+  startupF FSConfig{..} $ exeServer executorUI executorAI
 
 -- | Wire together game content, the main loop of game clients,
 -- the main game loop assigned to this frontend (possibly containing

@@ -22,6 +22,7 @@ data ConfigUI = ConfigUI
     -- ui
   , configFont         :: !String
   , configHistoryMax   :: !Int
+  , configMaxFps       :: !Int
   }
   deriving Show
 
@@ -35,6 +36,7 @@ instance Binary ConfigUI where
     put configMacros
     put configFont
     put configHistoryMax
+    put configMaxFps
   get = do
     configCommands     <- get
     configAppDataDirUI <- get
@@ -42,4 +44,5 @@ instance Binary ConfigUI where
     configMacros       <- get
     configFont         <- get
     configHistoryMax   <- get
+    configMaxFps <- get
     return ConfigUI{..}

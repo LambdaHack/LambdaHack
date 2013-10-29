@@ -52,8 +52,8 @@ data ConnMulti = ConnMulti
   , toMulti   :: ToMulti
   }
 
-startupF :: String -> IO () -> IO ()
-startupF s k = startup s $ \fs -> do
+startupF :: FSConfig -> IO () -> IO ()
+startupF fsc k = startup fsc $ \fs -> do
   void $ forkIO $ loopFrontend fs connMulti
   k
 

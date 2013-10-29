@@ -22,7 +22,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Graphics.UI.Gtk hiding (Point)
 import System.Time
 
-import Game.LambdaHack.Common.Animation (SingleFrame (..))
+import Game.LambdaHack.Common.Animation (FSConfig (..), SingleFrame (..))
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Key as K (KM (..), Modifier (..),
                                                   keyTranslate)
@@ -42,17 +42,23 @@ data FrontendSession = FrontendSession
   , stags       :: !(M.Map Color.Attr TextTag)  -- ^ text color tags for fg/bg
   , schanKey    :: !(Chan K.KM)                 -- ^ channel for keyboard input
   , sframeState :: !(MVar FrameState)
-      -- ^ state of the frame finite machine; this mvar is locked
+      -- ^ State of the frame finite machine. This mvar is locked
       -- for a short time only, because it's needed, among others,
       -- to display frames, which is done by a single polling thread,
-      -- in real time
+      -- in real time.
   , slastFull   :: !(MVar (GtkFrame, Bool))
-      -- ^ most recent full (not empty, not repeated) frame received
-      -- and if any empty frame followed it; this mvar is locked
+      -- ^ Most recent full (not empty, not repeated) frame received
+      -- and if any empty frame followed it. This mvar is locked
       -- for longer intervals to ensure that threads (possibly many)
       -- add frames in an orderly manner, which is not done in real time,
       -- though sometimes the frame display subsystem has to poll
-      -- for a frame, in which case the locking interval becomes meaningful
+      -- for a frame, in which case the locking interval becomes meaningful.
+  , smaxFps     :: Int
+      -- ^ Maximal frames per second.
+      -- This is better low and fixed, to avoid jerkiness and delays
+      -- that tell the player there are many intelligent enemies on the level.
+      -- That's better than scaling AI sofistication down based
+      -- on the FPS setting and machine speed.
   }
 
 data GtkFrame = GtkFrame
@@ -91,12 +97,13 @@ frontendName = "gtk"
 -- and need @sview@ and @stags@. Because of Windows, GTK needs to be
 -- on a bound thread, so we can't avoid the communication overhead
 -- of bound threads, so there's no point spawning a separate thread for GTK.
-startup :: String -> (FrontendSession -> IO ()) -> IO ()
+startup :: FSConfig -> (FrontendSession -> IO ()) -> IO ()
 startup = runGtk
 
 -- | Sets up and starts the main GTK loop providing input and output.
-runGtk :: String ->  (FrontendSession -> IO ()) -> IO ()
-runGtk configFont k = do
+runGtk :: FSConfig -> (FrontendSession -> IO ()) -> IO ()
+runGtk FSConfig{..} k = do
+  let smaxFps = fsmaxFps
   -- Init GUI.
   unsafeInitGUIForThreadedRTS
   -- Text attributes.
@@ -151,7 +158,7 @@ runGtk configFont k = do
           writeChan schanKey K.KM {key, modifier}
       return True
   -- Set the font specified in config, if any.
-  f <- fontDescriptionFromString configFont
+  f <- fontDescriptionFromString fsfont
   widgetModifyFont sview (Just f)
   -- Prepare font chooser dialog.
   currentfont <- newIORef f
@@ -222,19 +229,9 @@ setTo tb defAttr lx (ly, attr:attrs) = do
             setIter a 1 as
   setIter attr 1 attrs
 
--- TODO: configure
--- | Maximal frames per second.
--- This is better low and fixed, to avoid jerkiness and delays
--- that tell the player there are many intelligent enemies on the level.
--- That's better than scaling AI sofistication down based on the FPS setting
--- and machine speed.
-maxFps :: Int
-maxFps = 15
-
 -- | Maximal polls per second.
-maxPolls :: Int
-maxPolls = let maxP = 120
-           in assert (maxP >= 2 * maxFps `blame` (maxP, maxFps)) maxP
+maxPolls :: Int -> Int
+maxPolls smaxFps = max 120 (2 * smaxFps)
 
 -- | Add a given number of microseconds to time.
 addTime :: ClockTime -> Int -> ClockTime
@@ -248,11 +245,11 @@ diffTime (TOD s1 p1) (TOD s2 p2) =
 
 -- | Poll the frame queue often and draw frames at fixed intervals.
 pollFrames :: FrontendSession -> Maybe ClockTime -> IO ()
-pollFrames sess (Just setTime) = do
+pollFrames sess@FrontendSession{smaxFps} (Just setTime) = do
   -- Check if the time is up.
   curTime <- getClockTime
   let diffT = diffTime setTime curTime
-  if diffT > 1000000 `div` maxPolls
+  if diffT > 1000000 `div` maxPolls smaxFps
     then do
       -- Delay half of the time difference.
       threadDelay $ diffTime curTime setTime `div` 2
@@ -260,7 +257,7 @@ pollFrames sess (Just setTime) = do
     else
       -- Don't delay, because time is up!
       pollFrames sess Nothing
-pollFrames sess@FrontendSession{sframeState} Nothing = do
+pollFrames sess@FrontendSession{sframeState, smaxFps} Nothing = do
   -- Time is up, check if we actually wait for anyting.
   fs <- takeMVar sframeState
   case fs of
@@ -271,21 +268,21 @@ pollFrames sess@FrontendSession{sframeState} Nothing = do
           putMVar sframeState FPushed{fpushed = queue, fshown = frame}
           postGUIAsync $ output sess frame
           curTime <- getClockTime
-          threadDelay $ 1000000 `div` (maxFps * 2)
-          pollFrames sess $ Just $ addTime curTime $ 1000000 `div` maxFps
+          threadDelay $ 1000000 `div` (smaxFps * 2)
+          pollFrames sess $ Just $ addTime curTime $ 1000000 `div` smaxFps
         Just (Nothing, queue) -> do
           -- Delay requested via an empty frame.
           putMVar sframeState FPushed{fpushed = queue, ..}
           curTime <- getClockTime
           -- There is no problem if the delay is a bit delayed.
-          threadDelay $ 1000000 `div` maxFps
-          pollFrames sess $ Just $ addTime curTime $ 1000000 `div` maxFps
+          threadDelay $ 1000000 `div` smaxFps
+          pollFrames sess $ Just $ addTime curTime $ 1000000 `div` smaxFps
         Nothing -> do
           -- The queue is empty, the game logic thread lags.
           putMVar sframeState fs
           -- Time is up, the game thread is going to send a frame,
           -- (otherwise it would change the state), so poll often.
-          threadDelay $ 1000000 `div` maxPolls
+          threadDelay $ 1000000 `div` maxPolls smaxFps
           pollFrames sess Nothing
     _ -> do
       putMVar sframeState fs
@@ -293,7 +290,7 @@ pollFrames sess@FrontendSession{sframeState} Nothing = do
       -- The slow polling also gives the game logic a head start
       -- in creating frames in case one of the further frames is slow
       -- to generate and would normally cause a jerky delay in drawing.
-      threadDelay $ 1000000 `div` (maxFps * 2)
+      threadDelay $ 1000000 `div` (smaxFps * 2)
       pollFrames sess Nothing
 
 -- | Add a game screen frame to the frame drawing channel, or show

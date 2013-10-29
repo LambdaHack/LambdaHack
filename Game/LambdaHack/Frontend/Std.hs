@@ -13,7 +13,7 @@ import qualified Data.List as L
 import Data.Text.Encoding (encodeUtf8)
 import qualified System.IO as SIO
 
-import Game.LambdaHack.Common.Animation (SingleFrame (..))
+import Game.LambdaHack.Common.Animation (FSConfig, SingleFrame (..))
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Key as K (KM (..), Key (..),
                                                   Modifier (..))
@@ -26,7 +26,7 @@ frontendName :: String
 frontendName = "std"
 
 -- | Starts the main program loop using the frontend input and output.
-startup :: String -> (FrontendSession -> IO ()) -> IO ()
+startup :: FSConfig -> (FrontendSession -> IO ()) -> IO ()
 startup _ k = k ()
 
 -- | Output to the screen via the frontend.

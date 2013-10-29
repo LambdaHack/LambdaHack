@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.Animation
   , SingleFrame(..), emptySingleFrame, xsizeSingleFrame, ysizeSingleFrame
   , Animation, Frames, renderAnim, restrictAnim
   , twirlSplash, blockHit, blockMiss, deathBody, swapPlaces, fadeout
-  , AcFrame(..)
+  , AcFrame(..), FSConfig(..)
   ) where
 
 import Control.Arrow ((***))
@@ -217,3 +217,9 @@ instance Binary AcFrame where
       2 -> liftM AcNormal get
       3 -> return AcDelay
       _ -> fail "no parse (AcFrame)"
+
+-- Front-end configuration data.
+data FSConfig = FSConfig
+  { fsfont   :: String
+  , fsmaxFps :: Int
+  }

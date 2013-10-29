@@ -111,6 +111,7 @@ parseConfigUI dataDir cp =
         in map trMacro section
       configFont = get cp "ui" "font"
       configHistoryMax = get cp "ui" "historyMax"
+      configMaxFps = get cp "ui" "maxFps"
   in ConfigUI{..}
 
 -- | Read and parse UI config file.
