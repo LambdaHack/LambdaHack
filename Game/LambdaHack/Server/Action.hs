@@ -163,23 +163,32 @@ sendPingAI fid = do
 
 sendUpdateUI :: MonadConnServer m => FactionId -> CmdClientUI -> m ()
 sendUpdateUI fid cmd = do
-  conn <- getsDict $ snd . fst . (EM.! fid)
-  writeTQueueUI cmd $ fromServer conn
+  cs <- getsDict $ fst . (EM.! fid)
+  case cs of
+    Nothing -> assert `failure` fid
+    Just (_, conn) ->
+      writeTQueueUI cmd $ fromServer conn
 
 sendQueryUI :: MonadConnServer m => FactionId -> ActorId -> m CmdSer
 sendQueryUI fid aid = do
-  conn <- getsDict $ snd . fst . (EM.! fid)
-  writeTQueueUI (CmdQueryUI aid) $ fromServer conn
-  readTQueueUI $ toServer conn
+  cs <- getsDict $ fst . (EM.! fid)
+  case cs of
+    Nothing -> assert `failure` fid
+    Just (_, conn) -> do
+      writeTQueueUI (CmdQueryUI aid) $ fromServer conn
+      readTQueueUI $ toServer conn
 
 sendPingUI :: MonadConnServer m => FactionId -> m ()
 sendPingUI fid = do
-  conn <- getsDict $ snd . fst . (EM.! fid)
-  writeTQueueUI CmdPingUI $ fromServer conn
-  debugPrint $ "UI client" <+> showT fid <+> "pinged..."
-  cmdHack <- readTQueueUI $ toServer conn
-  debugPrint $ "UI client" <+> showT fid <+> "responded."
-  assert (cmdHack == TakeTimeSer (WaitSer (toEnum (-1)))) skip
+  cs <- getsDict $ fst . (EM.! fid)
+  case cs of
+    Nothing -> assert `failure` fid
+    Just (_, conn) -> do
+      writeTQueueUI CmdPingUI $ fromServer conn
+      debugPrint $ "UI client" <+> showT fid <+> "pinged..."
+      cmdHack <- readTQueueUI $ toServer conn
+      debugPrint $ "UI client" <+> showT fid <+> "responded."
+      assert (cmdHack == TakeTimeSer (WaitSer (toEnum (-1)))) skip
 
 -- | Create a server config file. Warning: when it's used, the game state
 -- may still be undefined, hence the content ops are given as an argument.
@@ -337,20 +346,26 @@ updateConn executorUI executorAI = do
         return ChanServer{..}
       mkChanFrontend :: IO Frontend.ChanFrontend
       mkChanFrontend = STM.newTQueueIO
-      addConn fid _ = case EM.lookup fid oldD of
+      addConn :: FactionId -> Faction -> IO ConnServerFaction
+      addConn fid fact = case EM.lookup fid oldD of
         Just conns -> return conns  -- share old conns and threads
-        Nothing -> do
+        Nothing | playerUI $ gplayer fact -> do
           connF <- mkChanFrontend
           connS <- mkChanServer
           connAI <- mkChanServer
-          return ((connF, connS), connAI)
+          return (Just (connF, connS), connAI)
+        Nothing -> do
+          connAI <- mkChanServer
+          return (Nothing, connAI)
   factionD <- getsState sfactionD
   d <- liftIO $ mapWithKeyM addConn factionD
   let newD = d `EM.union` oldD  -- never kill old clients
   putDict newD
   -- Spawn and kill client threads.
   let toSpawn = newD EM.\\ oldD
-      fdict fid = ( fst $ fst
+      fdict fid = ( fst
+                    $ fromMaybe (assert `failure` fid)
+                    $ fst
                     $ fromMaybe (assert `failure` fid)
                     $ EM.lookup fid newD
                   , maybe T.empty gname  -- a faction can go inactive
@@ -367,16 +382,18 @@ updateConn executorUI executorAI = do
         -- even if UI usage changes, but it works OK thanks to UI faction
         -- clients distinguished by positive FactionId numbers.
         forkAI fid connAI  -- AI clients always needed, e.g., for auto-explore
-        when (playerUI $ gplayer $ factionD EM.! fid) $ forkUI fid connUI
+        maybe skip (forkUI fid) connUI
   liftIO $ mapWithKeyM_ forkClient toSpawn
   nU <- nUI
   liftIO $ putMVar fromM (nU, fdict)  -- restart Frontend
 
 killAllClients :: (MonadAtomic m, MonadConnServer m) => m ()
 killAllClients = do
+  factionD <- getsState sfactionD
   d <- getDict
   let sendKill fid _ = do
-        sendUpdateUI fid $ CmdAtomicUI $ KillExitA fid
+        when (playerUI $ gplayer $ factionD EM.! fid) $
+          sendUpdateUI fid $ CmdAtomicUI $ KillExitA fid
         sendUpdateAI fid $ CmdAtomicAI $ KillExitA fid
   mapWithKeyM_ sendKill d
 
