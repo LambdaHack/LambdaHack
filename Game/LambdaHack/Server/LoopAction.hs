@@ -7,6 +7,7 @@ import Control.Arrow ((&&&))
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import Data.Key (mapWithKeyM_)
 import Data.List
 import Data.Maybe
 import qualified Data.Ord as Ord
@@ -113,15 +114,23 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
           loop
   loop
 
-saveBkpAll :: (MonadAtomic m, MonadServer m) => m ()
+-- This can be improved by adding a timeout and by asking clients to prepare
+-- a save (in this way checking they have permissions, enough space, etc.)
+-- and when all report back, asking them to commit the save.
+-- | Save game on server and all clients. Clients are pinged first,
+-- which greatly reduced the chance of saves being out of sync.
+saveBkpAll :: (MonadAtomic m, MonadServer m, MonadConnServer m) => m ()
 saveBkpAll = do
-  -- TODO: ping all clients and crash without saving if no answer;
-  -- otherwise saves on server and clients are out of sync
-  -- (they can still be, but much less likely).
+  factionD <- getsState sfactionD
+  let ping fid _ = do
+        sendPingAI fid
+        when (playerUI $ gplayer $ factionD EM.! fid) $ sendPingUI fid
+  mapWithKeyM_ ping factionD
   execCmdAtomic SaveBkpA
   saveServer
 
-endClip :: (MonadAtomic m, MonadServer m) => [LevelId] -> m ()
+endClip :: (MonadAtomic m, MonadServer m, MonadConnServer m)
+        => [LevelId] -> m ()
 endClip arenas = do
   time <- getsState stime
   Config{configSaveBkpClips} <- getsServer sconfig

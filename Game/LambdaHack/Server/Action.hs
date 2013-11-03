@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- | Game action monads and basic building blocks for human and computer
 -- player actions. Has no access to the the main action type.
 -- Does not export the @liftIO@ operation nor a few other implementation
@@ -126,7 +127,7 @@ readTQueueAI toServer = do
   debug <- getsServer $ sniffIn . sdebugSer
   when debug $ do
     let aid = aidCmdSerTakeTime cmd
-    d <- debugAid aid (showT ("CmdSerTakeTime", cmd))
+    d <- debugAid aid ("CmdSerTakeTime:" <+> showT cmd)
     liftIO $ T.hPutStrLn stderr d
   return cmd
 
@@ -136,7 +137,7 @@ readTQueueUI toServer = do
   debug <- getsServer $ sniffIn . sdebugSer
   when debug $ do
     let aid = aidCmdSer cmd
-    d <- debugAid aid (showT ("CmdSer", cmd))
+    d <- debugAid aid ("CmdSer:" <+> showT cmd)
     liftIO $ T.hPutStrLn stderr d
   return cmd
 
@@ -155,7 +156,9 @@ sendPingAI :: MonadConnServer m => FactionId -> m ()
 sendPingAI fid = do
   conn <- getsDict $ snd . (EM.! fid)
   writeTQueueAI CmdPingAI $ fromServer conn
+  debugPrint $ "AI client" <+> showT fid <+> "pinged..."
   cmdHack <- readTQueueAI $ toServer conn
+  debugPrint $ "AI client" <+> showT fid <+> "responded."
   assert (cmdHack == WaitSer (toEnum (-1))) skip
 
 sendUpdateUI :: MonadConnServer m => FactionId -> CmdClientUI -> m ()
@@ -173,7 +176,9 @@ sendPingUI :: MonadConnServer m => FactionId -> m ()
 sendPingUI fid = do
   conn <- getsDict $ snd . fst . (EM.! fid)
   writeTQueueUI CmdPingUI $ fromServer conn
+  debugPrint $ "UI client" <+> showT fid <+> "pinged..."
   cmdHack <- readTQueueUI $ toServer conn
+  debugPrint $ "UI client" <+> showT fid <+> "responded."
   assert (cmdHack == TakeTimeSer (WaitSer (toEnum (-1)))) skip
 
 -- | Create a server config file. Warning: when it's used, the game state
