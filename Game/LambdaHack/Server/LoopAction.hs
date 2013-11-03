@@ -71,8 +71,6 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
       updateConn executorUI executorAI
       initPer
       reinitGame
-      -- Save ASAP in case of crashes and disconnects.
-      saveBkpAll
     Just (sRaw, ser) -> do  -- Running a restored game.
       -- First, set the previous cops, to send consistent info to clients.
       let setPreviousCops = const cops
@@ -441,6 +439,4 @@ restartGame updConn loopServer = do
   updConn
   initPer
   reinitGame
-  -- Save ASAP in case of crashes and disconnects.
-  saveBkpAll
   loopServer
