@@ -144,6 +144,7 @@ posSfxAtomic cmd = case cmd of
   MsgAllD _ -> return PosAll
   DisplayPushD fid -> return $ PosFid fid
   DisplayDelayD fid -> return $ PosFid fid
+  RecordHistoryD fid -> return $ PosFid fid
 
 singleAid :: MonadActionRO m => ActorId -> m PosAtomic
 singleAid aid = do

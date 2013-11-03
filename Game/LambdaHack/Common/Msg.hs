@@ -20,7 +20,6 @@ import Data.Monoid hiding ((<>))
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
-import Game.LambdaHack.Utils.Assert
 import NLP.Miniutter.English (showT, (<+>), (<>))
 import qualified NLP.Miniutter.English as MU
 
@@ -197,7 +196,7 @@ stringByLocation lxsize lysize (msgTop : ls) =
 -- prefixed by @msg@ and postfixed by @moreMsg@ except for the last one,
 -- fits on the screen wrt height (but lines may still be too wide).
 splitOverlay :: Y -> Overlay -> Overlay -> Slideshow
-splitOverlay lysize msg ls = assert (length msg <= lysize) $
+splitOverlay lysize msg ls =
   let over = msg ++ ls
   in if length over <= lysize + 2
      then Slideshow [over]  -- all fits on one screen

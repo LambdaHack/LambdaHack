@@ -12,6 +12,7 @@ import Data.List
 import Data.Maybe
 import qualified Data.Ord as Ord
 
+import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -30,6 +31,7 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Frontend
 import Game.LambdaHack.Server.Action hiding (sendUpdateAI, sendUpdateUI)
@@ -167,7 +169,7 @@ handleActors :: (MonadAtomic m, MonadConnServer m)
              -> LevelId
              -> m ()
 handleActors cmdSerSem lid = do
-  Kind.COps{coactor} <- getsState scops
+  Kind.COps{coactor, cofact=Kind.Ops{okind}} <- getsState scops
   time <- getsState $ getLocalTime lid  -- the end of this clip, inclusive
   Level{lprio} <- getLevel lid
   quit <- getsServer squit
@@ -262,6 +264,16 @@ handleActors cmdSerSem lid = do
         -- of all his AI party members cumulated in a single frame,
         -- but one by one.
         execSfxAtomic $ DisplayPushD side
+        -- Clear messages in the UI client (if any), if the actor
+        -- is freely moving.
+        let factionAbilities
+              | Just aid == mleader = fAbilityLeader $ okind $ gkind fact
+              | otherwise = fAbilityOther $ okind $ gkind fact
+            canMove = playerUI (gplayer fact)
+                      && not (bproj body)
+                      && (Ability.Chase `elem` factionAbilities
+                          || Ability.Wander `elem` factionAbilities)
+        when canMove $ execSfxAtomic $ RecordHistoryD side
         cmdT <- sendQueryAI side aid
         let cmdS = TakeTimeSer cmdT
         (leaderNew, bPre) <- switchLeader cmdS

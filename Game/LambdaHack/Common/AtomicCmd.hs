@@ -110,6 +110,7 @@ data SfxAtomic =
   | MsgAllD Msg
   | DisplayPushD FactionId
   | DisplayDelayD FactionId
+  | RecordHistoryD FactionId
   deriving (Show, Eq, Generic)
 
 instance Binary SfxAtomic
@@ -177,6 +178,7 @@ undoSfxAtomic cmd = case cmd of
   MsgAllD{} -> cmd
   DisplayPushD{} -> cmd
   DisplayDelayD{} -> cmd
+  RecordHistoryD{} -> cmd
 
 undoAtomic :: Atomic -> Maybe Atomic
 undoAtomic (CmdAtomic cmd) = fmap CmdAtomic $ undoCmdAtomic cmd

@@ -613,6 +613,7 @@ drawSfxAtomicUI verbose sfx = case sfx of
     -- of last shown
     displayPush
   DisplayDelayD _ -> displayFrames [Nothing]
+  RecordHistoryD _ -> recordHistory
   _ -> return ()
 
 strikeD :: MonadClientUI m

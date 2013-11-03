@@ -97,10 +97,10 @@ queryAIPick aid = do
   side <- getsClient sside
   body <- getsState $ getActorBody aid
   assert (bfid body == side `blame` (aid, bfid body, side)) skip
-  leader <- getsClient _sleader
+  mleader <- getsClient _sleader
   fact <- getsState $ (EM.! bfid body) . sfactionD
   let factionAbilities
-        | Just aid == leader = fAbilityLeader $ okind $ gkind fact
+        | Just aid == mleader = fAbilityLeader $ okind $ gkind fact
         | otherwise = fAbilityOther $ okind $ gkind fact
   unless (bproj body) $ do
     stratTarget <- targetStrategy aid factionAbilities
@@ -124,7 +124,7 @@ queryAIPick aid = do
 --  trace _debug skip
   return action
 
--- | Handle the move of the hero.
+-- | Handle the move of a UI player.
 queryUI :: (MonadClientAbort m, MonadClientUI m) => ActorId -> m CmdSer
 queryUI aid = do
   -- When running, stop if aborted by a disturbance. Otherwise let
