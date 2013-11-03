@@ -44,26 +44,29 @@ cmdClientAISem cmd = case cmd of
   CmdQueryAI aid -> do
     cmdC <- queryAI aid
     writeServer cmdC
+  CmdPingAI ->
+    writeServer $ WaitSer $ toEnum (-1)
 
 cmdClientUISem :: ( MonadAtomic m, MonadClientAbort m
                   , MonadClientUI m, MonadClientWriteServer CmdSer m )
                => CmdClientUI -> m ()
-cmdClientUISem cmd =
-  case cmd of
-    CmdAtomicUI cmdA -> do
-      cmds <- cmdAtomicFilterCli cmdA
-      mapM_ cmdAtomicSemCli cmds
-      mapM_ execCmdAtomic cmds
-      mapM_ (drawCmdAtomicUI False) cmds
-      mapM_ (storeUndo . CmdAtomic) cmds  -- TODO: only store cmdA?
-    SfxAtomicUI sfx -> do
-      drawSfxAtomicUI False sfx
-      storeUndo $ SfxAtomic sfx
-    CmdQueryUI aid -> do
-      mleader <- getsClient _sleader
-      assert (isJust mleader `blame` cmd) skip
-      cmdH <- queryUI aid
-      writeServer cmdH
+cmdClientUISem cmd = case cmd of
+  CmdAtomicUI cmdA -> do
+    cmds <- cmdAtomicFilterCli cmdA
+    mapM_ cmdAtomicSemCli cmds
+    mapM_ execCmdAtomic cmds
+    mapM_ (drawCmdAtomicUI False) cmds
+    mapM_ (storeUndo . CmdAtomic) cmds  -- TODO: only store cmdA?
+  SfxAtomicUI sfx -> do
+    drawSfxAtomicUI False sfx
+    storeUndo $ SfxAtomic sfx
+  CmdQueryUI aid -> do
+    mleader <- getsClient _sleader
+    assert (isJust mleader `blame` cmd) skip
+    cmdH <- queryUI aid
+    writeServer cmdH
+  CmdPingUI ->
+    writeServer $ TakeTimeSer $ WaitSer $ toEnum (-1)
 
 wireSession :: (SessionUI -> State -> StateClient
                 -> ChanServer CmdClientUI CmdSer -> IO ())

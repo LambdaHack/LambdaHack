@@ -8,7 +8,8 @@ module Game.LambdaHack.Server.Action
   , MonadConnServer
   , tryRestore, updateConn, killAllClients, speedupCOps
     -- * Communication
-  , sendUpdateUI, sendQueryUI, sendUpdateAI, sendQueryAI
+  , sendUpdateAI, sendQueryAI, sendPingAI
+  , sendUpdateUI, sendQueryUI, sendPingUI
     -- * Assorted primitives
   , debugPrint, dumpCfg
   , mkConfigRules, restoreScore, revealItems, deduceQuits
@@ -150,6 +151,13 @@ sendQueryAI fid aid = do
   writeTQueueAI (CmdQueryAI aid) $ fromServer conn
   readTQueueAI $ toServer conn
 
+sendPingAI :: MonadConnServer m => FactionId -> m ()
+sendPingAI fid = do
+  conn <- getsDict $ snd . (EM.! fid)
+  writeTQueueAI CmdPingAI $ fromServer conn
+  cmdHack <- readTQueueAI $ toServer conn
+  assert (cmdHack == WaitSer (toEnum (-1))) skip
+
 sendUpdateUI :: MonadConnServer m => FactionId -> CmdClientUI -> m ()
 sendUpdateUI fid cmd = do
   conn <- getsDict $ snd . fst . (EM.! fid)
@@ -160,6 +168,13 @@ sendQueryUI fid aid = do
   conn <- getsDict $ snd . fst . (EM.! fid)
   writeTQueueUI (CmdQueryUI aid) $ fromServer conn
   readTQueueUI $ toServer conn
+
+sendPingUI :: MonadConnServer m => FactionId -> m ()
+sendPingUI fid = do
+  conn <- getsDict $ snd . fst . (EM.! fid)
+  writeTQueueUI CmdPingUI $ fromServer conn
+  cmdHack <- readTQueueUI $ toServer conn
+  assert (cmdHack == TakeTimeSer (WaitSer (toEnum (-1)))) skip
 
 -- | Create a server config file. Warning: when it's used, the game state
 -- may still be undefined, hence the content ops are given as an argument.

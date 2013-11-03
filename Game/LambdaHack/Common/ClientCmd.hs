@@ -28,6 +28,7 @@ import Game.LambdaHack.Frontend
 data CmdClientAI =
     CmdAtomicAI CmdAtomic
   | CmdQueryAI ActorId
+  | CmdPingAI
   deriving Show
 
 -- | Abstract syntax of client commands that use the UI.
@@ -35,6 +36,7 @@ data CmdClientUI =
     CmdAtomicUI CmdAtomic
   | SfxAtomicUI SfxAtomic
   | CmdQueryUI ActorId
+  | CmdPingUI
   deriving Show
 
 debugCmdClientAI :: MonadActionRO m => CmdClientAI -> m Text
@@ -43,6 +45,7 @@ debugCmdClientAI cmd = case cmd of
     ps <- posCmdAtomic cmdA
     return $ showT (showT cmd, ps)
   CmdQueryAI aid -> debugAid aid $ showT cmd
+  CmdPingAI -> return $ showT cmd
 
 debugCmdClientUI :: MonadActionRO m => CmdClientUI -> m Text
 debugCmdClientUI cmd = case cmd of
@@ -53,6 +56,7 @@ debugCmdClientUI cmd = case cmd of
     ps <- posSfxAtomic sfx
     return $ showT (showT cmd, ps)
   CmdQueryUI aid -> debugAid aid $ showT cmd
+  CmdPingUI -> return $ showT cmd
 
 debugAid :: MonadActionRO m => ActorId -> Text -> m Text
 debugAid aid s = do

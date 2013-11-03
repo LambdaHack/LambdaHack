@@ -24,7 +24,7 @@ data CmdSer =
   | GameExitSer ActorId
   | GameSaveSer ActorId
   | CfgDumpSer ActorId
-  deriving (Show)
+  deriving (Show, Eq)
 
 data CmdSerTakeTime =
     MoveSer ActorId Vector
@@ -38,7 +38,7 @@ data CmdSerTakeTime =
   | ApplySer ActorId ItemId Container
   | TriggerSer ActorId (Maybe F.Feature)
   | SetPathSer ActorId [Vector]
-  deriving (Show)
+  deriving (Show, Eq)
 
 -- | The actor that start performing the command (may be dead, after
 -- the command is performed).
