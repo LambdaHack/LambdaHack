@@ -24,6 +24,7 @@ import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
@@ -57,16 +58,16 @@ data StateClient = StateClient
   , smarkVision  :: !Bool          -- ^ mark leader and party FOV
   , smarkSmell   :: !Bool          -- ^ mark smell, if the leader can smell
   , smarkSuspect :: !Bool          -- ^ mark suspect features
-  , sdebugCli    :: !Bool          -- ^ show client debug messages
+  , sdebugCli    :: !DebugModeCli  -- ^ client debugging mode
   }
   deriving (Show)
 
 -- | Current targeting mode of a client.
 data TgtMode =
     TgtExplicit { tgtLevelId :: !LevelId }
-            -- ^ the player requested targeting mode explicitly
+      -- ^ the player requested targeting mode explicitly
   | TgtAuto     { tgtLevelId :: !LevelId }
-            -- ^ the mode was entered (and will be exited) automatically
+      -- ^ the mode was entered (and will be exited) automatically
   deriving (Show, Eq)
 
 -- | The type of na actor target.
@@ -100,7 +101,7 @@ defStateClient shistory sconfigUI _sside sisAI =
     , smarkVision = False
     , smarkSmell = False
     , smarkSuspect = False
-    , sdebugCli = False
+    , sdebugCli = defDebugModeCli
     }
 
 defHistory :: IO History

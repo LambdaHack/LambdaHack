@@ -66,6 +66,7 @@ import qualified Game.LambdaHack.Common.HighScore as HighScore
 import qualified Game.LambdaHack.Common.Key as K
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
@@ -78,8 +79,8 @@ import Game.LambdaHack.Utils.Assert
 
 debugPrint :: MonadClient m => Text -> m ()
 debugPrint t = do
-  debug <- getsClient sdebugCli
-  when debug $ liftIO $ Save.delayPrint t
+  sdbgMsgCli <- getsClient $ sdbgMsgCli . sdebugCli
+  when sdbgMsgCli $ liftIO $ Save.delayPrint t
 
 connFrontend :: FactionId -> Frontend.ChanFrontend -> ConnFrontend
 connFrontend fid fromF = ConnFrontend

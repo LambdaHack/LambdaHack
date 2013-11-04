@@ -52,7 +52,7 @@ applyDebug sdebugNxt =
                                      , sniffOut = sniffOut sdebugNxt
                                      , sallClear = sallClear sdebugNxt
                                      , stryFov = stryFov sdebugNxt
-                                     , sinternal = sinternal sdebugNxt }}
+                                     , sdbgMsgSer = sdbgMsgSer sdebugNxt }}
 
 initPer :: MonadServer m => m ()
 initPer = do

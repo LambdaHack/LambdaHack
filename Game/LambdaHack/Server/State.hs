@@ -14,6 +14,7 @@ import qualified System.Random as R
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.Fov
@@ -45,8 +46,8 @@ data DebugModeSer = DebugModeSer
   , sniffOut    :: !Bool
   , sallClear   :: !Bool
   , stryFov     :: !(Maybe FovMode)
-  , sdebugCli   :: !Bool
-  , sinternal   :: !Bool
+  , sdbgMsgSer  :: !Bool
+  , sdebugCli   :: !DebugModeCli
   }
   deriving Show
 
@@ -78,8 +79,8 @@ defDebugModeSer = DebugModeSer { sknowMap = False
                                , sniffOut = False
                                , sallClear = False
                                , stryFov = Nothing
-                               , sdebugCli = False
-                               , sinternal = False
+                               , sdbgMsgSer = False
+                               , sdebugCli = defDebugModeCli
                                }
 
 instance Binary StateServer where
@@ -122,8 +123,8 @@ instance Binary DebugModeSer where
     put sniffOut
     put sallClear
     put stryFov
+    put sdbgMsgSer
     put sdebugCli
-    put sinternal
   get = do
     sknowMap <- get
     sknowEvents <- get
@@ -131,6 +132,6 @@ instance Binary DebugModeSer where
     sniffOut <- get
     sallClear <- get
     stryFov <- get
+    sdbgMsgSer <- get
     sdebugCli <- get
-    sinternal <- get
     return DebugModeSer{..}

@@ -68,7 +68,7 @@ import Game.LambdaHack.Utils.File
 
 debugPrint :: MonadServer m => Text -> m ()
 debugPrint t = do
-  debug <- getsServer $ sinternal . sdebugSer
+  debug <- getsServer $ sdbgMsgSer . sdebugSer
   when debug $ liftIO $ do
     T.hPutStrLn stderr t
     hFlush stderr

@@ -13,6 +13,7 @@ import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Frontend
 import Game.LambdaHack.Server.Action
@@ -56,8 +57,9 @@ debugArgs = do
         , "  --sniffIn display all incoming commands on console "
         , "  --sniffOut display all outgoing commands on console "
         , "  --allClear let all map tiles be translucent"
-        , "  --debugCli let clients emit their debug messages"
-        , "  --internal let the server emit its internal debug messages"
+        , "  --noMore auto-clear --more-- messages"
+        , "  --dbgMsgSer let the server emit its internal debug messages"
+        , "  --dbgMsgCli let clients emit their internal debug messages"
         , "  --tryFov m set a Field of View mode, where m can be"
         , "    Digital r, r > 0"
         , "    Permissive"
@@ -79,10 +81,14 @@ debugArgs = do
         (parseArgs rest) {stryFov = Just $ Digital $ read r}
       parseArgs ("--tryFov" : mode : rest) =
         (parseArgs rest) {stryFov = Just $ read mode}
-      parseArgs ("--debugCli" : rest) =
-        (parseArgs rest) {sdebugCli = True}
-      parseArgs ("--internal" : rest) =
-        (parseArgs rest) {sinternal = True}
+      parseArgs ("--noMore" : rest) =
+        let debugSer = parseArgs rest
+        in debugSer {sdebugCli = (sdebugCli debugSer) {snoMoreCli = True}}
+      parseArgs ("--dbgMsgSer" : rest) =
+        (parseArgs rest) {sdbgMsgSer = True}
+      parseArgs ("--dbgMsgCli" : rest) =
+        let debugSer = parseArgs rest
+        in debugSer {sdebugCli = (sdebugCli debugSer) {sdbgMsgCli = True}}
       parseArgs _ = error $ unlines usage
   return $! parseArgs args
 
