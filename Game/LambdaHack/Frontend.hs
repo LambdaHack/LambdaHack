@@ -52,7 +52,7 @@ data ConnMulti = ConnMulti
   , toMulti   :: ToMulti
   }
 
-startupF :: FSConfig -> IO () -> IO ()
+startupF :: DebugModeCli -> IO () -> IO ()
 startupF fsc k = startup fsc $ \fs -> do
   void $ forkIO $ loopFrontend fs connMulti
   k

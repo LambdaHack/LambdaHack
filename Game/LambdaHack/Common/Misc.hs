@@ -4,7 +4,6 @@
 module Game.LambdaHack.Common.Misc
   ( normalLevelBound, maxLevelDim, divUp, Freqs, breturn
   , FactionId, LevelId
-  , DebugModeCli(..), defDebugModeCli
   ) where
 
 import Control.Monad
@@ -93,23 +92,3 @@ newtype LevelId = LevelId Int
 instance Binary LevelId where
   put (LevelId n) = put n
   get = fmap LevelId get
-
-data DebugModeCli = DebugModeCli
-  { sdbgMsgCli :: !Bool
-  , snoMoreCli :: !Bool
-  }
-  deriving (Show, Eq)
-
-defDebugModeCli :: DebugModeCli
-defDebugModeCli = DebugModeCli { sdbgMsgCli = False
-                               , snoMoreCli = False
-                               }
-
-instance Binary DebugModeCli where
-  put DebugModeCli{..} = do
-    put sdbgMsgCli
-    put snoMoreCli
-  get = do
-    sdbgMsgCli <- get
-    snoMoreCli <- get
-    return DebugModeCli{..}

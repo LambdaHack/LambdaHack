@@ -6,7 +6,7 @@ module Game.LambdaHack.Frontend.Gtk
     -- * The output and input operations
   , display, promptGetAnyKey
     -- * Frontend administration tools
-  , frontendName, startup
+  , frontendName, startup, smodeCli
   ) where
 
 import Control.Concurrent
@@ -22,7 +22,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Graphics.UI.Gtk hiding (Point)
 import System.Time
 
-import Game.LambdaHack.Common.Animation (FSConfig (..), SingleFrame (..))
+import Game.LambdaHack.Common.Animation (DebugModeCli (..), SingleFrame (..))
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Key as K (KM (..), Modifier (..),
                                                   keyTranslate)
@@ -53,12 +53,7 @@ data FrontendSession = FrontendSession
       -- add frames in an orderly manner, which is not done in real time,
       -- though sometimes the frame display subsystem has to poll
       -- for a frame, in which case the locking interval becomes meaningful.
-  , smaxFps     :: Int
-      -- ^ Maximal frames per second.
-      -- This is better low and fixed, to avoid jerkiness and delays
-      -- that tell the player there are many intelligent enemies on the level.
-      -- That's better than scaling AI sofistication down based
-      -- on the FPS setting and machine speed.
+  , smodeCli    :: !DebugModeCli  -- ^ client configuration
   }
 
 data GtkFrame = GtkFrame
@@ -97,13 +92,12 @@ frontendName = "gtk"
 -- and need @sview@ and @stags@. Because of Windows, GTK needs to be
 -- on a bound thread, so we can't avoid the communication overhead
 -- of bound threads, so there's no point spawning a separate thread for GTK.
-startup :: FSConfig -> (FrontendSession -> IO ()) -> IO ()
+startup :: DebugModeCli -> (FrontendSession -> IO ()) -> IO ()
 startup = runGtk
 
 -- | Sets up and starts the main GTK loop providing input and output.
-runGtk :: FSConfig -> (FrontendSession -> IO ()) -> IO ()
-runGtk FSConfig{..} k = do
-  let smaxFps = fsmaxFps
+runGtk :: DebugModeCli -> (FrontendSession -> IO ()) -> IO ()
+runGtk smodeCli@DebugModeCli{sfont} k = do
   -- Init GUI.
   unsafeInitGUIForThreadedRTS
   -- Text attributes.
@@ -158,7 +152,7 @@ runGtk FSConfig{..} k = do
           writeChan schanKey K.KM {key, modifier}
       return True
   -- Set the font specified in config, if any.
-  f <- fontDescriptionFromString fsfont
+  f <- fontDescriptionFromString sfont
   widgetModifyFont sview (Just f)
   -- Prepare font chooser dialog.
   currentfont <- newIORef f
@@ -245,7 +239,8 @@ diffTime (TOD s1 p1) (TOD s2 p2) =
 
 -- | Poll the frame queue often and draw frames at fixed intervals.
 pollFrames :: FrontendSession -> Maybe ClockTime -> IO ()
-pollFrames sess@FrontendSession{smaxFps} (Just setTime) = do
+pollFrames sess@FrontendSession{smodeCli = DebugModeCli{..}}
+           (Just setTime) = do
   -- Check if the time is up.
   curTime <- getClockTime
   let diffT = diffTime setTime curTime
@@ -257,7 +252,8 @@ pollFrames sess@FrontendSession{smaxFps} (Just setTime) = do
     else
       -- Don't delay, because time is up!
       pollFrames sess Nothing
-pollFrames sess@FrontendSession{sframeState, smaxFps} Nothing = do
+pollFrames sess@FrontendSession{sframeState, smodeCli = DebugModeCli{..}}
+           Nothing = do
   -- Time is up, check if we actually wait for anyting.
   fs <- takeMVar sframeState
   case fs of

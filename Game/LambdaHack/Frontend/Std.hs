@@ -5,7 +5,7 @@ module Game.LambdaHack.Frontend.Std
     -- * The output and input operations
   , display, promptGetAnyKey
     -- * Frontend administration tools
-  , frontendName, startup
+  , frontendName, startup, smodeCli
   ) where
 
 import qualified Data.ByteString.Char8 as BS
@@ -13,21 +13,23 @@ import qualified Data.List as L
 import Data.Text.Encoding (encodeUtf8)
 import qualified System.IO as SIO
 
-import Game.LambdaHack.Common.Animation (FSConfig, SingleFrame (..))
+import Game.LambdaHack.Common.Animation (DebugModeCli, SingleFrame (..))
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Key as K (KM (..), Key (..),
                                                   Modifier (..))
 
 -- | No session data needs to be maintained by this frontend.
-type FrontendSession = ()
+data FrontendSession = FrontendSession
+  { smodeCli :: !DebugModeCli  -- ^ client configuration
+  }
 
 -- | The name of the frontend.
 frontendName :: String
 frontendName = "std"
 
 -- | Starts the main program loop using the frontend input and output.
-startup :: FSConfig -> (FrontendSession -> IO ()) -> IO ()
-startup _ k = k ()
+startup :: DebugModeCli -> (FrontendSession -> IO ()) -> IO ()
+startup smodeCli k = k FrontendSession{..}
 
 -- | Output to the screen via the frontend.
 display :: FrontendSession          -- ^ frontend session data

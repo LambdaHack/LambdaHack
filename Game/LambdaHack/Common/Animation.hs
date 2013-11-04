@@ -5,7 +5,8 @@ module Game.LambdaHack.Common.Animation
   , SingleFrame(..), emptySingleFrame, xsizeSingleFrame, ysizeSingleFrame
   , Animation, Frames, renderAnim, restrictAnim
   , twirlSplash, blockHit, blockMiss, deathBody, swapPlaces, fadeout
-  , AcFrame(..), FSConfig(..)
+  , AcFrame(..)
+  , DebugModeCli(..), defDebugModeCli
   ) where
 
 import Control.Arrow ((***))
@@ -218,8 +219,45 @@ instance Binary AcFrame where
       3 -> return AcDelay
       _ -> fail "no parse (AcFrame)"
 
--- Front-end configuration data.
-data FSConfig = FSConfig
-  { fsfont   :: String
-  , fsmaxFps :: Int
+data DebugModeCli = DebugModeCli
+  { sfont      :: !String
+      -- ^ Font to use for the main game window.
+  , smaxFps    :: !Int
+      -- ^ Maximal frames per second.
+      -- This is better low and fixed, to avoid jerkiness and delays
+      -- that tell the player there are many intelligent enemies on the level.
+      -- That's better than scaling AI sofistication down based
+      -- on the FPS setting and machine speed.
+  , snoDelay   :: !Bool
+      -- ^ Don't maintain any requested delays between frames,
+      -- e.g., for screensaver.
+  , snoMore    :: !Bool
+      -- ^ Auto-answer all prompts, e.g., for screensaver.
+  , sdbgMsgCli :: !Bool
+      -- ^ Show clients' internal debug messages.
   }
+  deriving (Show, Eq)
+
+defDebugModeCli :: DebugModeCli
+defDebugModeCli = DebugModeCli
+  { sfont = ""
+  , smaxFps = -1
+  , snoDelay = False
+  , snoMore = False
+  , sdbgMsgCli = False
+  }
+
+instance Binary DebugModeCli where
+  put DebugModeCli{..} = do
+    put sfont
+    put smaxFps
+    put snoDelay
+    put snoMore
+    put sdbgMsgCli
+  get = do
+    sfont <- get
+    smaxFps <- get
+    snoDelay <- get
+    snoMore <- get
+    sdbgMsgCli <- get
+    return DebugModeCli{..}

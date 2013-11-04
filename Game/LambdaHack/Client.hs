@@ -18,7 +18,7 @@ import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.LoopAction
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
-import Game.LambdaHack.Common.Animation (FSConfig (..))
+import Game.LambdaHack.Common.Animation (DebugModeCli (..))
 import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Common.Faction
@@ -72,19 +72,26 @@ wireSession :: (SessionUI -> State -> StateClient
                 -> ChanServer CmdClientUI CmdSer -> IO ())
             -> (SessionUI -> State -> StateClient
                 -> ChanServer CmdClientAI CmdSerTakeTime -> IO ())
-            -> Kind.COps
+            -> Kind.COps -> DebugModeCli
             -> ((FactionId -> ChanFrontend -> ChanServer CmdClientUI CmdSer
                  -> IO ())
                 -> (FactionId -> ChanServer CmdClientAI CmdSerTakeTime
                     -> IO ())
                 -> IO ())
             -> IO ()
-wireSession exeClientUI exeClientAI cops@Kind.COps{corule} exeServer = do
+wireSession exeClientUI exeClientAI
+            cops@Kind.COps{corule} sdebugCli exeServer = do
   -- UI config reloaded at each client start.
   sconfigUI <- mkConfigUI corule
   let !sbinding = stdBinding sconfigUI  -- evaluate to check for errors
-      fsfont = configFont sconfigUI
-      fsmaxFps = configMaxFps sconfigUI
+      sdebugMode =
+        (\dbg -> if sfont dbg == ""
+                 then dbg {sfont = configFont sconfigUI}
+                 else dbg) .
+        (\dbg -> if smaxFps dbg == -1
+                  then dbg {smaxFps = configMaxFps sconfigUI}
+                  else dbg)
+        $ sdebugCli
   defHist <- defHistory
   let cli = defStateClient defHist sconfigUI
       s = updateCOps (const cops) emptyState
@@ -94,7 +101,7 @@ wireSession exeClientUI exeClientAI cops@Kind.COps{corule} exeServer = do
       executorUI fid fromF =
         let sfconn = connFrontend fid fromF
         in exeClientUI SessionUI{..} s (cli fid False)
-  startupF FSConfig{..} $ exeServer executorUI executorAI
+  startupF sdebugMode $ exeServer executorUI executorAI
 
 -- | Wire together game content, the main loop of game clients,
 -- the main game loop assigned to this frontend (possibly containing
@@ -112,14 +119,14 @@ exeFrontend :: ( MonadAtomic m, MonadClientAbort m, MonadClientUI m
             -> (n () -> SessionUI -> State -> StateClient
                 -> ChanServer CmdClientAI CmdSerTakeTime
                 -> IO ())
-            -> Kind.COps
+            -> Kind.COps -> DebugModeCli
             -> ((FactionId -> ChanFrontend -> ChanServer CmdClientUI CmdSer
                  -> IO ())
                -> (FactionId -> ChanServer CmdClientAI CmdSerTakeTime
                    -> IO ())
                -> IO ())
             -> IO ()
-exeFrontend executorUI executorAI cops exeServer = do
+exeFrontend executorUI executorAI cops sdebugCli exeServer = do
   let exeClientUI = executorUI $ loopUI cmdClientUISem
       exeClientAI = executorAI $ loopAI cmdClientAISem
-  wireSession exeClientUI exeClientAI cops exeServer
+  wireSession exeClientUI exeClientAI cops sdebugCli exeServer

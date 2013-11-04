@@ -5,7 +5,7 @@ module Game.LambdaHack.Frontend.Vty
     -- * The output and input operations
   , display, promptGetAnyKey
     -- * Frontend administration tools
-  , frontendName, startup
+  , frontendName, startup, smodeCli
   ) where
 
 import qualified Data.List as L
@@ -13,24 +13,28 @@ import Data.Text.Encoding (encodeUtf8)
 import Graphics.Vty
 import qualified Graphics.Vty as Vty
 
-import Game.LambdaHack.Common.Animation (FSConfig, SingleFrame (..))
+import Game.LambdaHack.Common.Animation (DebugModeCli, SingleFrame (..))
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Key as K (KM (..), Key (..),
                                                   Modifier (..))
 
 -- | Session data maintained by the frontend.
-type FrontendSession = Vty
+data FrontendSession = FrontendSession
+  { svty     :: !Vty  -- internal vty session
+  , smodeCli :: !DebugModeCli  -- ^ client configuration
+      -- ^ Configuration of the frontend session.
+  }
 
 -- | The name of the frontend.
 frontendName :: String
 frontendName = "vty"
 
 -- | Starts the main program loop using the frontend input and output.
-startup :: FSConfig -> (FrontendSession -> IO ()) -> IO ()
-startup _ k = do
-  fs <- mkVty
-  k fs
-  Vty.shutdown fs
+startup :: DebugModeCli -> (FrontendSession -> IO ()) -> IO ()
+startup smodeCli k = do
+  svty <- mkVty
+  k FrontendSession{..}
+  Vty.shutdown svty
 
 -- | Output to the screen via the frontend.
 display :: FrontendSession          -- ^ frontend session data
@@ -39,7 +43,7 @@ display :: FrontendSession          -- ^ frontend session data
         -> Maybe SingleFrame  -- ^ the screen frame to draw
         -> IO ()
 display _ _ Nothing = return ()
-display vty _ (Just SingleFrame{..}) =
+display FrontendSession{svty} _ (Just SingleFrame{..}) =
   let img = (foldr (<->) empty_image
              . L.map (foldr (<|>) empty_image
                       . L.map (\ Color.AttrChar{..} ->
@@ -49,12 +53,12 @@ display vty _ (Just SingleFrame{..}) =
               utf8_bytestring (setAttr Color.defAttr) (encodeUtf8 sfTop)
               <-> img <->
               utf8_bytestring (setAttr Color.defAttr) (encodeUtf8 sfBottom)
-  in update vty pic
+  in update svty pic
 
 -- | Input key via the frontend.
 nextEvent :: FrontendSession -> Maybe Bool -> IO K.KM
-nextEvent sess mb = do
-  e <- next_event sess
+nextEvent sess@FrontendSession{svty} mb = do
+  e <- next_event svty
   case e of
     EvKey n mods -> do
       let key = keyTranslate n

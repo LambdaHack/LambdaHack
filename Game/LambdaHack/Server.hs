@@ -10,10 +10,10 @@ import qualified Control.Exception as Ex hiding (handle)
 import System.Environment (getArgs)
 
 import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.Animation
 import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Frontend
 import Game.LambdaHack.Server.Action
@@ -57,8 +57,11 @@ debugArgs = do
         , "  --sniffIn display all incoming commands on console "
         , "  --sniffOut display all outgoing commands on console "
         , "  --allClear let all map tiles be translucent"
-        , "  --noMore auto-clear --more-- messages"
         , "  --dbgMsgSer let the server emit its internal debug messages"
+        , "  --font fn use the given font for the main game window"
+        , "  --maxFps n display at most n frames per second"
+        , "  --noDelay don't maintain any requested delays between frames"
+        , "  --noMore auto-answer all prompts"
         , "  --dbgMsgCli let clients emit their internal debug messages"
         , "  --tryFov m set a Field of View mode, where m can be"
         , "    Digital r, r > 0"
@@ -81,11 +84,20 @@ debugArgs = do
         (parseArgs rest) {stryFov = Just $ Digital $ read r}
       parseArgs ("--tryFov" : mode : rest) =
         (parseArgs rest) {stryFov = Just $ read mode}
-      parseArgs ("--noMore" : rest) =
-        let debugSer = parseArgs rest
-        in debugSer {sdebugCli = (sdebugCli debugSer) {snoMoreCli = True}}
       parseArgs ("--dbgMsgSer" : rest) =
         (parseArgs rest) {sdbgMsgSer = True}
+      parseArgs ("--font" : sfont : rest) =
+        let debugSer = parseArgs rest
+        in debugSer {sdebugCli = (sdebugCli debugSer) {sfont}}
+      parseArgs ("--maxFps" : n : rest) =
+        let debugSer = parseArgs rest
+        in debugSer {sdebugCli = (sdebugCli debugSer) {smaxFps = read n}}
+      parseArgs ("--noDelay" : rest) =
+        let debugSer = parseArgs rest
+        in debugSer {sdebugCli = (sdebugCli debugSer) {snoDelay = True}}
+      parseArgs ("--noMore" : rest) =
+        let debugSer = parseArgs rest
+        in debugSer {sdebugCli = (sdebugCli debugSer) {snoMore = True}}
       parseArgs ("--dbgMsgCli" : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli = (sdebugCli debugSer) {sdbgMsgCli = True}}
@@ -101,7 +113,7 @@ debugArgs = do
 mainSer :: (MonadAtomic m, MonadConnServer m)
         => Kind.COps
         -> (m () -> IO ())
-        -> (Kind.COps
+        -> (Kind.COps -> DebugModeCli
             -> ((FactionId -> ChanFrontend -> ChanServer CmdClientUI CmdSer
                  -> IO ())
                 -> (FactionId -> ChanServer CmdClientAI CmdSerTakeTime
@@ -122,4 +134,4 @@ mainSer copsSlow exeSer exeFront = do
           (exeSer (loopServer executorUI executorAI cops))
           (threadDelay 1000000)  -- server crash, show the error eventually
         waitForChildren childrenServer  -- no crash, wait indefinitely
-  exeFront cops exeServer
+  exeFront cops (sdebugCli sdebugNxt) exeServer

@@ -5,7 +5,7 @@ module Game.LambdaHack.Frontend.Curses
     -- * The output and input operations
   , display, promptGetAnyKey
     -- * Frontend administration tools
-  , frontendName, startup
+  , frontendName, startup, smodeCli
   ) where
 
 import Control.Monad
@@ -16,7 +16,7 @@ import qualified Data.Text as T
 import qualified UI.HSCurses.Curses as C
 import qualified UI.HSCurses.CursesHelper as C
 
-import Game.LambdaHack.Common.Animation (FSConfig, SingleFrame (..))
+import Game.LambdaHack.Common.Animation (DebugModeCli, SingleFrame (..))
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Key as K (KM (..), Key (..),
                                                   Modifier (..))
@@ -24,9 +24,10 @@ import Game.LambdaHack.Utils.Assert
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { swin    :: C.Window  -- ^ the window to draw to
-  , sstyles :: M.Map Color.Attr C.CursesStyle
+  { swin     :: !C.Window  -- ^ the window to draw to
+  , sstyles  :: !(M.Map Color.Attr C.CursesStyle)
       -- ^ map from fore/back colour pairs to defined curses styles
+  , smodeCli :: !DebugModeCli  -- ^ client configuration
   }
 
 -- | The name of the frontend.
@@ -34,8 +35,8 @@ frontendName :: String
 frontendName = "curses"
 
 -- | Starts the main program loop using the frontend input and output.
-startup :: FSConfig -> (FrontendSession -> IO ()) -> IO ()
-startup _ k = do
+startup :: DebugModeCli -> (FrontendSession -> IO ()) -> IO ()
+startup smodeCli k = do
   C.start
 --  C.keypad C.stdScr False  -- TODO: may help to fix xterm keypad on Ubuntu
   void $ C.cursSet C.CursorInvisible
@@ -50,8 +51,9 @@ startup _ k = do
        "Terminal has too few color pairs (" ++ show nr ++ "). Giving up.")
   let (ks, vs) = unzip s
   ws <- C.convertStyles vs
-  let styleMap = M.fromList (zip ks ws)
-  k (FrontendSession C.stdScr styleMap)
+  let swin = C.stdScr
+      sstyles = M.fromList (zip ks ws)
+  k FrontendSession{..}
   C.end
 
 -- | Output to the screen via the frontend.

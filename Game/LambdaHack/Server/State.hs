@@ -12,9 +12,9 @@ import Data.Text (Text)
 import qualified System.Random as R
 
 import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.Animation
 import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.Fov
