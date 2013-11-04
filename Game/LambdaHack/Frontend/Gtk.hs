@@ -24,8 +24,8 @@ import System.Time
 
 import Game.LambdaHack.Common.Animation (DebugModeCli (..), SingleFrame (..))
 import qualified Game.LambdaHack.Common.Color as Color
-import qualified Game.LambdaHack.Common.Key as K (KM (..), Modifier (..),
-                                                  keyTranslate)
+import qualified Game.LambdaHack.Common.Key as K (KM (..), Key (..),
+                                                  Modifier (..), keyTranslate)
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.LQueue
 
@@ -239,7 +239,7 @@ diffTime (TOD s1 p1) (TOD s2 p2) =
 
 -- | Poll the frame queue often and draw frames at fixed intervals.
 pollFrames :: FrontendSession -> Maybe ClockTime -> IO ()
-pollFrames sess@FrontendSession{smodeCli = DebugModeCli{..}}
+pollFrames sess@FrontendSession{smodeCli=DebugModeCli{smaxFps}}
            (Just setTime) = do
   -- Check if the time is up.
   curTime <- getClockTime
@@ -252,7 +252,7 @@ pollFrames sess@FrontendSession{smodeCli = DebugModeCli{..}}
     else
       -- Don't delay, because time is up!
       pollFrames sess Nothing
-pollFrames sess@FrontendSession{sframeState, smodeCli = DebugModeCli{..}}
+pollFrames sess@FrontendSession{sframeState, smodeCli=DebugModeCli{..}}
            Nothing = do
   -- Time is up, check if we actually wait for anyting.
   fs <- takeMVar sframeState
@@ -269,10 +269,10 @@ pollFrames sess@FrontendSession{sframeState, smodeCli = DebugModeCli{..}}
         Just (Nothing, queue) -> do
           -- Delay requested via an empty frame.
           putMVar sframeState FPushed{fpushed = queue, ..}
-          curTime <- getClockTime
-          -- There is no problem if the delay is a bit delayed.
-          threadDelay $ 1000000 `div` smaxFps
-          pollFrames sess $ Just $ addTime curTime $ 1000000 `div` smaxFps
+          unless snoDelay $
+            -- There is no problem if the delay is a bit delayed.
+            threadDelay $ 1000000 `div` smaxFps
+          pollFrames sess Nothing
         Nothing -> do
           -- The queue is empty, the game logic thread lags.
           putMVar sframeState fs
@@ -370,11 +370,16 @@ display sess noDelay = pushFrame sess noDelay False
 -- | Display a prompt, wait for any key.
 -- Starts in Push or None mode, stop in None mode.
 promptGetAnyKey :: FrontendSession -> SingleFrame -> IO K.KM
-promptGetAnyKey sess@FrontendSession{schanKey} frame = do
+promptGetAnyKey sess@FrontendSession{schanKey, smodeCli=DebugModeCli{snoMore}}
+                frame = do
   pushFrame sess True True $ Just frame
-  km <- readChan schanKey
-  trimFrameState sess
-  return km
+  if snoMore then do
+    trimFrameState sess
+    return K.KM {modifier = K.NoModifier, key = K.Esc}
+  else do
+    km <- readChan schanKey
+    trimFrameState sess
+    return km
 
 -- | Tells a dead key.
 deadKey :: String -> Bool

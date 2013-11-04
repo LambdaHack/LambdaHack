@@ -60,11 +60,15 @@ startupF fsc k = startup fsc $ \fs -> do
 -- | Display a prompt, wait for any of the specified keys (for any key,
 -- if the list is empty). Repeat if an unexpected key received.
 promptGetKey :: FrontendSession -> [K.KM] -> SingleFrame -> IO K.KM
-promptGetKey sess keys frame = do
+promptGetKey sess [] frame = promptGetAnyKey sess frame
+promptGetKey sess keys@(firstKM:_) frame = do
   km <- promptGetAnyKey sess frame
-  if null keys || km `elem` keys
+  if km `elem` keys
     then return km
-    else promptGetKey sess keys frame
+    else do
+      let DebugModeCli{snoMore} = smodeCli sess
+      if snoMore then return firstKM
+      else promptGetKey sess keys frame
 
 -- TODO: avoid unsafePerformIO; but server state is a wrong idea, too
 connMulti :: ConnMulti

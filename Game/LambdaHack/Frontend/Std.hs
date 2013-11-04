@@ -13,7 +13,7 @@ import qualified Data.List as L
 import Data.Text.Encoding (encodeUtf8)
 import qualified System.IO as SIO
 
-import Game.LambdaHack.Common.Animation (DebugModeCli, SingleFrame (..))
+import Game.LambdaHack.Common.Animation (DebugModeCli (..), SingleFrame (..))
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Key as K (KM (..), Key (..),
                                                   Modifier (..))
@@ -44,12 +44,14 @@ display _ _ (Just SingleFrame{..}) =
 
 -- | Input key via the frontend.
 nextEvent :: FrontendSession -> Maybe Bool -> IO K.KM
-nextEvent sess mb = do
-  e <- BS.hGet SIO.stdin 1
-  let c = BS.head e
-  if c == '\n'  -- let \n mark the end of input, for human players
-    then nextEvent sess mb
-    else return K.KM {key = keyTranslate c, modifier = K.NoModifier}
+nextEvent sess@FrontendSession{smodeCli=DebugModeCli{snoMore}} mb =
+  if snoMore then return K.KM {modifier = K.NoModifier, key = K.Esc}
+  else do
+    e <- BS.hGet SIO.stdin 1
+    let c = BS.head e
+    if c == '\n'  -- let \n mark the end of input, for human players
+      then nextEvent sess mb
+      else return K.KM {key = keyTranslate c, modifier = K.NoModifier}
 
 -- | Display a prompt, wait for any key.
 promptGetAnyKey :: FrontendSession -> SingleFrame

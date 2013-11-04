@@ -46,13 +46,14 @@ import Game.LambdaHack.Utils.Assert
 
 -- | Apply debug options that don't need a new game.
 applyDebug :: MonadServer m => DebugModeSer -> m ()
-applyDebug sdebugNxt =
+applyDebug DebugModeSer{..} =
   modifyServer $ \ser ->
-    ser {sdebugSer = (sdebugSer ser) { sniffIn = sniffIn sdebugNxt
-                                     , sniffOut = sniffOut sdebugNxt
-                                     , sallClear = sallClear sdebugNxt
-                                     , stryFov = stryFov sdebugNxt
-                                     , sdbgMsgSer = sdbgMsgSer sdebugNxt }}
+    ser {sdebugSer = (sdebugSer ser) { sniffIn
+                                     , sniffOut
+                                     , sallClear
+                                     , stryFov
+                                     , sdbgMsgSer
+                                     , sdebugCli }}
 
 initPer :: MonadServer m => m ()
 initPer = do

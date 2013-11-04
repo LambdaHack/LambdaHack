@@ -13,7 +13,7 @@ import Data.Text.Encoding (encodeUtf8)
 import Graphics.Vty
 import qualified Graphics.Vty as Vty
 
-import Game.LambdaHack.Common.Animation (DebugModeCli, SingleFrame (..))
+import Game.LambdaHack.Common.Animation (DebugModeCli (..), SingleFrame (..))
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Key as K (KM (..), Key (..),
                                                   Modifier (..))
@@ -57,14 +57,16 @@ display FrontendSession{svty} _ (Just SingleFrame{..}) =
 
 -- | Input key via the frontend.
 nextEvent :: FrontendSession -> Maybe Bool -> IO K.KM
-nextEvent sess@FrontendSession{svty} mb = do
-  e <- next_event svty
-  case e of
-    EvKey n mods -> do
-      let key = keyTranslate n
-          modifier = modifierTranslate mods
-      return K.KM {key, modifier}
-    _ -> nextEvent sess mb
+nextEvent sess@FrontendSession{svty, smodeCli=DebugModeCli{snoMore}} mb =
+  if snoMore then return K.KM {modifier = K.NoModifier, key = K.Esc}
+  else do
+    e <- next_event svty
+    case e of
+      EvKey n mods -> do
+        let key = keyTranslate n
+            modifier = modifierTranslate mods
+        return K.KM {key, modifier}
+      _ -> nextEvent sess mb
 
 -- | Display a prompt, wait for any key.
 promptGetAnyKey :: FrontendSession -> SingleFrame
