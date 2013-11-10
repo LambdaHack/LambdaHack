@@ -367,17 +367,45 @@ trimFrameState sess@FrontendSession{sframeState} = do
 display :: FrontendSession -> Bool -> Maybe SingleFrame -> IO ()
 display sess noDelay = pushFrame sess noDelay False
 
+-- Display all queued frames, synchronously.
+displayAllFramesSync :: FrontendSession -> FrameState -> IO ()
+displayAllFramesSync sess@FrontendSession{smodeCli=DebugModeCli{..}} fs = do
+  case fs of
+    FPushed{..} ->
+      case tryReadLQueue fpushed of
+        Just (Just frame, queue) -> do
+          -- Display synchronously.
+          postGUISync $ output sess frame
+          threadDelay $ 1000000 `div` smaxFps
+          displayAllFramesSync sess FPushed{fpushed = queue, fshown = frame}
+        Just (Nothing, queue) -> do
+          -- Delay requested via an empty frame.
+          unless snoDelay $
+            threadDelay $ 1000000 `div` smaxFps
+          displayAllFramesSync sess FPushed{fpushed = queue, ..}
+        Nothing ->
+          -- The queue is empty.
+          return ()
+    _ ->
+      -- Not in Push state to start with.
+      return ()
+
 -- | Display a prompt, wait for any key.
--- Starts in Push or None mode, stop in None mode.
+-- Starts in Push mode, ends in None mode.
+-- Syncs with the drawing threads by showing the last or all queued frames.
 promptGetAnyKey :: FrontendSession -> SingleFrame -> IO K.KM
-promptGetAnyKey sess@FrontendSession{schanKey, smodeCli=DebugModeCli{snoMore}}
+promptGetAnyKey sess@FrontendSession{smodeCli=DebugModeCli{snoMore}, ..}
                 frame = do
   pushFrame sess True True $ Just frame
   if snoMore then do
-    trimFrameState sess
+    -- Show all frames synchronously.
+    fs <- takeMVar sframeState
+    displayAllFramesSync sess fs
+    putMVar sframeState FNone
     return K.KM {modifier = K.NoModifier, key = K.Esc}
   else do
     km <- readChan schanKey
+    -- Show the last frame and empty the queue.
     trimFrameState sess
     return km
 
