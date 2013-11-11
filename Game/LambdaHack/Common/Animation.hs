@@ -220,9 +220,9 @@ instance Binary AcFrame where
       _ -> fail "no parse (AcFrame)"
 
 data DebugModeCli = DebugModeCli
-  { sfont      :: !String
+  { sfont      :: !(Maybe String)
       -- ^ Font to use for the main game window.
-  , smaxFps    :: !Int
+  , smaxFps    :: !(Maybe Int)
       -- ^ Maximal frames per second.
       -- This is better low and fixed, to avoid jerkiness and delays
       -- that tell the player there are many intelligent enemies on the level.
@@ -233,7 +233,7 @@ data DebugModeCli = DebugModeCli
       -- e.g., for screensaver.
   , snoMore    :: !Bool
       -- ^ Auto-answer all prompts, e.g., for screensaver.
-  , snoAnim    :: !Bool
+  , snoAnim    :: !(Maybe Bool)
       -- ^ Don't show any animations.
   , sdbgMsgCli :: !Bool
       -- ^ Show clients' internal debug messages.
@@ -242,11 +242,11 @@ data DebugModeCli = DebugModeCli
 
 defDebugModeCli :: DebugModeCli
 defDebugModeCli = DebugModeCli
-  { sfont = ""
-  , smaxFps = -1
+  { sfont = Nothing
+  , smaxFps = Nothing
   , snoDelay = False
   , snoMore = False
-  , snoAnim = False
+  , snoAnim = Nothing
   , sdbgMsgCli = False
   }
 

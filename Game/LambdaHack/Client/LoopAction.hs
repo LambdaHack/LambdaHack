@@ -9,6 +9,7 @@ import qualified Data.Text as T
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.Animation
 import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.ClientCmd
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -33,8 +34,8 @@ initCli putSt = do
       return False
 
 loopAI :: (MonadClientReadServer CmdClientAI m)
-       => (CmdClientAI -> m ()) -> m ()
-loopAI cmdClientAISem = do
+       => DebugModeCli -> (CmdClientAI -> m ()) -> m ()
+loopAI sdebugCli cmdClientAISem = do
   side <- getsClient sside
   restored <- initCli $ \s -> cmdClientAISem $ CmdAtomicAI $ ResumeServerA s
   cmd1 <- readServer
@@ -47,6 +48,7 @@ loopAI cmdClientAISem = do
     (False, CmdAtomicAI RestartA{}) -> return ()
     _ -> assert `failure` (side, restored, cmd1)
   cmdClientAISem cmd1
+  modifyClient $ \cli -> cli {sdebugCli}
   -- State and client state now valid.
   debugPrint $ "AI client" <+> showT side <+> "started."
   loop
@@ -59,8 +61,8 @@ loopAI cmdClientAISem = do
     unless quit loop
 
 loopUI :: (MonadClientUI m, MonadClientReadServer CmdClientUI m)
-       => (CmdClientUI -> m ()) -> m ()
-loopUI cmdClientUISem = do
+       => DebugModeCli -> (CmdClientUI -> m ()) -> m ()
+loopUI sdebugCli cmdClientUISem = do
   Kind.COps{corule} <- getsState scops
   let title = rtitle $ Kind.stdRuleset corule
   side <- getsClient sside
@@ -82,6 +84,7 @@ loopUI cmdClientUISem = do
       cmdClientUISem cmd1
       msgAdd msg
     _ -> assert `failure` (side, restored, cmd1)
+  modifyClient $ \cli -> cli {sdebugCli}
   -- State and client state now valid.
   debugPrint $ "UI client" <+> showT side <+> "started."
   loop

@@ -87,12 +87,13 @@ debugArgs = do
         (parseArgs rest) {stryFov = Just $ read mode}
       parseArgs ("--dbgMsgSer" : rest) =
         (parseArgs rest) {sdbgMsgSer = True}
-      parseArgs ("--font" : sfont : rest) =
+      parseArgs ("--font" : s : rest) =
         let debugSer = parseArgs rest
-        in debugSer {sdebugCli = (sdebugCli debugSer) {sfont}}
+        in debugSer {sdebugCli = (sdebugCli debugSer) {sfont = Just s}}
       parseArgs ("--maxFps" : n : rest) =
         let debugSer = parseArgs rest
-        in debugSer {sdebugCli = (sdebugCli debugSer) {smaxFps = read n}}
+        in debugSer {sdebugCli =
+                       (sdebugCli debugSer) {smaxFps = Just $ read n}}
       parseArgs ("--noDelay" : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli = (sdebugCli debugSer) {snoDelay = True}}
@@ -101,7 +102,7 @@ debugArgs = do
         in debugSer {sdebugCli = (sdebugCli debugSer) {snoMore = True}}
       parseArgs ("--noAnim" : rest) =
         let debugSer = parseArgs rest
-        in debugSer {sdebugCli = (sdebugCli debugSer) {snoAnim = True}}
+        in debugSer {sdebugCli = (sdebugCli debugSer) {snoAnim = Just True}}
       parseArgs ("--dbgMsgCli" : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli = (sdebugCli debugSer) {sdbgMsgCli = True}}

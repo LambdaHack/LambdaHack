@@ -68,44 +68,6 @@ cmdClientUISem cmd = case cmd of
   CmdPingUI ->
     writeServer $ TakeTimeSer $ WaitSer $ toEnum (-1)
 
-wireSession :: (SessionUI -> State -> StateClient
-                -> ChanServer CmdClientUI CmdSer -> IO ())
-            -> (SessionUI -> State -> StateClient
-                -> ChanServer CmdClientAI CmdSerTakeTime -> IO ())
-            -> Kind.COps -> DebugModeCli
-            -> ((FactionId -> ChanFrontend -> ChanServer CmdClientUI CmdSer
-                 -> IO ())
-                -> (FactionId -> ChanServer CmdClientAI CmdSerTakeTime
-                    -> IO ())
-                -> IO ())
-            -> IO ()
-wireSession exeClientUI exeClientAI
-            cops@Kind.COps{corule} sdebugCli exeServer = do
-  -- UI config reloaded at each client start.
-  sconfigUI <- mkConfigUI corule
-  let !sbinding = stdBinding sconfigUI  -- evaluate to check for errors
-      sdebugMode =
-        (\dbg -> if sfont dbg == ""
-                 then dbg {sfont = configFont sconfigUI}
-                 else dbg) .
-        (\dbg -> if smaxFps dbg == -1
-                 then dbg {smaxFps = configMaxFps sconfigUI}
-                 else dbg) .
-        (\dbg -> if snoAnim dbg == False
-                 then dbg {snoAnim = configNoAnim sconfigUI}
-                 else dbg)
-        $ sdebugCli
-  defHist <- defHistory
-  let cli = defStateClient defHist sconfigUI
-      s = updateCOps (const cops) emptyState
-      executorAI fid =
-        let noSession = assert `failure` fid
-        in exeClientAI noSession s (cli fid True)
-      executorUI fid fromF =
-        let sfconn = connFrontend fid fromF
-        in exeClientUI SessionUI{..} s (cli fid False)
-  startupF sdebugMode $ exeServer executorUI executorAI
-
 -- | Wire together game content, the main loop of game clients,
 -- the main game loop assigned to this frontend (possibly containing
 -- the server loop, if the whole game runs in one process),
@@ -129,7 +91,31 @@ exeFrontend :: ( MonadAtomic m, MonadClientAbort m, MonadClientUI m
                    -> IO ())
                -> IO ())
             -> IO ()
-exeFrontend executorUI executorAI cops sdebugCli exeServer = do
-  let exeClientUI = executorUI $ loopUI cmdClientUISem
-      exeClientAI = executorAI $ loopAI cmdClientAISem
-  wireSession exeClientUI exeClientAI cops sdebugCli exeServer
+exeFrontend executorUI executorAI
+            cops@Kind.COps{corule} sdebugCli exeServer = do
+  -- UI config reloaded at each client start.
+  sconfigUI <- mkConfigUI corule
+  let !sbinding = stdBinding sconfigUI  -- evaluate to check for errors
+      sdebugMode =
+        (\dbg -> if sfont dbg == Nothing
+                 then dbg {sfont = Just $ configFont sconfigUI}
+                 else dbg) .
+        (\dbg -> if smaxFps dbg == Nothing
+                 then dbg {smaxFps = Just $ configMaxFps sconfigUI}
+                 else dbg) .
+        (\dbg -> if snoAnim dbg == Nothing
+                 then dbg {snoAnim = Just $ configNoAnim sconfigUI}
+                 else dbg)
+        $ sdebugCli
+  defHist <- defHistory
+  let exeClientUI = executorUI $ loopUI sdebugMode cmdClientUISem
+      exeClientAI = executorAI $ loopAI sdebugMode cmdClientAISem
+      cli = defStateClient defHist sconfigUI
+      s = updateCOps (const cops) emptyState
+      eClientAI fid =
+        let noSession = assert `failure` fid
+        in exeClientAI noSession s (cli fid True)
+      eClientUI fid fromF =
+        let sfconn = connFrontend fid fromF
+        in exeClientUI SessionUI{..} s (cli fid False)
+  startupF sdebugMode $ exeServer eClientUI eClientAI

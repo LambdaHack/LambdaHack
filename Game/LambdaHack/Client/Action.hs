@@ -387,7 +387,7 @@ animate arena anim = do
       topLineOnly = truncateMsg lxsize over
       basicFrame = draw ColorFull cops per arena mleader cli s [topLineOnly]
   snoAnim <- getsClient $ snoAnim . sdebugCli
-  return $ if snoAnim
+  return $ if fromMaybe False snoAnim
            then [Just basicFrame]
            else renderAnim lxsize lysize basicFrame anim
 

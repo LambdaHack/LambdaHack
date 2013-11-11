@@ -151,7 +151,7 @@ runGtk smodeCli@DebugModeCli{sfont} k = do
           writeChan schanKey K.KM {key, modifier}
       return True
   -- Set the font specified in config, if any.
-  f <- fontDescriptionFromString sfont
+  f <- fontDescriptionFromString $ fromMaybe "" sfont
   widgetModifyFont sview (Just f)
   -- Prepare font chooser dialog.
   currentfont <- newIORef f
@@ -224,7 +224,7 @@ setTo tb defAttr lx (ly, attr:attrs) = do
 
 -- | Maximal polls per second.
 maxPolls :: Int -> Int
-maxPolls smaxFps = max 120 (2 * smaxFps)
+maxPolls maxFps = max 120 (2 * maxFps)
 
 picoInMicro :: Int
 picoInMicro = 1000000
@@ -242,14 +242,18 @@ diffTime (TOD s1 p1) (TOD s2 p2) =
 microInSec :: Int
 microInSec = 1000000
 
+defaultMaxFps :: Int
+defaultMaxFps = 15
+
 -- | Poll the frame queue often and draw frames at fixed intervals.
 pollFrames :: FrontendSession -> Maybe ClockTime -> IO ()
 pollFrames sess@FrontendSession{smodeCli=DebugModeCli{smaxFps}}
            (Just setTime) = do
   -- Check if the time is up.
+  let maxFps = fromMaybe defaultMaxFps smaxFps
   curTime <- getClockTime
   let diffT = diffTime setTime curTime
-  if diffT > microInSec `div` maxPolls smaxFps
+  if diffT > microInSec `div` maxPolls maxFps
     then do
       -- Delay half of the time difference.
       threadDelay $ diffTime curTime setTime `div` 2
@@ -260,6 +264,7 @@ pollFrames sess@FrontendSession{smodeCli=DebugModeCli{smaxFps}}
 pollFrames sess@FrontendSession{sframeState, smodeCli=DebugModeCli{..}}
            Nothing = do
   -- Time is up, check if we actually wait for anyting.
+  let maxFps = fromMaybe defaultMaxFps smaxFps
   fs <- takeMVar sframeState
   case fs of
     FPushed{..} ->
@@ -276,21 +281,21 @@ pollFrames sess@FrontendSession{sframeState, smodeCli=DebugModeCli{..}}
           -- frame rhythm, but makes sure this frame can at all be seen.
           -- If the main GTK thread doesn't lag, large-scale rhythm will be OK.
           -- TODO: anyway, it's GC that causes visible snags, most probably.
-          threadDelay $ microInSec `div` (smaxFps * 2)
-          pollFrames sess $ Just $ addTime curTime $ microInSec `div` smaxFps
+          threadDelay $ microInSec `div` (maxFps * 2)
+          pollFrames sess $ Just $ addTime curTime $ microInSec `div` maxFps
         Just (Nothing, queue) -> do
           -- Delay requested via an empty frame.
           putMVar sframeState FPushed{fpushed = queue, ..}
           unless snoDelay $
             -- There is no problem if the delay is a bit delayed.
-            threadDelay $ microInSec `div` smaxFps
+            threadDelay $ microInSec `div` maxFps
           pollFrames sess Nothing
         Nothing -> do
           -- The queue is empty, the game logic thread lags.
           putMVar sframeState fs
           -- Time is up, the game thread is going to send a frame,
           -- (otherwise it would change the state), so poll often.
-          threadDelay $ microInSec `div` maxPolls smaxFps
+          threadDelay $ microInSec `div` maxPolls maxFps
           pollFrames sess Nothing
     _ -> do
       putMVar sframeState fs
@@ -298,7 +303,7 @@ pollFrames sess@FrontendSession{sframeState, smodeCli=DebugModeCli{..}}
       -- The slow polling also gives the game logic a head start
       -- in creating frames in case one of the further frames is slow
       -- to generate and would normally cause a jerky delay in drawing.
-      threadDelay $ microInSec `div` (smaxFps * 2)
+      threadDelay $ microInSec `div` (maxFps * 2)
       pollFrames sess Nothing
 
 -- | Add a game screen frame to the frame drawing channel, or show
@@ -383,18 +388,19 @@ display sess noDelay = pushFrame sess noDelay False
 -- Display all queued frames, synchronously.
 displayAllFramesSync :: FrontendSession -> FrameState -> IO ()
 displayAllFramesSync sess@FrontendSession{smodeCli=DebugModeCli{..}} fs = do
+  let maxFps = fromMaybe defaultMaxFps smaxFps
   case fs of
     FPushed{..} ->
       case tryReadLQueue fpushed of
         Just (Just frame, queue) -> do
           -- Display synchronously.
           postGUISync $ output sess frame
-          threadDelay $ microInSec `div` smaxFps
+          threadDelay $ microInSec `div` maxFps
           displayAllFramesSync sess FPushed{fpushed = queue, fshown = frame}
         Just (Nothing, queue) -> do
           -- Delay requested via an empty frame.
           unless snoDelay $
-            threadDelay $ microInSec `div` smaxFps
+            threadDelay $ microInSec `div` maxFps
           displayAllFramesSync sess FPushed{fpushed = queue, ..}
         Nothing ->
           -- The queue is empty.
