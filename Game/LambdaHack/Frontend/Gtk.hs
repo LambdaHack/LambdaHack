@@ -268,8 +268,15 @@ pollFrames sess@FrontendSession{sframeState, smodeCli=DebugModeCli{..}}
         Just (Just frame, queue) -> do
           -- The frame has arrived so send it for drawing and update delay.
           putMVar sframeState FPushed{fpushed = queue, fshown = frame}
-          postGUIAsync $ output sess frame
+          -- Count the time spent outputting towards the total frame time.
           curTime <- getClockTime
+          -- Wait until the frame is drawn.
+          postGUISync $ output sess frame
+          -- Regardless of how much time drawing took, wait at least
+          -- half of the normal delay time. This can distort the large-scale
+          -- frame rhythm, but makes sure this frame can at all be seen.
+          -- If the main GTK thread doesn't lag, large-scale rhythm will be OK.
+          -- TODO: anyway, it's GC that causes visible snags, most probably.
           threadDelay $ microInSec `div` (smaxFps * 2)
           pollFrames sess $ Just $ addTime curTime $ microInSec `div` smaxFps
         Just (Nothing, queue) -> do
