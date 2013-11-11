@@ -36,7 +36,7 @@ startup smodeCli k = do
   Vty.shutdown svty
 
 -- | Output to the screen via the frontend.
-display :: FrontendSession          -- ^ frontend session data
+display :: FrontendSession    -- ^ frontend session data
 
         -> Bool
         -> Maybe SingleFrame  -- ^ the screen frame to draw
@@ -55,8 +55,8 @@ display FrontendSession{svty} _ (Just SingleFrame{..}) =
   in update svty pic
 
 -- | Input key via the frontend.
-nextEvent :: FrontendSession -> Maybe Bool -> IO K.KM
-nextEvent sess@FrontendSession{svty, smodeCli=DebugModeCli{snoMore}} mb =
+nextEvent :: FrontendSession -> IO K.KM
+nextEvent sess@FrontendSession{svty, smodeCli=DebugModeCli{snoMore}} =
   if snoMore then return K.escKey
   else do
     e <- next_event svty
@@ -65,14 +65,14 @@ nextEvent sess@FrontendSession{svty, smodeCli=DebugModeCli{snoMore}} mb =
         let key = keyTranslate n
             modifier = modifierTranslate mods
         return K.KM {key, modifier}
-      _ -> nextEvent sess mb
+      _ -> nextEvent sess
 
 -- | Display a prompt, wait for any key.
 promptGetAnyKey :: FrontendSession -> SingleFrame
-             -> IO K.KM
+                -> IO K.KM
 promptGetAnyKey sess frame = do
   display sess True $ Just frame
-  nextEvent sess Nothing
+  nextEvent sess
 
 keyTranslate :: Key -> K.Key
 keyTranslate n =

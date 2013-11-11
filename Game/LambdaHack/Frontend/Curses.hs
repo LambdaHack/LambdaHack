@@ -79,17 +79,17 @@ display FrontendSession{..}  _ (Just SingleFrame{..}) = do
   C.refresh
 
 -- | Input key via the frontend.
-nextEvent :: FrontendSession -> Maybe Bool -> IO K.KM
-nextEvent FrontendSession{smodeCli=DebugModeCli{snoMore}} _ =
+nextEvent :: FrontendSession -> IO K.KM
+nextEvent FrontendSession{smodeCli=DebugModeCli{snoMore}} =
   if snoMore then return K.escKey
   else keyTranslate `fmap` C.getKey C.refresh
 
 -- | Display a prompt, wait for any key.
 promptGetAnyKey :: FrontendSession -> SingleFrame
-             -> IO K.KM
+                -> IO K.KM
 promptGetAnyKey sess frame = do
   display sess True $ Just frame
-  nextEvent sess Nothing
+  nextEvent sess
 
 keyTranslate :: C.Key -> K.KM
 keyTranslate e = (\(key, modifier) -> K.KM {..}) $
