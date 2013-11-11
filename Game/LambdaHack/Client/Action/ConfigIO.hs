@@ -112,6 +112,7 @@ parseConfigUI dataDir cp =
       configFont = get cp "ui" "font"
       configHistoryMax = get cp "ui" "historyMax"
       configMaxFps = get cp "ui" "maxFps"
+      configNoAnim = get cp "ui" "noAnim"
   in ConfigUI{..}
 
 -- | Read and parse UI config file.

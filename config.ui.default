@@ -57,3 +57,4 @@
 ; font: Terminus,Monospace normal normal normal normal 12
 ; historyMax: 5000
 ; maxFps: 15
+; noAnim: False

@@ -23,6 +23,7 @@ data ConfigUI = ConfigUI
   , configFont         :: !String
   , configHistoryMax   :: !Int
   , configMaxFps       :: !Int
+  , configNoAnim       :: !Bool
   }
   deriving Show
 
@@ -37,6 +38,7 @@ instance Binary ConfigUI where
     put configFont
     put configHistoryMax
     put configMaxFps
+    put configNoAnim
   get = do
     configCommands     <- get
     configAppDataDirUI <- get
@@ -45,4 +47,5 @@ instance Binary ConfigUI where
     configFont         <- get
     configHistoryMax   <- get
     configMaxFps <- get
+    configNoAnim <- get
     return ConfigUI{..}

@@ -89,8 +89,11 @@ wireSession exeClientUI exeClientAI
                  then dbg {sfont = configFont sconfigUI}
                  else dbg) .
         (\dbg -> if smaxFps dbg == -1
-                  then dbg {smaxFps = configMaxFps sconfigUI}
-                  else dbg)
+                 then dbg {smaxFps = configMaxFps sconfigUI}
+                 else dbg) .
+        (\dbg -> if snoAnim dbg == False
+                 then dbg {snoAnim = configNoAnim sconfigUI}
+                 else dbg)
         $ sdebugCli
   defHist <- defHistory
   let cli = defStateClient defHist sconfigUI

@@ -233,6 +233,8 @@ data DebugModeCli = DebugModeCli
       -- e.g., for screensaver.
   , snoMore    :: !Bool
       -- ^ Auto-answer all prompts, e.g., for screensaver.
+  , snoAnim    :: !Bool
+      -- ^ Don't show any animations.
   , sdbgMsgCli :: !Bool
       -- ^ Show clients' internal debug messages.
   }
@@ -244,6 +246,7 @@ defDebugModeCli = DebugModeCli
   , smaxFps = -1
   , snoDelay = False
   , snoMore = False
+  , snoAnim = False
   , sdbgMsgCli = False
   }
 
@@ -253,11 +256,13 @@ instance Binary DebugModeCli where
     put smaxFps
     put snoDelay
     put snoMore
+    put snoAnim
     put sdbgMsgCli
   get = do
     sfont <- get
     smaxFps <- get
     snoDelay <- get
     snoMore <- get
+    snoAnim <- get
     sdbgMsgCli <- get
     return DebugModeCli{..}

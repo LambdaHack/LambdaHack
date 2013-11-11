@@ -386,7 +386,10 @@ animate arena anim = do
   let over = renderReport sreport
       topLineOnly = truncateMsg lxsize over
       basicFrame = draw ColorFull cops per arena mleader cli s [topLineOnly]
-  return $ renderAnim lxsize lysize basicFrame anim
+  snoAnim <- getsClient $ snoAnim . sdebugCli
+  return $ if snoAnim
+           then [Just basicFrame]
+           else renderAnim lxsize lysize basicFrame anim
 
 -- | The part of speech describing the actor or a special name if a leader
 -- of the observer's faction. The actor may not be present in the dungeon.

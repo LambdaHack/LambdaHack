@@ -62,6 +62,7 @@ debugArgs = do
         , "  --maxFps n display at most n frames per second"
         , "  --noDelay don't maintain any requested delays between frames"
         , "  --noMore auto-answer all prompts"
+        , "  --noAnim don't show any animations"
         , "  --dbgMsgCli let clients emit their internal debug messages"
         , "  --tryFov m set a Field of View mode, where m can be"
         , "    Digital r, r > 0"
@@ -98,6 +99,9 @@ debugArgs = do
       parseArgs ("--noMore" : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli = (sdebugCli debugSer) {snoMore = True}}
+      parseArgs ("--noAnim" : rest) =
+        let debugSer = parseArgs rest
+        in debugSer {sdebugCli = (sdebugCli debugSer) {snoAnim = True}}
       parseArgs ("--dbgMsgCli" : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli = (sdebugCli debugSer) {sdbgMsgCli = True}}
