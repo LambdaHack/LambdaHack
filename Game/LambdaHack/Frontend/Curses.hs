@@ -18,8 +18,7 @@ import qualified UI.HSCurses.CursesHelper as C
 
 import Game.LambdaHack.Common.Animation (DebugModeCli (..), SingleFrame (..))
 import qualified Game.LambdaHack.Common.Color as Color
-import qualified Game.LambdaHack.Common.Key as K (KM (..), Key (..),
-                                                  Modifier (..))
+import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Utils.Assert
 
 -- | Session data maintained by the frontend.
@@ -82,7 +81,7 @@ display FrontendSession{..}  _ (Just SingleFrame{..}) = do
 -- | Input key via the frontend.
 nextEvent :: FrontendSession -> Maybe Bool -> IO K.KM
 nextEvent FrontendSession{smodeCli=DebugModeCli{snoMore}} _ =
-  if snoMore then return K.KM {modifier = K.NoModifier, key = K.Esc}
+  if snoMore then return K.escKey
   else keyTranslate `fmap` C.getKey C.refresh
 
 -- | Display a prompt, wait for any key.

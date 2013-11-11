@@ -2,7 +2,7 @@
 -- | Frontend-independent keyboard input operations.
 module Game.LambdaHack.Common.Key
   ( Key(..), handleDir, dirAllMoveKey
-  , moveBinding, keyTranslate, Modifier(..), KM(..), showKM
+  , moveBinding, keyTranslate, Modifier(..), KM(..), showKM, escKey
   ) where
 
 import Data.Binary
@@ -135,6 +135,9 @@ showKey (Unknown s) = T.pack s
 showKM :: KM -> Text
 showKM KM{modifier=Control, key} = "CTRL-" <> showKey key
 showKM KM{modifier=NoModifier, key} = showKey key
+
+escKey :: KM
+escKey = KM {modifier = NoModifier, key = Esc}
 
 dirViChar :: [Char]
 dirViChar = ['y', 'k', 'u', 'l', 'n', 'j', 'b', 'h']

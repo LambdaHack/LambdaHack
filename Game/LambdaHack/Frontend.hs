@@ -84,9 +84,9 @@ getConfirmGeneric :: Monad m
                   -> [K.KM] -> a -> m Bool
 getConfirmGeneric pGetKey clearKeys x = do
   let extraKeys = [ K.KM {key=K.Space, modifier=K.NoModifier}
-                  , K.KM {key=K.Esc, modifier=K.NoModifier} ]
+                  , K.escKey ]
   km <- pGetKey (clearKeys ++ extraKeys) x
-  return $! km /= K.KM {key=K.Esc, modifier=K.NoModifier}
+  return $! km /= K.escKey
 
 flushFrames :: FrontendSession -> FactionId -> ReqMap -> IO ReqMap
 flushFrames fs fid reqMap = do
@@ -205,7 +205,7 @@ loopFrontend fs ConnMulti{..} = loop Nothing EM.empty
                   b <- getConfirmGeneric (promptGetKey fs) frontClear x
                   if b then go xs
                   else do
-                    writeKM fid K.KM {key=K.Esc, modifier=K.NoModifier}
+                    writeKM fid K.escKey
                     return x
         frLast <- go frontSlides
         loop (Just (fid, frLast)) reqMap2

@@ -157,7 +157,7 @@ getInitConfirms frontClear slides = do
     _ -> do
       writeConnFrontend Frontend.FrontSlides{..}
       km <- readConnFrontend
-      return $! km /= K.KM {key=K.Esc, modifier=K.NoModifier}
+      return $! km /= K.escKey
 
 getLeaderUI :: MonadClientUI m => m ActorId
 getLeaderUI = do
@@ -247,7 +247,7 @@ getYesNo :: MonadClientUI m => SingleFrame -> m Bool
 getYesNo frame = do
   let keys = [ K.KM {key=K.Char 'y', modifier=K.NoModifier}
              , K.KM {key=K.Char 'n', modifier=K.NoModifier}
-             , K.KM {key=K.Esc, modifier=K.NoModifier}
+             , K.escKey
              ]
   K.KM {key} <- promptGetKey keys frame
   case key of
@@ -280,7 +280,7 @@ displayChoiceUI prompt ov keys = do
   slides <- fmap runSlideshow $ overlayToSlideshow (prompt <> ", ESC]") ov
   let legalKeys =
         [ K.KM {key=K.Space, modifier=K.NoModifier}
-        , K.KM {key=K.Esc, modifier=K.NoModifier} ]
+        , K.escKey ]
         ++ keys
       loop [] = neverMind True
       loop (x : xs) = do

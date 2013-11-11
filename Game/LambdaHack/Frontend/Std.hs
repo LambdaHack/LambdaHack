@@ -15,8 +15,7 @@ import qualified System.IO as SIO
 
 import Game.LambdaHack.Common.Animation (DebugModeCli (..), SingleFrame (..))
 import qualified Game.LambdaHack.Common.Color as Color
-import qualified Game.LambdaHack.Common.Key as K (KM (..), Key (..),
-                                                  Modifier (..))
+import qualified Game.LambdaHack.Common.Key as K
 
 -- | No session data needs to be maintained by this frontend.
 data FrontendSession = FrontendSession
@@ -45,7 +44,7 @@ display _ _ (Just SingleFrame{..}) =
 -- | Input key via the frontend.
 nextEvent :: FrontendSession -> Maybe Bool -> IO K.KM
 nextEvent sess@FrontendSession{smodeCli=DebugModeCli{snoMore}} mb =
-  if snoMore then return K.KM {modifier = K.NoModifier, key = K.Esc}
+  if snoMore then return K.escKey
   else do
     e <- BS.hGet SIO.stdin 1
     let c = BS.head e

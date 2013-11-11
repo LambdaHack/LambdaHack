@@ -24,8 +24,7 @@ import System.Time
 
 import Game.LambdaHack.Common.Animation (DebugModeCli (..), SingleFrame (..))
 import qualified Game.LambdaHack.Common.Color as Color
-import qualified Game.LambdaHack.Common.Key as K (KM (..), Key (..),
-                                                  Modifier (..), keyTranslate)
+import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.LQueue
 
@@ -416,7 +415,7 @@ promptGetAnyKey sess@FrontendSession{smodeCli=DebugModeCli{snoMore}, ..}
     fs <- takeMVar sframeState
     displayAllFramesSync sess fs
     putMVar sframeState FNone
-    return K.KM {modifier = K.NoModifier, key = K.Esc}
+    return K.escKey
   else do
     km <- readChan schanKey
     -- Show the last frame and empty the queue.

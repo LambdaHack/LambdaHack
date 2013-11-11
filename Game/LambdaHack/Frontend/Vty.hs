@@ -15,8 +15,7 @@ import qualified Graphics.Vty as Vty
 
 import Game.LambdaHack.Common.Animation (DebugModeCli (..), SingleFrame (..))
 import qualified Game.LambdaHack.Common.Color as Color
-import qualified Game.LambdaHack.Common.Key as K (KM (..), Key (..),
-                                                  Modifier (..))
+import qualified Game.LambdaHack.Common.Key as K
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
@@ -58,7 +57,7 @@ display FrontendSession{svty} _ (Just SingleFrame{..}) =
 -- | Input key via the frontend.
 nextEvent :: FrontendSession -> Maybe Bool -> IO K.KM
 nextEvent sess@FrontendSession{svty, smodeCli=DebugModeCli{snoMore}} mb =
-  if snoMore then return K.KM {modifier = K.NoModifier, key = K.Esc}
+  if snoMore then return K.escKey
   else do
     e <- next_event svty
     case e of
