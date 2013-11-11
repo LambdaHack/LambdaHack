@@ -227,15 +227,21 @@ setTo tb defAttr lx (ly, attr:attrs) = do
 maxPolls :: Int -> Int
 maxPolls smaxFps = max 120 (2 * smaxFps)
 
+picoInMicro :: Int
+picoInMicro = 1000000
+
 -- | Add a given number of microseconds to time.
 addTime :: ClockTime -> Int -> ClockTime
-addTime (TOD s p) ms = TOD s (p + fromIntegral (ms * 1000000))
+addTime (TOD s p) mus = TOD s (p + fromIntegral (mus * picoInMicro))
 
 -- | The difference between the first and the second time, in microseconds.
 diffTime :: ClockTime -> ClockTime -> Int
 diffTime (TOD s1 p1) (TOD s2 p2) =
-  fromIntegral (s1 - s2) * 1000000 +
-  fromIntegral (p1 - p2) `div` 1000000
+  fromIntegral (s1 - s2) * picoInMicro +
+  fromIntegral (p1 - p2) `div` picoInMicro
+
+microInSec :: Int
+microInSec = 1000000
 
 -- | Poll the frame queue often and draw frames at fixed intervals.
 pollFrames :: FrontendSession -> Maybe ClockTime -> IO ()
@@ -244,7 +250,7 @@ pollFrames sess@FrontendSession{smodeCli=DebugModeCli{smaxFps}}
   -- Check if the time is up.
   curTime <- getClockTime
   let diffT = diffTime setTime curTime
-  if diffT > 1000000 `div` maxPolls smaxFps
+  if diffT > microInSec `div` maxPolls smaxFps
     then do
       -- Delay half of the time difference.
       threadDelay $ diffTime curTime setTime `div` 2
@@ -264,21 +270,21 @@ pollFrames sess@FrontendSession{sframeState, smodeCli=DebugModeCli{..}}
           putMVar sframeState FPushed{fpushed = queue, fshown = frame}
           postGUIAsync $ output sess frame
           curTime <- getClockTime
-          threadDelay $ 1000000 `div` (smaxFps * 2)
-          pollFrames sess $ Just $ addTime curTime $ 1000000 `div` smaxFps
+          threadDelay $ microInSec `div` (smaxFps * 2)
+          pollFrames sess $ Just $ addTime curTime $ microInSec `div` smaxFps
         Just (Nothing, queue) -> do
           -- Delay requested via an empty frame.
           putMVar sframeState FPushed{fpushed = queue, ..}
           unless snoDelay $
             -- There is no problem if the delay is a bit delayed.
-            threadDelay $ 1000000 `div` smaxFps
+            threadDelay $ microInSec `div` smaxFps
           pollFrames sess Nothing
         Nothing -> do
           -- The queue is empty, the game logic thread lags.
           putMVar sframeState fs
           -- Time is up, the game thread is going to send a frame,
           -- (otherwise it would change the state), so poll often.
-          threadDelay $ 1000000 `div` maxPolls smaxFps
+          threadDelay $ microInSec `div` maxPolls smaxFps
           pollFrames sess Nothing
     _ -> do
       putMVar sframeState fs
@@ -286,7 +292,7 @@ pollFrames sess@FrontendSession{sframeState, smodeCli=DebugModeCli{..}}
       -- The slow polling also gives the game logic a head start
       -- in creating frames in case one of the further frames is slow
       -- to generate and would normally cause a jerky delay in drawing.
-      threadDelay $ 1000000 `div` (smaxFps * 2)
+      threadDelay $ microInSec `div` (smaxFps * 2)
       pollFrames sess Nothing
 
 -- | Add a game screen frame to the frame drawing channel, or show
@@ -315,6 +321,7 @@ pushFrame sess noDelay immediate rawFrame = do
     FNone | immediate -> do
       -- If the frame not repeated, draw it.
       maybe skip (postGUIAsync . output sess) nextFrame
+      -- Frame sent, we may now safely release the queue lock.
       putMVar sframeState FNone
     FNone ->
       -- Never start playing with an empty frame.
@@ -376,12 +383,12 @@ displayAllFramesSync sess@FrontendSession{smodeCli=DebugModeCli{..}} fs = do
         Just (Just frame, queue) -> do
           -- Display synchronously.
           postGUISync $ output sess frame
-          threadDelay $ 1000000 `div` smaxFps
+          threadDelay $ microInSec `div` smaxFps
           displayAllFramesSync sess FPushed{fpushed = queue, fshown = frame}
         Just (Nothing, queue) -> do
           -- Delay requested via an empty frame.
           unless snoDelay $
-            threadDelay $ 1000000 `div` smaxFps
+            threadDelay $ microInSec `div` smaxFps
           displayAllFramesSync sess FPushed{fpushed = queue, ..}
         Nothing ->
           -- The queue is empty.
