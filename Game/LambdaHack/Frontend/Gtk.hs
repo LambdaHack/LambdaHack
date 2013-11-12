@@ -4,9 +4,9 @@ module Game.LambdaHack.Frontend.Gtk
   ( -- * Session data type for the frontend
     FrontendSession
     -- * The output and input operations
-  , display, promptGetAnyKey
+  , fdisplay, fpromptGetKey
     -- * Frontend administration tools
-  , frontendName, startup, sdebugCli
+  , frontendName, startup
   ) where
 
 import Control.Concurrent
@@ -52,7 +52,7 @@ data FrontendSession = FrontendSession
       -- add frames in an orderly manner, which is not done in real time,
       -- though sometimes the frame display subsystem has to poll
       -- for a frame, in which case the locking interval becomes meaningful.
-  , sdebugCli    :: !DebugModeCli  -- ^ client configuration
+  , sdebugCli   :: !DebugModeCli  -- ^ client configuration
   }
 
 data GtkFrame = GtkFrame
@@ -96,7 +96,7 @@ startup = runGtk
 
 -- | Sets up and starts the main GTK loop providing input and output.
 runGtk :: DebugModeCli -> (FrontendSession -> IO ()) -> IO ()
-runGtk sdebugCli@DebugModeCli{sfont} k = do
+runGtk sdebugCli@DebugModeCli{sfont} cont = do
   -- Init GUI.
   unsafeInitGUIForThreadedRTS
   -- Text attributes.
@@ -125,7 +125,7 @@ runGtk sdebugCli@DebugModeCli{sfont} k = do
   let sess = FrontendSession{..}
   -- Fork the game logic thread. When logic ends, game exits.
   -- TODO: is postGUIAsync needed here?
-  forkIO $ k sess >> postGUIAsync mainQuit
+  forkIO $ cont sess >> postGUIAsync mainQuit
   -- Fork the thread that periodically draws a frame from a queue, if any.
   forkIO $ pollFrames sess Nothing
   -- Fill the keyboard channel.
@@ -382,8 +382,11 @@ trimFrameState sess@FrontendSession{sframeState} = do
   putMVar sframeState FNone
 
 -- | Add a frame to be drawn.
-display :: FrontendSession -> Bool -> Maybe SingleFrame -> IO ()
-display sess noDelay = pushFrame sess noDelay False
+fdisplay :: FrontendSession    -- ^ frontend session data
+         -> Bool
+         -> Maybe SingleFrame  -- ^ the screen frame to draw
+         -> IO ()
+fdisplay sess noDelay = pushFrame sess noDelay False
 
 -- Display all queued frames, synchronously.
 displayAllFramesSync :: FrontendSession -> FrameState -> IO ()
@@ -412,9 +415,9 @@ displayAllFramesSync sess@FrontendSession{sdebugCli=DebugModeCli{..}} fs = do
 -- | Display a prompt, wait for any key.
 -- Starts in Push mode, ends in None mode.
 -- Syncs with the drawing threads by showing the last or all queued frames.
-promptGetAnyKey :: FrontendSession -> SingleFrame -> IO K.KM
-promptGetAnyKey sess@FrontendSession{sdebugCli=DebugModeCli{snoMore}, ..}
-                frame = do
+fpromptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
+fpromptGetKey sess@FrontendSession{sdebugCli=DebugModeCli{snoMore}, ..}
+              frame = do
   pushFrame sess True True $ Just frame
   if snoMore then do
     -- Show all frames synchronously.

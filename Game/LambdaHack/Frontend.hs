@@ -53,22 +53,22 @@ data ConnMulti = ConnMulti
   }
 
 startupF :: DebugModeCli -> IO () -> IO ()
-startupF dbg k = startup dbg $ \fs -> do
+startupF dbg k = chosenStartup dbg $ \fs -> do
   void $ forkIO $ loopFrontend fs connMulti
   k
 
 -- | Display a prompt, wait for any of the specified keys (for any key,
 -- if the list is empty). Repeat if an unexpected key received.
-promptGetKey :: FrontendSession -> [K.KM] -> SingleFrame -> IO K.KM
-promptGetKey sess [] frame = promptGetAnyKey sess frame
-promptGetKey sess keys@(firstKM:_) frame = do
-  km <- promptGetAnyKey sess frame
+promptGetKey :: Frontend -> [K.KM] -> SingleFrame -> IO K.KM
+promptGetKey fs [] frame = fpromptGetKey fs frame
+promptGetKey fs keys@(firstKM:_) frame = do
+  km <- fpromptGetKey fs frame
   if km `elem` keys
     then return km
     else do
-      let DebugModeCli{snoMore} = sdebugCli sess
+      let DebugModeCli{snoMore} = fdebugCli fs
       if snoMore then return firstKM
-      else promptGetKey sess keys frame
+      else promptGetKey fs keys frame
 
 -- TODO: avoid unsafePerformIO; but server state is a wrong idea, too
 connMulti :: ConnMulti
@@ -88,18 +88,18 @@ getConfirmGeneric pGetKey clearKeys x = do
   km <- pGetKey (clearKeys ++ extraKeys) x
   return $! km /= K.escKey
 
-flushFrames :: FrontendSession -> FactionId -> ReqMap -> IO ReqMap
+flushFrames :: Frontend -> FactionId -> ReqMap -> IO ReqMap
 flushFrames fs fid reqMap = do
   let queue = toListLQueue $ fromMaybe newLQueue $ EM.lookup fid reqMap
       reqMap2 = EM.delete fid reqMap
   mapM_ (displayAc fs) queue
   return reqMap2
 
-displayAc :: FrontendSession -> AcFrame -> IO ()
+displayAc :: Frontend -> AcFrame -> IO ()
 displayAc fs (AcConfirm fr) = void $ getConfirmGeneric (promptGetKey fs) [] fr
-displayAc fs (AcRunning fr) = display fs True (Just fr)
-displayAc fs (AcNormal fr) = display fs False (Just fr)
-displayAc fs AcDelay = display fs False Nothing
+displayAc fs (AcRunning fr) = fdisplay fs True (Just fr)
+displayAc fs (AcNormal fr) = fdisplay fs False (Just fr)
+displayAc fs AcDelay = fdisplay fs False Nothing
 
 getSingleFrame :: AcFrame -> Maybe SingleFrame
 getSingleFrame (AcConfirm fr) = Just fr
@@ -112,7 +112,7 @@ toSingles fid reqMap =
   let queue = toListLQueue $ fromMaybe newLQueue $ EM.lookup fid reqMap
   in mapMaybe getSingleFrame queue
 
-fadeF :: FrontendSession -> Bool -> FactionId -> Text -> SingleFrame -> IO ()
+fadeF :: Frontend -> Bool -> FactionId -> Text -> SingleFrame -> IO ()
 fadeF fs out side pname frame = do
   let topRight = True
       lxsize = xsizeSingleFrame frame
@@ -128,7 +128,7 @@ fadeF fs out side pname frame = do
             -- Empty frame to mark the fade-in end,
             -- to trim only to here if SPACE pressed.
           | otherwise = animFrs ++ [Nothing]
-  mapM_ (display fs False) frs
+  mapM_ (fdisplay fs False) frs
 
 insertFr :: FactionId -> AcFrame -> ReqMap -> ReqMap
 insertFr fid fr reqMap =
@@ -140,7 +140,7 @@ insertFr fid fr reqMap =
 -- There may be many UI clients, but this function is only ever
 -- executed on one thread, so the frontend receives requests
 -- in a sequential way, without any random interleaving.
-loopFrontend :: FrontendSession -> ConnMulti -> IO ()
+loopFrontend :: Frontend -> ConnMulti -> IO ()
 loopFrontend fs ConnMulti{..} = loop Nothing EM.empty
  where
   writeKM :: FactionId -> K.KM -> IO ()
@@ -198,7 +198,7 @@ loopFrontend fs ConnMulti{..} = loop Nothing EM.empty
               case frs of
                 [] -> assert `failure` fid
                 [x] -> do
-                  display fs False (Just x)
+                  fdisplay fs False (Just x)
                   writeKM fid K.KM {key=K.Space, modifier=K.NoModifier}
                   return x
                 x : xs -> do

@@ -3,9 +3,9 @@ module Game.LambdaHack.Frontend.Vty
   ( -- * Session data type for the frontend
     FrontendSession
     -- * The output and input operations
-  , display, promptGetAnyKey
+  , fdisplay, fpromptGetKey
     -- * Frontend administration tools
-  , frontendName, startup, sdebugCli
+  , frontendName, startup
   ) where
 
 import qualified Data.List as L
@@ -19,7 +19,7 @@ import qualified Game.LambdaHack.Common.Key as K
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { svty     :: !Vty  -- internal vty session
+  { svty      :: !Vty  -- internal vty session
   , sdebugCli :: !DebugModeCli  -- ^ client configuration
       -- ^ Configuration of the frontend session.
   }
@@ -36,13 +36,12 @@ startup sdebugCli k = do
   Vty.shutdown svty
 
 -- | Output to the screen via the frontend.
-display :: FrontendSession    -- ^ frontend session data
-
-        -> Bool
-        -> Maybe SingleFrame  -- ^ the screen frame to draw
-        -> IO ()
-display _ _ Nothing = return ()
-display FrontendSession{svty} _ (Just SingleFrame{..}) =
+fdisplay :: FrontendSession    -- ^ frontend session data
+         -> Bool
+         -> Maybe SingleFrame  -- ^ the screen frame to draw
+         -> IO ()
+fdisplay _ _ Nothing = return ()
+fdisplay FrontendSession{svty} _ (Just SingleFrame{..}) =
   let img = (foldr (<->) empty_image
              . L.map (foldr (<|>) empty_image
                       . L.map (\ Color.AttrChar{..} ->
@@ -68,10 +67,9 @@ nextEvent sess@FrontendSession{svty, sdebugCli=DebugModeCli{snoMore}} =
       _ -> nextEvent sess
 
 -- | Display a prompt, wait for any key.
-promptGetAnyKey :: FrontendSession -> SingleFrame
-                -> IO K.KM
-promptGetAnyKey sess frame = do
-  display sess True $ Just frame
+fpromptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
+fpromptGetKey sess frame = do
+  fdisplay sess True $ Just frame
   nextEvent sess
 
 keyTranslate :: Key -> K.Key

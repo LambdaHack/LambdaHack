@@ -3,9 +3,9 @@ module Game.LambdaHack.Frontend.Curses
   ( -- * Session data type for the frontend
     FrontendSession
     -- * The output and input operations
-  , display, promptGetAnyKey
+  , fdisplay, fpromptGetKey
     -- * Frontend administration tools
-  , frontendName, startup, sdebugCli
+  , frontendName, startup
   ) where
 
 import Control.Monad
@@ -23,8 +23,8 @@ import Game.LambdaHack.Utils.Assert
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
-  { swin     :: !C.Window  -- ^ the window to draw to
-  , sstyles  :: !(M.Map Color.Attr C.CursesStyle)
+  { swin      :: !C.Window  -- ^ the window to draw to
+  , sstyles   :: !(M.Map Color.Attr C.CursesStyle)
       -- ^ map from fore/back colour pairs to defined curses styles
   , sdebugCli :: !DebugModeCli  -- ^ client configuration
   }
@@ -56,12 +56,12 @@ startup sdebugCli k = do
   C.end
 
 -- | Output to the screen via the frontend.
-display :: FrontendSession    -- ^ frontend session data
-        -> Bool
-        -> Maybe SingleFrame  -- ^ the screen frame to draw
-        -> IO ()
-display _ _ Nothing = return ()
-display FrontendSession{..}  _ (Just SingleFrame{..}) = do
+fdisplay :: FrontendSession    -- ^ frontend session data
+         -> Bool
+         -> Maybe SingleFrame  -- ^ the screen frame to draw
+         -> IO ()
+fdisplay _ _ Nothing = return ()
+fdisplay FrontendSession{..}  _ (Just SingleFrame{..}) = do
   -- let defaultStyle = C.defaultCursesStyle
   -- Terminals with white background require this:
   let defaultStyle = sstyles M.! Color.defAttr
@@ -85,10 +85,9 @@ nextEvent FrontendSession{sdebugCli=DebugModeCli{snoMore}} =
   else keyTranslate `fmap` C.getKey C.refresh
 
 -- | Display a prompt, wait for any key.
-promptGetAnyKey :: FrontendSession -> SingleFrame
-                -> IO K.KM
-promptGetAnyKey sess frame = do
-  display sess True $ Just frame
+fpromptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
+fpromptGetKey sess frame = do
+  fdisplay sess True $ Just frame
   nextEvent sess
 
 keyTranslate :: C.Key -> K.KM

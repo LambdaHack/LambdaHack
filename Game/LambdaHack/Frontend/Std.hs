@@ -3,9 +3,9 @@ module Game.LambdaHack.Frontend.Std
   ( -- * Session data type for the frontend
     FrontendSession
     -- * The output and input operations
-  , display, promptGetAnyKey
+  , fdisplay, fpromptGetKey
     -- * Frontend administration tools
-  , frontendName, startup, sdebugCli
+  , frontendName, startup
   ) where
 
 import qualified Data.ByteString.Char8 as BS
@@ -32,12 +32,12 @@ startup :: DebugModeCli -> (FrontendSession -> IO ()) -> IO ()
 startup sdebugCli k = k FrontendSession{..}
 
 -- | Output to the screen via the frontend.
-display :: FrontendSession    -- ^ frontend session data
-        -> Bool
-        -> Maybe SingleFrame  -- ^ the screen frame to draw
-        -> IO ()
-display _ _ Nothing = return ()
-display _ _ (Just SingleFrame{..}) =
+fdisplay :: FrontendSession    -- ^ frontend session data
+         -> Bool
+         -> Maybe SingleFrame  -- ^ the screen frame to draw
+         -> IO ()
+fdisplay _ _ Nothing = return ()
+fdisplay _ _ (Just SingleFrame{..}) =
   let chars = L.map (BS.pack . L.map Color.acChar) sfLevel
       bs = [encodeUtf8 sfTop, BS.empty] ++ chars ++ [encodeUtf8 sfBottom, BS.empty]
   in mapM_ BS.putStrLn bs
@@ -54,10 +54,9 @@ nextEvent FrontendSession{sdebugCli=DebugModeCli{snoMore}} =
     return $! keyTranslate c
 
 -- | Display a prompt, wait for any key.
-promptGetAnyKey :: FrontendSession -> SingleFrame
-                -> IO K.KM
-promptGetAnyKey sess frame = do
-  display sess True $ Just frame
+fpromptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
+fpromptGetKey sess frame = do
+  fdisplay sess True $ Just frame
   nextEvent sess
 
 keyTranslate :: Char -> K.KM
