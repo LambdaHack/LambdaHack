@@ -109,7 +109,7 @@ executorCli :: ActionCli c d ()
 executorCli m sess s cli d =
   let saveFile (_, cli2) =
         let name = saveName (sside cli2) (sisAI cli2)
-        in configAppDataDirUI (sconfigUI cli2) </> name
+        in configAppDataDir (sconfigUI cli2) </> name
       exe toSave =
         runActionCli m
           sess

@@ -8,6 +8,7 @@ module Game.LambdaHack.Client
   , MonadClient, MonadClientUI, MonadClientReadServer, MonadClientWriteServer
   ) where
 
+import Control.Monad
 import Data.Maybe
 
 import Game.LambdaHack.Client.Action
@@ -97,15 +98,14 @@ exeFrontend executorUI executorAI
   sconfigUI <- mkConfigUI corule
   let !sbinding = stdBinding sconfigUI  -- evaluate to check for errors
       sdebugMode =
-        (\dbg -> if sfont dbg == Nothing
-                 then dbg {sfont = Just $ configFont sconfigUI}
-                 else dbg) .
-        (\dbg -> if smaxFps dbg == Nothing
-                 then dbg {smaxFps = Just $ configMaxFps sconfigUI}
-                 else dbg) .
-        (\dbg -> if snoAnim dbg == Nothing
-                 then dbg {snoAnim = Just $ configNoAnim sconfigUI}
-                 else dbg)
+        (\dbg -> dbg {sfont =
+            sfont dbg `mplus` Just (configFont sconfigUI)}) .
+        (\dbg -> dbg {smaxFps =
+            smaxFps dbg `mplus` Just (configMaxFps sconfigUI)}) .
+        (\dbg -> dbg {snoAnim =
+            snoAnim dbg `mplus` Just (configNoAnim sconfigUI)}) .
+        (\dbg -> dbg {ssavePrefixCli =
+            ssavePrefixCli dbg `mplus` Just (configSavePrefix sconfigUI)})
         $ sdebugCli
   defHist <- defHistory
   let exeClientUI = executorUI $ loopUI sdebugMode cmdClientUISem

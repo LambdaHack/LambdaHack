@@ -350,17 +350,17 @@ restoreGame = do
   side <- getsClient sside
   isAI <- getsClient sisAI
   let sName = saveName side isAI
-  ConfigUI{ configAppDataDirUI
+  ConfigUI{ configAppDataDir
           , configUICfgFile } <- getsClient sconfigUI
   let copies = [(configUICfgFile <.> ".default", configUICfgFile <.> ".ini")]
-  liftIO $ Save.restoreGame sName configAppDataDirUI copies pathsDataFile
+  liftIO $ Save.restoreGame sName configAppDataDir copies pathsDataFile
 
 -- | Assuming the client runs on the same machine and for the same
 -- user as the server, move the server savegame out of the way.
 removeServerSave :: MonadClient m => m ()
 removeServerSave = do
-  ConfigUI{configAppDataDirUI} <- getsClient sconfigUI
-  let serverSaveFile = configAppDataDirUI </> serverSaveName
+  ConfigUI{configAppDataDir} <- getsClient sconfigUI
+  let serverSaveFile = configAppDataDir </> serverSaveName
   liftIO $ renameFile serverSaveFile (serverSaveFile ++ ".bkp")
 
 -- | Invoke pseudo-random computation with the generator kept in the state.

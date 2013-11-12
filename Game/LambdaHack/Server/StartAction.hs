@@ -45,21 +45,22 @@ import Game.LambdaHack.Server.State
 import Game.LambdaHack.Utils.Assert
 
 -- | Apply debug options that don't need a new game.
-applyDebug :: MonadServer m => DebugModeSer -> m ()
-applyDebug DebugModeSer{..} =
+applyDebug :: MonadServer m => m ()
+applyDebug = do
+  DebugModeSer{..} <- getsServer sdebugNxt
   modifyServer $ \ser ->
     ser {sdebugSer = (sdebugSer ser) { sniffIn
                                      , sniffOut
                                      , sallClear
-                                     , stryFov
+                                     , sfovMode
                                      , sdbgMsgSer
                                      , sdebugCli }}
 
 initPer :: MonadServer m => m ()
 initPer = do
   cops <- getsState scops
-  configFov <- fovMode
-  pers <- getsState $ dungeonPerception cops configFov
+  fovMode <- getsServer $ sfovMode . sdebugSer
+  pers <- getsState $ dungeonPerception cops (fromMaybe (Digital 12) fovMode)
   modifyServer $ \ser1 -> ser1 {sper = pers}
 
 reinitGame :: (MonadAtomic m, MonadServer m) => m ()
@@ -160,8 +161,7 @@ gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}, corule} = do
       defState = defStateGlobal freshDungeon freshDepth faction cops scoreTable
       defSer = emptyStateServer
                  {sdisco, sdiscoRev, sflavour, srandom, smode, sconfig}
-  sdebugNxt <- getsServer sdebugNxt
-  putServer defSer {sdebugNxt, sdebugSer = sdebugNxt}
+  putServer defSer
   return defState
 
 -- Spawn initial actors. Clients should notice this, to set their leaders.

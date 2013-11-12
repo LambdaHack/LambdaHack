@@ -220,22 +220,24 @@ instance Binary AcFrame where
       _ -> fail "no parse (AcFrame)"
 
 data DebugModeCli = DebugModeCli
-  { sfont      :: !(Maybe String)
+  { sfont          :: !(Maybe String)
       -- ^ Font to use for the main game window.
-  , smaxFps    :: !(Maybe Int)
+  , smaxFps        :: !(Maybe Int)
       -- ^ Maximal frames per second.
       -- This is better low and fixed, to avoid jerkiness and delays
       -- that tell the player there are many intelligent enemies on the level.
       -- That's better than scaling AI sofistication down based
       -- on the FPS setting and machine speed.
-  , snoDelay   :: !Bool
+  , snoDelay       :: !Bool
       -- ^ Don't maintain any requested delays between frames,
       -- e.g., for screensaver.
-  , snoMore    :: !Bool
+  , snoMore        :: !Bool
       -- ^ Auto-answer all prompts, e.g., for screensaver.
-  , snoAnim    :: !(Maybe Bool)
+  , snoAnim        :: !(Maybe Bool)
       -- ^ Don't show any animations.
-  , sdbgMsgCli :: !Bool
+  , ssavePrefixCli :: !(Maybe String)
+      -- ^ Prefix of the save game file.
+  , sdbgMsgCli     :: !Bool
       -- ^ Show clients' internal debug messages.
   }
   deriving (Show, Eq)
@@ -247,6 +249,7 @@ defDebugModeCli = DebugModeCli
   , snoDelay = False
   , snoMore = False
   , snoAnim = Nothing
+  , ssavePrefixCli = Nothing
   , sdbgMsgCli = False
   }
 
@@ -257,6 +260,7 @@ instance Binary DebugModeCli where
     put snoDelay
     put snoMore
     put snoAnim
+    put ssavePrefixCli
     put sdbgMsgCli
   get = do
     sfont <- get
@@ -264,5 +268,6 @@ instance Binary DebugModeCli where
     snoDelay <- get
     snoMore <- get
     snoAnim <- get
+    ssavePrefixCli <- get
     sdbgMsgCli <- get
     return DebugModeCli{..}

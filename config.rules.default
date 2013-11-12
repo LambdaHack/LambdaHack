@@ -14,7 +14,9 @@
 ; saveBkpClips: 100
 
 ; [file]
-; ; Names of various game files. They reside in ~/.LambdaHack or similar.
+; ; Names (or prefixes) of various game files.
+; ; They reside in ~/.LambdaHack or similar.
+; savePrefix: save
 ; scoresFile: scores
 
 ; [heroName]

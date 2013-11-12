@@ -98,8 +98,9 @@ parseConfigUI dataDir cp =
         let mkCommand (key, def) = (mkKM key, read def :: HumanCmd)
             section = getItems cp "commands"
         in map mkCommand section
-      configAppDataDirUI = dataDir
+      configAppDataDir = dataDir
       configUICfgFile = dataDir </> "config.ui"
+      configSavePrefix = get cp "file" "savePrefix"
       configMacros =
         let trMacro (from, to) =
               let fromTr = mkKM from

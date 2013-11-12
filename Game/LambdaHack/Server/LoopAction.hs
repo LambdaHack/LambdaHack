@@ -57,17 +57,17 @@ loopSer :: (MonadAtomic m, MonadConnServer m)
             -> IO ())
         -> Kind.COps
         -> m ()
-loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
+loopSer sdebug cmdSerSem executorUI executorAI !cops = do
   -- Recover states and launch clients.
   restored <- tryRestore cops
   case restored of
     Nothing -> do  -- Starting a new game.
       -- Set up commandline debug mode
-      modifyServer $ \ser -> ser {sdebugNxt}
       s <- gameReset cops
+      sdebugNxt <- initDebug sdebug
+      modifyServer $ \ser -> ser {sdebugNxt, sdebugSer = sdebugNxt}
       let speedup = speedupCOps (sallClear sdebugNxt)
       execCmdAtomic $ RestartServerA $ updateCOps speedup s
-      applyDebug sdebugNxt
       updateConn executorUI executorAI
       initPer
       reinitGame
@@ -75,8 +75,10 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
       -- First, set the previous cops, to send consistent info to clients.
       let setPreviousCops = const cops
       execCmdAtomic $ ResumeServerA $ updateCOps setPreviousCops sRaw
-      putServer ser {sdebugNxt}
-      applyDebug sdebugNxt
+      putServer ser
+      sdebugNxt <- initDebug sdebug
+      modifyServer $ \ser2 -> ser2 {sdebugNxt}
+      applyDebug
       updateConn executorUI executorAI
       initPer
       pers <- getsServer sper
@@ -113,6 +115,16 @@ loopSer sdebugNxt cmdSerSem executorUI executorAI !cops = do
           endClip arenas
           loop
   loop
+
+initDebug :: MonadServer m => DebugModeSer -> m DebugModeSer
+initDebug sdebugSer = do
+  sconfig <- getsServer sconfig
+  return $
+    (\dbg -> dbg {sfovMode =
+        sfovMode dbg `mplus` Just (configFovMode sconfig)}) .
+    (\dbg -> dbg {ssavePrefixSer =
+        ssavePrefixSer dbg `mplus` Just (configSavePrefix sconfig)})
+    $ sdebugSer
 
 -- This can be improved by adding a timeout and by asking clients to prepare
 -- a save (in this way checking they have permissions, enough space, etc.)
@@ -425,8 +437,9 @@ endOrLoop updConn loopServer = do
       killAllClients
       -- Verify that the saved perception is equal to future reconstructed.
       persSaved <- getsServer sper
-      configFov <- fovMode
-      pers <- getsState $ dungeonPerception cops configFov
+      fovMode <- getsServer $ sfovMode . sdebugSer
+      pers <- getsState $ dungeonPerception cops
+                                            (fromMaybe (Digital 12) fovMode)
       assert (persSaved == pers `blame` (persSaved, pers)) skip
       -- Don't call @loopServer@, that is, quit the game loop.
 

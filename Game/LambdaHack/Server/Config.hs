@@ -21,6 +21,7 @@ data Config = Config
   , configAppDataDir     :: !FilePath
   , configScoresFile     :: !FilePath
   , configRulesCfgFile   :: !FilePath
+  , configSavePrefix     :: !String
     -- heroNames
   , configHeroNames      :: ![(Int, Text)]
   }
@@ -37,6 +38,7 @@ instance Binary Config where
     put configAppDataDir
     put configScoresFile
     put configRulesCfgFile
+    put configSavePrefix
     put configHeroNames
   get = do
     configSelfString     <- get
@@ -46,5 +48,6 @@ instance Binary Config where
     configAppDataDir     <- get
     configScoresFile     <- get
     configRulesCfgFile   <- get
+    configSavePrefix <- get
     configHeroNames      <- get
     return Config{..}

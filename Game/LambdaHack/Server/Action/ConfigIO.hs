@@ -135,6 +135,7 @@ parseConfigRules dataDir cp =
       configAppDataDir = dataDir
       configScoresFile = dataDir </> get cp "file" "scoresFile"
       configRulesCfgFile = dataDir </> "config.rules"
+      configSavePrefix = get cp "file" "savePrefix"
       configHeroNames =
         let toNumber (ident, name) =
               case stripPrefix "HeroName_" ident of

@@ -48,6 +48,11 @@
 ; T: MarkSuspect
 ; question: Help
 
+; [file]
+; ; Names (or prefixes) of various game files.
+; ; They reside in ~/.LambdaHack or similar.
+; savePrefix: save
+
 ; [macros]
 ; ; Handy with Vi keys:
 ; comma: g

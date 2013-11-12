@@ -63,8 +63,9 @@ debugArgs = do
         , "  --noDelay don't maintain any requested delays between frames"
         , "  --noMore auto-answer all prompts"
         , "  --noAnim don't show any animations"
+        , "  --savePrefix prepend the text to all savefile names"
         , "  --dbgMsgCli let clients emit their internal debug messages"
-        , "  --tryFov m set a Field of View mode, where m can be"
+        , "  --fovMode m set a Field of View mode, where m can be"
         , "    Digital r, r > 0"
         , "    Permissive"
         , "    Shadow"
@@ -81,10 +82,10 @@ debugArgs = do
         (parseArgs rest) {sniffOut = True}
       parseArgs ("--allClear" : rest) =
         (parseArgs rest) {sallClear = True}
-      parseArgs ("--tryFov" : "Digital" : r : rest) | (read r :: Int) > 0 =
-        (parseArgs rest) {stryFov = Just $ Digital $ read r}
-      parseArgs ("--tryFov" : mode : rest) =
-        (parseArgs rest) {stryFov = Just $ read mode}
+      parseArgs ("--fovMode" : "Digital" : r : rest) | (read r :: Int) > 0 =
+        (parseArgs rest) {sfovMode = Just $ Digital $ read r}
+      parseArgs ("--fovMode" : mode : rest) =
+        (parseArgs rest) {sfovMode = Just $ read mode}
       parseArgs ("--dbgMsgSer" : rest) =
         (parseArgs rest) {sdbgMsgSer = True}
       parseArgs ("--font" : s : rest) =
@@ -103,6 +104,11 @@ debugArgs = do
       parseArgs ("--noAnim" : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli = (sdebugCli debugSer) {snoAnim = Just True}}
+      parseArgs ("--savePrefix" : s : rest) =
+        let debugSer = parseArgs rest
+        in debugSer { ssavePrefixSer = Just s
+                    , sdebugCli =
+                         (sdebugCli debugSer) {ssavePrefixCli = Just s}}
       parseArgs ("--dbgMsgCli" : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli = (sdebugCli debugSer) {sdbgMsgCli = True}}

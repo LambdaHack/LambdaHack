@@ -40,14 +40,15 @@ data StateServer = StateServer
   deriving (Show)
 
 data DebugModeSer = DebugModeSer
-  { sknowMap    :: !Bool
-  , sknowEvents :: !Bool
-  , sniffIn     :: !Bool
-  , sniffOut    :: !Bool
-  , sallClear   :: !Bool
-  , stryFov     :: !(Maybe FovMode)
-  , sdbgMsgSer  :: !Bool
-  , sdebugCli   :: !DebugModeCli
+  { sknowMap       :: !Bool
+  , sknowEvents    :: !Bool
+  , sniffIn        :: !Bool
+  , sniffOut       :: !Bool
+  , sallClear      :: !Bool
+  , sfovMode       :: !(Maybe FovMode)
+  , ssavePrefixSer :: !(Maybe String)
+  , sdbgMsgSer     :: !Bool
+  , sdebugCli      :: !DebugModeCli
   }
   deriving Show
 
@@ -78,7 +79,8 @@ defDebugModeSer = DebugModeSer { sknowMap = False
                                , sniffIn = False
                                , sniffOut = False
                                , sallClear = False
-                               , stryFov = Nothing
+                               , sfovMode = Nothing
+                               , ssavePrefixSer = Nothing
                                , sdbgMsgSer = False
                                , sdebugCli = defDebugModeCli
                                }
@@ -122,7 +124,8 @@ instance Binary DebugModeSer where
     put sniffIn
     put sniffOut
     put sallClear
-    put stryFov
+    put sfovMode
+    put ssavePrefixSer
     put sdbgMsgSer
     put sdebugCli
   get = do
@@ -131,7 +134,8 @@ instance Binary DebugModeSer where
     sniffIn <- get
     sniffOut <- get
     sallClear <- get
-    stryFov <- get
+    sfovMode <- get
+    ssavePrefixSer <- get
     sdbgMsgSer <- get
     sdebugCli <- get
     return DebugModeSer{..}
