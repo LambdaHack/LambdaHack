@@ -4,7 +4,7 @@ module Game.LambdaHack.Content.ActorKind
   ) where
 
 import Control.Arrow ((&&&))
-import qualified Data.List as L
+import Data.List
 import qualified Data.Ord as Ord
 import Data.Text (Text)
 
@@ -39,6 +39,6 @@ avalidate :: [ActorKind] -> [ActorKind]
 avalidate l =
   let cmp = Ord.comparing $ asymbol &&& acolor
       eq ka1 ka2 = cmp ka1 ka2 == Ord.EQ
-      sorted = L.sortBy cmp l
-      nubbed = L.nubBy eq sorted
-  in L.deleteFirstsBy eq sorted nubbed
+      sorted = sortBy cmp l
+      nubbed = nubBy eq sorted
+  in deleteFirstsBy eq sorted nubbed

@@ -4,13 +4,13 @@ module Game.LambdaHack.Common.Random
   ( -- * The @Rng@ monad
     Rnd
     -- * Random operations
-  , randomR, random, oneOf, frequency, roll
-    -- * Rolling dice
-  , RollDice(..), rollDice, maxDice, minDice, meanDice
-    -- * Rolling 2D coordinates
-  , RollDiceXY(..), rollDiceXY
-    -- * Rolling dependent on depth
-  , RollDeep, rollDeep, chanceDeep, intToDeep, maxDeep
+  , randomR, random, oneOf, frequency, cast
+    -- * Casting dice
+  , RollDice, rollDice, castDice, maxDice, minDice, meanDice
+    -- * Casting 2D coordinates
+  , RollDiceXY(..), castDiceXY
+    -- * Casting dependent on depth
+  , RollDeep, castDeep, chanceDeep, intToDeep, maxDeep
     -- * Fractional chance
   , Chance, chance
     -- * Run using the IO RNG
@@ -53,9 +53,9 @@ oneOf xs = do
 frequency :: Show a => Frequency a -> Rnd a
 frequency fr = St.state $ rollFreq fr
 
--- | Roll a single die.
-roll :: Int -> Rnd Int
-roll x = if x <= 0 then return 0 else randomR (1, x)
+-- | Cast a single die.
+cast :: Int -> Rnd Int
+cast x = if x <= 0 then return 0 else randomR (1, x)
 
 -- | Dice: 1d7, 3d3, 1d0, etc.
 -- @RollDice a b@ represents @a@ rolls of @b@-sided die.
@@ -77,12 +77,16 @@ instance Hashable.Hashable RollDice
 
 instance Binary RollDice
 
--- | Roll dice and sum the results.
-rollDice :: RollDice -> Rnd Int
-rollDice (RollDice a' 1)  = return $ fromEnum a'  -- optimization
-rollDice (RollDice a' b') =
+rollDice :: Int -> Int -> RollDice
+rollDice a b = assert (a >= 0 && a <= 255 && b >= 0 && b <= 255 `blame` (a, b))
+               $ RollDice (toEnum a) (toEnum b)
+
+-- | Cast dice and sum the results.
+castDice :: RollDice -> Rnd Int
+castDice (RollDice a' 1)  = return $ fromEnum a'  -- optimization
+castDice (RollDice a' b') =
   let (a, b) = (fromEnum a', fromEnum b')
-  in liftM sum (replicateM a (roll b))
+  in liftM sum (replicateM a (cast b))
 
 -- | Maximal value of dice.
 maxDice :: RollDice -> Int
@@ -107,11 +111,11 @@ meanDice (RollDice a' b') =
 data RollDiceXY = RollDiceXY (RollDice, RollDice)
   deriving Show
 
--- | Roll the two sets of dice.
-rollDiceXY :: RollDiceXY -> Rnd (Int, Int)
-rollDiceXY (RollDiceXY (xd, yd)) = do
-  x <- rollDice xd
-  y <- rollDice yd
+-- | Cast the two sets of dice.
+castDiceXY :: RollDiceXY -> Rnd (Int, Int)
+castDiceXY (RollDiceXY (xd, yd)) = do
+  x <- castDice xd
+  y <- castDice yd
   return (x, y)
 
 -- | Dice for parameters scaled with current level depth.
@@ -119,20 +123,20 @@ rollDiceXY (RollDiceXY (xd, yd)) = do
 -- scaled in proportion to current depth divided by maximal dungeon depth.
 type RollDeep = (RollDice, RollDice)
 
--- | Roll dice scaled with current level depth.
+-- | Cast dice scaled with current level depth.
 -- Note that at the first level, the scaled dice are always ignored.
-rollDeep :: Int -> Int -> RollDeep -> Rnd Int
-rollDeep n depth (d1, d2) =
+castDeep :: Int -> Int -> RollDeep -> Rnd Int
+castDeep n depth (d1, d2) =
   assert (n > 0 && n <= depth `blame` (n, depth)) $ do
-  r1 <- rollDice d1
-  r2 <- rollDice d2
+  r1 <- castDice d1
+  r2 <- castDice d2
   return $ r1 + ((n - 1) * r2) `div` max 1 (depth - 1)
 
--- | Roll dice scaled with current level depth and return @True@
+-- | Cast dice scaled with current level depth and return @True@
 -- if the results if greater than 50.
 chanceDeep :: Int -> Int -> RollDeep -> Rnd Bool
 chanceDeep n depth deep = do
-  c <- rollDeep n depth deep
+  c <- castDeep n depth deep
   return $ c > 50
 
 -- | Generate a @RollDeep@ that always gives a constant integer.

@@ -83,7 +83,7 @@ data Actor = Actor
 -- will also depend on the cave kind used to build the level.
 monsterGenChance :: Int -> Int -> Int -> Rnd Bool
 monsterGenChance ldepth depth numMonsters =
-  -- Mimics @rollDeep@.
+  -- Mimics @castDeep@.
   let scaledDepth = 10 * (ldepth - 1) `div` max 1 (depth - 1)
   in chance $ 1%(fromIntegral (50 * (numMonsters - scaledDepth)) `max` 5)
 

@@ -74,8 +74,8 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ opick
                         , cocave=Kind.Ops{okind} }
           ln depth ci = do
   let kc@CaveKind{..} = okind ci
-  lgrid@(gx, gy) <- rollDiceXY cgrid
-  lminplace <- rollDiceXY cminPlaceSize
+  lgrid@(gx, gy) <- castDiceXY cgrid
+  lminplace <- castDiceXY cminPlaceSize
   let gs = grid lgrid (0, 0, cxsize - 1, cysize - 1)
   mandatory1 <- replicateM (cnonVoidMin `div` 2) $
                   xyInArea (0, 0, gx `div` 3, gy - 1)

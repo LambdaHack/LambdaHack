@@ -119,7 +119,7 @@ effectWound :: (MonadAtomic m, MonadServer m)
             => RollDice -> Int -> ActorId -> ActorId
             -> m Bool
 effectWound nDm power source target = do
-  n <- rndToAction $ rollDice nDm
+  n <- rndToAction $ castDice nDm
   let deltaHP = - (n + power)
   if deltaHP >= 0
     then return False
@@ -251,7 +251,7 @@ addHero bfid ppos lid configHeroNames mNumber time = do
   Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
   Faction{gcolor, gplayer} <- getsState $ (EM.! bfid) . sfactionD
   let kId = heroKindId coactor
-  hp <- rndToAction $ rollDice $ ahp $ okind kId
+  hp <- rndToAction $ castDice $ ahp $ okind kId
   mhs <- mapM (\n -> getsState $ \s -> tryFindHeroK s bfid n) [0..9]
   let freeHeroK = elemIndex Nothing mhs
       n = fromMaybe (fromMaybe 100 freeHeroK) mNumber
@@ -308,7 +308,7 @@ addMonster :: (MonadAtomic m, MonadServer m)
            -> m ActorId
 addMonster mk bfid ppos lid time = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-  hp <- rndToAction $ rollDice $ ahp $ okind mk
+  hp <- rndToAction $ castDice $ ahp $ okind mk
   addActor mk bfid ppos lid hp Nothing Nothing Nothing time
 
 -- ** CreateItem

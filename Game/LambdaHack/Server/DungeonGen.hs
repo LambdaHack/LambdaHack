@@ -77,7 +77,7 @@ buildLevel Kind.COps{ cotile=cotile@Kind.Ops{opick}
   cmap <- convertTileMaps (opick cdefTile (const True)) cxsize cysize dmap
   (sq, upEscape, downEscape, su, upId, sd, downId)
      <- placeStairs cotile cmap kc dplaces
-  litemNum <- rollDice citemNum
+  litemNum <- castDice citemNum
   secret <- random
   let stairs = (if ldepth == minD then [] else [(su, upId)])
                ++ (if ldepth == maxD then [] else [(sd, downId)])
