@@ -6,7 +6,7 @@ module Game.LambdaHack.Frontend.Gtk
     -- * The output and input operations
   , display, promptGetAnyKey
     -- * Frontend administration tools
-  , frontendName, startup, smodeCli
+  , frontendName, startup, sdebugCli
   ) where
 
 import Control.Concurrent
@@ -52,7 +52,7 @@ data FrontendSession = FrontendSession
       -- add frames in an orderly manner, which is not done in real time,
       -- though sometimes the frame display subsystem has to poll
       -- for a frame, in which case the locking interval becomes meaningful.
-  , smodeCli    :: !DebugModeCli  -- ^ client configuration
+  , sdebugCli    :: !DebugModeCli  -- ^ client configuration
   }
 
 data GtkFrame = GtkFrame
@@ -96,7 +96,7 @@ startup = runGtk
 
 -- | Sets up and starts the main GTK loop providing input and output.
 runGtk :: DebugModeCli -> (FrontendSession -> IO ()) -> IO ()
-runGtk smodeCli@DebugModeCli{sfont} k = do
+runGtk sdebugCli@DebugModeCli{sfont} k = do
   -- Init GUI.
   unsafeInitGUIForThreadedRTS
   -- Text attributes.
@@ -247,7 +247,7 @@ defaultMaxFps = 15
 
 -- | Poll the frame queue often and draw frames at fixed intervals.
 pollFrames :: FrontendSession -> Maybe ClockTime -> IO ()
-pollFrames sess@FrontendSession{smodeCli=DebugModeCli{smaxFps}}
+pollFrames sess@FrontendSession{sdebugCli=DebugModeCli{smaxFps}}
            (Just setTime) = do
   -- Check if the time is up.
   let maxFps = fromMaybe defaultMaxFps smaxFps
@@ -261,7 +261,7 @@ pollFrames sess@FrontendSession{smodeCli=DebugModeCli{smaxFps}}
     else
       -- Don't delay, because time is up!
       pollFrames sess Nothing
-pollFrames sess@FrontendSession{sframeState, smodeCli=DebugModeCli{..}}
+pollFrames sess@FrontendSession{sframeState, sdebugCli=DebugModeCli{..}}
            Nothing = do
   -- Time is up, check if we actually wait for anyting.
   let maxFps = fromMaybe defaultMaxFps smaxFps
@@ -387,7 +387,7 @@ display sess noDelay = pushFrame sess noDelay False
 
 -- Display all queued frames, synchronously.
 displayAllFramesSync :: FrontendSession -> FrameState -> IO ()
-displayAllFramesSync sess@FrontendSession{smodeCli=DebugModeCli{..}} fs = do
+displayAllFramesSync sess@FrontendSession{sdebugCli=DebugModeCli{..}} fs = do
   let maxFps = fromMaybe defaultMaxFps smaxFps
   case fs of
     FPushed{..} ->
@@ -413,7 +413,7 @@ displayAllFramesSync sess@FrontendSession{smodeCli=DebugModeCli{..}} fs = do
 -- Starts in Push mode, ends in None mode.
 -- Syncs with the drawing threads by showing the last or all queued frames.
 promptGetAnyKey :: FrontendSession -> SingleFrame -> IO K.KM
-promptGetAnyKey sess@FrontendSession{smodeCli=DebugModeCli{snoMore}, ..}
+promptGetAnyKey sess@FrontendSession{sdebugCli=DebugModeCli{snoMore}, ..}
                 frame = do
   pushFrame sess True True $ Just frame
   if snoMore then do

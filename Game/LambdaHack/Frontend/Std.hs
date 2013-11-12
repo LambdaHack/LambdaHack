@@ -5,7 +5,7 @@ module Game.LambdaHack.Frontend.Std
     -- * The output and input operations
   , display, promptGetAnyKey
     -- * Frontend administration tools
-  , frontendName, startup, smodeCli
+  , frontendName, startup, sdebugCli
   ) where
 
 import qualified Data.ByteString.Char8 as BS
@@ -20,7 +20,7 @@ import qualified Game.LambdaHack.Common.Key as K
 
 -- | No session data needs to be maintained by this frontend.
 data FrontendSession = FrontendSession
-  { smodeCli :: !DebugModeCli  -- ^ client configuration
+  { sdebugCli :: !DebugModeCli  -- ^ client configuration
   }
 
 -- | The name of the frontend.
@@ -29,7 +29,7 @@ frontendName = "std"
 
 -- | Starts the main program loop using the frontend input and output.
 startup :: DebugModeCli -> (FrontendSession -> IO ()) -> IO ()
-startup smodeCli k = k FrontendSession{..}
+startup sdebugCli k = k FrontendSession{..}
 
 -- | Output to the screen via the frontend.
 display :: FrontendSession    -- ^ frontend session data
@@ -44,7 +44,7 @@ display _ _ (Just SingleFrame{..}) =
 
 -- | Input key via the frontend.
 nextEvent :: FrontendSession -> IO K.KM
-nextEvent FrontendSession{smodeCli=DebugModeCli{snoMore}} =
+nextEvent FrontendSession{sdebugCli=DebugModeCli{snoMore}} =
   if snoMore then return K.escKey
   else do
     l <- BS.hGetLine SIO.stdin

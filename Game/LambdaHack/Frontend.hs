@@ -66,7 +66,7 @@ promptGetKey sess keys@(firstKM:_) frame = do
   if km `elem` keys
     then return km
     else do
-      let DebugModeCli{snoMore} = smodeCli sess
+      let DebugModeCli{snoMore} = sdebugCli sess
       if snoMore then return firstKM
       else promptGetKey sess keys frame
 

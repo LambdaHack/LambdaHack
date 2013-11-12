@@ -5,7 +5,7 @@ module Game.LambdaHack.Frontend.Curses
     -- * The output and input operations
   , display, promptGetAnyKey
     -- * Frontend administration tools
-  , frontendName, startup, smodeCli
+  , frontendName, startup, sdebugCli
   ) where
 
 import Control.Monad
@@ -26,7 +26,7 @@ data FrontendSession = FrontendSession
   { swin     :: !C.Window  -- ^ the window to draw to
   , sstyles  :: !(M.Map Color.Attr C.CursesStyle)
       -- ^ map from fore/back colour pairs to defined curses styles
-  , smodeCli :: !DebugModeCli  -- ^ client configuration
+  , sdebugCli :: !DebugModeCli  -- ^ client configuration
   }
 
 -- | The name of the frontend.
@@ -35,7 +35,7 @@ frontendName = "curses"
 
 -- | Starts the main program loop using the frontend input and output.
 startup :: DebugModeCli -> (FrontendSession -> IO ()) -> IO ()
-startup smodeCli k = do
+startup sdebugCli k = do
   C.start
 --  C.keypad C.stdScr False  -- TODO: may help to fix xterm keypad on Ubuntu
   void $ C.cursSet C.CursorInvisible
@@ -80,7 +80,7 @@ display FrontendSession{..}  _ (Just SingleFrame{..}) = do
 
 -- | Input key via the frontend.
 nextEvent :: FrontendSession -> IO K.KM
-nextEvent FrontendSession{smodeCli=DebugModeCli{snoMore}} =
+nextEvent FrontendSession{sdebugCli=DebugModeCli{snoMore}} =
   if snoMore then return K.escKey
   else keyTranslate `fmap` C.getKey C.refresh
 

@@ -5,7 +5,7 @@ module Game.LambdaHack.Frontend.Vty
     -- * The output and input operations
   , display, promptGetAnyKey
     -- * Frontend administration tools
-  , frontendName, startup, smodeCli
+  , frontendName, startup, sdebugCli
   ) where
 
 import qualified Data.List as L
@@ -20,7 +20,7 @@ import qualified Game.LambdaHack.Common.Key as K
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
   { svty     :: !Vty  -- internal vty session
-  , smodeCli :: !DebugModeCli  -- ^ client configuration
+  , sdebugCli :: !DebugModeCli  -- ^ client configuration
       -- ^ Configuration of the frontend session.
   }
 
@@ -30,7 +30,7 @@ frontendName = "vty"
 
 -- | Starts the main program loop using the frontend input and output.
 startup :: DebugModeCli -> (FrontendSession -> IO ()) -> IO ()
-startup smodeCli k = do
+startup sdebugCli k = do
   svty <- mkVty
   k FrontendSession{..}
   Vty.shutdown svty
@@ -56,7 +56,7 @@ display FrontendSession{svty} _ (Just SingleFrame{..}) =
 
 -- | Input key via the frontend.
 nextEvent :: FrontendSession -> IO K.KM
-nextEvent sess@FrontendSession{svty, smodeCli=DebugModeCli{snoMore}} =
+nextEvent sess@FrontendSession{svty, sdebugCli=DebugModeCli{snoMore}} =
   if snoMore then return K.escKey
   else do
     e <- next_event svty
