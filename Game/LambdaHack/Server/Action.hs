@@ -300,9 +300,10 @@ deduceQuits body status = do
     _ -> return ()
 
 tryRestore :: MonadServer m
-           => Kind.COps -> m (Maybe (State, StateServer))
-tryRestore Kind.COps{corule} = do
+           => Kind.COps -> DebugModeSer -> m (Maybe (State, StateServer))
+tryRestore Kind.COps{corule} sdebugSer = do
   let pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
+      prefix = ssavePrefixSer sdebugSer
   -- A throw-away copy of rules config, to be used until the old
   -- version of the config can be read from the savefile.
   (Config{ configAppDataDir
@@ -311,7 +312,8 @@ tryRestore Kind.COps{corule} = do
   let copies =
         [ (configRulesCfgFile <.> ".default", configRulesCfgFile <.> ".ini")
         , (configScoresFile, configScoresFile) ]
-  liftIO $ Save.restoreGame saveName configAppDataDir copies pathsDataFile
+      name = fromMaybe "save" prefix <.> saveName
+  liftIO $ Save.restoreGame name configAppDataDir copies pathsDataFile
 
 -- Global variable for all children threads of the server.
 childrenServer :: MVar [MVar ()]

@@ -10,6 +10,7 @@ module Game.LambdaHack.Server.Action.ActionType
 import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.State.Strict hiding (State)
 import qualified Data.EnumMap.Strict as EM
+import Data.Maybe
 import System.FilePath
 
 import Game.LambdaHack.Common.Action
@@ -67,7 +68,10 @@ instance MonadConnServer ActionSer where
 -- | Run an action in the @IO@ monad, with undefined state.
 executorSer :: ActionSer () -> IO ()
 executorSer m =
-  let saveFile (_, ser) = configAppDataDir (sconfig ser) </> saveName
+  let saveFile (_, ser) =
+        configAppDataDir (sconfig ser)
+        </> fromMaybe "save" (ssavePrefixSer (sdebugSer ser))
+        <.> saveName
       exe toSave =
         evalStateT (runActionSer m)
           SerState { serState = emptyState

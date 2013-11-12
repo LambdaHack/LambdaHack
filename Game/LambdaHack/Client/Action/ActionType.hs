@@ -9,6 +9,7 @@ module Game.LambdaHack.Client.Action.ActionType
 
 import Control.Concurrent.STM
 import qualified Data.EnumMap.Strict as EM
+import Data.Maybe
 import qualified Data.Text as T
 import System.FilePath
 import qualified System.Random as R
@@ -17,6 +18,7 @@ import Game.LambdaHack.Client.Action.ActionClass
 import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.Animation
 import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Common.Msg
 import qualified Game.LambdaHack.Common.Save as Save
@@ -108,8 +110,9 @@ executorCli :: ActionCli c d ()
             -> IO ()
 executorCli m sess s cli d =
   let saveFile (_, cli2) =
-        let name = saveName (sside cli2) (sisAI cli2)
-        in configAppDataDir (sconfigUI cli2) </> name
+        configAppDataDir (sconfigUI cli2)
+        </> fromMaybe "save" (ssavePrefixCli (sdebugCli cli2))
+        <.> saveName (sside cli2) (sisAI cli2)
       exe toSave =
         runActionCli m
           sess

@@ -59,7 +59,7 @@ loopSer :: (MonadAtomic m, MonadConnServer m)
         -> m ()
 loopSer sdebug cmdSerSem executorUI executorAI !cops = do
   -- Recover states and launch clients.
-  restored <- tryRestore cops
+  restored <- tryRestore cops sdebug
   case restored of
     Nothing -> do  -- Starting a new game.
       -- Set up commandline debug mode
@@ -447,7 +447,9 @@ restartGame :: (MonadAtomic m, MonadConnServer m)
             => m () -> m () -> m ()
 restartGame updConn loopServer = do
   cops <- getsState scops
+  sdebugNxt <- getsServer sdebugNxt
   s <- gameReset cops
+  modifyServer $ \ser -> ser {sdebugNxt, sdebugSer = sdebugNxt}
   execCmdAtomic $ RestartServerA s
   updConn
   initPer

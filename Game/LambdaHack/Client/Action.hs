@@ -349,18 +349,22 @@ restoreGame = do
   let pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
   side <- getsClient sside
   isAI <- getsClient sisAI
-  let sName = saveName side isAI
+  prefix <- getsClient $ ssavePrefixCli . sdebugCli
   ConfigUI{ configAppDataDir
           , configUICfgFile } <- getsClient sconfigUI
   let copies = [(configUICfgFile <.> ".default", configUICfgFile <.> ".ini")]
-  liftIO $ Save.restoreGame sName configAppDataDir copies pathsDataFile
+      name = fromMaybe "save" prefix <.> saveName side isAI
+  liftIO $ Save.restoreGame name configAppDataDir copies pathsDataFile
 
 -- | Assuming the client runs on the same machine and for the same
 -- user as the server, move the server savegame out of the way.
 removeServerSave :: MonadClient m => m ()
 removeServerSave = do
+  prefix <- getsClient $ ssavePrefixCli . sdebugCli  -- hack: assume the same
   ConfigUI{configAppDataDir} <- getsClient sconfigUI
-  let serverSaveFile = configAppDataDir </> serverSaveName
+  let serverSaveFile = configAppDataDir
+                       </> fromMaybe "save" prefix
+                       <.> serverSaveName
   liftIO $ renameFile serverSaveFile (serverSaveFile ++ ".bkp")
 
 -- | Invoke pseudo-random computation with the generator kept in the state.

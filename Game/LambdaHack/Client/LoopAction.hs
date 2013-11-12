@@ -18,17 +18,18 @@ import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Utils.Assert
 
-initCli :: MonadClient m => (State -> m ()) -> m Bool
-initCli putSt = do
+initCli :: MonadClient m => DebugModeCli -> (State -> m ()) -> m Bool
+initCli sdebugCli putSt = do
   -- Warning: state and client state are invalid here, e.g., sdungeon
   -- and sper are empty.
   cops <- getsState scops
+  modifyClient $ \cli -> cli {sdebugCli}
   restored <- restoreGame
   case restored of
     Just (s, cli) -> do  -- Restore the game.
       let sCops = updateCOps (const cops) s
       putSt sCops
-      putClient cli
+      putClient cli {sdebugCli}
       return True
     Nothing ->  -- First visit ever, use the initial state.
       return False
@@ -37,7 +38,8 @@ loopAI :: (MonadClientReadServer CmdClientAI m)
        => DebugModeCli -> (CmdClientAI -> m ()) -> m ()
 loopAI sdebugCli cmdClientAISem = do
   side <- getsClient sside
-  restored <- initCli $ \s -> cmdClientAISem $ CmdAtomicAI $ ResumeServerA s
+  restored <- initCli sdebugCli
+              $ \s -> cmdClientAISem $ CmdAtomicAI $ ResumeServerA s
   cmd1 <- readServer
   case (restored, cmd1) of
     (True, CmdAtomicAI ResumeA{}) -> return ()
@@ -48,7 +50,6 @@ loopAI sdebugCli cmdClientAISem = do
     (False, CmdAtomicAI RestartA{}) -> return ()
     _ -> assert `failure` (side, restored, cmd1)
   cmdClientAISem cmd1
-  modifyClient $ \cli -> cli {sdebugCli}
   -- State and client state now valid.
   debugPrint $ "AI client" <+> showT side <+> "started."
   loop
@@ -66,7 +67,8 @@ loopUI sdebugCli cmdClientUISem = do
   Kind.COps{corule} <- getsState scops
   let title = rtitle $ Kind.stdRuleset corule
   side <- getsClient sside
-  restored <- initCli $ \s -> cmdClientUISem $ CmdAtomicUI $ ResumeServerA s
+  restored <- initCli sdebugCli
+              $ \s -> cmdClientUISem $ CmdAtomicUI $ ResumeServerA s
   cmd1 <- readServer
   case (restored, cmd1) of
     (True, CmdAtomicUI ResumeA{}) -> do
@@ -84,7 +86,6 @@ loopUI sdebugCli cmdClientUISem = do
       cmdClientUISem cmd1
       msgAdd msg
     _ -> assert `failure` (side, restored, cmd1)
-  modifyClient $ \cli -> cli {sdebugCli}
   -- State and client state now valid.
   debugPrint $ "UI client" <+> showT side <+> "started."
   loop
