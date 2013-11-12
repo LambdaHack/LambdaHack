@@ -14,9 +14,9 @@ cdefs = ContentDef
   , getFreq = mfreq
   , validate = mvalidate
   , content =
-      [campaign, skirmish, pvp, coop, defense, screenserver]
+      [campaign, skirmish, pvp, coop, defense, screensaver]
   }
-campaign,        skirmish, pvp, coop, defense, screenserver :: ModeKind
+campaign,        skirmish, pvp, coop, defense, screensaver :: ModeKind
 
 campaign = ModeKind
   { msymbol  = 'r'  -- matches the keypress (with C-)
@@ -58,10 +58,10 @@ defense = ModeKind
   , mcaves   = cavesDefense
   }
 
-screenserver = ModeKind
+screensaver = ModeKind
   { msymbol  = 'n'
-  , mname    = "screenserver"
-  , mfreq    = [("screenserver", 1)]
+  , mname    = "screensaver"
+  , mfreq    = [("screensaver", 1)]
   , mplayers = playersScreensaver
   , mcaves   = cavesCampaign
   }

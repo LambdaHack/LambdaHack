@@ -63,7 +63,7 @@ loopSer sdebug cmdSerSem executorUI executorAI !cops = do
   case restored of
     Nothing -> do  -- Starting a new game.
       -- Set up commandline debug mode
-      s <- gameReset cops
+      s <- gameReset cops sdebug
       sdebugNxt <- initDebug sdebug
       modifyServer $ \ser -> ser {sdebugNxt, sdebugSer = sdebugNxt}
       let speedup = speedupCOps (sallClear sdebugNxt)
@@ -419,8 +419,8 @@ endOrLoop updConn loopServer = do
         _ -> False
       campers = filter (isCamper . snd) $ EM.assocs factionD
   case (quitters, campers) of
-    (modeName : _, _) -> do
-      modifyServer $ \ser -> ser {smode = modeName}
+    (sgameMode : _, _) -> do
+      modifyServer $ \ser -> ser {sdebugNxt = (sdebugNxt ser) {sgameMode}}
       restartGame updConn loopServer
     _ | gameOver -> restartGame updConn loopServer
     (_, []) -> loopServer  -- continue current game
@@ -448,7 +448,7 @@ restartGame :: (MonadAtomic m, MonadConnServer m)
 restartGame updConn loopServer = do
   cops <- getsState scops
   sdebugNxt <- getsServer sdebugNxt
-  s <- gameReset cops
+  s <- gameReset cops sdebugNxt
   modifyServer $ \ser -> ser {sdebugNxt, sdebugSer = sdebugNxt}
   execCmdAtomic $ RestartServerA s
   updConn

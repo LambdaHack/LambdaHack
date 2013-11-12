@@ -80,7 +80,7 @@ reinitGame = do
       sdisco = let f ik = isymbol (okind ik) `notElem` misteriousSymbols
                in EM.filter f discoS
   sdebugCli <- getsServer $ sdebugCli . sdebugSer
-  modeName <- getsServer smode
+  modeName <- getsServer $ sgameMode . sdebugSer
   broadcastCmdAtomic
     $ \fid -> RestartA fid sdisco (pers EM.! fid) defLoc sdebugCli modeName
   populateDungeon
@@ -138,15 +138,16 @@ createFactions Kind.COps{cofact=Kind.Ops{opick}} players = do
       warFs = mkDipl War allianceFs (swapIx (playersEnemy players))
   return warFs
 
-gameReset :: MonadServer m => Kind.COps -> m State
-gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}, corule} = do
+gameReset :: MonadServer m => Kind.COps -> DebugModeSer -> m State
+gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}, corule}
+          sdebug = do
   -- Rules config reloaded at each new game start.
   -- Taking the original config from config file, to reroll RNG, if needed
   -- (the current config file has the RNG rolled for the previous game).
   (sconfig, dungeonSeed, srandom) <- mkConfigRules corule
-  smode <- getsServer smode
   scoreTable <- restoreScore sconfig
-  let rnd :: Rnd (FactionDict, FlavourMap, Discovery, DiscoRev,
+  let smode = sgameMode sdebug
+      rnd :: Rnd (FactionDict, FlavourMap, Discovery, DiscoRev,
                   DungeonGen.FreshDungeon)
       rnd = do
         modeKind <- opick smode (const True)
@@ -160,7 +161,7 @@ gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}, corule} = do
         St.evalState rnd dungeonSeed
       defState = defStateGlobal freshDungeon freshDepth faction cops scoreTable
       defSer = emptyStateServer
-                 {sdisco, sdiscoRev, sflavour, srandom, smode, sconfig}
+                 {sdisco, sdiscoRev, sflavour, srandom, sconfig}
   putServer defSer
   return defState
 

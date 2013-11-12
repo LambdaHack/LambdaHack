@@ -7,6 +7,7 @@ module Game.LambdaHack.Server
 
 import Control.Concurrent
 import qualified Control.Exception as Ex hiding (handle)
+import qualified Data.Text as T
 import System.Environment (getArgs)
 
 import Game.LambdaHack.Common.Action
@@ -57,6 +58,7 @@ debugArgs = do
         , "  --sniffIn display all incoming commands on console "
         , "  --sniffOut display all outgoing commands on console "
         , "  --allClear let all map tiles be translucent"
+        , "  --gameMode m start next game in the given mode"
         , "  --dbgMsgSer let the server emit its internal debug messages"
         , "  --font fn use the given font for the main game window"
         , "  --maxFps n display at most n frames per second"
@@ -82,6 +84,8 @@ debugArgs = do
         (parseArgs rest) {sniffOut = True}
       parseArgs ("--allClear" : rest) =
         (parseArgs rest) {sallClear = True}
+      parseArgs ("--gameMode" : s : rest) =
+        (parseArgs rest) {sgameMode = T.pack s}
       parseArgs ("--fovMode" : "Digital" : r : rest) | (read r :: Int) > 0 =
         (parseArgs rest) {sfovMode = Just $ Digital $ read r}
       parseArgs ("--fovMode" : mode : rest) =

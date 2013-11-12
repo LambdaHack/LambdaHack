@@ -30,7 +30,6 @@ data StateServer = StateServer
   , sundo     :: ![Atomic]      -- ^ atomic commands performed to date
   , sper      :: !Pers          -- ^ perception of all factions
   , srandom   :: !R.StdGen      -- ^ current random generator
-  , smode     :: !Text          -- ^ current game mode name
   , sconfig   :: Config         -- ^ this game's config (including initial RNG)
   , squit     :: !Bool          -- ^ exit the game loop
   , sbkpSave  :: !Bool          -- ^ make backup savefile now
@@ -45,6 +44,7 @@ data DebugModeSer = DebugModeSer
   , sniffIn        :: !Bool
   , sniffOut       :: !Bool
   , sallClear      :: !Bool
+  , sgameMode      :: !Text  -- ^ next game mode name
   , sfovMode       :: !(Maybe FovMode)
   , ssavePrefixSer :: !(Maybe String)
   , sdbgMsgSer     :: !Bool
@@ -65,7 +65,6 @@ emptyStateServer =
     , sundo = []
     , sper = EM.empty
     , srandom = R.mkStdGen 42
-    , smode = "campaign"
     , sconfig = undefined
     , squit = False
     , sbkpSave = False
@@ -79,6 +78,7 @@ defDebugModeSer = DebugModeSer { sknowMap = False
                                , sniffIn = False
                                , sniffOut = False
                                , sallClear = False
+                               , sgameMode = "campaign"
                                , sfovMode = Nothing
                                , ssavePrefixSer = Nothing
                                , sdbgMsgSer = False
@@ -95,7 +95,6 @@ instance Binary StateServer where
     put sicounter
     put sundo
     put (show srandom)
-    put smode
     put sconfig
     put sdebugSer
   get = do
@@ -107,7 +106,6 @@ instance Binary StateServer where
     sicounter <- get
     sundo <- get
     g <- get
-    smode <- get
     sconfig <- get
     sdebugSer <- get
     let srandom = read g
@@ -124,6 +122,7 @@ instance Binary DebugModeSer where
     put sniffIn
     put sniffOut
     put sallClear
+    put sgameMode
     put sfovMode
     put ssavePrefixSer
     put sdbgMsgSer
@@ -134,6 +133,7 @@ instance Binary DebugModeSer where
     sniffIn <- get
     sniffOut <- get
     sallClear <- get
+    sgameMode <- get
     sfovMode <- get
     ssavePrefixSer <- get
     sdbgMsgSer <- get
