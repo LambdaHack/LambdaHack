@@ -74,10 +74,6 @@ flag curses
   description:        enable the curses frontend
   default:            False
 
-flag std
-  description:        enable the stdin/stdout frontend
-  default:            False
-
 library
   exposed-modules:    Game.LambdaHack.Client,
                       Game.LambdaHack.Client.Action,
@@ -142,6 +138,7 @@ library
                       Game.LambdaHack.Content.TileKind,
                       Game.LambdaHack.Frontend,
                       Game.LambdaHack.Frontend.Chosen,
+                      Game.LambdaHack.Frontend.Std,
                       Game.LambdaHack.Server,
                       Game.LambdaHack.Server.Action,
                       Game.LambdaHack.Server.Action.ActionClass,
@@ -216,13 +213,10 @@ library
     other-modules:    Game.LambdaHack.Frontend.Curses
     build-depends:    hscurses >= 1.4.1 && < 2
     cpp-options:      -DCURSES
-  } else { if flag(std) {
-    other-modules:    Game.LambdaHack.Frontend.Std
-    cpp-options:      -DSTD
   } else {
     other-modules:    Game.LambdaHack.Frontend.Gtk
     build-depends:    gtk >= 0.12.1 && < 0.13
-  } } } }
+  } } }
 
 executable LambdaHack
   hs-source-dirs:     LambdaHack

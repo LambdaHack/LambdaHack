@@ -6,16 +6,14 @@ module Game.LambdaHack.Frontend.Chosen
     FrontendSession, display, promptGetAnyKey, frontendName, startup, sdebugCli
   ) where
 
--- Wrapper for selected Display frontend.
-
 #ifdef GTK
 import Game.LambdaHack.Frontend.Gtk as D
 #elif VTY
 import Game.LambdaHack.Frontend.Vty as D
 #elif CURSES
 import Game.LambdaHack.Frontend.Curses as D
-#elif STD
-import Game.LambdaHack.Frontend.Std as D
 #else
 import Game.LambdaHack.Frontend.Gtk as D
 #endif
+
+import qualified Game.LambdaHack.Frontend.Std as Std
