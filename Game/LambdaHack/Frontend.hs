@@ -53,9 +53,10 @@ data ConnMulti = ConnMulti
   }
 
 startupF :: DebugModeCli -> IO () -> IO ()
-startupF dbg k = chosenStartup dbg $ \fs -> do
-  void $ forkIO $ loopFrontend fs connMulti
-  k
+startupF dbg cont =
+  (if sfrontendStd dbg then stdStartup else chosenStartup) dbg $ \fs -> do
+    void $ forkIO $ loopFrontend fs connMulti
+    cont
 
 -- | Display a prompt, wait for any of the specified keys (for any key,
 -- if the list is empty). Repeat if an unexpected key received.

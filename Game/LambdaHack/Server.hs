@@ -66,6 +66,7 @@ debugArgs = do
         , "  --noMore auto-answer all prompts"
         , "  --noAnim don't show any animations"
         , "  --savePrefix prepend the text to all savefile names"
+        , "  --frontendStd use the simple stdout/stdin frontend"
         , "  --dbgMsgCli let clients emit their internal debug messages"
         , "  --fovMode m set a Field of View mode, where m can be"
         , "    Digital r, r > 0"
@@ -113,6 +114,9 @@ debugArgs = do
         in debugSer { ssavePrefixSer = Just s
                     , sdebugCli =
                          (sdebugCli debugSer) {ssavePrefixCli = Just s}}
+      parseArgs ("--frontendStd" : rest) =
+        let debugSer = parseArgs rest
+        in debugSer {sdebugCli = (sdebugCli debugSer) {sfrontendStd = True}}
       parseArgs ("--dbgMsgCli" : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli = (sdebugCli debugSer) {sdbgMsgCli = True}}

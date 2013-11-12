@@ -237,6 +237,8 @@ data DebugModeCli = DebugModeCli
       -- ^ Don't show any animations.
   , ssavePrefixCli :: !(Maybe String)
       -- ^ Prefix of the save game file.
+  , sfrontendStd   :: !Bool
+      -- ^ Whether to use the stdout/stdin frontend.
   , sdbgMsgCli     :: !Bool
       -- ^ Show clients' internal debug messages.
   }
@@ -250,6 +252,7 @@ defDebugModeCli = DebugModeCli
   , snoMore = False
   , snoAnim = Nothing
   , ssavePrefixCli = Nothing
+  , sfrontendStd = False                   
   , sdbgMsgCli = False
   }
 
@@ -261,6 +264,7 @@ instance Binary DebugModeCli where
     put snoMore
     put snoAnim
     put ssavePrefixCli
+    put sfrontendStd
     put sdbgMsgCli
   get = do
     sfont <- get
@@ -269,5 +273,6 @@ instance Binary DebugModeCli where
     snoMore <- get
     snoAnim <- get
     ssavePrefixCli <- get
+    sfrontendStd <- get
     sdbgMsgCli <- get
     return DebugModeCli{..}
