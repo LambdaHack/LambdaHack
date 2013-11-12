@@ -283,7 +283,7 @@ deduceQuits body status = do
       assocsHuman = filter (playerHuman . gplayer . snd) assocsInGame
   case assocsNotSummon of
     _ | null assocsHuman ->
-      -- No screensaver mode for now --- all non-human players win.
+      -- All non-human players left in the game win.
       mapQuitF status{stOutcome=Conquer} keysInGame
     [] ->
       -- Only summons remain so all win, human or not, allied or not.

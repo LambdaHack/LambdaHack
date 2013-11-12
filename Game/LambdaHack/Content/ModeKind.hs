@@ -42,7 +42,7 @@ data Player = Player
   }
   deriving (Show, Eq)
 
--- TODO: assert if no UI, both Ai are on.
+-- TODO: assert if no UI, both Ai are on and there are some non-spawners
 -- | No specific possible problems for the content of this kind, so far,
 -- so the validation function always returns the empty list of offending kinds.
 mvalidate :: [ModeKind] -> [ModeKind]

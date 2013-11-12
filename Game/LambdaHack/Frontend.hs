@@ -31,6 +31,7 @@ import Game.LambdaHack.Utils.LQueue
 
 type ChanFrontend = TQueue K.KM
 
+-- | The first component is the number of UI players at game start.
 type FromMulti = MVar (Int, FactionId -> (ChanFrontend, Text))
 
 type ToMulti = TQueue (FactionId, FrontReq)
@@ -170,7 +171,8 @@ loopFrontend fs ConnMulti{..} = loop Nothing EM.empty
           return reqMap2
       let singles = toSingles fid reqMap2
           firstFrame = fromMaybe frontFr $ listToMaybe singles
-      -- @nU@ is unreliable, except at the game start.
+      -- TODO: @nU@ is unreliable, when some of UI players die;
+      -- in the result a single players has unneeded fadeins.
       unless (isNothing oldFidFrame && nU < 2) $
         fadeF fs False fid pname firstFrame
       flushFrames fs fid reqMap2
