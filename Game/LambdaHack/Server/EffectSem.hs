@@ -380,39 +380,61 @@ effectAscend power target = do
 effLvlGoUp :: MonadAtomic m => ActorId -> Int -> m Bool
 effLvlGoUp aid k = do
   Kind.COps{coactor} <- getsState scops
-  bOld <- getsState $ getActorBody aid
-  let lidOld = blid bOld
-      posOld = bpos bOld
-  whereto <- getsState $ \s -> whereTo s lidOld k
+  b1 <- getsState $ getActorBody aid
+  ais1 <- getsState $ getActorItem aid
+  let lid1 = blid b1
+      pos1 = bpos b1
+  whereto <- getsState $ \s -> whereTo s lid1 k
   case whereto of
     Nothing -> -- We are at the "end" of the dungeon.
       -- TODO: perhaps return Maybe Text explaining why it failed, instead?
       return False
-    Just (lidNew, posNew) -> do
+    Just (lid2, pos2) -> do
       -- The actor is added to the new level, but there can be other actors
       -- at his new position.
-      inhabitants <- getsState $ posToActor posNew lidNew
+      inhabitants <- getsState $ posToActor pos2 lid2
       case inhabitants of
-        Nothing -> return ()
+        Nothing ->
+          -- Move the actor out of the way.
+          switchLevels1 aid
         Just aid2 -> do
-          -- Start switching places. Move the inhabitant to where the actor is.
-          switchLevels aid2 lidOld posOld
-          -- Alert about the switch.
           b2 <- getsState $ getActorBody aid2
+          ais2 <- getsState $ getActorItem aid2
+          -- Alert about the switch.
           let part2 = partActor coactor b2
               verb = "be pushed to another level"
               msg2 = makeSentence [MU.SubjectVerbSg part2 verb]
           execSfxAtomic $ MsgFidD (bfid b2) msg2
-          -- There are now two actors at @posOld@.
-      switchLevels aid lidNew posNew
-      -- The property of at most one actor on a tile is restored.
-      void $ getsState $ posToActor posOld lidOld  -- assertion is inside
+          -- Move the actor out of the way.
+          switchLevels1 aid
+          -- Move the inhabitant out of the way.
+          switchLevels1 aid2
+          -- Move the inhabitant to where the actor was.
+          switchLevels2 aid2 b2 ais2 lid1 pos1
+      -- Move the actor to where the inhabitant was, if any.
+      switchLevels2 aid b1 ais1 lid2 pos2
+      void $ getsState $ posToActor pos1 lid1  -- assertion is inside
+      void $ getsState $ posToActor pos2 lid2  -- assertion is inside
       return True
 
-switchLevels :: MonadAtomic m => ActorId -> LevelId -> Point -> m ()
-switchLevels aid lidNew posNew = do
+switchLevels1 :: MonadAtomic m => ActorId -> m ()
+switchLevels1 aid = do
   bOld <- getsState $ getActorBody aid
   ais <- getsState $ getActorItem aid
+  let side = bfid bOld
+  mleader <- getsState $ gleader . (EM.! side) . sfactionD
+  -- Prevent leader pointing to a non-existing actor.
+  when (isJust mleader) $  -- trouble, if the actors are of the same faction
+    execCmdAtomic $ LeadFactionA side mleader Nothing
+  -- Remove the actor from the old level.
+  -- Onlookers see somebody disappear suddenly.
+  -- @DestroyActorA@ is too loud, so use @LoseActorA@ instead.
+  execCmdAtomic $ LoseActorA aid bOld ais
+
+switchLevels2 :: MonadAtomic m
+              => ActorId -> Actor -> [(ItemId, Item)] -> LevelId -> Point
+              -> m ()
+switchLevels2 aid bOld ais lidNew posNew = do
   let lidOld = blid bOld
       side = bfid bOld
   assert (lidNew /= lidOld `blame` (lidNew, "stairs looped" :: Text)) skip
@@ -424,21 +446,14 @@ switchLevels aid lidNew posNew = do
                   , btime = timeAdd timeLastVisited delta
                   , bpos = posNew
                   , boldpos = posNew}  -- new level, new direction
-  -- Prevent leader pointing to a non-existing actor.
   mleader <- getsState $ gleader . (EM.! side) . sfactionD
-  execCmdAtomic $ LeadFactionA side mleader Nothing
-  -- Remove the actor from the old level.
-  -- Onlookers see somebody disappear suddenly.
-  -- @DestroyActorA@ is too loud, so use @LoseActorA@ instead.
-  execCmdAtomic $ LoseActorA aid bOld ais
-  -- but this will be fixed just below.
+  -- Materialize the actor at the new location.
   -- Onlookers see somebody appear suddenly. The actor himself
   -- sees new surroundings and has to reset his perception.
   execCmdAtomic $ CreateActorA aid bNew ais
-  -- Inhabitants of the new location not checked, so there may be
-  -- two actors at the same position at this point. Beware.
   -- Changing levels is so important, that the leader changes.
-  execCmdAtomic $ LeadFactionA side Nothing (Just aid)
+  when (isNothing mleader) $  -- trouble, if the actors are of the same faction
+    execCmdAtomic $ LeadFactionA side Nothing (Just aid)
 
 -- ** Descend
 

@@ -59,11 +59,14 @@ debugCmdClientUI cmd = case cmd of
   CmdPingUI -> return $ showT cmd
 
 debugAid :: MonadActionRO m => ActorId -> Text -> m Text
-debugAid aid s = do
-  b <- getsState $ getActorBody aid
-  time <- getsState $ getLocalTime (blid b)
-  return $
-    showT (s, "lid", blid b, "time", time, "aid", aid, "faction", bfid b)
+debugAid aid s =
+  if aid == toEnum (-1) then
+    return ""
+  else do
+    b <- getsState $ getActorBody aid
+    time <- getsState $ getLocalTime (blid b)
+    return $
+      showT (s, "lid", blid b, "time", time, "aid", aid, "faction", bfid b)
 
 -- | Connection channels between the server and a single client.
 data ChanServer c d = ChanServer
