@@ -59,8 +59,8 @@ actorNotProjList p lid s = map snd $ actorNotProjAssocs p lid s
 posToActor :: Point -> LevelId -> State -> Maybe ActorId
 posToActor pos lid s =
   let l = posToActors pos lid s
-  in assert (length l <= 1 `blame` l) $
-     listToMaybe l
+  in assert (length l <= 1 `blame` l)
+     $ listToMaybe l
 
 posToActors :: Point -> LevelId -> State -> [ActorId]
 posToActors pos lid s =

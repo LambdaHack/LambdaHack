@@ -114,7 +114,6 @@ effectToBenefit (CreateItem p) = p * 20
 effectToBenefit ApplyPerfume = 0
 effectToBenefit Regeneration{} = 0      -- bigger benefit from carrying around
 effectToBenefit Searching{} = 0         -- AI doesn't search yet
-effectToBenefit Ascend{} = 5            -- AI can't choose levels smartly yet
-effectToBenefit Descend{} = 20          -- but it prefers to hide deep down
-effectToBenefit Escape = 100            -- hero AI wants to win ASAP, monster
-                                        -- AI sits on the exit to block it
+effectToBenefit Ascend{} = 5            -- AI prefers to hide deep down
+effectToBenefit Descend{} = 500
+effectToBenefit Escape = 100            -- AI wants to win

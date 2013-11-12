@@ -15,6 +15,7 @@ data Ability =
   | Flee    -- ^ flee if almost dead
   | Melee   -- ^ melee target
   | Pickup  -- ^ gather items, if no foes visible
+  | Trigger -- ^ trigger a feature
   | Ranged  -- ^ attack the visible target opponent at range, some of the time
   | Tools   -- ^ use items, if target opponent visible, some of the time
   | Chase   -- ^ chase the target, ignoring any actors on the way

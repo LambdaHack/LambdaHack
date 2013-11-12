@@ -35,6 +35,7 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.Frequency
 
@@ -137,11 +138,16 @@ proposeAction disco aid factionAbilities btarget = do
       foeVisible = isJust mfAid
       lootHere x = not $ EM.null $ lvl `atI` x
       actorAbilities = acanDo (okind bkind) `intersect` factionAbilities
-      isDistant = (`elem` [Ability.Ranged, Ability.Tools, Ability.Chase])
+      isDistant = (`elem` [ Ability.Trigger
+                          , Ability.Ranged
+                          , Ability.Tools
+                          , Ability.Chase ])
+      -- TODO: this is too fragile --- depends on order of abilities
       (prefix, rest)    = break isDistant actorAbilities
       (distant, suffix) = partition isDistant rest
       -- TODO: Ranged and Tools should only be triggered in some situations.
       aFrequency :: MonadActionRO m => Ability -> m (Frequency CmdSerTakeTime)
+      aFrequency Ability.Trigger = triggerFreq aid
       aFrequency Ability.Ranged = if not foeVisible then return mzero
                                   else rangedFreq disco aid fpos
       aFrequency Ability.Tools  = if not foeVisible then return mzero
@@ -217,6 +223,26 @@ melee aid fpos foeAid = do
   let foeAdjacent = adjacent lxsize bpos fpos  -- MeleeDistant
   return $ foeAdjacent .=> returN "melee" (MeleeSer aid foeAid)
 
+triggerFreq :: MonadActionRO m
+            => ActorId -> m (Frequency CmdSerTakeTime)
+triggerFreq aid = do
+  cops@Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
+  Actor{bpos, blid, bfid} <- getsState $ getActorBody aid
+  fact <- getsState $ \s -> sfactionD s EM.! bfid
+  lvl <- getLevel blid
+  let spawn = isSpawnFact cops fact
+      t = lvl `at` bpos
+      feats = TileKind.tfeature $ okind t
+      ben feat = case feat of
+        F.Cause ef ->
+          if spawn && ef == Effect.Escape  -- spawners lose if they escape
+          then 0
+          else Effect.effectToBenefit ef
+        _ -> 0
+      benefit = sum $ map ben feats
+  return $ toFreq "triggerFreq" $ [ (benefit, TriggerSer aid Nothing)
+                                  | benefit > 0 ]
+
 rangedFreq :: MonadActionRO m
            => Discovery -> ActorId -> Point -> m (Frequency CmdSerTakeTime)
 rangedFreq disco aid fpos = do
@@ -271,7 +297,6 @@ rangedFreq disco aid fpos = do
 toolsFreq :: MonadActionRO m
           => Discovery -> ActorId -> m (Frequency CmdSerTakeTime)
 toolsFreq disco aid = do
-  Kind.COps{coitem=Kind.Ops{okind=_iokind}} <- getsState scops
   Actor{bpos, blid, bbag, binv} <- getsState $ getActorBody aid
   lvl <- getLevel blid
   s <- getState

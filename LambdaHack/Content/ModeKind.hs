@@ -63,7 +63,7 @@ screensaver = ModeKind
   , mname    = "screensaver"
   , mfreq    = [("screensaver", 1)]
   , mplayers = playersScreensaver
-  , mcaves   = cavesCampaign
+  , mcaves   = cavesScreensaver
   }
 
 
@@ -170,7 +170,7 @@ playerHorror = Player
   }
 
 
-cavesCampaign, cavesCombat, cavesDefense :: Caves
+cavesCampaign, cavesCombat, cavesDefense, cavesScreensaver :: Caves
 
 -- Cave "dng" means a random choice from caves that can randomly appear;
 -- this is the default and the lack of the Escape feature is the default.
@@ -184,3 +184,6 @@ cavesCombat = EM.fromList [(toEnum 3, ("caveCombat", Nothing))]
 
 cavesDefense = EM.fromList [ (toEnum 1, ("dng", Nothing))
                            , (toEnum 5, ("caveEmpty", Just False))]
+
+cavesScreensaver = EM.fromList [ (toEnum 1, ("caveRogue", Nothing))
+                               , (toEnum 10, ("caveNoise", Just False))]
