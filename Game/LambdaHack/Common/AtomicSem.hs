@@ -304,7 +304,7 @@ alterTileA :: MonadAction m
 alterTileA lid p fromTile toTile = assert (fromTile /= toTile) $ do
   Kind.COps{cotile} <- getsState scops
   lvl <- getLevel lid
-  let freshClientTile = hideTile cotile p lvl
+  let freshClientTile = hideTile cotile lvl p
   -- The second alternative can happen if, e.g., a client remembers,
   -- but does not see the tile (so does not notice the SearchTileA action),
   -- and it suddenly changes into another tile,

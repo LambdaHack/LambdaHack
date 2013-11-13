@@ -224,7 +224,7 @@ alterSer source tpos mfeat = do
   else do
     lvl <- getLevel lid
     let serverTile = lvl `at` tpos
-        freshClientTile = hideTile cotile tpos lvl
+        freshClientTile = hideTile cotile lvl tpos
         changeTo tgroup = do
           -- No AlterD, because the effect is obvious (e.g., opened door).
           toTile <- rndToAction $ opick tgroup (const True)

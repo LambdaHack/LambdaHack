@@ -12,7 +12,7 @@ module Game.LambdaHack.Common.Level
     -- * Level update
   , updatePrio, updateSmell, updateFloor, updateTile
     -- * Level query
-  , at, atI, accessible, accessibleDir, hideTile
+  , at, atI, accessible, accessibleDir, isSecretPos, hideTile
   , findPos, findPosTry, mapLevelActors_, mapDungeonActors_
  ) where
 
@@ -89,8 +89,8 @@ data Level = Level
   , lclear   :: !Int             -- ^ total number of initially clear tiles
   , ltime    :: !Time            -- ^ date of the last activity on the level
   , litemNum :: !Int             -- ^ number of initial items, 0 for clients
-  , lsecret  :: !Int             -- ^ secret level seed, unknown by clients
-  , lhidden  :: !Int             -- ^ secret tile density, unknown by clients
+  , lsecret  :: !Int             -- ^ secret tile seed
+  , lhidden  :: !Int             -- ^ secret tile density
   }
   deriving (Show, Eq)
 
@@ -174,15 +174,16 @@ accessible Kind.COps{cotile=Kind.Ops{okind=okind}, corule}
 accessibleDir :: Kind.COps -> Level -> Point -> Vector -> Bool
 accessibleDir cops lvl spos dir = accessible cops lvl spos $ spos `shift` dir
 
-hideTile :: Kind.Ops TileKind -> Point -> Level -> Kind.Id TileKind
-hideTile cotile p lvl =
+isSecretPos :: Level -> Point -> Bool
+isSecretPos lvl p =
+  (lsecret lvl `Bits.rotateR` fromEnum p `Bits.xor` fromEnum p)
+  `mod` lhidden lvl == 0
+
+hideTile :: Kind.Ops TileKind -> Level -> Point -> Kind.Id TileKind
+hideTile cotile lvl p =
   let t = lvl `at` p
-      ht = Tile.hiddenAs cotile t  -- TODO; tabulate with Speedup?
-  in if ht == t
-        || (lsecret lvl `Bits.rotateR` fromEnum p `Bits.xor` fromEnum p)
-           `mod` lhidden lvl == 0
-     then ht
-     else t
+      ht = Tile.hideAs cotile t  -- TODO; tabulate with Speedup?
+  in if isSecretPos lvl p then ht else t
 
 -- | Find a random position on the map satisfying a predicate.
 findPos :: TileMap -> (Point -> Kind.Id TileKind -> Bool) -> Rnd Point

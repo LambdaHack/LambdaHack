@@ -159,7 +159,7 @@ atomicRemember lid inPer s =
       inItem = concatMap fBag inFloor
       -- Tiles.
       cotile = Kind.cotile (scops s)
-      inTileMap = map (\p -> (p, hideTile cotile p lvl)) inFov
+      inTileMap = map (\p -> (p, hideTile cotile lvl p)) inFov
       atomicTile = if null inTileMap then [] else [SpotTileA lid inTileMap]
       -- TODO: somehow also use this
       -- bonus = case strongestSearch itemAssocs of

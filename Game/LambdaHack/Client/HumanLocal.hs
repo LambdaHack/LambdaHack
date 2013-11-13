@@ -364,7 +364,7 @@ tgtEnemyLeader stgtModeNew = do
             _ -> (dbs, [])  -- target first enemy (e.g., number 0)
       gtlt = gt ++ lt
       seen (_, m) =
-        let mpos = bpos m            -- it is remembered by faction
+        let mpos = bpos m                -- it is remembered by faction
         in actorSeesLoc per leader mpos  -- is it visible by actor?
       lf = filter seen gtlt
       tgt = case lf of

@@ -16,7 +16,7 @@ module Game.LambdaHack.Common.Tile
   ( SmellTime
   , kindHasFeature, kindHas, hasFeature
   , isClear, isLit, isExplorable, similar, speedup
-  , openTo, closeTo, revealAs, hiddenAs, openable, closable, changeable
+  , openTo, closeTo, revealAs, hideAs, openable, closable, changeable
   ) where
 
 import qualified Data.Array.Unboxed as A
@@ -114,8 +114,8 @@ revealAs Kind.Ops{okind, opick} t = do
       group <- oneOf groups
       opick group (const True)
 
-hiddenAs :: Kind.Ops TileKind -> Kind.Id TileKind -> Kind.Id TileKind
-hiddenAs Kind.Ops{okind, ouniqGroup} t =
+hideAs :: Kind.Ops TileKind -> Kind.Id TileKind -> Kind.Id TileKind
+hideAs Kind.Ops{okind, ouniqGroup} t =
   let getTo (F.HideAs group) _ = Just group
       getTo _ acc = acc
   in case foldr getTo Nothing (tfeature (okind t)) of
