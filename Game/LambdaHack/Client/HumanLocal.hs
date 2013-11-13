@@ -99,7 +99,7 @@ lookAt :: MonadClientUI m
        -> Text       -- ^ an extra sentence to print
        -> m Text
 lookAt detailed canSee pos aid msg = do
-  Kind.COps{coitem, cotile=Kind.Ops{oname}} <- getsState scops
+  Kind.COps{coitem, cotile=cotile@Kind.Ops{oname}} <- getsState scops
   (_, lvl) <- viewedLevel
   subject <- partAidLeader aid
   s <- getState
@@ -114,9 +114,12 @@ lookAt detailed canSee pos aid msg = do
                              , MU.WWandW $ map nWs $ EM.assocs is]
               True -> "Objects:"
               _ -> "Objects here."
+      tile = lvl `at` pos
+      obscured | tile /= hideTile cotile lvl pos = "partially obscured"
+               | otherwise = ""
   if detailed
-    then let tile = lvl `at` pos
-         in return $! makeSentence [MU.Text $ oname tile] <+> msg <+> isd
+    then return $! makeSentence [obscured, MU.Text $ oname tile]
+                   <+> msg <+> isd
     else return $! msg <+> isd
 
 -- | Perform look around in the current position of the cursor.
