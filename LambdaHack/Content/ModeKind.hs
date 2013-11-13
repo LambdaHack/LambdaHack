@@ -14,9 +14,9 @@ cdefs = ContentDef
   , getFreq = mfreq
   , validate = mvalidate
   , content =
-      [campaign, skirmish, pvp, coop, defense, screensaver]
+      [campaign, skirmish, pvp, coop, defense, screensaver, testCoop, testDefense]
   }
-campaign,        skirmish, pvp, coop, defense, screensaver :: ModeKind
+campaign,        skirmish, pvp, coop, defense, screensaver, testCoop, testDefense :: ModeKind
 
 campaign = ModeKind
   { msymbol  = 'r'  -- matches the keypress (with C-)
@@ -66,8 +66,24 @@ screensaver = ModeKind
   , mcaves   = cavesScreensaver
   }
 
+testCoop = ModeKind
+  { msymbol  = 't'
+  , mname    = "testCoop"
+  , mfreq    = [("testCoop", 1)]
+  , mplayers = playersTestCoop
+  , mcaves   = cavesScreensaver
+  }
 
-playersCampaign, playersSkirmish, playersPvP, playersCoop, playersDefense, playersScreensaver :: Players
+testDefense = ModeKind
+  { msymbol  = 'u'
+  , mname    = "testDefense"
+  , mfreq    = [("testDefense", 1)]
+  , mplayers = playersTestDefense
+  , mcaves   = cavesDefense
+  }
+
+
+playersCampaign, playersSkirmish, playersPvP, playersCoop, playersDefense, playersScreensaver, playersTestCoop, playersTestDefense :: Players
 
 playersCampaign = Players
   { playersList = [ playerHero {playerInitial = 1}
@@ -126,6 +142,32 @@ playersScreensaver = Players
                   , playerMonster ]
   , playersEnemy = [("Adventuring Party", "Monster Hive")]
   , playersAlly = [] }
+
+playersTestCoop = Players
+  { playersList = [ playerHero { playerName = "Coral"
+                               , playerAiLeader = True
+                               , playerHuman = False }
+                  , playerHero { playerName = "Amber"
+                               , playerAiLeader = True
+                               , playerHuman = False }
+                  , playerMonster ]
+  , playersEnemy = [ ("Coral", "Monster Hive")
+                   , ("Amber", "Monster Hive") ]
+  , playersAlly = [("Coral", "Amber")] }
+
+playersTestDefense = Players
+  { playersList = [ playerMonster { playerInitial = 1
+                                  , playerEntry = toEnum 1
+                                  , playerUI = True }
+                  , playerAntiHero {playerName = "Green"}
+                  , playerAntiHero {playerName = "Yellow"}
+                  , playerAntiHero {playerName = "Cyan"} ]
+  , playersEnemy = [ ("Green", "Monster Hive")
+                   , ("Yellow", "Monster Hive")
+                   , ("Cyan", "Monster Hive") ]
+  , playersAlly = [ ("Green", "Yellow")
+                  , ("Green", "Cyan")
+                  , ("Yellow", "Cyan") ] }
 
 
 playerHero, playerAntiHero, playerMonster, playerHorror :: Player
