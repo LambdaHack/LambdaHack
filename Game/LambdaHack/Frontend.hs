@@ -197,7 +197,7 @@ loopFrontend fs ConnMulti{..} = loop Nothing EM.empty
       FrontSlides{frontSlides = []} -> return ()
       FrontSlides{frontSlides = frontSlides@(fr1 : _), ..} -> do
         reqMap2 <- flushFade fr1 oldFidFrame reqMap fid
-        let go frs =
+        let displayFrs frs =
               case frs of
                 [] -> assert `failure` fid
                 [x] -> do
@@ -205,10 +205,10 @@ loopFrontend fs ConnMulti{..} = loop Nothing EM.empty
                   writeKM fid K.KM {key=K.Space, modifier=K.NoModifier}
                   return x
                 x : xs -> do
-                  b <- getConfirmGeneric (promptGetKey fs) frontClear x
-                  if b then go xs
+                  go <- getConfirmGeneric (promptGetKey fs) frontClear x
+                  if go then displayFrs xs
                   else do
                     writeKM fid K.escKey
                     return x
-        frLast <- go frontSlides
+        frLast <- displayFrs frontSlides
         loop (Just (fid, frLast)) reqMap2

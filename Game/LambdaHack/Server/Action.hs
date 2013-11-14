@@ -195,8 +195,8 @@ mkConfigRules = liftIO . ConfigIO.mkConfigRules
 -- may still be undefined, hence the config is given as an argument.
 restoreScore :: MonadServer m => Config -> m HighScore.ScoreTable
 restoreScore Config{configScoresFile} = do
-  b <- liftIO $ doesFileExist configScoresFile
-  if not b
+  configExists <- liftIO $ doesFileExist configScoresFile
+  if not configExists
     then return HighScore.empty
     else liftIO $ strictDecodeEOF configScoresFile
 

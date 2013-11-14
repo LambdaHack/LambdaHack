@@ -24,8 +24,8 @@ import Game.LambdaHack.Utils.Assert
 
 overrideCP :: CP -> FilePath -> IO CP
 overrideCP cp@(CP defCF) cfile = do
-  b <- doesFileExist cfile
-  if not b
+  cpExists <- doesFileExist cfile
+  if not cpExists
     then return cp
     else do
       c <- CF.readfile defCF cfile

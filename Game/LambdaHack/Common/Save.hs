@@ -84,14 +84,14 @@ restoreGame name configAppDataDir copies pathsDataFile = do
   tryCreateDir configAppDataDir
   tryCopyDataFiles pathsDataFile copies
   let saveFile = configAppDataDir </> name
-  sb <- doesFileExist saveFile
+  saveExists <- doesFileExist saveFile
   -- If the savefile exists but we get IO or decoding errors,
   -- we show them and start a new game. If the savefile was randomly
   -- corrupted or made read-only, that should solve the problem.
   -- OTOH, serious IO problems (e.g. failure to create a user data directory)
   -- terminate the program with an exception.
   res <- Ex.try $
-    if sb then do
+    if saveExists then do
       s <- strictDecodeEOF saveFile
       return $ Just s
     else return Nothing

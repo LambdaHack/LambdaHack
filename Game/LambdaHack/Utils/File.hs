@@ -48,8 +48,8 @@ strictDecodeEOF f = do
 -- with an exception if the directory does not exist, but can't be created.
 tryCreateDir :: FilePath -> IO ()
 tryCreateDir dir = do
-  b <- doesDirectoryExist dir
-  unless b $ createDirectory dir
+  dirExists <- doesDirectoryExist dir
+  unless dirExists $ createDirectory dir
 
 -- | Try to copy over data files, if not already there.
 tryCopyDataFiles :: (FilePath -> IO FilePath) -> [(FilePath, FilePath)]

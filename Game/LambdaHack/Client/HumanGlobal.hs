@@ -495,8 +495,8 @@ gameRestartHuman t = do
 
 gameExitHuman :: (MonadClientAbort m, MonadClientUI m) => m CmdSer
 gameExitHuman = do
-  b <- displayYesNo ColorFull "Really save and exit?"
-  if b then do
+  go <- displayYesNo ColorFull "Really save and exit?"
+  if go then do
     leader <- getLeaderUI
     return $ GameExitSer leader
   else abortWith "Save and exit canceled."

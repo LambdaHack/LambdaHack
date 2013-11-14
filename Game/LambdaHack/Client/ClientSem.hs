@@ -196,8 +196,8 @@ humanCommand msgRunAbort = do
                 -- for all but the last one.
                 -- Note: the code that generates the slides is responsible
                 -- for inserting the @more@ prompt.
-                b <- getInitConfirms [km] $ toSlideshow $ reverse sls
-                return $! if b then Just sLast else Nothing
+                go <- getInitConfirms [km] $ toSlideshow $ reverse sls
+                return $! if go then Just sLast else Nothing
             case mLast of
               Nothing -> do
                 -- Display current state if no slideshow or interrupted.
