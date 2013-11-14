@@ -1,5 +1,21 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, OverloadedStrings #-}
 -- | Actors perceiving other actors and the dungeon level.
+--
+-- Visibility works according to KISS. Everything that player sees is real.
+-- There are no unmarked hidden tiles and only solid tiles can be marked,
+-- so there are no invisible walls and to pass through an illusory wall,
+-- you have use a turn bumping into it first. Only tiles marked with Suspect
+-- can turn out to be another tile. (So, if all tiles are marked with
+-- Suspect, the player knows nothing for sure, but this should be avoided,
+-- because searching becomes too time-consuming.)
+-- Each actor sees adjacent tiles, even when blind, so adjacent tiles are
+-- known, so the actor can decide accurately whether to pass thorugh
+-- or alter, etc.
+--
+-- Items are always real and visible. Actors are real, but can be invisible.
+-- Invisible actors in walls can't be hit, but are hinted at when altering
+-- the tile, so the player can flee or block. Invisible actors in open
+-- space can be hit.
 module Game.LambdaHack.Common.Perception
   ( Perception(..), PerceptionVisible(..), PerActor
   , totalVisible, smellVisible
