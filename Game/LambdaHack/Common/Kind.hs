@@ -1,5 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, OverloadedStrings, RankNTypes,
-             TypeFamilies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, RankNTypes, TypeFamilies #-}
 -- | General content types and operations.
 module Game.LambdaHack.Common.Kind
   ( -- * General content types

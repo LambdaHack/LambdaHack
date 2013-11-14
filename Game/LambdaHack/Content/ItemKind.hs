@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 -- | The type of kinds of weapons and treasure.
 module Game.LambdaHack.Content.ItemKind
   ( ItemKind(..), ivalidate

@@ -15,6 +15,7 @@ import System.FilePath
 import System.IO
 import qualified System.Random as R
 
+import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Utils.File
 import Game.LambdaHack.Utils.Thread
 
@@ -97,9 +98,9 @@ restoreGame name configAppDataDir copies pathsDataFile = do
     else return Nothing
   let handler :: Ex.SomeException -> IO (Maybe a)
       handler e = do
-        let msg = "Restore failed. The error message is: "
-                  ++ (unwords . lines) (show e)
-        delayPrint $ T.pack msg
+        let msg = "Restore failed. The error message is:"
+                  <+> (T.unwords . T.lines) (showT e)
+        delayPrint $ msg
         return Nothing
   either handler return res
 

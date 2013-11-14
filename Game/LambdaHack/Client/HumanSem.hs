@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 -- | Semantics of human player commands.
 module Game.LambdaHack.Client.HumanSem
   ( cmdHumanSem

@@ -1,9 +1,8 @@
-{-# LANGUAGE OverloadedStrings #-}
 -- | Rooms, halls and passages for LambdaHack.
 module Content.PlaceKind ( cdefs ) where
 
-import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Common.ContentDef
+import Game.LambdaHack.Content.PlaceKind
 
 cdefs :: ContentDef PlaceKind
 cdefs = ContentDef

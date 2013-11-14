@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, OverloadedStrings #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | High score table operations.
 module Game.LambdaHack.Common.HighScore
   ( ScoreTable, empty, register, slideshow

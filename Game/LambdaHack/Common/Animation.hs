@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, OverloadedStrings #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Screen frames and animations.
 module Game.LambdaHack.Common.Animation
   ( Attr(..), defAttr, AttrChar(..)
@@ -252,7 +252,7 @@ defDebugModeCli = DebugModeCli
   , snoMore = False
   , snoAnim = Nothing
   , ssavePrefixCli = Nothing
-  , sfrontendStd = False                   
+  , sfrontendStd = False
   , sdbgMsgCli = False
   }
 

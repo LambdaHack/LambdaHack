@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 -- | Effect semantics.
 -- TODO: document
 module Game.LambdaHack.Server.EffectSem

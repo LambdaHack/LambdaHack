@@ -20,7 +20,7 @@ encodeData f = LBS.writeFile f . Z.compress . encode
 -- The @OK@ is used as an EOF marker to ensure any apparent problems with
 -- corrupted files are reported to the user ASAP.
 encodeEOF :: Binary a => FilePath -> a -> IO ()
-encodeEOF f a = encodeData f (a, "OK")
+encodeEOF f a = encodeData f (a, "OK" :: String)
 
 -- | Read and decompress the serialized data.
 strictReadSerialized :: FilePath -> IO LBS.ByteString
@@ -40,7 +40,7 @@ strictDecodeData = fmap decode . strictReadSerialized
 strictDecodeEOF :: Binary a => FilePath -> IO a
 strictDecodeEOF f = do
   (a, n) <- strictDecodeData f
-  if n == "OK"
+  if n == ("OK" :: String)
     then return a
     else error $ "Fatal error: corrupted file " ++ f
 

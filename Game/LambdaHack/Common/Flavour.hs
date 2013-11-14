@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric #-}
 -- | The appearance of in-game items, as communicated to the player.
 module Game.LambdaHack.Common.Flavour
   ( -- * The @Flavour@ type

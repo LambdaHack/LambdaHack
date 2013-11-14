@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 -- | Semantics of 'CmdSer' server commands.
 -- A couple of them do not take time, the rest does.
 -- Note that since the results are atomic commands, which are executed

@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 -- | The main dungeon generation routine.
 module Game.LambdaHack.Server.DungeonGen
   ( FreshDungeon(..), dungeonGen

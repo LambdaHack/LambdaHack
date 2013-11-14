@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFunctor, DeriveGeneric, OverloadedStrings #-}
+{-# LANGUAGE DeriveFunctor, DeriveGeneric #-}
 -- | Effects of content on other content. No operation in this module
 -- involves the 'State' or 'Action' type.
 module Game.LambdaHack.Common.Effect

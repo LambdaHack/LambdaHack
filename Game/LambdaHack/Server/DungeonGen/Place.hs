@@ -100,7 +100,7 @@ buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
            = assert (not (trivialArea r) `blame` r) $ do
   qsolidFence <- opick cfillerTile (const True)
   dark <- chanceDeep ln depth cdarkChance
-  qkind <- popick (T.pack "rogue") (placeValid r)
+  qkind <- popick "rogue" (placeValid r)
   let kr = pokind qkind
       qlegend = if dark then cdarkLegendTile else clitLegendTile
       qseen = False

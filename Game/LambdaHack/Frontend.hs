@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 -- | Display game data on the screen and receive user input
 -- using one of the available raw frontends and derived  operations.
 module Game.LambdaHack.Frontend

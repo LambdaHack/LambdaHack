@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 -- | Generic binding of keys to commands, procesing macros,
 -- printing command help. No operation in this module
 -- involves the 'State' or 'Action' type.

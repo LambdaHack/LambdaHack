@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 -- | Semantics of most 'CmdClientAI' client commands.
 module Game.LambdaHack.Client.ClientSem where
 

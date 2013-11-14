@@ -98,8 +98,7 @@ runDisturbance :: Point -> Int -> Report
 runDisturbance posLast distLast report hs ms per markSuspect posHere
                posHasFeature posHasItems
                cotile lvl lxsize lysize (dirNew, distNew) =
-  let boringMsgs = map BS.pack [ "Saving backup."
-                               , "You hear some noises." ]
+  let boringMsgs = map BS.pack [ "You hear some noises." ]
       -- TODO: use a regexp from the UI config instead
       msgShown  = isJust $ findInReport (`notElem` boringMsgs) report
       msposs    = ES.delete posHere $ ES.fromList (L.map bpos ms)

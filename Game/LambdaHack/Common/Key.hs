@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 -- | Frontend-independent keyboard input operations.
 module Game.LambdaHack.Common.Key
   ( Key(..), handleDir, dirAllMoveKey
@@ -35,9 +34,9 @@ data Key =
   | End
   | Begin
   | Home
-  | KP !Char        -- ^ a keypad key for a character (digits and operators)
-  | Char !Char      -- ^ a single printable character
-  | Unknown !String -- ^ an unknown key, registered to warn the user
+  | KP !Char      -- ^ a keypad key for a character (digits and operators)
+  | Char !Char    -- ^ a single printable character
+  | Unknown !Text -- ^ an unknown key, registered to warn the user
   deriving (Ord, Eq)
 
 instance Binary Key where
@@ -129,7 +128,7 @@ showKey End      = "END"
 showKey Begin    = "BEGIN"
 showKey Home     = "HOME"
 showKey (KP c)   = "KEYPAD(" <> T.singleton c <> ")"
-showKey (Unknown s) = T.pack s
+showKey (Unknown s) = s
 
 -- | Show a key with a modifier, if any.
 showKM :: KM -> Text
@@ -232,4 +231,4 @@ keyTranslate "KP_Begin"      = Begin
 keyTranslate "KP_Enter"      = Return
 keyTranslate ['K','P','_',c] = KP c
 keyTranslate [c]             = Char c
-keyTranslate s               = Unknown s
+keyTranslate s               = Unknown $ T.pack s

@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 -- | Monsters and heroes for LambdaHack.
 module Content.ActorKind ( cdefs ) where
 

@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFoldable, DeriveTraversable, OverloadedStrings #-}
+{-# LANGUAGE DeriveFoldable, DeriveTraversable #-}
 -- | AI strategies to direct actors not controlled directly by human players.
 -- No operation in this module involves the 'State' or 'Action' type.
 module Game.LambdaHack.Client.Strategy

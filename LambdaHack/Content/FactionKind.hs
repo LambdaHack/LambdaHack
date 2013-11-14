@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 -- | The type of kinds of game factions (heroes, enemies, NPCs, etc.)
 -- for LambdaHack.
 module Content.FactionKind ( cdefs ) where

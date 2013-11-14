@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | Weapons, treasure and all the other items in the game.
 -- No operation in this module
 -- involves the 'State' or 'Action' type.
@@ -25,7 +25,6 @@ import qualified Data.Ix as Ix
 import Data.List
 import qualified Data.Set as S
 import Data.Text (Text)
-import qualified Data.Text as T
 import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
@@ -111,7 +110,7 @@ buildItem (FlavourMap flavour) discoRev ikChosen kind jeffect =
 newItem :: Kind.Ops ItemKind -> FlavourMap -> DiscoRev -> Int -> Int
         -> Rnd (Item, Int, ItemKind)
 newItem cops@Kind.Ops{opick, okind} flavour discoRev lvl depth = do
-  ikChosen <- opick (T.pack "dng") (const True)
+  ikChosen <- opick "dng" (const True)
   let kind = okind ikChosen
   jcount <- castDeep lvl depth (icount kind)
   if jcount == 0

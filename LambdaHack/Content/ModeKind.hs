@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 -- | The type of kinds of game modes for LambdaHack.
 module Content.ModeKind ( cdefs ) where
 

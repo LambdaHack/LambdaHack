@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell #-}
 -- | Game rules and assorted game setup data for LambdaHack.
 module Content.RuleKind ( cdefs ) where
 

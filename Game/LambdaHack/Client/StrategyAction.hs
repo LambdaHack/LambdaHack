@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 -- | AI strategy operations implemented with the 'Action' monad.
 module Game.LambdaHack.Client.StrategyAction
   ( targetStrategy, actionStrategy, visibleFoes
