@@ -42,11 +42,7 @@ import Game.LambdaHack.Server.StartAction
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.Utils.Assert
 
--- | Start a clip (a part of a turn for which one or more frames
--- will be generated). Do whatever has to be done
--- every fixed number of time units, e.g., monster generation.
--- Run the leader and other actors moves. Eventually advance the time
--- and repeat.
+-- | Start a game session. Loop, communicating with clients.
 loopSer :: (MonadAtomic m, MonadConnServer m)
         => DebugModeSer
         -> (CmdSer -> m Bool)
@@ -87,7 +83,12 @@ loopSer sdebug cmdSerSem executorUI executorAI !cops = do
       -- @sRaw@ is correct here, because none of the above changes State.
       execCmdAtomic $ ResumeServerA $ updateCOps setCurrentCops sRaw
       initPer
-  -- Loop, communicating with clients.
+  resetSessionStart
+  -- Start a clip (a part of a turn for which one or more frames
+  -- will be generated). Do whatever has to be done
+  -- every fixed number of time units, e.g., monster generation.
+  -- Run the leader and other actors moves. Eventually advance the time
+  -- and repeat.
   let loop = do
         let factionArena fact = do
               let spawn = isSpawnFact cops fact

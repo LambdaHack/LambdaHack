@@ -9,6 +9,7 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.HashMap.Strict as HM
 import Data.Text (Text)
 import qualified System.Random as R
+import System.Time
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Animation
@@ -32,6 +33,7 @@ data StateServer = StateServer
   , sconfig   :: Config         -- ^ this game's config (including initial RNG)
   , squit     :: !Bool          -- ^ exit the game loop
   , sbkpSave  :: !Bool          -- ^ make backup savefile now
+  , sstart    :: !ClockTime     -- ^ this session start time
   , sdebugSer :: !DebugModeSer  -- ^ current debugging mode
   , sdebugNxt :: !DebugModeSer  -- ^ debugging mode for the next game
   }
@@ -67,6 +69,7 @@ emptyStateServer =
     , sconfig = undefined
     , squit = False
     , sbkpSave = False
+    , sstart = TOD 0 0
     , sdebugSer = defDebugModeSer
     , sdebugNxt = defDebugModeSer
     }
@@ -111,6 +114,7 @@ instance Binary StateServer where
         sper = EM.empty
         squit = False
         sbkpSave = False
+        sstart = TOD 0 0
         sdebugNxt = defDebugModeSer
     return StateServer{..}
 

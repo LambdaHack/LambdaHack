@@ -145,6 +145,7 @@ gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}, corule}
   -- (the current config file has the RNG rolled for the previous game).
   (sconfig, dungeonSeed, srandom) <- mkConfigRules corule
   scoreTable <- restoreScore sconfig
+  sstart <- getsServer sstart  -- copy over from previous game
   let smode = sgameMode sdebug
       rnd :: Rnd (FactionDict, FlavourMap, Discovery, DiscoRev,
                   DungeonGen.FreshDungeon)
@@ -160,7 +161,7 @@ gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}, corule}
         St.evalState rnd dungeonSeed
       defState = defStateGlobal freshDungeon freshDepth faction cops scoreTable
       defSer = emptyStateServer
-                 {sdisco, sdiscoRev, sflavour, srandom, sconfig}
+                 {sdisco, sdiscoRev, sflavour, srandom, sconfig, sstart}
   putServer defSer
   return defState
 
