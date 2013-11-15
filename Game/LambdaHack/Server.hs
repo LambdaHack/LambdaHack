@@ -59,6 +59,7 @@ debugArgs = do
         , "  --sniffOut display all outgoing commands on console "
         , "  --allClear let all map tiles be translucent"
         , "  --gameMode m start next game in the given mode"
+        , "  --stopAfter n exit this game session after around n seconds"
         , "  --dbgMsgSer let the server emit its internal debug messages"
         , "  --font fn use the given font for the main game window"
         , "  --maxFps n display at most n frames per second"
@@ -87,6 +88,8 @@ debugArgs = do
         (parseArgs rest) {sallClear = True}
       parseArgs ("--gameMode" : s : rest) =
         (parseArgs rest) {sgameMode = T.pack s}
+      parseArgs ("--stopAfter" : s : rest) =
+        (parseArgs rest) {sstopAfter = Just $ read s}
       parseArgs ("--fovMode" : "Digital" : r : rest) | (read r :: Int) > 0 =
         (parseArgs rest) {sfovMode = Just $ Digital $ read r}
       parseArgs ("--fovMode" : mode : rest) =

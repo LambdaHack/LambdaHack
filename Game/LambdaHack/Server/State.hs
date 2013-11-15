@@ -39,13 +39,15 @@ data StateServer = StateServer
   }
   deriving (Show)
 
+-- | Debug commands. See 'Server.debugArgs' for the descriptions.
 data DebugModeSer = DebugModeSer
   { sknowMap       :: !Bool
   , sknowEvents    :: !Bool
   , sniffIn        :: !Bool
   , sniffOut       :: !Bool
   , sallClear      :: !Bool
-  , sgameMode      :: !Text  -- ^ next game mode name
+  , sgameMode      :: !Text
+  , sstopAfter     :: !(Maybe Int)
   , sfovMode       :: !(Maybe FovMode)
   , ssavePrefixSer :: !(Maybe String)
   , sdbgMsgSer     :: !Bool
@@ -81,6 +83,7 @@ defDebugModeSer = DebugModeSer { sknowMap = False
                                , sniffOut = False
                                , sallClear = False
                                , sgameMode = "campaign"
+                               , sstopAfter = Nothing
                                , sfovMode = Nothing
                                , ssavePrefixSer = Nothing
                                , sdbgMsgSer = False
@@ -141,4 +144,5 @@ instance Binary DebugModeSer where
     ssavePrefixSer <- get
     sdbgMsgSer <- get
     sdebugCli <- get
+    let sstopAfter = Nothing
     return DebugModeSer{..}

@@ -112,8 +112,8 @@ loopSer sdebug cmdSerSem executorUI executorAI !cops = do
           modifyServer $ \ser -> ser {squit = False}
           endOrLoop (updateConn executorUI executorAI) loop
         else do
-          endClip arenas
-          loop
+          continue <- endClip arenas
+          when continue loop
   loop
 
 initDebug :: MonadServer m => DebugModeSer -> m DebugModeSer
@@ -142,8 +142,16 @@ saveBkpAll = do
   saveServer
 
 endClip :: (MonadAtomic m, MonadServer m, MonadConnServer m)
-        => [LevelId] -> m ()
+        => [LevelId] -> m Bool
 endClip arenas = do
+  -- TODO: a couple messages each clip to many clients is too costly.
+  -- Store these on a queue and sum times instead of sending,
+  -- until a different command needs to be sent. Include HealActorA
+  -- from regenerateLevelHP, but keep it before AgeGameA.
+  -- TODO: this is also needed to keep savefiles small (undo info).
+  mapM_ (\lid -> execCmdAtomic $ AgeLevelA lid timeClip) arenas
+  execCmdAtomic $ AgeGameA timeClip
+  -- Perform periodic dungeon maintenance.
   time <- getsState stime
   Config{configSaveBkpClips} <- getsServer sconfig
   let clipN = time `timeFit` timeClip
@@ -157,17 +165,20 @@ endClip arenas = do
   -- Regenerate HP and add monsters each turn, not each clip.
   -- Do this on only one of the arenas to prevent micromanagement,
   -- e.g., spreading leaders across levels to bump monster generation.
-  when (clipMod == 1) $ do
+  if clipMod == 1 then do
     arena <- rndToAction $ oneOf arenas
     regenerateLevelHP arena
     generateMonster arena
-  -- TODO: a couple messages each clip to many clients is too costly.
-  -- Store these on a queue and sum times instead of sending,
-  -- until a different command needs to be sent. Include HealActorA
-  -- from regenerateLevelHP, but keep it before AgeGameA.
-  -- TODO: this is also needed to keep savefiles small (undo info).
-  mapM_ (\lid -> execCmdAtomic $ AgeLevelA lid timeClip) arenas
-  execCmdAtomic $ AgeGameA timeClip
+    sstopAfter <- getsServer $ sstopAfter . sdebugSer
+    case sstopAfter of
+      Nothing -> return True
+      Just stopAfter -> do
+        exit <- elapsedSessionTimeGT stopAfter
+        if exit then do
+          saveAndExit
+          return False  -- don't re-enter the game loop
+        else return True
+  else return True
 
 -- | Perform moves for individual actors, as long as there are actors
 -- with the next move time less than or equal to the current level time.
@@ -403,7 +414,6 @@ regenerateLevelHP lid = do
 -- | Continue or exit or restart the game.
 endOrLoop :: (MonadAtomic m, MonadConnServer m) => m () -> m () -> m ()
 endOrLoop updConn loopServer = do
-  cops <- getsState scops
   factionD <- getsState sfactionD
   let inGame fact = case gquit fact of
         Nothing -> True
@@ -424,24 +434,29 @@ endOrLoop updConn loopServer = do
       restartGame updConn loopServer
     _ | gameOver -> restartGame updConn loopServer
     (_, []) -> loopServer  -- continue current game
-    (_, _ : _) -> do  -- save game and exit
+    (_, _ : _) -> do
       -- Wipe out the quit flag for the savegame files.
       mapM_ (\(fid, fact) ->
               execCmdAtomic
               $ QuitFactionA fid Nothing (gquit fact) Nothing) campers
-      -- Save client and server data.
-      saveBkpAll
-      -- Kill all clients, including those that did not take part
-      -- in the current game.
-      -- Clients exit not now, but after they print all ending screens.
-      killAllClients
-      -- Verify that the saved perception is equal to future reconstructed.
-      persSaved <- getsServer sper
-      fovMode <- getsServer $ sfovMode . sdebugSer
-      pers <- getsState $ dungeonPerception cops
-                                            (fromMaybe (Digital 12) fovMode)
-      assert (persSaved == pers `blame` (persSaved, pers)) skip
+      saveAndExit
       -- Don't call @loopServer@, that is, quit the game loop.
+
+saveAndExit :: (MonadAtomic m, MonadConnServer m) => m ()
+saveAndExit = do
+  cops <- getsState scops
+  -- Save client and server data.
+  saveBkpAll
+  -- Kill all clients, including those that did not take part
+  -- in the current game.
+  -- Clients exit not now, but after they print all ending screens.
+  killAllClients
+  -- Verify that the saved perception is equal to future reconstructed.
+  persSaved <- getsServer sper
+  fovMode <- getsServer $ sfovMode . sdebugSer
+  pers <- getsState $ dungeonPerception cops
+                                        (fromMaybe (Digital 12) fovMode)
+  assert (persSaved == pers `blame` (persSaved, pers)) skip
 
 restartGame :: (MonadAtomic m, MonadConnServer m)
             => m () -> m () -> m ()

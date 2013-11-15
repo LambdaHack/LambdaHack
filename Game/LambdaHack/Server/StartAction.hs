@@ -52,6 +52,7 @@ applyDebug = do
                                      , sniffOut
                                      , sallClear
                                      , sfovMode
+                                     , sstopAfter
                                      , sdbgMsgSer
                                      , sdebugCli }}
 

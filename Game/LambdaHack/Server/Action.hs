@@ -13,7 +13,8 @@ module Game.LambdaHack.Server.Action
     -- * Assorted primitives
   , debugPrint, dumpCfg
   , mkConfigRules, restoreScore, revealItems, deduceQuits
-  , rndToAction, resetSessionStart, resetFidPerception, getPerFid
+  , rndToAction, resetSessionStart, elapsedSessionTimeGT
+  , resetFidPerception, getPerFid
   , childrenServer
   ) where
 
@@ -223,10 +224,16 @@ registerScore status mbody fid = do
                            (ntable :: HighScore.ScoreTable)
   maybe skip saveScore $ HighScore.register table total time status date
 
-resetSessionStart :: MonadServer m =>  m ()
+resetSessionStart :: MonadServer m => m ()
 resetSessionStart = do
   sstart <- liftIO getClockTime
   modifyServer $ \ser -> ser {sstart}
+
+elapsedSessionTimeGT :: MonadServer m => Int -> m Bool
+elapsedSessionTimeGT stopAfter = do
+  current <- liftIO getClockTime
+  TOD s p <- getsServer sstart
+  return $ TOD (s + fromIntegral stopAfter) p <= current
 
 revealItems :: (MonadAtomic m, MonadServer m)
             => Maybe FactionId -> Maybe Actor -> m ()
