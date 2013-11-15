@@ -412,8 +412,9 @@ effLvlGoUp aid k = do
           switchLevels2 aid2 b2 ais2 lid1 pos1
       -- Move the actor to where the inhabitant was, if any.
       switchLevels2 aid b1 ais1 lid2 pos2
-      void $ getsState $ posToActor pos1 lid1  -- assertion is inside
-      void $ getsState $ posToActor pos2 lid2  -- assertion is inside
+      -- Verify only one actor on every tile.
+      !_ <- getsState $ posToActor pos1 lid1  -- assertion is inside
+      !_ <- getsState $ posToActor pos2 lid2  -- assertion is inside
       return True
 
 switchLevels1 :: MonadAtomic m => ActorId -> m ()

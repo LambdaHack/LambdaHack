@@ -524,7 +524,7 @@ drawSfxAtomicUI verbose sfx = case sfx of
   RecoilD source target _ _ -> do
     spart <- partAidLeader source
     tpart <- partAidLeader target
-    msgAdd $ makeSentence [MU.SubjectVerbSg spart "shrink back from", tpart]
+    msgAdd $ makeSentence [MU.SubjectVerbSg spart "shrink away from", tpart]
   ProjectD aid iid -> aiVerbMU aid "aim" iid 1
   CatchD aid iid -> aiVerbMU aid "catch" iid 1
   ActivateD aid iid -> aiVerbMU aid "activate"{-TODO-} iid 1

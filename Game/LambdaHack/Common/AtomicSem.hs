@@ -339,7 +339,7 @@ spotTileA lid ts = assert (not $ null ts) $ do
           _ -> return ()
   mapM_ f ts
 
--- Stop noticing a previously invisible tiles. Unlike @spotTileA@, it verifies
+-- Stop noticing a previously visible tiles. Unlike @spotTileA@, it verifies
 -- the state of the tiles before changing them.
 loseTileA :: MonadAction m => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
 loseTileA lid ts = assert (not $ null ts) $ do
