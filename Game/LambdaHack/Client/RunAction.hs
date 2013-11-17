@@ -39,7 +39,8 @@ canRun leader (dir, dist) = do
   b <- getsState $ getActorBody leader
   lvl <- getLevel $ blid b
   stgtMode <- getsClient stgtMode
-  assert (isNothing stgtMode `blame` (dir, dist, stgtMode)) skip
+  assert (isNothing stgtMode `blame` "attempt to run in target mode"
+                             `with` (dir, dist, stgtMode)) skip
   return $ accessibleDir cops lvl (bpos b) dir
 
 runDir :: MonadClient m => ActorId -> (Vector, Int) -> m (Vector, Int)

@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 -- | Semantics of 'Command.Cmd' client commands that return server commands.
 -- A couple of them do not take time, the rest does.
 -- TODO: document

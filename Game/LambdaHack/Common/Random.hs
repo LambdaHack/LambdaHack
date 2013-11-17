@@ -78,7 +78,8 @@ instance Hashable.Hashable RollDice
 instance Binary RollDice
 
 rollDice :: Int -> Int -> RollDice
-rollDice a b = assert (a >= 0 && a <= 255 && b >= 0 && b <= 255 `blame` (a, b))
+rollDice a b = assert (a >= 0 && a <= 255 && b >= 0 && b <= 255
+                       `blame` "dice out of bounds" `with` (a, b))
                $ RollDice (toEnum a) (toEnum b)
 
 -- | Cast dice and sum the results.
@@ -127,7 +128,8 @@ type RollDeep = (RollDice, RollDice)
 -- Note that at the first level, the scaled dice are always ignored.
 castDeep :: Int -> Int -> RollDeep -> Rnd Int
 castDeep n depth (d1, d2) =
-  assert (n > 0 && n <= depth `blame` (n, depth)) $ do
+  assert (n > 0 && n <= depth `blame` "invalid current depth for dice rolls"
+                              `with` (n, depth)) $ do
   r1 <- castDice d1
   r2 <- castDice d2
   return $ r1 + ((n - 1) * r2) `div` max 1 (depth - 1)

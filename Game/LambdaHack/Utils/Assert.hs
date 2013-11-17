@@ -58,7 +58,7 @@ allB predicate l =
 skip :: Monad m => m ()
 skip = return ()
 
--- | In case of corruption, just fail.
+-- | In case of corruption, just fail and show the error message.
 forceEither :: Show a => Either a b -> b
 forceEither (Left a)  = assert `failure` "unexpected Left" `with` a
 forceEither (Right b) = b

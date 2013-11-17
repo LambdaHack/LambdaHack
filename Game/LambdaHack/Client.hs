@@ -63,7 +63,7 @@ cmdClientUISem cmd = case cmd of
     storeUndo $ SfxAtomic sfx
   CmdQueryUI aid -> do
     mleader <- getsClient _sleader
-    assert (isJust mleader `blame` cmd) skip
+    assert (isJust mleader `blame` "query without leader" `with` cmd) skip
     cmdH <- queryUI aid
     writeServer cmdH
   CmdPingUI ->

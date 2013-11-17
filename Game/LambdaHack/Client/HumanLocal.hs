@@ -222,7 +222,7 @@ memberCycleHuman = do
     [] -> abortWith "Cannot select any other member on this level."
     (np, b) : _ -> do
       success <- selectLeader np
-      assert (success `blame` (leader, np, b)) skip
+      assert (success `blame` "same leader" `with` (leader, np, b)) skip
 
 partyAfterLeader :: MonadActionRO m
                  => ActorId
@@ -249,13 +249,14 @@ selectLeader actor = do
     then return False -- already selected
     else do
       pbody <- getsState $ getActorBody actor
+      assert (not (bproj pbody) `blame` "projectile chosen as the leader"
+                                `with` (actor, pbody)) skip
       -- Even if it's already the leader, give his proper name, not 'you'.
       let subject = partActor coactor pbody
       msgAdd $ makeSentence [subject, "selected"]
       -- Update client state.
       s <- getState
       modifyClient $ updateLeader actor s
-      assert (not (bproj pbody) `blame` (actor, pbody)) skip
       -- Move the cursor, if active, to the new level.
       when (isJust stgtMode) $ setTgtId $ blid pbody
       -- Inform about items, etc.
@@ -279,7 +280,7 @@ memberBackHuman = do
     [] -> abortWith "No other member in the party."
     (np, b) : _ -> do
       success <- selectLeader np
-      assert (success `blame` (leader, np, b)) skip
+      assert (success `blame` "same leader" `with` (leader, np, b)) skip
 
 -- * Inventory
 

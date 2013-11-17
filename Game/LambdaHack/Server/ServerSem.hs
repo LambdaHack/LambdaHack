@@ -274,7 +274,8 @@ waitSer aid = do
 
 pickupSer :: MonadAtomic m
           => ActorId -> ItemId -> Int -> InvChar -> m ()
-pickupSer aid iid k l = assert (k > 0 `blame` (aid, iid, k, l)) $ do
+pickupSer aid iid k l = assert (k > 0 `blame` "pick up no items"
+                                      `with` (aid, iid, k, l)) $ do
   b <- getsState $ getActorBody aid
   execCmdAtomic $ MoveItemA iid k (CFloor (blid b) (bpos b)) (CActor aid l)
 

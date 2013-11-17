@@ -112,7 +112,7 @@ updateTile f lvl = lvl {ltile = f (ltile lvl)}
 
 assertSparseItems :: ItemFloor -> ItemFloor
 assertSparseItems m =
-  assert (EM.null (EM.filter EM.null m) `blame` m) m
+  assert (EM.null (EM.filter EM.null m) `blame` "null floors found" `with` m) m
 
 instance Binary Level where
   put Level{..} = do

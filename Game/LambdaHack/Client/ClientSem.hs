@@ -95,7 +95,8 @@ queryAIPick aid = do
   Kind.COps{cofact=Kind.Ops{okind}} <- getsState scops
   side <- getsClient sside
   body <- getsState $ getActorBody aid
-  assert (bfid body == side `blame` (aid, bfid body, side)) skip
+  assert (bfid body == side `blame` "AI tries to move enemy actor"
+                            `with` (aid, bfid body, side)) skip
   mleader <- getsClient _sleader
   fact <- getsState $ (EM.! bfid body) . sfactionD
   let factionAbilities
@@ -129,7 +130,8 @@ queryUI aid = do
   -- When running, stop if aborted by a disturbance. Otherwise let
   -- the human player issue commands, until any of them takes time.
   leader <- getLeaderUI
-  assert (leader == aid `blame` (leader, aid)) skip
+  assert (leader == aid `blame` "player moves not his leader"
+                        `with` (leader, aid)) skip
   let inputHumanCmd msg = do
         stopRunning
         humanCommand msg
@@ -179,7 +181,10 @@ humanCommand msgRunAbort = do
         -- The command was aborted or successful and if the latter,
         -- possibly took some time.
         case mcmdS of
-          Just cmdS -> assert (null (runSlideshow slides) `blame` slides) $ do
+          Just cmdS -> do
+            assert (null (runSlideshow slides)
+                    `blame` "some slides generated for server command"
+                    `with` slides) skip
             -- Exit the loop and let other actors act. No next key needed
             -- and no slides could have been generated.
             modifyClient (\st -> st {slastKey = Nothing})

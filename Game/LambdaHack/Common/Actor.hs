@@ -1,5 +1,4 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | Actors in the game: heroes, monsters, etc. No operation in this module
 -- involves the 'State' or 'Action' type.
 module Game.LambdaHack.Common.Actor
@@ -19,7 +18,6 @@ import Data.Binary
 import Data.Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import qualified Data.Hashable as Hashable
 import qualified Data.HashMap.Strict as HM
 import Data.List
 import Data.Maybe
@@ -168,11 +166,6 @@ type ActorDict = EM.EnumMap ActorId Actor
 -- | Reverse item map, for item creation, to keep items and item identifiers
 -- in bijection.
 type ItemRev = HM.HashMap Item ItemId
-
-instance (Binary k, Binary v, Eq k, Hashable.Hashable k)
-  => Binary (HM.HashMap k v) where
-  put ir = put $ HM.toList ir
-  get = fmap HM.fromList get
 
 cmpLetter :: InvChar -> InvChar -> Ordering
 cmpLetter (InvChar x) (InvChar y) =

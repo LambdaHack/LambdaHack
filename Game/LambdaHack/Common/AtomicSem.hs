@@ -86,7 +86,8 @@ createActorA aid body ais = do
   modifyState $ updateActorD $ EM.alter f aid
   -- Add actor to @sprio@.
   let g Nothing = Just [aid]
-      g (Just l) = assert (aid `notElem` l `blame` (aid, body, l))
+      g (Just l) = assert (aid `notElem` l `blame` "actor already added"
+                                           `with` (aid, body, l))
                    $ Just $ aid : l
   updateLevel (blid body) $ updatePrio $ EM.alter g (btime body)
   -- Actor's items may or may not be already present in @sitemD@,
@@ -94,7 +95,8 @@ createActorA aid body ais = do
   -- We re-add them all to save time determining which really need it.
   forM_ ais $ \(iid, item) -> do
     let h item1 item2 =
-          assert (item1 == item2 `blame` (aid, body, iid, item1, item2)) item1
+          assert (item1 == item2 `blame` "inconsistent created actor items"
+                                 `with` (aid, body, iid, item1, item2)) item1
     modifyState $ updateItemD $ EM.insertWith h iid item
 
 -- | Update a given level data within state.
@@ -109,14 +111,17 @@ destroyActorA aid body ais = do
   -- that do not appear anywhere else, for simplicity and speed.
   itemD <- getsState sitemD
   let match (iid, item) = itemD EM.! iid == item
-  assert (allB match ais `blame` (aid, body, ais, itemD)) skip
+  assert (allB match ais `blame` "destroyed actor items not found"
+                         `with` (aid, body, ais, itemD)) skip
   -- Remove actor from @sactorD@.
   let f Nothing = assert `failure` "actor already removed" `with` (aid, body)
-      f (Just b) = assert (b == body `blame` (aid, body, b)) Nothing
+      f (Just b) = assert (b == body `blame` "inconsisted destroyed actor body"
+                                     `with` (aid, body, b)) Nothing
   modifyState $ updateActorD $ EM.alter f aid
   -- Remove actor from @sprio@.
   let g Nothing = assert `failure` "actor already removed" `with` (aid, body)
-      g (Just l) = assert (aid `elem` l `blame` (aid, body, l))
+      g (Just l) = assert (aid `elem` l `blame` "actor already removed"
+                                        `with` (aid, body, l))
                    $ let l2 = delete aid l
                      in if null l2 then Nothing else Just l2
   updateLevel (blid body) $ updatePrio $ EM.alter g (btime body)
@@ -127,7 +132,9 @@ createItemA :: MonadAction m => ItemId -> Item -> Int -> Container -> m ()
 createItemA iid item k c = assert (k > 0) $ do
   -- The item may or may not be already present in @sitemD@,
   -- regardless if it's actually present in the dungeon.
-  let f item1 item2 = assert (item1 == item2 `blame` (iid, item, k, c)) item1
+  let f item1 item2 = assert (item1 == item2
+                              `blame` "inconsistent created item"
+                              `with` (iid, item, k, c)) item1
   modifyState $ updateItemD $ EM.insertWith f iid item
   case c of
     CFloor lid pos -> insertItemFloor lid iid k pos
@@ -159,7 +166,8 @@ destroyItemA iid item k c = assert (k > 0) $ do
   -- It's incredibly costly and not noticeable for the player.
   -- However, assert the item is registered in @sitemD@.
   itemD <- getsState sitemD
-  assert (iid `EM.lookup` itemD == Just item `blame` (iid, item, itemD)) skip
+  assert (iid `EM.lookup` itemD == Just item `blame` "item already removed"
+                                             `with` (iid, item, itemD)) skip
   case c of
     CFloor lid pos -> deleteItemFloor lid iid k pos
     CActor aid l -> deleteItemActor iid k l aid
@@ -181,21 +189,25 @@ deleteItemActor iid k l aid = do
     EM.adjust (\b -> b {bbag = rmFromBag k iid (bbag b)}) aid
   -- Do not remove from actor's @binv@, but assert it was there.
   b <- getsState $ getActorBody aid
-  assert (l `EM.lookup` binv b == Just iid `blame` (iid, l, aid)) skip
+  assert (l `EM.lookup` binv b == Just iid `blame` "item already removed"
+                                           `with` (iid, l, aid)) skip
   -- Actor's @bletter@ for UI not reset, but checked.
-  assert (bletter b >= l`blame` (iid, k, l, aid, bletter b)) skip
+  assert (bletter b >= l`blame` "inconsistent actor inventory letter"
+                        `with` (iid, k, l, aid, bletter b)) skip
 
 moveActorA :: MonadAction m => ActorId -> Point -> Point -> m ()
 moveActorA aid fromP toP = assert (fromP /= toP) $ do
   b <- getsState $ getActorBody aid
-  assert (fromP == bpos b `blame` (aid, fromP, toP, bpos b, b)) skip
+  assert (fromP == bpos b `blame` "unexpected moved actor position"
+                          `with` (aid, fromP, toP, bpos b, b)) skip
   modifyState $ updateActorBody aid
               $ \body -> body {bpos = toP, boldpos = fromP}
 
 waitActorA :: MonadAction m => ActorId -> Time -> Time -> m ()
 waitActorA aid fromWait toWait = assert (fromWait /= toWait) $ do
   b <- getsState $ getActorBody aid
-  assert (fromWait == bwait b `blame` (aid, fromWait, toWait, bwait b, b)) skip
+  assert (fromWait == bwait b `blame` "unexpected waited actor time"
+                              `with` (aid, fromWait, toWait, bwait b, b)) skip
   modifyState $ updateActorBody aid $ \body -> body {bwait = toWait}
 
 displaceActorA :: MonadAction m => ActorId -> ActorId -> m ()
@@ -209,7 +221,8 @@ moveItemA :: MonadAction m => ItemId -> Int -> Container -> Container -> m ()
 moveItemA iid k c1 c2 = assert (k > 0 && c1 /= c2) $ do
   (lid1, _) <- posOfContainer c1
   (lid2, _) <- posOfContainer c2
-  assert (lid1 == lid2 `blame` (iid, k, c1, c2, lid1, lid2)) skip
+  assert (lid1 == lid2 `blame` "moved item containers not on the same level"
+                       `with` (iid, k, c1, c2, lid1, lid2)) skip
   case c1 of
     CFloor lid pos -> deleteItemFloor lid iid k pos
     CActor aid l -> deleteItemActor iid k l aid
@@ -245,7 +258,8 @@ hasteActorA aid delta = assert (delta /= speedZero) $ do
     let innateSpeed = aspeed $ okind $ bkind b
         curSpeed = fromMaybe innateSpeed (bspeed b)
         newSpeed = speedAdd curSpeed delta
-    in assert (newSpeed >= speedZero `blame` (aid, curSpeed, delta)) $
+    in assert (newSpeed >= speedZero `blame` "actor slowed below zero"
+                                     `with` (aid, curSpeed, delta)) $
        if newSpeed == innateSpeed
        then b {bspeed = Nothing}
        else b {bspeed = Just newSpeed}
@@ -254,14 +268,16 @@ pathActorA :: MonadAction m
            => ActorId -> Maybe [Vector] -> Maybe [Vector] -> m ()
 pathActorA aid fromPath toPath = assert (fromPath /= toPath) $ do
   body <- getsState $ getActorBody aid
-  assert (fromPath == bpath body `blame` (aid, fromPath, toPath, body)) skip
+  assert (fromPath == bpath body `blame` "unexpected actor path"
+                                 `with` (aid, fromPath, toPath, body)) skip
   modifyState $ updateActorBody aid $ \b -> b {bpath = toPath}
 
 colorActorA :: MonadAction m
             => ActorId -> Maybe Color.Color -> Maybe Color.Color -> m ()
 colorActorA aid fromCol toCol = assert (fromCol /= toCol) $ do
   body <- getsState $ getActorBody aid
-  assert (fromCol == bcolor body `blame` (aid, fromCol, toCol, body)) skip
+  assert (fromCol == bcolor body `blame` "unexpected actor color"
+                                 `with` (aid, fromCol, toCol, body)) skip
   modifyState $ updateActorBody aid $ \b -> b {bcolor = toCol}
 
 quitFactionA :: MonadAction m
@@ -270,7 +286,8 @@ quitFactionA :: MonadAction m
 quitFactionA fid mbody fromSt toSt = assert (fromSt /= toSt) $ do
   assert (maybe True ((fid ==) . bfid) mbody) skip
   fact <- getsState $ (EM.! fid) . sfactionD
-  assert (fromSt == gquit fact `blame` (fid, fromSt, toSt, fact)) skip
+  assert (fromSt == gquit fact `blame` "unexpected actor quit status"
+                               `with` (fid, fromSt, toSt, fact)) skip
   let adj fa = fa {gquit = toSt}
   modifyState $ updateFaction $ EM.adjust adj fid
 
@@ -279,7 +296,8 @@ leadFactionA :: MonadAction m
              => FactionId -> Maybe ActorId -> Maybe ActorId -> m ()
 leadFactionA fid source target = assert (source /= target) $ do
   fact <- getsState $ (EM.! fid) . sfactionD
-  assert (source == gleader fact `blame` (fid, source, target, fact)) skip
+  assert (source == gleader fact `blame` "unexpected actor leader"
+                                 `with` (fid, source, target, fact)) skip
   let adj fa = fa {gleader = target}
   modifyState $ updateFaction $ EM.adjust adj fid
 
@@ -291,7 +309,8 @@ diplFactionA fid1 fid2 fromDipl toDipl =
     fact2 <- getsState $ (EM.! fid2) . sfactionD
     assert (fromDipl == EM.findWithDefault Unknown fid2 (gdipl fact1)
             && fromDipl == EM.findWithDefault Unknown fid1 (gdipl fact2)
-            `blame` (fid1, fid2, fromDipl, toDipl, fact1, fact2)) skip
+            `blame` "unexpected actor diplomacy status"
+            `with` (fid1, fid2, fromDipl, toDipl, fact1, fact2)) skip
     let adj fid fact = fact {gdipl = EM.insert fid toDipl (gdipl fact)}
     modifyState $ updateFaction $ EM.adjust (adj fid2) fid1
     modifyState $ updateFaction $ EM.adjust (adj fid1) fid2
@@ -312,7 +331,8 @@ alterTileA lid p fromTile toTile = assert (fromTile /= toTile) $ do
   -- See 'AtomicSemCli' for how this is reported to the client.
   let adj ts = assert (ts Kind.! p == fromTile
                        || ts Kind.! p == freshClientTile
-                       `blame` (lid, p, fromTile, toTile, ts Kind.! p))
+                       `blame` "unexpected altered tile kind"
+                       `with` (lid, p, fromTile, toTile, ts Kind.! p))
                $ ts Kind.// [(p, toTile)]
   updateLevel lid $ updateTile adj
   case (Tile.isExplorable cotile fromTile, Tile.isExplorable cotile toTile) of
@@ -361,7 +381,8 @@ alterSmellA :: MonadAction m
             => LevelId -> Point -> Maybe Time -> Maybe Time -> m ()
 alterSmellA lid p _fromSm toSm = do
   -- TODO: this rarely crashes when a dominated smelling monster exists:
-  -- let alt sm = assert (sm == fromSm `blame` (lid, p, fromSm, toSm, sm)) toSm
+  -- let alt sm = assert (sm == fromSm `blame` "unexpected tile smell"
+  --                                   `with` (lid, p, fromSm, toSm, sm)) toSm
   let alt _ =  toSm
   updateLevel lid $ updateSmell $ EM.alter alt p
 
@@ -371,7 +392,8 @@ spotSmellA lid sms = assert (not $ null sms) $ do
       alt sm (Just _) = Just sm
 -- TODO: a hack to sidestep server not disabling the nose of fresh actors,
 -- see smellFromActors
---      alt sm (Just oldSm) = assert `failure` "smell already added" `with` (lid, sms, sm, oldSm)
+--      alt sm (Just oldSm) = assert `failure` "smell already added"
+--                                   `with` (lid, sms, sm, oldSm)
       f (p, sm) = EM.alter (alt sm) p
       upd m = foldr f m sms
   updateLevel lid $ updateSmell upd
@@ -381,7 +403,8 @@ loseSmellA lid sms = assert (not $ null sms) $ do
   let alt sm Nothing = assert `failure` "smell already removed"
                               `with` (lid, sms, sm)
       alt sm (Just oldSm) =
-        assert (sm == oldSm `blame` (lid, sms, sm, oldSm)) Nothing
+        assert (sm == oldSm `blame` "unexpected lost smell"
+                            `with` (lid, sms, sm, oldSm)) Nothing
       f (p, sm) = EM.alter (alt sm) p
       upd m = foldr f m sms
   updateLevel lid $ updateSmell upd

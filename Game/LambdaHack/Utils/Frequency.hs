@@ -62,7 +62,7 @@ toFreq = Frequency
 -- by a positive integer constant.
 scaleFreq :: Show a => Int -> Frequency a -> Frequency a
 scaleFreq n (Frequency name xs) =
-  assert (n > 0 `blame` ("non-positive scale for" <+> name, n, xs)) $
+  assert (n > 0 `blame` "non-positive frequency scale" `with` (name, n, xs)) $
   Frequency name (map (first (* n)) xs)
 
 -- | Change the description of the frequency.
@@ -77,7 +77,7 @@ rollFreq (Frequency name [(n, x)]) _ | n <= 0 =
   assert `failure` "singleton void frequency" `with` (name, n, x)
 rollFreq (Frequency _ [(_, x)]) g = (x, g)  -- speedup
 rollFreq (Frequency name fs) g =
-  assert (sumf > 0 `blame` ("frequency with nothing to pick:" <+> name, fs))
+  assert (sumf > 0 `blame` "frequency with nothing to pick" `with` (name, fs))
     (frec r fs, ng)
  where
   sumf = sum (map fst fs)

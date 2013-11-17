@@ -11,6 +11,8 @@ import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Functor
+import qualified Data.Hashable as Hashable
+import qualified Data.HashMap.Strict as HM
 import Data.Key
 import Data.Text (Text)
 import Data.Traversable (traverse)
@@ -47,6 +49,11 @@ instance (Enum k, Binary k, Binary e) => Binary (EM.EnumMap k e) where
 instance (Enum k, Binary k) => Binary (ES.EnumSet k) where
   put m = put (ES.size m) >> mapM_ put (ES.toAscList m)
   get = liftM ES.fromDistinctAscList get
+
+instance (Binary k, Binary v, Eq k, Hashable.Hashable k)
+  => Binary (HM.HashMap k v) where
+  put ir = put $ HM.toList ir
+  get = fmap HM.fromList get
 
 -- Data.Key
 

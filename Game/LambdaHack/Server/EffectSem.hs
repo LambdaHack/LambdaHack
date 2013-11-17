@@ -437,7 +437,7 @@ switchLevels2 :: MonadAtomic m
 switchLevels2 aid bOld ais lidNew posNew = do
   let lidOld = blid bOld
       side = bfid bOld
-  assert (lidNew /= lidOld `blame` (lidNew, "stairs looped" :: Text)) skip
+  assert (lidNew /= lidOld `blame` "stairs looped" `with` lidNew) skip
   -- Sync the actor time with the level time.
   timeOld <- getsState $ getLocalTime lidOld
   timeLastVisited <- getsState $ getLocalTime lidNew

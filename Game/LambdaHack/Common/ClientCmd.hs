@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 -- | Abstract syntax of client commands.
 -- See
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
@@ -65,7 +64,11 @@ debugAid aid s =
     b <- getsState $ getActorBody aid
     time <- getsState $ getLocalTime (blid b)
     return $
-      showT (s, "lid", blid b, "time", time, "aid", aid, "faction", bfid b)
+      showT ( s
+            , "lid" :: Text, blid b
+            , "time" :: Text, time
+            , "aid" :: Text, aid
+            , "faction" :: Text, bfid b )
 
 -- | Connection channels between the server and a single client.
 data ChanServer c d = ChanServer

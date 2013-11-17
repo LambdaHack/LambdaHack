@@ -161,7 +161,7 @@ cmdAtomicSemCli cmd = case cmd of
       mleader <- getsClient _sleader
       assert (mleader == source     -- somebody changed the leader for us
               || mleader == target  -- we changed the leader originally
-              `blame` (cmd, mleader)) skip
+              `blame` "unexpected leader" `with` (cmd, mleader)) skip
       modifyClient $ \cli -> cli {_sleader = target}
   DiscoverA lid p iid ik -> discoverA lid p iid ik
   CoverA lid p iid ik -> coverA lid p iid ik
@@ -235,7 +235,8 @@ coverA :: MonadClient m
 coverA lid p iid ik = do
   item <- getsState $ getItemBody iid
   let f Nothing = assert `failure` "already covered" `with` (lid, p, iid, ik)
-      f (Just ik2) = assert (ik == ik2 `blame` (ik, ik2)) Nothing
+      f (Just ik2) = assert (ik == ik2 `blame` "unexpected covered item kind"
+                                       `with` (ik, ik2)) Nothing
   modifyClient $ \cli -> cli {sdisco = EM.alter f (jkindIx item) (sdisco cli)}
 
 killExitA :: MonadClient m => m ()

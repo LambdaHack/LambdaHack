@@ -113,7 +113,7 @@ moveRunHuman run v = do
         if bfid tb == bfid sb && not (bproj tb) then do
           -- Select adjacent actor by bumping into him. Takes no time.
           success <- selectLeader target
-          assert (success `blame` (source, target, tb)) skip
+          assert (success `blame` "bump self" `with` (source, target, tb)) skip
           return Nothing
         else
           -- Attacking does not require full access, adjacency is enough.

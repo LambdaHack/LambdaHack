@@ -48,7 +48,8 @@ isUnit lxsize = isUnitXY . fromDir lxsize
 -- | Converts a unit vector in cartesian representation into @Vector@.
 toDir :: X -> VectorXY -> Vector
 toDir lxsize v@(VectorXY (x, y)) =
-  assert (lxsize >= 3 && isUnitXY v `blame` (lxsize, v)) $
+  assert (lxsize >= 3 && isUnitXY v `blame` "ambiguous XY vector conversion"
+                                    `with` (lxsize, v)) $
   Vector $ x + y * lxsize
 
 -- | Converts a unit vector in the offset representation
@@ -58,7 +59,7 @@ fromDir :: X -> Vector -> VectorXY
 fromDir lxsize (Vector dir) =
   assert (lxsize >= 3 && isUnitXY res &&
           fst len1 + snd len1 * lxsize == dir
-          `blame` (lxsize, dir, res))
+          `blame` "ambiguous vector conversion" `with` (lxsize, dir, res))
   res
  where
   (x, y) = (dir `mod` lxsize, dir `div` lxsize)
@@ -109,7 +110,7 @@ neg (Vector dir) = Vector (-dir)
 -- (in the euclidean metric) maximally align with the original vector.
 normalize :: X -> VectorXY -> Vector
 normalize lxsize v@(VectorXY (dx, dy)) =
-  assert (dx /= 0 || dy /= 0 `blame` (dx, dy)) $
+  assert (dx /= 0 || dy /= 0 `blame` "can't normalize zero" `with` (dx, dy)) $
   let angle :: Double
       angle = atan (fromIntegral dy / fromIntegral dx) / (pi / 2)
       dxy | angle <= -0.75 && angle >= -1.25 = (0, -1)
@@ -122,7 +123,9 @@ normalize lxsize v@(VectorXY (dx, dy)) =
       rxy = if dx >= 0
             then VectorXY dxy
             else negXY $ VectorXY dxy
-  in assert (not (isUnitXY v) || v == rxy `blame` (v, rxy))
+  in assert (not (isUnitXY v) || v == rxy
+             `blame` "unit vector gets untrivially normalized"
+             `with` (v, rxy))
      $ toDir lxsize rxy
 
 -- TODO: Perhaps produce all acceptable directions and let AI choose.
@@ -137,7 +140,7 @@ normalize lxsize v@(VectorXY (dx, dy)) =
 -- the two points.
 towards :: X -> Point -> Point -> Vector
 towards lxsize pos0 pos1 =
-  assert (pos0 /= pos1 `blame` (pos0, pos1)) $
+  assert (pos0 /= pos1 `blame` "towards self" `with` (pos0, pos1)) $
   let v = displacementXYZ lxsize pos0 pos1
   in normalize lxsize v
 

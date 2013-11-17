@@ -124,7 +124,8 @@ updateLeader :: ActorId -> State -> StateClient -> StateClient
 updateLeader leader s cli =
   let side1 = bfid $ getActorBody leader s
       side2 = sside cli
-  in assert (side1 == side2 `blame` (side1, side2, leader, s))
+  in assert (side1 == side2 `blame` "enemy actor becomes our leader"
+                            `with` (side1, side2, leader, s))
      $ cli {_sleader = Just leader}
 
 sside :: StateClient -> FactionId
