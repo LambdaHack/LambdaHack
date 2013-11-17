@@ -113,7 +113,8 @@ exeFrontend executorUI executorAI
       cli = defStateClient defHist sconfigUI
       s = updateCOps (const cops) emptyState
       eClientAI fid =
-        let noSession = assert `failure` fid
+        let noSession = assert `failure` "AI client needs no UI session"
+                               `with` fid
         in exeClientAI noSession s (cli fid True)
       eClientUI fid fromF =
         let sfconn = connFrontend fid fromF

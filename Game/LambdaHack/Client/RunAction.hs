@@ -73,7 +73,7 @@ runMode pos dir dirEnterable lxsize =
         in L.foldr f []
       dirsEnterable = L.filter (dirEnterable pos) (moves lxsize)
   in case dirsEnterable of
-    [] -> assert `failure` (pos, dir)
+    [] -> assert `failure` "actor is stuck" `with` (pos, dir)  -- TODO
     [negdir] -> assert (negdir == neg dir) RunDeadEnd
     _ ->
       let dirsOpen = findOpen dirsEnterable

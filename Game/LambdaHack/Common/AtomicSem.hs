@@ -82,7 +82,7 @@ createActorA :: MonadAction m => ActorId -> Actor -> [(ItemId, Item)] -> m ()
 createActorA aid body ais = do
   -- Add actor to @sactorD@.
   let f Nothing = Just body
-      f (Just b) = assert `failure` (aid, body, b)
+      f (Just b) = assert `failure` "actor already added" `with` (aid, body, b)
   modifyState $ updateActorD $ EM.alter f aid
   -- Add actor to @sprio@.
   let g Nothing = Just [aid]
@@ -111,11 +111,11 @@ destroyActorA aid body ais = do
   let match (iid, item) = itemD EM.! iid == item
   assert (allB match ais `blame` (aid, body, ais, itemD)) skip
   -- Remove actor from @sactorD@.
-  let f Nothing = assert `failure` (aid, body)
+  let f Nothing = assert `failure` "actor already removed" `with` (aid, body)
       f (Just b) = assert (b == body `blame` (aid, body, b)) Nothing
   modifyState $ updateActorD $ EM.alter f aid
   -- Remove actor from @sprio@.
-  let g Nothing = assert `failure` (aid, body)
+  let g Nothing = assert `failure` "actor already removed" `with` (aid, body)
       g (Just l) = assert (aid `elem` l `blame` (aid, body, l))
                    $ let l2 = delete aid l
                      in if null l2 then Nothing else Just l2
@@ -170,7 +170,8 @@ deleteItemFloor lid iid k pos =
   let rmFromFloor (Just bag) =
         let nbag = rmFromBag k iid bag
         in if EM.null nbag then Nothing else Just nbag
-      rmFromFloor Nothing = assert `failure` (lid, iid, k, pos)
+      rmFromFloor Nothing = assert `failure` "item already removed"
+                                   `with` (lid, iid, k, pos)
   in updateLevel lid $ updateFloor $ EM.alter rmFromFloor pos
 
 deleteItemActor :: MonadAction m
@@ -370,14 +371,15 @@ spotSmellA lid sms = assert (not $ null sms) $ do
       alt sm (Just _) = Just sm
 -- TODO: a hack to sidestep server not disabling the nose of fresh actors,
 -- see smellFromActors
---      alt sm (Just oldSm) = assert `failure` (lid, sms, sm, oldSm)
+--      alt sm (Just oldSm) = assert `failure` "smell already added" `with` (lid, sms, sm, oldSm)
       f (p, sm) = EM.alter (alt sm) p
       upd m = foldr f m sms
   updateLevel lid $ updateSmell upd
 
 loseSmellA :: MonadAction m => LevelId -> [(Point, Time)] -> m ()
 loseSmellA lid sms = assert (not $ null sms) $ do
-  let alt sm Nothing = assert `failure` (lid, sms, sm)
+  let alt sm Nothing = assert `failure` "smell already removed"
+                              `with` (lid, sms, sm)
       alt sm (Just oldSm) =
         assert (sm == oldSm `blame` (lid, sms, sm, oldSm)) Nothing
       f (p, sm) = EM.alter (alt sm) p

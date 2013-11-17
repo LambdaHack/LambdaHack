@@ -86,7 +86,7 @@ createOps ContentDef{getSymbol, getName, getFreq, content, validate} =
             lists = L.foldl' f M.empty tuples
             nameFreq group = toFreq $ "opick ('" <> group <> "')"
         in M.mapWithKey nameFreq lists
-      okind i = fromMaybe (assert `failure` (i, kindMap))
+      okind i = fromMaybe (assert `failure` "no kind" `with` (i, kindMap))
                 $ EM.lookup i kindMap
       correct a = not (T.null (getName a)) && L.all ((> 0) . snd) (getFreq a)
       offenders = validate content
@@ -96,15 +96,17 @@ createOps ContentDef{getSymbol, getName, getFreq, content, validate} =
      Ops
        { osymbol = getSymbol . okind
        , oname = getName . okind
-       , okind = okind
+       , okind
        , ouniqGroup = \ group ->
-           let freq = fromMaybe (assert `failure` (group, kindFreq))
+           let freq = fromMaybe (assert `failure` "no unique group"
+                                        `with` (group, kindFreq))
                       $ M.lookup group kindFreq
            in case runFrequency freq of
              [(n, (i, _))] | n > 0 -> i
-             l -> assert `failure` l
+             l -> assert `failure` "not unique" `with` (l, group, kindFreq)
        , opick = \ group p ->
-           let freq = fromMaybe (assert `failure` (group, kindFreq))
+           let freq = fromMaybe (assert `failure` "no group to pick from"
+                                        `with` (group, kindFreq))
                       $ M.lookup group kindFreq
            in frequency $ do
              (i, k) <- freq

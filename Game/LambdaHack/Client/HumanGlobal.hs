@@ -255,15 +255,16 @@ getItem aid prompt p ptext bag inv isn = do
                            ((iid, getItemBody iid s),
                             (k, CFloor (blid b) pos)))
                    $ EM.assocs tis
-          K.Char l | InvChar l `elem` map (snd . snd) ims ->
+          K.Char l ->
             case find ((InvChar l ==) . snd . snd) ims of
-              Nothing -> assert `failure` (l,  ims)
+              Nothing -> assert `failure` "unexpected inventory letter"
+                                `with` (km, l,  ims)
               Just (iidItem, (k, l2)) ->
                 return (iidItem, (k, CActor aid l2))
           K.Return | bestFull ->
             let (iidItem, (k, l2)) = maximumBy (compare `on` snd . snd) isp
             in return (iidItem, (k, CActor aid l2))
-          _ -> assert `failure` "perform: unexpected key:" <+> K.showKM km
+          _ -> assert `failure` "unexpected key:" `with` km
   ask
 
 -- * Project
@@ -275,7 +276,7 @@ projectAid source ts = do
   target <- targetToPos
   let tpos = case target of
         Just p -> p
-        Nothing -> assert `failure` (source, "target unexpectedly invalid")
+        Nothing -> assert `failure` "target unexpectedly invalid" `with` source
   eps <- getsClient seps
   sb <- getsState $ getActorBody source
   let lid = blid sb
@@ -288,8 +289,8 @@ projectAid source ts = do
     else do
       case bla lxsize lysize eps spos tpos of
         Nothing -> abortFailure ProjectAimOnself
-        Just [] -> assert `failure`
-                     (spos, tpos, "project from the edge of level" :: Text)
+        Just [] -> assert `failure` "project from the edge of level"
+                          `with` (spos, tpos, sb, ts)
         Just (pos : _) -> do
           as <- getsState $ actorList (const True) lid
           lvl <- getLevel lid

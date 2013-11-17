@@ -153,7 +153,8 @@ proposeAction disco aid factionAbilities btarget = do
                                   else toolsFreq disco aid
       aFrequency Ability.Chase  = if fpos == bpos then return mzero
                                   else chaseFreq
-      aFrequency _              = assert `failure` distant
+      aFrequency ab             = assert `failure` "unexpected ability"
+                                          `with` (ab, distant, actorAbilities)
       chaseFreq :: MonadActionRO m => m (Frequency CmdSerTakeTime)
       chaseFreq = do
         st <- chase aid (fpos, foeVisible)
@@ -167,7 +168,8 @@ proposeAction disco aid factionAbilities btarget = do
       aStrategy Ability.Pickup | not foeVisible && lootHere bpos = pickup aid
       aStrategy Ability.Pickup = return mzero
       aStrategy Ability.Wander = wander aid
-      aStrategy _              = assert `failure` actorAbilities
+      aStrategy ab             = assert `failure` "unexpected ability"
+                                        `with`(ab, actorAbilities)
       sumS abis = do
         fs <- mapM aStrategy abis
         return $ msum fs
@@ -194,7 +196,7 @@ track aid = do
   let clearPath = returN "ClearPathSer" $ SetPathSer aid []
       strat = case bpath of
         Nothing -> reject
-        Just [] -> assert `failure` (aid, b)
+        Just [] -> assert `failure` "null path" `with` (aid, b)
         -- TODO: instead let server do this in MoveSer, abort, handle in loop
         Just (d : _) | not $ accessibleDir cops lvl bpos d -> clearPath
         Just lv -> returN "SetPathSer" $ SetPathSer aid lv
@@ -205,7 +207,7 @@ pickup aid = do
   body@Actor{bpos, blid} <- getsState $ getActorBody aid
   lvl <- getLevel blid
   actionPickup <- case EM.minViewWithKey $ lvl `atI` bpos of
-    Nothing -> assert `failure` (aid, bpos, lvl)
+    Nothing -> assert `failure` "pickup of empty pile" `with` (aid, bpos, lvl)
     Just ((iid, k), _) -> do  -- pick up first item
       item <- getsState $ getItemBody iid
       let l = if jsymbol item == '$' then Just $ InvChar '$' else Nothing
@@ -477,9 +479,9 @@ moveRunAid run source dir = do
         -- Movement requires full access.
         return $ MoveSer source dir
         -- The potential invisible actor is hit.
-      else if not $ EM.null $ lvl `atI` tpos then  -- AlterBlockItem
+      else if not $ EM.null $ lvl `atI` tpos then
         -- This is, e.g., inaccessible open door with an item in it.
-        assert `failure` (run, source, dir)
+        assert `failure` "AI causes AlterBlockItem" `with` (run, source, dir)
       else if not (Tile.hasFeature cotile F.Walkable t)  -- not implied
               && (Tile.hasFeature cotile F.Suspect t
                   || Tile.openable cotile t
@@ -489,4 +491,5 @@ moveRunAid run source dir = do
         return $ AlterSer source tpos Nothing
       else
         -- Boring tile, no point bumping into it, do WaitSer if really idle.
-        assert `failure` (run, source, dir)  -- MoveNothing, AlterNothing
+        assert `failure` "AI causes MoveNothing or AlterNothing"
+               `with` (run, source, dir)

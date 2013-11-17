@@ -141,12 +141,12 @@ meleeSer source target = do
     time <- getsState $ getLocalTime (blid tb)
     itemAssocs <- getsState $ getActorItem source
     (miid, item) <-
-      if bproj sb
+      if bproj sb   -- projectile
       then case itemAssocs of
-        [(iid, item)] -> return (Just iid, item)  -- projectile
-        _ -> assert `failure` itemAssocs
+        [(iid, item)] -> return (Just iid, item)
+        _ -> assert `failure` "projectile with wrong items" `with` itemAssocs
       else case strongestSword cops itemAssocs of
-        Just (_, (iid, w)) -> return (Just iid, w)
+        Just (_, (iid, w)) -> return (Just iid, w)  -- weapon combat
         Nothing -> do  -- hand to hand combat
           isSp <- getsState $ isSpawnFaction sfid
           let h2hGroup | isSp = "monstrous"
@@ -309,8 +309,8 @@ projectSer source tpos eps iid container = do
     else do
       case bla lxsize lysize eps spos tpos of
         Nothing -> execFailure sb ProjectAimOnself
-        Just [] -> assert `failure`
-                     (spos, tpos, "project from the edge of level" :: Text)
+        Just [] -> assert `failure` "projecting from the edge of level"
+                          `with` (spos, tpos)
         Just (pos : rest) -> do
           as <- getsState $ actorList (const True) lid
           lvl <- getLevel lid

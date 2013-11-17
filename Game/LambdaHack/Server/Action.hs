@@ -89,8 +89,10 @@ resetFidPerception fid lid = do
 getPerFid :: MonadServer m => FactionId -> LevelId -> m Perception
 getPerFid fid lid = do
   pers <- getsServer sper
-  let fper = fromMaybe (assert `failure` (lid, fid)) $ EM.lookup fid pers
-      per = fromMaybe (assert `failure` (lid, fid)) $ EM.lookup lid fper
+  let fper = fromMaybe (assert `failure` "no perception for faction"
+                               `with` (lid, fid)) $ EM.lookup fid pers
+      per = fromMaybe (assert `failure` "no perception for level"
+                              `with` (lid, fid)) $ EM.lookup lid fper
   return $! per
 
 -- | Dumps the current game rules configuration to a file.
@@ -159,7 +161,7 @@ sendUpdateUI :: MonadConnServer m => FactionId -> CmdClientUI -> m ()
 sendUpdateUI fid cmd = do
   cs <- getsDict $ fst . (EM.! fid)
   case cs of
-    Nothing -> assert `failure` fid
+    Nothing -> assert `failure` "no channel for faction" `with` fid
     Just (_, conn) ->
       writeTQueueUI cmd $ fromServer conn
 
@@ -167,7 +169,7 @@ sendQueryUI :: MonadConnServer m => FactionId -> ActorId -> m CmdSer
 sendQueryUI fid aid = do
   cs <- getsDict $ fst . (EM.! fid)
   case cs of
-    Nothing -> assert `failure` fid
+    Nothing -> assert `failure` "no channel for faction" `with` fid
     Just (_, conn) -> do
       writeTQueueUI (CmdQueryUI aid) $ fromServer conn
       readTQueueUI $ toServer conn
@@ -176,7 +178,7 @@ sendPingUI :: MonadConnServer m => FactionId -> m ()
 sendPingUI fid = do
   cs <- getsDict $ fst . (EM.! fid)
   case cs of
-    Nothing -> assert `failure` fid
+    Nothing -> assert `failure` "no channel for faction" `with` fid
     Just (_, conn) -> do
       writeTQueueUI CmdPingUI $ fromServer conn
       debugPrint $ "UI client" <+> showT fid <+> "pinged..."
@@ -272,10 +274,9 @@ quitF mbody status fid = do
 
 -- Send any QuitFactionA actions that can be deduced from their current state.
 deduceQuits :: (MonadAtomic m, MonadServer m) => Actor -> Status -> m ()
-deduceQuits body Status{stOutcome=Defeated} = assert `failure` body
-deduceQuits body Status{stOutcome=Camping} = assert `failure` body
-deduceQuits body Status{stOutcome=Restart} = assert `failure` body
-deduceQuits body Status{stOutcome=Conquer} = assert `failure` body
+deduceQuits body status@Status{stOutcome}
+  | stOutcome `elem` [Defeated, Camping, Restart, Conquer] =
+    assert `failure` "no quitting to deduce" `with` (status, body)
 deduceQuits body status = do
   cops <- getsState scops
   let fid = bfid body
@@ -371,9 +372,9 @@ updateConn executorUI executorAI = do
   -- Spawn and kill client threads.
   let toSpawn = newD EM.\\ oldD
       fdict fid = ( fst
-                    $ fromMaybe (assert `failure` fid)
+                    $ fromMaybe (assert `failure` "no channel" `with` fid)
                     $ fst
-                    $ fromMaybe (assert `failure` fid)
+                    $ fromMaybe (assert `failure` "no faction" `with` fid)
                     $ EM.lookup fid newD
                   , maybe T.empty gname  -- a faction can go inactive
                     $ EM.lookup fid factionD

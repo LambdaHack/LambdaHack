@@ -72,9 +72,9 @@ renameFreq newName fr = fr {nameFrequency = newName}
 -- | Randomly choose an item according to the distribution.
 rollFreq :: Show a => Frequency a -> R.StdGen -> (a, R.StdGen)
 rollFreq (Frequency name []) _ =
-  assert `failure` ("choice from an empty frequency:" <+> name)
+  assert `failure` "choice from an empty frequency" `with` name
 rollFreq (Frequency name [(n, x)]) _ | n <= 0 =
-  assert `failure` ("singleton frequency with nothing to pick:" <+> name, n, x)
+  assert `failure` "singleton void frequency" `with` (name, n, x)
 rollFreq (Frequency _ [(_, x)]) g = (x, g)  -- speedup
 rollFreq (Frequency name fs) g =
   assert (sumf > 0 `blame` ("frequency with nothing to pick:" <+> name, fs))
@@ -83,8 +83,8 @@ rollFreq (Frequency name fs) g =
   sumf = sum (map fst fs)
   (r, ng) = R.randomR (1, sumf) g
   frec :: Int -> [(Int, a)] -> a
-  frec m []                     = assert `failure`
-                                    ("impossible" <+> name, fs, m)
+  frec m []                     = assert `failure` "impossible roll"
+                                         `with` (name, fs, m)
   frec m ((n, x) : _)  | m <= n = x
   frec m ((n, _) : xs)          = frec (m - n) xs
 

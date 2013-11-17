@@ -8,7 +8,6 @@ module Game.LambdaHack.Common.AtomicPos
   ) where
 
 import qualified Data.EnumSet as ES
-import Data.Text (Text)
 
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
@@ -236,11 +235,11 @@ seenAtomicCli knowEvents fid per posAtomic =
     PosFidAndSer fid2 -> fid == fid2
     PosSer -> False
     PosAll -> True
-    PosNone -> assert `failure` fid
+    PosNone -> assert `failure` "no position possible" `with` fid
 
 seenAtomicSer :: PosAtomic -> Bool
 seenAtomicSer posAtomic =
   case posAtomic of
     PosFid _ -> False
-    PosNone -> assert `failure` ("PosNone considered for the server" :: Text)
+    PosNone -> assert `failure` "wrong position for server" `with` posAtomic
     _ -> True

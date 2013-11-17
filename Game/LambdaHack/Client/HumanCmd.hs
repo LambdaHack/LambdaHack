@@ -138,7 +138,7 @@ cmdDescription cmd = case cmd of
   TgtAscend k | k == -1 -> "target next deeper level"
   TgtAscend k | k <= -2 -> "target" <+> showT (-k) <+> "levels deeper"
   TgtAscend _ ->
-    assert `failure` ("void level change in targeting in config file" :: Text)
+    assert `failure` "void level change when targeting" `with` cmd
   EpsIncr True  -> "swerve targeting line"
   EpsIncr False -> "unswerve targeting line"
   Cancel      -> "cancel action"

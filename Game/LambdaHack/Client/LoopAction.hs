@@ -46,9 +46,11 @@ loopAI sdebugCli cmdClientAISem = do
     (True, CmdAtomicAI RestartA{}) -> return ()  -- ignoring old savefile
     (False, CmdAtomicAI ResumeA{}) -> do
       removeServerSave
-      error $ T.unpack $ "Savefile of client" <+> showT side <+> "not usable. Removing server savefile. Please restart now."
+      error $ T.unpack $
+        "Savefile of client" <+> showT side
+        <+> "not usable. Removing server savefile. Please restart now."
     (False, CmdAtomicAI RestartA{}) -> return ()
-    _ -> assert `failure` (side, restored, cmd1)
+    _ -> assert `failure` "unexpected command" `with` (side, restored, cmd1)
   cmdClientAISem cmd1
   -- State and client state now valid.
   debugPrint $ "AI client" <+> showT side <+> "started."
@@ -80,12 +82,14 @@ loopUI sdebugCli cmdClientUISem = do
       msgAdd $ "Starting a new" <+> title <+> "game."  -- ignoring old savefile
     (False, CmdAtomicUI ResumeA{}) -> do
       removeServerSave
-      error $ T.unpack $ "Savefile of client" <+> showT side <+> "not usable. Removing server savefile. Please restart now."
+      error $ T.unpack $
+        "Savefile of client" <+> showT side
+        <+> "not usable. Removing server savefile. Please restart now."
     (False, CmdAtomicUI RestartA{}) -> do
       let msg = "Welcome to" <+> title <> "!"
       cmdClientUISem cmd1
       msgAdd msg
-    _ -> assert `failure` (side, restored, cmd1)
+    _ -> assert `failure` "unexpected command" `with` (side, restored, cmd1)
   -- State and client state now valid.
   debugPrint $ "UI client" <+> showT side <+> "started."
   loop

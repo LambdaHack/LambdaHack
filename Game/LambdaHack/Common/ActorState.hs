@@ -117,7 +117,7 @@ tryFindHeroK :: State -> FactionId -> Int -> Maybe (ActorId, Actor)
 tryFindHeroK s fact k =
   let c | k == 0          = '@'
         | k > 0 && k < 10 = Char.intToDigit k
-        | otherwise       = assert `failure` k
+        | otherwise       = assert `failure` "no digit" `with` k
   in tryFindActor s (\body -> bsymbol body == Just c
                               && not (bproj body)
                               && bfid body == fact)
@@ -140,11 +140,12 @@ whereTo s lid k = assert (k /= 0) $
 -- | Gets actor body from the current level. Error if not found.
 getActorBody :: ActorId -> State -> Actor
 getActorBody aid s =
-  fromMaybe (assert `failure` (aid, s)) $ EM.lookup aid $ sactorD s
+  fromMaybe (assert `failure` "body not found" `with` (aid, s))
+  $ EM.lookup aid $ sactorD s
 
 updateActorBody :: ActorId -> (Actor -> Actor) -> State -> State
 updateActorBody aid f s =
-  let alt Nothing = assert `failure` (aid, s)
+  let alt Nothing = assert `failure` "no body to update" `with` (aid, s)
       alt (Just b) = Just $ f b
   in updateActorD (EM.alter alt aid) s
 
@@ -155,7 +156,7 @@ actorContainer :: ActorId -> ItemInv -> ItemId -> Container
 actorContainer aid binv iid =
   case find ((== iid) . snd) $ EM.assocs binv of
     Just (l, _) -> CActor aid l
-    Nothing -> assert `failure` (aid, binv, iid)
+    Nothing -> assert `failure` "item not in inventory" `with` (aid, binv, iid)
 
 getActorInv :: ActorId -> State -> ItemInv
 getActorInv aid s = binv $ getActorBody aid s
@@ -169,7 +170,8 @@ getActorItem aid s =
 
 getItemBody :: ItemId -> State -> Item
 getItemBody iid s =
-  fromMaybe (assert `failure` (iid, s)) $ EM.lookup iid $ sitemD s
+  fromMaybe (assert `failure` "item body not found"
+                    `with` (iid, s)) $ EM.lookup iid $ sitemD s
 
 -- | Checks if the actor is present on the current level.
 -- The order of argument here and in other functions is set to allow

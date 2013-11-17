@@ -45,9 +45,7 @@ startup sdebugCli k = do
             bg <- Color.legalBG ]
   nr <- C.colorPairs
   when (nr < L.length s) $
-    C.end >>
-    (assert `failure`
-       "Terminal has too few color pairs (" ++ show nr ++ "). Giving up.")
+    C.end >> (assert `failure` "terminal has too few color pairs" `with` nr)
   let (ks, vs) = unzip s
   ws <- C.convertStyles vs
   let swin = C.stdScr

@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 -- | Semantics of 'HumanCmd' client commands that do not return
 -- server commands. None of such commands takes game time.
 -- TODO: document
@@ -74,8 +73,9 @@ cursorLevel :: MonadClient m => m Level
 cursorLevel = do
   dungeon <- getsState sdungeon
   stgtMode <- getsClient stgtMode
-  let tgtId =
-        maybe (assert `failure` "not targetting right now") tgtLevelId stgtMode
+  cli <- getClient
+  let tgtId = maybe (assert `failure` "not targetting right now"
+                            `with` cli) tgtLevelId stgtMode
   return $! dungeon EM.! tgtId
 
 viewedLevel :: MonadClientUI m => m (LevelId, Level)
@@ -401,7 +401,7 @@ tgtAscendHuman k = do
       Nothing ->  -- we are at the "end" of the dungeon
         abortWith "no more levels in this direction"
       Just (nln, npos) ->
-        assert (nln /= tgtId `blame` (nln, "stairs looped")) $ do
+        assert (nln /= tgtId `blame` "stairs looped" `with` nln) $ do
           -- Do not freely reveal the other end of the stairs.
           let scursor =
                 if Tile.hasFeature cotile F.Exit (lvl `at` npos)
@@ -494,7 +494,7 @@ displayMainMenu = do
       menuOverlay =  -- TODO: switch to Text and use T.justifyLeft
         overwrite $ pasteVersion $ map T.unpack $ stripFrame mainMenuArt
   case menuOverlay of
-    [] -> assert `failure` "empty Main Menu overlay"
+    [] -> assert `failure` "empty Main Menu overlay" `with` mainMenuArt
     hd : tl -> do
       slides <- overlayToSlideshow hd tl  -- TODO: keys don't work if tl/=[]
       tell slides

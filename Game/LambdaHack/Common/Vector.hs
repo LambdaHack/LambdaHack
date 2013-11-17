@@ -112,12 +112,13 @@ normalize lxsize v@(VectorXY (dx, dy)) =
   assert (dx /= 0 || dy /= 0 `blame` (dx, dy)) $
   let angle :: Double
       angle = atan (fromIntegral dy / fromIntegral dx) / (pi / 2)
-      dxy | angle <= -0.75 = (0, -1)
+      dxy | angle <= -0.75 && angle >= -1.25 = (0, -1)
           | angle <= -0.25 = (1, -1)
           | angle <= 0.25  = (1, 0)
           | angle <= 0.75  = (1, 1)
           | angle <= 1.25  = (0, 1)
-          | otherwise = assert `failure` (lxsize, dx, dy, angle)
+          | otherwise = assert `failure` "impossible angle"
+                               `with` (lxsize, dx, dy, angle)
       rxy = if dx >= 0
             then VectorXY dxy
             else negXY $ VectorXY dxy

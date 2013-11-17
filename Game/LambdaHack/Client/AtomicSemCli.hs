@@ -79,8 +79,9 @@ cmdAtomicFilterCli cmd = case cmd of
                 return [ AlterTileA (blid b) p fromTile toTile  -- reveal tile
                        , cmd  -- show the message
                        ]
-           else -- Misguided. Should never happen, LoseTile resets memory.
-                assert `failure` (t, cmd)
+           else -- Misguided.
+                assert `failure` "LoseTile fails to reset memory"
+                       `with` (aid, p, fromTile, toTile, b, t, cmd)
   DiscoverA _ _ iid _ -> do
     disco <- getsClient sdisco
     item <- getsState $ getItemBody iid
@@ -215,7 +216,7 @@ perceptionA lid outPA inPA = do
           , psmell = PerceptionVisible ES.empty }
         outPer = paToDummy outPA
         inPer = paToDummy inPA
-        adj Nothing = assert `failure` lid
+        adj Nothing = assert `failure` "no perception to alter" `with` lid
         adj (Just per) = Just $ dummyToPer $ addPer (diffPer per outPer) inPer
         f = EM.alter adj lid
     modifyClient $ \cli -> cli {sfper = f (sfper cli)}
@@ -225,14 +226,15 @@ discoverA :: MonadClient m
 discoverA lid p iid ik = do
   item <- getsState $ getItemBody iid
   let f Nothing = Just ik
-      f (Just ik2) = assert `failure` (lid, p, iid, ik, ik2)
+      f (Just ik2) = assert `failure` "already discovered"
+                            `with` (lid, p, iid, ik, ik2)
   modifyClient $ \cli -> cli {sdisco = EM.alter f (jkindIx item) (sdisco cli)}
 
 coverA :: MonadClient m
        => LevelId -> Point -> ItemId -> Kind.Id ItemKind -> m ()
 coverA lid p iid ik = do
   item <- getsState $ getItemBody iid
-  let f Nothing = assert `failure` (lid, p, iid, ik)
+  let f Nothing = assert `failure` "already covered" `with` (lid, p, iid, ik)
       f (Just ik2) = assert (ik == ik2 `blame` (ik, ik2)) Nothing
   modifyClient $ \cli -> cli {sdisco = EM.alter f (jkindIx item) (sdisco cli)}
 

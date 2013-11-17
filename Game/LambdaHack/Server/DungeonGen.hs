@@ -133,7 +133,7 @@ dungeonGen cops caves = do
   let (minD, maxD) =
         case (EM.minViewWithKey caves, EM.maxViewWithKey caves) of
           (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
-          _ -> assert `failure` caves
+          _ -> assert `failure` "no caves" `with` caves
   assert (minD <= maxD && fromEnum minD >= 1 `blame` caves) skip
   let gen :: R.StdGen -> LevelId -> (R.StdGen, (LevelId, Level))
       gen g ldepth =

@@ -182,7 +182,7 @@ populateDungeon = do
   let (minD, maxD) =
         case (EM.minViewWithKey dungeon, EM.maxViewWithKey dungeon) of
           (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
-          _ -> assert `failure` dungeon
+          _ -> assert `failure` "empty dungeon" `with` dungeon
       needInitialCrew = EM.assocs factionD
       getEntryLevel (_, fact) =
         max minD $ min maxD $ playerEntry $ gplayer fact

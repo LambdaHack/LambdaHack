@@ -47,7 +47,7 @@ ascendInBranch dungeon lid k =
   let (minD, maxD) =
         case (EM.minViewWithKey dungeon, EM.maxViewWithKey dungeon) of
           (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
-          _ -> assert `failure` dungeon
+          _ -> assert `failure` "null dungeon" `with` dungeon
       ln = max minD $ min maxD $ toEnum $ fromEnum lid - k
   in case EM.lookup ln dungeon of
     Just _ | ln /= lid -> [ln]

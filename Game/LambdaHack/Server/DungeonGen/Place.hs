@@ -167,13 +167,13 @@ tilePlace (x0, y0, x1, y1) pl@PlaceKind{..} =
       interior = case pcover of
         CAlternate ->
           let tile :: Int -> [a] -> [a]
-              tile _ []  = assert `failure` pl
+              tile _ []  = assert `failure` "nothing to tile" `with` pl
               tile d pat =
                 L.take d (L.cycle $ L.init pat ++ L.init (L.reverse pat))
           in fillInterior tile
         CStretch ->
           let stretch :: Int -> [a] -> [a]
-              stretch _ []  = assert `failure` pl
+              stretch _ []  = assert `failure` "nothing to streth" `with` pl
               stretch d pat = tileReflect d (pat ++ L.repeat (L.last pat))
           in fillInterior stretch
         CReflect ->

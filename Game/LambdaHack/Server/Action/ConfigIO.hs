@@ -64,7 +64,7 @@ dump Config{configSelfString} fn = do
 set :: CP -> CF.SectionSpec -> CF.OptionSpec -> String -> CP
 set (CP conf) s o v =
   if CF.has_option conf s o
-  then assert `failure`"Overwritten config option: " ++ s ++ "." ++ o
+  then assert `failure`"overwritten config option" `with` (s, o)
   else CP $ forceEither $ CF.set conf s o v
 
 -- | Gets a random generator from the config or,
@@ -95,11 +95,6 @@ instance Show CP where
 toCP :: CF.ConfigParser -> CP
 toCP cf = CP $ cf {CF.optionxform = id}
 
--- | In case of corruption, just fail.
-forceEither :: Show a => Either a b -> b
-forceEither (Left a)  = assert `failure` a
-forceEither (Right b) = b
-
 -- | A simplified access to an option in a given section,
 -- with simple error reporting (no internal errors are caught nor hidden).
 -- If there is no such option, gives Nothing.
@@ -115,16 +110,14 @@ get :: CF.Get_C a => CP -> CF.SectionSpec -> CF.OptionSpec -> a
 get (CP conf) s o =
   if CF.has_option conf s o
   then forceEither $ CF.get conf s o
-  else assert `failure` "Unknown config option: " ++ s ++ "." ++ o
-                        ++ " in\n" ++ CF.to_string conf
+  else assert `failure` "unknown CF option" `with` (s, o, CF.to_string conf)
 
 -- | An association list corresponding to a section. Fails if no such section.
 getItems :: CP -> CF.SectionSpec -> [(String, String)]
 getItems (CP conf) s =
   if CF.has_section conf s
   then forceEither $ CF.items conf s
-  else assert `failure` "Unknown config section: " ++ s
-                        ++ " in\n" ++ CF.to_string conf
+  else assert `failure` "unknown CF section" `with` (s, CF.to_string conf)
 
 parseConfigRules :: FilePath -> CP -> Config
 parseConfigRules dataDir cp =
@@ -140,7 +133,7 @@ parseConfigRules dataDir cp =
         let toNumber (ident, name) =
               case stripPrefix "HeroName_" ident of
                 Just n -> (read n, T.pack name)
-                Nothing -> assert `failure` ("wrong hero name id " ++ ident)
+                Nothing -> assert `failure` "wrong hero name id" `with` ident
             section = getItems cp "heroName"
         in map toNumber section
   in Config{..}

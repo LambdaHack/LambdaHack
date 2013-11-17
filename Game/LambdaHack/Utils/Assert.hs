@@ -2,10 +2,11 @@
 -- Actually, a bunch of hacks wrapping the original @assert@ function,
 -- which is the only easy way of obtaining source positions.
 module Game.LambdaHack.Utils.Assert
-  ( assert, blame, failure, allB, skip
+  ( assert, blame, with, failure, allB, skip, forceEither
   ) where
 
 import Control.Exception (assert)
+import Data.Text (Text)
 import Debug.Trace (trace)
 
 infix 1 `blame`
@@ -21,6 +22,10 @@ blame condition blamed
     let s = "Contract failed and the following is to blame:\n" ++
             "  " ++ show blamed
     in trace s False
+
+infix 2 `with`
+with :: Text -> b -> (Text, b)
+with t b = (t, b)
 
 infix 1 `failure`
 -- | Like 'error', but shows the source position and also
@@ -52,3 +57,8 @@ allB predicate l =
 -- >    assert (b `blame` a) skip
 skip :: Monad m => m ()
 skip = return ()
+
+-- | In case of corruption, just fail.
+forceEither :: Show a => Either a b -> b
+forceEither (Left a)  = assert `failure` "unexpected Left" `with` a
+forceEither (Right b) = b

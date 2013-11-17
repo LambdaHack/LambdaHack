@@ -24,7 +24,6 @@ import qualified Data.Binary as Binary
 import qualified Data.Hashable as Hashable
 import qualified Data.List as L
 import Data.Ratio
-import Data.Text (Text)
 import GHC.Generics (Generic)
 import qualified System.Random as R
 
@@ -45,7 +44,7 @@ random = St.state R.random
 
 -- | Get any element of a list with equal probability.
 oneOf :: [a] -> Rnd a
-oneOf [] = assert `failure` ("oneOf []" :: Text)
+oneOf [] = assert `failure` "oneOf []" `with` ()
 oneOf xs = do
   r <- randomR (0, length xs - 1)
   return (xs !! r)
@@ -145,7 +144,7 @@ intToDeep :: Int -> RollDeep
 intToDeep 0  = (RollDice 0 0, RollDice 0 0)
 intToDeep n' = let n = toEnum n'
                in if n > maxBound || n < minBound
-                  then assert `failure` n'
+                  then assert `failure` "Deep out of bound" `with` n'
                   else (RollDice n 1, RollDice 0 0)
 
 -- | Maximal value of scaled dice.

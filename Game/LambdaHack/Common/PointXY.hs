@@ -40,7 +40,8 @@ fromTo (PointXY (x0, y0)) (PointXY (x1, y1)) =
  let result
        | x0 == x1 = L.map (\ y -> PointXY (x0, y)) (fromTo1 y0 y1)
        | y0 == y1 = L.map (\ x -> PointXY (x, y0)) (fromTo1 x0 x1)
-       | otherwise = assert `failure` ((x0, y0), (x1, y1))
+       | otherwise = assert `failure` "diagononal fromTo"
+                            `with` ((x0, y0), (x1, y1))
  in result
 
 fromTo1 :: Int -> Int -> [Int]
