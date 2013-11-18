@@ -69,11 +69,17 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
   (sq, su, sd) <- placeStairs cotile cmap kc
   stairsUp <- if ldepth == minD then return []
               else do
-                upId <- opick (findLegend su) ascendable
+                let cond tk | ldepth == maxD = ascendable tk
+                                               && not (descendable tk)
+                            | otherwise = ascendable tk
+                upId <- opick (findLegend su) cond
                 return [(su, upId)]
   stairsDown <- if ldepth == maxD then return []
                 else do
-                  downId <- opick (findLegend sd) descendable
+                  let cond tk | ldepth == minD = descendable tk
+                                                 && not (ascendable tk)
+                              | otherwise = descendable tk
+                  downId <- opick (findLegend sd) cond
                   return [(sd, downId)]
   escape <- case escapeFeature of
               Nothing -> return []

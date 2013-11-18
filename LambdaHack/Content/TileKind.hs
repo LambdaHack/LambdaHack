@@ -14,9 +14,9 @@ cdefs = ContentDef
   , getFreq = tfreq
   , validate = tvalidate
   , content =
-      [wall, hardRock, pillar, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpDark, stairsUpLit, stairsDownDark, stairsDownLit, escapeUpDark, escapeUpLit, escapeDownDark, escapeDownLit, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorItemLit, floorItemDark, floorActorItemLit, floorActorItemDark, floorRed, floorBlue, floorGreen, floorBrown]
+      [wall, hardRock, pillar, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpDark, stairsUpLit, stairsDark, stairsLit, stairsDownDark, stairsDownLit, escapeUpDark, escapeUpLit, escapeDownDark, escapeDownLit, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorItemLit, floorItemDark, floorActorItemLit, floorActorItemDark, floorRed, floorBlue, floorGreen, floorBrown]
   }
-wall,        hardRock, pillar, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpDark, stairsUpLit, stairsDownDark, stairsDownLit, escapeUpDark, escapeUpLit, escapeDownDark, escapeDownLit, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorItemLit, floorItemDark, floorActorItemLit, floorActorItemDark, floorRed, floorBlue, floorGreen, floorBrown :: TileKind
+wall,        hardRock, pillar, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpDark, stairsUpLit, stairsDark, stairsLit, stairsDownDark, stairsDownLit, escapeUpDark, escapeUpLit, escapeDownDark, escapeDownLit, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorItemLit, floorItemDark, floorActorItemLit, floorActorItemDark, floorRed, floorBlue, floorGreen, floorBrown :: TileKind
 
 wall = TileKind
   { tsymbol  = ' '
@@ -138,13 +138,26 @@ stairsUpLit = stairsUpDark
   , tcolor2  = defFG
   , tfeature = Lit : tfeature stairsUpDark
   }
+stairsDark = TileKind
+  { tsymbol  = '>'
+  , tname    = "staircase"
+  , tfreq    = []  -- TODO: [("darkLegend", 100)]
+  , tcolor   = BrCyan
+  , tcolor2  = Cyan  -- TODO
+  , tfeature = [ Walkable, Clear, Exit
+               , Cause $ Effect.Ascend 1
+               , Cause $ Effect.Descend 1 ]
+  }
+stairsLit = stairsDark
+  { tfreq    = []  -- TODO:  [("litLegend", 100)]
+  , tcolor   = BrCyan
+  , tcolor2  = Cyan  -- TODO
+  , tfeature = Lit : tfeature stairsDownDark
+  }
 stairsDownDark = TileKind
   { tsymbol  = '>'
   , tname    = "staircase down"
   , tfreq    = [("darkLegend", 100)]
--- Disabled, because the yellow artificial light does not fit LambdaHack.
---  , tcolor   = BrYellow
--- Dark room interior, OTOH, is fine:
   , tcolor   = BrWhite
   , tcolor2  = BrBlack
   , tfeature = [Walkable, Clear, Exit, Cause $ Effect.Descend 1]
