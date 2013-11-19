@@ -383,38 +383,34 @@ effLvlGoUp aid k = do
   ais1 <- getsState $ getActorItem aid
   let lid1 = blid b1
       pos1 = bpos b1
-  whereto <- getsState $ \s -> whereTo s lid1 k
-  case whereto of
-    Nothing -> assert `failure` "nowhere to go to" `with` (aid, k, b1)
-    Just [] -> assert `failure` "empty stair list" `with` (aid, k, b1)
-    Just ((lid2, pos2) : _)-> do  -- TODO: choose the correct stairs
-      -- The actor is added to the new level, but there can be other actors
-      -- at his new position.
-      inhabitants <- getsState $ posToActor pos2 lid2
-      case inhabitants of
-        Nothing ->
-          -- Move the actor out of the way.
-          switchLevels1 aid
-        Just aid2 -> do
-          b2 <- getsState $ getActorBody aid2
-          ais2 <- getsState $ getActorItem aid2
-          -- Alert about the switch.
-          let part2 = partActor coactor b2
-              verb = "be pushed to another level"
-              msg2 = makeSentence [MU.SubjectVerbSg part2 verb]
-          execSfxAtomic $ MsgFidD (bfid b2) msg2
-          -- Move the actor out of the way.
-          switchLevels1 aid
-          -- Move the inhabitant out of the way.
-          switchLevels1 aid2
-          -- Move the inhabitant to where the actor was.
-          switchLevels2 aid2 b2 ais2 lid1 pos1
-      -- Move the actor to where the inhabitant was, if any.
-      switchLevels2 aid b1 ais1 lid2 pos2
-      -- Verify only one actor on every tile.
-      !_ <- getsState $ posToActor pos1 lid1  -- assertion is inside
-      !_ <- getsState $ posToActor pos2 lid2  -- assertion is inside
-      return True
+  (lid2, pos2) <- getsState $ whereTo lid1 pos1 k
+  -- The actor is added to the new level, but there can be other actors
+  -- at his new position.
+  inhabitants <- getsState $ posToActor pos2 lid2
+  case inhabitants of
+    Nothing ->
+      -- Move the actor out of the way.
+      switchLevels1 aid
+    Just aid2 -> do
+      b2 <- getsState $ getActorBody aid2
+      ais2 <- getsState $ getActorItem aid2
+      -- Alert about the switch.
+      let part2 = partActor coactor b2
+          verb = "be pushed to another level"
+          msg2 = makeSentence [MU.SubjectVerbSg part2 verb]
+      execSfxAtomic $ MsgFidD (bfid b2) msg2
+      -- Move the actor out of the way.
+      switchLevels1 aid
+      -- Move the inhabitant out of the way.
+      switchLevels1 aid2
+      -- Move the inhabitant to where the actor was.
+      switchLevels2 aid2 b2 ais2 lid1 pos1
+  -- Move the actor to where the inhabitant was, if any.
+  switchLevels2 aid b1 ais1 lid2 pos2
+  -- Verify only one actor on every tile.
+  !_ <- getsState $ posToActor pos1 lid1  -- assertion is inside
+  !_ <- getsState $ posToActor pos2 lid2  -- assertion is inside
+  return True
 
 switchLevels1 :: MonadAtomic m => ActorId -> m ()
 switchLevels1 aid = do

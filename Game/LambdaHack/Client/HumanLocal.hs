@@ -386,31 +386,30 @@ tgtAscendHuman :: (MonadClientAbort m, MonadClientUI m)
 tgtAscendHuman k = do
   Kind.COps{cotile} <- getsState scops
   dungeon <- getsState sdungeon
-  s <- getState
   cursor <- getsClient scursor
   (tgtId, lvl) <- viewedLevel
   let rightStairs = case cursor of
-        Nothing -> False
+        Nothing -> Nothing
         Just cpos ->
           let tile = lvl `at` cpos
-          in k >= 1
-             && Tile.hasFeature cotile (F.Cause $ Effect.Ascend k)  tile
-             || k <= -1
-             && Tile.hasFeature cotile (F.Cause $ Effect.Descend (-k)) tile
-  if rightStairs  -- stairs, in the right direction
-    then case whereTo s tgtId k of
-      Nothing -> assert `failure` "nowhere to go to" `with` (k, lvl)
-      Just [] -> assert `failure` "empty stair list" `with` (k, lvl)
-      Just ((nln, npos) : _) ->  -- TODO: choose the correct stairs
-        assert (nln /= tgtId `blame` "stairs looped" `with` nln) $ do
-          -- Do not freely reveal the other end of the stairs.
-          let scursor =
-                if Tile.hasFeature cotile F.Exit (lvl `at` npos)
-                then Just npos  -- already know as an exit, focus on it
-                else cursor    -- unknown, do not reveal
-          modifyClient $ \cli -> cli {scursor}
-          setTgtId nln
-    else  -- no stairs in the right direction
+          in if k >= 1
+                && Tile.hasFeature cotile (F.Cause $ Effect.Ascend k) tile
+                || k <= -1
+                && Tile.hasFeature cotile (F.Cause $ Effect.Descend (-k)) tile
+             then Just cpos
+             else Nothing
+  case rightStairs of
+    Just cpos -> do  -- stairs, in the right direction
+      (nln, npos) <- getsState $ whereTo tgtId cpos k
+      assert (nln /= tgtId `blame` "stairs looped" `with` nln) skip
+      -- Do not freely reveal the other end of the stairs.
+      let scursor =
+            if Tile.hasFeature cotile F.Exit (lvl `at` npos)
+            then Just npos  -- already know as an exit, focus on it
+            else cursor    -- unknown, do not reveal
+      modifyClient $ \cli -> cli {scursor}
+      setTgtId nln
+    Nothing ->  -- no stairs in the right direction
       case ascendInBranch dungeon tgtId k of
         [] -> abortWith "no more levels in this direction"
         nln : _ -> setTgtId nln

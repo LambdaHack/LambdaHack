@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections #-}
 -- | Operations on the 'Actor' type that need the 'State' type,
 -- but not the 'Action' type.
 -- TODO: Document an export list after it's rewritten according to #17.
@@ -125,17 +124,28 @@ tryFindHeroK s fact k =
 
 -- | Compute the level identifier and starting position on the level,
 -- after a level change.
-whereTo :: State    -- ^ game state
-        -> LevelId  -- ^ start from this level
+whereTo :: LevelId  -- ^ level of the stairs
+        -> Point    -- ^ position of the stairs
         -> Int      -- ^ jump down this many levels
-        -> Maybe [(LevelId, Point)]
+        -> State    -- ^ game state
+        -> (LevelId, Point)
                     -- ^ target level and the position of its receiving stairs
-whereTo s lid k = assert (k /= 0) $
-  case ascendInBranch (sdungeon s) lid k of
-    [] -> Nothing
-    ln : _ -> let lvlTrg = sdungeon s EM.! ln
-              in Just $ map (ln,)
-                 $ (if k < 0 then fst else snd) (lstair lvlTrg)
+whereTo lid pos k s = assert (k /= 0) $
+  let dungeon = sdungeon s
+      lvl = dungeon EM.! lid
+      stairs = (if k < 0 then snd else fst) (lstair lvl)
+      failSrc = assert `failure` "no stairs at position"
+                       `with` (lid, pos, k, stairs)
+      i = fromMaybe failSrc $ elemIndex pos stairs
+  in case ascendInBranch dungeon lid k of
+    [] -> assert `failure` "no dungeon level to go to" `with` (lid, pos, k)
+    ln : _ -> let lvlTgt = dungeon EM.! ln
+                  stairsTgt = (if k < 0 then fst else snd) (lstair lvlTgt)
+                  failTgt = assert `failure` "no stairs at index"
+                                   `with` (lid, pos, k, stairsTgt, ln)
+              in if length stairsTgt < i
+                 then failTgt
+                 else (ln, stairsTgt !! i)
 
 -- * The operations below disregard levels other than the current.
 
