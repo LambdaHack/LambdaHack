@@ -218,8 +218,7 @@ populateDungeon = do
 findEntryPoss :: Kind.COps -> Level -> Int -> Rnd [Point]
 findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lysize, lstair} k =
   let factionDist = max lxsize lysize - 5
-      dist poss cmin l _ =
-        all (\pos -> chessDist lxsize l pos > cmin) poss
+      dist poss cmin l _ = all (\pos -> chessDist lxsize l pos > cmin) poss
       tryFind _ 0 = return []
       tryFind ps n = do
         np <- findPosTry 40 ltile

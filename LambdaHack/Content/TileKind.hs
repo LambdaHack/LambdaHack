@@ -141,7 +141,7 @@ stairsUpLit = stairsUpDark
 stairsDark = TileKind
   { tsymbol  = '>'
   , tname    = "staircase"
-  , tfreq    = []  -- TODO: [("darkLegend", 100)]
+  , tfreq    = [("darkLegend", 100)]
   , tcolor   = BrCyan
   , tcolor2  = Cyan  -- TODO
   , tfeature = [ Walkable, Clear, Exit
@@ -149,10 +149,10 @@ stairsDark = TileKind
                , Cause $ Effect.Descend 1 ]
   }
 stairsLit = stairsDark
-  { tfreq    = []  -- TODO:  [("litLegend", 100)]
+  { tfreq    = [("litLegend", 100)]
   , tcolor   = BrCyan
   , tcolor2  = Cyan  -- TODO
-  , tfeature = Lit : tfeature stairsDownDark
+  , tfeature = Lit : tfeature stairsDark
   }
 stairsDownDark = TileKind
   { tsymbol  = '>'

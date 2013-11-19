@@ -35,63 +35,74 @@ convertTileMaps cdefTile cxsize cysize ltile = do
   pickedTiles <- replicateM (cxsize * cysize) cdefTile
   return $ Kind.listArray bounds pickedTiles Kind.// assocs
 
-placeStairs :: Kind.Ops TileKind -> TileMap -> CaveKind
-            -> Rnd (Point, Point, Point)
-placeStairs cotile cmap CaveKind{..} = do
-  su <- findPos cmap (const (Tile.hasFeature cotile F.CanActor))
-  sd <- findPosTry 1000 cmap
-          [ \ l _ -> chessDist cxsize su l >= cminStairDist
-          , \ l _ -> chessDist cxsize su l >= cminStairDist `div` 2
-          , \ l t -> l /= su && Tile.hasFeature cotile F.CanActor t
-          ]
-  sq <- findPos cmap (const (Tile.hasFeature cotile F.CanActor))
-  return (sq, su, sd)
+placeStairs :: Kind.Ops TileKind -> TileMap -> CaveKind -> [Point]
+            -> Rnd Point
+placeStairs cotile cmap CaveKind{..} ps = do
+  let dist cmin l _ = all (\pos -> chessDist cxsize l pos > cmin) ps
+  findPosTry 1000 cmap
+    [ dist $ cminStairDist
+    , dist $ cminStairDist `div` 2
+    , dist $ cminStairDist `div` 4
+    , dist $ cminStairDist `div` 8
+    , \p t -> Tile.hasFeature cotile F.CanActor t
+              && dist 0 p t  -- can't overwrite stairs with other stairs
+    ]
 
 -- | Create a level from a cave, from a cave kind.
-buildLevel :: Kind.COps -> Cave -> Int -> Int -> Int -> Maybe Bool -> Rnd Level
-buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
-                         , cocave=Kind.Ops{okind} }
-           Cave{..} ldepth minD maxD escapeFeature = do
-  let kc@CaveKind{..} = okind dkind
+buildLevel :: Kind.COps -> Cave -> Int -> Int -> Int -> Int -> Maybe Bool
+           -> Rnd Level
+buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
+                         , cocave=Kind.Ops{okind=cokind} }
+           Cave{..} ldepth minD maxD nstairUp escapeFeature = do
+  let kc@CaveKind{..} = cokind dkind
       fitArea pos = inside cxsize pos . qarea
-      findLegend pos =
-        maybe clitLegendTile qlegend $ find (fitArea pos) dplaces
-      hasEscapeAndSymbol sym t =
-        Tile.kindHasFeature (F.Cause Effect.Escape) t
-        && tsymbol t == sym
-      ascendable tk =
-        any (\f -> case f of F.Cause (Effect.Ascend _) -> True; _ -> False
-            ) $ tfeature tk
-      descendable tk =
-        any (\f -> case f of F.Cause (Effect.Descend _) -> True; _ -> False
-            ) $ tfeature tk
+      findLegend pos = maybe clitLegendTile qlegend
+                       $ find (fitArea pos) dplaces
+      hasEscapeAndSymbol sym t = Tile.kindHasFeature (F.Cause Effect.Escape) t
+                                 && tsymbol t == sym
+      ascendable  = Tile.kindHasFeature $ F.Cause (Effect.Ascend 1)
+      descendable = Tile.kindHasFeature $ F.Cause (Effect.Descend 1)
   cmap <- convertTileMaps (opick cdefTile (const True)) cxsize cysize dmap
-  (sq, su, sd) <- placeStairs cotile cmap kc
-  stairsUp <- if ldepth == minD then return []
-              else do
-                let cond tk | ldepth == maxD = ascendable tk
-                                               && not (descendable tk)
-                            | otherwise = ascendable tk
-                upId <- opick (findLegend su) cond
-                return [(su, upId)]
-  stairsDown <- if ldepth == maxD then return []
-                else do
-                  let cond tk | ldepth == minD = descendable tk
-                                                 && not (ascendable tk)
-                              | otherwise = descendable tk
-                  downId <- opick (findLegend sd) cond
-                  return [(sd, downId)]
+  let fDown =
+        if ldepth == maxD then return ([], [])
+        else do
+          let cond tk = descendable tk && not (ldepth == minD && ascendable tk)
+          sd <- placeStairs cotile cmap kc []
+          downId <- opick (findLegend sd) cond
+          let st = [(sd, downId)]
+          return $ if ascendable $ okind downId then (st, st) else ([], st)
+      fUp (stairsUpCur, stairsDownCur) _ =
+        if ldepth == minD then return (stairsUpCur, stairsDownCur)
+        else do
+          let cond tk = ascendable tk && not (ldepth == maxD && descendable tk)
+              stairsCur = stairsUpCur ++ stairsDownCur
+              posCur = nub $ sort $ map fst stairsCur
+          su <- placeStairs cotile cmap kc posCur
+          upId <- opick (findLegend su) cond
+          let st = (su, upId)
+          return $ if descendable $ okind upId
+                   then (st : stairsUpCur, st : stairsDownCur)
+                   else (st : stairsUpCur, stairsDownCur)
+  (stairsUpExtra, stairsDownStd) <- fDown
+  let nstairUpLeft = nstairUp - length stairsUpExtra
+  (stairsUp, stairsDown) <-
+    foldM fUp (stairsUpExtra, stairsDownStd) [1 .. nstairUpLeft]
+  assert (length stairsUp == nstairUp) skip
+  let stairsTotal = stairsUp ++ stairsDown
+      posTotal = nub $ sort $ map fst stairsTotal
+  sq <- placeStairs cotile cmap kc $ posTotal
   escape <- case escapeFeature of
               Nothing -> return []
               Just True -> do
-                upEscape <- opick (findLegend su) $ hasEscapeAndSymbol '<'
+                upEscape <- opick (findLegend sq) $ hasEscapeAndSymbol '<'
                 return [(sq, upEscape)]
               Just False -> do
-                downEscape <- opick (findLegend su) $ hasEscapeAndSymbol '>'
+                downEscape <- opick (findLegend sq) $ hasEscapeAndSymbol '>'
                 return [(sq, downEscape)]
-  let exits = stairsUp ++ stairsDown ++ escape
+  let exits = stairsTotal ++ escape
       ltile = cmap Kind.// exits
-      lstair = ([su], [sd])  -- TODO: add more stairs, if required
+      lstair = (map fst stairsUp, map fst stairsDown)
+  -- traceShow (ldepth, nstairUp, (stairsUp, stairsDown)) skip
   litemNum <- castDice citemNum
   lsecret <- random
   return $! levelFromCaveKind cops kc ldepth ltile lstair litemNum lsecret
@@ -122,9 +133,9 @@ levelFromCaveKind Kind.COps{cotile}
     , lhidden = chidden
     }
 
-findGenerator :: Kind.COps -> Caves -> LevelId -> LevelId -> LevelId
+findGenerator :: Kind.COps -> Caves -> LevelId -> LevelId -> LevelId -> Int
               -> Rnd Level
-findGenerator cops caves ldepth minD maxD = do
+findGenerator cops caves ldepth minD maxD nstairUp = do
   let Kind.COps{cocave=Kind.Ops{opick}} = cops
       (genName, escapeFeature) =
         fromMaybe ("dng", Nothing) $ EM.lookup ldepth caves
@@ -132,7 +143,7 @@ findGenerator cops caves ldepth minD maxD = do
   let maxDepth = if minD == maxD then 10 else fromEnum maxD
   cave <- buildCave cops (fromEnum ldepth) maxDepth ci
   buildLevel cops cave
-             (fromEnum ldepth) (fromEnum minD) (fromEnum maxD)
+             (fromEnum ldepth) (fromEnum minD) (fromEnum maxD) nstairUp
              escapeFeature
 
 -- | Freshly generated and not yet populated dungeon.
@@ -150,15 +161,18 @@ dungeonGen cops caves = do
           _ -> assert `failure` "no caves" `with` caves
   assert (minD <= maxD && fromEnum minD >= 1 `blame` "wrongly labeled caves"
                                              `with` caves) skip
-  let gen :: R.StdGen -> LevelId -> (R.StdGen, (LevelId, Level))
-      gen g ldepth =
+  let gen :: (R.StdGen, Int) -> LevelId -> ((R.StdGen, Int), (LevelId, Level))
+      gen (g, nstairUp) ldepth =
         let (g1, g2) = R.split g
-            findG = findGenerator cops caves ldepth minD maxD
-            res = St.evalState findG g1
-        in (g2, (ldepth, res))
+            findG = findGenerator cops caves ldepth minD maxD nstairUp
+            lvl = St.evalState findG g1
+            -- nstairUp for the next level is nstairDown for the current level
+            nstairDown = length $ snd $ lstair lvl
+        in ((g2, nstairDown), (ldepth, lvl))
       con :: R.StdGen -> (FreshDungeon, R.StdGen)
-      con g = let (gd, levels) = mapAccumL gen g [minD..maxD]
+      con g = let ((gd, nstairUpLast), levels) =
+                    mapAccumL gen (g, 0) [minD..maxD]
                   freshDungeon = EM.fromList levels
                   freshDepth = if minD == maxD then 10 else fromEnum maxD
-              in (FreshDungeon{..}, gd)
+              in assert (nstairUpLast == 0) $ (FreshDungeon{..}, gd)
   St.state con
