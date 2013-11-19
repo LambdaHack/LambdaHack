@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 -- | Operations on the 'Actor' type that need the 'State' type,
 -- but not the 'Action' type.
 -- TODO: Document an export list after it's rewritten according to #17.
@@ -127,13 +128,14 @@ tryFindHeroK s fact k =
 whereTo :: State    -- ^ game state
         -> LevelId  -- ^ start from this level
         -> Int      -- ^ jump down this many levels
-        -> Maybe (LevelId, Point)
+        -> Maybe [(LevelId, Point)]
                     -- ^ target level and the position of its receiving stairs
 whereTo s lid k = assert (k /= 0) $
   case ascendInBranch (sdungeon s) lid k of
     [] -> Nothing
     ln : _ -> let lvlTrg = sdungeon s EM.! ln
-              in Just (ln, (if k < 0 then fst else snd) (lstair lvlTrg))
+              in Just $ map (ln,)
+                 $ (if k < 0 then fst else snd) (lstair lvlTrg)
 
 -- * The operations below disregard levels other than the current.
 

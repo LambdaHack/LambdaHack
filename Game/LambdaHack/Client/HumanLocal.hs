@@ -393,15 +393,15 @@ tgtAscendHuman k = do
         Nothing -> False
         Just cpos ->
           let tile = lvl `at` cpos
-          in k ==  1
-             && Tile.hasFeature cotile (F.Cause $ Effect.Ascend 1)  tile
-             || k == -1
-             && Tile.hasFeature cotile (F.Cause $ Effect.Descend 1) tile
+          in k >= 1
+             && Tile.hasFeature cotile (F.Cause $ Effect.Ascend k)  tile
+             || k <= -1
+             && Tile.hasFeature cotile (F.Cause $ Effect.Descend (-k)) tile
   if rightStairs  -- stairs, in the right direction
     then case whereTo s tgtId k of
-      Nothing ->  -- we are at the "end" of the dungeon
-        abortWith "no more levels in this direction"
-      Just (nln, npos) ->
+      Nothing -> assert `failure` "nowhere to go to" `with` (k, lvl)
+      Just [] -> assert `failure` "empty stair list" `with` (k, lvl)
+      Just ((nln, npos) : _) ->  -- TODO: choose the correct stairs
         assert (nln /= tgtId `blame` "stairs looped" `with` nln) $ do
           -- Do not freely reveal the other end of the stairs.
           let scursor =

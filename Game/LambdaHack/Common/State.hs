@@ -43,7 +43,7 @@ data State = State
 -- TODO: add a flag 'fresh' and when saving levels, don't save
 -- and when loading regenerate this level.
 unknownLevel :: Kind.Ops TileKind -> Int -> X -> Y
-             -> Text -> (Point, Point) -> Int -> Int -> Int
+             -> Text -> ([Point], [Point]) -> Int -> Int -> Int
              -> Level
 unknownLevel Kind.Ops{ouniqGroup} ldepth lxsize lysize ldesc lstair lclear
              lsecret lhidden =

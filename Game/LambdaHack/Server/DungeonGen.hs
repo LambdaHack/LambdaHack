@@ -89,15 +89,16 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
               Just False -> do
                 downEscape <- opick (findLegend su) $ hasEscapeAndSymbol '>'
                 return [(sq, downEscape)]
-  let stairs = stairsUp ++ stairsDown ++ escape
-      ltile = cmap Kind.// stairs
-      lstair = (su, sd)
+  let exits = stairsUp ++ stairsDown ++ escape
+      ltile = cmap Kind.// exits
+      lstair = ([su], [sd])  -- TODO: add more stairs, if required
   litemNum <- castDice citemNum
   lsecret <- random
   return $! levelFromCaveKind cops kc ldepth ltile lstair litemNum lsecret
 
 levelFromCaveKind :: Kind.COps
-                  -> CaveKind -> Int -> TileMap -> (Point, Point) -> Int -> Int
+                  -> CaveKind -> Int -> TileMap -> ([Point], [Point])
+                  -> Int -> Int
                   -> Level
 levelFromCaveKind Kind.COps{cotile}
                   CaveKind{..} ldepth ltile lstair litemNum lsecret =

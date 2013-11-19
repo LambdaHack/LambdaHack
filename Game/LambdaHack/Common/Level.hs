@@ -76,21 +76,22 @@ type SmellMap = EM.EnumMap Point SmellTime
 -- | A view on single, inhabited dungeon level. "Remembered" fields
 -- carry a subset of the info in the client copies of levels.
 data Level = Level
-  { ldepth   :: !Int             -- ^ depth of the level
-  , lprio    :: !ActorPrio       -- ^ remembered actor times on the level
-  , lfloor   :: !ItemFloor       -- ^ remembered items lying on the floor
-  , ltile    :: !TileMap         -- ^ remembered level map
-  , lxsize   :: !X               -- ^ width of the level
-  , lysize   :: !Y               -- ^ height of the level
-  , lsmell   :: !SmellMap        -- ^ remembered smells on the level
-  , ldesc    :: !Text            -- ^ level description
-  , lstair   :: !(Point, Point)  -- ^ destination of (up, down) stairs
-  , lseen    :: !Int             -- ^ currently remembered clear tiles
-  , lclear   :: !Int             -- ^ total number of initially clear tiles
-  , ltime    :: !Time            -- ^ date of the last activity on the level
-  , litemNum :: !Int             -- ^ number of initial items, 0 for clients
-  , lsecret  :: !Int             -- ^ secret tile seed
-  , lhidden  :: !Int             -- ^ secret tile density
+  { ldepth   :: !Int        -- ^ depth of the level
+  , lprio    :: !ActorPrio  -- ^ remembered actor times on the level
+  , lfloor   :: !ItemFloor  -- ^ remembered items lying on the floor
+  , ltile    :: !TileMap    -- ^ remembered level map
+  , lxsize   :: !X          -- ^ width of the level
+  , lysize   :: !Y          -- ^ height of the level
+  , lsmell   :: !SmellMap   -- ^ remembered smells on the level
+  , ldesc    :: !Text       -- ^ level description
+  , lstair   :: !([Point], [Point])
+                            -- ^ destinations of (up, down) stairs
+  , lseen    :: !Int        -- ^ currently remembered clear tiles
+  , lclear   :: !Int        -- ^ total number of initially clear tiles
+  , ltime    :: !Time       -- ^ date of the last activity on the level
+  , litemNum :: !Int        -- ^ number of initial items, 0 for clients
+  , lsecret  :: !Int        -- ^ secret tile seed
+  , lhidden  :: !Int        -- ^ secret tile density
   }
   deriving (Show, Eq)
 

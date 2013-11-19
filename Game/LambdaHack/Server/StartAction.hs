@@ -233,6 +233,6 @@ findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lysize, lstair} k =
                 ]
         nps <- tryFind (np : ps) (n - 1)
         return $ np : nps
-      stairPoss | k == 1 = [fst lstair, snd lstair]
+      stairPoss | k == 1 = fst lstair ++ snd lstair
                 | otherwise = []
   in tryFind stairPoss k

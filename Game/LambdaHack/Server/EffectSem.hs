@@ -385,10 +385,9 @@ effLvlGoUp aid k = do
       pos1 = bpos b1
   whereto <- getsState $ \s -> whereTo s lid1 k
   case whereto of
-    Nothing -> -- We are at the "end" of the dungeon.
-      -- TODO: perhaps return Maybe Text explaining why it failed, instead?
-      return False
-    Just (lid2, pos2) -> do
+    Nothing -> assert `failure` "nowhere to go to" `with` (aid, k, b1)
+    Just [] -> assert `failure` "empty stair list" `with` (aid, k, b1)
+    Just ((lid2, pos2) : _)-> do  -- TODO: choose the correct stairs
       -- The actor is added to the new level, but there can be other actors
       -- at his new position.
       inhabitants <- getsState $ posToActor pos2 lid2
