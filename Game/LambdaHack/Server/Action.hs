@@ -369,7 +369,7 @@ updateConn executorUI executorAI = do
   d <- liftIO $ mapWithKeyM addConn factionD
   let newD = d `EM.union` oldD  -- never kill old clients
   putDict newD
-  -- Spawn and kill client threads.
+  -- Spawn client threads.
   let toSpawn = newD EM.\\ oldD
       fdict fid = ( fst
                     $ fromMaybe (assert `failure` "no channel" `with` fid)
@@ -397,10 +397,10 @@ updateConn executorUI executorAI = do
 
 killAllClients :: (MonadAtomic m, MonadConnServer m) => m ()
 killAllClients = do
-  factionD <- getsState sfactionD
   d <- getDict
   let sendKill fid _ = do
-        when (playerUI $ gplayer $ factionD EM.! fid) $
+        -- We can't check in sfactionD, because client can be from an old game.
+        when (fromEnum fid > 0) $
           sendUpdateUI fid $ CmdAtomicUI $ KillExitA fid
         sendUpdateAI fid $ CmdAtomicAI $ KillExitA fid
   mapWithKeyM_ sendKill d
