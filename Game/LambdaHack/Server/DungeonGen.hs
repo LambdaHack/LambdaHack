@@ -61,14 +61,16 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
       ascendable  = Tile.kindHasFeature $ F.Cause (Effect.Ascend 1)
       descendable = Tile.kindHasFeature $ F.Cause (Effect.Ascend (-1))
   cmap <- convertTileMaps (opick cdefTile (const True)) cxsize cysize dmap
-  let fDown =
+  let fDown noAsc (stairsUpCur, stairsDownCur) =
         if ldepth == minD then return ([], [])
         else do
-          let cond tk = descendable tk && not (ldepth == maxD && ascendable tk)
+          let cond tk = descendable tk && not (noAsc && ascendable tk)
           sd <- placeStairs cotile cmap kc []
           downId <- opick (findLegend sd) cond
-          let st = [(sd, downId)]
-          return $ if ascendable $ okind downId then (st, st) else ([], st)
+          let st = (sd, downId)
+          return $ if ascendable $ okind downId
+                   then (st : stairsUpCur, st : stairsDownCur)
+                   else (stairsUpCur, st : stairsDownCur)
       fUp (stairsUpCur, stairsDownCur) _ =
         if ldepth == maxD then return (stairsUpCur, stairsDownCur)
         else do
@@ -81,10 +83,15 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
           return $ if descendable $ okind upId
                    then (st : stairsUpCur, st : stairsDownCur)
                    else (st : stairsUpCur, stairsDownCur)
-  (stairsUpExtra, stairsDownStd) <- fDown
-  let nstairUpLeft = nstairUp - length stairsUpExtra
+  (stairsUpExtra1, stairsDownStd1) <- fDown (ldepth == maxD) ([], [])
+  let nstairUpLeft = nstairUp - length stairsUpExtra1
+  (stairsUp2, stairsDown2) <-
+    foldM fUp (stairsUpExtra1, stairsDownStd1) [1 .. nstairUpLeft]
+  -- If only a single tile of up-and-down stairs, add one more stairs down.
   (stairsUp, stairsDown) <-
-    foldM fUp (stairsUpExtra, stairsDownStd) [1 .. nstairUpLeft]
+    if length stairsUp2 == length stairsDown2 && length stairsDown2 == 1
+    then fDown True (stairsUp2, stairsDown2)
+    else return (stairsUp2, stairsDown2)
   assert (length stairsUp == nstairUp) skip
   let stairsTotal = stairsUp ++ stairsDown
       posTotal = nub $ sort $ map fst stairsTotal
