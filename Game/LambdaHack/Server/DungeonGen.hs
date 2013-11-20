@@ -5,11 +5,9 @@ module Game.LambdaHack.Server.DungeonGen
 
 import Control.Arrow (first)
 import Control.Monad
-import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
 import Data.List
 import Data.Maybe
-import qualified System.Random as R
 
 import qualified Game.LambdaHack.Common.Effect as Effect
 import qualified Game.LambdaHack.Common.Feature as F
@@ -133,15 +131,15 @@ levelFromCaveKind Kind.COps{cotile}
     , lhidden = chidden
     }
 
-findGenerator :: Kind.COps -> Caves -> LevelId -> LevelId -> LevelId -> Int
+findGenerator :: Kind.COps -> Caves
+              -> LevelId -> LevelId -> LevelId -> Int -> Int
               -> Rnd Level
-findGenerator cops caves ldepth minD maxD nstairUp = do
+findGenerator cops caves ldepth minD maxD totalDepth nstairUp = do
   let Kind.COps{cocave=Kind.Ops{opick}} = cops
       (genName, escapeFeature) =
         fromMaybe ("dng", Nothing) $ EM.lookup ldepth caves
   ci <- opick genName (const True)
-  let maxDepth = if minD == maxD then 10 else fromEnum maxD
-  cave <- buildCave cops (fromEnum ldepth) maxDepth ci
+  cave <- buildCave cops (fromEnum ldepth) totalDepth ci
   buildLevel cops cave
              (fromEnum ldepth) (fromEnum minD) (fromEnum maxD) nstairUp
              escapeFeature
@@ -159,20 +157,18 @@ dungeonGen cops caves = do
         case (EM.minViewWithKey caves, EM.maxViewWithKey caves) of
           (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
           _ -> assert `failure` "no caves" `with` caves
+      totalDepth = if minD == maxD then 10 else fromEnum maxD
   assert (minD <= maxD && fromEnum minD >= 1 `blame` "wrongly labeled caves"
                                              `with` caves) skip
-  let gen :: (R.StdGen, Int) -> LevelId -> ((R.StdGen, Int), (LevelId, Level))
-      gen (g, nstairUp) ldepth =
-        let (g1, g2) = R.split g
-            findG = findGenerator cops caves ldepth minD maxD nstairUp
-            lvl = St.evalState findG g1
-            -- nstairUp for the next level is nstairDown for the current level
-            nstairDown = length $ snd $ lstair lvl
-        in ((g2, nstairDown), (ldepth, lvl))
-      con :: R.StdGen -> (FreshDungeon, R.StdGen)
-      con g = let ((gd, nstairUpLast), levels) =
-                    mapAccumL gen (g, 0) [minD..maxD]
-                  freshDungeon = EM.fromList levels
-                  freshDepth = if minD == maxD then 10 else fromEnum maxD
-              in assert (nstairUpLast == 0) $ (FreshDungeon{..}, gd)
-  St.state con
+  let gen :: (Int, [(LevelId, Level)]) -> LevelId
+          -> Rnd (Int, [(LevelId, Level)])
+      gen (nstairUp, l) ldepth = do
+        lvl <- findGenerator cops caves ldepth minD maxD totalDepth nstairUp
+        -- nstairUp for the next level is nstairDown for the current level
+        let nstairDown = length $ snd $ lstair lvl
+        return $ (nstairDown, (ldepth, lvl) : l)
+  (nstairUpLast, levels) <- foldM gen (0, []) [minD..maxD]
+  assert (nstairUpLast == 0) skip
+  let freshDungeon = EM.fromList levels
+      freshDepth = totalDepth
+  return FreshDungeon{..}
