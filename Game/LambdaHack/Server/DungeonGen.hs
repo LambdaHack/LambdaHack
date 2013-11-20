@@ -62,17 +62,17 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
       descendable = Tile.kindHasFeature $ F.Cause (Effect.Ascend (-1))
   cmap <- convertTileMaps (opick cdefTile (const True)) cxsize cysize dmap
   let fDown =
-        if ldepth == maxD then return ([], [])
+        if ldepth == minD then return ([], [])
         else do
-          let cond tk = descendable tk && not (ldepth == minD && ascendable tk)
+          let cond tk = descendable tk && not (ldepth == maxD && ascendable tk)
           sd <- placeStairs cotile cmap kc []
           downId <- opick (findLegend sd) cond
           let st = [(sd, downId)]
           return $ if ascendable $ okind downId then (st, st) else ([], st)
       fUp (stairsUpCur, stairsDownCur) _ =
-        if ldepth == minD then return (stairsUpCur, stairsDownCur)
+        if ldepth == maxD then return (stairsUpCur, stairsDownCur)
         else do
-          let cond tk = ascendable tk && not (ldepth == maxD && descendable tk)
+          let cond tk = ascendable tk && not (ldepth == minD && descendable tk)
               stairsCur = stairsUpCur ++ stairsDownCur
               posCur = nub $ sort $ map fst stairsCur
           su <- placeStairs cotile cmap kc posCur
@@ -157,9 +157,9 @@ dungeonGen cops caves = do
         case (EM.minViewWithKey caves, EM.maxViewWithKey caves) of
           (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
           _ -> assert `failure` "no caves" `with` caves
-      totalDepth = if minD == maxD then 10 else fromEnum maxD
-  assert (minD <= maxD && fromEnum minD >= 1 `blame` "wrongly labeled caves"
-                                             `with` caves) skip
+      totalDepth = if minD == maxD
+                   then 10
+                   else fromEnum maxD - fromEnum minD + 1
   let gen :: (Int, [(LevelId, Level)]) -> LevelId
           -> Rnd (Int, [(LevelId, Level)])
       gen (nstairUp, l) ldepth = do
@@ -167,7 +167,7 @@ dungeonGen cops caves = do
         -- nstairUp for the next level is nstairDown for the current level
         let nstairDown = length $ snd $ lstair lvl
         return $ (nstairDown, (ldepth, lvl) : l)
-  (nstairUpLast, levels) <- foldM gen (0, []) [minD..maxD]
+  (nstairUpLast, levels) <- foldM gen (0, []) $ reverse [minD..maxD]
   assert (nstairUpLast == 0) skip
   let freshDungeon = EM.fromList levels
       freshDepth = totalDepth

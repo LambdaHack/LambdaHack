@@ -144,7 +144,7 @@ draw dm cops per drawnLevelId mleader
       seenN = 100 * lseen `div` lclear
       seenTxt | seenN == 100 = "all"
               | otherwise = T.justifyRight 2 ' ' (showT seenN) <> "%"
-      lvlN = T.justifyLeft 2 ' ' (showT ldepth)
+      lvlN = T.justifyLeft 2 ' ' (showT $ abs ldepth)
       stats =
         T.justifyLeft 11 ' ' ("[" <> seenTxt <+> "seen]") <+>
         T.justifyLeft 9 ' ' ("$:" <+> showT wealth) <+>

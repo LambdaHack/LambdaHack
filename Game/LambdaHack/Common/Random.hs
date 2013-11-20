@@ -127,9 +127,11 @@ type RollDeep = (RollDice, RollDice)
 -- | Cast dice scaled with current level depth.
 -- Note that at the first level, the scaled dice are always ignored.
 castDeep :: Int -> Int -> RollDeep -> Rnd Int
-castDeep n depth (d1, d2) =
+castDeep n' depth' (d1, d2) = do
+  let n = abs n'
+      depth = abs depth'
   assert (n > 0 && n <= depth `blame` "invalid current depth for dice rolls"
-                              `with` (n, depth)) $ do
+                              `with` (n, depth)) skip
   r1 <- castDice d1
   r2 <- castDice d2
   return $ r1 + ((n - 1) * r2) `div` max 1 (depth - 1)
@@ -137,7 +139,9 @@ castDeep n depth (d1, d2) =
 -- | Cast dice scaled with current level depth and return @True@
 -- if the results if greater than 50.
 chanceDeep :: Int -> Int -> RollDeep -> Rnd Bool
-chanceDeep n depth deep = do
+chanceDeep n' depth' deep = do
+  let n = abs n'
+      depth = abs depth'
   c <- castDeep n depth deep
   return $ c > 50
 

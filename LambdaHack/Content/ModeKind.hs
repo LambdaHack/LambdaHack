@@ -120,7 +120,7 @@ playersCoop = Players
 
 playersDefense = Players
   { playersList = [ playerMonster { playerInitial = 1
-                                  , playerEntry = toEnum 1
+                                  , playerEntry = toEnum (-1)
                                   , playerAiLeader = False
                                   , playerHuman = True
                                   , playerUI = True }
@@ -156,7 +156,7 @@ playersTestCoop = Players
 
 playersTestDefense = Players
   { playersList = [ playerMonster { playerInitial = 1
-                                  , playerEntry = toEnum 1
+                                  , playerEntry = toEnum (-1)
                                   , playerUI = True }
                   , playerAntiHero {playerName = "Green"}
                   , playerAntiHero {playerName = "Yellow"}
@@ -174,7 +174,7 @@ playerHero, playerAntiHero, playerMonster, playerHorror :: Player
 playerHero = Player
   { playerName = "Adventuring Party"
   , playerFaction = "hero"
-  , playerEntry = toEnum 1
+  , playerEntry = toEnum (-1)
   , playerInitial = 3
   , playerAiLeader = False
   , playerAiOther = True
@@ -191,7 +191,7 @@ playerAntiHero = playerHero
 playerMonster = Player
   { playerName = "Monster Hive"
   , playerFaction = "monster"
-  , playerEntry = toEnum 3
+  , playerEntry = toEnum (-3)
   , playerInitial = 5
   , playerAiLeader = True
   , playerAiOther = True
@@ -202,7 +202,7 @@ playerMonster = Player
 playerHorror = Player
   { playerName = "Horror Den"
   , playerFaction = "horror"
-  , playerEntry = toEnum 1
+  , playerEntry = toEnum (-1)
   , playerInitial = 0
   , playerAiLeader = True
   , playerAiOther = True
@@ -216,15 +216,15 @@ cavesCampaign, cavesCombat, cavesDefense, cavesScreensaver :: Caves
 -- Cave "dng" means a random choice from caves that can randomly appear;
 -- this is the default and the lack of the Escape feature is the default.
 
-cavesCampaign = EM.fromList [ (toEnum 1, ("caveRogue", Just True))
-                            , (toEnum 2, ("caveRogue", Nothing))
-                            , (toEnum 3, ("caveEmpty", Nothing))
-                            , (toEnum 10, ("caveNoise", Nothing))]
+cavesCampaign = EM.fromList [ (toEnum (-1), ("caveRogue", Just True))
+                            , (toEnum (-2), ("caveRogue", Nothing))
+                            , (toEnum (-3), ("caveEmpty", Nothing))
+                            , (toEnum (-10), ("caveNoise", Nothing))]
 
-cavesCombat = EM.fromList [(toEnum 3, ("caveCombat", Nothing))]
+cavesCombat = EM.fromList [(toEnum (-3), ("caveCombat", Nothing))]
 
-cavesDefense = EM.fromList [ (toEnum 1, ("dng", Nothing))
-                           , (toEnum 5, ("caveEmpty", Just False))]
+cavesDefense = EM.fromList [ (toEnum (-1), ("dng", Nothing))
+                           , (toEnum (-5), ("caveEmpty", Just False))]
 
-cavesScreensaver = EM.fromList [ (toEnum 1, ("caveRogue", Nothing))
-                               , (toEnum 10, ("caveNoise", Just False))]
+cavesScreensaver = EM.fromList [ (toEnum (-1), ("caveRogue", Nothing))
+                               , (toEnum (-10), ("caveNoise", Just False))]
