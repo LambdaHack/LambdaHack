@@ -31,7 +31,6 @@ data Effect a =
   | Regeneration a
   | Searching a
   | Ascend Int
-  | Descend Int
   | Escape
   deriving (Show, Read, Eq, Ord, Generic, Functor)
 
@@ -60,11 +59,10 @@ effectTrav (Searching a) f = do
   b <- f a
   return $ Searching b
 effectTrav (Ascend p) _ = return $ Ascend p
-effectTrav (Descend p) _ = return $ Descend p
 effectTrav Escape _ = return Escape
 
 -- | Suffix to append to a basic content name if the content causes the effect.
-effectToSuff :: Effect a -> (a -> Text) -> Text
+effectToSuff :: Show a => Effect a -> (a -> Text) -> Text
 effectToSuff effect f =
   case St.evalState (effectTrav effect $ return . f) () of
     NoEffect -> ""
@@ -80,8 +78,9 @@ effectToSuff effect f =
     ApplyPerfume -> "of rose water"
     Regeneration t -> "of regeneration" <> t
     Searching t -> "of searching" <> t
-    Ascend p -> "of ascending" <> affixPower p
-    Descend p -> "of descending" <> affixPower p
+    Ascend p | p > 0 -> "of ascending" <> affixPower p
+    Ascend p | p < 0 -> "of descending" <> affixPower p
+    Ascend{} -> assert `failure` effect
     Escape -> "of escaping"
 
 effectToSuffix :: Effect Int -> Text
@@ -104,16 +103,17 @@ affixBonus p = case compare p 0 of
 -- benefit won't ever be used, neither actively nor passively.
 effectToBenefit :: Effect Int -> Int
 effectToBenefit NoEffect = 0
-effectToBenefit (Heal p) = p * 10       -- TODO: depends on (maxhp - hp)
-effectToBenefit (Hurt _ p) = -(p * 10)  -- TODO: dice ignored for now
-effectToBenefit Mindprobe{} = 0         -- AI can't benefit yet
-effectToBenefit Dominate = 1            -- hard to use; TODO: limit by IQ
+effectToBenefit (Heal p) = p * 10        -- TODO: depends on (maxhp - hp)
+effectToBenefit (Hurt _ p) = -(p * 10)   -- TODO: dice ignored for now
+effectToBenefit Mindprobe{} = 0          -- AI can't benefit yet
+effectToBenefit Dominate = 1             -- hard to use; TODO: limit by IQ
 effectToBenefit (CallFriend p) = p * 100
-effectToBenefit Summon{} = 5            -- may or may not spawn a friendly
+effectToBenefit Summon{} = 5             -- may or may not spawn a friendly
 effectToBenefit (CreateItem p) = p * 20
 effectToBenefit ApplyPerfume = 0
-effectToBenefit Regeneration{} = 0      -- bigger benefit from carrying around
-effectToBenefit Searching{} = 0         -- AI doesn't search yet
-effectToBenefit Ascend{} = 5            -- AI prefers to hide deep down
-effectToBenefit Descend{} = 500
-effectToBenefit Escape = 100            -- AI wants to win
+effectToBenefit Regeneration{} = 0       -- bigger benefit from carrying around
+effectToBenefit Searching{} = 0          -- AI doesn't search yet
+effectToBenefit (Ascend p) | p > 0 = 5   -- AI prefers to hide deep down
+effectToBenefit (Ascend p) | p < 0 = 500
+effectToBenefit ef@Ascend{} = assert `failure` ef
+effectToBenefit Escape = 100             -- AI wants to win

@@ -602,8 +602,9 @@ drawSfxAtomicUI verbose sfx = case sfx of
                 [ "It gets lost and"
                 , MU.SubjectVerbSg subject "search in vain" ]
           msgAdd msg
-        Effect.Ascend{} -> actorVerbMU aid b "find a way upstairs"
-        Effect.Descend{} -> actorVerbMU aid b "find a way downstairs"
+        Effect.Ascend k | k > 0 -> actorVerbMU aid b "find a way upstairs"
+        Effect.Ascend k | k < 0 -> actorVerbMU aid b "find a way downstairs"
+        Effect.Ascend{} -> assert `failure` sfx
         _ -> return ()
   MsgFidD _ msg -> msgAdd msg
   MsgAllD msg -> msgAdd msg

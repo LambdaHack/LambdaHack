@@ -59,7 +59,7 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
       hasEscapeAndSymbol sym t = Tile.kindHasFeature (F.Cause Effect.Escape) t
                                  && tsymbol t == sym
       ascendable  = Tile.kindHasFeature $ F.Cause (Effect.Ascend 1)
-      descendable = Tile.kindHasFeature $ F.Cause (Effect.Descend 1)
+      descendable = Tile.kindHasFeature $ F.Cause (Effect.Ascend (-1))
   cmap <- convertTileMaps (opick cdefTile (const True)) cxsize cysize dmap
   let fDown =
         if ldepth == maxD then return ([], [])

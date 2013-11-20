@@ -392,10 +392,7 @@ tgtAscendHuman k = do
         Nothing -> Nothing
         Just cpos ->
           let tile = lvl `at` cpos
-          in if k >= 1
-                && Tile.hasFeature cotile (F.Cause $ Effect.Ascend k) tile
-                || k <= -1
-                && Tile.hasFeature cotile (F.Cause $ Effect.Descend (-k)) tile
+          in if Tile.hasFeature cotile (F.Cause $ Effect.Ascend k) tile
              then Just cpos
              else Nothing
   case rightStairs of

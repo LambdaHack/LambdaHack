@@ -84,7 +84,6 @@ effectSem effect source target = case effect of
   Effect.Regeneration p -> effectSem (Effect.Heal p) source target
   Effect.Searching p -> effectSearching p source
   Effect.Ascend p -> effectAscend p target
-  Effect.Descend p -> effectDescend p target
   Effect.Escape -> effectEscape target
 
 -- + Individual semantic functions for effects
@@ -449,14 +448,6 @@ switchLevels2 aid bOld ais lidNew posNew = do
   -- Changing levels is so important, that the leader changes.
   when (isNothing mleader) $  -- trouble, if the actors are of the same faction
     execCmdAtomic $ LeadFactionA side Nothing (Just aid)
-
--- ** Descend
-
-effectDescend :: MonadAtomic m => Int -> ActorId -> m Bool
-effectDescend power target = do
-  b <- effLvlGoUp target (-power)
-  when b $ execSfxAtomic $ EffectD target $ Effect.Descend power
-  return b
 
 -- ** Escape
 

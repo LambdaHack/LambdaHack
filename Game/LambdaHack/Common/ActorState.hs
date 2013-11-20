@@ -126,7 +126,7 @@ tryFindHeroK s fact k =
 -- after a level change.
 whereTo :: LevelId  -- ^ level of the stairs
         -> Point    -- ^ position of the stairs
-        -> Int      -- ^ jump down this many levels
+        -> Int      -- ^ jump up this many levels
         -> State    -- ^ game state
         -> (LevelId, Point)
                     -- ^ target level and the position of its receiving stairs

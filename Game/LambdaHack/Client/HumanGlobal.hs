@@ -462,16 +462,21 @@ verifyTrigger leader feat = case feat of
 -- | Guess and report why the bump command failed.
 guessTrigger :: MonadClientAbort m
              => Kind.Ops TileKind -> [F.Feature] -> Kind.Id TileKind -> m a
-guessTrigger cotile (F.Cause (Effect.Ascend k) : _) t
-  | Tile.hasFeature cotile (F.Cause (Effect.Descend k)) t =
-    abortWith "the way goes down, not up"
-guessTrigger _ (F.Cause (Effect.Ascend _) : _) _ =
-  abortWith "can't ascend"
-guessTrigger cotile (F.Cause (Effect.Descend k) : _) t
-  | Tile.hasFeature cotile (F.Cause (Effect.Ascend k)) t =
-    abortWith "the way goes up, not down"
-guessTrigger _ (F.Cause (Effect.Descend _) : _) _ =
-  abortWith "can't descend"
+guessTrigger cotile fs@(F.Cause (Effect.Ascend k) : _) t
+  | Tile.hasFeature cotile (F.Cause (Effect.Ascend (-k))) t =
+    if k > 0 then
+      abortWith "the way goes down, not up"
+    else if k < 0 then
+      abortWith "the way goes up, not down"
+    else
+      assert `failure` fs
+guessTrigger _ fs@(F.Cause (Effect.Ascend k) : _) _ =
+    if k > 0 then
+      abortWith "can't ascend"
+    else if k < 0 then
+      abortWith "can't descend"
+    else
+      assert `failure` fs
 guessTrigger _ _ _ = neverMind True
 
 -- * GameRestart; does not take time
