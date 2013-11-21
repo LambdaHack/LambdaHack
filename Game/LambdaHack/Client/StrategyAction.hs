@@ -240,9 +240,10 @@ triggerFreq aid = do
           then 0
           else Effect.effectToBenefit ef
         _ -> 0
-      benefit = sum $ map ben feats
-  return $ toFreq "triggerFreq" $ [ (benefit, TriggerSer aid Nothing)
-                                  | benefit > 0 ]
+      benFeat = zip (map ben feats) feats
+  return $ toFreq "triggerFreq" $ [ (benefit, TriggerSer aid (Just feat))
+                                  | (benefit, feat) <- benFeat
+                                  , benefit > 0 ]
 
 rangedFreq :: MonadActionRO m
            => Discovery -> ActorId -> Point -> m (Frequency CmdSerTakeTime)
