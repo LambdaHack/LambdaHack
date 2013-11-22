@@ -155,6 +155,8 @@ cmdAtomicFilterCli cmd = case cmd of
 -- kept for each command received.
 cmdAtomicSemCli :: MonadClient m => CmdAtomic -> m ()
 cmdAtomicSemCli cmd = case cmd of
+  DestroyActorA aid _ _ -> destroyActorA aid
+  LoseActorA aid _ _ -> destroyActorA aid
   LeadFactionA fid source target -> do
     side <- getsClient sside
     when (side == fid) $ do
@@ -182,6 +184,13 @@ cmdAtomicSemCli cmd = case cmd of
   KillExitA _fid -> killExitA
   SaveBkpA -> saveClient
   _ -> return ()
+
+-- We wipe out the target, because if the actor gets recreated
+-- on another level, the old position does not make sense.
+-- And if he is really dead, we avoid a memory leak.
+destroyActorA :: MonadClient m => ActorId -> m ()
+destroyActorA aid =
+  modifyClient $ \cli -> cli {stargetD = EM.delete aid $ stargetD cli}
 
 perceptionA :: MonadClient m => LevelId -> PerActor -> PerActor -> m ()
 perceptionA lid outPA inPA = do
@@ -261,21 +270,12 @@ drawCmdAtomicUI verbose cmd = case cmd of
   CreateActorA aid body _ -> do
     when verbose $ actorVerbMU aid body "appear"
     lookAtMove aid
-  DestroyActorA aid body _ -> do
-    side <- getsClient sside
-    if bhp body <= 0 && not (bproj body) && bfid body == side then do
-      actorVerbMU aid body "die"
-      void $ displayMore ColorBW ""
-    else when verbose $ actorVerbMU aid body "disappear"
+  DestroyActorA aid body _ ->
+    destroyActorUI aid body "die" "be destroyed" verbose
   CreateItemA _ item k _ | verbose -> itemVerbMU item k "appear"
   DestroyItemA _ item k _ | verbose -> itemVerbMU item k "disappear"
-  LoseActorA aid body _ -> do
-    side <- getsClient sside
-    -- If no other faction actor is looking, death is invisible and
-    -- so is domination, time-freeze, etc. Then, this command appears instead.
-    when (bfid body == side && bhp body <= 0 && not (bproj body)) $ do
-      actorVerbMU aid body "be missing in action"
-      void $ displayMore ColorFull ""
+  LoseActorA aid body _ ->
+    destroyActorUI aid body "be missing in action" "be lost" verbose
   MoveActorA aid _ _ -> lookAtMove aid
   WaitActorA aid _ _| verbose -> aVerbMU aid "wait"
   DisplaceActorA source target -> displaceActorUI source target
@@ -408,8 +408,19 @@ aiVerbMU aid verb iid k = do
                          , partItemWs coitem disco k item ]
   msgAdd msg
 
+destroyActorUI :: MonadClientUI m
+               => ActorId -> Actor -> MU.Part -> MU.Part -> Bool -> m ()
+destroyActorUI aid body verb verboseVerb verbose = do
+  side <- getsClient sside
+  -- If no other faction actor is looking, death is invisible and
+  -- so is domination, time-freeze, etc.
+  if (bfid body == side && bhp body <= 0 && not (bproj body)) then do
+    actorVerbMU aid body verb
+    void $ displayMore ColorFull ""
+  else when verbose $ actorVerbMU aid body verboseVerb
+
 moveItemUI :: MonadClientUI m
-          => Bool -> ItemId -> Int -> Container -> Container -> m ()
+           => Bool -> ItemId -> Int -> Container -> Container -> m ()
 moveItemUI verbose iid k c1 c2 = do
   Kind.COps{coitem} <- getsState scops
   item <- getsState $ getItemBody iid
