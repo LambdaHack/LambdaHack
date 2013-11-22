@@ -54,7 +54,7 @@ visibleFoes aid fper = do
   let per = fper EM.! blid b
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
   foes <- getsState $ actorNotProjAssocs (isAtWar fact) (blid b)
-  return $! filter (actorSeesLoc per aid . bpos . snd) foes
+  return $! filter (actorSeesPos per aid . bpos . snd) foes
 
 reacquireTgt :: MonadActionRO m
              => ActorId -> [Ability] -> Maybe Target -> FactionPers
@@ -96,7 +96,7 @@ reacquireTgt aid factionAbilities btarget fper = do
         case tgt of
           Just (TEnemy a ll) | focused ->  -- chase even if enemy dead, to loot
             case fmap bpos $ EM.lookup a actorD of
-              Just l | actorSeesLoc per aid l ->
+              Just l | actorSeesPos per aid l ->
                 -- prefer visible (and alive) foes
                 returN "TEnemy" $ Just $ TEnemy a l
               _ -> if null visFoes         -- prefer visible foes to positions

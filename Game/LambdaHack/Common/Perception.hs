@@ -19,7 +19,7 @@
 module Game.LambdaHack.Common.Perception
   ( Perception(..), PerceptionVisible(..), PerActor
   , totalVisible, smellVisible
-  , actorSeesLoc, nullPer, addPer, diffPer, smellFromActors
+  , actorSeesPos, nullPer, addPer, diffPer, smellFromActors
   , FactionPers, Pers
   ) where
 
@@ -73,8 +73,8 @@ smellVisible :: Perception -> ES.EnumSet Point
 smellVisible = pvisible . psmell
 
 -- | Whether an actor can see a position.
-actorSeesLoc :: Perception -> ActorId -> Point -> Bool
-actorSeesLoc per aid pos =
+actorSeesPos :: Perception -> ActorId -> Point -> Bool
+actorSeesPos per aid pos =
   let isIn = (pos `ES.member`) . pvisible
      -- Blind and non-smelling actors don't see their own pos, hence False.
   in maybe False isIn $ EM.lookup aid $ perActor per

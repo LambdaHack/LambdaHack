@@ -144,7 +144,7 @@ doLook = do
                         in makeSentence [MU.SubjectVerbSg subject verb])
               ihabitant
       vis | not $ p `ES.member` totalVisible per = " (not visible)"
-          | actorSeesLoc per leader p = ""
+          | actorSeesPos per leader p = ""
           | otherwise = " (not visible)"
       mode = case target of
                Just TEnemy{} -> "[targeting foe" <> vis <> "]"
@@ -368,7 +368,7 @@ tgtEnemyLeader stgtModeNew = do
       gtlt = gt ++ lt
       seen (_, m) =
         let mpos = bpos m                -- it is remembered by faction
-        in actorSeesLoc per leader mpos  -- is it visible by actor?
+        in actorSeesPos per leader mpos  -- is it visible by actor?
       lf = filter seen gtlt
       tgt = case lf of
               [] -> target  -- no enemies in sight, stick to last target

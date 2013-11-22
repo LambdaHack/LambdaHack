@@ -122,7 +122,7 @@ draw dm cops per drawnLevelId mleader
                     i : _ -> Item.viewItem $ getItemBody i s
             vis = ES.member pos0 $ totalVisible per
             visPl =
-              maybe False (\leader -> actorSeesLoc per leader pos0) mleader
+              maybe False (\leader -> actorSeesPos per leader pos0) mleader
             bg0 = if isJust stgtMode && Just pos0 == scursor
                   then Color.defFG       -- highlight target cursor
                   else sVisBG vis visPl  -- FOV debug or standard bg

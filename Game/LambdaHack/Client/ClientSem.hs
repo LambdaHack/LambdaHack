@@ -22,22 +22,25 @@ import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Key as K
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.FactionKind
+import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Utils.Assert
 import Game.LambdaHack.Utils.Frequency
 
 queryAI :: MonadClient m => ActorId -> m CmdSerTakeTime
 queryAI oldAid = do
-  Kind.COps{cofact=Kind.Ops{okind}} <- getsState scops
+  Kind.COps{cofact=Kind.Ops{okind}, corule} <- getsState scops
   side <- getsClient sside
   fact <- getsState $ \s -> sfactionD s EM.! side
   let abilityLeader = fAbilityLeader $ okind $ gkind fact
@@ -53,36 +56,64 @@ queryAI oldAid = do
     then queryAIPick oldAid
     else do
       fper <- getsClient sfper
-      visFoes <- visibleFoes oldAid fper
       oldBody <- getsState $ getActorBody oldAid
+      oldAis <- getsState $ getActorItem oldAid
       btarget <- getsClient $ getTarget oldAid
       let arena = blid oldBody
+      -- Visibility ignored --- every foe is visible by somebody.
+      foes <- getsState $ actorNotProjList (isAtWar fact) arena
       ours <- getsState $ actorNotProjAssocs (== side) arena
-      Level{lxsize} <- getsState $ \s -> sdungeon s EM.! arena
+      Level{lxsize, lysize} <- getsState $ \s -> sdungeon s EM.! arena
+      actorD <- getsState sactorD
+      let oldPos = bpos oldBody
+          per = fper EM.! arena
+          posOnLevel b | blid b /= arena = Nothing
+                       | otherwise = Just $ bpos b
+          mfoePos foe = maybe Nothing posOnLevel
+                        $ EM.lookup foe actorD
+          canSee foe = maybe False (actorSeesPos per oldAid) $ mfoePos foe
+          isAmmo i = jsymbol i `elem` ritemProject (Kind.stdRuleset corule)
+          hasAmmo = any (isAmmo . snd) oldAis
+          isAdjacent = foesAdjacent lxsize lysize oldPos foes
       if -- Keep the leader: he is alone on the level.
          length ours == 1
-         -- Keep the leader: it still has an enemy target (even if not visible)
-         || case btarget of Just TEnemy{} -> True; _ -> False
-            -- ... and he is not yet adjacent to any foe.
-            && all (not . adjacent lxsize (bpos oldBody))
-                   (map (bpos . snd) visFoes)
+         -- Keep the leader: it has an enemy target
+         || case btarget of
+              Just (TEnemy foe _) ->
+                -- and he can shoot it.
+                canSee foe && hasAmmo && not isAdjacent
+              _ -> False
         then queryAIPick oldAid
         else do
-          -- Visibility ignored --- every foe is visible by somebody.
-          foes <- getsState $ actorNotProjAssocs (isAtWar fact) arena
-          let f (aid, b) =
+          let countMinFoeDist (aid, b) =
                 let distB = chessDist lxsize (bpos b)
-                    foeDist = map (\(_, body) -> distB (bpos body)) foes
-                    minDist | null foeDist = maxBound
-                            | otherwise = minimum foeDist
-                    maxChaseDist = 30
-                    maxProximity = max 1 $ maxChaseDist - minDist
-                in if aid == oldAid || minDist == 1 || bhp b <= 0
-                   then -- Ignore: leader or already in melee range
-                        -- or incapacitated.
+                    foeDist = map (distB . bpos) foes
+                    minFoeDist | null foeDist = maxBound
+                               | otherwise = minimum foeDist
+                in ((aid, b), minFoeDist)
+              oursMinFoeDist = map countMinFoeDist ours
+              inMelee (_, minFoeDist) = minFoeDist == 1
+              oursMeleePos = map (bpos . snd . fst)
+                             $ filter inMelee oursMinFoeDist
+          let f ((aid, b), minFoeDist) =
+                let distB = chessDist lxsize (bpos b)
+                    meleeDist = map distB oursMeleePos
+                    minMeleeDist | null meleeDist = maxBound
+                                 | otherwise = minimum meleeDist
+                    proximityMelee = max 0 $ 20 - minMeleeDist
+                    proximityFoe = max 0 $ 15 - minFoeDist
+                    distToLeader = distB oldPos
+                    proximityLeader = max 1 $ 10 - distToLeader
+                in if minFoeDist == 1 || bhp b <= 0
+                   then -- Ignore: already in melee range or incapacitated.
                         Nothing
-                   else Just (maxProximity, aid)
-              candidates = mapMaybe f ours
+                   else -- Help in melee, shoot or chase foes,
+                        -- fan out away from each other, if too close.
+                        Just ( proximityMelee * 1000
+                               + proximityFoe * 100
+                               + proximityLeader
+                             , aid )
+              candidates = mapMaybe f oursMinFoeDist
               freq | null candidates = toFreq "old leader" [(1, oldAid)]
                    | otherwise = toFreq "candidates for AI leader" candidates
           aid <- rndToAction $ frequency freq
