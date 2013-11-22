@@ -228,7 +228,7 @@ triggerFreq :: MonadActionRO m
             => ActorId -> m (Frequency CmdSerTakeTime)
 triggerFreq aid = do
   cops@Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
-  Actor{bpos, blid, bfid} <- getsState $ getActorBody aid
+  Actor{bpos, blid, bfid, boldpos} <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid
   lvl <- getLevel blid
   let spawn = isSpawnFact cops fact
@@ -241,9 +241,16 @@ triggerFreq aid = do
           else Effect.effectToBenefit ef
         _ -> 0
       benFeat = zip (map ben feats) feats
-  return $ toFreq "triggerFreq" $ [ (benefit, TriggerSer aid (Just feat))
-                                  | (benefit, feat) <- benFeat
-                                  , benefit > 0 ]
+  if bpos == boldpos then
+    -- Probably just switched levels or was pushed to another level
+    -- or triggered a feature. Do not repeatedly trigger the same thing
+    -- or switch levels or push each other between levels.
+    -- TODO: let AI trigger a healing cabinet repeatedly, until healty.
+    return mzero
+  else
+    return $ toFreq "triggerFreq" $ [ (benefit, TriggerSer aid (Just feat))
+                                    | (benefit, feat) <- benFeat
+                                    , benefit > 0 ]
 
 rangedFreq :: MonadActionRO m
            => Discovery -> ActorId -> Point -> m (Frequency CmdSerTakeTime)
