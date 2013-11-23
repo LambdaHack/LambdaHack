@@ -392,6 +392,9 @@ moveStrategy cops aid s mFoe =
     only (\x -> maybe True (\d -> euclidDistSq lxsize d x <= k) bdirAI)
   onlyKeepsDir_9 = only (\x -> maybe True (\d -> neg x /= d) bdirAI)
   foeVisible = fmap snd mFoe == Just True
+  -- TODO: aiq 16 leads to robotic, repetitious, looping movement;
+  -- either base it off some new stat or wait until pathfinding,
+  -- which will eliminate the loops
   moveIQ | foeVisible = onlyKeepsDir_9 moveRandomly  -- danger, be flexible
          | otherwise =
        aiq mk > 15 .=> onlyKeepsDir 0 moveRandomly
