@@ -79,7 +79,7 @@ effectToSuff effect f =
     Regeneration t -> "of regeneration" <> t
     Searching t -> "of searching" <> t
     Ascend p | p > 0 -> "of ascending" <> affixPower p
-    Ascend p | p < 0 -> "of descending" <> affixPower p
+    Ascend p | p < 0 -> "of descending" <> affixPower (- p)
     Ascend{} -> assert `failure` effect
     Escape -> "of escaping"
 
