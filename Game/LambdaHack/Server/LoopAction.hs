@@ -91,12 +91,10 @@ loopSer sdebug cmdSerSem executorUI executorAI !cops = do
   -- and repeat.
   let loop = do
         let factionArena fact = do
-              let spawn = isSpawnFact cops fact
               case gleader fact of
-               -- TODO; This is a significant advantage of human spawners;
-               -- perhaps we could instead auto-switch leaders
-               -- to the fist level non-spawner factions act on.
-               Just leader | playerHuman (gplayer fact) || not spawn -> do
+               -- Even spawners and horrors need an active arena
+               -- for their leader, or they start clogging stairs.
+               Just leader -> do
                   b <- getsState $ getActorBody leader
                   return $ Just $ blid b
                _ -> return Nothing
