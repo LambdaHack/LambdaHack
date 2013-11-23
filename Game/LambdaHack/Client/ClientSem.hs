@@ -104,10 +104,10 @@ queryAI oldAid = do
                     meleeDist = map distB oursMeleePos
                     minMeleeDist | null meleeDist = maxBound
                                  | otherwise = minimum meleeDist
-                    proximityMelee = max 0 $ 20 - minMeleeDist
-                    proximityFoe = max 0 $ 15 - minFoeDist
+                    proximityMelee = max 0 $ 10 - minMeleeDist
+                    proximityFoe = max 0 $ 20 - minFoeDist
                     distToLeader = distB oldPos
-                    proximityLeader = max 1 $ 10 - distToLeader
+                    proximityLeader = max 0 $ 10 - distToLeader
                 in if minFoeDist == 1
                       || bhp b <= 0
                       || aid == oldAid && waitedLastTurn b time
@@ -115,9 +115,10 @@ queryAI oldAid = do
                         Nothing
                    else -- Help in melee, shoot or chase foes,
                         -- fan out away from each other, if too close.
-                        Just ( proximityMelee * 1000
-                               + proximityFoe * 100
-                               + proximityLeader
+                        Just ( 1
+                               + proximityMelee * 9
+                               + proximityFoe * 6
+                               + proximityLeader * 3
                              , aid )
               candidates = mapMaybe f oursMinFoeDist
               freq | null candidates = toFreq "old leader" [(1, oldAid)]
