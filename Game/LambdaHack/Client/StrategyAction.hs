@@ -182,7 +182,10 @@ proposeAction disco aid factionAbilities btarget = do
   sumSuffix <- sumS suffix
   return $ sumPrefix .| comDistant .| sumSuffix
            -- Wait until friends sidestep; ensures the strategy is never empty.
+           -- TODO: try to switch leader away before that (we already
+           -- switch him afterwards)
            .| waitBlockNow aid
+
 -- | A strategy to always just wait.
 waitBlockNow :: ActorId -> Strategy CmdSerTakeTime
 waitBlockNow aid = returN "wait" $ WaitSer aid
@@ -242,10 +245,10 @@ triggerFreq aid = do
         _ -> 0
       benFeat = zip (map ben feats) feats
   if bpos == boldpos then
-    -- Probably just switched levels or was pushed to another level
-    -- or triggered a feature. Do not repeatedly trigger the same thing
-    -- or switch levels or push each other between levels.
-    -- TODO: let AI trigger a healing cabinet repeatedly, until healty.
+    -- Probably recently switched levels or was pushed to another level.
+    -- Do not repeatedly switch levels or push each other between levels.
+    -- Consequently, AI won't dive many levels down with linked staircases.
+    -- TODO: beware of stupid monsters that backtrack and so occupy stairs.
     return mzero
   else
     return $ toFreq "triggerFreq" $ [ (benefit, TriggerSer aid (Just feat))

@@ -166,7 +166,7 @@ meleeSer source target = do
           -- Msgs inside itemEffectSem describe the target part.
           itemEffect source target miid item
     -- Projectiles can't be blocked (though can be sidestepped).
-    -- Incapacitated actors can't block
+    -- Incapacitated actors can't block.
     if braced tb time && not (bproj sb) && bhp tb > 0
       then do
         blocked <- rndToAction $ chance $ 1%2

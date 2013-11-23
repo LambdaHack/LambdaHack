@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.Actor
   ( -- * Actor identifiers and related operations
     ActorId, monsterGenChance, partActor
     -- * The@ Acto@r type
-  , Actor(..), actorTemplate, timeAddFromSpeed, braced
+  , Actor(..), actorTemplate, timeAddFromSpeed, braced, waitedLastTurn
   , unoccupied, heroKindId, projectileKindId, actorSpeed
     -- * Inventory management
   , ItemBag, ItemInv, InvChar(..), ItemDict, ItemRev
@@ -89,9 +89,9 @@ monsterGenChance n' depth' numMonsters =
 
 -- | The part of speech describing the actor.
 partActor :: Kind.Ops ActorKind -> Actor -> MU.Part
-partActor Kind.Ops{oname} a =
-  case _bname a of
-    Nothing -> MU.AW $ MU.Text $ oname $ bkind a
+partActor Kind.Ops{oname} b =
+  case _bname b of
+    Nothing -> MU.AW $ MU.Text $ oname $ bkind b
     Just properName -> MU.Text properName
 
 -- Actor operations
@@ -111,25 +111,30 @@ actorTemplate bkind bsymbol _bname bcolor bspeed bhp bpath bpos blid btime
 
 -- | Access actor speed, individual or, otherwise, stock.
 actorSpeed :: Kind.Ops ActorKind -> Actor -> Speed
-actorSpeed Kind.Ops{okind} m =
-  let stockSpeed = aspeed $ okind $ bkind m
-  in fromMaybe stockSpeed $ bspeed m
+actorSpeed Kind.Ops{okind} b =
+  let stockSpeed = aspeed $ okind $ bkind b
+  in fromMaybe stockSpeed $ bspeed b
 
 -- | Add time taken by a single step at the actor's current speed.
 timeAddFromSpeed :: Kind.Ops ActorKind -> Actor -> Time -> Time
-timeAddFromSpeed coactor m time =
-  let speed = actorSpeed coactor m
+timeAddFromSpeed coactor b time =
+  let speed = actorSpeed coactor b
       delta = ticksPerMeter speed
   in timeAdd time delta
 
 -- | Whether an actor is braced for combat this turn.
 braced :: Actor -> Time -> Bool
-braced m time = time < bwait m
+braced b time = time < bwait b
+
+-- | The actor most probably waited last turn (unless his speed
+-- was changed, etc.)
+waitedLastTurn :: Actor -> Time -> Bool
+waitedLastTurn b time = time <= bwait b
 
 -- | Checks for the presence of actors in a position.
 -- Does not check if the tile is walkable.
 unoccupied :: [Actor] -> Point -> Bool
-unoccupied actors pos = all (\body -> bpos body /= pos) actors
+unoccupied actors pos = all (\b -> bpos b /= pos) actors
 
 -- | The unique kind of heroes.
 heroKindId :: Kind.Ops ActorKind -> Kind.Id ActorKind

@@ -63,6 +63,7 @@ queryAI oldAid = do
       -- Visibility ignored --- every foe is visible by somebody.
       foes <- getsState $ actorNotProjList (isAtWar fact) arena
       ours <- getsState $ actorNotProjAssocs (== side) arena
+      time <- getsState $ getLocalTime arena
       Level{lxsize, lysize} <- getsState $ \s -> sdungeon s EM.! arena
       actorD <- getsState sactorD
       let oldPos = bpos oldBody
@@ -77,12 +78,15 @@ queryAI oldAid = do
           isAdjacent = foesAdjacent lxsize lysize oldPos foes
       if -- Keep the leader: he is alone on the level.
          length ours == 1
-         -- Keep the leader: it has an enemy target
+         -- Keep the leader: he has an enemy target.
          || case btarget of
               Just (TEnemy foe _) ->
                 -- and he can shoot it.
                 canSee foe && hasAmmo && not isAdjacent
               _ -> False
+         -- Keep the leader: he probably just used stairs.
+         || bpos oldBody == boldpos oldBody
+            && not (waitedLastTurn oldBody time)
         then queryAIPick oldAid
         else do
           let countMinFoeDist (aid, b) =
@@ -104,8 +108,10 @@ queryAI oldAid = do
                     proximityFoe = max 0 $ 15 - minFoeDist
                     distToLeader = distB oldPos
                     proximityLeader = max 1 $ 10 - distToLeader
-                in if minFoeDist == 1 || bhp b <= 0
-                   then -- Ignore: already in melee range or incapacitated.
+                in if minFoeDist == 1
+                      || bhp b <= 0
+                      || waitedLastTurn b time && aid == oldAid
+                   then -- Ignore: in melee range or incapacitated or stuck.
                         Nothing
                    else -- Help in melee, shoot or chase foes,
                         -- fan out away from each other, if too close.

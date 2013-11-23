@@ -438,6 +438,7 @@ switchLevels2 aid bOld ais lidNew posNew = do
   let delta = timeAdd (btime bOld) (timeNegate timeOld)
       bNew = bOld { blid = lidNew
                   , btime = timeAdd timeLastVisited delta
+                  , bwait = timeZero  -- no longer braced
                   , bpos = posNew
                   , boldpos = posNew  -- new level, new direction
                   , bpath = Nothing }
@@ -447,6 +448,8 @@ switchLevels2 aid bOld ais lidNew posNew = do
   -- sees new surroundings and has to reset his perception.
   execCmdAtomic $ CreateActorA aid bNew ais
   -- Changing levels is so important, that the leader changes.
+  -- This also helps the actor clear the staircase and so avoid
+  -- being pushed back to the level he came from by another actor.
   when (isNothing mleader) $  -- trouble, if the actors are of the same faction
     execCmdAtomic $ LeadFactionA side Nothing (Just aid)
 
