@@ -59,7 +59,7 @@ unknownLevel Kind.Ops{ouniqGroup} ldepth lxsize lysize ldesc lstair lclear
            , lstair
            , lseen = 0
            , lclear
-           , ltime = timeZero
+           , ltime = timeTurn
            , litemNum = 0
            , lsecret
            , lhidden

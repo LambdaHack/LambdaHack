@@ -101,7 +101,7 @@ loopSer sdebug cmdSerSem executorUI executorAI !cops = do
         factionD <- getsState sfactionD
         marenas <- mapM factionArena $ EM.elems factionD
         let arenas = ES.toList $ ES.fromList $ catMaybes marenas
-        assert (not $ null arenas) skip  -- no 2 solo AI spawners scenario
+        assert (not $ null arenas) skip  -- game over not caught earlier
         mapM_ (handleActors cmdSerSem) arenas
         quit <- getsServer squit
         if quit then do

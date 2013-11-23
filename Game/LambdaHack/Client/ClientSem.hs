@@ -110,7 +110,7 @@ queryAI oldAid = do
                     proximityLeader = max 1 $ 10 - distToLeader
                 in if minFoeDist == 1
                       || bhp b <= 0
-                      || waitedLastTurn b time && aid == oldAid
+                      || aid == oldAid && waitedLastTurn b time
                    then -- Ignore: in melee range or incapacitated or stuck.
                         Nothing
                    else -- Help in melee, shoot or chase foes,
