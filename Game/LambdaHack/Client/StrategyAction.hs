@@ -406,7 +406,7 @@ moveStrategy cops aid s mFoe =
     mzero
                | otherwise =
     -- Prefer interests, but don't exclude other focused moves.
-    scaleFreq 5 $ bestVariant $ onlyInterest $ onlyKeepsDir 2 moveRandomly
+    scaleFreq 10 $ bestVariant $ onlyInterest $ onlyKeepsDir 2 moveRandomly
   interestIQFreq = interestFreq `mplus` bestVariant moveIQ
   moveClear    = onlyMoves (not . bumpableHere cops lvl foeVisible) moveFreely
   moveOpenable = onlyMoves (bumpableHere cops lvl foeVisible) moveFreely
