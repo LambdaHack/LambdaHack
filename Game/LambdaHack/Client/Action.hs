@@ -71,6 +71,7 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Frontend as Frontend
 import Game.LambdaHack.Utils.Assert
@@ -172,10 +173,12 @@ getArenaUI = do
   case mleader of
     Just leader -> getsState $ blid . getActorBody leader
     Nothing -> do
-      dungeon <- getsState sdungeon
-      case EM.minViewWithKey dungeon of
-        Just ((s, _), _) -> return s
-        Nothing -> assert `failure` "empty dungeon" `with` dungeon
+      side <- getsClient sside
+      factionD <- getsState sfactionD
+      let fact = factionD EM.! side
+      return $ case gquit fact of
+        Just Status{stDepth} -> toEnum stDepth
+        Nothing -> playerEntry $ gplayer fact
 
 -- | Calculate the position of leader's target.
 targetToPos :: MonadClientUI m => m (Maybe Point)
