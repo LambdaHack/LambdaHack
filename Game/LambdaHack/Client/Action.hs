@@ -145,10 +145,11 @@ promptGetKey frontKM frontFr = do
   readConnFrontend
 
 -- | Display a slideshow, awaiting confirmation for each slide except the last.
-getInitConfirms :: MonadClientUI m => [K.KM] -> Slideshow -> m Bool
-getInitConfirms frontClear slides = do
+getInitConfirms :: MonadClientUI m
+                => ColorMode -> [K.KM] -> Slideshow -> m Bool
+getInitConfirms dm frontClear slides = do
   ConnFrontend{..} <- getsSession sfconn
-  frontSlides <- mapM (drawOverlay ColorFull) $ runSlideshow slides
+  frontSlides <- mapM (drawOverlay dm) $ runSlideshow slides
   -- The first two cases are optimizations:
   case frontSlides of
     [] -> return True
@@ -240,9 +241,6 @@ getKeyOverlayCommand overlay = do
   km <- promptGetKey [] frame
   return $! fromMaybe km $ M.lookup km $ kmacro keyb
 
-getConfirm :: MonadClientUI m => [K.KM] -> SingleFrame -> m Bool
-getConfirm = Frontend.getConfirmGeneric promptGetKey
-
 -- | Push frames or delays to the frame queue.
 displayFrames :: MonadClientUI m => Frames -> m ()
 displayFrames = mapM_ (displayFrame False)
@@ -263,9 +261,9 @@ getYesNo frame = do
 -- tried to cancel/escape.
 displayMore :: MonadClientUI m => ColorMode -> Msg -> m Bool
 displayMore dm prompt = do
-  sli <- promptToSlideshow $ prompt <+> moreMsg
-  frame <- drawOverlay dm $ head $ runSlideshow sli
-  getConfirm [] frame
+  slides <- promptToSlideshow $ prompt <+> moreMsg
+  -- Two frames drawn total (unless 'prompt' very long).
+  getInitConfirms dm [] $ slides Monoid.<> toSlideshow [[]]
 
 -- | Print a yes/no question and return the player's answer. Use black
 -- and white colours to turn player's attention to the choice.

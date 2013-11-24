@@ -416,7 +416,7 @@ destroyActorUI aid body verb verboseVerb verbose = do
   -- so is domination, time-freeze, etc.
   if (bfid body == side && bhp body <= 0 && not (bproj body)) then do
     actorVerbMU aid body verb
-    void $ displayMore ColorFull ""
+    void $ displayMore ColorBW ""
   else when verbose $ actorVerbMU aid body verboseVerb
 
 moveItemUI :: MonadClientUI m
@@ -523,7 +523,7 @@ quitFactionUI fid mbody toSt = do
       partingSlide <- promptToSlideshow $ pp <+> moreMsg
       shutdownSlide <- promptToSlideshow pp
       -- TODO: First ESC cancels items display.
-      void $ getInitConfirms []
+      void $ getInitConfirms ColorFull []
         $ startingSlide Monoid.<> itemSlides
       -- TODO: Second ESC cancels high score and parting message display.
       -- The last slide stays onscreen during shutdown, etc.

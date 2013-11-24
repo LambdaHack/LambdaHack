@@ -4,7 +4,7 @@ module Game.LambdaHack.Frontend
   ( -- * Re-exported part of the raw frontend
     frontendName
     -- * Derived operation
-  , startupF, getConfirmGeneric
+  , startupF
     -- * Connection channels
   , ChanFrontend, FrontReq(..), ConnMulti(..), connMulti, loopFrontend
   ) where

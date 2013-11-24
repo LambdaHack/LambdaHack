@@ -10,6 +10,7 @@ import qualified Data.Text as T
 
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Binding
+import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.HumanCmd
 import Game.LambdaHack.Client.HumanLocal
 import Game.LambdaHack.Client.HumanSem
@@ -238,7 +239,7 @@ humanCommand msgRunAbort = do
                 -- for all but the last one.
                 -- Note: the code that generates the slides is responsible
                 -- for inserting the @more@ prompt.
-                go <- getInitConfirms [km] $ toSlideshow $ reverse sls
+                go <- getInitConfirms ColorFull [km] $ toSlideshow $ reverse sls
                 return $! if go then Just sLast else Nothing
             case mLast of
               Nothing -> do
