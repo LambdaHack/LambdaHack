@@ -129,14 +129,15 @@ proposeAction disco aid factionAbilities btarget = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   Actor{bkind, bpos, blid} <- getsState $ getActorBody aid
   lvl <- getLevel blid
-  let (fpos, mfAid) =
+  let mk = okind bkind
+      (fpos, mfAid) =
         case btarget of
           Just (TEnemy foeAid l) -> (l, Just foeAid)
           Just (TPos l) -> (l, Nothing)
           Nothing -> (bpos, Nothing)  -- an actor blocked by friends or a missile
       foeVisible = isJust mfAid
       lootHere x = not $ EM.null $ lvl `atI` x
-      actorAbilities = acanDo (okind bkind) `intersect` factionAbilities
+      actorAbilities = acanDo mk `intersect` factionAbilities
       isDistant = (`elem` [ Ability.Trigger
                           , Ability.Ranged
                           , Ability.Tools
@@ -310,11 +311,14 @@ rangedFreq disco aid fpos = do
 toolsFreq :: MonadActionRO m
           => Discovery -> ActorId -> m (Frequency CmdSerTakeTime)
 toolsFreq disco aid = do
-  Actor{bpos, blid, bbag, binv} <- getsState $ getActorBody aid
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  Actor{bkind, bpos, blid, bbag, binv} <- getsState $ getActorBody aid
   lvl <- getLevel blid
   s <- getState
   let tis = lvl `atI` bpos
-      quaffFreq bag multi container =
+      mk = okind bkind
+      mastered = "!" ++ if aiq mk < 10 then "" else "?"  -- literacy required
+      useFreq bag multi container =
         [ (benefit * multi, ApplySer aid iid (container iid))
         | (iid, i) <- map (\iid -> (iid, getItemBody iid s))
                       $ EM.keys bag
@@ -323,10 +327,10 @@ toolsFreq disco aid = do
                   Nothing -> 30  -- experimenting is fun
                   Just _ki -> Effect.effectToBenefit $ jeffect i
         , benefit > 0
-        , jsymbol i == '!' ]
-  return $ toFreq "quaffFreq" $
-    quaffFreq bbag 1 (actorContainer aid binv)
-    ++ quaffFreq tis 2 (const $ CFloor blid bpos)
+        , jsymbol i `elem` mastered ]
+  return $ toFreq "useFreq" $
+    useFreq bbag 1 (actorContainer aid binv)
+    ++ useFreq tis 2 (const $ CFloor blid bpos)
 
 -- TODO: express fully in MonadActionRO
 -- TODO: separate out bumping into solid tiles
