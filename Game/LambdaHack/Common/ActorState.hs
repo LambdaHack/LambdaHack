@@ -134,9 +134,8 @@ whereTo lid pos k s = assert (k /= 0) $
   let dungeon = sdungeon s
       lvl = dungeon EM.! lid
       stairs = (if k < 0 then snd else fst) (lstair lvl)
-      failSrc = assert `failure` "no stairs at position"
-                       `with` (lid, pos, k, stairs)
-      i = fromMaybe failSrc $ elemIndex pos stairs
+      defaultStairs = 0  -- for ascending via, e.g., spells
+      i = fromMaybe defaultStairs $ elemIndex pos stairs
   in case ascendInBranch dungeon lid k of
     [] -> assert `failure` "no dungeon level to go to" `with` (lid, pos, k)
     ln : _ -> let lvlTgt = dungeon EM.! ln
