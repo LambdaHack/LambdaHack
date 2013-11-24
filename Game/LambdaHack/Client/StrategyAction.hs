@@ -146,7 +146,8 @@ proposeAction disco aid factionAbilities btarget = do
       (distant, suffix) = partition isDistant rest
       -- TODO: Ranged and Tools should only be triggered in some situations.
       aFrequency :: MonadActionRO m => Ability -> m (Frequency CmdSerTakeTime)
-      aFrequency Ability.Trigger = triggerFreq aid
+      aFrequency Ability.Trigger = if foeVisible then return mzero
+                                   else triggerFreq aid
       aFrequency Ability.Ranged = if not foeVisible then return mzero
                                   else rangedFreq disco aid fpos
       aFrequency Ability.Tools  = if not foeVisible then return mzero
