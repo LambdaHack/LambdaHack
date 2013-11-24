@@ -13,9 +13,9 @@ cdefs = ContentDef
   , getFreq = mfreq
   , validate = mvalidate
   , content =
-      [campaign, skirmish, pvp, coop, defense, screensaver, testCoop, testDefense]
+      [campaign, skirmish, pvp, coop, defense, screensaver, testCoop, testDefense, testPeek]
   }
-campaign,        skirmish, pvp, coop, defense, screensaver, testCoop, testDefense :: ModeKind
+campaign,        skirmish, pvp, coop, defense, screensaver, testCoop, testDefense, testPeek :: ModeKind
 
 campaign = ModeKind
   { msymbol  = 'r'  -- matches the keypress (with C-)
@@ -81,8 +81,16 @@ testDefense = ModeKind
   , mcaves   = cavesDefense
   }
 
+testPeek = ModeKind
+  { msymbol  = 'e'
+  , mname    = "peek"
+  , mfreq    = [("peek", 1)]
+  , mplayers = playersPeek
+  , mcaves   = cavesScreensaver
+  }
 
-playersCampaign, playersSkirmish, playersPvP, playersCoop, playersDefense, playersScreensaver, playersTestCoop, playersTestDefense :: Players
+
+playersCampaign, playersSkirmish, playersPvP, playersCoop, playersDefense, playersScreensaver, playersTestCoop, playersTestDefense, playersPeek :: Players
 
 playersCampaign = Players
   { playersList = [ playerHero {playerInitial = 1}
@@ -167,6 +175,14 @@ playersTestDefense = Players
   , playersAlly = [ ("Green", "Yellow")
                   , ("Green", "Cyan")
                   , ("Yellow", "Cyan") ] }
+
+playersPeek = Players
+  { playersList = [ playerHero { playerInitial = 1 }
+                  , playerMonster { playerInitial = 1
+                                  , playerEntry = toEnum (-1)
+                                  , playerUI = True } ]
+  , playersEnemy = [("Adventuring Party", "Monster Hive")]
+  , playersAlly = [] }
 
 
 playerHero, playerAntiHero, playerMonster, playerHorror :: Player

@@ -519,6 +519,8 @@ quitFactionUI fid mbody toSt = do
         else do
           io <- floorItemOverlay bag
           overlayToSlideshow itemMsg io
+      -- Show score for any UI client, even though it is saved only
+      -- for human UI clients.
       scoreSlides <- scoreToSlideshow total status
       partingSlide <- promptToSlideshow $ pp <+> moreMsg
       shutdownSlide <- promptToSlideshow pp
