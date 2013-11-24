@@ -186,8 +186,6 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
   containerAdd w sview
   onDestroy w mainQuit
   widgetShowAll w
-  -- Wait until the other thread draws something and show the window.
-  yield
   mainGUI
 
 -- | Output to the screen via the frontend.
@@ -434,8 +432,8 @@ fpromptGetKey sess@FrontendSession{sdebugCli=DebugModeCli{snoMore}, ..}
 -- | Tells a dead key.
 deadKey :: String -> Bool
 deadKey x = case x of
-  "Shift_R"          -> True
   "Shift_L"          -> True
+  "Shift_R"          -> True
   "Control_L"        -> True
   "Control_R"        -> True
   "Super_L"          -> True

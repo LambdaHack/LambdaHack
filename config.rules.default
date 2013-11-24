@@ -11,7 +11,7 @@
 ; ;fovMode: Permissive
 ; ;fovMode: Shadow
 ; ;startingRandomGenerator: 42
-; saveBkpClips: 100
+; saveBkpClips: 500
 
 ; [file]
 ; ; Names (or prefixes) of various game files.

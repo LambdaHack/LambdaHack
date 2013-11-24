@@ -78,8 +78,9 @@ loopUI sdebugCli cmdClientUISem = do
       cmdClientUISem cmd1
       msgAdd msg
     (True, CmdAtomicUI RestartA{}) -> do
+      let msg = "Starting a new" <+> title <+> "game."  -- ignore old savefile
       cmdClientUISem cmd1
-      msgAdd $ "Starting a new" <+> title <+> "game."  -- ignoring old savefile
+      msgAdd msg
     (False, CmdAtomicUI ResumeA{}) -> do
       removeServerSave
       error $ T.unpack $

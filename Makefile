@@ -11,7 +11,7 @@ testCoop:
 	dist/build/LambdaHack/LambdaHack --noMore --noDelay --noAnim --maxFps 100000 --savePrefix testCoop --gameMode testCoop --frontendStd --stopAfter 500 > /tmp/stdtest.log
 
 testCoop-frontend:
-	dist/build/LambdaHack/LambdaHack --noMore --maxFps 45 --savePrefix testCoop --gameMode testCoop
+	dist/build/LambdaHack/LambdaHack --noMore --maxFps 180 --savePrefix testCoop --gameMode testCoop
 
 testCoop-travis:
 	dist/build/LambdaHack/LambdaHack --noMore --noDelay --noAnim --maxFps 100000 --savePrefix testCoop --gameMode testCoop --frontendStd --stopAfter 60 > /dev/null

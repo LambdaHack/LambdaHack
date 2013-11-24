@@ -16,6 +16,7 @@ import Game.LambdaHack.Client.AtomicSemCli
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.ClientSem
 import Game.LambdaHack.Client.Config
+import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.LoopAction
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
@@ -66,7 +67,11 @@ cmdClientUISem cmd = case cmd of
     assert (isJust mleader `blame` "query without leader" `with` cmd) skip
     cmdH <- queryUI aid
     writeServer cmdH
-  CmdPingUI ->
+  CmdPingUI -> do
+    -- Hack: in noMore mode, ping the frontend, too.
+    snoMore <- getsClient $ snoMore . sdebugCli
+    when snoMore $ void $ displayMore ColorFull "Flushing frames."
+    -- Return the ping.
     writeServer $ TakeTimeSer $ WaitSer $ toEnum (-1)
 
 -- | Wire together game content, the main loop of game clients,
