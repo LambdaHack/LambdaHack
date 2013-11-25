@@ -152,9 +152,9 @@ sendPingAI :: MonadConnServer m => FactionId -> m ()
 sendPingAI fid = do
   conn <- getsDict $ snd . (EM.! fid)
   writeTQueueAI CmdPingAI $ fromServer conn
-  debugPrint $ "AI client" <+> showT fid <+> "pinged..."
+  -- debugPrint $ "AI client" <+> showT fid <+> "pinged..."
   cmdHack <- readTQueueAI $ toServer conn
-  debugPrint $ "AI client" <+> showT fid <+> "responded."
+  -- debugPrint $ "AI client" <+> showT fid <+> "responded."
   assert (cmdHack == WaitSer (toEnum (-1))) skip
 
 sendUpdateUI :: MonadConnServer m => FactionId -> CmdClientUI -> m ()
@@ -181,9 +181,9 @@ sendPingUI fid = do
     Nothing -> assert `failure` "no channel for faction" `with` fid
     Just (_, conn) -> do
       writeTQueueUI CmdPingUI $ fromServer conn
-      debugPrint $ "UI client" <+> showT fid <+> "pinged..."
+      -- debugPrint $ "UI client" <+> showT fid <+> "pinged..."
       cmdHack <- readTQueueUI $ toServer conn
-      debugPrint $ "UI client" <+> showT fid <+> "responded."
+      -- debugPrint $ "UI client" <+> showT fid <+> "responded."
       assert (cmdHack == TakeTimeSer (WaitSer (toEnum (-1)))) skip
 
 -- | Create a server config file. Warning: when it's used, the game state
