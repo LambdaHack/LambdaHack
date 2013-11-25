@@ -239,11 +239,11 @@ triggerFreq aid = do
   let spawn = isSpawnFact cops fact
       t = lvl `at` bpos
       feats = TileKind.tfeature $ okind t
+      shallow k = signum k /= signum (fromEnum blid)
       ben feat = case feat of
-        F.Cause ef ->
-          if spawn && ef == Effect.Escape  -- spawners lose if they escape
-          then 0
-          else Effect.effectToBenefit ef
+        F.Cause Effect.Escape | spawn -> 0  -- spawners lose if they escape
+        F.Cause (Effect.Ascend k) | shallow k -> 1  -- everybody prefers depth
+        F.Cause ef -> Effect.effectToBenefit ef
         _ -> 0
       benFeat = zip (map ben feats) feats
   if bpos == boldpos then

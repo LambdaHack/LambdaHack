@@ -32,7 +32,7 @@ showScore :: (Int, ScoreRecord) -> [Text]
 showScore (pos, score) =
   let Status{stOutcome, stDepth} = status score
       died = case stOutcome of
-        Killed -> "perished on level " ++ show stDepth ++ ","
+        Killed -> "perished on level " ++ show (abs stDepth) ++ ","
         Defeated -> "was defeated"
         Camping -> "is camping somewhere,"
         Conquer -> "eliminated all opposition"
