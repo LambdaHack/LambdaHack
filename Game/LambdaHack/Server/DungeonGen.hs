@@ -61,6 +61,7 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
       ascendable  = Tile.kindHasFeature $ F.Cause (Effect.Ascend 1)
       descendable = Tile.kindHasFeature $ F.Cause (Effect.Ascend (-1))
   cmap <- convertTileMaps (opick cdefTile (const True)) cxsize cysize dmap
+  -- We keep two-way stairs at the start of the lists.
   let fDown noAsc (stairsUpCur, stairsDownCur) =
         if ldepth == minD then return ([], [])
         else do
@@ -70,11 +71,11 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
           let st = (sd, downId)
           return $ if ascendable $ okind downId
                    then (st : stairsUpCur, st : stairsDownCur)
-                   else (stairsUpCur, st : stairsDownCur)
-      fUp (stairsUpCur, stairsDownCur) _ =
+                   else (stairsUpCur, stairsDownCur ++ [st])
+      fUp noDesc (stairsUpCur, stairsDownCur) _ =
         if ldepth == maxD then return (stairsUpCur, stairsDownCur)
         else do
-          let cond tk = ascendable tk && not (ldepth == minD && descendable tk)
+          let cond tk = ascendable tk && not (noDesc && descendable tk)
               stairsCur = stairsUpCur ++ stairsDownCur
               posCur = nub $ sort $ map fst stairsCur
           su <- placeStairs cotile cmap kc posCur
@@ -82,11 +83,12 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
           let st = (su, upId)
           return $ if descendable $ okind upId
                    then (st : stairsUpCur, st : stairsDownCur)
-                   else (st : stairsUpCur, stairsDownCur)
+                   else (stairsUpCur ++ [st], stairsDownCur)
   (stairsUpExtra1, stairsDownStd1) <- fDown (ldepth == maxD) ([], [])
   let nstairUpLeft = nstairUp - length stairsUpExtra1
   (stairsUp2, stairsDown2) <-
-    foldM fUp (stairsUpExtra1, stairsDownStd1) [1 .. nstairUpLeft]
+    foldM (fUp (ldepth == minD)) (stairsUpExtra1, stairsDownStd1)
+          [1 .. nstairUpLeft]
   -- If only a single tile of up-and-down stairs, add one more stairs down.
   (stairsUp, stairsDown) <-
     if length stairsUp2 == length stairsDown2 && length stairsDown2 == 1
@@ -106,7 +108,8 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
                 return [(sq, downEscape)]
   let exits = stairsTotal ++ escape
       ltile = cmap Kind.// exits
-      lstair = (map fst stairsUp, map fst stairsDown)
+      -- We reverse the down stairs, to minimize long stair chains.
+      lstair = (map fst stairsUp, map fst $ reverse stairsDown)
   -- traceShow (ldepth, nstairUp, (stairsUp, stairsDown)) skip
   litemNum <- castDice citemNum
   lsecret <- random
