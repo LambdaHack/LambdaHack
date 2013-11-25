@@ -208,6 +208,7 @@ track aid = do
         Just lv -> returN "SetPathSer" $ SetPathSer aid lv
   return strat
 
+-- TODO: (most?) animals don't pick up. Everybody else does.
 pickup :: MonadActionRO m => ActorId -> m (Strategy CmdSerTakeTime)
 pickup aid = do
   body@Actor{bpos, blid} <- getsState $ getActorBody aid
@@ -222,6 +223,7 @@ pickup aid = do
         Nothing -> returN "pickup" $ WaitSer aid  -- TODO
   return actionPickup
 
+-- Everybody melees in a pinch, even though some prefer ranged attacks.
 melee :: MonadActionRO m
       => ActorId -> Point -> ActorId -> m (Strategy CmdSerTakeTime)
 melee aid fpos foeAid = do
@@ -230,10 +232,11 @@ melee aid fpos foeAid = do
   let foeAdjacent = adjacent lxsize bpos fpos  -- MeleeDistant
   return $ foeAdjacent .=> returN "melee" (MeleeSer aid foeAid)
 
+-- Fast monsters don't pay enough attention to features.
 triggerFreq :: MonadActionRO m
             => ActorId -> m (Frequency CmdSerTakeTime)
 triggerFreq aid = do
-  cops@Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
+  cops@Kind.COps{coactor, cotile=Kind.Ops{okind}} <- getsState scops
   b@Actor{bpos, blid, bfid, boldpos} <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid
   lvl <- getLevel blid
@@ -245,17 +248,22 @@ triggerFreq aid = do
         F.Cause ef -> effectToBenefit cops b ef
         _ -> 0
       benFeat = zip (map ben feats) feats
-  if bpos == boldpos then
-    -- Probably recently switched levels or was pushed to another level.
-    -- Do not repeatedly switch levels or push each other between levels.
-    -- Consequently, AI won't dive many levels down with linked staircases.
-    -- TODO: beware of stupid monsters that backtrack and so occupy stairs.
+      -- Probably recently switched levels or was pushed to another level.
+      -- Do not repeatedly switch levels or push each other between levels.
+      -- Consequently, AI won't dive many levels down with linked staircases.
+      -- TODO: beware of stupid monsters that backtrack and so occupy stairs.
+      recentlyAscended = bpos == boldpos
+      -- Too fast to notice and use features.
+      fast = actorSpeed coactor b > speedNormal
+  if recentlyAscended || fast then
     return mzero
   else
     return $ toFreq "triggerFreq" $ [ (benefit, TriggerSer aid (Just feat))
                                     | (benefit, feat) <- benFeat
                                     , benefit > 0 ]
 
+-- Actors require sight to use ranged combat and intelligence to throw
+-- or zap anything else than obvious physical missiles.
 rangedFreq :: MonadActionRO m
            => Discovery -> ActorId -> Point -> m (Frequency CmdSerTakeTime)
 rangedFreq disco aid fpos = do
@@ -279,6 +287,8 @@ rangedFreq disco aid fpos = do
   s <- getState
   let eps = 0
       bl = bla lxsize lysize eps bpos fpos  -- TODO:make an arg of projectGroupItem
+      permitted = (if aiq mk >= 10 then ritemProject else ritemRanged)
+                  $ Kind.stdRuleset corule
       throwFreq bag multi container =
         [ (- benefit * multi,
           ProjectSer aid fpos eps iid (container iid))
@@ -293,8 +303,7 @@ rangedFreq disco aid fpos = do
                         _unneeded = isymbol _kik
                     in effectToBenefit cops b (jeffect i)
         , benefit < 0
-          -- Wasting weapons and armour would be too cruel to the player.
-        , jsymbol i `elem` ritemProject (Kind.stdRuleset corule) ]
+        , jsymbol i `elem` permitted ]
   return $ toFreq "throwFreq" $
     case bl of
       Just (pos1 : _) ->
@@ -307,6 +316,7 @@ rangedFreq disco aid fpos = do
         else []
       _ -> []  -- ProjectAimOnself
 
+-- Tools use requires significant intelligence and sometimes literacy.
 toolsFreq :: MonadActionRO m
           => Discovery -> ActorId -> m (Frequency CmdSerTakeTime)
 toolsFreq disco aid = do
@@ -316,7 +326,9 @@ toolsFreq disco aid = do
   s <- getState
   let tis = lvl `atI` bpos
       mk = okind bkind
-      mastered = "!" ++ if aiq mk < 10 then "" else "?"  -- literacy required
+      mastered | aiq mk < 5 = ""
+               | aiq mk < 10 = "!"
+               | otherwise = "!?"  -- literacy required
       useFreq bag multi container =
         [ (benefit * multi, ApplySer aid iid (container iid))
         | (iid, i) <- map (\iid -> (iid, getItemBody iid s))

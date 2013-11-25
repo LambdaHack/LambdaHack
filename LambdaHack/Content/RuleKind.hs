@@ -43,6 +43,8 @@ standard = RuleKind
   , rpathsDataFile = Self.getDataFileName
   , rpathsVersion  = Self.version
   , ritemMelee     = ")"
+  , ritemRanged    = "|"
+  -- Wasting weapons and armour would be too cruel to the player.
   , ritemProject   = "!?|/"
   -- The strings containing the default configuration files,
   -- included from files config.game.default and config.ui.default.

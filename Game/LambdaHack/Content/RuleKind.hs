@@ -6,10 +6,10 @@ module Game.LambdaHack.Content.RuleKind
 import Data.Text (Text)
 import Data.Version
 
-import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.PointXY
+import Game.LambdaHack.Content.TileKind
 
 -- TODO: very few rules are configurable yet, extend as needed.
 
@@ -35,6 +35,7 @@ data RuleKind = RuleKind
   , rpathsDataFile   :: FilePath -> IO FilePath  -- ^ the path to data files
   , rpathsVersion    :: Version  -- ^ the version of the game
   , ritemMelee       :: [Char]   -- ^ symbols of melee weapons
+  , ritemRanged      :: [Char]   -- ^ symbols of ranged weapons and missiles
   , ritemProject     :: [Char]   -- ^ symbols of items AI can project
   , rcfgRulesDefault :: String   -- ^ the default game rules config file
   , rcfgUIDefault    :: String   -- ^ the default UI settings config file
