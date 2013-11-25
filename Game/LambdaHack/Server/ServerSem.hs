@@ -228,34 +228,31 @@ alterSer source tpos mfeat = do
           -- No AlterD, because the effect is obvious (e.g., opened door).
           toTile <- rndToAction $ opick tgroup (const True)
           execCmdAtomic $ AlterTileA lid tpos serverTile toTile
-          return True
-        alterFeat feat =
-          case feat of
-            F.OpenTo tgroup -> changeTo tgroup
-            F.CloseTo tgroup -> changeTo tgroup
-            F.ChangeTo tgroup -> changeTo tgroup
-            _ -> return False
         feats = case mfeat of
           Nothing -> TileKind.tfeature $ okind serverTile
           Just feat2 | Tile.hasFeature cotile feat2 serverTile -> [feat2]
           Just _ -> []
+        toAlter feat =
+          case feat of
+            F.OpenTo tgroup -> Just tgroup
+            F.CloseTo tgroup -> Just tgroup
+            F.ChangeTo tgroup -> Just tgroup
+            _ -> Nothing
+        groupsToAlter = mapMaybe toAlter feats
     as <- getsState $ actorList (const True) lid
-    if EM.null $ lvl `atI` tpos then
-      if unoccupied as tpos then do
-        if serverTile /= freshClientTile then do
-          -- Search, in case some actors (of other factions?)
-          -- don't know this tile.
-          execCmdAtomic $ SearchTileA source tpos freshClientTile serverTile
-          mapM_ alterFeat feats
-          -- Even if no effect, at least we possibly searched something,
-          -- so we don't report Failure.
-        else do
-          bs <- mapM alterFeat feats
-          when (not $ or bs) $
-            -- Neither searching nor altering possible; silly client.
-            execFailure sb AlterNothing
-      else execFailure sb AlterBlockActor
-    else execFailure sb AlterBlockItem
+    if null groupsToAlter && serverTile == freshClientTile then
+      -- Neither searching nor altering possible; silly client.
+      execFailure sb AlterNothing
+    else do
+      if EM.null $ lvl `atI` tpos then
+        if unoccupied as tpos then do
+          when (serverTile /= freshClientTile) $ do
+            -- Search, in case some actors (of other factions?)
+            -- don't know this tile.
+            execCmdAtomic $ SearchTileA source tpos freshClientTile serverTile
+          mapM_ changeTo groupsToAlter
+        else execFailure sb AlterBlockActor
+      else execFailure sb AlterBlockItem
 
 -- * WaitSer
 

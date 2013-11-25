@@ -93,19 +93,18 @@ moveRunAid source dir = do
   let spos = bpos sb           -- source position
       tpos = spos `shift` dir  -- target position
       t = lvl `at` tpos
+  -- Movement requires full access.
   if accessible cops lvl spos tpos then
-    -- Movement requires full access.
-    return $ MoveSer source dir
     -- The potential invisible actor is hit. War is started without asking.
-  else if not $ EM.null $ lvl `atI` tpos then
-    abortFailure AlterBlockItem
+    return $ MoveSer source dir
+  -- No access, so search and/or alter the tile.
   else if not (Tile.hasFeature cotile F.Walkable t)  -- not implied by access
           && (Tile.hasFeature cotile F.Suspect t
               || Tile.openable cotile t
               || Tile.closable cotile t
               || Tile.changeable cotile t) then
-    -- No access, so search and/or alter the tile.
-    return $ AlterSer source tpos Nothing
+    if not $ EM.null $ lvl `atI` tpos then abortFailure AlterBlockItem
+    else return $ AlterSer source tpos Nothing
     -- We don't use MoveSer, because we don't hit invisible actors here.
     -- The potential invisible actor, e.g., in a wall or in
     -- an inaccessible doorway, is made known, taking a turn.
