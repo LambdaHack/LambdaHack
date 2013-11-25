@@ -8,6 +8,7 @@ module Game.LambdaHack.Utils.Assert
 import Control.Exception (assert)
 import Data.Text (Text)
 import Debug.Trace (trace)
+import qualified Text.Show.Pretty as Show.Pretty
 
 infix 1 `blame`
 -- | If the condition fails, display the value blamed for the failure.
@@ -20,7 +21,7 @@ blame condition blamed
   | condition = True
   | otherwise =
     let s = "Contract failed and the following is to blame:\n" ++
-            "  " ++ show blamed
+            "  " ++ Show.Pretty.ppShow blamed
     in trace s False
 
 infix 2 `with`
@@ -36,7 +37,7 @@ failure :: Show a => (Bool -> b -> b) -> a -> b
 {-# INLINE failure #-}
 failure asrt blamed =
   let s = "Internal failure occured and the following is to blame:\n" ++
-          "  " ++ show blamed
+          "  " ++ Show.Pretty.ppShow blamed
   in trace s $
      asrt False
        (error "Assert.failure: no error position (upgrade to GHC >= 7.4)")
@@ -48,7 +49,9 @@ failure asrt blamed =
 allB :: Show a => (a -> Bool) -> [a] -> Bool
 {-# INLINE allB #-}
 allB predicate l =
-  let s = show (filter (not . predicate) l) ++ " in the context of " ++ show l
+  let s = Show.Pretty.ppShow (filter (not . predicate) l)
+          ++ " in the context of "
+          ++ Show.Pretty.ppShow l
   in blame (all predicate l) s
 
 -- | To be used in place of the verbose @skip@, as in:

@@ -121,7 +121,7 @@ debugSteeper f@(B(_xf, yf)) p1@(B(_x1, y1)) p2@(B(_x2, y2)) =
       (n2, k2) = intersect (p2, f) 0
   in n1 * k2 >= k1 * n2
 
--- | Debug: check is a view border line for DFOV is legal.
+-- | Debug: check if a view border line for DFOV is legal.
 debugLine :: Line -> (Bool, String)
 debugLine line@(B(x1, y1), B(x2, y2))
   | not (allB (>= 0) [y1, y2]) =

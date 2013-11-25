@@ -20,11 +20,16 @@ import Data.Monoid hiding ((<>))
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
-import NLP.Miniutter.English (showT, (<+>), (<>))
+import NLP.Miniutter.English ((<+>), (<>))
 import qualified NLP.Miniutter.English as MU
+import qualified Text.Show.Pretty as Show.Pretty
 
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.PointXY
+
+-- Pretty print and pack the result of @show@.
+showT :: Show a => a -> Text
+showT x = T.pack $ Show.Pretty.ppShow x
 
 -- | Re-exported English phrase creation functions, applied to default
 -- irregular word sets.

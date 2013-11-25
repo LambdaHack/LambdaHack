@@ -123,7 +123,7 @@ readTQueueAI toServer = do
   debug <- getsServer $ sniffIn . sdebugSer
   when debug $ do
     let aid = aidCmdSerTakeTime cmd
-    d <- debugAid aid ("CmdSerTakeTime:" <+> showT cmd)
+    d <- debugAid aid "CmdSerTakeTime" cmd
     liftIO $ T.hPutStrLn stderr d
   return cmd
 
@@ -133,7 +133,7 @@ readTQueueUI toServer = do
   debug <- getsServer $ sniffIn . sdebugSer
   when debug $ do
     let aid = aidCmdSer cmd
-    d <- debugAid aid ("CmdSer:" <+> showT cmd)
+    d <- debugAid aid "CmdSer" cmd
     liftIO $ T.hPutStrLn stderr d
   return cmd
 

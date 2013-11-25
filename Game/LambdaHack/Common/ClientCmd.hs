@@ -10,6 +10,7 @@ module Game.LambdaHack.Common.ClientCmd
 import Control.Concurrent.STM.TQueue
 import qualified Data.EnumMap.Strict as EM
 import Data.Text (Text)
+import qualified Data.Text as T
 
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
@@ -17,9 +18,11 @@ import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.AtomicPos
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Frontend
 
 -- | Abstract syntax of client commands that don't use the UI.
@@ -39,36 +42,58 @@ data CmdClientUI =
 
 debugCmdClientAI :: MonadActionRO m => CmdClientAI -> m Text
 debugCmdClientAI cmd = case cmd of
-  CmdAtomicAI cmdA -> do
-    ps <- posCmdAtomic cmdA
-    return $ showT (showT cmd, ps)
-  CmdQueryAI aid -> debugAid aid $ showT cmd
+  CmdAtomicAI cmdA@PerceptionA{} -> debugPlain cmd cmdA
+  CmdAtomicAI cmdA@ResumeA{} -> debugPlain cmd cmdA
+  CmdAtomicAI cmdA@SpotTileA{} -> debugPlain cmd cmdA
+  CmdAtomicAI cmdA -> debugPretty cmd cmdA
+  CmdQueryAI aid -> debugAid aid "CmdQueryAI" cmd
   CmdPingAI -> return $ showT cmd
 
 debugCmdClientUI :: MonadActionRO m => CmdClientUI -> m Text
 debugCmdClientUI cmd = case cmd of
-  CmdAtomicUI cmdA -> do
-    ps <- posCmdAtomic cmdA
-    return $ showT (showT cmd, ps)
+  CmdAtomicUI cmdA@PerceptionA{} -> debugPlain cmd cmdA
+  CmdAtomicUI cmdA@ResumeA{} -> debugPlain cmd cmdA
+  CmdAtomicUI cmdA@SpotTileA{} -> debugPlain cmd cmdA
+  CmdAtomicUI cmdA -> debugPretty cmd cmdA
   SfxAtomicUI sfx -> do
     ps <- posSfxAtomic sfx
-    return $ showT (showT cmd, ps)
-  CmdQueryUI aid -> debugAid aid $ showT cmd
+    return $ showT (cmd, ps)
+  CmdQueryUI aid -> debugAid aid "CmdQueryUI" cmd
   CmdPingUI -> return $ showT cmd
 
-debugAid :: MonadActionRO m => ActorId -> Text -> m Text
-debugAid aid s =
+debugPretty :: (MonadActionRO m, Show a) => a -> CmdAtomic -> m Text
+debugPretty cmd cmdA = do
+  ps <- posCmdAtomic cmdA
+  return $ showT (cmd, ps)
+
+debugPlain :: (MonadActionRO m, Show a) => a -> CmdAtomic -> m Text
+debugPlain cmd cmdA = do
+  ps <- posCmdAtomic cmdA
+  return $ T.pack $ show (cmd, ps)  -- too large for pretty show
+
+data DebugAid a = DebugAid
+  { label   :: Text
+  , cmd     :: a
+  , lid     :: LevelId
+  , time    :: Time
+  , aid     :: ActorId
+  , faction ::FactionId
+  }
+  deriving Show
+
+debugAid :: (MonadActionRO m, Show a) => ActorId -> Text -> a -> m Text
+debugAid aid label cmd =
   if aid == toEnum (-1) then
     return ""
   else do
     b <- getsState $ getActorBody aid
     time <- getsState $ getLocalTime (blid b)
-    return $
-      showT ( s
-            , "lid" :: Text, blid b
-            , "time" :: Text, time
-            , "aid" :: Text, aid
-            , "faction" :: Text, bfid b )
+    return $ showT DebugAid { label
+                            , cmd
+                            , lid = blid b
+                            , time
+                            , aid
+                            , faction = bfid b }
 
 -- | Connection channels between the server and a single client.
 data ChanServer c d = ChanServer

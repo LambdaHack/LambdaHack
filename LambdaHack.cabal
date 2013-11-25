@@ -182,6 +182,7 @@ library
                       miniutter  >= 0.4.1   && < 2,
                       mtl        >= 2.0.1   && < 3,
                       old-time   >= 1.0.0.7 && < 2,
+                      pretty-show >= 1.6    && < 2,
                       random     >= 1.0.1   && < 2,
                       stm        >= 2.4     && < 3,
                       text       >= 0.11.2.3 && < 1,
