@@ -36,6 +36,7 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Utils.Assert
 
 -- * CmdAtomicAI
@@ -46,7 +47,7 @@ import Game.LambdaHack.Utils.Assert
 cmdAtomicFilterCli :: MonadClient m => CmdAtomic -> m [CmdAtomic]
 cmdAtomicFilterCli cmd = case cmd of
   AlterTileA lid p fromTile toTile -> do
-    Kind.COps{cotile = Kind.Ops{oname}} <- getsState scops
+    Kind.COps{cotile = Kind.Ops{okind}} <- getsState scops
     lvl@Level{lxsize} <- getLevel lid
     let t = lvl `at` p
     if t == fromTile
@@ -59,11 +60,11 @@ cmdAtomicFilterCli cmd = case cmd of
         -- to @toTile@. See @alterTileA@.
         let subject = ""  -- a hack, we we don't handle adverbs well
             verb = "turn into"
-            msg = makeSentence [ "the", MU.Text $ oname t
+            msg = makeSentence [ "the", MU.Text $ tname $ okind t
                                , "at position", MU.Text $ showPoint lxsize p
                                , "suddenly"  -- adverb
                                , MU.SubjectVerbSg subject verb
-                               , MU.AW $ MU.Text $ oname toTile ]
+                               , MU.AW $ MU.Text $ tname $ okind toTile ]
         return [ cmd  -- reveal the tile
                , MsgAllA msg  -- show the message
                ]
@@ -313,15 +314,15 @@ drawCmdAtomicUI verbose cmd = case cmd of
   AlterTileA{} | verbose ->
     return ()  -- TODO: door opens
   SearchTileA aid _ fromTile toTile -> do
-    Kind.COps{cotile = Kind.Ops{oname}} <- getsState scops
+    Kind.COps{cotile = Kind.Ops{okind}} <- getsState scops
     subject <- partAidLeader aid
     let verb = "reveal that the"
-        subject2 = MU.Text $ oname fromTile
+        subject2 = MU.Text $ tname $ okind fromTile
         verb2 = "be"
     let msg = makeSentence [ MU.SubjectVerbSg subject verb
                            , MU.SubjectVerbSg subject2 verb2
                            , "a hidden"
-                           , MU.Text $ oname toTile ]
+                           , MU.Text $ tname $ okind toTile ]
     msgAdd msg
   AgeGameA t -> do
     when (t > timeClip) $ displayFrames [Nothing]  -- show delay
@@ -457,7 +458,7 @@ displaceActorUI source target = do
 quitFactionUI :: MonadClientUI m
               => FactionId -> Maybe Actor -> Maybe Status -> m ()
 quitFactionUI fid mbody toSt = do
-  Kind.COps{coitem=Kind.Ops{oname, ouniqGroup}} <- getsState scops
+  Kind.COps{coitem=Kind.Ops{okind, ouniqGroup}} <- getsState scops
   factionD <- getsState sfactionD
   let fact = factionD EM.! fid
       fidName = MU.Text $ gname fact
@@ -507,7 +508,7 @@ quitFactionUI fid mbody toSt = do
           Just aid -> do
             b <- getsState $ getActorBody aid
             getsState $ calculateTotal b
-      let currencyName = MU.Text $ oname $ ouniqGroup "currency"
+      let currencyName = MU.Text $ iname $ okind $ ouniqGroup "currency"
           itemMsg = makeSentence [ "Your loot is worth"
                                  , MU.CarWs total currencyName ]
                     <+> moreMsg

@@ -54,6 +54,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Utils.Assert
 
 -- * Move and Run
@@ -98,7 +99,7 @@ lookAt :: MonadClientUI m
        -> Text       -- ^ an extra sentence to print
        -> m Text
 lookAt detailed canSee pos aid msg = do
-  Kind.COps{coitem, cotile=cotile@Kind.Ops{oname}} <- getsState scops
+  Kind.COps{coitem, cotile=cotile@Kind.Ops{okind}} <- getsState scops
   (_, lvl) <- viewedLevel
   subject <- partAidLeader aid
   s <- getState
@@ -117,7 +118,7 @@ lookAt detailed canSee pos aid msg = do
       obscured | tile /= hideTile cotile lvl pos = "partially obscured"
                | otherwise = ""
   if detailed
-    then return $! makeSentence [obscured, MU.Text $ oname tile]
+    then return $! makeSentence [obscured, MU.Text $ tname $ okind tile]
                    <+> msg <+> isd
     else return $! msg <+> isd
 

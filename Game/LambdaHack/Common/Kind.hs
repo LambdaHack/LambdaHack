@@ -54,9 +54,7 @@ data instance Speedup TileKind = TileSpeedup
 
 -- | Content operations for the content of type @a@.
 data Ops a = Ops
-  { osymbol       :: Id a -> Char  -- ^ the symbol of a content element at id
-  , oname         :: Id a -> Text  -- ^ the name of a content element at id
-  , okind         :: Id a -> a     -- ^ the content element at given id
+  { okind         :: Id a -> a     -- ^ the content element at given id
   , ouniqGroup    :: Text -> Id a  -- ^ the id of the unique member of
                                    --   a singleton content group
   , opick         :: Text -> (a -> Bool) -> Rnd (Id a)
@@ -71,7 +69,7 @@ data Ops a = Ops
 -- | Create content operations for type @a@ from definition of content
 -- of type @a@.
 createOps :: forall a. Show a => ContentDef a -> Ops a
-createOps ContentDef{getSymbol, getName, getFreq, content, validate} =
+createOps ContentDef{getName, getFreq, content, validate} =
   assert (Id (fromIntegral $ length content) < sentinelId) $
   let kindAssocs :: [(Word8, a)]
       kindAssocs = L.zip [0..] content
@@ -93,9 +91,7 @@ createOps ContentDef{getSymbol, getName, getFreq, content, validate} =
   in assert (allB correct content) $
      assert (L.null offenders `blame` "content not validated" `with` offenders)
      Ops
-       { osymbol = getSymbol . okind
-       , oname = getName . okind
-       , okind
+       { okind
        , ouniqGroup = \ group ->
            let freq = fromMaybe (assert `failure` "no unique group"
                                         `with` (group, kindFreq))
