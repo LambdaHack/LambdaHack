@@ -26,6 +26,7 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.Random as Random
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -233,17 +234,15 @@ triggerFreq :: MonadActionRO m
             => ActorId -> m (Frequency CmdSerTakeTime)
 triggerFreq aid = do
   cops@Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
-  Actor{bpos, blid, bfid, boldpos} <- getsState $ getActorBody aid
+  b@Actor{bpos, blid, bfid, boldpos} <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid
   lvl <- getLevel blid
   let spawn = isSpawnFact cops fact
       t = lvl `at` bpos
       feats = TileKind.tfeature $ okind t
-      shallow k = signum k /= signum (fromEnum blid)
       ben feat = case feat of
         F.Cause Effect.Escape | spawn -> 0  -- spawners lose if they escape
-        F.Cause (Effect.Ascend k) | shallow k -> 1  -- everybody prefers depth
-        F.Cause ef -> Effect.effectToBenefit ef
+        F.Cause ef -> effectToBenefit cops b ef
         _ -> 0
       benFeat = zip (map ben feats) feats
   if bpos == boldpos then
@@ -260,12 +259,12 @@ triggerFreq aid = do
 rangedFreq :: MonadActionRO m
            => Discovery -> ActorId -> Point -> m (Frequency CmdSerTakeTime)
 rangedFreq disco aid fpos = do
-  Kind.COps{ coactor=Kind.Ops{okind}
-           , coitem=Kind.Ops{okind=iokind}
-           , corule
-           , cotile
-           } <- getsState scops
-  Actor{bkind, bpos, bfid, blid, bbag, binv} <- getsState $ getActorBody aid
+  cops@Kind.COps{ coactor=Kind.Ops{okind}
+                , coitem=Kind.Ops{okind=iokind}
+                , corule
+                , cotile
+                } <- getsState scops
+  b@Actor{bkind, bpos, bfid, blid, bbag, binv} <- getsState $ getActorBody aid
   lvl@Level{lxsize, lysize} <- getLevel blid
   let mk = okind bkind
       tis = lvl `atI` bpos
@@ -288,11 +287,11 @@ rangedFreq disco aid fpos = do
         , let benefit =
                 case jkind disco i of
                   Nothing -> -- TODO: (undefined, 0)   --- for now, cheating
-                    Effect.effectToBenefit (jeffect i)
+                    effectToBenefit cops b (jeffect i)
                   Just _ki ->
                     let _kik = iokind _ki
                         _unneeded = isymbol _kik
-                    in Effect.effectToBenefit (jeffect i)
+                    in effectToBenefit cops b (jeffect i)
         , benefit < 0
           -- Wasting weapons and armour would be too cruel to the player.
         , jsymbol i `elem` ritemProject (Kind.stdRuleset corule) ]
@@ -311,8 +310,8 @@ rangedFreq disco aid fpos = do
 toolsFreq :: MonadActionRO m
           => Discovery -> ActorId -> m (Frequency CmdSerTakeTime)
 toolsFreq disco aid = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-  Actor{bkind, bpos, blid, bbag, binv} <- getsState $ getActorBody aid
+  cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  b@Actor{bkind, bpos, blid, bbag, binv} <- getsState $ getActorBody aid
   lvl <- getLevel blid
   s <- getState
   let tis = lvl `atI` bpos
@@ -325,7 +324,7 @@ toolsFreq disco aid = do
         , let benefit =
                 case jkind disco i of
                   Nothing -> 30  -- experimenting is fun
-                  Just _ki -> Effect.effectToBenefit $ jeffect i
+                  Just _ki -> effectToBenefit cops b $ jeffect i
         , benefit > 0
         , jsymbol i `elem` mastered ]
   return $ toFreq "useFreq" $
@@ -512,3 +511,26 @@ moveRunAid run source dir = do
         -- Boring tile, no point bumping into it, do WaitSer if really idle.
         assert `failure` "AI causes MoveNothing or AlterNothing"
                `with` (run, source, dir)
+
+-- | How much AI benefits from applying the effect. Multipllied by item p.
+-- Negative means harm to the enemy when thrown at him. Effects with zero
+-- benefit won't ever be used, neither actively nor passively.
+effectToBenefit :: Kind.COps -> Actor -> Effect.Effect Int -> Int
+effectToBenefit Kind.COps{coactor=Kind.Ops{okind}} b eff =
+  let kind = okind $ bkind b
+      deep k = signum k == signum (fromEnum $ blid b)
+  in case eff of
+    Effect.NoEffect -> 0
+    (Effect.Heal p) -> 10 * min p (Random.maxDice (ahp kind) - bhp b)
+    (Effect.Hurt _ p) -> -(p * 10)     -- TODO: dice ignored, not capped
+    Effect.Mindprobe{} -> 0            -- AI can't benefit yet
+    Effect.Dominate -> -100
+    (Effect.CallFriend p) -> p * 100
+    Effect.Summon{} -> 1               -- may or may not spawn a friendly
+    (Effect.CreateItem p) -> p * 20
+    Effect.ApplyPerfume -> 0
+    Effect.Regeneration{} -> 0         -- bigger benefit from carrying around
+    Effect.Searching{} -> 0
+    (Effect.Ascend k) | deep k -> 500  -- AI likes to explore deep down
+    Effect.Ascend{} -> 1
+    Effect.Escape -> 1000              -- AI wants to win

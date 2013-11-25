@@ -2,7 +2,7 @@
 -- | Effects of content on other content. No operation in this module
 -- involves the 'State' or 'Action' type.
 module Game.LambdaHack.Common.Effect
-  ( Effect(..), effectTrav, effectToSuffix, effectToBenefit
+  ( Effect(..), effectTrav, effectToSuffix
   ) where
 
 import qualified Control.Monad.State as St
@@ -97,21 +97,3 @@ affixBonus p = case compare p 0 of
   EQ -> ""
   LT -> " (" <> showT p <> ")"
   GT -> " (+" <> showT p <> ")"
-
--- | How much AI benefits from applying the effect. Multipllied by item p.
--- Negative means harm to the enemy when thrown at him. Effects with zero
--- benefit won't ever be used, neither actively nor passively.
-effectToBenefit :: Effect Int -> Int
-effectToBenefit NoEffect = 0
-effectToBenefit (Heal p) = p * 10        -- TODO: depends on (maxhp - hp)
-effectToBenefit (Hurt _ p) = -(p * 10)   -- TODO: dice ignored for now
-effectToBenefit Mindprobe{} = 0          -- AI can't benefit yet
-effectToBenefit Dominate = 1             -- hard to use; TODO: limit by IQ
-effectToBenefit (CallFriend p) = p * 100
-effectToBenefit Summon{} = 1             -- may or may not spawn a friendly
-effectToBenefit (CreateItem p) = p * 20
-effectToBenefit ApplyPerfume = 0
-effectToBenefit Regeneration{} = 0       -- bigger benefit from carrying around
-effectToBenefit Searching{} = 0
-effectToBenefit Ascend{} = 500           -- everybody likes to explore
-effectToBenefit Escape = 100             -- AI wants to win
