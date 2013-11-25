@@ -48,8 +48,7 @@ draw dm cops per drawnLevelId mleader
      StateClient{ stgtMode, scursor, seps, sdisco
                 , smarkVision, smarkSmell, smarkSuspect }
      s overlay =
-  let Kind.COps{ coactor=Kind.Ops{okind}
-               , cotile=Kind.Ops{okind=tokind, ouniqGroup} } = cops
+  let Kind.COps{cotile=Kind.Ops{okind=tokind, ouniqGroup}} = cops
       (lvl@Level{ ldepth, lxsize, lysize, lsmell
                 , ldesc, ltime, lseen, lclear }) = sdungeon s EM.! drawnLevelId
       (msgTop, over, msgBottom) = stringByLocation lxsize lysize overlay
@@ -78,14 +77,13 @@ draw dm cops per drawnLevelId mleader
             items = lvl `atI` pos0
             sml = EM.findWithDefault timeZero pos0 lsmell
             smlt = sml `timeAdd` timeNegate ltime
-            viewActor aid Actor{bkind, bsymbol, bcolor, bhp, bproj}
+            viewActor aid Actor{bsymbol, bcolor, bhp, bproj}
               | Just aid == mleader = (symbol, Color.defBG)
               | otherwise = (symbol, color)
              where
-              ActorKind{asymbol, acolor} = okind bkind
-              color  = fromMaybe acolor bcolor
+              color  = bcolor
               symbol | bhp <= 0 && not bproj = '%'
-                     | otherwise = fromMaybe asymbol bsymbol
+                     | otherwise = bsymbol
             rainbow p = toEnum $ fromEnum p `rem` 14 + 1
             actorsHere = actorAssocs (const True) drawnLevelId s
             -- smarkSuspect is an optional overlay, so let's overlay it

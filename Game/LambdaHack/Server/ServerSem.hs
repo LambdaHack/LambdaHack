@@ -260,11 +260,10 @@ alterSer source tpos mfeat = do
 -- to remain correct even if the level is frozen for some global time turns.
 waitSer :: MonadAtomic m => ActorId -> m ()
 waitSer aid = do
-  Kind.COps{coactor} <- getsState scops
   body <- getsState $ getActorBody aid
   time <- getsState $ getLocalTime $ blid body
   let fromWait = bwait body
-      toWait = timeAddFromSpeed coactor body time
+      toWait = timeAddFromSpeed body time
   execCmdAtomic $ WaitActorA aid fromWait toWait
 
 -- * PickupSer
@@ -340,10 +339,11 @@ addProjectile :: (MonadAtomic m, MonadServer m)
               => Point -> [Point] -> ItemId -> LevelId -> FactionId -> Time
               -> m ActorId
 addProjectile bpos rest iid blid bfid btime = do
-  Kind.COps{coactor, coitem=coitem@Kind.Ops{okind}} <- getsState scops
+  Kind.COps{ coactor=coactor@Kind.Ops{okind}
+           , coitem=coitem@Kind.Ops{okind=iokind} } <- getsState scops
   disco <- getsServer sdisco
   item <- getsState $ getItemBody iid
-  let ik = okind (fromJust $ jkind disco item)
+  let ik = iokind (fromJust $ jkind disco item)
       speed = speedFromWeight (iweight ik) (itoThrow ik)
       range = rangeFromSpeed speed
       adj | range < 5 = "falling"
@@ -352,8 +352,10 @@ addProjectile bpos rest iid blid bfid btime = do
       (object1, object2) = partItem coitem EM.empty item
       name = makePhrase [MU.AW $ MU.Text adj, object1, object2]
       dirPath = take range $ displacePath (bpos : rest)
-      m = actorTemplate (projectileKindId coactor) Nothing (Just name) Nothing
-                        (Just speed) 0 (Just dirPath) bpos blid btime bfid True
+      kind = okind $ projectileKindId coactor
+      m = actorTemplate (projectileKindId coactor) (asymbol kind) name
+                        (acolor kind) speed 0 (Just dirPath)
+                        bpos blid btime bfid True
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
   execCmdAtomic $ CreateActorA acounter m [(iid, item)]
@@ -407,7 +409,7 @@ setPathSer :: (MonadAtomic m, MonadServer m)
 setPathSer aid path = do
   when (length path <= 2) $ do
     fromColor <- getsState $ bcolor . getActorBody aid
-    let toColor = Just Color.BrBlack
+    let toColor = Color.BrBlack
     when (fromColor /= toColor) $
       execCmdAtomic $ ColorActorA aid fromColor toColor
   fromPath <- getsState $ bpath . getActorBody aid

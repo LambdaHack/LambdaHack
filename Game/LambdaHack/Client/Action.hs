@@ -402,11 +402,10 @@ animate arena anim = do
 -- of the observer's faction. The actor may not be present in the dungeon.
 partActorLeader :: MonadClient m => ActorId -> Actor -> m MU.Part
 partActorLeader aid b = do
-  Kind.COps{coactor} <- getsState scops
   mleader <- getsClient _sleader
   return $! case mleader of
     Just leader | aid == leader -> "you"
-    _ -> partActor coactor b
+    _ -> partActor b
 
 -- | The part of speech describing the actor (designated by actor id
 -- and present in the dungeon) or a special name if a leader

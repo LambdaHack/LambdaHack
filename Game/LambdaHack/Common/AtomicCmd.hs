@@ -67,7 +67,7 @@ data CmdAtomic =
   | HealActorA ActorId Int
   | HasteActorA ActorId Speed
   | PathActorA ActorId (Maybe [Vector]) (Maybe [Vector])
-  | ColorActorA ActorId (Maybe Color.Color) (Maybe Color.Color)
+  | ColorActorA ActorId Color.Color Color.Color
   -- Change faction attributes.
   | QuitFactionA FactionId (Maybe Actor) (Maybe Status) (Maybe Status)
   | LeadFactionA FactionId (Maybe ActorId) (Maybe ActorId)

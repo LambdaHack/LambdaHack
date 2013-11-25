@@ -152,7 +152,6 @@ effectMindprobe target = do
 effectDominate :: (MonadAtomic m, MonadServer m)
                => ActorId -> ActorId -> m Bool
 effectDominate source target = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   sb <- getsState (getActorBody source)
   tb <- getsState (getActorBody target)
   if bfid tb == bfid sb then do
@@ -167,7 +166,7 @@ effectDominate source target = do
     execCmdAtomic $ CreateActorA target bNew ais
     leaderOld <- getsState $ gleader . (EM.! bfid sb) . sfactionD
     -- Halve the speed as a side-effect of domination.
-    let speed = fromMaybe (aspeed $ okind $ bkind bNew) $ bspeed bNew
+    let speed = bspeed bNew
         delta = speedScale (1%2) speed
     when (delta > speedZero) $
       execCmdAtomic $ HasteActorA target (speedNegate delta)
@@ -230,10 +229,13 @@ summonFriends bfid ps lid = do
 
 addActor :: (MonadAtomic m, MonadServer m)
          => Kind.Id ActorKind -> FactionId -> Point -> LevelId -> Int
-         -> Maybe Char -> Maybe Text -> Maybe Color.Color -> Time
+         -> Char -> Text -> Color.Color -> Time
          -> m ActorId
 addActor mk bfid pos lid hp bsymbol bname bcolor time = do
-  let m = actorTemplate mk bsymbol bname bcolor Nothing hp Nothing pos lid time
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  let kind = okind mk
+      speed = aspeed kind
+      m = actorTemplate mk bsymbol bname bcolor speed hp Nothing pos lid time
                         bfid False
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
@@ -259,7 +261,7 @@ addHero bfid ppos lid configHeroNames mNumber time = do
            | otherwise = playerName gplayer <+> "Hero" <+> showT n
       startHP = hp - (hp `div` 5) * min 3 n
   addActor
-    kId bfid ppos lid startHP (Just symbol) (Just name) (Just gcolor) time
+    kId bfid ppos lid startHP symbol name gcolor time
 
 -- ** SpawnMonster
 
@@ -306,8 +308,9 @@ addMonster :: (MonadAtomic m, MonadServer m)
            -> m ActorId
 addMonster mk bfid ppos lid time = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-  hp <- rndToAction $ castDice $ ahp $ okind mk
-  addActor mk bfid ppos lid hp Nothing Nothing Nothing time
+  let kind = okind mk
+  hp <- rndToAction $ castDice $ ahp kind
+  addActor mk bfid ppos lid hp (asymbol kind) (aname kind) (acolor kind) time
 
 -- ** CreateItem
 
@@ -377,7 +380,6 @@ effectAscend power target = do
 
 effLvlGoUp :: MonadAtomic m => ActorId -> Int -> m Bool
 effLvlGoUp aid k = do
-  Kind.COps{coactor} <- getsState scops
   b1 <- getsState $ getActorBody aid
   ais1 <- getsState $ getActorItem aid
   let lid1 = blid b1
@@ -396,7 +398,7 @@ effLvlGoUp aid k = do
         b2 <- getsState $ getActorBody aid2
         ais2 <- getsState $ getActorItem aid2
         -- Alert about the switch.
-        let part2 = partActor coactor b2
+        let part2 = partActor b2
             verb = "be pushed to another level"
             msg2 = makeSentence [MU.SubjectVerbSg part2 verb]
         execSfxAtomic $ MsgFidD (bfid b2) msg2

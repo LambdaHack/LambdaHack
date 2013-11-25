@@ -125,7 +125,6 @@ lookAt detailed canSee pos aid msg = do
 -- Assumes targeting mode and so assumes that a leader is selected.
 doLook :: MonadClientUI m => WriterT Slideshow m ()
 doLook = do
-  Kind.COps{coactor} <- getsState scops
   scursor <- getsClient scursor
   (lid, lvl) <- viewedLevel
   per <- getPerFid lid
@@ -139,7 +138,7 @@ doLook = do
                 | otherwise = Nothing
       enemyMsg =
         -- Even if it's the leader, give his proper name, not 'you'.
-        maybe "" (\m -> let subject = partActor coactor m
+        maybe "" (\b -> let subject = partActor b
                             verb = "be here"
                         in makeSentence [MU.SubjectVerbSg subject verb])
               ihabitant
@@ -242,7 +241,6 @@ partyAfterLeader leader = do
 -- | Select a faction leader. False, if nothing to do.
 selectLeader :: MonadClientUI m => ActorId -> m Bool
 selectLeader actor = do
-  Kind.COps{coactor} <- getsState scops
   leader <- getLeaderUI
   stgtMode <- getsClient stgtMode
   if leader == actor
@@ -252,7 +250,7 @@ selectLeader actor = do
       assert (not (bproj pbody) `blame` "projectile chosen as the leader"
                                 `with` (actor, pbody)) skip
       -- Even if it's already the leader, give his proper name, not 'you'.
-      let subject = partActor coactor pbody
+      let subject = partActor pbody
       msgAdd $ makeSentence [subject, "selected"]
       -- Update client state.
       s <- getState
@@ -540,7 +538,6 @@ endTargeting accept = do
 
 endTargetingMsg :: MonadClientUI m => m ()
 endTargetingMsg = do
-  Kind.COps{coactor} <- getsState scops
   leader <- getLeaderUI
   pbody <- getsState $ getActorBody leader
   target <- getsClient $ getTarget leader
@@ -550,7 +547,7 @@ endTargetingMsg = do
                     Just (TEnemy a _ll) ->
                       if memActor a (blid pbody) s
                       -- Never equal to leader, hence @partActor@.
-                      then partActor coactor $ getActorBody a s
+                      then partActor $ getActorBody a s
                       else "a fear of the past"
                     Just (TPos tpos) ->
                       MU.Text $ "position" <+> showPoint lxsize tpos

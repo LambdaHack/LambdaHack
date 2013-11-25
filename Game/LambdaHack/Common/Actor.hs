@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.Actor
     ActorId, monsterGenChance, partActor
     -- * The@ Acto@r type
   , Actor(..), actorTemplate, timeAddFromSpeed, braced, waitedLastTurn
-  , unoccupied, heroKindId, projectileKindId, actorSpeed
+  , unoccupied, heroKindId, projectileKindId
     -- * Inventory management
   , ItemBag, ItemInv, InvChar(..), ItemDict, ItemRev
   , allLetters, assignLetter, letterLabel, letterRange, rmFromBag
@@ -53,10 +53,10 @@ instance Binary ActorId where
 -- to the original value from @ActorKind@ over time. E.g., HP.
 data Actor = Actor
   { bkind   :: !(Kind.Id ActorKind)  -- ^ the kind of the actor
-  , bsymbol :: !(Maybe Char)         -- ^ individual map symbol
-  , _bname  :: !(Maybe Text)         -- ^ individual name
-  , bcolor  :: !(Maybe Color.Color)  -- ^ individual map color
-  , bspeed  :: !(Maybe Speed)        -- ^ individual speed
+  , bsymbol :: !Char                 -- ^ individual map symbol
+  , bname   :: !Text                 -- ^ individual name
+  , bcolor  :: !Color.Color          -- ^ individual map color
+  , bspeed  :: !Speed                -- ^ individual speed
   , bhp     :: !Int                  -- ^ current hit points
   , bpath   :: !(Maybe [Vector])     -- ^ path the actor is forced to travel
   , bpos    :: !Point                -- ^ current position
@@ -88,19 +88,16 @@ monsterGenChance n' depth' numMonsters =
   in chance $ 1%(fromIntegral (50 * (numMonsters - scaledDepth)) `max` 5)
 
 -- | The part of speech describing the actor.
-partActor :: Kind.Ops ActorKind -> Actor -> MU.Part
-partActor Kind.Ops{oname} b =
-  case _bname b of
-    Nothing -> MU.AW $ MU.Text $ oname $ bkind b
-    Just properName -> MU.Text properName
+partActor :: Actor -> MU.Part
+partActor b = MU.Text $ bname b
 
 -- Actor operations
 
 -- | A template for a new non-projectile actor.
-actorTemplate :: Kind.Id ActorKind -> Maybe Char -> Maybe Text
-              -> Maybe Color.Color -> Maybe Speed -> Int -> Maybe [Vector]
+actorTemplate :: Kind.Id ActorKind -> Char -> Text
+              -> Color.Color -> Speed -> Int -> Maybe [Vector]
               -> Point -> LevelId -> Time -> FactionId -> Bool -> Actor
-actorTemplate bkind bsymbol _bname bcolor bspeed bhp bpath bpos blid btime
+actorTemplate bkind bsymbol bname bcolor bspeed bhp bpath bpos blid btime
               bfid bproj =
   let boldpos = bpos
       bbag    = EM.empty
@@ -109,16 +106,10 @@ actorTemplate bkind bsymbol _bname bcolor bspeed bhp bpath bpos blid btime
       bwait   = timeZero
   in Actor{..}
 
--- | Access actor speed, individual or, otherwise, stock.
-actorSpeed :: Kind.Ops ActorKind -> Actor -> Speed
-actorSpeed Kind.Ops{okind} b =
-  let stockSpeed = aspeed $ okind $ bkind b
-  in fromMaybe stockSpeed $ bspeed b
-
 -- | Add time taken by a single step at the actor's current speed.
-timeAddFromSpeed :: Kind.Ops ActorKind -> Actor -> Time -> Time
-timeAddFromSpeed coactor b time =
-  let speed = actorSpeed coactor b
+timeAddFromSpeed :: Actor -> Time -> Time
+timeAddFromSpeed b time =
+  let speed = bspeed b
       delta = ticksPerMeter speed
   in timeAdd time delta
 
@@ -241,7 +232,7 @@ instance Binary Actor where
   put Actor{..} = do
     put bkind
     put bsymbol
-    put _bname
+    put bname
     put bcolor
     put bspeed
     put bhp
@@ -259,7 +250,7 @@ instance Binary Actor where
   get = do
     bkind <- get
     bsymbol <- get
-    _bname <- get
+    bname <- get
     bcolor <- get
     bspeed <- get
     bhp <- get

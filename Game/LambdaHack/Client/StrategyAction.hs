@@ -61,7 +61,7 @@ reacquireTgt :: MonadActionRO m
              => ActorId -> [Ability] -> Maybe Target -> FactionPers
              -> m (Strategy (Maybe Target))
 reacquireTgt aid factionAbilities btarget fper = do
-  cops@Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
+  cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   b <- getsState $ getActorBody aid
   assert (not $ bproj b) skip  -- would work, but is probably a bug
   lvl@Level{lxsize} <- getsState $ \s -> sdungeon s EM.! blid b
@@ -76,7 +76,7 @@ reacquireTgt aid factionAbilities btarget fper = do
   let per = fper EM.! blid b
       mk = okind $ bkind b
       actorAbilities = acanDo mk `intersect` factionAbilities
-      focused = actorSpeed coactor b <= speedNormal
+      focused = bspeed b <= speedNormal
                 -- Don't focus on a distant enemy, when you can't chase him.
                 -- TODO: or only if another enemy adjacent? consider Flee?
                 && Ability.Chase `elem` actorAbilities
@@ -236,7 +236,7 @@ melee aid fpos foeAid = do
 triggerFreq :: MonadActionRO m
             => ActorId -> m (Frequency CmdSerTakeTime)
 triggerFreq aid = do
-  cops@Kind.COps{coactor, cotile=Kind.Ops{okind}} <- getsState scops
+  cops@Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
   b@Actor{bpos, blid, bfid, boldpos} <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid
   lvl <- getLevel blid
@@ -254,7 +254,7 @@ triggerFreq aid = do
       -- TODO: beware of stupid monsters that backtrack and so occupy stairs.
       recentlyAscended = bpos == boldpos
       -- Too fast to notice and use features.
-      fast = actorSpeed coactor b > speedNormal
+      fast = bspeed b > speedNormal
   if recentlyAscended || fast then
     return mzero
   else

@@ -289,7 +289,6 @@ drawCmdAtomicUI verbose cmd = case cmd of
                   then "speed up"
                   else "slow down"
   LeadFactionA fid (Just source) (Just target) -> do
-    Kind.COps{coactor} <- getsState scops
     side <- getsClient sside
     when (fid == side) $ do
       actorD <- getsState sactorD
@@ -297,8 +296,8 @@ drawCmdAtomicUI verbose cmd = case cmd of
         Just sb | bhp sb <= 0 -> assert (not $ bproj sb) $ do
           -- Regardless who the leader is, give proper names here, not 'you'.
           tb <- getsState $ getActorBody target
-          let subject = partActor coactor tb
-              object  = partActor coactor sb
+          let subject = partActor tb
+              object  = partActor sb
           msgAdd $ makeSentence [ MU.SubjectVerbSg subject "take command"
                                 , "from", object ]
         _ -> skip

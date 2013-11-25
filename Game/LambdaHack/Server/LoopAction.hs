@@ -188,7 +188,7 @@ handleActors :: (MonadAtomic m, MonadConnServer m)
              -> LevelId
              -> m ()
 handleActors cmdSerSem lid = do
-  Kind.COps{coactor, cofact=Kind.Ops{okind}} <- getsState scops
+  Kind.COps{cofact=Kind.Ops{okind}} <- getsState scops
   time <- getsState $ getLocalTime lid  -- the end of this clip, inclusive
   Level{lprio} <- getLevel lid
   quit <- getsServer squit
@@ -255,7 +255,7 @@ handleActors cmdSerSem lid = do
             -- If the actor changes his speed this very turn,
             -- the test can fail, but it's a minor UI issue, so let it be.
             let previousClipEnd = timeAdd time $ timeNegate timeClip
-                lastSingleMove = timeAddFromSpeed coactor bPre previousClipEnd
+                lastSingleMove = timeAddFromSpeed bPre previousClipEnd
             when (btime bPre > lastSingleMove) $
               broadcastSfxAtomic DisplayPushD
       if queryUI then do
@@ -327,13 +327,11 @@ dropAllItems aid b = do
 -- | Advance the move time for the given actor.
 advanceTime :: MonadAtomic m => ActorId -> m ()
 advanceTime aid = do
-  Kind.COps{coactor} <- getsState scops
   b <- getsState $ getActorBody aid
   -- Don't update move time, so move ASAP, so the projectile
   -- corpse vanishes ASAP.
   unless (bhp b < 0 && bproj b || maybe False null (bpath b)) $ do
-    let speed = actorSpeed coactor b
-        t = ticksPerMeter speed
+    let t = ticksPerMeter $ bspeed b
     execCmdAtomic $ AgeActorA aid t
 
 -- | Generate a monster, possibly.

@@ -10,7 +10,6 @@ import Control.Arrow (second)
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.List
-import Data.Maybe
 
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
@@ -27,7 +26,6 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Utils.Assert
 
@@ -258,16 +256,11 @@ healActorA aid n = assert (n /= 0) $
 
 hasteActorA :: MonadAction m => ActorId -> Speed -> m ()
 hasteActorA aid delta = assert (delta /= speedZero) $ do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   modifyState $ updateActorBody aid $ \ b ->
-    let innateSpeed = aspeed $ okind $ bkind b
-        curSpeed = fromMaybe innateSpeed (bspeed b)
-        newSpeed = speedAdd curSpeed delta
+    let newSpeed = speedAdd (bspeed b) delta
     in assert (newSpeed >= speedZero `blame` "actor slowed below zero"
-                                     `with` (aid, curSpeed, delta)) $
-       if newSpeed == innateSpeed
-       then b {bspeed = Nothing}
-       else b {bspeed = Just newSpeed}
+                                     `with` (aid, delta, bspeed b, newSpeed)) $
+       b {bspeed = newSpeed}
 
 pathActorA :: MonadAction m
            => ActorId -> Maybe [Vector] -> Maybe [Vector] -> m ()
@@ -278,7 +271,7 @@ pathActorA aid fromPath toPath = assert (fromPath /= toPath) $ do
   modifyState $ updateActorBody aid $ \b -> b {bpath = toPath}
 
 colorActorA :: MonadAction m
-            => ActorId -> Maybe Color.Color -> Maybe Color.Color -> m ()
+            => ActorId -> Color.Color -> Color.Color -> m ()
 colorActorA aid fromCol toCol = assert (fromCol /= toCol) $ do
   body <- getsState $ getActorBody aid
   assert (fromCol == bcolor body `blame` "unexpected actor color"

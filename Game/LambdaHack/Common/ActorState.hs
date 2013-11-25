@@ -118,7 +118,7 @@ tryFindHeroK s fact k =
   let c | k == 0          = '@'
         | k > 0 && k < 10 = Char.intToDigit k
         | otherwise       = assert `failure` "no digit" `with` k
-  in tryFindActor s (\body -> bsymbol body == Just c
+  in tryFindActor s (\body -> bsymbol body == c
                               && not (bproj body)
                               && bfid body == fact)
 
