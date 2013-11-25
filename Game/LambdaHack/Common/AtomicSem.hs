@@ -245,7 +245,12 @@ ageActorA aid t = assert (t /= timeZero) $ do
   body <- getsState $ getActorBody aid
   ais <- getsState $ getActorItem aid
   destroyActorA aid body ais
-  createActorA aid body {btime = timeAdd (btime body) t} ais
+  let newBody = body { btime = timeAdd (btime body) t
+                     , bwait = if bwait body <= btime body
+                               then timeZero    -- reset old waiting time
+                               else bwait body  -- keep new waiting time
+                     }
+  createActorA aid newBody ais
 
 healActorA :: MonadAction m => ActorId -> Int -> m ()
 healActorA aid n = assert (n /= 0) $

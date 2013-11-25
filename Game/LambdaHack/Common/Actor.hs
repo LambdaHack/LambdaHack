@@ -122,11 +122,14 @@ timeAddFromSpeed coactor b time =
       delta = ticksPerMeter speed
   in timeAdd time delta
 
--- | Whether an actor is braced for combat this turn.
+-- | Whether an actor is braced for combat this clip. If a foe
+-- moves just after this actor in the same time moment, the actor won't block,
+-- because @bwait@ is reset to zero in @ageActorA@ before the condition
+-- is checked.
 braced :: Actor -> Time -> Bool
-braced b time = time < bwait b
+braced b time = time <= bwait b
 
--- | The actor most probably waited last turn (unless his speed
+-- | The actor most probably waited at most a turn ago (unless his speed
 -- was changed, etc.)
 waitedLastTurn :: Actor -> Time -> Bool
 waitedLastTurn b time = time <= bwait b
