@@ -86,7 +86,7 @@ testPeek = ModeKind
   , mname    = "peek"
   , mfreq    = [("peek", 1)]
   , mplayers = playersPeek
-  , mcaves   = cavesScreensaver
+  , mcaves   = cavesCampaign
   }
 
 
@@ -177,10 +177,8 @@ playersTestDefense = Players
                   , ("Yellow", "Cyan") ] }
 
 playersPeek = Players
-  { playersList = [ playerHero { playerInitial = 1 }
-                  , playerMonster { playerInitial = 1
-                                  , playerEntry = toEnum (-1)
-                                  , playerUI = True } ]
+  { playersList = [ playerHero {playerInitial = 1}
+                  , playerMonster {playerUI = True} ]
   , playersEnemy = [("Adventuring Party", "Monster Hive")]
   , playersAlly = [] }
 
