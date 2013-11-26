@@ -21,12 +21,12 @@ import Game.LambdaHack.Common.Msg
 
 -- | Bindings and other information about human player commands.
 data Binding = Binding
-  { kcmd    :: M.Map K.KM (Text, Bool, HumanCmd)
-                                    -- ^ binding keys to commands
-  , kmacro  :: M.Map K.KM K.KM      -- ^ macro map
-  , kmajor  :: [K.KM]               -- ^ major commands
-  , kminor  :: [K.KM]               -- ^ minor commands
-  , krevMap :: M.Map HumanCmd K.KM  -- ^ from cmds to their main keys
+  { kcmd    :: !(M.Map K.KM (Text, Bool, HumanCmd))
+                                       -- ^ binding keys to commands
+  , kmacro  :: !(M.Map K.KM K.KM)      -- ^ macro map
+  , kmajor  :: ![K.KM]                 -- ^ major commands
+  , kminor  :: ![K.KM]                 -- ^ minor commands
+  , krevMap :: !(M.Map HumanCmd K.KM)  -- ^ from cmds to their main keys
   }
 
 -- | Binding of keys to movement and other standard commands,

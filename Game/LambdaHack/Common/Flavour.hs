@@ -22,8 +22,8 @@ import Game.LambdaHack.Common.Color
 -- TODO: add more variety, as the number of items increases
 -- | The type of item flavours.
 data Flavour = Flavour
-  { fancyName :: Bool   -- ^ should the colour description be fancy or plain
-  , baseColor :: Color  -- ^ the colour of the flavour
+  { fancyName :: !Bool   -- ^ should the colour description be fancy or plain
+  , baseColor :: !Color  -- ^ the colour of the flavour
   }
   deriving (Show, Eq, Ord, Generic)
 

@@ -59,7 +59,7 @@ cast x = if x <= 0 then return 0 else randomR (1, x)
 
 -- | Dice: 1d7, 3d3, 1d0, etc.
 -- @RollDice a b@ represents @a@ rolls of @b@-sided die.
-data RollDice = RollDice Binary.Word8 Binary.Word8
+data RollDice = RollDice !Binary.Word8 !Binary.Word8
   deriving (Eq, Ord, Generic)
 
 instance Show RollDice where
@@ -109,7 +109,7 @@ meanDice (RollDice a' b') =
 
 -- | Dice for rolling a pair of integer parameters pertaining to,
 -- respectively, the X and Y cartesian 2D coordinates.
-data RollDiceXY = RollDiceXY (RollDice, RollDice)
+data RollDiceXY = RollDiceXY !(RollDice, RollDice)
   deriving Show
 
 -- | Cast the two sets of dice.

@@ -28,7 +28,7 @@ frontendName = Chosen.frontendName
 data Frontend = Frontend
   { fdisplay      :: Bool -> Maybe SingleFrame -> IO ()
   , fpromptGetKey :: SingleFrame -> IO K.KM
-  , fdebugCli     :: DebugModeCli
+  , fdebugCli     :: !DebugModeCli
   }
 
 chosenStartup :: DebugModeCli -> (Frontend -> IO ()) -> IO ()

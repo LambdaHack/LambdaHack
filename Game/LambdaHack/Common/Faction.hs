@@ -52,9 +52,9 @@ data Outcome =
 
 -- | Current game status.
 data Status = Status
-  { stOutcome :: Outcome  -- ^ current game outcome
-  , stDepth   :: Int      -- ^ depth of the final encounter
-  , stInfo    :: Text     -- ^ extra information
+  { stOutcome :: !Outcome  -- ^ current game outcome
+  , stDepth   :: !Int      -- ^ depth of the final encounter
+  , stInfo    :: !Text     -- ^ extra information
   }
   deriving (Show, Eq, Ord)
 

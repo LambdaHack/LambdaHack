@@ -26,15 +26,15 @@ import Game.LambdaHack.Utils.Assert
 -- | The type representing visibility of actions to factions,
 -- based on the position of the action, etc.
 data PosAtomic =
-    PosSight LevelId [Point]  -- ^ whomever sees all the positions, notices
-  | PosFidAndSight FactionId LevelId [Point]
-                              -- ^ observers and the faction notice
-  | PosSmell LevelId [Point]  -- ^ whomever smells all the positions, notices
-  | PosFid FactionId          -- ^ only the faction notices
-  | PosFidAndSer FactionId    -- ^ faction and server notices
-  | PosSer                    -- ^ only the server notices
-  | PosAll                    -- ^ everybody notices
-  | PosNone                   -- ^ never broadcasted, but sent manually
+    PosSight !LevelId ![Point]  -- ^ whomever sees all the positions, notices
+  | PosFidAndSight !FactionId !LevelId ![Point]
+                                -- ^ observers and the faction notice
+  | PosSmell !LevelId ![Point]  -- ^ whomever smells all the positions, notices
+  | PosFid !FactionId           -- ^ only the faction notices
+  | PosFidAndSer !FactionId     -- ^ faction and server notices
+  | PosSer                      -- ^ only the server notices
+  | PosAll                      -- ^ everybody notices
+  | PosNone                     -- ^ never broadcasted, but sent manually
   deriving (Show, Eq)
 
 -- | Produces the positions where the action takes place. If a faction

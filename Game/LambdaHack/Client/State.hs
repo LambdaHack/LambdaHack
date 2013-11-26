@@ -71,8 +71,8 @@ data TgtMode =
 
 -- | The type of na actor target.
 data Target =
-    TEnemy ActorId Point  -- ^ target an actor with its last seen position
-  | TPos Point            -- ^ target a given position
+    TEnemy !ActorId !Point  -- ^ target an actor with its last seen position
+  | TPos !Point             -- ^ target a given position
   deriving (Show, Eq)
 
 -- | Initial game client state.

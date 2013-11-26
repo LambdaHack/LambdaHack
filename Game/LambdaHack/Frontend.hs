@@ -48,8 +48,8 @@ type ReqMap = EM.EnumMap FactionId (LQueue AcFrame)
 -- | Multiplex connection channels, for the case of a frontend shared
 -- among clients. This is transparent to the clients themselves.
 data ConnMulti = ConnMulti
-  { fromMulti :: FromMulti
-  , toMulti   :: ToMulti
+  { fromMulti :: !FromMulti
+  , toMulti   :: !ToMulti
   }
 
 startupF :: DebugModeCli -> IO () -> IO ()

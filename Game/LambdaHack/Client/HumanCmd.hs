@@ -18,29 +18,29 @@ import Game.LambdaHack.Utils.Assert
 -- | Abstract syntax of player commands.
 data HumanCmd =
     -- These usually take time.
-    Move VectorXY
-  | Run VectorXY
+    Move !VectorXY
+  | Run !VectorXY
   | Wait
   | Pickup
   | Drop
-  | Project     [Trigger]
-  | Apply       [Trigger]
-  | AlterDir    [Trigger]
-  | TriggerTile [Trigger]
+  | Project     ![Trigger]
+  | Apply       ![Trigger]
+  | AlterDir    ![Trigger]
+  | TriggerTile ![Trigger]
     -- These do not take time.
-  | GameRestart Text
+  | GameRestart !Text
   | GameExit
   | GameSave
   | CfgDump
     -- These do not notify the server.
-  | SelectHero Int
+  | SelectHero !Int
   | MemberCycle
   | MemberBack
   | Inventory
   | TgtFloor
   | TgtEnemy
-  | TgtAscend Int
-  | EpsIncr Bool
+  | TgtAscend !Int
+  | EpsIncr !Bool
   | Cancel
   | Accept
   | Clear
@@ -54,9 +54,9 @@ data HumanCmd =
 instance Binary HumanCmd
 
 data Trigger =
-    ApplyItem {verb :: MU.Part, object :: MU.Part, symbol :: Char}
-  | AlterFeature {verb :: MU.Part, object :: MU.Part, feature :: F.Feature}
-  | TriggerFeature {verb :: MU.Part, object :: MU.Part, feature :: F.Feature}
+    ApplyItem {verb :: !MU.Part, object :: !MU.Part, symbol :: !Char}
+  | AlterFeature {verb :: !MU.Part, object :: !MU.Part, feature :: !F.Feature}
+  | TriggerFeature {verb :: !MU.Part, object :: !MU.Part, feature :: !F.Feature}
   deriving (Show, Read, Eq, Ord, Generic)
 
 instance Binary Trigger

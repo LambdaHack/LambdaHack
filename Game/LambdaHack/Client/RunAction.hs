@@ -52,10 +52,10 @@ runDir leader (dir, dist) = do
 
 -- | Human running mode, determined from the nearby cave layout.
 data RunMode =
-    RunOpen                     -- ^ open space, in particular the T crossing
-  | RunHub                      -- ^ a hub of separate corridors
-  | RunCorridor (Vector, Bool)  -- ^ a single corridor, turning here or not
-  | RunDeadEnd                  -- ^ dead end
+    RunOpen                      -- ^ open space, in particular the T crossing
+  | RunHub                       -- ^ a hub of separate corridors
+  | RunCorridor !(Vector, Bool)  -- ^ a single corridor, turning here or not
+  | RunDeadEnd                   -- ^ dead end
 
 -- | Determine the running mode. For corridors, pick the running direction
 -- trying to explore all corners, by prefering cardinal to diagonal moves.

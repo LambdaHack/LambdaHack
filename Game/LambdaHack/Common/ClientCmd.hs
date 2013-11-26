@@ -27,16 +27,16 @@ import Game.LambdaHack.Frontend
 
 -- | Abstract syntax of client commands that don't use the UI.
 data CmdClientAI =
-    CmdAtomicAI CmdAtomic
-  | CmdQueryAI ActorId
+    CmdAtomicAI !CmdAtomic
+  | CmdQueryAI !ActorId
   | CmdPingAI
   deriving Show
 
 -- | Abstract syntax of client commands that use the UI.
 data CmdClientUI =
-    CmdAtomicUI CmdAtomic
-  | SfxAtomicUI SfxAtomic
-  | CmdQueryUI ActorId
+    CmdAtomicUI !CmdAtomic
+  | SfxAtomicUI !SfxAtomic
+  | CmdQueryUI !ActorId
   | CmdPingUI
   deriving Show
 
@@ -72,12 +72,12 @@ debugPlain cmd cmdA = do
   return $ T.pack $ show (cmd, ps)  -- too large for pretty show
 
 data DebugAid a = DebugAid
-  { label   :: Text
-  , cmd     :: a
-  , lid     :: LevelId
-  , time    :: Time
-  , aid     :: ActorId
-  , faction ::FactionId
+  { label   :: !Text
+  , cmd     :: !a
+  , lid     :: !LevelId
+  , time    :: !Time
+  , aid     :: !ActorId
+  , faction :: !FactionId
   }
   deriving Show
 
@@ -97,8 +97,8 @@ debugAid aid label cmd =
 
 -- | Connection channels between the server and a single client.
 data ChanServer c d = ChanServer
-  { fromServer :: TQueue c
-  , toServer   :: TQueue d
+  { fromServer :: !(TQueue c)
+  , toServer   :: !(TQueue d)
   }
 
 -- | Connections to the human-controlled client of a faction and

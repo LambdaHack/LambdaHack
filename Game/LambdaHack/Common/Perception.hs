@@ -49,9 +49,9 @@ type PerActor = EM.EnumMap ActorId PerceptionVisible
 -- of a given faction on the level and serves only as a speedup.
 -- The fields are not strict because often not all are used.
 data Perception = Perception
-  { perActor :: PerActor           -- ^ visible points for each actor
-  , ptotal   :: PerceptionVisible  -- ^ sum over all actors
-  , psmell   :: PerceptionVisible  -- ^ sum over actors that can smell
+  { perActor :: !PerActor           -- ^ visible points for each actor
+  , ptotal   :: !PerceptionVisible  -- ^ sum over all actors
+  , psmell   :: !PerceptionVisible  -- ^ sum over actors that can smell
   }
   deriving (Show, Eq, Generic)
 

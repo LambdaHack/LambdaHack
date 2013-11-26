@@ -13,27 +13,27 @@ import Game.LambdaHack.Common.Random
 
 -- | Parameters for the generation of dungeon levels.
 data CaveKind = CaveKind
-  { csymbol         :: Char        -- ^ a symbol
-  , cname           :: Text        -- ^ short description
-  , cfreq           :: Freqs       -- ^ frequency within groups
-  , cxsize          :: X           -- ^ X size of the whole cave
-  , cysize          :: Y           -- ^ Y size of the whole cave
-  , cgrid           :: RollDiceXY  -- ^ the dimensions of the grid of places
-  , cminPlaceSize   :: RollDiceXY  -- ^ minimal size of places
-  , cdarkChance     :: RollDeep    -- ^ the chance a place is dark
-  , cauxConnects    :: Rational    -- ^ a proportion of extra connections
-  , cvoidChance     :: Chance      -- ^ the chance of not creating a place
-  , cnonVoidMin     :: Int         -- ^ extra places, may overlap except two
-  , cminStairDist   :: Int         -- ^ minimal distance between stairs
-  , cdoorChance     :: Chance      -- ^ the chance of a door in an opening
-  , copenChance     :: Chance      -- ^ if there's a door, is it open?
-  , chidden         :: Int         -- ^ if not open, hidden one in n times
-  , citemNum        :: RollDice    -- ^ the number of items in the cave
-  , cdefTile        :: Text        -- ^ the default cave tile group name
-  , ccorridorTile   :: Text        -- ^ the cave corridor tile group name
-  , cfillerTile     :: Text        -- ^ the filler wall group name
-  , cdarkLegendTile :: Text        -- ^ the dark place plan legend ground name
-  , clitLegendTile  :: Text        -- ^ the lit place plan legend ground name
+  { csymbol         :: !Char        -- ^ a symbol
+  , cname           :: !Text        -- ^ short description
+  , cfreq           :: !Freqs       -- ^ frequency within groups
+  , cxsize          :: !X           -- ^ X size of the whole cave
+  , cysize          :: !Y           -- ^ Y size of the whole cave
+  , cgrid           :: !RollDiceXY  -- ^ the dimensions of the grid of places
+  , cminPlaceSize   :: !RollDiceXY  -- ^ minimal size of places
+  , cdarkChance     :: !RollDeep    -- ^ the chance a place is dark
+  , cauxConnects    :: !Rational    -- ^ a proportion of extra connections
+  , cvoidChance     :: !Chance      -- ^ the chance of not creating a place
+  , cnonVoidMin     :: !Int         -- ^ extra places, may overlap except two
+  , cminStairDist   :: !Int         -- ^ minimal distance between stairs
+  , cdoorChance     :: !Chance      -- ^ the chance of a door in an opening
+  , copenChance     :: !Chance      -- ^ if there's a door, is it open?
+  , chidden         :: !Int         -- ^ if not open, hidden one in n times
+  , citemNum        :: !RollDice    -- ^ the number of items in the cave
+  , cdefTile        :: !Text        -- ^ the default cave tile group name
+  , ccorridorTile   :: !Text        -- ^ the cave corridor tile group name
+  , cfillerTile     :: !Text        -- ^ the filler wall group name
+  , cdarkLegendTile :: !Text        -- ^ the dark place plan legend ground name
+  , clitLegendTile  :: !Text        -- ^ the lit place plan legend ground name
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 

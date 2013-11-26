@@ -27,6 +27,9 @@ import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Random
 
 -- | The data sufficent to draw a single game screen frame.
+--
+-- The fields are not strict, because sometimes frames are not used,
+-- e.g., when a keypress discards all frames not yet drawn and displayed.
 data SingleFrame = SingleFrame
   { sfLevel  :: [[AttrChar]]  -- ^ content of the screen, line by line
   , sfTop    :: Text          -- ^ an extra line to show at the top
@@ -196,9 +199,9 @@ fadeout out topRight lxsize lysize = do
   return $ Animation as
 
 data AcFrame =
-    AcConfirm SingleFrame
-  | AcRunning SingleFrame
-  | AcNormal SingleFrame
+    AcConfirm !SingleFrame
+  | AcRunning !SingleFrame
+  | AcNormal !SingleFrame
   | AcDelay
   deriving (Show, Eq)
 

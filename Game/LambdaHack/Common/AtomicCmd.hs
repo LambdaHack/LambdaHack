@@ -40,8 +40,8 @@ import Game.LambdaHack.Content.ItemKind as ItemKind
 import Game.LambdaHack.Content.TileKind as TileKind
 
 data Atomic =
-    CmdAtomic CmdAtomic
-  | SfxAtomic SfxAtomic
+    CmdAtomic !CmdAtomic
+  | SfxAtomic !SfxAtomic
   deriving (Show, Eq, Generic)
 
 instance Binary Atomic
@@ -49,69 +49,69 @@ instance Binary Atomic
 -- | Abstract syntax of atomic commands.
 data CmdAtomic =
   -- Create/destroy actors and items.
-    CreateActorA ActorId Actor [(ItemId, Item)]
-  | DestroyActorA ActorId Actor [(ItemId, Item)]
-  | CreateItemA ItemId Item Int Container
-  | DestroyItemA ItemId Item Int Container
-  | SpotActorA ActorId Actor [(ItemId, Item)]
-  | LoseActorA ActorId Actor [(ItemId, Item)]
-  | SpotItemA ItemId Item Int Container
-  | LoseItemA ItemId Item Int Container
+    CreateActorA !ActorId !Actor ![(ItemId, Item)]
+  | DestroyActorA !ActorId !Actor ![(ItemId, Item)]
+  | CreateItemA !ItemId !Item !Int !Container
+  | DestroyItemA !ItemId !Item !Int !Container
+  | SpotActorA !ActorId !Actor ![(ItemId, Item)]
+  | LoseActorA !ActorId !Actor ![(ItemId, Item)]
+  | SpotItemA !ItemId !Item !Int !Container
+  | LoseItemA !ItemId !Item !Int !Container
   -- Move actors and items.
-  | MoveActorA ActorId Point Point
-  | WaitActorA ActorId Time Time
-  | DisplaceActorA ActorId ActorId
-  | MoveItemA ItemId Int Container Container
+  | MoveActorA !ActorId !Point !Point
+  | WaitActorA !ActorId !Time !Time
+  | DisplaceActorA !ActorId !ActorId
+  | MoveItemA !ItemId !Int !Container !Container
   -- Change actor attributes.
-  | AgeActorA ActorId Time
-  | HealActorA ActorId Int
-  | HasteActorA ActorId Speed
-  | PathActorA ActorId (Maybe [Vector]) (Maybe [Vector])
-  | ColorActorA ActorId Color.Color Color.Color
+  | AgeActorA !ActorId !Time
+  | HealActorA !ActorId !Int
+  | HasteActorA !ActorId !Speed
+  | PathActorA !ActorId !(Maybe [Vector]) !(Maybe [Vector])
+  | ColorActorA !ActorId !Color.Color !Color.Color
   -- Change faction attributes.
-  | QuitFactionA FactionId (Maybe Actor) (Maybe Status) (Maybe Status)
-  | LeadFactionA FactionId (Maybe ActorId) (Maybe ActorId)
-  | DiplFactionA FactionId FactionId Diplomacy Diplomacy
+  | QuitFactionA !FactionId !(Maybe Actor) !(Maybe Status) !(Maybe Status)
+  | LeadFactionA !FactionId !(Maybe ActorId) !(Maybe ActorId)
+  | DiplFactionA !FactionId !FactionId !Diplomacy !Diplomacy
   -- Alter map.
-  | AlterTileA LevelId Point (Kind.Id TileKind) (Kind.Id TileKind)
-  | SearchTileA ActorId Point (Kind.Id TileKind) (Kind.Id TileKind)
-  | SpotTileA LevelId [(Point, Kind.Id TileKind)]
-  | LoseTileA LevelId [(Point, Kind.Id TileKind)]
-  | AlterSmellA LevelId Point (Maybe Time) (Maybe Time)
-  | SpotSmellA LevelId [(Point, Time)]
-  | LoseSmellA LevelId [(Point, Time)]
+  | AlterTileA !LevelId !Point !(Kind.Id TileKind) !(Kind.Id TileKind)
+  | SearchTileA !ActorId !Point !(Kind.Id TileKind) !(Kind.Id TileKind)
+  | SpotTileA !LevelId ![(Point, Kind.Id TileKind)]
+  | LoseTileA !LevelId ![(Point, Kind.Id TileKind)]
+  | AlterSmellA !LevelId !Point !(Maybe Time) !(Maybe Time)
+  | SpotSmellA !LevelId ![(Point, Time)]
+  | LoseSmellA !LevelId ![(Point, Time)]
   -- Assorted.
-  | AgeLevelA LevelId Time
-  | AgeGameA Time
-  | DiscoverA LevelId Point ItemId (Kind.Id ItemKind)
-  | CoverA LevelId Point ItemId (Kind.Id ItemKind)
-  | PerceptionA LevelId PerActor PerActor
-  | RestartA FactionId Discovery FactionPers State DebugModeCli Text
-  | RestartServerA State
-  | ResumeA FactionId FactionPers
-  | ResumeServerA State
-  | KillExitA FactionId
+  | AgeLevelA !LevelId !Time
+  | AgeGameA !Time
+  | DiscoverA !LevelId !Point !ItemId !(Kind.Id ItemKind)
+  | CoverA !LevelId !Point !ItemId !(Kind.Id ItemKind)
+  | PerceptionA !LevelId !PerActor !PerActor
+  | RestartA !FactionId !Discovery !FactionPers !State !DebugModeCli !Text
+  | RestartServerA !State
+  | ResumeA !FactionId !FactionPers
+  | ResumeServerA !State
+  | KillExitA !FactionId
   | SaveBkpA
-  | MsgAllA Msg
+  | MsgAllA !Msg
   deriving (Show, Eq, Generic)
 
 instance Binary CmdAtomic
 
 data SfxAtomic =
-    StrikeD ActorId ActorId Item HitAtomic
-  | RecoilD ActorId ActorId Item HitAtomic
-  | ProjectD ActorId ItemId
-  | CatchD ActorId ItemId
-  | ActivateD ActorId ItemId
-  | CheckD ActorId ItemId
-  | TriggerD ActorId Point F.Feature
-  | ShunD ActorId Point F.Feature
-  | EffectD ActorId (Effect.Effect Int)
-  | MsgFidD FactionId Msg
-  | MsgAllD Msg
-  | DisplayPushD FactionId
-  | DisplayDelayD FactionId
-  | RecordHistoryD FactionId
+    StrikeD !ActorId !ActorId !Item !HitAtomic
+  | RecoilD !ActorId !ActorId !Item !HitAtomic
+  | ProjectD !ActorId !ItemId
+  | CatchD !ActorId !ItemId
+  | ActivateD !ActorId !ItemId
+  | CheckD !ActorId !ItemId
+  | TriggerD !ActorId !Point !F.Feature
+  | ShunD !ActorId !Point !F.Feature
+  | EffectD !ActorId !(Effect.Effect Int)
+  | MsgFidD !FactionId !Msg
+  | MsgAllD !Msg
+  | DisplayPushD !FactionId
+  | DisplayDelayD !FactionId
+  | RecordHistoryD !FactionId
   deriving (Show, Eq, Generic)
 
 instance Binary SfxAtomic

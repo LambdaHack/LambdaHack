@@ -18,25 +18,25 @@ import Game.LambdaHack.Common.Vector
 
 -- | Abstract syntax of server commands.
 data CmdSer =
-    TakeTimeSer CmdSerTakeTime
-  | GameRestartSer ActorId Text
-  | GameExitSer ActorId
-  | GameSaveSer ActorId
-  | CfgDumpSer ActorId
+    TakeTimeSer !CmdSerTakeTime
+  | GameRestartSer !ActorId !Text
+  | GameExitSer !ActorId
+  | GameSaveSer !ActorId
+  | CfgDumpSer !ActorId
   deriving (Show, Eq)
 
 data CmdSerTakeTime =
-    MoveSer ActorId Vector
-  | MeleeSer ActorId ActorId
-  | DisplaceSer ActorId ActorId
-  | AlterSer ActorId Point (Maybe F.Feature)
-  | WaitSer ActorId
-  | PickupSer ActorId ItemId Int InvChar
-  | DropSer ActorId ItemId
-  | ProjectSer ActorId Point Int ItemId Container
-  | ApplySer ActorId ItemId Container
-  | TriggerSer ActorId (Maybe F.Feature)
-  | SetPathSer ActorId [Vector]
+    MoveSer !ActorId !Vector
+  | MeleeSer !ActorId !ActorId
+  | DisplaceSer !ActorId !ActorId
+  | AlterSer !ActorId !Point !(Maybe F.Feature)
+  | WaitSer !ActorId
+  | PickupSer !ActorId !ItemId !Int !InvChar
+  | DropSer !ActorId !ItemId
+  | ProjectSer !ActorId !Point !Int !ItemId !Container
+  | ApplySer !ActorId !ItemId !Container
+  | TriggerSer !ActorId !(Maybe F.Feature)
+  | SetPathSer !ActorId ![Vector]
   deriving (Show, Eq)
 
 -- | The actor that start performing the command (may be dead, after

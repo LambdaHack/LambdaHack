@@ -54,16 +54,16 @@ data instance Speedup TileKind = TileSpeedup
 
 -- | Content operations for the content of type @a@.
 data Ops a = Ops
-  { okind         :: Id a -> a     -- ^ the content element at given id
-  , ouniqGroup    :: Text -> Id a  -- ^ the id of the unique member of
-                                   --   a singleton content group
+  { okind         :: Id a -> a      -- ^ the content element at given id
+  , ouniqGroup    :: Text -> Id a   -- ^ the id of the unique member of
+                                    --   a singleton content group
   , opick         :: Text -> (a -> Bool) -> Rnd (Id a)
-                                   -- ^ pick a random id belonging to a group
-                                   --   and satisfying a predicate
+                                    -- ^ pick a random id belonging to a group
+                                    --   and satisfying a predicate
   , ofoldrWithKey :: forall b. (Id a -> a -> b -> b) -> b -> b
-                                   -- ^ fold over all content elements of @a@
-  , obounds       :: (Id a, Id a)  -- ^ bounds of identifiers of content @a@
-  , ospeedup      :: Speedup a     -- ^ auxiliary speedup components
+                                    -- ^ fold over all content elements of @a@
+  , obounds       :: !(Id a, Id a)  -- ^ bounds of identifiers of content @a@
+  , ospeedup      :: (Speedup a)    -- ^ auxiliary speedup components
   }
 
 -- | Create content operations for type @a@ from definition of content

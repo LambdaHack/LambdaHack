@@ -158,10 +158,10 @@ fullscan cotile fovMode spectatorPos Level{lxsize, ltile} = spectatorPos :
 -- when other similar modifiers are added.
 -- | Field Of View scanning mode.
 data FovMode =
-    Shadow       -- ^ restrictive shadow casting
-  | Permissive   -- ^ permissive FOV
-  | Digital Int  -- ^ digital FOV with the given radius
-  | Blind        -- ^ only feeling out adjacent tiles by touch
+    Shadow        -- ^ restrictive shadow casting
+  | Permissive    -- ^ permissive FOV
+  | Digital !Int  -- ^ digital FOV with the given radius
+  | Blind         -- ^ only feeling out adjacent tiles by touch
   deriving (Show, Read)
 
 instance Binary FovMode where

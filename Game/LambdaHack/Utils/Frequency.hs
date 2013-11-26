@@ -24,8 +24,8 @@ import Game.LambdaHack.Utils.Assert
 -- TODO: do not expose runFrequency
 -- | The frequency distribution type.
 data Frequency a = Frequency
-  { nameFrequency :: Text        -- ^ short description for debug, etc.
-  , runFrequency  :: [(Int, a)]  -- ^ give acces to raw frequency values
+  { nameFrequency :: !Text        -- ^ short description for debug, etc.
+  , runFrequency  :: ![(Int, a)]  -- ^ give acces to raw frequency values
   }
   deriving (Show, Foldable, Traversable)
 

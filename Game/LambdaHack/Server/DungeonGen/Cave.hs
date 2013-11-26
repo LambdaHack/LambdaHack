@@ -33,9 +33,9 @@ type ItemFloorXY = EM.EnumMap PointXY (Item, Int)
 -- | The type of caves (not yet inhabited dungeon levels).
 data Cave = Cave
   { dkind   :: !(Kind.Id CaveKind)  -- ^ the kind of the cave
-  , dmap    :: TileMapXY            -- ^ tile kinds in the cave
-  , ditem   :: ItemFloorXY          -- ^ starting items in the cave
-  , dplaces :: [Place]              -- ^ places generated in the cave
+  , dmap    :: !TileMapXY           -- ^ tile kinds in the cave
+  , ditem   :: !ItemFloorXY         -- ^ starting items in the cave
+  , dplaces :: ![Place]             -- ^ places generated in the cave
   }
   deriving Show
 

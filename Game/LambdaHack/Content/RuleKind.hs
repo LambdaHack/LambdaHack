@@ -27,19 +27,19 @@ import Game.LambdaHack.Content.TileKind
 -- whether one position is accessible from another.
 -- Precondition: the two positions are next to each other.
 data RuleKind = RuleKind
-  { rsymbol          :: Char     -- ^ a symbol
-  , rname            :: Text     -- ^ short description
-  , rfreq            :: Freqs    -- ^ frequency within groups
+  { rsymbol          :: !Char     -- ^ a symbol
+  , rname            :: !Text     -- ^ short description
+  , rfreq            :: !Freqs    -- ^ frequency within groups
   , raccessible      :: X -> Point -> TileKind -> Point -> TileKind -> Bool
-  , rtitle           :: Text     -- ^ the title of the game
+  , rtitle           :: !Text     -- ^ the title of the game
   , rpathsDataFile   :: FilePath -> IO FilePath  -- ^ the path to data files
-  , rpathsVersion    :: Version  -- ^ the version of the game
-  , ritemMelee       :: [Char]   -- ^ symbols of melee weapons
-  , ritemRanged      :: [Char]   -- ^ symbols of ranged weapons and missiles
-  , ritemProject     :: [Char]   -- ^ symbols of items AI can project
-  , rcfgRulesDefault :: String   -- ^ the default game rules config file
-  , rcfgUIDefault    :: String   -- ^ the default UI settings config file
-  , rmainMenuArt     :: Text     -- ^ the ASCII art for the Main Menu
+  , rpathsVersion    :: !Version  -- ^ the version of the game
+  , ritemMelee       :: ![Char]   -- ^ symbols of melee weapons
+  , ritemRanged      :: ![Char]   -- ^ symbols of ranged weapons and missiles
+  , ritemProject     :: ![Char]   -- ^ symbols of items AI can project
+  , rcfgRulesDefault :: !String   -- ^ the default game rules config file
+  , rcfgUIDefault    :: !String   -- ^ the default UI settings config file
+  , rmainMenuArt     :: !Text     -- ^ the ASCII art for the Main Menu
   }
 
 -- | A dummy instance of the 'Show' class, to satisfy general requirments

@@ -20,17 +20,17 @@ import Game.LambdaHack.Utils.Assert
 -- either as a random formula dependent on level, or as a final rolled value.
 data Effect a =
     NoEffect
-  | Heal Int
-  | Hurt !RollDice a
-  | Mindprobe Int       -- the @Int@ is a hack to send the result to clients
+  | Heal !Int
+  | Hurt !RollDice !a
+  | Mindprobe !Int    -- the @Int@ is a hack to send the result to clients
   | Dominate
-  | CallFriend Int
-  | Summon Int
-  | CreateItem Int
+  | CallFriend !Int
+  | Summon !Int
+  | CreateItem !Int
   | ApplyPerfume
-  | Regeneration a
-  | Searching a
-  | Ascend Int
+  | Regeneration !a
+  | Searching !a
+  | Ascend !Int
   | Escape
   deriving (Show, Read, Eq, Ord, Generic, Functor)
 
