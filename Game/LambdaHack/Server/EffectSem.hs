@@ -71,7 +71,7 @@ effectSem :: (MonadAtomic m, MonadServer m)
           => Effect.Effect Int -> ActorId -> ActorId
           -> m Bool
 effectSem effect source target = case effect of
-  Effect.NoEffect -> effectNoEffect
+  Effect.NoEffect -> effectNoEffect target
   Effect.Heal p -> effectHeal p target
   Effect.Hurt nDm p -> effectWound nDm p source target
   Effect.Mindprobe _ -> effectMindprobe target
@@ -90,8 +90,10 @@ effectSem effect source target = case effect of
 
 -- ** NoEffect
 
-effectNoEffect :: Monad m => m Bool
-effectNoEffect = return False
+effectNoEffect :: MonadAtomic m => ActorId -> m Bool
+effectNoEffect target = do
+  execSfxAtomic $ EffectD target Effect.NoEffect
+  return False
 
 -- ** Heal
 
@@ -120,7 +122,9 @@ effectWound nDm power source target = do
   n <- rndToAction $ castDice nDm
   let deltaHP = - (n + power)
   if deltaHP >= 0
-    then return False
+    then do
+      execSfxAtomic $ EffectD target Effect.NoEffect
+      return False
     else do
       -- Damage the target.
       execCmdAtomic $ HealActorA target deltaHP
@@ -158,6 +162,8 @@ effectDominate source target = do
     execSfxAtomic $ EffectD target Effect.NoEffect
     return False
   else do
+    -- Announce domination before the actor changes sides.
+    execSfxAtomic $ EffectD target Effect.Dominate
     -- TODO: Perhaps insert a turn of delay here to allow countermeasures.
     electLeader (bfid tb) (blid tb) target
     ais <- getsState $ getActorItem target
@@ -202,7 +208,8 @@ deduceKilled body = do
 effectCallFriend :: (MonadAtomic m, MonadServer m)
                    => Int -> ActorId -> ActorId
                    -> m Bool
-effectCallFriend power source target = do
+effectCallFriend power source target = assert (power > 0) $ do
+  -- Obvious effect, nothing announced.
   Kind.COps{cotile} <- getsState scops
   sm <- getsState (getActorBody source)
   tm <- getsState (getActorBody target)
@@ -267,7 +274,8 @@ addHero bfid ppos lid configHeroNames mNumber time = do
 
 effectSummon :: (MonadAtomic m, MonadServer m)
              => Int -> ActorId -> m Bool
-effectSummon power target = do
+effectSummon power target = assert (power > 0) $ do
+  -- Obvious effect, nothing announced.
   Kind.COps{cotile} <- getsState scops
   tm <- getsState (getActorBody target)
   ps <- getsState $ nearbyFreePoints cotile (const True) (bpos tm) (blid tm)
@@ -316,7 +324,8 @@ addMonster mk bfid ppos lid time = do
 
 effectCreateItem :: (MonadAtomic m, MonadServer m)
                  => Int -> ActorId -> m Bool
-effectCreateItem power target = do
+effectCreateItem power target = assert (power > 0) $ do
+  -- Obvious effect, nothing announced.
   tm <- getsState $ getActorBody target
   void $ createItems power (bpos tm) (blid tm)
   return True
@@ -365,6 +374,7 @@ effectApplyPerfume source target =
 
 -- ** Searching
 
+-- TODO or to remove.
 effectSearching :: MonadAtomic m => Int -> ActorId -> m Bool
 effectSearching power source = do
   execSfxAtomic $ EffectD source $ Effect.Searching power
@@ -462,6 +472,7 @@ switchLevels2 aid bOld ais lidNew posNew = do
 -- | The faction leaves the dungeon.
 effectEscape :: (MonadAtomic m, MonadServer m) => ActorId -> m Bool
 effectEscape aid = do
+  -- Obvious effect, nothing announced.
   b <- getsState $ getActorBody aid
   let fid = bfid b
   spawn <- getsState $ isSpawnFaction fid

@@ -273,7 +273,7 @@ drawCmdAtomicUI verbose cmd = case cmd of
     lookAtMove aid
   DestroyActorA aid body _ ->
     destroyActorUI aid body "die" "be destroyed" verbose
-  CreateItemA _ item k _ | verbose -> itemVerbMU item k "appear"
+  CreateItemA _ item k _ | verbose -> itemVerbMU item k "appear"  -- TODO: not only in verbose mode, e.g., for scroll of item creation
   DestroyItemA _ item k _ | verbose -> itemVerbMU item k "disappear"
   LoseActorA aid body _ ->
     destroyActorUI aid body "be missing in action" "be lost" verbose
@@ -412,8 +412,6 @@ destroyActorUI :: MonadClientUI m
                => ActorId -> Actor -> MU.Part -> MU.Part -> Bool -> m ()
 destroyActorUI aid body verb verboseVerb verbose = do
   side <- getsClient sside
-  -- If no other faction actor is looking, death is invisible and
-  -- so is domination, time-freeze, etc.
   if (bfid body == side && bhp body <= 0 && not (bproj body)) then do
     actorVerbMU aid body verb
     void $ displayMore ColorBW ""
@@ -602,11 +600,13 @@ drawSfxAtomicUI verbose sfx = case sfx of
           let msg = makeSentence
                 [MU.CardinalWs nEnemy "howl", "of anger", "can be heard"]
           msgAdd msg
-        Effect.Dominate ->
-          if fid == side then lookAtMove aid
+        Effect.Dominate -> do
+          if fid == side then do
+            aVerbMU aid $ MU.Text "black out, dominated by foes"
+            void $ displayMore ColorFull ""
           else do
             fidName <- getsState $ gname . (EM.! fid) . sfactionD
-            aVerbMU aid $ MU.Text $ "fall under the influence of" <+> fidName
+            aVerbMU aid $ MU.Text $ "be no longer controlled by" <+> fidName
         Effect.ApplyPerfume ->
           msgAdd "The fragrance quells all scents in the vicinity."
         Effect.Searching{} -> do
