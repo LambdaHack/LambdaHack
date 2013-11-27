@@ -27,6 +27,7 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.TileKind
+import Game.LambdaHack.Utils.Assert
 
 -- | The last time a hero left a smell in a given tile. To be used
 -- by monsters that hunt by smell.
@@ -50,12 +51,14 @@ hasFeature Kind.Ops{okind} f t =
 -- | Whether a tile does not block vision.
 -- Essential for efficiency of "FOV", hence tabulated.
 isClear :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
-isClear Kind.Ops{ospeedup = Kind.TileSpeedup{isClearTab}} = isClearTab
+isClear Kind.Ops{ospeedup = Just Kind.TileSpeedup{isClearTab}} = isClearTab
+isClear cotile = assert `failure` "no speedup" `with` Kind.obounds cotile
 
 -- | Whether a tile is lit on its own.
 -- Essential for efficiency of "Perception", hence tabulated.
 isLit :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
-isLit Kind.Ops{ospeedup = Kind.TileSpeedup{isLitTab}} = isLitTab
+isLit Kind.Ops{ospeedup = Just Kind.TileSpeedup{isLitTab}} = isLitTab
+isLit cotile = assert `failure` "no speedup" `with` Kind.obounds cotile
 
 -- | Whether a tile can be explored, possibly yielding a treasure
 -- or a hidden message.

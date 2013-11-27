@@ -9,6 +9,7 @@ import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Key (mapWithKeyM_)
+import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Text (Text)
@@ -117,13 +118,13 @@ createFactions Kind.COps{cofact=Kind.Ops{opick}} players = do
   let lFs = reverse (zip [toEnum (-1), toEnum (-2)..] lnoUI)  -- sorted
             ++ zip [toEnum 1..] lUI
       swapIx l =
-        let ixs =
-              let f (name1, name2) =
-                    [ (ix1, ix2) | (ix1, fact1) <- lFs
-                                 , playerName (gplayer fact1) == name1
-                                 , (ix2, fact2) <- lFs
-                                 , playerName (gplayer fact2) == name2]
-              in concatMap f l
+        let findPlayerName name = find ((name ==) . playerName . gplayer . snd)
+            f (name1, name2) =
+              case (findPlayerName name1 lFs, findPlayerName name2 lFs) of
+                (Just (ix1, _), Just (ix2, _)) -> (ix1, ix2)
+                _ -> assert `failure` "unknown faction"
+                            `with` ((name1, name2), lFs)
+            ixs = map f l
         -- Only symmetry is ensured, everything else is permitted, e.g.,
         -- a faction in alliance with two others that are at war.
         in ixs ++ map swap ixs

@@ -409,7 +409,7 @@ killAllClients = do
 speedupCOps :: Bool -> Kind.COps -> Kind.COps
 speedupCOps allClear copsSlow@Kind.COps{cotile=tile} =
   let ospeedup = Tile.speedup allClear tile
-      cotile = tile {Kind.ospeedup = ospeedup}
+      cotile = tile {Kind.ospeedup = Just ospeedup}
   in copsSlow {Kind.cotile = cotile}
 
 -- | Invoke pseudo-random computation with the generator kept in the state.

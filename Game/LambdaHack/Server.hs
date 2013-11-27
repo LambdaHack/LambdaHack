@@ -143,7 +143,8 @@ mainSer :: (MonadAtomic m, MonadConnServer m)
                 -> IO ())
             -> IO ())
         -> IO ()
-mainSer copsSlow exeSer exeFront = do
+mainSer !copsSlow  -- evaluate fully to discover errors ASAP and free memory
+        exeSer exeFront = do
   sdebugNxt <- debugArgs
   let cops = speedupCOps False copsSlow
       loopServer = loopSer sdebugNxt cmdSerSem

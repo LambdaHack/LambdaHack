@@ -63,7 +63,7 @@ data Ops a = Ops
   , ofoldrWithKey :: forall b. (Id a -> a -> b -> b) -> b -> b
                                     -- ^ fold over all content elements of @a@
   , obounds       :: !(Id a, Id a)  -- ^ bounds of identifiers of content @a@
-  , ospeedup      :: (Speedup a)    -- ^ auxiliary speedup components
+  , ospeedup      :: !(Maybe (Speedup a))  -- ^ auxiliary speedup components
   }
 
 -- | Create content operations for type @a@ from definition of content
@@ -71,14 +71,12 @@ data Ops a = Ops
 createOps :: forall a. Show a => ContentDef a -> Ops a
 createOps ContentDef{getName, getFreq, content, validate} =
   assert (Id (fromIntegral $ length content) < sentinelId) $
-  let kindAssocs :: [(Word8, a)]
-      kindAssocs = L.zip [0..] content
-      kindMap :: EM.EnumMap (Id a) a
-      kindMap = EM.fromDistinctAscList $ L.zip [Id 0..] content
+  let kindMap :: EM.EnumMap (Id a) a
+      !kindMap = EM.fromDistinctAscList $ L.zip [Id 0..] content
       kindFreq :: M.Map Text (Frequency (Id a, a))
       kindFreq =
-        let tuples = [ (group, (n, (Id i, k)))
-                     | (i, k) <- kindAssocs
+        let tuples = [ (group, (n, (i, k)))
+                     | (i, k) <- EM.assocs kindMap
                      , (group, n) <- getFreq k, n > 0 ]
             f m (group, nik) = M.insertWith (++) group [nik] m
             lists = L.foldl' f M.empty tuples
@@ -89,17 +87,18 @@ createOps ContentDef{getName, getFreq, content, validate} =
       correct a = not (T.null (getName a)) && L.all ((> 0) . snd) (getFreq a)
       offenders = validate content
   in assert (allB correct content) $
-     assert (L.null offenders `blame` "content not validated" `with` offenders)
+     assert (L.null offenders `blame` "content not valid" `with` offenders)
+     -- By this point 'content' can be GCd.
      Ops
        { okind
-       , ouniqGroup = \ group ->
+       , ouniqGroup = \group ->
            let freq = fromMaybe (assert `failure` "no unique group"
                                         `with` (group, kindFreq))
                       $ M.lookup group kindFreq
            in case runFrequency freq of
              [(n, (i, _))] | n > 0 -> i
              l -> assert `failure` "not unique" `with` (l, group, kindFreq)
-       , opick = \ group p ->
+       , opick = \group p ->
            let freq = fromMaybe (assert `failure` "no group to pick from"
                                         `with` (group, kindFreq))
                       $ M.lookup group kindFreq
@@ -109,10 +108,11 @@ createOps ContentDef{getName, getFreq, content, validate} =
              {- with MonadComprehensions:
              frequency [ i | (i, k) <- kindFreq M.! group, p k ]
              -}
-       , ofoldrWithKey = \ f z -> L.foldr (\ (i, a) -> f (Id i) a) z kindAssocs
+       , ofoldrWithKey = \f z -> L.foldr (\(i, a) -> f i a) z
+                                 $ EM.assocs kindMap
        , obounds = ( fst $ EM.findMin kindMap
                    , fst $ EM.findMax kindMap )
-       , ospeedup = undefined  -- define elsewhere
+       , ospeedup = Nothing  -- define elsewhere
        }
 
 -- | Operations for all content types, gathered together.
