@@ -227,7 +227,8 @@ alterSer source tpos mfeat = do
         changeTo tgroup = do
           -- No AlterD, because the effect is obvious (e.g., opened door).
           toTile <- rndToAction $ opick tgroup (const True)
-          execCmdAtomic $ AlterTileA lid tpos serverTile toTile
+          unless (toTile == serverTile) $
+            execCmdAtomic $ AlterTileA lid tpos serverTile toTile
         feats = case mfeat of
           Nothing -> TileKind.tfeature $ okind serverTile
           Just feat2 | Tile.hasFeature cotile feat2 serverTile -> [feat2]
@@ -251,6 +252,8 @@ alterSer source tpos mfeat = do
             -- don't know this tile.
             execCmdAtomic $ SearchTileA source tpos freshClientTile serverTile
           mapM_ changeTo groupsToAlter
+          -- Perform an effect, if any permitted.
+          void $ triggerEffect source feats
         else execFailure sb AlterBlockActor
       else execFailure sb AlterBlockItem
 
@@ -377,7 +380,7 @@ applySer actor iid container = do
 
 -- * TriggerSer
 
--- | Perform the action specified for the tile in case it's triggered.
+-- | Perform the effect specified for the tile in case it's triggered.
 triggerSer :: (MonadAtomic m, MonadServer m)
            => ActorId -> Maybe F.Feature -> m ()
 triggerSer aid mfeat = do
@@ -387,6 +390,18 @@ triggerSer aid mfeat = do
   lvl <- getLevel lid
   let tpos = bpos sb
       serverTile = lvl `at` tpos
+      feats = case mfeat of
+        Nothing -> TileKind.tfeature $ okind serverTile
+        Just feat2 | Tile.hasFeature cotile feat2 serverTile -> [feat2]
+        Just _ -> []
+  go <- triggerEffect aid feats
+  unless go $ execFailure sb TriggerNothing
+
+triggerEffect :: (MonadAtomic m, MonadServer m)
+              => ActorId -> [F.Feature] -> m Bool
+triggerEffect aid feats = do
+  sb <- getsState $ getActorBody aid
+  let tpos = bpos sb
       triggerFeat feat =
         case feat of
           F.Cause ef -> do
@@ -395,12 +410,8 @@ triggerSer aid mfeat = do
             void $ effectSem ef aid aid
             return True
           _ -> return False
-      feats = case mfeat of
-        Nothing -> TileKind.tfeature $ okind serverTile
-        Just feat2 | Tile.hasFeature cotile feat2 serverTile -> [feat2]
-        Just _ -> []
-  bs <- mapM triggerFeat feats
-  when (not $ or bs) $ execFailure sb TriggerNothing
+  goes <- mapM triggerFeat feats
+  return $! or goes
 
 -- * SetPathSer
 

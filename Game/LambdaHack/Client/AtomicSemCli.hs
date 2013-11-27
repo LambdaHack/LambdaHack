@@ -273,8 +273,8 @@ drawCmdAtomicUI verbose cmd = case cmd of
     lookAtMove aid
   DestroyActorA aid body _ ->
     destroyActorUI aid body "die" "be destroyed" verbose
-  CreateItemA _ item k _ | verbose -> itemVerbMU item k "appear"  -- TODO: not only in verbose mode, e.g., for scroll of item creation
-  DestroyItemA _ item k _ | verbose -> itemVerbMU item k "disappear"
+  CreateItemA _ item k _ -> itemVerbMU item k "drop to the ground"
+  DestroyItemA _ item k _ -> itemVerbMU item k "disappear"
   LoseActorA aid body _ ->
     destroyActorUI aid body "be missing in action" "be lost" verbose
   MoveActorA aid _ _ -> lookAtMove aid
@@ -386,11 +386,12 @@ aVerbMU aid verb = do
   actorVerbMU aid b verb
 
 itemVerbMU :: MonadClientUI m => Item -> Int -> MU.Part -> m ()
-itemVerbMU item k verb = do
+itemVerbMU item k verb = assert (k > 0) $ do
   Kind.COps{coitem} <- getsState scops
   disco <- getsClient sdisco
-  let msg =
-        makeSentence [MU.SubjectVerbSg (partItemWs coitem disco k item) verb]
+  let subject = partItemWs coitem disco k item
+      msg | k > 1 = makeSentence [MU.SubjectVerb MU.PlEtc MU.Yes subject verb]
+          | otherwise = makeSentence [MU.SubjectVerbSg subject verb]
   msgAdd msg
 
 _iVerbMU :: MonadClientUI m => ItemId -> Int -> MU.Part -> m ()
