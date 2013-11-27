@@ -61,56 +61,66 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
       ascendable  = Tile.kindHasFeature $ F.Cause (Effect.Ascend 1)
       descendable = Tile.kindHasFeature $ F.Cause (Effect.Ascend (-1))
   cmap <- convertTileMaps (opick cdefTile (const True)) cxsize cysize dmap
-  -- We keep two-way stairs at the start of the lists.
-  let fDown noAsc (stairsUpCur, stairsDownCur) =
-        if ldepth == minD then return ([], [])
+  -- We keep two-way stairs separately, in the last component.
+  let makeStairs :: Bool -> Bool -> Bool
+                 -> ( [(Point, Kind.Id TileKind)]
+                    , [(Point, Kind.Id TileKind)]
+                    , [(Point, Kind.Id TileKind)] )
+                 -> Rnd ( [(Point, Kind.Id TileKind)]
+                        , [(Point, Kind.Id TileKind)]
+                        , [(Point, Kind.Id TileKind)] )
+      makeStairs moveUp noAsc noDesc (up, down, upDown) =
+        if (if moveUp then noAsc else noDesc) then
+          return (up, down, upDown)
         else do
-          let cond tk = descendable tk && not (noAsc && ascendable tk)
-          sd <- placeStairs cotile cmap kc []
-          downId <- opick (findLegend sd) cond
-          let st = (sd, downId)
-          return $ if ascendable $ okind downId
-                   then (st : stairsUpCur, st : stairsDownCur)
-                   else (stairsUpCur, stairsDownCur ++ [st])
-      fUp noDesc (stairsUpCur, stairsDownCur) _ =
-        if ldepth == maxD then return (stairsUpCur, stairsDownCur)
-        else do
-          let cond tk = ascendable tk && not (noDesc && descendable tk)
-              stairsCur = stairsUpCur ++ stairsDownCur
+          let cond tk = (if moveUp then ascendable tk else descendable tk)
+                        && (if noAsc then not (ascendable tk) else True)
+                        && (if noDesc then not (descendable tk) else True)
+              stairsCur = up ++ down ++ upDown
               posCur = nub $ sort $ map fst stairsCur
-          su <- placeStairs cotile cmap kc posCur
-          upId <- opick (findLegend su) cond
-          let st = (su, upId)
-          return $ if descendable $ okind upId
-                   then (st : stairsUpCur, st : stairsDownCur)
-                   else (stairsUpCur ++ [st], stairsDownCur)
-  (stairsUpExtra1, stairsDownStd1) <- fDown (ldepth == maxD) ([], [])
-  let nstairUpLeft = nstairUp - length stairsUpExtra1
-  (stairsUp2, stairsDown2) <-
-    foldM (fUp (ldepth == minD)) (stairsUpExtra1, stairsDownStd1)
+          spos <- placeStairs cotile cmap kc posCur
+          stairId <- opick (findLegend spos) cond
+          let st = (spos, stairId)
+              asc = ascendable $ okind stairId
+              desc = descendable $ okind stairId
+          return $ case (asc, desc) of
+                     (True, False) -> (st : up, down, upDown)
+                     (False, True) -> (up, st : down, upDown)
+                     (True, True)  -> (up, down, st : upDown)
+                     (False, False) -> assert `failure` st
+  (stairsUp1, stairsDown1, stairsUpDown1) <-
+    makeStairs False (ldepth == maxD) (ldepth == minD) ([], [], [])
+  assert (null stairsUp1) skip
+  let nstairUpLeft = nstairUp - length stairsUpDown1
+  (stairsUp2, stairsDown2, stairsUpDown2) <-
+    foldM (\sts _ -> makeStairs True (ldepth == maxD) (ldepth == minD) sts)
+          (stairsUp1, stairsDown1, stairsUpDown1)
           [1 .. nstairUpLeft]
   -- If only a single tile of up-and-down stairs, add one more stairs down.
-  (stairsUp, stairsDown) <-
-    if length stairsUp2 == length stairsDown2 && length stairsDown2 == 1
-    then fDown True (stairsUp2, stairsDown2)
-    else return (stairsUp2, stairsDown2)
-  assert (length stairsUp == nstairUp) skip
-  let stairsTotal = stairsUp ++ stairsDown
+  (stairsUp, stairsDown, stairsUpDown) <-
+    if length (stairsUp2 ++ stairsDown2) == 0
+    then (makeStairs False True (ldepth == minD)
+             (stairsUp2, stairsDown2, stairsUpDown2))
+    else return (stairsUp2, stairsDown2, stairsUpDown2)
+  let stairsUpAndUpDown = stairsUp ++ stairsUpDown
+  assert (length stairsUpAndUpDown == nstairUp) skip
+  let stairsTotal = stairsUpAndUpDown ++ stairsDown
       posTotal = nub $ sort $ map fst stairsTotal
-  sq <- placeStairs cotile cmap kc $ posTotal
+  epos <- placeStairs cotile cmap kc posTotal
   escape <- case escapeFeature of
               Nothing -> return []
               Just True -> do
-                upEscape <- opick (findLegend sq) $ hasEscapeAndSymbol '<'
-                return [(sq, upEscape)]
+                upEscape <- opick (findLegend epos) $ hasEscapeAndSymbol '<'
+                return [(epos, upEscape)]
               Just False -> do
-                downEscape <- opick (findLegend sq) $ hasEscapeAndSymbol '>'
-                return [(sq, downEscape)]
+                downEscape <- opick (findLegend epos) $ hasEscapeAndSymbol '>'
+                return [(epos, downEscape)]
   let exits = stairsTotal ++ escape
       ltile = cmap Kind.// exits
-      -- We reverse the down stairs, to minimize long stair chains.
-      lstair = (map fst stairsUp, map fst $ reverse stairsDown)
-  -- traceShow (ldepth, nstairUp, (stairsUp, stairsDown)) skip
+      -- We reverse the order in down stairs, to minimize long stair chains.
+      lstair = ( map fst $ stairsUp ++ stairsUpDown
+               , map fst $ stairsUpDown ++ stairsDown )
+  -- traceShow (ldepth, nstairUp, (stairsUp, stairsDown, stairsUpDown)) skip
   litemNum <- castDice citemNum
   lsecret <- random
   return $! levelFromCaveKind cops kc ldepth ltile lstair litemNum lsecret
