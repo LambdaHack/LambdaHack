@@ -142,10 +142,9 @@ whereTo lid pos k s = assert (k /= 0) $
     [] -> assert `failure` "no dungeon level to go to" `with` (lid, pos, k)
     ln : _ -> let lvlTgt = dungeon EM.! ln
                   stairsTgt = (if k < 0 then fst else snd) (lstair lvlTgt)
-                  failTgt = assert `failure` "no stairs at index"
-                                   `with` (lid, pos, k, stairsTgt, ln)
-              in if length stairsTgt < i
-                 then failTgt
+              in if length stairsTgt < i + 1
+                 then assert `failure` "no stairs at index"
+                             `with` (lid, pos, k, ln, stairsTgt, i)
                  else (ln, stairsTgt !! i)
 
 -- * The operations below disregard levels other than the current.
