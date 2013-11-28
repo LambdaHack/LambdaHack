@@ -32,6 +32,7 @@ consists of large number of tiles. The basic tiles are as follows.
                corridor                           #
                wall (horizontal and vertical)     - and |
                pillar                             O
+               wall cache                         &
                stairs up                          <
                stairs down                        >
                open door                          | and -
@@ -56,9 +57,10 @@ the vi text editor keys (also known as "Rogue-like keys").
 
 SHIFT (or CTRL) and a movement key make the selected hero run in the indicated
 direction, until anything of interest is spotted. The '5' and '.' keys take
-a turn to brace for combat, which gives a chance to block blows next turn.
-Melee, searching for secret doors and opening closed doors can be done
-by bumping into a monster, a wall and a door, respectively.
+a turn to brace for combat, which gives a chance to block blows
+for the remainder of the turn. Melee, searching for secret doors
+and opening closed doors can be done by bumping into a monster,
+a wall and a door, respectively.
 
 Below are the default keys for major commands. Those of them that take
 hero time are marked with a star.
@@ -118,8 +120,12 @@ via a configuration file.
                CTRL-o    new Coop game
                CTRL-e    new defense game
 
-There are also some debug and cheat options that can be specified
-on the command line when starting the game server. Use at your own peril!
+There are also some debug, testing and cheat options and game modes
+that can be specified on the command line when starting the game server.
+Use at your own peril! Of these, you may find the screensaver modes
+the least spoilery and the most fun, e.g.:
+
+    LambdaHack --newGame --noMore --maxFps 45 --savePrefix screensaver --gameMode screensaver
 
 
 Monsters

@@ -52,13 +52,14 @@ debugArgs :: IO DebugModeSer
 debugArgs = do
   args <- getArgs
   let usage =
-        [ "Configure server debug options here, gameplay in config.rules.ini."
+        [ "Configure debug options here, gameplay options in config.rules.ini."
         , "  --knowMap reveal map for all clients in the next game"
         , "  --knowEvents show all events in the next game (needs --knowMap)"
         , "  --sniffIn display all incoming commands on console "
         , "  --sniffOut display all outgoing commands on console "
         , "  --allClear let all map tiles be translucent"
         , "  --gameMode m start next game in the given mode"
+        , "  --newGame start a new game, overwriting the save file"
         , "  --stopAfter n exit this game session after around n seconds"
         , "  --dbgMsgSer let the server emit its internal debug messages"
         , "  --font fn use the given font for the main game window"
@@ -67,7 +68,6 @@ debugArgs = do
         , "  --noMore auto-answer all prompts"
         , "  --noAnim don't show any animations"
         , "  --savePrefix prepend the text to all savefile names"
-        , "  --newGame start a new game, overwriting the save file"
         , "  --frontendStd use the simple stdout/stdin frontend"
         , "  --dbgMsgCli let clients emit their internal debug messages"
         , "  --fovMode m set a Field of View mode, where m can be"
@@ -89,6 +89,11 @@ debugArgs = do
         (parseArgs rest) {sallClear = True}
       parseArgs ("--gameMode" : s : rest) =
         (parseArgs rest) {sgameMode = T.pack s}
+      parseArgs ("--newGame" : rest) =
+        let debugSer = parseArgs rest
+        in debugSer { snewGameSer = True
+                    , sdebugCli =
+                         (sdebugCli debugSer) {snewGameCli = True}}
       parseArgs ("--stopAfter" : s : rest) =
         (parseArgs rest) {sstopAfter = Just $ read s}
       parseArgs ("--fovMode" : "Digital" : r : rest) | (read r :: Int) > 0 =
@@ -113,11 +118,6 @@ debugArgs = do
       parseArgs ("--noAnim" : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli = (sdebugCli debugSer) {snoAnim = Just True}}
-      parseArgs ("--newGame" : rest) =
-        let debugSer = parseArgs rest
-        in debugSer { snewGameSer = True
-                    , sdebugCli =
-                         (sdebugCli debugSer) {snewGameCli = True}}
       parseArgs ("--savePrefix" : s : rest) =
         let debugSer = parseArgs rest
         in debugSer { ssavePrefixSer = Just s
