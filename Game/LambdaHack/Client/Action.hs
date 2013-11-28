@@ -177,9 +177,15 @@ getArenaUI = do
       side <- getsClient sside
       factionD <- getsState sfactionD
       let fact = factionD EM.! side
-      return $ case gquit fact of
-        Just Status{stDepth} -> toEnum stDepth
-        Nothing -> playerEntry $ gplayer fact
+      case gquit fact of
+        Just Status{stDepth} -> return $ toEnum stDepth
+        Nothing -> do
+          dungeon <- getsState sdungeon
+          let (minD, maxD) =
+                case (EM.minViewWithKey dungeon, EM.maxViewWithKey dungeon) of
+                  (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
+                  _ -> assert `failure` "empty dungeon" `with` dungeon
+          return $ max minD $ min maxD $ playerEntry $ gplayer fact
 
 -- | Calculate the position of leader's target.
 targetToPos :: MonadClientUI m => m (Maybe Point)
