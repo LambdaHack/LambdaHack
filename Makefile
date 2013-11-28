@@ -1,31 +1,45 @@
-test:
-	dist/build/LambdaHack/LambdaHack --noMore --noDelay --noAnim --maxFps 100000 --dbgMsgSer --savePrefix screensaver --gameMode screensaver --frontendStd --stopAfter 500 > /tmp/stdtest.log
+test: test-shortest test-short test-long
 
-test-frontend:
-	dist/build/LambdaHack/LambdaHack --noMore --maxFps 45 --dbgMsgSer --savePrefix screensaver --gameMode screensaver
+test-long: testCampaign testCoop testDefense
 
-test-travis:
-	dist/build/LambdaHack/LambdaHack --noMore --noDelay --noAnim --maxFps 100000 --savePrefix screensaver --gameMode screensaver --frontendStd --stopAfter 60 > /dev/null
+test-short: testCampaign-short testCoop-short testDefense-short
+
+testCampaign:
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --noMore --noDelay --noAnim --maxFps 100000 --savePrefix testCampaign --gameMode screensaver --frontendStd --stopAfter 500 > /tmp/stdtest.log
+
+testCampaign-short:
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --noMore --noDelay --noAnim --maxFps 100000 --savePrefix testCampaign --gameMode screensaver --frontendStd --stopAfter 60 > /tmp/stdtest.log
+
+testCampaign-frontend:
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --noMore --maxFps 45 --savePrefix screensaver --gameMode testCampaign
 
 testCoop:
-	dist/build/LambdaHack/LambdaHack --noMore --noDelay --noAnim --maxFps 100000 --fovMode Permissive --dbgMsgSer --savePrefix testCoop --gameMode testCoop --frontendStd --stopAfter 500 > /tmp/stdtest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --noMore --noDelay --noAnim --maxFps 100000 --fovMode Permissive --savePrefix testCoop --gameMode testCoop --frontendStd --stopAfter 500 > /tmp/stdtest.log
+
+testCoop-short:
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --noMore --noDelay --noAnim --maxFps 100000 --fovMode Shadow --savePrefix testCoop --gameMode testCoop --frontendStd --stopAfter 60 > /tmp/stdtest.log
 
 testCoop-frontend:
-	dist/build/LambdaHack/LambdaHack --noMore --maxFps 180 --dbgMsgSer --fovMode Permissive --savePrefix testCoop --gameMode testCoop
-
-testCoop-travis:
-	dist/build/LambdaHack/LambdaHack --noMore --noDelay --noAnim --maxFps 100000 --fovMode Permissive --savePrefix testCoop --gameMode testCoop --frontendStd --stopAfter 60 > /dev/null
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --noMore --maxFps 180 --fovMode Permissive --savePrefix testCoop --gameMode testCoop
 
 testDefense:
-	dist/build/LambdaHack/LambdaHack --noMore --maxFps 100000 --dbgMsgSer --savePrefix testDefense --gameMode testDefense --frontendStd --stopAfter 500 > /tmp/stdtest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --noMore --noAnim --maxFps 100000 --savePrefix testDefense --gameMode testDefense --frontendStd --stopAfter 500 > /tmp/stdtest.log
+
+testDefense-short:
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --noMore --maxFps 100000 --savePrefix testDefense --gameMode testDefense --frontendStd --stopAfter 60 > /tmp/stdtest.log
 
 testDefense-frontend:
-	dist/build/LambdaHack/LambdaHack --noMore --maxFps 45 --dbgMsgSer --savePrefix testDefense --gameMode testDefense
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --noMore --maxFps 45 --savePrefix testDefense --gameMode testDefense
 
-testDefense-travis:
-	dist/build/LambdaHack/LambdaHack --noMore --maxFps 100000 --savePrefix testDefense --gameMode testDefense --frontendStd --stopAfter 60 > /dev/null
+test-shortest:
+	yes . | dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix campaign --gameMode campaign --frontendStd --stopAfter 0 > /tmp/stdtest.log
+	yes . | dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix skirmish --gameMode skirmish --frontendStd --stopAfter 0 > /tmp/stdtest.log
+	yes . | dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix PvP --gameMode PvP --frontendStd --stopAfter 0 > /tmp/stdtest.log
+	yes . | dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix Coop --gameMode Coop --frontendStd --stopAfter 0 > /tmp/stdtest.log
+	yes . | dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix defense --gameMode defense --frontendStd --stopAfter 0 > /tmp/stdtest.log
+	yes . | dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix peek --gameMode peek --frontendStd --stopAfter 0 > /tmp/stdtest.log
 
-travisTests: test-travis testCoop-travis testDefense-travis
+test-travis: test-shortest test-short
 
 testPeek-play:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix peek --gameMode peek
