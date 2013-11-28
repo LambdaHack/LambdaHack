@@ -1,5 +1,5 @@
 name:          LambdaHack
-version:       0.2.9
+version:       0.2.10
 synopsis:      A roguelike game engine in early and active development
 description:   This is an alpha release of LambdaHack,
                a game engine library for roguelike games
@@ -16,15 +16,13 @@ description:   This is an alpha release of LambdaHack,
                in the strict and type-safe separation of code and content
                and of clients (human and AI-controlled) and server.
                .
-               New, in this release, is cooperative and competitive multiplayer
-               (shared-screen only in this version) and overhauled searching.
-               The code has been rewritten to have a single server
-               that sends restricted game state updates to many
-               fat clients, while a thin frontend layer multiplexes
-               visuals from a subset of the clients.
+               New in this release are screensaver game modes (AI vs AI),
+               improved AI (can now climbs stairs, etc.), multiple,
+               multi-floor staircases, multiple savefiles, configurable
+               framerate, combat animations and more.
                Upcoming features: new and improved frontends, improved AI
-               (better leader switching and ranged combat), dynamic light
-               sources, explosions, player action undo/redo, completely
+               (pathfinding, autoexplore, better ranged combat), dynamic
+               light sources, explosions, player action undo/redo, completely
                redesigned UI. Long term goals are focused on procedural
                content generation and include in-game content creation,
                auto-balancing and persistent content modification
