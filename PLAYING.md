@@ -122,7 +122,7 @@ via a configuration file.
 
 There are also some debug, testing and cheat options and game modes
 that can be specified on the command line when starting the game server.
-Use at your own peril! Of these, you may find the screensaver modes
+Use at your own peril! :) Of these, you may find the screensaver modes
 the least spoilery and the most fun, e.g.:
 
     LambdaHack --newGame --noMore --maxFps 45 --savePrefix screensaver --gameMode screensaver

@@ -13,9 +13,9 @@ cdefs = ContentDef
   , getFreq = mfreq
   , validate = mvalidate
   , content =
-      [campaign, skirmish, pvp, coop, defense, screensaver, testCoop, testDefense, testPeek]
+      [campaign, skirmish, pvp, coop, defense, screensaver, testCoop, testDefense, peekCampaign, peekSkirmish]
   }
-campaign,        skirmish, pvp, coop, defense, screensaver, testCoop, testDefense, testPeek :: ModeKind
+campaign,        skirmish, pvp, coop, defense, screensaver, testCoop, testDefense, peekCampaign, peekSkirmish :: ModeKind
 
 campaign = ModeKind
   { msymbol  = 'r'  -- matches the keypress (with C-)
@@ -81,16 +81,24 @@ testDefense = ModeKind
   , mcaves   = cavesDefense
   }
 
-testPeek = ModeKind
+peekCampaign = ModeKind
   { msymbol  = 'e'
-  , mname    = "peek"
-  , mfreq    = [("peek", 1)]
-  , mplayers = playersPeek
+  , mname    = "peekCampaign"
+  , mfreq    = [("peekCampaign", 1)]
+  , mplayers = playersPeekCampaign
   , mcaves   = cavesCampaign
   }
 
+peekSkirmish = ModeKind
+  { msymbol  = 'f'
+  , mname    = "peekSkirmish"
+  , mfreq    = [("peekSkirmish", 1)]
+  , mplayers = playersPeekSkirmish
+  , mcaves   = cavesCombat
+  }
 
-playersCampaign, playersSkirmish, playersPvP, playersCoop, playersDefense, playersScreensaver, playersTestCoop, playersTestDefense, playersPeek :: Players
+
+playersCampaign, playersSkirmish, playersPvP, playersCoop, playersDefense, playersScreensaver, playersTestCoop, playersTestDefense, playersPeekCampaign, playersPeekSkirmish :: Players
 
 playersCampaign = Players
   { playersList = [ playerHero {playerInitial = 1}
@@ -176,10 +184,20 @@ playersTestDefense = Players
                   , ("Green", "Cyan")
                   , ("Yellow", "Cyan") ] }
 
-playersPeek = Players
+playersPeekCampaign = Players
   { playersList = [ playerHero {playerInitial = 1}
                   , playerMonster {playerUI = True} ]
   , playersEnemy = [("Adventuring Party", "Monster Hive")]
+  , playersAlly = [] }
+
+playersPeekSkirmish = Players
+  { playersList = [ playerHero {playerName = "White"}
+                  , playerAntiHero { playerName = "Green"
+                                   , playerUI = True }
+                  , playerHorror ]
+  , playersEnemy = [ ("White", "Green")
+                   , ("White", "Horror Den")
+                   , ("Green", "Horror Den") ]
   , playersAlly = [] }
 
 

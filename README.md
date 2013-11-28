@@ -69,11 +69,13 @@ Vi keys (ykuhlbjn) should work everywhere regardless. Gtk works fine, too.
 Testing and debugging
 ---------------------
 
-The Makefile contains many test commands. All that use the screensaver
-game modes (AI vs. AI) are gathered in `make test`. Of these, travis
-runs the set contained in `make test-travis` on each push to the repo.
-Command `make testPeek-play' sets up a game mode where the player
-peeks into AI moves each time an AI actor dies or autosave kicks in.
+The Makefile contains many sample test commands. All that use the screensaver
+game modes (AI vs. AI) and the simplest stdout frontend are gathered
+in `make test`. Of these, travis runs the set contained in
+`make test-travis` on each push to the repo. Commands with prefix
+`frontend` run AI vs. AI games with the standard, user-friendly frontend.
+Commands with prefix `peek` set up a game mode where the player peeks
+into AI moves each time an AI actor dies or autosave kicks in.
 Run `LambdaHack --help` to see a brief description of all debug options.
 Of these, `--sniffIn` and `--sniffOut` are very useful (though verbose
 and initially cryptic), for monitoring the traffic between clients
@@ -91,7 +93,7 @@ You can use HPC with the game as follows
 
 The debug option `--stopAfter` is required for any screensaver mode
 game invocations that gather HPC info, because HPC needs a clean exit
-to save data files and screensaver modes can't be cleanly stopped
+(to save data files) and screensaver modes can't be cleanly stopped
 in any other way.
 
 
