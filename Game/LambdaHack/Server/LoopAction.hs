@@ -56,17 +56,7 @@ loopSer sdebug cmdSerSem executorUI executorAI !cops = do
   -- Recover states and launch clients.
   restored <- tryRestore cops sdebug
   case restored of
-    Nothing -> do  -- Starting a new game.
-      -- Set up commandline debug mode
-      s <- gameReset cops sdebug
-      sdebugNxt <- initDebug sdebug
-      modifyServer $ \ser -> ser {sdebugNxt, sdebugSer = sdebugNxt}
-      let speedup = speedupCOps (sallClear sdebugNxt)
-      execCmdAtomic $ RestartServerA $ updateCOps speedup s
-      updateConn executorUI executorAI
-      initPer
-      reinitGame
-    Just (sRaw, ser) -> do  -- Running a restored game.
+    Just (sRaw, ser) | not $ snewGameSer sdebug -> do  -- run a restored game
       -- First, set the previous cops, to send consistent info to clients.
       let setPreviousCops = const cops
       execCmdAtomic $ ResumeServerA $ updateCOps setPreviousCops sRaw
@@ -83,6 +73,16 @@ loopSer sdebug cmdSerSem executorUI executorAI !cops = do
       -- @sRaw@ is correct here, because none of the above changes State.
       execCmdAtomic $ ResumeServerA $ updateCOps setCurrentCops sRaw
       initPer
+    _ -> do  -- Starting a new game.
+      -- Set up commandline debug mode
+      s <- gameReset cops sdebug
+      sdebugNxt <- initDebug sdebug
+      modifyServer $ \ser -> ser {sdebugNxt, sdebugSer = sdebugNxt}
+      let speedup = speedupCOps (sallClear sdebugNxt)
+      execCmdAtomic $ RestartServerA $ updateCOps speedup s
+      updateConn executorUI executorAI
+      initPer
+      reinitGame
   resetSessionStart
   -- Start a clip (a part of a turn for which one or more frames
   -- will be generated). Do whatever has to be done

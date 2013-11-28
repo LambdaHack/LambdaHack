@@ -55,6 +55,7 @@ applyDebug = do
                                      , sfovMode
                                      , sstopAfter
                                      , sdbgMsgSer
+                                     , snewGameSer
                                      , sdebugCli }}
 
 initPer :: MonadServer m => m ()

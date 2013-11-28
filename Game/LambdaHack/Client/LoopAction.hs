@@ -26,12 +26,12 @@ initCli sdebugCli putSt = do
   modifyClient $ \cli -> cli {sdebugCli}
   restored <- restoreGame
   case restored of
-    Just (s, cli) -> do  -- Restore the game.
+    Just (s, cli) | not $ snewGameCli sdebugCli -> do  -- Restore the game.
       let sCops = updateCOps (const cops) s
       putSt sCops
       putClient cli {sdebugCli}
       return True
-    Nothing ->  -- First visit ever, use the initial state.
+    _ ->  -- First visit ever, use the initial state.
       return False
 
 loopAI :: (MonadClientReadServer CmdClientAI m)

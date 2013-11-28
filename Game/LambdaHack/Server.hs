@@ -67,6 +67,7 @@ debugArgs = do
         , "  --noMore auto-answer all prompts"
         , "  --noAnim don't show any animations"
         , "  --savePrefix prepend the text to all savefile names"
+        , "  --newGame start a new game, overwriting the save file"
         , "  --frontendStd use the simple stdout/stdin frontend"
         , "  --dbgMsgCli let clients emit their internal debug messages"
         , "  --fovMode m set a Field of View mode, where m can be"
@@ -112,6 +113,11 @@ debugArgs = do
       parseArgs ("--noAnim" : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli = (sdebugCli debugSer) {snoAnim = Just True}}
+      parseArgs ("--newGame" : rest) =
+        let debugSer = parseArgs rest
+        in debugSer { snewGameSer = True
+                    , sdebugCli =
+                         (sdebugCli debugSer) {snewGameCli = True}}
       parseArgs ("--savePrefix" : s : rest) =
         let debugSer = parseArgs rest
         in debugSer { ssavePrefixSer = Just s

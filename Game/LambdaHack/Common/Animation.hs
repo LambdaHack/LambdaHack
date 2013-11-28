@@ -235,6 +235,8 @@ data DebugModeCli = DebugModeCli
       -- ^ Auto-answer all prompts, e.g., for screensaver.
   , snoAnim        :: !(Maybe Bool)
       -- ^ Don't show any animations.
+  , snewGameCli    :: !Bool
+      -- ^ Start a new game, overwriting the save file.
   , ssavePrefixCli :: !(Maybe String)
       -- ^ Prefix of the save game file.
   , sfrontendStd   :: !Bool
@@ -251,6 +253,7 @@ defDebugModeCli = DebugModeCli
   , snoDelay = False
   , snoMore = False
   , snoAnim = Nothing
+  , snewGameCli = False
   , ssavePrefixCli = Nothing
   , sfrontendStd = False
   , sdbgMsgCli = False
@@ -263,6 +266,7 @@ instance Binary DebugModeCli where
     put snoDelay
     put snoMore
     put snoAnim
+    put snewGameCli
     put ssavePrefixCli
     put sfrontendStd
     put sdbgMsgCli
@@ -272,6 +276,7 @@ instance Binary DebugModeCli where
     snoDelay <- get
     snoMore <- get
     snoAnim <- get
+    snewGameCli <- get
     ssavePrefixCli <- get
     sfrontendStd <- get
     sdbgMsgCli <- get
