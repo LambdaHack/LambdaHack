@@ -107,7 +107,8 @@ reacquireTgt aid factionAbilities btarget fper = do
                    else closest
           Just TEnemy{} -> closest         -- just pick the closest foe
           Just (TPos pos) | bpos b == pos -> closest  -- already reached pos
-          Just (TPos pos) | not $ bumpableHere cops lvl False pos ->
+          Just (TPos pos)
+            | not $ bumpableHere cops lvl False (asight mk) pos ->
             closest  -- no longer bumpable, even assuming no foes
           Just TPos{} | null visFoes -> returN "TPos" tgt
                                            -- nothing visible, go to pos
@@ -424,8 +425,10 @@ moveStrategy cops aid s mFoe =
     -- Prefer interests, but don't exclude other focused moves.
     scaleFreq 10 $ bestVariant $ onlyInterest $ onlyKeepsDir 2 moveRandomly
   interestIQFreq = interestFreq `mplus` bestVariant moveIQ
-  moveClear    = onlyMoves (not . bumpableHere cops lvl foeVisible) moveFreely
-  moveOpenable = onlyMoves (bumpableHere cops lvl foeVisible) moveFreely
+  moveClear    =
+    onlyMoves (not . bumpableHere cops lvl foeVisible (asight mk)) moveFreely
+  moveOpenable =
+    onlyMoves (bumpableHere cops lvl foeVisible (asight mk)) moveFreely
   -- Ignore previously ignored loot, to prevent repetition.
   moveNewLoot = onlyLoot (onlyKeepsDir 2 moveRandomly)
   moveFreely = moveNewLoot
@@ -441,16 +444,18 @@ moveStrategy cops aid s mFoe =
   friends = actorList (not . isAtWar fact) blid s
   noFriends | asight mk = unoccupied friends
             | otherwise = const True
-  isSensible l = noFriends l && (accessibleHere l
-                                 || bumpableHere cops lvl foeVisible l)
+  isSensible l = noFriends l
+                 && (accessibleHere l
+                     || bumpableHere cops lvl foeVisible (asight mk) l)
   sensible = filter (isSensible . (bpos `shift`)) (moves lxsize)
 
-bumpableHere :: Kind.COps -> Level -> Bool ->  Point -> Bool
-bumpableHere Kind.COps{cotile} lvl foeVisible pos  =
+bumpableHere :: Kind.COps -> Level -> Bool -> Bool -> Point -> Bool
+bumpableHere Kind.COps{cotile} lvl foeVisible asight pos =
   let t = lvl `at` pos  -- cannot hold items, so OK
   in Tile.openable cotile t
-     || -- Try to find hidden doors only if no foe in sight.
-        not foeVisible && Tile.hasFeature cotile F.Suspect t
+     || -- Try to find hidden doors only if no foe in sight and not blind.
+        -- Blind actors forget their search results too quickly.
+        asight && not foeVisible && Tile.hasFeature cotile F.Suspect t
 
 chase :: MonadActionRO m
       => ActorId -> (Point, Bool) -> m (Strategy CmdSerTakeTime)

@@ -449,6 +449,9 @@ switchLevels2 aid bOld ais lidNew posNew = do
   -- Sync the actor time with the level time.
   timeOld <- getsState $ getLocalTime lidOld
   timeLastVisited <- getsState $ getLocalTime lidNew
+  -- This time calculation may cause a double move of a foe of the same
+  -- speed, but this is OK --- the foe didn't have a chance to move
+  -- before, because the arena went inactive, so he moves now one more time.
   let delta = timeAdd (btime bOld) (timeNegate timeOld)
       bNew = bOld { blid = lidNew
                   , btime = timeAdd timeLastVisited delta
