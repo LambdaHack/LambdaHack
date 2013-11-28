@@ -78,7 +78,7 @@ defStateGlobal _sdungeon _sdepth _sfactionD _scops _shigh =
   State
     { _sactorD = EM.empty
     , _sitemD = EM.empty
-    , _stime = timeZero
+    , _stime = timeTurn
     , ..
     }
 
@@ -91,7 +91,7 @@ emptyState =
     , _sactorD = EM.empty
     , _sitemD = EM.empty
     , _sfactionD = EM.empty
-    , _stime = timeZero
+    , _stime = timeTurn
     , _scops = undefined
     , _shigh = HighScore.empty
     }
