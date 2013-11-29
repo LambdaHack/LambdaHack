@@ -18,7 +18,7 @@ cdefs = ContentDef
 campaign,        skirmish, pvp, coop, defense, screensaver, testCoop, testDefense, peekCampaign, peekSkirmish :: ModeKind
 
 campaign = ModeKind
-  { msymbol  = 'r'  -- matches the keypress (with C-)
+  { msymbol  = 'r'
   , mname    = "campaign"
   , mfreq    = [("campaign", 1)]
   , mplayers = playersCampaign
@@ -244,9 +244,6 @@ playerHorror = Player
 
 
 cavesCampaign, cavesCombat, cavesDefense, cavesScreensaver :: Caves
-
--- Cave "dng" means a random choice from caves that can randomly appear;
--- this is the default and the lack of the Escape feature is the default.
 
 cavesCampaign = EM.fromList [ (toEnum (-1), ("caveRogue", Just True))
                             , (toEnum (-2), ("caveRogue", Nothing))

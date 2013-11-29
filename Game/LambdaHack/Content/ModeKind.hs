@@ -10,9 +10,9 @@ import NLP.Miniutter.English ()
 
 import Game.LambdaHack.Common.Misc (Freqs, LevelId)
 
--- | Faction properties that are fixed for a given kind of factions.
+-- | Game mode specification.
 data ModeKind = ModeKind
-  { msymbol  :: !Char     -- ^ a symbol
+  { msymbol  :: !Char     -- ^ a symbol (matches the keypress, if any)
   , mname    :: !Text     -- ^ short description
   , mfreq    :: !Freqs    -- ^ frequency within groups
   , mplayers :: !Players  -- ^ players taking part in the game
@@ -20,8 +20,14 @@ data ModeKind = ModeKind
   }
   deriving Show
 
+-- | Requested cave groups for particular levels. The default is
+-- the "dng" group, which means a random choice from all caves
+-- that can randomly appear. The second component of the pair
+-- is the @Escape@ feature on the level. @True@ means it's represented
+-- by @<@, @False@, by @>@.
 type Caves = EM.EnumMap LevelId (Text, Maybe Bool)
 
+-- | The specification of players for the game mode.
 data Players = Players
   { playersList  :: ![Player]        -- ^ players, both human and computer
   , playersEnemy :: ![(Text, Text)]  -- ^ the initial enmity matrix
@@ -29,6 +35,7 @@ data Players = Players
   }
   deriving (Show, Eq)
 
+-- | Properties of a particular player.
 data Player = Player
   { playerName     :: !Text     -- ^ name of the player
   , playerFaction  :: !Text     -- ^ name of faction(s) the player can control
@@ -36,7 +43,8 @@ data Player = Player
   , playerInitial  :: !Int      -- ^ number of initial members
   , playerAiLeader :: !Bool     -- ^ is the leader under AI control?
   , playerAiOther  :: !Bool     -- ^ are the others under AI control?
-  , playerHuman    :: !Bool     -- ^ is the player controlled by human?
+  , playerHuman    :: !Bool     -- ^ is the player considered human
+                                -- and so, e.g., eligible for a high score?
   , playerUI       :: !Bool     -- ^ does the faction have a UI client
                                 -- (for control or passive observation)
   }
