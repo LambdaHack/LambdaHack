@@ -19,7 +19,7 @@ description:   This is an alpha release of LambdaHack,
                New in this release are screensaver game modes (AI vs AI),
                improved AI (can now climbs stairs, etc.), multiple,
                multi-floor staircases, multiple savefiles, configurable
-               framerate, combat animations and more.
+               framerate and combat animations and more.
                Upcoming features: new and improved frontends, improved AI
                (pathfinding, autoexplore, better ranged combat), dynamic
                light sources, explosions, player action undo/redo, completely

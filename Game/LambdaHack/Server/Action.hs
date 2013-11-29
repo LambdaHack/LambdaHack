@@ -291,13 +291,13 @@ deduceQuits body status = do
       keysInGame = map fst assocsInGame
       assocsSpawn = filter (isSpawnFact cops . snd) assocsInGame
       assocsNotSummon = filter (not . isSummonFact cops . snd) assocsInGame
-      assocsHuman = filter (playerHuman . gplayer . snd) assocsInGame
+      assocsUI = filter (playerUI . gplayer . snd) assocsInGame
   case assocsNotSummon of
-    _ | null assocsHuman ->
-      -- All non-human players left in the game win.
+    _ | null assocsUI ->
+      -- All non-UI players left in the game win.
       mapQuitF status{stOutcome=Conquer} keysInGame
     [] ->
-      -- Only summons remain so all win, human or not, allied or not.
+      -- Only summons remain so all win, UI or human or not, allied or not.
       mapQuitF status{stOutcome=Conquer} keysInGame
     (_, fact1) : rest | null assocsSpawn && all (isAllied fact1 . fst) rest ->
       -- Only one allied team remains in a no-spawners game.
