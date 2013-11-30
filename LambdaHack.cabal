@@ -53,7 +53,7 @@ data-files:    LICENSE, CREDITS, PLAYING.md, README.md,
                Makefile, .travis.yml
 author:        Andres Loeh, Mikolaj Konarski
 maintainer:    Mikolaj Konarski <mikolaj.konarski@funktory.com>
-category:      Game Engine
+category:      Game Engine, Game
 build-type:    Simple
 cabal-version: >= 1.10
 
