@@ -102,7 +102,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ opick
       fenceBounds = (1, 1, cxsize - 2, cysize - 2)
       fence = buildFence hardRockId fenceBounds
   pickedCorTile <- opick ccorridorTile (const True)
-  let addPl (m, pls) (_, (x0, _, x1, _)) | x0 == x1 = return (m, pls)
+  let addPl (m, pls) (_, r) | trivialArea r = return (m, pls)
       addPl (m, pls) (_, r) = do
         (tmap, place) <- buildPlace cops kc pickedCorTile ln depth r
         return (EM.union tmap m, place : pls)

@@ -97,7 +97,7 @@ buildPlace :: Kind.COps         -- ^ the game content
 buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
                     , coplace=Kind.Ops{okind=pokind, opick=popick} }
            CaveKind{..} qhollowFence ln depth r
-           = assert (not (trivialArea r) `blame` r) $ do
+           = assert (not (trivialArea r) `blame` r) $ do  -- space for fence
   qsolidFence <- opick cfillerTile (const True)
   dark <- chanceDeep ln depth cdarkChance
   qkind <- popick "rogue" (placeValid r)

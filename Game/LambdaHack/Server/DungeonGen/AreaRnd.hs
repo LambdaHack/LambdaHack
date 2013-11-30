@@ -30,12 +30,12 @@ mkRoom :: (X, Y)    -- ^ minimum size
        -> Rnd Area
 mkRoom (xm, ym) (x0, y0, x1, y1) = do
   let area0 = (x0, y0, x1 - xm + 1, y1 - ym + 1)
-  assert (validArea area0 `blame` area0) $ do
-    PointXY (rx0, ry0) <- xyInArea area0
-    let area1 = (rx0 + xm - 1, ry0 + ym - 1, x1, y1)
-    assert (validArea area1 `blame` area1) $ do
-      PointXY (rx1, ry1) <- xyInArea area1
-      return (rx0, ry0, rx1, ry1)
+  assert (validArea area0 `blame` area0) skip
+  PointXY (rx0, ry0) <- xyInArea area0
+  let area1 = (rx0 + xm - 1, ry0 + ym - 1, x1, y1)
+  assert (validArea area1 `blame` area1) skip
+  PointXY (rx1, ry1) <- xyInArea area1
+  return (rx0, ry0, rx1, ry1)
 
 -- | Create a void room, i.e., a single point area.
 mkVoidRoom :: Area     -- ^ the area in which to pick the point
