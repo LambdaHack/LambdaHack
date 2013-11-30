@@ -49,7 +49,8 @@ license:       BSD3
 license-file:  LICENSE
 tested-with:   GHC == 7.4.2, GHC == 7.6.1
 data-files:    LICENSE, CREDITS, PLAYING.md, README.md,
-               config.rules.default, config.ui.default, MainMenu.ascii, scores
+               config.rules.default, config.ui.default, MainMenu.ascii, scores,
+               Makefile, .travis.yml
 author:        Andres Loeh, Mikolaj Konarski
 maintainer:    Mikolaj Konarski <mikolaj.konarski@funktory.com>
 category:      Game Engine
