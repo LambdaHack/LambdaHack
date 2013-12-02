@@ -8,7 +8,7 @@ module Game.LambdaHack.Common.Random
     -- * Casting dice
   , RollDice, rollDice, castDice, maxDice, minDice, meanDice
     -- * Casting 2D coordinates
-  , RollDiceXY(..), castDiceXY
+  , RollDiceXY, rollDiceXY, castDiceXY, maxDiceXY, minDiceXY, meanDiceXY
     -- * Casting dependent on depth
   , RollDeep, rollDeep, castDeep, chanceDeep, intToDeep, maxDeep
     -- * Fractional chance
@@ -109,15 +109,31 @@ meanDice (RollDice a' b') =
 
 -- | Dice for rolling a pair of integer parameters pertaining to,
 -- respectively, the X and Y cartesian 2D coordinates.
-data RollDiceXY = RollDiceXY !(RollDice, RollDice)
+data RollDiceXY = RollDiceXY ![RollDice] ![RollDice]
   deriving Show
+
+rollDiceXY :: [(Int, Int)] -> [(Int, Int)] -> RollDiceXY
+rollDiceXY lx ly = RollDiceXY (map (uncurry rollDice) lx)
+                              (map (uncurry rollDice) ly)
 
 -- | Cast the two sets of dice.
 castDiceXY :: RollDiceXY -> Rnd (Int, Int)
-castDiceXY (RollDiceXY (xd, yd)) = do
-  x <- castDice xd
-  y <- castDice yd
-  return (x, y)
+castDiceXY (RollDiceXY lx ly) = do
+  cx <- mapM castDice lx
+  cy <- mapM castDice ly
+  return (sum cx, sum cy)
+
+-- | Maximal value of RollDiceXY.
+maxDiceXY :: RollDiceXY -> (Int, Int)
+maxDiceXY (RollDiceXY lx ly) = (sum (map maxDice lx), sum (map maxDice ly))
+
+-- | Minimal value of RollDiceXY.
+minDiceXY :: RollDiceXY -> (Int, Int)
+minDiceXY (RollDiceXY lx ly) = (sum (map minDice lx), sum (map minDice ly))
+
+-- | Mean value of RollDiceXY.
+meanDiceXY :: RollDiceXY -> (Rational, Rational)
+meanDiceXY (RollDiceXY lx ly) = (sum (map meanDice lx), sum (map meanDice ly))
 
 -- | Dice for parameters scaled with current level depth.
 -- To the result of rolling the first set of dice we add the second,

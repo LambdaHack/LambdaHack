@@ -42,12 +42,12 @@ data CaveKind = CaveKind
 -- Catch caves with not enough space for all the places. Check the size
 -- of the cave descriptions to make sure they fit on screen.
 cvalidate :: [CaveKind] -> [CaveKind]
-cvalidate = L.filter (\ CaveKind{ cgrid = RollDiceXY (gx, gy)
-                                , cminPlaceSize = RollDiceXY (mx, my)
+cvalidate = L.filter (\ CaveKind{ cgrid
+                                , cminPlaceSize
                                 , ..
                                 } ->
-  let (maxGridX, maxGridY) = (maxDice gx, maxDice gy)
-      (maxPlaceSizeX, maxPlaceSizeY) = (maxDice mx,  maxDice my)
+  let (maxGridX, maxGridY) = maxDiceXY cgrid
+      (maxPlaceSizeX, maxPlaceSizeY) = maxDiceXY cminPlaceSize
       xborder = if maxGridX == 1 then 5 else 3
       yborder = if maxGridX == 1 then 5 else 3
   in T.length cname <= 25
