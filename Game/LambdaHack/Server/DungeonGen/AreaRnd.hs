@@ -38,10 +38,10 @@ mkRoom (xm, ym) (x0, y0, x1, y1) = do
   PointXY (rx1, ry1) <- xyInArea area1
   return (rx0, ry0, rx1, ry1)
 
--- | Create a void room, i.e., a single point area.
-mkVoidRoom :: Area     -- ^ the area in which to pick the point
+-- | Create a void room, i.e., a single point area within the designated area.
+mkVoidRoom :: Area
            -> Rnd Area
-mkVoidRoom area = assert (validArea area `blame` area) $ do
+mkVoidRoom area = do
   PointXY (ry, rx) <- xyInArea area
   return (ry, rx, ry, rx)
 

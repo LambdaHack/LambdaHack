@@ -20,6 +20,7 @@ import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Server.DungeonGen.AreaRnd
 import Game.LambdaHack.Server.DungeonGen.Place hiding (TileMapXY)
 import qualified Game.LambdaHack.Server.DungeonGen.Place as Place
+import Game.LambdaHack.Utils.Assert
 
 -- | The map of tile kinds in a cave.
 -- The map is sparse. The default tile that eventually fills the empty spaces
@@ -89,9 +90,10 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ opick
                      rv <- chance cvoidChance
                      r' <- let -- Reserved for corridors and the outer fence.
                                 innerArea = expand (-1) r
-                           in if rv && i `notElem` (mandatory1 ++ mandatory2)
-                           then mkVoidRoom innerArea
-                           else mkRoom minPlaceSize innerArea
+                           in assert (validArea innerArea)
+                              $ if rv && i `notElem` (mandatory1 ++ mandatory2)
+                                then fmap Left $ mkVoidRoom innerArea
+                                else fmap Right $ mkRoom minPlaceSize innerArea
                      return (i, r')) gs
   connects <- connectGrid lgrid
   addedConnects <-
@@ -101,16 +103,17 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ opick
     else return []
   let allConnects = L.union connects addedConnects  -- no duplicates
       places = EM.fromList places0
-  cs <- mapM (\ (p0, p1) -> do
-                 let r0 = expand (-1) $ places EM.! p0  -- for fences
-                     r1 = expand (-1) $ places EM.! p1
-                 connectPlaces r0 r1) allConnects
+  cs <- mapM (\(p0, p1) -> do
+                let shrinkForFence = expand (-1) . either id id
+                    r0 = shrinkForFence $ places EM.! p0
+                    r1 = shrinkForFence $ places EM.! p1
+                connectPlaces r0 r1) allConnects
   let hardRockId = ouniqGroup "hard rock"
       fenceBounds = (1, 1, cxsize - 2, cysize - 2)
       fence = buildFence hardRockId fenceBounds
   pickedCorTile <- opick ccorridorTile (const True)
-  let addPl (m, pls) (_, r) | trivialArea r = return (m, pls)
-      addPl (m, pls) (_, r) = do
+  let addPl (m, pls) (_, Left _) = return (m, pls)  -- no room
+      addPl (m, pls) (_, Right r) = do
         (tmap, place) <- buildPlace cops kc pickedCorTile ln depth r
         return (EM.union tmap m, place : pls)
   (lplaces, dplaces) <- foldM addPl (fence, []) places0
