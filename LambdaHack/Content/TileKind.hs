@@ -39,7 +39,7 @@ pillar = TileKind
   , tname    = "pillar"
   , tfreq    = [ ("cachable", 70)
                , ("litLegend", 100), ("darkLegend", 100)
-               , ("noiseSet", 55), ("combatSet", 5) ]
+               , ("noiseSet", 55), ("combatSet", 10) ]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfeature = []
