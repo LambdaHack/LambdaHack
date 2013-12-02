@@ -155,7 +155,7 @@ meleeSer source target = do
           flavour <- getsServer sflavour
           discoRev <- getsServer sdiscoRev
           let kind = okind h2hKind
-              effect = fmap (maxDice . fst) (ieffect kind)
+              effect = fmap maxDeep (ieffect kind)
           return ( Nothing
                  , buildItem flavour discoRev h2hKind kind effect )
     let performHit block = do

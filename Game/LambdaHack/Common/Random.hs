@@ -10,7 +10,7 @@ module Game.LambdaHack.Common.Random
     -- * Casting 2D coordinates
   , RollDiceXY(..), castDiceXY
     -- * Casting dependent on depth
-  , RollDeep, castDeep, chanceDeep, intToDeep, maxDeep
+  , RollDeep, rollDeep, castDeep, chanceDeep, intToDeep, maxDeep
     -- * Fractional chance
   , Chance, chance
     -- * Run using the IO RNG
@@ -122,12 +122,16 @@ castDiceXY (RollDiceXY (xd, yd)) = do
 -- | Dice for parameters scaled with current level depth.
 -- To the result of rolling the first set of dice we add the second,
 -- scaled in proportion to current depth divided by maximal dungeon depth.
-type RollDeep = (RollDice, RollDice)
+data RollDeep = RollDeep !RollDice !RollDice
+  deriving Show
+
+rollDeep :: (Int, Int) -> (Int, Int) -> RollDeep
+rollDeep (a, b) (c, d) = RollDeep (rollDice a b) (rollDice c d)
 
 -- | Cast dice scaled with current level depth.
 -- Note that at the first level, the scaled dice are always ignored.
 castDeep :: Int -> Int -> RollDeep -> Rnd Int
-castDeep n' depth' (d1, d2) = do
+castDeep n' depth' (RollDeep d1 d2) = do
   let n = abs n'
       depth = abs depth'
   assert (n > 0 && n <= depth `blame` "invalid current depth for dice rolls"
@@ -147,15 +151,15 @@ chanceDeep n' depth' deep = do
 
 -- | Generate a @RollDeep@ that always gives a constant integer.
 intToDeep :: Int -> RollDeep
-intToDeep 0  = (RollDice 0 0, RollDice 0 0)
+intToDeep 0  = RollDeep (RollDice 0 0) (RollDice 0 0)
 intToDeep n' = let n = toEnum n'
                in if n > maxBound || n < minBound
                   then assert `failure` "Deep out of bound" `with` n'
-                  else (RollDice n 1, RollDice 0 0)
+                  else RollDeep (RollDice n 1) (RollDice 0 0)
 
 -- | Maximal value of scaled dice.
 maxDeep :: RollDeep -> Int
-maxDeep (d1, d2) = maxDice d1 + maxDice d2
+maxDeep (RollDeep d1 d2) = maxDice d1 + maxDice d2
 
 -- | Fractional chance.
 type Chance = Rational

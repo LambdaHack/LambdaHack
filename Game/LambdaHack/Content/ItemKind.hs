@@ -19,8 +19,8 @@ data ItemKind = ItemKind
   , iflavour     :: ![Flavour]    -- ^ possible flavours
   , ieffect      :: !(Effect RollDeep)  -- ^ the effect when activated
   , icount       :: !RollDeep     -- ^ created in that quantify
-  , iverbApply   :: !MU.Part  -- ^ the verb for applying and possibly combat
-  , iverbProject :: !MU.Part  -- ^ the verb for projecting
+  , iverbApply   :: !MU.Part      -- ^ the verb for applying and combat
+  , iverbProject :: !MU.Part      -- ^ the verb for projecting
   , iweight      :: !Int          -- ^ weight in grams
   , itoThrow     :: !Int          -- ^ percentage bonus or malus to throw speed
   }
