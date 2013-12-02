@@ -28,6 +28,7 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -185,7 +186,8 @@ populateDungeon = do
         case (EM.minViewWithKey dungeon, EM.maxViewWithKey dungeon) of
           (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
           _ -> assert `failure` "empty dungeon" `with` dungeon
-      needInitialCrew = EM.assocs factionD
+      needInitialCrew = filter ((> 0 ) . playerInitial . gplayer . snd)
+                        $ EM.assocs factionD
       getEntryLevel (_, fact) =
         max minD $ min maxD $ playerEntry $ gplayer fact
       arenas = ES.toList $ ES.fromList $ map getEntryLevel needInitialCrew
@@ -218,22 +220,27 @@ populateDungeon = do
 -- | Find starting postions for all factions. Try to make them distant
 -- from each other. If only one faction, also move it away from any stairs.
 findEntryPoss :: Kind.COps -> Level -> Int -> Rnd [Point]
-findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lysize, lstair} k =
+findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lysize, lstair} k = do
   let factionDist = max lxsize lysize - 5
       dist poss cmin l _ = all (\pos -> chessDist lxsize l pos > cmin) poss
       tryFind _ 0 = return []
       tryFind ps n = do
-        np <- findPosTry 40 ltile
-                [ dist ps factionDist
-                , dist ps $ 2 * factionDist `div` 3
-                , dist ps $ factionDist `div` 2
+        np <- findPosTry 1000 ltile  -- try really hard, for skirmish fairness
+                [ dist ps $ factionDist `div` 2
                 , dist ps $ factionDist `div` 3
                 , dist ps $ factionDist `div` 4
-                , dist ps $ factionDist `div` 6
+                , dist ps $ factionDist `div` 8
+                , dist ps $ factionDist `div` 16
                 , const (Tile.hasFeature cotile F.CanActor)
                 ]
         nps <- tryFind (np : ps) (n - 1)
         return $ np : nps
-      stairPoss | k == 1 = fst lstair ++ snd lstair
-                | otherwise = []
-  in tryFind stairPoss k
+      stairPoss = fst lstair ++ snd lstair
+      middlePos = toPoint lxsize $ PointXY (lxsize `div` 2, lysize `div` 2)
+  assert (k > 0 && factionDist > 0) skip
+  case k of
+    1 -> tryFind stairPoss k
+    2 -> -- Make sure the first faction's pos is not chosen in the middle.
+         tryFind [middlePos] k
+    _ | k > 2 -> tryFind [] k
+    _ -> assert `failure` k
