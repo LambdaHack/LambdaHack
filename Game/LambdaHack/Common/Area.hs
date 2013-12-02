@@ -34,19 +34,16 @@ insideXY (PointXY (x, y)) (x0, y0, x1, y1) =
 normalizeArea :: Area -> Area
 normalizeArea (x0, y0, x1, y1) = (min x0 x1, min y0 y1, max x0 x1, max y0 y1)
 
--- | Divide uniformly a larger area into the given number of smaller areas.
+-- | Divide uniformly a larger area into the given number of smaller areas
+-- overlapping at the edges.
 grid :: (X, Y) -> Area -> [(PointXY, Area)]
 grid (nx, ny) (x0, y0, x1, y1) =
-  let xd = x1 - x0
+  let xd = x1 - x0  -- not +1, because we need overlap
       yd = y1 - y0
-      -- Make sure that in caves not filled with rock, there is a passage
-      -- across the cave, even if a single room blocks most of the cave.
-      xborder = if nx == 1 then 3 else 2
-      yborder = if ny == 1 then 3 else 2
-  in [ (PointXY (x, y), (x0 + (xd * x `div` nx) + xborder,
-                         y0 + (yd * y `div` ny) + yborder,
-                         x0 + (xd * (x + 1) `div` nx) - xborder,
-                         y0 + (yd * (y + 1) `div` ny) - yborder))
+  in [ (PointXY (x, y), (x0 + xd * x `div` nx,
+                         y0 + yd * y `div` ny,
+                         x0 + xd * (x + 1) `div` nx,
+                         y0 + yd * (y + 1) `div` ny))
      | x <- [0..nx-1], y <- [0..ny-1] ]
 
 -- | Checks if it's an area with at least one field.
@@ -58,5 +55,5 @@ trivialArea :: Area -> Bool
 trivialArea (x0, y0, x1, y1) = x0 == x1 && y0 == y1
 
 -- | Enlarge (or shrink) the given area on all fours sides by the amount.
-expand :: Area -> Int -> Area
-expand (x0, y0, x1, y1) k = (x0 - k, y0 - k, x1 + k, y1 + k)
+expand :: Int -> Area -> Area
+expand k (x0, y0, x1, y1) = (x0 - k, y0 - k, x1 + k, y1 + k)

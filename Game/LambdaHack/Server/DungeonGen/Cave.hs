@@ -74,17 +74,24 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ opick
           ln depth ci = do
   let kc@CaveKind{..} = okind ci
   lgrid@(gx, gy) <- castDiceXY cgrid
-  lminplace <- castDiceXY cminPlaceSize
-  let gs = grid lgrid (0, 0, cxsize - 1, cysize - 1)
+  -- Make sure that in caves not filled with rock, there is a passage
+  -- across the cave, even if a single room blocks most of the cave.
+  let fullArea = (0, 0, cxsize - 1, cysize - 1)
+      area | gx == 1 || gy == 1 = expand (-1) fullArea
+           | otherwise = fullArea
+      gs = grid lgrid area
+  minPlaceSize <- castDiceXY cminPlaceSize
   mandatory1 <- replicateM (cnonVoidMin `div` 2) $
                   xyInArea (0, 0, gx `div` 3, gy - 1)
   mandatory2 <- replicateM (cnonVoidMin `divUp` 2) $
                   xyInArea (gx - 1 - (gx `div` 3), 0, gx - 1, gy - 1)
   places0 <- mapM (\ (i, r) -> do
                      rv <- chance cvoidChance
-                     r' <- if rv && i `notElem` (mandatory1 ++ mandatory2)
-                           then mkVoidRoom r
-                           else mkRoom lminplace r
+                     r' <- let -- Reserved for corridors and the outer fence.
+                                innerArea = expand (-1) r
+                           in if rv && i `notElem` (mandatory1 ++ mandatory2)
+                           then mkVoidRoom innerArea
+                           else mkRoom minPlaceSize innerArea
                      return (i, r')) gs
   connects <- connectGrid lgrid
   addedConnects <-
@@ -95,8 +102,8 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ opick
   let allConnects = L.union connects addedConnects  -- no duplicates
       places = EM.fromList places0
   cs <- mapM (\ (p0, p1) -> do
-                 let r0 = places EM.! p0
-                     r1 = places EM.! p1
+                 let r0 = expand (-1) $ places EM.! p0  -- for fences
+                     r1 = expand (-1) $ places EM.! p1
                  connectPlaces r0 r1) allConnects
   let hardRockId = ouniqGroup "hard rock"
       fenceBounds = (1, 1, cxsize - 2, cysize - 2)

@@ -28,7 +28,7 @@ rect = PlaceKind  -- Valid for any nonempty area, hence low frequency.
 pillar = PlaceKind
   { psymbol  = 'p'
   , pname    = "pillar room"
-  , pfreq    = [("rogue", 1000)]
+  , pfreq    = [("rogue", 1000)]  -- larger rooms require support pillars
   , pcover   = CStretch
   , pfence   = FNone
   , ptopLeft = [ "-----"
@@ -47,8 +47,7 @@ pillarC = pillar
                ]
   }
 pillar3 = pillar
-  { pfreq    = [("rogue", 200)]
-  , ptopLeft = [ "-----"
+  { ptopLeft = [ "-----"
                , "|&.O."
                , "|...."
                , "|O..."

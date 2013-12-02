@@ -65,25 +65,26 @@ placeValid :: Area       -- ^ the area to fill
            -> PlaceKind  -- ^ the place kind to construct
            -> Bool
 placeValid r PlaceKind{..} =
-  let (x0, y0, x1, y1) = expandFence pfence r
+  let area@(x0, y0, x1, y1) = expandFence pfence r
       dx = x1 - x0 + 1
       dy = y1 - y0 + 1
       dxcorner = case ptopLeft of [] -> 0 ; l : _ -> T.length l
       dycorner = L.length ptopLeft
       wholeOverlapped d dcorner = d > 1 && dcorner > 1 &&
                                   (d - 1) `mod` (2 * (dcorner - 1)) == 0
-  in case pcover of
-    CAlternate -> wholeOverlapped dx dxcorner &&
-                  wholeOverlapped dy dycorner
-    _          -> dx >= 2 * dxcorner - 1 &&
-                  dy >= 2 * dycorner - 1
+  in validArea area  -- for somer fence types it can be invalid
+     && case pcover of
+       CAlternate -> wholeOverlapped dx dxcorner &&
+                     wholeOverlapped dy dycorner
+       _          -> dx >= 2 * dxcorner - 1 &&
+                     dy >= 2 * dycorner - 1
 
 -- | Modify available room area according to fence type.
 expandFence :: Fence -> Area -> Area
 expandFence fence r = case fence of
-  FWall  -> r
-  FFloor -> expand r (-1)
-  FNone  -> expand r 1
+  FWall  -> expand (-1) r
+  FFloor -> expand (-1) r
+  FNone  -> r
 
 -- | Given a few parameters, roll and construct a 'Place' datastructure
 -- and fill a cave section acccording to it.
@@ -92,12 +93,11 @@ buildPlace :: Kind.COps         -- ^ the game content
            -> Kind.Id TileKind  -- ^ fence tile, if fence hollow
            -> Int               -- ^ current level depth
            -> Int               -- ^ maximum depth
-           -> Area              -- ^ interior area of the place
+           -> Area              -- ^ whole area of the place, fence included
            -> Rnd (TileMapXY, Place)
 buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
                     , coplace=Kind.Ops{okind=pokind, opick=popick} }
-           CaveKind{..} qhollowFence ln depth r
-           = assert (not (trivialArea r) `blame` r) $ do  -- space for fence
+           CaveKind{..} qhollowFence ln depth r = do
   qsolidFence <- opick cfillerTile (const True)
   dark <- chanceDeep ln depth cdarkChance
   qkind <- popick "rogue" (placeValid r)

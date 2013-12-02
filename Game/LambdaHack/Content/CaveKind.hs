@@ -47,9 +47,12 @@ cvalidate = L.filter (\ CaveKind{ cgrid
                                 , ..
                                 } ->
   let (maxGridX, maxGridY) = maxDiceXY cgrid
+      (minPlaceSizeX, minPlaceSizeY) = minDiceXY cminPlaceSize
       (maxPlaceSizeX, maxPlaceSizeY) = maxDiceXY cminPlaceSize
-      xborder = if maxGridX == 1 then 5 else 3
-      yborder = if maxGridX == 1 then 5 else 3
-  in T.length cname <= 25
-     && (maxGridX * (xborder + maxPlaceSizeX) + 1 > cxsize ||
-         maxGridY * (yborder + maxPlaceSizeY) + 1 > cysize))
+      xborder = if maxGridX == 1 then 3 else 1
+      yborder = if maxGridX == 1 then 3 else 1
+  in T.length cname > 25
+     || minPlaceSizeX < 1
+     || minPlaceSizeY < 1
+     || maxGridX * (maxPlaceSizeX + xborder) >= cxsize
+     || maxGridY * (maxPlaceSizeY + yborder) >= cysize)

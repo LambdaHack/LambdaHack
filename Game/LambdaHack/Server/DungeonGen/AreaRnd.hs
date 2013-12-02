@@ -29,6 +29,7 @@ mkRoom :: (X, Y)    -- ^ minimum size
        -> Area      -- ^ the containing area, not the room itself
        -> Rnd Area
 mkRoom (xm, ym) (x0, y0, x1, y1) = do
+  assert (xm <= x1 - x0 + 1 && ym <= y1 - y0 + 1) skip
   let area0 = (x0, y0, x1 - xm + 1, y1 - ym + 1)
   assert (validArea area0 `blame` area0) skip
   PointXY (rx0, ry0) <- xyInArea area0
@@ -116,13 +117,13 @@ mkCorridor hv (PointXY (x0, y0)) (PointXY (x1, y1)) b = do
     Horiz -> return $ map PointXY [(x0, y0), (rx, y0), (rx, y1), (x1, y1)]
     Vert  -> return $ map PointXY [(x0, y0), (x0, ry), (x1, ry), (x1, y1)]
 
--- TODO: assert that sx1 <= tx0, etc.
--- | Try to connect two places with a corridor.
+-- | Try to connect two interiors of places with a corridor.
 -- Choose entrances at least 4 or 3 tiles distant from the edges, if the place
 -- is big enough. Note that with @pfence == FNone@, the area considered
--- is the interior of the place, without the outermost tiles.
+-- is the strict interior of the place, without the outermost tiles.
 connectPlaces :: Area -> Area -> Rnd Corridor
 connectPlaces sa@(_, _, sx1, sy1) ta@(tx0, ty0, _, _) = do
+  assert (sx1 < tx0 - 3 || sy1 < ty0 - 3 `blame` (sa, ta)) skip
   let trim (x0, y0, x1, y1) =
         let trim4 (v0, v1) | v1 - v0 < 6 = (v0, v1)
                            | v1 - v0 < 8 = (v0 + 3, v1 - 3)
