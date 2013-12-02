@@ -20,6 +20,7 @@ data CaveKind = CaveKind
   , cysize          :: !Y           -- ^ Y size of the whole cave
   , cgrid           :: !RollDiceXY  -- ^ the dimensions of the grid of places
   , cminPlaceSize   :: !RollDiceXY  -- ^ minimal size of places
+  , cmaxPlaceSize   :: !RollDiceXY  -- ^ maximal size of places
   , cdarkChance     :: !RollDeep    -- ^ the chance a place is dark
   , cauxConnects    :: !Rational    -- ^ a proportion of extra connections
   , cvoidChance     :: !Chance      -- ^ the chance of not creating a place
@@ -44,15 +45,19 @@ data CaveKind = CaveKind
 cvalidate :: [CaveKind] -> [CaveKind]
 cvalidate = L.filter (\ CaveKind{ cgrid
                                 , cminPlaceSize
+                                , cmaxPlaceSize
                                 , ..
                                 } ->
   let (maxGridX, maxGridY) = maxDiceXY cgrid
-      (minPlaceSizeX, minPlaceSizeY) = minDiceXY cminPlaceSize
-      (maxPlaceSizeX, maxPlaceSizeY) = maxDiceXY cminPlaceSize
+      (minMinSizeX, minMinSizeY) = minDiceXY cminPlaceSize
+      (maxMinSizeX, maxMinSizeY) = maxDiceXY cminPlaceSize
+      (minMaxSizeX, minMaxSizeY) = minDiceXY cmaxPlaceSize
       xborder = if maxGridX == 1 then 3 else 1
       yborder = if maxGridX == 1 then 3 else 1
   in T.length cname > 25
-     || minPlaceSizeX < 1
-     || minPlaceSizeY < 1
-     || maxGridX * (maxPlaceSizeX + xborder) >= cxsize
-     || maxGridY * (maxPlaceSizeY + yborder) >= cysize)
+     || minMinSizeX < 1
+     || minMinSizeY < 1
+     || minMaxSizeX < maxMinSizeX
+     || minMaxSizeY < maxMinSizeY
+     || maxGridX * (maxMinSizeX + xborder) >= cxsize
+     || maxGridY * (maxMinSizeY + yborder) >= cysize)

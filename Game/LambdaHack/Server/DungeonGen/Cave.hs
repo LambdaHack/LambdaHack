@@ -82,6 +82,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ opick
            | otherwise = fullArea
       gs = grid lgrid area
   minPlaceSize <- castDiceXY cminPlaceSize
+  maxPlaceSize <- castDiceXY cmaxPlaceSize
   mandatory1 <- replicateM (cnonVoidMin `div` 2) $
                   xyInArea (0, 0, gx `div` 3, gy - 1)
   mandatory2 <- replicateM (cnonVoidMin `divUp` 2) $
@@ -93,7 +94,8 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ opick
                            in assert (validArea innerArea)
                               $ if rv && i `notElem` (mandatory1 ++ mandatory2)
                                 then fmap Left $ mkVoidRoom innerArea
-                                else fmap Right $ mkRoom minPlaceSize innerArea
+                                else fmap Right $ mkRoom minPlaceSize
+                                                         maxPlaceSize innerArea
                      return (i, r')) gs
   connects <- connectGrid lgrid
   addedConnects <-

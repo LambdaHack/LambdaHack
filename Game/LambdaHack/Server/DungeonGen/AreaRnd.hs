@@ -26,14 +26,19 @@ xyInArea (x0, y0, x1, y1) = do
 
 -- | Create a random room according to given parameters.
 mkRoom :: (X, Y)    -- ^ minimum size
+       -> (X, Y)    -- ^ maximum size
        -> Area      -- ^ the containing area, not the room itself
        -> Rnd Area
-mkRoom (xm, ym) (x0, y0, x1, y1) = do
+mkRoom (xm, ym) (xM, yM) (x0, y0, x1, y1) = do
   assert (xm <= x1 - x0 + 1 && ym <= y1 - y0 + 1) skip
   let area0 = (x0, y0, x1 - xm + 1, y1 - ym + 1)
   assert (validArea area0 `blame` area0) skip
   PointXY (rx0, ry0) <- xyInArea area0
-  let area1 = (rx0 + xm - 1, ry0 + ym - 1, x1, y1)
+  let sX = rx0 + xm - 1
+      sY = ry0 + ym - 1
+      eX = min x1 (rx0 + xM - 1)
+      eY = min y1 (ry0 + yM - 1)
+      area1 = (sX, sY, eX, eY)
   assert (validArea area1 `blame` area1) skip
   PointXY (rx1, ry1) <- xyInArea area1
   return (rx0, ry0, rx1, ry1)

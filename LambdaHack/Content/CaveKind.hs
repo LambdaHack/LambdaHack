@@ -27,6 +27,8 @@ rogue = CaveKind
   , cysize        = snd normalLevelBound + 1
   , cgrid         = rollDiceXY [(2, 3)] [(2, 2)]
   , cminPlaceSize = rollDiceXY [(2, 2), (2, 1)] [(4, 1)]
+  , cmaxPlaceSize = rollDiceXY [(fst normalLevelBound, 1)]
+                               [(snd normalLevelBound, 1)]
   , cdarkChance   = rollDeep (1, 54) (0, 0)
   , cauxConnects  = 1%3
   , cvoidChance   = 1%5
