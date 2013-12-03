@@ -1,7 +1,7 @@
 {-# LANGUAGE RankNTypes #-}
 -- | Generation of places from place kinds.
 module Game.LambdaHack.Server.DungeonGen.Place
-  ( TileMapXY, Place(..), placeValid, buildFence, buildPlace
+  ( TileMapXY, Place(..), placeCheck, buildFence, buildPlace
   ) where
 
 import Data.Binary
@@ -61,11 +61,11 @@ type TileMapXY = EM.EnumMap PointXY (Kind.Id TileKind)
 -- overlap between consecutive coners and no trimming.
 -- For other tiling methods, check that the area is large enough for tiling
 -- the corner twice in each direction, with a possible one row/column overlap.
-placeValid :: Area       -- ^ the area to fill
+placeCheck :: Area       -- ^ the area to fill
            -> PlaceKind  -- ^ the place kind to construct
            -> Bool
-placeValid r PlaceKind{..} =
-  let area@(x0, y0, x1, y1) = expandFence pfence r
+placeCheck r PlaceKind{..} =
+  let area@(x0, y0, x1, y1) = expandFenceCheck pfence r
       dx = x1 - x0 + 1
       dy = y1 - y0 + 1
       dxcorner = case ptopLeft of [] -> 0 ; l : _ -> T.length l
@@ -79,11 +79,20 @@ placeValid r PlaceKind{..} =
        _          -> dx >= 2 * dxcorner - 1 &&
                      dy >= 2 * dycorner - 1
 
--- | Modify available room area according to fence type.
+-- | Modify available room area according to fence type, for checking
+-- if the room fits in an area.
+expandFenceCheck :: Fence -> Area -> Area
+expandFenceCheck fence r = case fence of
+  FWall  -> expand (-1) r
+  FFloor -> expand (-1) r
+  FNone  -> r
+
+-- | Modify available room area according to fence type, for connecting
+-- rooms.
 expandFence :: Fence -> Area -> Area
 expandFence fence r = case fence of
   FWall  -> expand (-1) r
-  FFloor -> expand (-1) r
+  FFloor -> expand (-2) r  -- treat outer walls as part of the room
   FNone  -> r
 
 -- | Given a few parameters, roll and construct a 'Place' datastructure
@@ -100,7 +109,7 @@ buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
            CaveKind{..} qhollowFence ln depth r = do
   qsolidFence <- opick cfillerTile (const True)
   dark <- chanceDeep ln depth cdarkChance
-  qkind <- popick "rogue" (placeValid r)
+  qkind <- popick "rogue" (placeCheck r)
   let kr = pokind qkind
       qlegend = if dark then cdarkLegendTile else clitLegendTile
       qseen = False
