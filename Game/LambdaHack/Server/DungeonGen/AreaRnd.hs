@@ -47,7 +47,10 @@ mkRoom (xm, ym) (xM, yM) (x0, y0, x1, y1) = do
 mkVoidRoom :: Area
            -> Rnd Area
 mkVoidRoom area = do
-  PointXY (ry, rx) <- xyInArea area
+  let shrunk = expand (-1) area
+      -- Pass corridors closer to the middle of the grid area, if possible.
+      core = if validArea shrunk then shrunk else area
+  PointXY (ry, rx) <- xyInArea core
   return (ry, rx, ry, rx)
 
 -- Choosing connections between areas in a grid
@@ -128,7 +131,8 @@ mkCorridor hv (PointXY (x0, y0)) (PointXY (x1, y1)) b = do
 -- is the strict interior of the place, without the outermost tiles.
 connectPlaces :: Area -> Area -> Rnd Corridor
 connectPlaces sa@(_, _, sx1, sy1) ta@(tx0, ty0, _, _) = do
-  assert (sx1 < tx0 - 3 || sy1 < ty0 - 3 `blame` (sa, ta)) skip
+  assert (validArea sa && validArea ta `blame` (sa, ta)) skip
+  assert (sx1 < tx0 - 1 || sy1 < ty0 - 1 `blame` (sa, ta)) skip
   let trim (x0, y0, x1, y1) =
         let trim4 (v0, v1) | v1 - v0 < 6 = (v0, v1)
                            | v1 - v0 < 8 = (v0 + 3, v1 - 3)

@@ -38,6 +38,7 @@ data CaveKind = CaveKind
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 
+-- TODO: check many things, e.g., if all items and actors fit in the dungeon.
 -- | Filter a list of kinds, passing through only the incorrect ones, if any.
 --
 -- Catch caves with not enough space for all the places. Check the size

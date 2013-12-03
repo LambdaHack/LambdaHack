@@ -90,7 +90,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ opick
   places0 <- mapM (\ (i, r) -> do
                      rv <- chance cvoidChance
                      r' <- let -- Reserved for corridors and the outer fence.
-                                innerArea = expand (-1) r
+                               innerArea = expand (-1) r
                            in assert (validArea innerArea)
                               $ if rv && i `notElem` (mandatory1 ++ mandatory2)
                                 then fmap Left $ mkVoidRoom innerArea
@@ -106,7 +106,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ opick
   let allConnects = L.union connects addedConnects  -- no duplicates
       places = EM.fromList places0
   cs <- mapM (\(p0, p1) -> do
-                let shrinkForFence = expand (-1) . either id id
+                let shrinkForFence = either id $ expand (-1)
                     r0 = shrinkForFence $ places EM.! p0
                     r1 = shrinkForFence $ places EM.! p1
                 connectPlaces r0 r1) allConnects
