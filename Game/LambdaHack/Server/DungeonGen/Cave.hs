@@ -89,7 +89,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ opick
                   xyInArea (gx - 1 - (gx `div` 3), 0, gx - 1, gy - 1)
   places0 <- mapM (\ (i, r) -> do
                      rv <- chance cvoidChance
-                     r' <- let -- Reserved for corridors and the outer fence.
+                     r' <- let -- Reserved for corridors and the global fence.
                                innerArea = expand (-1) r
                            in assert (validArea innerArea)
                               $ if rv && i `notElem` (mandatory1 ++ mandatory2)

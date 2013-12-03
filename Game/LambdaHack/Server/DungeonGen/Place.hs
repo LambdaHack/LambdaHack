@@ -65,7 +65,7 @@ placeCheck :: Area       -- ^ the area to fill
            -> PlaceKind  -- ^ the place kind to construct
            -> Bool
 placeCheck r PlaceKind{..} =
-  let area@(x0, y0, x1, y1) = expandFenceCheck pfence r
+  let area@(x0, y0, x1, y1) = interiorArea pfence r
       dx = x1 - x0 + 1
       dy = y1 - y0 + 1
       dxcorner = case ptopLeft of [] -> 0 ; l : _ -> T.length l
@@ -79,20 +79,15 @@ placeCheck r PlaceKind{..} =
        _          -> dx >= 2 * dxcorner - 1 &&
                      dy >= 2 * dycorner - 1
 
--- | Modify available room area according to fence type, for checking
--- if the room fits in an area.
-expandFenceCheck :: Fence -> Area -> Area
-expandFenceCheck fence r = case fence of
+-- | Calculate interior room area according to fence type, based on the
+-- total area for the room and it's fence. This is used for checking
+-- if the room fits in the area, for digging up the place and the fence
+-- and for deciding if the room is dark or lit later in the dungeon
+-- generation process (e.g., for stairs).
+interiorArea :: Fence -> Area -> Area
+interiorArea fence r = case fence of
   FWall  -> expand (-1) r
   FFloor -> expand (-1) r
-  FNone  -> r
-
--- | Modify available room area according to fence type, for connecting
--- rooms.
-expandFence :: Fence -> Area -> Area
-expandFence fence r = case fence of
-  FWall  -> expand (-1) r
-  FFloor -> expand (-2) r  -- treat outer walls as part of the room
   FNone  -> r
 
 -- | Given a few parameters, roll and construct a 'Place' datastructure
@@ -113,7 +108,7 @@ buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
   let kr = pokind qkind
       qlegend = if dark then cdarkLegendTile else clitLegendTile
       qseen = False
-      qarea = expandFence (pfence kr) r
+      qarea = interiorArea (pfence kr) r
       place = assert (validArea qarea `blame` qarea) Place {..}
   legend <- olegend cotile qlegend
   let xlegend = EM.insert 'X' qhollowFence legend
@@ -159,9 +154,14 @@ digPlace Place{..} kr legend =
 tilePlace :: Area                           -- ^ the area to fill
           -> PlaceKind                      -- ^ the place kind to construct
           -> EM.EnumMap PointXY Char
-tilePlace (x0, y0, x1, y1) pl@PlaceKind{..} =
-  let dx = x1 - x0 + 1
-      dy = y1 - y0 + 1
+tilePlace area@(x0, y0, x1, y1) pl@PlaceKind{..} =
+  let xwidth = x1 - x0 + 1
+      ywidth = y1 - y0 + 1
+      dxcorner = case ptopLeft of
+        [] -> assert `failure` (area, pl)
+        l : _ -> T.length l
+      (dx, dy) = assert (xwidth >= dxcorner && ywidth >= length ptopLeft
+                         `blame` (area, pl)) (xwidth, ywidth)
       fromX (x, y) = L.map PointXY $ L.zip [x..] (repeat y)
       fillInterior :: (forall a. Int -> [a] -> [a]) -> [(PointXY, Char)]
       fillInterior f =
@@ -182,7 +182,7 @@ tilePlace (x0, y0, x1, y1) pl@PlaceKind{..} =
           in fillInterior tile
         CStretch ->
           let stretch :: Int -> [a] -> [a]
-              stretch _ []  = assert `failure` "nothing to streth" `with` pl
+              stretch _ []  = assert `failure` "nothing to stretch" `with` pl
               stretch d pat = tileReflect d (pat ++ L.repeat (L.last pat))
           in fillInterior stretch
         CReflect ->
