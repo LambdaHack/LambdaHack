@@ -129,10 +129,14 @@ mkCorridor hv (PointXY (x0, y0)) (PointXY (x1, y1)) b = do
 -- Choose entrances at least 4 or 3 tiles distant from the edges, if the place
 -- is big enough. Note that with @pfence == FNone@, the area considered
 -- is the strict interior of the place, without the outermost tiles.
-connectPlaces :: Area -> Area -> Rnd Corridor
-connectPlaces sa@(_, _, sx1, sy1) ta@(tx0, ty0, _, _) = do
+connectPlaces :: (Area, Area) -> (Area, Area) -> Rnd Corridor
+connectPlaces (sa@(_, _, sx1, sy1), so@(_, _, sox1, soy1))
+              (ta@(tx0, ty0, _, _), to@(tox0, toy0, _, _)) = do
   assert (validArea sa && validArea ta `blame` (sa, ta)) skip
-  assert (sx1 < tx0 - 1 || sy1 < ty0 - 1 `blame` (sa, ta)) skip
+  assert (validArea so && validArea to `blame` (so, to)) skip
+  assert (sx1 <= tx0  || sy1 <= ty0  `blame` (sa, ta)) skip
+  assert (sx1 <= sox1 || sy1 <= soy1 `blame` (sa, so)) skip
+  assert (tx0 >= tox0 || ty0 >= toy0 `blame` (ta, to)) skip
   let trim (x0, y0, x1, y1) =
         let trim4 (v0, v1) | v1 - v0 < 6 = (v0, v1)
                            | v1 - v0 < 8 = (v0 + 3, v1 - 3)
@@ -140,8 +144,8 @@ connectPlaces sa@(_, _, sx1, sy1) ta@(tx0, ty0, _, _) = do
             (nx0, nx1) = trim4 (x0, x1)
             (ny0, ny1) = trim4 (y0, y1)
         in (nx0, ny0, nx1, ny1)
-  PointXY (sx, sy) <- xyInArea $ trim sa
-  PointXY (tx, ty) <- xyInArea $ trim ta
+  PointXY (sx, sy) <- xyInArea $ trim so
+  PointXY (tx, ty) <- xyInArea $ trim to
   let xarea = (sx1+2, min sy ty, tx0-2, max sy ty)
       yarea = (sx, sy1+2, tx, ty0-2)
       xyarea = (sx1+2, sy1+2, tx0-2, ty0-2)

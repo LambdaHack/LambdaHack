@@ -3,6 +3,7 @@ module Game.LambdaHack.Server.DungeonGen.Cave
   ( TileMapXY, ItemFloorXY, Cave(..), buildCave
   ) where
 
+import Control.Arrow ((&&&))
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.List as L
@@ -16,6 +17,7 @@ import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Content.CaveKind
+import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Server.DungeonGen.AreaRnd
 import Game.LambdaHack.Server.DungeonGen.Place hiding (TileMapXY)
@@ -71,7 +73,8 @@ buildCave :: Kind.COps         -- ^ content definitions
           -> Rnd Cave
 buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ opick
                                                 , ouniqGroup }
-                        , cocave=Kind.Ops{okind} }
+                        , cocave=Kind.Ops{okind}
+                        , coplace=Kind.Ops{okind=pokind} }
           ln depth ci = do
   let kc@CaveKind{..} = okind ci
   lgrid@(gx, gy) <- castDiceXY cgrid
@@ -97,6 +100,15 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ opick
                                 else fmap Right $ mkRoom minPlaceSize
                                                          maxPlaceSize innerArea
                      return (i, r')) gs
+  let hardRockId = ouniqGroup "hard rock"
+      fenceBounds = (1, 1, cxsize - 2, cysize - 2)
+      fence = buildFence hardRockId fenceBounds
+  pickedCorTile <- opick ccorridorTile (const True)
+  let addPl (m, pls, qls) (i, Left r) = return (m, pls, (i, Left r) : qls)
+      addPl (m, pls, qls) (i, Right r) = do
+        (tmap, place) <- buildPlace cops kc pickedCorTile ln depth r
+        return (EM.union tmap m, place : pls, (i, Right (r, place)) : qls)
+  (lplaces, dplaces, qplaces0) <- foldM addPl (fence, [], []) places0
   connects <- connectGrid lgrid
   addedConnects <-
     if gx * gy > 1
@@ -104,21 +116,18 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ opick
          in replicateM caux (randomConnection lgrid)
     else return []
   let allConnects = L.union connects addedConnects  -- no duplicates
-      places = EM.fromList places0
+      qplaces = EM.fromList qplaces0
   cs <- mapM (\(p0, p1) -> do
-                let shrinkForFence = either id $ expand (-1)
-                    r0 = shrinkForFence $ places EM.! p0
-                    r1 = shrinkForFence $ places EM.! p1
-                connectPlaces r0 r1) allConnects
-  let hardRockId = ouniqGroup "hard rock"
-      fenceBounds = (1, 1, cxsize - 2, cysize - 2)
-      fence = buildFence hardRockId fenceBounds
-  pickedCorTile <- opick ccorridorTile (const True)
-  let addPl (m, pls) (_, Left _) = return (m, pls)  -- no room
-      addPl (m, pls) (_, Right r) = do
-        (tmap, place) <- buildPlace cops kc pickedCorTile ln depth r
-        return (EM.union tmap m, place : pls)
-  (lplaces, dplaces) <- foldM addPl (fence, []) places0
+                -- Merge corridors with the floor fence.
+                let shrinkPlace (r, Place{qkind}) =
+                      let er = expand (-1) r
+                      in case pfence $ pokind qkind of
+                        FFloor -> (er, r)
+                        _ -> (er, er)
+                    shrinkForFence = either (id &&& id) shrinkPlace
+                    rr0 = shrinkForFence $ qplaces EM.! p0
+                    rr1 = shrinkForFence $ qplaces EM.! p1
+                connectPlaces rr0 rr1) allConnects
   let lcorridors = EM.unions (L.map (digCorridors pickedCorTile) cs)
       lm = EM.unionWith (mergeCorridor cotile) lcorridors lplaces
   -- Convert wall openings into doors, possibly.
