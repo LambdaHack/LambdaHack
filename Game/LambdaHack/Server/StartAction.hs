@@ -15,6 +15,7 @@ import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Tuple (swap)
+import qualified System.Random as R
 
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.ActorState
@@ -141,13 +142,14 @@ createFactions Kind.COps{cofact=Kind.Ops{opick}} players = do
       warFs = mkDipl War allianceFs (swapIx (playersEnemy players))
   return warFs
 
-gameReset :: MonadServer m => Kind.COps -> DebugModeSer -> m State
+gameReset :: MonadServer m
+          => Kind.COps -> DebugModeSer -> Maybe R.StdGen -> m State
 gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}, corule}
-          sdebug = do
+          sdebug mrandom = do
   -- Rules config reloaded at each new game start.
   -- Taking the original config from config file, to reroll RNG, if needed
   -- (the current config file has the RNG rolled for the previous game).
-  (sconfig, dungeonSeed, srandom) <- mkConfigRules corule
+  (sconfig, dungeonSeed, srandom) <- mkConfigRules corule mrandom
   scoreTable <- restoreScore sconfig
   sstart <- getsServer sstart  -- copy over from previous game
   let smode = sgameMode sdebug

@@ -71,14 +71,17 @@ set (CP conf) s o v =
 -- if not present, generates one and updates the config with it.
 getSetGen :: CP      -- ^ config
           -> String  -- ^ name of the generator
+          -> Maybe R.StdGen
           -> IO (R.StdGen, CP)
-getSetGen config option =
+getSetGen config option mrandom =
   case getOption config "engine" option of
     Just sg -> return (read sg, config)
     Nothing -> do
-      -- Pick the randomly chosen generator from the IO monad
+      -- Pick the randomly chosen generator from the IO monad (unless given)
       -- and record it in the config for debugging (can be 'D'umped).
-      g <- R.newStdGen
+      g <- case mrandom of
+        Just rnd -> return rnd
+        Nothing -> R.newStdGen
       let gs = show g
           c = set config "engine" option gs
       return (g, c)
@@ -139,13 +142,14 @@ parseConfigRules dataDir cp =
   in Config{..}
 
 -- | Read and parse rules config file and supplement it with random seeds.
-mkConfigRules :: Kind.Ops RuleKind -> IO (Config, R.StdGen, R.StdGen)
-mkConfigRules corule = do
+mkConfigRules :: Kind.Ops RuleKind -> Maybe R.StdGen
+              -> IO (Config, R.StdGen, R.StdGen)
+mkConfigRules corule mrandom = do
   let cpRulesDefault = rcfgRulesDefault $ Kind.stdRuleset corule
   appData <- appDataDir
   cpRules <- mkConfig cpRulesDefault $ appData </> "config.rules.ini"
-  (dungeonGen,  cp2) <- getSetGen cpRules "dungeonRandomGenerator"
-  (startingGen, cp3) <- getSetGen cp2     "startingRandomGenerator"
+  (dungeonGen,  cp2) <- getSetGen cpRules "dungeonRandomGenerator" mrandom
+  (startingGen, cp3) <- getSetGen cp2     "startingRandomGenerator" mrandom
   let conf = parseConfigRules appData cp3
       -- Catch syntax errors ASAP.
       !res = deepseq conf (conf, dungeonGen, startingGen)

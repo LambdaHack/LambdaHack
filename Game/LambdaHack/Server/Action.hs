@@ -188,8 +188,9 @@ sendPingUI fid = do
 -- | Create a server config file. Warning: when it's used, the game state
 -- may still be undefined, hence the content ops are given as an argument.
 mkConfigRules :: MonadServer m
-              => Kind.Ops RuleKind -> m (Config, R.StdGen, R.StdGen)
-mkConfigRules = liftIO . ConfigIO.mkConfigRules
+              => Kind.Ops RuleKind -> Maybe R.StdGen
+              -> m (Config, R.StdGen, R.StdGen)
+mkConfigRules rules mrandom = liftIO $ ConfigIO.mkConfigRules rules mrandom
 
 -- | Read the high scores table. Return the empty table if no file.
 -- Warning: when it's used, the game state
@@ -319,7 +320,7 @@ tryRestore Kind.COps{corule} sdebugSer = do
   -- version of the config can be read from the savefile.
   (Config{ configAppDataDir
          , configRulesCfgFile
-         , configScoresFile }, _, _) <- mkConfigRules corule
+         , configScoresFile }, _, _) <- mkConfigRules corule Nothing
   let copies =
         [ (configRulesCfgFile <.> ".default", configRulesCfgFile <.> ".ini")
         , (configScoresFile, configScoresFile) ]

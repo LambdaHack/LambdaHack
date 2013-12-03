@@ -75,7 +75,10 @@ loopSer sdebug cmdSerSem executorUI executorAI !cops = do
       initPer
     _ -> do  -- Starting a new game.
       -- Set up commandline debug mode
-      s <- gameReset cops sdebug
+      let mrandom = case restored of
+            Just (_, ser) -> Just $ srandom ser
+            Nothing -> Nothing
+      s <- gameReset cops sdebug mrandom
       sdebugNxt <- initDebug sdebug
       modifyServer $ \ser -> ser {sdebugNxt, sdebugSer = sdebugNxt}
       let speedup = speedupCOps (sallClear sdebugNxt)
@@ -461,7 +464,8 @@ restartGame :: (MonadAtomic m, MonadConnServer m)
 restartGame updConn loopServer = do
   cops <- getsState scops
   sdebugNxt <- getsServer sdebugNxt
-  s <- gameReset cops sdebugNxt
+  srandom <- getsServer srandom
+  s <- gameReset cops sdebugNxt $ Just srandom
   modifyServer $ \ser -> ser {sdebugNxt, sdebugSer = sdebugNxt}
   execCmdAtomic $ RestartServerA s
   updConn
