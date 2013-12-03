@@ -144,21 +144,26 @@ connectPlaces (sa@(_, _, sx1, sy1), so@(_, _, sox1, soy1))
             (nx0, nx1) = trim4 (x0, x1)
             (ny0, ny1) = trim4 (y0, y1)
         in (nx0, ny0, nx1, ny1)
-  PointXY (sx, sy) <- xyInArea $ trim so
-  PointXY (tx, ty) <- xyInArea $ trim to
-  let xarea = (sx1+2, min sy ty, tx0-2, max sy ty)
-      yarea = (sx, sy1+2, tx, ty0-2)
-      xyarea = (sx1+2, sy1+2, tx0-2, ty0-2)
-  (hv, area) <- if validArea xyarea
-                then fmap (\ hv -> (hv, xyarea)) (oneOf [Horiz, Vert])
-                else if validArea xarea
-                     then return (Horiz, xarea)
-                     else return (Vert, normalizeArea yarea)  -- vertical bias
-  let (p0, p1) = case hv of
-        Horiz -> (PointXY (if trivialArea sa then sx else sx1 + 1, sy),
-                  PointXY (if trivialArea ta then tx else tx0 - 1, ty))
-        Vert  -> (PointXY (sx, if trivialArea sa then sy else sy1 + 1),
-                  PointXY (tx, if trivialArea ta then ty else ty0 - 1))
+  p0@(PointXY (sx, sy)) <- xyInArea $ trim so
+  p1@(PointXY (tx, ty)) <- xyInArea $ trim to
+  let hva (_, _, zsx1, zsy1) (ztx0, zty0, _, _) = do
+        let xarea = (zsx1+2, min sy ty, ztx0-2, max sy ty)
+            yarea = (min sx tx, zsy1+2, max sx tx, zty0-2)
+            xyarea = (zsx1+2, zsy1+2, ztx0-2, zty0-2)
+        if validArea xyarea
+        then fmap (\hv -> (hv, xyarea)) (oneOf [Horiz, Vert])
+        else if validArea xarea
+             then return (Horiz, xarea)
+             else return (Vert, yarea) -- Vertical bias.
+  (hvOuter, areaOuter) <- hva so to
+  (hv, area) <- if validArea areaOuter
+                then return (hvOuter, areaOuter)
+                else do
+                  -- TODO: let mkCorridor only pick points on the floor fence
+                  (hvInner, areaInner) <- hva sa ta
+                  assert (validArea areaInner
+                          `blame` (sa, so, ta, to, areaOuter, areaInner)) skip
+                  return $ (hvInner, areaInner)
   -- The condition imposed on mkCorridor are tricky: there might not always
   -- exist a good intermediate point if the places are allowed to be close
   -- together and then we let the intermediate part degenerate.

@@ -118,11 +118,14 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ opick
   let allConnects = L.union connects addedConnects  -- no duplicates
       qplaces = EM.fromList qplaces0
   cs <- mapM (\(p0, p1) -> do
-                -- Merge corridors with the floor fence.
                 let shrinkPlace (r, Place{qkind}) =
                       let er = expand (-1) r
                       in case pfence $ pokind qkind of
-                        FFloor -> (er, r)
+                        FFloor ->
+                          -- Avoid corridors touching the floor fence,
+                          -- but let them merge with the fence.
+                          let mergeArea = expand (-1) er
+                          in (if validArea mergeArea then mergeArea else er, r)
                         _ -> (er, er)
                     shrinkForFence = either (id &&& id) shrinkPlace
                     rr0 = shrinkForFence $ qplaces EM.! p0
