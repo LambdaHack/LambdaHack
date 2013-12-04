@@ -80,18 +80,20 @@ interiorArea fence r = case fence of
 -- and fill a cave section acccording to it.
 buildPlace :: Kind.COps         -- ^ the game content
            -> CaveKind          -- ^ current cave kind
-           -> Kind.Id TileKind  -- ^ fence tile, if fence hollow
+           -> Kind.Id TileKind  -- ^ dark fence tile, if fence hollow
+           -> Kind.Id TileKind  -- ^ lit fence tile, if fence hollow
            -> Int               -- ^ current level depth
            -> Int               -- ^ maximum depth
            -> Area              -- ^ whole area of the place, fence included
            -> Rnd (TileMapXY, Place)
 buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
                     , coplace=Kind.Ops{okind=pokind, opick=popick} }
-           CaveKind{..} qhollowFence ln depth r = do
+           CaveKind{..} darkCorTile litCorTile ln depth r = do
   qsolidFence <- opick cfillerTile (const True)
   dark <- chanceDeep ln depth cdarkChance
   qkind <- popick "rogue" (placeCheck r)
-  let kr = pokind qkind
+  let qhollowFence = if dark then darkCorTile else litCorTile
+      kr = pokind qkind
       qlegend = if dark then cdarkLegendTile else clitLegendTile
       qseen = False
       qarea = fromMaybe (assert `failure` (kr, r)) $ interiorArea (pfence kr) r

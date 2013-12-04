@@ -39,6 +39,7 @@ data Cave = Cave
   , dmap    :: !TileMapXY           -- ^ tile kinds in the cave
   , ditem   :: !ItemFloorXY         -- ^ starting items in the cave
   , dplaces :: ![Place]             -- ^ places generated in the cave
+  , dnight  :: !Bool                -- ^ whether the cave is dark
   }
   deriving Show
 
@@ -111,10 +112,13 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ opick
                      return (i, r')) gs
   let hardRockId = ouniqGroup "hard rock"
       fence = buildFence hardRockId subFullArea
-  pickedCorTile <- opick ccorridorTile (const True)
-  let addPl (m, pls, qls) (i, Left r) = return (m, pls, (i, Left r) : qls)
+  dnight <- chanceDeep ln depth cnightChance
+  darkCorTile <- opick cdarkCorTile (const True)
+  litCorTile <- opick clitCorTile (const True)
+  let pickedCorTile = if dnight then darkCorTile else litCorTile
+      addPl (m, pls, qls) (i, Left r) = return (m, pls, (i, Left r) : qls)
       addPl (m, pls, qls) (i, Right r) = do
-        (tmap, place) <- buildPlace cops kc pickedCorTile ln depth r
+        (tmap, place) <- buildPlace cops kc darkCorTile litCorTile ln depth r
         return (EM.union tmap m, place : pls, (i, Right (r, place)) : qls)
   (lplaces, dplaces, qplaces0) <- foldM addPl (fence, [], []) places0
   connects <- connectGrid lgrid
@@ -162,6 +166,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ opick
         , ditem = EM.empty
         , dmap
         , dplaces
+        , dnight
         }
   return cave
 

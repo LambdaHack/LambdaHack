@@ -22,6 +22,7 @@ data CaveKind = CaveKind
   , cminPlaceSize   :: !RollDiceXY  -- ^ minimal size of places
   , cmaxPlaceSize   :: !RollDiceXY  -- ^ maximal size of places
   , cdarkChance     :: !RollDeep    -- ^ the chance a place is dark
+  , cnightChance    :: !RollDeep    -- ^ the chance the cave is dark
   , cauxConnects    :: !Rational    -- ^ a proportion of extra connections
   , cmaxVoid        :: !Rational    -- ^ at most this proportion of rooms void
   , cminStairDist   :: !Int         -- ^ minimal distance between stairs
@@ -30,7 +31,8 @@ data CaveKind = CaveKind
   , chidden         :: !Int         -- ^ if not open, hidden one in n times
   , citemNum        :: !RollDice    -- ^ the number of items in the cave
   , cdefTile        :: !Text        -- ^ the default cave tile group name
-  , ccorridorTile   :: !Text        -- ^ the cave corridor tile group name
+  , cdarkCorTile    :: !Text        -- ^ the dark cave corridor tile group name
+  , clitCorTile     :: !Text        -- ^ the dark cave corridor tile group name
   , cfillerTile     :: !Text        -- ^ the filler wall group name
   , cdarkLegendTile :: !Text        -- ^ the dark place plan legend ground name
   , clitLegendTile  :: !Text        -- ^ the lit place plan legend ground name

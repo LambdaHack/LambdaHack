@@ -61,7 +61,9 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
                                  && tsymbol t == sym
       ascendable  = Tile.kindHasFeature $ F.Cause (Effect.Ascend 1)
       descendable = Tile.kindHasFeature $ F.Cause (Effect.Ascend (-1))
-  cmap <- convertTileMaps (opick cdefTile (const True)) cxsize cysize dmap
+      dcond kt = not (Tile.kindHasFeature F.Clear kt)
+                 || (if dnight then not else id) (Tile.kindHasFeature F.Lit kt)
+  cmap <- convertTileMaps (opick cdefTile dcond) cxsize cysize dmap
   -- We keep two-way stairs separately, in the last component.
   let makeStairs :: Bool -> Bool -> Bool
                  -> ( [(Point, Kind.Id TileKind)]
