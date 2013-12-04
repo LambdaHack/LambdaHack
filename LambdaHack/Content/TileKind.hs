@@ -221,13 +221,13 @@ unknown = TileKind
 floorCorridorLit = TileKind
   { tsymbol  = '#'
   , tname    = "corridor"
-  , tfreq    = []
+  , tfreq    = [("floorCorridorLit", 1)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfeature = [Walkable, Clear, Lit]
   }
 floorCorridorDark = floorCorridorLit
-  { tfreq    = [("darkCorridor", 1)]
+  { tfreq    = [("floorCorridorDark", 1)]
 -- Disabled, because dark corridors and yellow light does not fit LambdaHack.
 --  , tcolor   = BrYellow
 --  , tcolor2  = BrBlack
@@ -236,12 +236,13 @@ floorCorridorDark = floorCorridorLit
 floorArenaLit = floorCorridorLit
   { tsymbol  = '.'
   , tname    = "stone floor"
-  , tfreq    = [("arenaSet", 1), ("noiseSet", 100), ("combatSet", 100)]
+  , tfreq    = [ ("floorArenaLit", 1)
+               , ("arenaSet", 1), ("noiseSet", 100), ("combatSet", 100) ]
   }
 floorArenaDark = floorCorridorDark
   { tsymbol  = '.'
   , tname    = "stone floor"
-  , tfreq    = []
+  , tfreq    = [("arenaSet", 1), ("noiseSet", 100), ("combatSet", 100)]
 -- Disabled, because the yellow artificial light does not fit LambdaHack.
 --  , tcolor   = BrYellow
 -- Dark room interior, OTOH, is fine:
@@ -252,7 +253,7 @@ floorItemLit = floorArenaLit
   , tfeature = CanItem : tfeature floorArenaLit
   }
 floorItemDark = floorArenaDark
-  { tfreq    = []
+  { tfreq    = [("combatSet", 20)]
   , tfeature = CanItem : tfeature floorArenaDark
   }
 floorActorItemLit = floorItemLit
@@ -260,7 +261,7 @@ floorActorItemLit = floorItemLit
   , tfeature = CanActor : tfeature floorItemLit
   }
 floorActorItemDark = floorItemDark
-  { tfreq    = [("darkLegend", 100)]
+  { tfreq    = [("darkLegend", 100), ("emptySet", 1)]
   , tfeature = CanActor : tfeature floorItemDark
   }
 floorRed = floorArenaLit
