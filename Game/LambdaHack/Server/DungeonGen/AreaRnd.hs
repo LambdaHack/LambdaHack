@@ -150,8 +150,8 @@ connectPlaces (sa, so) (ta, to) = do
             (nx0, nx1) = trim4 (x0, x1)
             (ny0, ny1) = trim4 (y0, y1)
         in fromMaybe (assert `failure` area) $ toArea (nx0, ny0, nx1, ny1)
-  p0@(PointXY (sx, sy)) <- xyInArea $ trim so
-  p1@(PointXY (tx, ty)) <- xyInArea $ trim to
+  PointXY (sx, sy) <- xyInArea $ trim so
+  PointXY (tx, ty) <- xyInArea $ trim to
   let hva sarea tarea = do
         let (_, _, zsx1, zsy1) = fromArea sarea
             (ztx0, zty0, _, _) = fromArea tarea
@@ -173,6 +173,11 @@ connectPlaces (sa, so) (ta, to) = do
       let yell = assert `failure` (sa, so, ta, to, areaOuter, aInner)
           areaInner = fromMaybe yell aInner
       return (hvInner, areaInner)
+  -- We cross width one places completely with the corridor, for void
+  -- rooms and others (e.g., one-tile wall room then becomes a door, etc.).
+  let (p0, p1) = case hv of
+        Horiz -> (PointXY (sox1, sy), PointXY (tox0, ty))
+        Vert  -> (PointXY (sx, soy1), PointXY (tx, toy0))
   -- The condition imposed on mkCorridor are tricky: there might not always
   -- exist a good intermediate point if the places are allowed to be close
   -- together and then we let the intermediate part degenerate.
