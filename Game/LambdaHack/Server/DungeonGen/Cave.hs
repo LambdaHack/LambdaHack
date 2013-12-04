@@ -12,7 +12,6 @@ import Data.Maybe
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -88,25 +87,27 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ opick
       area | gx == 1 || gy == 1 = subFullArea
            | otherwise = fullArea
       gs = grid lgrid area
+  (addedConnects, voidPlaces) <- do
+    if gx * gy > 1 then do
+       let fractionOfPlaces r = round $ r * fromIntegral (gx * gy)
+           cauxNum = fractionOfPlaces cauxConnects
+       addedC <- replicateM cauxNum (randomConnection lgrid)
+       let gridArea = fromMaybe (assert `failure` lgrid)
+                      $ toArea (0, 0, gx - 1, gy - 1)
+           voidNum = fractionOfPlaces cmaxVoid
+       voidPl <- replicateM voidNum $ xyInArea gridArea  -- repetitions are OK
+       return (addedC, voidPl)
+    else return ([], [])
   minPlaceSize <- castDiceXY cminPlaceSize
   maxPlaceSize <- castDiceXY cmaxPlaceSize
-  mandatory1 <- replicateM (cnonVoidMin `div` 2)
-                $ xyInArea
-                $ fromMaybe (assert `failure` lgrid)
-                $ toArea (0, 0, gx `divUp` 3, gy - 1)
-  mandatory2 <- replicateM (cnonVoidMin `divUp` 2)
-                $ xyInArea
-                $ fromMaybe (assert `failure` lgrid)
-                $ toArea (gx - 1 - (gx `divUp` 3), 0, gx - 1, gy - 1)
   places0 <- mapM (\ (i, r) -> do
-                     rv <- chance cvoidChance
-                     r' <- let -- Reserved for corridors and the global fence.
-                               innerArea = fromMaybe (assert `failure` (i, r))
-                                           $ shrink r
-                           in if rv && i `notElem` (mandatory1 ++ mandatory2)
-                              then fmap Left $ mkVoidRoom innerArea
-                              else fmap Right $ mkRoom minPlaceSize
-                                                       maxPlaceSize innerArea
+                     -- Reserved for corridors and the global fence.
+                     let innerArea = fromMaybe (assert `failure` (i, r))
+                                     $ shrink r
+                     r' <- if i `elem` voidPlaces
+                           then fmap Left $ mkVoidRoom innerArea
+                           else fmap Right $ mkRoom minPlaceSize
+                                                    maxPlaceSize innerArea
                      return (i, r')) gs
   let hardRockId = ouniqGroup "hard rock"
       fence = buildFence hardRockId subFullArea
@@ -117,11 +118,6 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ opick
         return (EM.union tmap m, place : pls, (i, Right (r, place)) : qls)
   (lplaces, dplaces, qplaces0) <- foldM addPl (fence, [], []) places0
   connects <- connectGrid lgrid
-  addedConnects <-
-    if gx * gy > 1
-    then let caux = round $ cauxConnects * fromIntegral (gx * gy)
-         in replicateM caux (randomConnection lgrid)
-    else return []
   let allConnects = L.union connects addedConnects  -- no duplicates
       qplaces = EM.fromList qplaces0
   cs <- mapM (\(p0, p1) -> do

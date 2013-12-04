@@ -23,8 +23,7 @@ data CaveKind = CaveKind
   , cmaxPlaceSize   :: !RollDiceXY  -- ^ maximal size of places
   , cdarkChance     :: !RollDeep    -- ^ the chance a place is dark
   , cauxConnects    :: !Rational    -- ^ a proportion of extra connections
-  , cvoidChance     :: !Chance      -- ^ the chance of not creating a place
-  , cnonVoidMin     :: !Int         -- ^ extra places, may overlap except two
+  , cmaxVoid        :: !Rational    -- ^ at most this proportion of rooms void
   , cminStairDist   :: !Int         -- ^ minimal distance between stairs
   , cdoorChance     :: !Chance      -- ^ the chance of a door in an opening
   , copenChance     :: !Chance      -- ^ if there's a door, is it open?
