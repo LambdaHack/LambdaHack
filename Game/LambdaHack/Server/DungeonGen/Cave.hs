@@ -9,7 +9,6 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.List as L
 import Data.Maybe
 
-import Game.LambdaHack.Common.Area
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -20,6 +19,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.TileKind
+import Game.LambdaHack.Server.DungeonGen.Area
 import Game.LambdaHack.Server.DungeonGen.AreaRnd
 import Game.LambdaHack.Server.DungeonGen.Place hiding (TileMapXY)
 import qualified Game.LambdaHack.Server.DungeonGen.Place as Place

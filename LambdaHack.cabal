@@ -98,7 +98,6 @@ library
                       Game.LambdaHack.Common.Actor,
                       Game.LambdaHack.Common.ActorState,
                       Game.LambdaHack.Common.Animation,
-                      Game.LambdaHack.Common.Area,
                       Game.LambdaHack.Common.AtomicCmd,
                       Game.LambdaHack.Common.AtomicPos,
                       Game.LambdaHack.Common.AtomicSem,
@@ -146,6 +145,7 @@ library
                       Game.LambdaHack.Server.AtomicSemSer,
                       Game.LambdaHack.Server.Config,
                       Game.LambdaHack.Server.DungeonGen,
+                      Game.LambdaHack.Server.DungeonGen.Area
                       Game.LambdaHack.Server.DungeonGen.AreaRnd,
                       Game.LambdaHack.Server.DungeonGen.Cave,
                       Game.LambdaHack.Server.DungeonGen.Place,

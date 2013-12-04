@@ -12,7 +12,6 @@ import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import Game.LambdaHack.Common.Area
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.PointXY
@@ -20,6 +19,7 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.TileKind
+import Game.LambdaHack.Server.DungeonGen.Area
 import Game.LambdaHack.Utils.Assert
 
 -- TODO: use more, rewrite as needed, document each field.

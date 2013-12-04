@@ -1,5 +1,5 @@
 -- | Rectangular areas of levels and their basic operations.
-module Game.LambdaHack.Common.Area
+module Game.LambdaHack.Server.DungeonGen.Area
   ( Area, toArea, fromArea, trivialArea, grid, shrink
   ) where
 
