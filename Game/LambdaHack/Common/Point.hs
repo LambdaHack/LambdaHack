@@ -12,7 +12,6 @@ import qualified Data.List as L
 import Data.Text (Text)
 import qualified System.Random as R
 
-import Game.LambdaHack.Common.Area
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.VectorXY
@@ -90,7 +89,7 @@ vicinityCardinal lxsize lysize p =
       fromPoint lxsize p
 
 -- | Checks that a point belongs to an area.
-inside :: X -> Point -> Area -> Bool
+inside :: X -> Point -> (X, Y, X, Y) -> Bool
 inside lxsize p = insideXY $ fromPoint lxsize p
 
 -- | Calculate the displacement vector from a position to another.

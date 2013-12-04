@@ -9,6 +9,7 @@ import qualified Data.EnumMap.Strict as EM
 import Data.List
 import Data.Maybe
 
+import Game.LambdaHack.Common.Area
 import qualified Game.LambdaHack.Common.Effect as Effect
 import qualified Game.LambdaHack.Common.Feature as F
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -53,7 +54,7 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
                          , cocave=Kind.Ops{okind=cokind} }
            Cave{..} ldepth minD maxD nstairUp escapeFeature = do
   let kc@CaveKind{..} = cokind dkind
-      fitArea pos = inside cxsize pos . qarea
+      fitArea pos = inside cxsize pos . fromArea . qarea
       findLegend pos = maybe clitLegendTile qlegend
                        $ find (fitArea pos) dplaces
       hasEscapeAndSymbol sym t = Tile.kindHasFeature (F.Cause Effect.Escape) t

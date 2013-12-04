@@ -9,17 +9,20 @@ module Game.LambdaHack.Server.DungeonGen.AreaRnd
   ) where
 
 import qualified Data.EnumSet as ES
+import Data.Maybe
 
 import Game.LambdaHack.Common.Area
 import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Common.VectorXY
 import Game.LambdaHack.Utils.Assert
 
 -- Picking random points inside areas
 
 -- | Pick a random point within an area.
 xyInArea :: Area -> Rnd PointXY
-xyInArea (x0, y0, x1, y1) = do
+xyInArea area = do
+  let (x0, y0, x1, y1) = fromArea area
   rx <- randomR (x0, x1)
   ry <- randomR (y0, y1)
   return $ PointXY (rx, ry)
@@ -29,29 +32,30 @@ mkRoom :: (X, Y)    -- ^ minimum size
        -> (X, Y)    -- ^ maximum size
        -> Area      -- ^ the containing area, not the room itself
        -> Rnd Area
-mkRoom (xm, ym) (xM, yM) (x0, y0, x1, y1) = do
+mkRoom (xm, ym) (xM, yM) area = do
+  let (x0, y0, x1, y1) = fromArea area
   assert (xm <= x1 - x0 + 1 && ym <= y1 - y0 + 1) skip
-  let area0 = (x0, y0, x1 - xm + 1, y1 - ym + 1)
-  assert (validArea area0 `blame` area0) skip
+  let a0 = (x0, y0, x1 - xm + 1, y1 - ym + 1)
+      area0 = fromMaybe (assert `failure` a0) $ toArea a0
   PointXY (rx0, ry0) <- xyInArea area0
   let sX = rx0 + xm - 1
       sY = ry0 + ym - 1
       eX = min x1 (rx0 + xM - 1)
       eY = min y1 (ry0 + yM - 1)
-      area1 = (sX, sY, eX, eY)
-  assert (validArea area1 `blame` area1) skip
+      a1 = (sX, sY, eX, eY)
+      area1 = fromMaybe (assert `failure` a1) $ toArea a1
   PointXY (rx1, ry1) <- xyInArea area1
-  return (rx0, ry0, rx1, ry1)
+  let a3 = (rx0, ry0, rx1, ry1)
+      area3 = fromMaybe (assert `failure` a3) $ toArea a3
+  return area3
 
 -- | Create a void room, i.e., a single point area within the designated area.
-mkVoidRoom :: Area
-           -> Rnd Area
+mkVoidRoom :: Area -> Rnd Area
 mkVoidRoom area = do
-  let shrunk = expand (-1) area
-      -- Pass corridors closer to the middle of the grid area, if possible.
-      core = if validArea shrunk then shrunk else area
-  PointXY (ry, rx) <- xyInArea core
-  return (ry, rx, ry, rx)
+  -- Pass corridors closer to the middle of the grid area, if possible.
+  let core = fromMaybe area $ shrink area
+  pxy <- xyInArea core
+  return $ trivialArea pxy
 
 -- Choosing connections between areas in a grid
 
@@ -130,40 +134,45 @@ mkCorridor hv (PointXY (x0, y0)) (PointXY (x1, y1)) b = do
 -- is big enough. Note that with @pfence == FNone@, the area considered
 -- is the strict interior of the place, without the outermost tiles.
 connectPlaces :: (Area, Area) -> (Area, Area) -> Rnd Corridor
-connectPlaces (sa@(_, _, sx1, sy1), so@(_, _, sox1, soy1))
-              (ta@(tx0, ty0, _, _), to@(tox0, toy0, _, _)) = do
-  assert (validArea sa && validArea ta `blame` (sa, ta)) skip
-  assert (validArea so && validArea to `blame` (so, to)) skip
+connectPlaces (sa, so) (ta, to) = do
+  let (_, _, sx1, sy1) = fromArea sa
+      (_, _, sox1, soy1) = fromArea so
+      (tx0, ty0, _, _) = fromArea ta
+      (tox0, toy0, _, _) = fromArea to
   assert (sx1 <= tx0  || sy1 <= ty0  `blame` (sa, ta)) skip
   assert (sx1 <= sox1 || sy1 <= soy1 `blame` (sa, so)) skip
   assert (tx0 >= tox0 || ty0 >= toy0 `blame` (ta, to)) skip
-  let trim (x0, y0, x1, y1) =
-        let trim4 (v0, v1) | v1 - v0 < 6 = (v0, v1)
+  let trim area =
+        let (x0, y0, x1, y1) = fromArea area
+            trim4 (v0, v1) | v1 - v0 < 6 = (v0, v1)
                            | v1 - v0 < 8 = (v0 + 3, v1 - 3)
                            | otherwise = (v0 + 4, v1 - 4)
             (nx0, nx1) = trim4 (x0, x1)
             (ny0, ny1) = trim4 (y0, y1)
-        in (nx0, ny0, nx1, ny1)
+        in fromMaybe (assert `failure` area) $ toArea (nx0, ny0, nx1, ny1)
   p0@(PointXY (sx, sy)) <- xyInArea $ trim so
   p1@(PointXY (tx, ty)) <- xyInArea $ trim to
-  let hva (_, _, zsx1, zsy1) (ztx0, zty0, _, _) = do
-        let xarea = (zsx1+2, min sy ty, ztx0-2, max sy ty)
-            yarea = (min sx tx, zsy1+2, max sx tx, zty0-2)
-            xyarea = (zsx1+2, zsy1+2, ztx0-2, zty0-2)
-        if validArea xyarea
-        then fmap (\hv -> (hv, xyarea)) (oneOf [Horiz, Vert])
-        else if validArea xarea
-             then return (Horiz, xarea)
-             else return (Vert, yarea) -- Vertical bias.
+  let hva sarea tarea = do
+        let (_, _, zsx1, zsy1) = fromArea sarea
+            (ztx0, zty0, _, _) = fromArea tarea
+            xa = (zsx1+2, min sy ty, ztx0-2, max sy ty)
+            ya = (min sx tx, zsy1+2, max sx tx, zty0-2)
+            xya = (zsx1+2, zsy1+2, ztx0-2, zty0-2)
+        case toArea xya of
+          Just xyarea -> fmap (\hv -> (hv, Just xyarea)) (oneOf [Horiz, Vert])
+          Nothing ->
+            case toArea xa of
+              Just xarea -> return (Horiz, Just xarea)
+              Nothing -> return (Vert, toArea ya) -- Vertical bias.
   (hvOuter, areaOuter) <- hva so to
-  (hv, area) <- if validArea areaOuter
-                then return (hvOuter, areaOuter)
-                else do
-                  -- TODO: let mkCorridor only pick points on the floor fence
-                  (hvInner, areaInner) <- hva sa ta
-                  assert (validArea areaInner
-                          `blame` (sa, so, ta, to, areaOuter, areaInner)) skip
-                  return $ (hvInner, areaInner)
+  (hv, area) <- case areaOuter of
+    Just arenaOuter -> return (hvOuter, arenaOuter)
+    Nothing -> do
+      -- TODO: let mkCorridor only pick points on the floor fence
+      (hvInner, aInner) <- hva sa ta
+      let yell = assert `failure` (sa, so, ta, to, areaOuter, aInner)
+          areaInner = fromMaybe yell aInner
+      return (hvInner, areaInner)
   -- The condition imposed on mkCorridor are tricky: there might not always
   -- exist a good intermediate point if the places are allowed to be close
   -- together and then we let the intermediate part degenerate.

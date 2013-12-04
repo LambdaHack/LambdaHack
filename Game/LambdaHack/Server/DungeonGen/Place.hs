@@ -8,6 +8,7 @@ import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.List as L
+import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 
@@ -34,23 +35,6 @@ data Place = Place
   }
   deriving Show
 
-instance Binary Place where
-  put Place{..} = do
-    put qkind
-    put qarea
-    put qseen
-    put qlegend
-    put qsolidFence
-    put qhollowFence
-  get = do
-    qkind <- get
-    qarea <- get
-    qseen <- get
-    qlegend <- get
-    qsolidFence <- get
-    qhollowFence <- get
-    return Place{..}
-
 -- | The map of tile kinds in a place (and generally anywhere in a cave).
 -- The map is sparse. The default tile that eventually fills the empty spaces
 -- is specified in the cave kind specification with @cdefTile@.
@@ -65,30 +49,32 @@ placeCheck :: Area       -- ^ the area to fill
            -> PlaceKind  -- ^ the place kind to construct
            -> Bool
 placeCheck r PlaceKind{..} =
-  let area@(x0, y0, x1, y1) = interiorArea pfence r
-      dx = x1 - x0 + 1
-      dy = y1 - y0 + 1
-      dxcorner = case ptopLeft of [] -> 0 ; l : _ -> T.length l
-      dycorner = L.length ptopLeft
-      wholeOverlapped d dcorner = d > 1 && dcorner > 1 &&
-                                  (d - 1) `mod` (2 * (dcorner - 1)) == 0
-  in validArea area  -- for somer fence types it can be invalid
-     && case pcover of
-       CAlternate -> wholeOverlapped dx dxcorner &&
-                     wholeOverlapped dy dycorner
-       _          -> dx >= 2 * dxcorner - 1 &&
-                     dy >= 2 * dycorner - 1
+  case interiorArea pfence r of
+    Nothing -> False
+    Just area ->
+      let (x0, y0, x1, y1) = fromArea area
+          dx = x1 - x0 + 1
+          dy = y1 - y0 + 1
+          dxcorner = case ptopLeft of [] -> 0 ; l : _ -> T.length l
+          dycorner = L.length ptopLeft
+          wholeOverlapped d dcorner = d > 1 && dcorner > 1 &&
+                                      (d - 1) `mod` (2 * (dcorner - 1)) == 0
+      in case pcover of
+        CAlternate -> wholeOverlapped dx dxcorner &&
+                      wholeOverlapped dy dycorner
+        _          -> dx >= 2 * dxcorner - 1 &&
+                      dy >= 2 * dycorner - 1
 
 -- | Calculate interior room area according to fence type, based on the
 -- total area for the room and it's fence. This is used for checking
 -- if the room fits in the area, for digging up the place and the fence
 -- and for deciding if the room is dark or lit later in the dungeon
 -- generation process (e.g., for stairs).
-interiorArea :: Fence -> Area -> Area
+interiorArea :: Fence -> Area -> Maybe Area
 interiorArea fence r = case fence of
-  FWall  -> expand (-1) r
-  FFloor -> expand (-1) r
-  FNone  -> r
+  FWall  -> shrink r
+  FFloor -> shrink r
+  FNone  -> Just r
 
 -- | Given a few parameters, roll and construct a 'Place' datastructure
 -- and fill a cave section acccording to it.
@@ -108,8 +94,8 @@ buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
   let kr = pokind qkind
       qlegend = if dark then cdarkLegendTile else clitLegendTile
       qseen = False
-      qarea = interiorArea (pfence kr) r
-      place = assert (validArea qarea `blame` qarea) Place {..}
+      qarea = fromMaybe (assert `failure` (kr, r)) $ interiorArea (pfence kr) r
+      place = Place {..}
   legend <- olegend cotile qlegend
   let xlegend = EM.insert 'X' qhollowFence legend
   return (digPlace place kr xlegend, place)
@@ -131,11 +117,12 @@ olegend Kind.Ops{ofoldrWithKey, opick} group =
 
 -- | Construct a fence around an area, with the given tile kind.
 buildFence :: Kind.Id TileKind -> Area -> TileMapXY
-buildFence fenceId (x0, y0, x1, y1) =
-  EM.fromList $ [ (PointXY (x, y), fenceId)
-                | x <- [x0-1, x1+1], y <- [y0..y1] ] ++
-                [ (PointXY (x, y), fenceId)
-                | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
+buildFence fenceId area =
+  let (x0, y0, x1, y1) = fromArea area
+  in EM.fromList $ [ (PointXY (x, y), fenceId)
+                   | x <- [x0-1, x1+1], y <- [y0..y1] ] ++
+                   [ (PointXY (x, y), fenceId)
+                   | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
 
 -- | Construct a place of the given kind, with the given fence tile.
 digPlace :: Place                               -- ^ the place parameters
@@ -154,8 +141,9 @@ digPlace Place{..} kr legend =
 tilePlace :: Area                           -- ^ the area to fill
           -> PlaceKind                      -- ^ the place kind to construct
           -> EM.EnumMap PointXY Char
-tilePlace area@(x0, y0, x1, y1) pl@PlaceKind{..} =
-  let xwidth = x1 - x0 + 1
+tilePlace area pl@PlaceKind{..} =
+  let (x0, y0, x1, y1) = fromArea area
+      xwidth = x1 - x0 + 1
       ywidth = y1 - y0 + 1
       dxcorner = case ptopLeft of
         [] -> assert `failure` (area, pl)
@@ -190,3 +178,20 @@ tilePlace area@(x0, y0, x1, y1) pl@PlaceKind{..} =
               reflect d pat = tileReflect d (L.cycle pat)
           in fillInterior reflect
   in EM.fromList interior
+
+instance Binary Place where
+  put Place{..} = do
+    put qkind
+    put qarea
+    put qseen
+    put qlegend
+    put qsolidFence
+    put qhollowFence
+  get = do
+    qkind <- get
+    qarea <- get
+    qseen <- get
+    qlegend <- get
+    qsolidFence <- get
+    qhollowFence <- get
+    return Place{..}

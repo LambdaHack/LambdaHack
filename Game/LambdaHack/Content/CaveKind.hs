@@ -56,6 +56,8 @@ cvalidate = L.filter (\ CaveKind{ cgrid
       xborder = if maxGridX == 1 then 3 else 1
       yborder = if maxGridX == 1 then 3 else 1
   in T.length cname > 25
+     || cxsize < 7
+     || cysize < 7
      || minMinSizeX < 1
      || minMinSizeY < 1
      || minMaxSizeX < maxMinSizeX

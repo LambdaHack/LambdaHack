@@ -1,6 +1,6 @@
 -- | Basic cartesian geometry operations on 2D points.
 module Game.LambdaHack.Common.PointXY
-  ( X, Y, PointXY(..), fromTo, sortPointXY, blaXY
+  ( X, Y, PointXY(..), fromTo, sortPointXY, blaXY, insideXY
   ) where
 
 import qualified Data.List as L
@@ -72,3 +72,8 @@ blaXY eps (PointXY (x0, y0)) (PointXY (x1, y1)) =
       bw = balancedWord p q (eps `mod` max 1 q)
       walk w xy = xy : walk (tail w) (step (head w) xy)
   in L.map PointXY $ walk bw (x0, y0)
+
+-- | Checks that a point belongs to an area.
+insideXY :: PointXY -> (X, Y, X, Y) -> Bool
+insideXY (PointXY (x, y)) (x0, y0, x1, y1) =
+  x1 >= x && x >= x0 && y1 >= y && y >= y0

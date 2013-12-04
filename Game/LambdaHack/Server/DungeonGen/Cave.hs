@@ -7,6 +7,7 @@ import Control.Arrow ((&&&))
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.List as L
+import Data.Maybe
 
 import Game.LambdaHack.Common.Area
 import qualified Game.LambdaHack.Common.Feature as F
@@ -80,29 +81,35 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ opick
   lgrid@(gx, gy) <- castDiceXY cgrid
   -- Make sure that in caves not filled with rock, there is a passage
   -- across the cave, even if a single room blocks most of the cave.
-  let fullArea = (0, 0, cxsize - 1, cysize - 1)
-      area | gx == 1 || gy == 1 = expand (-1) fullArea
+  let fullArea = fromMaybe (assert `failure` kc)
+                 $ toArea (0, 0, cxsize - 1, cysize - 1)
+      subFullArea = fromMaybe (assert `failure` kc)
+                    $ toArea (1, 1, cxsize - 2, cysize - 2)
+      area | gx == 1 || gy == 1 = subFullArea
            | otherwise = fullArea
       gs = grid lgrid area
   minPlaceSize <- castDiceXY cminPlaceSize
   maxPlaceSize <- castDiceXY cmaxPlaceSize
-  mandatory1 <- replicateM (cnonVoidMin `div` 2) $
-                  xyInArea (0, 0, gx `div` 3, gy - 1)
-  mandatory2 <- replicateM (cnonVoidMin `divUp` 2) $
-                  xyInArea (gx - 1 - (gx `div` 3), 0, gx - 1, gy - 1)
+  mandatory1 <- replicateM (cnonVoidMin `div` 2)
+                $ xyInArea
+                $ fromMaybe (assert `failure` lgrid)
+                $ toArea (0, 0, gx `divUp` 3, gy - 1)
+  mandatory2 <- replicateM (cnonVoidMin `divUp` 2)
+                $ xyInArea
+                $ fromMaybe (assert `failure` lgrid)
+                $ toArea (gx - 1 - (gx `divUp` 3), 0, gx - 1, gy - 1)
   places0 <- mapM (\ (i, r) -> do
                      rv <- chance cvoidChance
                      r' <- let -- Reserved for corridors and the global fence.
-                               innerArea = expand (-1) r
-                           in assert (validArea innerArea)
-                              $ if rv && i `notElem` (mandatory1 ++ mandatory2)
-                                then fmap Left $ mkVoidRoom innerArea
-                                else fmap Right $ mkRoom minPlaceSize
-                                                         maxPlaceSize innerArea
+                               innerArea = fromMaybe (assert `failure` (i, r))
+                                           $ shrink r
+                           in if rv && i `notElem` (mandatory1 ++ mandatory2)
+                              then fmap Left $ mkVoidRoom innerArea
+                              else fmap Right $ mkRoom minPlaceSize
+                                                       maxPlaceSize innerArea
                      return (i, r')) gs
   let hardRockId = ouniqGroup "hard rock"
-      fenceBounds = (1, 1, cxsize - 2, cysize - 2)
-      fence = buildFence hardRockId fenceBounds
+      fence = buildFence hardRockId subFullArea
   pickedCorTile <- opick ccorridorTile (const True)
   let addPl (m, pls, qls) (i, Left r) = return (m, pls, (i, Left r) : qls)
       addPl (m, pls, qls) (i, Right r) = do
@@ -119,14 +126,16 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ opick
       qplaces = EM.fromList qplaces0
   cs <- mapM (\(p0, p1) -> do
                 let shrinkPlace (r, Place{qkind}) =
-                      let er = expand (-1) r
-                      in case pfence $ pokind qkind of
-                        FFloor ->
-                          -- Avoid corridors touching the floor fence,
-                          -- but let them merge with the fence.
-                          let mergeArea = expand (-1) er
-                          in (if validArea mergeArea then mergeArea else er, r)
-                        _ -> (er, er)
+                      case shrink r of
+                        Nothing -> (r, r)  -- FNone place of x and/or y size 1
+                        Just sr -> case pfence $ pokind qkind of
+                          FFloor ->
+                            -- Avoid corridors touching the floor fence,
+                            -- but let them merge with the fence.
+                            case shrink sr of
+                              Nothing -> (sr, r)
+                              Just mergeArea -> (mergeArea, r)
+                          _ -> (sr, sr)
                     shrinkForFence = either (id &&& id) shrinkPlace
                     rr0 = shrinkForFence $ qplaces EM.! p0
                     rr1 = shrinkForFence $ qplaces EM.! p1

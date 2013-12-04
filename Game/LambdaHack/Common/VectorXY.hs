@@ -2,7 +2,7 @@
 -- | Basic cartesian geometry operations on 2D vectors.
 module Game.LambdaHack.Common.VectorXY
   ( VectorXY(..), shiftXY, movesXY, movesCardinalXY
-  , chessDistXY, euclidDistSqXY, negXY
+  , chessDistXY, euclidDistSqXY, negXY, vicinityXY, vicinityCardinalXY
   ) where
 
 import Data.Binary
@@ -40,3 +40,18 @@ euclidDistSqXY (VectorXY (x, y)) = x * x + y * y
 -- | Reverse an arbirary vector.
 negXY :: VectorXY -> VectorXY
 negXY (VectorXY (x, y)) = VectorXY (-x, -y)
+
+-- | All (8 at most) closest neighbours of a point within an area.
+vicinityXY :: (X, Y, X, Y)  -- ^ limit the search to this area
+           -> PointXY       -- ^ position to find neighbours of
+           -> [PointXY]
+vicinityXY area xy =
+  [ res | dxy <- movesXY, let res = shiftXY xy dxy, insideXY res area ]
+
+-- | All (4 at most) cardinal direction neighbours of a point within an area.
+vicinityCardinalXY :: (X, Y, X, Y)  -- ^ limit the search to this area
+                   -> PointXY       -- ^ position to find neighbours of
+                   -> [PointXY]
+vicinityCardinalXY area xy =
+  [ res
+  | dxy <- movesCardinalXY, let res = shiftXY xy dxy, insideXY res area ]

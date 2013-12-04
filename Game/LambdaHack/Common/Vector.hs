@@ -8,7 +8,6 @@ module Game.LambdaHack.Common.Vector
 
 import Data.Binary
 
-import Game.LambdaHack.Common.Area
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.VectorXY
@@ -76,7 +75,7 @@ shift :: Point -> Vector -> Point
 shift p (Vector dir) = toEnum $ fromEnum p + dir
 
 -- | Translate a point by a vector, but only if the result fits in an area.
-shiftBounded :: X -> Area -> Point -> Vector -> Point
+shiftBounded :: X -> (X, Y, X, Y) -> Point -> Vector -> Point
 shiftBounded lxsize area pos dir =
   let res = shift pos dir
   in if inside lxsize res area then res else pos
