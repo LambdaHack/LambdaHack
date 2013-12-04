@@ -14,9 +14,9 @@ cdefs = ContentDef
   , getFreq = tfreq
   , validate = tvalidate
   , content =
-      [wall, hardRock, pillar, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpDark, stairsUpLit, stairsDark, stairsLit, stairsDownDark, stairsDownLit, escapeUpDark, escapeUpLit, escapeDownDark, escapeDownLit, unknown, pillarCache, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorItemLit, floorItemDark, floorActorItemLit, floorActorItemDark, floorRed, floorBlue, floorGreen, floorBrown]
+      [wall, hardRock, pillar, pillarCache, tree, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpDark, stairsUpLit, stairsDark, stairsLit, stairsDownDark, stairsDownLit, escapeUpDark, escapeUpLit, escapeDownDark, escapeDownLit, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorItemLit, floorItemDark, floorActorItemLit, floorActorItemDark, floorRed, floorBlue, floorGreen, floorBrown]
   }
-wall,        hardRock, pillar, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpDark, stairsUpLit, stairsDark, stairsLit, stairsDownDark, stairsDownLit, escapeUpDark, escapeUpLit, escapeDownDark, escapeDownLit, unknown, pillarCache, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorItemLit, floorItemDark, floorActorItemLit, floorActorItemDark, floorRed, floorBlue, floorGreen, floorBrown :: TileKind
+wall,        hardRock, pillar, pillarCache, tree, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpDark, stairsUpLit, stairsDark, stairsLit, stairsDownDark, stairsDownLit, escapeUpDark, escapeUpLit, escapeDownDark, escapeDownLit, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorItemLit, floorItemDark, floorActorItemLit, floorActorItemDark, floorRed, floorBlue, floorGreen, floorBrown :: TileKind
 
 wall = TileKind
   { tsymbol  = ' '
@@ -39,7 +39,7 @@ pillar = TileKind
   , tname    = "pillar"
   , tfreq    = [ ("cachable", 70)
                , ("litLegend", 100), ("darkLegend", 100)
-               , ("noiseSet", 55), ("combatSet", 10) ]
+               , ("noiseSet", 55), ("combatSet", 3) ]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfeature = []
@@ -52,6 +52,14 @@ pillarCache = TileKind
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfeature = [Cause $ Effect.CreateItem 1, ChangeTo "cachable"]
+  }
+tree = TileKind
+  { tsymbol  = 'O'
+  , tname    = "tree"
+  , tfreq    = [("combatSet", 8)]
+  , tcolor   = BrGreen
+  , tcolor2  = Green
+  , tfeature = []
   }
 wallV = TileKind
   { tsymbol  = '|'
