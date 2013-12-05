@@ -1,0 +1,44 @@
+0.2.0
+
+	* the LambdaHack engine becomes a Haskell library
+
+	* the LambdaHack game depends on the engine library
+
+0.2.1
+
+	* missiles flying for three turns (by an old kosmikus' idea)
+
+	* visual feedback for targeting
+
+	* animations of combat and individual monster moves
+
+0.2.6
+
+	* the Main Menu
+
+	* improved and configurable mode of squad combat
+
+0.2.6.5
+
+	* this is a minor release, primarily intended to fix the broken haddock documentation on Hackage
+
+	* changes since 0.2.6 are mostly unrelated to gameplay: strictly typed config files split into UI and rules; a switch from Text to String throughout the codebase; use of the external library miniutter for English sentence generation
+
+0.2.8
+
+	* cooperative and competitive multiplayer (shared-screen only in this version)
+	* overhauled searching
+
+	* rewritten engine code to have a single server that sends restricted game state updates to many fat clients, while a thin frontend layer multiplexes visuals from a subset of the clients
+
+0.2.10
+
+	* screensaver game modes (AI vs AI)
+
+	* improved AI (can now climbs stairs, etc.)
+
+	* multiple, multi-floor staircases
+
+	* multiple savefiles
+
+	* configurable framerate and combat animations
