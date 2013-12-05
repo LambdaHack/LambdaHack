@@ -14,9 +14,9 @@ cdefs = ContentDef
   , getFreq = tfreq
   , validate = tvalidate
   , content =
-      [wall, hardRock, pillar, pillarCache, tree, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpDark, stairsUpLit, stairsDark, stairsLit, stairsDownDark, stairsDownLit, escapeUpDark, escapeUpLit, escapeDownDark, escapeDownLit, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorItemLit, floorItemDark, floorActorItemLit, floorActorItemDark, floorRed, floorBlue, floorGreen, floorBrown]
+      [wall, hardRock, pillar, pillarCache, tree, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpDark, stairsUpLit, stairsDark, stairsLit, stairsDownDark, stairsDownLit, escapeUpDark, escapeUpLit, escapeDownDark, escapeDownLit, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorItemLit, floorItemDark, floorActorItemLit, floorActorItemDark, floorRedDark, floorBlueDark, floorGreenDark, floorBrownDark, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit]
   }
-wall,        hardRock, pillar, pillarCache, tree, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpDark, stairsUpLit, stairsDark, stairsLit, stairsDownDark, stairsDownLit, escapeUpDark, escapeUpLit, escapeDownDark, escapeDownLit, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorItemLit, floorItemDark, floorActorItemLit, floorActorItemDark, floorRed, floorBlue, floorGreen, floorBrown :: TileKind
+wall,        hardRock, pillar, pillarCache, tree, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpDark, stairsUpLit, stairsDark, stairsLit, stairsDownDark, stairsDownLit, escapeUpDark, escapeUpLit, escapeDownDark, escapeDownLit, unknown, floorCorridorLit, floorCorridorDark, floorArenaLit, floorArenaDark, floorItemLit, floorItemDark, floorActorItemLit, floorActorItemDark, floorRedDark, floorBlueDark, floorGreenDark, floorBrownDark, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit :: TileKind
 
 wall = TileKind
   { tsymbol  = ' '
@@ -264,28 +264,44 @@ floorActorItemDark = floorItemDark
   { tfreq    = [("darkLegend", 100), ("emptySet", 1)]
   , tfeature = CanActor : tfeature floorItemDark
   }
-floorRed = floorArenaLit
+floorRedDark = floorArenaDark
   { tname    = "brick pavement"
-  , tfreq    = [("path", 30)]
+  , tfreq    = [("pathDark", 30)]
   , tcolor   = BrRed
   , tcolor2  = Red
-  , tfeature = Path : tfeature floorArenaLit
+  , tfeature = Path : tfeature floorArenaDark
   }
-floorBlue = floorRed
+floorRedLit  = floorRedDark
+  { tfreq    = [("pathLit", 30)]
+  , tfeature = Lit : tfeature floorRedDark
+  }
+floorBlueDark = floorRedDark
   { tname    = "granite cobblestones"
-  , tfreq    = [("path", 100)]
+  , tfreq    = [("pathDark", 100)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
   }
-floorGreen = floorRed
+floorBlueLit = floorBlueDark
+  { tfreq    = [("pathLit", 100)]
+  , tfeature = Lit : tfeature floorBlueDark
+  }
+floorGreenDark = floorRedDark
   { tname    = "mossy stone path"
-  , tfreq    = [("path", 100)]
+  , tfreq    = [("pathDark", 100)]
   , tcolor   = BrGreen
   , tcolor2  = Green
   }
-floorBrown = floorRed
+floorGreenLit = floorGreenDark
+  { tfreq    = [("pathLit", 100)]
+  , tfeature = Lit : tfeature floorGreenDark
+  }
+floorBrownDark = floorRedDark
   { tname    = "rotting mahogany deck"
-  , tfreq    = [("path", 10)]
+  , tfreq    = [("pathDark", 10)]
   , tcolor   = BrMagenta
   , tcolor2  = Magenta
+  }
+floorBrownLit = floorBrownDark
+  { tfreq    = [("pathLit", 10)]
+  , tfeature = Lit : tfeature floorBrownDark
   }
