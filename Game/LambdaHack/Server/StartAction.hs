@@ -175,10 +175,16 @@ gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}, corule}
 populateDungeon :: (MonadAtomic m, MonadServer m) => m ()
 populateDungeon = do
   cops@Kind.COps{cotile} <- getsState scops
-  let initialItems lid (Level{ltile, litemNum}) =
+  let initialItems lid (Level{ltile, litemNum, lxsize, lysize}) =
         replicateM litemNum $ do
-          pos <- rndToAction
-                 $ findPos ltile (const (Tile.hasFeature cotile F.CanItem))
+          Level{lfloor} <- getLevel lid
+          pos <- rndToAction $ findPosTry 1000 ltile
+                                 -- try really hard, for skirmish fairness
+                   [ \p _ -> all (flip EM.notMember lfloor)
+                             $ vicinity lxsize lysize p
+                   , \p _ -> EM.notMember p lfloor
+                   , const (Tile.hasFeature cotile F.CanItem)
+                   ]
           createItems 1 pos lid
   dungeon <- getsState sdungeon
   mapWithKeyM_ initialItems dungeon

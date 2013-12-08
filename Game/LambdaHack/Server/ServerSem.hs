@@ -366,6 +366,7 @@ addProjectile bpos rest iid blid bfid btime = do
 
 -- * ApplySer
 
+-- TODO: check actor has access to the item
 applySer :: (MonadAtomic m, MonadServer m)
          => ActorId    -- ^ actor applying the item (is on current level)
          -> ItemId     -- ^ the item to be applied
