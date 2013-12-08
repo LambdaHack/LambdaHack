@@ -27,7 +27,7 @@ overrideCP cp@(CP defCF) cfile = do
     then return cp
     else do
       c <- CF.readfile defCF cfile
-      return $ toCP $ forceEither c
+      return $ toCP $ assert `forceEither` c
 
 -- | Read a player configuration file and use it to override
 -- options from a default config. Currently we can't unset options,
@@ -39,7 +39,7 @@ mkConfig configDefault cfile = do
   let delComment = map (drop 2) $ lines configDefault
       unConfig = unlines delComment
       -- Evaluate, to catch config errors ASAP.
-      !defCF = forceEither $ CF.readstring CF.emptyCP unConfig
+      !defCF = assert `forceEither` CF.readstring CF.emptyCP unConfig
       !defCP = toCP defCF
   overrideCP defCP cfile
 
@@ -68,14 +68,14 @@ toCP cf = CP $ cf {CF.optionxform = id}
 get :: CF.Get_C a => CP -> CF.SectionSpec -> CF.OptionSpec -> a
 get (CP conf) s o =
   if CF.has_option conf s o
-  then forceEither $ CF.get conf s o
+  then assert `forceEither` CF.get conf s o
   else assert `failure` "unknown CF option" `with` (s, o, CF.to_string conf)
 
 -- | An association list corresponding to a section. Fails if no such section.
 getItems :: CP -> CF.SectionSpec -> [(String, String)]
 getItems (CP conf) s =
   if CF.has_section conf s
-  then forceEither $ CF.items conf s
+  then assert `forceEither` CF.items conf s
   else assert `failure` "unknown CF section" `with` (s, CF.to_string conf)
 
 parseConfigUI :: FilePath -> CP -> ConfigUI
