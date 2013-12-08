@@ -64,14 +64,14 @@ empty = rogue
   { csymbol       = '.'
   , cname         = "Tall cavern"
   , cfreq         = [("dng", 20), ("caveEmpty", 1)]
-  , cgrid         = rollDiceXY [(1, 2)] [(1, 1)]
+  , cgrid         = rollDiceXY [(1, 2), (1, 1)] [(1, 1)]
   , cminPlaceSize = rollDiceXY [(10, 1)] [(10, 1)]
   , cmaxPlaceSize = rollDiceXY [(fst normalLevelBound * 3 `div` 5, 1)]
                                [(snd normalLevelBound * 3 `div` 5, 1)]
   , cdarkChance   = rollDeep (1, 80) (1, 80)
   , cnightChance  = intToDeep 0
   , cauxConnects  = 1
-  , cmaxVoid      = 0
+  , cmaxVoid      = 1%2
   , cminStairDist = 50
   , chidden       = 1000
   , citemNum      = rollDice 8 2  -- whole floor strewn with treasure
