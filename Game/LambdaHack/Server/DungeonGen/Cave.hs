@@ -110,7 +110,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ opick
                            else fmap Right $ mkRoom minPlaceSize
                                                     maxPlaceSize innerArea
                      return (i, r')) gs
-  let hardRockId = ouniqGroup "hard rock"
+  let hardRockId = ouniqGroup "outer fence"
       fence = buildFence hardRockId subFullArea
   dnight <- chanceDeep ln depth cnightChance
   darkCorTile <- opick cdarkCorTile (const True)

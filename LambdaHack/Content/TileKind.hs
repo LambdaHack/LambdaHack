@@ -20,7 +20,7 @@ wall,        hardRock, pillar, pillarCache, tree, wallV, wallSuspectV, doorClose
 
 wall = TileKind
   { tsymbol  = ' '
-  , tname    = "rock"
+  , tname    = "bedrock"
   , tfreq    = [("fillerWall", 1), ("litLegend", 100), ("darkLegend", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
@@ -28,15 +28,15 @@ wall = TileKind
   }
 hardRock = TileKind
   { tsymbol  = ' '
-  , tname    = "hard rock"
-  , tfreq    = [("hard rock", 1)]
+  , tname    = "impenetrable bedrock"
+  , tfreq    = [("outer fence", 1)]
   , tcolor   = BrBlack
   , tcolor2  = BrBlack
   , tfeature = [Impenetrable]
   }
 pillar = TileKind
   { tsymbol  = 'O'
-  , tname    = "pillar"
+  , tname    = "rock"
   , tfreq    = [ ("cachable", 70)
                , ("litLegend", 100), ("darkLegend", 100)
                , ("noiseSet", 55), ("combatSet", 3) ]
@@ -46,7 +46,7 @@ pillar = TileKind
   }
 pillarCache = TileKind
   { tsymbol  = '&'
-  , tname    = "wall cache"
+  , tname    = "cache"
   , tfreq    = [ ("cachable", 30)
                , ("litLegend", 100), ("darkLegend", 100) ]
   , tcolor   = BrWhite

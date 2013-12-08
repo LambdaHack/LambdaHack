@@ -31,13 +31,13 @@ consists of large number of tiles. The basic tiles are as follows.
                floor                              .
                corridor                           #
                wall (horizontal and vertical)     - and |
-               pillar                             O
-               wall cache                         &
+               rock or tree                       O
+               cache                              &
                stairs up                          <
                stairs down                        >
                open door                          | and -
                closed door                        +
-               rock                               blank
+               bedrock                            blank
 
 The game world is persistent, i.e., every time the player visits a level
 during a single game, the level layout is the same.
