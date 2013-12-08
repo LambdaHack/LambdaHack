@@ -249,11 +249,11 @@ floorArenaDark = floorCorridorDark
   , tcolor2  = BrBlack
   }
 floorItemLit = floorArenaLit
-  { tfreq    = [("combatSet", 20)]
+  { tfreq    = []
   , tfeature = CanItem : tfeature floorArenaLit
   }
 floorItemDark = floorArenaDark
-  { tfreq    = [("combatSet", 20)]
+  { tfreq    = []
   , tfeature = CanItem : tfeature floorArenaDark
   }
 floorActorItemLit = floorItemLit
