@@ -89,7 +89,7 @@ effectToSuffix effect = effectToSuff effect affixBonus
 affixPower :: Int -> Text
 affixPower p = case compare p 1 of
   EQ -> ""
-  LT -> assert `failure` "power less than 1" `with` p
+  LT -> assert `failure` "power less than 1" `twith` p
   GT -> " (+" <> showT p <> ")"
 
 affixBonus :: Int -> Text

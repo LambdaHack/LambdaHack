@@ -256,13 +256,13 @@ getItem aid prompt p ptext bag inv isn = do
           K.Char l ->
             case find ((InvChar l ==) . snd . snd) ims of
               Nothing -> assert `failure` "unexpected inventory letter"
-                                `with` (km, l,  ims)
+                                `twith` (km, l,  ims)
               Just (iidItem, (k, l2)) ->
                 return (iidItem, (k, CActor aid l2))
           K.Return | bestFull ->
             let (iidItem, (k, l2)) = maximumBy (compare `on` snd . snd) isp
             in return (iidItem, (k, CActor aid l2))
-          _ -> assert `failure` "unexpected key:" `with` km
+          _ -> assert `failure` "unexpected key:" `twith` km
   ask
 
 -- * Project
@@ -274,7 +274,7 @@ projectAid source ts = do
   target <- targetToPos
   let tpos = case target of
         Just p -> p
-        Nothing -> assert `failure` "target unexpectedly invalid" `with` source
+        Nothing -> assert `failure` "target unexpectedly invalid" `twith` source
   eps <- getsClient seps
   sb <- getsState $ getActorBody source
   let lid = blid sb
@@ -288,7 +288,7 @@ projectAid source ts = do
       case bla lxsize lysize eps spos tpos of
         Nothing -> abortFailure ProjectAimOnself
         Just [] -> assert `failure` "project from the edge of level"
-                          `with` (spos, tpos, sb, ts)
+                          `twith` (spos, tpos, sb, ts)
         Just (pos : _) -> do
           as <- getsState $ actorList (const True) lid
           lvl <- getLevel lid

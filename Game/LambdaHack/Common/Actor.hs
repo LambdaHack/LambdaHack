@@ -216,9 +216,9 @@ letterLabel c = MU.Text $ T.pack $ invChar c : " -"
 
 rmFromBag :: Int -> ItemId -> ItemBag -> ItemBag
 rmFromBag k iid bag =
-  let rib Nothing = assert `failure` "rm from empty bag" `with` (k, iid, bag)
+  let rib Nothing = assert `failure` "rm from empty bag" `twith` (k, iid, bag)
       rib (Just n) = case compare n k of
-        LT -> assert `failure` "rm more than there is" `with` (n, k, iid, bag)
+        LT -> assert `failure` "rm more than there is" `twith` (n, k, iid, bag)
         EQ -> Nothing
         GT -> Just (n - k)
   in EM.alter rib iid bag

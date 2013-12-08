@@ -44,7 +44,7 @@ random = St.state R.random
 
 -- | Get any element of a list with equal probability.
 oneOf :: [a] -> Rnd a
-oneOf [] = assert `failure` "oneOf []" `with` ()
+oneOf [] = assert `failure` "oneOf []" `twith` ()
 oneOf xs = do
   r <- randomR (0, length xs - 1)
   return (xs !! r)
@@ -79,7 +79,7 @@ instance Binary RollDice
 
 rollDice :: Int -> Int -> RollDice
 rollDice a b = assert (a >= 0 && a <= 255 && b >= 0 && b <= 255
-                       `blame` "dice out of bounds" `with` (a, b))
+                       `blame` "dice out of bounds" `twith` (a, b))
                $ RollDice (toEnum a) (toEnum b)
 
 -- | Cast dice and sum the results.
@@ -151,7 +151,7 @@ castDeep n' depth' (RollDeep d1 d2) = do
   let n = abs n'
       depth = abs depth'
   assert (n > 0 && n <= depth `blame` "invalid current depth for dice rolls"
-                              `with` (n, depth)) skip
+                              `twith` (n, depth)) skip
   r1 <- castDice d1
   r2 <- castDice d2
   return $ r1 + ((n - 1) * r2) `div` max 1 (depth - 1)
@@ -170,7 +170,7 @@ intToDeep :: Int -> RollDeep
 intToDeep 0  = RollDeep (RollDice 0 0) (RollDice 0 0)
 intToDeep n' = let n = toEnum n'
                in if n > maxBound || n < minBound
-                  then assert `failure` "Deep out of bound" `with` n'
+                  then assert `failure` "Deep out of bound" `twith` n'
                   else RollDeep (RollDice n 1) (RollDice 0 0)
 
 -- | Maximal value of scaled dice.

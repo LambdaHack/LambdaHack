@@ -64,7 +64,7 @@ dump Config{configSelfString} fn = do
 set :: CP -> CF.SectionSpec -> CF.OptionSpec -> String -> CP
 set (CP conf) s o v =
   if CF.has_option conf s o
-  then assert `failure`"overwritten config option" `with` (s, o)
+  then assert `failure`"overwritten config option" `twith` (s, o)
   else CP $ assert `forceEither` CF.set conf s o v
 
 -- | Gets a random generator from the config or,
@@ -113,14 +113,14 @@ get :: CF.Get_C a => CP -> CF.SectionSpec -> CF.OptionSpec -> a
 get (CP conf) s o =
   if CF.has_option conf s o
   then assert `forceEither` CF.get conf s o
-  else assert `failure` "unknown CF option" `with` (s, o, CF.to_string conf)
+  else assert `failure` "unknown CF option" `twith` (s, o, CF.to_string conf)
 
 -- | An association list corresponding to a section. Fails if no such section.
 getItems :: CP -> CF.SectionSpec -> [(String, String)]
 getItems (CP conf) s =
   if CF.has_section conf s
   then assert `forceEither` CF.items conf s
-  else assert `failure` "unknown CF section" `with` (s, CF.to_string conf)
+  else assert `failure` "unknown CF section" `twith` (s, CF.to_string conf)
 
 parseConfigRules :: FilePath -> CP -> Config
 parseConfigRules dataDir cp =
@@ -136,7 +136,7 @@ parseConfigRules dataDir cp =
         let toNumber (ident, name) =
               case stripPrefix "HeroName_" ident of
                 Just n -> (read n, T.pack name)
-                Nothing -> assert `failure` "wrong hero name id" `with` ident
+                Nothing -> assert `failure` "wrong hero name id" `twith` ident
             section = getItems cp "heroName"
         in map toNumber section
   in Config{..}

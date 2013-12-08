@@ -179,7 +179,7 @@ dungeonGen cops caves = do
   let (minD, maxD) =
         case (EM.minViewWithKey caves, EM.maxViewWithKey caves) of
           (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
-          _ -> assert `failure` "no caves" `with` caves
+          _ -> assert `failure` "no caves" `twith` caves
       totalDepth = if minD == maxD
                    then 10
                    else fromEnum maxD - fromEnum minD + 1

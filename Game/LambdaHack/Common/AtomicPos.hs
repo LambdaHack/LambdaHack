@@ -235,11 +235,11 @@ seenAtomicCli knowEvents fid per posAtomic =
     PosFidAndSer fid2 -> fid == fid2
     PosSer -> False
     PosAll -> True
-    PosNone -> assert `failure` "no position possible" `with` fid
+    PosNone -> assert `failure` "no position possible" `twith` fid
 
 seenAtomicSer :: PosAtomic -> Bool
 seenAtomicSer posAtomic =
   case posAtomic of
     PosFid _ -> False
-    PosNone -> assert `failure` "wrong position for server" `with` posAtomic
+    PosNone -> assert `failure` "wrong position for server" `twith` posAtomic
     _ -> True

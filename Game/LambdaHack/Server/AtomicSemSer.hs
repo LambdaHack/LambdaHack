@@ -133,7 +133,7 @@ atomicSendSem atomic = do
         PosFidAndSer fid2 -> when (fid == fid2) $ sendUpdate fid atomic
         PosSer -> return ()
         PosAll -> sendUpdate fid atomic
-        PosNone -> assert `failure` "illegal sending" `with` (atomic, fid)
+        PosNone -> assert `failure` "illegal sending" `twith` (atomic, fid)
   mapWithKeyM_ (\fid _ -> send fid) factionD
 
 atomicRemember :: LevelId -> Perception -> State -> [CmdAtomic]

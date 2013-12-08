@@ -115,7 +115,7 @@ tryIgnore :: MonadClientAbort m => m () -> m ()
 tryIgnore =
   tryWith (\msg -> unless (T.null msg)
                    $ assert `failure` "can't catch failure with message"
-                            `with` msg)
+                            `twith` msg)
 
 -- | Set the current exception handler. Apart of executing it,
 -- draw and pass along a slide with the abort message (even if message empty).
@@ -165,7 +165,7 @@ getLeaderUI :: MonadClientUI m => m ActorId
 getLeaderUI = do
   cli <- getClient
   case _sleader cli of
-    Nothing -> assert `failure` "leader expected but not found" `with` cli
+    Nothing -> assert `failure` "leader expected but not found" `twith` cli
     Just leader -> return leader
 
 getArenaUI :: MonadClientUI m => m LevelId
@@ -184,7 +184,7 @@ getArenaUI = do
           let (minD, maxD) =
                 case (EM.minViewWithKey dungeon, EM.maxViewWithKey dungeon) of
                   (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
-                  _ -> assert `failure` "empty dungeon" `with` dungeon
+                  _ -> assert `failure` "empty dungeon" `twith` dungeon
           return $ max minD $ min maxD $ playerEntry $ gplayer fact
 
 -- | Calculate the position of leader's target.
@@ -234,7 +234,7 @@ getPerFid :: MonadClient m => LevelId -> m Perception
 getPerFid lid = do
   fper <- getsClient sfper
   return $! fromMaybe (assert `failure` "no perception at given level"
-                              `with` (lid, fper))
+                              `twith` (lid, fper))
                       $ EM.lookup lid fper
 
 -- | Display an overlay and wait for a human player command.

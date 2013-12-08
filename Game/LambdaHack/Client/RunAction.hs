@@ -40,7 +40,7 @@ canRun leader (dir, dist) = do
   lvl <- getLevel $ blid b
   stgtMode <- getsClient stgtMode
   assert (isNothing stgtMode `blame` "attempt to run in target mode"
-                             `with` (dir, dist, stgtMode)) skip
+                             `twith` (dir, dist, stgtMode)) skip
   return $ accessibleDir cops lvl (bpos b) dir
 
 runDir :: MonadClient m => ActorId -> (Vector, Int) -> m (Vector, Int)
@@ -74,7 +74,7 @@ runMode pos dir dirEnterable lxsize =
         in L.foldr f []
       dirsEnterable = L.filter (dirEnterable pos) (moves lxsize)
   in case dirsEnterable of
-    [] -> assert `failure` "actor is stuck" `with` (pos, dir)  -- TODO
+    [] -> assert `failure` "actor is stuck" `twith` (pos, dir)  -- TODO
     [negdir] -> assert (negdir == neg dir) RunDeadEnd
     _ ->
       let dirsOpen = findOpen dirsEnterable

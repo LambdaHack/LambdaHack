@@ -69,21 +69,21 @@ get :: CF.Get_C a => CP -> CF.SectionSpec -> CF.OptionSpec -> a
 get (CP conf) s o =
   if CF.has_option conf s o
   then assert `forceEither` CF.get conf s o
-  else assert `failure` "unknown CF option" `with` (s, o, CF.to_string conf)
+  else assert `failure` "unknown CF option" `twith` (s, o, CF.to_string conf)
 
 -- | An association list corresponding to a section. Fails if no such section.
 getItems :: CP -> CF.SectionSpec -> [(String, String)]
 getItems (CP conf) s =
   if CF.has_section conf s
   then assert `forceEither` CF.items conf s
-  else assert `failure` "unknown CF section" `with` (s, CF.to_string conf)
+  else assert `failure` "unknown CF section" `twith` (s, CF.to_string conf)
 
 parseConfigUI :: FilePath -> CP -> ConfigUI
 parseConfigUI dataDir cp =
   let mkKey s =
         case K.keyTranslate s of
           K.Unknown _ ->
-            assert `failure` "unknown config file key" `with` (s, cp)
+            assert `failure` "unknown config file key" `twith` (s, cp)
           key -> key
       mkKM ('C':'T':'R':'L':'-':s) = K.KM {key=mkKey s, modifier=K.Control}
       mkKM s = K.KM {key=mkKey s, modifier=K.NoModifier}
@@ -99,7 +99,7 @@ parseConfigUI dataDir cp =
               let fromTr = mkKM from
                   toTr  = mkKM to
               in if fromTr == toTr
-                 then assert `failure` "degenerate alias" `with` toTr
+                 then assert `failure` "degenerate alias" `twith` toTr
                  else (fromTr, toTr)
             section = getItems cp "macros"
         in map trMacro section

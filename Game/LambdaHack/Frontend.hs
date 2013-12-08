@@ -198,7 +198,7 @@ loopFrontend fs ConnMulti{..} = loop Nothing EM.empty
         reqMap2 <- flushFade fr1 oldFidFrame reqMap fid
         let displayFrs frs =
               case frs of
-                [] -> assert `failure` "null slides" `with` fid
+                [] -> assert `failure` "null slides" `twith` fid
                 [x] -> do
                   fdisplay fs False (Just x)
                   writeKM fid K.KM {key=K.Space, modifier=K.NoModifier}

@@ -144,7 +144,7 @@ meleeSer source target = do
       if bproj sb   -- projectile
       then case itemAssocs of
         [(iid, item)] -> return (Just iid, item)
-        _ -> assert `failure` "projectile with wrong items" `with` itemAssocs
+        _ -> assert `failure` "projectile with wrong items" `twith` itemAssocs
       else case strongestSword cops itemAssocs of
         Just (_, (iid, w)) -> return (Just iid, w)  -- weapon combat
         Nothing -> do  -- hand to hand combat
@@ -274,7 +274,7 @@ waitSer aid = do
 pickupSer :: MonadAtomic m
           => ActorId -> ItemId -> Int -> InvChar -> m ()
 pickupSer aid iid k l = assert (k > 0 `blame` "pick up no items"
-                                      `with` (aid, iid, k, l)) $ do
+                                      `twith` (aid, iid, k, l)) $ do
   b <- getsState $ getActorBody aid
   execCmdAtomic $ MoveItemA iid k (CFloor (blid b) (bpos b)) (CActor aid l)
 
@@ -310,7 +310,7 @@ projectSer source tpos eps iid container = do
       case bla lxsize lysize eps spos tpos of
         Nothing -> execFailure sb ProjectAimOnself
         Just [] -> assert `failure` "projecting from the edge of level"
-                          `with` (spos, tpos)
+                          `twith` (spos, tpos)
         Just (pos : rest) -> do
           as <- getsState $ actorList (const True) lid
           lvl <- getLevel lid

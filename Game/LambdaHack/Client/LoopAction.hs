@@ -50,7 +50,7 @@ loopAI sdebugCli cmdClientAISem = do
         "Savefile of client" <+> showT side
         <+> "not usable. Removing server savefile. Please restart now."
     (False, CmdAtomicAI RestartA{}) -> return ()
-    _ -> assert `failure` "unexpected command" `with` (side, restored, cmd1)
+    _ -> assert `failure` "unexpected command" `twith` (side, restored, cmd1)
   cmdClientAISem cmd1
   -- State and client state now valid.
   debugPrint $ "AI client" <+> showT side <+> "started."
@@ -90,7 +90,7 @@ loopUI sdebugCli cmdClientUISem = do
       let msg = "Welcome to" <+> title <> "!"
       cmdClientUISem cmd1
       msgAdd msg
-    _ -> assert `failure` "unexpected command" `with` (side, restored, cmd1)
+    _ -> assert `failure` "unexpected command" `twith` (side, restored, cmd1)
   -- State and client state now valid.
   debugPrint $ "UI client" <+> showT side <+> "started."
   loop

@@ -249,7 +249,7 @@ handleActors cmdSerSem lid = do
             bPre <- getsState $ getActorBody leaderNew
             assert (bfid bPre == side
                     `blame` "client tries to move other faction actors"
-                    `with` (bPre, side)) skip
+                    `twith` (bPre, side)) skip
             return (leaderNew, bPre)
           extraFrames bPre = do
             -- Generate extra frames if the actor has already moved during
@@ -302,7 +302,7 @@ handleActors cmdSerSem lid = do
         (leaderNew, bPre) <- switchLeader cmdS
         assert (not (bhp bPre <= 0 && not (bproj bPre))
                 `blame` "AI switches to an incapacitated actor"
-                `with` (cmdS, bPre, side)) skip
+                `twith` (cmdS, bPre, side)) skip
         void $ cmdSerSem cmdS
         -- AI always takes time and so doesn't loop.
         advanceTime leaderNew
@@ -457,7 +457,7 @@ saveAndExit = do
   pers <- getsState $ dungeonPerception cops
                                         (fromMaybe (Digital 12) fovMode)
   assert (persSaved == pers `blame` "wrong saved perception"
-                            `with` (persSaved, pers)) skip
+                            `twith` (persSaved, pers)) skip
 
 restartGame :: (MonadAtomic m, MonadConnServer m)
             => m () -> m () -> m ()

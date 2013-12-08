@@ -126,7 +126,7 @@ createFactions Kind.COps{cofact=Kind.Ops{opick}} players = do
               case (findPlayerName name1 lFs, findPlayerName name2 lFs) of
                 (Just (ix1, _), Just (ix2, _)) -> (ix1, ix2)
                 _ -> assert `failure` "unknown faction"
-                            `with` ((name1, name2), lFs)
+                            `twith` ((name1, name2), lFs)
             ixs = map f l
         -- Only symmetry is ensured, everything else is permitted, e.g.,
         -- a faction in alliance with two others that are at war.
@@ -187,7 +187,7 @@ populateDungeon = do
   let (minD, maxD) =
         case (EM.minViewWithKey dungeon, EM.maxViewWithKey dungeon) of
           (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
-          _ -> assert `failure` "empty dungeon" `with` dungeon
+          _ -> assert `failure` "empty dungeon" `twith` dungeon
       needInitialCrew = filter ((> 0 ) . playerInitial . gplayer . snd)
                         $ EM.assocs factionD
       getEntryLevel (_, fact) =

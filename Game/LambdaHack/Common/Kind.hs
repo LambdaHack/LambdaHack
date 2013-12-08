@@ -82,25 +82,25 @@ createOps ContentDef{getName, getFreq, content, validate} =
             lists = L.foldl' f M.empty tuples
             nameFreq group = toFreq $ "opick ('" <> group <> "')"
         in M.mapWithKey nameFreq lists
-      okind i = fromMaybe (assert `failure` "no kind" `with` (i, kindMap))
+      okind i = fromMaybe (assert `failure` "no kind" `twith` (i, kindMap))
                 $ EM.lookup i kindMap
       correct a = not (T.null (getName a)) && L.all ((> 0) . snd) (getFreq a)
       offenders = validate content
   in assert (allB correct content) $
-     assert (L.null offenders `blame` "content not valid" `with` offenders)
+     assert (L.null offenders `blame` "content not valid" `twith` offenders)
      -- By this point 'content' can be GCd.
      Ops
        { okind
        , ouniqGroup = \group ->
            let freq = fromMaybe (assert `failure` "no unique group"
-                                        `with` (group, kindFreq))
+                                        `twith` (group, kindFreq))
                       $ M.lookup group kindFreq
            in case runFrequency freq of
              [(n, (i, _))] | n > 0 -> i
-             l -> assert `failure` "not unique" `with` (l, group, kindFreq)
+             l -> assert `failure` "not unique" `twith` (l, group, kindFreq)
        , opick = \group p ->
            let freq = fromMaybe (assert `failure` "no group to pick from"
-                                        `with` (group, kindFreq))
+                                        `twith` (group, kindFreq))
                       $ M.lookup group kindFreq
            in frequency $ do
              (i, k) <- freq

@@ -13,7 +13,7 @@
 -- in your .cabal file. Otherwise, some of the functions will have
 -- no effect at all.
 module Game.LambdaHack.Utils.Assert
-  ( assert, blame, failure, with, swith, allB, skip, forceEither
+  ( assert, blame, failure, twith, swith, allB, skip, forceEither
   ) where
 
 import Control.Exception (assert)
@@ -51,22 +51,22 @@ failure asrt blamed =
      $ asrt False
      $ error "Assert.failure: no error position (upgrade to GHC >= 7.4)"
 
-infix 2 `with`
+infix 2 `twith`
 -- | Syntactic sugar for the pair operation, to be used in 'blame'
 -- and 'failure' as in
 --
--- > assert (age >= 0 `blame` "negative age" `with` age) $ savings / (99 - age)
+-- > assert (age >= 0 `blame` "negative age" `twith` age) $ savings / (99 - age)
 --
 -- or
 --
 -- > case xs of
--- >   0 : _ -> assert `failure` "insignificant zero" `with` xs
+-- >   0 : _ -> assert `failure` "insignificant zero" `twith` xs
 --
 -- Fixing the first component of the pair to @Text@ prevents warnings
 -- about defaulting.
-with :: Text -> b -> (Text, b)
-{-# INLINE with #-}
-with t b = (t, b)
+twith :: Text -> b -> (Text, b)
+{-# INLINE twith #-}
+twith t b = (t, b)
 
 infix 2 `swith`
 -- | Syntactic sugar for the pair operation, to be used in 'blame'
@@ -102,7 +102,7 @@ allBMessage predicate l = Show.Pretty.ppShow (filter (not . predicate) l)
 -- | To be used in place of the verbose @(return ())@, as in
 --
 -- > do k <- getK7 r
--- >    assert (k <= maxK `blame` "K7 too large" `with` r) skip
+-- >    assert (k <= maxK `blame` "K7 too large" `twith` r) skip
 -- >    return $ k >= averageK
 skip :: Monad m => m ()
 {-# INLINE skip #-}

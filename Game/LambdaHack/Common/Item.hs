@@ -88,7 +88,7 @@ serverDiscos Kind.Ops{obounds, ofoldrWithKey} = do
   let f ik _ (ikMap, ikRev, ix : rest) =
         (EM.insert ix ik ikMap, EM.insert ik ix ikRev, rest)
       f ik  _ (ikMap, _, []) =
-        assert `failure` "too short ixs" `with` (ik, ikMap)
+        assert `failure` "too short ixs" `twith` (ik, ikMap)
       (discoS, discoRev, _) =
         ofoldrWithKey f (EM.empty, EM.empty, shuffled)
   return (discoS, discoRev)

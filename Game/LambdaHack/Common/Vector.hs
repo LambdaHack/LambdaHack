@@ -48,7 +48,7 @@ isUnit lxsize = isUnitXY . fromDir lxsize
 toDir :: X -> VectorXY -> Vector
 toDir lxsize v@(VectorXY (x, y)) =
   assert (lxsize >= 3 && isUnitXY v `blame` "ambiguous XY vector conversion"
-                                    `with` (lxsize, v)) $
+                                    `twith` (lxsize, v)) $
   Vector $ x + y * lxsize
 
 -- | Converts a unit vector in the offset representation
@@ -58,7 +58,7 @@ fromDir :: X -> Vector -> VectorXY
 fromDir lxsize (Vector dir) =
   assert (lxsize >= 3 && isUnitXY res &&
           fst len1 + snd len1 * lxsize == dir
-          `blame` "ambiguous vector conversion" `with` (lxsize, dir, res))
+          `blame` "ambiguous vector conversion" `twith` (lxsize, dir, res))
   res
  where
   (x, y) = (dir `mod` lxsize, dir `div` lxsize)
@@ -109,7 +109,7 @@ neg (Vector dir) = Vector (-dir)
 -- (in the euclidean metric) maximally align with the original vector.
 normalize :: X -> VectorXY -> Vector
 normalize lxsize v@(VectorXY (dx, dy)) =
-  assert (dx /= 0 || dy /= 0 `blame` "can't normalize zero" `with` (dx, dy)) $
+  assert (dx /= 0 || dy /= 0 `blame` "can't normalize zero" `twith` (dx, dy)) $
   let angle :: Double
       angle = atan (fromIntegral dy / fromIntegral dx) / (pi / 2)
       dxy | angle <= -0.75 && angle >= -1.25 = (0, -1)
@@ -118,13 +118,13 @@ normalize lxsize v@(VectorXY (dx, dy)) =
           | angle <= 0.75  = (1, 1)
           | angle <= 1.25  = (0, 1)
           | otherwise = assert `failure` "impossible angle"
-                               `with` (lxsize, dx, dy, angle)
+                               `twith` (lxsize, dx, dy, angle)
       rxy = if dx >= 0
             then VectorXY dxy
             else negXY $ VectorXY dxy
   in assert (not (isUnitXY v) || v == rxy
              `blame` "unit vector gets untrivially normalized"
-             `with` (v, rxy))
+             `twith` (v, rxy))
      $ toDir lxsize rxy
 
 -- TODO: Perhaps produce all acceptable directions and let AI choose.
@@ -139,7 +139,7 @@ normalize lxsize v@(VectorXY (dx, dy)) =
 -- the two points.
 towards :: X -> Point -> Point -> Vector
 towards lxsize pos0 pos1 =
-  assert (pos0 /= pos1 `blame` "towards self" `with` (pos0, pos1)) $
+  assert (pos0 /= pos1 `blame` "towards self" `twith` (pos0, pos1)) $
   let v = displacementXYZ lxsize pos0 pos1
   in normalize lxsize v
 

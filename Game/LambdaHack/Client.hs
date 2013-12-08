@@ -64,7 +64,7 @@ cmdClientUISem cmd = case cmd of
     storeUndo $ SfxAtomic sfx
   CmdQueryUI aid -> do
     mleader <- getsClient _sleader
-    assert (isJust mleader `blame` "query without leader" `with` cmd) skip
+    assert (isJust mleader `blame` "query without leader" `twith` cmd) skip
     cmdH <- queryUI aid
     writeServer cmdH
   CmdPingUI -> do
@@ -119,7 +119,7 @@ exeFrontend executorUI executorAI
       s = updateCOps (const cops) emptyState
       eClientAI fid =
         let noSession = assert `failure` "AI client needs no UI session"
-                               `with` fid
+                               `twith` fid
         in exeClientAI noSession s (cli fid True)
       eClientUI fid fromF =
         let sfconn = connFrontend fid fromF

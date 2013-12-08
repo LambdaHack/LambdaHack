@@ -48,13 +48,13 @@ showPoint lxsize = showT . fromPoint lxsize
 toPoint :: X -> PointXY -> Point
 toPoint lxsize (PointXY (x, y)) =
   assert (lxsize > x && x >= 0 && y >= 0 `blame` "invalid point coordinates"
-                                         `with` (lxsize, x, y))
+                                         `twith` (lxsize, x, y))
   $ Point $ x + y * lxsize
 
 -- | Conversion from @Point@ to cartesian coordinates.
 fromPoint :: X -> Point -> PointXY
 fromPoint lxsize (Point p) =
-  assert (p >= 0 `blame` "negative point value" `with` (lxsize, p))
+  assert (p >= 0 `blame` "negative point value" `twith` (lxsize, p))
   $ PointXY (p `rem` lxsize, p `quot` lxsize)
 
 -- | The top-left corner position of the level.

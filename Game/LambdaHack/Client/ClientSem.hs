@@ -135,7 +135,7 @@ queryAIPick aid = do
   side <- getsClient sside
   body <- getsState $ getActorBody aid
   assert (bfid body == side `blame` "AI tries to move enemy actor"
-                            `with` (aid, bfid body, side)) skip
+                            `twith` (aid, bfid body, side)) skip
   mleader <- getsClient _sleader
   fact <- getsState $ (EM.! bfid body) . sfactionD
   let factionAbilities
@@ -170,7 +170,7 @@ queryUI aid = do
   -- the human player issue commands, until any of them takes time.
   leader <- getLeaderUI
   assert (leader == aid `blame` "player moves not his leader"
-                        `with` (leader, aid)) skip
+                        `twith` (leader, aid)) skip
   let inputHumanCmd msg = do
         stopRunning
         humanCommand msg
@@ -223,7 +223,7 @@ humanCommand msgRunAbort = do
           Just cmdS -> do
             assert (null (runSlideshow slides)
                     `blame` "some slides generated for server command"
-                    `with` slides) skip
+                    `twith` slides) skip
             -- Exit the loop and let other actors act. No next key needed
             -- and no slides could have been generated.
             modifyClient (\st -> st {slastKey = Nothing})

@@ -62,7 +62,7 @@ toFreq = Frequency
 -- by a positive integer constant.
 scaleFreq :: Show a => Int -> Frequency a -> Frequency a
 scaleFreq n (Frequency name xs) =
-  assert (n > 0 `blame` "non-positive frequency scale" `with` (name, n, xs)) $
+  assert (n > 0 `blame` "non-positive frequency scale" `twith` (name, n, xs)) $
   Frequency name (map (first (* n)) xs)
 
 -- | Change the description of the frequency.
@@ -72,19 +72,19 @@ renameFreq newName fr = fr {nameFrequency = newName}
 -- | Randomly choose an item according to the distribution.
 rollFreq :: Show a => Frequency a -> R.StdGen -> (a, R.StdGen)
 rollFreq (Frequency name []) _ =
-  assert `failure` "choice from an empty frequency" `with` name
+  assert `failure` "choice from an empty frequency" `twith` name
 rollFreq (Frequency name [(n, x)]) _ | n <= 0 =
-  assert `failure` "singleton void frequency" `with` (name, n, x)
+  assert `failure` "singleton void frequency" `twith` (name, n, x)
 rollFreq (Frequency _ [(_, x)]) g = (x, g)  -- speedup
 rollFreq (Frequency name fs) g =
-  assert (sumf > 0 `blame` "frequency with nothing to pick" `with` (name, fs))
+  assert (sumf > 0 `blame` "frequency with nothing to pick" `twith` (name, fs))
     (frec r fs, ng)
  where
   sumf = sum (map fst fs)
   (r, ng) = R.randomR (1, sumf) g
   frec :: Int -> [(Int, a)] -> a
   frec m []                     = assert `failure` "impossible roll"
-                                         `with` (name, fs, m)
+                                         `twith` (name, fs, m)
   frec m ((n, x) : _)  | m <= n = x
   frec m ((n, _) : xs)          = frec (m - n) xs
 

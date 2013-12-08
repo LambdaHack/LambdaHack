@@ -76,7 +76,7 @@ cursorLevel = do
   stgtMode <- getsClient stgtMode
   cli <- getClient
   let tgtId = maybe (assert `failure` "not targetting right now"
-                            `with` cli) tgtLevelId stgtMode
+                            `twith` cli) tgtLevelId stgtMode
   return $! dungeon EM.! tgtId
 
 viewedLevel :: MonadClientUI m => m (LevelId, Level)
@@ -222,7 +222,7 @@ memberCycleHuman = do
     [] -> abortWith "Cannot select any other member on this level."
     (np, b) : _ -> do
       success <- selectLeader np
-      assert (success `blame` "same leader" `with` (leader, np, b)) skip
+      assert (success `blame` "same leader" `twith` (leader, np, b)) skip
 
 partyAfterLeader :: MonadActionRO m
                  => ActorId
@@ -249,7 +249,7 @@ selectLeader actor = do
     else do
       pbody <- getsState $ getActorBody actor
       assert (not (bproj pbody) `blame` "projectile chosen as the leader"
-                                `with` (actor, pbody)) skip
+                                `twith` (actor, pbody)) skip
       -- Even if it's already the leader, give his proper name, not 'you'.
       let subject = partActor pbody
       msgAdd $ makeSentence [subject, "selected"]
@@ -279,7 +279,7 @@ memberBackHuman = do
     [] -> abortWith "No other member in the party."
     (np, b) : _ -> do
       success <- selectLeader np
-      assert (success `blame` "same leader" `with` (leader, np, b)) skip
+      assert (success `blame` "same leader" `twith` (leader, np, b)) skip
 
 -- * Inventory
 
@@ -397,7 +397,7 @@ tgtAscendHuman k = do
   case rightStairs of
     Just cpos -> do  -- stairs, in the right direction
       (nln, npos) <- getsState $ whereTo tgtId cpos k
-      assert (nln /= tgtId `blame` "stairs looped" `with` nln) skip
+      assert (nln /= tgtId `blame` "stairs looped" `twith` nln) skip
       -- Do not freely reveal the other end of the stairs.
       let scursor =
             if Tile.hasFeature cotile F.Exit (lvl `at` npos)
@@ -490,7 +490,7 @@ displayMainMenu = do
       menuOverlay =  -- TODO: switch to Text and use T.justifyLeft
         overwrite $ pasteVersion $ map T.unpack $ stripFrame mainMenuArt
   case menuOverlay of
-    [] -> assert `failure` "empty Main Menu overlay" `with` mainMenuArt
+    [] -> assert `failure` "empty Main Menu overlay" `twith` mainMenuArt
     hd : tl -> do
       slides <- overlayToSlideshow hd tl  -- TODO: keys don't work if tl/=[]
       tell slides

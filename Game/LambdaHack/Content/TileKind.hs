@@ -45,7 +45,7 @@ tvalidate lt =
                                  , [kt] )) lt
       mapFov :: (TileKind -> Color) -> M.Map (Char, Bool, Color) [TileKind]
       mapFov f = M.fromListWith (++) $ listFov f
-      namesUnequal [] = assert `failure` "no TileKind content" `with` lt
+      namesUnequal [] = assert `failure` "no TileKind content" `twith` lt
       namesUnequal (hd : tl) = -- Check that at least one is different.
                                L.any (/= tname hd) (L.map tname tl)
       confusions f = L.filter namesUnequal $ M.elems $ mapFov f

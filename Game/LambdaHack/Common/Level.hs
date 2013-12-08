@@ -47,7 +47,7 @@ ascendInBranch dungeon lid k =
   let (minD, maxD) =
         case (EM.minViewWithKey dungeon, EM.maxViewWithKey dungeon) of
           (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
-          _ -> assert `failure` "null dungeon" `with` dungeon
+          _ -> assert `failure` "null dungeon" `twith` dungeon
       ln = max minD $ min maxD $ toEnum $ fromEnum lid + k
   in case EM.lookup ln dungeon of
     Just _ | ln /= lid -> [ln]
@@ -113,7 +113,7 @@ updateTile f lvl = lvl {ltile = f (ltile lvl)}
 
 assertSparseItems :: ItemFloor -> ItemFloor
 assertSparseItems m =
-  assert (EM.null (EM.filter EM.null m) `blame` "null floors found" `with` m) m
+  assert (EM.null (EM.filter EM.null m) `blame` "null floors found" `twith` m) m
 
 instance Binary Level where
   put Level{..} = do
