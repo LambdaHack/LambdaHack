@@ -118,7 +118,7 @@ olegend Kind.Ops{ofoldrWithKey, opick} group =
         tk <- fmap (fromMaybe $ assert `failure` (group, s))
               $ opick group $ (== s) . tsymbol
         return $ EM.insert s tk m
-      legend = ES.fold getLegend (return EM.empty) symbols
+      legend = ES.foldr getLegend (return EM.empty) symbols
   in legend
 
 -- | Construct a fence around an area, with the given tile kind.
