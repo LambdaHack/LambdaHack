@@ -53,8 +53,8 @@ use Cabal flags, e.g,
 Compatibility notes
 -------------------
 
-The current code was tested with GHC 7.6, but should also work with
-other GHC versions (see file .travis.yml for GHC 7.4 commands).
+The current code was tested with GHC 7.6.3, but should also work with
+other GHC versions (see file .travis.yml.7.4.2 for GHC 7.4.2 commands).
 
 If you are using the curses or vty frontends,
 numerical keypad may not work correctly depending on the versions
