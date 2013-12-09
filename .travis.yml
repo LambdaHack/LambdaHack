@@ -1,9 +1,4 @@
 language: haskell
 
-install:
-  - cabal install pretty-show-1.6.1
-  - cabal install gtk2hs-buildtools
-  - cabal install --enable-tests
-
 script:
   - make test-travis
