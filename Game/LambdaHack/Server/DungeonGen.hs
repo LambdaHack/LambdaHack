@@ -8,6 +8,7 @@ import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.List
 import Data.Maybe
+import Data.Text (Text)
 
 import qualified Game.LambdaHack.Common.Effect as Effect
 import qualified Game.LambdaHack.Common.Feature as F
@@ -25,6 +26,8 @@ import Game.LambdaHack.Server.DungeonGen.Area
 import Game.LambdaHack.Server.DungeonGen.Cave hiding (TileMapXY)
 import Game.LambdaHack.Server.DungeonGen.Place
 import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Utils.Frequency
+
 
 convertTileMaps :: Rnd (Kind.Id TileKind) -> Int -> Int -> TileMapXY
                 -> Rnd TileMap
@@ -133,15 +136,18 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
                , map fst $ stairsUpDown ++ stairsDown )
   -- traceShow (ldepth, nstairUp, (stairsUp, stairsDown, stairsUpDown)) skip
   litemNum <- castDice citemNum
+  let itemFreq = toFreq cname citemFreq
+  assert (not $ nullFreq itemFreq) skip
   lsecret <- random
-  return $! levelFromCaveKind cops kc ldepth ltile lstair litemNum lsecret
+  return $! levelFromCaveKind cops kc ldepth ltile lstair
+                              litemNum itemFreq lsecret
 
 levelFromCaveKind :: Kind.COps
                   -> CaveKind -> Int -> TileMap -> ([Point], [Point])
-                  -> Int -> Int
+                  -> Int -> Frequency Text -> Int
                   -> Level
 levelFromCaveKind Kind.COps{cotile}
-                  CaveKind{..} ldepth ltile lstair litemNum lsecret =
+                  CaveKind{..} ldepth ltile lstair litemNum litemFreq lsecret =
   Level
     { ldepth
     , lprio = EM.empty
@@ -158,6 +164,7 @@ levelFromCaveKind Kind.COps{cotile}
                in Kind.foldlArray f 0 ltile
     , ltime = timeTurn
     , litemNum
+    , litemFreq
     , lsecret
     , lhidden = chidden
     }

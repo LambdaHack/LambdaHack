@@ -30,6 +30,7 @@ data CaveKind = CaveKind
   , copenChance     :: !Chance      -- ^ if there's a door, is it open?
   , chidden         :: !Int         -- ^ if not open, hidden one in n times
   , citemNum        :: !RollDice    -- ^ the number of items in the cave
+  , citemFreq       :: ![(Int, Text)]  -- ^ item groups to consider
   , cdefTile        :: !Text        -- ^ the default cave tile group name
   , cdarkCorTile    :: !Text        -- ^ the dark cave corridor tile group name
   , clitCorTile     :: !Text        -- ^ the dark cave corridor tile group name

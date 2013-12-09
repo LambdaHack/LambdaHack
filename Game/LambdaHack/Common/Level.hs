@@ -36,6 +36,7 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Utils.Frequency
 
 -- | The complete dungeon is a map from level names to levels.
 type Dungeon = EM.EnumMap LevelId Level
@@ -76,22 +77,24 @@ type SmellMap = EM.EnumMap Point SmellTime
 -- | A view on single, inhabited dungeon level. "Remembered" fields
 -- carry a subset of the info in the client copies of levels.
 data Level = Level
-  { ldepth   :: !Int        -- ^ depth of the level
-  , lprio    :: !ActorPrio  -- ^ remembered actor times on the level
-  , lfloor   :: !ItemFloor  -- ^ remembered items lying on the floor
-  , ltile    :: !TileMap    -- ^ remembered level map
-  , lxsize   :: !X          -- ^ width of the level
-  , lysize   :: !Y          -- ^ height of the level
-  , lsmell   :: !SmellMap   -- ^ remembered smells on the level
-  , ldesc    :: !Text       -- ^ level description
-  , lstair   :: !([Point], [Point])
+  { ldepth    :: !Int        -- ^ depth of the level
+  , lprio     :: !ActorPrio  -- ^ remembered actor times on the level
+  , lfloor    :: !ItemFloor  -- ^ remembered items lying on the floor
+  , ltile     :: !TileMap    -- ^ remembered level map
+  , lxsize    :: !X          -- ^ width of the level
+  , lysize    :: !Y          -- ^ height of the level
+  , lsmell    :: !SmellMap   -- ^ remembered smells on the level
+  , ldesc     :: !Text       -- ^ level description
+  , lstair    :: !([Point], [Point])
                             -- ^ destinations of (up, down) stairs
-  , lseen    :: !Int        -- ^ currently remembered clear tiles
-  , lclear   :: !Int        -- ^ total number of initially clear tiles
-  , ltime    :: !Time       -- ^ date of the last activity on the level
-  , litemNum :: !Int        -- ^ number of initial items, 0 for clients
-  , lsecret  :: !Int        -- ^ secret tile seed
-  , lhidden  :: !Int        -- ^ secret tile density
+  , lseen     :: !Int        -- ^ currently remembered clear tiles
+  , lclear    :: !Int        -- ^ total number of initially clear tiles
+  , ltime     :: !Time       -- ^ date of the last activity on the level
+  , litemNum  :: !Int        -- ^ number of initial items, 0 for clients
+  , litemFreq :: !(Frequency Text)  -- ^ frequency of initial items,
+                                    --   [] for clients
+  , lsecret   :: !Int        -- ^ secret tile seed
+  , lhidden   :: !Int        -- ^ secret tile density
   }
   deriving (Show, Eq)
 
@@ -113,42 +116,8 @@ updateTile f lvl = lvl {ltile = f (ltile lvl)}
 
 assertSparseItems :: ItemFloor -> ItemFloor
 assertSparseItems m =
-  assert (EM.null (EM.filter EM.null m) `blame` "null floors found" `twith` m) m
-
-instance Binary Level where
-  put Level{..} = do
-    put ldepth
-    put lprio
-    put (assertSparseItems lfloor)
-    put ltile
-    put lxsize
-    put lysize
-    put lsmell
-    put ldesc
-    put lstair
-    put lseen
-    put lclear
-    put ltime
-    put litemNum
-    put lsecret
-    put lhidden
-  get = do
-    ldepth <- get
-    lprio <- get
-    lfloor <- get
-    ltile <- get
-    lxsize <- get
-    lysize <- get
-    lsmell <- get
-    ldesc <- get
-    lstair <- get
-    lseen <- get
-    lclear <- get
-    ltime <- get
-    litemNum <- get
-    lsecret <- get
-    lhidden <- get
-    return Level{..}
+  assert (EM.null (EM.filter EM.null m)
+          `blame` "null floors found" `twith` m) m
 
 -- | Query for tile kinds on the map.
 at :: Level -> Point -> Kind.Id TileKind
@@ -228,3 +197,40 @@ mapDungeonActors_ :: Monad m => (ActorId -> m a) -> Dungeon -> m ()
 mapDungeonActors_ f dungeon = do
   let ls = EM.elems dungeon
   mapM_ (mapLevelActors_ f) ls
+
+instance Binary Level where
+  put Level{..} = do
+    put ldepth
+    put lprio
+    put (assertSparseItems lfloor)
+    put ltile
+    put lxsize
+    put lysize
+    put lsmell
+    put ldesc
+    put lstair
+    put lseen
+    put lclear
+    put ltime
+    put litemNum
+    put litemFreq
+    put lsecret
+    put lhidden
+  get = do
+    ldepth <- get
+    lprio <- get
+    lfloor <- get
+    ltile <- get
+    lxsize <- get
+    lysize <- get
+    lsmell <- get
+    ldesc <- get
+    lstair <- get
+    lseen <- get
+    lclear <- get
+    ltime <- get
+    litemNum <- get
+    litemFreq <- get
+    lsecret <- get
+    lhidden <- get
+    return Level{..}

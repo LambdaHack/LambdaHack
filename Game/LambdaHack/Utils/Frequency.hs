@@ -6,13 +6,14 @@ module Game.LambdaHack.Utils.Frequency
     -- * Construction
   , uniformFreq, toFreq
     -- * Transformation
-  , scaleFreq, renameFreq
+  , scaleFreq, renameFreq, setFreq
     -- * Consumption
   , rollFreq, nullFreq, runFrequency, nameFrequency
   ) where
 
 import Control.Arrow (first, second)
 import Control.Monad
+import Data.Binary
 import Data.Foldable (Foldable)
 import Data.Text (Text)
 import Data.Traversable (Traversable)
@@ -27,7 +28,7 @@ data Frequency a = Frequency
   { nameFrequency :: !Text        -- ^ short description for debug, etc.
   , runFrequency  :: ![(Int, a)]  -- ^ give acces to raw frequency values
   }
-  deriving (Show, Foldable, Traversable)
+  deriving (Show, Eq, Foldable, Traversable)
 
 instance Monad Frequency where
   return x = Frequency "return" [(1, x)]
@@ -69,6 +70,13 @@ scaleFreq n (Frequency name xs) =
 renameFreq :: Text -> Frequency a -> Frequency a
 renameFreq newName fr = fr {nameFrequency = newName}
 
+-- | Set frequency of an element.
+setFreq :: Eq a => Frequency a -> a -> Int -> Frequency a
+setFreq (Frequency name xs) x n =
+  let f (_, y) | y == x = (n, x)
+      f my = my
+  in Frequency name $ map f xs
+
 -- | Randomly choose an item according to the distribution.
 rollFreq :: Show a => Frequency a -> R.StdGen -> (a, R.StdGen)
 rollFreq (Frequency name []) _ =
@@ -91,3 +99,12 @@ rollFreq (Frequency name fs) g =
 -- | Test if the frequency distribution is empty.
 nullFreq :: Frequency a -> Bool
 nullFreq (Frequency _ fs) = all (== 0) $ map fst fs
+
+instance Binary a => Binary (Frequency a) where
+  put Frequency{..} = do
+    put nameFrequency
+    put runFrequency
+  get = do
+    nameFrequency <- get
+    runFrequency <- get
+    return Frequency{..}

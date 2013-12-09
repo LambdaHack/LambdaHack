@@ -38,6 +38,7 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Utils.Assert
+import Game.LambdaHack.Utils.Frequency
 
 -- | A unique identifier of an item in the dungeon.
 newtype ItemId = ItemId Int
@@ -108,22 +109,30 @@ buildItem (FlavourMap flavour) discoRev ikChosen kind jeffect =
   in Item{..}
 
 -- | Generate an item based on level.
-newItem :: Kind.Ops ItemKind -> FlavourMap -> DiscoRev -> Int -> Int
+newItem :: Kind.Ops ItemKind -> FlavourMap -> DiscoRev
+        -> Frequency Text -> Int -> Int
         -> Rnd (Item, Int, ItemKind)
-newItem cops@Kind.Ops{opick, okind} flavour discoRev lvl depth = do
-  let cave = "dng"
-  ikChosen <- fmap (fromMaybe $ assert `failure` cave)
-              $ opick cave (const True)
-  let kind = okind ikChosen
-  jcount <- castDeep lvl depth (icount kind)
-  if jcount == 0
-    then -- Rare item; beware of inifite loops.
-         newItem cops flavour discoRev lvl depth
-    else do
-      effect <- effectTrav (ieffect kind) (castDeep lvl depth)
-      return ( buildItem flavour discoRev ikChosen kind effect
-             , jcount
-             , kind )
+newItem cops@Kind.Ops{opick, okind} flavour discoRev itemFreq lvl depth = do
+  itemGroup <- frequency itemFreq
+  let castItem :: Int -> Rnd (Item, Int, ItemKind)
+      castItem 0 | nullFreq itemFreq = assert `failure` "no fallback items"
+                                              `twith` (itemFreq, lvl, depth)
+      castItem 0 = do
+        let newFreq = setFreq itemFreq itemGroup 0
+        newItem cops flavour discoRev newFreq lvl depth
+      castItem count = do
+        ikChosen <- fmap (fromMaybe $ assert `failure` itemGroup)
+                    $ opick itemGroup (const True)
+        let kind = okind ikChosen
+        jcount <- castDeep lvl depth (icount kind)
+        if jcount == 0 then
+          castItem $ count - 1
+        else do
+          effect <- effectTrav (ieffect kind) (castDeep lvl depth)
+          return ( buildItem flavour discoRev ikChosen kind effect
+                 , jcount
+                 , kind )
+  castItem 10
 
 -- | Represent an item on the map.
 viewItem :: Item -> (Char, Color.Color)

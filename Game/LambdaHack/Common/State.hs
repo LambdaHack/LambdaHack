@@ -24,6 +24,7 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.TileKind
+import Game.LambdaHack.Utils.Frequency
 
 -- | View on game state. "Remembered" fields carry a subset of the info
 -- in the client copies of the state. Clients never directly change
@@ -61,6 +62,7 @@ unknownLevel Kind.Ops{ouniqGroup} ldepth lxsize lysize ldesc lstair lclear
            , lclear
            , ltime = timeTurn
            , litemNum = 0
+           , litemFreq = toFreq "client item freq" []
            , lsecret
            , lhidden
            }

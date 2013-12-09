@@ -349,10 +349,11 @@ createItems n pos lid = do
   Kind.COps{coitem} <- getsState scops
   flavour <- getsServer sflavour
   discoRev <- getsServer sdiscoRev
-  Level{ldepth} <- getLevel lid
+  Level{ldepth, litemFreq} <- getLevel lid
   depth <- getsState sdepth
   replicateM_ n $ do
-    (item, k, _) <- rndToAction $ newItem coitem flavour discoRev ldepth depth
+    (item, k, _) <- rndToAction
+                    $ newItem coitem flavour discoRev litemFreq ldepth depth
     itemRev <- getsServer sitemRev
     case HM.lookup item itemRev of
       Just iid ->
@@ -362,7 +363,7 @@ createItems n pos lid = do
         icounter <- getsServer sicounter
         modifyServer $ \ser ->
           ser { sicounter = succ icounter
-              , sitemRev = HM.insert item icounter (sitemRev ser)}
+              , sitemRev = HM.insert item icounter (sitemRev ser) }
         execCmdAtomic $ CreateItemA icounter item k (CFloor lid pos)
 
 -- ** ApplyPerfume
