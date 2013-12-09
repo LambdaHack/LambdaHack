@@ -364,6 +364,8 @@ rollSpawnPos Kind.COps{cotile} visible lid Level{ltile, lxsize, lysize} s = do
       distantAtLeast d p _ =
         all (\b -> chessDist lxsize (bpos b) p > d) inhabitants
   findPosTry 40 ltile
+    ( \p t -> Tile.hasFeature cotile F.Walkable t
+              && unoccupied as p)
     [ \_ t -> not (isLit t)  -- no such tiles on some maps
     , distantAtLeast factionDist
     , distantAtLeast $ factionDist `div` 2
@@ -372,8 +374,6 @@ rollSpawnPos Kind.COps{cotile} visible lid Level{ltile, lxsize, lysize} s = do
     , \_ t -> Tile.hasFeature cotile F.CanActor t  -- in reachable area
     , distantAtLeast $ factionDist `div` 4
     , distantAtLeast 3  -- otherwise a fast actor can walk and hit in one turn
-    , \p t -> Tile.hasFeature cotile F.Walkable t
-              && unoccupied as p
     ]
 
 -- TODO: generalize to any list of items (or effects) applied to all actors

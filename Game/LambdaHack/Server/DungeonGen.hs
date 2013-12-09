@@ -39,12 +39,12 @@ placeStairs :: Kind.Ops TileKind -> TileMap -> CaveKind -> [Point]
 placeStairs cotile cmap CaveKind{..} ps = do
   let dist cmin l _ = all (\pos -> chessDist cxsize l pos > cmin) ps
   findPosTry 1000 cmap
+    (\p t -> Tile.hasFeature cotile F.CanActor t
+             && dist 0 p t)  -- can't overwrite stairs with other stairs
     [ dist $ cminStairDist
     , dist $ cminStairDist `div` 2
     , dist $ cminStairDist `div` 4
     , dist $ cminStairDist `div` 8
-    , \p t -> Tile.hasFeature cotile F.CanActor t
-              && dist 0 p t  -- can't overwrite stairs with other stairs
     ]
 
 -- | Create a level from a cave, from a cave kind.

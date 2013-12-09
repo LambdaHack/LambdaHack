@@ -226,7 +226,7 @@ summonFriends bfid ps lid = do
   time <- getsState $ getLocalTime lid
   factionD <- getsState sfactionD
   let fact = okind $ gkind $ factionD EM.! bfid
-  forM_ ps $ \ p -> do
+  forM_ ps $ \p -> do
     mk <- rndToAction $ opick (fname fact) (const True)
     if mk == heroKindId coactor
       then addHero bfid p lid [] Nothing time

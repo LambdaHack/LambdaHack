@@ -180,10 +180,10 @@ populateDungeon = do
           Level{lfloor} <- getLevel lid
           pos <- rndToAction $ findPosTry 1000 ltile
                                  -- try really hard, for skirmish fairness
+                   (const (Tile.hasFeature cotile F.CanItem))
                    [ \p _ -> all (flip EM.notMember lfloor)
                              $ vicinity lxsize lysize p
                    , \p _ -> EM.notMember p lfloor
-                   , const (Tile.hasFeature cotile F.CanItem)
                    ]
           createItems 1 pos lid
   dungeon <- getsState sdungeon
@@ -234,12 +234,12 @@ findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lysize, lstair} k = do
       tryFind _ 0 = return []
       tryFind ps n = do
         np <- findPosTry 1000 ltile  -- try really hard, for skirmish fairness
+                (const (Tile.hasFeature cotile F.CanActor))
                 [ dist ps $ factionDist `div` 2
                 , dist ps $ factionDist `div` 3
                 , dist ps $ factionDist `div` 4
                 , dist ps $ factionDist `div` 8
                 , dist ps $ factionDist `div` 16
-                , const (Tile.hasFeature cotile F.CanActor)
                 ]
         nps <- tryFind (np : ps) (n - 1)
         return $ np : nps

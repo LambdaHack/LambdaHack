@@ -205,16 +205,16 @@ findPos ltile p =
 -- at which point try as many times, as needed.
 findPosTry :: Int                                  -- ^ the number of tries
            -> TileMap                              -- ^ look up in this map
-           -> [Point -> Kind.Id TileKind -> Bool]  -- ^ predicates to satisfy
+           -> (Point -> Kind.Id TileKind -> Bool)  -- ^ mandatory predicate
+           -> [Point -> Kind.Id TileKind -> Bool]  -- ^ optional predicates
            -> Rnd Point
-findPosTry _        ltile []        = findPos ltile (const (const True))
-findPosTry _        ltile [p]       = findPos ltile p
-findPosTry numTries ltile l@(_ : tl) = assert (numTries > 0) $
-  let search 0 = findPosTry numTries ltile tl
+findPosTry _        ltile m []         = findPos ltile m
+findPosTry numTries ltile m l@(_ : tl) = assert (numTries > 0) $
+  let search 0 = findPosTry numTries ltile m tl
       search k = do
         pos <- randomR $ Kind.bounds ltile
         let tile = ltile Kind.! pos
-        if L.all (\ p -> p pos tile) l
+        if m pos tile && L.all (\p -> p pos tile) l
           then return pos
           else search (k - 1)
   in search numTries
