@@ -22,9 +22,13 @@ import Game.LambdaHack.Server
 import Game.LambdaHack.Server.Action.ActionType
 import Game.LambdaHack.Server.AtomicSemSer
 
+-- | The game-state semantics of atomic game commands
+-- as computed on the server.
 instance MonadAtomic ActionSer where
   execAtomic = atomicSendSem
 
+-- | The game-state semantics of atomic game commands
+-- as computed on clients. Special effects (@SfxAtomic@) don't modify state.
 instance MonadAtomic (ActionCli c d) where
   execAtomic (CmdAtomic cmd) = cmdAtomicSem cmd
   execAtomic (SfxAtomic _) = return ()
