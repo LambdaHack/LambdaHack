@@ -1,4 +1,8 @@
 language: haskell
 
+install:
+  - cabal install gtk2hs-buildtools
+  - cabal install --enable-tests
+
 script:
   - make test-travis
