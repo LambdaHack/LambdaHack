@@ -4,7 +4,7 @@ module Game.LambdaHack.Server.EffectSem
   ( -- + Semantics of effects
     itemEffect, effectSem
     -- * Assorted operations
-  , createItems, addHero, spawnMonsters, electLeader, deduceKilled
+  , createItems, addHero, spawnMonsters, pickFaction, electLeader, deduceKilled
   ) where
 
 import Control.Monad
@@ -282,36 +282,45 @@ effectSummon power target = assert (power > 0) $ do
   tm <- getsState (getActorBody target)
   ps <- getsState $ nearbyFreePoints cotile (const True) (bpos tm) (blid tm)
   time <- getsState $ getLocalTime (blid tm)
-  spawnMonsters (take power ps) (blid tm) (const True) time "summon"
-  return True
+  mfid <- pickFaction "summon" (const True)
+  case mfid of
+    Nothing -> return False  -- no faction summons
+    Just fid -> do
+      spawnMonsters (take power ps) (blid tm) time fid
+      return True
 
 -- | Spawn monsters of any spawn or summon faction, friendly or not.
 -- To be used for spontaneous spawning of monsters and for the summon effect.
 spawnMonsters :: (MonadAtomic m, MonadServer m)
-              => [Point] -> LevelId -> ((FactionId, Faction) -> Bool)
-              -> Time -> Text
+              => [Point] -> LevelId -> Time -> FactionId
               -> m ()
-spawnMonsters ps lid filt time freqChoice = assert (not $ null ps) $ do
-  Kind.COps{ coactor=Kind.Ops{opick}
-           , cofact=Kind.Ops{okind} } <- getsState scops
+spawnMonsters ps lid time fid = assert (not $ null ps) $ do
+  Kind.COps{coactor=Kind.Ops{opick}, cofact=Kind.Ops{okind}} <- getsState scops
+  fact <- getsState $ (EM.! fid) . sfactionD
+  let spawnName = fname $ okind $ gkind fact
+  laid <- forM ps $ \ p -> do
+    mk <- rndToAction $ fmap (fromMaybe $ assert `failure` spawnName)
+                        $ opick spawnName (const True)
+    addMonster mk fid p lid time
+  mleader <- getsState $ gleader . (EM.! fid) . sfactionD  -- just changed
+  when (isNothing mleader) $
+    execCmdAtomic $ LeadFactionA fid Nothing (Just $ head laid)
+
+-- | Roll a faction based on faction kind frequency key.
+pickFaction :: MonadServer m
+            => Text
+            -> ((FactionId, Faction) -> Bool)
+            -> m (Maybe FactionId)
+pickFaction freqChoice ffilter = do
+  Kind.COps{cofact=Kind.Ops{okind}} <- getsState scops
   factionD <- getsState sfactionD
-  -- TODO: rewrite with opick?
   let f (fid, fact) = let kind = okind (gkind fact)
-                          g n = (n, (kind, fid))
+                          g n = (n, fid)
                       in fmap g $ lookup freqChoice $ ffreq kind
-  case mapMaybe f $ filter filt $ EM.assocs factionD of
-    [] -> return ()  -- no faction spawns
-    spawnList -> do
-      let freq = toFreq "spawnMonsters" spawnList
-      (spawnKind, bfid) <- rndToAction $ frequency freq
-      laid <- forM ps $ \ p -> do
-        let spawnName = fname spawnKind
-        mk <- rndToAction $ fmap (fromMaybe $ assert `failure` spawnName)
-                            $ opick spawnName (const True)
-        addMonster mk bfid p lid time
-      mleader <- getsState $ gleader . (EM.! bfid) . sfactionD
-      when (isNothing mleader) $
-        execCmdAtomic $ LeadFactionA bfid Nothing (Just $ head laid)
+      flist = mapMaybe f $ filter ffilter $ EM.assocs factionD
+      freq = toFreq ("pickFaction" <+> freqChoice) flist
+  if nullFreq freq then return Nothing
+  else fmap Just $ rndToAction $ frequency freq
 
 -- | Create a new monster on the level, at a given position
 -- and with a given actor kind and HP.

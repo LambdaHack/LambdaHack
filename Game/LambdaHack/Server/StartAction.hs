@@ -209,20 +209,21 @@ populateDungeon = do
         mapM_ (arenaActors lid) $ zip arenaFactions entryPoss
       arenaActors _ ((_, Faction{gplayer = Player{playerInitial = 0}}), _) =
         return ()
-      arenaActors lid ((side, fact@Faction{gplayer}), ppos) = do
+      arenaActors lid ((side, fact), ppos) = do
         time <- getsState $ getLocalTime lid
         let nmult = fromEnum side `mod` 5  -- always positive
             ntime = timeAdd time (timeScale timeClip nmult)
         psFree <-
           getsState $ nearbyFreePoints
                         cotile (Tile.hasFeature cotile F.CanActor) ppos lid
-        let ps = take (playerInitial gplayer) $ zip [0..] psFree
+        let ps = take (playerInitial $ gplayer fact) $ zip [0..] psFree
         forM_ ps $ \ (n, p) ->
           if isSpawnFact cops fact
-          then spawnMonsters [p] lid ((== side) . fst) ntime "spawn"
+          then spawnMonsters [p] lid ntime side
           else do
             aid <- addHero side p lid configHeroNames (Just n) ntime
-            mleader <- getsState $ gleader . (EM.! side) . sfactionD
+            mleader <- getsState
+                       $ gleader . (EM.! side) . sfactionD  -- just changed
             when (isNothing mleader) $
               execCmdAtomic $ LeadFactionA side Nothing (Just aid)
   mapM_ initialActors arenas

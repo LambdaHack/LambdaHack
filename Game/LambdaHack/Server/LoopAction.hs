@@ -349,17 +349,24 @@ generateMonster lid = do
   depth <- getsState sdepth
   rc <- rndToAction $ monsterGenChance ldepth depth (length spawns)
   when rc $ do
-    let allPers = ES.unions $ map (totalVisible . (EM.! lid)) $ EM.elems pers
-    pos <- rndToAction $ rollSpawnPos cops allPers lid lvl s
     time <- getsState $ getLocalTime lid
-    spawnMonsters [pos] lid (const True) time "spawn"
+    mfid <- pickFaction "spawn" (const True)
+    case mfid of
+      Nothing -> return ()  -- no faction spawns
+      Just fid -> do
+        let allPers = ES.unions $ map (totalVisible . (EM.! lid))
+                      $ EM.elems $ EM.delete fid pers  -- expensive :(
+        pos <- rndToAction $ rollSpawnPos cops allPers lid lvl fid s
+        spawnMonsters [pos] lid time fid
 
-rollSpawnPos :: Kind.COps -> ES.EnumSet Point -> LevelId -> Level -> State
+rollSpawnPos :: Kind.COps -> ES.EnumSet Point
+             -> LevelId -> Level -> FactionId -> State
              -> Rnd Point
-rollSpawnPos Kind.COps{cotile} visible lid Level{ltile, lxsize, lysize} s = do
+rollSpawnPos Kind.COps{cotile} visible
+             lid Level{ltile, lxsize, lysize} fid s = do
   let factionDist = max lxsize lysize - 5
-      inhabitants = actorNotProjList (const True) lid s
-      as = actorList (const True) lid s
+      inhabitants = actorNotProjList (/= fid) lid s
+      as = actorList (/= fid) lid s
       isLit = Tile.isLit cotile
       distantAtLeast d p _ =
         all (\b -> chessDist lxsize (bpos b) p > d) inhabitants
