@@ -57,7 +57,7 @@ data Ops a = Ops
   { okind         :: Id a -> a      -- ^ the content element at given id
   , ouniqGroup    :: Text -> Id a   -- ^ the id of the unique member of
                                     --   a singleton content group
-  , opick         :: Text -> (a -> Bool) -> Rnd (Id a)
+  , opick         :: Text -> (a -> Bool) -> Rnd (Maybe (Id a))
                                     -- ^ pick a random id belonging to a group
                                     --   and satisfying a predicate
   , ofoldrWithKey :: forall b. (Id a -> a -> b -> b) -> b -> b
@@ -99,15 +99,14 @@ createOps ContentDef{getName, getFreq, content, validate} =
              [(n, (i, _))] | n > 0 -> i
              l -> assert `failure` "not unique" `twith` (l, group, kindFreq)
        , opick = \group p ->
-           let freq = fromMaybe (assert `failure` "no group to pick from"
-                                        `twith` (group, kindFreq))
-                      $ M.lookup group kindFreq
-           in frequency $ do
-             (i, k) <- freq
-             breturn (p k) i
-             {- with MonadComprehensions:
-             frequency [ i | (i, k) <- kindFreq M.! group, p k ]
-             -}
+           case M.lookup group kindFreq of
+             Just freq | not $ nullFreq freq -> fmap Just $ frequency $ do
+               (i, k) <- freq
+               breturn (p k) i
+               {- with MonadComprehensions:
+               frequency [ i | (i, k) <- kindFreq M.! group, p k ]
+               -}
+             _ -> return Nothing
        , ofoldrWithKey = \f z -> L.foldr (\(i, a) -> f i a) z
                                  $ EM.assocs kindMap
        , obounds = ( fst $ EM.findMin kindMap

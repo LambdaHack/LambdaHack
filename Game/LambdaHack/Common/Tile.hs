@@ -21,6 +21,7 @@ module Game.LambdaHack.Common.Tile
 
 import qualified Data.Array.Unboxed as A
 import qualified Data.List as L
+import Data.Maybe
 
 import qualified Game.LambdaHack.Common.Feature as F
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -95,7 +96,8 @@ openTo Kind.Ops{okind, opick} t = do
     [] -> return t
     groups -> do
       group <- oneOf groups
-      opick group (const True)
+      fmap (fromMaybe $ assert `failure` group)
+        $ opick group (const True)
 
 closeTo :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
 closeTo Kind.Ops{okind, opick} t = do
@@ -105,7 +107,8 @@ closeTo Kind.Ops{okind, opick} t = do
     [] -> return t
     groups -> do
       group <- oneOf groups
-      opick group (const True)
+      fmap (fromMaybe $ assert `failure` group)
+        $ opick group (const True)
 
 revealAs :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
 revealAs Kind.Ops{okind, opick} t = do
@@ -115,7 +118,8 @@ revealAs Kind.Ops{okind, opick} t = do
     [] -> return t
     groups -> do
       group <- oneOf groups
-      opick group (const True)
+      fmap (fromMaybe $ assert `failure` group)
+        $ opick group (const True)
 
 hideAs :: Kind.Ops TileKind -> Kind.Id TileKind -> Kind.Id TileKind
 hideAs Kind.Ops{okind, ouniqGroup} t =

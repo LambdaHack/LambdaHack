@@ -151,7 +151,8 @@ meleeSer source target = do
           isSp <- getsState $ isSpawnFaction sfid
           let h2hGroup | isSp = "monstrous"
                        | otherwise = "unarmed"
-          h2hKind <- rndToAction $ opick h2hGroup (const True)
+          h2hKind <- rndToAction $ fmap (fromMaybe $ assert `failure` h2hGroup)
+                                   $ opick h2hGroup (const True)
           flavour <- getsServer sflavour
           discoRev <- getsServer sdiscoRev
           let kind = okind h2hKind
@@ -226,7 +227,8 @@ alterSer source tpos mfeat = do
         freshClientTile = hideTile cotile lvl tpos
         changeTo tgroup = do
           -- No AlterD, because the effect is obvious (e.g., opened door).
-          toTile <- rndToAction $ opick tgroup (const True)
+          toTile <- rndToAction $ fmap (fromMaybe $ assert `failure` tgroup)
+                                  $ opick tgroup (const True)
           unless (toTile == serverTile) $
             execCmdAtomic $ AlterTileA lid tpos serverTile toTile
         feats = case mfeat of

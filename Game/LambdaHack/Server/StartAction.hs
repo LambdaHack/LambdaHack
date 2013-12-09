@@ -111,7 +111,8 @@ createFactions Kind.COps{cofact=Kind.Ops{opick}} players = do
             (gcolor, gname) = case M.lookup nameoc cmap of
               Nothing -> (Color.BrWhite, prefix <+> playerName)
               Just c -> (c, prefix <+> playerName <+> "Team")
-        gkind <- opick playerFaction (const True)
+        gkind <- fmap (fromMaybe $ assert `failure` playerFaction)
+                 $ opick playerFaction (const True)
         let gdipl = EM.empty  -- fixed below
             gquit = Nothing
             gleader = Nothing
@@ -156,7 +157,8 @@ gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}, corule}
       rnd :: Rnd (FactionDict, FlavourMap, Discovery, DiscoRev,
                   DungeonGen.FreshDungeon)
       rnd = do
-        modeKind <- opick smode (const True)
+        modeKind <- fmap (fromMaybe $ assert `failure` smode)
+                    $ opick smode (const True)
         let mode = okind modeKind
         faction <- createFactions cops $ mplayers mode
         sflavour <- dungeonFlavourMap coitem

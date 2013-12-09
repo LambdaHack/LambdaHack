@@ -23,6 +23,7 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.Hashable as Hashable
 import qualified Data.Ix as Ix
 import Data.List
+import Data.Maybe
 import qualified Data.Set as S
 import Data.Text (Text)
 import GHC.Generics (Generic)
@@ -110,7 +111,9 @@ buildItem (FlavourMap flavour) discoRev ikChosen kind jeffect =
 newItem :: Kind.Ops ItemKind -> FlavourMap -> DiscoRev -> Int -> Int
         -> Rnd (Item, Int, ItemKind)
 newItem cops@Kind.Ops{opick, okind} flavour discoRev lvl depth = do
-  ikChosen <- opick "dng" (const True)
+  let cave = "dng"
+  ikChosen <- fmap (fromMaybe $ assert `failure` cave)
+              $ opick cave (const True)
   let kind = okind ikChosen
   jcount <- castDeep lvl depth (icount kind)
   if jcount == 0

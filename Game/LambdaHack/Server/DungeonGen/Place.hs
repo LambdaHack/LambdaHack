@@ -89,9 +89,12 @@ buildPlace :: Kind.COps         -- ^ the game content
 buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
                     , coplace=Kind.Ops{okind=pokind, opick=popick} }
            CaveKind{..} darkCorTile litCorTile ln depth r = do
-  qsolidFence <- opick cfillerTile (const True)
+  qsolidFence <- fmap (fromMaybe $ assert `failure` cfillerTile)
+                 $ opick cfillerTile (const True)
   dark <- chanceDeep ln depth cdarkChance
-  qkind <- popick "rogue" (placeCheck r)
+  let cave = "rogue"
+  qkind <- fmap (fromMaybe $ assert `failure` (cave, r))
+           $ popick cave (placeCheck r)
   let qhollowFence = if dark then darkCorTile else litCorTile
       kr = pokind qkind
       qlegend = if dark then cdarkLegendTile else clitLegendTile
@@ -112,7 +115,8 @@ olegend Kind.Ops{ofoldrWithKey, opick} group =
       symbols = ofoldrWithKey getSymbols ES.empty
       getLegend s acc = do
         m <- acc
-        tk <- opick group $ (== s) . tsymbol
+        tk <- fmap (fromMaybe $ assert `failure` (group, s))
+              $ opick group $ (== s) . tsymbol
         return $ EM.insert s tk m
       legend = ES.fold getLegend (return EM.empty) symbols
   in legend

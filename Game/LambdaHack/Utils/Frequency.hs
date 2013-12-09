@@ -90,4 +90,4 @@ rollFreq (Frequency name fs) g =
 
 -- | Test if the frequency distribution is empty.
 nullFreq :: Frequency a -> Bool
-nullFreq = null . runFrequency
+nullFreq (Frequency _ fs) = all (== 0) $ map fst fs

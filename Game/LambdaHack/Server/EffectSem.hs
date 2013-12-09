@@ -227,7 +227,9 @@ summonFriends bfid ps lid = do
   factionD <- getsState sfactionD
   let fact = okind $ gkind $ factionD EM.! bfid
   forM_ ps $ \p -> do
-    mk <- rndToAction $ opick (fname fact) (const True)
+    let summonName = fname fact
+    mk <- rndToAction $ fmap (fromMaybe $ assert `failure` summonName)
+                        $ opick summonName (const True)
     if mk == heroKindId coactor
       then addHero bfid p lid [] Nothing time
       else addMonster mk bfid p lid time
@@ -303,7 +305,9 @@ spawnMonsters ps lid filt time freqChoice = assert (not $ null ps) $ do
       let freq = toFreq "spawnMonsters" spawnList
       (spawnKind, bfid) <- rndToAction $ frequency freq
       laid <- forM ps $ \ p -> do
-        mk <- rndToAction $ opick (fname spawnKind) (const True)
+        let spawnName = fname spawnKind
+        mk <- rndToAction $ fmap (fromMaybe $ assert `failure` spawnName)
+                            $ opick spawnName (const True)
         addMonster mk bfid p lid time
       mleader <- getsState $ gleader . (EM.! bfid) . sfactionD
       when (isNothing mleader) $

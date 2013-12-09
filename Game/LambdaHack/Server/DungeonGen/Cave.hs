@@ -113,8 +113,10 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ opick
   let hardRockId = ouniqGroup "outer fence"
       fence = buildFence hardRockId subFullArea
   dnight <- chanceDeep ln depth cnightChance
-  darkCorTile <- opick cdarkCorTile (const True)
-  litCorTile <- opick clitCorTile (const True)
+  darkCorTile <- fmap (fromMaybe $ assert `failure` cdarkCorTile)
+                 $ opick cdarkCorTile (const True)
+  litCorTile <- fmap (fromMaybe $ assert `failure` clitCorTile)
+                $ opick clitCorTile (const True)
   let pickedCorTile = if dnight then darkCorTile else litCorTile
       addPl (m, pls, qls) (i, Left r) = return (m, pls, (i, Left r) : qls)
       addPl (m, pls, qls) (i, Right r) = do

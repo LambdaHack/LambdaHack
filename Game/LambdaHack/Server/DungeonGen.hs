@@ -63,7 +63,9 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
       descendable = Tile.kindHasFeature $ F.Cause (Effect.Ascend (-1))
       dcond kt = not (Tile.kindHasFeature F.Clear kt)
                  || (if dnight then not else id) (Tile.kindHasFeature F.Lit kt)
-  cmap <- convertTileMaps (opick cdefTile dcond) cxsize cysize dmap
+      pickDefTile = fmap (fromMaybe $ assert `failure` cdefTile)
+                    $ opick cdefTile dcond
+  cmap <- convertTileMaps pickDefTile cxsize cysize dmap
   -- We keep two-way stairs separately, in the last component.
   let makeStairs :: Bool -> Bool -> Bool
                  -> ( [(Point, Kind.Id TileKind)]
@@ -82,7 +84,9 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
               stairsCur = up ++ down ++ upDown
               posCur = nub $ sort $ map fst stairsCur
           spos <- placeStairs cotile cmap kc posCur
-          stairId <- opick (findLegend spos) cond
+          let legend = findLegend spos
+          stairId <- fmap (fromMaybe $ assert `failure` legend)
+                     $ opick legend cond
           let st = (spos, stairId)
               asc = ascendable $ okind stairId
               desc = descendable $ okind stairId
@@ -113,10 +117,14 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
   escape <- case escapeFeature of
               Nothing -> return []
               Just True -> do
-                upEscape <- opick (findLegend epos) $ hasEscapeAndSymbol '<'
+                let legend = findLegend epos
+                upEscape <- fmap (fromMaybe $ assert `failure` legend)
+                            $ opick legend $ hasEscapeAndSymbol '<'
                 return [(epos, upEscape)]
               Just False -> do
-                downEscape <- opick (findLegend epos) $ hasEscapeAndSymbol '>'
+                let legend = findLegend epos
+                downEscape <- fmap (fromMaybe $ assert `failure` legend)
+                              $ opick legend $ hasEscapeAndSymbol '>'
                 return [(epos, downEscape)]
   let exits = stairsTotal ++ escape
       ltile = cmap Kind.// exits
@@ -161,7 +169,8 @@ findGenerator cops caves ldepth minD maxD totalDepth nstairUp = do
   let Kind.COps{cocave=Kind.Ops{opick}} = cops
       (genName, escapeFeature) =
         fromMaybe ("dng", Nothing) $ EM.lookup ldepth caves
-  ci <- opick genName (const True)
+  ci <- fmap (fromMaybe $ assert `failure` genName)
+        $ opick genName (const True)
   cave <- buildCave cops (fromEnum ldepth) totalDepth ci
   buildLevel cops cave
              (fromEnum ldepth) (fromEnum minD) (fromEnum maxD) nstairUp
