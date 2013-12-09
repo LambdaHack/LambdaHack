@@ -101,7 +101,7 @@ lowercase :: Text -> Text
 lowercase = T.pack . map Char.toLower . T.unpack
 
 createFactions :: Kind.COps -> Players -> Rnd FactionDict
-createFactions Kind.COps{cofact=Kind.Ops{opick}} players = do
+createFactions Kind.COps{cofaction=Kind.Ops{opick}} players = do
   let rawCreate gplayer@Player{..} = do
         let cmap = mapFromInvFuns
                      [colorToTeamName, colorToPlainName, colorToFancyName]

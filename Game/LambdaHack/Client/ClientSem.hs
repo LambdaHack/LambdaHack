@@ -41,7 +41,7 @@ import Game.LambdaHack.Utils.Frequency
 
 queryAI :: MonadClient m => ActorId -> m CmdSerTakeTime
 queryAI oldAid = do
-  Kind.COps{cofact=Kind.Ops{okind}, corule} <- getsState scops
+  Kind.COps{cofaction=Kind.Ops{okind}, corule} <- getsState scops
   side <- getsClient sside
   fact <- getsState $ \s -> sfactionD s EM.! side
   let abilityLeader = fAbilityLeader $ okind $ gkind fact
@@ -131,7 +131,7 @@ queryAI oldAid = do
 
 queryAIPick :: MonadClient m => ActorId -> m CmdSerTakeTime
 queryAIPick aid = do
-  Kind.COps{cofact=Kind.Ops{okind}} <- getsState scops
+  Kind.COps{cofaction=Kind.Ops{okind}} <- getsState scops
   side <- getsClient sside
   body <- getsState $ getActorBody aid
   assert (bfid body == side `blame` "AI tries to move enemy actor"

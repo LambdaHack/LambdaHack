@@ -191,7 +191,7 @@ handleActors :: (MonadAtomic m, MonadConnServer m)
              -> LevelId
              -> m ()
 handleActors cmdSerSem lid = do
-  Kind.COps{cofact=Kind.Ops{okind}} <- getsState scops
+  Kind.COps{cofaction=Kind.Ops{okind}} <- getsState scops
   time <- getsState $ getLocalTime lid  -- the end of this clip, inclusive
   Level{lprio} <- getLevel lid
   quit <- getsServer squit

@@ -222,7 +222,7 @@ summonFriends :: (MonadAtomic m, MonadServer m)
               -> m ()
 summonFriends bfid ps lid = do
   Kind.COps{ coactor=coactor@Kind.Ops{opick}
-           , cofact=Kind.Ops{okind} } <- getsState scops
+           , cofaction=Kind.Ops{okind} } <- getsState scops
   time <- getsState $ getLocalTime lid
   factionD <- getsState sfactionD
   let fact = okind $ gkind $ factionD EM.! bfid
@@ -295,7 +295,7 @@ spawnMonsters :: (MonadAtomic m, MonadServer m)
               => [Point] -> LevelId -> Time -> FactionId
               -> m ()
 spawnMonsters ps lid time fid = assert (not $ null ps) $ do
-  Kind.COps{coactor=Kind.Ops{opick}, cofact=Kind.Ops{okind}} <- getsState scops
+  Kind.COps{coactor=Kind.Ops{opick}, cofaction=Kind.Ops{okind}} <- getsState scops
   fact <- getsState $ (EM.! fid) . sfactionD
   let spawnName = fname $ okind $ gkind fact
   laid <- forM ps $ \ p -> do
@@ -312,7 +312,7 @@ pickFaction :: MonadServer m
             -> ((FactionId, Faction) -> Bool)
             -> m (Maybe FactionId)
 pickFaction freqChoice ffilter = do
-  Kind.COps{cofact=Kind.Ops{okind}} <- getsState scops
+  Kind.COps{cofaction=Kind.Ops{okind}} <- getsState scops
   factionD <- getsState sfactionD
   let f (fid, fact) = let kind = okind (gkind fact)
                           g n = (n, fid)

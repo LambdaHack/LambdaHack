@@ -34,13 +34,13 @@ instance MonadAtomic (ActionCli c d) where
 main :: IO ()
 main =
   let copsSlow = Kind.COps
-        { coactor = Kind.createOps Content.ActorKind.cdefs
-        , cocave  = Kind.createOps Content.CaveKind.cdefs
-        , cofact  = Kind.createOps Content.FactionKind.cdefs
-        , coitem  = Kind.createOps Content.ItemKind.cdefs
-        , comode  = Kind.createOps Content.ModeKind.cdefs
-        , coplace = Kind.createOps Content.PlaceKind.cdefs
-        , corule  = Kind.createOps Content.RuleKind.cdefs
-        , cotile  = Kind.createOps Content.TileKind.cdefs
+        { coactor   = Kind.createOps Content.ActorKind.cdefs
+        , cocave    = Kind.createOps Content.CaveKind.cdefs
+        , cofaction = Kind.createOps Content.FactionKind.cdefs
+        , coitem    = Kind.createOps Content.ItemKind.cdefs
+        , comode    = Kind.createOps Content.ModeKind.cdefs
+        , coplace   = Kind.createOps Content.PlaceKind.cdefs
+        , corule    = Kind.createOps Content.RuleKind.cdefs
+        , cotile    = Kind.createOps Content.TileKind.cdefs
         }
   in mainSer copsSlow executorSer $ exeFrontend executorCli executorCli
