@@ -15,7 +15,7 @@ import qualified System.Random as R
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.VectorXY
-import Game.LambdaHack.Utils.Assert
+import Control.Exception.Assert.Sugar
 
 -- | The type of positions on the 2D level map, heavily optimized.
 --

@@ -10,7 +10,7 @@ import Data.Text (Text)
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.Feature
 import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Utils.Assert
+import Control.Exception.Assert.Sugar
 
 -- | The type of kinds of terrain tiles. See @Tile.hs@ for explanation
 -- of the absence of a corresponding type @Tile@ that would hold

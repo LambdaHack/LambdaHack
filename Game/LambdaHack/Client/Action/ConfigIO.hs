@@ -15,7 +15,7 @@ import Game.LambdaHack.Client.HumanCmd
 import qualified Game.LambdaHack.Common.Key as K
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Utils.Assert
+import Control.Exception.Assert.Sugar
 
 -- TODO: Refactor the client and server ConfigIO.hs, after
 -- https://github.com/kosmikus/LambdaHack/issues/45.

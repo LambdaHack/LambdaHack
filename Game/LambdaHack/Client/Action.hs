@@ -74,7 +74,7 @@ import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Frontend as Frontend
-import Game.LambdaHack.Utils.Assert
+import Control.Exception.Assert.Sugar
 
 debugPrint :: MonadClient m => Text -> m ()
 debugPrint t = do

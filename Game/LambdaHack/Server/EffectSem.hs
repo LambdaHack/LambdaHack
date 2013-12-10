@@ -39,7 +39,7 @@ import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.Action
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.State
-import Game.LambdaHack.Utils.Assert
+import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Utils.Frequency
 
 -- + Semantics of effects

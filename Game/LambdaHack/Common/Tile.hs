@@ -28,7 +28,7 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.Utils.Assert
+import Control.Exception.Assert.Sugar
 
 -- | The last time a hero left a smell in a given tile. To be used
 -- by monsters that hunt by smell.

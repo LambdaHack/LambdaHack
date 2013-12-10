@@ -16,7 +16,7 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Utils.Assert
+import Control.Exception.Assert.Sugar
 
 initCli :: MonadClient m => DebugModeCli -> (State -> m ()) -> m Bool
 initCli sdebugCli putSt = do

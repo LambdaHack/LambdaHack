@@ -19,7 +19,7 @@ import qualified UI.HSCurses.CursesHelper as C
 import Game.LambdaHack.Common.Animation (DebugModeCli (..), SingleFrame (..))
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Key as K
-import Game.LambdaHack.Utils.Assert
+import Control.Exception.Assert.Sugar
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession

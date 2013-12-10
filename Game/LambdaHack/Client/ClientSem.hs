@@ -36,7 +36,7 @@ import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Utils.Assert
+import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Utils.Frequency
 
 queryAI :: MonadClient m => ActorId -> m CmdSerTakeTime

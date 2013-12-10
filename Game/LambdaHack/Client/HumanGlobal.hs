@@ -39,7 +39,7 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.TileKind as TileKind
-import Game.LambdaHack.Utils.Assert
+import Control.Exception.Assert.Sugar
 
 abortFailure :: MonadClientAbort m => FailureSer -> m a
 abortFailure = abortWith . showFailureSer

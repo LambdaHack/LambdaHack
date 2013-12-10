@@ -26,7 +26,7 @@ import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.Utils.Assert
+import Control.Exception.Assert.Sugar
 
 actorAssocs :: (FactionId -> Bool) -> LevelId -> State
             -> [(ActorId, Actor)]

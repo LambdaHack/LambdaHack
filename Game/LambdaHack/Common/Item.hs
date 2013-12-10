@@ -37,7 +37,7 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Utils.Assert
+import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Utils.Frequency
 
 -- | A unique identifier of an item in the dungeon.

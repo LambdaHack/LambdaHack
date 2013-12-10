@@ -7,7 +7,7 @@ module Game.LambdaHack.Server.Fov.Shadow (SBump, Interval, scan) where
 import Data.Ratio
 
 import Game.LambdaHack.Server.Fov.Common
-import Game.LambdaHack.Utils.Assert
+import Control.Exception.Assert.Sugar
 
 {-
 Field Of View

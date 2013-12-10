@@ -25,7 +25,7 @@ import System.Time
 import Game.LambdaHack.Common.Animation (DebugModeCli (..), SingleFrame (..))
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Key as K
-import Game.LambdaHack.Utils.Assert
+import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Utils.LQueue
 
 data FrameState =

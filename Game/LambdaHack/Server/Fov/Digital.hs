@@ -7,7 +7,7 @@ module Game.LambdaHack.Server.Fov.Digital
 
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Server.Fov.Common
-import Game.LambdaHack.Utils.Assert
+import Control.Exception.Assert.Sugar
 
 -- | Calculates the list of tiles, in @Bump@ coordinates, visible from (0, 0),
 -- within the given sight range.

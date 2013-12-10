@@ -25,7 +25,7 @@ import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Frontend.Chosen
-import Game.LambdaHack.Utils.Assert
+import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Utils.LQueue
 
 type ChanFrontend = TQueue K.KM

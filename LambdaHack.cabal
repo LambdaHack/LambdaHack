@@ -160,7 +160,6 @@ library
                       Game.LambdaHack.Server.ServerSem,
                       Game.LambdaHack.Server.StartAction,
                       Game.LambdaHack.Server.State,
-                      Game.LambdaHack.Utils.Assert,
                       Game.LambdaHack.Utils.File,
                       Game.LambdaHack.Utils.Frequency,
                       Game.LambdaHack.Utils.LQueue,
@@ -168,6 +167,7 @@ library
   other-modules:      Paths_LambdaHack
   build-depends:      ConfigFile >= 1.1.1   && < 2,
                       array      >= 0.3.0.3 && < 1,
+                      assert-failure >= 0.1 && < 1,
                       base       >= 4       && < 5,
                       binary     >= 0.7     && < 1,
                       bytestring >= 0.9.2   && < 1,
@@ -237,6 +237,7 @@ executable LambdaHack
 
                       ConfigFile >= 1.1.1   && < 2,
                       array      >= 0.3.0.3 && < 1,
+                      assert-failure >= 0.1 && < 1,
                       base       >= 4       && < 5,
                       binary     >= 0.7     && < 1,
                       bytestring >= 0.9.2   && < 1,

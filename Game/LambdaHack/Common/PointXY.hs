@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.PointXY
 import qualified Data.List as L
 
 import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Utils.Assert
+import Control.Exception.Assert.Sugar
 
 -- | Spacial dimension for points and vectors.
 type X = Int

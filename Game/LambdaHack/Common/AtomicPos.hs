@@ -18,7 +18,7 @@ import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Utils.Assert
+import Control.Exception.Assert.Sugar
 
 -- All functions here that take an atomic action are executed
 -- in the state just before the action is executed.

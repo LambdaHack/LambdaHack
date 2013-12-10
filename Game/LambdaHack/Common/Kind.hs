@@ -29,7 +29,7 @@ import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.Utils.Assert
+import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Utils.Frequency
 
 -- | Content identifiers for the content type @c@.

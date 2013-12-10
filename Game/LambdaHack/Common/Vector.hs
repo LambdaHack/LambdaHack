@@ -11,7 +11,7 @@ import Data.Binary
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.VectorXY
-import Game.LambdaHack.Utils.Assert
+import Control.Exception.Assert.Sugar
 
 -- | 2D vectors  represented as offsets in the linear framebuffer
 -- indexed by 'Point'.

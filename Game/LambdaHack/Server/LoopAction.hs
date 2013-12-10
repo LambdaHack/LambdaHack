@@ -40,7 +40,7 @@ import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.ServerSem
 import Game.LambdaHack.Server.StartAction
 import Game.LambdaHack.Server.State
-import Game.LambdaHack.Utils.Assert
+import Control.Exception.Assert.Sugar
 
 -- | Start a game session. Loop, communicating with clients.
 loopSer :: (MonadAtomic m, MonadConnServer m)

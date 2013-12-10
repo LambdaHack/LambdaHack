@@ -15,7 +15,7 @@ import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.VectorXY
 import Game.LambdaHack.Server.DungeonGen.Area
-import Game.LambdaHack.Utils.Assert
+import Control.Exception.Assert.Sugar
 
 -- Picking random points inside areas
 

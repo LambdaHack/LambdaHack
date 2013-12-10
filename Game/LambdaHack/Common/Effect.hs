@@ -13,7 +13,7 @@ import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Utils.Assert
+import Control.Exception.Assert.Sugar
 
 -- TODO: document each constructor
 -- Effects of items, tiles, etc. The type argument represents power.

@@ -20,7 +20,7 @@ import Data.Traversable (Traversable)
 import qualified System.Random as R
 
 import Game.LambdaHack.Common.Msg
-import Game.LambdaHack.Utils.Assert
+import Control.Exception.Assert.Sugar
 
 -- TODO: do not expose runFrequency
 -- | The frequency distribution type.

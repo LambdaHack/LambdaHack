@@ -44,7 +44,7 @@ import Game.LambdaHack.Server.Action hiding (sendQueryAI, sendQueryUI,
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.State
-import Game.LambdaHack.Utils.Assert
+import Control.Exception.Assert.Sugar
 
 execFailure :: (MonadAtomic m, MonadServer m)
             => Actor -> FailureSer -> m ()

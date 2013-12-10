@@ -13,7 +13,7 @@ import qualified NLP.Miniutter.English as MU
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.VectorXY
-import Game.LambdaHack.Utils.Assert
+import Control.Exception.Assert.Sugar
 
 -- | Abstract syntax of player commands.
 data HumanCmd =

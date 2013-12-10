@@ -20,7 +20,7 @@ import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Server.DungeonGen.Area
-import Game.LambdaHack.Utils.Assert
+import Control.Exception.Assert.Sugar
 
 -- TODO: use more, rewrite as needed, document each field.
 -- | The parameters of a place. Most are immutable and set

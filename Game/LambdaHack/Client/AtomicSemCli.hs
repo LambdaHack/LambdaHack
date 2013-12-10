@@ -37,7 +37,7 @@ import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.Utils.Assert
+import Control.Exception.Assert.Sugar
 
 -- * CmdAtomicAI
 

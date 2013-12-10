@@ -25,7 +25,7 @@ import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.Action
 import Game.LambdaHack.Server.State
-import Game.LambdaHack.Utils.Assert
+import Control.Exception.Assert.Sugar
 
 storeUndo :: MonadServer m => Atomic -> m ()
 storeUndo _atomic =

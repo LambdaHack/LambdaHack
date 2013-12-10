@@ -27,7 +27,7 @@ import Data.Ratio
 import GHC.Generics (Generic)
 import qualified System.Random as R
 
-import Game.LambdaHack.Utils.Assert
+import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Utils.Frequency
 
 -- | The monad of computations with random generator state.
