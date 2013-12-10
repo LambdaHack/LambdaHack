@@ -4,7 +4,7 @@
 --
 -- This is actually a bunch of hacks wrapping the original @assert@ function,
 -- which is, as of GHC 7.8, the only simple way of obtaining source positions.
--- The original @assert@ function is re-exported for convenience.
+-- The original @assert@ function is here re-exported for convenience.
 --
 -- Make sure to enable assertions for your cabal package, e.g., by setting
 --
