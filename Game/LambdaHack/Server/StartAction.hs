@@ -17,6 +17,7 @@ import qualified Data.Text as T
 import Data.Tuple (swap)
 import qualified System.Random as R
 
+import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.AtomicCmd
@@ -44,7 +45,6 @@ import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.ServerSem
 import Game.LambdaHack.Server.State
-import Control.Exception.Assert.Sugar
 
 -- | Apply debug options that don't need a new game.
 applyDebug :: MonadServer m => m ()
@@ -213,9 +213,8 @@ populateDungeon = do
         time <- getsState $ getLocalTime lid
         let nmult = fromEnum side `mod` 5  -- always positive
             ntime = timeAdd time (timeScale timeClip nmult)
-        psFree <-
-          getsState $ nearbyFreePoints
-                        cotile (Tile.hasFeature cotile F.CanActor) ppos lid
+            validTile t = Tile.hasFeature cotile F.CanActor t
+        psFree <- getsState $ nearbyFreePoints cotile validTile ppos lid
         let ps = take (playerInitial $ gplayer fact) $ zip [0..] psFree
         forM_ ps $ \ (n, p) ->
           if isSpawnFact cops fact

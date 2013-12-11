@@ -11,6 +11,7 @@ import Data.List
 import Data.Maybe
 import qualified Data.Ord as Ord
 
+import Control.Exception.Assert.Sugar
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
@@ -40,7 +41,6 @@ import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.ServerSem
 import Game.LambdaHack.Server.StartAction
 import Game.LambdaHack.Server.State
-import Control.Exception.Assert.Sugar
 
 -- | Start a game session. Loop, communicating with clients.
 loopSer :: (MonadAtomic m, MonadConnServer m)
@@ -366,7 +366,7 @@ rollSpawnPos Kind.COps{cotile} visible
              lid Level{ltile, lxsize, lysize} fid s = do
   let factionDist = max lxsize lysize - 5
       inhabitants = actorNotProjList (/= fid) lid s
-      as = actorList (/= fid) lid s
+      as = actorList (const True) lid s
       isLit = Tile.isLit cotile
       distantAtLeast d p _ =
         all (\b -> chessDist lxsize (bpos b) p > d) inhabitants
