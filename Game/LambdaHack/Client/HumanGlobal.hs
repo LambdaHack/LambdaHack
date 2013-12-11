@@ -4,7 +4,7 @@
 module Game.LambdaHack.Client.HumanGlobal
   ( moveRunAid, displaceAid, meleeAid, waitHuman, pickupHuman, dropHuman
   , projectAid, applyHuman, alterDirHuman, triggerTileHuman
-  , gameRestartHuman, gameExitHuman, gameSaveHuman, cfgDumpHuman
+  , gameRestartHuman, gameExitHuman, gameSaveHuman
   ) where
 
 import Control.Monad
@@ -16,6 +16,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
+import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.HumanCmd (Trigger (..))
@@ -39,7 +40,6 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.TileKind as TileKind
-import Control.Exception.Assert.Sugar
 
 abortFailure :: MonadClientAbort m => FailureSer -> m a
 abortFailure = abortWith . showFailureSer
@@ -512,10 +512,3 @@ gameSaveHuman = do
   -- TODO: do not save to history:
   msgAdd "Saving game backup."
   return $ GameSaveSer leader
-
--- * CfgDump; does not take time
-
-cfgDumpHuman :: MonadClientUI m => m CmdSer
-cfgDumpHuman = do
-  leader <- getLeaderUI
-  return $ CfgDumpSer leader

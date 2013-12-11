@@ -15,7 +15,6 @@ import Data.Key (mapWithKeyM_)
 import Data.Maybe
 import Data.Ratio
 import Data.Text (Text)
-import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
 import Control.Exception.Assert.Sugar
@@ -461,15 +460,3 @@ gameSaveSer :: MonadServer m => m ()
 gameSaveSer = do
   modifyServer $ \ser -> ser {sbkpSave = True}
   modifyServer $ \ser -> ser {squit = True}  -- do this at once
-
--- * CfgDumpSer
-
-cfgDumpSer :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
-cfgDumpSer aid = do
-  fn <- dumpCfg
-  b <- getsState $ getActorBody aid
-  let fid = bfid b
-      msg = "Server dumped current game rules configuration to file"
-            <+> T.pack fn <> "."
-  -- Wait with confirmation until saved; tell where the file is.
-  execSfxAtomic $ MsgFidD fid msg

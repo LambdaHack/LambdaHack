@@ -32,7 +32,6 @@ cmdSerSem cmd = case cmd of
   GameRestartSer aid t -> gameRestartSer aid t >> return False
   GameExitSer aid -> gameExitSer aid >> return False
   GameSaveSer _ -> gameSaveSer >> return False
-  CfgDumpSer aid -> cfgDumpSer aid >> return False
 
 cmdSerSemTakeTime :: (MonadAtomic m, MonadServer m) => CmdSerTakeTime -> m ()
 cmdSerSemTakeTime cmd = case cmd of

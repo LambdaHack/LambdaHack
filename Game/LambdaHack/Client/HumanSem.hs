@@ -7,6 +7,7 @@ import Control.Monad
 import Control.Monad.Writer.Strict (WriterT)
 import Data.Maybe
 
+import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.HumanCmd
 import Game.LambdaHack.Client.HumanGlobal
@@ -20,7 +21,6 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Common.VectorXY
-import Control.Exception.Assert.Sugar
 
 -- | The semantics of human player commands in terms of the @Action@ monad.
 -- Decides if the action takes time and what action to perform.
@@ -51,7 +51,6 @@ cmdAction cmd = case cmd of
   GameRestart t -> fmap Just $ gameRestartHuman t
   GameExit -> fmap Just gameExitHuman
   GameSave -> fmap Just gameSaveHuman
-  CfgDump -> fmap Just cfgDumpHuman
 
   SelectHero k -> selectHeroHuman k >> return Nothing
   MemberCycle -> memberCycleHuman >> return Nothing

@@ -10,10 +10,10 @@ import Data.Text (Text)
 import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
+import Control.Exception.Assert.Sugar
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.VectorXY
-import Control.Exception.Assert.Sugar
 
 -- | Abstract syntax of player commands.
 data HumanCmd =
@@ -31,7 +31,6 @@ data HumanCmd =
   | GameRestart !Text
   | GameExit
   | GameSave
-  | CfgDump
     -- These do not notify the server.
   | SelectHero !Int
   | MemberCycle
@@ -77,7 +76,6 @@ majorHumanCmd cmd = case cmd of
 -- | Minor commands land on the second page of command help.
 minorHumanCmd :: HumanCmd -> Bool
 minorHumanCmd cmd = case cmd of
---  CfgDump     -> True
   MemberCycle -> True
   MemberBack  -> True
   TgtFloor    -> True
@@ -125,7 +123,6 @@ cmdDescription cmd = case cmd of
   GameRestart t -> "new" <+> t <+> "game"
   GameExit    -> "save and exit"
   GameSave    -> "save game"
-  CfgDump     -> "dump current configuration"
 
   SelectHero{} -> "select hero"
   MemberCycle -> "cycle among heroes on the level"

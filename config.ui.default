@@ -26,7 +26,6 @@
 ; CTRL-e: GameRestart "defense"
 ; CTRL-x: GameExit
 ; CTRL-s: GameSave
-; CTRL-d: CfgDump
 ; Tab: MemberCycle
 ; ISO_Left_Tab: MemberBack
 ; I: Inventory

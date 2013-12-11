@@ -50,6 +50,7 @@ import System.Directory
 import System.FilePath
 import System.Time
 
+import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Client.Action.ActionClass
 import Game.LambdaHack.Client.Action.ConfigIO
 import Game.LambdaHack.Client.Binding
@@ -74,7 +75,6 @@ import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Frontend as Frontend
-import Control.Exception.Assert.Sugar
 
 debugPrint :: MonadClient m => Text -> m ()
 debugPrint t = do
@@ -331,6 +331,9 @@ drawOverlay dm over = do
   per <- getPerFid lid
   return $! draw dm cops per lid mleader cli s over
 
+-- TODO: if more slides, don't take head, but do as in getInitConfirms,
+-- but then we have to clear the messages or they get redisplayed
+-- each time screen is refreshed.
 -- | Push the frame depicting the current level to the frame queue.
 -- Only one screenful of the report is shown, the rest is ignored.
 displayPush :: MonadClientUI m => m ()

@@ -22,7 +22,6 @@ data CmdSer =
   | GameRestartSer !ActorId !Text
   | GameExitSer !ActorId
   | GameSaveSer !ActorId
-  | CfgDumpSer !ActorId
   deriving (Show, Eq)
 
 data CmdSerTakeTime =
@@ -47,7 +46,6 @@ aidCmdSer cmd = case cmd of
   GameRestartSer aid _ -> aid
   GameExitSer aid -> aid
   GameSaveSer aid -> aid
-  CfgDumpSer aid -> aid
 
 aidCmdSerTakeTime :: CmdSerTakeTime -> ActorId
 aidCmdSerTakeTime cmd = case cmd of
