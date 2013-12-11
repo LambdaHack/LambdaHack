@@ -38,6 +38,7 @@ import System.IO.Unsafe (unsafePerformIO)
 import qualified System.Random as R
 import System.Time
 
+import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -62,7 +63,6 @@ import qualified Game.LambdaHack.Server.Action.ConfigIO as ConfigIO
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.State
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Utils.File
 
 debugPrint :: MonadServer m => Text -> m ()
@@ -95,10 +95,13 @@ getPerFid fid lid = do
   return $! per
 
 -- | Dumps the current game rules configuration to a file.
-dumpCfg :: MonadServer m => FilePath -> m ()
-dumpCfg fn = do
+dumpCfg :: MonadServer m => m String
+dumpCfg = do
+  Config{configRulesCfgFile} <- getsServer sconfig
+  let fn = configRulesCfgFile ++ ".dump"
   config <- getsServer sconfig
   liftIO $ ConfigIO.dump config fn
+  return fn
 
 writeTQueueAI :: MonadConnServer m => CmdClientAI -> TQueue CmdClientAI -> m ()
 writeTQueueAI cmd fromServer = do

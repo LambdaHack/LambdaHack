@@ -86,6 +86,7 @@ loopSer sdebug cmdSerSem executorUI executorAI !cops = do
       updateConn executorUI executorAI
       initPer
       reinitGame
+      when (sdumpConfig sdebug) $ void $ dumpCfg
   resetSessionStart
   -- Start a clip (a part of a turn for which one or more frames
   -- will be generated). Do whatever has to be done

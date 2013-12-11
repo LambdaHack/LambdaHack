@@ -61,6 +61,7 @@ debugArgs = do
         , "  --gameMode m start next game in the given mode"
         , "  --newGame start a new game, overwriting the save file"
         , "  --stopAfter n exit this game session after around n seconds"
+        , "  --dumpConfig dump server config at the start of the game"
         , "  --dbgMsgSer let the server emit its internal debug messages"
         , "  --font fn use the given font for the main game window"
         , "  --maxFps n display at most n frames per second"
@@ -96,6 +97,8 @@ debugArgs = do
                          (sdebugCli debugSer) {snewGameCli = True}}
       parseArgs ("--stopAfter" : s : rest) =
         (parseArgs rest) {sstopAfter = Just $ read s}
+      parseArgs ("--dumpConfig" : rest) =
+        (parseArgs rest) {sdumpConfig = True}
       parseArgs ("--fovMode" : "Digital" : r : rest) | (read r :: Int) > 0 =
         (parseArgs rest) {sfovMode = Just $ Digital $ read r}
       parseArgs ("--fovMode" : mode : rest) =

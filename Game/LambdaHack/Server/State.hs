@@ -50,6 +50,7 @@ data DebugModeSer = DebugModeSer
   , sstopAfter     :: !(Maybe Int)
   , sfovMode       :: !(Maybe FovMode)
   , snewGameSer    :: !Bool
+  , sdumpConfig    :: !Bool
   , ssavePrefixSer :: !(Maybe String)
   , sdbgMsgSer     :: !Bool
   , sdebugCli      :: !DebugModeCli
@@ -87,6 +88,7 @@ defDebugModeSer = DebugModeSer { sknowMap = False
                                , sstopAfter = Nothing
                                , sfovMode = Nothing
                                , snewGameSer = False
+                               , sdumpConfig = False
                                , ssavePrefixSer = Nothing
                                , sdbgMsgSer = False
                                , sdebugCli = defDebugModeCli
@@ -132,7 +134,6 @@ instance Binary DebugModeSer where
     put sallClear
     put sgameMode
     put sfovMode
-    put snewGameSer
     put ssavePrefixSer
     put sdbgMsgSer
     put sdebugCli
@@ -144,9 +145,10 @@ instance Binary DebugModeSer where
     sallClear <- get
     sgameMode <- get
     sfovMode <- get
-    snewGameSer <- get
     ssavePrefixSer <- get
     sdbgMsgSer <- get
     sdebugCli <- get
     let sstopAfter = Nothing
+        snewGameSer = False
+        sdumpConfig = False
     return DebugModeSer{..}

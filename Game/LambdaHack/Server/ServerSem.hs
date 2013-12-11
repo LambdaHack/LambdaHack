@@ -18,6 +18,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
+import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -41,10 +42,8 @@ import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Server.Action hiding (sendQueryAI, sendQueryUI,
                                       sendUpdateAI, sendUpdateUI)
-import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.State
-import Control.Exception.Assert.Sugar
 
 execFailure :: (MonadAtomic m, MonadServer m)
             => Actor -> FailureSer -> m ()
@@ -467,12 +466,10 @@ gameSaveSer = do
 
 cfgDumpSer :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 cfgDumpSer aid = do
+  fn <- dumpCfg
   b <- getsState $ getActorBody aid
   let fid = bfid b
-  Config{configRulesCfgFile} <- getsServer sconfig
-  let fn = configRulesCfgFile ++ ".dump"
       msg = "Server dumped current game rules configuration to file"
             <+> T.pack fn <> "."
-  dumpCfg fn
   -- Wait with confirmation until saved; tell where the file is.
   execSfxAtomic $ MsgFidD fid msg
