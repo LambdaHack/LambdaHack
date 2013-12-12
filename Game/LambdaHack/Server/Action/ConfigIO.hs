@@ -129,8 +129,8 @@ parseConfigRules dataDir cp =
       configFovMode = get cp "engine" "fovMode"
       configSaveBkpClips = get cp "engine" "saveBkpClips"
       configAppDataDir = dataDir
-      configScoresFile = dataDir </> get cp "file" "scoresFile"
-      configRulesCfgFile = dataDir </> "config.rules"
+      configScoresFile = get cp "file" "scoresFile"
+      configRulesCfgFile = "config.rules"
       configSavePrefix = get cp "file" "savePrefix"
       configHeroNames =
         let toNumber (ident, name) =
@@ -146,11 +146,10 @@ mkConfigRules :: Kind.Ops RuleKind -> Maybe R.StdGen
               -> IO (Config, R.StdGen, R.StdGen)
 mkConfigRules corule mrandom = do
   let cpRulesDefault = rcfgRulesDefault $ Kind.stdRuleset corule
-  appData <- appDataDir
-  cpRules <- mkConfig cpRulesDefault $ appData </> "config.rules.ini"
+  dataDir <- appDataDir
+  cpRules <- mkConfig cpRulesDefault $ dataDir </> "config.rules.ini"
   (dungeonGen,  cp2) <- getSetGen cpRules "dungeonRandomGenerator" mrandom
   (startingGen, cp3) <- getSetGen cp2     "startingRandomGenerator" mrandom
-  let conf = parseConfigRules appData cp3
-      -- Catch syntax errors ASAP.
-      !res = deepseq conf (conf, dungeonGen, startingGen)
-  return res
+  let conf = parseConfigRules dataDir cp3
+  -- Catch syntax errors ASAP.
+  return $! deepseq conf (conf, dungeonGen, startingGen)

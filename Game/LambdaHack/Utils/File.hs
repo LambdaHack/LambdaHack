@@ -52,12 +52,15 @@ tryCreateDir dir = do
   unless dirExists $ createDirectory dir
 
 -- | Try to copy over data files, if not already there.
-tryCopyDataFiles :: (FilePath -> IO FilePath) -> [(FilePath, FilePath)]
+tryCopyDataFiles :: FilePath
+                 -> (FilePath -> IO FilePath)
+                 -> [(FilePath, FilePath)]
                  -> IO ()
-tryCopyDataFiles pathsDataFile files =
+tryCopyDataFiles configAppDataDir pathsDataFile files =
   let cpFile (fin, fout) = do
         pathsDataIn <- pathsDataFile $ takeFileName fin
         bIn <- doesFileExist pathsDataIn
-        bOut <- doesFileExist fout
-        when (bIn && not bOut) $ copyFile pathsDataIn fout
+        let pathsDataOut = configAppDataDir </> fout
+        bOut <- doesFileExist pathsDataOut
+        when (not bOut && bIn) $ copyFile pathsDataIn pathsDataOut
   in mapM_ cpFile files

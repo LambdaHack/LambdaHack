@@ -83,7 +83,7 @@ restoreGame :: Binary a
 restoreGame name configAppDataDir copies pathsDataFile = do
   -- Create user data directory and copy files, if not already there.
   tryCreateDir configAppDataDir
-  tryCopyDataFiles pathsDataFile copies
+  tryCopyDataFiles configAppDataDir pathsDataFile copies
   let saveFile = configAppDataDir </> name
   saveExists <- doesFileExist saveFile
   -- If the savefile exists but we get IO or decoding errors,

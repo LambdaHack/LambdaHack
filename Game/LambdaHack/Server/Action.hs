@@ -97,8 +97,8 @@ getPerFid fid lid = do
 -- | Dumps the current game rules configuration to a file.
 dumpCfg :: MonadServer m => m String
 dumpCfg = do
-  Config{configRulesCfgFile} <- getsServer sconfig
-  let fn = configRulesCfgFile ++ ".dump"
+  Config{configAppDataDir, configRulesCfgFile} <- getsServer sconfig
+  let fn = configAppDataDir </> configRulesCfgFile ++ ".dump"
   config <- getsServer sconfig
   liftIO $ ConfigIO.dump config fn
   return fn
@@ -199,11 +199,12 @@ mkConfigRules rules mrandom = liftIO $ ConfigIO.mkConfigRules rules mrandom
 -- Warning: when it's used, the game state
 -- may still be undefined, hence the config is given as an argument.
 restoreScore :: MonadServer m => Config -> m HighScore.ScoreTable
-restoreScore Config{configScoresFile} = do
-  configExists <- liftIO $ doesFileExist configScoresFile
+restoreScore Config{configAppDataDir, configScoresFile} = do
+  let path = configAppDataDir </> configScoresFile
+  configExists <- liftIO $ doesFileExist path
   if not configExists
     then return HighScore.empty
-    else liftIO $ strictDecodeEOF configScoresFile
+    else liftIO $ strictDecodeEOF path
 
 -- | Generate a new score, register it and save.
 registerScore :: MonadServer m => Status -> Maybe Actor -> FactionId -> m ()
@@ -219,14 +220,14 @@ registerScore status mbody fid = do
       Just aid -> do
         b <- getsState $ getActorBody aid
         getsState $ snd . calculateTotal b
-  config <- getsServer sconfig
+  config@Config{configAppDataDir, configScoresFile} <- getsServer sconfig
   -- Re-read the table in case it's changed by a concurrent game.
   table <- restoreScore config
   time <- getsState stime
   date <- liftIO getClockTime
-  let saveScore (ntable, _) =
-        liftIO $ encodeEOF (configScoresFile config)
-                           (ntable :: HighScore.ScoreTable)
+  let path = configAppDataDir </> configScoresFile
+      saveScore (ntable, _) =
+        liftIO $ encodeEOF path (ntable :: HighScore.ScoreTable)
   maybe skip saveScore $ HighScore.register table total time status date
 
 resetSessionStart :: MonadServer m => m ()

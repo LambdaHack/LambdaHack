@@ -92,7 +92,7 @@ parseConfigUI dataDir cp =
             section = getItems cp "commands"
         in map mkCommand section
       configAppDataDir = dataDir
-      configUICfgFile = dataDir </> "config.ui"
+      configUICfgFile = "config.ui"
       configSavePrefix = get cp "file" "savePrefix"
       configMacros =
         let trMacro (from, to) =
@@ -113,8 +113,8 @@ parseConfigUI dataDir cp =
 mkConfigUI :: Kind.Ops RuleKind -> IO ConfigUI
 mkConfigUI corule = do
   let cpUIDefault = rcfgUIDefault $ Kind.stdRuleset corule
-  appData <- appDataDir
-  cpUI <- mkConfig cpUIDefault $ appData </> "config.ui.ini"
-  let conf = parseConfigUI appData cpUI
+  dataDir <- appDataDir
+  cpUI <- mkConfig cpUIDefault $ dataDir </> "config.ui.ini"
+  let conf = parseConfigUI dataDir cpUI
   -- Catch syntax errors ASAP,
   return $! deepseq conf conf
