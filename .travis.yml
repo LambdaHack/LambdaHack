@@ -2,7 +2,8 @@ language: haskell
 
 install:
   - cabal install gtk2hs-buildtools
-  - cabal install --enable-tests
+  - cabal install --only-dependencies
 
 script:
+  - cabal install
   - make test-travis || (cat ~/.LambdaHack/config.rules.dump ; tail -n 200 /tmp/stdtest.log ; exit 77)

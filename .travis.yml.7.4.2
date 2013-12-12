@@ -7,4 +7,4 @@ install:
   - cabal install --enable-tests --force-reinstalls --constraint="mtl>=2.1.2" --constraint="containers>=0.5.2.1" --constraint="template-haskell==2.7.0.0" --constraint="text>=0.11.2.3"
 
 script:
-  - make test-travis
+  - cabal test
