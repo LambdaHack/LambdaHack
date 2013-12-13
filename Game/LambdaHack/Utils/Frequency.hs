@@ -11,6 +11,7 @@ module Game.LambdaHack.Utils.Frequency
   , rollFreq, nullFreq, runFrequency, nameFrequency
   ) where
 
+import Control.Applicative
 import Control.Arrow (first, second)
 import Control.Monad
 import Data.Binary
@@ -19,8 +20,8 @@ import Data.Text (Text)
 import Data.Traversable (Traversable)
 import qualified System.Random as R
 
-import Game.LambdaHack.Common.Msg
 import Control.Exception.Assert.Sugar
+import Game.LambdaHack.Common.Msg
 
 -- TODO: do not expose runFrequency
 -- | The frequency distribution type.
@@ -37,6 +38,13 @@ instance Monad Frequency where
               [(p * q, y) | (p, x) <- xs
                           , (q, y) <- runFrequency (f x) ]
 
+instance Functor Frequency where
+  fmap f (Frequency name xs) = Frequency name (map (second f) xs)
+
+instance Applicative Frequency where
+    pure  = return
+    (<*>) = ap
+
 instance MonadPlus Frequency where
   mplus (Frequency xname xs) (Frequency yname ys) =
     let name = case (xs, ys) of
@@ -47,8 +55,9 @@ instance MonadPlus Frequency where
     in Frequency name (xs ++ ys)
   mzero = Frequency "[]" []
 
-instance Functor Frequency where
-  fmap f (Frequency name xs) = Frequency name (map (second f) xs)
+instance Alternative Frequency where
+    (<|>) = mplus
+    empty = mzero
 
 -- | Uniform discrete frequency distribution.
 uniformFreq :: Text -> [a] -> Frequency a

@@ -6,6 +6,7 @@ module Game.LambdaHack.Client.Strategy
   , (.|), reject, (.=>), only, bestVariant, renameStrategy, returN
   ) where
 
+import Control.Applicative
 import Control.Monad
 import Data.Foldable (Foldable)
 import Data.Text (Text)
@@ -31,12 +32,20 @@ instance Monad Strategy where
     | x <- runStrategy m
     , let name = "Strategy_bind (" <> nameFrequency x <> ")"]
 
+instance Functor Strategy where
+  fmap f (Strategy fs) = Strategy (map (fmap f) fs)
+
+instance Applicative Strategy where
+    pure  = return
+    (<*>) = ap
+
 instance MonadPlus Strategy where
   mzero = Strategy []
   mplus (Strategy xs) (Strategy ys) = Strategy (xs ++ ys)
 
-instance Functor Strategy where
-  fmap f (Strategy fs) = Strategy (map (fmap f) fs)
+instance Alternative Strategy where
+    (<|>) = mplus
+    empty = mzero
 
 normalizeStrategy :: Strategy a -> Strategy a
 normalizeStrategy (Strategy fs) = Strategy $ filter (not . nullFreq) fs

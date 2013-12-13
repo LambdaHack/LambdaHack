@@ -7,6 +7,7 @@ module Game.LambdaHack.Server.Action.ActionType
   ( ActionSer, executorSer
   ) where
 
+import Control.Applicative
 import qualified Control.Monad.IO.Class as IO
 import Control.Monad.Trans.State.Strict hiding (State)
 import qualified Data.EnumMap.Strict as EM
@@ -31,7 +32,7 @@ data SerState = SerState
 
 -- | Server state transformation monad.
 newtype ActionSer a = ActionSer {runActionSer :: StateT SerState IO a}
-  deriving (Monad, Functor)
+  deriving (Monad, Functor, Applicative)
 
 instance MonadActionRO ActionSer where
   getState    = ActionSer $ gets serState

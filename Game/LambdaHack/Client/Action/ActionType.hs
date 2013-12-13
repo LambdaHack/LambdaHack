@@ -7,7 +7,9 @@ module Game.LambdaHack.Client.Action.ActionType
   ( FunActionCli, ActionCli, executorCli
   ) where
 
+import Control.Applicative
 import Control.Concurrent.STM
+import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 import qualified Data.Text as T
@@ -54,6 +56,10 @@ bindActionCli m f = ActionCli (\c d k a s cli ->
 instance Monad (ActionCli c d) where
   return = returnActionCli
   (>>=)  = bindActionCli
+
+instance Applicative (ActionCli c d) where
+    pure  = return
+    (<*>) = ap
 
 -- TODO: make sure fmap is inlined and all else is inlined here and elsewhere
 instance Functor (ActionCli c d) where

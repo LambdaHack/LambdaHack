@@ -2,7 +2,7 @@
 module Game.LambdaHack.Client.ClientSem where
 
 import Control.Monad
-import Control.Monad.Writer.Strict (WriterT, runWriterT)
+import Control.Monad.Writer.Strict (runWriterT)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
 import Data.Maybe
