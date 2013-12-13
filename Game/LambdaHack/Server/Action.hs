@@ -21,6 +21,7 @@ module Game.LambdaHack.Server.Action
 import Control.Concurrent
 import Control.Concurrent.STM (TQueue, atomically)
 import qualified Control.Concurrent.STM as STM
+import Control.DeepSeq
 import Control.Monad
 import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
@@ -44,6 +45,7 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.ClientCmd
+import qualified Game.LambdaHack.Common.ConfigIO as ConfigIO
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import Game.LambdaHack.Common.Item
@@ -59,7 +61,6 @@ import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Frontend as Frontend
 import Game.LambdaHack.Server.Action.ActionClass
-import qualified Game.LambdaHack.Server.Action.ConfigIO as ConfigIO
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.State
@@ -187,13 +188,6 @@ sendPingUI fid = do
       cmdHack <- readTQueueUI $ toServer conn
       -- debugPrint $ "UI client" <+> showT fid <+> "responded."
       assert (cmdHack == TakeTimeSer (WaitSer (toEnum (-1)))) skip
-
--- | Create a server config file. Warning: when it's used, the game state
--- may still be undefined, hence the content ops are given as an argument.
-mkConfigRules :: MonadServer m
-              => Kind.Ops RuleKind -> Maybe R.StdGen
-              -> m (Config, R.StdGen, R.StdGen)
-mkConfigRules rules mrandom = liftIO $ ConfigIO.mkConfigRules rules mrandom
 
 -- | Read the high scores table. Return the empty table if no file.
 -- Warning: when it's used, the game state
@@ -424,3 +418,61 @@ rndToAction r = do
   let (a, ng) = St.runState r g
   modifyServer $ \ser -> ser {srandom = ng}
   return a
+
+-- | Gets a random generator from the config or,
+-- if not present, generates one and updates the config with it.
+getSetGen :: ConfigIO.CP      -- ^ config
+          -> String  -- ^ name of the generator
+          -> Maybe R.StdGen
+          -> IO (R.StdGen, ConfigIO.CP)
+getSetGen config option mrandom =
+  case ConfigIO.getOption config "engine" option of
+    Just sg -> return (read sg, config)
+    Nothing -> do
+      -- Pick the randomly chosen generator from the IO monad (unless given)
+      -- and record it in the config for debugging (can be 'D'umped).
+      g <- case mrandom of
+        Just rnd -> return rnd
+        Nothing -> R.newStdGen
+      let gs = show g
+          c = ConfigIO.set config "engine" option gs
+      return (g, c)
+
+parseConfigRules :: FilePath -> ConfigIO.CP -> Config
+parseConfigRules dataDir cp =
+  let configSelfString = ConfigIO.to_string cp
+      configFirstDeathEnds = ConfigIO.get cp "engine" "firstDeathEnds"
+      configFovMode = ConfigIO.get cp "engine" "fovMode"
+      configSaveBkpClips = ConfigIO.get cp "engine" "saveBkpClips"
+      configAppDataDir = dataDir
+      configScoresFile = ConfigIO.get cp "file" "scoresFile"
+      configRulesCfgFile = "config.rules"
+      configSavePrefix = ConfigIO.get cp "file" "savePrefix"
+      configHeroNames =
+        let toNumber (ident, name) =
+              case stripPrefix "HeroName_" ident of
+                Just n -> (read n, T.pack name)
+                Nothing -> assert `failure` "wrong hero name id" `twith` ident
+            section = ConfigIO.getItems cp "heroName"
+        in map toNumber section
+  in Config{..}
+
+-- | Read and parse rules config file and supplement it with random seeds.
+-- This creates a server config file. Warning: when it's used, the game state
+-- may still be undefined, hence the content ops are given as an argument.
+mkConfigRules :: MonadServer m
+              => Kind.Ops RuleKind -> Maybe R.StdGen
+              -> m (Config, R.StdGen, R.StdGen)
+mkConfigRules corule mrandom = do
+  let cpRulesDefault = rcfgRulesDefault $ Kind.stdRuleset corule
+  dataDir <-
+    liftIO $ ConfigIO.appDataDir
+  cpRules <-
+    liftIO $ ConfigIO.mkConfig cpRulesDefault $ dataDir </> "config.rules.ini"
+  (dungeonGen,  cp2) <-
+    liftIO $ getSetGen cpRules "dungeonRandomGenerator" mrandom
+  (startingGen, cp3) <-
+    liftIO $ getSetGen cp2     "startingRandomGenerator" mrandom
+  let conf = parseConfigRules dataDir cp3
+  -- Catch syntax errors ASAP.
+  return $! deepseq conf (conf, dungeonGen, startingGen)

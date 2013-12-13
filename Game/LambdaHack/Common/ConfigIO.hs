@@ -1,26 +1,16 @@
--- TODO: factor out parts common with Client.ConfigIO
 -- | Personal game configuration file support.
-module Game.LambdaHack.Server.Action.ConfigIO
-  ( mkConfigRules, dump
+module Game.LambdaHack.Common.ConfigIO
+  ( CP, appDataDir, mkConfig, get, getOption, set, getItems, to_string, dump
   ) where
 
-import Control.DeepSeq
+import Control.Exception.Assert.Sugar
 import qualified Data.Char as Char
 import qualified Data.ConfigFile as CF
-import Data.List
-import qualified Data.Text as T
 import System.Directory
 import System.Environment
 import System.FilePath
-import qualified System.Random as R
 
-import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.Config
-import Control.Exception.Assert.Sugar
-
--- TODO: Refactor the client and server ConfigIO.hs, after
--- https://github.com/kosmikus/LambdaHack/issues/45.
 
 overrideCP :: CP -> FilePath -> IO CP
 overrideCP cp@(CP defCF) cfile = do
@@ -67,25 +57,6 @@ set (CP conf) s o v =
   then assert `failure`"overwritten config option" `twith` (s, o)
   else CP $ assert `forceEither` CF.set conf s o v
 
--- | Gets a random generator from the config or,
--- if not present, generates one and updates the config with it.
-getSetGen :: CP      -- ^ config
-          -> String  -- ^ name of the generator
-          -> Maybe R.StdGen
-          -> IO (R.StdGen, CP)
-getSetGen config option mrandom =
-  case getOption config "engine" option of
-    Just sg -> return (read sg, config)
-    Nothing -> do
-      -- Pick the randomly chosen generator from the IO monad (unless given)
-      -- and record it in the config for debugging (can be 'D'umped).
-      g <- case mrandom of
-        Just rnd -> return rnd
-        Nothing -> R.newStdGen
-      let gs = show g
-          c = set config "engine" option gs
-      return (g, c)
-
 -- | The content of the configuration file. It's parsed
 -- in a case sensitive way (unlike by default in ConfigFile).
 newtype CP = CP CF.ConfigParser
@@ -122,34 +93,5 @@ getItems (CP conf) s =
   then assert `forceEither` CF.items conf s
   else assert `failure` "unknown CF section" `twith` (s, CF.to_string conf)
 
-parseConfigRules :: FilePath -> CP -> Config
-parseConfigRules dataDir cp =
-  let configSelfString = let CP conf = cp in CF.to_string conf
-      configFirstDeathEnds = get cp "engine" "firstDeathEnds"
-      configFovMode = get cp "engine" "fovMode"
-      configSaveBkpClips = get cp "engine" "saveBkpClips"
-      configAppDataDir = dataDir
-      configScoresFile = get cp "file" "scoresFile"
-      configRulesCfgFile = "config.rules"
-      configSavePrefix = get cp "file" "savePrefix"
-      configHeroNames =
-        let toNumber (ident, name) =
-              case stripPrefix "HeroName_" ident of
-                Just n -> (read n, T.pack name)
-                Nothing -> assert `failure` "wrong hero name id" `twith` ident
-            section = getItems cp "heroName"
-        in map toNumber section
-  in Config{..}
-
--- | Read and parse rules config file and supplement it with random seeds.
-mkConfigRules :: Kind.Ops RuleKind -> Maybe R.StdGen
-              -> IO (Config, R.StdGen, R.StdGen)
-mkConfigRules corule mrandom = do
-  let cpRulesDefault = rcfgRulesDefault $ Kind.stdRuleset corule
-  dataDir <- appDataDir
-  cpRules <- mkConfig cpRulesDefault $ dataDir </> "config.rules.ini"
-  (dungeonGen,  cp2) <- getSetGen cpRules "dungeonRandomGenerator" mrandom
-  (startingGen, cp3) <- getSetGen cp2     "startingRandomGenerator" mrandom
-  let conf = parseConfigRules dataDir cp3
-  -- Catch syntax errors ASAP.
-  return $! deepseq conf (conf, dungeonGen, startingGen)
+to_string :: CP -> String
+to_string (CP conf) = CF.to_string conf

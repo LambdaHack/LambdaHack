@@ -36,6 +36,8 @@ module Game.LambdaHack.Client.Action
 
 import Control.Concurrent
 import Control.Concurrent.STM
+import Control.DeepSeq
+import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Control.Monad.State as St
 import Control.Monad.Writer.Strict (WriterT, lift, tell)
@@ -50,17 +52,17 @@ import System.Directory
 import System.FilePath
 import System.Time
 
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Client.Action.ActionClass
-import Game.LambdaHack.Client.Action.ConfigIO
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.Draw
+import Game.LambdaHack.Client.HumanCmd
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Animation
+import qualified Game.LambdaHack.Common.ConfigIO as ConfigIO
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import qualified Game.LambdaHack.Common.Key as K
@@ -387,7 +389,6 @@ rndToAction r = do
   modifyClient $ \cli -> cli {srandom = ng}
   return a
 
--- TODO: perhaps draw viewed level, not arena
 -- TODO: restrict the animation to 'per' before drawing.
 -- | Render animations on top of the current screen frame.
 animate :: MonadClientUI m => LevelId -> Animation -> m Frames
@@ -423,3 +424,44 @@ partAidLeader :: MonadClient m => ActorId -> m MU.Part
 partAidLeader aid = do
   b <- getsState $ getActorBody aid
   partActorLeader aid b
+
+parseConfigUI :: FilePath -> ConfigIO.CP -> ConfigUI
+parseConfigUI dataDir cp =
+  let mkKey s =
+        case K.keyTranslate s of
+          K.Unknown _ ->
+            assert `failure` "unknown config file key" `twith` (s, cp)
+          key -> key
+      mkKM ('C':'T':'R':'L':'-':s) = K.KM {key=mkKey s, modifier=K.Control}
+      mkKM s = K.KM {key=mkKey s, modifier=K.NoModifier}
+      configCommands =
+        let mkCommand (key, def) = (mkKM key, read def :: HumanCmd)
+            section = ConfigIO.getItems cp "commands"
+        in map mkCommand section
+      configAppDataDir = dataDir
+      configUICfgFile = "config.ui"
+      configSavePrefix = ConfigIO.get cp "file" "savePrefix"
+      configMacros =
+        let trMacro (from, to) =
+              let fromTr = mkKM from
+                  toTr  = mkKM to
+              in if fromTr == toTr
+                 then assert `failure` "degenerate alias" `twith` toTr
+                 else (fromTr, toTr)
+            section = ConfigIO.getItems cp "macros"
+        in map trMacro section
+      configFont = ConfigIO.get cp "ui" "font"
+      configHistoryMax = ConfigIO.get cp "ui" "historyMax"
+      configMaxFps = ConfigIO.get cp "ui" "maxFps"
+      configNoAnim = ConfigIO.get cp "ui" "noAnim"
+  in ConfigUI{..}
+
+-- | Read and parse UI config file.
+mkConfigUI :: Kind.Ops RuleKind -> IO ConfigUI
+mkConfigUI corule = do
+  let cpUIDefault = rcfgUIDefault $ Kind.stdRuleset corule
+  dataDir <- ConfigIO.appDataDir
+  cpUI <- ConfigIO.mkConfig cpUIDefault $ dataDir </> "config.ui.ini"
+  let conf = parseConfigUI dataDir cpUI
+  -- Catch syntax errors ASAP,
+  return $! deepseq conf conf
