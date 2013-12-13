@@ -239,15 +239,16 @@ handleActors cmdSerSem lid = do
             -- TODO: check that the command is legal first, report and reject,
             -- but do not crash (currently server asserts things and crashes)
             let leaderNew = aidCmdSer cmdS
-                leadAtoms =
+            bPre <- getsState $ getActorBody leaderNew
+            let leadAtoms =
                   if leaderNew /= aid
                   then -- Only leader can change leaders
                        -- TODO: effLvlGoUp changes
-                       assert (mleader == Just aid)
+                       assert (mleader == Just aid && not (bproj bPre)
+                               `blame` (aid, leaderNew, bPre, cmdS, fact))
                          [LeadFactionA side mleader (Just leaderNew)]
                   else []
             mapM_ execCmdAtomic leadAtoms
-            bPre <- getsState $ getActorBody leaderNew
             assert (bfid bPre == side
                     `blame` "client tries to move other faction actors"
                     `twith` (bPre, side)) skip

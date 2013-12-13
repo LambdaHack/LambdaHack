@@ -144,7 +144,7 @@ effectMindprobe target = do
   fact <- getsState $ (EM.! bfid tb) . sfactionD
   lb <- getsState $ actorNotProjList (isAtWar fact) lid
   let nEnemy = length lb
-  if nEnemy == 0 then do
+  if nEnemy == 0 || bproj tb then do
     execSfxAtomic $ EffectD target Effect.NoEffect
     return False
   else do
@@ -158,7 +158,7 @@ effectDominate :: (MonadAtomic m, MonadServer m)
 effectDominate source target = do
   sb <- getsState (getActorBody source)
   tb <- getsState (getActorBody target)
-  if bfid tb == bfid sb then do
+  if bfid tb == bfid sb || bproj tb then do  -- TODO: drop the projectile?
     execSfxAtomic $ EffectD target Effect.NoEffect
     return False
   else do
@@ -409,7 +409,8 @@ effLvlGoUp aid k = do
   let lid1 = blid b1
       pos1 = bpos b1
   (lid2, pos2) <- getsState $ whereTo lid1 pos1 k
-  if lid2 == lid1 && pos2 == pos1 then return False
+  if lid2 == lid1 && pos2 == pos1 || bproj b1 then
+    return False
   else do
     -- The actor is added to the new level, but there can be other actors
     -- at his new position.
@@ -494,7 +495,7 @@ effectEscape aid = do
   let fid = bfid b
   spawn <- getsState $ isSpawnFaction fid
   summon <- getsState $ isSummonFaction fid
-  if spawn || summon then return False
+  if spawn || summon || bproj b then return False
   else do
     deduceQuits b $ Status Escape (fromEnum $ blid b) ""
     return True

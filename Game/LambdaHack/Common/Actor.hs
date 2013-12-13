@@ -93,7 +93,7 @@ partActor b = MU.Text $ bname b
 
 -- Actor operations
 
--- | A template for a new non-projectile actor.
+-- | A template for a new actor.
 actorTemplate :: Kind.Id ActorKind -> Char -> Text
               -> Color.Color -> Speed -> Int -> Maybe [Vector]
               -> Point -> LevelId -> Time -> FactionId -> Bool -> Actor

@@ -101,10 +101,14 @@ createActorA aid body ais = do
 updateLevel :: MonadAction m => LevelId -> (Level -> Level) -> m ()
 updateLevel lid f = modifyState $ updateDungeon $ EM.adjust f lid
 
--- | Kills an actor. Note: after this command, usually a new leader
--- for the party should be elected.
+-- | Kills an actor.
 destroyActorA :: MonadAction m => ActorId -> Actor -> [(ItemId, Item)] -> m ()
 destroyActorA aid body ais = do
+  -- If a leader dies, a new leader should be elected on the server
+  -- before this command is executed.
+  -- TODO: check this only on the server (e.g., not in LoseActor):
+  -- fact <- getsState $ (EM.! bfid body) . sfactionD
+  -- assert (Just aid /= gleader fact `blame` (aid, body, fact)) skip
   -- Assert that actor's items belong to @sitemD@. Do not remove those
   -- that do not appear anywhere else, for simplicity and speed.
   itemD <- getsState sitemD
@@ -294,8 +298,11 @@ leadFactionA :: MonadAction m
              => FactionId -> Maybe ActorId -> Maybe ActorId -> m ()
 leadFactionA fid source target = assert (source /= target) $ do
   fact <- getsState $ (EM.! fid) . sfactionD
+  mtb <- getsState $ \s -> fmap (flip getActorBody s) target
+  assert (maybe True (not . bproj) mtb
+          `blame` (fid, source, target, mtb, fact)) skip
   assert (source == gleader fact `blame` "unexpected actor leader"
-                                 `twith` (fid, source, target, fact)) skip
+                                 `twith` (fid, source, target, mtb, fact)) skip
   let adj fa = fa {gleader = target}
   modifyState $ updateFaction $ EM.adjust adj fid
 
