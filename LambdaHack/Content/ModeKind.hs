@@ -108,11 +108,11 @@ playersCampaign = Players
 
 playersSkirmish = Players
   { playersList = [ playerHero {playerName = "White"}
-                  , playerAntiHero {playerName = "Green"}
+                  , playerAntiHero {playerName = "Purple"}
                   , playerHorror ]
-  , playersEnemy = [ ("White", "Green")
+  , playersEnemy = [ ("White", "Purple")
                    , ("White", "Horror Den")
-                   , ("Green", "Horror Den") ]
+                   , ("Purple", "Horror Den") ]
   , playersAlly = [] }
 
 playersPvP = Players
@@ -192,12 +192,12 @@ playersPeekCampaign = Players
 
 playersPeekSkirmish = Players
   { playersList = [ playerHero {playerName = "White"}
-                  , playerAntiHero { playerName = "Green"
+                  , playerAntiHero { playerName = "Purple"
                                    , playerUI = True }
                   , playerHorror ]
-  , playersEnemy = [ ("White", "Green")
+  , playersEnemy = [ ("White", "Purple")
                    , ("White", "Horror Den")
-                   , ("Green", "Horror Den") ]
+                   , ("Purple", "Horror Den") ]
   , playersAlly = [] }
 
 
