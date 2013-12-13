@@ -6,27 +6,30 @@ module Game.LambdaHack.Frontend
     -- * Derived operation
   , startupF
     -- * Connection channels
-  , ChanFrontend, FrontReq(..), ConnMulti(..), connMulti, loopFrontend
+  , ChanFrontend, FrontReq(..), ConnMulti(..), connMulti
   ) where
 
 import Control.Concurrent
-import Control.Concurrent.STM (TQueue, atomically, newTQueueIO)
+import Control.Concurrent.STM (TQueue, atomically, newTQueueIO, writeTQueue)
 import qualified Control.Concurrent.STM as STM
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.IO as T
+import System.IO
 import System.IO.Unsafe (unsafePerformIO)
 
+import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Common.Animation
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Frontend.Chosen
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Utils.LQueue
+import Game.LambdaHack.Utils.Thread
 
 type ChanFrontend = TQueue K.KM
 
@@ -42,6 +45,8 @@ data FrontReq =
       -- ^ flush frames, possibly show fadeout/fadein and ask for a keypress
   | FrontSlides {frontClear :: ![K.KM], frontSlides :: ![SingleFrame]}
       -- ^ show a whole slideshow without interleaving with other clients
+  | FrontFinish
+      -- ^ exit frontend loop
 
 type ReqMap = EM.EnumMap FactionId (LQueue AcFrame)
 
@@ -55,8 +60,18 @@ data ConnMulti = ConnMulti
 startupF :: DebugModeCli -> IO () -> IO ()
 startupF dbg cont =
   (if sfrontendStd dbg then stdStartup else chosenStartup) dbg $ \fs -> do
-    void $ forkIO $ loopFrontend fs connMulti
+    let debugPrint t = when (sdbgMsgCli dbg) $ do
+          T.hPutStrLn stderr t
+          hFlush stderr
+    children <- newMVar []
+    void $ forkChild children $ loopFrontend fs connMulti
     cont
+    debugPrint "Server shuts down"
+    let toF = toMulti connMulti
+    -- TODO: instead of this, wait for clients to send FrontFinish or timeout
+    atomically $ writeTQueue toF (toEnum 0 {-hack-}, FrontFinish)
+    waitForChildren children
+    debugPrint "Frontend shuts down"
 
 -- | Display a prompt, wait for any of the specified keys (for any key,
 -- if the list is empty). Repeat if an unexpected key received.
@@ -211,3 +226,6 @@ loopFrontend fs ConnMulti{..} = loop Nothing EM.empty
                     return x
         frLast <- displayFrs frontSlides
         loop (Just (fid, frLast)) reqMap2
+      FrontFinish ->
+        return ()  -- TODO: apply modified flushFrames to fid
+        -- Do not loop again.

@@ -452,15 +452,18 @@ endOrLoop updConn loopServer = do
               $ QuitFactionA fid Nothing (gquit fact) Nothing) campers
       saveAndExit
       -- Don't call @loopServer@, that is, quit the game loop.
+      -- debugPrint "Server loop finished"
 
 saveAndExit :: (MonadAtomic m, MonadConnServer m) => m ()
 saveAndExit = do
   cops <- getsState scops
   -- Save client and server data.
   saveBkpAll
+  -- debugPrint "Server saves game before exit"
   -- Kill all clients, including those that did not take part
   -- in the current game.
   -- Clients exit not now, but after they print all ending screens.
+  -- debugPrint "Server kills clients"
   killAllClients
   -- Verify that the saved perception is equal to future reconstructed.
   persSaved <- getsServer sper

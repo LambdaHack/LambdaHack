@@ -22,10 +22,10 @@ import Data.Text.Encoding (encodeUtf8)
 import Graphics.UI.Gtk hiding (Point)
 import System.Time
 
+import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Common.Animation (DebugModeCli (..), SingleFrame (..))
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Key as K
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Utils.LQueue
 
 data FrameState =
