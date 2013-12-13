@@ -238,21 +238,23 @@ handleActors cmdSerSem lid = do
           switchLeader cmdS = do
             -- TODO: check that the command is legal first, report and reject,
             -- but do not crash (currently server asserts things and crashes)
-            let leaderNew = aidCmdSer cmdS
-            bPre <- getsState $ getActorBody leaderNew
+            let aidNew = aidCmdSer cmdS
+            bPre <- getsState $ getActorBody aidNew
             let leadAtoms =
-                  if leaderNew /= aid
-                  then -- Only leader can change leaders
-                       -- TODO: effLvlGoUp changes
+                  if aidNew /= aid  -- switched, so aid must be leader
+                  then -- Only a leader can change his faction's leader
+                       -- before the action is performed (e.g., via AI
+                       -- switching leaders). Then, the action can change
+                       -- the leader again (e.g., via using stairs).
                        assert (mleader == Just aid && not (bproj bPre)
-                               `blame` (aid, leaderNew, bPre, cmdS, fact))
-                         [LeadFactionA side mleader (Just leaderNew)]
+                               `blame` (aid, aidNew, bPre, cmdS, fact))
+                         [LeadFactionA side mleader (Just aidNew)]
                   else []
             mapM_ execCmdAtomic leadAtoms
             assert (bfid bPre == side
                     `blame` "client tries to move other faction actors"
                     `twith` (bPre, side)) skip
-            return (leaderNew, bPre)
+            return (aidNew, bPre)
           extraFrames bPre = do
             -- Generate extra frames if the actor has already moved during
             -- this clip, so his multiple moves would be collapsed
@@ -266,7 +268,7 @@ handleActors cmdSerSem lid = do
       if queryUI then do
         -- The client always displays a frame in this case.
         cmdS <- sendQueryUI side aid
-        (leaderNew, bPre) <- switchLeader cmdS
+        (aidNew, bPre) <- switchLeader cmdS
         timed <-
           if bhp bPre <= 0 && not (bproj bPre) then do
             execSfxAtomic
@@ -281,7 +283,7 @@ handleActors cmdSerSem lid = do
         -- RET waits .3s and gives back control,
         -- Any other key does the .3s wait and the action from the key
         -- at once.
-        when timed $ advanceTime leaderNew
+        when timed $ advanceTime aidNew
         extraFrames bPre
       else do
         -- Order the UI client (if any) corresponding to the AI client
@@ -301,13 +303,13 @@ handleActors cmdSerSem lid = do
         when canMove $ execSfxAtomic $ RecordHistoryD side
         cmdT <- sendQueryAI side aid
         let cmdS = TakeTimeSer cmdT
-        (leaderNew, bPre) <- switchLeader cmdS
+        (aidNew, bPre) <- switchLeader cmdS
         assert (not (bhp bPre <= 0 && not (bproj bPre))
                 `blame` "AI switches to an incapacitated actor"
                 `twith` (cmdS, bPre, side)) skip
         void $ cmdSerSem cmdS
         -- AI always takes time and so doesn't loop.
-        advanceTime leaderNew
+        advanceTime aidNew
         extraFrames bPre
       handleActors cmdSerSem lid
 
