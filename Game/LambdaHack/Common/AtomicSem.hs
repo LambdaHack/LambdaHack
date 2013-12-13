@@ -11,6 +11,7 @@ import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.List
 
+import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -27,7 +28,6 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.TileKind as TileKind
-import Control.Exception.Assert.Sugar
 
 cmdAtomicSem :: MonadAction m => CmdAtomic -> m ()
 cmdAtomicSem cmd = case cmd of
@@ -154,12 +154,10 @@ insertItemActor :: MonadAction m
 insertItemActor iid k l aid = do
   let bag = EM.singleton iid k
       upd = EM.unionWith (+) bag
-  modifyState $ updateActorD $
-    EM.adjust (\b -> b {bbag = upd (bbag b)}) aid
-  modifyState $ updateActorD $
-    EM.adjust (\b -> b {binv = EM.insert l iid (binv b)}) aid
   modifyState $ updateActorBody aid $ \b ->
-    b {bletter = max l (bletter b)}
+    b { bbag = upd (bbag b)
+      , binv = EM.insert l iid (binv b)
+      , bletter = max l (bletter b) }
 
 -- | Destroy some copies (possibly not all) of an item.
 destroyItemA :: MonadAction m => ItemId -> Item -> Int -> Container -> m ()
@@ -187,8 +185,8 @@ deleteItemFloor lid iid k pos =
 deleteItemActor :: MonadAction m
                 => ItemId -> Int -> InvChar -> ActorId -> m ()
 deleteItemActor iid k l aid = do
-  modifyState $ updateActorD $
-    EM.adjust (\b -> b {bbag = rmFromBag k iid (bbag b)}) aid
+  modifyState $ updateActorBody aid $ \b ->
+    b {bbag = rmFromBag k iid (bbag b)}
   -- Do not remove from actor's @binv@, but assert it was there.
   b <- getsState $ getActorBody aid
   assert (l `EM.lookup` binv b == Just iid `blame` "item already removed"
