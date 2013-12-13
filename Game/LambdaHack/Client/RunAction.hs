@@ -9,6 +9,7 @@ import qualified Data.EnumSet as ES
 import qualified Data.List as L
 import Data.Maybe
 
+import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
@@ -26,7 +27,6 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.TileKind
-import Control.Exception.Assert.Sugar
 
 -- | Start running in the given direction and with the given number
 -- of tiles already traversed (usually 0). The first turn of running
@@ -116,12 +116,12 @@ runDisturbance posLast distLast report hs ms per markSuspect posHere
                   ]
       -- Here additionally ignore a tile property if you stand on such tile.
       standList = [ posHasFeature F.Path
-                  , not . posHasFeature F.Lit
                   ]
       -- Here stop only if you touch any such tile for the first time.
       -- TODO: stop when running along a path and it ends (or turns).
       -- TODO: perhaps in open areas change direction to follow lit and paths.
       firstList = [ posHasFeature F.Lit
+                  , not . posHasFeature F.Lit
                   , not . posHasFeature F.Path
                   , \t -> markSuspect && posHasFeature F.Suspect t
                     -- TODO: refine for suspect floors (e.g., traps)
