@@ -32,6 +32,7 @@ import Data.Version
 import Game.LambdaHack.Frontend (frontendName)
 import qualified NLP.Miniutter.English as MU
 
+import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Binding
 import qualified Game.LambdaHack.Client.HumanCmd as HumanCmd
@@ -55,7 +56,6 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
-import Control.Exception.Assert.Sugar
 
 -- * Move and Run
 
@@ -284,7 +284,8 @@ memberBackHuman = do
 -- * Inventory
 
 -- TODO: When inventory is displayed, let TAB switch the leader (without
--- announcing that) and show the inventory of the new leader.
+-- announcing that) and show the inventory of the new leader (unless
+-- we have just a single inventory in the future).
 -- | Display inventory
 inventoryHuman :: (MonadClientAbort m, MonadClientUI m)
                => WriterT Slideshow m ()
@@ -349,12 +350,11 @@ tgtEnemyLeader stgtModeNew = do
   (lid, Level{lxsize}) <- viewedLevel
   per <- getPerFid lid
   target <- getsClient $ getTarget leader
-  -- TODO: sort enemies by distance to the leader.
   stgtMode <- getsClient stgtMode
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   bs <- getsState $ actorNotProjAssocs (isAtWar fact) lid
-  let ordPos (_, m) = (chessDist lxsize ppos $ bpos m, bpos m)
+  let ordPos (_, b) = (chessDist lxsize ppos $ bpos b, bpos b)
       dbs = sortBy (comparing ordPos) bs
       (lt, gt) = case target of
             Just (TEnemy n _) | isJust stgtMode ->  -- pick next enemy
@@ -365,8 +365,8 @@ tgtEnemyLeader stgtModeNew = do
               in splitAt i dbs
             _ -> (dbs, [])  -- target first enemy (e.g., number 0)
       gtlt = gt ++ lt
-      seen (_, m) =
-        let mpos = bpos m                -- it is remembered by faction
+      seen (_, b) =
+        let mpos = bpos b                -- it is remembered by faction
         in actorSeesPos per leader mpos  -- is it visible by actor?
       lf = filter seen gtlt
       tgt = case lf of
