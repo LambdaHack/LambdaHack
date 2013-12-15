@@ -38,13 +38,15 @@ newtype PerceptionReachable = PerceptionReachable
 levelPerception :: Kind.COps -> State -> FovMode -> FactionId
                 -> LevelId -> Level
                 -> Perception
-levelPerception cops@Kind.COps{cotile} s configFov fid lid lvl =
+levelPerception cops@Kind.COps{cotile} s configFov fid lid
+                lvl@Level{lxsize, lysize} =
   let hs = actorAssocs (== fid) lid s
       reas = map (second $ computeReachable cops configFov lvl) hs
       lreas = map (preachable . snd) reas
       totalRea = PerceptionReachable $ ES.unions lreas
       -- TODO: give actors light sources explicitly or alter vision.
-      lights = ES.fromList $ map (bpos . snd) hs
+      pAndVicinity p = p : vicinity lxsize lysize p
+      lights = ES.fromList $ concatMap (pAndVicinity . bpos . snd) hs
       ptotal = computeVisible cotile totalRea lvl lights
       g = PerceptionVisible . ES.intersection (pvisible ptotal) . preachable
       perActor = EM.map g $ EM.fromList reas  -- reas is not sorted
@@ -79,23 +81,17 @@ dungeonPerception cops configFov s =
 -- moving shadows indicate monsters, etc.
 computeVisible :: Kind.Ops TileKind -> PerceptionReachable
                -> Level -> ES.EnumSet Point -> PerceptionVisible
-computeVisible cotile reachable@PerceptionReachable{preachable} lvl lights =
-  let isV = isVisible cotile reachable lvl lights
+computeVisible cotile PerceptionReachable{preachable} lvl lights =
+  let isV = isVisible cotile lvl lights
   in PerceptionVisible $ ES.filter isV preachable
 
--- TODO: this is calculated per-faction, not per-actor, but still optimize,
--- e.g., by partitioning preachable wrt litDirectly and then running
--- isVisible only over one of the parts, depending on which is smaller.
-isVisible :: Kind.Ops TileKind -> PerceptionReachable
-          -> Level -> ES.EnumSet Point -> Point -> Bool
-isVisible cotile PerceptionReachable{preachable}
-          lvl@Level{lxsize, lysize} lights pos0 =
-  let litDirectly pos = Tile.isLit cotile (lvl `at` pos)
-                        || pos `ES.member` lights
-      l_and_R pos = litDirectly pos && pos `ES.member` preachable
-  in litDirectly pos0 || L.any l_and_R (vicinity lxsize lysize pos0)
+isVisible :: Kind.Ops TileKind -> Level -> ES.EnumSet Point -> Point -> Bool
+isVisible cotile lvl lights pos =
+  Tile.isLit cotile (lvl `at` pos)
+  || pos `ES.member` lights
 
--- | Reachable are all fields on an unblocked path from the hero position.
+-- | Reachable are all fields on a visually unblocked path
+-- from the hero position.
 computeReachable :: Kind.COps -> FovMode -> Level -> Actor
                  -> PerceptionReachable
 computeReachable Kind.COps{cotile, coactor=Kind.Ops{okind}}
