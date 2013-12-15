@@ -9,9 +9,7 @@ module Game.LambdaHack.Frontend.Chosen
 import Game.LambdaHack.Common.Animation (DebugModeCli (..), SingleFrame (..))
 import qualified Game.LambdaHack.Common.Key as K
 
-#ifdef GTK
-import qualified Game.LambdaHack.Frontend.Gtk as Chosen
-#elif VTY
+#ifdef VTY
 import qualified Game.LambdaHack.Frontend.Vty as Chosen
 #elif CURSES
 import qualified Game.LambdaHack.Frontend.Curses as Chosen

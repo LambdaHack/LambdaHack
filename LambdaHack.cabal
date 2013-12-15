@@ -62,10 +62,6 @@ source-repository head
   type:               git
   location:           git://github.com/kosmikus/LambdaHack.git
 
-flag gtk
-  description:        enable the gtk frontend
-  default:            False
-
 flag vty
   description:        enable the vty frontend
   default:            False
@@ -203,22 +199,18 @@ library
   ghc-options:        -fno-ignore-asserts -funbox-strict-fields
   ghc-prof-options:   -fprof-auto-calls
 
-  if flag(gtk) {
-    other-modules:    Game.LambdaHack.Frontend.Gtk
-    build-depends:    gtk >= 0.12.1 && < 0.13
-    cpp-options:      -DGTK
+  if flag(curses) {
+    other-modules:    Game.LambdaHack.Frontend.Curses
+    build-depends:    hscurses >= 1.4.1 && < 2
+    cpp-options:      -DCURSES
   } else { if flag(vty) {
     other-modules:    Game.LambdaHack.Frontend.Vty
     build-depends:    vty >= 4.7.0.6
     cpp-options:      -DVTY
-  } else { if flag(curses) {
-    other-modules:    Game.LambdaHack.Frontend.Curses
-    build-depends:    hscurses >= 1.4.1 && < 2
-    cpp-options:      -DCURSES
   } else {
     other-modules:    Game.LambdaHack.Frontend.Gtk
     build-depends:    gtk >= 0.12.1 && < 0.13
-  } } }
+  } }
 
 executable LambdaHack
   hs-source-dirs:     LambdaHack
