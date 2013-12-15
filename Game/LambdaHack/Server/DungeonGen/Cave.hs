@@ -9,6 +9,7 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.List as L
 import Data.Maybe
 
+import Control.Exception.Assert.Sugar
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -22,7 +23,6 @@ import Game.LambdaHack.Server.DungeonGen.Area
 import Game.LambdaHack.Server.DungeonGen.AreaRnd
 import Game.LambdaHack.Server.DungeonGen.Place hiding (TileMapXY)
 import qualified Game.LambdaHack.Server.DungeonGen.Place as Place
-import Control.Exception.Assert.Sugar
 
 -- | The map of tile kinds in a cave.
 -- The map is sparse. The default tile that eventually fills the empty spaces
@@ -72,8 +72,7 @@ buildCave :: Kind.COps         -- ^ content definitions
           -> Int               -- ^ maximum depth of the dungeon
           -> Kind.Id CaveKind  -- ^ cave kind to use for generation
           -> Rnd Cave
-buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ opick
-                                                , ouniqGroup }
+buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                         , cocave=Kind.Ops{okind}
                         , coplace=Kind.Ops{okind=pokind} }
           ln depth ci = do
@@ -81,11 +80,13 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ opick
   lgrid@(gx, gy) <- castDiceXY cgrid
   -- Make sure that in caves not filled with rock, there is a passage
   -- across the cave, even if a single room blocks most of the cave.
+  -- Also, ensure fancy outer fences are not obstructed by room walls.
   let fullArea = fromMaybe (assert `failure` kc)
                  $ toArea (0, 0, cxsize - 1, cysize - 1)
       subFullArea = fromMaybe (assert `failure` kc)
                     $ toArea (1, 1, cxsize - 2, cysize - 2)
-      area | gx == 1 || gy == 1 = subFullArea
+      area | gx * gy == 1
+             || couterFenceTile /= "basic outer fence" = subFullArea
            | otherwise = fullArea
       gs = grid lgrid area
   (addedConnects, voidPlaces) <- do
@@ -110,8 +111,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{ opick
                            else fmap Right $ mkRoom minPlaceSize
                                                     maxPlaceSize innerArea
                      return (i, r')) gs
-  let hardRockId = ouniqGroup "outer fence"
-      fence = buildFence hardRockId subFullArea
+  fence <- buildFenceRnd cops couterFenceTile subFullArea
   dnight <- chanceDeep ln depth cnightChance
   darkCorTile <- fmap (fromMaybe $ assert `failure` cdarkCorTile)
                  $ opick cdarkCorTile (const True)

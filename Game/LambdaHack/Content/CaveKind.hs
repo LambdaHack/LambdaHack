@@ -35,6 +35,7 @@ data CaveKind = CaveKind
   , cdarkCorTile    :: !Text        -- ^ the dark cave corridor tile group name
   , clitCorTile     :: !Text        -- ^ the dark cave corridor tile group name
   , cfillerTile     :: !Text        -- ^ the filler wall group name
+  , couterFenceTile :: !Text        -- ^ the outer fence wall group name
   , cdarkLegendTile :: !Text        -- ^ the dark place plan legend ground name
   , clitLegendTile  :: !Text        -- ^ the lit place plan legend ground name
   }
@@ -46,17 +47,20 @@ data CaveKind = CaveKind
 -- Catch caves with not enough space for all the places. Check the size
 -- of the cave descriptions to make sure they fit on screen.
 cvalidate :: [CaveKind] -> [CaveKind]
-cvalidate = L.filter (\ CaveKind{ cgrid
-                                , cminPlaceSize
-                                , cmaxPlaceSize
-                                , ..
-                                } ->
+cvalidate = L.filter (\ CaveKind{..} ->
   let (maxGridX, maxGridY) = maxDiceXY cgrid
       (minMinSizeX, minMinSizeY) = minDiceXY cminPlaceSize
       (maxMinSizeX, maxMinSizeY) = maxDiceXY cminPlaceSize
       (minMaxSizeX, minMaxSizeY) = minDiceXY cmaxPlaceSize
-      xborder = if maxGridX == 1 then 3 else 1
-      yborder = if maxGridX == 1 then 3 else 1
+      -- If there is at most one room, we need extra borders for a passage,
+      -- but if there may be more rooms, we have that space, anyway,
+      -- because multiple rooms take more space than borders.
+      xborder = if maxGridX == 1 || couterFenceTile /= "basic outer fence"
+                then 2
+                else 0
+      yborder = if maxGridY == 1 || couterFenceTile /= "basic outer fence"
+                then 2
+                else 0
   in T.length cname > 25
      || cxsize < 7
      || cysize < 7
@@ -64,5 +68,5 @@ cvalidate = L.filter (\ CaveKind{ cgrid
      || minMinSizeY < 1
      || minMaxSizeX < maxMinSizeX
      || minMaxSizeY < maxMinSizeY
-     || maxGridX * (maxMinSizeX + xborder) >= cxsize
-     || maxGridY * (maxMinSizeY + yborder) >= cysize)
+     || maxGridX * (maxMinSizeX + 1) + xborder >= cxsize
+     || maxGridY * (maxMinSizeY + 1) + yborder >= cysize)

@@ -1,7 +1,7 @@
 {-# LANGUAGE RankNTypes #-}
 -- | Generation of places from place kinds.
 module Game.LambdaHack.Server.DungeonGen.Place
-  ( TileMapXY, Place(..), placeCheck, buildFence, buildPlace
+  ( TileMapXY, Place(..), placeCheck, buildFenceRnd, buildPlace
   ) where
 
 import Data.Binary
@@ -12,6 +12,7 @@ import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 
+import Control.Exception.Assert.Sugar
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.PointXY
@@ -20,7 +21,6 @@ import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Server.DungeonGen.Area
-import Control.Exception.Assert.Sugar
 
 -- TODO: use more, rewrite as needed, document each field.
 -- | The parameters of a place. Most are immutable and set
@@ -129,6 +129,22 @@ buildFence fenceId area =
                    | x <- [x0-1, x1+1], y <- [y0..y1] ] ++
                    [ (PointXY (x, y), fenceId)
                    | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
+
+-- | Construct a fence around an area, with the given tile group.
+buildFenceRnd :: Kind.COps -> Text -> Area -> Rnd TileMapXY
+buildFenceRnd Kind.COps{cotile=Kind.Ops{opick}} couterFenceTile area = do
+  let (x0, y0, x1, y1) = fromArea area
+      fenceIdRnd (xf, yf) = do
+        let isCorner x y = x `elem` [x0-1, x1+1] && y `elem` [y0-1, y1+1]
+            tileGroup | isCorner xf yf = "basic outer fence"
+                      | otherwise = couterFenceTile
+        fenceId <- fmap (fromMaybe $ assert `failure` tileGroup)
+                   $ opick tileGroup (const True)
+        return (PointXY (xf, yf), fenceId)
+      pointList = [ (x, y) | x <- [x0-1, x1+1], y <- [y0..y1] ]
+                  ++ [ (x, y) | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
+  fenceList <- mapM fenceIdRnd pointList
+  return $! EM.fromList fenceList
 
 -- | Construct a place of the given kind, with the given fence tile.
 digPlace :: Place                               -- ^ the place parameters
