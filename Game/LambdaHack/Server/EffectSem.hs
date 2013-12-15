@@ -18,6 +18,7 @@ import Data.Ratio ((%))
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
+import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -39,7 +40,6 @@ import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.Action
 import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.State
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Utils.Frequency
 
 -- + Semantics of effects
@@ -190,7 +190,8 @@ electLeader fid lid aidDead = do
     onLevel <- getsState $ actorNotProjAssocs (== fid) lid
     let mleaderNew = listToMaybe $ filter (/= aidDead)
                      $ map fst $ onLevel ++ party
-    execCmdAtomic $ LeadFactionA fid mleader mleaderNew
+    unless (mleader == mleaderNew) $
+      execCmdAtomic $ LeadFactionA fid mleader mleaderNew
 
 deduceKilled :: (MonadAtomic m, MonadServer m) => Actor -> m ()
 deduceKilled body = do
