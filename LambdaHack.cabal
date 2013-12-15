@@ -1,5 +1,5 @@
 name:          LambdaHack
-version:       0.2.10.5
+version:       0.2.10.6
 synopsis:      A roguelike game engine in early and active development
 description:   This is an alpha release of LambdaHack,
                a game engine library for roguelike games
@@ -16,7 +16,8 @@ description:   This is an alpha release of LambdaHack,
                in the strict and type-safe separation of code and content
                and of clients (human and AI-controlled) and server.
                .
-               This is a minor release, primarily intended to fix
+               This is a minor release, primarily intended to fix broken
+               vty an curses frontends and an unrelated game crash, as well as
                broken builds on hackage and travis. Changes since 0.2.10
                are mostly unrelated to gameplay: overhauled dungeon generation
                code and the use of the external library assert-failure

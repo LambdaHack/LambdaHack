@@ -88,8 +88,8 @@ You can use HPC with the game as follows
     cabal clean
     cabal install --enable-library-coverage
     make test
-    hpc report --hpcdir=dist/hpc/mix/LambdaHack-0.2.10.5/ LambdaHack
-    hpc markup --hpcdir=dist/hpc/mix/LambdaHack-0.2.10.5/ LambdaHack
+    hpc report --hpcdir=dist/hpc/mix/LambdaHack-0.2.10.6/ LambdaHack
+    hpc markup --hpcdir=dist/hpc/mix/LambdaHack-0.2.10.6/ LambdaHack
 
 The debug option `--stopAfter` is required for any screensaver mode
 game invocations that gather HPC info, because HPC needs a clean exit
