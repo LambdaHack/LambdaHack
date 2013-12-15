@@ -22,16 +22,16 @@ wall = TileKind
   { tsymbol  = ' '
   , tname    = "bedrock"
   , tfreq    = [("fillerWall", 1), ("litLegend", 100), ("darkLegend", 100)]
-  , tcolor   = BrWhite
-  , tcolor2  = defFG
+  , tcolor   = defBG
+  , tcolor2  = defBG
   , tfeature = []
   }
 hardRock = TileKind
   { tsymbol  = ' '
   , tname    = "impenetrable bedrock"
   , tfreq    = [("basic outer fence", 1)]
-  , tcolor   = BrBlack
-  , tcolor2  = BrBlack
+  , tcolor   = BrWhite
+  , tcolor2  = BrWhite
   , tfeature = [Impenetrable]
   }
 pillar = TileKind
@@ -42,7 +42,7 @@ pillar = TileKind
                , ("noiseSet", 55), ("combatSet", 3) ]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = []
+  , tfeature = [Lit]
   }
 pillarCache = TileKind
   { tsymbol  = '&'
@@ -51,7 +51,7 @@ pillarCache = TileKind
                , ("litLegend", 100), ("darkLegend", 100) ]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = [Cause $ Effect.CreateItem 1, ChangeTo "cachable"]
+  , tfeature = [Lit, Cause $ Effect.CreateItem 1, ChangeTo "cachable"]
   }
 tree = TileKind
   { tsymbol  = 'O'
@@ -59,7 +59,7 @@ tree = TileKind
   , tfreq    = [("combatSet", 8)]
   , tcolor   = BrGreen
   , tcolor2  = Green
-  , tfeature = []
+  , tfeature = [Lit]
   }
 wallV = TileKind
   { tsymbol  = '|'
@@ -67,7 +67,7 @@ wallV = TileKind
   , tfreq    = [("litLegend", 100), ("darkLegend", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = [HideAs "suspect vertical wall"]
+  , tfeature = [Lit, HideAs "suspect vertical wall"]
   }
 wallSuspectV = TileKind
   { tsymbol  = '|'
@@ -75,9 +75,7 @@ wallSuspectV = TileKind
   , tfreq    = [("suspect vertical wall", 1)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = [ Suspect
-               , RevealAs "vertical closed door"
-               ]
+  , tfeature = [Lit, Suspect, RevealAs "vertical closed door"]
   }
 doorClosedV = TileKind
   { tsymbol  = '+'
@@ -85,7 +83,8 @@ doorClosedV = TileKind
   , tfreq    = [("vertical closed door", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
-  , tfeature = [ Exit
+  , tfeature = [ Lit
+               , Exit
                , OpenTo "vertical open door"
                , HideAs "suspect vertical wall"
                ]
@@ -106,7 +105,7 @@ wallH = TileKind
   , tfreq    = [("litLegend", 100), ("darkLegend", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = [HideAs "suspect horizontal wall"]
+  , tfeature = [Lit, HideAs "suspect horizontal wall"]
   }
 wallSuspectH = TileKind
   { tsymbol  = '-'
@@ -114,9 +113,7 @@ wallSuspectH = TileKind
   , tfreq    = [("suspect horizontal wall", 1)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = [ Suspect
-               , RevealAs "horizontal closed door"
-               ]
+  , tfeature = [Lit, Suspect, RevealAs "horizontal closed door"]
   }
 doorClosedH = TileKind
   { tsymbol  = '+'
@@ -124,7 +121,8 @@ doorClosedH = TileKind
   , tfreq    = [("horizontal closed door", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
-  , tfeature = [ Exit
+  , tfeature = [ Lit
+               , Exit
                , OpenTo "horizontal open door"
                , HideAs "suspect horizontal wall"
                ]
@@ -215,7 +213,7 @@ unknown = TileKind
   , tname    = "unknown space"
   , tfreq    = [("unknown space", 1)]
   , tcolor   = defFG
-  , tcolor2  = BrWhite
+  , tcolor2  = defFG
   , tfeature = []
   }
 floorCorridorLit = TileKind
