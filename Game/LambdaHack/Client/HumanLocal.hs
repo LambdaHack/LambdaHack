@@ -66,7 +66,7 @@ moveCursor dir n = do
   scursor <- getsClient scursor
   let cpos = fromMaybe lpos scursor
   Level{lxsize, lysize} <- cursorLevel
-  let shiftB pos = shiftBounded lxsize (1, 1, lxsize - 2, lysize - 2) pos dir
+  let shiftB pos = shiftBounded lxsize (0, 0, lxsize - 1, lysize - 1) pos dir
   modifyClient $ \cli -> cli {scursor = Just $ iterate shiftB cpos !! n}
   doLook
 

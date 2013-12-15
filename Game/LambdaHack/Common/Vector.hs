@@ -8,10 +8,10 @@ module Game.LambdaHack.Common.Vector
 
 import Data.Binary
 
+import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.VectorXY
-import Control.Exception.Assert.Sugar
 
 -- | 2D vectors  represented as offsets in the linear framebuffer
 -- indexed by 'Point'.
@@ -76,9 +76,11 @@ shift p (Vector dir) = toEnum $ fromEnum p + dir
 
 -- | Translate a point by a vector, but only if the result fits in an area.
 shiftBounded :: X -> (X, Y, X, Y) -> Point -> Vector -> Point
-shiftBounded lxsize area pos dir =
-  let res = shift pos dir
-  in if inside lxsize res area then res else pos
+shiftBounded lxsize (x0, y0, x1, y1) pos dir =
+  let VectorXY (xv, yv) = fromDir lxsize dir
+  in if inside lxsize pos (x0 - xv, y0 - yv, x1 - xv, y1 - yv)
+     then shift pos dir
+     else pos
 
 -- | Vectors of all unit moves, clockwise, starting north-west.
 moves :: X -> [Vector]
