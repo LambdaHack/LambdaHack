@@ -3,7 +3,8 @@ language: haskell
 install:
   - cabal install gtk2hs-buildtools
   - cabal install --only-dependencies
+  - cabal install -fvty --only-dependencies
+  - cabal install -fcurses --only-dependencies
 
 script:
-  - cabal install
-  - make test-travis || (cat ~/.LambdaHack/config.rules.dump ; tail -n 200 /tmp/stdtest.log ; exit 77)
+  - cabal install && (make test-travis || (cat ~/.LambdaHack/config.rules.dump ; tail -n 200 /tmp/stdtest.log ; exit 77)) && cabal install -fvty && (make test-travis || (cat ~/.LambdaHack/config.rules.dump ; tail -n 200 /tmp/stdtest.log ; exit 77)) && cabal install -fcurses && (make test-travis || (cat ~/.LambdaHack/config.rules.dump ; tail -n 200 /tmp/stdtest.log ; exit 77))

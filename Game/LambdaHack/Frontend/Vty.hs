@@ -16,6 +16,7 @@ import qualified Graphics.Vty as Vty
 import Game.LambdaHack.Common.Animation (DebugModeCli (..), SingleFrame (..))
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Key as K
+import Game.LambdaHack.Common.Msg
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
@@ -90,7 +91,7 @@ keyTranslate n =
     KPageDown     -> K.PgDn
     KBegin        -> K.Begin
     (KASCII c)    -> K.Char c
-    _             -> K.Unknown (show n)
+    _             -> K.Unknown (showT n)
 
 -- | Translates modifiers to our own encoding.
 modifierTranslate :: [Modifier] -> K.Modifier
