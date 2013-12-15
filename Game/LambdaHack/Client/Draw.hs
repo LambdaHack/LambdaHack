@@ -18,6 +18,7 @@ import Game.LambdaHack.Common.Animation (SingleFrame (..))
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Effect
 import qualified Game.LambdaHack.Common.Feature as F
+import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Item as Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -52,14 +53,6 @@ draw dm cops per drawnLevelId mleader
       (lvl@Level{ ldepth, lxsize, lysize, lsmell
                 , ldesc, ltime, lseen, lclear }) = sdungeon s EM.! drawnLevelId
       (msgTop, over, msgBottom) = stringByLocation lxsize lysize overlay
-      -- TODO:
-      sVisBG = if smarkVision
-               then \ vis visPl -> if visPl
-                                   then Color.Magenta
-                                   else if vis
-                                        then Color.Blue
-                                        else Color.defBG
-               else \ _vis _visPl -> Color.defBG
       wealth = case mleader of
         Nothing -> 0
         Just leader -> snd $ calculateTotal (getActorBody leader s) s
@@ -77,14 +70,17 @@ draw dm cops per drawnLevelId mleader
             items = lvl `atI` pos0
             sml = EM.findWithDefault timeZero pos0 lsmell
             smlt = sml `timeAdd` timeNegate ltime
+            inverseVideo = Color.Attr{ Color.fg = Color.bg Color.defAttr
+                                     , Color.bg = Color.fg Color.defAttr
+                                     }
             viewActor aid Actor{bsymbol, bcolor, bhp, bproj}
-              | Just aid == mleader = (symbol, Color.defBG)
-              | otherwise = (symbol, color)
+              | Just aid == mleader = (symbol, inverseVideo)
+              | otherwise = (symbol, Color.defAttr {Color.fg = bcolor})
              where
-              color  = bcolor
               symbol | bhp <= 0 && not bproj = '%'
                      | otherwise = bsymbol
-            rainbow p = toEnum $ fromEnum p `rem` 14 + 1
+            rainbow p = Color.defAttr {Color.fg =
+                                         toEnum $ fromEnum p `rem` 14 + 1}
             actorsHere = actorAssocs (const True) drawnLevelId s
             -- smarkSuspect is an optional overlay, so let's overlay it
             -- over both visible and invisible tiles.
@@ -92,7 +88,10 @@ draw dm cops per drawnLevelId mleader
               | smarkSuspect && F.Suspect `elem` tfeature t = Color.BrCyan
               | vis = tcolor t
               | otherwise = tcolor2 t
-            (char, fg0) =
+            viewItem i = ( jsymbol i
+                         , Color.defAttr {Color.fg =
+                                            flavourToColor $ jflavour i} )
+            (char, attr0) =
               case ( L.find (\ (_, m) -> pos0 == Actor.bpos m) actorsHere
                    , L.find (\ (_, m) -> scursor == Just (Actor.bpos m))
                        actorsHere ) of
@@ -103,38 +102,36 @@ draw dm cops per drawnLevelId mleader
                                                         , bpos=prPos }) ->
                                             L.elem pos0 $ shiftPath prPos p
                                           _ -> False))
-                    ->
-                      let unknownId = ouniqGroup "unknown space"
-                      in ('*', case (vis, F.Walkable `elem` tfeature tk) of
-                                 _ | tile == unknownId -> Color.BrBlack
-                                 (True, True)   -> Color.BrGreen
-                                 (True, False)  -> Color.BrRed
-                                 (False, True)  -> Color.Green
-                                 (False, False) -> Color.Red)
+                    -> let unknownId = ouniqGroup "unknown space"
+                           fg = case (vis, F.Walkable `elem` tfeature tk) of
+                                  _ | tile == unknownId -> Color.BrBlack
+                                  (True, True)   -> Color.BrGreen
+                                  (True, False)  -> Color.BrRed
+                                  (False, True)  -> Color.Green
+                                  (False, False) -> Color.Red
+                       in ('*', if Just pos0 == scursor -- highlight cursor
+                                then inverseVideo {Color.fg = fg}
+                                else Color.defAttr {Color.fg = fg})
                 (Just (aid, m), _) -> viewActor aid m
                 _ | smarkSmell && smlt > timeZero ->
                   (timeToDigit smellTimeout smlt, rainbow pos0)
                   | otherwise ->
                   case EM.keys items of
-                    [] -> (tsymbol tk, vcolor tk)
-                    i : _ -> Item.viewItem $ getItemBody i s
+                    [] -> (tsymbol tk, Color.defAttr {Color.fg = vcolor tk})
+                    i : _ -> viewItem $ getItemBody i s
             vis = ES.member pos0 $ totalVisible per
             visPl =
               maybe False (\leader -> actorSeesPos per leader pos0) mleader
-            bg0 = if isJust stgtMode && Just pos0 == scursor
-                  then Color.defFG       -- highlight target cursor
-                  else sVisBG vis visPl  -- FOV debug or standard bg
-            reverseVideo = Color.Attr{ fg = Color.bg Color.defAttr
-                                     , bg = Color.fg Color.defAttr
-                                     }
-            optVisually attr@Color.Attr{fg, bg} =
-              if (fg == Color.defBG)
-                 || (bg == Color.defFG && fg == Color.defFG)
-              then reverseVideo
-              else attr
             a = case dm of
                   ColorBW   -> Color.defAttr
-                  ColorFull -> optVisually Color.Attr{fg = fg0, bg = bg0}
+                  ColorFull ->
+                    if smarkVision
+                    then if visPl
+                         then attr0 {Color.bg = Color.Magenta}
+                         else if vis
+                              then attr0 {Color.bg = Color.Blue}
+                              else attr0
+                    else attr0
         in case over pxy of
              Just c -> Color.AttrChar Color.defAttr c
              _      -> Color.AttrChar a char

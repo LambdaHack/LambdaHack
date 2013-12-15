@@ -6,7 +6,7 @@
 -- inventory manangement and items proper.
 module Game.LambdaHack.Common.Item
   ( -- * Teh @Item@ type
-    ItemId, Item(..), jkind, buildItem, newItem, viewItem
+    ItemId, Item(..), jkind, buildItem, newItem
     -- * Inventory search
   , strongestSearch, strongestSword, strongestRegen
    -- * The item discovery types
@@ -29,7 +29,7 @@ import Data.Text (Text)
 import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
-import qualified Game.LambdaHack.Common.Color as Color
+import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Flavour
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -37,7 +37,6 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Utils.Frequency
 
 -- | A unique identifier of an item in the dungeon.
@@ -133,10 +132,6 @@ newItem cops@Kind.Ops{opick, okind} flavour discoRev itemFreq lvl depth = do
                  , jcount
                  , kind )
   castItem 10
-
--- | Represent an item on the map.
-viewItem :: Item -> (Char, Color.Color)
-viewItem i = (jsymbol i, flavourToColor $ jflavour i)
 
 -- | Flavours assigned by the server to item kinds, in this particular game.
 newtype FlavourMap = FlavourMap (EM.EnumMap (Kind.Id ItemKind) Flavour)
