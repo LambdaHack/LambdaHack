@@ -16,10 +16,11 @@ import qualified Data.Text as T
 import qualified UI.HSCurses.Curses as C
 import qualified UI.HSCurses.CursesHelper as C
 
+import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Common.Animation (DebugModeCli (..), SingleFrame (..))
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Key as K
-import Control.Exception.Assert.Sugar
+import Game.LambdaHack.Common.Msg
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
@@ -126,7 +127,7 @@ keyTranslate e = (\(key, modifier) -> K.KM {..}) $
         -- as movement:
       | c `elem` ['1'..'9'] -> (K.KP c,              K.NoModifier)
       | otherwise           -> (K.Char c,            K.NoModifier)
-    _                       -> (K.Unknown (show e),  K.NoModifier)
+    _                       -> (K.Unknown (showT e),  K.NoModifier)
 
 toFColor :: Color.Color -> C.ForegroundColor
 toFColor Color.Black     = C.BlackF
