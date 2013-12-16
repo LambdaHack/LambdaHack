@@ -10,12 +10,12 @@ import Data.Binary
 import qualified Data.Ix as Ix
 import qualified Data.List as L
 import Data.Text (Text)
+import qualified Data.Text as T
 import qualified System.Random as R
 
-import Game.LambdaHack.Common.Msg
+import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.VectorXY
-import Control.Exception.Assert.Sugar
 
 -- | The type of positions on the 2D level map, heavily optimized.
 --
@@ -42,7 +42,7 @@ instance Show Point where
 
 -- | Print a point as a tuple of cartesian coordinates.
 showPoint :: X -> Point -> Text
-showPoint lxsize = showT . fromPoint lxsize
+showPoint lxsize = T.pack . show . fromPoint lxsize
 
 -- | Conversion from cartesian coordinates to @Point@.
 toPoint :: X -> PointXY -> Point
