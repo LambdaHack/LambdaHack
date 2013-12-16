@@ -21,7 +21,7 @@ wall,        hardRock, pillar, pillarCache, tree, wallV, wallSuspectV, doorClose
 wall = TileKind
   { tsymbol  = ' '
   , tname    = "bedrock"
-  , tfreq    = [("fillerWall", 1), ("litLegend", 100), ("darkLegend", 100)]
+  , tfreq    = [("fillerWall", 1), ("legendLit", 100), ("legendDark", 100)]
   , tcolor   = defBG
   , tcolor2  = defBG
   , tfeature = []
@@ -38,7 +38,7 @@ pillar = TileKind
   { tsymbol  = 'O'
   , tname    = "rock"
   , tfreq    = [ ("cachable", 70)
-               , ("litLegend", 100), ("darkLegend", 100)
+               , ("legendLit", 100), ("legendDark", 100)
                , ("noiseSet", 55), ("combatSet", 3) ]
   , tcolor   = BrWhite
   , tcolor2  = defFG
@@ -48,7 +48,7 @@ pillarCache = TileKind
   { tsymbol  = '&'
   , tname    = "cache"
   , tfreq    = [ ("cachable", 30)
-               , ("litLegend", 100), ("darkLegend", 100) ]
+               , ("legendLit", 100), ("legendDark", 100) ]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfeature = [Lit, Cause $ Effect.CreateItem 1, ChangeTo "cachable"]
@@ -64,7 +64,7 @@ tree = TileKind
 wallV = TileKind
   { tsymbol  = '|'
   , tname    = "granite wall"
-  , tfreq    = [("litLegend", 100), ("darkLegend", 100)]
+  , tfreq    = [("legendLit", 100), ("legendDark", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfeature = [Lit, HideAs "suspect vertical wall"]
@@ -102,7 +102,7 @@ doorOpenV = TileKind
 wallH = TileKind
   { tsymbol  = '-'
   , tname    = "granite wall"
-  , tfreq    = [("litLegend", 100), ("darkLegend", 100)]
+  , tfreq    = [("legendLit", 100), ("legendDark", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfeature = [Lit, HideAs "suspect horizontal wall"]
@@ -140,7 +140,7 @@ doorOpenH = TileKind
 stairsUpDark = TileKind
   { tsymbol  = '<'
   , tname    = "staircase up"
-  , tfreq    = [("darkLegend", 100)]
+  , tfreq    = [("legendDark", 100)]
 -- Disabled, because the yellow artificial light does not fit LambdaHack.
 --  , tcolor   = BrYellow
 -- Dark room interior, OTOH, is fine:
@@ -149,7 +149,7 @@ stairsUpDark = TileKind
   , tfeature = [Walkable, Clear, Exit, Cause $ Effect.Ascend 1]
   }
 stairsUpLit = stairsUpDark
-  { tfreq    = [("litLegend", 100)]
+  { tfreq    = [("legendLit", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfeature = Lit : tfeature stairsUpDark
@@ -157,7 +157,7 @@ stairsUpLit = stairsUpDark
 stairsDark = TileKind
   { tsymbol  = '>'
   , tname    = "staircase"
-  , tfreq    = [("darkLegend", 100)]
+  , tfreq    = [("legendDark", 100)]
   , tcolor   = BrCyan
   , tcolor2  = Cyan  -- TODO
   , tfeature = [ Walkable, Clear, Exit
@@ -165,7 +165,7 @@ stairsDark = TileKind
                , Cause $ Effect.Ascend (-1) ]
   }
 stairsLit = stairsDark
-  { tfreq    = [("litLegend", 100)]
+  { tfreq    = [("legendLit", 100)]
   , tcolor   = BrCyan
   , tcolor2  = Cyan  -- TODO
   , tfeature = Lit : tfeature stairsDark
@@ -173,13 +173,13 @@ stairsLit = stairsDark
 stairsDownDark = TileKind
   { tsymbol  = '>'
   , tname    = "staircase down"
-  , tfreq    = [("darkLegend", 100)]
+  , tfreq    = [("legendDark", 100)]
   , tcolor   = BrWhite
   , tcolor2  = BrBlack
   , tfeature = [Walkable, Clear, Exit, Cause $ Effect.Ascend (-1)]
   }
 stairsDownLit = stairsDownDark
-  { tfreq    = [("litLegend", 100)]
+  { tfreq    = [("legendLit", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfeature = Lit : tfeature stairsDownDark
@@ -187,25 +187,25 @@ stairsDownLit = stairsDownDark
 escapeUpDark = TileKind
   { tsymbol  = '<'
   , tname    = "exit trapdoor up"
-  , tfreq    = [("darkLegend", 100)]
+  , tfreq    = [("legendDark", 100)]
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
   , tfeature = [Walkable, Clear, Exit, Cause Effect.Escape]
   }
 escapeUpLit = escapeUpDark
-  { tfreq    = [("litLegend", 100)]
+  { tfreq    = [("legendLit", 100)]
   , tfeature = Lit : tfeature escapeUpDark
   }
 escapeDownDark = TileKind
   { tsymbol  = '>'
   , tname    = "exit trapdoor down"
-  , tfreq    = [("darkLegend", 100)]
+  , tfreq    = [("legendDark", 100)]
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
   , tfeature = [Walkable, Clear, Exit, Cause Effect.Escape]
   }
 escapeDownLit = escapeDownDark
-  { tfreq    = [("litLegend", 100)]
+  { tfreq    = [("legendLit", 100)]
   , tfeature = Lit : tfeature escapeDownDark
   }
 unknown = TileKind
@@ -255,11 +255,11 @@ floorItemDark = floorArenaDark
   , tfeature = CanItem : tfeature floorArenaDark
   }
 floorActorItemLit = floorItemLit
-  { tfreq    = [("litLegend", 100), ("emptySet", 1)]
+  { tfreq    = [("legendLit", 100), ("emptySet", 1)]
   , tfeature = CanActor : tfeature floorItemLit
   }
 floorActorItemDark = floorItemDark
-  { tfreq    = [("darkLegend", 100), ("emptySet", 1)]
+  { tfreq    = [("legendDark", 100), ("emptySet", 1)]
   , tfeature = CanActor : tfeature floorItemDark
   }
 floorRedDark = floorArenaDark

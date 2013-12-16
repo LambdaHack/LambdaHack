@@ -58,7 +58,7 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
            Cave{..} ldepth minD maxD nstairUp escapeFeature = do
   let kc@CaveKind{..} = cokind dkind
       fitArea pos = inside cxsize pos . fromArea . qarea
-      findLegend pos = maybe clitLegendTile qlegend
+      findLegend pos = maybe clegendLitTile qlegend
                        $ find (fitArea pos) dplaces
       hasEscapeAndSymbol sym t = Tile.kindHasFeature (F.Cause Effect.Escape) t
                                  && tsymbol t == sym

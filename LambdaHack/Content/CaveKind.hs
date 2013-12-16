@@ -44,8 +44,8 @@ rogue = CaveKind
   , clitCorTile     = "floorCorridorDark"
   , cfillerTile     = "fillerWall"
   , couterFenceTile = "basic outer fence"
-  , cdarkLegendTile = "darkLegend"
-  , clitLegendTile  = "litLegend"
+  , clegendDarkTile = "legendDark"
+  , clegendLitTile  = "legendLit"
   }
 arena = rogue
   { csymbol       = 'A'

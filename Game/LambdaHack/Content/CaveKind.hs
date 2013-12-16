@@ -36,8 +36,8 @@ data CaveKind = CaveKind
   , clitCorTile     :: !Text        -- ^ the dark cave corridor tile group name
   , cfillerTile     :: !Text        -- ^ the filler wall group name
   , couterFenceTile :: !Text        -- ^ the outer fence wall group name
-  , cdarkLegendTile :: !Text        -- ^ the dark place plan legend ground name
-  , clitLegendTile  :: !Text        -- ^ the lit place plan legend ground name
+  , clegendDarkTile :: !Text        -- ^ the dark place plan legend ground name
+  , clegendLitTile  :: !Text        -- ^ the lit place plan legend ground name
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 

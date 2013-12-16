@@ -97,7 +97,7 @@ buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
            $ popick cave (placeCheck r)
   let qhollowFence = if dark then darkCorTile else litCorTile
       kr = pokind qkind
-      qlegend = if dark then cdarkLegendTile else clitLegendTile
+      qlegend = if dark then clegendDarkTile else clegendLitTile
       qseen = False
       qarea = fromMaybe (assert `failure` (kr, r)) $ interiorArea (pfence kr) r
       place = Place {..}
