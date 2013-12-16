@@ -9,6 +9,7 @@ module Game.LambdaHack.Common.AtomicPos
 
 import qualified Data.EnumSet as ES
 
+import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -18,7 +19,6 @@ import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
-import Control.Exception.Assert.Sugar
 
 -- All functions here that take an atomic action are executed
 -- in the state just before the action is executed.
@@ -55,16 +55,12 @@ data PosAtomic =
 -- contradict state) if the visibility is lower.
 posCmdAtomic :: MonadActionRO m => CmdAtomic -> m PosAtomic
 posCmdAtomic cmd = case cmd of
-  CreateActorA _ body _ ->
-    return $ PosFidAndSight (bfid body) (blid body) [bpos body]
-  DestroyActorA _ body _ ->
-    return $ PosFidAndSight (bfid body) (blid body) [bpos body]
+  CreateActorA _ body _ -> posProjBody body
+  DestroyActorA _ body _ -> posProjBody body
   CreateItemA _ _ _ c -> singleContainer c
   DestroyItemA _ _ _ c -> singleContainer c
-  SpotActorA _ body _ ->
-    return $ PosFidAndSight (bfid body) (blid body) [bpos body]
-  LoseActorA _ body _ ->
-    return $ PosFidAndSight (bfid body) (blid body) [bpos body]
+  SpotActorA _ body _ -> posProjBody body
+  LoseActorA _ body _ -> posProjBody body
   SpotItemA _ _ _ c -> singleContainer c
   LoseItemA _ _ _ c -> singleContainer c
   MoveActorA aid fromP toP -> do
@@ -144,15 +140,21 @@ posSfxAtomic cmd = case cmd of
   DisplayDelayD fid -> return $ PosFid fid
   RecordHistoryD fid -> return $ PosFid fid
 
+posProjBody :: Monad m => Actor -> m PosAtomic
+posProjBody body = return $!
+  if bproj body
+  then PosSight (blid body) [bpos body]
+  else PosFidAndSight (bfid body) (blid body) [bpos body]
+
 singleAid :: MonadActionRO m => ActorId -> m PosAtomic
 singleAid aid = do
   b <- getsState $ getActorBody aid
-  return $ PosFidAndSight (bfid b) (blid b) [bpos b]
+  return $! PosSight (blid b) [bpos b]
 
 singleContainer :: MonadActionRO m => Container -> m PosAtomic
 singleContainer c = do
   (lid, p) <- posOfContainer c
-  return $ PosSight lid [p]
+  return $! PosSight lid [p]
 
 -- Determines is a command resets FOV. @Nothing@ means it always does.
 -- A list of faction means it does for each of the factions.
@@ -227,10 +229,10 @@ loudCmdAtomic fid cmd = case cmd of
 seenAtomicCli :: Bool -> FactionId -> Perception -> PosAtomic -> Bool
 seenAtomicCli knowEvents fid per posAtomic =
   case posAtomic of
-    PosSight _ ps -> knowEvents || all (`ES.member` totalVisible per) ps
+    PosSight _ ps -> all (`ES.member` totalVisible per) ps || knowEvents
     PosFidAndSight fid2 _ ps ->
-      knowEvents || fid == fid2 || all (`ES.member` totalVisible per) ps
-    PosSmell _ ps -> knowEvents || all (`ES.member` smellVisible per) ps
+      fid == fid2 || all (`ES.member` totalVisible per) ps || knowEvents
+    PosSmell _ ps -> all (`ES.member` smellVisible per) ps || knowEvents
     PosFid fid2 -> fid == fid2
     PosFidAndSer fid2 -> fid == fid2
     PosSer -> False

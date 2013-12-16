@@ -416,20 +416,24 @@ triggerEffect aid feats = do
 
 -- * SetPathSer
 
-setPathSer :: (MonadAtomic m, MonadServer m)
-           => ActorId -> [Vector] -> m ()
-setPathSer aid path = do
-  when (length path <= 2) $ do
-    fromColor <- getsState $ bcolor . getActorBody aid
-    let toColor = Color.BrBlack
-    when (fromColor /= toColor) $
-      execCmdAtomic $ ColorActorA aid fromColor toColor
-  fromPath <- getsState $ bpath . getActorBody aid
-  case path of
-    [] -> execCmdAtomic $ PathActorA aid fromPath (Just [])
-    d : lv -> do
-      void $ moveSer aid d
-      execCmdAtomic $ PathActorA aid fromPath (Just lv)
+setPathSer :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
+setPathSer aid = do
+  cops <- getsState scops
+  b@Actor{bpos, bpath, blid, bcolor} <- getsState $ getActorBody aid
+  lvl <- getLevel blid
+  let clearPath = execCmdAtomic $ PathActorA aid bpath (Just [])
+  case bpath of
+    Just (d : lv) ->
+      if not $ accessibleDir cops lvl bpos d
+      then clearPath
+      else do
+        when (length lv <= 1) $ do
+          let toColor = Color.BrBlack
+          when (bcolor /= toColor) $
+            execCmdAtomic $ ColorActorA aid bcolor toColor
+        void $ moveSer aid d
+        execCmdAtomic $ PathActorA aid bpath (Just lv)
+    _ -> assert `failure` "null path" `twith` (aid, b)
 
 -- * GameRestart
 

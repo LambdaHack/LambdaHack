@@ -265,7 +265,13 @@ handleActors cmdSerSem lid = do
                 lastSingleMove = timeAddFromSpeed bPre previousClipEnd
             when (btime bPre > lastSingleMove) $
               broadcastSfxAtomic DisplayPushD
-      if queryUI then do
+      if bproj body then do  -- TODO: perhaps check Track, not bproj
+        execSfxAtomic $ DisplayPushD side
+        let cmdS = TakeTimeSer $ SetPathSer aid
+        void $ cmdSerSem cmdS
+        advanceTime aid
+        extraFrames body
+      else if queryUI then do
         -- The client always displays a frame in this case.
         cmdS <- sendQueryUI side aid
         (aidNew, bPre) <- switchLeader cmdS

@@ -40,7 +40,7 @@ levelPerception :: Kind.COps -> State -> FovMode -> FactionId
                 -> Perception
 levelPerception cops@Kind.COps{cotile} s configFov fid lid
                 lvl@Level{lxsize, lysize} =
-  let hs = actorAssocs (== fid) lid s
+  let hs = actorNotProjAssocs (== fid) lid s
       reas = map (second $ computeReachable cops configFov lvl) hs
       lreas = map (preachable . snd) reas
       totalRea = PerceptionReachable $ ES.unions lreas

@@ -260,9 +260,10 @@ hasteActorA :: MonadAction m => ActorId -> Speed -> m ()
 hasteActorA aid delta = assert (delta /= speedZero) $ do
   modifyState $ updateActorBody aid $ \ b ->
     let newSpeed = speedAdd (bspeed b) delta
-    in assert (newSpeed >= speedZero `blame` "actor slowed below zero"
-                                     `twith` (aid, delta, bspeed b, newSpeed)) $
-       b {bspeed = newSpeed}
+    in assert (newSpeed >= speedZero
+               `blame` "actor slowed below zero"
+               `twith` (aid, delta, b, newSpeed))
+       $ b {bspeed = newSpeed}
 
 pathActorA :: MonadAction m
            => ActorId -> Maybe [Vector] -> Maybe [Vector] -> m ()

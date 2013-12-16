@@ -45,7 +45,7 @@ cmdSerSemTakeTime cmd = case cmd of
   ProjectSer aid p eps iid container -> projectSer aid p eps iid container
   ApplySer aid iid container -> applySer aid iid container
   TriggerSer aid mfeat -> triggerSer aid mfeat
-  SetPathSer aid path -> setPathSer aid path
+  SetPathSer aid -> setPathSer aid
 
 debugArgs :: IO DebugModeSer
 debugArgs = do

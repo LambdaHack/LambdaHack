@@ -10,6 +10,7 @@ import Data.List
 import Data.Maybe
 import qualified Data.Traversable as Traversable
 
+import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.Strategy
@@ -36,7 +37,6 @@ import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind as TileKind
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Utils.Frequency
 
 -- | AI proposes possible targets for the actor. Never empty.
@@ -194,20 +194,13 @@ proposeAction disco aid factionAbilities btarget = do
 waitBlockNow :: ActorId -> Strategy CmdSerTakeTime
 waitBlockNow aid = returN "wait" $ WaitSer aid
 
--- | Strategy for dumb missiles.
+-- | Strategy for a dumb missile or a strongly hurled actor.
 track :: MonadActionRO m => ActorId -> m (Strategy CmdSerTakeTime)
 track aid = do
-  cops <- getsState scops
-  b@Actor{bpos, bpath, blid} <- getsState $ getActorBody aid
-  lvl <- getLevel blid
-  let clearPath = returN "ClearPathSer" $ SetPathSer aid []
-      strat = case bpath of
-        Nothing -> reject
-        Just [] -> assert `failure` "null path" `twith` (aid, b)
-        -- TODO: instead let server do this in MoveSer, abort, handle in loop
-        Just (d : _) | not $ accessibleDir cops lvl bpos d -> clearPath
-        Just lv -> returN "SetPathSer" $ SetPathSer aid lv
-  return strat
+  bpath <- getsState $ bpath . getActorBody aid
+  return $! if isNothing bpath
+            then reject
+            else returN "SetPathSer" $ SetPathSer aid
 
 -- TODO: (most?) animals don't pick up. Everybody else does.
 pickup :: MonadActionRO m => ActorId -> m (Strategy CmdSerTakeTime)
