@@ -166,7 +166,7 @@ continueRunDir :: MonadClientAbort m
                => ActorId -> (Vector, Int)
                -> m (Vector, Int)
 continueRunDir leader (dirLast, distLast) = do
-  cops@Kind.COps{cotile} <- getsState scops
+  cops@Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
   body <- getsState $ getActorBody leader
   let lid = blid body
   per <- getPerFid lid
@@ -202,8 +202,11 @@ continueRunDir leader (dirLast, distLast) = do
       rightTilesLast = leftTiles posLast $ neg dirLast
       leftForwardTileHere = angleTile posHere dirLast (pi/4)
       rightForwardTileHere = angleTile posHere dirLast (-pi/4)
-      terrainChangeLeft = leftForwardTileHere `notElem` leftTilesLast
-      terrainChangeRight = rightForwardTileHere `notElem` rightTilesLast
+      tileAF = actionFeatures . okind
+      terrainChangeLeft = tileAF leftForwardTileHere
+                          `notElem` map tileAF leftTilesLast
+      terrainChangeRight = tileAF rightForwardTileHere
+                           `notElem` map tileAF rightTilesLast
   if terrainChangeLeft || terrainChangeRight then abort
   else do
     -- TODO: if we just learned this is a dead end, stop; but if we know
