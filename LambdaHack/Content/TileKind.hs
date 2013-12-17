@@ -20,7 +20,7 @@ cdefs = ContentDef
   , validate = tvalidate
   , content =
       [wall, hardRock, pillar, pillarCache, tree, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpLit, stairsLit, stairsDownLit, escapeUpLit, escapeDownLit, unknown, floorCorridorLit, floorArenaLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit]
-      ++ map makeDark [stairsLit, escapeUpLit, escapeDownLit, floorCorridorLit]
+      ++ map makeDark [wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsLit, escapeUpLit, escapeDownLit, floorCorridorLit]
       ++ map makeDarkColor [stairsUpLit, stairsDownLit, floorArenaLit, floorItemLit, floorActorItemLit]
   }
 wall,        hardRock, pillar, pillarCache, tree, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpLit, stairsLit, stairsDownLit, escapeUpLit, escapeDownLit, unknown, floorCorridorLit, floorArenaLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit :: TileKind
@@ -71,75 +71,75 @@ tree = TileKind
 wallV = TileKind
   { tsymbol  = '|'
   , tname    = "granite wall"
-  , tfreq    = [("legendLit", 100), ("legendDark", 100)]
+  , tfreq    = [("legendLit", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = [HideAs "suspect vertical wall"]
+  , tfeature = [HideAs "suspect vertical wall Lit"]
   }
 wallSuspectV = TileKind
   { tsymbol  = '|'
   , tname    = "moldy wall"
-  , tfreq    = [("suspect vertical wall", 1)]
+  , tfreq    = [("suspect vertical wall Lit", 1)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = [Suspect, RevealAs "vertical closed door"]
+  , tfeature = [Suspect, RevealAs "vertical closed door Lit"]
   }
 doorClosedV = TileKind
   { tsymbol  = '+'
   , tname    = "closed door"
-  , tfreq    = [("vertical closed door", 1)]
+  , tfreq    = [("vertical closed door Lit", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
   , tfeature = [ Exit
-               , OpenTo "vertical open door"
-               , HideAs "suspect vertical wall"
+               , OpenTo "vertical open door Lit"
+               , HideAs "suspect vertical wall Lit"
                ]
   }
 doorOpenV = TileKind
   { tsymbol  = '-'
   , tname    = "open door"
-  , tfreq    = [("vertical open door", 1)]
+  , tfreq    = [("vertical open door Lit", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
-  , tfeature = [ Dark, Walkable, Clear, Exit
-               , CloseTo "vertical closed door"
+  , tfeature = [ Walkable, Clear, Exit
+               , CloseTo "vertical closed door Lit"
                ]
   }
 wallH = TileKind
   { tsymbol  = '-'
   , tname    = "granite wall"
-  , tfreq    = [("legendLit", 100), ("legendDark", 100)]
+  , tfreq    = [("legendLit", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = [HideAs "suspect horizontal wall"]
+  , tfeature = [HideAs "suspect horizontal wall Lit"]
   }
 wallSuspectH = TileKind
   { tsymbol  = '-'
   , tname    = "scratched wall"
-  , tfreq    = [("suspect horizontal wall", 1)]
+  , tfreq    = [("suspect horizontal wall Lit", 1)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = [Suspect, RevealAs "horizontal closed door"]
+  , tfeature = [Suspect, RevealAs "horizontal closed door Lit"]
   }
 doorClosedH = TileKind
   { tsymbol  = '+'
   , tname    = "closed door"
-  , tfreq    = [("horizontal closed door", 1)]
+  , tfreq    = [("horizontal closed door Lit", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
   , tfeature = [ Exit
-               , OpenTo "horizontal open door"
-               , HideAs "suspect horizontal wall"
+               , OpenTo "horizontal open door Lit"
+               , HideAs "suspect horizontal wall Lit"
                ]
   }
 doorOpenH = TileKind
   { tsymbol  = '|'
   , tname    = "open door"
-  , tfreq    = [("horizontal open door", 1)]
+  , tfreq    = [("horizontal open door Lit", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
-  , tfeature = [ Dark, Walkable, Clear, Exit
-               , CloseTo "horizontal closed door"
+  , tfeature = [ Walkable, Clear, Exit
+               , CloseTo "horizontal closed door Lit"
                ]
   }
 stairsUpLit = TileKind
@@ -245,8 +245,14 @@ makeDark :: TileKind -> TileKind
 makeDark k = let textLit :: Text -> Text
                  textLit t = maybe t (<> "Dark") $ T.stripSuffix "Lit" t
                  litFreq = map (first textLit) $ tfreq k
+                 litFeat (OpenTo t) = OpenTo $ textLit t
+                 litFeat (CloseTo t) = CloseTo $ textLit t
+                 litFeat (ChangeTo t) = ChangeTo $ textLit t
+                 litFeat (HideAs t) = HideAs $ textLit t
+                 litFeat (RevealAs t) = RevealAs $ textLit t
+                 litFeat feat = feat
              in k { tfreq    = litFreq
-                  , tfeature = Dark : tfeature k
+                  , tfeature = Dark : map litFeat (tfeature k)
                   }
 
 makeDarkColor :: TileKind -> TileKind

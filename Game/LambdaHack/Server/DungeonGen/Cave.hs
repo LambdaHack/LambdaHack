@@ -153,7 +153,8 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
           -- and doors have a certain chance to be open.
           rd <- chance cdoorChance
           if not rd then
-            return $ EM.insert p pickedCorTile l  -- opening kept
+            let cor = if Tile.isLit cotile t then litCorTile else darkCorTile
+            in return $ EM.insert p cor l  -- opening kept
           else do
             ro <- chance copenChance
             doorClosedId <- Tile.revealAs cotile t
