@@ -32,12 +32,11 @@ data TileKind = TileKind
 -- TODO: verify that OpenTo, CloseTo and ChangeTo are assigned as specified.
 -- | Filter a list of kinds, passing through only the incorrect ones, if any.
 --
--- If tiles look the same on the map, the description should be the same, too.
--- Otherwise, the player has to inspect manually all the tiles of that kind
--- to see if any is special. This is a part of a stronger
--- but less precise property that tiles that look the same can't be
--- distinguished by player actions (but may behave differently
--- wrt dungeon generation, AI preferences, etc.).
+-- If tiles look the same on the map, the description and the substantial
+-- features should be the same, too. Otherwise, the player has to inspect
+-- manually all the tiles of that kind, or even experiment with them,
+-- to see if any is special. This would be tedious. Note that iiles may freely
+-- differ wrt dungeon generation, AI preferences, etc.
 tvalidate :: [TileKind] -> [TileKind]
 tvalidate lt =
   let listFov f = L.map (\kt -> ( ( tsymbol kt
@@ -51,22 +50,28 @@ tvalidate lt =
       namesUnequal (hd : tl) =
         -- Catch if at least one is different.
         L.any (/= tname hd) (L.map tname tl)
-        || L.any (/= actionFeatures hd) (L.map actionFeatures tl)
+        || L.any (/= actionFeatures True hd) (L.map (actionFeatures True) tl)
       confusions f = L.filter namesUnequal $ M.elems $ mapFov f
   in case confusions tcolor ++ confusions tcolor2 of
     [] -> []
     l : _ -> l
 
-actionFeatures :: TileKind -> S.Set F.Feature
-actionFeatures t =
+-- | Features of tiles that differentiate them substantially from one another.
+-- By tile contents validation condition, this means the player
+-- can tell such tile apart, and only looking at the map, not tile name.
+-- So if running uses this function, it won't stop at places that the player
+-- can't himself tell from other places, and so running does not confer
+-- any advantages, except UI convenience.
+actionFeatures :: Bool -> TileKind -> S.Set F.Feature
+actionFeatures markSuspect t =
   let f feat = case feat of
         F.Cause{} -> Just feat
-        F.OpenTo{} -> Just $ F.OpenTo ""
+        F.OpenTo{} -> Just $ F.OpenTo ""  -- if needed, remove prefix/suffix
         F.CloseTo{} -> Just $ F.CloseTo ""
         F.ChangeTo{} -> Just $ F.ChangeTo ""
         F.Walkable -> Just feat
         F.Clear -> Just feat
-        F.Suspect -> Just feat
+        F.Suspect -> if markSuspect then Just feat else Nothing
         F.Aura{} -> Just feat
         F.Impenetrable -> Just feat
         F.Path -> Just feat  -- doesn't affect tile behaviour, but important
@@ -75,5 +80,5 @@ actionFeatures t =
         F.Dark -> Nothing  -- not important any longer, after FOV computed
         F.CanItem -> Nothing
         F.CanActor -> Nothing
-        F.Exit -> Nothing
+        F.Exit -> Nothing  -- subsumed by Cause, etc.
   in S.fromList $ mapMaybe f $ tfeature t

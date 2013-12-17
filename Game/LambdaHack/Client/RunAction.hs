@@ -1,4 +1,10 @@
 -- | Running and disturbance.
+--
+-- The general rule is: whatever is behind you (and so ignored previously),
+-- determines what you ignore moving forward. This is calcaulated
+-- separately for the tiles to the left, to the right and in the middle
+-- along the running direction. Some things are never ignored, such as:
+-- enemies seen, imporant messages heard, items nearby, actors in the way.
 module Game.LambdaHack.Client.RunAction
   ( continueRunDir
   ) where
@@ -197,12 +203,17 @@ continueRunDir leader (dirLast, distLast) = do
       -- We assume the tiles have not changes since last running step.
       -- If they did, we don't care --- running should be stopped
       -- because of the change of nearby tiles then (TODO).
-      leftTiles pos dir = map (angleTile pos dir) [pi/4, pi/2, 3*pi/4]
-      leftTilesLast = leftTiles posLast dirLast
-      rightTilesLast = leftTiles posLast $ neg dirLast
+      -- We don't take into account the two tiles at the rear of last
+      -- surroundings, because the actor may have come from there
+      -- (via a diagonal move) and if so, he may be interested in such tiles.
+      -- If he arrived directly from the right or left, this must have been
+      -- a LambaHack door or a similar tile and we assume runDisturbance
+      -- takes care of those.
+      leftTilesLast = map (angleTile posHere dirLast) [pi/2, 3*pi/4]
+      rightTilesLast = map (angleTile posHere dirLast) [-pi/2, -3*pi/4]
       leftForwardTileHere = angleTile posHere dirLast (pi/4)
       rightForwardTileHere = angleTile posHere dirLast (-pi/4)
-      tileAF = actionFeatures . okind
+      tileAF = actionFeatures smarkSuspect . okind
       terrainChangeLeft = tileAF leftForwardTileHere
                           `notElem` map tileAF leftTilesLast
       terrainChangeRight = tileAF rightForwardTileHere

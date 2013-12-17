@@ -15,7 +15,7 @@
 module Game.LambdaHack.Common.Tile
   ( SmellTime
   , kindHasFeature, kindHas, hasFeature
-  , isClear, isLit, isExplorable, lookSimilar, actSimilar, speedup
+  , isClear, isLit, isExplorable, lookSimilar, speedup
   , openTo, closeTo, revealAs, hideAs, openable, closable, changeable
   ) where
 
@@ -73,14 +73,6 @@ lookSimilar t u =
   tname   t == tname   u &&
   tcolor  t == tcolor  u &&
   tcolor2 t == tcolor2 u
-
--- | The tile differ substantially from one another.
--- By tile contents validation conditions, this means the player
--- can tell them apart, too. So if running uses this function,
--- it won't stop at places that the player can't tell from other places
--- (and from map alone, not even taking into account tile names).
-actSimilar :: TileKind -> TileKind -> Bool
-actSimilar t u = actionFeatures t == actionFeatures u
 
 speedup :: Bool -> Kind.Ops TileKind -> Kind.Speedup TileKind
 speedup allClear Kind.Ops{ofoldrWithKey, obounds} =
