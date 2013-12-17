@@ -120,8 +120,8 @@ runDisturbance posLast distLast report hs ms per markSuspect posHere
       -- Here stop only if you touch any such tile for the first time.
       -- TODO: stop when running along a path and it ends (or turns).
       -- TODO: perhaps in open areas change direction to follow lit and paths.
-      firstList = [ posHasFeature F.Lit
-                  , not . posHasFeature F.Lit
+      firstList = [ not . posHasFeature F.Dark
+                  , posHasFeature F.Dark
                   , not . posHasFeature F.Path
                   , \t -> markSuspect && posHasFeature F.Suspect t
                     -- TODO: refine for suspect floors (e.g., traps)

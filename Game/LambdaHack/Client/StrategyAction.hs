@@ -392,9 +392,9 @@ moveStrategy cops aid s mFoe =
                       -- Blind actors tend to reveal/forget repeatedly.
                       || asight mk && Tile.hasFeature cotile F.Suspect t
                       -- Lit indirectly. E.g., a room entrance.
-                      || (not (Tile.hasFeature cotile F.Lit t)
+                      || (Tile.hasFeature cotile F.Dark t
                           && (x == bpos || accessible cops lvl x bpos)
-                          && any (Tile.hasFeature cotile F.Lit) ts)
+                          && any (not . Tile.hasFeature cotile F.Dark) ts)
   onlyInterest = onlyMoves interestHere
   bdirAI | bpos == boldpos = Nothing
          | otherwise = Just $ towards lxsize boldpos bpos

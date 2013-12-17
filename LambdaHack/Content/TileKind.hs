@@ -19,11 +19,11 @@ cdefs = ContentDef
   , getFreq = tfreq
   , validate = tvalidate
   , content =
-      [wall, hardRock, pillar, pillarCache, tree, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpDark, stairsDark, stairsDownDark, escapeUpDark, escapeDownDark, unknown, floorCorridorDark, floorArenaDark, floorItemDark, floorActorItemDark, floorRedDark, floorBlueDark, floorGreenDark, floorBrownDark]
-      ++ map makeLit [stairsDark, escapeUpDark, escapeDownDark, floorCorridorDark, floorRedDark, floorBlueDark, floorGreenDark, floorBrownDark]
-      ++ map makeLitDefFG [stairsUpDark, stairsDownDark, floorArenaDark, floorItemDark, floorActorItemDark]
+      [wall, hardRock, pillar, pillarCache, tree, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpLit, stairsLit, stairsDownLit, escapeUpLit, escapeDownLit, unknown, floorCorridorLit, floorArenaLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit]
+      ++ map makeDark [stairsLit, escapeUpLit, escapeDownLit, floorCorridorLit]
+      ++ map makeDarkColor [stairsUpLit, stairsDownLit, floorArenaLit, floorItemLit, floorActorItemLit]
   }
-wall,        hardRock, pillar, pillarCache, tree, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpDark, stairsDark, stairsDownDark, escapeUpDark, escapeDownDark, unknown, floorCorridorDark, floorArenaDark, floorItemDark, floorActorItemDark, floorRedDark, floorBlueDark, floorGreenDark, floorBrownDark :: TileKind
+wall,        hardRock, pillar, pillarCache, tree, wallV, wallSuspectV, doorClosedV, doorOpenV, wallH, wallSuspectH, doorClosedH, doorOpenH, stairsUpLit, stairsLit, stairsDownLit, escapeUpLit, escapeDownLit, unknown, floorCorridorLit, floorArenaLit, floorItemLit, floorActorItemLit, floorRedLit, floorBlueLit, floorGreenLit, floorBrownLit :: TileKind
 
 wall = TileKind
   { tsymbol  = ' '
@@ -31,7 +31,7 @@ wall = TileKind
   , tfreq    = [("fillerWall", 1), ("legendLit", 100), ("legendDark", 100)]
   , tcolor   = defBG
   , tcolor2  = defBG
-  , tfeature = []
+  , tfeature = [Dark]
   }
 hardRock = TileKind
   { tsymbol  = ' '
@@ -39,7 +39,7 @@ hardRock = TileKind
   , tfreq    = [("basic outer fence", 1)]
   , tcolor   = BrWhite
   , tcolor2  = BrWhite
-  , tfeature = [Impenetrable]
+  , tfeature = [Dark, Impenetrable]
   }
 pillar = TileKind
   { tsymbol  = 'O'
@@ -49,7 +49,7 @@ pillar = TileKind
                , ("noiseSet", 55), ("combatSet", 3) ]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = [Lit]
+  , tfeature = []
   }
 pillarCache = TileKind
   { tsymbol  = '&'
@@ -58,7 +58,7 @@ pillarCache = TileKind
                , ("legendLit", 100), ("legendDark", 100) ]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = [Lit, Cause $ Effect.CreateItem 1, ChangeTo "cachable"]
+  , tfeature = [Cause $ Effect.CreateItem 1, ChangeTo "cachable"]
   }
 tree = TileKind
   { tsymbol  = 'O'
@@ -66,7 +66,7 @@ tree = TileKind
   , tfreq    = [("combatSet", 8)]
   , tcolor   = BrGreen
   , tcolor2  = Green
-  , tfeature = [Lit]
+  , tfeature = []
   }
 wallV = TileKind
   { tsymbol  = '|'
@@ -74,7 +74,7 @@ wallV = TileKind
   , tfreq    = [("legendLit", 100), ("legendDark", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = [Lit, HideAs "suspect vertical wall"]
+  , tfeature = [HideAs "suspect vertical wall"]
   }
 wallSuspectV = TileKind
   { tsymbol  = '|'
@@ -82,7 +82,7 @@ wallSuspectV = TileKind
   , tfreq    = [("suspect vertical wall", 1)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = [Lit, Suspect, RevealAs "vertical closed door"]
+  , tfeature = [Suspect, RevealAs "vertical closed door"]
   }
 doorClosedV = TileKind
   { tsymbol  = '+'
@@ -90,8 +90,7 @@ doorClosedV = TileKind
   , tfreq    = [("vertical closed door", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
-  , tfeature = [ Lit
-               , Exit
+  , tfeature = [ Exit
                , OpenTo "vertical open door"
                , HideAs "suspect vertical wall"
                ]
@@ -102,7 +101,7 @@ doorOpenV = TileKind
   , tfreq    = [("vertical open door", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
-  , tfeature = [ Walkable, Clear, Exit
+  , tfeature = [ Dark, Walkable, Clear, Exit
                , CloseTo "vertical closed door"
                ]
   }
@@ -112,7 +111,7 @@ wallH = TileKind
   , tfreq    = [("legendLit", 100), ("legendDark", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = [Lit, HideAs "suspect horizontal wall"]
+  , tfeature = [HideAs "suspect horizontal wall"]
   }
 wallSuspectH = TileKind
   { tsymbol  = '-'
@@ -120,7 +119,7 @@ wallSuspectH = TileKind
   , tfreq    = [("suspect horizontal wall", 1)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = [Lit, Suspect, RevealAs "horizontal closed door"]
+  , tfeature = [Suspect, RevealAs "horizontal closed door"]
   }
 doorClosedH = TileKind
   { tsymbol  = '+'
@@ -128,8 +127,7 @@ doorClosedH = TileKind
   , tfreq    = [("horizontal closed door", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
-  , tfeature = [ Lit
-               , Exit
+  , tfeature = [ Exit
                , OpenTo "horizontal open door"
                , HideAs "suspect horizontal wall"
                ]
@@ -140,51 +138,48 @@ doorOpenH = TileKind
   , tfreq    = [("horizontal open door", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
-  , tfeature = [ Walkable, Clear, Exit
+  , tfeature = [ Dark, Walkable, Clear, Exit
                , CloseTo "horizontal closed door"
                ]
   }
-stairsUpDark = TileKind
+stairsUpLit = TileKind
   { tsymbol  = '<'
   , tname    = "staircase up"
-  , tfreq    = [("legendDark", 100)]
--- Disabled, because the yellow artificial light does not fit LambdaHack.
---  , tcolor   = BrYellow
--- Dark room interior, OTOH, is fine:
+  , tfreq    = [("legendLit", 100)]
   , tcolor   = BrWhite
-  , tcolor2  = BrBlack
+  , tcolor2  = defFG
   , tfeature = [Walkable, Clear, Exit, Cause $ Effect.Ascend 1]
   }
-stairsDark = TileKind
+stairsLit = TileKind
   { tsymbol  = '>'
   , tname    = "staircase"
-  , tfreq    = [("legendDark", 100)]
+  , tfreq    = [("legendLit", 100)]
   , tcolor   = BrCyan
   , tcolor2  = Cyan  -- TODO
   , tfeature = [ Walkable, Clear, Exit
                , Cause $ Effect.Ascend 1
                , Cause $ Effect.Ascend (-1) ]
   }
-stairsDownDark = TileKind
+stairsDownLit = TileKind
   { tsymbol  = '>'
   , tname    = "staircase down"
-  , tfreq    = [("legendDark", 100)]
+  , tfreq    = [("legendLit", 100)]
   , tcolor   = BrWhite
-  , tcolor2  = BrBlack
+  , tcolor2  = defFG
   , tfeature = [Walkable, Clear, Exit, Cause $ Effect.Ascend (-1)]
   }
-escapeUpDark = TileKind
+escapeUpLit = TileKind
   { tsymbol  = '<'
   , tname    = "exit trapdoor up"
-  , tfreq    = [("legendDark", 100)]
+  , tfreq    = [("legendLit", 100)]
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
   , tfeature = [Walkable, Clear, Exit, Cause Effect.Escape]
   }
-escapeDownDark = TileKind
+escapeDownLit = TileKind
   { tsymbol  = '>'
   , tname    = "exit trapdoor down"
-  , tfreq    = [("legendDark", 100)]
+  , tfreq    = [("legendLit", 100)]
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
   , tfeature = [Walkable, Clear, Exit, Cause Effect.Escape]
@@ -195,70 +190,64 @@ unknown = TileKind
   , tfreq    = [("unknown space", 1)]
   , tcolor   = defFG
   , tcolor2  = defFG
-  , tfeature = []
+  , tfeature = [Dark]
   }
-floorCorridorDark = TileKind
+floorCorridorLit = TileKind
   { tsymbol  = '#'
   , tname    = "corridor"
-  , tfreq    = [("floorCorridorDark", 1)]
--- Disabled, because dark corridors and yellow light does not fit LambdaHack.
---  , tcolor   = BrYellow
---  , tcolor2  = BrBlack
+  , tfreq    = [("floorCorridorLit", 1)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfeature = [Walkable, Clear]
   }
-floorArenaDark = floorCorridorDark
+floorArenaLit = floorCorridorLit
   { tsymbol  = '.'
   , tname    = "stone floor"
-  , tfreq    = [ ("floorArenaDark", 1)
+  , tfreq    = [ ("floorArenaLit", 1)
                , ("arenaSet", 1), ("noiseSet", 100), ("combatSet", 100) ]
--- Disabled, because the yellow artificial light does not fit LambdaHack.
---  , tcolor   = BrYellow
--- Dark room interior, OTOH, is fine:
   , tcolor2  = BrBlack
   }
-floorItemDark = floorArenaDark
+floorItemLit = floorArenaLit
   { tfreq    = []
-  , tfeature = CanItem : tfeature floorArenaDark
+  , tfeature = CanItem : tfeature floorArenaLit
   }
-floorActorItemDark = floorItemDark
-  { tfreq    = [("legendDark", 100), ("emptySet", 1)]
-  , tfeature = CanActor : tfeature floorItemDark
+floorActorItemLit = floorItemLit
+  { tfreq    = [("legendLit", 100), ("emptySet", 1)]
+  , tfeature = CanActor : tfeature floorItemLit
   }
-floorRedDark = floorArenaDark
+floorRedLit = floorArenaLit
   { tname    = "brick pavement"
-  , tfreq    = [("pathDark", 30)]
+  , tfreq    = [("pathLit", 30)]
   , tcolor   = BrRed
   , tcolor2  = Red
-  , tfeature = Path : tfeature floorArenaDark
+  , tfeature = Path : tfeature floorArenaLit
   }
-floorBlueDark = floorRedDark
+floorBlueLit = floorRedLit
   { tname    = "granite cobblestones"
-  , tfreq    = [("pathDark", 100)]
+  , tfreq    = [("pathLit", 100)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
   }
-floorGreenDark = floorRedDark
+floorGreenLit = floorRedLit
   { tname    = "mossy stone path"
-  , tfreq    = [("pathDark", 100)]
+  , tfreq    = [("pathLit", 100)]
   , tcolor   = BrGreen
   , tcolor2  = Green
   }
-floorBrownDark = floorRedDark
+floorBrownLit = floorRedLit
   { tname    = "rotting mahogany deck"
-  , tfreq    = [("pathDark", 10)]
+  , tfreq    = [("pathLit", 10)]
   , tcolor   = BrMagenta
   , tcolor2  = Magenta
   }
 
-makeLit :: TileKind -> TileKind
-makeLit k = let textLit :: Text -> Text
-                textLit t = maybe t (<> "Lit") $ T.stripSuffix "Dark" t
-                litFreq = map (first textLit) $ tfreq k
-            in k { tfreq    = litFreq
-                 , tfeature = Lit : tfeature k
-                 }
+makeDark :: TileKind -> TileKind
+makeDark k = let textLit :: Text -> Text
+                 textLit t = maybe t (<> "Dark") $ T.stripSuffix "Lit" t
+                 litFreq = map (first textLit) $ tfreq k
+             in k { tfreq    = litFreq
+                  , tfeature = Dark : tfeature k
+                  }
 
-makeLitDefFG :: TileKind -> TileKind
-makeLitDefFG k = (makeLit k) {tcolor2  = defFG}
+makeDarkColor :: TileKind -> TileKind
+makeDarkColor k = (makeDark k) {tcolor2 = BrBlack}

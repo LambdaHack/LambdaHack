@@ -22,7 +22,7 @@ data Feature =
 
   | Walkable             -- ^ actors can walk through
   | Clear                -- ^ actors can see through
-  | Lit                  -- ^ is lit with an ambient shine
+  | Dark                 -- ^ is not lit with an ambient shine
   | Suspect              -- ^ may not be what it seems (clients only)
   | Aura !(Effect Int)   -- ^ sustains the effect continuously, TODO
   | Impenetrable         -- ^ can never be excavated nor seen through

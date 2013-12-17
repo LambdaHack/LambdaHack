@@ -10,6 +10,7 @@ import Data.List
 import Data.Maybe
 import Data.Text (Text)
 
+import Control.Exception.Assert.Sugar
 import qualified Game.LambdaHack.Common.Effect as Effect
 import qualified Game.LambdaHack.Common.Feature as F
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -25,7 +26,6 @@ import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Server.DungeonGen.Area
 import Game.LambdaHack.Server.DungeonGen.Cave hiding (TileMapXY)
 import Game.LambdaHack.Server.DungeonGen.Place
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Utils.Frequency
 
 
@@ -65,7 +65,8 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
       ascendable  = Tile.kindHasFeature $ F.Cause (Effect.Ascend 1)
       descendable = Tile.kindHasFeature $ F.Cause (Effect.Ascend (-1))
       dcond kt = not (Tile.kindHasFeature F.Clear kt)
-                 || (if dnight then not else id) (Tile.kindHasFeature F.Lit kt)
+                 || (if dnight then id else not)
+                      (Tile.kindHasFeature F.Dark kt)
       pickDefTile = fmap (fromMaybe $ assert `failure` cdefTile)
                     $ opick cdefTile dcond
   cmap <- convertTileMaps pickDefTile cxsize cysize dmap

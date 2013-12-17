@@ -23,12 +23,12 @@ import qualified Data.Array.Unboxed as A
 import qualified Data.List as L
 import Data.Maybe
 
+import Control.Exception.Assert.Sugar
 import qualified Game.LambdaHack.Common.Feature as F
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.TileKind
-import Control.Exception.Assert.Sugar
 
 -- | The last time a hero left a smell in a given tile. To be used
 -- by monsters that hunt by smell.
@@ -85,7 +85,7 @@ speedup allClear Kind.Ops{ofoldrWithKey, obounds} =
       tabulate p = (createTab p A.!)
       isClearTab | allClear = tabulate $ not . kindHasFeature F.Impenetrable
                  | otherwise = tabulate $ kindHasFeature F.Clear
-      isLitTab   = tabulate $ kindHasFeature F.Lit
+      isLitTab   = tabulate $ not . kindHasFeature F.Dark
   in Kind.TileSpeedup {isClearTab, isLitTab}
 
 openTo :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
