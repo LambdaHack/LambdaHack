@@ -2,8 +2,9 @@
 -- but not unique, way.
 module Game.LambdaHack.Common.Vector
   ( Vector, toVector, toDir, shift, shiftBounded, moves
-  , isUnit, euclidDistSq, diagonal, neg, towards, displacement
-  , displacePath, shiftPath
+  , isUnit, euclidDistSq, diagonal
+  , neg, RadianAngle, rotate
+  , towards, displacement, displacePath, shiftPath
   ) where
 
 import Data.Binary
@@ -95,7 +96,7 @@ euclidDistSq lxsize dir0 dir1
 
 -- | Checks whether a unit vector is a diagonal direction,
 -- as opposed to cardinal. If the vector is not unit,
--- it reject horizontal and vertical vectors.
+-- it checks that the vector is not horizontal nor vertical.
 diagonal :: X -> Vector -> Bool
 diagonal lxsize dir | VectorXY (x, y) <- fromDir lxsize dir =
   x * y /= 0
@@ -104,16 +105,30 @@ diagonal lxsize dir | VectorXY (x, y) <- fromDir lxsize dir =
 neg :: Vector -> Vector
 neg (Vector dir) = Vector (-dir)
 
+type RadianAngle = Double
+
+-- | Rotate a vector by the given angle (expressed in radians)
+-- counterclockwise and return a unit vector approximately in the resulting
+-- direction.
+rotate :: X -> RadianAngle -> Vector -> Vector
+rotate lxsize angle dir | VectorXY (x', y') <- fromDir lxsize dir =
+  let x = fromIntegral x'
+      y = fromIntegral y'
+      dx = x * cos angle - y * sin angle
+      dy = x * sin angle + y * cos angle
+      rxy = normalize lxsize dx dy
+  in toDir lxsize rxy
+
 -- TODO: use bla for that
 -- | Given a vector of arbitrary non-zero length, produce a unit vector
 -- that points in the same direction (in the chessboard metric).
 -- Of several equally good directions it picks one of those that visually
 -- (in the euclidean metric) maximally align with the original vector.
-normalize :: X -> VectorXY -> Vector
-normalize lxsize v@(VectorXY (dx, dy)) =
+normalize :: X -> Double -> Double -> VectorXY
+normalize lxsize dx dy =
   assert (dx /= 0 || dy /= 0 `blame` "can't normalize zero" `twith` (dx, dy)) $
   let angle :: Double
-      angle = atan (fromIntegral dy / fromIntegral dx) / (pi / 2)
+      angle = atan (dy / dx) / (pi / 2)
       dxy | angle <= -0.75 && angle >= -1.25 = (0, -1)
           | angle <= -0.25 = (1, -1)
           | angle <= 0.25  = (1, 0)
@@ -121,9 +136,13 @@ normalize lxsize v@(VectorXY (dx, dy)) =
           | angle <= 1.25  = (0, 1)
           | otherwise = assert `failure` "impossible angle"
                                `twith` (lxsize, dx, dy, angle)
-      rxy = if dx >= 0
-            then VectorXY dxy
-            else negXY $ VectorXY dxy
+  in if dx >= 0
+     then VectorXY dxy
+     else negXY $ VectorXY dxy
+
+normalizeVector :: X -> VectorXY -> Vector
+normalizeVector lxsize v@(VectorXY (dx, dy)) =
+  let rxy = normalize lxsize (fromIntegral dx) (fromIntegral dy)
   in assert (not (isUnitXY v) || v == rxy
              `blame` "unit vector gets untrivially normalized"
              `twith` (v, rxy))
@@ -141,9 +160,8 @@ normalize lxsize v@(VectorXY (dx, dy)) =
 -- the two points.
 towards :: X -> Point -> Point -> Vector
 towards lxsize pos0 pos1 =
-  assert (pos0 /= pos1 `blame` "towards self" `twith` (pos0, pos1)) $
-  let v = displacementXYZ lxsize pos0 pos1
-  in normalize lxsize v
+  assert (pos0 /= pos1 `blame` "towards self" `twith` (pos0, pos1))
+  $ normalizeVector lxsize $ displacementXYZ lxsize pos0 pos1
 
 -- | A vector from a point to another. We have
 --

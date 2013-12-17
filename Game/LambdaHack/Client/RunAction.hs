@@ -59,8 +59,8 @@ data RunMode =
 
 -- | Determine the running mode. For corridors, pick the running direction
 -- trying to explore all corners, by prefering cardinal to diagonal moves.
-runMode :: Point -> Vector -> (Point -> Vector -> Bool) -> X -> RunMode
-runMode pos dir dirEnterable lxsize =
+_runMode :: Point -> Vector -> (Point -> Vector -> Bool) -> X -> RunMode
+_runMode pos dir dirEnterable lxsize =
   let dirNearby dir1 dir2 = euclidDistSq lxsize dir1 dir2 == 1
       dirBackward d = euclidDistSq lxsize (neg dir) d <= 1
       dirAhead d = euclidDistSq lxsize dir d <= 2
@@ -147,7 +147,7 @@ runDisturbance posLast distLast report hs ms per markSuspect posHere
       firstStop = firstNew
       tryRunMaybe
         | msgShown || enemySeen
-          || heroThere || distLast >= 40  = Nothing
+          || heroThere || distLast >= 20  = Nothing
         | L.any touchExplore touchList    = Just (dirNew, 1000)
         | L.any standExplore standList    = Just (dirNew, 1000)
         | L.any firstExplore firstList    = Just (dirNew, 1000)
@@ -179,25 +179,53 @@ continueRunDir leader (dirLast, distLast) = do
   let posHere = bpos body
       posHasFeature f pos = Tile.hasFeature cotile f (lvl `at` pos)
       posHasItems pos = not $ EM.null $ lvl `atI` pos
-      posLast = if distLast == 0 then posHere else posHere `shift` neg dirLast
-      tryRunDist (dir, distNew)
+      posLast = boldpos body
+  assert (posHere == shift posLast dirLast) skip  -- TODO: deduce dirLast
+  let tryRunDist (dir, distNew)
         | accessibleDir cops lvl posHere dir =
-          -- TODO: perhaps @abortWith report2?
           maybe abort (runDir leader) $
-            runDisturbance
+            runDisturbance  -- TODO: only check items in vicinity, not tiles
               posLast distLast sreport hs ms per smarkSuspect posHere
               posHasFeature posHasItems cotile lvl lxsize lysize (dir, distNew)
         | otherwise = abort  -- do not open doors in the middle of a run
       tryRun dir = tryRunDist (dir, distLast)
-      _tryRunAndStop dir = tryRunDist (dir, 1000)
-      openableDir pos dir = Tile.openable cotile (lvl `at` (pos `shift` dir))
-      dirEnterable pos d = accessibleDir cops lvl pos d || openableDir pos d
-  case runMode posHere dirLast dirEnterable lxsize of
-    RunDeadEnd -> abort                   -- we don't run backwards
-    RunOpen    -> tryRun dirLast          -- run forward into the open space
-    RunHub     -> abort                   -- stop and decide where to go
-    RunCorridor (dirNext, _turn) ->       -- look ahead
-      tryRun dirNext
+
+      -- This is supposed to work on diagonal, as well as,
+      -- vertical and horizontal unit vectors.
+      angleTile :: Point -> Vector -> RadianAngle -> Kind.Id TileKind
+      angleTile pos dir angle = lvl `at` shift pos (rotate lxsize angle dir)
+      -- We assume the tiles have not changes since last running step.
+      -- If they did, we don't care --- running should be stopped
+      -- because of the change of nearby tiles then (TODO).
+      leftTiles pos dir = map (angleTile pos dir) [pi/4, pi/2, 3*pi/4]
+      leftTilesLast = leftTiles posLast dirLast
+      rightTilesLast = leftTiles posLast $ neg dirLast
+      leftForwardTileHere = angleTile posHere dirLast (pi/4)
+      rightForwardTileHere = angleTile posHere dirLast (-pi/4)
+      terrainChangeLeft = leftForwardTileHere `notElem` leftTilesLast
+      terrainChangeRight = rightForwardTileHere `notElem` rightTilesLast
+  if terrainChangeLeft || terrainChangeRight then abort
+  else do
+    -- TODO: if we just learned this is a dead end, stop; but if we know
+    -- that from the start, just go to the end. Let if work up to 5 tiles away.
+    -- TODO: perhaps we always auto-turn after only one step (see below),
+    -- if the unique juncture was visible from the start and it's still unique
+    -- (no idea how to check that afterwards, given that visibility changes,
+    -- so it'd have to be kept in running state --- Bool, telling whether
+    -- any juncture in this direction was visible)
+    -- TODO: perhaps abortWith report_about_disturbance?
+    tryRun dirLast
+
+  -- -- auto-turn, see case RunCorridor
+  --let tryRunAndStop dir = tryRunDist (dir, 1000)
+  --    openableDir pos dir = Tile.openable cotile (lvl `at` (pos `shift` dir))
+  --    dirEnterable pos d = accessibleDir cops lvl pos d || openableDir pos d
+  -- case runMode posHere dirLast dirEnterable lxsize of
+  --   RunDeadEnd -> abort                   -- we don't run backwards
+  --   RunOpen    -> tryRun dirLast          -- run forward into the open space
+  --   RunHub     -> abort                   -- stop and decide where to go
+  --   RunCorridor (dirNext, _turn) ->       -- look ahead
+  --     tryRun dirNext
       -- TODO: instead of a lookahead (does not work, since clients have
       -- limited knowledge), pass _turn similarly as in (dir, 1000)
       -- and decide next turn.
