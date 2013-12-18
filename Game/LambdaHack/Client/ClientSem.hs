@@ -1,6 +1,7 @@
 -- | Semantics of most 'CmdClientAI' client commands.
 module Game.LambdaHack.Client.ClientSem where
 
+import Control.Exception.Assert.Sugar
 import Control.Monad
 import Control.Monad.Writer.Strict (runWriterT)
 import qualified Data.EnumMap.Strict as EM
@@ -33,10 +34,8 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
-import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.RuleKind
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Utils.Frequency
 
 queryAI :: MonadClient m => ActorId -> m CmdSerTakeTime
@@ -179,10 +178,10 @@ queryUI aid = do
     maybe abort (continueRun leader) srunning
 
 -- | Continue running in the given direction.
-continueRun :: MonadClientAbort m => ActorId -> (Vector, Int) -> m CmdSer
+continueRun :: MonadClientAbort m => ActorId -> (Bool, Int) -> m CmdSer
 continueRun leader dd = do
   (dir, distNew) <- continueRunDir leader dd
-  modifyClient $ \cli -> cli {srunning = Just (dir, distNew)}
+  modifyClient $ \cli -> cli {srunning = Just (False, distNew)}
   -- The potential invisible actor is hit. War is started without asking.
   return $ TakeTimeSer $ MoveSer leader dir
 

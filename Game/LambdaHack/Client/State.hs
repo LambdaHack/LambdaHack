@@ -6,11 +6,11 @@ module Game.LambdaHack.Client.State
   , toggleMarkVision, toggleMarkSmell, toggleMarkSuspect
   ) where
 
+import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
-import Game.LambdaHack.Common.Vector
 import qualified NLP.Miniutter.English as MU
 import qualified System.Random as R
 import System.Time
@@ -28,7 +28,6 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
-import Control.Exception.Assert.Sugar
 
 -- | Client state, belonging to a single faction.
 -- Some of the data, e.g, the history, carries over
@@ -40,8 +39,8 @@ data StateClient = StateClient
   , seps         :: !Int              -- ^ a parameter of the tgt digital line
   , stargetD     :: !(EM.EnumMap ActorId Target)
                                    -- ^ targets of our actors in the dungeon
-  , srunning     :: !(Maybe (Vector, Int))
-                                   -- ^ direction and distance of running
+  , srunning     :: !(Maybe (Bool, Int))
+                                   -- ^ permission to turn and distance of run
   , sreport      :: !Report        -- ^ current messages
   , shistory     :: !History       -- ^ history of messages
   , sundo        :: ![Atomic]      -- ^ atomic commands performed to date

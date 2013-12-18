@@ -22,6 +22,7 @@ import Control.Concurrent
 import Control.Concurrent.STM (TQueue, atomically)
 import qualified Control.Concurrent.STM as STM
 import Control.DeepSeq
+import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
@@ -39,7 +40,6 @@ import System.IO.Unsafe (unsafePerformIO)
 import qualified System.Random as R
 import System.Time
 
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
