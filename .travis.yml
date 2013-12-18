@@ -8,4 +8,4 @@ install:
 
 script:
   - cabal install -f-vty -f-curses && (make test-travis || (cat ~/.LambdaHack/config.rules.dump ; tail -n 200 /tmp/stdtest.log ; exit 77)) && cabal install -fvty -f-curses && (make test-travis || (cat ~/.LambdaHack/config.rules.dump ; tail -n 200 /tmp/stdtest.log ; exit 77)) && cabal install -f-vty -fcurses && (make test-travis || (cat ~/.LambdaHack/config.rules.dump ; tail -n 200 /tmp/stdtest.log ; exit 77))
-  - cabal install LambdaHack
+  - cabal install LambdaHack --reinstall
