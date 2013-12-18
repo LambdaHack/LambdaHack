@@ -40,7 +40,7 @@ verbose :: Bool
 verbose = True
 
 abrt :: MonadClientAbort m => Text -> m a
-abrt t = abortIfWith verbose $ "Run stopped:" <+> t
+abrt t = abortIfWith verbose $ "Run stop:" <+> t
 
 -- | This function implements the actual logic of running. It checks if we
 -- have to stop running because something interesting cropped up,
@@ -48,9 +48,9 @@ abrt t = abortIfWith verbose $ "Run stopped:" <+> t
 -- a corridor's corner (we never change direction except in corridors)
 -- and it increments the counter of traversed tiles.
 continueRunDir :: MonadClientAbort m
-               => ActorId -> Int
-               -> m (Vector, Int)
-continueRunDir aid distLast = do
+               => ActorId -> (Maybe Text, Int)
+               -> m (Vector, Maybe Text)
+continueRunDir aid (mstop, distLast) = do
   let maxDistance = 20
   cops <- getsState scops
   body <- getsState $ getActorBody aid
@@ -69,21 +69,21 @@ continueRunDir aid distLast = do
       check
         | msgShown = abort  -- the message should still be visible
         | enemySeen = abrt "enemy seen"
-        | distLast >= maxDistance = abort  -- can come from 1000 below
-            -- TODO: abrt $ "reached max distance" <+> show maxDistance
+        | distLast >= maxDistance =
+            abrt $ "reached max run distance" <+> showT maxDistance
+        | Just stop <- mstop = abrt stop
         | accessibleDir cops lvl posHere dirLast =
-            checkAndRun aid dirLast distLast
+            checkAndRun aid dirLast
         | distLast > 1 = abrt "blocked"  -- don't open doors inside a run
         | otherwise =
             -- Assume turning is permitted, because this is the start
             -- of the run, so the situation is mostly known to the player
-            tryTurning aid distLast
+            tryTurning aid
   check
 
 tryTurning :: MonadClientAbort m
-           => ActorId -> Int
-           -> m (Vector, Int)
-tryTurning aid distLast = do
+           => ActorId -> m (Vector, Maybe Text)
+tryTurning aid = do
   cops@Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody aid
   let lid = blid body
@@ -102,13 +102,12 @@ tryTurning aid distLast = do
       case sortBy (compare `on` euclidDistSq lxsize dirLast)
            $ filter (accessibleDir cops lvl posHere) $ d1 : ds of
         [] -> abrt "blocked and all similar directions are not walkable"
-        d : _ -> checkAndRun aid d distLast
+        d : _ -> checkAndRun aid d
     _ -> abrt "blocked and many distant similar directions found"
 
 checkAndRun :: MonadClientAbort m
-            => ActorId -> Vector -> Int
-            -> m (Vector, Int)
-checkAndRun aid dir distLast = do
+            => ActorId -> Vector -> m (Vector, Maybe Text)
+checkAndRun aid dir = do
   Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
   body <- getsState $ getActorBody aid
   smarkSuspect <- getsClient smarkSuspect
@@ -172,9 +171,10 @@ checkAndRun aid dir distLast = do
             -- the run is finished. They don't do anything unless triggered,
             -- so the player has a choice no sooner than when he enters them.
             if Tile.hasFeature cotile F.Exit tileThere
-            then return (dir, 1000)
+            then return (dir, Just "terrain change in the middle with an exit")
             else abrt "terrain change in the middle and no exit"
-        | itemChangeMiddle = return (dir, 1000)
-                                -- enter the item tile, then stop
-        | otherwise = return (dir, distLast + 1)
+        | itemChangeMiddle = return (dir, Just "item change in the middle")
+                             -- enter the item tile, then stop, the message
+                             -- is never shown, since item message ovewrites it
+        | otherwise = return (dir, Nothing)
   check

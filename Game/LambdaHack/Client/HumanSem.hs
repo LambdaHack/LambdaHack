@@ -100,7 +100,7 @@ moveRunHuman run v = do
         -- succeeds much more often than subsequent turns, because we ignore
         -- most of the disturbances, since the player is mostly aware of them
         -- and still explicitly requests a run, knowing how it behaves.
-        when run $ modifyClient $ \cli -> cli {srunning = Just 1}
+        when run $ modifyClient $ \cli -> cli {srunning = Just (Nothing, 1)}
         fmap (Just . TakeTimeSer) $ moveRunAid source dir
         -- When running, the invisible actor is hit (not displaced!),
         -- so that running in the presence of roving invisible

@@ -10,6 +10,7 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
+import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 import qualified System.Random as R
@@ -39,7 +40,8 @@ data StateClient = StateClient
   , seps         :: !Int              -- ^ a parameter of the tgt digital line
   , stargetD     :: !(EM.EnumMap ActorId Target)
                                    -- ^ targets of our actors in the dungeon
-  , srunning     :: !(Maybe Int)   -- ^ distance of the run so far
+  , srunning     :: !(Maybe (Maybe Text, Int))
+                                   -- ^ distance of the run so far
   , sreport      :: !Report        -- ^ current messages
   , shistory     :: !History       -- ^ history of messages
   , sundo        :: ![Atomic]      -- ^ atomic commands performed to date

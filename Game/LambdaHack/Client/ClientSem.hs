@@ -7,6 +7,7 @@ import Control.Monad.Writer.Strict (runWriterT)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
 import Data.Maybe
+import Data.Text (Text)
 import qualified Data.Text as T
 
 import Game.LambdaHack.Client.Action
@@ -178,10 +179,10 @@ queryUI aid = do
     maybe abort (continueRun leader) srunning
 
 -- | Continue running in the given direction.
-continueRun :: MonadClientAbort m => ActorId -> Int -> m CmdSer
-continueRun leader distOld = do
-  (dir, distNew) <- continueRunDir leader distOld
-  modifyClient $ \cli -> cli {srunning = Just distNew}
+continueRun :: MonadClientAbort m => ActorId -> (Maybe Text, Int) -> m CmdSer
+continueRun leader (mstopOld, distOld) = do
+  (dir, mstop) <- continueRunDir leader (mstopOld, distOld)
+  modifyClient $ \cli -> cli {srunning = Just (mstop, distOld + 1)}
   -- The potential invisible actor is hit. War is started without asking.
   return $ TakeTimeSer $ MoveSer leader dir
 
