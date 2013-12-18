@@ -80,6 +80,7 @@ interiorArea fence r = case fence of
 -- and fill a cave section acccording to it.
 buildPlace :: Kind.COps         -- ^ the game content
            -> CaveKind          -- ^ current cave kind
+           -> Bool              -- ^ whether the cave is dark
            -> Kind.Id TileKind  -- ^ dark fence tile, if fence hollow
            -> Kind.Id TileKind  -- ^ lit fence tile, if fence hollow
            -> Int               -- ^ current level depth
@@ -88,7 +89,7 @@ buildPlace :: Kind.COps         -- ^ the game content
            -> Rnd (TileMapXY, Place)
 buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
                     , coplace=Kind.Ops{okind=pokind, opick=popick} }
-           CaveKind{..} darkCorTile litCorTile ln depth r = do
+           CaveKind{..} dnight darkCorTile litCorTile ln depth r = do
   qsolidFence <- fmap (fromMaybe $ assert `failure` cfillerTile)
                  $ opick cfillerTile (const True)
   dark <- chanceDeep ln depth cdarkChance
@@ -102,8 +103,23 @@ buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
       qarea = fromMaybe (assert `failure` (kr, r)) $ interiorArea (pfence kr) r
       place = Place {..}
   legend <- olegend cotile qlegend
+  legendLit <- olegend cotile clegendLitTile
   let xlegend = EM.insert 'X' qhollowFence legend
-  return (digPlace place kr xlegend, place)
+      xlegendLit = EM.insert 'X' qhollowFence legendLit
+      cmap = tilePlace qarea kr
+      fence = case pfence kr of
+        FWall -> buildFence qsolidFence qarea
+        FFloor -> buildFence qhollowFence qarea
+        FNone -> EM.empty
+      (x0, y0, x1, y1) = fromArea qarea
+      isEdge (PointXY (x, y)) = x `elem` [x0, x1] || y `elem` [y0, y1]
+      digNight xy c | isEdge xy = xlegendLit EM.! c
+                    | otherwise = xlegend EM.! c
+      inside = case pfence kr of
+        FNone | not dnight -> EM.mapWithKey digNight cmap
+        _ -> EM.map (xlegend EM.!) cmap
+      tmap = EM.union inside fence
+  return (tmap, place)
 
 -- | Roll a legend of a place plan: a map from plan symbols to tile kinds.
 olegend :: Kind.Ops TileKind -> Text
@@ -145,18 +161,6 @@ buildFenceRnd Kind.COps{cotile=Kind.Ops{opick}} couterFenceTile area = do
                   ++ [ (x, y) | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
   fenceList <- mapM fenceIdRnd pointList
   return $! EM.fromList fenceList
-
--- | Construct a place of the given kind, with the given fence tile.
-digPlace :: Place                               -- ^ the place parameters
-         -> PlaceKind                           -- ^ the place kind
-         -> EM.EnumMap Char (Kind.Id TileKind)  -- ^ the legend
-         -> TileMapXY
-digPlace Place{..} kr legend =
-  let fence = case pfence kr of
-        FWall  -> buildFence qsolidFence qarea
-        FFloor -> buildFence qhollowFence qarea
-        FNone  -> EM.empty
-  in EM.union (EM.map (legend EM.!) $ tilePlace qarea kr) fence
 
 -- TODO: use Text more instead of [Char]?
 -- | Create a place by tiling patterns.

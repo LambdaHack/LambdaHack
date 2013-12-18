@@ -120,7 +120,8 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
   let pickedCorTile = if dnight then darkCorTile else litCorTile
       addPl (m, pls, qls) (i, Left r) = return (m, pls, (i, Left r) : qls)
       addPl (m, pls, qls) (i, Right r) = do
-        (tmap, place) <- buildPlace cops kc darkCorTile litCorTile ln depth r
+        (tmap, place) <-
+          buildPlace cops kc dnight darkCorTile litCorTile ln depth r
         return (EM.union tmap m, place : pls, (i, Right (r, place)) : qls)
   (lplaces, dplaces, qplaces0) <- foldM addPl (fence, [], []) places0
   connects <- connectGrid lgrid

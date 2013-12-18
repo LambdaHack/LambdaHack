@@ -33,11 +33,11 @@ data CaveKind = CaveKind
   , citemFreq       :: ![(Int, Text)]  -- ^ item groups to consider
   , cdefTile        :: !Text        -- ^ the default cave tile group name
   , cdarkCorTile    :: !Text        -- ^ the dark cave corridor tile group name
-  , clitCorTile     :: !Text        -- ^ the dark cave corridor tile group name
+  , clitCorTile     :: !Text        -- ^ the lit cave corridor tile group name
   , cfillerTile     :: !Text        -- ^ the filler wall group name
   , couterFenceTile :: !Text        -- ^ the outer fence wall group name
-  , clegendDarkTile :: !Text        -- ^ the dark place plan legend ground name
-  , clegendLitTile  :: !Text        -- ^ the lit place plan legend ground name
+  , clegendDarkTile :: !Text        -- ^ the dark place plan legend group name
+  , clegendLitTile  :: !Text        -- ^ the lit place plan legend group name
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 
