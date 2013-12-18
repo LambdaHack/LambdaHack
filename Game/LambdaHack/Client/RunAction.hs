@@ -93,32 +93,17 @@ tryTurning aid distLast = do
       dirLast = displacement posLast posHere
   let openableDir pos dir = Tile.openable cotile (lvl `at` (pos `shift` dir))
       dirEnterable pos d = accessibleDir cops lvl pos d || openableDir pos d
-      dirNearby dir1 dir2 = euclidDistSq lxsize dir1 dir2 == 1
-      dirBackward d = euclidDistSq lxsize (neg dirLast) d <= 1
-      findOpen =
-        let f dirC open = open ++
-              case L.filter (dirNearby dirC) dirsEnterable of
-                l | dirBackward dirC -> dirC : l  -- points backwards
-                []  -> []  -- a narrow corridor, just one tile wide
-                [_] -> []  -- a turning corridor, two tiles wide
-                l   -> dirC : l  -- too wide
-        in L.foldr f []
+      dirNearby dir1 dir2 = euclidDistSq lxsize dir1 dir2 `elem` [1, 2]
       dirsEnterable = L.filter (dirEnterable posHere) (moves lxsize)
   case dirsEnterable of
     [] -> assert `failure` "actor is stuck" `twith` (posHere, dirLast)
     [negdir] -> assert (negdir == neg dirLast) $ abrt "dead end"
-    _ ->
-      let dirsOpen = findOpen dirsEnterable
-          dirsCorridor = dirsEnterable L.\\ dirsOpen
-      in case dirsCorridor of
-        [] -> abrt "blocked and no corridors"
-        [d] -> checkAndRun aid d distLast  -- corridor with no turn
-        [d1, d2] | dirNearby d1 d2 ->  -- corridor with a turn
-          -- Prefer cardinal to diagonal dirs, for hero safety,
-          -- even if that means changing direction.
-          let d = if diagonal lxsize d1 then d2 else d1
-          in checkAndRun aid d distLast
-        _ -> abrt "blocked and a hub of many separate corridors"
+    _ -> case filter (dirNearby dirLast) dirsEnterable of
+      [] -> abrt "blocked and no similar direction available"
+      [d] -> if accessibleDir cops lvl posHere d
+             then checkAndRun aid d distLast
+             else abrt "blocked and the alternative dir is a closed door"
+      _ -> abrt "blocked and no unique similar direction found"
 
 checkAndRun :: MonadClientAbort m
             => ActorId -> Vector -> Int
