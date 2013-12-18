@@ -16,11 +16,9 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.ServerCmd
-import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Common.VectorXY
 
@@ -82,9 +80,8 @@ checkCursor arena = do
 moveRunHuman :: (MonadClientAbort m, MonadClientUI m)
              => Bool -> VectorXY -> WriterT Slideshow m (Maybe CmdSer)
 moveRunHuman run v = do
-  cops@Kind.COps{cotile=Kind.Ops{ouniqGroup}} <- getsState scops
   tgtMode <- getsClient stgtMode
-  (arena, lvl@Level{lxsize}) <- viewedLevel
+  (arena, Level{lxsize}) <- viewedLevel
   source <- getLeaderUI
   sb <- getsState $ getActorBody source
   let dir = toDir lxsize v
@@ -101,14 +98,9 @@ moveRunHuman run v = do
       Nothing -> do  -- move or search or alter
         -- Start running in the given direction. The first turn of running
         -- succeeds much more often than subsequent turns, because we ignore
-        -- most of the disturbances, since the player is aware of them
-        -- and still explicitly requests a run.
-        let posThere = shift (bpos sb) dir
-            access = accessibleDir cops lvl posThere dir
-            unknownId = ouniqGroup "unknown space"
-            posSecond = shift posThere dir
-            permit = not access && lvl `at` posSecond /= unknownId
-        when run $ modifyClient $ \cli -> cli {srunning = Just (permit, 1)}
+        -- most of the disturbances, since the player is mostly aware of them
+        -- and still explicitly requests a run, knowing how it behaves.
+        when run $ modifyClient $ \cli -> cli {srunning = Just 1}
         fmap (Just . TakeTimeSer) $ moveRunAid source dir
         -- When running, the invisible actor is hit (not displaced!),
         -- so that running in the presence of roving invisible

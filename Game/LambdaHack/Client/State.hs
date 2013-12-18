@@ -39,8 +39,7 @@ data StateClient = StateClient
   , seps         :: !Int              -- ^ a parameter of the tgt digital line
   , stargetD     :: !(EM.EnumMap ActorId Target)
                                    -- ^ targets of our actors in the dungeon
-  , srunning     :: !(Maybe (Bool, Int))
-                                   -- ^ permission to turn and distance of run
+  , srunning     :: !(Maybe Int)   -- ^ distance of the run so far
   , sreport      :: !Report        -- ^ current messages
   , shistory     :: !History       -- ^ history of messages
   , sundo        :: ![Atomic]      -- ^ atomic commands performed to date

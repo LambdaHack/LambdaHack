@@ -13,10 +13,10 @@ module Game.LambdaHack.Client.RunAction
   ( continueRunDir
   ) where
 
-import Control.Exception.Assert.Sugar
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.List as L
+import Data.Function
+import Data.List
 import Data.Maybe
 import Data.Text (Text)
 
@@ -48,9 +48,9 @@ abrt t = abortIfWith verbose $ "Run stopped:" <+> t
 -- a corridor's corner (we never change direction except in corridors)
 -- and it increments the counter of traversed tiles.
 continueRunDir :: MonadClientAbort m
-               => ActorId -> (Bool, Int)
+               => ActorId -> Int
                -> m (Vector, Int)
-continueRunDir aid (permit, distLast) = do
+continueRunDir aid distLast = do
   let maxDistance = 20
   cops <- getsState scops
   body <- getsState $ getActorBody aid
@@ -73,10 +73,10 @@ continueRunDir aid (permit, distLast) = do
             -- TODO: abrt $ "reached max distance" <+> show maxDistance
         | accessibleDir cops lvl posHere dirLast =
             checkAndRun aid dirLast distLast
-        | not permit = abrt "blocked"  -- don't open doors inside a run
+        | distLast > 1 = abrt "blocked"  -- don't open doors inside a run
         | otherwise =
-            -- Perhaps turn, since the obstacle was visible when the run
-            -- started, and so turning is implicitly permitted.
+            -- Assume turning is permitted, because this is the start
+            -- of the run, so the situation is mostly known to the player
             tryTurning aid distLast
   check
 
@@ -91,19 +91,19 @@ tryTurning aid distLast = do
   let posHere = bpos body
       posLast = boldpos body
       dirLast = displacement posLast posHere
-  let openableDir pos dir = Tile.openable cotile (lvl `at` (pos `shift` dir))
-      dirEnterable pos d = accessibleDir cops lvl pos d || openableDir pos d
+  let openableDir dir = Tile.openable cotile (lvl `at` (posHere `shift` dir))
+      dirEnterable dir = accessibleDir cops lvl posHere dir || openableDir dir
       dirNearby dir1 dir2 = euclidDistSq lxsize dir1 dir2 `elem` [1, 2]
-      dirsEnterable = L.filter (dirEnterable posHere) (moves lxsize)
-  case dirsEnterable of
-    [] -> assert `failure` "actor is stuck" `twith` (posHere, dirLast)
-    [negdir] -> assert (negdir == neg dirLast) $ abrt "dead end"
-    _ -> case filter (dirNearby dirLast) dirsEnterable of
-      [] -> abrt "blocked and no similar direction available"
-      [d] -> if accessibleDir cops lvl posHere d
-             then checkAndRun aid d distLast
-             else abrt "blocked and the alternative dir is a closed door"
-      _ -> abrt "blocked and no unique similar direction found"
+      dirSimilar dir = dirNearby dirLast dir && dirEnterable dir
+      dirsSimilar = filter dirSimilar (moves lxsize)
+  case dirsSimilar of
+    [] -> abrt "dead end"
+    d1 : ds | all (dirNearby d1) ds ->  -- only one or two directions possible
+      case sortBy (compare `on` euclidDistSq lxsize dirLast)
+           $ filter (accessibleDir cops lvl posHere) $ d1 : ds of
+        [] -> abrt "blocked and all similar directions are not walkable"
+        d : _ -> checkAndRun aid d distLast
+    _ -> abrt "blocked and many distant similar directions found"
 
 checkAndRun :: MonadClientAbort m
             => ActorId -> Vector -> Int
@@ -121,7 +121,7 @@ checkAndRun aid dir distLast = do
       posThere = posHere `shift` dir
       posLast = boldpos body
       dirLast = displacement posLast posHere
-      actorThere = posThere `elem` L.map bpos hs
+      actorThere = posThere `elem` map bpos hs
       -- This is supposed to work on unit vectors --- diagonal, as well as,
       -- vertical and horizontal.
       anglePos :: Point -> Vector -> RadianAngle -> Point

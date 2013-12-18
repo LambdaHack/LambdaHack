@@ -178,10 +178,10 @@ queryUI aid = do
     maybe abort (continueRun leader) srunning
 
 -- | Continue running in the given direction.
-continueRun :: MonadClientAbort m => ActorId -> (Bool, Int) -> m CmdSer
-continueRun leader dd = do
-  (dir, distNew) <- continueRunDir leader dd
-  modifyClient $ \cli -> cli {srunning = Just (False, distNew)}
+continueRun :: MonadClientAbort m => ActorId -> Int -> m CmdSer
+continueRun leader distOld = do
+  (dir, distNew) <- continueRunDir leader distOld
+  modifyClient $ \cli -> cli {srunning = Just distNew}
   -- The potential invisible actor is hit. War is started without asking.
   return $ TakeTimeSer $ MoveSer leader dir
 
