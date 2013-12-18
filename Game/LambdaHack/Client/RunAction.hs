@@ -120,6 +120,7 @@ checkAndRun aid dir distLast = do
       posHasItems pos = not $ EM.null $ lvl `atI` pos
       posThere = posHere `shift` dir
       posLast = boldpos body
+      dirLast = displacement posLast posHere
       actorThere = posThere `elem` L.map bpos hs
       -- This is supposed to work on unit vectors --- diagonal, as well as,
       -- vertical and horizontal.
@@ -137,8 +138,10 @@ checkAndRun aid dir distLast = do
       tileLast = lvl `at` posLast
       tileHere = lvl `at` posHere
       tileThere = lvl `at` posThere
-      leftPsLast = map (anglePos posHere dir) [pi/2, 3*pi/4]
-      rightPsLast = map (anglePos posHere dir) [-pi/2, -3*pi/4]
+      leftPsLast = map (anglePos posHere dirLast) [pi/2, 3*pi/4]
+                   ++ map (anglePos posHere dir) [pi/2, 3*pi/4]
+      rightPsLast = map (anglePos posHere dirLast) [-pi/2, -3*pi/4]
+                    ++ map (anglePos posHere dir) [-pi/2, -3*pi/4]
       leftForwardPosHere = anglePos posHere dir (pi/4)
       rightForwardPosHere = anglePos posHere dir (-pi/4)
       leftTilesLast = map (lvl `at`) leftPsLast
