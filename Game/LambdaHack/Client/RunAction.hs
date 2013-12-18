@@ -3,15 +3,18 @@
 -- The general rule is: whatever is behind you (and so ignored previously),
 -- determines what you ignore moving forward. This is calcaulated
 -- separately for the tiles to the left, to the right and in the middle
--- along the running direction. Some things are never ignored, such as:
--- enemies seen, imporant messages heard, items nearby, actors in the way.
+-- along the running direction. So, if you want to ignore something
+-- start running when you stand on it (or to the right or left, respectively)
+-- or by entering it (or passing to the right or left, respectively).
+--
+-- Some things are never ignored, such as: enemies seen, imporant messages
+-- heard, solid tiles and actors in the way.
 module Game.LambdaHack.Client.RunAction
   ( continueRunDir
   ) where
 
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.EnumSet as ES
 import qualified Data.List as L
 import Data.Maybe
 
@@ -26,143 +29,13 @@ import qualified Game.LambdaHack.Common.Feature as F
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
-import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.TileKind
 
--- | Start running in the given direction and with the given number
--- of tiles already traversed (usually 0). The first turn of running
--- succeeds much more often than subsequent turns, because most
--- of the disturbances are ignored, since the player is aware of them
--- and still explicitly requests a run.
-canRun :: MonadClient m => ActorId -> (Vector, Int) -> m Bool
-canRun leader (dir, dist) = do
-  cops <- getsState scops
-  b <- getsState $ getActorBody leader
-  lvl <- getLevel $ blid b
-  stgtMode <- getsClient stgtMode
-  assert (isNothing stgtMode `blame` "attempt to run in target mode"
-                             `twith` (dir, dist, stgtMode)) skip
-  return $ accessibleDir cops lvl (bpos b) dir
-
-runDir :: MonadClient m => ActorId -> (Vector, Int) -> m (Vector, Int)
-runDir leader (dir, dist) = do
-  canR <- canRun leader (dir, dist)
-  let -- Do not count distance if we just open a door.
-      distNew = if canR then dist + 1 else dist
-  return (dir, distNew)
-
--- | Human running mode, determined from the nearby cave layout.
-data RunMode =
-    RunOpen                      -- ^ open space, in particular the T crossing
-  | RunHub                       -- ^ a hub of separate corridors
-  | RunCorridor !(Vector, Bool)  -- ^ a single corridor, turning here or not
-  | RunDeadEnd                   -- ^ dead end
-
--- | Determine the running mode. For corridors, pick the running direction
--- trying to explore all corners, by prefering cardinal to diagonal moves.
-_runMode :: Point -> Vector -> (Point -> Vector -> Bool) -> X -> RunMode
-_runMode pos dir dirEnterable lxsize =
-  let dirNearby dir1 dir2 = euclidDistSq lxsize dir1 dir2 == 1
-      dirBackward d = euclidDistSq lxsize (neg dir) d <= 1
-      dirAhead d = euclidDistSq lxsize dir d <= 2
-      findOpen =
-        let f dirC open = open ++
-              case L.filter (dirNearby dirC) dirsEnterable of
-                l | dirBackward dirC -> dirC : l  -- points backwards
-                []  -> []  -- a narrow corridor, just one tile wide
-                [_] -> []  -- a turning corridor, two tiles wide
-                l   -> dirC : l  -- too wide
-        in L.foldr f []
-      dirsEnterable = L.filter (dirEnterable pos) (moves lxsize)
-  in case dirsEnterable of
-    [] -> assert `failure` "actor is stuck" `twith` (pos, dir)  -- TODO
-    [negdir] -> assert (negdir == neg dir) RunDeadEnd
-    _ ->
-      let dirsOpen = findOpen dirsEnterable
-          dirsCorridor = dirsEnterable L.\\ dirsOpen
-      in case dirsCorridor of
-        [] -> RunOpen  -- no corridors
-        _ | L.any dirAhead dirsOpen -> RunOpen  -- open space ahead
-        [d] -> RunCorridor (d, False)  -- corridor with no turn
-        [d1, d2] | dirNearby d1 d2 ->  -- corridor with a turn
-          -- Prefer cardinal to diagonal dirs, for hero safety,
-          -- even if that means changing direction.
-          RunCorridor (if diagonal lxsize d1 then d2 else d1, True)
-        _ -> RunHub  -- a hub of many separate corridors
-
--- TODO: express as MonadActionRO
--- | Check for disturbances to running such as newly visible items, monsters.
-runDisturbance :: Point -> Int -> Report
-               -> [Actor] -> [Actor] -> Perception -> Bool -> Point
-               -> (F.Feature -> Point -> Bool) -> (Point -> Bool)
-               -> Kind.Ops TileKind -> Level -> X -> Y
-               -> (Vector, Int) -> Maybe (Vector, Int)
-runDisturbance posLast distLast report hs ms per markSuspect posHere
-               posHasFeature posHasItems
-               cotile lvl lxsize lysize (dirNew, distNew) =
-  let boringMsgs = map BS.pack [ "You hear some noises." ]
-      -- TODO: use a regexp from the UI config instead
-      msgShown  = isJust $ findInReport (`notElem` boringMsgs) report
-      msposs    = ES.delete posHere $ ES.fromList (L.map bpos ms)
-      enemySeen =
-        not (ES.null (msposs `ES.intersection` totalVisible per))
-      surrLast  = posLast : vicinity lxsize lysize posLast
-      surrHere  = posHere : vicinity lxsize lysize posHere
-      posThere  = posHere `shift` dirNew
-      heroThere = posThere `elem` L.map bpos hs
-      -- Stop if you touch any individual tile with these propereties
-      -- first time, unless you enter it next move, in which case stop then.
-      touchList = [ posHasFeature F.Exit
-                  , posHasItems
-                  ]
-      -- Here additionally ignore a tile property if you stand on such tile.
-      standList = [ posHasFeature F.Path
-                  ]
-      -- Here stop only if you touch any such tile for the first time.
-      -- TODO: stop when running along a path and it ends (or turns).
-      -- TODO: perhaps in open areas change direction to follow lit and paths.
-      firstList = [ not . posHasFeature F.Dark
-                  , posHasFeature F.Dark
-                  , not . posHasFeature F.Path
-                  , \t -> markSuspect && posHasFeature F.Suspect t
-                    -- TODO: refine for suspect floors (e.g., traps)
-                  ]
-      -- TODO: stop when walls vanish from cardinal directions or when any
-      -- walls re-appear again. Actually stop one tile before that happens.
-      -- Then remove some other, subsumed conditions.
-      -- This will help with corridors starting in dark rooms.
-      touchNew fun =
-        let touchLast = L.filter fun surrLast
-            touchHere = L.filter fun surrHere
-        in touchHere L.\\ touchLast
-      touchExplore fun = touchNew fun == [posThere]
-      touchStop fun = touchNew fun /= []
-      standNew fun = L.filter (\pos -> posHasFeature F.Walkable pos ||
-                                       Tile.openable cotile (lvl `at` pos))
-                       (touchNew fun)
-      standExplore fun = not (fun posHere) && standNew fun == [posThere]
-      standStop fun = not (fun posHere) && standNew fun /= []
-      firstNew fun = L.all (not . fun) surrLast &&
-                     L.any fun surrHere
-      firstExplore fun = firstNew fun && fun posThere
-      firstStop = firstNew
-      tryRunMaybe
-        | msgShown || enemySeen
-          || heroThere || distLast >= 20  = Nothing
-        | L.any touchExplore touchList    = Just (dirNew, 1000)
-        | L.any standExplore standList    = Just (dirNew, 1000)
-        | L.any firstExplore firstList    = Just (dirNew, 1000)
-        | L.any touchStop touchList       = Nothing
-        | L.any standStop standList       = Nothing
-        | L.any firstStop firstList       = Nothing
-        | otherwise                       = Just (dirNew, distNew)
-  in tryRunMaybe
-
+-- TODO: perhaps abortWith report_about_disturbance?
 -- | This function implements the actual logic of running. It checks if we
 -- have to stop running because something interesting cropped up,
 -- it ajusts the direction given by the vector if we reached
@@ -171,83 +44,74 @@ runDisturbance posLast distLast report hs ms per markSuspect posHere
 continueRunDir :: MonadClientAbort m
                => ActorId -> (Vector, Int)
                -> m (Vector, Int)
-continueRunDir leader (dirLast, distLast) = do
+continueRunDir aid (dirLast, distLast) = do
   cops@Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
-  body <- getsState $ getActorBody leader
+  body <- getsState $ getActorBody aid
   let lid = blid body
-  per <- getPerFid lid
   sreport <- getsClient sreport -- TODO: check the message before it goes into history
   smarkSuspect <- getsClient smarkSuspect
   fact <- getsState $ (EM.! bfid body) . sfactionD
   ms <- getsState $ actorList (isAtWar fact) lid
   hs <- getsState $ actorList (not . isAtWar fact) lid
-  lvl@Level{lxsize, lysize} <- getLevel $ blid body
+  lvl@Level{lxsize} <- getLevel $ blid body
   let posHere = bpos body
-      posHasFeature f pos = Tile.hasFeature cotile f (lvl `at` pos)
       posHasItems pos = not $ EM.null $ lvl `atI` pos
+      posThere  = posHere `shift` dirLast
       posLast = boldpos body
   assert (posHere == shift posLast dirLast) skip  -- TODO: deduce dirLast
-  let tryRunDist (dir, distNew)
-        | accessibleDir cops lvl posHere dir =
-          maybe abort (runDir leader) $
-            runDisturbance  -- TODO: only check items in vicinity, not tiles
-              posLast distLast sreport hs ms per smarkSuspect posHere
-              posHasFeature posHasItems cotile lvl lxsize lysize (dir, distNew)
-        | otherwise = abort  -- do not open doors in the middle of a run
-      tryRun dir = tryRunDist (dir, distLast)
-
-      -- This is supposed to work on diagonal, as well as,
-      -- vertical and horizontal unit vectors.
-      angleTile :: Point -> Vector -> RadianAngle -> Kind.Id TileKind
-      angleTile pos dir angle = lvl `at` shift pos (rotate lxsize angle dir)
+  let boringMsgs = map BS.pack [ "You hear some noises." ]
+      -- TODO: use a regexp from the UI config instead
+      msgShown  = isJust $ findInReport (`notElem` boringMsgs) sreport
+      enemySeen = not $ null ms
+      actorThere = posThere `elem` L.map bpos hs
+      -- This is supposed to work on unit vectors --- diagonal, as well as,
+      -- vertical and horizontal.
+      anglePos :: Point -> Vector -> RadianAngle -> Point
+      anglePos pos dir angle = shift pos (rotate lxsize angle dir)
       -- We assume the tiles have not changes since last running step.
       -- If they did, we don't care --- running should be stopped
       -- because of the change of nearby tiles then (TODO).
       -- We don't take into account the two tiles at the rear of last
       -- surroundings, because the actor may have come from there
       -- (via a diagonal move) and if so, he may be interested in such tiles.
-      -- If he arrived directly from the right or left, this must have been
-      -- a LambaHack door or a similar tile and we assume runDisturbance
-      -- takes care of those.
-      leftTilesLast = map (angleTile posHere dirLast) [pi/2, 3*pi/4]
-      rightTilesLast = map (angleTile posHere dirLast) [-pi/2, -3*pi/4]
-      leftForwardTileHere = angleTile posHere dirLast (pi/4)
-      rightForwardTileHere = angleTile posHere dirLast (-pi/4)
-      tileAF = actionFeatures smarkSuspect . okind
-      terrainChangeLeft = tileAF leftForwardTileHere
-                          `notElem` map tileAF leftTilesLast
-      terrainChangeRight = tileAF rightForwardTileHere
-                           `notElem` map tileAF rightTilesLast
-  if terrainChangeLeft || terrainChangeRight then abort
-  else do
-    -- TODO: if we just learned this is a dead end, stop; but if we know
-    -- that from the start, just go to the end. Let if work up to 5 tiles away.
-    -- TODO: perhaps we always auto-turn after only one step (see below),
-    -- if the unique juncture was visible from the start and it's still unique
-    -- (no idea how to check that afterwards, given that visibility changes,
-    -- so it'd have to be kept in running state --- Bool, telling whether
-    -- any juncture in this direction was visible)
-    -- TODO: perhaps abortWith report_about_disturbance?
-    tryRun dirLast
-
-  -- -- auto-turn, see case RunCorridor
-  --let tryRunAndStop dir = tryRunDist (dir, 1000)
-  --    openableDir pos dir = Tile.openable cotile (lvl `at` (pos `shift` dir))
-  --    dirEnterable pos d = accessibleDir cops lvl pos d || openableDir pos d
-  -- case runMode posHere dirLast dirEnterable lxsize of
-  --   RunDeadEnd -> abort                   -- we don't run backwards
-  --   RunOpen    -> tryRun dirLast          -- run forward into the open space
-  --   RunHub     -> abort                   -- stop and decide where to go
-  --   RunCorridor (dirNext, _turn) ->       -- look ahead
-  --     tryRun dirNext
-      -- TODO: instead of a lookahead (does not work, since clients have
-      -- limited knowledge), pass _turn similarly as in (dir, 1000)
-      -- and decide next turn.
-      -- TODO: perhaps boldpos can be handy here
-      -- case runMode (posHere `shift` dirNext) dirNext dirEnterable lxsize of
-      --   RunDeadEnd     -> tryRun dirNext  -- explore the dead end
-      --   RunCorridor _  -> tryRun dirNext  -- follow the corridor
-      --   RunOpen | turn -> abort           -- stop and decide when to turn
-      --   RunHub  | turn -> abort           -- stop and decide when to turn
-      --   RunOpen -> tryRunAndStop dirNext  -- no turn, get closer and stop
-      --   RunHub  -> tryRunAndStop dirNext  -- no turn, get closer and stop
+      -- If he arrived directly from the right or left, he is responsible
+      -- for starting the run further away, if he does not want to ignore
+      -- such tiles as the ones he came from.
+      tileLast = lvl `at` posLast
+      tileHere = lvl `at` posHere
+      tileThere = lvl `at` posThere
+      leftPsLast = map (anglePos posHere dirLast) [pi/2, 3*pi/4]
+      rightPsLast = map (anglePos posHere dirLast) [-pi/2, -3*pi/4]
+      leftForwardPosHere = anglePos posHere dirLast (pi/4)
+      rightForwardPosHere = anglePos posHere dirLast (-pi/4)
+      leftTilesLast = map (lvl `at`) leftPsLast
+      rightTilesLast = map (lvl `at`) rightPsLast
+      leftForwardTileHere = lvl `at` leftForwardPosHere
+      rightForwardTileHere = lvl `at` rightForwardPosHere
+      featAt = actionFeatures smarkSuspect . okind
+      terrainChangeMiddle = featAt tileThere
+                            `notElem` map featAt [tileLast, tileHere]
+      terrainChangeLeft = featAt leftForwardTileHere
+                          `notElem` map featAt leftTilesLast
+      terrainChangeRight = featAt rightForwardTileHere
+                           `notElem` map featAt rightTilesLast
+      itemChangeMiddle = posHasItems posThere
+                         `notElem` map posHasItems [posLast, posHere]
+      itemChangeLeft = posHasItems leftForwardPosHere
+                       `notElem` map posHasItems leftPsLast
+      itemChangeRight = posHasItems rightForwardPosHere
+                        `notElem` map posHasItems rightPsLast
+  if not (accessibleDir cops lvl posHere dirLast)  -- don't open doors via run
+     || msgShown || enemySeen || actorThere || distLast >= 20 then abort
+  else if terrainChangeLeft || terrainChangeRight
+          || itemChangeLeft || itemChangeRight then abort
+  else if itemChangeMiddle then return (dirLast, 1000)
+                                -- enter the item tile, then stop
+  else if terrainChangeMiddle then
+    -- The Exit feature marks tiles that need to be entered before
+    -- the run is finished. They don't do anything unless triggered,
+    -- so the player has a choice no sooner than when he enters them.
+    if Tile.hasFeature cotile F.Exit tileThere
+    then return (dirLast, 1000)
+    else abort
+  else return (dirLast, distLast + 1)

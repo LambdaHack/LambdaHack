@@ -96,6 +96,10 @@ moveRunHuman run v = do
     tgt <- getsState $ posToActor tpos arena
     case tgt of
       Nothing -> do  -- move or search or alter
+        -- Start running in the given direction. The first turn of running
+        -- succeeds much more often than subsequent turns, because we ignore
+        -- most of the disturbances, since the player is aware of them
+        -- and still explicitly requests a run.
         when run $ modifyClient $ \cli -> cli {srunning = Just (dir, 1)}
         fmap (Just . TakeTimeSer) $ moveRunAid source dir
         -- When running, the invisible actor is hit (not displaced!),
