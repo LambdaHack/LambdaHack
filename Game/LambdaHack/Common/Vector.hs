@@ -114,8 +114,10 @@ rotate :: X -> RadianAngle -> Vector -> Vector
 rotate lxsize angle dir | VectorXY (x', y') <- fromDir lxsize dir =
   let x = fromIntegral x'
       y = fromIntegral y'
-      dx = x * cos angle - y * sin angle
-      dy = x * sin angle + y * cos angle
+      -- Minus before the angle comes from our coordinates being
+      -- mirrored along the X axis (Y coordinates grow going downwards).
+      dx = x * cos (-angle) - y * sin (-angle)
+      dy = x * sin (-angle) + y * cos (-angle)
       rxy = normalize lxsize dx dy
   in toDir lxsize rxy
 
