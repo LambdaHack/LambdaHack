@@ -379,7 +379,8 @@ removeServerSave = do
   let serverSaveFile = configAppDataDir
                        </> fromMaybe "save" prefix
                        <.> serverSaveName
-  liftIO $ renameFile serverSaveFile (serverSaveFile ++ ".bkp")
+  bSer <- liftIO $ doesFileExist serverSaveFile
+  when bSer $ liftIO $ renameFile serverSaveFile (serverSaveFile ++ ".bkp")
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: MonadClient m => Rnd a -> m a
