@@ -6,6 +6,7 @@ module Game.LambdaHack.Client.AtomicSemCli
   , drawCmdAtomicUI, drawSfxAtomicUI
   ) where
 
+import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
@@ -37,7 +38,6 @@ import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind
-import Control.Exception.Assert.Sugar
 
 -- * CmdAtomicAI
 
@@ -180,7 +180,7 @@ cmdAtomicSemCli cmd = case cmd of
                   , sfper
                   , _sleader = gleader fact
                   , sundo = [CmdAtomic cmd]
-                  , sdebugCli}
+                  , sdebugCli }
   ResumeA _fid sfper -> modifyClient $ \cli -> cli {sfper}
   KillExitA _fid -> killExitA
   SaveBkpA -> saveClient

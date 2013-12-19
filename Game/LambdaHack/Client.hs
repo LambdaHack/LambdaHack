@@ -3,11 +3,11 @@
 -- See
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Client
-  ( cmdClientAISem, cmdClientUISem
-  , loopAI, loopUI, exeFrontend
+  ( cmdClientAISem, cmdClientUISem, exeFrontend
   , MonadClient, MonadClientUI, MonadClientReadServer, MonadClientWriteServer
   ) where
 
+import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Maybe
 
@@ -28,7 +28,6 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Frontend
-import Control.Exception.Assert.Sugar
 
 storeUndo :: MonadClient m => Atomic -> m ()
 storeUndo _atomic =

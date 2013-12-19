@@ -6,6 +6,7 @@ module Game.LambdaHack.Client.LoopAction (loopAI, loopUI) where
 import Control.Monad
 import qualified Data.Text as T
 
+import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
@@ -16,20 +17,20 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.RuleKind
-import Control.Exception.Assert.Sugar
 
 initCli :: MonadClient m => DebugModeCli -> (State -> m ()) -> m Bool
 initCli sdebugCli putSt = do
   -- Warning: state and client state are invalid here, e.g., sdungeon
   -- and sper are empty.
   cops <- getsState scops
+  sconfigUI <- getsClient sconfigUI  -- config from file, not savegame
   modifyClient $ \cli -> cli {sdebugCli}
   restored <- restoreGame
   case restored of
     Just (s, cli) | not $ snewGameCli sdebugCli -> do  -- Restore the game.
       let sCops = updateCOps (const cops) s
       putSt sCops
-      putClient cli {sdebugCli}
+      putClient cli {sdebugCli, sconfigUI}
       return True
     _ ->  -- First visit ever, use the initial state.
       return False
@@ -43,7 +44,7 @@ loopAI sdebugCli cmdClientAISem = do
   cmd1 <- readServer
   case (restored, cmd1) of
     (True, CmdAtomicAI ResumeA{}) -> return ()
-    (True, CmdAtomicAI RestartA{}) -> return ()  -- ignoring old savefile
+    (True, CmdAtomicAI RestartA{}) -> return ()
     (False, CmdAtomicAI ResumeA{}) -> do
       removeServerSave
       error $ T.unpack $

@@ -23,6 +23,7 @@ import qualified Data.List as L
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
+import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
@@ -35,7 +36,6 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Utils.Frequency
 
 -- | The complete dungeon is a map from level names to levels.
@@ -133,7 +133,8 @@ atI Level{lfloor} p = EM.findWithDefault EM.empty p lfloor
 accessible :: Kind.COps -> Level -> Point -> Point -> Bool
 accessible Kind.COps{cotile=Kind.Ops{okind=okind}, corule}
            lvl@Level{lxsize} spos tpos =
-  assert (chessDist lxsize spos tpos == 1) $
+  assert (chessDist lxsize spos tpos == 1
+          `blame` (showPoint lxsize spos, showPoint lxsize tpos)) $
   let check = raccessible $ Kind.stdRuleset corule
       src = okind $ lvl `at` spos
       tgt = okind $ lvl `at` tpos
