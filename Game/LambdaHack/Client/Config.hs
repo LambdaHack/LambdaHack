@@ -13,18 +13,19 @@ import qualified Game.LambdaHack.Common.Key as K
 -- is a part of a game client.
 data ConfigUI = ConfigUI
   { -- commands
-    configCommands   :: ![(K.KM, HumanCmd)]
+    configCommands    :: ![(K.KM, HumanCmd)]
     -- files
-  , configAppDataDir :: !FilePath
-  , configUICfgFile  :: !FilePath
-  , configSavePrefix :: !String
+  , configAppDataDir  :: !FilePath
+  , configUICfgFile   :: !FilePath
+  , configSavePrefix  :: !String
     -- macros
-  , configMacros     :: ![(K.KM, K.KM)]
+  , configMacros      :: ![(K.KM, K.KM)]
     -- ui
-  , configFont       :: !String
-  , configHistoryMax :: !Int
-  , configMaxFps     :: !Int
-  , configNoAnim     :: !Bool
+  , configFont        :: !String
+  , configHistoryMax  :: !Int
+  , configMaxFps      :: !Int
+  , configNoAnim      :: !Bool
+  , configRunStopMsgs :: !Bool
   }
   deriving Show
 
@@ -41,6 +42,7 @@ instance Binary ConfigUI where
     put configHistoryMax
     put configMaxFps
     put configNoAnim
+    put configRunStopMsgs
   get = do
     configCommands <- get
     configAppDataDir <- get
@@ -51,4 +53,5 @@ instance Binary ConfigUI where
     configHistoryMax <- get
     configMaxFps <- get
     configNoAnim <- get
+    configRunStopMsgs <- get
     return ConfigUI{..}

@@ -12,6 +12,7 @@ import qualified Data.Text as T
 
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Binding
+import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.HumanCmd
 import Game.LambdaHack.Client.HumanLocal
@@ -181,7 +182,8 @@ queryUI aid = do
 -- | Continue running in the given direction.
 continueRun :: MonadClientAbort m => ActorId -> (Maybe Text, Int) -> m CmdSer
 continueRun leader (mstopOld, distOld) = do
-  (dir, mstop) <- continueRunDir leader (mstopOld, distOld)
+  ConfigUI{configRunStopMsgs} <- getsClient sconfigUI
+  (dir, mstop) <- continueRunDir configRunStopMsgs leader (mstopOld, distOld)
   modifyClient $ \cli -> cli {srunning = Just (mstop, distOld + 1)}
   -- The potential invisible actor is hit. War is started without asking.
   return $ TakeTimeSer $ MoveSer leader dir

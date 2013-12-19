@@ -61,3 +61,4 @@
 ; historyMax: 5000
 ; maxFps: 15
 ; noAnim: False
+; runStopMsgs: False

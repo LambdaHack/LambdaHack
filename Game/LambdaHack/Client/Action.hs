@@ -454,6 +454,7 @@ parseConfigUI dataDir cp =
       configHistoryMax = ConfigIO.get cp "ui" "historyMax"
       configMaxFps = ConfigIO.get cp "ui" "maxFps"
       configNoAnim = ConfigIO.get cp "ui" "noAnim"
+      configRunStopMsgs = ConfigIO.get cp "ui" "runStopMsgs"
   in ConfigUI{..}
 
 -- | Read and parse UI config file.

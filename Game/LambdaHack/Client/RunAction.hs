@@ -36,22 +36,18 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.TileKind
 
-verbose :: Bool
-verbose = True
-
-abrt :: MonadClientAbort m => Text -> m a
-abrt t = abortIfWith verbose $ "Run stop:" <+> t
-
 -- | This function implements the actual logic of running. It checks if we
 -- have to stop running because something interesting cropped up,
 -- it ajusts the direction given by the vector if we reached
 -- a corridor's corner (we never change direction except in corridors)
 -- and it increments the counter of traversed tiles.
 continueRunDir :: MonadClientAbort m
-               => ActorId -> (Maybe Text, Int)
+               => Bool -> ActorId -> (Maybe Text, Int)
                -> m (Vector, Maybe Text)
-continueRunDir aid (mstop, distLast) = do
-  let maxDistance = 20
+continueRunDir configRunStopMsgs aid (mstop, distLast) = do
+  let abrt :: MonadClientAbort m => Text -> m a
+      abrt t = abortIfWith configRunStopMsgs $ "Run stop:" <+> t
+      maxDistance = 20
   cops <- getsState scops
   body <- getsState $ getActorBody aid
   sreport <- getsClient sreport -- TODO: check the message before it goes into history
@@ -73,17 +69,19 @@ continueRunDir aid (mstop, distLast) = do
             abrt $ "reached max run distance" <+> showT maxDistance
         | Just stop <- mstop = abrt stop
         | accessibleDir cops lvl posHere dirLast =
-            checkAndRun aid dirLast
+            checkAndRun configRunStopMsgs aid dirLast
         | distLast > 1 = abrt "blocked"  -- don't open doors inside a run
         | otherwise =
             -- Assume turning is permitted, because this is the start
             -- of the run, so the situation is mostly known to the player
-            tryTurning aid
+            tryTurning configRunStopMsgs aid
   check
 
 tryTurning :: MonadClientAbort m
-           => ActorId -> m (Vector, Maybe Text)
-tryTurning aid = do
+           => Bool -> ActorId -> m (Vector, Maybe Text)
+tryTurning configRunStopMsgs aid = do
+  let abrt :: MonadClientAbort m => Text -> m a
+      abrt t = abortIfWith configRunStopMsgs $ "Run stop:" <+> t
   cops@Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody aid
   let lid = blid body
@@ -102,12 +100,14 @@ tryTurning aid = do
       case sortBy (compare `on` euclidDistSq lxsize dirLast)
            $ filter (accessibleDir cops lvl posHere) $ d1 : ds of
         [] -> abrt "blocked and all similar directions are not walkable"
-        d : _ -> checkAndRun aid d
+        d : _ -> checkAndRun configRunStopMsgs aid d
     _ -> abrt "blocked and many distant similar directions found"
 
 checkAndRun :: MonadClientAbort m
-            => ActorId -> Vector -> m (Vector, Maybe Text)
-checkAndRun aid dir = do
+            => Bool -> ActorId -> Vector -> m (Vector, Maybe Text)
+checkAndRun configRunStopMsgs aid dir = do
+  let abrt :: MonadClientAbort m => Text -> m a
+      abrt t = abortIfWith configRunStopMsgs $ "Run stop:" <+> t
   Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
   body <- getsState $ getActorBody aid
   smarkSuspect <- getsClient smarkSuspect
