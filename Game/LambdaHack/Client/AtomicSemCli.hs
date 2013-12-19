@@ -114,8 +114,10 @@ cmdAtomicFilterCli cmd = case cmd of
         outPrio = mapMaybe (\p -> posToActor p lid s) $ ES.elems outFov
         fActor aid =
           let b = getActorBody aid s
-          in if bfid b == fid  -- optimization; precludes DominateActorA
-             then Nothing
+          -- TODO: instead of bproj, check that actor sees himself.
+          in if not (bproj b) && bfid b == fid
+             then Nothing  -- optimization: the actor is soon lost anyway,
+                           -- e.g., via DominateActorA, so don't bother
              else Just $ LoseActorA aid b (getActorItem aid s)
         outActor = mapMaybe fActor outPrio
     -- Wipe out remembered items on tiles that now came into view.
