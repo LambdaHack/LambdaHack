@@ -48,7 +48,7 @@ continueRunDir configRunStopMsgs aid (mstop, distLast) = do
   let abrt :: MonadClientAbort m => Text -> m a
       abrt t = abortIfWith configRunStopMsgs $ "Run stop:" <+> t
       maxDistance = 20
-  cops <- getsState scops
+  cops@Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody aid
   sreport <- getsClient sreport -- TODO: check the message before it goes into history
   fact <- getsState $ (EM.! bfid body) . sfactionD
@@ -62,6 +62,7 @@ continueRunDir configRunStopMsgs aid (mstop, distLast) = do
       -- TODO: use a regexp from the UI config instead
       msgShown  = isJust $ findInReport (`notElem` boringMsgs) sreport
       enemySeen = not $ null ms
+      openableLast = Tile.openable cotile (lvl `at` (posHere `shift` dirLast))
       check
         | msgShown = abort  -- the message should still be visible
         | enemySeen = abrt "enemy seen"
@@ -71,6 +72,7 @@ continueRunDir configRunStopMsgs aid (mstop, distLast) = do
         | accessibleDir cops lvl posHere dirLast =
             checkAndRun configRunStopMsgs aid dirLast
         | distLast > 1 = abrt "blocked"  -- don't open doors inside a run
+        | openableLast = abrt "blocked by a closed door"  -- can be opened
         | otherwise =
             -- Assume turning is permitted, because this is the start
             -- of the run, so the situation is mostly known to the player
@@ -99,7 +101,7 @@ tryTurning configRunStopMsgs aid = do
     d1 : ds | all (dirNearby d1) ds ->  -- only one or two directions possible
       case sortBy (compare `on` euclidDistSq lxsize dirLast)
            $ filter (accessibleDir cops lvl posHere) $ d1 : ds of
-        [] -> abrt "blocked and all similar directions are not walkable"
+        [] -> abrt "blocked and all similar directions are closed doors"
         d : _ -> checkAndRun configRunStopMsgs aid d
     _ -> abrt "blocked and many distant similar directions found"
 

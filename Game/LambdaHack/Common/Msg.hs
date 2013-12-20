@@ -13,7 +13,6 @@ module Game.LambdaHack.Common.Msg
 import Data.Binary
 import qualified Data.ByteString.Char8 as BS
 import Data.Char
-import qualified Data.EnumMap.Strict as EM
 import Data.List
 import Data.Monoid hiding ((<>))
 import Data.Text (Text)
