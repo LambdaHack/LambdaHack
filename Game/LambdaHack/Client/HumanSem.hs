@@ -60,8 +60,7 @@ cmdAction cmd = case cmd of
   TgtEnemy -> tgtEnemyHuman
   TgtAscend k -> tgtAscendHuman k >> return Nothing
   EpsIncr b -> epsIncrHuman b >> return Nothing
-  SelectActor b -> selectActorHuman b >> return Nothing
-  SelectAll -> selectAllHuman >> return Nothing
+  SelectActor -> selectActorHuman >> return Nothing
   SelectNone -> selectNoneHuman >> return Nothing
   Cancel -> cancelHuman displayMainMenu >> return Nothing
   Accept -> acceptHuman helpHuman >> return Nothing

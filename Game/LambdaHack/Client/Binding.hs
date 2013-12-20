@@ -89,8 +89,8 @@ keyHelp Binding{kcmd, kmacro, kmajor, kminor} =
       ]
     minorBlurb =
       [ ""
---      , "For more playing instructions see file PLAYING.md."
---      , "Press SPACE to clear the messages and see the map again."
+      , "For more playing instructions see file PLAYING.md."
+      , "Press SPACE to clear the messages and see the map again."
       ]
     fmt k h = T.replicate 16 " "
               <> T.justifyLeft 15 ' ' k
@@ -113,7 +113,6 @@ keyHelp Binding{kcmd, kmacro, kmajor, kminor} =
       ++ mov ++ [moreMsg]
     , ["Basic keys. [press SPACE to advance]"] ++ [blank]
       ++ [keyCaption] ++ keys kcMajor ++ major ++ [moreMsg]
-    , ["Basic keys. [press SPACE to clear the messages and see the map again]"]
-      ++ [blank]
+    , ["Basic keys."] ++ [blank]
       ++ [keyCaption] ++ keys kcMinor ++ minor
     ]

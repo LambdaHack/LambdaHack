@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.HumanLocal
     moveCursor, retargetLeader
   , pickLeaderHuman, memberCycleHuman, memberBackHuman
   , inventoryHuman, tgtFloorLeader, tgtEnemyLeader, tgtAscendHuman
-  , epsIncrHuman, selectActorHuman, selectAllHuman, selectNoneHuman
+  , epsIncrHuman, selectActorHuman, selectNoneHuman
   , cancelHuman, displayMainMenu, acceptHuman, clearHuman
   , historyHuman, humanMarkVision, humanMarkSmell, humanMarkSuspect
   , helpHuman
@@ -433,47 +433,31 @@ epsIncrHuman b = do
 
 -- * SelectActor
 
-selectActorHuman :: MonadClientAbort m => Bool -> m ()
-selectActorHuman b = do
+selectActorHuman :: MonadClientAbort m => m ()
+selectActorHuman = do
   mleader <- getsClient _sleader
   case mleader of
     Nothing -> abortWith "no leader picked, can't select"
     Just leader -> do
       oldB <- getsClient $ ES.member leader . sselected
-      upd <- case (oldB, b) of
-        (True, True) -> abortWith "already selected"
-        (False, False) -> abortWith "already deselected"
-        (False, True) -> return $ ES.insert leader
-        (True, False) -> return $ ES.delete leader
+      let upd = if oldB
+                then ES.delete leader  -- already selected, deselect instead
+                else ES.insert leader
       modifyClient $ \cli -> cli {sselected = upd $ sselected cli}
-
--- * SelectAll
-
-selectAllHuman :: (MonadClientUI m, MonadClientAbort m) => m ()
-selectAllHuman = do
-  side <- getsClient sside
-  (lid, _) <- viewedLevel
-  ours <- getsState $ actorNotProjAssocs (== side) lid
-  let sel = ES.fromList $ map fst ours
-  oldSel <- getsClient sselected
-  if ES.isSubsetOf sel oldSel
-    then abortWith "already all selected"
-    else modifyClient
-         $ \cli -> cli {sselected = ES.union (sselected cli) sel}
 
 -- * SelectNone
 
-selectNoneHuman :: (MonadClientUI m, MonadClientAbort m) => m ()
+selectNoneHuman :: (MonadClientUI m, MonadClient m) => m ()
 selectNoneHuman = do
   side <- getsClient sside
   (lid, _) <- viewedLevel
   ours <- getsState $ actorNotProjAssocs (== side) lid
   let sel = ES.fromList $ map fst ours
   oldSel <- getsClient sselected
-  if ES.null $ ES.intersection sel oldSel
-    then abortWith "already all deselected"
-    else modifyClient
-         $ \cli -> cli {sselected = ES.difference (sselected cli) sel}
+  let upd = if ES.null $ ES.intersection sel oldSel
+            then ES.union  -- already all deselected; select all instead
+            else ES.difference
+  modifyClient $ \cli -> cli {sselected = upd (sselected cli) sel}
 
 -- * Cancel
 

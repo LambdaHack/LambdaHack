@@ -66,6 +66,8 @@ Below are the default keys for major commands. Those of them that take
 hero time are marked with a star.
 
                key       command
+               ESC       cancel action or bring up the Main Menu
+               RET       accept choice
                <         ascend a level*
                >         descend a level*
                ?         display help
@@ -88,26 +90,22 @@ than the party leader). The targeting commands and all the less used
 commands are listed below. None of them takes hero time.
 
                key       command
-               ESC       cancel action or bring up the Main Menu
-               RET       accept choice
-               TAB       cycle among party actors on the level
-               SHIFT-TAB cycle among party actors in the dungeon
+               TAB       cycle among party members on the level
+               SHIFT-TAB cycle among party members in the dungeon
                *         target monster
-               +         select actor
-               -         deselect actor
+               +         swerve targeting line
+               -         unswerve targeting line
                /         target position
-               =         select all actors on level
+               =         select (or deselect) a party member
                P         display previous messages
                S         mark smell
                T         mark suspect terrain
                V         mark visible area
                [         target next shallower level
                ]         target next deeper level
-               _         deselect all actors on level
+               _         deselect (or select) all on the level
                {         target 10 levels shallower
                }         target 10 levels deeper
-               CTRL-'+'  swerve targeting line
-               CTRL-'-'  unswerve targeting line
                0--9      pick a new leader anywhere in the dungeon
 
 Commands for saving and exiting the current game, starting a new game, etc.,

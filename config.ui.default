@@ -35,11 +35,9 @@
 ; bracketright: TgtAscend (-1)
 ; braceleft:    TgtAscend 10
 ; braceright:   TgtAscend (-10)
-; CTRL-plus: EpsIncr True
-; CTRL-minus: EpsIncr False
-; plus: SelectActor True
-; minus: SelectActor False
-; equal: SelectAll
+; plus: EpsIncr True
+; minus: EpsIncr False
+; equal: SelectActor
 ; underscore: SelectNone
 ; Escape: Cancel
 ; Return: Accept
