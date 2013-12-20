@@ -47,8 +47,11 @@ overlayOverlay sf@SingleFrame{sfTop=[]} = sf
 overlayOverlay sf@SingleFrame{..} =
   let lxsize = xsizeSingleFrame sf
       lysize = ysizeSingleFrame sf
-      (over, bottom) = splitAt (lysize + 1)
-                       $ map (truncateMsg lxsize) sfTop
+      (overRaw, bottom) = splitAt (lysize + 1)
+                          $ map (truncateMsg lxsize) sfTop
+      over = case overRaw of
+        [] -> assert `failure` sf
+        hd : tl -> T.stripEnd hd : tl  -- get rid of he space from truncateMsg
       both = zip over sfLevel
       f (t, line) = map (Color.AttrChar Color.defAttr) (T.unpack t)
                     ++ drop (T.length t) line

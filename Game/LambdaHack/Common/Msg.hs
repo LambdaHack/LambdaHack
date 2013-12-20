@@ -94,10 +94,9 @@ addMsg (Report xns) y = Report $ (encodeUtf8 y, 1) : xns
 
 -- | Split a messages into chunks that fit in one line.
 -- We assume the width of the messages line is the same as of level map.
-splitReport :: Report -> [Text]
-splitReport r =
-  let w = fst normalLevelBound + 1
-  in splitText w $ renderReport r
+splitReport :: X -> X -> Report -> [Text]
+splitReport w1 w r =
+  splitText w1 w $ renderReport r
 
 -- | Render a report as a (possibly very long) string.
 renderReport :: Report  -> Text
@@ -115,20 +114,23 @@ findInReport f (Report xns) = find f $ map fst xns
 -- | Split a string into lines. Avoids ending the line with a character
 -- other than whitespace or punctuation. Space characters are removed
 -- from the start, but never from the end of lines. Newlines are respected.
-splitText :: X -> Text -> [Text]
-splitText w xs = concatMap (splitText' w . T.dropWhile isSpace) $ T.lines xs
+splitText :: X -> X -> Text -> [Text]
+splitText w1 w xs =
+  case T.lines xs of
+    [] -> []
+    t : ts -> splitText' w1 w t
+              ++ concatMap (splitText' w w . T.dropWhile isSpace) ts
 
-splitText' :: X -> Text -> [Text]
-splitText' w xs
-  | w <= 0 = [xs]  -- border case, we cannot make progress
-  | w >= T.length xs = [xs]  -- no problem, everything fits
+splitText' :: X -> X -> Text -> [Text]
+splitText' w1 w xs
+  | w1 >= T.length xs = [xs]  -- no problem, everything fits
   | otherwise =
-      let (pre, post) = T.splitAt w xs
+      let (pre, post) = T.splitAt w1 xs
           (ppre, ppost) = T.break (== ' ') $ T.reverse pre
           testPost = T.dropWhile isSpace ppost
       in if T.null testPost
-         then pre : splitText w post
-         else T.reverse ppost : splitText w (T.reverse ppre <> post)
+         then pre : splitText w w post
+         else T.reverse ppost : splitText w w (T.reverse ppre <> post)
 
 -- | The history of reports.
 newtype History = History [Report]
@@ -154,7 +156,9 @@ mergeHistory l =
 
 -- | Render history as many lines of text, wrapping if necessary.
 renderHistory :: History -> Overlay
-renderHistory (History h) = concatMap splitReport h
+renderHistory (History h) =
+  let w = fst normalLevelBound + 1
+  in concatMap (splitReport w w) h
 
 -- | Add a report to history, handling repetitions.
 addReport :: Report -> History -> History

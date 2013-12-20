@@ -314,10 +314,13 @@ promptToSlideshow prompt = overlayToSlideshow prompt []
 -- of the screen are displayed below. As many slides as needed are shown.
 overlayToSlideshow :: MonadClientUI m => Msg -> Overlay -> m Slideshow
 overlayToSlideshow prompt overlay = do
+  side <- getsClient sside
   lid <- getArenaUI
-  Level{lysize} <- getLevel lid  -- TODO: screen length or viewLevel
+  Level{lxsize, lysize} <- getLevel lid  -- TODO: screen length or viewLevel
   sreport <- getsClient sreport
-  let msg = splitReport (addMsg sreport prompt)
+  ours <- getsState $ actorNotProjList (== side) lid
+  let firstLineSize = lxsize - length ours - 1
+      msg = splitReport firstLineSize lxsize (addMsg sreport prompt)
   return $! splitOverlay lysize msg overlay
 
 -- | Draw the current level with the overlay on top.

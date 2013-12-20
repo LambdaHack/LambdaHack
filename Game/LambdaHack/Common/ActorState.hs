@@ -9,6 +9,7 @@ module Game.LambdaHack.Common.ActorState
   , tryFindHeroK, foesAdjacent
   ) where
 
+import Control.Exception.Assert.Sugar
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
@@ -26,7 +27,6 @@ import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Content.TileKind
-import Control.Exception.Assert.Sugar
 
 actorAssocs :: (FactionId -> Bool) -> LevelId -> State
             -> [(ActorId, Actor)]
