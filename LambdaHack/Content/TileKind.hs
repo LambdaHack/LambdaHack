@@ -205,7 +205,6 @@ floorArenaLit = floorCorridorLit
   , tname    = "stone floor"
   , tfreq    = [ ("floorArenaLit", 1)
                , ("arenaSet", 1), ("noiseSet", 100), ("combatSet", 100) ]
-  , tcolor2  = BrBlack
   }
 floorItemLit = floorArenaLit
   { tfreq    = []
