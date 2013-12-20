@@ -8,6 +8,7 @@ module Game.LambdaHack.Frontend.Curses
   , frontendName, startup
   ) where
 
+import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Char (chr, ord)
 import qualified Data.List as L
@@ -16,8 +17,8 @@ import qualified Data.Text as T
 import qualified UI.HSCurses.Curses as C
 import qualified UI.HSCurses.CursesHelper as C
 
-import Control.Exception.Assert.Sugar
-import Game.LambdaHack.Common.Animation (DebugModeCli (..), SingleFrame (..))
+import Game.LambdaHack.Common.Animation (DebugModeCli (..), SingleFrame (..),
+                                         overlayOverlay)
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Common.Msg
@@ -60,13 +61,13 @@ fdisplay :: FrontendSession    -- ^ frontend session data
          -> Maybe SingleFrame  -- ^ the screen frame to draw
          -> IO ()
 fdisplay _ _ Nothing = return ()
-fdisplay FrontendSession{..}  _ (Just SingleFrame{..}) = do
+fdisplay FrontendSession{..}  _ (Just rawSF) = do
+  let SingleFrame{sfLevel, sfBottom} = overlayOverlay rawSF
   -- let defaultStyle = C.defaultCursesStyle
   -- Terminals with white background require this:
   let defaultStyle = sstyles M.! Color.defAttr
   C.erase
   C.setStyle defaultStyle
-  C.mvWAddStr swin 0 0 (T.unpack sfTop)
   -- We need to remove the last character from the status line,
   -- because otherwise it would overflow a standard size xterm window,
   -- due to the curses historical limitations.

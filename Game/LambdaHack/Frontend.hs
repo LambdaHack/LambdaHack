@@ -137,8 +137,8 @@ fadeF fs out side pname frame = do
             <+> pname <> (if T.null pname then "" else ",")
             <+> "get ready!"
   animMap <- rndToIO $ fadeout out topRight lxsize lysize
-  let sfTop = truncateMsg lxsize msg
-      basicFrame = frame {sfTop}
+  let sfTop = [truncateMsg lxsize msg]
+      basicFrame = frame {sfTop}  -- overwrite the whole original overlay
       animFrs = renderAnim lxsize lysize basicFrame animMap
       frs | out = animFrs
             -- Empty frame to mark the fade-in end,

@@ -1,8 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Screen frames and animations.
 module Game.LambdaHack.Common.Animation
-  ( Attr(..), defAttr, AttrChar(..)
-  , SingleFrame(..), emptySingleFrame, xsizeSingleFrame, ysizeSingleFrame
+  ( SingleFrame(..), overlayOverlay, xsizeSingleFrame, ysizeSingleFrame
   , Animation, Frames, renderAnim, restrictAnim
   , twirlSplash, blockHit, blockMiss, deathBody, swapPlaces, fadeout
   , AcFrame(..)
@@ -10,6 +9,7 @@ module Game.LambdaHack.Common.Animation
   ) where
 
 import Control.Arrow ((***))
+import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Binary
 import Data.Bits
@@ -19,34 +19,45 @@ import qualified Data.List as L
 import Data.Maybe
 import Data.Monoid
 import Data.Text (Text)
+import qualified Data.Text as T
 
 import Game.LambdaHack.Common.Color
+import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Random
 
 -- | The data sufficent to draw a single game screen frame.
---
--- The fields are not strict, because sometimes frames are not used,
--- e.g., when a keypress discards all frames not yet drawn and displayed.
 data SingleFrame = SingleFrame
-  { sfLevel  :: [[AttrChar]]  -- ^ content of the screen, line by line
-  , sfTop    :: Text          -- ^ an extra line to show at the top
-  , sfBottom :: Text          -- ^ an extra line to show at the bottom
+  { sfLevel  :: ![[AttrChar]]  -- ^ screen, from the top, line by line
+  , sfTop    :: !Overlay       -- ^ some extra lines to show at the top
+  , sfBottom :: !Text          -- ^ an extra line to show at the bottom
+                               --   unless the top lines leave no space
   }
   deriving (Eq, Show)
 
-instance Binary SingleFrame where
-  put SingleFrame{..} = do
-    put sfLevel
-    put sfTop
-    put sfBottom
-  get = do
-    sfLevel <- get
-    sfTop <- get
-    sfBottom <- get
-    return SingleFrame{..}
+-- | Overlays the sfTop overlay onto the @sfLevel@ and, if needed,
+-- the @sfBottom@ fields. The resulting frame has empty @sfTop@.
+-- To be used by simple frontends that don't display overlays
+-- in separate windows/panes/scrolled views.
+overlayOverlay :: SingleFrame -> SingleFrame
+overlayOverlay sf@SingleFrame{sfTop=[]} = sf
+overlayOverlay sf@SingleFrame{..} =
+  let lxsize = xsizeSingleFrame sf
+      lysize = ysizeSingleFrame sf
+      (over, bottom) = splitAt (lysize + 1)
+                       $ map (truncateMsg lxsize) sfTop
+      both = zip over sfLevel
+      f (t, line) = map (Color.AttrChar Color.defAttr) (T.unpack t)
+                    ++ drop (T.length t) line
+      newLevel = map f both ++ drop (length both) sfLevel
+      newBottom = case bottom of
+        [] -> sfBottom
+        [s] -> s
+        _ -> "--a portion of the text trimmed--"
+  in SingleFrame {sfLevel = newLevel, sfTop = [], sfBottom = newBottom}
 
 -- | Animation is a list of frame modifications to play one by one,
 -- where each modification if a map from positions to level map symbols.
@@ -56,30 +67,31 @@ newtype Animation = Animation [EM.EnumMap Point AttrChar]
 -- | Sequences of screen frames, including delays.
 type Frames = [Maybe SingleFrame]
 
-emptySingleFrame :: SingleFrame
-emptySingleFrame = SingleFrame{sfLevel = [], sfTop = "", sfBottom = ""}
-
 xsizeSingleFrame :: SingleFrame -> X
 xsizeSingleFrame SingleFrame{sfLevel=[]} = 0
 xsizeSingleFrame SingleFrame{sfLevel=line : _} = length line
 
 ysizeSingleFrame :: SingleFrame -> X
-ysizeSingleFrame SingleFrame{sfLevel} = length sfLevel
+ysizeSingleFrame SingleFrame{sfLevel} = length sfLevel - 1
 
 -- | Render animations on top of a screen frame.
 renderAnim :: X -> Y -> SingleFrame -> Animation -> Frames
 renderAnim lxsize lysize basicFrame (Animation anim) =
-  let modifyFrame SingleFrame{sfLevel = levelOld, ..} am =
+  let modifyFrame SingleFrame{sfLevel = []} _ =
+        assert `failure` (lxsize, lysize, basicFrame, anim)
+      modifyFrame SingleFrame{sfLevel = topLine : levelOld, ..} am =
         let fLine y lineOld =
               let f l (x, acOld) =
                     let pos = toPoint lxsize (PointXY (x, y))
                         !ac = fromMaybe acOld $ EM.lookup pos am
                     in ac : l
               in L.foldl' f [] (zip [lxsize-1,lxsize-2..0] (reverse lineOld))
-            sfLevel =  -- Fully evaluated.
-              let f l (y, lineOld) = let !line = fLine y lineOld in line : l
-              in L.foldl' f [] (zip [lysize-1,lysize-2..0] (reverse levelOld))
-        in Just SingleFrame{..}
+            sfLevel =  -- fully evaluated inside
+              topLine
+              : let f l (y, lineOld) = let !line = fLine y lineOld in line : l
+                in L.foldl' f [] (zip [lysize-1,lysize-2..0]
+                                  $ reverse levelOld)
+        in Just SingleFrame{..}  -- a thunk within Just
   in map (modifyFrame basicFrame) anim
 
 blank :: Maybe AttrChar
@@ -205,20 +217,6 @@ data AcFrame =
   | AcDelay
   deriving (Show, Eq)
 
-instance Binary AcFrame where
-  put (AcConfirm fr) = putWord8 0 >> put fr
-  put (AcRunning fr) = putWord8 1 >> put fr
-  put (AcNormal fr)  = putWord8 2 >> put fr
-  put AcDelay        = putWord8 3
-  get = do
-    tag <- getWord8
-    case tag of
-      0 -> liftM AcConfirm get
-      1 -> liftM AcRunning get
-      2 -> liftM AcNormal get
-      3 -> return AcDelay
-      _ -> fail "no parse (AcFrame)"
-
 data DebugModeCli = DebugModeCli
   { sfont          :: !(Maybe String)
       -- ^ Font to use for the main game window.
@@ -258,6 +256,31 @@ defDebugModeCli = DebugModeCli
   , sfrontendStd = False
   , sdbgMsgCli = False
   }
+
+instance Binary AcFrame where
+  put (AcConfirm fr) = putWord8 0 >> put fr
+  put (AcRunning fr) = putWord8 1 >> put fr
+  put (AcNormal fr)  = putWord8 2 >> put fr
+  put AcDelay        = putWord8 3
+  get = do
+    tag <- getWord8
+    case tag of
+      0 -> liftM AcConfirm get
+      1 -> liftM AcRunning get
+      2 -> liftM AcNormal get
+      3 -> return AcDelay
+      _ -> fail "no parse (AcFrame)"
+
+instance Binary SingleFrame where
+  put SingleFrame{..} = do
+    put sfLevel
+    put sfTop
+    put sfBottom
+  get = do
+    sfLevel <- get
+    sfTop <- get
+    sfBottom <- get
+    return SingleFrame{..}
 
 instance Binary DebugModeCli where
   put DebugModeCli{..} = do

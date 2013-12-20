@@ -13,7 +13,8 @@ import Data.Text.Encoding (encodeUtf8)
 import Graphics.Vty
 import qualified Graphics.Vty as Vty
 
-import Game.LambdaHack.Common.Animation (DebugModeCli (..), SingleFrame (..))
+import Game.LambdaHack.Common.Animation (DebugModeCli (..), SingleFrame (..),
+                                         overlayOverlay)
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Common.Msg
@@ -42,15 +43,15 @@ fdisplay :: FrontendSession    -- ^ frontend session data
          -> Maybe SingleFrame  -- ^ the screen frame to draw
          -> IO ()
 fdisplay _ _ Nothing = return ()
-fdisplay FrontendSession{svty} _ (Just SingleFrame{..}) =
-  let img = (foldr (<->) empty_image
+fdisplay FrontendSession{svty} _ (Just rawSF) =
+  let SingleFrame{sfLevel, sfBottom} = overlayOverlay rawSF
+      img = (foldr (<->) empty_image
              . L.map (foldr (<|>) empty_image
                       . L.map (\ Color.AttrChar{..} ->
                                 char (setAttr acAttr) acChar)))
             sfLevel
       pic = pic_for_image $
-              utf8_bytestring (setAttr Color.defAttr) (encodeUtf8 sfTop)
-              <-> img <->
+              img <->
               utf8_bytestring (setAttr Color.defAttr) (encodeUtf8 sfBottom)
   in update svty pic
 

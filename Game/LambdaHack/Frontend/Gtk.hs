@@ -23,7 +23,8 @@ import Graphics.UI.Gtk hiding (Point)
 import System.Time
 
 import Control.Exception.Assert.Sugar
-import Game.LambdaHack.Common.Animation (DebugModeCli (..), SingleFrame (..))
+import Game.LambdaHack.Common.Animation (DebugModeCli (..), SingleFrame (..),
+                                         overlayOverlay)
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Utils.LQueue
@@ -202,7 +203,7 @@ output FrontendSession{sview, stags} GtkFrame{..} = do  -- new frame
 setTo :: TextBuffer -> TextTag -> Int -> (Int, [TextTag]) -> IO ()
 setTo _  _   _  (_,  [])         = return ()
 setTo tb defAttr lx (ly, attr:attrs) = do
-  ib <- textBufferGetIterAtLineOffset tb (ly + 1) lx
+  ib <- textBufferGetIterAtLineOffset tb ly lx
   ie <- textIterCopy ib
   let setIter :: TextTag -> Int -> [TextTag] -> IO ()
       setIter previous repetitions [] = do
@@ -344,10 +345,11 @@ pushFrame sess noDelay immediate rawFrame = do
     Just f  -> putMVar slastFull (f, noDelay)
 
 evalFrame :: FrontendSession -> SingleFrame -> GtkFrame
-evalFrame FrontendSession{stags} SingleFrame{..} =
-  let levelChar = map (T.pack . map Color.acChar) sfLevel
+evalFrame FrontendSession{stags} rawSF =
+  let SingleFrame{sfLevel, sfBottom} = overlayOverlay rawSF
+      levelChar = map (T.pack . map Color.acChar) sfLevel
       gfChar = encodeUtf8 $ T.intercalate (T.singleton '\n')
-               $ sfTop : levelChar ++ [sfBottom]
+               $ levelChar ++ [sfBottom]
       -- Strict version of @map (map ((stags M.!) . fst)) sfLevel@.
       gfAttr  = reverse $ foldl' ff [] sfLevel
       ff ll l = reverse (foldl' f [] l) : ll

@@ -14,7 +14,8 @@ import qualified Data.List as L
 import Data.Text.Encoding (encodeUtf8)
 import qualified System.IO as SIO
 
-import Game.LambdaHack.Common.Animation (DebugModeCli (..), SingleFrame (..))
+import Game.LambdaHack.Common.Animation (DebugModeCli (..), SingleFrame (..),
+                                         overlayOverlay)
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Key as K
 
@@ -37,9 +38,10 @@ fdisplay :: FrontendSession    -- ^ frontend session data
          -> Maybe SingleFrame  -- ^ the screen frame to draw
          -> IO ()
 fdisplay _ _ Nothing = return ()
-fdisplay _ _ (Just SingleFrame{..}) =
-  let chars = L.map (BS.pack . L.map Color.acChar) sfLevel
-      bs = [encodeUtf8 sfTop, BS.empty] ++ chars ++ [encodeUtf8 sfBottom, BS.empty]
+fdisplay _ _ (Just rawSF) =
+  let SingleFrame{sfLevel, sfBottom} = overlayOverlay rawSF
+      chars = L.map (BS.pack . L.map Color.acChar) sfLevel
+      bs = chars ++ [encodeUtf8 sfBottom, BS.empty]
   in mapM_ BS.putStrLn bs
 
 -- | Input key via the frontend.

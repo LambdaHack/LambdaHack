@@ -7,8 +7,7 @@ module Game.LambdaHack.Common.Msg
   , splitReport, renderReport, findInReport
   , History, emptyHistory, singletonHistory, mergeHistory
   , addReport, renderHistory, takeHistory
-  , Overlay, stringByLocation
-  , Slideshow(runSlideshow), splitOverlay, toSlideshow)
+  , Overlay, Slideshow(runSlideshow), splitOverlay, toSlideshow)
   where
 
 import Data.Binary
@@ -177,25 +176,6 @@ takeHistory k (History h) = History $ take k h
 -- of the screen. An overlay may be transformed by adding the first line
 -- and/or by splitting into a slideshow of smaller overlays.
 type Overlay = [Text]
-
--- | Returns a function that looks up the characters in the
--- string by position. Takes the width and height of the display plus
--- the string. Returns also the message to print at the top and bottom.
-stringByLocation :: X -> Y -> Overlay
-                 -> (Text, PointXY -> Maybe Char, Maybe Text)
-stringByLocation _ _ [] = (T.empty, const Nothing, Nothing)
-stringByLocation lxsize lysize (msgTop : ls) =
-  let (over, bottom) = splitAt lysize $ map (truncateMsg lxsize) ls
-      m = EM.fromDistinctAscList
-          $ zip [0..]
-                (map (EM.fromDistinctAscList . zip [0..] . T.unpack) over)
-      msgBottom = case bottom of
-                  [] -> Nothing
-                  [s] -> Just s
-                  _ -> Just "--a portion of the text trimmed--"
-  in (truncateMsg lxsize msgTop,
-      \ (PointXY (x, y)) -> EM.lookup y m >>= \ n -> EM.lookup x n,
-      msgBottom)
 
 -- | Split an overlay into a slideshow in which each overlay,
 -- prefixed by @msg@ and postfixed by @moreMsg@ except for the last one,

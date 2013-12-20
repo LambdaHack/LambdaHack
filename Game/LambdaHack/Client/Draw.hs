@@ -40,19 +40,20 @@ data ColorMode =
   | ColorBW    -- ^ black+white only
 
 -- TODO: split up and generally rewrite.
--- | Draw the whole screen: level map, status area and, at most,
--- a single page overlay of text divided into lines.
+-- | Draw the whole screen: level map and status area.
+-- Pass at most a single page if overlay of text unchanged
+-- to the frontends to display separately or overlay over map,
+-- depending on the frontend.
 draw :: ColorMode -> Kind.COps -> Perception -> LevelId -> Maybe ActorId
      -> StateClient -> State -> Overlay
      -> SingleFrame
 draw dm cops per drawnLevelId mleader
      StateClient{ stgtMode, scursor, seps, sdisco
                 , smarkVision, smarkSmell, smarkSuspect }
-     s overlay =
+     s sfTop =
   let Kind.COps{cotile=Kind.Ops{okind=tokind, ouniqGroup}} = cops
       (lvl@Level{ ldepth, lxsize, lysize, lsmell
                 , ldesc, ltime, lseen, lclear }) = sdungeon s EM.! drawnLevelId
-      (msgTop, over, msgBottom) = stringByLocation lxsize lysize overlay
       wealth = case mleader of
         Nothing -> 0
         Just leader -> snd $ calculateTotal (getActorBody leader s) s
@@ -63,9 +64,8 @@ draw dm cops per drawnLevelId mleader
              then []
              else fromMaybe [] $ bla lxsize lysize seps bpos cursor
         _ -> []
-      dis pxy =
-        let pos0 = toPoint lxsize pxy
-            tile = lvl `at` pos0
+      dis pos0 =
+        let tile = lvl `at` pos0
             tk = tokind tile
             items = lvl `atI` pos0
             sml = EM.findWithDefault timeZero pos0 lsmell
@@ -132,9 +132,7 @@ draw dm cops per drawnLevelId mleader
                               then attr0 {Color.bg = Color.Blue}
                               else attr0
                     else attr0
-        in case over pxy of
-             Just c -> Color.AttrChar Color.defAttr c
-             _      -> Color.AttrChar a char
+        in Color.AttrChar a char
       leaderStatus = drawLeaderStatus cops s sdisco ltime mleader
       seenN = 100 * lseen `div` lclear
       seenTxt | seenN == 100 = "all"
@@ -149,13 +147,13 @@ draw dm cops per drawnLevelId mleader
       toWidth :: Int -> Text -> Text
       toWidth n x = T.take n (T.justifyLeft n ' ' x)
       fLine y =
-        let f l x = let !ac = dis (PointXY (x, y)) in ac : l
+        let f l x = let !ac = dis (toPoint lxsize $ PointXY (x, y)) in ac : l
         in L.foldl' f [] [lxsize-1,lxsize-2..0]
-      sfLevel =  -- Fully evaluated.
+      sfLevel =  -- fully evaluated
         let f l y = let !line = fLine y in line : l
-        in L.foldl' f [] [lysize-1,lysize-2..0]
-      sfTop = toWidth lxsize msgTop
-      sfBottom = toWidth (lxsize - 1) $ fromMaybe status msgBottom
+        in replicate lxsize (Color.AttrChar Color.defAttr ' ')
+           : L.foldl' f [] [lysize-1,lysize-2..0]
+      sfBottom = toWidth (lxsize - 1) status
   in SingleFrame{..}
 
 drawLeaderStatus :: Kind.COps -> State -> Discovery -> Time -> Maybe ActorId
