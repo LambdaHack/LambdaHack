@@ -12,7 +12,7 @@ data FactionKind = FactionKind
   { fsymbol        :: !Char       -- ^ a symbol
   , fname          :: !Text       -- ^ short description
   , ffreq          :: !Freqs      -- ^ frequency within groups
-  , fAbilityLeader :: ![Ability]  -- ^ abilities of the selected actor
+  , fAbilityLeader :: ![Ability]  -- ^ abilities of the picked leader
   , fAbilityOther  :: ![Ability]  -- ^ abilities of the other actors
   }
   deriving Show

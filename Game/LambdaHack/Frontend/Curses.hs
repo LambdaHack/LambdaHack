@@ -122,7 +122,7 @@ keyTranslate e = (\(key, modifier) -> K.KM {..}) $
       | ord '\^A' <= ord c && ord c <= ord '\^Z' ->
         -- Alas, only lower-case letters.
         (K.Char $ chr $ ord c - ord '\^A' + ord 'a', K.Control)
-        -- Movement keys are more important than hero selection,
+        -- Movement keys are more important than leader picking,
         -- so disabling the latter and interpreting the keypad numbers
         -- as movement:
       | c `elem` ['1'..'9'] -> (K.KP c,              K.NoModifier)

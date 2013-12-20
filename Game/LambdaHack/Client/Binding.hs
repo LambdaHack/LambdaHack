@@ -37,7 +37,7 @@ stdBinding !config@ConfigUI{configMacros} =
   let kmacro = M.fromList configMacros
       heroSelect k = ( K.KM { key=K.Char (Char.intToDigit k)
                             , modifier=K.NoModifier }
-                     , SelectHero k )
+                     , PickLeader k )
       cmdList =
         configCommands config
         ++ K.moveBinding Move Run
@@ -89,8 +89,8 @@ keyHelp Binding{kcmd, kmacro, kmajor, kminor} =
       ]
     minorBlurb =
       [ ""
-      , "For more playing instructions see file PLAYING.md."
-      , "Press SPACE to clear the messages and see the map again."
+--      , "For more playing instructions see file PLAYING.md."
+--      , "Press SPACE to clear the messages and see the map again."
       ]
     fmt k h = T.replicate 16 " "
               <> T.justifyLeft 15 ' ' k
@@ -113,6 +113,7 @@ keyHelp Binding{kcmd, kmacro, kmajor, kminor} =
       ++ mov ++ [moreMsg]
     , ["Basic keys. [press SPACE to advance]"] ++ [blank]
       ++ [keyCaption] ++ keys kcMajor ++ major ++ [moreMsg]
-    , ["Basic keys."] ++ [blank]
+    , ["Basic keys. [press SPACE to clear the messages and see the map again]"]
+      ++ [blank]
       ++ [keyCaption] ++ keys kcMinor ++ minor
     ]

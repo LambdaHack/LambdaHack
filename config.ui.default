@@ -5,7 +5,7 @@
 ; ; Warning: options are case-sensitive and only ';' for comments is permitted.
 
 ; [commands]
-; ; All commands are defined here, except movement, hero selection and debug.
+; ; All commands are defined here, except movement, leader picking and debug.
 ; ;
 ; KP_Begin: Wait
 ; g: Pickup
@@ -35,8 +35,12 @@
 ; bracketright: TgtAscend (-1)
 ; braceleft:    TgtAscend 10
 ; braceright:   TgtAscend (-10)
-; plus: EpsIncr True
-; minus: EpsIncr False
+; CTRL-plus: EpsIncr True
+; CTRL-minus: EpsIncr False
+; plus: SelectActor True
+; minus: SelectActor False
+; equal: SelectAll
+; underscore: SelectNone
 ; Escape: Cancel
 ; Return: Accept
 ; space: Clear

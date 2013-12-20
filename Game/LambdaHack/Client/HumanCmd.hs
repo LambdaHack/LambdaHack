@@ -32,7 +32,7 @@ data HumanCmd =
   | GameExit
   | GameSave
     -- These do not notify the server.
-  | SelectHero !Int
+  | PickLeader !Int
   | MemberCycle
   | MemberBack
   | Inventory
@@ -40,6 +40,9 @@ data HumanCmd =
   | TgtEnemy
   | TgtAscend !Int
   | EpsIncr !Bool
+  | SelectActor !Bool
+  | SelectAll
+  | SelectNone
   | Cancel
   | Accept
   | Clear
@@ -82,6 +85,9 @@ minorHumanCmd cmd = case cmd of
   TgtEnemy    -> True
   TgtAscend{} -> True
   EpsIncr{}   -> True
+  SelectActor{} -> True
+  SelectAll   -> True
+  SelectNone  -> True
   Cancel      -> True
   Accept      -> True
 --  Clear       -> True
@@ -124,9 +130,9 @@ cmdDescription cmd = case cmd of
   GameExit    -> "save and exit"
   GameSave    -> "save game"
 
-  SelectHero{} -> "select hero"
-  MemberCycle -> "cycle among heroes on the level"
-  MemberBack  -> "cycle among heroes in the dungeon"
+  PickLeader{} -> "pick leader"
+  MemberCycle -> "cycle among party actors on the level"
+  MemberBack  -> "cycle among party actors in the dungeon"
   Inventory   -> "display inventory"
   TgtFloor    -> "target position"
   TgtEnemy    -> "target monster"
@@ -138,6 +144,10 @@ cmdDescription cmd = case cmd of
     assert `failure` "void level change when targeting" `twith` cmd
   EpsIncr True  -> "swerve targeting line"
   EpsIncr False -> "unswerve targeting line"
+  SelectActor True  -> "select actor"
+  SelectActor False -> "deselect actor"
+  SelectAll   -> "select all actors on the level"
+  SelectNone  -> "deselect all actors on the level"
   Cancel      -> "cancel action"
   Accept      -> "accept choice"
   Clear       -> "clear messages"

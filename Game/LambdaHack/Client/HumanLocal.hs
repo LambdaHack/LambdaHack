@@ -4,13 +4,14 @@
 module Game.LambdaHack.Client.HumanLocal
   ( -- * Semantics of serverl-less human commands
     moveCursor, retargetLeader
-  , selectHeroHuman, memberCycleHuman, memberBackHuman
+  , pickLeaderHuman, memberCycleHuman, memberBackHuman
   , inventoryHuman, tgtFloorLeader, tgtEnemyLeader, tgtAscendHuman
-  , epsIncrHuman, cancelHuman, displayMainMenu, acceptHuman, clearHuman
+  , epsIncrHuman, selectActorHuman, selectAllHuman, selectNoneHuman
+  , cancelHuman, displayMainMenu, acceptHuman, clearHuman
   , historyHuman, humanMarkVision, humanMarkSmell, humanMarkSuspect
   , helpHuman
     -- * Helper functions useful also elsewhere
-  , endTargeting, floorItemOverlay, itemOverlay, viewedLevel, selectLeader
+  , endTargeting, floorItemOverlay, itemOverlay, viewedLevel, pickLeader
   , stopRunning, lookAt
   ) where
 
@@ -123,7 +124,7 @@ lookAt detailed canSee pos aid msg = do
     else return $! msg <+> isd
 
 -- | Perform look around in the current position of the cursor.
--- Assumes targeting mode and so assumes that a leader is selected.
+-- Assumes targeting mode and so assumes that a leader is picked.
 doLook :: MonadClientUI m => WriterT Slideshow m ()
 doLook = do
   scursor <- getsClient scursor
@@ -200,15 +201,15 @@ retargetLeader = do
   modifyClient $ \cli -> cli {scursor = Nothing, seps = 0}
   tgtEnemyLeader $ TgtAuto arena
 
--- * SelectHero
+-- * PickLeader
 
-selectHeroHuman :: (MonadClientAbort m, MonadClientUI m) => Int -> m ()
-selectHeroHuman k = do
+pickLeaderHuman :: (MonadClientAbort m, MonadClientUI m) => Int -> m ()
+pickLeaderHuman k = do
   side <- getsClient sside
   s <- getState
   case tryFindHeroK s side k of
     Nothing  -> abortWith "No such member of the party."
-    Just (aid, _) -> void $ selectLeader aid
+    Just (aid, _) -> void $ pickLeader aid
 
 -- * MemberCycle
 
@@ -219,9 +220,9 @@ memberCycleHuman = do
   body <- getsState $ getActorBody leader
   hs <- partyAfterLeader leader
   case filter (\(_, b) -> blid b == blid body) hs of
-    [] -> abortWith "Cannot select any other member on this level."
+    [] -> abortWith "Cannot pick any other member on this level."
     (np, b) : _ -> do
-      success <- selectLeader np
+      success <- pickLeader np
       assert (success `blame` "same leader" `twith` (leader, np, b)) skip
 
 partyAfterLeader :: MonadActionRO m
@@ -240,19 +241,19 @@ partyAfterLeader leader = do
   return $ gt ++ lt
 
 -- | Select a faction leader. False, if nothing to do.
-selectLeader :: MonadClientUI m => ActorId -> m Bool
-selectLeader actor = do
+pickLeader :: MonadClientUI m => ActorId -> m Bool
+pickLeader actor = do
   leader <- getLeaderUI
   stgtMode <- getsClient stgtMode
   if leader == actor
-    then return False -- already selected
+    then return False -- already picked
     else do
       pbody <- getsState $ getActorBody actor
       assert (not (bproj pbody) `blame` "projectile chosen as the leader"
                                 `twith` (actor, pbody)) skip
       -- Even if it's already the leader, give his proper name, not 'you'.
       let subject = partActor pbody
-      msgAdd $ makeSentence [subject, "selected"]
+      msgAdd $ makeSentence [subject, "picked"]
       -- Update client state.
       s <- getState
       modifyClient $ updateLeader actor s
@@ -278,7 +279,7 @@ memberBackHuman = do
   case reverse hs of
     [] -> abortWith "No other member in the party."
     (np, b) : _ -> do
-      success <- selectLeader np
+      success <- pickLeader np
       assert (success `blame` "same leader" `twith` (leader, np, b)) skip
 
 -- * Inventory
@@ -310,7 +311,7 @@ inventoryHuman = do
 -- | Start floor targeting mode or reset the cursor position to the leader.
 -- Note that the origin of a command (the hero that performs it) is unaffected
 -- by targeting. For example, not the targeted door, but one adjacent
--- to the selected hero is closed by him.
+-- to the leader is closed by him.
 tgtFloorLeader :: MonadClientUI m => TgtMode -> WriterT Slideshow m ()
 tgtFloorLeader stgtModeNew = do
   leader <- getLeaderUI
@@ -429,6 +430,50 @@ epsIncrHuman b = do
   if isJust stgtMode
     then modifyClient $ \cli -> cli {seps = seps cli + if b then 1 else -1}
     else neverMind True  -- no visual feedback, so no sense
+
+-- * SelectActor
+
+selectActorHuman :: MonadClientAbort m => Bool -> m ()
+selectActorHuman b = do
+  mleader <- getsClient _sleader
+  case mleader of
+    Nothing -> abortWith "no leader picked, can't select"
+    Just leader -> do
+      oldB <- getsClient $ ES.member leader . sselected
+      upd <- case (oldB, b) of
+        (True, True) -> abortWith "already selected"
+        (False, False) -> abortWith "already deselected"
+        (False, True) -> return $ ES.insert leader
+        (True, False) -> return $ ES.delete leader
+      modifyClient $ \cli -> cli {sselected = upd $ sselected cli}
+
+-- * SelectAll
+
+selectAllHuman :: (MonadClientUI m, MonadClientAbort m) => m ()
+selectAllHuman = do
+  side <- getsClient sside
+  (lid, _) <- viewedLevel
+  ours <- getsState $ actorNotProjAssocs (== side) lid
+  let sel = ES.fromList $ map fst ours
+  oldSel <- getsClient sselected
+  if ES.isSubsetOf sel oldSel
+    then abortWith "already all selected"
+    else modifyClient
+         $ \cli -> cli {sselected = ES.union (sselected cli) sel}
+
+-- * SelectNone
+
+selectNoneHuman :: (MonadClientUI m, MonadClientAbort m) => m ()
+selectNoneHuman = do
+  side <- getsClient sside
+  (lid, _) <- viewedLevel
+  ours <- getsState $ actorNotProjAssocs (== side) lid
+  let sel = ES.fromList $ map fst ours
+  oldSel <- getsClient sselected
+  if ES.null $ ES.intersection sel oldSel
+    then abortWith "already all deselected"
+    else modifyClient
+         $ \cli -> cli {sselected = ES.difference (sselected cli) sel}
 
 -- * Cancel
 

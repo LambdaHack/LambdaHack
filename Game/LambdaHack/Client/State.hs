@@ -10,6 +10,7 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
@@ -40,6 +41,8 @@ data StateClient = StateClient
   , seps         :: !Int              -- ^ a parameter of the tgt digital line
   , stargetD     :: !(EM.EnumMap ActorId Target)
                                    -- ^ targets of our actors in the dungeon
+  , sselected    :: !(ES.EnumSet ActorId)
+                                   -- ^ the set of currently selected actors
   , srunning     :: !(Maybe (Maybe Text, Int))
                                    -- ^ distance of the run so far
   , sreport      :: !Report        -- ^ current messages
@@ -50,7 +53,7 @@ data StateClient = StateClient
   , srandom      :: !R.StdGen      -- ^ current random generator
   , sconfigUI    :: !ConfigUI      -- ^ client config (including initial RNG)
   , slastKey     :: !(Maybe K.KM)  -- ^ last command key pressed
-  , _sleader     :: !(Maybe ActorId)  -- ^ selected actor
+  , _sleader     :: !(Maybe ActorId)  -- ^ picked leader
   , _sside       :: !FactionId     -- ^ faction controlled by the client
   , squit        :: !Bool          -- ^ exit the game loop
   , sisAI        :: !Bool          -- ^ whether it's an AI client
@@ -84,6 +87,7 @@ defStateClient shistory sconfigUI _sside sisAI =
     , scursor = Nothing
     , seps = 0
     , stargetD = EM.empty
+    , sselected = ES.empty
     , srunning = Nothing
     , sreport = emptyReport
     , shistory
@@ -113,13 +117,13 @@ defHistory = do
 -- | Update target parameters within client state.
 updateTarget :: ActorId -> (Maybe Target -> Maybe Target) -> StateClient
              -> StateClient
-updateTarget aid f cli = cli { stargetD = EM.alter f aid (stargetD cli) }
+updateTarget aid f cli = cli {stargetD = EM.alter f aid (stargetD cli)}
 
 -- | Get target parameters from client state.
 getTarget :: ActorId -> StateClient -> Maybe Target
-getTarget aid cli = EM.lookup aid (stargetD cli)
+getTarget aid cli = EM.lookup aid $ stargetD cli
 
--- | Update selected actor within state. Verify actor's faction.
+-- | Update picked leader within state. Verify actor's faction.
 updateLeader :: ActorId -> State -> StateClient -> StateClient
 updateLeader leader s cli =
   let side1 = bfid $ getActorBody leader s
@@ -147,6 +151,7 @@ instance Binary StateClient where
     put scursor
     put seps
     put stargetD
+    put sselected
     put srunning
     put sreport
     put shistory
@@ -166,6 +171,7 @@ instance Binary StateClient where
     scursor <- get
     seps <- get
     stargetD <- get
+    sselected <- get
     srunning <- get
     sreport <- get
     shistory <- get

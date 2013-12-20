@@ -26,7 +26,7 @@ import Game.LambdaHack.Common.VectorXY
 -- Decides if the action takes time and what action to perform.
 -- Time cosuming commands are marked as such in help and cannot be
 -- invoked in targeting mode on a remote level (level different than
--- the level of the selected hero).
+-- the level of the leader).
 cmdHumanSem :: (MonadClientAbort m, MonadClientUI m)
             => HumanCmd -> WriterT Slideshow m (Maybe CmdSer)
 cmdHumanSem cmd = do
@@ -52,7 +52,7 @@ cmdAction cmd = case cmd of
   GameExit -> fmap Just gameExitHuman
   GameSave -> fmap Just gameSaveHuman
 
-  SelectHero k -> selectHeroHuman k >> return Nothing
+  PickLeader k -> pickLeaderHuman k >> return Nothing
   MemberCycle -> memberCycleHuman >> return Nothing
   MemberBack -> memberBackHuman >> return Nothing
   Inventory -> inventoryHuman >> return Nothing
@@ -60,6 +60,9 @@ cmdAction cmd = case cmd of
   TgtEnemy -> tgtEnemyHuman
   TgtAscend k -> tgtAscendHuman k >> return Nothing
   EpsIncr b -> epsIncrHuman b >> return Nothing
+  SelectActor b -> selectActorHuman b >> return Nothing
+  SelectAll -> selectAllHuman >> return Nothing
+  SelectNone -> selectNoneHuman >> return Nothing
   Cancel -> cancelHuman displayMainMenu >> return Nothing
   Accept -> acceptHuman helpHuman >> return Nothing
   Clear -> clearHuman >> return Nothing
@@ -115,7 +118,7 @@ moveRunHuman run v = do
         -- We always see actors from our own faction.
         if bfid tb == bfid sb && not (bproj tb) then do
           -- Select adjacent actor by bumping into him. Takes no time.
-          success <- selectLeader target
+          success <- pickLeader target
           assert (success `blame` "bump self" `twith` (source, target, tb)) skip
           return Nothing
         else

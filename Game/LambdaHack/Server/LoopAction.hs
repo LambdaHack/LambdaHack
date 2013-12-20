@@ -400,7 +400,7 @@ rollSpawnPos Kind.COps{cotile} visible
 -- thing, but immediately (and destroy the item).
 -- | Possibly regenerate HP for all actors on the current level.
 --
--- We really want leader selection to be a purely UI distinction,
+-- We really want leader picking to be a purely UI distinction,
 -- so all actors need to regenerate, not just the leaders.
 -- Actors on frozen levels don't regenerate. This prevents cheating
 -- via sending an actor to a safe level and letting him regenerate there.
