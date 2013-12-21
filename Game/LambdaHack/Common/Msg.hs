@@ -2,7 +2,7 @@
 -- | Game messages displayed on top of the screen for the player to read.
 module Game.LambdaHack.Common.Msg
   ( makePhrase, makeSentence
-  , Msg, (<>), (<+>), showT, moreMsg, yesnoMsg, truncateMsg
+  , Msg, (<>), (<+>), showT, toWidth, moreMsg, yesnoMsg, truncateMsg
   , Report, emptyReport, nullReport, singletonReport, addMsg
   , splitReport, renderReport, findInReport
   , History, emptyHistory, singletonHistory, mergeHistory
@@ -29,6 +29,9 @@ import Game.LambdaHack.Common.PointXY
 -- Pretty print and pack the result of @show@.
 showT :: Show a => a -> Text
 showT x = T.pack $ Show.Pretty.ppShow x
+
+toWidth :: Int -> Text -> Text
+toWidth n x = T.take n (T.justifyLeft n ' ' x)
 
 -- | Re-exported English phrase creation functions, applied to default
 -- irregular word sets.

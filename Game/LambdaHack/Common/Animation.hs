@@ -52,7 +52,9 @@ overlayOverlay sf@SingleFrame{..} =
                           $ overlay sfTop
       over = case overRaw of
         [] -> assert `failure` sf
-        hd : tl -> T.stripEnd hd : tl  -- get rid of he space from truncateMsg
+        hd : tl | T.length hd < lxsize ->
+          T.stripEnd hd : tl  -- get rid of the space from truncateMsg
+        _ -> overRaw
       both = zip over sfLevel
       f (t, line) = map (Color.AttrChar Color.defAttr) (T.unpack t)
                     ++ drop (T.length t) line
@@ -61,7 +63,9 @@ overlayOverlay sf@SingleFrame{..} =
         [] -> sfBottom
         [s] -> s
         _ -> "--a portion of the text trimmed--"
-  in SingleFrame {sfLevel = newLevel, sfTop = emptyOverlay, sfBottom = newBottom}
+  in SingleFrame { sfLevel = newLevel
+                 , sfTop = emptyOverlay
+                 , sfBottom = newBottom }
 
 -- | Animation is a list of frame modifications to play one by one,
 -- where each modification if a map from positions to level map symbols.

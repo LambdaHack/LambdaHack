@@ -108,11 +108,11 @@ keyHelp Binding{kcmd, kmacro, kmajor, kminor} =
       L.partition ((`elem` kmajor) . fst) (M.toAscList kcmd)
     (kcMinor, _) =
       L.partition ((`elem` kminor) . fst) kcRest
-  in toSlideshow
-    [ ["Basic keys. [press SPACE to advance]"] ++ [blank]
+  in toSlideshow  -- TODO: 80 below is a hack
+    [ [T.justifyLeft 80 ' ' "Basic keys. [press SPACE to advance]"] ++ [blank]
       ++ mov ++ [moreMsg]
-    , ["Basic keys. [press SPACE to advance]"] ++ [blank]
+    , [T.justifyLeft 80 ' ' "Basic keys. [press SPACE to advance]"] ++ [blank]
       ++ [keyCaption] ++ keys kcMajor ++ major ++ [moreMsg]
-    , ["Basic keys."] ++ [blank]
+    , [T.justifyLeft 80 ' ' "Basic keys."] ++ [blank]
       ++ [keyCaption] ++ keys kcMinor ++ minor
     ]

@@ -320,9 +320,11 @@ overlayToSlideshow prompt overlay = do
   sreport <- getsClient sreport
   ours <- getsState $ actorNotProjList (== side) lid
   let leftForMsg = lxsize - length ours - 1
-      firstLineSize | leftForMsg < lxsize `div` 3 = 0
-                    | otherwise = leftForMsg
-      msg = splitReport firstLineSize lxsize (addMsg sreport prompt)
+      (firstLineSize, promptPadded)
+        | overlay /= emptyOverlay = (lxsize, T.justifyLeft lxsize ' ' prompt)
+        | leftForMsg < lxsize `div` 3 = (0, prompt)
+        | otherwise = (leftForMsg, prompt)
+      msg = splitReport firstLineSize lxsize (addMsg sreport promptPadded)
   return $! splitOverlay lysize msg overlay
 
 -- | Draw the current level with the overlay on top.
