@@ -7,7 +7,8 @@ module Game.LambdaHack.Common.Msg
   , splitReport, renderReport, findInReport
   , History, emptyHistory, singletonHistory, mergeHistory
   , addReport, renderHistory, takeHistory
-  , Overlay, Slideshow(runSlideshow), splitOverlay, toSlideshow)
+  , Overlay(overlay), emptyOverlay, truncateToOverlay, toOverlay
+  , Slideshow(slideshow), splitOverlay, toSlideshow)
   where
 
 import Data.Binary
@@ -65,11 +66,7 @@ truncateMsg w xsRaw =
 
 -- | The type of a set of messages to show at the screen at once.
 newtype Report = Report [(BS.ByteString, Int)]
-  deriving (Show)
-
-instance Binary Report where
-  put (Report x) = put x
-  get = fmap Report get
+  deriving (Show, Binary)
 
 -- | Empty set of messages.
 emptyReport :: Report
@@ -94,8 +91,11 @@ addMsg (Report xns) y = Report $ (encodeUtf8 y, 1) : xns
 
 -- | Split a messages into chunks that fit in one line.
 -- We assume the width of the messages line is the same as of level map.
-splitReport :: X -> X -> Report -> [Text]
-splitReport w1 w r =
+splitReport :: X -> X -> Report -> Overlay
+splitReport w1 w r = Overlay $ splitReportList w1 w r
+
+splitReportList :: X -> X -> Report -> [Text]
+splitReportList w1 w r =
   splitText w1 w $ renderReport r
 
 -- | Render a report as a (possibly very long) string.
@@ -134,11 +134,7 @@ splitText' w1 w xs
 
 -- | The history of reports.
 newtype History = History [Report]
-  deriving Show
-
-instance Binary History where
-  put (History x) = put x
-  get = fmap History get
+  deriving (Show, Binary)
 
 -- | Empty history of reports.
 emptyHistory :: History
@@ -158,7 +154,7 @@ mergeHistory l =
 renderHistory :: History -> Overlay
 renderHistory (History h) =
   let w = fst normalLevelBound + 1
-  in concatMap (splitReport w w) h
+  in Overlay $ concatMap (splitReportList w w) h
 
 -- | Add a report to history, handling repetitions.
 addReport :: Report -> History -> History
@@ -178,29 +174,40 @@ takeHistory k (History h) = History $ take k h
 -- | A series of screen lines that may or may not fit the width nor height
 -- of the screen. An overlay may be transformed by adding the first line
 -- and/or by splitting into a slideshow of smaller overlays.
-type Overlay = [Text]
+newtype Overlay = Overlay {overlay :: [Text]}
+  deriving (Show, Eq, Binary)
+
+emptyOverlay :: Overlay
+emptyOverlay = Overlay []
+
+truncateToOverlay :: X -> Text -> Overlay
+truncateToOverlay lxsize msg = Overlay [truncateMsg lxsize msg]
+
+toOverlay :: [Text] -> Overlay
+toOverlay = Overlay
 
 -- | Split an overlay into a slideshow in which each overlay,
 -- prefixed by @msg@ and postfixed by @moreMsg@ except for the last one,
 -- fits on the screen wrt height (but lines may still be too wide).
 splitOverlay :: Y -> Overlay -> Overlay -> Slideshow
-splitOverlay lysize msg ls =
+splitOverlay lysize (Overlay msg) (Overlay ls) =
   let over = msg ++ ls
   in if length over <= lysize + 2
-     then Slideshow [over]  -- all fits on one screen
+     then Slideshow [Overlay over]  -- all fits on one screen
      else let (pre, post) = splitAt (lysize + 1) over
-              Slideshow slides = splitOverlay lysize msg post
-          in Slideshow $ (pre ++ [moreMsg]) : slides
+              Slideshow slides =
+                splitOverlay lysize (Overlay msg) (Overlay post)
+          in Slideshow $ (Overlay $ pre ++ [moreMsg]) : slides
 
 -- | A few overlays, displayed one by one upon keypress.
 -- When displayed, they are trimmed, not wrapped
 -- and any lines below the lower screen edge are not visible.
-newtype Slideshow = Slideshow {runSlideshow :: [Overlay]}
+newtype Slideshow = Slideshow {slideshow :: [Overlay]}
   deriving (Monoid, Show)
 
--- | Declare the list of overlays to be fit for display on the screen.
+-- | Declare the list of raw overlays to be fit for display on the screen.
 -- In particular, current @Report@ is eiter empty or unimportant
 -- or contained in the overlays and if any vertical or horizontal
 -- trimming of the overlays happens, this is intended.
-toSlideshow :: [Overlay] -> Slideshow
-toSlideshow = Slideshow
+toSlideshow :: [[Text]] -> Slideshow
+toSlideshow l = Slideshow $ map Overlay l

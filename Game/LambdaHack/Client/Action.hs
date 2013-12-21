@@ -151,7 +151,7 @@ getInitConfirms :: MonadClientUI m
                 => ColorMode -> [K.KM] -> Slideshow -> m Bool
 getInitConfirms dm frontClear slides = do
   ConnFrontend{..} <- getsSession sfconn
-  frontSlides <- mapM (drawOverlay dm) $ runSlideshow slides
+  frontSlides <- mapM (drawOverlay dm) $ slideshow slides
   -- The first two cases are optimizations:
   case frontSlides of
     [] -> return True
@@ -278,7 +278,7 @@ displayMore dm prompt = do
 displayYesNo :: MonadClientUI m => ColorMode -> Msg -> m Bool
 displayYesNo dm prompt = do
   sli <- promptToSlideshow $ prompt <+> yesnoMsg
-  frame <- drawOverlay dm $ head $ runSlideshow sli
+  frame <- drawOverlay dm $ head $ slideshow sli
   getYesNo frame
 
 -- TODO: generalize getInitConfirms and displayChoiceUI to a single op
@@ -288,7 +288,7 @@ displayYesNo dm prompt = do
 displayChoiceUI :: (MonadClientAbort m, MonadClientUI m)
                 => Msg -> Overlay -> [K.KM] -> m K.KM
 displayChoiceUI prompt ov keys = do
-  slides <- fmap runSlideshow $ overlayToSlideshow (prompt <> ", ESC]") ov
+  slides <- fmap slideshow $ overlayToSlideshow (prompt <> ", ESC]") ov
   let legalKeys =
         [ K.KM {key=K.Space, modifier=K.NoModifier}
         , K.escKey ]
@@ -306,7 +306,7 @@ displayChoiceUI prompt ov keys = do
 -- | The prompt is shown after the current message, but not added to history.
 -- This is useful, e.g., in targeting mode, not to spam history.
 promptToSlideshow :: MonadClientUI m => Msg -> m Slideshow
-promptToSlideshow prompt = overlayToSlideshow prompt []
+promptToSlideshow prompt = overlayToSlideshow prompt emptyOverlay
 
 -- | The prompt is shown after the current message at the top of each slide.
 -- Together they may take more than one line. The prompt is not added
@@ -346,7 +346,7 @@ drawOverlay dm over = do
 displayPush :: MonadClientUI m => m ()
 displayPush = do
   sls <- promptToSlideshow ""
-  let slide = head $ runSlideshow sls
+  let slide = head $ slideshow sls
   frame <- drawOverlay ColorFull slide
   -- Visually speed up (by remving all empty frames) the show of the sequence
   -- of the move frames if the player is running.
@@ -358,7 +358,7 @@ scoreToSlideshow total status = do
   table <- getsState shigh
   time <- getsState stime
   date <- liftIO getClockTime
-  let showScore (ntable, pos) = HighScore.slideshow ntable pos status
+  let showScore (ntable, pos) = HighScore.highSlideshow ntable pos status
   return $! maybe Monoid.mempty showScore
             $ HighScore.register table total time status date
 
@@ -407,8 +407,8 @@ animate arena anim = do
   s <- getState
   per <- getPerFid arena
   let over = renderReport sreport
-      topLineOnly = truncateMsg lxsize over
-      basicFrame = draw ColorFull cops per arena mleader cli s [topLineOnly]
+      topLineOnly = truncateToOverlay lxsize over
+      basicFrame = draw ColorFull cops per arena mleader cli s topLineOnly
   snoAnim <- getsClient $ snoAnim . sdebugCli
   return $ if fromMaybe False snoAnim
            then [Just basicFrame]

@@ -195,8 +195,8 @@ humanCommand :: forall m. (MonadClientAbort m, MonadClientUI m)
              -> m CmdSer
 humanCommand msgRunAbort = do
   let loop :: Overlay -> m CmdSer
-      loop overlay = do
-        km <- getKeyOverlayCommand overlay
+      loop over = do
+        km <- getKeyOverlayCommand over
         -- Messages shown, so update history and reset current report.
         recordHistory
         -- On abort, just reset state and call loop again below.
@@ -223,7 +223,7 @@ humanCommand msgRunAbort = do
         -- possibly took some time.
         case mcmdS of
           Just cmdS -> do
-            assert (null (runSlideshow slides)
+            assert (null (slideshow slides)
                     `blame` "some slides generated for server command"
                     `twith` slides) skip
             -- Exit the loop and let other actors act. No next key needed
@@ -233,7 +233,7 @@ humanCommand msgRunAbort = do
           Nothing -> do
             -- If no time taken, rinse and repeat.
             -- Analyse the obtained slides.
-            mLast <- case reverse (runSlideshow slides) of
+            mLast <- case reverse $ slideshow slides of
               [] -> return Nothing
               [sLast] -> return $ Just sLast
               sls@(sLast : _) -> do
@@ -241,17 +241,18 @@ humanCommand msgRunAbort = do
                 -- for all but the last one.
                 -- Note: the code that generates the slides is responsible
                 -- for inserting the @more@ prompt.
-                go <- getInitConfirms ColorFull [km] $ toSlideshow $ reverse sls
+                go <- getInitConfirms ColorFull [km]
+                      $ toSlideshow $ reverse $ map overlay sls
                 return $! if go then Just sLast else Nothing
             case mLast of
               Nothing -> do
                 -- Display current state if no slideshow or interrupted.
                 modifyClient (\st -> st {slastKey = Nothing})
                 sli <- promptToSlideshow ""
-                loop $! head $! runSlideshow sli
+                loop $! head $! slideshow sli
               Just sLast ->
                 -- (Re-)display the last slide while waiting for the next key,
                 loop sLast
   sli <- promptToSlideshow msgRunAbort
-  let overlayInitial = head $ runSlideshow sli
+  let overlayInitial = head $ slideshow sli
   loop overlayInitial

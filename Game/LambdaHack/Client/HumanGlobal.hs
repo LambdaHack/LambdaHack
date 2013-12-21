@@ -367,7 +367,7 @@ alterDirHuman ts = do
         tr : _ -> verb tr
       keys = zipWith K.KM (repeat K.NoModifier) K.dirAllMoveKey
       prompt = makePhrase ["What to", verb1 MU.:> "? [movement key"]
-  e <- displayChoiceUI prompt [] keys
+  e <- displayChoiceUI prompt emptyOverlay keys
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   Level{lxsize} <- getLevel $ blid b

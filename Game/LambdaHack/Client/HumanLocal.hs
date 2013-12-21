@@ -175,7 +175,7 @@ floorItemOverlay bag = do
          makePhrase [ letterLabel l
                     , partItemWs coitem disco k (getItemBody iid s) ]
          <> " "
-  return $ map pr is
+  return $ toOverlay $ map pr is
 
 -- | Create a list of item names.
 itemOverlay :: MonadClient m => ItemBag -> ItemInv -> m Overlay
@@ -189,7 +189,7 @@ itemOverlay bag inv = do
          makePhrase [ letterLabel l
                     , partItemWs coitem disco k (getItemBody iid s) ]
          <> " "
-  return $ map pr is
+  return $ toOverlay $ map pr is
 
 -- * Project
 
@@ -521,7 +521,8 @@ displayMainMenu = do
   case menuOverlay of
     [] -> assert `failure` "empty Main Menu overlay" `twith` mainMenuArt
     hd : tl -> do
-      slides <- overlayToSlideshow hd tl  -- TODO: keys don't work if tl/=[]
+      slides <- overlayToSlideshow hd (toOverlay tl)
+                -- TODO: keys don't work if tl/=[]
       tell slides
 
 -- * Accept

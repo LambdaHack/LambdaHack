@@ -43,12 +43,13 @@ data SingleFrame = SingleFrame
 -- To be used by simple frontends that don't display overlays
 -- in separate windows/panes/scrolled views.
 overlayOverlay :: SingleFrame -> SingleFrame
-overlayOverlay sf@SingleFrame{sfTop=[]} = sf
+overlayOverlay sf@SingleFrame{sfTop} | sfTop == emptyOverlay = sf
 overlayOverlay sf@SingleFrame{..} =
   let lxsize = xsizeSingleFrame sf
       lysize = ysizeSingleFrame sf
       (overRaw, bottom) = splitAt (lysize + 1)
-                          $ map (truncateMsg lxsize) sfTop
+                          $ map (truncateMsg lxsize)
+                          $ overlay sfTop
       over = case overRaw of
         [] -> assert `failure` sf
         hd : tl -> T.stripEnd hd : tl  -- get rid of he space from truncateMsg
@@ -60,7 +61,7 @@ overlayOverlay sf@SingleFrame{..} =
         [] -> sfBottom
         [s] -> s
         _ -> "--a portion of the text trimmed--"
-  in SingleFrame {sfLevel = newLevel, sfTop = [], sfBottom = newBottom}
+  in SingleFrame {sfLevel = newLevel, sfTop = emptyOverlay, sfBottom = newBottom}
 
 -- | Animation is a list of frame modifications to play one by one,
 -- where each modification if a map from positions to level map symbols.

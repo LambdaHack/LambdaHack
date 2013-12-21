@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | High score table operations.
 module Game.LambdaHack.Common.HighScore
-  ( ScoreTable, empty, register, slideshow
+  ( ScoreTable, empty, register, highSlideshow
   ) where
 
 import Data.Binary
@@ -93,14 +93,14 @@ register table total time status@Status{stOutcome} date =
 
 -- | Show a screenful of the high scores table.
 -- Parameter height is the number of (3-line) scores to be shown.
-showTable :: ScoreTable -> Int -> Int -> Overlay
+showTable :: ScoreTable -> Int -> Int -> [Text]
 showTable (ScoreTable table) start height =
   let zipped    = zip [1..] table
       screenful = take height . drop (start - 1) $ zipped
   in concatMap showScore screenful ++ [moreMsg]
 
 -- | Produce a couple of renderings of the high scores table.
-showCloseScores :: Int -> ScoreTable -> Int -> [Overlay]
+showCloseScores :: Int -> ScoreTable -> Int -> [[Text]]
 showCloseScores pos h height =
   if pos <= height
   then [showTable h 1 height]
@@ -108,11 +108,11 @@ showCloseScores pos h height =
         showTable h (max (height + 1) (pos - height `div` 2)) height]
 
 -- | Generate a slideshow with the current and previous scores.
-slideshow :: ScoreTable -- ^ current score table
-          -> Int        -- ^ position of the current high score in the table
-          -> Status     -- ^ reason of the game interruption
-          -> Slideshow
-slideshow table pos status =
+highSlideshow :: ScoreTable -- ^ current score table
+              -> Int        -- ^ position of the current score in the table
+              -> Status     -- ^ reason of the game interruption
+              -> Slideshow
+highSlideshow table pos status =
   let (_, nlines) = normalLevelBound  -- TODO: query terminal size instead
       height = nlines `div` 3
       (subject, person, msgUnless) =
