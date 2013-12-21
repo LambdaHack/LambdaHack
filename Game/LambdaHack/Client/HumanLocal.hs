@@ -451,13 +451,13 @@ selectNoneHuman :: (MonadClientUI m, MonadClient m) => m ()
 selectNoneHuman = do
   side <- getsClient sside
   (lid, _) <- viewedLevel
-  ours <- getsState $ actorNotProjAssocs (== side) lid
-  let sel = ES.fromList $ map fst ours
+  oursAssocs <- getsState $ actorNotProjAssocs (== side) lid
+  let ours = ES.fromList $ map fst oursAssocs
   oldSel <- getsClient sselected
-  let upd = if ES.null $ ES.intersection sel oldSel
+  let upd = if ES.null $ ES.intersection ours oldSel
             then ES.union  -- already all deselected; select all instead
             else ES.difference
-  modifyClient $ \cli -> cli {sselected = upd (sselected cli) sel}
+  modifyClient $ \cli -> cli {sselected = upd (sselected cli) ours}
 
 -- * Cancel
 

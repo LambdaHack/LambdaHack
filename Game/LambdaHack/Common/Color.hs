@@ -72,7 +72,7 @@ data AttrChar = AttrChar
   { acAttr :: !Attr
   , acChar :: !Char
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 instance Binary AttrChar where
   put AttrChar{..} = do

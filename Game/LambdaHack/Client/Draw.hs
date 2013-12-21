@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.Draw
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import qualified Data.List as L
+import Data.List
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -48,8 +48,8 @@ draw :: ColorMode -> Kind.COps -> Perception -> LevelId -> Maybe ActorId
      -> StateClient -> State -> Overlay
      -> SingleFrame
 draw dm cops per drawnLevelId mleader
-     StateClient{ stgtMode, scursor, seps, sdisco
-                , smarkVision, smarkSmell, smarkSuspect }
+     cli@StateClient{ stgtMode, scursor, seps, sdisco, sselected
+                    , smarkVision, smarkSmell, smarkSuspect }
      s sfTop =
   let Kind.COps{cotile=Kind.Ops{okind=tokind, ouniqGroup}} = cops
       (lvl@Level{ ldepth, lxsize, lysize, lsmell
@@ -64,15 +64,16 @@ draw dm cops per drawnLevelId mleader
              then []
              else fromMaybe [] $ bla lxsize lysize seps bpos cursor
         _ -> []
+      inverseVideo = Color.Attr{ Color.fg = Color.bg Color.defAttr
+                               , Color.bg = Color.fg Color.defAttr
+                               }
+      actorsHere = actorAssocs (const True) drawnLevelId s
       dis pos0 =
         let tile = lvl `at` pos0
             tk = tokind tile
             items = lvl `atI` pos0
             sml = EM.findWithDefault timeZero pos0 lsmell
             smlt = sml `timeAdd` timeNegate ltime
-            inverseVideo = Color.Attr{ Color.fg = Color.bg Color.defAttr
-                                     , Color.bg = Color.fg Color.defAttr
-                                     }
             viewActor aid Actor{bsymbol, bcolor, bhp, bproj}
               | Just aid == mleader = (symbol, inverseVideo)
               | otherwise = (symbol, Color.defAttr {Color.fg = bcolor})
@@ -81,7 +82,6 @@ draw dm cops per drawnLevelId mleader
                      | otherwise = bsymbol
             rainbow p = Color.defAttr {Color.fg =
                                          toEnum $ fromEnum p `rem` 14 + 1}
-            actorsHere = actorAssocs (const True) drawnLevelId s
             -- smarkSuspect is an optional overlay, so let's overlay it
             -- over both visible and invisible tiles.
             vcolor t
@@ -92,15 +92,15 @@ draw dm cops per drawnLevelId mleader
                          , Color.defAttr {Color.fg =
                                             flavourToColor $ jflavour i} )
             (char, attr0) =
-              case ( L.find (\ (_, m) -> pos0 == Actor.bpos m) actorsHere
-                   , L.find (\ (_, m) -> scursor == Just (Actor.bpos m))
+              case ( find (\ (_, m) -> pos0 == Actor.bpos m) actorsHere
+                   , find (\ (_, m) -> scursor == Just (Actor.bpos m))
                        actorsHere ) of
                 (_, actorTgt) | isJust stgtMode
-                                && (L.elem pos0 bl
+                                && (elem pos0 bl
                                     || (case actorTgt of
                                           Just (_, Actor{ bpath=Just p
                                                         , bpos=prPos }) ->
-                                            L.elem pos0 $ shiftPath prPos p
+                                            elem pos0 $ shiftPath prPos p
                                           _ -> False))
                     -> let unknownId = ouniqGroup "unknown space"
                            fg = case (vis, F.Walkable `elem` tfeature tk) of
@@ -148,11 +148,40 @@ draw dm cops per drawnLevelId mleader
       toWidth n x = T.take n (T.justifyLeft n ' ' x)
       fLine y =
         let f l x = let !ac = dis (toPoint lxsize $ PointXY (x, y)) in ac : l
-        in L.foldl' f [] [lxsize-1,lxsize-2..0]
+        in foldl' f [] [lxsize-1,lxsize-2..0]
+      viewOurs (aid, Actor{bsymbol, bcolor, bhp})
+        | otherwise =
+          let cattr = Color.defAttr {Color.fg = bcolor}
+              sattr
+               | Just aid == mleader = inverseVideo
+               | ES.member aid sselected =
+                   -- TODO: in the future use a red rectangle instead
+                   -- of background and mark them on the map, too;
+                   -- also, perhaps blink all selected on the map,
+                   -- when selection changes
+                   if bcolor /= Color.Blue
+                   then cattr {Color.bg = Color.Blue}
+                   else cattr {Color.bg = Color.Magenta}
+               | otherwise = cattr
+          in ( (bhp > 0, bsymbol /= '@', bsymbol, bcolor, aid)
+             , Color.AttrChar sattr bsymbol )
+      ours = actorNotProjAssocs (== sside cli) drawnLevelId s
+      -- Don't show anything if the only actor on the level is the leader.
+      -- He's clearly highlighted on the level map, anyway.
+      star = let sattr = case ES.size sselected of
+                   0 -> Color.defAttr {Color.fg = Color.BrBlack}
+                   n | n == length ours ->
+                     Color.defAttr {Color.bg = Color.Blue}
+                   _ -> Color.defAttr
+             in Color.AttrChar sattr '*'
+      party | map (Just . fst) ours == [mleader] = []
+            | otherwise = star : map snd (sort $ map viewOurs ours)
+      topLine = take (lxsize - length party)
+                     (repeat (Color.AttrChar Color.defAttr ' '))
+                ++ party
       sfLevel =  -- fully evaluated
         let f l y = let !line = fLine y in line : l
-        in replicate lxsize (Color.AttrChar Color.defAttr ' ')
-           : L.foldl' f [] [lysize-1,lysize-2..0]
+        in topLine : foldl' f [] [lysize-1,lysize-2..0]
       sfBottom = toWidth (lxsize - 1) status
   in SingleFrame{..}
 
