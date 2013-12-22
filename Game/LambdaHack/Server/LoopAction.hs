@@ -12,7 +12,6 @@ import Data.Maybe
 import qualified Data.Ord as Ord
 
 import Control.Exception.Assert.Sugar
-import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -31,7 +30,6 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Frontend
 import Game.LambdaHack.Server.Action hiding (sendUpdateAI, sendUpdateUI)
@@ -192,7 +190,6 @@ handleActors :: (MonadAtomic m, MonadConnServer m)
              -> LevelId
              -> m ()
 handleActors cmdSerSem lid = do
-  Kind.COps{cofaction=Kind.Ops{okind}} <- getsState scops
   time <- getsState $ getLocalTime lid  -- the end of this clip, inclusive
   Level{lprio} <- getLevel lid
   quit <- getsServer squit
@@ -233,7 +230,8 @@ handleActors cmdSerSem lid = do
       let side = bfid body
           fact = factionD EM.! side
           mleader = gleader fact
-          queryUI | Just aid == mleader = not $ playerAiLeader $ gplayer fact
+          aidIsLeader = mleader == Just aid
+          queryUI | aidIsLeader = not $ playerAiLeader $ gplayer fact
                   | otherwise = not $ playerAiOther $ gplayer fact
           switchLeader cmdS = do
             -- TODO: check that the command is legal first, report and reject,
@@ -246,7 +244,7 @@ handleActors cmdSerSem lid = do
                        -- before the action is performed (e.g., via AI
                        -- switching leaders). Then, the action can change
                        -- the leader again (e.g., via using stairs).
-                       assert (mleader == Just aid && not (bproj bPre)
+                       assert ( aidIsLeader && not (bproj bPre)
                                `blame` (aid, aidNew, bPre, cmdS, fact))
                          [LeadFactionA side mleader (Just aidNew)]
                   else []
@@ -298,15 +296,11 @@ handleActors cmdSerSem lid = do
         -- but one by one.
         execSfxAtomic $ DisplayPushD side
         -- Clear messages in the UI client (if any), if the actor
-        -- is freely moving.
-        let factionAbilities
-              | Just aid == mleader = fAbilityLeader $ okind $ gkind fact
-              | otherwise = fAbilityOther $ okind $ gkind fact
-            canMove = playerUI (gplayer fact)
-                      && not (bproj body)
-                      && (Ability.Chase `elem` factionAbilities
-                          || Ability.Wander `elem` factionAbilities)
-        when canMove $ execSfxAtomic $ RecordHistoryD side
+        -- is a leader (which happens when a UI client is fully
+        -- computer-controlled). We could record history more often,
+        -- to avoid long reports, but we'd have to add -more- prompts.
+        let mainUIactor = playerUI (gplayer fact) && aidIsLeader
+        when mainUIactor $ execSfxAtomic $ RecordHistoryD side
         cmdT <- sendQueryAI side aid
         let cmdS = TakeTimeSer cmdT
         (aidNew, bPre) <- switchLeader cmdS
