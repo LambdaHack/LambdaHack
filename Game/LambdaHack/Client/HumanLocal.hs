@@ -253,7 +253,7 @@ pickLeader actor = do
                                 `twith` (actor, pbody)) skip
       -- Even if it's already the leader, give his proper name, not 'you'.
       let subject = partActor pbody
-      msgAdd $ makeSentence [subject, "picked"]
+      msgAdd $ makeSentence [subject, "picked as a leader"]
       -- Update client state.
       s <- getState
       modifyClient $ updateLeader actor s
@@ -433,17 +433,24 @@ epsIncrHuman b = do
 
 -- * SelectActor
 
-selectActorHuman :: MonadClientAbort m => m ()
+-- TODO: make the message (and for selectNoneHuman, pickLeader, etc.)
+-- optional, since they have a clear representation in the UI elsewhere.
+selectActorHuman ::(MonadClientUI m,  MonadClientAbort m) => m ()
 selectActorHuman = do
   mleader <- getsClient _sleader
   case mleader of
     Nothing -> abortWith "no leader picked, can't select"
     Just leader -> do
-      oldB <- getsClient $ ES.member leader . sselected
-      let upd = if oldB
+      body <- getsState $ getActorBody leader
+      wasMemeber <- getsClient $ ES.member leader . sselected
+      let upd = if wasMemeber
                 then ES.delete leader  -- already selected, deselect instead
                 else ES.insert leader
       modifyClient $ \cli -> cli {sselected = upd $ sselected cli}
+      let subject = partActor body
+      msgAdd $ makeSentence [subject, if wasMemeber
+                                      then "deselected"
+                                      else "selected"]
 
 -- * SelectNone
 
@@ -454,10 +461,15 @@ selectNoneHuman = do
   oursAssocs <- getsState $ actorNotProjAssocs (== side) lid
   let ours = ES.fromList $ map fst oursAssocs
   oldSel <- getsClient sselected
-  let upd = if ES.null $ ES.intersection ours oldSel
+  let wasNone = ES.null $ ES.intersection ours oldSel
+      upd = if wasNone
             then ES.union  -- already all deselected; select all instead
             else ES.difference
   modifyClient $ \cli -> cli {sselected = upd (sselected cli) ours}
+  let subject = "all party members on the level"
+  msgAdd $ makeSentence [subject, if wasNone
+                                  then "selected"
+                                  else "deselected"]
 
 -- * Cancel
 
