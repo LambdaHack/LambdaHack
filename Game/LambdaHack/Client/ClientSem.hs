@@ -178,37 +178,37 @@ queryUI aid = do
         humanCommand msg
   tryWith inputHumanCmd $ do
     srunning <- getsClient srunning
-    maybe abort (continueRun leader) srunning
+    maybe abort continueRun srunning
 
 -- | Continue running in the given direction.
-continueRun :: MonadClientAbort m => ActorId -> RunParams -> m CmdSer
-continueRun _ (RunParams (Just stopMsg) _ [] _) = do
+continueRun :: MonadClientAbort m => RunParams -> m CmdSer
+continueRun (RunParams _ (Just stopMsg) _ [] _) = do
   ConfigUI{configRunStopMsgs} <- getsClient sconfigUI
   let abrt :: MonadClientAbort m => Text -> m a
       abrt t = abortIfWith configRunStopMsgs $ "Run stop:" <+> t
   abrt stopMsg
-continueRun leader (RunParams Nothing 0 (r : rs) (Just dir)) = do
+continueRun (RunParams leader Nothing 0 (r : rs) (Just dir)) = do
   if r == leader then do
     -- Start a many-actor run with distance 1, to prevent changing
     -- direction on first turn, when the original direction is blocked.
     -- We want our runners to keep formation.
     let distNew = if null rs then 0 else 1
-    continueRun leader (RunParams Nothing distNew (r : rs) Nothing)
+    continueRun (RunParams leader Nothing distNew (r : rs) Nothing)
   else do
-    let paramNew = RunParams Nothing 0 (rs ++ [r]) (Just dir)
+    let paramNew = RunParams leader Nothing 0 (rs ++ [r]) (Just dir)
     modifyClient $ \cli -> cli {srunning = Just paramNew}
     fmap TakeTimeSer $ moveRunAid r dir
-continueRun leader (RunParams mstopOld distOld (r : rs) Nothing) = do
+continueRun (RunParams leader mstopOld distOld (r : rs) Nothing) = do
   ConfigUI{configRunStopMsgs} <- getsClient sconfigUI
   let distNew = if r == leader then distOld + 1 else distOld
   (dir, mstopCurrent) <- continueRunDir configRunStopMsgs r distNew
   let runnersNew = if isJust mstopOld then rs else rs ++ [r]
       mstopNew = mstopOld `mplus` mstopCurrent
-      paramNew = RunParams mstopNew distNew runnersNew Nothing
+      paramNew = RunParams leader mstopNew distNew runnersNew Nothing
   modifyClient $ \cli -> cli {srunning = Just paramNew}
   -- The potential invisible actor is hit. War is started without asking.
   return $ TakeTimeSer $ MoveSer r dir
-continueRun leader (RunParams mstopOld distOld rs mdir) =
+continueRun (RunParams leader mstopOld distOld rs mdir) =
   assert `failure` (leader, mstopOld, distOld, rs, mdir)
 
 -- | Determine and process the next human player command. The argument is

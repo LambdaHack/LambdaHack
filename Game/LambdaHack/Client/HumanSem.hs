@@ -101,7 +101,7 @@ moveRunHuman run v = do
       Nothing -> do  -- move or search or alter
         sel <- getsClient sselected
         let runners = ES.toList (ES.delete leader sel) ++ [leader]
-            runParams = RunParams Nothing 0 runners (Just dir)
+            runParams = RunParams leader Nothing 0 runners (Just dir)
         when run $ modifyClient $ \cli -> cli {srunning = Just runParams}
         -- Start running in the given direction. The first turn of running
         -- succeeds much more often than subsequent turns, because we ignore

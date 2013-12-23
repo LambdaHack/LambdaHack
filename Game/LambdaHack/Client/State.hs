@@ -66,10 +66,12 @@ data StateClient = StateClient
   }
   deriving (Show)
 
--- | Parameters of the current run. They include a message about the reason
--- of the next stop, distance of the run so far (plus one, if many runners),
+-- | Parameters of the current run. They include the original leader
+-- from the time running started, a message about the reason of the next stop,
+-- distance of the run so far (plus one, if many runners),
 -- the list of actors that take part and the direction of the initial step.
-data RunParams = RunParams !(Maybe Text) !Int ![ActorId] !(Maybe Vector)
+data RunParams =
+    RunParams !ActorId !(Maybe Text) !Int ![ActorId] !(Maybe Vector)
   deriving (Show)
 
 -- | Current targeting mode of a client.
@@ -201,17 +203,19 @@ instance Binary StateClient where
     return StateClient{..}
 
 instance Binary RunParams where
-  put (RunParams mt n as mv) = do
+  put (RunParams a mt n as mv) = do
+    put a
     put mt
     put n
     put as
     put mv
   get = do
+    a <- get
     mt <- get
     n <- get
     as <- get
     mv <- get
-    return (RunParams mt n as mv)
+    return (RunParams a mt n as mv)
 
 instance Binary TgtMode where
   put (TgtExplicit l) = putWord8 0 >> put l
