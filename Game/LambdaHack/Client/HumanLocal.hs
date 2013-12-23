@@ -271,10 +271,10 @@ stopRunning = do
   srunning <- getsClient srunning
   case srunning of
     Nothing -> return ()
-    Just (RunParams leader _ _ _ _) -> do
+    Just RunParams{runLeader} -> do
       -- Switch to the original leader, from before the run started.
       s <- getState
-      modifyClient $ updateLeader leader s
+      modifyClient $ updateLeader runLeader s
       modifyClient (\cli -> cli { srunning = Nothing })
 
 -- * MemberBack

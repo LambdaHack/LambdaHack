@@ -182,34 +182,45 @@ queryUI aid = do
 
 -- | Continue running in the given direction.
 continueRun :: MonadClientAbort m => RunParams -> m CmdSer
-continueRun (RunParams _ (Just stopMsg) _ [] _) = do
-  ConfigUI{configRunStopMsgs} <- getsClient sconfigUI
-  let abrt :: MonadClientAbort m => Text -> m a
-      abrt t = abortIfWith configRunStopMsgs $ "Run stop:" <+> t
-  abrt stopMsg
-continueRun (RunParams leader Nothing 0 (r : rs) (Just dir)) = do
-  if r == leader then do
-    -- Start a many-actor run with distance 1, to prevent changing
-    -- direction on first turn, when the original direction is blocked.
-    -- We want our runners to keep formation.
-    let distNew = if null rs then 0 else 1
-    continueRun (RunParams leader Nothing distNew (r : rs) Nothing)
-  else do
-    let paramNew = RunParams leader Nothing 0 (rs ++ [r]) (Just dir)
-    modifyClient $ \cli -> cli {srunning = Just paramNew}
-    fmap TakeTimeSer $ moveRunAid r dir
-continueRun (RunParams leader mstopOld distOld (r : rs) Nothing) = do
-  ConfigUI{configRunStopMsgs} <- getsClient sconfigUI
-  let distNew = if r == leader then distOld + 1 else distOld
-  (dir, mstopCurrent) <- continueRunDir configRunStopMsgs r distNew
-  let runnersNew = if isJust mstopOld then rs else rs ++ [r]
-      mstopNew = mstopOld `mplus` mstopCurrent
-      paramNew = RunParams leader mstopNew distNew runnersNew Nothing
-  modifyClient $ \cli -> cli {srunning = Just paramNew}
-  -- The potential invisible actor is hit. War is started without asking.
-  return $ TakeTimeSer $ MoveSer r dir
-continueRun (RunParams leader mstopOld distOld rs mdir) =
-  assert `failure` (leader, mstopOld, distOld, rs, mdir)
+continueRun paramOld =
+  case paramOld of
+    RunParams{runMembers=[], runStopMsg=Just stopMsg} -> do
+      ConfigUI{configRunStopMsgs} <- getsClient sconfigUI
+      let abrt :: MonadClientAbort m => Text -> m a
+          abrt t = abortIfWith configRunStopMsgs $ "Run stop:" <+> t
+      abrt stopMsg
+    RunParams{ runLeader
+             , runMembers = r : rs
+             , runDist = 0
+             , runStopMsg = Nothing
+             , runInitDir = Just dir } ->
+      if r == runLeader then do
+        -- Start a many-actor run with distance 1, to prevent changing
+        -- direction on first turn, when the original direction is blocked.
+        -- We want our runners to keep formation.
+        let runDistNew = if null rs then 0 else 1
+        continueRun paramOld{runDist = runDistNew, runInitDir = Nothing}
+      else do
+        let paramNew = paramOld {runMembers = rs ++ [r]}
+        modifyClient $ \cli -> cli {srunning = Just paramNew}
+        fmap TakeTimeSer $ moveRunAid r dir
+    RunParams{ runLeader
+             , runMembers = r : rs
+             , runDist
+             , runStopMsg
+             , runInitDir = Nothing } -> do
+      ConfigUI{configRunStopMsgs} <- getsClient sconfigUI
+      let runDistNew = if r == runLeader then runDist + 1 else runDist
+      (dir, runStopMsgCurrent) <- continueRunDir configRunStopMsgs r runDistNew
+      let runMembersNew = if isJust runStopMsg then rs else rs ++ [r]
+          runStopMsgNew = runStopMsg `mplus` runStopMsgCurrent
+          paramNew = paramOld { runMembers = runMembersNew
+                              , runDist = runDistNew
+                              , runStopMsg = runStopMsgNew }
+      modifyClient $ \cli -> cli {srunning = Just paramNew}
+      -- The potential invisible actor is hit. War is started without asking.
+      return $ TakeTimeSer $ MoveSer r dir
+    _ -> assert `failure` paramOld
 
 -- | Determine and process the next human player command. The argument is
 -- the last abort message due to running, if any.
