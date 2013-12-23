@@ -267,7 +267,15 @@ pickLeader actor = do
       return True
 
 stopRunning :: MonadClient m => m ()
-stopRunning = modifyClient (\ cli -> cli { srunning = Nothing })
+stopRunning = do
+  srunning <- getsClient srunning
+  case srunning of
+    Nothing -> return ()
+    Just (RunParams leader _ _ _ _) -> do
+      -- Switch to the original leader, from before the run started.
+      s <- getState
+      modifyClient $ updateLeader leader s
+      modifyClient (\cli -> cli { srunning = Nothing })
 
 -- * MemberBack
 
