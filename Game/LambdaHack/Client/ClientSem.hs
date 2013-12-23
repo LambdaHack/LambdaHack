@@ -182,13 +182,14 @@ queryUI aid = do
 
 -- | Continue running in the given direction.
 continueRun :: MonadClientAbort m => RunParams -> m CmdSer
-continueRun paramOld =
+continueRun paramOld = do
+  ConfigUI{configRunStopMsgs} <- getsClient sconfigUI
+  let abrt :: MonadClientAbort m => Text -> m a
+      abrt t | T.null t = abort  -- don't obscure other messages
+      abrt t = abortIfWith configRunStopMsgs $ "Run stop:" <+> t
   case paramOld of
-    RunParams{runMembers=[], runStopMsg=Just stopMsg} -> do
-      ConfigUI{configRunStopMsgs} <- getsClient sconfigUI
-      let abrt :: MonadClientAbort m => Text -> m a
-          abrt t = abortIfWith configRunStopMsgs $ "Run stop:" <+> t
-      abrt stopMsg
+    RunParams{ runMembers = []
+             , runStopMsg = Just stopMsg } -> abrt stopMsg
     RunParams{ runLeader
              , runMembers = r : rs
              , runDist = 0
@@ -209,9 +210,8 @@ continueRun paramOld =
              , runDist
              , runStopMsg
              , runInitDir = Nothing } -> do
-      ConfigUI{configRunStopMsgs} <- getsClient sconfigUI
       let runDistNew = if r == runLeader then runDist + 1 else runDist
-      (dir, runStopMsgCurrent) <- continueRunDir configRunStopMsgs r runDistNew
+      (dir, runStopMsgCurrent) <- continueRunDir abrt r runDistNew
       let runMembersNew = if isJust runStopMsg then rs else rs ++ [r]
           runStopMsgNew = runStopMsg `mplus` runStopMsgCurrent
           paramNew = paramOld { runMembers = runMembersNew

@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 -- | Running and disturbance.
 --
 -- The general rule is: whatever is behind you (and so ignored previously),
@@ -41,13 +42,11 @@ import Game.LambdaHack.Content.TileKind
 -- it ajusts the direction given by the vector if we reached
 -- a corridor's corner (we never change direction except in corridors)
 -- and it increments the counter of traversed tiles.
-continueRunDir :: MonadClientAbort m
-               => Bool -> ActorId -> Int
-               -> m (Vector, Maybe Text)
-continueRunDir configRunStopMsgs aid distLast = do
-  let abrt :: MonadClientAbort m => Text -> m a
-      abrt t = abortIfWith configRunStopMsgs $ "Run stop:" <+> t
-      maxDistance = 20
+continueRunDir :: MonadClient m
+               => (forall a. Text -> m a)
+               -> ActorId -> Int -> m (Vector, Maybe Text)
+continueRunDir abrt aid distLast = do
+  let maxDistance = 20
   cops@Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody aid
   sreport <- getsClient sreport -- TODO: check the message before it goes into history
@@ -64,25 +63,24 @@ continueRunDir configRunStopMsgs aid distLast = do
       enemySeen = not $ null ms
       openableLast = Tile.openable cotile (lvl `at` (posHere `shift` dirLast))
       check
-        | msgShown = abort  -- the message should still be visible
+        | msgShown = abrt ""  -- don't obscure the message
         | enemySeen = abrt "enemy seen"
         | distLast >= maxDistance =
             abrt $ "reached max run distance" <+> showT maxDistance
         | accessibleDir cops lvl posHere dirLast =
-            checkAndRun configRunStopMsgs aid dirLast
+            checkAndRun abrt aid dirLast
         | distLast > 1 = abrt "blocked"  -- don't open doors inside a run
         | openableLast = abrt "blocked by a closed door"  -- can be opened
         | otherwise =
             -- Assume turning is permitted, because this is the start
             -- of the run, so the situation is mostly known to the player
-            tryTurning configRunStopMsgs aid
+            tryTurning abrt aid
   check
 
-tryTurning :: MonadClientAbort m
-           => Bool -> ActorId -> m (Vector, Maybe Text)
-tryTurning configRunStopMsgs aid = do
-  let abrt :: MonadClientAbort m => Text -> m a
-      abrt t = abortIfWith configRunStopMsgs $ "Run stop:" <+> t
+tryTurning :: MonadClient m
+           => (forall a. Text -> m a)
+           -> ActorId -> m (Vector, Maybe Text)
+tryTurning abrt aid = do
   cops@Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody aid
   let lid = blid body
@@ -101,14 +99,13 @@ tryTurning configRunStopMsgs aid = do
       case sortBy (compare `on` euclidDistSq lxsize dirLast)
            $ filter (accessibleDir cops lvl posHere) $ d1 : ds of
         [] -> abrt "blocked and all similar directions are closed doors"
-        d : _ -> checkAndRun configRunStopMsgs aid d
+        d : _ -> checkAndRun abrt aid d
     _ -> abrt "blocked and many distant similar directions found"
 
-checkAndRun :: MonadClientAbort m
-            => Bool -> ActorId -> Vector -> m (Vector, Maybe Text)
-checkAndRun configRunStopMsgs aid dir = do
-  let abrt :: MonadClientAbort m => Text -> m a
-      abrt t = abortIfWith configRunStopMsgs $ "Run stop:" <+> t
+checkAndRun :: MonadClient m
+            => (forall a. Text -> m a)
+            -> ActorId -> Vector -> m (Vector, Maybe Text)
+checkAndRun abrt aid dir = do
   Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
   body <- getsState $ getActorBody aid
   smarkSuspect <- getsClient smarkSuspect
