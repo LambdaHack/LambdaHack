@@ -2,7 +2,7 @@
 module Game.LambdaHack.Client.State
   ( StateClient(..), defStateClient, defHistory
   , updateTarget, getTarget, updateLeader, sside
-  , TgtMode(..), Target(..)
+  , RunParams(..), TgtMode(..), Target(..)
   , toggleMarkVision, toggleMarkSmell, toggleMarkSuspect
   ) where
 
@@ -30,6 +30,7 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Common.Vector
 
 -- | Client state, belonging to a single faction.
 -- Some of the data, e.g, the history, carries over
@@ -43,8 +44,8 @@ data StateClient = StateClient
                                    -- ^ targets of our actors in the dungeon
   , sselected    :: !(ES.EnumSet ActorId)
                                    -- ^ the set of currently selected actors
-  , srunning     :: !(Maybe (Maybe Text, Int))
-                                   -- ^ distance of the run so far
+  , srunning     :: !(Maybe RunParams)
+                                   -- ^ parameters of the current run, if any
   , sreport      :: !Report        -- ^ current messages
   , shistory     :: !History       -- ^ history of messages
   , sundo        :: ![Atomic]      -- ^ atomic commands performed to date
@@ -53,7 +54,8 @@ data StateClient = StateClient
   , srandom      :: !R.StdGen      -- ^ current random generator
   , sconfigUI    :: !ConfigUI      -- ^ client config (including initial RNG)
   , slastKey     :: !(Maybe K.KM)  -- ^ last command key pressed
-  , _sleader     :: !(Maybe ActorId)  -- ^ picked leader
+  , _sleader     :: !(Maybe ActorId)
+                                   -- ^ current picked party leader
   , _sside       :: !FactionId     -- ^ faction controlled by the client
   , squit        :: !Bool          -- ^ exit the game loop
   , sisAI        :: !Bool          -- ^ whether it's an AI client
@@ -62,6 +64,12 @@ data StateClient = StateClient
   , smarkSuspect :: !Bool          -- ^ mark suspect features
   , sdebugCli    :: !DebugModeCli  -- ^ client debugging mode
   }
+  deriving (Show)
+
+-- | Parameters of the current run. They include a message about the reason
+-- of the next stop, distance of the run so far (plus one, if many runners),
+-- the list of actors that take part and the direction of the initial step.
+data RunParams = RunParams !(Maybe Text) !Int ![ActorId] !(Maybe Vector)
   deriving (Show)
 
 -- | Current targeting mode of a client.
@@ -191,6 +199,19 @@ instance Binary StateClient where
         slastKey = Nothing
         squit = False
     return StateClient{..}
+
+instance Binary RunParams where
+  put (RunParams mt n as mv) = do
+    put mt
+    put n
+    put as
+    put mv
+  get = do
+    mt <- get
+    n <- get
+    as <- get
+    mv <- get
+    return (RunParams mt n as mv)
 
 instance Binary TgtMode where
   put (TgtExplicit l) = putWord8 0 >> put l

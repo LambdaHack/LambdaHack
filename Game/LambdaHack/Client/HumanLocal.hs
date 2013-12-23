@@ -18,6 +18,7 @@ module Game.LambdaHack.Client.HumanLocal
 -- Cabal
 import qualified Paths_LambdaHack as Self (version)
 
+import Control.Exception.Assert.Sugar
 import Control.Monad
 import Control.Monad.Writer.Strict (WriterT, tell)
 import qualified Data.EnumMap.Strict as EM
@@ -33,7 +34,6 @@ import Data.Version
 import Game.LambdaHack.Frontend (frontendName)
 import qualified NLP.Miniutter.English as MU
 
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Binding
 import qualified Game.LambdaHack.Client.HumanCmd as HumanCmd

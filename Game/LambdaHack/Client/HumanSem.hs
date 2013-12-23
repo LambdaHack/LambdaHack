@@ -3,11 +3,12 @@ module Game.LambdaHack.Client.HumanSem
   ( cmdHumanSem
   ) where
 
+import Control.Exception.Assert.Sugar
 import Control.Monad
 import Control.Monad.Writer.Strict (WriterT)
+import qualified Data.EnumSet as ES
 import Data.Maybe
 
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.HumanCmd
 import Game.LambdaHack.Client.HumanGlobal
@@ -84,8 +85,8 @@ moveRunHuman :: (MonadClientAbort m, MonadClientUI m)
 moveRunHuman run v = do
   tgtMode <- getsClient stgtMode
   (arena, Level{lxsize}) <- viewedLevel
-  source <- getLeaderUI
-  sb <- getsState $ getActorBody source
+  leader <- getLeaderUI
+  sb <- getsState $ getActorBody leader
   let dir = toDir lxsize v
   if isJust tgtMode then do
     moveCursor dir (if run then 10 else 1) >> return Nothing
@@ -98,12 +99,15 @@ moveRunHuman run v = do
     tgt <- getsState $ posToActor tpos arena
     case tgt of
       Nothing -> do  -- move or search or alter
+        sel <- getsClient sselected
+        let runners = ES.toList (ES.delete leader sel) ++ [leader]
+            runParams = RunParams Nothing 0 runners (Just dir)
+        when run $ modifyClient $ \cli -> cli {srunning = Just runParams}
         -- Start running in the given direction. The first turn of running
         -- succeeds much more often than subsequent turns, because we ignore
         -- most of the disturbances, since the player is mostly aware of them
         -- and still explicitly requests a run, knowing how it behaves.
-        when run $ modifyClient $ \cli -> cli {srunning = Just (Nothing, 1)}
-        fmap (Just . TakeTimeSer) $ moveRunAid source dir
+        fmap (Just . TakeTimeSer) $ moveRunAid leader dir
         -- When running, the invisible actor is hit (not displaced!),
         -- so that running in the presence of roving invisible
         -- actors is equivalent to moving (with visible actors
@@ -111,18 +115,19 @@ moveRunHuman run v = do
         -- TODO: stop running at invisible actor
       Just target | run ->
         -- Displacing requires accessibility, but it's checked later on.
-        fmap (Just . TakeTimeSer) $ displaceAid source target
+        fmap (Just . TakeTimeSer) $ displaceAid leader target
       Just target -> do
         tb <- getsState $ getActorBody target
         -- We always see actors from our own faction.
         if bfid tb == bfid sb && not (bproj tb) then do
           -- Select adjacent actor by bumping into him. Takes no time.
           success <- pickLeader target
-          assert (success `blame` "bump self" `twith` (source, target, tb)) skip
+          assert (success `blame` "bump self"
+                          `twith` (leader, target, tb)) skip
           return Nothing
         else
           -- Attacking does not require full access, adjacency is enough.
-          fmap (Just . TakeTimeSer) $ meleeAid source target
+          fmap (Just . TakeTimeSer) $ meleeAid leader target
 
 projectHuman :: (MonadClientAbort m, MonadClientUI m)
              => [Trigger] -> WriterT Slideshow m (Maybe CmdSer)

@@ -67,7 +67,7 @@ meleeAid source target = do
   -- on a failed altering.
 
 -- | Actor swaps position with another.
-displaceAid :: (MonadClientAbort m, MonadClientUI m)
+displaceAid :: MonadClientAbort m
             => ActorId -> ActorId -> m CmdSerTakeTime
 displaceAid source target = do
   cops <- getsState scops
@@ -83,7 +83,7 @@ displaceAid source target = do
   else abortFailure DisplaceAccess
 
 -- | Actor moves or searches or alters. No visible actor at the position.
-moveRunAid :: (MonadClientAbort m, MonadClientUI m)
+moveRunAid :: MonadClientAbort m
            => ActorId -> Vector -> m CmdSerTakeTime
 moveRunAid source dir = do
   cops@Kind.COps{cotile} <- getsState scops
@@ -374,7 +374,7 @@ alterDirHuman ts = do
   K.handleDir lxsize e (flip (alterTile leader) ts) (neverMind True)
 
 -- | Player tries to alter a tile using a feature.
-alterTile :: (MonadClientAbort m, MonadClientUI m)
+alterTile :: MonadClientAbort m
           => ActorId -> Vector -> [Trigger] -> m CmdSerTakeTime
 alterTile source dir ts = do
   Kind.COps{cotile} <- getsState scops

@@ -461,8 +461,8 @@ chase aid foe@(_, foeVisible) = do
   s <- getState
   str <- moveStrategy cops aid s mFoe
   if fight
-    then Traversable.mapM (moveRunAid False aid) str
-    else Traversable.mapM (moveRunAid True aid) str
+    then Traversable.mapM (moveOrRunAid False aid) str
+    else Traversable.mapM (moveOrRunAid True aid) str
 
 wander :: MonadActionRO m
        => ActorId -> m (Strategy CmdSerTakeTime)
@@ -473,12 +473,12 @@ wander aid = do
   let mFoe = Nothing
   s <- getState
   str <- moveStrategy cops aid s mFoe
-  Traversable.mapM (moveRunAid False aid) str
+  Traversable.mapM (moveOrRunAid False aid) str
 
 -- | Actor moves or searches or alters or attacks. Displaces if @run@.
-moveRunAid :: MonadActionRO m
+moveOrRunAid :: MonadActionRO m
            => Bool -> ActorId -> Vector -> m CmdSerTakeTime
-moveRunAid run source dir = do
+moveOrRunAid run source dir = do
   cops@Kind.COps{cotile} <- getsState scops
   sb <- getsState $ getActorBody source
   let lid = blid sb

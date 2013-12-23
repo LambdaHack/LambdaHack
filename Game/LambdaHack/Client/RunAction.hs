@@ -42,9 +42,9 @@ import Game.LambdaHack.Content.TileKind
 -- a corridor's corner (we never change direction except in corridors)
 -- and it increments the counter of traversed tiles.
 continueRunDir :: MonadClientAbort m
-               => Bool -> ActorId -> (Maybe Text, Int)
+               => Bool -> ActorId -> Int
                -> m (Vector, Maybe Text)
-continueRunDir configRunStopMsgs aid (mstop, distLast) = do
+continueRunDir configRunStopMsgs aid distLast = do
   let abrt :: MonadClientAbort m => Text -> m a
       abrt t = abortIfWith configRunStopMsgs $ "Run stop:" <+> t
       maxDistance = 20
@@ -68,7 +68,6 @@ continueRunDir configRunStopMsgs aid (mstop, distLast) = do
         | enemySeen = abrt "enemy seen"
         | distLast >= maxDistance =
             abrt $ "reached max run distance" <+> showT maxDistance
-        | Just stop <- mstop = abrt stop
         | accessibleDir cops lvl posHere dirLast =
             checkAndRun configRunStopMsgs aid dirLast
         | distLast > 1 = abrt "blocked"  -- don't open doors inside a run
