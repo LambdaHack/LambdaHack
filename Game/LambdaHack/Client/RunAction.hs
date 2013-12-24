@@ -98,47 +98,48 @@ continueRunDir :: MonadClient m
                => ActorId -> Int -> Maybe Vector
                -> m (Maybe Vector, Maybe Text)
 continueRunDir aid distLast mdir = do
-  let maxDistance = 20
-  cops@Kind.COps{cotile} <- getsState scops
-  body <- getsState $ getActorBody aid
   sreport <- getsClient sreport -- TODO: check the message before it goes into history
-  fact <- getsState $ (EM.! bfid body) . sfactionD
-  let lid = blid body
-  hs <- getsState $ actorList (const True) lid
-  ms <- getsState $ actorList (isAtWar fact) lid
-  lvl <- getLevel lid
-  let posHere = bpos body
-      posLast = boldpos body
-      dirLast = displacement posLast posHere
-      dir = fromMaybe dirLast mdir
-      posThere = posHere `shift` dir
-      boringMsgs = map BS.pack [ "You hear some noises." ]
+  let boringMsgs = map BS.pack [ "You hear some noises." ]
       -- TODO: use a regexp from the UI config instead
       msgShown  = isJust $ findInReport (`notElem` boringMsgs) sreport
-      enemySeen = not $ null ms
-      actorThere = posThere `elem` map bpos hs
-      openableLast = Tile.openable cotile (lvl `at` (posHere `shift` dir))
-      check
-        | msgShown = return (Nothing, Just "")  -- don't obscure the message
-        | enemySeen = return (Nothing, Just "enemy seen")
-        | actorThere = return (Nothing, Just "actor in the way")
-                       -- don't displace actors, except with leader in step 1
-        | distLast >= maxDistance =
-            return (Nothing, Just $ "reached max run distance"
-                                    <+> showT maxDistance)
-        | accessibleDir cops lvl posHere dir =
-            if distLast == 0
-            then return (Nothing, Nothing)  -- zeroth step very liberal
-            else checkAndRun aid dir
-        | distLast /= 1 = return (Nothing, Just "blocked")
-                          -- don't open doors, except in step 1 of a run
-        | openableLast = return (Nothing, Just "blocked by a closed door")
-                         -- the player may prefer to open the door
-        | otherwise =
-            -- Assume turning is permitted, because this is the start
-            -- of the run, so the situation is mostly known to the player
-            tryTurning aid
-  check
+  if msgShown then return (Nothing, Just "")  -- don't obscure the message
+  else do
+    let maxDistance = 20
+    cops@Kind.COps{cotile} <- getsState scops
+    body <- getsState $ getActorBody aid
+    fact <- getsState $ (EM.! bfid body) . sfactionD
+    let lid = blid body
+    hs <- getsState $ actorList (const True) lid
+    ms <- getsState $ actorList (isAtWar fact) lid
+    lvl <- getLevel lid
+    let posHere = bpos body
+        posLast = boldpos body
+        dirLast = displacement posLast posHere
+        dir = fromMaybe dirLast mdir
+        posThere = posHere `shift` dir
+        enemySeen = not $ null ms
+        actorThere = posThere `elem` map bpos hs
+        openableLast = Tile.openable cotile (lvl `at` (posHere `shift` dir))
+        check
+          | enemySeen = return (Nothing, Just "enemy seen")
+          | actorThere = return (Nothing, Just "actor in the way")
+                         -- don't displace actors, except with leader in step 1
+          | distLast >= maxDistance =
+              return (Nothing, Just $ "reached max run distance"
+                                      <+> showT maxDistance)
+          | accessibleDir cops lvl posHere dir =
+              if distLast == 0
+              then return (Nothing, Nothing)  -- zeroth step very liberal
+              else checkAndRun aid dir
+          | distLast /= 1 = return (Nothing, Just "blocked")
+                            -- don't open doors, except in step 1 of a run
+          | openableLast = return (Nothing, Just "blocked by a closed door")
+                           -- the player may prefer to open the door
+          | otherwise =
+              -- Assume turning is permitted, because this is the start
+              -- of the run, so the situation is mostly known to the player
+              tryTurning aid
+    check
 
 tryTurning :: MonadClient m
            => ActorId -> m (Maybe Vector, Maybe Text)
