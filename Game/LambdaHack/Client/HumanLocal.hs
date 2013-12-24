@@ -262,19 +262,19 @@ pickLeader actor = do
       -- Inform about items, etc.
       lookMsg <- lookAt False True (bpos pbody) actor ""
       msgAdd lookMsg
-      -- Don't continue an old run, if any.
-      stopRunning
       return True
 
-stopRunning :: MonadClient m => m ()
+stopRunning :: MonadClientUI m => m ()
 stopRunning = do
   srunning <- getsClient srunning
   case srunning of
     Nothing -> return ()
     Just RunParams{runLeader} -> do
-      -- Switch to the original leader, from before the run started.
+      -- Switch to the original leader, from before the run start, unless dead.
+      arena <- getArenaUI
       s <- getState
-      modifyClient $ updateLeader runLeader s
+      when (memActor runLeader arena s) $
+        modifyClient $ updateLeader runLeader s
       modifyClient (\cli -> cli { srunning = Nothing })
 
 -- * MemberBack
