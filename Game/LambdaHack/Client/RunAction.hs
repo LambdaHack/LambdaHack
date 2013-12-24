@@ -11,17 +11,22 @@
 -- Some things are never ignored, such as: enemies seen, imporant messages
 -- heard, solid tiles and actors in the way.
 module Game.LambdaHack.Client.RunAction
-  ( continueRunDir
+  ( continueRun
   ) where
 
+import Control.Exception.Assert.Sugar
+import Control.Monad
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.EnumMap.Strict as EM
 import Data.Function
 import Data.List
 import Data.Maybe
 import Data.Text (Text)
+import qualified Data.Text as T
 
 import Game.LambdaHack.Client.Action
+import Game.LambdaHack.Client.Config
+import Game.LambdaHack.Client.HumanGlobal
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
@@ -32,10 +37,53 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.TileKind
+
+-- | Continue running in the given direction.
+continueRun :: MonadClientAbort m => RunParams -> m CmdSer
+continueRun paramOld = do
+  ConfigUI{configRunStopMsgs} <- getsClient sconfigUI
+  let abrt :: MonadClientAbort m => Text -> m a
+      abrt t | T.null t = abort  -- don't obscure other messages
+      abrt t = abortIfWith configRunStopMsgs $ "Run stop:" <+> t
+  case paramOld of
+    RunParams{ runMembers = []
+             , runStopMsg = Just stopMsg } -> abrt stopMsg
+    RunParams{ runLeader
+             , runMembers = r : rs
+             , runDist = 0
+             , runStopMsg = Nothing
+             , runInitDir = Just dir } ->
+      if r == runLeader then do
+        -- Start a many-actor run with distance 1, to prevent changing
+        -- direction on first turn, when the original direction is blocked.
+        -- We want our runners to keep formation.
+        let runDistNew = if null rs then 0 else 1
+        continueRun paramOld{runDist = runDistNew, runInitDir = Nothing}
+      else do
+        let paramNew = paramOld {runMembers = rs ++ [r]}
+        modifyClient $ \cli -> cli {srunning = Just paramNew}
+        fmap TakeTimeSer $ moveRunAid r dir
+    RunParams{ runLeader
+             , runMembers = r : rs
+             , runDist
+             , runStopMsg
+             , runInitDir = Nothing } -> do
+      let runDistNew = if r == runLeader then runDist + 1 else runDist
+      (dir, runStopMsgCurrent) <- continueRunDir abrt r runDistNew
+      let runMembersNew = if isJust runStopMsg then rs else rs ++ [r]
+          runStopMsgNew = runStopMsg `mplus` runStopMsgCurrent
+          paramNew = paramOld { runMembers = runMembersNew
+                              , runDist = runDistNew
+                              , runStopMsg = runStopMsgNew }
+      modifyClient $ \cli -> cli {srunning = Just paramNew}
+      -- The potential invisible actor is hit. War is started without asking.
+      return $ TakeTimeSer $ MoveSer r dir
+    _ -> assert `failure` paramOld
 
 -- | This function implements the actual logic of running. It checks if we
 -- have to stop running because something interesting cropped up,

@@ -7,15 +7,12 @@ import Control.Monad.Writer.Strict (runWriterT)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
 import Data.Maybe
-import Data.Text (Text)
 import qualified Data.Text as T
 
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Binding
-import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.HumanCmd
-import Game.LambdaHack.Client.HumanGlobal
 import Game.LambdaHack.Client.HumanLocal
 import Game.LambdaHack.Client.HumanSem
 import Game.LambdaHack.Client.RunAction
@@ -179,48 +176,6 @@ queryUI aid = do
   tryWith inputHumanCmd $ do
     srunning <- getsClient srunning
     maybe abort continueRun srunning
-
--- | Continue running in the given direction.
-continueRun :: MonadClientAbort m => RunParams -> m CmdSer
-continueRun paramOld = do
-  ConfigUI{configRunStopMsgs} <- getsClient sconfigUI
-  let abrt :: MonadClientAbort m => Text -> m a
-      abrt t | T.null t = abort  -- don't obscure other messages
-      abrt t = abortIfWith configRunStopMsgs $ "Run stop:" <+> t
-  case paramOld of
-    RunParams{ runMembers = []
-             , runStopMsg = Just stopMsg } -> abrt stopMsg
-    RunParams{ runLeader
-             , runMembers = r : rs
-             , runDist = 0
-             , runStopMsg = Nothing
-             , runInitDir = Just dir } ->
-      if r == runLeader then do
-        -- Start a many-actor run with distance 1, to prevent changing
-        -- direction on first turn, when the original direction is blocked.
-        -- We want our runners to keep formation.
-        let runDistNew = if null rs then 0 else 1
-        continueRun paramOld{runDist = runDistNew, runInitDir = Nothing}
-      else do
-        let paramNew = paramOld {runMembers = rs ++ [r]}
-        modifyClient $ \cli -> cli {srunning = Just paramNew}
-        fmap TakeTimeSer $ moveRunAid r dir
-    RunParams{ runLeader
-             , runMembers = r : rs
-             , runDist
-             , runStopMsg
-             , runInitDir = Nothing } -> do
-      let runDistNew = if r == runLeader then runDist + 1 else runDist
-      (dir, runStopMsgCurrent) <- continueRunDir abrt r runDistNew
-      let runMembersNew = if isJust runStopMsg then rs else rs ++ [r]
-          runStopMsgNew = runStopMsg `mplus` runStopMsgCurrent
-          paramNew = paramOld { runMembers = runMembersNew
-                              , runDist = runDistNew
-                              , runStopMsg = runStopMsgNew }
-      modifyClient $ \cli -> cli {srunning = Just paramNew}
-      -- The potential invisible actor is hit. War is started without asking.
-      return $ TakeTimeSer $ MoveSer r dir
-    _ -> assert `failure` paramOld
 
 -- | Determine and process the next human player command. The argument is
 -- the last abort message due to running, if any.
