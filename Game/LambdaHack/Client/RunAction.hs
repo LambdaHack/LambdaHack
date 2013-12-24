@@ -61,15 +61,20 @@ continueRun paramOld =
         continueRun paramOld{runDist = runDistNew, runInitDir = Nothing}
       else do
         let paramNew = paramOld {runMembers = rs ++ [r]}
-        runCmd <- moveRunAid r dir  -- can abort
-        return $ Right (paramNew, TakeTimeSer runCmd)
+        runOutcome <- continueRunDir r 0 (Just dir)
+        case runOutcome of
+          (Nothing, Nothing) -> do
+            runCmd <- moveRunAid r dir  -- can abort
+            return $ Right (paramNew, TakeTimeSer runCmd)
+          (Nothing, Just stopMsg) -> return $ Left stopMsg
+          _ -> assert `failure` (paramOld, runOutcome)
     RunParams{ runLeader
              , runMembers = r : rs
              , runDist
              , runStopMsg
              , runInitDir = Nothing } -> do
       let runDistNew = if r == runLeader then runDist + 1 else runDist
-      (mdir, runStopMsgCurrent) <- continueRunDir r runDistNew
+      (mdir, runStopMsgCurrent) <- continueRunDir r runDistNew Nothing
       let runStopMsgNew = runStopMsg `mplus` runStopMsgCurrent
           runMembersNew = if isJust runStopMsgNew then rs else rs ++ [r]
           paramNew = paramOld { runMembers = runMembersNew
@@ -90,34 +95,43 @@ continueRun paramOld =
 -- a corridor's corner (we never change direction except in corridors)
 -- and it increments the counter of traversed tiles.
 continueRunDir :: MonadClient m
-               => ActorId -> Int -> m (Maybe Vector, Maybe Text)
-continueRunDir aid distLast = do
+               => ActorId -> Int -> Maybe Vector
+               -> m (Maybe Vector, Maybe Text)
+continueRunDir aid distLast mdir = do
   let maxDistance = 20
   cops@Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody aid
   sreport <- getsClient sreport -- TODO: check the message before it goes into history
   fact <- getsState $ (EM.! bfid body) . sfactionD
   let lid = blid body
+  hs <- getsState $ actorList (const True) lid
   ms <- getsState $ actorList (isAtWar fact) lid
   lvl <- getLevel lid
   let posHere = bpos body
       posLast = boldpos body
       dirLast = displacement posLast posHere
+      dir = fromMaybe dirLast mdir
+      posThere = posHere `shift` dir
       boringMsgs = map BS.pack [ "You hear some noises." ]
       -- TODO: use a regexp from the UI config instead
       msgShown  = isJust $ findInReport (`notElem` boringMsgs) sreport
       enemySeen = not $ null ms
-      openableLast = Tile.openable cotile (lvl `at` (posHere `shift` dirLast))
+      actorThere = posThere `elem` map bpos hs
+      openableLast = Tile.openable cotile (lvl `at` (posHere `shift` dir))
       check
         | msgShown = return (Nothing, Just "")  -- don't obscure the message
         | enemySeen = return (Nothing, Just "enemy seen")
+        | actorThere = return (Nothing, Just "actor in the way")
+                       -- don't displace actors, except with leader in step 1
         | distLast >= maxDistance =
             return (Nothing, Just $ "reached max run distance"
                                     <+> showT maxDistance)
-        | accessibleDir cops lvl posHere dirLast =
-            checkAndRun aid dirLast
-        | distLast > 1 = return (Nothing, Just "blocked")
-                         -- don't open doors inside a run
+        | accessibleDir cops lvl posHere dir =
+            if distLast == 0
+            then return (Nothing, Nothing)  -- zeroth step very liberal
+            else checkAndRun aid dir
+        | distLast /= 1 = return (Nothing, Just "blocked")
+                          -- don't open doors, except in step 1 of a run
         | openableLast = return (Nothing, Just "blocked by a closed door")
                          -- the player may prefer to open the door
         | otherwise =
@@ -159,10 +173,9 @@ checkAndRun aid dir = do
   Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
   body <- getsState $ getActorBody aid
   smarkSuspect <- getsClient smarkSuspect
-  fact <- getsState $ (EM.! bfid body) . sfactionD
   let lid = blid body
   lvl@Level{lxsize} <- getLevel lid
-  hs <- getsState $ actorList (not . isAtWar fact) lid
+  hs <- getsState $ actorList (const True) lid
   let posHere = bpos body
       posHasItems pos = not $ EM.null $ lvl `atI` pos
       posThere = posHere `shift` dir
