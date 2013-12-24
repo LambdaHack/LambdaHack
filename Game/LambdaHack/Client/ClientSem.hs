@@ -11,6 +11,7 @@ import qualified Data.Text as T
 
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Binding
+import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.HumanCmd
 import Game.LambdaHack.Client.HumanLocal
@@ -170,12 +171,22 @@ queryUI aid = do
   leader <- getLeaderUI
   assert (leader == aid `blame` "player moves not his leader"
                         `twith` (leader, aid)) skip
-  let inputHumanCmd msg = do
-        stopRunning
-        humanCommand msg
-  tryWith inputHumanCmd $ do
-    srunning <- getsClient srunning
-    maybe abort continueRun srunning
+  srunning <- getsClient srunning
+  case srunning of
+    Nothing -> humanCommand ""
+    Just runParams -> do
+      runOutcome <- tryWith (return . Left) $ continueRun runParams
+      case runOutcome of
+        Left stopMsg -> do
+          stopRunning
+          ConfigUI{configRunStopMsgs} <- getsClient sconfigUI
+          let msg = if configRunStopMsgs
+                    then "Run stop:" <+> stopMsg
+                    else ""
+          humanCommand msg
+        Right (paramNew, runCmd) -> do
+          modifyClient $ \cli -> cli {srunning = Just paramNew}
+          return runCmd
 
 -- | Determine and process the next human player command. The argument is
 -- the last abort message due to running, if any.

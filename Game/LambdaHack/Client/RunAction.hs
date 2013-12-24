@@ -22,10 +22,8 @@ import Data.Function
 import Data.List
 import Data.Maybe
 import Data.Text (Text)
-import qualified Data.Text as T
 
 import Game.LambdaHack.Client.Action
-import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.HumanGlobal
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
@@ -44,15 +42,12 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.TileKind
 
 -- | Continue running in the given direction.
-continueRun :: MonadClientAbort m => RunParams -> m CmdSer
-continueRun paramOld = do
-  ConfigUI{configRunStopMsgs} <- getsClient sconfigUI
-  let abrt :: MonadClientAbort m => Text -> m a
-      abrt t | T.null t = abort  -- don't obscure other messages
-      abrt t = abortIfWith configRunStopMsgs $ "Run stop:" <+> t
+continueRun :: MonadClientAbort m
+            => RunParams -> m (Either Text (RunParams, CmdSer))
+continueRun paramOld =
   case paramOld of
     RunParams{ runMembers = []
-             , runStopMsg = Just stopMsg } -> abrt stopMsg
+             , runStopMsg = Just stopMsg } -> return $ Left stopMsg
     RunParams{ runLeader
              , runMembers = r : rs
              , runDist = 0
@@ -66,23 +61,27 @@ continueRun paramOld = do
         continueRun paramOld{runDist = runDistNew, runInitDir = Nothing}
       else do
         let paramNew = paramOld {runMembers = rs ++ [r]}
-        modifyClient $ \cli -> cli {srunning = Just paramNew}
-        fmap TakeTimeSer $ moveRunAid r dir
+        runCmd <- moveRunAid r dir  -- can abort
+        return $ Right (paramNew, TakeTimeSer runCmd)
     RunParams{ runLeader
              , runMembers = r : rs
              , runDist
              , runStopMsg
              , runInitDir = Nothing } -> do
       let runDistNew = if r == runLeader then runDist + 1 else runDist
-      (dir, runStopMsgCurrent) <- continueRunDir abrt r runDistNew
-      let runMembersNew = if isJust runStopMsg then rs else rs ++ [r]
-          runStopMsgNew = runStopMsg `mplus` runStopMsgCurrent
+      (mdir, runStopMsgCurrent) <- continueRunDir r runDistNew
+      let runStopMsgNew = runStopMsg `mplus` runStopMsgCurrent
+          runMembersNew = if isJust runStopMsgNew then rs else rs ++ [r]
           paramNew = paramOld { runMembers = runMembersNew
                               , runDist = runDistNew
                               , runStopMsg = runStopMsgNew }
-      modifyClient $ \cli -> cli {srunning = Just paramNew}
       -- The potential invisible actor is hit. War is started without asking.
-      return $ TakeTimeSer $ MoveSer r dir
+      case mdir of
+        Nothing ->
+          case runStopMsgCurrent of  -- show the more dire message
+            Nothing -> assert `failure` (paramOld, paramNew)
+            Just stopMsg -> return $ Left stopMsg
+        Just dir -> return $ Right (paramNew, TakeTimeSer $ MoveSer r dir)
     _ -> assert `failure` paramOld
 
 -- | This function implements the actual logic of running. It checks if we
@@ -91,9 +90,8 @@ continueRun paramOld = do
 -- a corridor's corner (we never change direction except in corridors)
 -- and it increments the counter of traversed tiles.
 continueRunDir :: MonadClient m
-               => (forall a. Text -> m a)
-               -> ActorId -> Int -> m (Vector, Maybe Text)
-continueRunDir abrt aid distLast = do
+               => ActorId -> Int -> m (Maybe Vector, Maybe Text)
+continueRunDir aid distLast = do
   let maxDistance = 20
   cops@Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody aid
@@ -111,24 +109,26 @@ continueRunDir abrt aid distLast = do
       enemySeen = not $ null ms
       openableLast = Tile.openable cotile (lvl `at` (posHere `shift` dirLast))
       check
-        | msgShown = abrt ""  -- don't obscure the message
-        | enemySeen = abrt "enemy seen"
+        | msgShown = return (Nothing, Just "")  -- don't obscure the message
+        | enemySeen = return (Nothing, Just "enemy seen")
         | distLast >= maxDistance =
-            abrt $ "reached max run distance" <+> showT maxDistance
+            return (Nothing, Just $ "reached max run distance"
+                                    <+> showT maxDistance)
         | accessibleDir cops lvl posHere dirLast =
-            checkAndRun abrt aid dirLast
-        | distLast > 1 = abrt "blocked"  -- don't open doors inside a run
-        | openableLast = abrt "blocked by a closed door"  -- can be opened
+            checkAndRun aid dirLast
+        | distLast > 1 = return (Nothing, Just "blocked")
+                         -- don't open doors inside a run
+        | openableLast = return (Nothing, Just "blocked by a closed door")
+                         -- the player may prefer to open the door
         | otherwise =
             -- Assume turning is permitted, because this is the start
             -- of the run, so the situation is mostly known to the player
-            tryTurning abrt aid
+            tryTurning aid
   check
 
 tryTurning :: MonadClient m
-           => (forall a. Text -> m a)
-           -> ActorId -> m (Vector, Maybe Text)
-tryTurning abrt aid = do
+           => ActorId -> m (Maybe Vector, Maybe Text)
+tryTurning aid = do
   cops@Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody aid
   let lid = blid body
@@ -142,18 +142,20 @@ tryTurning abrt aid = do
       dirSimilar dir = dirNearby dirLast dir && dirEnterable dir
       dirsSimilar = filter dirSimilar (moves lxsize)
   case dirsSimilar of
-    [] -> abrt "dead end"
+    [] -> return (Nothing, Just "dead end")
     d1 : ds | all (dirNearby d1) ds ->  -- only one or two directions possible
       case sortBy (compare `on` euclidDistSq lxsize dirLast)
            $ filter (accessibleDir cops lvl posHere) $ d1 : ds of
-        [] -> abrt "blocked and all similar directions are closed doors"
-        d : _ -> checkAndRun abrt aid d
-    _ -> abrt "blocked and many distant similar directions found"
+        [] ->
+          return ( Nothing
+                 , Just "blocked and all similar directions are closed doors" )
+        d : _ -> checkAndRun aid d
+    _ -> return ( Nothing
+                , Just "blocked and many distant similar directions found" )
 
 checkAndRun :: MonadClient m
-            => (forall a. Text -> m a)
-            -> ActorId -> Vector -> m (Vector, Maybe Text)
-checkAndRun abrt aid dir = do
+            => ActorId -> Vector -> m (Maybe Vector, Maybe Text)
+checkAndRun aid dir = do
   Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
   body <- getsState $ getActorBody aid
   smarkSuspect <- getsClient smarkSuspect
@@ -207,20 +209,25 @@ checkAndRun abrt aid dir = do
       itemChangeRight = posHasItems rightForwardPosHere
                         `notElem` map posHasItems rightPsLast
       check
-        | actorThere = abrt "actor in the way"
-        | terrainChangeLeft = abrt "terrain change on the left"
-        | terrainChangeRight = abrt "terrain change on the right"
-        | itemChangeLeft = abrt "item change on the left"
-        | itemChangeRight = abrt "item change on the right"
+        | actorThere = return (Nothing, Just "actor in the way")
+        | terrainChangeLeft =
+            return (Nothing, Just "terrain change on the left")
+        | terrainChangeRight =
+            return (Nothing, Just "terrain change on the right")
+        | itemChangeLeft = return (Nothing, Just "item change on the left")
+        | itemChangeRight = return (Nothing, Just "item change on the right")
         | terrainChangeMiddle =
             -- The Exit feature marks tiles that need to be entered before
             -- the run is finished. They don't do anything unless triggered,
             -- so the player has a choice no sooner than when he enters them.
             if Tile.hasFeature cotile F.Exit tileThere
-            then return (dir, Just "terrain change in the middle with an exit")
-            else abrt "terrain change in the middle and no exit"
-        | itemChangeMiddle = return (dir, Just "item change in the middle")
-                             -- enter the item tile, then stop, the message
-                             -- is never shown, since item message ovewrites it
-        | otherwise = return (dir, Nothing)
+            then return ( Just dir
+                        , Just "terrain change in the middle with an exit" )
+            else return ( Nothing
+                        , Just "terrain change in the middle and no exit" )
+        | itemChangeMiddle =
+            return (Just dir, Just "item change in the middle")
+            -- enter the item tile, then stop, the message
+            -- is never shown, since item message ovewrites it
+        | otherwise = return (Just dir, Nothing)
   check
