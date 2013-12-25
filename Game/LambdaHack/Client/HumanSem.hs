@@ -13,6 +13,7 @@ import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.HumanCmd
 import Game.LambdaHack.Client.HumanGlobal
 import Game.LambdaHack.Client.HumanLocal
+import Game.LambdaHack.Client.RunAction
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
@@ -99,19 +100,23 @@ moveRunHuman run v = do
     tgt <- getsState $ posToActor tpos arena
     case tgt of
       Nothing -> do  -- move or search or alter
-        sel <- getsClient sselected
-        let runMembers = ES.toList (ES.delete leader sel) ++ [leader]
-            runParams = RunParams { runLeader = leader
-                                  , runMembers
-                                  , runDist = 0
-                                  , runStopMsg = Nothing
-                                  , runInitDir = Just dir }
-        when run $ modifyClient $ \cli -> cli {srunning = Just runParams}
         -- Start running in the given direction. The first turn of running
         -- succeeds much more often than subsequent turns, because we ignore
         -- most of the disturbances, since the player is mostly aware of them
         -- and still explicitly requests a run, knowing how it behaves.
-        fmap (Just . TakeTimeSer) $ moveRunAid leader dir
+        runStopOrCmd <- moveRunAid leader dir
+        case runStopOrCmd of
+          Left stopMsg -> abortWith stopMsg
+          Right runCmd -> do
+            sel <- getsClient sselected
+            let runMembers = ES.toList (ES.delete leader sel) ++ [leader]
+                runParams = RunParams { runLeader = leader
+                                      , runMembers
+                                      , runDist = 0
+                                      , runStopMsg = Nothing
+                                      , runInitDir = Just dir }
+            when run $ modifyClient $ \cli -> cli {srunning = Just runParams}
+            return $ Just $ TakeTimeSer runCmd
         -- When running, the invisible actor is hit (not displaced!),
         -- so that running in the presence of roving invisible
         -- actors is equivalent to moving (with visible actors

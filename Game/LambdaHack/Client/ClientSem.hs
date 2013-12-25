@@ -175,7 +175,7 @@ queryUI aid = do
   case srunning of
     Nothing -> humanCommand ""
     Just runParams -> do
-      runOutcome <- tryWith (return . Left) $ continueRun runParams
+      runOutcome <- continueRun runParams
       case runOutcome of
         Left stopMsg -> do
           stopRunning
@@ -186,7 +186,7 @@ queryUI aid = do
           humanCommand msg
         Right (paramNew, runCmd) -> do
           modifyClient $ \cli -> cli {srunning = Just paramNew}
-          return runCmd
+          return $ TakeTimeSer runCmd
 
 -- | Determine and process the next human player command. The argument is
 -- the last abort message due to running, if any.

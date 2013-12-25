@@ -2,7 +2,7 @@
 -- A couple of them do not take time, the rest does.
 -- TODO: document
 module Game.LambdaHack.Client.HumanGlobal
-  ( moveRunAid, displaceAid, meleeAid, waitHuman, pickupHuman, dropHuman
+  ( displaceAid, meleeAid, waitHuman, pickupHuman, dropHuman
   , projectAid, applyHuman, alterDirHuman, triggerTileHuman
   , gameRestartHuman, gameExitHuman, gameSaveHuman
   ) where
@@ -81,43 +81,6 @@ displaceAid source target = do
     -- Displacing requires full access.
     return $ DisplaceSer source target
   else abortFailure DisplaceAccess
-
--- | Actor moves or searches or alters. No visible actor at the position.
-moveRunAid :: MonadClientAbort m
-           => ActorId -> Vector -> m CmdSerTakeTime
-moveRunAid source dir = do
-  cops@Kind.COps{cotile} <- getsState scops
-  sb <- getsState $ getActorBody source
-  let lid = blid sb
-  lvl <- getLevel lid
-  let spos = bpos sb           -- source position
-      tpos = spos `shift` dir  -- target position
-      t = lvl `at` tpos
-  -- Movement requires full access.
-  if accessible cops lvl spos tpos then
-    -- The potential invisible actor is hit. War is started without asking.
-    return $ MoveSer source dir
-  -- No access, so search and/or alter the tile.
-  else if not (Tile.hasFeature cotile F.Walkable t)  -- not implied by access
-          && (Tile.hasFeature cotile F.Suspect t
-              || Tile.openable cotile t
-              || Tile.closable cotile t
-              || Tile.changeable cotile t) then
-    if not $ EM.null $ lvl `atI` tpos then abortFailure AlterBlockItem
-    else return $ AlterSer source tpos Nothing
-    -- We don't use MoveSer, because we don't hit invisible actors here.
-    -- The potential invisible actor, e.g., in a wall or in
-    -- an inaccessible doorway, is made known, taking a turn.
-    -- If server performed an attack for free on the invisible actor anyway,
-    -- the player (or AI) would be tempted to repeatedly
-    -- hit random walls in hopes of killing a monster lurking within.
-    -- If the action had a cost, misclicks would incur the cost, too.
-    -- Right now the player may repeatedly alter tiles trying to learn
-    -- about invisible pass-wall actors, but it costs a turn
-    -- and does not harm the invisible actors, so it's not tempting.
-  else
-    -- Ignore a known boring, not accessible tile.
-    neverMind True
 
 -- * Wait
 

@@ -11,7 +11,7 @@
 -- Some things are never ignored, such as: enemies seen, imporant messages
 -- heard, solid tiles and actors in the way.
 module Game.LambdaHack.Client.RunAction
-  ( continueRun
+  ( continueRun, moveRunAid
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -24,7 +24,6 @@ import Data.Maybe
 import Data.Text (Text)
 
 import Game.LambdaHack.Client.Action
-import Game.LambdaHack.Client.HumanGlobal
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
@@ -42,8 +41,8 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.TileKind
 
 -- | Continue running in the given direction.
-continueRun :: MonadClientAbort m
-            => RunParams -> m (Either Text (RunParams, CmdSer))
+continueRun :: MonadClient m
+            => RunParams -> m (Either Text (RunParams, CmdSerTakeTime))
 continueRun paramOld =
   case paramOld of
     RunParams{ runMembers = []
@@ -64,8 +63,10 @@ continueRun paramOld =
         runOutcome <- continueRunDir r 0 (Just dir)
         case runOutcome of
           (Nothing, Nothing) -> do
-            runCmd <- moveRunAid r dir  -- can abort
-            return $ Right (paramNew, TakeTimeSer runCmd)
+            runStopOrCmd <- moveRunAid r dir
+            return $ case runStopOrCmd of
+              Left stopMsg -> Left stopMsg
+              Right runCmd -> Right (paramNew, runCmd)
           (Nothing, Just stopMsg) -> return $ Left stopMsg
           _ -> assert `failure` (paramOld, runOutcome)
     RunParams{ runLeader
@@ -86,8 +87,50 @@ continueRun paramOld =
           case runStopMsgCurrent of  -- show the more dire message
             Nothing -> assert `failure` (paramOld, paramNew)
             Just stopMsg -> return $ Left stopMsg
-        Just dir -> return $ Right (paramNew, TakeTimeSer $ MoveSer r dir)
+        Just dir -> return $ Right (paramNew, MoveSer r dir)
     _ -> assert `failure` paramOld
+
+-- | Actor moves or searches or alters. No visible actor at the position.
+moveRunAid :: MonadClient m
+           => ActorId -> Vector -> m (Either Text CmdSerTakeTime)
+moveRunAid source dir = do
+  cops@Kind.COps{cotile} <- getsState scops
+  sb <- getsState $ getActorBody source
+  let lid = blid sb
+  lvl <- getLevel lid
+  let spos = bpos sb           -- source position
+      tpos = spos `shift` dir  -- target position
+      t = lvl `at` tpos
+      runStopOrCmd =
+        -- Movement requires full access.
+        if accessible cops lvl spos tpos then
+          -- The potential invisible actor is hit. War started without asking.
+          Right $ MoveSer source dir
+        -- No access, so search and/or alter the tile. Non-walkability is
+        -- not implied by the lack of access.
+        else if not (Tile.hasFeature cotile F.Walkable t)
+                && (Tile.hasFeature cotile F.Suspect t
+                    || Tile.openable cotile t
+                    || Tile.closable cotile t
+                    || Tile.changeable cotile t) then
+          if not $ EM.null $ lvl `atI` tpos then
+            Left $ showFailureSer AlterBlockItem
+          else
+            Right $ AlterSer source tpos Nothing
+            -- We don't use MoveSer, because we don't hit invisible actors.
+            -- The potential invisible actor, e.g., in a wall or in
+            -- an inaccessible doorway, is made known, taking a turn.
+            -- If server performed an attack for free
+            -- on the invisible actor anyway, the player (or AI)
+            -- would be tempted to repeatedly hit random walls
+            -- in hopes of killing a monster lurking within.
+            -- If the action had a cost, misclicks would incur the cost, too.
+            -- Right now the player may repeatedly alter tiles trying to learn
+            -- about invisible pass-wall actors, but it costs a turn
+            -- and does not harm the invisible actors, so it's not tempting.
+       -- Ignore a known boring, not accessible tile.
+       else Left "never mind"
+  return runStopOrCmd
 
 -- | This function implements the actual logic of running. It checks if we
 -- have to stop running because something interesting cropped up,
