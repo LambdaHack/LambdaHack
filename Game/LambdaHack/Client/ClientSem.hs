@@ -3,7 +3,7 @@ module Game.LambdaHack.Client.ClientSem where
 
 import Control.Exception.Assert.Sugar
 import Control.Monad
-import Control.Monad.Writer.Strict (runWriterT)
+import Control.Monad.Writer.Strict (WriterT, lift, runWriterT, tell)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
 import Data.Maybe
@@ -199,6 +199,19 @@ humanCommand msgRunAbort = do
         km <- getKeyOverlayCommand over
         -- Messages shown, so update history and reset current report.
         recordHistory
+        -- | Set the current exception handler. Apart of executing it,
+        -- draw and pass along a slide with the abort message
+        -- (even if message empty).
+        let tryWithSlide :: (MonadClientAbort m, MonadClientUI m)
+                         => m a -> WriterT Slideshow m a
+                         -> WriterT Slideshow m a
+            tryWithSlide exc h =
+              let excMsg msg = do
+                    msgReset ""  -- TODO: needed?
+                    slides <- promptToSlideshow msg
+                    tell slides
+                    lift exc
+              in tryWith excMsg h
         -- On abort, just reset state and call loop again below.
         -- Each abort that gets this far generates a slide to be shown.
         (mcmdS, slides) <- runWriterT $ tryWithSlide (return Nothing) $ do
