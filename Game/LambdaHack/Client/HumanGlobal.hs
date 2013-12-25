@@ -7,7 +7,9 @@ module Game.LambdaHack.Client.HumanGlobal
   , gameRestartHuman, gameExitHuman, gameSaveHuman
   ) where
 
+import Control.Exception.Assert.Sugar
 import Control.Monad
+import Control.Monad.Writer.Strict (WriterT)
 import qualified Data.EnumMap.Strict as EM
 import Data.Function
 import Data.List
@@ -16,7 +18,6 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.HumanCmd (Trigger (..))
@@ -41,8 +42,9 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.TileKind as TileKind
 
-abortFailure :: MonadClientAbort m => FailureSer -> m a
-abortFailure = abortWith . showFailureSer
+failureSlide :: MonadClientUI m
+             => FailureSer -> WriterT Slideshow m (Maybe a)
+failureSlide = msgSlide . showFailureSer
 
 -- * Move and Run
 
@@ -67,8 +69,8 @@ meleeAid source target = do
   -- on a failed altering.
 
 -- | Actor swaps position with another.
-displaceAid :: MonadClientAbort m
-            => ActorId -> ActorId -> m CmdSerTakeTime
+displaceAid :: MonadClientUI m
+            => ActorId -> ActorId -> WriterT Slideshow m (Maybe CmdSerTakeTime)
 displaceAid source target = do
   cops <- getsState scops
   sb <- getsState $ getActorBody source
@@ -79,8 +81,8 @@ displaceAid source target = do
       tpos = bpos tb
   if accessible cops lvl spos tpos then
     -- Displacing requires full access.
-    return $ DisplaceSer source target
-  else abortFailure DisplaceAccess
+    return $ Just $ DisplaceSer source target
+  else failureSlide DisplaceAccess
 
 -- * Wait
 
@@ -231,7 +233,7 @@ getItem aid prompt p ptext bag inv isn = do
 -- * Project
 
 projectAid :: (MonadClientAbort m, MonadClientUI m)
-           => ActorId -> [Trigger] -> m CmdSerTakeTime
+           => ActorId -> [Trigger] -> WriterT Slideshow m (Maybe CmdSerTakeTime)
 projectAid source ts = do
   Kind.COps{cotile} <- getsState scops
   target <- targetToPos
@@ -246,10 +248,10 @@ projectAid source ts = do
   Level{lxsize, lysize} <- getLevel lid
   foes <- getsState $ actorNotProjList (isAtWar fact) lid
   if foesAdjacent lxsize lysize spos foes
-    then abortFailure ProjectBlockFoes
+    then failureSlide ProjectBlockFoes
     else do
       case bla lxsize lysize eps spos tpos of
-        Nothing -> abortFailure ProjectAimOnself
+        Nothing -> failureSlide ProjectAimOnself
         Just [] -> assert `failure` "project from the edge of level"
                           `twith` (spos, tpos, sb, ts)
         Just (pos : _) -> do
@@ -257,10 +259,10 @@ projectAid source ts = do
           lvl <- getLevel lid
           let t = lvl `at` pos
           if not $ Tile.hasFeature cotile F.Clear t
-            then abortFailure ProjectBlockTerrain
+            then failureSlide ProjectBlockTerrain
             else if unoccupied as pos
-                 then projectBla source tpos eps ts
-                 else abortFailure ProjectBlockActor
+                 then fmap Just $ projectBla source tpos eps ts
+                 else failureSlide ProjectBlockActor
 
 projectBla :: (MonadClientAbort m, MonadClientUI m)
            => ActorId -> Point -> Int -> [Trigger] -> m CmdSerTakeTime

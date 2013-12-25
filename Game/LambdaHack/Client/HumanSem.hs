@@ -36,7 +36,7 @@ cmdHumanSem cmd = do
   when (noRemoteHumanCmd cmd) $ checkCursor arena
   cmdAction cmd
 
--- | The basic action for a command and whether it takes time.
+-- | Compute the basic action for a command and mark whether it takes time.
 cmdAction :: (MonadClientAbort m, MonadClientUI m)
           => HumanCmd -> WriterT Slideshow m (Maybe CmdSer)
 cmdAction cmd = case cmd of
@@ -124,7 +124,7 @@ moveRunHuman run v = do
         -- TODO: stop running at invisible actor
       Just target | run ->
         -- Displacing requires accessibility, but it's checked later on.
-        fmap (Just . TakeTimeSer) $ displaceAid leader target
+        fmap (fmap TakeTimeSer) $ displaceAid leader target
       Just target -> do
         tb <- getsState $ getActorBody target
         -- We always see actors from our own faction.
@@ -146,7 +146,7 @@ projectHuman ts = do
     then retargetLeader >> return Nothing
     else do
       leader <- getLeaderUI
-      fmap (Just . TakeTimeSer) $ projectAid leader ts
+      fmap (fmap TakeTimeSer) $ projectAid leader ts
 
 tgtFloorHuman :: MonadClientUI m => WriterT Slideshow m (Maybe CmdSer)
 tgtFloorHuman = do
