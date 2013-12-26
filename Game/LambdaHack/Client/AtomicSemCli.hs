@@ -527,7 +527,7 @@ quitFactionUI fid mbody toSt = do
       shutdownSlide <- promptToSlideshow pp
       -- TODO: First ESC cancels items display.
       void $ getInitConfirms ColorFull []
-        $ startingSlide Monoid.<> itemSlides
+           $ startingSlide Monoid.<> itemSlides
       -- TODO: Second ESC cancels high score and parting message display.
       -- The last slide stays onscreen during shutdown, etc.
           Monoid.<> scoreSlides Monoid.<> partingSlide Monoid.<> shutdownSlide

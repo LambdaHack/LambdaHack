@@ -431,7 +431,7 @@ setPathSer aid = do
           let toColor = Color.BrBlack
           when (bcolor /= toColor) $
             execCmdAtomic $ ColorActorA aid bcolor toColor
-        void $ moveSer aid d
+        moveSer aid d
         execCmdAtomic $ PathActorA aid bpath (Just lv)
     _ -> assert `failure` "null path" `twith` (aid, b)
 

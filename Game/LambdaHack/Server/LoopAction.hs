@@ -266,7 +266,8 @@ handleActors cmdSerSem lid = do
       if bproj body then do  -- TODO: perhaps check Track, not bproj
         execSfxAtomic $ DisplayPushD side
         let cmdS = TakeTimeSer $ SetPathSer aid
-        void $ cmdSerSem cmdS
+        timed <- cmdSerSem cmdS
+        assert timed skip
         advanceTime aid
         extraFrames body
       else if queryUI then do
@@ -307,7 +308,8 @@ handleActors cmdSerSem lid = do
         assert (not (bhp bPre <= 0 && not (bproj bPre))
                 `blame` "AI switches to an incapacitated actor"
                 `twith` (cmdS, bPre, side)) skip
-        void $ cmdSerSem cmdS
+        timed <- cmdSerSem cmdS
+        assert timed skip
         -- AI always takes time and so doesn't loop.
         advanceTime aidNew
         extraFrames bPre

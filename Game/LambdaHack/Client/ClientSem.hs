@@ -215,7 +215,7 @@ humanCommand msgRunStop = do
 --                            then Clear
 --                            else cmd
             Nothing -> let msgKey = "unknown command <" <> K.showKM km <> ">"
-                       in failWith msgKey
+                       in fmap Left $ promptToSlideshow msgKey
         -- The command was failed or successful and if the latter,
         -- possibly took some time.
         case abortOrCmd of

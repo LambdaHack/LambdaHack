@@ -21,7 +21,6 @@ import qualified Data.EnumMap.Strict as EM
 import Data.Function
 import Data.List
 import Data.Maybe
-import Data.Text (Text)
 
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.State
@@ -42,7 +41,7 @@ import Game.LambdaHack.Content.TileKind
 
 -- | Continue running in the given direction.
 continueRun :: MonadClient m
-            => RunParams -> m (Either Text (RunParams, CmdSerTakeTime))
+            => RunParams -> m (Either Msg (RunParams, CmdSerTakeTime))
 continueRun paramOld =
   case paramOld of
     RunParams{ runMembers = []
@@ -92,7 +91,7 @@ continueRun paramOld =
 
 -- | Actor moves or searches or alters. No visible actor at the position.
 moveRunAid :: MonadClient m
-           => ActorId -> Vector -> m (Either Text CmdSerTakeTime)
+           => ActorId -> Vector -> m (Either Msg CmdSerTakeTime)
 moveRunAid source dir = do
   cops@Kind.COps{cotile} <- getsState scops
   sb <- getsState $ getActorBody source
@@ -138,14 +137,13 @@ moveRunAid source dir = do
 -- a corridor's corner (we never change direction except in corridors)
 -- and it increments the counter of traversed tiles.
 continueRunDir :: MonadClient m
-               => ActorId -> Int -> Maybe Vector
-               -> m (Maybe Vector, Maybe Text)
+               => ActorId -> Int -> Maybe Vector -> m (Maybe Vector, Maybe Msg)
 continueRunDir aid distLast mdir = do
   sreport <- getsClient sreport -- TODO: check the message before it goes into history
   let boringMsgs = map BS.pack [ "You hear some noises." ]
       -- TODO: use a regexp from the UI config instead
       msgShown  = isJust $ findInReport (`notElem` boringMsgs) sreport
-  if msgShown then return (Nothing, Just "")  -- don't obscure the message
+  if msgShown then return (Nothing, Just "FIXME: msgShown")  -- don't obscure the message
   else do
     let maxDistance = 20
     cops@Kind.COps{cotile} <- getsState scops
@@ -185,7 +183,7 @@ continueRunDir aid distLast mdir = do
     check
 
 tryTurning :: MonadClient m
-           => ActorId -> m (Maybe Vector, Maybe Text)
+           => ActorId -> m (Maybe Vector, Maybe Msg)
 tryTurning aid = do
   cops@Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody aid
@@ -212,7 +210,7 @@ tryTurning aid = do
                 , Just "blocked and many distant similar directions found" )
 
 checkAndRun :: MonadClient m
-            => ActorId -> Vector -> m (Maybe Vector, Maybe Text)
+            => ActorId -> Vector -> m (Maybe Vector, Maybe Msg)
 checkAndRun aid dir = do
   Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
   body <- getsState $ getActorBody aid

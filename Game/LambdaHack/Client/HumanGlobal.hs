@@ -2,16 +2,20 @@
 -- A couple of them do not take time, the rest does.
 -- TODO: document
 module Game.LambdaHack.Client.HumanGlobal
-  ( displaceAid, meleeAid, waitHuman, pickupHuman, dropHuman
-  , projectAid, applyHuman, alterDirHuman, triggerTileHuman
+  ( moveRunHuman, waitHuman, pickupHuman, dropHuman
+  , projectHuman, applyHuman, alterDirHuman, triggerTileHuman
   , gameRestartHuman, gameExitHuman, gameSaveHuman
+  , SlideOrCmd, failWith
   ) where
 
 import Control.Exception.Assert.Sugar
+import Control.Monad
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import Data.Function
 import Data.List
 import Data.Maybe
+import Data.Monoid hiding ((<>))
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
@@ -20,6 +24,7 @@ import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.HumanCmd (Trigger (..))
 import Game.LambdaHack.Client.HumanLocal
+import Game.LambdaHack.Client.RunAction
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
@@ -38,16 +43,79 @@ import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Common.VectorXY
 import Game.LambdaHack.Content.TileKind as TileKind
 
-failSer :: MonadClientUI m => FailureSer -> m (Abort a)
+type SlideOrCmd a = Either Slideshow a
+
+failWith :: MonadClientUI m => Msg -> m (SlideOrCmd a)
+failWith msg = assert (not $ T.null msg) $ fmap Left $ promptToSlideshow msg
+
+failSer :: MonadClientUI m => FailureSer -> m (SlideOrCmd a)
 failSer = failWith . showFailureSer
 
 -- * Move and Run
 
+moveRunHuman :: MonadClientUI m
+             => Bool -> VectorXY -> m (SlideOrCmd CmdSerTakeTime)
+moveRunHuman run v = do
+  tgtMode <- getsClient stgtMode
+  (arena, Level{lxsize}) <- viewedLevel
+  leader <- getLeaderUI
+  sb <- getsState $ getActorBody leader
+  let dir = toDir lxsize v
+  if isJust tgtMode then do
+    fmap Left $ moveCursor dir (if run then 10 else 1)
+  else do
+    let tpos = bpos sb `shift` dir
+    -- We start by checking actors at the the target position,
+    -- which gives a partial information (actors can be invisible),
+    -- as opposed to accessibility (and items) which are always accurate
+    -- (tiles can't be invisible).
+    tgt <- getsState $ posToActor tpos arena
+    case tgt of
+      Nothing -> do  -- move or search or alter
+        -- Start running in the given direction. The first turn of running
+        -- succeeds much more often than subsequent turns, because we ignore
+        -- most of the disturbances, since the player is mostly aware of them
+        -- and still explicitly requests a run, knowing how it behaves.
+        runStopOrCmd <- moveRunAid leader dir
+        case runStopOrCmd of
+          Left stopMsg -> failWith stopMsg
+          Right runCmd -> do
+            sel <- getsClient sselected
+            let runMembers = ES.toList (ES.delete leader sel) ++ [leader]
+                runParams = RunParams { runLeader = leader
+                                      , runMembers
+                                      , runDist = 0
+                                      , runStopMsg = Nothing
+                                      , runInitDir = Just dir }
+            when run $ modifyClient $ \cli -> cli {srunning = Just runParams}
+            return $ Right runCmd
+        -- When running, the invisible actor is hit (not displaced!),
+        -- so that running in the presence of roving invisible
+        -- actors is equivalent to moving (with visible actors
+        -- this is not a problem, since runnning stops early enough).
+        -- TODO: stop running at invisible actor
+      Just target | run ->
+        -- Displacing requires accessibility, but it's checked later on.
+        displaceAid leader target
+      Just target -> do
+        tb <- getsState $ getActorBody target
+        -- We always see actors from our own faction.
+        if bfid tb == bfid sb && not (bproj tb) then do
+          -- Select adjacent actor by bumping into him. Takes no time.
+          success <- pickLeader target
+          assert (success `blame` "bump self"
+                          `twith` (leader, target, tb)) skip
+          return $ Left mempty
+        else
+          -- Attacking does not require full access, adjacency is enough.
+          meleeAid leader target
+
 -- | Actor atttacks an enemy actor or his own projectile.
 meleeAid :: MonadClientUI m
-         => ActorId -> ActorId -> m (Abort CmdSerTakeTime)
+         => ActorId -> ActorId -> m (SlideOrCmd CmdSerTakeTime)
 meleeAid source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
@@ -70,7 +138,7 @@ meleeAid source target = do
 
 -- | Actor swaps position with another.
 displaceAid :: MonadClientUI m
-            => ActorId -> ActorId -> m (Abort CmdSerTakeTime)
+            => ActorId -> ActorId -> m (SlideOrCmd CmdSerTakeTime)
 displaceAid source target = do
   cops <- getsState scops
   sb <- getsState $ getActorBody source
@@ -94,7 +162,7 @@ waitHuman = do
 
 -- * Pickup
 
-pickupHuman :: MonadClientUI m => m (Abort CmdSerTakeTime)
+pickupHuman :: MonadClientUI m => m (SlideOrCmd CmdSerTakeTime)
 pickupHuman = do
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
@@ -114,7 +182,7 @@ pickupHuman = do
 -- TODO: you can drop an item already on the floor, which works correctly,
 -- but is weird and useless.
 -- | Drop a single item.
-dropHuman :: MonadClientUI m => m (Abort CmdSerTakeTime)
+dropHuman :: MonadClientUI m => m (SlideOrCmd CmdSerTakeTime)
 dropHuman = do
   -- TODO: allow dropping a given number of identical items.
   Kind.COps{coitem} <- getsState scops
@@ -146,7 +214,7 @@ getAnyItem :: MonadClientUI m
            -> ItemBag  -- ^ all items in question
            -> ItemInv  -- ^ inventory characters
            -> Text     -- ^ how to refer to the collection of items
-           -> m (Abort ((ItemId, Item), (Int, Container)))
+           -> m (SlideOrCmd ((ItemId, Item), (Int, Container)))
 getAnyItem leader prompt = getItem leader prompt (const True) allObjectsName
 
 data ItemDialogState = INone | ISuitable | IAll deriving Eq
@@ -161,7 +229,7 @@ getItem :: MonadClientUI m
         -> ItemBag         -- ^ all items in question
         -> ItemInv         -- ^ inventory characters
         -> Text            -- ^ how to refer to the collection of items
-        -> m (Abort ((ItemId, Item), (Int, Container)))
+        -> m (SlideOrCmd ((ItemId, Item), (Int, Container)))
 getItem aid prompt p ptext bag inv isn = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -237,9 +305,18 @@ getItem aid prompt p ptext bag inv isn = do
 
 -- * Project
 
+projectHuman :: MonadClientUI m
+             => [Trigger] -> m (SlideOrCmd CmdSerTakeTime)
+projectHuman ts = do
+  tgtLoc <- targetToPos
+  if isNothing tgtLoc
+    then fmap Left retargetLeader
+    else do
+      leader <- getLeaderUI
+      projectAid leader ts
+
 projectAid :: MonadClientUI m
-           => ActorId -> [Trigger]
-           -> m (Abort CmdSerTakeTime)
+           => ActorId -> [Trigger] -> m (SlideOrCmd CmdSerTakeTime)
 projectAid source ts = do
   Kind.COps{cotile} <- getsState scops
   target <- targetToPos
@@ -273,7 +350,7 @@ projectAid source ts = do
 
 projectBla :: MonadClientUI m
            => ActorId -> Point -> Int -> [Trigger]
-           -> m (Abort CmdSerTakeTime)
+           -> m (SlideOrCmd CmdSerTakeTime)
 projectBla source tpos eps ts = do
   let (verb1, object1) = case ts of
         [] -> ("aim", "object")
@@ -286,12 +363,10 @@ projectBla source tpos eps ts = do
   case ggi of
     Right ((iid, _), (_, container)) -> do
       stgtMode <- getsClient stgtMode
-      endT <- case stgtMode of
-        Just (TgtAuto _) -> endTargeting True
-        _ -> return Nothing
-      case endT of
-        Just slides -> return $ Left slides
-        Nothing -> return $! Right $ ProjectSer source tpos eps iid container
+      case stgtMode of
+        Just (TgtAuto _) -> targetAccept
+        _ -> return ()
+      return $! Right $ ProjectSer source tpos eps iid container
     Left slides -> return $ Left slides
 
 triggerSymbols :: [Trigger] -> [Char]
@@ -301,7 +376,7 @@ triggerSymbols (_ : ts) = triggerSymbols ts
 
 -- * Apply
 
-applyHuman :: MonadClientUI m => [Trigger] -> m (Abort CmdSerTakeTime)
+applyHuman :: MonadClientUI m => [Trigger] -> m (SlideOrCmd CmdSerTakeTime)
 applyHuman ts = do
   leader <- getLeaderUI
   bag <- getsState $ getActorBag leader
@@ -328,7 +403,7 @@ getGroupItem :: MonadClientUI m
              -> [Char]   -- ^ accepted item symbols
              -> Text     -- ^ prompt
              -> Text     -- ^ how to refer to the collection of objects
-             -> m (Abort ((ItemId, Item), (Int, Container)))
+             -> m (SlideOrCmd ((ItemId, Item), (Int, Container)))
 getGroupItem leader is inv object syms prompt packName = do
   let choice i = jsymbol i `elem` syms
       header = makePhrase [MU.Capitalize (MU.Ws object)]
@@ -337,7 +412,7 @@ getGroupItem leader is inv object syms prompt packName = do
 -- * AlterDir
 
 -- | Ask for a direction and alter a tile, if possible.
-alterDirHuman :: MonadClientUI m => [Trigger] -> m (Abort CmdSerTakeTime)
+alterDirHuman :: MonadClientUI m => [Trigger] -> m (SlideOrCmd CmdSerTakeTime)
 alterDirHuman ts = do
   let verb1 = case ts of
         [] -> "alter"
@@ -356,7 +431,7 @@ alterDirHuman ts = do
 -- | Player tries to alter a tile using a feature.
 alterTile :: MonadClientUI m
           => ActorId -> Vector -> [Trigger]
-          -> m (Abort CmdSerTakeTime)
+          -> m (SlideOrCmd CmdSerTakeTime)
 alterTile source dir ts = do
   Kind.COps{cotile} <- getsState scops
   b <- getsState $ getActorBody source
@@ -387,7 +462,7 @@ guessAlter _ _ _ = "never mind"
 
 -- | Leader tries to trigger the tile he's standing on.
 triggerTileHuman :: MonadClientUI m
-                 => [Trigger] -> m (Abort CmdSerTakeTime)
+                 => [Trigger] -> m (SlideOrCmd CmdSerTakeTime)
 triggerTileHuman ts = do
   leader <- getLeaderUI
   triggerTile leader ts
@@ -395,7 +470,7 @@ triggerTileHuman ts = do
 -- | Player tries to trigger a tile using a feature.
 triggerTile :: MonadClientUI m
             => ActorId -> [Trigger]
-            -> m (Abort CmdSerTakeTime)
+            -> m (SlideOrCmd CmdSerTakeTime)
 triggerTile leader ts = do
   Kind.COps{cotile} <- getsState scops
   b <- getsState $ getActorBody leader
@@ -417,7 +492,7 @@ triggerFeatures (_ : ts) = triggerFeatures ts
 
 -- | Verify important feature triggers, such as fleeing the dungeon.
 verifyTrigger :: MonadClientUI m
-              => ActorId -> F.Feature -> m (Abort ())
+              => ActorId -> F.Feature -> m (SlideOrCmd ())
 verifyTrigger leader feat = case feat of
   F.Cause Effect.Escape -> do
     b <- getsState $ getActorBody leader
@@ -459,7 +534,7 @@ guessTrigger _ _ _ = "never mind"
 
 -- * GameRestart; does not take time
 
-gameRestartHuman :: MonadClientUI m => Text -> m (Abort CmdSer)
+gameRestartHuman :: MonadClientUI m => Text -> m (SlideOrCmd CmdSer)
 gameRestartHuman t = do
   let msg = "You just requested a new" <+> t <+> "game."
   b1 <- displayMore ColorFull msg
@@ -477,7 +552,7 @@ gameRestartHuman t = do
 
 -- * GameExit; does not take time
 
-gameExitHuman :: MonadClientUI m => m (Abort CmdSer)
+gameExitHuman :: MonadClientUI m => m (SlideOrCmd CmdSer)
 gameExitHuman = do
   go <- displayYesNo ColorFull "Really save and exit?"
   if go then do

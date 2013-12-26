@@ -5,14 +5,14 @@ module Game.LambdaHack.Client.HumanLocal
   ( -- * Semantics of serverl-less human commands
     moveCursor, retargetLeader
   , pickLeaderHuman, memberCycleHuman, memberBackHuman
-  , inventoryHuman, tgtFloorLeader, tgtEnemyLeader, tgtAscendHuman
+  , inventoryHuman, tgtAscendHuman, tgtFloorHuman, tgtEnemyHuman
   , epsIncrHuman, selectActorHuman, selectNoneHuman
   , cancelHuman, displayMainMenu, acceptHuman, clearHuman
   , historyHuman, humanMarkVision, humanMarkSmell, humanMarkSuspect
   , helpHuman
     -- * Helper functions useful also elsewhere
-  , endTargeting, floorItemOverlay, itemOverlay, viewedLevel, pickLeader
-  , stopRunning, lookAt
+  , targetAccept, floorItemOverlay, itemOverlay
+  , viewedLevel, pickLeader, stopRunning, lookAt
   ) where
 
 -- Cabal
@@ -58,16 +58,9 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 
-failMaybe :: MonadClientUI m => Msg -> m (Maybe Slideshow)
-failMaybe msg | T.null msg = return $ Just mempty
-failMaybe msg = fmap Just $ promptToSlideshow msg
-
-succeed :: Monad m => m (Maybe Slideshow)
-succeed = return Nothing
-
 -- * Move and Run
 
-moveCursor :: MonadClientUI m => Vector -> Int -> m (Maybe Slideshow)
+moveCursor :: MonadClientUI m => Vector -> Int -> m Slideshow
 moveCursor dir n = do
   leader <- getLeaderUI
   lpos <- getsState $ bpos . getActorBody leader
@@ -132,7 +125,7 @@ lookAt detailed canSee pos aid msg = do
 
 -- | Perform look around in the current position of the cursor.
 -- Assumes targeting mode and so assumes that a leader is picked.
-doLook :: MonadClientUI m => m (Maybe Slideshow)
+doLook :: MonadClientUI m => m Slideshow
 doLook = do
   scursor <- getsClient scursor
   (lid, lvl) <- viewedLevel
@@ -164,10 +157,10 @@ doLook = do
   lookMsg <- lookAt True canSee p leader enemyMsg
   modifyClient (\st -> st {slastKey = Nothing})
   if EM.size is <= 2 then
-    fmap Just $ promptToSlideshow (mode <+> lookMsg)
+    promptToSlideshow (mode <+> lookMsg)
   else do
     io <- floorItemOverlay is
-    fmap Just $ overlayToSlideshow (mode <+> lookMsg) io
+    overlayToSlideshow (mode <+> lookMsg) io
 
 -- | Create a list of item names.
 floorItemOverlay :: MonadClient m => ItemBag -> m Overlay
@@ -198,7 +191,7 @@ itemOverlay bag inv = do
 
 -- * Project
 
-retargetLeader :: MonadClientUI m => m (Maybe Slideshow)
+retargetLeader :: MonadClientUI m => m Slideshow
 retargetLeader = do
   arena <- getArenaUI
   -- TODO: do not save to history:
@@ -208,30 +201,30 @@ retargetLeader = do
 
 -- * PickLeader
 
-pickLeaderHuman :: MonadClientUI m => Int -> m (Maybe Slideshow)
+pickLeaderHuman :: MonadClientUI m => Int -> m Slideshow
 pickLeaderHuman k = do
   side <- getsClient sside
   s <- getState
   case tryFindHeroK s side k of
-    Nothing  -> failMaybe "No such member of the party."
+    Nothing  -> promptToSlideshow "No such member of the party."
     Just (aid, _) -> do
       void $ pickLeader aid
-      succeed
+      return mempty
 
 -- * MemberCycle
 
 -- | Switches current member to the next on the level, if any, wrapping.
-memberCycleHuman :: MonadClientUI m => m (Maybe Slideshow)
+memberCycleHuman :: MonadClientUI m => m Slideshow
 memberCycleHuman = do
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
   hs <- partyAfterLeader leader
   case filter (\(_, b) -> blid b == blid body) hs of
-    [] -> failMaybe "Cannot pick any other member on this level."
+    [] -> promptToSlideshow "Cannot pick any other member on this level."
     (np, b) : _ -> do
       success <- pickLeader np
       assert (success `blame` "same leader" `twith` (leader, np, b)) skip
-      succeed
+      return mempty
 
 partyAfterLeader :: MonadActionRO m => ActorId -> m [(ActorId, Actor)]
 partyAfterLeader leader = do
@@ -286,16 +279,16 @@ stopRunning = do
 -- * MemberBack
 
 -- | Switches current member to the previous in the whole dungeon, wrapping.
-memberBackHuman :: MonadClientUI m => m (Maybe Slideshow)
+memberBackHuman :: MonadClientUI m => m Slideshow
 memberBackHuman = do
   leader <- getLeaderUI
   hs <- partyAfterLeader leader
   case reverse hs of
-    [] -> failMaybe "No other member in the party."
+    [] -> promptToSlideshow "No other member in the party."
     (np, b) : _ -> do
       success <- pickLeader np
       assert (success `blame` "same leader" `twith` (leader, np, b)) skip
-      succeed
+      return mempty
 
 -- * Inventory
 
@@ -303,29 +296,34 @@ memberBackHuman = do
 -- announcing that) and show the inventory of the new leader (unless
 -- we have just a single inventory in the future).
 -- | Display inventory
-inventoryHuman :: MonadClientUI m => m (Maybe Slideshow)
+inventoryHuman :: MonadClientUI m => m Slideshow
 inventoryHuman = do
   leader <- getLeaderUI
   subject <- partAidLeader leader
   bag <- getsState $ getActorBag leader
   inv <- getsState $ getActorInv leader
   if EM.null bag
-    then failMaybe $ makeSentence
+    then promptToSlideshow $ makeSentence
       [ MU.SubjectVerbSg subject "be"
       , "not carrying anything" ]
     else do
       let blurb = makePhrase
             [MU.Capitalize $ MU.SubjectVerbSg subject "be carrying:"]
       io <- itemOverlay bag inv
-      fmap Just $ overlayToSlideshow blurb io
+      overlayToSlideshow blurb io
 
 -- * TgtFloor
+
+tgtFloorHuman :: MonadClientUI m => m Slideshow
+tgtFloorHuman = do
+  arena <- getArenaUI
+  tgtFloorLeader (TgtExplicit arena)
 
 -- | Start floor targeting mode or reset the cursor position to the leader.
 -- Note that the origin of a command (the hero that performs it) is unaffected
 -- by targeting. For example, not the targeted door, but one adjacent
 -- to the leader is closed by him.
-tgtFloorLeader :: MonadClientUI m => TgtMode -> m (Maybe Slideshow)
+tgtFloorLeader :: MonadClientUI m => TgtMode -> m Slideshow
 tgtFloorLeader stgtModeNew = do
   leader <- getLeaderUI
   ppos <- getsState (bpos . getActorBody leader)
@@ -341,7 +339,7 @@ tgtFloorLeader stgtModeNew = do
   setCursor stgtModeNew
 
 -- | Set, activate and display cursor information.
-setCursor :: MonadClientUI m => TgtMode -> m (Maybe Slideshow)
+setCursor :: MonadClientUI m => TgtMode -> m Slideshow
 setCursor stgtModeNew = do
   stgtModeOld <- getsClient stgtMode
   scursorOld <- getsClient scursor
@@ -356,8 +354,13 @@ setCursor stgtModeNew = do
 
 -- * TgtEnemy
 
+tgtEnemyHuman :: MonadClientUI m => m Slideshow
+tgtEnemyHuman = do
+  arena <- getArenaUI
+  tgtEnemyLeader (TgtExplicit arena)
+
 -- | Start the enemy targeting mode. Cycle between enemy targets.
-tgtEnemyLeader :: MonadClientUI m => TgtMode -> m (Maybe Slideshow)
+tgtEnemyLeader :: MonadClientUI m => TgtMode -> m Slideshow
 tgtEnemyLeader stgtModeNew = do
   leader <- getLeaderUI
   ppos <- getsState (bpos . getActorBody leader)
@@ -395,7 +398,7 @@ tgtEnemyLeader stgtModeNew = do
 -- | Change the displayed level in targeting mode to (at most)
 -- k levels shallower. Enters targeting mode, if not already in one.
 tgtAscendHuman :: MonadClientUI m
-               => Int -> m (Maybe Slideshow)
+               => Int -> m Slideshow
 tgtAscendHuman k = do
   Kind.COps{cotile} <- getsState scops
   dungeon <- getsState sdungeon
@@ -422,7 +425,7 @@ tgtAscendHuman k = do
       doLook
     Nothing ->  -- no stairs in the right direction
       case ascendInBranch dungeon tgtId k of
-        [] -> failMaybe "no more levels in this direction"
+        [] -> promptToSlideshow "no more levels in this direction"
         nln : _ -> do
           setTgtId nln
           doLook
@@ -439,24 +442,24 @@ setTgtId nln = do
 -- * EpsIncr
 
 -- | Tweak the @eps@ parameter of the targeting digital line.
-epsIncrHuman :: MonadClientUI m => Bool -> m (Maybe Slideshow)
+epsIncrHuman :: MonadClientUI m => Bool -> m Slideshow
 epsIncrHuman b = do
   stgtMode <- getsClient stgtMode
   if isJust stgtMode
     then do
       modifyClient $ \cli -> cli {seps = seps cli + if b then 1 else -1}
-      succeed
-    else failMaybe "never mind"  -- no visual feedback, so no sense
+      return mempty
+    else promptToSlideshow "never mind"  -- no visual feedback, so no sense
 
 -- * SelectActor
 
 -- TODO: make the message (and for selectNoneHuman, pickLeader, etc.)
 -- optional, since they have a clear representation in the UI elsewhere.
-selectActorHuman ::MonadClientUI m => m (Maybe Slideshow)
+selectActorHuman ::MonadClientUI m => m Slideshow
 selectActorHuman = do
   mleader <- getsClient _sleader
   case mleader of
-    Nothing -> failMaybe "no leader picked, can't select"
+    Nothing -> promptToSlideshow "no leader picked, can't select"
     Just leader -> do
       body <- getsState $ getActorBody leader
       wasMemeber <- getsClient $ ES.member leader . sselected
@@ -468,7 +471,7 @@ selectActorHuman = do
       msgAdd $ makeSentence [subject, if wasMemeber
                                       then "deselected"
                                       else "selected"]
-      succeed
+      return mempty
 
 -- * SelectNone
 
@@ -493,16 +496,16 @@ selectNoneHuman = do
 
 -- | Cancel something, e.g., targeting mode, resetting the cursor
 -- to the position of the leader. Chosen target is not invalidated.
-cancelHuman :: MonadClientUI m => m (Maybe Slideshow) -> m (Maybe Slideshow)
+cancelHuman :: MonadClientUI m => m Slideshow -> m Slideshow
 cancelHuman h = do
   stgtMode <- getsClient stgtMode
   if isJust stgtMode
-    then endTargeting False
+    then targetReject
     else h  -- nothing to cancel right now, treat this as a command invocation
 
 -- TODO: merge with the help screens better
 -- | Display the main menu.
-displayMainMenu :: MonadClientUI m => m (Maybe Slideshow)
+displayMainMenu :: MonadClientUI m => m Slideshow
 displayMainMenu = do
   Kind.COps{corule} <- getsState scops
   Binding{krevMap} <- askBinding
@@ -549,50 +552,58 @@ displayMainMenu = do
         overwrite $ pasteVersion $ map T.unpack $ stripFrame mainMenuArt
   case menuOverlay of
     [] -> assert `failure` "empty Main Menu overlay" `twith` mainMenuArt
-    hd : tl -> fmap Just $ overlayToSlideshow hd (toOverlay tl)
-                           -- TODO: keys don't work if tl/=[]
+    hd : tl -> overlayToSlideshow hd (toOverlay tl)
+               -- TODO: keys don't work if tl/=[]
 
 -- * Accept
 
 -- | Accept something, e.g., targeting mode, keeping cursor where it was.
 -- Or perform the default action, if nothing needs accepting.
-acceptHuman :: MonadClientUI m => m (Maybe Slideshow) -> m (Maybe Slideshow)
+acceptHuman :: MonadClientUI m => m Slideshow -> m Slideshow
 acceptHuman h = do
   stgtMode <- getsClient stgtMode
   if isJust stgtMode
-    then endTargeting True
+    then do
+      targetAccept
+      return mempty
     else h  -- nothing to accept right now, treat this as a command invocation
 
+-- | End targeting mode, accepting the current position.
+targetAccept :: MonadClientUI m => m ()
+targetAccept = do
+  endTargeting
+  endTargetingMsg
+  modifyClient $ \cli -> cli { stgtMode = Nothing }
+
+-- | End targeting mode, rejecting the current position.
+targetReject :: MonadClientUI m => m Slideshow
+targetReject = do
+  endTargeting
+  promptToSlideshow "targeting canceled"
+
 -- | End targeting mode, accepting the current position or not.
-endTargeting :: MonadClientUI m => Bool -> m (Maybe Slideshow)
-endTargeting accept = do
-  when accept $ do
-    leader <- getLeaderUI
-    target <- getsClient $ getTarget leader
-    scursor <- getsClient scursor
-    (lid, _) <- viewedLevel
-    side <- getsClient sside
-    fact <- getsState $ (EM.! side) . sfactionD
-    bs <- getsState $ actorNotProjAssocs (isAtWar fact) lid
-    case target of
-      Just TEnemy{} ->
-        -- If in enemy targeting mode, switch to the enemy under
-        -- the current cursor position, if any.
-        case find (\ (_im, m) -> Just (bpos m) == scursor) bs of
-          Just (im, m)  ->
-            let tgt = Just $ TEnemy im (bpos m)
-            in modifyClient $ updateTarget leader (const tgt)
-          Nothing -> return ()
-      _ -> case scursor of
+endTargeting :: MonadClientUI m => m ()
+endTargeting = do
+  leader <- getLeaderUI
+  target <- getsClient $ getTarget leader
+  scursor <- getsClient scursor
+  (lid, _) <- viewedLevel
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
+  bs <- getsState $ actorNotProjAssocs (isAtWar fact) lid
+  case target of
+    Just TEnemy{} ->
+      -- If in enemy targeting mode, switch to the enemy under
+      -- the current cursor position, if any.
+      case find (\ (_im, m) -> Just (bpos m) == scursor) bs of
+        Just (im, m)  ->
+          let tgt = Just $ TEnemy im (bpos m)
+          in modifyClient $ updateTarget leader (const tgt)
         Nothing -> return ()
-        Just cpos ->
-          modifyClient $ updateTarget leader (const $ Just $ TPos cpos)
-  if accept
-    then do
-      endTargetingMsg
-      modifyClient $ \cli -> cli { stgtMode = Nothing }
-      succeed
-    else failMaybe "targeting canceled"
+    _ -> case scursor of
+      Nothing -> return ()
+      Just cpos ->
+        modifyClient $ updateTarget leader (const $ Just $ TPos cpos)
 
 endTargetingMsg :: MonadClientUI m => m ()
 endTargetingMsg = do
@@ -621,7 +632,7 @@ clearHuman = return ()
 
 -- * History
 
-historyHuman :: MonadClientUI m => m (Maybe Slideshow)
+historyHuman :: MonadClientUI m => m Slideshow
 historyHuman = do
   history <- getsClient shistory
   arena <- getArenaUI
@@ -633,7 +644,7 @@ historyHuman = do
         , "(this level:"
         , MU.Text (showT (local `timeFit` timeTurn)) MU.:> ")" ]
         <+> "Past messages:"
-  fmap Just $ overlayToSlideshow msg $ renderHistory history
+  overlayToSlideshow msg $ renderHistory history
 
 -- * MarkVision, MarkSmell, MarkSuspect
 
@@ -658,7 +669,7 @@ humanMarkSuspect = do
 -- * Help
 
 -- | Display command help.
-helpHuman :: MonadClientUI m => m (Maybe Slideshow)
+helpHuman :: MonadClientUI m => m Slideshow
 helpHuman = do
   keyb <- askBinding
-  return $ Just $ keyHelp keyb
+  return $ keyHelp keyb
