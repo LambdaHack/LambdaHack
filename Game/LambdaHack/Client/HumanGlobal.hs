@@ -40,12 +40,8 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.TileKind as TileKind
 
-failSer :: MonadClientUI m
-             => FailureSer -> m (Abort a)
-failSer = return . Left . showFailureSer
-
-failWith :: Monad m => Msg -> m (Abort a)
-failWith = return . Left
+failSer :: MonadClientUI m => FailureSer -> m (Abort a)
+failSer = failWith . showFailureSer
 
 -- * Move and Run
 
@@ -118,8 +114,7 @@ pickupHuman = do
 -- TODO: you can drop an item already on the floor, which works correctly,
 -- but is weird and useless.
 -- | Drop a single item.
-dropHuman :: (MonadClientAbort m, MonadClientUI m)
-          => m (Abort CmdSerTakeTime)
+dropHuman :: MonadClientUI m => m (Abort CmdSerTakeTime)
 dropHuman = do
   -- TODO: allow dropping a given number of identical items.
   Kind.COps{coitem} <- getsState scops
@@ -145,7 +140,7 @@ allObjectsName :: Text
 allObjectsName = "Objects"
 
 -- | Let the human player choose any item from a list of items.
-getAnyItem :: (MonadClientAbort m, MonadClientUI m)
+getAnyItem :: MonadClientUI m
            => ActorId
            -> Text     -- ^ prompt
            -> ItemBag  -- ^ all items in question
@@ -158,7 +153,7 @@ data ItemDialogState = INone | ISuitable | IAll deriving Eq
 
 -- | Let the human player choose a single, preferably suitable,
 -- item from a list of items.
-getItem :: (MonadClientAbort m, MonadClientUI m)
+getItem :: MonadClientUI m
         => ActorId
         -> Text            -- ^ prompt message
         -> (Item -> Bool)  -- ^ which items to consider suitable
@@ -202,7 +197,7 @@ getItem aid prompt p ptext bag inv isn = do
       ask = do
         if null is0 && EM.null tis
         then failWith "Not carrying anything."
-        else fmap Right $ perform INone
+        else perform INone
       invP = EM.filter (\iid -> p (getItemBody iid s)) inv
       perform itemDialogState = do
         let (ims, invOver, msg) = case itemDialogState of
@@ -210,36 +205,39 @@ getItem aid prompt p ptext bag inv isn = do
               ISuitable -> (isp, invP, ptext <+> isn <> ".")
               IAll      -> (is0, inv, allObjectsName <+> isn <> ".")
         io <- itemOverlay bag invOver
-        km@K.KM {..} <-
-          displayChoiceUI (msg <+> choice ims) io (keys ims)
-        assert (modifier == K.NoModifier) skip
-        case key of
-          K.Char '?' -> case itemDialogState of
-            INone -> perform ISuitable
-            ISuitable | ptext /= allObjectsName -> perform IAll
-            _ -> perform INone
-          K.Char '-' | floorFull ->
-            -- TODO: let player select item
-            return $ maximumBy (compare `on` fst . fst)
-                   $ map (\(iid, k) ->
-                           ((iid, getItemBody iid s),
-                            (k, CFloor (blid b) pos)))
-                   $ EM.assocs tis
-          K.Char l ->
-            case find ((InvChar l ==) . snd . snd) ims of
-              Nothing -> assert `failure` "unexpected inventory letter"
-                                `twith` (km, l,  ims)
-              Just (iidItem, (k, l2)) ->
-                return (iidItem, (k, CActor aid l2))
-          K.Return | bestFull ->
-            let (iidItem, (k, l2)) = maximumBy (compare `on` snd . snd) isp
-            in return (iidItem, (k, CActor aid l2))
-          _ -> assert `failure` "unexpected key:" `twith` km
+        akm <- displayChoiceUI (msg <+> choice ims) io (keys ims)
+        case akm of
+          Left amsg -> failWith amsg
+          Right (km@K.KM {..}) -> do
+            assert (modifier == K.NoModifier) skip
+            case key of
+              K.Char '?' -> case itemDialogState of
+                INone -> perform ISuitable
+                ISuitable | ptext /= allObjectsName -> perform IAll
+                _ -> perform INone
+              K.Char '-' | floorFull ->
+                -- TODO: let player select item
+                return $ Right
+                       $ maximumBy (compare `on` fst . fst)
+                       $ map (\(iid, k) ->
+                               ((iid, getItemBody iid s),
+                                (k, CFloor (blid b) pos)))
+                       $ EM.assocs tis
+              K.Char l ->
+                case find ((InvChar l ==) . snd . snd) ims of
+                  Nothing -> assert `failure` "unexpected inventory letter"
+                                    `twith` (km, l,  ims)
+                  Just (iidItem, (k, l2)) ->
+                    return $ Right (iidItem, (k, CActor aid l2))
+              K.Return | bestFull ->
+                let (iidItem, (k, l2)) = maximumBy (compare `on` snd . snd) isp
+                in return $ Right (iidItem, (k, CActor aid l2))
+              _ -> assert `failure` "unexpected key:" `twith` km
   ask
 
 -- * Project
 
-projectAid :: (MonadClientAbort m, MonadClientUI m)
+projectAid :: MonadClientUI m
            => ActorId -> [Trigger]
            -> m (Abort CmdSerTakeTime)
 projectAid source ts = do
@@ -273,7 +271,7 @@ projectAid source ts = do
                  then projectBla source tpos eps ts
                  else failSer ProjectBlockActor
 
-projectBla :: (MonadClientAbort m, MonadClientUI m)
+projectBla :: MonadClientUI m
            => ActorId -> Point -> Int -> [Trigger]
            -> m (Abort CmdSerTakeTime)
 projectBla source tpos eps ts = do
@@ -301,8 +299,7 @@ triggerSymbols (_ : ts) = triggerSymbols ts
 
 -- * Apply
 
-applyHuman :: (MonadClientAbort m, MonadClientUI m)
-           => [Trigger] -> m (Abort CmdSerTakeTime)
+applyHuman :: MonadClientUI m => [Trigger] -> m (Abort CmdSerTakeTime)
 applyHuman ts = do
   leader <- getLeaderUI
   bag <- getsState $ getActorBag leader
@@ -321,7 +318,7 @@ applyHuman ts = do
 -- | Let a human player choose any item with a given group name.
 -- Note that this does not guarantee the chosen item belongs to the group,
 -- as the player can override the choice.
-getGroupItem :: (MonadClientAbort m, MonadClientUI m)
+getGroupItem :: MonadClientUI m
              => ActorId
              -> ItemBag  -- ^ all objects in question
              -> ItemInv  -- ^ inventory characters
@@ -338,19 +335,21 @@ getGroupItem leader is inv object syms prompt packName = do
 -- * AlterDir
 
 -- | Ask for a direction and alter a tile, if possible.
-alterDirHuman :: (MonadClientAbort m, MonadClientUI m)
-              => [Trigger] -> m (Abort CmdSerTakeTime)
+alterDirHuman :: MonadClientUI m => [Trigger] -> m (Abort CmdSerTakeTime)
 alterDirHuman ts = do
   let verb1 = case ts of
         [] -> "alter"
         tr : _ -> verb tr
       keys = zipWith K.KM (repeat K.NoModifier) K.dirAllMoveKey
       prompt = makePhrase ["What to", verb1 MU.:> "? [movement key"]
-  e <- displayChoiceUI prompt emptyOverlay keys
-  leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
-  Level{lxsize} <- getLevel $ blid b
-  K.handleDir lxsize e (flip (alterTile leader) ts) (failWith "never mind")
+  me <- displayChoiceUI prompt emptyOverlay keys
+  case me of
+    Left msg -> failWith msg
+    Right e -> do
+      leader <- getLeaderUI
+      b <- getsState $ getActorBody leader
+      Level{lxsize} <- getLevel $ blid b
+      K.handleDir lxsize e (flip (alterTile leader) ts) (failWith "never mind")
 
 -- | Player tries to alter a tile using a feature.
 alterTile :: MonadClientUI m
@@ -468,8 +467,7 @@ guessTrigger _ _ _ = Left "never mind"
 
 -- * GameRestart; does not take time
 
-gameRestartHuman :: MonadClientUI m => Text
-                 -> m (Abort CmdSer)
+gameRestartHuman :: MonadClientUI m => Text -> m (Abort CmdSer)
 gameRestartHuman t = do
   let msg = "You just requested a new" <+> t <+> "game."
   b1 <- displayMore ColorFull msg

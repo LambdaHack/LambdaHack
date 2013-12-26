@@ -68,14 +68,6 @@ instance Functor (ActionCli c d) where
                runActionCli m c d (\s' cli' ->
                                  k s' cli' . f) a s cli)
 
-instance MonadClientAbort (ActionCli c d) where
-  tryWith exc m  =
-    ActionCli (\c d k a s cli ->
-             let runA srandom msg =
-                   runActionCli (exc msg) c d k a s cli {srandom}
-             in runActionCli m c d k runA s cli)
-  abortWith msg  = ActionCli (\_c _d _k a _s cli -> a (srandom cli) msg)
-
 instance MonadActionRO (ActionCli c d) where
   getState       = ActionCli (\_c _d k _a s cli -> k s cli s)
   getsState      = (`fmap` getState)

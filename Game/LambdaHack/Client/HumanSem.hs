@@ -29,15 +29,19 @@ import Game.LambdaHack.Common.VectorXY
 -- Time cosuming commands are marked as such in help and cannot be
 -- invoked in targeting mode on a remote level (level different than
 -- the level of the leader).
-cmdHumanSem :: (MonadClientAbort m, MonadClientUI m)
+cmdHumanSem :: MonadClientUI m
             => HumanCmd -> WriterT Slideshow m (Abort CmdSer)
 cmdHumanSem cmd = do
   arena <- getArenaUI
-  when (noRemoteHumanCmd cmd) $ checkCursor arena
-  cmdAction cmd
+  if noRemoteHumanCmd cmd then do
+    mmsg <- checkCursor arena
+    case mmsg of
+      Just msg -> failWith msg
+      Nothing -> cmdAction cmd
+  else cmdAction cmd
 
 -- | Compute the basic action for a command and mark whether it takes time.
-cmdAction :: (MonadClientAbort m, MonadClientUI m)
+cmdAction :: MonadClientUI m
           => HumanCmd -> WriterT Slideshow m (Abort CmdSer)
 cmdAction cmd = case cmd of
   Move v -> moveRunHuman False v
@@ -54,34 +58,43 @@ cmdAction cmd = case cmd of
   GameExit -> gameExitHuman
   GameSave -> fmap Right gameSaveHuman
 
-  PickLeader k -> pickLeaderHuman k >> return (Left "")
-  MemberCycle -> memberCycleHuman >> return (Left "")
-  MemberBack -> memberBackHuman >> return (Left "")
-  Inventory -> inventoryHuman >> return (Left "")
+  PickLeader k -> convertMsg $ pickLeaderHuman k
+  MemberCycle -> convertMsg memberCycleHuman
+  MemberBack -> convertMsg memberBackHuman
+  Inventory -> convertMsg inventoryHuman
   TgtFloor -> tgtFloorHuman
   TgtEnemy -> tgtEnemyHuman
-  TgtAscend k -> tgtAscendHuman k >> return (Left "")
-  EpsIncr b -> epsIncrHuman b >> return (Left "")
-  SelectActor -> selectActorHuman >> return (Left "")
-  SelectNone -> selectNoneHuman >> return (Left "")
-  Cancel -> cancelHuman displayMainMenu >> return (Left "")
-  Accept -> acceptHuman helpHuman >> return (Left "")
-  Clear -> clearHuman >> return (Left "")
-  History -> historyHuman >> return (Left "")
-  MarkVision -> humanMarkVision >> return (Left "")
-  MarkSmell -> humanMarkSmell >> return (Left "")
-  MarkSuspect -> humanMarkSuspect >> return (Left "")
-  Help -> displayMainMenu >> return (Left "")
+  TgtAscend k -> convertMsg $ tgtAscendHuman k
+  EpsIncr b -> convertMsg $ epsIncrHuman b
+  SelectActor -> convertMsg selectActorHuman
+  SelectNone -> addNoMsg selectNoneHuman
+  Cancel -> addNoMsg $ cancelHuman displayMainMenu
+  Accept -> addNoMsg $ acceptHuman helpHuman
+  Clear -> addNoMsg clearHuman
+  History -> addNoMsg historyHuman
+  MarkVision -> addNoMsg humanMarkVision
+  MarkSmell -> addNoMsg humanMarkSmell
+  MarkSuspect -> addNoMsg humanMarkSuspect
+  Help -> addNoMsg displayMainMenu
+
+addNoMsg :: Monad m => m () -> m (Abort CmdSer)
+addNoMsg cmdCli = cmdCli >> return (Left "")
+
+convertMsg :: Monad m => m (Maybe Msg) -> m (Abort CmdSer)
+convertMsg cmdCli = do
+  mmsg <- cmdCli
+  return . Left $ fromMaybe "" mmsg
 
 -- | If in targeting mode, check if the current level is the same
 -- as player level and refuse performing the action otherwise.
-checkCursor :: (MonadClientAbort m, MonadClientUI m) => LevelId -> m ()
+checkCursor :: MonadClientUI m => LevelId -> m (Maybe Msg)
 checkCursor arena = do
   (lid, _) <- viewedLevel
-  when (arena /= lid) $
-    abortWith "[targeting] command disabled on a remote level, press ESC to switch back"
+  if (arena /= lid) then
+    return $ Just "[targeting] command disabled on a remote level, press ESC to switch back"
+  else return Nothing
 
-moveRunHuman :: (MonadClientAbort m, MonadClientUI m)
+moveRunHuman :: MonadClientUI m
              => Bool -> VectorXY -> WriterT Slideshow m (Abort CmdSer)
 moveRunHuman run v = do
   tgtMode <- getsClient stgtMode
@@ -106,7 +119,7 @@ moveRunHuman run v = do
         -- and still explicitly requests a run, knowing how it behaves.
         runStopOrCmd <- moveRunAid leader dir
         case runStopOrCmd of
-          Left stopMsg -> abortWith stopMsg
+          Left stopMsg -> failWith stopMsg
           Right runCmd -> do
             sel <- getsClient sselected
             let runMembers = ES.toList (ES.delete leader sel) ++ [leader]
@@ -138,7 +151,7 @@ moveRunHuman run v = do
           -- Attacking does not require full access, adjacency is enough.
           fmap (fmap TakeTimeSer) $ meleeAid leader target
 
-projectHuman :: (MonadClientAbort m, MonadClientUI m)
+projectHuman :: MonadClientUI m
              => [Trigger] -> WriterT Slideshow m (Abort CmdSer)
 projectHuman ts = do
   tgtLoc <- targetToPos

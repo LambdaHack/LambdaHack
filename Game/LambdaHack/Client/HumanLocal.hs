@@ -58,6 +58,12 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 
+failMaybe :: Monad m => Msg -> m (Maybe Msg)
+failMaybe = return . Just
+
+succeed :: Monad m => m (Maybe Msg)
+succeed = return Nothing
+
 -- * Move and Run
 
 moveCursor :: MonadClientUI m => Vector -> Int -> WriterT Slideshow m ()
@@ -203,31 +209,32 @@ retargetLeader = do
 
 -- * PickLeader
 
-pickLeaderHuman :: (MonadClientAbort m, MonadClientUI m) => Int -> m ()
+pickLeaderHuman :: MonadClientUI m => Int -> m (Maybe Msg)
 pickLeaderHuman k = do
   side <- getsClient sside
   s <- getState
   case tryFindHeroK s side k of
-    Nothing  -> abortWith "No such member of the party."
-    Just (aid, _) -> void $ pickLeader aid
+    Nothing  -> failMaybe "No such member of the party."
+    Just (aid, _) -> do
+      void $ pickLeader aid
+      succeed
 
 -- * MemberCycle
 
 -- | Switches current member to the next on the level, if any, wrapping.
-memberCycleHuman :: (MonadClientAbort m, MonadClientUI m) => m ()
+memberCycleHuman :: MonadClientUI m => m (Maybe Msg)
 memberCycleHuman = do
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
   hs <- partyAfterLeader leader
   case filter (\(_, b) -> blid b == blid body) hs of
-    [] -> abortWith "Cannot pick any other member on this level."
+    [] -> failMaybe "Cannot pick any other member on this level."
     (np, b) : _ -> do
       success <- pickLeader np
       assert (success `blame` "same leader" `twith` (leader, np, b)) skip
+      succeed
 
-partyAfterLeader :: MonadActionRO m
-                 => ActorId
-                 -> m [(ActorId, Actor)]
+partyAfterLeader :: MonadActionRO m => ActorId -> m [(ActorId, Actor)]
 partyAfterLeader leader = do
   faction <- getsState $ bfid . getActorBody leader
   allA <- getsState $ EM.assocs . sactorD
@@ -280,15 +287,16 @@ stopRunning = do
 -- * MemberBack
 
 -- | Switches current member to the previous in the whole dungeon, wrapping.
-memberBackHuman :: (MonadClientAbort m, MonadClientUI m) => m ()
+memberBackHuman :: MonadClientUI m => m (Maybe Msg)
 memberBackHuman = do
   leader <- getLeaderUI
   hs <- partyAfterLeader leader
   case reverse hs of
-    [] -> abortWith "No other member in the party."
+    [] -> failMaybe "No other member in the party."
     (np, b) : _ -> do
       success <- pickLeader np
       assert (success `blame` "same leader" `twith` (leader, np, b)) skip
+      succeed
 
 -- * Inventory
 
@@ -296,15 +304,14 @@ memberBackHuman = do
 -- announcing that) and show the inventory of the new leader (unless
 -- we have just a single inventory in the future).
 -- | Display inventory
-inventoryHuman :: (MonadClientAbort m, MonadClientUI m)
-               => WriterT Slideshow m ()
+inventoryHuman :: MonadClientUI m => WriterT Slideshow m (Maybe Msg)
 inventoryHuman = do
   leader <- getLeaderUI
   subject <- partAidLeader leader
   bag <- getsState $ getActorBag leader
   inv <- getsState $ getActorInv leader
   if EM.null bag
-    then abortWith $ makeSentence
+    then failMaybe $ makeSentence
       [ MU.SubjectVerbSg subject "be"
       , "not carrying anything" ]
     else do
@@ -313,6 +320,7 @@ inventoryHuman = do
       io <- itemOverlay bag inv
       slides <- overlayToSlideshow blurb io
       tell slides
+      succeed
 
 -- * TgtFloor
 
@@ -389,8 +397,8 @@ tgtEnemyLeader stgtModeNew = do
 
 -- | Change the displayed level in targeting mode to (at most)
 -- k levels shallower. Enters targeting mode, if not already in one.
-tgtAscendHuman :: (MonadClientAbort m, MonadClientUI m)
-               => Int -> WriterT Slideshow m ()
+tgtAscendHuman :: MonadClientUI m
+               => Int -> WriterT Slideshow m (Maybe Msg)
 tgtAscendHuman k = do
   Kind.COps{cotile} <- getsState scops
   dungeon <- getsState sdungeon
@@ -414,11 +422,15 @@ tgtAscendHuman k = do
             else cursor    -- unknown, do not reveal
       modifyClient $ \cli -> cli {scursor}
       setTgtId nln
+      doLook
+      succeed
     Nothing ->  -- no stairs in the right direction
       case ascendInBranch dungeon tgtId k of
-        [] -> abortWith "no more levels in this direction"
-        nln : _ -> setTgtId nln
-  doLook
+        [] -> failMaybe "no more levels in this direction"
+        nln : _ -> do
+          setTgtId nln
+          doLook
+          succeed
 
 setTgtId :: MonadClient m => LevelId -> m ()
 setTgtId nln = do
@@ -432,22 +444,24 @@ setTgtId nln = do
 -- * EpsIncr
 
 -- | Tweak the @eps@ parameter of the targeting digital line.
-epsIncrHuman :: MonadClientAbort m => Bool -> m ()
+epsIncrHuman :: MonadClient m => Bool -> m (Maybe Msg)
 epsIncrHuman b = do
   stgtMode <- getsClient stgtMode
   if isJust stgtMode
-    then modifyClient $ \cli -> cli {seps = seps cli + if b then 1 else -1}
-    else neverMind True  -- no visual feedback, so no sense
+    then do
+      modifyClient $ \cli -> cli {seps = seps cli + if b then 1 else -1}
+      succeed
+    else failMaybe "never mind"  -- no visual feedback, so no sense
 
 -- * SelectActor
 
 -- TODO: make the message (and for selectNoneHuman, pickLeader, etc.)
 -- optional, since they have a clear representation in the UI elsewhere.
-selectActorHuman ::(MonadClientUI m,  MonadClientAbort m) => m ()
+selectActorHuman ::MonadClientUI m => m (Maybe Msg)
 selectActorHuman = do
   mleader <- getsClient _sleader
   case mleader of
-    Nothing -> abortWith "no leader picked, can't select"
+    Nothing -> failMaybe "no leader picked, can't select"
     Just leader -> do
       body <- getsState $ getActorBody leader
       wasMemeber <- getsClient $ ES.member leader . sselected
@@ -459,6 +473,7 @@ selectActorHuman = do
       msgAdd $ makeSentence [subject, if wasMemeber
                                       then "deselected"
                                       else "selected"]
+      succeed
 
 -- * SelectNone
 
@@ -483,8 +498,7 @@ selectNoneHuman = do
 
 -- | Cancel something, e.g., targeting mode, resetting the cursor
 -- to the position of the leader. Chosen target is not invalidated.
-cancelHuman :: MonadClientUI m
-            => WriterT Slideshow m () -> WriterT Slideshow m ()
+cancelHuman :: MonadClientUI m => m () -> m ()
 cancelHuman h = do
   stgtMode <- getsClient stgtMode
   if isJust stgtMode
@@ -549,8 +563,7 @@ displayMainMenu = do
 
 -- | Accept something, e.g., targeting mode, keeping cursor where it was.
 -- Or perform the default action, if nothing needs accepting.
-acceptHuman :: MonadClientUI m
-            => WriterT Slideshow m () -> WriterT Slideshow m ()
+acceptHuman :: MonadClientUI m => m () -> m ()
 acceptHuman h = do
   stgtMode <- getsClient stgtMode
   if isJust stgtMode

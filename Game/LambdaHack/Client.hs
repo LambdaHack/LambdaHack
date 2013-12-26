@@ -48,8 +48,8 @@ cmdClientAISem cmd = case cmd of
   CmdPingAI ->
     writeServer $ WaitSer $ toEnum (-1)
 
-cmdClientUISem :: ( MonadAtomic m, MonadClientAbort m
-                  , MonadClientUI m, MonadClientWriteServer CmdSer m )
+cmdClientUISem :: ( MonadAtomic m, MonadClientUI m
+                  , MonadClientWriteServer CmdSer m )
                => CmdClientUI -> m ()
 cmdClientUISem cmd = case cmd of
   CmdAtomicUI cmdA -> do
@@ -77,7 +77,7 @@ cmdClientUISem cmd = case cmd of
 -- the main game loop assigned to this frontend (possibly containing
 -- the server loop, if the whole game runs in one process),
 -- UI config and the definitions of game commands.
-exeFrontend :: ( MonadAtomic m, MonadClientAbort m, MonadClientUI m
+exeFrontend :: ( MonadAtomic m, MonadClientUI m
                , MonadClientReadServer CmdClientUI m
                , MonadClientWriteServer CmdSer m
                , MonadAtomic n

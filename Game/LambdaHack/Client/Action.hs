@@ -7,10 +7,7 @@ module Game.LambdaHack.Client.Action
     MonadClient( getClient, getsClient, putClient, modifyClient, saveClient )
   , MonadClientUI
   , MonadClientReadServer(..), MonadClientWriteServer(..)
-  , MonadClientAbort( abortWith, tryWith )
   , SessionUI(..), ConnFrontend(..), connFrontend
-    -- * Various ways to abort action
-  , Abort, abort, neverMind
     -- * Executing actions
   , mkConfigUI
     -- * Accessors to the game session Reader and the Perception Reader(-like)
@@ -26,6 +23,7 @@ module Game.LambdaHack.Client.Action
     -- * Draw frames
   , drawOverlay, animate
     -- * Assorted primitives
+  , Abort, failWith
   , restoreGame, removeServerSave, displayPush, scoreToSlideshow
   , rndToAction, getArenaUI, getLeaderUI
   , targetToPos, partAidLeader, partActorLeader
@@ -75,6 +73,11 @@ import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Frontend as Frontend
 
+type Abort a = Either Msg a
+
+failWith :: Monad m => Msg -> m (Abort a)
+failWith = return . Left
+
 debugPrint :: MonadClient m => Text -> m ()
 debugPrint t = do
   sdbgMsgCli <- getsClient $ sdbgMsgCli . sdebugCli
@@ -88,18 +91,6 @@ connFrontend fid fromF = ConnFrontend
       let toF = Frontend.toMulti Frontend.connMulti
       liftIO $ atomically $ writeTQueue toF (fid, efr)
   }
-
-type Abort a = Either Msg a
-
--- | Reset the state and resume from the last backup point, i.e., invoke
--- the failure continuation.
-abort :: MonadClientAbort m => m a
-abort = abortWith ""
-
--- | Abort and conditionally print the fixed message.
-neverMind :: MonadClientAbort m => Bool -> m a
-neverMind True = abortWith "never mind"
-neverMind False = abortWith ""
 
 displayFrame :: MonadClientUI m => Bool -> Maybe SingleFrame -> m ()
 displayFrame isRunning mf = do
@@ -255,22 +246,22 @@ displayYesNo dm prompt = do
 -- | Print a prompt and an overlay and wait for a player keypress.
 -- If many overlays, scroll screenfuls with SPACE. Do not wrap screenfuls
 -- (in some menus @?@ cycles views, so the user can restart from the top).
-displayChoiceUI :: (MonadClientAbort m, MonadClientUI m)
-                => Msg -> Overlay -> [K.KM] -> m K.KM
+displayChoiceUI :: MonadClientUI m
+                => Msg -> Overlay -> [K.KM] -> m (Abort K.KM)
 displayChoiceUI prompt ov keys = do
   slides <- fmap slideshow $ overlayToSlideshow (prompt <> ", ESC]") ov
   let legalKeys =
         [ K.KM {key=K.Space, modifier=K.NoModifier}
         , K.escKey ]
         ++ keys
-      loop [] = neverMind True
+      loop [] = failWith "never mind"
       loop (x : xs) = do
         frame <- drawOverlay ColorFull x
         km@K.KM {..} <- promptGetKey legalKeys frame
         case key of
-          K.Esc -> neverMind True
+          K.Esc -> failWith "never mind"
           K.Space -> loop xs
-          _ -> return km
+          _ -> return $ Right km
   loop slides
 
 -- | The prompt is shown after the current message, but not added to history.

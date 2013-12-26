@@ -4,7 +4,7 @@
 -- and 'TypeAction'.
 module Game.LambdaHack.Client.Action.ActionClass where
 
-import Control.Monad.Writer.Strict (WriterT (WriterT), lift, runWriterT)
+import Control.Monad.Writer.Strict (WriterT, lift)
 import Data.Monoid
 import qualified Game.LambdaHack.Common.Key as K
 
@@ -12,7 +12,6 @@ import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Frontend (FrontReq)
 
 -- | The information that is constant across a client playing session,
@@ -61,18 +60,6 @@ class MonadClient m => MonadClientReadServer c m | m -> c where
 
 class MonadClient m => MonadClientWriteServer d m | m -> d where
   writeServer  :: d -> m ()
-
--- | The bottom of the action monads class semilattice.
-class MonadClient m => MonadClientAbort m where
-  -- Set the current exception handler. First argument is the handler,
-  -- second is the computation the handler scopes over.
-  tryWith      :: (Msg -> m a) -> m a -> m a
-  -- Abort with the given message.
-  abortWith    :: Msg -> m a
-
-instance (Monoid a, MonadClientAbort m) => MonadClientAbort (WriterT a m) where
-  tryWith exc m = WriterT $ tryWith (runWriterT . exc) (runWriterT m)
-  abortWith = lift . abortWith
 
 saveName :: FactionId -> Bool -> String
 saveName side isAI =

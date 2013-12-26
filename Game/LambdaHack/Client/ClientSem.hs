@@ -3,7 +3,7 @@ module Game.LambdaHack.Client.ClientSem where
 
 import Control.Exception.Assert.Sugar
 import Control.Monad
-import Control.Monad.Writer.Strict (WriterT, lift, runWriterT, tell)
+import Control.Monad.Writer.Strict (runWriterT, tell)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
 import Data.Maybe
@@ -164,7 +164,7 @@ queryAIPick aid = do
   return action
 
 -- | Handle the move of a UI player.
-queryUI :: (MonadClientAbort m, MonadClientUI m) => ActorId -> m CmdSer
+queryUI :: MonadClientUI m => ActorId -> m CmdSer
 queryUI aid = do
   -- When running, stop if aborted by a disturbance. Otherwise let
   -- the human player issue commands, until any of them takes time.
@@ -190,7 +190,7 @@ queryUI aid = do
 
 -- | Determine and process the next human player command. The argument is
 -- the last abort message due to running, if any.
-humanCommand :: forall m. (MonadClientAbort m, MonadClientUI m)
+humanCommand :: forall m. MonadClientUI m
              => Msg
              -> m CmdSer
 humanCommand msgRunAbort = do
@@ -199,25 +199,12 @@ humanCommand msgRunAbort = do
         km <- getKeyOverlayCommand over
         -- Messages shown, so update history and reset current report.
         recordHistory
-        -- | Set the current exception handler. Apart of executing it,
-        -- draw and pass along a slide with the abort message
-        -- (even if message empty).
-        let tryWithSlide :: (MonadClientAbort m, MonadClientUI m)
-                         => m a -> WriterT Slideshow m a
-                         -> WriterT Slideshow m a
-            tryWithSlide exc h =
-              let excMsg msg = do
-                    msgReset ""  -- TODO: needed?
-                    slides <- promptToSlideshow msg
-                    tell slides
-                    lift exc
-              in tryWith excMsg h
         -- On abort, just reset state and call loop again below.
         -- Each abort that gets this far generates a slide to be shown.
-        (mcmdS, slides) <- runWriterT $ tryWithSlide (return Nothing) $ do
+        (mcmdS, slides) <- runWriterT $ do
           -- Look up the key.
           Binding{kcmd} <- askBinding
-          case M.lookup km kcmd of
+          possibleAbort <- case M.lookup km kcmd of
             Just (_, _, cmd) -> do
               -- Query and clear the last command key.
               lastKey <- getsClient slastKey
@@ -227,14 +214,18 @@ humanCommand msgRunAbort = do
               -- Depends on whether slastKey
               -- is needed in other parts of code.
               modifyClient (\st -> st {slastKey = Just km})
-              humanOutcome <- cmdHumanSem $ if Just km == lastKey
-                                            then Clear
-                                            else cmd
-              case humanOutcome of
-                Left msg -> abortWith msg
-                Right cmdOut -> return $ Just cmdOut
+              cmdHumanSem cmd
+-- TODO:              cmdHumanSem $ if Just km == lastKey
+--                            then Clear
+--                            else cmd
             Nothing -> let msgKey = "unknown command <" <> K.showKM km <> ">"
-                       in abortWith msgKey
+                       in failWith msgKey
+          case possibleAbort of
+            Right cmd -> return $ Just cmd
+            Left msg -> do
+              slides <- promptToSlideshow msg
+              tell slides
+              return Nothing
         -- The command was aborted or successful and if the latter,
         -- possibly took some time.
         case mcmdS of
