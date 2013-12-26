@@ -10,7 +10,7 @@ module Game.LambdaHack.Client.Action
   , MonadClientAbort( abortWith, tryWith )
   , SessionUI(..), ConnFrontend(..), connFrontend
     -- * Various ways to abort action
-  , abort, neverMind, msgSlide
+  , Abort, abort, neverMind
     -- * Executing actions
   , mkConfigUI
     -- * Accessors to the game session Reader and the Perception Reader(-like)
@@ -38,7 +38,6 @@ import Control.DeepSeq
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Control.Monad.State as St
-import Control.Monad.Writer.Strict (WriterT, tell)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
 import Data.Maybe
@@ -90,6 +89,8 @@ connFrontend fid fromF = ConnFrontend
       liftIO $ atomically $ writeTQueue toF (fid, efr)
   }
 
+type Abort a = Either Msg a
+
 -- | Reset the state and resume from the last backup point, i.e., invoke
 -- the failure continuation.
 abort :: MonadClientAbort m => m a
@@ -99,14 +100,6 @@ abort = abortWith ""
 neverMind :: MonadClientAbort m => Bool -> m a
 neverMind True = abortWith "never mind"
 neverMind False = abortWith ""
-
--- | Reset the state and resume from the last backup point, i.e., invoke
--- the failure continuation.
-msgSlide :: MonadClientUI m => Msg -> WriterT Slideshow m (Maybe a)
-msgSlide msg = do
-  slides <- promptToSlideshow msg
-  tell slides
-  return Nothing
 
 displayFrame :: MonadClientUI m => Bool -> Maybe SingleFrame -> m ()
 displayFrame isRunning mf = do

@@ -8,8 +8,6 @@ module Game.LambdaHack.Client.HumanGlobal
   ) where
 
 import Control.Exception.Assert.Sugar
-import Control.Monad
-import Control.Monad.Writer.Strict (WriterT)
 import qualified Data.EnumMap.Strict as EM
 import Data.Function
 import Data.List
@@ -42,35 +40,41 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.TileKind as TileKind
 
-failureSlide :: MonadClientUI m
-             => FailureSer -> WriterT Slideshow m (Maybe a)
-failureSlide = msgSlide . showFailureSer
+failSer :: MonadClientUI m
+             => FailureSer -> m (Abort a)
+failSer = return . Left . showFailureSer
+
+failWith :: Monad m => Msg -> m (Abort a)
+failWith = return . Left
 
 -- * Move and Run
 
 -- | Actor atttacks an enemy actor or his own projectile.
-meleeAid :: (MonadClientAbort m, MonadClientUI m)
-          => ActorId -> ActorId -> m CmdSerTakeTime
+meleeAid :: MonadClientUI m
+         => ActorId -> ActorId -> m (Abort CmdSerTakeTime)
 meleeAid source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   sfact <- getsState $ (EM.! bfid sb) . sfactionD
-  unless (bproj tb || isAtWar sfact (bfid tb)) $ do
-    go <- displayYesNo ColorBW
+  let returnCmd = return $ Right $ MeleeSer source target
+  if not (bproj tb || isAtWar sfact (bfid tb)) then do
+    go1 <- displayYesNo ColorBW
             "This attack will start a war. Are you sure?"
-    unless go $ abortWith "Attack canceled."
-  unless (bproj tb || not (isAllied sfact (bfid tb))) $ do
-    go <- displayYesNo ColorBW
-            "You are bound by an alliance. Really attack?"
-    unless go $ abortWith "Attack canceled."
-  return $ MeleeSer source target
+    if not go1 then failWith "Attack canceled."
+    else if not (bproj tb || not (isAllied sfact (bfid tb))) then do
+      go2 <- displayYesNo ColorBW
+              "You are bound by an alliance. Really attack?"
+      if not go2 then failWith "Attack canceled."
+      else returnCmd
+    else returnCmd
+  else returnCmd
   -- Seeing the actor prevents altering a tile under it, but that
   -- does not limit the player, he just doesn't waste a turn
   -- on a failed altering.
 
 -- | Actor swaps position with another.
 displaceAid :: MonadClientUI m
-            => ActorId -> ActorId -> WriterT Slideshow m (Maybe CmdSerTakeTime)
+            => ActorId -> ActorId -> m (Abort CmdSerTakeTime)
 displaceAid source target = do
   cops <- getsState scops
   sb <- getsState $ getActorBody source
@@ -81,8 +85,8 @@ displaceAid source target = do
       tpos = bpos tb
   if accessible cops lvl spos tpos then
     -- Displacing requires full access.
-    return $ Just $ DisplaceSer source target
-  else failureSlide DisplaceAccess
+    return $ Right $ DisplaceSer source target
+  else failSer DisplaceAccess
 
 -- * Wait
 
@@ -94,45 +98,48 @@ waitHuman = do
 
 -- * Pickup
 
-pickupHuman :: (MonadClientAbort m, MonadClientUI m) => m CmdSerTakeTime
+pickupHuman :: MonadClientUI m => m (Abort CmdSerTakeTime)
 pickupHuman = do
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
   lvl <- getLevel $ blid body
   -- Check if something is here to pick up. Items are never invisible.
   case EM.minViewWithKey $ lvl `atI` bpos body of
-    Nothing -> abortWith "nothing here"
+    Nothing -> failWith "nothing here"
     Just ((iid, k), _) ->  do  -- pick up first item; TODO: let pl select item
       item <- getsState $ getItemBody iid
       let l = if jsymbol item == '$' then Just $ InvChar '$' else Nothing
       case assignLetter iid l body of
-        Just l2 -> return $ PickupSer leader iid k l2
-        Nothing -> abortWith "cannot carry any more"
+        Just l2 -> return $ Right $ PickupSer leader iid k l2
+        Nothing -> failWith "cannot carry any more"
 
 -- * Drop
 
 -- TODO: you can drop an item already on the floor, which works correctly,
 -- but is weird and useless.
 -- | Drop a single item.
-dropHuman :: (MonadClientAbort m, MonadClientUI m) => m CmdSerTakeTime
+dropHuman :: (MonadClientAbort m, MonadClientUI m)
+          => m (Abort CmdSerTakeTime)
 dropHuman = do
   -- TODO: allow dropping a given number of identical items.
   Kind.COps{coitem} <- getsState scops
   leader <- getLeaderUI
   bag <- getsState $ getActorBag leader
   inv <- getsState $ getActorInv leader
-  ((iid, item), (_, container)) <-
-    getAnyItem leader "What to drop?" bag inv "in inventory"
-  case container of
-    CFloor{} -> neverMind True
-    CActor aid _ -> do
-      assert (aid == leader) skip
-      disco <- getsClient sdisco
-      subject <- partAidLeader leader
-      msgAdd $ makeSentence
-        [ MU.SubjectVerbSg subject "drop"
-        , partItemWs coitem disco 1 item ]
-      return $ DropSer leader iid
+  ggi <- getAnyItem leader "What to drop?" bag inv "in inventory"
+  case ggi of
+    Right ((iid, item), (_, container)) ->
+      case container of
+        CFloor{} -> failWith "never mind"
+        CActor aid _ -> do
+          assert (aid == leader) skip
+          disco <- getsClient sdisco
+          subject <- partAidLeader leader
+          msgAdd $ makeSentence
+            [ MU.SubjectVerbSg subject "drop"
+            , partItemWs coitem disco 1 item ]
+          return $ Right $ DropSer leader iid
+    Left msg -> failWith msg
 
 allObjectsName :: Text
 allObjectsName = "Objects"
@@ -144,7 +151,7 @@ getAnyItem :: (MonadClientAbort m, MonadClientUI m)
            -> ItemBag  -- ^ all items in question
            -> ItemInv  -- ^ inventory characters
            -> Text     -- ^ how to refer to the collection of items
-           -> m ((ItemId, Item), (Int, Container))
+           -> m (Abort ((ItemId, Item), (Int, Container)))
 getAnyItem leader prompt = getItem leader prompt (const True) allObjectsName
 
 data ItemDialogState = INone | ISuitable | IAll deriving Eq
@@ -159,7 +166,7 @@ getItem :: (MonadClientAbort m, MonadClientUI m)
         -> ItemBag         -- ^ all items in question
         -> ItemInv         -- ^ inventory characters
         -> Text            -- ^ how to refer to the collection of items
-        -> m ((ItemId, Item), (Int, Container))
+        -> m (Abort ((ItemId, Item), (Int, Container)))
 getItem aid prompt p ptext bag inv isn = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -193,9 +200,9 @@ getItem aid prompt p ptext bag inv isn = do
                  r = letterRange mls
              in "[" <> r <> ", ?" <> floorMsg <> bestMsg
       ask = do
-        when (null is0 && EM.null tis) $
-          abortWith "Not carrying anything."
-        perform INone
+        if null is0 && EM.null tis
+        then failWith "Not carrying anything."
+        else fmap Right $ perform INone
       invP = EM.filter (\iid -> p (getItemBody iid s)) inv
       perform itemDialogState = do
         let (ims, invOver, msg) = case itemDialogState of
@@ -233,13 +240,15 @@ getItem aid prompt p ptext bag inv isn = do
 -- * Project
 
 projectAid :: (MonadClientAbort m, MonadClientUI m)
-           => ActorId -> [Trigger] -> WriterT Slideshow m (Maybe CmdSerTakeTime)
+           => ActorId -> [Trigger]
+           -> m (Abort CmdSerTakeTime)
 projectAid source ts = do
   Kind.COps{cotile} <- getsState scops
   target <- targetToPos
   let tpos = case target of
         Just p -> p
-        Nothing -> assert `failure` "target unexpectedly invalid" `twith` source
+        Nothing -> assert `failure` "target unexpectedly invalid"
+                          `twith` source
   eps <- getsClient seps
   sb <- getsState $ getActorBody source
   let lid = blid sb
@@ -248,10 +257,10 @@ projectAid source ts = do
   Level{lxsize, lysize} <- getLevel lid
   foes <- getsState $ actorNotProjList (isAtWar fact) lid
   if foesAdjacent lxsize lysize spos foes
-    then failureSlide ProjectBlockFoes
+    then failSer ProjectBlockFoes
     else do
       case bla lxsize lysize eps spos tpos of
-        Nothing -> failureSlide ProjectAimOnself
+        Nothing -> failSer ProjectAimOnself
         Just [] -> assert `failure` "project from the edge of level"
                           `twith` (spos, tpos, sb, ts)
         Just (pos : _) -> do
@@ -259,13 +268,14 @@ projectAid source ts = do
           lvl <- getLevel lid
           let t = lvl `at` pos
           if not $ Tile.hasFeature cotile F.Clear t
-            then failureSlide ProjectBlockTerrain
+            then failSer ProjectBlockTerrain
             else if unoccupied as pos
-                 then fmap Just $ projectBla source tpos eps ts
-                 else failureSlide ProjectBlockActor
+                 then projectBla source tpos eps ts
+                 else failSer ProjectBlockActor
 
 projectBla :: (MonadClientAbort m, MonadClientUI m)
-           => ActorId -> Point -> Int -> [Trigger] -> m CmdSerTakeTime
+           => ActorId -> Point -> Int -> [Trigger]
+           -> m (Abort CmdSerTakeTime)
 projectBla source tpos eps ts = do
   let (verb1, object1) = case ts of
         [] -> ("aim", "object")
@@ -273,14 +283,16 @@ projectBla source tpos eps ts = do
       triggerSyms = triggerSymbols ts
   bag <- getsState $ getActorBag source
   inv <- getsState $ getActorInv source
-  ((iid, _), (_, container)) <-
-    getGroupItem source bag inv object1 triggerSyms
-      (makePhrase ["What to", verb1 MU.:> "?"]) "in inventory"
-  stgtMode <- getsClient stgtMode
-  case stgtMode of
-    Just (TgtAuto _) -> endTargeting True
-    _ -> return ()
-  return $! ProjectSer source tpos eps iid container
+  ggi <- getGroupItem source bag inv object1 triggerSyms
+           (makePhrase ["What to", verb1 MU.:> "?"]) "in inventory"
+  case ggi of
+    Right ((iid, _), (_, container)) -> do
+      stgtMode <- getsClient stgtMode
+      case stgtMode of
+        Just (TgtAuto _) -> endTargeting True
+        _ -> return ()
+      return $! Right $ ProjectSer source tpos eps iid container
+    Left msg -> failWith msg
 
 triggerSymbols :: [Trigger] -> [Char]
 triggerSymbols [] = []
@@ -290,7 +302,7 @@ triggerSymbols (_ : ts) = triggerSymbols ts
 -- * Apply
 
 applyHuman :: (MonadClientAbort m, MonadClientUI m)
-           => [Trigger] -> m CmdSerTakeTime
+           => [Trigger] -> m (Abort CmdSerTakeTime)
 applyHuman ts = do
   leader <- getLeaderUI
   bag <- getsState $ getActorBag leader
@@ -299,10 +311,12 @@ applyHuman ts = do
         [] -> ("activate", "object")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
-  ((iid, _), (_, container)) <-
-    getGroupItem leader bag inv object1 triggerSyms
-                 (makePhrase ["What to", verb1 MU.:> "?"]) "in inventory"
-  return $! ApplySer leader iid container
+  ggi <- getGroupItem leader bag inv object1 triggerSyms
+           (makePhrase ["What to", verb1 MU.:> "?"]) "in inventory"
+  case ggi of
+    Right ((iid, _), (_, container)) ->
+      return $! Right $ ApplySer leader iid container
+    Left msg -> failWith msg
 
 -- | Let a human player choose any item with a given group name.
 -- Note that this does not guarantee the chosen item belongs to the group,
@@ -315,7 +329,7 @@ getGroupItem :: (MonadClientAbort m, MonadClientUI m)
              -> [Char]   -- ^ accepted item symbols
              -> Text     -- ^ prompt
              -> Text     -- ^ how to refer to the collection of objects
-             -> m ((ItemId, Item), (Int, Container))
+             -> m (Abort ((ItemId, Item), (Int, Container)))
 getGroupItem leader is inv object syms prompt packName = do
   let choice i = jsymbol i `elem` syms
       header = makePhrase [MU.Capitalize (MU.Ws object)]
@@ -325,7 +339,7 @@ getGroupItem leader is inv object syms prompt packName = do
 
 -- | Ask for a direction and alter a tile, if possible.
 alterDirHuman :: (MonadClientAbort m, MonadClientUI m)
-              => [Trigger] -> m CmdSerTakeTime
+              => [Trigger] -> m (Abort CmdSerTakeTime)
 alterDirHuman ts = do
   let verb1 = case ts of
         [] -> "alter"
@@ -336,11 +350,12 @@ alterDirHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   Level{lxsize} <- getLevel $ blid b
-  K.handleDir lxsize e (flip (alterTile leader) ts) (neverMind True)
+  K.handleDir lxsize e (flip (alterTile leader) ts) (failWith "never mind")
 
 -- | Player tries to alter a tile using a feature.
-alterTile :: MonadClientAbort m
-          => ActorId -> Vector -> [Trigger] -> m CmdSerTakeTime
+alterTile :: MonadClientUI m
+          => ActorId -> Vector -> [Trigger]
+          -> m (Abort CmdSerTakeTime)
 alterTile source dir ts = do
   Kind.COps{cotile} <- getsState scops
   b <- getsState $ getActorBody source
@@ -349,8 +364,8 @@ alterTile source dir ts = do
       t = lvl `at` tpos
       alterFeats = alterFeatures ts
   case filter (\feat -> Tile.hasFeature cotile feat t) alterFeats of
-    [] -> guessAlter cotile alterFeats t
-    feat : _ -> return $! AlterSer source tpos $ Just feat
+    [] -> return $ guessAlter cotile alterFeats t
+    feat : _ -> return $! Right $ AlterSer source tpos $ Just feat
 
 alterFeatures :: [Trigger] -> [F.Feature]
 alterFeatures [] = []
@@ -358,30 +373,31 @@ alterFeatures (AlterFeature{feature} : ts) = feature : alterFeatures ts
 alterFeatures (_ : ts) = alterFeatures ts
 
 -- | Guess and report why the bump command failed.
-guessAlter :: MonadClientAbort m
-           => Kind.Ops TileKind -> [F.Feature] -> Kind.Id TileKind -> m a
+guessAlter :: Kind.Ops TileKind -> [F.Feature] -> Kind.Id TileKind
+           -> Abort CmdSerTakeTime
 guessAlter cotile (F.OpenTo _ : _) t | Tile.closable cotile t =
-  abortWith "already open"
+  Left "already open"
 guessAlter _ (F.OpenTo _ : _) _ =
-  abortWith "can't be opened"
+  Left "can't be opened"
 guessAlter cotile (F.CloseTo _ : _) t | Tile.openable cotile t =
-  abortWith "already closed"
+  Left "already closed"
 guessAlter _ (F.CloseTo _ : _) _ =
-  abortWith "can't be closed"
-guessAlter _ _ _ = neverMind True
+  Left "can't be closed"
+guessAlter _ _ _ = Left "never mind"
 
 -- * TriggerTile
 
 -- | Leader tries to trigger the tile he's standing on.
-triggerTileHuman :: (MonadClientAbort m, MonadClientUI m)
-                 => [Trigger] -> m CmdSerTakeTime
+triggerTileHuman :: MonadClientUI m
+                 => [Trigger] -> m (Abort CmdSerTakeTime)
 triggerTileHuman ts = do
   leader <- getLeaderUI
   triggerTile leader ts
 
 -- | Player tries to trigger a tile using a feature.
-triggerTile :: (MonadClientAbort m, MonadClientUI m)
-            => ActorId -> [Trigger] -> m CmdSerTakeTime
+triggerTile :: MonadClientUI m
+            => ActorId -> [Trigger]
+            -> m (Abort CmdSerTakeTime)
 triggerTile leader ts = do
   Kind.COps{cotile} <- getsState scops
   b <- getsState $ getActorBody leader
@@ -389,10 +405,12 @@ triggerTile leader ts = do
   let t = lvl `at` bpos b
       triggerFeats = triggerFeatures ts
   case filter (\feat -> Tile.hasFeature cotile feat t) triggerFeats of
-    [] -> guessTrigger cotile triggerFeats t
+    [] -> return $ guessTrigger cotile triggerFeats t
     feat : _ -> do
-      verifyTrigger leader feat
-      return $! TriggerSer leader $ Just feat
+      go <- verifyTrigger leader feat
+      case go of
+        Right () -> return $ Right $ TriggerSer leader $ Just feat
+        Left msg -> failWith msg
 
 triggerFeatures :: [Trigger] -> [F.Feature]
 triggerFeatures [] = []
@@ -400,74 +418,82 @@ triggerFeatures (TriggerFeature{feature} : ts) = feature : triggerFeatures ts
 triggerFeatures (_ : ts) = triggerFeatures ts
 
 -- | Verify important feature triggers, such as fleeing the dungeon.
-verifyTrigger :: (MonadClientAbort m, MonadClientUI m)
-              => ActorId -> F.Feature -> m ()
+verifyTrigger :: MonadClientUI m
+              => ActorId -> F.Feature -> m (Abort ())
 verifyTrigger leader feat = case feat of
   F.Cause Effect.Escape -> do
     b <- getsState $ getActorBody leader
     side <- getsClient sside
     spawn <- getsState $ isSpawnFaction side
     summon <- getsState $ isSummonFaction side
-    when (spawn || summon) $ abortWith
+    if spawn || summon then failWith
       "This is the way out, but where would you go in this alien world?"
-    go <- displayYesNo ColorFull "This is the way out. Really leave now?"
-    unless go $ abortWith "Game resumed."
-    (_, total) <- getsState $ calculateTotal b
-    when (total == 0) $ do
-      -- The player can back off at each of these steps.
-      go1 <- displayMore ColorBW
-               "Afraid of the challenge? Leaving so soon and empty-handed?"
-      unless go1 $ abortWith "Brave soul!"
-      go2 <- displayMore ColorBW
-               "Next time try to grab some loot before escape!"
-      unless go2 $ abortWith "Here's your chance!"
-  _ -> return ()
+    else do
+      go <- displayYesNo ColorFull "This is the way out. Really leave now?"
+      if not go then failWith "Game resumed."
+      else do
+        (_, total) <- getsState $ calculateTotal b
+        if total == 0 then do
+          -- The player can back off at each of these steps.
+          go1 <- displayMore ColorBW
+                   "Afraid of the challenge? Leaving so soon and empty-handed?"
+          if not go1 then failWith "Brave soul!"
+          else do
+             go2 <- displayMore ColorBW
+                     "Next time try to grab some loot before escape!"
+             if not go2 then failWith "Here's your chance!"
+             else return $ Right ()
+        else return $ Right ()
+  _ -> return $ Right ()
 
 -- | Guess and report why the bump command failed.
-guessTrigger :: MonadClientAbort m
-             => Kind.Ops TileKind -> [F.Feature] -> Kind.Id TileKind -> m a
+guessTrigger :: Kind.Ops TileKind -> [F.Feature] -> Kind.Id TileKind
+             -> Abort CmdSerTakeTime
 guessTrigger cotile fs@(F.Cause (Effect.Ascend k) : _) t
   | Tile.hasFeature cotile (F.Cause (Effect.Ascend (-k))) t =
     if k > 0 then
-      abortWith "the way goes down, not up"
+      Left "the way goes down, not up"
     else if k < 0 then
-      abortWith "the way goes up, not down"
+      Left "the way goes up, not down"
     else
       assert `failure` fs
 guessTrigger _ fs@(F.Cause (Effect.Ascend k) : _) _ =
     if k > 0 then
-      abortWith "can't ascend"
+      Left "can't ascend"
     else if k < 0 then
-      abortWith "can't descend"
+      Left "can't descend"
     else
       assert `failure` fs
-guessTrigger _ _ _ = neverMind True
+guessTrigger _ _ _ = Left "never mind"
 
 -- * GameRestart; does not take time
 
-gameRestartHuman :: (MonadClientAbort m, MonadClientUI m) => Text -> m CmdSer
+gameRestartHuman :: MonadClientUI m => Text
+                 -> m (Abort CmdSer)
 gameRestartHuman t = do
   let msg = "You just requested a new" <+> t <+> "game."
   b1 <- displayMore ColorFull msg
-  unless b1 $ neverMind True
-  b2 <- displayYesNo ColorBW
-          "Current progress will be lost! Really restart the game?"
-  msg2 <- rndToAction $ oneOf
-            [ "Yea, would be a pity to leave them all to die."
-            , "Yea, a shame to get your own team stranded." ]
-  unless b2 $ abortWith msg2
-  leader <- getLeaderUI
-  return $ GameRestartSer leader t
+  if not b1 then failWith "never mind"
+  else do
+    b2 <- displayYesNo ColorBW
+            "Current progress will be lost! Really restart the game?"
+    msg2 <- rndToAction $ oneOf
+              [ "Yea, would be a pity to leave them all to die."
+              , "Yea, a shame to get your own team stranded." ]
+    if not b2 then failWith msg2
+    else do
+      leader <- getLeaderUI
+      return $ Right $ GameRestartSer leader t
 
 -- * GameExit; does not take time
 
-gameExitHuman :: (MonadClientAbort m, MonadClientUI m) => m CmdSer
+gameExitHuman :: MonadClientUI m => m (Abort CmdSer)
 gameExitHuman = do
   go <- displayYesNo ColorFull "Really save and exit?"
   if go then do
     leader <- getLeaderUI
-    return $ GameExitSer leader
-  else abortWith "Save and exit canceled."
+    return $ Right $ GameExitSer leader
+  else failWith "Save and exit canceled."
 
 -- * GameSave; does not take time
 

@@ -30,7 +30,7 @@ import Game.LambdaHack.Common.VectorXY
 -- invoked in targeting mode on a remote level (level different than
 -- the level of the leader).
 cmdHumanSem :: (MonadClientAbort m, MonadClientUI m)
-            => HumanCmd -> WriterT Slideshow m (Maybe CmdSer)
+            => HumanCmd -> WriterT Slideshow m (Abort CmdSer)
 cmdHumanSem cmd = do
   arena <- getArenaUI
   when (noRemoteHumanCmd cmd) $ checkCursor arena
@@ -38,40 +38,40 @@ cmdHumanSem cmd = do
 
 -- | Compute the basic action for a command and mark whether it takes time.
 cmdAction :: (MonadClientAbort m, MonadClientUI m)
-          => HumanCmd -> WriterT Slideshow m (Maybe CmdSer)
+          => HumanCmd -> WriterT Slideshow m (Abort CmdSer)
 cmdAction cmd = case cmd of
   Move v -> moveRunHuman False v
   Run v -> moveRunHuman True v
-  Wait -> fmap (Just . TakeTimeSer) waitHuman
-  Pickup -> fmap (Just . TakeTimeSer) pickupHuman
-  Drop -> fmap (Just . TakeTimeSer) dropHuman
+  Wait -> fmap (Right . TakeTimeSer) waitHuman
+  Pickup -> fmap (fmap TakeTimeSer) pickupHuman
+  Drop -> fmap (fmap TakeTimeSer) dropHuman
   Project ts -> projectHuman ts
-  Apply ts -> fmap (Just . TakeTimeSer) $ applyHuman ts
-  AlterDir ts -> fmap (Just . TakeTimeSer) $ alterDirHuman ts
-  TriggerTile ts -> fmap (Just . TakeTimeSer) $ triggerTileHuman ts
+  Apply ts -> fmap (fmap TakeTimeSer) $ applyHuman ts
+  AlterDir ts -> fmap (fmap TakeTimeSer) $ alterDirHuman ts
+  TriggerTile ts ->  fmap (fmap TakeTimeSer) $ triggerTileHuman ts
 
-  GameRestart t -> fmap Just $ gameRestartHuman t
-  GameExit -> fmap Just gameExitHuman
-  GameSave -> fmap Just gameSaveHuman
+  GameRestart t -> gameRestartHuman t
+  GameExit -> gameExitHuman
+  GameSave -> fmap Right gameSaveHuman
 
-  PickLeader k -> pickLeaderHuman k >> return Nothing
-  MemberCycle -> memberCycleHuman >> return Nothing
-  MemberBack -> memberBackHuman >> return Nothing
-  Inventory -> inventoryHuman >> return Nothing
+  PickLeader k -> pickLeaderHuman k >> return (Left "")
+  MemberCycle -> memberCycleHuman >> return (Left "")
+  MemberBack -> memberBackHuman >> return (Left "")
+  Inventory -> inventoryHuman >> return (Left "")
   TgtFloor -> tgtFloorHuman
   TgtEnemy -> tgtEnemyHuman
-  TgtAscend k -> tgtAscendHuman k >> return Nothing
-  EpsIncr b -> epsIncrHuman b >> return Nothing
-  SelectActor -> selectActorHuman >> return Nothing
-  SelectNone -> selectNoneHuman >> return Nothing
-  Cancel -> cancelHuman displayMainMenu >> return Nothing
-  Accept -> acceptHuman helpHuman >> return Nothing
-  Clear -> clearHuman >> return Nothing
-  History -> historyHuman >> return Nothing
-  MarkVision -> humanMarkVision >> return Nothing
-  MarkSmell -> humanMarkSmell >> return Nothing
-  MarkSuspect -> humanMarkSuspect >> return Nothing
-  Help -> displayMainMenu >> return Nothing
+  TgtAscend k -> tgtAscendHuman k >> return (Left "")
+  EpsIncr b -> epsIncrHuman b >> return (Left "")
+  SelectActor -> selectActorHuman >> return (Left "")
+  SelectNone -> selectNoneHuman >> return (Left "")
+  Cancel -> cancelHuman displayMainMenu >> return (Left "")
+  Accept -> acceptHuman helpHuman >> return (Left "")
+  Clear -> clearHuman >> return (Left "")
+  History -> historyHuman >> return (Left "")
+  MarkVision -> humanMarkVision >> return (Left "")
+  MarkSmell -> humanMarkSmell >> return (Left "")
+  MarkSuspect -> humanMarkSuspect >> return (Left "")
+  Help -> displayMainMenu >> return (Left "")
 
 -- | If in targeting mode, check if the current level is the same
 -- as player level and refuse performing the action otherwise.
@@ -82,7 +82,7 @@ checkCursor arena = do
     abortWith "[targeting] command disabled on a remote level, press ESC to switch back"
 
 moveRunHuman :: (MonadClientAbort m, MonadClientUI m)
-             => Bool -> VectorXY -> WriterT Slideshow m (Maybe CmdSer)
+             => Bool -> VectorXY -> WriterT Slideshow m (Abort CmdSer)
 moveRunHuman run v = do
   tgtMode <- getsClient stgtMode
   (arena, Level{lxsize}) <- viewedLevel
@@ -90,7 +90,7 @@ moveRunHuman run v = do
   sb <- getsState $ getActorBody leader
   let dir = toDir lxsize v
   if isJust tgtMode then do
-    moveCursor dir (if run then 10 else 1) >> return Nothing
+    moveCursor dir (if run then 10 else 1) >> return (Left "")
   else do
     let tpos = bpos sb `shift` dir
     -- We start by checking actors at the the target position,
@@ -116,7 +116,7 @@ moveRunHuman run v = do
                                       , runStopMsg = Nothing
                                       , runInitDir = Just dir }
             when run $ modifyClient $ \cli -> cli {srunning = Just runParams}
-            return $ Just $ TakeTimeSer runCmd
+            return $ Right $ TakeTimeSer runCmd
         -- When running, the invisible actor is hit (not displaced!),
         -- so that running in the presence of roving invisible
         -- actors is equivalent to moving (with visible actors
@@ -133,27 +133,27 @@ moveRunHuman run v = do
           success <- pickLeader target
           assert (success `blame` "bump self"
                           `twith` (leader, target, tb)) skip
-          return Nothing
+          return (Left "")
         else
           -- Attacking does not require full access, adjacency is enough.
-          fmap (Just . TakeTimeSer) $ meleeAid leader target
+          fmap (fmap TakeTimeSer) $ meleeAid leader target
 
 projectHuman :: (MonadClientAbort m, MonadClientUI m)
-             => [Trigger] -> WriterT Slideshow m (Maybe CmdSer)
+             => [Trigger] -> WriterT Slideshow m (Abort CmdSer)
 projectHuman ts = do
   tgtLoc <- targetToPos
   if isNothing tgtLoc
-    then retargetLeader >> return Nothing
+    then retargetLeader >> return (Left "")
     else do
       leader <- getLeaderUI
       fmap (fmap TakeTimeSer) $ projectAid leader ts
 
-tgtFloorHuman :: MonadClientUI m => WriterT Slideshow m (Maybe CmdSer)
+tgtFloorHuman :: MonadClientUI m => WriterT Slideshow m (Abort CmdSer)
 tgtFloorHuman = do
   arena <- getArenaUI
-  tgtFloorLeader (TgtExplicit arena) >> return Nothing
+  tgtFloorLeader (TgtExplicit arena) >> return (Left "")
 
-tgtEnemyHuman :: MonadClientUI m => WriterT Slideshow m (Maybe CmdSer)
+tgtEnemyHuman :: MonadClientUI m => WriterT Slideshow m (Abort CmdSer)
 tgtEnemyHuman = do
   arena <- getArenaUI
-  tgtEnemyLeader (TgtExplicit arena) >> return Nothing
+  tgtEnemyLeader (TgtExplicit arena) >> return (Left "")

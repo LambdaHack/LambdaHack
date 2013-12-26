@@ -227,9 +227,12 @@ humanCommand msgRunAbort = do
               -- Depends on whether slastKey
               -- is needed in other parts of code.
               modifyClient (\st -> st {slastKey = Just km})
-              cmdHumanSem $ if Just km == lastKey
-                            then Clear
-                            else cmd
+              humanOutcome <- cmdHumanSem $ if Just km == lastKey
+                                            then Clear
+                                            else cmd
+              case humanOutcome of
+                Left msg -> abortWith msg
+                Right cmdOut -> return $ Just cmdOut
             Nothing -> let msgKey = "unknown command <" <> K.showKM km <> ">"
                        in abortWith msgKey
         -- The command was aborted or successful and if the latter,
