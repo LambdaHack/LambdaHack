@@ -27,6 +27,7 @@ import Data.Function
 import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
+import Data.Monoid hiding ((<>))
 import Data.Ord
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -58,10 +59,11 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 
-failMaybe :: Monad m => Msg -> m (Maybe Msg)
-failMaybe = return . Just
+failMaybe :: MonadClientUI m => Msg -> m (Maybe Slideshow)
+failMaybe msg | T.null msg = return $ Just mempty
+failMaybe msg = fmap Just $ promptToSlideshow msg
 
-succeed :: Monad m => m (Maybe Msg)
+succeed :: Monad m => m (Maybe Slideshow)
 succeed = return Nothing
 
 -- * Move and Run
@@ -209,7 +211,7 @@ retargetLeader = do
 
 -- * PickLeader
 
-pickLeaderHuman :: MonadClientUI m => Int -> m (Maybe Msg)
+pickLeaderHuman :: MonadClientUI m => Int -> m (Maybe Slideshow)
 pickLeaderHuman k = do
   side <- getsClient sside
   s <- getState
@@ -222,7 +224,7 @@ pickLeaderHuman k = do
 -- * MemberCycle
 
 -- | Switches current member to the next on the level, if any, wrapping.
-memberCycleHuman :: MonadClientUI m => m (Maybe Msg)
+memberCycleHuman :: MonadClientUI m => m (Maybe Slideshow)
 memberCycleHuman = do
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
@@ -287,7 +289,7 @@ stopRunning = do
 -- * MemberBack
 
 -- | Switches current member to the previous in the whole dungeon, wrapping.
-memberBackHuman :: MonadClientUI m => m (Maybe Msg)
+memberBackHuman :: MonadClientUI m => m (Maybe Slideshow)
 memberBackHuman = do
   leader <- getLeaderUI
   hs <- partyAfterLeader leader
@@ -304,7 +306,7 @@ memberBackHuman = do
 -- announcing that) and show the inventory of the new leader (unless
 -- we have just a single inventory in the future).
 -- | Display inventory
-inventoryHuman :: MonadClientUI m => WriterT Slideshow m (Maybe Msg)
+inventoryHuman :: MonadClientUI m => WriterT Slideshow m (Maybe Slideshow)
 inventoryHuman = do
   leader <- getLeaderUI
   subject <- partAidLeader leader
@@ -398,7 +400,7 @@ tgtEnemyLeader stgtModeNew = do
 -- | Change the displayed level in targeting mode to (at most)
 -- k levels shallower. Enters targeting mode, if not already in one.
 tgtAscendHuman :: MonadClientUI m
-               => Int -> WriterT Slideshow m (Maybe Msg)
+               => Int -> WriterT Slideshow m (Maybe Slideshow)
 tgtAscendHuman k = do
   Kind.COps{cotile} <- getsState scops
   dungeon <- getsState sdungeon
@@ -444,7 +446,7 @@ setTgtId nln = do
 -- * EpsIncr
 
 -- | Tweak the @eps@ parameter of the targeting digital line.
-epsIncrHuman :: MonadClient m => Bool -> m (Maybe Msg)
+epsIncrHuman :: MonadClientUI m => Bool -> m (Maybe Slideshow)
 epsIncrHuman b = do
   stgtMode <- getsClient stgtMode
   if isJust stgtMode
@@ -457,7 +459,7 @@ epsIncrHuman b = do
 
 -- TODO: make the message (and for selectNoneHuman, pickLeader, etc.)
 -- optional, since they have a clear representation in the UI elsewhere.
-selectActorHuman ::MonadClientUI m => m (Maybe Msg)
+selectActorHuman ::MonadClientUI m => m (Maybe Slideshow)
 selectActorHuman = do
   mleader <- getsClient _sleader
   case mleader of

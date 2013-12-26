@@ -8,6 +8,7 @@ import Control.Monad
 import Control.Monad.Writer.Strict (WriterT)
 import qualified Data.EnumSet as ES
 import Data.Maybe
+import Data.Monoid hiding ((<>))
 
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.HumanCmd
@@ -78,12 +79,12 @@ cmdAction cmd = case cmd of
   Help -> addNoMsg displayMainMenu
 
 addNoMsg :: Monad m => m () -> m (Abort CmdSer)
-addNoMsg cmdCli = cmdCli >> return (Left "")
+addNoMsg cmdCli = cmdCli >> return (Left mempty)
 
-convertMsg :: Monad m => m (Maybe Msg) -> m (Abort CmdSer)
+convertMsg :: Monad m => m (Maybe Slideshow) -> m (Abort CmdSer)
 convertMsg cmdCli = do
   mmsg <- cmdCli
-  return . Left $ fromMaybe "" mmsg
+  return . Left $ fromMaybe mempty mmsg
 
 -- | If in targeting mode, check if the current level is the same
 -- as player level and refuse performing the action otherwise.
@@ -103,7 +104,7 @@ moveRunHuman run v = do
   sb <- getsState $ getActorBody leader
   let dir = toDir lxsize v
   if isJust tgtMode then do
-    moveCursor dir (if run then 10 else 1) >> return (Left "")
+    moveCursor dir (if run then 10 else 1) >> return (Left mempty)
   else do
     let tpos = bpos sb `shift` dir
     -- We start by checking actors at the the target position,
@@ -146,7 +147,7 @@ moveRunHuman run v = do
           success <- pickLeader target
           assert (success `blame` "bump self"
                           `twith` (leader, target, tb)) skip
-          return (Left "")
+          return (Left mempty)
         else
           -- Attacking does not require full access, adjacency is enough.
           fmap (fmap TakeTimeSer) $ meleeAid leader target
@@ -156,7 +157,7 @@ projectHuman :: MonadClientUI m
 projectHuman ts = do
   tgtLoc <- targetToPos
   if isNothing tgtLoc
-    then retargetLeader >> return (Left "")
+    then retargetLeader >> return (Left mempty)
     else do
       leader <- getLeaderUI
       fmap (fmap TakeTimeSer) $ projectAid leader ts
@@ -164,9 +165,9 @@ projectHuman ts = do
 tgtFloorHuman :: MonadClientUI m => WriterT Slideshow m (Abort CmdSer)
 tgtFloorHuman = do
   arena <- getArenaUI
-  tgtFloorLeader (TgtExplicit arena) >> return (Left "")
+  tgtFloorLeader (TgtExplicit arena) >> return (Left mempty)
 
 tgtEnemyHuman :: MonadClientUI m => WriterT Slideshow m (Abort CmdSer)
 tgtEnemyHuman = do
   arena <- getArenaUI
-  tgtEnemyLeader (TgtExplicit arena) >> return (Left "")
+  tgtEnemyLeader (TgtExplicit arena) >> return (Left mempty)

@@ -220,8 +220,7 @@ humanCommand msgRunStop = do
                        in failWith msgKey
           case possibleAbort of
             Right cmd -> return $ Just cmd
-            Left msg -> do
-              slides <- promptToSlideshow msg
+            Left slides -> do
               tell slides
               return Nothing
         -- The command was failed or successful and if the latter,

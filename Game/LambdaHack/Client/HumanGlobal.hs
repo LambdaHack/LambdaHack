@@ -134,7 +134,7 @@ dropHuman = do
             [ MU.SubjectVerbSg subject "drop"
             , partItemWs coitem disco 1 item ]
           return $ Right $ DropSer leader iid
-    Left msg -> failWith msg
+    Left slides -> return $ Left slides
 
 allObjectsName :: Text
 allObjectsName = "Objects"
@@ -207,7 +207,7 @@ getItem aid prompt p ptext bag inv isn = do
         io <- itemOverlay bag invOver
         akm <- displayChoiceUI (msg <+> choice ims) io (keys ims)
         case akm of
-          Left amsg -> failWith amsg
+          Left slides -> return $ Left slides
           Right (km@K.KM {..}) -> do
             assert (modifier == K.NoModifier) skip
             case key of
@@ -290,7 +290,7 @@ projectBla source tpos eps ts = do
         Just (TgtAuto _) -> endTargeting True
         _ -> return ()
       return $! Right $ ProjectSer source tpos eps iid container
-    Left msg -> failWith msg
+    Left slides -> return $ Left slides
 
 triggerSymbols :: [Trigger] -> [Char]
 triggerSymbols [] = []
@@ -313,7 +313,7 @@ applyHuman ts = do
   case ggi of
     Right ((iid, _), (_, container)) ->
       return $! Right $ ApplySer leader iid container
-    Left msg -> failWith msg
+    Left slides -> return $ Left slides
 
 -- | Let a human player choose any item with a given group name.
 -- Note that this does not guarantee the chosen item belongs to the group,
@@ -344,7 +344,7 @@ alterDirHuman ts = do
       prompt = makePhrase ["What to", verb1 MU.:> "? [movement key"]
   me <- displayChoiceUI prompt emptyOverlay keys
   case me of
-    Left msg -> failWith msg
+    Left slides -> return $ Left slides
     Right e -> do
       leader <- getLeaderUI
       b <- getsState $ getActorBody leader
@@ -363,7 +363,7 @@ alterTile source dir ts = do
       t = lvl `at` tpos
       alterFeats = alterFeatures ts
   case filter (\feat -> Tile.hasFeature cotile feat t) alterFeats of
-    [] -> return $ guessAlter cotile alterFeats t
+    [] -> failWith $ guessAlter cotile alterFeats t
     feat : _ -> return $! Right $ AlterSer source tpos $ Just feat
 
 alterFeatures :: [Trigger] -> [F.Feature]
@@ -372,17 +372,14 @@ alterFeatures (AlterFeature{feature} : ts) = feature : alterFeatures ts
 alterFeatures (_ : ts) = alterFeatures ts
 
 -- | Guess and report why the bump command failed.
-guessAlter :: Kind.Ops TileKind -> [F.Feature] -> Kind.Id TileKind
-           -> Abort CmdSerTakeTime
-guessAlter cotile (F.OpenTo _ : _) t | Tile.closable cotile t =
-  Left "already open"
-guessAlter _ (F.OpenTo _ : _) _ =
-  Left "can't be opened"
-guessAlter cotile (F.CloseTo _ : _) t | Tile.openable cotile t =
-  Left "already closed"
-guessAlter _ (F.CloseTo _ : _) _ =
-  Left "can't be closed"
-guessAlter _ _ _ = Left "never mind"
+guessAlter :: Kind.Ops TileKind -> [F.Feature] -> Kind.Id TileKind -> Msg
+guessAlter cotile (F.OpenTo _ : _) t
+  | Tile.closable cotile t = "already open"
+guessAlter _ (F.OpenTo _ : _) _ = "can't be opened"
+guessAlter cotile (F.CloseTo _ : _) t
+  | Tile.openable cotile t = "already closed"
+guessAlter _ (F.CloseTo _ : _) _ = "can't be closed"
+guessAlter _ _ _ = "never mind"
 
 -- * TriggerTile
 
@@ -404,12 +401,12 @@ triggerTile leader ts = do
   let t = lvl `at` bpos b
       triggerFeats = triggerFeatures ts
   case filter (\feat -> Tile.hasFeature cotile feat t) triggerFeats of
-    [] -> return $ guessTrigger cotile triggerFeats t
+    [] -> failWith $ guessTrigger cotile triggerFeats t
     feat : _ -> do
       go <- verifyTrigger leader feat
       case go of
         Right () -> return $ Right $ TriggerSer leader $ Just feat
-        Left msg -> failWith msg
+        Left slides -> return $ Left slides
 
 triggerFeatures :: [Trigger] -> [F.Feature]
 triggerFeatures [] = []
@@ -446,24 +443,17 @@ verifyTrigger leader feat = case feat of
   _ -> return $ Right ()
 
 -- | Guess and report why the bump command failed.
-guessTrigger :: Kind.Ops TileKind -> [F.Feature] -> Kind.Id TileKind
-             -> Abort CmdSerTakeTime
+guessTrigger :: Kind.Ops TileKind -> [F.Feature] -> Kind.Id TileKind -> Msg
 guessTrigger cotile fs@(F.Cause (Effect.Ascend k) : _) t
   | Tile.hasFeature cotile (F.Cause (Effect.Ascend (-k))) t =
-    if k > 0 then
-      Left "the way goes down, not up"
-    else if k < 0 then
-      Left "the way goes up, not down"
-    else
-      assert `failure` fs
+    if k > 0 then "the way goes down, not up"
+    else if k < 0 then "the way goes up, not down"
+    else assert `failure` fs
 guessTrigger _ fs@(F.Cause (Effect.Ascend k) : _) _ =
-    if k > 0 then
-      Left "can't ascend"
-    else if k < 0 then
-      Left "can't descend"
-    else
-      assert `failure` fs
-guessTrigger _ _ _ = Left "never mind"
+    if k > 0 then "can't ascend"
+    else if k < 0 then "can't descend"
+    else assert `failure` fs
+guessTrigger _ _ _ = "never mind"
 
 -- * GameRestart; does not take time
 

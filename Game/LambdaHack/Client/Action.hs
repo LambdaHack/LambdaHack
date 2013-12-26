@@ -39,6 +39,7 @@ import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
 import Data.Maybe
+import Data.Monoid hiding ((<>))
 import qualified Data.Monoid as Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -73,10 +74,11 @@ import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Frontend as Frontend
 
-type Abort a = Either Msg a
+type Abort a = Either Slideshow a
 
-failWith :: Monad m => Msg -> m (Abort a)
-failWith = return . Left
+failWith :: MonadClientUI m => Msg -> m (Abort a)
+failWith msg | T.null msg = return $ Left mempty
+failWith msg = fmap Left $ promptToSlideshow msg
 
 debugPrint :: MonadClient m => Text -> m ()
 debugPrint t = do
