@@ -73,11 +73,11 @@ executorSer m =
         configAppDataDir (sconfig ser)
         </> fromMaybe "save" (ssavePrefixSer (sdebugSer ser))
         <.> saveName
-      exe toSave =
+      exe serToSave =
         evalStateT (runActionSer m)
           SerState { serState = emptyState
                    , serServer = emptyStateServer
                    , serDict = EM.empty
-                   , serToSave = toSave
+                   , serToSave
                    }
   in Save.wrapInSaves saveFile exe

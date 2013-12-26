@@ -166,7 +166,7 @@ queryAIPick aid = do
 -- | Handle the move of a UI player.
 queryUI :: MonadClientUI m => ActorId -> m CmdSer
 queryUI aid = do
-  -- When running, stop if aborted by a disturbance. Otherwise let
+  -- When running, stop if disturbed. Otherwise let
   -- the human player issue commands, until any of them takes time.
   leader <- getLeaderUI
   assert (leader == aid `blame` "player moves not his leader"
@@ -189,18 +189,16 @@ queryUI aid = do
           return $ TakeTimeSer runCmd
 
 -- | Determine and process the next human player command. The argument is
--- the last abort message due to running, if any.
+-- the last stop message due to running, if any.
 humanCommand :: forall m. MonadClientUI m
              => Msg
              -> m CmdSer
-humanCommand msgRunAbort = do
+humanCommand msgRunStop = do
   let loop :: Overlay -> m CmdSer
       loop over = do
         km <- getKeyOverlayCommand over
         -- Messages shown, so update history and reset current report.
         recordHistory
-        -- On abort, just reset state and call loop again below.
-        -- Each abort that gets this far generates a slide to be shown.
         (mcmdS, slides) <- runWriterT $ do
           -- Look up the key.
           Binding{kcmd} <- askBinding
@@ -226,7 +224,7 @@ humanCommand msgRunAbort = do
               slides <- promptToSlideshow msg
               tell slides
               return Nothing
-        -- The command was aborted or successful and if the latter,
+        -- The command was failed or successful and if the latter,
         -- possibly took some time.
         case mcmdS of
           Just cmdS -> do
@@ -260,6 +258,6 @@ humanCommand msgRunAbort = do
               Just sLast ->
                 -- (Re-)display the last slide while waiting for the next key,
                 loop sLast
-  sli <- promptToSlideshow msgRunAbort
+  sli <- promptToSlideshow msgRunStop
   let overlayInitial = head $ slideshow sli
   loop overlayInitial
