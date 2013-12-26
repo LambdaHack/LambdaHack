@@ -3,7 +3,6 @@ module Game.LambdaHack.Client.ClientSem where
 
 import Control.Exception.Assert.Sugar
 import Control.Monad
-import Control.Monad.Writer.Strict (runWriterT, tell)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
 import Data.Maybe
@@ -13,7 +12,6 @@ import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.Draw
-import Game.LambdaHack.Client.HumanCmd
 import Game.LambdaHack.Client.HumanLocal
 import Game.LambdaHack.Client.HumanSem
 import Game.LambdaHack.Client.RunAction
@@ -199,13 +197,13 @@ humanCommand msgRunStop = do
         km <- getKeyOverlayCommand over
         -- Messages shown, so update history and reset current report.
         recordHistory
-        (mcmdS, slides) <- runWriterT $ do
+        abortOrCmd <- do
           -- Look up the key.
           Binding{kcmd} <- askBinding
-          possibleAbort <- case M.lookup km kcmd of
+          case M.lookup km kcmd of
             Just (_, _, cmd) -> do
               -- Query and clear the last command key.
-              lastKey <- getsClient slastKey
+              _lastKey <- getsClient slastKey
               -- TODO: perhaps replace slastKey
               -- with test 'kmNext == km'
               -- or an extra arg to 'loop'.
@@ -218,23 +216,15 @@ humanCommand msgRunStop = do
 --                            else cmd
             Nothing -> let msgKey = "unknown command <" <> K.showKM km <> ">"
                        in failWith msgKey
-          case possibleAbort of
-            Right cmd -> return $ Just cmd
-            Left slides -> do
-              tell slides
-              return Nothing
         -- The command was failed or successful and if the latter,
         -- possibly took some time.
-        case mcmdS of
-          Just cmdS -> do
-            assert (null (slideshow slides)
-                    `blame` "some slides generated for server command"
-                    `twith` slides) skip
+        case abortOrCmd of
+          Right cmdS -> do
             -- Exit the loop and let other actors act. No next key needed
             -- and no slides could have been generated.
             modifyClient (\st -> st {slastKey = Nothing})
             return cmdS
-          Nothing -> do
+          Left slides -> do
             -- If no time taken, rinse and repeat.
             -- Analyse the obtained slides.
             mLast <- case reverse $ slideshow slides of

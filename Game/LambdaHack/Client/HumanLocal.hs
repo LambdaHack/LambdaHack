@@ -20,7 +20,6 @@ import qualified Paths_LambdaHack as Self (version)
 
 import Control.Exception.Assert.Sugar
 import Control.Monad
-import Control.Monad.Writer.Strict (WriterT, tell)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Function
@@ -68,7 +67,7 @@ succeed = return Nothing
 
 -- * Move and Run
 
-moveCursor :: MonadClientUI m => Vector -> Int -> WriterT Slideshow m ()
+moveCursor :: MonadClientUI m => Vector -> Int -> m (Maybe Slideshow)
 moveCursor dir n = do
   leader <- getLeaderUI
   lpos <- getsState $ bpos . getActorBody leader
@@ -133,7 +132,7 @@ lookAt detailed canSee pos aid msg = do
 
 -- | Perform look around in the current position of the cursor.
 -- Assumes targeting mode and so assumes that a leader is picked.
-doLook :: MonadClientUI m => WriterT Slideshow m ()
+doLook :: MonadClientUI m => m (Maybe Slideshow)
 doLook = do
   scursor <- getsClient scursor
   (lid, lvl) <- viewedLevel
@@ -164,13 +163,11 @@ doLook = do
   -- Show general info about current position.
   lookMsg <- lookAt True canSee p leader enemyMsg
   modifyClient (\st -> st {slastKey = Nothing})
-  if EM.size is <= 2 then do
-    slides <- promptToSlideshow (mode <+> lookMsg)
-    tell slides
+  if EM.size is <= 2 then
+    fmap Just $ promptToSlideshow (mode <+> lookMsg)
   else do
     io <- floorItemOverlay is
-    slides <- overlayToSlideshow (mode <+> lookMsg) io
-    tell slides
+    fmap Just $ overlayToSlideshow (mode <+> lookMsg) io
 
 -- | Create a list of item names.
 floorItemOverlay :: MonadClient m => ItemBag -> m Overlay
@@ -201,7 +198,7 @@ itemOverlay bag inv = do
 
 -- * Project
 
-retargetLeader :: MonadClientUI m => WriterT Slideshow m ()
+retargetLeader :: MonadClientUI m => m (Maybe Slideshow)
 retargetLeader = do
   arena <- getArenaUI
   -- TODO: do not save to history:
@@ -306,7 +303,7 @@ memberBackHuman = do
 -- announcing that) and show the inventory of the new leader (unless
 -- we have just a single inventory in the future).
 -- | Display inventory
-inventoryHuman :: MonadClientUI m => WriterT Slideshow m (Maybe Slideshow)
+inventoryHuman :: MonadClientUI m => m (Maybe Slideshow)
 inventoryHuman = do
   leader <- getLeaderUI
   subject <- partAidLeader leader
@@ -320,9 +317,7 @@ inventoryHuman = do
       let blurb = makePhrase
             [MU.Capitalize $ MU.SubjectVerbSg subject "be carrying:"]
       io <- itemOverlay bag inv
-      slides <- overlayToSlideshow blurb io
-      tell slides
-      succeed
+      fmap Just $ overlayToSlideshow blurb io
 
 -- * TgtFloor
 
@@ -330,7 +325,7 @@ inventoryHuman = do
 -- Note that the origin of a command (the hero that performs it) is unaffected
 -- by targeting. For example, not the targeted door, but one adjacent
 -- to the leader is closed by him.
-tgtFloorLeader :: MonadClientUI m => TgtMode -> WriterT Slideshow m ()
+tgtFloorLeader :: MonadClientUI m => TgtMode -> m (Maybe Slideshow)
 tgtFloorLeader stgtModeNew = do
   leader <- getLeaderUI
   ppos <- getsState (bpos . getActorBody leader)
@@ -346,7 +341,7 @@ tgtFloorLeader stgtModeNew = do
   setCursor stgtModeNew
 
 -- | Set, activate and display cursor information.
-setCursor :: MonadClientUI m => TgtMode -> WriterT Slideshow m ()
+setCursor :: MonadClientUI m => TgtMode -> m (Maybe Slideshow)
 setCursor stgtModeNew = do
   stgtModeOld <- getsClient stgtMode
   scursorOld <- getsClient scursor
@@ -362,7 +357,7 @@ setCursor stgtModeNew = do
 -- * TgtEnemy
 
 -- | Start the enemy targeting mode. Cycle between enemy targets.
-tgtEnemyLeader :: MonadClientUI m => TgtMode -> WriterT Slideshow m ()
+tgtEnemyLeader :: MonadClientUI m => TgtMode -> m (Maybe Slideshow)
 tgtEnemyLeader stgtModeNew = do
   leader <- getLeaderUI
   ppos <- getsState (bpos . getActorBody leader)
@@ -400,7 +395,7 @@ tgtEnemyLeader stgtModeNew = do
 -- | Change the displayed level in targeting mode to (at most)
 -- k levels shallower. Enters targeting mode, if not already in one.
 tgtAscendHuman :: MonadClientUI m
-               => Int -> WriterT Slideshow m (Maybe Slideshow)
+               => Int -> m (Maybe Slideshow)
 tgtAscendHuman k = do
   Kind.COps{cotile} <- getsState scops
   dungeon <- getsState sdungeon
@@ -425,14 +420,12 @@ tgtAscendHuman k = do
       modifyClient $ \cli -> cli {scursor}
       setTgtId nln
       doLook
-      succeed
     Nothing ->  -- no stairs in the right direction
       case ascendInBranch dungeon tgtId k of
         [] -> failMaybe "no more levels in this direction"
         nln : _ -> do
           setTgtId nln
           doLook
-          succeed
 
 setTgtId :: MonadClient m => LevelId -> m ()
 setTgtId nln = do
@@ -500,7 +493,7 @@ selectNoneHuman = do
 
 -- | Cancel something, e.g., targeting mode, resetting the cursor
 -- to the position of the leader. Chosen target is not invalidated.
-cancelHuman :: MonadClientUI m => m () -> m ()
+cancelHuman :: MonadClientUI m => m (Maybe Slideshow) -> m (Maybe Slideshow)
 cancelHuman h = do
   stgtMode <- getsClient stgtMode
   if isJust stgtMode
@@ -509,7 +502,7 @@ cancelHuman h = do
 
 -- TODO: merge with the help screens better
 -- | Display the main menu.
-displayMainMenu :: MonadClientUI m => WriterT Slideshow m ()
+displayMainMenu :: MonadClientUI m => m (Maybe Slideshow)
 displayMainMenu = do
   Kind.COps{corule} <- getsState scops
   Binding{krevMap} <- askBinding
@@ -556,16 +549,14 @@ displayMainMenu = do
         overwrite $ pasteVersion $ map T.unpack $ stripFrame mainMenuArt
   case menuOverlay of
     [] -> assert `failure` "empty Main Menu overlay" `twith` mainMenuArt
-    hd : tl -> do
-      slides <- overlayToSlideshow hd (toOverlay tl)
-                -- TODO: keys don't work if tl/=[]
-      tell slides
+    hd : tl -> fmap Just $ overlayToSlideshow hd (toOverlay tl)
+                           -- TODO: keys don't work if tl/=[]
 
 -- * Accept
 
 -- | Accept something, e.g., targeting mode, keeping cursor where it was.
 -- Or perform the default action, if nothing needs accepting.
-acceptHuman :: MonadClientUI m => m () -> m ()
+acceptHuman :: MonadClientUI m => m (Maybe Slideshow) -> m (Maybe Slideshow)
 acceptHuman h = do
   stgtMode <- getsClient stgtMode
   if isJust stgtMode
@@ -573,7 +564,7 @@ acceptHuman h = do
     else h  -- nothing to accept right now, treat this as a command invocation
 
 -- | End targeting mode, accepting the current position or not.
-endTargeting :: MonadClientUI m => Bool -> m ()
+endTargeting :: MonadClientUI m => Bool -> m (Maybe Slideshow)
 endTargeting accept = do
   when accept $ do
     leader <- getLeaderUI
@@ -597,10 +588,11 @@ endTargeting accept = do
         Just cpos ->
           modifyClient $ updateTarget leader (const $ Just $ TPos cpos)
   if accept
-    then endTargetingMsg
-    -- TODO: do not save to history:
-    else msgAdd "targeting canceled"
-  modifyClient $ \cli -> cli { stgtMode = Nothing }
+    then do
+      endTargetingMsg
+      modifyClient $ \cli -> cli { stgtMode = Nothing }
+      succeed
+    else failMaybe "targeting canceled"
 
 endTargetingMsg :: MonadClientUI m => m ()
 endTargetingMsg = do
@@ -629,7 +621,7 @@ clearHuman = return ()
 
 -- * History
 
-historyHuman :: MonadClientUI m => WriterT Slideshow m ()
+historyHuman :: MonadClientUI m => m (Maybe Slideshow)
 historyHuman = do
   history <- getsClient shistory
   arena <- getArenaUI
@@ -641,8 +633,7 @@ historyHuman = do
         , "(this level:"
         , MU.Text (showT (local `timeFit` timeTurn)) MU.:> ")" ]
         <+> "Past messages:"
-  slides <- overlayToSlideshow msg $ renderHistory history
-  tell slides
+  fmap Just $ overlayToSlideshow msg $ renderHistory history
 
 -- * MarkVision, MarkSmell, MarkSuspect
 
@@ -667,7 +658,7 @@ humanMarkSuspect = do
 -- * Help
 
 -- | Display command help.
-helpHuman :: MonadClientUI m => WriterT Slideshow m ()
+helpHuman :: MonadClientUI m => m (Maybe Slideshow)
 helpHuman = do
   keyb <- askBinding
-  tell $ keyHelp keyb
+  return $ Just $ keyHelp keyb

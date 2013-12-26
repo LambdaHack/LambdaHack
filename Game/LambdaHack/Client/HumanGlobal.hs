@@ -286,10 +286,12 @@ projectBla source tpos eps ts = do
   case ggi of
     Right ((iid, _), (_, container)) -> do
       stgtMode <- getsClient stgtMode
-      case stgtMode of
+      endT <- case stgtMode of
         Just (TgtAuto _) -> endTargeting True
-        _ -> return ()
-      return $! Right $ ProjectSer source tpos eps iid container
+        _ -> return Nothing
+      case endT of
+        Just slides -> return $ Left slides
+        Nothing -> return $! Right $ ProjectSer source tpos eps iid container
     Left slides -> return $ Left slides
 
 triggerSymbols :: [Trigger] -> [Char]

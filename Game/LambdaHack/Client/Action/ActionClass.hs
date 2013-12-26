@@ -4,8 +4,6 @@
 -- and 'TypeAction'.
 module Game.LambdaHack.Client.Action.ActionClass where
 
-import Control.Monad.Writer.Strict (WriterT, lift)
-import Data.Monoid
 import qualified Game.LambdaHack.Common.Key as K
 
 import Game.LambdaHack.Client.Binding
@@ -41,19 +39,8 @@ class MonadActionRO m => MonadClient m where
   liftIO       :: IO a -> m a
   saveClient   :: m ()
 
-instance (Monoid a, MonadClient m) => MonadClient (WriterT a m) where
-  getClient    = lift getClient
-  getsClient   = lift . getsClient
-  modifyClient = lift . modifyClient
-  putClient    = lift . putClient
-  liftIO       = lift . liftIO
-  saveClient   = lift saveClient
-
 class MonadClient m => MonadClientUI m where
   getsSession  :: (SessionUI -> a) -> m a
-
-instance (Monoid a, MonadClientUI m) => MonadClientUI (WriterT a m) where
-  getsSession  = lift . getsSession
 
 class MonadClient m => MonadClientReadServer c m | m -> c where
   readServer  :: m c

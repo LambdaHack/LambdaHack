@@ -5,7 +5,6 @@ module Game.LambdaHack.Client.HumanSem
 
 import Control.Exception.Assert.Sugar
 import Control.Monad
-import Control.Monad.Writer.Strict (WriterT)
 import qualified Data.EnumSet as ES
 import Data.Maybe
 import Data.Monoid hiding ((<>))
@@ -31,7 +30,7 @@ import Game.LambdaHack.Common.VectorXY
 -- invoked in targeting mode on a remote level (level different than
 -- the level of the leader).
 cmdHumanSem :: MonadClientUI m
-            => HumanCmd -> WriterT Slideshow m (Abort CmdSer)
+            => HumanCmd -> m (Abort CmdSer)
 cmdHumanSem cmd = do
   arena <- getArenaUI
   if noRemoteHumanCmd cmd then do
@@ -43,7 +42,7 @@ cmdHumanSem cmd = do
 
 -- | Compute the basic action for a command and mark whether it takes time.
 cmdAction :: MonadClientUI m
-          => HumanCmd -> WriterT Slideshow m (Abort CmdSer)
+          => HumanCmd -> m (Abort CmdSer)
 cmdAction cmd = case cmd of
   Move v -> moveRunHuman False v
   Run v -> moveRunHuman True v
@@ -69,14 +68,14 @@ cmdAction cmd = case cmd of
   EpsIncr b -> convertMsg $ epsIncrHuman b
   SelectActor -> convertMsg selectActorHuman
   SelectNone -> addNoMsg selectNoneHuman
-  Cancel -> addNoMsg $ cancelHuman displayMainMenu
-  Accept -> addNoMsg $ acceptHuman helpHuman
+  Cancel -> convertMsg $ cancelHuman displayMainMenu
+  Accept -> convertMsg $ acceptHuman helpHuman
   Clear -> addNoMsg clearHuman
-  History -> addNoMsg historyHuman
+  History -> convertMsg historyHuman
   MarkVision -> addNoMsg humanMarkVision
   MarkSmell -> addNoMsg humanMarkSmell
   MarkSuspect -> addNoMsg humanMarkSuspect
-  Help -> addNoMsg displayMainMenu
+  Help -> convertMsg displayMainMenu
 
 addNoMsg :: Monad m => m () -> m (Abort CmdSer)
 addNoMsg cmdCli = cmdCli >> return (Left mempty)
@@ -96,7 +95,7 @@ checkCursor arena = do
   else return Nothing
 
 moveRunHuman :: MonadClientUI m
-             => Bool -> VectorXY -> WriterT Slideshow m (Abort CmdSer)
+             => Bool -> VectorXY -> m (Abort CmdSer)
 moveRunHuman run v = do
   tgtMode <- getsClient stgtMode
   (arena, Level{lxsize}) <- viewedLevel
@@ -153,7 +152,7 @@ moveRunHuman run v = do
           fmap (fmap TakeTimeSer) $ meleeAid leader target
 
 projectHuman :: MonadClientUI m
-             => [Trigger] -> WriterT Slideshow m (Abort CmdSer)
+             => [Trigger] -> m (Abort CmdSer)
 projectHuman ts = do
   tgtLoc <- targetToPos
   if isNothing tgtLoc
@@ -162,12 +161,12 @@ projectHuman ts = do
       leader <- getLeaderUI
       fmap (fmap TakeTimeSer) $ projectAid leader ts
 
-tgtFloorHuman :: MonadClientUI m => WriterT Slideshow m (Abort CmdSer)
+tgtFloorHuman :: MonadClientUI m => m (Abort CmdSer)
 tgtFloorHuman = do
   arena <- getArenaUI
   tgtFloorLeader (TgtExplicit arena) >> return (Left mempty)
 
-tgtEnemyHuman :: MonadClientUI m => WriterT Slideshow m (Abort CmdSer)
+tgtEnemyHuman :: MonadClientUI m => m (Abort CmdSer)
 tgtEnemyHuman = do
   arena <- getArenaUI
   tgtEnemyLeader (TgtExplicit arena) >> return (Left mempty)

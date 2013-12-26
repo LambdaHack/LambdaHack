@@ -10,9 +10,7 @@ module Game.LambdaHack.Common.Action
   , serverSaveName
   ) where
 
-import Control.Monad.Writer.Strict (WriterT, lift)
 import qualified Data.EnumMap.Strict as EM
-import Data.Monoid
 
 import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.Faction
@@ -23,13 +21,6 @@ import Game.LambdaHack.Content.ModeKind
 class (Monad m, Functor m) => MonadActionRO m where
   getState    :: m State
   getsState   :: (State -> a) -> m a
-
-instance (Monoid a, MonadActionRO m) => MonadActionRO (WriterT a m) where
-  getState    = lift getState
-  getsState   = lift . getsState
-
-instance MonadActionRO m => Show (WriterT a m b) where
-  show _ = "an action"
 
 class MonadActionRO m => MonadAction m where
   modifyState :: (State -> State) -> m ()
