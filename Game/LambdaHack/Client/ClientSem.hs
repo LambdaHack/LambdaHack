@@ -12,6 +12,7 @@ import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.Draw
+import Game.LambdaHack.Client.HumanCmd
 import Game.LambdaHack.Client.HumanLocal
 import Game.LambdaHack.Client.HumanSem
 import Game.LambdaHack.Client.RunAction
@@ -203,17 +204,17 @@ humanCommand msgRunStop = do
           case M.lookup km kcmd of
             Just (_, _, cmd) -> do
               -- Query and clear the last command key.
-              _lastKey <- getsClient slastKey
+              lastKey <- getsClient slastKey
               -- TODO: perhaps replace slastKey
               -- with test 'kmNext == km'
               -- or an extra arg to 'loop'.
               -- Depends on whether slastKey
               -- is needed in other parts of code.
-              modifyClient (\st -> st {slastKey = Just km})
-              cmdHumanSem cmd
--- TODO:              cmdHumanSem $ if Just km == lastKey
---                            then Clear
---                            else cmd
+              if Just km == lastKey
+                then cmdHumanSem Clear
+                else do
+                  modifyClient (\st -> st {slastKey = Just km})
+                  cmdHumanSem cmd
             Nothing -> let msgKey = "unknown command <" <> K.showKM km <> ">"
                        in fmap Left $ promptToSlideshow msgKey
         -- The command was failed or successful and if the latter,
