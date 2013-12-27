@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | Hacks that haven't found their home yet.
 module Game.LambdaHack.Common.Misc
-  ( normalLevelBound, maxLevelDim, divUp, Freqs, breturn
+  ( normalLevelBound, divUp, Freqs, breturn
   , FactionId, LevelId
   ) where
 
@@ -20,11 +20,6 @@ import Data.Traversable (traverse)
 -- | Level bounds. TODO: query terminal size instead and scroll view.
 normalLevelBound :: (Int, Int)
 normalLevelBound = (79, 21)
-
--- | Maximal supported level X and Y dimension (32768). Not checked anywhere.
--- The value is chosen to support architectures with 32-bit ints.
-maxLevelDim :: Int
-maxLevelDim = 2 ^ (15 :: Int)
 
 -- | Integer division, rounding up.
 divUp :: Int -> Int -> Int

@@ -3,9 +3,9 @@ module Game.LambdaHack.Common.PointXY
   ( X, Y, PointXY(..), fromTo, sortPointXY, blaXY, insideXY
   ) where
 
+import Data.Bits (unsafeShiftL, unsafeShiftR, (.&.))
 import qualified Data.List as L
 
-import Game.LambdaHack.Common.Misc
 import Control.Exception.Assert.Sugar
 
 -- | Spacial dimension for points and vectors.
@@ -25,13 +25,24 @@ instance Show PointXY where
 -- so cheap, and we need, e.g., an extra addition per FOV point and per
 -- AI speculative move. Additions are cheap though and code would be
 -- shorter thanks to removing the lxsize argument in many places.
--- More serious is one addition and one multiplication per EnumMap lookup,
+-- More serious is an extra addition per EnumMap lookup,
 -- though in the computation-intensive cases of FOV and AI, the extra
 -- operations were already there, performed before lookup.
--- TODO: rem and quot by 2^w can probably be optimised
 instance Enum PointXY where
-  toEnum p = PointXY (p `rem` maxLevelDim, p `quot` maxLevelDim)
-  fromEnum (PointXY (x, y)) = x + y * maxLevelDim
+  toEnum p = PointXY (p .&. maxLevelDim, unsafeShiftR p maxLevelDimExponent)
+  fromEnum (PointXY (x, y)) = x + unsafeShiftL y maxLevelDimExponent
+
+-- | The maximum number of bits for level X and Y dimension (16).
+-- The value is chosen to support architectures with 32-bit Ints.
+maxLevelDimExponent :: Int
+{-# INLINE maxLevelDimExponent #-}
+maxLevelDimExponent = 16
+
+-- | Maximal supported level X and Y dimension. Not checked anywhere.
+-- The value is chosen to support architectures with 32-bit Ints.
+maxLevelDim :: Int
+{-# INLINE maxLevelDim #-}
+maxLevelDim = 2 ^ maxLevelDimExponent - 1
 
 -- | A list of all points on a straight vertical or straight horizontal line
 -- between two points. Fails if no such line exists.
