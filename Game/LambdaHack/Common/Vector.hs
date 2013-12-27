@@ -1,3 +1,4 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Basic operations on 2D vectors represented in an efficient,
 -- but not unique, way.
 module Game.LambdaHack.Common.Vector
@@ -9,6 +10,7 @@ module Game.LambdaHack.Common.Vector
 
 import Control.Exception.Assert.Sugar
 import Data.Binary
+import Data.Int (Int32)
 
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.PointXY
@@ -16,18 +18,13 @@ import Game.LambdaHack.Common.VectorXY
 
 -- | 2D vectors  represented as offsets in the linear framebuffer
 -- indexed by 'Point'.
---
 -- A newtype is used to prevent mixing up the type with @Point@ itself.
--- Note that the offset representations of a vector is usually not unique.
--- E.g., for vectors of length 1 in the chessboard metric, used to denote
--- geographical directions, the representations are pairwise distinct
--- if and only if the level width and height are at least 3.
 newtype Vector = Vector Int
-  deriving (Eq, Ord, Read)
+  deriving (Eq, Ord, Enum, Read)
 
 instance Binary Vector where
-  put (Vector dir) = put dir
-  get = fmap Vector get
+  put = put . (fromIntegral :: Int -> Int32) . fromEnum
+  get = fmap (toEnum . (fromIntegral :: Int32 -> Int)) get
 
 -- For debugging.
 instance Show Vector where
@@ -35,39 +32,32 @@ instance Show Vector where
 
 -- | Converts a vector in cartesian representation into @Vector@.
 toVector :: X -> VectorXY -> Vector
-toVector lxsize (VectorXY x y) =
-  Vector $ x + y * lxsize
-
-isUnitXY :: VectorXY -> Bool
-isUnitXY v = chessDistXY v == 1
-
--- | Tells if a vector has length 1 in the chessboard metric.
-isUnit ::  X -> Vector -> Bool
-isUnit lxsize = isUnitXY . fromDir lxsize
+toVector _ = toEnum . fromEnum
 
 -- | Converts a unit vector in cartesian representation into @Vector@.
 toDir :: X -> VectorXY -> Vector
-toDir lxsize v@(VectorXY x y) =
-  assert (lxsize >= 3 && isUnitXY v `blame` "ambiguous XY vector conversion"
-                                    `twith` (lxsize, v)) $
-  Vector $ x + y * lxsize
+toDir _ vxy =
+  assert (isUnitXY vxy `blame` "not a unit VectorXY" `twith` vxy)
+  $ toEnum $ fromEnum vxy
+
+isUnitXY :: VectorXY -> Bool
+isUnitXY vxy = chessDistXY vxy == 1
+
+-- | Tells if a vector has length 1 in the chessboard metric.
+isUnit ::  X -> Vector -> Bool
+isUnit _ = isUnitXY . fromVector
+
+-- | Converts a vector in the offset representation
+-- into the cartesian representation.
+fromVector :: Vector -> VectorXY
+fromVector = toEnum . fromEnum
 
 -- | Converts a unit vector in the offset representation
--- into the cartesian representation. Arbitrary vectors can't be
--- converted uniquely.
+-- into the cartesian representation.
 fromDir :: X -> Vector -> VectorXY
-fromDir lxsize (Vector dir) =
-  assert (lxsize >= 3 && isUnitXY res &&
-          fst len1 + snd len1 * lxsize == dir
-          `blame` "ambiguous vector conversion" `twith` (lxsize, dir, res))
-  res
- where
-  (x, y) = (dir `mod` lxsize, dir `div` lxsize)
-  -- Pick the vector's canonical form of length 1:
-  len1 = if x > 1
-         then (x - lxsize, y + 1)
-         else (x, y)
-  res = uncurry VectorXY len1
+fromDir _ v =
+  assert (isUnit 0 v `blame` "not a unit Vector" `twith` v)
+  $ toEnum $ fromEnum v
 
 -- | Translate a point by a vector.
 --

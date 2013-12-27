@@ -113,14 +113,14 @@ fullscan :: Kind.Ops TileKind  -- ^ tile content, determines clear tiles
 fullscan cotile fovMode spectatorPos Level{lxsize, ltile} = spectatorPos :
   case fovMode of
     Shadow ->
-      concatMap (\ tr -> map tr (Shadow.scan (isCl . tr) 1 (0, 1))) tr8
+      concatMap (\tr -> map tr (Shadow.scan (isCl . tr) 1 (0, 1))) tr8
     Permissive ->
-      concatMap (\ tr -> map tr (Permissive.scan (isCl . tr))) tr4
+      concatMap (\tr -> map tr (Permissive.scan (isCl . tr))) tr4
     Digital r ->
-      concatMap (\ tr -> map tr (Digital.scan r (isCl . tr))) tr4
+      concatMap (\tr -> map tr (Digital.scan r (isCl . tr))) tr4
     Blind ->  -- all actors feel adjacent positions (for easy exploration)
       let radiusOne = 1
-      in concatMap (\ tr -> map tr (Digital.scan radiusOne (isCl . tr))) tr4
+      in concatMap (\tr -> map tr (Digital.scan radiusOne (isCl . tr))) tr4
  where
   isCl :: Point -> Bool
   isCl = Tile.isClear cotile . (ltile Kind.!)
@@ -130,23 +130,23 @@ fullscan cotile fovMode spectatorPos Level{lxsize, ltile} = spectatorPos :
   -- | The translation, rotation and symmetry functions for octants.
   tr8 :: [(Distance, Progress) -> Point]
   tr8 =
-    [ \ (p, d) -> trV (  p,   d)
-    , \ (p, d) -> trV (- p,   d)
-    , \ (p, d) -> trV (  p, - d)
-    , \ (p, d) -> trV (- p, - d)
-    , \ (p, d) -> trV (  d,   p)
-    , \ (p, d) -> trV (- d,   p)
-    , \ (p, d) -> trV (  d, - p)
-    , \ (p, d) -> trV (- d, - p)
+    [ \(p, d) -> trV (  p,   d)
+    , \(p, d) -> trV (- p,   d)
+    , \(p, d) -> trV (  p, - d)
+    , \(p, d) -> trV (- p, - d)
+    , \(p, d) -> trV (  d,   p)
+    , \(p, d) -> trV (- d,   p)
+    , \(p, d) -> trV (  d, - p)
+    , \(p, d) -> trV (- d, - p)
     ]
 
   -- | The translation and rotation functions for quadrants.
   tr4 :: [Bump -> Point]
   tr4 =
-    [ \ (B(x, y)) -> trV (  x, - y)  -- quadrant I
-    , \ (B(x, y)) -> trV (  y,   x)  -- II (we rotate counter-clockwise)
-    , \ (B(x, y)) -> trV (- x,   y)  -- III
-    , \ (B(x, y)) -> trV (- y, - x)  -- IV
+    [ \(B(x, y)) -> trV (  x, - y)  -- quadrant I
+    , \(B(x, y)) -> trV (  y,   x)  -- II (we rotate counter-clockwise)
+    , \(B(x, y)) -> trV (- x,   y)  -- III
+    , \(B(x, y)) -> trV (- y, - x)  -- IV
     ]
 
 -- TODO: should Blind really be a FovMode, or a modifier? Let's decide

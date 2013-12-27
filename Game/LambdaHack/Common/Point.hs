@@ -8,6 +8,7 @@ module Game.LambdaHack.Common.Point
 
 import Control.Exception.Assert.Sugar
 import Data.Binary
+import Data.Int (Int32)
 import qualified Data.Ix as Ix
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -18,22 +19,27 @@ import Game.LambdaHack.Common.VectorXY
 
 -- | The type of positions on the 2D level map, heavily optimized.
 --
--- We represent the (level map on the) screen as a linear framebuffer,
--- where @Point@ is an @Int@ offset counted from the first cell.
--- We do bounds check for the X size whenever we convert
--- between representations and each subsequent array access
--- performs another check, effectively for Y size.
+-- We represent the (level map on the) screen as a linear
+-- framebuffer with very long lines, where @Point@ is an @Int@
+-- offset counted from the first cell. We do bounds checks wrt
+-- our smaller, real screen framebuffer on each array access.
 -- After dungeon is generated (using @PointXY@, not @Point@),
 -- and converted to the @Point@ representation, points are used
 -- mainly as keys and not constructed often, so the performance will improve
--- due to smaller save files, the use of @EnumMap@ and cheaper array indexing,
--- including cheaper bounds checks.
+-- due to smaller save files, a bit less memory accesses and cheaper array
+-- and map indexing, including cheaper bounds checks.
+--
+-- Note: do not iterate over the real screen by incrementing the point,
+-- since our screen is a small fraction of the represented abstract
+-- framebuffer and so the point coordinate aren't contiguous.
+-- Similarly, only particular (beginnings of) lines can be represented
+-- as a single array, not the whole screen.
 newtype Point = Point Int
   deriving (Eq, Ord, Ix.Ix, Enum, R.Random)
 
 instance Binary Point where
-  put (Point n) = put n
-  get = fmap Point get
+  put = put . (fromIntegral :: Int -> Int32) . fromEnum
+  get = fmap (toEnum . (fromIntegral :: Int32 -> Int)) get
 
 -- For debugging.
 instance Show Point where
@@ -45,16 +51,16 @@ showPoint lxsize = T.pack . show . fromPoint lxsize
 
 -- | Conversion from cartesian coordinates to @Point@.
 toPoint :: X -> PointXY -> Point
-toPoint lxsize (PointXY x y) =
-  assert (lxsize > x && x >= 0 && y >= 0 `blame` "invalid point coordinates"
-                                         `twith` (lxsize, x, y))
-  $ Point $ x + y * lxsize
+toPoint _ pxy@(PointXY x y) =
+  assert (x >= 0 && y >= 0 `blame` "invalid point coordinates"
+                           `twith` (x, y))
+  $ toEnum $ fromEnum pxy
 
 -- | Conversion from @Point@ to cartesian coordinates.
 fromPoint :: X -> Point -> PointXY
-fromPoint lxsize (Point p) =
-  assert (p >= 0 `blame` "negative point value" `twith` (lxsize, p))
-  $ PointXY (p `rem` lxsize) (p `quot` lxsize)
+fromPoint _ (Point p) =
+  assert (p >= 0 `blame` "negative point value" `twith` p)
+  $ toEnum $ fromEnum p
 
 -- | The top-left corner position of the level.
 origin :: Point
