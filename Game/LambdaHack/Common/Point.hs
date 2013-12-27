@@ -65,7 +65,7 @@ chessDist :: X -> Point -> Point -> Int
 chessDist lxsize pos0 pos1
   | PointXY x0 y0 <- fromPoint lxsize pos0
   , PointXY x1 y1 <- fromPoint lxsize pos1 =
-  chessDistXY $ VectorXY (x1 - x0, y1 - y0)
+  chessDistXY $ VectorXY (x1 - x0) (y1 - y0)
 
 -- | Checks whether two points are adjacent on the map
 -- (horizontally, vertically or diagonally).
@@ -96,7 +96,7 @@ displacementXYZ :: X -> Point -> Point -> VectorXY
 displacementXYZ lxsize pos0 pos1
   | PointXY x0 y0 <- fromPoint lxsize pos0
   , PointXY x1 y1 <- fromPoint lxsize pos1 =
-  VectorXY (x1 - x0, y1 - y0)
+  VectorXY (x1 - x0) (y1 - y0)
 
 -- | Bresenham's line algorithm generalized to arbitrary starting @eps@
 -- (@eps@ value of 0 gives the standard BLA).

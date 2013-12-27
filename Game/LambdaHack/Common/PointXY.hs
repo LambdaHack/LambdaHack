@@ -1,10 +1,13 @@
 -- | Basic cartesian geometry operations on 2D points.
 module Game.LambdaHack.Common.PointXY
-  ( X, Y, PointXY(..), fromTo, sortPointXY, blaXY, insideXY
+  ( X, Y, PointXY(..), maxLevelDimExponent, maxLevelDim, maxVectorDim
+  , fromTo, sortPointXY, blaXY, insideXY
   ) where
 
 import Control.Exception.Assert.Sugar
+import Data.Binary
 import Data.Bits (unsafeShiftL, unsafeShiftR, (.&.))
+import Data.Int (Int32)
 
 -- | Spacial dimension for points and vectors.
 type X = Int
@@ -12,7 +15,16 @@ type X = Int
 -- | Spacial dimension for points and vectors.
 type Y = Int
 
--- | 2D points in cartesian representation.
+-- | 2D points in cartesian representation. Coordinates grow to the right
+-- and down, so that the (0, 0) point is in the top-left corner of the screen.
+-- Coordinates are never negative.
+--
+-- Note: If we used this instead of @Point@, we'd need, e.g.,
+-- an extra addition per FOV point and per AI speculative move,
+-- plus some possible extra memory accesses to the individual coordinates.
+-- Even more serious is an extra addition and access per EnumMap lookup,
+-- though in the computation-intensive cases of FOV and AI, the extra
+-- operations were already there, performed before lookup.
 data PointXY = PointXY
   { px :: !X
   , py :: !Y
@@ -22,16 +34,14 @@ data PointXY = PointXY
 instance Show PointXY where
   show (PointXY x y) = show (x, y)
 
--- TODO: perhaps use this instead of Point, but then @shift@ is not longer
--- so cheap, and we need, e.g., an extra addition per FOV point and per
--- AI speculative move. Additions are cheap though and code would be
--- shorter thanks to removing the lxsize argument in many places.
--- More serious is an extra addition per EnumMap lookup,
--- though in the computation-intensive cases of FOV and AI, the extra
--- operations were already there, performed before lookup.
 instance Enum PointXY where
-  toEnum p = PointXY (p .&. maxLevelDim) (unsafeShiftR p maxLevelDimExponent)
+  toEnum xy = PointXY (xy .&. maxLevelDim)
+                      (unsafeShiftR xy maxLevelDimExponent)
   fromEnum (PointXY x y) = x + unsafeShiftL y maxLevelDimExponent
+
+instance Binary PointXY where
+  put = put . (fromIntegral :: Int -> Int32) . fromEnum
+  get = fmap (toEnum . (fromIntegral :: Int32 -> Int)) get
 
 -- | The maximum number of bits for level X and Y dimension (16).
 -- The value is chosen to support architectures with 32-bit Ints.
@@ -45,6 +55,11 @@ maxLevelDim :: Int
 {-# INLINE maxLevelDim #-}
 maxLevelDim = 2 ^ maxLevelDimExponent - 1
 
+-- | Maximal supported vector X and Y coordinates.
+maxVectorDim :: Int
+{-# INLINE maxVectorDim #-}
+maxVectorDim = 2 ^ (maxLevelDimExponent - 1) - 1
+
 -- | A list of all points on a straight vertical or straight horizontal line
 -- between two points. Fails if no such line exists.
 fromTo :: PointXY -> PointXY -> [PointXY]
@@ -52,7 +67,7 @@ fromTo (PointXY x0 y0) (PointXY x1 y1) =
  let result
        | x0 == x1 = map (\ y -> PointXY x0 y) (fromTo1 y0 y1)
        | y0 == y1 = map (\ x -> PointXY x y0) (fromTo1 x0 x1)
-       | otherwise = assert `failure` "diagononal fromTo"
+       | otherwise = assert `failure` "diagonal fromTo"
                             `twith` ((x0, y0), (x1, y1))
  in result
 

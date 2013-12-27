@@ -125,7 +125,7 @@ fullscan cotile fovMode spectatorPos Level{lxsize, ltile} = spectatorPos :
   isCl :: Point -> Bool
   isCl = Tile.isClear cotile . (ltile Kind.!)
 
-  trV xy = shift spectatorPos $ toVector lxsize $ VectorXY xy
+  trV xy = shift spectatorPos $ toVector lxsize $ uncurry VectorXY xy
 
   -- | The translation, rotation and symmetry functions for octants.
   tr8 :: [(Distance, Progress) -> Point]

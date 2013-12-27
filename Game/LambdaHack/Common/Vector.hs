@@ -35,7 +35,7 @@ instance Show Vector where
 
 -- | Converts a vector in cartesian representation into @Vector@.
 toVector :: X -> VectorXY -> Vector
-toVector lxsize (VectorXY (x, y)) =
+toVector lxsize (VectorXY x y) =
   Vector $ x + y * lxsize
 
 isUnitXY :: VectorXY -> Bool
@@ -47,7 +47,7 @@ isUnit lxsize = isUnitXY . fromDir lxsize
 
 -- | Converts a unit vector in cartesian representation into @Vector@.
 toDir :: X -> VectorXY -> Vector
-toDir lxsize v@(VectorXY (x, y)) =
+toDir lxsize v@(VectorXY x y) =
   assert (lxsize >= 3 && isUnitXY v `blame` "ambiguous XY vector conversion"
                                     `twith` (lxsize, v)) $
   Vector $ x + y * lxsize
@@ -67,7 +67,7 @@ fromDir lxsize (Vector dir) =
   len1 = if x > 1
          then (x - lxsize, y + 1)
          else (x, y)
-  res = VectorXY len1
+  res = uncurry VectorXY len1
 
 -- | Translate a point by a vector.
 --
@@ -78,7 +78,7 @@ shift p (Vector dir) = toEnum $ fromEnum p + dir
 -- | Translate a point by a vector, but only if the result fits in an area.
 shiftBounded :: X -> (X, Y, X, Y) -> Point -> Vector -> Point
 shiftBounded lxsize (x0, y0, x1, y1) pos dir =
-  let VectorXY (xv, yv) = fromDir lxsize dir
+  let VectorXY xv yv = fromDir lxsize dir
   in if inside lxsize pos (x0 - xv, y0 - yv, x1 - xv, y1 - yv)
      then shift pos dir
      else pos
@@ -90,15 +90,15 @@ moves lxsize = map (toDir lxsize) movesXY
 -- | Squared euclidean distance between two unit vectors.
 euclidDistSq :: X -> Vector -> Vector -> Int
 euclidDistSq lxsize dir0 dir1
-  | VectorXY (x0, y0) <- fromDir lxsize dir0
-  , VectorXY (x1, y1) <- fromDir lxsize dir1 =
-  euclidDistSqXY $ VectorXY (x1 - x0, y1 - y0)
+  | VectorXY x0 y0 <- fromDir lxsize dir0
+  , VectorXY x1 y1 <- fromDir lxsize dir1 =
+  euclidDistSqXY $ VectorXY (x1 - x0) (y1 - y0)
 
 -- | Checks whether a unit vector is a diagonal direction,
 -- as opposed to cardinal. If the vector is not unit,
 -- it checks that the vector is not horizontal nor vertical.
 diagonal :: X -> Vector -> Bool
-diagonal lxsize dir | VectorXY (x, y) <- fromDir lxsize dir =
+diagonal lxsize dir | VectorXY x y <- fromDir lxsize dir =
   x * y /= 0
 
 -- | Reverse an arbirary vector.
@@ -111,7 +111,7 @@ type RadianAngle = Double
 -- counterclockwise and return a unit vector approximately in the resulting
 -- direction.
 rotate :: X -> RadianAngle -> Vector -> Vector
-rotate lxsize angle dir | VectorXY (x', y') <- fromDir lxsize dir =
+rotate lxsize angle dir | VectorXY x' y' <- fromDir lxsize dir =
   let x = fromIntegral x'
       y = fromIntegral y'
       -- Minus before the angle comes from our coordinates being
@@ -139,11 +139,11 @@ normalize lxsize dx dy =
           | otherwise = assert `failure` "impossible angle"
                                `twith` (lxsize, dx, dy, angle)
   in if dx >= 0
-     then VectorXY dxy
-     else negXY $ VectorXY dxy
+     then uncurry VectorXY dxy
+     else negXY $ uncurry VectorXY dxy
 
 normalizeVector :: X -> VectorXY -> Vector
-normalizeVector lxsize v@(VectorXY (dx, dy)) =
+normalizeVector lxsize v@(VectorXY dx dy) =
   let rxy = normalize lxsize (fromIntegral dx) (fromIntegral dy)
   in assert (not (isUnitXY v) || v == rxy
              `blame` "unit vector gets untrivially normalized"
