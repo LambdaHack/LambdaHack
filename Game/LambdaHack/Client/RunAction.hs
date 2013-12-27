@@ -49,24 +49,29 @@ continueRun paramOld =
     RunParams{ runLeader
              , runMembers = r : rs
              , runDist = 0
-             , runStopMsg = Nothing
+             , runStopMsg
              , runInitDir = Just dir } ->
       if r == runLeader then do
         -- Start a many-actor run with distance 1, to prevent changing
-        -- direction on first turn, when the original direction is blocked.
+        -- direction on first turn, if the original direction is blocked.
         -- We want our runners to keep formation.
         let runDistNew = if null rs then 0 else 1
         continueRun paramOld{runDist = runDistNew, runInitDir = Nothing}
       else do
-        let paramNew = paramOld {runMembers = rs ++ [r]}
         runOutcome <- continueRunDir r 0 (Just dir)
         case runOutcome of
           (Nothing, Nothing) -> do
             runStopOrCmd <- moveRunAid r dir
+            let runMembersNew = if isJust runStopMsg then rs else rs ++ [r]
+                paramNew = paramOld {runMembers = runMembersNew}
             return $ case runStopOrCmd of
-              Left stopMsg -> Left stopMsg
+              Left stopMsg -> assert `failure` (paramOld, stopMsg)
               Right runCmd -> Right (paramNew, runCmd)
-          (Nothing, Just stopMsg) -> return $ Left stopMsg
+          (Nothing, runStopMsgCurrent) -> do
+            let runStopMsgNew = runStopMsg `mplus` runStopMsgCurrent
+                paramNew = paramOld { runMembers = rs
+                                    , runStopMsg = runStopMsgNew }
+            continueRun paramNew
           _ -> assert `failure` (paramOld, runOutcome)
     RunParams{ runLeader
              , runMembers = r : rs
@@ -76,17 +81,18 @@ continueRun paramOld =
       let runDistNew = if r == runLeader then runDist + 1 else runDist
       (mdir, runStopMsgCurrent) <- continueRunDir r runDistNew Nothing
       let runStopMsgNew = runStopMsg `mplus` runStopMsgCurrent
+          -- We check @runStopMsgNew@, because even if the current actor
+          -- runs OK, we want to stop soon if some others had to stop.
           runMembersNew = if isJust runStopMsgNew then rs else rs ++ [r]
           paramNew = paramOld { runMembers = runMembersNew
                               , runDist = runDistNew
                               , runStopMsg = runStopMsgNew }
-      -- The potential invisible actor is hit. War is started without asking.
       case mdir of
-        Nothing ->
-          case runStopMsgCurrent of  -- show the more dire message
-            Nothing -> assert `failure` (paramOld, paramNew)
-            Just stopMsg -> return $ Left stopMsg
+        Nothing -> do
+          assert (isJust runStopMsgCurrent `blame` (paramOld, paramNew)) skip
+          continueRun paramNew  -- run all undisturbed, but only one time
         Just dir -> return $ Right (paramNew, MoveSer r dir)
+      -- The potential invisible actor is hit. War is started without asking.
     _ -> assert `failure` paramOld
 
 -- | Actor moves or searches or alters. No visible actor at the position.
@@ -173,7 +179,7 @@ continueRunDir aid distLast mdir = do
               then return (Nothing, Nothing)  -- zeroth step very liberal
               else checkAndRun aid dir
           | distLast /= 1 = return (Nothing, Just "blocked")
-                            -- don't open doors, except in step 1 of a run
+                            -- don't change direction, except in step 1
           | openableLast = return (Nothing, Just "blocked by a closed door")
                            -- the player may prefer to open the door
           | otherwise =
@@ -209,6 +215,8 @@ tryTurning aid = do
     _ -> return ( Nothing
                 , Just "blocked and many distant similar directions found" )
 
+-- The direction is different than the original, if called from @tryTurning@
+-- and the same if from @continueRunDir@.
 checkAndRun :: MonadClient m
             => ActorId -> Vector -> m (Maybe Vector, Maybe Msg)
 checkAndRun aid dir = do
@@ -265,6 +273,7 @@ checkAndRun aid dir = do
                         `notElem` map posHasItems rightPsLast
       check
         | actorThere = return (Nothing, Just "actor in the way")
+                       -- Actor in possibly another direction tnat original.
         | terrainChangeLeft =
             return (Nothing, Just "terrain change on the left")
         | terrainChangeRight =
