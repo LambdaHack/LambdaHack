@@ -247,7 +247,7 @@ findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lysize, lstair} k = do
         nps <- tryFind (np : ps) (n - 1)
         return $ np : nps
       stairPoss = fst lstair ++ snd lstair
-      middlePos = toPoint lxsize $ PointXY (lxsize `div` 2, lysize `div` 2)
+      middlePos = toPoint lxsize $ PointXY (lxsize `div` 2) (lysize `div` 2)
   assert (k > 0 && factionDist > 0) skip
   case k of
     1 -> tryFind stairPoss k

@@ -90,7 +90,7 @@ renderAnim lxsize lysize basicFrame (Animation anim) =
       modifyFrame SingleFrame{sfLevel = topLine : levelOld, ..} am =
         let fLine y lineOld =
               let f l (x, acOld) =
-                    let pos = toPoint lxsize (PointXY (x, y))
+                    let pos = toPoint lxsize (PointXY x y)
                         !ac = fromMaybe acOld $ EM.lookup pos am
                     in ac : l
               in L.foldl' f [] (zip [lxsize-1,lxsize-2..0] (reverse lineOld))
@@ -206,7 +206,7 @@ fadeout out topRight lxsize lysize = do
         in EM.findWithDefault ' ' k edge
       rollFrame n = do
         r <- random
-        let l = [ ( PointXY (if topRight then x else xbound - x, y)
+        let l = [ ( PointXY (if topRight then x else xbound - x) y
                   , fadeChar r n x y )
                 | x <- [0..xbound]
                 , y <- [max 0 (ybound - (n - x) `div` 2)..ybound]

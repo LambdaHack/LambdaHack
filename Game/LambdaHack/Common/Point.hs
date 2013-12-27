@@ -46,7 +46,7 @@ showPoint lxsize = T.pack . show . fromPoint lxsize
 
 -- | Conversion from cartesian coordinates to @Point@.
 toPoint :: X -> PointXY -> Point
-toPoint lxsize (PointXY (x, y)) =
+toPoint lxsize (PointXY x y) =
   assert (lxsize > x && x >= 0 && y >= 0 `blame` "invalid point coordinates"
                                          `twith` (lxsize, x, y))
   $ Point $ x + y * lxsize
@@ -55,7 +55,7 @@ toPoint lxsize (PointXY (x, y)) =
 fromPoint :: X -> Point -> PointXY
 fromPoint lxsize (Point p) =
   assert (p >= 0 `blame` "negative point value" `twith` (lxsize, p))
-  $ PointXY (p `rem` lxsize, p `quot` lxsize)
+  $ PointXY (p `rem` lxsize) (p `quot` lxsize)
 
 -- | The top-left corner position of the level.
 origin :: Point
@@ -64,8 +64,8 @@ origin = Point 0
 -- | The distance between two points in the chessboard metric.
 chessDist :: X -> Point -> Point -> Int
 chessDist lxsize pos0 pos1
-  | PointXY (x0, y0) <- fromPoint lxsize pos0
-  , PointXY (x1, y1) <- fromPoint lxsize pos1 =
+  | PointXY x0 y0 <- fromPoint lxsize pos0
+  , PointXY x1 y1 <- fromPoint lxsize pos1 =
   chessDistXY $ VectorXY (x1 - x0, y1 - y0)
 
 -- | Checks whether two points are adjacent on the map
@@ -95,8 +95,8 @@ inside lxsize p = insideXY $ fromPoint lxsize p
 -- | Calculate the displacement vector from a position to another.
 displacementXYZ :: X -> Point -> Point -> VectorXY
 displacementXYZ lxsize pos0 pos1
-  | PointXY (x0, y0) <- fromPoint lxsize pos0
-  , PointXY (x1, y1) <- fromPoint lxsize pos1 =
+  | PointXY x0 y0 <- fromPoint lxsize pos0
+  , PointXY x1 y1 <- fromPoint lxsize pos1 =
   VectorXY (x1 - x0, y1 - y0)
 
 -- | Bresenham's line algorithm generalized to arbitrary starting @eps@
@@ -108,6 +108,6 @@ bla _ _ _ source target | source == target = Nothing
 bla lxsize lysize eps source target = Just $
   let s = fromPoint lxsize source
       e = fromPoint lxsize target
-      inBounds p@(PointXY (x, y)) =
+      inBounds p@(PointXY x y) =
         lxsize > x && x >= 0 && lysize > y && y >= 0 && p /= s
   in L.map (toPoint lxsize) $ L.takeWhile inBounds $ L.tail $ blaXY eps s e

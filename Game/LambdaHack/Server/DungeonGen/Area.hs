@@ -21,7 +21,7 @@ fromArea :: Area -> (X, Y, X, Y)
 fromArea (Area x0 y0 x1 y1) = (x0, y0, x1, y1)
 
 trivialArea :: PointXY -> Area
-trivialArea (PointXY (x, y)) = Area x y x y
+trivialArea (PointXY x y) = Area x y x y
 
 -- | Divide uniformly a larger area into the given number of smaller areas
 -- overlapping at the edges.
@@ -29,10 +29,10 @@ grid :: (X, Y) -> Area -> [(PointXY, Area)]
 grid (nx, ny) (Area x0 y0 x1 y1) =
   let xd = x1 - x0  -- not +1, because we need overlap
       yd = y1 - y0
-  in [ (PointXY (x, y), Area (x0 + xd * x `div` nx)
-                             (y0 + yd * y `div` ny)
-                             (x0 + xd * (x + 1) `div` nx)
-                             (y0 + yd * (y + 1) `div` ny))
+  in [ (PointXY x y, Area (x0 + xd * x `div` nx)
+                          (y0 + yd * y `div` ny)
+                          (x0 + xd * (x + 1) `div` nx)
+                          (y0 + yd * (y + 1) `div` ny))
      | x <- [0..nx-1], y <- [0..ny-1] ]
 
 -- | Enlarge (or shrink) the given area on all fours sides by the amount.

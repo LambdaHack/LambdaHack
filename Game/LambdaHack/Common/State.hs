@@ -69,7 +69,7 @@ unknownLevel Kind.Ops{ouniqGroup} ldepth lxsize lysize ldesc lstair lclear
 
 unknownTileMap :: Kind.Id TileKind -> Int -> Int -> TileMap
 unknownTileMap unknownId cxsize cysize =
-  let bounds = (origin, toPoint cxsize $ PointXY (cxsize - 1, cysize - 1))
+  let bounds = (origin, toPoint cxsize $ PointXY (cxsize - 1) (cysize - 1))
   in Kind.listArray bounds (repeat unknownId)
 
 -- | Initial complete global game state.

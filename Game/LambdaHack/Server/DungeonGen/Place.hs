@@ -7,7 +7,6 @@ module Game.LambdaHack.Server.DungeonGen.Place
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import qualified Data.List as L
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -56,7 +55,7 @@ placeCheck r PlaceKind{..} =
           dx = x1 - x0 + 1
           dy = y1 - y0 + 1
           dxcorner = case ptopLeft of [] -> 0 ; l : _ -> T.length l
-          dycorner = L.length ptopLeft
+          dycorner = length ptopLeft
           wholeOverlapped d dcorner = d > 1 && dcorner > 1 &&
                                       (d - 1) `mod` (2 * (dcorner - 1)) == 0
       in case pcover of
@@ -112,7 +111,7 @@ buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
         FFloor -> buildFence qhollowFence qarea
         FNone -> EM.empty
       (x0, y0, x1, y1) = fromArea qarea
-      isEdge (PointXY (x, y)) = x `elem` [x0, x1] || y `elem` [y0, y1]
+      isEdge (PointXY x y) = x `elem` [x0, x1] || y `elem` [y0, y1]
       digNight xy c | isEdge xy = xlegendLit EM.! c
                     | otherwise = xlegend EM.! c
       inside = case pfence kr of
@@ -124,15 +123,15 @@ buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
 -- | Roll a legend of a place plan: a map from plan symbols to tile kinds.
 olegend :: Kind.Ops TileKind -> Text
         -> Rnd (EM.EnumMap Char (Kind.Id TileKind))
-olegend Kind.Ops{ofoldrWithKey, opick} group =
+olegend Kind.Ops{ofoldrWithKey, opick} lgroup =
   let getSymbols _ tk acc =
         maybe acc (const $ ES.insert (tsymbol tk) acc)
-          (L.lookup group $ tfreq tk)
+          (lookup lgroup $ tfreq tk)
       symbols = ofoldrWithKey getSymbols ES.empty
       getLegend s acc = do
         m <- acc
-        tk <- fmap (fromMaybe $ assert `failure` (group, s))
-              $ opick group $ (== s) . tsymbol
+        tk <- fmap (fromMaybe $ assert `failure` (lgroup, s))
+              $ opick lgroup $ (== s) . tsymbol
         return $ EM.insert s tk m
       legend = ES.foldr getLegend (return EM.empty) symbols
   in legend
@@ -141,9 +140,9 @@ olegend Kind.Ops{ofoldrWithKey, opick} group =
 buildFence :: Kind.Id TileKind -> Area -> TileMapXY
 buildFence fenceId area =
   let (x0, y0, x1, y1) = fromArea area
-  in EM.fromList $ [ (PointXY (x, y), fenceId)
+  in EM.fromList $ [ (PointXY x y, fenceId)
                    | x <- [x0-1, x1+1], y <- [y0..y1] ] ++
-                   [ (PointXY (x, y), fenceId)
+                   [ (PointXY x y, fenceId)
                    | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
 
 -- | Construct a fence around an area, with the given tile group.
@@ -156,7 +155,7 @@ buildFenceRnd Kind.COps{cotile=Kind.Ops{opick}} couterFenceTile area = do
                       | otherwise = couterFenceTile
         fenceId <- fmap (fromMaybe $ assert `failure` tileGroup)
                    $ opick tileGroup (const True)
-        return (PointXY (xf, yf), fenceId)
+        return (PointXY xf yf, fenceId)
       pointList = [ (x, y) | x <- [x0-1, x1+1], y <- [y0..y1] ]
                   ++ [ (x, y) | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
   fenceList <- mapM fenceIdRnd pointList
@@ -176,32 +175,32 @@ tilePlace area pl@PlaceKind{..} =
         l : _ -> T.length l
       (dx, dy) = assert (xwidth >= dxcorner && ywidth >= length ptopLeft
                          `blame` (area, pl)) (xwidth, ywidth)
-      fromX (x, y) = L.map PointXY $ L.zip [x..] (repeat y)
+      fromX (x, y) = map (uncurry PointXY) $ zip [x..] (repeat y)
       fillInterior :: (forall a. Int -> [a] -> [a]) -> [(PointXY, Char)]
       fillInterior f =
-        let tileInterior (y, row) = L.zip (fromX (x0, y)) $ f dx row
-            reflected = L.zip [y0..] $ f dy $ map T.unpack ptopLeft
-        in L.concatMap tileInterior reflected
+        let tileInterior (y, row) = zip (fromX (x0, y)) $ f dx row
+            reflected = zip [y0..] $ f dy $ map T.unpack ptopLeft
+        in concatMap tileInterior reflected
       tileReflect :: Int -> [a] -> [a]
       tileReflect d pat =
-        let lstart = L.take (d `divUp` 2) pat
-            lend   = L.take (d `div`   2) pat
-        in lstart ++ L.reverse lend
+        let lstart = take (d `divUp` 2) pat
+            lend   = take (d `div`   2) pat
+        in lstart ++ reverse lend
       interior = case pcover of
         CAlternate ->
           let tile :: Int -> [a] -> [a]
               tile _ []  = assert `failure` "nothing to tile" `twith` pl
               tile d pat =
-                L.take d (L.cycle $ L.init pat ++ L.init (L.reverse pat))
+                take d (cycle $ init pat ++ init (reverse pat))
           in fillInterior tile
         CStretch ->
           let stretch :: Int -> [a] -> [a]
               stretch _ []  = assert `failure` "nothing to stretch" `twith` pl
-              stretch d pat = tileReflect d (pat ++ L.repeat (L.last pat))
+              stretch d pat = tileReflect d (pat ++ repeat (last pat))
           in fillInterior stretch
         CReflect ->
           let reflect :: Int -> [a] -> [a]
-              reflect d pat = tileReflect d (L.cycle pat)
+              reflect d pat = tileReflect d (cycle pat)
           in fillInterior reflect
   in EM.fromList interior
 

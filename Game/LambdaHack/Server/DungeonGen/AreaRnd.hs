@@ -11,11 +11,11 @@ module Game.LambdaHack.Server.DungeonGen.AreaRnd
 import qualified Data.EnumSet as ES
 import Data.Maybe
 
+import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.VectorXY
 import Game.LambdaHack.Server.DungeonGen.Area
-import Control.Exception.Assert.Sugar
 
 -- Picking random points inside areas
 
@@ -25,7 +25,7 @@ xyInArea area = do
   let (x0, y0, x1, y1) = fromArea area
   rx <- randomR (x0, x1)
   ry <- randomR (y0, y1)
-  return $ PointXY (rx, ry)
+  return $ PointXY rx ry
 
 -- | Create a random room according to given parameters.
 mkRoom :: (X, Y)    -- ^ minimum size
@@ -37,14 +37,14 @@ mkRoom (xm, ym) (xM, yM) area = do
   assert (xm <= x1 - x0 + 1 && ym <= y1 - y0 + 1) skip
   let a0 = (x0, y0, x1 - xm + 1, y1 - ym + 1)
       area0 = fromMaybe (assert `failure` a0) $ toArea a0
-  PointXY (rx0, ry0) <- xyInArea area0
+  PointXY rx0 ry0 <- xyInArea area0
   let sX = rx0 + xm - 1
       sY = ry0 + ym - 1
       eX = min x1 (rx0 + xM - 1)
       eY = min y1 (ry0 + yM - 1)
       a1 = (sX, sY, eX, eY)
       area1 = fromMaybe (assert `failure` a1) $ toArea a1
-  PointXY (rx1, ry1) <- xyInArea area1
+  PointXY rx1 ry1 <- xyInArea area1
   let a3 = (rx0, ry0, rx1, ry1)
       area3 = fromMaybe (assert `failure` a3) $ toArea a3
   return area3
@@ -63,13 +63,13 @@ mkVoidRoom area = do
 -- there is only one connected component in the graph of all areas.
 connectGrid :: (X, Y) -> Rnd [(PointXY, PointXY)]
 connectGrid (nx, ny) = do
-  let unconnected = ES.fromList [ PointXY (x, y)
+  let unconnected = ES.fromList [ PointXY x y
                                 | x <- [0..nx-1], y <- [0..ny-1] ]
   -- Candidates are neighbours that are still unconnected. We start with
   -- a random choice.
   rx <- randomR (0, nx-1)
   ry <- randomR (0, ny-1)
-  let candidates = ES.fromList [ PointXY (rx, ry) ]
+  let candidates = ES.fromList [PointXY rx ry]
   connectGrid' (nx, ny) unconnected candidates []
 
 connectGrid' :: (X, Y) -> ES.EnumSet PointXY -> ES.EnumSet PointXY
@@ -102,11 +102,11 @@ randomConnection (nx, ny) =
     then do
       rx  <- randomR (0, nx-2)
       ry  <- randomR (0, ny-1)
-      return (PointXY (rx, ry), PointXY (rx+1, ry))
+      return (PointXY rx ry, PointXY (rx+1) ry)
     else do
       rx  <- randomR (0, nx-1)
       ry  <- randomR (0, ny-2)
-      return (PointXY (rx, ry), PointXY (rx, ry+1))
+      return (PointXY rx ry, PointXY rx (ry+1))
 
 -- Plotting individual corridors between two areas
 
@@ -123,11 +123,13 @@ mkCorridor :: HV            -- ^ orientation of the starting section
            -> PointXY       -- ^ ending point
            -> Area          -- ^ the area containing the intermediate point
            -> Rnd Corridor  -- ^ straight sections of the corridor
-mkCorridor hv (PointXY (x0, y0)) (PointXY (x1, y1)) b = do
-  PointXY (rx, ry) <- xyInArea b
+mkCorridor hv (PointXY x0 y0) (PointXY x1 y1) b = do
+  PointXY rx ry <- xyInArea b
   case hv of
-    Horiz -> return $ map PointXY [(x0, y0), (rx, y0), (rx, y1), (x1, y1)]
-    Vert  -> return $ map PointXY [(x0, y0), (x0, ry), (x1, ry), (x1, y1)]
+    Horiz ->
+      return $ map (uncurry PointXY) [(x0, y0), (rx, y0), (rx, y1), (x1, y1)]
+    Vert  -> return
+             $ map (uncurry PointXY) [(x0, y0), (x0, ry), (x1, ry), (x1, y1)]
 
 -- | Try to connect two interiors of places with a corridor.
 -- Choose entrances at least 4 or 3 tiles distant from the edges, if the place
@@ -150,8 +152,8 @@ connectPlaces (sa, so) (ta, to) = do
             (nx0, nx1) = trim4 (x0, x1)
             (ny0, ny1) = trim4 (y0, y1)
         in fromMaybe (assert `failure` area) $ toArea (nx0, ny0, nx1, ny1)
-  PointXY (sx, sy) <- xyInArea $ trim so
-  PointXY (tx, ty) <- xyInArea $ trim to
+  PointXY sx sy <- xyInArea $ trim so
+  PointXY tx ty <- xyInArea $ trim to
   let hva sarea tarea = do
         let (_, _, zsx1, zsy1) = fromArea sarea
             (ztx0, zty0, _, _) = fromArea tarea
@@ -176,8 +178,8 @@ connectPlaces (sa, so) (ta, to) = do
   -- We cross width one places completely with the corridor, for void
   -- rooms and others (e.g., one-tile wall room then becomes a door, etc.).
   let (p0, p1) = case hv of
-        Horiz -> (PointXY (sox1, sy), PointXY (tox0, ty))
-        Vert  -> (PointXY (sx, soy1), PointXY (tx, toy0))
+        Horiz -> (PointXY sox1 sy, PointXY tox0 ty)
+        Vert  -> (PointXY sx soy1, PointXY tx toy0)
   -- The condition imposed on mkCorridor are tricky: there might not always
   -- exist a good intermediate point if the places are allowed to be close
   -- together and then we let the intermediate part degenerate.

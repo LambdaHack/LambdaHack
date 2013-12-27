@@ -15,7 +15,7 @@ newtype VectorXY = VectorXY (X, Y)
 
 -- | Shift a point by a vector.
 shiftXY :: PointXY -> VectorXY -> PointXY
-shiftXY (PointXY (x0, y0)) (VectorXY (x1, y1)) = PointXY (x0 + x1, y0 + y1)
+shiftXY (PointXY x0 y0) (VectorXY (x1, y1)) = PointXY (x0 + x1) (y0 + y1)
 
 -- | Vectors of all unit moves in the chessboard metric,
 -- clockwise, starting north-west.
