@@ -5,6 +5,7 @@ module Game.LambdaHack.Common.Effect
   ( Effect(..), effectTrav, effectToSuffix
   ) where
 
+import Control.Exception.Assert.Sugar
 import qualified Control.Monad.State as St
 import Data.Binary
 import qualified Data.Hashable as Hashable
@@ -13,7 +14,6 @@ import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Random
-import Control.Exception.Assert.Sugar
 
 -- TODO: document each constructor
 -- Effects of items, tiles, etc. The type argument represents power.

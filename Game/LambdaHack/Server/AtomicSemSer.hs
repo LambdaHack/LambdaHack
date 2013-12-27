@@ -5,6 +5,7 @@ module Game.LambdaHack.Server.AtomicSemSer
   ( atomicSendSem
   ) where
 
+import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
@@ -25,7 +26,6 @@ import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.Action
 import Game.LambdaHack.Server.State
-import Control.Exception.Assert.Sugar
 
 storeUndo :: MonadServer m => Atomic -> m ()
 storeUndo _atomic =

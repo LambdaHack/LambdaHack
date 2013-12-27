@@ -5,12 +5,12 @@ module Game.LambdaHack.Client.HumanCmd
   , majorHumanCmd, minorHumanCmd, noRemoteHumanCmd, cmdDescription
   ) where
 
+import Control.Exception.Assert.Sugar
 import Data.Binary
 import Data.Text (Text)
 import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
-import Control.Exception.Assert.Sugar
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.VectorXY

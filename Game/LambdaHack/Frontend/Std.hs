@@ -10,7 +10,6 @@ module Game.LambdaHack.Frontend.Std
 
 import qualified Data.ByteString.Char8 as BS
 import Data.Char (chr, ord)
-import qualified Data.List as L
 import Data.Text.Encoding (encodeUtf8)
 import qualified System.IO as SIO
 
@@ -40,7 +39,7 @@ fdisplay :: FrontendSession    -- ^ frontend session data
 fdisplay _ _ Nothing = return ()
 fdisplay _ _ (Just rawSF) =
   let SingleFrame{sfLevel, sfBottom} = overlayOverlay rawSF
-      chars = L.map (BS.pack . L.map Color.acChar) sfLevel
+      chars = map (BS.pack . map Color.acChar) sfLevel
       bs = chars ++ [encodeUtf8 sfBottom, BS.empty]
   in mapM_ BS.putStrLn bs
 

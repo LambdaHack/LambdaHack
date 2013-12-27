@@ -7,7 +7,7 @@ module Game.LambdaHack.Client.Binding
 
 import Control.Arrow (second)
 import qualified Data.Char as Char
-import qualified Data.List as L
+import Data.List
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import Data.Text (Text)
@@ -44,12 +44,12 @@ stdBinding !config@ConfigUI{configMacros} =
         ++ fmap heroSelect [0..9]
       mkDescribed cmd = (cmdDescription cmd, noRemoteHumanCmd cmd, cmd)
       mkCommand = second mkDescribed
-      semList = L.map mkCommand cmdList
+      semList = map mkCommand cmdList
   in Binding
   { kcmd = M.fromList semList
   , kmacro
-  , kmajor = L.map fst $ L.filter (majorHumanCmd . snd) cmdList
-  , kminor = L.map fst $ L.filter (minorHumanCmd . snd) cmdList
+  , kmajor = map fst $ filter (majorHumanCmd . snd) cmdList
+  , kminor = map fst $ filter (minorHumanCmd . snd) cmdList
   , krevMap = M.fromList $ map swap cmdList
   }
 
@@ -105,9 +105,9 @@ keyHelp Binding{kcmd, kmacro, kmajor, kminor} =
     keys l  = [ fmt (disp k) (h <> if timed then "*" else "")
               | (k, (h, timed, _)) <- l, h /= "" ]
     (kcMajor, kcRest) =
-      L.partition ((`elem` kmajor) . fst) (M.toAscList kcmd)
+      partition ((`elem` kmajor) . fst) (M.toAscList kcmd)
     (kcMinor, _) =
-      L.partition ((`elem` kminor) . fst) kcRest
+      partition ((`elem` kminor) . fst) kcRest
   in toSlideshow  -- TODO: 80 below is a hack
     [ [T.justifyLeft 80 ' ' "Basic keys. [press SPACE to advance]"] ++ [blank]
       ++ mov ++ [moreMsg]

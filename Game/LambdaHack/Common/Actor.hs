@@ -14,6 +14,7 @@ module Game.LambdaHack.Common.Actor
   , ActorDict, smellTimeout, mapActorItems_
   ) where
 
+import Control.Exception.Assert.Sugar
 import Data.Binary
 import Data.Char
 import qualified Data.EnumMap.Strict as EM
@@ -37,7 +38,6 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ActorKind
-import Control.Exception.Assert.Sugar
 
 -- | A unique identifier of an actor in the dungeon.
 newtype ActorId = ActorId Int

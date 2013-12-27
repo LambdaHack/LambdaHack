@@ -6,7 +6,6 @@ module Game.LambdaHack.Common.Key
 
 import Data.Binary
 import qualified Data.Char as Char
-import qualified Data.List as L
 import Data.Text (Text)
 import qualified Data.Text as T
 import Prelude hiding (Left, Right)
@@ -171,7 +170,7 @@ handleDir :: X -> KM -> (Vector -> a) -> a -> a
 handleDir lxsize KM{modifier=NoModifier, key} h k =
   let mvs = moves lxsize
       assocs = zip dirAllMoveKey $ mvs ++ mvs
-  in maybe k h (L.lookup key assocs)
+  in maybe k h (lookup key assocs)
 handleDir _lxsize _ _h k = k
 
 -- TODO: deduplicate

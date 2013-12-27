@@ -13,7 +13,6 @@ module Game.LambdaHack.Common.Flavour
 
 import Data.Binary
 import qualified Data.Hashable as Hashable
-import qualified Data.List as L
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
@@ -33,8 +32,8 @@ instance Binary Flavour
 
 -- | Turn a colour set into a flavour set.
 zipPlain, zipFancy :: [Color] -> [Flavour]
-zipPlain = L.map (Flavour False)
-zipFancy = L.map (Flavour True)
+zipPlain = map (Flavour False)
+zipFancy = map (Flavour True)
 
 -- | The standard full set of flavours.
 stdFlav :: [Flavour]

@@ -7,11 +7,11 @@ module Game.LambdaHack.Common.AtomicSem
   ) where
 
 import Control.Arrow (second)
+import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.List
 
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState

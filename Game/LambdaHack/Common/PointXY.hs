@@ -3,10 +3,8 @@ module Game.LambdaHack.Common.PointXY
   ( X, Y, PointXY(..), fromTo, sortPointXY, blaXY, insideXY
   ) where
 
-import Data.Bits (unsafeShiftL, unsafeShiftR, (.&.))
-import qualified Data.List as L
-
 import Control.Exception.Assert.Sugar
+import Data.Bits (unsafeShiftL, unsafeShiftR, (.&.))
 
 -- | Spacial dimension for points and vectors.
 type X = Int
@@ -52,8 +50,8 @@ maxLevelDim = 2 ^ maxLevelDimExponent - 1
 fromTo :: PointXY -> PointXY -> [PointXY]
 fromTo (PointXY x0 y0) (PointXY x1 y1) =
  let result
-       | x0 == x1 = L.map (\ y -> PointXY x0 y) (fromTo1 y0 y1)
-       | y0 == y1 = L.map (\ x -> PointXY x y0) (fromTo1 x0 x1)
+       | x0 == x1 = map (\ y -> PointXY x0 y) (fromTo1 y0 y1)
+       | y0 == y1 = map (\ x -> PointXY x y0) (fromTo1 x0 x1)
        | otherwise = assert `failure` "diagononal fromTo"
                             `twith` ((x0, y0), (x1, y1))
  in result
@@ -85,7 +83,7 @@ blaXY eps (PointXY x0 y0) (PointXY x1 y1) =
                    | otherwise       = (abs dx, abs dy, yxStep)
       bw = balancedWord p q (eps `mod` max 1 q)
       walk w xy = xy : walk (tail w) (step (head w) xy)
-  in L.map (uncurry PointXY) $ walk bw (x0, y0)
+  in map (uncurry PointXY) $ walk bw (x0, y0)
 
 -- | Checks that a point belongs to an area.
 insideXY :: PointXY -> (X, Y, X, Y) -> Bool

@@ -8,10 +8,10 @@ module Game.LambdaHack.Server.DungeonGen.AreaRnd
   , Corridor, connectPlaces
   ) where
 
+import Control.Exception.Assert.Sugar
 import qualified Data.EnumSet as ES
 import Data.Maybe
 
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.VectorXY

@@ -7,11 +7,12 @@ module Game.LambdaHack.Common.Kind
   , Array, (!), (//), listArray, array, bounds, foldlArray
   ) where
 
+import Control.Exception.Assert.Sugar
 import qualified Data.Array.Unboxed as A
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Ix as Ix
-import qualified Data.List as L
+import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
@@ -29,7 +30,6 @@ import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Utils.Frequency
 
 -- | Content identifiers for the content type @c@.
@@ -72,42 +72,42 @@ createOps :: forall a. Show a => ContentDef a -> Ops a
 createOps ContentDef{getName, getFreq, content, validate} =
   assert (Id (fromIntegral $ length content) < sentinelId) $
   let kindMap :: EM.EnumMap (Id a) a
-      !kindMap = EM.fromDistinctAscList $ L.zip [Id 0..] content
+      !kindMap = EM.fromDistinctAscList $ zip [Id 0..] content
       kindFreq :: M.Map Text (Frequency (Id a, a))
       kindFreq =
-        let tuples = [ (group, (n, (i, k)))
+        let tuples = [ (cgroup, (n, (i, k)))
                      | (i, k) <- EM.assocs kindMap
-                     , (group, n) <- getFreq k, n > 0 ]
-            f m (group, nik) = M.insertWith (++) group [nik] m
-            lists = L.foldl' f M.empty tuples
-            nameFreq group = toFreq $ "opick ('" <> group <> "')"
+                     , (cgroup, n) <- getFreq k, n > 0 ]
+            f m (cgroup, nik) = M.insertWith (++) cgroup [nik] m
+            lists = foldl' f M.empty tuples
+            nameFreq cgroup = toFreq $ "opick ('" <> cgroup <> "')"
         in M.mapWithKey nameFreq lists
       okind i = fromMaybe (assert `failure` "no kind" `twith` (i, kindMap))
                 $ EM.lookup i kindMap
-      correct a = not (T.null (getName a)) && L.all ((> 0) . snd) (getFreq a)
+      correct a = not (T.null (getName a)) && all ((> 0) . snd) (getFreq a)
       offenders = validate content
   in assert (allB correct content) $
-     assert (L.null offenders `blame` "content not valid" `twith` offenders)
+     assert (null offenders `blame` "content not valid" `twith` offenders)
      -- By this point 'content' can be GCd.
      Ops
        { okind
-       , ouniqGroup = \group ->
+       , ouniqGroup = \cgroup ->
            let freq = fromMaybe (assert `failure` "no unique group"
-                                        `twith` (group, kindFreq))
-                      $ M.lookup group kindFreq
+                                        `twith` (cgroup, kindFreq))
+                      $ M.lookup cgroup kindFreq
            in case runFrequency freq of
              [(n, (i, _))] | n > 0 -> i
-             l -> assert `failure` "not unique" `twith` (l, group, kindFreq)
-       , opick = \group p ->
-           case M.lookup group kindFreq of
+             l -> assert `failure` "not unique" `twith` (l, cgroup, kindFreq)
+       , opick = \cgroup p ->
+           case M.lookup cgroup kindFreq of
              Just freq | not $ nullFreq freq -> fmap Just $ frequency $ do
                (i, k) <- freq
                breturn (p k) i
                {- with MonadComprehensions:
-               frequency [ i | (i, k) <- kindFreq M.! group, p k ]
+               frequency [ i | (i, k) <- kindFreq M.! cgroup, p k ]
                -}
              _ -> return Nothing
-       , ofoldrWithKey = \f z -> L.foldr (\(i, a) -> f i a) z
+       , ofoldrWithKey = \f z -> foldr (\(i, a) -> f i a) z
                                  $ EM.assocs kindMap
        , obounds = ( fst $ EM.findMin kindMap
                    , fst $ EM.findMax kindMap )

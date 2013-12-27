@@ -8,7 +8,6 @@ module Game.LambdaHack.Frontend.Vty
   , frontendName, startup
   ) where
 
-import qualified Data.List as L
 import Data.Text.Encoding (encodeUtf8)
 import Graphics.Vty
 import qualified Graphics.Vty as Vty
@@ -46,8 +45,8 @@ fdisplay _ _ Nothing = return ()
 fdisplay FrontendSession{svty} _ (Just rawSF) =
   let SingleFrame{sfLevel, sfBottom} = overlayOverlay rawSF
       img = (foldr (<->) empty_image
-             . L.map (foldr (<|>) empty_image
-                      . L.map (\ Color.AttrChar{..} ->
+             . map (foldr (<|>) empty_image
+                      . map (\ Color.AttrChar{..} ->
                                 char (setAttr acAttr) acChar)))
             sfLevel
       pic = pic_for_image $

@@ -7,9 +7,9 @@ module Game.LambdaHack.Common.AtomicPos
   , seenAtomicCli, seenAtomicSer
   ) where
 
+import Control.Exception.Assert.Sugar
 import qualified Data.EnumSet as ES
 
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState

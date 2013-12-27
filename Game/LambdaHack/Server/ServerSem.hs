@@ -9,6 +9,7 @@
 -- TODO: document
 module Game.LambdaHack.Server.ServerSem where
 
+import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.Key (mapWithKeyM_)
@@ -17,7 +18,6 @@ import Data.Ratio
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState

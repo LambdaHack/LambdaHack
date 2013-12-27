@@ -3,6 +3,7 @@
 module Game.LambdaHack.Server.LoopAction (loopSer) where
 
 import Control.Arrow ((&&&))
+import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
@@ -11,7 +12,6 @@ import Data.List
 import Data.Maybe
 import qualified Data.Ord as Ord
 
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState

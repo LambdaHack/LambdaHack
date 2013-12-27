@@ -4,6 +4,7 @@ module Game.LambdaHack.Server.DungeonGen.Place
   ( TileMapXY, Place(..), placeCheck, buildFenceRnd, buildPlace
   ) where
 
+import Control.Exception.Assert.Sugar
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
@@ -11,7 +12,6 @@ import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 
-import Control.Exception.Assert.Sugar
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.PointXY
@@ -123,15 +123,15 @@ buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
 -- | Roll a legend of a place plan: a map from plan symbols to tile kinds.
 olegend :: Kind.Ops TileKind -> Text
         -> Rnd (EM.EnumMap Char (Kind.Id TileKind))
-olegend Kind.Ops{ofoldrWithKey, opick} lgroup =
+olegend Kind.Ops{ofoldrWithKey, opick} cgroup =
   let getSymbols _ tk acc =
         maybe acc (const $ ES.insert (tsymbol tk) acc)
-          (lookup lgroup $ tfreq tk)
+          (lookup cgroup $ tfreq tk)
       symbols = ofoldrWithKey getSymbols ES.empty
       getLegend s acc = do
         m <- acc
-        tk <- fmap (fromMaybe $ assert `failure` (lgroup, s))
-              $ opick lgroup $ (== s) . tsymbol
+        tk <- fmap (fromMaybe $ assert `failure` (cgroup, s))
+              $ opick cgroup $ (== s) . tsymbol
         return $ EM.insert s tk m
       legend = ES.foldr getLegend (return EM.empty) symbols
   in legend

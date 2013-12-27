@@ -15,7 +15,7 @@ import Data.Binary
 import Data.Bits
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import qualified Data.List as L
+import Data.List
 import Data.Maybe
 import Data.Monoid
 import Data.Text (Text)
@@ -93,11 +93,11 @@ renderAnim lxsize lysize basicFrame (Animation anim) =
                     let pos = toPoint lxsize (PointXY x y)
                         !ac = fromMaybe acOld $ EM.lookup pos am
                     in ac : l
-              in L.foldl' f [] (zip [lxsize-1,lxsize-2..0] (reverse lineOld))
+              in foldl' f [] (zip [lxsize-1,lxsize-2..0] (reverse lineOld))
             sfLevel =  -- fully evaluated inside
               topLine
               : let f l (y, lineOld) = let !line = fLine y lineOld in line : l
-                in L.foldl' f [] (zip [lysize-1,lysize-2..0]
+                in foldl' f [] (zip [lysize-1,lysize-2..0]
                                   $ reverse levelOld)
         in Just SingleFrame{..}  -- a thunk within Just
   in map (modifyFrame basicFrame) anim

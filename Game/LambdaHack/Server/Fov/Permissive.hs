@@ -7,9 +7,10 @@ module Game.LambdaHack.Server.Fov.Permissive
   ( scan, dline, dsteeper, intersect, debugSteeper, debugLine
   ) where
 
+import Control.Exception.Assert.Sugar
+
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Server.Fov.Common
-import Control.Exception.Assert.Sugar
 
 -- TODO: Scanning squares on horizontal lines in octants, not squares
 -- on diagonals in quadrants, may be much faster and a bit simpler.

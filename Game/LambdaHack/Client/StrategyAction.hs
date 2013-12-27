@@ -3,6 +3,7 @@ module Game.LambdaHack.Client.StrategyAction
   ( targetStrategy, actionStrategy, visibleFoes
   ) where
 
+import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.Function
@@ -10,7 +11,6 @@ import Data.List
 import Data.Maybe
 import qualified Data.Traversable as Traversable
 
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.Strategy

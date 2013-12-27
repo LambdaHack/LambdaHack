@@ -3,7 +3,6 @@ module Game.LambdaHack.Content.PlaceKind
   ( PlaceKind(..), Cover(..), Fence(..), pvalidate
   ) where
 
-import qualified Data.List as L
 import Data.Text (Text)
 import qualified Data.Text as T
 
@@ -44,8 +43,8 @@ data Fence =
 --
 -- Verify that the top-left corner map is rectangular and not empty.
 pvalidate :: [PlaceKind] -> [PlaceKind]
-pvalidate = L.filter (\ PlaceKind{..} ->
+pvalidate = filter (\ PlaceKind{..} ->
   let dxcorner = case ptopLeft of
         [] -> 0
         l : _ -> T.length l
-  in dxcorner /= 0 && L.any (/= dxcorner) (L.map T.length ptopLeft))
+  in dxcorner /= 0 && any (/= dxcorner) (map T.length ptopLeft))

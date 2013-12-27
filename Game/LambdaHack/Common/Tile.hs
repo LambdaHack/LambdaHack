@@ -19,11 +19,10 @@ module Game.LambdaHack.Common.Tile
   , openTo, closeTo, revealAs, hideAs, openable, closable, changeable
   ) where
 
+import Control.Exception.Assert.Sugar
 import qualified Data.Array.Unboxed as A
-import qualified Data.List as L
 import Data.Maybe
 
-import Control.Exception.Assert.Sugar
 import qualified Game.LambdaHack.Common.Feature as F
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Random
@@ -41,8 +40,8 @@ kindHasFeature f t = f `elem` tfeature t
 -- | Whether a tile kind has all features of the first set
 -- and no features of the second.
 kindHas :: [F.Feature] -> [F.Feature] -> TileKind -> Bool
-kindHas yes no t = L.all (`kindHasFeature` t) yes
-                   && not (L.any (`kindHasFeature` t) no)
+kindHas yes no t = all (`kindHasFeature` t) yes
+                   && not (any (`kindHasFeature` t) no)
 
 -- | Whether a tile kind (specified by its id) has the given feature.
 hasFeature :: Kind.Ops TileKind -> F.Feature -> Kind.Id TileKind -> Bool

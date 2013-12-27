@@ -3,7 +3,6 @@ module Game.LambdaHack.Content.CaveKind
   ( CaveKind(..), cvalidate
   ) where
 
-import qualified Data.List as L
 import Data.Text (Text)
 import qualified Data.Text as T
 
@@ -47,7 +46,7 @@ data CaveKind = CaveKind
 -- Catch caves with not enough space for all the places. Check the size
 -- of the cave descriptions to make sure they fit on screen.
 cvalidate :: [CaveKind] -> [CaveKind]
-cvalidate = L.filter (\ CaveKind{..} ->
+cvalidate = filter (\ CaveKind{..} ->
   let (maxGridX, maxGridY) = maxDiceXY cgrid
       (minMinSizeX, minMinSizeY) = minDiceXY cminPlaceSize
       (maxMinSizeX, maxMinSizeY) = maxDiceXY cminPlaceSize

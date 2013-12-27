@@ -3,10 +3,10 @@
 -- moves turn by turn.
 module Game.LambdaHack.Client.LoopAction (loopAI, loopUI) where
 
+import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.Text as T
 
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action

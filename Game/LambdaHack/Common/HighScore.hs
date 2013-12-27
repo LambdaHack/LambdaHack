@@ -5,7 +5,6 @@ module Game.LambdaHack.Common.HighScore
   ) where
 
 import Data.Binary
-import qualified Data.List as L
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
@@ -67,8 +66,8 @@ empty = ScoreTable []
 -- Make sure the table doesn't grow too large.
 insertPos :: ScoreRecord -> ScoreTable -> (ScoreTable, Int)
 insertPos s (ScoreTable table) =
-  let (prefix, suffix) = L.span (> s) table
-      pos = L.length prefix + 1
+  let (prefix, suffix) = span (> s) table
+      pos = length prefix + 1
   in (ScoreTable $ prefix ++ [s] ++ take (100 - pos) suffix, pos)
 
 -- | Register a new score in a score table.

@@ -4,13 +4,13 @@ module Game.LambdaHack.Server.DungeonGen
   ) where
 
 import Control.Arrow (first)
+import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.List
 import Data.Maybe
 import Data.Text (Text)
 
-import Control.Exception.Assert.Sugar
 import qualified Game.LambdaHack.Common.Effect as Effect
 import qualified Game.LambdaHack.Common.Feature as F
 import qualified Game.LambdaHack.Common.Kind as Kind

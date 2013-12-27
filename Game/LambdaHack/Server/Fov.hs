@@ -10,7 +10,6 @@ import Control.Arrow (second)
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import qualified Data.List as L
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -114,14 +113,14 @@ fullscan :: Kind.Ops TileKind  -- ^ tile content, determines clear tiles
 fullscan cotile fovMode spectatorPos Level{lxsize, ltile} = spectatorPos :
   case fovMode of
     Shadow ->
-      L.concatMap (\ tr -> map tr (Shadow.scan (isCl . tr) 1 (0, 1))) tr8
+      concatMap (\ tr -> map tr (Shadow.scan (isCl . tr) 1 (0, 1))) tr8
     Permissive ->
-      L.concatMap (\ tr -> map tr (Permissive.scan (isCl . tr))) tr4
+      concatMap (\ tr -> map tr (Permissive.scan (isCl . tr))) tr4
     Digital r ->
-      L.concatMap (\ tr -> map tr (Digital.scan r (isCl . tr))) tr4
+      concatMap (\ tr -> map tr (Digital.scan r (isCl . tr))) tr4
     Blind ->  -- all actors feel adjacent positions (for easy exploration)
       let radiusOne = 1
-      in L.concatMap (\ tr -> map tr (Digital.scan radiusOne (isCl . tr))) tr4
+      in concatMap (\ tr -> map tr (Digital.scan radiusOne (isCl . tr))) tr4
  where
   isCl :: Point -> Bool
   isCl = Tile.isClear cotile . (ltile Kind.!)

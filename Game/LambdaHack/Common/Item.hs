@@ -17,6 +17,7 @@ module Game.LambdaHack.Common.Item
   , partItem, partItemWs, partItemAW
   ) where
 
+import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
@@ -29,7 +30,6 @@ import Data.Text (Text)
 import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Flavour
 import qualified Game.LambdaHack.Common.Kind as Kind

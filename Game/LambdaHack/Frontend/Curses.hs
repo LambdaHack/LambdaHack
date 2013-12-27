@@ -11,7 +11,6 @@ module Game.LambdaHack.Frontend.Curses
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Char (chr, ord)
-import qualified Data.List as L
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified UI.HSCurses.Curses as C
@@ -46,7 +45,7 @@ startup sdebugCli k = do
             -- No more color combinations possible: 16*4, 64 is max.
             bg <- Color.legalBG ]
   nr <- C.colorPairs
-  when (nr < L.length s) $
+  when (nr < length s) $
     C.end >> (assert `failure` "terminal has too few color pairs" `twith` nr)
   let (ks, vs) = unzip s
   ws <- C.convertStyles vs
@@ -71,8 +70,8 @@ fdisplay FrontendSession{..}  _ (Just rawSF) = do
   -- We need to remove the last character from the status line,
   -- because otherwise it would overflow a standard size xterm window,
   -- due to the curses historical limitations.
-  C.mvWAddStr swin (L.length sfLevel + 1) 0 (L.init $ T.unpack sfBottom)
-  let nm = L.zip [0..] $ L.map (L.zip [0..]) sfLevel
+  C.mvWAddStr swin (length sfLevel + 1) 0 (init $ T.unpack sfBottom)
+  let nm = zip [0..] $ map (zip [0..]) sfLevel
   sequence_ [ C.setStyle (M.findWithDefault defaultStyle acAttr sstyles)
               >> C.mvWAddStr swin (y + 1) x [acChar]
             | (y, line) <- nm, (x, Color.AttrChar{..}) <- line ]

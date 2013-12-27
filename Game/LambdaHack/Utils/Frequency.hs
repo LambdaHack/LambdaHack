@@ -13,6 +13,7 @@ module Game.LambdaHack.Utils.Frequency
 
 import Control.Applicative
 import Control.Arrow (first, second)
+import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Binary
 import Data.Foldable (Foldable)
@@ -20,7 +21,6 @@ import Data.Text (Text)
 import Data.Traversable (Traversable)
 import qualified System.Random as R
 
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Common.Msg
 
 -- TODO: do not expose runFrequency

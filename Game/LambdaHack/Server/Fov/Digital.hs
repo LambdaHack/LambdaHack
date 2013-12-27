@@ -5,9 +5,10 @@ module Game.LambdaHack.Server.Fov.Digital
   ( scan, dline, dsteeper, intersect, debugSteeper, debugLine
   ) where
 
+import Control.Exception.Assert.Sugar
+
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Server.Fov.Common
-import Control.Exception.Assert.Sugar
 
 -- | Calculates the list of tiles, in @Bump@ coordinates, visible from (0, 0),
 -- within the given sight range.

@@ -6,14 +6,13 @@ module Game.LambdaHack.Common.Point
   , inside, displacementXYZ, bla
   ) where
 
+import Control.Exception.Assert.Sugar
 import Data.Binary
 import qualified Data.Ix as Ix
-import qualified Data.List as L
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified System.Random as R
 
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.VectorXY
 
@@ -110,4 +109,4 @@ bla lxsize lysize eps source target = Just $
       e = fromPoint lxsize target
       inBounds p@(PointXY x y) =
         lxsize > x && x >= 0 && lysize > y && y >= 0 && p /= s
-  in L.map (toPoint lxsize) $ L.takeWhile inBounds $ L.tail $ blaXY eps s e
+  in map (toPoint lxsize) $ takeWhile inBounds $ tail $ blaXY eps s e

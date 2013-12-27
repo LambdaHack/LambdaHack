@@ -7,9 +7,9 @@ module Game.LambdaHack.Common.Vector
   , towards, displacement, displacePath, shiftPath
   ) where
 
+import Control.Exception.Assert.Sugar
 import Data.Binary
 
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.VectorXY

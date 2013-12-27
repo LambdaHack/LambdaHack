@@ -4,10 +4,10 @@
 -- The main advantage of the algorithm is that it's very simple and fast.
 module Game.LambdaHack.Server.Fov.Shadow (SBump, Interval, scan) where
 
+import Control.Exception.Assert.Sugar
 import Data.Ratio
 
 import Game.LambdaHack.Server.Fov.Common
-import Control.Exception.Assert.Sugar
 
 {-
 Field Of View

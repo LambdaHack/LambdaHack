@@ -12,6 +12,7 @@ module Game.LambdaHack.Frontend
 import Control.Concurrent
 import Control.Concurrent.STM (TQueue, atomically, newTQueueIO, writeTQueue)
 import qualified Control.Concurrent.STM as STM
+import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
@@ -21,7 +22,6 @@ import qualified Data.Text.IO as T
 import System.IO
 import System.IO.Unsafe (unsafePerformIO)
 
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Common.Animation
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Key as K

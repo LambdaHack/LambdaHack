@@ -3,6 +3,7 @@ module Game.LambdaHack.Server.StartAction
   ( applyDebug, gameReset, reinitGame, initPer
   ) where
 
+import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Control.Monad.State as St
 import qualified Data.Char as Char
@@ -17,7 +18,6 @@ import qualified Data.Text as T
 import Data.Tuple (swap)
 import qualified System.Random as R
 
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.AtomicCmd

@@ -3,13 +3,12 @@ module Game.LambdaHack.Content.TileKind
   ( TileKind(..), tvalidate, actionFeatures
   ) where
 
-import qualified Data.List as L
+import Control.Exception.Assert.Sugar
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Set as S
 import Data.Text (Text)
 
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Common.Color
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Misc
@@ -39,7 +38,7 @@ data TileKind = TileKind
 -- differ wrt dungeon generation, AI preferences, etc.
 tvalidate :: [TileKind] -> [TileKind]
 tvalidate lt =
-  let listFov f = L.map (\kt -> ( ( tsymbol kt
+  let listFov f = map (\kt -> ( ( tsymbol kt
                                   , F.Suspect `elem` tfeature kt
                                   , f kt
                                   )
@@ -49,9 +48,9 @@ tvalidate lt =
       namesUnequal [] = assert `failure` "no TileKind content" `twith` lt
       namesUnequal (hd : tl) =
         -- Catch if at least one is different.
-        L.any (/= tname hd) (L.map tname tl)
-        || L.any (/= actionFeatures True hd) (L.map (actionFeatures True) tl)
-      confusions f = L.filter namesUnequal $ M.elems $ mapFov f
+        any (/= tname hd) (map tname tl)
+        || any (/= actionFeatures True hd) (map (actionFeatures True) tl)
+      confusions f = filter namesUnequal $ M.elems $ mapFov f
   in case confusions tcolor ++ confusions tcolor2 of
     [] -> []
     l : _ -> l

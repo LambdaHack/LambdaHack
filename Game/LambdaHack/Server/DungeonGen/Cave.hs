@@ -4,12 +4,12 @@ module Game.LambdaHack.Server.DungeonGen.Cave
   ) where
 
 import Control.Arrow ((&&&))
+import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.List as L
+import Data.List
 import Data.Maybe
 
-import Control.Exception.Assert.Sugar
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -125,7 +125,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
         return (EM.union tmap m, place : pls, (i, Right (r, place)) : qls)
   (lplaces, dplaces, qplaces0) <- foldM addPl (fence, [], []) places0
   connects <- connectGrid lgrid
-  let allConnects = L.union connects addedConnects  -- no duplicates
+  let allConnects = union connects addedConnects  -- no duplicates
       qplaces = EM.fromList qplaces0
   cs <- mapM (\(p0, p1) -> do
                 let shrinkPlace (r, Place{qkind}) =
@@ -143,7 +143,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                     rr0 = shrinkForFence $ qplaces EM.! p0
                     rr1 = shrinkForFence $ qplaces EM.! p1
                 connectPlaces rr0 rr1) allConnects
-  let lcorridors = EM.unions (L.map (digCorridors pickedCorTile) cs)
+  let lcorridors = EM.unions (map (digCorridors pickedCorTile) cs)
       lm = EM.unionWith (mergeCorridor cotile) lcorridors lplaces
   -- Convert wall openings into doors, possibly.
   let f l (p, t) =
@@ -179,7 +179,7 @@ digCorridors tile (p1:p2:ps) =
   EM.union corPos (digCorridors tile (p2:ps))
  where
   corXY  = fromTo p1 p2
-  corPos = EM.fromList $ L.zip corXY (repeat tile)
+  corPos = EM.fromList $ zip corXY (repeat tile)
 digCorridors _ _ = EM.empty
 
 mergeCorridor :: Kind.Ops TileKind -> Kind.Id TileKind -> Kind.Id TileKind

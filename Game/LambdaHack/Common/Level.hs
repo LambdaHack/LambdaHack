@@ -16,14 +16,13 @@ module Game.LambdaHack.Common.Level
   , findPos, findPosTry, mapLevelActors_, mapDungeonActors_
  ) where
 
+import Control.Exception.Assert.Sugar
 import Data.Binary
 import qualified Data.Bits as Bits
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.List as L
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
@@ -184,7 +183,7 @@ findPosTry numTries ltile m l@(_ : tl) = assert (numTries > 0) $
       search k = do
         pos <- randomR $ Kind.bounds ltile
         let tile = ltile Kind.! pos
-        if m pos tile && L.all (\p -> p pos tile) l
+        if m pos tile && all (\p -> p pos tile) l
           then return pos
           else search (k - 1)
   in search numTries

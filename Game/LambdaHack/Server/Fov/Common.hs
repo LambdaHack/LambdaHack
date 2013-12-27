@@ -12,7 +12,7 @@ module Game.LambdaHack.Server.Fov.Common
   , maximal, steeper, addHull
   ) where
 
-import qualified Data.List as L
+import Data.List
 
 import Game.LambdaHack.Common.PointXY
 
@@ -44,7 +44,7 @@ type EdgeInterval = (Edge, Edge)
 -- | Maximal element of a non-empty list. Prefers elements from the rear,
 -- which is essential for PFOV, to avoid ill-defined lines.
 maximal :: (a -> a -> Bool) -> [a] -> a
-maximal gte = L.foldl1' (\ acc e -> if gte e acc then e else acc)
+maximal gte = foldl1' (\ acc e -> if gte e acc then e else acc)
 
 -- | Check if the line from the second point to the first is more steep
 -- than the line from the third point to the first. This is related

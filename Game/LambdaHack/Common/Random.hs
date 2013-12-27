@@ -17,17 +17,16 @@ module Game.LambdaHack.Common.Random
   , rndToIO
   ) where
 
+import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Control.Monad.State as St
 import Data.Binary
 import qualified Data.Binary as Binary
 import qualified Data.Hashable as Hashable
-import qualified Data.List as L
 import Data.Ratio
 import GHC.Generics (Generic)
 import qualified System.Random as R
 
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Utils.Frequency
 
 -- | The monad of computations with random generator state.
@@ -67,7 +66,7 @@ instance Show RollDice where
 
 instance Read RollDice where
   readsPrec d s =
-    let (a, db) = L.break (== 'd') s
+    let (a, db) = break (== 'd') s
         av = read a
     in case db of
       'd' : b -> [ (RollDice av bv, rest) | (bv, rest) <- readsPrec d b ]

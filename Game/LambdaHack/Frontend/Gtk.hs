@@ -10,6 +10,7 @@ module Game.LambdaHack.Frontend.Gtk
   ) where
 
 import Control.Concurrent
+import Control.Exception.Assert.Sugar
 import Control.Monad
 import Control.Monad.Reader
 import qualified Data.ByteString.Char8 as BS
@@ -22,7 +23,6 @@ import Data.Text.Encoding (encodeUtf8)
 import Graphics.UI.Gtk hiding (Point)
 import System.Time
 
-import Control.Exception.Assert.Sugar
 import Game.LambdaHack.Common.Animation (DebugModeCli (..), SingleFrame (..),
                                          overlayOverlay)
 import qualified Game.LambdaHack.Common.Color as Color
