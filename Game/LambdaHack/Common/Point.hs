@@ -1,7 +1,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Basic operations on 2D points represented as linear offsets.
 module Game.LambdaHack.Common.Point
-  ( Point, toPoint, showPoint
+  ( Point, toPoint, fromPoint -- !!!
+  , showPoint
   , origin, chessDist, adjacent, vicinity, vicinityCardinal
   , inside, displacementXYZ, bla
   ) where

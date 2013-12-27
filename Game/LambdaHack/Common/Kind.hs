@@ -4,11 +4,12 @@ module Game.LambdaHack.Common.Kind
   ( -- * General content types
     Id, sentinelId, Speedup(..), Ops(..), COps(..), createOps, stdRuleset
     -- * Arrays of content identifiers
-  , Array, (!), (//), listArray, array, bounds, foldlArray
+  , Array, (!), (//), listArray, bounds, foldlArray
   ) where
 
 import Control.Exception.Assert.Sugar
-import qualified Data.Array.Unboxed as A
+import qualified Data.Array.IArray as A
+import Data.Array.Unboxed (UArray)
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Ix as Ix
@@ -21,6 +22,8 @@ import qualified Data.Text as T
 import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.CaveKind
@@ -139,42 +142,57 @@ instance Eq COps where
 -- | Arrays of content identifiers pointing to the content type @c@,
 -- where the identifiers are represented as @Word8@
 -- (and so content of type @c@ can have at most 256 elements).
--- The arrays are indexed by type @i@, e.g., a dungeon tile position.
-newtype Array i c = Array (A.UArray i Word8)
+-- The arrays are indexed by the X and Y coordinates
+-- of the dungeon tile position.
+newtype Array c = Array (A.Array Y (UArray X Word8))
   deriving Eq
 
 -- TODO: save/restore is still too slow, but we are already past
 -- the point of diminishing returns. A dramatic change would be
 -- low-level conversion to ByteString and serializing that.
-instance (Ix.Ix i, Binary i) => Binary (Array i c) where
+instance Binary (Array c) where
   put (Array a) = put a
   get = fmap Array get
 
-instance (Ix.Ix i, Show i) => Show (Array i c) where
-  show a = "Kind.Array with bounds " ++ show (bounds a)
+instance Show (Array c) where
+  show _ = "Kind.Array"
+--  show a = "Kind.Array with bounds " ++ show (bounds a)
 
 -- | Content identifiers array lookup.
-(!) :: Ix.Ix i => Array i c -> i -> Id c
-(!) (Array a) i = Id $ a A.! i
+(!) :: Array c -> Point -> Id c -- TDDO: PointXY?
+(!) (Array a) p = let PointXY x y = fromPoint 0 p in Id $ a A.! y A.! x
 
+-- TODO: optimize, perhaps after switching to Vectors
 -- | Construct a content identifiers array updated with the association list.
-(//) :: Ix.Ix i => Array i c -> [(i, Id c)] -> Array i c
-(//) (Array a) l = Array $ a A.// [(i, e) | (i, Id e) <- l]
+(//) :: Array c -> [(PointXY, Id c)] -> Array c
+(//) (Array a) l =
+  let f b (x, e) = b A.// [(x, e)]
+  in Array $ A.accum f a [(y, (x, e)) | (PointXY x y, Id e) <- l]
 
+-- TODO: optimize, perhaps after switching to Vectors
 -- | Create a content identifiers array from a list of elements.
-listArray :: Ix.Ix i => (i, i) -> [Id c] -> Array i c
-listArray bds l = Array $ A.listArray bds [e | Id e <- l]
+listArray :: (PointXY, PointXY) -> [Id c] -> Array c
+listArray ((PointXY x0 y0), (PointXY x1 y1)) ids =
+  let es = [e | Id e <- ids]
+      xsize = x1 - x0
+      split [] = []
+      split l = let (line, rest) = splitAt xsize l
+                in line : split rest
+  in Array $ A.listArray (y0, y1) $ map (A.listArray (x0, x1)) $ split es
 
 -- | Create a content identifiers array from an association list.
-array :: Ix.Ix i => (i, i) -> [(i, Id c)] -> Array i c
-array bds l = Array $ A.array bds [(i, e) | (i, Id e) <- l]
+--array :: (PointXY, PointXY) -> [(PointXY, Id c)] -> Array c
+--array bds l = Array $ A.array bds [(i, e) | (i, Id e) <- l]
 
 -- | Content identifiers array bounds.
-bounds :: Ix.Ix i => Array i c -> (i, i)
-bounds (Array a) = A.bounds a
+bounds :: Array c -> (PointXY, PointXY)
+bounds (Array a) =
+  let (y0, y1) = A.bounds a
+      (x0, x1) = A.bounds $ a A.! 0
+  in ((PointXY x0 y0), (PointXY x1 y1))
 
 -- | Fold left strictly over an array.
-foldlArray :: Ix.Ix i => (a -> Id c -> a) -> a -> Array i c -> a
-foldlArray f z0 (Array a) = lgo z0 $ A.elems a
+foldlArray :: (a -> Id c -> a) -> a -> Array c -> a
+foldlArray f z0 (Array a) = lgo z0 $ concatMap A.elems $ A.elems a
  where lgo z []       = z
        lgo z (x : xs) = let fzx = f z (Id x) in fzx `seq` lgo fzx xs

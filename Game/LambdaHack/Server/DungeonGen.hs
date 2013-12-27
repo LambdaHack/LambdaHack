@@ -32,8 +32,8 @@ import Game.LambdaHack.Utils.Frequency
 convertTileMaps :: Rnd (Kind.Id TileKind) -> Int -> Int -> TileMapXY
                 -> Rnd TileMap
 convertTileMaps cdefTile cxsize cysize ltile = do
-  let bounds = (origin, toPoint cxsize $ PointXY (cxsize - 1) (cysize - 1))
-      assocs = map (first (toPoint cxsize)) (EM.assocs ltile)
+  let bounds = (PointXY 0 0, PointXY (cxsize - 1) (cysize - 1))
+      assocs = EM.assocs ltile
   pickedTiles <- replicateM (cxsize * cysize) cdefTile
   return $ Kind.listArray bounds pickedTiles Kind.// assocs
 
@@ -130,7 +130,7 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
                 downEscape <- fmap (fromMaybe $ assert `failure` legend)
                               $ opick legend $ hasEscapeAndSymbol '>'
                 return [(epos, downEscape)]
-  let exits = stairsTotal ++ escape
+  let exits = map (first (fromPoint 0)) $ stairsTotal ++ escape
       ltile = cmap Kind.// exits
       -- We reverse the order in down stairs, to minimize long stair chains.
       lstair = ( map fst $ stairsUp ++ stairsUpDown

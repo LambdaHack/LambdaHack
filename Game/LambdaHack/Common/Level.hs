@@ -68,7 +68,7 @@ type ActorPrio = EM.EnumMap Time [ActorId]
 type ItemFloor = EM.EnumMap Point ItemBag
 
 -- | Tile kinds on the map.
-type TileMap = Kind.Array Point TileKind
+type TileMap = Kind.Array TileKind
 
 -- | Current smell on map tiles.
 type SmellMap = EM.EnumMap Point SmellTime
@@ -158,9 +158,13 @@ hideTile cotile lvl p =
 -- | Find a random position on the map satisfying a predicate.
 findPos :: TileMap -> (Point -> Kind.Id TileKind -> Bool) -> Rnd Point
 findPos ltile p =
-  let search = do
-        pos <- randomR $ Kind.bounds ltile
-        let tile = ltile Kind.! pos
+  let ((PointXY x0 y0), (PointXY x1 y1)) = Kind.bounds ltile
+      search = do
+        px <- randomR (x0, x1)
+        py <- randomR (y0, y1)
+        let pxy = PointXY{..}
+            pos = toPoint 0 pxy
+            tile = ltile Kind.! pos
         if p pos tile
           then return pos
           else search
@@ -179,10 +183,14 @@ findPosTry :: Int                                  -- ^ the number of tries
            -> Rnd Point
 findPosTry _        ltile m []         = findPos ltile m
 findPosTry numTries ltile m l@(_ : tl) = assert (numTries > 0) $
-  let search 0 = findPosTry numTries ltile m tl
+  let ((PointXY x0 y0), (PointXY x1 y1)) = Kind.bounds ltile
+      search 0 = findPosTry numTries ltile m tl
       search k = do
-        pos <- randomR $ Kind.bounds ltile
-        let tile = ltile Kind.! pos
+        px <- randomR (x0, x1)
+        py <- randomR (y0, y1)
+        let pxy = PointXY{..}
+            pos = toPoint 0 pxy
+            tile = ltile Kind.! pos
         if m pos tile && all (\p -> p pos tile) l
           then return pos
           else search (k - 1)
