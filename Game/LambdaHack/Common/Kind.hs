@@ -8,8 +8,6 @@ module Game.LambdaHack.Common.Kind
   ) where
 
 import Control.Exception.Assert.Sugar
-import qualified Data.Array.IArray as A
-import Data.Array.Unboxed (UArray)
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Ix as Ix
@@ -18,6 +16,10 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Vector as B (Vector)
+import Data.Vector.Binary ()
+import qualified Data.Vector.Generic as V
+import qualified Data.Vector.Unboxed as U (Vector)
 
 import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Common.Misc
@@ -144,7 +146,7 @@ instance Eq COps where
 -- (and so content of type @c@ can have at most 256 elements).
 -- The arrays are indexed by the X and Y coordinates
 -- of the dungeon tile position.
-newtype Array c = Array (A.Array Y (UArray X Word8))
+newtype Array c = Array (B.Vector (U.Vector Word8))
   deriving Eq
 
 -- TODO: save/restore is still too slow, but we are already past
@@ -155,44 +157,38 @@ instance Binary (Array c) where
   get = fmap Array get
 
 instance Show (Array c) where
-  show _ = "Kind.Array"
---  show a = "Kind.Array with bounds " ++ show (bounds a)
+  show a = "Kind.Array with bounds " ++ show (bounds a)
 
 -- | Content identifiers array lookup.
 (!) :: Array c -> Point -> Id c -- TDDO: PointXY?
-(!) (Array a) p = let PointXY x y = fromPoint 0 p in Id $ a A.! y A.! x
+(!) (Array a) p = let PointXY x y = fromPoint 0 p in Id $ a V.! y V.! x
 
 -- TODO: optimize, perhaps after switching to Vectors
 -- | Construct a content identifiers array updated with the association list.
 (//) :: Array c -> [(PointXY, Id c)] -> Array c
 (//) (Array a) l =
-  let f b (x, e) = b A.// [(x, e)]
-  in Array $ A.accum f a [(y, (x, e)) | (PointXY x y, Id e) <- l]
+  let f b (x, e) = b V.// [(x, e)]
+  in Array $ V.accum f a [(y, (x, e)) | (PointXY x y, Id e) <- l]
 
 -- TODO: optimize, perhaps after switching to Vectors
 -- | Create a content identifiers array from a list of elements.
-listArray :: (PointXY, PointXY) -> [Id c] -> Array c
-listArray ((PointXY x0 y0), (PointXY x1 y1)) ids =
+listArray :: PointXY -> [Id c] -> Array c
+listArray (PointXY x1 y1) ids =
   let es = [e | Id e <- ids]
-      xsize = x1 - x0
       split [] = []
-      split l = let (line, rest) = splitAt xsize l
+      split l = let (line, rest) = splitAt (x1 + 1) l
                 in line : split rest
-  in Array $ A.listArray (y0, y1) $ map (A.listArray (x0, x1)) $ split es
-
--- | Create a content identifiers array from an association list.
---array :: (PointXY, PointXY) -> [(PointXY, Id c)] -> Array c
---array bds l = Array $ A.array bds [(i, e) | (i, Id e) <- l]
+  in Array $ V.fromList $ map V.fromList $ take (y1 + 1) $ split es
 
 -- | Content identifiers array bounds.
-bounds :: Array c -> (PointXY, PointXY)
+bounds :: Array c -> PointXY
 bounds (Array a) =
-  let (y0, y1) = A.bounds a
-      (x0, x1) = A.bounds $ a A.! 0
-  in ((PointXY x0 y0), (PointXY x1 y1))
+  let py = V.length a - 1
+      px = V.length (a V.! 0) - 1
+  in PointXY{..}
 
 -- | Fold left strictly over an array.
 foldlArray :: (a -> Id c -> a) -> a -> Array c -> a
-foldlArray f z0 (Array a) = lgo z0 $ concatMap A.elems $ A.elems a
+foldlArray f z0 (Array a) = lgo z0 $ concatMap V.toList $ V.toList a
  where lgo z []       = z
        lgo z (x : xs) = let fzx = f z (Id x) in fzx `seq` lgo fzx xs

@@ -32,7 +32,7 @@ import Game.LambdaHack.Utils.Frequency
 convertTileMaps :: Rnd (Kind.Id TileKind) -> Int -> Int -> TileMapXY
                 -> Rnd TileMap
 convertTileMaps cdefTile cxsize cysize ltile = do
-  let bounds = (PointXY 0 0, PointXY (cxsize - 1) (cysize - 1))
+  let bounds = PointXY (cxsize - 1) (cysize - 1)
       assocs = EM.assocs ltile
   pickedTiles <- replicateM (cxsize * cysize) cdefTile
   return $ Kind.listArray bounds pickedTiles Kind.// assocs
