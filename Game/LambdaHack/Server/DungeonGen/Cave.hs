@@ -9,6 +9,7 @@ import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.List
 import Data.Maybe
+import qualified Data.Traversable as Traversable
 
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
@@ -146,25 +147,25 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
   let lcorridors = EM.unions (map (digCorridors pickedCorTile) cs)
       lm = EM.unionWith (mergeCorridor cotile) lcorridors lplaces
   -- Convert wall openings into doors, possibly.
-  let f l (p, t) =
+  let f t =
         if not $ Tile.hasFeature cotile F.Suspect t
-        then return l  -- no opening to start with
+        then return t  -- no opening to start with
         else do
           -- Openings have a certain chance to be doors
           -- and doors have a certain chance to be open.
           rd <- chance cdoorChance
           if not rd then
             let cor = if Tile.isLit cotile t then litCorTile else darkCorTile
-            in return $ EM.insert p cor l  -- opening kept
+            in return cor  -- opening kept
           else do
             ro <- chance copenChance
             doorClosedId <- Tile.revealAs cotile t
             if not ro then
-              return $ EM.insert p doorClosedId l
+              return doorClosedId
             else do
               doorOpenId <- Tile.openTo cotile doorClosedId
-              return $ EM.insert p doorOpenId l
-  dmap <- foldM f lm (EM.assocs lm)
+              return doorOpenId
+  dmap <- Traversable.mapM f lm
   let cave = Cave
         { dkind = ci
         , ditem = EM.empty
