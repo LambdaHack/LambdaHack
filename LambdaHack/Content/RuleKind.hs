@@ -32,13 +32,13 @@ standard = RuleKind
   -- Precondition: the two positions are next to each other.
   -- Apart of checking the target tile, we forbid diagonal movement
   -- to and from doors.
-  , raccessible    = \ lxsize spos src tpos tgt ->
+  , raccessible    = \spos src tpos tgt ->
       let getTo F.CloseTo{} = True
           getTo _ = False
       in F.Walkable `elem` tfeature tgt
          && not ((any getTo (tfeature  src) ||
                   any getTo (tfeature tgt))
-                 && diagonal lxsize (displacement spos tpos))
+                 && diagonal (displacement spos tpos))
   , rtitle         = "LambdaHack"
   , rpathsDataFile = Self.getDataFileName
   , rpathsVersion  = Self.version

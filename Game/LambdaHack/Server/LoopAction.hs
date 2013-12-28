@@ -375,7 +375,7 @@ rollSpawnPos Kind.COps{cotile} visible
       as = actorList (const True) lid s
       isLit = Tile.isLit cotile
       distantAtLeast d p _ =
-        all (\b -> chessDist lxsize (bpos b) p > d) inhabitants
+        all (\b -> chessDist (bpos b) p > d) inhabitants
   findPosTry 40 ltile
     ( \p t -> Tile.hasFeature cotile F.Walkable t
               && unoccupied as p)

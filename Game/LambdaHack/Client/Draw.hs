@@ -145,7 +145,7 @@ draw dm cops per drawnLevelId mleader
       widthForDesc = lxsize - T.length stats - T.length lvlN - 3
       status = lvlN <+> T.justifyLeft widthForDesc ' ' ldesc <+> stats
       fLine y =
-        let f l x = let !ac = dis (toPoint lxsize $ PointXY x y) in ac : l
+        let f l x = let !ac = dis (toPoint $ PointXY x y) in ac : l
         in foldl' f [] [lxsize-1,lxsize-2..0]
       viewOurs (aid, Actor{bsymbol, bcolor, bhp})
         | otherwise =

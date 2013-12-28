@@ -90,7 +90,7 @@ queryAI oldAid = do
         then queryAIPick oldAid
         else do
           let countMinFoeDist (aid, b) =
-                let distB = chessDist lxsize (bpos b)
+                let distB = chessDist (bpos b)
                     foeDist = map (distB . bpos) foes
                     minFoeDist | null foeDist = maxBound
                                | otherwise = minimum foeDist
@@ -100,7 +100,7 @@ queryAI oldAid = do
               oursMeleePos = map (bpos . snd . fst)
                              $ filter inMelee oursMinFoeDist
           let f ((aid, b), minFoeDist) =
-                let distB = chessDist lxsize (bpos b)
+                let distB = chessDist (bpos b)
                     meleeDist = map distB oursMeleePos
                     minMeleeDist | null meleeDist = maxBound
                                  | otherwise = minimum meleeDist

@@ -26,6 +26,7 @@ import GHC.Generics (Generic)
 import Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Random
@@ -130,14 +131,13 @@ atI Level{lfloor} p = EM.findWithDefault EM.empty p lfloor
 -- using the formula from the standard ruleset.
 -- Precondition: the two positions are next to each other.
 accessible :: Kind.COps -> Level -> Point -> Point -> Bool
-accessible Kind.COps{cotile=Kind.Ops{okind=okind}, corule}
-           lvl@Level{lxsize} spos tpos =
-  assert (chessDist lxsize spos tpos == 1
-          `blame` (showPoint lxsize spos, showPoint lxsize tpos)) $
+accessible Kind.COps{cotile=Kind.Ops{okind=okind}, corule} lvl spos tpos =
+  assert (chessDist spos tpos == 1
+          `blame` (showT spos, showT tpos)) $
   let check = raccessible $ Kind.stdRuleset corule
       src = okind $ lvl `at` spos
       tgt = okind $ lvl `at` tpos
-  in check lxsize spos src tpos tgt
+  in check spos src tpos tgt
 
 -- | Check whether actors can move from a position along a unit vector,
 -- using the formula from the standard ruleset.
@@ -163,7 +163,7 @@ findPos ltile p =
         px <- randomR (0, x - 1)
         py <- randomR (0, y - 1)
         let pxy = PointXY{..}
-            pos = toPoint 0 pxy
+            pos = toPoint pxy
             tile = ltile Kind.! pos
         if p pos tile
           then return pos
@@ -189,7 +189,7 @@ findPosTry numTries ltile m l@(_ : tl) = assert (numTries > 0) $
         px <- randomR (0, x - 1)
         py <- randomR (0, y - 1)
         let pxy = PointXY{..}
-            pos = toPoint 0 pxy
+            pos = toPoint pxy
             tile = ltile Kind.! pos
         if m pos tile && all (\p -> p pos tile) l
           then return pos

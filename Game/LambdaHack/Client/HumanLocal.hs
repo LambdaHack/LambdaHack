@@ -67,7 +67,7 @@ moveCursor dir n = do
   scursor <- getsClient scursor
   let cpos = fromMaybe lpos scursor
   Level{lxsize, lysize} <- cursorLevel
-  let shiftB pos = shiftBounded lxsize (0, 0, lxsize - 1, lysize - 1) pos dir
+  let shiftB pos = shiftBounded (0, 0, lxsize - 1, lysize - 1) pos dir
   modifyClient $ \cli -> cli {scursor = Just $ iterate shiftB cpos !! n}
   doLook
 
@@ -364,14 +364,14 @@ tgtEnemyLeader :: MonadClientUI m => TgtMode -> m Slideshow
 tgtEnemyLeader stgtModeNew = do
   leader <- getLeaderUI
   ppos <- getsState (bpos . getActorBody leader)
-  (lid, Level{lxsize}) <- viewedLevel
+  (lid, _) <- viewedLevel
   per <- getPerFid lid
   target <- getsClient $ getTarget leader
   stgtMode <- getsClient stgtMode
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   bs <- getsState $ actorNotProjAssocs (isAtWar fact) lid
-  let ordPos (_, b) = (chessDist lxsize ppos $ bpos b, bpos b)
+  let ordPos (_, b) = (chessDist ppos $ bpos b, bpos b)
       dbs = sortBy (comparing ordPos) bs
       (lt, gt) = case target of
             Just (TEnemy n _) | isJust stgtMode ->  -- pick next enemy
@@ -611,7 +611,6 @@ endTargetingMsg = do
   pbody <- getsState $ getActorBody leader
   target <- getsClient $ getTarget leader
   s <- getState
-  Level{lxsize} <- cursorLevel
   let targetMsg = case target of
                     Just (TEnemy a _ll) ->
                       if memActor a (blid pbody) s
@@ -619,7 +618,7 @@ endTargetingMsg = do
                       then partActor $ getActorBody a s
                       else "a fear of the past"
                     Just (TPos tpos) ->
-                      MU.Text $ "position" <+> showPoint lxsize tpos
+                      MU.Text $ "position" <+> showT tpos
                     Nothing -> "current cursor position continuously"
   subject <- partAidLeader leader
   msgAdd $ makeSentence [MU.SubjectVerbSg subject "target", targetMsg]

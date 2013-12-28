@@ -64,7 +64,7 @@ reacquireTgt aid factionAbilities btarget fper = do
   cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   b <- getsState $ getActorBody aid
   assert (not $ bproj b) skip  -- would work, but is probably a bug
-  lvl@Level{lxsize} <- getsState $ \s -> sdungeon s EM.! blid b
+  lvl <- getsState $ \s -> sdungeon s EM.! blid b
   visFoes <- visibleFoes aid fper
   actorD <- getsState sactorD
   -- TODO: set distant targets so that monsters behave as if they have
@@ -82,7 +82,7 @@ reacquireTgt aid factionAbilities btarget fper = do
                 && Ability.Chase `elem` actorAbilities
       closest :: Strategy (Maybe Target)
       closest =
-        let distB = chessDist lxsize (bpos b)
+        let distB = chessDist (bpos b)
             foeDist = map (\(_, body) -> distB (bpos body)) visFoes
             minDist | null foeDist = maxBound
                     | otherwise = minimum foeDist
@@ -221,9 +221,8 @@ pickup aid = do
 melee :: MonadActionRO m
       => ActorId -> Point -> ActorId -> m (Strategy CmdSerTakeTime)
 melee aid fpos foeAid = do
-  Actor{bpos, blid} <- getsState $ getActorBody aid
-  Level{lxsize} <- getLevel blid
-  let foeAdjacent = adjacent lxsize bpos fpos  -- MeleeDistant
+  Actor{bpos} <- getsState $ getActorBody aid
+  let foeAdjacent = adjacent bpos fpos  -- MeleeDistant
   return $ foeAdjacent .=> returN "melee" (MeleeSer aid foeAid)
 
 -- Fast monsters don't pay enough attention to features.
@@ -351,10 +350,10 @@ moveStrategy cops aid s mFoe =
     -- Target set and we chase the foe or his last position or another target.
     Just (fpos, _) ->
       let towardsFoe =
-            let tolerance | adjacent lxsize bpos fpos = 0
+            let tolerance | adjacent bpos fpos = 0
                           | otherwise = 1
-                foeDir = towards lxsize bpos fpos
-            in only (\x -> euclidDistSq lxsize foeDir x <= tolerance)
+                foeDir = towards bpos fpos
+            in only (\x -> euclidDistSq foeDir x <= tolerance)
       in if fpos == bpos
          then reject
          else towardsFoe
@@ -397,9 +396,9 @@ moveStrategy cops aid s mFoe =
                           && any (not . Tile.hasFeature cotile F.Dark) ts)
   onlyInterest = onlyMoves interestHere
   bdirAI | bpos == boldpos = Nothing
-         | otherwise = Just $ towards lxsize boldpos bpos
+         | otherwise = Just $ towards boldpos bpos
   onlyKeepsDir k =
-    only (\x -> maybe True (\d -> euclidDistSq lxsize d x <= k) bdirAI)
+    only (\x -> maybe True (\d -> euclidDistSq d x <= k) bdirAI)
   onlyKeepsDir_9 = only (\x -> maybe True (\d -> neg x /= d) bdirAI)
   foeVisible = fmap snd mFoe == Just True
   -- TODO: aiq 16 leads to robotic, repetitious, looping movement;
@@ -440,7 +439,7 @@ moveStrategy cops aid s mFoe =
   isSensible l = noFriends l
                  && (accessibleHere l
                      || bumpableHere cops lvl foeVisible (asight mk) l)
-  sensible = filter (isSensible . (bpos `shift`)) (moves lxsize)
+  sensible = filter (isSensible . (bpos `shift`)) moves
 
 bumpableHere :: Kind.COps -> Level -> Bool -> Bool -> Point -> Bool
 bumpableHere Kind.COps{cotile} lvl foeVisible asight pos =

@@ -8,7 +8,6 @@ import Data.Version
 
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Content.TileKind
 
 -- TODO: very few rules are configurable yet, extend as needed.
@@ -30,7 +29,7 @@ data RuleKind = RuleKind
   { rsymbol          :: !Char     -- ^ a symbol
   , rname            :: !Text     -- ^ short description
   , rfreq            :: !Freqs    -- ^ frequency within groups
-  , raccessible      :: X -> Point -> TileKind -> Point -> TileKind -> Bool
+  , raccessible      :: Point -> TileKind -> Point -> TileKind -> Bool
   , rtitle           :: !Text     -- ^ the title of the game
   , rpathsDataFile   :: FilePath -> IO FilePath  -- ^ the path to data files
   , rpathsVersion    :: !Version  -- ^ the version of the game

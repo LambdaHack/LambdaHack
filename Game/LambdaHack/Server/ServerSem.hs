@@ -70,9 +70,8 @@ broadcastSfxAtomic fcmd = do
 -- * MoveSer
 
 checkAdjacent :: MonadActionRO m => Actor -> Actor -> m Bool
-checkAdjacent sb tb = do
-  Level{lxsize} <- getLevel $ blid sb
-  return $ blid sb == blid tb && adjacent lxsize (bpos sb) (bpos tb)
+checkAdjacent sb tb =
+  return $ blid sb == blid tb && adjacent (bpos sb) (bpos tb)
 
 -- TODO: let only some actors/items leave smell, e.g., a Smelly Hide Armour.
 -- | Add a smell trace for the actor to the level. For now, all and only
@@ -217,8 +216,7 @@ alterSer source tpos mfeat = do
   sb <- getsState $ getActorBody source
   let lid = blid sb
       spos = bpos sb
-  Level{lxsize} <- getLevel lid
-  if not $ adjacent lxsize spos tpos then execFailure sb AlterDistant
+  if not $ adjacent spos tpos then execFailure sb AlterDistant
   else do
     lvl <- getLevel lid
     let serverTile = lvl `at` tpos

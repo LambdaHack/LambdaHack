@@ -39,7 +39,7 @@ convertTileMaps cdefTile cxsize cysize ltile = do
 placeStairs :: Kind.Ops TileKind -> TileMap -> CaveKind -> [Point]
             -> Rnd Point
 placeStairs cotile cmap CaveKind{..} ps = do
-  let dist cmin l _ = all (\pos -> chessDist cxsize l pos > cmin) ps
+  let dist cmin l _ = all (\pos -> chessDist l pos > cmin) ps
   findPosTry 1000 cmap
     (\p t -> Tile.hasFeature cotile F.CanActor t
              && dist 0 p t)  -- can't overwrite stairs with other stairs
@@ -56,7 +56,7 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
                          , cocave=Kind.Ops{okind=cokind} }
            Cave{..} ldepth minD maxD nstairUp escapeFeature = do
   let kc@CaveKind{..} = cokind dkind
-      fitArea pos = inside cxsize pos . fromArea . qarea
+      fitArea pos = inside pos . fromArea . qarea
       findLegend pos = maybe clegendLitTile qlegend
                        $ find (fitArea pos) dplaces
       hasEscapeAndSymbol sym t = Tile.kindHasFeature (F.Cause Effect.Escape) t

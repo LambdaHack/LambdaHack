@@ -110,7 +110,7 @@ fullscan :: Kind.Ops TileKind  -- ^ tile content, determines clear tiles
          -> Point              -- ^ position of the spectator
          -> Level              -- ^ the map that is scanned
          -> [Point]
-fullscan cotile fovMode spectatorPos Level{lxsize, ltile} = spectatorPos :
+fullscan cotile fovMode spectatorPos Level{ltile} = spectatorPos :
   case fovMode of
     Shadow ->
       concatMap (\tr -> map tr (Shadow.scan (isCl . tr) 1 (0, 1))) tr8
@@ -125,7 +125,7 @@ fullscan cotile fovMode spectatorPos Level{lxsize, ltile} = spectatorPos :
   isCl :: Point -> Bool
   isCl = Tile.isClear cotile . (ltile Kind.!)
 
-  trV xy = shift spectatorPos $ toVector lxsize $ uncurry VectorXY xy
+  trV xy = shift spectatorPos $ toVector $ uncurry VectorXY xy
 
   -- | The translation, rotation and symmetry functions for octants.
   tr8 :: [(Distance, Progress) -> Point]

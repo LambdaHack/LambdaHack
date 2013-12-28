@@ -90,7 +90,7 @@ renderAnim lxsize lysize basicFrame (Animation anim) =
       modifyFrame SingleFrame{sfLevel = topLine : levelOld, ..} am =
         let fLine y lineOld =
               let f l (x, acOld) =
-                    let pos = toPoint lxsize (PointXY x y)
+                    let pos = toPoint $ PointXY x y
                         !ac = fromMaybe acOld $ EM.lookup pos am
                     in ac : l
               in foldl' f [] (zip [lxsize-1,lxsize-2..0] (reverse lineOld))
@@ -212,7 +212,7 @@ fadeout out topRight lxsize lysize = do
                 , y <- [max 0 (ybound - (n - x) `div` 2)..ybound]
                     ++ [0..min ybound ((n - xbound + x) `div` 2)]
                 ]
-        return $ EM.fromList $ map (toPoint lxsize *** AttrChar defAttr) l
+        return $ EM.fromList $ map (toPoint *** AttrChar defAttr) l
       startN = if out then 3 else 1
       fs = [startN..3 * lxsize `divUp` 4 + 2]
   as <- mapM rollFrame $ if out then fs else reverse fs

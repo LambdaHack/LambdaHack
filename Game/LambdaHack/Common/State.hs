@@ -53,8 +53,8 @@ unknownLevel Kind.Ops{ouniqGroup} ldepth lxsize lysize ldesc lstair lclear
            , lprio = EM.empty
            , lfloor = EM.empty
            , ltile = unknownTileMap unknownId lxsize lysize
-           , lxsize = lxsize
-           , lysize = lysize
+           , lxsize
+           , lysize
            , lsmell = EM.empty
            , ldesc
            , lstair

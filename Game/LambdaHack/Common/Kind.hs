@@ -161,7 +161,7 @@ instance Show (Array c) where
 
 -- | Content identifiers array lookup.
 (!) :: Array c -> Point -> Id c
-(!) (Array a) p = let PointXY x y = fromPoint 0 p
+(!) (Array a) p = let PointXY x y = fromPoint p
                   in Id $ a V.! y V.! x
 
 -- TODO: optimize, either by replacing with a different operation
@@ -171,7 +171,7 @@ instance Show (Array c) where
 (//) (Array a) l =
   let f b (x, e) = b V.// [(x, e)]
   in Array $ V.accum f a [(y, (x, e))
-                         | (p, Id e) <- l, let PointXY x y = fromPoint 0 p]
+                         | (p, Id e) <- l, let PointXY x y = fromPoint p]
 
 -- | Create a content identifiers array from a replicated element.
 replicateA :: X -> Y -> Id c -> Array c

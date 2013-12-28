@@ -60,10 +60,10 @@ moveRunHuman :: MonadClientUI m
              => Bool -> VectorXY -> m (SlideOrCmd CmdSerTakeTime)
 moveRunHuman run v = do
   tgtMode <- getsClient stgtMode
-  (arena, Level{lxsize}) <- viewedLevel
+  (arena, _) <- viewedLevel
   leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
-  let dir = toDir lxsize v
+  let dir = toDir v
   if isJust tgtMode then do
     fmap Left $ moveCursor dir (if run then 10 else 1)
   else do
@@ -424,9 +424,7 @@ alterDirHuman ts = do
     Left slides -> return $ Left slides
     Right e -> do
       leader <- getLeaderUI
-      b <- getsState $ getActorBody leader
-      Level{lxsize} <- getLevel $ blid b
-      K.handleDir lxsize e (flip (alterTile leader) ts) (failWith "never mind")
+      K.handleDir e (flip (alterTile leader) ts) (failWith "never mind")
 
 -- | Player tries to alter a tile using a feature.
 alterTile :: MonadClientUI m

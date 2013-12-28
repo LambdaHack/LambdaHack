@@ -31,12 +31,12 @@ instance Show Vector where
   show (Vector n) = show n
 
 -- | Converts a vector in cartesian representation into @Vector@.
-toVector :: X -> VectorXY -> Vector
-toVector _ = toEnum . fromEnum
+toVector :: VectorXY -> Vector
+toVector = toEnum . fromEnum
 
 -- | Converts a unit vector in cartesian representation into @Vector@.
-toDir :: X -> VectorXY -> Vector
-toDir _ vxy =
+toDir :: VectorXY -> Vector
+toDir vxy =
   assert (isUnitXY vxy `blame` "not a unit VectorXY" `twith` vxy)
   $ toEnum $ fromEnum vxy
 
@@ -44,8 +44,8 @@ isUnitXY :: VectorXY -> Bool
 isUnitXY vxy = chessDistXY vxy == 1
 
 -- | Tells if a vector has length 1 in the chessboard metric.
-isUnit ::  X -> Vector -> Bool
-isUnit _ = isUnitXY . fromVector
+isUnit ::  Vector -> Bool
+isUnit = isUnitXY . fromVector
 
 -- | Converts a vector in the offset representation
 -- into the cartesian representation.
@@ -54,9 +54,9 @@ fromVector = toEnum . fromEnum
 
 -- | Converts a unit vector in the offset representation
 -- into the cartesian representation.
-fromDir :: X -> Vector -> VectorXY
-fromDir _ v =
-  assert (isUnit 0 v `blame` "not a unit Vector" `twith` v)
+fromDir :: Vector -> VectorXY
+fromDir v =
+  assert (isUnit v `blame` "not a unit Vector" `twith` v)
   $ toEnum $ fromEnum v
 
 -- | Translate a point by a vector.
@@ -66,29 +66,29 @@ shift :: Point -> Vector -> Point
 shift p (Vector dir) = toEnum $ fromEnum p + dir
 
 -- | Translate a point by a vector, but only if the result fits in an area.
-shiftBounded :: X -> (X, Y, X, Y) -> Point -> Vector -> Point
-shiftBounded lxsize (x0, y0, x1, y1) pos dir =
-  let VectorXY xv yv = fromDir lxsize dir
-  in if inside lxsize pos (x0 - xv, y0 - yv, x1 - xv, y1 - yv)
+shiftBounded :: (X, Y, X, Y) -> Point -> Vector -> Point
+shiftBounded (x0, y0, x1, y1) pos dir =
+  let VectorXY xv yv = fromDir dir
+  in if inside pos (x0 - xv, y0 - yv, x1 - xv, y1 - yv)
      then shift pos dir
      else pos
 
 -- | Vectors of all unit moves, clockwise, starting north-west.
-moves :: X -> [Vector]
-moves lxsize = map (toDir lxsize) movesXY
+moves :: [Vector]
+moves = map toDir movesXY
 
 -- | Squared euclidean distance between two unit vectors.
-euclidDistSq :: X -> Vector -> Vector -> Int
-euclidDistSq lxsize dir0 dir1
-  | VectorXY x0 y0 <- fromDir lxsize dir0
-  , VectorXY x1 y1 <- fromDir lxsize dir1 =
+euclidDistSq :: Vector -> Vector -> Int
+euclidDistSq dir0 dir1
+  | VectorXY x0 y0 <- fromDir dir0
+  , VectorXY x1 y1 <- fromDir dir1 =
   euclidDistSqXY $ VectorXY (x1 - x0) (y1 - y0)
 
 -- | Checks whether a unit vector is a diagonal direction,
 -- as opposed to cardinal. If the vector is not unit,
 -- it checks that the vector is not horizontal nor vertical.
-diagonal :: X -> Vector -> Bool
-diagonal lxsize dir | VectorXY x y <- fromDir lxsize dir =
+diagonal :: Vector -> Bool
+diagonal dir | VectorXY x y <- fromDir dir =
   x * y /= 0
 
 -- | Reverse an arbirary vector.
@@ -100,24 +100,24 @@ type RadianAngle = Double
 -- | Rotate a vector by the given angle (expressed in radians)
 -- counterclockwise and return a unit vector approximately in the resulting
 -- direction.
-rotate :: X -> RadianAngle -> Vector -> Vector
-rotate lxsize angle dir | VectorXY x' y' <- fromDir lxsize dir =
+rotate :: RadianAngle -> Vector -> Vector
+rotate angle dir | VectorXY x' y' <- fromDir dir =
   let x = fromIntegral x'
       y = fromIntegral y'
       -- Minus before the angle comes from our coordinates being
       -- mirrored along the X axis (Y coordinates grow going downwards).
       dx = x * cos (-angle) - y * sin (-angle)
       dy = x * sin (-angle) + y * cos (-angle)
-      rxy = normalize lxsize dx dy
-  in toDir lxsize rxy
+      rxy = normalize dx dy
+  in toDir rxy
 
 -- TODO: use bla for that
 -- | Given a vector of arbitrary non-zero length, produce a unit vector
 -- that points in the same direction (in the chessboard metric).
 -- Of several equally good directions it picks one of those that visually
 -- (in the euclidean metric) maximally align with the original vector.
-normalize :: X -> Double -> Double -> VectorXY
-normalize lxsize dx dy =
+normalize :: Double -> Double -> VectorXY
+normalize dx dy =
   assert (dx /= 0 || dy /= 0 `blame` "can't normalize zero" `twith` (dx, dy)) $
   let angle :: Double
       angle = atan (dy / dx) / (pi / 2)
@@ -127,18 +127,18 @@ normalize lxsize dx dy =
           | angle <= 0.75  = (1, 1)
           | angle <= 1.25  = (0, 1)
           | otherwise = assert `failure` "impossible angle"
-                               `twith` (lxsize, dx, dy, angle)
+                               `twith` (dx, dy, angle)
   in if dx >= 0
      then uncurry VectorXY dxy
      else negXY $ uncurry VectorXY dxy
 
-normalizeVector :: X -> VectorXY -> Vector
-normalizeVector lxsize v@(VectorXY dx dy) =
-  let rxy = normalize lxsize (fromIntegral dx) (fromIntegral dy)
+normalizeVector :: VectorXY -> Vector
+normalizeVector v@(VectorXY dx dy) =
+  let rxy = normalize (fromIntegral dx) (fromIntegral dy)
   in assert (not (isUnitXY v) || v == rxy
              `blame` "unit vector gets untrivially normalized"
              `twith` (v, rxy))
-     $ toDir lxsize rxy
+     $ toDir rxy
 
 -- TODO: Perhaps produce all acceptable directions and let AI choose.
 -- That would also eliminate the Doubles. Or only directions from bla?
@@ -150,10 +150,10 @@ normalizeVector lxsize v@(VectorXY dx dy) =
 -- (in the chessboard metric) it picks one of those that visually
 -- (in the euclidean metric) maximally align with the vector between
 -- the two points.
-towards :: X -> Point -> Point -> Vector
-towards lxsize pos0 pos1 =
+towards :: Point -> Point -> Vector
+towards pos0 pos1 =
   assert (pos0 /= pos1 `blame` "towards self" `twith` (pos0, pos1))
-  $ normalizeVector lxsize $ displacementXYZ lxsize pos0 pos1
+  $ normalizeVector $ displacementXYZ pos0 pos1
 
 -- | A vector from a point to another. We have
 --

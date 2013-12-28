@@ -11,7 +11,6 @@ import qualified Data.Text as T
 import Prelude hiding (Left, Right)
 
 import Game.LambdaHack.Common.Msg
-import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Common.VectorXY
 
@@ -166,12 +165,11 @@ dirHeroKey = map Char dirNums
 
 -- | Configurable event handler for the direction keys.
 -- Used for directed commands such as close door.
-handleDir :: X -> KM -> (Vector -> a) -> a -> a
-handleDir lxsize KM{modifier=NoModifier, key} h k =
-  let mvs = moves lxsize
-      assocs = zip dirAllMoveKey $ mvs ++ mvs
+handleDir :: KM -> (Vector -> a) -> a -> a
+handleDir KM{modifier=NoModifier, key} h k =
+  let assocs = zip dirAllMoveKey $ moves ++ moves
   in maybe k h (lookup key assocs)
-handleDir _lxsize _ _h k = k
+handleDir _ _ k = k
 
 -- TODO: deduplicate
 -- | Binding of both sets of movement keys.

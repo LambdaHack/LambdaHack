@@ -48,7 +48,7 @@ cmdAtomicFilterCli :: MonadClient m => CmdAtomic -> m [CmdAtomic]
 cmdAtomicFilterCli cmd = case cmd of
   AlterTileA lid p fromTile toTile -> do
     Kind.COps{cotile = Kind.Ops{okind}} <- getsState scops
-    lvl@Level{lxsize} <- getLevel lid
+    lvl <- getLevel lid
     let t = lvl `at` p
     if t == fromTile
       then return [cmd]
@@ -61,7 +61,7 @@ cmdAtomicFilterCli cmd = case cmd of
         let subject = ""  -- a hack, we we don't handle adverbs well
             verb = "turn into"
             msg = makeSentence [ "the", MU.Text $ tname $ okind t
-                               , "at position", MU.Text $ showPoint lxsize p
+                               , "at position", MU.Text $ showT p
                                , "suddenly"  -- adverb
                                , MU.SubjectVerbSg subject verb
                                , MU.AW $ MU.Text $ tname $ okind toTile ]

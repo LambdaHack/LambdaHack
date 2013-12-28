@@ -194,19 +194,19 @@ tryTurning aid = do
   cops@Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody aid
   let lid = blid body
-  lvl@Level{lxsize} <- getLevel lid
+  lvl <- getLevel lid
   let posHere = bpos body
       posLast = boldpos body
       dirLast = displacement posLast posHere
   let openableDir dir = Tile.openable cotile (lvl `at` (posHere `shift` dir))
       dirEnterable dir = accessibleDir cops lvl posHere dir || openableDir dir
-      dirNearby dir1 dir2 = euclidDistSq lxsize dir1 dir2 `elem` [1, 2]
+      dirNearby dir1 dir2 = euclidDistSq dir1 dir2 `elem` [1, 2]
       dirSimilar dir = dirNearby dirLast dir && dirEnterable dir
-      dirsSimilar = filter dirSimilar (moves lxsize)
+      dirsSimilar = filter dirSimilar moves
   case dirsSimilar of
     [] -> return (Nothing, Just "dead end")
     d1 : ds | all (dirNearby d1) ds ->  -- only one or two directions possible
-      case sortBy (compare `on` euclidDistSq lxsize dirLast)
+      case sortBy (compare `on` euclidDistSq dirLast)
            $ filter (accessibleDir cops lvl posHere) $ d1 : ds of
         [] ->
           return ( Nothing
@@ -224,7 +224,7 @@ checkAndRun aid dir = do
   body <- getsState $ getActorBody aid
   smarkSuspect <- getsClient smarkSuspect
   let lid = blid body
-  lvl@Level{lxsize} <- getLevel lid
+  lvl <- getLevel lid
   hs <- getsState $ actorList (const True) lid
   let posHere = bpos body
       posHasItems pos = not $ EM.null $ lvl `atI` pos
@@ -235,7 +235,7 @@ checkAndRun aid dir = do
       -- This is supposed to work on unit vectors --- diagonal, as well as,
       -- vertical and horizontal.
       anglePos :: Point -> Vector -> RadianAngle -> Point
-      anglePos pos d angle = shift pos (rotate lxsize angle d)
+      anglePos pos d angle = shift pos (rotate angle d)
       -- We assume the tiles have not changes since last running step.
       -- If they did, we don't care --- running should be stopped
       -- because of the change of nearby tiles then (TODO).
