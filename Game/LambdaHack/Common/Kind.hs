@@ -160,49 +160,51 @@ instance Show (Array c) where
   show a = "Kind.Array with size " ++ show (sizeA a)
 
 -- | Content identifiers array lookup.
-(!) :: Array c -> Point -> Id c -- TDDO: PointXY?
-(!) (Array a) p = let PointXY x y = fromPoint 0 p in Id $ a V.! y V.! x
+(!) :: Array c -> Point -> Id c
+(!) (Array a) p = let PointXY x y = fromPoint 0 p
+                  in Id $ a V.! y V.! x
 
 -- TODO: optimize, either by replacing with a different operation
 -- or by thawing all the vectors, updating, freezing.
 -- | Construct a content identifiers array updated with the association list.
-(//) :: Array c -> [(PointXY, Id c)] -> Array c
+(//) :: Array c -> [(Point, Id c)] -> Array c
 (//) (Array a) l =
   let f b (x, e) = b V.// [(x, e)]
-  in Array $ V.accum f a [(y, (x, e)) | (PointXY x y, Id e) <- l]
+  in Array $ V.accum f a [(y, (x, e))
+                         | (p, Id e) <- l, let PointXY x y = fromPoint 0 p]
 
 -- | Create a content identifiers array from a replicated element.
-replicateA :: PointXY -> Id c -> Array c
-replicateA (PointXY x1 y1) (Id e) =
-  let line = V.replicate x1 e
-  in Array $ V.replicate y1 line
+replicateA :: X -> Y -> Id c -> Array c
+replicateA x y (Id e) =
+  let line = V.replicate x e
+  in Array $ V.replicate y line
 
 -- | Create a content identifiers array from a replicated monadic action.
-replicateMA :: Monad m => PointXY -> m (Id c) -> m (Array c)
-replicateMA (PointXY x1 y1) m = do
+replicateMA :: Monad m => X -> Y -> m (Id c) -> m (Array c)
+replicateMA x y m = do
   let me = do
         Id e <- m
         return e
-      mline = V.replicateM x1 me
-  a <- V.replicateM y1 mline
+      mline = V.replicateM x me
+  a <- V.replicateM y mline
   return $ Array a
 
 -- | Create a content identifiers array from a monadic function.
-generateMA :: Monad m => PointXY -> (PointXY -> m (Id c)) -> m (Array c)
-generateMA (PointXY x1 y1) m = do
-  let me y x = do
-        Id e <- m $ PointXY x y
+generateMA :: Monad m => X -> Y -> (PointXY -> m (Id c)) -> m (Array c)
+generateMA x y m = do
+  let me y1 x1 = do
+        Id e <- m $ PointXY x1 y1
         return e
-      mline y = V.generateM x1 (me y)
-  a <- V.generateM y1 mline
+      mline y1 = V.generateM x (me y1)
+  a <- V.generateM y mline
   return $ Array a
 
 -- | Content identifiers array size.
-sizeA :: Array c -> PointXY
+sizeA :: Array c -> (X, Y)
 sizeA (Array a) =
-  let py = V.length a
-      px = V.length (a V.! 0)
-  in PointXY{..}
+  let y = V.length a
+      x = V.length (a V.! 0)
+  in (x, y)
 
 -- | Fold left strictly over an array.
 foldlA :: (a -> Id c -> a) -> a -> Array c -> a

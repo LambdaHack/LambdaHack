@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.AtomicSem
   , posOfAid, posOfContainer
   ) where
 
-import Control.Arrow (first, second)
+import Control.Arrow (second)
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
@@ -337,7 +337,7 @@ alterTileA lid p fromTile toTile = assert (fromTile /= toTile) $ do
                        || ts Kind.! p == freshClientTile
                        `blame` "unexpected altered tile kind"
                        `twith` (lid, p, fromTile, toTile, ts Kind.! p))
-               $ ts Kind.// [(fromPoint 0 p, toTile)]
+               $ ts Kind.// [(p, toTile)]
   updateLevel lid $ updateTile adj
   case (Tile.isExplorable cotile fromTile, Tile.isExplorable cotile toTile) of
     (False, True) -> updateLevel lid $ \lvl2 -> lvl2 {lseen = lseen lvl + 1}
@@ -354,7 +354,7 @@ spotTileA :: MonadAction m => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
 spotTileA lid ts = assert (not $ null ts) $ do
   Kind.COps{cotile} <- getsState scops
   Level{ltile} <- getLevel lid
-  let adj tileMap = tileMap Kind.// (map (first (fromPoint 0)) ts)
+  let adj tileMap = tileMap Kind.// ts
   updateLevel lid $ updateTile adj
   let f (p, t2) = do
         let t1 = ltile Kind.! p
@@ -374,7 +374,7 @@ loseTileA lid ts = assert (not $ null ts) $ do
       matches tileMap ((p, ov) : rest) =
         tileMap Kind.! p == ov && matches tileMap rest
       tu = map (second (const unknownId)) ts
-      adj tileMap = assert (matches tileMap ts) $ tileMap Kind.// (map (first (fromPoint 0)) tu)
+      adj tileMap = assert (matches tileMap ts) $ tileMap Kind.// tu
   updateLevel lid $ updateTile adj
   let f (_, t1) =
         when (Tile.isExplorable cotile t1) $

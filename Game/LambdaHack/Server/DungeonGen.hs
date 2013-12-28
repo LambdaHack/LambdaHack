@@ -3,7 +3,6 @@ module Game.LambdaHack.Server.DungeonGen
   ( FreshDungeon(..), dungeonGen
   ) where
 
-import Control.Arrow (first)
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
@@ -31,12 +30,11 @@ import Game.LambdaHack.Utils.Frequency
 convertTileMaps :: Rnd (Kind.Id TileKind) -> Int -> Int -> TileMapXY
                 -> Rnd TileMap
 convertTileMaps cdefTile cxsize cysize ltile = do
-  let size = PointXY cxsize cysize
-      f :: PointXY -> Rnd (Kind.Id TileKind)
+  let f :: PointXY -> Rnd (Kind.Id TileKind)
       f pxy = case EM.lookup pxy ltile of
         Just t -> return t
         Nothing -> cdefTile
-  Kind.generateMA size f
+  Kind.generateMA cxsize cysize f
 
 placeStairs :: Kind.Ops TileKind -> TileMap -> CaveKind -> [Point]
             -> Rnd Point
@@ -131,7 +129,7 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
                 downEscape <- fmap (fromMaybe $ assert `failure` legend)
                               $ opick legend $ hasEscapeAndSymbol '>'
                 return [(epos, downEscape)]
-  let exits = map (first (fromPoint 0)) $ stairsTotal ++ escape
+  let exits = stairsTotal ++ escape
       ltile = cmap Kind.// exits
       -- We reverse the order in down stairs, to minimize long stair chains.
       lstair = ( map fst $ stairsUp ++ stairsUpDown
