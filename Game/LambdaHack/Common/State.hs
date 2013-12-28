@@ -69,8 +69,8 @@ unknownLevel Kind.Ops{ouniqGroup} ldepth lxsize lysize ldesc lstair lclear
 
 unknownTileMap :: Kind.Id TileKind -> Int -> Int -> TileMap
 unknownTileMap unknownId cxsize cysize =
-  let bounds = PointXY (cxsize - 1) (cysize - 1)
-  in Kind.listArray bounds (repeat unknownId)
+  let size = PointXY cxsize cysize
+  in Kind.replicateA size unknownId
 
 -- | Initial complete global game state.
 defStateGlobal :: Dungeon -> Int

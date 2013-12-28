@@ -28,14 +28,15 @@ import Game.LambdaHack.Server.DungeonGen.Cave hiding (TileMapXY)
 import Game.LambdaHack.Server.DungeonGen.Place
 import Game.LambdaHack.Utils.Frequency
 
-
 convertTileMaps :: Rnd (Kind.Id TileKind) -> Int -> Int -> TileMapXY
                 -> Rnd TileMap
 convertTileMaps cdefTile cxsize cysize ltile = do
-  let bounds = PointXY (cxsize - 1) (cysize - 1)
-      assocs = EM.assocs ltile
-  pickedTiles <- replicateM (cxsize * cysize) cdefTile
-  return $ Kind.listArray bounds pickedTiles Kind.// assocs
+  let size = PointXY cxsize cysize
+      f :: PointXY -> Rnd (Kind.Id TileKind)
+      f pxy = case EM.lookup pxy ltile of
+        Just t -> return t
+        Nothing -> cdefTile
+  Kind.generateMA size f
 
 placeStairs :: Kind.Ops TileKind -> TileMap -> CaveKind -> [Point]
             -> Rnd Point
@@ -162,7 +163,7 @@ levelFromCaveKind Kind.COps{cotile}
     , lseen = 0
     , lclear = let f !n !tk | Tile.isExplorable cotile tk = n + 1
                             | otherwise = n
-               in Kind.foldlArray f 0 ltile
+               in Kind.foldlA f 0 ltile
     , ltime = timeTurn
     , litemNum
     , litemFreq

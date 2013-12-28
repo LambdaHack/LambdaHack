@@ -4,7 +4,7 @@ module Game.LambdaHack.Common.Kind
   ( -- * General content types
     Id, sentinelId, Speedup(..), Ops(..), COps(..), createOps, stdRuleset
     -- * Arrays of content identifiers
-  , Array, (!), (//), listArray, bounds, foldlArray
+  , Array, (!), (//), replicateA, replicateMA, generateMA, sizeA, foldlA
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -157,38 +157,55 @@ instance Binary (Array c) where
   get = fmap Array get
 
 instance Show (Array c) where
-  show a = "Kind.Array with bounds " ++ show (bounds a)
+  show a = "Kind.Array with size " ++ show (sizeA a)
 
 -- | Content identifiers array lookup.
 (!) :: Array c -> Point -> Id c -- TDDO: PointXY?
 (!) (Array a) p = let PointXY x y = fromPoint 0 p in Id $ a V.! y V.! x
 
--- TODO: optimize, perhaps after switching to Vectors
+-- TODO: optimize, either by replacing with a different operation
+-- or by thawing all the vectors, updating, freezing.
 -- | Construct a content identifiers array updated with the association list.
 (//) :: Array c -> [(PointXY, Id c)] -> Array c
 (//) (Array a) l =
   let f b (x, e) = b V.// [(x, e)]
   in Array $ V.accum f a [(y, (x, e)) | (PointXY x y, Id e) <- l]
 
--- TODO: optimize, perhaps after switching to Vectors
--- | Create a content identifiers array from a list of elements.
-listArray :: PointXY -> [Id c] -> Array c
-listArray (PointXY x1 y1) ids =
-  let es = [e | Id e <- ids]
-      split [] = []
-      split l = let (line, rest) = splitAt (x1 + 1) l
-                in line : split rest
-  in Array $ V.fromList $ map V.fromList $ take (y1 + 1) $ split es
+-- | Create a content identifiers array from a replicated element.
+replicateA :: PointXY -> Id c -> Array c
+replicateA (PointXY x1 y1) (Id e) =
+  let line = V.replicate x1 e
+  in Array $ V.replicate y1 line
 
--- | Content identifiers array bounds.
-bounds :: Array c -> PointXY
-bounds (Array a) =
-  let py = V.length a - 1
-      px = V.length (a V.! 0) - 1
+-- | Create a content identifiers array from a replicated monadic action.
+replicateMA :: Monad m => PointXY -> m (Id c) -> m (Array c)
+replicateMA (PointXY x1 y1) m = do
+  let me = do
+        Id e <- m
+        return e
+      mline = V.replicateM x1 me
+  a <- V.replicateM y1 mline
+  return $ Array a
+
+-- | Create a content identifiers array from a monadic function.
+generateMA :: Monad m => PointXY -> (PointXY -> m (Id c)) -> m (Array c)
+generateMA (PointXY x1 y1) m = do
+  let me y x = do
+        Id e <- m $ PointXY x y
+        return e
+      mline y = V.generateM x1 (me y)
+  a <- V.generateM y1 mline
+  return $ Array a
+
+-- | Content identifiers array size.
+sizeA :: Array c -> PointXY
+sizeA (Array a) =
+  let py = V.length a
+      px = V.length (a V.! 0)
   in PointXY{..}
 
 -- | Fold left strictly over an array.
-foldlArray :: (a -> Id c -> a) -> a -> Array c -> a
-foldlArray f z0 (Array a) = lgo z0 $ concatMap V.toList $ V.toList a
+foldlA :: (a -> Id c -> a) -> a -> Array c -> a
+foldlA f z0 (Array a) = lgo z0 $ concatMap V.toList $ V.toList a
  where lgo z []       = z
        lgo z (x : xs) = let fzx = f z (Id x) in fzx `seq` lgo fzx xs

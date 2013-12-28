@@ -158,10 +158,10 @@ hideTile cotile lvl p =
 -- | Find a random position on the map satisfying a predicate.
 findPos :: TileMap -> (Point -> Kind.Id TileKind -> Bool) -> Rnd Point
 findPos ltile p =
-  let PointXY x1 y1 = Kind.bounds ltile
+  let PointXY x1 y1 = Kind.sizeA ltile
       search = do
-        px <- randomR (0, x1)
-        py <- randomR (0, y1)
+        px <- randomR (0, x1 - 1)
+        py <- randomR (0, y1 - 1)
         let pxy = PointXY{..}
             pos = toPoint 0 pxy
             tile = ltile Kind.! pos
@@ -183,11 +183,11 @@ findPosTry :: Int                                  -- ^ the number of tries
            -> Rnd Point
 findPosTry _        ltile m []         = findPos ltile m
 findPosTry numTries ltile m l@(_ : tl) = assert (numTries > 0) $
-  let PointXY x1 y1 = Kind.bounds ltile
+  let PointXY x1 y1 = Kind.sizeA ltile
       search 0 = findPosTry numTries ltile m tl
       search k = do
-        px <- randomR (0, x1)
-        py <- randomR (0, y1)
+        px <- randomR (0, x1 - 1)
+        py <- randomR (0, y1 - 1)
         let pxy = PointXY{..}
             pos = toPoint 0 pxy
             tile = ltile Kind.! pos
