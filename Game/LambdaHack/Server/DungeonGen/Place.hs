@@ -1,7 +1,7 @@
 {-# LANGUAGE RankNTypes #-}
 -- | Generation of places from place kinds.
 module Game.LambdaHack.Server.DungeonGen.Place
-  ( TileMapXY, Place(..), placeCheck, buildFenceRnd, buildPlace
+  ( TileMapEM, Place(..), placeCheck, buildFenceRnd, buildPlace
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -14,6 +14,7 @@ import qualified Data.Text as T
 
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Content.CaveKind
@@ -37,7 +38,7 @@ data Place = Place
 -- | The map of tile kinds in a place (and generally anywhere in a cave).
 -- The map is sparse. The default tile that eventually fills the empty spaces
 -- is specified in the cave kind specification with @cdefTile@.
-type TileMapXY = EM.EnumMap PointXY (Kind.Id TileKind)
+type TileMapEM = EM.EnumMap Point (Kind.Id TileKind)
 
 -- | For @CAlternate@ tiling, require the place be comprised
 -- of an even number of whole corners, with exactly one square
@@ -85,7 +86,7 @@ buildPlace :: Kind.COps         -- ^ the game content
            -> Int               -- ^ current level depth
            -> Int               -- ^ maximum depth
            -> Area              -- ^ whole area of the place, fence included
-           -> Rnd (TileMapXY, Place)
+           -> Rnd (TileMapEM, Place)
 buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
                     , coplace=Kind.Ops{okind=pokind, opick=popick} }
            CaveKind{..} dnight darkCorTile litCorTile ln depth r = do
@@ -111,13 +112,14 @@ buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
         FFloor -> buildFence qhollowFence qarea
         FNone -> EM.empty
       (x0, y0, x1, y1) = fromArea qarea
-      isEdge (PointXY x y) = x `elem` [x0, x1] || y `elem` [y0, y1]
+      isEdge p = let PointXY x y = fromPoint p
+                 in x `elem` [x0, x1] || y `elem` [y0, y1]
       digNight xy c | isEdge xy = xlegendLit EM.! c
                     | otherwise = xlegend EM.! c
-      inside = case pfence kr of
+      interior = case pfence kr of
         FNone | not dnight -> EM.mapWithKey digNight cmap
         _ -> EM.map (xlegend EM.!) cmap
-      tmap = EM.union inside fence
+      tmap = EM.union interior fence
   return (tmap, place)
 
 -- | Roll a legend of a place plan: a map from plan symbols to tile kinds.
@@ -137,16 +139,16 @@ olegend Kind.Ops{ofoldrWithKey, opick} cgroup =
   in legend
 
 -- | Construct a fence around an area, with the given tile kind.
-buildFence :: Kind.Id TileKind -> Area -> TileMapXY
+buildFence :: Kind.Id TileKind -> Area -> TileMapEM
 buildFence fenceId area =
   let (x0, y0, x1, y1) = fromArea area
-  in EM.fromList $ [ (PointXY x y, fenceId)
+  in EM.fromList $ [ (toPoint $ PointXY x y, fenceId)
                    | x <- [x0-1, x1+1], y <- [y0..y1] ] ++
-                   [ (PointXY x y, fenceId)
+                   [ (toPoint $ PointXY x y, fenceId)
                    | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
 
 -- | Construct a fence around an area, with the given tile group.
-buildFenceRnd :: Kind.COps -> Text -> Area -> Rnd TileMapXY
+buildFenceRnd :: Kind.COps -> Text -> Area -> Rnd TileMapEM
 buildFenceRnd Kind.COps{cotile=Kind.Ops{opick}} couterFenceTile area = do
   let (x0, y0, x1, y1) = fromArea area
       fenceIdRnd (xf, yf) = do
@@ -155,7 +157,7 @@ buildFenceRnd Kind.COps{cotile=Kind.Ops{opick}} couterFenceTile area = do
                       | otherwise = couterFenceTile
         fenceId <- fmap (fromMaybe $ assert `failure` tileGroup)
                    $ opick tileGroup (const True)
-        return (PointXY xf yf, fenceId)
+        return (toPoint $ PointXY xf yf, fenceId)
       pointList = [ (x, y) | x <- [x0-1, x1+1], y <- [y0..y1] ]
                   ++ [ (x, y) | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
   fenceList <- mapM fenceIdRnd pointList
@@ -165,7 +167,7 @@ buildFenceRnd Kind.COps{cotile=Kind.Ops{opick}} couterFenceTile area = do
 -- | Create a place by tiling patterns.
 tilePlace :: Area                           -- ^ the area to fill
           -> PlaceKind                      -- ^ the place kind to construct
-          -> EM.EnumMap PointXY Char
+          -> EM.EnumMap Point Char
 tilePlace area pl@PlaceKind{..} =
   let (x0, y0, x1, y1) = fromArea area
       xwidth = x1 - x0 + 1
@@ -174,9 +176,11 @@ tilePlace area pl@PlaceKind{..} =
         [] -> assert `failure` (area, pl)
         l : _ -> T.length l
       (dx, dy) = assert (xwidth >= dxcorner && ywidth >= length ptopLeft
-                         `blame` (area, pl)) (xwidth, ywidth)
-      fromX (x, y) = map (uncurry PointXY) $ zip [x..] (repeat y)
-      fillInterior :: (forall a. Int -> [a] -> [a]) -> [(PointXY, Char)]
+                         `blame` (area, pl))
+                        (xwidth, ywidth)
+      fromX (x2, y2) =  -- TODO: can be optimized: rectangle of points in Point
+        zipWith (\x y -> toPoint (PointXY x y)) [x2..] (repeat y2)
+      fillInterior :: (forall a. Int -> [a] -> [a]) -> [(Point, Char)]
       fillInterior f =
         let tileInterior (y, row) = zip (fromX (x0, y)) $ f dx row
             reflected = zip [y0..] $ f dy $ map T.unpack ptopLeft
@@ -190,8 +194,7 @@ tilePlace area pl@PlaceKind{..} =
         CAlternate ->
           let tile :: Int -> [a] -> [a]
               tile _ []  = assert `failure` "nothing to tile" `twith` pl
-              tile d pat =
-                take d (cycle $ init pat ++ init (reverse pat))
+              tile d pat = take d (cycle $ init pat ++ init (reverse pat))
           in fillInterior tile
         CStretch ->
           let stretch :: Int -> [a] -> [a]

@@ -15,7 +15,6 @@ import qualified Game.LambdaHack.Common.Feature as F
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
@@ -23,15 +22,15 @@ import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Server.DungeonGen.Area
-import Game.LambdaHack.Server.DungeonGen.Cave hiding (TileMapXY)
+import Game.LambdaHack.Server.DungeonGen.Cave
 import Game.LambdaHack.Server.DungeonGen.Place
 import Game.LambdaHack.Utils.Frequency
 
-convertTileMaps :: Rnd (Kind.Id TileKind) -> Int -> Int -> TileMapXY
+convertTileMaps :: Rnd (Kind.Id TileKind) -> Int -> Int -> TileMapEM
                 -> Rnd TileMap
 convertTileMaps cdefTile cxsize cysize ltile = do
-  let f :: PointXY -> Rnd (Kind.Id TileKind)
-      f pxy = case EM.lookup pxy ltile of
+  let f :: Point -> Rnd (Kind.Id TileKind)
+      f p = case EM.lookup p ltile of
         Just t -> return t
         Nothing -> cdefTile
   Kind.generateMA cxsize cysize f

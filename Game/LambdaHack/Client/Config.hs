@@ -4,7 +4,6 @@ module Game.LambdaHack.Client.Config
   ) where
 
 import Control.DeepSeq
-import Data.Binary
 
 import Game.LambdaHack.Client.HumanCmd
 import qualified Game.LambdaHack.Common.Key as K
@@ -30,28 +29,3 @@ data ConfigUI = ConfigUI
   deriving Show
 
 instance NFData ConfigUI
-
-instance Binary ConfigUI where
-  put ConfigUI{..} = do
-    put configCommands
-    put configAppDataDir
-    put configUICfgFile
-    put configSavePrefix
-    put configMacros
-    put configFont
-    put configHistoryMax
-    put configMaxFps
-    put configNoAnim
-    put configRunStopMsgs
-  get = do
-    configCommands <- get
-    configAppDataDir <- get
-    configUICfgFile <- get
-    configSavePrefix <- get
-    configMacros <- get
-    configFont <- get
-    configHistoryMax <- get
-    configMaxFps <- get
-    configNoAnim <- get
-    configRunStopMsgs <- get
-    return ConfigUI{..}

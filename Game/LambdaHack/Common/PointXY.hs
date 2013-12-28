@@ -1,13 +1,11 @@
 -- | Basic cartesian geometry operations on 2D points.
 module Game.LambdaHack.Common.PointXY
-  ( X, Y, PointXY(..), maxLevelDimExponent, maxLevelDim, maxVectorDim
-  , fromTo, sortPointXY, blaXY, insideXY
+  ( X, Y, PointXY(..)
+  , maxLevelDimExponent, maxLevelDim, maxVectorDim
+  , fromTo, sortPointXY, insideXY
   ) where
 
 import Control.Exception.Assert.Sugar
-import Data.Binary
-import Data.Bits (unsafeShiftL, unsafeShiftR, (.&.))
-import Data.Int (Int32)
 
 -- | Spacial dimension for points and vectors.
 type X = Int
@@ -34,15 +32,6 @@ data PointXY = PointXY
 instance Show PointXY where
   show (PointXY x y) = show (x, y)
 
-instance Enum PointXY where
-  toEnum xy = PointXY (xy .&. maxLevelDim)
-                      (unsafeShiftR xy maxLevelDimExponent)
-  fromEnum (PointXY x y) = x + unsafeShiftL y maxLevelDimExponent
-
-instance Binary PointXY where
-  put = put . (fromIntegral :: Int -> Int32) . fromEnum
-  get = fmap (toEnum . (fromIntegral :: Int32 -> Int)) get
-
 -- | The maximum number of bits for level X and Y dimension (16).
 -- The value is chosen to support architectures with 32-bit Ints.
 maxLevelDimExponent :: Int
@@ -60,6 +49,7 @@ maxVectorDim :: Int
 {-# INLINE maxVectorDim #-}
 maxVectorDim = 2 ^ (maxLevelDimExponent - 1) - 1
 
+-- TODO: can be implemented in Point entirely.
 -- | A list of all points on a straight vertical or straight horizontal line
 -- between two points. Fails if no such line exists.
 fromTo :: PointXY -> PointXY -> [PointXY]
@@ -80,25 +70,6 @@ fromTo1 x0 x1
 sortPointXY :: (PointXY, PointXY) -> (PointXY, PointXY)
 sortPointXY (a, b) | a <= b    = (a, b)
                    | otherwise = (b, a)
-
--- | See <http://roguebasin.roguelikedevelopment.org/index.php/Digital_lines>.
-balancedWord :: Int -> Int -> Int -> [Int]
-balancedWord p q eps | eps + p < q = 0 : balancedWord p q (eps + p)
-balancedWord p q eps               = 1 : balancedWord p q (eps + p - q)
-
--- | Bresenham's line algorithm generalized to arbitrary starting @eps@
--- (@eps@ value of 0 gives the standard BLA). Includes the source point
--- and goes through the target point to infinity.
-blaXY :: Int -> PointXY -> PointXY -> [PointXY]
-blaXY eps (PointXY x0 y0) (PointXY x1 y1) =
-  let (dx, dy) = (x1 - x0, y1 - y0)
-      xyStep b (x, y) = (x + signum dx,     y + signum dy * b)
-      yxStep b (x, y) = (x + signum dx * b, y + signum dy)
-      (p, q, step) | abs dx > abs dy = (abs dy, abs dx, xyStep)
-                   | otherwise       = (abs dx, abs dy, yxStep)
-      bw = balancedWord p q (eps `mod` max 1 q)
-      walk w xy = xy : walk (tail w) (step (head w) xy)
-  in map (uncurry PointXY) $ walk bw (x0, y0)
 
 -- | Checks that a point belongs to an area.
 insideXY :: PointXY -> (X, Y, X, Y) -> Bool

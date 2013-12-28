@@ -190,10 +190,10 @@ replicateMA x y m = do
   return $ Array a
 
 -- | Create a content identifiers array from a monadic function.
-generateMA :: Monad m => X -> Y -> (PointXY -> m (Id c)) -> m (Array c)
+generateMA :: Monad m => X -> Y -> (Point -> m (Id c)) -> m (Array c)
 generateMA x y m = do
   let me y1 x1 = do
-        Id e <- m $ PointXY x1 y1
+        Id e <- m $ toPoint $ PointXY x1 y1
         return e
       mline y1 = V.generateM x (me y1)
   a <- V.generateM y mline

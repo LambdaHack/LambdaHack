@@ -12,7 +12,6 @@ import Prelude hiding (Left, Right)
 
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Common.VectorXY
 
 -- TODO: if the file grows much larger, split it and move a part to Utils/
 
@@ -173,19 +172,19 @@ handleDir _ _ k = k
 
 -- TODO: deduplicate
 -- | Binding of both sets of movement keys.
-moveBinding :: (VectorXY -> a) -> (VectorXY -> a)
+moveBinding :: (Vector -> a) -> (Vector -> a)
             -> [(KM, a)]
 moveBinding move run =
   let assign f (km, dir) = (km, f dir)
       rNoModifier = repeat NoModifier
       rControl = repeat Control
-  in map (assign move) (zip (zipWith KM rNoModifier dirViMoveKey) movesXY) ++
-     map (assign move) (zip (zipWith KM rNoModifier dirMoveKey) movesXY) ++
-     map (assign run)  (zip (zipWith KM rNoModifier dirViRunKey) movesXY) ++
-     map (assign run)  (zip (zipWith KM rNoModifier dirRunKey) movesXY) ++
-     map (assign run)  (zip (zipWith KM rControl dirMoveKey) movesXY) ++
-     map (assign run)  (zip (zipWith KM rControl dirRunKey) movesXY) ++
-     map (assign run)  (zip (zipWith KM rControl dirHeroKey ) movesXY)
+  in map (assign move) (zip (zipWith KM rNoModifier dirViMoveKey) moves) ++
+     map (assign move) (zip (zipWith KM rNoModifier dirMoveKey) moves) ++
+     map (assign run)  (zip (zipWith KM rNoModifier dirViRunKey) moves) ++
+     map (assign run)  (zip (zipWith KM rNoModifier dirRunKey) moves) ++
+     map (assign run)  (zip (zipWith KM rControl dirMoveKey) moves) ++
+     map (assign run)  (zip (zipWith KM rControl dirRunKey) moves) ++
+     map (assign run)  (zip (zipWith KM rControl dirHeroKey ) moves)
 
 -- | Translate key from a GTK string description to our internal key type.
 -- To be used, in particular, for the command bindings and macros

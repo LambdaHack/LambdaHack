@@ -8,7 +8,6 @@ module Game.LambdaHack.Common.Animation
   , DebugModeCli(..), defDebugModeCli
   ) where
 
-import Control.Arrow ((***))
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Binary
@@ -206,13 +205,13 @@ fadeout out topRight lxsize lysize = do
         in EM.findWithDefault ' ' k edge
       rollFrame n = do
         r <- random
-        let l = [ ( PointXY (if topRight then x else xbound - x) y
-                  , fadeChar r n x y )
+        let l = [ ( toPoint $ PointXY (if topRight then x else xbound - x) y
+                  , AttrChar defAttr $ fadeChar r n x y )
                 | x <- [0..xbound]
                 , y <- [max 0 (ybound - (n - x) `div` 2)..ybound]
                     ++ [0..min ybound ((n - xbound + x) `div` 2)]
                 ]
-        return $ EM.fromList $ map (toPoint *** AttrChar defAttr) l
+        return $ EM.fromList l
       startN = if out then 3 else 1
       fs = [startN..3 * lxsize `divUp` 4 + 2]
   as <- mapM rollFrame $ if out then fs else reverse fs

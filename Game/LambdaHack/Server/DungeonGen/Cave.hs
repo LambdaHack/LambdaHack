@@ -1,6 +1,6 @@
 -- | Generation of caves (not yet inhabited dungeon levels) from cave kinds.
 module Game.LambdaHack.Server.DungeonGen.Cave
-  ( TileMapXY, ItemFloorXY, Cave(..), buildCave
+  ( ItemFloorEM, Cave(..), buildCave
   ) where
 
 import Control.Arrow ((&&&))
@@ -8,12 +8,14 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.List
+import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Traversable as Traversable
 
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -22,23 +24,23 @@ import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Server.DungeonGen.Area
 import Game.LambdaHack.Server.DungeonGen.AreaRnd
-import Game.LambdaHack.Server.DungeonGen.Place hiding (TileMapXY)
+import Game.LambdaHack.Server.DungeonGen.Place hiding (TileMapEM)
 import qualified Game.LambdaHack.Server.DungeonGen.Place as Place
 
 -- | The map of tile kinds in a cave.
 -- The map is sparse. The default tile that eventually fills the empty spaces
 -- is specified in the cave kind specification with @cdefTile@.
-type TileMapXY = Place.TileMapXY
+type TileMapEM = Place.TileMapEM
 
 -- | The map of starting items in tiles of a cave. The map is sparse.
 -- Unspecified tiles have no starting items.
-type ItemFloorXY = EM.EnumMap PointXY (Item, Int)
+type ItemFloorEM = EM.EnumMap Point (Item, Int)
 
 -- | The type of caves (not yet inhabited dungeon levels).
 data Cave = Cave
   { dkind   :: !(Kind.Id CaveKind)  -- ^ the kind of the cave
-  , dmap    :: !TileMapXY           -- ^ tile kinds in the cave
-  , ditem   :: !ItemFloorXY         -- ^ starting items in the cave
+  , dmap    :: !TileMapEM           -- ^ tile kinds in the cave
+  , ditem   :: !ItemFloorEM         -- ^ starting items in the cave
   , dplaces :: ![Place]             -- ^ places generated in the cave
   , dnight  :: !Bool                -- ^ whether the cave is dark
   }
@@ -127,7 +129,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
   (lplaces, dplaces, qplaces0) <- foldM addPl (fence, [], []) places0
   connects <- connectGrid lgrid
   let allConnects = union connects addedConnects  -- no duplicates
-      qplaces = EM.fromList qplaces0
+      qplaces = M.fromList qplaces0
   cs <- mapM (\(p0, p1) -> do
                 let shrinkPlace (r, Place{qkind}) =
                       case shrink r of
@@ -141,8 +143,8 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                               Just mergeArea -> (mergeArea, r)
                           _ -> (sr, sr)
                     shrinkForFence = either (id &&& id) shrinkPlace
-                    rr0 = shrinkForFence $ qplaces EM.! p0
-                    rr1 = shrinkForFence $ qplaces EM.! p1
+                    rr0 = shrinkForFence $ qplaces M.! p0
+                    rr1 = shrinkForFence $ qplaces M.! p1
                 connectPlaces rr0 rr1) allConnects
   let lcorridors = EM.unions (map (digCorridors pickedCorTile) cs)
       lm = EM.unionWith (mergeCorridor cotile) lcorridors lplaces
@@ -175,12 +177,12 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
         }
   return cave
 
-digCorridors :: Kind.Id TileKind -> Corridor -> TileMapXY
+digCorridors :: Kind.Id TileKind -> Corridor -> TileMapEM
 digCorridors tile (p1:p2:ps) =
   EM.union corPos (digCorridors tile (p2:ps))
  where
-  corXY  = fromTo p1 p2
-  corPos = EM.fromList $ zip corXY (repeat tile)
+  cor  = map toPoint $ fromTo p1 p2
+  corPos = EM.fromList $ zip cor (repeat tile)
 digCorridors _ _ = EM.empty
 
 mergeCorridor :: Kind.Ops TileKind -> Kind.Id TileKind -> Kind.Id TileKind

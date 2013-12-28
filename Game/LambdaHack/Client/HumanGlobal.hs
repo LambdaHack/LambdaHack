@@ -43,7 +43,6 @@ import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Common.VectorXY
 import Game.LambdaHack.Content.TileKind as TileKind
 
 type SlideOrCmd a = Either Slideshow a
@@ -57,13 +56,12 @@ failSer = failWith . showFailureSer
 -- * Move and Run
 
 moveRunHuman :: MonadClientUI m
-             => Bool -> VectorXY -> m (SlideOrCmd CmdSerTakeTime)
-moveRunHuman run v = do
+             => Bool -> Vector -> m (SlideOrCmd CmdSerTakeTime)
+moveRunHuman run dir = do
   tgtMode <- getsClient stgtMode
   (arena, _) <- viewedLevel
   leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
-  let dir = toDir v
   if isJust tgtMode then do
     fmap Left $ moveCursor dir (if run then 10 else 1)
   else do

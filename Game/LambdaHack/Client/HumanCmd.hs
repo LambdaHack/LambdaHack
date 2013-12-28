@@ -13,13 +13,13 @@ import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Msg
-import Game.LambdaHack.Common.VectorXY
+import Game.LambdaHack.Common.Vector
 
 -- | Abstract syntax of player commands.
 data HumanCmd =
     -- These usually take time.
-    Move !VectorXY
-  | Run !VectorXY
+    Move !Vector
+  | Run !Vector
   | Wait
   | Pickup
   | Drop
@@ -50,9 +50,7 @@ data HumanCmd =
   | MarkSmell
   | MarkSuspect
   | Help
-  deriving (Show, Read, Eq, Ord, Generic)
-
-instance Binary HumanCmd
+  deriving (Eq, Ord, Show, Read)
 
 data Trigger =
     ApplyItem {verb :: !MU.Part, object :: !MU.Part, symbol :: !Char}

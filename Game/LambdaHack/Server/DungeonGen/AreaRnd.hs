@@ -9,8 +9,8 @@ module Game.LambdaHack.Server.DungeonGen.AreaRnd
   ) where
 
 import Control.Exception.Assert.Sugar
-import qualified Data.EnumSet as ES
 import Data.Maybe
+import qualified Data.Set as S
 
 import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Random
@@ -63,34 +63,34 @@ mkVoidRoom area = do
 -- there is only one connected component in the graph of all areas.
 connectGrid :: (X, Y) -> Rnd [(PointXY, PointXY)]
 connectGrid (nx, ny) = do
-  let unconnected = ES.fromList [ PointXY x y
+  let unconnected = S.fromList [ PointXY x y
                                 | x <- [0..nx-1], y <- [0..ny-1] ]
   -- Candidates are neighbours that are still unconnected. We start with
   -- a random choice.
   rx <- randomR (0, nx-1)
   ry <- randomR (0, ny-1)
-  let candidates = ES.fromList [PointXY rx ry]
+  let candidates = S.fromList [PointXY rx ry]
   connectGrid' (nx, ny) unconnected candidates []
 
-connectGrid' :: (X, Y) -> ES.EnumSet PointXY -> ES.EnumSet PointXY
+connectGrid' :: (X, Y) -> S.Set PointXY -> S.Set PointXY
              -> [(PointXY, PointXY)]
              -> Rnd [(PointXY, PointXY)]
 connectGrid' (nx, ny) unconnected candidates acc
-  | ES.null candidates = return $ map sortPointXY acc
+  | S.null candidates = return $ map sortPointXY acc
   | otherwise = do
-      c <- oneOf (ES.toList candidates)
+      c <- oneOf (S.toList candidates)
       -- potential new candidates:
-      let ns = ES.fromList $ vicinityCardinalXY (0, 0, nx-1, ny-1) c
-          nu = ES.delete c unconnected  -- new unconnected
+      let ns = S.fromList $ vicinityCardinalXY (0, 0, nx-1, ny-1) c
+          nu = S.delete c unconnected  -- new unconnected
           -- (new candidates, potential connections):
-          (nc, ds) = ES.partition (`ES.member` nu) ns
-      new <- if ES.null ds
+          (nc, ds) = S.partition (`S.member` nu) ns
+      new <- if S.null ds
              then return id
              else do
-               d <- oneOf (ES.toList ds)
+               d <- oneOf (S.toList ds)
                return ((c, d) :)
       connectGrid' (nx, ny) nu
-        (ES.delete c (candidates `ES.union` nc)) (new acc)
+        (S.delete c (candidates `S.union` nc)) (new acc)
 
 -- | Pick a single random connection between adjacent areas within a grid.
 randomConnection :: (X, Y) -> Rnd (PointXY, PointXY)

@@ -1,12 +1,8 @@
 -- | Basic cartesian geometry operations on 2D vectors.
 module Game.LambdaHack.Common.VectorXY
-  ( VectorXY(..), shiftXY, movesXY, movesCardinalXY
+  ( VectorXY(..), movesXY
   , chessDistXY, euclidDistSqXY, negXY, vicinityXY, vicinityCardinalXY
   ) where
-
-import Data.Binary
-import Data.Bits (unsafeShiftL)
-import Data.Int (Int32)
 
 import Game.LambdaHack.Common.PointXY
 
@@ -16,22 +12,7 @@ data VectorXY = VectorXY
   { vx :: !X
   , vy :: !Y
   }
-  deriving (Eq, Ord, Show, Read)
-
-instance Enum VectorXY where
-  toEnum xy =
-    let (y, x) = xy `quotRem` (2 ^ maxLevelDimExponent)
-        (vx, vy) = if x > maxVectorDim
-                   then (x - 2 ^ maxLevelDimExponent, y + 1)
-                   else if x < - maxVectorDim
-                        then (x + 2 ^ maxLevelDimExponent, y - 1)
-                        else (x, y)
-    in VectorXY{..}
-  fromEnum (VectorXY x y) = x + unsafeShiftL y maxLevelDimExponent
-
-instance Binary VectorXY where
-  put = put . (fromIntegral :: Int -> Int32) . fromEnum
-  get = fmap (toEnum . (fromIntegral :: Int32 -> Int)) get
+  deriving (Eq, Ord, Show)
 
 -- | Shift a point by a vector.
 shiftXY :: PointXY -> VectorXY -> PointXY

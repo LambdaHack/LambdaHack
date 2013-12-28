@@ -52,7 +52,7 @@ data StateClient = StateClient
   , sdisco       :: !Discovery     -- ^ remembered item discoveries
   , sfper        :: !FactionPers   -- ^ faction perception indexed by levels
   , srandom      :: !R.StdGen      -- ^ current random generator
-  , sconfigUI    :: !ConfigUI      -- ^ client config (including initial RNG)
+  , sconfigUI    :: ConfigUI       -- ^ client config (including initial RNG)
   , slastKey     :: !(Maybe K.KM)  -- ^ last command key pressed
   , _sleader     :: !(Maybe ActorId)
                                    -- ^ current picked party leader
@@ -171,7 +171,6 @@ instance Binary StateClient where
     put sundo
     put sdisco
     put (show srandom)
-    put sconfigUI
     put _sleader
     put _sside
     put sisAI
@@ -191,7 +190,6 @@ instance Binary StateClient where
     sundo <- get
     sdisco <- get
     g <- get
-    sconfigUI <- get
     _sleader <- get
     _sside <- get
     sisAI <- get
@@ -203,6 +201,7 @@ instance Binary StateClient where
         srandom = read g
         slastKey = Nothing
         squit = False
+        sconfigUI = undefined
     return StateClient{..}
 
 instance Binary RunParams where

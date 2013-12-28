@@ -10,6 +10,7 @@ module Game.LambdaHack.Common.Vector
 
 import Control.Exception.Assert.Sugar
 import Data.Binary
+import Data.Bits (unsafeShiftL)
 import Data.Int (Int32)
 
 import Game.LambdaHack.Common.Point
@@ -28,17 +29,19 @@ instance Binary Vector where
 
 -- For debugging.
 instance Show Vector where
-  show (Vector n) = show n
+  show = show . fromVector
 
 -- | Converts a vector in cartesian representation into @Vector@.
 toVector :: VectorXY -> Vector
-toVector = toEnum . fromEnum
+toVector =
+  let fromEnumXY (VectorXY x y) = x + unsafeShiftL y maxLevelDimExponent
+  in toEnum . fromEnumXY
 
 -- | Converts a unit vector in cartesian representation into @Vector@.
 toDir :: VectorXY -> Vector
 toDir vxy =
   assert (isUnitXY vxy `blame` "not a unit VectorXY" `twith` vxy)
-  $ toEnum $ fromEnum vxy
+  $ toVector vxy
 
 isUnitXY :: VectorXY -> Bool
 isUnitXY vxy = chessDistXY vxy == 1
@@ -50,14 +53,23 @@ isUnit = isUnitXY . fromVector
 -- | Converts a vector in the offset representation
 -- into the cartesian representation.
 fromVector :: Vector -> VectorXY
-fromVector = toEnum . fromEnum
+fromVector =
+  let toEnumXY xy =
+        let (y, x) = xy `quotRem` (2 ^ maxLevelDimExponent)
+            (vx, vy) = if x > maxVectorDim
+                       then (x - 2 ^ maxLevelDimExponent, y + 1)
+                       else if x < - maxVectorDim
+                            then (x + 2 ^ maxLevelDimExponent, y - 1)
+                            else (x, y)
+        in VectorXY{..}
+  in toEnumXY . fromEnum
 
 -- | Converts a unit vector in the offset representation
 -- into the cartesian representation.
 fromDir :: Vector -> VectorXY
 fromDir v =
   assert (isUnit v `blame` "not a unit Vector" `twith` v)
-  $ toEnum $ fromEnum v
+  $ fromVector v
 
 -- | Translate a point by a vector.
 --
@@ -73,7 +85,8 @@ shiftBounded (x0, y0, x1, y1) pos dir =
      then shift pos dir
      else pos
 
--- | Vectors of all unit moves, clockwise, starting north-west.
+-- | Vectors of all unit moves in the chessboard metric,
+-- clockwise, starting north-west.
 moves :: [Vector]
 moves = map toDir movesXY
 
@@ -132,13 +145,14 @@ normalize dx dy =
      then uncurry VectorXY dxy
      else negXY $ uncurry VectorXY dxy
 
-normalizeVector :: VectorXY -> Vector
-normalizeVector v@(VectorXY dx dy) =
-  let rxy = normalize (fromIntegral dx) (fromIntegral dy)
-  in assert (not (isUnitXY v) || v == rxy
+normalizeVector :: Vector -> Vector
+normalizeVector v =
+  let VectorXY dx dy = fromVector v
+      res = toDir $ normalize (fromIntegral dx) (fromIntegral dy)
+  in assert (not (isUnit v) || v == res
              `blame` "unit vector gets untrivially normalized"
-             `twith` (v, rxy))
-     $ toDir rxy
+             `twith` (v, res))
+     res
 
 -- TODO: Perhaps produce all acceptable directions and let AI choose.
 -- That would also eliminate the Doubles. Or only directions from bla?
@@ -153,7 +167,7 @@ normalizeVector v@(VectorXY dx dy) =
 towards :: Point -> Point -> Vector
 towards pos0 pos1 =
   assert (pos0 /= pos1 `blame` "towards self" `twith` (pos0, pos1))
-  $ normalizeVector $ displacementXYZ pos0 pos1
+  $ normalizeVector $ displacement pos0 pos1
 
 -- | A vector from a point to another. We have
 --
