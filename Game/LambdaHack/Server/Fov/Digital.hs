@@ -17,7 +17,8 @@ scan :: Distance        -- ^ visiblity radius
      -> [Bump]
 scan r isClear =
   -- The scanned area is a square, which is a sphere in the chessboard metric.
-  dscan 1 (((B 1 0, B (-r) r), [B 0 0]), ((B 0 0, B (r+1) r), [B 1 0]))
+  dscan 1 ( (Line (B 1 0) (B (-r) r), [B 0 0])
+          , (Line (B 0 0) (B (r+1) r), [B 1 0]) )
  where
   dscan :: Distance -> EdgeInterval -> [Bump]
   dscan d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps)) =
@@ -32,32 +33,32 @@ scan r isClear =
         inside = [B p d | p <- [ps0..pe]]
         outside
           | d >= r = []
-          | isClear (B ps0 d) = mscan (Just s0) (ps0+1) pe  -- start in light
-          | otherwise = mscan Nothing (ps0+1) pe            -- start in shadow
+          | isClear (B ps0 d) = mscanVisible s0 (ps0+1) pe  -- start visible
+          | otherwise = mscanShadowed (ps0+1) pe            -- start in shadow
     in assert (r >= d && d >= 0 && pe >= ps0 `blame` (r,d,s0,e,ps0,pe)) $
        inside ++ outside
    where
-    -- The current state of a scan is kept in @Maybe Edge@.
-    -- If it's the @Just@ case, we're in a visible interval. If @Nothing@,
-    -- we're in a shadowed interval.
-    mscan :: Maybe Edge -> Progress -> Progress -> [Bump]
-    mscan (Just s@(_, sBumps)) ps pe
+    -- We're in a visible interval.
+    mscanVisible :: Edge -> Progress -> Progress -> [Bump]
+    mscanVisible s@(_, sBumps) ps pe
       | ps > pe = dscan (d+1) (s, e)          -- reached end, scan next
       | not $ isClear steepBump =             -- entering shadow
-          mscan Nothing (ps+1) pe
+          mscanShadowed (ps+1) pe
           ++ dscan (d+1) (s, (dline nep steepBump, neBumps))
-      | otherwise = mscan (Just s) (ps+1) pe  -- continue in light
+      | otherwise = mscanVisible s (ps+1) pe  -- continue in visible area
      where
       steepBump = B ps d
       gte = dsteeper steepBump
       nep = maximal gte sBumps
       neBumps = addHull gte steepBump eBumps
 
-    mscan Nothing ps pe
+    -- We're in a shadowed interval.
+    mscanShadowed :: Progress -> Progress -> [Bump]
+    mscanShadowed ps pe
       | ps > pe = []                          -- reached end while in shadow
       | isClear shallowBump =                 -- moving out of shadow
-          mscan (Just (dline nsp shallowBump, nsBumps)) (ps+1) pe
-      | otherwise = mscan Nothing (ps+1) pe   -- continue in shadow
+          mscanVisible (dline nsp shallowBump, nsBumps) (ps+1) pe
+      | otherwise = mscanShadowed (ps+1) pe   -- continue in shadow
      where
       shallowBump = B ps d
       gte = flip $ dsteeper shallowBump
@@ -68,7 +69,8 @@ scan r isClear =
 dline :: Bump -> Bump -> Line
 {-# INLINE dline #-}
 dline p1 p2 =
-  assert (uncurry blame $ debugLine (p1, p2)) (p1, p2)
+  let line = Line p1 p2
+  in assert (uncurry blame $ debugLine line) line
 
 -- | Compare steepness of @(p1, f)@ and @(p2, f)@.
 -- Debug: Verify that the results of 2 independent checks are equal.
@@ -83,7 +85,7 @@ dsteeper f p1 p2 =
 -- @d@ from (0, 0).
 intersect :: Line -> Distance -> (Int, Int)
 {-# INLINE intersect #-}
-intersect (B x y, B xf yf) d =
+intersect (Line (B x y) (B xf yf)) d =
   assert (allB (>= 0) [y, yf])
     ((d - y)*(xf - x) + x*(yf - y), yf - y)
 {-
@@ -122,14 +124,14 @@ debugSteeper :: Bump -> Bump -> Bump -> Bool
 {-# INLINE debugSteeper #-}
 debugSteeper f@(B _xf yf) p1@(B _x1 y1) p2@(B _x2 y2) =
   assert (allB (>= 0) [yf, y1, y2]) $
-  let (n1, k1) = intersect (p1, f) 0
-      (n2, k2) = intersect (p2, f) 0
+  let (n1, k1) = intersect (Line p1 f) 0
+      (n2, k2) = intersect (Line p2 f) 0
   in n1 * k2 >= k1 * n2
 
 -- | Debug: check if a view border line for DFOV is legal.
 debugLine :: Line -> (Bool, String)
 {-# INLINE debugLine #-}
-debugLine line@(B x1 y1, B x2 y2)
+debugLine line@(Line (B x1 y1) (B x2 y2))
   | not (allB (>= 0) [y1, y2]) =
       (False, "negative coordinates: " ++ show line)
   | y1 == y2 && x1 == x2 =

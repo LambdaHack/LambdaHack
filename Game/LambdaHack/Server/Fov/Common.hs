@@ -7,7 +7,7 @@ module Game.LambdaHack.Server.Fov.Common
     -- * Scanning coordinate system
   , Bump(..)
     -- * Geometry in system @Bump@
-  , Line, ConvexHull, Edge, EdgeInterval
+  , Line(..), ConvexHull, Edge, EdgeInterval
     -- * Assorted minor operations
   , maximal, steeper, addHull
   ) where
@@ -33,7 +33,9 @@ data Bump = B
   deriving Show
 
 -- | Straight line between points.
-type Line         = (Bump, Bump)
+data Line = Line !Bump !Bump
+  deriving Show
+
 -- | Convex hull represented as a list of points.
 type ConvexHull   = [Bump]
 -- | An edge (comprising of a line and a convex hull)
