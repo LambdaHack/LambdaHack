@@ -45,13 +45,15 @@ type EdgeInterval = (Edge, Edge)
 -- | Maximal element of a non-empty list. Prefers elements from the rear,
 -- which is essential for PFOV, to avoid ill-defined lines.
 maximal :: (a -> a -> Bool) -> [a] -> a
-maximal gte = foldl1' (\ acc e -> if gte e acc then e else acc)
+{-# INLINE maximal #-}
+maximal gte = foldl1' (\acc e -> if gte e acc then e else acc)
 
 -- | Check if the line from the second point to the first is more steep
 -- than the line from the third point to the first. This is related
 -- to the formal notion of gradient (or angle), but hacked wrt signs
 -- to work fast in this particular setup. Returns True for ill-defined lines.
 steeper :: Bump -> Bump -> Bump -> Bool
+{-# INLINE steeper #-}
 steeper (B xf yf) (B x1 y1) (B x2 y2) =
   (yf - y1)*(xf - x2) >= (yf - y2)*(xf - x1)
 
@@ -62,6 +64,7 @@ addHull :: (Bump -> Bump -> Bool)  -- ^ a comparison function
         -> Bump                    -- ^ a new bump to consider
         -> ConvexHull  -- ^ a convex hull of bumps represented as a list
         -> ConvexHull
+{-# INLINE addHull #-}
 addHull gte new = (new :) . go
  where
   go (a:b:cs) | gte a b = go (b:cs)

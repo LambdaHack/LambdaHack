@@ -14,7 +14,7 @@
 -- Actors at normal speed (2 m/s) take one turn to move one tile (1 m by 1 m).
 module Game.LambdaHack.Common.Tile
   ( SmellTime
-  , kindHasFeature, kindHas, hasFeature
+  , kindHasFeature, hasFeature
   , isClear, isLit, isExplorable, lookSimilar, speedup
   , openTo, closeTo, revealAs, hideAs, openable, closable, changeable
   ) where
@@ -35,38 +35,37 @@ type SmellTime = Time
 
 -- | Whether a tile kind has the given feature.
 kindHasFeature :: F.Feature -> TileKind -> Bool
+{-# INLINE kindHasFeature #-}
 kindHasFeature f t = f `elem` tfeature t
-
--- | Whether a tile kind has all features of the first set
--- and no features of the second.
-kindHas :: [F.Feature] -> [F.Feature] -> TileKind -> Bool
-kindHas yes no t = all (`kindHasFeature` t) yes
-                   && not (any (`kindHasFeature` t) no)
 
 -- | Whether a tile kind (specified by its id) has the given feature.
 hasFeature :: Kind.Ops TileKind -> F.Feature -> Kind.Id TileKind -> Bool
-hasFeature Kind.Ops{okind} f t =
-  kindHasFeature f (okind t)
+{-# INLINE hasFeature #-}
+hasFeature Kind.Ops{okind} f t = kindHasFeature f (okind t)
 
 -- | Whether a tile does not block vision.
 -- Essential for efficiency of "FOV", hence tabulated.
 isClear :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+{-# INLINE isClear #-}
 isClear Kind.Ops{ospeedup = Just Kind.TileSpeedup{isClearTab}} = isClearTab
 isClear cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether a tile is lit on its own.
 -- Essential for efficiency of "Perception", hence tabulated.
 isLit :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+{-# INLINE isLit #-}
 isLit Kind.Ops{ospeedup = Just Kind.TileSpeedup{isLitTab}} = isLitTab
 isLit cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether a tile can be explored, possibly yielding a treasure
 -- or a hidden message.
 isExplorable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+{-# INLINE isExplorable #-}
 isExplorable cops tk = isClear cops tk || hasFeature cops F.Walkable tk
 
 -- | The player can't tell one tile from the other.
 lookSimilar :: TileKind -> TileKind -> Bool
+{-# INLINE lookSimilar #-}
 lookSimilar t u =
   tsymbol t == tsymbol u &&
   tname   t == tname   u &&

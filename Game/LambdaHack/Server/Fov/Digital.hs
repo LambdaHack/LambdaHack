@@ -66,12 +66,14 @@ scan r isClear =
 
 -- | Create a line from two points. Debug: check if well-defined.
 dline :: Bump -> Bump -> Line
+{-# INLINE dline #-}
 dline p1 p2 =
   assert (uncurry blame $ debugLine (p1, p2)) (p1, p2)
 
 -- | Compare steepness of @(p1, f)@ and @(p2, f)@.
 -- Debug: Verify that the results of 2 independent checks are equal.
 dsteeper :: Bump ->  Bump -> Bump -> Bool
+{-# INLINE dsteeper #-}
 dsteeper f p1 p2 =
   assert (res == debugSteeper f p1 p2) res
  where res = steeper f p1 p2
@@ -80,6 +82,7 @@ dsteeper f p1 p2 =
 -- a given line and the line of diagonals of diamonds at distance
 -- @d@ from (0, 0).
 intersect :: Line -> Distance -> (Int, Int)
+{-# INLINE intersect #-}
 intersect (B x y, B xf yf) d =
   assert (allB (>= 0) [y, yf])
     ((d - y)*(xf - x) + x*(yf - y), yf - y)
@@ -116,6 +119,7 @@ cordinates coincide with the Bump coordinates, unlike in PFOV.
 
 -- | Debug: calculate steeper for DFOV in another way and compare results.
 debugSteeper :: Bump -> Bump -> Bump -> Bool
+{-# INLINE debugSteeper #-}
 debugSteeper f@(B _xf yf) p1@(B _x1 y1) p2@(B _x2 y2) =
   assert (allB (>= 0) [yf, y1, y2]) $
   let (n1, k1) = intersect (p1, f) 0
@@ -124,6 +128,7 @@ debugSteeper f@(B _xf yf) p1@(B _x1 y1) p2@(B _x2 y2) =
 
 -- | Debug: check if a view border line for DFOV is legal.
 debugLine :: Line -> (Bool, String)
+{-# INLINE debugLine #-}
 debugLine line@(B x1 y1, B x2 y2)
   | not (allB (>= 0) [y1, y2]) =
       (False, "negative coordinates: " ++ show line)
