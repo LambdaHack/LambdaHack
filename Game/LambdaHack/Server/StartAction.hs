@@ -35,6 +35,7 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind

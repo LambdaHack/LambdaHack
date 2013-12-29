@@ -2,7 +2,8 @@
 -- | Basic operations on 2D points represented as linear offsets.
 module Game.LambdaHack.Common.Point
   ( Point, toPoint, fromPoint
-  , chessDist, adjacent, vicinity, vicinityCardinal, inside, bla
+  , maxLevelDimExponent, maxLevelDim, maxVectorDim
+  , chessDist, adjacent, inside, bla, fromTo
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -11,7 +12,6 @@ import Data.Bits (unsafeShiftL, unsafeShiftR, (.&.))
 import Data.Int (Int32)
 
 import Game.LambdaHack.Common.PointXY
-import Game.LambdaHack.Common.VectorXY
 
 -- | The type of positions on the 2D level map, heavily optimized.
 --
@@ -41,6 +41,23 @@ instance Binary Point where
 instance Show Point where
   show = show . fromPoint
 
+-- | The maximum number of bits for level X and Y dimension (16).
+-- The value is chosen to support architectures with 32-bit Ints.
+maxLevelDimExponent :: Int
+{-# INLINE maxLevelDimExponent #-}
+maxLevelDimExponent = 16
+
+-- | Maximal supported level X and Y dimension. Not checked anywhere.
+-- The value is chosen to support architectures with 32-bit Ints.
+maxLevelDim :: Int
+{-# INLINE maxLevelDim #-}
+maxLevelDim = 2 ^ maxLevelDimExponent - 1
+
+-- | Maximal supported vector X and Y coordinates.
+maxVectorDim :: Int
+{-# INLINE maxVectorDim #-}
+maxVectorDim = 2 ^ (maxLevelDimExponent - 1) - 1
+
 -- | Conversion from cartesian coordinates to @Point@.
 toPoint :: PointXY -> Point
 {-# INLINE toPoint #-}
@@ -65,7 +82,7 @@ chessDist :: Point -> Point -> Int
 chessDist pos0 pos1
   | PointXY x0 y0 <- fromPoint pos0
   , PointXY x1 y1 <- fromPoint pos1 =
-  chessDistXY $ VectorXY (x1 - x0) (y1 - y0)
+  max (abs (x1 - x0)) (abs (y1 - y0))
 
 -- | Checks whether two points are adjacent on the map
 -- (horizontally, vertically or diagonally).
@@ -73,27 +90,12 @@ adjacent :: Point -> Point -> Bool
 {-# INLINE adjacent #-}
 adjacent s t = chessDist s t == 1
 
--- | Returns the 8, or less, surrounding positions of a given position.
-vicinity :: X -> Y -> Point -> [Point]
-{-# INLINE vicinity #-}
-vicinity lxsize lysize p =
-  map toPoint $
-    vicinityXY (0, 0, lxsize - 1, lysize - 1) $
-      fromPoint p
-
--- | Returns the 4, or less, surrounding positions in cardinal directions
--- from a given position.
-vicinityCardinal :: X -> Y -> Point -> [Point]
-{-# INLINE vicinityCardinal #-}
-vicinityCardinal lxsize lysize p =
-  map toPoint $
-    vicinityCardinalXY (0, 0, lxsize - 1, lysize - 1) $
-      fromPoint p
-
 -- | Checks that a point belongs to an area.
 inside :: Point -> (X, Y, X, Y) -> Bool
 {-# INLINE inside #-}
-inside p = insideXY $ fromPoint p
+inside p (x0, y0, x1, y1) =
+  let PointXY x y = fromPoint p
+  in x1 >= x && x >= x0 && y1 >= y && y >= y0
 
 -- | Bresenham's line algorithm generalized to arbitrary starting @eps@
 -- (@eps@ value of 0 gives the standard BLA).
@@ -126,3 +128,23 @@ blaXY eps (PointXY x0 y0) (PointXY x1 y1) =
       bw = balancedWord p q (eps `mod` max 1 q)
       walk w xy = xy : walk (tail w) (step (head w) xy)
   in map (uncurry PointXY) $ walk bw (x0, y0)
+
+-- TODO: can be implemented in Point entirely.
+fromTo :: Point -> Point -> [Point]
+fromTo p1 p2 = map toPoint $ fromToXY (fromPoint p1) (fromPoint p2)
+
+-- | A list of all points on a straight vertical or straight horizontal line
+-- between two points. Fails if no such line exists.
+fromToXY :: PointXY -> PointXY -> [PointXY]
+fromToXY (PointXY x0 y0) (PointXY x1 y1) =
+ let result
+       | x0 == x1 = map (\ y -> PointXY x0 y) (fromTo1 y0 y1)
+       | y0 == y1 = map (\ x -> PointXY x y0) (fromTo1 x0 x1)
+       | otherwise = assert `failure` "diagonal fromTo"
+                            `twith` ((x0, y0), (x1, y1))
+ in result
+
+fromTo1 :: Int -> Int -> [Int]
+fromTo1 x0 x1
+  | x0 <= x1  = [x0..x1]
+  | otherwise = [x0,x0-1..x1]

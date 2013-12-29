@@ -26,6 +26,7 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
+import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.TileKind
 
 actorAssocs :: (FactionId -> Bool) -> LevelId -> State

@@ -6,6 +6,7 @@ module Game.LambdaHack.Common.Vector
   , isUnit, euclidDistSq, diagonal
   , neg, RadianAngle, rotate
   , towards, displacement, displacePath, shiftPath
+  , vicinity, vicinityCardinal, vicinityCardinalXY
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -199,3 +200,72 @@ shiftPath _     [] = []
 shiftPath start (v : vs) =
   let next = shift start v
   in next : shiftPath next vs
+
+-- | Returns the 8, or less, surrounding positions of a given position.
+vicinity :: X -> Y -> Point -> [Point]
+{-# INLINE vicinity #-}
+vicinity lxsize lysize p =
+  map toPoint $
+    vicinityXY (0, 0, lxsize - 1, lysize - 1) $
+      fromPoint p
+
+-- | Returns the 4, or less, surrounding positions in cardinal directions
+-- from a given position.
+vicinityCardinal :: X -> Y -> Point -> [Point]
+{-# INLINE vicinityCardinal #-}
+vicinityCardinal lxsize lysize p =
+  map toPoint $
+    vicinityCardinalXY (0, 0, lxsize - 1, lysize - 1) $
+      fromPoint p
+
+-- | Checks that a point belongs to an area.
+insideXY :: PointXY -> (X, Y, X, Y) -> Bool
+{-# INLINE insideXY #-}
+insideXY (PointXY x y) (x0, y0, x1, y1) =
+  x1 >= x && x >= x0 && y1 >= y && y >= y0
+
+-- | Shift a point by a vector.
+shiftXY :: PointXY -> VectorXY -> PointXY
+{-# INLINE shiftXY #-}
+shiftXY (PointXY x0 y0) (VectorXY x1 y1) = PointXY (x0 + x1) (y0 + y1)
+
+-- | Vectors of all unit moves in the chessboard metric,
+-- clockwise, starting north-west.
+movesXY :: [VectorXY]
+movesXY =
+  map (uncurry VectorXY)
+    [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]
+
+-- | Vectors of all cardinal direction unit moves, clockwise, starting north.
+movesCardinalXY :: [VectorXY]
+movesCardinalXY = map (uncurry VectorXY) [(0, -1), (1, 0), (0, 1), (-1, 0)]
+
+-- | The lenght of a vector in the chessboard metric,
+-- where diagonal moves cost 1.
+chessDistXY :: VectorXY -> Int
+{-# INLINE chessDistXY #-}
+chessDistXY (VectorXY x y) = max (abs x) (abs y)
+
+-- | Squared euclidean length of a vector.
+euclidDistSqXY :: VectorXY -> Int
+{-# INLINE euclidDistSqXY #-}
+euclidDistSqXY (VectorXY x y) = x * x + y * y
+
+-- | Reverse an arbirary vector.
+negXY :: VectorXY -> VectorXY
+{-# INLINE negXY #-}
+negXY (VectorXY x y) = VectorXY (-x) (-y)
+
+-- | All (8 at most) closest neighbours of a point within an area.
+vicinityXY :: (X, Y, X, Y)  -- ^ limit the search to this area
+           -> PointXY       -- ^ position to find neighbours of
+           -> [PointXY]
+vicinityXY area xy =
+  [ res | dxy <- movesXY, let res = shiftXY xy dxy, insideXY res area ]
+
+-- | All (4 at most) cardinal direction neighbours of a point within an area.
+vicinityCardinalXY :: (X, Y, X, Y)  -- ^ limit the search to this area
+                   -> PointXY       -- ^ position to find neighbours of
+                   -> [PointXY]
+vicinityCardinalXY area xy =
+  [ res | dxy <- movesCardinalXY, let res = shiftXY xy dxy, insideXY res area ]

@@ -16,7 +16,6 @@ import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Content.CaveKind
@@ -181,7 +180,7 @@ digCorridors :: Kind.Id TileKind -> Corridor -> TileMapEM
 digCorridors tile (p1:p2:ps) =
   EM.union corPos (digCorridors tile (p2:ps))
  where
-  cor  = map toPoint $ fromTo p1 p2
+  cor  = fromTo p1 p2
   corPos = EM.fromList $ zip cor (repeat tile)
 digCorridors _ _ = EM.empty
 

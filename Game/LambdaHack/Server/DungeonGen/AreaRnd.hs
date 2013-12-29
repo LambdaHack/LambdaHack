@@ -12,9 +12,10 @@ import Control.Exception.Assert.Sugar
 import Data.Maybe
 import qualified Data.Set as S
 
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Common.VectorXY
+import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Server.DungeonGen.Area
 
 -- Picking random points inside areas
@@ -92,6 +93,11 @@ connectGrid' (nx, ny) unconnected candidates acc
       connectGrid' (nx, ny) nu
         (S.delete c (candidates `S.union` nc)) (new acc)
 
+-- | Sort the sequence of two points, in the derived lexicographic order.
+sortPointXY :: (PointXY, PointXY) -> (PointXY, PointXY)
+sortPointXY (a, b) | a <= b    = (a, b)
+                   | otherwise = (b, a)
+
 -- | Pick a single random connection between adjacent areas within a grid.
 randomConnection :: (X, Y) -> Rnd (PointXY, PointXY)
 randomConnection (nx, ny) =
@@ -114,7 +120,7 @@ randomConnection (nx, ny) =
 data HV = Horiz | Vert
 
 -- | The coordinates of consecutive fields of a corridor.
-type Corridor = [PointXY]
+type Corridor = [Point]
 
 -- | Create a corridor, either horizontal or vertical, with
 -- a possible intermediate part that is in the opposite direction.
@@ -125,11 +131,9 @@ mkCorridor :: HV            -- ^ orientation of the starting section
            -> Rnd Corridor  -- ^ straight sections of the corridor
 mkCorridor hv (PointXY x0 y0) (PointXY x1 y1) b = do
   PointXY rx ry <- xyInArea b
-  case hv of
-    Horiz ->
-      return $ map (uncurry PointXY) [(x0, y0), (rx, y0), (rx, y1), (x1, y1)]
-    Vert  -> return
-             $ map (uncurry PointXY) [(x0, y0), (x0, ry), (x1, ry), (x1, y1)]
+  return $ map (toPoint . uncurry PointXY) $ case hv of
+    Horiz -> [(x0, y0), (rx, y0), (rx, y1), (x1, y1)]
+    Vert  -> [(x0, y0), (x0, ry), (x1, ry), (x1, y1)]
 
 -- | Try to connect two interiors of places with a corridor.
 -- Choose entrances at least 4 or 3 tiles distant from the edges, if the place
