@@ -13,7 +13,6 @@ module Game.LambdaHack.Common.Msg
 
 import Data.Binary
 import qualified Data.ByteString.Char8 as BS
-import Data.Char
 import Data.List
 import Data.Monoid hiding ((<>))
 import Data.Text (Text)
@@ -58,7 +57,7 @@ truncateMsg w xsRaw =
   let xs = case T.lines xsRaw of
         [] -> xsRaw
         [line] -> line
-        line : _ -> line <> T.replicate (w + 1) " "
+        line : _ -> T.justifyLeft (w + 1) ' ' line
       len = T.length xs
   in case compare w len of
        LT -> T.snoc (T.take (w - 1) xs) '$'
@@ -122,7 +121,7 @@ splitText w1 w xs =
   case T.lines xs of
     [] -> []
     t : ts -> splitText' w1 w t
-              ++ concatMap (splitText' w w . T.dropWhile isSpace) ts
+              ++ concatMap (splitText' w w . T.stripStart) ts
 
 splitText' :: X -> X -> Text -> [Text]
 splitText' w1 w xs
@@ -130,7 +129,7 @@ splitText' w1 w xs
   | otherwise =
       let (pre, post) = T.splitAt w1 xs
           (ppre, ppost) = T.break (== ' ') $ T.reverse pre
-          testPost = T.dropWhile isSpace ppost
+          testPost = T.stripEnd ppost
       in if T.null testPost
          then pre : splitText w w post
          else T.reverse ppost : splitText w w (T.reverse ppre <> post)

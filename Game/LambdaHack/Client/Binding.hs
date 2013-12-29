@@ -92,9 +92,9 @@ keyHelp Binding{kcmd, kmacro, kmajor, kminor} =
       , "For more playing instructions see file PLAYING.md."
       , "Press SPACE to clear the messages and see the map again."
       ]
-    fmt k h = T.replicate 16 " "
-              <> T.justifyLeft 15 ' ' k
-              <> T.justifyLeft 41 ' ' h
+    fmt k h = T.justifyRight 72 ' '
+              $ T.justifyLeft 15 ' ' k
+                <> T.justifyLeft 41 ' ' h
     fmts s  = " " <> T.justifyLeft 71 ' ' s
     blank   = fmt "" ""
     mov     = map fmts movBlurb

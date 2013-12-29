@@ -533,10 +533,8 @@ displayMainMenu = do
            ++ map revLookup cmds
       bindings =  -- key bindings to display
         let bindingLen = 25
-            fmt (k, d) =
-              let gapLen = (8 - T.length k) `max` 1
-                  padLen = bindingLen - T.length k - gapLen - T.length d
-              in k <> T.replicate gapLen " " <> d <> T.replicate padLen " "
+            fmt (k, d) = T.justifyLeft bindingLen ' '
+                         $ T.justifyLeft 7 ' ' k <> " " <> d
         in map fmt kds
       overwrite =  -- overwrite the art with key bindings
         let over [] line = ([], T.pack line)
