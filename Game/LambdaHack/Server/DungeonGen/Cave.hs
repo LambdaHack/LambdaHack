@@ -1,6 +1,6 @@
 -- | Generation of caves (not yet inhabited dungeon levels) from cave kinds.
 module Game.LambdaHack.Server.DungeonGen.Cave
-  ( ItemFloorEM, Cave(..), buildCave
+  ( Cave(..), buildCave
   ) where
 
 import Control.Arrow ((&&&))
@@ -13,7 +13,6 @@ import Data.Maybe
 import qualified Data.Traversable as Traversable
 
 import qualified Game.LambdaHack.Common.Feature as F
-import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
@@ -23,23 +22,12 @@ import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Server.DungeonGen.Area
 import Game.LambdaHack.Server.DungeonGen.AreaRnd
-import Game.LambdaHack.Server.DungeonGen.Place hiding (TileMapEM)
-import qualified Game.LambdaHack.Server.DungeonGen.Place as Place
-
--- | The map of tile kinds in a cave.
--- The map is sparse. The default tile that eventually fills the empty spaces
--- is specified in the cave kind specification with @cdefTile@.
-type TileMapEM = Place.TileMapEM
-
--- | The map of starting items in tiles of a cave. The map is sparse.
--- Unspecified tiles have no starting items.
-type ItemFloorEM = EM.EnumMap Point (Item, Int)
+import Game.LambdaHack.Server.DungeonGen.Place
 
 -- | The type of caves (not yet inhabited dungeon levels).
 data Cave = Cave
   { dkind   :: !(Kind.Id CaveKind)  -- ^ the kind of the cave
   , dmap    :: !TileMapEM           -- ^ tile kinds in the cave
-  , ditem   :: !ItemFloorEM         -- ^ starting items in the cave
   , dplaces :: ![Place]             -- ^ places generated in the cave
   , dnight  :: !Bool                -- ^ whether the cave is dark
   }
@@ -77,8 +65,8 @@ buildCave :: Kind.COps         -- ^ content definitions
 buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                         , cocave=Kind.Ops{okind}
                         , coplace=Kind.Ops{okind=pokind} }
-          ln depth ci = do
-  let kc@CaveKind{..} = okind ci
+          ln depth dkind = do
+  let kc@CaveKind{..} = okind dkind
   lgrid@(gx, gy) <- castDiceXY cgrid
   -- Make sure that in caves not filled with rock, there is a passage
   -- across the cave, even if a single room blocks most of the cave.
@@ -168,8 +156,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
               return doorOpenId
   dmap <- Traversable.mapM f lm
   let cave = Cave
-        { dkind = ci
-        , ditem = EM.empty
+        { dkind
         , dmap
         , dplaces
         , dnight

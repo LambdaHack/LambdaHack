@@ -75,6 +75,9 @@ lookSimilar t u =
 
 speedup :: Bool -> Kind.Ops TileKind -> Kind.Speedup TileKind
 speedup allClear Kind.Ops{ofoldrWithKey, obounds} =
+  -- Vectors pack bools as Word8 by default. No idea if the extra memory
+  -- taken makes random lookups more or less efficient, so not optimizing
+  -- further, until I have benchmarks.
   let createTab :: (TileKind -> Bool) -> A.UArray (Kind.Id TileKind) Bool
       createTab p =
         let f _ k acc = p k : acc
