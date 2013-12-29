@@ -25,7 +25,8 @@ scan isClear =
           , (Line (B 1 0) (B 0 999), [B 0 1]) )
  where
   dscan :: Distance -> EdgeInterval -> [Bump]
-  dscan d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps)) =
+  dscan d ( s0@(sl{-shallow line-}, sHull0)
+          , e@(el{-steep line-}, eHull) ) =
     assert (d >= 0 && pe + 1 >= ps0 && ps0 >= 0
             `blame` (d,s0,e,ps0,pe)) $
     if illegal then [] else inside ++ outside
@@ -49,16 +50,16 @@ scan isClear =
 
     -- We're in a visible interval.
     mscanVisible :: Edge -> Progress -> [Bump]
-    mscanVisible s@(_, sBumps) ps
+    mscanVisible s@(_, sHull) ps
       | ps > pe = dscan (d+1) (s, e)           -- reached end, scan next
       | not $ isClear (pd2bump (ps, d)) =      -- enter shadow, steep bump
           let steepBump = bottomRight (ps, d)
               gte = flip $ dsteeper steepBump
-              -- sBumps may contain steepBump, but maximal will ignore it
-              nep = maximal gte sBumps
-              neBumps = addHull gte steepBump eBumps
+              -- sHull may contain steepBump, but maximal will ignore it
+              nep = maximal gte sHull
+              neHull = addHull gte steepBump eHull
           in mscanShadowed (ps+1)
-             ++ dscan (d+1) (s, (dline nep steepBump, neBumps))
+             ++ dscan (d+1) (s, (dline nep steepBump, neHull))
       | otherwise = mscanVisible s (ps+1)      -- continue in visible area
 
     -- we're in a shadowed interval.
@@ -70,9 +71,9 @@ scan isClear =
           -- and the recursive call verifies that at the same ps coordinate
           let shallowBump = bottomRight (ps, d)
               gte = dsteeper shallowBump
-              nsp = maximal gte eBumps
-              nsBumps = addHull gte shallowBump sBumps0
-          in mscanVisible (dline nsp shallowBump, nsBumps) ps
+              nsp = maximal gte eHull
+              nsHull = addHull gte shallowBump sHull0
+          in mscanVisible (dline nsp shallowBump, nsHull) ps
 
 -- | Create a line from two points. Debug: check if well-defined.
 dline :: Bump -> Bump -> Line

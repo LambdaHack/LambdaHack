@@ -21,7 +21,9 @@ scan r isClear =
           , (Line (B 0 0) (B (r+1) r), [B 1 0]) )
  where
   dscan :: Distance -> EdgeInterval -> [Bump]
-  dscan d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps)) =
+  dscan d ( s0@(sl{-shallow line-}, sHull0)
+          , e@(el{-steep line-}, eHull) ) =
+
     let ps0 = let (n, k) = intersect sl d  -- minimal progress to consider
               in n `div` k
         pe = let (n, k) = intersect el d   -- maximal progress to consider
@@ -33,37 +35,38 @@ scan r isClear =
         inside = [B p d | p <- [ps0..pe]]
         outside
           | d >= r = []
-          | isClear (B ps0 d) = mscanVisible s0 (ps0+1) pe  -- start visible
-          | otherwise = mscanShadowed (ps0+1) pe            -- start in shadow
+          | isClear (B ps0 d) = mscanVisible s0 (ps0+1)  -- start visible
+          | otherwise = mscanShadowed (ps0+1)            -- start in shadow
+
+        -- We're in a visible interval.
+        mscanVisible :: Edge -> Progress -> [Bump]
+        mscanVisible s@(_, sHull) ps
+          | ps > pe = dscan (d+1) (s, e)       -- reached end, scan next
+          | not $ isClear steepBump =          -- entering shadow
+              mscanShadowed (ps+1)
+              ++ dscan (d+1) (s, (dline nep steepBump, neHull))
+          | otherwise = mscanVisible s (ps+1)  -- continue in visible area
+         where
+          steepBump = B ps d
+          gte = dsteeper steepBump
+          nep = maximal gte sHull
+          neHull = addHull gte steepBump eHull
+
+        -- We're in a shadowed interval.
+        mscanShadowed :: Progress -> [Bump]
+        mscanShadowed ps
+          | ps > pe = []                       -- reached end while in shadow
+          | isClear shallowBump =              -- moving out of shadow
+              mscanVisible (dline nsp shallowBump, nsHull) (ps+1)
+          | otherwise = mscanShadowed (ps+1)   -- continue in shadow
+         where
+          shallowBump = B ps d
+          gte = flip $ dsteeper shallowBump
+          nsp = maximal gte eHull
+          nsHull = addHull gte shallowBump sHull0
+
     in assert (r >= d && d >= 0 && pe >= ps0 `blame` (r,d,s0,e,ps0,pe)) $
        inside ++ outside
-   where
-    -- We're in a visible interval.
-    mscanVisible :: Edge -> Progress -> Progress -> [Bump]
-    mscanVisible s@(_, sBumps) ps pe
-      | ps > pe = dscan (d+1) (s, e)          -- reached end, scan next
-      | not $ isClear steepBump =             -- entering shadow
-          mscanShadowed (ps+1) pe
-          ++ dscan (d+1) (s, (dline nep steepBump, neBumps))
-      | otherwise = mscanVisible s (ps+1) pe  -- continue in visible area
-     where
-      steepBump = B ps d
-      gte = dsteeper steepBump
-      nep = maximal gte sBumps
-      neBumps = addHull gte steepBump eBumps
-
-    -- We're in a shadowed interval.
-    mscanShadowed :: Progress -> Progress -> [Bump]
-    mscanShadowed ps pe
-      | ps > pe = []                          -- reached end while in shadow
-      | isClear shallowBump =                 -- moving out of shadow
-          mscanVisible (dline nsp shallowBump, nsBumps) (ps+1) pe
-      | otherwise = mscanShadowed (ps+1) pe   -- continue in shadow
-     where
-      shallowBump = B ps d
-      gte = flip $ dsteeper shallowBump
-      nsp = maximal gte eBumps
-      nsBumps = addHull gte shallowBump sBumps0
 
 -- | Create a line from two points. Debug: check if well-defined.
 dline :: Bump -> Bump -> Line
