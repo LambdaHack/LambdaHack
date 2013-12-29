@@ -32,6 +32,7 @@ data Frequency a = Frequency
   deriving (Show, Eq, Foldable, Traversable)
 
 instance Monad Frequency where
+  {-# INLINE return #-}
   return x = Frequency "return" [(1, x)]
   Frequency name xs >>= f =
     Frequency ("bind (" <> name <> ")")
@@ -42,8 +43,8 @@ instance Functor Frequency where
   fmap f (Frequency name xs) = Frequency name (map (second f) xs)
 
 instance Applicative Frequency where
-    pure  = return
-    (<*>) = ap
+  pure  = return
+  (<*>) = ap
 
 instance MonadPlus Frequency where
   mplus (Frequency xname xs) (Frequency yname ys) =
@@ -56,8 +57,8 @@ instance MonadPlus Frequency where
   mzero = Frequency "[]" []
 
 instance Alternative Frequency where
-    (<|>) = mplus
-    empty = mzero
+  (<|>) = mplus
+  empty = mzero
 
 -- | Uniform discrete frequency distribution.
 uniformFreq :: Text -> [a] -> Frequency a

@@ -33,26 +33,31 @@ instance Show Vector where
 
 -- | Converts a vector in cartesian representation into @Vector@.
 toVector :: VectorXY -> Vector
+{-# INLINE toVector #-}
 toVector =
   let fromEnumXY (VectorXY x y) = x + unsafeShiftL y maxLevelDimExponent
   in toEnum . fromEnumXY
 
 -- | Converts a unit vector in cartesian representation into @Vector@.
 toDir :: VectorXY -> Vector
+{-# INLINE toDir #-}
 toDir vxy =
   assert (isUnitXY vxy `blame` "not a unit VectorXY" `twith` vxy)
   $ toVector vxy
 
 isUnitXY :: VectorXY -> Bool
+{-# INLINE isUnitXY #-}
 isUnitXY vxy = chessDistXY vxy == 1
 
 -- | Tells if a vector has length 1 in the chessboard metric.
 isUnit ::  Vector -> Bool
+{-# INLINE isUnit #-}
 isUnit = isUnitXY . fromVector
 
 -- | Converts a vector in the offset representation
 -- into the cartesian representation.
 fromVector :: Vector -> VectorXY
+{-# INLINE fromVector #-}
 fromVector =
   let toEnumXY xy =
         let (y, x) = xy `quotRem` (2 ^ maxLevelDimExponent)
@@ -67,6 +72,7 @@ fromVector =
 -- | Converts a unit vector in the offset representation
 -- into the cartesian representation.
 fromDir :: Vector -> VectorXY
+{-# INLINE fromDir #-}
 fromDir v =
   assert (isUnit v `blame` "not a unit Vector" `twith` v)
   $ fromVector v
@@ -75,6 +81,7 @@ fromDir v =
 --
 -- Particularly simple and fast implementation in the linear representation.
 shift :: Point -> Vector -> Point
+{-# INLINE shift #-}
 shift p (Vector dir) = toEnum $ fromEnum p + dir
 
 -- | Translate a point by a vector, but only if the result fits in an area.
@@ -92,6 +99,7 @@ moves = map toDir movesXY
 
 -- | Squared euclidean distance between two unit vectors.
 euclidDistSq :: Vector -> Vector -> Int
+{-# INLINE euclidDistSq #-}
 euclidDistSq dir0 dir1
   | VectorXY x0 y0 <- fromDir dir0
   , VectorXY x1 y1 <- fromDir dir1 =
@@ -101,11 +109,13 @@ euclidDistSq dir0 dir1
 -- as opposed to cardinal. If the vector is not unit,
 -- it checks that the vector is not horizontal nor vertical.
 diagonal :: Vector -> Bool
+{-# INLINE diagonal #-}
 diagonal dir | VectorXY x y <- fromDir dir =
   x * y /= 0
 
 -- | Reverse an arbirary vector.
 neg :: Vector -> Vector
+{-# INLINE neg #-}
 neg (Vector dir) = Vector (-dir)
 
 type RadianAngle = Double
@@ -175,6 +185,7 @@ towards pos0 pos1 =
 --
 -- Particularly simple and fast implementation in the linear representation.
 displacement :: Point -> Point -> Vector
+{-# INLINE displacement #-}
 displacement pos1 pos2 = Vector $ fromEnum pos2 - fromEnum pos1
 
 -- | A list of vectors between a list of points.

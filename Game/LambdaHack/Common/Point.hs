@@ -43,6 +43,7 @@ instance Show Point where
 
 -- | Conversion from cartesian coordinates to @Point@.
 toPoint :: PointXY -> Point
+{-# INLINE toPoint #-}
 toPoint pxy@(PointXY x y) =
   let fromEnumXY (PointXY x1 y1) = x1 + unsafeShiftL y1 maxLevelDimExponent
   in assert (x >= 0 && y >= 0 `blame` "invalid point coordinates"
@@ -51,6 +52,7 @@ toPoint pxy@(PointXY x y) =
 
 -- | Conversion from @Point@ to cartesian coordinates.
 fromPoint :: Point -> PointXY
+{-# INLINE fromPoint #-}
 fromPoint (Point p) =
   let toEnumXY xy = PointXY (xy .&. maxLevelDim)
                             (unsafeShiftR xy maxLevelDimExponent)
@@ -59,6 +61,7 @@ fromPoint (Point p) =
 
 -- | The distance between two points in the chessboard metric.
 chessDist :: Point -> Point -> Int
+{-# INLINE chessDist #-}
 chessDist pos0 pos1
   | PointXY x0 y0 <- fromPoint pos0
   , PointXY x1 y1 <- fromPoint pos1 =
@@ -67,10 +70,12 @@ chessDist pos0 pos1
 -- | Checks whether two points are adjacent on the map
 -- (horizontally, vertically or diagonally).
 adjacent :: Point -> Point -> Bool
+{-# INLINE adjacent #-}
 adjacent s t = chessDist s t == 1
 
 -- | Returns the 8, or less, surrounding positions of a given position.
 vicinity :: X -> Y -> Point -> [Point]
+{-# INLINE vicinity #-}
 vicinity lxsize lysize p =
   map toPoint $
     vicinityXY (0, 0, lxsize - 1, lysize - 1) $
@@ -79,6 +84,7 @@ vicinity lxsize lysize p =
 -- | Returns the 4, or less, surrounding positions in cardinal directions
 -- from a given position.
 vicinityCardinal :: X -> Y -> Point -> [Point]
+{-# INLINE vicinityCardinal #-}
 vicinityCardinal lxsize lysize p =
   map toPoint $
     vicinityCardinalXY (0, 0, lxsize - 1, lysize - 1) $
@@ -86,6 +92,7 @@ vicinityCardinal lxsize lysize p =
 
 -- | Checks that a point belongs to an area.
 inside :: Point -> (X, Y, X, Y) -> Bool
+{-# INLINE inside #-}
 inside p = insideXY $ fromPoint p
 
 -- | Bresenham's line algorithm generalized to arbitrary starting @eps@

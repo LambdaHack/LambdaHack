@@ -14,8 +14,6 @@ module Game.LambdaHack.Server.Fov.Common
 
 import Data.List
 
-import Game.LambdaHack.Common.PointXY
-
 -- | Distance from the (0, 0) point where FOV originates.
 type Distance = Int
 -- | Progress along an arc with a constant distance from (0, 0).
@@ -28,8 +26,11 @@ type Progress = Int
 -- The special coordinates are written using the standard mathematical
 -- coordinate setup, where quadrant I, with x and y positive,
 -- is on the upper right.
-newtype Bump = B (X, Y)
-  deriving (Show)
+data Bump = B
+  { bx :: !Int
+  , by :: !Int
+  }
+  deriving Show
 
 -- | Straight line between points.
 type Line         = (Bump, Bump)
@@ -51,7 +52,7 @@ maximal gte = foldl1' (\ acc e -> if gte e acc then e else acc)
 -- to the formal notion of gradient (or angle), but hacked wrt signs
 -- to work fast in this particular setup. Returns True for ill-defined lines.
 steeper :: Bump -> Bump -> Bump -> Bool
-steeper (B(xf, yf)) (B(x1, y1)) (B(x2, y2)) =
+steeper (B xf yf) (B x1 y1) (B x2 y2) =
   (yf - y1)*(xf - x2) >= (yf - y2)*(xf - x1)
 
 -- | Extends a convex hull of bumps with a new bump. Nothing needs to be done

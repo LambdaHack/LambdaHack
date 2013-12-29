@@ -21,7 +21,7 @@ import Game.LambdaHack.Server.Fov.Common
 scan :: (Bump -> Bool)  -- ^ clear tile predicate
      -> [Bump]
 scan isClear =
-  dscan 1 (((B(0, 1), B(999, 0)), [B(1, 0)]), ((B(1, 0), B(0, 999)), [B(0, 1)]))
+  dscan 1 (((B 0 1, B 999 0), [B 1 0]), ((B 1 0, B 0 999), [B 0 1]))
  where
   dscan :: Distance -> EdgeInterval -> [Bump]
   dscan d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps)) =
@@ -37,8 +37,8 @@ scan isClear =
     -- A single ray from an extremity produces non-permissive digital lines.
     illegal  = let (n, k) = intersect sl 0
                in ns*ke == ne*ks && (n `elem` [0, k])
-    pd2bump     (p, di) = B(di - p    , p)
-    bottomRight (p, di) = B(di - p + 1, p)
+    pd2bump     (p, di) = B (di - p) p
+    bottomRight (p, di) = B (di - p + 1) p
 
     inside = [pd2bump (p, d) | p <- [ps0..pe]]
     outside
@@ -89,7 +89,7 @@ dsteeper f p1 p2 =
 -- a given line and the line of diagonals of squares at distance
 -- @d@ from (0, 0).
 intersect :: Line -> Distance -> (Int, Int)
-intersect (B(x, y), B(xf, yf)) d =
+intersect (B x y, B xf yf) d =
   assert (allB (>= 0) [x, y, xf, yf])
     ((1 + d)*(yf - y) + y*xf - x*yf, (xf - x) + (yf - y))
 {-
@@ -126,7 +126,7 @@ are mangled and not used for geometry.
 
 -- | Debug: calculate steeper for PFOV in another way and compare results.
 debugSteeper :: Bump -> Bump -> Bump -> Bool
-debugSteeper f@(B(xf, yf)) p1@(B(x1, y1)) p2@(B(x2, y2)) =
+debugSteeper f@(B xf yf) p1@(B x1 y1) p2@(B x2 y2) =
   assert (allB (>= 0) [xf, yf, x1, y1, x2, y2]) $
   let (n1, k1) = intersect (p1, f) 0
       (n2, k2) = intersect (p2, f) 0
@@ -134,7 +134,7 @@ debugSteeper f@(B(xf, yf)) p1@(B(x1, y1)) p2@(B(x2, y2)) =
 
 -- | Debug: checks postconditions of borderLine.
 debugLine :: Line -> (Bool, String)
-debugLine line@(B(x1, y1), B(x2, y2))
+debugLine line@(B x1 y1, B x2 y2)
   | not (allB (>= 0) [x1, y1, x2, y2]) =
       (False, "negative coordinates: " ++ show line)
   | y1 == y2 && x1 == x2 =

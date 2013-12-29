@@ -18,6 +18,7 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
@@ -30,7 +31,7 @@ import qualified Game.LambdaHack.Server.Fov.Permissive as Permissive
 import qualified Game.LambdaHack.Server.Fov.Shadow as Shadow
 
 newtype PerceptionReachable = PerceptionReachable
-  { preachable :: ES.EnumSet Point }
+    {preachable :: ES.EnumSet Point}
   deriving Show
 
 -- | Calculate perception of the level.
@@ -100,6 +101,10 @@ computeReachable Kind.COps{cotile, coactor=Kind.Ops{okind}}
       ppos = bpos body
       scan = fullscan cotile fovMode ppos lvl
   in PerceptionReachable $ ES.fromList scan
+       -- Let's hope the list construction is optimized away completely.
+       -- If so, there's no point switching to vectors or constructing
+       -- the set earlier. We can't apply @fromDistinctAscList@,
+       -- which is cheaper, because the list is not sorted.
 
 -- | Perform a full scan for a given position. Returns the positions
 -- that are currently in the field of view. The Field of View
@@ -125,28 +130,32 @@ fullscan cotile fovMode spectatorPos Level{ltile} = spectatorPos :
   isCl :: Point -> Bool
   isCl = Tile.isClear cotile . (ltile Kind.!)
 
-  trV xy = shift spectatorPos $ toVector $ uncurry VectorXY xy
+  -- This function is very cheap, so no problem it's called twice
+  -- for each point: once with @isCl@, once via @concatMap@.
+  trV :: X -> Y -> Point
+  {-# INLINE trV #-}
+  trV x y = shift spectatorPos $ toVector $ VectorXY x y
 
   -- | The translation, rotation and symmetry functions for octants.
   tr8 :: [(Distance, Progress) -> Point]
   tr8 =
-    [ \(p, d) -> trV (  p,   d)
-    , \(p, d) -> trV (- p,   d)
-    , \(p, d) -> trV (  p, - d)
-    , \(p, d) -> trV (- p, - d)
-    , \(p, d) -> trV (  d,   p)
-    , \(p, d) -> trV (- d,   p)
-    , \(p, d) -> trV (  d, - p)
-    , \(p, d) -> trV (- d, - p)
+    [ \(p, d) -> trV   p    d
+    , \(p, d) -> trV (-p)   d
+    , \(p, d) -> trV   p  (-d)
+    , \(p, d) -> trV (-p) (-d)
+    , \(p, d) -> trV   d    p
+    , \(p, d) -> trV (-d)   p
+    , \(p, d) -> trV   d  (-p)
+    , \(p, d) -> trV (-d) (-p)
     ]
 
   -- | The translation and rotation functions for quadrants.
   tr4 :: [Bump -> Point]
   tr4 =
-    [ \(B(x, y)) -> trV (  x, - y)  -- quadrant I
-    , \(B(x, y)) -> trV (  y,   x)  -- II (we rotate counter-clockwise)
-    , \(B(x, y)) -> trV (- x,   y)  -- III
-    , \(B(x, y)) -> trV (- y, - x)  -- IV
+    [ \B{..} -> trV   bx  (-by)  -- quadrant I
+    , \B{..} -> trV   by    bx   -- II (we rotate counter-clockwise)
+    , \B{..} -> trV (-bx)   by   -- III
+    , \B{..} -> trV (-by) (-bx)  -- IV
     ]
 
 -- TODO: should Blind really be a FovMode, or a modifier? Let's decide

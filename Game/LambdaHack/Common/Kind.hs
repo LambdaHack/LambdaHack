@@ -160,7 +160,12 @@ instance Show (Array c) where
   show a = "Kind.Array with size " ++ show (sizeA a)
 
 -- | Content identifiers array lookup.
+--
+-- Note: there's no point specializing this to @PointXY@ arguments,
+-- since the extra few additions in @fromPoint@ may be less expensive than
+-- memory or register allocations needed for the extra @Int@ in @PointXY@.
 (!) :: Array c -> Point -> Id c
+{-# INLINE (!) #-}
 (!) (Array a) p = let PointXY x y = fromPoint p
                   in Id $ a V.! y V.! x
 
@@ -170,8 +175,8 @@ instance Show (Array c) where
 (//) :: Array c -> [(Point, Id c)] -> Array c
 (//) (Array a) l =
   let f b (x, e) = b V.// [(x, e)]
-  in Array $ V.accum f a [(y, (x, e))
-                         | (p, Id e) <- l, let PointXY x y = fromPoint p]
+  in Array $ V.accum f a [ (y, (x, e))
+                         | (p, Id e) <- l, let PointXY x y = fromPoint p ]
 
 -- | Create a content identifiers array from a replicated element.
 replicateA :: X -> Y -> Id c -> Array c

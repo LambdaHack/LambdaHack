@@ -39,7 +39,7 @@ import Game.LambdaHack.Content.ActorKind
 
 -- TOOD: if really needed, optimize by representing as a set of intervals.
 newtype PerceptionVisible = PerceptionVisible
-  { pvisible :: ES.EnumSet Point}
+    {pvisible :: ES.EnumSet Point}
   deriving (Show, Eq, Binary)
 
 type PerActor = EM.EnumMap ActorId PerceptionVisible

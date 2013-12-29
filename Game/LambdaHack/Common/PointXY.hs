@@ -73,5 +73,6 @@ sortPointXY (a, b) | a <= b    = (a, b)
 
 -- | Checks that a point belongs to an area.
 insideXY :: PointXY -> (X, Y, X, Y) -> Bool
+{-# INLINE insideXY #-}
 insideXY (PointXY x y) (x0, y0, x1, y1) =
   x1 >= x && x >= x0 && y1 >= y && y >= y0

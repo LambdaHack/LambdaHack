@@ -17,7 +17,7 @@ scan :: Distance        -- ^ visiblity radius
      -> [Bump]
 scan r isClear =
   -- The scanned area is a square, which is a sphere in the chessboard metric.
-  dscan 1 (((B(1, 0), B(-r, r)), [B(0, 0)]), ((B(0, 0), B(r+1, r)), [B(1, 0)]))
+  dscan 1 (((B 1 0, B (-r) r), [B 0 0]), ((B 0 0, B (r+1) r), [B 1 0]))
  where
   dscan :: Distance -> EdgeInterval -> [Bump]
   dscan d (s0@(sl{-shallow line-}, sBumps0), e@(el{-steep line-}, eBumps)) =
@@ -29,11 +29,11 @@ scan r isClear =
                -- so if its intersection with the line of diagonals is only
                -- at a corner, choose the diamond leading to a smaller view.
              in -1 + n `divUp` k
-        inside = [B(p, d) | p <- [ps0..pe]]
+        inside = [B p d | p <- [ps0..pe]]
         outside
           | d >= r = []
-          | isClear (B(ps0, d)) = mscan (Just s0) (ps0+1) pe  -- start in light
-          | otherwise = mscan Nothing (ps0+1) pe              -- start in shadow
+          | isClear (B ps0 d) = mscan (Just s0) (ps0+1) pe  -- start in light
+          | otherwise = mscan Nothing (ps0+1) pe            -- start in shadow
     in assert (r >= d && d >= 0 && pe >= ps0 `blame` (r,d,s0,e,ps0,pe)) $
        inside ++ outside
    where
@@ -48,7 +48,7 @@ scan r isClear =
           ++ dscan (d+1) (s, (dline nep steepBump, neBumps))
       | otherwise = mscan (Just s) (ps+1) pe  -- continue in light
      where
-      steepBump = B(ps, d)
+      steepBump = B ps d
       gte = dsteeper steepBump
       nep = maximal gte sBumps
       neBumps = addHull gte steepBump eBumps
@@ -59,7 +59,7 @@ scan r isClear =
           mscan (Just (dline nsp shallowBump, nsBumps)) (ps+1) pe
       | otherwise = mscan Nothing (ps+1) pe   -- continue in shadow
      where
-      shallowBump = B(ps, d)
+      shallowBump = B ps d
       gte = flip $ dsteeper shallowBump
       nsp = maximal gte eBumps
       nsBumps = addHull gte shallowBump sBumps0
@@ -80,7 +80,7 @@ dsteeper f p1 p2 =
 -- a given line and the line of diagonals of diamonds at distance
 -- @d@ from (0, 0).
 intersect :: Line -> Distance -> (Int, Int)
-intersect (B(x, y), B(xf, yf)) d =
+intersect (B x y, B xf yf) d =
   assert (allB (>= 0) [y, yf])
     ((d - y)*(xf - x) + x*(yf - y), yf - y)
 {-
@@ -116,7 +116,7 @@ cordinates coincide with the Bump coordinates, unlike in PFOV.
 
 -- | Debug: calculate steeper for DFOV in another way and compare results.
 debugSteeper :: Bump -> Bump -> Bump -> Bool
-debugSteeper f@(B(_xf, yf)) p1@(B(_x1, y1)) p2@(B(_x2, y2)) =
+debugSteeper f@(B _xf yf) p1@(B _x1 y1) p2@(B _x2 y2) =
   assert (allB (>= 0) [yf, y1, y2]) $
   let (n1, k1) = intersect (p1, f) 0
       (n2, k2) = intersect (p2, f) 0
@@ -124,7 +124,7 @@ debugSteeper f@(B(_xf, yf)) p1@(B(_x1, y1)) p2@(B(_x2, y2)) =
 
 -- | Debug: check if a view border line for DFOV is legal.
 debugLine :: Line -> (Bool, String)
-debugLine line@(B(x1, y1), B(x2, y2))
+debugLine line@(B x1 y1, B x2 y2)
   | not (allB (>= 0) [y1, y2]) =
       (False, "negative coordinates: " ++ show line)
   | y1 == y2 && x1 == x2 =

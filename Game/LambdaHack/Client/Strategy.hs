@@ -22,6 +22,7 @@ newtype Strategy a = Strategy { runStrategy :: [Frequency a] }
 
 -- | Strategy is a monad. TODO: Can we write this as a monad transformer?
 instance Monad Strategy where
+  {-# INLINE return #-}
   return x = Strategy $ return $ uniformFreq "Strategy_return" [x]
   m >>= f  = normalizeStrategy $ Strategy
     [ toFreq name [ (p * q, b)
@@ -36,16 +37,17 @@ instance Functor Strategy where
   fmap f (Strategy fs) = Strategy (map (fmap f) fs)
 
 instance Applicative Strategy where
-    pure  = return
-    (<*>) = ap
+  pure  = return
+  (<*>) = ap
 
 instance MonadPlus Strategy where
   mzero = Strategy []
+  {-# INLINE mplus #-}
   mplus (Strategy xs) (Strategy ys) = Strategy (xs ++ ys)
 
 instance Alternative Strategy where
-    (<|>) = mplus
-    empty = mzero
+  (<|>) = mplus
+  empty = mzero
 
 normalizeStrategy :: Strategy a -> Strategy a
 normalizeStrategy (Strategy fs) = Strategy $ filter (not . nullFreq) fs
