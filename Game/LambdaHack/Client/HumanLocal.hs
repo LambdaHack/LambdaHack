@@ -571,12 +571,13 @@ targetAccept :: MonadClientUI m => m ()
 targetAccept = do
   endTargeting
   endTargetingMsg
-  modifyClient $ \cli -> cli { stgtMode = Nothing }
+  modifyClient $ \cli -> cli {stgtMode = Nothing}
 
 -- | End targeting mode, rejecting the current position.
 targetReject :: MonadClientUI m => m Slideshow
 targetReject = do
   endTargeting
+  modifyClient $ \cli -> cli {stgtMode = Nothing}
   promptToSlideshow "targeting canceled"
 
 -- | End targeting mode, accepting the current position or not.
