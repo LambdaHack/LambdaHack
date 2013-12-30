@@ -101,14 +101,17 @@ inside p (x0, y0, x1, y1) =
 -- (@eps@ value of 0 gives the standard BLA).
 -- Skips the source point and goes through the second point
 -- to the edge of the level. GIves @Nothing@ if the points are equal.
-bla :: X -> Y -> Int -> Point -> Point -> Maybe [Point]
-bla _ _ _ source target | source == target = Nothing
-bla lxsize lysize eps source target = Just $
+-- The target is given as @PointXY@ to permit aiming out of the level,
+-- e.g., to get uniform distributions of directions for explosions
+-- close to the edge of the level.
+bla :: X -> Y -> Int -> Point -> PointXY -> Maybe [Point]
+bla lxsize lysize eps source e =
   let s = fromPoint source
-      e = fromPoint target
-      inBounds p@(PointXY x y) =
-        lxsize > x && x >= 0 && lysize > y && y >= 0 && p /= s
-  in map toPoint $ takeWhile inBounds $ tail $ blaXY eps s e
+  in if s == e then Nothing
+     else Just $
+       let inBounds p@(PointXY x y) =
+             lxsize > x && x >= 0 && lysize > y && y >= 0 && p /= s
+       in map toPoint $ takeWhile inBounds $ tail $ blaXY eps s e
 
 -- | See <http://roguebasin.roguelikedevelopment.org/index.php/Digital_lines>.
 balancedWord :: Int -> Int -> Int -> [Int]

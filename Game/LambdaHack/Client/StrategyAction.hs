@@ -279,7 +279,7 @@ rangedFreq disco aid fpos = do
   -- Also don't throw if target not in range.
   s <- getState
   let eps = 0
-      bl = bla lxsize lysize eps bpos fpos  -- TODO:make an arg of projectGroupItem
+      bl = bla lxsize lysize eps bpos (fromPoint fpos)  -- TODO:make an arg of projectGroupItem
       permitted = (if aiq mk >= 10 then ritemProject else ritemRanged)
                   $ Kind.stdRuleset corule
       throwFreq bag multi container =

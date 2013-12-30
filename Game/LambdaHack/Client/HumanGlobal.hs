@@ -332,7 +332,7 @@ projectAid source ts = do
   if foesAdjacent lxsize lysize spos foes
     then failSer ProjectBlockFoes
     else do
-      case bla lxsize lysize eps spos tpos of
+      case bla lxsize lysize eps spos (fromPoint tpos) of
         Nothing -> failSer ProjectAimOnself
         Just [] -> assert `failure` "project from the edge of level"
                           `twith` (spos, tpos, sb, ts)

@@ -4,7 +4,8 @@ module Game.LambdaHack.Server.EffectSem
   ( -- + Semantics of effects
     itemEffect, effectSem
     -- * Assorted operations
-  , createItems, addHero, spawnMonsters, pickFaction, electLeader, deduceKilled
+  , registerItem, createItems, addHero, spawnMonsters
+  , pickFaction, electLeader, deduceKilled
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -352,20 +353,30 @@ createItems n pos lid = do
   discoRev <- getsServer sdiscoRev
   Level{ldepth, litemFreq} <- getLevel lid
   depth <- getsState sdepth
+  let container = CFloor lid pos
   replicateM_ n $ do
     (item, k, _) <- rndToAction
                     $ newItem coitem flavour discoRev litemFreq ldepth depth
-    itemRev <- getsServer sitemRev
-    case HM.lookup item itemRev of
-      Just iid ->
-        -- TODO: try to avoid this case, to make items more interesting
-        execCmdAtomic $ CreateItemA iid item k (CFloor lid pos)
-      Nothing -> do
-        icounter <- getsServer sicounter
-        modifyServer $ \ser ->
-          ser { sicounter = succ icounter
-              , sitemRev = HM.insert item icounter (sitemRev ser) }
-        execCmdAtomic $ CreateItemA icounter item k (CFloor lid pos)
+    void $ registerItem item k container True
+
+registerItem :: (MonadAtomic m, MonadServer m)
+             => Item -> Int -> Container -> Bool -> m ItemId
+registerItem item k container verbose = do
+  itemRev <- getsServer sitemRev
+  case HM.lookup item itemRev of
+    Just iid -> do
+      -- TODO: try to avoid this case for createItems,
+      -- to make items more interesting
+      execCmdAtomic $ CreateItemA iid item k container
+      return iid
+    Nothing -> do
+      icounter <- getsServer sicounter
+      modifyServer $ \ser ->
+        ser { sicounter = succ icounter
+            , sitemRev = HM.insert item icounter (sitemRev ser) }
+      let cmd = if verbose then CreateItemA else SpotItemA
+      execCmdAtomic $ cmd icounter item k container
+      return icounter
 
 -- ** ApplyPerfume
 

@@ -15,9 +15,9 @@ cdefs = ContentDef
   , getFreq = ifreq
   , validate = ivalidate
   , content =
-      [amulet, dart, gem1, gem2, gem3, currency, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand1, wand2, fist, foot, tentacle]
+      [amulet, dart, gem1, gem2, gem3, currency, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand1, wand2, fist, foot, tentacle, shrapnel]
   }
-amulet,        dart, gem1, gem2, gem3, currency, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand1, wand2, fist, foot, tentacle :: ItemKind
+amulet,        dart, gem1, gem2, gem3, currency, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand1, wand2, fist, foot, tentacle, shrapnel :: ItemKind
 
 gem, potion, scroll, wand :: ItemKind  -- generic templates
 
@@ -203,4 +203,16 @@ tentacle = sword
   , ieffect  = Hurt (rollDice 3 1) (intToDeep 0)
   , iverbApply   = "hit"
   , iverbProject = "ERROR, please report: iverbProject tentacle"
+  }
+shrapnel = ItemKind
+  { isymbol  = '\''
+  , iname    = "shrapnel"
+  , ifreq    = [("shrapnel", 1)]
+  , iflavour = zipPlain [Red]
+  , ieffect  = Hurt (rollDice 3 1) (intToDeep 0)
+  , icount   = rollDeep (20, 2) (0, 0)
+  , iverbApply   = "grate"
+  , iverbProject = "toss"
+  , iweight  = 10
+  , itoThrow = 0
   }

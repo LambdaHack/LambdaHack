@@ -30,6 +30,7 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
@@ -53,7 +54,8 @@ execFailure body failureSer = do
   let fid = bfid body
       msg = showFailureSer failureSer
   debugPrint $ "execFailure:" <+> showT fid <+> ":" <+> msg
-  execSfxAtomic $ MsgFidD fid msg  -- TODO: --more--
+  execSfxAtomic $ MsgFidD fid $ "Unexpected problem:" <+> msg <> "."
+    -- TODO: --more--, but keep in history
 
 broadcastCmdAtomic :: MonadAtomic m
                    => (FactionId -> CmdAtomic) -> m ()
@@ -289,35 +291,49 @@ dropSer aid iid = do
 
 projectSer :: (MonadAtomic m, MonadServer m)
            => ActorId    -- ^ actor projecting the item (is on current lvl)
-           -> Point      -- ^ target position of the projectile
+           -> PointXY    -- ^ target position of the projectile
            -> Int        -- ^ digital line parameter
            -> ItemId     -- ^ the item to be projected
            -> Container  -- ^ whether the items comes from floor or inventory
            -> m ()
-projectSer source tpos eps iid container = do
+projectSer source tpxy eps iid container = do
+  sb <- getsState $ getActorBody source
+  mfail <- projectFail source tpxy eps iid container
+  maybe skip (execFailure sb) mfail
+
+projectFail :: (MonadAtomic m, MonadServer m)
+            => ActorId    -- ^ actor projecting the item (is on current lvl)
+            -> PointXY    -- ^ target position of the projectile
+            -> Int        -- ^ digital line parameter
+            -> ItemId     -- ^ the item to be projected
+            -> Container  -- ^ whether the items comes from floor or inventory
+            -> m (Maybe FailureSer)
+projectFail source tpxy eps iid container = do
   Kind.COps{cotile} <- getsState scops
   sb <- getsState $ getActorBody source
   let lid = blid sb
       spos = bpos sb
-  fact <- getsState $ (EM.! bfid sb) . sfactionD
-  Level{lxsize, lysize} <- getLevel lid
-  foes <- getsState $ actorNotProjList (isAtWar fact) lid
-  if foesAdjacent lxsize lysize spos foes
-    then execFailure sb ProjectBlockFoes
-    else do
-      case bla lxsize lysize eps spos tpos of
-        Nothing -> execFailure sb ProjectAimOnself
-        Just [] -> assert `failure` "projecting from the edge of level"
-                          `twith` (spos, tpos)
-        Just (pos : rest) -> do
+  lvl@Level{lxsize, lysize} <- getLevel lid
+  case bla lxsize lysize eps spos tpxy of
+    Nothing -> return $ Just ProjectAimOnself
+    Just [] -> assert `failure` "projecting from the edge of level"
+                      `twith` (spos, tpxy)
+    Just (pos : rest) -> do
+      let t = lvl `at` pos
+      if not $ Tile.hasFeature cotile F.Clear t
+        then return $ Just ProjectBlockTerrain
+        else do
           as <- getsState $ actorList (const True) lid
-          lvl <- getLevel lid
-          let t = lvl `at` pos
-          if not $ Tile.hasFeature cotile F.Clear t
-            then execFailure sb ProjectBlockTerrain
-            else if unoccupied as pos
-                 then projectBla source pos rest iid container
-                 else execFailure sb ProjectBlockActor
+          if not $ unoccupied as pos
+            then return $ Just ProjectBlockActor
+            else do
+              fact <- getsState $ (EM.! bfid sb) . sfactionD
+              foes <- getsState $ actorNotProjList (isAtWar fact) lid
+              if foesAdjacent lxsize lysize spos foes
+                then return $ Just ProjectBlockFoes
+                else do
+                  projectBla source pos rest iid container
+                  return Nothing
 
 projectBla :: (MonadAtomic m, MonadServer m)
            => ActorId    -- ^ actor projecting the item (is on current lvl)
@@ -331,7 +347,7 @@ projectBla source pos rest iid container = do
   let lid = blid sb
       -- A bit later than actor time, to prevent a move this turn.
       time = btime sb `timeAdd` timeEpsilon
-  execSfxAtomic $ ProjectD source iid
+  unless (bproj sb) $ execSfxAtomic $ ProjectD source iid
   projId <- addProjectile pos rest iid lid (bfid sb) time
   execCmdAtomic $ MoveItemA iid 1 container (CActor projId (InvChar 'a'))
 

@@ -15,6 +15,7 @@ import Game.LambdaHack.Common.Animation
 import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Frontend
 import Game.LambdaHack.Server.Action
@@ -42,7 +43,8 @@ cmdSerSemTakeTime cmd = case cmd of
   WaitSer aid -> waitSer aid
   PickupSer aid i k l -> pickupSer aid i k l
   DropSer aid iid -> dropSer aid iid
-  ProjectSer aid p eps iid container -> projectSer aid p eps iid container
+  ProjectSer aid p eps iid container ->
+    projectSer aid (fromPoint p) eps iid container
   ApplySer aid iid container -> applySer aid iid container
   TriggerSer aid mfeat -> triggerSer aid mfeat
   SetPathSer aid -> setPathSer aid

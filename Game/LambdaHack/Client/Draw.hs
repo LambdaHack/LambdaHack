@@ -62,7 +62,7 @@ draw dm cops per drawnLevelId mleader
           let Actor{bpos, blid} = getActorBody leader s
           in if blid /= drawnLevelId
              then []
-             else fromMaybe [] $ bla lxsize lysize seps bpos cursor
+             else fromMaybe [] $ bla lxsize lysize seps bpos (fromPoint cursor)
         _ -> []
       inverseVideo = Color.Attr{ Color.fg = Color.bg Color.defAttr
                                , Color.bg = Color.fg Color.defAttr

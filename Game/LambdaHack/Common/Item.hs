@@ -195,7 +195,7 @@ isFragile :: Kind.Ops ItemKind -> Discovery -> Item -> Bool
 isFragile _cops disco i =
   case jkind disco i of
     Nothing -> False
-    Just _ -> jname i == "potion"
+    Just _ -> jname i == "potion" || jname i == "shrapnel"
 
 isExplosive :: Kind.Ops ItemKind -> Discovery -> Item -> Bool
 isExplosive _cops disco i =

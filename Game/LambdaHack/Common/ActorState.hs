@@ -89,9 +89,9 @@ calculateTotal :: Actor -> State -> (ItemBag, Int)
 calculateTotal body s =
   let bs = actorList (== bfid body) (blid body) s
       bag = EM.unionsWith (+) $ map bbag $ if null bs then [body] else bs
-      heroItem = map (\(iid, k) -> (getItemBody iid s, k))
-                 $ EM.assocs bag
-  in (bag, sum $ map itemPrice heroItem)
+      items = map (\(iid, k) -> (getItemBody iid s, k))
+              $ EM.assocs bag
+  in (bag, sum $ map itemPrice items)
 
 -- | Price an item, taking count into consideration.
 itemPrice :: (Item, Int) -> Int

@@ -24,6 +24,7 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
@@ -39,6 +40,7 @@ import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.ServerSem
 import Game.LambdaHack.Server.StartAction
 import Game.LambdaHack.Server.State
+import Game.LambdaHack.Utils.Frequency
 
 -- | Start a game session. Loop, communicating with clients.
 loopSer :: (MonadAtomic m, MonadConnServer m)
@@ -327,12 +329,14 @@ dieSer aid b hit = do
   --       modify Draw.hs and Client.hs to handle that
   if bproj b then do
     dropAllItems aid b hit
-    execCmdAtomic $ DestroyActorA aid b {bbag = EM.empty} []
+    b2 <- getsState $ getActorBody aid
+    execCmdAtomic $ DestroyActorA aid b2 []
   else do
     electLeader (bfid b) (blid b) aid
     dropAllItems aid b False
-    execCmdAtomic $ DestroyActorA aid b {bbag = EM.empty} []
-    deduceKilled b
+    b2 <- getsState $ getActorBody aid
+    execCmdAtomic $ DestroyActorA aid b2 []
+    deduceKilled b2
 
 -- | Drop all actor's items. If the actor hits another actor and this
 -- collision results in all item being dropped, all items are destroyed.
@@ -348,11 +352,56 @@ dropAllItems aid b hit = do
       f iid k = do
         let container = actorContainer aid (binv b) iid
         item <- getsState $ getItemBody iid
-        if isDestroyed item then
+        if isDestroyed item then do
           execCmdAtomic $ DestroyItemA iid item k container
+          when (isExplosive coitem discoS item) $
+            explodeItem aid b container
         else
           execCmdAtomic $ MoveItemA iid k container (CFloor (blid b) (bpos b))
   mapActorItems_ f b
+
+explodeItem :: (MonadAtomic m, MonadServer m)
+            => ActorId -> Actor -> Container -> m ()
+explodeItem aid b container = do
+  Kind.COps{coitem} <- getsState scops
+  flavour <- getsServer sflavour
+  discoRev <- getsServer sdiscoRev
+  Level{ldepth} <- getLevel $ blid b
+  depth <- getsState sdepth
+  let itemFreq = toFreq "shrapnel" [(1, "shrapnel")]
+  (item, n, _) <- rndToAction
+                  $ newItem coitem flavour discoRev itemFreq ldepth depth
+  iid <- registerItem item n container False
+  let eps = 0
+      PointXY{..} = fromPoint $ bpos b
+  replicateM_ n $ do
+    tpxy <- rndToAction $ do
+      border <- randomR (1, 4)
+      -- We pick a point at the border, not inside, to have a uniform
+      -- distribution for the points the line goes through at each distance
+      -- from the source. Otherwise, e.g., the points on cardinal
+      -- and diagonal lines from the source would be more common.
+      case border :: Int of
+        1 -> fmap (PointXY (px - 10)) $ randomR (py - 10, py + 10)
+        2 -> fmap (PointXY (px + 10)) $ randomR (py - 10, py + 10)
+        3 -> fmap (flip PointXY (py - 10)) $ randomR (px - 10, px + 10)
+        4 -> fmap (flip PointXY (py + 10)) $ randomR (px - 10, px + 10)
+        _ -> assert `failure` border
+    mfail <- projectFail aid tpxy eps iid container
+    case mfail of
+      Nothing -> return ()
+      Just ProjectBlockTerrain -> return ()
+      Just failMsg -> execFailure b failMsg
+  bag <- getsState $ bbag . getActorBody aid
+  let nRemaining = bag EM.! iid
+  when (nRemaining > 0) $
+    execCmdAtomic $ LoseItemA iid item nRemaining container
+  -- TODO: make it fly for only 1 turn? (set HP to -10?)
+  -- TODO: hit obstructing actors intead of ProjectBlockActor,
+  -- don't check ifAdjacentMelee, prevent many shrapnells on one tile
+  -- Let projectiles displace one another. Make shrapnels not white.
+  -- Show explosion much more slowly or even delay it.
+  -- Don't report shrapnel hitting walls.
 
 -- | Advance the move time for the given actor.
 advanceTime :: MonadAtomic m => ActorId -> m ()
