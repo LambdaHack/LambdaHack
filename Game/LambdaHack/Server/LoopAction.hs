@@ -211,20 +211,26 @@ handleActors cmdSerSem lid = do
     Nothing -> return ()
     Just (aid, b) | bproj b && bhp b < 0 -> do
       -- A projectile hits an actor. The carried item is destroyed.
-      -- TODO: perhaps don't destroy if no effect (NoEffect).
-      ais <- getsState $ getActorItem aid
-      execCmdAtomic $ DestroyActorA aid b ais
+      -- TODO: perhaps don't destroy if no effect (NoEffect),
+      -- to help testing items. But OTOH, we want most items to have
+      -- some effect, even silly, for flavour. Anyway, if the silly
+      -- effect identifies an item, the hit is not wasted, so this makes sense.
+      dieSer aid b True
       -- The attack animation for the projectile hit subsumes @DisplayPushD@,
       -- so not sending an extra @DisplayPushD@ here.
       handleActors cmdSerSem lid
-    Just (aid, b) | bhp b <= 0 && not (bproj b)
-                    || maybe False null (bpath b) -> do
-      -- An actor (projectile or not) ceases to exist.
-      -- Items drop to the ground and possibly a new leader is elected.
-      dieSer aid
-      -- If it's a death, not a projectile drop, the death animation
-      -- subsumes @DisplayPushD@, so not sending it here. ProjectileProjectile
-      -- destruction is not important enough for an extra @DisplayPushD@.
+    Just (aid, b) | maybe False null (bpath b) -> do
+      assert (bproj b) skip
+      -- A projectile drops to the ground due to obstacles or range.
+      dieSer aid b False
+      -- Projectile destruction is not important enough for an extra
+      -- @DisplayPushD@.
+      handleActors cmdSerSem lid
+    Just (aid, b) | bhp b <= 0 && not (bproj b) -> do
+      -- An actor dies. Items drop to the ground
+      -- and possibly a new leader is elected.
+      dieSer aid b False
+      -- The death animation subsumes @DisplayPushD@, so not sending it here.
       handleActors cmdSerSem lid
     Just (aid, body) -> do
       let side = bfid body
@@ -315,22 +321,37 @@ handleActors cmdSerSem lid = do
         extraFrames bPre
       handleActors cmdSerSem lid
 
-dieSer :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
-dieSer aid = do  -- TODO: explode if a projectile holding a potion
-  body <- getsState $ getActorBody aid
+dieSer :: (MonadAtomic m, MonadServer m) => ActorId -> Actor -> Bool -> m ()
+dieSer aid b hit = do
   -- TODO: clients don't see the death of their last standing actor;
   --       modify Draw.hs and Client.hs to handle that
-  electLeader (bfid body) (blid body) aid
-  dropAllItems aid body
-  execCmdAtomic $ DestroyActorA aid body {bbag = EM.empty} []
-  deduceKilled body
+  if bproj b then do
+    dropAllItems aid b hit
+    execCmdAtomic $ DestroyActorA aid b {bbag = EM.empty} []
+  else do
+    electLeader (bfid b) (blid b) aid
+    dropAllItems aid b False
+    execCmdAtomic $ DestroyActorA aid b {bbag = EM.empty} []
+    deduceKilled b
 
--- | Drop all actor's items.
-dropAllItems :: MonadAtomic m => ActorId -> Actor -> m ()
-dropAllItems aid b = do
-  let f iid k = execCmdAtomic
-                $ MoveItemA iid k (actorContainer aid (binv b) iid)
-                                  (CFloor (blid b) (bpos b))
+-- | Drop all actor's items. If the actor hits another actor and this
+-- collision results in all item being dropped, all items are destroyed.
+-- If the actor does not hit, but dies, only fragile items are destroyed
+-- and only if the actor was a projectile (and so died by dropping
+-- to the ground due to exceeded range or bumping off an obstacle).
+dropAllItems :: (MonadAtomic m, MonadServer m)
+             => ActorId -> Actor -> Bool -> m ()
+dropAllItems aid b hit = do
+  Kind.COps{coitem} <- getsState scops
+  discoS <- getsServer sdisco
+  let isDestroyed item = hit || bproj b && isFragile coitem discoS item
+      f iid k = do
+        let container = actorContainer aid (binv b) iid
+        item <- getsState $ getItemBody iid
+        if isDestroyed item then
+          execCmdAtomic $ DestroyItemA iid item k container
+        else
+          execCmdAtomic $ MoveItemA iid k container (CFloor (blid b) (bpos b))
   mapActorItems_ f b
 
 -- | Advance the move time for the given actor.

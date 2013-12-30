@@ -71,7 +71,7 @@ initPer = do
 
 reinitGame :: (MonadAtomic m, MonadServer m) => m ()
 reinitGame = do
-  Kind.COps{ coitem=Kind.Ops{okind}, corule } <- getsState scops
+  Kind.COps{coitem=Kind.Ops{okind}, corule} <- getsState scops
   pers <- getsServer sper
   knowMap <- getsServer $ sknowMap . sdebugSer
   -- This state is quite small, fit for transmition to the client.

@@ -15,6 +15,8 @@ module Game.LambdaHack.Common.Item
   , FlavourMap, emptyFlavourMap, dungeonFlavourMap
     -- * Textual description
   , partItem, partItemWs, partItemAW
+    -- * Assorted
+  , isFragile, isExplosive
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -188,6 +190,18 @@ strongestRegen :: [(ItemId, Item)] -> Maybe (Int, (ItemId, Item))
 strongestRegen is =
   strongestItem is $ \ i ->
     case jeffect i of Regeneration k -> Just k; _ -> Nothing
+
+isFragile :: Kind.Ops ItemKind -> Discovery -> Item -> Bool
+isFragile _cops disco i =
+  case jkind disco i of
+    Nothing -> False
+    Just _ -> jname i == "potion"
+
+isExplosive :: Kind.Ops ItemKind -> Discovery -> Item -> Bool
+isExplosive _cops disco i =
+  case jkind disco i of
+    Nothing -> False
+    Just _ -> jname i == "potion"
 
 -- | The part of speech describing the item.
 partItem :: Kind.Ops ItemKind -> Discovery -> Item -> (MU.Part, MU.Part)
