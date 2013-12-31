@@ -393,9 +393,8 @@ explodeItem aid b container = do
       Just ProjectBlockTerrain -> return ()
       Just failMsg -> execFailure b failMsg
   bag <- getsState $ bbag . getActorBody aid
-  let nRemaining = bag EM.! iid
-  when (nRemaining > 0) $
-    execCmdAtomic $ LoseItemA iid item nRemaining container
+  let nRemaining = EM.lookup iid bag
+  maybe skip (\k -> execCmdAtomic $ LoseItemA iid item k container) nRemaining
 
 -- | Advance the move time for the given actor.
 advanceTime :: MonadAtomic m => ActorId -> m ()

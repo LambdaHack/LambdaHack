@@ -489,8 +489,8 @@ moveOrRunAid run source dir = do
   -- which gives a partial information (actors can be invisible),
   -- as opposed to accessibility (and items) which are always accurate
   -- (tiles can't be invisible).
-  tgt <- getsState $ posToActors tpos lid
-  case tgt of
+  tgts <- getsState $ posToActors tpos lid
+  case tgts of
     [(target, _)] | run ->  -- can be a foe, as well as a friend
       if accessible cops lvl spos tpos then
         -- Displacing requires accessibility.

@@ -363,18 +363,18 @@ registerItem :: (MonadAtomic m, MonadServer m)
              => Item -> Int -> Container -> Bool -> m ItemId
 registerItem item k container verbose = do
   itemRev <- getsServer sitemRev
+  let cmd = if verbose then CreateItemA else SpotItemA
   case HM.lookup item itemRev of
     Just iid -> do
       -- TODO: try to avoid this case for createItems,
       -- to make items more interesting
-      execCmdAtomic $ CreateItemA iid item k container
+      execCmdAtomic $ cmd iid item k container
       return iid
     Nothing -> do
       icounter <- getsServer sicounter
       modifyServer $ \ser ->
         ser { sicounter = succ icounter
             , sitemRev = HM.insert item icounter (sitemRev ser) }
-      let cmd = if verbose then CreateItemA else SpotItemA
       execCmdAtomic $ cmd icounter item k container
       return icounter
 
@@ -436,9 +436,9 @@ effLvlGoUp aid k = do
     let switch2 = do
           -- Move the actor to where the inhabitant was, if any.
           switchLevels2 aid b1 ais1 lid2 pos2
-          -- Verify only one actor on every tile.
-          !_ <- getsState $ posToActor pos1 lid1  -- assertion is inside
-          !_ <- getsState $ posToActor pos2 lid2  -- assertion is inside
+          -- Verify only one non-projectile actor on every tile.
+          !_ <- getsState $ posToActors pos1 lid1  -- assertion is inside
+          !_ <- getsState $ posToActors pos2 lid2  -- assertion is inside
           return Nothing
     -- The actor is added to the new level, but there can be other actors
     -- at his new position.

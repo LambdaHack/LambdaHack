@@ -70,8 +70,8 @@ moveRunHuman run dir = do
     -- which gives a partial information (actors can be invisible),
     -- as opposed to accessibility (and items) which are always accurate
     -- (tiles can't be invisible).
-    tgt <- getsState $ posToActors tpos arena
-    case tgt of
+    tgts <- getsState $ posToActors tpos arena
+    case tgts of
       [] -> do  -- move or search or alter
         -- Start running in the given direction. The first turn of running
         -- succeeds much more often than subsequent turns, because we ignore

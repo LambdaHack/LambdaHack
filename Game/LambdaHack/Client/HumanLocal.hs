@@ -133,17 +133,18 @@ doLook = do
   leader <- getLeaderUI
   lpos <- getsState $ bpos . getActorBody leader
   target <- getsClient $ getTarget leader
-  hms <- getsState $ actorList (const True) lid
   let p = fromMaybe lpos scursor
       canSee = ES.member p (totalVisible per)
-      ihabitant | canSee = find (\m -> bpos m == p) hms
-                | otherwise = Nothing
-      enemyMsg =
-        -- Even if it's the leader, give his proper name, not 'you'.
-        maybe "" (\b -> let subject = partActor b
-                            verb = "be here"
-                        in makeSentence [MU.SubjectVerbSg subject verb])
-              ihabitant
+  inhabitants <- if canSee
+                then getsState $ posToActors p lid
+                else return []
+  let enemyMsg = case inhabitants of
+        [] -> ""
+        _ -> -- Even if it's the leader, give his proper name, not 'you'.
+             let subjects = map (partActor . snd) inhabitants
+                 subject = MU.WWandW subjects
+                 verb = "be here"
+             in makeSentence [MU.SubjectVerbSg subject verb]
       vis | not $ p `ES.member` totalVisible per = " (not visible)"
           | actorSeesPos per leader p = ""
           | otherwise = " (not visible)"
