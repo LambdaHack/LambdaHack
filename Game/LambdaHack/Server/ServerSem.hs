@@ -108,10 +108,11 @@ moveSer source dir = do
   -- We start by checking actors at the the target position.
   tgt <- getsState $ posToActor tpos lid
   case tgt of
-    Just (target, _) ->  -- visible or not
+    Just (target, tb) | not (bproj sb && bproj tb) ->  -- visible or not
       -- Attacking does not require full access, adjacency is enough.
+      -- Projectiles are too small to hit each other.
       meleeSer source target
-    Nothing
+    _
       | accessible cops lvl spos tpos -> do
           -- Movement requires full access.
           execCmdAtomic $ MoveActorA source spos tpos

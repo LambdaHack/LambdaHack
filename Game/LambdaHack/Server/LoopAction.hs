@@ -397,9 +397,6 @@ explodeItem aid b container = do
   when (nRemaining > 0) $
     execCmdAtomic $ LoseItemA iid item nRemaining container
   -- TODO: make it fly for only 1 turn? (set HP to -10?)
-  -- Make shrapnels not white.
-  -- Show explosion much more slowly or even delay it.
-  -- Don't report shrapnel hitting walls.
 
 -- | Advance the move time for the given actor.
 advanceTime :: MonadAtomic m => ActorId -> m ()
