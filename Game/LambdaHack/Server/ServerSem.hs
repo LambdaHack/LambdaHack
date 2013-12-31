@@ -108,7 +108,7 @@ moveSer source dir = do
   -- We start by checking actors at the the target position.
   tgt <- getsState $ posToActor tpos lid
   case tgt of
-    Just target ->  -- visible or not
+    Just (target, _) ->  -- visible or not
       -- Attacking does not require full access, adjacency is enough.
       meleeSer source target
     Nothing

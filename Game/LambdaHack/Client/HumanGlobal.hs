@@ -70,9 +70,9 @@ moveRunHuman run dir = do
     -- which gives a partial information (actors can be invisible),
     -- as opposed to accessibility (and items) which are always accurate
     -- (tiles can't be invisible).
-    tgt <- getsState $ posToActor tpos arena
+    tgt <- getsState $ posToActors tpos arena
     case tgt of
-      Nothing -> do  -- move or search or alter
+      [] -> do  -- move or search or alter
         -- Start running in the given direction. The first turn of running
         -- succeeds much more often than subsequent turns, because we ignore
         -- most of the disturbances, since the player is mostly aware of them
@@ -95,11 +95,10 @@ moveRunHuman run dir = do
         -- actors is equivalent to moving (with visible actors
         -- this is not a problem, since runnning stops early enough).
         -- TODO: stop running at invisible actor
-      Just target | run ->
+      [(target, _)] | run ->
         -- Displacing requires accessibility, but it's checked later on.
         displaceAid leader target
-      Just target -> do
-        tb <- getsState $ getActorBody target
+      (target, tb) : _ -> do
         -- We always see actors from our own faction.
         if bfid tb == bfid sb && not (bproj tb) then do
           -- Select adjacent actor by bumping into him. Takes no time.

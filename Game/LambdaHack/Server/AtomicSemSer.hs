@@ -147,8 +147,8 @@ atomicRemember lid inPer s =
   let inFov = ES.elems $ totalVisible inPer
       lvl = sdungeon s EM.! lid
       -- Actors.
-      inPrio = mapMaybe (\p -> posToActor p lid s) inFov
-      fActor aid = SpotActorA aid (getActorBody aid s) (getActorItem aid s)
+      inPrio = concatMap (\p -> posToActors p lid s) inFov
+      fActor (aid, b) = SpotActorA aid b (getActorItem aid s)
       inActor = map fActor inPrio
       -- Items.
       pMaybe p = maybe Nothing (\x -> Just (p, x))

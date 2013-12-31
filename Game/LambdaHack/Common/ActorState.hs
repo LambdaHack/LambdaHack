@@ -4,7 +4,8 @@
 module Game.LambdaHack.Common.ActorState
   ( actorAssocs, actorList, actorNotProjAssocs, actorNotProjList
   , calculateTotal, nearbyFreePoints, whereTo
-  , posToActor, getItemBody, memActor, getActorBody, updateActorBody
+  , posToActors, posToActor, getItemBody, memActor
+  , getActorBody, updateActorBody
   , getActorItem, getActorBag, actorContainer, getActorInv
   , tryFindHeroK, foesAdjacent
   ) where
@@ -55,18 +56,17 @@ actorNotProjList :: (FactionId -> Bool) -> LevelId -> State
                  -> [Actor]
 actorNotProjList p lid s = map snd $ actorNotProjAssocs p lid s
 
--- | Finds an actor at a position on the current level. Perception irrelevant.
-posToActor :: Point -> LevelId -> State -> Maybe ActorId
-posToActor pos lid s =
-  let l = posToActors pos lid s
-  in assert (length l <= 1 `blame` "many actors at the same position" `twith` l)
-     $ listToMaybe l
+-- | Finds an actor at a position on the current level.
+posToActor :: Point -> LevelId -> State -> Maybe (ActorId, Actor)
+posToActor pos lid s = listToMaybe $ posToActors pos lid s
 
-posToActors :: Point -> LevelId -> State -> [ActorId]
+posToActors :: Point -> LevelId -> State -> [(ActorId, Actor)]
 posToActors pos lid s =
   let as = actorAssocs (const True) lid s
-      apos = filter (\(_, b) -> bpos b == pos) as
-  in fmap fst apos
+      l = filter (\(_, b) -> bpos b == pos) as
+  in assert (length l <= 1 || all (bproj . snd) l
+             `blame` "many actors at the same position" `twith` l)
+     l
 
 nearbyFreePoints :: Kind.Ops TileKind
                  -> (Kind.Id TileKind -> Bool) -> Point -> LevelId -> State

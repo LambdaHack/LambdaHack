@@ -489,19 +489,19 @@ moveOrRunAid run source dir = do
   -- which gives a partial information (actors can be invisible),
   -- as opposed to accessibility (and items) which are always accurate
   -- (tiles can't be invisible).
-  tgt <- getsState $ posToActor tpos lid
+  tgt <- getsState $ posToActors tpos lid
   case tgt of
-    Just target | run ->  -- can be a foe, as well as a friend
+    [(target, _)] | run ->  -- can be a foe, as well as a friend
       if accessible cops lvl spos tpos then
         -- Displacing requires accessibility.
         return $ DisplaceSer source target
       else
         -- If cannot displace, hit. No DisplaceAccess.
         return $ MeleeSer source target
-    Just target ->  -- can be a foe, as well as a friend
+    (target, _) : _ ->  -- can be a foe, as well as a friend
       -- Attacking does not require full access, adjacency is enough.
       return $ MeleeSer source target
-    Nothing -> do  -- move or search or alter
+    [] -> do  -- move or search or alter
       if accessible cops lvl spos tpos then
         -- Movement requires full access.
         return $ MoveSer source dir

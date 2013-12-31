@@ -397,9 +397,7 @@ explodeItem aid b container = do
   when (nRemaining > 0) $
     execCmdAtomic $ LoseItemA iid item nRemaining container
   -- TODO: make it fly for only 1 turn? (set HP to -10?)
-  -- TODO: hit obstructing actors intead of ProjectBlockActor,
-  -- prevent many shrapnels on one tile
-  -- Let projectiles displace one another. Make shrapnels not white.
+  -- Make shrapnels not white.
   -- Show explosion much more slowly or even delay it.
   -- Don't report shrapnel hitting walls.
 
