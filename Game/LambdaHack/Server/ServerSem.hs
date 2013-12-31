@@ -298,7 +298,7 @@ projectSer :: (MonadAtomic m, MonadServer m)
            -> m ()
 projectSer source tpxy eps iid container = do
   sb <- getsState $ getActorBody source
-  mfail <- projectFail source tpxy eps iid container
+  mfail <- projectFail source tpxy eps iid container True
   maybe skip (execFailure sb) mfail
 
 projectFail :: (MonadAtomic m, MonadServer m)
@@ -307,8 +307,9 @@ projectFail :: (MonadAtomic m, MonadServer m)
             -> Int        -- ^ digital line parameter
             -> ItemId     -- ^ the item to be projected
             -> Container  -- ^ whether the items comes from floor or inventory
+            -> Bool       -- ^ whether melee prevents projecting
             -> m (Maybe FailureSer)
-projectFail source tpxy eps iid container = do
+projectFail source tpxy eps iid container meleePrevents = do
   Kind.COps{cotile} <- getsState scops
   sb <- getsState $ getActorBody source
   let lid = blid sb
@@ -327,13 +328,17 @@ projectFail source tpxy eps iid container = do
           if not $ unoccupied as pos
             then return $ Just ProjectBlockActor
             else do
-              fact <- getsState $ (EM.! bfid sb) . sfactionD
-              foes <- getsState $ actorNotProjList (isAtWar fact) lid
-              if foesAdjacent lxsize lysize spos foes
-                then return $ Just ProjectBlockFoes
-                else do
-                  projectBla source pos rest iid container
-                  return Nothing
+              blockedByFoes <-
+                if meleePrevents then do
+                  fact <- getsState $ (EM.! bfid sb) . sfactionD
+                  foes <- getsState $ actorNotProjList (isAtWar fact) lid
+                  return $ foesAdjacent lxsize lysize spos foes
+                else return False
+              if blockedByFoes then
+                return $ Just ProjectBlockFoes
+              else do
+                projectBla source pos rest iid container
+                return Nothing
 
 projectBla :: (MonadAtomic m, MonadServer m)
            => ActorId    -- ^ actor projecting the item (is on current lvl)

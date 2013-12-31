@@ -387,7 +387,7 @@ explodeItem aid b container = do
         3 -> fmap (flip PointXY (py - 10)) $ randomR (px - 10, px + 10)
         4 -> fmap (flip PointXY (py + 10)) $ randomR (px - 10, px + 10)
         _ -> assert `failure` border
-    mfail <- projectFail aid tpxy eps iid container
+    mfail <- projectFail aid tpxy eps iid container False
     case mfail of
       Nothing -> return ()
       Just ProjectBlockTerrain -> return ()
@@ -398,7 +398,7 @@ explodeItem aid b container = do
     execCmdAtomic $ LoseItemA iid item nRemaining container
   -- TODO: make it fly for only 1 turn? (set HP to -10?)
   -- TODO: hit obstructing actors intead of ProjectBlockActor,
-  -- don't check ifAdjacentMelee, prevent many shrapnells on one tile
+  -- prevent many shrapnels on one tile
   -- Let projectiles displace one another. Make shrapnels not white.
   -- Show explosion much more slowly or even delay it.
   -- Don't report shrapnel hitting walls.
