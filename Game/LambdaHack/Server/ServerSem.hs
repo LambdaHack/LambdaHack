@@ -327,7 +327,12 @@ projectFail source tpxy eps iid container isShrapnel = do
         else do
           mab <- getsState $ posToActor pos lid
           if not $ maybe True (bproj . snd) mab
-            then return $ Just ProjectBlockActor
+            then
+              if isShrapnel then do
+                -- Hit the blocking actor.
+                projectBla source spos (pos:rest) iid container isShrapnel
+                return Nothing
+              else return $ Just ProjectBlockActor
             else do
               blockedByFoes <-
                 if isShrapnel then return False
