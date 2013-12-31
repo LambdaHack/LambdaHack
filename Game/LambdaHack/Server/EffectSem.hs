@@ -448,8 +448,7 @@ effLvlGoUp aid k = do
         -- Move the actor out of the way.
         switchLevels1 aid
         switch2
-      [(aid2, b2)] -> do
-        ais2 <- getsState $ getActorItem aid2
+      [((aid2, b2), ais2)] -> do
         -- Alert about the switch.
         let part2 = partActor b2
             verb = "be pushed to another level"

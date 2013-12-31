@@ -148,7 +148,7 @@ atomicRemember lid inPer s =
       lvl = sdungeon s EM.! lid
       -- Actors.
       inPrio = concatMap (\p -> posToActors p lid s) inFov
-      fActor (aid, b) = SpotActorA aid b (getActorItem aid s)
+      fActor ((aid, b), ais) = SpotActorA aid b ais
       inActor = map fActor inPrio
       -- Items.
       pMaybe p = maybe Nothing (\x -> Just (p, x))

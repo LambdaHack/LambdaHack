@@ -112,12 +112,12 @@ cmdAtomicFilterCli cmd = case cmd of
     -- cheaper than repeated posToActor (until it's optimized).
     let outFov = totalVisible perOld ES.\\ totalVisible perNew
         outPrio = concatMap (\p -> posToActors p lid s) $ ES.elems outFov
-        fActor (aid, b) =
+        fActor ((aid, b), ais) =
           -- TODO: instead of bproj, check that actor sees himself.
           if not (bproj b) && bfid b == fid
           then Nothing  -- optimization: the actor is soon lost anyway,
                         -- e.g., via DominateActorA, so don't bother
-          else Just $ LoseActorA aid b (getActorItem aid s)
+          else Just $ LoseActorA aid b ais
         outActor = mapMaybe fActor outPrio
     -- Wipe out remembered items on tiles that now came into view.
     Level{lfloor, lsmell} <- getLevel lid

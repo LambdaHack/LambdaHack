@@ -302,7 +302,7 @@ rangedFreq disco aid fpos = do
       if not foesAdj  -- ProjectBlockFoes
          && asight mk
          && posClear pos1  -- ProjectBlockTerrain
-         && maybe True (bproj . snd) mab  -- ProjectBlockActor
+         && maybe True (bproj . snd . fst) mab  -- ProjectBlockActor
       then return $ toFreq "throwFreq"
            $ throwFreq bbag 3 (actorContainer aid binv)
              ++ throwFreq tis 6 (const $ CFloor blid bpos)
@@ -491,14 +491,14 @@ moveOrRunAid run source dir = do
   -- (tiles can't be invisible).
   tgts <- getsState $ posToActors tpos lid
   case tgts of
-    [(target, _)] | run ->  -- can be a foe, as well as a friend
+    [((target, _), _)] | run ->  -- can be a foe, as well as a friend
       if accessible cops lvl spos tpos then
         -- Displacing requires accessibility.
         return $ DisplaceSer source target
       else
         -- If cannot displace, hit. No DisplaceAccess.
         return $ MeleeSer source target
-    (target, _) : _ ->  -- can be a foe, as well as a friend
+    ((target, _), _) : _ ->  -- can be a foe, as well as a friend
       -- Attacking does not require full access, adjacency is enough.
       return $ MeleeSer source target
     [] -> do  -- move or search or alter

@@ -141,7 +141,7 @@ doLook = do
   let enemyMsg = case inhabitants of
         [] -> ""
         _ -> -- Even if it's the leader, give his proper name, not 'you'.
-             let subjects = map (partActor . snd) inhabitants
+             let subjects = map (partActor . snd . fst) inhabitants
                  subject = MU.WWandW subjects
                  verb = "be here"
              in makeSentence [MU.SubjectVerbSg subject verb]

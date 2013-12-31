@@ -57,14 +57,19 @@ actorNotProjList :: (FactionId -> Bool) -> LevelId -> State
 actorNotProjList p lid s = map snd $ actorNotProjAssocs p lid s
 
 -- | Finds an actor at a position on the current level.
-posToActor :: Point -> LevelId -> State -> Maybe (ActorId, Actor)
+posToActor :: Point -> LevelId -> State
+           -> Maybe ((ActorId, Actor), [(ItemId, Item)])
 posToActor pos lid s = listToMaybe $ posToActors pos lid s
 
-posToActors :: Point -> LevelId -> State -> [(ActorId, Actor)]
+posToActors :: Point -> LevelId -> State
+            -> [((ActorId, Actor), [(ItemId, Item)])]
 posToActors pos lid s =
   let as = actorAssocs (const True) lid s
-      l = filter (\(_, b) -> bpos b == pos) as
-  in assert (length l <= 1 || all (bproj . snd) l
+      aps = filter (\(_, b) -> bpos b == pos) as
+      f iid = (iid, getItemBody iid s)
+      g (aid, b) = ((aid, b), map f $ EM.keys $ bbag b)
+      l = map g aps
+  in assert (length l <= 1 || all (bproj . snd . fst) l
              `blame` "many actors at the same position" `twith` l)
      l
 

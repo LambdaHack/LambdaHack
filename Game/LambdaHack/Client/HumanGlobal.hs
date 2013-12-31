@@ -95,10 +95,10 @@ moveRunHuman run dir = do
         -- actors is equivalent to moving (with visible actors
         -- this is not a problem, since runnning stops early enough).
         -- TODO: stop running at invisible actor
-      [(target, _)] | run ->
+      [((target, _), _)] | run ->
         -- Displacing requires accessibility, but it's checked later on.
         displaceAid leader target
-      (target, tb) : _ -> do
+      ((target, tb), _) : _ -> do
         -- We always see actors from our own faction.
         if bfid tb == bfid sb && not (bproj tb) then do
           -- Select adjacent actor by bumping into him. Takes no time.
@@ -342,7 +342,7 @@ projectAid source ts = do
             then failSer ProjectBlockTerrain
             else do
               mab <- getsState $ posToActor pos lid
-              if maybe True (bproj . snd) mab
+              if maybe True (bproj . snd . fst) mab
               then projectBla source tpos eps ts
               else failSer ProjectBlockActor
 

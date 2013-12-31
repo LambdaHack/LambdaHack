@@ -108,7 +108,7 @@ moveSer source dir = do
   -- We start by checking actors at the the target position.
   tgt <- getsState $ posToActor tpos lid
   case tgt of
-    Just (target, tb) | not (bproj sb && bproj tb) ->  -- visible or not
+    Just ((target, tb), _) | not (bproj sb && bproj tb) ->  -- visible or not
       -- Attacking does not require full access, adjacency is enough.
       -- Projectiles are too small to hit each other.
       meleeSer source target
@@ -326,7 +326,7 @@ projectFail source tpxy eps iid container isShrapnel = do
         then return $ Just ProjectBlockTerrain
         else do
           mab <- getsState $ posToActor pos lid
-          if not $ maybe True (bproj . snd) mab
+          if not $ maybe True (bproj . snd . fst) mab
             then
               if isShrapnel then do
                 -- Hit the blocking actor.
