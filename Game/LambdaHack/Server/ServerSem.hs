@@ -299,7 +299,7 @@ projectSer :: (MonadAtomic m, MonadServer m)
            -> m ()
 projectSer source tpxy eps iid container = do
   sb <- getsState $ getActorBody source
-  mfail <- projectFail source tpxy eps iid container True
+  mfail <- projectFail source tpxy eps iid container False
   maybe skip (execFailure sb) mfail
 
 projectFail :: (MonadAtomic m, MonadServer m)
@@ -308,9 +308,9 @@ projectFail :: (MonadAtomic m, MonadServer m)
             -> Int        -- ^ digital line parameter
             -> ItemId     -- ^ the item to be projected
             -> Container  -- ^ whether the items comes from floor or inventory
-            -> Bool       -- ^ whether melee prevents projecting
+            -> Bool       -- ^ whether the item is a shrapnel
             -> m (Maybe FailureSer)
-projectFail source tpxy eps iid container meleePrevents = do
+projectFail source tpxy eps iid container isShrapnel = do
   Kind.COps{cotile} <- getsState scops
   sb <- getsState $ getActorBody source
   let lid = blid sb
@@ -330,15 +330,15 @@ projectFail source tpxy eps iid container meleePrevents = do
             then return $ Just ProjectBlockActor
             else do
               blockedByFoes <-
-                if meleePrevents then do
+                if isShrapnel then return False
+                else do
                   fact <- getsState $ (EM.! bfid sb) . sfactionD
                   foes <- getsState $ actorNotProjList (isAtWar fact) lid
                   return $ foesAdjacent lxsize lysize spos foes
-                else return False
               if blockedByFoes then
                 return $ Just ProjectBlockFoes
               else do
-                projectBla source pos rest iid container
+                projectBla source pos rest iid container isShrapnel
                 return Nothing
 
 projectBla :: (MonadAtomic m, MonadServer m)
@@ -347,21 +347,22 @@ projectBla :: (MonadAtomic m, MonadServer m)
            -> [Point]    -- ^ rest of the path of the projectile
            -> ItemId     -- ^ the item to be projected
            -> Container  -- ^ whether the items comes from floor or inventory
+           -> Bool       -- ^ whether this is a shrapnel
            -> m ()
-projectBla source pos rest iid container = do
+projectBla source pos rest iid container isShrapnel = do
   sb <- getsState $ getActorBody source
   let lid = blid sb
       -- A bit later than actor time, to prevent a move this turn.
       time = btime sb `timeAdd` timeEpsilon
   unless (bproj sb) $ execSfxAtomic $ ProjectD source iid
-  projId <- addProjectile pos rest iid lid (bfid sb) time
+  projId <- addProjectile pos rest iid lid (bfid sb) time isShrapnel
   execCmdAtomic $ MoveItemA iid 1 container (CActor projId (InvChar 'a'))
 
 -- | Create a projectile actor containing the given missile.
 addProjectile :: (MonadAtomic m, MonadServer m)
               => Point -> [Point] -> ItemId -> LevelId -> FactionId -> Time
-              -> m ActorId
-addProjectile bpos rest iid blid bfid btime = do
+              -> Bool -> m ActorId
+addProjectile bpos rest iid blid bfid btime isShrapnel = do
   Kind.COps{ coactor=coactor@Kind.Ops{okind}
            , coitem=coitem@Kind.Ops{okind=iokind} } <- getsState scops
   disco <- getsServer sdisco
@@ -374,7 +375,9 @@ addProjectile bpos rest iid blid bfid btime = do
       -- Not much details about a fast flying object.
       (object1, object2) = partItem coitem EM.empty item
       name = makePhrase [MU.AW $ MU.Text adj, object1, object2]
-      dirPath = take range $ displacePath (bpos : rest)
+      pathLength | isShrapnel = range `div` 4  -- fly for half a turn
+                 | otherwise = range
+      dirPath = take pathLength $ displacePath (bpos : rest)
       kind = okind $ projectileKindId coactor
       m = actorTemplate (projectileKindId coactor) (asymbol kind) name
                         (acolor kind) speed 0 (Just dirPath)

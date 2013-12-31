@@ -387,7 +387,7 @@ explodeItem aid b container = do
         3 -> fmap (flip PointXY (py - 10)) $ randomR (px - 10, px + 10)
         4 -> fmap (flip PointXY (py + 10)) $ randomR (px - 10, px + 10)
         _ -> assert `failure` border
-    mfail <- projectFail aid tpxy eps iid container False
+    mfail <- projectFail aid tpxy eps iid container True
     case mfail of
       Nothing -> return ()
       Just ProjectBlockTerrain -> return ()
@@ -396,7 +396,6 @@ explodeItem aid b container = do
   let nRemaining = bag EM.! iid
   when (nRemaining > 0) $
     execCmdAtomic $ LoseItemA iid item nRemaining container
-  -- TODO: make it fly for only 1 turn? (set HP to -10?)
 
 -- | Advance the move time for the given actor.
 advanceTime :: MonadAtomic m => ActorId -> m ()
