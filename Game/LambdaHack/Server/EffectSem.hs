@@ -433,9 +433,10 @@ effLvlGoUp aid k = do
   else if bproj b1 then
     return $ Just "projectiles can't exit levels"
   else do
-    let switch2 = do
+    let switch1 = switchLevels1 ((aid, b1), ais1)
+        switch2 = do
           -- Move the actor to where the inhabitant was, if any.
-          switchLevels2 aid b1 ais1 lid2 pos2
+          switchLevels2 lid2 pos2 ((aid, b1), ais1)
           -- Verify only one non-projectile actor on every tile.
           !_ <- getsState $ posToActors pos1 lid1  -- assertion is inside
           !_ <- getsState $ posToActors pos2 lid2  -- assertion is inside
@@ -445,33 +446,32 @@ effLvlGoUp aid k = do
     inhabitants <- getsState $ posToActors pos2 lid2
     case inhabitants of
       [] -> do
-        -- Move the actor out of the way.
-        switchLevels1 aid
+        switch1
         switch2
-      [((aid2, b2), ais2)] -> do
+      ((_, b2), _) : _ -> do
         -- Alert about the switch.
-        let part2 = partActor b2
+        let subjects = map (partActor . snd . fst) inhabitants
+            subject = MU.WWandW subjects
             verb = "be pushed to another level"
-            msg2 = makeSentence [MU.SubjectVerbSg part2 verb]
+            msg2 = makeSentence [MU.SubjectVerbSg subject verb]
+        -- Only tell one player, even if many actors, because then
+        -- they are projectiles, so not too important.
         execSfxAtomic $ MsgFidD (bfid b2) msg2
         -- Move the actor out of the way.
-        switchLevels1 aid
+        switch1
         -- Move the inhabitant out of the way.
-        switchLevels1 aid2
+        mapM_ switchLevels1 inhabitants
         -- Move the inhabitant to where the actor was.
-        switchLevels2 aid2 b2 ais2 lid1 pos1
+        mapM_ (switchLevels2 lid1 pos1) inhabitants
         switch2
-      _ -> return $ Just "level exit blocked by projectiles"
-           -- TODO: squash the projectiles instead -- can block game progress!
 
-switchLevels1 :: MonadAtomic m => ActorId -> m ()
-switchLevels1 aid = do
-  bOld <- getsState $ getActorBody aid
-  ais <- getsState $ getActorItem aid
+switchLevels1 :: MonadAtomic m => ((ActorId, Actor), [(ItemId, Item)]) -> m ()
+switchLevels1 ((aid, bOld), ais) = do
   let side = bfid bOld
   mleader <- getsState $ gleader . (EM.! side) . sfactionD
   -- Prevent leader pointing to a non-existing actor.
-  when (isJust mleader) $  -- trouble, if the actors are of the same faction
+  when (not (bproj bOld) && isJust mleader) $
+    -- Trouble, if the actors are of the same faction.
     execCmdAtomic $ LeadFactionA side mleader Nothing
   -- Remove the actor from the old level.
   -- Onlookers see somebody disappear suddenly.
@@ -479,9 +479,9 @@ switchLevels1 aid = do
   execCmdAtomic $ LoseActorA aid bOld ais
 
 switchLevels2 :: MonadAtomic m
-              => ActorId -> Actor -> [(ItemId, Item)] -> LevelId -> Point
+              => LevelId -> Point -> ((ActorId, Actor), [(ItemId, Item)])
               -> m ()
-switchLevels2 aid bOld ais lidNew posNew = do
+switchLevels2 lidNew posNew ((aid, bOld), ais) = do
   let lidOld = blid bOld
       side = bfid bOld
   assert (lidNew /= lidOld `blame` "stairs looped" `twith` lidNew) skip
@@ -496,8 +496,7 @@ switchLevels2 aid bOld ais lidNew posNew = do
                   , btime = timeAdd timeLastVisited delta
                   , bwait = timeZero  -- no longer braced
                   , bpos = posNew
-                  , boldpos = posNew  -- new level, new direction
-                  , bpath = Nothing }
+                  , boldpos = posNew }  -- new level, new direction
   mleader <- getsState $ gleader . (EM.! side) . sfactionD
   -- Materialize the actor at the new location.
   -- Onlookers see somebody appear suddenly. The actor himself
@@ -506,7 +505,8 @@ switchLevels2 aid bOld ais lidNew posNew = do
   -- Changing levels is so important, that the leader changes.
   -- This also helps the actor clear the staircase and so avoid
   -- being pushed back to the level he came from by another actor.
-  when (isNothing mleader) $  -- trouble, if the actors are of the same faction
+  when (not (bproj bOld) && isNothing mleader) $
+    -- Trouble, if the actors are of the same faction.
     execCmdAtomic $ LeadFactionA side Nothing (Just aid)
 
 -- ** Escape
