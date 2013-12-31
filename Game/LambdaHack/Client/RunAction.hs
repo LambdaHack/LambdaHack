@@ -146,10 +146,12 @@ continueRunDir :: MonadClient m
                => ActorId -> Int -> Maybe Vector -> m (Maybe Vector, Maybe Msg)
 continueRunDir aid distLast mdir = do
   sreport <- getsClient sreport -- TODO: check the message before it goes into history
-  let boringMsgs = map BS.pack [ "You hear some noises." ]
+  let boringMsgs = map BS.pack [ "You hear some noises."
+                               , "reveals that the" ]
+      boring repLine = any (`BS.isInfixOf` repLine) boringMsgs
       -- TODO: use a regexp from the UI config instead
-      msgShown  = isJust $ findInReport (`notElem` boringMsgs) sreport
-  if msgShown then return (Nothing, Just "FIXME: msgShown")  -- don't obscure the message
+      msgShown  = isJust $ findInReport (not . boring) sreport
+  if msgShown then return (Nothing, Just "message shown")
   else do
     let maxDistance = 20
     cops@Kind.COps{cotile} <- getsState scops
