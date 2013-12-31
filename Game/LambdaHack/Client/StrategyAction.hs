@@ -273,7 +273,6 @@ rangedFreq disco aid fpos = do
   foes <- getsState $ actorNotProjList (isAtWar fact) blid
   let foesAdj = foesAdjacent lxsize lysize bpos foes
       posClear pos1 = Tile.hasFeature cotile F.Clear (lvl `at` pos1)
-  as <- getsState $ actorList (const True) blid
   -- TODO: also don't throw if any pos on path is visibly not accessible
   -- from previous (and tweak eps in bla to make it accessible).
   -- Also don't throw if target not in range.
@@ -297,17 +296,18 @@ rangedFreq disco aid fpos = do
                     in effectToBenefit cops b (jeffect i)
         , benefit < 0
         , jsymbol i `elem` permitted ]
-  return $ toFreq "throwFreq" $
-    case bl of
-      Just (pos1 : _) ->
-        if not foesAdj  -- ProjectBlockFoes
-           && asight mk
-           && posClear pos1  -- ProjectBlockTerrain
-           && unoccupied as pos1  -- ProjectBlockActor
-        then throwFreq bbag 3 (actorContainer aid binv)
+  case bl of
+    Just (pos1 : _) -> do
+      mab <- getsState $ posToActor pos1 blid
+      if not foesAdj  -- ProjectBlockFoes
+         && asight mk
+         && posClear pos1  -- ProjectBlockTerrain
+         && maybe True (bproj . snd) mab  -- ProjectBlockActor
+      then return $ toFreq "throwFreq"
+           $ throwFreq bbag 3 (actorContainer aid binv)
              ++ throwFreq tis 6 (const $ CFloor blid bpos)
-        else []
-      _ -> []  -- ProjectAimOnself
+      else return $ toFreq "throwFreq blocked" []
+    _ -> return $ toFreq "throwFreq no bla" []  -- ProjectAimOnself
 
 -- Tools use requires significant intelligence and sometimes literacy.
 toolsFreq :: MonadActionRO m

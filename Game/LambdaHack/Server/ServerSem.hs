@@ -324,8 +324,8 @@ projectFail source tpxy eps iid container meleePrevents = do
       if not $ Tile.hasFeature cotile F.Clear t
         then return $ Just ProjectBlockTerrain
         else do
-          as <- getsState $ actorList (const True) lid
-          if not $ unoccupied as pos
+          mab <- getsState $ posToActor pos lid
+          if not $ maybe True (bproj . snd) mab
             then return $ Just ProjectBlockActor
             else do
               blockedByFoes <-

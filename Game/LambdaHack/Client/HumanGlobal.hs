@@ -336,14 +336,15 @@ projectAid source ts = do
         Just [] -> assert `failure` "project from the edge of level"
                           `twith` (spos, tpos, sb, ts)
         Just (pos : _) -> do
-          as <- getsState $ actorList (const True) lid
           lvl <- getLevel lid
           let t = lvl `at` pos
           if not $ Tile.hasFeature cotile F.Clear t
             then failSer ProjectBlockTerrain
-            else if unoccupied as pos
-                 then projectBla source tpos eps ts
-                 else failSer ProjectBlockActor
+            else do
+              mab <- getsState $ posToActor pos lid
+              if maybe True (bproj . snd) mab
+              then projectBla source tpos eps ts
+              else failSer ProjectBlockActor
 
 projectBla :: MonadClientUI m
            => ActorId -> Point -> Int -> [Trigger]
