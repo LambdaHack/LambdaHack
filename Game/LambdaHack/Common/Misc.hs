@@ -21,8 +21,9 @@ import Data.Traversable (traverse)
 normalLevelBound :: (Int, Int)
 normalLevelBound = (79, 21)
 
+infixl 7 `divUp`
 -- | Integer division, rounding up.
-divUp :: Int -> Int -> Int
+divUp :: Integral a => a -> a -> a
 divUp n k = (n + k - 1) `div` k
 
 -- | For each group that the kind belongs to, denoted by a @Text@ name

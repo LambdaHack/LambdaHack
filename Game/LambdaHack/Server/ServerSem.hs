@@ -362,28 +362,24 @@ projectBla :: (MonadAtomic m, MonadServer m)
            -> Container  -- ^ whether the items comes from floor or inventory
            -> m ()
 projectBla source pos rest iid container = do
-  Kind.COps{coitem} <- getsState scops
-  discoS <- getsServer sdisco
   sb <- getsState $ getActorBody source
-  item <- getsState $ getItemBody iid
   let lid = blid sb
-      -- A bit later than actor time, to prevent a move this turn.
-      time = btime sb `timeAdd` timeEpsilon
-      lingerPercent = isLingering coitem discoS item
+      time = btime sb
   unless (bproj sb) $ execSfxAtomic $ ProjectD source iid
-  projId <- addProjectile pos rest iid lid (bfid sb) time lingerPercent
+  projId <- addProjectile pos rest iid lid (bfid sb) time
   execCmdAtomic $ MoveItemA iid 1 container (CActor projId (InvChar 'a'))
 
 -- | Create a projectile actor containing the given missile.
 addProjectile :: (MonadAtomic m, MonadServer m)
               => Point -> [Point] -> ItemId -> LevelId -> FactionId -> Time
-              -> Int -> m ActorId
-addProjectile bpos rest iid blid bfid btime lingerPercent = do
+              -> m ActorId
+addProjectile bpos rest iid blid bfid btime = do
   Kind.COps{ coactor=coactor@Kind.Ops{okind}
            , coitem=coitem@Kind.Ops{okind=iokind} } <- getsState scops
   disco <- getsServer sdisco
   item <- getsState $ getItemBody iid
-  let ik = iokind (fromJust $ jkind disco item)
+  let lingerPercent = isLingering coitem disco item
+      ik = iokind (fromJust $ jkind disco item)
       speed = speedFromWeight (iweight ik) (itoThrow ik)
       range = rangeFromSpeed speed
       adj | range < 5 = "falling"

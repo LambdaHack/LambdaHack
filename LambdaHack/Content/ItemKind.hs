@@ -226,7 +226,7 @@ mist = ItemKind
   , iverbApply   = "inhale"
   , iverbProject = "blow"
   , iweight  = 1
-  , itoThrow = -80
+  , itoThrow = -85
   , ifeature = [Cause $ Heal 2, Fragile]
   }
 shrapnel = ItemKind
@@ -250,6 +250,6 @@ smoke = ItemKind
   , iverbApply   = "inhale"
   , iverbProject = "blow"
   , iweight  = 1
-  , itoThrow = -90
-  , ifeature = [Fragile]
+  , itoThrow = -80
+  , ifeature = [Fragile, Linger 75]
   }

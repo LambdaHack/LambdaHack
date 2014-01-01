@@ -5,12 +5,14 @@ module Game.LambdaHack.Common.Time
   , timeAdd, timeFit, timeNegate, timeScale, timeEpsilon
   , timeToDigit
   , Speed, toSpeed, speedZero, speedNormal, speedScale, speedAdd, speedNegate
-  , ticksPerMeter, traveled, speedFromWeight, rangeFromSpeed
+  , ticksPerMeter, speedFromWeight, rangeFromSpeed
   ) where
 
 import Data.Binary
 import qualified Data.Char as Char
 import Data.Int (Int64)
+
+import Game.LambdaHack.Common.Misc
 
 -- | Game time in ticks. The time dimension.
 -- One tick is 1 microsecond (one millionth of a second),
@@ -130,13 +132,7 @@ speedNegate (Speed n) = Speed (-n)
 
 -- | The number of time ticks it takes to walk 1 meter at the given speed.
 ticksPerMeter :: Speed -> Time
-ticksPerMeter (Speed v) = Time $ _ticksInSecond * sInMs `div` v
-
--- | Distance in meters (so also in tiles, given the chess metric)
--- traveled in a given time by a body with a given speed.
-traveled :: Speed -> Time -> Int
-traveled (Speed v) (Time t) =
-  fromIntegral $ v * t `div` (_ticksInSecond * sInMs)
+ticksPerMeter (Speed v) = Time $ _ticksInSecond * sInMs `divUp` v
 
 -- | Calculate projectile speed from item weight in grams
 -- and speed bonus in percents.
@@ -152,7 +148,7 @@ speedFromWeight weight bonus =
 
 -- | Calculate maximum range in meters of a projectile from its speed.
 -- See <https://github.com/kosmikus/LambdaHack/wiki/Item-statistics>.
--- With this formula, each projectile flies for exactly one second,
+-- With this formula, each projectile flies for at most 1 second,
 -- that is 2 turns, and then drops to the ground.
 -- Dividing and multiplying by 2 ensures both turns of flight
 -- cover the same distance.

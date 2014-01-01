@@ -212,7 +212,7 @@ handleActors cmdSerSem lid = do
   case mnext of
     _ | quit -> return ()
     Nothing -> return ()
-    Just (aid, b) | bproj b && bhp b < 0 -> do
+    Just (aid, b) | bhp b < 0 && bproj b -> do
       -- A projectile hits an actor. The carried item is destroyed.
       -- TODO: perhaps don't destroy if no effect (NoEffect),
       -- to help testing items. But OTOH, we want most items to have
@@ -224,10 +224,9 @@ handleActors cmdSerSem lid = do
       handleActors cmdSerSem lid
     Just (aid, b) | maybe False null (bpath b) -> do
       assert (bproj b) skip
+      execSfxAtomic $ DisplayPushD (bfid b)  -- show last position before drop
       -- A projectile drops to the ground due to obstacles or range.
       dieSer aid b False
-      -- Projectile destruction is not important enough for an extra
-      -- @DisplayPushD@.
       handleActors cmdSerSem lid
     Just (aid, b) | bhp b <= 0 && not (bproj b) -> do
       -- An actor dies. Items drop to the ground
@@ -277,8 +276,14 @@ handleActors cmdSerSem lid = do
         let cmdS = TakeTimeSer $ SetPathSer aid
         timed <- cmdSerSem cmdS
         assert timed skip
-        advanceTime aid
-        extraFrames body
+        b <- getsState $ getActorBody aid
+        -- Colliding with a wall or actor doesn't take time, because
+        -- the projectile does not move (the move is blocked).
+        -- Not advancing time forces dead projectiles to be destroyed ASAP.
+        -- Otherwise it would be displayed in the same place twice.
+        unless (bhp b < 0 || maybe False null (bpath b)) $ do
+          advanceTime aid
+          extraFrames b
       else if queryUI then do
         -- The client always displays a frame in this case.
         cmdS <- sendQueryUI side aid
@@ -370,42 +375,43 @@ explodeItem aid b container cgroup = do
   Level{ldepth} <- getLevel $ blid b
   depth <- getsState sdepth
   let itemFreq = toFreq "shrapnel group" [(1, cgroup)]
-  (item, n, _) <- rndToAction
-                  $ newItem coitem flavour discoRev itemFreq ldepth depth
-  iid <- registerItem item n container False
+  (item, n1, _) <- rndToAction
+                   $ newItem coitem flavour discoRev itemFreq ldepth depth
+  iid <- registerItem item n1 container False
   let eps = 0
       PointXY{..} = fromPoint $ bpos b
-  replicateM_ n $ do
-    tpxy <- rndToAction $ do
-      border <- randomR (1, 4)
-      -- We pick a point at the border, not inside, to have a uniform
-      -- distribution for the points the line goes through at each distance
-      -- from the source. Otherwise, e.g., the points on cardinal
-      -- and diagonal lines from the source would be more common.
-      case border :: Int of
-        1 -> fmap (PointXY (px - 10)) $ randomR (py - 10, py + 10)
-        2 -> fmap (PointXY (px + 10)) $ randomR (py - 10, py + 10)
-        3 -> fmap (flip PointXY (py - 10)) $ randomR (px - 10, px + 10)
-        4 -> fmap (flip PointXY (py + 10)) $ randomR (px - 10, px + 10)
-        _ -> assert `failure` border
-    mfail <- projectFail aid tpxy eps iid container True
-    case mfail of
-      Nothing -> return ()
-      Just ProjectBlockTerrain -> return ()
-      Just failMsg -> execFailure b failMsg
-  bag <- getsState $ bbag . getActorBody aid
-  let nRemaining = EM.lookup iid bag
-  maybe skip (\k -> execCmdAtomic $ LoseItemA iid item k container) nRemaining
+  let projectN n = replicateM_ n $ do
+        tpxy <- rndToAction $ do
+          border <- randomR (1, 4)
+          -- We pick a point at the border, not inside, to have a uniform
+          -- distribution for the points the line goes through at each distance
+          -- from the source. Otherwise, e.g., the points on cardinal
+          -- and diagonal lines from the source would be more common.
+          case border :: Int of
+            1 -> fmap (PointXY (px - 10)) $ randomR (py - 10, py + 10)
+            2 -> fmap (PointXY (px + 10)) $ randomR (py - 10, py + 10)
+            3 -> fmap (flip PointXY (py - 10)) $ randomR (px - 10, px + 10)
+            4 -> fmap (flip PointXY (py + 10)) $ randomR (px - 10, px + 10)
+            _ -> assert `failure` border
+        mfail <- projectFail aid tpxy eps iid container True
+        case mfail of
+          Nothing -> return ()
+          Just ProjectBlockTerrain -> return ()
+          Just failMsg -> execFailure b failMsg
+  projectN n1
+  bag2 <- getsState $ bbag . getActorBody aid
+  let mn2 = EM.lookup iid bag2
+  maybe skip projectN mn2  -- assume all shrapnels bounce off obstacles once
+  bag3 <- getsState $ bbag . getActorBody aid
+  let mn3 = EM.lookup iid bag3
+  maybe skip (\k -> execCmdAtomic $ LoseItemA iid item k container) mn3
 
 -- | Advance the move time for the given actor.
 advanceTime :: MonadAtomic m => ActorId -> m ()
 advanceTime aid = do
   b <- getsState $ getActorBody aid
-  -- Don't update move time, so move ASAP, so the projectile
-  -- corpse vanishes ASAP.
-  unless (bhp b < 0 && bproj b || maybe False null (bpath b)) $ do
-    let t = ticksPerMeter $ bspeed b
-    execCmdAtomic $ AgeActorA aid t
+  let t = ticksPerMeter $ bspeed b
+  execCmdAtomic $ AgeActorA aid t
 
 -- | Generate a monster, possibly.
 generateMonster :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
