@@ -10,8 +10,7 @@ import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Effect
 
--- | All possible terrain tile features, some of them parameterized
--- or dependent on outside coefficients, e.g., on the tile secrecy value.
+-- | All possible terrain tile features.
 data Feature =
     Cause !(Effect Int)  -- ^ causes the effect when triggered
   | OpenTo !Text         -- ^ goes from an open to a closed tile when altered

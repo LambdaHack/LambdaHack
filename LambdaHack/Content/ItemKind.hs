@@ -34,6 +34,7 @@ amulet = ItemKind
   , iverbProject = "cast"
   , iweight  = 30
   , itoThrow = -50  -- not dense enough
+  , ifeature = []
   }
 dart = ItemKind
   { isymbol  = '|'
@@ -46,6 +47,7 @@ dart = ItemKind
   , iverbProject = "hurl"
   , iweight  = 50
   , itoThrow = 0  -- a cheap dart
+  , ifeature = []
   }
 gem = ItemKind
   { isymbol  = '*'
@@ -58,6 +60,7 @@ gem = ItemKind
   , iverbProject = "toss"
   , iweight  = 50
   , itoThrow = 0
+  , ifeature = []
   }
 gem1 = gem
   { icount   = rollDeep (0, 0) (1, 1)  -- appears on max depth
@@ -79,6 +82,7 @@ currency = ItemKind
   , iverbProject = "toss"
   , iweight  = 31
   , itoThrow = 0
+  , ifeature = []
   }
 harpoon = ItemKind
   { isymbol  = '|'
@@ -91,6 +95,7 @@ harpoon = ItemKind
   , iverbProject = "hurl"
   , iweight  = 4000
   , itoThrow = 0  -- cheap but deadly
+  , ifeature = []
   }
 potion = ItemKind
   { isymbol  = '!'
@@ -103,6 +108,7 @@ potion = ItemKind
   , iverbProject = "lob"
   , iweight  = 200
   , itoThrow = -50  -- oily, bad grip
+  , ifeature = []
   }
 potion1 = potion
   { ifreq    = [("useful", 5)]
@@ -126,6 +132,7 @@ ring = ItemKind
   , iverbProject = "toss"
   , iweight  = 15
   , itoThrow = 0
+  , ifeature = []
   }
 scroll = ItemKind
   { isymbol  = '?'
@@ -138,6 +145,7 @@ scroll = ItemKind
   , iverbProject = "lob"
   , iweight  = 50
   , itoThrow = -75  -- bad shape, even rolled up
+  , ifeature = []
   }
 scroll1 = scroll
   { ieffect  = CallFriend 1
@@ -160,6 +168,7 @@ sword = ItemKind
   , iverbProject = "heave"
   , iweight  = 2000
   , itoThrow = -50  -- ensuring it hits with the tip costs speed
+  , ifeature = []
   }
 wand = ItemKind
   { isymbol  = '/'
@@ -172,6 +181,7 @@ wand = ItemKind
   , iverbProject = "zap"
   , iweight  = 300
   , itoThrow = 25  -- magic
+  , ifeature = []
   }
 wand1 = wand
   { ieffect  = Dominate
@@ -215,4 +225,5 @@ shrapnel = ItemKind
   , iverbProject = "toss"
   , iweight  = 10
   , itoThrow = 0
+  , ifeature = []
   }

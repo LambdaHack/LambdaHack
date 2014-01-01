@@ -37,7 +37,8 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ActorKind
 
--- TOOD: if really needed, optimize by representing as a set of intervals.
+-- TOOD: if really needed, optimize by representing as a set of intervals
+-- or a set of bitmaps, like the internal representation of IntSet.
 newtype PerceptionVisible = PerceptionVisible
     {pvisible :: ES.EnumSet Point}
   deriving (Show, Eq, Binary)

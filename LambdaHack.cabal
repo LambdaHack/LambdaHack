@@ -108,6 +108,7 @@ library
                       Game.LambdaHack.Common.Flavour,
                       Game.LambdaHack.Common.HighScore,
                       Game.LambdaHack.Common.Item,
+                      Game.LambdaHack.Common.ItemFeature,
                       Game.LambdaHack.Common.Key,
                       Game.LambdaHack.Common.Kind,
                       Game.LambdaHack.Common.Level,

@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveGeneric #-}
 -- | Abstract syntax human player commands.
 module Game.LambdaHack.Client.HumanCmd
   ( HumanCmd(..), Trigger(..)
@@ -6,9 +5,7 @@ module Game.LambdaHack.Client.HumanCmd
   ) where
 
 import Control.Exception.Assert.Sugar
-import Data.Binary
 import Data.Text (Text)
-import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Common.Feature as F
@@ -56,9 +53,7 @@ data Trigger =
     ApplyItem {verb :: !MU.Part, object :: !MU.Part, symbol :: !Char}
   | AlterFeature {verb :: !MU.Part, object :: !MU.Part, feature :: !F.Feature}
   | TriggerFeature {verb :: !MU.Part, object :: !MU.Part, feature :: !F.Feature}
-  deriving (Show, Read, Eq, Ord, Generic)
-
-instance Binary Trigger
+  deriving (Show, Read, Eq, Ord)
 
 -- | Major commands land on the first page of command help.
 majorHumanCmd :: HumanCmd -> Bool

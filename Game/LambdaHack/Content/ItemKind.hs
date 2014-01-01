@@ -8,21 +8,23 @@ import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Flavour
+import qualified Game.LambdaHack.Common.ItemFeature as IF
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Random
 
 -- | Item properties that are fixed for a given kind of items.
 data ItemKind = ItemKind
-  { isymbol      :: !Char         -- ^ map symbol
-  , iname        :: !Text         -- ^ generic name
-  , ifreq        :: !Freqs        -- ^ frequency within groups
-  , iflavour     :: ![Flavour]    -- ^ possible flavours
+  { isymbol      :: !Char          -- ^ map symbol
+  , iname        :: !Text          -- ^ generic name
+  , ifreq        :: !Freqs         -- ^ frequency within groups
+  , iflavour     :: ![Flavour]     -- ^ possible flavours
   , ieffect      :: !(Effect RollDeep)  -- ^ the effect when activated
-  , icount       :: !RollDeep     -- ^ created in that quantify
-  , iverbApply   :: !MU.Part      -- ^ the verb for applying and combat
-  , iverbProject :: !MU.Part      -- ^ the verb for projecting
-  , iweight      :: !Int          -- ^ weight in grams
-  , itoThrow     :: !Int          -- ^ percentage bonus or malus to throw speed
+  , icount       :: !RollDeep      -- ^ created in that quantify
+  , iverbApply   :: !MU.Part       -- ^ the verb for applying and combat
+  , iverbProject :: !MU.Part       -- ^ the verb for projecting
+  , iweight      :: !Int           -- ^ weight in grams
+  , itoThrow     :: !Int           -- ^ percentage bonus to throw speed
+  , ifeature     :: ![IF.Feature]  -- ^ properties
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 
