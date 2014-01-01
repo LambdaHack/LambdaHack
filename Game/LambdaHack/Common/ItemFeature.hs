@@ -9,11 +9,12 @@ import Data.Text (Text)
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Effect
+import Game.LambdaHack.Common.Random
 
 -- | All possible item features.
 data Feature =
-    Cause !(Effect Int)  -- ^ causes the effect when triggered
-  | ChangeTo !Text       -- ^ changes to this item kind group when altered
-  deriving (Show, Read, Eq, Ord, Generic)
+    Cause !(Effect RollDeep)  -- ^ causes the effect when triggered
+  | ChangeTo !Text            -- ^ changes to this item kind group when altered
+  deriving (Show, Eq, Ord, Generic)
 
 instance Binary Feature

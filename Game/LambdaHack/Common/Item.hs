@@ -34,6 +34,7 @@ import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Flavour
+import qualified Game.LambdaHack.Common.ItemFeature as IF
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Random
@@ -129,7 +130,13 @@ newItem cops@Kind.Ops{opick, okind} flavour discoRev itemFreq lvl depth = do
         if jcount == 0 then
           castItem $ count - 1
         else do
-          effect <- effectTrav (ieffect kind) (castDeep lvl depth)
+          let kindEffect =
+                let getTo (IF.Cause eff) acc = eff : acc
+                    getTo _ acc = acc
+                in case foldr getTo [] $ ifeature kind of
+                     [] -> NoEffect
+                     eff : _TODO -> eff
+          effect <- effectTrav kindEffect (castDeep lvl depth)
           return ( buildItem flavour discoRev ikChosen kind effect
                  , jcount
                  , kind )

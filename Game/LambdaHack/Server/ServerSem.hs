@@ -23,9 +23,11 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.AtomicCmd
 import qualified Game.LambdaHack.Common.Color as Color
+import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemFeature as IF
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
@@ -156,7 +158,13 @@ meleeSer source target = do
           flavour <- getsServer sflavour
           discoRev <- getsServer sdiscoRev
           let kind = okind h2hKind
-              effect = fmap maxDeep (ieffect kind)
+              kindEffect =
+                let getTo (IF.Cause eff) acc = eff : acc
+                    getTo _ acc = acc
+                in case foldr getTo [] $ ifeature kind of
+                     [] -> NoEffect
+                     eff : _TODO -> eff
+              effect = fmap maxDeep kindEffect
           return ( Nothing
                  , buildItem flavour discoRev h2hKind kind effect )
     let performHit block = do

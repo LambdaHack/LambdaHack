@@ -138,7 +138,9 @@ meanDiceXY (RollDiceXY lx ly) = (sum (map meanDice lx), sum (map meanDice ly))
 -- To the result of rolling the first set of dice we add the second,
 -- scaled in proportion to current depth divided by maximal dungeon depth.
 data RollDeep = RollDeep !RollDice !RollDice
-  deriving Show
+  deriving (Show, Eq, Ord, Generic)
+
+instance Binary RollDeep
 
 rollDeep :: (Int, Int) -> (Int, Int) -> RollDeep
 rollDeep (a, b) (c, d) = RollDeep (rollDice a b) (rollDice c d)

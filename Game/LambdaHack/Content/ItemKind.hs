@@ -6,7 +6,6 @@ module Game.LambdaHack.Content.ItemKind
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Flavour
 import qualified Game.LambdaHack.Common.ItemFeature as IF
 import Game.LambdaHack.Common.Misc
@@ -18,7 +17,6 @@ data ItemKind = ItemKind
   , iname        :: !Text          -- ^ generic name
   , ifreq        :: !Freqs         -- ^ frequency within groups
   , iflavour     :: ![Flavour]     -- ^ possible flavours
-  , ieffect      :: !(Effect RollDeep)  -- ^ the effect when activated
   , icount       :: !RollDeep      -- ^ created in that quantify
   , iverbApply   :: !MU.Part       -- ^ the verb for applying and combat
   , iverbProject :: !MU.Part       -- ^ the verb for projecting
