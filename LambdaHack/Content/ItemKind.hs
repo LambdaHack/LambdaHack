@@ -16,9 +16,9 @@ cdefs = ContentDef
   , getFreq = ifreq
   , validate = ivalidate
   , content =
-      [amulet, dart, gem1, gem2, gem3, currency, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand1, wand2, fist, foot, tentacle, shrapnel]
+      [amulet, dart, gem1, gem2, gem3, currency, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand1, wand2, fist, foot, tentacle, fragrance, mist, shrapnel, smoke]
   }
-amulet,        dart, gem1, gem2, gem3, currency, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand1, wand2, fist, foot, tentacle, shrapnel :: ItemKind
+amulet,        dart, gem1, gem2, gem3, currency, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand1, wand2, fist, foot, tentacle, fragrance, mist, shrapnel, smoke :: ItemKind
 
 gem, potion, scroll, wand :: ItemKind  -- generic templates
 
@@ -107,14 +107,14 @@ potion = ItemKind
   }
 potion1 = potion
   { ifreq    = [("useful", 5)]
-  , ifeature = [Cause ApplyPerfume]
+  , ifeature = [Cause ApplyPerfume, Explode "fragrance"]
   }
 potion2 = potion
-  { ifeature = [Cause $ Heal 5]
+  { ifeature = [Cause $ Heal 5, Explode "mist"]
   }
 potion3 = potion
   { ifreq    = [("useful", 5)]
-  , ifeature = [Cause $ Heal (-5)]
+  , ifeature = [Cause $ Heal (-5), Explode "shrapnel"]
   }
 ring = ItemKind
   { isymbol  = '='
@@ -172,14 +172,14 @@ wand = ItemKind
   , iverbProject = "zap"
   , iweight  = 300
   , itoThrow = 25  -- magic
-  , ifeature = []
+  , ifeature = [Fragile]
   }
 wand1 = wand
-  { ifeature = [Cause Dominate]
+  { ifeature = ifeature wand ++ [Cause Dominate]
   }
 wand2 = wand
   { ifreq    = [("useful", 3)]
-  , ifeature = [Cause $ Heal (-25)]
+  , ifeature = ifeature wand ++ [Cause $ Heal (-25)]
   }
 fist = sword
   { isymbol  = '@'
@@ -205,15 +205,51 @@ tentacle = sword
   , iverbProject = "ERROR, please report: iverbProject tentacle"
   , ifeature = [Cause $ Hurt (rollDice 3 1) (intToDeep 0)]
   }
+fragrance = ItemKind
+  { isymbol  = '\''
+  , iname    = "fragrance"
+  , ifreq    = [("fragrance", 1)]
+  , iflavour = zipFancy [BrMagenta]
+  , icount   = rollDeep (5, 2) (0, 0)
+  , iverbApply   = "smell"
+  , iverbProject = "exude"
+  , iweight  = 1
+  , itoThrow = -70
+  , ifeature = [Fragile, Linger 50]
+  }
+mist = ItemKind
+  { isymbol  = '\''
+  , iname    = "mist"
+  , ifreq    = [("mist", 1)]
+  , iflavour = zipFancy [White]
+  , icount   = rollDeep (15, 2) (0, 0)
+  , iverbApply   = "inhale"
+  , iverbProject = "blow"
+  , iweight  = 1
+  , itoThrow = -80
+  , ifeature = [Cause $ Heal 2, Fragile]
+  }
 shrapnel = ItemKind
   { isymbol  = '\''
   , iname    = "shrapnel"
   , ifreq    = [("shrapnel", 1)]
   , iflavour = zipPlain [Red]
-  , icount   = rollDeep (20, 2) (0, 0)
+  , icount   = rollDeep (10, 2) (0, 0)
   , iverbApply   = "grate"
   , iverbProject = "toss"
   , iweight  = 10
   , itoThrow = 0
-  , ifeature = [Cause $ Hurt (rollDice 3 1) (intToDeep 0)]
+  , ifeature = [Cause $ Hurt (rollDice 3 1) (intToDeep 0), Fragile, Linger 25]
+  }
+smoke = ItemKind
+  { isymbol  = '\''
+  , iname    = "smoke"
+  , ifreq    = [("smoke", 1)]
+  , iflavour = zipPlain [BrBlack]
+  , icount   = rollDeep (15, 2) (0, 0)
+  , iverbApply   = "inhale"
+  , iverbProject = "blow"
+  , iweight  = 1
+  , itoThrow = -90
+  , ifeature = [Fragile]
   }

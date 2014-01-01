@@ -11,6 +11,7 @@ import Data.Key (mapWithKeyM_)
 import Data.List
 import Data.Maybe
 import qualified Data.Ord as Ord
+import Data.Text (Text)
 
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
@@ -354,21 +355,21 @@ dropAllItems aid b hit = do
         item <- getsState $ getItemBody iid
         if isDestroyed item then do
           execCmdAtomic $ DestroyItemA iid item k container
-          when (isExplosive coitem discoS item) $
-            explodeItem aid b container
+          let mcgroup = isExplosive coitem discoS item
+          maybe skip (explodeItem aid b container) mcgroup
         else
           execCmdAtomic $ MoveItemA iid k container (CFloor (blid b) (bpos b))
   mapActorItems_ f b
 
 explodeItem :: (MonadAtomic m, MonadServer m)
-            => ActorId -> Actor -> Container -> m ()
-explodeItem aid b container = do
+            => ActorId -> Actor -> Container -> Text -> m ()
+explodeItem aid b container cgroup = do
   Kind.COps{coitem} <- getsState scops
   flavour <- getsServer sflavour
   discoRev <- getsServer sdiscoRev
   Level{ldepth} <- getLevel $ blid b
   depth <- getsState sdepth
-  let itemFreq = toFreq "shrapnel" [(1, "shrapnel")]
+  let itemFreq = toFreq "shrapnel group" [(1, cgroup)]
   (item, n, _) <- rndToAction
                   $ newItem coitem flavour discoRev itemFreq ldepth depth
   iid <- registerItem item n container False

@@ -338,7 +338,7 @@ projectFail source tpxy eps iid container isShrapnel = do
             then
               if isShrapnel then do
                 -- Hit the blocking actor.
-                projectBla source spos (pos:rest) iid container isShrapnel
+                projectBla source spos (pos:rest) iid container
                 return Nothing
               else return $ Just ProjectBlockActor
             else do
@@ -351,7 +351,7 @@ projectFail source tpxy eps iid container isShrapnel = do
               if blockedByFoes then
                 return $ Just ProjectBlockFoes
               else do
-                projectBla source pos rest iid container isShrapnel
+                projectBla source pos rest iid container
                 return Nothing
 
 projectBla :: (MonadAtomic m, MonadServer m)
@@ -360,22 +360,25 @@ projectBla :: (MonadAtomic m, MonadServer m)
            -> [Point]    -- ^ rest of the path of the projectile
            -> ItemId     -- ^ the item to be projected
            -> Container  -- ^ whether the items comes from floor or inventory
-           -> Bool       -- ^ whether this is a shrapnel
            -> m ()
-projectBla source pos rest iid container isShrapnel = do
+projectBla source pos rest iid container = do
+  Kind.COps{coitem} <- getsState scops
+  discoS <- getsServer sdisco
   sb <- getsState $ getActorBody source
+  item <- getsState $ getItemBody iid
   let lid = blid sb
       -- A bit later than actor time, to prevent a move this turn.
       time = btime sb `timeAdd` timeEpsilon
+      lingerPercent = isLingering coitem discoS item
   unless (bproj sb) $ execSfxAtomic $ ProjectD source iid
-  projId <- addProjectile pos rest iid lid (bfid sb) time isShrapnel
+  projId <- addProjectile pos rest iid lid (bfid sb) time lingerPercent
   execCmdAtomic $ MoveItemA iid 1 container (CActor projId (InvChar 'a'))
 
 -- | Create a projectile actor containing the given missile.
 addProjectile :: (MonadAtomic m, MonadServer m)
               => Point -> [Point] -> ItemId -> LevelId -> FactionId -> Time
-              -> Bool -> m ActorId
-addProjectile bpos rest iid blid bfid btime isShrapnel = do
+              -> Int -> m ActorId
+addProjectile bpos rest iid blid bfid btime lingerPercent = do
   Kind.COps{ coactor=coactor@Kind.Ops{okind}
            , coitem=coitem@Kind.Ops{okind=iokind} } <- getsState scops
   disco <- getsServer sdisco
@@ -388,8 +391,7 @@ addProjectile bpos rest iid blid bfid btime isShrapnel = do
       -- Not much details about a fast flying object.
       (object1, object2) = partItem coitem EM.empty item
       name = makePhrase [MU.AW $ MU.Text adj, object1, object2]
-      pathLength | isShrapnel = range `div` 4  -- fly for half a turn
-                 | otherwise = range
+      pathLength = lingerPercent * range `div` 100
       dirPath = take pathLength $ displacePath (bpos : rest)
       kind = okind $ projectileKindId coactor
       m = actorTemplate (projectileKindId coactor) (asymbol kind) name

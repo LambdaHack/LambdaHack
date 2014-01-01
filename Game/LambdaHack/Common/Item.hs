@@ -16,7 +16,7 @@ module Game.LambdaHack.Common.Item
     -- * Textual description
   , partItem, partItemWs, partItemAW
     -- * Assorted
-  , isFragile, isExplosive
+  , isFragile, isExplosive, isLingering
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -199,16 +199,35 @@ strongestRegen is =
     case jeffect i of Regeneration k -> Just k; _ -> Nothing
 
 isFragile :: Kind.Ops ItemKind -> Discovery -> Item -> Bool
-isFragile _cops disco i =
+isFragile Kind.Ops{okind} disco i =
   case jkind disco i of
     Nothing -> False
-    Just _ -> jname i == "potion" || jname i == "shrapnel"
+    Just ik ->
+      let kind = okind ik
+          getTo IF.Fragile _acc = True
+          getTo IF.Explode{} _acc = True
+          getTo _ acc = acc
+      in foldr getTo False $ ifeature kind
 
-isExplosive :: Kind.Ops ItemKind -> Discovery -> Item -> Bool
-isExplosive _cops disco i =
+isExplosive :: Kind.Ops ItemKind -> Discovery -> Item -> Maybe Text
+isExplosive Kind.Ops{okind} disco i =
   case jkind disco i of
-    Nothing -> False
-    Just _ -> jname i == "potion"
+    Nothing -> Nothing
+    Just ik ->
+      let kind = okind ik
+          getTo (IF.Explode cgroup) _acc = Just cgroup
+          getTo _ acc = acc
+      in foldr getTo Nothing $ ifeature kind
+
+isLingering :: Kind.Ops ItemKind -> Discovery -> Item -> Int
+isLingering Kind.Ops{okind} disco i =
+  case jkind disco i of
+    Nothing -> 100
+    Just ik ->
+      let kind = okind ik
+          getTo (IF.Linger percent) _acc = percent
+          getTo _ acc = acc
+      in foldr getTo 100 $ ifeature kind
 
 -- | The part of speech describing the item.
 partItem :: Kind.Ops ItemKind -> Discovery -> Item -> (MU.Part, MU.Part)
