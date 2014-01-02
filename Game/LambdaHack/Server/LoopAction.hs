@@ -378,8 +378,7 @@ explodeItem aid b container cgroup = do
   (item, n1, _) <- rndToAction
                    $ newItem coitem flavour discoRev itemFreq ldepth depth
   iid <- registerItem item n1 container False
-  let eps = 0
-      PointXY{..} = fromPoint $ bpos b
+  let PointXY x y = fromPoint $ bpos b
   let projectN n = replicateM_ n $ do
         tpxy <- rndToAction $ do
           border <- randomR (1, 4)
@@ -388,11 +387,12 @@ explodeItem aid b container cgroup = do
           -- from the source. Otherwise, e.g., the points on cardinal
           -- and diagonal lines from the source would be more common.
           case border :: Int of
-            1 -> fmap (PointXY (px - 10)) $ randomR (py - 10, py + 10)
-            2 -> fmap (PointXY (px + 10)) $ randomR (py - 10, py + 10)
-            3 -> fmap (flip PointXY (py - 10)) $ randomR (px - 10, px + 10)
-            4 -> fmap (flip PointXY (py + 10)) $ randomR (px - 10, px + 10)
+            1 -> fmap (PointXY (x - 10)) $ randomR (y - 10, y + 10)
+            2 -> fmap (PointXY (x + 10)) $ randomR (y - 10, y + 10)
+            3 -> fmap (flip PointXY (y - 10)) $ randomR (x - 10, x + 10)
+            4 -> fmap (flip PointXY (y + 10)) $ randomR (x - 10, x + 10)
             _ -> assert `failure` border
+        let eps = px tpxy + py tpxy
         mfail <- projectFail aid tpxy eps iid container True
         case mfail of
           Nothing -> return ()

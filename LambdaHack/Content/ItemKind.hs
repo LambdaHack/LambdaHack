@@ -214,20 +214,20 @@ fragrance = ItemKind
   , iverbApply   = "smell"
   , iverbProject = "exude"
   , iweight  = 1
-  , itoThrow = -70
-  , ifeature = [Fragile, Linger 50]
+  , itoThrow = -93  -- the slowest that gets anywhere (1 step only)
+  , ifeature = [Fragile]
   }
 mist = ItemKind
   { isymbol  = '\''
   , iname    = "mist"
   , ifreq    = [("mist", 1)]
   , iflavour = zipFancy [White]
-  , icount   = rollDeep (15, 2) (0, 0)
+  , icount   = rollDeep (12, 2) (0, 0)
   , iverbApply   = "inhale"
   , iverbProject = "blow"
   , iweight  = 1
-  , itoThrow = -85
-  , ifeature = [Cause $ Heal 2, Fragile]
+  , itoThrow = -87  -- the slowest that travels at least 2 steps
+  , ifeature = [Cause $ Heal 1, Fragile]
   }
 shrapnel = ItemKind
   { isymbol  = '\''
@@ -239,17 +239,17 @@ shrapnel = ItemKind
   , iverbProject = "toss"
   , iweight  = 10
   , itoThrow = 0
-  , ifeature = [Cause $ Hurt (rollDice 3 1) (intToDeep 0), Fragile, Linger 25]
+  , ifeature = [Cause $ Hurt (rollDice 1 1) (intToDeep 0), Fragile, Linger 20]
   }
 smoke = ItemKind
   { isymbol  = '\''
   , iname    = "smoke"
   , ifreq    = [("smoke", 1)]
   , iflavour = zipPlain [BrBlack]
-  , icount   = rollDeep (15, 2) (0, 0)
+  , icount   = rollDeep (12, 2) (0, 0)
   , iverbApply   = "inhale"
   , iverbProject = "blow"
   , iweight  = 1
-  , itoThrow = -80
-  , ifeature = [Fragile, Linger 75]
+  , itoThrow = -70
+  , ifeature = [Fragile]
   }

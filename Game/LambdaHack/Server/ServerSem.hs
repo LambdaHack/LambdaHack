@@ -351,7 +351,11 @@ projectFail source tpxy eps iid container isShrapnel = do
               if blockedByFoes then
                 return $ Just ProjectBlockFoes
               else do
-                projectBla source pos rest iid container
+                if isShrapnel && eps `mod` 2 == 0 then
+                  -- Make the explosion a bit less regular.
+                  projectBla source spos (pos:rest) iid container
+                else
+                  projectBla source pos rest iid container
                 return Nothing
 
 projectBla :: (MonadAtomic m, MonadServer m)

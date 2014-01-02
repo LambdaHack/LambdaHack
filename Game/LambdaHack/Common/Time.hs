@@ -144,13 +144,16 @@ speedFromWeight weight bonus =
       mpMs | w <= 500 = sInMs * 16
            | w > 500 && w <= 2000 = sInMs * 16 * 1500 `div` (w + 1000)
            | otherwise = sInMs * (10000 - w) `div` 1000
-  in Speed $ max 0 $ mpMs * (100 + b) `div` 100
+  in Speed $ max 1 $ mpMs * (100 + b) `div` 100
 
 -- | Calculate maximum range in meters of a projectile from its speed.
 -- See <https://github.com/kosmikus/LambdaHack/wiki/Item-statistics>.
 -- With this formula, each projectile flies for at most 1 second,
 -- that is 2 turns, and then drops to the ground.
--- Dividing and multiplying by 2 ensures both turns of flight
--- cover the same distance.
+-- We round down to the nearest multiple of 2 (unless the speed
+-- is very low), to ensure both turns of flight cover the same distance.
 rangeFromSpeed :: Speed -> Int
-rangeFromSpeed (Speed v) = fromIntegral $ 2 * (v `div` (sInMs * 2))
+rangeFromSpeed (Speed v) =
+  fromIntegral $ if v >= 2 * sInMs
+                 then 2 * (v `div` (2 * sInMs))
+                 else v `div` sInMs
