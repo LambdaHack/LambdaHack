@@ -181,6 +181,7 @@ cmdAtomicSemCli cmd = case cmd of
                   , sfper
                   , _sleader = gleader fact
                   , sundo = [CmdAtomic cmd]
+                  , sdifficulty = sdifficultyCli sdebugCli
                   , sdebugCli }
   ResumeA _fid sfper -> modifyClient $ \cli -> cli {sfper}
   KillExitA _fid -> killExitA

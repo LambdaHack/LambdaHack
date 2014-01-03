@@ -62,6 +62,7 @@ data StateClient = StateClient
   , smarkVision  :: !Bool          -- ^ mark leader and party FOV
   , smarkSmell   :: !Bool          -- ^ mark smell, if the leader can smell
   , smarkSuspect :: !Bool          -- ^ mark suspect features
+  , sdifficulty  :: !Int           -- ^ current game difficulty level
   , sdebugCli    :: !DebugModeCli  -- ^ client debugging mode
   }
   deriving (Show)
@@ -117,6 +118,7 @@ defStateClient shistory sconfigUI _sside sisAI =
     , smarkVision = False
     , smarkSmell = False
     , smarkSuspect = False
+    , sdifficulty = 0
     , sdebugCli = defDebugModeCli
     }
 
@@ -177,6 +179,7 @@ instance Binary StateClient where
     put smarkVision
     put smarkSmell
     put smarkSuspect
+    put sdifficulty
     put sdebugCli
   get = do
     stgtMode <- get
@@ -196,6 +199,7 @@ instance Binary StateClient where
     smarkVision <- get
     smarkSmell <- get
     smarkSuspect <- get
+    sdifficulty <- get
     sdebugCli <- get
     let sfper = EM.empty
         srandom = read g

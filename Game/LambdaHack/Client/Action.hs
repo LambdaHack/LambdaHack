@@ -317,10 +317,10 @@ scoreToSlideshow total status = do
   table <- getsState shigh
   time <- getsState stime
   date <- liftIO getClockTime
-  DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
+  sdifficulty <- getsClient sdifficulty
   let showScore (ntable, pos) = HighScore.highSlideshow ntable pos status
       diff | not $ playerUI $ gplayer fact = 0
-           | otherwise = sdifficultyCli
+           | otherwise = sdifficulty
   return $! maybe Monoid.mempty showScore
             $ HighScore.register table total time status date diff
 

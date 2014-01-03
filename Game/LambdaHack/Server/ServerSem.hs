@@ -21,6 +21,7 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import Game.LambdaHack.Common.Animation
 import Game.LambdaHack.Common.AtomicCmd
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Effect
@@ -507,4 +508,8 @@ gameSaveSer = do
 
 gameDifficultySer :: MonadServer m => Int -> m ()
 gameDifficultySer n =
-  modifyServer $ \ser -> ser {sdebugNxt = (sdebugNxt ser) {sdifficultySer = n}}
+  modifyServer $ \ser ->
+    ser {sdebugNxt = (sdebugNxt ser) { sdifficultySer = n
+                                     , sdebugCli = (sdebugCli (sdebugNxt ser))
+                                                     {sdifficultyCli = n}
+                                     }}
