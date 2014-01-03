@@ -98,6 +98,9 @@ moveRunHuman run dir = do
       [((target, _), _)] | run ->
         -- Displacing requires accessibility, but it's checked later on.
         displaceAid leader target
+      _ : _ : _ | run -> do
+        assert (all (bproj . snd . fst) tgts) skip
+        failSer DisplaceProjectiles
       ((target, tb), _) : _ -> do
         -- We always see actors from our own faction.
         if bfid tb == bfid sb && not (bproj tb) then do

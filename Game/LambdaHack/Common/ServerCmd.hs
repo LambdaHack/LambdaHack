@@ -66,6 +66,7 @@ data FailureSer =
   | MeleeDistant
   | DisplaceDistant
   | DisplaceAccess
+  | DisplaceProjectiles
   | AlterDistant
   | AlterBlockActor
   | AlterBlockItem
@@ -82,6 +83,7 @@ showFailureSer failureSer = case failureSer of
   MeleeDistant -> "trying to melee a distant foe"
   DisplaceDistant -> "trying to switch places with a distant actor"
   DisplaceAccess -> "switching places without access"
+  DisplaceProjectiles -> "trying to switch places with multiple projectiles"
   AlterDistant -> "trying to alter a distant tile"
   AlterBlockActor -> "blocked by an actor"
   AlterBlockItem -> "jammed by an item"
