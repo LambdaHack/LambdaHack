@@ -22,6 +22,7 @@ import Control.Concurrent
 import Control.Concurrent.STM (TQueue, atomically)
 import qualified Control.Concurrent.STM as STM
 import Control.DeepSeq
+import qualified Control.Exception as Ex hiding (handle)
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Control.Monad.State as St
@@ -51,8 +52,10 @@ import qualified Game.LambdaHack.Common.HighScore as HighScore
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Common.Save
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
@@ -189,6 +192,7 @@ sendPingUI fid = do
       -- debugPrint $ "UI client" <+> showT fid <+> "responded."
       assert (cmdHack == TakeTimeSer (WaitSer (toEnum (-1)))) skip
 
+-- TODO: refactor wrt Game.LambdaHack.Common.Save
 -- | Read the high scores table. Return the empty table if no file.
 -- Warning: when it's used, the game state
 -- may still be undefined, hence the config is given as an argument.
@@ -196,16 +200,26 @@ restoreScore :: MonadServer m => Config -> m HighScore.ScoreTable
 restoreScore Config{configAppDataDir, configScoresFile} = do
   let path = configAppDataDir </> configScoresFile
   configExists <- liftIO $ doesFileExist path
-  if not configExists
-    then return HighScore.empty
-    else liftIO $ strictDecodeEOF path
+  mscore <- liftIO $ do
+    res <- Ex.try $
+      if configExists then do
+        s <- strictDecodeEOF path
+        return $ Just s
+      else return Nothing
+    let handler :: Ex.SomeException -> IO (Maybe a)
+        handler e = do
+          let msg = "High score restore failed. The error message is:"
+                    <+> (T.unwords . T.lines) (showT e)
+          delayPrint $ msg
+          return Nothing
+    either handler return res
+  maybe (return HighScore.empty) return mscore
 
 -- | Generate a new score, register it and save.
 registerScore :: MonadServer m => Status -> Maybe Actor -> FactionId -> m ()
 registerScore status mbody fid = do
   assert (maybe True ((fid ==) . bfid) mbody) skip
-  factionD <- getsState sfactionD
-  let fact = factionD EM.! fid
+  fact <- getsState $ (EM.! fid) . sfactionD
   assert (playerHuman $ gplayer fact) skip
   total <- case mbody of
     Just body -> getsState $ snd . calculateTotal body
@@ -219,10 +233,13 @@ registerScore status mbody fid = do
   table <- restoreScore config
   time <- getsState stime
   date <- liftIO getClockTime
+  DebugModeSer{sdifficultySer} <- getsServer sdebugSer
   let path = configAppDataDir </> configScoresFile
       saveScore (ntable, _) =
         liftIO $ encodeEOF path (ntable :: HighScore.ScoreTable)
-  maybe skip saveScore $ HighScore.register table total time status date
+      diff | not $ playerUI $ gplayer fact = 0
+           | otherwise = sdifficultySer
+  maybe skip saveScore $ HighScore.register table total time status date diff
 
 resetSessionStart :: MonadServer m => m ()
 resetSessionStart = do

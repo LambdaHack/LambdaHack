@@ -19,10 +19,11 @@ import Game.LambdaHack.Common.Time
 -- | A single score record. Records are ordered in the highscore table,
 -- from the best to the worst, in lexicographic ordering wrt the fields below.
 data ScoreRecord = ScoreRecord
-  { points  :: !Int        -- ^ the score
-  , negTime :: !Time       -- ^ game time spent (negated, so less better)
-  , date    :: !ClockTime  -- ^ date of the last game interruption
-  , status  :: !Status     -- ^ reason of the game interruption
+  { points     :: !Int        -- ^ the score
+  , negTime    :: !Time       -- ^ game time spent (negated, so less better)
+  , date       :: !ClockTime  -- ^ date of the last game interruption
+  , status     :: !Status     -- ^ reason of the game interruption
+  , difficulty :: !Int        -- ^ difficulty of the game
   }
   deriving (Eq, Ord)
 
@@ -42,13 +43,14 @@ showScore (pos, score) =
       big = "                                                 "
       lil = "              "
       turns = - (negTime score `timeFit` timeTurn)
+      diff = 5 + difficulty score
      -- TODO: the spaces at the end are hand-crafted. Remove when display
      -- of overlays adds such spaces automatically.
   in map T.pack
        [ big
-       , printf "%4d. %6d  This adventuring party %s after %d turns  "
-                pos (points score) died turns
-       , lil ++ printf "on %s.  " curDate
+       , printf "%4d. %6d  This adventuring party %s under difficulty %d "
+                pos (points score) died diff
+       , lil ++ printf "after %d turns on %s.  " turns curDate
        ]
 
 -- | The list of scores, in decreasing order.
@@ -76,16 +78,19 @@ register :: ScoreTable  -- ^ old table
          -> Time        -- ^ game time spent
          -> Status      -- ^ reason of the game interruption
          -> ClockTime   -- ^ current date
+         -> Int         -- ^ difficulty level
          -> Maybe (ScoreTable, Int)
-register table total time status@Status{stOutcome} date =
-  let points = if stOutcome `elem` [Killed, Defeated, Restart]
-               then (total + 1) `div` 2
-               else if stOutcome == Conquer
-                    then let turnsSpent = timeFit time timeTurn
-                             speedup = 10000 - 5 * turnsSpent
-                             bonus = sqrt $ fromIntegral speedup :: Double
-                         in 10 + floor bonus
-                    else total
+register table total time status@Status{stOutcome} date difficulty =
+  let pUnscaled = if stOutcome `elem` [Killed, Defeated, Restart]
+                  then (total + 1) `div` 2
+                  else if stOutcome == Conquer
+                       then let turnsSpent = timeFit time timeTurn
+                                speedup = 10000 - 5 * turnsSpent
+                                bonus = sqrt $ fromIntegral speedup :: Double
+                            in 10 + floor bonus
+                       else total
+      points = (round :: Double -> Int)
+               $ fromIntegral pUnscaled * 1.5 ^^ difficulty
       negTime = timeNegate time
       score = ScoreRecord{..}
   in if points > 0 then Just $ insertPos score table else Nothing
@@ -143,16 +148,18 @@ highSlideshow table pos status =
   in toSlideshow $ map ([msg] ++) $ showCloseScores pos table height
 
 instance Binary ScoreRecord where
-  put (ScoreRecord p n (TOD cs cp) s) = do
+  put (ScoreRecord p n (TOD cs cp) s difficulty) = do
     put p
     put n
     put cs
     put cp
     put s
+    put difficulty
   get = do
     p <- get
     n <- get
     cs <- get
     cp <- get
     s <- get
-    return (ScoreRecord p n (TOD cs cp) s)
+    difficulty <- get
+    return $ ScoreRecord p n (TOD cs cp) s difficulty

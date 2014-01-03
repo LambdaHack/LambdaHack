@@ -276,8 +276,7 @@ addHero bfid ppos lid configHeroNames mNumber time = do
         fromMaybe ("Hero" <+> showT n) $ lookup n configHeroNames
            | otherwise = playerName gplayer <+> "Hero" <+> showT n
       startHP = hp - (hp `div` 5) * min 3 n
-  addActor
-    kId bfid ppos lid startHP symbol name gcolor time
+  addActor kId bfid ppos lid startHP symbol name gcolor time
 
 -- ** SpawnMonster
 

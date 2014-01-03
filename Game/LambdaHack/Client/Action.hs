@@ -312,12 +312,17 @@ displayPush = do
 
 scoreToSlideshow :: MonadClientUI m => Int -> Status -> m Slideshow
 scoreToSlideshow total status = do
+  fid <- getsClient sside
+  fact <- getsState $ (EM.! fid) . sfactionD
   table <- getsState shigh
   time <- getsState stime
   date <- liftIO getClockTime
+  DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
   let showScore (ntable, pos) = HighScore.highSlideshow ntable pos status
+      diff | not $ playerUI $ gplayer fact = 0
+           | otherwise = sdifficultyCli
   return $! maybe Monoid.mempty showScore
-            $ HighScore.register table total time status date
+            $ HighScore.register table total time status date diff
 
 restoreGame :: MonadClient m => m (Maybe (State, StateClient))
 restoreGame = do
