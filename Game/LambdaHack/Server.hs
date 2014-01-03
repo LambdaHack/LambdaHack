@@ -96,14 +96,12 @@ debugArgs = do
       parseArgs ("--newGame" : rest) =
         let debugSer = parseArgs rest
         in debugSer { snewGameSer = True
-                    , sdebugCli =
-                         (sdebugCli debugSer) {snewGameCli = True}}
+                    , sdebugCli = (sdebugCli debugSer) {snewGameCli = True}}
       parseArgs ("--difficulty" : s : rest) =
         let debugSer = parseArgs rest
-            diff = read s
+            diff = 5 - read s
         in debugSer { sdifficultySer = diff
-                    , sdebugCli =
-                         (sdebugCli debugSer) {sdifficultyCli = diff}}
+                    , sdebugCli = (sdebugCli debugSer) {sdifficultyCli = diff}}
       parseArgs ("--stopAfter" : s : rest) =
         (parseArgs rest) {sstopAfter = Just $ read s}
       parseArgs ("--dumpConfig" : rest) =
@@ -134,7 +132,7 @@ debugArgs = do
         let debugSer = parseArgs rest
         in debugSer { ssavePrefixSer = Just s
                     , sdebugCli =
-                         (sdebugCli debugSer) {ssavePrefixCli = Just s}}
+                        (sdebugCli debugSer) {ssavePrefixCli = Just s}}
       parseArgs ("--frontendStd" : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli = (sdebugCli debugSer) {sfrontendStd = True}}

@@ -242,10 +242,15 @@ addActor :: (MonadAtomic m, MonadServer m)
          => Kind.Id ActorKind -> FactionId -> Point -> LevelId -> Int
          -> Char -> Text -> Color.Color -> Time
          -> m ActorId
-addActor mk bfid pos lid hp bsymbol bname bcolor time = do
+addActor mk bfid pos lid hpUnscaled bsymbol bname bcolor time = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  Faction{gplayer} <- getsState $ (EM.! bfid) . sfactionD
+  DebugModeSer{sdifficultySer} <- getsServer sdebugSer
   let kind = okind mk
       speed = aspeed kind
+      hp | not $ playerUI gplayer = hpUnscaled
+         | otherwise = (round :: Double -> Int)
+                       $ fromIntegral hpUnscaled * 1.5 ^^ sdifficultySer
       m = actorTemplate mk bsymbol bname bcolor speed hp Nothing pos lid time
                         bfid False
   acounter <- getsServer sacounter
