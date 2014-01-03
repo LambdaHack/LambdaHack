@@ -44,6 +44,7 @@ cmdAction cmd = case cmd of
   GameRestart t -> gameRestartHuman t
   GameExit -> gameExitHuman
   GameSave -> fmap Right gameSaveHuman
+  GameDifficultyCycle -> fmap Right gameDifficultyCycle
 
   PickLeader k -> fmap Left $ pickLeaderHuman k
   MemberCycle -> fmap Left memberCycleHuman

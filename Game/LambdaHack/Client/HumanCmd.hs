@@ -28,7 +28,8 @@ data HumanCmd =
   | GameRestart !Text
   | GameExit
   | GameSave
-    -- These do not notify the server.
+  | GameDifficultyCycle
+  -- These do not notify the server.
   | PickLeader !Int
   | MemberCycle
   | MemberBack
@@ -120,6 +121,7 @@ cmdDescription cmd = case cmd of
   GameRestart t -> "new" <+> t <+> "game"
   GameExit    -> "save and exit"
   GameSave    -> "save game"
+  GameDifficultyCycle -> "cycle next game difficulty"
 
   PickLeader{} -> "pick leader"
   MemberCycle -> "cycle among party members on the level"

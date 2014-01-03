@@ -18,6 +18,7 @@
 ; o: AlterDir [AlterFeature {verb = "open", object = "door", feature = OpenTo "vertical open door Lit"}, AlterFeature {verb = "open", object = "door", feature = OpenTo "horizontal open door Lit"}, AlterFeature {verb = "open", object = "door", feature = OpenTo "vertical open door Dark"}, AlterFeature {verb = "open", object = "door", feature = OpenTo "horizontal open door Dark"}]
 ; less: TriggerTile [TriggerFeature {verb = "ascend", object = "level", feature = Cause (Ascend 1)}, TriggerFeature {verb = "escape", object = "dungeon", feature = Cause Escape}]
 ; greater: TriggerTile [TriggerFeature {verb = "descend", object = "level", feature = Cause (Ascend (-1))}, TriggerFeature {verb = "escape", object = "dungeon", feature = Cause Escape}]
+; CTRL-d: GameDifficultyCycle
 ; CTRL-r: GameRestart "campaign"
 ; ; TODO: pick game modes via arrow keys, not special keys
 ; CTRL-k: GameRestart "skirmish"

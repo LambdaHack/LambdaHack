@@ -43,7 +43,7 @@ showScore (pos, score) =
       big = "                                                 "
       lil = "              "
       turns = - (negTime score `timeFit` timeTurn)
-      diff = 5 + difficulty score
+      diff = 5 - difficulty score
      -- TODO: the spaces at the end are hand-crafted. Remove when display
      -- of overlays adds such spaces automatically.
   in map T.pack

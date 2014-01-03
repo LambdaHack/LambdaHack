@@ -4,7 +4,7 @@
 module Game.LambdaHack.Client.HumanGlobal
   ( moveRunHuman, waitHuman, pickupHuman, dropHuman
   , projectHuman, applyHuman, alterDirHuman, triggerTileHuman
-  , gameRestartHuman, gameExitHuman, gameSaveHuman
+  , gameRestartHuman, gameExitHuman, gameSaveHuman, gameDifficultyCycle
   , SlideOrCmd, failWith
   ) where
 
@@ -29,6 +29,7 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import Game.LambdaHack.Common.Animation
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
@@ -567,3 +568,14 @@ gameSaveHuman = do
   -- TODO: do not save to history:
   msgAdd "Saving game backup."
   return $ GameSaveSer leader
+
+-- * GameDifficultyCycle; does not take time
+
+gameDifficultyCycle :: MonadClientUI m => m CmdSer
+gameDifficultyCycle = do
+  leader <- getLeaderUI
+  DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
+  let d = if sdifficultyCli <= -4 then 4 else sdifficultyCli - 1
+  modifyClient $ \cli -> cli {sdebugCli = (sdebugCli cli) {sdifficultyCli = d}}
+  msgAdd $ "Next game difficulty set to" <+> showT (5 - d) <> "."
+  return $ GameDifficultySer leader d
