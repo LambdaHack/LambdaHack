@@ -41,6 +41,7 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import Game.LambdaHack.Common.Animation
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
@@ -513,6 +514,8 @@ displayMainMenu :: MonadClientUI m => m Slideshow
 displayMainMenu = do
   Kind.COps{corule} <- getsState scops
   Binding{krevMap} <- askBinding
+  sdifficulty <- getsClient sdifficulty
+  DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
   let stripFrame t = map (T.tail . T.init) $ tail . init $ T.lines t
       pasteVersion art =
         let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
@@ -535,9 +538,12 @@ displayMainMenu = do
         in [ (fst (revLookup HumanCmd.Cancel), "back to playing")
            , (fst (revLookup HumanCmd.Accept), "see more help") ]
            ++ map revLookup cmds
+           ++ [ (fst ( revLookup HumanCmd.GameDifficultyCycle)
+                     , "next game difficulty" <+> showT (5 - sdifficultyCli)
+                       <+> "(current" <+> showT (5 - sdifficulty) <> ")" ) ]
+      bindingLen = 25
       bindings =  -- key bindings to display
-        let bindingLen = 25
-            fmt (k, d) = T.justifyLeft bindingLen ' '
+        let fmt (k, d) = T.justifyLeft bindingLen ' '
                          $ T.justifyLeft 7 ' ' k <> " " <> d
         in map fmt kds
       overwrite =  -- overwrite the art with key bindings
@@ -546,7 +552,9 @@ displayMainMenu = do
               let (prefix, lineRest) = break (=='{') line
                   (braces, suffix)   = span  (=='{') lineRest
               in if length braces == 25
-                 then (bsRest, T.pack prefix <> binding <> T.pack suffix)
+                 then (bsRest, T.pack prefix <> binding
+                               <> T.drop (T.length binding - bindingLen)
+                                         (T.pack suffix))
                  else (bs, T.pack line)
         in snd . mapAccumL over bindings
       mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule

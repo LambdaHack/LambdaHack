@@ -112,7 +112,8 @@ Commands for saving and exiting the current game, starting a new game, etc.,
 are listed in the Main Menu, brough up by the ESC key.
 Some of the game modes are multiplayer or feature multiple computer
 players (allied or not). The setup of the modes can be modified
-via a configuration file.
+via a configuration file. Game difficulty setting affects only
+the starting hitpoints for the players that use the UI.
 
                key       command
                CTRL-x    save and exit
@@ -121,6 +122,7 @@ via a configuration file.
                CTRL-p    new PvP game
                CTRL-o    new Coop game
                CTRL-e    new defense game
+               CTRL-d    cycle next game difficulty
 
 There are also some debug, testing and cheat options and game modes
 that can be specified on the command line when starting the game server.
