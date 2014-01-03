@@ -305,12 +305,12 @@ getItem aid prompt p ptext bag inv isn = do
 projectHuman :: MonadClientUI m
              => [Trigger] -> m (SlideOrCmd CmdSerTakeTime)
 projectHuman ts = do
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
   tgtLoc <- targetToPos
-  if isNothing tgtLoc
+  if isNothing tgtLoc || Just (bpos b) == tgtLoc
     then fmap Left retargetLeader
-    else do
-      leader <- getLeaderUI
-      projectAid leader ts
+    else projectAid leader ts
 
 projectAid :: MonadClientUI m
            => ActorId -> [Trigger] -> m (SlideOrCmd CmdSerTakeTime)

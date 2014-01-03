@@ -195,8 +195,11 @@ itemOverlay bag inv = do
 retargetLeader :: MonadClientUI m => m Slideshow
 retargetLeader = do
   arena <- getArenaUI
+  tgtLoc <- targetToPos
+  if isNothing tgtLoc
   -- TODO: do not save to history:
-  msgAdd "Last target invalid."
+    then msgAdd "Last target invalid."
+    else msgAdd "Cannot aim at oneself."
   modifyClient $ \cli -> cli {scursor = Nothing, seps = 0}
   tgtEnemyLeader $ TgtAuto arena
 
