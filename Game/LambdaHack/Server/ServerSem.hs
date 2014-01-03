@@ -502,3 +502,9 @@ gameSaveSer :: MonadServer m => m ()
 gameSaveSer = do
   modifyServer $ \ser -> ser {sbkpSave = True}
   modifyServer $ \ser -> ser {squit = True}  -- do this at once
+
+-- * GameDifficultySer
+
+gameDifficultySer :: MonadServer m => Int -> m ()
+gameDifficultySer n =
+  modifyServer $ \ser -> ser {sdebugNxt = (sdebugNxt ser) {sdifficultySer = n}}

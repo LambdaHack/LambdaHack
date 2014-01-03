@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | Screen frames and animations.
 module Game.LambdaHack.Common.Animation
   ( SingleFrame(..), overlayOverlay, xsizeSingleFrame, ysizeSingleFrame
@@ -19,6 +19,7 @@ import Data.Maybe
 import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
+import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Color
 import qualified Game.LambdaHack.Common.Color as Color
@@ -242,6 +243,8 @@ data DebugModeCli = DebugModeCli
       -- ^ Don't show any animations.
   , snewGameCli    :: !Bool
       -- ^ Start a new game, overwriting the save file.
+  , sdifficultyCli :: !Int
+      -- ^ The difficulty level for all UI clients.
   , ssavePrefixCli :: !(Maybe String)
       -- ^ Prefix of the save game file.
   , sfrontendStd   :: !Bool
@@ -249,7 +252,7 @@ data DebugModeCli = DebugModeCli
   , sdbgMsgCli     :: !Bool
       -- ^ Show clients' internal debug messages.
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
 
 defDebugModeCli :: DebugModeCli
 defDebugModeCli = DebugModeCli
@@ -259,6 +262,7 @@ defDebugModeCli = DebugModeCli
   , snoMore = False
   , snoAnim = Nothing
   , snewGameCli = False
+  , sdifficultyCli = 0
   , ssavePrefixCli = Nothing
   , sfrontendStd = False
   , sdbgMsgCli = False
@@ -289,25 +293,4 @@ instance Binary SingleFrame where
     sfBottom <- get
     return SingleFrame{..}
 
-instance Binary DebugModeCli where
-  put DebugModeCli{..} = do
-    put sfont
-    put smaxFps
-    put snoDelay
-    put snoMore
-    put snoAnim
-    put snewGameCli
-    put ssavePrefixCli
-    put sfrontendStd
-    put sdbgMsgCli
-  get = do
-    sfont <- get
-    smaxFps <- get
-    snoDelay <- get
-    snoMore <- get
-    snoAnim <- get
-    snewGameCli <- get
-    ssavePrefixCli <- get
-    sfrontendStd <- get
-    sdbgMsgCli <- get
-    return DebugModeCli{..}
+instance Binary DebugModeCli

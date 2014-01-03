@@ -281,6 +281,8 @@ handleActors cmdSerSem lid = do
         -- the projectile does not move (the move is blocked).
         -- Not advancing time forces dead projectiles to be destroyed ASAP.
         -- Otherwise it would be displayed in the same place twice.
+        -- If ever needed this can be implemented properly by moving
+        -- SetPathSer out of TakeTimeSer.
         unless (bhp b < 0 || maybe False null (bpath b)) $ do
           advanceTime aid
           extraFrames b

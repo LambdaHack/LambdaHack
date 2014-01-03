@@ -33,6 +33,7 @@ cmdSerSem cmd = case cmd of
   GameRestartSer aid t -> gameRestartSer aid t >> return False
   GameExitSer aid -> gameExitSer aid >> return False
   GameSaveSer _ -> gameSaveSer >> return False
+  GameDifficultySer _ diff -> gameDifficultySer diff >> return False
 
 cmdSerSemTakeTime :: (MonadAtomic m, MonadServer m) => CmdSerTakeTime -> m ()
 cmdSerSemTakeTime cmd = case cmd of
@@ -61,6 +62,7 @@ debugArgs = do
         , "  --allClear let all map tiles be translucent"
         , "  --gameMode m start next game in the given mode"
         , "  --newGame start a new game, overwriting the save file"
+        , "  --difficulty n set difficulty for all UI players to n"
         , "  --stopAfter n exit this game session after around n seconds"
         , "  --dumpConfig dump server config at the start of the game"
         , "  --dbgMsgSer let the server emit its internal debug messages"
@@ -96,6 +98,12 @@ debugArgs = do
         in debugSer { snewGameSer = True
                     , sdebugCli =
                          (sdebugCli debugSer) {snewGameCli = True}}
+      parseArgs ("--difficulty" : s : rest) =
+        let debugSer = parseArgs rest
+            diff = read s
+        in debugSer { sdifficultySer = diff
+                    , sdebugCli =
+                         (sdebugCli debugSer) {sdifficultyCli = diff}}
       parseArgs ("--stopAfter" : s : rest) =
         (parseArgs rest) {sstopAfter = Just $ read s}
       parseArgs ("--dumpConfig" : rest) =

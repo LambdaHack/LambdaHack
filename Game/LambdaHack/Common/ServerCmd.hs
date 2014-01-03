@@ -22,6 +22,7 @@ data CmdSer =
   | GameRestartSer !ActorId !Text
   | GameExitSer !ActorId
   | GameSaveSer !ActorId
+  | GameDifficultySer !ActorId !Int
   deriving (Show, Eq)
 
 data CmdSerTakeTime =
@@ -38,7 +39,7 @@ data CmdSerTakeTime =
   | SetPathSer !ActorId
   deriving (Show, Eq)
 
--- | The actor that start performing the command (may be dead, after
+-- | The actor that starts performing the command (may be dead, after
 -- the command is performed).
 aidCmdSer :: CmdSer -> ActorId
 aidCmdSer cmd = case cmd of
@@ -46,6 +47,7 @@ aidCmdSer cmd = case cmd of
   GameRestartSer aid _ -> aid
   GameExitSer aid -> aid
   GameSaveSer aid -> aid
+  GameDifficultySer aid _ -> aid
 
 aidCmdSerTakeTime :: CmdSerTakeTime -> ActorId
 aidCmdSerTakeTime cmd = case cmd of
