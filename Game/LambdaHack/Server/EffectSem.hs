@@ -421,8 +421,7 @@ effectAscend power target = do
       return True
     Just failMsg -> do
       b <- getsState $ getActorBody target
-      execSfxAtomic $ MsgFidD (bfid b)
-                    $ "Unexpected problem:" <+> failMsg <> "."
+      execSfxAtomic $ MsgFidD (bfid b) failMsg
       return False
 
 effLvlGoUp :: MonadAtomic m => ActorId -> Int -> m (Maybe Msg)
@@ -433,9 +432,9 @@ effLvlGoUp aid k = do
       pos1 = bpos b1
   (lid2, pos2) <- getsState $ whereTo lid1 pos1 k
   if lid2 == lid1 && pos2 == pos1 then
-    return $ Just "the level exit is looped"
+    return $ Just "The effect fizzles: no more levels in this direction."
   else if bproj b1 then
-    return $ Just "projectiles can't exit levels"
+    assert `failure` "projectiles can't exit levels" `twith` (aid, k, b1)
   else do
     let switch1 = switchLevels1 ((aid, b1), ais1)
         switch2 = do
