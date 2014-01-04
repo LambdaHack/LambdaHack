@@ -360,10 +360,14 @@ dropAllItems aid b hit = do
       f iid k = do
         let container = actorContainer aid (binv b) iid
         item <- getsState $ getItemBody iid
-        if isDestroyed item then do
-          execCmdAtomic $ DestroyItemA iid item k container
-          let mcgroup = isExplosive coitem discoS item
-          maybe skip (explodeItem aid b container) mcgroup
+        if isDestroyed item then
+          case isExplosive coitem discoS item of
+            Nothing -> execCmdAtomic $ DestroyItemA iid item k container
+            Just cgroup -> do
+              let ik = fromJust $ jkind discoS item
+              execCmdAtomic $ DiscoverA (blid b) (bpos b) iid ik
+              execCmdAtomic $ DestroyItemA iid item k container
+              explodeItem aid b container cgroup
         else
           execCmdAtomic $ MoveItemA iid k container (CFloor (blid b) (bpos b))
   mapActorItems_ f b
