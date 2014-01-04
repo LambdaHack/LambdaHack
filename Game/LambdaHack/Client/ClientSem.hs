@@ -205,15 +205,10 @@ humanCommand msgRunStop = do
             Just (_, _, cmd) -> do
               -- Query and clear the last command key.
               lastKey <- getsClient slastKey
-              -- TODO: perhaps replace slastKey
-              -- with test 'kmNext == km'
-              -- or an extra arg to 'loop'.
-              -- Depends on whether slastKey
-              -- is needed in other parts of code.
               if Just km == lastKey
                 then cmdHumanSem Clear
                 else do
-                  modifyClient (\st -> st {slastKey = Just km})
+                  modifyClient $ \cli -> cli {slastKey = Just km}
                   cmdHumanSem cmd
             Nothing -> let msgKey = "unknown command <" <> K.showKM km <> ">"
                        in fmap Left $ promptToSlideshow msgKey
@@ -223,7 +218,7 @@ humanCommand msgRunStop = do
           Right cmdS -> do
             -- Exit the loop and let other actors act. No next key needed
             -- and no slides could have been generated.
-            modifyClient (\st -> st {slastKey = Nothing})
+            modifyClient $ \cli -> cli {slastKey = Nothing}
             return cmdS
           Left slides -> do
             -- If no time taken, rinse and repeat.
@@ -242,7 +237,7 @@ humanCommand msgRunStop = do
             case mLast of
               Nothing -> do
                 -- Display current state if no slideshow or interrupted.
-                modifyClient (\st -> st {slastKey = Nothing})
+                modifyClient $ \cli -> cli {slastKey = Nothing}
                 sli <- promptToSlideshow ""
                 loop $! head $! slideshow sli
               Just sLast ->

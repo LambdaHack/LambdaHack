@@ -59,6 +59,11 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 
+failWith :: MonadClientUI m => Msg -> m Slideshow
+failWith msg = do
+  modifyClient $ \cli -> cli {slastKey = Nothing}
+  assert (not $ T.null msg) $ promptToSlideshow msg
+
 -- * Move and Run
 
 moveCursor :: MonadClientUI m => Vector -> Int -> m Slideshow
@@ -157,7 +162,7 @@ doLook = do
       is = lvl `atI` p
   -- Show general info about current position.
   lookMsg <- lookAt True canSee p leader enemyMsg
-  modifyClient (\st -> st {slastKey = Nothing})
+  modifyClient $ \cli -> cli {slastKey = Nothing}
   if EM.size is <= 2 then
     promptToSlideshow (mode <+> lookMsg)
   else do
@@ -210,7 +215,7 @@ pickLeaderHuman k = do
   side <- getsClient sside
   s <- getState
   case tryFindHeroK s side k of
-    Nothing  -> promptToSlideshow "No such member of the party."
+    Nothing  -> failWith "No such member of the party."
     Just (aid, _) -> do
       void $ pickLeader aid
       return mempty
@@ -224,7 +229,7 @@ memberCycleHuman = do
   body <- getsState $ getActorBody leader
   hs <- partyAfterLeader leader
   case filter (\(_, b) -> blid b == blid body) hs of
-    [] -> promptToSlideshow "Cannot pick any other member on this level."
+    [] -> failWith "Cannot pick any other member on this level."
     (np, b) : _ -> do
       success <- pickLeader np
       assert (success `blame` "same leader" `twith` (leader, np, b)) skip
@@ -288,7 +293,7 @@ memberBackHuman = do
   leader <- getLeaderUI
   hs <- partyAfterLeader leader
   case reverse hs of
-    [] -> promptToSlideshow "No other member in the party."
+    [] -> failWith "No other member in the party."
     (np, b) : _ -> do
       success <- pickLeader np
       assert (success `blame` "same leader" `twith` (leader, np, b)) skip
@@ -430,7 +435,7 @@ tgtAscendHuman k = do
       doLook
     Nothing ->  -- no stairs in the right direction
       case ascendInBranch dungeon tgtId k of
-        [] -> promptToSlideshow "no more levels in this direction"
+        [] -> failWith "no more levels in this direction"
         nln : _ -> do
           setTgtId nln
           doLook
@@ -454,7 +459,7 @@ epsIncrHuman b = do
     then do
       modifyClient $ \cli -> cli {seps = seps cli + if b then 1 else -1}
       return mempty
-    else promptToSlideshow "never mind"  -- no visual feedback, so no sense
+    else failWith "never mind"  -- no visual feedback, so no sense
 
 -- * SelectActor
 
@@ -464,7 +469,7 @@ selectActorHuman ::MonadClientUI m => m Slideshow
 selectActorHuman = do
   mleader <- getsClient _sleader
   case mleader of
-    Nothing -> promptToSlideshow "no leader picked, can't select"
+    Nothing -> failWith "no leader picked, can't select"
     Just leader -> do
       body <- getsState $ getActorBody leader
       wasMemeber <- getsClient $ ES.member leader . sselected
@@ -590,7 +595,7 @@ targetReject :: MonadClientUI m => m Slideshow
 targetReject = do
   endTargeting
   modifyClient $ \cli -> cli {stgtMode = Nothing}
-  promptToSlideshow "targeting canceled"
+  failWith "targeting canceled"
 
 -- | End targeting mode, accepting the current position or not.
 endTargeting :: MonadClientUI m => m ()

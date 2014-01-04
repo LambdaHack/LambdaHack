@@ -49,7 +49,14 @@ import Game.LambdaHack.Content.TileKind as TileKind
 type SlideOrCmd a = Either Slideshow a
 
 failWith :: MonadClientUI m => Msg -> m (SlideOrCmd a)
-failWith msg = assert (not $ T.null msg) $ fmap Left $ promptToSlideshow msg
+failWith msg = do
+  modifyClient $ \cli -> cli {slastKey = Nothing}
+  assert (not $ T.null msg) $ fmap Left $ promptToSlideshow msg
+
+failSlides :: MonadClientUI m => Slideshow -> m (SlideOrCmd a)
+failSlides slides = do
+  modifyClient $ \cli -> cli {slastKey = Nothing}
+  return $ Left slides
 
 failSer :: MonadClientUI m => FailureSer -> m (SlideOrCmd a)
 failSer = failWith . showFailureSer
@@ -180,8 +187,8 @@ pickupHuman = do
 
 -- * Drop
 
--- TODO: you can drop an item already on the floor, which works correctly,
--- but is weird and useless.
+-- TODO: you can drop an item already on the floor (the '-' is there),
+-- which is weird and useless.
 -- | Drop a single item.
 dropHuman :: MonadClientUI m => m (SlideOrCmd CmdSerTakeTime)
 dropHuman = do
@@ -203,7 +210,7 @@ dropHuman = do
             [ MU.SubjectVerbSg subject "drop"
             , partItemWs coitem disco 1 item ]
           return $ Right $ DropSer leader iid
-    Left slides -> return $ Left slides
+    Left slides -> failSlides slides
 
 allObjectsName :: Text
 allObjectsName = "Objects"
@@ -276,7 +283,7 @@ getItem aid prompt p ptext bag invRaw isn = do
         io <- itemOverlay bag invOver
         akm <- displayChoiceUI (msg <+> choice ims) io (keys ims)
         case akm of
-          Left slides -> return $ Left slides
+          Left slides -> failSlides slides
           Right (km@K.KM {..}) -> do
             assert (modifier == K.NoModifier) skip
             case key of
@@ -371,7 +378,7 @@ projectBla source tpos eps ts = do
         Just (TgtAuto _) -> targetAccept
         _ -> return ()
       return $! Right $ ProjectSer source tpos eps iid container
-    Left slides -> return $ Left slides
+    Left slides -> failSlides slides
 
 triggerSymbols :: [Trigger] -> [Char]
 triggerSymbols [] = []
@@ -394,7 +401,7 @@ applyHuman ts = do
   case ggi of
     Right ((iid, _), (_, container)) ->
       return $! Right $ ApplySer leader iid container
-    Left slides -> return $ Left slides
+    Left slides -> failSlides slides
 
 -- | Let a human player choose any item with a given group name.
 -- Note that this does not guarantee the chosen item belongs to the group,
@@ -425,7 +432,7 @@ alterDirHuman ts = do
       prompt = makePhrase ["What to", verb1 MU.:> "? [movement key"]
   me <- displayChoiceUI prompt emptyOverlay keys
   case me of
-    Left slides -> return $ Left slides
+    Left slides -> failSlides slides
     Right e -> do
       leader <- getLeaderUI
       K.handleDir e (flip (alterTile leader) ts) (failWith "never mind")
@@ -485,7 +492,7 @@ triggerTile leader ts = do
       go <- verifyTrigger leader feat
       case go of
         Right () -> return $ Right $ TriggerSer leader $ Just feat
-        Left slides -> return $ Left slides
+        Left slides -> failSlides slides
 
 triggerFeatures :: [Trigger] -> [F.Feature]
 triggerFeatures [] = []
