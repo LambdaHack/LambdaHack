@@ -193,8 +193,17 @@ humanCommand :: forall m. MonadClientUI m
              => Msg
              -> m CmdSer
 humanCommand msgRunStop = do
-  let loop :: Overlay -> m CmdSer
-      loop over = do
+  let loop :: Maybe Overlay -> m CmdSer
+      loop mover = do
+        over <- case mover of
+          Nothing -> do
+            -- Display current state if no slideshow or if interrupted.
+            modifyClient $ \cli -> cli {slastKey = Nothing}
+            sli <- promptToSlideshow ""
+            return $! head $! slideshow sli
+          Just sLast ->
+            -- (Re-)display the last slide while waiting for the next key,
+            return sLast
         km <- getKeyOverlayCommand over
         -- Messages shown, so update history and reset current report.
         recordHistory
@@ -205,8 +214,10 @@ humanCommand msgRunStop = do
             Just (_, _, cmd) -> do
               -- Query and clear the last command key.
               lastKey <- getsClient slastKey
-              if Just km == lastKey
-                then cmdHumanSem Clear
+              if Just km == lastKey || km == K.escKey && isJust mover
+                then do
+                  modifyClient $ \cli -> cli {slastKey = Nothing}
+                  cmdHumanSem Clear
                 else do
                   modifyClient $ \cli -> cli {slastKey = Just km}
                   cmdHumanSem cmd
@@ -234,15 +245,7 @@ humanCommand msgRunStop = do
                 go <- getInitConfirms ColorFull [km]
                       $ toSlideshow $ reverse $ map overlay sls
                 return $! if go then Just sLast else Nothing
-            case mLast of
-              Nothing -> do
-                -- Display current state if no slideshow or interrupted.
-                modifyClient $ \cli -> cli {slastKey = Nothing}
-                sli <- promptToSlideshow ""
-                loop $! head $! slideshow sli
-              Just sLast ->
-                -- (Re-)display the last slide while waiting for the next key,
-                loop sLast
+            loop mLast
   sli <- promptToSlideshow msgRunStop
   let overlayInitial = head $ slideshow sli
-  loop overlayInitial
+  loop $ Just overlayInitial
