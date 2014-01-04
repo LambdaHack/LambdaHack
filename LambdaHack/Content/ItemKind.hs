@@ -16,9 +16,9 @@ cdefs = ContentDef
   , getFreq = ifreq
   , validate = ivalidate
   , content =
-      [amulet, dart, gem1, gem2, gem3, currency, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand1, wand2, fist, foot, tentacle, fragrance, mist, shrapnel, smoke]
+      [amulet, dart, gem1, gem2, gem3, currency, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand1, wand2, fist, foot, tentacle, fragrance, mist_healing, mist_wounding, glass_piece, smoke]
   }
-amulet,        dart, gem1, gem2, gem3, currency, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand1, wand2, fist, foot, tentacle, fragrance, mist, shrapnel, smoke :: ItemKind
+amulet,        dart, gem1, gem2, gem3, currency, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand1, wand2, fist, foot, tentacle, fragrance, mist_healing, mist_wounding, glass_piece, smoke :: ItemKind
 
 gem, potion, scroll, wand :: ItemKind  -- generic templates
 
@@ -110,11 +110,11 @@ potion1 = potion
   , ifeature = [Cause ApplyPerfume, Explode "fragrance"]
   }
 potion2 = potion
-  { ifeature = [Cause $ Heal 5, Explode "mist"]
+  { ifeature = [Cause $ Heal 5, Explode "mist healing"]
   }
 potion3 = potion
   { ifreq    = [("useful", 5)]
-  , ifeature = [Cause $ Heal (-5), Explode "shrapnel"]
+  , ifeature = [Cause $ Heal (-5), Explode "mist wounding"]
   }
 ring = ItemKind
   { isymbol  = '='
@@ -217,10 +217,10 @@ fragrance = ItemKind
   , itoThrow = -93  -- the slowest that gets anywhere (1 step only)
   , ifeature = [Fragile]
   }
-mist = ItemKind
+mist_healing = ItemKind
   { isymbol  = '\''
   , iname    = "mist"
-  , ifreq    = [("mist", 1)]
+  , ifreq    = [("mist healing", 1)]
   , iflavour = zipFancy [White]
   , icount   = rollDeep (12, 2) (0, 0)
   , iverbApply   = "inhale"
@@ -229,11 +229,23 @@ mist = ItemKind
   , itoThrow = -87  -- the slowest that travels at least 2 steps
   , ifeature = [Cause $ Heal 1, Fragile]
   }
-shrapnel = ItemKind
+mist_wounding = ItemKind
   { isymbol  = '\''
-  , iname    = "shrapnel"
-  , ifreq    = [("shrapnel", 1)]
-  , iflavour = zipPlain [Red]
+  , iname    = "mist"
+  , ifreq    = [("mist wounding", 1)]
+  , iflavour = zipFancy [White]
+  , icount   = rollDeep (12, 2) (0, 0)
+  , iverbApply   = "inhale"
+  , iverbProject = "blow"
+  , iweight  = 1
+  , itoThrow = -87
+  , ifeature = [Cause $ Heal (-1), Fragile]
+  }
+glass_piece = ItemKind
+  { isymbol  = '\''
+  , iname    = "glass piece"
+  , ifreq    = [("glass piece", 1)]
+  , iflavour = zipPlain [BrBlue]
   , icount   = rollDeep (10, 2) (0, 0)
   , iverbApply   = "grate"
   , iverbProject = "toss"
