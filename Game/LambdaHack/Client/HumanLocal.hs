@@ -183,13 +183,12 @@ itemOverlay bag inv = do
   Kind.COps{coitem} <- getsState scops
   s <- getState
   disco <- getsClient sdisco
-  let checkItem (l, iid) = fmap (\k -> (l, iid, k)) $ EM.lookup iid bag
-      is = mapMaybe checkItem $ EM.assocs inv
-      pr (l, iid, k) =
+  let pr (l, iid) =
          makePhrase [ letterLabel l
-                    , partItemWs coitem disco k (getItemBody iid s) ]
+                    , partItemWs coitem disco (bag EM.! iid)
+                                 (getItemBody iid s) ]
          <> " "
-  return $ toOverlay $ map pr is
+  return $ toOverlay $ map pr $ EM.assocs inv
 
 -- * Project
 
@@ -306,7 +305,7 @@ inventoryHuman = do
   leader <- getLeaderUI
   subject <- partAidLeader leader
   bag <- getsState $ getActorBag leader
-  inv <- getsState $ getActorInv leader
+  invRaw <- getsState $ getActorInv leader
   if EM.null bag
     then promptToSlideshow $ makeSentence
       [ MU.SubjectVerbSg subject "be"
@@ -314,6 +313,7 @@ inventoryHuman = do
     else do
       let blurb = makePhrase
             [MU.Capitalize $ MU.SubjectVerbSg subject "be carrying:"]
+          inv = EM.filter (`EM.member` bag) invRaw
       io <- itemOverlay bag inv
       overlayToSlideshow blurb io
 

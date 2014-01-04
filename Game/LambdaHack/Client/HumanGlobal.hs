@@ -231,15 +231,15 @@ getItem :: MonadClientUI m
         -> ItemInv         -- ^ inventory characters
         -> Text            -- ^ how to refer to the collection of items
         -> m (SlideOrCmd ((ItemId, Item), (Int, Container)))
-getItem aid prompt p ptext bag inv isn = do
+getItem aid prompt p ptext bag invRaw isn = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   lvl <- getLevel $ blid b
   s <- getState
   body <- getsState $ getActorBody aid
-  let checkItem (l, iid) =
-        fmap (\k -> ((iid, getItemBody iid s), (k, l))) $ EM.lookup iid bag
-      is0 = mapMaybe checkItem $ EM.assocs inv
+  let inv = EM.filter (`EM.member` bag) invRaw
+      checkItem (l, iid) = ((iid, getItemBody iid s), (bag EM.! iid, l))
+      is0 = map checkItem $ EM.assocs inv
       pos = bpos body
       tis = lvl `atI` pos
       floorFull = not $ EM.null tis
@@ -281,7 +281,9 @@ getItem aid prompt p ptext bag inv isn = do
             assert (modifier == K.NoModifier) skip
             case key of
               K.Char '?' -> case itemDialogState of
-                INone -> perform ISuitable
+                INone -> if EM.null invP
+                         then perform IAll
+                         else perform ISuitable
                 ISuitable | ptext /= allObjectsName -> perform IAll
                 _ -> perform INone
               K.Char '-' | floorFull ->
