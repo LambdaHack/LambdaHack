@@ -281,7 +281,7 @@ getItem aid prompt p ptext bag invRaw isn = do
               ISuitable -> (isp, invP, ptext <+> isn <> ".")
               IAll      -> (is0, inv, allObjectsName <+> isn <> ".")
         io <- itemOverlay bag invOver
-        akm <- displayChoiceUI (msg <+> choice ims) io (keys ims)
+        akm <- displayChoiceUI (msg <+> choice ims) io (keys is0)
         case akm of
           Left slides -> failSlides slides
           Right (km@K.KM {..}) -> do
@@ -302,9 +302,9 @@ getItem aid prompt p ptext bag invRaw isn = do
                                 (k, CFloor (blid b) pos)))
                        $ EM.assocs tis
               K.Char l ->
-                case find ((InvChar l ==) . snd . snd) ims of
+                case find ((InvChar l ==) . snd . snd) is0 of
                   Nothing -> assert `failure` "unexpected inventory letter"
-                                    `twith` (km, l,  ims)
+                                    `twith` (km, l,  is0)
                   Just (iidItem, (k, l2)) ->
                     return $ Right (iidItem, (k, CActor aid l2))
               K.Return | bestFull ->
