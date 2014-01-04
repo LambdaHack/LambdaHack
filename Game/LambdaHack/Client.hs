@@ -34,7 +34,7 @@ storeUndo _atomic =
   maybe skip (\a -> modifyClient $ \cli -> cli {sundo = a : sundo cli})
     $ Nothing   -- TODO: undoAtomic atomic
 
-cmdClientAISem :: (MonadAtomic m, MonadClientWriteServer CmdSerTakeTime m)
+cmdClientAISem :: (MonadAtomic m, MonadClientWriteServer CmdTakeTimeSer m)
                => CmdClientAI -> m ()
 cmdClientAISem cmd = case cmd of
   CmdAtomicAI cmdA -> do
@@ -71,7 +71,7 @@ cmdClientUISem cmd = case cmd of
     snoMore <- getsClient $ snoMore . sdebugCli
     when snoMore $ void $ displayMore ColorFull "Flushing frames."
     -- Return the ping.
-    writeServer $ TakeTimeSer $ WaitSer $ toEnum (-1)
+    writeServer $ CmdTakeTimeSer $ WaitSer $ toEnum (-1)
 
 -- | Wire together game content, the main loop of game clients,
 -- the main game loop assigned to this frontend (possibly containing
@@ -82,17 +82,17 @@ exeFrontend :: ( MonadAtomic m, MonadClientUI m
                , MonadClientWriteServer CmdSer m
                , MonadAtomic n
                , MonadClientReadServer CmdClientAI n
-               , MonadClientWriteServer CmdSerTakeTime n )
+               , MonadClientWriteServer CmdTakeTimeSer n )
             => (m () -> SessionUI -> State -> StateClient
                 -> ChanServer CmdClientUI CmdSer
                 -> IO ())
             -> (n () -> SessionUI -> State -> StateClient
-                -> ChanServer CmdClientAI CmdSerTakeTime
+                -> ChanServer CmdClientAI CmdTakeTimeSer
                 -> IO ())
             -> Kind.COps -> DebugModeCli
             -> ((FactionId -> ChanFrontend -> ChanServer CmdClientUI CmdSer
                  -> IO ())
-               -> (FactionId -> ChanServer CmdClientAI CmdSerTakeTime
+               -> (FactionId -> ChanServer CmdClientAI CmdTakeTimeSer
                    -> IO ())
                -> IO ())
             -> IO ()

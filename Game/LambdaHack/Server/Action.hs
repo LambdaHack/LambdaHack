@@ -123,13 +123,13 @@ writeTQueueUI cmd fromServer = do
     liftIO $ T.hPutStrLn stderr d
   liftIO $ atomically $ STM.writeTQueue fromServer cmd
 
-readTQueueAI :: MonadConnServer m => TQueue CmdSerTakeTime -> m CmdSerTakeTime
+readTQueueAI :: MonadConnServer m => TQueue CmdTakeTimeSer -> m CmdTakeTimeSer
 readTQueueAI toServer = do
   cmd <- liftIO $ atomically $ STM.readTQueue toServer
   debug <- getsServer $ sniffIn . sdebugSer
   when debug $ do
-    let aid = aidCmdSerTakeTime cmd
-    d <- debugAid aid "CmdSerTakeTime" cmd
+    let aid = aidCmdTakeTimeSer cmd
+    d <- debugAid aid "CmdTakeTimeSer" cmd
     liftIO $ T.hPutStrLn stderr d
   return cmd
 
@@ -148,7 +148,7 @@ sendUpdateAI fid cmd = do
   conn <- getsDict $ snd . (EM.! fid)
   writeTQueueAI cmd $ fromServer conn
 
-sendQueryAI :: MonadConnServer m => FactionId -> ActorId -> m CmdSerTakeTime
+sendQueryAI :: MonadConnServer m => FactionId -> ActorId -> m CmdTakeTimeSer
 sendQueryAI fid aid = do
   conn <- getsDict $ snd . (EM.! fid)
   writeTQueueAI (CmdQueryAI aid) $ fromServer conn
@@ -190,7 +190,7 @@ sendPingUI fid = do
       -- debugPrint $ "UI client" <+> showT fid <+> "pinged..."
       cmdHack <- readTQueueUI $ toServer conn
       -- debugPrint $ "UI client" <+> showT fid <+> "responded."
-      assert (cmdHack == TakeTimeSer (WaitSer (toEnum (-1)))) skip
+      assert (cmdHack == CmdTakeTimeSer (WaitSer (toEnum (-1)))) skip
 
 -- TODO: refactor wrt Game.LambdaHack.Common.Save
 -- | Read the high scores table. Return the empty table if no file.
@@ -356,7 +356,7 @@ updateConn :: (MonadAtomic m, MonadConnServer m)
                -> ChanServer CmdClientUI CmdSer
                -> IO ())
            -> (FactionId
-               -> ChanServer CmdClientAI CmdSerTakeTime
+               -> ChanServer CmdClientAI CmdTakeTimeSer
                -> IO ())
            -> m ()
 updateConn executorUI executorAI = do

@@ -31,15 +31,16 @@ cmdHumanSem cmd = do
 -- | Compute the basic action for a command and mark whether it takes time.
 cmdAction :: MonadClientUI m => HumanCmd -> m (SlideOrCmd CmdSer)
 cmdAction cmd = case cmd of
-  Move v -> fmap (fmap TakeTimeSer) $ moveRunHuman False v
-  Run v -> fmap (fmap TakeTimeSer) $ moveRunHuman True v
-  Wait -> fmap Right $ fmap TakeTimeSer waitHuman
-  Pickup -> fmap (fmap TakeTimeSer) pickupHuman
-  Drop -> fmap (fmap TakeTimeSer) dropHuman
-  Project ts -> fmap (fmap TakeTimeSer) $ projectHuman ts
-  Apply ts -> fmap (fmap TakeTimeSer) $ applyHuman ts
-  AlterDir ts -> fmap (fmap TakeTimeSer) $ alterDirHuman ts
-  TriggerTile ts ->  fmap (fmap TakeTimeSer) $ triggerTileHuman ts
+  Move v -> fmap (fmap CmdTakeTimeSer) $ moveRunHuman False v
+  Run v -> fmap (fmap CmdTakeTimeSer) $ moveRunHuman True v
+  Wait -> fmap Right $ fmap CmdTakeTimeSer waitHuman
+  Pickup -> fmap (fmap CmdTakeTimeSer) pickupHuman
+  Drop -> fmap (fmap CmdTakeTimeSer) dropHuman
+  Project ts -> fmap (fmap CmdTakeTimeSer) $ projectHuman ts
+  Apply ts -> fmap (fmap CmdTakeTimeSer) $ applyHuman ts
+  AlterDir ts -> fmap (fmap CmdTakeTimeSer) $ alterDirHuman ts
+  TriggerTile ts -> fmap (fmap CmdTakeTimeSer) $ triggerTileHuman ts
+  Repeat n -> fmap (fmap CmdTakeTimeSer) $ repeatHuman n
 
   GameRestart t -> gameRestartHuman t
   GameExit -> gameExitHuman

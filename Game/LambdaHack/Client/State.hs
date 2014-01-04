@@ -29,6 +29,7 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Vector
 
@@ -54,6 +55,8 @@ data StateClient = StateClient
   , srandom      :: !R.StdGen      -- ^ current random generator
   , sconfigUI    :: ConfigUI       -- ^ client config (including initial RNG)
   , slastKey     :: !(Maybe K.KM)  -- ^ last command key pressed
+  , slastCmd     :: !(Maybe CmdTakeTimeSer)
+                                   -- ^ last command sent to the server
   , _sleader     :: !(Maybe ActorId)
                                    -- ^ current picked party leader
   , _sside       :: !FactionId     -- ^ faction controlled by the client
@@ -111,6 +114,7 @@ defStateClient shistory sconfigUI _sside sisAI =
     , sconfigUI
     , srandom = R.mkStdGen 42  -- will be set later
     , slastKey = Nothing
+    , slastCmd = Nothing
     , _sleader = Nothing  -- no heroes yet alive
     , _sside
     , squit = False
@@ -204,6 +208,7 @@ instance Binary StateClient where
     let sfper = EM.empty
         srandom = read g
         slastKey = Nothing
+        slastCmd = Nothing
         squit = False
         sconfigUI = undefined
     return StateClient{..}

@@ -41,7 +41,7 @@ import Game.LambdaHack.Content.TileKind
 
 -- | Continue running in the given direction.
 continueRun :: MonadClient m
-            => RunParams -> m (Either Msg (RunParams, CmdSerTakeTime))
+            => RunParams -> m (Either Msg (RunParams, CmdTakeTimeSer))
 continueRun paramOld =
   case paramOld of
     RunParams{ runMembers = []
@@ -97,7 +97,7 @@ continueRun paramOld =
 
 -- | Actor moves or searches or alters. No visible actor at the position.
 moveRunAid :: MonadClient m
-           => ActorId -> Vector -> m (Either Msg CmdSerTakeTime)
+           => ActorId -> Vector -> m (Either Msg CmdTakeTimeSer)
 moveRunAid source dir = do
   cops@Kind.COps{cotile} <- getsState scops
   sb <- getsState $ getActorBody source

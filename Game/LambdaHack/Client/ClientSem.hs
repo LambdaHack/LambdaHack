@@ -38,7 +38,7 @@ import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Utils.Frequency
 
-queryAI :: MonadClient m => ActorId -> m CmdSerTakeTime
+queryAI :: MonadClient m => ActorId -> m CmdTakeTimeSer
 queryAI oldAid = do
   Kind.COps{cofaction=Kind.Ops{okind}, corule} <- getsState scops
   side <- getsClient sside
@@ -128,7 +128,7 @@ queryAI oldAid = do
           modifyClient $ updateLeader aid s
           queryAIPick aid
 
-queryAIPick :: MonadClient m => ActorId -> m CmdSerTakeTime
+queryAIPick :: MonadClient m => ActorId -> m CmdTakeTimeSer
 queryAIPick aid = do
   Kind.COps{cofaction=Kind.Ops{okind}} <- getsState scops
   side <- getsClient sside
@@ -185,7 +185,7 @@ queryUI aid = do
           humanCommand msg
         Right (paramNew, runCmd) -> do
           modifyClient $ \cli -> cli {srunning = Just paramNew}
-          return $ TakeTimeSer runCmd
+          return $ CmdTakeTimeSer runCmd
 
 -- | Determine and process the next human player command. The argument is
 -- the last stop message due to running, if any.
@@ -230,6 +230,10 @@ humanCommand msgRunStop = do
             -- Exit the loop and let other actors act. No next key needed
             -- and no slides could have been generated.
             modifyClient $ \cli -> cli {slastKey = Nothing}
+            case cmdS of
+              CmdTakeTimeSer cmd ->
+                modifyClient $ \cli -> cli {slastCmd = Just cmd}
+              _ -> return ()
             return cmdS
           Left slides -> do
             -- If no time taken, rinse and repeat.

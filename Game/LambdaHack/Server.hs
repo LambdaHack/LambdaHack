@@ -29,13 +29,13 @@ import Game.LambdaHack.Utils.Thread
 -- indicates if the command took some time.
 cmdSerSem :: (MonadAtomic m, MonadServer m) => CmdSer -> m Bool
 cmdSerSem cmd = case cmd of
-  TakeTimeSer cmd2 -> cmdSerSemTakeTime cmd2 >> return True
+  CmdTakeTimeSer cmd2 -> cmdSerSemTakeTime cmd2 >> return True
   GameRestartSer aid t -> gameRestartSer aid t >> return False
   GameExitSer aid -> gameExitSer aid >> return False
   GameSaveSer _ -> gameSaveSer >> return False
   GameDifficultySer _ diff -> gameDifficultySer diff >> return False
 
-cmdSerSemTakeTime :: (MonadAtomic m, MonadServer m) => CmdSerTakeTime -> m ()
+cmdSerSemTakeTime :: (MonadAtomic m, MonadServer m) => CmdTakeTimeSer -> m ()
 cmdSerSemTakeTime cmd = case cmd of
   MoveSer source target -> moveSer source target
   MeleeSer source target -> meleeSer source target
@@ -154,7 +154,7 @@ mainSer :: (MonadAtomic m, MonadConnServer m)
         -> (Kind.COps -> DebugModeCli
             -> ((FactionId -> ChanFrontend -> ChanServer CmdClientUI CmdSer
                  -> IO ())
-                -> (FactionId -> ChanServer CmdClientAI CmdSerTakeTime
+                -> (FactionId -> ChanServer CmdClientAI CmdTakeTimeSer
                     -> IO ())
                 -> IO ())
             -> IO ())

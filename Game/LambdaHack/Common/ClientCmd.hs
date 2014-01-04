@@ -104,7 +104,7 @@ data ChanServer c d = ChanServer
 -- | Connections to the human-controlled client of a faction and
 -- to the AI client for the same faction.
 type ConnServerFaction = ( Maybe (ChanFrontend, ChanServer CmdClientUI CmdSer)
-                         , ChanServer CmdClientAI CmdSerTakeTime )
+                         , ChanServer CmdClientAI CmdTakeTimeSer )
 
 -- | Connection information for all factions, indexed by faction identifier.
 type ConnServerDict = EM.EnumMap FactionId ConnServerFaction

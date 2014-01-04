@@ -118,7 +118,7 @@ reacquireTgt aid factionAbilities btarget fper = do
 
 -- | AI strategy based on actor's sight, smell, intelligence, etc. Never empty.
 actionStrategy :: MonadClient m
-               => ActorId -> [Ability] -> m (Strategy CmdSerTakeTime)
+               => ActorId -> [Ability] -> m (Strategy CmdTakeTimeSer)
 actionStrategy aid factionAbilities = do
   disco <- getsClient sdisco
   btarget <- getsClient $ getTarget aid
@@ -126,7 +126,7 @@ actionStrategy aid factionAbilities = do
 
 proposeAction :: MonadActionRO m
               => Discovery -> ActorId -> [Ability] -> Maybe Target
-              -> m (Strategy CmdSerTakeTime)
+              -> m (Strategy CmdTakeTimeSer)
 proposeAction disco aid factionAbilities btarget = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   Actor{bkind, bpos, blid} <- getsState $ getActorBody aid
@@ -148,7 +148,7 @@ proposeAction disco aid factionAbilities btarget = do
       (prefix, rest)    = break isDistant actorAbilities
       (distant, suffix) = partition isDistant rest
       -- TODO: Ranged and Tools should only be triggered in some situations.
-      aFrequency :: MonadActionRO m => Ability -> m (Frequency CmdSerTakeTime)
+      aFrequency :: MonadActionRO m => Ability -> m (Frequency CmdTakeTimeSer)
       aFrequency Ability.Trigger = if foeVisible then return mzero
                                    else triggerFreq aid
       aFrequency Ability.Ranged = if not foeVisible then return mzero
@@ -159,11 +159,11 @@ proposeAction disco aid factionAbilities btarget = do
                                   else chaseFreq
       aFrequency ab             = assert `failure` "unexpected ability"
                                           `twith` (ab, distant, actorAbilities)
-      chaseFreq :: MonadActionRO m => m (Frequency CmdSerTakeTime)
+      chaseFreq :: MonadActionRO m => m (Frequency CmdTakeTimeSer)
       chaseFreq = do
         st <- chase aid (fpos, foeVisible)
         return $ scaleFreq 30 $ bestVariant st
-      aStrategy :: MonadActionRO m => Ability -> m (Strategy CmdSerTakeTime)
+      aStrategy :: MonadActionRO m => Ability -> m (Strategy CmdTakeTimeSer)
       aStrategy Ability.Track  = track aid
       aStrategy Ability.Heal   = return mzero  -- TODO
       aStrategy Ability.Flee   = return mzero  -- TODO
@@ -191,11 +191,11 @@ proposeAction disco aid factionAbilities btarget = do
            .| waitBlockNow aid
 
 -- | A strategy to always just wait.
-waitBlockNow :: ActorId -> Strategy CmdSerTakeTime
+waitBlockNow :: ActorId -> Strategy CmdTakeTimeSer
 waitBlockNow aid = returN "wait" $ WaitSer aid
 
 -- | Strategy for a dumb missile or a strongly hurled actor.
-track :: MonadActionRO m => ActorId -> m (Strategy CmdSerTakeTime)
+track :: MonadActionRO m => ActorId -> m (Strategy CmdTakeTimeSer)
 track aid = do
   bpath <- getsState $ bpath . getActorBody aid
   return $! if isNothing bpath
@@ -203,7 +203,7 @@ track aid = do
             else returN "SetPathSer" $ SetPathSer aid
 
 -- TODO: (most?) animals don't pick up. Everybody else does.
-pickup :: MonadActionRO m => ActorId -> m (Strategy CmdSerTakeTime)
+pickup :: MonadActionRO m => ActorId -> m (Strategy CmdTakeTimeSer)
 pickup aid = do
   body@Actor{bpos, blid} <- getsState $ getActorBody aid
   lvl <- getLevel blid
@@ -219,7 +219,7 @@ pickup aid = do
 
 -- Everybody melees in a pinch, even though some prefer ranged attacks.
 melee :: MonadActionRO m
-      => ActorId -> Point -> ActorId -> m (Strategy CmdSerTakeTime)
+      => ActorId -> Point -> ActorId -> m (Strategy CmdTakeTimeSer)
 melee aid fpos foeAid = do
   Actor{bpos} <- getsState $ getActorBody aid
   let foeAdjacent = adjacent bpos fpos  -- MeleeDistant
@@ -227,7 +227,7 @@ melee aid fpos foeAid = do
 
 -- Fast monsters don't pay enough attention to features.
 triggerFreq :: MonadActionRO m
-            => ActorId -> m (Frequency CmdSerTakeTime)
+            => ActorId -> m (Frequency CmdTakeTimeSer)
 triggerFreq aid = do
   cops@Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
   b@Actor{bpos, blid, bfid, boldpos} <- getsState $ getActorBody aid
@@ -258,7 +258,7 @@ triggerFreq aid = do
 -- Actors require sight to use ranged combat and intelligence to throw
 -- or zap anything else than obvious physical missiles.
 rangedFreq :: MonadActionRO m
-           => Discovery -> ActorId -> Point -> m (Frequency CmdSerTakeTime)
+           => Discovery -> ActorId -> Point -> m (Frequency CmdTakeTimeSer)
 rangedFreq disco aid fpos = do
   cops@Kind.COps{ coactor=Kind.Ops{okind}
                 , coitem=Kind.Ops{okind=iokind}
@@ -311,7 +311,7 @@ rangedFreq disco aid fpos = do
 
 -- Tools use requires significant intelligence and sometimes literacy.
 toolsFreq :: MonadActionRO m
-          => Discovery -> ActorId -> m (Frequency CmdSerTakeTime)
+          => Discovery -> ActorId -> m (Frequency CmdTakeTimeSer)
 toolsFreq disco aid = do
   cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   b@Actor{bkind, bpos, blid, bbag, binv} <- getsState $ getActorBody aid
@@ -450,7 +450,7 @@ bumpableHere Kind.COps{cotile} lvl foeVisible asight pos =
         asight && not foeVisible && Tile.hasFeature cotile F.Suspect t
 
 chase :: MonadActionRO m
-      => ActorId -> (Point, Bool) -> m (Strategy CmdSerTakeTime)
+      => ActorId -> (Point, Bool) -> m (Strategy CmdTakeTimeSer)
 chase aid foe@(_, foeVisible) = do
   cops <- getsState scops
   -- Target set and we chase the foe or offer null strategy if we can't.
@@ -464,7 +464,7 @@ chase aid foe@(_, foeVisible) = do
     else Traversable.mapM (moveOrRunAid True aid) str
 
 wander :: MonadActionRO m
-       => ActorId -> m (Strategy CmdSerTakeTime)
+       => ActorId -> m (Strategy CmdTakeTimeSer)
 wander aid = do
   cops <- getsState scops
   -- Target set, but we don't chase the foe, e.g., because we are blocked
@@ -476,7 +476,7 @@ wander aid = do
 
 -- | Actor moves or searches or alters or attacks. Displaces if @run@.
 moveOrRunAid :: MonadActionRO m
-           => Bool -> ActorId -> Vector -> m CmdSerTakeTime
+           => Bool -> ActorId -> Vector -> m CmdTakeTimeSer
 moveOrRunAid run source dir = do
   cops@Kind.COps{cotile} <- getsState scops
   sb <- getsState $ getActorBody source

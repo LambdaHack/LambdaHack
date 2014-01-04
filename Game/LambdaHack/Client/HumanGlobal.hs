@@ -3,7 +3,7 @@
 -- TODO: document
 module Game.LambdaHack.Client.HumanGlobal
   ( moveRunHuman, waitHuman, pickupHuman, dropHuman
-  , projectHuman, applyHuman, alterDirHuman, triggerTileHuman
+  , projectHuman, applyHuman, alterDirHuman, triggerTileHuman, repeatHuman
   , gameRestartHuman, gameExitHuman, gameSaveHuman, gameDifficultyCycle
   , SlideOrCmd, failWith
   ) where
@@ -64,7 +64,7 @@ failSer = failWith . showFailureSer
 -- * Move and Run
 
 moveRunHuman :: MonadClientUI m
-             => Bool -> Vector -> m (SlideOrCmd CmdSerTakeTime)
+             => Bool -> Vector -> m (SlideOrCmd CmdTakeTimeSer)
 moveRunHuman run dir = do
   tgtMode <- getsClient stgtMode
   (arena, _) <- viewedLevel
@@ -123,7 +123,7 @@ moveRunHuman run dir = do
 
 -- | Actor atttacks an enemy actor or his own projectile.
 meleeAid :: MonadClientUI m
-         => ActorId -> ActorId -> m (SlideOrCmd CmdSerTakeTime)
+         => ActorId -> ActorId -> m (SlideOrCmd CmdTakeTimeSer)
 meleeAid source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
@@ -146,7 +146,7 @@ meleeAid source target = do
 
 -- | Actor swaps position with another.
 displaceAid :: MonadClientUI m
-            => ActorId -> ActorId -> m (SlideOrCmd CmdSerTakeTime)
+            => ActorId -> ActorId -> m (SlideOrCmd CmdTakeTimeSer)
 displaceAid source target = do
   cops <- getsState scops
   sb <- getsState $ getActorBody source
@@ -163,14 +163,14 @@ displaceAid source target = do
 -- * Wait
 
 -- | Leader waits a turn (and blocks, etc.).
-waitHuman :: MonadClientUI m => m CmdSerTakeTime
+waitHuman :: MonadClientUI m => m CmdTakeTimeSer
 waitHuman = do
   leader <- getLeaderUI
   return $ WaitSer leader
 
 -- * Pickup
 
-pickupHuman :: MonadClientUI m => m (SlideOrCmd CmdSerTakeTime)
+pickupHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
 pickupHuman = do
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
@@ -190,7 +190,7 @@ pickupHuman = do
 -- TODO: you can drop an item already on the floor (the '-' is there),
 -- which is weird and useless.
 -- | Drop a single item.
-dropHuman :: MonadClientUI m => m (SlideOrCmd CmdSerTakeTime)
+dropHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
 dropHuman = do
   -- TODO: allow dropping a given number of identical items.
   Kind.COps{coitem} <- getsState scops
@@ -316,7 +316,7 @@ getItem aid prompt p ptext bag invRaw isn = do
 -- * Project
 
 projectHuman :: MonadClientUI m
-             => [Trigger] -> m (SlideOrCmd CmdSerTakeTime)
+             => [Trigger] -> m (SlideOrCmd CmdTakeTimeSer)
 projectHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -326,7 +326,7 @@ projectHuman ts = do
     else projectAid leader ts
 
 projectAid :: MonadClientUI m
-           => ActorId -> [Trigger] -> m (SlideOrCmd CmdSerTakeTime)
+           => ActorId -> [Trigger] -> m (SlideOrCmd CmdTakeTimeSer)
 projectAid source ts = do
   Kind.COps{cotile} <- getsState scops
   target <- targetToPos
@@ -361,7 +361,7 @@ projectAid source ts = do
 
 projectBla :: MonadClientUI m
            => ActorId -> Point -> Int -> [Trigger]
-           -> m (SlideOrCmd CmdSerTakeTime)
+           -> m (SlideOrCmd CmdTakeTimeSer)
 projectBla source tpos eps ts = do
   let (verb1, object1) = case ts of
         [] -> ("aim", "object")
@@ -387,7 +387,7 @@ triggerSymbols (_ : ts) = triggerSymbols ts
 
 -- * Apply
 
-applyHuman :: MonadClientUI m => [Trigger] -> m (SlideOrCmd CmdSerTakeTime)
+applyHuman :: MonadClientUI m => [Trigger] -> m (SlideOrCmd CmdTakeTimeSer)
 applyHuman ts = do
   leader <- getLeaderUI
   bag <- getsState $ getActorBag leader
@@ -423,7 +423,7 @@ getGroupItem leader is inv object syms prompt packName = do
 -- * AlterDir
 
 -- | Ask for a direction and alter a tile, if possible.
-alterDirHuman :: MonadClientUI m => [Trigger] -> m (SlideOrCmd CmdSerTakeTime)
+alterDirHuman :: MonadClientUI m => [Trigger] -> m (SlideOrCmd CmdTakeTimeSer)
 alterDirHuman ts = do
   let verb1 = case ts of
         [] -> "alter"
@@ -440,7 +440,7 @@ alterDirHuman ts = do
 -- | Player tries to alter a tile using a feature.
 alterTile :: MonadClientUI m
           => ActorId -> Vector -> [Trigger]
-          -> m (SlideOrCmd CmdSerTakeTime)
+          -> m (SlideOrCmd CmdTakeTimeSer)
 alterTile source dir ts = do
   Kind.COps{cotile} <- getsState scops
   b <- getsState $ getActorBody source
@@ -471,7 +471,7 @@ guessAlter _ _ _ = "never mind"
 
 -- | Leader tries to trigger the tile he's standing on.
 triggerTileHuman :: MonadClientUI m
-                 => [Trigger] -> m (SlideOrCmd CmdSerTakeTime)
+                 => [Trigger] -> m (SlideOrCmd CmdTakeTimeSer)
 triggerTileHuman ts = do
   leader <- getLeaderUI
   triggerTile leader ts
@@ -479,7 +479,7 @@ triggerTileHuman ts = do
 -- | Player tries to trigger a tile using a feature.
 triggerTile :: MonadClientUI m
             => ActorId -> [Trigger]
-            -> m (SlideOrCmd CmdSerTakeTime)
+            -> m (SlideOrCmd CmdTakeTimeSer)
 triggerTile leader ts = do
   Kind.COps{cotile} <- getsState scops
   b <- getsState $ getActorBody leader
@@ -540,6 +540,15 @@ guessTrigger _ fs@(F.Cause (Effect.Ascend k) : _) _ =
     else if k < 0 then "can't descend"
     else assert `failure` fs
 guessTrigger _ _ _ = "never mind"
+
+-- * Repeat
+
+repeatHuman :: MonadClientUI m => Int -> m (SlideOrCmd CmdTakeTimeSer)
+repeatHuman _n = do  -- TODO
+  slastCmd <- getsClient slastCmd
+  case slastCmd of
+    Just cmd -> return $ Right cmd
+    Nothing -> failWith "no time-taking command to repeat"
 
 -- * GameRestart; does not take time
 

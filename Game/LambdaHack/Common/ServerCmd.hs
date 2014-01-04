@@ -2,7 +2,7 @@
 -- See
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Common.ServerCmd
-  ( CmdSer(..), CmdSerTakeTime(..), aidCmdSer, aidCmdSerTakeTime
+  ( CmdSer(..), CmdTakeTimeSer(..), aidCmdSer, aidCmdTakeTimeSer
   , FailureSer(..), showFailureSer
   ) where
 
@@ -18,14 +18,14 @@ import Game.LambdaHack.Common.Vector
 
 -- | Abstract syntax of server commands.
 data CmdSer =
-    TakeTimeSer !CmdSerTakeTime
+    CmdTakeTimeSer !CmdTakeTimeSer
   | GameRestartSer !ActorId !Text
   | GameExitSer !ActorId
   | GameSaveSer !ActorId
   | GameDifficultySer !ActorId !Int
   deriving (Show, Eq)
 
-data CmdSerTakeTime =
+data CmdTakeTimeSer =
     MoveSer !ActorId !Vector
   | MeleeSer !ActorId !ActorId
   | DisplaceSer !ActorId !ActorId
@@ -43,14 +43,14 @@ data CmdSerTakeTime =
 -- the command is performed).
 aidCmdSer :: CmdSer -> ActorId
 aidCmdSer cmd = case cmd of
-  TakeTimeSer cmd2 -> aidCmdSerTakeTime cmd2
+  CmdTakeTimeSer cmd2 -> aidCmdTakeTimeSer cmd2
   GameRestartSer aid _ -> aid
   GameExitSer aid -> aid
   GameSaveSer aid -> aid
   GameDifficultySer aid _ -> aid
 
-aidCmdSerTakeTime :: CmdSerTakeTime -> ActorId
-aidCmdSerTakeTime cmd = case cmd of
+aidCmdTakeTimeSer :: CmdTakeTimeSer -> ActorId
+aidCmdTakeTimeSer cmd = case cmd of
   MoveSer aid _ -> aid
   MeleeSer aid _ -> aid
   DisplaceSer aid _ -> aid

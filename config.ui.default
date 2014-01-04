@@ -18,11 +18,13 @@
 ; o: AlterDir [AlterFeature {verb = "open", object = "door", feature = OpenTo "vertical open door Lit"}, AlterFeature {verb = "open", object = "door", feature = OpenTo "horizontal open door Lit"}, AlterFeature {verb = "open", object = "door", feature = OpenTo "vertical open door Dark"}, AlterFeature {verb = "open", object = "door", feature = OpenTo "horizontal open door Dark"}]
 ; less: TriggerTile [TriggerFeature {verb = "ascend", object = "level", feature = Cause (Ascend 1)}, TriggerFeature {verb = "escape", object = "dungeon", feature = Cause Escape}]
 ; greater: TriggerTile [TriggerFeature {verb = "descend", object = "level", feature = Cause (Ascend (-1))}, TriggerFeature {verb = "escape", object = "dungeon", feature = Cause Escape}]
+; p: Repeat 1
+; P: Repeat 100
 ; CTRL-d: GameDifficultyCycle
 ; CTRL-r: GameRestart "campaign"
 ; ; TODO: pick game modes via arrow keys, not special keys
 ; CTRL-k: GameRestart "skirmish"
-; CTRL-p: GameRestart "PvP"
+; CTRL-v: GameRestart "PvP"
 ; CTRL-o: GameRestart "Coop"
 ; CTRL-e: GameRestart "defense"
 ; CTRL-x: GameExit
@@ -43,7 +45,7 @@
 ; Escape: Cancel
 ; Return: Accept
 ; space: Clear
-; P: History
+; D: History
 ; V: MarkVision
 ; S: MarkSmell
 ; T: MarkSuspect

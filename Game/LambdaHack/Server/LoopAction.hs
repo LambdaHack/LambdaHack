@@ -49,7 +49,7 @@ loopSer :: (MonadAtomic m, MonadConnServer m)
         -> (CmdSer -> m Bool)
         -> (FactionId -> ChanFrontend -> ChanServer CmdClientUI CmdSer
             -> IO ())
-        -> (FactionId -> ChanServer CmdClientAI CmdSerTakeTime
+        -> (FactionId -> ChanServer CmdClientAI CmdTakeTimeSer
             -> IO ())
         -> Kind.COps
         -> m ()
@@ -273,7 +273,7 @@ handleActors cmdSerSem lid = do
               broadcastSfxAtomic DisplayPushD
       if bproj body then do  -- TODO: perhaps check Track, not bproj
         execSfxAtomic $ DisplayPushD side
-        let cmdS = TakeTimeSer $ SetPathSer aid
+        let cmdS = CmdTakeTimeSer $ SetPathSer aid
         timed <- cmdSerSem cmdS
         assert timed skip
         b <- getsState $ getActorBody aid
@@ -282,7 +282,7 @@ handleActors cmdSerSem lid = do
         -- Not advancing time forces dead projectiles to be destroyed ASAP.
         -- Otherwise it would be displayed in the same place twice.
         -- If ever needed this can be implemented properly by moving
-        -- SetPathSer out of TakeTimeSer.
+        -- SetPathSer out of CmdTakeTimeSer.
         unless (bhp b < 0 || maybe False null (bpath b)) $ do
           advanceTime aid
           extraFrames b
@@ -319,7 +319,7 @@ handleActors cmdSerSem lid = do
         let mainUIactor = playerUI (gplayer fact) && aidIsLeader
         when mainUIactor $ execSfxAtomic $ RecordHistoryD side
         cmdT <- sendQueryAI side aid
-        let cmdS = TakeTimeSer cmdT
+        let cmdS = CmdTakeTimeSer cmdT
         (aidNew, bPre) <- switchLeader cmdS
         assert (not (bhp bPre <= 0 && not (bproj bPre))
                 `blame` "AI switches to an incapacitated actor"
