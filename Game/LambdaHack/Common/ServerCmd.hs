@@ -31,8 +31,8 @@ data CmdTakeTimeSer =
   | DisplaceSer !ActorId !ActorId
   | AlterSer !ActorId !Point !(Maybe F.Feature)
   | WaitSer !ActorId
-  | PickupSer !ActorId !ItemId !Int !InvChar
-  | DropSer !ActorId !ItemId
+  | PickupSer !ActorId !ItemId !Int
+  | DropSer !ActorId !ItemId !Int
   | ProjectSer !ActorId !Point !Int !ItemId !Container
   | ApplySer !ActorId !ItemId !Container
   | TriggerSer !ActorId !(Maybe F.Feature)
@@ -56,8 +56,8 @@ aidCmdTakeTimeSer cmd = case cmd of
   DisplaceSer aid _ -> aid
   AlterSer aid _ _ -> aid
   WaitSer aid -> aid
-  PickupSer aid _ _ _ -> aid
-  DropSer aid _ -> aid
+  PickupSer aid _ _ -> aid
+  DropSer aid _ _ -> aid
   ProjectSer aid _ _ _ _ -> aid
   ApplySer aid _ _ -> aid
   TriggerSer aid _ -> aid
@@ -73,6 +73,7 @@ data FailureSer =
   | AlterBlockActor
   | AlterBlockItem
   | AlterNothing
+  | PickupOverfull
   | ProjectAimOnself
   | ProjectBlockTerrain
   | ProjectBlockActor
@@ -90,6 +91,7 @@ showFailureSer failureSer = case failureSer of
   AlterBlockActor -> "blocked by an actor"
   AlterBlockItem -> "jammed by an item"
   AlterNothing -> "wasting time on altering nothing"
+  PickupOverfull -> "cannot carry any more"
   ProjectAimOnself -> "cannot aim at oneself"
   ProjectBlockTerrain -> "aiming obstructed by terrain"
   ProjectBlockActor -> "aiming blocked by an actor"

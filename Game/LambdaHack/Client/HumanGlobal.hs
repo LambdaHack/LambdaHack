@@ -182,8 +182,8 @@ pickupHuman = do
       item <- getsState $ getItemBody iid
       let l = if jsymbol item == '$' then Just $ InvChar '$' else Nothing
       case assignLetter iid l body of
-        Just l2 -> return $ Right $ PickupSer leader iid k l2
-        Nothing -> failWith "cannot carry any more"
+        Just _ -> return $ Right $ PickupSer leader iid k
+        Nothing -> failSer PickupOverfull
 
 -- * Drop
 
@@ -209,7 +209,7 @@ dropHuman = do
           msgAdd $ makeSentence
             [ MU.SubjectVerbSg subject "drop"
             , partItemWs coitem disco 1 item ]
-          return $ Right $ DropSer leader iid
+          return $ Right $ DropSer leader iid 1
     Left slides -> failSlides slides
 
 allObjectsName :: Text

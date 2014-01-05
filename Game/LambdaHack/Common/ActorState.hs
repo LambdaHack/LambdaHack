@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.ActorState
   , calculateTotal, nearbyFreePoints, whereTo
   , posToActors, posToActor, getItemBody, memActor
   , getActorBody, updateActorBody
-  , getActorItem, getActorBag, actorContainer, getActorInv
+  , getActorItem, getActorBag, actorContainer, actorContainerB, getActorInv
   , tryFindHeroK, foesAdjacent
   ) where
 
@@ -175,6 +175,16 @@ actorContainer aid binv iid =
   case find ((== iid) . snd) $ EM.assocs binv of
     Just (l, _) -> CActor aid l
     Nothing -> assert `failure` "item not in inventory" `twith` (aid, binv, iid)
+
+actorContainerB :: ActorId -> Actor -> ItemId -> Item -> Maybe Container
+actorContainerB aid body iid item =
+  case find ((== iid) . snd) $ EM.assocs (binv body) of
+    Just (l, _) -> Just $ CActor aid l
+    Nothing ->
+      let l = if jsymbol item == '$' then Just $ InvChar '$' else Nothing
+      in case assignLetter iid l body of
+        Just l2 -> Just $ CActor aid l2
+        Nothing -> Nothing
 
 getActorInv :: ActorId -> State -> ItemInv
 getActorInv aid s = binv $ getActorBody aid s

@@ -213,7 +213,7 @@ pickup aid = do
       item <- getsState $ getItemBody iid
       let l = if jsymbol item == '$' then Just $ InvChar '$' else Nothing
       return $ case assignLetter iid l body of
-        Just l2 -> returN "pickup" $ PickupSer aid iid k l2
+        Just _ -> returN "pickup" $ PickupSer aid iid k
         Nothing -> returN "pickup" $ WaitSer aid  -- TODO
   return actionPickup
 

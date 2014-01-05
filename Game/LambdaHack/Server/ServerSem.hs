@@ -281,21 +281,22 @@ waitSer aid = do
 
 -- * PickupSer
 
-pickupSer :: MonadAtomic m
-          => ActorId -> ItemId -> Int -> InvChar -> m ()
-pickupSer aid iid k l = assert (k > 0 `blame` "pick up no items"
-                                      `twith` (aid, iid, k, l)) $ do
+pickupSer ::  (MonadAtomic m, MonadServer m)
+          => ActorId -> ItemId -> Int -> m ()
+pickupSer aid iid k = assert (k > 0) $ do
   b <- getsState $ getActorBody aid
-  execCmdAtomic $ MoveItemA iid k (CFloor (blid b) (bpos b)) (CActor aid l)
+  item <- getsState $ getItemBody iid
+  case actorContainerB aid b iid item of
+    Just c -> execCmdAtomic $ MoveItemA iid k (CFloor (blid b) (bpos b)) c
+    Nothing -> execFailure b PickupOverfull
 
 -- * DropSer
 
-dropSer :: MonadAtomic m => ActorId -> ItemId -> m ()
-dropSer aid iid = do
+dropSer :: MonadAtomic m => ActorId -> ItemId -> Int -> m ()
+dropSer aid iid k = assert (k > 0) $ do
   b <- getsState $ getActorBody aid
-  let k = 1
-  execCmdAtomic $ MoveItemA iid k (actorContainer aid (binv b) iid)
-                                  (CFloor (blid b) (bpos b))
+  let c = actorContainer aid (binv b) iid
+  execCmdAtomic $ MoveItemA iid k c (CFloor (blid b) (bpos b))
 
 -- * ProjectSer
 
