@@ -172,7 +172,7 @@ queryUI aid = do
                         `twith` (leader, aid)) skip
   srunning <- getsClient srunning
   case srunning of
-    Nothing -> humanCommand ""
+    Nothing -> humanCommand Nothing
     Just runParams -> do
       runOutcome <- continueRun runParams
       case runOutcome of
@@ -180,8 +180,8 @@ queryUI aid = do
           stopRunning
           ConfigUI{configRunStopMsgs} <- getsClient sconfigUI
           let msg = if configRunStopMsgs
-                    then "Run stop:" <+> stopMsg
-                    else ""
+                    then Just $ "Run stop:" <+> stopMsg
+                    else Nothing
           humanCommand msg
         Right (paramNew, runCmd) -> do
           modifyClient $ \cli -> cli {srunning = Just paramNew}
@@ -190,7 +190,7 @@ queryUI aid = do
 -- | Determine and process the next human player command. The argument is
 -- the last stop message due to running, if any.
 humanCommand :: forall m. MonadClientUI m
-             => Msg
+             => Maybe Msg
              -> m CmdSer
 humanCommand msgRunStop = do
   let loop :: Maybe Overlay -> m CmdSer
@@ -260,6 +260,8 @@ humanCommand msgRunStop = do
                       $ toSlideshow $ reverse $ map overlay sls
                 return $! if go then Just sLast else Nothing
             loop mLast
-  sli <- promptToSlideshow msgRunStop
-  let overlayInitial = head $ slideshow sli
-  loop $ Just overlayInitial
+  case msgRunStop of
+    Nothing -> loop Nothing
+    Just msg -> do
+      sli <- promptToSlideshow msg
+      loop $ Just $ head $ slideshow sli
