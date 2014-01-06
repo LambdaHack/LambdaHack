@@ -271,8 +271,15 @@ killExitA = modifyClient $ \cli -> cli {squit = True}
 drawCmdAtomicUI :: MonadClientUI m => Bool -> CmdAtomic -> m ()
 drawCmdAtomicUI verbose cmd = case cmd of
   CreateActorA aid body _ -> do
-    when verbose $ actorVerbMU aid body "appear"
+    side <- getsClient sside
+    when (verbose || bfid body /= side) $ actorVerbMU aid body "appear"
+    when (bfid body /= side) $ modifyClient $ \cli -> cli {slastRepeat = 0}
     lookAtMove aid
+  SpotActorA aid body _ -> do
+    side <- getsClient sside
+    when (verbose || bfid body /= side) $ actorVerbMU aid body "be spotted"
+    when (bfid body /= side) $ modifyClient $ \cli -> cli {slastRepeat = 0}
+    -- TODO: "XXX spots YYY"? or rather "at (192,43)"? or center, blink, mark?
   DestroyActorA aid body _ ->
     destroyActorUI aid body "die" "be destroyed" verbose
   CreateItemA _ item k _ -> itemVerbMU item k "drop to the ground"

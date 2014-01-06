@@ -7,7 +7,7 @@ module Game.LambdaHack.Client.HumanLocal
   , pickLeaderHuman, memberCycleHuman, memberBackHuman
   , inventoryHuman, tgtAscendHuman, tgtFloorHuman, tgtEnemyHuman
   , epsIncrHuman, selectActorHuman, selectNoneHuman
-  , cancelHuman, displayMainMenu, acceptHuman, clearHuman
+  , cancelHuman, displayMainMenu, acceptHuman, clearHuman, repeatHuman
   , historyHuman, humanMarkVision, humanMarkSmell, humanMarkSuspect
   , helpHuman
     -- * Helper functions useful also elsewhere
@@ -648,6 +648,14 @@ endTargetingMsg = do
 -- | Clear current messages, show the next screen if any.
 clearHuman :: Monad m => m ()
 clearHuman = return ()
+
+-- * Repeat
+
+-- Note that walk followed by repeat should not be equivalent to run,
+-- because the player can really use a command that does not stop
+-- at terrain change or when walking over items.
+repeatHuman :: MonadClientUI m => Int -> m ()
+repeatHuman n = modifyClient $ \cli -> cli {slastRepeat = n + 1}
 
 -- * History
 

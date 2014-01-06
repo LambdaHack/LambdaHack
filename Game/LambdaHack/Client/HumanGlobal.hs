@@ -3,8 +3,7 @@
 -- TODO: document
 module Game.LambdaHack.Client.HumanGlobal
   ( moveRunHuman, waitHuman, pickupHuman, dropHuman
-  , projectHuman, applyHuman, alterDirHuman, triggerTileHuman
-  , repeatHuman, resendHuman
+  , projectHuman, applyHuman, alterDirHuman, triggerTileHuman, resendHuman
   , gameRestartHuman, gameExitHuman, gameSaveHuman, gameDifficultyCycle
   , SlideOrCmd, failWith
   ) where
@@ -543,11 +542,6 @@ guessTrigger _ fs@(F.Cause (Effect.Ascend k) : _) _ =
     else if k < 0 then "can't descend"
     else assert `failure` fs
 guessTrigger _ _ _ = "never mind"
-
--- * Repeat
-
-repeatHuman :: MonadClientUI m => Int -> m ()
-repeatHuman n = modifyClient $ \cli -> cli {slastRepeat = n + 1}
 
 -- * Resend
 

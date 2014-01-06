@@ -24,7 +24,6 @@ data HumanCmd =
   | Apply       ![Trigger]
   | AlterDir    ![Trigger]
   | TriggerTile ![Trigger]
-  | Repeat !Int
   | Resend
     -- These do not take time.
   | GameRestart !Text
@@ -45,6 +44,7 @@ data HumanCmd =
   | Cancel
   | Accept
   | Clear
+  | Repeat !Int
   | History
   | MarkVision
   | MarkSmell
@@ -121,8 +121,6 @@ cmdDescription cmd = case cmd of
   Apply ts       -> triggerDescription ts
   AlterDir ts -> triggerDescription ts
   TriggerTile ts -> triggerDescription ts
-  Repeat 1    -> "play back last keys"
-  Repeat n    -> "play back last keys" <+> showT n <+> "times"
   Resend      -> "resend last server command"
 
   GameRestart t -> "new" <+> t <+> "game"
@@ -149,6 +147,8 @@ cmdDescription cmd = case cmd of
   Cancel      -> "cancel action"
   Accept      -> "accept choice"
   Clear       -> "clear messages"
+  Repeat 1    -> "play back last keys"
+  Repeat n    -> "play back last keys" <+> showT n <+> "times"
   History     -> "display player diary"
   MarkVision  -> "mark visible area"
   MarkSmell   -> "mark smell"
