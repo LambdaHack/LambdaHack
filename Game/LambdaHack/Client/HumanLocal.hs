@@ -418,7 +418,7 @@ tgtEnemyLeader stgtModeNew = do
 tgtAscendHuman :: MonadClientUI m
                => Int -> m Slideshow
 tgtAscendHuman k = do
-  Kind.COps{cotile} <- getsState scops
+  Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
   dungeon <- getsState sdungeon
   cursor <- getsClient scursor
   (tgtId, lvl) <- viewedLevel
@@ -434,10 +434,12 @@ tgtAscendHuman k = do
       (nln, npos) <- getsState $ whereTo tgtId cpos k
       assert (nln /= tgtId `blame` "stairs looped" `twith` nln) skip
       -- Do not freely reveal the other end of the stairs.
-      let scursor =
-            if Tile.hasFeature cotile F.Exit (lvl `at` npos)
-            then Just npos  -- already know as an exit, focus on it
-            else cursor    -- unknown, do not reveal
+      let ascDesc (F.Cause (Effect.Ascend _)) = True
+          ascDesc _ = False
+          scursor =
+            if any ascDesc $ tfeature $ okind (lvl `at` npos)
+            then Just npos  -- already known as an exit, focus on it
+            else cursor     -- unknown, do not reveal
       modifyClient $ \cli -> cli {scursor}
       setTgtId nln
       doLook

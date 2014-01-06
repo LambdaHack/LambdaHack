@@ -90,8 +90,7 @@ doorClosedV = TileKind
   , tfreq    = [("vertical closed door Lit", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
-  , tfeature = [ Exit
-               , OpenTo "vertical open door Lit"
+  , tfeature = [ OpenTo "vertical open door Lit"
                , HideAs "suspect vertical wall Lit"
                ]
   }
@@ -101,7 +100,7 @@ doorOpenV = TileKind
   , tfreq    = [("vertical open door Lit", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
-  , tfeature = [ Walkable, Clear, Exit
+  , tfeature = [ Walkable, Clear
                , CloseTo "vertical closed door Lit"
                ]
   }
@@ -127,8 +126,7 @@ doorClosedH = TileKind
   , tfreq    = [("horizontal closed door Lit", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
-  , tfeature = [ Exit
-               , OpenTo "horizontal open door Lit"
+  , tfeature = [ OpenTo "horizontal open door Lit"
                , HideAs "suspect horizontal wall Lit"
                ]
   }
@@ -138,7 +136,7 @@ doorOpenH = TileKind
   , tfreq    = [("horizontal open door Lit", 1)]
   , tcolor   = Brown
   , tcolor2  = BrBlack
-  , tfeature = [ Walkable, Clear, Exit
+  , tfeature = [ Walkable, Clear
                , CloseTo "horizontal closed door Lit"
                ]
   }
@@ -148,7 +146,7 @@ stairsUpLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = [Walkable, Clear, Exit, Cause $ Effect.Ascend 1]
+  , tfeature = [Walkable, Clear, Cause $ Effect.Ascend 1]
   }
 stairsLit = TileKind
   { tsymbol  = '>'
@@ -156,7 +154,7 @@ stairsLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrCyan
   , tcolor2  = Cyan  -- TODO
-  , tfeature = [ Walkable, Clear, Exit
+  , tfeature = [ Walkable, Clear
                , Cause $ Effect.Ascend 1
                , Cause $ Effect.Ascend (-1) ]
   }
@@ -166,7 +164,7 @@ stairsDownLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = [Walkable, Clear, Exit, Cause $ Effect.Ascend (-1)]
+  , tfeature = [Walkable, Clear, Cause $ Effect.Ascend (-1)]
   }
 escapeUpLit = TileKind
   { tsymbol  = '<'
@@ -174,7 +172,7 @@ escapeUpLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
-  , tfeature = [Walkable, Clear, Exit, Cause Effect.Escape]
+  , tfeature = [Walkable, Clear, Cause Effect.Escape]
   }
 escapeDownLit = TileKind
   { tsymbol  = '>'
@@ -182,7 +180,7 @@ escapeDownLit = TileKind
   , tfreq    = [("legendLit", 100)]
   , tcolor   = BrYellow
   , tcolor2  = BrYellow
-  , tfeature = [Walkable, Clear, Exit, Cause Effect.Escape]
+  , tfeature = [Walkable, Clear, Cause Effect.Escape]
   }
 unknown = TileKind
   { tsymbol  = ' '

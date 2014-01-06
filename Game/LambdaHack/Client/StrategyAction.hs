@@ -387,13 +387,14 @@ moveStrategy cops aid s mFoe =
   onlyLoot = onlyMoves lootHere
   interestHere x = let t = lvl `at` x
                        ts = map (lvl `at`) $ vicinity lxsize lysize x
-                   in Tile.hasFeature cotile F.Exit t
-                      -- Blind actors tend to reveal/forget repeatedly.
-                      || asight mk && Tile.hasFeature cotile F.Suspect t
-                      -- Lit indirectly. E.g., a room entrance.
-                      || (Tile.hasFeature cotile F.Dark t
-                          && (x == bpos || accessible cops lvl x bpos)
-                          && any (not . Tile.hasFeature cotile F.Dark) ts)
+                   in -- Blind actors tend to reveal/forget repeatedly.
+                      asight mk && Tile.hasFeature cotile F.Suspect t
+                      || (x == bpos || accessible cops lvl x bpos)
+                             -- E.g., a room entrance
+                         && (Tile.hasFeature cotile F.Dark t
+                             && any (not . Tile.hasFeature cotile F.Dark) ts
+                             -- E.g., stairs.
+                             || not (null (Tile.causeEffects cotile t)))
   onlyInterest = onlyMoves interestHere
   bdirAI | bpos == boldpos = Nothing
          | otherwise = Just $ towards boldpos bpos

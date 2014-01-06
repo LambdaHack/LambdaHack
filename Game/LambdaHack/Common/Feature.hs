@@ -28,7 +28,6 @@ data Feature =
 
   | CanItem              -- ^ items can be generated there
   | CanActor             -- ^ actors and stairs can be generated there
-  | Exit                 -- ^ is a (not hidden) door, stair, etc.
   | Path                 -- ^ used for visible paths throughout the level
   deriving (Show, Read, Eq, Ord, Generic)
 

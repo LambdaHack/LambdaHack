@@ -79,5 +79,4 @@ actionFeatures markSuspect t =
         F.Dark -> Nothing  -- not important any longer, after FOV computed
         F.CanItem -> Nothing
         F.CanActor -> Nothing
-        F.Exit -> Nothing  -- subsumed by Cause, etc.
   in S.fromList $ mapMaybe f $ tfeature t
