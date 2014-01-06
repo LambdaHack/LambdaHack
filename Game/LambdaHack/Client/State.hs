@@ -55,6 +55,9 @@ data StateClient = StateClient
   , srandom      :: !R.StdGen      -- ^ current random generator
   , sconfigUI    :: ConfigUI       -- ^ client config (including initial RNG)
   , slastKey     :: !(Maybe K.KM)  -- ^ last command key pressed
+  , slastSeq1    :: ![K.KM]        -- ^ last key sequence, slot 1
+  , slastSeq2    :: ![K.KM]        -- ^ last key sequence, slot 2
+  , slastRepeat  :: !Int           -- ^ the number of required sequence repeats
   , slastCmd     :: !(Maybe CmdTakeTimeSer)
                                    -- ^ last command sent to the server
   , _sleader     :: !(Maybe ActorId)
@@ -114,6 +117,9 @@ defStateClient shistory sconfigUI _sside sisAI =
     , sconfigUI
     , srandom = R.mkStdGen 42  -- will be set later
     , slastKey = Nothing
+    , slastSeq1 = []
+    , slastSeq2 = []
+    , slastRepeat = 0
     , slastCmd = Nothing
     , _sleader = Nothing  -- no heroes yet alive
     , _sside
@@ -208,6 +214,9 @@ instance Binary StateClient where
     let sfper = EM.empty
         srandom = read g
         slastKey = Nothing
+        slastSeq1 = []
+        slastSeq2 = []
+        slastRepeat = 0
         slastCmd = Nothing
         squit = False
         sconfigUI = undefined

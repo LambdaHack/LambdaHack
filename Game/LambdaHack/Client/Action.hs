@@ -97,9 +97,23 @@ displayFrame isRunning mf = do
 
 promptGetKey :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
 promptGetKey frontKM frontFr = do
-  ConnFrontend{..} <- getsSession sfconn
-  writeConnFrontend Frontend.FrontKey {..}
-  readConnFrontend
+  slastRepeat <- getsClient slastRepeat
+  if slastRepeat <= 0 then do
+    ConnFrontend{..} <- getsSession sfconn
+    writeConnFrontend Frontend.FrontKey {..}
+    km <- readConnFrontend
+    modifyClient $ \cli -> cli {slastSeq1 = km : slastSeq1 cli}
+    return km
+  else do
+    slastSeq1 <- getsClient slastSeq1
+    case slastSeq1 of
+      km : kms | null frontKM || km `elem` frontKM -> do
+        modifyClient $ \cli -> cli {slastSeq1 = kms}
+        return km
+      _ -> do
+        -- Something went wrong, stop repeating.
+        modifyClient $ \cli -> cli {slastRepeat = 0}
+        return K.escKey
 
 -- | Display a slideshow, awaiting confirmation for each slide except the last.
 getInitConfirms :: MonadClientUI m

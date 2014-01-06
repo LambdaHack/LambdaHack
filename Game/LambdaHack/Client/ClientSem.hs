@@ -202,8 +202,16 @@ humanCommand msgRunStop = do
             sli <- promptToSlideshow ""
             return $! head $! slideshow sli
           Just sLast ->
-            -- (Re-)display the last slide while waiting for the next key,
+            -- (Re-)display the last slide while waiting for the next key.
             return sLast
+        modifyClient $ \cli -> cli {slastRepeat = slastRepeat cli - 1}
+        slastRepeat <- getsClient slastRepeat
+        if slastRepeat <= 0
+          then modifyClient $ \cli -> cli { slastSeq1 = []
+                                          , slastSeq2 = if slastSeq1 cli == []
+                                                        then slastSeq2 cli
+                                                        else slastSeq1 cli}
+          else modifyClient $ \cli -> cli {slastSeq1 = reverse $ slastSeq2 cli}
         km <- getKeyOverlayCommand over
         -- Messages shown, so update history and reset current report.
         recordHistory
@@ -214,7 +222,9 @@ humanCommand msgRunStop = do
             Just (_, _, cmd) -> do
               -- Query and clear the last command key.
               lastKey <- getsClient slastKey
-              if Just km == lastKey || km == K.escKey && isJust mover
+              stgtMode <- getsClient stgtMode
+              if Just km == lastKey
+                 || km == K.escKey && isNothing stgtMode && isJust mover
                 then do
                   modifyClient $ \cli -> cli {slastKey = Nothing}
                   cmdHumanSem Clear

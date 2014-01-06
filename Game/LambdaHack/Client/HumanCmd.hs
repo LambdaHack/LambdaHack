@@ -25,6 +25,7 @@ data HumanCmd =
   | AlterDir    ![Trigger]
   | TriggerTile ![Trigger]
   | Repeat !Int
+  | Resend
     -- These do not take time.
   | GameRestart !Text
   | GameExit
@@ -70,12 +71,12 @@ majorHumanCmd cmd = case cmd of
   Help          -> True
   Cancel        -> True
   Accept        -> True
+  Repeat{}      -> True
   _             -> False
 
 -- | Minor commands land on the second page of command help.
 minorHumanCmd :: HumanCmd -> Bool
 minorHumanCmd cmd = case cmd of
-  Repeat{}    -> True
   MemberCycle -> True
   MemberBack  -> True
   TgtFloor    -> True
@@ -105,7 +106,7 @@ noRemoteHumanCmd cmd = case cmd of
   Apply{}       -> True
   AlterDir{}    -> True
   TriggerTile{} -> True
-  Repeat{}      -> True
+  Resend        -> True
   _             -> False
 
 -- | Description of player commands.
@@ -120,7 +121,9 @@ cmdDescription cmd = case cmd of
   Apply ts       -> triggerDescription ts
   AlterDir ts -> triggerDescription ts
   TriggerTile ts -> triggerDescription ts
-  Repeat n    -> "play back last command" <+> showT n <+> "times"
+  Repeat 1    -> "play back last keys"
+  Repeat n    -> "play back last keys" <+> showT n <+> "times"
+  Resend      -> "resend last server command"
 
   GameRestart t -> "new" <+> t <+> "game"
   GameExit    -> "save and exit"

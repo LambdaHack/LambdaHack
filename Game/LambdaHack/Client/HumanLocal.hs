@@ -61,7 +61,8 @@ import Game.LambdaHack.Content.TileKind
 
 failWith :: MonadClientUI m => Msg -> m Slideshow
 failWith msg = do
-  modifyClient $ \cli -> cli {slastKey = Nothing}
+  modifyClient $ \cli -> cli { slastKey = Nothing
+                             , slastRepeat = 0 }
   assert (not $ T.null msg) $ promptToSlideshow msg
 
 -- * Move and Run
@@ -71,11 +72,14 @@ moveCursor dir n = do
   leader <- getLeaderUI
   lpos <- getsState $ bpos . getActorBody leader
   scursor <- getsClient scursor
-  let cpos = fromMaybe lpos scursor
   Level{lxsize, lysize} <- cursorLevel
-  let shiftB pos = shiftBounded (0, 0, lxsize - 1, lysize - 1) pos dir
-  modifyClient $ \cli -> cli {scursor = Just $ iterate shiftB cpos !! n}
-  doLook
+  let cpos = fromMaybe lpos scursor
+      shiftB pos = shiftBounded (0, 0, lxsize - 1, lysize - 1) pos dir
+      newPos = iterate shiftB cpos !! n
+  if newPos == cpos then failWith "never mind"
+  else do
+    modifyClient $ \cli -> cli {scursor = Just newPos}
+    doLook
 
 cursorLevel :: MonadClient m => m Level
 cursorLevel = do

@@ -3,7 +3,8 @@
 -- TODO: document
 module Game.LambdaHack.Client.HumanGlobal
   ( moveRunHuman, waitHuman, pickupHuman, dropHuman
-  , projectHuman, applyHuman, alterDirHuman, triggerTileHuman, repeatHuman
+  , projectHuman, applyHuman, alterDirHuman, triggerTileHuman
+  , repeatHuman, resendHuman
   , gameRestartHuman, gameExitHuman, gameSaveHuman, gameDifficultyCycle
   , SlideOrCmd, failWith
   ) where
@@ -50,12 +51,14 @@ type SlideOrCmd a = Either Slideshow a
 
 failWith :: MonadClientUI m => Msg -> m (SlideOrCmd a)
 failWith msg = do
-  modifyClient $ \cli -> cli {slastKey = Nothing}
+  modifyClient $ \cli -> cli { slastKey = Nothing
+                             , slastRepeat = 0 }
   assert (not $ T.null msg) $ fmap Left $ promptToSlideshow msg
 
 failSlides :: MonadClientUI m => Slideshow -> m (SlideOrCmd a)
 failSlides slides = do
-  modifyClient $ \cli -> cli {slastKey = Nothing}
+  modifyClient $ \cli -> cli { slastKey = Nothing
+                             , slastRepeat = 0 }
   return $ Left slides
 
 failSer :: MonadClientUI m => FailureSer -> m (SlideOrCmd a)
@@ -210,7 +213,7 @@ dropHuman = do
             [ MU.SubjectVerbSg subject "drop"
             , partItemWs coitem disco 1 item ]
           return $ Right $ DropSer leader iid 1
-    Left slides -> failSlides slides
+    Left slides -> return $ Left slides
 
 allObjectsName :: Text
 allObjectsName = "Objects"
@@ -378,7 +381,7 @@ projectBla source tpos eps ts = do
         Just (TgtAuto _) -> targetAccept
         _ -> return ()
       return $! Right $ ProjectSer source tpos eps iid container
-    Left slides -> failSlides slides
+    Left slides -> return $ Left slides
 
 triggerSymbols :: [Trigger] -> [Char]
 triggerSymbols [] = []
@@ -401,7 +404,7 @@ applyHuman ts = do
   case ggi of
     Right ((iid, _), (_, container)) ->
       return $! Right $ ApplySer leader iid container
-    Left slides -> failSlides slides
+    Left slides -> return $ Left slides
 
 -- | Let a human player choose any item with a given group name.
 -- Note that this does not guarantee the chosen item belongs to the group,
@@ -492,7 +495,7 @@ triggerTile leader ts = do
       go <- verifyTrigger leader feat
       case go of
         Right () -> return $ Right $ TriggerSer leader $ Just feat
-        Left slides -> failSlides slides
+        Left slides -> return $ Left slides
 
 triggerFeatures :: [Trigger] -> [F.Feature]
 triggerFeatures [] = []
@@ -543,8 +546,13 @@ guessTrigger _ _ _ = "never mind"
 
 -- * Repeat
 
-repeatHuman :: MonadClientUI m => Int -> m (SlideOrCmd CmdTakeTimeSer)
-repeatHuman _n = do  -- TODO
+repeatHuman :: MonadClientUI m => Int -> m ()
+repeatHuman n = modifyClient $ \cli -> cli {slastRepeat = n + 1}
+
+-- * Resend
+
+resendHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
+resendHuman = do
   slastCmd <- getsClient slastCmd
   case slastCmd of
     Just cmd -> return $ Right cmd

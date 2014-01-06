@@ -40,7 +40,8 @@ cmdAction cmd = case cmd of
   Apply ts -> fmap (fmap CmdTakeTimeSer) $ applyHuman ts
   AlterDir ts -> fmap (fmap CmdTakeTimeSer) $ alterDirHuman ts
   TriggerTile ts -> fmap (fmap CmdTakeTimeSer) $ triggerTileHuman ts
-  Repeat n -> fmap (fmap CmdTakeTimeSer) $ repeatHuman n
+  Repeat n -> addNoSlides $ repeatHuman n
+  Resend -> fmap (fmap CmdTakeTimeSer) $ resendHuman
 
   GameRestart t -> gameRestartHuman t
   GameExit -> gameExitHuman

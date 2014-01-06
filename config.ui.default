@@ -20,6 +20,8 @@
 ; greater: TriggerTile [TriggerFeature {verb = "descend", object = "level", feature = Cause (Ascend (-1))}, TriggerFeature {verb = "escape", object = "dungeon", feature = Cause Escape}]
 ; p: Repeat 1
 ; P: Repeat 100
+; CTRL-p: Repeat 1000
+; CTRL-y: Resend
 ; CTRL-d: GameDifficultyCycle
 ; CTRL-r: GameRestart "campaign"
 ; ; TODO: pick game modes via arrow keys, not special keys
