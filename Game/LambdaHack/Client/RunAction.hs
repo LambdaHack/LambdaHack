@@ -27,7 +27,6 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -156,21 +155,17 @@ continueRunDir aid distLast mdir = do
     let maxDistance = 20
     cops@Kind.COps{cotile} <- getsState scops
     body <- getsState $ getActorBody aid
-    fact <- getsState $ (EM.! bfid body) . sfactionD
     let lid = blid body
     hs <- getsState $ actorList (const True) lid
-    ms <- getsState $ actorList (isAtWar fact) lid
     lvl <- getLevel lid
     let posHere = bpos body
         posLast = boldpos body
         dirLast = displacement posLast posHere
         dir = fromMaybe dirLast mdir
         posThere = posHere `shift` dir
-        enemySeen = not $ null ms
         actorThere = posThere `elem` map bpos hs
         openableLast = Tile.openable cotile (lvl `at` (posHere `shift` dir))
         check
-          | enemySeen = return (Nothing, Just "enemy seen")
           | actorThere = return (Nothing, Just "actor in the way")
                          -- don't displace actors, except with leader in step 1
           | distLast >= maxDistance =
@@ -261,14 +256,14 @@ checkAndRun aid dir = do
       leftForwardTileHere = lvl `at` leftForwardPosHere
       rightForwardTileHere = lvl `at` rightForwardPosHere
       featAt = actionFeatures smarkSuspect . okind
-      terrainChangeMiddle = featAt tileThere
-                            `notElem` map featAt [tileLast, tileHere]
+      terrainChangeMiddle = null (Tile.causeEffects cotile tileThere)
+                              -- step into; will stop next turn due to message
+                            && featAt tileThere
+                               `notElem` map featAt [tileLast, tileHere]
       terrainChangeLeft = featAt leftForwardTileHere
                           `notElem` map featAt leftTilesLast
       terrainChangeRight = featAt rightForwardTileHere
                            `notElem` map featAt rightTilesLast
-      itemChangeMiddle = posHasItems posThere
-                         `notElem` map posHasItems [posLast, posHere]
       itemChangeLeft = posHasItems leftForwardPosHere
                        `notElem` map posHasItems leftPsLast
       itemChangeRight = posHasItems rightForwardPosHere
@@ -283,17 +278,6 @@ checkAndRun aid dir = do
         | itemChangeLeft = return (Nothing, Just "item change on the left")
         | itemChangeRight = return (Nothing, Just "item change on the right")
         | terrainChangeMiddle =
-            -- The Exit feature marks tiles that need to be entered before
-            -- the run is finished. They don't do anything unless triggered,
-            -- so the player has a choice no sooner than when he enters them.
-            if Tile.hasFeature cotile F.Exit tileThere
-            then return ( Just dir
-                        , Just "terrain change in the middle with an exit" )
-            else return ( Nothing
-                        , Just "terrain change in the middle and no exit" )
-        | itemChangeMiddle =
-            return (Just dir, Just "item change in the middle")
-            -- enter the item tile, then stop, the message
-            -- is never shown, since item message ovewrites it
+            return ( Nothing, Just "terrain change in the middle and no exit" )
         | otherwise = return (Just dir, Nothing)
   check

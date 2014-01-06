@@ -128,10 +128,14 @@ lookAt detailed canSee pos aid msg = do
       tile = lvl `at` pos
       obscured | tile /= hideTile cotile lvl pos = "partially obscured"
                | otherwise = ""
-  if detailed
-    then return $! makeSentence [obscured, MU.Text $ tname $ okind tile]
-                   <+> msg <+> isd
-    else return $! msg <+> isd
+      tileDesc = [obscured, MU.Text $ tname $ okind tile]
+  if not (null (Tile.causeEffects cotile tile)) then
+    return $! makeSentence ("activable:" : tileDesc)
+              <+> msg <+> isd
+  else if detailed then
+    return $! makeSentence tileDesc
+              <+> msg <+> isd
+  else return $! msg <+> isd
 
 -- | Perform look around in the current position of the cursor.
 -- Assumes targeting mode and so assumes that a leader is picked.

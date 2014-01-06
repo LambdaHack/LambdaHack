@@ -16,13 +16,15 @@ module Game.LambdaHack.Common.Tile
   ( SmellTime
   , kindHasFeature, hasFeature
   , isClear, isLit, isExplorable, lookSimilar, speedup
-  , openTo, closeTo, revealAs, hideAs, openable, closable, changeable
+  , openTo, closeTo, causeEffects, revealAs, hideAs
+  , openable, closable, changeable
   ) where
 
 import Control.Exception.Assert.Sugar
 import qualified Data.Array.Unboxed as A
 import Data.Maybe
 
+import qualified Game.LambdaHack.Common.Effect as Effect
 import qualified Game.LambdaHack.Common.Feature as F
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Random
@@ -110,6 +112,12 @@ closeTo Kind.Ops{okind, opick} t = do
       group <- oneOf groups
       fmap (fromMaybe $ assert `failure` group)
         $ opick group (const True)
+
+causeEffects :: Kind.Ops TileKind -> Kind.Id TileKind -> [Effect.Effect Int]
+causeEffects Kind.Ops{okind} t = do
+  let getTo (F.Cause eff) acc = eff : acc
+      getTo _ acc = acc
+  foldr getTo [] $ tfeature $ okind t
 
 revealAs :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
 revealAs Kind.Ops{okind, opick} t = do

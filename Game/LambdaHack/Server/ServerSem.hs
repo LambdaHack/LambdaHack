@@ -28,7 +28,6 @@ import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.ItemFeature as IF
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
@@ -133,7 +132,7 @@ moveSer source dir = do
 -- but for melee and not using up the weapon.
 meleeSer :: (MonadAtomic m, MonadServer m) => ActorId -> ActorId -> m ()
 meleeSer source target = do
-  cops@Kind.COps{coitem=Kind.Ops{opick, okind}} <- getsState scops
+  cops@Kind.COps{coitem=coitem@Kind.Ops{opick, okind}} <- getsState scops
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   adj <- checkAdjacent sb tb
@@ -159,12 +158,9 @@ meleeSer source target = do
           flavour <- getsServer sflavour
           discoRev <- getsServer sdiscoRev
           let kind = okind h2hKind
-              kindEffect =
-                let getTo (IF.Cause eff) acc = eff : acc
-                    getTo _ acc = acc
-                in case foldr getTo [] $ ifeature kind of
-                     [] -> NoEffect
-                     eff : _TODO -> eff
+          let kindEffect = case causeIEffects coitem h2hKind of
+                [] -> NoEffect
+                eff : _TODO -> eff
               effect = fmap maxDeep kindEffect
           return ( Nothing
                  , buildItem flavour discoRev h2hKind kind effect )

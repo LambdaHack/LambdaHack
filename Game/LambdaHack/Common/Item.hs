@@ -16,7 +16,7 @@ module Game.LambdaHack.Common.Item
     -- * Textual description
   , partItem, partItemWs, partItemAW
     -- * Assorted
-  , isFragile, isExplosive, isLingering
+  , isFragile, isExplosive, isLingering, causeIEffects
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -114,14 +114,14 @@ buildItem (FlavourMap flavour) discoRev ikChosen kind jeffect =
 newItem :: Kind.Ops ItemKind -> FlavourMap -> DiscoRev
         -> Frequency Text -> Int -> Int
         -> Rnd (Item, Int, ItemKind)
-newItem cops@Kind.Ops{opick, okind} flavour discoRev itemFreq lvl depth = do
+newItem coitem@Kind.Ops{opick, okind} flavour discoRev itemFreq lvl depth = do
   itemGroup <- frequency itemFreq
   let castItem :: Int -> Rnd (Item, Int, ItemKind)
       castItem 0 | nullFreq itemFreq = assert `failure` "no fallback items"
                                               `twith` (itemFreq, lvl, depth)
       castItem 0 = do
         let newFreq = setFreq itemFreq itemGroup 0
-        newItem cops flavour discoRev newFreq lvl depth
+        newItem coitem flavour discoRev newFreq lvl depth
       castItem count = do
         ikChosen <- fmap (fromMaybe $ assert `failure` itemGroup)
                     $ opick itemGroup (const True)
@@ -130,12 +130,9 @@ newItem cops@Kind.Ops{opick, okind} flavour discoRev itemFreq lvl depth = do
         if jcount == 0 then
           castItem $ count - 1
         else do
-          let kindEffect =
-                let getTo (IF.Cause eff) acc = eff : acc
-                    getTo _ acc = acc
-                in case foldr getTo [] $ ifeature kind of
-                     [] -> NoEffect
-                     eff : _TODO -> eff
+          let kindEffect = case causeIEffects coitem ikChosen of
+                [] -> NoEffect
+                eff : _TODO -> eff
           effect <- effectTrav kindEffect (castDeep lvl depth)
           return ( buildItem flavour discoRev ikChosen kind effect
                  , jcount
@@ -203,31 +200,34 @@ isFragile Kind.Ops{okind} disco i =
   case jkind disco i of
     Nothing -> False
     Just ik ->
-      let kind = okind ik
-          getTo IF.Fragile _acc = True
+      let getTo IF.Fragile _acc = True
           getTo IF.Explode{} _acc = True
           getTo _ acc = acc
-      in foldr getTo False $ ifeature kind
+      in foldr getTo False $ ifeature $ okind ik
 
 isExplosive :: Kind.Ops ItemKind -> Discovery -> Item -> Maybe Text
 isExplosive Kind.Ops{okind} disco i =
   case jkind disco i of
     Nothing -> Nothing
     Just ik ->
-      let kind = okind ik
-          getTo (IF.Explode cgroup) _acc = Just cgroup
+      let getTo (IF.Explode cgroup) _acc = Just cgroup
           getTo _ acc = acc
-      in foldr getTo Nothing $ ifeature kind
+      in foldr getTo Nothing $ ifeature $ okind ik
 
 isLingering :: Kind.Ops ItemKind -> Discovery -> Item -> Int
 isLingering Kind.Ops{okind} disco i =
   case jkind disco i of
     Nothing -> 100
     Just ik ->
-      let kind = okind ik
-          getTo (IF.Linger percent) _acc = percent
+      let getTo (IF.Linger percent) _acc = percent
           getTo _ acc = acc
-      in foldr getTo 100 $ ifeature kind
+      in foldr getTo 100 $ ifeature $ okind ik
+
+causeIEffects :: Kind.Ops ItemKind -> Kind.Id ItemKind -> [Effect RollDeep]
+causeIEffects Kind.Ops{okind} ik = do
+  let getTo (IF.Cause eff) acc = eff : acc
+      getTo _ acc = acc
+  foldr getTo [] $ ifeature $ okind ik
 
 -- | The part of speech describing the item.
 partItem :: Kind.Ops ItemKind -> Discovery -> Item -> (MU.Part, MU.Part)
