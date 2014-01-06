@@ -59,17 +59,17 @@ continueRun paramOld =
       else do
         runOutcome <- continueRunDir r 0 (Just dir)
         case runOutcome of
-          (Nothing, Nothing) -> do
+          Left "" -> do  -- hack; means that zeroth step OK
             runStopOrCmd <- moveRunAid r dir
             let runMembersNew = if isJust runStopMsg then rs else rs ++ [r]
                 paramNew = paramOld {runMembers = runMembersNew}
             return $ case runStopOrCmd of
               Left stopMsg -> assert `failure` (paramOld, stopMsg)
               Right runCmd -> Right (paramNew, runCmd)
-          (Nothing, runStopMsgCurrent) -> do
-            let runStopMsgNew = runStopMsg `mplus` runStopMsgCurrent
+          Left runStopMsgCurrent -> do
+            let runStopMsgNew = fromMaybe runStopMsgCurrent runStopMsg
                 paramNew = paramOld { runMembers = rs
-                                    , runStopMsg = runStopMsgNew }
+                                    , runStopMsg = Just runStopMsgNew }
             continueRun paramNew
           _ -> assert `failure` (paramOld, runOutcome)
     RunParams{ runLeader
@@ -78,19 +78,19 @@ continueRun paramOld =
              , runStopMsg
              , runInitDir = Nothing } -> do
       let runDistNew = if r == runLeader then runDist + 1 else runDist
-      (mdir, runStopMsgCurrent) <- continueRunDir r runDistNew Nothing
-      let runStopMsgNew = runStopMsg `mplus` runStopMsgCurrent
+      mdirOrRunStopMsgCurrent <- continueRunDir r runDistNew Nothing
+      let runStopMsgCurrent =
+            either Just (const Nothing) mdirOrRunStopMsgCurrent
+          runStopMsgNew = runStopMsg `mplus` runStopMsgCurrent
           -- We check @runStopMsgNew@, because even if the current actor
           -- runs OK, we want to stop soon if some others had to stop.
           runMembersNew = if isJust runStopMsgNew then rs else rs ++ [r]
           paramNew = paramOld { runMembers = runMembersNew
                               , runDist = runDistNew
                               , runStopMsg = runStopMsgNew }
-      case mdir of
-        Nothing -> do
-          assert (isJust runStopMsgCurrent `blame` (paramOld, paramNew)) skip
-          continueRun paramNew  -- run all undisturbed, but only one time
-        Just dir -> return $ Right (paramNew, MoveSer r dir)
+      case mdirOrRunStopMsgCurrent of
+        Left _ -> continueRun paramNew  -- run all undisturbed; only one time
+        Right dir -> return $ Right (paramNew, MoveSer r dir)
       -- The potential invisible actor is hit. War is started without asking.
     _ -> assert `failure` paramOld
 
@@ -142,7 +142,7 @@ moveRunAid source dir = do
 -- a corridor's corner (we never change direction except in corridors)
 -- and it increments the counter of traversed tiles.
 continueRunDir :: MonadClient m
-               => ActorId -> Int -> Maybe Vector -> m (Maybe Vector, Maybe Msg)
+               => ActorId -> Int -> Maybe Vector -> m (Either Msg Vector)
 continueRunDir aid distLast mdir = do
   sreport <- getsClient sreport -- TODO: check the message before it goes into history
   let boringMsgs = map BS.pack [ "You hear some noises."
@@ -150,7 +150,7 @@ continueRunDir aid distLast mdir = do
       boring repLine = any (`BS.isInfixOf` repLine) boringMsgs
       -- TODO: use a regexp from the UI config instead
       msgShown  = isJust $ findInReport (not . boring) sreport
-  if msgShown then return (Nothing, Just "message shown")
+  if msgShown then return $ Left "message shown"
   else do
     let maxDistance = 20
     cops@Kind.COps{cotile} <- getsState scops
@@ -166,18 +166,17 @@ continueRunDir aid distLast mdir = do
         actorThere = posThere `elem` map bpos hs
         openableLast = Tile.openable cotile (lvl `at` (posHere `shift` dir))
         check
-          | actorThere = return (Nothing, Just "actor in the way")
+          | actorThere = return $ Left "actor in the way"
                          -- don't displace actors, except with leader in step 1
           | distLast >= maxDistance =
-              return (Nothing, Just $ "reached max run distance"
-                                      <+> showT maxDistance)
+              return $ Left $ "reached max run distance" <+> showT maxDistance
           | accessibleDir cops lvl posHere dir =
               if distLast == 0
-              then return (Nothing, Nothing)  -- zeroth step very liberal
+              then return $ Left ""  -- hack; means that zeroth step OK
               else checkAndRun aid dir
-          | distLast /= 1 = return (Nothing, Just "blocked")
+          | distLast /= 1 = return $ Left "blocked"
                             -- don't change direction, except in step 1
-          | openableLast = return (Nothing, Just "blocked by a closed door")
+          | openableLast = return $ Left "blocked by a closed door"
                            -- the player may prefer to open the door
           | otherwise =
               -- Assume turning is permitted, because this is the start
@@ -186,7 +185,7 @@ continueRunDir aid distLast mdir = do
     check
 
 tryTurning :: MonadClient m
-           => ActorId -> m (Maybe Vector, Maybe Msg)
+           => ActorId -> m (Either Msg Vector)
 tryTurning aid = do
   cops@Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody aid
@@ -201,21 +200,19 @@ tryTurning aid = do
       dirSimilar dir = dirNearby dirLast dir && dirEnterable dir
       dirsSimilar = filter dirSimilar moves
   case dirsSimilar of
-    [] -> return (Nothing, Just "dead end")
+    [] -> return $ Left "dead end"
     d1 : ds | all (dirNearby d1) ds ->  -- only one or two directions possible
       case sortBy (compare `on` euclidDistSq dirLast)
            $ filter (accessibleDir cops lvl posHere) $ d1 : ds of
         [] ->
-          return ( Nothing
-                 , Just "blocked and all similar directions are closed doors" )
+          return $ Left "blocked and all similar directions are closed doors"
         d : _ -> checkAndRun aid d
-    _ -> return ( Nothing
-                , Just "blocked and many distant similar directions found" )
+    _ -> return $ Left "blocked and many distant similar directions found"
 
 -- The direction is different than the original, if called from @tryTurning@
 -- and the same if from @continueRunDir@.
 checkAndRun :: MonadClient m
-            => ActorId -> Vector -> m (Maybe Vector, Maybe Msg)
+            => ActorId -> Vector -> m (Either Msg Vector)
 checkAndRun aid dir = do
   Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
   body <- getsState $ getActorBody aid
@@ -269,15 +266,12 @@ checkAndRun aid dir = do
       itemChangeRight = posHasItems rightForwardPosHere
                         `notElem` map posHasItems rightPsLast
       check
-        | actorThere = return (Nothing, Just "actor in the way")
+        | actorThere = return $ Left "actor in the way"
                        -- Actor in possibly another direction tnat original.
-        | terrainChangeLeft =
-            return (Nothing, Just "terrain change on the left")
-        | terrainChangeRight =
-            return (Nothing, Just "terrain change on the right")
-        | itemChangeLeft = return (Nothing, Just "item change on the left")
-        | itemChangeRight = return (Nothing, Just "item change on the right")
-        | terrainChangeMiddle =
-            return ( Nothing, Just "terrain change in the middle and no exit" )
-        | otherwise = return (Just dir, Nothing)
+        | terrainChangeLeft = return $ Left "terrain change on the left"
+        | terrainChangeRight = return $ Left "terrain change on the right"
+        | itemChangeLeft = return $ Left "item change on the left"
+        | itemChangeRight = return $ Left "item change on the right"
+        | terrainChangeMiddle = return $ Left "terrain change in the middle"
+        | otherwise = return $ Right dir
   check
