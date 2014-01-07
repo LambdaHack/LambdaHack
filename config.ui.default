@@ -21,6 +21,7 @@
 ; p: Repeat 1
 ; P: Repeat 100
 ; CTRL-p: Repeat 1000
+; apostrophe: Record
 ; CTRL-y: Resend
 ; CTRL-d: GameDifficultyCycle
 ; CTRL-r: GameRestart "campaign"

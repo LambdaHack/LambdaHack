@@ -61,6 +61,7 @@ cmdAction cmd = case cmd of
   Accept -> fmap Left $ acceptHuman helpHuman
   Clear -> addNoSlides clearHuman
   Repeat n -> addNoSlides $ repeatHuman n
+  Record -> fmap Left recordHuman
   History -> fmap Left historyHuman
   MarkVision -> addNoSlides humanMarkVision
   MarkSmell -> addNoSlides humanMarkSmell

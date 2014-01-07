@@ -211,6 +211,7 @@ keyTranslate "bracketleft"   = Char '['
 keyTranslate "bracketright"  = Char ']'
 keyTranslate "braceleft"     = Char '{'
 keyTranslate "braceright"    = Char '}'
+keyTranslate "apostrophe"    = Char '\''
 keyTranslate "Escape"        = Esc
 keyTranslate "Return"        = Return
 keyTranslate "space"         = Space

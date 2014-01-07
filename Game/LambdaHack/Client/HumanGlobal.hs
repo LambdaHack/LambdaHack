@@ -50,14 +50,14 @@ type SlideOrCmd a = Either Slideshow a
 
 failWith :: MonadClientUI m => Msg -> m (SlideOrCmd a)
 failWith msg = do
-  modifyClient $ \cli -> cli { slastKey = Nothing
-                             , slastRepeat = 0 }
+  modifyClient $ \cli -> cli {slastKey = Nothing}
+  stopPlayBack
   assert (not $ T.null msg) $ fmap Left $ promptToSlideshow msg
 
 failSlides :: MonadClientUI m => Slideshow -> m (SlideOrCmd a)
 failSlides slides = do
-  modifyClient $ \cli -> cli { slastKey = Nothing
-                             , slastRepeat = 0 }
+  modifyClient $ \cli -> cli {slastKey = Nothing}
+  stopPlayBack
   return $ Left slides
 
 failSer :: MonadClientUI m => FailureSer -> m (SlideOrCmd a)

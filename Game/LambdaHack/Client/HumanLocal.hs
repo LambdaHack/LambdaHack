@@ -7,7 +7,8 @@ module Game.LambdaHack.Client.HumanLocal
   , pickLeaderHuman, memberCycleHuman, memberBackHuman
   , inventoryHuman, tgtAscendHuman, tgtFloorHuman, tgtEnemyHuman
   , epsIncrHuman, selectActorHuman, selectNoneHuman
-  , cancelHuman, displayMainMenu, acceptHuman, clearHuman, repeatHuman
+  , cancelHuman, displayMainMenu, acceptHuman, clearHuman
+   ,repeatHuman, recordHuman
   , historyHuman, humanMarkVision, humanMarkSmell, humanMarkSuspect
   , helpHuman
     -- * Helper functions useful also elsewhere
@@ -61,8 +62,8 @@ import Game.LambdaHack.Content.TileKind
 
 failWith :: MonadClientUI m => Msg -> m Slideshow
 failWith msg = do
-  modifyClient $ \cli -> cli { slastKey = Nothing
-                             , slastRepeat = 0 }
+  modifyClient $ \cli -> cli {slastKey = Nothing}
+  stopPlayBack
   assert (not $ T.null msg) $ promptToSlideshow msg
 
 -- * Move and Run
@@ -661,7 +662,35 @@ clearHuman = return ()
 -- because the player can really use a command that does not stop
 -- at terrain change or when walking over items.
 repeatHuman :: MonadClientUI m => Int -> m ()
-repeatHuman n = modifyClient $ \cli -> cli {slastRepeat = n + 1}
+repeatHuman n = do
+  slastSeqOld <- getsClient slastSeq
+  case slastSeqOld of
+    LPlayBack _ _ _ -> assert `failure` slastSeqOld
+    LRecord _ seqPrevious _ -> do
+      let slastSeq = LPlayBack [] seqPrevious n
+      modifyClient $ \cli -> cli {slastSeq}
+
+maxK :: Int
+maxK = 100
+
+-- * Record
+
+recordHuman :: MonadClientUI m => m Slideshow
+recordHuman = do
+  modifyClient $ \cli -> cli {slastKey = Nothing}
+  slastSeqOld <- getsClient slastSeq
+  case slastSeqOld of
+    LPlayBack _ _ _ -> assert `failure` slastSeqOld
+    LRecord _ _ 0 -> do
+      let slastSeq = LRecord [] [] maxK
+      modifyClient $ \cli -> cli {slastSeq}
+      promptToSlideshow $ "Macro will be recorded for up to"
+                          <+> showT maxK <+> "steps."
+    LRecord _ seqPrevious k -> do
+      let slastSeq = LRecord seqPrevious [] 0
+      modifyClient $ \cli -> cli {slastSeq}
+      promptToSlideshow $ "Macro recording interrupted after"
+                          <+> showT (maxK - k - 1) <+> "steps."
 
 -- * History
 

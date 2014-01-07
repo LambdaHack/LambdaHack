@@ -2,7 +2,7 @@
 module Game.LambdaHack.Client.State
   ( StateClient(..), defStateClient, defHistory
   , updateTarget, getTarget, updateLeader, sside
-  , RunParams(..), TgtMode(..), Target(..)
+  , TgtMode(..), Target(..), RunParams(..), LastSeq(..)
   , toggleMarkVision, toggleMarkSmell, toggleMarkSuspect
   ) where
 
@@ -55,9 +55,7 @@ data StateClient = StateClient
   , srandom      :: !R.StdGen      -- ^ current random generator
   , sconfigUI    :: ConfigUI       -- ^ client config (including initial RNG)
   , slastKey     :: !(Maybe K.KM)  -- ^ last command key pressed
-  , slastSeq1    :: ![K.KM]        -- ^ last key sequence, slot 1
-  , slastSeq2    :: ![K.KM]        -- ^ last key sequence, slot 2
-  , slastRepeat  :: !Int           -- ^ the number of required sequence repeats
+  , slastSeq     :: !LastSeq       -- ^ state of key sequence recording/playing
   , slastCmd     :: !(Maybe CmdTakeTimeSer)
                                    -- ^ last command sent to the server
   , _sleader     :: !(Maybe ActorId)
@@ -71,18 +69,7 @@ data StateClient = StateClient
   , sdifficulty  :: !Int           -- ^ current game difficulty level
   , sdebugCli    :: !DebugModeCli  -- ^ client debugging mode
   }
-  deriving (Show)
-
--- | Parameters of the current run.
-data RunParams = RunParams
-  { runLeader  :: !ActorId         -- ^ the original leader from run start
-  , runMembers :: ![ActorId]       -- ^ the list of actors that take part
-  , runDist    :: !Int             -- ^ distance of the run so far
-                                   --   (plus one, if multiple runners)
-  , runStopMsg :: !(Maybe Text)    -- ^ message with the next stop reason
-  , runInitDir :: !(Maybe Vector)  -- ^ the direction of the initial step
-  }
-  deriving (Show)
+  deriving Show
 
 -- | Current targeting mode of a client.
 data TgtMode =
@@ -97,6 +84,30 @@ data Target =
     TEnemy !ActorId !Point  -- ^ target an actor with its last seen position
   | TPos !Point             -- ^ target a given position
   deriving (Show, Eq)
+
+-- | Parameters of the current run.
+data RunParams = RunParams
+  { runLeader  :: !ActorId         -- ^ the original leader from run start
+  , runMembers :: ![ActorId]       -- ^ the list of actors that take part
+  , runDist    :: !Int             -- ^ distance of the run so far
+                                   --   (plus one, if multiple runners)
+  , runStopMsg :: !(Maybe Text)    -- ^ message with the next stop reason
+  , runInitDir :: !(Maybe Vector)  -- ^ the direction of the initial step
+  }
+  deriving (Show)
+
+data LastSeq =
+    LPlayBack
+      { seqRemaining :: ![K.KM]
+      , seqMacro     :: ![K.KM]
+      , seqPlayBackN :: !Int
+      }
+  | LRecord
+      { seqCurrent  :: ![K.KM]
+      , seqPrevious :: ![K.KM]
+      , seqRecordN  :: !Int
+      }
+  deriving Show
 
 -- | Initial game client state.
 defStateClient :: History -> ConfigUI -> FactionId -> Bool
@@ -117,9 +128,7 @@ defStateClient shistory sconfigUI _sside sisAI =
     , sconfigUI
     , srandom = R.mkStdGen 42  -- will be set later
     , slastKey = Nothing
-    , slastSeq1 = []
-    , slastSeq2 = []
-    , slastRepeat = 0
+    , slastSeq = LRecord [] [] 0
     , slastCmd = Nothing
     , _sleader = Nothing  -- no heroes yet alive
     , _sside
@@ -214,9 +223,7 @@ instance Binary StateClient where
     let sfper = EM.empty
         srandom = read g
         slastKey = Nothing
-        slastSeq1 = []
-        slastSeq2 = []
-        slastRepeat = 0
+        slastSeq = LRecord [] [] 0
         slastCmd = Nothing
         squit = False
         sconfigUI = undefined

@@ -45,6 +45,7 @@ data HumanCmd =
   | Accept
   | Clear
   | Repeat !Int
+  | Record
   | History
   | MarkVision
   | MarkSmell
@@ -149,6 +150,7 @@ cmdDescription cmd = case cmd of
   Clear       -> "clear messages"
   Repeat 1    -> "play back last keys"
   Repeat n    -> "play back last keys" <+> showT n <+> "times"
+  Record      -> "start recording a macro"
   History     -> "display player diary"
   MarkVision  -> "mark visible area"
   MarkSmell   -> "mark smell"

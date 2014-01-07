@@ -204,14 +204,17 @@ humanCommand msgRunStop = do
           Just sLast ->
             -- (Re-)display the last slide while waiting for the next key.
             return sLast
-        modifyClient $ \cli -> cli {slastRepeat = slastRepeat cli - 1}
-        slastRepeat <- getsClient slastRepeat
-        if slastRepeat <= 0
-          then modifyClient $ \cli -> cli { slastSeq1 = []
-                                          , slastSeq2 = if slastSeq1 cli == []
-                                                        then slastSeq2 cli
-                                                        else slastSeq1 cli}
-          else modifyClient $ \cli -> cli {slastSeq1 = reverse $ slastSeq2 cli}
+        slastSeqOld <- getsClient slastSeq
+        let slastSeq = case slastSeqOld of
+              LPlayBack _ [] _ -> LRecord [] [] 0
+              LPlayBack [] macro 0 -> LRecord [] macro 0
+              LPlayBack [] macro n -> LPlayBack (reverse macro) macro (n - 1)
+              LPlayBack _ _ _ -> slastSeqOld
+              LRecord seqCurrent _ 0 ->
+                LRecord [] seqCurrent 0
+              LRecord seqCurrent seqPrevious k ->
+                LRecord [] (seqCurrent ++ seqPrevious) (k - 1)
+        modifyClient $ \cli -> cli {slastSeq}
         km <- getKeyOverlayCommand over
         -- Messages shown, so update history and reset current report.
         recordHistory

@@ -15,7 +15,7 @@ module Game.LambdaHack.Client.Action
     -- * History and report
   , msgAdd, msgReset, recordHistory
     -- * Key input
-  , getKeyOverlayCommand, getInitConfirms
+  , getKeyOverlayCommand, getInitConfirms, stopPlayBack
     -- * Display and key input
   , displayFrames, displayMore, displayYesNo, displayChoiceUI
     -- * Generate slideshows
@@ -97,23 +97,33 @@ displayFrame isRunning mf = do
 
 promptGetKey :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
 promptGetKey frontKM frontFr = do
-  slastRepeat <- getsClient slastRepeat
-  if slastRepeat <= 0 then do
-    ConnFrontend{..} <- getsSession sfconn
-    writeConnFrontend Frontend.FrontKey {..}
-    km <- readConnFrontend
-    modifyClient $ \cli -> cli {slastSeq1 = km : slastSeq1 cli}
-    return km
-  else do
-    slastSeq1 <- getsClient slastSeq1
-    case slastSeq1 of
-      km : kms | null frontKM || km `elem` frontKM -> do
-        modifyClient $ \cli -> cli {slastSeq1 = kms}
-        return km
-      _ -> do
-        -- Something went wrong, stop repeating.
-        modifyClient $ \cli -> cli {slastRepeat = 0}
-        return K.escKey
+  lastSeq <- getsClient slastSeq
+  case lastSeq of
+    LPlayBack (km : kms) macro n | null frontKM || km `elem` frontKM -> do
+      displayFrame False $ Just frontFr
+      let slastSeq = LPlayBack kms macro n
+      modifyClient $ \cli -> cli {slastSeq}
+      return km
+    LPlayBack{} -> do  -- something went wrong, stop repeating
+      displayFrame False $ Just frontFr
+      stopPlayBack
+      return K.escKey
+    LRecord seqCurrent seqPrevious k -> do
+      ConnFrontend{..} <- getsSession sfconn
+      writeConnFrontend Frontend.FrontKey {..}
+      km <- readConnFrontend
+      let slastSeq = LRecord (km : seqCurrent) seqPrevious k
+      modifyClient $ \cli -> cli {slastSeq}
+      return km
+
+stopPlayBack :: MonadClient m => m ()
+stopPlayBack = do
+  lastSeq <- getsClient slastSeq
+  case lastSeq of
+    LPlayBack _ macro _ -> do
+      let slastSeq = LRecord macro [] 0
+      modifyClient $ \cli -> cli {slastSeq}
+    LRecord{} -> return ()
 
 -- | Display a slideshow, awaiting confirmation for each slide except the last.
 getInitConfirms :: MonadClientUI m

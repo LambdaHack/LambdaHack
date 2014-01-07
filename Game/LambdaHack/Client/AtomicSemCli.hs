@@ -273,12 +273,12 @@ drawCmdAtomicUI verbose cmd = case cmd of
   CreateActorA aid body _ -> do
     side <- getsClient sside
     when (verbose || bfid body /= side) $ actorVerbMU aid body "appear"
-    when (bfid body /= side) $ modifyClient $ \cli -> cli {slastRepeat = 0}
+    when (bfid body /= side) stopPlayBack
     lookAtMove aid
   SpotActorA aid body _ -> do
     side <- getsClient sside
     when (verbose || bfid body /= side) $ actorVerbMU aid body "be spotted"
-    when (bfid body /= side) $ modifyClient $ \cli -> cli {slastRepeat = 0}
+    when (bfid body /= side) stopPlayBack
     -- TODO: "XXX spots YYY"? or rather "at (192,43)"? or center, blink, mark?
   DestroyActorA aid body _ ->
     destroyActorUI aid body "die" "be destroyed" verbose
