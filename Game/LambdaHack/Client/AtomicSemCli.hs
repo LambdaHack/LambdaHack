@@ -34,8 +34,10 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind
 
@@ -47,7 +49,7 @@ import Game.LambdaHack.Content.TileKind
 cmdAtomicFilterCli :: MonadClient m => CmdAtomic -> m [CmdAtomic]
 cmdAtomicFilterCli cmd = case cmd of
   AlterTileA lid p fromTile toTile -> do
-    Kind.COps{cotile = Kind.Ops{okind}} <- getsState scops
+    Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
     lvl <- getLevel lid
     let t = lvl `at` p
     if t == fromTile
@@ -275,25 +277,33 @@ drawCmdAtomicUI verbose cmd = case cmd of
     when (verbose || bfid body /= side) $ actorVerbMU aid body "appear"
     when (bfid body /= side) stopPlayBack
     lookAtMove aid
+  DestroyActorA aid body _ ->
+    destroyActorUI aid body "die" "be destroyed" verbose
+  CreateItemA _ item k _ -> itemVerbMU item k "drop to the ground"
+  DestroyItemA _ item k _ -> itemVerbMU item k "disappear"
   SpotActorA aid body _ -> do
     side <- getsClient sside
     when (verbose || bfid body /= side) $ actorVerbMU aid body "be spotted"
     when (bfid body /= side) stopPlayBack
     -- TODO: "XXX spots YYY"? or rather "at (192,43)"? or center, blink, mark?
-  DestroyActorA aid body _ ->
-    destroyActorUI aid body "die" "be destroyed" verbose
-  CreateItemA _ item k _ -> itemVerbMU item k "drop to the ground"
-  DestroyItemA _ item k _ -> itemVerbMU item k "disappear"
   LoseActorA aid body _ ->
     destroyActorUI aid body "be missing in action" "be lost" verbose
   MoveActorA aid _ _ -> lookAtMove aid
   WaitActorA aid _ _| verbose -> aVerbMU aid "wait"
   DisplaceActorA source target -> displaceActorUI source target
   MoveItemA iid k c1 c2 -> moveItemUI verbose iid k c1 c2
-  HealActorA aid n | verbose ->
-    aVerbMU aid $ MU.Text $ if n > 0
-                            then "heal"  <+> showT n <> "HP"
-                            else "be about to lose" <+> showT n <> "HP"
+  HealActorA aid n -> do
+    when verbose $
+      aVerbMU aid $ MU.Text $ (if n > 0 then "heal" else "lose")
+                              <+> showT (abs n) <> "HP"
+    mleader <- getsClient _sleader
+    when (Just aid == mleader) $ do
+      Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+      b <- getsState $ getActorBody aid
+      let ActorKind{ahp} = okind $ bkind b
+      when (bhp b == maxDice ahp) $ do
+        actorVerbMU aid b "heal fully"
+        stopPlayBack
   HasteActorA aid delta ->
     aVerbMU aid $ if delta > speedZero
                   then "speed up"
