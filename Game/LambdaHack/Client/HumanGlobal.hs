@@ -167,6 +167,7 @@ displaceAid source target = do
 -- | Leader waits a turn (and blocks, etc.).
 waitHuman :: MonadClientUI m => m CmdTakeTimeSer
 waitHuman = do
+  modifyClient $ \cli -> cli {swaitTimes = abs (swaitTimes cli) + 1}
   leader <- getLeaderUI
   return $ WaitSer leader
 

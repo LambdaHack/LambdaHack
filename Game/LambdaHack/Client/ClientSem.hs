@@ -223,6 +223,10 @@ humanCommand msgRunStop = do
               -- Query and clear the last command key.
               lastKey <- getsClient slastKey
               stgtMode <- getsClient stgtMode
+              modifyClient $ \cli -> cli
+                {swaitTimes = if swaitTimes cli > 0
+                              then - swaitTimes cli
+                              else 0}
               if Just km == lastKey
                  || km == K.escKey && isNothing stgtMode && isJust mover
                 then do

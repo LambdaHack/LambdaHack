@@ -49,7 +49,7 @@ draw :: ColorMode -> Kind.COps -> Perception -> LevelId -> Maybe ActorId
      -> SingleFrame
 draw dm cops per drawnLevelId mleader
      cli@StateClient{ stgtMode, scursor, seps, sdisco, sselected
-                    , smarkVision, smarkSmell, smarkSuspect }
+                    , smarkVision, smarkSmell, smarkSuspect, swaitTimes }
      s sfTop =
   let Kind.COps{cotile=Kind.Ops{okind=tokind, ouniqGroup}} = cops
       (lvl@Level{ ldepth, lxsize, lysize, lsmell
@@ -133,7 +133,7 @@ draw dm cops per drawnLevelId mleader
                               else attr0
                     else attr0
         in Color.AttrChar a char
-      leaderStatus = drawLeaderStatus cops s sdisco ltime mleader
+      leaderStatus = drawLeaderStatus cops s sdisco ltime swaitTimes mleader
       seenN = 100 * lseen `div` lclear
       seenTxt | seenN == 100 = "all"
               | otherwise = T.justifyRight 2 ' ' (showT seenN) <> "%"
@@ -183,9 +183,10 @@ draw dm cops per drawnLevelId mleader
       sfBottom = toWidth (lxsize - 1) status
   in SingleFrame{..}
 
-drawLeaderStatus :: Kind.COps -> State -> Discovery -> Time -> Maybe ActorId
+drawLeaderStatus :: Kind.COps -> State -> Discovery
+                 -> Time -> Int -> Maybe ActorId
                  -> Text
-drawLeaderStatus cops s sdisco ltime mleader =
+drawLeaderStatus cops s sdisco ltime waitTimes mleader =
   case mleader of
     Just leader ->
       let Kind.COps{coactor=Kind.Ops{okind}} = cops
@@ -206,7 +207,10 @@ drawLeaderStatus cops s sdisco ltime mleader =
           -- Indicate the actor is braced (was waiting last move).
           -- It's a useful feedback for the otherwise hard to observe
           -- 'wait' command.
-          braceSign | bracedL   = "{"
+          braceChars = ['{', '\\', 'X', '\\', '}', '/', 'X', '/']
+          braceChar = braceChars
+                      !! (max 0 (waitTimes - 1) `mod` length braceChars)
+          braceSign | bracedL   = T.singleton braceChar
                     | otherwise = " "
       in T.justifyLeft 11 ' ' ("Dmg:" <+> damage) <+>
          T.justifyLeft 13 ' ' (braceSign <> "HP:" <+> bhpS

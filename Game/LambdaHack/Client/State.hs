@@ -59,6 +59,7 @@ data StateClient = StateClient
   , slastPlay    :: ![K.KM]        -- ^ state of key sequence playback
   , slastCmd     :: !(Maybe CmdTakeTimeSer)
                                    -- ^ last command sent to the server
+  , swaitTimes   :: !Int           -- ^ player just waited this many times
   , _sleader     :: !(Maybe ActorId)
                                    -- ^ current picked party leader
   , _sside       :: !FactionId     -- ^ faction controlled by the client
@@ -124,6 +125,7 @@ defStateClient shistory sconfigUI _sside sisAI =
     , slastRecord = ([], [], 0)
     , slastPlay = []
     , slastCmd = Nothing
+    , swaitTimes = 0
     , _sleader = Nothing  -- no heroes yet alive
     , _sside
     , squit = False
@@ -220,6 +222,7 @@ instance Binary StateClient where
         slastRecord = ([], [], 0)
         slastPlay = []
         slastCmd = Nothing
+        swaitTimes = 0
         squit = False
         sconfigUI = undefined
     return StateClient{..}

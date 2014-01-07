@@ -124,7 +124,9 @@ stopPlayBack =
   modifyClient $ \cli -> cli
     { slastPlay = []
     , slastRecord = let (seqCurrent, seqPrevious, _) = slastRecord cli
-                    in (seqCurrent, seqPrevious, 0) }
+                    in (seqCurrent, seqPrevious, 0)
+    , swaitTimes = - swaitTimes cli
+    }
 
 -- | Display a slideshow, awaiting confirmation for each slide except the last.
 getInitConfirms :: MonadClientUI m
