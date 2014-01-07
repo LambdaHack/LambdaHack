@@ -663,13 +663,11 @@ clearHuman = return ()
 -- at terrain change or when walking over items.
 repeatHuman :: MonadClientUI m => Int -> m ()
 repeatHuman n = do
-  slastSeqOld <- getsClient slastSeq
-  case slastSeqOld of
-    LPlayBack _ -> assert `failure` slastSeqOld
-    LRecord _ seqPrevious _ -> do
-      let macro = concat $ replicate n $ reverse seqPrevious
-          slastSeq = LPlayBack macro
-      modifyClient $ \cli -> cli {slastSeq}
+  (_, seqPrevious, k) <- getsClient slastRecord
+  let macro = concat $ replicate n $ reverse seqPrevious
+  modifyClient $ \cli -> cli {slastPlay = macro ++ slastPlay cli}
+  let slastRecord = ([], [], if k == 0 then 0 else maxK)
+  modifyClient $ \cli -> cli {slastRecord}
 
 maxK :: Int
 maxK = 100
@@ -679,17 +677,16 @@ maxK = 100
 recordHuman :: MonadClientUI m => m Slideshow
 recordHuman = do
   modifyClient $ \cli -> cli {slastKey = Nothing}
-  slastSeqOld <- getsClient slastSeq
-  case slastSeqOld of
-    LPlayBack _ -> assert `failure` slastSeqOld
-    LRecord _ _ 0 -> do
-      let slastSeq = LRecord [] [] maxK
-      modifyClient $ \cli -> cli {slastSeq}
+  (_seqCurrent, seqPrevious, k) <- getsClient slastRecord
+  case k of
+    0 -> do
+      let slastRecord = ([], [], maxK)
+      modifyClient $ \cli -> cli {slastRecord}
       promptToSlideshow $ "Macro will be recorded for up to"
                           <+> showT maxK <+> "steps."
-    LRecord _ seqPrevious k -> do
-      let slastSeq = LRecord seqPrevious [] 0
-      modifyClient $ \cli -> cli {slastSeq}
+    _ -> do
+      let slastRecord = (seqPrevious, [], 0)
+      modifyClient $ \cli -> cli {slastRecord}
       promptToSlideshow $ "Macro recording interrupted after"
                           <+> showT (maxK - k - 1) <+> "steps."
 

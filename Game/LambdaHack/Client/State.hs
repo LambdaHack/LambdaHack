@@ -2,7 +2,7 @@
 module Game.LambdaHack.Client.State
   ( StateClient(..), defStateClient, defHistory
   , updateTarget, getTarget, updateLeader, sside
-  , TgtMode(..), Target(..), RunParams(..), LastSeq(..)
+  , TgtMode(..), Target(..), RunParams(..), LastRecord
   , toggleMarkVision, toggleMarkSmell, toggleMarkSuspect
   ) where
 
@@ -55,7 +55,8 @@ data StateClient = StateClient
   , srandom      :: !R.StdGen      -- ^ current random generator
   , sconfigUI    :: ConfigUI       -- ^ client config (including initial RNG)
   , slastKey     :: !(Maybe K.KM)  -- ^ last command key pressed
-  , slastSeq     :: !LastSeq       -- ^ state of key sequence recording/playing
+  , slastRecord  :: !LastRecord    -- ^ state of key sequence recording
+  , slastPlay    :: ![K.KM]        -- ^ state of key sequence playback
   , slastCmd     :: !(Maybe CmdTakeTimeSer)
                                    -- ^ last command sent to the server
   , _sleader     :: !(Maybe ActorId)
@@ -96,16 +97,10 @@ data RunParams = RunParams
   }
   deriving (Show)
 
-data LastSeq =
-    LPlayBack
-      { seqMacro :: ![K.KM]
-      }
-  | LRecord
-      { seqCurrent  :: ![K.KM]
-      , seqPrevious :: ![K.KM]
-      , seqRecordN  :: !Int
-      }
-  deriving Show
+type LastRecord = ( [K.KM]  -- ^ accumulated keys of the current command
+                  , [K.KM]  -- ^ keys of the rest of the recorded command batch
+                  , Int     -- ^ commands left to record for this batch
+                  )
 
 -- | Initial game client state.
 defStateClient :: History -> ConfigUI -> FactionId -> Bool
@@ -126,7 +121,8 @@ defStateClient shistory sconfigUI _sside sisAI =
     , sconfigUI
     , srandom = R.mkStdGen 42  -- will be set later
     , slastKey = Nothing
-    , slastSeq = LRecord [] [] 0
+    , slastRecord = ([], [], 0)
+    , slastPlay = []
     , slastCmd = Nothing
     , _sleader = Nothing  -- no heroes yet alive
     , _sside
@@ -221,7 +217,8 @@ instance Binary StateClient where
     let sfper = EM.empty
         srandom = read g
         slastKey = Nothing
-        slastSeq = LRecord [] [] 0
+        slastRecord = ([], [], 0)
+        slastPlay = []
         slastCmd = Nothing
         squit = False
         sconfigUI = undefined

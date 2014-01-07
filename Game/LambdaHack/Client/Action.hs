@@ -97,33 +97,28 @@ displayFrame isRunning mf = do
 
 promptGetKey :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
 promptGetKey frontKM frontFr = do
-  lastSeq <- getsClient slastSeq
-  case lastSeq of
-    LPlayBack (km : kms) | null frontKM || km `elem` frontKM -> do
+  lastPlayOld <- getsClient slastPlay
+  km <- case lastPlayOld of
+    km : kms | null frontKM || km `elem` frontKM -> do
       displayFrame False $ Just frontFr
-      let slastSeq = LPlayBack kms
-      modifyClient $ \cli -> cli {slastSeq}
+      modifyClient $ \cli -> cli {slastPlay = kms}
       return km
-    LPlayBack{} -> do  -- something went wrong, stop repeating
-      displayFrame False $ Just frontFr
-      stopPlayBack
-      return K.escKey
-    LRecord seqCurrent seqPrevious k -> do
+    _ -> do
+      unless (null lastPlayOld) stopPlayBack  -- something went wrong
       ConnFrontend{..} <- getsSession sfconn
       writeConnFrontend Frontend.FrontKey {..}
-      km <- readConnFrontend
-      let slastSeq = LRecord (km : seqCurrent) seqPrevious k
-      modifyClient $ \cli -> cli {slastSeq}
-      return km
+      readConnFrontend
+  (seqCurrent, seqPrevious, k) <- getsClient slastRecord
+  let slastRecord = (km : seqCurrent, seqPrevious, k)
+  modifyClient $ \cli -> cli {slastRecord}
+  return km
 
 stopPlayBack :: MonadClient m => m ()
-stopPlayBack = do
-  lastSeq <- getsClient slastSeq
-  case lastSeq of
-    LPlayBack macro -> do
-      let slastSeq = LRecord macro [] 0
-      modifyClient $ \cli -> cli {slastSeq}
-    LRecord{} -> return ()
+stopPlayBack =
+  modifyClient $ \cli -> cli
+    { slastPlay = []
+    , slastRecord = let (seqCurrent, seqPrevious, _) = slastRecord cli
+                    in (seqCurrent, seqPrevious, 0) }
 
 -- | Display a slideshow, awaiting confirmation for each slide except the last.
 getInitConfirms :: MonadClientUI m
