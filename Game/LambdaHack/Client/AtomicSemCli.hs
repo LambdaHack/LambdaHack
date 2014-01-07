@@ -277,8 +277,10 @@ drawCmdAtomicUI verbose cmd = case cmd of
     when (verbose || bfid body /= side) $ actorVerbMU aid body "appear"
     when (bfid body /= side) stopPlayBack
     lookAtMove aid
-  DestroyActorA aid body _ ->
+  DestroyActorA aid body _ -> do
+    side <- getsClient sside
     destroyActorUI aid body "die" "be destroyed" verbose
+    when (bfid body == side && not (bproj body)) stopPlayBack
   CreateItemA _ item k _ -> itemVerbMU item k "drop to the ground"
   DestroyItemA _ item k _ -> itemVerbMU item k "disappear"
   SpotActorA aid body _ -> do
@@ -376,8 +378,7 @@ drawCmdAtomicUI verbose cmd = case cmd of
                                     "look like an ordinary"
           , objUnkown1, objUnkown2 ]
     msgAdd msg
-  RestartA _ _ _ _ _ t ->
-    msgAdd $ "New game started in" <+> t <+> "mode."
+  RestartA _ _ _ _ _ t -> msgAdd $ "New game started in" <+> t <+> "mode."
   SaveBkpA | verbose -> msgAdd "Saving backup."
   MsgAllA msg -> msgAdd msg
   _ -> return ()
@@ -392,6 +393,14 @@ lookAtMove aid = do
         && isNothing tgtMode) $ do  -- targeting does a more extensive look
     lookMsg <- lookAt False True (bpos body) aid ""
     msgAdd lookMsg
+  fact <- getsState $ (EM.! bfid body) . sfactionD
+  Level{lxsize, lysize} <- getsState $ (EM.! blid body) . sdungeon
+  if side == bfid body then do
+    foes <- getsState $ actorList (isAtWar fact) (blid body)
+    when (foesAdjacent lxsize lysize (bpos body) foes) stopPlayBack
+  else when (isAtWar fact side) $ do
+    foes <- getsState $ actorNotProjList (== side) (blid body)
+    when (foesAdjacent lxsize lysize (bpos body) foes) stopPlayBack
 
 -- | Sentences such as \"Dog barks loudly.\".
 actorVerbMU :: MonadClientUI m => ActorId -> Actor -> MU.Part -> m ()

@@ -120,13 +120,14 @@ promptGetKey frontKM frontFr = do
   return km
 
 stopPlayBack :: MonadClient m => m ()
-stopPlayBack =
+stopPlayBack = do
   modifyClient $ \cli -> cli
     { slastPlay = []
     , slastRecord = let (seqCurrent, seqPrevious, _) = slastRecord cli
                     in (seqCurrent, seqPrevious, 0)
     , swaitTimes = - swaitTimes cli
     }
+  stopRunning
 
 -- | Display a slideshow, awaiting confirmation for each slide except the last.
 getInitConfirms :: MonadClientUI m
