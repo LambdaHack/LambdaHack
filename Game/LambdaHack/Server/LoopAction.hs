@@ -496,8 +496,7 @@ regenerateLevelHP lid = do
               || bhp m <= 0
            then Nothing
            else Just a
-  toRegen <-
-    getsState $ mapMaybe approve . actorNotProjAssocs (const True) lid
+  toRegen <- getsState $ mapMaybe approve . actorNotProjAssocs (const True) lid
   mapM_ (\aid -> execCmdAtomic $ HealActorA aid 1) toRegen
 
 -- | Continue or exit or restart the game.

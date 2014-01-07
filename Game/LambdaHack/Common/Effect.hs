@@ -22,7 +22,7 @@ data Effect a =
     NoEffect
   | Heal !Int
   | Hurt !RollDice !a
-  | Mindprobe !Int    -- the @Int@ is a hack to send the result to clients
+  | Mindprobe Int    -- the @Int@ is a lazy hack to send the result to clients
   | Dominate
   | CallFriend !Int
   | Summon !Int
