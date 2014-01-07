@@ -60,7 +60,11 @@
 ; savePrefix: save
 
 ; [macros]
-; ; Handy with Vi keys:
+; ; rest for 100 turns
+; R: KP_Begin P
+; ; throw something at the closest monster repeatedly
+; backslash: apostrophe asterisk Return t Return apostrophe P
+; ; handy shorthands with Vi keys
 ; comma: g
 ; period: KP_Begin
 

@@ -208,6 +208,7 @@ itemOverlay bag inv = do
 
 retargetLeader :: MonadClientUI m => m Slideshow
 retargetLeader = do
+  stopPlayBack
   arena <- getArenaUI
   tgtLoc <- targetToPos
   if isNothing tgtLoc

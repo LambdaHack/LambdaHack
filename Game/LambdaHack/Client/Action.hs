@@ -107,7 +107,13 @@ promptGetKey frontKM frontFr = do
       unless (null lastPlayOld) stopPlayBack  -- something went wrong
       ConnFrontend{..} <- getsSession sfconn
       writeConnFrontend Frontend.FrontKey {..}
-      readConnFrontend
+      kmRaw <- readConnFrontend
+      keyb <- askBinding
+      case fromMaybe [kmRaw] $ M.lookup kmRaw $ kmacro keyb of
+        [] -> assert `failure` kmRaw
+        km : kms -> do
+          modifyClient $ \cli -> cli {slastPlay = kms ++ slastPlay cli}
+          return km
   (seqCurrent, seqPrevious, k) <- getsClient slastRecord
   let slastRecord = (km : seqCurrent, seqPrevious, k)
   modifyClient $ \cli -> cli {slastRecord}
@@ -217,11 +223,9 @@ getPerFid lid = do
 getKeyOverlayCommand :: MonadClientUI m => Overlay -> m K.KM
 getKeyOverlayCommand overlay = do
   frame <- drawOverlay ColorFull overlay
-  keyb <- askBinding
   -- Give the previous client time to display his frames.
   liftIO $ threadDelay 1000
-  km <- promptGetKey [] frame
-  return $! fromMaybe km $ M.lookup km $ kmacro keyb
+  promptGetKey [] frame
 
 -- | Push frames or delays to the frame queue.
 displayFrames :: MonadClientUI m => Frames -> m ()
@@ -431,8 +435,8 @@ parseConfigUI dataDir cp =
       configMacros =
         let trMacro (from, to) =
               let fromTr = mkKM from
-                  toTr  = mkKM to
-              in if fromTr == toTr
+                  toTr = map mkKM $ words to
+              in if [fromTr] == toTr
                  then assert `failure` "degenerate alias" `twith` toTr
                  else (fromTr, toTr)
             section = ConfigIO.getItems cp "macros"

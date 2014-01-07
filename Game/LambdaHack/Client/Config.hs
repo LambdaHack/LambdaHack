@@ -18,7 +18,7 @@ data ConfigUI = ConfigUI
   , configUICfgFile   :: !FilePath
   , configSavePrefix  :: !String
     -- macros
-  , configMacros      :: ![(K.KM, K.KM)]
+  , configMacros      :: ![(K.KM, [K.KM])]
     -- ui
   , configFont        :: !String
   , configHistoryMax  :: !Int

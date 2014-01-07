@@ -23,7 +23,7 @@ import Game.LambdaHack.Common.Msg
 data Binding = Binding
   { kcmd    :: !(M.Map K.KM (Text, Bool, HumanCmd))
                                        -- ^ binding keys to commands
-  , kmacro  :: !(M.Map K.KM K.KM)      -- ^ macro map
+  , kmacro  :: !(M.Map K.KM [K.KM])    -- ^ macro map
   , kmajor  :: ![K.KM]                 -- ^ major commands
   , kminor  :: ![K.KM]                 -- ^ minor commands
   , krevMap :: !(M.Map HumanCmd K.KM)  -- ^ from cmds to their main keys
@@ -53,12 +53,12 @@ stdBinding !config@ConfigUI{configMacros} =
   , krevMap = M.fromList $ map swap cmdList
   }
 
-coImage :: M.Map K.KM K.KM -> K.KM -> [K.KM]
+coImage :: M.Map K.KM [K.KM] -> K.KM -> [K.KM]
 coImage kmacro k =
   let domain = M.keysSet kmacro
   in if k `S.member` domain
      then []
-     else k : [ from | (from, to) <- M.assocs kmacro, to == k ]
+     else k : [ from | (from, to) <- M.assocs kmacro, to == [k] ]
 
 -- | Produce a set of help screens from the key bindings.
 keyHelp :: Binding -> Slideshow
