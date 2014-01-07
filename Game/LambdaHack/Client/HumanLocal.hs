@@ -13,7 +13,7 @@ module Game.LambdaHack.Client.HumanLocal
   , helpHuman
     -- * Helper functions useful also elsewhere
   , targetAccept, floorItemOverlay, itemOverlay
-  , viewedLevel, pickLeader, stopRunning, lookAt
+  , viewedLevel, pickLeader, lookAt
   ) where
 
 -- Cabal
@@ -281,19 +281,6 @@ pickLeader actor = do
       lookMsg <- lookAt False True (bpos pbody) actor ""
       msgAdd lookMsg
       return True
-
-stopRunning :: MonadClientUI m => m ()
-stopRunning = do
-  srunning <- getsClient srunning
-  case srunning of
-    Nothing -> return ()
-    Just RunParams{runLeader} -> do
-      -- Switch to the original leader, from before the run start, unless dead.
-      arena <- getArenaUI
-      s <- getState
-      when (memActor runLeader arena s) $
-        modifyClient $ updateLeader runLeader s
-      modifyClient (\cli -> cli { srunning = Nothing })
 
 -- * MemberBack
 

@@ -13,7 +13,6 @@ import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.HumanCmd
-import Game.LambdaHack.Client.HumanLocal
 import Game.LambdaHack.Client.HumanSem
 import Game.LambdaHack.Client.RunAction
 import Game.LambdaHack.Client.State

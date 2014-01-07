@@ -15,7 +15,7 @@ module Game.LambdaHack.Client.Action
     -- * History and report
   , msgAdd, msgReset, recordHistory
     -- * Key input
-  , getKeyOverlayCommand, getInitConfirms, stopPlayBack
+  , getKeyOverlayCommand, getInitConfirms, stopPlayBack, stopRunning
     -- * Display and key input
   , displayFrames, displayMore, displayYesNo, displayChoiceUI
     -- * Generate slideshows
@@ -119,7 +119,7 @@ promptGetKey frontKM frontFr = do
   modifyClient $ \cli -> cli {slastRecord}
   return km
 
-stopPlayBack :: MonadClient m => m ()
+stopPlayBack :: MonadClientUI m => m ()
 stopPlayBack = do
   modifyClient $ \cli -> cli
     { slastPlay = []
@@ -128,6 +128,19 @@ stopPlayBack = do
     , swaitTimes = - swaitTimes cli
     }
   stopRunning
+
+stopRunning :: MonadClientUI m => m ()
+stopRunning = do
+  srunning <- getsClient srunning
+  case srunning of
+    Nothing -> return ()
+    Just RunParams{runLeader} -> do
+      -- Switch to the original leader, from before the run start, unless dead.
+      arena <- getArenaUI
+      s <- getState
+      when (memActor runLeader arena s) $
+        modifyClient $ updateLeader runLeader s
+      modifyClient (\cli -> cli { srunning = Nothing })
 
 -- | Display a slideshow, awaiting confirmation for each slide except the last.
 getInitConfirms :: MonadClientUI m
