@@ -206,10 +206,8 @@ humanCommand msgRunStop = do
             return sLast
         slastSeqOld <- getsClient slastSeq
         let slastSeq = case slastSeqOld of
-              LPlayBack _ [] _ -> LRecord [] [] 0
-              LPlayBack [] macro 0 -> LRecord [] macro 0
-              LPlayBack [] macro n -> LPlayBack (reverse macro) macro (n - 1)
-              LPlayBack _ _ _ -> slastSeqOld
+              LPlayBack [] -> LRecord [] [] 0
+              LPlayBack _ -> slastSeqOld
               LRecord seqCurrent _ 0 ->
                 LRecord [] seqCurrent 0
               LRecord seqCurrent seqPrevious k ->

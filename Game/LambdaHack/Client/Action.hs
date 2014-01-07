@@ -99,9 +99,9 @@ promptGetKey :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
 promptGetKey frontKM frontFr = do
   lastSeq <- getsClient slastSeq
   case lastSeq of
-    LPlayBack (km : kms) macro n | null frontKM || km `elem` frontKM -> do
+    LPlayBack (km : kms) | null frontKM || km `elem` frontKM -> do
       displayFrame False $ Just frontFr
-      let slastSeq = LPlayBack kms macro n
+      let slastSeq = LPlayBack kms
       modifyClient $ \cli -> cli {slastSeq}
       return km
     LPlayBack{} -> do  -- something went wrong, stop repeating
@@ -120,7 +120,7 @@ stopPlayBack :: MonadClient m => m ()
 stopPlayBack = do
   lastSeq <- getsClient slastSeq
   case lastSeq of
-    LPlayBack _ macro _ -> do
+    LPlayBack macro -> do
       let slastSeq = LRecord macro [] 0
       modifyClient $ \cli -> cli {slastSeq}
     LRecord{} -> return ()

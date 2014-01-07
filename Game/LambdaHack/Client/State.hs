@@ -98,9 +98,7 @@ data RunParams = RunParams
 
 data LastSeq =
     LPlayBack
-      { seqRemaining :: ![K.KM]
-      , seqMacro     :: ![K.KM]
-      , seqPlayBackN :: !Int
+      { seqMacro :: ![K.KM]
       }
   | LRecord
       { seqCurrent  :: ![K.KM]

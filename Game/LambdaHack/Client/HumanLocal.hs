@@ -665,9 +665,10 @@ repeatHuman :: MonadClientUI m => Int -> m ()
 repeatHuman n = do
   slastSeqOld <- getsClient slastSeq
   case slastSeqOld of
-    LPlayBack _ _ _ -> assert `failure` slastSeqOld
+    LPlayBack _ -> assert `failure` slastSeqOld
     LRecord _ seqPrevious _ -> do
-      let slastSeq = LPlayBack [] seqPrevious n
+      let macro = concat $ replicate n $ reverse seqPrevious
+          slastSeq = LPlayBack macro
       modifyClient $ \cli -> cli {slastSeq}
 
 maxK :: Int
@@ -680,7 +681,7 @@ recordHuman = do
   modifyClient $ \cli -> cli {slastKey = Nothing}
   slastSeqOld <- getsClient slastSeq
   case slastSeqOld of
-    LPlayBack _ _ _ -> assert `failure` slastSeqOld
+    LPlayBack _ -> assert `failure` slastSeqOld
     LRecord _ _ 0 -> do
       let slastSeq = LRecord [] [] maxK
       modifyClient $ \cli -> cli {slastSeq}
