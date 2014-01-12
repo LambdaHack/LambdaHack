@@ -31,6 +31,7 @@ import Data.Monoid hiding ((<>))
 import Data.Ord
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Vector.Generic as V
 import Data.Version
 import Game.LambdaHack.Frontend (frontendName)
 import qualified NLP.Miniutter.English as MU
@@ -142,12 +143,14 @@ lookAt detailed canSee pos aid msg = do
 -- Assumes targeting mode and so assumes that a leader is picked.
 doLook :: MonadClientUI m => m Slideshow
 doLook = do
+  Kind.COps{cotile} <- getsState scops
   scursor <- getsClient scursor
-  (lid, lvl) <- viewedLevel
+  (lid, lvl@Level{lxsize, lysize, ltile}) <- viewedLevel
   per <- getPerFid lid
   leader <- getLeaderUI
   lpos <- getsState $ bpos . getActorBody leader
   target <- getsClient $ getTarget leader
+  tgtPos <- targetToPos
   let p = fromMaybe lpos scursor
       canSee = ES.member p (totalVisible per)
   inhabitants <- if canSee
@@ -160,14 +163,24 @@ doLook = do
                  subject = MU.WWandW subjects
                  verb = "be here"
              in makeSentence [MU.SubjectVerbSg subject verb]
-      vis | not canSee = " (not visible)"
+      vis | not canSee = "(not visible)"
           | actorSeesPos per leader p = ""
-          | otherwise = " (not seen)"
+          | otherwise = "(not seen)"
+      -- TODO: move elsewhere and recalcuate only when neeed or even less often
+      distance = case tgtPos of
+        Nothing -> Nothing
+        Just tgtP ->
+          let isWalkable = Tile.isWalkable cotile . (ltile Kind.!)
+              vInitial = V.replicate (lxsize * lysize) (-1)
+              vFinal = bfsFill isWalkable lpos vInitial
+              dist = vFinal V.! fromEnum tgtP
+          in if dist == -1 then Nothing else Just dist
+      delta = maybe "" (\d -> ", delta" <+> showT d) distance
       mode = case target of
-               Just TEnemy{} -> "[targeting foe" <> vis <> "]"
-               Just TPoint{} -> "[targeting absolute position" <> vis <> "]"
-               Just TVector{} -> "[targeting position" <> vis <> "]"
-               Nothing -> "[targeting cursor" <> vis <> "]"
+               Just TEnemy{} -> "[targeting foe" <+> vis <> delta <> "]"
+               Just TPoint{} -> "[targeting spot" <+> vis <> delta <> "]"
+               Just TVector{} -> "[targeting position" <+> vis <> delta <> "]"
+               Nothing -> "[targeting cursor" <+> vis <> delta <> "]"
       -- Check if there's something lying around at current position.
       is = lvl `atI` p
   -- Show general info about current position.
@@ -661,7 +674,7 @@ endTargetingMsg = do
                       then partActor $ getActorBody a s
                       else "a fear of the past"
                     Just TPoint{} ->
-                      MU.Text $ "absolute position" <+> T.pack (show tgtPos)
+                      MU.Text $ "spot" <+> T.pack (show tgtPos)
                     Just TVector{} ->
                       MU.Text $ "position" <+> T.pack (show tgtPos)
                     Nothing -> "current cursor position continuously"

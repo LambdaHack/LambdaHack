@@ -15,7 +15,7 @@
 module Game.LambdaHack.Common.Tile
   ( SmellTime
   , kindHasFeature, hasFeature
-  , isClear, isLit, isExplorable, lookSimilar, speedup
+  , isClear, isLit, isWalkable, isExplorable, lookSimilar, speedup
   , openTo, closeTo, causeEffects, revealAs, hideAs
   , openable, closable, changeable
   ) where
@@ -59,6 +59,13 @@ isLit :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 isLit Kind.Ops{ospeedup = Just Kind.TileSpeedup{isLitTab}} = isLitTab
 isLit cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
+-- | Whether actors can walk into a tile.
+-- Essential for efficiency of pathfinding, hence tabulated.
+isWalkable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+{-# INLINE isWalkable #-}
+isWalkable Kind.Ops{ospeedup = Just Kind.TileSpeedup{isWalkableTab=iWT}} = iWT
+isWalkable cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
+
 -- | Whether a tile can be explored, possibly yielding a treasure
 -- or a hidden message.
 isExplorable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
@@ -88,8 +95,9 @@ speedup allClear Kind.Ops{ofoldrWithKey, obounds} =
       tabulate p = (createTab p A.!)
       isClearTab | allClear = tabulate $ not . kindHasFeature F.Impenetrable
                  | otherwise = tabulate $ kindHasFeature F.Clear
-      isLitTab   = tabulate $ not . kindHasFeature F.Dark
-  in Kind.TileSpeedup {isClearTab, isLitTab}
+      isLitTab = tabulate $ not . kindHasFeature F.Dark
+      isWalkableTab = tabulate $ kindHasFeature F.Walkable
+  in Kind.TileSpeedup {..}
 
 openTo :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
 openTo Kind.Ops{okind, opick} t = do
