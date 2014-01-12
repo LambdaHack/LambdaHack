@@ -491,7 +491,7 @@ getRegenerateBsf aid = do
       Level{lxsize, lysize, ltile} <- getLevel $ blid b
       -- Treat doors as an open tile; Don't add an extra step for opening
       -- the doors, because other actors open and use them, too,
-      -- so it's amortized.
+      -- so it's amortized.w
       -- TODO: Sometimes treat hidden tiles as possibly open
       -- and sometimes treat unknown tiles as open.
       let isOpen = Tile.isPassable cotile . (ltile Kind.!)

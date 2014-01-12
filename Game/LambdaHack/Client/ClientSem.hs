@@ -164,8 +164,8 @@ queryAIPick aid = do
 -- | Handle the move of a UI player.
 queryUI :: MonadClientUI m => ActorId -> m CmdSer
 queryUI aid = do
-  -- When running, stop if disturbed. Otherwise let
-  -- the human player issue commands, until any of them takes time.
+  -- When running, stop if disturbed. If not running, let the human
+  -- player issue commands, until any command takes time.
   leader <- getLeaderUI
   assert (leader == aid `blame` "player moves not his leader"
                         `twith` (leader, aid)) skip
@@ -192,6 +192,10 @@ humanCommand :: forall m. MonadClientUI m
              => Maybe Msg
              -> m CmdSer
 humanCommand msgRunStop = do
+  -- For human UI we invalidate whole @sbsfD@ at the start of each
+  -- UI player input, which is an overkill, but doesn't affects
+  -- screensavers, because they are UI, but not human.
+  modifyClient $ \cli -> cli {sbsfD = EM.empty}
   let loop :: Maybe Overlay -> m CmdSer
       loop mover = do
         over <- case mover of
