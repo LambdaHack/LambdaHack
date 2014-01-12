@@ -12,7 +12,9 @@ module Game.LambdaHack.Common.Vector
 import Control.Exception.Assert.Sugar
 import Data.Binary
 import Data.Bits (unsafeShiftL)
+import qualified Data.EnumSet as ES
 import Data.Int (Int32)
+import qualified Data.Sequence as Seq
 
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.PointXY
@@ -268,4 +270,25 @@ vicinityCardinalXY :: (X, Y, X, Y)  -- ^ limit the search to this area
                    -> PointXY       -- ^ position to find neighbours of
                    -> [PointXY]
 vicinityCardinalXY area xy =
-  [ res | dxy <- movesCardinalXY, let res = shiftXY xy dxy, insideXY res area ]
+  [ res | dxy <- movesCardinalXY
+        , let res = shiftXY xy dxy
+        , insideXY res area ]
+
+bfsSearch :: (Point -> Bool)  -- ^ tells if the position walkable
+          -> (Point -> Bool)  -- ^ tells if the position is a goal
+          -> Point            -- ^ starting position
+          -> Bool             -- ^ tell if a goal found
+bfsSearch isWalkable isGoal origin =
+  let bfs q s =
+        case Seq.viewr q of
+          Seq.EmptyR -> False
+          q1 Seq.:> pos ->
+            if isGoal pos
+            then True
+            else let rawChildren = map (shift pos) moves
+                     goodChild p = isWalkable p && ES.notMember p s
+                     children = filter goodChild rawChildren
+                     q2 = foldr (Seq.<|) q1 children
+                     s2 = foldr ES.insert s children
+                 in bfs q2 s2
+  in bfs (Seq.singleton origin) (ES.singleton origin)
