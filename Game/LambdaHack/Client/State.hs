@@ -25,6 +25,7 @@ import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Key as K
+import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
@@ -43,6 +44,8 @@ data StateClient = StateClient
   , seps         :: !Int              -- ^ a parameter of the tgt digital line
   , stargetD     :: !(EM.EnumMap ActorId Target)
                                    -- ^ targets of our actors in the dungeon
+  , sbsfD        :: !(EM.EnumMap ActorId (Kind.Array BfsDistance))
+                                   -- ^ pathfinding distances for our actors
   , sselected    :: !(ES.EnumSet ActorId)
                                    -- ^ the set of currently selected actors
   , srunning     :: !(Maybe RunParams)
@@ -113,6 +116,7 @@ defStateClient shistory sconfigUI _sside sisAI =
     , scursor = Nothing
     , seps = 0
     , stargetD = EM.empty
+    , sbsfD = EM.empty
     , sselected = ES.empty
     , srunning = Nothing
     , sreport = emptyReport
@@ -217,7 +221,8 @@ instance Binary StateClient where
     smarkSuspect <- get
     sdifficulty <- get
     sdebugCli <- get
-    let sfper = EM.empty
+    let sbsfD = EM.empty
+        sfper = EM.empty
         srandom = read g
         slastKey = Nothing
         slastRecord = ([], [], 0)

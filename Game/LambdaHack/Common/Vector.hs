@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.Vector
   , neg, RadianAngle, rotate
   , towards, displacement, displacePath, shiftPath
   , vicinity, vicinityCardinal, vicinityCardinalXY
-  , bfsFill
+  , BfsDistance, bfsFill
   ) where
 
 import Control.Exception.Assert.Sugar

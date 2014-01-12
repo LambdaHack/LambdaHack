@@ -194,8 +194,7 @@ cmdAtomicSemCli cmd = case cmd of
 -- on another level, the old position does not make sense.
 -- And if he is really dead, we avoid a memory leak.
 destroyActorA :: MonadClient m => ActorId -> m ()
-destroyActorA aid =
-  modifyClient $ \cli -> cli {stargetD = EM.delete aid $ stargetD cli}
+destroyActorA aid = modifyClient $ updateTarget aid (const Nothing)
 
 perceptionA :: MonadClient m => LevelId -> PerActor -> PerActor -> m ()
 perceptionA lid outPA inPA = do

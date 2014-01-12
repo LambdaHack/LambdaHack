@@ -26,6 +26,7 @@ module Game.LambdaHack.Client.Action
   , restoreGame, removeServerSave, displayPush, scoreToSlideshow
   , rndToAction, getArenaUI, getLeaderUI
   , targetToPos, partAidLeader, partActorLeader
+  , accessRegenerateBsf
   , debugPrint
   ) where
 
@@ -68,6 +69,7 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
@@ -477,3 +479,30 @@ mkConfigUI corule = do
   let conf = parseConfigUI dataDir cpUI
   -- Catch syntax errors ASAP,
   return $! deepseq conf conf
+
+getRegenerateBsf :: MonadClient m => ActorId -> m (Kind.Array BfsDistance)
+getRegenerateBsf aid = do
+  mbsf <- getsClient $ EM.lookup aid . sbsfD
+  case mbsf of
+    Just bsf -> return bsf
+    Nothing -> do
+      Kind.COps{cotile} <- getsState scops
+      b <- getsState $ getActorBody aid
+      Level{lxsize, lysize, ltile} <- getLevel $ blid b
+      -- Treat doors as an open tile; Don't add an extra step for opening
+      -- the doors, because other actors open and use them, too,
+      -- so it's amortized.
+      -- TODO: Sometimes treat hidden tiles as possibly open
+      -- and sometimes treat unknown tiles as open.
+      let isOpen = Tile.isPassable cotile . (ltile Kind.!)
+          origin = bpos b
+          vInitial = Kind.replicateA lxsize lysize Kind.sentinelId
+          vFinal = bfsFill isOpen origin vInitial
+      modifyClient $ \cli -> cli {sbsfD = EM.insert aid vFinal (sbsfD cli)}
+      return vFinal
+
+accessRegenerateBsf :: MonadClient m => ActorId -> Point -> m (Maybe Int)
+accessRegenerateBsf aid tgtP = do
+  bsf <- getRegenerateBsf aid
+  let dist = bsf Kind.! tgtP
+  return $ if dist == Kind.sentinelId then Nothing else Just $ fromEnum dist
