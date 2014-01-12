@@ -68,6 +68,7 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Frontend as Frontend
@@ -193,16 +194,19 @@ targetToPos = do
     Nothing -> return Nothing
     Just leader -> do
       scursor <- getsClient scursor
-      lid <- getsState $ blid . getActorBody leader
+      b <- getsState $ getActorBody leader
       target <- getsClient $ getTarget leader
+      Level{lxsize, lysize} <- getLevel (blid b)
       case target of
-        Just (TPos pos) -> return $ Just pos
         Just (TEnemy a _ll) -> do
-          mem <- getsState $ memActor a lid  -- alive and visible?
-          if mem then do
+          mem <- getsState $ memActor a (blid b)
+          if mem then do  -- alive and visible
             pos <- getsState $ bpos . getActorBody a
             return $ Just pos
           else return Nothing
+        Just (TPoint pos) -> return $ Just pos
+        Just (TVector v) ->
+          return $ Just $ shiftBounded lxsize lysize (bpos b) v
         Nothing -> return scursor
 
 -- | Get the key binding.

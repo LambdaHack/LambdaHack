@@ -323,8 +323,8 @@ projectHuman :: MonadClientUI m
 projectHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  tgtLoc <- targetToPos
-  if isNothing tgtLoc || Just (bpos b) == tgtLoc
+  tgtPos <- targetToPos
+  if isNothing tgtPos || Just (bpos b) == tgtPos
     then fmap Left retargetLeader
     else projectAid leader ts
 
@@ -332,8 +332,8 @@ projectAid :: MonadClientUI m
            => ActorId -> [Trigger] -> m (SlideOrCmd CmdTakeTimeSer)
 projectAid source ts = do
   Kind.COps{cotile} <- getsState scops
-  target <- targetToPos
-  let tpos = case target of
+  tgtPos <- targetToPos
+  let tpos = case tgtPos of
         Just p -> p
         Nothing -> assert `failure` "target unexpectedly invalid"
                           `twith` source

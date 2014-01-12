@@ -90,10 +90,10 @@ shift :: Point -> Vector -> Point
 shift p (Vector dir) = toEnum $ fromEnum p + dir
 
 -- | Translate a point by a vector, but only if the result fits in an area.
-shiftBounded :: (X, Y, X, Y) -> Point -> Vector -> Point
-shiftBounded (x0, y0, x1, y1) pos dir =
-  let VectorXY xv yv = fromDir dir
-  in if inside pos (x0 - xv, y0 - yv, x1 - xv, y1 - yv)
+shiftBounded :: X -> Y -> Point -> Vector -> Point
+shiftBounded lxsize lysize pos dir =
+  let VectorXY xv yv = fromVector dir
+  in if inside pos (-xv, -yv, lxsize - xv - 1, lysize - yv - 1)
      then shift pos dir
      else pos
 

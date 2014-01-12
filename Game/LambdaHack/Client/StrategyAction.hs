@@ -72,7 +72,7 @@ reacquireTgt aid factionAbilities btarget fper = do
   noFoes :: Strategy (Maybe Target) <- do
     s <- getState
     str <- moveStrategy cops aid s Nothing
-    return $ (Just . TPos . (bpos b `shift`)) `liftM` str
+    return $ (Just . TPoint . (bpos b `shift`)) `liftM` str
   let per = fper EM.! blid b
       mk = okind $ bkind b
       actorAbilities = acanDo mk `intersect` factionAbilities
@@ -102,21 +102,24 @@ reacquireTgt aid factionAbilities btarget fper = do
                 returN "TEnemy" $ Just $ TEnemy a l
               _ -> if null visFoes         -- prefer visible foes to positions
                       && bpos b /= ll      -- not yet reached the last pos
-                   then returN "last known" $ Just $ TPos ll
+                   then returN "last known" $ Just $ TPoint ll
                                            -- chase the last known pos
                    else closest
           Just TEnemy{} -> closest         -- just pick the closest foe
-          Just (TPos pos) | bpos b == pos -> closest  -- already reached pos
-          Just (TPos pos)
+          Just (TPoint pos) | bpos b == pos -> closest  -- already reached pos
+          Just (TPoint pos)
             | not $ bumpableHere cops lvl False (asight mk) pos ->
             closest  -- no longer bumpable, even assuming no foes
-          Just TPos{} | null visFoes -> returN "TPos" tgt
+          Just TPoint{} | null visFoes -> returN "TPoint" tgt
                                            -- nothing visible, go to pos
-          Just TPos{} -> closest           -- prefer visible foes
+          Just TPoint{} -> closest           -- prefer visible foes
+          Just TVector{} -> closest
+                 -- TODO: use instead of TPoint to avoid using boldpos
           Nothing -> closest
   return $! reacquire btarget
 
--- | AI strategy based on actor's sight, smell, intelligence, etc. Never empty.
+-- | AI strategy based on actor's sight, smell, intelligence, etc.
+-- Never empty.
 actionStrategy :: MonadClient m
                => ActorId -> [Ability] -> m (Strategy CmdTakeTimeSer)
 actionStrategy aid factionAbilities = do
@@ -130,13 +133,16 @@ proposeAction :: MonadActionRO m
 proposeAction disco aid factionAbilities btarget = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   Actor{bkind, bpos, blid} <- getsState $ getActorBody aid
-  lvl <- getLevel blid
+  lvl@Level{lxsize, lysize} <- getLevel blid
   let mk = okind bkind
       (fpos, mfAid) =
         case btarget of
           Just (TEnemy foeAid l) -> (l, Just foeAid)
-          Just (TPos l) -> (l, Nothing)
-          Nothing -> (bpos, Nothing)  -- an actor blocked by friends or a missile
+          Just (TPoint l) -> (l, Nothing)
+          Just (TVector v) ->
+            let l = shiftBounded lxsize lysize bpos v
+            in (l, Nothing)
+          Nothing -> (bpos, Nothing)  -- actor blocked by friends or a missile
       foeVisible = isJust mfAid
       lootHere x = not $ EM.null $ lvl `atI` x
       actorAbilities = acanDo mk `intersect` factionAbilities

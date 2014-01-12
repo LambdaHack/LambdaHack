@@ -75,7 +75,7 @@ moveCursor dir n = do
   scursor <- getsClient scursor
   Level{lxsize, lysize} <- cursorLevel
   let cpos = fromMaybe lpos scursor
-      shiftB pos = shiftBounded (0, 0, lxsize - 1, lysize - 1) pos dir
+      shiftB pos = shiftBounded lxsize lysize pos dir
       newPos = iterate shiftB cpos !! n
   if newPos == cpos then failWith "never mind"
   else do
@@ -165,8 +165,9 @@ doLook = do
           | otherwise = " (not seen)"
       mode = case target of
                Just TEnemy{} -> "[targeting foe" <> vis <> "]"
-               Just TPos{}   -> "[targeting position" <> vis <> "]"
-               Nothing       -> "[targeting cursor" <> vis <> "]"
+               Just TPoint{} -> "[targeting absolute position" <> vis <> "]"
+               Just TVector{} -> "[targeting position" <> vis <> "]"
+               Nothing -> "[targeting cursor" <> vis <> "]"
       -- Check if there's something lying around at current position.
       is = lvl `atI` p
   -- Show general info about current position.
@@ -210,8 +211,8 @@ retargetLeader :: MonadClientUI m => m Slideshow
 retargetLeader = do
   stopPlayBack
   arena <- getArenaUI
-  tgtLoc <- targetToPos
-  if isNothing tgtLoc
+  tgtPos <- targetToPos
+  if isNothing tgtPos
   -- TODO: do not save to history:
     then msgAdd "Last target invalid."
     else msgAdd "Cannot aim at oneself."
@@ -341,22 +342,23 @@ tgtFloorLeader :: MonadClientUI m => TgtMode -> m Slideshow
 tgtFloorLeader stgtModeNew = do
   leader <- getLeaderUI
   target <- getsClient $ getTarget leader
-  ppos <- getsState (bpos . getActorBody leader)
+  b <- getsState $ getActorBody leader
   mcursor <- getsClient scursor
   stgtMode <- getsClient stgtMode
-  let cursor = fromMaybe ppos mcursor
+  tgtPos <- targetToPos
+  let cursor = fromMaybe (bpos b) mcursor
       (tgt, newCursor) = case target of
         Just TEnemy{} ->  -- forget enemy target, keep the cursor
           (Nothing, cursor)
         _ | not $ isJust stgtMode ->
           -- first key press: keep target and cursor
           (target, cursor)
-        Just (TPos tpos) | Just tpos == mcursor ->
+        Just TVector{} | tgtPos == mcursor ->
           -- double key press at this position: forget position, reset cursor
-          (Nothing, ppos)
+          (Nothing, bpos b)
         _ ->
           -- any other not first key press: target position, keep the cursor
-          (Just $ TPos cursor, cursor)
+          (Just $ TVector $ displacement (bpos b) cursor, cursor)
   -- Register that we want to target positions or cursor.
   modifyClient $ updateTarget leader (const tgt)
   modifyClient $ \cli -> cli {scursor = Just newCursor}
@@ -617,46 +619,51 @@ targetReject = do
   modifyClient $ \cli -> cli {stgtMode = Nothing}
   failWith "targeting canceled"
 
--- | End targeting mode, accepting the current position or not.
+-- | End targeting mode, accepting the current position.
 endTargeting :: MonadClientUI m => m ()
 endTargeting = do
   leader <- getLeaderUI
-  target <- getsClient $ getTarget leader
+  b <- getsState $ getActorBody leader
   scursor <- getsClient scursor
   (lid, _) <- viewedLevel
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   bs <- getsState $ actorNotProjAssocs (isAtWar fact) lid
-  case target of
-    Just TEnemy{} ->
-      -- If in enemy targeting mode, switch to the enemy under
-      -- the current cursor position, if any.
-      case find (\(_im, m) -> Just (bpos m) == scursor) bs of
-        Just (im, m)  ->
-          let tgt = Just $ TEnemy im (bpos m)
-          in modifyClient $ updateTarget leader (const tgt)
-        Nothing -> return ()
-    Just TPos{} ->
-      case scursor of
-        Nothing -> return ()
-        Just cpos ->
-          modifyClient $ updateTarget leader (const $ Just $ TPos cpos)
-    Nothing -> return ()
+  let newTarget oldTarget = case oldTarget of
+        Just TEnemy{} ->
+          -- If in enemy targeting mode, switch to the enemy under
+          -- the current cursor position, if any.
+          case find (\(_im, m) -> Just (bpos m) == scursor) bs of
+            Just (im, m) -> Just $ TEnemy im (bpos m)
+            Nothing -> oldTarget
+        Just TPoint{} ->
+          case scursor of
+            Nothing -> oldTarget
+            Just cpos -> Just $ TPoint cpos
+        Just TVector{} ->
+          case scursor of
+            Nothing -> oldTarget
+            Just cpos -> Just $ TVector $ displacement (bpos b) cpos
+        Nothing -> oldTarget
+  modifyClient $ updateTarget leader newTarget
 
 endTargetingMsg :: MonadClientUI m => m ()
 endTargetingMsg = do
   leader <- getLeaderUI
-  pbody <- getsState $ getActorBody leader
+  b <- getsState $ getActorBody leader
   target <- getsClient $ getTarget leader
   s <- getState
+  tgtPos <- targetToPos
   let targetMsg = case target of
                     Just (TEnemy a _ll) ->
-                      if memActor a (blid pbody) s
+                      if memActor a (blid b) s
                       -- Never equal to leader, hence @partActor@.
                       then partActor $ getActorBody a s
                       else "a fear of the past"
-                    Just (TPos tpos) ->
-                      MU.Text $ "position" <+> T.pack (show tpos)
+                    Just TPoint{} ->
+                      MU.Text $ "absolute position" <+> T.pack (show tgtPos)
+                    Just TVector{} ->
+                      MU.Text $ "position" <+> T.pack (show tgtPos)
                     Nothing -> "current cursor position continuously"
   subject <- partAidLeader leader
   msgAdd $ makeSentence [MU.SubjectVerbSg subject "target", targetMsg]

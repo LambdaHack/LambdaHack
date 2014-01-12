@@ -84,7 +84,8 @@ data TgtMode =
 -- | The type of na actor target.
 data Target =
     TEnemy !ActorId !Point  -- ^ target an actor with its last seen position
-  | TPos !Point             -- ^ target a given position
+  | TPoint !Point           -- ^ target a given position
+  | TVector !Vector         -- ^ target a position relative to actor's @bpos@
   deriving (Show, Eq)
 
 -- | Parameters of the current run.
@@ -254,10 +255,12 @@ instance Binary TgtMode where
 
 instance Binary Target where
   put (TEnemy a ll) = putWord8 0 >> put a >> put ll
-  put (TPos pos) = putWord8 1 >> put pos
+  put (TPoint p) = putWord8 1 >> put p
+  put (TVector v) = putWord8 2 >> put v
   get = do
     tag <- getWord8
     case tag of
       0 -> liftM2 TEnemy get get
-      1 -> liftM TPos get
+      1 -> liftM TPoint get
+      2 -> liftM TVector get
       _ -> fail "no parse (Target)"
