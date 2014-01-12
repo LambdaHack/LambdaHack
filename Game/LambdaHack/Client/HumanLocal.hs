@@ -151,8 +151,8 @@ doLook = do
   let p = fromMaybe lpos scursor
       canSee = ES.member p (totalVisible per)
   inhabitants <- if canSee
-                then getsState $ posToActors p lid
-                else return []
+                 then getsState $ posToActors p lid
+                 else return []
   let enemyMsg = case inhabitants of
         [] -> ""
         _ -> -- Even if it's the leader, give his proper name, not 'you'.
@@ -160,13 +160,13 @@ doLook = do
                  subject = MU.WWandW subjects
                  verb = "be here"
              in makeSentence [MU.SubjectVerbSg subject verb]
-      vis | not $ p `ES.member` totalVisible per = " (not visible)"
+      vis | not canSee = " (not visible)"
           | actorSeesPos per leader p = ""
-          | otherwise = " (not visible)"
+          | otherwise = " (not seen)"
       mode = case target of
                Just TEnemy{} -> "[targeting foe" <> vis <> "]"
                Just TPos{}   -> "[targeting position" <> vis <> "]"
-               Nothing       -> "[targeting current" <> vis <> "]"
+               Nothing       -> "[targeting cursor" <> vis <> "]"
       -- Check if there's something lying around at current position.
       is = lvl `atI` p
   -- Show general info about current position.
@@ -633,7 +633,7 @@ endTargetingMsg = do
                       then partActor $ getActorBody a s
                       else "a fear of the past"
                     Just (TPos tpos) ->
-                      MU.Text $ "position" <+> showT tpos
+                      MU.Text $ "position" <+> T.pack (show tpos)
                     Nothing -> "current cursor position continuously"
   subject <- partAidLeader leader
   msgAdd $ makeSentence [MU.SubjectVerbSg subject "target", targetMsg]
