@@ -31,7 +31,6 @@ import Data.Monoid hiding ((<>))
 import Data.Ord
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Vector.Generic as V
 import Data.Version
 import Game.LambdaHack.Frontend (frontendName)
 import qualified NLP.Miniutter.English as MU
@@ -171,11 +170,11 @@ doLook = do
         Nothing -> Nothing
         Just tgtP ->
           let isWalkable = Tile.isWalkable cotile . (ltile Kind.!)
-              vInitial = V.replicate (lxsize * lysize) (-1)
+              vInitial = Kind.replicateA lxsize lysize Kind.sentinelId
               vFinal = bfsFill isWalkable lpos vInitial
-              dist = vFinal V.! fromEnum tgtP
-          in if dist == -1 then Nothing else Just dist
-      delta = maybe "" (\d -> ", delta" <+> showT d) distance
+              dist = vFinal Kind.! tgtP
+          in if dist == Kind.sentinelId then Nothing else Just dist
+      delta = maybe "" (\d -> ", delta" <+> showT (fromEnum d)) distance
       mode = case target of
                Just TEnemy{} -> "[targeting foe" <+> vis <> delta <> "]"
                Just TPoint{} -> "[targeting spot" <+> vis <> delta <> "]"

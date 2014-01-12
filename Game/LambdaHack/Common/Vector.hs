@@ -15,9 +15,8 @@ import Data.Binary
 import Data.Bits (unsafeShiftL)
 import Data.Int (Int32)
 import qualified Data.Sequence as Seq
-import qualified Data.Vector.Generic as V
-import qualified Data.Vector.Unboxed as U (Vector)
 
+import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.VectorXY
@@ -276,23 +275,27 @@ vicinityCardinalXY area xy =
         , let res = shiftXY xy dxy
         , insideXY res area ]
 
-bfsFill :: (Point -> Bool)  -- ^ tells if the position walkable
-        -> Point            -- ^ starting position
-        -> U.Vector Int     -- ^ the initial vector, filled with @-1@;
-                            --   we assume all positions fit in this vector
-        -> U.Vector Int     -- ^ vector with the resulting distance data;
-                            --   has the same shape as the input vector
-bfsFill isWalkable origin vInitial =
+data BfsDistance
+
+bfsFill :: (Point -> Bool)         -- ^ tells if the position walkable
+        -> Point                   -- ^ starting position
+        -> Kind.Array BfsDistance  -- ^ initial array, filled with @sentinelId@
+        -> Kind.Array BfsDistance  -- ^ array with the resulting distance data
+bfsFill isWalkable origin aInitial =
   -- TODO: copy, thaw, mutate, freeze
-  -- TODO: encapsulate the Enum coercions
-  let bfs q v distance =
+  let bfs :: Seq.Seq Point -> Kind.Array BfsDistance -> Kind.Id BfsDistance
+          -> Kind.Array BfsDistance
+      bfs _ a distance | distance == Kind.sentinelId = a  -- too far away
+      bfs q a distance =
         case Seq.viewr q of
-          Seq.EmptyR -> v  -- no more positions to check
+          Seq.EmptyR -> a  -- no more positions to check
           q1 Seq.:> pos ->
             let rawChildren = map (shift pos) moves
-                goodChild p = isWalkable p && v V.! fromEnum p == -1
+                goodChild p = isWalkable p && a Kind.! p == Kind.sentinelId
                 children = filter goodChild rawChildren
                 q2 = foldr (Seq.<|) q1 children
-                s2 = v V.// map (\p -> (fromEnum p, distance)) children
-            in bfs q2 s2 (distance + 1)
-  in bfs (Seq.singleton origin) (vInitial V.// [(fromEnum origin, 0)]) 1
+                s2 = a Kind.// map (\p -> (p, distance)) children
+            in bfs q2 s2 (toEnum $ fromEnum distance + 1)
+  in bfs (Seq.singleton origin)
+         (aInitial Kind.// [(origin, toEnum 0)])
+         (toEnum 1)
