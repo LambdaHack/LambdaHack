@@ -275,8 +275,15 @@ pickLeader actor = do
       -- Update client state.
       s <- getState
       modifyClient $ updateLeader actor s
-      -- Move the cursor, if active, to the new level.
-      when (isJust stgtMode) $ setTgtId $ blid pbody
+      -- Move the cursor, if active, to the new level...
+      case stgtMode of
+        Nothing -> return ()
+        Just tgtMode -> do
+          setTgtId $ blid pbody
+          -- ... and to the new position, if the new leader targets
+          -- enemy or position.
+          target <- getsClient $ getTarget actor
+          when (isJust target) $ setCursor tgtMode
       -- Inform about items, etc.
       lookMsg <- lookAt False True (bpos pbody) actor ""
       msgAdd lookMsg
@@ -348,9 +355,10 @@ tgtFloorLeader stgtModeNew = do
     ppos <- getsState (bpos . getActorBody leader)
     modifyClient $ \cli -> cli {scursor = Just ppos}
   setCursor stgtModeNew
+  doLook
 
 -- | Set, activate and display cursor information.
-setCursor :: MonadClientUI m => TgtMode -> m Slideshow
+setCursor :: MonadClientUI m => TgtMode -> m ()
 setCursor stgtModeNew = do
   stgtModeOld <- getsClient stgtMode
   scursorOld <- getsClient scursor
@@ -358,10 +366,9 @@ setCursor stgtModeNew = do
   scursor <- targetToPos
   let seps = if scursor == scursorOld then sepsOld else 0
       stgtMode = if isNothing stgtModeOld
-                   then Just stgtModeNew
-                   else stgtModeOld
+                 then Just stgtModeNew
+                 else stgtModeOld
   modifyClient $ \cli -> cli {scursor, seps, stgtMode}
-  doLook
 
 -- * TgtEnemy
 
@@ -407,6 +414,7 @@ tgtEnemyLeader stgtModeNew = do
   -- Register the chosen enemy, to pick another on next invocation.
   modifyClient $ updateTarget leader (const tgt)
   setCursor stgtModeNew
+  doLook
 
 -- * TgtAscend
 
