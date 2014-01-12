@@ -277,11 +277,11 @@ vicinityCardinalXY area xy =
 
 data BfsDistance
 
-bfsFill :: (Point -> Bool)         -- ^ tells if the position walkable
+bfsFill :: (Point -> Bool)         -- ^ tells if the position is open
         -> Point                   -- ^ starting position
         -> Kind.Array BfsDistance  -- ^ initial array, filled with @sentinelId@
         -> Kind.Array BfsDistance  -- ^ array with the resulting distance data
-bfsFill isWalkable origin aInitial =
+bfsFill isOpen origin aInitial =
   -- TODO: copy, thaw, mutate, freeze
   let bfs :: Seq.Seq (Point, Kind.Id BfsDistance) -> Kind.Array BfsDistance
           -> Kind.Array BfsDistance
@@ -292,7 +292,7 @@ bfsFill isWalkable origin aInitial =
           q1 Seq.:> (pos, oldDistance) ->
             let distance = toEnum $ fromEnum oldDistance + 1
                 rawChildren = map (shift pos) moves
-                goodChild p = isWalkable p && a Kind.! p == Kind.sentinelId
+                goodChild p = isOpen p && a Kind.! p == Kind.sentinelId
                 children = zip (filter goodChild rawChildren) (repeat distance)
                 q2 = foldr (Seq.<|) q1 children
                 s2 = a Kind.// children

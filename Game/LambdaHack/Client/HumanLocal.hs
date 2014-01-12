@@ -169,9 +169,14 @@ doLook = do
       distance = case tgtPos of
         Nothing -> Nothing
         Just tgtP ->
-          let isWalkable = Tile.isWalkable cotile . (ltile Kind.!)
+          -- Treat doors as an open tile; Don't add an extra step for opening
+          -- the doors, because other actors open and use them, too,
+          -- so it's amortized.
+          -- TODO: Sometimes treat hidden tiles as possibly open
+          -- and sometimes treat unknown tiles as open.
+          let isOpen = Tile.isPassable cotile . (ltile Kind.!)
               vInitial = Kind.replicateA lxsize lysize Kind.sentinelId
-              vFinal = bfsFill isWalkable lpos vInitial
+              vFinal = bfsFill isOpen lpos vInitial
               dist = vFinal Kind.! tgtP
           in if dist == Kind.sentinelId then Nothing else Just dist
       delta = maybe "" (\d -> ", delta" <+> showT (fromEnum d)) distance

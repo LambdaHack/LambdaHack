@@ -15,7 +15,8 @@
 module Game.LambdaHack.Common.Tile
   ( SmellTime
   , kindHasFeature, hasFeature
-  , isClear, isLit, isWalkable, isExplorable, lookSimilar, speedup
+  , isClear, isLit, isWalkable, isPassable
+  , isExplorable, lookSimilar, speedup
   , openTo, closeTo, causeEffects, revealAs, hideAs
   , openable, closable, changeable
   ) where
@@ -63,8 +64,15 @@ isLit cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 -- Essential for efficiency of pathfinding, hence tabulated.
 isWalkable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 {-# INLINE isWalkable #-}
-isWalkable Kind.Ops{ospeedup = Just Kind.TileSpeedup{isWalkableTab=iWT}} = iWT
+isWalkable Kind.Ops{ospeedup = Just Kind.TileSpeedup{isWalkableTab=tab}} = tab
 isWalkable cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
+
+-- | Whether actors can walk into a tile, perhaps opening a door first.
+-- Essential for efficiency of pathfinding, hence tabulated.
+isPassable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+{-# INLINE isPassable #-}
+isPassable Kind.Ops{ospeedup = Just Kind.TileSpeedup{isPassableTab=tab}} = tab
+isPassable cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether a tile can be explored, possibly yielding a treasure
 -- or a hidden message.
@@ -97,6 +105,11 @@ speedup allClear Kind.Ops{ofoldrWithKey, obounds} =
                  | otherwise = tabulate $ kindHasFeature F.Clear
       isLitTab = tabulate $ not . kindHasFeature F.Dark
       isWalkableTab = tabulate $ kindHasFeature F.Walkable
+      isPassableTab = tabulate $ \tk ->
+        let getTo F.OpenTo{} = True
+            getTo F.Walkable = True
+            getTo _ = False
+        in any getTo $ tfeature tk
   in Kind.TileSpeedup {..}
 
 openTo :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
@@ -146,7 +159,7 @@ hideAs Kind.Ops{okind, ouniqGroup} t =
        Nothing    -> t
        Just group -> ouniqGroup group
 
--- | Whether a tile kind (specified by its id) has a OpenTo feature.
+-- | Whether a tile kind (specified by its id) has an OpenTo feature.
 openable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 openable Kind.Ops{okind} t =
   let getTo F.OpenTo{} = True
