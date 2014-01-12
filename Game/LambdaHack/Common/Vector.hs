@@ -283,19 +283,19 @@ bfsFill :: (Point -> Bool)         -- ^ tells if the position walkable
         -> Kind.Array BfsDistance  -- ^ array with the resulting distance data
 bfsFill isWalkable origin aInitial =
   -- TODO: copy, thaw, mutate, freeze
-  let bfs :: Seq.Seq Point -> Kind.Array BfsDistance -> Kind.Id BfsDistance
+  let bfs :: Seq.Seq (Point, Kind.Id BfsDistance) -> Kind.Array BfsDistance
           -> Kind.Array BfsDistance
-      bfs _ a distance | distance == Kind.sentinelId = a  -- too far away
-      bfs q a distance =
+      bfs q a =
         case Seq.viewr q of
           Seq.EmptyR -> a  -- no more positions to check
-          q1 Seq.:> pos ->
-            let rawChildren = map (shift pos) moves
+          _ Seq.:> (_, d)| d == Kind.sentinelId -> a  -- too far away
+          q1 Seq.:> (pos, oldDistance) ->
+            let distance = toEnum $ fromEnum oldDistance + 1
+                rawChildren = map (shift pos) moves
                 goodChild p = isWalkable p && a Kind.! p == Kind.sentinelId
-                children = filter goodChild rawChildren
+                children = zip (filter goodChild rawChildren) (repeat distance)
                 q2 = foldr (Seq.<|) q1 children
-                s2 = a Kind.// map (\p -> (p, distance)) children
-            in bfs q2 s2 (toEnum $ fromEnum distance + 1)
-  in bfs (Seq.singleton origin)
-         (aInitial Kind.// [(origin, toEnum 0)])
-         (toEnum 1)
+                s2 = a Kind.// children
+            in bfs q2 s2
+      origin0 = (origin, toEnum 0)
+  in bfs (Seq.singleton origin0) (aInitial Kind.// [origin0])
