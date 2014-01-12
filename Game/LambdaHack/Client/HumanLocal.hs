@@ -341,23 +341,29 @@ tgtFloorLeader :: MonadClientUI m => TgtMode -> m Slideshow
 tgtFloorLeader stgtModeNew = do
   leader <- getLeaderUI
   target <- getsClient $ getTarget leader
+  ppos <- getsState (bpos . getActorBody leader)
+  mcursor <- getsClient scursor
   stgtMode <- getsClient stgtMode
-  let (resetCursor, tgt) = case target of
-        Just (TEnemy _ _) ->
-          (False, Nothing)  -- forget enemy target, keep the cursor
-        _ | isJust stgtMode ->
-          (True, Nothing)  -- double key press: reset cursor, target cursor
-        t ->
-          (False, t)  -- first key press, keep the cursor and target
-  -- Register that we want to target only positions.
+  let cursor = fromMaybe ppos mcursor
+      (tgt, newCursor) = case target of
+        Just TEnemy{} ->  -- forget enemy target, keep the cursor
+          (Nothing, cursor)
+        _ | not $ isJust stgtMode ->
+          -- first key press: keep target and cursor
+          (target, cursor)
+        Just (TPos tpos) | Just tpos == mcursor ->
+          -- double key press at this position: forget position, reset cursor
+          (Nothing, ppos)
+        _ ->
+          -- any other not first key press: target position, keep the cursor
+          (Just $ TPos cursor, cursor)
+  -- Register that we want to target positions or cursor.
   modifyClient $ updateTarget leader (const tgt)
-  when resetCursor $ do
-    ppos <- getsState (bpos . getActorBody leader)
-    modifyClient $ \cli -> cli {scursor = Just ppos}
+  modifyClient $ \cli -> cli {scursor = Just newCursor}
   setCursor stgtModeNew
   doLook
 
--- | Set, activate and display cursor information.
+-- | Set and activate cursor.
 setCursor :: MonadClientUI m => TgtMode -> m ()
 setCursor stgtModeNew = do
   stgtModeOld <- getsClient stgtMode
@@ -396,10 +402,10 @@ tgtEnemyLeader stgtModeNew = do
             Just (TEnemy n _) | isJust stgtMode ->  -- pick next enemy
               let i = fromMaybe (-1) $ findIndex ((== n) . fst) dbs
               in splitAt (i + 1) dbs
-            Just (TEnemy n _) ->  -- try to retarget the old enemy
+            Just (TEnemy n _) ->  -- first key press, retarget old enemy
               let i = fromMaybe (-1) $ findIndex ((== n) . fst) dbs
               in splitAt i dbs
-            _ ->  -- switch to the enemy under cursor, if any
+            _ ->  -- first key press, switch to the enemy under cursor, if any
               let i = fromMaybe (-1)
                       $ findIndex ((== scursor) . Just . bpos . snd) dbs
               in splitAt i dbs
@@ -608,7 +614,6 @@ targetAccept = do
 -- | End targeting mode, rejecting the current position.
 targetReject :: MonadClientUI m => m Slideshow
 targetReject = do
-  endTargeting
   modifyClient $ \cli -> cli {stgtMode = Nothing}
   failWith "targeting canceled"
 
@@ -631,10 +636,12 @@ endTargeting = do
           let tgt = Just $ TEnemy im (bpos m)
           in modifyClient $ updateTarget leader (const tgt)
         Nothing -> return ()
-    _ -> case scursor of
-      Nothing -> return ()
-      Just cpos ->
-        modifyClient $ updateTarget leader (const $ Just $ TPos cpos)
+    Just TPos{} ->
+      case scursor of
+        Nothing -> return ()
+        Just cpos ->
+          modifyClient $ updateTarget leader (const $ Just $ TPos cpos)
+    Nothing -> return ()
 
 endTargetingMsg :: MonadClientUI m => m ()
 endTargetingMsg = do
