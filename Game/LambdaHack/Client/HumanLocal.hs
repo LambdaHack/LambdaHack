@@ -147,10 +147,10 @@ doLook = do
   (lid, lvl@Level{lxsize, lysize, ltile}) <- viewedLevel
   per <- getPerFid lid
   leader <- getLeaderUI
-  lpos <- getsState $ bpos . getActorBody leader
+  b <- getsState $ getActorBody leader
   target <- getsClient $ getTarget leader
   tgtPos <- targetToPos
-  let p = fromMaybe lpos scursor
+  let p = fromMaybe (bpos b) scursor
       canSee = ES.member p (totalVisible per)
   inhabitants <- if canSee
                  then getsState $ posToActors p lid
@@ -167,6 +167,7 @@ doLook = do
           | otherwise = "(not seen)"
       -- TODO: move elsewhere and recalcuate only when neeed or even less often
       distance = case tgtPos of
+        _ | lid /= blid b -> Nothing
         Nothing -> Nothing
         Just tgtP ->
           -- Treat doors as an open tile; Don't add an extra step for opening
@@ -176,7 +177,7 @@ doLook = do
           -- and sometimes treat unknown tiles as open.
           let isOpen = Tile.isPassable cotile . (ltile Kind.!)
               vInitial = Kind.replicateA lxsize lysize Kind.sentinelId
-              vFinal = bfsFill isOpen lpos vInitial
+              vFinal = bfsFill isOpen (bpos b) vInitial
               dist = vFinal Kind.! tgtP
           in if dist == Kind.sentinelId then Nothing else Just dist
       delta = maybe "" (\d -> ", delta" <+> showT (fromEnum d)) distance
