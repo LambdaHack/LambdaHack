@@ -333,16 +333,20 @@ tgtFloorHuman = do
 tgtFloorLeader :: MonadClientUI m => TgtMode -> m Slideshow
 tgtFloorLeader stgtModeNew = do
   leader <- getLeaderUI
-  ppos <- getsState (bpos . getActorBody leader)
   target <- getsClient $ getTarget leader
   stgtMode <- getsClient stgtMode
-  let tgt = case target of
-        Just (TEnemy _ _) -> Nothing  -- forget enemy target, keep the cursor
+  let (resetCursor, tgt) = case target of
+        Just (TEnemy _ _) ->
+          (False, Nothing)  -- forget enemy target, keep the cursor
         _ | isJust stgtMode ->
-          Just (TPos ppos)  -- double key press: reset cursor
-        t -> t  -- keep the target from previous targeting session
+          (True, Nothing)  -- double key press: reset cursor, target cursor
+        t ->
+          (False, t)  -- first key press, keep the cursor and target
   -- Register that we want to target only positions.
   modifyClient $ updateTarget leader (const tgt)
+  when resetCursor $ do
+    ppos <- getsState (bpos . getActorBody leader)
+    modifyClient $ \cli -> cli {scursor = Just ppos}
   setCursor stgtModeNew
 
 -- | Set, activate and display cursor information.
@@ -356,7 +360,7 @@ setCursor stgtModeNew = do
       stgtMode = if isNothing stgtModeOld
                    then Just stgtModeNew
                    else stgtModeOld
-  modifyClient $ \cli2 -> cli2 {scursor, seps, stgtMode}
+  modifyClient $ \cli -> cli {scursor, seps, stgtMode}
   doLook
 
 -- * TgtEnemy
@@ -373,6 +377,7 @@ tgtEnemyLeader stgtModeNew = do
   ppos <- getsState (bpos . getActorBody leader)
   (lid, _) <- viewedLevel
   per <- getPerFid lid
+  scursor <- getsClient scursor
   target <- getsClient $ getTarget leader
   stgtMode <- getsClient stgtMode
   side <- getsClient sside
@@ -387,7 +392,10 @@ tgtEnemyLeader stgtModeNew = do
             Just (TEnemy n _) ->  -- try to retarget the old enemy
               let i = fromMaybe (-1) $ findIndex ((== n) . fst) dbs
               in splitAt i dbs
-            _ -> (dbs, [])  -- target first enemy (e.g., number 0)
+            _ ->  -- switch to the enemy under cursor, if any
+              let i = fromMaybe (-1)
+                      $ findIndex ((== scursor) . Just . bpos . snd) dbs
+              in splitAt i dbs
       gtlt = gt ++ lt
       seen (_, b) =
         let mpos = bpos b                -- it is remembered by faction
@@ -610,7 +618,7 @@ endTargeting = do
     Just TEnemy{} ->
       -- If in enemy targeting mode, switch to the enemy under
       -- the current cursor position, if any.
-      case find (\ (_im, m) -> Just (bpos m) == scursor) bs of
+      case find (\(_im, m) -> Just (bpos m) == scursor) bs of
         Just (im, m)  ->
           let tgt = Just $ TEnemy im (bpos m)
           in modifyClient $ updateTarget leader (const tgt)
