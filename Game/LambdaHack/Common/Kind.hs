@@ -2,7 +2,7 @@
 -- | General content types and operations.
 module Game.LambdaHack.Common.Kind
   ( -- * General content types
-    Id, sentinelId, Speedup(..), Ops(..), COps(..), createOps, stdRuleset
+    Id, Speedup(..), Ops(..), COps(..), createOps, stdRuleset
     -- * Arrays of content identifiers
   , Array, (!), (//), replicateA, replicateMA, generateMA, sizeA, foldlA
   ) where
@@ -39,14 +39,7 @@ import Game.LambdaHack.Utils.Frequency
 
 -- | Content identifiers for the content type @c@.
 newtype Id c = Id Word8
-  deriving (Show, Eq, Ord, Ix.Ix, Enum)
-
-instance Binary (Id c) where
-  put (Id i) = put i
-  get = fmap Id get
-
-sentinelId :: Id c
-sentinelId = Id 255
+  deriving (Show, Eq, Ord, Ix.Ix, Enum, Bounded, Binary)
 
 -- | Type family for auxiliary data structures for speeding up
 -- content operations.
@@ -77,7 +70,7 @@ data Ops a = Ops
 -- of type @a@.
 createOps :: forall a. Show a => ContentDef a -> Ops a
 createOps ContentDef{getName, getFreq, content, validate} =
-  assert (Id (fromIntegral $ length content) < sentinelId) $
+  assert (length content <= fromEnum (maxBound :: Id a)) $
   let kindMap :: EM.EnumMap (Id a) a
       !kindMap = EM.fromDistinctAscList $ zip [Id 0..] content
       kindFreq :: M.Map Text (Frequency (Id a, a))

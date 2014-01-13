@@ -288,11 +288,11 @@ bfsFill isOpen origin aInitial =
       bfs q a =
         case Seq.viewr q of
           Seq.EmptyR -> a  -- no more positions to check
-          _ Seq.:> (_, d)| d == Kind.sentinelId -> a  -- too far away
+          _ Seq.:> (_, d)| d == maxBound -> a  -- too far away
           q1 Seq.:> (pos, oldDistance) ->
             let distance = toEnum $ fromEnum oldDistance + 1
                 rawChildren = map (shift pos) moves
-                goodChild p = isOpen p && a Kind.! p == Kind.sentinelId
+                goodChild p = isOpen p && a Kind.! p == maxBound
                 children = zip (filter goodChild rawChildren) (repeat distance)
                 q2 = foldr (Seq.<|) q1 children
                 s2 = a Kind.// children

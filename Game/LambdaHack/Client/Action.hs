@@ -498,7 +498,7 @@ getRegenerateBfs aid = do
       -- and sometimes treat unknown tiles as open.
       let isOpen = Tile.isPassable cotile . (ltile Kind.!)
           origin = bpos b
-          vInitial = Kind.replicateA lxsize lysize Kind.sentinelId
+          vInitial = Kind.replicateA lxsize lysize maxBound
           vFinal = bfsFill isOpen origin vInitial
       modifyClient $ \cli -> cli {sbfsD = EM.insert aid vFinal (sbfsD cli)}
       return vFinal
@@ -507,7 +507,7 @@ accessRegenerateBfs :: MonadClient m => ActorId -> Point -> m (Maybe Int)
 accessRegenerateBfs aid tgtP = do
   bfs <- getRegenerateBfs aid
   let dist = bfs Kind.! tgtP
-  return $ if dist == Kind.sentinelId then Nothing else Just $ fromEnum dist
+  return $ if dist == maxBound then Nothing else Just $ fromEnum dist
 
 -- TODO: Use http://harablog.wordpress.com/2011/09/07/jump-point-search/
 -- to determine a few really different paths and compare them,
@@ -522,7 +522,7 @@ pathBfs aid target = do
   b <- getsState $ getActorBody aid
   sepsRaw <- getsClient seps
   let source = bpos b
-  assert (bfs Kind.! source /= Kind.sentinelId `blame` (aid, b)) skip
+  assert (bfs Kind.! source /= maxBound `blame` (aid, b)) skip
   let eps = abs sepsRaw `mod` length moves
       path :: Point -> [Point] -> [Point]
       path pos suffix | pos == source = suffix
@@ -536,5 +536,5 @@ pathBfs aid target = do
              Nothing -> assert `failure` (source, target, pos, children)
              Just (_, p) -> p
         in path minP (pos : suffix)
-  if bfs Kind.! target == Kind.sentinelId then return Nothing
+  if bfs Kind.! target == maxBound then return Nothing
   else return $ Just $ path target []
