@@ -162,17 +162,17 @@ cmdAtomicSemCli cmd = case cmd of
   DestroyActorA aid _ _ -> destroyActorA aid
   LoseActorA aid _ _ -> destroyActorA aid
   MoveActorA aid _ _ ->
-    -- @sbsfD@ is invalidated only in these 2 cases, not when perception
+    -- @sbfsD@ is invalidated only in these 2 cases, not when perception
     -- or dungeon tiles change, to siplifie and optimize AI.
     -- AI actors need to move to think clearly and noticing changes.
-    -- TODO: right now save/load makes AI smarter by invalidating sbsfD.
-    -- For human UI we invalidate whole @sbsfD@ at the start of each
+    -- TODO: right now save/load makes AI smarter by invalidating sbfsD.
+    -- For human UI we invalidate whole @sbfsD@ at the start of each
     -- UI player input, which is an overkill, but doesn't affects
     -- screensavers, because they are UI, but not human.
-    modifyClient $ \cli -> cli {sbsfD = EM.delete aid $ sbsfD cli}
+    modifyClient $ \cli -> cli {sbfsD = EM.delete aid $ sbfsD cli}
   DisplaceActorA source target -> do
-    modifyClient $ \cli -> cli {sbsfD = EM.delete source $ sbsfD cli}
-    modifyClient $ \cli -> cli {sbsfD = EM.delete target $ sbsfD cli}
+    modifyClient $ \cli -> cli {sbfsD = EM.delete source $ sbfsD cli}
+    modifyClient $ \cli -> cli {sbfsD = EM.delete target $ sbfsD cli}
   LeadFactionA fid source target -> do
     side <- getsClient sside
     when (side == fid) $ do
@@ -208,7 +208,7 @@ cmdAtomicSemCli cmd = case cmd of
 destroyActorA :: MonadClient m => ActorId -> m ()
 destroyActorA aid = do
   modifyClient $ updateTarget aid (const Nothing)
-  modifyClient $ \cli -> cli {sbsfD = EM.delete aid $ sbsfD cli}
+  modifyClient $ \cli -> cli {sbfsD = EM.delete aid $ sbfsD cli}
 
 perceptionA :: MonadClient m => LevelId -> PerActor -> PerActor -> m ()
 perceptionA lid outPA inPA = do

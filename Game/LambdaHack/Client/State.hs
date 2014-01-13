@@ -44,7 +44,7 @@ data StateClient = StateClient
   , seps         :: !Int              -- ^ a parameter of the tgt digital line
   , stargetD     :: !(EM.EnumMap ActorId Target)
                                    -- ^ targets of our actors in the dungeon
-  , sbsfD        :: !(EM.EnumMap ActorId (Kind.Array BfsDistance))
+  , sbfsD        :: !(EM.EnumMap ActorId (Kind.Array BfsDistance))
                                    -- ^ pathfinding distances for our actors
   , sselected    :: !(ES.EnumSet ActorId)
                                    -- ^ the set of currently selected actors
@@ -116,7 +116,7 @@ defStateClient shistory sconfigUI _sside sisAI =
     , scursor = Nothing
     , seps = 0
     , stargetD = EM.empty
-    , sbsfD = EM.empty
+    , sbfsD = EM.empty
     , sselected = ES.empty
     , srunning = Nothing
     , sreport = emptyReport
@@ -221,7 +221,7 @@ instance Binary StateClient where
     smarkSuspect <- get
     sdifficulty <- get
     sdebugCli <- get
-    let sbsfD = EM.empty
+    let sbfsD = EM.empty
         sfper = EM.empty
         srandom = read g
         slastKey = Nothing

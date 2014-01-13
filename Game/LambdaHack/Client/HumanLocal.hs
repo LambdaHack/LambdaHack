@@ -168,7 +168,7 @@ doLook = do
   distance <- case tgtPos of
     _ | lid /= blid b -> return Nothing
     Nothing -> return Nothing
-    Just tgtP -> accessRegenerateBsf leader tgtP
+    Just tgtP -> accessRegenerateBfs leader tgtP
   let delta = maybe "" (\d -> ", delta" <+> showT d) distance
       mode = case target of
                Just TEnemy{} -> "[targeting foe" <+> vis <> delta <> "]"

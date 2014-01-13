@@ -26,7 +26,7 @@ module Game.LambdaHack.Client.Action
   , restoreGame, removeServerSave, displayPush, scoreToSlideshow
   , rndToAction, getArenaUI, getLeaderUI
   , targetToPos, partAidLeader, partActorLeader
-  , accessRegenerateBsf
+  , accessRegenerateBfs
   , debugPrint
   ) where
 
@@ -480,11 +480,11 @@ mkConfigUI corule = do
   -- Catch syntax errors ASAP,
   return $! deepseq conf conf
 
-getRegenerateBsf :: MonadClient m => ActorId -> m (Kind.Array BfsDistance)
-getRegenerateBsf aid = do
-  mbsf <- getsClient $ EM.lookup aid . sbsfD
-  case mbsf of
-    Just bsf -> return bsf
+getRegenerateBfs :: MonadClient m => ActorId -> m (Kind.Array BfsDistance)
+getRegenerateBfs aid = do
+  mbfs <- getsClient $ EM.lookup aid . sbfsD
+  case mbfs of
+    Just bfs -> return bfs
     Nothing -> do
       Kind.COps{cotile} <- getsState scops
       b <- getsState $ getActorBody aid
@@ -498,11 +498,11 @@ getRegenerateBsf aid = do
           origin = bpos b
           vInitial = Kind.replicateA lxsize lysize Kind.sentinelId
           vFinal = bfsFill isOpen origin vInitial
-      modifyClient $ \cli -> cli {sbsfD = EM.insert aid vFinal (sbsfD cli)}
+      modifyClient $ \cli -> cli {sbfsD = EM.insert aid vFinal (sbfsD cli)}
       return vFinal
 
-accessRegenerateBsf :: MonadClient m => ActorId -> Point -> m (Maybe Int)
-accessRegenerateBsf aid tgtP = do
-  bsf <- getRegenerateBsf aid
-  let dist = bsf Kind.! tgtP
+accessRegenerateBfs :: MonadClient m => ActorId -> Point -> m (Maybe Int)
+accessRegenerateBfs aid tgtP = do
+  bfs <- getRegenerateBfs aid
+  let dist = bfs Kind.! tgtP
   return $ if dist == Kind.sentinelId then Nothing else Just $ fromEnum dist

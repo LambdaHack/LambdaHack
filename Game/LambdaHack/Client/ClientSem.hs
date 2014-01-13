@@ -192,10 +192,10 @@ humanCommand :: forall m. MonadClientUI m
              => Maybe Msg
              -> m CmdSer
 humanCommand msgRunStop = do
-  -- For human UI we invalidate whole @sbsfD@ at the start of each
+  -- For human UI we invalidate whole @sbfsD@ at the start of each
   -- UI player input, which is an overkill, but doesn't affects
   -- screensavers, because they are UI, but not human.
-  modifyClient $ \cli -> cli {sbsfD = EM.empty}
+  modifyClient $ \cli -> cli {sbfsD = EM.empty}
   let loop :: Maybe Overlay -> m CmdSer
       loop mover = do
         over <- case mover of
