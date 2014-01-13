@@ -18,7 +18,7 @@ cdefs = ContentDef
   { getSymbol = rsymbol
   , getName = rname
   , getFreq = rfreq
-  , validate = ruvalidate
+  , validate = validateRuleKind
   , content =
       [standard]
   }

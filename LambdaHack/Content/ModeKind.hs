@@ -11,7 +11,7 @@ cdefs = ContentDef
   { getSymbol = msymbol
   , getName = mname
   , getFreq = mfreq
-  , validate = mvalidate
+  , validate = validateModeKind
   , content =
       [campaign, skirmish, pvp, coop, defense, screensaver, testCoop, testDefense, peekCampaign, peekSkirmish]
   }

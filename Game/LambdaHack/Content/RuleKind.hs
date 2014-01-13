@@ -1,6 +1,6 @@
 -- | The type of game rule sets and assorted game data.
 module Game.LambdaHack.Content.RuleKind
-  ( RuleKind(..), ruvalidate
+  ( RuleKind(..), validateRuleKind
   ) where
 
 import Data.Text (Text)
@@ -48,5 +48,5 @@ instance Show RuleKind where
   show _ = "The game ruleset specification."
 
 -- | Validates the ASCII art format (TODO).
-ruvalidate :: [RuleKind] -> [RuleKind]
-ruvalidate _ = []
+validateRuleKind :: [RuleKind] -> [RuleKind]
+validateRuleKind _ = []

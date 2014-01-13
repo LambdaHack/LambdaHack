@@ -1,6 +1,6 @@
 -- | The type of kinds of weapons and treasure.
 module Game.LambdaHack.Content.ItemKind
-  ( ItemKind(..), ivalidate
+  ( ItemKind(..), validateItemKind
   ) where
 
 import Data.Text (Text)
@@ -28,5 +28,5 @@ data ItemKind = ItemKind
 
 -- | No specific possible problems for the content of this kind, so far,
 -- so the validation function always returns the empty list of offending kinds.
-ivalidate :: [ItemKind] -> [ItemKind]
-ivalidate _ = []
+validateItemKind :: [ItemKind] -> [ItemKind]
+validateItemKind _ = []

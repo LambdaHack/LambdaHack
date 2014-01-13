@@ -1,6 +1,6 @@
 -- | The type of kinds of monsters and heroes.
 module Game.LambdaHack.Content.ActorKind
-  ( ActorKind(..), avalidate
+  ( ActorKind(..), validateActorKind
   ) where
 
 import Control.Arrow ((&&&))
@@ -35,8 +35,8 @@ data ActorKind = ActorKind
 -- | Filter a list of kinds, passing through only the incorrect ones, if any.
 --
 -- Make sure actor kinds can be told apart on the level map.
-avalidate :: [ActorKind] -> [ActorKind]
-avalidate l =
+validateActorKind :: [ActorKind] -> [ActorKind]
+validateActorKind l =
   let cmp = Ord.comparing $ asymbol &&& acolor
       eq ka1 ka2 = cmp ka1 ka2 == Ord.EQ
       sorted = sortBy cmp l

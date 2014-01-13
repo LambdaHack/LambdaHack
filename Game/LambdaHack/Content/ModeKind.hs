@@ -1,6 +1,6 @@
 -- | The type of kinds of game modes.
 module Game.LambdaHack.Content.ModeKind
-  ( Caves, Players(..), Player(..), ModeKind(..), mvalidate
+  ( Caves, Players(..), Player(..), ModeKind(..), validateModeKind
   ) where
 
 import Data.Binary
@@ -54,8 +54,8 @@ data Player = Player
 -- assert that playersEnemy and playersAlly mention only factions in play.
 -- | No specific possible problems for the content of this kind, so far,
 -- so the validation function always returns the empty list of offending kinds.
-mvalidate :: [ModeKind] -> [ModeKind]
-mvalidate _ = []
+validateModeKind :: [ModeKind] -> [ModeKind]
+validateModeKind _ = []
 
 instance Binary Player where
   put Player{..} = do

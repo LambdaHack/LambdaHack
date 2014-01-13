@@ -1,6 +1,6 @@
 -- | The type of cave layout kinds.
 module Game.LambdaHack.Content.CaveKind
-  ( CaveKind(..), cvalidate
+  ( CaveKind(..), validateCaveKind
   ) where
 
 import Data.Text (Text)
@@ -45,8 +45,8 @@ data CaveKind = CaveKind
 --
 -- Catch caves with not enough space for all the places. Check the size
 -- of the cave descriptions to make sure they fit on screen.
-cvalidate :: [CaveKind] -> [CaveKind]
-cvalidate = filter (\ CaveKind{..} ->
+validateCaveKind :: [CaveKind] -> [CaveKind]
+validateCaveKind = filter (\ CaveKind{..} ->
   let (maxGridX, maxGridY) = maxDiceXY cgrid
       (minMinSizeX, minMinSizeY) = minDiceXY cminPlaceSize
       (maxMinSizeX, maxMinSizeY) = maxDiceXY cminPlaceSize

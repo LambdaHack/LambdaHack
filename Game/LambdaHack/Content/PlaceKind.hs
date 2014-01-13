@@ -1,6 +1,6 @@
 -- | The type of kinds of rooms, halls and passages.
 module Game.LambdaHack.Content.PlaceKind
-  ( PlaceKind(..), Cover(..), Fence(..), pvalidate
+  ( PlaceKind(..), Cover(..), Fence(..), validatePlaceKind
   ) where
 
 import Data.Text (Text)
@@ -42,8 +42,8 @@ data Fence =
 -- | Filter a list of kinds, passing through only the incorrect ones, if any.
 --
 -- Verify that the top-left corner map is rectangular and not empty.
-pvalidate :: [PlaceKind] -> [PlaceKind]
-pvalidate = filter (\ PlaceKind{..} ->
+validatePlaceKind :: [PlaceKind] -> [PlaceKind]
+validatePlaceKind = filter (\ PlaceKind{..} ->
   let dxcorner = case ptopLeft of
         [] -> 0
         l : _ -> T.length l

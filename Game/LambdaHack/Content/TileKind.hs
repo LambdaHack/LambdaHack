@@ -1,6 +1,6 @@
 -- | The type of kinds of terrain tiles.
 module Game.LambdaHack.Content.TileKind
-  ( TileKind(..), tvalidate, actionFeatures
+  ( TileKind(..), validateTileKind, actionFeatures
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -36,8 +36,8 @@ data TileKind = TileKind
 -- manually all the tiles of that kind, or even experiment with them,
 -- to see if any is special. This would be tedious. Note that iiles may freely
 -- differ wrt dungeon generation, AI preferences, etc.
-tvalidate :: [TileKind] -> [TileKind]
-tvalidate lt =
+validateTileKind :: [TileKind] -> [TileKind]
+validateTileKind lt =
   let listFov f = map (\kt -> ( ( tsymbol kt
                                   , F.Suspect `elem` tfeature kt
                                   , f kt

@@ -9,7 +9,7 @@ cdefs = ContentDef
   { getSymbol = psymbol
   , getName = pname
   , getFreq = pfreq
-  , validate = pvalidate
+  , validate = validatePlaceKind
   , content =
       [rect, pillar, pillarC, pillar3, colonnade, colonnadeW]
   }

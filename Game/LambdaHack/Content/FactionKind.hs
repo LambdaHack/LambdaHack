@@ -1,6 +1,6 @@
 -- | The type of kinds of game factions (heroes, enemies, NPCs, etc.).
 module Game.LambdaHack.Content.FactionKind
-  ( FactionKind(..), fvalidate
+  ( FactionKind(..), validateFactionKind
   ) where
 
 import Data.Text (Text)
@@ -19,5 +19,5 @@ data FactionKind = FactionKind
 
 -- | No specific possible problems for the content of this kind, so far,
 -- so the validation function always returns the empty list of offending kinds.
-fvalidate :: [FactionKind] -> [FactionKind]
-fvalidate _ = []
+validateFactionKind :: [FactionKind] -> [FactionKind]
+validateFactionKind _ = []
