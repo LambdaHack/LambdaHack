@@ -41,7 +41,6 @@ import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Monoid as Monoid
-import Data.Ord
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
@@ -490,18 +489,24 @@ getRegenerateBfs aid = do
   case mbfs of
     Just bfs -> return bfs
     Nothing -> do
+      cops <- getsState scops
       Kind.COps{cotile} <- getsState scops
       b <- getsState $ getActorBody aid
-      Level{lxsize, lysize, ltile} <- getLevel $ blid b
+      lvl@Level{lxsize, lysize} <- getLevel $ blid b
       -- Treat doors as an open tile; Don't add an extra step for opening
       -- the doors, because other actors open and use them, too,
-      -- so it's amortized.w
+      -- so it's amortized.
       -- TODO: Sometimes treat hidden tiles as possibly open
       -- and sometimes treat unknown tiles as open.
-      let isOpen = Tile.isPassable cotile . (ltile PointArray.!)
+      let checkPassablity =
+            Just $ \_ tpos -> Tile.isPassable cotile $ lvl `at` tpos
+          conditions = catMaybes [ checkPassablity
+                                 , checkAccess cops lvl
+                                 , checkDoorAccess cops lvl ]
+          isEnterable spos tpos = all (\f -> f spos tpos) conditions
           origin = bpos b
           vInitial = PointArray.replicateA lxsize lysize maxBound
-          vFinal = bfsFill isOpen origin vInitial
+          vFinal = bfsFill isEnterable origin vInitial
       modifyClient $ \cli -> cli {sbfsD = EM.insert aid vFinal (sbfsD cli)}
       return vFinal
 
@@ -526,17 +531,16 @@ pathBfs aid target = do
   let source = bpos b
   assert (bfs PointArray.! source /= maxBound `blame` (aid, b)) skip
   let eps = abs sepsRaw `mod` length moves
-      path :: Point -> [Point] -> [Point]
-      path pos suffix | pos == source = suffix
-      path pos suffix =
-        let shiftDist v = let p = shift pos v
-                          in (bfs PointArray.! p, p)
-            (ch1, ch2) = splitAt eps $ map shiftDist moves
+      path :: Point -> BfsDistance -> [Point] -> [Point]
+      path pos oldDist suffix | pos == source =
+        assert (oldDist == minBound) suffix
+      path pos oldDist suffix =
+        let dist = toEnum $ fromEnum oldDist - 1
+            (ch1, ch2) = splitAt eps $ map (shift pos) moves
             children = ch2 ++ ch1
-            minDist = fst $ minimumBy (comparing fst) children
-            minP = case find ((== minDist) . fst) children of
-             Nothing -> assert `failure` (source, target, pos, children)
-             Just (_, p) -> p
-        in path minP (pos : suffix)
-  if bfs PointArray.! target == maxBound then return Nothing
-  else return $ Just $ path target []
+            minP = fromMaybe (assert `failure` (source, target, pos, children))
+                             (find ((== dist) . (bfs PointArray.!)) children)
+        in path minP dist (pos : suffix)
+      targetDist = bfs PointArray.! target
+  if targetDist == maxBound then return Nothing
+  else return $ Just $ path target targetDist []

@@ -278,13 +278,13 @@ vicinityCardinalXY area xy =
 newtype BfsDistance = BfsDistance Word8
   deriving (Show, Eq, Ord, Enum, Bounded)
 
-bfsFill :: (Point -> Bool)         -- ^ tells if the position is open
-        -> Point                   -- ^ starting position
+bfsFill :: (Point -> Point -> Bool)  -- ^ legality of move, assuming open doors
+        -> Point                     -- ^ starting position
         -> PointArray.Array BfsDistance
-                                   -- ^ initial array, filled with @sentinelId@
+                                     -- ^ initial array, filled with @maxBound@
         -> PointArray.Array BfsDistance
-                                   -- ^ array with the resulting distance data
-bfsFill isOpen origin aInitial =
+                                     -- ^ array with calculated distance data
+bfsFill isEnterable origin aInitial =
   -- TODO: copy, thaw, mutate, freeze
   let bfs :: Seq.Seq (Point, BfsDistance)
           -> PointArray.Array BfsDistance
@@ -296,7 +296,7 @@ bfsFill isOpen origin aInitial =
           q1 Seq.:> (pos, oldDistance) ->
             let distance = toEnum $ fromEnum oldDistance + 1
                 rawChildren = map (shift pos) moves
-                goodChild p = isOpen p && a PointArray.! p == maxBound
+                goodChild p = a PointArray.! p == maxBound && isEnterable pos p
                 children = zip (filter goodChild rawChildren) (repeat distance)
                 q2 = foldr (Seq.<|) q1 children
                 s2 = a PointArray.// children
