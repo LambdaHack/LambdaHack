@@ -26,7 +26,7 @@ module Game.LambdaHack.Client.Action
   , restoreGame, removeServerSave, displayPush, scoreToSlideshow
   , rndToAction, getArenaUI, getLeaderUI
   , targetToPos, partAidLeader, partActorLeader
-  , accessRegenerateBfs
+  , accessRegenerateBfs, pathBfs
   , debugPrint
   ) where
 
@@ -37,9 +37,11 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
+import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Monoid as Monoid
+import Data.Ord
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
@@ -506,3 +508,33 @@ accessRegenerateBfs aid tgtP = do
   bfs <- getRegenerateBfs aid
   let dist = bfs Kind.! tgtP
   return $ if dist == Kind.sentinelId then Nothing else Just $ fromEnum dist
+
+-- TODO: Use http://harablog.wordpress.com/2011/09/07/jump-point-search/
+-- to determine a few really different paths and compare them,
+-- e.g., how many closed doors they pass, open doors, unknown tiles
+-- on the path or close enough to revelat them.
+-- Also, check if JPS can somehow optimize BFS or pathBfs.
+-- Also, let eps determine the path in more detail (we use only a couple
+-- of first bits of eps so far).
+pathBfs :: MonadClient m => ActorId -> Point -> m (Maybe [Point])
+pathBfs aid target = do
+  bfs <- getRegenerateBfs aid
+  b <- getsState $ getActorBody aid
+  sepsRaw <- getsClient seps
+  let source = bpos b
+  assert (bfs Kind.! source /= Kind.sentinelId `blame` (aid, b)) skip
+  let eps = abs sepsRaw `mod` length moves
+      path :: Point -> [Point] -> [Point]
+      path pos suffix | pos == source = suffix
+      path pos suffix =
+        let shiftDist v = let p = shift pos v
+                          in (bfs Kind.! p, p)
+            (ch1, ch2) = splitAt eps $ map shiftDist moves
+            children = ch2 ++ ch1
+            minDist = fst $ minimumBy (comparing fst) children
+            minP = case find ((== minDist) . fst) children of
+             Nothing -> assert `failure` (source, target, pos, children)
+             Just (_, p) -> p
+        in path minP (pos : suffix)
+  if bfs Kind.! target == Kind.sentinelId then return Nothing
+  else return $ Just $ path target []

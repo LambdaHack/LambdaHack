@@ -22,6 +22,7 @@
 ; P: Repeat 100
 ; CTRL-p: Repeat 1000
 ; apostrophe: Record
+; CTRL-semicolon: StepToTarget
 ; CTRL-y: Resend
 ; CTRL-d: GameDifficultyCycle
 ; CTRL-r: GameRestart "campaign"
@@ -62,6 +63,8 @@
 ; [macros]
 ; ; rest for 100 turns
 ; R: KP_Begin P
+; ; go to cursor for 100 turns
+; semicolon: CTRL-semicolon P
 ; ; throw something at the closest monster repeatedly
 ; backslash: apostrophe asterisk Return t Return apostrophe P
 ; ; handy shorthands with Vi keys

@@ -40,7 +40,8 @@ cmdAction cmd = case cmd of
   Apply ts -> fmap (fmap CmdTakeTimeSer) $ applyHuman ts
   AlterDir ts -> fmap (fmap CmdTakeTimeSer) $ alterDirHuman ts
   TriggerTile ts -> fmap (fmap CmdTakeTimeSer) $ triggerTileHuman ts
-  Resend -> fmap (fmap CmdTakeTimeSer) $ resendHuman
+  StepToTarget -> fmap (fmap CmdTakeTimeSer) stepToTargetHuman
+  Resend -> fmap (fmap CmdTakeTimeSer) resendHuman
 
   GameRestart t -> gameRestartHuman t
   GameExit -> gameExitHuman
@@ -51,8 +52,8 @@ cmdAction cmd = case cmd of
   MemberCycle -> fmap Left memberCycleHuman
   MemberBack -> fmap Left memberBackHuman
   Inventory -> fmap Left inventoryHuman
-  TgtFloor -> fmap Left $ tgtFloorHuman
-  TgtEnemy -> fmap Left $ tgtEnemyHuman
+  TgtFloor -> fmap Left tgtFloorHuman
+  TgtEnemy -> fmap Left tgtEnemyHuman
   TgtAscend k -> fmap Left $ tgtAscendHuman k
   EpsIncr b -> fmap Left $ epsIncrHuman b
   SelectActor -> fmap Left selectActorHuman

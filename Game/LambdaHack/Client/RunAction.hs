@@ -156,17 +156,16 @@ continueRunDir aid distLast mdir = do
     cops@Kind.COps{cotile} <- getsState scops
     body <- getsState $ getActorBody aid
     let lid = blid body
-    hs <- getsState $ actorList (const True) lid
     lvl <- getLevel lid
     let posHere = bpos body
         posLast = boldpos body
         dirLast = displacement posLast posHere
         dir = fromMaybe dirLast mdir
         posThere = posHere `shift` dir
-        actorThere = posThere `elem` map bpos hs
-        openableLast = Tile.openable cotile (lvl `at` (posHere `shift` dir))
+    actorsThere <- getsState $ posToActors posThere lid
+    let openableLast = Tile.openable cotile (lvl `at` (posHere `shift` dir))
         check
-          | actorThere = return $ Left "actor in the way"
+          | not $ null actorsThere = return $ Left "actor in the way"
                          -- don't displace actors, except with leader in step 1
           | distLast >= maxDistance =
               return $ Left $ "reached max run distance" <+> showT maxDistance
@@ -219,13 +218,12 @@ checkAndRun aid dir = do
   smarkSuspect <- getsClient smarkSuspect
   let lid = blid body
   lvl <- getLevel lid
-  hs <- getsState $ actorList (const True) lid
   let posHere = bpos body
       posHasItems pos = not $ EM.null $ lvl `atI` pos
       posThere = posHere `shift` dir
-      posLast = boldpos body
+  actorsThere <- getsState $ posToActors posThere lid
+  let posLast = boldpos body
       dirLast = displacement posLast posHere
-      actorThere = posThere `elem` map bpos hs
       -- This is supposed to work on unit vectors --- diagonal, as well as,
       -- vertical and horizontal.
       anglePos :: Point -> Vector -> RadianAngle -> Point
@@ -266,7 +264,7 @@ checkAndRun aid dir = do
       itemChangeRight = posHasItems rightForwardPosHere
                         `notElem` map posHasItems rightPsLast
       check
-        | actorThere = return $ Left "actor in the way"
+        | not $ null actorsThere = return $ Left "actor in the way"
                        -- Actor in possibly another direction tnat original.
         | terrainChangeLeft = return $ Left "terrain change on the left"
         | terrainChangeRight = return $ Left "terrain change on the right"

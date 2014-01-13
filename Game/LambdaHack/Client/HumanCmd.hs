@@ -24,6 +24,7 @@ data HumanCmd =
   | Apply       ![Trigger]
   | AlterDir    ![Trigger]
   | TriggerTile ![Trigger]
+  | StepToTarget
   | Resend
     -- These do not take time.
   | GameRestart !Text
@@ -78,6 +79,7 @@ majorHumanCmd cmd = case cmd of
 -- | Minor commands land on the second page of command help.
 minorHumanCmd :: HumanCmd -> Bool
 minorHumanCmd cmd = case cmd of
+  StepToTarget -> True
   MemberCycle -> True
   MemberBack  -> True
   TgtFloor    -> True
@@ -86,7 +88,7 @@ minorHumanCmd cmd = case cmd of
   EpsIncr{}   -> True
   SelectActor -> True
   SelectNone  -> True
---  Clear       -> True
+--  Clear     -> True
   History     -> True
   MarkVision  -> True
   MarkSmell   -> True
@@ -95,7 +97,7 @@ minorHumanCmd cmd = case cmd of
 
 -- | Commands that are forbidden on a remote level, because they
 -- would usually take time when invoked on one.
--- Not that movement commands are not included, because they take time
+-- Note that movement commands are not included, because they take time
 -- on normal levels, but don't take time on remote levels, that is,
 -- in targeting mode.
 noRemoteHumanCmd :: HumanCmd -> Bool
@@ -122,6 +124,7 @@ cmdDescription cmd = case cmd of
   Apply ts       -> triggerDescription ts
   AlterDir ts -> triggerDescription ts
   TriggerTile ts -> triggerDescription ts
+  StepToTarget -> "make one step towards the target"
   Resend      -> "resend last server command"
 
   GameRestart t -> "new" <+> t <+> "game"

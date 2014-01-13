@@ -3,7 +3,8 @@
 -- TODO: document
 module Game.LambdaHack.Client.HumanGlobal
   ( moveRunHuman, waitHuman, pickupHuman, dropHuman
-  , projectHuman, applyHuman, alterDirHuman, triggerTileHuman, resendHuman
+  , projectHuman, applyHuman, alterDirHuman, triggerTileHuman
+  , resendHuman, stepToTargetHuman
   , gameRestartHuman, gameExitHuman, gameSaveHuman, gameDifficultyCycle
   , SlideOrCmd, failWith
   ) where
@@ -552,6 +553,28 @@ resendHuman = do
   case slastCmd of
     Just cmd -> return $ Right cmd
     Nothing -> failWith "no time-taking command to repeat"
+
+-- * StepToTarget
+
+stepToTargetHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
+stepToTargetHuman = do
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  tgtPos <- targetToPos
+  case tgtPos of
+    Nothing -> failWith "target not set"
+    Just c | c == bpos b -> failWith "target reached"
+    Just c -> do
+      mpath <- pathBfs leader c
+      case mpath of
+        Nothing -> failWith "no route to target"
+        Just [] -> assert `failure` (leader, b, bpos b, c)
+        Just (p1 : _) -> do
+          as <- getsState $ posToActors p1 (blid b)
+          if not $ null as then
+            failWith "actor in the path to target"
+          else
+            moveRunHuman False $ towards (bpos b) p1
 
 -- * GameRestart; does not take time
 
