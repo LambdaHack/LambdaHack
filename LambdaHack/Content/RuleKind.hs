@@ -8,10 +8,8 @@ import Language.Haskell.TH.Syntax
 import qualified Paths_LambdaHack as Self (getDataFileName, version)
 
 import Game.LambdaHack.Common.ContentDef
-import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Content.TileKind
 
 cdefs :: ContentDef RuleKind
 cdefs = ContentDef
@@ -32,13 +30,9 @@ standard = RuleKind
   -- Precondition: the two positions are next to each other.
   -- Apart of checking the target tile, we forbid diagonal movement
   -- to and from doors.
-  , raccessible    = \spos src tpos tgt ->
-      let getTo F.CloseTo{} = True
-          getTo _ = False
-      in F.Walkable `elem` tfeature tgt
-         && not ((any getTo (tfeature  src) ||
-                  any getTo (tfeature tgt))
-                 && diagonal (displacement spos tpos))
+  , raccessible    = Nothing
+  , raccessibleDoor = Just $ \spos tpos ->
+                                not $ diagonal $ displacement spos tpos
   , rtitle         = "LambdaHack"
   , rpathsDataFile = Self.getDataFileName
   , rpathsVersion  = Self.version

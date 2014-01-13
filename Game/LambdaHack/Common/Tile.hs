@@ -15,7 +15,7 @@
 module Game.LambdaHack.Common.Tile
   ( SmellTime
   , kindHasFeature, hasFeature
-  , isClear, isLit, isWalkable, isPassable
+  , isClear, isLit, isWalkable, isPassable, isDoor
   , isExplorable, lookSimilar, speedup
   , openTo, closeTo, causeEffects, revealAs, hideAs
   , openable, closable, changeable
@@ -74,6 +74,13 @@ isPassable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 isPassable Kind.Ops{ospeedup = Just Kind.TileSpeedup{isPassableTab=tab}} = tab
 isPassable cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
+-- | Whether a tile is a door, open or closed.
+-- Essential for efficiency of pathfinding, hence tabulated.
+isDoor :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+{-# INLINE isDoor #-}
+isDoor Kind.Ops{ospeedup = Just Kind.TileSpeedup{isDoorTab=tab}} = tab
+isDoor cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
+
 -- | Whether a tile can be explored, possibly yielding a treasure
 -- or a hidden message.
 isExplorable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
@@ -108,6 +115,11 @@ speedup allClear Kind.Ops{ofoldrWithKey, obounds} =
       isPassableTab = tabulate $ \tk ->
         let getTo F.OpenTo{} = True
             getTo F.Walkable = True
+            getTo _ = False
+        in any getTo $ tfeature tk
+      isDoorTab = tabulate $ \tk ->
+        let getTo F.OpenTo{} = True
+            getTo F.CloseTo{} = True
             getTo _ = False
         in any getTo $ tfeature tk
   in Kind.TileSpeedup {..}
