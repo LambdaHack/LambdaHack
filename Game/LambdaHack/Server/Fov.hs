@@ -115,7 +115,7 @@ fullscan :: Kind.Ops TileKind  -- ^ tile content, determines clear tiles
          -> Point              -- ^ position of the spectator
          -> Level              -- ^ the map that is scanned
          -> [Point]
-fullscan cotile fovMode spectatorPos Level{ltile} = spectatorPos :
+fullscan cotile fovMode spectatorPos lvl = spectatorPos :
   case fovMode of
     Shadow ->
       concatMap (\tr -> map tr (Shadow.scan (isCl . tr) 1 (0, 1))) tr8
@@ -128,7 +128,7 @@ fullscan cotile fovMode spectatorPos Level{ltile} = spectatorPos :
       in concatMap (\tr -> map tr (Digital.scan radiusOne (isCl . tr))) tr4
  where
   isCl :: Point -> Bool
-  isCl = Tile.isClear cotile . (ltile Kind.!)
+  isCl = Tile.isClear cotile . (lvl `at`)
 
   -- This function is very cheap, so no problem it's called twice
   -- for each point: once with @isCl@, once via @concatMap@.

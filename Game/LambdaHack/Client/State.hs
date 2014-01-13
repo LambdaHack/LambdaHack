@@ -25,11 +25,11 @@ import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Key as K
-import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Vector
@@ -44,7 +44,7 @@ data StateClient = StateClient
   , seps         :: !Int              -- ^ a parameter of the tgt digital line
   , stargetD     :: !(EM.EnumMap ActorId Target)
                                    -- ^ targets of our actors in the dungeon
-  , sbfsD        :: !(EM.EnumMap ActorId (Kind.Array BfsDistance))
+  , sbfsD        :: !(EM.EnumMap ActorId (PointArray.Array BfsDistance))
                                    -- ^ pathfinding distances for our actors
   , sselected    :: !(ES.EnumSet ActorId)
                                    -- ^ the set of currently selected actors

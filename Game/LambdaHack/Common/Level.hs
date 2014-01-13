@@ -28,6 +28,7 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Tile
@@ -69,7 +70,7 @@ type ActorPrio = EM.EnumMap Time [ActorId]
 type ItemFloor = EM.EnumMap Point ItemBag
 
 -- | Tile kinds on the map.
-type TileMap = Kind.Array TileKind
+type TileMap = PointArray.Array (Kind.Id TileKind)
 
 -- | Current smell on map tiles.
 type SmellMap = EM.EnumMap Point SmellTime
@@ -121,7 +122,7 @@ assertSparseItems m =
 
 -- | Query for tile kinds on the map.
 at :: Level -> Point -> Kind.Id TileKind
-at Level{ltile} p = ltile Kind.! p
+at Level{ltile} p = ltile PointArray.! p
 
 -- | Query for items on the ground.
 atI :: Level -> Point -> ItemBag
@@ -158,12 +159,12 @@ hideTile cotile lvl p =
 -- | Find a random position on the map satisfying a predicate.
 findPos :: TileMap -> (Point -> Kind.Id TileKind -> Bool) -> Rnd Point
 findPos ltile p =
-  let (x, y) = Kind.sizeA ltile
+  let (x, y) = PointArray.sizeA ltile
       search = do
         px <- randomR (0, x - 1)
         py <- randomR (0, y - 1)
         let pos = toPoint PointXY{..}
-            tile = ltile Kind.! pos
+            tile = ltile PointArray.! pos
         if p pos tile
           then return pos
           else search
@@ -182,13 +183,13 @@ findPosTry :: Int                                  -- ^ the number of tries
            -> Rnd Point
 findPosTry _        ltile m []         = findPos ltile m
 findPosTry numTries ltile m l@(_ : tl) = assert (numTries > 0) $
-  let (x, y) = Kind.sizeA ltile
+  let (x, y) = PointArray.sizeA ltile
       search 0 = findPosTry numTries ltile m tl
       search k = do
         px <- randomR (0, x - 1)
         py <- randomR (0, y - 1)
         let pos = toPoint PointXY{..}
-            tile = ltile Kind.! pos
+            tile = ltile PointArray.! pos
         if m pos tile && all (\p -> p pos tile) l
           then return pos
           else search (k - 1)

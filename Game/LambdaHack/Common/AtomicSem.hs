@@ -23,6 +23,7 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
@@ -333,11 +334,11 @@ alterTileA lid p fromTile toTile = assert (fromTile /= toTile) $ do
   -- and it suddenly changes into another tile,
   -- which at the same time becomes visible (e.g., an open door).
   -- See 'AtomicSemCli' for how this is reported to the client.
-  let adj ts = assert (ts Kind.! p == fromTile
-                       || ts Kind.! p == freshClientTile
+  let adj ts = assert (ts PointArray.! p == fromTile
+                       || ts PointArray.! p == freshClientTile
                        `blame` "unexpected altered tile kind"
-                       `twith` (lid, p, fromTile, toTile, ts Kind.! p))
-               $ ts Kind.// [(p, toTile)]
+                       `twith` (lid, p, fromTile, toTile, ts PointArray.! p))
+               $ ts PointArray.// [(p, toTile)]
   updateLevel lid $ updateTile adj
   case (Tile.isExplorable cotile fromTile, Tile.isExplorable cotile toTile) of
     (False, True) -> updateLevel lid $ \lvl2 -> lvl2 {lseen = lseen lvl + 1}
@@ -354,10 +355,10 @@ spotTileA :: MonadAction m => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
 spotTileA lid ts = assert (not $ null ts) $ do
   Kind.COps{cotile} <- getsState scops
   Level{ltile} <- getLevel lid
-  let adj tileMap = tileMap Kind.// ts
+  let adj tileMap = tileMap PointArray.// ts
   updateLevel lid $ updateTile adj
   let f (p, t2) = do
-        let t1 = ltile Kind.! p
+        let t1 = ltile PointArray.! p
         case (Tile.isExplorable cotile t1, Tile.isExplorable cotile t2) of
           (False, True) -> updateLevel lid $ \lvl -> lvl {lseen = lseen lvl+1}
           (True, False) -> updateLevel lid $ \lvl -> lvl {lseen = lseen lvl-1}
@@ -372,9 +373,9 @@ loseTileA lid ts = assert (not $ null ts) $ do
   let unknownId = ouniqGroup "unknown space"
       matches _ [] = True
       matches tileMap ((p, ov) : rest) =
-        tileMap Kind.! p == ov && matches tileMap rest
+        tileMap PointArray.! p == ov && matches tileMap rest
       tu = map (second (const unknownId)) ts
-      adj tileMap = assert (matches tileMap ts) $ tileMap Kind.// tu
+      adj tileMap = assert (matches tileMap ts) $ tileMap PointArray.// tu
   updateLevel lid $ updateTile adj
   let f (_, t1) =
         when (Tile.isExplorable cotile t1) $

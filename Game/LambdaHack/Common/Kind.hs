@@ -1,10 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, RankNTypes, TypeFamilies #-}
 -- | General content types and operations.
 module Game.LambdaHack.Common.Kind
-  ( -- * General content types
-    Id, Speedup(..), Ops(..), COps(..), createOps, stdRuleset
-    -- * Arrays of content identifiers
-  , Array, (!), (//), replicateA, replicateMA, generateMA, sizeA, foldlA
+  ( Id, Speedup(..), Ops(..), COps(..), createOps, stdRuleset
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -16,16 +13,10 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Vector as B (Vector)
-import Data.Vector.Binary ()
-import qualified Data.Vector.Generic as V
-import qualified Data.Vector.Unboxed as U (Vector)
 
 import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
-import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.CaveKind
@@ -135,79 +126,3 @@ instance Show COps where
 
 instance Eq COps where
   (==) _ _ = True
-
--- | Arrays of content identifiers pointing to the content type @c@,
--- where the identifiers are represented as @Word8@
--- (and so content of type @c@ can have at most 256 elements).
--- The arrays are indexed by the X and Y coordinates
--- of the dungeon tile position.
-newtype Array c = Array (B.Vector (U.Vector Word8))
-  deriving Eq
-
--- TODO: save/restore is still too slow, but we are already past
--- the point of diminishing returns. A dramatic change would be
--- low-level conversion to ByteString and serializing that.
-instance Binary (Array c) where
-  put (Array a) = put a
-  get = fmap Array get
-
-instance Show (Array c) where
-  show a = "Kind.Array with size " ++ show (sizeA a)
-
--- | Content identifiers array lookup.
---
--- Note: there's no point specializing this to @PointXY@ arguments,
--- since the extra few additions in @fromPoint@ may be less expensive than
--- memory or register allocations needed for the extra @Int@ in @PointXY@.
-(!) :: Array c -> Point -> Id c
-{-# INLINE (!) #-}
-(!) (Array a) p = let PointXY x y = fromPoint p
-                  in Id $ a V.! y V.! x
-
--- TODO: optimize, either by replacing with a different operation
--- or by thawing all the vectors, updating, freezing.
--- | Construct a content identifiers array updated with the association list.
-(//) :: Array c -> [(Point, Id c)] -> Array c
-(//) (Array a) l =
-  let f b (x, e) = b V.// [(x, e)]
-  in Array $ V.accum f a [ (y, (x, e))
-                         | (p, Id e) <- l, let PointXY x y = fromPoint p ]
-
--- | Create a content identifiers array from a replicated element.
-replicateA :: X -> Y -> Id c -> Array c
-replicateA x y (Id e) =
-  let line = V.replicate x e
-  in Array $ V.replicate y line
-
--- | Create a content identifiers array from a replicated monadic action.
-replicateMA :: Monad m => X -> Y -> m (Id c) -> m (Array c)
-replicateMA x y m = do
-  let me = do
-        Id e <- m
-        return e
-      mline = V.replicateM x me
-  a <- V.replicateM y mline
-  return $ Array a
-
--- | Create a content identifiers array from a monadic function.
-generateMA :: Monad m => X -> Y -> (Point -> m (Id c)) -> m (Array c)
-generateMA x y m = do
-  let me y1 x1 = do
-        Id e <- m $ toPoint $ PointXY x1 y1
-        return e
-      mline y1 = V.generateM x (me y1)
-  a <- V.generateM y mline
-  return $ Array a
-
--- | Content identifiers array size.
-sizeA :: Array c -> (X, Y)
-sizeA (Array a) =
-  let y = V.length a
-      x = V.length (a V.! 0)
-  in (x, y)
-
--- | Fold left strictly over an array.
-foldlA :: (a -> Id c -> a) -> a -> Array c -> a
-foldlA f z0 (Array a) = lgo z0 $ concatMap V.toList $ V.toList a
- where lgo z []       = z
-       lgo z (x : xs) = let fzx = f z (Id x) in fzx `seq` lgo fzx xs

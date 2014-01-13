@@ -16,8 +16,8 @@ import Data.Bits (unsafeShiftL)
 import Data.Int (Int32)
 import qualified Data.Sequence as Seq
 
-import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.VectorXY
 
@@ -275,16 +275,20 @@ vicinityCardinalXY area xy =
         , let res = shiftXY xy dxy
         , insideXY res area ]
 
-data BfsDistance
+newtype BfsDistance = BfsDistance Word8
+  deriving (Show, Eq, Ord, Enum, Bounded)
 
 bfsFill :: (Point -> Bool)         -- ^ tells if the position is open
         -> Point                   -- ^ starting position
-        -> Kind.Array BfsDistance  -- ^ initial array, filled with @sentinelId@
-        -> Kind.Array BfsDistance  -- ^ array with the resulting distance data
+        -> PointArray.Array BfsDistance
+                                   -- ^ initial array, filled with @sentinelId@
+        -> PointArray.Array BfsDistance
+                                   -- ^ array with the resulting distance data
 bfsFill isOpen origin aInitial =
   -- TODO: copy, thaw, mutate, freeze
-  let bfs :: Seq.Seq (Point, Kind.Id BfsDistance) -> Kind.Array BfsDistance
-          -> Kind.Array BfsDistance
+  let bfs :: Seq.Seq (Point, BfsDistance)
+          -> PointArray.Array BfsDistance
+          -> PointArray.Array BfsDistance
       bfs q a =
         case Seq.viewr q of
           Seq.EmptyR -> a  -- no more positions to check
@@ -292,10 +296,10 @@ bfsFill isOpen origin aInitial =
           q1 Seq.:> (pos, oldDistance) ->
             let distance = toEnum $ fromEnum oldDistance + 1
                 rawChildren = map (shift pos) moves
-                goodChild p = isOpen p && a Kind.! p == maxBound
+                goodChild p = isOpen p && a PointArray.! p == maxBound
                 children = zip (filter goodChild rawChildren) (repeat distance)
                 q2 = foldr (Seq.<|) q1 children
-                s2 = a Kind.// children
+                s2 = a PointArray.// children
             in bfs q2 s2
       origin0 = (origin, toEnum 0)
-  in bfs (Seq.singleton origin0) (aInitial Kind.// [origin0])
+  in bfs (Seq.singleton origin0) (aInitial PointArray.// [origin0])

@@ -15,6 +15,7 @@ import qualified Game.LambdaHack.Common.Feature as F
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
@@ -33,7 +34,7 @@ convertTileMaps cdefTile cxsize cysize ltile = do
       f p = case EM.lookup p ltile of
         Just t -> return t
         Nothing -> cdefTile
-  Kind.generateMA cxsize cysize f
+  PointArray.generateMA cxsize cysize f
 
 placeStairs :: Kind.Ops TileKind -> TileMap -> CaveKind -> [Point]
             -> Rnd Point
@@ -129,7 +130,7 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
                               $ opick legend $ hasEscapeAndSymbol '>'
                 return [(epos, downEscape)]
   let exits = stairsTotal ++ escape
-      ltile = cmap Kind.// exits
+      ltile = cmap PointArray.// exits
       -- We reverse the order in down stairs, to minimize long stair chains.
       lstair = ( map fst $ stairsUp ++ stairsUpDown
                , map fst $ stairsUpDown ++ stairsDown )
@@ -160,7 +161,7 @@ levelFromCaveKind Kind.COps{cotile}
     , lseen = 0
     , lclear = let f !n !tk | Tile.isExplorable cotile tk = n + 1
                             | otherwise = n
-               in Kind.foldlA f 0 ltile
+               in PointArray.foldlA f 0 ltile
     , ltime = timeTurn
     , litemNum
     , litemFreq

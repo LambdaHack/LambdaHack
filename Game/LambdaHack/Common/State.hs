@@ -21,6 +21,7 @@ import qualified Game.LambdaHack.Common.HighScore as HighScore
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.TileKind
@@ -69,7 +70,7 @@ unknownLevel Kind.Ops{ouniqGroup} ldepth lxsize lysize ldesc lstair lclear
 
 unknownTileMap :: Kind.Id TileKind -> Int -> Int -> TileMap
 unknownTileMap unknownId cxsize cysize =
-  Kind.replicateA cxsize cysize unknownId
+  PointArray.replicateA cxsize cysize unknownId
 
 -- | Initial complete global game state.
 defStateGlobal :: Dungeon -> Int

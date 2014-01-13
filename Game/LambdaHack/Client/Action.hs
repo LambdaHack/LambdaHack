@@ -68,6 +68,7 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
@@ -482,7 +483,8 @@ mkConfigUI corule = do
   -- Catch syntax errors ASAP,
   return $! deepseq conf conf
 
-getRegenerateBfs :: MonadClient m => ActorId -> m (Kind.Array BfsDistance)
+getRegenerateBfs :: MonadClient m
+                 => ActorId -> m (PointArray.Array BfsDistance)
 getRegenerateBfs aid = do
   mbfs <- getsClient $ EM.lookup aid . sbfsD
   case mbfs of
@@ -496,9 +498,9 @@ getRegenerateBfs aid = do
       -- so it's amortized.w
       -- TODO: Sometimes treat hidden tiles as possibly open
       -- and sometimes treat unknown tiles as open.
-      let isOpen = Tile.isPassable cotile . (ltile Kind.!)
+      let isOpen = Tile.isPassable cotile . (ltile PointArray.!)
           origin = bpos b
-          vInitial = Kind.replicateA lxsize lysize maxBound
+          vInitial = PointArray.replicateA lxsize lysize maxBound
           vFinal = bfsFill isOpen origin vInitial
       modifyClient $ \cli -> cli {sbfsD = EM.insert aid vFinal (sbfsD cli)}
       return vFinal
@@ -506,7 +508,7 @@ getRegenerateBfs aid = do
 accessRegenerateBfs :: MonadClient m => ActorId -> Point -> m (Maybe Int)
 accessRegenerateBfs aid tgtP = do
   bfs <- getRegenerateBfs aid
-  let dist = bfs Kind.! tgtP
+  let dist = bfs PointArray.! tgtP
   return $ if dist == maxBound then Nothing else Just $ fromEnum dist
 
 -- TODO: Use http://harablog.wordpress.com/2011/09/07/jump-point-search/
@@ -522,13 +524,13 @@ pathBfs aid target = do
   b <- getsState $ getActorBody aid
   sepsRaw <- getsClient seps
   let source = bpos b
-  assert (bfs Kind.! source /= maxBound `blame` (aid, b)) skip
+  assert (bfs PointArray.! source /= maxBound `blame` (aid, b)) skip
   let eps = abs sepsRaw `mod` length moves
       path :: Point -> [Point] -> [Point]
       path pos suffix | pos == source = suffix
       path pos suffix =
         let shiftDist v = let p = shift pos v
-                          in (bfs Kind.! p, p)
+                          in (bfs PointArray.! p, p)
             (ch1, ch2) = splitAt eps $ map shiftDist moves
             children = ch2 ++ ch1
             minDist = fst $ minimumBy (comparing fst) children
@@ -536,5 +538,5 @@ pathBfs aid target = do
              Nothing -> assert `failure` (source, target, pos, children)
              Just (_, p) -> p
         in path minP (pos : suffix)
-  if bfs Kind.! target == maxBound then return Nothing
+  if bfs PointArray.! target == maxBound then return Nothing
   else return $ Just $ path target []

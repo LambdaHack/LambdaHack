@@ -115,6 +115,7 @@ library
                       Game.LambdaHack.Common.Misc,
                       Game.LambdaHack.Common.Msg,
                       Game.LambdaHack.Common.Perception,
+                      Game.LambdaHack.Common.PointArray,
                       Game.LambdaHack.Common.Point,
                       Game.LambdaHack.Common.PointXY,
                       Game.LambdaHack.Common.Random,
