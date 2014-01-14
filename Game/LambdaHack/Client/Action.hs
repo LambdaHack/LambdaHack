@@ -340,7 +340,12 @@ drawOverlay dm over = do
   s <- getState
   cli <- getClient
   per <- getPerFid lid
-  return $! draw dm cops per lid mleader cli s over
+  tgtPos <- targetToPos
+  let pathFromTgt leader tgtP = fmap snd $ getCacheBfs leader tgtP
+      pathFromLeader leader =
+        maybe (return Nothing) (pathFromTgt leader) tgtPos
+  mpath <- maybe (return Nothing) pathFromLeader mleader
+  return $! draw dm cops per lid mleader tgtPos mpath cli s over
 
 -- TODO: if more slides, don't take head, but do as in getInitConfirms,
 -- but then we have to clear the messages or they get redisplayed
@@ -415,9 +420,15 @@ animate arena anim = do
   cli <- getClient
   s <- getState
   per <- getPerFid arena
+  tgtPos <- targetToPos
+  let pathFromTgt leader tgtP = fmap snd $ getCacheBfs leader tgtP
+      pathFromLeader leader =
+        maybe (return Nothing) (pathFromTgt leader) tgtPos
+  mpath <- maybe (return Nothing) pathFromLeader mleader
   let over = renderReport sreport
       topLineOnly = truncateToOverlay lxsize over
-      basicFrame = draw ColorFull cops per arena mleader cli s topLineOnly
+      basicFrame =
+        draw ColorFull cops per arena mleader tgtPos mpath cli s topLineOnly
   snoAnim <- getsClient $ snoAnim . sdebugCli
   return $ if fromMaybe False snoAnim
            then [Just basicFrame]

@@ -45,9 +45,9 @@ data ColorMode =
 -- to the frontends to display separately or overlay over map,
 -- depending on the frontend.
 draw :: ColorMode -> Kind.COps -> Perception -> LevelId -> Maybe ActorId
-     -> StateClient -> State -> Overlay
+     -> Maybe Point -> Maybe [Point] -> StateClient -> State -> Overlay
      -> SingleFrame
-draw dm cops per drawnLevelId mleader
+draw dm cops per drawnLevelId mleader tgtPos mpath
      cli@StateClient{ stgtMode, scursor, seps, sdisco, sselected
                     , smarkVision, smarkSmell, smarkSuspect, swaitTimes }
      s sfTop =
@@ -68,6 +68,13 @@ draw dm cops per drawnLevelId mleader
                                , Color.bg = Color.fg Color.defAttr
                                }
       actorsHere = actorAssocs (const True) drawnLevelId s
+      cursorHere = find (\(_, m) -> scursor == Just (Actor.bpos m)) actorsHere
+      shiftedBPath = case cursorHere of
+        Just (_, Actor{bpath = Just p, bpos = prPos}) -> shiftPath prPos p
+        _ -> []
+      -- Don't show path if it overlaps too much with line.
+      drawPath = tgtPos /= scursor
+      unknownId = ouniqGroup "unknown space"
       dis pos0 =
         let tile = lvl `at` pos0
             tk = tokind tile
@@ -88,31 +95,28 @@ draw dm cops per drawnLevelId mleader
               | smarkSuspect && F.Suspect `elem` tfeature t = Color.BrCyan
               | vis = tcolor t
               | otherwise = tcolor2 t
-            viewItem i = ( jsymbol i
-                         , Color.defAttr {Color.fg =
-                                            flavourToColor $ jflavour i} )
+            viewItem i =
+              ( jsymbol i
+              , Color.defAttr {Color.fg = flavourToColor $ jflavour i} )
+            fgOnPathOrLine = case (vis, F.Walkable `elem` tfeature tk) of
+              _ | tile == unknownId -> Color.BrBlack
+              (True, True)   -> Color.BrGreen
+              (True, False)  -> Color.BrRed
+              (False, True)  -> Color.Green
+              (False, False) -> Color.Red
+            atttrOnPathOrLine = if Just pos0 `elem` [scursor, tgtPos]
+                                then inverseVideo {Color.fg = fgOnPathOrLine}
+                                else Color.defAttr {Color.fg = fgOnPathOrLine}
             (char, attr0) =
-              case ( find (\ (_, m) -> pos0 == Actor.bpos m) actorsHere
-                   , find (\ (_, m) -> scursor == Just (Actor.bpos m))
-                       actorsHere ) of
-                (_, actorTgt) | isJust stgtMode
-                                && (elem pos0 bl
-                                    || (case actorTgt of
-                                          Just (_, Actor{ bpath=Just p
-                                                        , bpos=prPos }) ->
-                                            elem pos0 $ shiftPath prPos p
-                                          _ -> False))
-                    -> let unknownId = ouniqGroup "unknown space"
-                           fg = case (vis, F.Walkable `elem` tfeature tk) of
-                                  _ | tile == unknownId -> Color.BrBlack
-                                  (True, True)   -> Color.BrGreen
-                                  (True, False)  -> Color.BrRed
-                                  (False, True)  -> Color.Green
-                                  (False, False) -> Color.Red
-                       in ('*', if Just pos0 == scursor -- highlight cursor
-                                then inverseVideo {Color.fg = fg}
-                                else Color.defAttr {Color.fg = fg})
-                (Just (aid, m), _) -> viewActor aid m
+              case find (\(_, m) -> pos0 == Actor.bpos m) actorsHere of
+                _ | isJust stgtMode
+                    && (elem pos0 bl || elem pos0 shiftedBPath) ->
+                  ('*', atttrOnPathOrLine)  -- line takes precedence over path
+                _ | isJust stgtMode
+                    && drawPath
+                    && (maybe False (elem pos0) mpath) ->
+                  (';', atttrOnPathOrLine)
+                Just (aid, m) -> viewActor aid m
                 _ | smarkSmell && smlt > timeZero ->
                   (timeToDigit smellTimeout smlt, rainbow pos0)
                   | otherwise ->
