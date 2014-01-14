@@ -9,7 +9,7 @@ import Control.Arrow (second)
 import qualified Data.Char as Char
 import Data.List
 import qualified Data.Map.Strict as M
-import qualified Data.Set as S
+import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Tuple (swap)
@@ -21,20 +21,22 @@ import Game.LambdaHack.Common.Msg
 
 -- | Bindings and other information about human player commands.
 data Binding = Binding
-  { kcmd    :: !(M.Map K.KM (Text, Bool, HumanCmd))
-                                       -- ^ binding keys to commands
-  , kmacro  :: !(M.Map K.KM [K.KM])    -- ^ macro map
-  , kmajor  :: ![K.KM]                 -- ^ major commands
-  , kminor  :: ![K.KM]                 -- ^ minor commands
-  , krevMap :: !(M.Map HumanCmd K.KM)  -- ^ from cmds to their main keys
+  { kcmd       :: !(M.Map K.KM (Text, Bool, HumanCmd))
+                                          -- ^ binding keys to commands
+  , kmacro     :: !(M.Map K.KM [K.KM])    -- ^ macro map
+  , kmacroDesc :: !(M.Map K.KM Text)      -- ^ macro description map
+  , kmajor     :: ![K.KM]                 -- ^ major commands
+  , kminor     :: ![K.KM]                 -- ^ minor commands
+  , krevMap    :: !(M.Map HumanCmd K.KM)  -- ^ from cmds to their main keys
   }
 
 -- | Binding of keys to movement and other standard commands,
 -- as well as commands defined in the config file.
 stdBinding :: ConfigUI  -- ^ game config
            -> Binding   -- ^ concrete binding
-stdBinding !config@ConfigUI{configMacros} =
+stdBinding !config@ConfigUI{configMacros, configMacroDesc} =
   let kmacro = M.fromList configMacros
+      kmacroDesc = M.fromList configMacroDesc  -- no check vs. kmacro
       heroSelect k = ( K.KM { key=K.Char (Char.intToDigit k)
                             , modifier=K.NoModifier }
                      , PickLeader k )
@@ -48,21 +50,15 @@ stdBinding !config@ConfigUI{configMacros} =
   in Binding
   { kcmd = M.fromList semList
   , kmacro
+  , kmacroDesc
   , kmajor = map fst $ filter (majorHumanCmd . snd) cmdList
   , kminor = map fst $ filter (minorHumanCmd . snd) cmdList
   , krevMap = M.fromList $ map swap cmdList
   }
 
-coImage :: M.Map K.KM [K.KM] -> K.KM -> [K.KM]
-coImage kmacro k =
-  let domain = M.keysSet kmacro
-  in if k `S.member` domain
-     then []
-     else k : [ from | (from, to) <- M.assocs kmacro, to == [k] ]
-
 -- | Produce a set of help screens from the key bindings.
 keyHelp :: Binding -> Slideshow
-keyHelp Binding{kcmd, kmacro, kmajor, kminor} =
+keyHelp Binding{kcmd, kmacro, kmacroDesc, kmajor, kminor} =
   let
     movBlurb =
       [ "Move throughout the level with numerical keypad or"
@@ -101,6 +97,8 @@ keyHelp Binding{kcmd, kmacro, kmajor, kminor} =
     major   = map fmts majorBlurb
     minor   = map fmts minorBlurb
     keyCaption = fmt "keys" "command"
+    coImage :: M.Map K.KM [K.KM] -> K.KM -> [K.KM]
+    coImage macroD k = k : [ from | (from, to) <- M.assocs macroD, to == [k] ]
     disp k  = T.concat $ map K.showKM $ coImage kmacro k
     keys l  = [ fmt (disp k) (h <> if timed then "*" else "")
               | (k, (h, timed, _)) <- l, h /= "" ]
@@ -108,11 +106,17 @@ keyHelp Binding{kcmd, kmacro, kmajor, kminor} =
       partition ((`elem` kmajor) . fst) (M.toAscList kcmd)
     (kcMinor, _) =
       partition ((`elem` kminor) . fst) kcRest
+    macro2cmd (km, _) = case M.lookup km kmacroDesc of
+      Nothing -> Nothing
+      Just desc ->
+        let timed = True  -- TODO: check if any of the commands is timed
+        in Just (km, (desc, timed, undefined))
+    kcMacroDesc = mapMaybe macro2cmd $ M.toAscList kmacro
   in toSlideshow  -- TODO: 80 below is a hack
     [ [T.justifyLeft 80 ' ' "Basic keys. [press SPACE to advance]"] ++ [blank]
       ++ mov ++ [moreMsg]
     , [T.justifyLeft 80 ' ' "Basic keys. [press SPACE to advance]"] ++ [blank]
       ++ [keyCaption] ++ keys kcMajor ++ major ++ [moreMsg]
     , [T.justifyLeft 80 ' ' "Basic keys."] ++ [blank]
-      ++ [keyCaption] ++ keys kcMinor ++ minor
+      ++ [keyCaption] ++ keys (sort $ kcMinor ++ kcMacroDesc) ++ minor
     ]
