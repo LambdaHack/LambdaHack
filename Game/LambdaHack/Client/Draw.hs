@@ -72,8 +72,6 @@ draw dm cops per drawnLevelId mleader tgtPos mpath
       shiftedBPath = case cursorHere of
         Just (_, Actor{bpath = Just p, bpos = prPos}) -> shiftPath prPos p
         _ -> []
-      -- Don't show path if it overlaps too much with line.
-      drawPath = tgtPos /= scursor
       unknownId = ouniqGroup "unknown space"
       dis pos0 =
         let tile = lvl `at` pos0
@@ -113,7 +111,6 @@ draw dm cops per drawnLevelId mleader tgtPos mpath
                     && (elem pos0 bl || elem pos0 shiftedBPath) ->
                   ('*', atttrOnPathOrLine)  -- line takes precedence over path
                 _ | isJust stgtMode
-                    && drawPath
                     && (maybe False (elem pos0) mpath) ->
                   (';', atttrOnPathOrLine)
                 Just (aid, m) -> viewActor aid m
