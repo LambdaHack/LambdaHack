@@ -470,7 +470,7 @@ parseConfigRules dataDir cp =
               case stripPrefix "HeroName_" ident of
                 Just n -> (read n, T.pack name)
                 Nothing -> assert `failure` "wrong hero name id" `twith` ident
-            section = ConfigIO.getItems cp "heroName"
+            section = ConfigIO.getItems cp "hero names"
         in map toNumber section
   in Config{..}
 

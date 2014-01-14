@@ -61,15 +61,17 @@
 ; savePrefix: save
 
 ; [macros]
-; ; rest for 100 turns
 ; R: KP_Begin P
-; ; go to cursor for 100 turns
 ; semicolon: CTRL-semicolon P
-; ; throw something at the closest monster repeatedly
 ; backslash: apostrophe asterisk Return t Return apostrophe P
 ; ; handy shorthands with Vi keys
 ; comma: g
 ; period: KP_Begin
+
+; [macro descriptions]
+; R: rest (wait 100 times)
+; semicolon: go to target for 100 steps
+; backslash: throw at the closest enemy 100 times
 
 ; [ui]
 ; font: Terminus,Monospace normal normal normal normal 12

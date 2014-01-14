@@ -30,6 +30,7 @@ module Game.LambdaHack.Client.Action
   , debugPrint
   ) where
 
+import Control.Arrow ((***))
 import Control.Concurrent
 import Control.Concurrent.STM
 import Control.DeepSeq
@@ -476,6 +477,8 @@ parseConfigUI dataDir cp =
                  else (fromTr, toTr)
             section = ConfigIO.getItems cp "macros"
         in map trMacro section
+      configMacroDesc =
+        map (mkKM *** T.pack) $ ConfigIO.getItems cp "macro descriptions"
       configFont = ConfigIO.get cp "ui" "font"
       configHistoryMax = ConfigIO.get cp "ui" "historyMax"
       configMaxFps = ConfigIO.get cp "ui" "maxFps"
@@ -556,10 +559,10 @@ findPathBfs aid target bfs = do
   else do
     b <- getsState $ getActorBody aid
     sepsRaw <- getsClient seps
-    let source = bpos b
-    assert (bfs PointArray.! source /= maxBound `blame` (aid, b)) skip
     let eps = abs sepsRaw `mod` length moves
-        track :: Point -> BfsDistance -> [Point] -> [Point]
+        source = bpos b
+    assert (bfs PointArray.! source /= maxBound `blame` (aid, b)) skip
+    let track :: Point -> BfsDistance -> [Point] -> [Point]
         track pos oldDist suffix | pos == source =
           assert (oldDist == minBound) suffix
         track pos oldDist suffix =

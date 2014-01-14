@@ -4,6 +4,7 @@ module Game.LambdaHack.Client.Config
   ) where
 
 import Control.DeepSeq
+import Data.Text (Text)
 
 import Game.LambdaHack.Client.HumanCmd
 import qualified Game.LambdaHack.Common.Key as K
@@ -19,6 +20,7 @@ data ConfigUI = ConfigUI
   , configSavePrefix  :: !String
     -- macros
   , configMacros      :: ![(K.KM, [K.KM])]
+  , configMacroDesc   :: ![(K.KM, Text)]
     -- ui
   , configFont        :: !String
   , configHistoryMax  :: !Int
