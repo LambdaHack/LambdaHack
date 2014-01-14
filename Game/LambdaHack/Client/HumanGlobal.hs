@@ -70,12 +70,12 @@ moveRunHuman :: MonadClientUI m
              => Bool -> Vector -> m (SlideOrCmd CmdTakeTimeSer)
 moveRunHuman run dir = do
   tgtMode <- getsClient stgtMode
-  (arena, _) <- viewedLevel
-  leader <- getLeaderUI
-  sb <- getsState $ getActorBody leader
-  if isJust tgtMode then do
+  if isJust tgtMode then
     fmap Left $ moveCursor dir (if run then 10 else 1)
   else do
+    (arena, _) <- viewedLevel
+    leader <- getLeaderUI
+    sb <- getsState $ getActorBody leader
     let tpos = bpos sb `shift` dir
     -- We start by checking actors at the the target position,
     -- which gives a partial information (actors can be invisible),
@@ -558,23 +558,28 @@ resendHuman = do
 
 stepToTargetHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
 stepToTargetHuman = do
-  leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
-  tgtPos <- targetToPos
-  case tgtPos of
-    Nothing -> failWith "target not set"
-    Just c | c == bpos b -> failWith "target reached"
-    Just c -> do
-      (_, mpath) <- getCacheBfs leader c
-      case mpath of
-        Nothing -> failWith "no route to target"
-        Just [] -> assert `failure` (leader, b, bpos b, c)
-        Just (p1 : _) -> do
-          as <- getsState $ posToActors p1 (blid b)
-          if not $ null as then
-            failWith "actor in the path to target"
-          else
-            moveRunHuman False $ towards (bpos b) p1
+  tgtMode <- getsClient stgtMode
+  -- Movement is legal only outside targeting mode.
+  -- TODO: use this command for something in targeting mode.
+  if isJust tgtMode then failWith "can't move in targeting mode"
+  else do
+    leader <- getLeaderUI
+    b <- getsState $ getActorBody leader
+    tgtPos <- targetToPos
+    case tgtPos of
+      Nothing -> failWith "target not set"
+      Just c | c == bpos b -> failWith "target reached"
+      Just c -> do
+        (_, mpath) <- getCacheBfs leader c
+        case mpath of
+          Nothing -> failWith "no route to target"
+          Just [] -> assert `failure` (leader, b, bpos b, c)
+          Just (p1 : _) -> do
+            as <- getsState $ posToActors p1 (blid b)
+            if not $ null as then
+              failWith "actor in the path to target"
+            else
+              moveRunHuman False $ towards (bpos b) p1
 
 -- * GameRestart; does not take time
 
