@@ -499,17 +499,20 @@ getCacheBfs :: forall m. MonadClient m
             => ActorId -> Point
             -> m (PointArray.Array BfsDistance, Maybe [Point])
 getCacheBfs aid target = do
+  seps <- getsClient seps
   let pathAndStore :: (PointArray.Array BfsDistance)
                    -> m (PointArray.Array BfsDistance, Maybe [Point])
       pathAndStore bfs = do
         mpath <- findPathBfs aid target bfs
         modifyClient $ \cli ->
-          cli {sbfsD = EM.insert aid (bfs, target, mpath) (sbfsD cli)}
+          cli {sbfsD = EM.insert aid (bfs, target, seps, mpath) (sbfsD cli)}
         return (bfs, mpath)
   mbfs <- getsClient $ EM.lookup aid . sbfsD
   case mbfs of
-    Just (bfs, targetOld, mpath) | targetOld == target -> return (bfs, mpath)
-    Just (bfs, _, _) -> pathAndStore bfs
+    Just (bfs, targetOld, sepsOld, mpath) | targetOld == target
+                                            && sepsOld == seps ->
+      return (bfs, mpath)
+    Just (bfs, _, _, _) -> pathAndStore bfs
     Nothing -> do
       bfs <- computeBFS aid
       pathAndStore bfs

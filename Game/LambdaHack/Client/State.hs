@@ -45,7 +45,8 @@ data StateClient = StateClient
   , stargetD     :: !(EM.EnumMap ActorId Target)
                                    -- ^ targets of our actors in the dungeon
   , sbfsD        :: !(EM.EnumMap ActorId
-                        (PointArray.Array BfsDistance, Point, Maybe [Point]))
+                        ( PointArray.Array BfsDistance
+                        , Point, Int, Maybe [Point]) )
                                    -- ^ pathfinding distances for our actors
                                    --   and paths to their targets, if any
   , sselected    :: !(ES.EnumSet ActorId)
