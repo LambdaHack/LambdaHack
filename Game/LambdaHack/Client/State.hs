@@ -44,8 +44,10 @@ data StateClient = StateClient
   , seps         :: !Int              -- ^ a parameter of the tgt digital line
   , stargetD     :: !(EM.EnumMap ActorId Target)
                                    -- ^ targets of our actors in the dungeon
-  , sbfsD        :: !(EM.EnumMap ActorId (PointArray.Array BfsDistance))
+  , sbfsD        :: !(EM.EnumMap ActorId
+                        (PointArray.Array BfsDistance, Point, Maybe [Point]))
                                    -- ^ pathfinding distances for our actors
+                                   --   and paths to their targets, if any
   , sselected    :: !(ES.EnumSet ActorId)
                                    -- ^ the set of currently selected actors
   , srunning     :: !(Maybe RunParams)

@@ -565,7 +565,7 @@ stepToTargetHuman = do
     Nothing -> failWith "target not set"
     Just c | c == bpos b -> failWith "target reached"
     Just c -> do
-      mpath <- pathBfs leader c
+      (_, mpath) <- getCacheBfs leader c
       case mpath of
         Nothing -> failWith "no route to target"
         Just [] -> assert `failure` (leader, b, bpos b, c)

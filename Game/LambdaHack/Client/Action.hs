@@ -26,7 +26,7 @@ module Game.LambdaHack.Client.Action
   , restoreGame, removeServerSave, displayPush, scoreToSlideshow
   , rndToAction, getArenaUI, getLeaderUI
   , targetToPos, partAidLeader, partActorLeader
-  , accessRegenerateBfs, pathBfs
+  , getCacheBfs, accessCacheBfs
   , debugPrint
   ) where
 
@@ -482,65 +482,84 @@ mkConfigUI corule = do
   -- Catch syntax errors ASAP,
   return $! deepseq conf conf
 
-getRegenerateBfs :: MonadClient m
-                 => ActorId -> m (PointArray.Array BfsDistance)
-getRegenerateBfs aid = do
+-- | Get cached BFS data and path or, if not stored, generate,
+-- store and return. Due to laziness, they are not calculated until needed.
+getCacheBfs :: forall m. MonadClient m
+            => ActorId -> Point
+            -> m (PointArray.Array BfsDistance, Maybe [Point])
+getCacheBfs aid target = do
+  let pathAndStore :: (PointArray.Array BfsDistance)
+                   -> m (PointArray.Array BfsDistance, Maybe [Point])
+      pathAndStore bfs = do
+        mpath <- findPathBfs aid target bfs
+        modifyClient $ \cli ->
+          cli {sbfsD = EM.insert aid (bfs, target, mpath) (sbfsD cli)}
+        return (bfs, mpath)
   mbfs <- getsClient $ EM.lookup aid . sbfsD
   case mbfs of
-    Just bfs -> return bfs
+    Just (bfs, targetOld, mpath) | targetOld == target -> return (bfs, mpath)
+    Just (bfs, _, _) -> pathAndStore bfs
     Nothing -> do
-      cops <- getsState scops
-      Kind.COps{cotile} <- getsState scops
-      b <- getsState $ getActorBody aid
-      lvl@Level{lxsize, lysize} <- getLevel $ blid b
-      -- Treat doors as an open tile; Don't add an extra step for opening
-      -- the doors, because other actors open and use them, too,
-      -- so it's amortized.
-      -- TODO: Sometimes treat hidden tiles as possibly open
-      -- and sometimes treat unknown tiles as open.
-      let checkPassablity =
-            Just $ \_ tpos -> Tile.isPassable cotile $ lvl `at` tpos
-          conditions = catMaybes [ checkPassablity
-                                 , checkAccess cops lvl
-                                 , checkDoorAccess cops lvl ]
-          isEnterable spos tpos = all (\f -> f spos tpos) conditions
-          origin = bpos b
-          vInitial = PointArray.replicateA lxsize lysize maxBound
-          vFinal = bfsFill isEnterable origin vInitial
-      modifyClient $ \cli -> cli {sbfsD = EM.insert aid vFinal (sbfsD cli)}
-      return vFinal
+      bfs <- computeBFS aid
+      pathAndStore bfs
 
-accessRegenerateBfs :: MonadClient m => ActorId -> Point -> m (Maybe Int)
-accessRegenerateBfs aid tgtP = do
-  bfs <- getRegenerateBfs aid
-  let dist = bfs PointArray.! tgtP
-  return $ if dist == maxBound then Nothing else Just $ fromEnum dist
+computeBFS :: MonadClient m => ActorId -> m (PointArray.Array BfsDistance)
+computeBFS aid = do
+  cops <- getsState scops
+  Kind.COps{cotile} <- getsState scops
+  b <- getsState $ getActorBody aid
+  lvl@Level{lxsize, lysize} <- getLevel $ blid b
+  -- We treat doors as an open tile and don't add an extra step for opening
+  -- the doors, because other actors open and use them, too,
+  -- so it's amortized.
+  -- TODO: Sometimes treat hidden tiles as possibly open
+  -- and sometimes treat unknown tiles as open.
+  -- Unless a better strategy on average is to pick patchs close to unknown
+  -- and ajust them as soon as unknown revealed.
+  let checkPassablity =
+        Just $ \_ tpos -> Tile.isPassable cotile $ lvl `at` tpos
+      conditions = catMaybes [ checkPassablity
+                             , checkAccess cops lvl
+                             , checkDoorAccess cops lvl ]
+      isEnterable spos tpos = all (\f -> f spos tpos) conditions
+      origin = bpos b
+      vInitial = PointArray.replicateA lxsize lysize maxBound
+  return $! bfsFill isEnterable origin vInitial
 
 -- TODO: Use http://harablog.wordpress.com/2011/09/07/jump-point-search/
 -- to determine a few really different paths and compare them,
 -- e.g., how many closed doors they pass, open doors, unknown tiles
--- on the path or close enough to revelat them.
+-- on the path or close enough to reveal them.
 -- Also, check if JPS can somehow optimize BFS or pathBfs.
 -- Also, let eps determine the path in more detail (we use only a couple
 -- of first bits of eps so far).
-pathBfs :: MonadClient m => ActorId -> Point -> m (Maybe [Point])
-pathBfs aid target = do
-  bfs <- getRegenerateBfs aid
-  b <- getsState $ getActorBody aid
-  sepsRaw <- getsClient seps
-  let source = bpos b
-  assert (bfs PointArray.! source /= maxBound `blame` (aid, b)) skip
-  let eps = abs sepsRaw `mod` length moves
-      path :: Point -> BfsDistance -> [Point] -> [Point]
-      path pos oldDist suffix | pos == source =
-        assert (oldDist == minBound) suffix
-      path pos oldDist suffix =
-        let dist = toEnum $ fromEnum oldDist - 1
-            (ch1, ch2) = splitAt eps $ map (shift pos) moves
-            children = ch2 ++ ch1
-            minP = fromMaybe (assert `failure` (source, target, pos, children))
-                             (find ((== dist) . (bfs PointArray.!)) children)
-        in path minP dist (pos : suffix)
-      targetDist = bfs PointArray.! target
+findPathBfs :: MonadClient m
+            => ActorId -> Point -> (PointArray.Array BfsDistance)
+            -> m (Maybe [Point])
+findPathBfs aid target bfs = do
+  let targetDist = bfs PointArray.! target
   if targetDist == maxBound then return Nothing
-  else return $ Just $ path target targetDist []
+  else do
+    b <- getsState $ getActorBody aid
+    sepsRaw <- getsClient seps
+    let source = bpos b
+    assert (bfs PointArray.! source /= maxBound `blame` (aid, b)) skip
+    let eps = abs sepsRaw `mod` length moves
+        track :: Point -> BfsDistance -> [Point] -> [Point]
+        track pos oldDist suffix | pos == source =
+          assert (oldDist == minBound) suffix
+        track pos oldDist suffix =
+          let dist = toEnum $ fromEnum oldDist - 1
+              (ch1, ch2) = splitAt eps $ map (shift pos) moves
+              children = ch2 ++ ch1
+              minP = fromMaybe
+                       (assert `failure` (source, target, pos, children))
+                       (find ((== dist) . (bfs PointArray.!)) children)
+          in track minP dist (pos : suffix)
+    return $! Just $ track target targetDist []
+
+accessCacheBfs :: MonadClient m => ActorId -> Point -> m (Maybe Int)
+accessCacheBfs aid target = do
+  (bfs, _) <- getCacheBfs aid target
+  let dist = bfs PointArray.! target
+  return $! if dist == maxBound then Nothing else Just $ fromEnum dist
