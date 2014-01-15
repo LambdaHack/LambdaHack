@@ -188,7 +188,7 @@ unknown = TileKind
   , tfreq    = [("unknown space", 1)]
   , tcolor   = defFG
   , tcolor2  = defFG
-  , tfeature = [Dark]
+  , tfeature = [Walkable, Dark]
   }
 floorCorridorLit = TileKind
   { tsymbol  = '#'

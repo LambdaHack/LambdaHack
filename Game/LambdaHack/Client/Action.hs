@@ -536,16 +536,13 @@ computeBFS aid = do
       isEnterable :: Point -> Point -> MoveLegal
       isEnterable spos tpos =
         let tt = lvl `at` tpos
-            allCond = all (\f -> f spos tpos) conditions
-        in if tt == unknownId
-           then if allCond
-                then MoveToUnknown
+        in if Tile.isPassable cotile tt
+           then if all (\f -> f spos tpos) conditions
+                then if tt == unknownId
+                     then MoveToUnknown
+                     else MoveToOpen
                 else MoveBlocked
-           else if Tile.isPassable cotile tt
-                then if allCond
-                     then MoveToOpen
-                     else MoveBlocked
-                else MoveBlocked
+           else MoveBlocked
       passUnknown :: Point -> Point -> Bool
       passUnknown = case chAccess of  -- spos is unknown, so not a door
         Nothing -> \_ tpos -> lvl `at` tpos == unknownId
