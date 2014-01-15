@@ -50,10 +50,11 @@ unknownLevel :: Kind.Ops TileKind -> Int -> X -> Y
 unknownLevel Kind.Ops{ouniqGroup} ldepth lxsize lysize ldesc lstair lclear
              lsecret lhidden =
   let unknownId = ouniqGroup "unknown space"
+      outerId = ouniqGroup "basic outer fence"
   in Level { ldepth
            , lprio = EM.empty
            , lfloor = EM.empty
-           , ltile = unknownTileMap unknownId lxsize lysize
+           , ltile = unknownTileMap unknownId outerId lxsize lysize
            , lxsize
            , lysize
            , lsmell = EM.empty
@@ -68,9 +69,15 @@ unknownLevel Kind.Ops{ouniqGroup} ldepth lxsize lysize ldesc lstair lclear
            , lhidden
            }
 
-unknownTileMap :: Kind.Id TileKind -> Int -> Int -> TileMap
-unknownTileMap unknownId cxsize cysize =
-  PointArray.replicateA cxsize cysize unknownId
+unknownTileMap :: Kind.Id TileKind -> Kind.Id TileKind -> Int -> Int -> TileMap
+unknownTileMap unknownId outerId lxsize lysize =
+  let unknownMap = PointArray.replicateA lxsize lysize unknownId
+      borders = [ toPoint $ PointXY x y
+                | x <- [0, lxsize - 1], y <- [1..lysize - 2] ]
+                ++ [ toPoint $ PointXY x y
+                   | x <- [0..lxsize - 1], y <- [0, lysize - 1] ]
+      outerUpdate = zip borders $ repeat outerId
+  in unknownMap PointArray.// outerUpdate
 
 -- | Initial complete global game state.
 defStateGlobal :: Dungeon -> Int
