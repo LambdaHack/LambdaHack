@@ -85,7 +85,9 @@ isDoor cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 -- or a hidden message.
 isExplorable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 {-# INLINE isExplorable #-}
-isExplorable cops tk = isClear cops tk || hasFeature cops F.Walkable tk
+isExplorable cops@Kind.Ops{ouniqGroup} tk =
+  let unknownId = ouniqGroup "unknown space"
+  in isClear cops tk || (tk /= unknownId && hasFeature cops F.Walkable tk)
 
 -- | The player can't tell one tile from the other.
 lookSimilar :: TileKind -> TileKind -> Bool
