@@ -7,9 +7,10 @@ module Game.LambdaHack.Common.Vector
   , neg, RadianAngle, rotate
   , towards, displacement, displacePath, shiftPath
   , vicinity, vicinityCardinal, vicinityCardinalXY
-  , BfsDistance, bfsFill
+  , BfsDistance, MoveLegal(..), bfsFill
   ) where
 
+import Control.Arrow (second)
 import Control.Exception.Assert.Sugar
 import Data.Binary
 import Data.Bits (unsafeShiftL)
@@ -278,28 +279,49 @@ vicinityCardinalXY area xy =
 newtype BfsDistance = BfsDistance Word8
   deriving (Show, Eq, Ord, Enum, Bounded)
 
-bfsFill :: (Point -> Point -> Bool)  -- ^ legality of move, assuming open doors
-        -> Point                     -- ^ starting position
-        -> PointArray.Array BfsDistance
-                                     -- ^ initial array, filled with @maxBound@
-        -> PointArray.Array BfsDistance
-                                     -- ^ array with calculated distance data
-bfsFill isEnterable origin aInitial =
+data MoveLegal = MoveBlocked | MoveToOpen | MoveToUnknown
+  deriving Eq
+
+addBfsDistance :: BfsDistance -> BfsDistance -> BfsDistance
+addBfsDistance d1 d2 = toEnum $ fromEnum d1 + fromEnum d2
+
+bfsFill :: (Point -> Point -> MoveLegal)  -- ^ is move from a known tile legal
+        -> (Point -> Point -> Bool)       -- ^ is a move from unknown legal
+        -> Point                          -- ^ starting position
+        -> PointArray.Array BfsDistance   -- ^ initial array, with @maxBound@
+        -> PointArray.Array BfsDistance   -- ^ array with calculated distances
+bfsFill isEnterable passUnknown origin aInitial =
   -- TODO: copy, thaw, mutate, freeze
-  let bfs :: Seq.Seq (Point, BfsDistance)
+  let unknownBound = toEnum $ fromEnum (maxBound :: BfsDistance) `div` 2
+      bfs :: Seq.Seq (Point, BfsDistance)
           -> PointArray.Array BfsDistance
           -> PointArray.Array BfsDistance
       bfs q a =
         case Seq.viewr q of
           Seq.EmptyR -> a  -- no more positions to check
-          _ Seq.:> (_, d)| d == maxBound -> a  -- too far away
+          _ Seq.:> (_, d)| d == unknownBound || d == maxBound -> a  -- too far
+          q1 Seq.:> (pos, oldDistance) | oldDistance > unknownBound ->
+            let distance = toEnum $ fromEnum oldDistance + 1
+                allMvs = map (shift pos) moves
+                goodMv p = a PointArray.! p == maxBound && passUnknown pos p
+                mvs = zip (filter goodMv allMvs) (repeat distance)
+                q2 = foldr (Seq.<|) q1 mvs
+                s2 = a PointArray.// mvs
+            in bfs q2 s2
           q1 Seq.:> (pos, oldDistance) ->
             let distance = toEnum $ fromEnum oldDistance + 1
-                rawChildren = map (shift pos) moves
-                goodChild p = a PointArray.! p == maxBound && isEnterable pos p
-                children = zip (filter goodChild rawChildren) (repeat distance)
-                q2 = foldr (Seq.<|) q1 children
-                s2 = a PointArray.// children
+                allMvs = map (shift pos) moves
+                freshMv p = a PointArray.! p == maxBound
+                freshMvs = filter freshMv allMvs
+                legal p = (p, isEnterable pos p)
+                legalities = map legal freshMvs
+                notBlocked = filter ((/= MoveBlocked) . snd) legalities
+                legalToDist l = if l == MoveToOpen
+                                then distance
+                                else addBfsDistance distance unknownBound
+                mvs = map (second legalToDist) notBlocked
+                q2 = foldr (Seq.<|) q1 mvs
+                s2 = a PointArray.// mvs
             in bfs q2 s2
       origin0 = (origin, toEnum 0)
   in bfs (Seq.singleton origin0) (aInitial PointArray.// [origin0])

@@ -522,26 +522,38 @@ getCacheBfs aid target = do
 
 computeBFS :: MonadClient m => ActorId -> m (PointArray.Array BfsDistance)
 computeBFS aid = do
-  cops <- getsState scops
-  Kind.COps{cotile} <- getsState scops
+  cops@Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getsState scops
   b <- getsState $ getActorBody aid
   lvl@Level{lxsize, lysize} <- getLevel $ blid b
   -- We treat doors as an open tile and don't add an extra step for opening
   -- the doors, because other actors open and use them, too,
-  -- so it's amortized.
-  -- TODO: Sometimes treat hidden tiles as possibly open
-  -- and sometimes treat unknown tiles as open.
-  -- Unless a better strategy on average is to pick patchs close to unknown
-  -- and ajust them as soon as unknown revealed.
-  let checkPassablity =
-        Just $ \_ tpos -> Tile.isPassable cotile $ lvl `at` tpos
-      conditions = catMaybes [ checkPassablity
-                             , checkAccess cops lvl
-                             , checkDoorAccess cops lvl ]
-      isEnterable spos tpos = all (\f -> f spos tpos) conditions
+  -- so it's amortized. We treat unknown tiles specially.
+  -- TODO: Sometimes treat hidden tiles as possibly open?
+  let unknownId = ouniqGroup "unknown space"
+      chAccess = checkAccess cops lvl
+      chDoorAccess = checkDoorAccess cops lvl
+      conditions = catMaybes [chAccess, chDoorAccess]
+      isEnterable :: Point -> Point -> MoveLegal
+      isEnterable spos tpos =
+        let tt = lvl `at` tpos
+            allCond = all (\f -> f spos tpos) conditions
+        in if tt == unknownId
+           then if allCond
+                then MoveToUnknown
+                else MoveBlocked
+           else if Tile.isPassable cotile tt
+                then if allCond
+                     then MoveToOpen
+                     else MoveBlocked
+                else MoveBlocked
+      passUnknown :: Point -> Point -> Bool
+      passUnknown = case chAccess of  -- spos is unknown, so not a door
+        Nothing -> \_ tpos -> lvl `at` tpos == unknownId
+        Just ch -> \spos tpos -> lvl `at` tpos == unknownId
+                                 && ch spos tpos
       origin = bpos b
       vInitial = PointArray.replicateA lxsize lysize maxBound
-  return $! bfsFill isEnterable origin vInitial
+  return $! bfsFill isEnterable passUnknown origin vInitial
 
 -- TODO: Use http://harablog.wordpress.com/2011/09/07/jump-point-search/
 -- to determine a few really different paths and compare them,
