@@ -13,7 +13,7 @@ module Game.LambdaHack.Common.Vector
 import Control.Arrow (second)
 import Control.Exception.Assert.Sugar
 import Data.Binary
-import Data.Bits (unsafeShiftL)
+import Data.Bits (Bits, unsafeShiftL, (.|.))
 import Data.Int (Int32)
 import qualified Data.Sequence as Seq
 
@@ -277,13 +277,10 @@ vicinityCardinalXY area xy =
         , insideXY res area ]
 
 newtype BfsDistance = BfsDistance Word8
-  deriving (Show, Eq, Ord, Enum, Bounded)
+  deriving (Show, Eq, Ord, Enum, Bounded, Bits)
 
 data MoveLegal = MoveBlocked | MoveToOpen | MoveToUnknown
   deriving Eq
-
-addBfsDistance :: BfsDistance -> BfsDistance -> BfsDistance
-addBfsDistance d1 d2 = toEnum $ fromEnum d1 + fromEnum d2
 
 bfsFill :: (Point -> Point -> MoveLegal)  -- ^ is move from a known tile legal
         -> (Point -> Point -> Bool)       -- ^ is a move from unknown legal
@@ -292,7 +289,7 @@ bfsFill :: (Point -> Point -> MoveLegal)  -- ^ is move from a known tile legal
         -> PointArray.Array BfsDistance   -- ^ array with calculated distances
 bfsFill isEnterable passUnknown origin aInitial =
   -- TODO: copy, thaw, mutate, freeze
-  let unknownBound = toEnum $ fromEnum (maxBound :: BfsDistance) `div` 2
+  let unknownBound = toEnum $ (1 + fromEnum (maxBound :: BfsDistance)) `div` 2
       bfs :: Seq.Seq (Point, BfsDistance)
           -> PointArray.Array BfsDistance
           -> PointArray.Array BfsDistance
@@ -318,7 +315,7 @@ bfsFill isEnterable passUnknown origin aInitial =
                 notBlocked = filter ((/= MoveBlocked) . snd) legalities
                 legalToDist l = if l == MoveToOpen
                                 then distance
-                                else addBfsDistance distance unknownBound
+                                else distance .|. unknownBound
                 mvs = map (second legalToDist) notBlocked
                 q2 = foldr (Seq.<|) q1 mvs
                 s2 = a PointArray.// mvs
