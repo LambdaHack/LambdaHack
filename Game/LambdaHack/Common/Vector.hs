@@ -292,7 +292,7 @@ bfsFill :: (Point -> Point -> MoveLegal)  -- ^ is move from a known tile legal
         -> PointArray.Array BfsDistance   -- ^ array with calculated distances
 bfsFill isEnterable passUnknown origin aInitial =
   -- TODO: copy, thaw, mutate, freeze
-  let maxUnknown = toEnum $ fromEnum minKnown - 1
+  let maxUnknown = pred minKnown
       bfs :: Seq.Seq (Point, BfsDistance)
           -> PointArray.Array BfsDistance
           -> PointArray.Array BfsDistance
@@ -301,7 +301,7 @@ bfsFill isEnterable passUnknown origin aInitial =
           Seq.EmptyR -> a  -- no more positions to check
           _ Seq.:> (_, d)| d == maxUnknown || d == maxBound -> a  -- too far
           q1 Seq.:> (pos, oldDistance) | oldDistance > maxUnknown ->
-            let distance = toEnum $ fromEnum oldDistance + 1
+            let distance = succ oldDistance
                 allMvs = map (shift pos) moves
                 freshMv p = a PointArray.! p == maxBound
                 freshMvs = filter freshMv allMvs
@@ -316,7 +316,7 @@ bfsFill isEnterable passUnknown origin aInitial =
                 s2 = a PointArray.// mvs
             in bfs q2 s2
           q1 Seq.:> (pos, oldDistance) ->
-            let distance = toEnum $ fromEnum oldDistance + 1
+            let distance = succ oldDistance
                 allMvs = map (shift pos) moves
                 goodMv p = a PointArray.! p == maxBound && passUnknown pos p
                 mvs = zip (filter goodMv allMvs) (repeat distance)

@@ -534,6 +534,7 @@ computeBFS aid = do
       chAccess = checkAccess cops lvl
       chDoorAccess = checkDoorAccess cops lvl
       conditions = catMaybes [chAccess, chDoorAccess]
+      -- Legality of move from a known tile, assuming doors freely openable.
       isEnterable :: Point -> Point -> MoveLegal
       isEnterable spos tpos =
         let tt = lvl `at` tpos
@@ -544,6 +545,7 @@ computeBFS aid = do
                      else MoveToOpen
                 else MoveBlocked
            else MoveBlocked
+      -- Legality of move from an unknown tile, assuming unknown are open.
       passUnknown :: Point -> Point -> Bool
       passUnknown = case chAccess of  -- spos is unknown, so not a door
         Nothing -> \_ tpos -> lvl `at` tpos == unknownId
@@ -567,7 +569,7 @@ findPathBfs aid target bfs = do
   let targetDist = bfs PointArray.! target
   if targetDist == maxBound then return Nothing
   else do
-    let maxUnknown = toEnum $ fromEnum minKnown - 1
+    let maxUnknown = pred minKnown
     b <- getsState $ getActorBody aid
     sepsRaw <- getsClient seps
     let eps = abs sepsRaw `mod` length moves
@@ -577,7 +579,7 @@ findPathBfs aid target bfs = do
         track pos oldDist suffix | oldDist == minKnown =
           assert (pos == source) suffix
         track pos oldDist suffix | oldDist > maxUnknown =
-          let dist = toEnum $ fromEnum oldDist - 1
+          let dist = pred oldDist
               (ch1, ch2) = splitAt eps $ map (shift pos) moves
               children = ch2 ++ ch1
               matchesDist p = bfs PointArray.! p == dist
@@ -585,7 +587,7 @@ findPathBfs aid target bfs = do
                                (find matchesDist children)
           in track minP dist (pos : suffix)
         track pos oldDist suffix =
-          let distUnknown = toEnum $ fromEnum oldDist - 1
+          let distUnknown = pred oldDist
               distKnown = distUnknown .|. minKnown
               (ch1, ch2) = splitAt eps $ map (shift pos) moves
               children = ch2 ++ ch1
