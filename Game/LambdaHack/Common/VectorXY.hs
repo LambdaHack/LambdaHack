@@ -3,7 +3,7 @@ module Game.LambdaHack.Common.VectorXY
   ( VectorXY(..)
   ) where
 
-import Game.LambdaHack.Common.PointXY
+import Game.LambdaHack.Common.Point
 
 -- | 2D vectors in cartesian representation. Coordinates grow to the right
 -- and down, so that the (0, 0) point is in the top-left corner of the screen.

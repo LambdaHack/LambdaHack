@@ -26,7 +26,6 @@ import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Random
 
 -- | The data sufficent to draw a single game screen frame.
@@ -90,7 +89,7 @@ renderAnim lxsize lysize basicFrame (Animation anim) =
       modifyFrame SingleFrame{sfLevel = topLine : levelOld, ..} am =
         let fLine y lineOld =
               let f l (x, acOld) =
-                    let pos = toPoint $ PointXY x y
+                    let pos = Point x y
                         !ac = fromMaybe acOld $ EM.lookup pos am
                     in ac : l
               in foldl' f [] (zip [lxsize-1,lxsize-2..0] (reverse lineOld))
@@ -206,7 +205,7 @@ fadeout out topRight lxsize lysize = do
         in EM.findWithDefault ' ' k edge
       rollFrame n = do
         r <- random
-        let l = [ ( toPoint $ PointXY (if topRight then x else xbound - x) y
+        let l = [ ( Point (if topRight then x else xbound - x) y
                   , AttrChar defAttr $ fadeChar r n x y )
                 | x <- [0..xbound]
                 , y <- [max 0 (ybound - (n - x) `div` 2)..ybound]

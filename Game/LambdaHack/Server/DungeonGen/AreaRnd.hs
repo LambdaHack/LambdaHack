@@ -13,7 +13,6 @@ import Data.Maybe
 import qualified Data.Set as S
 
 import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Server.DungeonGen.Area
@@ -21,12 +20,12 @@ import Game.LambdaHack.Server.DungeonGen.Area
 -- Picking random points inside areas
 
 -- | Pick a random point within an area.
-xyInArea :: Area -> Rnd PointXY
+xyInArea :: Area -> Rnd Point
 xyInArea area = do
   let (x0, y0, x1, y1) = fromArea area
   rx <- randomR (x0, x1)
   ry <- randomR (y0, y1)
-  return $ PointXY rx ry
+  return $ Point rx ry
 
 -- | Create a random room according to given parameters.
 mkRoom :: (X, Y)    -- ^ minimum size
@@ -38,14 +37,14 @@ mkRoom (xm, ym) (xM, yM) area = do
   assert (xm <= x1 - x0 + 1 && ym <= y1 - y0 + 1) skip
   let a0 = (x0, y0, x1 - xm + 1, y1 - ym + 1)
       area0 = fromMaybe (assert `failure` a0) $ toArea a0
-  PointXY rx0 ry0 <- xyInArea area0
+  Point rx0 ry0 <- xyInArea area0
   let sX = rx0 + xm - 1
       sY = ry0 + ym - 1
       eX = min x1 (rx0 + xM - 1)
       eY = min y1 (ry0 + yM - 1)
       a1 = (sX, sY, eX, eY)
       area1 = fromMaybe (assert `failure` a1) $ toArea a1
-  PointXY rx1 ry1 <- xyInArea area1
+  Point rx1 ry1 <- xyInArea area1
   let a3 = (rx0, ry0, rx1, ry1)
       area3 = fromMaybe (assert `failure` a3) $ toArea a3
   return area3
@@ -62,26 +61,26 @@ mkVoidRoom area = do
 
 -- | Pick a subset of connections between adjacent areas within a grid until
 -- there is only one connected component in the graph of all areas.
-connectGrid :: (X, Y) -> Rnd [(PointXY, PointXY)]
+connectGrid :: (X, Y) -> Rnd [(Point, Point)]
 connectGrid (nx, ny) = do
-  let unconnected = S.fromList [ PointXY x y
+  let unconnected = S.fromList [ Point x y
                                 | x <- [0..nx-1], y <- [0..ny-1] ]
   -- Candidates are neighbours that are still unconnected. We start with
   -- a random choice.
   rx <- randomR (0, nx-1)
   ry <- randomR (0, ny-1)
-  let candidates = S.fromList [PointXY rx ry]
+  let candidates = S.fromList [Point rx ry]
   connectGrid' (nx, ny) unconnected candidates []
 
-connectGrid' :: (X, Y) -> S.Set PointXY -> S.Set PointXY
-             -> [(PointXY, PointXY)]
-             -> Rnd [(PointXY, PointXY)]
+connectGrid' :: (X, Y) -> S.Set Point -> S.Set Point
+             -> [(Point, Point)]
+             -> Rnd [(Point, Point)]
 connectGrid' (nx, ny) unconnected candidates acc
-  | S.null candidates = return $ map sortPointXY acc
+  | S.null candidates = return $ map sortPoint acc
   | otherwise = do
       c <- oneOf (S.toList candidates)
       -- potential new candidates:
-      let ns = S.fromList $ vicinityCardinalXY (0, 0, nx-1, ny-1) c
+      let ns = S.fromList $ vicinityCardinal nx ny c
           nu = S.delete c unconnected  -- new unconnected
           -- (new candidates, potential connections):
           (nc, ds) = S.partition (`S.member` nu) ns
@@ -94,12 +93,12 @@ connectGrid' (nx, ny) unconnected candidates acc
         (S.delete c (candidates `S.union` nc)) (new acc)
 
 -- | Sort the sequence of two points, in the derived lexicographic order.
-sortPointXY :: (PointXY, PointXY) -> (PointXY, PointXY)
-sortPointXY (a, b) | a <= b    = (a, b)
+sortPoint :: (Point, Point) -> (Point, Point)
+sortPoint (a, b) | a <= b    = (a, b)
                    | otherwise = (b, a)
 
 -- | Pick a single random connection between adjacent areas within a grid.
-randomConnection :: (X, Y) -> Rnd (PointXY, PointXY)
+randomConnection :: (X, Y) -> Rnd (Point, Point)
 randomConnection (nx, ny) =
   assert (nx > 1 && ny > 0 || nx > 0 && ny > 1 `blame` "wrong connection"
                                                `twith` (nx, ny)) $ do
@@ -108,11 +107,11 @@ randomConnection (nx, ny) =
     then do
       rx  <- randomR (0, nx-2)
       ry  <- randomR (0, ny-1)
-      return (PointXY rx ry, PointXY (rx+1) ry)
+      return (Point rx ry, Point (rx+1) ry)
     else do
       rx  <- randomR (0, nx-1)
       ry  <- randomR (0, ny-2)
-      return (PointXY rx ry, PointXY rx (ry+1))
+      return (Point rx ry, Point rx (ry+1))
 
 -- Plotting individual corridors between two areas
 
@@ -125,13 +124,13 @@ type Corridor = [Point]
 -- | Create a corridor, either horizontal or vertical, with
 -- a possible intermediate part that is in the opposite direction.
 mkCorridor :: HV            -- ^ orientation of the starting section
-           -> PointXY       -- ^ starting point
-           -> PointXY       -- ^ ending point
+           -> Point       -- ^ starting point
+           -> Point       -- ^ ending point
            -> Area          -- ^ the area containing the intermediate point
            -> Rnd Corridor  -- ^ straight sections of the corridor
-mkCorridor hv (PointXY x0 y0) (PointXY x1 y1) b = do
-  PointXY rx ry <- xyInArea b
-  return $ map (toPoint . uncurry PointXY) $ case hv of
+mkCorridor hv (Point x0 y0) (Point x1 y1) b = do
+  Point rx ry <- xyInArea b
+  return $ map (uncurry Point) $ case hv of
     Horiz -> [(x0, y0), (rx, y0), (rx, y1), (x1, y1)]
     Vert  -> [(x0, y0), (x0, ry), (x1, ry), (x1, y1)]
 
@@ -156,8 +155,8 @@ connectPlaces (sa, so) (ta, to) = do
             (nx0, nx1) = trim4 (x0, x1)
             (ny0, ny1) = trim4 (y0, y1)
         in fromMaybe (assert `failure` area) $ toArea (nx0, ny0, nx1, ny1)
-  PointXY sx sy <- xyInArea $ trim so
-  PointXY tx ty <- xyInArea $ trim to
+  Point sx sy <- xyInArea $ trim so
+  Point tx ty <- xyInArea $ trim to
   let hva sarea tarea = do
         let (_, _, zsx1, zsy1) = fromArea sarea
             (ztx0, zty0, _, _) = fromArea tarea
@@ -182,8 +181,8 @@ connectPlaces (sa, so) (ta, to) = do
   -- We cross width one places completely with the corridor, for void
   -- rooms and others (e.g., one-tile wall room then becomes a door, etc.).
   let (p0, p1) = case hv of
-        Horiz -> (PointXY sox1 sy, PointXY tox0 ty)
-        Vert  -> (PointXY sx soy1, PointXY tx toy0)
+        Horiz -> (Point sox1 sy, Point tox0 ty)
+        Vert  -> (Point sx soy1, Point tx toy0)
   -- The condition imposed on mkCorridor are tricky: there might not always
   -- exist a good intermediate point if the places are allowed to be close
   -- together and then we let the intermediate part degenerate.

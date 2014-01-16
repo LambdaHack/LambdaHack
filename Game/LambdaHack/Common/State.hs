@@ -22,7 +22,6 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
-import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Utils.Frequency
@@ -72,9 +71,9 @@ unknownLevel Kind.Ops{ouniqGroup} ldepth lxsize lysize ldesc lstair lclear
 unknownTileMap :: Kind.Id TileKind -> Kind.Id TileKind -> Int -> Int -> TileMap
 unknownTileMap unknownId outerId lxsize lysize =
   let unknownMap = PointArray.replicateA lxsize lysize unknownId
-      borders = [ toPoint $ PointXY x y
+      borders = [ Point x y
                 | x <- [0, lxsize - 1], y <- [1..lysize - 2] ]
-                ++ [ toPoint $ PointXY x y
+                ++ [ Point x y
                    | x <- [0..lxsize - 1], y <- [0, lysize - 1] ]
       outerUpdate = zip borders $ repeat outerId
   in unknownMap PointArray.// outerUpdate

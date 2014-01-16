@@ -23,7 +23,7 @@ import qualified NLP.Miniutter.English as MU
 import qualified Text.Show.Pretty as Show.Pretty
 
 import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.PointXY
+import Game.LambdaHack.Common.Point
 
 -- Pretty print and pack the result of @show@.
 showT :: Show a => a -> Text

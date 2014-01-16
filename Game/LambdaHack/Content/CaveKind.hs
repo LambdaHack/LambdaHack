@@ -7,7 +7,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.PointXY
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 
 -- | Parameters for the generation of dungeon levels.

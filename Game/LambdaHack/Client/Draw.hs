@@ -26,7 +26,6 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
@@ -62,7 +61,7 @@ draw dm cops per drawnLevelId mleader tgtPos mpath
           let Actor{bpos, blid} = getActorBody leader s
           in if blid /= drawnLevelId
              then [cursor]
-             else fromMaybe [] $ bla lxsize lysize seps bpos (fromPoint cursor)
+             else fromMaybe [] $ bla lxsize lysize seps bpos cursor
         _ -> []
       inverseVideo = Color.Attr{ Color.fg = Color.bg Color.defAttr
                                , Color.bg = Color.fg Color.defAttr
@@ -146,7 +145,7 @@ draw dm cops per drawnLevelId mleader tgtPos mpath
       widthForDesc = lxsize - T.length stats - T.length lvlN - 3
       status = lvlN <+> T.justifyLeft widthForDesc ' ' ldesc <+> stats
       fLine y =
-        let f l x = let !ac = dis $ toPoint $ PointXY x y in ac : l
+        let f l x = let !ac = dis $ Point x y in ac : l
         in foldl' f [] [lxsize-1,lxsize-2..0]
       viewOurs (aid, Actor{bsymbol, bcolor, bhp})
         | otherwise =

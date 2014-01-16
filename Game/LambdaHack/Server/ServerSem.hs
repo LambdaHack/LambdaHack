@@ -32,7 +32,6 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
@@ -298,7 +297,7 @@ dropSer aid iid k = assert (k > 0) $ do
 
 projectSer :: (MonadAtomic m, MonadServer m)
            => ActorId    -- ^ actor projecting the item (is on current lvl)
-           -> PointXY    -- ^ target position of the projectile
+           -> Point    -- ^ target position of the projectile
            -> Int        -- ^ digital line parameter
            -> ItemId     -- ^ the item to be projected
            -> Container  -- ^ whether the items comes from floor or inventory
@@ -310,7 +309,7 @@ projectSer source tpxy eps iid container = do
 
 projectFail :: (MonadAtomic m, MonadServer m)
             => ActorId    -- ^ actor projecting the item (is on current lvl)
-            -> PointXY    -- ^ target position of the projectile
+            -> Point    -- ^ target position of the projectile
             -> Int        -- ^ digital line parameter
             -> ItemId     -- ^ the item to be projected
             -> Container  -- ^ whether the items comes from floor or inventory

@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.Vector
   , isUnit, euclidDistSq, diagonal
   , neg, RadianAngle, rotate
   , towards, displacement, displacePath, shiftPath
-  , vicinity, vicinityCardinal, vicinityCardinalXY
+  , vicinity, vicinityCardinal
   , BfsDistance, MoveLegal(..), minKnown, bfsFill
   ) where
 
@@ -19,7 +19,6 @@ import qualified Data.Sequence as Seq
 
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
-import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.VectorXY
 
 -- | 2D vectors  represented as offsets in the linear framebuffer
@@ -35,6 +34,11 @@ instance Binary Vector where
 -- For debugging.
 instance Show Vector where
   show = show . fromVector
+
+-- | Maximal supported vector X and Y coordinates.
+maxVectorDim :: Int
+{-# INLINE maxVectorDim #-}
+maxVectorDim = 2 ^ (maxLevelDimExponent - 1) - 1
 
 -- | Converts a vector in cartesian representation into @Vector@.
 toVector :: VectorXY -> Vector
@@ -205,33 +209,10 @@ shiftPath start (v : vs) =
   let next = shift start v
   in next : shiftPath next vs
 
--- | Returns the 8, or less, surrounding positions of a given position.
-vicinity :: X -> Y -> Point -> [Point]
-{-# INLINE vicinity #-}
-vicinity lxsize lysize p =
-  map toPoint $
-    vicinityXY (0, 0, lxsize - 1, lysize - 1) $
-      fromPoint p
-
--- | Returns the 4, or less, surrounding positions in cardinal directions
--- from a given position.
-vicinityCardinal :: X -> Y -> Point -> [Point]
-{-# INLINE vicinityCardinal #-}
-vicinityCardinal lxsize lysize p =
-  map toPoint $
-    vicinityCardinalXY (0, 0, lxsize - 1, lysize - 1) $
-      fromPoint p
-
--- | Checks that a point belongs to an area.
-insideXY :: PointXY -> (X, Y, X, Y) -> Bool
-{-# INLINE insideXY #-}
-insideXY (PointXY x y) (x0, y0, x1, y1) =
-  x1 >= x && x >= x0 && y1 >= y && y >= y0
-
 -- | Shift a point by a vector.
-shiftXY :: PointXY -> VectorXY -> PointXY
+shiftXY :: Point -> VectorXY -> Point
 {-# INLINE shiftXY #-}
-shiftXY (PointXY x0 y0) (VectorXY x1 y1) = PointXY (x0 + x1) (y0 + y1)
+shiftXY (Point x0 y0) (VectorXY x1 y1) = Point (x0 + x1) (y0 + y1)
 
 -- | Vectors of all unit moves in the chessboard metric,
 -- clockwise, starting north-west.
@@ -261,20 +242,22 @@ negXY :: VectorXY -> VectorXY
 negXY (VectorXY x y) = VectorXY (-x) (-y)
 
 -- | All (8 at most) closest neighbours of a point within an area.
-vicinityXY :: (X, Y, X, Y)  -- ^ limit the search to this area
-           -> PointXY       -- ^ position to find neighbours of
-           -> [PointXY]
-vicinityXY area xy =
-  [ res | dxy <- movesXY, let res = shiftXY xy dxy, insideXY res area ]
+vicinity :: X -> Y   -- ^ limit the search to this area
+         -> Point    -- ^ position to find neighbours of
+         -> [Point]
+vicinity lxsize lysize p =
+  [ res | dxy <- movesXY
+        , let res = shiftXY p dxy
+        , inside res (0, 0, lxsize - 1, lysize - 1) ]
 
 -- | All (4 at most) cardinal direction neighbours of a point within an area.
-vicinityCardinalXY :: (X, Y, X, Y)  -- ^ limit the search to this area
-                   -> PointXY       -- ^ position to find neighbours of
-                   -> [PointXY]
-vicinityCardinalXY area xy =
+vicinityCardinal :: X -> Y   -- ^ limit the search to this area
+                 -> Point    -- ^ position to find neighbours of
+                 -> [Point]
+vicinityCardinal lxsize lysize p =
   [ res | dxy <- movesCardinalXY
-        , let res = shiftXY xy dxy
-        , insideXY res area ]
+        , let res = shiftXY p dxy
+        , inside res (0, 0, lxsize - 1, lysize - 1) ]
 
 newtype BfsDistance = BfsDistance Word8
   deriving (Show, Eq, Ord, Enum, Bounded, Bits)

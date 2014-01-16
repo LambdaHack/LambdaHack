@@ -12,7 +12,6 @@ import Data.Vector.Binary ()
 import qualified Data.Vector.Unboxed as U
 
 import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.PointXY
 
 -- TODO: for now, until there's support for GeneralizedNewtypeDeriving
 -- for Unboxed, there's a lot of @Word8@ in place of @c@ here
@@ -34,16 +33,15 @@ cnv :: (Enum a, Enum b) => a -> b
 cnv = toEnum . fromEnum
 
 pindex :: X -> Point -> Int
-pindex xsize p = let PointXY x y = fromPoint p
-                 in y * xsize + x
+pindex xsize (Point x y) = y * xsize + x
 
 punindex :: X -> Int -> Point
 punindex xsize n = let (y, x) = n `quotRem` xsize
-                   in toPoint $ PointXY x y
+                   in Point x y
 
--- Note: there's no point specializing this to @PointXY@ arguments,
+-- Note: there's no point specializing this to @Point@ arguments,
 -- since the extra few additions in @fromPoint@ may be less expensive than
--- memory or register allocations needed for the extra @Int@ in @PointXY@.
+-- memory or register allocations needed for the extra @Int@ in @Point@.
 -- | Array lookup.
 (!) :: Enum c => Array c -> Point -> c
 {-# INLINE (!) #-}

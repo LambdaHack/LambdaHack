@@ -15,7 +15,6 @@ import qualified Data.Text as T
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Content.CaveKind
 import Game.LambdaHack.Content.PlaceKind
@@ -112,8 +111,7 @@ buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
         FFloor -> buildFence qhollowFence qarea
         FNone -> EM.empty
       (x0, y0, x1, y1) = fromArea qarea
-      isEdge p = let PointXY x y = fromPoint p
-                 in x `elem` [x0, x1] || y `elem` [y0, y1]
+      isEdge (Point x y) = x `elem` [x0, x1] || y `elem` [y0, y1]
       digNight xy c | isEdge xy = xlegendLit EM.! c
                     | otherwise = xlegend EM.! c
       interior = case pfence kr of
@@ -142,9 +140,9 @@ olegend Kind.Ops{ofoldrWithKey, opick} cgroup =
 buildFence :: Kind.Id TileKind -> Area -> TileMapEM
 buildFence fenceId area =
   let (x0, y0, x1, y1) = fromArea area
-  in EM.fromList $ [ (toPoint $ PointXY x y, fenceId)
+  in EM.fromList $ [ (Point x y, fenceId)
                    | x <- [x0-1, x1+1], y <- [y0..y1] ] ++
-                   [ (toPoint $ PointXY x y, fenceId)
+                   [ (Point x y, fenceId)
                    | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
 
 -- | Construct a fence around an area, with the given tile group.
@@ -157,7 +155,7 @@ buildFenceRnd Kind.COps{cotile=Kind.Ops{opick}} couterFenceTile area = do
                       | otherwise = couterFenceTile
         fenceId <- fmap (fromMaybe $ assert `failure` tileGroup)
                    $ opick tileGroup (const True)
-        return (toPoint $ PointXY xf yf, fenceId)
+        return (Point xf yf, fenceId)
       pointList = [ (x, y) | x <- [x0-1, x1+1], y <- [y0..y1] ]
                   ++ [ (x, y) | x <- [x0-1..x1+1], y <- [y0-1, y1+1] ]
   fenceList <- mapM fenceIdRnd pointList
@@ -179,7 +177,7 @@ tilePlace area pl@PlaceKind{..} =
                          `blame` (area, pl))
                         (xwidth, ywidth)
       fromX (x2, y2) =  -- TODO: can be optimized: rectangle of points in Point
-        zipWith (\x y -> toPoint (PointXY x y)) [x2..] (repeat y2)
+        zipWith (\x y -> Point x y) [x2..] (repeat y2)
       fillInterior :: (forall a. Int -> [a] -> [a]) -> [(Point, Char)]
       fillInterior f =
         let tileInterior (y, row) = zip (fromX (x0, y)) $ f dx row

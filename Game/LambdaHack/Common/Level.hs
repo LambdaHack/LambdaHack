@@ -30,7 +30,6 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
-import Game.LambdaHack.Common.PointXY
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Tile
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -182,7 +181,7 @@ findPos ltile p =
       search = do
         px <- randomR (0, x - 1)
         py <- randomR (0, y - 1)
-        let pos = toPoint PointXY{..}
+        let pos = Point{..}
             tile = ltile PointArray.! pos
         if p pos tile
           then return pos
@@ -207,7 +206,7 @@ findPosTry numTries ltile m l@(_ : tl) = assert (numTries > 0) $
       search k = do
         px <- randomR (0, x - 1)
         py <- randomR (0, y - 1)
-        let pos = toPoint PointXY{..}
+        let pos = Point{..}
             tile = ltile PointArray.! pos
         if m pos tile && all (\p -> p pos tile) l
           then return pos
