@@ -19,7 +19,7 @@ import Data.Traversable (traverse)
 
 -- | Level bounds. TODO: query terminal size instead and scroll view.
 normalLevelBound :: (Int, Int)
-normalLevelBound = (79, 21)
+normalLevelBound = (79, 20)
 
 infixl 7 `divUp`
 -- | Integer division, rounding up.
