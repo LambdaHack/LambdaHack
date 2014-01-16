@@ -37,7 +37,7 @@ import Control.DeepSeq
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Control.Monad.State as St
-import Data.Bits (complement, (.&.))
+import Data.Bits (complement, (.&.), (.|.))
 import qualified Data.EnumMap.Strict as EM
 import Data.List
 import qualified Data.Map.Strict as M
@@ -567,19 +567,26 @@ findPathBfs aid target bfs = do
   let targetDist = bfs PointArray.! target
   if targetDist == maxBound then return Nothing
   else do
-    let unknownBound =
-          toEnum $ (1 + fromEnum (maxBound :: BfsDistance)) `div` 2
+    let maxUnknown = toEnum $ fromEnum minKnown - 1
     b <- getsState $ getActorBody aid
     sepsRaw <- getsClient seps
     let eps = abs sepsRaw `mod` length moves
         source = bpos b
-    assert (bfs PointArray.! source == toEnum 0) skip
+    assert (bfs PointArray.! source == minKnown) skip
     let track :: Point -> BfsDistance -> [Point] -> [Point]
-        track pos oldDist suffix | oldDist == toEnum 0 =
+        track pos oldDist suffix | oldDist == minKnown =
           assert (pos == source) suffix
-        track pos oldDist suffix | oldDist > unknownBound  =
+        track pos oldDist suffix | oldDist > maxUnknown =
+          let dist = toEnum $ fromEnum oldDist - 1
+              (ch1, ch2) = splitAt eps $ map (shift pos) moves
+              children = ch2 ++ ch1
+              matchesDist p = bfs PointArray.! p == dist
+              minP = fromMaybe (assert `failure` (pos, oldDist, children))
+                               (find matchesDist children)
+          in track minP dist (pos : suffix)
+        track pos oldDist suffix =
           let distUnknown = toEnum $ fromEnum oldDist - 1
-              distKnown = distUnknown .&. complement unknownBound
+              distKnown = distUnknown .|. minKnown
               (ch1, ch2) = splitAt eps $ map (shift pos) moves
               children = ch2 ++ ch1
               matchesDistUnknown p = bfs PointArray.! p == distUnknown
@@ -590,21 +597,12 @@ findPathBfs aid target bfs = do
                   Just p -> (p, distUnknown)
                   Nothing -> assert `failure` (pos, oldDist, children)
           in track minP dist (pos : suffix)
-        track pos oldDist suffix =
-          let dist = toEnum $ fromEnum oldDist - 1
-              (ch1, ch2) = splitAt eps $ map (shift pos) moves
-              children = ch2 ++ ch1
-              matchesDist p = bfs PointArray.! p == dist
-              minP = fromMaybe (assert `failure` (pos, oldDist, children))
-                               (find matchesDist children)
-          in track minP dist (pos : suffix)
     return $! Just $ track target targetDist []
 
 accessCacheBfs :: MonadClient m => ActorId -> Point -> m (Maybe Int)
 accessCacheBfs aid target = do
   (bfs, _) <- getCacheBfs aid target
   let dist = bfs PointArray.! target
-      unknownBound = toEnum $ (1 + fromEnum (maxBound :: BfsDistance)) `div` 2
   return $! if dist == maxBound
             then Nothing
-            else Just $ fromEnum $ dist .&. complement unknownBound
+            else Just $ fromEnum $ dist .&. complement minKnown
