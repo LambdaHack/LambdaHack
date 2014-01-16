@@ -1,7 +1,8 @@
 -- | Arrays, based on Data.Vector.Unboxed, indexed by @Point@.
 module Game.LambdaHack.Common.PointArray
   ( Array
-  , (!), (//), replicateA, replicateMA, generateMA, sizeA, foldlA, ifoldlA
+  , (!), (//), replicateA, replicateMA, generateMA, sizeA
+  , foldlA, ifoldlA, minIndexA
   ) where
 
 import Control.Arrow ((***))
@@ -87,6 +88,11 @@ foldlA f z0 Array{..} =
 ifoldlA :: Enum c => (a -> Point -> c -> a) -> a -> Array c -> a
 ifoldlA f z0 Array{..} =
   U.ifoldl' (\a n c -> f a (punindex axsize n) (cnv c)) z0 avector
+
+-- | Yield the point coordinates of the minimum element of the array.
+-- The array may not be empty.
+minIndexA :: Enum c => Array c -> Point
+minIndexA Array{..} = punindex axsize $ U.minIndex avector
 
 instance Binary (Array c) where
   put Array{..} = do

@@ -4,8 +4,8 @@
 module Game.LambdaHack.Client.HumanLocal
   ( -- * Semantics of serverl-less human commands
     moveCursor, retargetLeader
-  , pickLeaderHuman, memberCycleHuman, memberBackHuman
-  , inventoryHuman, tgtAscendHuman, tgtFloorHuman, tgtEnemyHuman
+  , pickLeaderHuman, memberCycleHuman, memberBackHuman, inventoryHuman
+  , tgtFloorHuman, tgtEnemyHuman, tgtUnknownHuman, tgtAscendHuman
   , epsIncrHuman, selectActorHuman, selectNoneHuman
   , cancelHuman, displayMainMenu, acceptHuman, clearHuman
    ,repeatHuman, recordHuman
@@ -53,6 +53,7 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
@@ -431,12 +432,31 @@ tgtEnemyLeader stgtModeNew = do
   setCursor stgtModeNew
   doLook
 
+-- * TgtUnknown
+
+tgtUnknownHuman :: MonadClientUI m => m Slideshow
+tgtUnknownHuman = do
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  tgtPos <- targetToPos
+  let target = case tgtPos of
+        Nothing -> bpos b
+        Just c -> c
+  (bfs, _) <- getCacheBfs leader target
+  let closestUnknownPos = PointArray.minIndexA bfs
+      dist = bfs PointArray.! closestUnknownPos
+  if dist >= minKnown
+    then failWith "no unknown spot left"
+    else do
+      let tgt = Just $ TPoint closestUnknownPos
+      modifyClient $ updateTarget leader (const tgt)
+      return mempty
+
 -- * TgtAscend
 
 -- | Change the displayed level in targeting mode to (at most)
 -- k levels shallower. Enters targeting mode, if not already in one.
-tgtAscendHuman :: MonadClientUI m
-               => Int -> m Slideshow
+tgtAscendHuman :: MonadClientUI m => Int -> m Slideshow
 tgtAscendHuman k = do
   Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
   dungeon <- getsState sdungeon

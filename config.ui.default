@@ -38,6 +38,7 @@
 ; I: Inventory
 ; slash: TgtFloor
 ; asterisk: TgtEnemy
+; CTRL-question: TgtUnknown
 ; bracketleft:  TgtAscend 1
 ; bracketright: TgtAscend (-1)
 ; braceleft:    TgtAscend 10
@@ -63,7 +64,9 @@
 ; [macros]
 ; R: KP_Begin P
 ; semicolon: CTRL-semicolon P
-; backslash: apostrophe asterisk Return t Return apostrophe P
+; x: CTRL-question CTRL-semicolon P
+; X: ' CTRL-question CTRL-semicolon ' P
+; backslash: ' asterisk Return t Return ' P
 ; ; handy shorthands with Vi keys
 ; comma: g
 ; period: KP_Begin
@@ -71,6 +74,8 @@
 ; [macro descriptions]
 ; R: rest (wait 100 times)
 ; semicolon: go to target for 100 steps
+; x: explore the closest unknown spot
+; X: autoexplore 100 times
 ; backslash: throw at the closest enemy 100 times
 
 ; [ui]

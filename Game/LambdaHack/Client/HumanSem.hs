@@ -54,6 +54,7 @@ cmdAction cmd = case cmd of
   Inventory -> fmap Left inventoryHuman
   TgtFloor -> fmap Left tgtFloorHuman
   TgtEnemy -> fmap Left tgtEnemyHuman
+  TgtUnknown -> fmap Left tgtUnknownHuman
   TgtAscend k -> fmap Left $ tgtAscendHuman k
   EpsIncr b -> fmap Left $ epsIncrHuman b
   SelectActor -> fmap Left selectActorHuman
