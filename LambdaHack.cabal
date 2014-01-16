@@ -124,7 +124,6 @@ library
                       Game.LambdaHack.Common.Tile,
                       Game.LambdaHack.Common.Time,
                       Game.LambdaHack.Common.Vector,
-                      Game.LambdaHack.Common.VectorXY,
                       Game.LambdaHack.Content.ActorKind,
                       Game.LambdaHack.Content.CaveKind,
                       Game.LambdaHack.Content.FactionKind,

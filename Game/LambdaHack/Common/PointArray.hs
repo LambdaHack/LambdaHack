@@ -33,7 +33,7 @@ cnv :: (Enum a, Enum b) => a -> b
 cnv = toEnum . fromEnum
 
 pindex :: X -> Point -> Int
-pindex xsize (Point x y) = y * xsize + x
+pindex xsize (Point x y) = x + y * xsize
 
 punindex :: X -> Int -> Point
 punindex xsize n = let (y, x) = n `quotRem` xsize

@@ -34,7 +34,7 @@ instance Binary Point where
 -- This conversion cannot be used for PointArray indexing,
 -- because it is not contiguous --- we don't know the horizontal
 -- width of the levels nor of the screen.
--- This conversion is implemented mainly for @EnumMap@ and @EnumSet@.
+-- The conversion is implemented mainly for @EnumMap@ and @EnumSet@.
 instance Enum Point where
   fromEnum = fromEnumPoint
   toEnum = toEnumPoint

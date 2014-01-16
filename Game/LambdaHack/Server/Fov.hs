@@ -21,7 +21,6 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
-import Game.LambdaHack.Common.VectorXY
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Server.Fov.Common
@@ -129,11 +128,11 @@ fullscan cotile fovMode spectatorPos lvl = spectatorPos :
   isCl :: Point -> Bool
   isCl = Tile.isClear cotile . (lvl `at`)
 
-  -- This function is very cheap, so no problem it's called twice
+  -- This function is cheap, so no problem it's called twice
   -- for each point: once with @isCl@, once via @concatMap@.
   trV :: X -> Y -> Point
   {-# INLINE trV #-}
-  trV x y = shift spectatorPos $ toVector $ VectorXY x y
+  trV x y = shift spectatorPos $ Vector x y
 
   -- | The translation, rotation and symmetry functions for octants.
   tr8 :: [(Distance, Progress) -> Point]

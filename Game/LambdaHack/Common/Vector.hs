@@ -2,130 +2,148 @@
 -- | Basic operations on 2D vectors represented in an efficient,
 -- but not unique, way.
 module Game.LambdaHack.Common.Vector
-  ( Vector, toVector, toDir, shift, shiftBounded, moves
-  , isUnit, euclidDistSq, diagonal
-  , neg, RadianAngle, rotate
-  , towards, displacement, displacePath, shiftPath
-  , vicinity, vicinityCardinal
+  ( Vector(..), isUnit, isDiagonal, neg, euclidDistSq
+  , moves, vicinity, vicinityCardinal
+  , shift, shiftBounded, shiftPath, displacement, displacePath
+  , RadianAngle, rotate, towards
   , BfsDistance, MoveLegal(..), minKnown, bfsFill
   ) where
 
 import Control.Arrow (second)
 import Control.Exception.Assert.Sugar
 import Data.Binary
-import Data.Bits (Bits, complement, unsafeShiftL, (.&.))
+import Data.Bits (Bits, complement, (.&.))
 import Data.Int (Int32)
 import qualified Data.Sequence as Seq
 
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
-import Game.LambdaHack.Common.VectorXY
 
--- | 2D vectors  represented as offsets in the linear framebuffer
--- indexed by 'Point'.
--- A newtype is used to prevent mixing up the type with @Point@ itself.
-newtype Vector = Vector Int
-  deriving (Eq, Ord, Enum, Read)
+-- | 2D vectors in cartesian representation. Coordinates grow to the right
+-- and down, so that the (1, 1) vector points to the bottom-right corner
+-- of the screen.
+data Vector = Vector
+  { vx :: !X
+  , vy :: !Y
+  }
+  deriving (Eq, Ord, Show, Read)
 
 instance Binary Vector where
   put = put . (fromIntegral :: Int -> Int32) . fromEnum
   get = fmap (toEnum . (fromIntegral :: Int32 -> Int)) get
 
--- For debugging.
-instance Show Vector where
-  show = show . fromVector
+instance Enum Vector where
+  fromEnum = fromEnumVector
+  toEnum = toEnumVector
 
 -- | Maximal supported vector X and Y coordinates.
 maxVectorDim :: Int
 {-# INLINE maxVectorDim #-}
 maxVectorDim = 2 ^ (maxLevelDimExponent - 1) - 1
 
--- | Converts a vector in cartesian representation into @Vector@.
-toVector :: VectorXY -> Vector
-{-# INLINE toVector #-}
-toVector =
-  let fromEnumXY (VectorXY x y) = x + unsafeShiftL y maxLevelDimExponent
-  in toEnum . fromEnumXY
+fromEnumVector :: Vector -> Int
+{-# INLINE fromEnumVector #-}
+fromEnumVector (Vector vx vy) = vx + vy * (2 ^ maxLevelDimExponent)
 
--- | Converts a unit vector in cartesian representation into @Vector@.
-toDir :: VectorXY -> Vector
-{-# INLINE toDir #-}
-toDir vxy =
-  assert (isUnitXY vxy `blame` "not a unit VectorXY" `twith` vxy)
-  $ toVector vxy
-
-isUnitXY :: VectorXY -> Bool
-{-# INLINE isUnitXY #-}
-isUnitXY vxy = chessDistXY vxy == 1
+toEnumVector :: Int -> Vector
+{-# INLINE toEnumVector #-}
+toEnumVector n =
+  let (y, x) = n `quotRem` (2 ^ maxLevelDimExponent)
+      (vx, vy) = if x > maxVectorDim
+                 then (x - 2 ^ maxLevelDimExponent, y + 1)
+                 else if x < - maxVectorDim
+                      then (x + 2 ^ maxLevelDimExponent, y - 1)
+                      else (x, y)
+  in Vector{..}
 
 -- | Tells if a vector has length 1 in the chessboard metric.
-isUnit ::  Vector -> Bool
+isUnit :: Vector -> Bool
 {-# INLINE isUnit #-}
-isUnit = isUnitXY . fromVector
-
--- | Converts a vector in the offset representation
--- into the cartesian representation.
-fromVector :: Vector -> VectorXY
-{-# INLINE fromVector #-}
-fromVector =
-  let toEnumXY xy =
-        let (y, x) = xy `quotRem` (2 ^ maxLevelDimExponent)
-            (vx, vy) = if x > maxVectorDim
-                       then (x - 2 ^ maxLevelDimExponent, y + 1)
-                       else if x < - maxVectorDim
-                            then (x + 2 ^ maxLevelDimExponent, y - 1)
-                            else (x, y)
-        in VectorXY{..}
-  in toEnumXY . fromEnum
-
--- | Converts a unit vector in the offset representation
--- into the cartesian representation.
-fromDir :: Vector -> VectorXY
-{-# INLINE fromDir #-}
-fromDir v =
-  assert (isUnit v `blame` "not a unit Vector" `twith` v)
-  $ fromVector v
-
--- | Translate a point by a vector.
---
--- Particularly simple and fast implementation in the linear representation.
-shift :: Point -> Vector -> Point
-{-# INLINE shift #-}
-shift p (Vector dir) = toEnum $ fromEnum p + dir
-
--- | Translate a point by a vector, but only if the result fits in an area.
-shiftBounded :: X -> Y -> Point -> Vector -> Point
-shiftBounded lxsize lysize pos dir =
-  let VectorXY xv yv = fromVector dir
-  in if inside pos (-xv, -yv, lxsize - xv - 1, lysize - yv - 1)
-     then shift pos dir
-     else pos
-
--- | Vectors of all unit moves in the chessboard metric,
--- clockwise, starting north-west.
-moves :: [Vector]
-moves = map toDir movesXY
-
--- | Squared euclidean distance between two unit vectors.
-euclidDistSq :: Vector -> Vector -> Int
-{-# INLINE euclidDistSq #-}
-euclidDistSq dir0 dir1
-  | VectorXY x0 y0 <- fromDir dir0
-  , VectorXY x1 y1 <- fromDir dir1 =
-  euclidDistSqXY $ VectorXY (x1 - x0) (y1 - y0)
+isUnit v = chessDistVector v == 1
 
 -- | Checks whether a unit vector is a diagonal direction,
 -- as opposed to cardinal. If the vector is not unit,
 -- it checks that the vector is not horizontal nor vertical.
-diagonal :: Vector -> Bool
-{-# INLINE diagonal #-}
-diagonal dir | VectorXY x y <- fromDir dir =
-  x * y /= 0
+isDiagonal :: Vector -> Bool
+{-# INLINE isDiagonal #-}
+isDiagonal (Vector x y) = x * y /= 0
 
 -- | Reverse an arbirary vector.
 neg :: Vector -> Vector
 {-# INLINE neg #-}
-neg (Vector dir) = Vector (-dir)
+neg (Vector vx vy) = Vector (-vx) (-vy)
+
+-- | Squared euclidean distance between two vectors.
+euclidDistSq :: Vector -> Vector -> Int
+{-# INLINE euclidDistSq #-}
+euclidDistSq (Vector x0 y0) (Vector x1 y1) =
+  let square n = n ^ (2 :: Int)
+  in square (x1 - x0) + square (y1 - y0)
+
+-- | The lenght of a vector in the chessboard metric,
+-- where diagonal moves cost 1.
+chessDistVector :: Vector -> Int
+{-# INLINE chessDistVector #-}
+chessDistVector (Vector x y) = max (abs x) (abs y)
+
+-- | Vectors of all unit moves in the chessboard metric,
+-- clockwise, starting north-west.
+moves :: [Vector]
+moves =
+  map (uncurry Vector)
+    [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]
+
+-- | Vectors of all cardinal direction unit moves, clockwise, starting north.
+movesCardinal :: [Vector]
+movesCardinal = map (uncurry Vector) [(0, -1), (1, 0), (0, 1), (-1, 0)]
+
+-- | All (8 at most) closest neighbours of a point within an area.
+vicinity :: X -> Y   -- ^ limit the search to this area
+         -> Point    -- ^ position to find neighbours of
+         -> [Point]
+vicinity lxsize lysize p =
+  [ res | dxy <- moves
+        , let res = shift p dxy
+        , inside res (0, 0, lxsize - 1, lysize - 1) ]
+
+-- | All (4 at most) cardinal direction neighbours of a point within an area.
+vicinityCardinal :: X -> Y   -- ^ limit the search to this area
+                 -> Point    -- ^ position to find neighbours of
+                 -> [Point]
+vicinityCardinal lxsize lysize p =
+  [ res | dxy <- movesCardinal
+        , let res = shift p dxy
+        , inside res (0, 0, lxsize - 1, lysize - 1) ]
+
+-- | Translate a point by a vector.
+shift :: Point -> Vector -> Point
+{-# INLINE shift #-}
+shift (Point x0 y0) (Vector x1 y1) = Point (x0 + x1) (y0 + y1)
+
+-- | Translate a point by a vector, but only if the result fits in an area.
+shiftBounded :: X -> Y -> Point -> Vector -> Point
+shiftBounded lxsize lysize pos v@(Vector xv yv) =
+  if inside pos (-xv, -yv, lxsize - xv - 1, lysize - yv - 1)
+  then shift pos v
+  else pos
+
+-- | A list of points that a list of vectors leads to.
+shiftPath :: Point -> [Vector] -> [Point]
+shiftPath _ [] = []
+shiftPath start (v : vs) = let next = shift start v
+                           in next : shiftPath next vs
+
+-- | A vector from a point to another. We have
+--
+-- > shift pos1 (displacement pos1 pos2) == pos2
+displacement :: Point -> Point -> Vector
+{-# INLINE displacement #-}
+displacement (Point x0 y0) (Point x1 y1) = Vector (x1 - x0) (y1 - y0)
+
+-- | A list of vectors between a list of points.
+displacePath :: [Point] -> [Vector]
+displacePath [] = []
+displacePath lp1@(_ : lp2) = zipWith displacement lp1 lp2
 
 type RadianAngle = Double
 
@@ -133,22 +151,21 @@ type RadianAngle = Double
 -- counterclockwise and return a unit vector approximately in the resulting
 -- direction.
 rotate :: RadianAngle -> Vector -> Vector
-rotate angle dir | VectorXY x' y' <- fromDir dir =
+rotate angle (Vector x' y') =
   let x = fromIntegral x'
       y = fromIntegral y'
       -- Minus before the angle comes from our coordinates being
       -- mirrored along the X axis (Y coordinates grow going downwards).
       dx = x * cos (-angle) - y * sin (-angle)
       dy = x * sin (-angle) + y * cos (-angle)
-      rxy = normalize dx dy
-  in toDir rxy
+  in normalize dx dy
 
 -- TODO: use bla for that
 -- | Given a vector of arbitrary non-zero length, produce a unit vector
 -- that points in the same direction (in the chessboard metric).
 -- Of several equally good directions it picks one of those that visually
 -- (in the euclidean metric) maximally align with the original vector.
-normalize :: Double -> Double -> VectorXY
+normalize :: Double -> Double -> Vector
 normalize dx dy =
   assert (dx /= 0 || dy /= 0 `blame` "can't normalize zero" `twith` (dx, dy)) $
   let angle :: Double
@@ -161,13 +178,12 @@ normalize dx dy =
           | otherwise = assert `failure` "impossible angle"
                                `twith` (dx, dy, angle)
   in if dx >= 0
-     then uncurry VectorXY dxy
-     else negXY $ uncurry VectorXY dxy
+     then uncurry Vector dxy
+     else neg $ uncurry Vector dxy
 
 normalizeVector :: Vector -> Vector
-normalizeVector v =
-  let VectorXY dx dy = fromVector v
-      res = toDir $ normalize (fromIntegral dx) (fromIntegral dy)
+normalizeVector v@(Vector vx vy) =
+  let res = normalize (fromIntegral vx) (fromIntegral vy)
   in assert (not (isUnit v) || v == res
              `blame` "unit vector gets untrivially normalized"
              `twith` (v, res))
@@ -188,77 +204,6 @@ towards pos0 pos1 =
   assert (pos0 /= pos1 `blame` "towards self" `twith` (pos0, pos1))
   $ normalizeVector $ displacement pos0 pos1
 
--- | A vector from a point to another. We have
---
--- > shift pos1 (displacement pos1 pos2) == pos2
---
--- Particularly simple and fast implementation in the linear representation.
-displacement :: Point -> Point -> Vector
-{-# INLINE displacement #-}
-displacement pos1 pos2 = Vector $ fromEnum pos2 - fromEnum pos1
-
--- | A list of vectors between a list of points.
-displacePath :: [Point] -> [Vector]
-displacePath []  = []
-displacePath lp1@(_ : lp2) = zipWith displacement lp1 lp2
-
--- | A list of points that a list of vectors leads to.
-shiftPath :: Point -> [Vector] -> [Point]
-shiftPath _     [] = []
-shiftPath start (v : vs) =
-  let next = shift start v
-  in next : shiftPath next vs
-
--- | Shift a point by a vector.
-shiftXY :: Point -> VectorXY -> Point
-{-# INLINE shiftXY #-}
-shiftXY (Point x0 y0) (VectorXY x1 y1) = Point (x0 + x1) (y0 + y1)
-
--- | Vectors of all unit moves in the chessboard metric,
--- clockwise, starting north-west.
-movesXY :: [VectorXY]
-movesXY =
-  map (uncurry VectorXY)
-    [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]
-
--- | Vectors of all cardinal direction unit moves, clockwise, starting north.
-movesCardinalXY :: [VectorXY]
-movesCardinalXY = map (uncurry VectorXY) [(0, -1), (1, 0), (0, 1), (-1, 0)]
-
--- | The lenght of a vector in the chessboard metric,
--- where diagonal moves cost 1.
-chessDistXY :: VectorXY -> Int
-{-# INLINE chessDistXY #-}
-chessDistXY (VectorXY x y) = max (abs x) (abs y)
-
--- | Squared euclidean length of a vector.
-euclidDistSqXY :: VectorXY -> Int
-{-# INLINE euclidDistSqXY #-}
-euclidDistSqXY (VectorXY x y) = x * x + y * y
-
--- | Reverse an arbirary vector.
-negXY :: VectorXY -> VectorXY
-{-# INLINE negXY #-}
-negXY (VectorXY x y) = VectorXY (-x) (-y)
-
--- | All (8 at most) closest neighbours of a point within an area.
-vicinity :: X -> Y   -- ^ limit the search to this area
-         -> Point    -- ^ position to find neighbours of
-         -> [Point]
-vicinity lxsize lysize p =
-  [ res | dxy <- movesXY
-        , let res = shiftXY p dxy
-        , inside res (0, 0, lxsize - 1, lysize - 1) ]
-
--- | All (4 at most) cardinal direction neighbours of a point within an area.
-vicinityCardinal :: X -> Y   -- ^ limit the search to this area
-                 -> Point    -- ^ position to find neighbours of
-                 -> [Point]
-vicinityCardinal lxsize lysize p =
-  [ res | dxy <- movesCardinalXY
-        , let res = shiftXY p dxy
-        , inside res (0, 0, lxsize - 1, lysize - 1) ]
-
 newtype BfsDistance = BfsDistance Word8
   deriving (Show, Eq, Ord, Enum, Bounded, Bits)
 
@@ -268,6 +213,7 @@ data MoveLegal = MoveBlocked | MoveToOpen | MoveToUnknown
 minKnown :: BfsDistance
 minKnown = toEnum $ (1 + fromEnum (maxBound :: BfsDistance)) `div` 2
 
+-- TODO: Move somewhere; in particular, only clients need to know that.
 bfsFill :: (Point -> Point -> MoveLegal)  -- ^ is move from a known tile legal
         -> (Point -> Point -> Bool)       -- ^ is a move from unknown legal
         -> Point                          -- ^ starting position

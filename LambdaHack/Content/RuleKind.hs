@@ -32,7 +32,7 @@ standard = RuleKind
   -- to and from doors.
   , raccessible    = Nothing
   , raccessibleDoor = Just $ \spos tpos ->
-                                not $ diagonal $ displacement spos tpos
+                                not $ isDiagonal $ displacement spos tpos
   , rtitle         = "LambdaHack"
   , rpathsDataFile = Self.getDataFileName
   , rpathsVersion  = Self.version
