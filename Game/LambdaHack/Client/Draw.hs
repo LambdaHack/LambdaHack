@@ -8,7 +8,6 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.List
 import Data.Maybe
-import Data.Text (Text)
 import qualified Data.Text as T
 
 import Game.LambdaHack.Client.State
@@ -52,11 +51,7 @@ draw sfBlank dm cops per drawnLevelId mleader tgtPos mpath
                     , smarkVision, smarkSmell, smarkSuspect, swaitTimes }
      s sfTop =
   let Kind.COps{cotile=Kind.Ops{okind=tokind, ouniqGroup}} = cops
-      (lvl@Level{ ldepth, lxsize, lysize, lsmell
-                , ldesc, ltime, lseen, lclear }) = sdungeon s EM.! drawnLevelId
-      wealth = case mleader of
-        Nothing -> 0
-        Just leader -> snd $ calculateTotal (getActorBody leader s) s
+      (lvl@Level{lxsize, lysize, lsmell, ltime}) = sdungeon s EM.! drawnLevelId
       bl = case (scursor, mleader) of
         (Just cursor, Just leader) ->
           let Actor{bpos, blid} = getActorBody leader s
@@ -131,69 +126,77 @@ draw sfBlank dm cops per drawnLevelId mleader tgtPos mpath
                               else attr0
                     else attr0
         in Color.AttrChar a char
+      addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
+      arenaStatus = drawArenaStatus lvl
+      cursorStatus = addAttr $ T.justifyLeft 40 ' ' "Cursor:"  -- TODO
+      selectedStatus = drawSelected cli s drawnLevelId mleader
       leaderStatus = drawLeaderStatus cops s sdisco ltime swaitTimes mleader
-      seenN = 100 * lseen `div` lclear
-      seenTxt | seenN == 100 = "all"
-              | otherwise = T.justifyRight 2 ' ' (showT seenN) <> "%"
-      lvlN = T.justifyLeft 2 ' ' (showT $ abs ldepth)
-      stats =
-        T.justifyLeft 11 ' ' ("[" <> seenTxt <+> "seen]") <+>
-        T.justifyLeft 9 ' ' ("$:" <+> showT wealth) <+>
-        leaderStatus
-      widthForDesc = lxsize - T.length stats - T.length lvlN - 3
-      status = lvlN <+> T.justifyLeft widthForDesc ' ' ldesc <+> stats
+      targetStatus = addAttr $ T.justifyLeft 40 ' ' "Target:"  -- TODO
+      sfBottom = [ arenaStatus ++ cursorStatus
+                 , selectedStatus ++ leaderStatus ++ targetStatus ]
       fLine y =
         let f l x = let !ac = dis $ Point x y in ac : l
         in foldl' f [] [lxsize-1,lxsize-2..0]
       sfLevel =  -- fully evaluated
         let f l y = let !line = fLine y in line : l
         in foldl' f [] [lysize-1,lysize-2..0]
-      addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
-      sfBottom = [ addAttr $ toWidth (lxsize - 1) status
-                 , drawSelected cli s drawnLevelId mleader ]
   in SingleFrame{..}
 
 inverseVideo :: Color.Attr
-inverseVideo = Color.Attr{ Color.fg = Color.bg Color.defAttr
-                         , Color.bg = Color.fg Color.defAttr
-                         }
+inverseVideo = Color.Attr { Color.fg = Color.bg Color.defAttr
+                          , Color.bg = Color.fg Color.defAttr }
+
+drawArenaStatus :: Level -> [Color.AttrChar]
+drawArenaStatus Level{ldepth, ldesc, lseen, lclear} =
+  let addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
+      seenN = 100 * lseen `div` lclear
+      seenTxt | seenN == 100 = "all"
+              | otherwise = T.justifyLeft 3 ' ' (showT seenN <> "%")
+      lvlN = T.justifyLeft 2 ' ' (showT $ abs ldepth)
+      seenStatus = T.justifyLeft 11 ' ' ("[" <> seenTxt <+> "seen]")
+  in addAttr $ lvlN <+> T.justifyLeft 25 ' ' ldesc <+> seenStatus
 
 drawLeaderStatus :: Kind.COps -> State -> Discovery
                  -> Time -> Int -> Maybe ActorId
-                 -> Text
+                 -> [Color.AttrChar]
 drawLeaderStatus cops s sdisco ltime waitTimes mleader =
-  case mleader of
-    Just leader ->
-      let Kind.COps{coactor=Kind.Ops{okind}} = cops
-          (bitems, bracedL, ahpS, bhpS) =
-            let mpl@Actor{bkind, bhp} = getActorBody leader s
-                ActorKind{ahp} = okind bkind
-            in (getActorItem leader s, braced mpl ltime,
-                showT (maxDice ahp), showT bhp)
-          damage = case Item.strongestSword cops bitems of
-            Just (_, (_, sw)) ->
-              case Item.jkind sdisco sw of
-                Just _ ->
-                  case jeffect sw of
-                    Hurt dice p -> showT dice <> "+" <> showT p
-                    _ -> ""
-                Nothing -> "3d1"  -- TODO: ?
-            Nothing -> "3d1"  -- TODO; use the item 'fist'
-          -- Indicate the actor is braced (was waiting last move).
-          -- It's a useful feedback for the otherwise hard to observe
-          -- 'wait' command.
-          braceChars = ['{', '\\', 'X', '\\', '}', '/', 'X', '/']
-          braceChar = braceChars
-                      !! (max 0 (waitTimes - 1) `mod` length braceChars)
-          braceSign | bracedL   = T.singleton braceChar
-                    | otherwise = " "
-      in T.justifyLeft 11 ' ' ("Dmg:" <+> damage) <+>
-         T.justifyLeft 13 ' ' (braceSign <> "HP:" <+> bhpS
-                               <+> "(" <> ahpS <> ")")
-    Nothing ->
-         T.justifyLeft 11 ' ' ("Dmg:" <+> "---") <+>
-         T.justifyLeft 13 ' ' (" " <> "HP:" <+> "--"
-                               <+> "(" <> "--" <> ")")
+  let addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
+      stats = case mleader of
+        Just leader ->
+          let Kind.COps{coactor=Kind.Ops{okind}} = cops
+              (bitems, bracedL, ahpS, bhpS) =
+                let mpl@Actor{bkind, bhp} = getActorBody leader s
+                    ActorKind{ahp} = okind bkind
+                in (getActorItem leader s, braced mpl ltime,
+                    showT (maxDice ahp), showT bhp)
+              damage = case Item.strongestSword cops bitems of
+                Just (_, (_, sw)) ->
+                  case Item.jkind sdisco sw of
+                    Just _ ->
+                      case jeffect sw of
+                        Hurt dice p -> showT dice <> "+" <> showT p
+                        _ -> ""
+                    Nothing -> "3d1"  -- TODO: ?
+                Nothing -> "3d1"  -- TODO; use the item 'fist'
+              -- Indicate the actor is braced (was waiting last move).
+              -- It's a useful feedback for the otherwise hard to observe
+              -- 'wait' command.
+              slashes = ["|", "\\", "|", "/"]
+              slashPick | bracedL =
+                slashes !! (max 0 (waitTimes - 1) `mod` length slashes)
+                        | otherwise = "/"
+              bracePick | bracedL   = "}"
+                        | otherwise = ":"
+              hpText = bhpS <> slashPick <> ahpS
+          in T.justifyLeft 12 ' '
+               ("Dmg:" <> (if T.length damage < 8 then " " else "") <> damage)
+             <+> "HP" <> bracePick <> T.justifyRight 7 ' ' hpText
+             <> " "
+        Nothing ->
+             T.justifyLeft 12 ' ' "Dmg: ---"
+             <+> T.justifyRight 10 ' ' "HP: --/--"
+             <> " "
+  in addAttr stats
 
 drawSelected :: StateClient -> State -> LevelId -> Maybe ActorId
              -> [Color.AttrChar]
@@ -216,7 +219,7 @@ drawSelected cli s drawnLevelId mleader =
           in ( (bhp > 0, bsymbol /= '@', bsymbol, bcolor, aid)
              , Color.AttrChar sattr bsymbol )
       ours = actorNotProjAssocs (== sside cli) drawnLevelId s
-      maxViewed = 10
+      maxViewed = 14
       -- Don't show anything if the only actor on the level is the leader.
       -- He's clearly highlighted on the level map, anyway.
       star = let sattr = case ES.size selected of
@@ -227,6 +230,15 @@ drawSelected cli s drawnLevelId mleader =
                  char = if length ours > maxViewed then '$' else '*'
              in Color.AttrChar sattr char
       viewed = take maxViewed $ sort $ map viewOurs ours
-      party | map (Just . fst) ours == [mleader] = []
-            | otherwise = map snd viewed ++ [star]
-  in party
+      addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
+      allOurs = filter ((== sside cli) . bfid) $ EM.elems $ sactorD s
+      nameN n b = T.stripEnd $ T.dropWhileEnd (/= ' ')
+                 $ T.justifyLeft (n + 1) ' ' $ T.take (n + 1) $ bname b
+      leaderName n = case mleader of
+        Nothing -> ""
+        Just aid -> nameN n  $ getActorBody aid s
+      party = case allOurs of
+        [b] -> addAttr $ nameN 15 b
+        _ -> map snd viewed ++ [star] ++ addAttr " "
+             ++ addAttr (leaderName (13 - length viewed))
+  in party ++ addAttr (T.replicate (16 - length party) " ")
