@@ -103,7 +103,7 @@ playersCampaign, playersSkirmish, playersPvP, playersCoop, playersDefense, playe
 playersCampaign = Players
   { playersList = [ playerHero {playerInitial = 1}
                   , playerMonster ]
-  , playersEnemy = [("Adventuring Party", "Monster Hive")]
+  , playersEnemy = [("Adventurer Party", "Monster Hive")]
   , playersAlly = [] }
 
 playersSkirmish = Players
@@ -155,7 +155,7 @@ playersScreensaver = Players
                                , playerAiLeader = True
                                , playerHuman = False }
                   , playerMonster ]
-  , playersEnemy = [("Adventuring Party", "Monster Hive")]
+  , playersEnemy = [("Adventurer Party", "Monster Hive")]
   , playersAlly = [] }
 
 playersTestCoop = Players
@@ -187,7 +187,7 @@ playersTestDefense = Players
 playersPeekCampaign = Players
   { playersList = [ playerHero {playerInitial = 1}
                   , playerMonster {playerUI = True} ]
-  , playersEnemy = [("Adventuring Party", "Monster Hive")]
+  , playersEnemy = [("Adventurer Party", "Monster Hive")]
   , playersAlly = [] }
 
 playersPeekSkirmish = Players
@@ -204,7 +204,7 @@ playersPeekSkirmish = Players
 playerHero, playerAntiHero, playerMonster, playerHorror :: Player
 
 playerHero = Player
-  { playerName = "Adventuring Party"
+  { playerName = "Adventurer Party"
   , playerFaction = "hero"
   , playerEntry = toEnum (-1)
   , playerInitial = 3
