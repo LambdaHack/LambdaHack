@@ -17,7 +17,6 @@ import qualified Data.EnumSet as ES
 import Data.List
 import Data.Maybe
 import Data.Monoid
-import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
 
@@ -32,7 +31,7 @@ import Game.LambdaHack.Common.Random
 data SingleFrame = SingleFrame
   { sfLevel  :: ![[AttrChar]]  -- ^ screen, from top to bottom, line by line
   , sfTop    :: !Overlay       -- ^ some extra lines to show over the top
-  , sfBottom :: ![Text]        -- ^ some extra lines to show at the bottom
+  , sfBottom :: ![[AttrChar]]  -- ^ some extra lines to show at the bottom
   , sfBlank  :: !Bool          -- ^ display only @sfTop@, on blank screen
   }
   deriving (Eq, Show)
@@ -58,8 +57,7 @@ overlayOverlay sf@SingleFrame{..} =
       f layerLine canvasLine = addAttr layerLine
                                ++ drop (T.length layerLine) canvasLine
       picture = zipWith f topLayer canvas
-      bottomLines | sfBlank = []
-                  | otherwise = map addAttr sfBottom
+      bottomLines = if sfBlank then [] else sfBottom
       newLevel = picture ++ drop (length picture) canvas ++ bottomLines
   in SingleFrame { sfLevel = newLevel
                  , sfTop = emptyOverlay

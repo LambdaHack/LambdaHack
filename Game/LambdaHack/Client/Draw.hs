@@ -48,7 +48,7 @@ draw :: Bool -> ColorMode -> Kind.COps -> Perception -> LevelId
      -> Overlay
      -> SingleFrame
 draw sfBlank dm cops per drawnLevelId mleader tgtPos mpath
-     cli@StateClient{ stgtMode, scursor, seps, sdisco, sselected
+     cli@StateClient{ stgtMode, scursor, seps, sdisco
                     , smarkVision, smarkSmell, smarkSuspect, swaitTimes }
      s sfTop =
   let Kind.COps{cotile=Kind.Ops{okind=tokind, ouniqGroup}} = cops
@@ -64,9 +64,6 @@ draw sfBlank dm cops per drawnLevelId mleader tgtPos mpath
              then [cursor]
              else fromMaybe [] $ bla lxsize lysize seps bpos cursor
         _ -> []
-      inverseVideo = Color.Attr{ Color.fg = Color.bg Color.defAttr
-                               , Color.bg = Color.fg Color.defAttr
-                               }
       actorsHere = actorAssocs (const True) drawnLevelId s
       cursorHere = find (\(_, m) -> scursor == Just (Actor.bpos m)) actorsHere
       shiftedBPath = case cursorHere of
@@ -151,8 +148,15 @@ draw sfBlank dm cops per drawnLevelId mleader tgtPos mpath
       sfLevel =  -- fully evaluated
         let f l y = let !line = fLine y in line : l
         in foldl' f [] [lysize-1,lysize-2..0]
-      sfBottom = ["", toWidth (lxsize - 1) status]
+      addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
+      sfBottom = [ addAttr $ toWidth (lxsize - 1) status
+                 , drawSelected cli s drawnLevelId mleader ]
   in SingleFrame{..}
+
+inverseVideo :: Color.Attr
+inverseVideo = Color.Attr{ Color.fg = Color.bg Color.defAttr
+                         , Color.bg = Color.fg Color.defAttr
+                         }
 
 drawLeaderStatus :: Kind.COps -> State -> Discovery
                  -> Time -> Int -> Maybe ActorId
@@ -190,3 +194,39 @@ drawLeaderStatus cops s sdisco ltime waitTimes mleader =
          T.justifyLeft 11 ' ' ("Dmg:" <+> "---") <+>
          T.justifyLeft 13 ' ' (" " <> "HP:" <+> "--"
                                <+> "(" <> "--" <> ")")
+
+drawSelected :: StateClient -> State -> LevelId -> Maybe ActorId
+             -> [Color.AttrChar]
+drawSelected cli s drawnLevelId mleader =
+  let selected = sselected cli
+      viewOurs (aid, Actor{bsymbol, bcolor, bhp})
+        | otherwise =
+          let cattr = Color.defAttr {Color.fg = bcolor}
+              sattr
+               | Just aid == mleader = inverseVideo
+               | ES.member aid selected =
+                   -- TODO: in the future use a red rectangle instead
+                   -- of background and mark them on the map, too;
+                   -- also, perhaps blink all selected on the map,
+                   -- when selection changes
+                   if bcolor /= Color.Blue
+                   then cattr {Color.bg = Color.Blue}
+                   else cattr {Color.bg = Color.Magenta}
+               | otherwise = cattr
+          in ( (bhp > 0, bsymbol /= '@', bsymbol, bcolor, aid)
+             , Color.AttrChar sattr bsymbol )
+      ours = actorNotProjAssocs (== sside cli) drawnLevelId s
+      maxViewed = 10
+      -- Don't show anything if the only actor on the level is the leader.
+      -- He's clearly highlighted on the level map, anyway.
+      star = let sattr = case ES.size selected of
+                   0 -> Color.defAttr {Color.fg = Color.BrBlack}
+                   n | n == length ours ->
+                     Color.defAttr {Color.bg = Color.Blue}
+                   _ -> Color.defAttr
+                 char = if length ours > maxViewed then '$' else '*'
+             in Color.AttrChar sattr char
+      viewed = take maxViewed $ sort $ map viewOurs ours
+      party | map (Just . fst) ours == [mleader] = []
+            | otherwise = map snd viewed ++ [star]
+  in party
