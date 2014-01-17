@@ -16,6 +16,7 @@ import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Animation (SingleFrame (..))
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Effect
+import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Item
@@ -30,6 +31,7 @@ import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.TileKind
 
 -- | Color mode for the display.
@@ -232,13 +234,13 @@ drawSelected cli s drawnLevelId mleader =
       viewed = take maxViewed $ sort $ map viewOurs ours
       addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
       allOurs = filter ((== sside cli) . bfid) $ EM.elems $ sactorD s
-      nameN n b = T.stripEnd $ T.dropWhileEnd (/= ' ')
-                 $ T.justifyLeft (n + 1) ' ' $ T.take (n + 1) $ bname b
-      leaderName n = case mleader of
-        Nothing -> ""
-        Just aid -> nameN n  $ getActorBody aid s
+      nameN n t = T.justifyLeft n ' '
+                  $ let firstWord = head $ T.words t
+                    in if T.length firstWord > n then "" else firstWord
+      fact = sfactionD s EM.! sside cli
+      ourName n = addAttr $ nameN n $ playerName $ gplayer fact
       party = case allOurs of
-        [b] -> addAttr $ nameN 15 b
-        _ -> map snd viewed ++ [star] ++ addAttr " "
-             ++ addAttr (leaderName (13 - length viewed))
-  in party ++ addAttr (T.replicate (16 - length party) " ")
+        [_] -> ourName $ maxViewed + 1
+        _ -> [star] ++ map snd viewed ++ addAttr " "
+             ++ ourName (maxViewed - 1 - length viewed)
+  in party ++ addAttr (T.replicate (maxViewed + 2 - length party) " ")
