@@ -93,12 +93,11 @@ addMsg (Report xns) y = Report $ (encodeUtf8 y, 1) : xns
 
 -- | Split a messages into chunks that fit in one line.
 -- We assume the width of the messages line is the same as of level map.
-splitReport :: X -> X -> Report -> Overlay
-splitReport w1 w r = Overlay $ splitReportList w1 w r
+splitReport :: X -> Report -> Overlay
+splitReport w r = Overlay $ splitReportList w r
 
-splitReportList :: X -> X -> Report -> [Text]
-splitReportList w1 w r =
-  splitText w1 w $ renderReport r
+splitReportList :: X -> Report -> [Text]
+splitReportList w r = splitText w $ renderReport r
 
 -- | Render a report as a (possibly very long) string.
 renderReport :: Report  -> Text
@@ -116,23 +115,19 @@ findInReport f (Report xns) = find f $ map fst xns
 -- | Split a string into lines. Avoids ending the line with a character
 -- other than whitespace or punctuation. Space characters are removed
 -- from the start, but never from the end of lines. Newlines are respected.
-splitText :: X -> X -> Text -> [Text]
-splitText w1 w xs =
-  case T.lines xs of
-    [] -> []
-    t : ts -> splitText' w1 w t
-              ++ concatMap (splitText' w w . T.stripStart) ts
+splitText :: X -> Text -> [Text]
+splitText w xs = concatMap (splitText' w . T.stripStart) $ T.lines xs
 
-splitText' :: X -> X -> Text -> [Text]
-splitText' w1 w xs
-  | w1 >= T.length xs = [xs]  -- no problem, everything fits
+splitText' :: X -> Text -> [Text]
+splitText' w xs
+  | w >= T.length xs = [xs]  -- no problem, everything fits
   | otherwise =
-      let (pre, post) = T.splitAt w1 xs
+      let (pre, post) = T.splitAt w xs
           (ppre, ppost) = T.break (== ' ') $ T.reverse pre
           testPost = T.stripEnd ppost
       in if T.null testPost
-         then pre : splitText w w post
-         else T.reverse ppost : splitText w w (T.reverse ppre <> post)
+         then pre : splitText w post
+         else T.reverse ppost : splitText w (T.reverse ppre <> post)
 
 -- | The history of reports.
 newtype History = History [Report]
@@ -156,7 +151,7 @@ mergeHistory l =
 renderHistory :: History -> Overlay
 renderHistory (History h) =
   let w = fst normalLevelBound + 1
-  in Overlay $ concatMap (splitReportList w w) h
+  in Overlay $ concatMap (splitReportList w) h
 
 -- | Add a report to history, handling repetitions.
 addReport :: Report -> History -> History
@@ -190,26 +185,33 @@ toOverlay = Overlay
 
 -- | Split an overlay into a slideshow in which each overlay,
 -- prefixed by @msg@ and postfixed by @moreMsg@ except for the last one,
--- fits on the screen wrt height (but lines may still be too wide).
-splitOverlay :: Y -> Overlay -> Overlay -> Slideshow
-splitOverlay lysize (Overlay msg) (Overlay ls) =
+-- fits on the screen wrt height (but lines may be too wide).
+splitOverlay :: Bool -> Y -> Overlay -> Overlay -> Slideshow
+splitOverlay onBlank yspace (Overlay msg) (Overlay ls) =
   let over = msg ++ ls
-  in if length over <= lysize + 2
-     then Slideshow [Overlay over]  -- all fits on one screen
-     else let (pre, post) = splitAt (lysize + 1) over
-              Slideshow slides =
-                splitOverlay lysize (Overlay msg) (Overlay post)
-          in Slideshow $ (Overlay $ pre ++ [moreMsg]) : slides
+  in if length over <= yspace
+     then Slideshow (onBlank, [Overlay over])  -- all fits on one screen
+     else let (pre, post) = splitAt (yspace - 1) over
+              Slideshow (_, slides) =
+                splitOverlay onBlank yspace (Overlay msg) (Overlay post)
+          in Slideshow $ (onBlank, (Overlay $ pre ++ [moreMsg]) : slides)
 
 -- | A few overlays, displayed one by one upon keypress.
 -- When displayed, they are trimmed, not wrapped
 -- and any lines below the lower screen edge are not visible.
-newtype Slideshow = Slideshow {slideshow :: [Overlay]}
-  deriving (Monoid, Show)
+-- If the boolean flag is set, the overlay is displayed over a blank screen,
+-- including the bottom lines.
+newtype Slideshow = Slideshow {slideshow :: (Bool, [Overlay])}
+  deriving Show
+
+instance Monoid Slideshow where
+  mempty = Slideshow (False, [])
+  mappend (Slideshow (b1, l1)) (Slideshow (b2, l2)) =
+    Slideshow (b1 || b2, l1 ++ l2)
 
 -- | Declare the list of raw overlays to be fit for display on the screen.
 -- In particular, current @Report@ is eiter empty or unimportant
 -- or contained in the overlays and if any vertical or horizontal
 -- trimming of the overlays happens, this is intended.
-toSlideshow :: [[Text]] -> Slideshow
-toSlideshow l = Slideshow $ map Overlay l
+toSlideshow :: Bool -> [[Text]] -> Slideshow
+toSlideshow onBlank l = Slideshow (onBlank, map Overlay l)

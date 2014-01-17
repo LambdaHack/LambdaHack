@@ -8,7 +8,6 @@ module Game.LambdaHack.Frontend.Vty
   , frontendName, startup
   ) where
 
-import Data.Text.Encoding (encodeUtf8)
 import Graphics.Vty
 import qualified Graphics.Vty as Vty
 
@@ -43,15 +42,13 @@ fdisplay :: FrontendSession    -- ^ frontend session data
          -> IO ()
 fdisplay _ _ Nothing = return ()
 fdisplay FrontendSession{svty} _ (Just rawSF) =
-  let SingleFrame{sfLevel, sfBottom} = overlayOverlay rawSF
+  let SingleFrame{sfLevel} = overlayOverlay rawSF
       img = (foldr (<->) empty_image
              . map (foldr (<|>) empty_image
                       . map (\ Color.AttrChar{..} ->
                                 char (setAttr acAttr) acChar)))
             sfLevel
-      pic = pic_for_image $
-              img <->
-              utf8_bytestring (setAttr Color.defAttr) (encodeUtf8 sfBottom)
+      pic = pic_for_image img
   in update svty pic
 
 -- | Input key via the frontend.

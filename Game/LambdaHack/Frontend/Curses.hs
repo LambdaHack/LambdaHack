@@ -61,7 +61,7 @@ fdisplay :: FrontendSession    -- ^ frontend session data
          -> IO ()
 fdisplay _ _ Nothing = return ()
 fdisplay FrontendSession{..}  _ (Just rawSF) = do
-  let SingleFrame{sfLevel, sfBottom} = overlayOverlay rawSF
+  let SingleFrame{sfLevel} = overlayOverlay rawSF
   -- let defaultStyle = C.defaultCursesStyle
   -- Terminals with white background require this:
   let defaultStyle = sstyles M.! Color.defAttr
@@ -70,8 +70,8 @@ fdisplay FrontendSession{..}  _ (Just rawSF) = do
   -- We need to remove the last character from the status line,
   -- because otherwise it would overflow a standard size xterm window,
   -- due to the curses historical limitations.
-  C.mvWAddStr swin (length sfLevel + 1) 0 (init $ T.unpack sfBottom)
-  let nm = zip [0..] $ map (zip [0..]) sfLevel
+  let level = init sfLevel ++ [init $ last sfLevel]
+      nm = zip [0..] $ map (zip [0..]) level
   sequence_ [ C.setStyle (M.findWithDefault defaultStyle acAttr sstyles)
               >> C.mvWAddStr swin (y + 1) x [acChar]
             | (y, line) <- nm, (x, Color.AttrChar{..}) <- line ]

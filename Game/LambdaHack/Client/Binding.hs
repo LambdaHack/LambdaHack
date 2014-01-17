@@ -112,7 +112,7 @@ keyHelp Binding{kcmd, kmacro, kmacroDesc, kmajor, kminor} =
         let timed = True  -- TODO: check if any of the commands is timed
         in Just (km, (desc, timed, undefined))
     kcMacroDesc = mapMaybe macro2cmd $ M.toAscList kmacro
-  in toSlideshow  -- TODO: 80 below is a hack
+  in toSlideshow True -- TODO: 80 below is a hack
     [ [T.justifyLeft 80 ' ' "Basic keys. [press SPACE to advance]"] ++ [blank]
       ++ mov ++ [moreMsg]
     , [T.justifyLeft 80 ' ' "Basic keys. [press SPACE to advance]"] ++ [blank]

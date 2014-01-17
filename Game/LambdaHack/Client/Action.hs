@@ -19,7 +19,7 @@ module Game.LambdaHack.Client.Action
     -- * Display and key input
   , displayFrames, displayMore, displayYesNo, displayChoiceUI
     -- * Generate slideshows
-  , promptToSlideshow, overlayToSlideshow
+  , promptToSlideshow, overlayToSlideshow, overlayToBlankSlideshow
     -- * Draw frames
   , drawOverlay, animate
     -- * Assorted primitives
@@ -154,7 +154,8 @@ getInitConfirms :: MonadClientUI m
                 => ColorMode -> [K.KM] -> Slideshow -> m Bool
 getInitConfirms dm frontClear slides = do
   ConnFrontend{..} <- getsSession sfconn
-  frontSlides <- mapM (drawOverlay dm) $ slideshow slides
+  let (onBlank, ovs) = slideshow slides
+  frontSlides <- mapM (drawOverlay onBlank dm) ovs
   -- The first two cases are optimizations:
   case frontSlides of
     [] -> return True
@@ -246,9 +247,9 @@ getPerFid lid = do
                       $ EM.lookup lid fper
 
 -- | Display an overlay and wait for a human player command.
-getKeyOverlayCommand :: MonadClientUI m => Overlay -> m K.KM
-getKeyOverlayCommand overlay = do
-  frame <- drawOverlay ColorFull overlay
+getKeyOverlayCommand :: MonadClientUI m => Bool -> Overlay -> m K.KM
+getKeyOverlayCommand onBlank overlay = do
+  frame <- drawOverlay onBlank ColorFull overlay
   -- Give the previous client time to display his frames.
   liftIO $ threadDelay 1000
   promptGetKey [] frame
@@ -275,14 +276,14 @@ displayMore :: MonadClientUI m => ColorMode -> Msg -> m Bool
 displayMore dm prompt = do
   slides <- promptToSlideshow $ prompt <+> moreMsg
   -- Two frames drawn total (unless 'prompt' very long).
-  getInitConfirms dm [] $ slides Monoid.<> toSlideshow [[]]
+  getInitConfirms dm [] $ slides Monoid.<> toSlideshow False [[]]
 
 -- | Print a yes/no question and return the player's answer. Use black
 -- and white colours to turn player's attention to the choice.
 displayYesNo :: MonadClientUI m => ColorMode -> Msg -> m Bool
 displayYesNo dm prompt = do
   sli <- promptToSlideshow $ prompt <+> yesnoMsg
-  frame <- drawOverlay dm $ head $ slideshow sli
+  frame <- drawOverlay False dm $ head . snd $ slideshow sli
   getYesNo frame
 
 -- TODO: generalize getInitConfirms and displayChoiceUI to a single op
@@ -292,20 +293,20 @@ displayYesNo dm prompt = do
 displayChoiceUI :: MonadClientUI m
                 => Msg -> Overlay -> [K.KM] -> m (Either Slideshow K.KM)
 displayChoiceUI prompt ov keys = do
-  slides <- fmap slideshow $ overlayToSlideshow (prompt <> ", ESC]") ov
+  (_, ovs) <- fmap slideshow $ overlayToSlideshow (prompt <> ", ESC]") ov
   let legalKeys =
         [ K.KM {key=K.Space, modifier=K.NoModifier}
         , K.escKey ]
         ++ keys
       loop [] = fmap Left $ promptToSlideshow "never mind"
       loop (x : xs) = do
-        frame <- drawOverlay ColorFull x
+        frame <- drawOverlay False ColorFull x
         km@K.KM {..} <- promptGetKey legalKeys frame
         case key of
           K.Esc -> fmap Left $ promptToSlideshow "never mind"
           K.Space -> loop xs
           _ -> return $ Right km
-  loop slides
+  loop ovs
 
 -- | The prompt is shown after the current message, but not added to history.
 -- This is useful, e.g., in targeting mode, not to spam history.
@@ -318,22 +319,21 @@ promptToSlideshow prompt = overlayToSlideshow prompt emptyOverlay
 -- of the screen are displayed below. As many slides as needed are shown.
 overlayToSlideshow :: MonadClientUI m => Msg -> Overlay -> m Slideshow
 overlayToSlideshow prompt overlay = do
-  side <- getsClient sside
   lid <- getArenaUI
   Level{lxsize, lysize} <- getLevel lid  -- TODO: screen length or viewLevel
   sreport <- getsClient sreport
-  ours <- getsState $ actorNotProjList (== side) lid
-  let leftForMsg = lxsize - length ours - 1
-      (firstLineSize, promptPadded)
-        | overlay /= emptyOverlay = (lxsize, T.justifyLeft lxsize ' ' prompt)
-        | leftForMsg < lxsize `div` 3 = (0, prompt)
-        | otherwise = (leftForMsg, prompt)
-      msg = splitReport firstLineSize lxsize (addMsg sreport promptPadded)
-  return $! splitOverlay lysize msg overlay
+  let msg = splitReport lxsize (addMsg sreport prompt)
+  return $! splitOverlay False (lysize + 1) msg overlay
+
+overlayToBlankSlideshow :: MonadClientUI m => Msg -> Overlay -> m Slideshow
+overlayToBlankSlideshow prompt overlay = do
+  lid <- getArenaUI
+  Level{lysize} <- getLevel lid  -- TODO: screen length or viewLevel
+  return $! splitOverlay True (lysize + 3) (toOverlay [prompt]) overlay
 
 -- | Draw the current level with the overlay on top.
-drawOverlay :: MonadClientUI m => ColorMode -> Overlay -> m SingleFrame
-drawOverlay dm over = do
+drawOverlay :: MonadClientUI m => Bool -> ColorMode -> Overlay -> m SingleFrame
+drawOverlay onBlank dm over = do
   cops <- getsState scops
   stgtMode <- getsClient stgtMode
   arena <- getArenaUI
@@ -347,7 +347,7 @@ drawOverlay dm over = do
       pathFromLeader leader =
         maybe (return Nothing) (pathFromTgt leader) tgtPos
   mpath <- maybe (return Nothing) pathFromLeader mleader
-  return $! draw dm cops per lid mleader tgtPos mpath cli s over
+  return $! draw onBlank dm cops per lid mleader tgtPos mpath cli s over
 
 -- TODO: if more slides, don't take head, but do as in getInitConfirms,
 -- but then we have to clear the messages or they get redisplayed
@@ -357,8 +357,8 @@ drawOverlay dm over = do
 displayPush :: MonadClientUI m => m ()
 displayPush = do
   sls <- promptToSlideshow ""
-  let slide = head $ slideshow sls
-  frame <- drawOverlay ColorFull slide
+  let slide = head . snd $ slideshow sls
+  frame <- drawOverlay False ColorFull slide
   -- Visually speed up (by remving all empty frames) the show of the sequence
   -- of the move frames if the player is running.
   srunning <- getsClient srunning
@@ -430,7 +430,8 @@ animate arena anim = do
   let over = renderReport sreport
       topLineOnly = truncateToOverlay lxsize over
       basicFrame =
-        draw ColorFull cops per arena mleader tgtPos mpath cli s topLineOnly
+        draw False ColorFull cops per arena mleader tgtPos mpath cli s
+             topLineOnly
   snoAnim <- getsClient $ snoAnim . sdebugCli
   return $ if fromMaybe False snoAnim
            then [Just basicFrame]

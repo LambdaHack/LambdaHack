@@ -196,17 +196,17 @@ humanCommand msgRunStop = do
   -- UI player input, which is an overkill, but doesn't affects
   -- screensavers, because they are UI, but not human.
   modifyClient $ \cli -> cli {sbfsD = EM.empty}
-  let loop :: Maybe Overlay -> m CmdSer
+  let loop :: Maybe (Bool, Overlay) -> m CmdSer
       loop mover = do
-        over <- case mover of
+        (lastBlank, over) <- case mover of
           Nothing -> do
             -- Display current state if no slideshow or if interrupted.
             modifyClient $ \cli -> cli {slastKey = Nothing}
             sli <- promptToSlideshow ""
-            return $! head $! slideshow sli
-          Just sLast ->
+            return (False, head . snd $! slideshow sli)
+          Just bLast ->
             -- (Re-)display the last slide while waiting for the next key.
-            return sLast
+            return bLast
         (seqCurrent, seqPrevious, k) <- getsClient slastRecord
         case k of
           0 -> do
@@ -215,7 +215,7 @@ humanCommand msgRunStop = do
           _ -> do
             let slastRecord = ([], seqCurrent ++ seqPrevious, k - 1)
             modifyClient $ \cli -> cli {slastRecord}
-        km <- getKeyOverlayCommand over
+        km <- getKeyOverlayCommand lastBlank over
         -- Messages shown, so update history and reset current report.
         recordHistory
         abortOrCmd <- do
@@ -255,20 +255,21 @@ humanCommand msgRunStop = do
           Left slides -> do
             -- If no time taken, rinse and repeat.
             -- Analyse the obtained slides.
-            mLast <- case reverse $ slideshow slides of
+            let (onBlank, sli) = slideshow slides
+            mLast <- case reverse sli  of
               [] -> return Nothing
-              [sLast] -> return $ Just sLast
+              [sLast] -> return $ Just (onBlank, sLast)
               sls@(sLast : _) -> do
                 -- Show, one by one, all slides, awaiting confirmation
                 -- for all but the last one.
                 -- Note: the code that generates the slides is responsible
                 -- for inserting the @more@ prompt.
                 go <- getInitConfirms ColorFull [km]
-                      $ toSlideshow $ reverse $ map overlay sls
-                return $! if go then Just sLast else Nothing
+                      $ toSlideshow onBlank $ reverse $ map overlay sls
+                return $! if go then Just (onBlank, sLast) else Nothing
             loop mLast
   case msgRunStop of
     Nothing -> loop Nothing
     Just msg -> do
       sli <- promptToSlideshow msg
-      loop $ Just $ head $ slideshow sli
+      loop $ Just (False, head . snd $ slideshow sli)

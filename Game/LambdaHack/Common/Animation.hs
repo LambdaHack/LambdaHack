@@ -30,41 +30,41 @@ import Game.LambdaHack.Common.Random
 
 -- | The data sufficent to draw a single game screen frame.
 data SingleFrame = SingleFrame
-  { sfLevel  :: ![[AttrChar]]  -- ^ screen, from the top, line by line
-  , sfTop    :: !Overlay       -- ^ some extra lines to show at the top
-  , sfBottom :: !Text          -- ^ an extra line to show at the bottom
-                               --   unless the top lines leave no space
+  { sfLevel  :: ![[AttrChar]]  -- ^ screen, from top to bottom, line by line
+  , sfTop    :: !Overlay       -- ^ some extra lines to show over the top
+  , sfBottom :: ![Text]        -- ^ some extra lines to show at the bottom
+  , sfBlank  :: !Bool          -- ^ display only @sfTop@, on blank screen
   }
   deriving (Eq, Show)
 
--- | Overlays the sfTop overlay onto the @sfLevel@ and, if needed,
--- the @sfBottom@ fields. The resulting frame has empty @sfTop@.
+-- | Overlays the @sfTop@ and @sfBottom@ fields onto the @sfLevel@ field.
+-- The resulting frame has empty @sfTop@ and @sfBottom@.
 -- To be used by simple frontends that don't display overlays
 -- in separate windows/panes/scrolled views.
 overlayOverlay :: SingleFrame -> SingleFrame
-overlayOverlay sf@SingleFrame{sfTop} | sfTop == emptyOverlay = sf
 overlayOverlay sf@SingleFrame{..} =
   let lxsize = xsizeSingleFrame sf
       lysize = ysizeSingleFrame sf
-      (overRaw, bottom) = splitAt (lysize + 1)
-                          $ map (truncateMsg lxsize)
-                          $ overlay sfTop
-      over = case overRaw of
-        [] -> assert `failure` sf
-        hd : tl | T.length hd < lxsize ->
-          T.stripEnd hd : tl  -- get rid of the space from truncateMsg
-        _ -> overRaw
-      both = zip over sfLevel
-      f (t, line) = map (Color.AttrChar Color.defAttr) (T.unpack t)
-                    ++ drop (T.length t) line
-      newLevel = map f both ++ drop (length both) sfLevel
-      newBottom = case bottom of
-        [] -> sfBottom
-        [s] -> s
-        _ -> "--a portion of the text trimmed--"
+      emptyLine = replicate lxsize (Color.AttrChar Color.defAttr ' ')
+      canvasLength = if sfBlank then lysize + 3 else lysize + 1
+      canvas | sfBlank = replicate canvasLength emptyLine
+             | otherwise = emptyLine : sfLevel
+      topTrunc = map (truncateMsg lxsize) $ overlay sfTop
+      topLayer = if length topTrunc <= canvasLength
+                 then topTrunc
+                 else take (canvasLength - 1) topTrunc
+                      ++ ["--a portion of the text trimmed--"]
+      addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
+      f layerLine canvasLine = addAttr layerLine
+                               ++ drop (T.length layerLine) canvasLine
+      picture = zipWith f topLayer canvas
+      bottomLines | sfBlank = []
+                  | otherwise = map addAttr sfBottom
+      newLevel = picture ++ drop (length picture) canvas ++ bottomLines
   in SingleFrame { sfLevel = newLevel
                  , sfTop = emptyOverlay
-                 , sfBottom = newBottom }
+                 , sfBottom = []
+                 , sfBlank }
 
 -- | Animation is a list of frame modifications to play one by one,
 -- where each modification if a map from positions to level map symbols.
@@ -79,14 +79,14 @@ xsizeSingleFrame SingleFrame{sfLevel=[]} = 0
 xsizeSingleFrame SingleFrame{sfLevel=line : _} = length line
 
 ysizeSingleFrame :: SingleFrame -> X
-ysizeSingleFrame SingleFrame{sfLevel} = length sfLevel - 1
+ysizeSingleFrame SingleFrame{sfLevel} = length sfLevel
 
 -- | Render animations on top of a screen frame.
 renderAnim :: X -> Y -> SingleFrame -> Animation -> Frames
 renderAnim lxsize lysize basicFrame (Animation anim) =
   let modifyFrame SingleFrame{sfLevel = []} _ =
         assert `failure` (lxsize, lysize, basicFrame, anim)
-      modifyFrame SingleFrame{sfLevel = topLine : levelOld, ..} am =
+      modifyFrame SingleFrame{sfLevel = levelOld, ..} am =
         let fLine y lineOld =
               let f l (x, acOld) =
                     let pos = Point x y
@@ -94,10 +94,8 @@ renderAnim lxsize lysize basicFrame (Animation anim) =
                     in ac : l
               in foldl' f [] (zip [lxsize-1,lxsize-2..0] (reverse lineOld))
             sfLevel =  -- fully evaluated inside
-              topLine
-              : let f l (y, lineOld) = let !line = fLine y lineOld in line : l
-                in foldl' f [] (zip [lysize-1,lysize-2..0]
-                                  $ reverse levelOld)
+              let f l (y, lineOld) = let !line = fLine y lineOld in line : l
+              in foldl' f [] (zip [lysize-1,lysize-2..0] $ reverse levelOld)
         in Just SingleFrame{..}  -- a thunk within Just
   in map (modifyFrame basicFrame) anim
 
@@ -286,10 +284,12 @@ instance Binary SingleFrame where
     put sfLevel
     put sfTop
     put sfBottom
+    put sfBlank
   get = do
     sfLevel <- get
     sfTop <- get
     sfBottom <- get
+    sfBlank <- get
     return SingleFrame{..}
 
 instance Binary DebugModeCli

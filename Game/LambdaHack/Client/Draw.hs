@@ -43,10 +43,11 @@ data ColorMode =
 -- Pass at most a single page if overlay of text unchanged
 -- to the frontends to display separately or overlay over map,
 -- depending on the frontend.
-draw :: ColorMode -> Kind.COps -> Perception -> LevelId -> Maybe ActorId
-     -> Maybe Point -> Maybe [Point] -> StateClient -> State -> Overlay
+draw :: Bool -> ColorMode -> Kind.COps -> Perception -> LevelId
+     -> Maybe ActorId -> Maybe Point -> Maybe [Point] -> StateClient -> State
+     -> Overlay
      -> SingleFrame
-draw dm cops per drawnLevelId mleader tgtPos mpath
+draw sfBlank dm cops per drawnLevelId mleader tgtPos mpath
      cli@StateClient{ stgtMode, scursor, seps, sdisco, sselected
                     , smarkVision, smarkSmell, smarkSuspect, swaitTimes }
      s sfTop =
@@ -147,40 +148,10 @@ draw dm cops per drawnLevelId mleader tgtPos mpath
       fLine y =
         let f l x = let !ac = dis $ Point x y in ac : l
         in foldl' f [] [lxsize-1,lxsize-2..0]
-      viewOurs (aid, Actor{bsymbol, bcolor, bhp})
-        | otherwise =
-          let cattr = Color.defAttr {Color.fg = bcolor}
-              sattr
-               | Just aid == mleader = inverseVideo
-               | ES.member aid sselected =
-                   -- TODO: in the future use a red rectangle instead
-                   -- of background and mark them on the map, too;
-                   -- also, perhaps blink all selected on the map,
-                   -- when selection changes
-                   if bcolor /= Color.Blue
-                   then cattr {Color.bg = Color.Blue}
-                   else cattr {Color.bg = Color.Magenta}
-               | otherwise = cattr
-          in ( (bhp > 0, bsymbol /= '@', bsymbol, bcolor, aid)
-             , Color.AttrChar sattr bsymbol )
-      ours = actorNotProjAssocs (== sside cli) drawnLevelId s
-      -- Don't show anything if the only actor on the level is the leader.
-      -- He's clearly highlighted on the level map, anyway.
-      star = let sattr = case ES.size sselected of
-                   0 -> Color.defAttr {Color.fg = Color.BrBlack}
-                   n | n == length ours ->
-                     Color.defAttr {Color.bg = Color.Blue}
-                   _ -> Color.defAttr
-             in Color.AttrChar sattr '*'
-      party | map (Just . fst) ours == [mleader] = []
-            | otherwise = star : map snd (sort $ map viewOurs ours)
-      topLine = take (lxsize - length party)
-                     (repeat (Color.AttrChar Color.defAttr ' '))
-                ++ party
       sfLevel =  -- fully evaluated
         let f l y = let !line = fLine y in line : l
-        in topLine : foldl' f [] [lysize-1,lysize-2..0]
-      sfBottom = toWidth (lxsize - 1) status
+        in foldl' f [] [lysize-1,lysize-2..0]
+      sfBottom = ["", toWidth (lxsize - 1) status]
   in SingleFrame{..}
 
 drawLeaderStatus :: Kind.COps -> State -> Discovery

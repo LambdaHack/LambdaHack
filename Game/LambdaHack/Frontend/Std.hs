@@ -10,7 +10,6 @@ module Game.LambdaHack.Frontend.Std
 
 import qualified Data.ByteString.Char8 as BS
 import Data.Char (chr, ord)
-import Data.Text.Encoding (encodeUtf8)
 import qualified System.IO as SIO
 
 import Game.LambdaHack.Common.Animation (DebugModeCli (..), SingleFrame (..),
@@ -38,9 +37,8 @@ fdisplay :: FrontendSession    -- ^ frontend session data
          -> IO ()
 fdisplay _ _ Nothing = return ()
 fdisplay _ _ (Just rawSF) =
-  let SingleFrame{sfLevel, sfBottom} = overlayOverlay rawSF
-      chars = map (BS.pack . map Color.acChar) sfLevel
-      bs = chars ++ [encodeUtf8 sfBottom, BS.empty]
+  let SingleFrame{sfLevel} = overlayOverlay rawSF
+      bs = map (BS.pack . map Color.acChar) sfLevel ++ [BS.empty]
   in mapM_ BS.putStrLn bs
 
 -- | Input key via the frontend.

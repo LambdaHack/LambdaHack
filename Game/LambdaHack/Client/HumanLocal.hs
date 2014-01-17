@@ -617,7 +617,7 @@ displayMainMenu = do
         overwrite $ pasteVersion $ map T.unpack $ stripFrame mainMenuArt
   case menuOverlay of
     [] -> assert `failure` "empty Main Menu overlay" `twith` mainMenuArt
-    hd : tl -> overlayToSlideshow hd (toOverlay tl)
+    hd : tl -> overlayToBlankSlideshow hd (toOverlay tl)
                -- TODO: keys don't work if tl/=[]
 
 -- * Accept
@@ -749,7 +749,7 @@ historyHuman = do
         , "(this level:"
         , MU.Text (showT (local `timeFit` timeTurn)) MU.:> ")" ]
         <+> "Past messages:"
-  overlayToSlideshow msg $ renderHistory history
+  overlayToBlankSlideshow msg $ renderHistory history
 
 -- * MarkVision, MarkSmell, MarkSuspect
 

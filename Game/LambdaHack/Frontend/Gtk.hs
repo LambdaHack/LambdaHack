@@ -18,8 +18,6 @@ import Data.IORef
 import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
-import qualified Data.Text as T
-import Data.Text.Encoding (encodeUtf8)
 import Graphics.UI.Gtk hiding (Point)
 import System.Time
 
@@ -346,10 +344,9 @@ pushFrame sess noDelay immediate rawFrame = do
 
 evalFrame :: FrontendSession -> SingleFrame -> GtkFrame
 evalFrame FrontendSession{stags} rawSF =
-  let SingleFrame{sfLevel, sfBottom} = overlayOverlay rawSF
-      levelChar = map (T.pack . map Color.acChar) sfLevel
-      gfChar = encodeUtf8 $ T.intercalate (T.singleton '\n')
-               $ levelChar ++ [sfBottom]
+  let SingleFrame{sfLevel} = overlayOverlay rawSF
+      levelChar = unlines $ map (map Color.acChar) sfLevel
+      gfChar = BS.pack $ init levelChar
       -- Strict version of @map (map ((stags M.!) . fst)) sfLevel@.
       gfAttr  = reverse $ foldl' ff [] sfLevel
       ff ll l = reverse (foldl' f [] l) : ll

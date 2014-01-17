@@ -145,7 +145,7 @@ highSlideshow table pos status =
         [ MU.SubjectVerb person MU.Yes subject "award you"
         , MU.Ordinal pos, "place"
         , msgUnless ]
-  in toSlideshow $ map ([msg] ++) $ showCloseScores pos table height
+  in toSlideshow True $ map ([msg] ++) $ showCloseScores pos table height
 
 instance Binary ScoreRecord where
   put (ScoreRecord p n (TOD cs cp) s difficulty) = do
