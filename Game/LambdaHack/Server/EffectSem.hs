@@ -272,9 +272,11 @@ addHero bfid ppos lid configHeroNames mNumber time = do
   let freeHeroK = elemIndex Nothing mhs
       n = fromMaybe (fromMaybe 100 freeHeroK) mNumber
       symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
+      nameFromNumber 0 = "Captain"
+      nameFromNumber k = "Hero" <+> showT k
       name | gcolor == Color.BrWhite =
-        fromMaybe ("Hero" <+> showT n) $ lookup n configHeroNames
-           | otherwise = playerName gplayer <+> "Hero" <+> showT n
+        fromMaybe (nameFromNumber n) $ lookup n configHeroNames
+           | otherwise = playerName gplayer <+> nameFromNumber n
       startHP = hp - (hp `div` 5) * min 3 n
   addActor kId bfid ppos lid startHP symbol name gcolor time
 
