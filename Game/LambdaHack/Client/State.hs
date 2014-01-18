@@ -40,7 +40,7 @@ import Game.LambdaHack.Common.Vector
 -- Data invariant: if @_sleader@ is @Nothing@ then so is @srunning@.
 data StateClient = StateClient
   { stgtMode     :: !(Maybe TgtMode)  -- ^ targeting mode
-  , scursor      :: !(Maybe Point)    -- ^ cursor coordinates
+  , scursor      :: !Target           -- ^ the common, cursor target
   , seps         :: !Int              -- ^ a parameter of the tgt digital line
   , stargetD     :: !(EM.EnumMap ActorId Target)
                                    -- ^ targets of our actors in the dungeon
@@ -116,7 +116,7 @@ defStateClient :: History -> ConfigUI -> FactionId -> Bool
 defStateClient shistory sconfigUI _sside sisAI =
   StateClient
     { stgtMode = Nothing
-    , scursor = Nothing
+    , scursor = TVector $ Vector 0 (-1)  -- a step north
     , seps = 0
     , stargetD = EM.empty
     , sbfsD = EM.empty

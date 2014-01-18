@@ -73,14 +73,15 @@ moveCursor :: MonadClientUI m => Vector -> Int -> m Slideshow
 moveCursor dir n = do
   leader <- getLeaderUI
   lpos <- getsState $ bpos . getActorBody leader
-  scursor <- getsClient scursor
+  cursorPos <- cursorToPos
   Level{lxsize, lysize} <- cursorLevel
-  let cpos = fromMaybe lpos scursor
+  let cpos = fromMaybe lpos cursorPos
       shiftB pos = shiftBounded lxsize lysize pos dir
       newPos = iterate shiftB cpos !! n
   if newPos == cpos then failWith "never mind"
   else do
-    modifyClient $ \cli -> cli {scursor = Just newPos}
+    let newVector = displacement lpos newPos
+    modifyClient $ \cli -> cli {scursor = TVector newVector}
     doLook
 
 cursorLevel :: MonadClient m => m Level
@@ -143,13 +144,13 @@ lookAt detailed canSee pos aid msg = do
 -- Assumes targeting mode and so assumes that a leader is picked.
 doLook :: MonadClientUI m => m Slideshow
 doLook = do
-  scursor <- getsClient scursor
+  cursorPos <- cursorToPos
   (lid, lvl) <- viewedLevel
   per <- getPerFid lid
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   tgtPos <- targetToPos
-  let p = fromMaybe (bpos b) scursor
+  let p = fromMaybe (bpos b) cursorPos
       canSee = ES.member p (totalVisible per)
   inhabitants <- if canSee
                  then getsState $ posToActors p lid
@@ -211,7 +212,8 @@ itemOverlay bag inv = do
 -- * Project
 
 retargetLeader :: MonadClientUI m => m Slideshow
-retargetLeader = do
+retargetLeader = undefined
+{-
   stopPlayBack
   arena <- getArenaUI
   tgtPos <- targetToPos
@@ -221,6 +223,7 @@ retargetLeader = do
     else msgAdd "Cannot aim at oneself."
   modifyClient $ \cli -> cli {scursor = Nothing, seps = 0}
   tgtEnemyLeader $ TgtAuto arena
+-}
 
 -- * PickLeader
 
@@ -342,11 +345,12 @@ tgtFloorHuman = do
 -- by targeting. For example, not the targeted door, but one adjacent
 -- to the leader is closed by him.
 tgtFloorLeader :: MonadClientUI m => TgtMode -> m Slideshow
-tgtFloorLeader stgtModeNew = do
+tgtFloorLeader stgtModeNew = undefined
+{-
   leader <- getLeaderUI
   target <- getsClient $ getTarget leader
   b <- getsState $ getActorBody leader
-  mcursor <- getsClient scursor
+  mcursor <- cursorToPos
   stgtMode <- getsClient stgtMode
   tgtPos <- targetToPos
   let cursor = fromMaybe (bpos b) mcursor
@@ -367,10 +371,12 @@ tgtFloorLeader stgtModeNew = do
   modifyClient $ \cli -> cli {scursor = Just newCursor}
   setCursor stgtModeNew
   doLook
+-}
 
 -- | Set and activate cursor.
 setCursor :: MonadClientUI m => TgtMode -> m ()
-setCursor stgtModeNew = do
+setCursor stgtModeNew = undefined
+{-
   stgtModeOld <- getsClient stgtMode
   scursorOld <- getsClient scursor
   sepsOld <- getsClient seps
@@ -380,6 +386,7 @@ setCursor stgtModeNew = do
                  then Just stgtModeNew
                  else stgtModeOld
   modifyClient $ \cli -> cli {scursor, seps, stgtMode}
+-}
 
 -- * TgtEnemy
 
@@ -395,7 +402,7 @@ tgtEnemyLeader stgtModeNew = do
   ppos <- getsState (bpos . getActorBody leader)
   (lid, _) <- viewedLevel
   per <- getPerFid lid
-  scursor <- getsClient scursor
+  cursorPos <- cursorToPos
   target <- getsClient $ getTarget leader
   stgtMode <- getsClient stgtMode
   side <- getsClient sside
@@ -412,7 +419,7 @@ tgtEnemyLeader stgtModeNew = do
               in splitAt i dbs
             _ ->  -- first key press, switch to the enemy under cursor, if any
               let i = fromMaybe (-1)
-                      $ findIndex ((== scursor) . Just . bpos . snd) dbs
+                      $ findIndex ((== cursorPos) . Just . bpos . snd) dbs
               in splitAt i dbs
       gtlt = gt ++ lt
       seen (_, b) =
@@ -455,9 +462,10 @@ tgtAscendHuman :: MonadClientUI m => Int -> m Slideshow
 tgtAscendHuman k = do
   Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
   dungeon <- getsState sdungeon
-  cursor <- getsClient scursor
+  scursorOld <- getsClient scursor
+  cursorPos <- cursorToPos
   (tgtId, lvl) <- viewedLevel
-  let rightStairs = case cursor of
+  let rightStairs = case cursorPos of
         Nothing -> Nothing
         Just cpos ->
           let tile = lvl `at` cpos
@@ -473,8 +481,8 @@ tgtAscendHuman k = do
           ascDesc _ = False
           scursor =
             if any ascDesc $ tfeature $ okind (lvl `at` npos)
-            then Just npos  -- already known as an exit, focus on it
-            else cursor     -- unknown, do not reveal
+            then TPoint nln npos  -- already known as an exit, focus on it
+            else scursorOld  -- unknown, do not reveal
       modifyClient $ \cli -> cli {scursor}
       setTgtId nln
       doLook
@@ -645,29 +653,11 @@ targetReject = do
 endTargeting :: MonadClientUI m => m ()
 endTargeting = do
   leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
   scursor <- getsClient scursor
   (lid, _) <- viewedLevel
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  bs <- getsState $ actorNotProjAssocs (isAtWar fact) lid
-  let newTarget oldTarget = case oldTarget of
-        Just TEnemy{} ->
-          -- If in enemy targeting mode, switch to the enemy under
-          -- the current cursor position, if any.
-          case find (\(_im, m) -> Just (bpos m) == scursor) bs of
-            Just (im, m) -> Just $ TEnemy im (bpos m)
-            Nothing -> oldTarget
-        Just TPoint{} ->
-          case scursor of
-            Nothing -> oldTarget
-            Just cpos -> Just $ TPoint undefined cpos
-        Just TVector{} ->
-          case scursor of
-            Nothing -> oldTarget
-            Just cpos -> Just $ TVector $ displacement (bpos b) cpos
-        Nothing -> oldTarget
-  modifyClient $ updateTarget leader newTarget
+  modifyClient $ updateTarget leader $ const $ Just scursor
 
 endTargetingMsg :: MonadClientUI m => m ()
 endTargetingMsg = do

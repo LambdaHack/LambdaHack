@@ -25,7 +25,7 @@ module Game.LambdaHack.Client.Action
     -- * Assorted primitives
   , restoreGame, removeServerSave, displayPush, scoreToSlideshow
   , rndToAction, getArenaUI, getLeaderUI, targetDesc
-  , targetToPos, partAidLeader, partActorLeader
+  , targetToPos, cursorToPos, partAidLeader, partActorLeader
   , getCacheBfs, accessCacheBfs
   , debugPrint
   ) where
@@ -194,28 +194,40 @@ getArenaUI = do
           return $ max minD $ min maxD $ playerEntry $ gplayer fact
 
 -- | Calculate the position of leader's target.
+aidTgtToPos :: MonadClientUI m => ActorId -> Maybe Target -> m (Maybe Point)
+aidTgtToPos aid target = do
+  b <- getsState $ getActorBody aid
+  Level{lxsize, lysize} <- getLevel (blid b)
+  case target of
+    Just (TEnemy a _ll) -> do
+      mem <- getsState $ memActor a (blid b)
+      if mem then do  -- alive and visible
+        pos <- getsState $ bpos . getActorBody a
+        return $ Just pos
+      else return Nothing
+    Just (TPoint lid pos) ->
+      return $ if lid == blid b then Just pos else Nothing
+    Just (TVector v) ->
+      return $ Just $ shiftBounded lxsize lysize (bpos b) v
+    Nothing -> cursorToPos
+
 targetToPos :: MonadClientUI m => m (Maybe Point)
 targetToPos = do
   mleader <- getsClient _sleader
   case mleader of
     Nothing -> return Nothing
-    Just leader -> do
+    Just aid -> do
+      target <- getsClient $ getTarget aid
+      aidTgtToPos aid target
+
+cursorToPos :: MonadClientUI m => m (Maybe Point)
+cursorToPos = do
+  mleader <- getsClient _sleader
+  case mleader of
+    Nothing -> return Nothing
+    Just aid -> do
       scursor <- getsClient scursor
-      b <- getsState $ getActorBody leader
-      target <- getsClient $ getTarget leader
-      Level{lxsize, lysize} <- getLevel (blid b)
-      case target of
-        Just (TEnemy a _ll) -> do
-          mem <- getsState $ memActor a (blid b)
-          if mem then do  -- alive and visible
-            pos <- getsState $ bpos . getActorBody a
-            return $ Just pos
-          else return Nothing
-        Just (TPoint lid pos) ->
-          return $ if lid == blid b then Just pos else Nothing
-        Just (TVector v) ->
-          return $ Just $ shiftBounded lxsize lysize (bpos b) v
-        Nothing -> return scursor
+      aidTgtToPos aid $ Just scursor
 
 -- | Get the key binding.
 askBinding :: MonadClientUI m => m Binding
@@ -344,13 +356,14 @@ drawOverlay onBlank dm over = do
   cli <- getClient
   per <- getPerFid lid
   tgtPos <- targetToPos
+  cursorPos <- cursorToPos
   let pathFromTgt leader tgtP = fmap snd $ getCacheBfs leader tgtP
       pathFromLeader leader =
         maybe (return Nothing) (pathFromTgt leader) tgtPos
   mpath <- maybe (return Nothing) pathFromLeader mleader
   tgtDesc <- maybe (return "") targetDesc mleader
-  return $!
-    draw onBlank dm cops per lid mleader tgtPos mpath cli s tgtDesc over
+  return $! draw onBlank dm cops per lid mleader cursorPos tgtPos
+                 mpath cli s tgtDesc over
 
 -- TODO: if more slides, don't take head, but do as in getInitConfirms,
 -- but then we have to clear the messages or they get redisplayed
@@ -426,6 +439,7 @@ animate arena anim = do
   s <- getState
   per <- getPerFid arena
   tgtPos <- targetToPos
+  cursorPos <- cursorToPos
   let pathFromTgt leader tgtP = fmap snd $ getCacheBfs leader tgtP
       pathFromLeader leader =
         maybe (return Nothing) (pathFromTgt leader) tgtPos
@@ -434,8 +448,8 @@ animate arena anim = do
   let over = renderReport sreport
       topLineOnly = truncateToOverlay lxsize over
       basicFrame =
-        draw False ColorFull cops per arena mleader tgtPos mpath cli s
-             tgtDesc topLineOnly
+        draw False ColorFull cops per arena mleader
+             cursorPos tgtPos mpath cli s tgtDesc topLineOnly
   snoAnim <- getsClient $ snoAnim . sdebugCli
   return $ if fromMaybe False snoAnim
            then [Just basicFrame]

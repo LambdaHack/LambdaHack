@@ -46,16 +46,17 @@ data ColorMode =
 -- to the frontends to display separately or overlay over map,
 -- depending on the frontend.
 draw :: Bool -> ColorMode -> Kind.COps -> Perception -> LevelId
-     -> Maybe ActorId -> Maybe Point -> Maybe [Point] -> StateClient -> State
+     -> Maybe ActorId -> Maybe Point -> Maybe Point
+     -> Maybe [Point] -> StateClient -> State
      -> Text -> Overlay
      -> SingleFrame
-draw sfBlank dm cops per drawnLevelId mleader tgtPos mpath
-     cli@StateClient{ stgtMode, scursor, seps, sdisco
+draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos mpath
+     cli@StateClient{ stgtMode, seps, sdisco
                     , smarkVision, smarkSmell, smarkSuspect, swaitTimes } s
      targetMsg sfTop =
   let Kind.COps{cotile=Kind.Ops{okind=tokind, ouniqGroup}} = cops
       (lvl@Level{lxsize, lysize, lsmell, ltime}) = sdungeon s EM.! drawnLevelId
-      bl = case (scursor, mleader) of
+      bl = case (cursorPos, mleader) of
         (Just cursor, Just leader) ->
           let Actor{bpos, blid} = getActorBody leader s
           in if blid /= drawnLevelId
@@ -63,7 +64,7 @@ draw sfBlank dm cops per drawnLevelId mleader tgtPos mpath
              else fromMaybe [] $ bla lxsize lysize seps bpos cursor
         _ -> []
       actorsHere = actorAssocs (const True) drawnLevelId s
-      cursorHere = find (\(_, m) -> scursor == Just (Actor.bpos m)) actorsHere
+      cursorHere = find (\(_, m) -> cursorPos == Just (Actor.bpos m)) actorsHere
       shiftedBPath = case cursorHere of
         Just (_, Actor{bpath = Just p, bpos = prPos}) -> shiftPath prPos p
         _ -> []
@@ -97,7 +98,7 @@ draw sfBlank dm cops per drawnLevelId mleader tgtPos mpath
               (True, False)  -> Color.BrRed
               (False, True)  -> Color.Green
               (False, False) -> Color.Red
-            atttrOnPathOrLine = if Just pos0 `elem` [scursor, tgtPos]
+            atttrOnPathOrLine = if Just pos0 `elem` [cursorPos, tgtPos]
                                 then inverseVideo {Color.fg = fgOnPathOrLine}
                                 else Color.defAttr {Color.fg = fgOnPathOrLine}
             (char, attr0) =
