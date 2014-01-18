@@ -4,6 +4,7 @@ module Game.LambdaHack.Content.ItemKind
   ) where
 
 import Data.Text (Text)
+import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Common.Flavour
@@ -29,4 +30,4 @@ data ItemKind = ItemKind
 -- | No specific possible problems for the content of this kind, so far,
 -- so the validation function always returns the empty list of offending kinds.
 validateItemKind :: [ItemKind] -> [ItemKind]
-validateItemKind _ = []
+validateItemKind l = filter (\ik -> T.length (iname ik) > 25) l

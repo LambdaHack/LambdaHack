@@ -7,6 +7,7 @@ import Control.Arrow ((&&&))
 import Data.List
 import qualified Data.Ord as Ord
 import Data.Text (Text)
+import qualified Data.Text as T
 
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Color
@@ -41,4 +42,6 @@ validateActorKind l =
       eq ka1 ka2 = cmp ka1 ka2 == Ord.EQ
       sorted = sortBy cmp l
       nubbed = nubBy eq sorted
-  in deleteFirstsBy eq sorted nubbed
+      tooSimilar = deleteFirstsBy eq sorted nubbed
+      tooVerbose = filter (\ak -> T.length (aname ak) > 25) l
+  in tooSimilar ++ tooVerbose

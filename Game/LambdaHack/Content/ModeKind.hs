@@ -50,6 +50,7 @@ data Player = Player
   }
   deriving (Show, Eq)
 
+-- TODO: assert every Player's playerName's first word's length <= 15
 -- TODO: assert if no UI, both Ai are on and there are some non-spawners;
 -- assert that playersEnemy and playersAlly mention only factions in play.
 -- | No specific possible problems for the content of this kind, so far,
