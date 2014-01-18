@@ -3,7 +3,7 @@
 -- TODO: document
 module Game.LambdaHack.Client.HumanLocal
   ( -- * Semantics of serverl-less human commands
-    moveCursor, retargetLeader
+    moveCursor
   , pickLeaderHuman, memberCycleHuman, memberBackHuman, inventoryHuman
   , tgtFloorHuman, tgtEnemyHuman, tgtUnknownHuman, tgtAscendHuman
   , epsIncrHuman, selectActorHuman, selectNoneHuman
@@ -209,22 +209,6 @@ itemOverlay bag inv = do
          <> " "
   return $ toOverlay $ map pr $ EM.assocs inv
 
--- * Project
-
-retargetLeader :: MonadClientUI m => m Slideshow
-retargetLeader = undefined
-{-
-  stopPlayBack
-  arena <- getArenaUI
-  tgtPos <- targetToPos
-  if isNothing tgtPos
-  -- TODO: do not save to history:
-    then msgAdd "Last target invalid."
-    else msgAdd "Cannot aim at oneself."
-  modifyClient $ \cli -> cli {scursor = Nothing, seps = 0}
-  tgtEnemyLeader $ TgtAuto arena
--}
-
 -- * PickLeader
 
 pickLeaderHuman :: MonadClientUI m => Int -> m Slideshow
@@ -338,7 +322,7 @@ inventoryHuman = do
 tgtFloorHuman :: MonadClientUI m => m Slideshow
 tgtFloorHuman = do
   arena <- getArenaUI
-  tgtFloorLeader (TgtExplicit arena)
+  tgtFloorLeader undefined -- (TgtExplicit arena)
 
 -- | Start floor targeting mode or reset the cursor position to the leader.
 -- Note that the origin of a command (the hero that performs it) is unaffected
@@ -393,11 +377,6 @@ setCursor stgtModeNew = undefined
 tgtEnemyHuman :: MonadClientUI m => m Slideshow
 tgtEnemyHuman = do
   arena <- getArenaUI
-  tgtEnemyLeader (TgtExplicit arena)
-
--- | Start the enemy targeting mode. Cycle between enemy targets.
-tgtEnemyLeader :: MonadClientUI m => TgtMode -> m Slideshow
-tgtEnemyLeader stgtModeNew = do
   leader <- getLeaderUI
   ppos <- getsState (bpos . getActorBody leader)
   (lid, _) <- viewedLevel
@@ -431,7 +410,7 @@ tgtEnemyLeader stgtModeNew = do
               (na, nm) : _ -> Just (TEnemy na (bpos nm))  -- pick the next
   -- Register the chosen enemy, to pick another on next invocation.
   modifyClient $ updateTarget leader (const tgt)
-  setCursor stgtModeNew
+  setCursor $ TgtMode arena
   doLook
 
 -- * TgtUnknown
@@ -494,13 +473,7 @@ tgtAscendHuman k = do
           doLook
 
 setTgtId :: MonadClient m => LevelId -> m ()
-setTgtId nln = do
-  stgtMode <- getsClient stgtMode
-  case stgtMode of
-    Just (TgtAuto _) ->
-      modifyClient $ \cli -> cli {stgtMode = Just (TgtAuto nln)}
-    _ ->
-      modifyClient $ \cli -> cli {stgtMode = Just (TgtExplicit nln)}
+setTgtId nln = modifyClient $ \cli -> cli {stgtMode = Just (TgtMode nln)}
 
 -- * EpsIncr
 
@@ -654,9 +627,6 @@ endTargeting :: MonadClientUI m => m ()
 endTargeting = do
   leader <- getLeaderUI
   scursor <- getsClient scursor
-  (lid, _) <- viewedLevel
-  side <- getsClient sside
-  fact <- getsState $ (EM.! side) . sfactionD
   modifyClient $ updateTarget leader $ const $ Just scursor
 
 endTargetingMsg :: MonadClientUI m => m ()

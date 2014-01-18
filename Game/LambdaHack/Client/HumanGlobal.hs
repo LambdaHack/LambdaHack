@@ -325,9 +325,10 @@ projectHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   tgtPos <- targetToPos
-  if isNothing tgtPos || Just (bpos b) == tgtPos
-    then fmap Left retargetLeader
-    else projectAid leader ts
+  case tgtPos of
+    Nothing -> failWith "last target invalid"
+    Just pos | pos == bpos b -> failWith "cannot aim at oneself"
+    Just _ -> projectAid leader ts
 
 projectAid :: MonadClientUI m
            => ActorId -> [Trigger] -> m (SlideOrCmd CmdTakeTimeSer)
@@ -376,11 +377,7 @@ projectBla source tpos eps ts = do
   ggi <- getGroupItem source bag inv object1 triggerSyms
            (makePhrase ["What to", verb1 MU.:> "?"]) "in inventory"
   case ggi of
-    Right ((iid, _), (_, container)) -> do
-      stgtMode <- getsClient stgtMode
-      case stgtMode of
-        Just (TgtAuto _) -> targetAccept
-        _ -> return ()
+    Right ((iid, _), (_, container)) ->
       return $! Right $ ProjectSer source tpos eps iid container
     Left slides -> return $ Left slides
 

@@ -1,3 +1,4 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Server and client game state types and operations.
 module Game.LambdaHack.Client.State
   ( StateClient(..), defStateClient, defHistory
@@ -80,12 +81,8 @@ data StateClient = StateClient
   deriving Show
 
 -- | Current targeting mode of a client.
-data TgtMode =
-    TgtExplicit { tgtLevelId :: !LevelId }
-      -- ^ the player requested targeting mode explicitly
-  | TgtAuto     { tgtLevelId :: !LevelId }
-      -- ^ the mode was entered (and will be exited) automatically
-  deriving (Show, Eq)
+newtype TgtMode = TgtMode { tgtLevelId :: LevelId }
+  deriving (Show, Eq, Binary)
 
 -- | The type of na actor target.
 data Target =
@@ -250,16 +247,6 @@ instance Binary RunParams where
     runStopMsg <- get
     runInitDir <- get
     return RunParams{..}
-
-instance Binary TgtMode where
-  put (TgtExplicit l) = putWord8 0 >> put l
-  put (TgtAuto     l) = putWord8 1 >> put l
-  get = do
-    tag <- getWord8
-    case tag of
-      0 -> liftM TgtExplicit get
-      1 -> liftM TgtAuto get
-      _ -> fail "no parse (TgtMode)"
 
 instance Binary Target where
   put (TEnemy a ll) = putWord8 0 >> put a >> put ll
