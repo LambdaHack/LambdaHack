@@ -211,7 +211,8 @@ targetToPos = do
             pos <- getsState $ bpos . getActorBody a
             return $ Just pos
           else return Nothing
-        Just (TPoint pos) -> return $ Just pos
+        Just (TPoint lid pos) ->
+          return $ if lid == blid b then Just pos else Nothing
         Just (TVector v) ->
           return $ Just $ shiftBounded lxsize lysize (bpos b) v
         Nothing -> return scursor

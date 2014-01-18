@@ -443,7 +443,7 @@ tgtUnknownHuman = do
   if dist >= minKnown
     then failWith "no unknown spot left"
     else do
-      let tgt = Just $ TPoint closestUnknownPos
+      let tgt = Just $ TPoint (blid b) closestUnknownPos
       modifyClient $ updateTarget leader (const tgt)
       return mempty
 
@@ -661,7 +661,7 @@ endTargeting = do
         Just TPoint{} ->
           case scursor of
             Nothing -> oldTarget
-            Just cpos -> Just $ TPoint cpos
+            Just cpos -> Just $ TPoint undefined cpos
         Just TVector{} ->
           case scursor of
             Nothing -> oldTarget

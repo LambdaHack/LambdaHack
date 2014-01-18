@@ -72,7 +72,7 @@ reacquireTgt aid factionAbilities btarget fper = do
   noFoes :: Strategy (Maybe Target) <- do
     s <- getState
     str <- moveStrategy cops aid s Nothing
-    return $ (Just . TPoint . (bpos b `shift`)) `liftM` str
+    return $ (Just . TPoint (blid b) . (bpos b `shift`)) `liftM` str
   let per = fper EM.! blid b
       mk = okind $ bkind b
       actorAbilities = acanDo mk `intersect` factionAbilities
@@ -102,17 +102,19 @@ reacquireTgt aid factionAbilities btarget fper = do
                 returN "TEnemy" $ Just $ TEnemy a l
               _ -> if null visFoes         -- prefer visible foes to positions
                       && bpos b /= ll      -- not yet reached the last pos
-                   then returN "last known" $ Just $ TPoint ll
+                   then returN "last known" $ Just $ TPoint (blid b) ll
                                            -- chase the last known pos
                    else closest
           Just TEnemy{} -> closest         -- just pick the closest foe
-          Just (TPoint pos) | bpos b == pos -> closest  -- already reached pos
-          Just (TPoint pos)
-            | not $ bumpableHere cops lvl False (asight mk) pos ->
+          Just (TPoint lid pos) | pos == bpos b && lid == blid b ->
+            closest  -- already reached pos
+          Just (TPoint lid pos)
+            | not (bumpableHere cops lvl False (asight mk) pos)
+              && lid == blid b ->
             closest  -- no longer bumpable, even assuming no foes
           Just TPoint{} | null visFoes -> returN "TPoint" tgt
                                            -- nothing visible, go to pos
-          Just TPoint{} -> closest           -- prefer visible foes
+          Just TPoint{} -> closest         -- prefer visible foes
           Just TVector{} -> closest
                  -- TODO: use instead of TPoint to avoid using boldpos
           Nothing -> closest
@@ -138,7 +140,7 @@ proposeAction disco aid factionAbilities btarget = do
       (fpos, mfAid) =
         case btarget of
           Just (TEnemy foeAid l) -> (l, Just foeAid)
-          Just (TPoint l) -> (l, Nothing)
+          Just (TPoint lid l) -> (if lid == blid then l else bpos, Nothing)
           Just (TVector v) ->
             let l = shiftBounded lxsize lysize bpos v
             in (l, Nothing)
