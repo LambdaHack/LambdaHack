@@ -148,7 +148,6 @@ doLook = do
   per <- getPerFid lid
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  target <- getsClient $ getTarget leader
   tgtPos <- targetToPos
   let p = fromMaybe (bpos b) scursor
       canSee = ES.member p (totalVisible per)
@@ -170,22 +169,18 @@ doLook = do
     _ | lid /= blid b -> return Nothing
     Nothing -> return Nothing
     Just tgtP -> accessCacheBfs leader tgtP
-  let delta = maybe "" (\d -> ", delta" <+> showT d) distance
-      mode = case target of
-               Just TEnemy{} -> "[targeting foe" <+> vis <> delta <> "]"
-               Just TPoint{} -> "[targeting spot" <+> vis <> delta <> "]"
-               Just TVector{} -> "[targeting position" <+> vis <> delta <> "]"
-               Nothing -> "[targeting cursor" <+> vis <> delta <> "]"
+  let delta = maybe "" (\d -> "; delta" <+> showT d) distance
+      spotInfo = "[targetting" <+> vis <> delta <> "]"
       -- Check if there's something lying around at current position.
       is = lvl `atI` p
   -- Show general info about current position.
   lookMsg <- lookAt True canSee p leader enemyMsg
   modifyClient $ \cli -> cli {slastKey = Nothing}
   if EM.size is <= 2 then
-    promptToSlideshow (mode <+> lookMsg)
+    promptToSlideshow (spotInfo <+> lookMsg)
   else do
     io <- floorItemOverlay is
-    overlayToSlideshow (mode <+> lookMsg) io
+    overlayToSlideshow (spotInfo <+> lookMsg) io
 
 -- | Create a list of item names.
 floorItemOverlay :: MonadClient m => ItemBag -> m Overlay
@@ -677,23 +672,9 @@ endTargeting = do
 endTargetingMsg :: MonadClientUI m => m ()
 endTargetingMsg = do
   leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
-  target <- getsClient $ getTarget leader
-  s <- getState
-  tgtPos <- targetToPos
-  let targetMsg = case target of
-                    Just (TEnemy a _ll) ->
-                      if memActor a (blid b) s
-                      -- Never equal to leader, hence @partActor@.
-                      then partActor $ getActorBody a s
-                      else "a fear of the past"
-                    Just TPoint{} ->
-                      MU.Text $ "spot" <+> T.pack (show tgtPos)
-                    Just TVector{} ->
-                      MU.Text $ "position" <+> T.pack (show tgtPos)
-                    Nothing -> "current cursor position continuously"
+  targetMsg <- targetDesc leader
   subject <- partAidLeader leader
-  msgAdd $ makeSentence [MU.SubjectVerbSg subject "target", targetMsg]
+  msgAdd $ makeSentence [MU.SubjectVerbSg subject "target", MU.Text targetMsg]
 
 -- * Clear
 

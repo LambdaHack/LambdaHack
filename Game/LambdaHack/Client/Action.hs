@@ -24,7 +24,7 @@ module Game.LambdaHack.Client.Action
   , drawOverlay, animate
     -- * Assorted primitives
   , restoreGame, removeServerSave, displayPush, scoreToSlideshow
-  , rndToAction, getArenaUI, getLeaderUI
+  , rndToAction, getArenaUI, getLeaderUI, targetDesc
   , targetToPos, partAidLeader, partActorLeader
   , getCacheBfs, accessCacheBfs
   , debugPrint
@@ -347,7 +347,9 @@ drawOverlay onBlank dm over = do
       pathFromLeader leader =
         maybe (return Nothing) (pathFromTgt leader) tgtPos
   mpath <- maybe (return Nothing) pathFromLeader mleader
-  return $! draw onBlank dm cops per lid mleader tgtPos mpath cli s over
+  tgtDesc <- maybe (return "") targetDesc mleader
+  return $!
+    draw onBlank dm cops per lid mleader tgtPos mpath cli s tgtDesc over
 
 -- TODO: if more slides, don't take head, but do as in getInitConfirms,
 -- but then we have to clear the messages or they get redisplayed
@@ -427,11 +429,12 @@ animate arena anim = do
       pathFromLeader leader =
         maybe (return Nothing) (pathFromTgt leader) tgtPos
   mpath <- maybe (return Nothing) pathFromLeader mleader
+  tgtDesc <- maybe (return "") targetDesc mleader
   let over = renderReport sreport
       topLineOnly = truncateToOverlay lxsize over
       basicFrame =
         draw False ColorFull cops per arena mleader tgtPos mpath cli s
-             topLineOnly
+             tgtDesc topLineOnly
   snoAnim <- getsClient $ snoAnim . sdebugCli
   return $ if fromMaybe False snoAnim
            then [Just basicFrame]
@@ -609,3 +612,17 @@ accessCacheBfs aid target = do
   return $! if dist == maxBound
             then Nothing
             else Just $ fromEnum $ dist .&. complement minKnown
+
+targetDesc :: MonadClientUI m => ActorId -> m Text
+targetDesc leader = do
+  b <- getsState $ getActorBody leader
+  target <- getsClient $ getTarget leader
+  s <- getState
+  tgtPos <- targetToPos
+  return $ case target of
+    Just (TEnemy a _) -> if memActor a (blid b) s
+                         then bname $ getActorBody a s
+                         else "a fear of the past"
+    Just TPoint{} -> "exact spot" <+> maybe "" (T.pack . show) tgtPos
+    Just TVector{} -> "relative position" <+> maybe "" (T.pack . show) tgtPos
+    Nothing -> "cursor location"

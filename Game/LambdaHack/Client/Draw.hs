@@ -8,6 +8,7 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.List
 import Data.Maybe
+import Data.Text (Text)
 import qualified Data.Text as T
 
 import Game.LambdaHack.Client.State
@@ -46,12 +47,12 @@ data ColorMode =
 -- depending on the frontend.
 draw :: Bool -> ColorMode -> Kind.COps -> Perception -> LevelId
      -> Maybe ActorId -> Maybe Point -> Maybe [Point] -> StateClient -> State
-     -> Overlay
+     -> Text -> Overlay
      -> SingleFrame
 draw sfBlank dm cops per drawnLevelId mleader tgtPos mpath
      cli@StateClient{ stgtMode, scursor, seps, sdisco
-                    , smarkVision, smarkSmell, smarkSuspect, swaitTimes }
-     s sfTop =
+                    , smarkVision, smarkSmell, smarkSuspect, swaitTimes } s
+     targetMsg sfTop =
   let Kind.COps{cotile=Kind.Ops{okind=tokind, ouniqGroup}} = cops
       (lvl@Level{lxsize, lysize, lsmell, ltime}) = sdungeon s EM.! drawnLevelId
       bl = case (scursor, mleader) of
@@ -133,7 +134,7 @@ draw sfBlank dm cops per drawnLevelId mleader tgtPos mpath
       cursorStatus = addAttr $ T.justifyLeft 40 ' ' "Cursor:"  -- TODO
       selectedStatus = drawSelected cli s drawnLevelId mleader
       leaderStatus = drawLeaderStatus cops s sdisco ltime swaitTimes mleader
-      targetStatus = addAttr $ T.justifyLeft 40 ' ' "Target:"  -- TODO
+      targetStatus = addAttr $ T.justifyLeft 40 ' ' $ "Target:" <+> targetMsg
       sfBottom = [ arenaStatus ++ cursorStatus
                  , selectedStatus ++ leaderStatus ++ targetStatus ]
       fLine y =
