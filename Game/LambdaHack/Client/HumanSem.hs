@@ -68,6 +68,7 @@ cmdAction cmd = case cmd of
   TgtUnknown -> fmap Left tgtUnknownHuman
   TgtAscend k -> fmap Left $ tgtAscendHuman k
   EpsIncr b -> fmap Left $ epsIncrHuman b
+  TgtClear -> addNoSlides tgtClearHuman
   Cancel -> fmap Left $ cancelHuman displayMainMenu
   Accept -> fmap Left $ acceptHuman helpHuman
 

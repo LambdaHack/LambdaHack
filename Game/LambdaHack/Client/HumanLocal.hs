@@ -10,7 +10,7 @@ module Game.LambdaHack.Client.HumanLocal
   , helpHuman
   , moveCursor
   , tgtFloorHuman, tgtEnemyHuman, tgtUnknownHuman, tgtAscendHuman
-  , epsIncrHuman, cancelHuman, displayMainMenu, acceptHuman
+  , epsIncrHuman, tgtClearHuman, cancelHuman, displayMainMenu, acceptHuman
     -- * Helper functions useful also elsewhere
   , floorItemOverlay, itemOverlay
   , pickLeader, lookAt
@@ -560,6 +560,15 @@ epsIncrHuman b = do
       modifyClient $ \cli -> cli {seps = seps cli + if b then 1 else -1}
       return mempty
     else failWith "never mind"  -- no visual feedback, so no sense
+
+-- * TgtClear
+
+tgtClearHuman :: MonadClient m => m ()
+tgtClearHuman = do
+  mleader <- getsClient _sleader
+  case mleader of
+    Nothing -> return mempty
+    Just leader -> modifyClient $ updateTarget leader (const Nothing)
 
 -- * Cancel
 

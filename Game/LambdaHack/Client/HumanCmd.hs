@@ -52,6 +52,7 @@ data HumanCmd =
   | TgtUnknown
   | TgtAscend !Int
   | EpsIncr !Bool
+  | TgtClear
   | Cancel
   | Accept
   deriving (Eq, Ord, Show, Read)
@@ -94,6 +95,7 @@ minorHumanCmd cmd = case cmd of
   TgtEnemy    -> True
   TgtAscend{} -> True
   EpsIncr{}   -> True
+  TgtClear    -> True
   _           -> False
 
 -- | Commands that are forbidden on a remote level, because they
@@ -160,6 +162,7 @@ cmdDescription cmd = case cmd of
     assert `failure` "void level change when targeting" `twith` cmd
   EpsIncr True  -> "swerve targeting line"
   EpsIncr False -> "unswerve targeting line"
+  TgtClear    -> "clear leader's target"
   Cancel      -> "cancel action"
   Accept      -> "accept choice"
 

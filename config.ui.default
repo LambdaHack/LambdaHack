@@ -57,6 +57,7 @@
 ; braceright:   TgtAscend (-10)
 ; plus: EpsIncr True
 ; minus: EpsIncr False
+; BackSpace: TgtClear
 ; Escape: Cancel
 ; Return: Accept
 
