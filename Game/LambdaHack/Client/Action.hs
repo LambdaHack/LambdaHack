@@ -25,7 +25,7 @@ module Game.LambdaHack.Client.Action
     -- * Assorted primitives
   , restoreGame, removeServerSave, displayPush, scoreToSlideshow
   , rndToAction, getArenaUI, getLeaderUI, targetDesc
-  , targetToPos, cursorToPos, partAidLeader, partActorLeader
+  , viewedLevel, targetToPos, cursorToPos, partAidLeader, partActorLeader
   , getCacheBfs, accessCacheBfs
   , debugPrint
   ) where
@@ -193,13 +193,20 @@ getArenaUI = do
                   _ -> assert `failure` "empty dungeon" `twith` dungeon
           return $ max minD $ min maxD $ playerEntry $ gplayer fact
 
+viewedLevel :: MonadClientUI m => m (LevelId, Level)
+viewedLevel = do
+  arena <- getArenaUI
+  dungeon <- getsState sdungeon
+  stgtMode <- getsClient stgtMode
+  let tgtId = maybe arena tgtLevelId stgtMode
+  return (tgtId, dungeon EM.! tgtId)
+
 -- | Calculate the position of leader's target.
-aidTgtToPos :: MonadClientUI m => ActorId -> Maybe Target -> m (Maybe Point)
-aidTgtToPos aid target = do
+aidTgtToPos :: MonadClient m
+            => ActorId -> LevelId -> Maybe Target -> m (Maybe Point)
+aidTgtToPos aid currentLid target = do
   b <- getsState $ getActorBody aid
-  tgtMode <- getsClient stgtMode
-  let currentLid = maybe (blid b) tgtLevelId tgtMode
-  Level{lxsize, lysize} <- getLevel (blid b)
+  Level{lxsize, lysize} <- getLevel currentLid
   case target of
     Just (TEnemy a _ _) -> do
       mem <- getsState $ memActor a currentLid
@@ -211,25 +218,29 @@ aidTgtToPos aid target = do
       return $ if lid == currentLid then Just pos else Nothing
     Just (TVector v) ->
       return $ Just $ shiftBounded lxsize lysize (bpos b) v
-    Nothing -> cursorToPos
+    Nothing -> do
+      scursor <- getsClient scursor
+      aidTgtToPos aid currentLid $ Just scursor
 
 targetToPos :: MonadClientUI m => m (Maybe Point)
 targetToPos = do
+  (currentLid, _) <- viewedLevel
   mleader <- getsClient _sleader
   case mleader of
     Nothing -> return Nothing
     Just aid -> do
       target <- getsClient $ getTarget aid
-      aidTgtToPos aid target
+      aidTgtToPos aid currentLid target
 
 cursorToPos :: MonadClientUI m => m (Maybe Point)
 cursorToPos = do
+  (currentLid, _) <- viewedLevel
   mleader <- getsClient _sleader
   case mleader of
     Nothing -> return Nothing
     Just aid -> do
       scursor <- getsClient scursor
-      aidTgtToPos aid $ Just scursor
+      aidTgtToPos aid currentLid $ Just scursor
 
 -- | Get the key binding.
 askBinding :: MonadClientUI m => m Binding
@@ -350,9 +361,7 @@ overlayToBlankSlideshow prompt overlay = do
 drawOverlay :: MonadClientUI m => Bool -> ColorMode -> Overlay -> m SingleFrame
 drawOverlay onBlank dm over = do
   cops <- getsState scops
-  stgtMode <- getsClient stgtMode
-  arena <- getArenaUI
-  let lid = maybe arena tgtLevelId stgtMode
+  (lid, _) <- viewedLevel
   mleader <- getsClient _sleader
   s <- getState
   cli <- getClient
@@ -632,9 +641,7 @@ accessCacheBfs aid target = do
 
 targetDesc :: MonadClientUI m => ActorId -> m Text
 targetDesc leader = do
-  b <- getsState $ getActorBody leader
-  tgtMode <- getsClient stgtMode
-  let currentLid = maybe (blid b) tgtLevelId tgtMode
+  (currentLid, _) <- viewedLevel
   target <- getsClient $ getTarget leader
   s <- getState
   tgtPos <- targetToPos

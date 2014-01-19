@@ -12,8 +12,8 @@ module Game.LambdaHack.Client.HumanLocal
   , historyHuman, humanMarkVision, humanMarkSmell, humanMarkSuspect
   , helpHuman
     -- * Helper functions useful also elsewhere
-  , targetAccept, floorItemOverlay, itemOverlay
-  , viewedLevel, pickLeader, lookAt
+  , floorItemOverlay, itemOverlay
+  , pickLeader, lookAt
   ) where
 
 -- Cabal
@@ -74,7 +74,7 @@ moveCursor dir n = do
   leader <- getLeaderUI
   lpos <- getsState $ bpos . getActorBody leader
   cursorPos <- cursorToPos
-  Level{lxsize, lysize} <- cursorLevel
+  (_, Level{lxsize, lysize}) <- viewedLevel
   let cpos = fromMaybe lpos cursorPos
       shiftB pos = shiftBounded lxsize lysize pos dir
       newPos = iterate shiftB cpos !! n
@@ -83,23 +83,6 @@ moveCursor dir n = do
     let newVector = displacement lpos newPos
     modifyClient $ \cli -> cli {scursor = TVector newVector}
     doLook
-
-cursorLevel :: MonadClient m => m Level
-cursorLevel = do
-  dungeon <- getsState sdungeon
-  stgtMode <- getsClient stgtMode
-  cli <- getClient
-  let tgtId = maybe (assert `failure` "not targetting right now"
-                            `twith` cli) tgtLevelId stgtMode
-  return $! dungeon EM.! tgtId
-
-viewedLevel :: MonadClientUI m => m (LevelId, Level)
-viewedLevel = do
-  arena <- getArenaUI
-  dungeon <- getsState sdungeon
-  stgtMode <- getsClient stgtMode
-  let tgtId = maybe arena tgtLevelId stgtMode
-  return (tgtId, dungeon EM.! tgtId)
 
 -- TODO: probably move somewhere (Level?)
 -- | Produces a textual description of the terrain and items at an already
@@ -269,7 +252,8 @@ pickLeader actor = do
       -- Move the cursor, if active, to the new level.
       case stgtMode of
         Nothing -> return ()
-        Just _ -> setTgtId $ blid pbody
+        Just _ ->
+          modifyClient $ \cli -> cli {stgtMode = Just $ TgtMode $ blid pbody}
       -- Inform about items, etc.
       lookMsg <- lookAt False True (bpos pbody) actor ""
       msgAdd lookMsg
@@ -431,18 +415,14 @@ tgtAscendHuman k = do
             if any ascDesc $ tfeature $ okind (lvl `at` npos)
             then TPoint nln npos  -- already known as an exit, focus on it
             else scursorOld  -- unknown, do not reveal
-      modifyClient $ \cli -> cli {scursor}
-      setTgtId nln
+      modifyClient $ \cli -> cli {scursor, stgtMode = Just (TgtMode nln)}
       doLook
     Nothing ->  -- no stairs in the right direction
       case ascendInBranch dungeon tgtId k of
         [] -> failWith "no more levels in this direction"
         nln : _ -> do
-          setTgtId nln
+          modifyClient $ \cli -> cli {stgtMode = Just (TgtMode nln)}
           doLook
-
-setTgtId :: MonadClient m => LevelId -> m ()
-setTgtId nln = modifyClient $ \cli -> cli {stgtMode = Just (TgtMode nln)}
 
 -- * EpsIncr
 
