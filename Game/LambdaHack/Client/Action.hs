@@ -205,8 +205,10 @@ aidTgtToPos aid target = do
         pos <- getsState $ bpos . getActorBody a
         return $ Just pos
       else return Nothing
-    Just (TPoint lid pos) ->
-      return $ if lid == blid b then Just pos else Nothing
+    Just (TPoint lid pos) -> do
+      tgtMode <- getsClient stgtMode
+      let currentLid = maybe (blid b) tgtLevelId tgtMode
+      return $ if lid == currentLid then Just pos else Nothing
     Just (TVector v) ->
       return $ Just $ shiftBounded lxsize lysize (bpos b) v
     Nothing -> cursorToPos
@@ -634,10 +636,17 @@ targetDesc leader = do
   target <- getsClient $ getTarget leader
   s <- getState
   tgtPos <- targetToPos
-  return $ case target of
-    Just (TEnemy a _) -> if memActor a (blid b) s
-                         then bname $ getActorBody a s
-                         else "a fear of the past"
-    Just TPoint{} -> "exact spot" <+> maybe "" (T.pack . show) tgtPos
-    Just TVector{} -> "relative position" <+> maybe "" (T.pack . show) tgtPos
-    Nothing -> "cursor location"
+  case target of
+    Just (TEnemy a _) -> return $
+      if memActor a (blid b) s
+      then bname $ getActorBody a s
+      else "a fear of the past"
+    Just (TPoint lid _) -> do
+      tgtMode <- getsClient stgtMode
+      let currentLid = maybe (blid b) tgtLevelId tgtMode
+      return $ if lid == currentLid
+               then "exact spot" <+> maybe "" (T.pack . show) tgtPos
+               else "a spot on level" <+> showT (fromEnum lid)
+    Just TVector{} -> return $
+      "relative position" <+> maybe "" (T.pack . show) tgtPos
+    Nothing ->return $ "cursor location"
