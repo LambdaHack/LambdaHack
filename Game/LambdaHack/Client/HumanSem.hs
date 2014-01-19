@@ -52,15 +52,8 @@ cmdAction cmd = case cmd of
   MemberCycle -> fmap Left memberCycleHuman
   MemberBack -> fmap Left memberBackHuman
   Inventory -> fmap Left inventoryHuman
-  TgtFloor -> fmap Left tgtFloorHuman
-  TgtEnemy -> fmap Left tgtEnemyHuman
-  TgtUnknown -> fmap Left tgtUnknownHuman
-  TgtAscend k -> fmap Left $ tgtAscendHuman k
-  EpsIncr b -> fmap Left $ epsIncrHuman b
   SelectActor -> fmap Left selectActorHuman
   SelectNone -> addNoSlides selectNoneHuman
-  Cancel -> fmap Left $ cancelHuman displayMainMenu
-  Accept -> fmap Left $ acceptHuman helpHuman
   Clear -> addNoSlides clearHuman
   Repeat n -> addNoSlides $ repeatHuman n
   Record -> fmap Left recordHuman
@@ -69,6 +62,14 @@ cmdAction cmd = case cmd of
   MarkSmell -> addNoSlides humanMarkSmell
   MarkSuspect -> addNoSlides humanMarkSuspect
   Help -> fmap Left displayMainMenu
+
+  TgtFloor -> fmap Left tgtFloorHuman
+  TgtEnemy -> fmap Left tgtEnemyHuman
+  TgtUnknown -> fmap Left tgtUnknownHuman
+  TgtAscend k -> fmap Left $ tgtAscendHuman k
+  EpsIncr b -> fmap Left $ epsIncrHuman b
+  Cancel -> fmap Left $ cancelHuman displayMainMenu
+  Accept -> fmap Left $ acceptHuman helpHuman
 
 addNoSlides :: Monad m => m () -> m (SlideOrCmd CmdSer)
 addNoSlides cmdCli = cmdCli >> return (Left mempty)

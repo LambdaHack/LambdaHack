@@ -18,13 +18,9 @@
 ; o: AlterDir [AlterFeature {verb = "open", object = "door", feature = OpenTo "vertical open door Lit"}, AlterFeature {verb = "open", object = "door", feature = OpenTo "horizontal open door Lit"}, AlterFeature {verb = "open", object = "door", feature = OpenTo "vertical open door Dark"}, AlterFeature {verb = "open", object = "door", feature = OpenTo "horizontal open door Dark"}]
 ; less: TriggerTile [TriggerFeature {verb = "ascend", object = "level", feature = Cause (Ascend 1)}, TriggerFeature {verb = "escape", object = "dungeon", feature = Cause Escape}]
 ; greater: TriggerTile [TriggerFeature {verb = "descend", object = "level", feature = Cause (Ascend (-1))}, TriggerFeature {verb = "escape", object = "dungeon", feature = Cause Escape}]
-; p: Repeat 1
-; P: Repeat 100
-; CTRL-p: Repeat 1000
-; apostrophe: Record
 ; CTRL-semicolon: StepToTarget
 ; CTRL-y: Resend
-; CTRL-d: GameDifficultyCycle
+
 ; CTRL-r: GameRestart "campaign"
 ; ; TODO: pick game modes via arrow keys, not special keys
 ; CTRL-k: GameRestart "skirmish"
@@ -33,9 +29,25 @@
 ; CTRL-e: GameRestart "defense"
 ; CTRL-x: GameExit
 ; CTRL-s: GameSave
+; CTRL-d: GameDifficultyCycle
+
+
 ; Tab: MemberCycle
 ; ISO_Left_Tab: MemberBack
 ; I: Inventory
+; equal: SelectActor
+; underscore: SelectNone
+; space: Clear
+; p: Repeat 1
+; P: Repeat 100
+; CTRL-p: Repeat 1000
+; apostrophe: Record
+; D: History
+; V: MarkVision
+; S: MarkSmell
+; T: MarkSuspect
+; question: Help
+
 ; slash: TgtFloor
 ; asterisk: TgtEnemy
 ; CTRL-question: TgtUnknown
@@ -45,16 +57,8 @@
 ; braceright:   TgtAscend (-10)
 ; plus: EpsIncr True
 ; minus: EpsIncr False
-; equal: SelectActor
-; underscore: SelectNone
 ; Escape: Cancel
 ; Return: Accept
-; space: Clear
-; D: History
-; V: MarkVision
-; S: MarkSmell
-; T: MarkSuspect
-; question: Help
 
 ; [file]
 ; ; Names (or prefixes) of various game files.

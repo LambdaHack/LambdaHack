@@ -3,14 +3,14 @@
 -- TODO: document
 module Game.LambdaHack.Client.HumanLocal
   ( -- * Semantics of serverl-less human commands
-    moveCursor
-  , pickLeaderHuman, memberCycleHuman, memberBackHuman, inventoryHuman
-  , tgtFloorHuman, tgtEnemyHuman, tgtUnknownHuman, tgtAscendHuman
-  , epsIncrHuman, selectActorHuman, selectNoneHuman
-  , cancelHuman, displayMainMenu, acceptHuman, clearHuman
-   ,repeatHuman, recordHuman
+    pickLeaderHuman, memberCycleHuman, memberBackHuman, inventoryHuman
+  , selectActorHuman, selectNoneHuman, clearHuman
+  , repeatHuman, recordHuman
   , historyHuman, humanMarkVision, humanMarkSmell, humanMarkSuspect
   , helpHuman
+  , moveCursor
+  , tgtFloorHuman, tgtEnemyHuman, tgtUnknownHuman, tgtAscendHuman
+  , epsIncrHuman, cancelHuman, displayMainMenu, acceptHuman
     -- * Helper functions useful also elsewhere
   , floorItemOverlay, itemOverlay
   , pickLeader, lookAt
@@ -66,6 +66,235 @@ failWith msg = do
   modifyClient $ \cli -> cli {slastKey = Nothing}
   stopPlayBack
   assert (not $ T.null msg) $ promptToSlideshow msg
+
+-- * PickLeader
+
+pickLeaderHuman :: MonadClientUI m => Int -> m Slideshow
+pickLeaderHuman k = do
+  side <- getsClient sside
+  s <- getState
+  case tryFindHeroK s side k of
+    Nothing  -> failWith "No such member of the party."
+    Just (aid, _) -> do
+      void $ pickLeader aid
+      return mempty
+
+-- * MemberCycle
+
+-- | Switches current member to the next on the level, if any, wrapping.
+memberCycleHuman :: MonadClientUI m => m Slideshow
+memberCycleHuman = do
+  leader <- getLeaderUI
+  body <- getsState $ getActorBody leader
+  hs <- partyAfterLeader leader
+  case filter (\(_, b) -> blid b == blid body) hs of
+    [] -> failWith "Cannot pick any other member on this level."
+    (np, b) : _ -> do
+      success <- pickLeader np
+      assert (success `blame` "same leader" `twith` (leader, np, b)) skip
+      return mempty
+
+partyAfterLeader :: MonadActionRO m => ActorId -> m [(ActorId, Actor)]
+partyAfterLeader leader = do
+  faction <- getsState $ bfid . getActorBody leader
+  allA <- getsState $ EM.assocs . sactorD
+  s <- getState
+  let hs9 = mapMaybe (tryFindHeroK s faction) [0..9]
+      factionA = filter (\(_, body) ->
+        not (bproj body) && bfid body == faction) allA
+      hs = hs9 ++ deleteFirstsBy ((==) `on` fst) factionA hs9
+      i = fromMaybe (-1) $ findIndex ((== leader) . fst) hs
+      (lt, gt) = (take i hs, drop (i + 1) hs)
+  return $ gt ++ lt
+
+-- | Select a faction leader. False, if nothing to do.
+pickLeader :: MonadClientUI m => ActorId -> m Bool
+pickLeader actor = do
+  leader <- getLeaderUI
+  stgtMode <- getsClient stgtMode
+  if leader == actor
+    then return False -- already picked
+    else do
+      pbody <- getsState $ getActorBody actor
+      assert (not (bproj pbody) `blame` "projectile chosen as the leader"
+                                `twith` (actor, pbody)) skip
+      -- Even if it's already the leader, give his proper name, not 'you'.
+      let subject = partActor pbody
+      msgAdd $ makeSentence [subject, "picked as a leader"]
+      -- Update client state.
+      s <- getState
+      modifyClient $ updateLeader actor s
+      -- Move the cursor, if active, to the new level.
+      case stgtMode of
+        Nothing -> return ()
+        Just _ ->
+          modifyClient $ \cli -> cli {stgtMode = Just $ TgtMode $ blid pbody}
+      -- Inform about items, etc.
+      lookMsg <- lookAt False True (bpos pbody) actor ""
+      msgAdd lookMsg
+      return True
+
+-- * MemberBack
+
+-- | Switches current member to the previous in the whole dungeon, wrapping.
+memberBackHuman :: MonadClientUI m => m Slideshow
+memberBackHuman = do
+  leader <- getLeaderUI
+  hs <- partyAfterLeader leader
+  case reverse hs of
+    [] -> failWith "No other member in the party."
+    (np, b) : _ -> do
+      success <- pickLeader np
+      assert (success `blame` "same leader" `twith` (leader, np, b)) skip
+      return mempty
+
+-- * Inventory
+
+-- TODO: When inventory is displayed, let TAB switch the leader (without
+-- announcing that) and show the inventory of the new leader (unless
+-- we have just a single inventory in the future).
+-- | Display inventory
+inventoryHuman :: MonadClientUI m => m Slideshow
+inventoryHuman = do
+  leader <- getLeaderUI
+  subject <- partAidLeader leader
+  bag <- getsState $ getActorBag leader
+  invRaw <- getsState $ getActorInv leader
+  if EM.null bag
+    then promptToSlideshow $ makeSentence
+      [ MU.SubjectVerbSg subject "be"
+      , "not carrying anything" ]
+    else do
+      let blurb = makePhrase
+            [MU.Capitalize $ MU.SubjectVerbSg subject "be carrying:"]
+          inv = EM.filter (`EM.member` bag) invRaw
+      io <- itemOverlay bag inv
+      overlayToSlideshow blurb io
+
+-- * SelectActor
+
+-- TODO: make the message (and for selectNoneHuman, pickLeader, etc.)
+-- optional, since they have a clear representation in the UI elsewhere.
+selectActorHuman ::MonadClientUI m => m Slideshow
+selectActorHuman = do
+  mleader <- getsClient _sleader
+  case mleader of
+    Nothing -> failWith "no leader picked, can't select"
+    Just leader -> do
+      body <- getsState $ getActorBody leader
+      wasMemeber <- getsClient $ ES.member leader . sselected
+      let upd = if wasMemeber
+                then ES.delete leader  -- already selected, deselect instead
+                else ES.insert leader
+      modifyClient $ \cli -> cli {sselected = upd $ sselected cli}
+      let subject = partActor body
+      msgAdd $ makeSentence [subject, if wasMemeber
+                                      then "deselected"
+                                      else "selected"]
+      return mempty
+
+-- * SelectNone
+
+selectNoneHuman :: (MonadClientUI m, MonadClient m) => m ()
+selectNoneHuman = do
+  side <- getsClient sside
+  (lid, _) <- viewedLevel
+  oursAssocs <- getsState $ actorNotProjAssocs (== side) lid
+  let ours = ES.fromList $ map fst oursAssocs
+  oldSel <- getsClient sselected
+  let wasNone = ES.null $ ES.intersection ours oldSel
+      upd = if wasNone
+            then ES.union  -- already all deselected; select all instead
+            else ES.difference
+  modifyClient $ \cli -> cli {sselected = upd (sselected cli) ours}
+  let subject = "all party members on the level"
+  msgAdd $ makeSentence [subject, if wasNone
+                                  then "selected"
+                                  else "deselected"]
+
+-- * Clear
+
+-- | Clear current messages, show the next screen if any.
+clearHuman :: Monad m => m ()
+clearHuman = return ()
+
+-- * Repeat
+
+-- Note that walk followed by repeat should not be equivalent to run,
+-- because the player can really use a command that does not stop
+-- at terrain change or when walking over items.
+repeatHuman :: MonadClientUI m => Int -> m ()
+repeatHuman n = do
+  (_, seqPrevious, k) <- getsClient slastRecord
+  let macro = concat $ replicate n $ reverse seqPrevious
+  modifyClient $ \cli -> cli {slastPlay = macro ++ slastPlay cli}
+  let slastRecord = ([], [], if k == 0 then 0 else maxK)
+  modifyClient $ \cli -> cli {slastRecord}
+
+maxK :: Int
+maxK = 100
+
+-- * Record
+
+recordHuman :: MonadClientUI m => m Slideshow
+recordHuman = do
+  modifyClient $ \cli -> cli {slastKey = Nothing}
+  (_seqCurrent, seqPrevious, k) <- getsClient slastRecord
+  case k of
+    0 -> do
+      let slastRecord = ([], [], maxK)
+      modifyClient $ \cli -> cli {slastRecord}
+      promptToSlideshow $ "Macro will be recorded for up to"
+                          <+> tshow maxK <+> "steps."
+    _ -> do
+      let slastRecord = (seqPrevious, [], 0)
+      modifyClient $ \cli -> cli {slastRecord}
+      promptToSlideshow $ "Macro recording interrupted after"
+                          <+> tshow (maxK - k - 1) <+> "steps."
+
+-- * History
+
+historyHuman :: MonadClientUI m => m Slideshow
+historyHuman = do
+  history <- getsClient shistory
+  arena <- getArenaUI
+  local <- getsState $ getLocalTime arena
+  global <- getsState stime
+  let  msg = makeSentence
+        [ "You survived for"
+        , MU.CarWs (global `timeFit` timeTurn) "half-second turn"
+        , "(this level:"
+        , MU.Text (tshow (local `timeFit` timeTurn)) MU.:> ")" ]
+        <+> "Past messages:"
+  overlayToBlankSlideshow msg $ renderHistory history
+
+-- * MarkVision, MarkSmell, MarkSuspect
+
+humanMarkVision :: MonadClientUI m => m ()
+humanMarkVision = do
+  modifyClient toggleMarkVision
+  cur <- getsClient smarkVision
+  msgAdd $ "Visible area display toggled" <+> if cur then "on." else "off."
+
+humanMarkSmell :: MonadClientUI m => m ()
+humanMarkSmell = do
+  modifyClient toggleMarkSmell
+  cur <- getsClient smarkSmell
+  msgAdd $ "Smell display toggled" <+> if cur then "on." else "off."
+
+humanMarkSuspect :: MonadClientUI m => m ()
+humanMarkSuspect = do
+  modifyClient toggleMarkSuspect
+  cur <- getsClient smarkSuspect
+  msgAdd $ "Suspect terrain display toggled" <+> if cur then "on." else "off."
+
+-- * Help
+
+-- | Display command help.
+helpHuman :: MonadClientUI m => m Slideshow
+helpHuman = do
+  keyb <- askBinding
+  return $ keyHelp keyb
 
 -- * Move and Run
 
@@ -191,110 +420,6 @@ itemOverlay bag inv = do
                                  (getItemBody iid s) ]
          <> " "
   return $ toOverlay $ map pr $ EM.assocs inv
-
--- * PickLeader
-
-pickLeaderHuman :: MonadClientUI m => Int -> m Slideshow
-pickLeaderHuman k = do
-  side <- getsClient sside
-  s <- getState
-  case tryFindHeroK s side k of
-    Nothing  -> failWith "No such member of the party."
-    Just (aid, _) -> do
-      void $ pickLeader aid
-      return mempty
-
--- * MemberCycle
-
--- | Switches current member to the next on the level, if any, wrapping.
-memberCycleHuman :: MonadClientUI m => m Slideshow
-memberCycleHuman = do
-  leader <- getLeaderUI
-  body <- getsState $ getActorBody leader
-  hs <- partyAfterLeader leader
-  case filter (\(_, b) -> blid b == blid body) hs of
-    [] -> failWith "Cannot pick any other member on this level."
-    (np, b) : _ -> do
-      success <- pickLeader np
-      assert (success `blame` "same leader" `twith` (leader, np, b)) skip
-      return mempty
-
-partyAfterLeader :: MonadActionRO m => ActorId -> m [(ActorId, Actor)]
-partyAfterLeader leader = do
-  faction <- getsState $ bfid . getActorBody leader
-  allA <- getsState $ EM.assocs . sactorD
-  s <- getState
-  let hs9 = mapMaybe (tryFindHeroK s faction) [0..9]
-      factionA = filter (\(_, body) ->
-        not (bproj body) && bfid body == faction) allA
-      hs = hs9 ++ deleteFirstsBy ((==) `on` fst) factionA hs9
-      i = fromMaybe (-1) $ findIndex ((== leader) . fst) hs
-      (lt, gt) = (take i hs, drop (i + 1) hs)
-  return $ gt ++ lt
-
--- | Select a faction leader. False, if nothing to do.
-pickLeader :: MonadClientUI m => ActorId -> m Bool
-pickLeader actor = do
-  leader <- getLeaderUI
-  stgtMode <- getsClient stgtMode
-  if leader == actor
-    then return False -- already picked
-    else do
-      pbody <- getsState $ getActorBody actor
-      assert (not (bproj pbody) `blame` "projectile chosen as the leader"
-                                `twith` (actor, pbody)) skip
-      -- Even if it's already the leader, give his proper name, not 'you'.
-      let subject = partActor pbody
-      msgAdd $ makeSentence [subject, "picked as a leader"]
-      -- Update client state.
-      s <- getState
-      modifyClient $ updateLeader actor s
-      -- Move the cursor, if active, to the new level.
-      case stgtMode of
-        Nothing -> return ()
-        Just _ ->
-          modifyClient $ \cli -> cli {stgtMode = Just $ TgtMode $ blid pbody}
-      -- Inform about items, etc.
-      lookMsg <- lookAt False True (bpos pbody) actor ""
-      msgAdd lookMsg
-      return True
-
--- * MemberBack
-
--- | Switches current member to the previous in the whole dungeon, wrapping.
-memberBackHuman :: MonadClientUI m => m Slideshow
-memberBackHuman = do
-  leader <- getLeaderUI
-  hs <- partyAfterLeader leader
-  case reverse hs of
-    [] -> failWith "No other member in the party."
-    (np, b) : _ -> do
-      success <- pickLeader np
-      assert (success `blame` "same leader" `twith` (leader, np, b)) skip
-      return mempty
-
--- * Inventory
-
--- TODO: When inventory is displayed, let TAB switch the leader (without
--- announcing that) and show the inventory of the new leader (unless
--- we have just a single inventory in the future).
--- | Display inventory
-inventoryHuman :: MonadClientUI m => m Slideshow
-inventoryHuman = do
-  leader <- getLeaderUI
-  subject <- partAidLeader leader
-  bag <- getsState $ getActorBag leader
-  invRaw <- getsState $ getActorInv leader
-  if EM.null bag
-    then promptToSlideshow $ makeSentence
-      [ MU.SubjectVerbSg subject "be"
-      , "not carrying anything" ]
-    else do
-      let blurb = makePhrase
-            [MU.Capitalize $ MU.SubjectVerbSg subject "be carrying:"]
-          inv = EM.filter (`EM.member` bag) invRaw
-      io <- itemOverlay bag inv
-      overlayToSlideshow blurb io
 
 -- * TgtFloor
 
@@ -436,47 +561,6 @@ epsIncrHuman b = do
       return mempty
     else failWith "never mind"  -- no visual feedback, so no sense
 
--- * SelectActor
-
--- TODO: make the message (and for selectNoneHuman, pickLeader, etc.)
--- optional, since they have a clear representation in the UI elsewhere.
-selectActorHuman ::MonadClientUI m => m Slideshow
-selectActorHuman = do
-  mleader <- getsClient _sleader
-  case mleader of
-    Nothing -> failWith "no leader picked, can't select"
-    Just leader -> do
-      body <- getsState $ getActorBody leader
-      wasMemeber <- getsClient $ ES.member leader . sselected
-      let upd = if wasMemeber
-                then ES.delete leader  -- already selected, deselect instead
-                else ES.insert leader
-      modifyClient $ \cli -> cli {sselected = upd $ sselected cli}
-      let subject = partActor body
-      msgAdd $ makeSentence [subject, if wasMemeber
-                                      then "deselected"
-                                      else "selected"]
-      return mempty
-
--- * SelectNone
-
-selectNoneHuman :: (MonadClientUI m, MonadClient m) => m ()
-selectNoneHuman = do
-  side <- getsClient sside
-  (lid, _) <- viewedLevel
-  oursAssocs <- getsState $ actorNotProjAssocs (== side) lid
-  let ours = ES.fromList $ map fst oursAssocs
-  oldSel <- getsClient sselected
-  let wasNone = ES.null $ ES.intersection ours oldSel
-      upd = if wasNone
-            then ES.union  -- already all deselected; select all instead
-            else ES.difference
-  modifyClient $ \cli -> cli {sselected = upd (sselected cli) ours}
-  let subject = "all party members on the level"
-  msgAdd $ makeSentence [subject, if wasNone
-                                  then "selected"
-                                  else "deselected"]
-
 -- * Cancel
 
 -- | Cancel something, e.g., targeting mode, resetting the cursor
@@ -584,87 +668,3 @@ endTargetingMsg = do
   targetMsg <- targetDesc leader
   subject <- partAidLeader leader
   msgAdd $ makeSentence [MU.SubjectVerbSg subject "target", MU.Text targetMsg]
-
--- * Clear
-
--- | Clear current messages, show the next screen if any.
-clearHuman :: Monad m => m ()
-clearHuman = return ()
-
--- * Repeat
-
--- Note that walk followed by repeat should not be equivalent to run,
--- because the player can really use a command that does not stop
--- at terrain change or when walking over items.
-repeatHuman :: MonadClientUI m => Int -> m ()
-repeatHuman n = do
-  (_, seqPrevious, k) <- getsClient slastRecord
-  let macro = concat $ replicate n $ reverse seqPrevious
-  modifyClient $ \cli -> cli {slastPlay = macro ++ slastPlay cli}
-  let slastRecord = ([], [], if k == 0 then 0 else maxK)
-  modifyClient $ \cli -> cli {slastRecord}
-
-maxK :: Int
-maxK = 100
-
--- * Record
-
-recordHuman :: MonadClientUI m => m Slideshow
-recordHuman = do
-  modifyClient $ \cli -> cli {slastKey = Nothing}
-  (_seqCurrent, seqPrevious, k) <- getsClient slastRecord
-  case k of
-    0 -> do
-      let slastRecord = ([], [], maxK)
-      modifyClient $ \cli -> cli {slastRecord}
-      promptToSlideshow $ "Macro will be recorded for up to"
-                          <+> tshow maxK <+> "steps."
-    _ -> do
-      let slastRecord = (seqPrevious, [], 0)
-      modifyClient $ \cli -> cli {slastRecord}
-      promptToSlideshow $ "Macro recording interrupted after"
-                          <+> tshow (maxK - k - 1) <+> "steps."
-
--- * History
-
-historyHuman :: MonadClientUI m => m Slideshow
-historyHuman = do
-  history <- getsClient shistory
-  arena <- getArenaUI
-  local <- getsState $ getLocalTime arena
-  global <- getsState stime
-  let  msg = makeSentence
-        [ "You survived for"
-        , MU.CarWs (global `timeFit` timeTurn) "half-second turn"
-        , "(this level:"
-        , MU.Text (tshow (local `timeFit` timeTurn)) MU.:> ")" ]
-        <+> "Past messages:"
-  overlayToBlankSlideshow msg $ renderHistory history
-
--- * MarkVision, MarkSmell, MarkSuspect
-
-humanMarkVision :: MonadClientUI m => m ()
-humanMarkVision = do
-  modifyClient toggleMarkVision
-  cur <- getsClient smarkVision
-  msgAdd $ "Visible area display toggled" <+> if cur then "on." else "off."
-
-humanMarkSmell :: MonadClientUI m => m ()
-humanMarkSmell = do
-  modifyClient toggleMarkSmell
-  cur <- getsClient smarkSmell
-  msgAdd $ "Smell display toggled" <+> if cur then "on." else "off."
-
-humanMarkSuspect :: MonadClientUI m => m ()
-humanMarkSuspect = do
-  modifyClient toggleMarkSuspect
-  cur <- getsClient smarkSuspect
-  msgAdd $ "Suspect terrain display toggled" <+> if cur then "on." else "off."
-
--- * Help
-
--- | Display command help.
-helpHuman :: MonadClientUI m => m Slideshow
-helpHuman = do
-  keyb <- askBinding
-  return $ keyHelp keyb

@@ -26,25 +26,18 @@ data HumanCmd =
   | TriggerTile ![Trigger]
   | StepToTarget
   | Resend
-    -- These do not take time.
+    -- Below this line, commands do not take time.
   | GameRestart !Text
   | GameExit
   | GameSave
   | GameDifficultyCycle
-  -- These do not notify the server.
+    -- Below this line, commands do not notify the server.
   | PickLeader !Int
   | MemberCycle
   | MemberBack
   | Inventory
-  | TgtFloor
-  | TgtEnemy
-  | TgtUnknown
-  | TgtAscend !Int
-  | EpsIncr !Bool
   | SelectActor
   | SelectNone
-  | Cancel
-  | Accept
   | Clear
   | Repeat !Int
   | Record
@@ -53,6 +46,14 @@ data HumanCmd =
   | MarkSmell
   | MarkSuspect
   | Help
+    -- These are mostly related to targeting.
+  | TgtFloor
+  | TgtEnemy
+  | TgtUnknown
+  | TgtAscend !Int
+  | EpsIncr !Bool
+  | Cancel
+  | Accept
   deriving (Eq, Ord, Show, Read)
 
 data Trigger =
@@ -83,17 +84,16 @@ minorHumanCmd cmd = case cmd of
   StepToTarget -> True
   MemberCycle -> True
   MemberBack  -> True
-  TgtFloor    -> True
-  TgtEnemy    -> True
-  TgtAscend{} -> True
-  EpsIncr{}   -> True
   SelectActor -> True
   SelectNone  -> True
---  Clear     -> True
   History     -> True
   MarkVision  -> True
   MarkSmell   -> True
   MarkSuspect -> True
+  TgtFloor    -> True
+  TgtEnemy    -> True
+  TgtAscend{} -> True
+  EpsIncr{}   -> True
   _           -> False
 
 -- | Commands that are forbidden on a remote level, because they
@@ -137,6 +137,18 @@ cmdDescription cmd = case cmd of
   MemberCycle -> "cycle among party members on the level"
   MemberBack  -> "cycle among party members in the dungeon"
   Inventory   -> "display inventory"
+  SelectActor -> "select (or deselect) a party member"
+  SelectNone  -> "deselect (or select) all on the level"
+  Clear       -> "clear messages"
+  Repeat 1    -> "play back last keys"
+  Repeat n    -> "play back last keys" <+> tshow n <+> "times"
+  Record      -> "start recording a macro"
+  History     -> "display player diary"
+  MarkVision  -> "mark visible area"
+  MarkSmell   -> "mark smell"
+  MarkSuspect -> "mark suspect terrain"
+  Help        -> "display help"
+
   TgtFloor    -> "target position"
   TgtEnemy    -> "target monster"
   TgtUnknown  -> "target the closest unknown spot"
@@ -148,19 +160,8 @@ cmdDescription cmd = case cmd of
     assert `failure` "void level change when targeting" `twith` cmd
   EpsIncr True  -> "swerve targeting line"
   EpsIncr False -> "unswerve targeting line"
-  SelectActor -> "select (or deselect) a party member"
-  SelectNone  -> "deselect (or select) all on the level"
   Cancel      -> "cancel action"
   Accept      -> "accept choice"
-  Clear       -> "clear messages"
-  Repeat 1    -> "play back last keys"
-  Repeat n    -> "play back last keys" <+> tshow n <+> "times"
-  Record      -> "start recording a macro"
-  History     -> "display player diary"
-  MarkVision  -> "mark visible area"
-  MarkSmell   -> "mark smell"
-  MarkSuspect -> "mark suspect terrain"
-  Help        -> "display help"
 
 triggerDescription :: [Trigger] -> Text
 triggerDescription [] = "trigger a thing"
