@@ -63,7 +63,7 @@ cmdAtomicFilterCli cmd = case cmd of
         let subject = ""  -- a hack, we we don't handle adverbs well
             verb = "turn into"
             msg = makeSentence [ "the", MU.Text $ tname $ okind t
-                               , "at position", MU.Text $ showT p
+                               , "at position", MU.Text $ tshow p
                                , "suddenly"  -- adverb
                                , MU.SubjectVerbSg subject verb
                                , MU.AW $ MU.Text $ tname $ okind toTile ]
@@ -310,7 +310,7 @@ drawCmdAtomicUI verbose cmd = case cmd of
   HealActorA aid n -> do
     when verbose $
       aVerbMU aid $ MU.Text $ (if n > 0 then "heal" else "lose")
-                              <+> showT (abs n) <> "HP"
+                              <+> tshow (abs n) <> "HP"
     mleader <- getsClient _sleader
     when (Just aid == mleader) $ do
       Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops

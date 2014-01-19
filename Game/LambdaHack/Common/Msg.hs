@@ -2,7 +2,7 @@
 -- | Game messages displayed on top of the screen for the player to read.
 module Game.LambdaHack.Common.Msg
   ( makePhrase, makeSentence
-  , Msg, (<>), (<+>), showT, toWidth, moreMsg, yesnoMsg, truncateMsg
+  , Msg, (<>), (<+>), tshow, toWidth, moreMsg, yesnoMsg, truncateMsg
   , Report, emptyReport, nullReport, singletonReport, addMsg
   , splitReport, renderReport, findInReport
   , History, emptyHistory, singletonHistory, mergeHistory
@@ -26,8 +26,8 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 
 -- Pretty print and pack the result of @show@.
-showT :: Show a => a -> Text
-showT x = T.pack $ Show.Pretty.ppShow x
+tshow :: Show a => a -> Text
+tshow x = T.pack $ Show.Pretty.ppShow x
 
 toWidth :: Int -> Text -> Text
 toWidth n x = T.take n (T.justifyLeft n ' ' x)
@@ -107,7 +107,7 @@ renderReport (Report (xn : xs)) =
 
 renderRepetition :: (BS.ByteString, Int) -> Text
 renderRepetition (s, 1) = decodeUtf8 s
-renderRepetition (s, n) = decodeUtf8 s <> "<x" <> showT n <> ">"
+renderRepetition (s, n) = decodeUtf8 s <> "<x" <> tshow n <> ">"
 
 findInReport :: (BS.ByteString -> Bool) -> Report -> Maybe BS.ByteString
 findInReport f (Report xns) = find f $ map fst xns

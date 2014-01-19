@@ -127,7 +127,7 @@ keyTranslate e = (\(key, modifier) -> K.KM {..}) $
         -- as movement:
       | c `elem` ['1'..'9'] -> (K.KP c,              K.NoModifier)
       | otherwise           -> (K.Char c,            K.NoModifier)
-    _                       -> (K.Unknown (showT e),  K.NoModifier)
+    _                       -> (K.Unknown (tshow e),  K.NoModifier)
 
 toFColor :: Color.Color -> C.ForegroundColor
 toFColor Color.Black     = C.BlackF

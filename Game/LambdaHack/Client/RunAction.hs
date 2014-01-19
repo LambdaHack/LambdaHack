@@ -168,7 +168,7 @@ continueRunDir aid distLast mdir = do
           | not $ null actorsThere = return $ Left "actor in the way"
                          -- don't displace actors, except with leader in step 1
           | distLast >= maxDistance =
-              return $ Left $ "reached max run distance" <+> showT maxDistance
+              return $ Left $ "reached max run distance" <+> tshow maxDistance
           | accessibleDir cops lvl posHere dir =
               if distLast == 0
               then return $ Left ""  -- hack; means that zeroth step OK

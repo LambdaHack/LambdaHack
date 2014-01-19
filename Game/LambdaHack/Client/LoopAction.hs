@@ -48,15 +48,15 @@ loopAI sdebugCli cmdClientAISem = do
     (False, CmdAtomicAI ResumeA{}) -> do
       removeServerSave
       error $ T.unpack $
-        "Savefile of client" <+> showT side
+        "Savefile of client" <+> tshow side
         <+> "not usable. Removing server savefile. Please restart now."
     (False, CmdAtomicAI RestartA{}) -> return ()
     _ -> assert `failure` "unexpected command" `twith` (side, restored, cmd1)
   cmdClientAISem cmd1
   -- State and client state now valid.
-  debugPrint $ "AI client" <+> showT side <+> "started."
+  debugPrint $ "AI client" <+> tshow side <+> "started."
   loop
-  debugPrint $ "AI client" <+> showT side <+> "stopped."
+  debugPrint $ "AI client" <+> tshow side <+> "stopped."
  where
   loop = do
     cmd <- readServer
@@ -85,7 +85,7 @@ loopUI sdebugCli cmdClientUISem = do
     (False, CmdAtomicUI ResumeA{}) -> do
       removeServerSave
       error $ T.unpack $
-        "Savefile of client" <+> showT side
+        "Savefile of client" <+> tshow side
         <+> "not usable. Removing server savefile. Please restart now."
     (False, CmdAtomicUI RestartA{}) -> do
       let msg = "Welcome to" <+> title <> "!"
@@ -93,9 +93,9 @@ loopUI sdebugCli cmdClientUISem = do
       msgAdd msg
     _ -> assert `failure` "unexpected command" `twith` (side, restored, cmd1)
   -- State and client state now valid.
-  debugPrint $ "UI client" <+> showT side <+> "started."
+  debugPrint $ "UI client" <+> tshow side <+> "started."
   loop
-  debugPrint $ "UI client" <+> showT side <+> "stopped."
+  debugPrint $ "UI client" <+> tshow side <+> "stopped."
  where
   loop = do
     cmd <- readServer

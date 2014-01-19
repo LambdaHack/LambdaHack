@@ -155,8 +155,8 @@ drawArenaStatus Level{ldepth, ldesc, lseen, lclear} =
   let addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
       seenN = 100 * lseen `div` lclear
       seenTxt | seenN == 100 = "all"
-              | otherwise = T.justifyLeft 3 ' ' (showT seenN <> "%")
-      lvlN = T.justifyLeft 2 ' ' (showT $ abs ldepth)
+              | otherwise = T.justifyLeft 3 ' ' (tshow seenN <> "%")
+      lvlN = T.justifyLeft 2 ' ' (tshow $ abs ldepth)
       seenStatus = T.justifyLeft 11 ' ' ("[" <> seenTxt <+> "seen]")
   in addAttr $ lvlN <+> T.justifyLeft 25 ' ' ldesc <+> seenStatus
 
@@ -172,13 +172,13 @@ drawLeaderStatus cops s sdisco ltime waitTimes mleader =
                 let mpl@Actor{bkind, bhp} = getActorBody leader s
                     ActorKind{ahp} = okind bkind
                 in (getActorItem leader s, braced mpl ltime,
-                    showT (maxDice ahp), showT bhp)
+                    tshow (maxDice ahp), tshow bhp)
               damage = case Item.strongestSword cops bitems of
                 Just (_, (_, sw)) ->
                   case Item.jkind sdisco sw of
                     Just _ ->
                       case jeffect sw of
-                        Hurt dice p -> showT dice <> "+" <> showT p
+                        Hurt dice p -> tshow dice <> "+" <> tshow p
                         _ -> ""
                     Nothing -> "3d1"  -- TODO: ?
                 Nothing -> "3d1"  -- TODO; use the item 'fist'

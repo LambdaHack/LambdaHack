@@ -69,7 +69,7 @@ effectToSuff effect f =
     Heal p | p > 0 -> "of healing" <> affixBonus p
     Heal 0 -> "of bloodletting"
     Heal p -> "of wounding" <> affixBonus p
-    Hurt dice t -> "(" <> showT dice <> ")" <> t
+    Hurt dice t -> "(" <> tshow dice <> ")" <> t
     Mindprobe{} -> "of soul searching"
     Dominate -> "of domination"
     CallFriend p -> "of aid calling" <> affixPower p
@@ -90,10 +90,10 @@ affixPower :: Int -> Text
 affixPower p = case compare p 1 of
   EQ -> ""
   LT -> assert `failure` "power less than 1" `twith` p
-  GT -> " (+" <> showT p <> ")"
+  GT -> " (+" <> tshow p <> ")"
 
 affixBonus :: Int -> Text
 affixBonus p = case compare p 0 of
   EQ -> ""
-  LT -> " (" <> showT p <> ")"
-  GT -> " (+" <> showT p <> ")"
+  LT -> " (" <> tshow p <> ")"
+  GT -> " (+" <> tshow p <> ")"

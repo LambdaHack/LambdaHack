@@ -273,7 +273,7 @@ addHero bfid ppos lid configHeroNames mNumber time = do
       n = fromMaybe (fromMaybe 100 freeHeroK) mNumber
       symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
       nameFromNumber 0 = "Captain"
-      nameFromNumber k = "Hero" <+> showT k
+      nameFromNumber k = "Hero" <+> tshow k
       name | gcolor == Color.BrWhite =
         fromMaybe (nameFromNumber n) $ lookup n configHeroNames
            | otherwise = playerName gplayer <+> nameFromNumber n

@@ -623,5 +623,5 @@ gameDifficultyCycle = do
   DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
   let d = if sdifficultyCli <= -4 then 4 else sdifficultyCli - 1
   modifyClient $ \cli -> cli {sdebugCli = (sdebugCli cli) {sdifficultyCli = d}}
-  msgAdd $ "Next game difficulty set to" <+> showT (5 - d) <> "."
+  msgAdd $ "Next game difficulty set to" <+> tshow (5 - d) <> "."
   return $ GameDifficultySer leader d

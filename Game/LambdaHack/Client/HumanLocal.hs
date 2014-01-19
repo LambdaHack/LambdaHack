@@ -170,7 +170,7 @@ doLook = do
     _ | lid /= blid b -> return Nothing
     Nothing -> return Nothing
     Just tgtP -> accessCacheBfs leader tgtP
-  let delta = maybe "" (\d -> "; delta" <+> showT d) distance
+  let delta = maybe "" (\d -> "; delta" <+> tshow d) distance
       spotInfo = "[targetting" <+> vis <> delta <> "]"
       -- Check if there's something lying around at current position.
       is = lvl `atI` p
@@ -570,8 +570,8 @@ displayMainMenu = do
            , (fst (revLookup HumanCmd.Accept), "see more help") ]
            ++ map revLookup cmds
            ++ [ (fst ( revLookup HumanCmd.GameDifficultyCycle)
-                     , "next game difficulty" <+> showT (5 - sdifficultyCli)
-                       <+> "(current" <+> showT (5 - sdifficulty) <> ")" ) ]
+                     , "next game difficulty" <+> tshow (5 - sdifficultyCli)
+                       <+> "(current" <+> tshow (5 - sdifficulty) <> ")" ) ]
       bindingLen = 25
       bindings =  -- key bindings to display
         let fmt (k, d) = T.justifyLeft bindingLen ' '
@@ -669,12 +669,12 @@ recordHuman = do
       let slastRecord = ([], [], maxK)
       modifyClient $ \cli -> cli {slastRecord}
       promptToSlideshow $ "Macro will be recorded for up to"
-                          <+> showT maxK <+> "steps."
+                          <+> tshow maxK <+> "steps."
     _ -> do
       let slastRecord = (seqPrevious, [], 0)
       modifyClient $ \cli -> cli {slastRecord}
       promptToSlideshow $ "Macro recording interrupted after"
-                          <+> showT (maxK - k - 1) <+> "steps."
+                          <+> tshow (maxK - k - 1) <+> "steps."
 
 -- * History
 
@@ -688,7 +688,7 @@ historyHuman = do
         [ "You survived for"
         , MU.CarWs (global `timeFit` timeTurn) "half-second turn"
         , "(this level:"
-        , MU.Text (showT (local `timeFit` timeTurn)) MU.:> ")" ]
+        , MU.Text (tshow (local `timeFit` timeTurn)) MU.:> ")" ]
         <+> "Past messages:"
   overlayToBlankSlideshow msg $ renderHistory history
 

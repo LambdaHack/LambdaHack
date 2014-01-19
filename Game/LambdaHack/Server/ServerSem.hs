@@ -54,7 +54,7 @@ execFailure body failureSer = do
   -- (server should work OK with stupid clients, too).
   let fid = bfid body
       msg = showFailureSer failureSer
-  debugPrint $ "execFailure:" <+> showT fid <+> ":" <+> msg
+  debugPrint $ "execFailure:" <+> tshow fid <+> ":" <+> msg
   execSfxAtomic $ MsgFidD fid $ "Unexpected problem:" <+> msg <> "."
     -- TODO: --more--, but keep in history
 

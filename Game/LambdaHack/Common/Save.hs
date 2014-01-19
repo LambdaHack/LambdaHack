@@ -99,7 +99,7 @@ restoreGame name configAppDataDir copies pathsDataFile = do
   let handler :: Ex.SomeException -> IO (Maybe a)
       handler e = do
         let msg = "Restore failed. The error message is:"
-                  <+> (T.unwords . T.lines) (showT e)
+                  <+> (T.unwords . T.lines) (tshow e)
         delayPrint $ msg
         return Nothing
   either handler return res

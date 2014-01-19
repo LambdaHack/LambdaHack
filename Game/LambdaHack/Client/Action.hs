@@ -646,7 +646,7 @@ targetDesc leader = do
       let currentLid = maybe (blid b) tgtLevelId tgtMode
       return $ if lid == currentLid
                then "exact spot" <+> maybe "" (T.pack . show) tgtPos
-               else "a spot on level" <+> showT (fromEnum lid)
+               else "a spot on level" <+> tshow (fromEnum lid)
     Just TVector{} -> return $
       "relative position" <+> maybe "" (T.pack . show) tgtPos
     Nothing ->return $ "cursor location"

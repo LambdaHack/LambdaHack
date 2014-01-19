@@ -141,9 +141,9 @@ cmdDescription cmd = case cmd of
   TgtEnemy    -> "target monster"
   TgtUnknown  -> "target the closest unknown spot"
   TgtAscend k | k == 1  -> "target next shallower level"
-  TgtAscend k | k >= 2  -> "target" <+> showT k    <+> "levels shallower"
+  TgtAscend k | k >= 2  -> "target" <+> tshow k    <+> "levels shallower"
   TgtAscend k | k == -1 -> "target next deeper level"
-  TgtAscend k | k <= -2 -> "target" <+> showT (-k) <+> "levels deeper"
+  TgtAscend k | k <= -2 -> "target" <+> tshow (-k) <+> "levels deeper"
   TgtAscend _ ->
     assert `failure` "void level change when targeting" `twith` cmd
   EpsIncr True  -> "swerve targeting line"
@@ -154,7 +154,7 @@ cmdDescription cmd = case cmd of
   Accept      -> "accept choice"
   Clear       -> "clear messages"
   Repeat 1    -> "play back last keys"
-  Repeat n    -> "play back last keys" <+> showT n <+> "times"
+  Repeat n    -> "play back last keys" <+> tshow n <+> "times"
   Record      -> "start recording a macro"
   History     -> "display player diary"
   MarkVision  -> "mark visible area"

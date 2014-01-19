@@ -249,8 +249,8 @@ pollFrames sess@FrontendSession{sdebugCli=DebugModeCli{smaxFps}}
   -- Check if the time is up.
   let maxFps = fromMaybe defaultMaxFps smaxFps
   curTime <- getClockTime
-  let diffT = diffTime setTime curTime
-  if diffT > microInSec `div` maxPolls maxFps
+  let diffSetCur = diffTime setTime curTime
+  if diffSetCur > microInSec `div` maxPolls maxFps
     then do
       -- Delay half of the time difference.
       threadDelay $ diffTime curTime setTime `div` 2

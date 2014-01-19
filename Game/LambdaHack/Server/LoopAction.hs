@@ -157,9 +157,9 @@ endClip arenas = do
   time <- getsState stime
   Config{configSaveBkpClips} <- getsServer sconfig
   let clipN = time `timeFit` timeClip
-      cinT = let r = timeTurn `timeFit` timeClip
-             in assert (r > 2) r
-      clipMod = clipN `mod` cinT
+      clipInTurn = let r = timeTurn `timeFit` timeClip
+                   in assert (r > 2) r
+      clipMod = clipN `mod` clipInTurn
   bkpSave <- getsServer sbkpSave
   when (bkpSave || clipN `mod` configSaveBkpClips == 0) $ do
     modifyServer $ \ser -> ser {sbkpSave = False}
@@ -317,8 +317,8 @@ handleActors cmdSerSem lid = do
         -- to avoid long reports, but we'd have to add -more- prompts.
         let mainUIactor = playerUI (gplayer fact) && aidIsLeader
         when mainUIactor $ execSfxAtomic $ RecordHistoryD side
-        cmdT <- sendQueryAI side aid
-        let cmdS = CmdTakeTimeSer cmdT
+        cmdTimed <- sendQueryAI side aid
+        let cmdS = CmdTakeTimeSer cmdTimed
         (aidNew, bPre) <- switchLeader cmdS
         assert (not (bhp bPre <= 0 && not (bproj bPre))
                 `blame` "AI switches to an incapacitated actor"

@@ -158,9 +158,9 @@ sendPingAI :: MonadConnServer m => FactionId -> m ()
 sendPingAI fid = do
   conn <- getsDict $ snd . (EM.! fid)
   writeTQueueAI CmdPingAI $ fromServer conn
-  -- debugPrint $ "AI client" <+> showT fid <+> "pinged..."
+  -- debugPrint $ "AI client" <+> tshow fid <+> "pinged..."
   cmdHack <- readTQueueAI $ toServer conn
-  -- debugPrint $ "AI client" <+> showT fid <+> "responded."
+  -- debugPrint $ "AI client" <+> tshow fid <+> "responded."
   assert (cmdHack == WaitSer (toEnum (-1))) skip
 
 sendUpdateUI :: MonadConnServer m => FactionId -> CmdClientUI -> m ()
@@ -187,9 +187,9 @@ sendPingUI fid = do
     Nothing -> assert `failure` "no channel for faction" `twith` fid
     Just (_, conn) -> do
       writeTQueueUI CmdPingUI $ fromServer conn
-      -- debugPrint $ "UI client" <+> showT fid <+> "pinged..."
+      -- debugPrint $ "UI client" <+> tshow fid <+> "pinged..."
       cmdHack <- readTQueueUI $ toServer conn
-      -- debugPrint $ "UI client" <+> showT fid <+> "responded."
+      -- debugPrint $ "UI client" <+> tshow fid <+> "responded."
       assert (cmdHack == CmdTakeTimeSer (WaitSer (toEnum (-1)))) skip
 
 -- TODO: refactor wrt Game.LambdaHack.Common.Save
@@ -209,7 +209,7 @@ restoreScore Config{configAppDataDir, configScoresFile} = do
     let handler :: Ex.SomeException -> IO (Maybe a)
         handler e = do
           let msg = "High score restore failed. The error message is:"
-                    <+> (T.unwords . T.lines) (showT e)
+                    <+> (T.unwords . T.lines) (tshow e)
           delayPrint $ msg
           return Nothing
     either handler return res

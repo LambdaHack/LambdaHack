@@ -133,7 +133,7 @@ fadeF fs out side pname frame = do
   let topRight = True
       lxsize = xsizeSingleFrame frame
       lysize = ysizeSingleFrame frame
-      msg = "Player" <+> showT (fromEnum side) <> ","
+      msg = "Player" <+> tshow (fromEnum side) <> ","
             <+> pname <> (if T.null pname then "" else ",")
             <+> "get ready!"
   animMap <- rndToIO $ fadeout out topRight lxsize lysize

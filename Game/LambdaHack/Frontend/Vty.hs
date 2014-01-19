@@ -88,7 +88,7 @@ keyTranslate n =
     KPageDown     -> K.PgDn
     KBegin        -> K.Begin
     (KASCII c)    -> K.Char c
-    _             -> K.Unknown (showT n)
+    _             -> K.Unknown (tshow n)
 
 -- | Translates modifiers to our own encoding.
 modifierTranslate :: [Modifier] -> K.Modifier
