@@ -300,8 +300,10 @@ helpHuman = do
 
 moveCursor :: MonadClientUI m => Vector -> Int -> m Slideshow
 moveCursor dir n = do
+  arena <- getArenaUI
   leader <- getLeaderUI
   lpos <- getsState $ bpos . getActorBody leader
+  scursor <- getsClient scursor
   cursorPos <- cursorToPos
   (_, Level{lxsize, lysize}) <- viewedLevel
   let cpos = fromMaybe lpos cursorPos
@@ -309,8 +311,10 @@ moveCursor dir n = do
       newPos = iterate shiftB cpos !! n
   if newPos == cpos then failWith "never mind"
   else do
-    let newVector = displacement lpos newPos
-    modifyClient $ \cli -> cli {scursor = TVector newVector}
+    let tgt = case scursor of
+          TVector{} -> TVector $ displacement lpos newPos
+          _ -> TPoint arena newPos
+    modifyClient $ \cli -> cli {scursor = tgt}
     doLook
 
 -- TODO: probably move somewhere (Level?)
@@ -438,16 +442,14 @@ tgtFloorHuman = do
   bs <- getsState $ actorNotProjAssocs (isAtWar fact) arena
   let cursor = fromMaybe (bpos b) cursorPos
       tgt = case scursor of
-        _ | not $ isJust stgtMode ->  -- first key press: keep target
+        _ | isNothing stgtMode ->  -- first key press: keep target
           scursor
-        TEnemy{} ->  -- target position
-          TVector $ displacement (bpos b) cursor
-        TVector{} ->  -- target spot
-          TPoint arena cursor
-        TPoint{} ->  -- target enemy, if any
+        TEnemy{} -> TPoint arena cursor
+        TPoint{} -> TVector $ displacement (bpos b) cursor
+        TVector{} ->
           case find (\(_, m) -> Just (bpos m) == cursorPos) bs of
             Just (im, m) -> TEnemy im (blid m) (bpos m)
-            Nothing -> scursor
+            Nothing -> TPoint arena cursor
   modifyClient $ \cli -> cli {scursor = tgt, stgtMode = Just $ TgtMode arena}
   doLook
 
