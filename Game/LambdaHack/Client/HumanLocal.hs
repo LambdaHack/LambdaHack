@@ -266,15 +266,10 @@ pickLeader actor = do
       -- Update client state.
       s <- getState
       modifyClient $ updateLeader actor s
-      -- Move the cursor, if active, to the new level...
+      -- Move the cursor, if active, to the new level.
       case stgtMode of
         Nothing -> return ()
-        Just tgtMode -> do
-          setTgtId $ blid pbody
-          -- ... and to the new position, if the new leader targets
-          -- enemy or position.
-          target <- getsClient $ getTarget actor
-          when (isJust target) $ setCursor tgtMode
+        Just _ -> setTgtId $ blid pbody
       -- Inform about items, etc.
       lookMsg <- lookAt False True (bpos pbody) actor ""
       msgAdd lookMsg
@@ -319,58 +314,33 @@ inventoryHuman = do
 
 -- * TgtFloor
 
+-- | Cycle targeting mode. Do not change position of the cursor,
+-- switch among things at that position.
 tgtFloorHuman :: MonadClientUI m => m Slideshow
 tgtFloorHuman = do
   arena <- getArenaUI
-  tgtFloorLeader undefined -- (TgtExplicit arena)
-
--- | Start floor targeting mode or reset the cursor position to the leader.
--- Note that the origin of a command (the hero that performs it) is unaffected
--- by targeting. For example, not the targeted door, but one adjacent
--- to the leader is closed by him.
-tgtFloorLeader :: MonadClientUI m => TgtMode -> m Slideshow
-tgtFloorLeader stgtModeNew = undefined
-{-
   leader <- getLeaderUI
-  target <- getsClient $ getTarget leader
   b <- getsState $ getActorBody leader
-  mcursor <- cursorToPos
+  cursorPos <- cursorToPos
+  scursor <- getsClient scursor
   stgtMode <- getsClient stgtMode
-  tgtPos <- targetToPos
-  let cursor = fromMaybe (bpos b) mcursor
-      (tgt, newCursor) = case target of
-        Just TEnemy{} ->  -- forget enemy target, keep the cursor
-          (Nothing, cursor)
-        _ | not $ isJust stgtMode ->
-          -- first key press: keep target and cursor
-          (target, cursor)
-        Just TVector{} | tgtPos == mcursor ->
-          -- double key press at this position: forget position, reset cursor
-          (Nothing, bpos b)
-        _ ->
-          -- any other not first key press: target position, keep the cursor
-          (Just $ TVector $ displacement (bpos b) cursor, cursor)
-  -- Register that we want to target positions or cursor.
-  modifyClient $ updateTarget leader (const tgt)
-  modifyClient $ \cli -> cli {scursor = Just newCursor}
-  setCursor stgtModeNew
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
+  bs <- getsState $ actorNotProjAssocs (isAtWar fact) arena
+  let cursor = fromMaybe (bpos b) cursorPos
+      tgt = case scursor of
+        _ | not $ isJust stgtMode ->  -- first key press: keep target
+          scursor
+        TEnemy{} ->  -- target position
+          TVector $ displacement (bpos b) cursor
+        TVector{} ->  -- target spot
+          TPoint arena cursor
+        TPoint{} ->  -- target enemy, if any
+          case find (\(_, m) -> Just (bpos m) == cursorPos) bs of
+            Just (im, m) -> TEnemy im (bpos m)
+            Nothing -> scursor
+  modifyClient $ \cli -> cli {scursor = tgt, stgtMode = Just $ TgtMode arena}
   doLook
--}
-
--- | Set and activate cursor.
-setCursor :: MonadClientUI m => TgtMode -> m ()
-setCursor stgtModeNew = undefined
-{-
-  stgtModeOld <- getsClient stgtMode
-  scursorOld <- getsClient scursor
-  sepsOld <- getsClient seps
-  scursor <- targetToPos
-  let seps = if scursor == scursorOld then sepsOld else 0
-      stgtMode = if isNothing stgtModeOld
-                 then Just stgtModeNew
-                 else stgtModeOld
-  modifyClient $ \cli -> cli {scursor, seps, stgtMode}
--}
 
 -- * TgtEnemy
 
@@ -382,18 +352,18 @@ tgtEnemyHuman = do
   (lid, _) <- viewedLevel
   per <- getPerFid lid
   cursorPos <- cursorToPos
-  target <- getsClient $ getTarget leader
+  scursor <- getsClient scursor
   stgtMode <- getsClient stgtMode
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   bs <- getsState $ actorNotProjAssocs (isAtWar fact) lid
   let ordPos (_, b) = (chessDist ppos $ bpos b, bpos b)
       dbs = sortBy (comparing ordPos) bs
-      (lt, gt) = case target of
-            Just (TEnemy n _) | isJust stgtMode ->  -- pick next enemy
+      (lt, gt) = case scursor of
+            TEnemy n _ | isJust stgtMode ->  -- pick next enemy
               let i = fromMaybe (-1) $ findIndex ((== n) . fst) dbs
               in splitAt (i + 1) dbs
-            Just (TEnemy n _) ->  -- first key press, retarget old enemy
+            TEnemy n _ ->  -- first key press, retarget old enemy
               let i = fromMaybe (-1) $ findIndex ((== n) . fst) dbs
               in splitAt i dbs
             _ ->  -- first key press, switch to the enemy under cursor, if any
@@ -406,11 +376,10 @@ tgtEnemyHuman = do
         in actorSeesPos per leader mpos  -- is it visible by actor?
       lf = filter seen gtlt
       tgt = case lf of
-              [] -> target  -- no enemies in sight, stick to last target
-              (na, nm) : _ -> Just (TEnemy na (bpos nm))  -- pick the next
+              [] -> scursor  -- no enemies in sight, stick to last target
+              (na, nm) : _ -> TEnemy na (bpos nm)  -- pick the next
   -- Register the chosen enemy, to pick another on next invocation.
-  modifyClient $ updateTarget leader (const tgt)
-  setCursor $ TgtMode arena
+  modifyClient $ \cli -> cli {scursor = tgt, stgtMode = Just $ TgtMode arena}
   doLook
 
 -- * TgtUnknown

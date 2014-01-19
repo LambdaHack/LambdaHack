@@ -197,17 +197,17 @@ getArenaUI = do
 aidTgtToPos :: MonadClientUI m => ActorId -> Maybe Target -> m (Maybe Point)
 aidTgtToPos aid target = do
   b <- getsState $ getActorBody aid
+  tgtMode <- getsClient stgtMode
+  let currentLid = maybe (blid b) tgtLevelId tgtMode
   Level{lxsize, lysize} <- getLevel (blid b)
   case target of
-    Just (TEnemy a _ll) -> do
-      mem <- getsState $ memActor a (blid b)
+    Just (TEnemy a _) -> do
+      mem <- getsState $ memActor a currentLid
       if mem then do  -- alive and visible
         pos <- getsState $ bpos . getActorBody a
         return $ Just pos
       else return Nothing
-    Just (TPoint lid pos) -> do
-      tgtMode <- getsClient stgtMode
-      let currentLid = maybe (blid b) tgtLevelId tgtMode
+    Just (TPoint lid pos) ->
       return $ if lid == currentLid then Just pos else Nothing
     Just (TVector v) ->
       return $ Just $ shiftBounded lxsize lysize (bpos b) v
@@ -633,17 +633,17 @@ accessCacheBfs aid target = do
 targetDesc :: MonadClientUI m => ActorId -> m Text
 targetDesc leader = do
   b <- getsState $ getActorBody leader
+  tgtMode <- getsClient stgtMode
+  let currentLid = maybe (blid b) tgtLevelId tgtMode
   target <- getsClient $ getTarget leader
   s <- getState
   tgtPos <- targetToPos
   case target of
     Just (TEnemy a _) -> return $
-      if memActor a (blid b) s
+      if memActor a currentLid s
       then bname $ getActorBody a s
       else "a fear of the past"
-    Just (TPoint lid _) -> do
-      tgtMode <- getsClient stgtMode
-      let currentLid = maybe (blid b) tgtLevelId tgtMode
+    Just (TPoint lid _) ->
       return $ if lid == currentLid
                then "exact spot" <+> maybe "" (T.pack . show) tgtPos
                else "a spot on level" <+> tshow (fromEnum lid)
