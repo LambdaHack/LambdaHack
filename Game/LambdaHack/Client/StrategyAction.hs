@@ -88,21 +88,23 @@ reacquireTgt aid factionAbilities btarget fper = do
                     | otherwise = minimum foeDist
             minFoes =
               filter (\(_, body) -> distB (bpos body) == minDist) visFoes
-            minTargets = map (\(a, body) ->
-                                Just $ TEnemy a $ bpos body) minFoes
+            minTargets =
+              map (\(a, body) ->
+                    Just $ TEnemy a (blid body) (bpos body)) minFoes
             minTgtS = liftFrequency $ uniformFreq "closest" minTargets
         in minTgtS .| noFoes .| returN "TCursor" Nothing  -- never empty
       reacquire :: Maybe Target -> Strategy (Maybe Target)
       reacquire tgt =
         case tgt of
-          Just (TEnemy a ll) | focused ->  -- chase even if enemy dead, to loot
+          Just (TEnemy a lid ll) | focused && lid == blid b ->
+            -- Chase even if enemy dead, to loot.
             case fmap bpos $ EM.lookup a actorD of
               Just l | actorSeesPos per aid l ->
                 -- prefer visible (and alive) foes
-                returN "TEnemy" $ Just $ TEnemy a l
+                returN "TEnemy" $ Just $ TEnemy a lid l
               _ -> if null visFoes         -- prefer visible foes to positions
                       && bpos b /= ll      -- not yet reached the last pos
-                   then returN "last known" $ Just $ TPoint (blid b) ll
+                   then returN "last known" $ Just $ TPoint lid ll
                                            -- chase the last known pos
                    else closest
           Just TEnemy{} -> closest         -- just pick the closest foe
@@ -139,7 +141,8 @@ proposeAction disco aid factionAbilities btarget = do
   let mk = okind bkind
       (fpos, mfAid) =
         case btarget of
-          Just (TEnemy foeAid l) -> (l, Just foeAid)
+          Just (TEnemy foeAid lid l) ->
+            (if lid == blid then l else bpos, Just foeAid)
           Just (TPoint lid l) -> (if lid == blid then l else bpos, Nothing)
           Just (TVector v) ->
             let l = shiftBounded lxsize lysize bpos v

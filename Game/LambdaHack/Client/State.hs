@@ -86,7 +86,8 @@ newtype TgtMode = TgtMode { tgtLevelId :: LevelId }
 
 -- | The type of na actor target.
 data Target =
-    TEnemy !ActorId !Point  -- ^ target an actor with its last seen position
+    TEnemy !ActorId !LevelId !Point
+                            -- ^ target an actor with its last seen position
   | TPoint !LevelId !Point  -- ^ target a concrete spot
   | TVector !Vector         -- ^ target a position relative to actor's @bpos@
   deriving (Show, Eq)
@@ -249,13 +250,13 @@ instance Binary RunParams where
     return RunParams{..}
 
 instance Binary Target where
-  put (TEnemy a ll) = putWord8 0 >> put a >> put ll
+  put (TEnemy a lid p) = putWord8 0 >> put a >> put lid >> put p
   put (TPoint lid p) = putWord8 1 >> put lid >> put p
   put (TVector v) = putWord8 2 >> put v
   get = do
     tag <- getWord8
     case tag of
-      0 -> liftM2 TEnemy get get
+      0 -> liftM3 TEnemy get get get
       1 -> liftM2 TPoint get get
       2 -> liftM TVector get
       _ -> fail "no parse (Target)"

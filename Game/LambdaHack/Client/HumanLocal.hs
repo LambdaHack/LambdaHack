@@ -337,7 +337,7 @@ tgtFloorHuman = do
           TPoint arena cursor
         TPoint{} ->  -- target enemy, if any
           case find (\(_, m) -> Just (bpos m) == cursorPos) bs of
-            Just (im, m) -> TEnemy im (bpos m)
+            Just (im, m) -> TEnemy im (blid m) (bpos m)
             Nothing -> scursor
   modifyClient $ \cli -> cli {scursor = tgt, stgtMode = Just $ TgtMode arena}
   doLook
@@ -360,10 +360,10 @@ tgtEnemyHuman = do
   let ordPos (_, b) = (chessDist ppos $ bpos b, bpos b)
       dbs = sortBy (comparing ordPos) bs
       (lt, gt) = case scursor of
-            TEnemy n _ | isJust stgtMode ->  -- pick next enemy
+            TEnemy n _ _ | isJust stgtMode ->  -- pick next enemy
               let i = fromMaybe (-1) $ findIndex ((== n) . fst) dbs
               in splitAt (i + 1) dbs
-            TEnemy n _ ->  -- first key press, retarget old enemy
+            TEnemy n _ _ ->  -- first key press, retarget old enemy
               let i = fromMaybe (-1) $ findIndex ((== n) . fst) dbs
               in splitAt i dbs
             _ ->  -- first key press, switch to the enemy under cursor, if any
@@ -377,7 +377,7 @@ tgtEnemyHuman = do
       lf = filter seen gtlt
       tgt = case lf of
               [] -> scursor  -- no enemies in sight, stick to last target
-              (na, nm) : _ -> TEnemy na (bpos nm)  -- pick the next
+              (na, nm) : _ -> TEnemy na (blid nm) (bpos nm)  -- pick the next
   -- Register the chosen enemy, to pick another on next invocation.
   modifyClient $ \cli -> cli {scursor = tgt, stgtMode = Just $ TgtMode arena}
   doLook

@@ -201,7 +201,7 @@ aidTgtToPos aid target = do
   let currentLid = maybe (blid b) tgtLevelId tgtMode
   Level{lxsize, lysize} <- getLevel (blid b)
   case target of
-    Just (TEnemy a _) -> do
+    Just (TEnemy a _ _) -> do
       mem <- getsState $ memActor a currentLid
       if mem then do  -- alive and visible
         pos <- getsState $ bpos . getActorBody a
@@ -639,7 +639,7 @@ targetDesc leader = do
   s <- getState
   tgtPos <- targetToPos
   case target of
-    Just (TEnemy a _) -> return $
+    Just (TEnemy a _ _) -> return $
       if memActor a currentLid s
       then bname $ getActorBody a s
       else "a fear of the past"
