@@ -167,81 +167,6 @@ getInitConfirms dm frontClear slides = do
       km <- readConnFrontend
       return $! km /= K.escKey
 
-getLeaderUI :: MonadClientUI m => m ActorId
-getLeaderUI = do
-  cli <- getClient
-  case _sleader cli of
-    Nothing -> assert `failure` "leader expected but not found" `twith` cli
-    Just leader -> return leader
-
-getArenaUI :: MonadClientUI m => m LevelId
-getArenaUI = do
-  mleader <- getsClient _sleader
-  case mleader of
-    Just leader -> getsState $ blid . getActorBody leader
-    Nothing -> do
-      side <- getsClient sside
-      factionD <- getsState sfactionD
-      let fact = factionD EM.! side
-      case gquit fact of
-        Just Status{stDepth} -> return $ toEnum stDepth
-        Nothing -> do
-          dungeon <- getsState sdungeon
-          let (minD, maxD) =
-                case (EM.minViewWithKey dungeon, EM.maxViewWithKey dungeon) of
-                  (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
-                  _ -> assert `failure` "empty dungeon" `twith` dungeon
-          return $ max minD $ min maxD $ playerEntry $ gplayer fact
-
-viewedLevel :: MonadClientUI m => m (LevelId, Level)
-viewedLevel = do
-  arena <- getArenaUI
-  dungeon <- getsState sdungeon
-  stgtMode <- getsClient stgtMode
-  let tgtId = maybe arena tgtLevelId stgtMode
-  return (tgtId, dungeon EM.! tgtId)
-
--- | Calculate the position of leader's target.
-aidTgtToPos :: MonadClient m
-            => Maybe ActorId -> LevelId -> Maybe Target -> m (Maybe Point)
-aidTgtToPos maid currentLid target = do
-  Level{lxsize, lysize} <- getLevel currentLid
-  case target of
-    Just (TEnemy a _ _) -> do
-      mem <- getsState $ memActor a currentLid
-      if mem then do  -- alive and visible
-        pos <- getsState $ bpos . getActorBody a
-        return $ Just pos
-      else return Nothing
-    Just (TPoint lid pos) ->
-      return $ if lid == currentLid then Just pos else Nothing
-    Just (TVector v) ->
-      case maid of
-        Nothing -> return Nothing
-        Just aid -> do
-          b <- getsState $ getActorBody aid
-          return $ Just $ shiftBounded lxsize lysize (bpos b) v
-    Nothing -> do
-      scursor <- getsClient scursor
-      aidTgtToPos maid currentLid $ Just scursor
-
-targetToPos :: MonadClientUI m => m (Maybe Point)
-targetToPos = do
-  (currentLid, _) <- viewedLevel
-  mleader <- getsClient _sleader
-  case mleader of
-    Nothing -> return Nothing
-    Just aid -> do
-      target <- getsClient $ getTarget aid
-      aidTgtToPos mleader currentLid target
-
-cursorToPos :: MonadClientUI m => m (Maybe Point)
-cursorToPos = do
-  (currentLid, _) <- viewedLevel
-  mleader <- getsClient _sleader
-  scursor <- getsClient scursor
-  aidTgtToPos mleader currentLid $ Just scursor
-
 -- | Get the key binding.
 askBinding :: MonadClientUI m => m Binding
 askBinding = getsSession sbinding
@@ -645,20 +570,22 @@ targetDesc :: MonadClientUI m => Maybe Target -> m Text
 targetDesc target = do
   (currentLid, _) <- viewedLevel
   mleader <- getsClient _sleader
-  tgtPos <- aidTgtToPos mleader currentLid target
   case target of
-    Just (TEnemy a _ _) -> do
+    Just (TEnemy a lid p) -> do
       onLevel <- getsState $ memActor a currentLid
       if onLevel
       then do
         getsState $ bname . getActorBody a
-      else
-        return "a fear of the past"
-    Just (TPoint lid _) ->
+      else return $
+        if lid == currentLid
+        then "a foe last seen at" <+> (T.pack . show) p
+        else "a foe last seen on level" <+> tshow (fromEnum lid)
+    Just (TPoint lid p) ->
       return $ if lid == currentLid
-               then "exact spot" <+> maybe "" (T.pack . show) tgtPos
+               then "exact spot" <+> (T.pack . show) p
                else "a spot on level" <+> tshow (fromEnum lid)
-    Just TVector{} ->
+    Just TVector{} -> do
+       tgtPos <- aidTgtToPos mleader currentLid target
        return $ "relative position" <+> maybe "" (T.pack . show) tgtPos
     Nothing -> return $ "cursor location"
 
@@ -671,3 +598,81 @@ targetDescCursor :: MonadClientUI m => m Text
 targetDescCursor = do
   scursor <- getsClient scursor
   targetDesc $ Just scursor
+
+
+getLeaderUI :: MonadClientUI m => m ActorId
+getLeaderUI = do
+  cli <- getClient
+  case _sleader cli of
+    Nothing -> assert `failure` "leader expected but not found" `twith` cli
+    Just leader -> return leader
+
+getArenaUI :: MonadClientUI m => m LevelId
+getArenaUI = do
+  mleader <- getsClient _sleader
+  case mleader of
+    Just leader -> getsState $ blid . getActorBody leader
+    Nothing -> do
+      side <- getsClient sside
+      factionD <- getsState sfactionD
+      let fact = factionD EM.! side
+      case gquit fact of
+        Just Status{stDepth} -> return $ toEnum stDepth
+        Nothing -> do
+          dungeon <- getsState sdungeon
+          let (minD, maxD) =
+                case (EM.minViewWithKey dungeon, EM.maxViewWithKey dungeon) of
+                  (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
+                  _ -> assert `failure` "empty dungeon" `twith` dungeon
+          return $ max minD $ min maxD $ playerEntry $ gplayer fact
+
+viewedLevel :: MonadClientUI m => m (LevelId, Level)
+viewedLevel = do
+  arena <- getArenaUI
+  dungeon <- getsState sdungeon
+  stgtMode <- getsClient stgtMode
+  let tgtId = maybe arena tgtLevelId stgtMode
+  return (tgtId, dungeon EM.! tgtId)
+
+-- | Calculate the position of leader's target.
+aidTgtToPos :: MonadClient m
+            => Maybe ActorId -> LevelId -> Maybe Target -> m (Maybe Point)
+aidTgtToPos maid currentLid target = do
+  Level{lxsize, lysize} <- getLevel currentLid
+  case target of
+    Just (TEnemy a _ _) -> do
+      mem <- getsState $ memActor a currentLid
+      if mem then do  -- alive and visible
+        pos <- getsState $ bpos . getActorBody a
+        return $ Just pos
+      else return Nothing
+    Just (TPoint lid pos) ->
+      return $ if lid == currentLid then Just pos else Nothing
+    Just (TVector v) ->
+      case maid of
+        Nothing -> return Nothing
+        Just aid -> do
+          b <- getsState $ getActorBody aid
+          return $ Just $ shiftBounded lxsize lysize (bpos b) v
+    Nothing -> do
+      scursor <- getsClient scursor
+      aidTgtToPos maid currentLid $ Just scursor
+
+-- TODO: don't point at Enemy you don't see, or you shoot at wall
+-- there is a discrepancy between / and * in aquiring unseen Enemy targets
+targetToPos :: MonadClientUI m => m (Maybe Point)
+targetToPos = do
+  (currentLid, _) <- viewedLevel
+  mleader <- getsClient _sleader
+  case mleader of
+    Nothing -> return Nothing
+    Just aid -> do
+      target <- getsClient $ getTarget aid
+      aidTgtToPos mleader currentLid target
+
+cursorToPos :: MonadClientUI m => m (Maybe Point)
+cursorToPos = do
+  (currentLid, _) <- viewedLevel
+  mleader <- getsClient _sleader
+  scursor <- getsClient scursor
+  aidTgtToPos mleader currentLid $ Just scursor
