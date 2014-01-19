@@ -24,7 +24,7 @@ module Game.LambdaHack.Client.Action
   , drawOverlay, animate
     -- * Assorted primitives
   , restoreGame, removeServerSave, displayPush, scoreToSlideshow
-  , rndToAction, getArenaUI, getLeaderUI, targetDesc
+  , rndToAction, getArenaUI, getLeaderUI, targetDescLeader
   , viewedLevel, targetToPos, cursorToPos, partAidLeader, partActorLeader
   , getCacheBfs, accessCacheBfs
   , debugPrint
@@ -203,9 +203,8 @@ viewedLevel = do
 
 -- | Calculate the position of leader's target.
 aidTgtToPos :: MonadClient m
-            => ActorId -> LevelId -> Maybe Target -> m (Maybe Point)
-aidTgtToPos aid currentLid target = do
-  b <- getsState $ getActorBody aid
+            => Maybe ActorId -> LevelId -> Maybe Target -> m (Maybe Point)
+aidTgtToPos maid currentLid target = do
   Level{lxsize, lysize} <- getLevel currentLid
   case target of
     Just (TEnemy a _ _) -> do
@@ -217,10 +216,14 @@ aidTgtToPos aid currentLid target = do
     Just (TPoint lid pos) ->
       return $ if lid == currentLid then Just pos else Nothing
     Just (TVector v) ->
-      return $ Just $ shiftBounded lxsize lysize (bpos b) v
+      case maid of
+        Nothing -> return Nothing
+        Just aid -> do
+          b <- getsState $ getActorBody aid
+          return $ Just $ shiftBounded lxsize lysize (bpos b) v
     Nothing -> do
       scursor <- getsClient scursor
-      aidTgtToPos aid currentLid $ Just scursor
+      aidTgtToPos maid currentLid $ Just scursor
 
 targetToPos :: MonadClientUI m => m (Maybe Point)
 targetToPos = do
@@ -230,17 +233,14 @@ targetToPos = do
     Nothing -> return Nothing
     Just aid -> do
       target <- getsClient $ getTarget aid
-      aidTgtToPos aid currentLid target
+      aidTgtToPos mleader currentLid target
 
 cursorToPos :: MonadClientUI m => m (Maybe Point)
 cursorToPos = do
   (currentLid, _) <- viewedLevel
   mleader <- getsClient _sleader
-  case mleader of
-    Nothing -> return Nothing
-    Just aid -> do
-      scursor <- getsClient scursor
-      aidTgtToPos aid currentLid $ Just scursor
+  scursor <- getsClient scursor
+  aidTgtToPos mleader currentLid $ Just scursor
 
 -- | Get the key binding.
 askBinding :: MonadClientUI m => m Binding
@@ -372,9 +372,10 @@ drawOverlay onBlank dm over = do
       pathFromLeader leader =
         maybe (return Nothing) (pathFromTgt leader) tgtPos
   mpath <- maybe (return Nothing) pathFromLeader mleader
-  tgtDesc <- maybe (return "") targetDesc mleader
+  tgtDesc <- maybe (return "") targetDescLeader mleader
+  cursorDesc <- targetDescCursor
   return $! draw onBlank dm cops per lid mleader cursorPos tgtPos
-                 mpath cli s tgtDesc over
+                 mpath cli s cursorDesc tgtDesc over
 
 -- TODO: if more slides, don't take head, but do as in getInitConfirms,
 -- but then we have to clear the messages or they get redisplayed
@@ -455,12 +456,13 @@ animate arena anim = do
       pathFromLeader leader =
         maybe (return Nothing) (pathFromTgt leader) tgtPos
   mpath <- maybe (return Nothing) pathFromLeader mleader
-  tgtDesc <- maybe (return "") targetDesc mleader
+  tgtDesc <- maybe (return "") targetDescLeader mleader
+  cursorDesc <- targetDescCursor
   let over = renderReport sreport
       topLineOnly = truncateToOverlay lxsize over
       basicFrame =
         draw False ColorFull cops per arena mleader
-             cursorPos tgtPos mpath cli s tgtDesc topLineOnly
+             cursorPos tgtPos mpath cli s cursorDesc tgtDesc topLineOnly
   snoAnim <- getsClient $ snoAnim . sdebugCli
   return $ if fromMaybe False snoAnim
            then [Just basicFrame]
@@ -639,21 +641,33 @@ accessCacheBfs aid target = do
             then Nothing
             else Just $ fromEnum $ dist .&. complement minKnown
 
-targetDesc :: MonadClientUI m => ActorId -> m Text
-targetDesc leader = do
+targetDesc :: MonadClientUI m => Maybe Target -> m Text
+targetDesc target = do
   (currentLid, _) <- viewedLevel
-  target <- getsClient $ getTarget leader
-  s <- getState
-  tgtPos <- targetToPos
+  mleader <- getsClient _sleader
+  tgtPos <- aidTgtToPos mleader currentLid target
   case target of
-    Just (TEnemy a _ _) -> return $
-      if memActor a currentLid s
-      then bname $ getActorBody a s
-      else "a fear of the past"
+    Just (TEnemy a _ _) -> do
+      onLevel <- getsState $ memActor a currentLid
+      if onLevel
+      then do
+        getsState $ bname . getActorBody a
+      else
+        return "a fear of the past"
     Just (TPoint lid _) ->
       return $ if lid == currentLid
                then "exact spot" <+> maybe "" (T.pack . show) tgtPos
                else "a spot on level" <+> tshow (fromEnum lid)
-    Just TVector{} -> return $
-      "relative position" <+> maybe "" (T.pack . show) tgtPos
-    Nothing ->return $ "cursor location"
+    Just TVector{} ->
+       return $ "relative position" <+> maybe "" (T.pack . show) tgtPos
+    Nothing -> return $ "cursor location"
+
+targetDescLeader :: MonadClientUI m => ActorId -> m Text
+targetDescLeader leader = do
+  target <- getsClient $ getTarget leader
+  targetDesc target
+
+targetDescCursor :: MonadClientUI m => m Text
+targetDescCursor = do
+  scursor <- getsClient scursor
+  targetDesc $ Just scursor

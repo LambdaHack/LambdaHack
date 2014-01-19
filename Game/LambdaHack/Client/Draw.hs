@@ -48,12 +48,12 @@ data ColorMode =
 draw :: Bool -> ColorMode -> Kind.COps -> Perception -> LevelId
      -> Maybe ActorId -> Maybe Point -> Maybe Point
      -> Maybe [Point] -> StateClient -> State
-     -> Text -> Overlay
+     -> Text -> Text -> Overlay
      -> SingleFrame
 draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos mpath
      cli@StateClient{ stgtMode, seps, sdisco
                     , smarkVision, smarkSmell, smarkSuspect, swaitTimes } s
-     targetMsg sfTop =
+     cursorDesc targetDesc sfTop =
   let Kind.COps{cotile=Kind.Ops{okind=tokind, ouniqGroup}} = cops
       (lvl@Level{lxsize, lysize, lsmell, ltime}) = sdungeon s EM.! drawnLevelId
       bl = case (cursorPos, mleader) of
@@ -132,10 +132,10 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos mpath
         in Color.AttrChar a char
       addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
       arenaStatus = drawArenaStatus lvl
-      cursorStatus = addAttr $ T.justifyLeft 40 ' ' "Cursor:"  -- TODO
+      cursorStatus = addAttr $ T.justifyLeft 40 ' ' $ "Cursor:" <+> cursorDesc
       selectedStatus = drawSelected cli s drawnLevelId mleader
       leaderStatus = drawLeaderStatus cops s sdisco ltime swaitTimes mleader
-      targetStatus = addAttr $ T.justifyLeft 40 ' ' $ "Target:" <+> targetMsg
+      targetStatus = addAttr $ T.justifyLeft 40 ' ' $ "Target:" <+> targetDesc
       sfBottom = [ arenaStatus ++ cursorStatus
                  , selectedStatus ++ leaderStatus ++ targetStatus ]
       fLine y =
