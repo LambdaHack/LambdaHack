@@ -507,8 +507,8 @@ tgtUnknownHuman = do
   if dist >= minKnown
     then failWith "no unknown spot left"
     else do
-      let tgt = Just $ TPoint (blid b) closestUnknownPos
-      modifyClient $ updateTarget leader (const tgt)
+      let tgt = TPoint (blid b) closestUnknownPos
+      modifyClient $ \cli -> cli {scursor = tgt}
       return mempty
 
 -- * TgtAscend
