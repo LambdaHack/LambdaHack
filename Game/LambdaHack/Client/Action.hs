@@ -292,7 +292,7 @@ drawOverlay onBlank dm over = do
   s <- getState
   cli <- getClient
   per <- getPerFid lid
-  tgtPos <- targetToPos
+  tgtPos <- fmap (fmap fst) targetToPos
   cursorPos <- cursorToPos
   let pathFromTgt leader tgtP = fmap snd $ getCacheBfs leader tgtP
       pathFromLeader leader =
@@ -376,7 +376,7 @@ animate arena anim = do
   cli <- getClient
   s <- getState
   per <- getPerFid arena
-  tgtPos <- targetToPos
+  tgtPos <- fmap (fmap fst) targetToPos
   cursorPos <- cursorToPos
   let pathFromTgt leader tgtP = fmap snd $ getCacheBfs leader tgtP
       pathFromLeader leader =
@@ -588,9 +588,14 @@ targetDesc target = do
       return $ if lid == currentLid
                then "exact spot" <+> (T.pack . show) p
                else "a spot on level" <+> tshow (fromEnum lid)
-    Just TVector{} -> do
-       tgtPos <- aidTgtToPos mleader currentLid target
-       return $ "relative position" <+> maybe "" (T.pack . show) tgtPos
+    Just TVector{} ->
+      case mleader of
+        Nothing -> return "a relative position"
+        Just aid -> do
+          tgtPos <- aidTgtToPos aid currentLid target
+          let invalidMsg = "an invalid relative position"
+              validMsg p = "relative position" <+> (T.pack . show) p
+          return $ maybe invalidMsg validMsg tgtPos
     Nothing -> return $ "cursor location"
 
 targetDescLeader :: MonadClientUI m => ActorId -> m Text
@@ -602,7 +607,6 @@ targetDescCursor :: MonadClientUI m => m Text
 targetDescCursor = do
   scursor <- getsClient scursor
   targetDesc $ Just scursor
-
 
 getLeaderUI :: MonadClientUI m => m ActorId
 getLeaderUI = do
@@ -638,35 +642,38 @@ viewedLevel = do
   let tgtId = maybe arena tgtLevelId stgtMode
   return (tgtId, dungeon EM.! tgtId)
 
--- | Calculate the position of leader's target.
+-- | Calculate the position of leader's target and whether one is
+-- permitted to shoot it.
 aidTgtToPos :: MonadClient m
-            => Maybe ActorId -> LevelId -> Maybe Target -> m (Maybe Point)
-aidTgtToPos maid currentLid target = do
+            => ActorId -> LevelId -> Maybe Target -> m (Maybe (Point, Bool))
+aidTgtToPos aid currentLid target = do
   Level{lxsize, lysize} <- getLevel currentLid
   case target of
-    Just (TEnemy a) ->
-      getsState $ Just . bpos . getActorBody a
+    Just (TEnemy a) -> do
+      per <- getPerFid currentLid
+      pos <- getsState $ bpos . getActorBody a
+      return $ Just (pos, actorSeesPos per aid pos)
     Just (TEnemyPos _ lid p) ->
-      return $ if lid == currentLid then Just p else Nothing
-    Just (TActor a) ->
-      getsState $ Just . bpos . getActorBody a
+      return $ if lid == currentLid then Just (p, False) else Nothing
+    Just (TActor a) -> do
+      per <- getPerFid currentLid
+      pos <- getsState $ bpos . getActorBody a
+      return $ Just (pos, actorSeesPos per aid pos)
     Just (TActorPos _ lid p) ->
-      return $ if lid == currentLid then Just p else Nothing
+      return $ if lid == currentLid then Just (p, False) else Nothing
     Just (TPoint lid p) ->
-      return $ if lid == currentLid then Just p else Nothing
-    Just (TVector v) ->
-      case maid of
-        Nothing -> return Nothing
-        Just aid -> do
-          b <- getsState $ getActorBody aid
-          return $ Just $ shiftBounded lxsize lysize (bpos b) v
+      return $ if lid == currentLid then Just (p, True) else Nothing
+    Just (TVector v) -> do
+      b <- getsState $ getActorBody aid
+      let shifted = shiftBounded lxsize lysize (bpos b) v
+      return $ if shifted == bpos b then Nothing else Just (shifted, True)
     Nothing -> do
       scursor <- getsClient scursor
-      aidTgtToPos maid currentLid $ Just scursor
+      aidTgtToPos aid currentLid $ Just scursor
 
 -- TODO: don't point at Enemy you don't see, or you shoot at wall
 -- there is a discrepancy between / and * in aquiring unseen Enemy targets
-targetToPos :: MonadClientUI m => m (Maybe Point)
+targetToPos :: MonadClientUI m => m (Maybe (Point, Bool))
 targetToPos = do
   (currentLid, _) <- viewedLevel
   mleader <- getsClient _sleader
@@ -674,11 +681,13 @@ targetToPos = do
     Nothing -> return Nothing
     Just aid -> do
       target <- getsClient $ getTarget aid
-      aidTgtToPos mleader currentLid target
+      aidTgtToPos aid currentLid target
 
 cursorToPos :: MonadClientUI m => m (Maybe Point)
 cursorToPos = do
   (currentLid, _) <- viewedLevel
   mleader <- getsClient _sleader
   scursor <- getsClient scursor
-  aidTgtToPos mleader currentLid $ Just scursor
+  case mleader of
+    Nothing -> return Nothing
+    Just aid -> fmap (fmap fst) $ aidTgtToPos aid currentLid $ Just scursor

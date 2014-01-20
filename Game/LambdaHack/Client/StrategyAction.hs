@@ -129,18 +129,12 @@ actionStrategy :: MonadClient m
 actionStrategy aid factionAbilities = do
   disco <- getsClient sdisco
   btarget <- getsClient $ getTarget aid
-  proposeAction disco aid factionAbilities btarget
-
-proposeAction :: MonadClient m
-              => Discovery -> ActorId -> [Ability] -> Maybe Target
-              -> m (Strategy CmdTakeTimeSer)
-proposeAction disco aid factionAbilities btarget = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   Actor{bkind, bpos, blid} <- getsState $ getActorBody aid
   lvl <- getLevel blid
-  mfpos <- aidTgtToPos (Just aid) blid btarget
+  mfpos <- aidTgtToPos aid blid btarget
   let mk = okind bkind
-      fpos = fromMaybe bpos mfpos
+      fpos = maybe bpos fst mfpos
       mfAid =
         case btarget of
           Just (TEnemy foeAid) -> Just foeAid

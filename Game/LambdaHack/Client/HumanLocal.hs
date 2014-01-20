@@ -381,11 +381,11 @@ doLook = do
       vis | not canSee = "(not visible)"
           | actorSeesPos per leader p = ""
           | otherwise = "(not seen)"
-      -- TODO: move elsewhere and recalcuate only when neeed or even less often
+      -- TODO: move elsewhere and recalcuate when needed or even less often
   distance <- case tgtPos of
     _ | lid /= blid b -> return Nothing
     Nothing -> return Nothing
-    Just tgtP -> accessCacheBfs leader tgtP
+    Just (tgtP, _) -> accessCacheBfs leader tgtP
   let delta = maybe "" (\d -> "; delta" <+> tshow d) distance
       spotInfo = "[targetting" <+> vis <> delta <> "]"
       -- Check if there's something lying around at current position.
@@ -525,7 +525,7 @@ tgtUnknownHuman = do
   tgtPos <- targetToPos
   let target = case tgtPos of
         Nothing -> bpos b
-        Just c -> c
+        Just (c, _) -> c
   (bfs, _) <- getCacheBfs leader target
   let closestUnknownPos = PointArray.minIndexA bfs
       dist = bfs PointArray.! closestUnknownPos

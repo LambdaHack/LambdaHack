@@ -327,18 +327,14 @@ projectHuman ts = do
   tgtPos <- targetToPos
   case tgtPos of
     Nothing -> failWith "last target invalid"
-    Just pos | pos == bpos b -> failWith "cannot aim at oneself"
-    Just _ -> projectAid leader ts
+    Just (_, False) -> failWith "aiming line to the opponent blocked"
+    Just (pos, _) | pos == bpos b -> failWith "cannot aim at oneself"
+    Just (pos, _) -> projectAid leader ts pos
 
 projectAid :: MonadClientUI m
-           => ActorId -> [Trigger] -> m (SlideOrCmd CmdTakeTimeSer)
-projectAid source ts = do
+           => ActorId -> [Trigger] -> Point -> m (SlideOrCmd CmdTakeTimeSer)
+projectAid source ts tpos = do
   Kind.COps{cotile} <- getsState scops
-  tgtPos <- targetToPos
-  let tpos = case tgtPos of
-        Just p -> p
-        Nothing -> assert `failure` "target unexpectedly invalid"
-                          `twith` source
   eps <- getsClient seps
   sb <- getsState $ getActorBody source
   let lid = blid sb
@@ -565,8 +561,8 @@ stepToTargetHuman = do
     tgtPos <- targetToPos
     case tgtPos of
       Nothing -> failWith "target not set"
-      Just c | c == bpos b -> failWith "target reached"
-      Just c -> do
+      Just (c, _) | c == bpos b -> failWith "target reached"
+      Just (c, _) -> do
         (_, mpath) <- getCacheBfs leader c
         case mpath of
           Nothing -> failWith "no route to target"
