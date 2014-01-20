@@ -585,8 +585,20 @@ tgtClearHuman :: MonadClient m => m ()
 tgtClearHuman = do
   mleader <- getsClient _sleader
   case mleader of
-    Nothing -> return mempty
-    Just leader -> modifyClient $ updateTarget leader (const Nothing)
+    Nothing -> return ()
+    Just leader -> do
+      tgt <- getsClient $ getTarget leader
+      case tgt of
+        Just _ -> modifyClient $ updateTarget leader (const Nothing)
+        Nothing -> do
+          scursorOld <- getsClient scursor
+          b <- getsState $ getActorBody leader
+          let scursor = case scursorOld of
+                TEnemy _ permit -> TEnemy leader permit
+                TEnemyPos _ _ _ permit -> TEnemy leader permit
+                TPoint{} -> TPoint (blid b) (bpos b)
+                TVector{} -> TVector (Vector 0 0)
+          modifyClient $ \cli -> cli {scursor}
 
 -- * Cancel
 

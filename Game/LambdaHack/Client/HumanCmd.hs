@@ -162,7 +162,7 @@ cmdDescription cmd = case cmd of
     assert `failure` "void level change when targeting" `twith` cmd
   EpsIncr True  -> "swerve targeting line"
   EpsIncr False -> "unswerve targeting line"
-  TgtClear    -> "clear leader's target"
+  TgtClear    -> "clear target/cursor"
   Cancel      -> "cancel action"
   Accept      -> "accept choice"
 

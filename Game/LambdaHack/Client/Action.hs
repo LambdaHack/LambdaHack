@@ -594,8 +594,8 @@ targetDesc target = do
 
 targetDescLeader :: MonadClientUI m => ActorId -> m Text
 targetDescLeader leader = do
-  target <- getsClient $ getTarget leader
-  targetDesc target
+  tgt <- getsClient $ getTarget leader
+  targetDesc tgt
 
 targetDescCursor :: MonadClientUI m => m Text
 targetDescCursor = do
