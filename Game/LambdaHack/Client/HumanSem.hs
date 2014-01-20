@@ -22,8 +22,8 @@ cmdHumanSem cmd = do
     -- | If in targeting mode, check if the current level is the same
     -- as player level and refuse performing the action otherwise.
     arena <- getArenaUI
-    (lid, _) <- viewedLevel
-    if (arena /= lid) then
+    lidV <- viewedLevel
+    if (arena /= lidV) then
       failWith $ "[targeting] command disabled on a remote level, press ESC to switch back"
     else cmdAction cmd
   else cmdAction cmd

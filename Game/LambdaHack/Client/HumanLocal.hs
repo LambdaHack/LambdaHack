@@ -198,8 +198,8 @@ selectActorHuman = do
 selectNoneHuman :: (MonadClientUI m, MonadClient m) => m ()
 selectNoneHuman = do
   side <- getsClient sside
-  (lid, _) <- viewedLevel
-  oursAssocs <- getsState $ actorNotProjAssocs (== side) lid
+  lidV <- viewedLevel
+  oursAssocs <- getsState $ actorNotProjAssocs (== side) lidV
   let ours = ES.fromList $ map fst oursAssocs
   oldSel <- getsClient sselected
   let wasNone = ES.null $ ES.intersection ours oldSel
@@ -300,12 +300,13 @@ helpHuman = do
 
 moveCursor :: MonadClientUI m => Vector -> Int -> m Slideshow
 moveCursor dir n = do
-  arena <- getArenaUI
   leader <- getLeaderUI
+  stgtMode <- getsClient stgtMode
+  let lidV = maybe (assert `failure` leader) tgtLevelId stgtMode
+  Level{lxsize, lysize} <- getLevel lidV
   lpos <- getsState $ bpos . getActorBody leader
   scursor <- getsClient scursor
   cursorPos <- cursorToPos
-  (_, Level{lxsize, lysize}) <- viewedLevel
   let cpos = fromMaybe lpos cursorPos
       shiftB pos = shiftBounded lxsize lysize pos dir
       newPos = iterate shiftB cpos !! n
@@ -313,7 +314,7 @@ moveCursor dir n = do
   else do
     let tgt = case scursor of
           TVector{} -> TVector $ displacement lpos newPos
-          _ -> TPoint arena newPos
+          _ -> TPoint lidV newPos
     modifyClient $ \cli -> cli {scursor = tgt}
     doLook
 
@@ -330,7 +331,8 @@ lookAt :: MonadClientUI m
        -> m Text
 lookAt detailed canSee pos aid msg = do
   Kind.COps{coitem, cotile=cotile@Kind.Ops{okind}} <- getsState scops
-  (_, lvl) <- viewedLevel
+  lidV <- viewedLevel
+  lvl <- getLevel lidV
   subject <- partAidLeader aid
   s <- getState
   let is = lvl `atI` pos
@@ -360,16 +362,18 @@ lookAt detailed canSee pos aid msg = do
 -- Assumes targeting mode and so assumes that a leader is picked.
 doLook :: MonadClientUI m => m Slideshow
 doLook = do
-  cursorPos <- cursorToPos
-  (lid, lvl) <- viewedLevel
-  per <- getPerFid lid
   leader <- getLeaderUI
+  stgtMode <- getsClient stgtMode
+  let lidV = maybe (assert `failure` leader) tgtLevelId stgtMode
+  lvl <- getLevel lidV
+  cursorPos <- cursorToPos
+  per <- getPerFid lidV
   b <- getsState $ getActorBody leader
   tgtPos <- targetToPos
   let p = fromMaybe (bpos b) cursorPos
       canSee = ES.member p (totalVisible per)
   inhabitants <- if canSee
-                 then getsState $ posToActors p lid
+                 then getsState $ posToActors p lidV
                  else return []
   let enemyMsg = case inhabitants of
         [] -> ""
@@ -383,7 +387,7 @@ doLook = do
           | otherwise = "(not seen)"
       -- TODO: move elsewhere and recalcuate when needed or even less often
   distance <- case tgtPos of
-    _ | lid /= blid b -> return Nothing
+    _ | lidV /= blid b -> return Nothing
     Nothing -> return Nothing
     Just (tgtP, _) -> accessCacheBfs leader tgtP
   let delta = maybe "" (\d -> "; delta" <+> tshow d) distance
@@ -431,7 +435,7 @@ itemOverlay bag inv = do
 -- switch among things at that position.
 tgtFloorHuman :: MonadClientUI m => m Slideshow
 tgtFloorHuman = do
-  arena <- getArenaUI
+  lidV <- viewedLevel
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
   cursorPos <- cursorToPos
@@ -439,16 +443,16 @@ tgtFloorHuman = do
   stgtMode <- getsClient stgtMode
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  per <- getPerFid arena
-  bsAll <- getsState $ actorAssocs (const True) arena
+  per <- getPerFid lidV
+  bsAll <- getsState $ actorAssocs (const True) lidV
   let cursor = fromMaybe (bpos body) cursorPos
       tgt = case scursor of
         _ | isNothing stgtMode ->  -- first key press: keep target
           scursor
         TEnemy a False -> TEnemy a True
         TEnemyPos a lid p False -> TEnemyPos a lid p True
-        TEnemy{} -> TPoint arena cursor
-        TEnemyPos{} -> TPoint arena cursor
+        TEnemy{} -> TPoint lidV cursor
+        TEnemyPos{} -> TPoint lidV cursor
         TPoint{} -> TVector $ displacement (bpos body) cursor
         TVector{} ->
           let isEnemy b = isAtWar fact (bfid b)
@@ -460,25 +464,24 @@ tgtFloorHuman = do
           in case find (\(_, m) -> Just (bpos m) == cursorPos) bsAll of
             Just (im, m) | isEnemy m -> TEnemy im False
             Just (im, _) -> TEnemy im True
-            Nothing -> TPoint arena cursor
-  modifyClient $ \cli -> cli {scursor = tgt, stgtMode = Just $ TgtMode arena}
+            Nothing -> TPoint lidV cursor
+  modifyClient $ \cli -> cli {scursor = tgt, stgtMode = Just $ TgtMode lidV}
   doLook
 
 -- * TgtEnemy
 
 tgtEnemyHuman :: MonadClientUI m => m Slideshow
 tgtEnemyHuman = do
-  arena <- getArenaUI
+  lidV <- viewedLevel
   leader <- getLeaderUI
   ppos <- getsState (bpos . getActorBody leader)
-  (lid, _) <- viewedLevel
-  per <- getPerFid lid
+  per <- getPerFid lidV
   cursorPos <- cursorToPos
   scursor <- getsClient scursor
   stgtMode <- getsClient stgtMode
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  bsAll <- getsState $ actorAssocs (const True) arena
+  bsAll <- getsState $ actorAssocs (const True) lidV
   let ordPos (_, b) = (chessDist ppos $ bpos b, bpos b)
       dbs = sortBy (comparing ordPos) bsAll
       pickUnderCursor =  -- switch to the enemy under cursor, if any
@@ -506,7 +509,7 @@ tgtEnemyHuman = do
         (a, _) : _ -> TEnemy a False
         [] -> scursor  -- no seen foes in sight, stick to last target
   -- Register the chosen enemy, to pick another on next invocation.
-  modifyClient $ \cli -> cli {scursor = tgt, stgtMode = Just $ TgtMode arena}
+  modifyClient $ \cli -> cli {scursor = tgt, stgtMode = Just $ TgtMode lidV}
   doLook
 
 -- * TgtUnknown
@@ -539,7 +542,8 @@ tgtAscendHuman k = do
   dungeon <- getsState sdungeon
   scursorOld <- getsClient scursor
   cursorPos <- cursorToPos
-  (tgtId, lvl) <- viewedLevel
+  lidV <- viewedLevel
+  lvl <- getLevel lidV
   let rightStairs = case cursorPos of
         Nothing -> Nothing
         Just cpos ->
@@ -549,8 +553,8 @@ tgtAscendHuman k = do
              else Nothing
   case rightStairs of
     Just cpos -> do  -- stairs, in the right direction
-      (nln, npos) <- getsState $ whereTo tgtId cpos k
-      assert (nln /= tgtId `blame` "stairs looped" `twith` nln) skip
+      (nln, npos) <- getsState $ whereTo lidV cpos k
+      assert (nln /= lidV `blame` "stairs looped" `twith` nln) skip
       -- Do not freely reveal the other end of the stairs.
       let ascDesc (F.Cause (Effect.Ascend _)) = True
           ascDesc _ = False
@@ -561,7 +565,7 @@ tgtAscendHuman k = do
       modifyClient $ \cli -> cli {scursor, stgtMode = Just (TgtMode nln)}
       doLook
     Nothing ->  -- no stairs in the right direction
-      case ascendInBranch dungeon tgtId k of
+      case ascendInBranch dungeon lidV k of
         [] -> failWith "no more levels in this direction"
         nln : _ -> do
           modifyClient $ \cli -> cli {stgtMode = Just (TgtMode nln)}

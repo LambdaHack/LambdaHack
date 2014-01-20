@@ -73,7 +73,7 @@ moveRunHuman run dir = do
   if isJust tgtMode then
     fmap Left $ moveCursor dir (if run then 10 else 1)
   else do
-    (arena, _) <- viewedLevel
+    arena <- getArenaUI
     leader <- getLeaderUI
     sb <- getsState $ getActorBody leader
     let tpos = bpos sb `shift` dir
