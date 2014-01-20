@@ -79,7 +79,7 @@ queryAI oldAid = do
          length ours == 1
          -- Keep the leader: he has an enemy target.
          || case btarget of
-              Just (TEnemy foe) ->
+              Just (TEnemy foe False) ->
                 -- and he can shoot it.
                 canSee foe && hasAmmo && not isAdjacent
               _ -> False

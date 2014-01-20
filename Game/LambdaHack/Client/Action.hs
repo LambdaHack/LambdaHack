@@ -572,15 +572,9 @@ targetDesc target = do
   (currentLid, _) <- viewedLevel
   mleader <- getsClient _sleader
   case target of
-    Just (TEnemy a) ->
+    Just (TEnemy a _) ->
       getsState $ bname . getActorBody a
-    Just (TEnemyPos _ lid p) ->
-      return $ if lid == currentLid
-               then "something last seen at" <+> (T.pack . show) p
-               else "something last seen on level" <+> tshow (fromEnum lid)
-    Just (TActor a) ->
-      getsState $ bname . getActorBody a
-    Just (TActorPos _ lid p) ->
+    Just (TEnemyPos _ lid p _) ->
       return $ if lid == currentLid
                then "something last seen at" <+> (T.pack . show) p
                else "something last seen on level" <+> tshow (fromEnum lid)
@@ -649,17 +643,11 @@ aidTgtToPos :: MonadClient m
 aidTgtToPos aid currentLid target = do
   Level{lxsize, lysize} <- getLevel currentLid
   case target of
-    Just (TEnemy a) -> do
+    Just (TEnemy a _) -> do
       per <- getPerFid currentLid
       pos <- getsState $ bpos . getActorBody a
       return $ Just (pos, actorSeesPos per aid pos)
-    Just (TEnemyPos _ lid p) ->
-      return $ if lid == currentLid then Just (p, False) else Nothing
-    Just (TActor a) -> do
-      per <- getPerFid currentLid
-      pos <- getsState $ bpos . getActorBody a
-      return $ Just (pos, actorSeesPos per aid pos)
-    Just (TActorPos _ lid p) ->
+    Just (TEnemyPos _ lid p _) ->
       return $ if lid == currentLid then Just (p, False) else Nothing
     Just (TPoint lid p) ->
       return $ if lid == currentLid then Just (p, True) else Nothing

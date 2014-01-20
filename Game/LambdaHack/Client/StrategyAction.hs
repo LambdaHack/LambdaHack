@@ -88,28 +88,26 @@ reacquireTgt aid factionAbilities btarget fper = do
                     | otherwise = minimum foeDist
             minFoes =
               filter (\(_, body) -> distB (bpos body) == minDist) visFoes
-            minTargets = map (\(a, _) -> Just $ TEnemy a) minFoes
+            minTargets = map (\(a, _) -> Just $ TEnemy a False) minFoes
             minTgtS = liftFrequency $ uniformFreq "closest" minTargets
         in minTgtS .| noFoes .| returN "TCursor" Nothing  -- never empty
       reacquire :: Maybe Target -> Strategy (Maybe Target)
       reacquire tgt =
         case tgt of
-          Just (TEnemy a) ->
+          Just (TEnemy a permit) ->
             case fmap bpos $ EM.lookup a actorD of
               Just l ->
                 if actorSeesPos per aid l || null visFoes
-                then returN "TEnemy" $ Just $ TEnemy a
+                then returN "TEnemy" $ Just $ TEnemy a permit
                 else closest  -- prefer visible foes
               Nothing -> assert `failure` tgt
-          Just (TEnemyPos _ lid ll) | focused && lid == blid b ->
+          Just (TEnemyPos _ lid ll _) | focused && lid == blid b ->
             -- Chase even if enemy dead, to loot.
             if null visFoes               -- prefer visible foes to positions
                && bpos b /= ll            -- not yet reached the last pos
             then returN "last known" tgt  -- chase the last known pos
             else closest
           Just TEnemyPos{} -> closest
-          Just TActor{} -> closest
-          Just TActorPos{} -> closest
           Just (TPoint lid _) | lid /= blid b -> closest  -- wrong level
           Just (TPoint _ pos) | pos == bpos b -> closest  -- already reached
           Just (TPoint _ pos)
@@ -137,7 +135,7 @@ actionStrategy aid factionAbilities = do
       fpos = maybe bpos fst mfpos
       mfAid =
         case btarget of
-          Just (TEnemy foeAid) -> Just foeAid
+          Just (TEnemy foeAid _) -> Just foeAid
           _ -> Nothing
       foeVisible = isJust mfAid
       lootHere x = not $ EM.null $ lvl `atI` x

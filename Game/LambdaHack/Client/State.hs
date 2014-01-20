@@ -86,10 +86,10 @@ newtype TgtMode = TgtMode { tgtLevelId :: LevelId }
 
 -- | The type of na actor target.
 data Target =
-    TEnemy !ActorId                     -- ^ target a seen foe
-  | TEnemyPos !ActorId !LevelId !Point  -- ^ last seen position of seen foe
-  | TActor !ActorId                     -- ^ target any actor, even projectile
-  | TActorPos !ActorId !LevelId !Point  -- ^ last seen position of an actor
+    TEnemy !ActorId !Bool
+    -- ^ target an actor; cycle only trough seen foes, unless the flag is set
+  | TEnemyPos !ActorId !LevelId !Point !Bool
+    -- ^ last seen position of the targeted actor
   | TPoint !LevelId !Point              -- ^ target a concrete spot
   | TVector !Vector                     -- ^ target position relative to actor
   deriving (Show, Eq)
@@ -252,19 +252,16 @@ instance Binary RunParams where
     return RunParams{..}
 
 instance Binary Target where
-  put (TEnemy a) = putWord8 0 >> put a
-  put (TEnemyPos a lid p) = putWord8 1 >> put a >> put lid >> put p
-  put (TActor a) = putWord8 2 >> put a
-  put (TActorPos a lid p) = putWord8 3 >> put a >> put lid >> put p
-  put (TPoint lid p) = putWord8 4 >> put lid >> put p
-  put (TVector v) = putWord8 5 >> put v
+  put (TEnemy a permit) = putWord8 0 >> put a >> put permit
+  put (TEnemyPos a lid p permit) =
+    putWord8 1 >> put a >> put lid >> put p >> put permit
+  put (TPoint lid p) = putWord8 2 >> put lid >> put p
+  put (TVector v) = putWord8 3 >> put v
   get = do
     tag <- getWord8
     case tag of
-      0 -> liftM TEnemy get
-      1 -> liftM3 TEnemyPos get get get
-      2 -> liftM TActor get
-      3 -> liftM3 TActorPos get get get
-      4 -> liftM2 TPoint get get
-      5 -> liftM TVector get
+      0 -> liftM2 TEnemy get get
+      1 -> liftM4 TEnemyPos get get get get
+      2 -> liftM2 TPoint get get
+      3 -> liftM TVector get
       _ -> fail "no parse (Target)"

@@ -445,10 +445,10 @@ tgtFloorHuman = do
       tgt = case scursor of
         _ | isNothing stgtMode ->  -- first key press: keep target
           scursor
-        TEnemy a -> TActor a
-        TEnemyPos a lid p -> TActorPos a lid p
-        TActor{} -> TPoint arena cursor
-        TActorPos{} -> TPoint arena cursor
+        TEnemy a False -> TEnemy a True
+        TEnemyPos a lid p False -> TEnemyPos a lid p True
+        TEnemy{} -> TPoint arena cursor
+        TEnemyPos{} -> TPoint arena cursor
         TPoint{} -> TVector $ displacement (bpos body) cursor
         TVector{} ->
           let isEnemy b = isAtWar fact (bfid b)
@@ -458,8 +458,8 @@ tgtFloorHuman = do
           -- by '*', so that all other projectiles on the tile come next,
           -- without any intervening actors from other tiles.
           in case find (\(_, m) -> Just (bpos m) == cursorPos) bsAll of
-            Just (im, m) | isEnemy m -> TEnemy im
-            Just (im, _) -> TActor im
+            Just (im, m) | isEnemy m -> TEnemy im False
+            Just (im, _) -> TEnemy im True
             Nothing -> TPoint arena cursor
   modifyClient $ \cli -> cli {scursor = tgt, stgtMode = Just $ TgtMode arena}
   doLook
@@ -485,33 +485,26 @@ tgtEnemyHuman = do
         let i = fromMaybe (-1)
                 $ findIndex ((== cursorPos) . Just . bpos . snd) dbs
         in splitAt i dbs
-      (forceFoe, (lt, gt)) = case scursor of
-            TEnemy a | isJust stgtMode ->  -- pick next enemy
+      (permitAnyActor, (lt, gt)) = case scursor of
+            TEnemy a permit | isJust stgtMode ->  -- pick next enemy
               let i = fromMaybe (-1) $ findIndex ((== a) . fst) dbs
-              in (True, splitAt (i + 1) dbs)
-            TEnemy a ->  -- first key press, retarget old enemy
+              in (permit, splitAt (i + 1) dbs)
+            TEnemy a permit ->  -- first key press, retarget old enemy
               let i = fromMaybe (-1) $ findIndex ((== a) . fst) dbs
-              in (True, splitAt i dbs)
-            TEnemyPos{} -> (True, pickUnderCursor)
-            TActor a | isJust stgtMode ->  -- pick next enemy
-              let i = fromMaybe (-1) $ findIndex ((== a) . fst) dbs
-              in (False, splitAt (i + 1) dbs)
-            TActor a ->  -- first key press, retarget old enemy
-              let i = fromMaybe (-1) $ findIndex ((== a) . fst) dbs
-              in (False, splitAt i dbs)
-            TActorPos{} -> (False, pickUnderCursor)
-            _ -> (True, pickUnderCursor)  -- the sensible default is foes
+              in (permit, splitAt i dbs)
+            TEnemyPos _ _ _ permit -> (permit, pickUnderCursor)
+            _ -> (False, pickUnderCursor)  -- the sensible default is only-foes
       gtlt = gt ++ lt
       isEnemy b = isAtWar fact (bfid b)
                   && not (bproj b)
                   && actorSeesPos per leader (bpos b)
       lf = filter (isEnemy . snd) gtlt
-      tgt | forceFoe = case lf of
-        (a, _) : _ -> TEnemy a
-        [] -> scursor  -- no seen foes in sight, stick to last target
-          | otherwise = case gtlt of
-        (a, _) : _ -> TActor a
+      tgt | permitAnyActor = case lf of
+        (a, _) : _ -> TEnemy a True
         [] -> scursor  -- no actors in sight, stick to last target
+          | otherwise = case gtlt of
+        (a, _) : _ -> TEnemy a False
+        [] -> scursor  -- no seen foes in sight, stick to last target
   -- Register the chosen enemy, to pick another on next invocation.
   modifyClient $ \cli -> cli {scursor = tgt, stgtMode = Just $ TgtMode arena}
   doLook
