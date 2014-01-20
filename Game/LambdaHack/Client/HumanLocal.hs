@@ -179,7 +179,7 @@ selectActorHuman ::MonadClientUI m => m Slideshow
 selectActorHuman = do
   mleader <- getsClient _sleader
   case mleader of
-    Nothing -> failWith "no leader picked, can't select"
+    Nothing -> failWith "no leader picked, cannot select"
     Just leader -> do
       body <- getsState $ getActorBody leader
       wasMemeber <- getsClient $ ES.member leader . sselected
@@ -386,8 +386,8 @@ doLook = do
                  subject = MU.WWandW subjects
                  verb = "be here"
              in makeSentence [MU.SubjectVerbSg subject verb]
-      vis | not canSee = "you can't see"
-          | mdist /= Just (chessDist (bpos b) p) = "you can't penetrate"
+      vis | not canSee = "you cannot see"
+          | mdist /= Just (chessDist (bpos b) p) = "you cannot penetrate"
           | otherwise = "you see"
   -- Show general info about current position.
   lookMsg <- lookAt True vis canSee p leader enemyMsg

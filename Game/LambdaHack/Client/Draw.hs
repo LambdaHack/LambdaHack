@@ -50,21 +50,24 @@ draw :: Bool -> ColorMode -> Kind.COps -> Perception -> LevelId
      -> Maybe [Point] -> StateClient -> State
      -> Text -> Text -> Overlay
      -> SingleFrame
-draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos mpath
+draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos mpathRaw
      cli@StateClient{ stgtMode, seps, sdisco
                     , smarkVision, smarkSmell, smarkSuspect, swaitTimes } s
      cursorDesc targetDesc sfTop =
   let Kind.COps{cotile=Kind.Ops{okind=tokind, ouniqGroup}} = cops
       (lvl@Level{lxsize, lysize, lsmell, ltime}) = sdungeon s EM.! drawnLevelId
-      bl = case (cursorPos, mleader) of
+      (bl, blLength) = case (cursorPos, mleader) of
         (Just cursor, Just leader) ->
           let Actor{bpos, blid} = getActorBody leader s
           in if blid /= drawnLevelId
-             then [cursor]
-             else fromMaybe [] $ bla lxsize lysize seps bpos cursor
-        _ -> []
+             then ([cursor], 0)
+             else ( fromMaybe [] $ bla lxsize lysize seps bpos cursor
+                  , chessDist bpos cursor )
+        _ -> ([], 0)
+      mpath = if blLength == 0 then Nothing else mpathRaw
       actorsHere = actorAssocs (const True) drawnLevelId s
-      cursorHere = find (\(_, m) -> cursorPos == Just (Actor.bpos m)) actorsHere
+      cursorHere = find (\(_, m) -> cursorPos == Just (Actor.bpos m))
+                   actorsHere
       shiftedBPath = case cursorHere of
         Just (_, Actor{bpath = Just p, bpos = prPos}) -> shiftPath prPos p
         _ -> []
@@ -130,13 +133,29 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos mpath
                               else attr0
                     else attr0
         in Color.AttrChar a char
+      showN2 n = T.justifyRight 2 ' ' (tshow n)
       addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
       arenaStatus = drawArenaStatus lvl
-      cursorText = if isJust stgtMode then "cursor>" else "Cursor:"
-      cursorStatus = addAttr $ T.justifyLeft 40 ' ' $ cursorText <+> cursorDesc
+      cursorText = (if isJust stgtMode then "cursor>" else "Cursor:")
+                   <+> cursorDesc
+      lineText = let space = 40 - T.length cursorText - 1
+                     lText | blLength == 0 = ""
+                           | otherwise = "(line" <+> showN2 blLength <> ")"
+                 in if T.length lText > space
+                    then ""
+                    else T.justifyRight space ' ' lText
+      cursorStatus = addAttr $ T.justifyLeft 40 ' ' $ cursorText <+> lineText
       selectedStatus = drawSelected cli s drawnLevelId mleader
       leaderStatus = drawLeaderStatus cops s sdisco ltime swaitTimes mleader
-      targetStatus = addAttr $ T.justifyLeft 40 ' ' $ "Target:" <+> targetDesc
+      targetText = "Target:" <+> targetDesc
+      pathText = let space = 40 - T.length targetText - 1
+                     len = maybe 0 length mpath
+                     pText | len == 0 = ""
+                           | otherwise = "(path" <+> showN2 len <> ")"
+                 in if T.length pText > space
+                    then ""
+                    else T.justifyRight space ' ' pText
+      targetStatus = addAttr $ T.justifyLeft 40 ' ' $ targetText <+> pathText
       sfBottom = [ arenaStatus ++ cursorStatus
                  , selectedStatus ++ leaderStatus ++ targetStatus ]
       fLine y =

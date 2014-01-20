@@ -458,10 +458,10 @@ alterFeatures (_ : ts) = alterFeatures ts
 guessAlter :: Kind.Ops TileKind -> [F.Feature] -> Kind.Id TileKind -> Msg
 guessAlter cotile (F.OpenTo _ : _) t
   | Tile.closable cotile t = "already open"
-guessAlter _ (F.OpenTo _ : _) _ = "can't be opened"
+guessAlter _ (F.OpenTo _ : _) _ = "cannot be opened"
 guessAlter cotile (F.CloseTo _ : _) t
   | Tile.openable cotile t = "already closed"
-guessAlter _ (F.CloseTo _ : _) _ = "can't be closed"
+guessAlter _ (F.CloseTo _ : _) _ = "cannot be closed"
 guessAlter _ _ _ = "never mind"
 
 -- * TriggerTile
@@ -533,8 +533,8 @@ guessTrigger cotile fs@(F.Cause (Effect.Ascend k) : _) t
     else if k < 0 then "the way goes up, not down"
     else assert `failure` fs
 guessTrigger _ fs@(F.Cause (Effect.Ascend k) : _) _ =
-    if k > 0 then "can't ascend"
-    else if k < 0 then "can't descend"
+    if k > 0 then "cannot ascend"
+    else if k < 0 then "cannot descend"
     else assert `failure` fs
 guessTrigger _ _ _ = "never mind"
 
@@ -554,7 +554,7 @@ stepToTargetHuman = do
   tgtMode <- getsClient stgtMode
   -- Movement is legal only outside targeting mode.
   -- TODO: use this command for something in targeting mode.
-  if isJust tgtMode then failWith "can't move in targeting mode"
+  if isJust tgtMode then failWith "cannot move in targeting mode"
   else do
     leader <- getLeaderUI
     b <- getsState $ getActorBody leader

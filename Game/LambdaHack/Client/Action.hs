@@ -577,18 +577,18 @@ targetDesc target = do
     Just (TEnemyPos _ lid p _) ->
       return $ if lid == lidV
                then "hot spot" <+> (T.pack . show) p
-               else "a hot spot on level" <+> tshow (fromEnum lid)
+               else "a hot spot on level" <+> tshow (abs $ fromEnum lid)
     Just (TPoint lid p) ->
       return $ if lid == lidV
                then "exact spot" <+> (T.pack . show) p
-               else "a spot on level" <+> tshow (fromEnum lid)
+               else "an exact spot on level" <+> tshow (abs $ fromEnum lid)
     Just TVector{} ->
       case mleader of
-        Nothing -> return "a relative position"
+        Nothing -> return "a relative shift"
         Just aid -> do
           tgtPos <- aidTgtToPos aid lidV target
-          let invalidMsg = "an invalid relative position"
-              validMsg (p, _) = "relative position" <+> (T.pack . show) p
+          let invalidMsg = "an invalid relative shift"
+              validMsg (p, _) = "shift to" <+> (T.pack . show) p
           return $ maybe invalidMsg validMsg tgtPos
     Nothing -> return "cursor location"
 
