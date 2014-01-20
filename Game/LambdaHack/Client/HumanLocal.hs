@@ -130,7 +130,7 @@ pickLeader actor = do
         Just _ ->
           modifyClient $ \cli -> cli {stgtMode = Just $ TgtMode $ blid pbody}
       -- Inform about items, etc.
-      lookMsg <- lookAt False True (bpos pbody) actor ""
+      lookMsg <- lookAt False "" True (bpos pbody) actor ""
       msgAdd lookMsg
       return True
 
@@ -324,19 +324,20 @@ moveCursor dir n = do
 -- The detailed variant is for use in the targeting mode.
 lookAt :: MonadClientUI m
        => Bool       -- ^ detailed?
+       -> Text       -- ^ how to start tile description
        -> Bool       -- ^ can be seen right now?
        -> Point      -- ^ position to describe
        -> ActorId    -- ^ the actor that looks
        -> Text       -- ^ an extra sentence to print
        -> m Text
-lookAt detailed canSee pos aid msg = do
+lookAt detailed tilePrefix canSee pos aid msg = do
   Kind.COps{coitem, cotile=cotile@Kind.Ops{okind}} <- getsState scops
   lidV <- viewedLevel
   lvl <- getLevel lidV
   subject <- partAidLeader aid
   s <- getState
   let is = lvl `atI` pos
-      verb = MU.Text $ if canSee then "see" else "remember"
+      verb = MU.Text $ if canSee then "recognize" else "remember"
   disco <- getsClient sdisco
   let nWs (iid, k) = partItemWs coitem disco k (getItemBody iid s)
       isd = case detailed of
@@ -349,7 +350,10 @@ lookAt detailed canSee pos aid msg = do
       tile = lvl `at` pos
       obscured | tile /= hideTile cotile lvl pos = "partially obscured"
                | otherwise = ""
-      tileDesc = [obscured, MU.Text $ tname $ okind tile]
+      tileText = tname $ okind tile
+      tilePart | T.null tilePrefix = MU.Text tileText
+               | otherwise = MU.AW $ MU.Text tileText
+      tileDesc = [MU.Text tilePrefix, obscured, tilePart]
   if not (null (Tile.causeEffects cotile tile)) then
     return $! makeSentence ("activable:" : tileDesc)
               <+> msg <+> isd
@@ -369,12 +373,12 @@ doLook = do
   cursorPos <- cursorToPos
   per <- getPerFid lidV
   b <- getsState $ getActorBody leader
-  tgtPos <- targetToPos
   let p = fromMaybe (bpos b) cursorPos
       canSee = ES.member p (totalVisible per)
   inhabitants <- if canSee
                  then getsState $ posToActors p lidV
                  else return []
+  mdist <- accessCacheBfs leader p
   let enemyMsg = case inhabitants of
         [] -> ""
         _ -> -- Even if it's the leader, give his proper name, not 'you'.
@@ -382,26 +386,19 @@ doLook = do
                  subject = MU.WWandW subjects
                  verb = "be here"
              in makeSentence [MU.SubjectVerbSg subject verb]
-      vis | not canSee = "(not visible)"
-          | actorSeesPos per leader p = ""
-          | otherwise = "(not seen)"
-      -- TODO: move elsewhere and recalcuate when needed or even less often
-  distance <- case tgtPos of
-    _ | lidV /= blid b -> return Nothing
-    Nothing -> return Nothing
-    Just (tgtP, _) -> accessCacheBfs leader tgtP
-  let delta = maybe "" (\d -> "; delta" <+> tshow d) distance
-      spotInfo = "[targetting" <+> vis <> delta <> "]"
-      -- Check if there's something lying around at current position.
-      is = lvl `atI` p
+      vis | not canSee = "you can't see"
+          | mdist /= Just (chessDist (bpos b) p) = "you can't penetrate"
+          | otherwise = "you see"
   -- Show general info about current position.
-  lookMsg <- lookAt True canSee p leader enemyMsg
+  lookMsg <- lookAt True vis canSee p leader enemyMsg
   modifyClient $ \cli -> cli {slastKey = Nothing}
+  -- Check if there's something lying around at current position.
+  let is = lvl `atI` p
   if EM.size is <= 2 then
-    promptToSlideshow (spotInfo <+> lookMsg)
+    promptToSlideshow lookMsg
   else do
     io <- floorItemOverlay is
-    overlayToSlideshow (spotInfo <+> lookMsg) io
+    overlayToSlideshow lookMsg io
 
 -- | Create a list of item names.
 floorItemOverlay :: MonadClient m => ItemBag -> m Overlay
@@ -502,10 +499,10 @@ tgtEnemyHuman = do
                   && not (bproj b)
                   && actorSeesPos per leader (bpos b)
       lf = filter (isEnemy . snd) gtlt
-      tgt | permitAnyActor = case lf of
+      tgt | permitAnyActor = case gtlt of
         (a, _) : _ -> TEnemy a True
         [] -> scursor  -- no actors in sight, stick to last target
-          | otherwise = case gtlt of
+          | otherwise = case lf of
         (a, _) : _ -> TEnemy a False
         [] -> scursor  -- no seen foes in sight, stick to last target
   -- Register the chosen enemy, to pick another on next invocation.

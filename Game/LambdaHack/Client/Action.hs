@@ -650,9 +650,8 @@ aidTgtToPos aid lidV target = do
       if blid body == lidV then do
         let pos = bpos body
         if blid b == lidV then do
-          (_, mpath) <- getCacheBfs aid pos
-          return $ Just ( pos
-                        , fmap length mpath == Just (chessDist (bpos b) pos))
+          mdist <- accessCacheBfs aid pos
+          return $ Just (pos, mdist == Just (chessDist (bpos b) pos))
         else return $ Just (pos, False)
       else return Nothing
     Just (TEnemyPos _ lid p _) ->
@@ -661,7 +660,9 @@ aidTgtToPos aid lidV target = do
       return $ if lid == lidV then Just (p, True) else Nothing
     Just (TVector v) -> do
       let shifted = shiftBounded lxsize lysize (bpos b) v
-      return $ if shifted == bpos b then Nothing else Just (shifted, True)
+      return $ if shifted == bpos b && v /= Vector 0 0
+               then Nothing
+               else Just (shifted, True)
     Nothing -> do
       scursor <- getsClient scursor
       aidTgtToPos aid lidV $ Just scursor

@@ -132,7 +132,8 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos mpath
         in Color.AttrChar a char
       addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
       arenaStatus = drawArenaStatus lvl
-      cursorStatus = addAttr $ T.justifyLeft 40 ' ' $ "Cursor:" <+> cursorDesc
+      cursorText = if isJust stgtMode then "cursor>" else "Cursor:"
+      cursorStatus = addAttr $ T.justifyLeft 40 ' ' $ cursorText <+> cursorDesc
       selectedStatus = drawSelected cli s drawnLevelId mleader
       leaderStatus = drawLeaderStatus cops s sdisco ltime swaitTimes mleader
       targetStatus = addAttr $ T.justifyLeft 40 ' ' $ "Target:" <+> targetDesc

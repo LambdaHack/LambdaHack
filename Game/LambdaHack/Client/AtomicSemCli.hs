@@ -401,7 +401,7 @@ lookAtMove aid = do
   when (not (bproj body)
         && bfid body == side
         && isNothing tgtMode) $ do  -- targeting does a more extensive look
-    lookMsg <- lookAt False True (bpos body) aid ""
+    lookMsg <- lookAt False "" True (bpos body) aid ""
     msgAdd lookMsg
   fact <- getsState $ (EM.! bfid body) . sfactionD
   Level{lxsize, lysize} <- getsState $ (EM.! blid body) . sdungeon
