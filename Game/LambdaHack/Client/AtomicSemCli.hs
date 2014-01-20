@@ -159,8 +159,8 @@ cmdAtomicFilterCli cmd = case cmd of
 -- kept for each command received.
 cmdAtomicSemCli :: MonadClient m => CmdAtomic -> m ()
 cmdAtomicSemCli cmd = case cmd of
-  DestroyActorA aid _ _ -> destroyActorA aid
-  LoseActorA aid _ _ -> destroyActorA aid
+  DestroyActorA aid b _ -> destroyActorA aid b True
+  LoseActorA aid b _ -> destroyActorA aid b False
   MoveActorA aid _ _ ->
     -- @sbfsD@ is invalidated only in these 2 cases, not when perception
     -- or dungeon tiles change, to siplifie and optimize AI.
@@ -202,13 +202,18 @@ cmdAtomicSemCli cmd = case cmd of
   SaveBkpA -> saveClient
   _ -> return ()
 
--- We wipe out the target, because if the actor gets recreated
--- on another level, the old position does not make sense.
--- And if he is really dead, we avoid a memory leak.
-destroyActorA :: MonadClient m => ActorId -> m ()
-destroyActorA aid = do
-  modifyClient $ updateTarget aid (const Nothing)
+destroyActorA :: MonadClient m => ActorId -> Actor -> Bool -> m ()
+destroyActorA aid b destroy = do
+  when destroy $ modifyClient $ updateTarget aid (const Nothing)  -- gc
+  -- Invalidate BFS cache at level change, etc.
   modifyClient $ \cli -> cli {sbfsD = EM.delete aid $ sbfsD cli}
+  let affect tgt = case tgt of
+        TEnemy a permit | a == aid -> TEnemyPos aid (blid b) (bpos b) permit
+        -- Don't consider @destroy@, because even if actor dead, it makes
+        -- sense to go to last known location to loot or find others.
+        _ -> tgt
+  modifyClient $ \cli -> cli {stargetD = EM.map affect (stargetD cli)}
+  modifyClient $ \cli -> cli {scursor = affect $ scursor cli}
 
 perceptionA :: MonadClient m => LevelId -> PerActor -> PerActor -> m ()
 perceptionA lid outPA inPA = do
@@ -285,22 +290,14 @@ killExitA = modifyClient $ \cli -> cli {squit = True}
 -- the client state is modified by the command.
 drawCmdAtomicUI :: MonadClientUI m => Bool -> CmdAtomic -> m ()
 drawCmdAtomicUI verbose cmd = case cmd of
-  CreateActorA aid body _ -> do
-    side <- getsClient sside
-    when (verbose || bfid body /= side) $ actorVerbMU aid body "appear"
-    when (bfid body /= side) stopPlayBack
-    lookAtMove aid
+  CreateActorA aid body _ -> createActorUI aid body verbose "appear"
   DestroyActorA aid body _ -> do
     side <- getsClient sside
     destroyActorUI aid body "die" "be destroyed" verbose
     when (bfid body == side && not (bproj body)) stopPlayBack
   CreateItemA _ item k _ -> itemVerbMU item k "drop to the ground"
   DestroyItemA _ item k _ -> itemVerbMU item k "disappear"
-  SpotActorA aid body _ -> do
-    side <- getsClient sside
-    when (verbose || bfid body /= side) $ actorVerbMU aid body "be spotted"
-    when (bfid body /= side) stopPlayBack
-    -- TODO: "XXX spots YYY"? or rather "at (192,43)"? or center, blink, mark?
+  SpotActorA aid body _ -> createActorUI aid body verbose "be spotted"
   LoseActorA aid body _ ->
     destroyActorUI aid body "be missing in action" "be lost" verbose
   MoveActorA aid _ _ -> lookAtMove aid
@@ -449,6 +446,22 @@ aiVerbMU aid verb iid k = do
   let msg = makeSentence [ MU.SubjectVerbSg subject verb
                          , partItemWs coitem disco k item ]
   msgAdd msg
+
+-- TODO: "XXX spots YYY"? or blink or show the changed cursor?
+createActorUI :: MonadClientUI m => ActorId -> Actor -> Bool -> MU.Part -> m ()
+createActorUI aid body verbose verb = do
+  side <- getsClient sside
+  when (verbose || bfid body /= side) $ actorVerbMU aid body verb
+  when (bfid body /= side) $ do
+    mleader <- getsClient _sleader
+    per <- getPerFid (blid body)
+    fact <- getsState $ (EM.! bfid body) . sfactionD
+    let mpermit leader = actorSeesPos per leader (bpos body)
+        permit = maybe False mpermit mleader  -- by default, target foes only
+    when (isAtWar fact side) $
+      modifyClient $ \cli -> cli {scursor = TEnemy aid permit}
+    stopPlayBack
+  lookAtMove aid
 
 destroyActorUI :: MonadClientUI m
                => ActorId -> Actor -> MU.Part -> MU.Part -> Bool -> m ()

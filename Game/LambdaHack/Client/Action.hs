@@ -576,8 +576,8 @@ targetDesc target = do
       getsState $ bname . getActorBody a
     Just (TEnemyPos _ lid p _) ->
       return $ if lid == currentLid
-               then "something last seen at" <+> (T.pack . show) p
-               else "something last seen on level" <+> tshow (fromEnum lid)
+               then "hot spot" <+> (T.pack . show) p
+               else "a hot spot on level" <+> tshow (fromEnum lid)
     Just (TPoint lid p) ->
       return $ if lid == currentLid
                then "exact spot" <+> (T.pack . show) p
@@ -588,9 +588,9 @@ targetDesc target = do
         Just aid -> do
           tgtPos <- aidTgtToPos aid currentLid target
           let invalidMsg = "an invalid relative position"
-              validMsg p = "relative position" <+> (T.pack . show) p
+              validMsg (p, _) = "relative position" <+> (T.pack . show) p
           return $ maybe invalidMsg validMsg tgtPos
-    Nothing -> return $ "cursor location"
+    Nothing -> return "cursor location"
 
 targetDescLeader :: MonadClientUI m => ActorId -> m Text
 targetDescLeader leader = do
