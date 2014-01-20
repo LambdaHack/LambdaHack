@@ -433,22 +433,33 @@ tgtFloorHuman :: MonadClientUI m => m Slideshow
 tgtFloorHuman = do
   arena <- getArenaUI
   leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
+  body <- getsState $ getActorBody leader
   cursorPos <- cursorToPos
   scursor <- getsClient scursor
   stgtMode <- getsClient stgtMode
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  bs <- getsState $ actorNotProjAssocs (isAtWar fact) arena
-  let cursor = fromMaybe (bpos b) cursorPos
+  per <- getPerFid arena
+  bsAll <- getsState $ actorAssocs (const True) arena
+  let cursor = fromMaybe (bpos body) cursorPos
       tgt = case scursor of
         _ | isNothing stgtMode ->  -- first key press: keep target
           scursor
-        TEnemy{} -> TPoint arena cursor
-        TPoint{} -> TVector $ displacement (bpos b) cursor
+        TEnemy a -> TActor a
+        TEnemyPos a lid p -> TActorPos a lid p
+        TActor{} -> TPoint arena cursor
+        TActorPos{} -> TPoint arena cursor
+        TPoint{} -> TVector $ displacement (bpos body) cursor
         TVector{} ->
-          case find (\(_, m) -> Just (bpos m) == cursorPos) bs of
-            Just (im, m) -> TEnemy im (blid m) (bpos m)
+          let isEnemy b = isAtWar fact (bfid b)
+                          && not (bproj b)
+                          && actorSeesPos per leader (bpos b)
+          -- For projectiles, we pick here the first that would be picked
+          -- by '*', so that all other projectiles on the tile come next,
+          -- without any intervening actors from other tiles.
+          in case find (\(_, m) -> Just (bpos m) == cursorPos) bsAll of
+            Just (im, m) | isEnemy m -> TEnemy im
+            Just (im, _) -> TActor im
             Nothing -> TPoint arena cursor
   modifyClient $ \cli -> cli {scursor = tgt, stgtMode = Just $ TgtMode arena}
   doLook
@@ -467,28 +478,40 @@ tgtEnemyHuman = do
   stgtMode <- getsClient stgtMode
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  bs <- getsState $ actorNotProjAssocs (isAtWar fact) lid
+  bsAll <- getsState $ actorAssocs (const True) arena
   let ordPos (_, b) = (chessDist ppos $ bpos b, bpos b)
-      dbs = sortBy (comparing ordPos) bs
-      (lt, gt) = case scursor of
-            TEnemy n _ _ | isJust stgtMode ->  -- pick next enemy
-              let i = fromMaybe (-1) $ findIndex ((== n) . fst) dbs
-              in splitAt (i + 1) dbs
-            TEnemy n _ _ ->  -- first key press, retarget old enemy
-              let i = fromMaybe (-1) $ findIndex ((== n) . fst) dbs
-              in splitAt i dbs
-            _ ->  -- first key press, switch to the enemy under cursor, if any
-              let i = fromMaybe (-1)
-                      $ findIndex ((== cursorPos) . Just . bpos . snd) dbs
-              in splitAt i dbs
+      dbs = sortBy (comparing ordPos) bsAll
+      pickUnderCursor =  -- switch to the enemy under cursor, if any
+        let i = fromMaybe (-1)
+                $ findIndex ((== cursorPos) . Just . bpos . snd) dbs
+        in splitAt i dbs
+      (forceFoe, (lt, gt)) = case scursor of
+            TEnemy a | isJust stgtMode ->  -- pick next enemy
+              let i = fromMaybe (-1) $ findIndex ((== a) . fst) dbs
+              in (True, splitAt (i + 1) dbs)
+            TEnemy a ->  -- first key press, retarget old enemy
+              let i = fromMaybe (-1) $ findIndex ((== a) . fst) dbs
+              in (True, splitAt i dbs)
+            TEnemyPos{} -> (True, pickUnderCursor)
+            TActor a | isJust stgtMode ->  -- pick next enemy
+              let i = fromMaybe (-1) $ findIndex ((== a) . fst) dbs
+              in (False, splitAt (i + 1) dbs)
+            TActor a ->  -- first key press, retarget old enemy
+              let i = fromMaybe (-1) $ findIndex ((== a) . fst) dbs
+              in (False, splitAt i dbs)
+            TActorPos{} -> (False, pickUnderCursor)
+            _ -> (True, pickUnderCursor)  -- the sensible default is foes
       gtlt = gt ++ lt
-      seen (_, b) =
-        let mpos = bpos b                -- it is remembered by faction
-        in actorSeesPos per leader mpos  -- is it visible by actor?
-      lf = filter seen gtlt
-      tgt = case lf of
-              [] -> scursor  -- no enemies in sight, stick to last target
-              (na, nm) : _ -> TEnemy na (blid nm) (bpos nm)  -- pick the next
+      isEnemy b = isAtWar fact (bfid b)
+                  && not (bproj b)
+                  && actorSeesPos per leader (bpos b)
+      lf = filter (isEnemy . snd) gtlt
+      tgt | forceFoe = case lf of
+        (a, _) : _ -> TEnemy a
+        [] -> scursor  -- no seen foes in sight, stick to last target
+          | otherwise = case gtlt of
+        (a, _) : _ -> TActor a
+        [] -> scursor  -- no actors in sight, stick to last target
   -- Register the chosen enemy, to pick another on next invocation.
   modifyClient $ \cli -> cli {scursor = tgt, stgtMode = Just $ TgtMode arena}
   doLook

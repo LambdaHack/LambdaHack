@@ -25,7 +25,8 @@ module Game.LambdaHack.Client.Action
     -- * Assorted primitives
   , restoreGame, removeServerSave, displayPush, scoreToSlideshow
   , rndToAction, getArenaUI, getLeaderUI, targetDescLeader
-  , viewedLevel, targetToPos, cursorToPos, partAidLeader, partActorLeader
+  , viewedLevel, aidTgtToPos, targetToPos, cursorToPos
+  , partAidLeader, partActorLeader
   , getCacheBfs, accessCacheBfs
   , debugPrint
   ) where
@@ -571,15 +572,18 @@ targetDesc target = do
   (currentLid, _) <- viewedLevel
   mleader <- getsClient _sleader
   case target of
-    Just (TEnemy a lid p) -> do
-      onLevel <- getsState $ memActor a currentLid
-      if onLevel
-      then do
-        getsState $ bname . getActorBody a
-      else return $
-        if lid == currentLid
-        then "a foe last seen at" <+> (T.pack . show) p
-        else "a foe last seen on level" <+> tshow (fromEnum lid)
+    Just (TEnemy a) ->
+      getsState $ bname . getActorBody a
+    Just (TEnemyPos _ lid p) ->
+      return $ if lid == currentLid
+               then "something last seen at" <+> (T.pack . show) p
+               else "something last seen on level" <+> tshow (fromEnum lid)
+    Just (TActor a) ->
+      getsState $ bname . getActorBody a
+    Just (TActorPos _ lid p) ->
+      return $ if lid == currentLid
+               then "something last seen at" <+> (T.pack . show) p
+               else "something last seen on level" <+> tshow (fromEnum lid)
     Just (TPoint lid p) ->
       return $ if lid == currentLid
                then "exact spot" <+> (T.pack . show) p
@@ -640,14 +644,16 @@ aidTgtToPos :: MonadClient m
 aidTgtToPos maid currentLid target = do
   Level{lxsize, lysize} <- getLevel currentLid
   case target of
-    Just (TEnemy a _ _) -> do
-      mem <- getsState $ memActor a currentLid
-      if mem then do  -- alive and visible
-        pos <- getsState $ bpos . getActorBody a
-        return $ Just pos
-      else return Nothing
-    Just (TPoint lid pos) ->
-      return $ if lid == currentLid then Just pos else Nothing
+    Just (TEnemy a) ->
+      getsState $ Just . bpos . getActorBody a
+    Just (TEnemyPos _ lid p) ->
+      return $ if lid == currentLid then Just p else Nothing
+    Just (TActor a) ->
+      getsState $ Just . bpos . getActorBody a
+    Just (TActorPos _ lid p) ->
+      return $ if lid == currentLid then Just p else Nothing
+    Just (TPoint lid p) ->
+      return $ if lid == currentLid then Just p else Nothing
     Just (TVector v) ->
       case maid of
         Nothing -> return Nothing

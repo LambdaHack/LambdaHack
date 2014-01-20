@@ -88,37 +88,37 @@ reacquireTgt aid factionAbilities btarget fper = do
                     | otherwise = minimum foeDist
             minFoes =
               filter (\(_, body) -> distB (bpos body) == minDist) visFoes
-            minTargets =
-              map (\(a, body) ->
-                    Just $ TEnemy a (blid body) (bpos body)) minFoes
+            minTargets = map (\(a, _) -> Just $ TEnemy a) minFoes
             minTgtS = liftFrequency $ uniformFreq "closest" minTargets
         in minTgtS .| noFoes .| returN "TCursor" Nothing  -- never empty
       reacquire :: Maybe Target -> Strategy (Maybe Target)
       reacquire tgt =
         case tgt of
-          Just (TEnemy a lid ll) | focused && lid == blid b ->
-            -- Chase even if enemy dead, to loot.
+          Just (TEnemy a) ->
             case fmap bpos $ EM.lookup a actorD of
-              Just l | actorSeesPos per aid l ->
-                -- prefer visible (and alive) foes
-                returN "TEnemy" $ Just $ TEnemy a lid l
-              _ -> if null visFoes         -- prefer visible foes to positions
-                      && bpos b /= ll      -- not yet reached the last pos
-                   then returN "last known" $ Just $ TPoint lid ll
-                                           -- chase the last known pos
-                   else closest
-          Just TEnemy{} -> closest         -- just pick the closest foe
-          Just (TPoint lid pos) | pos == bpos b && lid == blid b ->
-            closest  -- already reached pos
-          Just (TPoint lid pos)
-            | not (bumpableHere cops lvl False (asight mk) pos)
-              && lid == blid b ->
+              Just l ->
+                if actorSeesPos per aid l || null visFoes
+                then returN "TEnemy" $ Just $ TEnemy a
+                else closest  -- prefer visible foes
+              Nothing -> assert `failure` tgt
+          Just (TEnemyPos _ lid ll) | focused && lid == blid b ->
+            -- Chase even if enemy dead, to loot.
+            if null visFoes               -- prefer visible foes to positions
+               && bpos b /= ll            -- not yet reached the last pos
+            then returN "last known" tgt  -- chase the last known pos
+            else closest
+          Just TEnemyPos{} -> closest
+          Just TActor{} -> closest
+          Just TActorPos{} -> closest
+          Just (TPoint lid _) | lid /= blid b -> closest  -- wrong level
+          Just (TPoint _ pos) | pos == bpos b -> closest  -- already reached
+          Just (TPoint _ pos)
+            | not (bumpableHere cops lvl False (asight mk) pos) ->
             closest  -- no longer bumpable, even assuming no foes
           Just TPoint{} | null visFoes -> returN "TPoint" tgt
-                                           -- nothing visible, go to pos
-          Just TPoint{} -> closest         -- prefer visible foes
+                                          -- nothing visible, go to pos
+          Just TPoint{} -> closest  -- prefer visible foes
           Just TVector{} -> closest
-                 -- TODO: use instead of TPoint to avoid using boldpos
           Nothing -> closest
   return $! reacquire btarget
 
@@ -131,23 +131,20 @@ actionStrategy aid factionAbilities = do
   btarget <- getsClient $ getTarget aid
   proposeAction disco aid factionAbilities btarget
 
-proposeAction :: MonadActionRO m
+proposeAction :: MonadClient m
               => Discovery -> ActorId -> [Ability] -> Maybe Target
               -> m (Strategy CmdTakeTimeSer)
 proposeAction disco aid factionAbilities btarget = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   Actor{bkind, bpos, blid} <- getsState $ getActorBody aid
-  lvl@Level{lxsize, lysize} <- getLevel blid
+  lvl <- getLevel blid
+  mfpos <- aidTgtToPos (Just aid) blid btarget
   let mk = okind bkind
-      (fpos, mfAid) =
+      fpos = fromMaybe bpos mfpos
+      mfAid =
         case btarget of
-          Just (TEnemy foeAid lid l) ->
-            (if lid == blid then l else bpos, Just foeAid)
-          Just (TPoint lid l) -> (if lid == blid then l else bpos, Nothing)
-          Just (TVector v) ->
-            let l = shiftBounded lxsize lysize bpos v
-            in (l, Nothing)
-          Nothing -> (bpos, Nothing)  -- actor blocked by friends or a missile
+          Just (TEnemy foeAid) -> Just foeAid
+          _ -> Nothing
       foeVisible = isJust mfAid
       lootHere x = not $ EM.null $ lvl `atI` x
       actorAbilities = acanDo mk `intersect` factionAbilities
