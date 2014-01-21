@@ -53,7 +53,6 @@ queryAI oldAid = do
      || Ability.Melee `notElem` abilityOther
     then queryAIPick oldAid
     else do
-
       oldBody <- getsState $ getActorBody oldAid
       oldAis <- getsState $ getActorItem oldAid
       btarget <- getsClient $ getTarget oldAid

@@ -6,14 +6,17 @@ module Game.LambdaHack.Common.Vector
   , moves, vicinity, vicinityCardinal
   , shift, shiftBounded, shiftPath, displacement, displacePath
   , RadianAngle, rotate, towards
-  , BfsDistance, MoveLegal(..), minKnown, bfsFill, accessBfs, posAimsPos
+  , BfsDistance, MoveLegal(..), minKnown
+  , fillBfs, findPathBfs, accessBfs, posAimsPos
   ) where
 
 import Control.Arrow (second)
 import Control.Exception.Assert.Sugar
 import Data.Binary
-import Data.Bits (Bits, complement, (.&.))
+import Data.Bits (Bits, complement, (.&.), (.|.))
 import Data.Int (Int32)
+import Data.List
+import Data.Maybe
 import qualified Data.Sequence as Seq
 
 import Game.LambdaHack.Common.Point
@@ -214,12 +217,12 @@ minKnown :: BfsDistance
 minKnown = toEnum $ (1 + fromEnum (maxBound :: BfsDistance)) `div` 2
 
 -- TODO: Move somewhere; in particular, only clients need to know that.
-bfsFill :: (Point -> Point -> MoveLegal)  -- ^ is move from a known tile legal
+fillBfs :: (Point -> Point -> MoveLegal)  -- ^ is move from a known tile legal
         -> (Point -> Point -> Bool)       -- ^ is a move from unknown legal
         -> Point                          -- ^ starting position
         -> PointArray.Array BfsDistance   -- ^ initial array, with @maxBound@
         -> PointArray.Array BfsDistance   -- ^ array with calculated distances
-bfsFill isEnterable passUnknown origin aInitial =
+fillBfs isEnterable passUnknown origin aInitial =
   -- TODO: copy, thaw, mutate, freeze
   let maxUnknown = pred minKnown
       bfs :: Seq.Seq (Point, BfsDistance)
@@ -254,6 +257,49 @@ bfsFill isEnterable passUnknown origin aInitial =
             in bfs q2 s2
       origin0 = (origin, minKnown)
   in bfs (Seq.singleton origin0) (aInitial PointArray.// [origin0])
+
+-- TODO: Use http://harablog.wordpress.com/2011/09/07/jump-point-search/
+-- to determine a few really different paths and compare them,
+-- e.g., how many closed doors they pass, open doors, unknown tiles
+-- on the path or close enough to reveal them.
+-- Also, check if JPS can somehow optimize BFS or pathBfs.
+-- Also, let eps determine the path in more detail (we use only a couple
+-- of first bits of eps so far).
+findPathBfs :: Point -> Point -> Int -> (PointArray.Array BfsDistance)
+            -> Maybe [Point]
+findPathBfs source target sepsRaw bfs =
+  assert (bfs PointArray.! source == minKnown) $
+  let targetDist = bfs PointArray.! target
+  in if targetDist == maxBound
+     then Nothing
+     else
+       let maxUnknown = pred minKnown
+           eps = abs sepsRaw `mod` length moves
+           track :: Point -> BfsDistance -> [Point] -> [Point]
+           track pos oldDist suffix | oldDist == minKnown =
+             assert (pos == source) suffix
+           track pos oldDist suffix | oldDist > maxUnknown =
+             let dist = pred oldDist
+                 (ch1, ch2) = splitAt eps $ map (shift pos) moves
+                 children = ch2 ++ ch1
+                 matchesDist p = bfs PointArray.! p == dist
+                 minP = fromMaybe (assert `failure` (pos, oldDist, children))
+                                  (find matchesDist children)
+             in track minP dist (pos : suffix)
+           track pos oldDist suffix =
+             let distUnknown = pred oldDist
+                 distKnown = distUnknown .|. minKnown
+                 (ch1, ch2) = splitAt eps $ map (shift pos) moves
+                 children = ch2 ++ ch1
+                 matchesDistUnknown p = bfs PointArray.! p == distUnknown
+                 matchesDistKnown p = bfs PointArray.! p == distKnown
+                 (minP, dist) = case find matchesDistKnown children of
+                   Just p -> (p, distKnown)
+                   Nothing -> case find matchesDistUnknown children of
+                     Just p -> (p, distUnknown)
+                     Nothing -> assert `failure` (pos, oldDist, children)
+             in track minP dist (pos : suffix)
+       in Just $ track target targetDist []
 
 accessBfs :: PointArray.Array BfsDistance -> Point -> Maybe Int
 {-# INLINE accessBfs #-}

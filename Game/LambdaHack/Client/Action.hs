@@ -27,7 +27,7 @@ module Game.LambdaHack.Client.Action
   , rndToAction, getArenaUI, getLeaderUI, targetDescLeader
   , viewedLevel, aidTgtToPos, targetToPos, cursorToPos
   , partAidLeader, partActorLeader
-  , getCacheBfsAndPath, getCacheBfs, accessCacheBfs, actorAimsPos, posAimsPos
+  , getCacheBfsAndPath, getCacheBfs, accessCacheBfs, actorAimsPos
   , debugPrint
   ) where
 
@@ -38,9 +38,7 @@ import Control.DeepSeq
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Control.Monad.State as St
-import Data.Bits ((.|.))
 import qualified Data.EnumMap.Strict as EM
-import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Monoid as Monoid
@@ -463,7 +461,8 @@ getCacheBfsAndPath aid target = do
   let pathAndStore :: (PointArray.Array BfsDistance)
                    -> m (PointArray.Array BfsDistance, Maybe [Point])
       pathAndStore bfs = do
-        mpath <- findPathBfs aid target bfs
+        source <- getsState $ bpos . getActorBody aid
+        let mpath = findPathBfs source target seps bfs
         modifyClient $ \cli ->
           cli {sbfsD = EM.insert aid (bfs, target, seps, mpath) (sbfsD cli)}
         return (bfs, mpath)
@@ -517,53 +516,8 @@ computeBFS aid = do
                                  && ch spos tpos
       origin = bpos b
       vInitial = PointArray.replicateA lxsize lysize maxBound
-  return $! bfsFill isEnterable passUnknown origin vInitial
-
--- TODO: Use http://harablog.wordpress.com/2011/09/07/jump-point-search/
--- to determine a few really different paths and compare them,
--- e.g., how many closed doors they pass, open doors, unknown tiles
--- on the path or close enough to reveal them.
--- Also, check if JPS can somehow optimize BFS or pathBfs.
--- Also, let eps determine the path in more detail (we use only a couple
--- of first bits of eps so far).
-findPathBfs :: MonadClient m
-            => ActorId -> Point -> (PointArray.Array BfsDistance)
-            -> m (Maybe [Point])
-findPathBfs aid target bfs = do
-  let targetDist = bfs PointArray.! target
-  if targetDist == maxBound then return Nothing
-  else do
-    let maxUnknown = pred minKnown
-    b <- getsState $ getActorBody aid
-    sepsRaw <- getsClient seps
-    let eps = abs sepsRaw `mod` length moves
-        source = bpos b
-    assert (bfs PointArray.! source == minKnown) skip
-    let track :: Point -> BfsDistance -> [Point] -> [Point]
-        track pos oldDist suffix | oldDist == minKnown =
-          assert (pos == source) suffix
-        track pos oldDist suffix | oldDist > maxUnknown =
-          let dist = pred oldDist
-              (ch1, ch2) = splitAt eps $ map (shift pos) moves
-              children = ch2 ++ ch1
-              matchesDist p = bfs PointArray.! p == dist
-              minP = fromMaybe (assert `failure` (pos, oldDist, children))
-                               (find matchesDist children)
-          in track minP dist (pos : suffix)
-        track pos oldDist suffix =
-          let distUnknown = pred oldDist
-              distKnown = distUnknown .|. minKnown
-              (ch1, ch2) = splitAt eps $ map (shift pos) moves
-              children = ch2 ++ ch1
-              matchesDistUnknown p = bfs PointArray.! p == distUnknown
-              matchesDistKnown p = bfs PointArray.! p == distKnown
-              (minP, dist) = case find matchesDistKnown children of
-                Just p -> (p, distKnown)
-                Nothing -> case find matchesDistUnknown children of
-                  Just p -> (p, distUnknown)
-                  Nothing -> assert `failure` (pos, oldDist, children)
-          in track minP dist (pos : suffix)
-    return $! Just $ track target targetDist []
+  -- Here we don't want '$!', because we want the BFS data lazy.
+  return $ fillBfs isEnterable passUnknown origin vInitial
 
 accessCacheBfs :: MonadClient m => ActorId -> Point -> m (Maybe Int)
 {-# INLINE accessCacheBfs #-}

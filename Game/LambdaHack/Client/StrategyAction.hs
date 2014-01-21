@@ -94,12 +94,12 @@ reacquireTgt aid factionAbilities btarget bfs = do
       reacquire :: Maybe Target -> Strategy (Maybe Target)
       reacquire tgt =
         case tgt of
-          Just (TEnemy a permit) ->
+          Just (TEnemy a _) ->
             case fmap bpos $ EM.lookup a actorD of
               Just l ->
-                if posAimsPos bfs (bpos b) l || null visFoes
-                then returN "TEnemy" $ Just $ TEnemy a permit
-                else closest  -- prefer visible foes
+                if posAimsPos bfs (bpos b) l
+                then returN "TEnemy" tgt
+                else closest  -- prefer aimable foes
               Nothing -> assert `failure` tgt
           Just (TEnemyPos _ lid ll _) | focused && lid == blid b ->
             -- Chase even if enemy dead, to loot.
