@@ -28,7 +28,6 @@ import qualified Game.LambdaHack.Common.Key as K
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
-import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.ServerCmd
@@ -54,7 +53,7 @@ queryAI oldAid = do
      || Ability.Melee `notElem` abilityOther
     then queryAIPick oldAid
     else do
-      fper <- getsClient sfper
+
       oldBody <- getsState $ getActorBody oldAid
       oldAis <- getsState $ getActorItem oldAid
       btarget <- getsClient $ getTarget oldAid
@@ -64,25 +63,23 @@ queryAI oldAid = do
       ours <- getsState $ actorNotProjAssocs (== side) arena
       time <- getsState $ getLocalTime arena
       Level{lxsize, lysize} <- getsState $ \s -> sdungeon s EM.! arena
-      actorD <- getsState sactorD
       let oldPos = bpos oldBody
-          per = fper EM.! arena
-          posOnLevel b | blid b /= arena = Nothing
-                       | otherwise = Just $ bpos b
-          mfoePos foe = maybe Nothing posOnLevel
-                        $ EM.lookup foe actorD
-          canSee foe = maybe False (actorSeesPos per oldAid) $ mfoePos foe
           isAmmo i = jsymbol i `elem` ritemProject (Kind.stdRuleset corule)
           hasAmmo = any (isAmmo . snd) oldAis
           isAdjacent = foesAdjacent lxsize lysize oldPos foes
+      hasGoodTarget <- case btarget of
+        Just (TEnemy foe False) -> do
+          bfoe <- getsState $ getActorBody foe
+          if blid bfoe /= arena then
+            assert `failure` (oldAid, blid oldBody, foe, blid bfoe)
+          else do
+            aims <- actorAimsPos oldAid (bpos bfoe)
+            return $ aims && hasAmmo && not isAdjacent
+        _ -> return False
       if -- Keep the leader: he is alone on the level.
          length ours == 1
-         -- Keep the leader: he has an enemy target.
-         || case btarget of
-              Just (TEnemy foe False) ->
-                -- and he can shoot it.
-                canSee foe && hasAmmo && not isAdjacent
-              _ -> False
+         -- Keep the leader: he has a good target.
+         || hasGoodTarget
          -- Keep the leader: he probably just used stairs.
          || bpos oldBody == boldpos oldBody
             && not (waitedLastTurn oldBody time)

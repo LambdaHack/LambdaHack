@@ -378,7 +378,7 @@ doLook = do
   inhabitants <- if canSee
                  then getsState $ posToActors p lidV
                  else return []
-  mdist <- accessCacheBfs leader p
+  aims <- actorAimsPos leader p
   let enemyMsg = case inhabitants of
         [] -> ""
         _ -> -- Even if it's the leader, give his proper name, not 'you'.
@@ -387,7 +387,7 @@ doLook = do
                  verb = "be here"
              in makeSentence [MU.SubjectVerbSg subject verb]
       vis | not canSee = "you cannot see"
-          | mdist /= Just (chessDist (bpos b) p) = "you cannot penetrate"
+          | not aims = "you cannot penetrate"
           | otherwise = "you see"
   -- Show general info about current position.
   lookMsg <- lookAt True vis canSee p leader enemyMsg
@@ -434,15 +434,15 @@ tgtFloorHuman :: MonadClientUI m => m Slideshow
 tgtFloorHuman = do
   lidV <- viewedLevel
   leader <- getLeaderUI
-  body <- getsState $ getActorBody leader
+  lpos <- getsState $ bpos . getActorBody leader
   cursorPos <- cursorToPos
   scursor <- getsClient scursor
   stgtMode <- getsClient stgtMode
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  per <- getPerFid lidV
+  bfs <- getCacheBfs leader
   bsAll <- getsState $ actorAssocs (const True) lidV
-  let cursor = fromMaybe (bpos body) cursorPos
+  let cursor = fromMaybe lpos cursorPos
       tgt = case scursor of
         _ | isNothing stgtMode ->  -- first key press: keep target
           scursor
@@ -450,11 +450,11 @@ tgtFloorHuman = do
         TEnemyPos a lid p False -> TEnemyPos a lid p True
         TEnemy{} -> TPoint lidV cursor
         TEnemyPos{} -> TPoint lidV cursor
-        TPoint{} -> TVector $ displacement (bpos body) cursor
+        TPoint{} -> TVector $ displacement lpos cursor
         TVector{} ->
           let isEnemy b = isAtWar fact (bfid b)
                           && not (bproj b)
-                          && actorSeesPos per leader (bpos b)
+                          && posAimsPos bfs lpos (bpos b)
           -- For projectiles, we pick here the first that would be picked
           -- by '*', so that all other projectiles on the tile come next,
           -- without any intervening actors from other tiles.
@@ -471,15 +471,15 @@ tgtEnemyHuman :: MonadClientUI m => m Slideshow
 tgtEnemyHuman = do
   lidV <- viewedLevel
   leader <- getLeaderUI
-  ppos <- getsState (bpos . getActorBody leader)
-  per <- getPerFid lidV
+  lpos <- getsState $ bpos . getActorBody leader
   cursorPos <- cursorToPos
   scursor <- getsClient scursor
   stgtMode <- getsClient stgtMode
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
+  bfs <- getCacheBfs leader
   bsAll <- getsState $ actorAssocs (const True) lidV
-  let ordPos (_, b) = (chessDist ppos $ bpos b, bpos b)
+  let ordPos (_, b) = (chessDist lpos $ bpos b, bpos b)
       dbs = sortBy (comparing ordPos) bsAll
       pickUnderCursor =  -- switch to the enemy under cursor, if any
         let i = fromMaybe (-1)
@@ -497,7 +497,7 @@ tgtEnemyHuman = do
       gtlt = gt ++ lt
       isEnemy b = isAtWar fact (bfid b)
                   && not (bproj b)
-                  && actorSeesPos per leader (bpos b)
+                  && posAimsPos bfs lpos (bpos b)
       lf = filter (isEnemy . snd) gtlt
       tgt | permitAnyActor = case gtlt of
         (a, _) : _ -> TEnemy a True
@@ -515,11 +515,7 @@ tgtUnknownHuman :: MonadClientUI m => m Slideshow
 tgtUnknownHuman = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  tgtPos <- targetToPos
-  let target = case tgtPos of
-        Nothing -> bpos b
-        Just (c, _) -> c
-  bfs <- getCacheBfs leader target
+  bfs <- getCacheBfs leader
   let closestUnknownPos = PointArray.minIndexA bfs
       dist = bfs PointArray.! closestUnknownPos
   if dist >= minKnown

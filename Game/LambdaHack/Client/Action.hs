@@ -27,7 +27,7 @@ module Game.LambdaHack.Client.Action
   , rndToAction, getArenaUI, getLeaderUI, targetDescLeader
   , viewedLevel, aidTgtToPos, targetToPos, cursorToPos
   , partAidLeader, partActorLeader
-  , getCacheBfsAndPath, getCacheBfs, accessCacheBfs
+  , getCacheBfsAndPath, getCacheBfs, accessCacheBfs, actorAimsPos, posAimsPos
   , debugPrint
   ) where
 
@@ -38,7 +38,7 @@ import Control.DeepSeq
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Control.Monad.State as St
-import Data.Bits (complement, (.&.), (.|.))
+import Data.Bits ((.|.))
 import qualified Data.EnumMap.Strict as EM
 import Data.List
 import qualified Data.Map.Strict as M
@@ -294,14 +294,13 @@ drawOverlay onBlank dm over = do
   per <- getPerFid lid
   tgtPos <- fmap (fmap fst) targetToPos
   cursorPos <- cursorToPos
-  let pathFromTgt leader tgtP = fmap snd $ getCacheBfsAndPath leader tgtP
-      pathFromLeader leader =
-        maybe (return Nothing) (pathFromTgt leader) tgtPos
-  mpath <- maybe (return Nothing) pathFromLeader mleader
+  let pathFromLeader leader =
+        maybe (return Nothing) (fmap Just . getCacheBfsAndPath leader) tgtPos
+  bfsmpath <- maybe (return Nothing) pathFromLeader mleader
   tgtDesc <- maybe (return "") targetDescLeader mleader
   cursorDesc <- targetDescCursor
   return $! draw onBlank dm cops per lid mleader cursorPos tgtPos
-                 mpath cli s cursorDesc tgtDesc over
+                 bfsmpath cli s cursorDesc tgtDesc over
 
 -- TODO: if more slides, don't take head, but do as in getInitConfirms,
 -- but then we have to clear the messages or they get redisplayed
@@ -378,17 +377,16 @@ animate arena anim = do
   per <- getPerFid arena
   tgtPos <- fmap (fmap fst) targetToPos
   cursorPos <- cursorToPos
-  let pathFromTgt leader tgtP = fmap snd $ getCacheBfsAndPath leader tgtP
-      pathFromLeader leader =
-        maybe (return Nothing) (pathFromTgt leader) tgtPos
-  mpath <- maybe (return Nothing) pathFromLeader mleader
+  let pathFromLeader leader =
+        maybe (return Nothing) (fmap Just . getCacheBfsAndPath leader) tgtPos
+  bfsmpath <- maybe (return Nothing) pathFromLeader mleader
   tgtDesc <- maybe (return "") targetDescLeader mleader
   cursorDesc <- targetDescCursor
   let over = renderReport sreport
       topLineOnly = truncateToOverlay lxsize over
       basicFrame =
         draw False ColorFull cops per arena mleader
-             cursorPos tgtPos mpath cli s cursorDesc tgtDesc topLineOnly
+             cursorPos tgtPos bfsmpath cli s cursorDesc tgtDesc topLineOnly
   snoAnim <- getsClient $ snoAnim . sdebugCli
   return $ if fromMaybe False snoAnim
            then [Just basicFrame]
@@ -479,14 +477,13 @@ getCacheBfsAndPath aid target = do
       bfs <- computeBFS aid
       pathAndStore bfs
 
-getCacheBfs :: MonadClient m
-            => ActorId -> Point -> m (PointArray.Array BfsDistance)
+getCacheBfs :: MonadClient m => ActorId -> m (PointArray.Array BfsDistance)
 {-# INLINE getCacheBfs #-}
-getCacheBfs aid target = do
+getCacheBfs aid = do
   mbfs <- getsClient $ EM.lookup aid . sbfsD
   case mbfs of
     Just (bfs, _, _, _) -> return bfs
-    Nothing -> fmap fst $ getCacheBfsAndPath aid target
+    Nothing -> fmap fst $ getCacheBfsAndPath aid (Point 0 0)
 
 computeBFS :: MonadClient m => ActorId -> m (PointArray.Array BfsDistance)
 computeBFS aid = do
@@ -571,11 +568,15 @@ findPathBfs aid target bfs = do
 accessCacheBfs :: MonadClient m => ActorId -> Point -> m (Maybe Int)
 {-# INLINE accessCacheBfs #-}
 accessCacheBfs aid target = do
-  bfs <- getCacheBfs aid target
-  let dist = bfs PointArray.! target
-  return $! if dist == maxBound
-            then Nothing
-            else Just $ fromEnum $ dist .&. complement minKnown
+  bfs <- getCacheBfs aid
+  return $! accessBfs bfs target
+
+actorAimsPos :: MonadClient m => ActorId -> Point -> m Bool
+{-# INLINE actorAimsPos #-}
+actorAimsPos aid target = do
+  bfs <- getCacheBfs aid
+  b <- getsState $ getActorBody aid
+  return $! posAimsPos bfs (bpos b) target
 
 targetDesc :: MonadClientUI m => Maybe Target -> m Text
 targetDesc target = do
@@ -660,8 +661,8 @@ aidTgtToPos aid lidV target = do
       if blid body == lidV then do
         let pos = bpos body
         if blid b == lidV then do
-          mdist <- accessCacheBfs aid pos
-          return $ Just (pos, mdist == Just (chessDist (bpos b) pos))
+          aims <- actorAimsPos aid pos
+          return $ Just (pos, aims)
         else return $ Just (pos, False)
       else return Nothing
     Just (TEnemyPos _ lid p _) ->

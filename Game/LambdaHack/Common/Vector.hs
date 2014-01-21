@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.Vector
   , moves, vicinity, vicinityCardinal
   , shift, shiftBounded, shiftPath, displacement, displacePath
   , RadianAngle, rotate, towards
-  , BfsDistance, MoveLegal(..), minKnown, bfsFill
+  , BfsDistance, MoveLegal(..), minKnown, bfsFill, accessBfs, posAimsPos
   ) where
 
 import Control.Arrow (second)
@@ -254,3 +254,17 @@ bfsFill isEnterable passUnknown origin aInitial =
             in bfs q2 s2
       origin0 = (origin, minKnown)
   in bfs (Seq.singleton origin0) (aInitial PointArray.// [origin0])
+
+accessBfs :: PointArray.Array BfsDistance -> Point -> Maybe Int
+{-# INLINE accessBfs #-}
+accessBfs bfs target =
+  let dist = bfs PointArray.! target
+  in if dist == maxBound
+     then Nothing
+     else Just $ fromEnum $ dist .&. complement minKnown
+
+posAimsPos :: PointArray.Array BfsDistance -> Point -> Point -> Bool
+{-# INLINE posAimsPos #-}
+posAimsPos bfs bpos target =
+  let mdist = accessBfs bfs target
+  in mdist == Just (chessDist bpos target)

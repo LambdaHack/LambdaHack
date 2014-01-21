@@ -1,6 +1,6 @@
 -- | AI strategy operations implemented with the 'Action' monad.
 module Game.LambdaHack.Client.StrategyAction
-  ( targetStrategy, actionStrategy, visibleFoes
+  ( targetStrategy, actionStrategy
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -25,8 +25,8 @@ import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 import qualified Game.LambdaHack.Common.Random as Random
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
@@ -44,28 +44,29 @@ targetStrategy :: MonadClient m
                => ActorId -> [Ability] -> m (Strategy (Maybe Target))
 targetStrategy aid factionAbilities = do
   btarget <- getsClient $ getTarget aid
-  fper <- getsClient sfper
-  reacquireTgt aid factionAbilities btarget fper
+  bfs <- getCacheBfs aid
+  reacquireTgt aid factionAbilities btarget bfs
 
-visibleFoes :: MonadActionRO m
-            => ActorId -> FactionPers -> m [(ActorId, Actor)]
-visibleFoes aid fper = do
+aimableFoes :: MonadActionRO m
+            => ActorId -> PointArray.Array BfsDistance
+            -> m [(ActorId, Actor)]
+aimableFoes aid bfs = do
   b <- getsState $ getActorBody aid
   assert (not $ bproj b) skip  -- would work, but is probably a bug
-  let per = fper EM.! blid b
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
   foes <- getsState $ actorNotProjAssocs (isAtWar fact) (blid b)
-  return $! filter (actorSeesPos per aid . bpos . snd) foes
+  return $! filter (posAimsPos bfs (bpos b) . bpos . snd) foes
 
 reacquireTgt :: MonadActionRO m
-             => ActorId -> [Ability] -> Maybe Target -> FactionPers
+             => ActorId -> [Ability] -> Maybe Target
+             -> PointArray.Array BfsDistance
              -> m (Strategy (Maybe Target))
-reacquireTgt aid factionAbilities btarget fper = do
+reacquireTgt aid factionAbilities btarget bfs = do
   cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   b <- getsState $ getActorBody aid
   assert (not $ bproj b) skip  -- would work, but is probably a bug
   lvl <- getsState $ \s -> sdungeon s EM.! blid b
-  visFoes <- visibleFoes aid fper
+  visFoes <- aimableFoes aid bfs
   actorD <- getsState sactorD
   -- TODO: set distant targets so that monsters behave as if they have
   -- a plan. We need pathfinding for that.
@@ -73,8 +74,7 @@ reacquireTgt aid factionAbilities btarget fper = do
     s <- getState
     str <- moveStrategy cops aid s Nothing
     return $ (Just . TPoint (blid b) . (bpos b `shift`)) `liftM` str
-  let per = fper EM.! blid b
-      mk = okind $ bkind b
+  let mk = okind $ bkind b
       actorAbilities = acanDo mk `intersect` factionAbilities
       focused = bspeed b <= speedNormal
                 -- Don't focus on a distant enemy, when you can't chase him.
@@ -97,7 +97,7 @@ reacquireTgt aid factionAbilities btarget fper = do
           Just (TEnemy a permit) ->
             case fmap bpos $ EM.lookup a actorD of
               Just l ->
-                if actorSeesPos per aid l || null visFoes
+                if posAimsPos bfs (bpos b) l || null visFoes
                 then returN "TEnemy" $ Just $ TEnemy a permit
                 else closest  -- prefer visible foes
               Nothing -> assert `failure` tgt

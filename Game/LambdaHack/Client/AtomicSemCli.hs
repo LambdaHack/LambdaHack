@@ -465,11 +465,11 @@ createActorUI aid body verbose verb = do
   when (verbose || bfid body /= side) $ actorVerbMU aid body verb
   when (bfid body /= side) $ do
     mleader <- getsClient _sleader
-    per <- getPerFid (blid body)
+    permit <- case mleader of
+      Nothing -> return False
+      Just leader -> actorAimsPos leader (bpos body)
     fact <- getsState $ (EM.! bfid body) . sfactionD
-    let mpermit leader = actorSeesPos per leader (bpos body)
-        permit = maybe False mpermit mleader  -- by default, target foes only
-    when (isAtWar fact side) $
+    when (isAtWar fact side && permit) $  -- don't target if can't aim at it
       modifyClient $ \cli -> cli {scursor = TEnemy aid permit}
     stopPlayBack
   lookAtMove aid

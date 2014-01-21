@@ -27,6 +27,7 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
+import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
@@ -47,10 +48,11 @@ data ColorMode =
 -- depending on the frontend.
 draw :: Bool -> ColorMode -> Kind.COps -> Perception -> LevelId
      -> Maybe ActorId -> Maybe Point -> Maybe Point
-     -> Maybe [Point] -> StateClient -> State
+     -> Maybe (PointArray.Array BfsDistance, Maybe [Point])
+     -> StateClient -> State
      -> Text -> Text -> Overlay
      -> SingleFrame
-draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos mpathRaw
+draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
      cli@StateClient{ stgtMode, seps, sdisco
                     , smarkVision, smarkSmell, smarkSuspect, swaitTimes } s
      cursorDesc targetDesc sfTop =
@@ -64,7 +66,9 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos mpathRaw
              else ( fromMaybe [] $ bla lxsize lysize seps bpos cursor
                   , chessDist bpos cursor )
         _ -> ([], 0)
-      mpath = if blLength == 0 then Nothing else mpathRaw
+      mpath = maybe Nothing (\(_, mp) -> if blLength == 0
+                                         then Nothing
+                                         else mp) bfsmpathRaw
       actorsHere = actorAssocs (const True) drawnLevelId s
       cursorHere = find (\(_, m) -> cursorPos == Just (Actor.bpos m))
                    actorsHere
@@ -120,8 +124,11 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos mpathRaw
                     [] -> (tsymbol tk, Color.defAttr {Color.fg = vcolor tk})
                     i : _ -> viewItem $ getItemBody i s
             vis = ES.member pos0 $ totalVisible per
-            visPl =
-              maybe False (\leader -> actorSeesPos per leader pos0) mleader
+            visPl = case (mleader, bfsmpathRaw) of
+              (Just leader, Just (bfs, _)) ->
+                 let Actor{bpos} = getActorBody leader s
+                 in posAimsPos bfs bpos pos0
+              _ -> False
             a = case dm of
                   ColorBW   -> Color.defAttr
                   ColorFull ->
@@ -149,7 +156,10 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos mpathRaw
       leaderStatus = drawLeaderStatus cops s sdisco ltime swaitTimes mleader
       targetText = "Target:" <+> targetDesc
       pathText = let space = 40 - T.length targetText - 1
-                     len = maybe 0 length mpath
+                     len = case (cursorPos, bfsmpathRaw) of
+                       (Just cursor, Just (bfs, _)) ->
+                         fromMaybe 0 (accessBfs bfs cursor)
+                       _ -> 0
                      pText | len == 0 = ""
                            | otherwise = "(path" <+> showN2 len <> ")"
                  in if T.length pText > space
