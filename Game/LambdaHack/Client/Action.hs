@@ -27,7 +27,7 @@ module Game.LambdaHack.Client.Action
   , rndToAction, getArenaUI, getLeaderUI, targetDescLeader
   , viewedLevel, aidTgtToPos, targetToPos, cursorToPos
   , partAidLeader, partActorLeader
-  , getCacheBfs, accessCacheBfs
+  , getCacheBfsAndPath, getCacheBfs, accessCacheBfs
   , debugPrint
   ) where
 
@@ -294,7 +294,7 @@ drawOverlay onBlank dm over = do
   per <- getPerFid lid
   tgtPos <- fmap (fmap fst) targetToPos
   cursorPos <- cursorToPos
-  let pathFromTgt leader tgtP = fmap snd $ getCacheBfs leader tgtP
+  let pathFromTgt leader tgtP = fmap snd $ getCacheBfsAndPath leader tgtP
       pathFromLeader leader =
         maybe (return Nothing) (pathFromTgt leader) tgtPos
   mpath <- maybe (return Nothing) pathFromLeader mleader
@@ -378,7 +378,7 @@ animate arena anim = do
   per <- getPerFid arena
   tgtPos <- fmap (fmap fst) targetToPos
   cursorPos <- cursorToPos
-  let pathFromTgt leader tgtP = fmap snd $ getCacheBfs leader tgtP
+  let pathFromTgt leader tgtP = fmap snd $ getCacheBfsAndPath leader tgtP
       pathFromLeader leader =
         maybe (return Nothing) (pathFromTgt leader) tgtPos
   mpath <- maybe (return Nothing) pathFromLeader mleader
@@ -457,10 +457,10 @@ mkConfigUI corule = do
 
 -- | Get cached BFS data and path or, if not stored, generate,
 -- store and return. Due to laziness, they are not calculated until needed.
-getCacheBfs :: forall m. MonadClient m
-            => ActorId -> Point
-            -> m (PointArray.Array BfsDistance, Maybe [Point])
-getCacheBfs aid target = do
+getCacheBfsAndPath :: forall m. MonadClient m
+                   => ActorId -> Point
+                   -> m (PointArray.Array BfsDistance, Maybe [Point])
+getCacheBfsAndPath aid target = do
   seps <- getsClient seps
   let pathAndStore :: (PointArray.Array BfsDistance)
                    -> m (PointArray.Array BfsDistance, Maybe [Point])
@@ -478,6 +478,15 @@ getCacheBfs aid target = do
     Nothing -> do
       bfs <- computeBFS aid
       pathAndStore bfs
+
+getCacheBfs :: MonadClient m
+            => ActorId -> Point -> m (PointArray.Array BfsDistance)
+{-# INLINE getCacheBfs #-}
+getCacheBfs aid target = do
+  mbfs <- getsClient $ EM.lookup aid . sbfsD
+  case mbfs of
+    Just (bfs, _, _, _) -> return bfs
+    Nothing -> fmap fst $ getCacheBfsAndPath aid target
 
 computeBFS :: MonadClient m => ActorId -> m (PointArray.Array BfsDistance)
 computeBFS aid = do
@@ -560,8 +569,9 @@ findPathBfs aid target bfs = do
     return $! Just $ track target targetDist []
 
 accessCacheBfs :: MonadClient m => ActorId -> Point -> m (Maybe Int)
+{-# INLINE accessCacheBfs #-}
 accessCacheBfs aid target = do
-  (bfs, _) <- getCacheBfs aid target
+  bfs <- getCacheBfs aid target
   let dist = bfs PointArray.! target
   return $! if dist == maxBound
             then Nothing

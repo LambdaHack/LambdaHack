@@ -519,7 +519,7 @@ tgtUnknownHuman = do
   let target = case tgtPos of
         Nothing -> bpos b
         Just (c, _) -> c
-  (bfs, _) <- getCacheBfs leader target
+  bfs <- getCacheBfs leader target
   let closestUnknownPos = PointArray.minIndexA bfs
       dist = bfs PointArray.! closestUnknownPos
   if dist >= minKnown
