@@ -101,13 +101,11 @@ atomicSendSem atomic = do
           resetFidPerception fid lid
           perNew <- getPerFid fid lid
           let inPer = diffPer perNew perOld
-              inPA = perActor inPer
               outPer = diffPer perOld perNew
-              outPA = perActor outPer
-          if EM.null outPA && EM.null inPA
+          if nullPer outPer && nullPer inPer
             then anySend fid perOld perOld
             else do
-              sendA fid $ PerceptionA lid outPA inPA
+              sendA fid $ PerceptionA lid outPer inPer
               unless knowEvents $ do  -- inconsistencies would quickly manifest
                 let remember = atomicRemember lid inPer sOld
                     seenNew = seenAtomicCli False fid perNew

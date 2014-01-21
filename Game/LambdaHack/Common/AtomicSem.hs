@@ -65,8 +65,8 @@ cmdAtomicSem cmd = case cmd of
   AgeGameA t -> ageGameA t
   DiscoverA{} -> return ()  -- Server keeps all atomic comands so the semantics
   CoverA{} -> return ()     -- of inverses has to be reasonably inverse.
-  PerceptionA _ outPA inPA ->
-    assert (not (EM.null outPA && EM.null inPA)) $ return ()
+  PerceptionA _ outPer inPer ->
+    assert (not (nullPer outPer && nullPer inPer)) skip
   RestartA fid sdisco sfper s _ _ -> restartA fid sdisco sfper s
   RestartServerA s -> restartServerA s
   ResumeA{} -> return ()

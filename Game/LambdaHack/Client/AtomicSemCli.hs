@@ -97,14 +97,14 @@ cmdAtomicFilterCli cmd = case cmd of
     if jkindIx item `EM.notMember` disco
       then return []
       else return [cmd]
-  PerceptionA lid outPA inPA -> do
+  PerceptionA lid outPer inPer -> do
     -- Here we cheat by setting a new perception outright instead of
     -- in @cmdAtomicSemCli@, to avoid computing perception twice.
     -- TODO: try to assert similar things as for @atomicRemember@:
     -- that posCmdAtomic of all the Lose* commands was visible in old Per,
     -- but is not visible any more.
     perOld <- getPerFid lid
-    perceptionA lid outPA inPA
+    perceptionA lid outPer inPer
     perNew <- getPerFid lid
     s <- getState
     fid <- getsClient sside
@@ -183,7 +183,7 @@ cmdAtomicSemCli cmd = case cmd of
       modifyClient $ \cli -> cli {_sleader = target}
   DiscoverA lid p iid ik -> discoverA lid p iid ik
   CoverA lid p iid ik -> coverA lid p iid ik
-  PerceptionA lid outPA inPA -> perceptionA lid outPA inPA
+  PerceptionA lid outPer inPer -> perceptionA lid outPer inPer
   RestartA _ sdisco sfper s sdebugCli _ -> do
     side <- getsClient sside
     let fact = sfactionD s EM.! side
@@ -215,41 +215,26 @@ destroyActorA aid b destroy = do
   modifyClient $ \cli -> cli {stargetD = EM.map affect (stargetD cli)}
   modifyClient $ \cli -> cli {scursor = affect $ scursor cli}
 
-perceptionA :: MonadClient m => LevelId -> PerActor -> PerActor -> m ()
-perceptionA lid outPA inPA = do
-  cops <- getsState scops
-  s <- getState
+perceptionA :: MonadClient m => LevelId -> Perception -> Perception -> m ()
+perceptionA lid outPer inPer = do
   -- Clients can't compute FOV on their own, because they don't know
   -- if unknown tiles are clear or not. Server would need to send
   -- info about properties of unknown tiles, which complicates
   -- and makes heavier the most bulky data set in the game: tile maps.
-  -- Note we assume, but do not check that @outPA@ is contained
-  -- in current perception and @inPA@ has no common part with it.
+  -- Note we assume, but do not check that @outPer@ is contained
+  -- in current perception and @inPer@ has no common part with it.
   -- It would make the already very costly operation even more expensive.
   perOld <- getPerFid lid
   -- Check if new perception is already set in @cmdAtomicFilterCli@
   -- or if we are doing undo/redo, which does not involve filtering.
   -- The data structure is strict, so the cheap check can't be any simpler.
-  let interHead [] = Nothing
-      interHead ((aid, vis) : _) =
-        Just $ pvisible vis `ES.intersection`
-                 maybe ES.empty pvisible (EM.lookup aid (perActor perOld))
-      unset = maybe False ES.null (interHead (EM.assocs inPA))
-              || maybe False (not . ES.null) (interHead (EM.assocs outPA))
+  let interAlready per =
+        Just $ totalVisible per `ES.intersection` totalVisible perOld
+      unset = maybe False ES.null (interAlready inPer)
+              || maybe False (not . ES.null) (interAlready outPer)
   when unset $ do
-    let dummyToPer Perception{perActor} = Perception
-          { perActor
-          , ptotal = PerceptionVisible
-                     $ ES.unions $ map pvisible $ EM.elems perActor
-          , psmell = smellFromActors cops s perActor }
-        paToDummy perActor = Perception
-          { perActor
-          , ptotal = PerceptionVisible ES.empty
-          , psmell = PerceptionVisible ES.empty }
-        outPer = paToDummy outPA
-        inPer = paToDummy inPA
-        adj Nothing = assert `failure` "no perception to alter" `twith` lid
-        adj (Just per) = Just $ dummyToPer $ addPer (diffPer per outPer) inPer
+    let adj Nothing = assert `failure` "no perception to alter" `twith` lid
+        adj (Just per) = Just $ addPer (diffPer per outPer) inPer
         f = EM.alter adj lid
     modifyClient $ \cli -> cli {sfper = f (sfper cli)}
 

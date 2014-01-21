@@ -85,7 +85,7 @@ data CmdAtomic =
   | AgeGameA !Time
   | DiscoverA !LevelId !Point !ItemId !(Kind.Id ItemKind)
   | CoverA !LevelId !Point !ItemId !(Kind.Id ItemKind)
-  | PerceptionA !LevelId !PerActor !PerActor
+  | PerceptionA !LevelId !Perception !Perception
   | RestartA !FactionId !Discovery !FactionPers !State !DebugModeCli !Text
   | RestartServerA !State
   | ResumeA !FactionId !FactionPers

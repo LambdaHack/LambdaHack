@@ -46,10 +46,8 @@ levelPerception cops@Kind.COps{cotile} s configFov fid lid
       pAndVicinity p = p : vicinity lxsize lysize p
       lights = ES.fromList $ concatMap (pAndVicinity . bpos . snd) hs
       ptotal = computeVisible cotile totalRea lvl lights
-      g = PerceptionVisible . ES.intersection (pvisible ptotal) . preachable
-      perActor = EM.map g $ EM.fromList reas  -- reas is not sorted
-      psmell = smellFromActors cops s perActor
-  in Perception {..}
+      psmell = smellFromActors cops s
+  in Perception ptotal psmell
 
 -- | Calculate perception of a faction.
 factionPerception :: Kind.COps -> FovMode -> State -> FactionId
