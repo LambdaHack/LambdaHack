@@ -300,6 +300,17 @@ drawCmdAtomicUI verbose cmd = case cmd of
   SpotActorA aid body _ -> createActorUI aid body verbose "be spotted"
   LoseActorA aid body _ ->
     destroyActorUI aid body "be missing in action" "be lost" verbose
+  SpotItemA _ item k c -> do
+    scursorOld <- getsClient scursor
+    case scursorOld of
+      TEnemy{} -> return ()  -- probably too important to overwrite
+      TEnemyPos{} -> return ()
+      _ -> do
+        (lid, p) <- posOfContainer c
+        modifyClient $ \cli -> cli {scursor = TPoint lid p}
+        stopPlayBack
+        -- TODO: perhaps don't spam for already seen items; hard to do
+        itemVerbMU item k "be spotted"
   MoveActorA aid _ _ -> lookAtMove aid
   WaitActorA aid _ _| verbose -> aVerbMU aid "wait"
   DisplaceActorA source target -> displaceActorUI source target
