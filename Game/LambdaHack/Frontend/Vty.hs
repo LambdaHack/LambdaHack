@@ -61,7 +61,7 @@ nextEvent sess@FrontendSession{svty, sdebugCli=DebugModeCli{snoMore}} =
       EvKey n mods -> do
         let key = keyTranslate n
             modifier = modifierTranslate mods
-        return K.KM {key, modifier}
+        return $! K.KM {key, modifier}
       _ -> nextEvent sess
 
 -- | Display a prompt, wait for any key.

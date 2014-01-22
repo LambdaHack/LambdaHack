@@ -265,4 +265,4 @@ instance Binary Actor where
     bwait <- get
     bfid <- get
     bproj <- get
-    return Actor{..}
+    return $! Actor{..}

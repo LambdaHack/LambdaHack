@@ -162,4 +162,4 @@ instance Binary ScoreRecord where
     cp <- get
     s <- get
     difficulty <- get
-    return $ ScoreRecord p n (TOD cs cp) s difficulty
+    return $! ScoreRecord p n (TOD cs cp) s difficulty

@@ -63,7 +63,7 @@ continueRun paramOld =
             runStopOrCmd <- moveRunAid r dir
             let runMembersNew = if isJust runStopMsg then rs else rs ++ [r]
                 paramNew = paramOld {runMembers = runMembersNew}
-            return $ case runStopOrCmd of
+            return $! case runStopOrCmd of
               Left stopMsg -> assert `failure` (paramOld, stopMsg)
               Right runCmd -> Right (paramNew, runCmd)
           Left runStopMsgCurrent -> do
@@ -134,7 +134,7 @@ moveRunAid source dir = do
             -- and does not harm the invisible actors, so it's not tempting.
        -- Ignore a known boring, not accessible tile.
        else Left "never mind"
-  return runStopOrCmd
+  return $! runStopOrCmd
 
 -- | This function implements the actual logic of running. It checks if we
 -- have to stop running because something interesting cropped up,

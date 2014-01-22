@@ -149,8 +149,8 @@ defHistory :: IO History
 defHistory = do
   dateTime <- getClockTime
   let curDate = MU.Text $ T.pack $ calendarTimeToString $ toUTCTime dateTime
-  return $ singletonHistory $ singletonReport
-         $ makeSentence ["Human history log started on", curDate]
+  return $! singletonHistory $ singletonReport
+         $! makeSentence ["Human history log started on", curDate]
 
 -- | Update target parameters within client state.
 updateTarget :: ActorId -> (Maybe Target -> Maybe Target) -> StateClient
@@ -234,7 +234,7 @@ instance Binary StateClient where
         swaitTimes = 0
         squit = False
         sconfigUI = undefined
-    return StateClient{..}
+    return $! StateClient{..}
 
 instance Binary RunParams where
   put RunParams{..} = do
@@ -249,7 +249,7 @@ instance Binary RunParams where
     runDist<- get
     runStopMsg <- get
     runInitDir <- get
-    return RunParams{..}
+    return $! RunParams{..}
 
 instance Binary Target where
   put (TEnemy a permit) = putWord8 0 >> put a >> put permit

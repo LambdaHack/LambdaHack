@@ -42,23 +42,23 @@ instance Binary a => Binary (Effect a)
 -- | Transform an effect using a stateful function.
 effectTrav :: Effect a -> (a -> St.State s b) -> St.State s (Effect b)
 effectTrav NoEffect _ = return NoEffect
-effectTrav (Heal p) _ = return $ Heal p
+effectTrav (Heal p) _ = return $! Heal p
 effectTrav (Hurt dice a) f = do
   b <- f a
-  return $ Hurt dice b
-effectTrav (Mindprobe x) _ = return $ Mindprobe x
+  return $! Hurt dice b
+effectTrav (Mindprobe x) _ = return $! Mindprobe x
 effectTrav Dominate _ = return Dominate
-effectTrav (CallFriend p) _ = return $ CallFriend p
-effectTrav (Summon p) _ = return $ Summon p
-effectTrav (CreateItem p) _ = return $ CreateItem p
+effectTrav (CallFriend p) _ = return $! CallFriend p
+effectTrav (Summon p) _ = return $! Summon p
+effectTrav (CreateItem p) _ = return $! CreateItem p
 effectTrav ApplyPerfume _ = return ApplyPerfume
 effectTrav (Regeneration a) f = do
   b <- f a
-  return $ Regeneration b
+  return $! Regeneration b
 effectTrav (Searching a) f = do
   b <- f a
-  return $ Searching b
-effectTrav (Ascend p) _ = return $ Ascend p
+  return $! Searching b
+effectTrav (Ascend p) _ = return $! Ascend p
 effectTrav Escape _ = return Escape
 
 -- | Suffix to append to a basic content name if the content causes the effect.

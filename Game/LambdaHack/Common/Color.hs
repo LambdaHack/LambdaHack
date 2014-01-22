@@ -62,7 +62,7 @@ instance Binary Attr where
   get = do
     fg <- get
     bg <- get
-    return Attr{..}
+    return $! Attr{..}
 
 -- | The default attribute, to optimize attribute setting.
 defAttr :: Attr
@@ -81,7 +81,7 @@ instance Binary AttrChar where
   get = do
     acAttr <- get
     acChar <- get
-    return AttrChar{..}
+    return $! AttrChar{..}
 
 -- | A helper for the terminal frontends that display bright via bold.
 isBright :: Color -> Bool

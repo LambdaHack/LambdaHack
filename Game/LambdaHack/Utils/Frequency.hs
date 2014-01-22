@@ -117,4 +117,4 @@ instance Binary a => Binary (Frequency a) where
   get = do
     nameFrequency <- get
     runFrequency <- get
-    return Frequency{..}
+    return $! Frequency{..}

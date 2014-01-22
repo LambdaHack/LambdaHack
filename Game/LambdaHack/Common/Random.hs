@@ -83,7 +83,7 @@ rollDice a b = assert (a >= 0 && a <= 255 && b >= 0 && b <= 255
 
 -- | Cast dice and sum the results.
 castDice :: RollDice -> Rnd Int
-castDice (RollDice a' 1)  = return $ fromEnum a'  -- optimization
+castDice (RollDice a' 1)  = return $! fromEnum a'  -- optimization
 castDice (RollDice a' b') =
   let (a, b) = (fromEnum a', fromEnum b')
   in liftM sum (replicateM a (cast b))
@@ -155,7 +155,7 @@ castDeep n' depth' (RollDeep d1 d2) = do
                               `twith` (n, depth)) skip
   r1 <- castDice d1
   r2 <- castDice d2
-  return $ r1 + ((n - 1) * r2) `div` max 1 (depth - 1)
+  return $! r1 + ((n - 1) * r2) `div` max 1 (depth - 1)
 
 -- | Cast dice scaled with current level depth and return @True@
 -- if the results if greater than 50.
@@ -164,7 +164,7 @@ chanceDeep n' depth' deep = do
   let n = abs n'
       depth = abs depth'
   c <- castDeep n depth deep
-  return $ c > 50
+  return $! c > 50
 
 -- | Generate a @RollDeep@ that always gives a constant integer.
 intToDeep :: Int -> RollDeep

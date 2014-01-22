@@ -41,7 +41,7 @@ strictDecodeEOF :: Binary a => FilePath -> IO a
 strictDecodeEOF f = do
   (a, n) <- strictDecodeData f
   if n == ("OK" :: String)
-    then return a
+    then return $! a
     else error $ "Fatal error: corrupted file " ++ f
 
 -- | Try to create a directory, if it doesn't exist. Terminate the program

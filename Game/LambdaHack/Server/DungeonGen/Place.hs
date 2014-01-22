@@ -132,7 +132,7 @@ olegend Kind.Ops{ofoldrWithKey, opick} cgroup =
         m <- acc
         tk <- fmap (fromMaybe $ assert `failure` (cgroup, s))
               $ opick cgroup $ (== s) . tsymbol
-        return $ EM.insert s tk m
+        return $! EM.insert s tk m
       legend = ES.foldr getLegend (return EM.empty) symbols
   in legend
 
@@ -220,4 +220,4 @@ instance Binary Place where
     qlegend <- get
     qsolidFence <- get
     qhollowFence <- get
-    return Place{..}
+    return $! Place{..}

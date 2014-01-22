@@ -39,7 +39,7 @@ getLevel lid = getsState $ (EM.! lid) . sdungeon
 nUI :: MonadActionRO m => m Int
 nUI = do
   factionD <- getsState sfactionD
-  return $ length $ filter (playerUI . gplayer) $ EM.elems factionD
+  return $! length $ filter (playerUI . gplayer) $ EM.elems factionD
 
 serverSaveName :: String
 serverSaveName = "server.sav"

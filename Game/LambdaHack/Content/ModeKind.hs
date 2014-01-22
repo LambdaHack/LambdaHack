@@ -77,4 +77,4 @@ instance Binary Player where
     playerAiOther <- get
     playerHuman <- get
     playerUI <- get
-    return Player{..}
+    return $! Player{..}

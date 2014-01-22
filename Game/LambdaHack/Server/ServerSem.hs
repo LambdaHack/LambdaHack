@@ -74,7 +74,7 @@ broadcastSfxAtomic fcmd = do
 
 checkAdjacent :: MonadActionRO m => Actor -> Actor -> m Bool
 checkAdjacent sb tb =
-  return $ blid sb == blid tb && adjacent (bpos sb) (bpos tb)
+  return $! blid sb == blid tb && adjacent (bpos sb) (bpos tb)
 
 -- TODO: let only some actors/items leave smell, e.g., a Smelly Hide Armour.
 -- | Add a smell trace for the actor to the level. For now, all and only
@@ -344,7 +344,7 @@ projectFail source tpxy eps iid container isShrapnel = do
                 else do
                   fact <- getsState $ (EM.! bfid sb) . sfactionD
                   foes <- getsState $ actorNotProjList (isAtWar fact) lid
-                  return $ foesAdjacent lxsize lysize spos foes
+                  return $! foesAdjacent lxsize lysize spos foes
               if blockedByFoes then
                 return $ Just ProjectBlockFoes
               else do
@@ -397,7 +397,7 @@ addProjectile bpos rest iid blid bfid btime = do
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
   execCmdAtomic $ CreateActorA acounter m [(iid, item)]
-  return acounter
+  return $! acounter
 
 -- * ApplySer
 

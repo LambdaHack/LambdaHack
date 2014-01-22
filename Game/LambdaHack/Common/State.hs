@@ -202,4 +202,4 @@ instance Binary State where
     _stime <- get
     _shigh <- get
     let _scops = undefined  -- overwritten by recreated cops
-    return State{..}
+    return $! State{..}

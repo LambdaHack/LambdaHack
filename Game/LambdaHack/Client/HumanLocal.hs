@@ -105,7 +105,7 @@ partyAfterLeader leader = do
       hs = hs9 ++ deleteFirstsBy ((==) `on` fst) factionA hs9
       i = fromMaybe (-1) $ findIndex ((== leader) . fst) hs
       (lt, gt) = (take i hs, drop (i + 1) hs)
-  return $ gt ++ lt
+  return $! gt ++ lt
 
 -- | Select a faction leader. False, if nothing to do.
 pickLeader :: MonadClientUI m => ActorId -> m Bool
@@ -294,7 +294,7 @@ humanMarkSuspect = do
 helpHuman :: MonadClientUI m => m Slideshow
 helpHuman = do
   keyb <- askBinding
-  return $ keyHelp keyb
+  return $! keyHelp keyb
 
 -- * Move and Run
 
@@ -411,7 +411,7 @@ floorItemOverlay bag = do
          makePhrase [ letterLabel l
                     , partItemWs coitem disco k (getItemBody iid s) ]
          <> " "
-  return $ toOverlay $ map pr is
+  return $! toOverlay $ map pr is
 
 -- | Create a list of item names.
 itemOverlay :: MonadClient m => ItemBag -> ItemInv -> m Overlay
@@ -424,7 +424,7 @@ itemOverlay bag inv = do
                     , partItemWs coitem disco (bag EM.! iid)
                                  (getItemBody iid s) ]
          <> " "
-  return $ toOverlay $ map pr $ EM.assocs inv
+  return $! toOverlay $ map pr $ EM.assocs inv
 
 -- * TgtFloor
 

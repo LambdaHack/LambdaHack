@@ -25,7 +25,7 @@ xyInArea area = do
   let (x0, y0, x1, y1) = fromArea area
   rx <- randomR (x0, x1)
   ry <- randomR (y0, y1)
-  return $ Point rx ry
+  return $! Point rx ry
 
 -- | Create a random room according to given parameters.
 mkRoom :: (X, Y)    -- ^ minimum size
@@ -47,7 +47,7 @@ mkRoom (xm, ym) (xM, yM) area = do
   Point rx1 ry1 <- xyInArea area1
   let a3 = (rx0, ry0, rx1, ry1)
       area3 = fromMaybe (assert `failure` a3) $ toArea a3
-  return area3
+  return $! area3
 
 -- | Create a void room, i.e., a single point area within the designated area.
 mkVoidRoom :: Area -> Rnd Area
@@ -55,7 +55,7 @@ mkVoidRoom area = do
   -- Pass corridors closer to the middle of the grid area, if possible.
   let core = fromMaybe area $ shrink area
   pxy <- xyInArea core
-  return $ trivialArea pxy
+  return $! trivialArea pxy
 
 -- Choosing connections between areas in a grid
 
@@ -76,7 +76,7 @@ connectGrid' :: (X, Y) -> S.Set Point -> S.Set Point
              -> [(Point, Point)]
              -> Rnd [(Point, Point)]
 connectGrid' (nx, ny) unconnected candidates acc
-  | S.null candidates = return $ map sortPoint acc
+  | S.null candidates = return $! map sortPoint acc
   | otherwise = do
       c <- oneOf (S.toList candidates)
       -- potential new candidates:
@@ -130,7 +130,7 @@ mkCorridor :: HV            -- ^ orientation of the starting section
            -> Rnd Corridor  -- ^ straight sections of the corridor
 mkCorridor hv (Point x0 y0) (Point x1 y1) b = do
   Point rx ry <- xyInArea b
-  return $ map (uncurry Point) $ case hv of
+  return $! map (uncurry Point) $ case hv of
     Horiz -> [(x0, y0), (rx, y0), (rx, y1), (x1, y1)]
     Vert  -> [(x0, y0), (x0, ry), (x1, ry), (x1, y1)]
 

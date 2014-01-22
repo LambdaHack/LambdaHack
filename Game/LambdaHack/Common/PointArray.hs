@@ -63,14 +63,14 @@ replicateA axsize aysize c =
 replicateMA :: Enum c => Monad m => X -> Y -> m c -> m (Array c)
 replicateMA axsize aysize m = do
   v <- U.replicateM (axsize * aysize) $ liftM cnv m
-  return Array{avector = v, ..}
+  return $! Array{avector = v, ..}
 
 -- | Create an array from a monadic function.
 generateMA :: Enum c => Monad m => X -> Y -> (Point -> m c) -> m (Array c)
 generateMA axsize aysize fm = do
   let gm n = liftM cnv $ fm $ punindex axsize n
   v <- U.generateM (axsize * aysize) gm
-  return Array{avector = v, ..}
+  return $! Array{avector = v, ..}
 
 -- | Content identifiers array size.
 sizeA :: Array c -> (X, Y)
@@ -101,4 +101,4 @@ instance Binary (Array c) where
     axsize <- get
     aysize <- get
     avector <- get
-    return Array{..}
+    return $! Array{..}

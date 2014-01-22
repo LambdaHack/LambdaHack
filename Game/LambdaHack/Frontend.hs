@@ -80,7 +80,7 @@ promptGetKey fs [] frame = fpromptGetKey fs frame
 promptGetKey fs keys@(firstKM:_) frame = do
   km <- fpromptGetKey fs frame
   if km `elem` keys
-    then return km
+    then return $! km
     else do
       let DebugModeCli{snoMore} = fdebugCli fs
       if snoMore then return firstKM
@@ -92,7 +92,7 @@ connMulti :: ConnMulti
 connMulti = unsafePerformIO $ do
   fromMulti <- newMVar undefined
   toMulti <- newTQueueIO
-  return ConnMulti{..}
+  return $! ConnMulti{..}
 
 -- | Augment a function that takes and returns keys.
 getConfirmGeneric :: Monad m
@@ -109,7 +109,7 @@ flushFrames fs fid reqMap = do
   let queue = toListLQueue $ fromMaybe newLQueue $ EM.lookup fid reqMap
       reqMap2 = EM.delete fid reqMap
   mapM_ (displayAc fs) queue
-  return reqMap2
+  return $! reqMap2
 
 displayAc :: Frontend -> AcFrame -> IO ()
 displayAc fs (AcConfirm fr) = void $ getConfirmGeneric (promptGetKey fs) [] fr
@@ -182,7 +182,7 @@ loopFrontend fs ConnMulti{..} = loop Nothing EM.empty
           let singles = toSingles oldFid reqMap  -- not @reqMap2@!
               lastFrame = fromMaybe oldFrame $ listToMaybe $ reverse singles
           fadeF fs True fid pname lastFrame
-          return reqMap2
+          return $! reqMap2
       let singles = toSingles fid reqMap2
           firstFrame = fromMaybe frontFr $ listToMaybe singles
       -- TODO: @nU@ is unreliable, when some of UI players die;

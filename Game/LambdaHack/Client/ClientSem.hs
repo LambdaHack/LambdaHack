@@ -73,7 +73,7 @@ queryAI oldAid = do
             assert `failure` (oldAid, blid oldBody, foe, blid bfoe)
           else do
             aims <- actorAimsPos oldAid (bpos bfoe)
-            return $ aims && hasAmmo && not isAdjacent
+            return $! aims && hasAmmo && not isAdjacent
         _ -> return False
       if -- Keep the leader: he is alone on the level.
          length ours == 1
@@ -180,7 +180,7 @@ queryUI aid = do
           humanCommand msg
         Right (paramNew, runCmd) -> do
           modifyClient $ \cli -> cli {srunning = Just paramNew}
-          return $ CmdTakeTimeSer runCmd
+          return $! CmdTakeTimeSer runCmd
 
 -- | Determine and process the next human player command. The argument is
 -- the last stop message due to running, if any.

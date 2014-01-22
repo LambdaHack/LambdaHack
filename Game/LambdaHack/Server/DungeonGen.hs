@@ -93,7 +93,7 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
           let st = (spos, stairId)
               asc = ascendable $ okind stairId
               desc = descendable $ okind stairId
-          return $ case (asc, desc) of
+          return $! case (asc, desc) of
                      (True, False) -> (st : up, down, upDown)
                      (False, True) -> (up, st : down, upDown)
                      (True, True)  -> (up, down, st : upDown)
@@ -210,4 +210,4 @@ dungeonGen cops caves = do
   assert (nstairUpLast == 0) skip
   let freshDungeon = EM.fromList levels
       freshDepth = totalDepth
-  return FreshDungeon{..}
+  return $! FreshDungeon{..}

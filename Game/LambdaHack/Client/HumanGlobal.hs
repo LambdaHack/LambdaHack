@@ -170,7 +170,7 @@ waitHuman :: MonadClientUI m => m CmdTakeTimeSer
 waitHuman = do
   modifyClient $ \cli -> cli {swaitTimes = abs (swaitTimes cli) + 1}
   leader <- getLeaderUI
-  return $ WaitSer leader
+  return $! WaitSer leader
 
 -- * Pickup
 
@@ -374,7 +374,7 @@ projectBla source tpos eps ts = do
            (makePhrase ["What to", verb1 MU.:> "?"]) "in inventory"
   case ggi of
     Right ((iid, _), (_, container)) ->
-      return $! Right $ ProjectSer source tpos eps iid container
+      return $ Right $ ProjectSer source tpos eps iid container
     Left slides -> return $ Left slides
 
 triggerSymbols :: [Trigger] -> [Char]
@@ -397,7 +397,7 @@ applyHuman ts = do
            (makePhrase ["What to", verb1 MU.:> "?"]) "in inventory"
   case ggi of
     Right ((iid, _), (_, container)) ->
-      return $! Right $ ApplySer leader iid container
+      return $ Right $ ApplySer leader iid container
     Left slides -> return $ Left slides
 
 -- | Let a human player choose any item with a given group name.
@@ -447,7 +447,7 @@ alterTile source dir ts = do
       alterFeats = alterFeatures ts
   case filter (\feat -> Tile.hasFeature cotile feat t) alterFeats of
     [] -> failWith $ guessAlter cotile alterFeats t
-    feat : _ -> return $! Right $ AlterSer source tpos $ Just feat
+    feat : _ -> return $ Right $ AlterSer source tpos $ Just feat
 
 alterFeatures :: [Trigger] -> [F.Feature]
 alterFeatures [] = []
@@ -609,7 +609,7 @@ gameSaveHuman = do
   leader <- getLeaderUI
   -- TODO: do not save to history:
   msgAdd "Saving game backup."
-  return $ GameSaveSer leader
+  return $! GameSaveSer leader
 
 -- * GameDifficultyCycle; does not take time
 
@@ -620,4 +620,4 @@ gameDifficultyCycle = do
   let d = if sdifficultyCli <= -4 then 4 else sdifficultyCli - 1
   modifyClient $ \cli -> cli {sdebugCli = (sdebugCli cli) {sdifficultyCli = d}}
   msgAdd $ "Next game difficulty set to" <+> tshow (5 - d) <> "."
-  return $ GameDifficultySer leader d
+  return $! GameDifficultySer leader d

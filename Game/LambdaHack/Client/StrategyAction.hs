@@ -73,7 +73,7 @@ reacquireTgt aid factionAbilities btarget bfs = do
   noFoes :: Strategy (Maybe Target) <- do
     s <- getState
     str <- moveStrategy cops aid s Nothing
-    return $ (Just . TPoint (blid b) . (bpos b `shift`)) `liftM` str
+    return $! (Just . TPoint (blid b) . (bpos b `shift`)) `liftM` str
   let mk = okind $ bkind b
       actorAbilities = acanDo mk `intersect` factionAbilities
       focused = bspeed b <= speedNormal
@@ -162,7 +162,7 @@ actionStrategy aid factionAbilities = do
       chaseFreq :: MonadActionRO m => m (Frequency CmdTakeTimeSer)
       chaseFreq = do
         st <- chase aid (fpos, foeVisible)
-        return $ scaleFreq 30 $ bestVariant st
+        return $! scaleFreq 30 $ bestVariant st
       aStrategy :: MonadActionRO m => Ability -> m (Strategy CmdTakeTimeSer)
       aStrategy Ability.Track  = track aid
       aStrategy Ability.Heal   = return mzero  -- TODO
@@ -176,19 +176,19 @@ actionStrategy aid factionAbilities = do
                                         `twith`(ab, actorAbilities)
       sumS abis = do
         fs <- mapM aStrategy abis
-        return $ msum fs
+        return $! msum fs
       sumF abis = do
         fs <- mapM aFrequency abis
-        return $ msum fs
+        return $! msum fs
       combineDistant as = fmap liftFrequency $ sumF as
   sumPrefix <- sumS prefix
   comDistant <- combineDistant distant
   sumSuffix <- sumS suffix
-  return $ sumPrefix .| comDistant .| sumSuffix
-           -- Wait until friends sidestep; ensures the strategy is never empty.
-           -- TODO: try to switch leader away before that (we already
-           -- switch him afterwards)
-           .| waitBlockNow aid
+  return $! sumPrefix .| comDistant .| sumSuffix
+            -- Wait until friends sidestep; ensures strategy is never empty.
+            -- TODO: try to switch leader away before that (we already
+            -- switch him afterwards)
+            .| waitBlockNow aid
 
 -- | A strategy to always just wait.
 waitBlockNow :: ActorId -> Strategy CmdTakeTimeSer
@@ -212,10 +212,10 @@ pickup aid = do
     Just ((iid, k), _) -> do  -- pick up first item
       item <- getsState $ getItemBody iid
       let l = if jsymbol item == '$' then Just $ InvChar '$' else Nothing
-      return $ case assignLetter iid l body of
+      return $! case assignLetter iid l body of
         Just _ -> returN "pickup" $ PickupSer aid iid k
         Nothing -> returN "pickup" $ WaitSer aid  -- TODO
-  return actionPickup
+  return $! actionPickup
 
 -- Everybody melees in a pinch, even though some prefer ranged attacks.
 melee :: MonadActionRO m
@@ -223,7 +223,7 @@ melee :: MonadActionRO m
 melee aid fpos foeAid = do
   Actor{bpos} <- getsState $ getActorBody aid
   let foeAdjacent = adjacent bpos fpos  -- MeleeDistant
-  return $ foeAdjacent .=> returN "melee" (MeleeSer aid foeAid)
+  return $! foeAdjacent .=> returN "melee" (MeleeSer aid foeAid)
 
 -- Fast monsters don't pay enough attention to features.
 triggerFreq :: MonadActionRO m
@@ -251,9 +251,9 @@ triggerFreq aid = do
   if recentlyAscended || fast then
     return mzero
   else
-    return $ toFreq "triggerFreq" $ [ (benefit, TriggerSer aid (Just feat))
-                                    | (benefit, feat) <- benFeat
-                                    , benefit > 0 ]
+    return $! toFreq "triggerFreq" $ [ (benefit, TriggerSer aid (Just feat))
+                                     | (benefit, feat) <- benFeat
+                                     , benefit > 0 ]
 
 -- Actors require sight to use ranged combat and intelligence to throw
 -- or zap anything else than obvious physical missiles.
@@ -303,11 +303,11 @@ rangedFreq disco aid fpos = do
          && asight mk
          && posClear pos1  -- ProjectBlockTerrain
          && maybe True (bproj . snd . fst) mab  -- ProjectBlockActor
-      then return $ toFreq "throwFreq"
+      then return $! toFreq "throwFreq"
            $ throwFreq bbag 3 (actorContainer aid binv)
              ++ throwFreq tis 6 (const $ CFloor blid bpos)
-      else return $ toFreq "throwFreq blocked" []
-    _ -> return $ toFreq "throwFreq no bla" []  -- ProjectAimOnself
+      else return $! toFreq "throwFreq blocked" []
+    _ -> return $! toFreq "throwFreq no bla" []  -- ProjectAimOnself
 
 -- Tools use requires significant intelligence and sometimes literacy.
 toolsFreq :: MonadActionRO m
@@ -332,7 +332,7 @@ toolsFreq disco aid = do
                   Just _ki -> effectToBenefit cops b $ jeffect i
         , benefit > 0
         , jsymbol i `elem` mastered ]
-  return $ toFreq "useFreq" $
+  return $! toFreq "useFreq" $
     useFreq bbag 1 (actorContainer aid binv)
     ++ useFreq tis 2 (const $ CFloor blid bpos)
 
@@ -346,7 +346,7 @@ moveStrategy :: MonadActionRO m
              => Kind.COps -> ActorId -> State -> Maybe (Point, Bool)
              -> m (Strategy Vector)
 moveStrategy cops aid s mFoe =
-  return $ case mFoe of
+  return $! case mFoe of
     -- Target set and we chase the foe or his last position or another target.
     Just (fpos, _) ->
       let towardsFoe =
@@ -495,17 +495,17 @@ moveOrRunAid run source dir = do
     [((target, _), _)] | run ->  -- can be a foe, as well as a friend
       if accessible cops lvl spos tpos then
         -- Displacing requires accessibility.
-        return $ DisplaceSer source target
+        return $! DisplaceSer source target
       else
         -- If cannot displace, hit. No DisplaceAccess.
-        return $ MeleeSer source target
+        return $! MeleeSer source target
     ((target, _), _) : _ ->  -- can be a foe, as well as a friend
       -- Attacking does not require full access, adjacency is enough.
-      return $ MeleeSer source target
+      return $! MeleeSer source target
     [] -> do  -- move or search or alter
       if accessible cops lvl spos tpos then
         -- Movement requires full access.
-        return $ MoveSer source dir
+        return $! MoveSer source dir
         -- The potential invisible actor is hit.
       else if not $ EM.null $ lvl `atI` tpos then
         -- This is, e.g., inaccessible open door with an item in it.
@@ -516,7 +516,7 @@ moveOrRunAid run source dir = do
                   || Tile.closable cotile t
                   || Tile.changeable cotile t) then
         -- No access, so search and/or alter the tile.
-        return $ AlterSer source tpos Nothing
+        return $! AlterSer source tpos Nothing
       else
         -- Boring tile, no point bumping into it, do WaitSer if really idle.
         assert `failure` "AI causes MoveNothing or AlterNothing"

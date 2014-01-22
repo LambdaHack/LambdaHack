@@ -65,51 +65,51 @@ posCmdAtomic cmd = case cmd of
   LoseItemA _ _ _ c -> singleContainer c
   MoveActorA aid fromP toP -> do
     (lid, _) <- posOfAid aid
-    return $ PosSight lid [fromP, toP]
+    return $! PosSight lid [fromP, toP]
   WaitActorA aid _ _ -> singleAid aid
   DisplaceActorA source target -> do
     (slid, sp) <- posOfAid source
     (tlid, tp) <- posOfAid target
-    return $ assert (slid == tlid) $ PosSight slid [sp, tp]
+    return $! assert (slid == tlid) $ PosSight slid [sp, tp]
   MoveItemA _ _ c1 c2 -> do  -- works even if moved between positions
     (lid1, p1) <- posOfContainer c1
     (lid2, p2) <- posOfContainer c2
-    return $ assert (lid1 == lid2) $ PosSight lid1 [p1, p2]
+    return $! assert (lid1 == lid2) $ PosSight lid1 [p1, p2]
   AgeActorA aid _ -> singleAid aid
   HealActorA aid _ -> singleAid aid
   HasteActorA aid _ -> singleAid aid
   PathActorA aid _ _ -> singleAid aid
   ColorActorA aid _ _ -> singleAid aid
   QuitFactionA{} -> return PosAll
-  LeadFactionA fid _ _ -> return $ PosFidAndSer fid
+  LeadFactionA fid _ _ -> return $! PosFidAndSer fid
   DiplFactionA{} -> return PosAll
-  AlterTileA lid p _ _ -> return $ PosSight lid [p]
+  AlterTileA lid p _ _ -> return $! PosSight lid [p]
   SearchTileA aid p _ _ -> do
     (lid, pos) <- posOfAid aid
-    return $ PosSight lid [pos, p]
+    return $! PosSight lid [pos, p]
   SpotTileA lid ts -> do
     let ps = map fst ts
-    return $ PosSight lid ps
+    return $! PosSight lid ps
   LoseTileA lid ts -> do
     let ps = map fst ts
-    return $ PosSight lid ps
-  AlterSmellA lid p _ _ -> return $ PosSmell lid [p]
+    return $! PosSight lid ps
+  AlterSmellA lid p _ _ -> return $! PosSmell lid [p]
   SpotSmellA lid sms -> do
     let ps = map fst sms
-    return $ PosSmell lid ps
+    return $! PosSmell lid ps
   LoseSmellA lid sms -> do
     let ps = map fst sms
-    return $ PosSmell lid ps
-  AgeLevelA lid _ ->  return $ PosSight lid []
+    return $! PosSmell lid ps
+  AgeLevelA lid _ ->  return $! PosSight lid []
   AgeGameA _ ->  return PosAll
-  DiscoverA lid p _ _ -> return $ PosSight lid [p]
-  CoverA lid p _ _ -> return $ PosSight lid [p]
+  DiscoverA lid p _ _ -> return $! PosSight lid [p]
+  CoverA lid p _ _ -> return $! PosSight lid [p]
   PerceptionA{} -> return PosNone
-  RestartA fid _ _ _ _ _ -> return $ PosFid fid
+  RestartA fid _ _ _ _ _ -> return $! PosFid fid
   RestartServerA _ -> return PosSer
-  ResumeA fid _ -> return $ PosFid fid
+  ResumeA fid _ -> return $! PosFid fid
   ResumeServerA _ -> return PosSer
-  KillExitA fid -> return $ PosFid fid
+  KillExitA fid -> return $! PosFid fid
   SaveBkpA -> return PosAll
   MsgAllA{} -> return PosAll
 
@@ -118,27 +118,27 @@ posSfxAtomic cmd = case cmd of
   StrikeD source target _ _ -> do
     (slid, sp) <- posOfAid source
     (tlid, tp) <- posOfAid target
-    return $ assert (slid == tlid) $ PosSight slid [sp, tp]
+    return $! assert (slid == tlid) $ PosSight slid [sp, tp]
   RecoilD source target _ _ -> do
     (slid, sp) <- posOfAid source
     (tlid, tp) <- posOfAid target
-    return $ assert (slid == tlid) $ PosSight slid [sp, tp]
+    return $! assert (slid == tlid) $ PosSight slid [sp, tp]
   ProjectD aid _ -> singleAid aid
   CatchD aid _ -> singleAid aid
   ActivateD aid _ -> singleAid aid
   CheckD aid _ -> singleAid aid
   TriggerD aid p _ -> do
     (lid, pa) <- posOfAid aid
-    return $ PosSight lid [pa, p]
+    return $! PosSight lid [pa, p]
   ShunD aid p _ -> do
     (lid, pa) <- posOfAid aid
-    return $ PosSight lid [pa, p]
+    return $! PosSight lid [pa, p]
   EffectD aid _ -> singleAid aid
-  MsgFidD fid _ -> return $ PosFid fid
+  MsgFidD fid _ -> return $! PosFid fid
   MsgAllD _ -> return PosAll
-  DisplayPushD fid -> return $ PosFid fid
-  DisplayDelayD fid -> return $ PosFid fid
-  RecordHistoryD fid -> return $ PosFid fid
+  DisplayPushD fid -> return $! PosFid fid
+  DisplayDelayD fid -> return $! PosFid fid
+  RecordHistoryD fid -> return $! PosFid fid
 
 posProjBody :: Monad m => Actor -> m PosAtomic
 posProjBody body = return $!

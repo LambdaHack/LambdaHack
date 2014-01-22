@@ -125,7 +125,7 @@ instance Binary StateServer where
         sbkpSave = False
         sstart = TOD 0 0
         sdebugNxt = defDebugModeSer
-    return StateServer{..}
+    return $! StateServer{..}
 
 instance Binary DebugModeSer where
   put DebugModeSer{..} = do
@@ -155,4 +155,4 @@ instance Binary DebugModeSer where
     let sstopAfter = Nothing
         snewGameSer = False
         sdumpConfig = False
-    return DebugModeSer{..}
+    return $! DebugModeSer{..}

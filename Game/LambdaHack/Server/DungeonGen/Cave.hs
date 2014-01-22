@@ -145,15 +145,15 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
           rd <- chance cdoorChance
           if not rd then
             let cor = if Tile.isLit cotile t then litCorTile else darkCorTile
-            in return cor  -- opening kept
+            in return $! cor  -- opening kept
           else do
             ro <- chance copenChance
             doorClosedId <- Tile.revealAs cotile t
             if not ro then
-              return doorClosedId
+              return $! doorClosedId
             else do
               doorOpenId <- Tile.openTo cotile doorClosedId
-              return doorOpenId
+              return $! doorOpenId
   dmap <- Traversable.mapM f lm
   let cave = Cave
         { dkind
@@ -161,7 +161,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
         , dplaces
         , dnight
         }
-  return cave
+  return $! cave
 
 digCorridors :: Kind.Id TileKind -> Corridor -> TileMapEM
 digCorridors tile (p1:p2:ps) =

@@ -47,7 +47,7 @@ debugCmdClientAI cmd = case cmd of
   CmdAtomicAI cmdA@SpotTileA{} -> debugPlain cmd cmdA
   CmdAtomicAI cmdA -> debugPretty cmd cmdA
   CmdQueryAI aid -> debugAid aid "CmdQueryAI" cmd
-  CmdPingAI -> return $ tshow cmd
+  CmdPingAI -> return $! tshow cmd
 
 debugCmdClientUI :: MonadActionRO m => CmdClientUI -> m Text
 debugCmdClientUI cmd = case cmd of
@@ -57,19 +57,19 @@ debugCmdClientUI cmd = case cmd of
   CmdAtomicUI cmdA -> debugPretty cmd cmdA
   SfxAtomicUI sfx -> do
     ps <- posSfxAtomic sfx
-    return $ tshow (cmd, ps)
+    return $! tshow (cmd, ps)
   CmdQueryUI aid -> debugAid aid "CmdQueryUI" cmd
-  CmdPingUI -> return $ tshow cmd
+  CmdPingUI -> return $! tshow cmd
 
 debugPretty :: (MonadActionRO m, Show a) => a -> CmdAtomic -> m Text
 debugPretty cmd cmdA = do
   ps <- posCmdAtomic cmdA
-  return $ tshow (cmd, ps)
+  return $! tshow (cmd, ps)
 
 debugPlain :: (MonadActionRO m, Show a) => a -> CmdAtomic -> m Text
 debugPlain cmd cmdA = do
   ps <- posCmdAtomic cmdA
-  return $ T.pack $ show (cmd, ps)  -- too large for pretty show
+  return $! T.pack $ show (cmd, ps)  -- too large for pretty show
 
 data DebugAid a = DebugAid
   { label   :: !Text
@@ -88,12 +88,12 @@ debugAid aid label cmd =
   else do
     b <- getsState $ getActorBody aid
     time <- getsState $ getLocalTime (blid b)
-    return $ tshow DebugAid { label
-                            , cmd
-                            , lid = blid b
-                            , time
-                            , aid
-                            , faction = bfid b }
+    return $! tshow DebugAid { label
+                             , cmd
+                             , lid = blid b
+                             , time
+                             , aid
+                             , faction = bfid b }
 
 -- | Connection channels between the server and a single client.
 data ChanServer c d = ChanServer

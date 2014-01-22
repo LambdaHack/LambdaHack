@@ -386,9 +386,9 @@ animate arena anim = do
         draw False ColorFull cops per arena mleader
              cursorPos tgtPos bfsmpath cli s cursorDesc tgtDesc topLineOnly
   snoAnim <- getsClient $ snoAnim . sdebugCli
-  return $ if fromMaybe False snoAnim
-           then [Just basicFrame]
-           else renderAnim lxsize lysize basicFrame anim
+  return $! if fromMaybe False snoAnim
+            then [Just basicFrame]
+            else renderAnim lxsize lysize basicFrame anim
 
 -- | The part of speech describing the actor or a special name if a leader
 -- of the observer's faction. The actor may not be present in the dungeon.
@@ -517,7 +517,7 @@ computeBFS aid = do
       origin = bpos b
       vInitial = PointArray.replicateA lxsize lysize maxBound
   -- Here we don't want '$!', because we want the BFS data lazy.
-  return $ fillBfs isEnterable passUnknown origin vInitial
+  return ${-keep it!-} fillBfs isEnterable passUnknown origin vInitial
 
 accessCacheBfs :: MonadClient m => ActorId -> Point -> m (Maybe Int)
 {-# INLINE accessCacheBfs #-}
@@ -540,13 +540,13 @@ targetDesc target = do
     Just (TEnemy a _) ->
       getsState $ bname . getActorBody a
     Just (TEnemyPos _ lid p _) ->
-      return $ if lid == lidV
-               then "hot spot" <+> (T.pack . show) p
-               else "a hot spot on level" <+> tshow (abs $ fromEnum lid)
+      return $! if lid == lidV
+                then "hot spot" <+> (T.pack . show) p
+                else "a hot spot on level" <+> tshow (abs $ fromEnum lid)
     Just (TPoint lid p) ->
-      return $ if lid == lidV
-               then "exact spot" <+> (T.pack . show) p
-               else "an exact spot on level" <+> tshow (abs $ fromEnum lid)
+      return $! if lid == lidV
+                then "exact spot" <+> (T.pack . show) p
+                else "an exact spot on level" <+> tshow (abs $ fromEnum lid)
     Just TVector{} ->
       case mleader of
         Nothing -> return "a relative shift"
@@ -554,7 +554,7 @@ targetDesc target = do
           tgtPos <- aidTgtToPos aid lidV target
           let invalidMsg = "an invalid relative shift"
               validMsg (p, _) = "shift to" <+> (T.pack . show) p
-          return $ maybe invalidMsg validMsg tgtPos
+          return $! maybe invalidMsg validMsg tgtPos
     Nothing -> return "cursor location"
 
 targetDescLeader :: MonadClientUI m => ActorId -> m Text
@@ -584,14 +584,14 @@ getArenaUI = do
       factionD <- getsState sfactionD
       let fact = factionD EM.! side
       case gquit fact of
-        Just Status{stDepth} -> return $ toEnum stDepth
+        Just Status{stDepth} -> return $! toEnum stDepth
         Nothing -> do
           dungeon <- getsState sdungeon
           let (minD, maxD) =
                 case (EM.minViewWithKey dungeon, EM.maxViewWithKey dungeon) of
                   (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
                   _ -> assert `failure` "empty dungeon" `twith` dungeon
-          return $ max minD $ min maxD $ playerEntry $ gplayer fact
+          return $! max minD $ min maxD $ playerEntry $ gplayer fact
 
 viewedLevel :: MonadClientUI m => m LevelId
 viewedLevel = do
@@ -620,14 +620,14 @@ aidTgtToPos aid lidV target = do
         else return $ Just (pos, False)
       else return Nothing
     Just (TEnemyPos _ lid p _) ->
-      return $ if lid == lidV then Just (p, False) else Nothing
+      return $! if lid == lidV then Just (p, False) else Nothing
     Just (TPoint lid p) ->
-      return $ if lid == lidV then Just (p, True) else Nothing
+      return $! if lid == lidV then Just (p, True) else Nothing
     Just (TVector v) -> do
       let shifted = shiftBounded lxsize lysize (bpos b) v
-      return $ if shifted == bpos b && v /= Vector 0 0
-               then Nothing
-               else Just (shifted, True)
+      return $! if shifted == bpos b && v /= Vector 0 0
+                then Nothing
+                else Just (shifted, True)
     Nothing -> do
       scursor <- getsClient scursor
       aidTgtToPos aid lidV $ Just scursor

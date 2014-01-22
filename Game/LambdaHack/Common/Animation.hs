@@ -207,11 +207,11 @@ fadeout out topRight lxsize lysize = do
                 , y <- [max 0 (ybound - (n - x) `div` 2)..ybound]
                     ++ [0..min ybound ((n - xbound + x) `div` 2)]
                 ]
-        return $ EM.fromList l
+        return $! EM.fromList l
       startN = if out then 3 else 1
       fs = [startN..3 * lxsize `divUp` 4 + 2]
   as <- mapM rollFrame $ if out then fs else reverse fs
-  return $ Animation as
+  return $! Animation as
 
 data AcFrame =
     AcConfirm !SingleFrame
@@ -288,6 +288,6 @@ instance Binary SingleFrame where
     sfTop <- get
     sfBottom <- get
     sfBlank <- get
-    return SingleFrame{..}
+    return $! SingleFrame{..}
 
 instance Binary DebugModeCli

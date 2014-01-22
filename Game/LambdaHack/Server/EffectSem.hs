@@ -256,7 +256,7 @@ addActor mk bfid pos lid hpUnscaled bsymbol bname bcolor time = do
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
   execCmdAtomic $ CreateActorA acounter m []
-  return acounter
+  return $! acounter
 
 -- TODO: apply this special treatment only to actors with symbol '@'.
 -- | Create a new hero on the current level, close to the given position.
@@ -382,7 +382,7 @@ registerItem item k container verbose = do
         ser { sicounter = succ icounter
             , sitemRev = HM.insert item icounter (sitemRev ser) }
       execCmdAtomic $ cmd icounter item k container
-      return icounter
+      return $! icounter
 
 -- ** ApplyPerfume
 

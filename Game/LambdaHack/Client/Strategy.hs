@@ -23,7 +23,7 @@ newtype Strategy a = Strategy { runStrategy :: [Frequency a] }
 -- | Strategy is a monad. TODO: Can we write this as a monad transformer?
 instance Monad Strategy where
   {-# INLINE return #-}
-  return x = Strategy $ return $ uniformFreq "Strategy_return" [x]
+  return x = Strategy $ return $! uniformFreq "Strategy_return" [x]
   m >>= f  = normalizeStrategy $ Strategy
     [ toFreq name [ (p * q, b)
                   | (p, a) <- runFrequency x
@@ -97,4 +97,4 @@ renameStrategy newName (Strategy fs) = Strategy $ map (renameFreq newName) fs
 
 -- | Like 'return', but pick a name of the single frequency.
 returN :: Text -> a -> Strategy a
-returN name x = Strategy $ return $ uniformFreq name [x]
+returN name x = Strategy $ return $! uniformFreq name [x]

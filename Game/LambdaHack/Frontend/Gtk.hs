@@ -78,7 +78,7 @@ lengthQueue :: FrontendSession -> IO Int
 lengthQueue FrontendSession{sframeState} = do
   fs <- readMVar sframeState
   case fs of
-    FPushed{..} -> return $ lengthLQueue fpushed
+    FPushed{..} -> return $! lengthLQueue fpushed
     _ -> return 0
 
 -- | The name of the frontend.

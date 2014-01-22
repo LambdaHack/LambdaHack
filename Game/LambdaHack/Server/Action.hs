@@ -105,7 +105,7 @@ dumpCfg = do
   let fn = configAppDataDir </> configRulesCfgFile ++ ".dump"
   config <- getsServer sconfig
   liftIO $ ConfigIO.dump config fn
-  return fn
+  return $! fn
 
 writeTQueueAI :: MonadConnServer m => CmdClientAI -> TQueue CmdClientAI -> m ()
 writeTQueueAI cmd fromServer = do
@@ -131,7 +131,7 @@ readTQueueAI toServer = do
     let aid = aidCmdTakeTimeSer cmd
     d <- debugAid aid "CmdTakeTimeSer" cmd
     liftIO $ T.hPutStrLn stderr d
-  return cmd
+  return $! cmd
 
 readTQueueUI :: MonadConnServer m => TQueue CmdSer -> m CmdSer
 readTQueueUI toServer = do
@@ -141,7 +141,7 @@ readTQueueUI toServer = do
     let aid = aidCmdSer cmd
     d <- debugAid aid "CmdSer" cmd
     liftIO $ T.hPutStrLn stderr d
-  return cmd
+  return $! cmd
 
 sendUpdateAI :: MonadConnServer m => FactionId -> CmdClientAI -> m ()
 sendUpdateAI fid cmd = do
@@ -250,7 +250,7 @@ elapsedSessionTimeGT :: MonadServer m => Int -> m Bool
 elapsedSessionTimeGT stopAfter = do
   current <- liftIO getClockTime
   TOD s p <- getsServer sstart
-  return $ TOD (s + fromIntegral stopAfter) p <= current
+  return $! TOD (s + fromIntegral stopAfter) p <= current
 
 revealItems :: (MonadAtomic m, MonadServer m)
             => Maybe FactionId -> Maybe Actor -> m ()
@@ -366,7 +366,7 @@ updateConn executorUI executorAI = do
       mkChanServer = do
         fromServer <- STM.newTQueueIO
         toServer <- STM.newTQueueIO
-        return ChanServer{..}
+        return $! ChanServer{..}
       mkChanFrontend :: IO Frontend.ChanFrontend
       mkChanFrontend = STM.newTQueueIO
       addConn :: FactionId -> Faction -> IO ConnServerFaction
@@ -434,7 +434,7 @@ rndToAction r = do
   g <- getsServer srandom
   let (a, ng) = St.runState r g
   modifyServer $ \ser -> ser {srandom = ng}
-  return a
+  return $! a
 
 -- | Gets a random generator from the config or,
 -- if not present, generates one and updates the config with it.

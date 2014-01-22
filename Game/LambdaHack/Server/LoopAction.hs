@@ -121,7 +121,7 @@ loopSer sdebug cmdSerSem executorUI executorAI !cops = do
 initDebug :: MonadServer m => DebugModeSer -> m DebugModeSer
 initDebug sdebugSer = do
   sconfig <- getsServer sconfig
-  return $
+  return $!
     (\dbg -> dbg {sfovMode =
         sfovMode dbg `mplus` Just (configFovMode sconfig)}) .
     (\dbg -> dbg {ssavePrefixSer =

@@ -95,7 +95,7 @@ instance Binary Faction where
     gdipl <- get
     gquit <- get
     gleader <- get
-    return Faction{..}
+    return $! Faction{..}
 
 instance Binary Diplomacy where
   put Unknown  = putWord8 0
@@ -138,4 +138,4 @@ instance Binary Status where
     stOutcome <- get
     stDepth <- get
     stInfo <- get
-    return Status{..}
+    return $! Status{..}

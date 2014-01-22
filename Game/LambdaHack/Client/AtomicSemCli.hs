@@ -149,7 +149,7 @@ cmdAtomicFilterCli cmd = case cmd of
     assert (allB (not . seenOld) psItemSmell) skip
     -- Verify that we forget only currently seen items and smell.
     assert (allB seenNew psItemSmell) skip
-    return $ cmd : outActor ++ inItem ++ inSmell
+    return $! cmd : outActor ++ inItem ++ inSmell
   _ -> return [cmd]
 
 -- | Effect of atomic actions on client state is calculated

@@ -117,7 +117,7 @@ createFactions Kind.COps{cofaction=Kind.Ops{opick}} players = do
         let gdipl = EM.empty  -- fixed below
             gquit = Nothing
             gleader = Nothing
-        return Faction{..}
+        return $! Faction{..}
   lUI <- mapM rawCreate $ filter playerUI $ playersList players
   lnoUI <- mapM rawCreate $ filter (not . playerUI) $ playersList players
   let lFs = reverse (zip [toEnum (-1), toEnum (-2)..] lnoUI)  -- sorted
@@ -142,7 +142,7 @@ createFactions Kind.COps{cofaction=Kind.Ops{opick}} players = do
       -- War overrides alliance, so 'warFs' second.
       allianceFs = mkDipl Alliance rawFs (swapIx (playersAlly players))
       warFs = mkDipl War allianceFs (swapIx (playersEnemy players))
-  return warFs
+  return $! warFs
 
 gameReset :: MonadServer m
           => Kind.COps -> DebugModeSer -> Maybe R.StdGen -> m State
@@ -172,7 +172,7 @@ gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}, corule}
       defSer = emptyStateServer
                  {sdisco, sdiscoRev, sflavour, srandom, sconfig, sstart}
   putServer defSer
-  return defState
+  return $! defState
 
 -- Spawn initial actors. Clients should notice this, to set their leaders.
 populateDungeon :: (MonadAtomic m, MonadServer m) => m ()
@@ -245,7 +245,7 @@ findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lysize, lstair} k = do
                 , dist ps $ factionDist `div` 16
                 ]
         nps <- tryFind (np : ps) (n - 1)
-        return $ np : nps
+        return $! np : nps
       stairPoss = fst lstair ++ snd lstair
       middlePos = Point (lxsize `div` 2) (lysize `div` 2)
   assert (k > 0 && factionDist > 0) skip

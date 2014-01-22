@@ -184,7 +184,7 @@ findPos ltile p =
         let pos = Point{..}
             tile = ltile PointArray.! pos
         if p pos tile
-          then return pos
+          then return $! pos
           else search
   in search
 
@@ -209,7 +209,7 @@ findPosTry numTries ltile m l@(_ : tl) = assert (numTries > 0) $
         let pos = Point{..}
             tile = ltile PointArray.! pos
         if m pos tile && all (\p -> p pos tile) l
-          then return pos
+          then return $! pos
           else search (k - 1)
   in search numTries
 
@@ -258,4 +258,4 @@ instance Binary Level where
     litemFreq <- get
     lsecret <- get
     lhidden <- get
-    return Level{..}
+    return $! Level{..}

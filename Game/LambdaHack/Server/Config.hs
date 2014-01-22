@@ -50,4 +50,4 @@ instance Binary Config where
     configRulesCfgFile   <- get
     configSavePrefix <- get
     configHeroNames      <- get
-    return Config{..}
+    return $! Config{..}

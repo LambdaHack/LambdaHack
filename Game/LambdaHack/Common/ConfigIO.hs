@@ -19,7 +19,7 @@ overrideCP cp@(CP defCF) cfile = do
     then return cp
     else do
       c <- CF.readfile defCF cfile
-      return $ toCP $ assert `forceEither` c
+      return $! toCP $ assert `forceEither` c
 
 -- | Read a player configuration file and use it to override
 -- options from a default config. Currently we can't unset options,
