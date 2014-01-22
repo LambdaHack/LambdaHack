@@ -43,18 +43,22 @@ instance MonadActionRO (ActionCli c d) where
   getsState f = ActionCli $ gets $ f . cliState
 
 instance MonadAction (ActionCli c d) where
-  modifyState f =
-    ActionCli $ modify $ \cliS -> cliS {cliState = f $ cliState cliS}
-  putState    s =
-    ActionCli $ modify $ \cliS -> cliS {cliState = s}
+  modifyState f = ActionCli $ state $ \cliS ->
+    let newCliS = cliS {cliState = f $ cliState cliS}
+    in newCliS `seq` ((), newCliS)
+  putState    s = ActionCli $ state $ \cliS ->
+    let newCliS = cliS {cliState = s}
+    in newCliS `seq` ((), newCliS)
 
 instance MonadClient (ActionCli c d) where
   getClient      = ActionCli $ gets cliClient
   getsClient   f = ActionCli $ gets $ f . cliClient
-  modifyClient f =
-    ActionCli $ modify $ \cliS -> cliS {cliClient = f $ cliClient cliS}
-  putClient    s =
-    ActionCli $ modify $ \cliS -> cliS {cliClient = s}
+  modifyClient f = ActionCli $ state $ \cliS ->
+    let newCliS = cliS {cliClient = f $ cliClient cliS}
+    in newCliS `seq` ((), newCliS)
+  putClient    s = ActionCli $ state $ \cliS ->
+    let newCliS = cliS {cliClient = s}
+    in newCliS `seq` ((), newCliS)
   liftIO         = ActionCli . IO.liftIO
   saveClient     = ActionCli $ do
     s <- gets cliState

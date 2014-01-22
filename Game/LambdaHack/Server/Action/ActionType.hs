@@ -39,18 +39,22 @@ instance MonadActionRO ActionSer where
   getsState f = ActionSer $ gets $ f . serState
 
 instance MonadAction ActionSer where
-  modifyState f =
-    ActionSer $ modify $ \serS -> serS {serState = f $ serState serS}
-  putState    s =
-    ActionSer $ modify $ \serS -> serS {serState = s}
+  modifyState f = ActionSer $ state $ \serS ->
+    let newSerS = serS {serState = f $ serState serS}
+    in newSerS `seq` ((), newSerS)
+  putState    s = ActionSer $ state $ \serS ->
+    let newSerS = serS {serState = s}
+    in newSerS `seq` ((), newSerS)
 
 instance MonadServer ActionSer where
   getServer      = ActionSer $ gets serServer
   getsServer   f = ActionSer $ gets $ f . serServer
-  modifyServer f =
-    ActionSer $ modify $ \serS -> serS {serServer = f $ serServer serS}
-  putServer    s =
-    ActionSer $ modify $ \serS -> serS {serServer = s}
+  modifyServer f = ActionSer $ state $ \serS ->
+    let newSerS = serS {serServer = f $ serServer serS}
+    in newSerS `seq` ((), newSerS)
+  putServer    s = ActionSer $ state $ \serS ->
+    let newSerS = serS {serServer = s}
+    in newSerS `seq` ((), newSerS)
   liftIO         = ActionSer . IO.liftIO
   saveServer     = ActionSer $ do
     s <- gets serState
