@@ -156,9 +156,9 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
       leaderStatus = drawLeaderStatus cops s sdisco ltime swaitTimes mleader
       targetText = "Target:" <+> targetDesc
       pathText = let space = 40 - T.length targetText - 1
-                     len = case (cursorPos, bfsmpathRaw) of
-                       (Just cursor, Just (bfs, _)) ->
-                         fromMaybe 0 (accessBfs bfs cursor)
+                     len = case (tgtPos, bfsmpathRaw) of
+                       (Just target, Just (bfs, _)) ->
+                         fromMaybe 0 (accessBfs bfs target)
                        _ -> 0
                      pText | len == 0 = ""
                            | otherwise = "(path" <+> showN2 len <> ")"

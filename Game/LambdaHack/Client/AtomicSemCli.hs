@@ -277,8 +277,8 @@ drawCmdAtomicUI :: MonadClientUI m => Bool -> CmdAtomic -> m ()
 drawCmdAtomicUI verbose cmd = case cmd of
   CreateActorA aid body _ -> createActorUI aid body verbose "appear"
   DestroyActorA aid body _ -> do
-    side <- getsClient sside
     destroyActorUI aid body "die" "be destroyed" verbose
+    side <- getsClient sside
     when (bfid body == side && not (bproj body)) stopPlayBack
   CreateItemA _ item k _ -> itemVerbMU item k "drop to the ground"
   DestroyItemA _ item k _ -> itemVerbMU item k "disappear"

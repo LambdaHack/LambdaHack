@@ -81,7 +81,8 @@ createActorA :: MonadAction m => ActorId -> Actor -> [(ItemId, Item)] -> m ()
 createActorA aid body ais = do
   -- Add actor to @sactorD@.
   let f Nothing = Just body
-      f (Just b) = assert `failure` "actor already added" `twith` (aid, body, b)
+      f (Just b) = assert `failure` "actor already added"
+                          `twith` (aid, body, b)
   modifyState $ updateActorD $ EM.alter f aid
   -- Add actor to @sprio@.
   let g Nothing = Just [aid]
