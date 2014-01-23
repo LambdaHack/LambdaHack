@@ -232,7 +232,7 @@ fillBfs isEnterable passUnknown origin aInitial =
         case Seq.viewr q of
           Seq.EmptyR -> a  -- no more positions to check
           _ Seq.:> (_, d)| d == maxUnknown || d == maxBound -> a  -- too far
-          q1 Seq.:> (pos, oldDistance) | oldDistance > maxUnknown ->
+          q1 Seq.:> (pos, oldDistance) | oldDistance >= minKnown ->
             let distance = succ oldDistance
                 allMvs = map (shift pos) moves
                 freshMv p = a PointArray.! p == maxBound
@@ -263,8 +263,10 @@ fillBfs isEnterable passUnknown origin aInitial =
 -- e.g., how many closed doors they pass, open doors, unknown tiles
 -- on the path or close enough to reveal them.
 -- Also, check if JPS can somehow optimize BFS or pathBfs.
--- Also, let eps determine the path in more detail (we use only a couple
--- of first bits of eps so far).
+-- | Find a path with the smallest length.
+-- The @eps@ coefficient determines which direction (or the closest
+-- directions available) that path should prefer, where 0 means north-west
+-- and 1 means north.
 findPathBfs :: Point -> Point -> Int -> (PointArray.Array BfsDistance)
             -> Maybe [Point]
 findPathBfs source target sepsRaw bfs =
@@ -273,15 +275,18 @@ findPathBfs source target sepsRaw bfs =
   in if targetDist == maxBound
      then Nothing
      else
-       let maxUnknown = pred minKnown
-           eps = abs sepsRaw `mod` length moves
+       let eps = abs sepsRaw `mod` length moves
+           mix (x : xs) ys = x : mix ys xs
+           mix [] ys = ys
+           preferedMoves = let (ch1, ch2) = splitAt eps moves
+                               ch = ch2 ++ ch1
+                           in mix ch (reverse ch)
            track :: Point -> BfsDistance -> [Point] -> [Point]
            track pos oldDist suffix | oldDist == minKnown =
              assert (pos == source) suffix
-           track pos oldDist suffix | oldDist > maxUnknown =
+           track pos oldDist suffix | oldDist >= minKnown =
              let dist = pred oldDist
-                 (ch1, ch2) = splitAt eps $ map (shift pos) moves
-                 children = ch2 ++ ch1
+                 children = map (shift pos) preferedMoves
                  matchesDist p = bfs PointArray.! p == dist
                  minP = fromMaybe (assert `failure` (pos, oldDist, children))
                                   (find matchesDist children)
@@ -289,8 +294,7 @@ findPathBfs source target sepsRaw bfs =
            track pos oldDist suffix =
              let distUnknown = pred oldDist
                  distKnown = distUnknown .|. minKnown
-                 (ch1, ch2) = splitAt eps $ map (shift pos) moves
-                 children = ch2 ++ ch1
+                 children = map (shift pos) preferedMoves
                  matchesDistUnknown p = bfs PointArray.! p == distUnknown
                  matchesDistKnown p = bfs PointArray.! p == distKnown
                  (minP, dist) = case find matchesDistKnown children of
