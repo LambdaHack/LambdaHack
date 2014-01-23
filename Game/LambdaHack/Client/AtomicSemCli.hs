@@ -164,9 +164,10 @@ cmdAtomicSemCli cmd = case cmd of
   SpotActorA aid body _ -> createActorA aid body
   LoseActorA aid b _ -> destroyActorA aid b False
   MoveActorA aid _ _ ->
-    -- @sbfsD@ is invalidated only in these 2 cases, not when perception
-    -- or dungeon tiles change, to siplifie and optimize AI.
-    -- AI actors need to move to think clearly and noticing changes.
+    -- @sbfsD@ is invalidated only in these 2 cases and in @destroyActorA@,
+    -- not whenever perception or dungeon tiles change,
+    -- to simplify and optimize AI.
+    -- AI actors need to move to think clearly and notice changes.
     -- TODO: right now save/load makes AI smarter by invalidating sbfsD.
     -- For human UI we invalidate whole @sbfsD@ at the start of each
     -- UI player input, which is an overkill, but doesn't affects
@@ -215,7 +216,7 @@ createActorA aid _b = do
 destroyActorA :: MonadClient m => ActorId -> Actor -> Bool -> m ()
 destroyActorA aid b destroy = do
   when destroy $ modifyClient $ updateTarget aid (const Nothing)  -- gc
-  -- Invalidate BFS cache at level change, etc.
+  -- Invalidate AI BFS cache on level change, etc., and gc.
   modifyClient $ \cli -> cli {sbfsD = EM.delete aid $ sbfsD cli}
   let affect tgt = case tgt of
         TEnemy a permit | a == aid -> TEnemyPos a (blid b) (bpos b) permit
@@ -459,13 +460,14 @@ createActorUI aid body verbose verb = do
   side <- getsClient sside
   when (verbose || bfid body /= side) $ actorVerbMU aid body verb
   when (bfid body /= side) $ do
-    mleader <- getsClient _sleader
-    permit <- case mleader of
-      Nothing -> return False
-      Just leader -> actorAimsPos leader (bpos body)
     fact <- getsState $ (EM.! bfid body) . sfactionD
-    when (isAtWar fact side && permit) $  -- don't target if can't aim at it
-      modifyClient $ \cli -> cli {scursor = TEnemy aid permit}
+    when (not (bproj body) && isAtWar fact side) $ do
+      -- Target even if nobody can aim at the enemy. Let's home in on him
+      -- and then we can aim or melee. We set permit to False, because it's
+      -- technically very hard to check aimability here, because we are
+      -- in-between turns and, e.g., leader's move has not yet been taken
+      -- into account.
+      modifyClient $ \cli -> cli {scursor = TEnemy aid False}
     stopPlayBack
   lookAtMove aid
 
