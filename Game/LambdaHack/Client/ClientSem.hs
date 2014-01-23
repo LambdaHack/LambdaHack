@@ -135,7 +135,7 @@ queryAIPick aid = do
         | Just aid == mleader = fAbilityLeader $ okind $ gkind fact
         | otherwise = fAbilityOther $ okind $ gkind fact
   unless (bproj body) $ do
-    stratTarget <- targetStrategy aid factionAbilities
+    stratTarget <- targetStrategy aid
     -- Choose a target from those proposed by AI for the actor.
     btarget <- rndToAction $ frequency $ bestVariant stratTarget
     let _debug = T.unpack

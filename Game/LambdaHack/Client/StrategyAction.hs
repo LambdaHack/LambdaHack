@@ -26,7 +26,6 @@ import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Point
-import qualified Game.LambdaHack.Common.PointArray as PointArray
 import qualified Game.LambdaHack.Common.Random as Random
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
@@ -40,96 +39,66 @@ import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Utils.Frequency
 
 -- | AI proposes possible targets for the actor. Never empty.
-targetStrategy :: MonadClient m
-               => ActorId -> [Ability] -> m (Strategy (Maybe Target))
-targetStrategy aid factionAbilities = do
+targetStrategy :: forall m. MonadClient m
+               => ActorId -> m (Strategy (Maybe Target))
+targetStrategy aid = do
   btarget <- getsClient $ getTarget aid
-  bfs <- getCacheBfs aid
-  reacquireTgt aid factionAbilities btarget bfs
-
-aimableFoes :: MonadActionRO m
-            => ActorId -> PointArray.Array BfsDistance
-            -> m [(ActorId, Actor)]
-aimableFoes aid bfs = do
+  cops@Kind.COps{cotile=Kind.Ops{ouniqGroup}} <- getsState scops
   b <- getsState $ getActorBody aid
+  lvl <- getLevel $ blid b
   assert (not $ bproj b) skip  -- would work, but is probably a bug
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
-  foes <- getsState $ actorNotProjAssocs (isAtWar fact) (blid b)
-  return $! filter (posAimsPos bfs (bpos b) . bpos . snd) foes
-
-reacquireTgt :: MonadClient m
-             => ActorId -> [Ability] -> Maybe Target
-             -> PointArray.Array BfsDistance
-             -> m (Strategy (Maybe Target))
-reacquireTgt aid factionAbilities btarget bfs = do
-  cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-  b <- getsState $ getActorBody aid
-  assert (not $ bproj b) skip  -- would work, but is probably a bug
-  lvl <- getsState $ \s -> sdungeon s EM.! blid b
-  visFoes <- aimableFoes aid bfs
-  actorD <- getsState sactorD
-  let randomMove = do
+  nearbyFoes <- getsState $ actorNotProjAssocs (isAtWar fact) (blid b)  -- TODO
+  let unknownId = ouniqGroup "unknown space"
+      focused = bspeed b <= speedNormal
+      randomMove = do
         s <- getState
         str <- moveStrategy cops aid s Nothing
         return $! (Just . TPoint (blid b) . (bpos b `shift`)) `liftM` str
-  -- TODO: we probably calculate this whether needed or not:
-  noFoes :: Strategy (Maybe Target) <- do
-    mpos <- closestUnknown aid
-    case mpos of
-      Nothing -> randomMove
-      Just closestUnknownPos -> do
-        -- TODO: generate all moves compatible with this target
-        -- and then value them based on moveStrategy.
-        (_, mpath) <- getCacheBfsAndPath aid closestUnknownPos
-        case mpath of
-          Just (p : _) ->
-            return $! returN "closestUnknown" $ Just $ TPoint (blid b) p
-          _ -> randomMove
-  let mk = okind $ bkind b
-      actorAbilities = acanDo mk `intersect` factionAbilities
-      focused = bspeed b <= speedNormal
-                -- Don't focus on a distant enemy, when you can't chase him.
-                -- TODO: or only if another enemy adjacent? consider Flee?
-                && Ability.Chase `elem` actorAbilities
-      closest :: Strategy (Maybe Target)
-      closest =
-        let distB = chessDist (bpos b)
-            foeDist = map (\(_, body) -> distB (bpos body)) visFoes
-            minDist | null foeDist = maxBound
-                    | otherwise = minimum foeDist
-            minFoes =
-              filter (\(_, body) -> distB (bpos body) == minDist) visFoes
-            minTargets = map (\(a, _) -> Just $ TEnemy a False) minFoes
-            minTgtS = liftFrequency $ uniformFreq "closest" minTargets
-        in minTgtS .| noFoes .| returN "TCursor" Nothing  -- never empty
-      reacquire :: Maybe Target -> Strategy (Maybe Target)
-      reacquire tgt =
-        case tgt of
-          Just (TEnemy a _) ->
-            case EM.lookup a actorD of
-              Just body ->
-                if posAimsPos bfs (bpos b) (bpos body) && blid b == blid body
-                then returN "TEnemy" tgt
-                else closest  -- prefer aimable foes on the same level
-              Nothing -> assert `failure` tgt
-          Just (TEnemyPos _ lid ll _) | focused && lid == blid b ->
-            -- Chase even if enemy dead, to loot.
-            if null visFoes               -- prefer visible foes to positions
-               && bpos b /= ll            -- not yet reached the last pos
-            then returN "last known" tgt  -- chase the last known pos
-            else closest
-          Just TEnemyPos{} -> closest
-          Just (TPoint lid _) | lid /= blid b -> closest  -- wrong level
-          Just (TPoint _ pos) | pos == bpos b -> closest  -- already reached
-          Just (TPoint _ pos)
-            | not (bumpableHere cops lvl False (asight mk) pos) ->
-            closest  -- no longer bumpable, even assuming no foes
-          Just TPoint{} | null visFoes -> returN "TPoint" tgt
-                                          -- nothing visible, go to pos
-          Just TPoint{} -> closest  -- prefer visible foes
-          Just TVector{} -> closest
-          Nothing -> closest
-  return $! reacquire btarget
+      pickNewTarget :: m (Strategy (Maybe Target))
+      pickNewTarget = do
+        -- TODO: for foes and items consider a few nearby, not just one
+        cfoes <- closestFoes aid
+        case cfoes of
+          [] -> do
+            citems <- closestItems aid
+            case citems of
+              [] -> do
+                mpos <- closestUnknown aid
+                case mpos of
+                  Nothing -> randomMove
+                  Just p -> do
+                    return $! returN "new unknown" $ Just $ TPoint (blid b) p
+              (_, (p, _)) : _ ->
+                return $! returN "new item" $ Just $ TPoint (blid b) p
+          (_, (a, _)) : _ ->
+            return $! returN "new enemy" $ Just $ TEnemy a False
+  newTarget <- case btarget of
+    Just (TEnemy a _) -> do
+      body <- getsState $ getActorBody a
+      if not focused  -- prefers closest foes
+         || blid body /= blid b  -- wrong level
+      then pickNewTarget
+      else return $! returN "TEnemy" btarget
+    _ | not $ null nearbyFoes -> pickNewTarget  -- prefer foes to anything
+    Just (TEnemyPos _ lid p _) ->
+      -- Chase last position even if foe hides or dies, to find his companions.
+      if not focused  -- forgets last positions at once
+         || lid /= blid b  -- wrong level
+         || bpos b == p  -- not yet reached the position
+      then pickNewTarget
+      else return $! returN "TEnemyPos" btarget
+    Just (TPoint lid pos) ->
+      if lid /= blid b  -- wrong level
+         || pos == bpos b  -- already reached
+         || (EM.null (lvl `atI` pos)  -- no items any more
+             && lvl `at` pos /= unknownId)  -- not unknown any more
+      then pickNewTarget
+      else return $! returN "TPoint" btarget
+    Just TVector{} -> pickNewTarget
+    Nothing -> pickNewTarget
+  -- TODO: if target differs or is actor, generate new bpath
+  return $! newTarget
 
 -- | AI strategy based on actor's sight, smell, intelligence, etc.
 -- Never empty.
