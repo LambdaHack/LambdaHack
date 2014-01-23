@@ -57,7 +57,7 @@ aimableFoes aid bfs = do
   foes <- getsState $ actorNotProjAssocs (isAtWar fact) (blid b)
   return $! filter (posAimsPos bfs (bpos b) . bpos . snd) foes
 
-reacquireTgt :: MonadActionRO m
+reacquireTgt :: MonadClient m
              => ActorId -> [Ability] -> Maybe Target
              -> PointArray.Array BfsDistance
              -> m (Strategy (Maybe Target))
@@ -68,12 +68,23 @@ reacquireTgt aid factionAbilities btarget bfs = do
   lvl <- getsState $ \s -> sdungeon s EM.! blid b
   visFoes <- aimableFoes aid bfs
   actorD <- getsState sactorD
-  -- TODO: set distant targets so that monsters behave as if they have
-  -- a plan. We need pathfinding for that.
+  let randomMove = do
+        s <- getState
+        str <- moveStrategy cops aid s Nothing
+        return $! (Just . TPoint (blid b) . (bpos b `shift`)) `liftM` str
+  -- TODO: we probably calculate this whether needed or not:
   noFoes :: Strategy (Maybe Target) <- do
-    s <- getState
-    str <- moveStrategy cops aid s Nothing
-    return $! (Just . TPoint (blid b) . (bpos b `shift`)) `liftM` str
+    mpos <- closestUnknown aid
+    case mpos of
+      Nothing -> randomMove
+      Just closestUnknownPos -> do
+        -- TODO: generate all moves compatible with this target
+        -- and then value them based on moveStrategy.
+        (_, mpath) <- getCacheBfsAndPath aid closestUnknownPos
+        case mpath of
+          Just (p : _) ->
+            return $! returN "closestUnknown" $ Just $ TPoint (blid b) p
+          _ -> randomMove
   let mk = okind $ bkind b
       actorAbilities = acanDo mk `intersect` factionAbilities
       focused = bspeed b <= speedNormal

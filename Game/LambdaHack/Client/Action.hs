@@ -27,7 +27,8 @@ module Game.LambdaHack.Client.Action
   , rndToAction, getArenaUI, getLeaderUI, targetDescLeader
   , viewedLevel, aidTgtToPos, targetToPos, cursorToPos
   , partAidLeader, partActorLeader
-  , getCacheBfsAndPath, getCacheBfs, accessCacheBfs, actorAimsPos
+  , getCacheBfsAndPath, getCacheBfs, accessCacheBfs
+  , actorAimsPos, closestUnknown
   , debugPrint
   ) where
 
@@ -652,3 +653,12 @@ cursorToPos = do
   case mleader of
     Nothing -> return Nothing
     Just aid -> fmap (fmap fst) $ aidTgtToPos aid lidV $ Just scursor
+
+closestUnknown :: MonadClient m => ActorId -> m (Maybe Point)
+closestUnknown aid = do
+  bfs <- getCacheBfs aid
+  let closestUnknownPos = PointArray.minIndexA bfs
+      dist = bfs PointArray.! closestUnknownPos
+  return $ if dist >= minKnown
+           then Nothing
+           else Just closestUnknownPos

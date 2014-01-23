@@ -53,7 +53,6 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
-import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
@@ -515,12 +514,10 @@ tgtUnknownHuman :: MonadClientUI m => m Slideshow
 tgtUnknownHuman = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  bfs <- getCacheBfs leader
-  let closestUnknownPos = PointArray.minIndexA bfs
-      dist = bfs PointArray.! closestUnknownPos
-  if dist >= minKnown
-    then failWith "no unknown spot left"
-    else do
+  mpos <- closestUnknown leader
+  case mpos of
+    Nothing -> failWith "no unknown spot left"
+    Just closestUnknownPos -> do
       let tgt = TPoint (blid b) closestUnknownPos
       modifyClient $ \cli -> cli {scursor = tgt}
       return mempty
