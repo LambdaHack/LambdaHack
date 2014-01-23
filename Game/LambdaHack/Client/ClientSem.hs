@@ -69,11 +69,10 @@ queryAI oldAid = do
       hasGoodTarget <- case btarget of
         Just (TEnemy foe False) -> do
           bfoe <- getsState $ getActorBody foe
-          if blid bfoe /= arena then
-            assert `failure` (oldAid, blid oldBody, foe, blid bfoe)
-          else do
-            aims <- actorAimsPos oldAid (bpos bfoe)
-            return $! aims && hasAmmo && not isAdjacent
+          aims <- actorAimsPos oldAid (bpos bfoe)
+          return $ if blid bfoe /= arena
+                   then False  -- actor ascended, but others still see enemy
+                   else aims && hasAmmo && not isAdjacent
         _ -> return False
       if -- Keep the leader: he is alone on the level.
          length ours == 1

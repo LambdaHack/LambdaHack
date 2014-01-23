@@ -228,7 +228,7 @@ drawLeaderStatus cops s sdisco ltime waitTimes mleader =
              <> " "
         Nothing ->
              T.justifyLeft 12 ' ' "Dmg: ---"
-             <+> T.justifyRight 10 ' ' "HP: --/--"
+             <+> T.justifyRight 10 ' ' "HP:  --/--"
              <> " "
   in addAttr stats
 
@@ -271,8 +271,8 @@ drawSelected cli s drawnLevelId mleader =
                     in if T.length firstWord > n then "" else firstWord
       fact = sfactionD s EM.! sside cli
       ourName n = addAttr $ nameN n $ playerName $ gplayer fact
-      party = case allOurs of
-        [_] -> ourName $ maxViewed + 1
-        _ -> [star] ++ map snd viewed ++ addAttr " "
-             ++ ourName (maxViewed - 1 - length viewed)
+      party = if length allOurs <= 1
+              then ourName $ maxViewed + 1
+              else [star] ++ map snd viewed ++ addAttr " "
+                   ++ ourName (maxViewed - 1 - length viewed)
   in party ++ addAttr (T.replicate (maxViewed + 2 - length party) " ")
