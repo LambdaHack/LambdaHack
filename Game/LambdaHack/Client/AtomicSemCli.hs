@@ -159,7 +159,9 @@ cmdAtomicFilterCli cmd = case cmd of
 -- kept for each command received.
 cmdAtomicSemCli :: MonadClient m => CmdAtomic -> m ()
 cmdAtomicSemCli cmd = case cmd of
+  CreateActorA aid body _ -> createActorA aid body
   DestroyActorA aid b _ -> destroyActorA aid b True
+  SpotActorA aid body _ -> createActorA aid body
   LoseActorA aid b _ -> destroyActorA aid b False
   MoveActorA aid _ _ ->
     -- @sbfsD@ is invalidated only in these 2 cases, not when perception
@@ -202,13 +204,21 @@ cmdAtomicSemCli cmd = case cmd of
   SaveBkpA -> saveClient
   _ -> return ()
 
+createActorA :: MonadClient m => ActorId -> Actor -> m ()
+createActorA aid _b = do
+  let affect tgt = case tgt of
+        TEnemyPos a _ _ permit | a == aid -> TEnemy a permit
+        _ -> tgt
+  modifyClient $ \cli -> cli {stargetD = EM.map affect (stargetD cli)}
+  modifyClient $ \cli -> cli {scursor = affect $ scursor cli}
+
 destroyActorA :: MonadClient m => ActorId -> Actor -> Bool -> m ()
 destroyActorA aid b destroy = do
   when destroy $ modifyClient $ updateTarget aid (const Nothing)  -- gc
   -- Invalidate BFS cache at level change, etc.
   modifyClient $ \cli -> cli {sbfsD = EM.delete aid $ sbfsD cli}
   let affect tgt = case tgt of
-        TEnemy a permit | a == aid -> TEnemyPos aid (blid b) (bpos b) permit
+        TEnemy a permit | a == aid -> TEnemyPos a (blid b) (bpos b) permit
         -- Don't consider @destroy@, because even if actor dead, it makes
         -- sense to go to last known location to loot or find others.
         _ -> tgt
