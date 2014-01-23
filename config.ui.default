@@ -51,6 +51,7 @@
 ; slash: TgtFloor
 ; asterisk: TgtEnemy
 ; CTRL-question: TgtUnknown
+; CTRL-i: TgtItem
 ; bracketleft:  TgtAscend 1
 ; bracketright: TgtAscend (-1)
 ; braceleft:    TgtAscend 10

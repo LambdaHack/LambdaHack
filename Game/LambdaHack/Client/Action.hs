@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 -- | Game action monads and basic building blocks for human and computer
 -- player actions. Has no access to the the main action type.
 -- Does not export the @liftIO@ operation nor a few other implementation
@@ -28,7 +29,7 @@ module Game.LambdaHack.Client.Action
   , viewedLevel, aidTgtToPos, targetToPos, cursorToPos
   , partAidLeader, partActorLeader
   , getCacheBfsAndPath, getCacheBfs, accessCacheBfs
-  , actorAimsPos, closestUnknown
+  , actorAimsPos, closestUnknown, closestItems, closestFoes
   , debugPrint
   ) where
 
@@ -40,6 +41,7 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
+import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Monoid as Monoid
@@ -679,8 +681,33 @@ cursorToPos = do
 closestUnknown :: MonadClient m => ActorId -> m (Maybe Point)
 closestUnknown aid = do
   bfs <- getCacheBfs aid
-  let closestUnknownPos = PointArray.minIndexA bfs
-      dist = bfs PointArray.! closestUnknownPos
+  let closestPos = PointArray.minIndexA bfs
+      dist = bfs PointArray.! closestPos
   return $ if dist >= minKnown
            then Nothing
-           else Just closestUnknownPos
+           else Just closestPos
+
+closestItems :: MonadClient m => ActorId -> m ([(Int, (Point, ItemBag))])
+closestItems aid = do
+  body <- getsState $ getActorBody aid
+  Level{lfloor} <- getLevel $ blid body
+  let items = EM.keys lfloor
+  case items of
+    [] -> return []
+    _ -> do
+      bfs <- getCacheBfs aid
+      let ds = mapMaybe (\x@(p, _) -> fmap (,x) (accessBfs bfs p))
+                        $ EM.assocs lfloor
+      return $! dropWhile (\(d, _) -> d == 0) $ sort ds
+
+closestFoes :: MonadClient m => ActorId -> m [(Int, (ActorId, Actor))]
+closestFoes aid = do
+  body <- getsState $ getActorBody aid
+  fact <- getsState $ \s -> sfactionD s EM.! bfid body
+  foes <- getsState $ actorNotProjAssocs (isAtWar fact) (blid body)
+  case foes of
+    [] -> return []
+    _ -> do
+      bfs <- getCacheBfs aid
+      let ds = mapMaybe (\x@(_, b) -> fmap (,x) (accessBfs bfs (bpos b))) foes
+      return $! sort ds  -- no foes possible at distance 0

@@ -66,6 +66,7 @@ cmdAction cmd = case cmd of
   TgtFloor -> fmap Left tgtFloorHuman
   TgtEnemy -> fmap Left tgtEnemyHuman
   TgtUnknown -> fmap Left tgtUnknownHuman
+  TgtItem -> fmap Left tgtItemHuman
   TgtAscend k -> fmap Left $ tgtAscendHuman k
   EpsIncr b -> fmap Left $ epsIncrHuman b
   TgtClear -> addNoSlides tgtClearHuman

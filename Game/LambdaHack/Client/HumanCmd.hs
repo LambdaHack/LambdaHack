@@ -50,6 +50,7 @@ data HumanCmd =
   | TgtFloor
   | TgtEnemy
   | TgtUnknown
+  | TgtItem
   | TgtAscend !Int
   | EpsIncr !Bool
   | TgtClear
@@ -154,6 +155,7 @@ cmdDescription cmd = case cmd of
   TgtFloor    -> "target position"
   TgtEnemy    -> "target monster"
   TgtUnknown  -> "target the closest unknown spot"
+  TgtItem     -> "target the closest item"
   TgtAscend k | k == 1  -> "target next shallower level"
   TgtAscend k | k >= 2  -> "target" <+> tshow k    <+> "levels shallower"
   TgtAscend k | k == -1 -> "target next deeper level"

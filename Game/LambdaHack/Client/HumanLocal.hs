@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.HumanLocal
   , historyHuman, humanMarkVision, humanMarkSmell, humanMarkSuspect
   , helpHuman
   , moveCursor
-  , tgtFloorHuman, tgtEnemyHuman, tgtUnknownHuman, tgtAscendHuman
+  , tgtFloorHuman, tgtEnemyHuman, tgtUnknownHuman, tgtItemHuman, tgtAscendHuman
   , epsIncrHuman, tgtClearHuman, cancelHuman, displayMainMenu, acceptHuman
     -- * Helper functions useful also elsewhere
   , floorItemOverlay, itemOverlay
@@ -516,9 +516,23 @@ tgtUnknownHuman = do
   b <- getsState $ getActorBody leader
   mpos <- closestUnknown leader
   case mpos of
-    Nothing -> failWith "no unknown spot left"
-    Just closestUnknownPos -> do
-      let tgt = TPoint (blid b) closestUnknownPos
+    Nothing -> failWith "no more unknown spots left"
+    Just p -> do
+      let tgt = TPoint (blid b) p
+      modifyClient $ \cli -> cli {scursor = tgt}
+      return mempty
+
+-- * TgtItem
+
+tgtItemHuman :: MonadClientUI m => m Slideshow
+tgtItemHuman = do
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  items <- closestItems leader
+  case items of
+    [] -> failWith "no more items remembered or visible"
+    (_, (p, _)) : _ -> do
+      let tgt = TPoint (blid b) p
       modifyClient $ \cli -> cli {scursor = tgt}
       return mempty
 
