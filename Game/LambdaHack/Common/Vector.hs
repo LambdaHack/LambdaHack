@@ -267,9 +267,11 @@ fillBfs isEnterable passUnknown origin aInitial =
 -- The @eps@ coefficient determines which direction (or the closest
 -- directions available) that path should prefer, where 0 means north-west
 -- and 1 means north.
-findPathBfs :: Point -> Point -> Int -> (PointArray.Array BfsDistance)
+findPathBfs :: (Point -> Point -> MoveLegal)
+            -> (Point -> Point -> Bool)
+            -> Point -> Point -> Int -> PointArray.Array BfsDistance
             -> Maybe [Point]
-findPathBfs source target sepsRaw bfs =
+findPathBfs isEnterable passUnknown source target sepsRaw bfs =
   assert (bfs PointArray.! source == minKnown) $
   let targetDist = bfs PointArray.! target
   in if targetDist == maxBound
@@ -288,6 +290,7 @@ findPathBfs source target sepsRaw bfs =
              let dist = pred oldDist
                  children = map (shift pos) preferedMoves
                  matchesDist p = bfs PointArray.! p == dist
+                                 && isEnterable p pos == MoveToOpen
                  minP = fromMaybe (assert `failure` (pos, oldDist, children))
                                   (find matchesDist children)
              in track minP dist (pos : suffix)
@@ -296,7 +299,9 @@ findPathBfs source target sepsRaw bfs =
                  distKnown = distUnknown .|. minKnown
                  children = map (shift pos) preferedMoves
                  matchesDistUnknown p = bfs PointArray.! p == distUnknown
+                                        && passUnknown p pos
                  matchesDistKnown p = bfs PointArray.! p == distKnown
+                                      && isEnterable p pos == MoveToUnknown
                  (minP, dist) = case find matchesDistKnown children of
                    Just p -> (p, distKnown)
                    Nothing -> case find matchesDistUnknown children of

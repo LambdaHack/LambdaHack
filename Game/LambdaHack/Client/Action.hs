@@ -459,11 +459,11 @@ getCacheBfsAndPath :: forall m. MonadClient m
                    -> m (PointArray.Array BfsDistance, Maybe [Point])
 getCacheBfsAndPath aid target = do
   seps <- getsClient seps
-  let pathAndStore :: (PointArray.Array BfsDistance)
+  let pathAndStore :: PointArray.Array BfsDistance
                    -> m (PointArray.Array BfsDistance, Maybe [Point])
       pathAndStore bfs = do
-        source <- getsState $ bpos . getActorBody aid
-        let mpath = findPathBfs source target seps bfs
+        computePath <- computePathBFS aid
+        let mpath = computePath target seps bfs
         modifyClient $ \cli ->
           cli {sbfsD = EM.insert aid (bfs, target, seps, mpath) (sbfsD cli)}
         return (bfs, mpath)
@@ -486,10 +486,35 @@ getCacheBfs aid = do
     Nothing -> fmap fst $ getCacheBfsAndPath aid (Point 0 0)
 
 computeBFS :: MonadClient m => ActorId -> m (PointArray.Array BfsDistance)
-computeBFS aid = do
+computeBFS = computeAnythingBFS $ \isEnterable passUnknown aid -> do
+  b <- getsState $ getActorBody aid
+  Level{lxsize, lysize} <- getLevel $ blid b
+  let origin = bpos b
+      vInitial = PointArray.replicateA lxsize lysize maxBound
+  -- Here we don't want '$!', because we want the BFS data lazy.
+  return ${-keep it!-} fillBfs isEnterable passUnknown origin vInitial
+
+computePathBFS :: MonadClient m
+               => ActorId
+               -> m (Point -> Int -> PointArray.Array BfsDistance
+                     -> Maybe [Point])
+computePathBFS = computeAnythingBFS $ \isEnterable passUnknown aid -> do
+  b <- getsState $ getActorBody aid
+  let origin = bpos b
+  -- Here we don't want '$!', because we want the BFS data lazy.
+  return ${-keep it!-} findPathBfs isEnterable passUnknown origin
+
+computeAnythingBFS :: MonadClient m
+                   => ((Point -> Point -> MoveLegal)
+                       -> (Point -> Point -> Bool)
+                       -> ActorId
+                       -> m a)
+                   -> ActorId
+                   -> m a
+computeAnythingBFS fAnything aid = do
   cops@Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getsState scops
   b <- getsState $ getActorBody aid
-  lvl@Level{lxsize, lysize} <- getLevel $ blid b
+  lvl <- getLevel $ blid b
   -- We treat doors as an open tile and don't add an extra step for opening
   -- the doors, because other actors open and use them, too,
   -- so it's amortized. We treat unknown tiles specially.
@@ -515,10 +540,7 @@ computeBFS aid = do
         Nothing -> \_ tpos -> lvl `at` tpos == unknownId
         Just ch -> \spos tpos -> lvl `at` tpos == unknownId
                                  && ch spos tpos
-      origin = bpos b
-      vInitial = PointArray.replicateA lxsize lysize maxBound
-  -- Here we don't want '$!', because we want the BFS data lazy.
-  return ${-keep it!-} fillBfs isEnterable passUnknown origin vInitial
+  fAnything isEnterable passUnknown aid
 
 accessCacheBfs :: MonadClient m => ActorId -> Point -> m (Maybe Int)
 {-# INLINE accessCacheBfs #-}
