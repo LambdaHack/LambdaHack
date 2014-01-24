@@ -40,17 +40,18 @@ import Game.LambdaHack.Utils.Frequency
 
 -- | AI proposes possible targets for the actor. Never empty.
 targetStrategy :: forall m. MonadClient m
-               => ActorId -> m (Strategy (Target, Maybe ([Point], Point)))
+               => ActorId -> m (Strategy (Target, ([Point], Point)))
 targetStrategy aid = do
   Kind.COps{cotile=Kind.Ops{ouniqGroup}} <- getsState scops
   modifyClient $ \cli -> cli {sbfsD = EM.empty}
   b <- getsState $ getActorBody aid
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
-  let (oldMTgt, cutMPath) = case mtgtMPath of
-        Nothing -> (Nothing, Nothing)
-        Just (tgt, Just (p : rest, target)) | p == bpos b ->
-          (Just tgt, Just (rest, target))
-        Just (tgt, mpath) -> (Just tgt, mpath)
+  let oldTgtUpdatedPath = case mtgtMPath of
+        Just (tgt, Just path@(p : rest, goal)) ->
+          if p == bpos b
+          then Just (tgt, (rest, goal))
+          else Just (tgt, path)
+        _ -> Nothing
   lvl <- getLevel $ blid b
   assert (not $ bproj b) skip  -- would work, but is probably a bug
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
@@ -60,7 +61,7 @@ targetStrategy aid = do
                              chessDist (bpos body) (bpos b) < nearby) allFoes
       unknownId = ouniqGroup "unknown space"
       focused = bspeed b <= speedNormal
-      setPath :: Target -> m (Strategy (Target, Maybe ([Point], Point)))
+      setPath :: Target -> m (Strategy (Target, ([Point], Point)))
       setPath tgt = do
         mpos <- aidTgtToPos aid (blid b) (Just tgt)
         let failUn :: forall a. a
@@ -69,8 +70,8 @@ targetStrategy aid = do
         (_, mpath) <- getCacheBfsAndPath aid p
         case mpath of
           Nothing -> failUn
-          Just path -> return $! returN "pickNewTarget" (tgt, Just (path, p))
-      pickNewTarget :: m (Strategy (Target, Maybe ([Point], Point)))
+          Just path -> return $! returN "pickNewTarget" (tgt, (path, p))
+      pickNewTarget :: m (Strategy (Target, ([Point], Point)))
       pickNewTarget = do
         -- TODO: for foes and items consider a few nearby, not just one
         cfoes <- closestFoes aid
@@ -85,40 +86,49 @@ targetStrategy aid = do
                   Just p -> setPath $ TPoint (blid b) p
               (_, (p, _)) : _ -> setPath $ TPoint (blid b) p
           (_, (a, _)) : _ -> setPath $ TEnemy a False
-  newTarget <- case oldMTgt of
-    Just oldTgt@(TEnemy a _) -> do
-      body <- getsState $ getActorBody a
-      if not focused  -- prefers closer foes
-         && not (null nearbyFoes)  -- no close foes
-         && a `notElem` map fst nearbyFoes  -- close enough
-         || blid body /= blid b  -- wrong level
-      then pickNewTarget
-      else if Just (bpos body) == fmap snd cutMPath
-           then return $! returN "TEnemy" (oldTgt, cutMPath)  -- didn't move
-           else do
-             let p = bpos body
-             (_, mpath) <- getCacheBfsAndPath aid p
-             case mpath of
-               Nothing -> pickNewTarget  -- enemy became unreachable
-               Just path -> return $! returN "TEnemy" (oldTgt, Just (path, p))
-    _ | not $ null nearbyFoes -> pickNewTarget  -- prefer foes to anything
-    Just oldTgt@(TEnemyPos _ lid p _) ->
-      -- Chase last position even if foe hides or dies, to find his companions.
-      if not focused  -- forgets last positions at once
-         || lid /= blid b  -- wrong level
-         || p == bpos b  -- already reached the position
-      then pickNewTarget
-      else return $! returN "TEnemyPos" (oldTgt, cutMPath)
-    Just oldTgt@(TPoint lid pos) ->
-      if lid /= blid b  -- wrong level
-         || pos == bpos b  -- already reached the position
-         || (EM.null (lvl `atI` pos)  -- no items any more
-             && lvl `at` pos /= unknownId)  -- not unknown any more
-      then pickNewTarget
-      else return $! returN "TPoint" (oldTgt, cutMPath)
-    Just TVector{} -> pickNewTarget
+      updateTgt :: Target -> ([Point], Point)
+                -> m (Strategy (Target, ([Point], Point)))
+      updateTgt oldTgt updatedPath = case oldTgt of
+        TEnemy a _ -> do
+          body <- getsState $ getActorBody a
+          if not focused  -- prefers closer foes
+             && not (null nearbyFoes)  -- no close foes
+             && a `notElem` map fst nearbyFoes  -- close enough
+             || blid body /= blid b  -- wrong level
+          then pickNewTarget
+          else if bpos body == snd updatedPath
+               then return $! returN "TEnemy" (oldTgt, updatedPath)
+                      -- The enemy didn't move since the target acquired.
+                      -- If any walls were added that make the enemy
+                      -- unreachable, AI learns that the hard way,
+                      -- as soon as it bumps into them.
+               else do
+                 let p = bpos body
+                 (_, mpath) <- getCacheBfsAndPath aid p
+                 case mpath of
+                   Nothing -> pickNewTarget  -- enemy became unreachable
+                   Just path ->
+                      return $! returN "TEnemy" (oldTgt, (path, p))
+        _ | not $ null nearbyFoes -> pickNewTarget  -- prefer foes to anything
+        TEnemyPos _ lid p _ ->
+          -- Chase last position even if foe hides or dies,
+          --to find his companions.
+          if not focused  -- forgets last positions at once
+             || lid /= blid b  -- wrong level
+             || p == bpos b  -- already reached the position
+          then pickNewTarget
+          else return $! returN "TEnemyPos" (oldTgt, updatedPath)
+        TPoint lid pos ->
+          if lid /= blid b  -- wrong level
+             || pos == bpos b  -- already reached the position
+             || (EM.null (lvl `atI` pos)  -- no items any more
+                 && lvl `at` pos /= unknownId)  -- not unknown any more
+          then pickNewTarget
+          else return $! returN "TPoint" (oldTgt, updatedPath)
+        TVector{} -> pickNewTarget
+  case oldTgtUpdatedPath of
+    Just (oldTgt, updatedPath) -> updateTgt oldTgt updatedPath
     Nothing -> pickNewTarget
-  return $! newTarget
 
 -- | AI strategy based on actor's sight, smell, intelligence, etc.
 -- Never empty.
@@ -275,9 +285,9 @@ rangedFreq aid = do
       foes <- getsState $ actorNotProjList (isAtWar fact) blid
       let foesAdj = foesAdjacent lxsize lysize bpos foes
           posClear pos1 = Tile.hasFeature cotile F.Clear (lvl `at` pos1)
-      -- TODO: also don't throw if any pos on path is visibly not accessible
-      -- from previous (and tweak eps in bla to make it accessible).
-      -- Also don't throw if target not in range.
+      -- TODO: also don't throw if any pos on trajectory is visibly
+      -- not accessible from previous (and tweak eps in bla to make it
+      -- accessible). Also don't throw if target not in range.
       s <- getState
       let eps = 0
           bl = bla lxsize lysize eps bpos fpos  -- TODO:make an arg of projectGroupItem
@@ -352,9 +362,9 @@ moveStrategy aid mFoe = do
   cops@Kind.COps{cotile, coactor=Kind.Ops{okind}} <- getsState scops
   s <- getState
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
-  let mpath = case mtgtMPath of
-        Nothing -> Nothing
-        Just (_, mp) -> mp
+  let nextOnPath = case mtgtMPath of
+        Just (_, Just (p : _, _)) -> p
+        _ -> assert `failure` (aid, mFoe)
       lvl@Level{lsmell, lxsize, lysize, ltime} = sdungeon s EM.! blid
       Actor{bkind, bpos, boldpos, bfid, blid} = getActorBody aid s
       mk = okind bkind
@@ -448,12 +458,9 @@ moveStrategy aid mFoe = do
                                   . uniformFreq "smell k") reject smells
              .| moveOpenable  -- no enemy in sight, explore doors
              .| moveClear
-  return $! case mpath of
-    Just (p : _, _) ->
-      (adjacent bpos p && noFriends p)
-        .=> (returN "move from path" $ displacement bpos p)
-      .| randomStr (Just (p, False))
-    _ -> randomStr mFoe
+  return $! (adjacent bpos nextOnPath && noFriends nextOnPath)
+              .=> (returN "move from path" $ displacement bpos nextOnPath)
+            .| randomStr (Just (nextOnPath, False))
 
 bumpableHere :: Kind.COps -> Level -> Bool -> Bool -> Point -> Bool
 bumpableHere Kind.COps{cotile} lvl foeVisible asight pos =

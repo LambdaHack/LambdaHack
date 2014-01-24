@@ -2,7 +2,6 @@
 module Game.LambdaHack.Client.ClientSem where
 
 import Control.Exception.Assert.Sugar
-import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
 import Data.Maybe
@@ -129,18 +128,20 @@ queryAIPick aid = do
   body <- getsState $ getActorBody aid
   assert (bfid body == side `blame` "AI tries to move enemy actor"
                             `twith` (aid, bfid body, side)) skip
+  assert (not (bproj body) `blame` "AI gets to manually move its projectiles"
+                           `twith` (aid, bfid body, side)) skip
   mleader <- getsClient _sleader
   fact <- getsState $ (EM.! bfid body) . sfactionD
   let factionAbilities
         | Just aid == mleader = fAbilityLeader $ okind $ gkind fact
         | otherwise = fAbilityOther $ okind $ gkind fact
-  unless (bproj body) $ do
-    stratTarget <- targetStrategy aid
-    -- Choose a target from those proposed by AI for the actor.
-    tgtMPath <- if nullStrategy stratTarget then
-                  return Nothing
-                else
-                  fmap Just $ rndToAction $ frequency $ bestVariant stratTarget
+  stratTarget <- targetStrategy aid
+  -- Choose a target from those proposed by AI for the actor.
+  if nullStrategy stratTarget then
+    return $ WaitSer aid  -- TODO: switch leader, if possible, instead
+  else do
+    (tgt, path) <- rndToAction $ frequency $ bestVariant stratTarget
+    let tgtMPath = Just (tgt, Just path)
     let _debug = T.unpack
           $ "\nHandleAI abilities:" <+> tshow factionAbilities
           <> ", symbol:"            <+> tshow (bsymbol body)
@@ -152,14 +153,14 @@ queryAIPick aid = do
     modifyClient $ \cli ->
       cli {stargetD =
              EM.alter (const $ tgtMPath) aid (stargetD cli)}
-  stratAction <- actionStrategy aid factionAbilities
-  -- Run the AI: chose an action from those given by the AI strategy.
-  action <- rndToAction $ frequency $ bestVariant stratAction
-  let _debug = T.unpack
+    stratAction <- actionStrategy aid factionAbilities
+    -- Run the AI: chose an action from those given by the AI strategy.
+    action <- rndToAction $ frequency $ bestVariant stratAction
+    let _debug = T.unpack
           $ "HandleAI saction:"   <+> tshow stratAction
           <> "\nHandleAI action:" <+> tshow action
 --  trace _debug skip
-  return action
+    return action
 
 -- | Handle the move of a UI player.
 queryUI :: MonadClientUI m => ActorId -> m CmdSer
