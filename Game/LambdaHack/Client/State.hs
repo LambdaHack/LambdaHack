@@ -116,7 +116,7 @@ defStateClient :: History -> ConfigUI -> FactionId -> Bool
 defStateClient shistory sconfigUI _sside sisAI =
   StateClient
     { stgtMode = Nothing
-    , scursor = TVector $ Vector 0 (-1)  -- a step north
+    , scursor = TVector $ Vector 1 1  -- a step south-east
     , seps = 0
     , stargetD = EM.empty
     , sbfsD = EM.empty

@@ -54,13 +54,12 @@ targetStrategy aid = do
   lvl <- getLevel $ blid b
   assert (not $ bproj b) skip  -- would work, but is probably a bug
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
-  nearbyFoes <- getsState $ actorNotProjAssocs (isAtWar fact) (blid b)  -- TODO
-  let unknownId = ouniqGroup "unknown space"
+  allFoes <- getsState $ actorNotProjAssocs (isAtWar fact) (blid b)
+  let nearby = 10
+      nearbyFoes = filter (\(_, body) ->
+                             chessDist (bpos body) (bpos b) < nearby) allFoes
+      unknownId = ouniqGroup "unknown space"
       focused = bspeed b <= speedNormal
-      randomMove = do
-        str <- moveStrategy aid Nothing
-        return $ (\v -> (TPoint (blid b) (bpos b `shift` v), Nothing))
-                 `liftM` str
       setPath :: Target -> m (Strategy (Target, Maybe ([Point], Point)))
       setPath tgt = do
         mpos <- aidTgtToPos aid (blid b) (Just tgt)
@@ -82,14 +81,16 @@ targetStrategy aid = do
               [] -> do
                 mpos <- closestUnknown aid
                 case mpos of
-                  Nothing -> randomMove
+                  Nothing -> return reject
                   Just p -> setPath $ TPoint (blid b) p
               (_, (p, _)) : _ -> setPath $ TPoint (blid b) p
           (_, (a, _)) : _ -> setPath $ TEnemy a False
   newTarget <- case oldMTgt of
     Just oldTgt@(TEnemy a _) -> do
       body <- getsState $ getActorBody a
-      if not focused  -- prefers closest foes
+      if not focused  -- prefers closer foes
+         && not (null nearbyFoes)  -- no close foes
+         && a `notElem` map fst nearbyFoes  -- close enough
          || blid body /= blid b  -- wrong level
       then pickNewTarget
       else if Just (bpos body) == fmap snd cutMPath
@@ -129,9 +130,7 @@ actionStrategy aid factionAbilities = do
   btarget <- getsClient $ getTarget aid
   Actor{bkind, bpos, blid} <- getsState $ getActorBody aid
   lvl <- getLevel blid
-  mfpos <- aidTgtToPos aid blid btarget
   let mk = okind bkind
-      fpos = maybe bpos fst mfpos
       mfAid =
         case btarget of
           Just (TEnemy foeAid _) -> Just foeAid
@@ -150,23 +149,21 @@ actionStrategy aid factionAbilities = do
       aFrequency :: Ability -> m (Frequency CmdTakeTimeSer)
       aFrequency Ability.Trigger = if foeVisible then return mzero
                                    else triggerFreq aid
-      aFrequency Ability.Ranged = if not foeVisible || fpos == bpos then return mzero
-                                  else rangedFreq disco aid fpos
+      aFrequency Ability.Ranged = rangedFreq aid
       aFrequency Ability.Tools  = if not foeVisible then return mzero
                                   else toolsFreq disco aid
-      aFrequency Ability.Chase  = if fpos == bpos then return mzero
-                                  else chaseFreq
+      aFrequency Ability.Chase  = chaseFreq
       aFrequency ab             = assert `failure` "unexpected ability"
                                           `twith` (ab, distant, actorAbilities)
       chaseFreq :: MonadActionRO m => m (Frequency CmdTakeTimeSer)
       chaseFreq = do
-        st <- chase aid (fpos, foeVisible)
+        st <- chase aid foeVisible
         return $! scaleFreq 30 $ bestVariant st
       aStrategy :: Ability -> m (Strategy CmdTakeTimeSer)
       aStrategy Ability.Track  = track aid
       aStrategy Ability.Heal   = return mzero  -- TODO
       aStrategy Ability.Flee   = return mzero  -- TODO
-      aStrategy Ability.Melee | Just foeAid <- mfAid, fpos /= bpos = melee aid fpos foeAid
+      aStrategy Ability.Melee | Just foeAid <- mfAid = melee aid foeAid
       aStrategy Ability.Melee  = return mzero
       aStrategy Ability.Pickup | not foeVisible && lootHere bpos = pickup aid
       aStrategy Ability.Pickup = return mzero
@@ -218,9 +215,10 @@ pickup aid = do
 
 -- Everybody melees in a pinch, even though some prefer ranged attacks.
 melee :: MonadActionRO m
-      => ActorId -> Point -> ActorId -> m (Strategy CmdTakeTimeSer)
-melee aid fpos foeAid = do
+      => ActorId -> ActorId -> m (Strategy CmdTakeTimeSer)
+melee aid foeAid = do
   Actor{bpos} <- getsState $ getActorBody aid
+  Actor{bpos = fpos} <- getsState $ getActorBody foeAid
   let foeAdjacent = adjacent bpos fpos  -- MeleeDistant
   return $! foeAdjacent .=> returN "melee" (MeleeSer aid foeAid)
 
@@ -256,57 +254,63 @@ triggerFreq aid = do
 
 -- Actors require sight to use ranged combat and intelligence to throw
 -- or zap anything else than obvious physical missiles.
-rangedFreq :: MonadActionRO m
-           => Discovery -> ActorId -> Point -> m (Frequency CmdTakeTimeSer)
-rangedFreq disco aid fpos = do
+rangedFreq :: MonadClient m
+           => ActorId -> m (Frequency CmdTakeTimeSer)
+rangedFreq aid = do
   cops@Kind.COps{ coactor=Kind.Ops{okind}
                 , coitem=Kind.Ops{okind=iokind}
                 , corule
                 , cotile
                 } <- getsState scops
+  disco <- getsClient sdisco
+  btarget <- getsClient $ getTarget aid
   b@Actor{bkind, bpos, bfid, blid, bbag, binv} <- getsState $ getActorBody aid
-  lvl@Level{lxsize, lysize} <- getLevel blid
-  let mk = okind bkind
-      tis = lvl `atI` bpos
-  fact <- getsState $ \s -> sfactionD s EM.! bfid
-  foes <- getsState $ actorNotProjList (isAtWar fact) blid
-  let foesAdj = foesAdjacent lxsize lysize bpos foes
-      posClear pos1 = Tile.hasFeature cotile F.Clear (lvl `at` pos1)
-  -- TODO: also don't throw if any pos on path is visibly not accessible
-  -- from previous (and tweak eps in bla to make it accessible).
-  -- Also don't throw if target not in range.
-  s <- getState
-  let eps = 0
-      bl = bla lxsize lysize eps bpos fpos  -- TODO:make an arg of projectGroupItem
-      permitted = (if aiq mk >= 10 then ritemProject else ritemRanged)
-                  $ Kind.stdRuleset corule
-      throwFreq bag multi container =
-        [ (- benefit * multi,
-          ProjectSer aid fpos eps iid (container iid))
-        | (iid, i) <- map (\iid -> (iid, getItemBody iid s))
-                      $ EM.keys bag
-        , let benefit =
-                case jkind disco i of
-                  Nothing -> -- TODO: (undefined, 0)   --- for now, cheating
-                    effectToBenefit cops b (jeffect i)
-                  Just _ki ->
-                    let _kik = iokind _ki
-                        _unneeded = isymbol _kik
-                    in effectToBenefit cops b (jeffect i)
-        , benefit < 0
-        , jsymbol i `elem` permitted ]
-  case bl of
-    Just (pos1 : _) -> do
-      mab <- getsState $ posToActor pos1 blid
-      if not foesAdj  -- ProjectBlockFoes
-         && asight mk
-         && posClear pos1  -- ProjectBlockTerrain
-         && maybe True (bproj . snd . fst) mab  -- ProjectBlockActor
-      then return $! toFreq "throwFreq"
-           $ throwFreq bbag 3 (actorContainer aid binv)
-             ++ throwFreq tis 6 (const $ CFloor blid bpos)
-      else return $! toFreq "throwFreq blocked" []
-    _ -> return $! toFreq "throwFreq no bla" []  -- ProjectAimOnself
+  mfpos <- aidTgtToPos aid blid btarget
+  case (btarget, mfpos) of
+    (Just TEnemy{}, Just (fpos, _)) -> do
+      lvl@Level{lxsize, lysize} <- getLevel blid
+      let mk = okind bkind
+          tis = lvl `atI` bpos
+      fact <- getsState $ \s -> sfactionD s EM.! bfid
+      foes <- getsState $ actorNotProjList (isAtWar fact) blid
+      let foesAdj = foesAdjacent lxsize lysize bpos foes
+          posClear pos1 = Tile.hasFeature cotile F.Clear (lvl `at` pos1)
+      -- TODO: also don't throw if any pos on path is visibly not accessible
+      -- from previous (and tweak eps in bla to make it accessible).
+      -- Also don't throw if target not in range.
+      s <- getState
+      let eps = 0
+          bl = bla lxsize lysize eps bpos fpos  -- TODO:make an arg of projectGroupItem
+          permitted = (if aiq mk >= 10 then ritemProject else ritemRanged)
+                      $ Kind.stdRuleset corule
+          throwFreq bag multi container =
+            [ (- benefit * multi,
+              ProjectSer aid fpos eps iid (container iid))
+            | (iid, i) <- map (\iid -> (iid, getItemBody iid s))
+                          $ EM.keys bag
+            , let benefit =
+                    case jkind disco i of
+                      Nothing -> -- TODO: (undefined, 0)   --- for now, cheating
+                        effectToBenefit cops b (jeffect i)
+                      Just _ki ->
+                        let _kik = iokind _ki
+                            _unneeded = isymbol _kik
+                        in effectToBenefit cops b (jeffect i)
+            , benefit < 0
+            , jsymbol i `elem` permitted ]
+      case bl of
+        Just (pos1 : _) -> do
+          mab <- getsState $ posToActor pos1 blid
+          if not foesAdj  -- ProjectBlockFoes
+             && asight mk
+             && posClear pos1  -- ProjectBlockTerrain
+             && maybe True (bproj . snd . fst) mab  -- ProjectBlockActor
+          then return $! toFreq "throwFreq"
+               $ throwFreq bbag 3 (actorContainer aid binv)
+                 ++ throwFreq tis 6 (const $ CFloor blid bpos)
+          else return $! toFreq "throwFreq blocked" []
+        _ -> return $! toFreq "throwFreq no bla" []  -- ProjectAimOnself
+    _ -> return $! toFreq "throwFreq no enemy target on level" []
 
 -- Tools use requires significant intelligence and sometimes literacy.
 toolsFreq :: MonadActionRO m
@@ -460,11 +464,16 @@ bumpableHere Kind.COps{cotile} lvl foeVisible asight pos =
         asight && not foeVisible && Tile.hasFeature cotile F.Suspect t
 
 chase :: MonadClient m
-      => ActorId -> (Point, Bool) -> m (Strategy CmdTakeTimeSer)
-chase aid foe@(_, foeVisible) = do
+      => ActorId -> Bool -> m (Strategy CmdTakeTimeSer)
+chase aid foeVisible = do
   -- Target set and we chase the foe or offer null strategy if we can't.
   -- The foe is visible, or we remember his last position.
-  let mFoe = Just foe
+  btarget <- getsClient $ getTarget aid
+  Actor{blid} <- getsState $ getActorBody aid
+  mfpos <- aidTgtToPos aid blid btarget
+  let mFoe = case mfpos of
+        Nothing -> Nothing
+        Just (pos, _) -> Just (pos, foeVisible)
       fight = not foeVisible  -- don't pick fights if the real foe is close
   str <- moveStrategy aid mFoe
   if fight
