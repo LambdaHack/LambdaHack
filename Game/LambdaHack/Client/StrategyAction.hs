@@ -65,7 +65,7 @@ targetStrategy aid = do
         mpos <- aidTgtToPos aid (blid b) (Just tgt)
         let failUn :: forall a. a
             failUn = assert `failure` "new target unreachable" `twith` (b, tgt)
-            p = fst $ fromMaybe failUn mpos
+            p = fromMaybe failUn mpos
         (_, mpath) <- getCacheBfsAndPath aid p
         case mpath of
           Nothing -> failUn
@@ -267,7 +267,7 @@ rangedFreq aid = do
   b@Actor{bkind, bpos, bfid, blid, bbag, binv} <- getsState $ getActorBody aid
   mfpos <- aidTgtToPos aid blid btarget
   case (btarget, mfpos) of
-    (Just TEnemy{}, Just (fpos, _)) -> do
+    (Just TEnemy{}, Just fpos) -> do
       lvl@Level{lxsize, lysize} <- getLevel blid
       let mk = okind bkind
           tis = lvl `atI` bpos
@@ -473,7 +473,7 @@ chase aid foeVisible = do
   mfpos <- aidTgtToPos aid blid btarget
   let mFoe = case mfpos of
         Nothing -> Nothing
-        Just (pos, _) -> Just (pos, foeVisible)
+        Just pos -> Just (pos, foeVisible)
       fight = not foeVisible  -- don't pick fights if the real foe is close
   str <- moveStrategy aid mFoe
   if fight

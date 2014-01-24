@@ -25,8 +25,8 @@ module Game.LambdaHack.Client.Action
   , drawOverlay, animate
     -- * Assorted primitives
   , restoreGame, removeServerSave, displayPush, scoreToSlideshow
-  , rndToAction, getArenaUI, getLeaderUI, targetDescLeader
-  , viewedLevel, aidTgtToPos, targetToPos, cursorToPos
+  , rndToAction, getArenaUI, getLeaderUI, targetDescLeader, viewedLevel
+  , aidTgtToPos, aidTgtAims, leaderTgtToPos, leaderTgtAims, cursorToPos
   , partAidLeader, partActorLeader
   , getCacheBfsAndPath, getCacheBfs, accessCacheBfs
   , actorAimsPos, closestUnknown, closestItems, closestFoes
@@ -293,7 +293,7 @@ drawOverlay onBlank dm over = do
   s <- getState
   cli <- getClient
   per <- getPerFid lid
-  tgtPos <- fmap (fmap fst) targetToPos
+  tgtPos <- leaderTgtToPos
   cursorPos <- cursorToPos
   let pathFromLeader leader =
         maybe (return Nothing) (fmap Just . getCacheBfsAndPath leader) tgtPos
@@ -376,7 +376,7 @@ animate arena anim = do
   cli <- getClient
   s <- getState
   per <- getPerFid arena
-  tgtPos <- fmap (fmap fst) targetToPos
+  tgtPos <- leaderTgtToPos
   cursorPos <- cursorToPos
   let pathFromLeader leader =
         maybe (return Nothing) (fmap Just . getCacheBfsAndPath leader) tgtPos
@@ -578,7 +578,7 @@ targetDesc target = do
         Just aid -> do
           tgtPos <- aidTgtToPos aid lidV target
           let invalidMsg = "an invalid relative shift"
-              validMsg (p, _) = "shift to" <+> (T.pack . show) p
+              validMsg p = "shift to" <+> (T.pack . show) p
           return $! maybe invalidMsg validMsg tgtPos
     Nothing -> return "cursor location"
 
@@ -624,50 +624,76 @@ viewedLevel = do
   stgtMode <- getsClient stgtMode
   return $! maybe arena tgtLevelId stgtMode
 
--- | Calculate the position of leader's target and whether one is permitted
--- to shoot it (this is only checked for actors; positions let player
--- shoot at obstacles, e.g., to destroy them). Perception is not enough
--- for the check, because the target actor can be obscured by a glass wall
--- or be out of sight range, but in weapon range.
+-- | Calculate the position of an actor's target.
 aidTgtToPos :: MonadClient m
-            => ActorId -> LevelId -> Maybe Target -> m (Maybe (Point, Bool))
-aidTgtToPos aid lidV target = do
-  Level{lxsize, lysize} <- getLevel lidV
-  b <- getsState $ getActorBody aid
-  case target of
+            => ActorId -> LevelId -> Maybe Target -> m (Maybe Point)
+aidTgtToPos aid lidV tgt =
+  case tgt of
     Just (TEnemy a _) -> do
       body <- getsState $ getActorBody a
-      if blid body == lidV then do
-        let pos = bpos body
-        if blid b == lidV then do
-          aims <- actorAimsPos aid pos
-          return $ Just (pos, aims)
-        else return $ Just (pos, False)
-      else return Nothing
+      return $! if blid body == lidV
+                then Just (bpos body)
+                else Nothing
     Just (TEnemyPos _ lid p _) ->
-      return $! if lid == lidV then Just (p, False) else Nothing
+      return $! if lid == lidV then Just p else Nothing
     Just (TPoint lid p) ->
-      return $! if lid == lidV then Just (p, True) else Nothing
+      return $! if lid == lidV then Just p else Nothing
     Just (TVector v) -> do
+      b <- getsState $ getActorBody aid
+      Level{lxsize, lysize} <- getLevel lidV
       let shifted = shiftBounded lxsize lysize (bpos b) v
       return $! if shifted == bpos b && v /= Vector 0 0
                 then Nothing
-                else Just (shifted, True)
+                else Just shifted
     Nothing -> do
       scursor <- getsClient scursor
       aidTgtToPos aid lidV $ Just scursor
 
--- TODO: don't point at Enemy you don't see, or you shoot at wall
--- there is a discrepancy between / and * in aquiring unseen Enemy targets
-targetToPos :: MonadClientUI m => m (Maybe (Point, Bool))
-targetToPos = do
+-- | Check whether one is permitted to aim at a target
+-- (this is only checked for actors; positions let player
+-- shoot at obstacles, e.g., to destroy them).
+-- This assumes @aidTgtToPos@ does not return @Nothing@.
+--
+-- Note: Perception is not enough for the check,
+-- because the target actor can be obscured by a glass wall
+-- or be out of sight range, but in weapon range.
+aidTgtAims :: MonadClient m
+            => ActorId -> LevelId -> Maybe Target -> m Bool
+aidTgtAims aid lidV tgt = do
+  case tgt of
+    Just (TEnemy a _) -> do
+      body <- getsState $ getActorBody a
+      let pos = bpos body
+      b <- getsState $ getActorBody aid
+      if blid b == lidV
+        then actorAimsPos aid pos
+        else return False
+    Just TEnemyPos{} -> return False
+    Just TPoint{} -> return True
+    Just TVector{} -> return $ True
+    Nothing -> do
+      scursor <- getsClient scursor
+      aidTgtAims aid lidV $ Just scursor
+
+leaderTgtToPos :: MonadClientUI m => m (Maybe Point)
+leaderTgtToPos = do
   lidV <- viewedLevel
   mleader <- getsClient _sleader
   case mleader of
     Nothing -> return Nothing
     Just aid -> do
-      target <- getsClient $ getTarget aid
-      aidTgtToPos aid lidV target
+      tgt <- getsClient $ getTarget aid
+      aidTgtToPos aid lidV tgt
+
+leaderTgtAims :: MonadClientUI m => m Bool
+leaderTgtAims = do
+  lidV <- viewedLevel
+  mleader <- getsClient _sleader
+  case mleader of
+    Nothing -> return False
+    Just aid -> do
+      tgt <- getsClient $ getTarget aid
+      aidTgtAims aid lidV tgt
 
 cursorToPos :: MonadClientUI m => m (Maybe Point)
 cursorToPos = do
@@ -676,7 +702,7 @@ cursorToPos = do
   scursor <- getsClient scursor
   case mleader of
     Nothing -> return Nothing
-    Just aid -> fmap (fmap fst) $ aidTgtToPos aid lidV $ Just scursor
+    Just aid -> aidTgtToPos aid lidV $ Just scursor
 
 closestUnknown :: MonadClient m => ActorId -> m (Maybe Point)
 closestUnknown aid = do

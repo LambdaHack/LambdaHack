@@ -324,12 +324,15 @@ projectHuman :: MonadClientUI m
 projectHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  tgtPos <- targetToPos
+  tgtPos <- leaderTgtToPos
   case tgtPos of
     Nothing -> failWith "last target invalid"
-    Just (_, False) -> failWith "aiming line to the opponent blocked"
-    Just (pos, _) | pos == bpos b -> failWith "cannot aim at oneself"
-    Just (pos, _) -> projectAid leader ts pos
+    Just pos | pos == bpos b -> failWith "cannot aim at oneself"
+    Just pos -> do
+      canAim <- leaderTgtAims
+      if canAim
+        then projectAid leader ts pos
+        else failWith "aiming line to the opponent blocked"
 
 projectAid :: MonadClientUI m
            => ActorId -> [Trigger] -> Point -> m (SlideOrCmd CmdTakeTimeSer)
@@ -558,11 +561,11 @@ stepToTargetHuman = do
   else do
     leader <- getLeaderUI
     b <- getsState $ getActorBody leader
-    tgtPos <- targetToPos
+    tgtPos <- leaderTgtToPos
     case tgtPos of
       Nothing -> failWith "target not set"
-      Just (c, _) | c == bpos b -> failWith "target reached"
-      Just (c, _) -> do
+      Just c | c == bpos b -> failWith "target reached"
+      Just c -> do
         (_, mpath) <- getCacheBfsAndPath leader c
         case mpath of
           Nothing -> failWith "no route to target"
