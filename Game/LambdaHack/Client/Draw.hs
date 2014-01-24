@@ -72,8 +72,8 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
       actorsHere = actorAssocs (const True) drawnLevelId s
       cursorHere = find (\(_, m) -> cursorPos == Just (Actor.bpos m))
                    actorsHere
-      shiftedBPath = case cursorHere of
-        Just (_, Actor{bpath = Just p, bpos = prPos}) -> shiftPath prPos p
+      shiftedBTrajectory = case cursorHere of
+        Just (_, Actor{btrajectory = Just p, bpos = prPos}) -> trajectoryToPath prPos p
         _ -> []
       unknownId = ouniqGroup "unknown space"
       dis pos0 =
@@ -111,7 +111,7 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
             (char, attr0) =
               case find (\(_, m) -> pos0 == Actor.bpos m) actorsHere of
                 _ | isJust stgtMode
-                    && (elem pos0 bl || elem pos0 shiftedBPath) ->
+                    && (elem pos0 bl || elem pos0 shiftedBTrajectory) ->
                   ('*', atttrOnPathOrLine)  -- line takes precedence over path
                 _ | isJust stgtMode
                     && (maybe False (elem pos0) mpath) ->

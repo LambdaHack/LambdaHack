@@ -359,7 +359,7 @@ projectFail source tpxy eps iid container isShrapnel = do
 projectBla :: (MonadAtomic m, MonadServer m)
            => ActorId    -- ^ actor projecting the item (is on current lvl)
            -> Point      -- ^ starting point of the projectile
-           -> [Point]    -- ^ rest of the path of the projectile
+           -> [Point]    -- ^ rest of the trajectory of the projectile
            -> ItemId     -- ^ the item to be projected
            -> Container  -- ^ whether the items comes from floor or inventory
            -> m ()
@@ -389,11 +389,11 @@ addProjectile bpos rest iid blid bfid btime = do
       -- Not much details about a fast flying object.
       (object1, object2) = partItem coitem EM.empty item
       name = makePhrase [MU.AW $ MU.Text adj, object1, object2]
-      pathLength = lingerPercent * range `div` 100
-      dirPath = take pathLength $ displacePath (bpos : rest)
+      trajectoryLength = lingerPercent * range `div` 100
+      dirTrajectory = take trajectoryLength $ pathToTrajectory (bpos : rest)
       kind = okind $ projectileKindId coactor
       m = actorTemplate (projectileKindId coactor) (asymbol kind) name
-                        (acolor kind) speed 0 (Just dirPath)
+                        (acolor kind) speed 0 (Just dirTrajectory)
                         bpos blid btime bfid True
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
@@ -450,26 +450,27 @@ triggerEffect aid feats = do
   goes <- mapM triggerFeat feats
   return $! or goes
 
--- * SetPathSer
+-- * SetTrajectorySer
 
-setPathSer :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
-setPathSer aid = do
+setTrajectorySer :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
+setTrajectorySer aid = do
   cops <- getsState scops
-  b@Actor{bpos, bpath, blid, bcolor} <- getsState $ getActorBody aid
+  b@Actor{bpos, btrajectory, blid, bcolor} <- getsState $ getActorBody aid
   lvl <- getLevel blid
-  let clearPath = execCmdAtomic $ PathActorA aid bpath (Just [])
-  case bpath of
+  let clearTrajectory =
+        execCmdAtomic $ TrajectoryActorA aid btrajectory (Just [])
+  case btrajectory of
     Just (d : lv) ->
       if not $ accessibleDir cops lvl bpos d
-      then clearPath
+      then clearTrajectory
       else do
         when (length lv <= 1) $ do
           let toColor = Color.BrBlack
           when (bcolor /= toColor) $
             execCmdAtomic $ ColorActorA aid bcolor toColor
         moveSer aid d
-        execCmdAtomic $ PathActorA aid bpath (Just lv)
-    _ -> assert `failure` "null path" `twith` (aid, b)
+        execCmdAtomic $ TrajectoryActorA aid btrajectory (Just lv)
+    _ -> assert `failure` "null trajectory" `twith` (aid, b)
 
 -- * GameRestart
 

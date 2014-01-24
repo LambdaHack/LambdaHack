@@ -36,7 +36,7 @@ data CmdTakeTimeSer =
   | ProjectSer !ActorId !Point !Int !ItemId !Container
   | ApplySer !ActorId !ItemId !Container
   | TriggerSer !ActorId !(Maybe F.Feature)
-  | SetPathSer !ActorId
+  | SetTrajectorySer !ActorId
   deriving (Show, Eq)
 
 -- | The actor that starts performing the command (may be dead, after
@@ -61,7 +61,7 @@ aidCmdTakeTimeSer cmd = case cmd of
   ProjectSer aid _ _ _ _ -> aid
   ApplySer aid _ _ -> aid
   TriggerSer aid _ -> aid
-  SetPathSer aid -> aid
+  SetTrajectorySer aid -> aid
 
 data FailureSer =
     MoveNothing

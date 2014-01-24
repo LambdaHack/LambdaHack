@@ -10,7 +10,7 @@ import Data.Binary
 -- that any actor picks each turn, depending on the actor's characteristics
 -- and his environment.
 data Ability =
-    Track   -- ^ move along a set path, if any, meleeing any opponents
+    Track   -- ^ move along a set trajectory, if any, meleeing any opponents
   | Heal    -- ^ heal if almost dead
   | Flee    -- ^ flee if almost dead
   | Melee   -- ^ melee target

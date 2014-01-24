@@ -52,24 +52,24 @@ instance Binary ActorId where
 -- they are usually modified temporarily, but tend to return
 -- to the original value from @ActorKind@ over time. E.g., HP.
 data Actor = Actor
-  { bkind   :: !(Kind.Id ActorKind)  -- ^ the kind of the actor
-  , bsymbol :: !Char                 -- ^ individual map symbol
-  , bname   :: !Text                 -- ^ individual name
-  , bcolor  :: !Color.Color          -- ^ individual map color
-  , bspeed  :: !Speed                -- ^ individual speed
-  , bhp     :: !Int                  -- ^ current hit points
-  , bpath   :: !(Maybe [Vector])     -- ^ path the actor is forced to travel
-  , bpos    :: !Point                -- ^ current position
-  , boldpos :: !Point                -- ^ previous position
-  , blid    :: !LevelId              -- ^ current level
-  , bbag    :: !ItemBag              -- ^ items carried
-  , binv    :: !ItemInv              -- ^ map from letters to items
-  , bletter :: !InvChar              -- ^ next inventory letter
-  , btime   :: !Time                 -- ^ absolute time of next action
-  , bwait   :: !Time                 -- ^ last bracing expires at this time
-  , bfid    :: !FactionId            -- ^ to which faction the actor belongs
-  , bproj   :: !Bool                 -- ^ is a projectile? (shorthand only,
-                                     --   this can be deduced from bkind)
+  { bkind       :: !(Kind.Id ActorKind)  -- ^ the kind of the actor
+  , bsymbol     :: !Char                 -- ^ individual map symbol
+  , bname       :: !Text                 -- ^ individual name
+  , bcolor      :: !Color.Color          -- ^ individual map color
+  , bspeed      :: !Speed                -- ^ individual speed
+  , bhp         :: !Int                  -- ^ current hit points
+  , btrajectory :: !(Maybe [Vector])     -- ^ trajectory the actor must travel
+  , bpos        :: !Point                -- ^ current position
+  , boldpos     :: !Point                -- ^ previous position
+  , blid        :: !LevelId              -- ^ current level
+  , bbag        :: !ItemBag              -- ^ items carried
+  , binv        :: !ItemInv              -- ^ map from letters to items
+  , bletter     :: !InvChar              -- ^ next inventory letter
+  , btime       :: !Time                 -- ^ absolute time of next action
+  , bwait       :: !Time                 -- ^ last bracing expires at this time
+  , bfid        :: !FactionId            -- ^ faction the actor belongs to
+  , bproj       :: !Bool                 -- ^ is a projectile? (shorthand only,
+                                         --   this can be deduced from bkind)
   }
   deriving (Show, Eq, Ord)
 
@@ -97,7 +97,7 @@ partActor b = MU.Text $ bname b
 actorTemplate :: Kind.Id ActorKind -> Char -> Text
               -> Color.Color -> Speed -> Int -> Maybe [Vector]
               -> Point -> LevelId -> Time -> FactionId -> Bool -> Actor
-actorTemplate bkind bsymbol bname bcolor bspeed bhp bpath bpos blid btime
+actorTemplate bkind bsymbol bname bcolor bspeed bhp btrajectory bpos blid btime
               bfid bproj =
   let boldpos = bpos
       bbag    = EM.empty
@@ -236,7 +236,7 @@ instance Binary Actor where
     put bcolor
     put bspeed
     put bhp
-    put bpath
+    put btrajectory
     put bpos
     put boldpos
     put blid
@@ -254,7 +254,7 @@ instance Binary Actor where
     bcolor <- get
     bspeed <- get
     bhp <- get
-    bpath <- get
+    btrajectory <- get
     bpos <- get
     boldpos <- get
     blid <- get

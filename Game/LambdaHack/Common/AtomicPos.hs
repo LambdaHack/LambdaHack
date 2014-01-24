@@ -78,7 +78,7 @@ posCmdAtomic cmd = case cmd of
   AgeActorA aid _ -> singleAid aid
   HealActorA aid _ -> singleAid aid
   HasteActorA aid _ -> singleAid aid
-  PathActorA aid _ _ -> singleAid aid
+  TrajectoryActorA aid _ _ -> singleAid aid
   ColorActorA aid _ _ -> singleAid aid
   QuitFactionA{} -> return PosAll
   LeadFactionA fid _ _ -> return $! PosFidAndSer fid

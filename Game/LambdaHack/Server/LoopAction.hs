@@ -221,7 +221,7 @@ handleActors cmdSerSem lid = do
       -- The attack animation for the projectile hit subsumes @DisplayPushD@,
       -- so not sending an extra @DisplayPushD@ here.
       handleActors cmdSerSem lid
-    Just (aid, b) | maybe False null (bpath b) -> do
+    Just (aid, b) | maybe False null (btrajectory b) -> do
       assert (bproj b) skip
       execSfxAtomic $ DisplayPushD (bfid b)  -- show last position before drop
       -- A projectile drops to the ground due to obstacles or range.
@@ -272,7 +272,7 @@ handleActors cmdSerSem lid = do
               broadcastSfxAtomic DisplayPushD
       if bproj body then do  -- TODO: perhaps check Track, not bproj
         execSfxAtomic $ DisplayPushD side
-        let cmdS = CmdTakeTimeSer $ SetPathSer aid
+        let cmdS = CmdTakeTimeSer $ SetTrajectorySer aid
         timed <- cmdSerSem cmdS
         assert timed skip
         b <- getsState $ getActorBody aid
@@ -281,8 +281,8 @@ handleActors cmdSerSem lid = do
         -- Not advancing time forces dead projectiles to be destroyed ASAP.
         -- Otherwise it would be displayed in the same place twice.
         -- If ever needed this can be implemented properly by moving
-        -- SetPathSer out of CmdTakeTimeSer.
-        unless (bhp b < 0 || maybe False null (bpath b)) $ do
+        -- SetTrajectorySer out of CmdTakeTimeSer.
+        unless (bhp b < 0 || maybe False null (btrajectory b)) $ do
           advanceTime aid
           extraFrames b
       else if queryUI then do

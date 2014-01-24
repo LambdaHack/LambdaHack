@@ -47,7 +47,7 @@ cmdAtomicSem cmd = case cmd of
   AgeActorA aid t -> ageActorA aid t
   HealActorA aid n -> healActorA aid n
   HasteActorA aid delta -> hasteActorA aid delta
-  PathActorA aid fromPath toPath -> pathActorA aid fromPath toPath
+  TrajectoryActorA aid fromT toT -> trajectoryActorA aid fromT toT
   ColorActorA aid fromCol toCol -> colorActorA aid fromCol toCol
   QuitFactionA fid mbody fromSt toSt -> quitFactionA fid mbody fromSt toSt
   LeadFactionA fid source target -> leadFactionA fid source target
@@ -267,13 +267,13 @@ hasteActorA aid delta = assert (delta /= speedZero) $ do
                `twith` (aid, delta, b, newSpeed))
        $ b {bspeed = newSpeed}
 
-pathActorA :: MonadAction m
+trajectoryActorA :: MonadAction m
            => ActorId -> Maybe [Vector] -> Maybe [Vector] -> m ()
-pathActorA aid fromPath toPath = assert (fromPath /= toPath) $ do
+trajectoryActorA aid fromT toT = assert (fromT /= toT) $ do
   body <- getsState $ getActorBody aid
-  assert (fromPath == bpath body `blame` "unexpected actor path"
-                                 `twith` (aid, fromPath, toPath, body)) skip
-  modifyState $ updateActorBody aid $ \b -> b {bpath = toPath}
+  assert (fromT == btrajectory body `blame` "unexpected actor trajectory"
+                                    `twith` (aid, fromT, toT, body)) skip
+  modifyState $ updateActorBody aid $ \b -> b {btrajectory = toT}
 
 colorActorA :: MonadAction m
             => ActorId -> Color.Color -> Color.Color -> m ()
@@ -322,7 +322,7 @@ diplFactionA fid1 fid2 fromDipl toDipl =
     modifyState $ updateFaction $ EM.adjust (adj fid1) fid2
 
 -- | Alter an attribute (actually, the only, the defining attribute)
--- of a visible tile. This is similar to e.g., @PathActorA@.
+-- of a visible tile. This is similar to e.g., @TrajectoryActorA@.
 alterTileA :: MonadAction m
            => LevelId -> Point -> Kind.Id TileKind -> Kind.Id TileKind
            -> m ()

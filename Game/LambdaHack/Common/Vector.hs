@@ -4,7 +4,7 @@
 module Game.LambdaHack.Common.Vector
   ( Vector(..), isUnit, isDiagonal, neg, euclidDistSq
   , moves, vicinity, vicinityCardinal
-  , shift, shiftBounded, shiftPath, displacement, displacePath
+  , shift, shiftBounded, trajectoryToPath, displacement, pathToTrajectory
   , RadianAngle, rotate, towards
   , BfsDistance, MoveLegal(..), minKnown
   , fillBfs, findPathBfs, accessBfs, posAimsPos
@@ -131,10 +131,10 @@ shiftBounded lxsize lysize pos v@(Vector xv yv) =
   else pos
 
 -- | A list of points that a list of vectors leads to.
-shiftPath :: Point -> [Vector] -> [Point]
-shiftPath _ [] = []
-shiftPath start (v : vs) = let next = shift start v
-                           in next : shiftPath next vs
+trajectoryToPath :: Point -> [Vector] -> [Point]
+trajectoryToPath _ [] = []
+trajectoryToPath start (v : vs) = let next = shift start v
+                           in next : trajectoryToPath next vs
 
 -- | A vector from a point to another. We have
 --
@@ -144,9 +144,9 @@ displacement :: Point -> Point -> Vector
 displacement (Point x0 y0) (Point x1 y1) = Vector (x1 - x0) (y1 - y0)
 
 -- | A list of vectors between a list of points.
-displacePath :: [Point] -> [Vector]
-displacePath [] = []
-displacePath lp1@(_ : lp2) = zipWith displacement lp1 lp2
+pathToTrajectory :: [Point] -> [Vector]
+pathToTrajectory [] = []
+pathToTrajectory lp1@(_ : lp2) = zipWith displacement lp1 lp2
 
 type RadianAngle = Double
 

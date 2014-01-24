@@ -203,10 +203,10 @@ waitBlockNow aid = returN "wait" $ WaitSer aid
 -- | Strategy for a dumb missile or a strongly hurled actor.
 track :: MonadActionRO m => ActorId -> m (Strategy CmdTakeTimeSer)
 track aid = do
-  bpath <- getsState $ bpath . getActorBody aid
-  return $! if isNothing bpath
+  btrajectory <- getsState $ btrajectory . getActorBody aid
+  return $! if isNothing btrajectory
             then reject
-            else returN "SetPathSer" $ SetPathSer aid
+            else returN "SetTrajectorySer" $ SetTrajectorySer aid
 
 -- TODO: (most?) animals don't pick up. Everybody else does.
 pickup :: MonadActionRO m => ActorId -> m (Strategy CmdTakeTimeSer)
