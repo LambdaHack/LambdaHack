@@ -29,7 +29,7 @@ module Game.LambdaHack.Client.Action
   , aidTgtToPos, aidTgtAims, leaderTgtToPos, leaderTgtAims, cursorToPos
   , partAidLeader, partActorLeader
   , getCacheBfsAndPath, getCacheBfs, accessCacheBfs
-  , actorAimsPos, closestUnknown, closestItems, closestFoes
+  , actorAimsPos, closestUnknown, furthestKnown, closestItems, closestFoes
   , debugPrint
   ) where
 
@@ -704,15 +704,45 @@ cursorToPos = do
     Nothing -> return Nothing
     Just aid -> aidTgtToPos aid lidV $ Just scursor
 
+-- | Closest reachable unkown tile, if any.
 closestUnknown :: MonadClient m => ActorId -> m (Maybe Point)
 closestUnknown aid = do
-  bfs <- getCacheBfs aid
-  let closestPos = PointArray.minIndexA bfs
-      dist = bfs PointArray.! closestPos
-  return $ if dist >= apartBfs
-           then Nothing
-           else Just closestPos
+  b <- getsState $ getActorBody aid
+  lvl <- getsState $ (EM.! blid b) . sdungeon
+  if lseen lvl == lclear lvl then
+    return Nothing
+  else do
+    bfs <- getCacheBfs aid
+    let closestPos = PointArray.minIndexA bfs
+        dist = bfs PointArray.! closestPos
+    return $! if dist >= apartBfs
+              then Nothing
+              else Just closestPos
 
+-- | A passable neighbour of the furthest known position,
+-- except under the actor.
+furthestKnown :: MonadClient m => ActorId -> m (Maybe Point)
+furthestKnown aid = do
+  Kind.COps{cotile} <- getsState scops
+  b <- getsState $ getActorBody aid
+  lvl@Level{lxsize, lysize} <- getsState $ (EM.! blid b) . sdungeon
+  bfs <- getCacheBfs aid
+  let borders = [ Point x y
+                | x <- [0, lxsize - 1], y <- [1..lysize - 2] ]
+                ++ [ Point x y
+                   | x <- [0..lxsize - 1], y <- [0, lysize - 1] ]
+      bfsNoBorders = bfs PointArray.// map (\p -> (p, succ apartBfs)) borders
+      furthestPos = PointArray.maxIndexA bfsNoBorders
+      dist = bfs PointArray.! furthestPos
+  return $! if dist <= apartBfs
+            then assert `failure` (aid, furthestPos, dist)
+            else if dist == succ apartBfs  -- bpos of aid
+                 then Nothing
+                 else let passable = Tile.isPassable cotile . (lvl `at`)
+                      in find passable
+                         $ furthestPos : vicinity lxsize lysize furthestPos
+
+-- | Closest (wrt paths) items, except under the actor.
 closestItems :: MonadClient m => ActorId -> m ([(Int, (Point, ItemBag))])
 closestItems aid = do
   body <- getsState $ getActorBody aid

@@ -2,7 +2,7 @@
 module Game.LambdaHack.Common.PointArray
   ( Array
   , (!), (//), replicateA, replicateMA, generateMA, sizeA
-  , foldlA, ifoldlA, minIndexA
+  , foldlA, ifoldlA, minIndexA, maxIndexA
   ) where
 
 import Control.Arrow ((***))
@@ -91,6 +91,11 @@ ifoldlA f z0 Array{..} =
 -- The array may not be empty.
 minIndexA :: Enum c => Array c -> Point
 minIndexA Array{..} = punindex axsize $ U.minIndex avector
+
+-- | Yield the point coordinates of the maximum element of the array.
+-- The array may not be empty.
+maxIndexA :: Enum c => Array c -> Point
+maxIndexA Array{..} = punindex axsize $ U.maxIndex avector
 
 instance Binary (Array c) where
   put Array{..} = do

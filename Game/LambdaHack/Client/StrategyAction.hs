@@ -78,9 +78,13 @@ targetStrategy aid = do
             citems <- closestItems aid
             case citems of
               [] -> do
-                mpos <- closestUnknown aid
-                case mpos of
-                  Nothing -> return reject
+                upos <- closestUnknown aid
+                case upos of
+                  Nothing -> do
+                    kpos <- furthestKnown aid
+                    case kpos of
+                      Nothing -> return reject
+                      Just p -> setPath $ TPoint (blid b) p
                   Just p -> setPath $ TPoint (blid b) p
               (_, (p, _)) : _ -> setPath $ TPoint (blid b) p
           (_, (a, _)) : _ -> setPath $ TEnemy a False
