@@ -43,7 +43,7 @@ data StateClient = StateClient
   { stgtMode     :: !(Maybe TgtMode)  -- ^ targeting mode
   , scursor      :: !Target           -- ^ the common, cursor target
   , seps         :: !Int              -- ^ a parameter of the tgt digital line
-  , stargetD     :: !(EM.EnumMap ActorId Target)
+  , stargetD     :: !(EM.EnumMap ActorId (Target, Maybe ([Point], Point)))
                                    -- ^ targets of our actors in the dungeon
   , sbfsD        :: !(EM.EnumMap ActorId
                         ( PointArray.Array BfsDistance
@@ -155,11 +155,15 @@ defHistory = do
 -- | Update target parameters within client state.
 updateTarget :: ActorId -> (Maybe Target -> Maybe Target) -> StateClient
              -> StateClient
-updateTarget aid f cli = cli {stargetD = EM.alter f aid (stargetD cli)}
+updateTarget aid f cli =
+  let f2 tp = case f $ fmap fst tp of
+        Nothing -> Nothing
+        Just tgt -> Just (tgt, Nothing)  -- reset path
+  in cli {stargetD = EM.alter f2 aid (stargetD cli)}
 
 -- | Get target parameters from client state.
 getTarget :: ActorId -> StateClient -> Maybe Target
-getTarget aid cli = EM.lookup aid $ stargetD cli
+getTarget aid cli = fmap fst $ EM.lookup aid $ stargetD cli
 
 -- | Update picked leader within state. Verify actor's faction.
 updateLeader :: ActorId -> State -> StateClient -> StateClient

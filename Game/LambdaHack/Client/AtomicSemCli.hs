@@ -210,7 +210,8 @@ createActorA aid _b = do
   let affect tgt = case tgt of
         TEnemyPos a _ _ permit | a == aid -> TEnemy a permit
         _ -> tgt
-  modifyClient $ \cli -> cli {stargetD = EM.map affect (stargetD cli)}
+      affect3 (tgt, _) = (affect tgt, Nothing)  -- reset path
+  modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
   modifyClient $ \cli -> cli {scursor = affect $ scursor cli}
 
 destroyActorA :: MonadClient m => ActorId -> Actor -> Bool -> m ()
@@ -223,7 +224,8 @@ destroyActorA aid b destroy = do
         -- Don't consider @destroy@, because even if actor dead, it makes
         -- sense to go to last known location to loot or find others.
         _ -> tgt
-  modifyClient $ \cli -> cli {stargetD = EM.map affect (stargetD cli)}
+      affect3 (tgt, _) = (affect tgt, Nothing)  -- reset path
+  modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
   modifyClient $ \cli -> cli {scursor = affect $ scursor cli}
 
 perceptionA :: MonadClient m => LevelId -> Perception -> Perception -> m ()

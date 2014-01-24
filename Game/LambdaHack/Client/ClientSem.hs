@@ -137,16 +137,19 @@ queryAIPick aid = do
   unless (bproj body) $ do
     stratTarget <- targetStrategy aid
     -- Choose a target from those proposed by AI for the actor.
-    btarget <- rndToAction $ frequency $ bestVariant stratTarget
+    (tgt, mpath) <- rndToAction $ frequency $ bestVariant stratTarget
     let _debug = T.unpack
           $ "\nHandleAI abilities:" <+> tshow factionAbilities
           <> ", symbol:"            <+> tshow (bsymbol body)
           <> ", aid:"               <+> tshow aid
           <> ", pos:"               <+> tshow (bpos body)
           <> "\nHandleAI starget:"  <+> tshow stratTarget
-          <> "\nHandleAI target:"   <+> tshow btarget
+          <> "\nHandleAI target:"   <+> tshow tgt
+          <> "\nHandleAI path:"     <+> tshow mpath
 --    trace _debug skip
-    modifyClient $ updateTarget aid (const btarget)
+    modifyClient $ \cli ->
+      cli {stargetD =
+             EM.alter (const $ Just (tgt, mpath)) aid (stargetD cli)}
   stratAction <- actionStrategy aid factionAbilities
   -- Run the AI: chose an action from those given by the AI strategy.
   action <- rndToAction $ frequency $ bestVariant stratAction

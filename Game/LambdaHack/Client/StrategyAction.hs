@@ -40,10 +40,13 @@ import Game.LambdaHack.Utils.Frequency
 
 -- | AI proposes possible targets for the actor. Never empty.
 targetStrategy :: forall m. MonadClient m
-               => ActorId -> m (Strategy (Maybe Target))
+               => ActorId -> m (Strategy (Target, Maybe ([Point], Point)))
 targetStrategy aid = do
-  btarget <- getsClient $ getTarget aid
   cops@Kind.COps{cotile=Kind.Ops{ouniqGroup}} <- getsState scops
+  mtgtMPath <- getsClient $ EM.lookup aid . stargetD
+  let (oldMTgt, oldMPath) = case mtgtMPath of
+        Nothing -> (Nothing, Nothing)
+        Just (tgt, mpath) -> (Just tgt, mpath)
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
   assert (not $ bproj b) skip  -- would work, but is probably a bug
@@ -54,8 +57,19 @@ targetStrategy aid = do
       randomMove = do
         s <- getState
         str <- moveStrategy cops aid s Nothing
-        return $! (Just . TPoint (blid b) . (bpos b `shift`)) `liftM` str
-      pickNewTarget :: m (Strategy (Maybe Target))
+        return $ (\v -> (TPoint (blid b) (bpos b `shift` v), Nothing))
+                 `liftM` str
+      setPath :: Target -> m (Strategy (Target, Maybe ([Point], Point)))
+      setPath tgt = do
+        mpos <- aidTgtToPos aid (blid b) (Just tgt)
+        let failUn :: forall a. a
+            failUn = assert `failure` "new target unreachable" `twith` (b, tgt)
+            p = fst $ fromMaybe failUn mpos
+        (_, mpath) <- getCacheBfsAndPath aid p
+        case mpath of
+          Nothing -> failUn
+          Just path -> return $! returN "pickNewTarget" (tgt, Just (path, p))
+      pickNewTarget :: m (Strategy (Target, Maybe ([Point], Point)))
       pickNewTarget = do
         -- TODO: for foes and items consider a few nearby, not just one
         cfoes <- closestFoes aid
@@ -67,37 +81,40 @@ targetStrategy aid = do
                 mpos <- closestUnknown aid
                 case mpos of
                   Nothing -> randomMove
-                  Just p -> do
-                    return $! returN "new unknown" $ Just $ TPoint (blid b) p
-              (_, (p, _)) : _ ->
-                return $! returN "new item" $ Just $ TPoint (blid b) p
-          (_, (a, _)) : _ ->
-            return $! returN "new enemy" $ Just $ TEnemy a False
-  newTarget <- case btarget of
-    Just (TEnemy a _) -> do
+                  Just p -> setPath $ TPoint (blid b) p
+              (_, (p, _)) : _ -> setPath $ TPoint (blid b) p
+          (_, (a, _)) : _ -> setPath $ TEnemy a False
+  newTarget <- case oldMTgt of
+    Just oldTgt@(TEnemy a _) -> do
       body <- getsState $ getActorBody a
       if not focused  -- prefers closest foes
          || blid body /= blid b  -- wrong level
       then pickNewTarget
-      else return $! returN "TEnemy" btarget
+      else if Just (bpos body) == fmap snd oldMPath
+           then return $! returN "TEnemy" (oldTgt, oldMPath)  -- didn't move
+           else do
+             let p = bpos body
+             (_, mpath) <- getCacheBfsAndPath aid p
+             case mpath of
+               Nothing -> pickNewTarget  -- enemy became unreachable
+               Just path -> return $! returN "TEnemy" (oldTgt, Just (path, p))
     _ | not $ null nearbyFoes -> pickNewTarget  -- prefer foes to anything
-    Just (TEnemyPos _ lid p _) ->
+    Just oldTgt@(TEnemyPos _ lid p _) ->
       -- Chase last position even if foe hides or dies, to find his companions.
       if not focused  -- forgets last positions at once
          || lid /= blid b  -- wrong level
          || bpos b == p  -- not yet reached the position
       then pickNewTarget
-      else return $! returN "TEnemyPos" btarget
-    Just (TPoint lid pos) ->
+      else return $! returN "TEnemyPos" (oldTgt, oldMPath)
+    Just oldTgt@(TPoint lid pos) ->
       if lid /= blid b  -- wrong level
          || pos == bpos b  -- already reached
          || (EM.null (lvl `atI` pos)  -- no items any more
              && lvl `at` pos /= unknownId)  -- not unknown any more
       then pickNewTarget
-      else return $! returN "TPoint" btarget
+      else return $! returN "TPoint" (oldTgt, oldMPath)
     Just TVector{} -> pickNewTarget
     Nothing -> pickNewTarget
-  -- TODO: if target differs or is actor, generate new bpath
   return $! newTarget
 
 -- | AI strategy based on actor's sight, smell, intelligence, etc.
