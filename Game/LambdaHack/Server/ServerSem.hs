@@ -135,7 +135,8 @@ meleeSer source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   adj <- checkAdjacent sb tb
-  if not adj then execFailure sb MeleeDistant
+  if source == target then execFailure sb MeleeSelf
+  else if not adj then execFailure sb MeleeDistant
   else do
     let sfid = bfid sb
         tfid = bfid tb

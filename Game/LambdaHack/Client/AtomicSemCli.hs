@@ -163,19 +163,6 @@ cmdAtomicSemCli cmd = case cmd of
   DestroyActorA aid b _ -> destroyActorA aid b True
   SpotActorA aid body _ -> createActorA aid body
   LoseActorA aid b _ -> destroyActorA aid b False
-  MoveActorA aid _ _ ->
-    -- @sbfsD@ is invalidated only in these 2 cases and in @destroyActorA@,
-    -- not whenever perception or dungeon tiles change,
-    -- to simplify and optimize AI.
-    -- AI actors need to move to think clearly and notice changes.
-    -- TODO: right now save/load makes AI smarter by invalidating sbfsD.
-    -- For human UI we invalidate whole @sbfsD@ at the start of each
-    -- UI player input, which is an overkill, but doesn't affects
-    -- screensavers, because they are UI, but not human.
-    modifyClient $ \cli -> cli {sbfsD = EM.delete aid $ sbfsD cli}
-  DisplaceActorA source target -> do
-    modifyClient $ \cli -> cli {sbfsD = EM.delete source $ sbfsD cli}
-    modifyClient $ \cli -> cli {sbfsD = EM.delete target $ sbfsD cli}
   LeadFactionA fid source target -> do
     side <- getsClient sside
     when (side == fid) $ do
@@ -217,8 +204,7 @@ createActorA aid _b = do
 destroyActorA :: MonadClient m => ActorId -> Actor -> Bool -> m ()
 destroyActorA aid b destroy = do
   when destroy $ modifyClient $ updateTarget aid (const Nothing)  -- gc
-  -- Invalidate AI BFS cache on level change, etc., and gc.
-  modifyClient $ \cli -> cli {sbfsD = EM.delete aid $ sbfsD cli}
+  modifyClient $ \cli -> cli {sbfsD = EM.delete aid $ sbfsD cli}  -- gc
   let affect tgt = case tgt of
         TEnemy a permit | a == aid -> TEnemyPos a (blid b) (bpos b) permit
         -- Don't consider @destroy@, because even if actor dead, it makes

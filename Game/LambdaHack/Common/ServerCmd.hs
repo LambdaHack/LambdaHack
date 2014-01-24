@@ -65,6 +65,7 @@ aidCmdTakeTimeSer cmd = case cmd of
 
 data FailureSer =
     MoveNothing
+  | MeleeSelf
   | MeleeDistant
   | DisplaceDistant
   | DisplaceAccess
@@ -83,6 +84,7 @@ data FailureSer =
 showFailureSer :: FailureSer -> Msg
 showFailureSer failureSer = case failureSer of
   MoveNothing -> "wasting time on moving into obstacle"
+  MeleeSelf -> "trying to melee oneself"
   MeleeDistant -> "trying to melee a distant foe"
   DisplaceDistant -> "trying to switch places with a distant actor"
   DisplaceAccess -> "switching places without access"
