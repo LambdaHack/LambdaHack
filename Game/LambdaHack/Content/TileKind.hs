@@ -73,7 +73,7 @@ actionFeatures markSuspect t =
         F.Suspect -> if markSuspect then Just feat else Nothing
         F.Aura{} -> Just feat
         F.Impenetrable -> Just feat
-        F.Path -> Just feat  -- doesn't affect tile behaviour, but important
+        F.Trail -> Just feat  -- doesn't affect tile behaviour, but important
         F.HideAs{} -> Nothing
         F.RevealAs{} -> Nothing
         F.Dark -> Nothing  -- not important any longer, after FOV computed

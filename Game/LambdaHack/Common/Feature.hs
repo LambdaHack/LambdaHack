@@ -28,7 +28,7 @@ data Feature =
 
   | CanItem              -- ^ items can be generated there
   | CanActor             -- ^ actors and stairs can be generated there
-  | Path                 -- ^ used for visible paths throughout the level
+  | Trail                -- ^ used for visible trails throughout the level
   deriving (Show, Read, Eq, Ord, Generic)
 
 instance Binary Feature

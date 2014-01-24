@@ -214,26 +214,26 @@ floorActorItemLit = floorItemLit
   }
 floorRedLit = floorArenaLit
   { tname    = "brick pavement"
-  , tfreq    = [("pathLit", 30)]
+  , tfreq    = [("trailLit", 30)]
   , tcolor   = BrRed
   , tcolor2  = Red
-  , tfeature = Path : tfeature floorArenaLit
+  , tfeature = Trail : tfeature floorArenaLit
   }
 floorBlueLit = floorRedLit
   { tname    = "granite cobblestones"
-  , tfreq    = [("pathLit", 100)]
+  , tfreq    = [("trailLit", 100)]
   , tcolor   = BrBlue
   , tcolor2  = Blue
   }
 floorGreenLit = floorRedLit
   { tname    = "mossy stone path"
-  , tfreq    = [("pathLit", 100)]
+  , tfreq    = [("trailLit", 100)]
   , tcolor   = BrGreen
   , tcolor2  = Green
   }
 floorBrownLit = floorRedLit
   { tname    = "rotting mahogany deck"
-  , tfreq    = [("pathLit", 10)]
+  , tfreq    = [("trailLit", 10)]
   , tcolor   = BrMagenta
   , tcolor2  = Magenta
   }
