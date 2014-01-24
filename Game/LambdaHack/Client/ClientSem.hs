@@ -77,9 +77,8 @@ queryAI oldAid = do
          length ours == 1
          -- Keep the leader: he has a good target.
          || hasGoodTarget
-         -- Keep the leader: he probably just used stairs.
+         -- Keep the leader: he probably used stairs right now.
          || bpos oldBody == boldpos oldBody
-            && not (waitedLastTurn oldBody time)
         then queryAIPick oldAid
         else do
           let countMinFoeDist (aid, b) =

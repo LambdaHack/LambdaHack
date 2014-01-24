@@ -99,7 +99,7 @@ actorTemplate :: Kind.Id ActorKind -> Char -> Text
               -> Point -> LevelId -> Time -> FactionId -> Bool -> Actor
 actorTemplate bkind bsymbol bname bcolor bspeed bhp btrajectory bpos blid btime
               bfid bproj =
-  let boldpos = bpos
+  let boldpos = Point 0 0  -- make sure /= bpos, to tell it didn't switch level
       bbag    = EM.empty
       binv    = EM.empty
       bletter = InvChar 'a'
