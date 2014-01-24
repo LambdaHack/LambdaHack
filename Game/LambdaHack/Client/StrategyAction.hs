@@ -64,12 +64,10 @@ targetStrategy aid = do
       setPath :: Target -> m (Strategy (Target, ([Point], Point)))
       setPath tgt = do
         mpos <- aidTgtToPos aid (blid b) (Just tgt)
-        let failUn :: forall a. a
-            failUn = assert `failure` "new target unreachable" `twith` (b, tgt)
-            p = fromMaybe failUn mpos
+        let p = fromMaybe (assert `failure` (b, tgt)) mpos
         (_, mpath) <- getCacheBfsAndPath aid p
         case mpath of
-          Nothing -> failUn
+          Nothing -> assert `failure` "new target unreachable" `twith` (b, tgt)
           Just path -> return $! returN "pickNewTarget" (tgt, (path, p))
       pickNewTarget :: m (Strategy (Target, ([Point], Point)))
       pickNewTarget = do
@@ -349,7 +347,7 @@ toolsFreq disco aid = do
     useFreq bbag 1 (actorContainer aid binv)
     ++ useFreq tis 2 (const $ CFloor blid bpos)
 
--- TODO: express fully in MonadActionRO
+-- TODO: express fully in MonadClient
 -- TODO: separate out bumping into solid tiles
 -- TODO: also close doors; then stupid members of the party won't see them,
 -- but it's assymetric warfare: rather harm humans than help party members

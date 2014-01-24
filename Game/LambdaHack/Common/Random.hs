@@ -21,7 +21,6 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Control.Monad.State as St
 import Data.Binary
-import qualified Data.Binary as Binary
 import qualified Data.Hashable as Hashable
 import Data.Ratio
 import GHC.Generics (Generic)
@@ -58,7 +57,7 @@ cast x = if x <= 0 then return 0 else randomR (1, x)
 
 -- | Dice: 1d7, 3d3, 1d0, etc.
 -- @RollDice a b@ represents @a@ rolls of @b@-sided die.
-data RollDice = RollDice !Binary.Word8 !Binary.Word8
+data RollDice = RollDice !Word8 !Word8
   deriving (Eq, Ord, Generic)
 
 instance Show RollDice where
@@ -169,10 +168,11 @@ chanceDeep n' depth' deep = do
 -- | Generate a @RollDeep@ that always gives a constant integer.
 intToDeep :: Int -> RollDeep
 intToDeep 0  = RollDeep (RollDice 0 0) (RollDice 0 0)
-intToDeep n' = let n = toEnum n'
-               in if n > maxBound || n < minBound
-                  then assert `failure` "Deep out of bound" `twith` n'
-                  else RollDeep (RollDice n 1) (RollDice 0 0)
+intToDeep n' = if n' > fromEnum (maxBound :: Word8)
+                  || n' < fromEnum (minBound :: Word8)
+               then assert `failure` "Deep out of bound" `twith` n'
+               else let n = toEnum n'
+                    in RollDeep (RollDice n 1) (RollDice 0 0)
 
 -- | Maximal value of scaled dice.
 maxDeep :: RollDeep -> Int

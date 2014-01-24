@@ -492,7 +492,7 @@ computeBFS = computeAnythingBFS $ \isEnterable passUnknown aid -> do
   b <- getsState $ getActorBody aid
   Level{lxsize, lysize} <- getLevel $ blid b
   let origin = bpos b
-      vInitial = PointArray.replicateA lxsize lysize maxBound
+      vInitial = PointArray.replicateA lxsize lysize apartBfs
   -- Here we don't want '$!', because we want the BFS data lazy.
   return ${-keep it!-} fillBfs isEnterable passUnknown origin vInitial
 
@@ -709,7 +709,7 @@ closestUnknown aid = do
   bfs <- getCacheBfs aid
   let closestPos = PointArray.minIndexA bfs
       dist = bfs PointArray.! closestPos
-  return $ if dist >= minKnown
+  return $ if dist >= apartBfs
            then Nothing
            else Just closestPos
 

@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.Vector
   , moves, vicinity, vicinityCardinal
   , shift, shiftBounded, trajectoryToPath, displacement, pathToTrajectory
   , RadianAngle, rotate, towards
-  , BfsDistance, MoveLegal(..), minKnown
+  , BfsDistance, MoveLegal(..), apartBfs
   , fillBfs, findPathBfs, accessBfs, posAimsPos
   ) where
 
@@ -213,36 +213,39 @@ newtype BfsDistance = BfsDistance Word8
 data MoveLegal = MoveBlocked | MoveToOpen | MoveToUnknown
   deriving Eq
 
-minKnown :: BfsDistance
-minKnown = toEnum $ (1 + fromEnum (maxBound :: BfsDistance)) `div` 2
+minKnownBfs :: BfsDistance
+minKnownBfs = toEnum $ (1 + fromEnum (maxBound :: BfsDistance)) `div` 2
+
+apartBfs :: BfsDistance
+apartBfs = pred minKnownBfs
 
 -- TODO: Move somewhere; in particular, only clients need to know that.
 fillBfs :: (Point -> Point -> MoveLegal)  -- ^ is move from a known tile legal
         -> (Point -> Point -> Bool)       -- ^ is a move from unknown legal
         -> Point                          -- ^ starting position
-        -> PointArray.Array BfsDistance   -- ^ initial array, with @maxBound@
+        -> PointArray.Array BfsDistance   -- ^ initial array, with @apartBfs@
         -> PointArray.Array BfsDistance   -- ^ array with calculated distances
 fillBfs isEnterable passUnknown origin aInitial =
   -- TODO: copy, thaw, mutate, freeze
-  let maxUnknown = pred minKnown
+  let maxUnknownBfs = pred apartBfs
       bfs :: Seq.Seq (Point, BfsDistance)
           -> PointArray.Array BfsDistance
           -> PointArray.Array BfsDistance
       bfs q a =
         case Seq.viewr q of
           Seq.EmptyR -> a  -- no more positions to check
-          _ Seq.:> (_, d)| d == maxUnknown || d == maxBound -> a  -- too far
-          q1 Seq.:> (pos, oldDistance) | oldDistance >= minKnown ->
+          _ Seq.:> (_, d)| d == maxUnknownBfs || d == maxBound -> a  -- too far
+          q1 Seq.:> (pos, oldDistance) | oldDistance >= minKnownBfs ->
             let distance = succ oldDistance
                 allMvs = map (shift pos) moves
-                freshMv p = a PointArray.! p == maxBound
+                freshMv p = a PointArray.! p == apartBfs
                 freshMvs = filter freshMv allMvs
                 legal p = (p, isEnterable pos p)
                 legalities = map legal freshMvs
                 notBlocked = filter ((/= MoveBlocked) . snd) legalities
                 legalToDist l = if l == MoveToOpen
                                 then distance
-                                else distance .&. complement minKnown
+                                else distance .&. complement minKnownBfs
                 mvs = map (second legalToDist) notBlocked
                 q2 = foldr (Seq.<|) q1 mvs
                 s2 = a PointArray.// mvs
@@ -250,12 +253,12 @@ fillBfs isEnterable passUnknown origin aInitial =
           q1 Seq.:> (pos, oldDistance) ->
             let distance = succ oldDistance
                 allMvs = map (shift pos) moves
-                goodMv p = a PointArray.! p == maxBound && passUnknown pos p
+                goodMv p = a PointArray.! p == apartBfs && passUnknown pos p
                 mvs = zip (filter goodMv allMvs) (repeat distance)
                 q2 = foldr (Seq.<|) q1 mvs
                 s2 = a PointArray.// mvs
             in bfs q2 s2
-      origin0 = (origin, minKnown)
+      origin0 = (origin, minKnownBfs)
   in bfs (Seq.singleton origin0) (aInitial PointArray.// [origin0])
 
 -- TODO: Use http://harablog.wordpress.com/2011/09/07/jump-point-search/
@@ -272,9 +275,9 @@ findPathBfs :: (Point -> Point -> MoveLegal)
             -> Point -> Point -> Int -> PointArray.Array BfsDistance
             -> Maybe [Point]
 findPathBfs isEnterable passUnknown source target sepsRaw bfs =
-  assert (bfs PointArray.! source == minKnown) $
+  assert (bfs PointArray.! source == minKnownBfs) $
   let targetDist = bfs PointArray.! target
-  in if targetDist == maxBound
+  in if targetDist == apartBfs
      then Nothing
      else
        let eps = abs sepsRaw `mod` length moves
@@ -284,9 +287,9 @@ findPathBfs isEnterable passUnknown source target sepsRaw bfs =
                                ch = ch2 ++ ch1
                            in mix ch (reverse ch)
            track :: Point -> BfsDistance -> [Point] -> [Point]
-           track pos oldDist suffix | oldDist == minKnown =
+           track pos oldDist suffix | oldDist == minKnownBfs =
              assert (pos == source) suffix
-           track pos oldDist suffix | oldDist >= minKnown =
+           track pos oldDist suffix | oldDist > minKnownBfs =
              let dist = pred oldDist
                  children = map (shift pos) preferedMoves
                  matchesDist p = bfs PointArray.! p == dist
@@ -296,7 +299,7 @@ findPathBfs isEnterable passUnknown source target sepsRaw bfs =
              in track minP dist (pos : suffix)
            track pos oldDist suffix =
              let distUnknown = pred oldDist
-                 distKnown = distUnknown .|. minKnown
+                 distKnown = distUnknown .|. minKnownBfs
                  children = map (shift pos) preferedMoves
                  matchesDistUnknown p = bfs PointArray.! p == distUnknown
                                         && passUnknown p pos
@@ -314,9 +317,9 @@ accessBfs :: PointArray.Array BfsDistance -> Point -> Maybe Int
 {-# INLINE accessBfs #-}
 accessBfs bfs target =
   let dist = bfs PointArray.! target
-  in if dist == maxBound
+  in if dist == apartBfs
      then Nothing
-     else Just $ fromEnum $ dist .&. complement minKnown
+     else Just $ fromEnum $ dist .&. complement minKnownBfs
 
 posAimsPos :: PointArray.Array BfsDistance -> Point -> Point -> Bool
 {-# INLINE posAimsPos #-}
