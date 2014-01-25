@@ -708,7 +708,9 @@ cursorToPos = do
 closestUnknown :: MonadClient m => ActorId -> m (Maybe Point)
 closestUnknown aid = do
   bfs <- getCacheBfs aid
-  let closestPos = PointArray.minIndexA bfs
+  getMinIndex <- rndToAction $ oneOf [ PointArray.minIndexA
+                                     , PointArray.minLastIndexA ]
+  let closestPos = getMinIndex bfs
       dist = bfs PointArray.! closestPos
   return $! if dist >= apartBfs
             then Nothing
