@@ -42,6 +42,7 @@ data instance Speedup TileKind = TileSpeedup
   , isWalkableTab :: Id TileKind -> Bool
   , isPassableTab :: Id TileKind -> Bool
   , isDoorTab :: Id TileKind -> Bool
+  , isSuspectTab :: Id TileKind -> Bool
   }
 
 -- | Content operations for the content of type @a@.

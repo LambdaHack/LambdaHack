@@ -43,7 +43,7 @@ import Game.LambdaHack.Utils.Frequency
 targetStrategy :: forall m. MonadClient m
                => ActorId -> m (Strategy (Target, ([Point], Point)))
 targetStrategy aid = do
-  Kind.COps{cotile=Kind.Ops{ouniqGroup}} <- getsState scops
+  Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getsState scops
   modifyClient $ \cli -> cli {sbfsD = EM.empty}
   b <- getsState $ getActorBody aid
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
@@ -83,11 +83,15 @@ targetStrategy aid = do
                 upos <- closestUnknown aid
                 case upos of
                   Nothing -> do
-                    kpos <- furthestKnown aid
-                    case kpos of
-                      Nothing -> return reject
-                      Just p -> setPath $ TEnemyPos aid (blid b) p False
-                        -- Chase imaginary, invisible doppelganger.
+                    spos <- closestSuspect aid
+                    case spos of
+                      [] -> do
+                        kpos <- furthestKnown aid
+                        case kpos of
+                          Nothing -> return reject
+                          Just p -> setPath $ TEnemyPos aid (blid b) p False
+                            -- Chase imaginary, invisible doppelganger.
+                      p : _ -> setPath $ TPoint (blid b) p
                   Just p -> setPath $ TPoint (blid b) p
               (_, (p, _)) : _ -> setPath $ TPoint (blid b) p
           (_, (a, _)) : _ -> setPath $ TEnemy a False
@@ -134,7 +138,9 @@ targetStrategy aid = do
         TPoint lid pos ->
           if lid /= blid b  -- wrong level
              || EM.null (lvl `atI` pos)  -- no items here any more
-                && lvl `at` pos /= unknownId  -- not unknown any more
+                && let t = lvl `at` pos
+                   in t /= unknownId  -- not unknown any more
+                      && not (Tile.isSuspect cotile t)  -- not suspect any more
           then pickNewTarget
           else return $! returN "TPoint" (oldTgt, updatedPath)
         TVector{} -> pickNewTarget

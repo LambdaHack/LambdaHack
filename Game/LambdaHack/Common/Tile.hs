@@ -15,7 +15,7 @@
 module Game.LambdaHack.Common.Tile
   ( SmellTime
   , kindHasFeature, hasFeature
-  , isClear, isLit, isWalkable, isPassable, isDoor
+  , isClear, isLit, isWalkable, isPassable, isDoor, isSuspect
   , isExplorable, lookSimilar, speedup
   , openTo, closeTo, causeEffects, revealAs, hideAs
   , openable, closable, changeable
@@ -81,6 +81,13 @@ isDoor :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 isDoor Kind.Ops{ospeedup = Just Kind.TileSpeedup{isDoorTab=tab}} = tab
 isDoor cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
+-- | Whether a tile is suspect.
+-- Essential for efficiency of pathfinding, hence tabulated.
+isSuspect :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+{-# INLINE isSuspect #-}
+isSuspect Kind.Ops{ospeedup = Just Kind.TileSpeedup{isSuspectTab=tab}} = tab
+isSuspect cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
+
 -- | Whether a tile can be explored, possibly yielding a treasure.
 -- Note that non-walkable tiles can hold treasure, e.g., caches.
 isExplorable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
@@ -126,6 +133,7 @@ speedup allClear Kind.Ops{ofoldrWithKey, obounds} =
             getTo F.CloseTo{} = True
             getTo _ = False
         in any getTo $ tfeature tk
+      isSuspectTab = tabulate $ kindHasFeature F.Suspect
   in Kind.TileSpeedup {..}
 
 openTo :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)

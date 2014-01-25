@@ -159,8 +159,8 @@ levelFromCaveKind Kind.COps{cotile}
     , ldesc = cname
     , lstair
     , lseen = 0
-    , lclear = let f !n !tk | Tile.isExplorable cotile tk = n + 1
-                            | otherwise = n
+    , lclear = let f n t | Tile.isExplorable cotile t = n + 1
+                         | otherwise = n
                in PointArray.foldlA f 0 ltile
     , ltime = timeTurn
     , litemNum
