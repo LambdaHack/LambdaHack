@@ -402,7 +402,7 @@ explodeItem aid b container cgroup = do
         case mfail of
           Nothing -> return ()
           Just ProjectBlockTerrain -> return ()
-          Just failMsg -> execFailure b failMsg
+          Just failMsg -> execFailure aid failMsg
   projectN n1
   bag2 <- getsState $ bbag . getActorBody aid
   let mn2 = EM.lookup iid bag2

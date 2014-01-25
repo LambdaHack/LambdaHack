@@ -47,14 +47,16 @@ import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.State
 
 execFailure :: (MonadAtomic m, MonadServer m)
-            => Actor -> FailureSer -> m ()
-execFailure body failureSer = do
+            => ActorId -> FailureSer -> m ()
+execFailure aid failureSer = do
   -- Clients should rarely do that (only in case of invisible actors)
   -- so we report it, send a --more-- meeesage (if not AI), but do not crash
   -- (server should work OK with stupid clients, too).
+  body <- getsState $ getActorBody aid
   let fid = bfid body
       msg = showFailureSer failureSer
-  debugPrint $ "execFailure:" <+> tshow fid <+> ":" <+> msg
+  debugPrint
+    $ "execFailure:" <+> tshow fid <+> ":" <+> msg <> "\n" <> tshow body
   execSfxAtomic $ MsgFidD fid $ "Unexpected problem:" <+> msg <> "."
     -- TODO: --more--, but keep in history
 
@@ -120,7 +122,7 @@ moveSer source dir = do
           addSmell source
       | otherwise ->
           -- Client foolishly tries to move into blocked, boring tile.
-          execFailure sb MoveNothing
+          execFailure source MoveNothing
 
 -- * MeleeSer
 
@@ -135,8 +137,8 @@ meleeSer source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   adj <- checkAdjacent sb tb
-  if source == target then execFailure sb MeleeSelf
-  else if not adj then execFailure sb MeleeDistant
+  if source == target then execFailure source MeleeSelf
+  else if not adj then execFailure source MeleeDistant
   else do
     let sfid = bfid sb
         tfid = bfid tb
@@ -197,7 +199,7 @@ displaceSer source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   adj <- checkAdjacent sb tb
-  if not adj then execFailure sb DisplaceDistant
+  if not adj then execFailure source DisplaceDistant
   else do
     let lid = blid sb
     lvl <- getLevel lid
@@ -209,7 +211,7 @@ displaceSer source target = do
       addSmell source
     else do
       -- Client foolishly tries to displace an actor without access.
-      execFailure sb DisplaceAccess
+      execFailure source DisplaceAccess
 
 -- * AlterSer
 
@@ -224,7 +226,7 @@ alterSer source tpos mfeat = do
   sb <- getsState $ getActorBody source
   let lid = blid sb
       spos = bpos sb
-  if not $ adjacent spos tpos then execFailure sb AlterDistant
+  if not $ adjacent spos tpos then execFailure source AlterDistant
   else do
     lvl <- getLevel lid
     let serverTile = lvl `at` tpos
@@ -249,7 +251,7 @@ alterSer source tpos mfeat = do
     as <- getsState $ actorList (const True) lid
     if null groupsToAlter && serverTile == freshClientTile then
       -- Neither searching nor altering possible; silly client.
-      execFailure sb AlterNothing
+      execFailure source AlterNothing
     else do
       if EM.null $ lvl `atI` tpos then
         if unoccupied as tpos then do
@@ -260,8 +262,8 @@ alterSer source tpos mfeat = do
           mapM_ changeTo groupsToAlter
           -- Perform an effect, if any permitted.
           void $ triggerEffect source feats
-        else execFailure sb AlterBlockActor
-      else execFailure sb AlterBlockItem
+        else execFailure source AlterBlockActor
+      else execFailure source AlterBlockItem
 
 -- * WaitSer
 
@@ -284,7 +286,7 @@ pickupSer aid iid k = assert (k > 0) $ do
   item <- getsState $ getItemBody iid
   case actorContainerB aid b iid item of
     Just c -> execCmdAtomic $ MoveItemA iid k (CFloor (blid b) (bpos b)) c
-    Nothing -> execFailure b PickupOverfull
+    Nothing -> execFailure aid PickupOverfull
 
 -- * DropSer
 
@@ -304,13 +306,12 @@ projectSer :: (MonadAtomic m, MonadServer m)
            -> Container  -- ^ whether the items comes from floor or inventory
            -> m ()
 projectSer source tpxy eps iid container = do
-  sb <- getsState $ getActorBody source
   mfail <- projectFail source tpxy eps iid container False
-  maybe skip (execFailure sb) mfail
+  maybe skip (execFailure source) mfail
 
 projectFail :: (MonadAtomic m, MonadServer m)
             => ActorId    -- ^ actor projecting the item (is on current lvl)
-            -> Point    -- ^ target position of the projectile
+            -> Point      -- ^ target position of the projectile
             -> Int        -- ^ digital line parameter
             -> ItemId     -- ^ the item to be projected
             -> Container  -- ^ whether the items comes from floor or inventory
@@ -434,7 +435,7 @@ triggerSer aid mfeat = do
         Just feat2 | Tile.hasFeature cotile feat2 serverTile -> [feat2]
         Just _ -> []
   go <- triggerEffect aid feats
-  unless go $ execFailure sb TriggerNothing
+  unless go $ execFailure aid TriggerNothing
 
 triggerEffect :: (MonadAtomic m, MonadServer m)
               => ActorId -> [F.Feature] -> m Bool

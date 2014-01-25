@@ -325,7 +325,7 @@ rangedFreq aid = do
         Just (pos1 : _) -> do
           mab <- getsState $ posToActor pos1 blid
           if not foesAdj  -- ProjectBlockFoes
-             && asight mk  -- not legal for blind monsters
+             && asight mk  -- ProjectBlind
              && posClear pos1  -- ProjectBlockTerrain
              && maybe True (bproj . snd . fst) mab  -- ProjectBlockActor
           then return $! toFreq "throwFreq"
