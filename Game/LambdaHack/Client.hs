@@ -39,8 +39,8 @@ cmdClientAISem :: (MonadAtomic m, MonadClientWriteServer CmdTakeTimeSer m)
 cmdClientAISem cmd = case cmd of
   CmdAtomicAI cmdA -> do
     cmds <- cmdAtomicFilterCli cmdA
-    mapM_ cmdAtomicSemCli cmds
-    mapM_ execCmdAtomic cmds
+    mapM_ (\c -> cmdAtomicSemCli c
+                 >> execCmdAtomic c) cmds
     mapM_ (storeUndo . CmdAtomic) cmds
   CmdQueryAI aid -> do
     cmdC <- queryAI aid
@@ -54,9 +54,9 @@ cmdClientUISem :: ( MonadAtomic m, MonadClientUI m
 cmdClientUISem cmd = case cmd of
   CmdAtomicUI cmdA -> do
     cmds <- cmdAtomicFilterCli cmdA
-    mapM_ cmdAtomicSemCli cmds
-    mapM_ execCmdAtomic cmds
-    mapM_ (drawCmdAtomicUI False) cmds
+    mapM_ (\c -> cmdAtomicSemCli c
+                 >> execCmdAtomic c
+                 >> drawCmdAtomicUI False c) cmds
     mapM_ (storeUndo . CmdAtomic) cmds  -- TODO: only store cmdA?
   SfxAtomicUI sfx -> do
     drawSfxAtomicUI False sfx
