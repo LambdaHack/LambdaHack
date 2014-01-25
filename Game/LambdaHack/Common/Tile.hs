@@ -82,11 +82,14 @@ isDoor Kind.Ops{ospeedup = Just Kind.TileSpeedup{isDoorTab=tab}} = tab
 isDoor cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether a tile can be explored, possibly yielding a treasure.
+-- Note that non-walkable tiles can hold treasure, e.g., caches.
 isExplorable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 {-# INLINE isExplorable #-}
 isExplorable cotile@Kind.Ops{ouniqGroup} tk =
   let unknownId = ouniqGroup "unknown space"
   in tk /= unknownId && isWalkable cotile tk
+     || isDoor cotile tk
+     || changeable cotile tk
 
 -- | The player can't tell one tile from the other.
 lookSimilar :: TileKind -> TileKind -> Bool

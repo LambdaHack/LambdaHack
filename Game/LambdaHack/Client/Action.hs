@@ -704,20 +704,15 @@ cursorToPos = do
     Nothing -> return Nothing
     Just aid -> aidTgtToPos aid lidV $ Just scursor
 
--- | Closest reachable unkown tile, if any.
+-- | Closest reachable unknown tile, if any.
 closestUnknown :: MonadClient m => ActorId -> m (Maybe Point)
 closestUnknown aid = do
-  b <- getsState $ getActorBody aid
-  lvl <- getsState $ (EM.! blid b) . sdungeon
-  if lseen lvl == lclear lvl then
-    return Nothing
-  else do
-    bfs <- getCacheBfs aid
-    let closestPos = PointArray.minIndexA bfs
-        dist = bfs PointArray.! closestPos
-    return $! if dist >= apartBfs
-              then Nothing
-              else Just closestPos
+  bfs <- getCacheBfs aid
+  let closestPos = PointArray.minIndexA bfs
+      dist = bfs PointArray.! closestPos
+  return $! if dist >= apartBfs
+            then Nothing
+            else Just closestPos
 
 -- | A passable neighbour of the furthest known position,
 -- except under the actor.

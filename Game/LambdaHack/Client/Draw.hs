@@ -184,7 +184,7 @@ drawArenaStatus :: Level -> [Color.AttrChar]
 drawArenaStatus Level{ldepth, ldesc, lseen, lclear} =
   let addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
       seenN = 100 * lseen `div` lclear
-      seenTxt | seenN == 100 = "all"
+      seenTxt | seenN >= 100 = "all"
               | otherwise = T.justifyLeft 3 ' ' (tshow seenN <> "%")
       lvlN = T.justifyLeft 2 ' ' (tshow $ abs ldepth)
       seenStatus = T.justifyLeft 11 ' ' ("[" <> seenTxt <+> "seen]")

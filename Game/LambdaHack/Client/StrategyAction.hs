@@ -52,6 +52,7 @@ targetStrategy aid = do
           if p == bpos b
           then Just (tgt, (rest, goal))
           else Just (tgt, path)
+        Just (tgt, Just path) -> Just (tgt, path)  -- empty path, stay there
         _ -> Nothing
   lvl <- getLevel $ blid b
   assert (not $ bproj b) skip  -- would work, but is probably a bug
@@ -85,10 +86,19 @@ targetStrategy aid = do
                     kpos <- furthestKnown aid
                     case kpos of
                       Nothing -> return reject
-                      Just p -> setPath $ TPoint (blid b) p
+                      Just p -> setPath $ TEnemyPos aid (blid b) p False
+                        -- Chase imaginary, invisible doppelganger.
                   Just p -> setPath $ TPoint (blid b) p
               (_, (p, _)) : _ -> setPath $ TPoint (blid b) p
           (_, (a, _)) : _ -> setPath $ TEnemy a False
+      tellOthersNothingHere pos = do
+        let affect tgt = case tgt of
+              TEnemyPos _ lid p _ | lid == blid b && p == pos ->
+                TVector $ Vector 0 0  -- hack: reset target
+              _ -> tgt
+            affect3 (tgt, mpath) = (affect tgt, mpath)  -- path is the same
+        modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
+        pickNewTarget
       updateTgt :: Target -> ([Point], Point)
                 -> m (Strategy (Target, ([Point], Point)))
       updateTgt oldTgt updatedPath = case oldTgt of
@@ -115,17 +125,15 @@ targetStrategy aid = do
         _ | not $ null nearbyFoes -> pickNewTarget  -- prefer foes to anything
         TEnemyPos _ lid p _ ->
           -- Chase last position even if foe hides or dies,
-          --to find his companions.
-          if not focused  -- forgets last positions at once
-             || p == bpos b  -- already reached the position
-             || lid /= blid b  -- wrong level
+          -- to find his companions.
+          if lid /= blid b  -- wrong level
           then pickNewTarget
-          else return $! returN "TEnemyPos" (oldTgt, updatedPath)
+          else if p == bpos b
+               then tellOthersNothingHere p
+               else return $! returN "TEnemyPos" (oldTgt, updatedPath)
         TPoint lid pos ->
-          if pos == bpos b  -- already reached the position
-             || lid /= blid b  -- wrong level
-             || lseen lvl /= lclear lvl  -- still things left to explore
-                && EM.null (lvl `atI` pos)  -- no items here any more
+          if lid /= blid b  -- wrong level
+             || EM.null (lvl `atI` pos)  -- no items here any more
                 && lvl `at` pos /= unknownId  -- not unknown any more
           then pickNewTarget
           else return $! returN "TPoint" (oldTgt, updatedPath)
@@ -392,6 +400,7 @@ chase aid foeVisible = do
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   str <- case mtgtMPath of
     Just (_, Just ((p : _), goal)) -> moveTowards aid p goal
+    Just (_, Just _) -> return reject  -- goal reached
     _ -> assert `failure` (aid, mtgtMPath)
   let fight = not foeVisible  -- don't pick fights if the real foe is close
   if fight

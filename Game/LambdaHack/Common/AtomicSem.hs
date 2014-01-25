@@ -323,6 +323,9 @@ diplFactionA fid1 fid2 fromDipl toDipl =
 
 -- | Alter an attribute (actually, the only, the defining attribute)
 -- of a visible tile. This is similar to e.g., @TrajectoryActorA@.
+-- We do not modify @lclear@ here, because we can't keep track of
+-- alterations to unknown tiles. The server would need to send @lclear@
+-- updates for each invisible tile alteration that affects it.
 alterTileA :: MonadAction m
            => LevelId -> Point -> Kind.Id TileKind -> Kind.Id TileKind
            -> m ()
