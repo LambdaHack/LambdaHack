@@ -81,13 +81,12 @@ isDoor :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 isDoor Kind.Ops{ospeedup = Just Kind.TileSpeedup{isDoorTab=tab}} = tab
 isDoor cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
--- | Whether a tile can be explored, possibly yielding a treasure
--- or a hidden message.
+-- | Whether a tile can be explored, possibly yielding a treasure.
 isExplorable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 {-# INLINE isExplorable #-}
-isExplorable cops@Kind.Ops{ouniqGroup} tk =
+isExplorable cotile@Kind.Ops{ouniqGroup} tk =
   let unknownId = ouniqGroup "unknown space"
-  in isClear cops tk || (tk /= unknownId && hasFeature cops F.Walkable tk)
+  in tk /= unknownId && isWalkable cotile tk
 
 -- | The player can't tell one tile from the other.
 lookSimilar :: TileKind -> TileKind -> Bool

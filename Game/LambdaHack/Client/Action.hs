@@ -727,12 +727,14 @@ furthestKnown aid = do
   b <- getsState $ getActorBody aid
   lvl@Level{lxsize, lysize} <- getsState $ (EM.! blid b) . sdungeon
   bfs <- getCacheBfs aid
+  getMaxIndex <- rndToAction $ oneOf [ PointArray.maxIndexA
+                                     , PointArray.maxLastIndexA ]
   let borders = [ Point x y
                 | x <- [0, lxsize - 1], y <- [1..lysize - 2] ]
                 ++ [ Point x y
                    | x <- [0..lxsize - 1], y <- [0, lysize - 1] ]
       bfsNoBorders = bfs PointArray.// map (\p -> (p, succ apartBfs)) borders
-      furthestPos = PointArray.maxIndexA bfsNoBorders
+      furthestPos = getMaxIndex bfsNoBorders
       dist = bfs PointArray.! furthestPos
   return $! if dist <= apartBfs
             then assert `failure` (aid, furthestPos, dist)

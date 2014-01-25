@@ -2,13 +2,15 @@
 module Game.LambdaHack.Common.PointArray
   ( Array
   , (!), (//), replicateA, replicateMA, generateMA, sizeA
-  , foldlA, ifoldlA, minIndexA, maxIndexA
+  , foldlA, ifoldlA, minIndexA, maxIndexA, maxLastIndexA
   ) where
 
 import Control.Arrow ((***))
 import Control.Monad
 import Data.Binary
 import Data.Vector.Binary ()
+import qualified Data.Vector.Fusion.Stream as Stream
+import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
 
 import Game.LambdaHack.Common.Point
@@ -87,15 +89,28 @@ ifoldlA :: Enum c => (a -> Point -> c -> a) -> a -> Array c -> a
 ifoldlA f z0 Array{..} =
   U.ifoldl' (\a n c -> f a (punindex axsize n) (cnv c)) z0 avector
 
--- | Yield the point coordinates of the minimum element of the array.
+-- | Yield the point coordinates of a minimum element of the array.
 -- The array may not be empty.
 minIndexA :: Enum c => Array c -> Point
+{-# INLINE minIndexA #-}
 minIndexA Array{..} = punindex axsize $ U.minIndex avector
 
--- | Yield the point coordinates of the maximum element of the array.
+-- | Yield the point coordinates of the first maximum element of the array.
 -- The array may not be empty.
 maxIndexA :: Enum c => Array c -> Point
+{-# INLINE maxIndexA #-}
 maxIndexA Array{..} = punindex axsize $ U.maxIndex avector
+
+-- | Yield the point coordinates of the last maximum element of the array.
+-- The array may not be empty.
+maxLastIndexA :: Enum c => Array c -> Point
+{-# INLINE maxLastIndexA #-}
+maxLastIndexA Array{..} =
+  punindex axsize
+  $ fst . Stream.foldl1' imax . Stream.indexed . G.stream
+  $ avector
+ where
+  imax (i, x) (j, y) = i `seq` j `seq` if x <= y then (j, y) else (i, x)
 
 instance Binary (Array c) where
   put Array{..} = do
