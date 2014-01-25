@@ -349,10 +349,10 @@ lookAt detailed tilePrefix canSee pos aid msg = do
       tile = lvl `at` pos
       obscured | tile /= hideTile cotile lvl pos = "partially obscured"
                | otherwise = ""
-      tileText = tname $ okind tile
+      tileText = obscured <+> tname (okind tile)
       tilePart | T.null tilePrefix = MU.Text tileText
                | otherwise = MU.AW $ MU.Text tileText
-      tileDesc = [MU.Text tilePrefix, obscured, tilePart]
+      tileDesc = [MU.Text tilePrefix, tilePart]
   if not (null (Tile.causeEffects cotile tile)) then
     return $! makeSentence ("activable:" : tileDesc)
               <+> msg <+> isd

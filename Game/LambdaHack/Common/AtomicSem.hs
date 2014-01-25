@@ -346,7 +346,7 @@ alterTileA lid p fromTile toTile = assert (fromTile /= toTile) $ do
     (True, False) -> updateLevel lid $ \lvl2 -> lvl2 {lseen = lseen lvl - 1}
     _ -> return ()
 
--- Notice a previously invisible tiles. This is similar to @SpotActorA@,
+-- Notice previously invisible tiles. This is similar to @SpotActorA@,
 -- but done in bulk, because it often involves dozens of tiles pers move.
 -- We don't check that the tiles at the positions in question are unknown
 -- to save computation, especially for clients that remember tiles
@@ -366,7 +366,7 @@ spotTileA lid ts = assert (not $ null ts) $ do
           _ -> return ()
   mapM_ f ts
 
--- Stop noticing a previously visible tiles. Unlike @spotTileA@, it verifies
+-- Stop noticing previously visible tiles. Unlike @spotTileA@, it verifies
 -- the state of the tiles before changing them.
 loseTileA :: MonadAction m => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
 loseTileA lid ts = assert (not $ null ts) $ do

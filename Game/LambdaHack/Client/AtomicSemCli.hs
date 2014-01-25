@@ -36,6 +36,7 @@ import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
@@ -74,17 +75,30 @@ cmdAtomicFilterCli cmd = case cmd of
     b <- getsState $ getActorBody aid
     lvl <- getLevel $ blid b
     let t = lvl `at` p
-    if t == toTile
-      then -- Already knows the tile fully.
-           return []
-      else if t == fromTile
-           then -- Fully ignorant. (No intermediate knowledge possible.)
-                return [ AlterTileA (blid b) p fromTile toTile  -- reveal tile
-                       , cmd  -- show the message
-                       ]
+    return $!
+      if t == fromTile
+      then -- Fully ignorant. (No intermediate knowledge possible.)
+           [ cmd  -- show the message
+           , AlterTileA (blid b) p fromTile toTile  -- reveal tile
+           ]
+      else if t == toTile
+           then [cmd]  -- Already knows the tile fully, only confirm.
            else -- Misguided.
                 assert `failure` "LoseTile fails to reset memory"
                        `twith` (aid, p, fromTile, toTile, b, t, cmd)
+  SpotTileA lid ts -> do
+    Kind.COps{cotile} <- getsState scops
+    lvl <- getLevel lid
+    -- We ignore the server resending us hidden versions of the tiles
+    -- (and resending us the same data we already got).
+    -- If the tiles are changed to other variants of the hidden tile,
+    -- we can still verify by searching, and the UI warns us "obscured".
+    let notKnown (p, t) = let tClient = lvl `at` p
+                          in t /= tClient
+                             && (not (isSecretPos lvl p)
+                                 || t /= Tile.hideAs cotile tClient)
+        newTs = filter notKnown ts
+    return $! if null newTs then [] else [SpotTileA lid newTs]
   DiscoverA _ _ iid _ -> do
     disco <- getsClient sdisco
     item <- getsState $ getItemBody iid
@@ -339,13 +353,18 @@ drawCmdAtomicUI verbose cmd = case cmd of
   QuitFactionA fid mbody _ toSt -> quitFactionUI fid mbody toSt
   AlterTileA{} | verbose ->
     return ()  -- TODO: door opens
-  SearchTileA aid _ fromTile toTile -> do
+  SearchTileA aid p fromTile toTile -> do
     Kind.COps{cotile = Kind.Ops{okind}} <- getsState scops
+    b <- getsState $ getActorBody aid
+    lvl <- getLevel $ blid b
     subject <- partAidLeader aid
-    let verb = "reveal that the"
+    let t = lvl `at` p
+        verb | t == toTile = "confirm"
+             | otherwise = "reveal"
         subject2 = MU.Text $ tname $ okind fromTile
         verb2 = "be"
     let msg = makeSentence [ MU.SubjectVerbSg subject verb
+                           , "that the"
                            , MU.SubjectVerbSg subject2 verb2
                            , "a hidden"
                            , MU.Text $ tname $ okind toTile ]

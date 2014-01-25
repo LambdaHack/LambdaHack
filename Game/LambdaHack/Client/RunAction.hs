@@ -113,7 +113,7 @@ moveRunAid source dir = do
         -- No access, so search and/or alter the tile. Non-walkability is
         -- not implied by the lack of access.
         else if not (Tile.hasFeature cotile F.Walkable t)
-                && (Tile.hasFeature cotile F.Suspect t
+                && (isSecretPos lvl tpos
                     || Tile.openable cotile t
                     || Tile.closable cotile t
                     || Tile.changeable cotile t) then
