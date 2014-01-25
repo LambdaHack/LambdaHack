@@ -6,8 +6,10 @@ module Game.LambdaHack.Client.StrategyAction
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
+import Data.Function
 import Data.List
 import Data.Maybe
+import Data.Ord
 import qualified Data.Traversable as Traversable
 
 import Game.LambdaHack.Client.Action
@@ -355,32 +357,34 @@ toolsFreq disco aid = do
 moveTowards :: MonadClient m
             => ActorId -> Point -> Point -> m (Strategy Vector)
 moveTowards aid target goal = do
-  cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-  Actor{bkind, bpos, bfid, blid} <- getsState $ getActorBody aid
-  lvl <- getsState $ (EM.! blid) . sdungeon
-  fact <- getsState $ (EM.! bfid) . sfactionD
-  friends <- getsState $ actorList (not . isAtWar fact) blid
-  let mk = okind bkind
+  cops@Kind.COps{coactor=Kind.Ops{okind}, cotile} <- getsState scops
+  b <- getsState $ getActorBody aid
+  lvl <- getsState $ (EM.! blid b) . sdungeon
+  fact <- getsState $ (EM.! bfid b) . sfactionD
+  friends <- getsState $ actorList (not . isAtWar fact) $ blid b
+  let source = bpos b
+      mk = okind $ bkind b
       noFriends | asight mk = unoccupied friends  -- TODO: && animal or stupid
         -- TODO: but beware of trivial cycles from displacing repeatedly
         -- and also somehow hide friends from UI blind actors
                 | otherwise = const True
-      accessibleHere = accessible cops lvl bpos
-      enterableHere p = (accessibleHere p
-                         || bumpableHere cops lvl False p)
-  if adjacent bpos target && noFriends target && enterableHere target then
-    return $! returN "moveTowards adjacent" $ displacement bpos target
+      accessibleHere = accessible cops lvl source
+      bumpableHere p =
+        let t = lvl `at` p
+        in Tile.openable cotile t || Tile.hasFeature cotile F.Suspect t
+      enterableHere p = accessibleHere p || bumpableHere p
+  if adjacent source target && noFriends target && enterableHere target then
+    return $! returN "moveTowards adjacent" $ displacement source target
   else do
-    let nonincreasing p = chessDist bpos goal >= chessDist p goal
+    let goesBack v = v == displacement source (boldpos b)
+        nonincreasing p = chessDist source goal >= chessDist p goal
         isSensible p = nonincreasing p && noFriends p && enterableHere p
-        sensible = filter (isSensible . (bpos `shift`)) moves
-    return $! liftFrequency $ uniformFreq "moveTowards" sensible
-
-bumpableHere :: Kind.COps -> Level -> Bool -> Point -> Bool
-bumpableHere Kind.COps{cotile} lvl foeVisible pos =
-  let t = lvl `at` pos
-  in Tile.openable cotile t
-     || not foeVisible && Tile.hasFeature cotile F.Suspect t
+        sensible = [ ((goesBack v, chessDist p goal), v)
+                   | v <- moves, let p = source `shift` v, isSensible p ]
+        sorted = sortBy (comparing fst) sensible
+        groups = map (map snd) $ groupBy ((==) `on` fst) sorted
+        freqs = map (liftFrequency . uniformFreq "moveTowards") groups
+    return $! foldr (.|) mzero freqs
 
 chase :: MonadClient m
       => ActorId -> Bool -> m (Strategy CmdTakeTimeSer)
