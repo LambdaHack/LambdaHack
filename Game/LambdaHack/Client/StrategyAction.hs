@@ -6,7 +6,6 @@ module Game.LambdaHack.Client.StrategyAction
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
-import Data.Function
 import Data.List
 import Data.Maybe
 import qualified Data.Traversable as Traversable
@@ -94,8 +93,8 @@ targetStrategy aid = do
         TEnemy a _ -> do
           body <- getsState $ getActorBody a
           if not focused  -- prefers closer foes
-             && not (null nearbyFoes)  -- no close foes
-             && a `notElem` map fst nearbyFoes  -- close enough
+             && not (null nearbyFoes)  -- foes nearby
+             && a `notElem` map fst nearbyFoes  -- old one not close enough
              || blid body /= blid b  -- wrong level
           then pickNewTarget
           else if bpos body == snd updatedPath
@@ -116,15 +115,16 @@ targetStrategy aid = do
           -- Chase last position even if foe hides or dies,
           --to find his companions.
           if not focused  -- forgets last positions at once
-             || lid /= blid b  -- wrong level
              || p == bpos b  -- already reached the position
+             || lid /= blid b  -- wrong level
           then pickNewTarget
           else return $! returN "TEnemyPos" (oldTgt, updatedPath)
         TPoint lid pos ->
-          if lid /= blid b  -- wrong level
-             || pos == bpos b  -- already reached the position
-             || (EM.null (lvl `atI` pos)  -- no items any more
-                 && lvl `at` pos /= unknownId)  -- not unknown any more
+          if pos == bpos b  -- already reached the position
+             || lid /= blid b  -- wrong level
+             || lseen lvl /= lclear lvl  -- still things left to explore
+                && EM.null (lvl `atI` pos)  -- no items here any more
+                && lvl `at` pos /= unknownId  -- not unknown any more
           then pickNewTarget
           else return $! returN "TPoint" (oldTgt, updatedPath)
         TVector{} -> pickNewTarget
@@ -161,15 +161,16 @@ actionStrategy aid factionAbilities = do
       aFrequency :: Ability -> m (Frequency CmdTakeTimeSer)
       aFrequency Ability.Trigger = if foeVisible then return mzero
                                    else triggerFreq aid
-      aFrequency Ability.Ranged = rangedFreq aid
-      aFrequency Ability.Tools  = if not foeVisible then return mzero
-                                  else toolsFreq disco aid
-      aFrequency Ability.Chase  = chaseFreq
-      aFrequency ab             = assert `failure` "unexpected ability"
+      aFrequency Ability.Ranged  = rangedFreq aid
+      aFrequency Ability.Tools   = if not foeVisible then return mzero
+                                   else toolsFreq disco aid
+      aFrequency Ability.Chase   = if not foeVisible then return mzero
+                                   else chaseFreq
+      aFrequency ab              = assert `failure` "unexpected ability"
                                           `twith` (ab, distant, actorAbilities)
       chaseFreq :: MonadActionRO m => m (Frequency CmdTakeTimeSer)
       chaseFreq = do
-        st <- chase aid foeVisible
+        st <- chase aid True
         return $! scaleFreq 30 $ bestVariant st
       aStrategy :: Ability -> m (Strategy CmdTakeTimeSer)
       aStrategy Ability.Track  = track aid
@@ -179,7 +180,7 @@ actionStrategy aid factionAbilities = do
       aStrategy Ability.Melee  = return mzero
       aStrategy Ability.Pickup | not foeVisible && lootHere bpos = pickup aid
       aStrategy Ability.Pickup = return mzero
-      aStrategy Ability.Wander = wander aid
+      aStrategy Ability.Wander = chase aid False
       aStrategy ab             = assert `failure` "unexpected ability"
                                         `twith`(ab, actorAbilities)
       sumS abis = do
@@ -351,152 +352,48 @@ toolsFreq disco aid = do
     useFreq bbag 1 (actorContainer aid binv)
     ++ useFreq tis 2 (const $ CFloor blid bpos)
 
--- TODO: express fully in MonadClient
--- TODO: separate out bumping into solid tiles
--- TODO: also close doors; then stupid members of the party won't see them,
--- but it's assymetric warfare: rather harm humans than help party members
--- | AI finds interesting moves in the absense of visible foes.
--- This strategy can be null (e.g., if the actor is blocked by friends).
-moveStrategy :: MonadClient m
-             => ActorId -> Maybe (Point, Bool)
-             -> m (Strategy Vector)
-moveStrategy aid mFoe = do
-  cops@Kind.COps{cotile, coactor=Kind.Ops{okind}} <- getsState scops
-  s <- getState
-  mtgtMPath <- getsClient $ EM.lookup aid . stargetD
-  let nextOnPath = case mtgtMPath of
-        Just (_, Just (p : _, _)) -> p
-        _ -> assert `failure` (aid, mFoe)
-      lvl@Level{lsmell, lxsize, lysize, ltime} = sdungeon s EM.! blid
-      Actor{bkind, bpos, boldpos, bfid, blid} = getActorBody aid s
-      mk = okind bkind
-      lootHere x = not $ EM.null $ lvl `atI` x
-      onlyLoot = onlyMoves lootHere
-      interestHere x = let t = lvl `at` x
-                           ts = map (lvl `at`) $ vicinity lxsize lysize x
-                       in -- Blind actors tend to reveal/forget repeatedly.
-                          asight mk && Tile.hasFeature cotile F.Suspect t
-                          || (x == bpos || accessible cops lvl x bpos)
-                                 -- E.g., a room entrance
-                             && (Tile.hasFeature cotile F.Dark t
-                                 && any (not . Tile.hasFeature cotile F.Dark) ts
-                                 -- E.g., stairs.
-                                 || not (null (Tile.causeEffects cotile t)))
-      onlyInterest = onlyMoves interestHere
-      bdirAI | bpos == boldpos = Nothing
-             | otherwise = Just $ towards boldpos bpos
-      onlyKeepsDir k =
-        only (\x -> maybe True (\d -> euclidDistSq d x <= k) bdirAI)
-      onlyKeepsDir_9 = only (\x -> maybe True (\d -> neg x /= d) bdirAI)
-      foeVisible = fmap snd mFoe == Just True
-      -- TODO: aiq 16 leads to robotic, repetitious, looping movement;
-      -- either base it off some new stat or wait until pathfinding,
-      -- which will eliminate the loops
-      moveIQ | foeVisible = onlyKeepsDir_9 moveRandomly  -- danger, be flexible
-             | otherwise =
-           aiq mk > 15 .=> onlyKeepsDir 0 moveRandomly
-        .| aiq mk > 10 .=> onlyKeepsDir 1 moveRandomly
-        .| aiq mk > 5  .=> onlyKeepsDir 2 moveRandomly
-        .| onlyKeepsDir_9 moveRandomly
-      interestFreq | interestHere bpos =
-        -- Don't detour towards an interest if already on one.
-        mzero
-                   | otherwise =
-        -- Prefer interests, but don't exclude other focused moves.
-        scaleFreq 10 $ bestVariant $ onlyInterest $ onlyKeepsDir 2 moveRandomly
-      interestIQFreq = interestFreq `mplus` bestVariant moveIQ
-      moveClear    =
-        onlyMoves (not . bumpableHere cops lvl foeVisible (asight mk)) moveFreely
-      moveOpenable =
-        onlyMoves (bumpableHere cops lvl foeVisible (asight mk)) moveFreely
-      -- Ignore previously ignored loot, to prevent repetition.
-      moveNewLoot = onlyLoot (onlyKeepsDir 2 moveRandomly)
-      moveFreely = moveNewLoot
-                   .| liftFrequency interestIQFreq
-                   .| moveIQ  -- @bestVariant moveIQ@ may be excluded elsewhere
-                   .| moveRandomly
-      onlyMoves :: (Point -> Bool) -> Strategy Vector -> Strategy Vector
-      onlyMoves p = only (\x -> p (bpos `shift` x))
-      moveRandomly :: Strategy Vector
-      moveRandomly = liftFrequency $ uniformFreq "moveRandomly" sensible
-      accessibleHere = accessible cops lvl bpos
-      fact = sfactionD s EM.! bfid
-      friends = actorList (not . isAtWar fact) blid s
-      noFriends | asight mk = unoccupied friends
+moveTowards :: MonadClient m
+            => ActorId -> Point -> Point -> m (Strategy Vector)
+moveTowards aid target goal = do
+  cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  Actor{bkind, bpos, bfid, blid} <- getsState $ getActorBody aid
+  lvl <- getsState $ (EM.! blid) . sdungeon
+  fact <- getsState $ (EM.! bfid) . sfactionD
+  friends <- getsState $ actorList (not . isAtWar fact) blid
+  let mk = okind bkind
+      noFriends | asight mk = unoccupied friends  -- TODO: && animal or stupid
+        -- TODO: beware of trivial cycles from displacing repeatedly
                 | otherwise = const True
-      isSensible l = noFriends l
-                     && (accessibleHere l
-                         || bumpableHere cops lvl foeVisible (asight mk) l)
-      sensible = filter (isSensible . (bpos `shift`)) moves
-      randomStr mpFoe = case mpFoe of
-        -- Target set and we chase the foe or his last position or another target.
-        Just (fpos, _) ->
-          let towardsFoe =
-                let tolerance | adjacent bpos fpos = 0
-                              | otherwise = 1
-                    foeDir = towards bpos fpos
-                in only (\x -> euclidDistSq foeDir x <= tolerance)
-          in if fpos == bpos
-             then reject
-             else towardsFoe
-                  $ if foeVisible
-                    then moveClear  -- enemies in sight, don't waste time for doors
-                         .| moveOpenable
-                    else moveOpenable  -- no enemy in sight, explore doors
-                         .| moveClear
-        Nothing ->
-          let smells =
-                map (map fst)
-                $ groupBy ((==) `on` snd)
-                $ sortBy (flip compare `on` snd)
-                $ filter (\(_, sm) -> sm > timeZero)
-                $ map (\x ->
-                          let sml = EM.findWithDefault
-                                      timeZero (bpos `shift` x) lsmell
-                          in (x, sml `timeAdd` timeNegate ltime))
-                    sensible
-          in asmell mk .=> foldr ((.|)
-                                  . liftFrequency
-                                  . uniformFreq "smell k") reject smells
-             .| moveOpenable  -- no enemy in sight, explore doors
-             .| moveClear
-  return $! (adjacent bpos nextOnPath && noFriends nextOnPath)
-              .=> (returN "move from path" $ displacement bpos nextOnPath)
-            .| randomStr (Just (nextOnPath, False))
+      accessibleHere = accessible cops lvl bpos
+      enterableHere p = (accessibleHere p
+                         || bumpableHere cops lvl False (asight mk) p)
+  if adjacent bpos target && noFriends target && enterableHere target then
+    return $! returN "moveTowards adjacent" $ displacement bpos target
+  else do
+    let nonincreasing p = chessDist bpos goal >= chessDist p goal
+        isSensible p = nonincreasing p && noFriends p && enterableHere p
+        sensible = filter (isSensible . (bpos `shift`)) moves
+    return $! liftFrequency $ uniformFreq "moveTowards" sensible
 
 bumpableHere :: Kind.COps -> Level -> Bool -> Bool -> Point -> Bool
 bumpableHere Kind.COps{cotile} lvl foeVisible asight pos =
-  let t = lvl `at` pos  -- cannot hold items, so OK
+  let t = lvl `at` pos
   in Tile.openable cotile t
-     || -- Try to find hidden doors only if no foe in sight and not blind.
+     || -- Try to find hidden doors only if not blind.
         -- Blind actors forget their search results too quickly.
         asight && not foeVisible && Tile.hasFeature cotile F.Suspect t
 
 chase :: MonadClient m
       => ActorId -> Bool -> m (Strategy CmdTakeTimeSer)
 chase aid foeVisible = do
-  -- Target set and we chase the foe or offer null strategy if we can't.
-  -- The foe is visible, or we remember his last position.
-  btarget <- getsClient $ getTarget aid
-  Actor{blid} <- getsState $ getActorBody aid
-  mfpos <- aidTgtToPos aid blid btarget
-  let mFoe = case mfpos of
-        Nothing -> Nothing
-        Just pos -> Just (pos, foeVisible)
-      fight = not foeVisible  -- don't pick fights if the real foe is close
-  str <- moveStrategy aid mFoe
+  mtgtMPath <- getsClient $ EM.lookup aid . stargetD
+  str <- case mtgtMPath of
+    Just (_, Just ((p : _), goal)) -> moveTowards aid p goal
+    _ -> assert `failure` (aid, mtgtMPath)
+  let fight = not foeVisible  -- don't pick fights if the real foe is close
   if fight
     then Traversable.mapM (moveOrRunAid False aid) str
     else Traversable.mapM (moveOrRunAid True aid) str
-
-wander :: MonadClient m
-       => ActorId -> m (Strategy CmdTakeTimeSer)
-wander aid = do
-  -- Target set, but we don't chase the foe, e.g., because we are blocked
-  -- or we cannot chase at all.
-  let mFoe = Nothing
-  str <- moveStrategy aid mFoe
-  Traversable.mapM (moveOrRunAid False aid) str
 
 -- | Actor moves or searches or alters or attacks. Displaces if @run@.
 moveOrRunAid :: MonadActionRO m
