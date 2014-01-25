@@ -79,6 +79,7 @@ data FailureSer =
   | ProjectBlockTerrain
   | ProjectBlockActor
   | ProjectBlockFoes
+  | ProjectBlind
   | TriggerNothing
 
 showFailureSer :: FailureSer -> Msg
@@ -98,4 +99,5 @@ showFailureSer failureSer = case failureSer of
   ProjectBlockTerrain -> "aiming obstructed by terrain"
   ProjectBlockActor -> "aiming blocked by an actor"
   ProjectBlockFoes -> "aiming interrupted by foes"
+  ProjectBlind -> "blind actors cannot aim"
   TriggerNothing -> "wasting time on triggering nothing"

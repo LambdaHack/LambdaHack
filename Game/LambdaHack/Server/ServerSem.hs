@@ -317,7 +317,7 @@ projectFail :: (MonadAtomic m, MonadServer m)
             -> Bool       -- ^ whether the item is a shrapnel
             -> m (Maybe FailureSer)
 projectFail source tpxy eps iid container isShrapnel = do
-  Kind.COps{cotile} <- getsState scops
+  Kind.COps{coactor=Kind.Ops{okind}, cotile} <- getsState scops
   sb <- getsState $ getActorBody source
   let lid = blid sb
       spos = bpos sb
@@ -348,13 +348,15 @@ projectFail source tpxy eps iid container isShrapnel = do
                   return $! foesAdjacent lxsize lysize spos foes
               if blockedByFoes then
                 return $ Just ProjectBlockFoes
-              else do
-                if isShrapnel && eps `mod` 2 == 0 then
-                  -- Make the explosion a bit less regular.
-                  projectBla source spos (pos:rest) iid container
-                else
-                  projectBla source pos rest iid container
-                return Nothing
+              else if not (asight $ okind $ bkind sb)
+                   then return $ Just ProjectBlind
+                   else do
+                    if isShrapnel && eps `mod` 2 == 0 then
+                      -- Make the explosion a bit less regular.
+                      projectBla source spos (pos:rest) iid container
+                    else
+                      projectBla source pos rest iid container
+                    return Nothing
 
 projectBla :: (MonadAtomic m, MonadServer m)
            => ActorId    -- ^ actor projecting the item (is on current lvl)

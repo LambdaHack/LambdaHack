@@ -45,6 +45,7 @@ import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.TileKind as TileKind
 
 type SlideOrCmd a = Either Slideshow a
@@ -337,7 +338,7 @@ projectHuman ts = do
 projectAid :: MonadClientUI m
            => ActorId -> [Trigger] -> Point -> m (SlideOrCmd CmdTakeTimeSer)
 projectAid source ts tpos = do
-  Kind.COps{cotile} <- getsState scops
+  Kind.COps{coactor=Kind.Ops{okind}, cotile} <- getsState scops
   eps <- getsClient seps
   sb <- getsState $ getActorBody source
   let lid = blid sb
@@ -360,7 +361,9 @@ projectAid source ts tpos = do
             else do
               mab <- getsState $ posToActor pos lid
               if maybe True (bproj . snd . fst) mab
-              then projectBla source tpos eps ts
+              then if not (asight $ okind $ bkind sb)
+                   then failSer ProjectBlind
+                   else projectBla source tpos eps ts
               else failSer ProjectBlockActor
 
 projectBla :: MonadClientUI m

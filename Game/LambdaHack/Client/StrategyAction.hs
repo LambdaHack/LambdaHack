@@ -315,7 +315,7 @@ rangedFreq aid = do
         Just (pos1 : _) -> do
           mab <- getsState $ posToActor pos1 blid
           if not foesAdj  -- ProjectBlockFoes
-             && asight mk
+             && asight mk  -- not legal for blind monsters
              && posClear pos1  -- ProjectBlockTerrain
              && maybe True (bproj . snd . fst) mab  -- ProjectBlockActor
           then return $! toFreq "throwFreq"
@@ -362,11 +362,12 @@ moveTowards aid target goal = do
   friends <- getsState $ actorList (not . isAtWar fact) blid
   let mk = okind bkind
       noFriends | asight mk = unoccupied friends  -- TODO: && animal or stupid
-        -- TODO: beware of trivial cycles from displacing repeatedly
+        -- TODO: but beware of trivial cycles from displacing repeatedly
+        -- and also somehow hide friends from UI blind actors
                 | otherwise = const True
       accessibleHere = accessible cops lvl bpos
       enterableHere p = (accessibleHere p
-                         || bumpableHere cops lvl False (asight mk) p)
+                         || bumpableHere cops lvl False p)
   if adjacent bpos target && noFriends target && enterableHere target then
     return $! returN "moveTowards adjacent" $ displacement bpos target
   else do
@@ -375,13 +376,11 @@ moveTowards aid target goal = do
         sensible = filter (isSensible . (bpos `shift`)) moves
     return $! liftFrequency $ uniformFreq "moveTowards" sensible
 
-bumpableHere :: Kind.COps -> Level -> Bool -> Bool -> Point -> Bool
-bumpableHere Kind.COps{cotile} lvl foeVisible asight pos =
+bumpableHere :: Kind.COps -> Level -> Bool -> Point -> Bool
+bumpableHere Kind.COps{cotile} lvl foeVisible pos =
   let t = lvl `at` pos
   in Tile.openable cotile t
-     || -- Try to find hidden doors only if not blind.
-        -- Blind actors forget their search results too quickly.
-        asight && not foeVisible && Tile.hasFeature cotile F.Suspect t
+     || not foeVisible && Tile.hasFeature cotile F.Suspect t
 
 chase :: MonadClient m
       => ActorId -> Bool -> m (Strategy CmdTakeTimeSer)
