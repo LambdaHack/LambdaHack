@@ -89,7 +89,8 @@ data Level = Level
   , lstair    :: !([Point], [Point])
                              -- ^ destinations of (up, down) stairs
   , lseen     :: !Int        -- ^ currently remembered clear tiles
-  , lclear    :: !Int        -- ^ total number of initially clear tiles
+  , lclear    :: !Int        -- ^ total number of initially clear tiles;
+                             --   set to 1 on clients when fully explored
   , ltime     :: !Time       -- ^ date of the last activity on the level
   , litemNum  :: !Int        -- ^ number of initial items, 0 for clients
   , litemFreq :: !(Frequency Text)  -- ^ frequency of initial items,

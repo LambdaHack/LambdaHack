@@ -53,7 +53,7 @@ draw :: Bool -> ColorMode -> Kind.COps -> Perception -> LevelId
      -> Text -> Text -> Overlay
      -> SingleFrame
 draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
-     cli@StateClient{ stgtMode, seps, sdisco
+     cli@StateClient{ stgtMode, seps, sdisco, sexplored
                     , smarkVision, smarkSmell, smarkSuspect, swaitTimes } s
      cursorDesc targetDesc sfTop =
   let Kind.COps{cotile=cotile@Kind.Ops{okind=tokind, ouniqGroup}} = cops
@@ -143,7 +143,7 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
         in Color.AttrChar a char
       showN2 n = T.justifyRight 2 ' ' (tshow n)
       addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
-      arenaStatus = drawArenaStatus lvl
+      arenaStatus = drawArenaStatus (ES.member drawnLevelId sexplored) lvl
       cursorText = (if isJust stgtMode then "cursor>" else "Cursor:")
                    <+> cursorDesc
       lineText = let space = 40 - T.length cursorText - 1
@@ -181,11 +181,11 @@ inverseVideo :: Color.Attr
 inverseVideo = Color.Attr { Color.fg = Color.bg Color.defAttr
                           , Color.bg = Color.fg Color.defAttr }
 
-drawArenaStatus :: Level -> [Color.AttrChar]
-drawArenaStatus Level{ldepth, ldesc, lseen, lclear} =
+drawArenaStatus :: Bool -> Level -> [Color.AttrChar]
+drawArenaStatus explored Level{ldepth, ldesc, lseen, lclear} =
   let addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
       seenN = 100 * lseen `div` lclear
-      seenTxt | seenN >= 100 = "all"
+      seenTxt | explored || seenN >= 100 = "all"
               | otherwise = T.justifyLeft 3 ' ' (tshow seenN <> "%")
       lvlN = T.justifyLeft 2 ' ' (tshow $ abs ldepth)
       seenStatus = T.justifyLeft 11 ' ' ("[" <> seenTxt <+> "seen]")

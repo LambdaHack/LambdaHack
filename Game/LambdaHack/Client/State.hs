@@ -45,6 +45,8 @@ data StateClient = StateClient
   , seps         :: !Int              -- ^ a parameter of the tgt digital line
   , stargetD     :: !(EM.EnumMap ActorId (Target, Maybe ([Point], Point)))
                                    -- ^ targets of our actors in the dungeon
+  , sexplored    :: !(ES.EnumSet LevelId)
+                                   -- ^ the set of fully explored levels
   , sbfsD        :: !(EM.EnumMap ActorId
                         ( PointArray.Array BfsDistance
                         , Point, Int, Maybe [Point]) )
@@ -121,6 +123,7 @@ defStateClient shistory sconfigUI _sside sisAI =
                 else TVector $ Vector 1 1  -- a step south-east
     , seps = 0
     , stargetD = EM.empty
+    , sexplored = ES.empty
     , sbfsD = EM.empty
     , sselected = ES.empty
     , srunning = Nothing
@@ -195,6 +198,7 @@ instance Binary StateClient where
     put scursor
     put seps
     put stargetD
+    put sexplored
     put sselected
     put srunning
     put sreport
@@ -215,6 +219,7 @@ instance Binary StateClient where
     scursor <- get
     seps <- get
     stargetD <- get
+    sexplored <- get
     sselected <- get
     srunning <- get
     sreport <- get

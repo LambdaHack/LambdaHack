@@ -41,6 +41,7 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
@@ -725,9 +726,16 @@ closestUnknown aid = do
                                      , PointArray.minLastIndexA ]
   let closestPos = getMinIndex bfs
       dist = bfs PointArray.! closestPos
-  return $! if dist >= apartBfs
-            then Nothing
-            else Just closestPos
+  if dist >= apartBfs then do
+    body <- getsState $ getActorBody aid
+    smarkSuspect <- getsClient smarkSuspect
+    sisAI <- getsClient sisAI
+    let passSuspect = smarkSuspect || sisAI
+    when passSuspect $  -- explored fully, including suspect tiles
+      modifyClient $ \cli ->
+        cli {sexplored = ES.insert (blid body) (sexplored cli)}
+    return Nothing
+  else return $ Just closestPos
 
 -- | Furthest (wrt paths) known position, except under the actor.
 furthestKnown :: MonadClient m => ActorId -> m (Maybe Point)

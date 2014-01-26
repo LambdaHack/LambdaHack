@@ -6,6 +6,7 @@ module Game.LambdaHack.Client.StrategyAction
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.EnumSet as ES
 import Data.Function
 import Data.List
 import Data.Maybe
@@ -93,8 +94,7 @@ targetStrategy aid = do
                     kpos <- furthestKnown aid
                     case kpos of
                       Nothing -> return reject
-                      Just p -> setPath $ TEnemyPos aid (blid b) p False
-                        -- Chase imaginary, invisible doppelganger.
+                      Just p -> setPath $ TPoint (blid b) p
                   Just p -> setPath $ TPoint (blid b) p
               (_, (p, _)) : _ -> setPath $ TPoint (blid b) p
           (_, (a, _)) : _ -> setPath $ TEnemy a False
@@ -136,12 +136,15 @@ targetStrategy aid = do
           else if p == bpos b
                then tellOthersNothingHere p
                else return $! returN "TEnemyPos" (oldTgt, updatedPath)
-        TPoint lid pos ->
+        TPoint lid pos -> do
+          explored <- getsClient sexplored
           if lid /= blid b  -- wrong level
              || EM.null (lvl `atI` pos)  -- no items here any more
                 && let t = lvl `at` pos
                    in t /= unknownId  -- not unknown any more
                       && not (Tile.isSuspect cotile t)  -- not suspect any more
+                      && (ES.notMember lid explored  -- still things to explore
+                          || pos == bpos b)  -- or already reached
           then pickNewTarget
           else return $! returN "TPoint" (oldTgt, updatedPath)
         TVector{} -> pickNewTarget
@@ -191,12 +194,12 @@ actionStrategy aid factionAbilities = do
         return $! scaleFreq 30 $ bestVariant st
       aStrategy :: Ability -> m (Strategy CmdTakeTimeSer)
       aStrategy Ability.Track  = track aid
-      aStrategy Ability.Heal   = return mzero  -- TODO
-      aStrategy Ability.Flee   = return mzero  -- TODO
+      aStrategy Ability.Heal   = return reject  -- TODO
+      aStrategy Ability.Flee   = return reject  -- TODO
       aStrategy Ability.Melee | Just foeAid <- mfAid = melee aid foeAid
-      aStrategy Ability.Melee  = return mzero
+      aStrategy Ability.Melee  = return reject
       aStrategy Ability.Pickup | not foeVisible && lootHere bpos = pickup aid
-      aStrategy Ability.Pickup = return mzero
+      aStrategy Ability.Pickup = return reject
       aStrategy Ability.Wander = chase aid False
       aStrategy ab             = assert `failure` "unexpected ability"
                                         `twith`(ab, actorAbilities)
@@ -253,30 +256,45 @@ melee aid foeAid = do
   return $! foeAdjacent .=> returN "melee" (MeleeSer aid foeAid)
 
 -- Fast monsters don't pay enough attention to features.
-triggerFreq :: MonadActionRO m
+triggerFreq :: MonadClient m
             => ActorId -> m (Frequency CmdTakeTimeSer)
 triggerFreq aid = do
   cops@Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
+  dungeon <- getsState sdungeon
+  explored <- getsClient sexplored
   b@Actor{bpos, blid, bfid, boldpos} <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid
   lvl <- getLevel blid
   let spawn = isSpawnFact cops fact
       t = lvl `at` bpos
       feats = TileKind.tfeature $ okind t
+      unexploredDepth nlid p =
+        case ascendInBranch dungeon nlid p of
+          [] -> False
+          nlid2 : _ -> ES.notMember nlid2 explored
+                       || unexploredDepth nlid2 (signum p)
       ben feat = case feat of
         F.Cause Effect.Escape{} | spawn -> 0  -- spawners lose if they escape
+        F.Cause (Effect.Ascend p) ->  -- change levels sensibly, in teams
+          let exploredCurrent = ES.member blid explored
+          in if not exploredCurrent
+             then 0  -- don't leave the level until explored
+             else if unexploredDepth blid (signum p)
+             then 1000
+             else if unexploredDepth blid (- signum p)
+             then 0  -- wait for stairs in the opposite direciton
+             else 2  -- everything explored, switch levels occasionally
         F.Cause ef -> effectToBenefit cops b ef
         _ -> 0
       benFeat = zip (map ben feats) feats
       -- Probably recently switched levels or was pushed to another level.
       -- Do not repeatedly switch levels or push each other between levels.
       -- Consequently, AI won't dive many levels down with linked staircases.
-      -- TODO: beware of stupid monsters that backtrack and so occupy stairs.
       recentlyAscended = bpos == boldpos
-      -- Too fast to notice and use features.
-      fast = bspeed b > speedNormal
-  if recentlyAscended || fast then
-    return mzero
+  if recentlyAscended then
+    return mzero  -- TODO: make sure the actor does not stay here,
+                  -- blocking the stairs and repeatedly pusing one another
+                  -- between levels, unless this is Escape
   else
     return $! toFreq "triggerFreq" $ [ (benefit, TriggerSer aid (Just feat))
                                      | (benefit, feat) <- benFeat
@@ -399,7 +417,7 @@ moveTowards aid source target goal = do
         sorted = sortBy (comparing fst) sensible
         groups = map (map snd) $ groupBy ((==) `on` fst) sorted
         freqs = map (liftFrequency . uniformFreq "moveTowards") groups
-    return $! foldr (.|) mzero freqs
+    return $! foldr (.|) reject freqs
 
 chase :: MonadClient m
       => ActorId -> Bool -> m (Strategy CmdTakeTimeSer)
@@ -466,7 +484,6 @@ moveOrRunAid run source dir = do
 effectToBenefit :: Kind.COps -> Actor -> Effect.Effect Int -> Int
 effectToBenefit Kind.COps{coactor=Kind.Ops{okind}} b eff =
   let kind = okind $ bkind b
-      deep k = signum k == signum (fromEnum $ blid b)
   in case eff of
     Effect.NoEffect -> 0
     (Effect.Heal p) -> 10 * min p (Random.maxDice (ahp kind) - bhp b)
@@ -479,6 +496,5 @@ effectToBenefit Kind.COps{coactor=Kind.Ops{okind}} b eff =
     Effect.ApplyPerfume -> 0
     Effect.Regeneration{} -> 0         -- bigger benefit from carrying around
     Effect.Searching{} -> 0
-    (Effect.Ascend k) | deep k -> 500  -- AI likes to explore deep down
-    Effect.Ascend{} -> 1
-    Effect.Escape{} -> 1000            -- AI wants to win; spawners to guard
+    Effect.Ascend{} -> 0               -- change levels sensibly, in teams
+    Effect.Escape{} -> 10000           -- AI wants to win; spawners to guard
