@@ -83,15 +83,11 @@ targetStrategy aid = do
                 upos <- closestUnknown aid
                 case upos of
                   Nothing -> do
-                    spos <- closestSuspect aid
-                    case spos of
-                      [] -> do
-                        kpos <- furthestKnown aid
-                        case kpos of
-                          Nothing -> return reject
-                          Just p -> setPath $ TEnemyPos aid (blid b) p False
-                            -- Chase imaginary, invisible doppelganger.
-                      p : _ -> setPath $ TPoint (blid b) p
+                    kpos <- furthestKnown aid
+                    case kpos of
+                      Nothing -> return reject
+                      Just p -> setPath $ TEnemyPos aid (blid b) p False
+                        -- Chase imaginary, invisible doppelganger.
                   Just p -> setPath $ TPoint (blid b) p
               (_, (p, _)) : _ -> setPath $ TPoint (blid b) p
           (_, (a, _)) : _ -> setPath $ TEnemy a False

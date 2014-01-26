@@ -29,7 +29,7 @@ module Game.LambdaHack.Client.Action
   , aidTgtToPos, aidTgtAims, leaderTgtToPos, leaderTgtAims, cursorToPos
   , partAidLeader, partActorLeader
   , getCacheBfsAndPath, getCacheBfs, accessCacheBfs, actorAimsPos
-  , closestUnknown, furthestKnown, closestSuspect, closestItems, closestFoes
+  , closestUnknown, furthestKnown, closestItems, closestFoes
   , debugPrint
   ) where
 
@@ -45,7 +45,6 @@ import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Monoid as Monoid
-import Data.Ord
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
@@ -746,23 +745,6 @@ furthestKnown aid = do
             else if dist == succ apartBfs  -- bpos of aid
                  then Nothing
                  else Just furthestPos
-
--- TODO: use findIndices or another function giving a vector and sort it.
--- | Closest reachable suspect tile positions.
-closestSuspect :: MonadClient m => ActorId -> m [Point]
-closestSuspect aid = do
-  Kind.COps{cotile} <- getsState scops
-  body <- getsState $ getActorBody aid
-  lvl <- getLevel $ blid body
-  let f l p t | Tile.isSuspect cotile t = p : l
-              | otherwise = l
-      suspects = PointArray.ifoldlA f [] $ ltile lvl
-  if null suspects then
-    return []
-  else do
-    bfs <- getCacheBfs aid
-    let g = comparing (fromMaybe maxBound . accessBfs bfs)
-    return $! sortBy g suspects
 
 -- | Closest (wrt paths) items.
 closestItems :: MonadClient m => ActorId -> m ([(Int, (Point, ItemBag))])
