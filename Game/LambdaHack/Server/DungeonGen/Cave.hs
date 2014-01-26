@@ -137,6 +137,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
   -- Convert wall openings into doors, possibly.
   let f t =
         if not $ Tile.isSuspect cotile t
+          -- May also turns a cache into a door; tough luck.
         then return t  -- no opening to start with
         else do
           -- Openings have a certain chance to be doors

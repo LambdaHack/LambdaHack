@@ -58,7 +58,7 @@ pillarCache = TileKind
                , ("legendLit", 100), ("legendDark", 100) ]
   , tcolor   = BrWhite
   , tcolor2  = defFG
-  , tfeature = [Cause $ Effect.CreateItem 1, ChangeTo "cachable"]
+  , tfeature = [Suspect, Cause $ Effect.CreateItem 1, ChangeTo "cachable"]
   }
 tree = TileKind
   { tsymbol  = 'O'
