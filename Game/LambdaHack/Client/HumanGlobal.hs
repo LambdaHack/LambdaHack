@@ -506,7 +506,7 @@ triggerFeatures (_ : ts) = triggerFeatures ts
 verifyTrigger :: MonadClientUI m
               => ActorId -> F.Feature -> m (SlideOrCmd ())
 verifyTrigger leader feat = case feat of
-  F.Cause Effect.Escape -> do
+  F.Cause Effect.Escape{} -> do
     b <- getsState $ getActorBody leader
     side <- getsClient sside
     spawn <- getsState $ isSpawnFaction side

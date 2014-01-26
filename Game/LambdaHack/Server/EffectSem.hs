@@ -85,7 +85,7 @@ effectSem effect source target = case effect of
   Effect.Regeneration p -> effectSem (Effect.Heal p) source target
   Effect.Searching p -> effectSearching p source
   Effect.Ascend p -> effectAscend p target
-  Effect.Escape -> effectEscape target
+  Effect.Escape{} -> effectEscape target
 
 -- + Individual semantic functions for effects
 

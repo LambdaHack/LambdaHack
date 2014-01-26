@@ -264,7 +264,7 @@ triggerFreq aid = do
       t = lvl `at` bpos
       feats = TileKind.tfeature $ okind t
       ben feat = case feat of
-        F.Cause Effect.Escape | spawn -> 0  -- spawners lose if they escape
+        F.Cause Effect.Escape{} | spawn -> 0  -- spawners lose if they escape
         F.Cause ef -> effectToBenefit cops b ef
         _ -> 0
       benFeat = zip (map ben feats) feats
@@ -481,4 +481,4 @@ effectToBenefit Kind.COps{coactor=Kind.Ops{okind}} b eff =
     Effect.Searching{} -> 0
     (Effect.Ascend k) | deep k -> 500  -- AI likes to explore deep down
     Effect.Ascend{} -> 1
-    Effect.Escape -> 1000              -- AI wants to win
+    Effect.Escape{} -> 1000            -- AI wants to win; spawners to guard

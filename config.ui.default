@@ -16,8 +16,8 @@
 ; r: Apply [ApplyItem {verb = "read", object = "scroll", symbol = '?'}]
 ; c: AlterDir [AlterFeature {verb = "close", object = "door", feature = CloseTo "vertical closed door Lit"}, AlterFeature {verb = "close", object = "door", feature = CloseTo "horizontal closed door Lit"}, AlterFeature {verb = "close", object = "door", feature = CloseTo "vertical closed door Dark"}, AlterFeature {verb = "close", object = "door", feature = CloseTo "horizontal closed door Dark"}]
 ; o: AlterDir [AlterFeature {verb = "open", object = "door", feature = OpenTo "vertical open door Lit"}, AlterFeature {verb = "open", object = "door", feature = OpenTo "horizontal open door Lit"}, AlterFeature {verb = "open", object = "door", feature = OpenTo "vertical open door Dark"}, AlterFeature {verb = "open", object = "door", feature = OpenTo "horizontal open door Dark"}]
-; less: TriggerTile [TriggerFeature {verb = "ascend", object = "level", feature = Cause (Ascend 1)}, TriggerFeature {verb = "escape", object = "dungeon", feature = Cause Escape}]
-; greater: TriggerTile [TriggerFeature {verb = "descend", object = "level", feature = Cause (Ascend (-1))}, TriggerFeature {verb = "escape", object = "dungeon", feature = Cause Escape}]
+; less: TriggerTile [TriggerFeature {verb = "ascend", object = "level", feature = Cause (Ascend 1)}, TriggerFeature {verb = "escape", object = "dungeon", feature = Cause (Escape 1)}]
+; greater: TriggerTile [TriggerFeature {verb = "descend", object = "level", feature = Cause (Ascend (-1))}, TriggerFeature {verb = "escape", object = "dungeon", feature = Cause (Escape (-1))}]
 ; CTRL-semicolon: StepToTarget
 ; CTRL-y: Resend
 

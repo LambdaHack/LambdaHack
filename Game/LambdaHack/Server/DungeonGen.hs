@@ -59,8 +59,7 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
       fitArea pos = inside pos . fromArea . qarea
       findLegend pos = maybe clegendLitTile qlegend
                        $ find (fitArea pos) dplaces
-      hasEscapeAndSymbol sym t = Tile.kindHasFeature (F.Cause Effect.Escape) t
-                                 && tsymbol t == sym
+      hasEscape p t = Tile.kindHasFeature (F.Cause $ Effect.Escape p) t
       ascendable  = Tile.kindHasFeature $ F.Cause (Effect.Ascend 1)
       descendable = Tile.kindHasFeature $ F.Cause (Effect.Ascend (-1))
       dcond kt = not (Tile.kindHasFeature F.Clear kt)
@@ -122,12 +121,12 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
               Just True -> do
                 let legend = findLegend epos
                 upEscape <- fmap (fromMaybe $ assert `failure` legend)
-                            $ opick legend $ hasEscapeAndSymbol '<'
+                            $ opick legend $ hasEscape 1
                 return [(epos, upEscape)]
               Just False -> do
                 let legend = findLegend epos
                 downEscape <- fmap (fromMaybe $ assert `failure` legend)
-                              $ opick legend $ hasEscapeAndSymbol '>'
+                              $ opick legend $ hasEscape (-1)
                 return [(epos, downEscape)]
   let exits = stairsTotal ++ escape
       ltile = cmap PointArray.// exits

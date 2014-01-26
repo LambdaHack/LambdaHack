@@ -31,7 +31,7 @@ data Effect a =
   | Regeneration !a
   | Searching !a
   | Ascend !Int
-  | Escape
+  | Escape !Int
   deriving (Show, Read, Eq, Ord, Generic, Functor)
 
 instance Hashable.Hashable a => Hashable.Hashable (Effect a)
@@ -59,7 +59,7 @@ effectTrav (Searching a) f = do
   b <- f a
   return $! Searching b
 effectTrav (Ascend p) _ = return $! Ascend p
-effectTrav Escape _ = return Escape
+effectTrav (Escape p) _ = return $! Escape p
 
 -- | Suffix to append to a basic content name if the content causes the effect.
 effectToSuff :: Show a => Effect a -> (a -> Text) -> Text
@@ -81,7 +81,7 @@ effectToSuff effect f =
     Ascend p | p > 0 -> "of ascending" <> affixPower p
     Ascend p | p < 0 -> "of descending" <> affixPower (- p)
     Ascend{} -> assert `failure` effect
-    Escape -> "of escaping"
+    Escape{} -> "of escaping"
 
 effectToSuffix :: Effect Int -> Text
 effectToSuffix effect = effectToSuff effect affixBonus
