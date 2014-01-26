@@ -19,7 +19,6 @@ import Data.Maybe
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Faction
-import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -79,7 +78,7 @@ nearbyFreePoints cotile f start lid s =
   let lvl@Level{lxsize, lysize} = sdungeon s EM.! lid
       as = actorList (const True) lid s
       good p = f (lvl `at` p)
-               && Tile.hasFeature cotile F.Walkable (lvl `at` p)
+               && Tile.isWalkable cotile (lvl `at` p)
                && unoccupied as p
       ps = nub $ start : concatMap (vicinity lxsize lysize) ps
   in filter good ps

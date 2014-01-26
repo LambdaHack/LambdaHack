@@ -506,7 +506,6 @@ computePathBFS = computeAnythingBFS $ \isEnterable passUnknown aid -> do
   -- Here we don't want '$!', because we want the BFS data lazy.
   return ${-keep it!-} findPathBfs isEnterable passUnknown origin
 
--- TODO: later on, consider making unknown not walkable, again
 computeAnythingBFS :: MonadClient m
                    => ((Point -> Point -> MoveLegal)
                        -> (Point -> Point -> Bool)
@@ -534,19 +533,17 @@ computeAnythingBFS fAnything aid = do
       isEnterable spos tpos =
         let tt = lvl `at` tpos
             allOK = all (\f -> f spos tpos) conditions
-        in if Tile.isPassable cotile tt
-           then if tt == unknownId
-                then if allOK
+        in if tt == unknownId
+           then if allOK
+                then MoveToUnknown
+                else MoveBlocked
+           else if Tile.isSuspect cotile tt
+                then if passSuspect && allOK
                      then MoveToUnknown
                      else MoveBlocked
-                else if Tile.isSuspect cotile tt
-                     then if passSuspect && allOK
-                          then MoveToUnknown
-                          else MoveBlocked
-                     else if allOK
-                          then MoveToOpen
-                          else MoveBlocked
-           else MoveBlocked
+                else if Tile.isPassable cotile tt && allOK
+                     then MoveToOpen
+                     else MoveBlocked
       -- Legality of move from an unknown tile, assuming unknown are open.
       passUnknown :: Point -> Point -> Bool
       passUnknown = case chAccess of  -- spos is unknown, so not a door

@@ -12,7 +12,6 @@ import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Traversable as Traversable
 
-import qualified Game.LambdaHack.Common.Feature as F
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
@@ -137,7 +136,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
       lm = EM.unionWith (mergeCorridor cotile) lcorridors lplaces
   -- Convert wall openings into doors, possibly.
   let f t =
-        if not $ Tile.hasFeature cotile F.Suspect t
+        if not $ Tile.isSuspect cotile t
         then return t  -- no opening to start with
         else do
           -- Openings have a certain chance to be doors

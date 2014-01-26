@@ -452,7 +452,7 @@ rollSpawnPos Kind.COps{cotile} visible
       distantAtLeast d p _ =
         all (\b -> chessDist (bpos b) p > d) inhabitants
   findPosTry 40 ltile
-    ( \p t -> Tile.hasFeature cotile F.Walkable t
+    ( \p t -> Tile.isWalkable cotile t
               && unoccupied as p)
     [ \_ t -> not (isLit t)  -- no such tiles on some maps
     , distantAtLeast factionDist

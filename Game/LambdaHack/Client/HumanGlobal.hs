@@ -356,7 +356,7 @@ projectAid source ts tpos = do
         Just (pos : _) -> do
           lvl <- getLevel lid
           let t = lvl `at` pos
-          if not $ Tile.hasFeature cotile F.Clear t
+          if not $ Tile.isWalkable cotile t
             then failSer ProjectBlockTerrain
             else do
               mab <- getsState $ posToActor pos lid
@@ -463,10 +463,10 @@ alterFeatures (_ : ts) = alterFeatures ts
 -- | Guess and report why the bump command failed.
 guessAlter :: Kind.Ops TileKind -> [F.Feature] -> Kind.Id TileKind -> Msg
 guessAlter cotile (F.OpenTo _ : _) t
-  | Tile.closable cotile t = "already open"
+  | Tile.isClosable cotile t = "already open"
 guessAlter _ (F.OpenTo _ : _) _ = "cannot be opened"
 guessAlter cotile (F.CloseTo _ : _) t
-  | Tile.openable cotile t = "already closed"
+  | Tile.isOpenable cotile t = "already closed"
 guessAlter _ (F.CloseTo _ : _) _ = "cannot be closed"
 guessAlter _ _ _ = "never mind"
 

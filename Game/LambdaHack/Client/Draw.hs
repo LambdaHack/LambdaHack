@@ -18,7 +18,6 @@ import Game.LambdaHack.Common.Animation (SingleFrame (..))
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Faction
-import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Item as Item
@@ -30,6 +29,7 @@ import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ActorKind
@@ -56,7 +56,7 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
      cli@StateClient{ stgtMode, seps, sdisco
                     , smarkVision, smarkSmell, smarkSuspect, swaitTimes } s
      cursorDesc targetDesc sfTop =
-  let Kind.COps{cotile=Kind.Ops{okind=tokind, ouniqGroup}} = cops
+  let Kind.COps{cotile=cotile@Kind.Ops{okind=tokind, ouniqGroup}} = cops
       (lvl@Level{lxsize, lysize, lsmell, ltime}) = sdungeon s EM.! drawnLevelId
       (bl, blLength) = case (cursorPos, mleader) of
         (Just cursor, Just leader) ->
@@ -92,15 +92,16 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
                                          toEnum $ fromEnum p `rem` 14 + 1}
             -- smarkSuspect is an optional overlay, so let's overlay it
             -- over both visible and invisible tiles.
-            vcolor t
-              | smarkSuspect && F.Suspect `elem` tfeature t = Color.BrCyan
-              | vis = tcolor t
-              | otherwise = tcolor2 t
+            vcolor
+              | smarkSuspect && Tile.isSuspect cotile tile = Color.BrCyan
+              | vis = tcolor tk
+              | otherwise = tcolor2 tk
             viewItem i =
               ( jsymbol i
               , Color.defAttr {Color.fg = flavourToColor $ jflavour i} )
-            fgOnPathOrLine = case (vis, F.Walkable `elem` tfeature tk) of
+            fgOnPathOrLine = case (vis, Tile.isWalkable cotile tile) of
               _ | tile == unknownId -> Color.BrBlack
+              _ | Tile.isSuspect cotile tile -> Color.BrCyan
               (True, True)   -> Color.BrGreen
               (True, False)  -> Color.BrRed
               (False, True)  -> Color.Green
@@ -121,7 +122,7 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
                   (timeToDigit smellTimeout smlt, rainbow pos0)
                   | otherwise ->
                   case EM.keys items of
-                    [] -> (tsymbol tk, Color.defAttr {Color.fg = vcolor tk})
+                    [] -> (tsymbol tk, Color.defAttr {Color.fg = vcolor})
                     i : _ -> viewItem $ getItemBody i s
             vis = ES.member pos0 $ totalVisible per
             visPl = case (mleader, bfsmpathRaw) of

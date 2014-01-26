@@ -329,7 +329,7 @@ projectFail source tpxy eps iid container isShrapnel = do
                       `twith` (spos, tpxy)
     Just (pos : rest) -> do
       let t = lvl `at` pos
-      if not $ Tile.hasFeature cotile F.Clear t
+      if not $ Tile.isClear cotile t
         then return $ Just ProjectBlockTerrain
         else do
           mab <- getsState $ posToActor pos lid

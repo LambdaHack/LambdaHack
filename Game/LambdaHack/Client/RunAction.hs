@@ -27,7 +27,6 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Common.Feature as F
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
@@ -112,11 +111,11 @@ moveRunAid source dir = do
           Right $ MoveSer source dir
         -- No access, so search and/or alter the tile. Non-walkability is
         -- not implied by the lack of access.
-        else if not (Tile.hasFeature cotile F.Walkable t)
+        else if not (Tile.isWalkable cotile t)
                 && (isSecretPos lvl tpos
-                    || Tile.openable cotile t
-                    || Tile.closable cotile t
-                    || Tile.changeable cotile t) then
+                    || Tile.isOpenable cotile t
+                    || Tile.isClosable cotile t
+                    || Tile.isChangeable cotile t) then
           if not $ EM.null $ lvl `atI` tpos then
             Left $ showFailureSer AlterBlockItem
           else
@@ -163,7 +162,7 @@ continueRunDir aid distLast mdir = do
         dir = fromMaybe dirLast mdir
         posThere = posHere `shift` dir
     actorsThere <- getsState $ posToActors posThere lid
-    let openableLast = Tile.openable cotile (lvl `at` (posHere `shift` dir))
+    let openableLast = Tile.isOpenable cotile (lvl `at` (posHere `shift` dir))
         check
           | not $ null actorsThere = return $ Left "actor in the way"
                          -- don't displace actors, except with leader in step 1
@@ -193,7 +192,7 @@ tryTurning aid = do
   let posHere = bpos body
       posLast = boldpos body
       dirLast = displacement posLast posHere
-  let openableDir dir = Tile.openable cotile (lvl `at` (posHere `shift` dir))
+  let openableDir dir = Tile.isOpenable cotile (lvl `at` (posHere `shift` dir))
       dirEnterable dir = accessibleDir cops lvl posHere dir || openableDir dir
       dirNearby dir1 dir2 = euclidDistSq dir1 dir2 `elem` [1, 2]
       dirSimilar dir = dirNearby dirLast dir && dirEnterable dir

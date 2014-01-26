@@ -299,7 +299,7 @@ rangedFreq aid = do
       fact <- getsState $ \s -> sfactionD s EM.! bfid
       foes <- getsState $ actorNotProjList (isAtWar fact) blid
       let foesAdj = foesAdjacent lxsize lysize bpos foes
-          posClear pos1 = Tile.hasFeature cotile F.Clear (lvl `at` pos1)
+          posWalkable pos1 = Tile.isWalkable cotile (lvl `at` pos1)
       -- TODO: also don't throw if any pos on trajectory is visibly
       -- not accessible from previous (and tweak eps in bla to make it
       -- accessible). Also don't throw if target not in range.
@@ -328,7 +328,7 @@ rangedFreq aid = do
           mab <- getsState $ posToActor pos1 blid
           if not foesAdj  -- ProjectBlockFoes
              && asight mk  -- ProjectBlind
-             && posClear pos1  -- ProjectBlockTerrain
+             && posWalkable pos1  -- ProjectBlockTerrain
              && maybe True (bproj . snd . fst) mab  -- ProjectBlockActor
           then return $! toFreq "throwFreq"
                $ throwFreq bbag 3 (actorContainer aid binv)
@@ -381,7 +381,7 @@ moveTowards aid target goal = do
       accessibleHere = accessible cops lvl source
       bumpableHere p =
         let t = lvl `at` p
-        in Tile.openable cotile t || Tile.hasFeature cotile F.Suspect t
+        in Tile.isOpenable cotile t || Tile.isSuspect cotile t
       enterableHere p = accessibleHere p || bumpableHere p
   if adjacent source target && noFriends target && enterableHere target then
     return $! returN "moveTowards adjacent" $ displacement source target
@@ -444,11 +444,11 @@ moveOrRunAid run source dir = do
       else if not $ EM.null $ lvl `atI` tpos then
         -- This is, e.g., inaccessible open door with an item in it.
         assert `failure` "AI causes AlterBlockItem" `twith` (run, source, dir)
-      else if not (Tile.hasFeature cotile F.Walkable t)  -- not implied
-              && (Tile.hasFeature cotile F.Suspect t
-                  || Tile.openable cotile t
-                  || Tile.closable cotile t
-                  || Tile.changeable cotile t) then
+      else if not (Tile.isWalkable cotile t)  -- not implied
+              && (Tile.isSuspect cotile t
+                  || Tile.isOpenable cotile t
+                  || Tile.isClosable cotile t
+                  || Tile.isChangeable cotile t) then
         -- No access, so search and/or alter the tile.
         return $! AlterSer source tpos Nothing
       else

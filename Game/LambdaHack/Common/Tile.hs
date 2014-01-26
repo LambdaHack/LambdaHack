@@ -18,7 +18,7 @@ module Game.LambdaHack.Common.Tile
   , isClear, isLit, isWalkable, isPassable, isDoor, isSuspect
   , isExplorable, lookSimilar, speedup
   , openTo, closeTo, causeEffects, revealAs, hideAs
-  , openable, closable, changeable
+  , isOpenable, isClosable, isChangeable
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -92,11 +92,8 @@ isSuspect cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 -- Note that non-walkable tiles can hold treasure, e.g., caches.
 isExplorable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 {-# INLINE isExplorable #-}
-isExplorable cotile@Kind.Ops{ouniqGroup} tk =
-  let unknownId = ouniqGroup "unknown space"
-  in tk /= unknownId && isWalkable cotile tk
-     || isDoor cotile tk
-     || changeable cotile tk
+isExplorable cotile t =
+  isWalkable cotile t || isDoor cotile t || isChangeable cotile t
 
 -- | The player can't tell one tile from the other.
 lookSimilar :: TileKind -> TileKind -> Bool
@@ -126,7 +123,6 @@ speedup allClear Kind.Ops{ofoldrWithKey, obounds} =
       isPassableTab = tabulate $ \tk ->
         let getTo F.OpenTo{} = True
             getTo F.Walkable = True
-            getTo F.Suspect = True
             getTo _ = False
         in any getTo $ tfeature tk
       isDoorTab = tabulate $ \tk ->
@@ -185,22 +181,22 @@ hideAs Kind.Ops{okind, ouniqGroup} t =
        Just group -> ouniqGroup group
 
 -- | Whether a tile kind (specified by its id) has an OpenTo feature.
-openable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
-openable Kind.Ops{okind} t =
+isOpenable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+isOpenable Kind.Ops{okind} t =
   let getTo F.OpenTo{} = True
       getTo _ = False
   in any getTo $ tfeature $ okind t
 
 -- | Whether a tile kind (specified by its id) has a CloseTo feature.
-closable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
-closable Kind.Ops{okind} t =
+isClosable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+isClosable Kind.Ops{okind} t =
   let getTo F.CloseTo{} = True
       getTo _ = False
   in any getTo $ tfeature $ okind t
 
 -- | Whether a tile kind (specified by its id) has a ChangeTo feature.
-changeable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
-changeable Kind.Ops{okind} t =
+isChangeable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+isChangeable Kind.Ops{okind} t =
   let getTo F.ChangeTo{} = True
       getTo _ = False
   in any getTo $ tfeature $ okind t
