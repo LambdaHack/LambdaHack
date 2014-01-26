@@ -268,7 +268,7 @@ fillBfs isEnterable passUnknown origin aInitial =
 -- e.g., how many closed doors they pass, open doors, unknown tiles
 -- on the path or close enough to reveal them.
 -- Also, check if JPS can somehow optimize BFS or pathBfs.
--- | Find a path with the smallest length.
+-- | Find a path, without the source position, with the smallest length.
 -- The @eps@ coefficient determines which direction (or the closest
 -- directions available) that path should prefer, where 0 means north-west
 -- and 1 means north.

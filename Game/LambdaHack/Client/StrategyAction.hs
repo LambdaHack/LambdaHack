@@ -48,12 +48,18 @@ targetStrategy aid = do
   b <- getsState $ getActorBody aid
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   let oldTgtUpdatedPath = case mtgtMPath of
-        Just (tgt, Just path@(p : rest, goal)) ->
-          if p == bpos b
-          then Just (tgt, (rest, goal))
-          else Just (tgt, path)
-        Just (tgt, Just path) -> Just (tgt, path)  -- empty path, stay there
-        _ -> Nothing
+        Just (tgt, Just path@(p : q : rest, goal)) ->
+          if bpos b == p
+          then Just (tgt, path)  -- no move last turn
+          else if bpos b == q
+          then Just (tgt, (q : rest, goal))  -- moved one step along the path
+          else Nothing  -- veered off the path
+        Just (tgt, Just path@([p], goal)) ->
+          assert (bpos b == p && p == goal `blame` (aid, b, mtgtMPath))
+            Just (tgt, path)  -- goal reached; stay there picking up items
+        Just (_, Just ([], _)) -> assert `failure` (aid, b, mtgtMPath)
+        Just (_, Nothing) -> assert `failure` (aid, b, mtgtMPath)
+        Nothing -> Nothing  -- no target assigned yet
   lvl <- getLevel $ blid b
   assert (not $ bproj b) skip  -- would work, but is probably a bug
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
@@ -70,7 +76,8 @@ targetStrategy aid = do
         (_, mpath) <- getCacheBfsAndPath aid p
         case mpath of
           Nothing -> assert `failure` "new target unreachable" `twith` (b, tgt)
-          Just path -> return $! returN "pickNewTarget" (tgt, (path, p))
+          Just path ->
+            return $! returN "pickNewTarget" (tgt, (bpos b : path, p))
       pickNewTarget :: m (Strategy (Target, ([Point], Point)))
       pickNewTarget = do
         -- TODO: for foes and items consider a few nearby, not just one
@@ -92,12 +99,10 @@ targetStrategy aid = do
               (_, (p, _)) : _ -> setPath $ TPoint (blid b) p
           (_, (a, _)) : _ -> setPath $ TEnemy a False
       tellOthersNothingHere pos = do
-        let affect tgt = case tgt of
-              TEnemyPos _ lid p _ | lid == blid b && p == pos ->
-                TVector $ Vector 0 0  -- hack: reset target
-              _ -> tgt
-            affect3 (tgt, mpath) = (affect tgt, mpath)  -- path is the same
-        modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
+        let f (tgt, _) = case tgt of
+              TEnemyPos _ lid p _ -> p /= pos || lid /= blid b
+              _ -> True
+        modifyClient $ \cli -> cli {stargetD = EM.filter f (stargetD cli)}
         pickNewTarget
       updateTgt :: Target -> ([Point], Point)
                 -> m (Strategy (Target, ([Point], Point)))
@@ -121,7 +126,7 @@ targetStrategy aid = do
                  case mpath of
                    Nothing -> pickNewTarget  -- enemy became unreachable
                    Just path ->
-                      return $! returN "TEnemy" (oldTgt, (path, p))
+                      return $! returN "TEnemy" (oldTgt, (bpos b : path, p))
         _ | not $ null nearbyFoes -> pickNewTarget  -- prefer foes to anything
         TEnemyPos _ lid p _ ->
           -- Chase last position even if foe hides or dies,
@@ -365,15 +370,15 @@ toolsFreq disco aid = do
     ++ useFreq tis 2 (const $ CFloor blid bpos)
 
 moveTowards :: MonadClient m
-            => ActorId -> Point -> Point -> m (Strategy Vector)
-moveTowards aid target goal = do
+            => ActorId -> Point -> Point -> Point -> m (Strategy Vector)
+moveTowards aid source target goal = do
   cops@Kind.COps{coactor=Kind.Ops{okind}, cotile} <- getsState scops
   b <- getsState $ getActorBody aid
+  assert (source == bpos b && adjacent source target) skip
   lvl <- getsState $ (EM.! blid b) . sdungeon
   fact <- getsState $ (EM.! bfid b) . sfactionD
   friends <- getsState $ actorList (not . isAtWar fact) $ blid b
-  let source = bpos b
-      mk = okind $ bkind b
+  let mk = okind $ bkind b
       noFriends | asight mk = unoccupied friends  -- TODO: && animal or stupid
         -- TODO: but beware of trivial cycles from displacing repeatedly
         -- and also somehow hide friends from UI blind actors
@@ -383,7 +388,7 @@ moveTowards aid target goal = do
         let t = lvl `at` p
         in Tile.isOpenable cotile t || Tile.isSuspect cotile t
       enterableHere p = accessibleHere p || bumpableHere p
-  if adjacent source target && noFriends target && enterableHere target then
+  if noFriends target && enterableHere target then
     return $! returN "moveTowards adjacent" $ displacement source target
   else do
     let goesBack v = v == displacement source (boldpos b)
@@ -401,9 +406,8 @@ chase :: MonadClient m
 chase aid foeVisible = do
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   str <- case mtgtMPath of
-    Just (_, Just ((p : _), goal)) -> moveTowards aid p goal
-    Just (_, Just _) -> return reject  -- goal reached
-    _ -> assert `failure` (aid, mtgtMPath)
+    Just (_, Just ((p : q : _), goal)) -> moveTowards aid p q goal
+    _ -> return reject  -- goal reached
   let fight = not foeVisible  -- don't pick fights if the real foe is close
   if fight
     then Traversable.mapM (moveOrRunAid False aid) str

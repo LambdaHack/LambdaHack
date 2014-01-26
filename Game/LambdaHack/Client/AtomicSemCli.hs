@@ -211,7 +211,8 @@ createActorA aid _b = do
   let affect tgt = case tgt of
         TEnemyPos a _ _ permit | a == aid -> TEnemy a permit
         _ -> tgt
-      affect3 (tgt, _) = (affect tgt, Nothing)  -- reset path
+      affect3 (tgt, mpath) = (affect tgt, mpath)
+                                -- If old path is bad, will be updated later.
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
   modifyClient $ \cli -> cli {scursor = affect $ scursor cli}
 
@@ -221,10 +222,10 @@ destroyActorA aid b destroy = do
   modifyClient $ \cli -> cli {sbfsD = EM.delete aid $ sbfsD cli}  -- gc
   let affect tgt = case tgt of
         TEnemy a permit | a == aid -> TEnemyPos a (blid b) (bpos b) permit
-        -- Don't consider @destroy@, because even if actor dead, it makes
-        -- sense to go to last known location to loot or find others.
+          -- Don't consider @destroy@, because even if actor dead, it makes
+          -- sense to go to last known location to loot or find others.
         _ -> tgt
-      affect3 (tgt, _) = (affect tgt, Nothing)  -- reset path
+      affect3 (tgt, mpath) = (affect tgt, mpath)  -- old path always good
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
   modifyClient $ \cli -> cli {scursor = affect $ scursor cli}
 

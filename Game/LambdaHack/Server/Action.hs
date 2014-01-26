@@ -438,8 +438,8 @@ rndToAction r = do
 
 -- | Gets a random generator from the config or,
 -- if not present, generates one and updates the config with it.
-getSetGen :: ConfigIO.CP      -- ^ config
-          -> String  -- ^ name of the generator
+getSetGen :: ConfigIO.CP  -- ^ config
+          -> String       -- ^ name of the generator
           -> Maybe R.StdGen
           -> IO (R.StdGen, ConfigIO.CP)
 getSetGen config option mrandom =

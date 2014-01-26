@@ -150,8 +150,7 @@ queryAIPick aid = do
           <> "\nHandleAI target:"   <+> tshow tgtMPath
 --    trace _debug skip
     modifyClient $ \cli ->
-      cli {stargetD =
-             EM.alter (const $ tgtMPath) aid (stargetD cli)}
+      cli {stargetD = EM.alter (const $ tgtMPath) aid (stargetD cli)}
     stratAction <- actionStrategy aid factionAbilities
     -- Run the AI: chose an action from those given by the AI strategy.
     action <- rndToAction $ frequency $ bestVariant stratAction
