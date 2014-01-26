@@ -126,6 +126,7 @@ speedup allClear Kind.Ops{ofoldrWithKey, obounds} =
       isPassableTab = tabulate $ \tk ->
         let getTo F.OpenTo{} = True
             getTo F.Walkable = True
+            getTo F.Suspect = True
             getTo _ = False
         in any getTo $ tfeature tk
       isDoorTab = tabulate $ \tk ->

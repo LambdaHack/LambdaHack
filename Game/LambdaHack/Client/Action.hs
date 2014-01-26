@@ -507,6 +507,7 @@ computePathBFS = computeAnythingBFS $ \isEnterable passUnknown aid -> do
   -- Here we don't want '$!', because we want the BFS data lazy.
   return ${-keep it!-} findPathBfs isEnterable passUnknown origin
 
+-- TODO: later on, consider making unknown not walkable, again
 computeAnythingBFS :: MonadClient m
                    => ((Point -> Point -> MoveLegal)
                        -> (Point -> Point -> Bool)
@@ -518,11 +519,14 @@ computeAnythingBFS fAnything aid = do
   cops@Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getsState scops
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
+  smarkSuspect <- getsClient smarkSuspect
+  sisAI <- getsClient sisAI
   -- We treat doors as an open tile and don't add an extra step for opening
   -- the doors, because other actors open and use them, too,
   -- so it's amortized. We treat unknown tiles specially.
-  -- TODO: Sometimes treat hidden tiles as possibly open?
-  let unknownId = ouniqGroup "unknown space"
+  let -- Suspect tiles treated as a kind of unknown.
+      passSuspect = smarkSuspect || sisAI  -- AI checks suspects ASAP
+      unknownId = ouniqGroup "unknown space"
       chAccess = checkAccess cops lvl
       chDoorAccess = checkDoorAccess cops lvl
       conditions = catMaybes [chAccess, chDoorAccess]
@@ -530,19 +534,31 @@ computeAnythingBFS fAnything aid = do
       isEnterable :: Point -> Point -> MoveLegal
       isEnterable spos tpos =
         let tt = lvl `at` tpos
+            allOK = all (\f -> f spos tpos) conditions
         in if Tile.isPassable cotile tt
-           then if all (\f -> f spos tpos) conditions
-                then if tt == unknownId
+           then if tt == unknownId
+                then if allOK
                      then MoveToUnknown
-                     else MoveToOpen
-                else MoveBlocked
+                     else MoveBlocked
+                else if Tile.isSuspect cotile tt
+                     then if passSuspect && allOK
+                          then MoveToUnknown
+                          else MoveBlocked
+                     else if allOK
+                          then MoveToOpen
+                          else MoveBlocked
            else MoveBlocked
       -- Legality of move from an unknown tile, assuming unknown are open.
       passUnknown :: Point -> Point -> Bool
       passUnknown = case chAccess of  -- spos is unknown, so not a door
-        Nothing -> \_ tpos -> lvl `at` tpos == unknownId
-        Just ch -> \spos tpos -> lvl `at` tpos == unknownId
-                                 && ch spos tpos
+        Nothing -> \_ tpos -> let tt = lvl `at` tpos
+                              in tt == unknownId
+                                 || passSuspect && Tile.isSuspect cotile tt
+        Just ch -> \spos tpos -> let tt = lvl `at` tpos
+                                 in (tt == unknownId
+                                     || passSuspect
+                                        && Tile.isSuspect cotile tt)
+                                    && ch spos tpos
   fAnything isEnterable passUnknown aid
 
 accessCacheBfs :: MonadClient m => ActorId -> Point -> m (Maybe Int)
@@ -717,30 +733,19 @@ closestUnknown aid = do
             then Nothing
             else Just closestPos
 
--- | A passable neighbour of the furthest (wrt paths) known position,
--- except under the actor.
+-- | Furthest (wrt paths) known position, except under the actor.
 furthestKnown :: MonadClient m => ActorId -> m (Maybe Point)
 furthestKnown aid = do
-  Kind.COps{cotile} <- getsState scops
-  b <- getsState $ getActorBody aid
-  lvl@Level{lxsize, lysize} <- getsState $ (EM.! blid b) . sdungeon
   bfs <- getCacheBfs aid
   getMaxIndex <- rndToAction $ oneOf [ PointArray.maxIndexA
                                      , PointArray.maxLastIndexA ]
-  let borders = [ Point x y
-                | x <- [0, lxsize - 1], y <- [1..lysize - 2] ]
-                ++ [ Point x y
-                   | x <- [0..lxsize - 1], y <- [0, lysize - 1] ]
-      bfsNoBorders = bfs PointArray.// map (\p -> (p, succ apartBfs)) borders
-      furthestPos = getMaxIndex bfsNoBorders
+  let furthestPos = getMaxIndex bfs
       dist = bfs PointArray.! furthestPos
   return $! if dist <= apartBfs
             then assert `failure` (aid, furthestPos, dist)
             else if dist == succ apartBfs  -- bpos of aid
                  then Nothing
-                 else let passable = Tile.isPassable cotile . (lvl `at`)
-                      in find passable
-                         $ furthestPos : vicinity lxsize lysize furthestPos
+                 else Just furthestPos
 
 -- TODO: use findIndices or another function giving a vector and sort it.
 -- | Closest reachable suspect tile positions.
