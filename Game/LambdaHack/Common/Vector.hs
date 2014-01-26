@@ -228,13 +228,15 @@ fillBfs :: (Point -> Point -> MoveLegal)  -- ^ is move from a known tile legal
 fillBfs isEnterable passUnknown origin aInitial =
   -- TODO: copy, thaw, mutate, freeze
   let maxUnknownBfs = pred apartBfs
+      maxKnownBfs = pred maxBound
       bfs :: Seq.Seq (Point, BfsDistance)
           -> PointArray.Array BfsDistance
           -> PointArray.Array BfsDistance
       bfs q a =
         case Seq.viewr q of
           Seq.EmptyR -> a  -- no more positions to check
-          _ Seq.:> (_, d)| d == maxUnknownBfs || d == maxBound -> a  -- too far
+          _ Seq.:> (_, d)
+            | d == maxUnknownBfs || d == maxKnownBfs -> a  -- too far
           q1 Seq.:> (pos, oldDistance) | oldDistance >= minKnownBfs ->
             let distance = succ oldDistance
                 allMvs = map (shift pos) moves
@@ -288,7 +290,8 @@ findPathBfs isEnterable passUnknown source target sepsRaw bfs =
                            in mix ch (reverse ch)
            track :: Point -> BfsDistance -> [Point] -> [Point]
            track pos oldDist suffix | oldDist == minKnownBfs =
-             assert (pos == source) suffix
+             assert (pos == source
+                     `blame` (source, target, pos, suffix)) suffix
            track pos oldDist suffix | oldDist > minKnownBfs =
              let dist = pred oldDist
                  children = map (shift pos) preferedMoves
