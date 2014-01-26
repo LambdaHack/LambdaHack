@@ -349,7 +349,7 @@ projectFail source tpxy eps iid container isShrapnel = do
                   return $! foesAdjacent lxsize lysize spos foes
               if blockedByFoes then
                 return $ Just ProjectBlockFoes
-              else if not (asight $ okind $ bkind sb)
+              else if not (asight (okind $ bkind sb) || bproj sb)
                    then return $ Just ProjectBlind
                    else do
                     if isShrapnel && eps `mod` 2 == 0 then
