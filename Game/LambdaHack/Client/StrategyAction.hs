@@ -28,6 +28,7 @@ import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Random as Random
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
@@ -69,6 +70,9 @@ targetStrategy aid = do
       nearbyFoes = filter (\(_, body) ->
                              chessDist (bpos body) (bpos b) < nearby) allFoes
       unknownId = ouniqGroup "unknown space"
+      notEscape t = let notEffectEscape Effect.Escape{} = False
+                        notEffectEscape _ = True
+                    in all notEffectEscape $ Tile.causeEffects cotile t
       focused = bspeed b <= speedNormal
       setPath :: Target -> m (Strategy (Target, ([Point], Point)))
       setPath tgt = do
@@ -81,7 +85,7 @@ targetStrategy aid = do
             return $! returN "pickNewTarget" (tgt, (bpos b : path, p))
       pickNewTarget :: m (Strategy (Target, ([Point], Point)))
       pickNewTarget = do
-        -- TODO: for foes and items consider a few nearby, not just one
+        -- TODO: for foes, items, etc. consider a few nearby, not just one
         cfoes <- closestFoes aid
         case cfoes of
           [] -> do
@@ -91,10 +95,18 @@ targetStrategy aid = do
                 upos <- closestUnknown aid
                 case upos of
                   Nothing -> do
-                    kpos <- furthestKnown aid
-                    case kpos of
-                      Nothing -> return reject
-                      Just p -> setPath $ TPoint (blid b) p
+                    ctriggers <- closestTriggers False aid
+                    case ctriggers of
+                      [] -> do
+                        getDistant <-
+                          rndToAction
+                          $ oneOf [ closestTriggers True
+                                  , fmap maybeToList . furthestKnown ]
+                        kpos <- getDistant aid
+                        case kpos of
+                          [] -> return reject
+                          p : _ -> setPath $ TPoint (blid b) p
+                      p : _ -> setPath $ TPoint (blid b) p
                   Just p -> setPath $ TPoint (blid b) p
               (_, (p, _)) : _ -> setPath $ TPoint (blid b) p
           (_, (a, _)) : _ -> setPath $ TEnemy a False
@@ -143,8 +155,9 @@ targetStrategy aid = do
                 && let t = lvl `at` pos
                    in t /= unknownId  -- not unknown any more
                       && not (Tile.isSuspect cotile t)  -- not suspect any more
+                      && notEscape t  -- not an escape to trigger/occupy
                       && (ES.notMember lid explored  -- still things to explore
-                          || pos == bpos b)  -- or already reached
+                          || pos == bpos b)  -- or reached, patrol elsewhere
           then pickNewTarget
           else return $! returN "TPoint" (oldTgt, updatedPath)
         TVector{} -> pickNewTarget
@@ -272,12 +285,12 @@ triggerFreq aid = do
         case ascendInBranch dungeon nlid p of
           [] -> False
           nlid2 : _ -> ES.notMember nlid2 explored
-                       || unexploredDepth nlid2 (signum p)
+                       || unexploredDepth nlid2 p
       ben feat = case feat of
         F.Cause Effect.Escape{} | spawn -> 0  -- spawners lose if they escape
         F.Cause (Effect.Ascend p) ->  -- change levels sensibly, in teams
-          let exploredCurrent = ES.member blid explored
-          in if not exploredCurrent
+          let unexploredCurrent = ES.notMember blid explored
+          in if unexploredCurrent
              then 0  -- don't leave the level until explored
              else if unexploredDepth blid (signum p)
              then 1000

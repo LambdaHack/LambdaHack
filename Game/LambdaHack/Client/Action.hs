@@ -29,7 +29,7 @@ module Game.LambdaHack.Client.Action
   , aidTgtToPos, aidTgtAims, leaderTgtToPos, leaderTgtAims, cursorToPos
   , partAidLeader, partActorLeader
   , getCacheBfsAndPath, getCacheBfs, accessCacheBfs, actorAimsPos
-  , closestUnknown, furthestKnown, closestItems, closestFoes
+  , closestUnknown, furthestKnown, closestTriggers, closestItems, closestFoes
   , debugPrint
   ) where
 
@@ -64,6 +64,7 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Animation
 import qualified Game.LambdaHack.Common.ConfigIO as ConfigIO
+import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import qualified Game.LambdaHack.Common.Key as K
@@ -80,6 +81,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Frontend as Frontend
 
 debugPrint :: MonadClient m => Text -> m ()
@@ -718,6 +720,20 @@ cursorToPos = do
     Nothing -> return Nothing
     Just aid -> aidTgtToPos aid lidV $ Just scursor
 
+-- | Furthest (wrt paths) known position, except under the actor.
+furthestKnown :: MonadClient m => ActorId -> m (Maybe Point)
+furthestKnown aid = do
+  bfs <- getCacheBfs aid
+  getMaxIndex <- rndToAction $ oneOf [ PointArray.maxIndexA
+                                     , PointArray.maxLastIndexA ]
+  let furthestPos = getMaxIndex bfs
+      dist = bfs PointArray.! furthestPos
+  return $! if dist <= apartBfs
+            then assert `failure` (aid, furthestPos, dist)
+            else if dist == succ apartBfs  -- bpos of aid
+                 then Nothing
+                 else Just furthestPos
+
 -- | Closest reachable unknown tile position, if any.
 closestUnknown :: MonadClient m => ActorId -> m (Maybe Point)
 closestUnknown aid = do
@@ -737,32 +753,54 @@ closestUnknown aid = do
     return Nothing
   else return $ Just closestPos
 
--- | Furthest (wrt paths) known position, except under the actor.
-furthestKnown :: MonadClient m => ActorId -> m (Maybe Point)
-furthestKnown aid = do
-  bfs <- getCacheBfs aid
-  getMaxIndex <- rndToAction $ oneOf [ PointArray.maxIndexA
-                                     , PointArray.maxLastIndexA ]
-  let furthestPos = getMaxIndex bfs
-      dist = bfs PointArray.! furthestPos
-  return $! if dist <= apartBfs
-            then assert `failure` (aid, furthestPos, dist)
-            else if dist == succ apartBfs  -- bpos of aid
-                 then Nothing
-                 else Just furthestPos
+-- | Closest (wrt paths) triggerable open tiles, except under the actor.
+closestTriggers :: MonadClient m => Bool -> ActorId -> m [Point]
+closestTriggers exploredToo aid = do
+  Kind.COps{cotile} <- getsState scops
+  body <- getsState $ getActorBody aid
+  lvl <- getLevel $ blid body
+  dungeon <- getsState sdungeon
+  explored <- getsClient sexplored
+  let unexploredDepth nlid p =
+        -- TODO: record in level or read from PlayerLevel the location
+        -- of Escape and mark such levels are unexplored; also in StrategyAct
+        case ascendInBranch dungeon nlid p of
+          [] -> False
+          nlid2 : _ -> ES.notMember nlid2 explored
+                       || unexploredDepth nlid2 p
+      unexploredUp = unexploredDepth (blid body) 1
+      unexploredDown = unexploredDepth (blid body) (-1)
+      unexEffect (Effect.Ascend p) =
+        if p > 0 then unexploredUp else unexploredDown
+      unexEffect _ = not (unexploredUp || unexploredDown)
+                       -- escape only after exploring, for high score and fun
+      isTrigger
+        | exploredToo = \t -> Tile.isWalkable cotile t
+                              && not (null $ Tile.causeEffects cotile t)
+        | otherwise = \t -> Tile.isWalkable cotile t
+                            && any unexEffect (Tile.causeEffects cotile t)
+      f :: [Point] -> Point -> Kind.Id TileKind -> [Point]
+      f acc p t = if isTrigger t then p : acc else acc
+  let triggersAll = PointArray.ifoldlA f [] $ ltile lvl
+      triggers = delete (bpos body) triggersAll
+  case triggers of
+    [] -> return []
+    _ -> do
+      bfs <- getCacheBfs aid
+      let ds = mapMaybe (\p -> fmap (,p) (accessBfs bfs p)) triggers
+      return $! map snd $ sort ds
 
 -- | Closest (wrt paths) items.
 closestItems :: MonadClient m => ActorId -> m ([(Int, (Point, ItemBag))])
 closestItems aid = do
   body <- getsState $ getActorBody aid
   Level{lfloor} <- getLevel $ blid body
-  let items = EM.keys lfloor
+  let items = EM.assocs lfloor
   case items of
     [] -> return []
     _ -> do
       bfs <- getCacheBfs aid
-      let ds = mapMaybe (\x@(p, _) -> fmap (,x) (accessBfs bfs p))
-                        $ EM.assocs lfloor
+      let ds = mapMaybe (\x@(p, _) -> fmap (,x) (accessBfs bfs p)) items
       return $! sort ds
 
 -- | Closest (wrt paths) enemy actors.
