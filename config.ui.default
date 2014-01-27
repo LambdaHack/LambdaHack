@@ -52,6 +52,8 @@
 ; asterisk: TgtEnemy
 ; CTRL-question: TgtUnknown
 ; CTRL-i: TgtItem
+; CTRL-less: TgtStair True
+; CTRL-greater: TgtStair False
 ; bracketleft:  TgtAscend 1
 ; bracketright: TgtAscend (-1)
 ; braceleft:    TgtAscend 10

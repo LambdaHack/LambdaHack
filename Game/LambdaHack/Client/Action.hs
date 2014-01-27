@@ -754,8 +754,8 @@ closestUnknown aid = do
   else return $ Just closestPos
 
 -- | Closest (wrt paths) triggerable open tiles, except under the actor.
-closestTriggers :: MonadClient m => Bool -> ActorId -> m [Point]
-closestTriggers exploredToo aid = do
+closestTriggers :: MonadClient m => Maybe Bool -> Bool -> ActorId -> m [Point]
+closestTriggers onlyDir exploredToo aid = do
   Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody aid
   lvl <- getLevel $ blid body
@@ -768,11 +768,13 @@ closestTriggers exploredToo aid = do
           [] -> False
           nlid2 : _ -> ES.notMember nlid2 explored
                        || unexploredDepth nlid2 p
-      unexploredUp = unexploredDepth (blid body) 1
-      unexploredDown = unexploredDepth (blid body) (-1)
+      unexUp = onlyDir == Just True
+               || isNothing onlyDir && unexploredDepth (blid body) 1
+      unexDown = onlyDir == Just False
+                 || isNothing onlyDir && unexploredDepth (blid body) (-1)
       unexEffect (Effect.Ascend p) =
-        if p > 0 then unexploredUp else unexploredDown
-      unexEffect _ = not (unexploredUp || unexploredDown)
+        if p > 0 then unexUp else unexDown
+      unexEffect _ = not (unexUp || unexDown)
                        -- escape only after exploring, for high score and fun
       isTrigger
         | exploredToo = \t -> Tile.isWalkable cotile t

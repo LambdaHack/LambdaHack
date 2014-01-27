@@ -49,19 +49,23 @@ targetStrategy aid = do
   modifyClient $ \cli -> cli {sbfsD = EM.empty}
   b <- getsState $ getActorBody aid
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
-  let oldTgtUpdatedPath = case mtgtMPath of
-        Just (tgt, Just path@(p : q : rest, goal)) ->
+  oldTgtUpdatedPath <- case mtgtMPath of
+    Just (tgt, Just path) -> do
+      mvalidPos <- aidTgtToPos aid (blid b) (Just tgt)
+      if isNothing mvalidPos then return Nothing  -- wrong level
+      else return $! case path of
+        (p : q : rest, goal) ->
           if bpos b == p
           then Just (tgt, path)  -- no move last turn
           else if bpos b == q
-          then Just (tgt, (q : rest, goal))  -- moved one step along the path
-          else Nothing  -- veered off the path
-        Just (tgt, Just path@([p], goal)) ->
+               then Just (tgt, (q : rest, goal))  -- moved a step along path
+               else Nothing  -- veered off the path
+        ([p], goal) ->
           assert (bpos b == p && p == goal `blame` (aid, b, mtgtMPath))
             Just (tgt, path)  -- goal reached; stay there picking up items
-        Just (_, Just ([], _)) -> assert `failure` (aid, b, mtgtMPath)
-        Just (_, Nothing) -> assert `failure` (aid, b, mtgtMPath)
-        Nothing -> Nothing  -- no target assigned yet
+        ([], _) -> assert `failure` (aid, b, mtgtMPath)
+    Just (_, Nothing) -> assert `failure` (aid, b, mtgtMPath)
+    Nothing -> return Nothing  -- no target assigned yet
   lvl <- getLevel $ blid b
   assert (not $ bproj b) skip  -- would work, but is probably a bug
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
@@ -95,12 +99,12 @@ targetStrategy aid = do
                 upos <- closestUnknown aid
                 case upos of
                   Nothing -> do
-                    ctriggers <- closestTriggers False aid
+                    ctriggers <- closestTriggers Nothing False aid
                     case ctriggers of
                       [] -> do
                         getDistant <-
                           rndToAction
-                          $ oneOf [ closestTriggers True
+                          $ oneOf [ closestTriggers Nothing True
                                   , fmap maybeToList . furthestKnown ]
                         kpos <- getDistant aid
                         case kpos of

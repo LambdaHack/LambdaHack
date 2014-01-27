@@ -8,8 +8,8 @@ module Game.LambdaHack.Client.HumanLocal
   , repeatHuman, recordHuman
   , historyHuman, humanMarkVision, humanMarkSmell, humanMarkSuspect
   , helpHuman
-  , moveCursor
-  , tgtFloorHuman, tgtEnemyHuman, tgtUnknownHuman, tgtItemHuman, tgtAscendHuman
+  , moveCursor, tgtFloorHuman, tgtEnemyHuman
+  , tgtUnknownHuman, tgtItemHuman, tgtStairHuman, tgtAscendHuman
   , epsIncrHuman, tgtClearHuman, cancelHuman, displayMainMenu, acceptHuman
     -- * Helper functions useful also elsewhere
   , floorItemOverlay, itemOverlay
@@ -535,6 +535,21 @@ tgtItemHuman = do
   case items of
     [] -> failWith "no more items remembered or visible"
     (_, (p, _)) : _ -> do
+      let tgt = TPoint (blid b) p
+      modifyClient $ \cli -> cli {scursor = tgt}
+      return mempty
+
+-- * TgtStair
+
+tgtStairHuman :: MonadClientUI m => Bool -> m Slideshow
+tgtStairHuman up = do
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  stairs <- closestTriggers (Just up) False leader
+  case stairs of
+    [] -> failWith $ "no stairs"
+                     <+> if up then "up" else "down"
+    p : _ -> do
       let tgt = TPoint (blid b) p
       modifyClient $ \cli -> cli {scursor = tgt}
       return mempty
