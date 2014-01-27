@@ -45,7 +45,7 @@ import qualified Data.EnumSet as ES
 import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
-import qualified Data.Monoid as Monoid
+import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
@@ -232,7 +232,7 @@ displayMore :: MonadClientUI m => ColorMode -> Msg -> m Bool
 displayMore dm prompt = do
   slides <- promptToSlideshow $ prompt <+> moreMsg
   -- Two frames drawn total (unless 'prompt' very long).
-  getInitConfirms dm [] $ slides Monoid.<> toSlideshow False [[]]
+  getInitConfirms dm [] $ slides <> toSlideshow False [[]]
 
 -- | Print a yes/no question and return the player's answer. Use black
 -- and white colours to turn player's attention to the choice.
@@ -332,7 +332,7 @@ scoreToSlideshow total status = do
   let showScore (ntable, pos) = HighScore.highSlideshow ntable pos status
       diff | not $ playerUI $ gplayer fact = 0
            | otherwise = sdifficulty
-  return $! maybe Monoid.mempty showScore
+  return $! maybe mempty showScore
             $ HighScore.register table total time status date diff
 
 restoreGame :: MonadClient m => m (Maybe (State, StateClient))

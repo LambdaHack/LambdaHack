@@ -14,11 +14,11 @@ module Game.LambdaHack.Common.Msg
 import Data.Binary
 import qualified Data.ByteString.Char8 as BS
 import Data.List
-import Data.Monoid hiding ((<>))
+import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
-import NLP.Miniutter.English ((<+>), (<>))
+import NLP.Miniutter.English ((<+>))
 import qualified NLP.Miniutter.English as MU
 import qualified Text.Show.Pretty as Show.Pretty
 

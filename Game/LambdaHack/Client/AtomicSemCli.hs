@@ -11,7 +11,7 @@ import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Maybe
-import qualified Data.Monoid as Monoid
+import Data.Monoid
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.Action
@@ -584,7 +584,7 @@ quitFactionUI fid mbody toSt = do
       startingSlide <- promptToSlideshow moreMsg
       recordHistory  -- we are going to exit or restart, so record
       itemSlides <-
-        if EM.null bag then return Monoid.mempty
+        if EM.null bag then return mempty
         else do
           io <- floorItemOverlay bag
           overlayToSlideshow itemMsg io
@@ -595,10 +595,10 @@ quitFactionUI fid mbody toSt = do
       shutdownSlide <- promptToSlideshow pp
       -- TODO: First ESC cancels items display.
       void $ getInitConfirms ColorFull []
-           $ startingSlide Monoid.<> itemSlides
+           $ startingSlide <> itemSlides
       -- TODO: Second ESC cancels high score and parting message display.
       -- The last slide stays onscreen during shutdown, etc.
-          Monoid.<> scoreSlides Monoid.<> partingSlide Monoid.<> shutdownSlide
+          <> scoreSlides <> partingSlide <> shutdownSlide
     _ -> return ()
 
 -- * SfxAtomicUI

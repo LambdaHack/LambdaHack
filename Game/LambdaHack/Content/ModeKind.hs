@@ -6,7 +6,7 @@ module Game.LambdaHack.Content.ModeKind
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import Data.Text (Text)
-import NLP.Miniutter.English ()
+import qualified NLP.Miniutter.English as MU ()
 
 import Game.LambdaHack.Common.Misc (Freqs, LevelId)
 

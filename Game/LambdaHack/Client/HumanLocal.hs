@@ -27,7 +27,7 @@ import Data.Function
 import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
-import Data.Monoid hiding ((<>))
+import Data.Monoid
 import Data.Ord
 import Data.Text (Text)
 import qualified Data.Text as T

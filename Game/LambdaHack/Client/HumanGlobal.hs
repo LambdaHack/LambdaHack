@@ -16,7 +16,7 @@ import qualified Data.EnumSet as ES
 import Data.Function
 import Data.List
 import Data.Maybe
-import Data.Monoid hiding ((<>))
+import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU

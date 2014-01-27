@@ -3,7 +3,7 @@ module Game.LambdaHack.Client.HumanSem
   ( cmdHumanSem
   ) where
 
-import Data.Monoid hiding ((<>))
+import Data.Monoid
 
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.HumanCmd
