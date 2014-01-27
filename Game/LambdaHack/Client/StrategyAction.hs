@@ -161,7 +161,8 @@ targetStrategy aid = do
                       && not (Tile.isSuspect cotile t)  -- not suspect any more
                       && notEscape t  -- not an escape to trigger/occupy
                       && (ES.notMember lid explored  -- still things to explore
-                          || pos == bpos b)  -- or reached, patrol elsewhere
+                          || pos == bpos b  -- or reached; go patrol elsewhere
+                          || not (Tile.isWalkable cotile t))  -- or unreachable
           then pickNewTarget
           else return $! returN "TPoint" (oldTgt, updatedPath)
         TVector{} -> pickNewTarget
