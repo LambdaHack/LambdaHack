@@ -49,7 +49,7 @@ homepage:      http://github.com/kosmikus/LambdaHack
 bug-reports:   http://github.com/kosmikus/LambdaHack/issues
 license:       BSD3
 license-file:  LICENSE
-tested-with:   GHC == 7.4.2, GHC == 7.6.3, GHC == 7.7
+tested-with:   GHC == 7.6.3, GHC == 7.7
 data-files:    config.rules.default, config.ui.default, scores
 extra-source-files: LICENSE, CREDITS, changelog, PLAYING.md, README.md,
                     Makefile, MainMenu.ascii, .travis.yml
