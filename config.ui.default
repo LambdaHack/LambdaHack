@@ -26,8 +26,10 @@
 ; semicolon: (CmdMove, Macro "go to target for 100 steps" ["CTRL-semicolon", "P"])
 ; x: (CmdMove, Macro "explore the closest unknown spot" ["CTRL-question", "CTRL-semicolon", "P"])
 ; X: (CmdMove, Macro "autoexplore 100 times" ["'", "CTRL-question", "CTRL-semicolon", "'", "P"])
-; less: (CmdMove, TriggerTile [TriggerFeature {verb = "ascend", object = "level", feature = Cause (Ascend 1)}, TriggerFeature {verb = "escape", object = "dungeon", feature = Cause (Escape 1)}])
-; greater: (CmdMove, TriggerTile [TriggerFeature {verb = "descend", object = "level", feature = Cause (Ascend (-1))}, TriggerFeature {verb = "escape", object = "dungeon", feature = Cause (Escape (-1))}])
+; less: (CmdMove, TriggerTile [TriggerFeature {verb = "ascend", object = "a level", feature = Cause (Ascend 1)}, TriggerFeature {verb = "escape", object = "dungeon", feature = Cause (Escape 1)}])
+; CTRL-less: (CmdMove, TriggerTile [TriggerFeature {verb = "ascend", object = "10 levels", feature = Cause (Ascend 10)}])
+; greater: (CmdMove, TriggerTile [TriggerFeature {verb = "descend", object = "a level", feature = Cause (Ascend (-1))}, TriggerFeature {verb = "escape", object = "dungeon", feature = Cause (Escape (-1))}])
+; CTRL-greater: (CmdMove, TriggerTile [TriggerFeature {verb = "descend", object = "10 levels", feature = Cause (Ascend (-10))}])
 ; c: (CmdMove, AlterDir [AlterFeature {verb = "close", object = "door", feature = CloseTo "vertical closed door Lit"}, AlterFeature {verb = "close", object = "door", feature = CloseTo "horizontal closed door Lit"}, AlterFeature {verb = "close", object = "door", feature = CloseTo "vertical closed door Dark"}, AlterFeature {verb = "close", object = "door", feature = CloseTo "horizontal closed door Dark"}])
 ; o: (CmdMove, AlterDir [AlterFeature {verb = "open", object = "door", feature = OpenTo "vertical open door Lit"}, AlterFeature {verb = "open", object = "door", feature = OpenTo "horizontal open door Lit"}, AlterFeature {verb = "open", object = "door", feature = OpenTo "vertical open door Dark"}, AlterFeature {verb = "open", object = "door", feature = OpenTo "horizontal open door Dark"}])
 
@@ -43,17 +45,13 @@
 ; ; Targeting
 ; slash: (CmdTgt, TgtFloor)
 ; asterisk: (CmdTgt, TgtEnemy)
-; bracketleft: (CmdTgt, TgtAscend 1)
-; braceleft: (CmdTgt, TgtAscend 10)
-; bracketright: (CmdTgt, TgtAscend (-1))
-; braceright: (CmdTgt, TgtAscend (-10))
 ; plus: (CmdTgt, EpsIncr True)
 ; minus: (CmdTgt, EpsIncr False)
 ; BackSpace: (CmdTgt, TgtClear)
 ; CTRL-question: (CmdTgt, TgtUnknown)
 ; CTRL-I: (CmdTgt, TgtItem)
-; CTRL-less: (CmdTgt, TgtStair True)
-; CTRL-greater: (CmdTgt, TgtStair False)
+; CTRL-braceleft: (CmdTgt, TgtStair True)
+; CTRL-braceright: (CmdTgt, TgtStair False)
 
 ; ; Assorted
 ; question: (CmdMeta, Help)

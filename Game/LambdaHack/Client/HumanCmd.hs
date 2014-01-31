@@ -177,4 +177,4 @@ cmdDescription cmd = case cmd of
 
 triggerDescription :: [Trigger] -> Text
 triggerDescription [] = "trigger a thing"
-triggerDescription (t : _) = makePhrase [verb t, MU.AW $ object t]
+triggerDescription (t : _) = makePhrase [verb t, object t]
