@@ -34,14 +34,14 @@ data Binding = Binding
 -- as well as commands defined in the config file.
 stdBinding :: ConfigUI  -- ^ game config
            -> Binding   -- ^ concrete binding
-stdBinding !config@ConfigUI{configMacros, configMacroDesc} =
+stdBinding !ConfigUI{configCommands, configMacros, configMacroDesc} =
   let kmacro = M.fromList configMacros
       kmacroDesc = M.fromList configMacroDesc  -- no check vs. kmacro
       heroSelect k = ( K.KM { key=K.Char (Char.intToDigit k)
                             , modifier=K.NoModifier }
                      , PickLeader k )
       cmdList =
-        configCommands config
+        map (\(x, (_y, z)) -> (x, z)) configCommands
         ++ K.moveBinding Move Run
         ++ fmap heroSelect [0..9]
       mkDescribed cmd = (cmdDescription cmd, noRemoteHumanCmd cmd, cmd)

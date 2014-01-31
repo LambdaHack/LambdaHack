@@ -13,7 +13,7 @@ import qualified Game.LambdaHack.Common.Key as K
 -- is a part of a game client.
 data ConfigUI = ConfigUI
   { -- commands
-    configCommands    :: ![(K.KM, HumanCmd)]
+    configCommands    :: ![(K.KM, (CmdCategory, HumanCmd))]
     -- files
   , configAppDataDir  :: !FilePath
   , configUICfgFile   :: !FilePath

@@ -1,6 +1,6 @@
 -- | Abstract syntax human player commands.
 module Game.LambdaHack.Client.HumanCmd
-  ( HumanCmd(..), Trigger(..)
+  ( CmdCategory(..), HumanCmd(..), Trigger(..)
   , majorHumanCmd, minorHumanCmd, noRemoteHumanCmd, cmdDescription
   ) where
 
@@ -11,6 +11,9 @@ import qualified NLP.Miniutter.English as MU
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Vector
+
+data CmdCategory = CmdMenu | CmdMove | CmdItem | CmdTgt | CmdMeta | CmdDebug
+  deriving (Show, Read)
 
 -- | Abstract syntax of player commands.
 data HumanCmd =

@@ -423,7 +423,8 @@ parseConfigUI dataDir cp =
       mkKM ('C':'T':'R':'L':'-':s) = K.KM {key=mkKey s, modifier=K.Control}
       mkKM s = K.KM {key=mkKey s, modifier=K.NoModifier}
       configCommands =
-        let mkCommand (key, def) = (mkKM key, read def :: HumanCmd)
+        let mkCommand (key, def) =
+              (mkKM key, read def :: (CmdCategory, HumanCmd))
             section = ConfigIO.getItems cp "commands"
         in map mkCommand section
       configAppDataDir = dataDir
