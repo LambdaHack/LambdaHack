@@ -476,8 +476,19 @@ guessAlter _ _ _ = "never mind"
 triggerTileHuman :: MonadClientUI m
                  => [Trigger] -> m (SlideOrCmd CmdTakeTimeSer)
 triggerTileHuman ts = do
-  leader <- getLeaderUI
-  triggerTile leader ts
+  tgtMode <- getsClient stgtMode
+  if isJust tgtMode then do
+    let getK tfs = case tfs of
+          TriggerFeature {feature = F.Cause (Effect.Ascend k)} : _ -> Just k
+          _ : rest -> getK rest
+          [] -> Nothing
+        mk = getK ts
+    case mk of
+      Nothing -> failWith  "never mind"
+      Just k -> fmap Left $ tgtAscendHuman k
+  else do
+    leader <- getLeaderUI
+    triggerTile leader ts
 
 -- | Player tries to trigger a tile using a feature.
 triggerTile :: MonadClientUI m

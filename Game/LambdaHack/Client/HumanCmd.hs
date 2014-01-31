@@ -117,7 +117,7 @@ noRemoteHumanCmd cmd = case cmd of
   Project{}     -> True
   Apply{}       -> True
   AlterDir{}    -> True
-  TriggerTile{} -> True
+  StepToTarget  -> True
   Resend        -> True
   _             -> False
 

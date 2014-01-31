@@ -308,7 +308,7 @@ drawCmdAtomicUI verbose cmd = case cmd of
         (lid, p) <- posOfContainer c
         modifyClient $ \cli -> cli {scursor = TPoint lid p}
         stopPlayBack
-        -- TODO: perhaps don't spam for already seen items; hard to do
+        -- TODO: perhaps don't spam for already seen items; very hard to do
         itemVerbMU item k "be spotted"
   MoveActorA aid _ _ -> lookAtMove aid
   WaitActorA aid _ _| verbose -> aVerbMU aid "wait"

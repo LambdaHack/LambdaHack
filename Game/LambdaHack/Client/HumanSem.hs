@@ -24,7 +24,7 @@ cmdHumanSem cmd = do
     arena <- getArenaUI
     lidV <- viewedLevel
     if (arena /= lidV) then
-      failWith $ "[targeting] command disabled on a remote level, press ESC to switch back"
+      failWith $ "command disabled on a remote level, press ESC to switch back"
     else cmdAction cmd
   else cmdAction cmd
 
