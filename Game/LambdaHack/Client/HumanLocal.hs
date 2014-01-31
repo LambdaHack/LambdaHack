@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.HumanLocal
   ( -- * Semantics of serverl-less human commands
     pickLeaderHuman, memberCycleHuman, memberBackHuman, inventoryHuman
   , selectActorHuman, selectNoneHuman, clearHuman
-  , repeatHuman, recordHuman
+  , repeatHuman, recordHuman, macroHuman
   , historyHuman, humanMarkVision, humanMarkSmell, humanMarkSuspect
   , helpHuman
   , moveCursor, tgtFloorHuman, tgtEnemyHuman
@@ -222,7 +222,7 @@ clearHuman = return ()
 -- Note that walk followed by repeat should not be equivalent to run,
 -- because the player can really use a command that does not stop
 -- at terrain change or when walking over items.
-repeatHuman :: MonadClientUI m => Int -> m ()
+repeatHuman :: MonadClient m => Int -> m ()
 repeatHuman n = do
   (_, seqPrevious, k) <- getsClient slastRecord
   let macro = concat $ replicate n $ reverse seqPrevious
@@ -250,6 +250,12 @@ recordHuman = do
       modifyClient $ \cli -> cli {slastRecord}
       promptToSlideshow $ "Macro recording interrupted after"
                           <+> tshow (maxK - k - 1) <+> "steps."
+
+-- * Macro
+
+macroHuman :: MonadClient m => [String] -> m ()
+macroHuman kms =
+  modifyClient $ \cli -> cli {slastPlay = map K.mkKM kms ++ slastPlay cli}
 
 -- * History
 

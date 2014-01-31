@@ -60,6 +60,7 @@ data HumanCmd =
   | TgtClear
   | Cancel
   | Accept
+  | Macro !Text ![String]
   deriving (Eq, Ord, Show, Read)
 
 data Trigger =
@@ -172,6 +173,7 @@ cmdDescription cmd = case cmd of
   TgtClear    -> "clear target/cursor"
   Cancel      -> "cancel action"
   Accept      -> "accept choice"
+  Macro t _   -> t
 
 triggerDescription :: [Trigger] -> Text
 triggerDescription [] = "trigger a thing"

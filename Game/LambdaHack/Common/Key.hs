@@ -2,9 +2,10 @@
 -- | Frontend-independent keyboard input operations.
 module Game.LambdaHack.Common.Key
   ( Key(..), handleDir, dirAllMoveKey
-  , moveBinding, keyTranslate, Modifier(..), KM(..), showKM, escKey
+  , moveBinding, mkKM, keyTranslate, Modifier(..), KM(..), showKM, escKey
   ) where
 
+import Control.Exception.Assert.Sugar
 import Data.Binary
 import qualified Data.Char as Char
 import Data.Text (Text)
@@ -37,7 +38,7 @@ data Key =
   | KP !Char      -- ^ a keypad key for a character (digits and operators)
   | Char !Char    -- ^ a single printable character
   | Unknown !Text -- ^ an unknown key, registered to warn the user
-  deriving (Ord, Eq, Generic)
+  deriving (Read, Ord, Eq, Generic)
 
 instance Binary Key
 
@@ -45,32 +46,17 @@ instance Binary Key
 data Modifier =
     NoModifier
   | Control
-  deriving (Ord, Eq)
+  deriving (Read, Ord, Eq, Generic)
 
-instance Binary Modifier where
-  put NoModifier = putWord8 0
-  put Control    = putWord8 1
-  get = do
-    tag <- getWord8
-    case tag of
-      0  -> return NoModifier
-      1  -> return Control
-      _ -> fail "no parse (Modifier)"
+instance Binary Modifier
 
 data KM = KM {modifier :: !Modifier, key :: !Key}
-  deriving (Ord, Eq)
+  deriving (Read, Ord, Eq, Generic)
 
 instance Show KM where
   show = T.unpack . showKM
 
-instance Binary KM where
-  put KM {..} = do
-    put key
-    put modifier
-  get = do
-    key <- get
-    modifier <- get
-    return $! KM {..}
+instance Binary KM
 
 -- Common and terse names for keys.
 showKey :: Key -> Text
@@ -151,6 +137,16 @@ moveBinding move run =
      map (assign run)  (zip (zipWith KM rControl dirMoveKey) moves) ++
      map (assign run)  (zip (zipWith KM rControl dirRunKey) moves) ++
      map (assign run)  (zip (zipWith KM rControl dirHeroKey ) moves)
+
+mkKM :: String -> KM
+mkKM s = let mkKey sk =
+               case keyTranslate sk of
+                 Unknown _ ->
+                   assert `failure` "unknown key" `twith` s
+                 key -> key
+         in case s of
+           ('C':'T':'R':'L':'-':rest) -> KM {key=mkKey rest, modifier=Control}
+           _ -> KM {key=mkKey s, modifier=NoModifier}
 
 -- | Translate key from a GTK string description to our internal key type.
 -- To be used, in particular, for the command bindings and macros

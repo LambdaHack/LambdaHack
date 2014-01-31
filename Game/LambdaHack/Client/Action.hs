@@ -33,7 +33,6 @@ module Game.LambdaHack.Client.Action
   , debugPrint
   ) where
 
-import Control.Arrow ((***))
 import Control.Concurrent
 import Control.Concurrent.STM
 import Control.DeepSeq
@@ -43,7 +42,6 @@ import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.List
-import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid
 import Data.Text (Text)
@@ -119,13 +117,7 @@ promptGetKey frontKM frontFr = do
       unless (null lastPlayOld) stopPlayBack  -- something went wrong
       ConnFrontend{..} <- getsSession sfconn
       writeConnFrontend Frontend.FrontKey {..}
-      kmRaw <- readConnFrontend
-      keyb <- askBinding
-      case fromMaybe [kmRaw] $ M.lookup kmRaw $ kmacro keyb of
-        [] -> assert `failure` kmRaw
-        km : kms -> do
-          modifyClient $ \cli -> cli {slastPlay = kms ++ slastPlay cli}
-          return km
+      readConnFrontend
   (seqCurrent, seqPrevious, k) <- getsClient slastRecord
   let slastRecord = (km : seqCurrent, seqPrevious, k)
   modifyClient $ \cli -> cli {slastRecord}
@@ -415,32 +407,14 @@ partAidLeader aid = do
 
 parseConfigUI :: FilePath -> ConfigIO.CP -> ConfigUI
 parseConfigUI dataDir cp =
-  let mkKey s =
-        case K.keyTranslate s of
-          K.Unknown _ ->
-            assert `failure` "unknown config file key" `twith` (s, cp)
-          key -> key
-      mkKM ('C':'T':'R':'L':'-':s) = K.KM {key=mkKey s, modifier=K.Control}
-      mkKM s = K.KM {key=mkKey s, modifier=K.NoModifier}
-      configCommands =
+  let configCommands =
         let mkCommand (key, def) =
-              (mkKM key, read def :: (CmdCategory, HumanCmd))
+              (K.mkKM key, read def :: (CmdCategory, HumanCmd))
             section = ConfigIO.getItems cp "commands"
         in map mkCommand section
       configAppDataDir = dataDir
       configUICfgFile = "config.ui"
       configSavePrefix = ConfigIO.get cp "file" "savePrefix"
-      configMacros =
-        let trMacro (from, to) =
-              let fromTr = mkKM from
-                  toTr = map mkKM $ words to
-              in if [fromTr] == toTr
-                 then assert `failure` "degenerate alias" `twith` toTr
-                 else (fromTr, toTr)
-            section = ConfigIO.getItems cp "macros"
-        in map trMacro section
-      configMacroDesc =
-        map (mkKM *** T.pack) $ ConfigIO.getItems cp "macro descriptions"
       configFont = ConfigIO.get cp "ui" "font"
       configHistoryMax = ConfigIO.get cp "ui" "historyMax"
       configMaxFps = ConfigIO.get cp "ui" "maxFps"

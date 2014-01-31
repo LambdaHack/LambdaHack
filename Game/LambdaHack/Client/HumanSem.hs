@@ -57,6 +57,7 @@ cmdAction cmd = case cmd of
   Clear -> addNoSlides clearHuman
   Repeat n -> addNoSlides $ repeatHuman n
   Record -> fmap Left recordHuman
+  Macro _ kms -> addNoSlides $ macroHuman kms
   History -> fmap Left historyHuman
   MarkVision -> addNoSlides humanMarkVision
   MarkSmell -> addNoSlides humanMarkSmell
