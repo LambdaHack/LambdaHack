@@ -11,7 +11,6 @@ import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.Draw
-import Game.LambdaHack.Client.HumanCmd
 import Game.LambdaHack.Client.HumanSem
 import Game.LambdaHack.Client.RunAction
 import Game.LambdaHack.Client.State
@@ -22,6 +21,7 @@ import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.HumanCmd
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Key as K
 import qualified Game.LambdaHack.Common.Kind as Kind

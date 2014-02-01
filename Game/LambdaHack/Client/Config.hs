@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.Config
 
 import Control.DeepSeq
 
-import Game.LambdaHack.Client.HumanCmd
+import Game.LambdaHack.Common.HumanCmd
 import qualified Game.LambdaHack.Common.Key as K
 
 -- | Fully typed contents of the UI config file. This config

@@ -6,9 +6,9 @@ module Game.LambdaHack.Client.HumanSem
 import Data.Monoid
 
 import Game.LambdaHack.Client.Action
-import Game.LambdaHack.Client.HumanCmd
 import Game.LambdaHack.Client.HumanGlobal
 import Game.LambdaHack.Client.HumanLocal
+import Game.LambdaHack.Common.HumanCmd
 import Game.LambdaHack.Common.ServerCmd
 
 -- | The semantics of human player commands in terms of the @Action@ monad.

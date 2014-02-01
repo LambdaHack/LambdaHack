@@ -100,7 +100,7 @@ exeFrontend executorUI executorAI
             cops@Kind.COps{corule} sdebugCli exeServer = do
   -- UI config reloaded at each client start.
   sconfigUI <- mkConfigUI corule
-  let !sbinding = stdBinding sconfigUI  -- evaluate to check for errors
+  let !sbinding = stdBinding corule sconfigUI  -- evaluate to check for errors
       sdebugMode =
         (\dbg -> dbg {sfont =
             sfont dbg `mplus` Just (configFont sconfigUI)}) .

@@ -6,6 +6,8 @@ module Game.LambdaHack.Content.RuleKind
 import Data.Text (Text)
 import Data.Version
 
+import Game.LambdaHack.Common.HumanCmd
+import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 
@@ -46,6 +48,8 @@ data RuleKind = RuleKind
   , rcfgRulesDefault :: !String   -- ^ the default game rules config file
   , rcfgUIDefault    :: !String   -- ^ the default UI settings config file
   , rmainMenuArt     :: !Text     -- ^ the ASCII art for the Main Menu
+  , rhumanCommands   :: [(K.KM, (CmdCategory, HumanCmd))]
+                                  -- ^ default client commands
   }
 
 -- | A dummy instance of the 'Show' class, to satisfy general requirments

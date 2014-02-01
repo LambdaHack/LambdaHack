@@ -6,15 +6,18 @@ module Game.LambdaHack.Client.Binding
 
 import Control.Arrow (second)
 import qualified Data.Char as Char
+import Data.List
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Tuple (swap)
 
 import Game.LambdaHack.Client.Config
-import Game.LambdaHack.Client.HumanCmd
+import Game.LambdaHack.Common.HumanCmd
 import qualified Game.LambdaHack.Common.Key as K
+import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Content.RuleKind
 
 -- | Bindings and other information about human player commands.
 data Binding = Binding
@@ -28,21 +31,25 @@ data Binding = Binding
 
 -- | Binding of keys to movement and other standard commands,
 -- as well as commands defined in the config file.
-stdBinding :: ConfigUI  -- ^ game config
-           -> Binding   -- ^ concrete binding
-stdBinding !ConfigUI{configCommands} =
-  let heroSelect k = ( K.KM { key=K.Char (Char.intToDigit k)
+stdBinding :: Kind.Ops RuleKind  -- ^ default game rules
+           -> ConfigUI           -- ^ game config
+           -> Binding            -- ^ concrete binding
+stdBinding corule !ConfigUI{configCommands} =
+  let stdRuleset = Kind.stdRuleset corule
+      heroSelect k = ( K.KM { key=K.Char (Char.intToDigit k)
                             , modifier=K.NoModifier }
                      , (CmdMeta, PickLeader k) )
-      cmdList =
-        configCommands
+      cmdWithHelp = rhumanCommands stdRuleset ++ configCommands
+      cmdAll =
+        cmdWithHelp
+        ++ [(K.mkKM "KP_Begin", (CmdMove, Wait))]
         ++ K.moveBinding (\v -> (CmdMove, Move v)) (\v -> (CmdMove, Run v))
         ++ fmap heroSelect [0..9]
       mkDescribed (cat, cmd) = (cmdDescription cmd, cat, cmd)
   in Binding
-  { bcmdMap = M.fromList $ map (second mkDescribed) cmdList
-  , bcmdList = map (second mkDescribed) configCommands
-  , brevMap = M.fromList $ map swap $ map (second snd) cmdList
+  { bcmdMap = M.fromList $ map (second mkDescribed) cmdAll
+  , bcmdList = map (second mkDescribed) cmdWithHelp
+  , brevMap = M.fromList $ map swap $ map (second snd) cmdAll
   }
 
 -- | Produce a set of help screens from the key bindings.
@@ -85,10 +92,10 @@ keyHelp Binding{bcmdList} =
     lastText = map fmts lastBlurb
     keyCaption = fmt "keys" "command"
     coImage :: K.KM -> [K.KM]
-    coImage k = k : [ from
-                    | (from, (_, _, Macro _ [to])) <- bcmdList
-                    , K.mkKM to == k ]
-    disp k = T.concat $ map K.showKM $ coImage k
+    coImage k = k : sort [ from
+                         | (from, (_, _, Macro _ [to])) <- bcmdList
+                         , K.mkKM to == k ]
+    disp k = T.concat $ intersperse " and " $ map K.showKM $ coImage k
     keys cat = [ fmt (disp k) h
                | (k, (h, cat', _)) <- bcmdList, cat == cat', h /= "" ]
   in toSlideshow True -- TODO: 80 below is a hack

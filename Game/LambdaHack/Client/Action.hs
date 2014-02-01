@@ -55,7 +55,6 @@ import Game.LambdaHack.Client.Action.ActionClass
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.Draw
-import Game.LambdaHack.Client.HumanCmd
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
@@ -65,6 +64,7 @@ import qualified Game.LambdaHack.Common.ConfigIO as ConfigIO
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
+import Game.LambdaHack.Common.HumanCmd
 import qualified Game.LambdaHack.Common.Key as K
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -410,7 +410,7 @@ parseConfigUI dataDir cp =
   let configCommands =
         let mkCommand (key, def) =
               (K.mkKM key, read def :: (CmdCategory, HumanCmd))
-            section = ConfigIO.getItems cp "commands"
+            section = ConfigIO.getItems cp "extra commands"
         in map mkCommand section
       configAppDataDir = dataDir
       configUICfgFile = "config.ui"
