@@ -221,7 +221,7 @@ humanCommand msgRunStop = do
           -- Look up the key.
           Binding{kcmd} <- askBinding
           case M.lookup km kcmd of
-            Just (_, _, cmd) -> do
+            Just (_, cmd) -> do
               -- Query and clear the last command key.
               lastKey <- getsClient slastKey
               stgtMode <- getsClient stgtMode

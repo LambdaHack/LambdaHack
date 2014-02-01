@@ -13,7 +13,7 @@ import Game.LambdaHack.Common.ServerCmd
 
 -- | The semantics of human player commands in terms of the @Action@ monad.
 -- Decides if the action takes time and what action to perform.
--- Time cosuming commands are marked as such in help and cannot be
+-- Some time cosuming commands are enabled in targeting mode, but cannot be
 -- invoked in targeting mode on a remote level (level different than
 -- the level of the leader).
 cmdHumanSem :: MonadClientUI m => HumanCmd -> m (SlideOrCmd CmdSer)

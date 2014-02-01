@@ -62,35 +62,31 @@ for the remainder of the turn. Melee, searching for secret doors
 and opening closed doors can be done by bumping into a monster,
 a wall and a door, respectively.
 
-Below are the default keys for major commands. Those of them that take
-hero time are marked with a star.
+Below are the default keys for major commands.
 
                key       command
                ESC       cancel action or bring up the Main Menu
                RET       accept choice
-               <         ascend a level*
-               >         descend a level*
+               <         ascend a level
+               >         descend a level
                ?         display help
                I         display inventory
                P         play back last keys 100 times
-               c         close a door*
-               d         drop an object*
-               g         get an object*
-               o         open a door*
+               c         close a door
+               d         drop an object
+               g         get an object
+               o         open a door
                p         play back last keys
-               q         quaff a potion*
-               r         read a scroll*
-               t         throw a dart*
-               z         zap a wand*
+               q         quaff a potion
+               r         read a scroll
+               t         throw a dart
+               z         zap a wand
                CTRL-p    play back last keys 1000 times
 
 To make a ranged attack, you need to set your target first,
 using targeting mode ('*' and '/' keys). The target, for the few
 commands that require any, is indicated by the targeting cursor.
-To avoid confusion, commands that take time are blocked when targeting
-at a remote level (when the cursor is displayed on a different level
-than the party leader). The targeting commands and all the less used
-commands are listed below. None of them takes hero time.
+The targeting commands and all the less used commands are listed below.
 
                key       command
                TAB       cycle among party members on the level

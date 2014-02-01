@@ -19,11 +19,10 @@ import Game.LambdaHack.Common.Msg
 
 -- | Bindings and other information about human player commands.
 data Binding = Binding
-  { kcmd    :: !(M.Map K.KM (Text, Bool, HumanCmd))
-                                       -- ^ binding keys to commands
-  , kmajor  :: ![K.KM]                 -- ^ major commands
-  , kminor  :: ![K.KM]                 -- ^ minor commands
-  , krevMap :: !(M.Map HumanCmd K.KM)  -- ^ from cmds to their main keys
+  { kcmd    :: !(M.Map K.KM (Text, HumanCmd))  -- ^ binding keys to commands
+  , kmajor  :: ![K.KM]                         -- ^ major commands
+  , kminor  :: ![K.KM]                         -- ^ minor commands
+  , krevMap :: !(M.Map HumanCmd K.KM)          -- ^ from commands to their keys
   }
 
 -- | Binding of keys to movement and other standard commands,
@@ -38,7 +37,7 @@ stdBinding !ConfigUI{configCommands} =
         map (\(x, (_y, z)) -> (x, z)) configCommands
         ++ K.moveBinding Move Run
         ++ fmap heroSelect [0..9]
-      mkDescribed cmd = (cmdDescription cmd, noRemoteHumanCmd cmd, cmd)
+      mkDescribed cmd = (cmdDescription cmd, cmd)
       mkCommand = second mkDescribed
       semList = map mkCommand cmdList
   in Binding
@@ -72,7 +71,6 @@ keyHelp Binding{kcmd, kmajor, kminor} =
       ]
     majorBlurb =
       [ ""
-      , "Commands marked with * take time and are blocked on remote levels."
       , "Press SPACE to see the next page, with the list of minor commands."
       ]
     minorBlurb =
@@ -92,11 +90,10 @@ keyHelp Binding{kcmd, kmajor, kminor} =
     assocsCmd = M.assocs kcmd
     coImage :: K.KM -> [K.KM]
     coImage k = k : [ from
-                    | (from, (_, _, Macro _ [to])) <- assocsCmd
+                    | (from, (_, Macro _ [to])) <- assocsCmd
                     , K.mkKM to == k ]
     disp k = T.concat $ map K.showKM $ coImage k
-    keys l = [ fmt (disp k) (h <> if timed then "*" else "")
-             | (k, (h, timed, _)) <- l, h /= "" ]
+    keys l = [ fmt (disp k) h | (k, (h, _)) <- l, h /= "" ]
     (kcMajor, kcRest) =
       partition ((`elem` kmajor) . fst) (M.assocs kcmd)
     (kcMinor, _) =

@@ -106,9 +106,8 @@ minorHumanCmd cmd = case cmd of
 
 -- | Commands that are forbidden on a remote level, because they
 -- would usually take time when invoked on one.
--- Note that movement commands are not included, because they take time
--- on normal levels, but don't take time on remote levels, that is,
--- in targeting mode.
+-- Note that some commands that take time are not included,
+-- because they don't take time in targeting mode.
 noRemoteHumanCmd :: HumanCmd -> Bool
 noRemoteHumanCmd cmd = case cmd of
   Wait          -> True
