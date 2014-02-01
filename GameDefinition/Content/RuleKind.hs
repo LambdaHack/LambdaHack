@@ -96,6 +96,7 @@ standard = RuleKind
       , ("CTRL-v", (CmdMenu, GameRestart "PvP"))
       , ("CTRL-o", (CmdMenu, GameRestart "Coop"))
       , ("CTRL-e", (CmdMenu, GameRestart "defense"))
+      , ("CTRL-d", (CmdMenu, GameDifficultyCycle))
 
       -- Movement and terrain alteration
       , ("less", (CmdMove, TriggerTile
@@ -207,6 +208,5 @@ standard = RuleKind
       -- Debug and others not to display in help screens
       , ("CTRL-s", (CmdDebug, GameSave))
       , ("CTRL-y", (CmdDebug, Resend))
-      , ("CTRL-d", (CmdDebug, GameDifficultyCycle))
       ]
   }

@@ -305,7 +305,7 @@ helpHuman = do
 mainMenuHuman :: MonadClientUI m => m Slideshow
 mainMenuHuman = do
   Kind.COps{corule} <- getsState scops
-  Binding{brevMap} <- askBinding
+  Binding{brevMap, bcmdList} <- askBinding
   sdifficulty <- getsClient sdifficulty
   DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
   let stripFrame t = map (T.tail . T.init) $ tail . init $ T.lines t
@@ -320,16 +320,12 @@ mainMenuHuman = do
       kds =  -- key-description pairs
         let showKD cmd km = (K.showKM km, HumanCmd.cmdDescription cmd)
             revLookup cmd = maybe ("", "") (showKD cmd) $ M.lookup cmd brevMap
-            cmds = [ HumanCmd.GameExit
-                   , HumanCmd.GameRestart "campaign"
-                   , HumanCmd.GameRestart "skirmish"
-                   , HumanCmd.GameRestart "PvP"
-                   , HumanCmd.GameRestart "Coop"
-                   , HumanCmd.GameRestart "defense"
-                   ]
+            cmds = [ (K.showKM km, desc)
+                   | (km, (desc, HumanCmd.CmdMenu, cmd)) <- bcmdList,
+                     cmd /= HumanCmd.GameDifficultyCycle ]
         in [ (fst (revLookup HumanCmd.Cancel), "back to playing")
            , (fst (revLookup HumanCmd.Accept), "see more help") ]
-           ++ map revLookup cmds
+           ++ cmds
            ++ [ (fst ( revLookup HumanCmd.GameDifficultyCycle)
                      , "next game difficulty" <+> tshow (5 - sdifficultyCli)
                        <+> "(current" <+> tshow (5 - sdifficulty) <> ")" ) ]
