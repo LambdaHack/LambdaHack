@@ -165,4 +165,4 @@ clean :
 	runghc Setup clean
 
 ghci :
-	ghci -XCPP -idist/build/autogen:Game/LambdaHack
+	ghci -XCPP -idist/build/autogen:.

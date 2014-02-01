@@ -75,8 +75,8 @@ standard = RuleKind
   -- TODO: Show highlighted keybinding in inverse video or bright white on grey
   -- background. The spaces that pad keybindings are not highlighted.
   , rmainMenuArt = $(do
-      qAddDependentFile "LambdaHack/MainMenu.ascii"
-      x <- qRunIO (readFile "LambdaHack/MainMenu.ascii")
+      qAddDependentFile "GameDefinition/MainMenu.ascii"
+      x <- qRunIO (readFile "GameDefinition/MainMenu.ascii")
       lift x)
   , rhumanCommands = map (first K.mkKM)
       -- All commands are defined here, except some movement and leader picking

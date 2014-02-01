@@ -216,7 +216,7 @@ library
   } }
 
 executable LambdaHack
-  hs-source-dirs:     LambdaHack
+  hs-source-dirs:     GameDefinition
   main-is:            Main.hs
   other-modules:      Content.ActorKind,
                       Content.CaveKind,
