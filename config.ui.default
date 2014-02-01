@@ -6,7 +6,8 @@
 
 ; [commands]
 ; ; All commands are defined here, except some movement and leader picking
-; ; commands. All commands are shown on help screens except debug commands.
+; ; commands. All commands are shown on help screens except debug commands
+; ; and macros with empty descriptions.
 ; ; The order below determines the order on the help screens.
 ; ; Remember to put commands that show information (e.g., enter targeting
 ; ; mode) first.
@@ -71,7 +72,7 @@
 ; Escape: (CmdMeta, Cancel)
 ; Return: (CmdMeta, Accept)
 
-; ; Debug and others no to display in help screens
+; ; Debug and others not to display in help screens
 ; CTRL-s: (CmdDebug, GameSave)
 ; CTRL-y: (CmdDebug, Resend)
 ; CTRL-d: (CmdDebug, GameDifficultyCycle)

@@ -648,7 +648,7 @@ cancelHuman h = do
 displayMainMenu :: MonadClientUI m => m Slideshow
 displayMainMenu = do
   Kind.COps{corule} <- getsState scops
-  Binding{krevMap} <- askBinding
+  Binding{brevMap} <- askBinding
   sdifficulty <- getsClient sdifficulty
   DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
   let stripFrame t = map (T.tail . T.init) $ tail . init $ T.lines t
@@ -662,7 +662,7 @@ displayMainMenu = do
         in init art ++ [take (80 - versionLen) (last art) ++ version]
       kds =  -- key-description pairs
         let showKD cmd km = (K.showKM km, HumanCmd.cmdDescription cmd)
-            revLookup cmd = maybe ("", "") (showKD cmd) $ M.lookup cmd krevMap
+            revLookup cmd = maybe ("", "") (showKD cmd) $ M.lookup cmd brevMap
             cmds = [ HumanCmd.GameExit
                    , HumanCmd.GameRestart "campaign"
                    , HumanCmd.GameRestart "skirmish"

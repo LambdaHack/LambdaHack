@@ -1,7 +1,7 @@
 -- | Abstract syntax human player commands.
 module Game.LambdaHack.Client.HumanCmd
   ( CmdCategory(..), HumanCmd(..), Trigger(..)
-  , majorHumanCmd, minorHumanCmd, noRemoteHumanCmd, cmdDescription
+  , noRemoteHumanCmd, categoryDescription, cmdDescription
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -13,7 +13,15 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Vector
 
 data CmdCategory = CmdMenu | CmdMove | CmdItem | CmdTgt | CmdMeta | CmdDebug
-  deriving (Show, Read)
+  deriving (Show, Read, Eq)
+
+categoryDescription :: CmdCategory -> Text
+categoryDescription CmdMenu = "Main Menu"
+categoryDescription CmdMove = "Movement and terrain alteration"
+categoryDescription CmdItem = "Inventory and items"
+categoryDescription CmdTgt = "Targeting"
+categoryDescription CmdMeta = "Assorted"
+categoryDescription CmdDebug = "Debug"
 
 -- | Abstract syntax of player commands.
 data HumanCmd =
@@ -68,41 +76,6 @@ data Trigger =
   | AlterFeature {verb :: !MU.Part, object :: !MU.Part, feature :: !F.Feature}
   | TriggerFeature {verb :: !MU.Part, object :: !MU.Part, feature :: !F.Feature}
   deriving (Show, Read, Eq, Ord)
-
--- | Major commands land on the first page of command help.
-majorHumanCmd :: HumanCmd -> Bool
-majorHumanCmd cmd = case cmd of
-  Pickup        -> True
-  Drop          -> True
-  Project{}     -> True
-  Apply{}       -> True
-  AlterDir{}    -> True
-  TriggerTile{} -> True
-  Inventory     -> True
-  Help          -> True
-  Cancel        -> True
-  Accept        -> True
-  Repeat{}      -> True
-  _             -> False
-
--- | Minor commands land on the second page of command help.
-minorHumanCmd :: HumanCmd -> Bool
-minorHumanCmd cmd = case cmd of
-  StepToTarget -> True
-  MemberCycle -> True
-  MemberBack  -> True
-  SelectActor -> True
-  SelectNone  -> True
-  History     -> True
-  MarkVision  -> True
-  MarkSmell   -> True
-  MarkSuspect -> True
-  TgtFloor    -> True
-  TgtEnemy    -> True
-  TgtAscend{} -> True
-  EpsIncr{}   -> True
-  TgtClear    -> True
-  _           -> False
 
 -- | Commands that are forbidden on a remote level, because they
 -- would usually take time when invoked on one.
