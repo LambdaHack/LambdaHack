@@ -101,7 +101,7 @@ Further information
 -------------------
 
 For more information, visit the [wiki] [4]
-and see the files PLAYING.md, CREDITS and LICENSE.
+and see GameDefinition/PLAYING.md, CREDITS and LICENSE.
 
 Have fun!
 

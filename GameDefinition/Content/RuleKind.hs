@@ -52,12 +52,14 @@ standard = RuleKind
   -- Note: consider code.haskell.org/~dons/code/compiled-constants
   -- as soon as the config file grows very big.
   , rcfgRulesDefault = $(do
-      qAddDependentFile "config.rules.default"
-      x <- qRunIO (readFile "config.rules.default")
+      let path = "GameDefinition/config.rules.default"
+      qAddDependentFile path
+      x <- qRunIO (readFile path)
       lift x)
   , rcfgUIDefault = $(do
-      qAddDependentFile "config.ui.default"
-      x <- qRunIO (readFile "config.ui.default")
+      let path = "GameDefinition/config.ui.default"
+      qAddDependentFile path
+      x <- qRunIO (readFile path)
       lift x)
   -- ASCII art for the Main Menu. Only pure 7-bit ASCII characters are
   -- allowed. The picture should be exactly 24 rows by 80 columns,
@@ -75,8 +77,9 @@ standard = RuleKind
   -- TODO: Show highlighted keybinding in inverse video or bright white on grey
   -- background. The spaces that pad keybindings are not highlighted.
   , rmainMenuArt = $(do
-      qAddDependentFile "GameDefinition/MainMenu.ascii"
-      x <- qRunIO (readFile "GameDefinition/MainMenu.ascii")
+      let path = "GameDefinition/MainMenu.ascii"
+      qAddDependentFile path
+      x <- qRunIO (readFile path)
       lift x)
   , rhumanCommands = map (first K.mkKM)
       -- All commands are defined here, except some movement and leader picking
