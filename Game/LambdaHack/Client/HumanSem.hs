@@ -57,13 +57,15 @@ cmdAction cmd = case cmd of
   Clear -> addNoSlides clearHuman
   Repeat n -> addNoSlides $ repeatHuman n
   Record -> fmap Left recordHuman
-  Macro _ kms -> addNoSlides $ macroHuman kms
   History -> fmap Left historyHuman
-  MarkVision -> addNoSlides humanMarkVision
-  MarkSmell -> addNoSlides humanMarkSmell
-  MarkSuspect -> addNoSlides humanMarkSuspect
-  Help -> fmap Left displayMainMenu
+  MarkVision -> addNoSlides markVisionHuman
+  MarkSmell -> addNoSlides markSmellHuman
+  MarkSuspect -> addNoSlides markSuspectHuman
+  Help -> fmap Left helpHuman
+  MainMenu -> fmap Left mainMenuHuman
+  Macro _ kms -> addNoSlides $ macroHuman kms
 
+  MoveCursor v k -> fmap Left $ moveCursorHuman v k
   TgtFloor -> fmap Left tgtFloorHuman
   TgtEnemy -> fmap Left tgtEnemyHuman
   TgtUnknown -> fmap Left tgtUnknownHuman
@@ -72,7 +74,7 @@ cmdAction cmd = case cmd of
   TgtAscend k -> fmap Left $ tgtAscendHuman k
   EpsIncr b -> fmap Left $ epsIncrHuman b
   TgtClear -> addNoSlides tgtClearHuman
-  Cancel -> fmap Left $ cancelHuman displayMainMenu
+  Cancel -> fmap Left $ cancelHuman mainMenuHuman
   Accept -> fmap Left $ acceptHuman helpHuman
 
 addNoSlides :: Monad m => m () -> m (SlideOrCmd CmdSer)

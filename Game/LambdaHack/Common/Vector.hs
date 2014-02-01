@@ -3,7 +3,7 @@
 -- but not unique, way.
 module Game.LambdaHack.Common.Vector
   ( Vector(..), isUnit, isDiagonal, neg, euclidDistSq
-  , moves, vicinity, vicinityCardinal
+  , moves, compassText, vicinity, vicinityCardinal
   , shift, shiftBounded, trajectoryToPath, displacement, pathToTrajectory
   , RadianAngle, rotate, towards
   , BfsDistance, MoveLegal(..), apartBfs
@@ -14,10 +14,12 @@ import Control.Arrow (second)
 import Control.Exception.Assert.Sugar
 import Data.Binary
 import Data.Bits (Bits, complement, (.&.), (.|.))
+import qualified Data.EnumMap.Strict as EM
 import Data.Int (Int32)
 import Data.List
 import Data.Maybe
 import qualified Data.Sequence as Seq
+import Data.Text (Text)
 
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
@@ -95,6 +97,14 @@ moves :: [Vector]
 moves =
   map (uncurry Vector)
     [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]
+
+moveTexts :: [Text]
+moveTexts = ["NW", "N", "NE", "E", "SE", "S", "SW", "W"]
+
+compassText :: Vector -> Text
+compassText v = let m = EM.fromList $ zip moves moveTexts
+                in fromMaybe (assert `failure` "not a unit vector"
+                                     `twith` v) $ EM.lookup v m
 
 -- | Vectors of all cardinal direction unit moves, clockwise, starting north.
 movesCardinal :: [Vector]

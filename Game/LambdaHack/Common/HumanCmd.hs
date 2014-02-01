@@ -57,7 +57,10 @@ data HumanCmd =
   | MarkSmell
   | MarkSuspect
   | Help
+  | MainMenu
+  | Macro !Text ![String]
     -- These are mostly related to targeting.
+  | MoveCursor !Vector !Int
   | TgtFloor
   | TgtEnemy
   | TgtUnknown
@@ -68,7 +71,6 @@ data HumanCmd =
   | TgtClear
   | Cancel
   | Accept
-  | Macro !Text ![String]
   deriving (Eq, Ord, Show, Read)
 
 data Trigger =
@@ -96,8 +98,8 @@ noRemoteHumanCmd cmd = case cmd of
 -- | Description of player commands.
 cmdDescription :: HumanCmd -> Text
 cmdDescription cmd = case cmd of
-  Move{}      -> "move"
-  Run{}       -> "run"
+  Move v      -> "move" <+> compassText v
+  Run v       -> "run" <+> compassText v
   Wait        -> "wait"
   Pickup      -> "get an object"
   Drop        -> "drop an object"
@@ -128,7 +130,12 @@ cmdDescription cmd = case cmd of
   MarkSmell   -> "mark smell"
   MarkSuspect -> "mark suspect terrain"
   Help        -> "display help"
+  MainMenu    -> "display the Main Menu"
+  Macro t _   -> t
 
+  MoveCursor v 1 -> "move cursor" <+> compassText v
+  MoveCursor v k ->
+    "move cursor up to" <+> tshow k <+> "steps" <+> compassText v
   TgtFloor    -> "target position"
   TgtEnemy    -> "target monster"
   TgtUnknown  -> "target the closest unknown spot"
@@ -145,7 +152,6 @@ cmdDescription cmd = case cmd of
   TgtClear    -> "clear target/cursor"
   Cancel      -> "cancel action"
   Accept      -> "accept choice"
-  Macro t _   -> t
 
 triggerDescription :: [Trigger] -> Text
 triggerDescription [] = "trigger a thing"

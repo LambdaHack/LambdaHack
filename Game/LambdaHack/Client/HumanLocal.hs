@@ -2,16 +2,16 @@
 -- server commands. None of such commands takes game time.
 -- TODO: document
 module Game.LambdaHack.Client.HumanLocal
-  ( -- * Semantics of serverl-less human commands
+  ( -- * Assorted commands that do not notify the server
     pickLeaderHuman, memberCycleHuman, memberBackHuman, inventoryHuman
-  , selectActorHuman, selectNoneHuman, clearHuman
-  , repeatHuman, recordHuman, macroHuman
-  , historyHuman, humanMarkVision, humanMarkSmell, humanMarkSuspect
-  , helpHuman
-  , moveCursor, tgtFloorHuman, tgtEnemyHuman
+  , selectActorHuman, selectNoneHuman, clearHuman, repeatHuman, recordHuman
+  , historyHuman, markVisionHuman, markSmellHuman, markSuspectHuman
+  , helpHuman, mainMenuHuman, macroHuman
+    -- * Commands specific to targeting
+  , moveCursorHuman, tgtFloorHuman, tgtEnemyHuman
   , tgtUnknownHuman, tgtItemHuman, tgtStairHuman, tgtAscendHuman
-  , epsIncrHuman, tgtClearHuman, cancelHuman, displayMainMenu, acceptHuman
-    -- * Helper functions useful also elsewhere
+  , epsIncrHuman, tgtClearHuman, cancelHuman, acceptHuman
+    -- * Helper definitions
   , floorItemOverlay, itemOverlay
   , pickLeader, lookAt
   ) where
@@ -251,12 +251,6 @@ recordHuman = do
       promptToSlideshow $ "Macro recording interrupted after"
                           <+> tshow (maxK - k - 1) <+> "steps."
 
--- * Macro
-
-macroHuman :: MonadClient m => [String] -> m ()
-macroHuman kms =
-  modifyClient $ \cli -> cli {slastPlay = map K.mkKM kms ++ slastPlay cli}
-
 -- * History
 
 historyHuman :: MonadClientUI m => m Slideshow
@@ -275,20 +269,20 @@ historyHuman = do
 
 -- * MarkVision, MarkSmell, MarkSuspect
 
-humanMarkVision :: MonadClientUI m => m ()
-humanMarkVision = do
+markVisionHuman :: MonadClientUI m => m ()
+markVisionHuman = do
   modifyClient toggleMarkVision
   cur <- getsClient smarkVision
   msgAdd $ "Visible area display toggled" <+> if cur then "on." else "off."
 
-humanMarkSmell :: MonadClientUI m => m ()
-humanMarkSmell = do
+markSmellHuman :: MonadClientUI m => m ()
+markSmellHuman = do
   modifyClient toggleMarkSmell
   cur <- getsClient smarkSmell
   msgAdd $ "Smell display toggled" <+> if cur then "on." else "off."
 
-humanMarkSuspect :: MonadClientUI m => m ()
-humanMarkSuspect = do
+markSuspectHuman :: MonadClientUI m => m ()
+markSuspectHuman = do
   -- BFS takes suspect tiles into account depending on @smarkSuspect@,
   -- so we need to invalidate the BFS data caches.
   modifyClient $ \cli -> cli {sbfsD = EM.empty}
@@ -304,10 +298,75 @@ helpHuman = do
   keyb <- askBinding
   return $! keyHelp keyb
 
--- * Move and Run
+-- * MainMenu
 
-moveCursor :: MonadClientUI m => Vector -> Int -> m Slideshow
-moveCursor dir n = do
+-- TODO: merge with the help screens better
+-- | Display the main menu.
+mainMenuHuman :: MonadClientUI m => m Slideshow
+mainMenuHuman = do
+  Kind.COps{corule} <- getsState scops
+  Binding{brevMap} <- askBinding
+  sdifficulty <- getsClient sdifficulty
+  DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
+  let stripFrame t = map (T.tail . T.init) $ tail . init $ T.lines t
+      pasteVersion art =
+        let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
+            version = " Version " ++ showVersion pathsVersion
+                      ++ " (frontend: " ++ frontendName
+                      ++ ", engine: LambdaHack " ++ showVersion Self.version
+                      ++ ") "
+            versionLen = length version
+        in init art ++ [take (80 - versionLen) (last art) ++ version]
+      kds =  -- key-description pairs
+        let showKD cmd km = (K.showKM km, HumanCmd.cmdDescription cmd)
+            revLookup cmd = maybe ("", "") (showKD cmd) $ M.lookup cmd brevMap
+            cmds = [ HumanCmd.GameExit
+                   , HumanCmd.GameRestart "campaign"
+                   , HumanCmd.GameRestart "skirmish"
+                   , HumanCmd.GameRestart "PvP"
+                   , HumanCmd.GameRestart "Coop"
+                   , HumanCmd.GameRestart "defense"
+                   ]
+        in [ (fst (revLookup HumanCmd.Cancel), "back to playing")
+           , (fst (revLookup HumanCmd.Accept), "see more help") ]
+           ++ map revLookup cmds
+           ++ [ (fst ( revLookup HumanCmd.GameDifficultyCycle)
+                     , "next game difficulty" <+> tshow (5 - sdifficultyCli)
+                       <+> "(current" <+> tshow (5 - sdifficulty) <> ")" ) ]
+      bindingLen = 25
+      bindings =  -- key bindings to display
+        let fmt (k, d) = T.justifyLeft bindingLen ' '
+                         $ T.justifyLeft 7 ' ' k <> " " <> d
+        in map fmt kds
+      overwrite =  -- overwrite the art with key bindings
+        let over [] line = ([], T.pack line)
+            over bs@(binding : bsRest) line =
+              let (prefix, lineRest) = break (=='{') line
+                  (braces, suffix)   = span  (=='{') lineRest
+              in if length braces == 25
+                 then (bsRest, T.pack prefix <> binding
+                               <> T.drop (T.length binding - bindingLen)
+                                         (T.pack suffix))
+                 else (bs, T.pack line)
+        in snd . mapAccumL over bindings
+      mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule
+      menuOverlay =  -- TODO: switch to Text and use T.justifyLeft
+        overwrite $ pasteVersion $ map T.unpack $ stripFrame mainMenuArt
+  case menuOverlay of
+    [] -> assert `failure` "empty Main Menu overlay" `twith` mainMenuArt
+    hd : tl -> overlayToBlankSlideshow hd (toOverlay tl)
+               -- TODO: keys don't work if tl/=[]
+
+-- * Macro
+
+macroHuman :: MonadClient m => [String] -> m ()
+macroHuman kms =
+  modifyClient $ \cli -> cli {slastPlay = map K.mkKM kms ++ slastPlay cli}
+
+-- * MoveCursor
+
+moveCursorHuman :: MonadClientUI m => Vector -> Int -> m Slideshow
+moveCursorHuman dir n = do
   leader <- getLeaderUI
   stgtMode <- getsClient stgtMode
   let lidV = maybe (assert `failure` leader) tgtLevelId stgtMode
@@ -643,62 +702,11 @@ cancelHuman h = do
     then targetReject
     else h  -- nothing to cancel right now, treat this as a command invocation
 
--- TODO: merge with the help screens better
--- | Display the main menu.
-displayMainMenu :: MonadClientUI m => m Slideshow
-displayMainMenu = do
-  Kind.COps{corule} <- getsState scops
-  Binding{brevMap} <- askBinding
-  sdifficulty <- getsClient sdifficulty
-  DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
-  let stripFrame t = map (T.tail . T.init) $ tail . init $ T.lines t
-      pasteVersion art =
-        let pathsVersion = rpathsVersion $ Kind.stdRuleset corule
-            version = " Version " ++ showVersion pathsVersion
-                      ++ " (frontend: " ++ frontendName
-                      ++ ", engine: LambdaHack " ++ showVersion Self.version
-                      ++ ") "
-            versionLen = length version
-        in init art ++ [take (80 - versionLen) (last art) ++ version]
-      kds =  -- key-description pairs
-        let showKD cmd km = (K.showKM km, HumanCmd.cmdDescription cmd)
-            revLookup cmd = maybe ("", "") (showKD cmd) $ M.lookup cmd brevMap
-            cmds = [ HumanCmd.GameExit
-                   , HumanCmd.GameRestart "campaign"
-                   , HumanCmd.GameRestart "skirmish"
-                   , HumanCmd.GameRestart "PvP"
-                   , HumanCmd.GameRestart "Coop"
-                   , HumanCmd.GameRestart "defense"
-                   ]
-        in [ (fst (revLookup HumanCmd.Cancel), "back to playing")
-           , (fst (revLookup HumanCmd.Accept), "see more help") ]
-           ++ map revLookup cmds
-           ++ [ (fst ( revLookup HumanCmd.GameDifficultyCycle)
-                     , "next game difficulty" <+> tshow (5 - sdifficultyCli)
-                       <+> "(current" <+> tshow (5 - sdifficulty) <> ")" ) ]
-      bindingLen = 25
-      bindings =  -- key bindings to display
-        let fmt (k, d) = T.justifyLeft bindingLen ' '
-                         $ T.justifyLeft 7 ' ' k <> " " <> d
-        in map fmt kds
-      overwrite =  -- overwrite the art with key bindings
-        let over [] line = ([], T.pack line)
-            over bs@(binding : bsRest) line =
-              let (prefix, lineRest) = break (=='{') line
-                  (braces, suffix)   = span  (=='{') lineRest
-              in if length braces == 25
-                 then (bsRest, T.pack prefix <> binding
-                               <> T.drop (T.length binding - bindingLen)
-                                         (T.pack suffix))
-                 else (bs, T.pack line)
-        in snd . mapAccumL over bindings
-      mainMenuArt = rmainMenuArt $ Kind.stdRuleset corule
-      menuOverlay =  -- TODO: switch to Text and use T.justifyLeft
-        overwrite $ pasteVersion $ map T.unpack $ stripFrame mainMenuArt
-  case menuOverlay of
-    [] -> assert `failure` "empty Main Menu overlay" `twith` mainMenuArt
-    hd : tl -> overlayToBlankSlideshow hd (toOverlay tl)
-               -- TODO: keys don't work if tl/=[]
+-- | End targeting mode, rejecting the current position.
+targetReject :: MonadClientUI m => m Slideshow
+targetReject = do
+  modifyClient $ \cli -> cli {stgtMode = Nothing}
+  failWith "targeting canceled"
 
 -- * Accept
 
@@ -719,12 +727,6 @@ targetAccept = do
   endTargeting
   endTargetingMsg
   modifyClient $ \cli -> cli {stgtMode = Nothing}
-
--- | End targeting mode, rejecting the current position.
-targetReject :: MonadClientUI m => m Slideshow
-targetReject = do
-  modifyClient $ \cli -> cli {stgtMode = Nothing}
-  failWith "targeting canceled"
 
 -- | End targeting mode, accepting the current position.
 endTargeting :: MonadClientUI m => m ()

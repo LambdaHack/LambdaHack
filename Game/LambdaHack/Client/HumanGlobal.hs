@@ -2,10 +2,13 @@
 -- A couple of them do not take time, the rest does.
 -- TODO: document
 module Game.LambdaHack.Client.HumanGlobal
-  ( moveRunHuman, waitHuman, pickupHuman, dropHuman
+  ( -- * Commands that usually take time
+    moveRunHuman, waitHuman, pickupHuman, dropHuman
   , projectHuman, applyHuman, alterDirHuman, triggerTileHuman
-  , resendHuman, stepToTargetHuman
+  , stepToTargetHuman, resendHuman
+    -- * Commands that never take time
   , gameRestartHuman, gameExitHuman, gameSaveHuman, gameDifficultyCycle
+    -- * Helper definitions
   , SlideOrCmd, failWith
   ) where
 
@@ -72,7 +75,7 @@ moveRunHuman :: MonadClientUI m
 moveRunHuman run dir = do
   tgtMode <- getsClient stgtMode
   if isJust tgtMode then
-    fmap Left $ moveCursor dir (if run then 10 else 1)
+    fmap Left $ moveCursorHuman dir (if run then 10 else 1)
   else do
     arena <- getArenaUI
     leader <- getLeaderUI
@@ -555,15 +558,6 @@ guessTrigger _ fs@(F.Cause (Effect.Ascend k) : _) _ =
     else assert `failure` fs
 guessTrigger _ _ _ = "never mind"
 
--- * Resend
-
-resendHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
-resendHuman = do
-  slastCmd <- getsClient slastCmd
-  case slastCmd of
-    Just cmd -> return $ Right cmd
-    Nothing -> failWith "no time-taking command to repeat"
-
 -- * StepToTarget
 
 stepToTargetHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
@@ -590,6 +584,15 @@ stepToTargetHuman = do
               failWith "actor in the path to target"
             else
               moveRunHuman False $ towards (bpos b) p1
+
+-- * Resend
+
+resendHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
+resendHuman = do
+  slastCmd <- getsClient slastCmd
+  case slastCmd of
+    Just cmd -> return $ Right cmd
+    Nothing -> failWith "no time-taking command to repeat"
 
 -- * GameRestart; does not take time
 
