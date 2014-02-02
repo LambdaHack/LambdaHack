@@ -188,17 +188,14 @@ cmdAtomicSemCli cmd = case cmd of
   DiscoverA lid p iid ik -> discoverA lid p iid ik
   CoverA lid p iid ik -> coverA lid p iid ik
   PerceptionA lid outPer inPer -> perceptionA lid outPer inPer
-  RestartA _ sdisco sfper s sdebugCli _ -> do
-    side <- getsClient sside
-    let fact = sfactionD s EM.! side
+  RestartA side sdisco sfper _ sdebugCli _ -> do
     shistory <- getsClient shistory
     sconfigUI <- getsClient sconfigUI
     isAI <- getsClient sisAI
     let cli = defStateClient shistory sconfigUI side isAI
     putClient cli { sdisco
                   , sfper
-                  , _sleader = gleader fact
-                  , sundo = [CmdAtomic cmd]
+                  -- , sundo = [CmdAtomic cmd]
                   , sdifficulty = sdifficultyCli sdebugCli
                   , sdebugCli }
   ResumeA _fid sfper -> modifyClient $ \cli -> cli {sfper}
