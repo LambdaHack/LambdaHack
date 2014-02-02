@@ -29,10 +29,9 @@ import Game.LambdaHack.Utils.Thread
 cmdSerSem :: (MonadAtomic m, MonadServer m) => CmdSer -> m Bool
 cmdSerSem cmd = case cmd of
   CmdTakeTimeSer cmd2 -> cmdSerSemTakeTime cmd2 >> return True
-  GameRestartSer aid t -> gameRestartSer aid t >> return False
-  GameExitSer aid -> gameExitSer aid >> return False
+  GameRestartSer aid t d names -> gameRestartSer aid t d names >> return False
+  GameExitSer aid d -> gameExitSer aid d >> return False
   GameSaveSer _ -> gameSaveSer >> return False
-  GameDifficultySer _ diff -> gameDifficultySer diff >> return False
 
 cmdSerSemTakeTime :: (MonadAtomic m, MonadServer m) => CmdTakeTimeSer -> m ()
 cmdSerSemTakeTime cmd = case cmd of

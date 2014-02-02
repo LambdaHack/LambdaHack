@@ -477,8 +477,14 @@ setTrajectorySer aid = do
 
 -- * GameRestart
 
-gameRestartSer :: (MonadAtomic m, MonadServer m) => ActorId -> Text -> m ()
-gameRestartSer aid stInfo = do
+gameRestartSer :: (MonadAtomic m, MonadServer m)
+               => ActorId -> Text -> Int -> [(Int, Text)] -> m ()
+gameRestartSer aid stInfo d names = do
+  modifyServer $ \ser ->
+    ser {sdebugNxt = (sdebugNxt ser) { sdifficultySer = d
+                                     , sdebugCli = (sdebugCli (sdebugNxt ser))
+                                                     {sdifficultyCli = d}
+                                     }}
   b <- getsState $ getActorBody aid
   let fid = bfid b
   oldSt <- getsState $ gquit . (EM.! fid) . sfactionD
@@ -489,8 +495,13 @@ gameRestartSer aid stInfo = do
 
 -- * GameExit
 
-gameExitSer :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
-gameExitSer aid = do
+gameExitSer :: (MonadAtomic m, MonadServer m) => ActorId -> Int -> m ()
+gameExitSer aid d = do
+  modifyServer $ \ser ->
+    ser {sdebugNxt = (sdebugNxt ser) { sdifficultySer = d
+                                     , sdebugCli = (sdebugCli (sdebugNxt ser))
+                                                     {sdifficultyCli = d}
+                                     }}
   b <- getsState $ getActorBody aid
   let fid = bfid b
   oldSt <- getsState $ gquit . (EM.! fid) . sfactionD
@@ -504,13 +515,3 @@ gameSaveSer :: MonadServer m => m ()
 gameSaveSer = do
   modifyServer $ \ser -> ser {sbkpSave = True}
   modifyServer $ \ser -> ser {squit = True}  -- do this at once
-
--- * GameDifficultySer
-
-gameDifficultySer :: MonadServer m => Int -> m ()
-gameDifficultySer n =
-  modifyServer $ \ser ->
-    ser {sdebugNxt = (sdebugNxt ser) { sdifficultySer = n
-                                     , sdebugCli = (sdebugCli (sdebugNxt ser))
-                                                     {sdifficultyCli = n}
-                                     }}

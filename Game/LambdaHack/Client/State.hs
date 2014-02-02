@@ -77,7 +77,7 @@ data StateClient = StateClient
   , smarkVision  :: !Bool          -- ^ mark leader and party FOV
   , smarkSmell   :: !Bool          -- ^ mark smell, if the leader can smell
   , smarkSuspect :: !Bool          -- ^ mark suspect features
-  , sdifficulty  :: !Int           -- ^ current game difficulty level
+  , scurDifficulty  :: !Int        -- ^ current game difficulty level
   , sdebugCli    :: !DebugModeCli  -- ^ client debugging mode
   }
   deriving Show
@@ -146,7 +146,7 @@ defStateClient shistory sconfigUI _sside sisAI =
     , smarkVision = False
     , smarkSmell = False
     , smarkSuspect = False
-    , sdifficulty = 0
+    , scurDifficulty = 0
     , sdebugCli = defDebugModeCli
     }
 
@@ -212,8 +212,8 @@ instance Binary StateClient where
     put smarkVision
     put smarkSmell
     put smarkSuspect
-    put sdifficulty
-    put sdebugCli
+    put scurDifficulty
+    put sdebugCli  -- TODO: this is overwritten at once
   get = do
     stgtMode <- get
     scursor <- get
@@ -233,7 +233,7 @@ instance Binary StateClient where
     smarkVision <- get
     smarkSmell <- get
     smarkSuspect <- get
-    sdifficulty <- get
+    scurDifficulty <- get
     sdebugCli <- get
     let sbfsD = EM.empty
         sfper = EM.empty

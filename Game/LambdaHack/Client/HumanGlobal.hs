@@ -7,7 +7,7 @@ module Game.LambdaHack.Client.HumanGlobal
   , projectHuman, applyHuman, alterDirHuman, triggerTileHuman
   , stepToTargetHuman, resendHuman
     -- * Commands that never take time
-  , gameRestartHuman, gameExitHuman, gameSaveHuman, gameDifficultyCycle
+  , gameRestartHuman, gameExitHuman, gameSaveHuman
     -- * Helper definitions
   , SlideOrCmd, failWith
   ) where
@@ -610,7 +610,8 @@ gameRestartHuman t = do
     if not b2 then failWith msg2
     else do
       leader <- getLeaderUI
-      return $ Right $ GameRestartSer leader t
+      DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
+      return $ Right $ GameRestartSer leader t sdifficultyCli []
 
 -- * GameExit; does not take time
 
@@ -619,7 +620,8 @@ gameExitHuman = do
   go <- displayYesNo ColorFull "Really save and exit?"
   if go then do
     leader <- getLeaderUI
-    return $ Right $ GameExitSer leader
+    DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
+    return $ Right $ GameExitSer leader sdifficultyCli
   else failWith "Save and exit canceled."
 
 -- * GameSave; does not take time
@@ -630,14 +632,3 @@ gameSaveHuman = do
   -- TODO: do not save to history:
   msgAdd "Saving game backup."
   return $! GameSaveSer leader
-
--- * GameDifficultyCycle; does not take time
-
-gameDifficultyCycle :: MonadClientUI m => m CmdSer
-gameDifficultyCycle = do
-  leader <- getLeaderUI
-  DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
-  let d = if sdifficultyCli <= -4 then 4 else sdifficultyCli - 1
-  modifyClient $ \cli -> cli {sdebugCli = (sdebugCli cli) {sdifficultyCli = d}}
-  msgAdd $ "Next game difficulty set to" <+> tshow (5 - d) <> "."
-  return $! GameDifficultySer leader d

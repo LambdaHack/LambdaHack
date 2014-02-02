@@ -196,7 +196,7 @@ cmdAtomicSemCli cmd = case cmd of
     putClient cli { sdisco
                   , sfper
                   -- , sundo = [CmdAtomic cmd]
-                  , sdifficulty = sdifficultyCli sdebugCli
+                  , scurDifficulty = sdifficultyCli sdebugCli
                   , sdebugCli }
   ResumeA _fid sfper -> modifyClient $ \cli -> cli {sfper}
   KillExitA _fid -> killExitA

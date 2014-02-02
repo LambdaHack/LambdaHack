@@ -124,7 +124,7 @@ instance Binary StateServer where
         squit = False
         sbkpSave = False
         sstart = TOD 0 0
-        sdebugNxt = defDebugModeSer
+        sdebugNxt = defDebugModeSer  -- TODO: here difficulty level, etc. from the last session is wiped out
     return $! StateServer{..}
 
 instance Binary DebugModeSer where

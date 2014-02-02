@@ -3,7 +3,8 @@
 -- TODO: document
 module Game.LambdaHack.Client.HumanLocal
   ( -- * Assorted commands that do not notify the server
-    pickLeaderHuman, memberCycleHuman, memberBackHuman, inventoryHuman
+    gameDifficultyCycle
+  , pickLeaderHuman, memberCycleHuman, memberBackHuman, inventoryHuman
   , selectActorHuman, selectNoneHuman, clearHuman, repeatHuman, recordHuman
   , historyHuman, markVisionHuman, markSmellHuman, markSuspectHuman
   , helpHuman, mainMenuHuman, macroHuman
@@ -65,6 +66,15 @@ failWith msg = do
   modifyClient $ \cli -> cli {slastKey = Nothing}
   stopPlayBack
   assert (not $ T.null msg) $ promptToSlideshow msg
+
+-- * GameDifficultyCycle
+
+gameDifficultyCycle :: MonadClientUI m => m ()
+gameDifficultyCycle = do
+  DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
+  let d = if sdifficultyCli <= -4 then 4 else sdifficultyCli - 1
+  modifyClient $ \cli -> cli {sdebugCli = (sdebugCli cli) {sdifficultyCli = d}}
+  msgAdd $ "Next game difficulty set to" <+> tshow (5 - d) <> "."
 
 -- * PickLeader
 
@@ -306,7 +316,7 @@ mainMenuHuman :: MonadClientUI m => m Slideshow
 mainMenuHuman = do
   Kind.COps{corule} <- getsState scops
   Binding{brevMap, bcmdList} <- askBinding
-  sdifficulty <- getsClient sdifficulty
+  scurDifficulty <- getsClient scurDifficulty
   DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
   let stripFrame t = map (T.tail . T.init) $ tail . init $ T.lines t
       pasteVersion art =
@@ -327,8 +337,10 @@ mainMenuHuman = do
            , (fst (revLookup HumanCmd.Accept), "see more help") ]
            ++ cmds
            ++ [ (fst ( revLookup HumanCmd.GameDifficultyCycle)
-                     , "next game difficulty" <+> tshow (5 - sdifficultyCli)
-                       <+> "(current" <+> tshow (5 - sdifficulty) <> ")" ) ]
+                     , "next game difficulty"
+                       <+> tshow (5 - sdifficultyCli)
+                       <+> "(current"
+                       <+> tshow (5 - scurDifficulty) <> ")" ) ]
       bindingLen = 25
       bindings =  -- key bindings to display
         let fmt (k, d) = T.justifyLeft bindingLen ' '

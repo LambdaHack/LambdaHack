@@ -19,10 +19,9 @@ import Game.LambdaHack.Common.Vector
 -- | Abstract syntax of server commands.
 data CmdSer =
     CmdTakeTimeSer !CmdTakeTimeSer
-  | GameRestartSer !ActorId !Text
-  | GameExitSer !ActorId
+  | GameRestartSer !ActorId !Text !Int ![(Int, Text)] --TODO: hero names
+  | GameExitSer !ActorId !Int
   | GameSaveSer !ActorId
-  | GameDifficultySer !ActorId !Int
   deriving (Show, Eq)
 
 data CmdTakeTimeSer =
@@ -44,10 +43,9 @@ data CmdTakeTimeSer =
 aidCmdSer :: CmdSer -> ActorId
 aidCmdSer cmd = case cmd of
   CmdTakeTimeSer cmd2 -> aidCmdTakeTimeSer cmd2
-  GameRestartSer aid _ -> aid
-  GameExitSer aid -> aid
+  GameRestartSer aid _ _ _ -> aid
+  GameExitSer aid _ -> aid
   GameSaveSer aid -> aid
-  GameDifficultySer aid _ -> aid
 
 aidCmdTakeTimeSer :: CmdTakeTimeSer -> ActorId
 aidCmdTakeTimeSer cmd = case cmd of
