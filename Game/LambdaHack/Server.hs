@@ -61,7 +61,7 @@ debugArgs = do
         , "  --newGame start a new game, overwriting the save file"
         , "  --difficulty n set difficulty for all UI players to n"
         , "  --stopAfter n exit this game session after around n seconds"
-        , "  --dumpConfig dump server config at the start of the game"
+        , "  --dumpInitRngs dump RNG states from the start of the game"
         , "  --dbgMsgSer let the server emit its internal debug messages"
         , "  --font fn use the given font for the main game window"
         , "  --maxFps n display at most n frames per second"
@@ -101,8 +101,8 @@ debugArgs = do
                     , sdebugCli = (sdebugCli debugSer) {sdifficultyCli = diff}}
       parseArgs ("--stopAfter" : s : rest) =
         (parseArgs rest) {sstopAfter = Just $ read s}
-      parseArgs ("--dumpConfig" : rest) =
-        (parseArgs rest) {sdumpConfig = True}
+      parseArgs ("--dumpInitRngs" : rest) =
+        (parseArgs rest) {sdumpInitRngs = True}
       parseArgs ("--fovMode" : "Digital" : r : rest) | (read r :: Int) > 0 =
         (parseArgs rest) {sfovMode = Just $ Digital $ read r}
       parseArgs ("--fovMode" : mode : rest) =

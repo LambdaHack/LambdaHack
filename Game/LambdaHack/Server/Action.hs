@@ -11,7 +11,7 @@ module Game.LambdaHack.Server.Action
   , sendUpdateAI, sendQueryAI, sendPingAI
   , sendUpdateUI, sendQueryUI, sendPingUI
     -- * Assorted primitives
-  , debugPrint, dumpCfg
+  , debugPrint, dumpRngs
   , mkConfigRules, restoreScore, revealItems, deduceQuits
   , rndToAction, resetSessionStart, elapsedSessionTimeGT
   , resetFidPerception, getPerFid
@@ -98,13 +98,13 @@ getPerFid fid lid = do
                               `twith` (lid, fid)) $ EM.lookup lid fper
   return $! per
 
--- | Dumps the current game rules configuration to a file.
-dumpCfg :: MonadServer m => m String
-dumpCfg = do
-  Config{configAppDataDir, configRulesCfgFile} <- getsServer sconfig
-  let fn = configAppDataDir </> configRulesCfgFile ++ ".dump"
-  config <- getsServer sconfig
-  liftIO $ ConfigIO.dump config fn
+-- | Dumps RNG states from the start of the game to a file.
+dumpRngs :: MonadServer m => m String
+dumpRngs = do
+  Kind.COps{corule} <- getsState scops
+  let fn = "rngs.dump"
+      rngs = undefined  -- TODO: rngs $ Kind.stdRuleset corule
+  liftIO $ writeFile fn rngs
   return $! fn
 
 writeTQueueAI :: MonadConnServer m => CmdClientAI -> TQueue CmdClientAI -> m ()

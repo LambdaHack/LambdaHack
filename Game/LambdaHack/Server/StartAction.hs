@@ -57,7 +57,7 @@ applyDebug = do
                                      , sstopAfter
                                      , sdbgMsgSer
                                      , snewGameSer
-                                     , sdumpConfig
+                                     , sdumpInitRngs
                                      , sdebugCli }}
 
 initPer :: MonadServer m => m ()

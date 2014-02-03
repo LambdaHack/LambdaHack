@@ -1,6 +1,6 @@
 -- | Personal game configuration file support.
 module Game.LambdaHack.Common.ConfigIO
-  ( CP, appDataDir, mkConfig, get, getOption, set, getItems, to_string, dump
+  ( CP, appDataDir, mkConfig, get, getOption, set, getItems, to_string
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -8,9 +8,6 @@ import qualified Data.Char as Char
 import qualified Data.ConfigFile as CF
 import System.Directory
 import System.Environment
-import System.FilePath
-
-import Game.LambdaHack.Server.Config
 
 overrideCP :: CP -> FilePath -> IO CP
 overrideCP cp@(CP defCF) cfile = do
@@ -42,13 +39,6 @@ appDataDir = do
   progName <- getProgName
   let name = takeWhile Char.isAlphaNum progName
   getAppUserDataDirectory name
-
--- | Dumps the current configuration to a file.
-dump :: Config -> FilePath -> IO ()
-dump Config{configSelfString} fn = do
-  current <- getCurrentDirectory
-  let path = current </> fn
-  writeFile path configSelfString
 
 -- | Simplified setting of an option in a given section. Overwriting forbidden.
 set :: CP -> CF.SectionSpec -> CF.OptionSpec -> String -> CP

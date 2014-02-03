@@ -6,4 +6,4 @@ install:
 
 script:
   - make install-debug
-  - make xctest-travis || (cat ~/.LambdaHack/config.rules.dump ; tail -n 200 /tmp/stdtest.log ; exit 77)
+  - make xctest-travis || (cat ~/.LambdaHack/rngs.dump ; tail -n 200 /tmp/stdtest.log ; exit 77)
