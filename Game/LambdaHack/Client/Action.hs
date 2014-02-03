@@ -453,9 +453,14 @@ mkConfigUI corule = do
       cfgUIDefault = either (assert `failure`) id $ Ini.parse sUIDefault
   dataDir <- appDataDir
   let userPath = dataDir </> cfgUIName <.> "ini"
-  sUser <- readFile userPath
-  let cfgUser = either (assert `failure`) id $ Ini.parse sUser
-      cfgUI = M.unionWith M.union cfgUser cfgUIDefault  -- user cfg preferred
+  cfgUser <- do
+    cpExists <- doesFileExist userPath
+    if not cpExists
+      then return Ini.emptyConfig
+      else do
+        sUser <- readFile userPath
+        return $! either (assert `failure`) id $ Ini.parse sUser
+  let cfgUI = M.unionWith M.union cfgUser cfgUIDefault  -- user cfg preferred
       conf = parseConfigUI cfgUI
   -- Catch syntax errors in complex expressions ASAP,
   return $! deepseq conf conf
