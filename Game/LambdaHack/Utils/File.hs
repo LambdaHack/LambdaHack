@@ -58,11 +58,11 @@ tryCopyDataFiles :: FilePath
                  -> (FilePath -> IO FilePath)
                  -> [(FilePath, FilePath)]
                  -> IO ()
-tryCopyDataFiles configAppDataDir pathsDataFile files =
+tryCopyDataFiles dataDir pathsDataFile files =
   let cpFile (fin, fout) = do
-        pathsDataIn <- pathsDataFile $ takeFileName fin
+        pathsDataIn <- pathsDataFile fin
         bIn <- doesFileExist pathsDataIn
-        let pathsDataOut = configAppDataDir </> fout
+        let pathsDataOut = dataDir </> fout
         bOut <- doesFileExist pathsDataOut
         when (not bOut && bIn) $ copyFile pathsDataIn pathsDataOut
   in mapM_ cpFile files

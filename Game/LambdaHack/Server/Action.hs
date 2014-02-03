@@ -96,12 +96,12 @@ getPerFid fid lid = do
   return $! per
 
 -- | Dumps RNG states from the start of the game to a file.
-dumpRngs :: MonadServer m => m String
+dumpRngs :: MonadServer m => m ()
 dumpRngs = do
+  dataDir <- liftIO appDataDir
+  let fn = dataDir </> "rngs.dump"
   rngs <- getsServer srngs
-  let fn = "rngs.dump"
   liftIO $ writeFile fn (show rngs)
-  return $! fn
 
 writeTQueueAI :: MonadConnServer m => CmdClientAI -> TQueue CmdClientAI -> m ()
 writeTQueueAI cmd fromServer = do
