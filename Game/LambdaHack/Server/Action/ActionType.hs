@@ -19,7 +19,6 @@ import Game.LambdaHack.Common.ClientCmd
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Server.Action.ActionClass
-import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.State
 
 data SerState = SerState
@@ -74,8 +73,7 @@ instance MonadConnServer ActionSer where
 executorSer :: ActionSer () -> IO ()
 executorSer m =
   let saveFile (_, ser) =
-        configAppDataDir (sconfig ser)
-        </> fromMaybe "save" (ssavePrefixSer (sdebugSer ser))
+        fromMaybe "save" (ssavePrefixSer (sdebugSer ser))
         <.> saveName
       exe serToSave =
         evalStateT (runActionSer m)

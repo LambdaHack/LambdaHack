@@ -38,8 +38,8 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ModeKind
+import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.Action
-import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.Utils.Frequency
 
@@ -196,13 +196,14 @@ electLeader fid lid aidDead = do
 
 deduceKilled :: (MonadAtomic m, MonadServer m) => Actor -> m ()
 deduceKilled body = do
-  let fid = bfid body
+  Kind.COps{corule} <- getsState scops
+  let firstDeathEnds = rfirstDeathEnds $ Kind.stdRuleset corule
+      fid = bfid body
   spawn <- getsState $ isSpawnFaction fid
   summon <- getsState $ isSummonFaction fid
-  Config{configFirstDeathEnds} <- getsServer sconfig
   mleader <- getsState $ gleader . (EM.! fid) . sfactionD
   when (not spawn && not summon
-        && (isNothing mleader || configFirstDeathEnds)) $
+        && (isNothing mleader || firstDeathEnds)) $
     deduceQuits body $ Status Killed (fromEnum $ blid body) ""
 
 -- ** SummonFriend

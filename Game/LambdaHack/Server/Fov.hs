@@ -2,12 +2,10 @@
 -- See <https://github.com/kosmikus/LambdaHack/wiki/Fov-and-los>
 -- for discussion.
 module Game.LambdaHack.Server.Fov
-  ( dungeonPerception, levelPerception
-  , fullscan, FovMode(..)
+  ( dungeonPerception, levelPerception, fullscan
   ) where
 
 import Control.Arrow (second)
-import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 
@@ -22,6 +20,7 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Server.Fov.Common
 import qualified Game.LambdaHack.Server.Fov.Digital as Digital
@@ -153,27 +152,3 @@ fullscan cotile fovMode spectatorPos lvl = spectatorPos :
     , \B{..} -> trV (-bx)   by   -- III
     , \B{..} -> trV (-by) (-bx)  -- IV
     ]
-
--- TODO: should Blind really be a FovMode, or a modifier? Let's decide
--- when other similar modifiers are added.
--- | Field Of View scanning mode.
-data FovMode =
-    Shadow        -- ^ restrictive shadow casting
-  | Permissive    -- ^ permissive FOV
-  | Digital !Int  -- ^ digital FOV with the given radius
-  | Blind         -- ^ only feeling out adjacent tiles by touch
-  deriving (Show, Read)
-
-instance Binary FovMode where
-  put Shadow      = putWord8 0
-  put Permissive  = putWord8 1
-  put (Digital r) = putWord8 2 >> put r
-  put Blind       = putWord8 3
-  get = do
-    tag <- getWord8
-    case tag of
-      0 -> return Shadow
-      1 -> return Permissive
-      2 -> fmap Digital get
-      3 -> return Blind
-      _ -> fail "no parse (FovMode)"

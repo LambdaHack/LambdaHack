@@ -9,11 +9,6 @@
 ; comma: (CmdItem, Macro "" ["g"])
 ; period: (CmdMove, Macro "" ["KP_Begin"])
 
-; [file]
-; ; Names (or prefixes) of various game files.
-; ; They reside in ~/.LambdaHack or similar.
-; savePrefix: save
-
 ; [hero names]
 ; HeroName_0: Haskell Alvin
 ; HeroName_1: Alonzo Barkley

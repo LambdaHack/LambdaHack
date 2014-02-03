@@ -1,13 +1,11 @@
 -- | Personal game configuration file support.
-module Game.LambdaHack.Common.ConfigIO
-  ( CP, appDataDir, mkConfig, get, getOption, set, getItems, to_string
+module Game.LambdaHack.Client.ConfigIO
+  ( CP, mkConfig, get, getOption, set, getItems
   ) where
 
 import Control.Exception.Assert.Sugar
-import qualified Data.Char as Char
 import qualified Data.ConfigFile as CF
 import System.Directory
-import System.Environment
 
 overrideCP :: CP -> FilePath -> IO CP
 overrideCP cp@(CP defCF) cfile = do
@@ -31,14 +29,6 @@ mkConfig configDefault cfile = do
       !defCF = assert `forceEither` CF.readstring CF.emptyCP unConfig
       !defCP = toCP defCF
   overrideCP defCP cfile
-
--- | Personal data directory for the game. Depends on the OS and the game,
--- e.g., for LambdaHack under Linux it's @~\/.LambdaHack\/@.
-appDataDir :: IO FilePath
-appDataDir = do
-  progName <- getProgName
-  let name = takeWhile Char.isAlphaNum progName
-  getAppUserDataDirectory name
 
 -- | Simplified setting of an option in a given section. Overwriting forbidden.
 set :: CP -> CF.SectionSpec -> CF.OptionSpec -> String -> CP
@@ -82,6 +72,3 @@ getItems (CP conf) s =
   if CF.has_section conf s
   then assert `forceEither` CF.items conf s
   else assert `failure` "unknown CF section" `twith` (s, CF.to_string conf)
-
-to_string :: CP -> String
-to_string (CP conf) = CF.to_string conf

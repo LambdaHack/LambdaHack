@@ -21,7 +21,6 @@ module Game.LambdaHack.Server.Action
 import Control.Concurrent
 import Control.Concurrent.STM (TQueue, atomically)
 import qualified Control.Concurrent.STM as STM
-import Control.DeepSeq
 import qualified Control.Exception as Ex hiding (handle)
 import Control.Exception.Assert.Sugar
 import Control.Monad
@@ -46,7 +45,6 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.ClientCmd
-import qualified Game.LambdaHack.Common.ConfigIO as ConfigIO
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import Game.LambdaHack.Common.Item
@@ -64,7 +62,6 @@ import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Frontend as Frontend
 import Game.LambdaHack.Server.Action.ActionClass
-import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.Utils.File
@@ -101,10 +98,9 @@ getPerFid fid lid = do
 -- | Dumps RNG states from the start of the game to a file.
 dumpRngs :: MonadServer m => m String
 dumpRngs = do
-  Kind.COps{corule} <- getsState scops
+  rngs <- getsServer srngs
   let fn = "rngs.dump"
-      rngs = undefined  -- TODO: rngs $ Kind.stdRuleset corule
-  liftIO $ writeFile fn rngs
+  liftIO $ writeFile fn (show rngs)
   return $! fn
 
 writeTQueueAI :: MonadConnServer m => CmdClientAI -> TQueue CmdClientAI -> m ()
@@ -194,11 +190,12 @@ sendPingUI fid = do
 
 -- TODO: refactor wrt Game.LambdaHack.Common.Save
 -- | Read the high scores table. Return the empty table if no file.
--- Warning: when it's used, the game state
--- may still be undefined, hence the config is given as an argument.
-restoreScore :: MonadServer m => Config -> m HighScore.ScoreTable
-restoreScore Config{configAppDataDir, configScoresFile} = do
-  let path = configAppDataDir </> configScoresFile
+restoreScore :: MonadServer m => Kind.COps -> m HighScore.ScoreTable
+restoreScore Kind.COps{corule} = do
+  let stdRuleset = Kind.stdRuleset corule
+      scoresFile = rscoresFile stdRuleset
+  dataDir <- liftIO appDataDir
+  let path = dataDir </> scoresFile
   configExists <- liftIO $ doesFileExist path
   mscore <- liftIO $ do
     res <- Ex.try $
@@ -218,6 +215,7 @@ restoreScore Config{configAppDataDir, configScoresFile} = do
 -- | Generate a new score, register it and save.
 registerScore :: MonadServer m => Status -> Maybe Actor -> FactionId -> m ()
 registerScore status mbody fid = do
+  cops@Kind.COps{corule} <- getsState scops
   assert (maybe True ((fid ==) . bfid) mbody) skip
   fact <- getsState $ (EM.! fid) . sfactionD
   assert (playerHuman $ gplayer fact) skip
@@ -228,13 +226,15 @@ registerScore status mbody fid = do
       Just aid -> do
         b <- getsState $ getActorBody aid
         getsState $ snd . calculateTotal b
-  config@Config{configAppDataDir, configScoresFile} <- getsServer sconfig
+  let stdRuleset = Kind.stdRuleset corule
+      scoresFile = rscoresFile stdRuleset
+  dataDir <- liftIO appDataDir
   -- Re-read the table in case it's changed by a concurrent game.
-  table <- restoreScore config
+  table <- restoreScore cops
   time <- getsState stime
   date <- liftIO getClockTime
   DebugModeSer{sdifficultySer} <- getsServer sdebugSer
-  let path = configAppDataDir </> configScoresFile
+  let path = dataDir </> scoresFile
       saveScore (ntable, _) =
         liftIO $ encodeEOF path (ntable :: HighScore.ScoreTable)
       diff | not $ playerUI $ gplayer fact = 0
@@ -329,18 +329,13 @@ deduceQuits body status = do
 tryRestore :: MonadServer m
            => Kind.COps -> DebugModeSer -> m (Maybe (State, StateServer))
 tryRestore Kind.COps{corule} sdebugSer = do
-  let pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
+  let stdRuleset = Kind.stdRuleset corule
+      scoresFile = rscoresFile stdRuleset
+      pathsDataFile = rpathsDataFile stdRuleset
       prefix = ssavePrefixSer sdebugSer
-  -- A throw-away copy of rules config, to be used until the old
-  -- version of the config can be read from the savefile.
-  (Config{ configAppDataDir
-         , configRulesCfgFile
-         , configScoresFile }, _, _) <- mkConfigRules corule Nothing
-  let copies =
-        [ (configRulesCfgFile <.> ".default", configRulesCfgFile <.> ".ini")
-        , (configScoresFile, configScoresFile) ]
+  let copies = [(scoresFile, scoresFile)]
       name = fromMaybe "save" prefix <.> saveName
-  liftIO $ Save.restoreGame name configAppDataDir copies pathsDataFile
+  liftIO $ Save.restoreGame name copies pathsDataFile
 
 -- Global variable for all children threads of the server.
 childrenServer :: MVar [MVar ()]
@@ -436,53 +431,28 @@ rndToAction r = do
   modifyServer $ \ser -> ser {srandom = ng}
   return $! a
 
--- | Gets a random generator from the config or,
--- if not present, generates one and updates the config with it.
-getSetGen :: ConfigIO.CP  -- ^ config
-          -> String       -- ^ name of the generator
+-- | Gets a random generator from the rules content or,
+-- if not present, generates one.
+getSetGen :: Kind.Ops RuleKind
+          -> (RNGs -> Maybe R.StdGen)
           -> Maybe R.StdGen
-          -> IO (R.StdGen, ConfigIO.CP)
-getSetGen config option mrandom =
-  case ConfigIO.getOption config "engine" option of
-    Just sg -> return (read sg, config)
+          -> IO R.StdGen
+getSetGen corule accessor mrandom =
+  case accessor $ rinitRngs $ Kind.stdRuleset corule of
+    Just sg -> return sg
     Nothing -> do
-      -- Pick the randomly chosen generator from the IO monad (unless given)
-      -- and record it in the config for debugging (can be 'D'umped).
       g <- case mrandom of
         Just rnd -> return rnd
         Nothing -> R.newStdGen
-      let gs = show g
-          c = ConfigIO.set config "engine" option gs
-      return (g, c)
+      return g
 
-parseConfigRules :: FilePath -> ConfigIO.CP -> Config
-parseConfigRules dataDir cp =
-  let configSelfString = ConfigIO.to_string cp
-      configFirstDeathEnds = ConfigIO.get cp "engine" "firstDeathEnds"
-      configFovMode = ConfigIO.get cp "engine" "fovMode"
-      configSaveBkpClips = ConfigIO.get cp "engine" "saveBkpClips"
-      configAppDataDir = dataDir
-      configScoresFile = ConfigIO.get cp "file" "scoresFile"
-      configRulesCfgFile = "config.rules"
-      configSavePrefix = ConfigIO.get cp "file" "savePrefix"
-  in Config{..}
-
--- | Read and parse rules config file and supplement it with random seeds.
--- This creates a server config file. Warning: when it's used, the game state
+-- | Read or generate and then set random seeds.
+-- Warning: when it's used, the game state
 -- may still be undefined, hence the content ops are given as an argument.
 mkConfigRules :: MonadServer m
               => Kind.Ops RuleKind -> Maybe R.StdGen
-              -> m (Config, R.StdGen, R.StdGen)
+              -> m (R.StdGen, R.StdGen)
 mkConfigRules corule mrandom = do
-  let cpRulesDefault = rcfgRulesDefault $ Kind.stdRuleset corule
-  dataDir <-
-    liftIO $ ConfigIO.appDataDir
-  cpRules <-
-    liftIO $ ConfigIO.mkConfig cpRulesDefault $ dataDir </> "config.rules.ini"
-  (dungeonGen,  cp2) <-
-    liftIO $ getSetGen cpRules "dungeonRandomGenerator" mrandom
-  (startingGen, cp3) <-
-    liftIO $ getSetGen cp2     "startingRandomGenerator" mrandom
-  let conf = parseConfigRules dataDir cp3
-  -- Catch syntax errors ASAP.
-  return $! deepseq conf (conf, dungeonGen, startingGen)
+  dungeonGen <- liftIO $ getSetGen corule dungeonRandomGenerator mrandom
+  startingGen <- liftIO $ getSetGen corule startingRandomGenerator mrandom
+  return (dungeonGen, startingGen)

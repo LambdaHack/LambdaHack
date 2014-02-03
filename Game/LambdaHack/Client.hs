@@ -27,6 +27,7 @@ import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Frontend
 
 storeUndo :: MonadClient m => Atomic -> m ()
@@ -100,7 +101,8 @@ exeFrontend executorUI executorAI
             cops@Kind.COps{corule} sdebugCli exeServer = do
   -- UI config reloaded at each client start.
   sconfigUI <- mkConfigUI corule
-  let !sbinding = stdBinding corule sconfigUI  -- evaluate to check for errors
+  let stdRuleset = Kind.stdRuleset corule
+      !sbinding = stdBinding corule sconfigUI  -- evaluate to check for errors
       sdebugMode =
         (\dbg -> dbg {sfont =
             sfont dbg `mplus` Just (configFont sconfigUI)}) .
@@ -109,7 +111,7 @@ exeFrontend executorUI executorAI
         (\dbg -> dbg {snoAnim =
             snoAnim dbg `mplus` Just (configNoAnim sconfigUI)}) .
         (\dbg -> dbg {ssavePrefixCli =
-            ssavePrefixCli dbg `mplus` Just (configSavePrefix sconfigUI)})
+            ssavePrefixCli dbg `mplus` Just (rsavePrefix stdRuleset)})
         $ sdebugCli
   defHist <- defHistory
   let exeClientUI = executorUI $ loopUI sdebugMode cmdClientUISem

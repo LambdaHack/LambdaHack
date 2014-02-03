@@ -32,9 +32,9 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ModeKind
+import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Frontend
 import Game.LambdaHack.Server.Action hiding (sendUpdateAI, sendUpdateUI)
-import Game.LambdaHack.Server.Config
 import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.ServerSem
@@ -61,7 +61,7 @@ loopSer sdebug cmdSerSem executorUI executorAI !cops = do
       let setPreviousCops = const cops
       execCmdAtomic $ ResumeServerA $ updateCOps setPreviousCops sRaw
       putServer ser
-      sdebugNxt <- initDebug sdebug
+      sdebugNxt <- initDebug cops sdebug
       modifyServer $ \ser2 -> ser2 {sdebugNxt}
       applyDebug
       updateConn executorUI executorAI
@@ -79,7 +79,7 @@ loopSer sdebug cmdSerSem executorUI executorAI !cops = do
             Just (_, ser) -> Just $ srandom ser
             Nothing -> Nothing
       s <- gameReset cops sdebug mrandom
-      sdebugNxt <- initDebug sdebug
+      sdebugNxt <- initDebug cops sdebug
       modifyServer $ \ser -> ser {sdebugNxt, sdebugSer = sdebugNxt}
       let speedup = speedupCOps (sallClear sdebugNxt)
       execCmdAtomic $ RestartServerA $ updateCOps speedup s
@@ -118,14 +118,14 @@ loopSer sdebug cmdSerSem executorUI executorAI !cops = do
           when continue loop
   loop
 
-initDebug :: MonadServer m => DebugModeSer -> m DebugModeSer
-initDebug sdebugSer = do
-  sconfig <- getsServer sconfig
+initDebug :: MonadActionRO m => Kind.COps -> DebugModeSer -> m DebugModeSer
+initDebug Kind.COps{corule} sdebugSer = do
+  let stdRuleset = Kind.stdRuleset corule
   return $!
     (\dbg -> dbg {sfovMode =
-        sfovMode dbg `mplus` Just (configFovMode sconfig)}) .
+        sfovMode dbg `mplus` Just (rfovMode stdRuleset)}) .
     (\dbg -> dbg {ssavePrefixSer =
-        ssavePrefixSer dbg `mplus` Just (configSavePrefix sconfig)})
+        ssavePrefixSer dbg `mplus` Just (rsavePrefix stdRuleset)})
     $ sdebugSer
 
 -- This can be improved by adding a timeout and by asking clients to prepare
@@ -146,6 +146,8 @@ saveBkpAll = do
 endClip :: (MonadAtomic m, MonadServer m, MonadConnServer m)
         => [LevelId] -> m Bool
 endClip arenas = do
+  Kind.COps{corule} <- getsState scops
+  let saveBkpClips = rsaveBkpClips $ Kind.stdRuleset corule
   -- TODO: a couple messages each clip to many clients is too costly.
   -- Store these on a queue and sum times instead of sending,
   -- until a different command needs to be sent. Include HealActorA
@@ -155,13 +157,12 @@ endClip arenas = do
   execCmdAtomic $ AgeGameA timeClip
   -- Perform periodic dungeon maintenance.
   time <- getsState stime
-  Config{configSaveBkpClips} <- getsServer sconfig
   let clipN = time `timeFit` timeClip
       clipInTurn = let r = timeTurn `timeFit` timeClip
                    in assert (r > 2) r
       clipMod = clipN `mod` clipInTurn
   bkpSave <- getsServer sbkpSave
-  when (bkpSave || clipN `mod` configSaveBkpClips == 0) $ do
+  when (bkpSave || clipN `mod` saveBkpClips == 0) $ do
     modifyServer $ \ser -> ser {sbkpSave = False}
     saveBkpAll
   -- Regenerate HP and add monsters each turn, not each clip.

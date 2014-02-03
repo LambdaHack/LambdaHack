@@ -45,7 +45,8 @@ loopSave saveFile toSave =
     ms <- takeMVar toSave
     case ms of
       Just s -> do
-        encodeEOF (saveFile s) s
+        dataDir <- appDataDir
+        encodeEOF (dataDir </> saveFile s) s
         -- Wait until the save finished. During that time, the mvar
         -- is continually updated to newest state values.
         loop
@@ -77,14 +78,14 @@ wrapInSaves saveFile exe = do
 -- | Restore a saved game, if it exists. Initialize directory structure
 -- and cope over data files, if needed.
 restoreGame :: Binary a
-            => String -> FilePath
-            -> [(FilePath, FilePath)] -> (FilePath -> IO FilePath)
+            => String -> [(FilePath, FilePath)] -> (FilePath -> IO FilePath)
             -> IO (Maybe a)
-restoreGame name configAppDataDir copies pathsDataFile = do
+restoreGame name copies pathsDataFile = do
   -- Create user data directory and copy files, if not already there.
-  tryCreateDir configAppDataDir
-  tryCopyDataFiles configAppDataDir pathsDataFile copies
-  let saveFile = configAppDataDir </> name
+  dataDir <- appDataDir
+  tryCreateDir dataDir
+  tryCopyDataFiles dataDir pathsDataFile copies
+  let saveFile = dataDir </> name
   saveExists <- doesFileExist saveFile
   -- If the savefile exists but we get IO or decoding errors,
   -- we show them and start a new game. If the savefile was randomly

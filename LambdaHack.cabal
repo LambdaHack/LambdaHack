@@ -50,8 +50,7 @@ bug-reports:   http://github.com/kosmikus/LambdaHack/issues
 license:       BSD3
 license-file:  LICENSE
 tested-with:   GHC == 7.6.3, GHC == 7.7
-data-files:    GameDefinition/config.rules.default,
-               GameDefinition/config.ui.default,
+data-files:    GameDefinition/config.ui.default,
                GameDefinition/scores
 extra-source-files: GameDefinition/PLAYING.md, GameDefinition/MainMenu.ascii,
                     README.md, LICENSE, CREDITS, changelog, Makefile
@@ -82,6 +81,7 @@ library
                       Game.LambdaHack.Client.Binding,
                       Game.LambdaHack.Client.ClientSem,
                       Game.LambdaHack.Client.Config,
+                      Game.LambdaHack.Client.ConfigIO,
                       Game.LambdaHack.Client.Draw,
                       Game.LambdaHack.Client.HumanGlobal,
                       Game.LambdaHack.Client.HumanLocal,
@@ -101,7 +101,6 @@ library
                       Game.LambdaHack.Common.AtomicSem,
                       Game.LambdaHack.Common.ClientCmd,
                       Game.LambdaHack.Common.Color,
-                      Game.LambdaHack.Common.ConfigIO,
                       Game.LambdaHack.Common.ContentDef,
                       Game.LambdaHack.Common.Effect,
                       Game.LambdaHack.Common.Faction,
@@ -142,7 +141,6 @@ library
                       Game.LambdaHack.Server.Action.ActionClass,
                       Game.LambdaHack.Server.Action.ActionType,
                       Game.LambdaHack.Server.AtomicSemSer,
-                      Game.LambdaHack.Server.Config,
                       Game.LambdaHack.Server.DungeonGen,
                       Game.LambdaHack.Server.DungeonGen.Area
                       Game.LambdaHack.Server.DungeonGen.AreaRnd,

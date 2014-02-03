@@ -147,11 +147,8 @@ gameReset :: MonadServer m
           => Kind.COps -> DebugModeSer -> Maybe R.StdGen -> m State
 gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}, corule}
           sdebug mrandom = do
-  -- Rules config reloaded at each new game start.
-  -- Taking the original config from config file, to reroll RNG, if needed
-  -- (the current config file has the RNG rolled for the previous game).
-  (sconfig, dungeonSeed, srandom) <- mkConfigRules corule mrandom
-  scoreTable <- restoreScore sconfig
+  (dungeonSeed, srandom) <- mkConfigRules corule mrandom
+  scoreTable <- restoreScore cops
   sstart <- getsServer sstart  -- copy over from previous game
   sheroNames <- getsServer sheroNames  -- copy over from previous game
   let smode = sgameMode sdebug
@@ -170,7 +167,9 @@ gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}, corule}
         St.evalState rnd dungeonSeed
       defState = defStateGlobal freshDungeon freshDepth faction cops scoreTable
       defSer = emptyStateServer { sdisco, sdiscoRev, sflavour
-                                , srandom, sconfig, sstart, sheroNames }
+                                , srandom, sstart, sheroNames
+                                , srngs = RNGs (Just dungeonSeed)
+                                               (Just srandom) }
   putServer defSer
   return $! defState
 

@@ -16,9 +16,9 @@ import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.ServerCmd
+import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Frontend
 import Game.LambdaHack.Server.Action
-import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.LoopAction
 import Game.LambdaHack.Server.ServerSem
 import Game.LambdaHack.Server.State

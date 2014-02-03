@@ -1,10 +1,12 @@
 -- | The type of game rule sets and assorted game data.
 module Game.LambdaHack.Content.RuleKind
-  ( RuleKind(..), validateRuleKind
+  ( RuleKind(..), validateRuleKind, RNGs(..), FovMode(..)
   ) where
 
+import Data.Binary
 import Data.Text (Text)
 import Data.Version
+import qualified System.Random as R
 
 import Game.LambdaHack.Common.HumanCmd
 import qualified Game.LambdaHack.Common.Key as K
@@ -34,23 +36,72 @@ import Game.LambdaHack.Common.Point
 -- Precondition: the two positions are next to each other.
 -- We assume the predicate is symmetric.
 data RuleKind = RuleKind
-  { rsymbol          :: !Char     -- ^ a symbol
-  , rname            :: !Text     -- ^ short description
-  , rfreq            :: !Freqs    -- ^ frequency within groups
-  , raccessible      :: Maybe (Point -> Point -> Bool)
-  , raccessibleDoor  :: Maybe (Point -> Point -> Bool)
-  , rtitle           :: !Text     -- ^ the title of the game
-  , rpathsDataFile   :: FilePath -> IO FilePath  -- ^ the path to data files
-  , rpathsVersion    :: !Version  -- ^ the version of the game
-  , ritemMelee       :: ![Char]   -- ^ symbols of melee weapons
-  , ritemRanged      :: ![Char]   -- ^ symbols of ranged weapons and missiles
-  , ritemProject     :: ![Char]   -- ^ symbols of items AI can project
-  , rcfgRulesDefault :: !String   -- ^ the default game rules config file
-  , rcfgUIDefault    :: !String   -- ^ the default UI settings config file
-  , rmainMenuArt     :: !Text     -- ^ the ASCII art for the Main Menu
-  , rhumanCommands   :: [(K.KM, (CmdCategory, HumanCmd))]
+  { rsymbol         :: !Char      -- ^ a symbol
+  , rname           :: !Text      -- ^ short description
+  , rfreq           :: !Freqs     -- ^ frequency within groups
+  , raccessible     :: !(Maybe (Point -> Point -> Bool))
+  , raccessibleDoor :: !(Maybe (Point -> Point -> Bool))
+  , rtitle          :: !Text      -- ^ the title of the game
+  , rpathsDataFile  :: FilePath -> IO FilePath
+                                  -- ^ the path to data files
+  , rpathsVersion   :: !Version   -- ^ the version of the game
+  , ritemMelee      :: ![Char]    -- ^ symbols of melee weapons
+  , ritemRanged     :: ![Char]    -- ^ ranged weapons and missiles
+  , ritemProject    :: ![Char]    -- ^ symbols of items AI can project
+  , rcfgUIName      :: !FilePath  -- ^ base name of the UI config file
+  , rcfgUIDefault   :: !String    -- ^ the default UI settings config file
+  , rmainMenuArt    :: !Text      -- ^ the ASCII art for the Main Menu
+  , rhumanCommands  :: ![(K.KM, (CmdCategory, HumanCmd))]
                                   -- ^ default client commands
+  , rfirstDeathEnds :: !Bool      -- ^ whether first non-spawner actor death
+                                  --   ends the game
+  , rfovMode        :: !FovMode   -- ^ FOV calculation mode
+  , rsaveBkpClips   :: !Int       -- ^ game backup is saved that often
+  , rscoresFile     :: !FilePath  -- ^ name of the scores file
+  , rsavePrefix     :: !String    -- ^ name of the savefile prefix
+  , rinitRngs       :: !RNGs      -- ^ initial RNG states
   }
+
+data RNGs = RNGs
+  { dungeonRandomGenerator  :: !(Maybe R.StdGen)
+  , startingRandomGenerator :: !(Maybe R.StdGen)
+  }
+  deriving Show
+
+-- TODO: should Blind really be a FovMode, or a modifier? Let's decide
+-- when other similar modifiers are added.
+-- | Field Of View scanning mode.
+data FovMode =
+    Shadow        -- ^ restrictive shadow casting
+  | Permissive    -- ^ permissive FOV
+  | Digital !Int  -- ^ digital FOV with the given radius
+  | Blind         -- ^ only feeling out adjacent tiles by touch
+  deriving (Show, Read)
+
+instance Binary RNGs where
+  put RNGs{..} = do
+    put (show dungeonRandomGenerator)
+    put (show startingRandomGenerator)
+  get = do
+    dg <- get
+    sg <- get
+    let dungeonRandomGenerator = read dg
+        startingRandomGenerator = read sg
+    return $! RNGs{..}
+
+instance Binary FovMode where
+  put Shadow      = putWord8 0
+  put Permissive  = putWord8 1
+  put (Digital r) = putWord8 2 >> put r
+  put Blind       = putWord8 3
+  get = do
+    tag <- getWord8
+    case tag of
+      0 -> return Shadow
+      1 -> return Permissive
+      2 -> fmap Digital get
+      3 -> return Blind
+      _ -> fail "no parse (FovMode)"
 
 -- | A dummy instance of the 'Show' class, to satisfy general requirments
 -- about content. We won't have many rule sets and they contain functions,

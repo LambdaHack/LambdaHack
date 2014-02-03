@@ -14,10 +14,6 @@ import qualified Game.LambdaHack.Common.Key as K
 data ConfigUI = ConfigUI
   { -- commands
     configCommands    :: ![(K.KM, (CmdCategory, HumanCmd))]
-    -- files
-  , configAppDataDir  :: !FilePath
-  , configUICfgFile   :: !FilePath
-  , configSavePrefix  :: !String
     -- hero names
   , configHeroNames   :: ![(Int, Text)]
     -- ui

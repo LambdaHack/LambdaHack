@@ -17,8 +17,7 @@ import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Perception
-import Game.LambdaHack.Server.Config
-import Game.LambdaHack.Server.Fov
+import Game.LambdaHack.Content.RuleKind
 
 -- | Global, server state.
 data StateServer = StateServer
@@ -31,7 +30,7 @@ data StateServer = StateServer
   , sundo      :: ![Atomic]      -- ^ atomic commands performed to date
   , sper       :: !Pers          -- ^ perception of all factions
   , srandom    :: !R.StdGen      -- ^ current random generator
-  , sconfig    :: Config         -- ^ this game's config (with initial RNG)
+  , srngs      :: !RNGs          -- ^ initial random generators
   , squit      :: !Bool          -- ^ exit the game loop
   , sbkpSave   :: !Bool          -- ^ make backup savefile now
   , sstart     :: !ClockTime     -- ^ this session start time
@@ -74,7 +73,8 @@ emptyStateServer =
     , sundo = []
     , sper = EM.empty
     , srandom = R.mkStdGen 42
-    , sconfig = undefined
+    , srngs = RNGs { dungeonRandomGenerator = Nothing
+                   , startingRandomGenerator = Nothing }
     , squit = False
     , sbkpSave = False
     , sstart = TOD 0 0
@@ -110,7 +110,7 @@ instance Binary StateServer where
     put sicounter
     put sundo
     put (show srandom)
-    put sconfig
+    put srngs
     put sheroNames
     put sdebugSer
   get = do
@@ -122,7 +122,7 @@ instance Binary StateServer where
     sicounter <- get
     sundo <- get
     g <- get
-    sconfig <- get
+    srngs <- get
     sheroNames <- get
     sdebugSer <- get
     let srandom = read g

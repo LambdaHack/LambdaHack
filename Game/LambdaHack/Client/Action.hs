@@ -54,13 +54,13 @@ import System.Time
 import Game.LambdaHack.Client.Action.ActionClass
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.Config
+import qualified Game.LambdaHack.Client.ConfigIO as ConfigIO
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Animation
-import qualified Game.LambdaHack.Common.ConfigIO as ConfigIO
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
@@ -81,6 +81,7 @@ import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Frontend as Frontend
+import Game.LambdaHack.Utils.File
 
 debugPrint :: MonadClient m => Text -> m ()
 debugPrint t = do
@@ -330,27 +331,27 @@ scoreToSlideshow total status = do
 restoreGame :: MonadClient m => m (Maybe (State, StateClient))
 restoreGame = do
   Kind.COps{corule} <- getsState scops
-  let pathsDataFile = rpathsDataFile $ Kind.stdRuleset corule
+  let stdRuleset = Kind.stdRuleset corule
+      pathsDataFile = rpathsDataFile stdRuleset
+      cfgUIName = rcfgUIName stdRuleset
   side <- getsClient sside
   isAI <- getsClient sisAI
   prefix <- getsClient $ ssavePrefixCli . sdebugCli
-  ConfigUI{ configAppDataDir
-          , configUICfgFile } <- getsClient sconfigUI
-  let copies = [(configUICfgFile <.> ".default", configUICfgFile <.> ".ini")]
+  let copies = [(cfgUIName <.> "default", cfgUIName <.> "ini")]
       name = fromMaybe "save" prefix <.> saveName side isAI
-  liftIO $ Save.restoreGame name configAppDataDir copies pathsDataFile
+  liftIO $ Save.restoreGame name copies pathsDataFile
 
 -- | Assuming the client runs on the same machine and for the same
 -- user as the server, move the server savegame out of the way.
 removeServerSave :: MonadClient m => m ()
 removeServerSave = do
   prefix <- getsClient $ ssavePrefixCli . sdebugCli  -- hack: assume the same
-  ConfigUI{configAppDataDir} <- getsClient sconfigUI
-  let serverSaveFile = configAppDataDir
+  dataDir <- liftIO appDataDir
+  let serverSaveFile = dataDir
                        </> fromMaybe "save" prefix
                        <.> serverSaveName
   bSer <- liftIO $ doesFileExist serverSaveFile
-  when bSer $ liftIO $ renameFile serverSaveFile (serverSaveFile ++ ".bkp")
+  when bSer $ liftIO $ renameFile serverSaveFile (serverSaveFile <.> "bkp")
 
 -- | Invoke pseudo-random computation with the generator kept in the state.
 rndToAction :: MonadClient m => Rnd a -> m a
@@ -405,16 +406,13 @@ partAidLeader aid = do
   b <- getsState $ getActorBody aid
   partActorLeader aid b
 
-parseConfigUI :: FilePath -> ConfigIO.CP -> ConfigUI
-parseConfigUI dataDir cp =
+parseConfigUI :: ConfigIO.CP -> ConfigUI
+parseConfigUI cp =
   let configCommands =
         let mkCommand (key, def) =
               (K.mkKM key, read def :: (CmdCategory, HumanCmd))
             section = ConfigIO.getItems cp "extra commands"
         in map mkCommand section
-      configAppDataDir = dataDir
-      configUICfgFile = "config.ui"
-      configSavePrefix = ConfigIO.get cp "file" "savePrefix"
       configHeroNames =
         let toNumber (ident, name) =
               case stripPrefix "HeroName_" ident of
@@ -432,10 +430,12 @@ parseConfigUI dataDir cp =
 -- | Read and parse UI config file.
 mkConfigUI :: Kind.Ops RuleKind -> IO ConfigUI
 mkConfigUI corule = do
-  let cpUIDefault = rcfgUIDefault $ Kind.stdRuleset corule
-  dataDir <- ConfigIO.appDataDir
-  cpUI <- ConfigIO.mkConfig cpUIDefault $ dataDir </> "config.ui.ini"
-  let conf = parseConfigUI dataDir cpUI
+  let stdRuleset = Kind.stdRuleset corule
+      cfgUIDefault = rcfgUIDefault stdRuleset
+      cfgUIName = rcfgUIName stdRuleset
+  dataDir <- appDataDir
+  cpUI <- ConfigIO.mkConfig cfgUIDefault $ dataDir </> cfgUIName <.> "ini"
+  let conf = parseConfigUI cpUI
   -- Catch syntax errors ASAP,
   return $! deepseq conf conf
 

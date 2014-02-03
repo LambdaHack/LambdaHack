@@ -16,7 +16,6 @@ import Data.Maybe
 import System.FilePath
 
 import Game.LambdaHack.Client.Action.ActionClass
-import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Animation
@@ -86,8 +85,7 @@ executorCli :: ActionCli c d ()
             -> IO ()
 executorCli m cliSession cliState cliClient cliDict =
   let saveFile (_, cli2) =
-        configAppDataDir (sconfigUI cli2)
-        </> fromMaybe "save" (ssavePrefixCli (sdebugCli cli2))
+        fromMaybe "save" (ssavePrefixCli (sdebugCli cli2))
         <.> saveName (sside cli2) (sisAI cli2)
       exe cliToSave =
         evalStateT (runActionCli m) CliState{..}

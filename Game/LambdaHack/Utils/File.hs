@@ -1,13 +1,15 @@
 -- | Saving/loading with serialization and compression.
 module Game.LambdaHack.Utils.File
-  ( encodeEOF, strictDecodeEOF, tryCreateDir, tryCopyDataFiles
+  ( encodeEOF, strictDecodeEOF, tryCreateDir, tryCopyDataFiles, appDataDir
   ) where
 
 import qualified Codec.Compression.Zlib as Z
 import Control.Monad
 import Data.Binary
 import qualified Data.ByteString.Lazy as LBS
+import qualified Data.Char as Char
 import System.Directory
+import System.Environment
 import System.FilePath
 import System.IO
 
@@ -64,3 +66,11 @@ tryCopyDataFiles configAppDataDir pathsDataFile files =
         bOut <- doesFileExist pathsDataOut
         when (not bOut && bIn) $ copyFile pathsDataIn pathsDataOut
   in mapM_ cpFile files
+
+-- | Personal data directory for the game. Depends on the OS and the game,
+-- e.g., for LambdaHack under Linux it's @~\/.LambdaHack\/@.
+appDataDir :: IO FilePath
+appDataDir = do
+  progName <- getProgName
+  let name = takeWhile Char.isAlphaNum progName
+  getAppUserDataDirectory name
