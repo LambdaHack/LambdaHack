@@ -14,6 +14,14 @@
 ; ; They reside in ~/.LambdaHack or similar.
 ; savePrefix: save
 
+; [hero names]
+; HeroName_0: Haskell Alvin
+; HeroName_1: Alonzo Barkley
+; HeroName_2: Ines Galenti
+; HeroName_3: Ernst Abraham
+; HeroName_4: Samuel Saunders
+; HeroName_5: Roger Robin
+
 ; [ui]
 ; font: Terminus,Monospace normal normal normal normal 12
 ; historyMax: 5000

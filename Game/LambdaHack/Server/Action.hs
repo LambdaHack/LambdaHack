@@ -465,13 +465,6 @@ parseConfigRules dataDir cp =
       configScoresFile = ConfigIO.get cp "file" "scoresFile"
       configRulesCfgFile = "config.rules"
       configSavePrefix = ConfigIO.get cp "file" "savePrefix"
-      configHeroNames =
-        let toNumber (ident, name) =
-              case stripPrefix "HeroName_" ident of
-                Just n -> (read n, T.pack name)
-                Nothing -> assert `failure` "wrong hero name id" `twith` ident
-            section = ConfigIO.getItems cp "hero names"
-        in map toNumber section
   in Config{..}
 
 -- | Read and parse rules config file and supplement it with random seeds.

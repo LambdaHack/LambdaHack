@@ -18,11 +18,3 @@
 ; ; They reside in ~/.LambdaHack or similar.
 ; savePrefix: save
 ; scoresFile: scores
-
-; [hero names]
-; HeroName_0: Haskell Alvin
-; HeroName_1: Alonzo Barkley
-; HeroName_2: Ines Galenti
-; HeroName_3: Ernst Abraham
-; HeroName_4: Samuel Saunders
-; HeroName_5: Roger Robin

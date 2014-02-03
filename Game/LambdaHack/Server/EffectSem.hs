@@ -263,7 +263,7 @@ addActor mk bfid pos lid hpUnscaled bsymbol bname bcolor time = do
 addHero :: (MonadAtomic m, MonadServer m)
         => FactionId -> Point -> LevelId -> [(Int, Text)] -> Maybe Int -> Time
         -> m ActorId
-addHero bfid ppos lid configHeroNames mNumber time = do
+addHero bfid ppos lid heroNames mNumber time = do
   Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
   Faction{gcolor, gplayer} <- getsState $ (EM.! bfid) . sfactionD
   let kId = heroKindId coactor
@@ -275,7 +275,7 @@ addHero bfid ppos lid configHeroNames mNumber time = do
       nameFromNumber 0 = "Captain"
       nameFromNumber k = "Hero" <+> tshow k
       name | gcolor == Color.BrWhite =
-        fromMaybe (nameFromNumber n) $ lookup n configHeroNames
+        fromMaybe (nameFromNumber n) $ lookup n heroNames
            | otherwise = playerName gplayer <+> nameFromNumber n
       startHP = hp - (hp `div` 5) * min 3 n
   addActor kId bfid ppos lid startHP symbol name gcolor time

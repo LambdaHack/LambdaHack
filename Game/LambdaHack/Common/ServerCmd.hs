@@ -19,7 +19,7 @@ import Game.LambdaHack.Common.Vector
 -- | Abstract syntax of server commands.
 data CmdSer =
     CmdTakeTimeSer !CmdTakeTimeSer
-  | GameRestartSer !ActorId !Text !Int ![(Int, Text)] --TODO: hero names
+  | GameRestartSer !ActorId !Text !Int ![(Int, Text)]
   | GameExitSer !ActorId !Int
   | GameSaveSer !ActorId
   deriving (Show, Eq)

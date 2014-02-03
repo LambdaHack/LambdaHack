@@ -39,7 +39,6 @@ import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.Action hiding (sendUpdateAI, sendUpdateUI)
-import Game.LambdaHack.Server.Config
 import qualified Game.LambdaHack.Server.DungeonGen as DungeonGen
 import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.Fov
@@ -154,6 +153,7 @@ gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}, corule}
   (sconfig, dungeonSeed, srandom) <- mkConfigRules corule mrandom
   scoreTable <- restoreScore sconfig
   sstart <- getsServer sstart  -- copy over from previous game
+  sheroNames <- getsServer sheroNames  -- copy over from previous game
   let smode = sgameMode sdebug
       rnd :: Rnd (FactionDict, FlavourMap, Discovery, DiscoRev,
                   DungeonGen.FreshDungeon)
@@ -169,8 +169,8 @@ gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}, corule}
   let (faction, sflavour, sdisco, sdiscoRev, DungeonGen.FreshDungeon{..}) =
         St.evalState rnd dungeonSeed
       defState = defStateGlobal freshDungeon freshDepth faction cops scoreTable
-      defSer = emptyStateServer
-                 {sdisco, sdiscoRev, sflavour, srandom, sconfig, sstart}
+      defSer = emptyStateServer { sdisco, sdiscoRev, sflavour
+                                , srandom, sconfig, sstart, sheroNames }
   putServer defSer
   return $! defState
 
@@ -192,7 +192,7 @@ populateDungeon = do
   dungeon <- getsState sdungeon
   mapWithKeyM_ initialItems dungeon
   factionD <- getsState sfactionD
-  Config{configHeroNames} <- getsServer sconfig
+  sheroNames <- getsServer sheroNames
   let (minD, maxD) =
         case (EM.minViewWithKey dungeon, EM.maxViewWithKey dungeon) of
           (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
@@ -221,7 +221,8 @@ populateDungeon = do
           if isSpawnFact cops fact
           then spawnMonsters [p] lid ntime side
           else do
-            aid <- addHero side p lid configHeroNames (Just n) ntime
+            let hNames = fromMaybe [] $ EM.lookup side sheroNames
+            aid <- addHero side p lid hNames (Just n) ntime
             mleader <- getsState
                        $ gleader . (EM.! side) . sfactionD  -- just changed
             when (isNothing mleader) $

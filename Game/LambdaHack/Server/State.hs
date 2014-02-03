@@ -14,6 +14,7 @@ import System.Time
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Animation
 import Game.LambdaHack.Common.AtomicCmd
+import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Server.Config
@@ -21,21 +22,23 @@ import Game.LambdaHack.Server.Fov
 
 -- | Global, server state.
 data StateServer = StateServer
-  { sdisco    :: !Discovery     -- ^ full item discoveries data
-  , sdiscoRev :: !DiscoRev      -- ^ reverse disco map, used for item creation
-  , sitemRev  :: !ItemRev       -- ^ reverse id map, used for item creation
-  , sflavour  :: !FlavourMap    -- ^ association of flavour to items
-  , sacounter :: !ActorId       -- ^ stores next actor index
-  , sicounter :: !ItemId        -- ^ stores next item index
-  , sundo     :: ![Atomic]      -- ^ atomic commands performed to date
-  , sper      :: !Pers          -- ^ perception of all factions
-  , srandom   :: !R.StdGen      -- ^ current random generator
-  , sconfig   :: Config         -- ^ this game's config (including initial RNG)
-  , squit     :: !Bool          -- ^ exit the game loop
-  , sbkpSave  :: !Bool          -- ^ make backup savefile now
-  , sstart    :: !ClockTime     -- ^ this session start time
-  , sdebugSer :: !DebugModeSer  -- ^ current debugging mode
-  , sdebugNxt :: !DebugModeSer  -- ^ debugging mode for the next game
+  { sdisco     :: !Discovery     -- ^ full item discoveries data
+  , sdiscoRev  :: !DiscoRev      -- ^ reverse disco map, used for item creation
+  , sitemRev   :: !ItemRev       -- ^ reverse id map, used for item creation
+  , sflavour   :: !FlavourMap    -- ^ association of flavour to items
+  , sacounter  :: !ActorId       -- ^ stores next actor index
+  , sicounter  :: !ItemId        -- ^ stores next item index
+  , sundo      :: ![Atomic]      -- ^ atomic commands performed to date
+  , sper       :: !Pers          -- ^ perception of all factions
+  , srandom    :: !R.StdGen      -- ^ current random generator
+  , sconfig    :: Config         -- ^ this game's config (with initial RNG)
+  , squit      :: !Bool          -- ^ exit the game loop
+  , sbkpSave   :: !Bool          -- ^ make backup savefile now
+  , sstart     :: !ClockTime     -- ^ this session start time
+  , sheroNames :: !(EM.EnumMap FactionId [(Int, Text)])
+                                 -- ^ hero names sent by clients
+  , sdebugSer  :: !DebugModeSer  -- ^ current debugging mode
+  , sdebugNxt  :: !DebugModeSer  -- ^ debugging mode for the next game
   }
   deriving (Show)
 
@@ -75,6 +78,7 @@ emptyStateServer =
     , squit = False
     , sbkpSave = False
     , sstart = TOD 0 0
+    , sheroNames = EM.empty
     , sdebugSer = defDebugModeSer
     , sdebugNxt = defDebugModeSer
     }
@@ -107,6 +111,7 @@ instance Binary StateServer where
     put sundo
     put (show srandom)
     put sconfig
+    put sheroNames
     put sdebugSer
   get = do
     sdisco <- get
@@ -118,6 +123,7 @@ instance Binary StateServer where
     sundo <- get
     g <- get
     sconfig <- get
+    sheroNames <- get
     sdebugSer <- get
     let srandom = read g
         sper = EM.empty

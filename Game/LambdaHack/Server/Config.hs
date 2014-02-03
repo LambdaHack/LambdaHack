@@ -5,7 +5,6 @@ module Game.LambdaHack.Server.Config
 
 import Control.DeepSeq
 import Data.Binary
-import Data.Text (Text)
 
 import Game.LambdaHack.Server.Fov
 
@@ -22,8 +21,6 @@ data Config = Config
   , configScoresFile     :: !FilePath
   , configRulesCfgFile   :: !FilePath
   , configSavePrefix     :: !String
-    -- heroNames
-  , configHeroNames      :: ![(Int, Text)]
   }
   deriving Show
 
@@ -39,7 +36,6 @@ instance Binary Config where
     put configScoresFile
     put configRulesCfgFile
     put configSavePrefix
-    put configHeroNames
   get = do
     configSelfString     <- get
     configFirstDeathEnds <- get
@@ -49,5 +45,4 @@ instance Binary Config where
     configScoresFile     <- get
     configRulesCfgFile   <- get
     configSavePrefix <- get
-    configHeroNames      <- get
     return $! Config{..}

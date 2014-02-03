@@ -25,6 +25,7 @@ import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.Action
+import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.HumanLocal
 import Game.LambdaHack.Client.RunAction
@@ -611,7 +612,8 @@ gameRestartHuman t = do
     else do
       leader <- getLeaderUI
       DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
-      return $ Right $ GameRestartSer leader t sdifficultyCli []
+      ConfigUI{configHeroNames} <- getsClient sconfigUI
+      return $ Right $ GameRestartSer leader t sdifficultyCli configHeroNames
 
 -- * GameExit; does not take time
 

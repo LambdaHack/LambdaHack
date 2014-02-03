@@ -415,6 +415,13 @@ parseConfigUI dataDir cp =
       configAppDataDir = dataDir
       configUICfgFile = "config.ui"
       configSavePrefix = ConfigIO.get cp "file" "savePrefix"
+      configHeroNames =
+        let toNumber (ident, name) =
+              case stripPrefix "HeroName_" ident of
+                Just n -> (read n, T.pack name)
+                Nothing -> assert `failure` "wrong hero name id" `twith` ident
+            section = ConfigIO.getItems cp "hero names"
+        in map toNumber section
       configFont = ConfigIO.get cp "ui" "font"
       configHistoryMax = ConfigIO.get cp "ui" "historyMax"
       configMaxFps = ConfigIO.get cp "ui" "maxFps"

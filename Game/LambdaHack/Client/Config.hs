@@ -5,6 +5,7 @@ module Game.LambdaHack.Client.Config
 
 import Control.DeepSeq
 
+import Data.Text (Text)
 import Game.LambdaHack.Common.HumanCmd
 import qualified Game.LambdaHack.Common.Key as K
 
@@ -17,6 +18,8 @@ data ConfigUI = ConfigUI
   , configAppDataDir  :: !FilePath
   , configUICfgFile   :: !FilePath
   , configSavePrefix  :: !String
+    -- hero names
+  , configHeroNames   :: ![(Int, Text)]
     -- ui
   , configFont        :: !String
   , configHistoryMax  :: !Int

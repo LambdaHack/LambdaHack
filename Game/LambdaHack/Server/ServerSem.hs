@@ -477,9 +477,12 @@ setTrajectorySer aid = do
 
 -- * GameRestart
 
+-- TODO: implement a handshake and send hero names there,
+-- so that they are available in the first game too,
+-- not only in subsequent, restarted, games.
 gameRestartSer :: (MonadAtomic m, MonadServer m)
                => ActorId -> Text -> Int -> [(Int, Text)] -> m ()
-gameRestartSer aid stInfo d names = do
+gameRestartSer aid stInfo d configHeroNames = do
   modifyServer $ \ser ->
     ser {sdebugNxt = (sdebugNxt ser) { sdifficultySer = d
                                      , sdebugCli = (sdebugCli (sdebugNxt ser))
@@ -488,7 +491,9 @@ gameRestartSer aid stInfo d names = do
   b <- getsState $ getActorBody aid
   let fid = bfid b
   oldSt <- getsState $ gquit . (EM.! fid) . sfactionD
-  modifyServer $ \ser -> ser {squit = True}  -- do this at once
+  modifyServer $ \ser ->
+    ser { squit = True  -- do this at once
+        , sheroNames = EM.insert fid configHeroNames $ sheroNames ser }
   revealItems Nothing Nothing
   execCmdAtomic $ QuitFactionA fid (Just b) oldSt
                 $ Just $ Status Restart (fromEnum $ blid b) stInfo
