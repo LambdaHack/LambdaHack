@@ -41,7 +41,11 @@ import Control.Monad
 import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import qualified Data.Ini as Ini
+import qualified Data.Ini.Reader as Ini
+import qualified Data.Ini.Types as Ini
 import Data.List
+import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid
 import Data.Text (Text)
@@ -50,11 +54,11 @@ import qualified NLP.Miniutter.English as MU
 import System.Directory
 import System.FilePath
 import System.Time
+import Text.Read
 
 import Game.LambdaHack.Client.Action.ActionClass
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.Config
-import qualified Game.LambdaHack.Client.ConfigIO as ConfigIO
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
@@ -406,37 +410,54 @@ partAidLeader aid = do
   b <- getsState $ getActorBody aid
   partActorLeader aid b
 
-parseConfigUI :: ConfigIO.CP -> ConfigUI
-parseConfigUI cp =
+parseConfigUI :: Ini.Config -> ConfigUI
+parseConfigUI cfg =
   let configCommands =
-        let mkCommand (key, def) =
-              (K.mkKM key, read def :: (CmdCategory, HumanCmd))
-            section = ConfigIO.getItems cp "extra commands"
+        let mkCommand (ident, keydef) =
+              case stripPrefix "Macro_" ident of
+                Just _ ->
+                  let (key, def) = read keydef
+                  in (K.mkKM key, def :: (CmdCategory, HumanCmd))
+                Nothing -> assert `failure` "wrong macro id" `twith` ident
+            section = Ini.allItems "extra_commands" cfg
         in map mkCommand section
       configHeroNames =
         let toNumber (ident, name) =
               case stripPrefix "HeroName_" ident of
                 Just n -> (read n, T.pack name)
                 Nothing -> assert `failure` "wrong hero name id" `twith` ident
-            section = ConfigIO.getItems cp "hero names"
+            section = Ini.allItems "hero_names" cfg
         in map toNumber section
-      configFont = ConfigIO.get cp "ui" "font"
-      configHistoryMax = ConfigIO.get cp "ui" "historyMax"
-      configMaxFps = ConfigIO.get cp "ui" "maxFps"
-      configNoAnim = ConfigIO.get cp "ui" "noAnim"
-      configRunStopMsgs = ConfigIO.get cp "ui" "runStopMsgs"
+      getOption :: forall a. Read a => String -> a
+      getOption optionName =
+        let lookupFail :: forall b. String -> b
+            lookupFail err =
+              assert `failure` ("config file access failed:" <+> T.pack err)
+                     `twith` (optionName, cfg)
+            s = fromMaybe (lookupFail "") $ Ini.getOption "ui" optionName cfg
+        in either lookupFail id $ readEither s
+      configFont = getOption "font"
+      configHistoryMax = getOption "historyMax"
+      configMaxFps = getOption "maxFps"
+      configNoAnim = getOption "noAnim"
+      configRunStopMsgs = getOption "runStopMsgs"
   in ConfigUI{..}
 
 -- | Read and parse UI config file.
 mkConfigUI :: Kind.Ops RuleKind -> IO ConfigUI
 mkConfigUI corule = do
   let stdRuleset = Kind.stdRuleset corule
-      cfgUIDefault = rcfgUIDefault stdRuleset
       cfgUIName = rcfgUIName stdRuleset
+      commentsUIDefault = map (drop 2) $ lines $ rcfgUIDefault stdRuleset
+      sUIDefault = unlines commentsUIDefault
+      cfgUIDefault = either (assert `failure`) id $ Ini.parse sUIDefault
   dataDir <- appDataDir
-  cpUI <- ConfigIO.mkConfig cfgUIDefault $ dataDir </> cfgUIName <.> "ini"
-  let conf = parseConfigUI cpUI
-  -- Catch syntax errors ASAP,
+  let userPath = dataDir </> cfgUIName <.> "ini"
+  sUser <- readFile userPath
+  let cfgUser = either (assert `failure`) id $ Ini.parse sUser
+      cfgUI = M.unionWith M.union cfgUser cfgUIDefault  -- user cfg preferred
+      conf = parseConfigUI cfgUI
+  -- Catch syntax errors in complex expressions ASAP,
   return $! deepseq conf conf
 
 -- | Get cached BFS data and path or, if not stored, generate,
