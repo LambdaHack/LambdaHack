@@ -43,7 +43,7 @@ import Game.LambdaHack.Utils.Frequency
 
 -- | AI proposes possible targets for the actor. Never empty.
 targetStrategy :: forall m. MonadClient m
-               => ActorId -> m (Strategy (Target, ([Point], Point)))
+               => ActorId -> m (Strategy (Target, PathEtc))
 targetStrategy aid = do
   Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getsState scops
   modifyClient $ \cli -> cli {sbfsD = EM.empty}
@@ -54,13 +54,13 @@ targetStrategy aid = do
       mvalidPos <- aidTgtToPos aid (blid b) (Just tgt)
       if isNothing mvalidPos then return Nothing  -- wrong level
       else return $! case path of
-        (p : q : rest, goal) ->
+        (p : q : rest, goalLen) ->
           if bpos b == p
           then Just (tgt, path)  -- no move last turn
           else if bpos b == q
-               then Just (tgt, (q : rest, goal))  -- moved a step along path
+               then Just (tgt, (q : rest, goalLen))  -- moved a step along path
                else Nothing  -- veered off the path
-        ([p], goal) -> do
+        ([p], (goal, _)) -> do
           assert (p == goal `blame` (aid, b, mtgtMPath)) skip
           if bpos b == p then
             Just (tgt, path)  -- goal reached; stay there picking up items
@@ -81,16 +81,19 @@ targetStrategy aid = do
                         notEffectEscape _ = True
                     in all notEffectEscape $ Tile.causeEffects cotile t
       focused = bspeed b <= speedNormal
-      setPath :: Target -> m (Strategy (Target, ([Point], Point)))
+      setPath :: Target -> m (Strategy (Target, PathEtc))
       setPath tgt = do
         mpos <- aidTgtToPos aid (blid b) (Just tgt)
         let p = fromMaybe (assert `failure` (b, tgt)) mpos
-        (_, mpath) <- getCacheBfsAndPath aid p
+        (bfs, mpath) <- getCacheBfsAndPath aid p
         case mpath of
           Nothing -> assert `failure` "new target unreachable" `twith` (b, tgt)
           Just path ->
-            return $! returN "pickNewTarget" (tgt, (bpos b : path, p))
-      pickNewTarget :: m (Strategy (Target, ([Point], Point)))
+            return $! returN "pickNewTarget"
+              (tgt, ( bpos b : path
+                    , (p, fromMaybe (assert `failure` mpath)
+                          $ accessBfs bfs p) ))
+      pickNewTarget :: m (Strategy (Target, PathEtc))
       pickNewTarget = do
         -- TODO: for foes, items, etc. consider a few nearby, not just one
         cfoes <- closestFoes aid
@@ -123,8 +126,8 @@ targetStrategy aid = do
               _ -> True
         modifyClient $ \cli -> cli {stargetD = EM.filter f (stargetD cli)}
         pickNewTarget
-      updateTgt :: Target -> ([Point], Point)
-                -> m (Strategy (Target, ([Point], Point)))
+      updateTgt :: Target -> PathEtc
+                -> m (Strategy (Target, PathEtc))
       updateTgt oldTgt updatedPath = case oldTgt of
         TEnemy a _ -> do
           body <- getsState $ getActorBody a
@@ -133,7 +136,7 @@ targetStrategy aid = do
              && a `notElem` map fst nearbyFoes  -- old one not close enough
              || blid body /= blid b  -- wrong level
           then pickNewTarget
-          else if bpos body == snd updatedPath
+          else if bpos body == fst (snd updatedPath)
                then return $! returN "TEnemy" (oldTgt, updatedPath)
                       -- The enemy didn't move since the target acquired.
                       -- If any walls were added that make the enemy
@@ -141,11 +144,14 @@ targetStrategy aid = do
                       -- as soon as it bumps into them.
                else do
                  let p = bpos body
-                 (_, mpath) <- getCacheBfsAndPath aid p
+                 (bfs, mpath) <- getCacheBfsAndPath aid p
                  case mpath of
                    Nothing -> pickNewTarget  -- enemy became unreachable
                    Just path ->
-                      return $! returN "TEnemy" (oldTgt, (bpos b : path, p))
+                      return $! returN "TEnemy"
+                        (oldTgt, ( bpos b : path
+                        , (p, fromMaybe (assert `failure` mpath)
+                              $ accessBfs bfs p) ))
         _ | not $ null nearbyFoes -> pickNewTarget  -- prefer foes to anything
         TEnemyPos _ lid p _ ->
           -- Chase last position even if foe hides or dies,
@@ -445,7 +451,7 @@ chase :: MonadClient m
 chase aid foeVisible = do
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   str <- case mtgtMPath of
-    Just (_, Just ((p : q : _), goal)) -> moveTowards aid p q goal
+    Just (_, Just ((p : q : _), (goal, _))) -> moveTowards aid p q goal
     _ -> return reject  -- goal reached
   let fight = not foeVisible  -- don't pick fights if the real foe is close
   if fight

@@ -3,7 +3,7 @@
 module Game.LambdaHack.Client.State
   ( StateClient(..), defStateClient, defHistory
   , updateTarget, getTarget, updateLeader, sside
-  , TgtMode(..), Target(..), RunParams(..), LastRecord
+  , PathEtc, TgtMode(..), Target(..), RunParams(..), LastRecord
   , toggleMarkVision, toggleMarkSmell, toggleMarkSuspect
   ) where
 
@@ -43,7 +43,7 @@ data StateClient = StateClient
   { stgtMode     :: !(Maybe TgtMode)  -- ^ targeting mode
   , scursor      :: !Target           -- ^ the common, cursor target
   , seps         :: !Int              -- ^ a parameter of the tgt digital line
-  , stargetD     :: !(EM.EnumMap ActorId (Target, Maybe ([Point], Point)))
+  , stargetD     :: !(EM.EnumMap ActorId (Target, Maybe PathEtc))
                                    -- ^ targets of our actors in the dungeon
   , sexplored    :: !(ES.EnumSet LevelId)
                                    -- ^ the set of fully explored levels
@@ -77,10 +77,12 @@ data StateClient = StateClient
   , smarkVision  :: !Bool          -- ^ mark leader and party FOV
   , smarkSmell   :: !Bool          -- ^ mark smell, if the leader can smell
   , smarkSuspect :: !Bool          -- ^ mark suspect features
-  , scurDifficulty  :: !Int        -- ^ current game difficulty level
+  , scurDifficulty :: !Int         -- ^ current game difficulty level
   , sdebugCli    :: !DebugModeCli  -- ^ client debugging mode
   }
   deriving Show
+
+type PathEtc = ([Point], (Point, Int))
 
 -- | Current targeting mode of a client.
 newtype TgtMode = TgtMode { tgtLevelId :: LevelId }
