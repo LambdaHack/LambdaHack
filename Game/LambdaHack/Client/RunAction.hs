@@ -194,13 +194,13 @@ tryTurning aid = do
       dirLast = displacement posLast posHere
   let openableDir dir = Tile.isOpenable cotile (lvl `at` (posHere `shift` dir))
       dirEnterable dir = accessibleDir cops lvl posHere dir || openableDir dir
-      dirNearby dir1 dir2 = euclidDistSq dir1 dir2 `elem` [1, 2]
+      dirNearby dir1 dir2 = euclidDistSqVector dir1 dir2 `elem` [1, 2]
       dirSimilar dir = dirNearby dirLast dir && dirEnterable dir
       dirsSimilar = filter dirSimilar moves
   case dirsSimilar of
     [] -> return $ Left "dead end"
     d1 : ds | all (dirNearby d1) ds ->  -- only one or two directions possible
-      case sortBy (compare `on` euclidDistSq dirLast)
+      case sortBy (compare `on` euclidDistSqVector dirLast)
            $ filter (accessibleDir cops lvl posHere) $ d1 : ds of
         [] ->
           return $ Left "blocked and all similar directions are closed doors"

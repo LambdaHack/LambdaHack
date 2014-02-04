@@ -2,7 +2,7 @@
 -- | Basic operations on 2D vectors represented in an efficient,
 -- but not unique, way.
 module Game.LambdaHack.Common.Vector
-  ( Vector(..), isUnit, isDiagonal, neg, euclidDistSq
+  ( Vector(..), isUnit, isDiagonal, neg, chessDistVector, euclidDistSqVector
   , moves, compassText, vicinity, vicinityCardinal
   , shift, shiftBounded, trajectoryToPath, displacement, pathToTrajectory
   , RadianAngle, rotate, towards
@@ -79,9 +79,9 @@ neg :: Vector -> Vector
 neg (Vector vx vy) = Vector (-vx) (-vy)
 
 -- | Squared euclidean distance between two vectors.
-euclidDistSq :: Vector -> Vector -> Int
-{-# INLINE euclidDistSq #-}
-euclidDistSq (Vector x0 y0) (Vector x1 y1) =
+euclidDistSqVector :: Vector -> Vector -> Int
+{-# INLINE euclidDistSqVector #-}
+euclidDistSqVector (Vector x0 y0) (Vector x1 y1) =
   let square n = n ^ (2 :: Int)
   in square (x1 - x0) + square (y1 - y0)
 

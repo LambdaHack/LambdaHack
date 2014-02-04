@@ -1,7 +1,7 @@
 -- | Basic operations on 2D points represented as linear offsets.
 module Game.LambdaHack.Common.Point
   ( X, Y, Point(..), maxLevelDimExponent
-  , chessDist, adjacent, inside, bla, fromTo
+  , chessDist, euclidDistSq, adjacent, inside, bla, fromTo
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -67,6 +67,13 @@ toEnumPoint n =
 chessDist :: Point -> Point -> Int
 {-# INLINE chessDist #-}
 chessDist (Point x0 y0) (Point x1 y1) = max (abs (x1 - x0)) (abs (y1 - y0))
+
+-- | Squared euclidean distance between two points.
+euclidDistSq :: Point -> Point -> Int
+{-# INLINE euclidDistSq #-}
+euclidDistSq (Point x0 y0) (Point x1 y1) =
+  let square n = n ^ (2 :: Int)
+  in square (x1 - x0) + square (y1 - y0)
 
 -- | Checks whether two points are adjacent on the map
 -- (horizontally, vertically or diagonally).

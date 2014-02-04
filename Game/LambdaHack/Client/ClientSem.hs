@@ -1,7 +1,6 @@
 -- | Semantics of most 'CmdClientAI' client commands.
 module Game.LambdaHack.Client.ClientSem where
 
-import Control.Arrow ((&&&))
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
@@ -33,6 +32,7 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Utils.Frequency
 
@@ -47,22 +47,24 @@ queryAI oldAid = do
       abilityOther = fAbilityOther $ okind $ gkind fact
   mleader <- getsClient _sleader
   ours <- getsState $ actorNotProjAssocs (== side) arena
-  if -- Keep the leader: only a leader is allowed to pick another leader.
-     mleader /= Just oldAid
-     -- Keep the leader: abilities are the same (we assume leader can do
-     -- at least as much as others).
-     || abilityLeader == abilityOther
-     -- Keep the leader: other members can't melee. -- TODO: but can explore
-     || Ability.Melee `notElem` abilityOther
-     -- Keep the leader: he probably used stairs right now
-     -- and we don't want to clog stairs or get pushed to another level.
-     || bpos oldBody == boldpos oldBody
-     -- Keep the leader: he is alone on the level.
-     || length ours == 1
-    then do
-      void $ refreshTarget (oldAid, oldBody)
-      queryAIPick (oldAid, oldBody)
-    else do
+  let pickOld = do
+        void $ refreshTarget (oldAid, oldBody)
+        queryAIPick (oldAid, oldBody)
+  case ours of
+    [] -> assert `failure` (oldAid, oldBody)
+    [_] -> pickOld  -- Keep the leader: he is alone on the level.
+    _ | -- Keep the leader: only a leader is allowed to pick another leader.
+        mleader /= Just oldAid
+        -- Keep the leader: abilities are the same (we assume leader can do
+        -- at least as much as others).
+        || abilityLeader == abilityOther
+        -- Keep the leader: other members can't melee. -- TODO: but can explore
+        || Ability.Melee `notElem` abilityOther
+        -- Keep the leader: he probably used stairs right now
+        -- and we don't want to clog stairs or get pushed to another level.
+        || bpos oldBody == boldpos oldBody
+      -> pickOld
+    (captain, captainBody) : (sergeant, sergeantBody) : _ -> do
       -- At this point we almost forget who the old leader was
       -- and treat all party actors the same, eliminating candidates
       -- until we can't distinguish them any more, at which point we prefer
@@ -82,9 +84,50 @@ queryAI oldAid = do
                   [_goal] -> Nothing
                   _ : q : _ -> Just q
             in any ((== next) . Just . bpos . snd) ours
+-- TODO: stuck actors are picked while others close could approach an enemy;
+-- we should detect stuck actors (or one-sided stuck)
+-- so far we only detect blocked and only in Other mode
+--             && not (aid == oldAid && waitedLastTurn b time)  -- not stuck
+-- this only prevents staying stuck
           (oursBlocked, oursPos) = partition targetBlocked oursOther
-          valueOurs :: ((ActorId, Actor), (Target, PathEtc)) -> (Int, Bool)
-          valueOurs = snd . snd . snd . snd &&& (/= oldAid) . fst . fst
+          valueOurs :: ((ActorId, Actor), (Target, PathEtc))
+                    -> (Int, Int, Bool)
+          valueOurs ((aid, b), (TEnemy{}, (_, (_, d)))) =
+            -- TODO: take weapon, walk and fight speed, etc. into account
+            (d, - 10 * (bhp b `div` 10), aid /= oldAid)
+          valueOurs ((aid, b), (_tgt, (_path, (goal, d)))) =
+            -- Keep proper formation, not too dense, not to sparse.
+            let -- TODO: vary the parameters according to the stage of game,
+                -- enough equipment or not, game mode, level map, etc.
+                minSpread = 7
+                maxSpread = 12 * 2
+                dcaptain p =
+                  chessDistVector $ displacement p (bpos captainBody)
+                dsergeant p =
+                  chessDistVector $ displacement p (bpos sergeantBody)
+                minDist | aid == captain = dsergeant (bpos b)
+                        | aid == sergeant = dcaptain (bpos b)
+                        | otherwise = dsergeant (bpos b)
+                                      `min` dcaptain (bpos b)
+                pDist p = dcaptain p + dsergeant p
+                sumDist = pDist (bpos b)
+                -- Positive, if the goal gets us closer to the party.
+                diffDist = sumDist - pDist goal
+                minCoeff | minDist < minSpread = (minDist - minSpread) `div` 3
+                         | otherwise = 0
+                explorationValue = diffDist * (sumDist `div` 4)
+-- TODO: this half is not yet ready:
+-- instead spread targets between actors; moving many actors
+-- to a single target and stopping and starting them
+-- is very wasteful; also, pick targets not closest to the actor in hand,
+-- but to the sum of captain and sergant or something
+                sumCoeff | sumDist > maxSpread = - explorationValue
+                         | otherwise = 0
+            in ( if d == 0 then d
+                 else max 1 $ minCoeff + if d < 10 then 3 + d `div` 4
+                                         else 9 + d `div` 10
+               , sumCoeff
+               , aid /= oldAid )
           sortOurs = sortBy $ comparing valueOurs
           goodGeneric _our@((aid, b), (_tgt, _pathEtc)) =
             bhp b > 0  -- not incapacitated
@@ -95,13 +138,9 @@ queryAI oldAid = do
           oursTEnemyGood = filter goodTEnemy oursTEnemy
           oursPosGood = filter goodGeneric oursPos
           oursBlockedGood = filter goodGeneric oursBlocked
-          blurDistance (ab, (tgt, (path, (goal, d)))) =
-            (ab, (tgt, (path, (goal, d `div` 4))))
-          oursPosGoodCoarse = map blurDistance oursPosGood
-          oursBlockedGoodCoarse = map blurDistance oursBlockedGood
           candidates = sortOurs oursTEnemyGood
-                       ++ sortOurs oursPosGoodCoarse
-                       ++ sortOurs oursBlockedGoodCoarse
+                       ++ sortOurs oursPosGood
+                       ++ sortOurs oursBlockedGood
       case candidates of
         [] -> queryAIPick (oldAid, oldBody)
         c : _ -> do

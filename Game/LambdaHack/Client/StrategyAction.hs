@@ -98,7 +98,9 @@ targetStrategy aid = do
         -- TODO: for foes, items, etc. consider a few nearby, not just one
         cfoes <- closestFoes aid
         case cfoes of
-          [] -> do
+          -- TODO: also check the path is not too long
+          (_, (a, _)) : _ | not $ null nearbyFoes -> setPath $ TEnemy a False
+          _ -> do
             citems <- closestItems aid
             case citems of
               [] -> do
@@ -119,7 +121,6 @@ targetStrategy aid = do
                       p : _ -> setPath $ TPoint (blid b) p
                   Just p -> setPath $ TPoint (blid b) p
               (_, (p, _)) : _ -> setPath $ TPoint (blid b) p
-          (_, (a, _)) : _ -> setPath $ TEnemy a False
       tellOthersNothingHere pos = do
         let f (tgt, _) = case tgt of
               TEnemyPos _ lid p _ -> p /= pos || lid /= blid b
