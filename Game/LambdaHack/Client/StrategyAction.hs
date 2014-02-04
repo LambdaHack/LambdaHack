@@ -60,9 +60,12 @@ targetStrategy aid = do
           else if bpos b == q
                then Just (tgt, (q : rest, goal))  -- moved a step along path
                else Nothing  -- veered off the path
-        ([p], goal) ->
-          assert (bpos b == p && p == goal `blame` (aid, b, mtgtMPath))
+        ([p], goal) -> do
+          assert (p == goal `blame` (aid, b, mtgtMPath)) skip
+          if bpos b == p then
             Just (tgt, path)  -- goal reached; stay there picking up items
+          else
+            Nothing  -- somebody pushed us off the goal; let's target again
         ([], _) -> assert `failure` (aid, b, mtgtMPath)
     Just (_, Nothing) -> assert `failure` (aid, b, mtgtMPath)
     Nothing -> return Nothing  -- no target assigned yet
