@@ -114,7 +114,7 @@ cmdDescription cmd = case cmd of
   GameExit    -> "save and exit"
   GameSave    -> "save game"
 
-  GameDifficultyCycle -> "cycle next game difficulty"
+  GameDifficultyCycle -> "cycle difficulty of the next game"
   PickLeader{} -> "pick leader"
   MemberCycle -> "cycle among party members on the level"
   MemberBack  -> "cycle among party members in the dungeon"
