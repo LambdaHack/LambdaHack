@@ -1,10 +1,14 @@
 -- | Semantics of most 'CmdClientAI' client commands.
 module Game.LambdaHack.Client.ClientSem where
 
+import Control.Arrow ((&&&))
 import Control.Exception.Assert.Sugar
+import Control.Monad
 import qualified Data.EnumMap.Strict as EM
+import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
+import Data.Ord
 import qualified Data.Text as T
 
 import Game.LambdaHack.Client.Action
@@ -22,109 +26,135 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.HumanCmd
-import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Key as K
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.FactionKind
-import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Utils.Frequency
 
 queryAI :: MonadClient m => ActorId -> m CmdTakeTimeSer
 queryAI oldAid = do
-  Kind.COps{cofaction=Kind.Ops{okind}, corule} <- getsState scops
-  side <- getsClient sside
+  Kind.COps{cofaction=Kind.Ops{okind}} <- getsState scops
+  oldBody <- getsState $ getActorBody oldAid
+  let side = bfid oldBody
+      arena = blid oldBody
   fact <- getsState $ \s -> sfactionD s EM.! side
   let abilityLeader = fAbilityLeader $ okind $ gkind fact
       abilityOther = fAbilityOther $ okind $ gkind fact
   mleader <- getsClient _sleader
+  ours <- getsState $ actorNotProjAssocs (== side) arena
   if -- Keep the leader: only a leader is allowed to pick another leader.
      mleader /= Just oldAid
      -- Keep the leader: abilities are the same (we assume leader can do
      -- at least as much as others).
      || abilityLeader == abilityOther
-     -- Keep the leader: other members can't melee.
+     -- Keep the leader: other members can't melee. -- TODO: but can explore
      || Ability.Melee `notElem` abilityOther
-    then queryAIPick oldAid
+     -- Keep the leader: he probably used stairs right now
+     -- and we don't want to clog stairs or get pushed to another level.
+     || bpos oldBody == boldpos oldBody
+     -- Keep the leader: he is alone on the level.
+     || length ours == 1
+    then do
+      void $ refreshTarget (oldAid, oldBody)
+      queryAIPick (oldAid, oldBody)
     else do
-      oldBody <- getsState $ getActorBody oldAid
-      oldAis <- getsState $ getActorItem oldAid
-      btarget <- getsClient $ getTarget oldAid
-      let arena = blid oldBody
-      -- Visibility ignored --- every foe is visible by somebody.
-      foes <- getsState $ actorNotProjList (isAtWar fact) arena
-      ours <- getsState $ actorNotProjAssocs (== side) arena
+      -- At this point we almost forget who the old leader was
+      -- and treat all party actors the same, eliminating candidates
+      -- until we can't distinguish them any more, at which point we prefer
+      -- the old leader, if he is among the best candidates
+      -- (to make the AI appear more human-like to easier to observe).
+      -- TODO: this also takes melee into account, not shooting.
       time <- getsState $ getLocalTime arena
-      Level{lxsize, lysize} <- getsState $ \s -> sdungeon s EM.! arena
-      let oldPos = bpos oldBody
-          isAmmo i = jsymbol i `elem` ritemProject (Kind.stdRuleset corule)
-          hasAmmo = any (isAmmo . snd) oldAis
-          isAdjacent = foesAdjacent lxsize lysize oldPos foes
-      hasGoodTarget <- case btarget of
-        Just (TEnemy foe False) -> do
-          bfoe <- getsState $ getActorBody foe
-          aims <- actorAimsPos oldAid (bpos bfoe)
-          return $ if blid bfoe /= arena
-                   then False  -- actor ascended, but others still see enemy
-                   else aims && hasAmmo && not isAdjacent
-        _ -> return False
-      if -- Keep the leader: he is alone on the level.
-         length ours == 1
-         -- Keep the leader: he has a good target.
-         || hasGoodTarget
-         -- Keep the leader: he probably used stairs right now.
-         || bpos oldBody == boldpos oldBody
-        then queryAIPick oldAid
-        else do
-          let countMinFoeDist (aid, b) =
-                let distB = chessDist (bpos b)
-                    foeDist = map (distB . bpos) foes
-                    minFoeDist | null foeDist = maxBound
-                               | otherwise = minimum foeDist
-                in ((aid, b), minFoeDist)
-              oursMinFoeDist = map countMinFoeDist ours
-              inMelee (_, minFoeDist) = minFoeDist == 1
-              oursMeleePos = map (bpos . snd . fst)
-                             $ filter inMelee oursMinFoeDist
-          let f ((aid, b), minFoeDist) =
-                let distB = chessDist (bpos b)
-                    meleeDist = map distB oursMeleePos
-                    minMeleeDist | null meleeDist = maxBound
-                                 | otherwise = minimum meleeDist
-                    proximityMelee = max 0 $ 10 - minMeleeDist
-                    proximityFoe = max 0 $ 20 - minFoeDist
-                    distToLeader = distB oldPos
-                    proximityLeader = max 0 $ 10 - distToLeader
-                in if minFoeDist == 1
-                      || bhp b <= 0
-                      || aid == oldAid && waitedLastTurn b time
-                   then -- Ignore: in melee range or incapacitated or stuck.
-                        Nothing
-                   else -- Help in melee, shoot or chase foes,
-                        -- fan out away from each other, if too close.
-                        Just ( 1
-                               + proximityMelee * 9
-                               + proximityFoe * 6
-                               + proximityLeader * 3
-                             , aid )
-              candidates = mapMaybe f oursMinFoeDist
-              freq | null candidates = toFreq "old leader" [(1, oldAid)]
-                   | otherwise = toFreq "candidates for AI leader" candidates
-          aid <- rndToAction $ frequency freq
+      oursTgt <- fmap catMaybes $ mapM refreshTarget ours
+      let targetTEnemy (_, (TEnemy{}, _)) = True
+          targetTEnemy _ = False
+          (oursTEnemy, oursOther) = partition targetTEnemy oursTgt
+          -- These are not necessarily stuck (perhaps can go around),
+          -- but their current path is blocked by friends.
+          targetBlocked our@((_aid, _b), (_tgt, (path, _etc))) =
+            let next = case path of
+                  [] -> assert `failure` our
+                  [_goal] -> Nothing
+                  _ : q : _ -> Just q
+            in any ((== next) . Just . bpos . snd) ours
+          (oursBlocked, oursPos) = partition targetBlocked oursOther
+          valueOurs :: ((ActorId, Actor), (Target, PathEtc)) -> (Int, Bool)
+          valueOurs = snd . snd . snd . snd &&& (/= oldAid) . fst . fst
+          sortOurs = sortBy $ comparing valueOurs
+          goodGeneric _our@((aid, b), (_tgt, _pathEtc)) =
+            bhp b > 0  -- not incapacitated
+            && not (aid == oldAid && waitedLastTurn b time)  -- not stuck
+          goodTEnemy our@((_aid, b), (_tgt, (_path, (goal, _d)))) =
+            not (adjacent (bpos b) goal) -- not in melee range already
+            && goodGeneric our
+          oursTEnemyGood = filter goodTEnemy oursTEnemy
+          oursPosGood = filter goodGeneric oursPos
+          oursBlockedGood = filter goodGeneric oursBlocked
+          blurDistance (ab, (tgt, (path, (goal, d)))) =
+            (ab, (tgt, (path, (goal, d `div` 4))))
+          oursPosGoodCoarse = map blurDistance oursPosGood
+          oursBlockedGoodCoarse = map blurDistance oursBlockedGood
+          candidates = sortOurs oursTEnemyGood
+                       ++ sortOurs oursPosGoodCoarse
+                       ++ sortOurs oursBlockedGoodCoarse
+      case candidates of
+        [] -> queryAIPick (oldAid, oldBody)
+        c : _ -> do
+          let best = takeWhile ((== valueOurs c) . valueOurs) candidates
+              freq = uniformFreq "candidates for AI leader" best
+          ((aid, b), _) <- rndToAction $ frequency freq
           s <- getState
           modifyClient $ updateLeader aid s
-          queryAIPick aid
+          queryAIPick (aid, b)
 
-queryAIPick :: MonadClient m => ActorId -> m CmdTakeTimeSer
-queryAIPick aid = do
+refreshTarget :: MonadClient m
+              => (ActorId, Actor)
+              -> m (Maybe ((ActorId, Actor), (Target, PathEtc)))
+refreshTarget (aid, body) = do
   Kind.COps{cofaction=Kind.Ops{okind}} <- getsState scops
   side <- getsClient sside
-  body <- getsState $ getActorBody aid
+  assert (bfid body == side `blame` "AI tries to move an enemy actor"
+                            `twith` (aid, body, side)) skip
+  assert (not (bproj body) `blame` "AI gets to manually move its projectiles"
+                           `twith` (aid, body, side)) skip
+  mleader <- getsClient _sleader
+  fact <- getsState $ (EM.! bfid body) . sfactionD
+  let factionAbilities
+        | Just aid == mleader = fAbilityLeader $ okind $ gkind fact
+        | otherwise = fAbilityOther $ okind $ gkind fact
+  stratTarget <- targetStrategy aid
+  tgtMPath <-
+    if nullStrategy stratTarget then
+      -- No sensible target, wipe out the old one  .
+      return Nothing
+    else do
+      -- Choose a target from those proposed by AI for the actor.
+      (tgt, path) <- rndToAction $ frequency $ bestVariant stratTarget
+      return $ Just (tgt, Just path)
+  let _debug = T.unpack
+          $ "\nHandleAI abilities:" <+> tshow factionAbilities
+          <> ", symbol:"            <+> tshow (bsymbol body)
+          <> ", aid:"               <+> tshow aid
+          <> ", pos:"               <+> tshow (bpos body)
+          <> "\nHandleAI starget:"  <+> tshow stratTarget
+          <> "\nHandleAI target:"   <+> tshow tgtMPath
+--  trace _debug skip
+  modifyClient $ \cli ->
+    cli {stargetD = EM.alter (const $ tgtMPath) aid (stargetD cli)}
+--  trace _debug skip
+  return $! case tgtMPath of
+    Just (tgt, Just pathEtc) -> Just ((aid, body), (tgt, pathEtc))
+    _ -> Nothing
+
+queryAIPick :: MonadClient m => (ActorId, Actor) -> m CmdTakeTimeSer
+queryAIPick (aid, body) = do
+  Kind.COps{cofaction=Kind.Ops{okind}} <- getsState scops
+  side <- getsClient sside
   assert (bfid body == side `blame` "AI tries to move enemy actor"
                             `twith` (aid, bfid body, side)) skip
   assert (not (bproj body) `blame` "AI gets to manually move its projectiles"
@@ -134,31 +164,9 @@ queryAIPick aid = do
   let factionAbilities
         | Just aid == mleader = fAbilityLeader $ okind $ gkind fact
         | otherwise = fAbilityOther $ okind $ gkind fact
-  stratTarget <- targetStrategy aid
-  -- Choose a target from those proposed by AI for the actor.
-  if nullStrategy stratTarget then
-    return $ WaitSer aid  -- TODO: switch leader, if possible, instead
-  else do
-    (tgt, path) <- rndToAction $ frequency $ bestVariant stratTarget
-    let tgtMPath = Just (tgt, Just path)
-    let _debug = T.unpack
-          $ "\nHandleAI abilities:" <+> tshow factionAbilities
-          <> ", symbol:"            <+> tshow (bsymbol body)
-          <> ", aid:"               <+> tshow aid
-          <> ", pos:"               <+> tshow (bpos body)
-          <> "\nHandleAI starget:"  <+> tshow stratTarget
-          <> "\nHandleAI target:"   <+> tshow tgtMPath
---    trace _debug skip
-    modifyClient $ \cli ->
-      cli {stargetD = EM.alter (const $ tgtMPath) aid (stargetD cli)}
-    stratAction <- actionStrategy aid factionAbilities
-    -- Run the AI: chose an action from those given by the AI strategy.
-    action <- rndToAction $ frequency $ bestVariant stratAction
-    let _debug = T.unpack
-          $ "HandleAI saction:"   <+> tshow stratAction
-          <> "\nHandleAI action:" <+> tshow action
---  trace _debug skip
-    return action
+  stratAction <- actionStrategy aid factionAbilities
+  -- Run the AI: chose an action from those given by the AI strategy.
+  rndToAction $ frequency $ bestVariant stratAction
 
 -- | Handle the move of a UI player.
 queryUI :: MonadClientUI m => ActorId -> m CmdSer
