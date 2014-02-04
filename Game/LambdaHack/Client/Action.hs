@@ -341,7 +341,8 @@ restoreGame = do
   side <- getsClient sside
   isAI <- getsClient sisAI
   prefix <- getsClient $ ssavePrefixCli . sdebugCli
-  let copies = [(cfgUIName <.> "default", cfgUIName <.> "ini")]
+  let copies = [( "GameDefinition" </> cfgUIName <.> "default"
+                , cfgUIName <.> "ini" )]
       name = fromMaybe "save" prefix <.> saveName side isAI
   liftIO $ Save.restoreGame name copies pathsDataFile
 

@@ -333,7 +333,8 @@ tryRestore Kind.COps{corule} sdebugSer = do
       scoresFile = rscoresFile stdRuleset
       pathsDataFile = rpathsDataFile stdRuleset
       prefix = ssavePrefixSer sdebugSer
-  let copies = [(scoresFile, scoresFile)]
+  let copies = [( "GameDefinition" </> scoresFile
+                , scoresFile )]
       name = fromMaybe "save" prefix <.> saveName
   liftIO $ Save.restoreGame name copies pathsDataFile
 
