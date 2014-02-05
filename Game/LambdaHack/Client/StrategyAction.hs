@@ -98,8 +98,7 @@ targetStrategy aid = do
         -- TODO: for foes, items, etc. consider a few nearby, not just one
         cfoes <- closestFoes aid
         case cfoes of
-          -- TODO: also check the path is not too long
-          (_, (a, _)) : _ | not $ null nearbyFoes -> setPath $ TEnemy a False
+          (d, (a, _)) : _ | d < nearby -> setPath $ TEnemy a False
           _ -> do
             citems <- closestItems aid
             case citems of

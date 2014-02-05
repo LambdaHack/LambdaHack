@@ -92,9 +92,11 @@ queryAI oldAid = do
           (oursBlocked, oursPos) = partition targetBlocked oursOther
           valueOurs :: ((ActorId, Actor), (Target, PathEtc))
                     -> (Int, Int, Bool)
-          valueOurs ((aid, b), (TEnemy{}, (_, (_, d)))) =
+          valueOurs our@((aid, b), (TEnemy{}, (_, (_, d)))) =
             -- TODO: take weapon, walk and fight speed, etc. into account
-            (d, - 10 * (bhp b `div` 10), aid /= oldAid)
+            ( d + if targetBlocked our then 2 else 0  -- possible delay, hacky
+            , - 10 * (bhp b `div` 10)
+            , aid /= oldAid )
           valueOurs ((aid, b), (_tgt, (_path, (goal, d)))) =
             -- Keep proper formation, not too dense, not to sparse.
             let -- TODO: vary the parameters according to the stage of game,
