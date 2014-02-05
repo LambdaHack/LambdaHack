@@ -13,9 +13,9 @@ cdefs = ContentDef
   , getFreq = mfreq
   , validate = validateModeKind
   , content =
-      [campaign, skirmish, pvp, coop, defense, screensaver, testCoop, testDefense, peekCampaign, peekSkirmish]
+      [campaign, skirmish, pvp, coop, defense, testCampaign, testSkirmish, testPvP, testCoop, testDefense, peekCampaign, peekSkirmish]
   }
-campaign,        skirmish, pvp, coop, defense, screensaver, testCoop, testDefense, peekCampaign, peekSkirmish :: ModeKind
+campaign,        skirmish, pvp, coop, defense, testCampaign, testSkirmish, testPvP, testCoop, testDefense, peekCampaign, peekSkirmish :: ModeKind
 
 campaign = ModeKind
   { msymbol  = 'r'
@@ -26,7 +26,7 @@ campaign = ModeKind
   }
 
 skirmish = ModeKind
-  { msymbol  = 's'
+  { msymbol  = 'k'
   , mname    = "skirmish"
   , mfreq    = [("skirmish", 1)]
   , mplayers = playersSkirmish
@@ -34,7 +34,7 @@ skirmish = ModeKind
   }
 
 pvp = ModeKind
-  { msymbol  = 'p'
+  { msymbol  = 'v'
   , mname    = "PvP"
   , mfreq    = [("PvP", 1)]
   , mplayers = playersPvP
@@ -42,7 +42,7 @@ pvp = ModeKind
   }
 
 coop = ModeKind
-  { msymbol  = 'c'
+  { msymbol  = 'o'
   , mname    = "Coop"
   , mfreq    = [("Coop", 1)]
   , mplayers = playersCoop
@@ -50,19 +50,35 @@ coop = ModeKind
   }
 
 defense = ModeKind
-  { msymbol  = 'd'
+  { msymbol  = 'e'
   , mname    = "defense"
   , mfreq    = [("defense", 1)]
   , mplayers = playersDefense
   , mcaves   = cavesDefense
   }
 
-screensaver = ModeKind
-  { msymbol  = 'n'
-  , mname    = "screensaver"
-  , mfreq    = [("screensaver", 1)]
-  , mplayers = playersScreensaver
-  , mcaves   = cavesScreensaver
+testCampaign = ModeKind
+  { msymbol  = 't'
+  , mname    = "testCampaign"
+  , mfreq    = [("testCampaign", 1)]
+  , mplayers = playersTestCampaign
+  , mcaves   = cavesTestCampaign
+  }
+
+testSkirmish = ModeKind
+  { msymbol  = 't'
+  , mname    = "testSkirmish"
+  , mfreq    = [("testSkirmish", 1)]
+  , mplayers = playersTestSkirmish
+  , mcaves   = cavesCombat
+  }
+
+testPvP = ModeKind
+  { msymbol  = 't'
+  , mname    = "testPvP"
+  , mfreq    = [("testPvP", 1)]
+  , mplayers = playersTestPvP
+  , mcaves   = cavesCombat
   }
 
 testCoop = ModeKind
@@ -70,11 +86,11 @@ testCoop = ModeKind
   , mname    = "testCoop"
   , mfreq    = [("testCoop", 1)]
   , mplayers = playersTestCoop
-  , mcaves   = cavesScreensaver
+  , mcaves   = cavesTestCampaign
   }
 
 testDefense = ModeKind
-  { msymbol  = 'u'
+  { msymbol  = 't'
   , mname    = "testDefense"
   , mfreq    = [("testDefense", 1)]
   , mplayers = playersTestDefense
@@ -82,7 +98,7 @@ testDefense = ModeKind
   }
 
 peekCampaign = ModeKind
-  { msymbol  = 'e'
+  { msymbol  = 'p'
   , mname    = "peekCampaign"
   , mfreq    = [("peekCampaign", 1)]
   , mplayers = playersPeekCampaign
@@ -90,7 +106,7 @@ peekCampaign = ModeKind
   }
 
 peekSkirmish = ModeKind
-  { msymbol  = 'f'
+  { msymbol  = 'p'
   , mname    = "peekSkirmish"
   , mfreq    = [("peekSkirmish", 1)]
   , mplayers = playersPeekSkirmish
@@ -98,7 +114,7 @@ peekSkirmish = ModeKind
   }
 
 
-playersCampaign, playersSkirmish, playersPvP, playersCoop, playersDefense, playersScreensaver, playersTestCoop, playersTestDefense, playersPeekCampaign, playersPeekSkirmish :: Players
+playersCampaign, playersSkirmish, playersPvP, playersCoop, playersDefense, playersTestCampaign, playersTestSkirmish, playersTestPvP, playersTestCoop, playersTestDefense, playersPeekCampaign, playersPeekSkirmish :: Players
 
 playersCampaign = Players
   { playersList = [ playerHero {playerInitial = 1}
@@ -150,55 +166,54 @@ playersDefense = Players
                   , ("Green", "Cyan")
                   , ("Yellow", "Cyan") ] }
 
-playersScreensaver = Players
+playersTestCampaign = playersCampaign
   { playersList = [ playerHero { playerInitial = 5
                                , playerAiLeader = True
                                , playerHuman = False }
-                  , playerMonster ]
-  , playersEnemy = [("Adventurer Party", "Monster Hive")]
-  , playersAlly = [] }
+                  , playerMonster ] }
 
-playersTestCoop = Players
+playersTestSkirmish = playersSkirmish
+  { playersList = [ playerHero { playerName = "White"
+                               , playerAiLeader = True
+                               , playerHuman = False }
+                  , playerAntiHero { playerName = "Purple" }
+                  , playerHorror ] }
+
+playersTestPvP = playersPvP
+  { playersList = [ playerHero { playerName = "Red"
+                               , playerAiLeader = True
+                               , playerHuman = False }
+                  , playerHero { playerName = "Blue"
+                               , playerAiLeader = True
+                               , playerHuman = False }
+                  , playerHorror ] }
+
+playersTestCoop = playersCoop
   { playersList = [ playerHero { playerName = "Coral"
                                , playerAiLeader = True
                                , playerHuman = False }
                   , playerHero { playerName = "Amber"
                                , playerAiLeader = True
                                , playerHuman = False }
-                  , playerMonster ]
-  , playersEnemy = [ ("Coral", "Monster Hive")
-                   , ("Amber", "Monster Hive") ]
-  , playersAlly = [("Coral", "Amber")] }
+                  , playerMonster ] }
 
-playersTestDefense = Players
+playersTestDefense = playersDefense
   { playersList = [ playerMonster { playerInitial = 1
                                   , playerEntry = toEnum (-1)
                                   , playerUI = True }
                   , playerAntiHero {playerName = "Green"}
                   , playerAntiHero {playerName = "Yellow"}
-                  , playerAntiHero {playerName = "Cyan"} ]
-  , playersEnemy = [ ("Green", "Monster Hive")
-                   , ("Yellow", "Monster Hive")
-                   , ("Cyan", "Monster Hive") ]
-  , playersAlly = [ ("Green", "Yellow")
-                  , ("Green", "Cyan")
-                  , ("Yellow", "Cyan") ] }
+                  , playerAntiHero {playerName = "Cyan"} ] }
 
-playersPeekCampaign = Players
+playersPeekCampaign = playersCampaign
   { playersList = [ playerHero {playerInitial = 1}
-                  , playerMonster {playerUI = True} ]
-  , playersEnemy = [("Adventurer Party", "Monster Hive")]
-  , playersAlly = [] }
+                  , playerMonster {playerUI = True} ] }
 
-playersPeekSkirmish = Players
+playersPeekSkirmish = playersSkirmish
   { playersList = [ playerHero {playerName = "White"}
                   , playerAntiHero { playerName = "Purple"
                                    , playerUI = True }
-                  , playerHorror ]
-  , playersEnemy = [ ("White", "Purple")
-                   , ("White", "Horror Den")
-                   , ("Purple", "Horror Den") ]
-  , playersAlly = [] }
+                  , playerHorror ] }
 
 
 playerHero, playerAntiHero, playerMonster, playerHorror :: Player
@@ -243,7 +258,7 @@ playerHorror = Player
   }
 
 
-cavesCampaign, cavesCombat, cavesDefense, cavesScreensaver :: Caves
+cavesCampaign, cavesCombat, cavesDefense, cavesTestCampaign :: Caves
 
 cavesCampaign = EM.fromList [ (toEnum (-1), ("caveRogue", Just True))
                             , (toEnum (-2), ("caveRogue", Nothing))
@@ -255,5 +270,5 @@ cavesCombat = EM.fromList [(toEnum (-3), ("caveCombat", Nothing))]
 cavesDefense = EM.fromList [ (toEnum (-1), ("dng", Nothing))
                            , (toEnum (-5), ("caveEmpty", Just False))]
 
-cavesScreensaver = EM.fromList [ (toEnum (-1), ("caveRogue", Nothing))
-                               , (toEnum (-10), ("caveNoise", Just False))]
+cavesTestCampaign = EM.fromList [ (toEnum (-1), ("caveRogue", Nothing))
+                                , (toEnum (-10), ("caveNoise", Just False))]
