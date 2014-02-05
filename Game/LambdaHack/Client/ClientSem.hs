@@ -48,22 +48,23 @@ queryAI oldAid = do
   mleader <- getsClient _sleader
   ours <- getsState $ actorNotProjAssocs (== side) arena
   let pickOld = do
-        void $ refreshTarget (oldAid, oldBody)
+        when (mleader == Just oldAid
+              || not (null ([Ability.Ranged, Ability.Chase, Ability.Wander]
+                            `intersect` abilityOther))) $
+          void $ refreshTarget (oldAid, oldBody)
         queryAIPick (oldAid, oldBody)
   case ours of
-    [] -> assert `failure` (oldAid, oldBody)
-    [_] -> pickOld  -- Keep the leader: he is alone on the level.
     _ | -- Keep the leader: only a leader is allowed to pick another leader.
         mleader /= Just oldAid
         -- Keep the leader: abilities are the same (we assume leader can do
         -- at least as much as others).
         || abilityLeader == abilityOther
-        -- Keep the leader: other members can't melee. -- TODO: but can explore
-        || Ability.Melee `notElem` abilityOther
         -- Keep the leader: he probably used stairs right now
         -- and we don't want to clog stairs or get pushed to another level.
         || bpos oldBody == boldpos oldBody
       -> pickOld
+    [] -> assert `failure` (oldAid, oldBody)
+    [_] -> pickOld  -- Keep the leader: he is alone on the level.
     (captain, captainBody) : (sergeant, sergeantBody) : _ -> do
       -- At this point we almost forget who the old leader was
       -- and treat all party actors the same, eliminating candidates
