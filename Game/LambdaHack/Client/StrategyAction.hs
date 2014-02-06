@@ -292,7 +292,7 @@ triggerFreq aid = do
   cops@Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
   dungeon <- getsState sdungeon
   explored <- getsClient sexplored
-  b@Actor{bpos, blid, bfid, boldpos} <- getsState $ getActorBody aid
+  b@Actor{bpos, blid, bfid} <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid
   lvl <- getLevel blid
   let spawn = isSpawnFact cops fact
@@ -317,18 +317,9 @@ triggerFreq aid = do
         F.Cause ef -> effectToBenefit cops b ef
         _ -> 0
       benFeat = zip (map ben feats) feats
-      -- Probably recently switched levels or was pushed to another level.
-      -- Do not repeatedly switch levels or push each other between levels.
-      -- Consequently, AI won't dive many levels down with linked staircases.
-      recentlyAscended = bpos == boldpos
-  if recentlyAscended then
-    return mzero  -- TODO: make sure the actor does not stay here,
-                  -- blocking the stairs and repeatedly pusing one another
-                  -- between levels, unless this is Escape
-  else
-    return $! toFreq "triggerFreq" $ [ (benefit, TriggerSer aid (Just feat))
-                                     | (benefit, feat) <- benFeat
-                                     , benefit > 0 ]
+  return $! toFreq "triggerFreq" $ [ (benefit, TriggerSer aid (Just feat))
+                                   | (benefit, feat) <- benFeat
+                                   , benefit > 0 ]
 
 -- Actors require sight to use ranged combat and intelligence to throw
 -- or zap anything else than obvious physical missiles.
