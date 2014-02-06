@@ -793,7 +793,8 @@ closestTriggers onlyDir exploredToo aid = do
       f :: [Point] -> Point -> Kind.Id TileKind -> [Point]
       f acc p t = if isTrigger t then p : acc else acc
   let triggersAll = PointArray.ifoldlA f [] $ ltile lvl
-      triggers = delete (bpos body) triggersAll
+      triggers | exploredToo = delete (bpos body) triggersAll
+               | otherwise = triggersAll  -- exploring, under the actor is OK
   case triggers of
     [] -> return []
     _ -> do

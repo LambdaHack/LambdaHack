@@ -152,15 +152,8 @@ targetStrategy aid = do
                         (oldTgt, ( bpos b : path
                         , (p, fromMaybe (assert `failure` mpath)
                               $ accessBfs bfs p) ))
-        _ | not $ null nearbyFoes -> pickNewTarget  -- prefer foes to anything
-        TEnemyPos _ lid p _ ->
-          -- Chase last position even if foe hides or dies,
-          -- to find his companions.
-          if lid /= blid b  -- wrong level
-          then pickNewTarget
-          else if p == bpos b
-               then tellOthersNothingHere p
-               else return $! returN "TEnemyPos" (oldTgt, updatedPath)
+        _ | not $ null nearbyFoes ->
+          pickNewTarget  -- prefer close foes to anything
         TPoint lid pos -> do
           explored <- getsClient sexplored
           if lid /= blid b  -- wrong level
@@ -174,6 +167,16 @@ targetStrategy aid = do
                           || not (Tile.isWalkable cotile t))  -- or unreachable
           then pickNewTarget
           else return $! returN "TPoint" (oldTgt, updatedPath)
+        _ | not $ null allFoes ->
+          pickNewTarget  -- new likely foes location spotted, forget the old
+        TEnemyPos _ lid p _ ->
+          -- Chase last position even if foe hides or dies,
+          -- to find his companions, loot, etc.
+          if lid /= blid b  -- wrong level
+          then pickNewTarget
+          else if p == bpos b
+               then tellOthersNothingHere p
+               else return $! returN "TEnemyPos" (oldTgt, updatedPath)
         TVector{} -> pickNewTarget
   case oldTgtUpdatedPath of
     Just (oldTgt, updatedPath) -> updateTgt oldTgt updatedPath
