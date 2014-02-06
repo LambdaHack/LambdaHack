@@ -61,7 +61,7 @@ xctestPvP-long:
 	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --fovMode Permissive --savePrefix test --gameMode testPvP --frontendStd --dumpInitRngs --stopAfter 500 --difficulty 1 > /tmp/stdtest.log
 
 xctestPvP-medium:
-	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --fovMode Permissive --savePrefix test --gameMode testCoop --frontendStd --dumpInitRngs --stopAfter 120 > /tmp/stdtest.log
+	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --fovMode Permissive --savePrefix test --gameMode testPvP --frontendStd --dumpInitRngs --stopAfter 120 > /tmp/stdtest.log
 
 xctestCoop-long:
 	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --fovMode Permissive --savePrefix test --gameMode testCoop --frontendStd --dumpInitRngs --stopAfter 500 --difficulty 1 > /tmp/stdtest.log
@@ -147,10 +147,10 @@ testPvP-long:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --fovMode Permissive --savePrefix test --gameMode testPvP --frontendStd --dumpInitRngs --stopAfter 500 --difficulty 1 > /tmp/stdtest.log
 
 testPvP-medium:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --fovMode Permissive --savePrefix test --gameMode testCoop --frontendStd --dumpInitRngs --stopAfter 120 > /tmp/stdtest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --fovMode Permissive --savePrefix test --gameMode testPvP --frontendStd --dumpInitRngs --stopAfter 120 > /tmp/stdtest.log
 
 testCoop-long:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --fovMode Shadow --savePrefix test --gameMode testPvP --frontendStd --dumpInitRngs --stopAfter 500 > /tmp/stdtest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --fovMode Shadow --savePrefix test --gameMode testCoop --frontendStd --dumpInitRngs --stopAfter 500 > /tmp/stdtest.log
 
 testCoop-medium:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --fovMode Shadow --savePrefix test --gameMode testCoop --frontendStd --dumpInitRngs --stopAfter 120 --difficulty 1 > /tmp/stdtest.log
