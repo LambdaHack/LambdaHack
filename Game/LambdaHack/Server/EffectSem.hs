@@ -244,13 +244,15 @@ addActor :: (MonadAtomic m, MonadServer m)
          -> Char -> Text -> Color.Color -> Time
          -> m ActorId
 addActor mk bfid pos lid hp bsymbol bname bcolor time = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-  Faction{gplayer} <- getsState $ (EM.! bfid) . sfactionD
+  cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  fact@Faction{gplayer} <- getsState $ (EM.! bfid) . sfactionD
   DebugModeSer{sdifficultySer} <- getsServer sdebugSer
-  let diffHP | not $ playerUI gplayer = hp
-             | otherwise = (ceiling :: Double -> Int)
-                           $ fromIntegral hp * 1.5 ^^ sdifficultySer
-  let kind = okind mk
+  nU <- nUI
+  -- If no UI factions, the difficulty applies to heroes (for testing).
+  let diffHP | playerUI gplayer || nU == 0 && not (isSpawnFact cops fact) =
+        (ceiling :: Double -> Int) $ fromIntegral hp * 1.5 ^^ sdifficultySer
+             | otherwise = hp
+      kind = okind mk
       speed = aspeed kind
       m = actorTemplate mk bsymbol bname bcolor speed diffHP
                         Nothing pos lid time bfid False
