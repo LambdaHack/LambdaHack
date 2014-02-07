@@ -243,17 +243,17 @@ addActor :: (MonadAtomic m, MonadServer m)
          => Kind.Id ActorKind -> FactionId -> Point -> LevelId -> Int
          -> Char -> Text -> Color.Color -> Time
          -> m ActorId
-addActor mk bfid pos lid hpUnscaled bsymbol bname bcolor time = do
+addActor mk bfid pos lid hp bsymbol bname bcolor time = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   Faction{gplayer} <- getsState $ (EM.! bfid) . sfactionD
   DebugModeSer{sdifficultySer} <- getsServer sdebugSer
+  let diffHP | not $ playerUI gplayer = hp
+             | otherwise = (ceiling :: Double -> Int)
+                           $ fromIntegral hp * 1.5 ^^ sdifficultySer
   let kind = okind mk
       speed = aspeed kind
-      hp | not $ playerUI gplayer = hpUnscaled
-         | otherwise = (round :: Double -> Int)
-                       $ fromIntegral hpUnscaled * 1.5 ^^ sdifficultySer
-      m = actorTemplate mk bsymbol bname bcolor speed hp Nothing pos lid time
-                        bfid False
+      m = actorTemplate mk bsymbol bname bcolor speed diffHP
+                        Nothing pos lid time bfid False
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
   execCmdAtomic $ CreateActorA acounter m []
@@ -277,8 +277,9 @@ addHero bfid ppos lid heroNames mNumber time = do
       nameFromNumber k = "Hero" <+> tshow k
       name | gcolor == Color.BrWhite =
         fromMaybe (nameFromNumber n) $ lookup n heroNames
-           | otherwise = playerName gplayer <+> nameFromNumber n
-      startHP = hp - (hp `div` 5) * min 3 n
+           | otherwise =
+        playerName gplayer <+> nameFromNumber n
+      startHP = hp - (min 10 $ hp `div` 10) * min 5 n
   addActor kId bfid ppos lid startHP symbol name gcolor time
 
 -- ** SpawnMonster
