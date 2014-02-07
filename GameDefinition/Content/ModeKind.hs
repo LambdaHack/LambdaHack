@@ -54,7 +54,7 @@ defense = ModeKind
   , mname    = "defense"
   , mfreq    = [("defense", 1)]
   , mplayers = playersDefense
-  , mcaves   = cavesDefense
+  , mcaves   = cavesCampaign
   }
 
 testCampaign = ModeKind
@@ -62,7 +62,7 @@ testCampaign = ModeKind
   , mname    = "testCampaign"
   , mfreq    = [("testCampaign", 1)]
   , mplayers = playersTestCampaign
-  , mcaves   = cavesTestCampaign
+  , mcaves   = cavesCampaign
   }
 
 testSkirmish = ModeKind
@@ -86,7 +86,7 @@ testCoop = ModeKind
   , mname    = "testCoop"
   , mfreq    = [("testCoop", 1)]
   , mplayers = playersTestCoop
-  , mcaves   = cavesTestCampaign
+  , mcaves   = cavesCampaign
   }
 
 testDefense = ModeKind
@@ -94,7 +94,7 @@ testDefense = ModeKind
   , mname    = "testDefense"
   , mfreq    = [("testDefense", 1)]
   , mplayers = playersTestDefense
-  , mcaves   = cavesDefense
+  , mcaves   = cavesCampaign
   }
 
 peekCampaign = ModeKind
@@ -152,7 +152,6 @@ playersCoop = Players
 
 playersDefense = Players
   { playersList = [ playerMonster { playerInitial = 1
-                                  , playerEntry = toEnum (-1)
                                   , playerAiLeader = False
                                   , playerHuman = True
                                   , playerUI = True }
@@ -199,7 +198,6 @@ playersTestCoop = playersCoop
 
 playersTestDefense = playersDefense
   { playersList = [ playerMonster { playerInitial = 1
-                                  , playerEntry = toEnum (-1)
                                   , playerUI = True }
                   , playerAntiHero {playerName = "Green"}
                   , playerAntiHero {playerName = "Yellow"}
@@ -258,7 +256,7 @@ playerHorror = Player
   }
 
 
-cavesCampaign, cavesCombat, cavesDefense, cavesTestCampaign :: Caves
+cavesCampaign, cavesCombat :: Caves
 
 cavesCampaign = EM.fromList [ (toEnum (-1), ("caveRogue", Just True))
                             , (toEnum (-2), ("caveRogue", Nothing))
@@ -266,9 +264,3 @@ cavesCampaign = EM.fromList [ (toEnum (-1), ("caveRogue", Just True))
                             , (toEnum (-10), ("caveNoise", Nothing))]
 
 cavesCombat = EM.fromList [(toEnum (-3), ("caveCombat", Nothing))]
-
-cavesDefense = EM.fromList [ (toEnum (-1), ("dng", Nothing))
-                           , (toEnum (-5), ("caveEmpty", Just False))]
-
-cavesTestCampaign = EM.fromList [ (toEnum (-1), ("caveRogue", Nothing))
-                                , (toEnum (-10), ("caveNoise", Just False))]
