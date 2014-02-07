@@ -44,10 +44,10 @@ data State = State
 -- TODO: add a flag 'fresh' and when saving levels, don't save
 -- and when loading regenerate this level.
 unknownLevel :: Kind.Ops TileKind -> Int -> X -> Y
-             -> Text -> ([Point], [Point]) -> Int -> Int -> Int
+             -> Text -> ([Point], [Point]) -> Int -> Int -> Int -> Bool
              -> Level
 unknownLevel Kind.Ops{ouniqGroup} ldepth lxsize lysize ldesc lstair lclear
-             lsecret lhidden =
+             lsecret lhidden lescape =
   let unknownId = ouniqGroup "unknown space"
       outerId = ouniqGroup "basic outer fence"
   in Level { ldepth
@@ -66,6 +66,7 @@ unknownLevel Kind.Ops{ouniqGroup} ldepth lxsize lysize ldesc lstair lclear
            , litemFreq = toFreq "client item freq" []
            , lsecret
            , lhidden
+           , lescape
            }
 
 unknownTileMap :: Kind.Id TileKind -> Kind.Id TileKind -> Int -> Int -> TileMap
@@ -115,7 +116,7 @@ localFromGlobal State{_scops=_scops@Kind.COps{cotile}, .. } =
     { _sdungeon =
       EM.map (\Level{..} ->
               unknownLevel cotile ldepth lxsize lysize ldesc lstair lclear
-                           lsecret lhidden)
+                           lsecret lhidden lescape)
             _sdungeon
     , ..
     }

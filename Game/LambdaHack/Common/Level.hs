@@ -97,6 +97,7 @@ data Level = Level
                                     --   [] for clients
   , lsecret   :: !Int        -- ^ secret tile seed
   , lhidden   :: !Int        -- ^ secret tile density
+  , lescape   :: !Bool       -- ^ has an Effect.Escape tile
   }
   deriving (Show, Eq)
 
@@ -242,6 +243,7 @@ instance Binary Level where
     put litemFreq
     put lsecret
     put lhidden
+    put lescape
   get = do
     ldepth <- get
     lprio <- get
@@ -259,4 +261,5 @@ instance Binary Level where
     litemFreq <- get
     lsecret <- get
     lhidden <- get
+    lescape <- get
     return $! Level{..}

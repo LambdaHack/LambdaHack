@@ -139,14 +139,15 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
   assert (not $ nullFreq itemFreq) skip
   lsecret <- random
   return $! levelFromCaveKind cops kc ldepth ltile lstair
-                              litemNum itemFreq lsecret
+                              litemNum itemFreq lsecret (isJust escapeFeature)
 
 levelFromCaveKind :: Kind.COps
                   -> CaveKind -> Int -> TileMap -> ([Point], [Point])
-                  -> Int -> Frequency Text -> Int
+                  -> Int -> Frequency Text -> Int -> Bool
                   -> Level
 levelFromCaveKind Kind.COps{cotile}
-                  CaveKind{..} ldepth ltile lstair litemNum litemFreq lsecret =
+                  CaveKind{..}
+                  ldepth ltile lstair litemNum litemFreq lsecret lescape =
   Level
     { ldepth
     , lprio = EM.empty
@@ -166,6 +167,7 @@ levelFromCaveKind Kind.COps{cotile}
     , litemFreq
     , lsecret
     , lhidden = chidden
+    , lescape
     }
 
 findGenerator :: Kind.COps -> Caves
