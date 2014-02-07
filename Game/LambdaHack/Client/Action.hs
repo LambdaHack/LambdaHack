@@ -27,7 +27,7 @@ module Game.LambdaHack.Client.Action
   , restoreGame, removeServerSave, displayPush, scoreToSlideshow
   , rndToAction, getArenaUI, getLeaderUI, targetDescLeader, viewedLevel
   , aidTgtToPos, aidTgtAims, leaderTgtToPos, leaderTgtAims, cursorToPos
-  , partAidLeader, partActorLeader
+  , partAidLeader, partActorLeader, unexploredDepth
   , getCacheBfsAndPath, getCacheBfs, accessCacheBfs, actorAimsPos
   , closestUnknown, furthestKnown, closestTriggers, closestItems, closestFoes
   , debugPrint
@@ -762,29 +762,23 @@ closestUnknown aid = do
     return Nothing
   else return $ Just closestPos
 
--- | Closest (wrt paths) triggerable open tiles, except under the actor.
+-- | Closest (wrt paths) triggerable open tiles,
+-- except under the actor in @exploredToo@ case.
+-- We assume there at most one escape from the dungeon
+-- and in fact we assume linear dungeon in @unexploredD@,
+-- because otherwise we'd need to calculate shortest paths in a graph, etc.
 closestTriggers :: MonadClient m => Maybe Bool -> Bool -> ActorId -> m [Point]
 closestTriggers onlyDir exploredToo aid = do
   Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody aid
   lvl <- getLevel $ blid body
-  dungeon <- getsState sdungeon
-  explored <- getsClient sexplored
-  let unexploredDepth nlid p =
-        -- TODO: record in level or read from PlayerLevel the location
-        -- of Escape and mark such levels are unexplored; also in StrategyAct
-        case ascendInBranch dungeon nlid p of
-          [] -> False
-          nlid2 : _ -> ES.notMember nlid2 explored
-                       || unexploredDepth nlid2 p
-      unexUp = onlyDir == Just True
-               || isNothing onlyDir && unexploredDepth (blid body) 1
-      unexDown = onlyDir == Just False
-                 || isNothing onlyDir && unexploredDepth (blid body) (-1)
-      unexEffect (Effect.Ascend p) =
-        if p > 0 then unexUp else unexDown
-      unexEffect _ = not (unexUp || unexDown)
-                       -- escape only after exploring, for high score and fun
+  unexploredD <- unexploredDepth
+  let unexUp = onlyDir /= Just False && unexploredD 1 (blid body)
+      unexDown = onlyDir /= Just True && unexploredD (-1) (blid body)
+      unexEffect (Effect.Ascend p) = if p > 0 then unexUp else unexDown
+      unexEffect _ =
+        -- Escape (or guard) only after exploring, for high score, etc.
+        not (unexUp || unexDown)
       isTrigger
         | exploredToo = \t -> Tile.isWalkable cotile t
                               && not (null $ Tile.causeEffects cotile t)
@@ -801,6 +795,18 @@ closestTriggers onlyDir exploredToo aid = do
       bfs <- getCacheBfs aid
       let ds = mapMaybe (\p -> fmap (,p) (accessBfs bfs p)) triggers
       return $! map snd $ sort ds
+
+unexploredDepth :: MonadClient m => m (Int -> LevelId -> Bool)
+unexploredDepth = do
+  dungeon <- getsState sdungeon
+  explored <- getsClient sexplored
+  let allExplored = ES.size explored == EM.size dungeon
+      unexploredD p =
+        let unex lid = allExplored && lescape (dungeon EM.! lid)
+                       || ES.notMember lid explored
+                       || unexploredD p lid
+        in any unex . ascendInBranch dungeon p
+  return unexploredD
 
 -- | Closest (wrt paths) items.
 closestItems :: MonadClient m => ActorId -> m ([(Int, (Point, ItemBag))])

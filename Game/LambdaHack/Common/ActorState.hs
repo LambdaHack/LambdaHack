@@ -152,7 +152,7 @@ whereTo lid pos k s = assert (k /= 0) $
       defaultStairs = 0  -- for ascending via, e.g., spells
       mindex = elemIndex pos stairs
       i = fromMaybe defaultStairs mindex
-  in case ascendInBranch dungeon lid k of
+  in case ascendInBranch dungeon k lid of
     [] | isNothing mindex -> (lid, pos)  -- spell fizzles
     [] -> assert `failure` "no dungeon level to go to" `twith` (lid, pos, k)
     ln : _ -> let lvlTgt = dungeon EM.! ln

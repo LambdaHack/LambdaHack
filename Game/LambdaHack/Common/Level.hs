@@ -43,8 +43,8 @@ import Game.LambdaHack.Utils.Frequency
 type Dungeon = EM.EnumMap LevelId Level
 
 -- | Levels in the current branch, @k@ levels shallower than the current.
-ascendInBranch :: Dungeon -> LevelId -> Int -> [LevelId]
-ascendInBranch dungeon lid k =
+ascendInBranch :: Dungeon -> Int -> LevelId -> [LevelId]
+ascendInBranch dungeon k lid =
   -- Currently there is just one branch, so the computation is simple.
   let (minD, maxD) =
         case (EM.minViewWithKey dungeon, EM.maxViewWithKey dungeon) of

@@ -295,25 +295,26 @@ triggerFreq aid = do
   b@Actor{bpos, blid, bfid} <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid
   lvl <- getLevel blid
-  let spawn = isSpawnFact cops fact
+  unexploredD <- unexploredDepth
+  let allExplored = ES.size explored == EM.size dungeon
+      spawn = isSpawnFact cops fact
       t = lvl `at` bpos
       feats = TileKind.tfeature $ okind t
-      unexploredDepth nlid p =
-        case ascendInBranch dungeon nlid p of
-          [] -> False
-          nlid2 : _ -> ES.notMember nlid2 explored
-                       || unexploredDepth nlid2 p
       ben feat = case feat of
-        F.Cause Effect.Escape{} | spawn -> 0  -- spawners lose if they escape
         F.Cause (Effect.Ascend p) ->  -- change levels sensibly, in teams
           let unexploredCurrent = ES.notMember blid explored
           in if unexploredCurrent
              then 0  -- don't leave the level until explored
-             else if unexploredDepth blid (signum p)
+             else if unexploredD (signum p) blid
              then 1000
-             else if unexploredDepth blid (- signum p)
+             else if unexploredD (- signum p) blid
              then 0  -- wait for stairs in the opposite direciton
-             else 2  -- everything explored, switch levels occasionally
+             else if lescape lvl
+             then 0  -- all explored, stay on the escape level
+             else 2  -- no escape anywhere, switch levels occasionally
+        F.Cause ef@Effect.Escape{} ->
+          -- Spawners can't escape and others explore all for high score.
+          if spawn || not allExplored then 0 else effectToBenefit cops b ef
         F.Cause ef -> effectToBenefit cops b ef
         _ -> 0
       benFeat = zip (map ben feats) feats

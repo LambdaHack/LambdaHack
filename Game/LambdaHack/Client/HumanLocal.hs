@@ -660,7 +660,7 @@ tgtAscendHuman k = do
       modifyClient $ \cli -> cli {scursor, stgtMode = Just (TgtMode nln)}
       doLook
     Nothing ->  -- no stairs in the right direction
-      case ascendInBranch dungeon lidV k of
+      case ascendInBranch dungeon k lidV of
         [] -> failWith "no more levels in this direction"
         nln : _ -> do
           modifyClient $ \cli -> cli {stgtMode = Just (TgtMode nln)}
