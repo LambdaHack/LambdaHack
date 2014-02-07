@@ -2,7 +2,8 @@
 -- but not the 'Action' type.
 -- TODO: Document an export list after it's rewritten according to #17.
 module Game.LambdaHack.Common.ActorState
-  ( actorAssocs, actorList, actorNotProjAssocs, actorNotProjList
+  ( actorAssocsLvl, actorAssocs, actorList
+  , actorNotProjAssocsLvl, actorNotProjAssocs, actorNotProjList
   , calculateTotal, nearbyFreePoints, whereTo
   , posToActors, posToActor, getItemBody, memActor
   , getActorBody, updateActorBody
@@ -28,27 +29,37 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.TileKind
 
-actorAssocs :: (FactionId -> Bool) -> LevelId -> State
+actorAssocsLvl :: (FactionId -> Bool) -> Level -> ActorDict
             -> [(ActorId, Actor)]
-actorAssocs p lid s =
-  mapMaybe (\aid -> let actor = sactorD s EM.! aid
+actorAssocsLvl p lvl actorD =
+  mapMaybe (\aid -> let actor = actorD EM.! aid
                     in if p (bfid actor)
                        then Just (aid, actor)
                        else Nothing)
-  $ concat $ EM.elems $ lprio $ sdungeon s EM.! lid
+  $ concat $ EM.elems $ lprio lvl
+
+actorAssocs :: (FactionId -> Bool) -> LevelId -> State
+            -> [(ActorId, Actor)]
+actorAssocs p lid s =
+  actorAssocsLvl p (sdungeon s EM.! lid) (sactorD s)
 
 actorList :: (FactionId -> Bool) -> LevelId -> State
           -> [Actor]
 actorList p lid s = map snd $ actorAssocs p lid s
 
-actorNotProjAssocs :: (FactionId -> Bool) -> LevelId -> State
+actorNotProjAssocsLvl :: (FactionId -> Bool) -> Level -> ActorDict
                    -> [(ActorId, Actor)]
-actorNotProjAssocs p lid s =
-  mapMaybe (\aid -> let actor = sactorD s EM.! aid
+actorNotProjAssocsLvl p lvl actorD =
+  mapMaybe (\aid -> let actor = actorD EM.! aid
                     in if not (bproj actor) && p (bfid actor)
                        then Just (aid, actor)
                        else Nothing)
-  $ concat $ EM.elems $ lprio $ sdungeon s EM.! lid
+  $ concat $ EM.elems $ lprio lvl
+
+actorNotProjAssocs :: (FactionId -> Bool) -> LevelId -> State
+                   -> [(ActorId, Actor)]
+actorNotProjAssocs p lid s =
+  actorNotProjAssocsLvl p (sdungeon s EM.! lid) (sactorD s)
 
 actorNotProjList :: (FactionId -> Bool) -> LevelId -> State
                  -> [Actor]

@@ -57,6 +57,7 @@ data RuleKind = RuleKind
                                   --   ends the game
   , rfovMode        :: !FovMode   -- ^ FOV calculation mode
   , rsaveBkpClips   :: !Int       -- ^ game backup is saved that often
+  , rleadLevelClips :: !Int       -- ^ AI/spawn leader level flipped that often
   , rscoresFile     :: !FilePath  -- ^ name of the scores file
   , rsavePrefix     :: !String    -- ^ name of the savefile prefix
   , rinitRngs       :: !RNGs      -- ^ initial RNG states

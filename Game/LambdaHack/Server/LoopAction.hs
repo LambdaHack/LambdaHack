@@ -101,7 +101,7 @@ loopSer sdebug cmdSerSem executorUI executorAI !cops = do
                Just leader -> do
                   b <- getsState $ getActorBody leader
                   return $ Just $ blid b
-               _ -> return Nothing
+               Nothing -> return Nothing
         factionD <- getsState sfactionD
         marenas <- mapM factionArena $ EM.elems factionD
         let arenas = ES.toList $ ES.fromList $ catMaybes marenas
@@ -147,7 +147,9 @@ endClip :: (MonadAtomic m, MonadServer m, MonadConnServer m)
         => [LevelId] -> m Bool
 endClip arenas = do
   Kind.COps{corule} <- getsState scops
-  let saveBkpClips = rsaveBkpClips $ Kind.stdRuleset corule
+  let stdRuleset = Kind.stdRuleset corule
+      saveBkpClips = rsaveBkpClips stdRuleset
+      leadLevelClips = rleadLevelClips stdRuleset
   -- TODO: a couple messages each clip to many clients is too costly.
   -- Store these on a queue and sum times instead of sending,
   -- until a different command needs to be sent. Include HealActorA
@@ -165,6 +167,7 @@ endClip arenas = do
   when (bkpSave || clipN `mod` saveBkpClips == 0) $ do
     modifyServer $ \ser -> ser {sbkpSave = False}
     saveBkpAll
+  when (clipN `mod` leadLevelClips == 0) leadLevelFlip
   -- Regenerate HP and add monsters each turn, not each clip.
   -- Do this on only one of the arenas to prevent micromanagement,
   -- e.g., spreading leaders across levels to bump monster generation.
@@ -498,6 +501,47 @@ regenerateLevelHP lid = do
            else Just a
   toRegen <- getsState $ mapMaybe approve . actorNotProjAssocs (const True) lid
   mapM_ (\aid -> execCmdAtomic $ HealActorA aid 1) toRegen
+
+leadLevelFlip :: (MonadAtomic m, MonadServer m) => m ()
+leadLevelFlip = do
+  cops <- getsState scops
+  let noFlip fact = not $ playerAiLeader (gplayer fact)
+                          || isSpawnFact cops fact
+      flipFaction fact | noFlip fact = return ()
+      flipFaction fact = do
+        case gleader fact of
+          Nothing -> return ()
+          Just leader -> do
+            body <- getsState $ getActorBody leader
+            -- Keep the leader: he probably used stairs right now
+            -- and we don't want to clog stairs or get pushed to another level.
+            unless (bpos body == boldpos body) $ do
+              actorD <- getsState sactorD
+              let ourLvl (lid, lvl) =
+                    ( lid
+                    , EM.size (lfloor lvl)
+                    , actorNotProjAssocsLvl (== bfid body) lvl actorD )
+              ours <- getsState $ map ourLvl . EM.assocs . sdungeon
+              -- Spawners, being born in the dungeon, have a rough idea of
+              -- the number of items left on the level and will focus
+              -- on levels they started exploring and that have few items
+              -- left. This is to to explore them completely, leave them
+              -- once and for all and concentrate forces on another level.
+              -- In addition, sole stranded actors tend to become leaders
+              -- so that they can join the main force ASAP.
+              let freqList = [ (k, (lid, a))
+                             | (lid, itemN, (a, b) : rest) <- ours
+                             , bhp b > 0  -- drama levels skipped
+                             , let len = 1 + length rest
+                                   k = 1000000 `div` (3 * itemN + len) ]
+              unless (null freqList) $ do
+                (lid, a) <- rndToAction $ frequency
+                                        $ toFreq "leadLevel" freqList
+                unless (lid == blid body) $
+                  execCmdAtomic
+                  $ LeadFactionA (bfid body) (Just leader) (Just a)
+  factionD <- getsState sfactionD
+  mapM_ flipFaction $ EM.elems factionD
 
 -- | Continue or exit or restart the game.
 endOrLoop :: (MonadAtomic m, MonadConnServer m) => m () -> m () -> m ()

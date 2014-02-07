@@ -205,6 +205,7 @@ standard = RuleKind
   , rfirstDeathEnds = False
   , rfovMode = Digital 12
   , rsaveBkpClips = 500
+  , rleadLevelClips = 100
   , rscoresFile = "scores"
   , rsavePrefix = "save"
   , rinitRngs = RNGs { dungeonRandomGenerator = Nothing  -- Just (read "42")
