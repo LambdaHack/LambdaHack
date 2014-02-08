@@ -77,9 +77,6 @@ targetStrategy aid = do
       nearbyFoes = filter (\(_, body) ->
                              chessDist (bpos body) (bpos b) < nearby) allFoes
       unknownId = ouniqGroup "unknown space"
-      notEscape t = let notEffectEscape Effect.Escape{} = False
-                        notEffectEscape _ = True
-                    in all notEffectEscape $ Tile.causeEffects cotile t
       focused = bspeed b <= speedNormal
       setPath :: Target -> m (Strategy (Target, PathEtc))
       setPath tgt = do
@@ -156,15 +153,28 @@ targetStrategy aid = do
           pickNewTarget  -- prefer close foes to anything
         TPoint lid pos -> do
           explored <- getsClient sexplored
+          dungeon <- getsState sdungeon
+          let allExplored = ES.size explored == EM.size dungeon
           if lid /= blid b  -- wrong level
-             || EM.null (lvl `atI` pos)  -- no items here any more
+             -- Below we check the target could not be picked again in
+             -- pickNewTarget, and only in this case it is invalidated.
+             -- This ensures targets are eventually reached (unless a foe
+             -- shows up) and not changed all the time mid-route
+             -- to equally interesting, but perhaps a bit closer targets,
+             -- most probably already targeted by other actors.
+             || EM.null (lvl `atI` pos)  -- closestItems
                 && let t = lvl `at` pos
-                   in t /= unknownId  -- not unknown any more
-                      && not (Tile.isSuspect cotile t)  -- not suspect any more
-                      && notEscape t  -- not an escape to trigger/occupy
-                      && (ES.notMember lid explored  -- still things to explore
-                          || pos == bpos b  -- or reached; go patrol elsewhere
-                          || not (Tile.isWalkable cotile t))  -- or unreachable
+                   in if ES.notMember lid explored
+                      then  -- closestUnknown
+                        t /= unknownId
+                        && not (Tile.isSuspect cotile t)
+                      else  -- closestTriggers
+                        not (Tile.isEscape cotile t && allExplored)
+                        -- The remaining case is stairs in closestTriggers.
+                        -- We don't determine if the stairs are interesting
+                        -- (this changes with time), but allow the actor
+                        -- to reach them and then retarget.
+                        && not (Tile.isStair cotile t && pos /= bpos b)
           then pickNewTarget
           else return $! returN "TPoint" (oldTgt, updatedPath)
         _ | not $ null allFoes ->

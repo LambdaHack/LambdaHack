@@ -762,23 +762,27 @@ closestUnknown aid = do
     return Nothing
   else return $ Just closestPos
 
+-- TODO: We assume linear dungeon in @unexploredD@,
+-- because otherwise we'd need to calculate shortest paths in a graph, etc.
 -- | Closest (wrt paths) triggerable open tiles,
 -- except under the actor in @exploredToo@ case.
--- We assume there at most one escape from the dungeon
--- and in fact we assume linear dungeon in @unexploredD@,
--- because otherwise we'd need to calculate shortest paths in a graph, etc.
+-- The second argument can ever be true only if there's
+-- no escape from the dungeon.
 closestTriggers :: MonadClient m => Maybe Bool -> Bool -> ActorId -> m [Point]
 closestTriggers onlyDir exploredToo aid = do
   Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody aid
   lvl <- getLevel $ blid body
+  dungeon <- getsState sdungeon
+  explored <- getsClient sexplored
   unexploredD <- unexploredDepth
-  let unexUp = onlyDir /= Just False && unexploredD 1 (blid body)
+  let allExplored = ES.size explored == EM.size dungeon
+      unexUp = onlyDir /= Just False && unexploredD 1 (blid body)
       unexDown = onlyDir /= Just True && unexploredD (-1) (blid body)
       unexEffect (Effect.Ascend p) = if p > 0 then unexUp else unexDown
       unexEffect _ =
         -- Escape (or guard) only after exploring, for high score, etc.
-        not (unexUp || unexDown)
+        allExplored
       isTrigger
         | exploredToo = \t -> Tile.isWalkable cotile t
                               && not (null $ Tile.causeEffects cotile t)

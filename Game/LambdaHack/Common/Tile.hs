@@ -18,7 +18,7 @@ module Game.LambdaHack.Common.Tile
   , isClear, isLit, isWalkable, isPassable, isDoor, isSuspect
   , isExplorable, lookSimilar, speedup
   , openTo, closeTo, causeEffects, revealAs, hideAs
-  , isOpenable, isClosable, isChangeable
+  , isOpenable, isClosable, isChangeable, isEscape, isStair
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -200,3 +200,13 @@ isChangeable Kind.Ops{okind} t =
   let getTo F.ChangeTo{} = True
       getTo _ = False
   in any getTo $ tfeature $ okind t
+
+isEscape :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+isEscape cotile t = let isEffectEscape Effect.Escape{} = True
+                        isEffectEscape _ = False
+                    in any isEffectEscape $ causeEffects cotile t
+
+isStair :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+isStair cotile t = let isEffectAscend Effect.Ascend{} = True
+                       isEffectAscend _ = False
+                   in any isEffectAscend $ causeEffects cotile t
