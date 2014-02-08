@@ -72,7 +72,6 @@ queryAI oldAid = do
       -- the old leader, if he is among the best candidates
       -- (to make the AI appear more human-like to easier to observe).
       -- TODO: this also takes melee into account, not shooting.
-      time <- getsState $ getLocalTime arena
       oursTgt <- fmap catMaybes $ mapM refreshTarget ours
       let targetTEnemy (_, (TEnemy{}, _)) = True
           targetTEnemy _ = False
@@ -134,7 +133,7 @@ queryAI oldAid = do
           sortOurs = sortBy $ comparing valueOurs
           goodGeneric _our@((aid, b), (_tgt, _pathEtc)) =
             bhp b > 0  -- not incapacitated
-            && not (aid == oldAid && waitedLastTurn b time)  -- not stuck
+            && not (aid == oldAid && waitedLastTurn b)  -- not stuck
           goodTEnemy our@((_aid, b), (_tgt, (_path, (goal, _d)))) =
             not (adjacent (bpos b) goal) -- not in melee range already
             && goodGeneric our

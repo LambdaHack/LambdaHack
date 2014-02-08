@@ -66,7 +66,7 @@ data Actor = Actor
   , binv        :: !ItemInv              -- ^ map from letters to items
   , bletter     :: !InvChar              -- ^ next inventory letter
   , btime       :: !Time                 -- ^ absolute time of next action
-  , bwait       :: !Time                 -- ^ last bracing expires at this time
+  , bwait       :: !Bool                 -- ^ is the actor waiting right now?
   , bfid        :: !FactionId            -- ^ faction the actor belongs to
   , bproj       :: !Bool                 -- ^ is a projectile? (shorthand only,
                                          --   this can be deduced from bkind)
@@ -103,7 +103,7 @@ actorTemplate bkind bsymbol bname bcolor bspeed bhp btrajectory bpos blid btime
       bbag    = EM.empty
       binv    = EM.empty
       bletter = InvChar 'a'
-      bwait   = timeZero
+      bwait   = False
   in Actor{..}
 
 -- | Add time taken by a single step at the actor's current speed.
@@ -113,17 +113,13 @@ timeAddFromSpeed b time =
       delta = ticksPerMeter speed
   in timeAdd time delta
 
--- | Whether an actor is braced for combat this clip. If a foe
--- moves just after this actor in the same time moment, the actor won't block,
--- because @bwait@ is reset to zero in @ageActorA@ before the condition
--- is checked.
-braced :: Actor -> Time -> Bool
-braced b time = time <= bwait b
+-- | Whether an actor is braced for combat this clip.
+braced :: Actor -> Bool
+braced b = bwait b
 
--- | The actor most probably waited at most a turn ago (unless his speed
--- was changed, etc.)
-waitedLastTurn :: Actor -> Time -> Bool
-waitedLastTurn b time = time <= bwait b
+-- | The actor waited last turn.
+waitedLastTurn :: Actor -> Bool
+waitedLastTurn b = bwait b
 
 -- | Checks for the presence of actors in a position.
 -- Does not check if the tile is walkable.

@@ -503,7 +503,6 @@ switchLevels2 lidNew posNew ((aid, bOld), ais) = do
   let delta = timeAdd (btime bOld) (timeNegate timeOld)
       bNew = bOld { blid = lidNew
                   , btime = timeAdd timeLastVisited delta
-                  , bwait = timeZero  -- no longer braced
                   , bpos = posNew
                   , boldpos = posNew }  -- new level, new direction
   mleader <- getsState $ gleader . (EM.! side) . sfactionD

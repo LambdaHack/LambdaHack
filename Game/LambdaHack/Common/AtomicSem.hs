@@ -205,7 +205,7 @@ moveActorA aid fromP toP = assert (fromP /= toP) $ do
   modifyState $ updateActorBody aid
               $ \body -> body {bpos = toP, boldpos = fromP}
 
-waitActorA :: MonadAction m => ActorId -> Time -> Time -> m ()
+waitActorA :: MonadAction m => ActorId -> Bool -> Bool -> m ()
 waitActorA aid fromWait toWait = assert (fromWait /= toWait) $ do
   b <- getsState $ getActorBody aid
   assert (fromWait == bwait b `blame` "unexpected waited actor time"
@@ -247,11 +247,7 @@ ageActorA aid t = assert (t /= timeZero) $ do
   body <- getsState $ getActorBody aid
   ais <- getsState $ getActorItem aid
   destroyActorA aid body ais
-  let newBody = body { btime = timeAdd (btime body) t
-                     , bwait = if bwait body <= btime body  -- see Actor.braced
-                               then timeZero    -- reset old waiting time
-                               else bwait body  -- keep new waiting time
-                     }
+  let newBody = body {btime = timeAdd (btime body) t}
   createActorA aid newBody ais
 
 healActorA :: MonadAction m => ActorId -> Int -> m ()

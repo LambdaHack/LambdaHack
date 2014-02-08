@@ -264,6 +264,12 @@ handleActors cmdSerSem lid = do
                     `blame` "client tries to move other faction actors"
                     `twith` (bPre, side)) skip
             return (aidNew, bPre)
+          setBWait (CmdTakeTimeSer WaitSer{}) aidNew bPre = do
+            let fromWait = bwait bPre
+            unless fromWait $ execCmdAtomic $ WaitActorA aidNew fromWait True
+          setBWait _ aidNew bPre = do
+            let fromWait = bwait bPre
+            when fromWait $ execCmdAtomic $ WaitActorA aidNew fromWait False
           extraFrames bPre = do
             -- Generate extra frames if the actor has already moved during
             -- this clip, so his multiple moves would be collapsed
@@ -299,6 +305,7 @@ handleActors cmdSerSem lid = do
               $ MsgFidD side "You strain, fumble and faint from the exertion."
             return False
           else cmdSerSem cmdS
+        setBWait cmdS aidNew bPre
         -- Advance time once, after the leader switched perhaps many times.
         -- TODO: this is correct only when all heroes have the same
         -- speed and can't switch leaders by, e.g., aiming a wand
@@ -329,6 +336,7 @@ handleActors cmdSerSem lid = do
                 `twith` (cmdS, bPre, side)) skip
         timed <- cmdSerSem cmdS
         assert timed skip
+        setBWait cmdS aidNew bPre
         -- AI always takes time and so doesn't loop.
         advanceTime aidNew
         extraFrames bPre
@@ -513,8 +521,7 @@ leadLevelFlip = do
           Nothing -> return ()
           Just leader -> do
             body <- getsState $ getActorBody leader
-            time <- getsState $ getLocalTime $ blid body
-            let leaderStuck = waitedLastTurn body time
+            let leaderStuck = waitedLastTurn body
             -- Keep the leader: he probably used stairs right now
             -- and we don't want to clog stairs or get pushed to another level.
             unless (not leaderStuck && bpos body == boldpos body) $ do

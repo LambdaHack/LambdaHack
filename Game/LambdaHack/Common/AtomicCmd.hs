@@ -59,7 +59,7 @@ data CmdAtomic =
   | LoseItemA !ItemId !Item !Int !Container
   -- Move actors and items.
   | MoveActorA !ActorId !Point !Point
-  | WaitActorA !ActorId !Time !Time
+  | WaitActorA !ActorId !Bool !Bool
   | DisplaceActorA !ActorId !ActorId
   | MoveItemA !ItemId !Int !Container !Container
   -- Change actor attributes.

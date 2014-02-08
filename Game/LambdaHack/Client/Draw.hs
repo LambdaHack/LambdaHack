@@ -154,7 +154,7 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
                     else T.justifyRight space ' ' lText
       cursorStatus = addAttr $ T.justifyLeft 40 ' ' $ cursorText <+> lineText
       selectedStatus = drawSelected cli s drawnLevelId mleader
-      leaderStatus = drawLeaderStatus cops s sdisco ltime swaitTimes mleader
+      leaderStatus = drawLeaderStatus cops s sdisco swaitTimes mleader
       targetText = "Target:" <+> targetDesc
       pathText = let space = 40 - T.length targetText - 1
                      len = case (tgtPos, bfsmpathRaw) of
@@ -192,9 +192,9 @@ drawArenaStatus explored Level{ldepth, ldesc, lseen, lclear} =
   in addAttr $ lvlN <+> T.justifyLeft 25 ' ' ldesc <+> seenStatus
 
 drawLeaderStatus :: Kind.COps -> State -> Discovery
-                 -> Time -> Int -> Maybe ActorId
+                 -> Int -> Maybe ActorId
                  -> [Color.AttrChar]
-drawLeaderStatus cops s sdisco ltime waitTimes mleader =
+drawLeaderStatus cops s sdisco waitTimes mleader =
   let addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
       stats = case mleader of
         Just leader ->
@@ -202,7 +202,7 @@ drawLeaderStatus cops s sdisco ltime waitTimes mleader =
               (bitems, bracedL, ahpS, bhpS) =
                 let mpl@Actor{bkind, bhp} = getActorBody leader s
                     ActorKind{ahp} = okind bkind
-                in (getActorItem leader s, braced mpl ltime,
+                in (getActorItem leader s, braced mpl,
                     tshow (maxDice ahp), tshow bhp)
               damage = case Item.strongestSword cops bitems of
                 Just (_, (_, sw)) ->

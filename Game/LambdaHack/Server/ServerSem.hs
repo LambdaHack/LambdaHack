@@ -142,7 +142,6 @@ meleeSer source target = do
   else do
     let sfid = bfid sb
         tfid = bfid tb
-    time <- getsState $ getLocalTime (blid tb)
     itemAssocs <- getsState $ getActorItem source
     (miid, item) <-
       if bproj sb   -- projectile
@@ -175,7 +174,7 @@ meleeSer source target = do
           itemEffect source target miid item
     -- Projectiles can't be blocked (though can be sidestepped).
     -- Incapacitated actors can't block.
-    if braced tb time && not (bproj sb) && bhp tb > 0
+    if braced tb && not (bproj sb) && bhp tb > 0
       then do
         blocked <- rndToAction $ chance $ 1%2
         if blocked
@@ -267,15 +266,11 @@ alterSer source tpos mfeat = do
 
 -- * WaitSer
 
--- | Update the wait/block count. Uses local, per-level time,
--- to remain correct even if the level is frozen for some global time turns.
+-- | Do nothing.
+--
+-- Something is sometimes done in 'LoopAction.setBWait'.
 waitSer :: MonadAtomic m => ActorId -> m ()
-waitSer aid = do
-  body <- getsState $ getActorBody aid
-  time <- getsState $ getLocalTime $ blid body
-  let fromWait = bwait body
-      toWait = timeAddFromSpeed body time
-  execCmdAtomic $ WaitActorA aid fromWait toWait
+waitSer _ = return ()
 
 -- * PickupSer
 
