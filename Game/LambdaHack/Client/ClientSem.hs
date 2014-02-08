@@ -19,7 +19,6 @@ import Game.LambdaHack.Client.RunAction
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.Strategy
 import Game.LambdaHack.Client.StrategyAction
-import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -48,10 +47,7 @@ queryAI oldAid = do
   mleader <- getsClient _sleader
   ours <- getsState $ actorNotProjAssocs (== side) arena
   let pickOld = do
-        when (mleader == Just oldAid
-              || not (null ([Ability.Ranged, Ability.Chase, Ability.Wander]
-                            `intersect` abilityOther))) $
-          void $ refreshTarget (oldAid, oldBody)
+        void $ refreshTarget (oldAid, oldBody)
         queryAIPick (oldAid, oldBody)
   case ours of
     _ | -- Keep the leader: only a leader is allowed to pick another leader.
