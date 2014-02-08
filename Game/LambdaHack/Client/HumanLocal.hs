@@ -648,7 +648,7 @@ tgtAscendHuman k = do
              else Nothing
   case rightStairs of
     Just cpos -> do  -- stairs, in the right direction
-      (nln, npos) <- getsState $ whereTo lidV cpos k
+      (nln, npos) <- getsState $ whereTo lidV cpos k . sdungeon
       assert (nln /= lidV `blame` "stairs looped" `twith` nln) skip
       -- Do not freely reveal the other end of the stairs.
       let ascDesc (F.Cause (Effect.Ascend _)) = True

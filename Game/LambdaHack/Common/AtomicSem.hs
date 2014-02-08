@@ -248,7 +248,7 @@ ageActorA aid t = assert (t /= timeZero) $ do
   ais <- getsState $ getActorItem aid
   destroyActorA aid body ais
   let newBody = body { btime = timeAdd (btime body) t
-                     , bwait = if bwait body <= btime body
+                     , bwait = if bwait body <= btime body  -- see Actor.braced
                                then timeZero    -- reset old waiting time
                                else bwait body  -- keep new waiting time
                      }

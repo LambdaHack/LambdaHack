@@ -292,26 +292,35 @@ triggerFreq aid = do
   cops@Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
   dungeon <- getsState sdungeon
   explored <- getsClient sexplored
-  b@Actor{bpos, blid, bfid} <- getsState $ getActorBody aid
-  fact <- getsState $ \s -> sfactionD s EM.! bfid
-  lvl <- getLevel blid
+  b <- getsState $ getActorBody aid
+  fact <- getsState $ \s -> sfactionD s EM.! bfid b
+  lvl <- getLevel $ blid b
   unexploredD <- unexploredDepth
-  let allExplored = ES.size explored == EM.size dungeon
+  s <- getState
+  let unexploredCurrent = ES.notMember (blid b) explored
+      allExplored = ES.size explored == EM.size dungeon
       spawn = isSpawnFact cops fact
-      t = lvl `at` bpos
+      t = lvl `at` bpos b
       feats = TileKind.tfeature $ okind t
       ben feat = case feat of
-        F.Cause (Effect.Ascend p) ->  -- change levels sensibly, in teams
-          let unexploredCurrent = ES.notMember blid explored
-          in if unexploredCurrent
-             then 0  -- don't leave the level until explored
-             else if unexploredD (signum p) blid
-             then 1000
-             else if unexploredD (- signum p) blid
-             then 0  -- wait for stairs in the opposite direciton
-             else if lescape lvl
-             then 0  -- all explored, stay on the escape level
-             else 2  -- no escape anywhere, switch levels occasionally
+        F.Cause (Effect.Ascend k) ->  -- change levels sensibly, in teams
+          let expBenefit =
+                if unexploredCurrent
+                then 0  -- don't leave the level until explored
+                else if unexploredD (signum k) (blid b)
+                then 1000
+                else if unexploredD (- signum k) (blid b)
+                then 0  -- wait for stairs in the opposite direciton
+                else if lescape lvl
+                then 0  -- all explored, stay on the escape level
+                else 2  -- no escape anywhere, switch levels occasionally
+              (lid2, pos2) = whereTo (blid b) (bpos b) k dungeon
+              actorsThere = posToActors pos2 lid2 s
+          in case actorsThere of
+            [] -> expBenefit
+            [((_, body), _)] | not (bproj body) && isAtWar fact (bfid body) ->
+              min 1 expBenefit  -- push the enemy if nothing else to do
+            _ -> 0  -- projectiles or non-enemies
         F.Cause ef@Effect.Escape{} ->
           -- Spawners can't escape and others explore all for high score.
           if spawn || not allExplored then 0 else effectToBenefit cops b ef

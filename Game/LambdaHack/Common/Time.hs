@@ -102,7 +102,7 @@ instance Binary Speed where
   put (Speed n) = put n
   get = fmap Speed get
 
--- | Number of seconds in a kilo-second.
+-- | Number of seconds in a mega-second.
 sInMs :: Int64
 sInMs = 1000000
 

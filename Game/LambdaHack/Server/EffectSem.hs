@@ -436,7 +436,7 @@ effLvlGoUp aid k = do
   ais1 <- getsState $ getActorItem aid
   let lid1 = blid b1
       pos1 = bpos b1
-  (lid2, pos2) <- getsState $ whereTo lid1 pos1 k
+  (lid2, pos2) <- getsState $ whereTo lid1 pos1 k . sdungeon
   if lid2 == lid1 && pos2 == pos1 then
     return $ Just "The effect fizzles: no more levels in this direction."
   else if bproj b1 then

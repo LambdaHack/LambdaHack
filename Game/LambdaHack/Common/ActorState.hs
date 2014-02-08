@@ -142,12 +142,11 @@ tryFindHeroK s fact k =
 whereTo :: LevelId  -- ^ level of the stairs
         -> Point    -- ^ position of the stairs
         -> Int      -- ^ jump up this many levels
-        -> State    -- ^ game state
+        -> Dungeon  -- ^ current game dungeon
         -> (LevelId, Point)
                     -- ^ target level and the position of its receiving stairs
-whereTo lid pos k s = assert (k /= 0) $
-  let dungeon = sdungeon s
-      lvl = dungeon EM.! lid
+whereTo lid pos k dungeon = assert (k /= 0) $
+  let lvl = dungeon EM.! lid
       stairs = (if k < 0 then snd else fst) (lstair lvl)
       defaultStairs = 0  -- for ascending via, e.g., spells
       mindex = elemIndex pos stairs

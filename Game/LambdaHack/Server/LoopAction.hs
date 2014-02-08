@@ -505,17 +505,19 @@ regenerateLevelHP lid = do
 leadLevelFlip :: (MonadAtomic m, MonadServer m) => m ()
 leadLevelFlip = do
   cops <- getsState scops
-  let noFlip fact = not $ playerAiLeader (gplayer fact)
-                          || isSpawnFact cops fact
-      flipFaction fact | noFlip fact = return ()
+  let canFlip fact = playerAiLeader (gplayer fact)
+                     || isSpawnFact cops fact
+      flipFaction fact | not $ canFlip fact = return ()
       flipFaction fact = do
         case gleader fact of
           Nothing -> return ()
           Just leader -> do
             body <- getsState $ getActorBody leader
+            time <- getsState $ getLocalTime $ blid body
+            let leaderStuck = waitedLastTurn body time
             -- Keep the leader: he probably used stairs right now
             -- and we don't want to clog stairs or get pushed to another level.
-            unless (bpos body == boldpos body) $ do
+            unless (not leaderStuck && bpos body == boldpos body) $ do
               actorD <- getsState sactorD
               let ourLvl (lid, lvl) =
                     ( lid
@@ -532,6 +534,7 @@ leadLevelFlip = do
               let freqList = [ (k, (lid, a))
                              | (lid, itemN, (a, b) : rest) <- ours
                              , bhp b > 0  -- drama levels skipped
+                             , not leaderStuck || lid /= blid body
                              , let len = 1 + length rest
                                    k = 1000000 `div` (3 * itemN + len) ]
               unless (null freqList) $ do
