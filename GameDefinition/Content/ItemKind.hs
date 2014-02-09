@@ -46,7 +46,7 @@ dart = ItemKind
   , iverbProject = "hurl"
   , iweight  = 50
   , itoThrow = 0  -- a cheap dart
-  , ifeature = [Cause $ Hurt (rollDice 1 1) (rollDeep (1, 2) (1, 2))]
+  , ifeature = [Cause $ Hurt (rollDice 1 2) (rollDeep (1, 2) (1, 2))]
   }
 gem = ItemKind
   { isymbol  = '*'
@@ -91,7 +91,7 @@ harpoon = ItemKind
   , iverbProject = "hurl"
   , iweight  = 4000
   , itoThrow = 0  -- cheap but deadly
-  , ifeature = [Cause $ Hurt (rollDice 1 2) (rollDeep (1, 2) (2, 2))]
+  , ifeature = [Cause $ Hurt (rollDice 2 2) (rollDeep (1, 2) (2, 2))]
   }
 potion = ItemKind
   { isymbol  = '!'
@@ -160,7 +160,7 @@ sword = ItemKind
   , iverbProject = "heave"
   , iweight  = 2000
   , itoThrow = -50  -- ensuring it hits with the tip costs speed
-  , ifeature = [Cause $ Hurt (rollDice 3 1) (rollDeep (1, 2) (4, 2))]
+  , ifeature = [Cause $ Hurt (rollDice 5 1) (rollDeep (1, 2) (4, 2))]
   }
 wand = ItemKind
   { isymbol  = '/'
@@ -187,7 +187,7 @@ fist = sword
   , ifreq    = [("hth", 1), ("unarmed", 100)]
   , iverbApply   = "punch"
   , iverbProject = "ERROR, please report: iverbProject fist"
-  , ifeature = [Cause $ Hurt (rollDice 3 1) (intToDeep 0)]
+  , ifeature = [Cause $ Hurt (rollDice 5 1) (intToDeep 0)]
   }
 foot = sword
   { isymbol  = '@'
@@ -195,7 +195,7 @@ foot = sword
   , ifreq    = [("hth", 1), ("unarmed", 50)]
   , iverbApply   = "kick"
   , iverbProject = "ERROR, please report: iverbProject foot"
-  , ifeature = [Cause $ Hurt (rollDice 3 1) (intToDeep 0)]
+  , ifeature = [Cause $ Hurt (rollDice 5 1) (intToDeep 0)]
   }
 tentacle = sword
   { isymbol  = 'S'
@@ -203,7 +203,7 @@ tentacle = sword
   , ifreq    = [("hth", 1), ("monstrous", 100)]
   , iverbApply   = "hit"
   , iverbProject = "ERROR, please report: iverbProject tentacle"
-  , ifeature = [Cause $ Hurt (rollDice 3 1) (intToDeep 0)]
+  , ifeature = [Cause $ Hurt (rollDice 5 1) (intToDeep 0)]
   }
 fragrance = ItemKind
   { isymbol  = '\''
