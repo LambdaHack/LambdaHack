@@ -310,7 +310,7 @@ deduceQuits body status = do
       assocsUI = filter (playerUI . gplayer . snd) assocsInGame
   case assocsNotSummon of
     _ | null assocsUI ->
-      -- All non-UI players left in the game win.
+      -- Only non-UI players left in the game and they all win.
       mapQuitF status{stOutcome=Conquer} keysInGame
     [] ->
       -- Only summons remain so all win, UI or human or not, allied or not.

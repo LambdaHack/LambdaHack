@@ -84,8 +84,9 @@ monsterGenChance n' depth' numMonsters =
   -- Mimics @castDeep@.
   let n = abs n'
       depth = abs depth'
-      scaledDepth = 10 * (n - 1) `div` max 1 (depth - 1)
-  in chance $ 1%(fromIntegral (50 * (numMonsters - scaledDepth)) `max` 5)
+      -- On level 1, First 2 monsters appear fast.
+      scaledDepth = 5 * n `div` depth
+  in chance $ 1%(fromIntegral (100 * (numMonsters - scaledDepth)) `max` 10)
 
 -- | The part of speech describing the actor.
 partActor :: Actor -> MU.Part

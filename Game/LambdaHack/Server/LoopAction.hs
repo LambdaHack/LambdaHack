@@ -575,8 +575,8 @@ endOrLoop updConn loopServer = do
       modifyServer $ \ser -> ser {sdebugNxt = (sdebugNxt ser) {sgameMode}}
       restartGame updConn loopServer
     _ | gameOver -> restartGame updConn loopServer
-    (_, []) -> loopServer  -- continue current game
-    (_, _ : _) -> do
+    ([], []) -> loopServer  -- continue current game
+    ([], _ : _) -> do
       -- Wipe out the quit flag for the savegame files.
       mapM_ (\(fid, fact) ->
               execCmdAtomic
