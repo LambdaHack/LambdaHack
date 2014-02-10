@@ -775,7 +775,7 @@ closestUnknown aid = do
 -- common and so if wiped they can't incur a large total cost.
 -- TODO: remove targets where the smell is likely to get too old by the time
 -- the actor gets there.
--- | Finds smells closest to the actor.
+-- | Finds smells closest to the actor, except under the actor.
 closestSmell :: MonadClient m => ActorId -> m [(Int, (Point, Tile.SmellTime))]
 closestSmell aid = do
   body <- getsState $ getActorBody aid
@@ -785,7 +785,8 @@ closestSmell aid = do
     [] -> return []
     _ -> do
       bfs <- getCacheBfs aid
-      let ds = mapMaybe (\x@(p, _) -> fmap (,x) (accessBfs bfs p)) smells
+      let ts = mapMaybe (\x@(p, _) -> fmap (,x) (accessBfs bfs p)) smells
+          ds = filter (\(d, _) -> d /= 0) ts  -- bpos of aid
       return $! sortBy (comparing (fst &&& timeNegate . snd . snd)) ds
 
 -- TODO: We assume linear dungeon in @unexploredD@,

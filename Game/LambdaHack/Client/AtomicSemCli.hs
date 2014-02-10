@@ -49,6 +49,15 @@ import Game.LambdaHack.Content.TileKind
 -- of commands kept for each command received.
 cmdAtomicFilterCli :: MonadClient m => CmdAtomic -> m [CmdAtomic]
 cmdAtomicFilterCli cmd = case cmd of
+  MoveActorA aid _ toP -> do
+    cmdSml <- deleteSmell aid toP
+    return $ [cmd] ++ cmdSml
+  DisplaceActorA source target -> do
+    bs <- getsState $ getActorBody source
+    bt <- getsState $ getActorBody target
+    cmdSource <- deleteSmell source (bpos bt)
+    cmdTarget <- deleteSmell target (bpos bs)
+    return $ [cmd] ++ cmdSource ++ cmdTarget
   AlterTileA lid p fromTile toTile -> do
     Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
     lvl <- getLevel lid
@@ -99,6 +108,16 @@ cmdAtomicFilterCli cmd = case cmd of
                                  || t /= Tile.hideAs cotile tClient)
         newTs = filter notKnown ts
     return $! if null newTs then [] else [SpotTileA lid newTs]
+  AlterSmellA lid p fromSm _toSm -> do
+    lvl <- getLevel lid
+    let msml = EM.lookup p $ lsmell lvl
+    return $ if msml /= fromSm then
+               -- Revert to the server smell before server command executes.
+               -- This is needed due to our hacky removal of traversed smells
+               -- in @deleteSmell@.
+               [AlterSmellA lid p msml fromSm, cmd]
+             else
+               [cmd]
   DiscoverA _ _ iid _ -> do
     disco <- getsClient sdisco
     item <- getsState $ getItemBody iid
@@ -166,11 +185,20 @@ cmdAtomicFilterCli cmd = case cmd of
     return $! cmd : outActor ++ inItem ++ inSmell
   _ -> return [cmd]
 
+deleteSmell :: MonadClient m => ActorId -> Point -> m [CmdAtomic]
+deleteSmell aid pos = do
+  Kind.COps{coactor = Kind.Ops{okind}} <- getsState scops
+  b <- getsState $ getActorBody aid
+  let canSmell = asmell $ okind $ bkind b
+  if canSmell then do
+    lvl <- getLevel $ blid b
+    let msml = EM.lookup pos $ lsmell lvl
+    return $
+      maybe [] (\sml -> [AlterSmellA (blid b) pos (Just sml) Nothing]) msml
+  else return []
+
 -- | Effect of atomic actions on client state is calculated
 -- in the global state before the command is executed.
--- Clients keep a subset of atomic commands sent by the server
--- and add their own. The result of this function is the list of commands
--- kept for each command received.
 cmdAtomicSemCli :: MonadClient m => CmdAtomic -> m ()
 cmdAtomicSemCli cmd = case cmd of
   CreateActorA aid body _ -> createActorA aid body
