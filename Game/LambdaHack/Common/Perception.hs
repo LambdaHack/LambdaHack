@@ -19,7 +19,7 @@
 module Game.LambdaHack.Common.Perception
   ( Perception(Perception), PerceptionVisible(PerceptionVisible)
   , totalVisible, smellVisible
-  , nullPer, addPer, diffPer, smellFromActors
+  , nullPer, addPer, diffPer
   , FactionPers, Pers
   ) where
 
@@ -29,10 +29,8 @@ import qualified Data.EnumSet as ES
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Faction
-import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.State
 
 newtype PerceptionVisible = PerceptionVisible
     {pvisible :: ES.EnumSet Point}
@@ -84,7 +82,3 @@ diffPer per1 per2 =
     , psmell = PerceptionVisible
                $ smellVisible per1 ES.\\ smellVisible per2
     }
-
--- TODO: rewrite
-smellFromActors :: Kind.COps -> State -> PerceptionVisible
-smellFromActors _ _  = PerceptionVisible ES.empty

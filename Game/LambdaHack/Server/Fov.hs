@@ -5,7 +5,6 @@ module Game.LambdaHack.Server.Fov
   ( dungeonPerception, levelPerception, fullscan
   ) where
 
-import Control.Arrow (second)
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 
@@ -28,36 +27,36 @@ import qualified Game.LambdaHack.Server.Fov.Permissive as Permissive
 import qualified Game.LambdaHack.Server.Fov.Shadow as Shadow
 
 newtype PerceptionReachable = PerceptionReachable
-    {preachable :: ES.EnumSet Point}
+    {preachable :: [Point]}
   deriving Show
 
 -- | Calculate perception of the level.
-levelPerception :: Kind.COps -> State -> FovMode -> FactionId
-                -> LevelId -> Level
+levelPerception :: Kind.COps -> FovMode -> FactionId
+                -> LevelId -> Level -> State
                 -> Perception
-levelPerception cops@Kind.COps{cotile} s configFov fid lid
-                lvl@Level{lxsize, lysize} =
-  let hs = actorNotProjAssocs (== fid) lid s
-      reas = map (second $ computeReachable cops configFov lvl) hs
-      lreas = map (preachable . snd) reas
-      totalRea = PerceptionReachable $ ES.unions lreas
+levelPerception cops@Kind.COps{cotile} configFov fid lid
+                lvl@Level{lxsize, lysize} s =
+  let hs = actorNotProjList (== fid) lid s
+      cR b = preachable $ computeReachable cops configFov lvl b
+      totalReachable = PerceptionReachable $ concatMap cR hs
       -- TODO: give actors light sources explicitly or alter vision.
       pAndVicinity p = p : vicinity lxsize lysize p
-      lights = ES.fromList $ concatMap (pAndVicinity . bpos . snd) hs
-      ptotal = computeVisible cotile totalRea lvl lights
-      psmell = smellFromActors cops s
+      lights = concatMap (pAndVicinity . bpos) hs
+      ptotal = computeVisible cotile totalReachable lvl lights
+      psmell = undefined
   in Perception ptotal psmell
 
 -- | Calculate perception of a faction.
-factionPerception :: Kind.COps -> FovMode -> State -> FactionId
+factionPerception :: Kind.COps -> FovMode -> FactionId -> State
                   -> FactionPers
-factionPerception cops configFov s fid =
-  EM.mapWithKey (levelPerception cops s configFov fid) $ sdungeon s
+factionPerception cops configFov fid s =
+  EM.mapWithKey (\lid lvl -> levelPerception cops configFov fid lid lvl s)
+                $ sdungeon s
 
 -- | Calculate the perception of the whole dungeon.
 dungeonPerception :: Kind.COps -> FovMode -> State -> Pers
 dungeonPerception cops configFov s =
-  let f fid _ = factionPerception cops configFov s fid
+  let f fid _ = factionPerception cops configFov fid s
   in EM.mapWithKey f $ sfactionD s
 
 -- | A position can be directly lit by an ambient shine or a weak, portable
@@ -75,15 +74,10 @@ dungeonPerception cops configFov s =
 -- there must be a wall in-between. Stray rays indicate doors,
 -- moving shadows indicate monsters, etc.
 computeVisible :: Kind.Ops TileKind -> PerceptionReachable
-               -> Level -> ES.EnumSet Point -> PerceptionVisible
+               -> Level -> [Point] -> PerceptionVisible
 computeVisible cotile PerceptionReachable{preachable} lvl lights =
-  let isV = isVisible cotile lvl lights
-  in PerceptionVisible $ ES.filter isV preachable
-
-isVisible :: Kind.Ops TileKind -> Level -> ES.EnumSet Point -> Point -> Bool
-isVisible cotile lvl lights pos =
-  Tile.isLit cotile (lvl `at` pos)
-  || pos `ES.member` lights
+  let isVisible pos = Tile.isLit cotile (lvl `at` pos)
+  in PerceptionVisible $ ES.fromList $ lights ++ filter isVisible preachable
 
 -- | Reachable are all fields on a visually unblocked path
 -- from the hero position.
@@ -95,11 +89,7 @@ computeReachable Kind.COps{cotile, coactor=Kind.Ops{okind}}
       fovMode = if sight then configFov else Blind
       ppos = bpos body
       scan = fullscan cotile fovMode ppos lvl
-  in PerceptionReachable $ ES.fromList scan
-       -- Let's hope the list construction is optimized away completely.
-       -- If so, there's no point switching to vectors or constructing
-       -- the set earlier. We can't apply @fromDistinctAscList@,
-       -- which is cheaper, because the list is not sorted.
+  in PerceptionReachable scan
 
 -- | Perform a full scan for a given position. Returns the positions
 -- that are currently in the field of view. The Field of View
