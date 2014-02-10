@@ -161,7 +161,7 @@ singleContainer c = do
 -- This is only an optimization to save perception and spot/lose computation.
 --
 -- Invariant: if @resetsFovAtomic@ determines a faction does not need
--- to reset Fov, perception (@perActor@ to be precise, @psmell@ is irrelevant)
+-- to reset Fov, perception (@ptotal@ to be precise, @psmell@ is irrelevant)
 -- of that faction does not change upon recomputation. Otherwise,
 -- save/restore would change game state.
 resetsFovAtomic :: MonadActionRO m => CmdAtomic -> m (Maybe [FactionId])

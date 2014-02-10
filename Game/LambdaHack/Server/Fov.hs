@@ -34,16 +34,21 @@ newtype PerceptionReachable = PerceptionReachable
 levelPerception :: Kind.COps -> FovMode -> FactionId
                 -> LevelId -> Level -> State
                 -> Perception
-levelPerception cops@Kind.COps{cotile} configFov fid lid
-                lvl@Level{lxsize, lysize} s =
+levelPerception cops@Kind.COps{cotile, coactor=Kind.Ops{okind}}
+                configFov fid lid lvl@Level{lxsize, lysize} s =
   let hs = actorNotProjList (== fid) lid s
       cR b = preachable $ computeReachable cops configFov lvl b
       totalReachable = PerceptionReachable $ concatMap cR hs
       -- TODO: give actors light sources explicitly or alter vision.
       pAndVicinity p = p : vicinity lxsize lysize p
-      lights = concatMap (pAndVicinity . bpos) hs
-      ptotal = computeVisible cotile totalReachable lvl lights
-      psmell = undefined
+      lightsBodies = map (\b -> (pAndVicinity $ bpos b, b)) hs
+      light = concat $ map fst lightsBodies
+      ptotal = computeVisible cotile totalReachable lvl light
+      canSmell b = asmell $ okind $ bkind b
+      -- We assume smell FOV radius is always 1, regardless of vision
+      -- radius of the actor (if he can see at all).
+      psmell = PerceptionVisible $ ES.fromList
+               $ concat $ map fst $ filter (canSmell . snd) lightsBodies
   in Perception ptotal psmell
 
 -- | Calculate perception of a faction.

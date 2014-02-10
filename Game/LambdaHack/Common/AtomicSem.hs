@@ -384,21 +384,16 @@ loseTileA lid ts = assert (not $ null ts) $ do
 
 alterSmellA :: MonadAction m
             => LevelId -> Point -> Maybe Time -> Maybe Time -> m ()
-alterSmellA lid p _fromSm toSm = do
-  -- TODO: this rarely crashes when a dominated smelling monster exists:
-  -- let alt sm = assert (sm == fromSm `blame` "unexpected tile smell"
-  --                                   `twith` (lid, p, fromSm, toSm, sm)) toSm
-  let alt _ =  toSm
+alterSmellA lid p fromSm toSm = do
+  let alt sm = assert (sm == fromSm `blame` "unexpected tile smell"
+                                    `twith` (lid, p, fromSm, toSm, sm)) toSm
   updateLevel lid $ updateSmell $ EM.alter alt p
 
 spotSmellA :: MonadAction m => LevelId -> [(Point, Time)] -> m ()
 spotSmellA lid sms = assert (not $ null sms) $ do
   let alt sm Nothing = Just sm
-      alt sm (Just _) = Just sm
--- TODO: a hack to sidestep server not disabling the nose of fresh actors,
--- see smellFromActors
---      alt sm (Just oldSm) = assert `failure` "smell already added"
---                                   `twith` (lid, sms, sm, oldSm)
+      alt sm (Just oldSm) = assert `failure` "smell already added"
+                                   `twith` (lid, sms, sm, oldSm)
       f (p, sm) = EM.alter (alt sm) p
       upd m = foldr f m sms
   updateLevel lid $ updateSmell upd
