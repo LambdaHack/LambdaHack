@@ -45,7 +45,8 @@ import Game.LambdaHack.Utils.Frequency
 targetStrategy :: forall m. MonadClient m
                => ActorId -> m (Strategy (Target, PathEtc))
 targetStrategy aid = do
-  Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getsState scops
+  Kind.COps{ cotile=cotile@Kind.Ops{ouniqGroup}
+           , coactor=Kind.Ops{okind} } <- getsState scops
   modifyClient $ \cli -> cli {sbfsD = EM.empty}
   b <- getsState $ getActorBody aid
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
@@ -78,6 +79,7 @@ targetStrategy aid = do
                              chessDist (bpos body) (bpos b) < nearby) allFoes
       unknownId = ouniqGroup "unknown space"
       focused = bspeed b <= speedNormal
+      canSmell = asmell $ okind $ bkind b
       setPath :: Target -> m (Strategy (Target, PathEtc))
       setPath tgt = do
         mpos <- aidTgtToPos aid (blid b) (Just tgt)
@@ -100,22 +102,28 @@ targetStrategy aid = do
             citems <- closestItems aid
             case citems of
               [] -> do
-                upos <- closestUnknown aid
-                case upos of
-                  Nothing -> do
-                    ctriggers <- closestTriggers Nothing False aid
-                    case ctriggers of
-                      [] -> do
-                        getDistant <-
-                          rndToAction
-                          $ oneOf [ closestTriggers Nothing True
-                                  , fmap maybeToList . furthestKnown ]
-                        kpos <- getDistant aid
-                        case kpos of
-                          [] -> return reject
+                -- Tracking enemies is more important than exploring,
+                -- and smelling actors are usually blind, so bad at exploring.
+                smpos <- if canSmell then closestSmell aid else return []
+                case smpos of
+                  [] -> do
+                    upos <- closestUnknown aid
+                    case upos of
+                      Nothing -> do
+                        ctriggers <- closestTriggers Nothing False aid
+                        case ctriggers of
+                          [] -> do
+                            getDistant <-
+                              rndToAction
+                              $ oneOf [ closestTriggers Nothing True
+                                      , fmap maybeToList . furthestKnown ]
+                            kpos <- getDistant aid
+                            case kpos of
+                              [] -> return reject
+                              p : _ -> setPath $ TPoint (blid b) p
                           p : _ -> setPath $ TPoint (blid b) p
-                      p : _ -> setPath $ TPoint (blid b) p
-                  Just p -> setPath $ TPoint (blid b) p
+                      Just p -> setPath $ TPoint (blid b) p
+                  (_, (p, _)) : _ -> setPath $ TPoint (blid b) p
               (_, (p, _)) : _ -> setPath $ TPoint (blid b) p
       tellOthersNothingHere pos = do
         let f (tgt, _) = case tgt of
@@ -163,6 +171,10 @@ targetStrategy aid = do
              -- to equally interesting, but perhaps a bit closer targets,
              -- most probably already targeted by other actors.
              || EM.null (lvl `atI` pos)  -- closestItems
+                && not (canSmell  -- closestSmell
+                        && let sml = EM.findWithDefault timeZero
+                                                        (bpos b) (lsmell lvl)
+                           in sml `timeAdd` timeNegate (ltime lvl) > timeZero)
                 && let t = lvl `at` pos
                    in if ES.notMember lid explored
                       then  -- closestUnknown

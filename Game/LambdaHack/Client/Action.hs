@@ -29,10 +29,12 @@ module Game.LambdaHack.Client.Action
   , aidTgtToPos, aidTgtAims, leaderTgtToPos, leaderTgtAims, cursorToPos
   , partAidLeader, partActorLeader, unexploredDepth
   , getCacheBfsAndPath, getCacheBfs, accessCacheBfs, actorAimsPos
-  , closestUnknown, furthestKnown, closestTriggers, closestItems, closestFoes
+  , closestUnknown, closestSmell, furthestKnown, closestTriggers
+  , closestItems, closestFoes
   , debugPrint
   ) where
 
+import Control.Arrow ((&&&))
 import Control.Concurrent
 import Control.Concurrent.STM
 import Control.DeepSeq
@@ -48,6 +50,7 @@ import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid
+import Data.Ord
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
@@ -80,6 +83,7 @@ import Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
+import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
@@ -762,6 +766,28 @@ closestUnknown aid = do
     return Nothing
   else return $ Just closestPos
 
+-- TODO: this is costly, because target has to be changed every
+-- turn when walking along trail. But inverting the sort and going
+-- to the newest smell, while sometimes faster, may result in many
+-- actors following the same trail, unless we wipe the trail as soon
+-- as target is assigned (but then we don't know if we should keep the target
+-- or not, because somebody already followed it). OTOH, trails are not
+-- common and so if wiped they can't incur a large total cost.
+-- TODO: remove targets where the smell is likely to get too old by the time
+-- the actor gets there.
+-- | Finds smells closest to the actor.
+closestSmell :: MonadClient m => ActorId -> m [(Int, (Point, Tile.SmellTime))]
+closestSmell aid = do
+  body <- getsState $ getActorBody aid
+  Level{lsmell} <- getLevel $ blid body
+  let smells = EM.assocs lsmell
+  case smells of
+    [] -> return []
+    _ -> do
+      bfs <- getCacheBfs aid
+      let ds = mapMaybe (\x@(p, _) -> fmap (,x) (accessBfs bfs p)) smells
+      return $! sortBy (comparing (fst &&& timeNegate . snd . snd)) ds
+
 -- TODO: We assume linear dungeon in @unexploredD@,
 -- because otherwise we'd need to calculate shortest paths in a graph, etc.
 -- | Closest (wrt paths) triggerable open tiles,
@@ -798,7 +824,7 @@ closestTriggers onlyDir exploredToo aid = do
     _ -> do
       bfs <- getCacheBfs aid
       let ds = mapMaybe (\p -> fmap (,p) (accessBfs bfs p)) triggers
-      return $! map snd $ sort ds
+      return $! map snd $ sortBy (comparing fst) ds
 
 unexploredDepth :: MonadClient m => m (Int -> LevelId -> Bool)
 unexploredDepth = do
@@ -823,7 +849,7 @@ closestItems aid = do
     _ -> do
       bfs <- getCacheBfs aid
       let ds = mapMaybe (\x@(p, _) -> fmap (,x) (accessBfs bfs p)) items
-      return $! sort ds
+      return $! sortBy (comparing fst) ds
 
 -- | Closest (wrt paths) enemy actors.
 closestFoes :: MonadClient m => ActorId -> m [(Int, (ActorId, Actor))]
@@ -836,4 +862,4 @@ closestFoes aid = do
     _ -> do
       bfs <- getCacheBfs aid
       let ds = mapMaybe (\x@(_, b) -> fmap (,x) (accessBfs bfs (bpos b))) foes
-      return $! sort ds
+      return $! sortBy (comparing fst) ds
