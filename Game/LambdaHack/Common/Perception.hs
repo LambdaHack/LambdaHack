@@ -63,7 +63,7 @@ smellVisible :: Perception -> ES.EnumSet Point
 smellVisible = pvisible . psmell
 
 nullPer :: Perception -> Bool
-nullPer per = ES.null (totalVisible per)
+nullPer per = ES.null (totalVisible per) && ES.null (smellVisible per)
 
 addPer :: Perception -> Perception -> Perception
 addPer per1 per2 =
