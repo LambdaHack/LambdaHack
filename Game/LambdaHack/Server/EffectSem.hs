@@ -5,7 +5,7 @@ module Game.LambdaHack.Server.EffectSem
     itemEffect, effectSem
     -- * Assorted operations
   , registerItem, createItems, addHero, spawnMonsters
-  , pickFaction, electLeader, deduceKilled
+  , electLeader, deduceKilled
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -244,12 +244,12 @@ addActor :: (MonadAtomic m, MonadServer m)
          -> Char -> Text -> Color.Color -> Time
          -> m ActorId
 addActor mk bfid pos lid hp bsymbol bname bcolor time = do
-  cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   fact@Faction{gplayer} <- getsState $ (EM.! bfid) . sfactionD
   DebugModeSer{sdifficultySer} <- getsServer sdebugSer
   nU <- nUI
   -- If no UI factions, the difficulty applies to heroes (for testing).
-  let diffHP | playerUI gplayer || nU == 0 && not (isSpawnFact cops fact) =
+  let diffHP | playerUI gplayer || nU == 0 && not (isSpawnFact fact) =
         (ceiling :: Double -> Int) $ fromIntegral hp * 1.5 ^^ sdifficultySer
              | otherwise = hp
       kind = okind mk

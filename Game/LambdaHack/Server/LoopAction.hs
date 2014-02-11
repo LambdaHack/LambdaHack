@@ -441,9 +441,15 @@ generateMonster lid = do
       spawns = actorNotProjList f lid s
   depth <- getsState sdepth
   rc <- rndToAction $ monsterGenChance ldepth depth (length spawns)
+  factionD <- getsState sfactionD
   when rc $ do
     time <- getsState $ getLocalTime lid
-    mfid <- pickFaction "spawn" (const True)
+    let freq = toFreq "spawn"
+               $ map (\(fid, fact) -> (playerSpawn $ gplayer fact, fid))
+               $ EM.assocs factionD
+    mfid <- if nullFreq freq then
+              return Nothing
+            else fmap Just $ rndToAction $ frequency freq
     case mfid of
       Nothing -> return ()  -- no faction spawns
       Just fid -> do
@@ -512,9 +518,8 @@ regenerateLevelHP lid = do
 
 leadLevelFlip :: (MonadAtomic m, MonadServer m) => m ()
 leadLevelFlip = do
-  cops <- getsState scops
   let canFlip fact = playerAiLeader (gplayer fact)
-                     || isSpawnFact cops fact
+                     || isSpawnFact fact
       flipFaction fact | not $ canFlip fact = return ()
       flipFaction fact = do
         case gleader fact of

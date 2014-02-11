@@ -59,10 +59,8 @@ data Status = Status
   deriving (Show, Eq, Ord)
 
 -- | Tell whether the faction can spawn actors.
-isSpawnFact :: Kind.COps -> Faction -> Bool
-isSpawnFact Kind.COps{cofaction=Kind.Ops{okind}} fact =
-  let kind = okind (gkind fact)
-  in maybe False (> 0) $ lookup "spawn" $ ffreq kind
+isSpawnFact :: Faction -> Bool
+isSpawnFact fact = playerSpawn (gplayer fact) > 0
 
 -- | Tell whether actors of the faction can be summoned by items, etc.
 isSummonFact :: Kind.COps -> Faction -> Bool

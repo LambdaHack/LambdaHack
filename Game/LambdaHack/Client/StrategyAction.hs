@@ -321,7 +321,7 @@ triggerFreq aid = do
   s <- getState
   let unexploredCurrent = ES.notMember (blid b) explored
       allExplored = ES.size explored == EM.size dungeon
-      spawn = isSpawnFact cops fact
+      spawn = isSpawnFact fact
       t = lvl `at` bpos b
       feats = TileKind.tfeature $ okind t
       ben feat = case feat of

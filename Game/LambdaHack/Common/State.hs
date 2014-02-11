@@ -155,7 +155,7 @@ getLocalTime lid s = ltime $ _sdungeon s EM.! lid
 
 -- | Tell whether the faction can spawn actors.
 isSpawnFaction :: FactionId -> State -> Bool
-isSpawnFaction fid s = isSpawnFact (_scops s) $ _sfactionD s EM.! fid
+isSpawnFaction fid s = isSpawnFact $ _sfactionD s EM.! fid
 
 -- | Tell whether actors of the faction can be summoned by items, etc..
 isSummonFaction :: FactionId -> State -> Bool

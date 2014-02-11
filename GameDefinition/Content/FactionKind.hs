@@ -28,7 +28,7 @@ hero = FactionKind
 monster = FactionKind
   { fsymbol        = 'm'
   , fname          = "monster"
-  , ffreq          = [("monster", 1), ("spawn", 50), ("summon", 50)]
+  , ffreq          = [("monster", 1), ("summon", 50)]
   , fAbilityLeader = allAbilities
   , fAbilityOther  = allAbilities
   }

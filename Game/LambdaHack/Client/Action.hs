@@ -791,8 +791,7 @@ closestSmell aid = do
 
 -- TODO: We assume linear dungeon in @unexploredD@,
 -- because otherwise we'd need to calculate shortest paths in a graph, etc.
--- | Closest (wrt paths) triggerable open tiles,
--- except under the actor in @exploredToo@ case.
+-- | Closest (wrt paths) triggerable open tiles.
 -- The second argument can ever be true only if there's
 -- no escape from the dungeon.
 closestTriggers :: MonadClient m => Maybe Bool -> Bool -> ActorId -> m [Point]
@@ -818,8 +817,11 @@ closestTriggers onlyDir exploredToo aid = do
       f :: [Point] -> Point -> Kind.Id TileKind -> [Point]
       f acc p t = if isTrigger t then p : acc else acc
   let triggersAll = PointArray.ifoldlA f [] $ ltile lvl
-      triggers | exploredToo = delete (bpos body) triggersAll
-               | otherwise = triggersAll  -- exploring, under the actor is OK
+      -- Don't target stairs under the actor. Most of the time they
+      -- are blocked and stay so, so we seek other stairs, if any.
+      -- If no other stairs in this direction, let's wait here.
+      triggers | length triggersAll > 1 = delete (bpos body) triggersAll
+               | otherwise = triggersAll
   case triggers of
     [] -> return []
     _ -> do

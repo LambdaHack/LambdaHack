@@ -39,6 +39,7 @@ data Players = Players
 data Player = Player
   { playerName     :: !Text     -- ^ name of the player
   , playerFaction  :: !Text     -- ^ name of faction(s) the player can control
+  , playerSpawn    :: !Int      -- ^ spawning frequency
   , playerEntry    :: !LevelId  -- ^ level where the initial members start
   , playerInitial  :: !Int      -- ^ number of initial members
   , playerAiLeader :: !Bool     -- ^ is the leader under AI control?
@@ -62,6 +63,7 @@ instance Binary Player where
   put Player{..} = do
     put playerName
     put playerFaction
+    put playerSpawn
     put playerEntry
     put playerInitial
     put playerAiLeader
@@ -71,6 +73,7 @@ instance Binary Player where
   get = do
     playerName <- get
     playerFaction <- get
+    playerSpawn <- get
     playerEntry <- get
     playerInitial <- get
     playerAiLeader <- get

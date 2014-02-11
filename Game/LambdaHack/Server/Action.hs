@@ -305,7 +305,7 @@ deduceQuits body status = do
   factionD <- getsState sfactionD
   let assocsInGame = filter (inGame . snd) $ EM.assocs factionD
       keysInGame = map fst assocsInGame
-      assocsSpawn = filter (isSpawnFact cops . snd) assocsInGame
+      assocsSpawn = filter (isSpawnFact . snd) assocsInGame
       assocsNotSummon = filter (not . isSummonFact cops . snd) assocsInGame
       assocsUI = filter (playerUI . gplayer . snd) assocsInGame
   case assocsNotSummon of

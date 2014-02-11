@@ -217,7 +217,7 @@ populateDungeon = do
         psFree <- getsState $ nearbyFreePoints cotile validTile ppos lid
         let ps = take (playerInitial $ gplayer fact) $ zip [0..] psFree
         forM_ ps $ \ (n, p) ->
-          if isSpawnFact cops fact
+          if isSpawnFact fact
           then spawnMonsters [p] lid ntime side
           else do
             let hNames = fromMaybe [] $ EM.lookup side sheroNames
