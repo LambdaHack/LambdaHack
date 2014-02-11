@@ -46,7 +46,8 @@ loopSave saveFile toSave =
     case ms of
       Just s -> do
         dataDir <- appDataDir
-        encodeEOF (dataDir </> saveFile s) s
+        tryCreateDir (dataDir </> "saves")
+        encodeEOF (dataDir </> "saves" </> saveFile s) s
         -- Wait until the save finished. During that time, the mvar
         -- is continually updated to newest state values.
         loop
@@ -85,7 +86,7 @@ restoreGame name copies pathsDataFile = do
   dataDir <- appDataDir
   tryCreateDir dataDir
   tryCopyDataFiles dataDir pathsDataFile copies
-  let saveFile = dataDir </> name
+  let saveFile = dataDir </> "saves" </> name
   saveExists <- doesFileExist saveFile
   -- If the savefile exists but we get IO or decoding errors,
   -- we show them and start a new game. If the savefile was randomly
