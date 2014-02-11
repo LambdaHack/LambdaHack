@@ -4,6 +4,7 @@ module Game.LambdaHack.Utils.File
   ) where
 
 import qualified Codec.Compression.Zlib as Z
+import qualified Control.Exception as Ex
 import Control.Monad
 import Data.Binary
 import qualified Data.ByteString.Lazy as LBS
@@ -16,7 +17,16 @@ import System.IO
 -- | Serialize, compress and save data.
 -- Note that LBS.writeFile opens the file in binary mode.
 encodeData :: Binary a => FilePath -> a -> IO ()
-encodeData f = LBS.writeFile f . Z.compress . encode
+encodeData f a = do
+  let tmpPath = f <.> "tmp"
+  Ex.bracketOnError
+    (openBinaryFile tmpPath WriteMode)
+    (\h -> hClose h >> removeFile tmpPath)
+    (\h -> do
+       LBS.hPut h . Z.compress . encode $ a
+       hClose h
+       renameFile tmpPath f
+    )
 
 -- | Serialize, compress and save data with an EOF marker.
 -- The @OK@ is used as an EOF marker to ensure any apparent problems with
