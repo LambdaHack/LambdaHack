@@ -313,10 +313,10 @@ deduceQuits body status = do
       -- Only non-UI players left in the game and they all win.
       mapQuitF status{stOutcome=Conquer} keysInGame
     [] ->
-      -- Only summons remain so all win, UI or human or not, allied or not.
+      -- Only summons remain so they all win, UI or human or not, allied/not.
       mapQuitF status{stOutcome=Conquer} keysInGame
     (_, fact1) : rest | null assocsSpawn && all (isAllied fact1 . fst) rest ->
-      -- Only one allied team remains in a no-spawners game.
+      -- Only one allied non-summon team remains in a no-spawners game.
       mapQuitF status{stOutcome=Conquer} keysInGame
     _ | stOutcome status == Escape -> do
       -- Otherwise, in a spawners game or a game with many teams alive,

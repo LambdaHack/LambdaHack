@@ -552,18 +552,16 @@ displaceActorUI source target = do
 quitFactionUI :: MonadClientUI m
               => FactionId -> Maybe Actor -> Maybe Status -> m ()
 quitFactionUI fid mbody toSt = do
-  Kind.COps{coitem=Kind.Ops{okind, ouniqGroup}} <- getsState scops
-  factionD <- getsState sfactionD
-  let fact = factionD EM.! fid
-      fidName = MU.Text $ gname fact
+  cops@Kind.COps{coitem=Kind.Ops{okind, ouniqGroup}} <- getsState scops
+  fact <- getsState $ (EM.! fid) . sfactionD
+  let fidName = MU.Text $ gname fact
+      horror = isHorrorFact cops fact
   side <- getsClient sside
-  spawn <- getsState $ isSpawnFaction fid
-  summon <- getsState $ isSummonFaction fid
   let msgIfSide _ | fid /= side = Nothing
       msgIfSide s = Just s
       (startingPart, partingPart) = case toSt of
-        _ | summon && not spawn ->
-          (Nothing, Nothing)  -- Ignore summoned actors factions.
+        _ | horror ->
+          (Nothing, Nothing)  -- Ignore summoned actors' factions.
         Just Status{stOutcome=Killed} ->
           ( Just "be eliminated"
           , msgIfSide "Let's hope another party can save the day!" )

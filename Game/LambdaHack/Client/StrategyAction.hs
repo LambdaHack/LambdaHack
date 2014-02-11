@@ -321,7 +321,7 @@ triggerFreq aid = do
   s <- getState
   let unexploredCurrent = ES.notMember (blid b) explored
       allExplored = ES.size explored == EM.size dungeon
-      spawn = isSpawnFact fact
+      isHero = isHeroFact cops fact
       t = lvl `at` bpos b
       feats = TileKind.tfeature $ okind t
       ben feat = case feat of
@@ -344,8 +344,8 @@ triggerFreq aid = do
               min 1 expBenefit  -- push the enemy if nothing else to do
             _ -> 0  -- projectiles or non-enemies
         F.Cause ef@Effect.Escape{} ->
-          -- Spawners can't escape and others explore all for high score.
-          if spawn || not allExplored then 0 else effectToBenefit cops b ef
+          -- Only heroes escape but they first explore all for high score.
+          if not (isHero && allExplored) then 0 else effectToBenefit cops b ef
         F.Cause ef -> effectToBenefit cops b ef
         _ -> 0
       benFeat = zip (map ben feats) feats

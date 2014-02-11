@@ -83,11 +83,11 @@ checkAdjacent sb tb =
 -- actors from non-spawning factions leave smell.
 addSmell :: MonadAtomic m => ActorId -> m ()
 addSmell aid = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   b <- getsState $ getActorBody aid
-  spawn <- getsState $ isSpawnFaction (bfid b)
+  fact <- getsState $ (EM.! bfid b) . sfactionD
   let canSmell = asmell $ okind $ bkind b
-  unless (bproj b || spawn || canSmell) $ do
+  unless (bproj b || isHeroFact cops fact || canSmell) $ do
     time <- getsState $ getLocalTime $ blid b
     lvl <- getLevel $ blid b
     let oldS = EM.lookup (bpos b) . lsmell $ lvl
@@ -142,6 +142,7 @@ meleeSer source target = do
   else do
     let sfid = bfid sb
         tfid = bfid tb
+    sfact <- getsState $ (EM.! sfid) . sfactionD
     itemAssocs <- getsState $ getActorItem source
     (miid, item) <-
       if bproj sb   -- projectile
@@ -151,9 +152,9 @@ meleeSer source target = do
       else case strongestSword cops itemAssocs of
         Just (_, (iid, w)) -> return (Just iid, w)  -- weapon combat
         Nothing -> do  -- hand to hand combat
-          isSp <- getsState $ isSpawnFaction sfid
-          let h2hGroup | isSp = "monstrous"
-                       | otherwise = "unarmed"
+          let isHero = isHeroFact cops sfact
+              h2hGroup | isHero = "unarmed"
+                       | otherwise = "monstrous"
           h2hKind <- rndToAction $ fmap (fromMaybe $ assert `failure` h2hGroup)
                                    $ opick h2hGroup (const True)
           flavour <- getsServer sflavour
@@ -181,7 +182,6 @@ meleeSer source target = do
           then execSfxAtomic $ StrikeD source target item MissBlockD
           else performHit True
       else performHit False
-    sfact <- getsState $ (EM.! sfid) . sfactionD
     -- The only way to start a war is to slap an enemy. Being hit by
     -- and hitting projectiles count as unintentional friendly fire.
     let friendlyFire = bproj sb || bproj tb

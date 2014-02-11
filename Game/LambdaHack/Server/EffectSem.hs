@@ -196,13 +196,14 @@ electLeader fid lid aidDead = do
 
 deduceKilled :: (MonadAtomic m, MonadServer m) => Actor -> m ()
 deduceKilled body = do
-  Kind.COps{corule} <- getsState scops
+  cops@Kind.COps{corule} <- getsState scops
   let firstDeathEnds = rfirstDeathEnds $ Kind.stdRuleset corule
       fid = bfid body
   spawn <- getsState $ isSpawnFaction fid
-  summon <- getsState $ isSummonFaction fid
+  fact <- getsState $ (EM.! fid) . sfactionD
+  let horror = isHorrorFact cops fact
   mleader <- getsState $ gleader . (EM.! fid) . sfactionD
-  when (not spawn && not summon
+  when (not spawn && not horror
         && (isNothing mleader || firstDeathEnds)) $
     deduceQuits body $ Status Killed (fromEnum $ blid body) ""
 
@@ -244,12 +245,12 @@ addActor :: (MonadAtomic m, MonadServer m)
          -> Char -> Text -> Color.Color -> Time
          -> m ActorId
 addActor mk bfid pos lid hp bsymbol bname bcolor time = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-  fact@Faction{gplayer} <- getsState $ (EM.! bfid) . sfactionD
+  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
+  Faction{gplayer} <- getsState $ (EM.! bfid) . sfactionD
   DebugModeSer{sdifficultySer} <- getsServer sdebugSer
   nU <- nUI
   -- If no UI factions, the difficulty applies to heroes (for testing).
-  let diffHP | playerUI gplayer || nU == 0 && not (isSpawnFact fact) =
+  let diffHP | playerUI gplayer || nU == 0 && mk == heroKindId coactor =
         (ceiling :: Double -> Int) $ fromIntegral hp * 1.5 ^^ sdifficultySer
              | otherwise = hp
       kind = okind mk
@@ -301,8 +302,9 @@ effectSummon power target = assert (power > 0) $ do
       spawnMonsters (take power ps) (blid tm) time fid
       return True
 
--- | Spawn monsters of any spawn or summon faction, friendly or not.
--- To be used for spontaneous spawning of monsters and for the summon effect.
+-- | Spawn non-hero actors of any faction, friendly or not.
+-- To be used for initial dungeon population, spontaneous spawning
+-- of monsters and for the summon effect.
 spawnMonsters :: (MonadAtomic m, MonadServer m)
               => [Point] -> LevelId -> Time -> FactionId
               -> m ()
@@ -523,11 +525,12 @@ switchLevels2 lidNew posNew ((aid, bOld), ais) = do
 effectEscape :: (MonadAtomic m, MonadServer m) => ActorId -> m Bool
 effectEscape aid = do
   -- Obvious effect, nothing announced.
+  cops <- getsState scops
   b <- getsState $ getActorBody aid
   let fid = bfid b
-  spawn <- getsState $ isSpawnFaction fid
-  summon <- getsState $ isSummonFaction fid
-  if spawn || summon || bproj b then return False
+  fact <- getsState $ (EM.! fid) . sfactionD
+  if not (isHeroFact cops fact) || bproj b then
+    return False
   else do
     deduceQuits b $ Status Escape (fromEnum $ blid b) ""
     return True

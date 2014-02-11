@@ -522,11 +522,12 @@ verifyTrigger :: MonadClientUI m
               => ActorId -> F.Feature -> m (SlideOrCmd ())
 verifyTrigger leader feat = case feat of
   F.Cause Effect.Escape{} -> do
+    cops <- getsState scops
     b <- getsState $ getActorBody leader
     side <- getsClient sside
-    spawn <- getsState $ isSpawnFaction side
-    summon <- getsState $ isSummonFaction side
-    if spawn || summon then failWith
+    fact <- getsState $ (EM.! side) . sfactionD
+    let isHero = isHeroFact cops fact
+    if not isHero then failWith
       "This is the way out, but where would you go in this alien world?"
     else do
       go <- displayYesNo ColorFull "This is the way out. Really leave now?"
