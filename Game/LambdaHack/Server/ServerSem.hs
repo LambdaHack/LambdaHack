@@ -380,7 +380,7 @@ addProjectile bpos rest iid blid bfid btime = do
   item <- getsState $ getItemBody iid
   let lingerPercent = isLingering coitem disco item
       ik = iokind (fromJust $ jkind disco item)
-      speed = speedFromWeight (iweight ik) (itoThrow ik)
+      speed = speedFromWeight (jweight item) (itoThrow ik)
       range = rangeFromSpeed speed
       adj | range < 5 = "falling"
           | otherwise = "flying"

@@ -69,6 +69,7 @@ data Item = Item
   , jname    :: !Text        -- ^ individual generic name
   , jflavour :: !Flavour     -- ^ individual flavour
   , jeffect  :: !(Effect Int)  -- ^ the effect when activated
+  , jweight  :: !Int         -- ^ weight in grams, obvious enough
   }
   deriving (Show, Eq, Ord, Generic)
 
@@ -108,6 +109,7 @@ buildItem (FlavourMap flavour) discoRev ikChosen kind jeffect =
         case iflavour kind of
           [fl] -> fl
           _ -> flavour EM.! ikChosen
+      jweight = iweight kind
   in Item{..}
 
 -- | Generate an item based on level.

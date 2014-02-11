@@ -359,59 +359,89 @@ rangedFreq :: MonadClient m
            => ActorId -> m (Frequency CmdTakeTimeSer)
 rangedFreq aid = do
   cops@Kind.COps{ coactor=Kind.Ops{okind}
-                , coitem=Kind.Ops{okind=iokind}
+                , coitem=coitem@Kind.Ops{okind=iokind}
                 , corule
-                , cotile
                 } <- getsState scops
-  disco <- getsClient sdisco
   btarget <- getsClient $ getTarget aid
   b@Actor{bkind, bpos, bfid, blid, bbag, binv} <- getsState $ getActorBody aid
   mfpos <- aidTgtToPos aid blid btarget
   case (btarget, mfpos) of
     (Just TEnemy{}, Just fpos) -> do
+      disco <- getsClient sdisco
+      itemD <- getsState sitemD
       lvl@Level{lxsize, lysize} <- getLevel blid
       let mk = okind bkind
           tis = lvl `atI` bpos
       fact <- getsState $ \s -> sfactionD s EM.! bfid
       foes <- getsState $ actorNotProjList (isAtWar fact) blid
       let foesAdj = foesAdjacent lxsize lysize bpos foes
-          posWalkable pos1 = Tile.isWalkable cotile (lvl `at` pos1)
       -- TODO: also don't throw if any pos on trajectory is visibly
       -- not accessible from previous (and tweak eps in bla to make it
       -- accessible). Also don't throw if target not in range.
-      s <- getState
-      let eps = 0
-          bl = bla lxsize lysize eps bpos fpos  -- TODO:make an arg of projectGroupItem
-          permitted = (if aiq mk >= 10 then ritemProject else ritemRanged)
+      (steps, eps) <- makePath b fpos
+      let permitted = (if aiq mk >= 10 then ritemProject else ritemRanged)
                       $ Kind.stdRuleset corule
+          itemReaches item =
+            let lingerPercent = isLingering coitem disco item
+                toThrow = maybe 0 (itoThrow . iokind) $ jkind disco item
+                speed = speedFromWeight (jweight item) toThrow
+                range = rangeFromSpeed speed
+                totalRange = lingerPercent * range `div` 100
+            in steps <= totalRange  -- probably enough range
+                 -- TODO: make sure itoThrow identified after a single throw
+          getItemB iid =
+            fromMaybe (assert `failure` "item body not found"
+                              `twith` (iid, itemD)) $ EM.lookup iid itemD
           throwFreq bag multi container =
             [ (- benefit * multi,
               ProjectSer aid fpos eps iid (container iid))
-            | (iid, i) <- map (\iid -> (iid, getItemBody iid s))
+            | (iid, i) <- map (\iid -> (iid, getItemB iid))
                           $ EM.keys bag
             , let benefit =
                     case jkind disco i of
-                      Nothing -> -- TODO: (undefined, 0)   --- for now, cheating
+                      Nothing -> -- TODO: (undefined, 0)  --- for now, cheating
                         effectToBenefit cops b (jeffect i)
                       Just _ki ->
                         let _kik = iokind _ki
                             _unneeded = isymbol _kik
                         in effectToBenefit cops b (jeffect i)
             , benefit < 0
-            , jsymbol i `elem` permitted ]
-      case bl of
-        Just (pos1 : _) -> do
-          mab <- getsState $ posToActor pos1 blid
-          if not foesAdj  -- ProjectBlockFoes
-             && asight mk  -- ProjectBlind
-             && posWalkable pos1  -- ProjectBlockTerrain
-             && maybe True (bproj . snd . fst) mab  -- ProjectBlockActor
-          then return $! toFreq "throwFreq"
-               $ throwFreq bbag 3 (actorContainer aid binv)
-                 ++ throwFreq tis 6 (const $ CFloor blid bpos)
-          else return $! toFreq "throwFreq blocked" []
-        _ -> return $! toFreq "throwFreq no bla" []  -- ProjectAimOnself
-    _ -> return $! toFreq "throwFreq no enemy target on level" []
+            , jsymbol i `elem` permitted
+            , itemReaches i ]
+          freq =
+            if asight mk  -- ProjectBlind
+               && not foesAdj  -- ProjectBlockFoes
+               -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
+               -- and no actors or obstracles along the path
+               && steps == chessDist bpos fpos
+            then toFreq "throwFreq"
+                 $ throwFreq bbag 4 (actorContainer aid binv)
+                   ++ throwFreq tis 8 (const $ CFloor blid bpos)
+            else toFreq "throwFreq: not possible" []
+      return $! freq
+    _ -> return $! toFreq "throwFreq: no enemy target" []
+
+-- TODO: finetune eps
+-- | Counts the number of steps until the projectile would hit
+-- an actor or obstacle.
+makePath :: MonadClient m => Actor -> Point -> m (Int, Int)
+makePath body fpos = do
+  cops <- getsState scops
+  lvl@Level{lxsize, lysize} <- getLevel (blid body)
+  bs <- getsState $ actorNotProjList (const True) (blid body)
+  let eps = 0
+      mbl = bla lxsize lysize eps (bpos body) fpos
+  case mbl of
+    Just bl -> do
+      let noActor p = any ((== p) . bpos) bs
+      case break noActor bl of
+        (flies, hits : _) -> do
+          let blRest = flies ++ [hits]
+              blZip = zip (bpos body : blRest) blRest
+              blAccess = takeWhile (uncurry $ accessible cops lvl) blZip
+          return $ (length blAccess, eps)
+        _ -> assert `failure` (body, fpos, bl)
+    _ -> return (0, eps)  -- ProjectAimOnself
 
 -- Tools use requires significant intelligence and sometimes literacy.
 toolsFreq :: MonadActionRO m
