@@ -111,7 +111,9 @@ queryAI oldAid = do
                 sumDist = pDist (bpos b)
                 -- Positive, if the goal gets us closer to the party.
                 diffDist = sumDist - pDist goal
-                minCoeff | minDist < minSpread = (minDist - minSpread) `div` 3
+                minCoeff | minDist < minSpread =
+                  (minDist - minSpread) `div` 3
+                  - if aid == oldAid then 3 else 0
                          | otherwise = 0
                 explorationValue = diffDist * (sumDist `div` 4)
 -- TODO: this half is not yet ready:
@@ -122,7 +124,8 @@ queryAI oldAid = do
                 sumCoeff | sumDist > maxSpread = - explorationValue
                          | otherwise = 0
             in ( if d == 0 then d
-                 else max 1 $ minCoeff + if d < 10 then 3 + d `div` 4
+                 else max 1 $ minCoeff + if d < 10
+                                         then 3 + d `div` 4
                                          else 9 + d `div` 10
                , sumCoeff
                , aid /= oldAid )
