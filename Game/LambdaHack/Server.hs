@@ -61,6 +61,7 @@ debugArgs = do
         , "  --newGame start a new game, overwriting the save file"
         , "  --difficulty n set difficulty for all UI players to n"
         , "  --stopAfter n exit this game session after around n seconds"
+             -- and don't save, except at the exit
         , "  --dumpInitRngs dump RNG states from the start of the game"
         , "  --dbgMsgSer let the server emit its internal debug messages"
         , "  --font fn use the given font for the main game window"

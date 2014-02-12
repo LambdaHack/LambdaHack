@@ -88,7 +88,8 @@ reinitGame = do
   broadcastCmdAtomic
     $ \fid -> RestartA fid sdisco (pers EM.! fid) defLoc sdebugCli modeName
   populateDungeon
-  saveBkpAll
+  stopAfter <- getsServer $ sstopAfter . sdebugSer
+  when (isNothing stopAfter) saveBkpAll
 
 -- TODO: This can be improved by adding a timeout
 -- and by asking clients to prepare

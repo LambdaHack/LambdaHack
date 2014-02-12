@@ -13,7 +13,7 @@ module Game.LambdaHack.Server.Action
     -- * Assorted primitives
   , debugPrint, dumpRngs
   , mkConfigRules, restoreScore, revealItems, deduceQuits
-  , rndToAction, resetSessionStart, elapsedSessionTimeGT
+  , rndToAction, resetSessionStart, elapsedSessionTimeGT, tellClipPS
   , resetFidPerception, getPerFid
   , childrenServer
   ) where
@@ -58,6 +58,7 @@ import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
+import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Frontend as Frontend
@@ -251,6 +252,16 @@ elapsedSessionTimeGT stopAfter = do
   current <- liftIO getClockTime
   TOD s p <- getsServer sstart
   return $! TOD (s + fromIntegral stopAfter) p <= current
+
+tellClipPS :: MonadServer m => m ()
+tellClipPS = do
+  TOD sCur pCur <- liftIO getClockTime
+  TOD s p <- getsServer sstart
+  time <- getsState stime
+  let diff = fromIntegral sCur + fromIntegral pCur / 10e12
+             - fromIntegral s - fromIntegral p / 10e12
+      cps = fromIntegral (timeFit time timeClip) / diff :: Double
+  debugPrint $ "Average clips per second:" <+> tshow cps
 
 revealItems :: (MonadAtomic m, MonadServer m)
             => Maybe FactionId -> Maybe Actor -> m ()

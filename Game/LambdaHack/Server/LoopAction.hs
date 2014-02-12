@@ -148,7 +148,8 @@ endClip arenas = do
                    in assert (r > 2) r
       clipMod = clipN `mod` clipInTurn
   bkpSave <- getsServer sbkpSave
-  when (bkpSave || clipN `mod` saveBkpClips == 0) $ do
+  stopAfter <- getsServer $ sstopAfter . sdebugSer
+  when (isNothing stopAfter && (bkpSave || clipN `mod` saveBkpClips == 0)) $ do
     modifyServer $ \ser -> ser {sbkpSave = False}
     saveBkpAll
   when (clipN `mod` leadLevelClips == 0) leadLevelFlip
@@ -159,13 +160,13 @@ endClip arenas = do
     arena <- rndToAction $ oneOf arenas
     regenerateLevelHP arena
     generateMonster arena
-    sstopAfter <- getsServer $ sstopAfter . sdebugSer
-    case sstopAfter of
+    case stopAfter of
       Nothing -> return True
-      Just stopAfter -> do
-        exit <- elapsedSessionTimeGT stopAfter
+      Just stopA -> do
+        exit <- elapsedSessionTimeGT stopA
         if exit then do
           saveAndExit
+          tellClipPS
           return False  -- don't re-enter the game loop
         else return True
   else return True
