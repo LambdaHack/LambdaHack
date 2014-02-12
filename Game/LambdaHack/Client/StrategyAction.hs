@@ -491,11 +491,15 @@ moveTowards aid source target goal = do
   lvl <- getsState $ (EM.! blid b) . sdungeon
   fact <- getsState $ (EM.! bfid b) . sfactionD
   friends <- getsState $ actorList (not . isAtWar fact) $ blid b
-  let mk = okind $ bkind b
-      noFriends | asight mk = unoccupied friends  -- TODO: && animal or stupid
-        -- TODO: but beware of trivial cycles from displacing repeatedly
-        -- and also somehow hide friends from UI blind actors
-                | otherwise = const True
+  let _mk = okind $ bkind b
+      noFriends = unoccupied friends
+      -- Was:
+      -- noFriends | asight mk = unoccupied friends
+      --           | otherwise = const True
+      -- but this should be implemented on the server or, if not,
+      -- restricted to AI-only factions (e.g., animals).
+      -- Otherwise human players are tempted to tweak their AI clients
+      -- (as soon as we let them register their AI clients with the server).
       accessibleHere = accessible cops lvl source
       bumpableHere p =
         let t = lvl `at` p

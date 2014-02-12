@@ -536,7 +536,7 @@ leadLevelFlip = do
                     , EM.size (lfloor lvl)
                     , actorNotProjAssocsLvl (== bfid body) lvl actorD )
               ours <- getsState $ map ourLvl . EM.assocs . sdungeon
-              -- Spawners, being born in the dungeon, have a rough idea of
+              -- Non-humans, being born in the dungeon, have a rough idea of
               -- the number of items left on the level and will focus
               -- on levels they started exploring and that have few items
               -- left. This is to to explore them completely, leave them
