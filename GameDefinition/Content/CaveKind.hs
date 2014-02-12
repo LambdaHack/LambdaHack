@@ -15,9 +15,9 @@ cdefs = ContentDef
   , getFreq = cfreq
   , validate = validateCaveKind
   , content =
-      [rogue, arena, empty, noise, combat]
+      [rogue, arena, empty, noise, combat, battle]
   }
-rogue,        arena, empty, noise, combat :: CaveKind
+rogue,        arena, empty, noise, combat, battle :: CaveKind
 
 rogue = CaveKind
   { csymbol       = '$'
@@ -114,4 +114,10 @@ combat = rogue
   , cdefTile      = "combatSet"
   , cdarkCorTile  = "trailLit"  -- let trails give off light
   , clitCorTile   = "floorArenaLit"
+  }
+battle = combat  -- TODO: actors can get stuck forever among trees
+  { csymbol       = 'B'
+  , cname         = "Battle arena"
+  , cfreq         = [("caveBattle", 1)]
+  , clitCorTile   = "floorActorLit"
   }

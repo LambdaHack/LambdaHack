@@ -38,7 +38,7 @@ battle = ModeKind
   , mname    = "battle"
   , mfreq    = [("battle", 1)]
   , mplayers = playersBattle
-  , mcaves   = cavesCombat
+  , mcaves   = cavesBattle
   }
 
 pvp = ModeKind
@@ -86,7 +86,7 @@ testBattle = ModeKind
   , mname    = "testBattle"
   , mfreq    = [("testBattle", 1)]
   , mplayers = playersTestBattle
-  , mcaves   = cavesCombat
+  , mcaves   = cavesBattle
   }
 
 testPvP = ModeKind
@@ -289,7 +289,7 @@ playerHorror = Player
   }
 
 
-cavesCampaign, cavesCombat :: Caves
+cavesCampaign, cavesCombat, cavesBattle :: Caves
 
 cavesCampaign = EM.fromList [ (toEnum (-1), ("caveRogue", Just True))
                             , (toEnum (-2), ("caveRogue", Nothing))
@@ -297,3 +297,5 @@ cavesCampaign = EM.fromList [ (toEnum (-1), ("caveRogue", Just True))
                             , (toEnum (-10), ("caveNoise", Nothing))]
 
 cavesCombat = EM.fromList [(toEnum (-3), ("caveCombat", Nothing))]
+
+cavesBattle = EM.fromList [(toEnum (-3), ("caveBattle", Nothing))]
