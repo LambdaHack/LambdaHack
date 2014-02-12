@@ -211,8 +211,8 @@ drawLeaderStatus cops s sdisco waitTimes mleader =
                       case jeffect sw of
                         Hurt dice p -> tshow dice <> "+" <> tshow p
                         _ -> ""
-                    Nothing -> "3d1"  -- TODO: ?
-                Nothing -> "3d1"  -- TODO; use the item 'fist'
+                    Nothing -> "5d1"  -- TODO: ?
+                Nothing -> "5d1"  -- TODO; use the item 'fist'
               -- Indicate the actor is braced (was waiting last move).
               -- It's a useful feedback for the otherwise hard to observe
               -- 'wait' command.
