@@ -105,8 +105,8 @@ atomicSendSem atomic = do
           if nullPer outPer && nullPer inPer
             then anySend fid perOld perOld
             else do
-              sendA fid $ PerceptionA lid outPer inPer
               unless knowEvents $ do  -- inconsistencies would quickly manifest
+                sendA fid $ PerceptionA lid outPer inPer
                 let remember = atomicRemember lid inPer sOld
                     seenNew = seenAtomicCli False fid perNew
                     seenOld = seenAtomicCli False fid perOld
