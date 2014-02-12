@@ -221,10 +221,12 @@ targetStrategy oldLeader aid = do
 actionStrategy :: forall m. MonadClient m
                => ActorId -> [Ability] -> m (Strategy CmdTakeTimeSer)
 actionStrategy aid factionAbilities = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   disco <- getsClient sdisco
   btarget <- getsClient $ getTarget aid
   Actor{bkind, bpos, blid} <- getsState $ getActorBody aid
+  bitems <- getsState $ getActorItem aid
+  lootItems <- getsState $ getFloorItem blid bpos
   lvl <- getLevel blid
   let mk = okind bkind
       mfAid =
@@ -233,6 +235,8 @@ actionStrategy aid factionAbilities = do
           _ -> Nothing
       foeVisible = isJust mfAid  -- TODO: check aimability, within aFrequency
       lootHere x = not $ EM.null $ lvl `atI` x
+      lootIsWeapon = isJust $ strongestSword cops lootItems
+      hasNoWeapon = isNothing $ strongestSword cops bitems
       actorAbilities = acanDo mk `intersect` factionAbilities
       isDistant = (`elem` [ Ability.Trigger
                           , Ability.Ranged
@@ -262,7 +266,8 @@ actionStrategy aid factionAbilities = do
       aStrategy Ability.Flee   = return reject  -- TODO
       aStrategy Ability.Melee | Just foeAid <- mfAid = melee aid foeAid
       aStrategy Ability.Melee  = return reject
-      aStrategy Ability.Pickup | not foeVisible && lootHere bpos = pickup aid
+      aStrategy Ability.Pickup | not foeVisible && lootHere bpos
+                                 || hasNoWeapon && lootIsWeapon = pickup aid
       aStrategy Ability.Pickup = return reject
       aStrategy Ability.Wander = chase aid False
       aStrategy ab             = assert `failure` "unexpected ability"
@@ -296,6 +301,7 @@ track aid = do
             else returN "SetTrajectorySer" $ SetTrajectorySer aid
 
 -- TODO: (most?) animals don't pick up. Everybody else does.
+-- TODO: pick up best weapons first
 pickup :: MonadActionRO m => ActorId -> m (Strategy CmdTakeTimeSer)
 pickup aid = do
   body@Actor{bpos, blid} <- getsState $ getActorBody aid

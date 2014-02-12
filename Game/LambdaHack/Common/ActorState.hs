@@ -7,7 +7,8 @@ module Game.LambdaHack.Common.ActorState
   , calculateTotal, nearbyFreePoints, whereTo
   , posToActors, posToActor, getItemBody, memActor
   , getActorBody, updateActorBody
-  , getActorItem, getActorBag, actorContainer, actorContainerB, getActorInv
+  , getActorItem, getFloorItem, getActorBag
+  , actorContainer, actorContainerB, getActorInv
   , tryFindHeroK, foesAdjacent
   ) where
 
@@ -203,6 +204,11 @@ getActorItem :: ActorId -> State -> [(ItemId, Item)]
 getActorItem aid s =
   let f iid = (iid, getItemBody iid s)
   in map f $ EM.keys $ getActorBag aid s
+
+getFloorItem :: LevelId -> Point -> State -> [(ItemId, Item)]
+getFloorItem lid pos s =
+  let f iid = (iid, getItemBody iid s)
+  in map f $ EM.keys $ sdungeon s EM.! lid `atI` pos
 
 getItemBody :: ItemId -> State -> Item
 getItemBody iid s =
