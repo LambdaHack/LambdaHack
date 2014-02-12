@@ -1,6 +1,6 @@
 -- | Operations for starting and restarting the game.
 module Game.LambdaHack.Server.StartAction
-  ( applyDebug, gameReset, reinitGame, initPer
+  ( applyDebug, gameReset, reinitGame, saveBkpAll, initPer
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -67,7 +67,7 @@ initPer = do
   pers <- getsState $ dungeonPerception cops (fromMaybe (Digital 12) fovMode)
   modifyServer $ \ser1 -> ser1 {sper = pers}
 
-reinitGame :: (MonadAtomic m, MonadServer m) => m ()
+reinitGame :: (MonadAtomic m, MonadConnServer m) => m ()
 reinitGame = do
   Kind.COps{coitem=Kind.Ops{okind}, corule} <- getsState scops
   pers <- getsServer sper
@@ -88,6 +88,23 @@ reinitGame = do
   broadcastCmdAtomic
     $ \fid -> RestartA fid sdisco (pers EM.! fid) defLoc sdebugCli modeName
   populateDungeon
+  saveBkpAll
+
+-- TODO: This can be improved by adding a timeout
+-- and by asking clients to prepare
+-- a save (in this way checking they have permissions, enough space, etc.)
+-- and when all report back, asking them to commit the save.
+-- | Save game on server and all clients. Clients are pinged first,
+-- which greatly reduced the chance of saves being out of sync.
+saveBkpAll :: (MonadAtomic m, MonadServer m, MonadConnServer m) => m ()
+saveBkpAll = do
+  factionD <- getsState sfactionD
+  let ping fid _ = do
+        sendPingAI fid
+        when (playerUI $ gplayer $ factionD EM.! fid) $ sendPingUI fid
+  mapWithKeyM_ ping factionD
+  execCmdAtomic SaveBkpA
+  saveServer
 
 mapFromInvFuns :: (Bounded a, Enum a, Ord b) => [a -> b] -> M.Map b a
 mapFromInvFuns =
