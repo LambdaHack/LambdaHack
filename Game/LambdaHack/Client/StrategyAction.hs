@@ -36,6 +36,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind as TileKind
@@ -43,10 +44,11 @@ import Game.LambdaHack.Utils.Frequency
 
 -- | AI proposes possible targets for the actor. Never empty.
 targetStrategy :: forall m. MonadClient m
-               => ActorId -> m (Strategy (Target, PathEtc))
-targetStrategy aid = do
+               => ActorId -> ActorId -> m (Strategy (Target, PathEtc))
+targetStrategy oldLeader aid = do
   Kind.COps{ cotile=cotile@Kind.Ops{ouniqGroup}
-           , coactor=Kind.Ops{okind} } <- getsState scops
+           , coactor=Kind.Ops{okind}
+           , cofaction=Kind.Ops{okind=fokind} } <- getsState scops
   modifyClient $ \cli -> cli {sbfsD = EM.empty}
   b <- getsState $ getActorBody aid
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
@@ -74,6 +76,7 @@ targetStrategy aid = do
   assert (not $ bproj b) skip  -- would work, but is probably a bug
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
   allFoes <- getsState $ actorNotProjAssocs (isAtWar fact) (blid b)
+  dungeon <- getsState sdungeon
   let nearby = 10
       nearbyFoes = filter (\(_, body) ->
                              chessDist (bpos body) (bpos b) < nearby) allFoes
@@ -114,9 +117,10 @@ targetStrategy aid = do
                         case ctriggers of
                           [] -> do
                             getDistant <-
-                              rndToAction
-                              $ oneOf [ closestTriggers Nothing True
-                                      , fmap maybeToList . furthestKnown ]
+                              rndToAction $ oneOf
+                              $ [fmap maybeToList . furthestKnown]
+                                ++ [ closestTriggers Nothing True
+                                   | EM.size dungeon > 1 ]
                             kpos <- getDistant aid
                             case kpos of
                               [] -> return reject
@@ -161,8 +165,9 @@ targetStrategy aid = do
           pickNewTarget  -- prefer close foes to anything
         TPoint lid pos -> do
           explored <- getsClient sexplored
-          dungeon <- getsState sdungeon
           let allExplored = ES.size explored == EM.size dungeon
+              abilityLeader = fAbilityLeader $ fokind $ gkind fact
+              abilityOther = fAbilityOther $ fokind $ gkind fact
           if lid /= blid b  -- wrong level
              -- Below we check the target could not be picked again in
              -- pickNewTarget, and only in this case it is invalidated.
@@ -182,11 +187,18 @@ targetStrategy aid = do
                         && not (Tile.isSuspect cotile t)
                       else  -- closestTriggers
                         not (Tile.isEscape cotile t && allExplored)
-                        -- The remaining case is stairs in closestTriggers.
+                        -- The next case is stairs in closestTriggers.
                         -- We don't determine if the stairs are interesting
                         -- (this changes with time), but allow the actor
                         -- to reach them and then retarget.
-                        && not (Tile.isStair cotile t && pos /= bpos b)
+                        && not (pos /= bpos b && Tile.isStair cotile t)
+                        -- The remaining case is furthestKnown. This is
+                        -- always an unimportant target, so we forget it
+                        -- if the actor is stuck (could move, but waits).
+                        && let isStuck = waitedLastTurn b
+                                         && (oldLeader == aid
+                                             || abilityLeader == abilityOther)
+                           in not (pos /= bpos b && not isStuck && allExplored)
           then pickNewTarget
           else return $! returN "TPoint" (oldTgt, updatedPath)
         _ | not $ null allFoes ->

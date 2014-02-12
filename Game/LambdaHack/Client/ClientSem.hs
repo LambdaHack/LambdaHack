@@ -47,13 +47,14 @@ queryAI oldAid = do
   mleader <- getsClient _sleader
   ours <- getsState $ actorNotProjAssocs (== side) arena
   let pickOld = do
-        void $ refreshTarget (oldAid, oldBody)
+        void $ refreshTarget oldAid (oldAid, oldBody)
         queryAIPick (oldAid, oldBody)
   case ours of
     _ | -- Keep the leader: only a leader is allowed to pick another leader.
         mleader /= Just oldAid
         -- Keep the leader: abilities are the same (we assume leader can do
-        -- at least as much as others).
+        -- at least as much as others). TODO: check not accurate,
+        -- inatead define 'movesThisTurn' and use elsehwere.
         || abilityLeader == abilityOther
         -- Keep the leader: he probably used stairs right now
         -- and we don't want to clog stairs or get pushed to another level.
@@ -68,7 +69,7 @@ queryAI oldAid = do
       -- the old leader, if he is among the best candidates
       -- (to make the AI appear more human-like to easier to observe).
       -- TODO: this also takes melee into account, not shooting.
-      oursTgt <- fmap catMaybes $ mapM refreshTarget ours
+      oursTgt <- fmap catMaybes $ mapM (refreshTarget oldAid) ours
       let targetTEnemy (_, (TEnemy{}, _)) = True
           targetTEnemy _ = False
           (oursTEnemy, oursOther) = partition targetTEnemy oursTgt
@@ -153,9 +154,9 @@ queryAI oldAid = do
           queryAIPick (aid, b)
 
 refreshTarget :: MonadClient m
-              => (ActorId, Actor)
+              => ActorId -> (ActorId, Actor)
               -> m (Maybe ((ActorId, Actor), (Target, PathEtc)))
-refreshTarget (aid, body) = do
+refreshTarget oldLeader (aid, body) = do
   Kind.COps{cofaction=Kind.Ops{okind}} <- getsState scops
   side <- getsClient sside
   assert (bfid body == side `blame` "AI tries to move an enemy actor"
@@ -167,7 +168,7 @@ refreshTarget (aid, body) = do
   let factionAbilities
         | Just aid == mleader = fAbilityLeader $ okind $ gkind fact
         | otherwise = fAbilityOther $ okind $ gkind fact
-  stratTarget <- targetStrategy aid
+  stratTarget <- targetStrategy oldLeader aid
   tgtMPath <-
     if nullStrategy stratTarget then
       -- No sensible target, wipe out the old one  .
