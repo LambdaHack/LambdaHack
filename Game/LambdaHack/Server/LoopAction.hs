@@ -166,7 +166,7 @@ endClip arenas = do
         exit <- elapsedSessionTimeGT stopA
         if exit then do
           saveAndExit
-          tellClipPS
+          when (stopA > 0) tellClipPS
           return False  -- don't re-enter the game loop
         else return True
   else return True
