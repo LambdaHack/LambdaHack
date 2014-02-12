@@ -54,7 +54,7 @@ queryAI oldAid = do
         mleader /= Just oldAid
         -- Keep the leader: abilities are the same (we assume leader can do
         -- at least as much as others). TODO: check not accurate,
-        -- inatead define 'movesThisTurn' and use elsehwere.
+        -- instead define 'movesThisTurn' and use elsehwere.
         || abilityLeader == abilityOther
         -- Keep the leader: he probably used stairs right now
         -- and we don't want to clog stairs or get pushed to another level.

@@ -49,8 +49,6 @@ punindex xsize n = let (y, x) = n `quotRem` xsize
 {-# INLINE (!) #-}
 (!) Array{..} p = cnv $ avector U.! pindex axsize p
 
--- TODO: optimize, either by replacing with a different operation
--- or by thawing all the vectors, updating, freezing.
 -- | Construct an array updated with the association list.
 (//) :: Enum c => Array c -> [(Point, c)] -> Array c
 (//) Array{..} l = let v = avector U.// map (pindex axsize *** cnv) l

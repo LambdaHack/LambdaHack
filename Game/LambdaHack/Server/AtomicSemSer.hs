@@ -169,7 +169,6 @@ atomicRemember lid inPer s =
       -- TODO: make floor paths from hidden tiles
       -- TODO: perhaps decrease secrecy as lseen, ltime or lsmell increases
       -- or a per-party counter increases
-      -- TODO: give spawning factions a bonus to searching
       -- Smells.
       inSmellFov = ES.elems $ smellVisible inPer
       inSm = mapMaybe (\p -> pMaybe p $ EM.lookup p (lsmell lvl)) inSmellFov

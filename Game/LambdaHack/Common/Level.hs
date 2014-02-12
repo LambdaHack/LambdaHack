@@ -147,7 +147,6 @@ checkDoorAccess Kind.COps{corule, cotile} lvl =
         in not (Tile.isDoor cotile st || Tile.isDoor cotile tt)
            || chDoor spos tpos
 
--- TODO: optimze; perhaps insert into TileSpeedup
 -- | Check whether one position is accessible from another,
 -- using the formula from the standard ruleset.
 -- Precondition: the two positions are next to each other.

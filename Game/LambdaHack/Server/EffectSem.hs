@@ -262,7 +262,6 @@ addActor mk bfid pos lid hp bsymbol bname bcolor time = do
   execCmdAtomic $ CreateActorA acounter m []
   return $! acounter
 
--- TODO: apply this special treatment only to actors with symbol '@'.
 -- | Create a new hero on the current level, close to the given position.
 addHero :: (MonadAtomic m, MonadServer m)
         => FactionId -> Point -> LevelId -> [(Int, Text)] -> Maybe Int -> Time

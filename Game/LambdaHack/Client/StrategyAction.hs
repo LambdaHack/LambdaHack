@@ -233,7 +233,7 @@ actionStrategy aid factionAbilities = do
         case btarget of
           Just (TEnemy foeAid _) -> Just foeAid
           _ -> Nothing
-      foeVisible = isJust mfAid  -- TODO: check aimability, within aFrequency
+      foeVisible = isJust mfAid
       lootHere x = not $ EM.null $ lvl `atI` x
       lootIsWeapon = isJust $ strongestSword cops lootItems
       hasNoWeapon = isNothing $ strongestSword cops bitems
@@ -245,7 +245,6 @@ actionStrategy aid factionAbilities = do
       -- TODO: this is too fragile --- depends on order of abilities
       (prefix, rest)    = break isDistant actorAbilities
       (distant, suffix) = partition isDistant rest
-      -- TODO: Ranged and Tools should only be triggered in some situations.
       aFrequency :: Ability -> m (Frequency CmdTakeTimeSer)
       aFrequency Ability.Trigger = if foeVisible then return mzero
                                    else triggerFreq aid
@@ -393,9 +392,6 @@ rangedFreq aid = do
       fact <- getsState $ \s -> sfactionD s EM.! bfid
       foes <- getsState $ actorNotProjList (isAtWar fact) blid
       let foesAdj = foesAdjacent lxsize lysize bpos foes
-      -- TODO: also don't throw if any pos on trajectory is visibly
-      -- not accessible from previous (and tweak eps in bla to make it
-      -- accessible). Also don't throw if target not in range.
       (steps, eps) <- makePath b fpos
       let permitted = (if aiq mk >= 10 then ritemProject else ritemRanged)
                       $ Kind.stdRuleset corule

@@ -98,7 +98,7 @@ keyHelp Binding{bcmdList} =
     disp k = T.concat $ intersperse " and " $ map K.showKM $ coImage k
     keys cat = [ fmt (disp k) h
                | (k, (h, cat', _)) <- bcmdList, cat == cat', h /= "" ]
-  in toSlideshow True -- TODO: 80 below is a hack
+  in toSlideshow True
     [ ["Basic keys. [press SPACE to advance]"] ++ [""]
       ++ movText ++ [moreMsg]
     , [categoryDescription CmdMove <> ". [press SPACE to advance]"] ++ [""]

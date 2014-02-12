@@ -176,7 +176,7 @@ tilePlace area pl@PlaceKind{..} =
       (dx, dy) = assert (xwidth >= dxcorner && ywidth >= length ptopLeft
                          `blame` (area, pl))
                         (xwidth, ywidth)
-      fromX (x2, y2) =  -- TODO: can be optimized: rectangle of points in Point
+      fromX (x2, y2) =
         zipWith (\x y -> Point x y) [x2..] (repeat y2)
       fillInterior :: (forall a. Int -> [a] -> [a]) -> [(Point, Char)]
       fillInterior f =
