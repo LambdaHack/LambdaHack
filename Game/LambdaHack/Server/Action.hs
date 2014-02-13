@@ -265,9 +265,8 @@ elapsedSessionTimeGT stopAfter = do
 
 tellAllClipPS :: MonadServer m => m ()
 tellAllClipPS = do
-  stopAfter <- getsServer $ sstopAfter . sdebugSer
-  let stopA = fromMaybe 0 stopAfter
-  when (stopA > 0) $ do
+  bench <- getsServer $ sbenchmark . sdebugSer
+  when bench $ do
     TOD s p <- getsServer sstart
     TOD sCur pCur <- liftIO getClockTime
     allTime <- getsServer sallTime
@@ -281,9 +280,8 @@ tellAllClipPS = do
 
 tellGameClipPS :: MonadServer m => m ()
 tellGameClipPS = do
-  stopAfter <- getsServer $ sstopAfter . sdebugSer
-  let stopA = fromMaybe 0 stopAfter
-  when (stopA > 0) $ do
+  bench <- getsServer $ sbenchmark . sdebugSer
+  when bench $ do
     TOD s p <- getsServer sgstart
     unless (s == 0) $ do  -- loaded game, don't report anything
       TOD sCur pCur <- liftIO getClockTime

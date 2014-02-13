@@ -89,8 +89,7 @@ reinitGame = do
   broadcastCmdAtomic
     $ \fid -> RestartA fid sdisco (pers EM.! fid) defLoc sdebugCli modeName
   populateDungeon
-  stopAfter <- getsServer $ sstopAfter . sdebugSer
-  when (isNothing stopAfter) saveBkpAll
+  saveBkpAll False
 
 -- TODO: This can be improved by adding a timeout
 -- and by asking clients to prepare
@@ -98,15 +97,17 @@ reinitGame = do
 -- and when all report back, asking them to commit the save.
 -- | Save game on server and all clients. Clients are pinged first,
 -- which greatly reduced the chance of saves being out of sync.
-saveBkpAll :: (MonadAtomic m, MonadServer m, MonadConnServer m) => m ()
-saveBkpAll = do
+saveBkpAll :: (MonadAtomic m, MonadServer m, MonadConnServer m) => Bool -> m ()
+saveBkpAll unconditional = do
   factionD <- getsState sfactionD
   let ping fid _ = do
         sendPingAI fid
         when (playerUI $ gplayer $ factionD EM.! fid) $ sendPingUI fid
   mapWithKeyM_ ping factionD
-  execCmdAtomic SaveBkpA
-  saveServer
+  bench <- getsServer $ sbenchmark . sdebugSer
+  when (unconditional || not bench) $ do
+    execCmdAtomic SaveBkpA
+    saveServer
 
 mapFromInvFuns :: (Bounded a, Enum a, Ord b) => [a -> b] -> M.Map b a
 mapFromInvFuns =
@@ -168,7 +169,7 @@ gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}}
           sdebug mrandom = do
   dungeonSeed <- getSetGen $ sdungeonRng sdebug `mplus` mrandom
   srandom <- getSetGen $ smainRng sdebug `mplus` mrandom
-  scoreTable <- if isJust (sstopAfter sdebug) then
+  scoreTable <- if sbenchmark sdebug then
                   return HighScore.empty
                 else
                   restoreScore cops
@@ -194,7 +195,7 @@ gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}}
                                 , srngs = RNGs (Just dungeonSeed)
                                                (Just srandom) }
   putServer defSer
-  when (isJust $ sstopAfter sdebug) resetGameStart
+  when (sbenchmark sdebug) resetGameStart
   modifyServer $ \ser -> ser {sdisco, sdiscoRev, sflavour}
   return $! defState
 

@@ -147,10 +147,9 @@ endClip arenas = do
                    in assert (r > 2) r
       clipMod = clipN `mod` clipInTurn
   bkpSave <- getsServer sbkpSave
-  stopAfter <- getsServer $ sstopAfter . sdebugSer
-  when (isNothing stopAfter && (bkpSave || clipN `mod` saveBkpClips == 0)) $ do
+  when (bkpSave || clipN `mod` saveBkpClips == 0) $ do
     modifyServer $ \ser -> ser {sbkpSave = False}
-    saveBkpAll
+    saveBkpAll False
   when (clipN `mod` leadLevelClips == 0) leadLevelFlip
   -- Regenerate HP and add monsters each turn, not each clip.
   -- Do this on only one of the arenas to prevent micromanagement,
@@ -159,6 +158,7 @@ endClip arenas = do
     arena <- rndToAction $ oneOf arenas
     regenerateLevelHP arena
     generateMonster arena
+    stopAfter <- getsServer $ sstopAfter . sdebugSer
     case stopAfter of
       Nothing -> return True
       Just stopA -> do
@@ -578,7 +578,7 @@ saveAndExit :: (MonadAtomic m, MonadConnServer m) => m ()
 saveAndExit = do
   cops <- getsState scops
   -- Save client and server data.
-  saveBkpAll
+  saveBkpAll True
   -- debugPrint "Server saves game before exit"
   -- Kill all clients, including those that did not take part
   -- in the current game.

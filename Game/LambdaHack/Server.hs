@@ -60,8 +60,8 @@ debugArgs = do
         , "  --gameMode m  start next game in the given mode"
         , "  --newGame  start a new game, overwriting the save file"
         , "  --difficulty n  set difficulty for all UI players to n"
-        , "  --stopAfter n  benchmark mode, exits after around n seconds"
-             -- and doesn't save, except at the exit, doesn't read scores
+        , "  --stopAfter n  exit this game session after around n seconds"
+        , "  --benchmark  print stats, limit saving and other file operations"
         , "  --setDungeonRng s  set dungeon generation RNG seed to string s"
         , "  --setMainRng s  set the main game RNG seed to string s"
         , "  --dumpInitRngs  dump RNG states from the start of the game"
@@ -104,6 +104,8 @@ debugArgs = do
                     , sdebugCli = (sdebugCli debugSer) {sdifficultyCli = diff}}
       parseArgs ("--stopAfter" : s : rest) =
         (parseArgs rest) {sstopAfter = Just $ read s}
+      parseArgs ("--benchmark" : rest) =
+        (parseArgs rest) {sbenchmark = True}
       parseArgs ("--setDungeonRng" : s : rest) =
         (parseArgs rest) {sdungeonRng = Just $ read s}
       parseArgs ("--setMainRng" : s : rest) =
