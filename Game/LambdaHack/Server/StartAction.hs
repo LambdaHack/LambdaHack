@@ -25,6 +25,7 @@ import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Flavour
+import qualified Game.LambdaHack.Common.HighScore as HighScore
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -166,7 +167,10 @@ gameReset :: MonadServer m
 gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}, corule}
           sdebug mrandom = do
   (dungeonSeed, srandom) <- mkConfigRules corule mrandom
-  scoreTable <- restoreScore cops
+  scoreTable <- if isJust (sstopAfter sdebug) then
+                  return HighScore.empty
+                else
+                  restoreScore cops
   sstart <- getsServer sstart  -- copy over from previous game
   sheroNames <- getsServer sheroNames  -- copy over from previous game
   let smode = sgameMode sdebug
