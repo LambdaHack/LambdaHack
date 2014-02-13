@@ -78,7 +78,9 @@ loopSer sdebug cmdSerSem executorUI executorAI !cops = do
             Nothing -> Nothing
       s <- gameReset cops sdebug mrandom
       sdebugNxt <- initDebug cops sdebug
-      modifyServer $ \ser -> ser {sdebugNxt, sdebugSer = sdebugNxt}
+      let debugBarRngs = sdebugNxt {sdungeonRng = Nothing, smainRng = Nothing}
+      modifyServer $ \ser -> ser { sdebugNxt = debugBarRngs
+                                 , sdebugSer = debugBarRngs }
       let speedup = speedupCOps (sallClear sdebugNxt)
       execCmdAtomic $ RestartServerA $ updateCOps speedup s
       updateConn executorUI executorAI
@@ -601,7 +603,9 @@ restartGame updConn loopServer = do
   sdebugNxt <- getsServer sdebugNxt
   srandom <- getsServer srandom
   s <- gameReset cops sdebugNxt $ Just srandom
-  modifyServer $ \ser -> ser {sdebugNxt, sdebugSer = sdebugNxt}
+  let debugBarRngs = sdebugNxt {sdungeonRng = Nothing, smainRng = Nothing}
+  modifyServer $ \ser -> ser { sdebugNxt = debugBarRngs
+                             , sdebugSer = debugBarRngs }
   execCmdAtomic $ RestartServerA s
   updConn
   initPer
