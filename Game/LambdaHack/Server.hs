@@ -52,27 +52,29 @@ debugArgs = do
   args <- getArgs
   let usage =
         [ "Configure debug options here, gameplay options in config.rules.ini."
-        , "  --knowMap reveal map for all clients in the next game"
-        , "  --knowEvents show all events in the next game (needs --knowMap)"
-        , "  --sniffIn display all incoming commands on console "
-        , "  --sniffOut display all outgoing commands on console "
-        , "  --allClear let all map tiles be translucent"
-        , "  --gameMode m start next game in the given mode"
-        , "  --newGame start a new game, overwriting the save file"
-        , "  --difficulty n set difficulty for all UI players to n"
-        , "  --stopAfter n exit this game session after around n seconds"
-             -- and don't save, except at the exit
-        , "  --dumpInitRngs dump RNG states from the start of the game"
-        , "  --dbgMsgSer let the server emit its internal debug messages"
-        , "  --font fn use the given font for the main game window"
-        , "  --maxFps n display at most n frames per second"
-        , "  --noDelay don't maintain any requested delays between frames"
-        , "  --noMore auto-answer all prompts"
-        , "  --noAnim don't show any animations"
-        , "  --savePrefix prepend the text to all savefile names"
-        , "  --frontendStd use the simple stdout/stdin frontend"
-        , "  --dbgMsgCli let clients emit their internal debug messages"
-        , "  --fovMode m set a Field of View mode, where m can be"
+        , "  --knowMap  reveal map for all clients in the next game"
+        , "  --knowEvents  show all events in the next game (needs --knowMap)"
+        , "  --sniffIn  display all incoming commands on console "
+        , "  --sniffOut  display all outgoing commands on console "
+        , "  --allClear  let all map tiles be translucent"
+        , "  --gameMode m  start next game in the given mode"
+        , "  --newGame  start a new game, overwriting the save file"
+        , "  --difficulty n  set difficulty for all UI players to n"
+        , "  --stopAfter n  benchmark mode, exits after around n seconds"
+             -- and doesn't save, except at the exit, doesn't read scores
+        , "  --setDungeonRng s  set dungeon generation RNG seed to string s"
+        , "  --setMainRng s  set the main game RNG seed to string s"
+        , "  --dumpInitRngs  dump RNG states from the start of the game"
+        , "  --dbgMsgSer  let the server emit its internal debug messages"
+        , "  --font fn  use the given font for the main game window"
+        , "  --maxFps n  display at most n frames per second"
+        , "  --noDelay  don't maintain any requested delays between frames"
+        , "  --noMore  auto-answer all prompts"
+        , "  --noAnim  don't show any animations"
+        , "  --savePrefix  prepend the text to all savefile names"
+        , "  --frontendStd  use the simple stdout/stdin frontend"
+        , "  --dbgMsgCli  let clients emit their internal debug messages"
+        , "  --fovMode m  set a Field of View mode, where m can be"
         , "    Digital r, r > 0"
         , "    Permissive"
         , "    Shadow"
@@ -102,6 +104,10 @@ debugArgs = do
                     , sdebugCli = (sdebugCli debugSer) {sdifficultyCli = diff}}
       parseArgs ("--stopAfter" : s : rest) =
         (parseArgs rest) {sstopAfter = Just $ read s}
+      parseArgs ("--setDungeonRng" : s : rest) =
+        (parseArgs rest) {sdungeonRng = Just $ read s}
+      parseArgs ("--setMainRng" : s : rest) =
+        (parseArgs rest) {smainRng = Just $ read s}
       parseArgs ("--dumpInitRngs" : rest) =
         (parseArgs rest) {sdumpInitRngs = True}
       parseArgs ("--fovMode" : "Digital" : r : rest) | (read r :: Int) > 0 =

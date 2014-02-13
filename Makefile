@@ -35,6 +35,12 @@ xcfrontendCoop:
 xcfrontendDefense:
 	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --maxFps 100000 --savePrefix test --gameMode testDefense --difficulty 9
 
+xcbenchCampaign:
+	time dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --maxFps 100000 --savePrefix test --frontendStd --stopAfter 60 --gameMode testCampaign --difficulty 1 --setDungeonRng 42 --setMainRng 42 > /dev/null
+
+xcbenchBattle:
+	time dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --maxFps 100000 --savePrefix test --frontendStd --stopAfter 60 --gameMode testBattle --difficulty 1 --setDungeonRng 42 --setMainRng 42 > /dev/null
+
 
 xctest-travis: xctest-short xctest-medium
 
@@ -131,6 +137,12 @@ frontendCoop:
 
 frontendDefense:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --maxFps 100000 --savePrefix test --gameMode testDefense --difficulty 9
+
+benchCampaign:
+	time dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --maxFps 100000 --savePrefix test --frontendStd --stopAfter 60 --gameMode testCampaign --difficulty 1 --setDungeonRng 42 --setMainRng 42 > /dev/null
+
+benchBattle:
+	time dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --maxFps 100000 --savePrefix test --frontendStd --stopAfter 60 --gameMode testBattle --difficulty 1 --setDungeonRng 42 --setMainRng 42 > /dev/null
 
 
 test-travis: test-short test-medium

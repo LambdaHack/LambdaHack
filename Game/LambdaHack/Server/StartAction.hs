@@ -164,9 +164,10 @@ createFactions Kind.COps{cofaction=Kind.Ops{opick}} players = do
 
 gameReset :: MonadServer m
           => Kind.COps -> DebugModeSer -> Maybe R.StdGen -> m State
-gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}, corule}
+gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}}
           sdebug mrandom = do
-  (dungeonSeed, srandom) <- mkConfigRules corule mrandom
+  dungeonSeed <- getSetGen $ sdungeonRng sdebug `mplus` mrandom
+  srandom <- getSetGen $ smainRng sdebug `mplus` mrandom
   scoreTable <- if isJust (sstopAfter sdebug) then
                   return HighScore.empty
                 else

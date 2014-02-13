@@ -2,11 +2,13 @@
 module Game.LambdaHack.Server.State
   ( StateServer(..), emptyStateServer
   , DebugModeSer(..), defDebugModeSer
+  , RNGs(..)
   ) where
 
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.HashMap.Strict as HM
+import Data.List
 import Data.Text (Text)
 import qualified System.Random as R
 import System.Time
@@ -50,6 +52,8 @@ data DebugModeSer = DebugModeSer
   , sallClear      :: !Bool
   , sgameMode      :: !Text
   , sstopAfter     :: !(Maybe Int)
+  , sdungeonRng    :: !(Maybe R.StdGen)
+  , smainRng       :: !(Maybe R.StdGen)
   , sfovMode       :: !(Maybe FovMode)
   , snewGameSer    :: !Bool
   , sdifficultySer :: !Int
@@ -59,6 +63,19 @@ data DebugModeSer = DebugModeSer
   , sdebugCli      :: !DebugModeCli
   }
   deriving Show
+
+data RNGs = RNGs
+  { dungeonRandomGenerator  :: !(Maybe R.StdGen)
+  , startingRandomGenerator :: !(Maybe R.StdGen)
+  }
+
+instance Show RNGs where
+  show RNGs{..} =
+    let args = [ maybe "" (\gen -> "--setDungeonRng \"" ++ show gen ++ "\"")
+                       dungeonRandomGenerator
+               , maybe "" (\gen -> "--setMainRng \"" ++ show gen ++ "\"")
+                       startingRandomGenerator ]
+    in intercalate " " args
 
 -- | Initial, empty game server state.
 emptyStateServer :: StateServer
@@ -91,6 +108,8 @@ defDebugModeSer = DebugModeSer { sknowMap = False
                                , sallClear = False
                                , sgameMode = "campaign"
                                , sstopAfter = Nothing
+                               , sdungeonRng = Nothing
+                               , smainRng = Nothing
                                , sfovMode = Nothing
                                , snewGameSer = False
                                , sdifficultySer = 0
@@ -159,6 +178,19 @@ instance Binary DebugModeSer where
     sdbgMsgSer <- get
     sdebugCli <- get
     let sstopAfter = Nothing
+        sdungeonRng = Nothing
+        smainRng = Nothing
         snewGameSer = False
         sdumpInitRngs = False
     return $! DebugModeSer{..}
+
+instance Binary RNGs where
+  put RNGs{..} = do
+    put (show dungeonRandomGenerator)
+    put (show startingRandomGenerator)
+  get = do
+    dg <- get
+    sg <- get
+    let dungeonRandomGenerator = read dg
+        startingRandomGenerator = read sg
+    return $! RNGs{..}

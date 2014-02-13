@@ -1,12 +1,11 @@
 -- | The type of game rule sets and assorted game data.
 module Game.LambdaHack.Content.RuleKind
-  ( RuleKind(..), validateRuleKind, RNGs(..), FovMode(..)
+  ( RuleKind(..), validateRuleKind, FovMode(..)
   ) where
 
 import Data.Binary
 import Data.Text (Text)
 import Data.Version
-import qualified System.Random as R
 
 import Game.LambdaHack.Common.HumanCmd
 import qualified Game.LambdaHack.Common.Key as K
@@ -60,14 +59,7 @@ data RuleKind = RuleKind
   , rleadLevelClips :: !Int       -- ^ AI/spawn leader level flipped that often
   , rscoresFile     :: !FilePath  -- ^ name of the scores file
   , rsavePrefix     :: !String    -- ^ name of the savefile prefix
-  , rinitRngs       :: !RNGs      -- ^ initial RNG states
   }
-
-data RNGs = RNGs
-  { dungeonRandomGenerator  :: !(Maybe R.StdGen)
-  , startingRandomGenerator :: !(Maybe R.StdGen)
-  }
-  deriving Show
 
 -- TODO: should Blind really be a FovMode, or a modifier? Let's decide
 -- when other similar modifiers are added.
@@ -78,17 +70,6 @@ data FovMode =
   | Digital !Int  -- ^ digital FOV with the given radius
   | Blind         -- ^ only feeling out adjacent tiles by touch
   deriving (Show, Read)
-
-instance Binary RNGs where
-  put RNGs{..} = do
-    put (show dungeonRandomGenerator)
-    put (show startingRandomGenerator)
-  get = do
-    dg <- get
-    sg <- get
-    let dungeonRandomGenerator = read dg
-        startingRandomGenerator = read sg
-    return $! RNGs{..}
 
 instance Binary FovMode where
   put Shadow      = putWord8 0

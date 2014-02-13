@@ -12,7 +12,7 @@ module Game.LambdaHack.Server.Action
   , sendUpdateUI, sendQueryUI, sendPingUI
     -- * Assorted primitives
   , debugPrint, dumpRngs
-  , mkConfigRules, restoreScore, revealItems, deduceQuits
+  , getSetGen, restoreScore, revealItems, deduceQuits
   , rndToAction, resetSessionStart, elapsedSessionTimeGT, tellClipPS
   , resetFidPerception, getPerFid
   , childrenServer
@@ -443,28 +443,11 @@ rndToAction r = do
   modifyServer $ \ser -> ser {srandom = ng}
   return $! a
 
--- | Gets a random generator from the rules content or,
--- if not present, generates one.
-getSetGen :: Kind.Ops RuleKind
-          -> (RNGs -> Maybe R.StdGen)
-          -> Maybe R.StdGen
-          -> IO R.StdGen
-getSetGen corule accessor mrandom =
-  case accessor $ rinitRngs $ Kind.stdRuleset corule of
-    Just sg -> return sg
-    Nothing -> do
-      g <- case mrandom of
-        Just rnd -> return rnd
-        Nothing -> R.newStdGen
-      return g
-
--- | Read or generate and then set random seeds.
--- Warning: when it's used, the game state
--- may still be undefined, hence the content ops are given as an argument.
-mkConfigRules :: MonadServer m
-              => Kind.Ops RuleKind -> Maybe R.StdGen
-              -> m (R.StdGen, R.StdGen)
-mkConfigRules corule mrandom = do
-  dungeonGen <- liftIO $ getSetGen corule dungeonRandomGenerator mrandom
-  startingGen <- liftIO $ getSetGen corule startingRandomGenerator mrandom
-  return (dungeonGen, startingGen)
+-- | Gets a random generator from the arguments or, if not present,
+-- generates one.
+getSetGen :: MonadServer m
+          => Maybe R.StdGen
+          -> m R.StdGen
+getSetGen mrng = case mrng of
+  Just rnd -> return rnd
+  Nothing -> liftIO $ R.newStdGen
