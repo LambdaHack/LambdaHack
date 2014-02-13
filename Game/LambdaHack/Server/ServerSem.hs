@@ -171,7 +171,7 @@ meleeSer source target = do
           execSfxAtomic $ StrikeD source target item hitA
           -- Deduct a hitpoint for a pierce of a projectile.
           when (bproj sb) $ execCmdAtomic $ HealActorA source (-1)
-          -- Msgs inside itemEffectSem describe the target part.
+          -- Msgs inside itemEffect describe the target part.
           itemEffect source target miid item
     -- Projectiles can't be blocked (though can be sidestepped).
     -- Incapacitated actors can't block.
