@@ -71,7 +71,6 @@ loopSer sdebug cmdSerSem executorUI executorAI !cops = do
       let setCurrentCops = const (speedupCOps (sallClear sdebugNxt) cops)
       -- @sRaw@ is correct here, because none of the above changes State.
       execCmdAtomic $ ResumeServerA $ updateCOps setCurrentCops sRaw
-      initPer
     _ -> do  -- Starting a new game.
       -- Set up commandline debug mode
       let mrandom = case restored of
@@ -165,7 +164,7 @@ endClip arenas = do
       Just stopA -> do
         exit <- elapsedSessionTimeGT stopA
         if exit then do
-          when (stopA > 0) tellClipPS
+          tellAllClipPS
           saveAndExit
           return False  -- don't re-enter the game loop
         else return True
@@ -597,6 +596,7 @@ saveAndExit = do
 restartGame :: (MonadAtomic m, MonadConnServer m)
             => m () -> m () -> m ()
 restartGame updConn loopServer = do
+  tellGameClipPS
   cops <- getsState scops
   sdebugNxt <- getsServer sdebugNxt
   srandom <- getsServer srandom

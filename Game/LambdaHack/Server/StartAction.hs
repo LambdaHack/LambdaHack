@@ -173,6 +173,7 @@ gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}}
                 else
                   restoreScore cops
   sstart <- getsServer sstart  -- copy over from previous game
+  sallTime <- getsServer sallTime  -- copy over from previous game
   sheroNames <- getsServer sheroNames  -- copy over from previous game
   let smode = sgameMode sdebug
       rnd :: Rnd (FactionDict, FlavourMap, Discovery, DiscoRev,
@@ -189,11 +190,12 @@ gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}}
   let (faction, sflavour, sdisco, sdiscoRev, DungeonGen.FreshDungeon{..}) =
         St.evalState rnd dungeonSeed
       defState = defStateGlobal freshDungeon freshDepth faction cops scoreTable
-      defSer = emptyStateServer { sdisco, sdiscoRev, sflavour
-                                , srandom, sstart, sheroNames
+      defSer = emptyStateServer { sstart, sallTime, sheroNames, srandom
                                 , srngs = RNGs (Just dungeonSeed)
                                                (Just srandom) }
   putServer defSer
+  when (isJust $ sstopAfter sdebug) resetGameStart
+  modifyServer $ \ser -> ser {sdisco, sdiscoRev, sflavour}
   return $! defState
 
 -- Spawn initial actors. Clients should notice this, to set their leaders.

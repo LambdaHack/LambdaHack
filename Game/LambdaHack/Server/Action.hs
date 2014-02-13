@@ -13,7 +13,8 @@ module Game.LambdaHack.Server.Action
     -- * Assorted primitives
   , debugPrint, dumpRngs
   , getSetGen, restoreScore, revealItems, deduceQuits
-  , rndToAction, resetSessionStart, elapsedSessionTimeGT, tellClipPS
+  , rndToAction, resetSessionStart, resetGameStart, elapsedSessionTimeGT
+  , tellAllClipPS, tellGameClipPS
   , resetFidPerception, getPerFid
   , childrenServer
   ) where
@@ -247,21 +248,51 @@ resetSessionStart = do
   sstart <- liftIO getClockTime
   modifyServer $ \ser -> ser {sstart}
 
+-- TODO: all this breaks when games are loaded; we'd need to save
+-- elapsed game clock time to fix this.
+resetGameStart :: MonadServer m => m ()
+resetGameStart = do
+  sgstart <- liftIO getClockTime
+  time <- getsState stime
+  modifyServer $ \ser ->
+    ser {sgstart, sallTime = timeAdd (sallTime ser) time}
+
 elapsedSessionTimeGT :: MonadServer m => Int -> m Bool
 elapsedSessionTimeGT stopAfter = do
   current <- liftIO getClockTime
   TOD s p <- getsServer sstart
   return $! TOD (s + fromIntegral stopAfter) p <= current
 
-tellClipPS :: MonadServer m => m ()
-tellClipPS = do
-  TOD sCur pCur <- liftIO getClockTime
-  TOD s p <- getsServer sstart
-  time <- getsState stime
-  let diff = fromIntegral sCur + fromIntegral pCur / 10e12
-             - fromIntegral s - fromIntegral p / 10e12
-      cps = fromIntegral (timeFit time timeClip) / diff :: Double
-  debugPrint $ "Average clips per second:" <+> tshow cps
+tellAllClipPS :: MonadServer m => m ()
+tellAllClipPS = do
+  stopAfter <- getsServer $ sstopAfter . sdebugSer
+  let stopA = fromMaybe 0 stopAfter
+  when (stopA > 0) $ do
+    TOD s p <- getsServer sstart
+    TOD sCur pCur <- liftIO getClockTime
+    allTime <- getsServer sallTime
+    gtime <- getsState stime
+    let time = timeAdd allTime gtime
+    let diff = fromIntegral sCur + fromIntegral pCur / 10e12
+               - fromIntegral s - fromIntegral p / 10e12
+        cps = fromIntegral (timeFit time timeClip) / diff :: Double
+    debugPrint $ "Session time:" <+> tshow diff <> "s."
+                 <+> "Average clips per second:" <+> tshow cps <> "."
+
+tellGameClipPS :: MonadServer m => m ()
+tellGameClipPS = do
+  stopAfter <- getsServer $ sstopAfter . sdebugSer
+  let stopA = fromMaybe 0 stopAfter
+  when (stopA > 0) $ do
+    TOD s p <- getsServer sgstart
+    unless (s == 0) $ do  -- loaded game, don't report anything
+      TOD sCur pCur <- liftIO getClockTime
+      time <- getsState stime
+      let diff = fromIntegral sCur + fromIntegral pCur / 10e12
+                 - fromIntegral s - fromIntegral p / 10e12
+          cps = fromIntegral (timeFit time timeClip) / diff :: Double
+      debugPrint $ "Game time:" <+> tshow diff <> "s."
+                   <+> "Average clips per second:" <+> tshow cps <> "."
 
 revealItems :: (MonadAtomic m, MonadServer m)
             => Maybe FactionId -> Maybe Actor -> m ()

@@ -19,6 +19,7 @@ import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Perception
+import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.RuleKind
 
 -- | Global, server state.
@@ -36,6 +37,8 @@ data StateServer = StateServer
   , squit      :: !Bool          -- ^ exit the game loop
   , sbkpSave   :: !Bool          -- ^ make backup savefile now
   , sstart     :: !ClockTime     -- ^ this session start time
+  , sgstart    :: !ClockTime     -- ^ this game start time
+  , sallTime   :: !Time          -- ^ clips since the start of the session
   , sheroNames :: !(EM.EnumMap FactionId [(Int, Text)])
                                  -- ^ hero names sent by clients
   , sdebugSer  :: !DebugModeSer  -- ^ current debugging mode
@@ -95,6 +98,8 @@ emptyStateServer =
     , squit = False
     , sbkpSave = False
     , sstart = TOD 0 0
+    , sgstart = TOD 0 0
+    , sallTime = timeZero
     , sheroNames = EM.empty
     , sdebugSer = defDebugModeSer
     , sdebugNxt = defDebugModeSer
@@ -149,6 +154,8 @@ instance Binary StateServer where
         squit = False
         sbkpSave = False
         sstart = TOD 0 0
+        sgstart = TOD 0 0
+        sallTime = timeZero
         sdebugNxt = defDebugModeSer  -- TODO: here difficulty level, etc. from the last session is wiped out
     return $! StateServer{..}
 
