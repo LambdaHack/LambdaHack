@@ -483,16 +483,23 @@ getCacheBfsAndPath aid target = do
         computePath <- computePathBFS aid
         let mpath = computePath target seps bfs
         modifyClient $ \cli ->
-          cli {sbfsD = EM.insert aid (bfs, target, seps, mpath) (sbfsD cli)}
+          cli {sbfsD = EM.insert aid (bfs, target, seps, mpath, True) (sbfsD cli)}
         return (bfs, mpath)
   mbfs <- getsClient $ EM.lookup aid . sbfsD
   case mbfs of
-    Just (bfs, targetOld, sepsOld, mpath) | targetOld == target
-                                            && sepsOld == seps ->
+    Just (bfs, targetOld, sepsOld, mpath, True) | targetOld == target
+                                                  && sepsOld == seps ->
       return (bfs, mpath)
-    Just (bfs, _, _, _) -> pathAndStore bfs
-    Nothing -> do
-      bfs <- computeBFS aid
+    Just (bfs, _, _, _, True) -> pathAndStore bfs
+    Just (oldBfs, _, _, _, False) -> do
+      -- TODO: we assume level size is always the same
+      bfs <- computeBFS (PointArray.set oldBfs apartBfs) aid
+      pathAndStore bfs
+    _ -> do
+      b <- getsState $ getActorBody aid
+      Level{lxsize, lysize} <- getLevel $ blid b
+      let vInitial = PointArray.replicateA lxsize lysize apartBfs
+      bfs <- computeBFS vInitial aid
       pathAndStore bfs
 
 getCacheBfs :: MonadClient m => ActorId -> m (PointArray.Array BfsDistance)
@@ -500,15 +507,16 @@ getCacheBfs :: MonadClient m => ActorId -> m (PointArray.Array BfsDistance)
 getCacheBfs aid = do
   mbfs <- getsClient $ EM.lookup aid . sbfsD
   case mbfs of
-    Just (bfs, _, _, _) -> return bfs
-    Nothing -> fmap fst $ getCacheBfsAndPath aid (Point 0 0)
+    Just (bfs, _, _, _, True) -> return bfs
+    _-> fmap fst $ getCacheBfsAndPath aid (Point 0 0)
 
-computeBFS :: MonadClient m => ActorId -> m (PointArray.Array BfsDistance)
-computeBFS = computeAnythingBFS $ \isEnterable passUnknown aid -> do
+computeBFS :: MonadClient m
+           => PointArray.Array BfsDistance -> ActorId
+           -> m (PointArray.Array BfsDistance)
+computeBFS vInitial = computeAnythingBFS $ \isEnterable passUnknown aid -> do
   b <- getsState $ getActorBody aid
-  Level{lxsize, lysize} <- getLevel $ blid b
+  Level{lxsize} <- getLevel $ blid b
   let origin = bpos b
-      vInitial = PointArray.replicateA lxsize lysize apartBfs
   -- Here we don't want '$!', because we want the BFS data lazy.
   return ${-keep it!-} fillBfs isEnterable passUnknown origin lxsize vInitial
 

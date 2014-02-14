@@ -4,7 +4,7 @@ module Game.LambdaHack.Common.PointArray
   ( Array
   , (!), (//), replicateA, replicateMA, generateMA, sizeA
   , foldlA, ifoldlA, minIndexA, minLastIndexA, maxIndexA, maxLastIndexA
-  , pointUnsafeRead, pointUnsafeWrite, modify
+  , pointUnsafeRead, pointUnsafeWrite, modify, set
   ) where
 
 import Control.Arrow ((***))
@@ -137,14 +137,28 @@ pointUnsafeWrite :: (GM.MVector v a, Enum a, Enum c)
 {-# INLINE pointUnsafeWrite #-}
 pointUnsafeWrite axsize v p c = GM.unsafeWrite v (pindex axsize p) (cnv c)
 
--- TODO: make sure @modify@ does not copy here
 -- Granted, not pretty at all.
 modify :: Enum c
        => (forall s. U.MVector s Word8 -> ST s ())
        -> Array c
        -> Array c
 {-# INLINE modify #-}
-modify f Array{..} = Array {avector = G.modify f avector, ..}
+modify f Array{..} =
+  runST $ do
+    vt <- G.unsafeThaw avector
+    f vt
+    vf <- G.unsafeFreeze vt
+    return Array{avector = vf, ..}
+
+-- Granted, this is rather messy.
+set :: Enum c => Array c -> c  -> Array c
+{-# INLINE set #-}
+set Array{..} c =
+  runST $ do
+    vt <- G.unsafeThaw avector
+    GM.set vt (cnv c)
+    vf <- G.unsafeFreeze vt
+    return Array{avector = vf, ..}
 
 instance Binary (Array c) where
   put Array{..} = do

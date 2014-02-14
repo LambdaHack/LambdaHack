@@ -49,7 +49,7 @@ targetStrategy oldLeader aid = do
   Kind.COps{ cotile=cotile@Kind.Ops{ouniqGroup}
            , coactor=Kind.Ops{okind}
            , cofaction=Kind.Ops{okind=fokind} } <- getsState scops
-  modifyClient $ \cli -> cli {sbfsD = EM.empty}
+  modifyClient $ \cli -> cli {sbfsD = EM.adjust (\(bfs, p, i, mp, _) -> (bfs, p, i, mp, False)) aid $ sbfsD cli}
   b <- getsState $ getActorBody aid
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   oldTgtUpdatedPath <- case mtgtMPath of

@@ -49,7 +49,7 @@ data StateClient = StateClient
                                    -- ^ the set of fully explored levels
   , sbfsD        :: !(EM.EnumMap ActorId
                         ( PointArray.Array BfsDistance
-                        , Point, Int, Maybe [Point]) )
+                        , Point, Int, Maybe [Point], Bool) )
                                    -- ^ pathfinding distances for our actors
                                    --   and paths to their targets, if any
   , sselected    :: !(ES.EnumSet ActorId)
