@@ -73,6 +73,7 @@ debugArgs = do
         , "  --noAnim  don't show any animations"
         , "  --savePrefix  prepend the text to all savefile names"
         , "  --frontendStd  use the simple stdout/stdin frontend"
+        , "  --frontendNo  use no frontend at all (for AIvsAI benchmarks)"
         , "  --dbgMsgCli  let clients emit their internal debug messages"
         , "  --fovMode m  set a Field of View mode, where m can be"
         , "    Digital r, r > 0"
@@ -142,6 +143,9 @@ debugArgs = do
       parseArgs ("--frontendStd" : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli = (sdebugCli debugSer) {sfrontendStd = True}}
+      parseArgs ("--frontendNo" : rest) =
+        let debugSer = parseArgs rest
+        in debugSer {sdebugCli = (sdebugCli debugSer) {sfrontendNo = True}}
       parseArgs ("--dbgMsgCli" : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli = (sdebugCli debugSer) {sdbgMsgCli = True}}
