@@ -1,16 +1,20 @@
+{-# LANGUAGE RankNTypes #-}
 -- | Arrays, based on Data.Vector.Unboxed, indexed by @Point@.
 module Game.LambdaHack.Common.PointArray
   ( Array
   , (!), (//), replicateA, replicateMA, generateMA, sizeA
   , foldlA, ifoldlA, minIndexA, minLastIndexA, maxIndexA, maxLastIndexA
+  , pointUnsafeRead, pointUnsafeWrite, modify
   ) where
 
 import Control.Arrow ((***))
 import Control.Monad
+import Control.Monad.ST.Strict
 import Data.Binary
 import Data.Vector.Binary ()
 import qualified Data.Vector.Fusion.Stream as Stream
 import qualified Data.Vector.Generic as G
+import qualified Data.Vector.Generic.Mutable as GM
 import qualified Data.Vector.Unboxed as U
 
 import Game.LambdaHack.Common.Point
@@ -22,9 +26,9 @@ import Game.LambdaHack.Common.Point
 -- TODO: perhaps make them an instance of Data.Vector.Generic?
 -- | Arrays indexed by @Point@.
 data Array c = Array
-  { axsize  :: X
-  , aysize  :: Y
-  , avector :: U.Vector Word8
+  { axsize  :: !X
+  , aysize  :: !Y
+  , avector :: !(U.Vector Word8)
   }
   deriving Eq
 
@@ -120,6 +124,27 @@ maxLastIndexA Array{..} =
   $ avector
  where
   imax (i, x) (j, y) = i `seq` j `seq` if x <= y then (j, y) else (i, x)
+
+-- Granted, this ain't pretty.
+pointUnsafeRead :: (GM.MVector v a, Enum a, Enum c)
+                => forall s. X -> v s a -> Point -> ST s c
+{-# INLINE pointUnsafeRead #-}
+pointUnsafeRead axsize v p = fmap cnv $ GM.unsafeRead v (pindex axsize p)
+
+-- Granted, this is not pretty.
+pointUnsafeWrite :: (GM.MVector v a, Enum a, Enum c)
+                 => forall s. X -> v s a -> Point -> c -> ST s ()
+{-# INLINE pointUnsafeWrite #-}
+pointUnsafeWrite axsize v p c = GM.unsafeWrite v (pindex axsize p) (cnv c)
+
+-- TODO: make sure @modify@ does not copy here
+-- Granted, not pretty at all.
+modify :: Enum c
+       => (forall s. U.MVector s Word8 -> ST s ())
+       -> Array c
+       -> Array c
+{-# INLINE modify #-}
+modify f Array{..} = Array {avector = G.modify f avector, ..}
 
 instance Binary (Array c) where
   put Array{..} = do

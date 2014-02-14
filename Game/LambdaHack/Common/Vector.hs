@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, RankNTypes #-}
 -- | Basic operations on 2D vectors represented in an efficient,
 -- but not unique, way.
 module Game.LambdaHack.Common.Vector
@@ -12,6 +12,8 @@ module Game.LambdaHack.Common.Vector
 
 import Control.Arrow (second)
 import Control.Exception.Assert.Sugar
+import Control.Monad
+import Control.Monad.ST.Strict
 import Data.Binary
 import Data.Bits (Bits, complement, (.&.), (.|.))
 import qualified Data.EnumMap.Strict as EM
@@ -20,6 +22,7 @@ import Data.List
 import Data.Maybe
 import qualified Data.Sequence as Seq
 import Data.Text (Text)
+import qualified Data.Vector.Unboxed as U
 
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
@@ -233,26 +236,28 @@ apartBfs = pred minKnownBfs
 fillBfs :: (Point -> Point -> MoveLegal)  -- ^ is move from a known tile legal
         -> (Point -> Point -> Bool)       -- ^ is a move from unknown legal
         -> Point                          -- ^ starting position
+        -> X                              -- ^ width of the level
         -> PointArray.Array BfsDistance   -- ^ initial array, with @apartBfs@
         -> PointArray.Array BfsDistance   -- ^ array with calculated distances
-fillBfs isEnterable passUnknown origin aInitial =
-  -- TODO: copy, thaw, mutate, freeze
+fillBfs isEnterable passUnknown origin lxsize aInitial =
   let maxUnknownBfs = pred apartBfs
       maxKnownBfs = pred maxBound
-      bfs :: Seq.Seq (Point, BfsDistance)
-          -> PointArray.Array BfsDistance
-          -> PointArray.Array BfsDistance
-      bfs q a =
+      bfs :: forall s.
+             Seq.Seq (Point, BfsDistance)
+          -> U.MVector s Word8
+          -> ST s ()
+      bfs q v = do
         case Seq.viewr q of
-          Seq.EmptyR -> a  -- no more positions to check
+          Seq.EmptyR -> return ()  -- no more positions to check
           _ Seq.:> (_, d)
-            | d == maxUnknownBfs || d == maxKnownBfs -> a  -- too far
-          q1 Seq.:> (pos, oldDistance) | oldDistance >= minKnownBfs ->
+            | d == maxUnknownBfs || d == maxKnownBfs -> return ()  -- too far
+          q1 Seq.:> (pos, oldDistance) | oldDistance >= minKnownBfs -> do
             let distance = succ oldDistance
                 allMvs = map (shift pos) moves
-                freshMv p = a PointArray.! p == apartBfs
-                freshMvs = filter freshMv allMvs
-                legal p = (p, isEnterable pos p)
+                freshMv p = fmap (== apartBfs)
+                            $ PointArray.pointUnsafeRead lxsize v p
+            freshMvs <- filterM freshMv allMvs
+            let legal p = (p, isEnterable pos p)
                 legalities = map legal freshMvs
                 notBlocked = filter ((/= MoveBlocked) . snd) legalities
                 legalToDist l = if l == MoveToOpen
@@ -260,18 +265,25 @@ fillBfs isEnterable passUnknown origin aInitial =
                                 else distance .&. complement minKnownBfs
                 mvs = map (second legalToDist) notBlocked
                 q2 = foldr (Seq.<|) q1 mvs
-                s2 = a PointArray.// mvs
-            in bfs q2 s2
-          q1 Seq.:> (pos, oldDistance) ->
+            mapM_ (\(p, d) -> PointArray.pointUnsafeWrite lxsize v p d) mvs
+            bfs q2 v
+          q1 Seq.:> (pos, oldDistance) -> do
             let distance = succ oldDistance
                 allMvs = map (shift pos) moves
-                goodMv p = a PointArray.! p == apartBfs && passUnknown pos p
-                mvs = zip (filter goodMv allMvs) (repeat distance)
+                goodMv p = fmap ((&& passUnknown pos p) . (== apartBfs))
+                           $ PointArray.pointUnsafeRead lxsize v p
+            goodMvs <- filterM goodMv allMvs
+            let mvs = zip goodMvs (repeat distance)
                 q2 = foldr (Seq.<|) q1 mvs
-                s2 = a PointArray.// mvs
-            in bfs q2 s2
-      origin0 = (origin, minKnownBfs)
-  in bfs (Seq.singleton origin0) (aInitial PointArray.// [origin0])
+            mapM_ (\(p, d) -> PointArray.pointUnsafeWrite lxsize v p d) mvs
+            bfs q2 v
+      bfsRun :: forall s.
+                U.MVector s Word8
+             -> ST s ()
+      bfsRun v = do
+        PointArray.pointUnsafeWrite lxsize v origin minKnownBfs
+        bfs (Seq.singleton (origin, minKnownBfs)) v
+  in PointArray.modify bfsRun aInitial
 
 -- TODO: Use http://harablog.wordpress.com/2011/09/07/jump-point-search/
 -- to determine a few really different paths and compare them,

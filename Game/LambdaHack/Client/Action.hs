@@ -510,7 +510,7 @@ computeBFS = computeAnythingBFS $ \isEnterable passUnknown aid -> do
   let origin = bpos b
       vInitial = PointArray.replicateA lxsize lysize apartBfs
   -- Here we don't want '$!', because we want the BFS data lazy.
-  return ${-keep it!-} fillBfs isEnterable passUnknown origin vInitial
+  return ${-keep it!-} fillBfs isEnterable passUnknown origin lxsize vInitial
 
 computePathBFS :: MonadClient m
                => ActorId
