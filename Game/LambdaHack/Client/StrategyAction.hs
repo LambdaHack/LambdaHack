@@ -49,7 +49,7 @@ targetStrategy oldLeader aid = do
   Kind.COps{ cotile=cotile@Kind.Ops{ouniqGroup}
            , coactor=Kind.Ops{okind}
            , cofaction=Kind.Ops{okind=fokind} } <- getsState scops
-  modifyClient $ \cli -> cli {sbfsD = EM.empty}
+  modifyClient $ \cli -> cli {sbfsD = EM.delete aid (sbfsD cli)}
   b <- getsState $ getActorBody aid
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   oldTgtUpdatedPath <- case mtgtMPath of
@@ -57,11 +57,11 @@ targetStrategy oldLeader aid = do
       mvalidPos <- aidTgtToPos aid (blid b) (Just tgt)
       if isNothing mvalidPos then return Nothing  -- wrong level
       else return $! case path of
-        (p : q : rest, goalLen) ->
+        (p : q : rest, (goal, len)) ->
           if bpos b == p
           then Just (tgt, path)  -- no move last turn
           else if bpos b == q
-               then Just (tgt, (q : rest, goalLen))  -- moved a step along path
+               then Just (tgt, (q : rest, (goal, len - 1)))  -- step along path
                else Nothing  -- veered off the path
         ([p], (goal, _)) -> do
           assert (p == goal `blame` (aid, b, mtgtMPath)) skip
