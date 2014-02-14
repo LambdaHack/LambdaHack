@@ -16,8 +16,7 @@ import qualified Data.Text as T
 import qualified UI.HSCurses.Curses as C
 import qualified UI.HSCurses.CursesHelper as C
 
-import Game.LambdaHack.Common.Animation (DebugModeCli (..), SingleFrame (..),
-                                         overlayOverlay)
+import Game.LambdaHack.Common.Animation
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Common.Msg
@@ -70,7 +69,8 @@ fdisplay FrontendSession{..}  _ (Just rawSF) = do
   -- We need to remove the last character from the status line,
   -- because otherwise it would overflow a standard size xterm window,
   -- due to the curses historical limitations.
-  let level = init sfLevel ++ [init $ last sfLevel]
+  let sfLevelDecoded = map decodeLine sfLevel
+      level = init sfLevelDecoded ++ [init $ last sfLevelDecoded]
       nm = zip [0..] $ map (zip [0..]) level
   sequence_ [ C.setStyle (M.findWithDefault defaultStyle acAttr sstyles)
               >> C.mvWAddStr swin (y + 1) x [acChar]

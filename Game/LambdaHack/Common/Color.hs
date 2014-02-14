@@ -9,6 +9,7 @@ module Game.LambdaHack.Common.Color
   ) where
 
 import Data.Binary
+import Data.Bits (unsafeShiftL, unsafeShiftR, (.&.))
 import qualified Data.Hashable as Hashable
 import GHC.Generics (Generic)
 
@@ -39,10 +40,6 @@ data Color =
 
 instance Hashable.Hashable Color
 
-instance Binary Color where
-  put = putWord8 . toEnum . fromEnum
-  get = fmap (toEnum . fromEnum) getWord8
-
 -- | The default colours, to optimize attribute setting.
 defBG, defFG :: Color
 defBG = Black
@@ -55,14 +52,10 @@ data Attr = Attr
   }
   deriving (Show, Eq, Ord)
 
-instance Binary Attr where
-  put Attr{..} = do
-    put fg
-    put bg
-  get = do
-    fg <- get
-    bg <- get
-    return $! Attr{..}
+instance Enum Attr where
+  fromEnum Attr{..} = fromEnum fg + unsafeShiftL (fromEnum bg) 8
+  toEnum n = Attr (toEnum $ n .&. (2 ^ (8 :: Int)  - 1))
+                  (toEnum $ unsafeShiftR n 8)
 
 -- | The default attribute, to optimize attribute setting.
 defAttr :: Attr
@@ -74,14 +67,10 @@ data AttrChar = AttrChar
   }
   deriving (Show, Eq, Ord)
 
-instance Binary AttrChar where
-  put AttrChar{..} = do
-    put acAttr
-    put acChar
-  get = do
-    acAttr <- get
-    acChar <- get
-    return $! AttrChar{..}
+instance Enum AttrChar where
+  fromEnum AttrChar{..} = fromEnum acAttr + unsafeShiftL (fromEnum acChar) 16
+  toEnum n = AttrChar (toEnum $ n .&. (2 ^ (16 :: Int) - 1))
+                      (toEnum $ unsafeShiftR n 16)
 
 -- | A helper for the terminal frontends that display bright via bold.
 isBright :: Color -> Bool
@@ -136,3 +125,25 @@ _olorToRGB BrBlue    = "#5555FF"
 _olorToRGB BrMagenta = "#FF55FF"
 _olorToRGB BrCyan    = "#55FFFF"
 _olorToRGB BrWhite   = "#FFFFFF"
+
+instance Binary Color where
+  put = putWord8 . toEnum . fromEnum
+  get = fmap (toEnum . fromEnum) getWord8
+
+instance Binary Attr where
+  put Attr{..} = do
+    put fg
+    put bg
+  get = do
+    fg <- get
+    bg <- get
+    return $! Attr{..}
+
+instance Binary AttrChar where
+  put AttrChar{..} = do
+    put acAttr
+    put acChar
+  get = do
+    acAttr <- get
+    acChar <- get
+    return $! AttrChar{..}

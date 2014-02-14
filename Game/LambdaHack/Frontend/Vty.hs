@@ -11,8 +11,7 @@ module Game.LambdaHack.Frontend.Vty
 import Graphics.Vty
 import qualified Graphics.Vty as Vty
 
-import Game.LambdaHack.Common.Animation (DebugModeCli (..), SingleFrame (..),
-                                         overlayOverlay)
+import Game.LambdaHack.Common.Animation
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Common.Msg
@@ -47,7 +46,7 @@ fdisplay FrontendSession{svty} _ (Just rawSF) =
              . map (foldr (<|>) empty_image
                       . map (\ Color.AttrChar{..} ->
                                 char (setAttr acAttr) acChar)))
-            sfLevel
+            $ map decodeLine sfLevel
       pic = pic_for_image img
   in update svty pic
 

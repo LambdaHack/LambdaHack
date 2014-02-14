@@ -12,8 +12,7 @@ import qualified Data.ByteString.Char8 as BS
 import Data.Char (chr, ord)
 import qualified System.IO as SIO
 
-import Game.LambdaHack.Common.Animation (DebugModeCli (..), SingleFrame (..),
-                                         overlayOverlay)
+import Game.LambdaHack.Common.Animation
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Key as K
 
@@ -38,7 +37,7 @@ fdisplay :: FrontendSession    -- ^ frontend session data
 fdisplay _ _ Nothing = return ()
 fdisplay _ _ (Just rawSF) =
   let SingleFrame{sfLevel} = overlayOverlay rawSF
-      bs = map (BS.pack . map Color.acChar) sfLevel ++ [BS.empty]
+      bs = map (BS.pack . map Color.acChar . decodeLine) sfLevel ++ [BS.empty]
   in mapM_ BS.putStrLn bs
 
 -- | Input key via the frontend.

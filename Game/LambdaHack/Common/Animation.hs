@@ -1,7 +1,8 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | Screen frames and animations.
 module Game.LambdaHack.Common.Animation
-  ( SingleFrame(..), overlayOverlay, xsizeSingleFrame, ysizeSingleFrame
+  ( SingleFrame(..), decodeLine, encodeLine
+  , overlayOverlay, xsizeSingleFrame, ysizeSingleFrame
   , Animation, Frames, renderAnim, restrictAnim
   , twirlSplash, blockHit, blockMiss, deathBody, swapPlaces, fadeout
   , AcFrame(..)
@@ -14,10 +15,13 @@ import Data.Binary
 import Data.Bits
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import Data.Int (Int32)
 import Data.List
 import Data.Maybe
 import Data.Monoid
 import qualified Data.Text as T
+import qualified Data.Vector.Generic as G
+import qualified Data.Vector.Unboxed as U
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Color
@@ -27,11 +31,19 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 
+type ScreenLine = U.Vector Int32
+
+decodeLine :: ScreenLine -> [AttrChar]
+decodeLine v = map (toEnum . fromIntegral) $ G.toList v
+
+encodeLine :: [AttrChar] -> ScreenLine
+encodeLine l = G.fromList $ map (fromIntegral . fromEnum) l
+
 -- | The data sufficent to draw a single game screen frame.
 data SingleFrame = SingleFrame
-  { sfLevel  :: ![[AttrChar]]  -- ^ screen, from top to bottom, line by line
+  { sfLevel  :: ![ScreenLine]  -- ^ screen, from top to bottom, line by line
   , sfTop    :: !Overlay       -- ^ some extra lines to show over the top
-  , sfBottom :: ![[AttrChar]]  -- ^ some extra lines to show at the bottom
+  , sfBottom :: ![ScreenLine]  -- ^ some extra lines to show at the bottom
   , sfBlank  :: !Bool          -- ^ display only @sfTop@, on blank screen
   }
   deriving (Eq, Show)
@@ -44,7 +56,8 @@ overlayOverlay :: SingleFrame -> SingleFrame
 overlayOverlay sf@SingleFrame{..} =
   let lxsize = xsizeSingleFrame sf
       lysize = ysizeSingleFrame sf
-      emptyLine = replicate lxsize (Color.AttrChar Color.defAttr ' ')
+      emptyLine = encodeLine
+                  $ replicate lxsize (Color.AttrChar Color.defAttr ' ')
       canvasLength = if sfBlank then lysize + 3 else lysize + 1
       canvas | sfBlank = replicate canvasLength emptyLine
              | otherwise = emptyLine : sfLevel
@@ -54,8 +67,9 @@ overlayOverlay sf@SingleFrame{..} =
                  else take (canvasLength - 1) topTrunc
                       ++ ["--a portion of the text trimmed--"]
       addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
-      f layerLine canvasLine = addAttr layerLine
-                               ++ drop (T.length layerLine) canvasLine
+      f layerLine canvasLine = encodeLine
+        $ addAttr layerLine
+          ++ drop (T.length layerLine) (decodeLine canvasLine)
       picture = zipWith f topLayer canvas
       bottomLines = if sfBlank then [] else sfBottom
       newLevel = picture ++ drop (length picture) canvas ++ bottomLines
@@ -74,7 +88,7 @@ type Frames = [Maybe SingleFrame]
 
 xsizeSingleFrame :: SingleFrame -> X
 xsizeSingleFrame SingleFrame{sfLevel=[]} = 0
-xsizeSingleFrame SingleFrame{sfLevel=line : _} = length line
+xsizeSingleFrame SingleFrame{sfLevel=line : _} = G.length line
 
 ysizeSingleFrame :: SingleFrame -> X
 ysizeSingleFrame SingleFrame{sfLevel} = length sfLevel
@@ -93,7 +107,9 @@ renderAnim lxsize lysize basicFrame (Animation anim) =
               in foldl' f [] (zip [lxsize-1,lxsize-2..0] (reverse lineOld))
             sfLevel =  -- fully evaluated inside
               let f l (y, lineOld) = let !line = fLine y lineOld in line : l
-              in foldl' f [] (zip [lysize-1,lysize-2..0] $ reverse levelOld)
+              in map encodeLine
+                 $ foldl' f [] (zip [lysize-1,lysize-2..0]
+                                $ reverse $ map decodeLine levelOld)
         in Just SingleFrame{..}  -- a thunk within Just
   in map (modifyFrame basicFrame) anim
 

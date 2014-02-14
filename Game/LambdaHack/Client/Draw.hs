@@ -14,7 +14,7 @@ import qualified Data.Text as T
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Actor as Actor
 import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.Animation (SingleFrame (..))
+import Game.LambdaHack.Common.Animation
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Faction
@@ -167,10 +167,11 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
                     then ""
                     else T.justifyRight space ' ' pText
       targetStatus = addAttr $ T.justifyLeft 40 ' ' $ targetText <+> pathText
-      sfBottom = [ arenaStatus ++ cursorStatus
-                 , selectedStatus ++ leaderStatus ++ targetStatus ]
-      fLine y =
-        let f l x = let !ac = dis $ Point x y in ac : l
+      sfBottom =
+        [ encodeLine $ arenaStatus ++ cursorStatus
+        , encodeLine $ selectedStatus ++ leaderStatus ++ targetStatus ]
+      fLine y = encodeLine $
+        let f l x = let ac = dis $ Point x y in ac : l
         in foldl' f [] [lxsize-1,lxsize-2..0]
       sfLevel =  -- fully evaluated
         let f l y = let !line = fLine y in line : l

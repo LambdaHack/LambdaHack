@@ -21,8 +21,7 @@ import Data.Maybe
 import Graphics.UI.Gtk hiding (Point)
 import System.Time
 
-import Game.LambdaHack.Common.Animation (DebugModeCli (..), SingleFrame (..),
-                                         overlayOverlay)
+import Game.LambdaHack.Common.Animation
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Utils.LQueue
@@ -345,10 +344,11 @@ pushFrame sess noDelay immediate rawFrame = do
 evalFrame :: FrontendSession -> SingleFrame -> GtkFrame
 evalFrame FrontendSession{stags} rawSF =
   let SingleFrame{sfLevel} = overlayOverlay rawSF
-      levelChar = unlines $ map (map Color.acChar) sfLevel
+      sfLevelDecoded = map decodeLine sfLevel
+      levelChar = unlines $ map (map Color.acChar) sfLevelDecoded
       gfChar = BS.pack $ init levelChar
-      -- Strict version of @map (map ((stags M.!) . fst)) sfLevel@.
-      gfAttr  = reverse $ foldl' ff [] sfLevel
+      -- Strict version of @map (map ((stags M.!) . fst)) sfLevelDecoded@.
+      gfAttr  = reverse $ foldl' ff [] sfLevelDecoded
       ff ll l = reverse (foldl' f [] l) : ll
       f l ac  = let !tag = stags M.! Color.acAttr ac in tag : l
   in GtkFrame{..}
