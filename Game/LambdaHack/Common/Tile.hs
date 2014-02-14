@@ -22,7 +22,6 @@ module Game.LambdaHack.Common.Tile
   ) where
 
 import Control.Exception.Assert.Sugar
-import qualified Data.Array.Unboxed as A
 import Data.Maybe
 
 import qualified Game.LambdaHack.Common.Effect as Effect
@@ -50,42 +49,48 @@ hasFeature Kind.Ops{okind} f t = kindHasFeature f (okind t)
 -- Essential for efficiency of "FOV", hence tabulated.
 isClear :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 {-# INLINE isClear #-}
-isClear Kind.Ops{ospeedup = Just Kind.TileSpeedup{isClearTab}} = isClearTab
+isClear Kind.Ops{ospeedup = Just Kind.TileSpeedup{isClearTab}} =
+  \k -> Kind.accessTab isClearTab k
 isClear cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether a tile is lit on its own.
 -- Essential for efficiency of "Perception", hence tabulated.
 isLit :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 {-# INLINE isLit #-}
-isLit Kind.Ops{ospeedup = Just Kind.TileSpeedup{isLitTab}} = isLitTab
+isLit Kind.Ops{ospeedup = Just Kind.TileSpeedup{isLitTab}} =
+  \k -> Kind.accessTab isLitTab k
 isLit cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether actors can walk into a tile.
 -- Essential for efficiency of pathfinding, hence tabulated.
 isWalkable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 {-# INLINE isWalkable #-}
-isWalkable Kind.Ops{ospeedup = Just Kind.TileSpeedup{isWalkableTab=tab}} = tab
+isWalkable Kind.Ops{ospeedup = Just Kind.TileSpeedup{isWalkableTab}} =
+  \k -> Kind.accessTab isWalkableTab k
 isWalkable cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether actors can walk into a tile, perhaps opening a door first.
 -- Essential for efficiency of pathfinding, hence tabulated.
 isPassable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 {-# INLINE isPassable #-}
-isPassable Kind.Ops{ospeedup = Just Kind.TileSpeedup{isPassableTab=tab}} = tab
+isPassable Kind.Ops{ospeedup = Just Kind.TileSpeedup{isPassableTab}} =
+  \k -> Kind.accessTab isPassableTab k
 isPassable cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether a tile is a door, open or closed.
 -- Essential for efficiency of pathfinding, hence tabulated.
 isDoor :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 {-# INLINE isDoor #-}
-isDoor Kind.Ops{ospeedup = Just Kind.TileSpeedup{isDoorTab=tab}} = tab
+isDoor Kind.Ops{ospeedup = Just Kind.TileSpeedup{isDoorTab}} =
+  \k -> Kind.accessTab isDoorTab k
 isDoor cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether a tile is suspect.
 -- Essential for efficiency of pathfinding, hence tabulated.
 isSuspect :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 {-# INLINE isSuspect #-}
-isSuspect Kind.Ops{ospeedup = Just Kind.TileSpeedup{isSuspectTab=tab}} = tab
+isSuspect Kind.Ops{ospeedup = Just Kind.TileSpeedup{isSuspectTab}} =
+  \k -> Kind.accessTab isSuspectTab k
 isSuspect cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether a tile can be explored, possibly yielding a treasure.
@@ -105,32 +110,27 @@ lookSimilar t u =
   tcolor2 t == tcolor2 u
 
 speedup :: Bool -> Kind.Ops TileKind -> Kind.Speedup TileKind
-speedup allClear Kind.Ops{ofoldrWithKey, obounds} =
+speedup allClear cotile =
   -- Vectors pack bools as Word8 by default. No idea if the extra memory
   -- taken makes random lookups more or less efficient, so not optimizing
   -- further, until I have benchmarks.
-  let createTab :: (TileKind -> Bool) -> A.UArray (Kind.Id TileKind) Bool
-      createTab p =
-        let f _ k acc = p k : acc
-            clearAssocs = ofoldrWithKey f []
-        in A.listArray obounds clearAssocs
-      tabulate :: (TileKind -> Bool) -> Kind.Id TileKind -> Bool
-      tabulate p = (createTab p A.!)
-      isClearTab | allClear = tabulate $ not . kindHasFeature F.Impenetrable
-                 | otherwise = tabulate $ kindHasFeature F.Clear
-      isLitTab = tabulate $ not . kindHasFeature F.Dark
-      isWalkableTab = tabulate $ kindHasFeature F.Walkable
-      isPassableTab = tabulate $ \tk ->
+  let isClearTab | allClear = Kind.createTab cotile
+                              $ not . kindHasFeature F.Impenetrable
+                 | otherwise = Kind.createTab cotile
+                               $ kindHasFeature F.Clear
+      isLitTab = Kind.createTab cotile $ not . kindHasFeature F.Dark
+      isWalkableTab = Kind.createTab cotile $ kindHasFeature F.Walkable
+      isPassableTab = Kind.createTab cotile $ \tk ->
         let getTo F.OpenTo{} = True
             getTo F.Walkable = True
             getTo _ = False
         in any getTo $ tfeature tk
-      isDoorTab = tabulate $ \tk ->
+      isDoorTab = Kind.createTab cotile $ \tk ->
         let getTo F.OpenTo{} = True
             getTo F.CloseTo{} = True
             getTo _ = False
         in any getTo $ tfeature tk
-      isSuspectTab = tabulate $ kindHasFeature F.Suspect
+      isSuspectTab = Kind.createTab cotile $ kindHasFeature F.Suspect
   in Kind.TileSpeedup {..}
 
 openTo :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
