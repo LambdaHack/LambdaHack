@@ -30,7 +30,7 @@ module Game.LambdaHack.Client.Action
   , partAidLeader, partActorLeader, unexploredDepth
   , getCacheBfsAndPath, getCacheBfs, accessCacheBfs, actorAimsPos
   , closestUnknown, closestSmell, furthestKnown, closestTriggers
-  , closestItems, closestFoes
+  , closestItems, closestFoes, actorAbilities
   , debugPrint
   ) where
 
@@ -64,6 +64,7 @@ import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.State
+import Game.LambdaHack.Common.Ability (Ability)
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -85,6 +86,8 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
@@ -866,3 +869,14 @@ closestFoes aid = do
       bfs <- getCacheBfs aid
       let ds = mapMaybe (\x@(_, b) -> fmap (,x) (accessBfs bfs (bpos b))) foes
       return $! sortBy (comparing fst) ds
+
+actorAbilities :: MonadClient m => ActorId -> Maybe ActorId -> m [Ability]
+actorAbilities aid mleader = do
+  Kind.COps{ coactor=Kind.Ops{okind}
+           , cofaction=Kind.Ops{okind=fokind} } <- getsState scops
+  body <- getsState $ getActorBody aid
+  fact <- getsState $ (EM.! bfid body) . sfactionD
+  let factionAbilities
+        | Just aid == mleader = fAbilityLeader $ fokind $ gkind fact
+        | otherwise = fAbilityOther $ fokind $ gkind fact
+  return $! acanDo (okind $ bkind body) `intersect` factionAbilities

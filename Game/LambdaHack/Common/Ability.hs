@@ -14,6 +14,7 @@ data Ability =
   | Heal    -- ^ heal if almost dead
   | Flee    -- ^ flee if almost dead
   | Melee   -- ^ melee target
+  | Displace  -- ^ switch places with a friend
   | Pickup  -- ^ gather items, if no foes visible
   | Trigger -- ^ trigger a feature
   | Ranged  -- ^ attack the visible target opponent at range, some of the time

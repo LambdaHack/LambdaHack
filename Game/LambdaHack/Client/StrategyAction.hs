@@ -77,6 +77,9 @@ targetStrategy oldLeader aid = do
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
   allFoes <- getsState $ actorNotProjAssocs (isAtWar fact) (blid b)
   dungeon <- getsState sdungeon
+  -- TODO: we assume the actor eventually becomes a leader (or has the same
+  -- set of abilities as the leader, anyway) and set his target accordingly.
+  actorAbs <- actorAbilities aid (Just aid)
   let nearby = 10
       nearbyFoes = filter (\(_, body) ->
                              chessDist (bpos body) (bpos b) < nearby) allFoes
@@ -102,18 +105,24 @@ targetStrategy oldLeader aid = do
         case cfoes of
           (d, (a, _)) : _ | d < nearby -> setPath $ TEnemy a False
           _ -> do
-            citems <- closestItems aid
+            citems <- if Ability.Pickup `elem` actorAbs
+                      then closestItems aid
+                      else return []
             case citems of
               [] -> do
                 -- Tracking enemies is more important than exploring,
                 -- and smelling actors are usually blind, so bad at exploring.
-                smpos <- if canSmell then closestSmell aid else return []
+                smpos <- if canSmell
+                         then closestSmell aid
+                         else return []
                 case smpos of
                   [] -> do
                     upos <- closestUnknown aid
                     case upos of
                       Nothing -> do
-                        ctriggers <- closestTriggers Nothing False aid
+                        ctriggers <- if Ability.Trigger `elem` actorAbs
+                                     then closestTriggers Nothing False aid
+                                     else return []
                         case ctriggers of
                           [] -> do
                             getDistant <-
@@ -175,18 +184,20 @@ targetStrategy oldLeader aid = do
              -- shows up) and not changed all the time mid-route
              -- to equally interesting, but perhaps a bit closer targets,
              -- most probably already targeted by other actors.
-             || EM.null (lvl `atI` pos)  -- closestItems
-                && not (canSmell  -- closestSmell
-                        && let sml = EM.findWithDefault timeZero
-                                                        (bpos b) (lsmell lvl)
-                           in sml `timeAdd` timeNegate (ltime lvl) > timeZero)
+             || (Ability.Pickup `notElem` actorAbs  -- closestItems
+                 || EM.null (lvl `atI` pos))
+                && (not canSmell  -- closestSmell
+                    || let sml =
+                             EM.findWithDefault timeZero (bpos b) (lsmell lvl)
+                       in sml `timeAdd` timeNegate (ltime lvl) <= timeZero)
                 && let t = lvl `at` pos
                    in if ES.notMember lid explored
                       then  -- closestUnknown
                         t /= unknownId
                         && not (Tile.isSuspect cotile t)
                       else  -- closestTriggers
-                        not (Tile.isEscape cotile t && allExplored)
+                        (Ability.Trigger `notElem` actorAbs
+                         || not (Tile.isEscape cotile t && allExplored))
                         -- The next case is stairs in closestTriggers.
                         -- We don't determine if the stairs are interesting
                         -- (this changes with time), but allow the actor
@@ -219,17 +230,18 @@ targetStrategy oldLeader aid = do
 -- | AI strategy based on actor's sight, smell, intelligence, etc.
 -- Never empty.
 actionStrategy :: forall m. MonadClient m
-               => ActorId -> [Ability] -> m (Strategy CmdTakeTimeSer)
-actionStrategy aid factionAbilities = do
-  cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+               => ActorId -> m (Strategy CmdTakeTimeSer)
+actionStrategy aid = do
+  cops <- getsState scops
   disco <- getsClient sdisco
   btarget <- getsClient $ getTarget aid
-  Actor{bkind, bpos, blid} <- getsState $ getActorBody aid
+  Actor{bpos, blid} <- getsState $ getActorBody aid
   bitems <- getsState $ getActorItem aid
   lootItems <- getsState $ getFloorItem blid bpos
   lvl <- getLevel blid
-  let mk = okind bkind
-      mfAid =
+  mleader <- getsClient _sleader
+  actorAbs <- actorAbilities aid mleader
+  let mfAid =
         case btarget of
           Just (TEnemy foeAid _) -> Just foeAid
           _ -> Nothing
@@ -237,13 +249,12 @@ actionStrategy aid factionAbilities = do
       lootHere x = not $ EM.null $ lvl `atI` x
       lootIsWeapon = isJust $ strongestSword cops lootItems
       hasNoWeapon = isNothing $ strongestSword cops bitems
-      actorAbilities = acanDo mk `intersect` factionAbilities
       isDistant = (`elem` [ Ability.Trigger
                           , Ability.Ranged
                           , Ability.Tools
                           , Ability.Chase ])
       -- TODO: this is too fragile --- depends on order of abilities
-      (prefix, rest)    = break isDistant actorAbilities
+      (prefix, rest)    = break isDistant actorAbs
       (distant, suffix) = partition isDistant rest
       aFrequency :: Ability -> m (Frequency CmdTakeTimeSer)
       aFrequency Ability.Trigger = if foeVisible then return mzero
@@ -254,7 +265,7 @@ actionStrategy aid factionAbilities = do
       aFrequency Ability.Chase   = if not foeVisible then return mzero
                                    else chaseFreq
       aFrequency ab              = assert `failure` "unexpected ability"
-                                          `twith` (ab, distant, actorAbilities)
+                                          `twith` (ab, distant, actorAbs)
       chaseFreq :: MonadActionRO m => m (Frequency CmdTakeTimeSer)
       chaseFreq = do
         st <- chase aid True
@@ -265,12 +276,13 @@ actionStrategy aid factionAbilities = do
       aStrategy Ability.Flee   = return reject  -- TODO
       aStrategy Ability.Melee | Just foeAid <- mfAid = melee aid foeAid
       aStrategy Ability.Melee  = return reject
+      aStrategy Ability.Displace = displace aid
       aStrategy Ability.Pickup | not foeVisible && lootHere bpos
                                  || hasNoWeapon && lootIsWeapon = pickup aid
       aStrategy Ability.Pickup = return reject
       aStrategy Ability.Wander = chase aid False
       aStrategy ab             = assert `failure` "unexpected ability"
-                                        `twith`(ab, actorAbilities)
+                                        `twith`(ab, actorAbs)
       sumS abis = do
         fs <- mapM aStrategy abis
         return $! msum fs
@@ -484,6 +496,50 @@ toolsFreq disco aid = do
     useFreq bbag 1 (actorContainer aid binv)
     ++ useFreq tis 2 (const $ CFloor blid bpos)
 
+displace :: MonadClient m => ActorId -> m (Strategy CmdTakeTimeSer)
+displace aid = do
+  mtgtMPath <- getsClient $ EM.lookup aid . stargetD
+  str <- case mtgtMPath of
+    Just (_, Just ((p : q : _), _)) -> displaceTowards aid p q
+    _ -> return reject  -- goal reached
+  Traversable.mapM (moveOrRunAid True aid) str
+
+-- TODO: perhaps modify target when actually moving, not when
+-- producing the strategy, even if it's a unique choice in this case.
+displaceTowards :: MonadClient m
+                => ActorId -> Point -> Point -> m (Strategy Vector)
+displaceTowards aid source target = do
+  cops <- getsState scops
+  b <- getsState $ getActorBody aid
+  assert (source == bpos b && adjacent source target) skip
+  lvl <- getsState $ (EM.! blid b) . sdungeon
+  if accessible cops lvl source target then do
+    mBlocker <- getsState $ posToActor target (blid b)
+    case mBlocker of
+      Nothing -> return reject
+      Just ((aid2, _), _) -> do
+        mtgtMPath <- getsClient $ EM.lookup aid2 . stargetD
+        case mtgtMPath of
+          Just (tgt, Just (p : q : rest, (goal, len)))
+            | q == source && p == target -> do
+              let newTgt = Just (tgt, Just (q : rest, (goal, len - 1)))
+              modifyClient $ \cli ->
+                cli {stargetD = EM.alter (const $ newTgt) aid (stargetD cli)}
+              return $! returN "moveTowards adjacent"
+                     $ displacement source target
+          _ -> return reject
+  else return reject
+
+chase :: MonadClient m => ActorId -> Bool -> m (Strategy CmdTakeTimeSer)
+chase aid foeVisible = do
+  mtgtMPath <- getsClient $ EM.lookup aid . stargetD
+  str <- case mtgtMPath of
+    Just (_, Just ((p : q : _), (goal, _))) -> moveTowards aid p q goal
+    _ -> return reject  -- goal reached
+  if foeVisible  -- don't pick fights, but displace, if the real foe is close
+    then Traversable.mapM (moveOrRunAid True aid) str
+    else Traversable.mapM (moveOrRunAid False aid) str
+
 moveTowards :: MonadClient m
             => ActorId -> Point -> Point -> Point -> m (Strategy Vector)
 moveTowards aid source target goal = do
@@ -519,18 +575,6 @@ moveTowards aid source target goal = do
         groups = map (map snd) $ groupBy ((==) `on` fst) sorted
         freqs = map (liftFrequency . uniformFreq "moveTowards") groups
     return $! foldr (.|) reject freqs
-
-chase :: MonadClient m
-      => ActorId -> Bool -> m (Strategy CmdTakeTimeSer)
-chase aid foeVisible = do
-  mtgtMPath <- getsClient $ EM.lookup aid . stargetD
-  str <- case mtgtMPath of
-    Just (_, Just ((p : q : _), (goal, _))) -> moveTowards aid p q goal
-    _ -> return reject  -- goal reached
-  let fight = not foeVisible  -- don't pick fights if the real foe is close
-  if fight
-    then Traversable.mapM (moveOrRunAid False aid) str
-    else Traversable.mapM (moveOrRunAid True aid) str
 
 -- | Actor moves or searches or alters or attacks. Displaces if @run@.
 moveOrRunAid :: MonadActionRO m

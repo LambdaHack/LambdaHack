@@ -157,17 +157,11 @@ refreshTarget :: MonadClient m
               => ActorId -> (ActorId, Actor)
               -> m (Maybe ((ActorId, Actor), (Target, PathEtc)))
 refreshTarget oldLeader (aid, body) = do
-  Kind.COps{cofaction=Kind.Ops{okind}} <- getsState scops
   side <- getsClient sside
   assert (bfid body == side `blame` "AI tries to move an enemy actor"
                             `twith` (aid, body, side)) skip
   assert (not (bproj body) `blame` "AI gets to manually move its projectiles"
                            `twith` (aid, body, side)) skip
-  mleader <- getsClient _sleader
-  fact <- getsState $ (EM.! bfid body) . sfactionD
-  let factionAbilities
-        | Just aid == mleader = fAbilityLeader $ okind $ gkind fact
-        | otherwise = fAbilityOther $ okind $ gkind fact
   stratTarget <- targetStrategy oldLeader aid
   tgtMPath <-
     if nullStrategy stratTarget then
@@ -178,8 +172,7 @@ refreshTarget oldLeader (aid, body) = do
       (tgt, path) <- rndToAction $ frequency $ bestVariant stratTarget
       return $ Just (tgt, Just path)
   let _debug = T.unpack
-          $ "\nHandleAI abilities:" <+> tshow factionAbilities
-          <> ", symbol:"            <+> tshow (bsymbol body)
+          $ "\nHandleAI symbol:"    <+> tshow (bsymbol body)
           <> ", aid:"               <+> tshow aid
           <> ", pos:"               <+> tshow (bpos body)
           <> "\nHandleAI starget:"  <+> tshow stratTarget
@@ -194,18 +187,12 @@ refreshTarget oldLeader (aid, body) = do
 
 queryAIPick :: MonadClient m => (ActorId, Actor) -> m CmdTakeTimeSer
 queryAIPick (aid, body) = do
-  Kind.COps{cofaction=Kind.Ops{okind}} <- getsState scops
   side <- getsClient sside
   assert (bfid body == side `blame` "AI tries to move enemy actor"
                             `twith` (aid, bfid body, side)) skip
   assert (not (bproj body) `blame` "AI gets to manually move its projectiles"
                            `twith` (aid, bfid body, side)) skip
-  mleader <- getsClient _sleader
-  fact <- getsState $ (EM.! bfid body) . sfactionD
-  let factionAbilities
-        | Just aid == mleader = fAbilityLeader $ okind $ gkind fact
-        | otherwise = fAbilityOther $ okind $ gkind fact
-  stratAction <- actionStrategy aid factionAbilities
+  stratAction <- actionStrategy aid
   -- Run the AI: chose an action from those given by the AI strategy.
   rndToAction $ frequency $ bestVariant stratAction
 
