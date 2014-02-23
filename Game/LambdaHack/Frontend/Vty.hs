@@ -69,6 +69,9 @@ fpromptGetKey sess frame = do
   fdisplay sess True $ Just frame
   nextEvent sess
 
+-- TODO: Ctrl-Home and Ctrl-End are the same as Home and End on some terminals
+-- so we should probably go back to using 0-9 (and Shift) for movement
+-- but let's wait until vty 5.0 is out and see if it helps.
 keyTranslate :: Key -> K.Key
 keyTranslate n =
   case n of
@@ -77,15 +80,17 @@ keyTranslate n =
     (KASCII ' ')  -> K.Space
     (KASCII '\t') -> K.Tab
     KBackTab      -> K.BackTab
+    KBS           -> K.BackSpace
     KUp           -> K.Up
     KDown         -> K.Down
     KLeft         -> K.Left
     KRight        -> K.Right
     KHome         -> K.Home
-    KPageUp       -> K.PgUp
     KEnd          -> K.End
+    KPageUp       -> K.PgUp
     KPageDown     -> K.PgDn
     KBegin        -> K.Begin
+    KNP5          -> K.Begin
     (KASCII c)    -> K.Char c
     _             -> K.Unknown (tshow n)
 
@@ -94,6 +99,7 @@ modifierTranslate :: [Modifier] -> K.Modifier
 modifierTranslate mods =
   if MCtrl `elem` mods then K.Control else K.NoModifier
 
+-- TODO: with vty 5.0 check if bold is still needed.
 -- A hack to get bright colors via the bold attribute. Depending on terminal
 -- settings this is needed or not and the characters really get bold or not.
 -- HSCurses does this by default, but in Vty you have to request the hack.

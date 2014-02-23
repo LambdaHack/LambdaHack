@@ -207,7 +207,7 @@ library
     cpp-options:      -DCURSES
   } else { if flag(vty) {
     other-modules:    Game.LambdaHack.Frontend.Vty
-    build-depends:    vty >= 4.7.0.6
+    build-depends:    vty >= 4.7.0.6 && < 5
     cpp-options:      -DVTY
   } else {
     other-modules:    Game.LambdaHack.Frontend.Gtk

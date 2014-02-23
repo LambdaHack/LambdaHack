@@ -1,4 +1,6 @@
--- | Text frontend based on HSCurses.
+-- | Text frontend based on HSCurses. This frontend is not fully supported
+-- due to the limitations of the curses library (keys, colours, last character
+-- of the last line).
 module Game.LambdaHack.Frontend.Curses
   ( -- * Session data type for the frontend
     FrontendSession
@@ -100,6 +102,7 @@ keyTranslate e = (\(key, modifier) -> K.KM {..}) $
     C.KeyChar ' '    -> (K.Space,   K.NoModifier)
     C.KeyChar '\t'   -> (K.Tab,     K.NoModifier)
     C.KeyBTab        -> (K.BackTab, K.NoModifier)
+    C.KeyBackspace   -> (K.BackSpace, K.NoModifier)
     C.KeyUp          -> (K.Up,      K.NoModifier)
     C.KeyDown        -> (K.Down,    K.NoModifier)
     C.KeyLeft        -> (K.Left,    K.NoModifier)
@@ -107,8 +110,8 @@ keyTranslate e = (\(key, modifier) -> K.KM {..}) $
     C.KeyRight       -> (K.Right,   K.NoModifier)
     C.KeySRight      -> (K.Right,   K.NoModifier)
     C.KeyHome        -> (K.Home,    K.NoModifier)
-    C.KeyPPage       -> (K.PgUp,    K.NoModifier)
     C.KeyEnd         -> (K.End,     K.NoModifier)
+    C.KeyPPage       -> (K.PgUp,    K.NoModifier)
     C.KeyNPage       -> (K.PgDn,    K.NoModifier)
     C.KeyBeg         -> (K.Begin,   K.NoModifier)
     C.KeyB2          -> (K.Begin,   K.NoModifier)
@@ -127,7 +130,7 @@ keyTranslate e = (\(key, modifier) -> K.KM {..}) $
         -- as movement:
       | c `elem` ['1'..'9'] -> (K.KP c,              K.NoModifier)
       | otherwise           -> (K.Char c,            K.NoModifier)
-    _                       -> (K.Unknown (tshow e),  K.NoModifier)
+    _                       -> (K.Unknown (tshow e), K.NoModifier)
 
 toFColor :: Color.Color -> C.ForegroundColor
 toFColor Color.Black     = C.BlackF

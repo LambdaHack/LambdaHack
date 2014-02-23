@@ -56,13 +56,11 @@ Compatibility notes
 The current code was tested with GHC 7.6.3, but should also work with
 other GHC versions (see file .travis.yml.7.4.2 for GHC 7.4.2 commands).
 
-If you are using the curses or vty frontends,
-numerical keypad may not work correctly depending on the versions
-of curses, terminfo and terminal emulators.
-Selecting heroes via number keys or SHIFT-keypad keys is disabled
-with curses, because CTRL-keypad for running does not work there,
-so the numbers produced by the keypad have to be used. With vty on xterm,
-CTRL-direction keys seem to work OK, but on rxvt they do not.
+If you are using the terminal frontends, numerical keypad may not work
+correctly depending on versions of the libraries, terminfo and terminal
+emulators. The curses frontend is not fully supported due to the limitations
+of the curses library. With the vty frontend run in an xterm,
+CTRL-keypad keys for running seem to work OK, but on rxvt they do not.
 Vi keys (ykuhlbjn) should work everywhere regardless. Gtk works fine, too.
 
 
