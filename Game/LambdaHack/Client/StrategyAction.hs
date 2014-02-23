@@ -513,7 +513,8 @@ displaceTowards aid source target = do
   b <- getsState $ getActorBody aid
   assert (source == bpos b && adjacent source target) skip
   lvl <- getsState $ (EM.! blid b) . sdungeon
-  if accessible cops lvl source target then do
+  if boldpos b /= target -- avoid loops
+     && accessible cops lvl source target then do
     mBlocker <- getsState $ posToActor target (blid b)
     case mBlocker of
       Nothing -> return reject
@@ -525,9 +526,10 @@ displaceTowards aid source target = do
               let newTgt = Just (tgt, Just (q : rest, (goal, len - 1)))
               modifyClient $ \cli ->
                 cli {stargetD = EM.alter (const $ newTgt) aid (stargetD cli)}
-              return $! returN "moveTowards adjacent"
-                     $ displacement source target
-          _ -> return reject
+              return $! returN "displace friend" $ displacement source target
+          Just _ -> return reject
+          Nothing ->
+            return $! returN "displace other" $ displacement source target
   else return reject
 
 chase :: MonadClient m => ActorId -> Bool -> m (Strategy CmdTakeTimeSer)
