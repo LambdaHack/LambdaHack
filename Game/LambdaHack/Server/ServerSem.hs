@@ -79,15 +79,15 @@ checkAdjacent sb tb =
   return $! blid sb == blid tb && adjacent (bpos sb) (bpos tb)
 
 -- TODO: let only some actors/items leave smell, e.g., a Smelly Hide Armour.
--- | Add a smell trace for the actor to the level. For now, all and only
--- actors from non-spawning factions leave smell.
+-- | Add a smell trace for the actor to the level. For now, only heroes
+-- leave smell.
 addSmell :: MonadAtomic m => ActorId -> m ()
 addSmell aid = do
   cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let canSmell = asmell $ okind $ bkind b
-  unless (bproj b || isHeroFact cops fact || canSmell) $ do
+  unless (bproj b || not (isHeroFact cops fact) || canSmell) $ do
     time <- getsState $ getLocalTime $ blid b
     lvl <- getLevel $ blid b
     let oldS = EM.lookup (bpos b) . lsmell $ lvl
