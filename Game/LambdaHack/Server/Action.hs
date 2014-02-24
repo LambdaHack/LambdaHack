@@ -346,20 +346,21 @@ deduceQuits body status = do
   let assocsInGame = filter (inGame . snd) $ EM.assocs factionD
       keysInGame = map fst assocsInGame
       assocsSpawn = filter (isSpawnFact . snd) assocsInGame
-      assocsNotSummon = filter (not . isSummonFact cops . snd) assocsInGame
+      assocsNotHorror = filter (not . isHorrorFact cops . snd) assocsInGame
       assocsUI = filter (playerUI . gplayer . snd) assocsInGame
-  case assocsNotSummon of
+  case assocsNotHorror of
     _ | null assocsUI ->
       -- Only non-UI players left in the game and they all win.
       mapQuitF status{stOutcome=Conquer} keysInGame
     [] ->
-      -- Only summons remain so they all win, UI or human or not, allied/not.
+      -- Only horrors remain so they win.
       mapQuitF status{stOutcome=Conquer} keysInGame
-    (_, fact1) : rest | null assocsSpawn && all (isAllied fact1 . fst) rest ->
-      -- Only one allied non-summon team remains in a no-spawners game.
+    (_, fact1) : rest | null assocsSpawn
+                        && all (not . isAtWar fact1 . fst) rest ->
+      -- Only one non-horror team not at war remains in a no-spawners game.
       mapQuitF status{stOutcome=Conquer} keysInGame
     _ | stOutcome status == Escape -> do
-      -- Otherwise, in a spawners game or a game with many teams alive,
+      -- Otherwise, in a spawners game or a game with many warring teams alive,
       -- only complete Victory matters.
       let (victors, losers) = partition (flip isAllied fid . snd) assocsInGame
       mapQuitF status{stOutcome=Escape} $ map fst victors
