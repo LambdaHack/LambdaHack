@@ -84,7 +84,8 @@ targetStrategy oldLeader aid = do
       nearbyFoes = filter (\(_, body) ->
                              chessDist (bpos body) (bpos b) < nearby) allFoes
       unknownId = ouniqGroup "unknown space"
-      focused = bspeed b <= speedNormal
+      -- TODO: make more common when weak ranged foes preferred, etc.
+      focused = bspeed b < speedNormal
       canSmell = asmell $ okind $ bkind b
       setPath :: Target -> m (Strategy (Target, PathEtc))
       setPath tgt = do
@@ -274,7 +275,7 @@ actionStrategy aid = do
       aStrategy Ability.Track  = track aid
       aStrategy Ability.Heal   = return reject  -- TODO
       aStrategy Ability.Flee   = return reject  -- TODO
-      aStrategy Ability.Melee | Just foeAid <- mfAid = melee aid foeAid
+      aStrategy Ability.Melee | foeVisible = melee aid
       aStrategy Ability.Melee  = return reject
       aStrategy Ability.Displace = displace aid
       aStrategy Ability.Pickup | not foeVisible && lootHere bpos
@@ -328,17 +329,27 @@ pickup aid = do
   return $! actionPickup
 
 -- Everybody melees in a pinch, even though some prefer ranged attacks.
-melee :: MonadActionRO m
-      => ActorId -> ActorId -> m (Strategy CmdTakeTimeSer)
-melee aid foeAid = do
-  Actor{bpos} <- getsState $ getActorBody aid
-  Actor{bpos = fpos} <- getsState $ getActorBody foeAid
-  let foeAdjacent = adjacent bpos fpos  -- MeleeDistant
-  return $! foeAdjacent .=> returN "melee" (MeleeSer aid foeAid)
+melee :: MonadClient m => ActorId -> m (Strategy CmdTakeTimeSer)
+melee aid = do
+  b <- getsState $ getActorBody aid
+  mtgtMPath <- getsClient $ EM.lookup aid . stargetD
+  case mtgtMPath of
+    Just (_, Just (_ : q : _, _)) -> do
+      -- We melee if @q@ is the foe position or any blocking enemy position.
+      mBlocker <- getsState $ posToActor q (blid b)
+      case mBlocker of
+        Just ((aid2, _), _) -> do
+          body2 <- getsState $ getActorBody aid2
+          fact <- getsState $ \s -> sfactionD s EM.! bfid b
+          if adjacent (bpos b) (bpos body2)  -- MeleeDistant
+             && isAtWar fact (bfid body2) then
+            return $! returN "melee foe" (MeleeSer aid aid2)
+          else return reject
+        Nothing -> return reject
+    _ -> return reject  -- probably no path to the foe, if any
 
 -- Fast monsters don't pay enough attention to features.
-triggerFreq :: MonadClient m
-            => ActorId -> m (Frequency CmdTakeTimeSer)
+triggerFreq :: MonadClient m => ActorId -> m (Frequency CmdTakeTimeSer)
 triggerFreq aid = do
   cops@Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
   dungeon <- getsState sdungeon
@@ -500,7 +511,7 @@ displace :: MonadClient m => ActorId -> m (Strategy CmdTakeTimeSer)
 displace aid = do
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   str <- case mtgtMPath of
-    Just (_, Just ((p : q : _), _)) -> displaceTowards aid p q
+    Just (_, Just (p : q : _, _)) -> displaceTowards aid p q
     _ -> return reject  -- goal reached
   Traversable.mapM (moveOrRunAid True aid) str
 
@@ -536,7 +547,7 @@ chase :: MonadClient m => ActorId -> Bool -> m (Strategy CmdTakeTimeSer)
 chase aid foeVisible = do
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   str <- case mtgtMPath of
-    Just (_, Just ((p : q : _), (goal, _))) -> moveTowards aid p q goal
+    Just (_, Just (p : q : _, (goal, _))) -> moveTowards aid p q goal
     _ -> return reject  -- goal reached
   if foeVisible  -- don't pick fights, but displace, if the real foe is close
     then Traversable.mapM (moveOrRunAid True aid) str
