@@ -146,7 +146,7 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
           -- through some intermediate frames of an animation --- other keys
           -- are not meant to be pressed many times before the engine
           -- is ready to recognize and process them.
-          writeChan schanKey K.KM {key, modifier}
+          writeChan schanKey K.KM{key, modifier}
       return True
   -- Set the font specified in config, if any.
   f <- fontDescriptionFromString $ fromMaybe "" sfont
@@ -386,8 +386,8 @@ fdisplay :: FrontendSession    -- ^ frontend session data
 fdisplay sess noDelay = pushFrame sess noDelay False
 
 -- Display all queued frames, synchronously.
-displayAllFramesSync :: FrontendSession -> FrameState -> IO ()
-displayAllFramesSync sess@FrontendSession{sdebugCli=DebugModeCli{..}} fs = do
+_displayAllFramesSync :: FrontendSession -> FrameState -> IO ()
+_displayAllFramesSync sess@FrontendSession{sdebugCli=DebugModeCli{..}} fs = do
   let maxFps = fromMaybe defaultMaxFps smaxFps
   case fs of
     FPushed{..} ->
@@ -396,12 +396,12 @@ displayAllFramesSync sess@FrontendSession{sdebugCli=DebugModeCli{..}} fs = do
           -- Display synchronously.
           postGUISync $ output sess frame
           threadDelay $ microInSec `div` maxFps
-          displayAllFramesSync sess FPushed{fpushed = queue, fshown = frame}
+          _displayAllFramesSync sess FPushed{fpushed = queue, fshown = frame}
         Just (Nothing, queue) -> do
           -- Delay requested via an empty frame.
           unless snoDelay $
             threadDelay $ microInSec `div` maxFps
-          displayAllFramesSync sess FPushed{fpushed = queue, ..}
+          _displayAllFramesSync sess FPushed{fpushed = queue, ..}
         Nothing ->
           -- The queue is empty.
           return ()
@@ -417,10 +417,13 @@ fpromptGetKey sess@FrontendSession{sdebugCli=DebugModeCli{snoMore}, ..}
               frame = do
   pushFrame sess True True $ Just frame
   if snoMore then do
-    -- Show all frames synchronously.
-    fs <- takeMVar sframeState
-    displayAllFramesSync sess fs
-    putMVar sframeState FNone
+    -- TODO: This freezes the game for unknown reasons.
+    -- -- Show all frames synchronously.
+    -- fs <- takeMVar sframeState
+    -- displayAllFramesSync sess fs
+    -- putMVar sframeState FNone
+    -- return K.escKey
+    trimFrameState sess
     return K.escKey
   else do
     km <- readChan schanKey
