@@ -118,9 +118,11 @@ standard = RuleKind
       , ("semicolon", (CmdMove, Macro "go to target for 100 steps"
                                       ["CTRL-semicolon", "P"]))
       , ("x", (CmdMove, Macro "explore the closest unknown spot"
-                              ["CTRL-question", "CTRL-semicolon", "P"]))
+                              [ "BackSpace"
+                              , "CTRL-question", "CTRL-semicolon", "P" ]))
       , ("X", (CmdMove, Macro "autoexplore 100 times"
-                              [ "'", "CTRL-question", "CTRL-semicolon", "'"
+                              [ "BackSpace"
+                              , "'", "CTRL-question", "CTRL-semicolon", "'"
                               , "P" ]))
       , ("R", (CmdMove, Macro "rest (wait 100 times)" ["KP_Begin", "P"]))
       , ("c", (CmdMove, AlterDir
