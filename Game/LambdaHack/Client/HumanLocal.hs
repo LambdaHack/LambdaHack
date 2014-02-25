@@ -412,7 +412,7 @@ lookAt detailed tilePrefix canSee pos aid msg = do
   subject <- partAidLeader aid
   s <- getState
   let is = lvl `atI` pos
-      verb = MU.Text $ if canSee then "recognize" else "remember"
+      verb = MU.Text $ if canSee then "notice" else "remember"
   disco <- getsClient sdisco
   let nWs (iid, k) = partItemWs coitem disco k (getItemBody iid s)
       isd = case detailed of
