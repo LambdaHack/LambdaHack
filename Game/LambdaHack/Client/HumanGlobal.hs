@@ -118,6 +118,8 @@ moveRunHuman run dir = do
         assert (all (bproj . snd . fst) tgts) skip
         failSer DisplaceProjectiles
       ((target, tb), _) : _ -> do
+        -- No problem if there are many projectiles at the spot. We just
+        -- attack the first one.
         -- We always see actors from our own faction.
         if bfid tb == bfid sb && not (bproj tb) then do
           -- Select adjacent actor by bumping into him. Takes no time.
@@ -159,14 +161,22 @@ displaceAid source target = do
   cops <- getsState scops
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  let lid = blid sb
-  lvl <- getLevel lid
-  let spos = bpos sb
-      tpos = bpos tb
-  if accessible cops lvl spos tpos then
+  let adj = checkAdjacent sb tb
+  if not adj then failSer DisplaceDistant
+  else do
+    let lid = blid sb
+    lvl <- getLevel lid
+    let spos = bpos sb
+        tpos = bpos tb
     -- Displacing requires full access.
-    return $ Right $ DisplaceSer source target
-  else failSer DisplaceAccess
+    if accessible cops lvl spos tpos then do
+      tgts <- getsState $ posToActors tpos lid
+      case tgts of
+        [] -> assert `failure` (source, sb, target, tb)
+        [_] -> do
+          return $ Right $ DisplaceSer source target
+        _ -> failSer DisplaceProjectiles
+    else failSer DisplaceAccess
 
 -- * Wait
 

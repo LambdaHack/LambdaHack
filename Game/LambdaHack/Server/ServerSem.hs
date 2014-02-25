@@ -74,10 +74,6 @@ broadcastSfxAtomic fcmd = do
 
 -- * MoveSer
 
-checkAdjacent :: MonadActionRO m => Actor -> Actor -> m Bool
-checkAdjacent sb tb =
-  return $! blid sb == blid tb && adjacent (bpos sb) (bpos tb)
-
 -- TODO: let only some actors/items leave smell, e.g., a Smelly Hide Armour.
 -- | Add a smell trace for the actor to the level. For now, only heroes
 -- leave smell.
@@ -131,12 +127,14 @@ moveSer source dir = do
 -- For instance, an actor embedded in a wall can be attacked from
 -- an adjacent position. This function is analogous to projectGroupItem,
 -- but for melee and not using up the weapon.
+-- No problem if there are many projectiles at the spot. We just
+-- attack the one specified.
 meleeSer :: (MonadAtomic m, MonadServer m) => ActorId -> ActorId -> m ()
 meleeSer source target = do
   cops@Kind.COps{coitem=coitem@Kind.Ops{opick, okind}} <- getsState scops
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  adj <- checkAdjacent sb tb
+  let adj = checkAdjacent sb tb
   if source == target then execFailure source MeleeSelf
   else if not adj then execFailure source MeleeDistant
   else do
@@ -197,17 +195,23 @@ displaceSer source target = do
   cops <- getsState scops
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  adj <- checkAdjacent sb tb
+  let adj = checkAdjacent sb tb
   if not adj then execFailure source DisplaceDistant
   else do
     let lid = blid sb
     lvl <- getLevel lid
     let spos = bpos sb
         tpos = bpos tb
+    -- Displacing requires full access.
     if accessible cops lvl spos tpos then do
-      -- Displacing requires full access.
-      execCmdAtomic $ DisplaceActorA source target
-      addSmell source
+      tgts <- getsState $ posToActors tpos lid
+      case tgts of
+        [] -> assert `failure` (source, sb, target, tb)
+        [_] -> do
+          execCmdAtomic $ DisplaceActorA source target
+          addSmell source
+          addSmell target
+        _ -> execFailure source DisplaceProjectiles
     else do
       -- Client foolishly tries to displace an actor without access.
       execFailure source DisplaceAccess

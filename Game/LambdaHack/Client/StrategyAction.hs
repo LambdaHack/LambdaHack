@@ -336,16 +336,18 @@ melee aid = do
   case mtgtMPath of
     Just (_, Just (_ : q : _, _)) -> do
       -- We melee if @q@ is the foe position or any blocking enemy position.
-      mBlocker <- getsState $ posToActor q (blid b)
+      mBlocker <- getsState $ posToActors q (blid b)
       case mBlocker of
-        Just ((aid2, _), _) -> do
+        ((aid2, _), _) : _ -> do
+          -- No problem if there are many projectiles at the spot. We just
+          -- attack the first one.
           body2 <- getsState $ getActorBody aid2
           fact <- getsState $ \s -> sfactionD s EM.! bfid b
           if adjacent (bpos b) (bpos body2)  -- MeleeDistant
              && isAtWar fact (bfid body2) then
             return $! returN "melee foe" (MeleeSer aid aid2)
           else return reject
-        Nothing -> return reject
+        [] -> return reject
     _ -> return reject  -- probably no path to the foe, if any
 
 -- Fast monsters don't pay enough attention to features.
@@ -381,7 +383,7 @@ triggerFreq aid = do
           in case actorsThere of
             [] -> expBenefit
             [((_, body), _)] | not (bproj body) && isAtWar fact (bfid body) ->
-              min 1 expBenefit  -- push the enemy if nothing else to do
+              min 1 expBenefit  -- push the enemy if can't do anything else
             _ -> 0  -- projectiles or non-enemies
         F.Cause ef@Effect.Escape{} ->
           -- Only heroes escape but they first explore all for high score.
@@ -526,10 +528,10 @@ displaceTowards aid source target = do
   lvl <- getsState $ (EM.! blid b) . sdungeon
   if boldpos b /= target -- avoid loops
      && accessible cops lvl source target then do
-    mBlocker <- getsState $ posToActor target (blid b)
+    mBlocker <- getsState $ posToActors target (blid b)
     case mBlocker of
-      Nothing -> return reject
-      Just ((aid2, _), _) -> do
+      [] -> return reject
+      [((aid2, _), _)] -> do
         mtgtMPath <- getsClient $ EM.lookup aid2 . stargetD
         case mtgtMPath of
           Just (tgt, Just (p : q : rest, (goal, len)))
@@ -541,6 +543,7 @@ displaceTowards aid source target = do
           Just _ -> return reject
           Nothing ->
             return $! returN "displace other" $ displacement source target
+      _ -> return reject  -- many projectiles, can't displace
   else return reject
 
 chase :: MonadClient m => ActorId -> Bool -> m (Strategy CmdTakeTimeSer)
@@ -613,7 +616,9 @@ moveOrRunAid run source dir = do
       else
         -- If cannot displace, hit. No DisplaceAccess.
         return $! MeleeSer source target
-    ((target, _), _) : _ ->  -- can be a foe, as well as a friend
+    ((target, _), _) : _ ->  -- can be a foe, as well as a friend (e.g., proj.)
+      -- No problem if there are many projectiles at the spot. We just
+      -- attack the first one.
       -- Attacking does not require full access, adjacency is enough.
       return $! MeleeSer source target
     [] -> do  -- move or search or alter
