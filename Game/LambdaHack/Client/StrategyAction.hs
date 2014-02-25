@@ -475,16 +475,20 @@ makePath body fpos = do
   let eps = 0
       mbl = bla lxsize lysize eps (bpos body) fpos
   case mbl of
-    Just bl -> do
+    Just bl@(pos1:_) -> do
       let noActor p = any ((== p) . bpos) bs
       case break noActor bl of
         (flies, hits : _) -> do
           let blRest = flies ++ [hits]
               blZip = zip (bpos body : blRest) blRest
               blAccess = takeWhile (uncurry $ accessible cops lvl) blZip
-          return $ (length blAccess, eps)
+          mab <- getsState $ posToActor pos1 (blid body)
+          if maybe True (bproj . snd . fst) mab then
+            return $ (length blAccess, eps)
+          else return (0, eps)  -- ProjectBlockActor
         _ -> assert `failure` (body, fpos, bl)
-    _ -> return (0, eps)  -- ProjectAimOnself
+    Just [] -> assert `failure` (body, fpos)
+    Nothing -> return (0, eps)  -- ProjectAimOnself
 
 -- Tools use requires significant intelligence and sometimes literacy.
 toolsFreq :: MonadActionRO m

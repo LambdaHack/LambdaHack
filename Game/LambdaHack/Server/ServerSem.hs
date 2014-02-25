@@ -336,7 +336,7 @@ projectFail source tpxy eps iid container isShrapnel = do
             then
               if isShrapnel then do
                 -- Hit the blocking actor.
-                projectBla source spos (pos:rest) iid container
+                projectBla source spos (pos : rest) iid container
                 return Nothing
               else return $ Just ProjectBlockActor
             else do
