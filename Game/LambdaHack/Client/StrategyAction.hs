@@ -380,11 +380,15 @@ triggerFreq aid = do
                 else 2  -- no escape anywhere, switch levels occasionally
               (lid2, pos2) = whereTo (blid b) (bpos b) k dungeon
               actorsThere = posToActors pos2 lid2 s
-          in case actorsThere of
-            [] -> expBenefit
-            [((_, body), _)] | not (bproj body) && isAtWar fact (bfid body) ->
-              min 1 expBenefit  -- push the enemy if can't do anything else
-            _ -> 0  -- projectiles or non-enemies
+          in if boldpos b == bpos b  -- probably used stairs last turn
+                && boldlid b == lid2   -- in the opposite direction
+             then 0  -- avoid trivial loops (pushing, being pushed, etc.)
+             else case actorsThere of
+               [] -> expBenefit
+               [((_, body), _)] | not (bproj body)
+                                  && isAtWar fact (bfid body) ->
+                 min 1 expBenefit  -- push the enemy if no better option
+               _ -> 0  -- projectiles or non-enemies
         F.Cause ef@Effect.Escape{} ->
           -- Only heroes escape but they first explore all for high score.
           if not (isHero && allExplored) then 0 else effectToBenefit cops b ef
@@ -526,7 +530,7 @@ displaceTowards aid source target = do
   b <- getsState $ getActorBody aid
   assert (source == bpos b && adjacent source target) skip
   lvl <- getsState $ (EM.! blid b) . sdungeon
-  if boldpos b /= target -- avoid loops
+  if boldpos b /= target -- avoid trivial loops
      && accessible cops lvl source target then do
     mBlocker <- getsState $ posToActors target (blid b)
     case mBlocker of

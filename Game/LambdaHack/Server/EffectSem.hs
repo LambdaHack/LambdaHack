@@ -507,7 +507,8 @@ switchLevels2 lidNew posNew ((aid, bOld), ais) = do
       bNew = bOld { blid = lidNew
                   , btime = timeAdd timeLastVisited delta
                   , bpos = posNew
-                  , boldpos = posNew }  -- new level, new direction
+                  , boldpos = posNew  -- new level, new direction
+                  , boldlid = lidOld }  -- record old level
   mleader <- getsState $ gleader . (EM.! side) . sfactionD
   -- Materialize the actor at the new location.
   -- Onlookers see somebody appear suddenly. The actor himself

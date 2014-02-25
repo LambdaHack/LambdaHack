@@ -62,6 +62,7 @@ data Actor = Actor
   , bpos        :: !Point                -- ^ current position
   , boldpos     :: !Point                -- ^ previous position
   , blid        :: !LevelId              -- ^ current level
+  , boldlid     :: !LevelId              -- ^ previous level
   , bbag        :: !ItemBag              -- ^ items carried
   , binv        :: !ItemInv              -- ^ map from letters to items
   , bletter     :: !InvChar              -- ^ next inventory letter
@@ -101,6 +102,7 @@ actorTemplate :: Kind.Id ActorKind -> Char -> Text
 actorTemplate bkind bsymbol bname bcolor bspeed bhp btrajectory bpos blid btime
               bfid bproj =
   let boldpos = Point 0 0  -- make sure /= bpos, to tell it didn't switch level
+      boldlid = blid
       bbag    = EM.empty
       binv    = EM.empty
       bletter = InvChar 'a'
@@ -240,6 +242,7 @@ instance Binary Actor where
     put bpos
     put boldpos
     put blid
+    put boldlid
     put bbag
     put binv
     put bletter
@@ -258,6 +261,7 @@ instance Binary Actor where
     bpos <- get
     boldpos <- get
     blid <- get
+    boldlid <- get
     bbag <- get
     binv <- get
     bletter <- get
