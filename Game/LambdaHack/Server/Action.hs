@@ -345,7 +345,6 @@ deduceQuits body status = do
   factionD <- getsState sfactionD
   let assocsInGame = filter (inGame . snd) $ EM.assocs factionD
       keysInGame = map fst assocsInGame
-      assocsSpawn = filter (isSpawnFact . snd) assocsInGame
       assocsNotHorror = filter (not . isHorrorFact cops . snd) assocsInGame
       assocsUI = filter (playerUI . gplayer . snd) assocsInGame
   case assocsNotHorror of
@@ -353,15 +352,15 @@ deduceQuits body status = do
       -- Only non-UI players left in the game and they all win.
       mapQuitF status{stOutcome=Conquer} keysInGame
     [] ->
-      -- Only horrors remain so they win.
+      -- Only horrors remain, so they win.
       mapQuitF status{stOutcome=Conquer} keysInGame
-    (_, fact1) : rest | null assocsSpawn
-                        && all (not . isAtWar fact1 . fst) rest ->
-      -- Only one non-horror team not at war remains in a no-spawners game.
+    (_, fact1) : rest | all (not . isAtWar fact1 . fst) rest ->
+      -- Nobody is at war any more, so all win.
+      -- TODO: check not at war with each other.
       mapQuitF status{stOutcome=Conquer} keysInGame
     _ | stOutcome status == Escape -> do
-      -- Otherwise, in a spawners game or a game with many warring teams alive,
-      -- only complete Victory matters.
+      -- Otherwise, in a game with many warring teams alive,
+      -- only complete Victory matters, until enough of them die.
       let (victors, losers) = partition (flip isAllied fid . snd) assocsInGame
       mapQuitF status{stOutcome=Escape} $ map fst victors
       mapQuitF status{stOutcome=Defeated} $ map fst losers
