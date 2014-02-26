@@ -533,7 +533,7 @@ leadLevelFlip = do
                              | (lid, itemN, (a, b) : rest) <- ours
                              , bhp b > 0  -- drama levels skipped
                              , not leaderStuck || lid /= blid body
-                             , let len = 1 + length rest
+                             , let len = 1 + (min 10 $ length rest)
                                    k = 1000000 `div` (3 * itemN + len) ]
               unless (null freqList) $ do
                 (lid, a) <- rndToAction $ frequency
