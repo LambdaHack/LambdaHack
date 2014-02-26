@@ -334,20 +334,25 @@ melee aid = do
   b <- getsState $ getActorBody aid
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   case mtgtMPath of
-    Just (_, Just (_ : q : _, _)) -> do
-      -- We melee if @q@ is the foe position or any blocking enemy position.
-      mBlocker <- getsState $ posToActors q (blid b)
+    Just (_, Just (_ : q : _, (goal, _))) -> do
+      -- We prefer the goal (e.g., when no accessible, but adjacent),
+      -- but accept @q@ even if it's only a blocking enemy position.
+      let maim = if adjacent (bpos b) goal then Just goal
+                 else if adjacent (bpos b) q then Just q
+                 else Nothing  -- MeleeDistant
+      mBlocker <- case maim of
+        Nothing -> return Nothing
+        Just aim -> getsState $ posToActor aim (blid b)
       case mBlocker of
-        ((aid2, _), _) : _ -> do
+        Just ((aid2, _), _) -> do
           -- No problem if there are many projectiles at the spot. We just
           -- attack the first one.
           body2 <- getsState $ getActorBody aid2
           fact <- getsState $ \s -> sfactionD s EM.! bfid b
-          if adjacent (bpos b) (bpos body2)  -- MeleeDistant
-             && isAtWar fact (bfid body2) then
+          if isAtWar fact (bfid body2) then
             return $! returN "melee foe" (MeleeSer aid aid2)
           else return reject
-        [] -> return reject
+        Nothing -> return reject
     _ -> return reject  -- probably no path to the foe, if any
 
 -- Fast monsters don't pay enough attention to features.
@@ -380,8 +385,8 @@ triggerFreq aid = do
                 else 2  -- no escape anywhere, switch levels occasionally
               (lid2, pos2) = whereTo (blid b) (bpos b) k dungeon
               actorsThere = posToActors pos2 lid2 s
-          in if boldpos b == bpos b  -- probably used stairs last turn
-                && boldlid b == lid2   -- in the opposite direction
+          in if boldpos b == bpos b   -- probably used stairs last turn
+                && boldlid b == lid2  -- in the opposite direction
              then 0  -- avoid trivial loops (pushing, being pushed, etc.)
              else case actorsThere of
                [] -> expBenefit
