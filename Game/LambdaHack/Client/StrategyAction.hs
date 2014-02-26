@@ -70,7 +70,7 @@ targetStrategy oldLeader aid = do
           else
             Nothing  -- somebody pushed us off the goal; let's target again
         ([], _) -> assert `failure` (aid, b, mtgtMPath)
-    Just (_, Nothing) -> assert `failure` (aid, b, mtgtMPath)
+    Just (_, Nothing) -> return Nothing  -- path invalidated, e.g. SpotActorA
     Nothing -> return Nothing  -- no target assigned yet
   lvl <- getLevel $ blid b
   assert (not $ bproj b) skip  -- would work, but is probably a bug
@@ -169,8 +169,8 @@ targetStrategy oldLeader aid = do
                    Just path ->
                       return $! returN "TEnemy"
                         (oldTgt, ( bpos b : path
-                        , (p, fromMaybe (assert `failure` mpath)
-                              $ accessBfs bfs p) ))
+                                 , (p, fromMaybe (assert `failure` mpath)
+                                       $ accessBfs bfs p) ))
         _ | not $ null nearbyFoes ->
           pickNewTarget  -- prefer close foes to anything
         TPoint lid pos -> do
@@ -188,8 +188,9 @@ targetStrategy oldLeader aid = do
              || (Ability.Pickup `notElem` actorAbs  -- closestItems
                  || EM.null (lvl `atI` pos))
                 && (not canSmell  -- closestSmell
+                    || pos == bpos b  -- in case server resends deleted smell
                     || let sml =
-                             EM.findWithDefault timeZero (bpos b) (lsmell lvl)
+                             EM.findWithDefault timeZero pos (lsmell lvl)
                        in sml `timeAdd` timeNegate (ltime lvl) <= timeZero)
                 && let t = lvl `at` pos
                    in if ES.notMember lid explored

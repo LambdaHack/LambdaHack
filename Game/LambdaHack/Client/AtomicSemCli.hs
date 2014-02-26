@@ -236,8 +236,9 @@ createActorA aid _b = do
   let affect tgt = case tgt of
         TEnemyPos a _ _ permit | a == aid -> TEnemy a permit
         _ -> tgt
-      affect3 (tgt, mpath) = (affect tgt, mpath)
-                                -- If old path is bad, will be updated later.
+      affect3 (tgt, mpath) = case tgt of
+        TEnemyPos a _ _ permit | a == aid -> (TEnemy a permit, Nothing)
+        _ -> (tgt, mpath)
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
   modifyClient $ \cli -> cli {scursor = affect $ scursor cli}
 
