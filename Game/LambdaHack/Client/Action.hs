@@ -305,7 +305,7 @@ drawOverlay onBlank dm over = do
   let pathFromLeader leader =
         maybe (return Nothing) (fmap Just . getCacheBfsAndPath leader) tgtPos
   bfsmpath <- maybe (return Nothing) pathFromLeader mleader
-  tgtDesc <- maybe (return "") targetDescLeader mleader
+  tgtDesc <- maybe (return "------") targetDescLeader mleader
   cursorDesc <- targetDescCursor
   return $! draw onBlank dm cops per lid mleader cursorPos tgtPos
                  bfsmpath cli s cursorDesc tgtDesc over
@@ -389,7 +389,7 @@ animate arena anim = do
   let pathFromLeader leader =
         maybe (return Nothing) (fmap Just . getCacheBfsAndPath leader) tgtPos
   bfsmpath <- maybe (return Nothing) pathFromLeader mleader
-  tgtDesc <- maybe (return "") targetDescLeader mleader
+  tgtDesc <- maybe (return "------") targetDescLeader mleader
   cursorDesc <- targetDescCursor
   let over = renderReport sreport
       topLineOnly = truncateToOverlay lxsize over
