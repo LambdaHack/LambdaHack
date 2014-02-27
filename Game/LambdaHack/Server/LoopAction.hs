@@ -504,6 +504,7 @@ regenerateLevelHP lid = do
 
 leadLevelFlip :: (MonadAtomic m, MonadServer m) => m ()
 leadLevelFlip = do
+  Kind.COps{cotile} <- getsState scops
   let canFlip fact = playerAiLeader (gplayer fact)
                      || isSpawnFact fact
       flipFaction fact | not $ canFlip fact = return ()
@@ -512,10 +513,12 @@ leadLevelFlip = do
           Nothing -> return ()
           Just leader -> do
             body <- getsState $ getActorBody leader
+            lvl2 <- getLevel $ blid body
             let leaderStuck = waitedLastTurn body
-            -- Keep the leader: he probably used stairs right now
+                t = lvl2 `at` bpos body
+            -- Keep the leader: he is on stairs and not stuck
             -- and we don't want to clog stairs or get pushed to another level.
-            unless (not leaderStuck && bpos body == boldpos body) $ do
+            unless (not leaderStuck && Tile.isStair cotile t) $ do
               actorD <- getsState sactorD
               let ourLvl (lid, lvl) =
                     ( lid

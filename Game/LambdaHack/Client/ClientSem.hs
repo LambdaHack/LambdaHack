@@ -26,23 +26,28 @@ import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.HumanCmd
 import qualified Game.LambdaHack.Common.Key as K
 import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Utils.Frequency
 
 queryAI :: MonadClient m => ActorId -> m CmdTakeTimeSer
 queryAI oldAid = do
-  Kind.COps{cofaction=Kind.Ops{okind}} <- getsState scops
+  Kind.COps{cotile, cofaction=Kind.Ops{okind}} <- getsState scops
   oldBody <- getsState $ getActorBody oldAid
   let side = bfid oldBody
       arena = blid oldBody
   fact <- getsState $ \s -> sfactionD s EM.! side
-  let abilityLeader = fAbilityLeader $ okind $ gkind fact
+  lvl <- getLevel arena
+  let leaderStuck = waitedLastTurn oldBody
+      t = lvl `at` bpos oldBody
+      abilityLeader = fAbilityLeader $ okind $ gkind fact
       abilityOther = fAbilityOther $ okind $ gkind fact
   mleader <- getsClient _sleader
   ours <- getsState $ actorNotProjAssocs (== side) arena
@@ -56,9 +61,9 @@ queryAI oldAid = do
         -- at least as much as others). TODO: check not accurate,
         -- instead define 'movesThisTurn' and use elsehwere.
         || abilityLeader == abilityOther
-        -- Keep the leader: he probably used stairs right now
+        -- Keep the leader: he is on stairs and not stuck
         -- and we don't want to clog stairs or get pushed to another level.
-        || bpos oldBody == boldpos oldBody
+        || not leaderStuck && Tile.isStair cotile t
       -> pickOld
     [] -> assert `failure` (oldAid, oldBody)
     [_] -> pickOld  -- Keep the leader: he is alone on the level.
