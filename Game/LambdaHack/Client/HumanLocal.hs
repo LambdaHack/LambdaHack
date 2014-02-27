@@ -522,7 +522,6 @@ tgtFloorHuman = do
         _ | isNothing stgtMode ->  -- first key press: keep target
           scursor
         TEnemy a False -> TEnemy a True
-        TEnemyPos a lid p False -> TEnemyPos a lid p True
         TEnemy{} -> TPoint lidV cursor
         TEnemyPos{} -> TPoint lidV cursor
         TPoint{} -> TVector $ displacement lpos cursor
