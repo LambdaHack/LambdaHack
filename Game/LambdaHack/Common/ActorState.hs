@@ -31,7 +31,7 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.TileKind
 
 actorAssocsLvl :: (FactionId -> Bool) -> Level -> ActorDict
-            -> [(ActorId, Actor)]
+               -> [(ActorId, Actor)]
 actorAssocsLvl p lvl actorD =
   mapMaybe (\aid -> let actor = actorD EM.! aid
                     in if p (bfid actor)
@@ -49,7 +49,7 @@ actorList :: (FactionId -> Bool) -> LevelId -> State
 actorList p lid s = map snd $ actorAssocs p lid s
 
 actorNotProjAssocsLvl :: (FactionId -> Bool) -> Level -> ActorDict
-                   -> [(ActorId, Actor)]
+                      -> [(ActorId, Actor)]
 actorNotProjAssocsLvl p lvl actorD =
   mapMaybe (\aid -> let actor = actorD EM.! aid
                     in if not (bproj actor) && p (bfid actor)

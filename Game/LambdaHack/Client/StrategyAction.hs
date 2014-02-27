@@ -333,8 +333,9 @@ pickup aid = do
 melee :: MonadClient m => ActorId -> m (Strategy CmdTakeTimeSer)
 melee aid = do
   b <- getsState $ getActorBody aid
+  fact <- getsState $ \s -> sfactionD s EM.! bfid b
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
-  case mtgtMPath of
+  str1 <- case mtgtMPath of
     Just (_, Just (_ : q : _, (goal, _))) -> do
       -- We prefer the goal (e.g., when no accessible, but adjacent),
       -- but accept @q@ even if it's only a blocking enemy position.
@@ -349,12 +350,21 @@ melee aid = do
           -- No problem if there are many projectiles at the spot. We just
           -- attack the first one.
           body2 <- getsState $ getActorBody aid2
-          fact <- getsState $ \s -> sfactionD s EM.! bfid b
           if isAtWar fact (bfid body2) then
-            return $! returN "melee foe" (MeleeSer aid aid2)
+            return $! returN "melee in the way" (MeleeSer aid aid2)
           else return reject
         Nothing -> return reject
     _ -> return reject  -- probably no path to the foe, if any
+  -- TODO: depending on actor kind, sometimes move this in strategy
+  -- to a place after movement
+  if not $ nullStrategy str1 then return str1 else do
+    Level{lxsize, lysize} <- getLevel $ blid b
+    allFoes <- getsState $ actorNotProjAssocs (isAtWar fact) (blid b)
+    let vic = vicinity lxsize lysize $ bpos b
+        adjFoes = filter ((`elem` vic) . bpos . snd) allFoes
+        -- TODO: prioritize somehow
+        freq = uniformFreq "melee adjacent" $ map (MeleeSer aid . fst) adjFoes
+    return $ liftFrequency freq
 
 -- Fast monsters don't pay enough attention to features.
 triggerFreq :: MonadClient m => ActorId -> m (Frequency CmdTakeTimeSer)
