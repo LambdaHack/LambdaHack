@@ -690,19 +690,22 @@ aidTgtToPos aid lidV tgt =
 -- because the target actor can be obscured by a glass wall
 -- or be out of sight range, but in weapon range.
 aidTgtAims :: MonadClient m
-            => ActorId -> LevelId -> Maybe Target -> m Bool
+           => ActorId -> LevelId -> Maybe Target -> m (Maybe Text)
 aidTgtAims aid lidV tgt = do
   case tgt of
     Just (TEnemy a _) -> do
       body <- getsState $ getActorBody a
       let pos = bpos body
       b <- getsState $ getActorBody aid
-      if blid b == lidV
-        then actorAimsPos aid pos
-        else return False
-    Just TEnemyPos{} -> return False
-    Just TPoint{} -> return True
-    Just TVector{} -> return $ True
+      if blid b == lidV then do
+        aims <- actorAimsPos aid pos
+        if aims
+          then return Nothing
+          else return $ Just "aiming line to the opponent blocked"
+      else return $ Just "target opponent not on this level"
+    Just TEnemyPos{} -> return $ Just "target opponent not visible"
+    Just TPoint{} -> return Nothing
+    Just TVector{} -> return Nothing
     Nothing -> do
       scursor <- getsClient scursor
       aidTgtAims aid lidV $ Just scursor
@@ -717,12 +720,12 @@ leaderTgtToPos = do
       tgt <- getsClient $ getTarget aid
       aidTgtToPos aid lidV tgt
 
-leaderTgtAims :: MonadClientUI m => m Bool
+leaderTgtAims :: MonadClientUI m => m (Maybe Text)
 leaderTgtAims = do
   lidV <- viewedLevel
   mleader <- getsClient _sleader
   case mleader of
-    Nothing -> return False
+    Nothing -> return $ Just "no leader to target with"
     Just aid -> do
       tgt <- getsClient $ getTarget aid
       aidTgtAims aid lidV tgt

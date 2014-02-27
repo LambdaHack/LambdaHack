@@ -345,9 +345,9 @@ projectHuman ts = do
     Just pos | pos == bpos b -> failWith "cannot aim at oneself"
     Just pos -> do
       canAim <- leaderTgtAims
-      if canAim
-        then projectAid leader ts pos
-        else failWith "aiming line to the opponent blocked"
+      case canAim of
+        Nothing -> projectAid leader ts pos
+        Just cause -> failWith cause
 
 projectAid :: MonadClientUI m
            => ActorId -> [Trigger] -> Point -> m (SlideOrCmd CmdTakeTimeSer)
