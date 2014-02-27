@@ -106,17 +106,18 @@ targetStrategy oldLeader aid = do
         case cfoes of
           (d, (a, _)) : _ | d < nearby -> setPath $ TEnemy a False
           _ -> do
-            citems <- if Ability.Pickup `elem` actorAbs
-                      then closestItems aid
-                      else return []
-            case citems of
+            -- Tracking enemies is more important than exploring,
+            -- and smelling actors are usually blind, so bad at exploring.
+            -- TODO: prefer closer items to older smells
+            smpos <- if canSmell
+                     then closestSmell aid
+                     else return []
+            case smpos of
               [] -> do
-                -- Tracking enemies is more important than exploring,
-                -- and smelling actors are usually blind, so bad at exploring.
-                smpos <- if canSmell
-                         then closestSmell aid
-                         else return []
-                case smpos of
+                citems <- if Ability.Pickup `elem` actorAbs
+                          then closestItems aid
+                          else return []
+                case citems of
                   [] -> do
                     upos <- closestUnknown aid
                     case upos of
