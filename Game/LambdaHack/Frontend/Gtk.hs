@@ -410,7 +410,7 @@ _displayAllFramesSync sess@FrontendSession{sdebugCli=DebugModeCli{..}} fs = do
       return ()
 
 -- | Display a prompt, wait for any key.
--- Starts in Push mode, ends in None mode.
+-- Starts in Push mode, ends in None mode (TODO: not so currently with snoMore)
 -- Syncs with the drawing threads by showing the last or all queued frames.
 fpromptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
 fpromptGetKey sess@FrontendSession{sdebugCli=DebugModeCli{snoMore}, ..}
@@ -423,7 +423,6 @@ fpromptGetKey sess@FrontendSession{sdebugCli=DebugModeCli{snoMore}, ..}
     -- displayAllFramesSync sess fs
     -- putMVar sframeState FNone
     -- return K.escKey
-    trimFrameState sess
     return K.escKey
   else do
     km <- readChan schanKey
