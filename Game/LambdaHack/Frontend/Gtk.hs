@@ -73,13 +73,6 @@ onQueue f FrontendSession{sframeState} = do
     _ ->
       putMVar sframeState fs
 
-lengthQueue :: FrontendSession -> IO Int
-lengthQueue FrontendSession{sframeState} = do
-  fs <- readMVar sframeState
-  case fs of
-    FPushed{..} -> return $! lengthLQueue fpushed
-    _ -> return 0
-
 -- | The name of the frontend.
 frontendName :: String
 frontendName = "gtk"
@@ -133,20 +126,9 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
     let !key = K.keyTranslate n
         !modifier = modifierTranslate mods
     liftIO $ do
-      unless (deadKey n) $ do
-        len <- lengthQueue sess
-        if n == "space" && len > 1 then
-          -- Only drop frames up to the first empty frame.
-          -- Some new frames may be arriving at the same time
-          -- or being displayed and removed, but we don't care.
-          onQueue dropStartLQueue sess
-        else
-          -- Store the key in the channel. All but last frame will be dropped
-          -- as soon as the channel is read. Use SPACE repeatedly to step
-          -- through some intermediate frames of an animation --- other keys
-          -- are not meant to be pressed many times before the engine
-          -- is ready to recognize and process them.
-          writeChan schanKey K.KM{key, modifier}
+      unless (deadKey n) $
+        -- Store the key in the channel.
+        writeChan schanKey K.KM{key, modifier}
       return True
   -- Set the font specified in config, if any.
   f <- fontDescriptionFromString $ fromMaybe "" sfont
@@ -386,8 +368,8 @@ fdisplay :: FrontendSession    -- ^ frontend session data
 fdisplay sess noDelay = pushFrame sess noDelay False
 
 -- Display all queued frames, synchronously.
-_displayAllFramesSync :: FrontendSession -> FrameState -> IO ()
-_displayAllFramesSync sess@FrontendSession{sdebugCli=DebugModeCli{..}} fs = do
+displayAllFramesSync :: FrontendSession -> FrameState -> IO ()
+displayAllFramesSync sess@FrontendSession{sdebugCli=DebugModeCli{..}} fs = do
   let maxFps = fromMaybe defaultMaxFps smaxFps
   case fs of
     FPushed{..} ->
@@ -396,12 +378,12 @@ _displayAllFramesSync sess@FrontendSession{sdebugCli=DebugModeCli{..}} fs = do
           -- Display synchronously.
           postGUISync $ output sess frame
           threadDelay $ microInSec `div` maxFps
-          _displayAllFramesSync sess FPushed{fpushed = queue, fshown = frame}
+          displayAllFramesSync sess FPushed{fpushed = queue, fshown = frame}
         Just (Nothing, queue) -> do
           -- Delay requested via an empty frame.
           unless snoDelay $
             threadDelay $ microInSec `div` maxFps
-          _displayAllFramesSync sess FPushed{fpushed = queue, ..}
+          displayAllFramesSync sess FPushed{fpushed = queue, ..}
         Nothing ->
           -- The queue is empty.
           return ()
@@ -410,24 +392,31 @@ _displayAllFramesSync sess@FrontendSession{sdebugCli=DebugModeCli{..}} fs = do
       return ()
 
 -- | Display a prompt, wait for any key.
--- Starts in Push mode, ends in None mode (TODO: not so currently with snoMore)
+-- Starts in Push mode, ends in Push or None mode.
 -- Syncs with the drawing threads by showing the last or all queued frames.
 fpromptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
 fpromptGetKey sess@FrontendSession{sdebugCli=DebugModeCli{snoMore}, ..}
               frame = do
   pushFrame sess True True $ Just frame
   if snoMore then do
-    -- TODO: This freezes the game for unknown reasons.
-    -- -- Show all frames synchronously.
-    -- fs <- takeMVar sframeState
-    -- displayAllFramesSync sess fs
-    -- putMVar sframeState FNone
-    -- return K.escKey
+    -- Show all frames synchronously. Keys completely ignored. TODO: K.Space
+    fs <- takeMVar sframeState
+    displayAllFramesSync sess fs
+    putMVar sframeState FNone
     return K.escKey
   else do
     km <- readChan schanKey
-    -- Show the last frame and empty the queue.
-    trimFrameState sess
+    case km of
+      K.KM{key=K.Space, modifier=K.NoModifier} ->
+        -- Drop frames up to the first empty frame.
+        -- Keep the last non-empty frame, if any.
+        -- Pressing SPACE repeatedly can be used to step
+        -- through intermediate stages of an animation,
+        -- whereas any other key skips the whole animation outright.
+        onQueue dropStartLQueue sess
+      _ ->
+        -- Show the last non-empty frame and empty the queue.
+        trimFrameState sess
     return km
 
 -- | Tells a dead key.
