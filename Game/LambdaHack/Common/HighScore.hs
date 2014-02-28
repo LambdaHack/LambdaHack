@@ -27,30 +27,31 @@ data ScoreRecord = ScoreRecord
   }
   deriving (Eq, Ord)
 
+-- TODO: move all to Text
 -- | Show a single high score, from the given ranking in the high score table.
 showScore :: (Int, ScoreRecord) -> [Text]
 showScore (pos, score) =
   let Status{stOutcome, stDepth} = status score
       died = case stOutcome of
-        Killed -> "perished on level " ++ show (abs stDepth) ++ ","
-        Defeated -> "was defeated"
-        Camping -> "is camping somewhere,"
-        Conquer -> "eliminated all opposition"
-        Escape -> "emerged victorious"
-        Restart -> "resigned prematurely"
+        Killed   -> "Perished on level " ++ show (abs stDepth)
+        Defeated -> "Was defeated"
+        Camping  -> "Camps somewhere"
+        Conquer  -> "Slew all opposition"
+        Escape   -> "Emerged victorious"
+        Restart  -> "Resigned prematurely"
       curDate = calendarTimeToString . toUTCTime . date $ score
-      big, lil :: String
-      big = "                                                 "
-      lil = "              "
       turns = - (negTime score `timeFit` timeTurn)
       diff = 5 - difficulty score
+      diffText :: String
+      diffText | diff == 5 = ","
+               | otherwise = printf " (difficulty %d)," diff
      -- TODO: the spaces at the end are hand-crafted. Remove when display
      -- of overlays adds such spaces automatically.
   in map T.pack
-       [ big
-       , printf "%4d. %6d  This adventuring party %s under difficulty %d "
-                pos (points score) died diff
-       , lil ++ printf "after %d turns on %s.  " turns curDate
+       [ ""
+       , printf "%4d. %6d  %s%s"
+                pos (points score) died diffText
+       , "              " ++ printf "after %d turns on %s." turns curDate
        ]
 
 -- | The list of scores, in decreasing order.
