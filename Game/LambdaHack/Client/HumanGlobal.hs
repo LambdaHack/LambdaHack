@@ -81,6 +81,7 @@ moveRunHuman run dir = do
     arena <- getArenaUI
     leader <- getLeaderUI
     sb <- getsState $ getActorBody leader
+    fact <- getsState $ (EM.! bfid sb) . sfactionD
     let tpos = bpos sb `shift` dir
     -- We start by checking actors at the the target position,
     -- which gives a partial information (actors can be invisible),
@@ -98,7 +99,9 @@ moveRunHuman run dir = do
           Left stopMsg -> failWith stopMsg
           Right runCmd -> do
             sel <- getsClient sselected
-            let runMembers = ES.toList (ES.delete leader sel) ++ [leader]
+            let runMembers = if isSpawnFact fact
+                             then [leader]  -- TODO: warn?
+                             else ES.toList (ES.delete leader sel) ++ [leader]
                 runParams = RunParams { runLeader = leader
                                       , runMembers
                                       , runDist = 0
@@ -122,11 +125,14 @@ moveRunHuman run dir = do
         -- attack the first one.
         -- We always see actors from our own faction.
         if bfid tb == bfid sb && not (bproj tb) then do
-          -- Select adjacent actor by bumping into him. Takes no time.
-          success <- pickLeader target
-          assert (success `blame` "bump self"
-                          `twith` (leader, target, tb)) skip
-          return $ Left mempty
+          if isSpawnFact fact then
+            failWith "spawners cannot manually change leaders"
+          else do
+            -- Select adjacent actor by bumping into him. Takes no time.
+            success <- pickLeader target
+            assert (success `blame` "bump self"
+                            `twith` (leader, target, tb)) skip
+            return $ Left mempty
         else
           -- Attacking does not require full access, adjacency is enough.
           meleeAid leader target
@@ -141,11 +147,11 @@ meleeAid source target = do
   let returnCmd = return $ Right $ MeleeSer source target
   if not (bproj tb || isAtWar sfact (bfid tb)) then do
     go1 <- displayYesNo ColorBW
-            "This attack will start a war. Are you sure?"
+             "This attack will start a war. Are you sure?"
     if not go1 then failWith "Attack canceled."
     else if not (bproj tb || not (isAllied sfact (bfid tb))) then do
       go2 <- displayYesNo ColorBW
-              "You are bound by an alliance. Really attack?"
+               "You are bound by an alliance. Really attack?"
       if not go2 then failWith "Attack canceled."
       else returnCmd
     else returnCmd

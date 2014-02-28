@@ -43,7 +43,7 @@ queryAI oldAid = do
   oldBody <- getsState $ getActorBody oldAid
   let side = bfid oldBody
       arena = blid oldBody
-  fact <- getsState $ \s -> sfactionD s EM.! side
+  fact <- getsState $ (EM.! side) . sfactionD
   lvl <- getLevel arena
   let leaderStuck = waitedLastTurn oldBody
       t = lvl `at` bpos oldBody
@@ -61,6 +61,8 @@ queryAI oldAid = do
         -- at least as much as others). TODO: check not accurate,
         -- instead define 'movesThisTurn' and use elsehwere.
         || abilityLeader == abilityOther
+        -- Keep the leader: spawners can't change leaders themselves.
+        || isSpawnFact fact
         -- Keep the leader: he is on stairs and not stuck
         -- and we don't want to clog stairs or get pushed to another level.
         || not leaderStuck && Tile.isStair cotile t

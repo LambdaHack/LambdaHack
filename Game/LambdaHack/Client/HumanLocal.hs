@@ -81,9 +81,11 @@ gameDifficultyCycle = do
 pickLeaderHuman :: MonadClientUI m => Int -> m Slideshow
 pickLeaderHuman k = do
   side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
   s <- getState
   case tryFindHeroK s side k of
-    Nothing  -> failWith "No such member of the party."
+    _ | isSpawnFact fact -> failWith "spawners cannot manually change leaders"
+    Nothing -> failWith "No such member of the party."
     Just (aid, _) -> do
       void $ pickLeader aid
       return mempty
@@ -93,10 +95,13 @@ pickLeaderHuman k = do
 -- | Switches current member to the next on the level, if any, wrapping.
 memberCycleHuman :: MonadClientUI m => m Slideshow
 memberCycleHuman = do
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
   hs <- partyAfterLeader leader
   case filter (\(_, b) -> blid b == blid body) hs of
+    _ | isSpawnFact fact -> failWith "spawners cannot manually change leaders"
     [] -> failWith "Cannot pick any other member on this level."
     (np, b) : _ -> do
       success <- pickLeader np
@@ -148,9 +153,12 @@ pickLeader actor = do
 -- | Switches current member to the previous in the whole dungeon, wrapping.
 memberBackHuman :: MonadClientUI m => m Slideshow
 memberBackHuman = do
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
   leader <- getLeaderUI
   hs <- partyAfterLeader leader
   case reverse hs of
+    _ | isSpawnFact fact -> failWith "spawners cannot manually change leaders"
     [] -> failWith "No other member in the party."
     (np, b) : _ -> do
       success <- pickLeader np

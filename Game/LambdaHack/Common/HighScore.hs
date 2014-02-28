@@ -43,8 +43,8 @@ showScore (pos, score) =
       turns = - (negTime score `timeFit` timeTurn)
       diff = 5 - difficulty score
       diffText :: String
-      diffText | diff == 5 = ","
-               | otherwise = printf " (difficulty %d)," diff
+      diffText | diff == 5 = ""
+               | otherwise = printf " (difficulty %d)" diff
      -- TODO: the spaces at the end are hand-crafted. Remove when display
      -- of overlays adds such spaces automatically.
   in map T.pack

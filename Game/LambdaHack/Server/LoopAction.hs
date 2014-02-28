@@ -240,9 +240,11 @@ handleActors cmdSerSem lid = do
                   then -- Only a leader can change his faction's leader
                        -- before the action is performed (e.g., via AI
                        -- switching leaders). Then, the action can change
-                       -- the leader again (e.g., via using stairs).
-                       assert ( aidIsLeader && not (bproj bPre)
-                               `blame` (aid, aidNew, bPre, cmdS, fact))
+                       -- the leader again (e.g., via killing the old leader).
+                       assert (aidIsLeader
+                               && not (bproj bPre)
+                               && not (isSpawnFact fact)
+                               `blame` (aid, body, aidNew, bPre, cmdS, fact))
                          [LeadFactionA side mleader (Just aidNew)]
                   else []
             mapM_ execCmdAtomic leadAtoms
