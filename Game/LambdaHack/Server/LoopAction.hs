@@ -341,7 +341,7 @@ dieSer aid b hit = do
     dropAllItems aid b False
     b2 <- getsState $ getActorBody aid
     execCmdAtomic $ DestroyActorA aid b2 []
-    deduceKilled b2
+    deduceKilled b
 
 -- | Drop all actor's items. If the actor hits another actor and this
 -- collision results in all item being dropped, all items are destroyed.
