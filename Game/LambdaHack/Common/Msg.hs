@@ -18,12 +18,15 @@ import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
-import NLP.Miniutter.English ((<+>))
 import qualified NLP.Miniutter.English as MU
 import qualified Text.Show.Pretty as Show.Pretty
 
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
+
+infixr 6 <+>  -- TODO: not needed when we require a very new minimorph
+(<+>) :: Text -> Text -> Text
+(<+>) = (MU.<+>)
 
 -- Pretty print and pack the result of @show@.
 tshow :: Show a => a -> Text
