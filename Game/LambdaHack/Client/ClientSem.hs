@@ -205,6 +205,8 @@ queryAIPick (aid, body) = do
 -- | Handle the move of a UI player.
 queryUI :: MonadClientUI m => ActorId -> m CmdSer
 queryUI aid = do
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
   -- When running, stop if disturbed. If not running, let the human
   -- player issue commands, until any command takes time.
   leader <- getLeaderUI
@@ -213,6 +215,13 @@ queryUI aid = do
   srunning <- getsClient srunning
   case srunning of
     Nothing -> humanCommand Nothing
+    Just RunParams{runMembers} | isSpawnFact fact && runMembers /= [aid] -> do
+      stopRunning
+      ConfigUI{configRunStopMsgs} <- getsClient sconfigUI
+      let msg = if configRunStopMsgs
+                then Just $ "Run stop: spawner leader change"
+                else Nothing
+      humanCommand msg
     Just runParams -> do
       runOutcome <- continueRun runParams
       case runOutcome of

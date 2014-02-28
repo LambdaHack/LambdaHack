@@ -152,9 +152,11 @@ stopRunning = do
     Nothing -> return ()
     Just RunParams{runLeader} -> do
       -- Switch to the original leader, from before the run start, unless dead.
+      side <- getsClient sside
+      fact <- getsState $ (EM.! side) . sfactionD
       arena <- getArenaUI
       s <- getState
-      when (memActor runLeader arena s) $
+      when (memActor runLeader arena s && not (isSpawnFact fact)) $
         modifyClient $ updateLeader runLeader s
       modifyClient (\cli -> cli { srunning = Nothing })
 
