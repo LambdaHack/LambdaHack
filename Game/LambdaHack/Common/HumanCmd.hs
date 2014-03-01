@@ -103,8 +103,8 @@ cmdDescription cmd = case cmd of
   Wait        -> "wait"
   Pickup      -> "get an object"
   Drop        -> "drop an object"
-  Project ts     -> triggerDescription ts
-  Apply ts       -> triggerDescription ts
+  Project ts  -> triggerDescription ts
+  Apply ts    -> triggerDescription ts
   AlterDir ts -> triggerDescription ts
   TriggerTile ts -> triggerDescription ts
   StepToTarget -> "make one step towards the target"
@@ -136,8 +136,8 @@ cmdDescription cmd = case cmd of
   MoveCursor v 1 -> "move cursor" <+> compassText v
   MoveCursor v k ->
     "move cursor up to" <+> tshow k <+> "steps" <+> compassText v
-  TgtFloor    -> "target position"
-  TgtEnemy    -> "target monster"
+  TgtFloor    -> "cycle targeting mode"
+  TgtEnemy    -> "target enemy"
   TgtUnknown  -> "target the closest unknown spot"
   TgtItem     -> "target the closest item"
   TgtStair up -> "target the closest stairs" <+> if up then "up" else "down"
@@ -145,8 +145,8 @@ cmdDescription cmd = case cmd of
   TgtAscend k | k >= 2  -> "target" <+> tshow k    <+> "levels shallower"
   TgtAscend k | k == -1 -> "target next deeper level"
   TgtAscend k | k <= -2 -> "target" <+> tshow (-k) <+> "levels deeper"
-  TgtAscend _ ->
-    assert `failure` "void level change when targeting" `twith` cmd
+  TgtAscend _ -> assert `failure` "void level change when targeting"
+                        `twith` cmd
   EpsIncr True  -> "swerve targeting line"
   EpsIncr False -> "unswerve targeting line"
   TgtClear    -> "clear target/cursor"

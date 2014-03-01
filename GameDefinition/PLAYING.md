@@ -13,9 +13,11 @@ by smell and sight.
 Once the few basic command keys and on-screen symbols are learned,
 mastery and enjoyment of the game is the matter of tactical skill
 and literary imagination. To be honest, a lot of imagination is required
-for this simple game, but it's playable and winnable.
-The game also features multiplayer cooperative and competitive modes,
-though only a shared-screen interface is provided at this time.
+for this rudimentary game, but it's playable and winnable.
+The game also features experimental multiplayer cooperative and competitive
+modes, but they are troublesome to play with the shared-screen
+and shared-keyboard interface available at this time.
+Contributions welcome.
 
 
 Dungeon
@@ -25,7 +27,7 @@ The heroes are marked on the map with symbols '@' and '1' through '9'.
 Their goal is to explore the dungeon, battle the horrors within,
 gather as much gold and gems as possible, and escape to tell the tale.
 The dungeon of the campaign mode game consists of 10 levels and each level
-consists of large number of tiles. The basic tiles are as follows.
+consists of a large number of tiles. The basic tile kinds are as follows.
 
                dungeon terrain type               on-screen symbol
                floor                              .
@@ -49,86 +51,114 @@ Keys
 You move throughout the level using the numerical keypad or
 the vi text editor keys (also known as "Rogue-like keys").
 
-               7 8 9     y k u
-                \|/       \|/
-               4-5-6     h-.-l
-                /|\       /|\
-               1 2 3     b j n
+                7 8 9          y k u
+                 \|/            \|/
+                4-5-6          h-.-l
+                 /|\            /|\
+                1 2 3          b j n
 
 SHIFT (or CTRL) and a movement key make the party leader run in the indicated
 direction, until anything of interest is spotted. The '5' and '.' keys take
-a turn to brace for combat, which gives a chance to block blows
-for the remainder of the turn. Melee, searching for secret doors
-and opening closed doors can be done by bumping into a monster,
-a wall and a door, respectively.
+a turn and make you brace for combat, which confers a chance to block blows
+for the remainder of the turn. In targeting mode the same keys move
+the targeting cursor.
 
-Below are the default keys for major commands.
+Melee, searching for secret doors and opening closed doors
+can be done by bumping into a monster, a wall and a door, respectively.
+Not many other commands are necessary for ordinary play.
+Some are provided only as building blocks for more complex commands
+and player macros, e.g., the autoexplore command (key X) is defined
+in the game content using BACKSPACE, CTRL-?, CTRL-; and P.
 
-               key       command
-               ESC       cancel action or bring up the Main Menu
-               RET       accept choice
-               <         ascend a level
-               >         descend a level
-               ?         display help
-               I         display inventory
-               P         play back last keys 100 times
-               c         close a door
-               d         drop an object
-               g         get an object
-               o         open a door
-               p         play back last keys
-               q         quaff a potion
-               r         read a scroll
-               t         throw a dart
-               z         zap a wand
-               CTRL-p    play back last keys 1000 times
+Below are the remaining keys for movement and terrain alteration.
+The first four also switch levels in targeting mode.
 
-To make a ranged attack, you need to set your target first,
-using targeting mode ('*' and '/' keys). The target, for the few
-commands that require any, is indicated by the targeting cursor.
-The targeting commands and all the less used commands are listed below.
+                keys           command
+                <              ascend a level
+                CTRL-<         ascend 10 levels
+                >              descend a level
+                CTRL->         descend 10 levels
+                CTRL-;         make one step towards the target
+                ;              go to target for 100 steps
+                x              explore the closest unknown spot
+                X              autoexplore 100 times
+                R              rest (wait 100 times)
+                c              close door
+                o              open door
 
-               key       command
-               TAB       cycle among party members on the level
-               SHIFT-TAB cycle among party members in the dungeon
-               *         target monster
-               +         swerve targeting line
-               -         unswerve targeting line
-               /         target position
-               =         select (or deselect) a party member
-               D         display player diary
-               S         mark smell
-               T         mark suspect terrain
-               V         mark visible area
-               [         target next shallower level
-               ]         target next deeper level
-               _         deselect (or select) all on the level
-               {         target 10 levels shallower
-               }         target 10 levels deeper
-               0--9      pick a new leader anywhere in the dungeon
+Inventory and items-related keys are as follows.
+
+                keys           command
+                I              display inventory
+                g and ,        get an object
+                d              drop an object
+                q              quaff potion
+                r              read scroll
+                t              throw missile
+                z              zap wand
+
+To make a ranged attack, as in the last few commands above,
+you need to set your target first (however, initial target is set
+automatically as soon as a monster comes into view). Once in targeting mode,
+you can move the targeting cursor with arrow keys and switch focus
+among enemies with '*' (or among friends and enemies, depending
+on targeting mode set by '/'). The details of the shared cursor position
+and of the personal target are described at the bottom of the screen.
+All targeting keys are listed below.
+
+                keys           command
+                *              target enemy
+                /              cycle targeting mode
+                +              swerve targeting line
+                -              unswerve targeting line
+                BACKSPACE      clear target/cursor
+                CTRL-?         target the closest unknown spot
+                CTRL-I         target the closest item
+                CTRL-{         target the closest stairs up
+                CTRL-}         target the closest stairs down
+
+Assorted keys and commands follow.
+
+                keys           command
+                ?              display help
+                D              display player diary
+                T              mark suspect terrain
+                V              mark visible area
+                S              mark smell
+                TAB            cycle among party members on the level
+                SHIFT-TAB      cycle among party members in the dungeon
+                =              select (or deselect) a party member
+                _              deselect (or select) all on the level
+                p              play back last keys
+                P              play back last keys 100 times
+                CTRL-p         play back last keys 1000 times
+                '              start recording a macro
+                SPACE          clear messages
+                ESC            cancel action
+                RET            accept choice
+                0--9           pick a new hero leader anywhere in the dungeon
 
 Commands for saving and exiting the current game, starting a new game, etc.,
-are listed in the Main Menu, brough up by the ESC key.
-Some of the game modes are multiplayer or feature multiple computer
-players (allied or not). The setup of the modes can be modified
-via a configuration file. Game difficulty setting affects hitpoints
-at birth for any actors of any UI-using player.
+are listed in the Main Menu, brought up by the ESC key.
+Some of the game modes are experimental multiplayer modes or feature
+multiple computer players (allied or not). Game difficulty setting affects
+hitpoints at birth for any actors of any UI-using faction.
 
-               key       command
-               CTRL-x    save and exit
-               CTRL-r    new campaign game
-               CTRL-k    new skirmish game
-               CTRL-p    new PvP game
-               CTRL-o    new Coop game
-               CTRL-e    new defense game
-               CTRL-d    cycle next game difficulty
+                keys           command
+                CTRL-x         save and exit
+                CTRL-r         new campaign game
+                CTRL-k         new skirmish game
+                CTRL-v         new PvP game
+                CTRL-o         new Coop game
+                CTRL-e         new defense game
+                CTRL-d         cycle next game difficulty
 
 There are also some debug, testing and cheat options and game modes
 that can be specified on the command line when starting the game server.
 Use at your own peril! :) Of these, you may find the screensaver modes
 the least spoilery and the most fun, e.g.:
 
-    LambdaHack --newGame --noMore --maxFps 45 --savePrefix testCampaign --gameMode testCampaign
+    LambdaHack --newGame --noMore --maxFps 45 --savePrefix test --gameMode testCampaign --difficulty 1
 
 
 Monsters
@@ -151,7 +181,6 @@ This gives the opponent a free blow, but can improve the tactical situation
 or aid escape.
 
 Throwing weapons at targets wounds them, consuming the weapon in the process.
-Target a monster with the '*' key from the top keyboard row or from keypad.
 You may throw any object in your possession (press '?' to choose
 an object and press it again for a non-standard choice) or on the floor
 (press '-'). Only objects of a few kinds inflict any damage.

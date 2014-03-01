@@ -172,8 +172,8 @@ standard = RuleKind
                                            , symbol = '/' }]))
 
       -- Targeting
-      , ("slash", (CmdTgt, TgtFloor))
       , ("asterisk", (CmdTgt, TgtEnemy))
+      , ("slash", (CmdTgt, TgtFloor))
       , ("plus", (CmdTgt, EpsIncr True))
       , ("minus", (CmdTgt, EpsIncr False))
       , ("BackSpace", (CmdTgt, TgtClear))
