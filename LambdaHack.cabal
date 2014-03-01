@@ -15,7 +15,6 @@ description:   This is an alpha release of LambdaHack,
                but the fundamental source of flexibility lies
                in the strict and type-safe separation of code and content
                and of clients (human and AI-controlled) and server.
-               .
                Please see the changelog file for recent improvements
                and the issue tracker for short-term plans. Long term vision
                revolves around procedural content generation and includes

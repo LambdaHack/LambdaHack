@@ -23,7 +23,7 @@ Contributions welcome.
 Dungeon
 -------
 
-The heroes are marked on the map with symbols '@' and '1' through '9'.
+The heroes are marked on the map with symbols `@` and `1` through `9`.
 Their goal is to explore the dungeon, battle the horrors within,
 gather as much gold and gems as possible, and escape to tell the tale.
 The dungeon of the campaign mode game consists of 10 levels and each level
@@ -57,21 +57,20 @@ the vi text editor keys (also known as "Rogue-like keys").
                  /|\            /|\
                 1 2 3          b j n
 
-SHIFT (or CTRL) and a movement key make the party leader run in the indicated
-direction, until anything of interest is spotted. The '5' and '.' keys take
-a turn and make you brace for combat, which confers a chance to block blows
-for the remainder of the turn. In targeting mode the same keys move
-the targeting cursor.
+`SHIFT` (or `CTRL`) and a movement key make the party leader
+run in the indicated direction, until anything of interest is spotted.
+The `5` and `.` keys take a turn and make you brace for combat,
+which confers a chance to block blows for the remainder of the turn.
+In targeting mode the same keys move the targeting cursor.
 
 Melee, searching for secret doors and opening closed doors
 can be done by bumping into a monster, a wall and a door, respectively.
-Not many other commands are necessary for ordinary play.
-Some are provided only as building blocks for more complex commands
-and player macros, e.g., the autoexplore command (key X) is defined
-in the game content using BACKSPACE, CTRL-?, CTRL-; and P.
+Few commands other than movement are necessary for casual play.
+Some are provided only as building blocks for more complex convenience
+commands, e.g., the autoexplore command (key `X`) could be defined
+by the player as a macro using `BACKSPACE`, `CTRL-?`, `CTRL-;` and `P`.
 
 Below are the remaining keys for movement and terrain alteration.
-The first four also switch levels in targeting mode.
 
                 keys           command
                 <              ascend a level
@@ -101,8 +100,8 @@ To make a ranged attack, as in the last few commands above,
 you need to set your target first (however, initial target is set
 automatically as soon as a monster comes into view). Once in targeting mode,
 you can move the targeting cursor with arrow keys and switch focus
-among enemies with '*' (or among friends and enemies, depending
-on targeting mode set by '/'). The details of the shared cursor position
+among enemies with `*` (or among friends and enemies, depending
+on targeting mode set by `/`). The details of the shared cursor position
 and of the personal target are described at the bottom of the screen.
 All targeting keys are listed below.
 
@@ -117,7 +116,7 @@ All targeting keys are listed below.
                 CTRL-{         target the closest stairs up
                 CTRL-}         target the closest stairs down
 
-Assorted keys and commands follow.
+Assorted remaining keys and commands follow.
 
                 keys           command
                 ?              display help
@@ -139,10 +138,11 @@ Assorted keys and commands follow.
                 0--9           pick a new hero leader anywhere in the dungeon
 
 Commands for saving and exiting the current game, starting a new game, etc.,
-are listed in the Main Menu, brought up by the ESC key.
-Some of the game modes are experimental multiplayer modes or feature
-multiple computer players (allied or not). Game difficulty setting affects
-hitpoints at birth for any actors of any UI-using faction.
+are listed in the Main Menu, brought up by the `ESC` key.
+All but the campaign and skirmish game modes are experimental
+and feature multiple human or computer players (allied or not).
+Game difficulty setting affects hitpoints at birth for any actors
+of any UI-using faction.
 
                 keys           command
                 CTRL-x         save and exit
@@ -176,14 +176,14 @@ is taken into account for calculating bonus damage. The total damage
 the current hero can potentially inflict is displayed at the bottom
 of the screen. The total damage potential of a monster may change
 as it finds and picks up new weapons. Heroes and monsters running into
-one another (with the Shift key) do not inflict damage, but change places.
+one another (with the `SHIFT` key) do not inflict damage, but change places.
 This gives the opponent a free blow, but can improve the tactical situation
 or aid escape.
 
 Throwing weapons at targets wounds them, consuming the weapon in the process.
-You may throw any object in your possession (press '?' to choose
+You may throw any object in your possession (press `?` to choose
 an object and press it again for a non-standard choice) or on the floor
-(press '-'). Only objects of a few kinds inflict any damage.
+(press `-`). Only objects of a few kinds inflict any damage.
 Whenever the monster's or hero's hit points reach zero, the combatant dies.
 When the last hero dies, the game ends.
 
