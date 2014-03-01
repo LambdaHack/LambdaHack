@@ -1,3 +1,21 @@
+v0.2.12
+
+	* improve and simplify dungeon generation
+	* simplify running and permit multi-actor runs
+	* let items explode and generate shrapnel projectiles
+	* add game difficulty setting (initial HP scaling right now)
+	* allow recording, playing back and looping commands
+	* implement pathfinding via per-actor BFS over the whole level
+	* extend setting targets for actors in UI tremendously
+        * implement autoexplore, go-to-target, etc., as macros
+	* let AI use pathfinding, switch leaders, pick levels to swarm to
+	* force level/leader changes on spawners (even when played by humans)
+	* extend and redesign UI bottom status lines
+        * get rid of CPS style monads, aborts and WriterT
+	* benchmark and optimize the code, in particular using Data.Vector
+        * split off and use the external library assert-failure
+	* simplify config files and limit the number of external dependencies
+
 v0.2.10
 
 	* screensaver game modes (AI vs AI)

@@ -1,5 +1,5 @@
 name:          LambdaHack
-version:       0.2.11
+version:       0.2.12
 synopsis:      A roguelike game engine in early and active development
 description:   This is an alpha release of LambdaHack,
                a game engine library for roguelike games
@@ -16,19 +16,11 @@ description:   This is an alpha release of LambdaHack,
                in the strict and type-safe separation of code and content
                and of clients (human and AI-controlled) and server.
                .
-               This is a minor release, primarily intended to fix broken
-               vty an curses frontends and an unrelated game crash, as well as
-               broken builds on hackage and travis. Changes since 0.2.10
-               are mostly unrelated to gameplay: overhauled dungeon generation
-               code and the use of the external library assert-failure
-               for expressing assertions and error messages.
-               Upcoming features: new and improved frontends, improved AI
-               (pathfinding, autoexplore, better ranged combat), dynamic
-               light sources, explosions, player action undo/redo, completely
-               redesigned UI. Long term goals are focused on procedural
-               content generation and include in-game content creation,
-               auto-balancing and persistent content modification
-               based on player behaviour.
+               Please see the changelog file for recent improvements
+               and the issue tracker for short-term plans. Long term vision
+               revolves around procedural content generation and includes
+               in-game content creation, auto-balancing and persistent
+               content modification based on player behaviour.
                .
                A larger game that depends on the LambdaHack library
                is Allure of the Stars, available from
@@ -49,7 +41,7 @@ homepage:      http://github.com/kosmikus/LambdaHack
 bug-reports:   http://github.com/kosmikus/LambdaHack/issues
 license:       BSD3
 license-file:  LICENSE
-tested-with:   GHC == 7.6.3, GHC == 7.7
+tested-with:   GHC == 7.6.3, GHC == 7.8
 data-files:    GameDefinition/config.ui.default,
                GameDefinition/scores
 extra-source-files: GameDefinition/PLAYING.md, GameDefinition/MainMenu.ascii,

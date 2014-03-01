@@ -13,8 +13,7 @@ are easily overridden, but the fundamental source of flexibility lies
 in the strict and type-safe separation of code and content and of clients
 (human and AI-controlled) and server. Long-term goals for LambdaHack include
 support for multiplayer tactical squad combat, in-game content creation,
-auto-balancing and persistent content modification based
-on player behaviour.
+auto-balancing and persistent content modification based on player behaviour.
 
 The engine comes with a sample code for a little dungeon crawler,
 called LambdaHack and described in PLAYING.md. The engine and the example
@@ -53,8 +52,8 @@ use Cabal flags, e.g,
 Compatibility notes
 -------------------
 
-The current code was tested with GHC 7.6.3, but should also work with
-other GHC versions (see file .travis.yml.7.4.2 for GHC 7.4.2 commands).
+The current code was tested with GHC 7.6 and 7.8, but should also work with
+other GHC versions (see file .travis.yml.7.4.2 for GHC 7.4 commands).
 
 If you are using the terminal frontends, numerical keypad may not work
 correctly depending on versions of the libraries, terminfo and terminal
@@ -69,8 +68,8 @@ Testing and debugging
 
 The Makefile contains many sample test commands. All that use the screensaver
 game modes (AI vs. AI) and the simplest stdout frontend are gathered
-in `make test`. Of these, travis runs the set contained in
-`make test-travis` on each push to the repo. Commands with prefix
+in `make test`. Of these, travis runs one of the sets prefixed
+'test-travis` on each push to the repo. Commands with prefix
 `frontend` run AI vs. AI games with the standard, user-friendly frontend.
 Commands with prefix `peek` set up a game mode where the player peeks
 into AI moves each time an AI actor dies or autosave kicks in.
