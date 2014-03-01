@@ -169,6 +169,7 @@ effectDominate source target = do
     execSfxAtomic $ EffectD target Effect.Dominate
     -- TODO: Perhaps insert a turn of delay here to allow countermeasures.
     electLeader (bfid tb) (blid tb) target
+    deduceKilled tb
     ais <- getsState $ getActorItem target
     execCmdAtomic $ LoseActorA target tb ais
     let bNew = tb {bfid = bfid sb}
@@ -180,7 +181,6 @@ effectDominate source target = do
     when (delta > speedZero) $
       execCmdAtomic $ HasteActorA target (speedNegate delta)
     execCmdAtomic $ LeadFactionA (bfid sb) leaderOld (Just target)
-    deduceKilled tb  -- tb (not bNew), because that's how we saw him last
     return True
 
 electLeader :: MonadAtomic m => FactionId -> LevelId -> ActorId -> m ()
