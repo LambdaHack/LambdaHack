@@ -19,7 +19,7 @@ import Game.LambdaHack.Common.ServerCmd
 cmdHumanSem :: MonadClientUI m => HumanCmd -> m (SlideOrCmd CmdSer)
 cmdHumanSem cmd = do
   if noRemoteHumanCmd cmd then do
-    -- | If in targeting mode, check if the current level is the same
+    -- If in targeting mode, check if the current level is the same
     -- as player level and refuse performing the action otherwise.
     arena <- getArenaUI
     lidV <- viewedLevel

@@ -109,9 +109,9 @@ data RunParams = RunParams
   }
   deriving (Show)
 
-type LastRecord = ( [K.KM]  -- ^ accumulated keys of the current command
-                  , [K.KM]  -- ^ keys of the rest of the recorded command batch
-                  , Int     -- ^ commands left to record for this batch
+type LastRecord = ( [K.KM]  -- accumulated keys of the current command
+                  , [K.KM]  -- keys of the rest of the recorded command batch
+                  , Int     -- commands left to record for this batch
                   )
 
 -- | Initial game client state.
