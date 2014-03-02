@@ -104,8 +104,8 @@ targetStrategy oldLeader aid = do
         -- TODO: for foes, items, etc. consider a few nearby, not just one
         cfoes <- closestFoes aid
         case cfoes of
-          (d, (a, _)) : _ | d < nearby -> setPath $ TEnemy a False
-          _ -> do
+          (_, (a, _)) : _ -> setPath $ TEnemy a False
+          [] -> do
             -- Tracking enemies is more important than exploring,
             -- and smelling actors are usually blind, so bad at exploring.
             -- TODO: prefer closer items to older smells
@@ -199,20 +199,27 @@ targetStrategy oldLeader aid = do
                         t /= unknownId
                         && not (Tile.isSuspect cotile t)
                       else  -- closestTriggers
-                        (Ability.Trigger `notElem` actorAbs
-                         || not (Tile.isEscape cotile t && allExplored))
-                        -- The next case is stairs in closestTriggers.
-                        -- We don't determine if the stairs are interesting
-                        -- (this changes with time), but allow the actor
-                        -- to reach them and then retarget.
-                        && not (pos /= bpos b && Tile.isStair cotile t)
-                        -- The remaining case is furthestKnown. This is
-                        -- always an unimportant target, so we forget it
-                        -- if the actor is stuck (could move, but waits).
-                        && let isStuck = waitedLastTurn b
-                                         && (oldLeader == aid
-                                             || abilityLeader == abilityOther)
-                           in not (pos /= bpos b && not isStuck && allExplored)
+                        -- Try to kill that very last enemy for his loot before
+                        -- leaving the level or dungeon.
+                        not (null allFoes)
+                        || -- If all explored, escape/block escapes.
+                           (Ability.Trigger `notElem` actorAbs
+                            || not (Tile.isEscape cotile t && allExplored))
+                           -- The next case is stairs in closestTriggers.
+                           -- We don't determine if the stairs are interesting
+                           -- (this changes with time), but allow the actor
+                           -- to reach them and then retarget.
+                           && not (pos /= bpos b && Tile.isStair cotile t)
+                           -- The remaining case is furthestKnown. This is
+                           -- always an unimportant target, so we forget it
+                           -- if the actor is stuck (could move, but waits).
+                           && let isStuck =
+                                    waitedLastTurn b
+                                    && (oldLeader == aid
+                                        || abilityLeader == abilityOther)
+                              in not (pos /= bpos b
+                                      && not isStuck
+                                      && allExplored)
           then pickNewTarget
           else return $! returN "TPoint" (oldTgt, updatedPath)
         _ | not $ null allFoes ->
