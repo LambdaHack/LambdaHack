@@ -57,9 +57,10 @@ the vi text editor keys (also known as "Rogue-like keys").
                  /|\            /|\
                 1 2 3          b j n
 
-`SHIFT` (or `CTRL`) and a movement key make the party leader
-run in the indicated direction, until anything of interest is spotted.
-The `5` and `.` keys take a turn and make you brace for combat,
+`SHIFT` (or `CTRL`) and a movement key make the current party leader
+(and currently selected party members, if any) run in the indicated
+direction, until anything of interest is spotted.
+The `5` and `.` keys consume a turn and make you brace for combat,
 which confers a chance to block blows for the remainder of the turn.
 In targeting mode the same keys move the targeting cursor.
 

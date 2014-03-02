@@ -31,9 +31,11 @@ Games known to use the LambdaHack library:
 Compilation and installation
 ----------------------------
 
-The library is best compiled and installed via Cabal, which also takes care
-of all dependencies. The latest official version of the library
-can be downloaded automatically by Cabal from [Hackage] [3] as follows
+The library is best compiled and installed via Cabal (already a part
+of your OS distribution, or available within [The Haskell Platform] [7]),
+which also takes care of all the dependencies. The latest official
+version of the library can be downloaded automatically by Cabal
+from [Hackage] [3] as follows
 
     cabal install LambdaHack
 
@@ -60,7 +62,7 @@ correctly depending on versions of the libraries, terminfo and terminal
 emulators. The curses frontend is not fully supported due to the limitations
 of the curses library. With the vty frontend run in an xterm,
 CTRL-keypad keys for running seem to work OK, but on rxvt they do not.
-Vi keys (ykuhlbjn) should work everywhere regardless. Gtk works fine, too.
+Vi keys (ykuhlbjn) should work everywhere regardless. GTK works fine, too.
 
 
 Testing and debugging
@@ -110,3 +112,4 @@ Have fun!
 [4]: https://github.com/kosmikus/LambdaHack/wiki
 [5]: http://github.com/kosmikus/LambdaHack
 [6]: http://hackage.haskell.org/package/Allure
+[7]: http://www.haskell.org/platform
