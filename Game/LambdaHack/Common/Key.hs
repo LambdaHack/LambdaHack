@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | Frontend-independent keyboard input operations.
 module Game.LambdaHack.Common.Key
-  ( Key(..), handleDir, dirAllMoveKey
+  ( Key(..), handleDir, dirAllKey
   , moveBinding, mkKM, keyTranslate, Modifier(..), KM(..), showKM, escKey
   ) where
 
@@ -76,7 +76,7 @@ showKey End      = "END"
 showKey PgUp     = "PGUP"
 showKey PgDn     = "PGDOWN"
 showKey Begin    = "BEGIN"
-showKey (KP c)   = "KEYPAD(" <> T.singleton c <> ")"
+showKey (KP c)   = "KEYPAD_" <> T.singleton c
 showKey (Unknown s) = s
 
 -- | Show a key with a modifier, if any.
@@ -87,56 +87,61 @@ showKM KM{modifier=NoModifier, key} = showKey key
 escKey :: KM
 escKey = KM {modifier = NoModifier, key = Esc}
 
+dirKeypadKey :: [Key]
+dirKeypadKey = [Home, Up, PgUp, Right, PgDn, Down, End, Left]
+
+dirKeypadShiftChar :: [Char]
+dirKeypadShiftChar = ['7', '8', '9', '6', '3', '2', '1', '4']
+
+dirKeypadShiftKey :: [Key]
+dirKeypadShiftKey = map KP dirKeypadShiftChar
+
+dirLaptopKey :: [Key]
+dirLaptopKey = map Char ['7', '8', '9', 'o', 'l', 'k', 'j', 'u']
+
+dirLaptopShiftKey :: [Key]
+dirLaptopShiftKey = map Char ['&', '*', '(', 'O', 'L', 'K', 'J', 'U']
+
 dirViChar :: [Char]
 dirViChar = ['y', 'k', 'u', 'l', 'n', 'j', 'b', 'h']
 
-dirViMoveKey :: [Key]
-dirViMoveKey = map Char dirViChar
+dirViKey :: [Key]
+dirViKey = map Char dirViChar
 
-dirMoveKey :: [Key]
-dirMoveKey = [Home, Up, PgUp, Right, PgDn, Down, End, Left]
+dirViShiftKey :: [Key]
+dirViShiftKey = map (Char . Char.toUpper) dirViChar
 
-dirAllMoveKey :: [Key]
-dirAllMoveKey = dirViMoveKey ++ dirMoveKey
-
-dirViRunKey :: [Key]
-dirViRunKey = map (Char . Char.toUpper) dirViChar
-
-dirRunKey :: [Key]
-dirRunKey = map KP dirNums
-
-_dirAllRunKey :: [Key]
-_dirAllRunKey = dirViRunKey ++ dirRunKey
-
-dirNums :: [Char]
-dirNums = ['7', '8', '9', '6', '3', '2', '1', '4']
-
-dirHeroKey :: [Key]
-dirHeroKey = map Char dirNums
+dirAllKey :: Bool -> [Key]
+dirAllKey configVi = dirKeypadKey ++ if configVi
+                                     then dirViKey
+                                     else dirKeypadKey
 
 -- | Configurable event handler for the direction keys.
 -- Used for directed commands such as close door.
-handleDir :: KM -> (Vector -> a) -> a -> a
-handleDir KM{modifier=NoModifier, key} h k =
-  let assocs = zip dirAllMoveKey $ moves ++ moves
+handleDir :: Bool -> KM -> (Vector -> a) -> a -> a
+handleDir configVi KM{modifier=NoModifier, key} h k =
+  let assocs = zip (dirAllKey configVi) $ moves ++ moves
   in maybe k h (lookup key assocs)
-handleDir _ _ k = k
+handleDir _ _ _ k = k
 
--- TODO: deduplicate
 -- | Binding of both sets of movement keys.
-moveBinding :: (Vector -> a) -> (Vector -> a)
+moveBinding :: Bool -> (Vector -> a) -> (Vector -> a)
             -> [(KM, a)]
-moveBinding move run =
+moveBinding configVi move run =
   let assign f (km, dir) = (km, f dir)
-      rNoModifier = repeat NoModifier
-      rControl = repeat Control
-  in map (assign move) (zip (zipWith KM rNoModifier dirViMoveKey) moves) ++
-     map (assign move) (zip (zipWith KM rNoModifier dirMoveKey) moves) ++
-     map (assign run)  (zip (zipWith KM rNoModifier dirViRunKey) moves) ++
-     map (assign run)  (zip (zipWith KM rNoModifier dirRunKey) moves) ++
-     map (assign run)  (zip (zipWith KM rControl dirMoveKey) moves) ++
-     map (assign run)  (zip (zipWith KM rControl dirRunKey) moves) ++
-     map (assign run)  (zip (zipWith KM rControl dirHeroKey ) moves)
+      mapMove modifier keys =
+        map (assign move) (zip (zipWith KM (repeat modifier) keys) moves)
+      mapRun modifier keys =
+        map (assign run) (zip (zipWith KM (repeat modifier) keys) moves)
+      dirOtherKey = if configVi then dirViKey else dirLaptopKey
+      dirOtherShiftKey = if configVi then dirViShiftKey else dirLaptopShiftKey
+  in mapMove NoModifier dirKeypadKey
+     ++ mapMove NoModifier dirOtherKey
+     ++ mapRun NoModifier dirKeypadShiftKey
+     ++ mapRun NoModifier dirOtherShiftKey
+     ++ mapRun Control dirKeypadKey
+     ++ mapRun Control dirKeypadShiftKey
+     ++ mapRun Control (map Char dirKeypadShiftChar)
 
 mkKM :: String -> KM
 mkKM s = let mkKey sk =
@@ -160,6 +165,8 @@ keyTranslate "semicolon"     = Char ';'
 keyTranslate "comma"         = Char ','
 keyTranslate "question"      = Char '?'
 keyTranslate "dollar"        = Char '$'
+keyTranslate "parenleft"     = Char '('
+keyTranslate "parenright"    = Char ')'
 keyTranslate "asterisk"      = Char '*'
 keyTranslate "KP_Multiply"   = KP '*'
 keyTranslate "slash"         = Char '/'
@@ -175,6 +182,7 @@ keyTranslate "bracketleft"   = Char '['
 keyTranslate "bracketright"  = Char ']'
 keyTranslate "braceleft"     = Char '{'
 keyTranslate "braceright"    = Char '}'
+keyTranslate "ampersand"     = Char '&'
 keyTranslate "apostrophe"    = Char '\''
 keyTranslate "Escape"        = Esc
 keyTranslate "Return"        = Return

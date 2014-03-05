@@ -62,7 +62,8 @@ correctly depending on versions of the libraries, terminfo and terminal
 emulators. The curses frontend is not fully supported due to the limitations
 of the curses library. With the vty frontend run in an xterm,
 CTRL-keypad keys for running seem to work OK, but on rxvt they do not.
-Vi keys (ykuhlbjn) should work everywhere regardless. GTK works fine, too.
+laptop (uk8o79jl) and Vi keys (hjklyubn, if enabled in config.ui.ini)
+should work everywhere regardless. GTK works fine, too.
 
 
 Testing and debugging

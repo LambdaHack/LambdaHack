@@ -48,19 +48,21 @@ during a single game, the level layout is the same.
 Keys
 ----
 
-You move throughout the level using the numerical keypad or
-the vi text editor keys (also known as "Rogue-like keys").
+You move throughout the level using the numerical keypad (left diagram)
+or its compact laptop replacement (middle) or Vi text editor keys
+(right, also known as "Rogue-like keys", which have to be enabled
+in config.ui.ini).
 
-                7 8 9          y k u
-                 \|/            \|/
-                4-5-6          h-.-l
-                 /|\            /|\
-                1 2 3          b j n
+                7 8 9          7 8 9          y k u
+                 \|/            \|/            \|/
+                4-5-6          u-i-o          h-.-l
+                 /|\            /|\            /|\
+                1 2 3          j k l          b j n
 
 `SHIFT` (or `CTRL`) and a movement key make the current party leader
 (and currently selected party members, if any) run in the indicated
 direction, until anything of interest is spotted.
-The `5` and `.` keys consume a turn and make you brace for combat,
+The '5', 'i' and '.' keys consume a turn and make you brace for combat,
 which confers a chance to block blows for the remainder of the turn.
 In targeting mode the same keys move the targeting cursor.
 
@@ -84,7 +86,6 @@ Below are the remaining keys for movement and terrain alteration.
                 X              autoexplore 100 times
                 R              rest (wait 100 times)
                 c              close door
-                o              open door
 
 Inventory and items-related keys are as follows.
 
@@ -107,7 +108,7 @@ and of the personal target are described at the bottom of the screen.
 All targeting keys are listed below.
 
                 keys           command
-                *              target enemy
+                KEYPAD_* and \ target enemy
                 /              cycle targeting mode
                 +              swerve targeting line
                 -              unswerve targeting line

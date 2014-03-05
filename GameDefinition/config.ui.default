@@ -5,9 +5,8 @@
 ; ; Warning: options are case-sensitive and only ';' for comments is permitted.
 
 ; [extra_commands]
-; ; Handy shorthands with Vi keys:
+; ; A handy shorthand with Vi keys:
 ; Macro_1 = ("comma", (CmdItem, Macro "" ["g"]))
-; Macro_2 = ("period", (CmdMove, Macro "" ["KP_Begin"]))
 
 ; [hero_names]
 ; HeroName_0 = Haskell Alvin
@@ -18,6 +17,7 @@
 ; HeroName_5 = Roger Robin
 
 ; [ui]
+; movementViKeys_hjklyubn = False
 ; font = "Terminus,Monospace normal normal normal normal 12"
 ; historyMax = 5000
 ; maxFps = 15

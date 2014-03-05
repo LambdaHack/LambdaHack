@@ -446,6 +446,7 @@ parseConfigUI cfg =
                      `twith` (optionName, cfg)
             s = fromMaybe (lookupFail "") $ Ini.getOption "ui" optionName cfg
         in either lookupFail id $ readEither s
+      configVi = getOption "movementViKeys_hjklyubn"
       configFont = getOption "font"
       configHistoryMax = getOption "historyMax"
       configMaxFps = getOption "maxFps"

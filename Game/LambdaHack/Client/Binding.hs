@@ -34,7 +34,7 @@ data Binding = Binding
 stdBinding :: Kind.Ops RuleKind  -- ^ default game rules
            -> ConfigUI           -- ^ game config
            -> Binding            -- ^ concrete binding
-stdBinding corule !ConfigUI{configCommands} =
+stdBinding corule !ConfigUI{configCommands, configVi} =
   let stdRuleset = Kind.stdRuleset corule
       heroSelect k = ( K.KM { key=K.Char (Char.intToDigit k)
                             , modifier=K.NoModifier }
@@ -43,7 +43,8 @@ stdBinding corule !ConfigUI{configCommands} =
       cmdAll =
         cmdWithHelp
         ++ [(K.mkKM "KP_Begin", (CmdMove, Wait))]
-        ++ K.moveBinding (\v -> (CmdMove, Move v)) (\v -> (CmdMove, Run v))
+        ++ K.moveBinding configVi (\v -> (CmdMove, Move v))
+                                  (\v -> (CmdMove, Run v))
         ++ fmap heroSelect [0..6]
       mkDescribed (cat, cmd) = (cmdDescription cmd, cat, cmd)
   in Binding
@@ -57,20 +58,21 @@ keyHelp :: Binding -> Slideshow
 keyHelp Binding{bcmdList} =
   let
     movBlurb =
-      [ "Move throughout the level with numerical keypad or"
-      , "the Vi text editor keys (also known as \"Rogue-like keys\"):"
+      [ "Move throughout the level with numerical keypad (left diagram)"
+      , "or its compact laptop replacement (middle) or Vi text editor keys"
+      , "(right, also known as \"Rogue-like keys\"; can be enabled in config.ui.ini):"
       , ""
-      , "               7 8 9          y k u"
-      , "                \\|/            \\|/"
-      , "               4-5-6          h-.-l"
-      , "                /|\\            /|\\"
-      , "               1 2 3          b j n"
+      , "               7 8 9          7 8 9          y k u"
+      , "                \\|/            \\|/            \\|/"
+      , "               4-5-6          u-i-o          h-.-l"
+      , "                /|\\            /|\\            /|\\"
+      , "               1 2 3          j k l          b j n"
       , ""
       , "Run ahead, until anything disturbs you, with SHIFT (or CTRL) and a key."
-      , "Press keypad '5' or '.' to wait a turn, bracing for blows next turn."
+      , "Press '5' or 'i' or '.' to wait, bracing for blows next turn."
       , "In targeting mode the same keys move the targeting cursor."
       , ""
-      , "Search, open and attack, by bumping into walls, doors and enemies."
+      , "Search, open and attack by bumping into walls, doors and enemies."
       , ""
       , "Press SPACE to see detailed command descriptions."
       ]

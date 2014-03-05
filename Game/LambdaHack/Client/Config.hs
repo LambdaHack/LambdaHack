@@ -17,6 +17,7 @@ data ConfigUI = ConfigUI
     -- hero names
   , configHeroNames   :: ![(Int, Text)]
     -- ui
+  , configVi          :: !Bool
   , configFont        :: !String
   , configHistoryMax  :: !Int
   , configMaxFps      :: !Int

@@ -139,6 +139,8 @@ standard = RuleKind
                           , object = "door"
                           , feature = F.CloseTo "horizontal closed door Dark" }
            ]))
+      , ("period", (CmdMove, Macro "" ["KP_Begin"]))
+      , ("i", (CmdMove, Macro "" ["KP_Begin"]))
 
       -- Inventory and items
       , ("I", (CmdItem, Inventory))
