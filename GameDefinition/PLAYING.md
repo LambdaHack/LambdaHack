@@ -93,6 +93,9 @@ Inventory and items-related keys are as follows.
                 I              display inventory
                 g and ,        get an object
                 d              drop an object
+                E              display equipment
+                w              wear/wield an object
+                y              yield an object
                 q              quaff potion
                 r              read scroll
                 t              throw missile
@@ -173,7 +176,7 @@ monsters don't care about each other and all move at once,
 sometimes brutally colliding by accident.
 
 When the hero bumps into a monster or a monster attacks the hero,
-melee combat occurs. The best weapon carried by each opponent
+melee combat occurs. The best weapon equipped by each opponent
 is taken into account for calculating bonus damage. The total damage
 the current hero can potentially inflict is displayed at the bottom
 of the screen. The total damage potential of a monster may change
@@ -196,10 +199,7 @@ On Winning and Dying
 You win the game if you escape the dungeon alive (or eliminate
 all opposition, in some game modes). Your score is
 the sum of all gold you've plundered plus 100 gold pieces for each gem.
-Only the loot in possession of the party members on the current level
-counts (the rest of the party is considered MIA).
 
-If all heroes die, your score is halved and only the treasure carried
-by the last standing hero counts. You are free to start again
+If all heroes die, your score is halved. You are free to start again
 from a different entrance to the dungeon, but all your previous wealth
 is gone and fresh, undaunted enemies bar your way.

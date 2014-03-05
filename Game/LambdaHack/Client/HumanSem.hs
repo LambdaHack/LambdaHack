@@ -36,6 +36,8 @@ cmdAction cmd = case cmd of
   Wait -> fmap Right $ fmap CmdTakeTimeSer waitHuman
   Pickup -> fmap (fmap CmdTakeTimeSer) pickupHuman
   Drop -> fmap (fmap CmdTakeTimeSer) dropHuman
+  Wear -> fmap (fmap CmdTakeTimeSer) wearHuman
+  Yield -> fmap (fmap CmdTakeTimeSer) yieldHuman
   Project ts -> fmap (fmap CmdTakeTimeSer) $ projectHuman ts
   Apply ts -> fmap (fmap CmdTakeTimeSer) $ applyHuman ts
   AlterDir ts -> fmap (fmap CmdTakeTimeSer) $ alterDirHuman ts
@@ -52,6 +54,7 @@ cmdAction cmd = case cmd of
   MemberCycle -> fmap Left memberCycleHuman
   MemberBack -> fmap Left memberBackHuman
   Inventory -> fmap Left inventoryHuman
+  Equipment -> fmap Left equipmentHuman
   SelectActor -> fmap Left selectActorHuman
   SelectNone -> addNoSlides selectNoneHuman
   Clear -> addNoSlides clearHuman

@@ -3,7 +3,7 @@
 -- TODO: document
 module Game.LambdaHack.Client.HumanGlobal
   ( -- * Commands that usually take time
-    moveRunHuman, waitHuman, pickupHuman, dropHuman
+    moveRunHuman, waitHuman, pickupHuman, dropHuman, wearHuman, yieldHuman
   , projectHuman, applyHuman, alterDirHuman, triggerTileHuman
   , stepToTargetHuman, resendHuman
     -- * Commands that never take time
@@ -337,6 +337,51 @@ getItem aid prompt p ptext bag invRaw isn = do
                 in return $ Right (iidItem, (k, CActor aid l2))
               _ -> assert `failure` "unexpected key:" `twith` km
   ask
+
+-- * Wear
+
+-- Wear/wield a single item.
+wearHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
+wearHuman = do
+  leader <- getLeaderUI
+  body <- getsState $ getActorBody leader
+  lvl <- getLevel $ blid body
+  -- Check if something is here to pick up. Items are never invisible.
+  case EM.minViewWithKey $ lvl `atI` bpos body of
+    Nothing -> failWith "nothing here"
+    Just ((iid, k), _) ->  do  -- pick up first item; TODO: let pl select item
+      item <- getsState $ getItemBody iid
+      let l = if jsymbol item == '$' then Just $ InvChar '$' else Nothing
+      case assignLetter iid l body of
+        Just _ -> return $ Right $ PickupSer leader iid k
+        Nothing -> failSer PickupOverfull
+
+-- * Yield
+
+-- TODO: you can drop an item already on the floor (the '-' is there),
+-- which is weird and useless.
+-- | Take off a single item.
+yieldHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
+yieldHuman = do
+  -- TODO: allow dropping a given number of identical items.
+  Kind.COps{coitem} <- getsState scops
+  leader <- getLeaderUI
+  bag <- getsState $ getActorBag leader
+  inv <- getsState $ getActorInv leader
+  ggi <- getAnyItem leader "What to drop?" bag inv "in inventory"
+  case ggi of
+    Right ((iid, item), (_, container)) ->
+      case container of
+        CFloor{} -> failWith "never mind"
+        CActor aid _ -> do
+          assert (aid == leader) skip
+          disco <- getsClient sdisco
+          subject <- partAidLeader leader
+          msgAdd $ makeSentence
+            [ MU.SubjectVerbSg subject "drop"
+            , partItemWs coitem disco 1 item ]
+          return $ Right $ DropSer leader iid 1
+    Left slides -> return $ Left slides
 
 -- * Project
 

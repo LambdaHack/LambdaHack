@@ -31,6 +31,8 @@ data HumanCmd =
   | Wait
   | Pickup
   | Drop
+  | Wear
+  | Yield
   | Project     ![Trigger]
   | Apply       ![Trigger]
   | AlterDir    ![Trigger]
@@ -47,6 +49,7 @@ data HumanCmd =
   | MemberCycle
   | MemberBack
   | Inventory
+  | Equipment
   | SelectActor
   | SelectNone
   | Clear
@@ -103,6 +106,8 @@ cmdDescription cmd = case cmd of
   Wait        -> "wait"
   Pickup      -> "get an object"
   Drop        -> "drop an object"
+  Wear        -> "wear/wield an object"
+  Yield       -> "yield an object"
   Project ts  -> triggerDescription ts
   Apply ts    -> triggerDescription ts
   AlterDir ts -> triggerDescription ts
@@ -119,6 +124,7 @@ cmdDescription cmd = case cmd of
   MemberCycle -> "cycle among party members on the level"
   MemberBack  -> "cycle among party members in the dungeon"
   Inventory   -> "display inventory"
+  Equipment   -> "display equipment"
   SelectActor -> "select (or deselect) a party member"
   SelectNone  -> "deselect (or select) all on the level"
   Clear       -> "clear messages"

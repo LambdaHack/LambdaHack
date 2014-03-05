@@ -4,7 +4,8 @@
 module Game.LambdaHack.Client.HumanLocal
   ( -- * Assorted commands that do not notify the server
     gameDifficultyCycle
-  , pickLeaderHuman, memberCycleHuman, memberBackHuman, inventoryHuman
+  , pickLeaderHuman, memberCycleHuman, memberBackHuman
+  , inventoryHuman, equipmentHuman
   , selectActorHuman, selectNoneHuman, clearHuman, repeatHuman, recordHuman
   , historyHuman, markVisionHuman, markSmellHuman, markSuspectHuman
   , helpHuman, mainMenuHuman, macroHuman
@@ -167,12 +168,18 @@ memberBackHuman = do
 
 -- * Inventory
 
--- TODO: When inventory is displayed, let TAB switch the leader (without
--- announcing that) and show the inventory of the new leader (unless
--- we have just a single inventory in the future).
--- | Display inventory
+-- | Display the common inventory of the whole party.
 inventoryHuman :: MonadClientUI m => m Slideshow
-inventoryHuman = do
+inventoryHuman = undefined
+
+-- * Equipment
+
+-- TODO: When equipment is displayed, let TAB switch the leader (without
+-- announcing that) and show the equipment of the new leader.
+-- TODO: slowly rename "actor inventory" to "equipment".
+-- | Display equipment of the leader..
+equipmentHuman :: MonadClientUI m => m Slideshow
+equipmentHuman = do
   leader <- getLeaderUI
   subject <- partAidLeader leader
   bag <- getsState $ getActorBag leader
