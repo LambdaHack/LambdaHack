@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.State
     -- * State operations
   , defStateGlobal, emptyState, localFromGlobal
   , updateDungeon, updateDepth, updateActorD, updateItemD
-  , updateFaction, updateTime, updateCOps, getLocalTime
+  , updateFactionD, updateTime, updateCOps, getLocalTime
   , isSpawnFaction
   ) where
 
@@ -138,8 +138,8 @@ updateItemD :: (ItemDict -> ItemDict) -> State -> State
 updateItemD f s = s {_sitemD = f (_sitemD s)}
 
 -- | Update faction data within state.
-updateFaction :: (FactionDict -> FactionDict) -> State -> State
-updateFaction f s = s {_sfactionD = f (_sfactionD s)}
+updateFactionD :: (FactionDict -> FactionDict) -> State -> State
+updateFactionD f s = s {_sfactionD = f (_sfactionD s)}
 
 -- | Update global time within state.
 updateTime :: (Time -> Time) -> State -> State

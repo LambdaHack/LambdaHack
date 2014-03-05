@@ -6,10 +6,11 @@ module Game.LambdaHack.Common.ActorState
   , actorNotProjAssocsLvl, actorNotProjAssocs, actorNotProjList
   , calculateTotal, nearbyFreePoints, whereTo
   , posToActors, posToActor, getItemBody, memActor
-  , getActorBody, updateActorBody
+  , getActorBody, updateActorBody, updateFactionBody
   , getActorItem, getFloorItem, getActorBag
-  , actorContainer, actorContainerB, getActorInv
+  , actorContainer, actorContainerB
   , tryFindHeroK, foesAdjacent
+  , allLetters, assignLetter, letterLabel
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -18,6 +19,9 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.List
 import Data.Maybe
+import qualified Data.Text as T
+import Data.Tuple
+import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Faction
@@ -176,6 +180,35 @@ updateActorBody aid f s =
       alt (Just b) = Just $ f b
   in updateActorD (EM.alter alt aid) s
 
+updateFactionBody :: FactionId -> (Faction -> Faction) -> State -> State
+updateFactionBody fid f s =
+  let alt Nothing = assert `failure` "no faction to update" `twith` (fid, s)
+      alt (Just fact) = Just $ f fact
+  in updateFactionD (EM.alter alt fid) s
+
+allLetters :: [InvChar]
+allLetters = map InvChar $ ['a'..'z'] ++ ['A'..'Z']
+
+-- | Assigns a letter to an item, for inclusion in the inventory
+-- of a hero. Tries to to use the requested letter, if any.
+assignLetter :: ItemId -> Maybe InvChar -> Actor -> Faction -> Maybe InvChar
+assignLetter iid r body fact =
+  case lookup iid $ map swap $ EM.assocs $ ginv fact of
+    Just l -> Just l
+    Nothing ->  case r of
+      Just l | l `elem` allowed -> Just l
+      _ -> listToMaybe free
+ where
+  c = gletter fact
+  candidates = take (length allLetters)
+               $ drop (fromJust (elemIndex c allLetters))
+               $ cycle allLetters
+  inBag = EM.keysSet $ bbag body
+  f l = maybe True (`ES.notMember` inBag) $ EM.lookup l $ ginv fact
+  free = filter f candidates
+  allowed = InvChar '$' : free
+
+
 getActorBag :: ActorId -> State -> ItemBag
 getActorBag aid s = bbag $ getActorBody aid s
 
@@ -185,18 +218,19 @@ actorContainer aid binv iid =
     Just (l, _) -> CActor aid l
     Nothing -> assert `failure` "item not in inventory" `twith` (aid, binv, iid)
 
-actorContainerB :: ActorId -> Actor -> ItemId -> Item -> Maybe Container
-actorContainerB aid body iid item =
-  case find ((== iid) . snd) $ EM.assocs (binv body) of
+actorContainerB :: ActorId -> Actor -> Faction -> ItemId -> Item
+                -> Maybe Container
+actorContainerB aid body fact iid item =
+  case find ((== iid) . snd) $ EM.assocs (ginv fact) of
     Just (l, _) -> Just $ CActor aid l
     Nothing ->
       let l = if jsymbol item == '$' then Just $ InvChar '$' else Nothing
-      in case assignLetter iid l body of
+      in case assignLetter iid l body fact of
         Just l2 -> Just $ CActor aid l2
         Nothing -> Nothing
 
-getActorInv :: ActorId -> State -> ItemInv
-getActorInv aid s = binv $ getActorBody aid s
+letterLabel :: InvChar -> MU.Part
+letterLabel c = MU.Text $ T.pack $ invChar c : " -"
 
 -- | Gets actor's items from the current level. Warning: this does not work
 -- for viewing items of actors from remote level.

@@ -326,13 +326,14 @@ track aid = do
 pickup :: MonadActionRO m => ActorId -> m (Strategy CmdTakeTimeSer)
 pickup aid = do
   body@Actor{bpos, blid} <- getsState $ getActorBody aid
+  fact <- getsState $ (EM.! bfid body) . sfactionD
   lvl <- getLevel blid
   actionPickup <- case EM.minViewWithKey $ lvl `atI` bpos of
     Nothing -> assert `failure` "pickup of empty pile" `twith` (aid, bpos, lvl)
     Just ((iid, k), _) -> do  -- pick up first item
       item <- getsState $ getItemBody iid
       let l = if jsymbol item == '$' then Just $ InvChar '$' else Nothing
-      return $! case assignLetter iid l body of
+      return $! case assignLetter iid l body fact of
         Just _ -> returN "pickup" $ PickupSer aid iid k
         Nothing -> returN "pickup" $ WaitSer aid  -- TODO
   return $! actionPickup
@@ -433,7 +434,7 @@ rangedFreq aid = do
                 , corule
                 } <- getsState scops
   btarget <- getsClient $ getTarget aid
-  b@Actor{bkind, bpos, bfid, blid, bbag, binv} <- getsState $ getActorBody aid
+  b@Actor{bkind, bpos, blid, bbag} <- getsState $ getActorBody aid
   mfpos <- aidTgtToPos aid blid btarget
   case (btarget, mfpos) of
     (Just TEnemy{}, Just fpos) -> do
@@ -442,7 +443,7 @@ rangedFreq aid = do
       lvl@Level{lxsize, lysize} <- getLevel blid
       let mk = okind bkind
           tis = lvl `atI` bpos
-      fact <- getsState $ \s -> sfactionD s EM.! bfid
+      fact <- getsState $ (EM.! bfid b) . sfactionD
       foes <- getsState $ actorNotProjList (isAtWar fact) blid
       let foesAdj = foesAdjacent lxsize lysize bpos foes
       (steps, eps) <- makePath b fpos
@@ -482,7 +483,7 @@ rangedFreq aid = do
                -- and no actors or obstracles along the path
                && steps == chessDist bpos fpos
             then toFreq "throwFreq"
-                 $ throwFreq bbag 4 (actorContainer aid binv)
+                 $ throwFreq bbag 4 (actorContainer aid (ginv fact))
                    ++ throwFreq tis 8 (const $ CFloor blid bpos)
             else toFreq "throwFreq: not possible" []
       return $! freq
@@ -519,7 +520,8 @@ toolsFreq :: MonadActionRO m
           => Discovery -> ActorId -> m (Frequency CmdTakeTimeSer)
 toolsFreq disco aid = do
   cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-  b@Actor{bkind, bpos, blid, bbag, binv} <- getsState $ getActorBody aid
+  b@Actor{bkind, bpos, blid, bbag} <- getsState $ getActorBody aid
+  Faction{ginv} <- getsState $ (EM.! bfid b) . sfactionD
   lvl <- getLevel blid
   s <- getState
   let tis = lvl `atI` bpos
@@ -538,7 +540,7 @@ toolsFreq disco aid = do
         , benefit > 0
         , jsymbol i `elem` mastered ]
   return $! toFreq "useFreq" $
-    useFreq bbag 1 (actorContainer aid binv)
+    useFreq bbag 1 (actorContainer aid ginv)
     ++ useFreq tis 2 (const $ CFloor blid bpos)
 
 displace :: MonadClient m => ActorId -> m (Strategy CmdTakeTimeSer)

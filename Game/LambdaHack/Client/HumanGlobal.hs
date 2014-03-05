@@ -199,6 +199,7 @@ pickupHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
 pickupHuman = do
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
+  fact <- getsState $ (EM.! bfid body) . sfactionD
   lvl <- getLevel $ blid body
   -- Check if something is here to pick up. Items are never invisible.
   case EM.minViewWithKey $ lvl `atI` bpos body of
@@ -206,7 +207,7 @@ pickupHuman = do
     Just ((iid, k), _) ->  do  -- pick up first item; TODO: let pl select item
       item <- getsState $ getItemBody iid
       let l = if jsymbol item == '$' then Just $ InvChar '$' else Nothing
-      case assignLetter iid l body of
+      case assignLetter iid l body fact of
         Just _ -> return $ Right $ PickupSer leader iid k
         Nothing -> failSer PickupOverfull
 
@@ -220,8 +221,10 @@ dropHuman = do
   -- TODO: allow dropping a given number of identical items.
   Kind.COps{coitem} <- getsState scops
   leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  fact <- getsState $ (EM.! bfid b) . sfactionD
+  let inv = ginv fact
   bag <- getsState $ getActorBag leader
-  inv <- getsState $ getActorInv leader
   ggi <- getAnyItem leader "What to drop?" bag inv "in inventory"
   case ggi of
     Right ((iid, item), (_, container)) ->
@@ -345,6 +348,7 @@ wearHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
 wearHuman = do
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
+  fact <- getsState $ (EM.! bfid body) . sfactionD
   lvl <- getLevel $ blid body
   -- Check if something is here to pick up. Items are never invisible.
   case EM.minViewWithKey $ lvl `atI` bpos body of
@@ -352,7 +356,7 @@ wearHuman = do
     Just ((iid, k), _) ->  do  -- pick up first item; TODO: let pl select item
       item <- getsState $ getItemBody iid
       let l = if jsymbol item == '$' then Just $ InvChar '$' else Nothing
-      case assignLetter iid l body of
+      case assignLetter iid l body fact of
         Just _ -> return $ Right $ WearSer leader iid k
         Nothing -> failSer PickupOverfull
 
@@ -367,7 +371,9 @@ yieldHuman = do
   Kind.COps{coitem} <- getsState scops
   leader <- getLeaderUI
   bag <- getsState $ getActorBag leader
-  inv <- getsState $ getActorInv leader
+  b <- getsState $ getActorBody leader
+  fact <- getsState $ (EM.! bfid b) . sfactionD
+  let inv = ginv fact
   ggi <- getAnyItem leader "What to drop?" bag inv "in inventory"
   case ggi of
     Right ((iid, item), (_, container)) ->
@@ -440,7 +446,9 @@ projectBla source tpos eps ts = do
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
   bag <- getsState $ getActorBag source
-  inv <- getsState $ getActorInv source
+  b <- getsState $ getActorBody source
+  fact <- getsState $ (EM.! bfid b) . sfactionD
+  let inv = ginv fact
   ggi <- getGroupItem source bag inv object1 triggerSyms
            (makePhrase ["What to", verb1 MU.:> "?"]) "in inventory"
   case ggi of
@@ -459,8 +467,10 @@ applyHuman :: MonadClientUI m => [Trigger] -> m (SlideOrCmd CmdTakeTimeSer)
 applyHuman ts = do
   leader <- getLeaderUI
   bag <- getsState $ getActorBag leader
-  inv <- getsState $ getActorInv leader
-  let (verb1, object1) = case ts of
+  b <- getsState $ getActorBody leader
+  fact <- getsState $ (EM.! bfid b) . sfactionD
+  let inv = ginv fact
+      (verb1, object1) = case ts of
         [] -> ("activate", "object")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts

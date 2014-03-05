@@ -354,10 +354,11 @@ dropAllItems :: (MonadAtomic m, MonadServer m)
              => ActorId -> Actor -> Bool -> m ()
 dropAllItems aid b hit = do
   Kind.COps{coitem} <- getsState scops
+  fact <- getsState $ (EM.! bfid b) . sfactionD
   discoS <- getsServer sdisco
   let isDestroyed item = hit || bproj b && isFragile coitem discoS item
       f iid k = do
-        let container = actorContainer aid (binv b) iid
+        let container = actorContainer aid (ginv fact) iid
         item <- getsState $ getItemBody iid
         if isDestroyed item then
           case isExplosive coitem discoS item of

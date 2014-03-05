@@ -9,7 +9,7 @@ module Game.LambdaHack.Common.Actor
   , unoccupied, heroKindId, projectileKindId
     -- * Inventory management
   , ItemBag, ItemInv, InvChar(..), ItemDict, ItemRev
-  , allLetters, assignLetter, letterLabel, letterRange, rmFromBag
+  , letterRange, rmFromBag
     -- * Assorted
   , ActorDict, smellTimeout, mapActorItems_, checkAdjacent
   ) where
@@ -18,14 +18,11 @@ import Control.Exception.Assert.Sugar
 import Data.Binary
 import Data.Char
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.EnumSet as ES
 import qualified Data.HashMap.Strict as HM
 import Data.List
-import Data.Maybe
 import Data.Ratio
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Tuple
 import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Common.Color as Color
@@ -64,8 +61,6 @@ data Actor = Actor
   , blid        :: !LevelId              -- ^ current level
   , boldlid     :: !LevelId              -- ^ previous level
   , bbag        :: !ItemBag              -- ^ items carried
-  , binv        :: !ItemInv              -- ^ map from letters to items
-  , bletter     :: !InvChar              -- ^ next inventory letter
   , btime       :: !Time                 -- ^ absolute time of next action
   , bwait       :: !Bool                 -- ^ is the actor waiting right now?
   , bfid        :: !FactionId            -- ^ faction the actor belongs to
@@ -104,8 +99,6 @@ actorTemplate bkind bsymbol bname bcolor bspeed bhp btrajectory bpos blid btime
   let boldpos = Point 0 0  -- make sure /= bpos, to tell it didn't switch level
       boldlid = blid
       bbag    = EM.empty
-      binv    = EM.empty
-      bletter = InvChar 'a'
       bwait   = False
   in Actor{..}
 
@@ -171,28 +164,6 @@ cmpLetter :: InvChar -> InvChar -> Ordering
 cmpLetter (InvChar x) (InvChar y) =
   compare (isUpper x, toLower x) (isUpper y, toLower y)
 
-allLetters :: [InvChar]
-allLetters = map InvChar $ ['a'..'z'] ++ ['A'..'Z']
-
--- | Assigns a letter to an item, for inclusion in the inventory
--- of a hero. Tries to to use the requested letter, if any.
-assignLetter :: ItemId -> Maybe InvChar -> Actor -> Maybe InvChar
-assignLetter iid r body =
-  case lookup iid $ map swap $ EM.assocs $ binv body of
-    Just l -> Just l
-    Nothing ->  case r of
-      Just l | l `elem` allowed -> Just l
-      _ -> listToMaybe free
- where
-  c = bletter body
-  candidates = take (length allLetters)
-               $ drop (fromJust (elemIndex c allLetters))
-               $ cycle allLetters
-  inBag = EM.keysSet $ bbag body
-  f l = maybe True (`ES.notMember` inBag) $ EM.lookup l $ binv body
-  free = filter f candidates
-  allowed = InvChar '$' : free
-
 letterRange :: [InvChar] -> Text
 letterRange ls =
   sectionBy (sortBy cmpLetter ls) Nothing
@@ -209,9 +180,6 @@ letterRange ls =
   finish (c, d) | c == d         = T.pack [invChar c]
                 | succLetter c d = T.pack [invChar c, invChar d]
                 | otherwise      = T.pack [invChar c, '-', invChar d]
-
-letterLabel :: InvChar -> MU.Part
-letterLabel c = MU.Text $ T.pack $ invChar c : " -"
 
 rmFromBag :: Int -> ItemId -> ItemBag -> ItemBag
 rmFromBag k iid bag =
@@ -244,8 +212,6 @@ instance Binary Actor where
     put blid
     put boldlid
     put bbag
-    put binv
-    put bletter
     put btime
     put bwait
     put bfid
@@ -263,8 +229,6 @@ instance Binary Actor where
     blid <- get
     boldlid <- get
     bbag <- get
-    binv <- get
-    bletter <- get
     btime <- get
     bwait <- get
     bfid <- get

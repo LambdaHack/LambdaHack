@@ -282,8 +282,9 @@ pickupSer :: (MonadAtomic m, MonadServer m)
           => ActorId -> ItemId -> Int -> m ()
 pickupSer aid iid k = assert (k > 0) $ do
   b <- getsState $ getActorBody aid
+  fact <- getsState $ (EM.! bfid b) . sfactionD
   item <- getsState $ getItemBody iid
-  case actorContainerB aid b iid item of
+  case actorContainerB aid b fact iid item of
     Just c -> execCmdAtomic $ MoveItemA iid k (CFloor (blid b) (bpos b)) c
     Nothing -> execFailure aid PickupOverfull
 
@@ -292,7 +293,8 @@ pickupSer aid iid k = assert (k > 0) $ do
 dropSer :: MonadAtomic m => ActorId -> ItemId -> Int -> m ()
 dropSer aid iid k = assert (k > 0) $ do
   b <- getsState $ getActorBody aid
-  let c = actorContainer aid (binv b) iid
+  fact <- getsState $ (EM.! bfid b) . sfactionD
+  let c = actorContainer aid (ginv fact) iid
   execCmdAtomic $ MoveItemA iid k c (CFloor (blid b) (bpos b))
 
 -- * WearSer
@@ -301,8 +303,9 @@ wearSer :: (MonadAtomic m, MonadServer m)
         => ActorId -> ItemId -> Int -> m ()
 wearSer aid iid k = assert (k > 0) $ do
   b <- getsState $ getActorBody aid
+  fact <- getsState $ (EM.! bfid b) . sfactionD
   item <- getsState $ getItemBody iid
-  case actorContainerB aid b iid item of
+  case actorContainerB aid b fact iid item of
     Just c -> execCmdAtomic $ MoveItemA iid k (CFloor (blid b) (bpos b)) c
     Nothing -> execFailure aid PickupOverfull
 
@@ -311,7 +314,8 @@ wearSer aid iid k = assert (k > 0) $ do
 yieldSer :: MonadAtomic m => ActorId -> ItemId -> Int -> m ()
 yieldSer aid iid k = assert (k > 0) $ do
   b <- getsState $ getActorBody aid
-  let c = actorContainer aid (binv b) iid
+  fact <- getsState $ (EM.! bfid b) . sfactionD
+  let c = actorContainer aid (ginv fact) iid
   execCmdAtomic $ MoveItemA iid k c (CFloor (blid b) (bpos b))
 
 -- * ProjectSer

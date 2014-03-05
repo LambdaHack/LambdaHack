@@ -157,9 +157,11 @@ insertItemActor iid k l aid = do
   let bag = EM.singleton iid k
       upd = EM.unionWith (+) bag
   modifyState $ updateActorBody aid $ \b ->
-    b { bbag = upd (bbag b)
-      , binv = EM.insert l iid (binv b)
-      , bletter = max l (bletter b) }
+    b { bbag = upd (bbag b) }
+  b <- getsState $ getActorBody aid
+  modifyState $ updateFactionBody (bfid b) $ \fact ->
+    fact { ginv = EM.insert l iid (ginv fact)
+         , gletter = max l (gletter fact) }
 
 -- | Destroy some copies (possibly not all) of an item.
 destroyItemA :: MonadAction m => ItemId -> Item -> Int -> Container -> m ()
@@ -191,11 +193,12 @@ deleteItemActor iid k l aid = do
     b {bbag = rmFromBag k iid (bbag b)}
   -- Do not remove from actor's @binv@, but assert it was there.
   b <- getsState $ getActorBody aid
-  assert (l `EM.lookup` binv b == Just iid `blame` "item already removed"
-                                           `twith` (iid, l, aid)) skip
-  -- Actor's @bletter@ for UI not reset, but checked.
-  assert (bletter b >= l`blame` "inconsistent actor inventory letter"
-                        `twith` (iid, k, l, aid, bletter b)) skip
+  fact <- getsState $ (EM.! bfid b) . sfactionD
+  assert (l `EM.lookup` ginv fact == Just iid `blame` "item already removed"
+                                              `twith` (iid, l, aid)) skip
+  -- Faction's @gletter@ for UI not reset, but checked.
+  assert (gletter fact >= l`blame` "inconsistent actor inventory letter"
+                           `twith` (iid, k, l, aid, gletter fact)) skip
 
 moveActorA :: MonadAction m => ActorId -> Point -> Point -> m ()
 moveActorA aid fromP toP = assert (fromP /= toP) $ do
@@ -288,7 +291,7 @@ quitFactionA fid mbody fromSt toSt = assert (fromSt /= toSt) $ do
   assert (fromSt == gquit fact `blame` "unexpected actor quit status"
                                `twith` (fid, fromSt, toSt, fact)) skip
   let adj fa = fa {gquit = toSt}
-  modifyState $ updateFaction $ EM.adjust adj fid
+  modifyState $ updateFactionBody fid adj
 
 -- The previous leader is assumed to be alive.
 leadFactionA :: MonadAction m
@@ -301,7 +304,7 @@ leadFactionA fid source target = assert (source /= target) $ do
   assert (source == gleader fact `blame` "unexpected actor leader"
                                  `twith` (fid, source, target, mtb, fact)) skip
   let adj fa = fa {gleader = target}
-  modifyState $ updateFaction $ EM.adjust adj fid
+  modifyState $ updateFactionBody fid adj
 
 diplFactionA :: MonadAction m
              => FactionId -> FactionId -> Diplomacy -> Diplomacy -> m ()
@@ -314,8 +317,8 @@ diplFactionA fid1 fid2 fromDipl toDipl =
             `blame` "unexpected actor diplomacy status"
             `twith` (fid1, fid2, fromDipl, toDipl, fact1, fact2)) skip
     let adj fid fact = fact {gdipl = EM.insert fid toDipl (gdipl fact)}
-    modifyState $ updateFaction $ EM.adjust (adj fid2) fid1
-    modifyState $ updateFaction $ EM.adjust (adj fid1) fid2
+    modifyState $ updateFactionBody fid1 (adj fid2)
+    modifyState $ updateFactionBody fid2 (adj fid1)
 
 -- | Alter an attribute (actually, the only, the defining attribute)
 -- of a visible tile. This is similar to e.g., @TrajectoryActorA@.

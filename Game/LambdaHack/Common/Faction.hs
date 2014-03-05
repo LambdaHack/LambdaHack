@@ -27,6 +27,8 @@ data Faction = Faction
   , gdipl   :: !Dipl                   -- ^ diplomatic mode
   , gquit   :: !(Maybe Status)         -- ^ cause of game end/exit
   , gleader :: !(Maybe ActorId)        -- ^ the leader of the faction, if any
+  , ginv    :: !ItemInv                -- ^ map from letters to items
+  , gletter :: !InvChar                -- ^ next free letter
   }
   deriving (Show, Eq)
 
@@ -97,6 +99,8 @@ instance Binary Faction where
     put gdipl
     put gquit
     put gleader
+    put ginv
+    put gletter
   get = do
     gkind <- get
     gname <- get
@@ -105,6 +109,8 @@ instance Binary Faction where
     gdipl <- get
     gquit <- get
     gleader <- get
+    ginv <- get
+    gletter <- get
     return $! Faction{..}
 
 instance Binary Diplomacy where
