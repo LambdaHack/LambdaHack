@@ -18,7 +18,7 @@ import qualified NLP.Miniutter.English as MU
 import qualified System.Random as R
 import System.Time
 
-import Game.LambdaHack.Client.Config
+import Game.LambdaHack.Client.ConfigUI
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Animation

@@ -61,7 +61,7 @@ import Text.Read
 
 import Game.LambdaHack.Client.Action.ActionClass
 import Game.LambdaHack.Client.Binding
-import Game.LambdaHack.Client.Config
+import Game.LambdaHack.Client.ConfigUI
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Ability (Ability)

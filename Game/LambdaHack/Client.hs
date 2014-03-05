@@ -15,7 +15,7 @@ import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.AtomicSemCli
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.ClientSem
-import Game.LambdaHack.Client.Config
+import Game.LambdaHack.Client.ConfigUI
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.LoopAction
 import Game.LambdaHack.Client.State

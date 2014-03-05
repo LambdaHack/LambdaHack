@@ -71,7 +71,7 @@ library
                       Game.LambdaHack.Client.AtomicSemCli,
                       Game.LambdaHack.Client.Binding,
                       Game.LambdaHack.Client.ClientSem,
-                      Game.LambdaHack.Client.Config,
+                      Game.LambdaHack.Client.ConfigUI,
                       Game.LambdaHack.Client.Draw,
                       Game.LambdaHack.Client.HumanGlobal,
                       Game.LambdaHack.Client.HumanLocal,

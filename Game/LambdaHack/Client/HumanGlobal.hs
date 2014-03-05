@@ -25,7 +25,7 @@ import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.Action
-import Game.LambdaHack.Client.Config
+import Game.LambdaHack.Client.ConfigUI
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.HumanLocal
 import Game.LambdaHack.Client.RunAction
