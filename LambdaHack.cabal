@@ -1,5 +1,5 @@
 name:          LambdaHack
-version:       0.2.12
+version:       0.2.13
 synopsis:      A roguelike game engine in early and active development
 description:   This is an alpha release of LambdaHack,
                a game engine library for roguelike games
