@@ -136,7 +136,7 @@ Assorted remaining keys and commands follow.
                 SPACE          clear messages
                 ESC            cancel action
                 RET            accept choice
-                0--9           pick a new hero leader anywhere in the dungeon
+                0--6           pick a new hero leader anywhere in the dungeon
 
 Commands for saving and exiting the current game, starting a new game, etc.,
 are listed in the Main Menu, brought up by the `ESC` key.

@@ -44,7 +44,7 @@ stdBinding corule !ConfigUI{configCommands} =
         cmdWithHelp
         ++ [(K.mkKM "KP_Begin", (CmdMove, Wait))]
         ++ K.moveBinding (\v -> (CmdMove, Move v)) (\v -> (CmdMove, Run v))
-        ++ fmap heroSelect [0..9]
+        ++ fmap heroSelect [0..6]
       mkDescribed (cat, cmd) = (cmdDescription cmd, cat, cmd)
   in Binding
   { bcmdMap = M.fromList $ map (second mkDescribed) cmdAll

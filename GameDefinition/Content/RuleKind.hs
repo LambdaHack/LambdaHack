@@ -139,20 +139,6 @@ standard = RuleKind
                           , object = "door"
                           , feature = F.CloseTo "horizontal closed door Dark" }
            ]))
-      , ("o", (CmdMove, AlterDir
-           [ AlterFeature { verb = "open"
-                          , object = "door"
-                          , feature = F.OpenTo "vertical open door Lit" }
-           , AlterFeature { verb = "open"
-                          , object = "door"
-                          , feature = F.OpenTo "horizontal open door Lit" }
-           , AlterFeature { verb = "open"
-                          , object = "door"
-                          , feature = F.OpenTo "vertical open door Dark" }
-           , AlterFeature { verb = "open"
-                          , object = "door"
-                          , feature = F.OpenTo "horizontal open door Dark" }
-           ]))
 
       -- Inventory and items
       , ("I", (CmdItem, Inventory))
@@ -172,7 +158,8 @@ standard = RuleKind
                                            , symbol = '/' }]))
 
       -- Targeting
-      , ("asterisk", (CmdTgt, TgtEnemy))
+      , ("KP_Multiply", (CmdTgt, TgtEnemy))
+      , ("backslash", (CmdTgt, Macro "" ["KP_Multiply"]))
       , ("slash", (CmdTgt, TgtFloor))
       , ("plus", (CmdTgt, EpsIncr True))
       , ("minus", (CmdTgt, EpsIncr False))
