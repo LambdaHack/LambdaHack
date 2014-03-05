@@ -35,30 +35,31 @@ import Game.LambdaHack.Common.Point
 -- Precondition: the two positions are next to each other.
 -- We assume the predicate is symmetric.
 data RuleKind = RuleKind
-  { rsymbol         :: !Char      -- ^ a symbol
-  , rname           :: !Text      -- ^ short description
-  , rfreq           :: !Freqs     -- ^ frequency within groups
-  , raccessible     :: !(Maybe (Point -> Point -> Bool))
-  , raccessibleDoor :: !(Maybe (Point -> Point -> Bool))
-  , rtitle          :: !Text      -- ^ the title of the game
-  , rpathsDataFile  :: FilePath -> IO FilePath
-                                  -- ^ the path to data files
-  , rpathsVersion   :: !Version   -- ^ the version of the game
-  , ritemMelee      :: ![Char]    -- ^ symbols of melee weapons
-  , ritemRanged     :: ![Char]    -- ^ ranged weapons and missiles
-  , ritemProject    :: ![Char]    -- ^ symbols of items AI can project
-  , rcfgUIName      :: !FilePath  -- ^ base name of the UI config file
-  , rcfgUIDefault   :: !String    -- ^ the default UI settings config file
-  , rmainMenuArt    :: !Text      -- ^ the ASCII art for the Main Menu
-  , rhumanCommands  :: ![(K.KM, (CmdCategory, HumanCmd))]
-                                  -- ^ default client commands
-  , rfirstDeathEnds :: !Bool      -- ^ whether first non-spawner actor death
-                                  --   ends the game
-  , rfovMode        :: !FovMode   -- ^ FOV calculation mode
-  , rsaveBkpClips   :: !Int       -- ^ game backup is saved that often
-  , rleadLevelClips :: !Int       -- ^ AI/spawn leader level flipped that often
-  , rscoresFile     :: !FilePath  -- ^ name of the scores file
-  , rsavePrefix     :: !String    -- ^ name of the savefile prefix
+  { rsymbol          :: !Char      -- ^ a symbol
+  , rname            :: !Text      -- ^ short description
+  , rfreq            :: !Freqs     -- ^ frequency within groups
+  , raccessible      :: !(Maybe (Point -> Point -> Bool))
+  , raccessibleDoor  :: !(Maybe (Point -> Point -> Bool))
+  , rtitle           :: !Text      -- ^ the title of the game
+  , rpathsDataFile   :: FilePath -> IO FilePath
+                                   -- ^ the path to data files
+  , rpathsVersion    :: !Version   -- ^ the version of the game
+  , ritemMelee       :: ![Char]    -- ^ symbols of melee weapons
+  , ritemRanged      :: ![Char]    -- ^ ranged weapons and missiles
+  , ritemProject     :: ![Char]    -- ^ symbols of items AI can project
+  , rcfgUIName       :: !FilePath  -- ^ base name of the UI config file
+  , rcfgUIDefault    :: !String    -- ^ the default UI settings config file
+  , rmainMenuArt     :: !Text      -- ^ the ASCII art for the Main Menu
+  , rhumanCommands   :: ![(K.KM, (CmdCategory, HumanCmd))]
+                                   -- ^ default client commands
+  , rfirstDeathEnds  :: !Bool      -- ^ whether first non-spawner actor death
+                                   --   ends the game
+  , rfovMode         :: !FovMode   -- ^ FOV calculation mode
+  , rsaveBkpClips    :: !Int       -- ^ game backup is saved that often
+  , rleadLevelClips  :: !Int       -- ^ flip AI/spawn leader level that often
+  , rscoresFile      :: !FilePath  -- ^ name of the scores file
+  , rsavePrefix      :: !String    -- ^ name of the savefile prefix
+  , rsharedInventory :: !Bool      -- ^ whether whole faction shares inventory
   }
 
 -- TODO: should Blind really be a FovMode, or a modifier? Let's decide

@@ -224,8 +224,7 @@ dropHuman = do
   b <- getsState $ getActorBody leader
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let inv = ginv fact
-  bag <- getsState $ getActorBag leader
-  ggi <- getAnyItem leader "What to drop?" bag inv "in inventory"
+  ggi <- getAnyItem leader "What to drop?" (bbag b) inv "in inventory"
   case ggi of
     Right ((iid, item), (_, container)) ->
       case container of
@@ -370,11 +369,10 @@ yieldHuman = do
   -- TODO: allow dropping a given number of identical items.
   Kind.COps{coitem} <- getsState scops
   leader <- getLeaderUI
-  bag <- getsState $ getActorBag leader
   b <- getsState $ getActorBody leader
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let inv = ginv fact
-  ggi <- getAnyItem leader "What to drop?" bag inv "in inventory"
+  ggi <- getAnyItem leader "What to drop?" (bbag b) inv "in inventory"
   case ggi of
     Right ((iid, item), (_, container)) ->
       case container of
@@ -445,11 +443,10 @@ projectBla source tpos eps ts = do
         [] -> ("aim", "object")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
-  bag <- getsState $ getActorBag source
   b <- getsState $ getActorBody source
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let inv = ginv fact
-  ggi <- getGroupItem source bag inv object1 triggerSyms
+  ggi <- getGroupItem source (bbag b) inv object1 triggerSyms
            (makePhrase ["What to", verb1 MU.:> "?"]) "in inventory"
   case ggi of
     Right ((iid, _), (_, container)) ->
@@ -466,7 +463,6 @@ triggerSymbols (_ : ts) = triggerSymbols ts
 applyHuman :: MonadClientUI m => [Trigger] -> m (SlideOrCmd CmdTakeTimeSer)
 applyHuman ts = do
   leader <- getLeaderUI
-  bag <- getsState $ getActorBag leader
   b <- getsState $ getActorBody leader
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let inv = ginv fact
@@ -474,7 +470,7 @@ applyHuman ts = do
         [] -> ("activate", "object")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
-  ggi <- getGroupItem leader bag inv object1 triggerSyms
+  ggi <- getGroupItem leader (bbag b) inv object1 triggerSyms
            (makePhrase ["What to", verb1 MU.:> "?"]) "in inventory"
   case ggi of
     Right ((iid, _), (_, container)) ->

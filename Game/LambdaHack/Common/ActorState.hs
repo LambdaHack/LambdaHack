@@ -4,10 +4,10 @@
 module Game.LambdaHack.Common.ActorState
   ( actorAssocsLvl, actorAssocs, actorList
   , actorNotProjAssocsLvl, actorNotProjAssocs, actorNotProjList
-  , calculateTotal, nearbyFreePoints, whereTo
+  , calculateTotal, sharedInv, nearbyFreePoints, whereTo
   , posToActors, posToActor, getItemBody, memActor
   , getActorBody, updateActorBody, updateFactionBody
-  , getActorItem, getFloorItem, getActorBag
+  , getActorItem, getFloorItem
   , actorContainer, actorContainerB
   , tryFindHeroK, foesAdjacent
   , allLetters, assignLetter, letterLabel
@@ -99,18 +99,23 @@ nearbyFreePoints cotile f start lid s =
       ps = nub $ start : concatMap (vicinity lxsize lysize) ps
   in filter good ps
 
--- | Calculate loot's worth for heroes on the current level.
---
--- Warning: scores are shown during the game, so when the server calculates
--- then, we should be careful not to leak secret information
--- (e.g., the nature of the items through the total worth of inventory).
+-- | Calculate loot's worth for a faction of a given actor.
 calculateTotal :: Actor -> State -> (ItemBag, Int)
 calculateTotal body s =
-  let bs = actorList (== bfid body) (blid body) s
-      bag = EM.unionsWith (+) $ map bbag $ if null bs then [body] else bs
+  let bag = sharedInv body s
       items = map (\(iid, k) -> (getItemBody iid s, k))
               $ EM.assocs bag
   in (bag, sum $ map itemPrice items)
+
+sharedInv :: Actor -> State -> ItemBag
+sharedInv body s =
+  let bs = fidActorNotProjList (bfid body) s
+  in EM.unionsWith (+) $ map bbag $ if null bs then [body] else bs
+
+fidActorNotProjList :: FactionId -> State -> [Actor]
+fidActorNotProjList fid s =
+  let f lvl bs = map snd (actorNotProjAssocsLvl (== fid) lvl (sactorD s)) ++ bs
+  in foldr f [] $ EM.elems $ sdungeon s
 
 -- | Price an item, taking count into consideration.
 itemPrice :: (Item, Int) -> Int
@@ -208,10 +213,6 @@ assignLetter iid r body fact =
   free = filter f candidates
   allowed = InvChar '$' : free
 
-
-getActorBag :: ActorId -> State -> ItemBag
-getActorBag aid s = bbag $ getActorBody aid s
-
 actorContainer :: ActorId -> ItemInv -> ItemId -> Container
 actorContainer aid binv iid =
   case find ((== iid) . snd) $ EM.assocs binv of
@@ -237,7 +238,7 @@ letterLabel c = MU.Text $ T.pack $ invChar c : " -"
 getActorItem :: ActorId -> State -> [(ItemId, Item)]
 getActorItem aid s =
   let f iid = (iid, getItemBody iid s)
-  in map f $ EM.keys $ getActorBag aid s
+  in map f $ EM.keys $ bbag (getActorBody aid s)
 
 getFloorItem :: LevelId -> Point -> State -> [(ItemId, Item)]
 getFloorItem lid pos s =
