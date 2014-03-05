@@ -75,8 +75,8 @@ infix 3 .=>
 
 -- | Conditionally accepted strategy.
 (.=>) :: Bool -> Strategy a -> Strategy a
-p .=> m | p          =  m
-        | otherwise  =  mzero
+p .=> m | p         = m
+        | otherwise = mzero
 
 -- | Strategy with all actions not satisfying the predicate removed.
 -- The remaining actions keep their original relative frequency values.

@@ -278,7 +278,7 @@ waitSer _ = return ()
 
 -- * PickupSer
 
-pickupSer ::  (MonadAtomic m, MonadServer m)
+pickupSer :: (MonadAtomic m, MonadServer m)
           => ActorId -> ItemId -> Int -> m ()
 pickupSer aid iid k = assert (k > 0) $ do
   b <- getsState $ getActorBody aid
@@ -295,11 +295,30 @@ dropSer aid iid k = assert (k > 0) $ do
   let c = actorContainer aid (binv b) iid
   execCmdAtomic $ MoveItemA iid k c (CFloor (blid b) (bpos b))
 
+-- * WearSer
+
+wearSer :: (MonadAtomic m, MonadServer m)
+        => ActorId -> ItemId -> Int -> m ()
+wearSer aid iid k = assert (k > 0) $ do
+  b <- getsState $ getActorBody aid
+  item <- getsState $ getItemBody iid
+  case actorContainerB aid b iid item of
+    Just c -> execCmdAtomic $ MoveItemA iid k (CFloor (blid b) (bpos b)) c
+    Nothing -> execFailure aid PickupOverfull
+
+-- * YieldSer
+
+yieldSer :: MonadAtomic m => ActorId -> ItemId -> Int -> m ()
+yieldSer aid iid k = assert (k > 0) $ do
+  b <- getsState $ getActorBody aid
+  let c = actorContainer aid (binv b) iid
+  execCmdAtomic $ MoveItemA iid k c (CFloor (blid b) (bpos b))
+
 -- * ProjectSer
 
 projectSer :: (MonadAtomic m, MonadServer m)
            => ActorId    -- ^ actor projecting the item (is on current lvl)
-           -> Point    -- ^ target position of the projectile
+           -> Point      -- ^ target position of the projectile
            -> Int        -- ^ digital line parameter
            -> ItemId     -- ^ the item to be projected
            -> Container  -- ^ whether the items comes from floor or inventory

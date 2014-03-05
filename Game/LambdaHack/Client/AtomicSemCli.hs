@@ -649,9 +649,9 @@ drawSfxAtomicUI verbose sfx = case sfx of
     if bhp b <= 0 && not (bproj b) || bhp b < 0 then do
       -- We assume the effect is the cause of incapacitation.
       let firstFall | fid == side && bproj b = "fall apart"
-                    | fid == side =  "fall down"
+                    | fid == side = "fall down"
                     | bproj b = "break up"
-                    | otherwise =  "collapse"
+                    | otherwise = "collapse"
           hurtExtra | fid == side && bproj b = "be stomped flat"
                     | fid == side = "be ground into the floor"
                     | bproj b = "be shattered into little pieces"

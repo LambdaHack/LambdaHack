@@ -353,7 +353,7 @@ wearHuman = do
       item <- getsState $ getItemBody iid
       let l = if jsymbol item == '$' then Just $ InvChar '$' else Nothing
       case assignLetter iid l body of
-        Just _ -> return $ Right $ PickupSer leader iid k
+        Just _ -> return $ Right $ WearSer leader iid k
         Nothing -> failSer PickupOverfull
 
 -- * Yield
@@ -380,7 +380,7 @@ yieldHuman = do
           msgAdd $ makeSentence
             [ MU.SubjectVerbSg subject "drop"
             , partItemWs coitem disco 1 item ]
-          return $ Right $ DropSer leader iid 1
+          return $ Right $ YieldSer leader iid 1
     Left slides -> return $ Left slides
 
 -- * Project

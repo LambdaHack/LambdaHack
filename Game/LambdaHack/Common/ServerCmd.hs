@@ -32,6 +32,8 @@ data CmdTakeTimeSer =
   | WaitSer !ActorId
   | PickupSer !ActorId !ItemId !Int
   | DropSer !ActorId !ItemId !Int
+  | WearSer !ActorId !ItemId !Int
+  | YieldSer !ActorId !ItemId !Int
   | ProjectSer !ActorId !Point !Int !ItemId !Container
   | ApplySer !ActorId !ItemId !Container
   | TriggerSer !ActorId !(Maybe F.Feature)
@@ -56,6 +58,8 @@ aidCmdTakeTimeSer cmd = case cmd of
   WaitSer aid -> aid
   PickupSer aid _ _ -> aid
   DropSer aid _ _ -> aid
+  WearSer aid _ _ -> aid
+  YieldSer aid _ _ -> aid
   ProjectSer aid _ _ _ _ -> aid
   ApplySer aid _ _ -> aid
   TriggerSer aid _ -> aid

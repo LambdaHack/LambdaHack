@@ -199,7 +199,7 @@ equipmentHuman = do
 
 -- TODO: make the message (and for selectNoneHuman, pickLeader, etc.)
 -- optional, since they have a clear representation in the UI elsewhere.
-selectActorHuman ::MonadClientUI m => m Slideshow
+selectActorHuman :: MonadClientUI m => m Slideshow
 selectActorHuman = do
   mleader <- getsClient _sleader
   case mleader of
