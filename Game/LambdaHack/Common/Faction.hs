@@ -20,15 +20,15 @@ import Game.LambdaHack.Content.ModeKind
 type FactionDict = EM.EnumMap FactionId Faction
 
 data Faction = Faction
-  { gkind   :: !(Kind.Id FactionKind)  -- ^ the kind of the faction
-  , gname   :: !Text                   -- ^ individual name
-  , gcolor  :: !Color.Color            -- ^ color of actors or their frames
-  , gplayer :: !Player                 -- ^ the player spec for this faction
-  , gdipl   :: !Dipl                   -- ^ diplomatic mode
-  , gquit   :: !(Maybe Status)         -- ^ cause of game end/exit
-  , gleader :: !(Maybe ActorId)        -- ^ the leader of the faction, if any
-  , ginv    :: !ItemInv                -- ^ map from letters to items
-  , gletter :: !InvChar                -- ^ next free letter
+  { gkind     :: !(Kind.Id FactionKind)  -- ^ the kind of the faction
+  , gname     :: !Text                   -- ^ individual name
+  , gcolor    :: !Color.Color            -- ^ color of actors or their frames
+  , gplayer   :: !Player                 -- ^ the player spec for this faction
+  , gdipl     :: !Dipl                   -- ^ diplomatic mode
+  , gquit     :: !(Maybe Status)         -- ^ cause of game end/exit
+  , gleader   :: !(Maybe ActorId)        -- ^ the leader of the faction, if any
+  , gslots    :: !ItemSlots              -- ^ map from slots to items
+  , gfreeSlot :: !SlotChar               -- ^ first free slot
   }
   deriving (Show, Eq)
 
@@ -99,8 +99,8 @@ instance Binary Faction where
     put gdipl
     put gquit
     put gleader
-    put ginv
-    put gletter
+    put gslots
+    put gfreeSlot
   get = do
     gkind <- get
     gname <- get
@@ -109,8 +109,8 @@ instance Binary Faction where
     gdipl <- get
     gquit <- get
     gleader <- get
-    ginv <- get
-    gletter <- get
+    gslots <- get
+    gfreeSlot <- get
     return $! Faction{..}
 
 instance Binary Diplomacy where

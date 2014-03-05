@@ -8,8 +8,8 @@ module Game.LambdaHack.Common.Actor
   , Actor(..), actorTemplate, timeAddFromSpeed, braced, waitedLastTurn
   , unoccupied, heroKindId, projectileKindId
     -- * Inventory management
-  , ItemBag, ItemInv, InvChar(..), ItemDict, ItemRev
-  , letterRange, rmFromBag
+  , ItemBag, ItemSlots, SlotChar(..), ItemDict, ItemRev
+  , slotRange, rmFromBag
     -- * Assorted
   , ActorDict, smellTimeout, mapActorItems_, checkAdjacent
   ) where
@@ -136,20 +136,20 @@ projectileKindId Kind.Ops{ouniqGroup} = ouniqGroup "projectile"
 smellTimeout :: Time
 smellTimeout = timeScale timeTurn 100
 
-newtype InvChar = InvChar {invChar :: Char}
+newtype SlotChar = SlotChar {slotChar :: Char}
   deriving (Show, Eq, Enum)
 
-instance Ord InvChar where
-  compare (InvChar x) (InvChar y) =
+instance Ord SlotChar where
+  compare (SlotChar x) (SlotChar y) =
     compare (isUpper x, toLower x) (isUpper y, toLower y)
 
-instance Binary InvChar where
-  put (InvChar x) = put x
-  get = fmap InvChar get
+instance Binary SlotChar where
+  put (SlotChar x) = put x
+  get = fmap SlotChar get
 
 type ItemBag = EM.EnumMap ItemId Int
 
-type ItemInv = EM.EnumMap InvChar ItemId
+type ItemSlots = EM.EnumMap SlotChar ItemId
 
 -- | All items in the dungeon (including in actor inventories),
 -- indexed by item identifier.
@@ -162,26 +162,26 @@ type ActorDict = EM.EnumMap ActorId Actor
 -- in bijection.
 type ItemRev = HM.HashMap Item ItemId
 
-cmpLetter :: InvChar -> InvChar -> Ordering
-cmpLetter (InvChar x) (InvChar y) =
+cmpSlot :: SlotChar -> SlotChar -> Ordering
+cmpSlot (SlotChar x) (SlotChar y) =
   compare (isUpper x, toLower x) (isUpper y, toLower y)
 
-letterRange :: [InvChar] -> Text
-letterRange ls =
-  sectionBy (sortBy cmpLetter ls) Nothing
+slotRange :: [SlotChar] -> Text
+slotRange ls =
+  sectionBy (sortBy cmpSlot ls) Nothing
  where
-  succLetter c d = ord (invChar d) - ord (invChar c) == 1
+  succSlot c d = ord (slotChar d) - ord (slotChar c) == 1
 
   sectionBy []     Nothing       = T.empty
   sectionBy []     (Just (c, d)) = finish (c,d)
   sectionBy (x:xs) Nothing       = sectionBy xs (Just (x, x))
   sectionBy (x:xs) (Just (c, d))
-    | succLetter d x             = sectionBy xs (Just (c, x))
+    | succSlot d x             = sectionBy xs (Just (c, x))
     | otherwise                  = finish (c,d) <> sectionBy xs (Just (x, x))
 
-  finish (c, d) | c == d         = T.pack [invChar c]
-                | succLetter c d = T.pack [invChar c, invChar d]
-                | otherwise      = T.pack [invChar c, '-', invChar d]
+  finish (c, d) | c == d         = T.pack [slotChar c]
+                | succSlot c d = T.pack [slotChar c, slotChar d]
+                | otherwise      = T.pack [slotChar c, '-', slotChar d]
 
 rmFromBag :: Int -> ItemId -> ItemBag -> ItemBag
 rmFromBag k iid bag =

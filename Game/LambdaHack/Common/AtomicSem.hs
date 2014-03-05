@@ -152,7 +152,7 @@ insertItemFloor lid iid k pos =
   in updateLevel lid $ updateFloor mergeBag
 
 insertItemActor :: MonadAction m
-                => ItemId -> Int -> InvChar -> ActorId -> m ()
+                => ItemId -> Int -> SlotChar -> ActorId -> m ()
 insertItemActor iid k l aid = do
   let bag = EM.singleton iid k
       upd = EM.unionWith (+) bag
@@ -160,8 +160,8 @@ insertItemActor iid k l aid = do
     b { bbag = upd (bbag b) }
   b <- getsState $ getActorBody aid
   modifyState $ updateFactionBody (bfid b) $ \fact ->
-    fact { ginv = EM.insert l iid (ginv fact)
-         , gletter = max l (gletter fact) }
+    fact { gslots = EM.insert l iid (gslots fact)
+         , gfreeSlot = max l (gfreeSlot fact) }
 
 -- | Destroy some copies (possibly not all) of an item.
 destroyItemA :: MonadAction m => ItemId -> Item -> Int -> Container -> m ()
@@ -187,18 +187,19 @@ deleteItemFloor lid iid k pos =
   in updateLevel lid $ updateFloor $ EM.alter rmFromFloor pos
 
 deleteItemActor :: MonadAction m
-                => ItemId -> Int -> InvChar -> ActorId -> m ()
+                => ItemId -> Int -> SlotChar -> ActorId -> m ()
 deleteItemActor iid k l aid = do
   modifyState $ updateActorBody aid $ \b ->
     b {bbag = rmFromBag k iid (bbag b)}
-  -- Do not remove from actor's @binv@, but assert it was there.
+  -- Do not remove from actor's item slots, but assert it was there.
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  assert (l `EM.lookup` ginv fact == Just iid `blame` "item already removed"
-                                              `twith` (iid, l, aid)) skip
-  -- Faction's @gletter@ for UI not reset, but checked.
-  assert (gletter fact >= l`blame` "inconsistent actor inventory letter"
-                           `twith` (iid, k, l, aid, gletter fact)) skip
+  assert (l `EM.lookup` gslots fact == Just iid
+          `blame` "item already removed"
+          `twith` (iid, l, aid)) skip
+  -- Faction's @gfreeSlot@ for UI not reset, but checked.
+  assert (gfreeSlot fact >= l`blame` "inconsistent actor inventory slot"
+                         `twith` (iid, k, l, aid, gfreeSlot fact)) skip
 
 moveActorA :: MonadAction m => ActorId -> Point -> Point -> m ()
 moveActorA aid fromP toP = assert (fromP /= toP) $ do

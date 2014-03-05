@@ -10,7 +10,7 @@ module Game.LambdaHack.Common.ActorState
   , getActorItem, getFloorItem
   , actorContainer, actorContainerB
   , tryFindHeroK, foesAdjacent
-  , allLetters, assignLetter, letterLabel
+  , allSlots, assignSlot, slotLabel
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -191,47 +191,48 @@ updateFactionBody fid f s =
       alt (Just fact) = Just $ f fact
   in updateFactionD (EM.alter alt fid) s
 
-allLetters :: [InvChar]
-allLetters = map InvChar $ ['a'..'z'] ++ ['A'..'Z']
+allSlots :: [SlotChar]
+allSlots = map SlotChar $ ['a'..'z'] ++ ['A'..'Z']
 
--- | Assigns a letter to an item, for inclusion in the inventory
--- of a hero. Tries to to use the requested letter, if any.
-assignLetter :: ItemId -> Maybe InvChar -> Actor -> Faction -> Maybe InvChar
-assignLetter iid r body fact =
-  case lookup iid $ map swap $ EM.assocs $ ginv fact of
+-- | Assigns a slot to an item, for inclusion in the inventory
+-- of a hero. Tries to to use the requested slot, if any.
+assignSlot :: ItemId -> Maybe SlotChar -> Actor -> Faction -> Maybe SlotChar
+assignSlot iid r body fact =
+  case lookup iid $ map swap $ EM.assocs $ gslots fact of
     Just l -> Just l
     Nothing ->  case r of
       Just l | l `elem` allowed -> Just l
       _ -> listToMaybe free
  where
-  c = gletter fact
-  candidates = take (length allLetters)
-               $ drop (fromJust (elemIndex c allLetters))
-               $ cycle allLetters
+  c = gfreeSlot fact
+  candidates = take (length allSlots)
+               $ drop (fromJust (elemIndex c allSlots))
+               $ cycle allSlots
   inBag = EM.keysSet $ bbag body
-  f l = maybe True (`ES.notMember` inBag) $ EM.lookup l $ ginv fact
+  f l = maybe True (`ES.notMember` inBag) $ EM.lookup l $ gslots fact
   free = filter f candidates
-  allowed = InvChar '$' : free
+  allowed = SlotChar '$' : free
 
-actorContainer :: ActorId -> ItemInv -> ItemId -> Container
-actorContainer aid binv iid =
-  case find ((== iid) . snd) $ EM.assocs binv of
+actorContainer :: ActorId -> ItemSlots -> ItemId -> Container
+actorContainer aid slotChars iid =
+  case find ((== iid) . snd) $ EM.assocs slotChars of
     Just (l, _) -> CActor aid l
-    Nothing -> assert `failure` "item not in inventory" `twith` (aid, binv, iid)
+    Nothing -> assert `failure` "item not in inventory"
+                      `twith` (aid, slotChars, iid)
 
 actorContainerB :: ActorId -> Actor -> Faction -> ItemId -> Item
                 -> Maybe Container
 actorContainerB aid body fact iid item =
-  case find ((== iid) . snd) $ EM.assocs (ginv fact) of
+  case find ((== iid) . snd) $ EM.assocs (gslots fact) of
     Just (l, _) -> Just $ CActor aid l
     Nothing ->
-      let l = if jsymbol item == '$' then Just $ InvChar '$' else Nothing
-      in case assignLetter iid l body fact of
+      let l = if jsymbol item == '$' then Just $ SlotChar '$' else Nothing
+      in case assignSlot iid l body fact of
         Just l2 -> Just $ CActor aid l2
         Nothing -> Nothing
 
-letterLabel :: InvChar -> MU.Part
-letterLabel c = MU.Text $ T.pack $ invChar c : " -"
+slotLabel :: SlotChar -> MU.Part
+slotLabel c = MU.Text $ T.pack $ slotChar c : " -"
 
 -- | Gets actor's items from the current level. Warning: this does not work
 -- for viewing items of actors from remote level.

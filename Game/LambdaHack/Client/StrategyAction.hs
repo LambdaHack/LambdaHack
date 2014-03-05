@@ -332,8 +332,8 @@ pickup aid = do
     Nothing -> assert `failure` "pickup of empty pile" `twith` (aid, bpos, lvl)
     Just ((iid, k), _) -> do  -- pick up first item
       item <- getsState $ getItemBody iid
-      let l = if jsymbol item == '$' then Just $ InvChar '$' else Nothing
-      return $! case assignLetter iid l body fact of
+      let l = if jsymbol item == '$' then Just $ SlotChar '$' else Nothing
+      return $! case assignSlot iid l body fact of
         Just _ -> returN "pickup" $ PickupSer aid iid k
         Nothing -> returN "pickup" $ WaitSer aid  -- TODO
   return $! actionPickup
@@ -483,7 +483,7 @@ rangedFreq aid = do
                -- and no actors or obstracles along the path
                && steps == chessDist bpos fpos
             then toFreq "throwFreq"
-                 $ throwFreq bbag 4 (actorContainer aid (ginv fact))
+                 $ throwFreq bbag 4 (actorContainer aid (gslots fact))
                    ++ throwFreq tis 8 (const $ CFloor blid bpos)
             else toFreq "throwFreq: not possible" []
       return $! freq
@@ -521,7 +521,7 @@ toolsFreq :: MonadActionRO m
 toolsFreq disco aid = do
   cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   b@Actor{bkind, bpos, blid, bbag} <- getsState $ getActorBody aid
-  Faction{ginv} <- getsState $ (EM.! bfid b) . sfactionD
+  Faction{gslots} <- getsState $ (EM.! bfid b) . sfactionD
   lvl <- getLevel blid
   s <- getState
   let tis = lvl `atI` bpos
@@ -540,7 +540,7 @@ toolsFreq disco aid = do
         , benefit > 0
         , jsymbol i `elem` mastered ]
   return $! toFreq "useFreq" $
-    useFreq bbag 1 (actorContainer aid ginv)
+    useFreq bbag 1 (actorContainer aid gslots)
     ++ useFreq tis 2 (const $ CFloor blid bpos)
 
 displace :: MonadClient m => ActorId -> m (Strategy CmdTakeTimeSer)

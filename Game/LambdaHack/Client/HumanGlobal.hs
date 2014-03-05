@@ -206,8 +206,8 @@ pickupHuman = do
     Nothing -> failWith "nothing here"
     Just ((iid, k), _) ->  do  -- pick up first item; TODO: let pl select item
       item <- getsState $ getItemBody iid
-      let l = if jsymbol item == '$' then Just $ InvChar '$' else Nothing
-      case assignLetter iid l body fact of
+      let l = if jsymbol item == '$' then Just $ SlotChar '$' else Nothing
+      case assignSlot iid l body fact of
         Just _ -> return $ Right $ PickupSer leader iid k
         Nothing -> failSer PickupOverfull
 
@@ -223,7 +223,7 @@ dropHuman = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  let inv = ginv fact
+  let inv = gslots fact
   ggi <- getAnyItem leader "What to drop?" (bbag b) inv "in inventory"
   case ggi of
     Right ((iid, item), (_, container)) ->
@@ -247,7 +247,7 @@ getAnyItem :: MonadClientUI m
            => ActorId
            -> Text     -- ^ prompt
            -> ItemBag  -- ^ all items in question
-           -> ItemInv  -- ^ inventory characters
+           -> ItemSlots  -- ^ inventory characters
            -> Text     -- ^ how to refer to the collection of items
            -> m (SlideOrCmd ((ItemId, Item), (Int, Container)))
 getAnyItem leader prompt = getItem leader prompt (const True) allObjectsName
@@ -262,7 +262,7 @@ getItem :: MonadClientUI m
         -> (Item -> Bool)  -- ^ which items to consider suitable
         -> Text            -- ^ how to describe suitable items
         -> ItemBag         -- ^ all items in question
-        -> ItemInv         -- ^ inventory characters
+        -> ItemSlots         -- ^ inventory characters
         -> Text            -- ^ how to refer to the collection of items
         -> m (SlideOrCmd ((ItemId, Item), (Int, Container)))
 getItem aid prompt p ptext bag invRaw isn = do
@@ -283,19 +283,19 @@ getItem aid prompt p ptext bag invRaw isn = do
       bestFull = not $ null isp
       (bestMsg, bestKey)
         | bestFull =
-          let bestLetter = invChar $ maximum $ map (snd . snd) isp
-          in (", RET(" <> T.singleton bestLetter <> ")", [K.Return])
+          let bestSlot = slotChar $ maximum $ map (snd . snd) isp
+          in (", RET(" <> T.singleton bestSlot <> ")", [K.Return])
         | otherwise = ("", [])
       keys ims =
         let mls = map (snd . snd) ims
             ks = bestKey ++ floorKey ++ [K.Char '?']
-                 ++ map (K.Char . invChar) mls
+                 ++ map (K.Char . slotChar) mls
         in zipWith K.KM (repeat K.NoModifier) ks
       choice ims =
         if null ims
         then "[?" <> floorMsg
         else let mls = map (snd . snd) ims
-                 r = letterRange mls
+                 r = slotRange mls
              in "[" <> r <> ", ?" <> floorMsg <> bestMsg
       ask = do
         if null is0 && EM.null tis
@@ -329,8 +329,8 @@ getItem aid prompt p ptext bag invRaw isn = do
                                 (k, CFloor (blid b) pos)))
                        $ EM.assocs tis
               K.Char l ->
-                case find ((InvChar l ==) . snd . snd) is0 of
-                  Nothing -> assert `failure` "unexpected inventory letter"
+                case find ((SlotChar l ==) . snd . snd) is0 of
+                  Nothing -> assert `failure` "unexpected inventory slot"
                                     `twith` (km, l,  is0)
                   Just (iidItem, (k, l2)) ->
                     return $ Right (iidItem, (k, CActor aid l2))
@@ -354,8 +354,8 @@ wearHuman = do
     Nothing -> failWith "nothing here"
     Just ((iid, k), _) ->  do  -- pick up first item; TODO: let pl select item
       item <- getsState $ getItemBody iid
-      let l = if jsymbol item == '$' then Just $ InvChar '$' else Nothing
-      case assignLetter iid l body fact of
+      let l = if jsymbol item == '$' then Just $ SlotChar '$' else Nothing
+      case assignSlot iid l body fact of
         Just _ -> return $ Right $ WearSer leader iid k
         Nothing -> failSer PickupOverfull
 
@@ -371,7 +371,7 @@ yieldHuman = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  let inv = ginv fact
+  let inv = gslots fact
   ggi <- getAnyItem leader "What to drop?" (bbag b) inv "in inventory"
   case ggi of
     Right ((iid, item), (_, container)) ->
@@ -445,7 +445,7 @@ projectBla source tpos eps ts = do
       triggerSyms = triggerSymbols ts
   b <- getsState $ getActorBody source
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  let inv = ginv fact
+  let inv = gslots fact
   ggi <- getGroupItem source (bbag b) inv object1 triggerSyms
            (makePhrase ["What to", verb1 MU.:> "?"]) "in inventory"
   case ggi of
@@ -465,7 +465,7 @@ applyHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  let inv = ginv fact
+  let inv = gslots fact
       (verb1, object1) = case ts of
         [] -> ("activate", "object")
         tr : _ -> (verb tr, object tr)
@@ -483,7 +483,7 @@ applyHuman ts = do
 getGroupItem :: MonadClientUI m
              => ActorId
              -> ItemBag  -- ^ all objects in question
-             -> ItemInv  -- ^ inventory characters
+             -> ItemSlots  -- ^ inventory characters
              -> MU.Part  -- ^ name of the group
              -> [Char]   -- ^ accepted item symbols
              -> Text     -- ^ prompt

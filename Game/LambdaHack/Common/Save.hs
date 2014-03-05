@@ -109,6 +109,6 @@ restoreGame name copies pathsDataFile = do
 delayPrint :: Text -> IO ()
 delayPrint t = do
   delay <- R.randomRIO (0, 1000000)
-  threadDelay delay  -- try not to interleave letters with other clients
+  threadDelay delay  -- try not to interleave saves with other clients
   T.hPutStrLn stderr t
   hFlush stderr

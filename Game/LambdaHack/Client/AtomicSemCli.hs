@@ -527,7 +527,7 @@ moveItemUI verbose iid k c1 c2 = do
         let n = bbag b EM.! iid
         side <- getsClient sside
         if bfid b == side then
-          msgAdd $ makePhrase [ letterLabel l
+          msgAdd $ makePhrase [ slotLabel l
                               , partItemWs coitem disco n item
                               , "\n" ]
         else aiVerbMU aid "pick up" iid k

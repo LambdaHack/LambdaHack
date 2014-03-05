@@ -294,7 +294,7 @@ dropSer :: MonadAtomic m => ActorId -> ItemId -> Int -> m ()
 dropSer aid iid k = assert (k > 0) $ do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  let c = actorContainer aid (ginv fact) iid
+  let c = actorContainer aid (gslots fact) iid
   execCmdAtomic $ MoveItemA iid k c (CFloor (blid b) (bpos b))
 
 -- * WearSer
@@ -315,7 +315,7 @@ yieldSer :: MonadAtomic m => ActorId -> ItemId -> Int -> m ()
 yieldSer aid iid k = assert (k > 0) $ do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  let c = actorContainer aid (ginv fact) iid
+  let c = actorContainer aid (gslots fact) iid
   execCmdAtomic $ MoveItemA iid k c (CFloor (blid b) (bpos b))
 
 -- * ProjectSer
@@ -394,7 +394,7 @@ projectBla source pos rest iid container = do
       time = btime sb
   unless (bproj sb) $ execSfxAtomic $ ProjectD source iid
   projId <- addProjectile pos rest iid lid (bfid sb) time
-  execCmdAtomic $ MoveItemA iid 1 container (CActor projId (InvChar 'a'))
+  execCmdAtomic $ MoveItemA iid 1 container (CActor projId (SlotChar 'a'))
 
 -- | Create a projectile actor containing the given missile.
 addProjectile :: (MonadAtomic m, MonadServer m)

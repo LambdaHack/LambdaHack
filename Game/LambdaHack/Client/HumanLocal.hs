@@ -182,7 +182,7 @@ inventoryHuman = do
   bag <- if rsharedInventory
          then return $ bbag b
          else getsState $ sharedInv b
-  let invRaw = ginv fact
+  let invRaw = gslots fact
   if EM.null bag
     then promptToSlideshow $ makeSentence
       [ MU.SubjectVerbSg subject "have"
@@ -206,7 +206,7 @@ equipmentHuman = do
   b <- getsState $ getActorBody leader
   let bag = beqp b
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  let invRaw = ginv fact
+  let invRaw = gslots fact
   if EM.null bag
     then promptToSlideshow $ makeSentence
       [ MU.SubjectVerbSg subject "have"
@@ -519,21 +519,21 @@ floorItemOverlay bag = do
   Kind.COps{coitem} <- getsState scops
   s <- getState
   disco <- getsClient sdisco
-  let is = zip (EM.assocs bag) (allLetters ++ repeat (InvChar ' '))
+  let is = zip (EM.assocs bag) (allSlots ++ repeat (SlotChar ' '))
       pr ((iid, k), l) =
-         makePhrase [ letterLabel l
+         makePhrase [ slotLabel l
                     , partItemWs coitem disco k (getItemBody iid s) ]
          <> " "
   return $! toOverlay $ map pr is
 
 -- | Create a list of item names.
-itemOverlay :: MonadClient m => ItemBag -> ItemInv -> m Overlay
+itemOverlay :: MonadClient m => ItemBag -> ItemSlots -> m Overlay
 itemOverlay bag inv = do
   Kind.COps{coitem} <- getsState scops
   s <- getState
   disco <- getsClient sdisco
   let pr (l, iid) =
-         makePhrase [ letterLabel l
+         makePhrase [ slotLabel l
                     , partItemWs coitem disco (bag EM.! iid)
                                  (getItemBody iid s) ]
          <> " "
