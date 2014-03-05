@@ -54,8 +54,8 @@ use Cabal flags, e.g,
 Compatibility notes
 -------------------
 
-The current code was tested with GHC 7.6 and 7.8, but should also work with
-other GHC versions (see file `.travis.yml.7.4.2` for GHC 7.4 commands).
+The current code was tested with GHC 7.6.3 and 7.8.1,
+but should also work with other GHC versions.
 
 If you are using the terminal frontends, numerical keypad may not work
 correctly depending on versions of the libraries, terminfo and terminal
