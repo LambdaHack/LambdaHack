@@ -103,7 +103,7 @@ dumpRngs = do
   dataDir <- liftIO appDataDir
   let fn = dataDir </> "rngs.dump"
   rngs <- getsServer srngs
-  liftIO $ writeFile fn (show rngs)
+  liftIO $ writeFile fn (show rngs ++ "\n")
 
 writeTQueueAI :: MonadConnServer m => CmdClientAI -> TQueue CmdClientAI -> m ()
 writeTQueueAI cmd fromServer = do
