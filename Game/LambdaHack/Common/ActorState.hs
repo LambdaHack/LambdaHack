@@ -81,8 +81,7 @@ posToActors pos lid s =
   let as = actorAssocs (const True) lid s
       aps = filter (\(_, b) -> bpos b == pos) as
       f iid = (iid, getItemBody iid s)
-      g (aid, b) = ((aid, b), map f $ EM.keys
-                              $ EM.unionWith (+) (binv b) (beqp b))
+      g (aid, b) = ((aid, b), map f $ EM.keys (binv b) ++ EM.keys (beqp b))
       l = map g aps
   in assert (length l <= 1 || all (bproj . snd . fst) l
              `blame` "many actors at the same position" `twith` l)
@@ -210,13 +209,12 @@ assignSlot :: ItemId -> Maybe SlotChar -> Actor -> Faction -> State
 assignSlot iid r body fact s =
   case lookup iid $ map swap $ EM.assocs $ gslots fact of
     Just l -> Just l
-    Nothing ->  case r of
+    Nothing -> case r of
       Just l | l `elem` allowed -> Just l
       _ -> listToMaybe free
  where
-  c = gfreeSlot fact
   candidates = take (length allSlots)
-               $ drop (fromJust (elemIndex c allSlots))
+               $ drop (fromJust (elemIndex (gfreeSlot fact) allSlots))
                $ cycle allSlots
   inBag = EM.keysSet $ sharedBag body s
   f l = maybe True (`ES.notMember` inBag) $ EM.lookup l $ gslots fact

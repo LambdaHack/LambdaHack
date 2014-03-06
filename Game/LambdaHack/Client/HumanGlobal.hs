@@ -204,7 +204,7 @@ pickupHuman = do
   -- Check if something is here to pick up. Items are never invisible.
   case EM.minViewWithKey $ lvl `atI` bpos body of
     Nothing -> failWith "nothing here"
-    Just ((iid, k), _) ->  do  -- pick up first item; TODO: let pl select item
+    Just ((iid, k), _) -> do  -- pick up first item; TODO: let pl select item
       item <- getsState $ getItemBody iid
       let l = if jsymbol item == '$' then Just $ SlotChar '$' else Nothing
       mc <- getsState $ assignSlot iid l body fact
@@ -354,7 +354,7 @@ wearHuman = do
   -- Check if something is here to pick up. Items are never invisible.
   case EM.minViewWithKey $ lvl `atI` bpos body of
     Nothing -> failWith "nothing here"
-    Just ((iid, k), _) ->  do  -- pick up first item; TODO: let pl select item
+    Just ((iid, k), _) -> do  -- pick up first item; TODO: let pl select item
       item <- getsState $ getItemBody iid
       let l = if jsymbol item == '$' then Just $ SlotChar '$' else Nothing
       mc <- getsState $ assignSlot iid l body fact

@@ -77,7 +77,7 @@ dline p1 p2 =
 
 -- | Compare steepness of @(p1, f)@ and @(p2, f)@.
 -- Debug: Verify that the results of 2 independent checks are equal.
-dsteeper :: Bump ->  Bump -> Bump -> Bool
+dsteeper :: Bump -> Bump -> Bump -> Bool
 {-# INLINE dsteeper #-}
 dsteeper f p1 p2 =
   assert (res == debugSteeper f p1 p2) res

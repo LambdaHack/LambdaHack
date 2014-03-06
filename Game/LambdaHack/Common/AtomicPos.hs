@@ -100,8 +100,8 @@ posCmdAtomic cmd = case cmd of
   LoseSmellA lid sms -> do
     let ps = map fst sms
     return $! PosSmell lid ps
-  AgeLevelA lid _ ->  return $! PosSight lid []
-  AgeGameA _ ->  return PosAll
+  AgeLevelA lid _ -> return $! PosSight lid []
+  AgeGameA _ -> return PosAll
   DiscoverA lid p _ _ -> return $! PosSight lid [p]
   CoverA lid p _ _ -> return $! PosSight lid [p]
   PerceptionA{} -> return PosNone

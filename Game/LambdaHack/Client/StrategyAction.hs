@@ -336,7 +336,7 @@ pickup aid = do
       mv <- getsState $ assignSlot iid l body fact
       return $! case mv of
         Just _ -> returN "pickup" $ PickupSer aid iid k
-        Nothing -> returN "pickup" $ WaitSer aid  -- TODO
+        Nothing -> assert `failure` fact  -- TODO: return mzero  -- PickupOverfull
   return $! actionPickup
 
 -- Everybody melees in a pinch, even though some prefer ranged attacks.

@@ -190,18 +190,13 @@ deleteItemActor :: MonadAction m
                 => ItemId -> Int -> SlotChar -> ActorId -> m ()
 deleteItemActor iid k l aid = do
   modifyState $ updateActorBody aid $ \b ->
-    if EM.member iid (binv b)
-    then b {binv = rmFromBag k iid (binv b)}
-    else b {beqp = rmFromBag k iid (beqp b)}
+    b {binv = rmFromBag k iid (binv b)}
   -- Do not remove from actor's item slots, but assert it was there.
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   assert (l `EM.lookup` gslots fact == Just iid
-          `blame` "item already removed"
-          `twith` (iid, l, aid)) skip
-  -- Faction's @gfreeSlot@ for UI not reset, but checked.
-  assert (gfreeSlot fact >= l `blame` "inconsistent actor inventory slot"
-                              `twith` (iid, k, l, aid, gfreeSlot fact)) skip
+          `blame` "removing item without any slot"
+          `twith` (gslots fact, iid, l, aid)) skip
 
 moveActorA :: MonadAction m => ActorId -> Point -> Point -> m ()
 moveActorA aid fromP toP = assert (fromP /= toP) $ do
