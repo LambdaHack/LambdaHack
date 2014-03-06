@@ -231,7 +231,7 @@ dropHuman = do
     Right ((iid, item), (_, container)) ->
       case container of
         CFloor{} -> failWith "never mind"
-        CActor aid _ -> do
+        CActor aid -> do
           assert (aid == leader) skip
           disco <- getsClient sdisco
           subject <- partAidLeader leader
@@ -335,10 +335,10 @@ getItem aid prompt p ptext bag invRaw isn = do
                   Nothing -> assert `failure` "unexpected inventory slot"
                                     `twith` (km, l,  is0)
                   Just (iidItem, (k, l2)) ->
-                    return $ Right (iidItem, (k, CActor aid l2))
+                    return $ Right (iidItem, (k, CActor aid))
               K.Return | bestFull ->
                 let (iidItem, (k, l2)) = maximumBy (compare `on` snd . snd) isp
-                in return $ Right (iidItem, (k, CActor aid l2))
+                in return $ Right (iidItem, (k, CActor aid))
               _ -> assert `failure` "unexpected key:" `twith` km
   ask
 
@@ -380,7 +380,7 @@ yieldHuman = do
     Right ((iid, item), (_, container)) ->
       case container of
         CFloor{} -> failWith "never mind"
-        CActor aid _ -> do
+        CActor aid -> do
           assert (aid == leader) skip
           disco <- getsClient sdisco
           subject <- partAidLeader leader

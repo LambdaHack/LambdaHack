@@ -447,7 +447,6 @@ rangedFreq aid = do
       lvl@Level{lxsize, lysize} <- getLevel blid
       let mk = okind bkind
           tis = lvl `atI` bpos
-      slots <- getsClient sslots
       fact <- getsState $ (EM.! bfid b) . sfactionD
       foes <- getsState $ actorNotProjList (isAtWar fact) blid
       let foesAdj = foesAdjacent lxsize lysize bpos foes
@@ -467,7 +466,7 @@ rangedFreq aid = do
                               `twith` (iid, itemD)) $ EM.lookup iid itemD
           throwFreq bag multi container =
             [ (- benefit * multi,
-              ProjectSer aid fpos eps iid (container iid))
+              ProjectSer aid fpos eps iid container)
             | (iid, i) <- map (\iid -> (iid, getItemB iid))
                           $ EM.keys bag
             , let benefit =
@@ -488,8 +487,8 @@ rangedFreq aid = do
                -- and no actors or obstracles along the path
                && steps == chessDist bpos fpos
             then toFreq "throwFreq"
-                 $ throwFreq invBag 4 (actorContainer aid slots)
-                   ++ throwFreq tis 8 (const $ CFloor blid bpos)
+                 $ throwFreq invBag 4 (CActor aid)
+                   ++ throwFreq tis 8 (CFloor blid bpos)
             else toFreq "throwFreq: not possible" []
       return $! freq
     _ -> return $! toFreq "throwFreq: no enemy target" []
@@ -526,7 +525,6 @@ toolsFreq :: MonadClient m
 toolsFreq disco aid = do
   cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   b@Actor{bkind, bpos, blid} <- getsState $ getActorBody aid
-  slots <- getsClient sslots
   invBag <- actorInventory b
   lvl <- getLevel blid
   s <- getState
@@ -536,7 +534,7 @@ toolsFreq disco aid = do
                | aiq mk < 10 = "!"
                | otherwise = "!?"  -- literacy required
       useFreq bag multi container =
-        [ (benefit * multi, ApplySer aid iid (container iid))
+        [ (benefit * multi, ApplySer aid iid container)
         | (iid, i) <- map (\iid -> (iid, getItemBody iid s))
                       $ EM.keys bag
         , let benefit =
@@ -546,8 +544,8 @@ toolsFreq disco aid = do
         , benefit > 0
         , jsymbol i `elem` mastered ]
   return $! toFreq "useFreq" $
-    useFreq invBag 1 (actorContainer aid slots)
-    ++ useFreq tis 2 (const $ CFloor blid bpos)
+    useFreq invBag 1 (CActor aid)
+    ++ useFreq tis 2 (CFloor blid bpos)
 
 displace :: MonadClient m => ActorId -> m (Strategy CmdTakeTimeSer)
 displace aid = do

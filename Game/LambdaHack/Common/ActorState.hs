@@ -222,23 +222,23 @@ assignSlot iid r body slots freeSlot s =
   free = filter f candidates
   allowed = SlotChar '$' : free
 
-actorContainer :: ActorId -> ItemSlots -> ItemId -> Container
+actorContainer :: ActorId -> ItemSlots -> ItemId -> SlotChar
 actorContainer aid slotChars iid =
   case find ((== iid) . snd) $ EM.assocs slotChars of
-    Just (l, _) -> CActor aid l
+    Just (l, _) -> l
     Nothing -> assert `failure` "item not in inventory"
                       `twith` (aid, slotChars, iid)
 
-actorContainerB :: ActorId -> Actor -> ItemSlots -> SlotChar
+actorContainerB :: Actor -> ItemSlots -> SlotChar
                 -> ItemId -> Item -> State
-                -> Maybe Container
-actorContainerB aid body slots freeSlot iid item s =
+                -> Maybe SlotChar
+actorContainerB body slots freeSlot iid item s =
   case find ((== iid) . snd) $ EM.assocs slots of
-    Just (l, _) -> Just $ CActor aid l
+    Just (l, _) -> Just l
     Nothing ->
       let l = if jsymbol item == '$' then Just $ SlotChar '$' else Nothing
       in case assignSlot iid l body slots freeSlot s of
-        Just l2 -> Just $ CActor aid l2
+        Just l2 -> Just l2
         Nothing -> Nothing
 
 slotLabel :: SlotChar -> MU.Part

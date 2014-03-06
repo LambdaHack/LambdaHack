@@ -142,7 +142,7 @@ createItemA iid item k c = assert (k > 0) $ do
   modifyState $ updateItemD $ EM.insertWith f iid item
   case c of
     CFloor lid pos -> insertItemFloor lid iid k pos
-    CActor aid l -> insertItemActor iid k l aid
+    CActor aid -> insertItemActor iid k aid
 
 insertItemFloor :: MonadAction m
                 => LevelId -> ItemId -> Int -> Point -> m ()
@@ -151,9 +151,8 @@ insertItemFloor lid iid k pos =
       mergeBag = EM.insertWith (EM.unionWith (+)) pos bag
   in updateLevel lid $ updateFloor mergeBag
 
-insertItemActor :: MonadAction m
-                => ItemId -> Int -> SlotChar -> ActorId -> m ()
-insertItemActor iid k _l aid = do
+insertItemActor :: MonadAction m => ItemId -> Int -> ActorId -> m ()
+insertItemActor iid k aid = do
   let bag = EM.singleton iid k
       upd = EM.unionWith (+) bag
   modifyState $ updateActorBody aid $ \b ->
@@ -170,7 +169,7 @@ destroyItemA iid item k c = assert (k > 0) $ do
                                              `twith` (iid, item, itemD)) skip
   case c of
     CFloor lid pos -> deleteItemFloor lid iid k pos
-    CActor aid l -> deleteItemActor iid k l aid
+    CActor aid -> deleteItemActor iid k aid
 
 deleteItemFloor :: MonadAction m
                 => LevelId -> ItemId -> Int -> Point -> m ()
@@ -182,9 +181,8 @@ deleteItemFloor lid iid k pos =
                                    `twith` (lid, iid, k, pos)
   in updateLevel lid $ updateFloor $ EM.alter rmFromFloor pos
 
-deleteItemActor :: MonadAction m
-                => ItemId -> Int -> SlotChar -> ActorId -> m ()
-deleteItemActor iid k _l aid = do
+deleteItemActor :: MonadAction m => ItemId -> Int -> ActorId -> m ()
+deleteItemActor iid k aid = do
   modifyState $ updateActorBody aid $ \b ->
     b {binv = rmFromBag k iid (binv b)}
 
@@ -218,10 +216,10 @@ moveItemA iid k c1 c2 = assert (k > 0 && c1 /= c2) $ do
                        `twith` (iid, k, c1, c2, lid1, lid2)) skip
   case c1 of
     CFloor lid pos -> deleteItemFloor lid iid k pos
-    CActor aid l -> deleteItemActor iid k l aid
+    CActor aid -> deleteItemActor iid k aid
   case c2 of
     CFloor lid pos -> insertItemFloor lid iid k pos
-    CActor aid l -> insertItemActor iid k l aid
+    CActor aid -> insertItemActor iid k aid
 
 posOfAid :: MonadActionRO m => ActorId -> m (LevelId, Point)
 posOfAid aid = do
@@ -230,7 +228,7 @@ posOfAid aid = do
 
 posOfContainer :: MonadActionRO m => Container -> m (LevelId, Point)
 posOfContainer (CFloor lid p) = return (lid, p)
-posOfContainer (CActor aid _) = posOfAid aid
+posOfContainer (CActor aid) = posOfAid aid
 
 -- TODO: optimize (a single call to updatePrio is enough)
 ageActorA :: MonadAction m => ActorId -> Time -> m ()

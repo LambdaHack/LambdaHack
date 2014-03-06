@@ -357,7 +357,7 @@ dropAllItems aid b hit = do
   discoS <- getsServer sdisco
   let isDestroyed item = hit || bproj b && isFragile coitem discoS item
       f iid k = do
-        let container = CActor aid undefined
+        let container = CActor aid
         item <- getsState $ getItemBody iid
         if isDestroyed item then
           case isExplosive coitem discoS item of

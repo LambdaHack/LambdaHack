@@ -283,14 +283,14 @@ pickupSer :: (MonadAtomic m, MonadServer m)
           => ActorId -> ItemId -> Int -> m ()
 pickupSer aid iid k = assert (k > 0) $ do
   b <- getsState $ getActorBody aid
-  execCmdAtomic $ MoveItemA iid k (CFloor (blid b) (bpos b)) (CActor aid undefined)
+  execCmdAtomic $ MoveItemA iid k (CFloor (blid b) (bpos b)) (CActor aid)
 
 -- * DropSer
 
 dropSer :: MonadAtomic m => ActorId -> ItemId -> Int -> m ()
 dropSer aid iid k = assert (k > 0) $ do
   b <- getsState $ getActorBody aid
-  execCmdAtomic $ MoveItemA iid k (CActor aid undefined) (CFloor (blid b) (bpos b))
+  execCmdAtomic $ MoveItemA iid k (CActor aid) (CFloor (blid b) (bpos b))
 
 -- * WearSer
 
@@ -298,14 +298,14 @@ wearSer :: (MonadAtomic m, MonadServer m)
         => ActorId -> ItemId -> Int -> m ()
 wearSer aid iid k = assert (k > 0) $ do
   b <- getsState $ getActorBody aid
-  execCmdAtomic $ MoveItemA iid k (CFloor (blid b) (bpos b)) (CActor aid undefined)
+  execCmdAtomic $ MoveItemA iid k (CFloor (blid b) (bpos b)) (CActor aid)
 
 -- * YieldSer
 
 yieldSer :: MonadAtomic m => ActorId -> ItemId -> Int -> m ()
 yieldSer aid iid k = assert (k > 0) $ do
   b <- getsState $ getActorBody aid
-  execCmdAtomic $ MoveItemA iid k (CActor aid undefined) (CFloor (blid b) (bpos b))
+  execCmdAtomic $ MoveItemA iid k (CActor aid) (CFloor (blid b) (bpos b))
 
 -- * ProjectSer
 
@@ -383,7 +383,7 @@ projectBla source pos rest iid container = do
       time = btime sb
   unless (bproj sb) $ execSfxAtomic $ ProjectD source iid
   projId <- addProjectile pos rest iid lid (bfid sb) time
-  execCmdAtomic $ MoveItemA iid 1 container (CActor projId (SlotChar 'a'))
+  execCmdAtomic $ MoveItemA iid 1 container (CActor projId)
 
 -- | Create a projectile actor containing the given missile.
 addProjectile :: (MonadAtomic m, MonadServer m)

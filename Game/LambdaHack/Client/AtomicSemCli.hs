@@ -12,6 +12,7 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Maybe
 import Data.Monoid
+import Data.Tuple
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.Action
@@ -521,17 +522,21 @@ moveItemUI verbose iid k c1 c2 = do
   item <- getsState $ getItemBody iid
   disco <- getsClient sdisco
   case (c1, c2) of
-    (CFloor _ _, CActor aid l) -> do
+    (CFloor _ _, CActor aid) -> do
       b <- getsState $ getActorBody aid
       unless (bproj b) $ do
         let n = binv b EM.! iid
         side <- getsClient sside
-        if bfid b == side then
-          msgAdd $ makePhrase [ slotLabel l
-                              , partItemWs coitem disco n item
-                              , "\n" ]
+        if bfid b == side then do
+          slots <- getsClient sslots
+          case lookup iid $ map swap $ EM.assocs slots of
+            Just l -> msgAdd $ makePhrase
+                        [ slotLabel l
+                        , partItemWs coitem disco n item
+                        , "\n" ]
+            Nothing -> assert `failure` (aid, slots)
         else aiVerbMU aid "pick up" iid k
-    (CActor aid _, CFloor _ _) | verbose ->
+    (CActor aid, CFloor _ _) | verbose ->
       aiVerbMU aid "drop" iid k
     _ -> return ()
 
