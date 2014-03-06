@@ -283,7 +283,7 @@ pickupSer :: (MonadAtomic m, MonadServer m)
           => ActorId -> ItemId -> Int -> m ()
 pickupSer aid iid k = assert (k > 0) $ do
   b <- getsState $ getActorBody aid
-  execCmdAtomic $ MoveItemA iid k (CFloor (blid b) (bpos b)) (CActor aid)
+  execCmdAtomic $ MoveItemA iid k (CFloor (blid b) (bpos b)) (CInv aid)
 
 -- * DropSer
 
@@ -291,7 +291,7 @@ dropSer :: (MonadAtomic m, MonadServer m)
         => ActorId -> ItemId -> Int -> m ()
 dropSer aid iid k = assert (k > 0) $ do
   b <- getsState $ getActorBody aid
-  inventoryC <- inventoryContainers iid k (CActor aid)
+  inventoryC <- inventoryContainers iid k (CInv aid)
   mapM_ (\c -> execCmdAtomic $ MoveItemA iid k c (CFloor (blid b) (bpos b)))
         inventoryC
 
@@ -299,36 +299,33 @@ inventoryContainers :: MonadServer m
                     => ItemId -> Int -> Container -> m [Container]
 inventoryContainers iid k container =
   case container of
-    CFloor _ _ -> return [container]
-    CActor aid -> do
+    CInv aid -> do
       let takeFromInv :: Int -> [(ActorId, Actor)] -> [Container]
           takeFromInv 0 _ = []
           takeFromInv _ [] = assert `failure` (iid, k, container)
           takeFromInv n ((aid2, b2) : as) =
             case EM.lookup iid $ binv b2 of
               Nothing -> takeFromInv n as
-              Just m -> CActor aid2 : takeFromInv (max 0 (n - m)) as
+              Just m -> CInv aid2 : takeFromInv (max 0 (n - m)) as
       b <- getsState $ getActorBody aid
       as <- getsState $ fidActorNotProjAssocs (bfid b)
       return $ takeFromInv k $ (aid, b) : filter ((/= aid) . fst) as
+    _ -> return [container]
 
 -- * WearSer
 
 wearSer :: (MonadAtomic m, MonadServer m)
         => ActorId -> ItemId -> Int -> m ()
 wearSer aid iid k = assert (k > 0) $ do
-  b <- getsState $ getActorBody aid
-  execCmdAtomic $ MoveItemA iid k (CFloor (blid b) (bpos b)) (CActor aid)
+  inventoryC <- inventoryContainers iid k (CInv aid)
+  mapM_ (\c -> execCmdAtomic $ MoveItemA iid k c (CEqp aid)) inventoryC
 
 -- * YieldSer
 
 yieldSer :: (MonadAtomic m, MonadServer m)
          => ActorId -> ItemId -> Int -> m ()
 yieldSer aid iid k = assert (k > 0) $ do
-  b <- getsState $ getActorBody aid
-  inventoryC <- inventoryContainers iid k (CActor aid)
-  mapM_ (\c -> execCmdAtomic $ MoveItemA iid k c (CFloor (blid b) (bpos b)))
-        inventoryC
+  execCmdAtomic $ MoveItemA iid k (CEqp aid) (CInv aid)
 
 -- * ProjectSer
 
@@ -407,7 +404,7 @@ projectBla source pos rest iid container = do
   unless (bproj sb) $ execSfxAtomic $ ProjectD source iid
   projId <- addProjectile pos rest iid lid (bfid sb) time
   inventoryC <- inventoryContainers iid 1 container
-  mapM_ (\c -> execCmdAtomic $ MoveItemA iid 1 c (CActor projId)) inventoryC
+  mapM_ (\c -> execCmdAtomic $ MoveItemA iid 1 c (CInv projId)) inventoryC
 
 -- | Create a projectile actor containing the given missile.
 addProjectile :: (MonadAtomic m, MonadServer m)

@@ -355,9 +355,11 @@ dropAllItems :: (MonadAtomic m, MonadServer m)
 dropAllItems aid b hit = do
   Kind.COps{coitem} <- getsState scops
   discoS <- getsServer sdisco
+  let container = CInv aid
+      g iid k = execCmdAtomic $ MoveItemA iid k (CEqp aid) container
+  mapActorEqp_ g b
   let isDestroyed item = hit || bproj b && isFragile coitem discoS item
       f iid k = do
-        let container = CActor aid
         item <- getsState $ getItemBody iid
         if isDestroyed item then
           case isExplosive coitem discoS item of
@@ -369,7 +371,7 @@ dropAllItems aid b hit = do
               explodeItem aid b container cgroup
         else
           execCmdAtomic $ MoveItemA iid k container (CFloor (blid b) (bpos b))
-  mapActorItems_ f b
+  mapActorInv_ f b
 
 explodeItem :: (MonadAtomic m, MonadServer m)
             => ActorId -> Actor -> Container -> Text -> m ()

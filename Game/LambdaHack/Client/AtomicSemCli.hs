@@ -261,7 +261,7 @@ moveItem :: MonadClient m
          => ItemId -> Int -> Container -> Container -> m ()
 moveItem iid _ c1 c2 =
   case (c1, c2) of
-    (CFloor _ _, CActor aid) -> do
+    (CFloor _ _, CInv aid) -> do
       -- Update items slots, in case the item was picked up by
       -- the other client for the same faction.
       b <- getsState $ getActorBody aid
@@ -550,7 +550,7 @@ moveItemUI :: MonadClientUI m
 moveItemUI verbose iid k c1 c2 = do
   Kind.COps{coitem} <- getsState scops
   case (c1, c2) of
-    (CFloor _ _, CActor aid) -> do
+    (CFloor _ _, CInv aid) -> do
       b <- getsState $ getActorBody aid
       unless (bproj b) $ do
         side <- getsClient sside
@@ -566,7 +566,7 @@ moveItemUI verbose iid k c1 c2 = do
                         , "\n" ]
             Nothing -> assert `failure` (aid, b, iid, slots)
         else aiVerbMU aid "pick up" iid k
-    (CActor aid, CFloor _ _) | verbose ->
+    (CInv aid, CFloor _ _) | verbose ->
       aiVerbMU aid "drop" iid k
     _ -> return ()
 

@@ -58,7 +58,8 @@ ascendInBranch dungeon k lid =
 -- | Item container type.
 data Container =
     CFloor !LevelId !Point
-  | CActor !ActorId
+  | CInv !ActorId
+  | CEqp !ActorId
   deriving (Show, Eq, Ord, Generic)
 
 instance Binary Container

@@ -141,7 +141,8 @@ createItemA iid item k c = assert (k > 0) $ do
   modifyState $ updateItemD $ EM.insertWith f iid item
   case c of
     CFloor lid pos -> insertItemFloor lid iid k pos
-    CActor aid -> insertItemActor iid k aid
+    CInv aid -> insertItemInv iid k aid
+    CEqp aid -> insertItemEqp iid k aid
 
 insertItemFloor :: MonadAction m
                 => LevelId -> ItemId -> Int -> Point -> m ()
@@ -150,12 +151,19 @@ insertItemFloor lid iid k pos =
       mergeBag = EM.insertWith (EM.unionWith (+)) pos bag
   in updateLevel lid $ updateFloor mergeBag
 
-insertItemActor :: MonadAction m => ItemId -> Int -> ActorId -> m ()
-insertItemActor iid k aid = do
+insertItemInv :: MonadAction m => ItemId -> Int -> ActorId -> m ()
+insertItemInv iid k aid = do
   let bag = EM.singleton iid k
       upd = EM.unionWith (+) bag
   modifyState $ updateActorBody aid $ \b ->
     b {binv = upd (binv b)}
+
+insertItemEqp :: MonadAction m => ItemId -> Int -> ActorId -> m ()
+insertItemEqp iid k aid = do
+  let bag = EM.singleton iid k
+      upd = EM.unionWith (+) bag
+  modifyState $ updateActorBody aid $ \b ->
+    b {beqp = upd (beqp b)}
 
 -- | Destroy some copies (possibly not all) of an item.
 destroyItemA :: MonadAction m => ItemId -> Item -> Int -> Container -> m ()
@@ -168,7 +176,8 @@ destroyItemA iid item k c = assert (k > 0) $ do
                                              `twith` (iid, item, itemD)) skip
   case c of
     CFloor lid pos -> deleteItemFloor lid iid k pos
-    CActor aid -> deleteItemActor iid k aid
+    CInv aid -> deleteItemInv iid k aid
+    CEqp aid -> deleteItemEqp iid k aid
 
 deleteItemFloor :: MonadAction m
                 => LevelId -> ItemId -> Int -> Point -> m ()
@@ -180,10 +189,15 @@ deleteItemFloor lid iid k pos =
                                    `twith` (lid, iid, k, pos)
   in updateLevel lid $ updateFloor $ EM.alter rmFromFloor pos
 
-deleteItemActor :: MonadAction m => ItemId -> Int -> ActorId -> m ()
-deleteItemActor iid k aid = do
+deleteItemInv :: MonadAction m => ItemId -> Int -> ActorId -> m ()
+deleteItemInv iid k aid = do
   modifyState $ updateActorBody aid $ \b ->
     b {binv = rmFromBag k iid (binv b)}
+
+deleteItemEqp :: MonadAction m => ItemId -> Int -> ActorId -> m ()
+deleteItemEqp iid k aid = do
+  modifyState $ updateActorBody aid $ \b ->
+    b {beqp = rmFromBag k iid (beqp b)}
 
 moveActorA :: MonadAction m => ActorId -> Point -> Point -> m ()
 moveActorA aid fromP toP = assert (fromP /= toP) $ do
@@ -204,17 +218,19 @@ displaceActorA :: MonadAction m => ActorId -> ActorId -> m ()
 displaceActorA source target = assert (source /= target) $ do
   spos <- getsState $ bpos . getActorBody source
   tpos <- getsState $ bpos . getActorBody target
-  modifyState $ updateActorBody source $ \ b -> b {bpos = tpos, boldpos = spos}
-  modifyState $ updateActorBody target $ \ b -> b {bpos = spos, boldpos = tpos}
+  modifyState $ updateActorBody source $ \b -> b {bpos = tpos, boldpos = spos}
+  modifyState $ updateActorBody target $ \b -> b {bpos = spos, boldpos = tpos}
 
 moveItemA :: MonadAction m => ItemId -> Int -> Container -> Container -> m ()
 moveItemA iid k c1 c2 = assert (k > 0 && c1 /= c2) $ do
   case c1 of
     CFloor lid pos -> deleteItemFloor lid iid k pos
-    CActor aid -> deleteItemActor iid k aid
+    CInv aid -> deleteItemInv iid k aid
+    CEqp aid -> deleteItemEqp iid k aid
   case c2 of
     CFloor lid pos -> insertItemFloor lid iid k pos
-    CActor aid -> insertItemActor iid k aid
+    CInv aid -> insertItemInv iid k aid
+    CEqp aid -> insertItemEqp iid k aid
 
 -- TODO: optimize (a single call to updatePrio is enough)
 ageActorA :: MonadAction m => ActorId -> Time -> m ()

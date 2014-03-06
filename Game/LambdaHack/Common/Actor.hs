@@ -11,7 +11,8 @@ module Game.LambdaHack.Common.Actor
   , ItemBag, ItemSlots, SlotChar(..), ItemDict, ItemRev
   , slotRange, rmFromBag
     -- * Assorted
-  , ActorDict, smellTimeout, mapActorItems_, checkAdjacent
+  , ActorDict, smellTimeout, checkAdjacent
+  , mapActorItems_, mapActorInv_, mapActorEqp_
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -192,13 +193,23 @@ rmFromBag k iid bag =
         GT -> Just (n - k)
   in EM.alter rib iid bag
 
+checkAdjacent :: Actor -> Actor -> Bool
+checkAdjacent sb tb = blid sb == blid tb && adjacent (bpos sb) (bpos tb)
+
 mapActorItems_ :: Monad m => (ItemId -> Int -> m a) -> Actor -> m ()
 mapActorItems_ f Actor{binv, beqp} = do
   let is = EM.assocs binv ++ EM.assocs beqp
   mapM_ (uncurry f) is
 
-checkAdjacent :: Actor -> Actor -> Bool
-checkAdjacent sb tb = blid sb == blid tb && adjacent (bpos sb) (bpos tb)
+mapActorInv_ :: Monad m => (ItemId -> Int -> m a) -> Actor -> m ()
+mapActorInv_ f Actor{binv} = do
+  let is = EM.assocs binv
+  mapM_ (uncurry f) is
+
+mapActorEqp_ :: Monad m => (ItemId -> Int -> m a) -> Actor -> m ()
+mapActorEqp_ f Actor{beqp} = do
+  let is = EM.assocs beqp
+  mapM_ (uncurry f) is
 
 instance Binary Actor where
   put Actor{..} = do
