@@ -3,7 +3,6 @@
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Common.AtomicSem
   ( cmdAtomicSem
-  , posOfAid, posOfContainer
   ) where
 
 import Control.Arrow (second)
@@ -210,25 +209,12 @@ displaceActorA source target = assert (source /= target) $ do
 
 moveItemA :: MonadAction m => ItemId -> Int -> Container -> Container -> m ()
 moveItemA iid k c1 c2 = assert (k > 0 && c1 /= c2) $ do
-  (lid1, _) <- posOfContainer c1
-  (lid2, _) <- posOfContainer c2
-  assert (lid1 == lid2 `blame` "moved item containers not on the same level"
-                       `twith` (iid, k, c1, c2, lid1, lid2)) skip
   case c1 of
     CFloor lid pos -> deleteItemFloor lid iid k pos
     CActor aid -> deleteItemActor iid k aid
   case c2 of
     CFloor lid pos -> insertItemFloor lid iid k pos
     CActor aid -> insertItemActor iid k aid
-
-posOfAid :: MonadActionRO m => ActorId -> m (LevelId, Point)
-posOfAid aid = do
-  b <- getsState $ getActorBody aid
-  return (blid b, bpos b)
-
-posOfContainer :: MonadActionRO m => Container -> m (LevelId, Point)
-posOfContainer (CFloor lid p) = return (lid, p)
-posOfContainer (CActor aid) = posOfAid aid
 
 -- TODO: optimize (a single call to updatePrio is enough)
 ageActorA :: MonadAction m => ActorId -> Time -> m ()

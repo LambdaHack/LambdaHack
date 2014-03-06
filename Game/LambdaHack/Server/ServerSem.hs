@@ -287,10 +287,29 @@ pickupSer aid iid k = assert (k > 0) $ do
 
 -- * DropSer
 
-dropSer :: MonadAtomic m => ActorId -> ItemId -> Int -> m ()
+dropSer :: (MonadAtomic m, MonadServer m)
+        => ActorId -> ItemId -> Int -> m ()
 dropSer aid iid k = assert (k > 0) $ do
   b <- getsState $ getActorBody aid
-  execCmdAtomic $ MoveItemA iid k (CActor aid) (CFloor (blid b) (bpos b))
+  inventoryC <- inventoryContainers iid k (CActor aid)
+  mapM_ (\c -> execCmdAtomic $ MoveItemA iid k c (CFloor (blid b) (bpos b)))
+        inventoryC
+
+inventoryContainers :: MonadServer m
+                    => ItemId -> Int -> Container -> m [Container]
+inventoryContainers iid k container =
+  case container of
+    CFloor _ _ -> return [container]
+    CActor aid -> do
+      let takeFromInv :: Int -> [(ActorId, Actor)] -> [Container]
+          takeFromInv 0 _ = []
+          takeFromInv n ((aid2, b2) : as) =
+            case EM.lookup iid $ binv b2 of
+              Nothing -> takeFromInv n as
+              Just m -> CActor aid2 : takeFromInv (max 0 (n - m)) as
+      b <- getsState $ getActorBody aid
+      as <- getsState $ fidActorNotProjAssocs (bfid b)
+      return $ takeFromInv k $ (aid, b) : filter ((/= aid) . fst) as
 
 -- * WearSer
 
@@ -302,10 +321,13 @@ wearSer aid iid k = assert (k > 0) $ do
 
 -- * YieldSer
 
-yieldSer :: MonadAtomic m => ActorId -> ItemId -> Int -> m ()
+yieldSer :: (MonadAtomic m, MonadServer m)
+         => ActorId -> ItemId -> Int -> m ()
 yieldSer aid iid k = assert (k > 0) $ do
   b <- getsState $ getActorBody aid
-  execCmdAtomic $ MoveItemA iid k (CActor aid) (CFloor (blid b) (bpos b))
+  inventoryC <- inventoryContainers iid k (CActor aid)
+  mapM_ (\c -> execCmdAtomic $ MoveItemA iid k c (CFloor (blid b) (bpos b)))
+        inventoryC
 
 -- * ProjectSer
 
@@ -363,12 +385,12 @@ projectFail source tpxy eps iid container isShrapnel = do
               else if not (asight (okind $ bkind sb) || bproj sb)
                    then return $ Just ProjectBlind
                    else do
-                    if isShrapnel && eps `mod` 2 == 0 then
-                      -- Make the explosion a bit less regular.
-                      projectBla source spos (pos:rest) iid container
-                    else
-                      projectBla source pos rest iid container
-                    return Nothing
+                     if isShrapnel && eps `mod` 2 == 0 then
+                       -- Make the explosion a bit less regular.
+                       projectBla source spos (pos:rest) iid container
+                     else
+                       projectBla source pos rest iid container
+                     return Nothing
 
 projectBla :: (MonadAtomic m, MonadServer m)
            => ActorId    -- ^ actor projecting the item (is on current lvl)
@@ -383,7 +405,8 @@ projectBla source pos rest iid container = do
       time = btime sb
   unless (bproj sb) $ execSfxAtomic $ ProjectD source iid
   projId <- addProjectile pos rest iid lid (bfid sb) time
-  execCmdAtomic $ MoveItemA iid 1 container (CActor projId)
+  inventoryC <- inventoryContainers iid 1 container
+  mapM_ (\c -> execCmdAtomic $ MoveItemA iid 1 c (CActor projId)) inventoryC
 
 -- | Create a projectile actor containing the given missile.
 addProjectile :: (MonadAtomic m, MonadServer m)
@@ -427,7 +450,8 @@ applySer actor iid container = do
   execSfxAtomic $ ActivateD actor iid
   itemEffect actor actor (Just iid) item
   -- TODO: don't destroy if not really used up; also, don't take time?
-  execCmdAtomic $ DestroyItemA iid item 1 container
+  inventoryC <- inventoryContainers iid 1 container
+  mapM_ (execCmdAtomic . DestroyItemA iid item 1) inventoryC
 
 -- * TriggerSer
 

@@ -4,7 +4,7 @@
 module Game.LambdaHack.Common.AtomicPos
   ( PosAtomic(..), posCmdAtomic, posSfxAtomic
   , resetsFovAtomic, breakCmdAtomic, loudCmdAtomic
-  , seenAtomicCli, seenAtomicSer
+  , seenAtomicCli, seenAtomicSer, posOfContainer
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -14,7 +14,6 @@ import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.AtomicCmd
-import Game.LambdaHack.Common.AtomicSem (posOfAid, posOfContainer)
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Perception
@@ -150,6 +149,15 @@ singleAid :: MonadActionRO m => ActorId -> m PosAtomic
 singleAid aid = do
   b <- getsState $ getActorBody aid
   return $! PosSight (blid b) [bpos b]
+
+posOfAid :: MonadActionRO m => ActorId -> m (LevelId, Point)
+posOfAid aid = do
+  b <- getsState $ getActorBody aid
+  return (blid b, bpos b)
+
+posOfContainer :: MonadActionRO m => Container -> m (LevelId, Point)
+posOfContainer (CFloor lid p) = return (lid, p)
+posOfContainer (CActor aid) = posOfAid aid
 
 singleContainer :: MonadActionRO m => Container -> m PosAtomic
 singleContainer c = do

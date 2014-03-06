@@ -2,7 +2,7 @@
 -- but not the 'Action' type.
 -- TODO: Document an export list after it's rewritten according to #17.
 module Game.LambdaHack.Common.ActorState
-  ( actorAssocsLvl, actorAssocs, actorList
+  ( fidActorNotProjAssocs, actorAssocsLvl, actorAssocs, actorList
   , actorNotProjAssocsLvl, actorNotProjAssocs, actorNotProjList
   , calculateTotal, sharedInv, nearbyFreePoints, whereTo
   , posToActors, posToActor, getItemBody, memActor
@@ -33,6 +33,14 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.TileKind
+
+fidActorNotProjAssocs :: FactionId -> State -> [(ActorId, Actor)]
+fidActorNotProjAssocs fid s =
+  let f lvl bs = actorNotProjAssocsLvl (== fid) lvl (sactorD s) ++ bs
+  in foldr f [] $ EM.elems $ sdungeon s
+
+fidActorNotProjList :: FactionId -> State -> [Actor]
+fidActorNotProjList fid s = map snd $ fidActorNotProjAssocs fid s
 
 actorAssocsLvl :: (FactionId -> Bool) -> Level -> ActorDict
                -> [(ActorId, Actor)]
@@ -119,11 +127,6 @@ sharedEqp body s =
 
 sharedBag :: Actor -> State -> ItemBag
 sharedBag body s = EM.unionWith (+) (sharedInv body s) (sharedEqp body s)
-
-fidActorNotProjList :: FactionId -> State -> [Actor]
-fidActorNotProjList fid s =
-  let f lvl bs = map snd (actorNotProjAssocsLvl (== fid) lvl (sactorD s)) ++ bs
-  in foldr f [] $ EM.elems $ sdungeon s
 
 -- | Price an item, taking count into consideration.
 itemPrice :: (Item, Int) -> Int
