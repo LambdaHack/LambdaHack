@@ -206,6 +206,7 @@ cmdAtomicSemCli cmd = case cmd of
   DestroyActorA aid b _ -> destroyActorA aid b True
   SpotActorA aid body _ -> createActorA aid body
   LoseActorA aid b _ -> destroyActorA aid b False
+  MoveItemA iid k c1 c2 -> moveItem iid k c1 c2
   LeadFactionA fid source target -> do
     side <- getsClient sside
     when (side == fid) $ do
@@ -255,6 +256,35 @@ destroyActorA aid b destroy = do
       affect3 (tgt, mpath) = (affect tgt, mpath)  -- old path always good
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
   modifyClient $ \cli -> cli {scursor = affect $ scursor cli}
+
+moveItem :: MonadClient m
+         => ItemId -> Int -> Container -> Container -> m ()
+moveItem iid _ c1 c2 =
+  case (c1, c2) of
+    (CFloor _ _, CActor aid) -> do
+      -- Update items slots, in case the item was picked up by
+      -- the other client for the same faction.
+      b <- getsState $ getActorBody aid
+      unless (bproj b) $ do
+        side <- getsClient sside
+        when (bfid b == side) $ do
+          slots <- getsClient sslots
+          case lookup iid $ map swap $ EM.assocs slots of
+            Just _ -> return ()
+            Nothing -> do
+              item <- getsState $ getItemBody iid
+              freeSlot <- getsClient sfreeSlot
+              let l = if jsymbol item == '$'
+                      then Just $ SlotChar '$'
+                      else Nothing
+              mc <- getsState $ assignSlot iid l b slots freeSlot
+              case mc of
+                Just l2 -> do
+                  modifyClient $ \cli ->
+                    cli { sslots = EM.insert l2 iid (sslots cli)
+                        , sfreeSlot = max l2 (sfreeSlot cli) }
+                Nothing -> assert `failure` (iid, l, b, slots, freeSlot)
+    _ -> return ()
 
 perceptionA :: MonadClient m => LevelId -> Perception -> Perception -> m ()
 perceptionA lid outPer inPer = do
@@ -519,22 +549,22 @@ moveItemUI :: MonadClientUI m
            => Bool -> ItemId -> Int -> Container -> Container -> m ()
 moveItemUI verbose iid k c1 c2 = do
   Kind.COps{coitem} <- getsState scops
-  item <- getsState $ getItemBody iid
-  disco <- getsClient sdisco
   case (c1, c2) of
     (CFloor _ _, CActor aid) -> do
       b <- getsState $ getActorBody aid
       unless (bproj b) $ do
-        let n = binv b EM.! iid
         side <- getsClient sside
         if bfid b == side then do
+          item <- getsState $ getItemBody iid
+          disco <- getsClient sdisco
           slots <- getsClient sslots
+          let n = binv b EM.! iid
           case lookup iid $ map swap $ EM.assocs slots of
             Just l -> msgAdd $ makePhrase
                         [ slotLabel l
                         , partItemWs coitem disco n item
                         , "\n" ]
-            Nothing -> assert `failure` (aid, slots)
+            Nothing -> assert `failure` (aid, b, iid, slots)
         else aiVerbMU aid "pick up" iid k
     (CActor aid, CFloor _ _) | verbose ->
       aiVerbMU aid "drop" iid k

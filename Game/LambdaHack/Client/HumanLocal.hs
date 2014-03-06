@@ -2,7 +2,7 @@
 -- server commands. None of such commands takes game time.
 -- TODO: document
 module Game.LambdaHack.Client.HumanLocal
-  ( -- * Assorted commands that do not notify the server
+  ( -- * Assorted commands
     gameDifficultyCycle
   , pickLeaderHuman, memberCycleHuman, memberBackHuman
   , inventoryHuman, equipmentHuman
@@ -180,8 +180,8 @@ inventoryHuman = do
              then return $ MU.Text $ gname fact
              else partAidLeader leader
   bag <- if rsharedInventory
-         then return $ binv b
-         else getsState $ sharedInv b
+         then getsState $ sharedInv b
+         else return $ binv b
   slots <- getsClient sslots
   if EM.null bag
     then promptToSlideshow $ makeSentence

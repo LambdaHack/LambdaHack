@@ -328,7 +328,7 @@ pickup aid = do
   body@Actor{bpos, blid} <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
   lvl <- getLevel blid
-  actionPickup <- case EM.minViewWithKey $ lvl `atI` bpos of
+  case EM.minViewWithKey $ lvl `atI` bpos of
     Nothing -> assert `failure` "pickup of empty pile" `twith` (aid, bpos, lvl)
     Just ((iid, k), _) -> do  -- pick up first item
       item <- getsState $ getItemBody iid
@@ -336,10 +336,13 @@ pickup aid = do
       freeSlot <- getsClient sfreeSlot
       let l = if jsymbol item == '$' then Just $ SlotChar '$' else Nothing
       mv <- getsState $ assignSlot iid l body slots freeSlot
-      return $! case mv of
-        Just _ -> returN "pickup" $ PickupSer aid iid k
+      case mv of
+        Just l2 -> do
+          modifyClient $ \cli ->
+            cli { sslots = EM.insert l2 iid (sslots cli)
+                , sfreeSlot = max l2 (sfreeSlot cli) }
+          return $! returN "pickup" $ PickupSer aid iid k
         Nothing -> assert `failure` fact  -- TODO: return mzero  -- PickupOverfull
-  return $! actionPickup
 
 -- Everybody melees in a pinch, even though some prefer ranged attacks.
 melee :: MonadClient m => ActorId -> m (Strategy CmdTakeTimeSer)

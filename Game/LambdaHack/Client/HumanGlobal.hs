@@ -210,7 +210,11 @@ pickupHuman = do
       let l = if jsymbol item == '$' then Just $ SlotChar '$' else Nothing
       mc <- getsState $ assignSlot iid l body slots freeSlot
       case mc of
-        Just _ -> return $ Right $ PickupSer leader iid k
+        Just l2 -> do
+          modifyClient $ \cli ->
+            cli { sslots = EM.insert l2 iid (sslots cli)
+                , sfreeSlot = max l2 (sfreeSlot cli) }
+          return $ Right $ PickupSer leader iid k
         Nothing -> failSer PickupOverfull
 
 -- * Drop
@@ -238,6 +242,7 @@ dropHuman = do
           msgAdd $ makeSentence
             [ MU.SubjectVerbSg subject "drop"
             , partItemWs coitem disco 1 item ]
+          -- Do not remove from item slots.
           return $ Right $ DropSer leader iid 1
     Left slides -> return $ Left slides
 
@@ -334,10 +339,10 @@ getItem aid prompt p ptext bag invRaw isn = do
                 case find ((SlotChar l ==) . snd . snd) is0 of
                   Nothing -> assert `failure` "unexpected inventory slot"
                                     `twith` (km, l,  is0)
-                  Just (iidItem, (k, l2)) ->
+                  Just (iidItem, (k, _)) ->
                     return $ Right (iidItem, (k, CActor aid))
               K.Return | bestFull ->
-                let (iidItem, (k, l2)) = maximumBy (compare `on` snd . snd) isp
+                let (iidItem, (k, _)) = maximumBy (compare `on` snd . snd) isp
                 in return $ Right (iidItem, (k, CActor aid))
               _ -> assert `failure` "unexpected key:" `twith` km
   ask
@@ -360,7 +365,11 @@ wearHuman = do
       let l = if jsymbol item == '$' then Just $ SlotChar '$' else Nothing
       mc <- getsState $ assignSlot iid l body slots freeSlot
       case mc of
-        Just _ -> return $ Right $ WearSer leader iid k
+        Just l2 -> do
+          modifyClient $ \cli ->
+            cli { sslots = EM.insert l2 iid (sslots cli)
+                , sfreeSlot = max l2 (sfreeSlot cli) }
+          return $ Right $ WearSer leader iid k
         Nothing -> failSer PickupOverfull
 
 -- * Yield
@@ -387,6 +396,7 @@ yieldHuman = do
           msgAdd $ makeSentence
             [ MU.SubjectVerbSg subject "drop"
             , partItemWs coitem disco 1 item ]
+          -- Do not remove from item slots.
           return $ Right $ YieldSer leader iid 1
     Left slides -> return $ Left slides
 
