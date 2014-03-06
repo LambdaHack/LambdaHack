@@ -303,6 +303,7 @@ inventoryContainers iid k container =
     CActor aid -> do
       let takeFromInv :: Int -> [(ActorId, Actor)] -> [Container]
           takeFromInv 0 _ = []
+          takeFromInv _ [] = assert `failure` (iid, k, container)
           takeFromInv n ((aid2, b2) : as) =
             case EM.lookup iid $ binv b2 of
               Nothing -> takeFromInv n as
