@@ -60,7 +60,7 @@ data Actor = Actor
   , boldpos     :: !Point                -- ^ previous position
   , blid        :: !LevelId              -- ^ current level
   , boldlid     :: !LevelId              -- ^ previous level
-  , bbag        :: !ItemBag              -- ^ personal inventory
+  , binv        :: !ItemBag              -- ^ personal inventory
   , beqp        :: !ItemBag              -- ^ personal equipment
   , btime       :: !Time                 -- ^ absolute time of next action
   , bwait       :: !Bool                 -- ^ is the actor waiting right now?
@@ -99,7 +99,7 @@ actorTemplate bkind bsymbol bname bcolor bspeed bhp btrajectory bpos blid btime
               bfid bproj =
   let boldpos = Point 0 0  -- make sure /= bpos, to tell it didn't switch level
       boldlid = blid
-      bbag    = EM.empty
+      binv    = EM.empty
       beqp    = EM.empty
       bwait   = False
   in Actor{..}
@@ -193,8 +193,8 @@ rmFromBag k iid bag =
   in EM.alter rib iid bag
 
 mapActorItems_ :: Monad m => (ItemId -> Int -> m a) -> Actor -> m ()
-mapActorItems_ f Actor{bbag, beqp} = do
-  let is = EM.assocs bbag ++ EM.assocs beqp
+mapActorItems_ f Actor{binv, beqp} = do
+  let is = EM.assocs binv ++ EM.assocs beqp
   mapM_ (uncurry f) is
 
 checkAdjacent :: Actor -> Actor -> Bool
@@ -213,7 +213,7 @@ instance Binary Actor where
     put boldpos
     put blid
     put boldlid
-    put bbag
+    put binv
     put beqp
     put btime
     put bwait
@@ -231,7 +231,7 @@ instance Binary Actor where
     boldpos <- get
     blid <- get
     boldlid <- get
-    bbag <- get
+    binv <- get
     beqp <- get
     btime <- get
     bwait <- get

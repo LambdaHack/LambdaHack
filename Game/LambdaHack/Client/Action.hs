@@ -30,7 +30,7 @@ module Game.LambdaHack.Client.Action
   , partAidLeader, partActorLeader, unexploredDepth
   , getCacheBfsAndPath, getCacheBfs, accessCacheBfs, actorAimsPos
   , closestUnknown, closestSmell, furthestKnown, closestTriggers
-  , closestItems, closestFoes, actorAbilities
+  , closestItems, closestFoes, actorAbilities, actorInventory
   , debugPrint
   ) where
 
@@ -886,3 +886,11 @@ actorAbilities aid mleader = do
         | Just aid == mleader = fAbilityLeader $ fokind $ gkind fact
         | otherwise = fAbilityOther $ fokind $ gkind fact
   return $! acanDo (okind $ bkind body) `intersect` factionAbilities
+
+actorInventory :: MonadActionRO m => Actor -> m ItemBag
+actorInventory b = do
+  Kind.COps{corule} <- getsState scops
+  let RuleKind{rsharedInventory} = Kind.stdRuleset corule
+  if rsharedInventory
+    then getsState $ sharedInv b
+    else return $ binv b

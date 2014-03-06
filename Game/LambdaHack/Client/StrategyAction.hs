@@ -246,7 +246,7 @@ actionStrategy aid = do
   disco <- getsClient sdisco
   btarget <- getsClient $ getTarget aid
   Actor{bpos, blid} <- getsState $ getActorBody aid
-  bitems <- getsState $ getActorItem aid
+  bitems <- getsState $ getActorEqp aid
   lootItems <- getsState $ getFloorItem blid bpos
   lvl <- getLevel blid
   mleader <- getsClient _sleader
@@ -333,7 +333,8 @@ pickup aid = do
     Just ((iid, k), _) -> do  -- pick up first item
       item <- getsState $ getItemBody iid
       let l = if jsymbol item == '$' then Just $ SlotChar '$' else Nothing
-      return $! case assignSlot iid l body fact of
+      mv <- getsState $ assignSlot iid l body fact
+      return $! case mv of
         Just _ -> returN "pickup" $ PickupSer aid iid k
         Nothing -> returN "pickup" $ WaitSer aid  -- TODO
   return $! actionPickup
@@ -434,7 +435,8 @@ rangedFreq aid = do
                 , corule
                 } <- getsState scops
   btarget <- getsClient $ getTarget aid
-  b@Actor{bkind, bpos, blid, bbag} <- getsState $ getActorBody aid
+  b@Actor{bkind, bpos, blid} <- getsState $ getActorBody aid
+  invBag <- actorInventory b
   mfpos <- aidTgtToPos aid blid btarget
   case (btarget, mfpos) of
     (Just TEnemy{}, Just fpos) -> do
@@ -483,7 +485,7 @@ rangedFreq aid = do
                -- and no actors or obstracles along the path
                && steps == chessDist bpos fpos
             then toFreq "throwFreq"
-                 $ throwFreq bbag 4 (actorContainer aid (gslots fact))
+                 $ throwFreq invBag 4 (actorContainer aid (gslots fact))
                    ++ throwFreq tis 8 (const $ CFloor blid bpos)
             else toFreq "throwFreq: not possible" []
       return $! freq
@@ -520,8 +522,9 @@ toolsFreq :: MonadActionRO m
           => Discovery -> ActorId -> m (Frequency CmdTakeTimeSer)
 toolsFreq disco aid = do
   cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-  b@Actor{bkind, bpos, blid, bbag} <- getsState $ getActorBody aid
+  b@Actor{bkind, bpos, blid} <- getsState $ getActorBody aid
   Faction{gslots} <- getsState $ (EM.! bfid b) . sfactionD
+  invBag <- actorInventory b
   lvl <- getLevel blid
   s <- getState
   let tis = lvl `atI` bpos
@@ -540,7 +543,7 @@ toolsFreq disco aid = do
         , benefit > 0
         , jsymbol i `elem` mastered ]
   return $! toFreq "useFreq" $
-    useFreq bbag 1 (actorContainer aid gslots)
+    useFreq invBag 1 (actorContainer aid gslots)
     ++ useFreq tis 2 (const $ CFloor blid bpos)
 
 displace :: MonadClient m => ActorId -> m (Strategy CmdTakeTimeSer)

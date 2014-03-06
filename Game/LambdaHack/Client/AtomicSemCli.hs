@@ -524,7 +524,7 @@ moveItemUI verbose iid k c1 c2 = do
     (CFloor _ _, CActor aid l) -> do
       b <- getsState $ getActorBody aid
       unless (bproj b) $ do
-        let n = bbag b EM.! iid
+        let n = binv b EM.! iid
         side <- getsClient sside
         if bfid b == side then
           msgAdd $ makePhrase [ slotLabel l

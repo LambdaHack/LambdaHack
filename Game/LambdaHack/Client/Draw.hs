@@ -203,7 +203,7 @@ drawLeaderStatus cops s sdisco waitTimes mleader =
               (bitems, bracedL, ahpS, bhpS) =
                 let mpl@Actor{bkind, bhp} = getActorBody leader s
                     ActorKind{ahp} = okind bkind
-                in (getActorItem leader s, braced mpl,
+                in (getActorEqp leader s, braced mpl,
                     tshow (maxDice ahp), tshow bhp)
               damage = case Item.strongestSword cops bitems of
                 Just (_, (_, sw)) ->

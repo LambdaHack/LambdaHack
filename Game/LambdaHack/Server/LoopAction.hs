@@ -405,10 +405,10 @@ explodeItem aid b container cgroup = do
           Just ProjectBlockTerrain -> return ()
           Just failMsg -> execFailure aid failMsg
   projectN n1
-  bag2 <- getsState $ bbag . getActorBody aid
+  bag2 <- getsState $ binv . getActorBody aid
   let mn2 = EM.lookup iid bag2
   maybe skip projectN mn2  -- assume all shrapnels bounce off obstacles once
-  bag3 <- getsState $ bbag . getActorBody aid
+  bag3 <- getsState $ binv . getActorBody aid
   let mn3 = EM.lookup iid bag3
   maybe skip (\k -> execCmdAtomic $ LoseItemA iid item k container) mn3
 
@@ -489,7 +489,7 @@ regenerateLevelHP lid = do
   s <- getState
   let approve (a, m) =
         let ak = okind $ bkind m
-            itemAssocs = getActorItem a s
+            itemAssocs = getActorEqp a s
             regen = max 1 $
                       aregen ak `div`
                       case strongestRegen itemAssocs of

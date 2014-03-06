@@ -141,13 +141,14 @@ meleeSer source target = do
     let sfid = bfid sb
         tfid = bfid tb
     sfact <- getsState $ (EM.! sfid) . sfactionD
+    eqpAssocs <- getsState $ getActorEqp source
     itemAssocs <- getsState $ getActorItem source
     (miid, item) <-
       if bproj sb   -- projectile
       then case itemAssocs of
         [(iid, item)] -> return (Just iid, item)
         _ -> assert `failure` "projectile with wrong items" `twith` itemAssocs
-      else case strongestSword cops itemAssocs of
+      else case strongestSword cops eqpAssocs of
         Just (_, (iid, w)) -> return (Just iid, w)  -- weapon combat
         Nothing -> do  -- hand to hand combat
           let isHero = isHeroFact cops sfact
@@ -284,7 +285,8 @@ pickupSer aid iid k = assert (k > 0) $ do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   item <- getsState $ getItemBody iid
-  case actorContainerB aid b fact iid item of
+  mc <- getsState $ actorContainerB aid b fact iid item
+  case mc of
     Just c -> execCmdAtomic $ MoveItemA iid k (CFloor (blid b) (bpos b)) c
     Nothing -> execFailure aid PickupOverfull
 
@@ -305,7 +307,8 @@ wearSer aid iid k = assert (k > 0) $ do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   item <- getsState $ getItemBody iid
-  case actorContainerB aid b fact iid item of
+  mc <- getsState $ actorContainerB aid b fact iid item
+  case mc of
     Just c -> execCmdAtomic $ MoveItemA iid k (CFloor (blid b) (bpos b)) c
     Nothing -> execFailure aid PickupOverfull
 

@@ -207,7 +207,8 @@ pickupHuman = do
     Just ((iid, k), _) ->  do  -- pick up first item; TODO: let pl select item
       item <- getsState $ getItemBody iid
       let l = if jsymbol item == '$' then Just $ SlotChar '$' else Nothing
-      case assignSlot iid l body fact of
+      mc <- getsState $ assignSlot iid l body fact
+      case mc of
         Just _ -> return $ Right $ PickupSer leader iid k
         Nothing -> failSer PickupOverfull
 
@@ -224,7 +225,8 @@ dropHuman = do
   b <- getsState $ getActorBody leader
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let inv = gslots fact
-  ggi <- getAnyItem leader "What to drop?" (bbag b) inv "in inventory"
+  bag <- actorInventory b
+  ggi <- getAnyItem leader "What to drop?" bag inv "in inventory"
   case ggi of
     Right ((iid, item), (_, container)) ->
       case container of
@@ -355,7 +357,8 @@ wearHuman = do
     Just ((iid, k), _) ->  do  -- pick up first item; TODO: let pl select item
       item <- getsState $ getItemBody iid
       let l = if jsymbol item == '$' then Just $ SlotChar '$' else Nothing
-      case assignSlot iid l body fact of
+      mc <- getsState $ assignSlot iid l body fact
+      case mc of
         Just _ -> return $ Right $ WearSer leader iid k
         Nothing -> failSer PickupOverfull
 
@@ -372,7 +375,7 @@ yieldHuman = do
   b <- getsState $ getActorBody leader
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let inv = gslots fact
-  ggi <- getAnyItem leader "What to drop?" (bbag b) inv "in inventory"
+  ggi <- getAnyItem leader "What to drop?" (beqp b) inv "in inventory"
   case ggi of
     Right ((iid, item), (_, container)) ->
       case container of
@@ -446,7 +449,8 @@ projectBla source tpos eps ts = do
   b <- getsState $ getActorBody source
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let inv = gslots fact
-  ggi <- getGroupItem source (bbag b) inv object1 triggerSyms
+  bag <- actorInventory b
+  ggi <- getGroupItem source bag inv object1 triggerSyms
            (makePhrase ["What to", verb1 MU.:> "?"]) "in inventory"
   case ggi of
     Right ((iid, _), (_, container)) ->
@@ -470,7 +474,8 @@ applyHuman ts = do
         [] -> ("activate", "object")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
-  ggi <- getGroupItem leader (bbag b) inv object1 triggerSyms
+  bag <- actorInventory b
+  ggi <- getGroupItem leader bag inv object1 triggerSyms
            (makePhrase ["What to", verb1 MU.:> "?"]) "in inventory"
   case ggi of
     Right ((iid, _), (_, container)) ->

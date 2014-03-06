@@ -180,7 +180,7 @@ inventoryHuman = do
              then return $ MU.Text $ gname fact
              else partAidLeader leader
   bag <- if rsharedInventory
-         then return $ bbag b
+         then return $ binv b
          else getsState $ sharedInv b
   let invRaw = gslots fact
   if EM.null bag

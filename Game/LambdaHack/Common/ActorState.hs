@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.ActorState
   , calculateTotal, sharedInv, nearbyFreePoints, whereTo
   , posToActors, posToActor, getItemBody, memActor
   , getActorBody, updateActorBody, updateFactionBody
-  , getActorItem, getFloorItem
+  , getActorItem, getActorEqp, getFloorItem
   , actorContainer, actorContainerB
   , tryFindHeroK, foesAdjacent
   , allSlots, assignSlot, slotLabel
@@ -81,7 +81,8 @@ posToActors pos lid s =
   let as = actorAssocs (const True) lid s
       aps = filter (\(_, b) -> bpos b == pos) as
       f iid = (iid, getItemBody iid s)
-      g (aid, b) = ((aid, b), map f $ EM.keys $ bbag b)
+      g (aid, b) = ((aid, b), map f $ EM.keys
+                              $ EM.unionWith (+) (binv b) (beqp b))
       l = map g aps
   in assert (length l <= 1 || all (bproj . snd . fst) l
              `blame` "many actors at the same position" `twith` l)
@@ -102,7 +103,7 @@ nearbyFreePoints cotile f start lid s =
 -- | Calculate loot's worth for a faction of a given actor.
 calculateTotal :: Actor -> State -> (ItemBag, Int)
 calculateTotal body s =
-  let bag = sharedInv body s
+  let bag = sharedBag body s
       items = map (\(iid, k) -> (getItemBody iid s, k))
               $ EM.assocs bag
   in (bag, sum $ map itemPrice items)
@@ -110,7 +111,15 @@ calculateTotal body s =
 sharedInv :: Actor -> State -> ItemBag
 sharedInv body s =
   let bs = fidActorNotProjList (bfid body) s
-  in EM.unionsWith (+) $ map bbag $ if null bs then [body] else bs
+  in EM.unionsWith (+) $ map binv $ if null bs then [body] else bs
+
+sharedEqp :: Actor -> State -> ItemBag
+sharedEqp body s =
+  let bs = fidActorNotProjList (bfid body) s
+  in EM.unionsWith (+) $ map beqp $ if null bs then [body] else bs
+
+sharedBag :: Actor -> State -> ItemBag
+sharedBag body s = EM.unionWith (+) (sharedInv body s) (sharedEqp body s)
 
 fidActorNotProjList :: FactionId -> State -> [Actor]
 fidActorNotProjList fid s =
@@ -196,8 +205,9 @@ allSlots = map SlotChar $ ['a'..'z'] ++ ['A'..'Z']
 
 -- | Assigns a slot to an item, for inclusion in the inventory
 -- of a hero. Tries to to use the requested slot, if any.
-assignSlot :: ItemId -> Maybe SlotChar -> Actor -> Faction -> Maybe SlotChar
-assignSlot iid r body fact =
+assignSlot :: ItemId -> Maybe SlotChar -> Actor -> Faction -> State
+           -> Maybe SlotChar
+assignSlot iid r body fact s =
   case lookup iid $ map swap $ EM.assocs $ gslots fact of
     Just l -> Just l
     Nothing ->  case r of
@@ -208,7 +218,7 @@ assignSlot iid r body fact =
   candidates = take (length allSlots)
                $ drop (fromJust (elemIndex c allSlots))
                $ cycle allSlots
-  inBag = EM.keysSet $ bbag body
+  inBag = EM.keysSet $ sharedBag body s
   f l = maybe True (`ES.notMember` inBag) $ EM.lookup l $ gslots fact
   free = filter f candidates
   allowed = SlotChar '$' : free
@@ -220,26 +230,31 @@ actorContainer aid slotChars iid =
     Nothing -> assert `failure` "item not in inventory"
                       `twith` (aid, slotChars, iid)
 
-actorContainerB :: ActorId -> Actor -> Faction -> ItemId -> Item
+actorContainerB :: ActorId -> Actor -> Faction -> ItemId -> Item -> State
                 -> Maybe Container
-actorContainerB aid body fact iid item =
+actorContainerB aid body fact iid item s =
   case find ((== iid) . snd) $ EM.assocs (gslots fact) of
     Just (l, _) -> Just $ CActor aid l
     Nothing ->
       let l = if jsymbol item == '$' then Just $ SlotChar '$' else Nothing
-      in case assignSlot iid l body fact of
+      in case assignSlot iid l body fact s of
         Just l2 -> Just $ CActor aid l2
         Nothing -> Nothing
 
 slotLabel :: SlotChar -> MU.Part
 slotLabel c = MU.Text $ T.pack $ slotChar c : " -"
 
--- | Gets actor's items from the current level. Warning: this does not work
--- for viewing items of actors from remote level.
 getActorItem :: ActorId -> State -> [(ItemId, Item)]
 getActorItem aid s =
   let f iid = (iid, getItemBody iid s)
-  in map f $ EM.keys $ bbag (getActorBody aid s)
+      b = getActorBody aid s
+  in map f $ EM.keys $ EM.unionWith (+) (binv b) (beqp b)
+
+getActorEqp :: ActorId -> State -> [(ItemId, Item)]
+getActorEqp aid s =
+  let f iid = (iid, getItemBody iid s)
+      b = getActorBody aid s
+  in map f $ EM.keys $ beqp b
 
 getFloorItem :: LevelId -> Point -> State -> [(ItemId, Item)]
 getFloorItem lid pos s =
