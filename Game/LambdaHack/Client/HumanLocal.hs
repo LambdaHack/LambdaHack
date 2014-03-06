@@ -182,7 +182,7 @@ inventoryHuman = do
   bag <- if rsharedInventory
          then return $ binv b
          else getsState $ sharedInv b
-  let invRaw = gslots fact
+  slots <- getsClient sslots
   if EM.null bag
     then promptToSlideshow $ makeSentence
       [ MU.SubjectVerbSg subject "have"
@@ -190,7 +190,7 @@ inventoryHuman = do
     else do
       let blurb = makePhrase
             [MU.Capitalize $ MU.SubjectVerbSg subject "keep in inventory:"]
-          inv = EM.filter (`EM.member` bag) invRaw
+          inv = EM.filter (`EM.member` bag) slots
       io <- itemOverlay bag inv
       overlayToSlideshow blurb io
 
@@ -205,8 +205,7 @@ equipmentHuman = do
   subject <- partAidLeader leader
   b <- getsState $ getActorBody leader
   let bag = beqp b
-  fact <- getsState $ (EM.! bfid b) . sfactionD
-  let invRaw = gslots fact
+  slots <- getsClient sslots
   if EM.null bag
     then promptToSlideshow $ makeSentence
       [ MU.SubjectVerbSg subject "have"
@@ -214,7 +213,7 @@ equipmentHuman = do
     else do
       let blurb = makePhrase
             [MU.Capitalize $ MU.SubjectVerbSg subject "hold as equipment:"]
-          inv = EM.filter (`EM.member` bag) invRaw
+          inv = EM.filter (`EM.member` bag) slots
       io <- itemOverlay bag inv
       overlayToSlideshow blurb io
 

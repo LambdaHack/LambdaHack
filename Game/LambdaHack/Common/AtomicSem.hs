@@ -153,15 +153,11 @@ insertItemFloor lid iid k pos =
 
 insertItemActor :: MonadAction m
                 => ItemId -> Int -> SlotChar -> ActorId -> m ()
-insertItemActor iid k l aid = do
+insertItemActor iid k _l aid = do
   let bag = EM.singleton iid k
       upd = EM.unionWith (+) bag
   modifyState $ updateActorBody aid $ \b ->
     b {binv = upd (binv b)}
-  b <- getsState $ getActorBody aid
-  modifyState $ updateFactionBody (bfid b) $ \fact ->
-    fact { gslots = EM.insert l iid (gslots fact)
-         , gfreeSlot = max l (gfreeSlot fact) }
 
 -- | Destroy some copies (possibly not all) of an item.
 destroyItemA :: MonadAction m => ItemId -> Item -> Int -> Container -> m ()
@@ -188,15 +184,9 @@ deleteItemFloor lid iid k pos =
 
 deleteItemActor :: MonadAction m
                 => ItemId -> Int -> SlotChar -> ActorId -> m ()
-deleteItemActor iid k l aid = do
+deleteItemActor iid k _l aid = do
   modifyState $ updateActorBody aid $ \b ->
     b {binv = rmFromBag k iid (binv b)}
-  -- Do not remove from actor's item slots, but assert it was there.
-  b <- getsState $ getActorBody aid
-  fact <- getsState $ (EM.! bfid b) . sfactionD
-  assert (l `EM.lookup` gslots fact == Just iid
-          `blame` "removing item without any slot"
-          `twith` (gslots fact, iid, l, aid)) skip
 
 moveActorA :: MonadAction m => ActorId -> Point -> Point -> m ()
 moveActorA aid fromP toP = assert (fromP /= toP) $ do

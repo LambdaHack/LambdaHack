@@ -19,7 +19,6 @@ import Data.Tuple (swap)
 import qualified System.Random as R
 
 import Game.LambdaHack.Common.Action
-import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.AtomicCmd
 import qualified Game.LambdaHack.Common.Color as Color
@@ -137,8 +136,6 @@ createFactions Kind.COps{cofaction=Kind.Ops{opick}} players = do
         let gdipl = EM.empty  -- fixed below
             gquit = Nothing
             gleader = Nothing
-            gslots = EM.empty
-            gfreeSlot = SlotChar 'a'
         return $! Faction{..}
   lUI <- mapM rawCreate $ filter playerUI $ playersList players
   lnoUI <- mapM rawCreate $ filter (not . playerUI) $ playersList players

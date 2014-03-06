@@ -199,15 +199,16 @@ pickupHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
 pickupHuman = do
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
-  fact <- getsState $ (EM.! bfid body) . sfactionD
   lvl <- getLevel $ blid body
   -- Check if something is here to pick up. Items are never invisible.
   case EM.minViewWithKey $ lvl `atI` bpos body of
     Nothing -> failWith "nothing here"
     Just ((iid, k), _) -> do  -- pick up first item; TODO: let pl select item
       item <- getsState $ getItemBody iid
+      slots <- getsClient sslots
+      freeSlot <- getsClient sfreeSlot
       let l = if jsymbol item == '$' then Just $ SlotChar '$' else Nothing
-      mc <- getsState $ assignSlot iid l body fact
+      mc <- getsState $ assignSlot iid l body slots freeSlot
       case mc of
         Just _ -> return $ Right $ PickupSer leader iid k
         Nothing -> failSer PickupOverfull
@@ -223,10 +224,9 @@ dropHuman = do
   Kind.COps{coitem} <- getsState scops
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  fact <- getsState $ (EM.! bfid b) . sfactionD
-  let inv = gslots fact
+  slots <- getsClient sslots
   bag <- actorInventory b
-  ggi <- getAnyItem leader "What to drop?" bag inv "in inventory"
+  ggi <- getAnyItem leader "What to drop?" bag slots "in inventory"
   case ggi of
     Right ((iid, item), (_, container)) ->
       case container of
@@ -349,15 +349,16 @@ wearHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
 wearHuman = do
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
-  fact <- getsState $ (EM.! bfid body) . sfactionD
   lvl <- getLevel $ blid body
   -- Check if something is here to pick up. Items are never invisible.
   case EM.minViewWithKey $ lvl `atI` bpos body of
     Nothing -> failWith "nothing here"
     Just ((iid, k), _) -> do  -- pick up first item; TODO: let pl select item
       item <- getsState $ getItemBody iid
+      slots <- getsClient sslots
+      freeSlot <- getsClient sfreeSlot
       let l = if jsymbol item == '$' then Just $ SlotChar '$' else Nothing
-      mc <- getsState $ assignSlot iid l body fact
+      mc <- getsState $ assignSlot iid l body slots freeSlot
       case mc of
         Just _ -> return $ Right $ WearSer leader iid k
         Nothing -> failSer PickupOverfull
@@ -373,9 +374,8 @@ yieldHuman = do
   Kind.COps{coitem} <- getsState scops
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  fact <- getsState $ (EM.! bfid b) . sfactionD
-  let inv = gslots fact
-  ggi <- getAnyItem leader "What to drop?" (beqp b) inv "in inventory"
+  slots <- getsClient sslots
+  ggi <- getAnyItem leader "What to drop?" (beqp b) slots "in inventory"
   case ggi of
     Right ((iid, item), (_, container)) ->
       case container of
@@ -447,10 +447,9 @@ projectBla source tpos eps ts = do
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
   b <- getsState $ getActorBody source
-  fact <- getsState $ (EM.! bfid b) . sfactionD
-  let inv = gslots fact
+  slots <- getsClient sslots
   bag <- actorInventory b
-  ggi <- getGroupItem source bag inv object1 triggerSyms
+  ggi <- getGroupItem source bag slots object1 triggerSyms
            (makePhrase ["What to", verb1 MU.:> "?"]) "in inventory"
   case ggi of
     Right ((iid, _), (_, container)) ->
@@ -468,14 +467,13 @@ applyHuman :: MonadClientUI m => [Trigger] -> m (SlideOrCmd CmdTakeTimeSer)
 applyHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  fact <- getsState $ (EM.! bfid b) . sfactionD
-  let inv = gslots fact
-      (verb1, object1) = case ts of
+  slots <- getsClient sslots
+  let (verb1, object1) = case ts of
         [] -> ("activate", "object")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
   bag <- actorInventory b
-  ggi <- getGroupItem leader bag inv object1 triggerSyms
+  ggi <- getGroupItem leader bag slots object1 triggerSyms
            (makePhrase ["What to", verb1 MU.:> "?"]) "in inventory"
   case ggi of
     Right ((iid, _), (_, container)) ->

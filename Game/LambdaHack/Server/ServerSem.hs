@@ -283,21 +283,14 @@ pickupSer :: (MonadAtomic m, MonadServer m)
           => ActorId -> ItemId -> Int -> m ()
 pickupSer aid iid k = assert (k > 0) $ do
   b <- getsState $ getActorBody aid
-  fact <- getsState $ (EM.! bfid b) . sfactionD
-  item <- getsState $ getItemBody iid
-  mc <- getsState $ actorContainerB aid b fact iid item
-  case mc of
-    Just c -> execCmdAtomic $ MoveItemA iid k (CFloor (blid b) (bpos b)) c
-    Nothing -> execFailure aid PickupOverfull
+  execCmdAtomic $ MoveItemA iid k (CFloor (blid b) (bpos b)) (CActor aid undefined)
 
 -- * DropSer
 
 dropSer :: MonadAtomic m => ActorId -> ItemId -> Int -> m ()
 dropSer aid iid k = assert (k > 0) $ do
   b <- getsState $ getActorBody aid
-  fact <- getsState $ (EM.! bfid b) . sfactionD
-  let c = actorContainer aid (gslots fact) iid
-  execCmdAtomic $ MoveItemA iid k c (CFloor (blid b) (bpos b))
+  execCmdAtomic $ MoveItemA iid k (CActor aid undefined) (CFloor (blid b) (bpos b))
 
 -- * WearSer
 
@@ -305,21 +298,14 @@ wearSer :: (MonadAtomic m, MonadServer m)
         => ActorId -> ItemId -> Int -> m ()
 wearSer aid iid k = assert (k > 0) $ do
   b <- getsState $ getActorBody aid
-  fact <- getsState $ (EM.! bfid b) . sfactionD
-  item <- getsState $ getItemBody iid
-  mc <- getsState $ actorContainerB aid b fact iid item
-  case mc of
-    Just c -> execCmdAtomic $ MoveItemA iid k (CFloor (blid b) (bpos b)) c
-    Nothing -> execFailure aid PickupOverfull
+  execCmdAtomic $ MoveItemA iid k (CFloor (blid b) (bpos b)) (CActor aid undefined)
 
 -- * YieldSer
 
 yieldSer :: MonadAtomic m => ActorId -> ItemId -> Int -> m ()
 yieldSer aid iid k = assert (k > 0) $ do
   b <- getsState $ getActorBody aid
-  fact <- getsState $ (EM.! bfid b) . sfactionD
-  let c = actorContainer aid (gslots fact) iid
-  execCmdAtomic $ MoveItemA iid k c (CFloor (blid b) (bpos b))
+  execCmdAtomic $ MoveItemA iid k (CActor aid undefined) (CFloor (blid b) (bpos b))
 
 -- * ProjectSer
 

@@ -78,6 +78,8 @@ data StateClient = StateClient
   , smarkSmell   :: !Bool          -- ^ mark smell, if the leader can smell
   , smarkSuspect :: !Bool          -- ^ mark suspect features
   , scurDifficulty :: !Int         -- ^ current game difficulty level
+  , sslots        :: !ItemSlots    -- ^ map from slots to items
+  , sfreeSlot    :: !SlotChar      -- ^ first free slot
   , sdebugCli    :: !DebugModeCli  -- ^ client debugging mode
   }
   deriving Show
@@ -149,6 +151,8 @@ defStateClient shistory sconfigUI _sside sisAI =
     , smarkSmell = False
     , smarkSuspect = False
     , scurDifficulty = 0
+    , sslots = EM.empty
+    , sfreeSlot = SlotChar 'a'
     , sdebugCli = defDebugModeCli
     }
 
@@ -215,6 +219,8 @@ instance Binary StateClient where
     put smarkSmell
     put smarkSuspect
     put scurDifficulty
+    put sslots
+    put sfreeSlot
     put sdebugCli  -- TODO: this is overwritten at once
   get = do
     stgtMode <- get
@@ -236,6 +242,8 @@ instance Binary StateClient where
     smarkSmell <- get
     smarkSuspect <- get
     scurDifficulty <- get
+    sslots <- get
+    sfreeSlot <- get
     sdebugCli <- get
     let sbfsD = EM.empty
         sfper = EM.empty

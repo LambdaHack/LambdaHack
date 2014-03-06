@@ -204,20 +204,21 @@ allSlots = map SlotChar $ ['a'..'z'] ++ ['A'..'Z']
 
 -- | Assigns a slot to an item, for inclusion in the inventory
 -- of a hero. Tries to to use the requested slot, if any.
-assignSlot :: ItemId -> Maybe SlotChar -> Actor -> Faction -> State
+assignSlot :: ItemId -> Maybe SlotChar -> Actor -> ItemSlots -> SlotChar
+           -> State
            -> Maybe SlotChar
-assignSlot iid r body fact s =
-  case lookup iid $ map swap $ EM.assocs $ gslots fact of
+assignSlot iid r body slots freeSlot s =
+  case lookup iid $ map swap $ EM.assocs slots of
     Just l -> Just l
     Nothing -> case r of
       Just l | l `elem` allowed -> Just l
       _ -> listToMaybe free
  where
   candidates = take (length allSlots)
-               $ drop (fromJust (elemIndex (gfreeSlot fact) allSlots))
+               $ drop (fromJust (elemIndex freeSlot allSlots))
                $ cycle allSlots
   inBag = EM.keysSet $ sharedBag body s
-  f l = maybe True (`ES.notMember` inBag) $ EM.lookup l $ gslots fact
+  f l = maybe True (`ES.notMember` inBag) $ EM.lookup l slots
   free = filter f candidates
   allowed = SlotChar '$' : free
 
@@ -228,14 +229,15 @@ actorContainer aid slotChars iid =
     Nothing -> assert `failure` "item not in inventory"
                       `twith` (aid, slotChars, iid)
 
-actorContainerB :: ActorId -> Actor -> Faction -> ItemId -> Item -> State
+actorContainerB :: ActorId -> Actor -> ItemSlots -> SlotChar
+                -> ItemId -> Item -> State
                 -> Maybe Container
-actorContainerB aid body fact iid item s =
-  case find ((== iid) . snd) $ EM.assocs (gslots fact) of
+actorContainerB aid body slots freeSlot iid item s =
+  case find ((== iid) . snd) $ EM.assocs slots of
     Just (l, _) -> Just $ CActor aid l
     Nothing ->
       let l = if jsymbol item == '$' then Just $ SlotChar '$' else Nothing
-      in case assignSlot iid l body fact s of
+      in case assignSlot iid l body slots freeSlot s of
         Just l2 -> Just $ CActor aid l2
         Nothing -> Nothing
 
