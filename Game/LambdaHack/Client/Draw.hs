@@ -125,21 +125,11 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
                     [] -> (tsymbol tk, Color.defAttr {Color.fg = vcolor})
                     i : _ -> viewItem $ getItemBody i s
             vis = ES.member pos0 $ totalVisible per
-            visPl = case (mleader, bfsmpathRaw) of
-              (Just leader, Just (bfs, _)) ->
-                 let Actor{bpos} = getActorBody leader s
-                 in posAimsPos bfs bpos pos0
-              _ -> False
             a = case dm of
-                  ColorBW   -> Color.defAttr
-                  ColorFull ->
-                    if smarkVision
-                    then if visPl
-                         then attr0 {Color.bg = Color.Magenta}
-                         else if vis
-                              then attr0 {Color.bg = Color.Blue}
-                              else attr0
-                    else attr0
+                  ColorBW -> Color.defAttr
+                  ColorFull -> if smarkVision && vis
+                               then attr0 {Color.bg = Color.Blue}
+                               else attr0
         in Color.AttrChar a char
       showN2 n = T.justifyRight 2 ' ' (tshow n)
       addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)

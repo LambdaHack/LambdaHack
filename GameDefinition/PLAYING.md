@@ -108,7 +108,7 @@ To make a ranged attack, as in the last few commands above,
 you need to set your target first (however, initial target is set
 automatically as soon as a monster comes into view). Once in targeting mode,
 you can move the targeting cursor with arrow keys and switch focus
-among enemies with `*` (or among friends and enemies, depending
+among enemies with `*` (or among friends, projectiles and enemies, depending
 on targeting mode set by `/`). The details of the shared cursor position
 and of the personal target are described at the bottom of the screen.
 All targeting keys are listed below.

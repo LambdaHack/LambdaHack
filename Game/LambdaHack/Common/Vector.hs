@@ -7,7 +7,7 @@ module Game.LambdaHack.Common.Vector
   , shift, shiftBounded, trajectoryToPath, displacement, pathToTrajectory
   , RadianAngle, rotate, towards
   , BfsDistance, MoveLegal(..), apartBfs
-  , fillBfs, findPathBfs, accessBfs, posAimsPos
+  , fillBfs, findPathBfs, accessBfs
   ) where
 
 import Control.Arrow (second)
@@ -333,9 +333,3 @@ accessBfs bfs target =
   in if dist == apartBfs
      then Nothing
      else Just $ fromEnum $ dist .&. complement minKnownBfs
-
-posAimsPos :: PointArray.Array BfsDistance -> Point -> Point -> Bool
-{-# INLINE posAimsPos #-}
-posAimsPos bfs bpos target =
-  let mdist = accessBfs bfs target
-  in mdist == Just (chessDist bpos target)

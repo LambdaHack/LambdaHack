@@ -490,7 +490,7 @@ doLook = do
   inhabitants <- if canSee
                  then getsState $ posToActors p lidV
                  else return []
-  aims <- actorAimsPos leader p
+  aims <- undefined -- actorAimsPos leader p
   let enemyMsg = case inhabitants of
         [] -> ""
         _ -> -- Even if it's the leader, give his proper name, not 'you'.
@@ -552,7 +552,6 @@ tgtFloorHuman = do
   stgtMode <- getsClient stgtMode
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  bfs <- getCacheBfs leader
   bsAll <- getsState $ actorAssocs (const True) lidV
   let cursor = fromMaybe lpos cursorPos
       tgt = case scursor of
@@ -565,7 +564,6 @@ tgtFloorHuman = do
         TVector{} ->
           let isEnemy b = isAtWar fact (bfid b)
                           && not (bproj b)
-                          && posAimsPos bfs lpos (bpos b)
           -- For projectiles, we pick here the first that would be picked
           -- by '*', so that all other projectiles on the tile come next,
           -- without any intervening actors from other tiles.
@@ -588,7 +586,6 @@ tgtEnemyHuman = do
   stgtMode <- getsClient stgtMode
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  bfs <- getCacheBfs leader
   bsAll <- getsState $ actorAssocs (const True) lidV
   let ordPos (_, b) = (chessDist lpos $ bpos b, bpos b)
       dbs = sortBy (comparing ordPos) bsAll
@@ -608,7 +605,6 @@ tgtEnemyHuman = do
       gtlt = gt ++ lt
       isEnemy b = isAtWar fact (bfid b)
                   && not (bproj b)
-                  && posAimsPos bfs lpos (bpos b)
       lf = filter (isEnemy . snd) gtlt
       tgt | permitAnyActor = case gtlt of
         (a, _) : _ -> TEnemy a True

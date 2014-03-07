@@ -28,7 +28,7 @@ module Game.LambdaHack.Client.Action
   , rndToAction, getArenaUI, getLeaderUI, targetDescLeader, viewedLevel
   , aidTgtToPos, aidTgtAims, leaderTgtToPos, leaderTgtAims, cursorToPos
   , partAidLeader, partActorLeader, unexploredDepth
-  , getCacheBfsAndPath, getCacheBfs, accessCacheBfs, actorAimsPos
+  , getCacheBfsAndPath, getCacheBfs, accessCacheBfs
   , closestUnknown, closestSmell, furthestKnown, closestTriggers
   , closestItems, closestFoes, actorAbilities
   , debugPrint
@@ -585,13 +585,6 @@ accessCacheBfs aid target = do
   bfs <- getCacheBfs aid
   return $! accessBfs bfs target
 
-actorAimsPos :: MonadClient m => ActorId -> Point -> m Bool
-{-# INLINE actorAimsPos #-}
-actorAimsPos aid target = do
-  bfs <- getCacheBfs aid
-  b <- getsState $ getActorBody aid
-  return $! posAimsPos bfs (bpos b) target
-
 targetDesc :: MonadClientUI m => Maybe Target -> m Text
 targetDesc target = do
   lidV <- viewedLevel
@@ -701,7 +694,7 @@ aidTgtAims aid lidV tgt = do
       let pos = bpos body
       b <- getsState $ getActorBody aid
       if blid b == lidV then do
-        aims <- actorAimsPos aid pos
+        aims <- undefined -- actorAimsPos aid pos
         if aims
           then return Nothing
           else return $ Just "aiming line to the opponent blocked"
