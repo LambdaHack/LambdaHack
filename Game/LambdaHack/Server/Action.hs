@@ -97,13 +97,11 @@ getPerFid fid lid = do
                               `twith` (lid, fid)) $ EM.lookup lid fper
   return $! per
 
--- | Dumps RNG states from the start of the game to a file.
+-- | Dumps RNG states from the start of the game to stderr.
 dumpRngs :: MonadServer m => m ()
 dumpRngs = do
-  dataDir <- liftIO appDataDir
-  let fn = dataDir </> "rngs.dump"
   rngs <- getsServer srngs
-  liftIO $ writeFile fn (show rngs ++ "\n")
+  debugPrint $ tshow rngs
 
 writeTQueueAI :: MonadConnServer m => CmdClientAI -> TQueue CmdClientAI -> m ()
 writeTQueueAI cmd fromServer = do

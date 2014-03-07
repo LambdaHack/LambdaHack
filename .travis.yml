@@ -10,4 +10,4 @@ script:
   - cabal install -f-vty -fcurses
   - cabal install -fvty -f-curses
   - cabal install -f-vty -f-curses
-  - make test-travis || (cat ~/.LambdaHack/rngs.dump ; tail -n 200 /tmp/stdtest.log ; exit 77)
+  - make test-travis || (tail -n 200 /tmp/stdtest.log ; exit 77)
