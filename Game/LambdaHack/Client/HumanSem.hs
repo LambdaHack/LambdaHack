@@ -36,7 +36,7 @@ cmdAction cmd = case cmd of
   Wait -> fmap Right $ fmap CmdTakeTimeSer waitHuman
   Pickup -> fmap (fmap CmdTakeTimeSer) pickupHuman
   Drop -> fmap (fmap CmdTakeTimeSer) dropHuman
-  Wear -> fmap (fmap CmdTakeTimeSer) wearHuman
+  Wield -> fmap (fmap CmdTakeTimeSer) wieldHuman
   Yield -> fmap (fmap CmdTakeTimeSer) yieldHuman
   Project ts -> fmap (fmap CmdTakeTimeSer) $ projectHuman ts
   Apply ts -> fmap (fmap CmdTakeTimeSer) $ applyHuman ts

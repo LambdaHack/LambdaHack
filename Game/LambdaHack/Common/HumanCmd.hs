@@ -31,7 +31,7 @@ data HumanCmd =
   | Wait
   | Pickup
   | Drop
-  | Wear
+  | Wield
   | Yield
   | Project     ![Trigger]
   | Apply       ![Trigger]
@@ -106,7 +106,7 @@ cmdDescription cmd = case cmd of
   Wait        -> "wait"
   Pickup      -> "get an object"
   Drop        -> "drop an object"
-  Wear        -> "wear/wield an object"
+  Wield       -> "wield/wear an object"
   Yield       -> "yield an object"
   Project ts  -> triggerDescription ts
   Apply ts    -> triggerDescription ts

@@ -148,7 +148,7 @@ standard = RuleKind
       , ("g", (CmdItem, Pickup))
       , ("d", (CmdItem, Drop))
       , ("E", (CmdItem, Equipment))
-      , ("w", (CmdItem, Wear))
+      , ("w", (CmdItem, Wield))
       , ("y", (CmdItem, Yield))
       , ("q", (CmdItem, Apply [ApplyItem { verb = "quaff"
                                          , object = "potion"

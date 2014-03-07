@@ -353,7 +353,7 @@ pickup aid = do
                 bestEqp = strongestItem eqpAssocs $ pSymbol cops symbol
             in case (bestInv, bestEqp) of
               (Just (_, (iidInv, _)), Nothing) ->
-                returN "wield" $ WearSer aid iidInv 1
+                returN "wield" $ WieldSer aid iidInv 1
               (Just (vInv, (_, _)), Just (vEqp, (iidEqp, _))) | vInv > vEqp ->
                 returN "yield" $ YieldSer aid iidEqp 1
               _ -> reject

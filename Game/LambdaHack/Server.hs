@@ -42,7 +42,7 @@ cmdSerSemTakeTime cmd = case cmd of
   WaitSer aid -> waitSer aid
   PickupSer aid i k -> pickupSer aid i k
   DropSer aid iid k -> dropSer aid iid k
-  WearSer aid i k -> wearSer aid i k
+  WieldSer aid i k -> wieldSer aid i k
   YieldSer aid iid k -> yieldSer aid iid k
   ProjectSer aid p eps iid container -> projectSer aid p eps iid container
   ApplySer aid iid container -> applySer aid iid container

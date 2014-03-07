@@ -312,11 +312,11 @@ inventoryContainers iid k container =
       return $ takeFromInv k $ (aid, b) : filter ((/= aid) . fst) as
     _ -> return [container]
 
--- * WearSer
+-- * WieldSer
 
-wearSer :: (MonadAtomic m, MonadServer m)
+wieldSer :: (MonadAtomic m, MonadServer m)
         => ActorId -> ItemId -> Int -> m ()
-wearSer aid iid k = assert (k > 0) $ do
+wieldSer aid iid k = assert (k > 0) $ do
   inventoryC <- inventoryContainers iid k (CInv aid)
   mapM_ (\c -> execCmdAtomic $ MoveItemA iid k c (CEqp aid)) inventoryC
 

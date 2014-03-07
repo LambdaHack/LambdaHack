@@ -94,7 +94,7 @@ Inventory and items-related keys are as follows.
                 g and ,        get an object
                 d              drop an object
                 E              display equipment
-                w              wear/wield an object
+                w              wield/wear an object
                 y              yield an object
                 q              quaff potion
                 r              read scroll

@@ -3,7 +3,7 @@
 -- TODO: document
 module Game.LambdaHack.Client.HumanGlobal
   ( -- * Commands that usually take time
-    moveRunHuman, waitHuman, pickupHuman, dropHuman, wearHuman, yieldHuman
+    moveRunHuman, waitHuman, pickupHuman, dropHuman, wieldHuman, yieldHuman
   , projectHuman, applyHuman, alterDirHuman, triggerTileHuman
   , stepToTargetHuman, resendHuman
     -- * Commands that never take time
@@ -346,14 +346,14 @@ getItem prompt p ptext startWithInv isn = do
               _ -> assert `failure` "unexpected key:" `twith` km
   ask
 
--- * Wear
+-- * Wield
 
--- Wear/wield a single item.
-wearHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
-wearHuman = do
+-- Wield/wear a single item.
+wieldHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
+wieldHuman = do
   Kind.COps{coitem} <- getsState scops
   leader <- getLeaderUI
-  ggi <- getAnyItem "What to wear/wield?" True "in inventory"
+  ggi <- getAnyItem "What to wield/wear?" True "in inventory"
   case ggi of
     Right ((iid, item), (_, container)) ->
       case container of
@@ -362,9 +362,9 @@ wearHuman = do
           disco <- getsClient sdisco
           subject <- partAidLeader leader
           msgAdd $ makeSentence
-            [ MU.SubjectVerbSg subject "wear"  -- TODO: /wields
+            [ MU.SubjectVerbSg subject "wield"
             , partItemWs coitem disco 1 item ]
-          return $ Right $ WearSer leader iid 1
+          return $ Right $ WieldSer leader iid 1
         _ -> failWith "never mind"
     Left slides -> return $ Left slides
 
