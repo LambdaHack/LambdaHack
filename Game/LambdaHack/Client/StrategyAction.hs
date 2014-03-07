@@ -246,9 +246,9 @@ actionStrategy aid = do
   disco <- getsClient sdisco
   btarget <- getsClient $ getTarget aid
   b@Actor{bpos, blid} <- getsState $ getActorBody aid
+  invAssocs <- getsState $ getInvAssocs b
   eqpAssocs <- getsState $ getEqpAssocs b
   floorAssocs <- getsState $ getFloorAssocs blid bpos
-  lvl <- getLevel blid
   mleader <- getsClient _sleader
   actorAbs <- actorAbilities aid mleader
   let mfAid =
@@ -256,9 +256,10 @@ actionStrategy aid = do
           Just (TEnemy foeAid _) -> Just foeAid
           _ -> Nothing
       foeVisible = isJust mfAid
-      lootHere x = not $ EM.null $ lvl `atI` x
       hasNoWeapon = isNothing $ strongestSword cops eqpAssocs
       lootIsWeapon = isJust $ strongestSword cops floorAssocs
+      weaponinInv = isJust $ strongestSword cops invAssocs
+      weaponAvailable = lootIsWeapon || weaponinInv
       isDistant = (`elem` [ Ability.Trigger
                           , Ability.Ranged
                           , Ability.Tools
@@ -287,8 +288,8 @@ actionStrategy aid = do
       aStrategy Ability.Melee | foeVisible = melee aid
       aStrategy Ability.Melee  = return reject
       aStrategy Ability.Displace = displace aid
-      aStrategy Ability.Pickup | not foeVisible && lootHere bpos
-                                 || hasNoWeapon && lootIsWeapon = pickup aid
+      aStrategy Ability.Pickup | not foeVisible
+                                 || hasNoWeapon && weaponAvailable = pickup aid
       aStrategy Ability.Pickup = return reject
       aStrategy Ability.Wander = chase aid False
       aStrategy ab             = assert `failure` "unexpected ability"
@@ -329,7 +330,6 @@ pickup aid = do
   fact <- getsState $ (EM.! bfid body) . sfactionD
   lvl <- getLevel blid
   case EM.minViewWithKey $ lvl `atI` bpos of
-    Nothing -> assert `failure` "pickup of empty pile" `twith` (aid, bpos, lvl)
     Just ((iid, k), _) -> do  -- pick up first item
       item <- getsState $ getItemBody iid
       slots <- getsClient sslots
@@ -343,6 +343,27 @@ pickup aid = do
                 , sfreeSlot = max l2 (sfreeSlot cli) }
           return $! returN "pickup" $ PickupSer aid iid k
         Nothing -> assert `failure` fact  -- TODO: return mzero  -- PickupOverfull
+    Nothing -> do
+      cops@Kind.COps{corule} <- getsState scops
+      let RuleKind{ritemEqp} = Kind.stdRuleset corule
+      invAssocs <- getsState $ getInvAssocs body
+      eqpAssocs <- getsState $ getEqpAssocs body
+      let improve symbol =
+            let bestInv = strongestItem invAssocs $ pSymbol cops symbol
+                bestEqp = strongestItem eqpAssocs $ pSymbol cops symbol
+            in case (bestInv, bestEqp) of
+              (Just (_, (iidInv, _)), Nothing) ->
+                returN "wield" $ WearSer aid iidInv 1
+              (Just (vInv, (_, _)), Just (vEqp, (iidEqp, _))) | vInv > vEqp ->
+                returN "yield" $ YieldSer aid iidEqp 1
+              _ -> reject
+      return $ msum $ map improve ritemEqp
+
+pSymbol :: Kind.COps -> Char -> Item -> Maybe Int
+pSymbol cops c = case c of
+  ')' -> pMelee cops
+  '\"' -> pRegen
+  _ -> \_ -> Just 0
 
 -- Everybody melees in a pinch, even though some prefer ranged attacks.
 melee :: MonadClient m => ActorId -> m (Strategy CmdTakeTimeSer)

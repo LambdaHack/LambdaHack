@@ -44,6 +44,7 @@ standard = RuleKind
   , rpathsVersion  = Self.version
   , ritemMelee     = ")"
   , ritemRanged    = "|"
+  , ritemEqp       = ")\""
   -- Wasting weapons and armour would be too cruel to the player.
   , ritemProject   = "!?|/"
   -- The strings containing the default configuration file

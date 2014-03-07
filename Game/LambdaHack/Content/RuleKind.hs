@@ -46,6 +46,7 @@ data RuleKind = RuleKind
   , rpathsVersion    :: !Version   -- ^ the version of the game
   , ritemMelee       :: ![Char]    -- ^ symbols of melee weapons
   , ritemRanged      :: ![Char]    -- ^ ranged weapons and missiles
+  , ritemEqp         :: ![Char]    -- ^ items for equipment (if enabled)
   , ritemProject     :: ![Char]    -- ^ symbols of items AI can project
   , rcfgUIName       :: !FilePath  -- ^ base name of the UI config file
   , rcfgUIDefault    :: !String    -- ^ the default UI settings config file
