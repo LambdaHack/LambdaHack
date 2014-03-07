@@ -99,6 +99,7 @@ Inventory and items-related keys are as follows.
                 E              display equipment
                 w              wield/wear an object
                 t              take off an object
+                A              display all owned objects
                 q              quaff potion
                 r              read scroll
                 s              sling missile

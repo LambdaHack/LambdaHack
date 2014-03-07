@@ -159,6 +159,7 @@ standard = RuleKind
       , ("E", (CmdItem, Equipment))
       , ("w", (CmdItem, Wield))
       , ("t", (CmdItem, Yield))
+      , ("A", (CmdItem, AllOwned))
       , ("q", (CmdItem, Apply [ApplyItem { verb = "quaff"
                                          , object = "potion"
                                          , symbol = '!' }]))

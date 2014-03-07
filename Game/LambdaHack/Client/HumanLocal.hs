@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.HumanLocal
   ( -- * Assorted commands
     gameDifficultyCycle
   , pickLeaderHuman, memberCycleHuman, memberBackHuman
-  , inventoryHuman, equipmentHuman
+  , inventoryHuman, equipmentHuman, allOwnedHuman
   , selectActorHuman, selectNoneHuman, clearHuman, repeatHuman, recordHuman
   , historyHuman, markVisionHuman, markSmellHuman, markSuspectHuman
   , helpHuman, mainMenuHuman, macroHuman
@@ -213,6 +213,28 @@ equipmentHuman = do
     else do
       let blurb = makePhrase
             [MU.Capitalize $ MU.SubjectVerbSg subject "hold as equipment:"]
+          inv = EM.filter (`EM.member` bag) slots
+      io <- itemOverlay bag inv
+      overlayToSlideshow blurb io
+
+-- * AllOwned
+
+-- | Display the common inventory of the whole party.
+allOwnedHuman :: MonadClientUI m => m Slideshow
+allOwnedHuman = do
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  fact <- getsState $ (EM.! bfid b) . sfactionD
+  let subject = MU.Text $ gname fact
+  bag <- getsState $ sharedAllOwned b
+  slots <- getsClient sslots
+  if EM.null bag
+    then promptToSlideshow $ makeSentence
+      [ MU.SubjectVerbSg subject "have"
+      , "nothing in possesion" ]
+    else do
+      let blurb = makePhrase
+            [MU.Capitalize $ MU.SubjectVerbSg subject "own:"]
           inv = EM.filter (`EM.member` bag) slots
       io <- itemOverlay bag inv
       overlayToSlideshow blurb io

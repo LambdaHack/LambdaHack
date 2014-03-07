@@ -50,6 +50,7 @@ data HumanCmd =
   | MemberBack
   | Inventory
   | Equipment
+  | AllOwned
   | SelectActor
   | SelectNone
   | Clear
@@ -125,6 +126,7 @@ cmdDescription cmd = case cmd of
   MemberBack  -> "cycle among party members in the dungeon"
   Inventory   -> "display inventory"
   Equipment   -> "display equipment"
+  AllOwned    -> "display all owned objects"
   SelectActor -> "select (or deselect) a party member"
   SelectNone  -> "deselect (or select) all on the level"
   Clear       -> "clear messages"

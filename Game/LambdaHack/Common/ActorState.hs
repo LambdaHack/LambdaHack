@@ -4,7 +4,8 @@
 module Game.LambdaHack.Common.ActorState
   ( fidActorNotProjAssocs, actorAssocsLvl, actorAssocs, actorList
   , actorNotProjAssocsLvl, actorNotProjAssocs, actorNotProjList
-  , calculateTotal, sharedInv, getInvBag, nearbyFreePoints, whereTo
+  , calculateTotal, sharedInv, sharedAllOwned
+  , getInvBag, nearbyFreePoints, whereTo
   , posToActors, posToActor, getItemBody, memActor
   , getActorBody, updateActorBody, updateFactionBody
   , getCarriedAssocs, getEqpAssocs, getInvAssocs, getFloorAssocs
@@ -111,7 +112,7 @@ nearbyFreePoints cotile f start lid s =
 -- | Calculate loot's worth for a faction of a given actor.
 calculateTotal :: Actor -> State -> (ItemBag, Int)
 calculateTotal body s =
-  let bag = sharedBag body s
+  let bag = sharedAllOwned body s
       items = map (\(iid, k) -> (getItemBody iid s, k))
               $ EM.assocs bag
   in (bag, sum $ map itemPrice items)
@@ -126,8 +127,8 @@ sharedEqp body s =
   let bs = fidActorNotProjList (bfid body) s
   in EM.unionsWith (+) $ map beqp $ if null bs then [body] else bs
 
-sharedBag :: Actor -> State -> ItemBag
-sharedBag body s = EM.unionWith (+) (sharedInv body s) (sharedEqp body s)
+sharedAllOwned :: Actor -> State -> ItemBag
+sharedAllOwned body s = EM.unionWith (+) (sharedInv body s) (sharedEqp body s)
 
 -- | Price an item, taking count into consideration.
 itemPrice :: (Item, Int) -> Int
@@ -221,7 +222,7 @@ assignSlot iid r body slots freeSlot s =
   candidates = take (length allSlots)
                $ drop (fromJust (elemIndex freeSlot allSlots))
                $ cycle allSlots
-  inBag = EM.keysSet $ sharedBag body s
+  inBag = EM.keysSet $ sharedAllOwned body s
   f l = maybe True (`ES.notMember` inBag) $ EM.lookup l slots
   free = filter f candidates
   allowed = SlotChar '$' : free
