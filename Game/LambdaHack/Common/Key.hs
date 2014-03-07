@@ -111,30 +111,36 @@ dirViKey = map Char dirViChar
 dirViShiftKey :: [Key]
 dirViShiftKey = map (Char . Char.toUpper) dirViChar
 
-dirAllKey :: Bool -> [Key]
-dirAllKey configVi = dirKeypadKey ++ if configVi
-                                     then dirViKey
-                                     else dirKeypadKey
+dirAllKey :: Bool -> Bool -> [Key]
+dirAllKey configVi configLaptop = dirKeypadKey ++ if configVi
+                                                  then dirViKey
+                                                  else if configLaptop
+                                                       then dirLaptopKey
+                                                       else []
 
 -- | Configurable event handler for the direction keys.
 -- Used for directed commands such as close door.
-handleDir :: Bool -> KM -> (Vector -> a) -> a -> a
-handleDir configVi KM{modifier=NoModifier, key} h k =
-  let assocs = zip (dirAllKey configVi) $ moves ++ moves
+handleDir :: Bool -> Bool -> KM -> (Vector -> a) -> a -> a
+handleDir configVi configLaptop KM{modifier=NoModifier, key} h k =
+  let assocs = zip (dirAllKey configVi configLaptop) $ moves ++ moves
   in maybe k h (lookup key assocs)
-handleDir _ _ _ k = k
+handleDir _ _ _ _ k = k
 
 -- | Binding of both sets of movement keys.
-moveBinding :: Bool -> (Vector -> a) -> (Vector -> a)
+moveBinding :: Bool -> Bool -> (Vector -> a) -> (Vector -> a)
             -> [(KM, a)]
-moveBinding configVi move run =
+moveBinding configVi configLaptop move run =
   let assign f (km, dir) = (km, f dir)
       mapMove modifier keys =
         map (assign move) (zip (zipWith KM (repeat modifier) keys) moves)
       mapRun modifier keys =
         map (assign run) (zip (zipWith KM (repeat modifier) keys) moves)
-      dirOtherKey = if configVi then dirViKey else dirLaptopKey
-      dirOtherShiftKey = if configVi then dirViShiftKey else dirLaptopShiftKey
+      dirOtherKey | configVi = dirViKey
+                  | configLaptop = dirLaptopKey
+                  | otherwise = []
+      dirOtherShiftKey | configVi = dirViShiftKey
+                       | configLaptop = dirLaptopShiftKey
+                       | otherwise = []
   in mapMove NoModifier dirKeypadKey
      ++ mapMove NoModifier dirOtherKey
      ++ mapRun NoModifier dirKeypadShiftKey

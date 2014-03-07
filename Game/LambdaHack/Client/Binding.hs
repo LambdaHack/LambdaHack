@@ -34,7 +34,7 @@ data Binding = Binding
 stdBinding :: Kind.Ops RuleKind  -- ^ default game rules
            -> ConfigUI           -- ^ game config
            -> Binding            -- ^ concrete binding
-stdBinding corule !ConfigUI{configCommands, configVi} =
+stdBinding corule !ConfigUI{configCommands, configVi, configLaptop} =
   let stdRuleset = Kind.stdRuleset corule
       heroSelect k = ( K.KM { key=K.Char (Char.intToDigit k)
                             , modifier=K.NoModifier }
@@ -43,8 +43,8 @@ stdBinding corule !ConfigUI{configCommands, configVi} =
       cmdAll =
         cmdWithHelp
         ++ [(K.mkKM "KP_Begin", (CmdMove, Wait))]
-        ++ K.moveBinding configVi (\v -> (CmdMove, Move v))
-                                  (\v -> (CmdMove, Run v))
+        ++ K.moveBinding configVi configLaptop (\v -> (CmdMove, Move v))
+                                               (\v -> (CmdMove, Run v))
         ++ fmap heroSelect [0..6]
       mkDescribed (cat, cmd) = (cmdDescription cmd, cat, cmd)
   in Binding

@@ -17,7 +17,8 @@ data ConfigUI = ConfigUI
     -- hero names
   , configHeroNames   :: ![(Int, Text)]
     -- ui
-  , configVi          :: !Bool
+  , configVi          :: !Bool  -- ^ the option for Vi keys takes precendence
+  , configLaptop      :: !Bool  -- ^ because the laptop keys are the default
   , configFont        :: !String
   , configHistoryMax  :: !Int
   , configMaxFps      :: !Int

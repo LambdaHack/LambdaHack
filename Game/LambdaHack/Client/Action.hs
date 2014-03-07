@@ -448,6 +448,9 @@ parseConfigUI cfg =
             s = fromMaybe (lookupFail "") $ Ini.getOption "ui" optionName cfg
         in either lookupFail id $ readEither s
       configVi = getOption "movementViKeys_hjklyubn"
+      -- The option for Vi keys takes precendence,
+      -- because the laptop keys are the default.
+      configLaptop = not configVi && getOption "movementLaptopKeys_uk8o79jl"
       configFont = getOption "font"
       configHistoryMax = getOption "historyMax"
       configMaxFps = getOption "maxFps"

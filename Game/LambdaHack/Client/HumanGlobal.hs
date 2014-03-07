@@ -499,19 +499,20 @@ getGroupItem object syms prompt packName startWithInv = do
 -- | Ask for a direction and alter a tile, if possible.
 alterDirHuman :: MonadClientUI m => [Trigger] -> m (SlideOrCmd CmdTakeTimeSer)
 alterDirHuman ts = do
-  ConfigUI{configVi} <- getsClient sconfigUI
+  ConfigUI{configVi, configLaptop} <- getsClient sconfigUI
   let verb1 = case ts of
         [] -> "alter"
         tr : _ -> verb tr
-      keys = zipWith K.KM (repeat K.NoModifier) (K.dirAllKey configVi)
+      keys = zipWith K.KM (repeat K.NoModifier)
+                          (K.dirAllKey configVi configLaptop)
       prompt = makePhrase ["What to", verb1 MU.:> "? [movement key"]
   me <- displayChoiceUI prompt emptyOverlay keys
   case me of
     Left slides -> failSlides slides
     Right e -> do
       leader <- getLeaderUI
-      K.handleDir configVi e (flip (alterTile leader) ts)
-                             (failWith "never mind")
+      K.handleDir configVi configLaptop e (flip (alterTile leader) ts)
+                                          (failWith "never mind")
 
 -- | Player tries to alter a tile using a feature.
 alterTile :: MonadClientUI m

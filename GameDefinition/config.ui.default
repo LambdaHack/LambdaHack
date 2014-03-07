@@ -18,6 +18,7 @@
 
 ; [ui]
 ; movementViKeys_hjklyubn = False
+; movementLaptopKeys_uk8o79jl = True
 ; font = "Terminus,Monospace normal normal normal normal 12"
 ; historyMax = 5000
 ; maxFps = 15
