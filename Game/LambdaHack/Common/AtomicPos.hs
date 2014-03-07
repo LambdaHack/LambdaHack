@@ -210,14 +210,14 @@ breakCmdAtomic :: MonadActionRO m => CmdAtomic -> m [CmdAtomic]
 breakCmdAtomic cmd = case cmd of
   MoveActorA aid _ toP -> do
     b <- getsState $ getActorBody aid
-    ais <- getsState $ getActorItem aid
+    ais <- getsState $ getCarriedAssocs b
     return [ LoseActorA aid b ais
            , SpotActorA aid b {bpos = toP, boldpos = bpos b} ais ]
   DisplaceActorA source target -> do
     sb <- getsState $ getActorBody source
-    sais <- getsState $ getActorItem source
+    sais <- getsState $ getCarriedAssocs sb
     tb <- getsState $ getActorBody target
-    tais <- getsState $ getActorItem target
+    tais <- getsState $ getCarriedAssocs tb
     return [ LoseActorA source sb sais
            , SpotActorA source sb {bpos = bpos tb, boldpos = bpos sb} sais
            , LoseActorA target tb tais

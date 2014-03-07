@@ -141,13 +141,13 @@ meleeSer source target = do
     let sfid = bfid sb
         tfid = bfid tb
     sfact <- getsState $ (EM.! sfid) . sfactionD
-    eqpAssocs <- getsState $ getActorEqp source
-    itemAssocs <- getsState $ getActorItem source
+    eqpAssocs <- getsState $ getEqpAssocs sb
+    ais <- getsState $ getCarriedAssocs sb
     (miid, item) <-
       if bproj sb   -- projectile
-      then case itemAssocs of
+      then case ais of
         [(iid, item)] -> return (Just iid, item)
-        _ -> assert `failure` "projectile with wrong items" `twith` itemAssocs
+        _ -> assert `failure` "projectile with wrong items" `twith` ais
       else case strongestSword cops eqpAssocs of
         Just (_, (iid, w)) -> return (Just iid, w)  -- weapon combat
         Nothing -> do  -- hand to hand combat

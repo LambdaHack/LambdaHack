@@ -236,7 +236,7 @@ moveItemA iid k c1 c2 = assert (k > 0 && c1 /= c2) $ do
 ageActorA :: MonadAction m => ActorId -> Time -> m ()
 ageActorA aid t = assert (t /= timeZero) $ do
   body <- getsState $ getActorBody aid
-  ais <- getsState $ getActorItem aid
+  ais <- getsState $ getCarriedAssocs body
   destroyActorA aid body ais
   let newBody = body {btime = timeAdd (btime body) t}
   createActorA aid newBody ais

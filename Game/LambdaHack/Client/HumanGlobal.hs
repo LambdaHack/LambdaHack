@@ -269,16 +269,16 @@ getItem :: MonadClientUI m
 getItem prompt p ptext startWithInv isn = do
   leader <- getLeaderUI
   slots <- getsClient sslots
-  body2 <- getsState $ getActorBody leader
+  body <- getsState $ getActorBody leader
   bag <- if startWithInv
-         then actorInventory body2
-         else return $ beqp body2
-  lvl <- getLevel $ blid body2
+         then getsState $ getInvBag body
+         else return $ beqp body
+  lvl <- getLevel $ blid body
   s <- getState
   let inv = EM.filter (`EM.member` bag) slots
       checkItem (l, iid) = ((iid, getItemBody iid s), (bag EM.! iid, l))
       is0 = map checkItem $ EM.assocs inv
-      pos = bpos body2
+      pos = bpos body
       tis = lvl `atI` pos
       floorFull = not $ EM.null tis
       (floorMsg, floorKey) | floorFull = (", -", [K.Char '-'])
@@ -332,7 +332,7 @@ getItem prompt p ptext startWithInv isn = do
                        $ maximumBy (compare `on` fst . fst)
                        $ map (\(iid, k) ->
                                ((iid, getItemBody iid s),
-                                (k, CFloor (blid body2) pos)))
+                                (k, CFloor (blid body) pos)))
                        $ EM.assocs tis
               K.Char l ->
                 case find ((SlotChar l ==) . snd . snd) is0 of

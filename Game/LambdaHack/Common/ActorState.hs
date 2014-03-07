@@ -4,10 +4,10 @@
 module Game.LambdaHack.Common.ActorState
   ( fidActorNotProjAssocs, actorAssocsLvl, actorAssocs, actorList
   , actorNotProjAssocsLvl, actorNotProjAssocs, actorNotProjList
-  , calculateTotal, sharedInv, nearbyFreePoints, whereTo
+  , calculateTotal, sharedInv, getInvBag, nearbyFreePoints, whereTo
   , posToActors, posToActor, getItemBody, memActor
   , getActorBody, updateActorBody, updateFactionBody
-  , getActorItem, getActorEqp, getFloorItem
+  , getCarriedAssocs, getEqpAssocs, getInvAssocs, getFloorAssocs
   , actorContainer, actorContainerB
   , tryFindHeroK, foesAdjacent
   , allSlots, assignSlot, slotLabel
@@ -32,6 +32,7 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 
 fidActorNotProjAssocs :: FactionId -> State -> [(ActorId, Actor)]
@@ -247,20 +248,30 @@ actorContainerB body slots freeSlot iid item s =
 slotLabel :: SlotChar -> MU.Part
 slotLabel c = MU.Text $ T.pack $ slotChar c : " -"
 
-getActorItem :: ActorId -> State -> [(ItemId, Item)]
-getActorItem aid s =
+getCarriedAssocs :: Actor -> State -> [(ItemId, Item)]
+getCarriedAssocs b s =
   let f iid = (iid, getItemBody iid s)
-      b = getActorBody aid s
   in map f $ EM.keys $ EM.unionWith (+) (binv b) (beqp b)
 
-getActorEqp :: ActorId -> State -> [(ItemId, Item)]
-getActorEqp aid s =
+getEqpAssocs :: Actor -> State -> [(ItemId, Item)]
+getEqpAssocs b s =
   let f iid = (iid, getItemBody iid s)
-      b = getActorBody aid s
   in map f $ EM.keys $ beqp b
 
-getFloorItem :: LevelId -> Point -> State -> [(ItemId, Item)]
-getFloorItem lid pos s =
+getInvAssocs :: Actor -> State -> [(ItemId, Item)]
+getInvAssocs b s =
+  let f iid = (iid, getItemBody iid s)
+  in map f $ EM.keys $ getInvBag b s
+
+getInvBag :: Actor -> State -> ItemBag
+getInvBag b s =
+  let RuleKind{rsharedInventory} = Kind.stdRuleset $ Kind.corule $ scops s
+  in if rsharedInventory
+     then sharedInv b s
+     else binv b
+
+getFloorAssocs :: LevelId -> Point -> State -> [(ItemId, Item)]
+getFloorAssocs lid pos s =
   let f iid = (iid, getItemBody iid s)
   in map f $ EM.keys $ sdungeon s EM.! lid `atI` pos
 

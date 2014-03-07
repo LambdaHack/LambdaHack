@@ -8,7 +8,8 @@ module Game.LambdaHack.Common.Item
   ( -- * Teh @Item@ type
     ItemId, Item(..), jkind, buildItem, newItem
     -- * Inventory search
-  , strongestSearch, strongestSword, strongestRegen
+  , strongestItem, strongestSearch, strongestSword, strongestRegen
+  , pMelee, pRegen
    -- * The item discovery types
   , ItemKindIx, Discovery, DiscoRev, serverDiscos
     -- * The @FlavourMap@ type
@@ -181,21 +182,24 @@ strongestItem is p =
 
 strongestSearch :: [(ItemId, Item)] -> Maybe (Int, (ItemId, Item))
 strongestSearch is =
-  strongestItem is $ \ i ->
+  strongestItem is $ \i ->
     case jeffect i of Searching k -> Just k; _ -> Nothing
 
+pMelee :: Kind.COps -> Item -> Maybe Int
+pMelee Kind.COps{corule} i =
+  case jeffect i of
+    Hurt d k | jsymbol i `elem` ritemMelee (Kind.stdRuleset corule)
+      -> Just $ floor (meanDice d) + k
+    _ -> Nothing
+
 strongestSword :: Kind.COps -> [(ItemId, Item)] -> Maybe (Int, (ItemId, Item))
-strongestSword Kind.COps{corule} is =
-  strongestItem is $ \ i ->
-    case jeffect i of
-      Hurt d k | jsymbol i `elem` ritemMelee (Kind.stdRuleset corule)
-        -> Just $ floor (meanDice d) + k
-      _ -> Nothing
+strongestSword cops is = strongestItem is $ pMelee cops
+
+pRegen :: Item -> Maybe Int
+pRegen i =  case jeffect i of Regeneration k -> Just k; _ -> Nothing
 
 strongestRegen :: [(ItemId, Item)] -> Maybe (Int, (ItemId, Item))
-strongestRegen is =
-  strongestItem is $ \ i ->
-    case jeffect i of Regeneration k -> Just k; _ -> Nothing
+strongestRegen is = strongestItem is pRegen
 
 isFragile :: Kind.Ops ItemKind -> Discovery -> Item -> Bool
 isFragile Kind.Ops{okind} disco i =

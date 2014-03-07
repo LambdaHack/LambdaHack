@@ -490,10 +490,10 @@ regenerateLevelHP lid = do
   s <- getState
   let approve (a, m) =
         let ak = okind $ bkind m
-            itemAssocs = getActorEqp a s
+            eqpAssocs = getEqpAssocs m s
             regen = max 1 $
                       aregen ak `div`
-                      case strongestRegen itemAssocs of
+                      case strongestRegen eqpAssocs of
                         Just (k, _)  -> k + 1
                         Nothing -> 1
             bhpMax = maxDice (ahp ak)

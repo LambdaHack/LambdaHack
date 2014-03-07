@@ -170,7 +170,7 @@ effectDominate source target = do
     -- TODO: Perhaps insert a turn of delay here to allow countermeasures.
     electLeader (bfid tb) (blid tb) target
     deduceKilled tb
-    ais <- getsState $ getActorItem target
+    ais <- getsState $ getCarriedAssocs tb
     execCmdAtomic $ LoseActorA target tb ais
     let bNew = tb {bfid = bfid sb}
     execCmdAtomic $ CreateActorA target bNew ais
@@ -436,7 +436,7 @@ effectAscend power target = do
 effLvlGoUp :: MonadAtomic m => ActorId -> Int -> m (Maybe Msg)
 effLvlGoUp aid k = do
   b1 <- getsState $ getActorBody aid
-  ais1 <- getsState $ getActorItem aid
+  ais1 <- getsState $ getCarriedAssocs b1
   let lid1 = blid b1
       pos1 = bpos b1
   (lid2, pos2) <- getsState $ whereTo lid1 pos1 k . sdungeon

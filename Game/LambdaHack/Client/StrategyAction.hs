@@ -245,9 +245,9 @@ actionStrategy aid = do
   cops <- getsState scops
   disco <- getsClient sdisco
   btarget <- getsClient $ getTarget aid
-  Actor{bpos, blid} <- getsState $ getActorBody aid
-  bitems <- getsState $ getActorEqp aid
-  lootItems <- getsState $ getFloorItem blid bpos
+  b@Actor{bpos, blid} <- getsState $ getActorBody aid
+  eqpAssocs <- getsState $ getEqpAssocs b
+  floorAssocs <- getsState $ getFloorAssocs blid bpos
   lvl <- getLevel blid
   mleader <- getsClient _sleader
   actorAbs <- actorAbilities aid mleader
@@ -257,8 +257,8 @@ actionStrategy aid = do
           _ -> Nothing
       foeVisible = isJust mfAid
       lootHere x = not $ EM.null $ lvl `atI` x
-      lootIsWeapon = isJust $ strongestSword cops lootItems
-      hasNoWeapon = isNothing $ strongestSword cops bitems
+      hasNoWeapon = isNothing $ strongestSword cops eqpAssocs
+      lootIsWeapon = isJust $ strongestSword cops floorAssocs
       isDistant = (`elem` [ Ability.Trigger
                           , Ability.Ranged
                           , Ability.Tools
@@ -441,7 +441,7 @@ rangedFreq aid = do
                 } <- getsState scops
   btarget <- getsClient $ getTarget aid
   b@Actor{bkind, bpos, blid} <- getsState $ getActorBody aid
-  invBag <- actorInventory b
+  invBag <- getsState $ getInvBag b
   mfpos <- aidTgtToPos aid blid btarget
   case (btarget, mfpos) of
     (Just TEnemy{}, Just fpos) -> do
@@ -528,7 +528,7 @@ toolsFreq :: MonadClient m
 toolsFreq disco aid = do
   cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   b@Actor{bkind, bpos, blid} <- getsState $ getActorBody aid
-  invBag <- actorInventory b
+  invBag <- getsState $ getInvBag b
   lvl <- getLevel blid
   s <- getState
   let tis = lvl `atI` bpos

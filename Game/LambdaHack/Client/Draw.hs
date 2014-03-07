@@ -200,12 +200,12 @@ drawLeaderStatus cops s sdisco waitTimes mleader =
       stats = case mleader of
         Just leader ->
           let Kind.COps{coactor=Kind.Ops{okind}} = cops
-              (bitems, bracedL, ahpS, bhpS) =
+              (eqpAssocs, bracedL, ahpS, bhpS) =
                 let mpl@Actor{bkind, bhp} = getActorBody leader s
                     ActorKind{ahp} = okind bkind
-                in (getActorEqp leader s, braced mpl,
+                in (getEqpAssocs mpl s, braced mpl,
                     tshow (maxDice ahp), tshow bhp)
-              damage = case Item.strongestSword cops bitems of
+              damage = case Item.strongestSword cops eqpAssocs of
                 Just (_, (_, sw)) ->
                   case Item.jkind sdisco sw of
                     Just _ ->
