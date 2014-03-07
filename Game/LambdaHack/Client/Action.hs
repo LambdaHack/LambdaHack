@@ -26,7 +26,8 @@ module Game.LambdaHack.Client.Action
     -- * Assorted primitives
   , restoreGame, removeServerSave, displayPush, scoreToSlideshow
   , rndToAction, getArenaUI, getLeaderUI, targetDescLeader, viewedLevel
-  , aidTgtToPos, aidTgtAims, leaderTgtToPos, leaderTgtAims, cursorToPos
+  , aidTgtToPos, aidTgtAims, makeLine
+  , leaderTgtToPos, leaderTgtAims, cursorToPos
   , partAidLeader, partActorLeader, unexploredDepth
   , getCacheBfsAndPath, getCacheBfs, accessCacheBfs
   , closestUnknown, closestSmell, furthestKnown, closestTriggers
@@ -694,8 +695,9 @@ aidTgtAims aid lidV tgt = do
       let pos = bpos body
       b <- getsState $ getActorBody aid
       if blid b == lidV then do
-        aims <- undefined -- actorAimsPos aid pos
-        if aims
+        seps <- getsClient seps
+        (steps, _eps) <- makeLine b pos seps
+        if steps == chessDist (bpos b) pos
           then return Nothing
           else return $ Just "aiming line to the opponent blocked"
       else return $ Just "target opponent not on this level"
@@ -705,6 +707,31 @@ aidTgtAims aid lidV tgt = do
     Nothing -> do
       scursor <- getsClient scursor
       aidTgtAims aid lidV $ Just scursor
+
+-- | Counts the number of steps until the projectile would hit
+-- an actor or obstacle. Prefers the given eps.
+-- TODO: but modifies eps, if needed.
+makeLine :: MonadClient m => Actor -> Point -> Int -> m (Int, Int)
+makeLine body fpos eps = do
+  cops <- getsState scops
+  lvl@Level{lxsize, lysize} <- getLevel (blid body)
+  bs <- getsState $ actorNotProjList (const True) (blid body)
+  let mbl = bla lxsize lysize eps (bpos body) fpos
+  case mbl of
+    Just bl@(pos1:_) -> do
+      let noActor p = any ((== p) . bpos) bs || p == fpos
+      case break noActor bl of
+        (flies, hits : _) -> do
+          let blRest = flies ++ [hits]
+              blZip = zip (bpos body : blRest) blRest
+              blAccess = takeWhile (uncurry $ accessible cops lvl) blZip
+          mab <- getsState $ posToActor pos1 (blid body)
+          if maybe True (bproj . snd . fst) mab then
+            return $ (length blAccess, eps)
+          else return (0, eps)  -- ProjectBlockActor
+        _ -> assert `failure` (body, fpos, bl)
+    Just [] -> assert `failure` (body, fpos)
+    Nothing -> return (0, eps)  -- ProjectAimOnself
 
 leaderTgtToPos :: MonadClientUI m => m (Maybe Point)
 leaderTgtToPos = do

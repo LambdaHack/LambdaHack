@@ -490,8 +490,10 @@ doLook = do
   inhabitants <- if canSee
                  then getsState $ posToActors p lidV
                  else return []
-  aims <- undefined -- actorAimsPos leader p
-  let enemyMsg = case inhabitants of
+  seps <- getsClient seps
+  (steps, _eps) <- makeLine b p seps
+  let aims = steps == chessDist (bpos b) p
+      enemyMsg = case inhabitants of
         [] -> ""
         _ -> -- Even if it's the leader, give his proper name, not 'you'.
              let subjects = map (partActor . snd . fst) inhabitants

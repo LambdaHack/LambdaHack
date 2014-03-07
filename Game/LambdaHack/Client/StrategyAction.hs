@@ -474,7 +474,8 @@ rangedFreq aid = do
       fact <- getsState $ (EM.! bfid b) . sfactionD
       foes <- getsState $ actorNotProjList (isAtWar fact) blid
       let foesAdj = foesAdjacent lxsize lysize bpos foes
-      (steps, eps) <- makePath b fpos
+          initalEps = 0
+      (steps, eps) <- makeLine b fpos initalEps
       let permitted = (if aiq mk >= 10 then ritemProject else ritemRanged)
                       $ Kind.stdRuleset corule
           itemReaches item =
@@ -516,32 +517,6 @@ rangedFreq aid = do
             else toFreq "throwFreq: not possible" []
       return $! freq
     _ -> return $! toFreq "throwFreq: no enemy target" []
-
--- TODO: finetune eps
--- | Counts the number of steps until the projectile would hit
--- an actor or obstacle.
-makePath :: MonadClient m => Actor -> Point -> m (Int, Int)
-makePath body fpos = do
-  cops <- getsState scops
-  lvl@Level{lxsize, lysize} <- getLevel (blid body)
-  bs <- getsState $ actorNotProjList (const True) (blid body)
-  let eps = 0
-      mbl = bla lxsize lysize eps (bpos body) fpos
-  case mbl of
-    Just bl@(pos1:_) -> do
-      let noActor p = any ((== p) . bpos) bs
-      case break noActor bl of
-        (flies, hits : _) -> do
-          let blRest = flies ++ [hits]
-              blZip = zip (bpos body : blRest) blRest
-              blAccess = takeWhile (uncurry $ accessible cops lvl) blZip
-          mab <- getsState $ posToActor pos1 (blid body)
-          if maybe True (bproj . snd . fst) mab then
-            return $ (length blAccess, eps)
-          else return (0, eps)  -- ProjectBlockActor
-        _ -> assert `failure` (body, fpos, bl)
-    Just [] -> assert `failure` (body, fpos)
-    Nothing -> return (0, eps)  -- ProjectAimOnself
 
 -- Tools use requires significant intelligence and sometimes literacy.
 toolsFreq :: MonadClient m
