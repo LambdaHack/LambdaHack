@@ -85,7 +85,7 @@ standard = RuleKind
 
       -- Main Menu, which apart of these includes a few extra commands
       [ ("CTRL-x", (CmdMenu, GameExit))
-      , ("CTRL-r", (CmdMenu, GameRestart "campaign"))
+      , ("CTRL-a", (CmdMenu, GameRestart "campaign"))
       , ("CTRL-k", (CmdMenu, GameRestart "skirmish"))
       , ("CTRL-v", (CmdMenu, GameRestart "PvP"))
       , ("CTRL-o", (CmdMenu, GameRestart "Coop"))
@@ -115,17 +115,26 @@ standard = RuleKind
            [ TriggerFeature { verb = "descend"
                             , object = "10 levels"
                             , feature = F.Cause (Effect.Ascend (-10)) } ]))
-      , ("CTRL-semicolon", (CmdMove, StepToTarget))
-      , ("semicolon", (CmdMove, Macro "go to target for 100 steps"
-                                      ["CTRL-semicolon", "P"]))
+      , ("semicolon", (CmdMove, StepToTarget))
+      , ("colon", (CmdMove, Macro "go to target for 100 steps"
+                                  ["semicolon", "P"]))
+      , ("CTRL-colon", (CmdMove, Macro "go to target for 10 steps"
+                                       ["semicolon", "CTRL-P"]))
       , ("x", (CmdMove, Macro "explore the closest unknown spot"
                               [ "BackSpace"
-                              , "CTRL-question", "CTRL-semicolon", "P" ]))
+                              , "CTRL-question", "semicolon", "P" ]))
       , ("X", (CmdMove, Macro "autoexplore 100 times"
                               [ "BackSpace"
-                              , "'", "CTRL-question", "CTRL-semicolon", "'"
+                              , "'", "CTRL-question", "semicolon", "'"
                               , "P" ]))
-      , ("R", (CmdMove, Macro "rest (wait 100 times)" ["KP_Begin", "P"]))
+      , ("CTRL-X", (CmdMove, Macro "autoexplore 10 times"
+                                   [ "BackSpace"
+                                   , "'", "CTRL-question", "semicolon", "'"
+                                   , "CTRL-P" ]))
+      , ("R", (CmdMove, Macro "rest (wait 100 times)"
+                              ["KP_Begin", "P"]))
+      , ("CTRL-R", (CmdMove, Macro "rest (wait 10 times)"
+                                   ["KP_Begin", "CTRL-P"]))
       , ("c", (CmdMove, AlterDir
            [ AlterFeature { verb = "close"
                           , object = "door"
@@ -188,6 +197,7 @@ standard = RuleKind
       , ("p", (CmdMeta, Repeat 1))
       , ("P", (CmdMeta, Repeat 100))
       , ("CTRL-p", (CmdMeta, Repeat 1000))
+      , ("CTRL-P", (CmdMeta, Repeat 10))
       , ("apostrophe", (CmdMeta, Record))
       , ("space", (CmdMeta, Clear))
       , ("Escape", (CmdMeta, Cancel))

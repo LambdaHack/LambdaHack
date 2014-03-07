@@ -71,7 +71,7 @@ can be done by bumping into a monster, a wall and a door, respectively.
 Few commands other than movement are necessary for casual play.
 Some are provided only as building blocks for more complex convenience
 commands, e.g., the autoexplore command (key `X`) could be defined
-by the player as a macro using `BACKSPACE`, `CTRL-?`, `CTRL-;` and `P`.
+by the player as a macro using `BACKSPACE`, `CTRL-?`, `;` and `P`.
 
 Below are the remaining keys for movement and terrain alteration.
 
@@ -80,11 +80,14 @@ Below are the remaining keys for movement and terrain alteration.
                 CTRL-<         ascend 10 levels
                 >              descend a level
                 CTRL->         descend 10 levels
-                CTRL-;         make one step towards the target
-                ;              go to target for 100 steps
+                ;              make one step towards the target
+                :              go to target for 100 steps
+                CTRL-:         go to target for 10 steps
                 x              explore the closest unknown spot
                 X              autoexplore 100 times
+                CTRL-X         autoexplore 10 times
                 R              rest (wait 100 times)
+                CTRL-R         rest (wait 10 times)
                 c              close door
 
 Inventory and items-related keys are as follows.
@@ -136,6 +139,7 @@ Assorted remaining keys and commands follow.
                 p              play back last keys
                 P              play back last keys 100 times
                 CTRL-p         play back last keys 1000 times
+                CTRL-P         play back last keys 10 times
                 '              start recording a macro
                 SPACE          clear messages
                 ESC            cancel action
@@ -151,7 +155,7 @@ of any UI-using faction.
 
                 keys           command
                 CTRL-x         save and exit
-                CTRL-r         new campaign game
+                CTRL-a         new campaign game
                 CTRL-k         new skirmish game
                 CTRL-v         new PvP game
                 CTRL-o         new Coop game
