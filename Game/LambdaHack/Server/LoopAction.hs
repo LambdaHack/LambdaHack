@@ -71,6 +71,9 @@ loopSer sdebug cmdSerSem executorUI executorAI !cops = do
       let setCurrentCops = const (speedupCOps (sallClear sdebugNxt) cops)
       -- @sRaw@ is correct here, because none of the above changes State.
       execCmdAtomic $ ResumeServerA $ updateCOps setCurrentCops sRaw
+      -- We dump RNG seeds here, in case the game wasn't run
+      -- with --dumpInitRngs previously and we need to seeds.
+      when (sdumpInitRngs sdebug) $ dumpRngs
     _ -> do  -- Starting a new game.
       -- Set up commandline debug mode
       let mrandom = case restored of
@@ -86,7 +89,6 @@ loopSer sdebug cmdSerSem executorUI executorAI !cops = do
       updateConn executorUI executorAI
       initPer
       reinitGame
-  when (sdumpInitRngs sdebug) $ dumpRngs
   resetSessionStart
   -- Start a clip (a part of a turn for which one or more frames
   -- will be generated). Do whatever has to be done

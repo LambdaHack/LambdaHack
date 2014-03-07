@@ -197,6 +197,7 @@ gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}}
   putServer defSer
   when (sbenchmark sdebug) resetGameStart
   modifyServer $ \ser -> ser {sdisco, sdiscoRev, sflavour}
+  when (sdumpInitRngs sdebug) $ dumpRngs
   return $! defState
 
 -- Spawn initial actors. Clients should notice this, to set their leaders.
