@@ -95,10 +95,10 @@ Inventory and items-related keys are as follows.
                 d              drop an object
                 E              display equipment
                 w              wield/wear an object
-                y              yield an object
+                t              take off an object
                 q              quaff potion
                 r              read scroll
-                t              throw missile
+                s              sling missile
                 z              zap wand
 
 To make a ranged attack, as in the last few commands above,
@@ -185,8 +185,8 @@ one another (with the `SHIFT` key) do not inflict damage, but change places.
 This gives the opponent a free blow, but can improve the tactical situation
 or aid escape.
 
-Throwing weapons at targets wounds them, consuming the weapon in the process.
-You may throw any object in your possession (press `?` to choose
+Slinging missiles at targets wounds them, consuming the weapon in the process.
+You may sling any object in your possession (press `?` to choose
 an object and press it again for a non-standard choice) or on the floor
 (press `-`). Only objects of a few kinds inflict any damage.
 Whenever the monster's or hero's hit points reach zero, the combatant dies.

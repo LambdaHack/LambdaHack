@@ -107,7 +107,7 @@ cmdDescription cmd = case cmd of
   Pickup      -> "get an object"
   Drop        -> "drop an object"
   Wield       -> "wield/wear an object"
-  Yield       -> "yield an object"
+  Yield       -> "take off an object"
   Project ts  -> triggerDescription ts
   Apply ts    -> triggerDescription ts
   AlterDir ts -> triggerDescription ts

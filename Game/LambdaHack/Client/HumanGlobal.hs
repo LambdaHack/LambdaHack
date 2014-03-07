@@ -378,7 +378,7 @@ yieldHuman = do
   -- TODO: allow dropping a given number of identical items.
   Kind.COps{coitem} <- getsState scops
   leader <- getLeaderUI
-  ggi <- getAnyItem "What to yield?" False "in equipment"
+  ggi <- getAnyItem "What to take off?" False "in equipment"
   case ggi of
     Right ((iid, item), (_, container)) ->
       case container of
@@ -387,7 +387,7 @@ yieldHuman = do
           disco <- getsClient sdisco
           subject <- partAidLeader leader
           msgAdd $ makeSentence
-            [ MU.SubjectVerbSg subject "yield"
+            [ MU.SubjectVerbSg subject "take off"
             , partItemWs coitem disco 1 item ]
           return $ Right $ YieldSer leader iid 1
         _ -> failWith "never mind"

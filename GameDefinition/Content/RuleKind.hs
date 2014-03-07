@@ -149,14 +149,14 @@ standard = RuleKind
       , ("d", (CmdItem, Drop))
       , ("E", (CmdItem, Equipment))
       , ("w", (CmdItem, Wield))
-      , ("y", (CmdItem, Yield))
+      , ("t", (CmdItem, Yield))
       , ("q", (CmdItem, Apply [ApplyItem { verb = "quaff"
                                          , object = "potion"
                                          , symbol = '!' }]))
       , ("r", (CmdItem, Apply [ApplyItem { verb = "read"
                                          , object = "scroll"
                                          , symbol = '?' }]))
-      , ("t", (CmdItem, Project [ApplyItem { verb = "throw"
+      , ("s", (CmdItem, Project [ApplyItem { verb = "sling"
                                            , object = "missile"
                                            , symbol = '|' }]))
       , ("z", (CmdItem, Project [ApplyItem { verb = "zap"
