@@ -101,7 +101,9 @@ getPerFid fid lid = do
 dumpRngs :: MonadServer m => m ()
 dumpRngs = do
   rngs <- getsServer srngs
-  debugPrint $ tshow rngs
+  liftIO $ do
+    T.hPutStrLn stderr $ tshow rngs
+    hFlush stderr
 
 writeTQueueAI :: MonadConnServer m => CmdClientAI -> TQueue CmdClientAI -> m ()
 writeTQueueAI cmd fromServer = do
