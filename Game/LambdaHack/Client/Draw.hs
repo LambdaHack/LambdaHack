@@ -58,14 +58,15 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
      cursorDesc targetDesc sfTop =
   let Kind.COps{cotile=cotile@Kind.Ops{okind=tokind, ouniqGroup}} = cops
       (lvl@Level{lxsize, lysize, lsmell, ltime}) = sdungeon s EM.! drawnLevelId
-      (bl, blLength) = case (cursorPos, mleader) of
+      (bl, blLength, mblid) = case (cursorPos, mleader) of
         (Just cursor, Just leader) ->
           let Actor{bpos, blid} = getActorBody leader s
           in if blid /= drawnLevelId
-             then ([cursor], 0)
+             then ([cursor], 0, Just blid)
              else ( fromMaybe [] $ bla lxsize lysize seps bpos cursor
-                  , chessDist bpos cursor )
-        _ -> ([], 0)
+                  , chessDist bpos cursor
+                  , Just blid)
+        _ -> ([], 0, Nothing)
       mpath = maybe Nothing (\(_, mp) -> if blLength == 0
                                          then Nothing
                                          else mp) bfsmpathRaw
@@ -140,7 +141,8 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
                                     widthStats
       displayPathText mp =
         let len = case (mp, bfsmpathRaw) of
-              (Just target, Just (bfs, _)) -> fromMaybe 0 (accessBfs bfs target)
+              (Just target, Just (bfs, _)) | mblid == Just drawnLevelId ->
+                fromMaybe 0 (accessBfs bfs target)
               _ -> 0
             pText | len == 0 = ""
                   | otherwise = "(path" <+> showN2 len <> ")"
