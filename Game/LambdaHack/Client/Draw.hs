@@ -138,19 +138,24 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
       addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
       arenaStatus = drawArenaStatus (ES.member drawnLevelId sexplored) lvl
                                     widthStats
+      displayPathText mp =
+        let len = case (mp, bfsmpathRaw) of
+              (Just target, Just (bfs, _)) -> fromMaybe 0 (accessBfs bfs target)
+              _ -> 0
+            pText | len == 0 = ""
+                  | otherwise = "(path" <+> showN2 len <> ")"
+        in " " <> pText
       -- The indicators must fit, they are the actual information.
-      lineText = let lText | blLength == 0 = ""
-                           | otherwise = "(line" <+> showN2 blLength <> ")"
-                 in " " <> lText
+      pathCsr = displayPathText cursorPos
       -- TODO: when too long descriptions, use Csr and Tgt
       cursorText =
-        let space = widthTgt - T.length lineText
+        let space = widthTgt - T.length pathCsr
         in T.take space
            $ (if isJust stgtMode then "cursor>" else "Cursor:")
              <+> cursorDesc
-      cursorGap = T.replicate (widthTgt - T.length lineText
+      cursorGap = T.replicate (widthTgt - T.length pathCsr
                                         - T.length cursorText) " "
-      cursorStatus = addAttr $ cursorText <> cursorGap <> lineText
+      cursorStatus = addAttr $ cursorText <> cursorGap <> pathCsr
       leaderStatus = drawLeaderStatus cops s swaitTimes mleader
                                       widthStats
       selectedStatus = drawSelected cli s drawnLevelId mleader
@@ -166,20 +171,14 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
                                                     - length damageStatus
                                                     - length nameStatus) " "
       -- The indicators must fit, they are the actual information.
-      pathText = let len = case (tgtPos, bfsmpathRaw) of
-                       (Just target, Just (bfs, _)) ->
-                         fromMaybe 0 (accessBfs bfs target)
-                       _ -> 0
-                     pText | len == 0 = ""
-                           | otherwise = "(path" <+> showN2 len <> ")"
-                 in " " <> pText
+      pathTgt = displayPathText tgtPos
       targetText =
-        let space = widthTgt - T.length lineText
+        let space = widthTgt - T.length pathTgt
         in T.take space
            $ "Target:" <+> targetDesc
-      targetGap = T.replicate (widthTgt - T.length pathText
+      targetGap = T.replicate (widthTgt - T.length pathTgt
                                         - T.length targetText) " "
-      targetStatus = addAttr $ targetText <> targetGap <> pathText
+      targetStatus = addAttr $ targetText <> targetGap <> pathTgt
       sfBottom =
         [ encodeLine $ arenaStatus ++ cursorStatus
         , encodeLine $ selectedStatus ++ nameStatus ++ statusGap
