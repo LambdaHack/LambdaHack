@@ -706,11 +706,12 @@ tgtAscendHuman k = do
     Just cpos -> do  -- stairs, in the right direction
       (nln, npos) <- getsState $ whereTo lidV cpos k . sdungeon
       assert (nln /= lidV `blame` "stairs looped" `twith` nln) skip
+      nlvl <- getLevel nln
       -- Do not freely reveal the other end of the stairs.
       let ascDesc (F.Cause (Effect.Ascend _)) = True
           ascDesc _ = False
           scursor =
-            if any ascDesc $ tfeature $ okind (lvl `at` npos)
+            if any ascDesc $ tfeature $ okind (nlvl `at` npos)
             then TPoint nln npos  -- already known as an exit, focus on it
             else scursorOld  -- unknown, do not reveal
       modifyClient $ \cli -> cli {scursor, stgtMode = Just (TgtMode nln)}
