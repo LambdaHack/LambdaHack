@@ -305,7 +305,7 @@ drawOverlay onBlank dm over = do
   per <- getPerFid lid
   tgtPos <- leaderTgtToPos
   cursorPos <- cursorToPos
-  let anyPos = fromMaybe (Point 0 0) tgtPos
+  let anyPos = fromMaybe (Point 0 0) cursorPos
       pathFromLeader leader = fmap Just $ getCacheBfsAndPath leader anyPos
   bfsmpath <- maybe (return Nothing) pathFromLeader mleader
   tgtDesc <- maybe (return "------") targetDescLeader mleader
@@ -389,7 +389,7 @@ animate arena anim = do
   per <- getPerFid arena
   tgtPos <- leaderTgtToPos
   cursorPos <- cursorToPos
-  let anyPos = fromMaybe (Point 0 0) tgtPos
+  let anyPos = fromMaybe (Point 0 0) cursorPos
       pathFromLeader leader = fmap Just $ getCacheBfsAndPath leader anyPos
   bfsmpath <- maybe (return Nothing) pathFromLeader mleader
   tgtDesc <- maybe (return "------") targetDescLeader mleader
