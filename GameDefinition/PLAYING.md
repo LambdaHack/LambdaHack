@@ -20,12 +20,41 @@ and shared-keyboard interface available at this time.
 Contributions welcome.
 
 
-Dungeon
--------
+Heroes
+------
 
 The heroes are marked on the map with symbols `@` and `1` through `9`.
 Their goal is to explore the dungeon, battle the horrors within,
 gather as much gold and gems as possible, and escape to tell the tale.
+
+The currently chosen party leader is highlighted on the screen
+and his attributes are displayed at the bottommost status line,
+which in its most complex form may look as follows.
+
+    *@12 Adventurer D: 5d1+1 S: 20/50 H: 33/50 Target: basilisk  (path  7)
+
+The line starts with the list of party members (unless only one member
+resides on the currently displayed level) and the shortened name of the team.
+After 'D' comes the damage of the leader's weapon, after 'S' his current
+and maximum stamina and after 'H' his current and maximum hit points.
+At the end, the personal target of the leader is described
+and the length of the shortest path to the target.
+
+The other status line relates to the dungeon and to the whole party.
+
+    5  Tall cavern  [33% seen] Cursor: exact spot (71,12)  (path  5)
+
+First comes the depth of the current level and its description.
+Then the approximate percentage of its explorable tiles already
+seen by the heroes. The cursor is the common target of the whole party,
+directly manipulated with movement keys in the targeting mode.
+The line ends with the length of the shortest path from the leader
+to the cursor position.
+
+
+Dungeon
+-------
+
 The dungeon of the campaign mode game consists of 10 levels and each level
 consists of a large number of tiles. The basic tile kinds are as follows.
 
@@ -45,8 +74,8 @@ The game world is persistent, i.e., every time the player visits a level
 during a single game, the level layout is the same.
 
 
-Keys
-----
+Commands
+--------
 
 You move throughout the level using the numerical keypad (left diagram)
 or its compact laptop replacement (middle) or Vi text editor keys
