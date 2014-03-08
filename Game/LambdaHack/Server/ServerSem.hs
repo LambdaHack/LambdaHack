@@ -428,7 +428,7 @@ addProjectile bpos rest iid blid bfid btime = do
       dirTrajectory = take trajectoryLength $ pathToTrajectory (bpos : rest)
       kind = okind $ projectileKindId coactor
       m = actorTemplate (projectileKindId coactor) (asymbol kind) name
-                        (acolor kind) speed 0 (Just dirTrajectory)
+                        (acolor kind) speed 0 maxBound (Just dirTrajectory)
                         bpos blid btime bfid True
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
