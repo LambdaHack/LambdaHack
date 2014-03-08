@@ -131,22 +131,30 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
                                then attr0 {Color.bg = Color.Blue}
                                else attr0
         in Color.AttrChar a char
+      widthX = 80
+      widthTgt = 39
+      widthStats = widthX - widthTgt
       showN2 n = T.justifyRight 2 ' ' (tshow n)
       addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
       arenaStatus = drawArenaStatus (ES.member drawnLevelId sexplored) lvl
-      cursorText = (if isJust stgtMode then "cursor>" else "Cursor:")
-                   <+> cursorDesc
-      lineText = let space = 40 - T.length cursorText - 1
+                                    widthStats
+      -- TODO: when too long descriptions, use Csr and Tgt
+      cursorText =  T.take (widthTgt - 8)
+                    $ (if isJust stgtMode then "cursor>" else "Cursor:")
+                      <+> cursorDesc
+      lineText = let space = widthTgt - T.length cursorText - 1
                      lText | blLength == 0 = ""
                            | otherwise = "(line" <+> showN2 blLength <> ")"
                  in if T.length lText > space
                     then ""
                     else T.justifyRight space ' ' lText
-      cursorStatus = addAttr $ T.justifyLeft 40 ' ' $ cursorText <+> lineText
-      selectedStatus = drawSelected cli s drawnLevelId mleader
+      cursorStatus = addAttr $ cursorText <+> lineText
       leaderStatus = drawLeaderStatus cops s sdisco swaitTimes mleader
-      targetText = "Target:" <+> targetDesc
-      pathText = let space = 40 - T.length targetText - 1
+                                      widthStats
+      selectedStatus = drawSelected cli s drawnLevelId mleader
+                                    (widthStats - length leaderStatus)
+      targetText = T.take (widthTgt - 8) $ "Target:" <+> targetDesc
+      pathText = let space = widthTgt - T.length targetText - 1
                      len = case (tgtPos, bfsmpathRaw) of
                        (Just target, Just (bfs, _)) ->
                          fromMaybe 0 (accessBfs bfs target)
@@ -156,7 +164,7 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
                  in if T.length pText > space
                     then ""
                     else T.justifyRight space ' ' pText
-      targetStatus = addAttr $ T.justifyLeft 40 ' ' $ targetText <+> pathText
+      targetStatus = addAttr $ targetText <+> pathText
       sfBottom =
         [ encodeLine $ arenaStatus ++ cursorStatus
         , encodeLine $ selectedStatus ++ leaderStatus ++ targetStatus ]
@@ -172,20 +180,23 @@ inverseVideo :: Color.Attr
 inverseVideo = Color.Attr { Color.fg = Color.bg Color.defAttr
                           , Color.bg = Color.fg Color.defAttr }
 
-drawArenaStatus :: Bool -> Level -> [Color.AttrChar]
-drawArenaStatus explored Level{ldepth, ldesc, lseen, lclear} =
+-- Comfortably accomodates 3-digit level numbers and 25-character
+-- level descriptions (currently enforced max).
+drawArenaStatus :: Bool -> Level -> Int -> [Color.AttrChar]
+drawArenaStatus explored Level{ldepth, ldesc, lseen, lclear} width =
   let addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
       seenN = 100 * lseen `div` lclear
       seenTxt | explored || seenN >= 100 = "all"
               | otherwise = T.justifyLeft 3 ' ' (tshow seenN <> "%")
       lvlN = T.justifyLeft 2 ' ' (tshow $ abs ldepth)
       seenStatus = T.justifyLeft 11 ' ' ("[" <> seenTxt <+> "seen]")
-  in addAttr $ lvlN <+> T.justifyLeft 25 ' ' ldesc <+> seenStatus
+  in addAttr $ T.justifyLeft width ' '
+             $ T.take 29 (lvlN <+> T.justifyLeft 26 ' ' ldesc) <+> seenStatus
 
 drawLeaderStatus :: Kind.COps -> State -> Discovery
-                 -> Int -> Maybe ActorId
+                 -> Int -> Maybe ActorId -> Int
                  -> [Color.AttrChar]
-drawLeaderStatus cops s sdisco waitTimes mleader =
+drawLeaderStatus cops s sdisco waitTimes mleader _width =
   let addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
       stats = case mleader of
         Just leader ->
@@ -224,9 +235,10 @@ drawLeaderStatus cops s sdisco waitTimes mleader =
              <> " "
   in addAttr stats
 
-drawSelected :: StateClient -> State -> LevelId -> Maybe ActorId
+-- TODO: colour some texts using the faction's colour
+drawSelected :: StateClient -> State -> LevelId -> Maybe ActorId -> Int
              -> [Color.AttrChar]
-drawSelected cli s drawnLevelId mleader =
+drawSelected cli s drawnLevelId mleader width =
   let selected = sselected cli
       viewOurs (aid, Actor{bsymbol, bcolor, bhp})
         | otherwise =
@@ -245,7 +257,7 @@ drawSelected cli s drawnLevelId mleader =
           in ( (bhp > 0, bsymbol /= '@', bsymbol, bcolor, aid)
              , Color.AttrChar sattr bsymbol )
       ours = actorNotProjAssocs (== sside cli) drawnLevelId s
-      maxViewed = 14
+      maxViewed = width - 1
       -- Don't show anything if the only actor on the level is the leader.
       -- He's clearly highlighted on the level map, anyway.
       star = let sattr = case ES.size selected of
@@ -267,4 +279,4 @@ drawSelected cli s drawnLevelId mleader =
               then ourName $ maxViewed + 1
               else [star] ++ map snd viewed ++ addAttr " "
                    ++ ourName (maxViewed - 1 - length viewed)
-  in party ++ addAttr (T.replicate (maxViewed + 2 - length party) " ")
+  in party ++ addAttr (T.replicate (maxViewed + 1 - length party) " ")
