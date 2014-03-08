@@ -138,36 +138,53 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
       addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
       arenaStatus = drawArenaStatus (ES.member drawnLevelId sexplored) lvl
                                     widthStats
-      -- TODO: when too long descriptions, use Csr and Tgt
-      cursorText =  T.take (widthTgt - 8)
-                    $ (if isJust stgtMode then "cursor>" else "Cursor:")
-                      <+> cursorDesc
-      lineText = let space = widthTgt - T.length cursorText - 1
-                     lText | blLength == 0 = ""
+      -- The indicators must fit, they are the actual information.
+      lineText = let lText | blLength == 0 = ""
                            | otherwise = "(line" <+> showN2 blLength <> ")"
-                 in if T.length lText > space
-                    then ""
-                    else T.justifyRight space ' ' lText
-      cursorStatus = addAttr $ cursorText <+> lineText
-      leaderStatus = drawLeaderStatus cops s sdisco swaitTimes mleader
+                 in " " <> lText
+      -- TODO: when too long descriptions, use Csr and Tgt
+      cursorText =
+        let space = widthTgt - T.length lineText
+        in T.take space
+           $ (if isJust stgtMode then "cursor>" else "Cursor:")
+             <+> cursorDesc
+      cursorGap = T.replicate (widthTgt - T.length lineText
+                                        - T.length cursorText) " "
+      cursorStatus = addAttr $ cursorText <> cursorGap <> lineText
+      leaderStatus = drawLeaderStatus cops s swaitTimes mleader
                                       widthStats
       selectedStatus = drawSelected cli s drawnLevelId mleader
                                     (widthStats - length leaderStatus)
-      targetText = T.take (widthTgt - 8) $ "Target:" <+> targetDesc
-      pathText = let space = widthTgt - T.length targetText - 1
-                     len = case (tgtPos, bfsmpathRaw) of
+      damageStatus = drawLeaderDamage cops s sdisco mleader
+                                      (widthStats - length leaderStatus
+                                                  - length selectedStatus)
+      nameStatus = drawPlayerName cli s (widthStats - length leaderStatus
+                                                    - length selectedStatus
+                                                    - length damageStatus)
+      statusGap = addAttr $ T.replicate (widthStats - length leaderStatus
+                                                    - length selectedStatus
+                                                    - length damageStatus
+                                                    - length nameStatus) " "
+      -- The indicators must fit, they are the actual information.
+      pathText = let len = case (tgtPos, bfsmpathRaw) of
                        (Just target, Just (bfs, _)) ->
                          fromMaybe 0 (accessBfs bfs target)
                        _ -> 0
                      pText | len == 0 = ""
                            | otherwise = "(path" <+> showN2 len <> ")"
-                 in if T.length pText > space
-                    then ""
-                    else T.justifyRight space ' ' pText
-      targetStatus = addAttr $ targetText <+> pathText
+                 in " " <> pText
+      targetText =
+        let space = widthTgt - T.length lineText
+        in T.take space
+           $ "Target:" <+> targetDesc
+      targetGap = T.replicate (widthTgt - T.length pathText
+                                        - T.length targetText) " "
+      targetStatus = addAttr $ targetText <> targetGap <> pathText
       sfBottom =
         [ encodeLine $ arenaStatus ++ cursorStatus
-        , encodeLine $ selectedStatus ++ leaderStatus ++ targetStatus ]
+        , encodeLine $ selectedStatus ++ nameStatus ++ statusGap
+                       ++ damageStatus ++ leaderStatus
+                       ++ targetStatus ]
       fLine y = encodeLine $
         let f l x = let ac = dis $ Point x y in ac : l
         in foldl' f [] [lxsize-1,lxsize-2..0]
@@ -193,28 +210,20 @@ drawArenaStatus explored Level{ldepth, ldesc, lseen, lclear} width =
   in addAttr $ T.justifyLeft width ' '
              $ T.take 29 (lvlN <+> T.justifyLeft 26 ' ' ldesc) <+> seenStatus
 
-drawLeaderStatus :: Kind.COps -> State -> Discovery
+drawLeaderStatus :: Kind.COps -> State
                  -> Int -> Maybe ActorId -> Int
                  -> [Color.AttrChar]
-drawLeaderStatus cops s sdisco waitTimes mleader _width =
+drawLeaderStatus cops s waitTimes mleader _width =
   let addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
       stats = case mleader of
         Just leader ->
           let Kind.COps{coactor=Kind.Ops{okind}} = cops
-              (eqpAssocs, bracedL, ahpS, bhpS) =
-                let mpl@Actor{bkind, bhp} = getActorBody leader s
-                    ActorKind{ahp} = okind bkind
-                in (getEqpAssocs mpl s, braced mpl,
-                    tshow (maxDice ahp), tshow bhp)
-              damage = case Item.strongestSword cops eqpAssocs of
-                Just (_, (_, sw)) ->
-                  case Item.jkind sdisco sw of
-                    Just _ ->
-                      case jeffect sw of
-                        Hurt dice p -> tshow dice <> "+" <> tshow p
-                        _ -> ""
-                    Nothing -> "5d1"  -- TODO: ?
-                Nothing -> "5d1"  -- TODO; use the item 'fist'
+              (bracedL, ahpS, bhpS, astaminaS, bstaminaS) =
+                let b@Actor{bkind, bhp, bstamina} = getActorBody leader s
+                    ActorKind{ahp, astamina} = okind bkind
+                in ( braced b
+                   , tshow (maxDice ahp), tshow bhp
+                   , tshow (maxDice astamina), tshow bstamina )
               -- Indicate the actor is braced (was waiting last move).
               -- It's a useful feedback for the otherwise hard to observe
               -- 'wait' command.
@@ -225,15 +234,36 @@ drawLeaderStatus cops s sdisco waitTimes mleader _width =
               bracePick | bracedL   = "}"
                         | otherwise = ":"
               hpText = bhpS <> slashPick <> ahpS
-          in T.justifyLeft 12 ' '
-               ("Dmg:" <> (if T.length damage < 8 then " " else "") <> damage)
-             <+> "HP" <> bracePick <> T.justifyRight 7 ' ' hpText
-             <> " "
+              staminaText = bstaminaS <> "/" <> astaminaS
+          in "S:" <> T.justifyRight 6 ' ' staminaText
+             <+> "H" <> bracePick <> T.justifyRight 6 ' ' hpText
         Nothing ->
-             T.justifyLeft 12 ' ' "Dmg: ---"
-             <+> T.justifyRight 10 ' ' "HP:  --/--"
-             <> " "
-  in addAttr stats
+             "S: --/--"
+             <+> "H: --/--"
+  in addAttr $ stats <> " "
+
+drawLeaderDamage :: Kind.COps -> State -> Discovery
+                 -> Maybe ActorId -> Int
+                 -> [Color.AttrChar]
+drawLeaderDamage cops s sdisco mleader width =
+  let addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
+      stats = case mleader of
+        Just leader ->
+          let b = getActorBody leader s
+              eqpAssocs = getEqpAssocs b s
+              damage = case Item.strongestSword cops eqpAssocs of
+                Just (_, (_, sw)) ->
+                  case Item.jkind sdisco sw of
+                    Just _ ->
+                      case jeffect sw of
+                        Hurt dice p -> tshow dice <> "+" <> tshow p
+                        _ -> ""
+                    Nothing -> "5d1"  -- TODO: ?
+                Nothing -> "5d1"  -- TODO; use the item 'fist'
+          in T.justifyLeft 8 ' '
+               ("D:" <> (if T.length damage < 6 then " " else "") <> damage)
+        Nothing -> "D: ---  "
+  in if T.length stats > width then [] else addAttr $ stats <> " "
 
 -- TODO: colour some texts using the faction's colour
 drawSelected :: StateClient -> State -> LevelId -> Maybe ActorId -> Int
@@ -257,7 +287,7 @@ drawSelected cli s drawnLevelId mleader width =
           in ( (bhp > 0, bsymbol /= '@', bsymbol, bcolor, aid)
              , Color.AttrChar sattr bsymbol )
       ours = actorNotProjAssocs (== sside cli) drawnLevelId s
-      maxViewed = width - 1
+      maxViewed = width - 2
       -- Don't show anything if the only actor on the level is the leader.
       -- He's clearly highlighted on the level map, anyway.
       star = let sattr = case ES.size selected of
@@ -270,13 +300,17 @@ drawSelected cli s drawnLevelId mleader width =
       viewed = take maxViewed $ sort $ map viewOurs ours
       addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
       allOurs = filter ((== sside cli) . bfid) $ EM.elems $ sactorD s
-      nameN n t = T.justifyLeft n ' '
-                  $ let firstWord = head $ T.words t
-                    in if T.length firstWord > n then "" else firstWord
-      fact = sfactionD s EM.! sside cli
-      ourName n = addAttr $ nameN n $ playerName $ gplayer fact
       party = if length allOurs <= 1
-              then ourName $ maxViewed + 1
+              then []
               else [star] ++ map snd viewed ++ addAttr " "
-                   ++ ourName (maxViewed - 1 - length viewed)
-  in party ++ addAttr (T.replicate (maxViewed + 1 - length party) " ")
+  in party
+
+drawPlayerName :: StateClient -> State -> Int
+               -> [Color.AttrChar]
+drawPlayerName cli s width =
+  let addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
+      fact = sfactionD s EM.! sside cli
+      nameN n t = let firstWord = head $ T.words t
+                  in if T.length firstWord > n then "" else firstWord
+      ourName = nameN (width - 1) $ playerName $ gplayer fact
+  in if T.length ourName > width then [] else addAttr $ ourName <> " "
