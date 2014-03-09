@@ -46,9 +46,9 @@ import Game.LambdaHack.Utils.Frequency
 targetStrategy :: forall m. MonadClient m
                => ActorId -> ActorId -> m (Strategy (Target, PathEtc))
 targetStrategy oldLeader aid = do
-  Kind.COps{ cotile=cotile@Kind.Ops{ouniqGroup}
-           , coactor=Kind.Ops{okind}
-           , cofaction=Kind.Ops{okind=fokind} } <- getsState scops
+  cops@Kind.COps{ cotile=cotile@Kind.Ops{ouniqGroup}
+                , coactor=Kind.Ops{okind}
+                , cofaction=Kind.Ops{okind=fokind} } <- getsState scops
   modifyClient $ \cli -> cli {sbfsD = EM.delete aid (sbfsD cli)}
   b <- getsState $ getActorBody aid
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
@@ -77,6 +77,8 @@ targetStrategy oldLeader aid = do
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
   allFoes <- getsState $ actorNotProjAssocs (isAtWar fact) (blid b)
   dungeon <- getsState sdungeon
+  itemD <- getsState sitemD
+  disco <- getsClient sdisco
   -- TODO: we assume the actor eventually becomes a leader (or has the same
   -- set of abilities as the leader, anyway) and set his target accordingly.
   actorAbs <- actorAbilities aid (Just aid)
@@ -84,6 +86,22 @@ targetStrategy oldLeader aid = do
       nearbyFoes = filter (\(_, body) ->
                              chessDist (bpos body) (bpos b) < nearby) allFoes
       unknownId = ouniqGroup "unknown space"
+      fightsAgainstSpawners =
+        let escape = any lescape $ EM.elems dungeon
+            isSpawner = isSpawnFact fact
+        in escape && not isSpawner
+      itemUsefulness item =
+        case jkind disco item of
+          Nothing -> -- TODO: 30  -- experimenting is fun
+             -- for now, cheating:
+             effectToBenefit cops b (jeffect item)
+          Just _ki -> effectToBenefit cops b $ jeffect item
+      desirableItem item k | fightsAgainstSpawners = itemUsefulness item /= 0
+                                                     || itemPrice (item, k) > 0
+                           | otherwise = itemUsefulness item /= 0
+      desirableBag bag = any (\(iid, k) -> desirableItem (itemD EM.! iid) k)
+                         $ EM.assocs bag
+      desirable (_, (_, bag)) = desirableBag bag
       -- TODO: make more common when weak ranged foes preferred, etc.
       focused = bspeed b < speedNormal
       canSmell = asmell $ okind $ bkind b
@@ -117,7 +135,7 @@ targetStrategy oldLeader aid = do
                 citems <- if Ability.Pickup `elem` actorAbs
                           then closestItems aid
                           else return []
-                case citems of
+                case filter desirable citems of
                   [] -> do
                     upos <- closestUnknown aid
                     case upos of
@@ -187,7 +205,7 @@ targetStrategy oldLeader aid = do
              -- to equally interesting, but perhaps a bit closer targets,
              -- most probably already targeted by other actors.
              || (Ability.Pickup `notElem` actorAbs  -- closestItems
-                 || EM.null (lvl `atI` pos))
+                 || not (desirableBag (lvl `atI` pos)))
                 && (not canSmell  -- closestSmell
                     || pos == bpos b  -- in case server resends deleted smell
                     || let sml =
@@ -243,7 +261,6 @@ actionStrategy :: forall m. MonadClient m
                => ActorId -> m (Strategy CmdTakeTimeSer)
 actionStrategy aid = do
   cops <- getsState scops
-  disco <- getsClient sdisco
   btarget <- getsClient $ getTarget aid
   b@Actor{bpos, blid} <- getsState $ getActorBody aid
   invAssocs <- getsState $ getInvAssocs b
@@ -272,7 +289,7 @@ actionStrategy aid = do
                                    else triggerFreq aid
       aFrequency Ability.Ranged  = rangedFreq aid
       aFrequency Ability.Tools   = if not foeVisible then return mzero
-                                   else toolsFreq disco aid
+                                   else toolsFreq aid
       aFrequency Ability.Chase   = if not foeVisible then return mzero
                                    else chaseFreq
       aFrequency ab              = assert `failure` "unexpected ability"
@@ -326,12 +343,32 @@ track aid = do
 -- TODO: pick up best weapons first
 pickup :: MonadClient m => ActorId -> m (Strategy CmdTakeTimeSer)
 pickup aid = do
+  cops@Kind.COps{corule} <- getsState scops
   body@Actor{bpos, blid} <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
+  dungeon <- getsState sdungeon
+  itemD <- getsState sitemD
+  disco <- getsClient sdisco
   lvl <- getLevel blid
-  case EM.minViewWithKey $ lvl `atI` bpos of
-    Just ((iid, k), _) -> do  -- pick up first item
-      item <- getsState $ getItemBody iid
+  let fightsAgainstSpawners =
+        let escape = any lescape $ EM.elems dungeon
+            isSpawner = isSpawnFact fact
+        in escape && not isSpawner
+      itemUsefulness item =
+        case jkind disco item of
+          Nothing -> -- TODO: 30  -- experimenting is fun
+             -- for now, cheating:
+             effectToBenefit cops body (jeffect item)
+          Just _ki -> effectToBenefit cops body $ jeffect item
+      desirableItem item k | fightsAgainstSpawners = itemUsefulness item /= 0
+                                                     || itemPrice (item, k) > 0
+                           | otherwise = itemUsefulness item /= 0
+      mapDesirable (iid, k) = let item = itemD EM.! iid
+                              in if desirableItem item k
+                                 then Just (iid, item, k)
+                                 else Nothing
+  case mapMaybe mapDesirable $ EM.assocs $ lvl `atI` bpos of
+    (iid, item, k) : _ -> do  -- pick up first desirable item, if any
       slots <- getsClient sslots
       freeSlot <- getsClient sfreeSlot
       let l = if jsymbol item == '$' then Just $ SlotChar '$' else Nothing
@@ -343,8 +380,7 @@ pickup aid = do
                 , sfreeSlot = max l2 (sfreeSlot cli) }
           return $! returN "pickup" $ PickupSer aid iid k
         Nothing -> assert `failure` fact  -- TODO: return mzero  -- PickupOverfull
-    Nothing -> do
-      cops@Kind.COps{corule} <- getsState scops
+    [] -> do
       let RuleKind{ritemEqp} = Kind.stdRuleset corule
       invAssocs <- getsState $ getInvAssocs body
       eqpAssocs <- getsState $ getEqpAssocs body
@@ -519,10 +555,10 @@ rangedFreq aid = do
     _ -> return $! toFreq "throwFreq: no enemy target" []
 
 -- Tools use requires significant intelligence and sometimes literacy.
-toolsFreq :: MonadClient m
-          => Discovery -> ActorId -> m (Frequency CmdTakeTimeSer)
-toolsFreq disco aid = do
+toolsFreq :: MonadClient m => ActorId -> m (Frequency CmdTakeTimeSer)
+toolsFreq aid = do
   cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  disco <- getsClient sdisco
   b@Actor{bkind, bpos, blid} <- getsState $ getActorBody aid
   invBag <- getsState $ getInvBag b
   lvl <- getLevel blid
@@ -693,8 +729,8 @@ effectToBenefit Kind.COps{coactor=Kind.Ops{okind}} b eff =
     (Effect.CallFriend p) -> p * 100
     Effect.Summon{} -> 1               -- may or may not spawn a friendly
     (Effect.CreateItem p) -> p * 20
-    Effect.ApplyPerfume -> 0
-    Effect.Regeneration{} -> 0         -- bigger benefit from carrying around
+    Effect.ApplyPerfume -> 1           -- TODO: tweak vs smell mechanics
+    Effect.Regeneration p -> p
     Effect.Searching{} -> 0
-    Effect.Ascend{} -> 0               -- change levels sensibly, in teams
+    Effect.Ascend{} -> 1               -- change levels sensibly, in teams
     Effect.Escape{} -> 10000           -- AI wants to win; spawners to guard

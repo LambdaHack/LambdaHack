@@ -11,7 +11,7 @@ module Game.LambdaHack.Common.ActorState
   , getCarriedAssocs, getEqpAssocs, getInvAssocs, getFloorAssocs
   , actorContainer, actorContainerB
   , tryFindHeroK, foesAdjacent
-  , allSlots, assignSlot, slotLabel
+  , allSlots, assignSlot, slotLabel, itemPrice
   ) where
 
 import Control.Exception.Assert.Sugar
