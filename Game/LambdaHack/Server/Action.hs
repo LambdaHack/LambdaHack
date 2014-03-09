@@ -237,6 +237,7 @@ registerScore status mbody fid = do
   date <- liftIO getClockTime
   DebugModeSer{sdifficultySer} <- getsServer sdebugSer
   factionD <- getsState sfactionD
+  dungeon <- getsState sdungeon
   let path = dataDir </> scoresFile
       saveScore (ntable, _) =
         liftIO $ encodeEOF path (ntable :: HighScore.ScoreTable)
@@ -248,9 +249,13 @@ registerScore status mbody fid = do
       ourVic (fi, fa) | isAllied fact fi = Just $ gvictims fa
                       | otherwise = Nothing
       ourVictims = EM.unionsWith (+) $ mapMaybe ourVic $ EM.assocs factionD
+      fightsAgainstSpawners =
+        let escape = any lescape $ EM.elems dungeon
+            isSpawner = isSpawnFact fact
+        in escape && not isSpawner
   maybe skip saveScore $
     HighScore.register table total time status date diff
-                       ourVictims theirVictims
+                       ourVictims theirVictims fightsAgainstSpawners
 
 resetSessionStart :: MonadServer m => m ()
 resetSessionStart = do

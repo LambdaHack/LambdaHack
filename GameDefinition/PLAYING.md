@@ -230,9 +230,13 @@ When the last hero dies, the game ends.
 On Winning and Dying
 --------------------
 
-You win the game if you escape the dungeon alive (or eliminate
-all opposition, in some game modes). Your score is
-the sum of all gold you've plundered plus 100 gold pieces for each gem.
+You win the game if you escape the dungeon alive or eliminate all opposition.
+If you escape the dungeon, your score is the sum of all gold
+you've plundered, plus 100 gold pieces for each gem, minus 100 gold
+for each hero you lost. If the game mode offers you no escape
+and so your goal is to eliminate you foes completely, your score is
+100 gold for each opponent killed, plus a bonus if you manage
+to kill all quickly.
 
 If all heroes die, your score is halved. You are free to start again
 from a different entrance to the dungeon, but all your previous wealth

@@ -83,26 +83,35 @@ insertPos s (ScoreTable table) =
 
 -- | Register a new score in a score table.
 register :: ScoreTable  -- ^ old table
-         -> Int         -- ^ the total score. not halved yet
+         -> Int         -- ^ the total value of faction items
          -> Time        -- ^ game time spent
          -> Status      -- ^ reason of the game interruption
          -> ClockTime   -- ^ current date
          -> Int         -- ^ difficulty level
          -> EM.EnumMap (Kind.Id ActorKind) Int  -- ^ allies lost
          -> EM.EnumMap (Kind.Id ActorKind) Int  -- ^ foes killed
+         -> Bool        -- ^ whether the faction fights against spawners
          -> Maybe (ScoreTable, Int)
 register table total time status@Status{stOutcome} date difficulty
-         ourVictims theirVictims =
-  let pUnscaled = if stOutcome `elem` [Killed, Defeated, Restart]
-                  then (total + 1) `div` 2
-                  else if stOutcome == Conquer
-                       then let turnsSpent = timeFit time timeTurn
-                                speedup = 10000 - 5 * turnsSpent
-                                bonus = sqrt $ fromIntegral speedup :: Double
-                            in 10 + floor bonus
-                       else total
+         ourVictims theirVictims fightsAgainstSpawners =
+  let pUnscaled =
+        if fightsAgainstSpawners
+        -- Heroes gather loot and mourn their victims.
+        then total - 100 * EM.size ourVictims
+        -- Spawners or skirmishers get no bonus from loot and no malus
+        -- from loses, but try to kill opponents fast and blodily.
+        else let turnsSpent = timeFit time timeTurn
+                 speedup = 10000 - 5 * turnsSpent
+                 bonus = sqrt $ fromIntegral speedup :: Double
+             in 100 * EM.size theirVictims
+                + if stOutcome == Conquer
+                  then 10 + floor bonus
+                  else 0
+      pHalved = if stOutcome `elem` [Killed, Defeated, Restart]
+                then pUnscaled `divUp` 2
+                else pUnscaled
       points = (round :: Double -> Int)
-               $ fromIntegral pUnscaled * 1.5 ^^ difficulty
+               $ fromIntegral pHalved * 1.5 ^^ difficulty
       negTime = timeNegate time
       score = ScoreRecord{..}
   in if points > 0 then Just $ insertPos score table else Nothing

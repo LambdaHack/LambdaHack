@@ -332,23 +332,32 @@ scoreToSlideshow :: MonadClientUI m => Int -> Status -> m Slideshow
 scoreToSlideshow total status = do
   fid <- getsClient sside
   fact <- getsState $ (EM.! fid) . sfactionD
+  -- TODO: Re-read the table in case it's changed by a concurrent game.
+  -- TODO: we should do this, and make sure we do that after server
+  -- saved the updated score table, and not register, but read from it.
+  -- Otherwise the score is not accurate, e.g., the number of victims.
   table <- getsState shigh
   time <- getsState stime
   date <- liftIO getClockTime
   scurDifficulty <- getsClient scurDifficulty
   factionD <- getsState sfactionD
-  let theirVic (fi, fa) | isAtWar fact fi = Just $ gvictims fa
+  dungeon <- getsState sdungeon
+  let showScore (ntable, pos) = HighScore.highSlideshow ntable pos status
+      diff | not $ playerUI $ gplayer fact = 0
+           | otherwise = scurDifficulty
+      theirVic (fi, fa) | isAtWar fact fi = Just $ gvictims fa
                         | otherwise = Nothing
       theirVictims = EM.unionsWith (+) $ mapMaybe theirVic $ EM.assocs factionD
       ourVic (fi, fa) | isAllied fact fi = Just $ gvictims fa
                       | otherwise = Nothing
       ourVictims = EM.unionsWith (+) $ mapMaybe ourVic $ EM.assocs factionD
-  let showScore (ntable, pos) = HighScore.highSlideshow ntable pos status
-      diff | not $ playerUI $ gplayer fact = 0
-           | otherwise = scurDifficulty
+      fightsAgainstSpawners =
+        let escape = any lescape $ EM.elems dungeon
+            isSpawner = isSpawnFact fact
+        in escape && not isSpawner
   return $! maybe mempty showScore
             $ HighScore.register table total time status date diff
-                                 ourVictims theirVictims
+                                 ourVictims theirVictims fightsAgainstSpawners
 
 restoreGame :: MonadClient m => m (Maybe (State, StateClient))
 restoreGame = do
