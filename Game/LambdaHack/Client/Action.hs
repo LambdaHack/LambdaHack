@@ -336,11 +336,19 @@ scoreToSlideshow total status = do
   time <- getsState stime
   date <- liftIO getClockTime
   scurDifficulty <- getsClient scurDifficulty
+  factionD <- getsState sfactionD
+  let theirVic (fi, fa) | isAtWar fact fi = Just $ gvictims fa
+                        | otherwise = Nothing
+      theirVictims = EM.unionsWith (+) $ mapMaybe theirVic $ EM.assocs factionD
+      ourVic (fi, fa) | isAllied fact fi = Just $ gvictims fa
+                      | otherwise = Nothing
+      ourVictims = EM.unionsWith (+) $ mapMaybe ourVic $ EM.assocs factionD
   let showScore (ntable, pos) = HighScore.highSlideshow ntable pos status
       diff | not $ playerUI $ gplayer fact = 0
            | otherwise = scurDifficulty
   return $! maybe mempty showScore
             $ HighScore.register table total time status date diff
+                                 ourVictims theirVictims
 
 restoreGame :: MonadClient m => m (Maybe (State, StateClient))
 restoreGame = do

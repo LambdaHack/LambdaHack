@@ -136,6 +136,7 @@ createFactions Kind.COps{cofaction=Kind.Ops{opick}} players = do
         let gdipl = EM.empty  -- fixed below
             gquit = Nothing
             gleader = Nothing
+            gvictims = EM.empty
         return $! Faction{..}
   lUI <- mapM rawCreate $ filter playerUI $ playersList players
   lnoUI <- mapM rawCreate $ filter (not . playerUI) $ playersList players

@@ -5,8 +5,10 @@ module Game.LambdaHack.Common.HighScore
   ) where
 
 import Data.Binary
+import qualified Data.EnumMap.Strict as EM
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Game.LambdaHack.Common.Kind as Kind
 import qualified NLP.Miniutter.English as MU
 import System.Time
 import Text.Printf
@@ -15,15 +17,18 @@ import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Content.ActorKind
 
 -- | A single score record. Records are ordered in the highscore table,
 -- from the best to the worst, in lexicographic ordering wrt the fields below.
 data ScoreRecord = ScoreRecord
-  { points     :: !Int        -- ^ the score
-  , negTime    :: !Time       -- ^ game time spent (negated, so less better)
-  , date       :: !ClockTime  -- ^ date of the last game interruption
-  , status     :: !Status     -- ^ reason of the game interruption
-  , difficulty :: !Int        -- ^ difficulty of the game
+  { points       :: !Int        -- ^ the score
+  , negTime      :: !Time       -- ^ game time spent (negated, so less better)
+  , date         :: !ClockTime  -- ^ date of the last game interruption
+  , status       :: !Status     -- ^ reason of the game interruption
+  , difficulty   :: !Int        -- ^ difficulty of the game
+  , ourVictims   :: !(EM.EnumMap (Kind.Id ActorKind) Int)  -- ^ allies lost
+  , theirVictims :: !(EM.EnumMap (Kind.Id ActorKind) Int)  -- ^ foes killed
   }
   deriving (Eq, Ord)
 
@@ -42,15 +47,18 @@ showScore (pos, score) =
       curDate = calendarTimeToString . toUTCTime . date $ score
       turns = - (negTime score `timeFit` timeTurn)
       diff = 5 - difficulty score
+      victims :: String
+      victims = printf ", killed %d, lost %d" (EM.size $ theirVictims score)
+                                              (EM.size $ ourVictims score)
       diffText :: String
       diffText | diff == 5 = ""
-               | otherwise = printf " (difficulty %d)" diff
+               | otherwise = printf ", difficulty %d" diff
      -- TODO: the spaces at the end are hand-crafted. Remove when display
      -- of overlays adds such spaces automatically.
   in map T.pack
        [ ""
-       , printf "%4d. %6d  %s%s"
-                pos (points score) died diffText
+       , printf "%4d. %6d  %s%s%s"
+                pos (points score) died victims diffText
        , "              " ++ printf "after %d turns on %s." turns curDate
        ]
 
@@ -80,8 +88,11 @@ register :: ScoreTable  -- ^ old table
          -> Status      -- ^ reason of the game interruption
          -> ClockTime   -- ^ current date
          -> Int         -- ^ difficulty level
+         -> EM.EnumMap (Kind.Id ActorKind) Int  -- ^ allies lost
+         -> EM.EnumMap (Kind.Id ActorKind) Int  -- ^ foes killed
          -> Maybe (ScoreTable, Int)
-register table total time status@Status{stOutcome} date difficulty =
+register table total time status@Status{stOutcome} date difficulty
+         ourVictims theirVictims =
   let pUnscaled = if stOutcome `elem` [Killed, Defeated, Restart]
                   then (total + 1) `div` 2
                   else if stOutcome == Conquer
@@ -129,6 +140,8 @@ highSlideshow table pos status =
           Defeated ->
             ("your futile efforts", MU.PlEtc, "(score halved)")
           Camping ->
+            -- TODO: this is only according to the limited player knowledge;
+            -- the final score can be different; say this somewhere
             ("your valiant exploits", MU.PlEtc, "(unless you are slain)")
           Conquer ->
             ("your ruthless victory", MU.Sg3rd,
@@ -149,13 +162,15 @@ highSlideshow table pos status =
   in toSlideshow True $ map ([msg] ++) $ showCloseScores pos table height
 
 instance Binary ScoreRecord where
-  put (ScoreRecord p n (TOD cs cp) s difficulty) = do
+  put (ScoreRecord p n (TOD cs cp) s difficulty ourVictims theirVictims) = do
     put p
     put n
     put cs
     put cp
     put s
     put difficulty
+    put ourVictims
+    put theirVictims
   get = do
     p <- get
     n <- get
@@ -163,4 +178,6 @@ instance Binary ScoreRecord where
     cp <- get
     s <- get
     difficulty <- get
-    return $! ScoreRecord p n (TOD cs cp) s difficulty
+    ourVictims <- get
+    theirVictims <- get
+    return $! ScoreRecord p n (TOD cs cp) s difficulty ourVictims theirVictims

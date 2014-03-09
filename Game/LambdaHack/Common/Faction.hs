@@ -13,6 +13,7 @@ import Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ModeKind
 
@@ -20,13 +21,14 @@ import Game.LambdaHack.Content.ModeKind
 type FactionDict = EM.EnumMap FactionId Faction
 
 data Faction = Faction
-  { gkind   :: !(Kind.Id FactionKind)  -- ^ the kind of the faction
-  , gname   :: !Text                   -- ^ individual name
-  , gcolor  :: !Color.Color            -- ^ color of actors or their frames
-  , gplayer :: !Player                 -- ^ the player spec for this faction
-  , gdipl   :: !Dipl                   -- ^ diplomatic mode
-  , gquit   :: !(Maybe Status)         -- ^ cause of game end/exit
-  , gleader :: !(Maybe ActorId)        -- ^ the leader of the faction, if any
+  { gkind    :: !(Kind.Id FactionKind)  -- ^ the kind of the faction
+  , gname    :: !Text                   -- ^ individual name
+  , gcolor   :: !Color.Color            -- ^ color of actors or their frames
+  , gplayer  :: !Player                 -- ^ the player spec for this faction
+  , gdipl    :: !Dipl                   -- ^ diplomatic mode
+  , gquit    :: !(Maybe Status)         -- ^ cause of game end/exit
+  , gleader  :: !(Maybe ActorId)        -- ^ the leader of the faction, if any
+  , gvictims :: !(EM.EnumMap (Kind.Id ActorKind) Int)  -- ^ members killed
   }
   deriving (Show, Eq)
 
@@ -97,6 +99,7 @@ instance Binary Faction where
     put gdipl
     put gquit
     put gleader
+    put gvictims
   get = do
     gkind <- get
     gname <- get
@@ -105,6 +108,7 @@ instance Binary Faction where
     gdipl <- get
     gquit <- get
     gleader <- get
+    gvictims <- get
     return $! Faction{..}
 
 instance Binary Diplomacy where

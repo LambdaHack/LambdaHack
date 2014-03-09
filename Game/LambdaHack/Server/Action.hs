@@ -236,12 +236,21 @@ registerScore status mbody fid = do
   time <- getsState stime
   date <- liftIO getClockTime
   DebugModeSer{sdifficultySer} <- getsServer sdebugSer
+  factionD <- getsState sfactionD
   let path = dataDir </> scoresFile
       saveScore (ntable, _) =
         liftIO $ encodeEOF path (ntable :: HighScore.ScoreTable)
       diff | not $ playerUI $ gplayer fact = 0
            | otherwise = sdifficultySer
-  maybe skip saveScore $ HighScore.register table total time status date diff
+      theirVic (fi, fa) | isAtWar fact fi = Just $ gvictims fa
+                        | otherwise = Nothing
+      theirVictims = EM.unionsWith (+) $ mapMaybe theirVic $ EM.assocs factionD
+      ourVic (fi, fa) | isAllied fact fi = Just $ gvictims fa
+                      | otherwise = Nothing
+      ourVictims = EM.unionsWith (+) $ mapMaybe ourVic $ EM.assocs factionD
+  maybe skip saveScore $
+    HighScore.register table total time status date diff
+                       ourVictims theirVictims
 
 resetSessionStart :: MonadServer m => m ()
 resetSessionStart = do
