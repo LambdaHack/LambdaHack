@@ -10,6 +10,7 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.List
+import Data.Maybe
 
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
@@ -52,6 +53,7 @@ cmdAtomicSem cmd = case cmd of
   LeadFactionA fid source target -> leadFactionA fid source target
   DiplFactionA fid1 fid2 fromDipl toDipl ->
     diplFactionA fid1 fid2 fromDipl toDipl
+  RecordKillA aid k -> recordKillA aid k
   AlterTileA lid p fromTile toTile -> alterTileA lid p fromTile toTile
   SearchTileA _ _ fromTile toTile ->
     assert (fromTile /= toTile) $ return ()  -- only for clients
@@ -307,6 +309,18 @@ diplFactionA fid1 fid2 fromDipl toDipl =
     let adj fid fact = fact {gdipl = EM.insert fid toDipl (gdipl fact)}
     modifyState $ updateFactionBody fid1 (adj fid2)
     modifyState $ updateFactionBody fid2 (adj fid1)
+
+-- | Record a given number (usually just 1, or -1 for undo) of actor kills
+-- for score calculation.
+recordKillA :: MonadAction m => ActorId -> Int -> m ()
+recordKillA aid k = do
+  b <- getsState $ getActorBody aid
+  assert (not (bproj b) `blame` (aid, b)) skip
+  let alterKind mn = let n = fromMaybe 0 mn + k
+                     in if n == 0 then Nothing else Just n
+      adjFact fact = fact {gvictims = EM.alter alterKind (bkind b)
+                                      $ gvictims fact}
+  modifyState $ updateFactionBody (bfid b) adjFact
 
 -- | Alter an attribute (actually, the only, the defining attribute)
 -- of a visible tile. This is similar to e.g., @TrajectoryActorA@.

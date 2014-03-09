@@ -172,6 +172,9 @@ effectDominate source target = do
     deduceKilled tb
     ais <- getsState $ getCarriedAssocs tb
     execCmdAtomic $ LoseActorA target tb ais
+    -- TODO: if domination stays permanent (undecided yet), perhaps increase
+    -- kill count here or record original factions and increase count only
+    -- when the recreated actor really dies.
     let bNew = tb {bfid = bfid sb}
     execCmdAtomic $ CreateActorA target bNew ais
     leaderOld <- getsState $ gleader . (EM.! bfid sb) . sfactionD

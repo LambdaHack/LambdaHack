@@ -36,6 +36,7 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
+
 import Game.LambdaHack.Content.ItemKind as ItemKind
 import Game.LambdaHack.Content.TileKind as TileKind
 
@@ -72,6 +73,7 @@ data CmdAtomic =
   | QuitFactionA !FactionId !(Maybe Actor) !(Maybe Status) !(Maybe Status)
   | LeadFactionA !FactionId !(Maybe ActorId) !(Maybe ActorId)
   | DiplFactionA !FactionId !FactionId !Diplomacy !Diplomacy
+  | RecordKillA !ActorId !Int
   -- Alter map.
   | AlterTileA !LevelId !Point !(Kind.Id TileKind) !(Kind.Id TileKind)
   | SearchTileA !ActorId !Point !(Kind.Id TileKind) !(Kind.Id TileKind)
@@ -144,6 +146,7 @@ undoCmdAtomic cmd = case cmd of
   LeadFactionA fid source target -> Just $ LeadFactionA fid target source
   DiplFactionA fid1 fid2 fromDipl toDipl ->
     Just $ DiplFactionA fid1 fid2 toDipl fromDipl
+  RecordKillA aid k -> Just $ RecordKillA aid (-k)
   AlterTileA lid p fromTile toTile -> Just $ AlterTileA lid p toTile fromTile
   SearchTileA aid p fromTile toTile -> Just $ SearchTileA aid p toTile fromTile
   SpotTileA lid ts -> Just $ LoseTileA lid ts

@@ -82,6 +82,7 @@ posCmdAtomic cmd = case cmd of
   QuitFactionA{} -> return PosAll
   LeadFactionA fid _ _ -> return $! PosFidAndSer fid
   DiplFactionA{} -> return PosAll
+  RecordKillA aid _ -> singleFidAndAid aid
   AlterTileA lid p _ _ -> return $! PosSight lid [p]
   SearchTileA aid p _ _ -> do
     (lid, pos) <- posOfAid aid
@@ -144,6 +145,11 @@ posProjBody body = return $!
   if bproj body
   then PosSight (blid body) [bpos body]
   else PosFidAndSight (bfid body) (blid body) [bpos body]
+
+singleFidAndAid :: MonadActionRO m => ActorId -> m PosAtomic
+singleFidAndAid aid = do
+  body <- getsState $ getActorBody aid
+  return $! PosFidAndSight (bfid body) (blid body) [bpos body]
 
 singleAid :: MonadActionRO m => ActorId -> m PosAtomic
 singleAid aid = do
