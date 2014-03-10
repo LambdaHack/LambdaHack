@@ -70,10 +70,10 @@ xctestCampaign-medium:
 	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 280 --dumpInitRngs --gameMode testCampaign --difficulty 1 > /tmp/stdtest.log
 
 xctestSkirmish-long:
-	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 580 --dumpInitRngs --gameMode testSkirmish > /tmp/stdtest.log
+	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 58 --dumpInitRngs --gameMode testSkirmish > /tmp/stdtest.log
 
 xctestSkirmish-medium:
-	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 280 --dumpInitRngs --gameMode testSkirmish > /tmp/stdtest.log
+	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 28 --dumpInitRngs --gameMode testSkirmish > /tmp/stdtest.log
 
 xctestBattle-long:
 	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 580 --dumpInitRngs --gameMode testBattle --difficulty 1 > /tmp/stdtest.log
@@ -82,10 +82,10 @@ xctestBattle-medium:
 	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 280 --dumpInitRngs --gameMode testBattle --difficulty 1 > /tmp/stdtest.log
 
 xctestPvP-long:
-	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 580 --dumpInitRngs --gameMode testPvP > /tmp/stdtest.log
+	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 58 --dumpInitRngs --gameMode testPvP > /tmp/stdtest.log
 
 xctestPvP-medium:
-	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 280 --dumpInitRngs --gameMode testPvP > /tmp/stdtest.log
+	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 28 --dumpInitRngs --gameMode testPvP > /tmp/stdtest.log
 
 xctestCoop-long:
 	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 580 --dumpInitRngs --gameMode testCoop --difficulty 1 > /tmp/stdtest.log
@@ -183,10 +183,10 @@ testCampaign-medium:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 280 --dumpInitRngs --gameMode testCampaign --difficulty 1 > /tmp/stdtest.log
 
 testSkirmish-long:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 580 --dumpInitRngs --gameMode testSkirmish > /tmp/stdtest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 58 --dumpInitRngs --gameMode testSkirmish > /tmp/stdtest.log
 
 testSkirmish-medium:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 280 --dumpInitRngs --gameMode testSkirmish > /tmp/stdtest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 28 --dumpInitRngs --gameMode testSkirmish > /tmp/stdtest.log
 
 testBattle-long:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 580 --dumpInitRngs --gameMode testBattle --difficulty 1 > /tmp/stdtest.log
@@ -195,10 +195,10 @@ testBattle-medium:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 280 --dumpInitRngs --gameMode testBattle --difficulty 1 > /tmp/stdtest.log
 
 testPvP-long:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 580 --dumpInitRngs --gameMode testPvP > /tmp/stdtest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 58 --dumpInitRngs --gameMode testPvP > /tmp/stdtest.log
 
 testPvP-medium:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 280 --dumpInitRngs --gameMode testPvP > /tmp/stdtest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 28 --dumpInitRngs --gameMode testPvP > /tmp/stdtest.log
 
 testCoop-long:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 580 --dumpInitRngs --gameMode testCoop --difficulty 1 > /tmp/stdtest.log
