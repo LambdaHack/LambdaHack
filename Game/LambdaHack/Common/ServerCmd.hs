@@ -6,6 +6,7 @@ module Game.LambdaHack.Common.ServerCmd
   , FailureSer(..), showFailureSer
   ) where
 
+import Control.Exception.Assert.Sugar
 import Data.Text (Text)
 
 import Game.LambdaHack.Common.Actor
@@ -39,6 +40,7 @@ data CmdTakeTimeSer =
   | ApplySer !ActorId !ItemId !Container
   | TriggerSer !ActorId !(Maybe F.Feature)
   | SetTrajectorySer !ActorId
+  | PongHackSer
   deriving (Show, Eq)
 
 -- | The actor that starts performing the command (may be dead, after
@@ -66,6 +68,7 @@ aidCmdTakeTimeSer cmd = case cmd of
   ApplySer aid _ _ -> aid
   TriggerSer aid _ -> aid
   SetTrajectorySer aid -> aid
+  PongHackSer -> assert `failure` cmd
 
 data FailureSer =
     MoveNothing

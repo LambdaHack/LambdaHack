@@ -152,14 +152,17 @@ sendQueryAI fid aid = do
   writeTQueueAI (CmdQueryAI aid) $ fromServer conn
   readTQueueAI $ toServer conn
 
-sendPingAI :: MonadConnServer m => FactionId -> m ()
+sendPingAI :: (MonadAtomic m, MonadConnServer m)
+           => FactionId -> m ()
 sendPingAI fid = do
   conn <- getsDict $ snd . (EM.! fid)
   writeTQueueAI CmdPingAI $ fromServer conn
   -- debugPrint $ "AI client" <+> tshow fid <+> "pinged..."
   cmdHack <- readTQueueAI $ toServer conn
   -- debugPrint $ "AI client" <+> tshow fid <+> "responded."
-  assert (cmdHack == WaitSer (toEnum (-1))) skip
+  assert (case cmdHack of
+            PongHackSer -> True
+            _ -> False) skip
 
 sendUpdateUI :: MonadConnServer m => FactionId -> CmdClientUI -> m ()
 sendUpdateUI fid cmd = do
@@ -169,7 +172,8 @@ sendUpdateUI fid cmd = do
     Just (_, conn) ->
       writeTQueueUI cmd $ fromServer conn
 
-sendQueryUI :: MonadConnServer m => FactionId -> ActorId -> m CmdSer
+sendQueryUI :: (MonadAtomic m, MonadConnServer m)
+            => FactionId -> ActorId -> m CmdSer
 sendQueryUI fid aid = do
   cs <- getsDict $ fst . (EM.! fid)
   case cs of
@@ -188,7 +192,9 @@ sendPingUI fid = do
       -- debugPrint $ "UI client" <+> tshow fid <+> "pinged..."
       cmdHack <- readTQueueUI $ toServer conn
       -- debugPrint $ "UI client" <+> tshow fid <+> "responded."
-      assert (cmdHack == CmdTakeTimeSer (WaitSer (toEnum (-1)))) skip
+      assert (case cmdHack of
+                CmdTakeTimeSer PongHackSer -> True
+                _ -> False) skip
 
 -- TODO: refactor wrt Game.LambdaHack.Common.Save
 -- | Read the high scores table. Return the empty table if no file.

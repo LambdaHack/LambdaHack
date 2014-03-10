@@ -49,6 +49,7 @@ cmdSerSemTakeTime cmd = case cmd of
   ApplySer aid iid container -> applySer aid iid container
   TriggerSer aid mfeat -> triggerSer aid mfeat
   SetTrajectorySer aid -> setTrajectorySer aid
+  PongHackSer -> return ()
 
 debugArgs :: IO DebugModeSer
 debugArgs = do
