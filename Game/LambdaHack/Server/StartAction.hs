@@ -25,7 +25,6 @@ import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Flavour
-import qualified Game.LambdaHack.Common.HighScore as HighScore
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -170,10 +169,7 @@ gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}}
           sdebug mrandom = do
   dungeonSeed <- getSetGen $ sdungeonRng sdebug `mplus` mrandom
   srandom <- getSetGen $ smainRng sdebug `mplus` mrandom
-  scoreTable <- if sbenchmark sdebug then
-                  return HighScore.empty
-                else
-                  restoreScore cops
+  scoreTable <- restoreScore cops
   sstart <- getsServer sstart  -- copy over from previous game
   sallTime <- getsServer sallTime  -- copy over from previous game
   sheroNames <- getsServer sheroNames  -- copy over from previous game

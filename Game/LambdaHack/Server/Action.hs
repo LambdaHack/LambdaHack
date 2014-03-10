@@ -245,7 +245,7 @@ registerScore status mbody fid = do
             liftIO $ encodeEOF path (ntable :: HighScore.ScoreTable)
           else return ()
         else
-          debugPrint $ T.unlines
+          debugPrint $ T.intercalate "\n"
           $ HighScore.showScore (pos, HighScore.getRecord pos ntable)
       diff | not $ playerUI $ gplayer fact = difficultyDefault
            | otherwise = sdifficultySer

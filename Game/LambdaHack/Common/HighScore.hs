@@ -4,8 +4,11 @@ module Game.LambdaHack.Common.HighScore
   ( ScoreTable, empty, register, showScore, getRecord, highSlideshow
   ) where
 
+import Control.Exception.Assert.Sugar
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
+import Data.List
+import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -31,7 +34,7 @@ data ScoreRecord = ScoreRecord
   , ourVictims   :: !(EM.EnumMap (Kind.Id ActorKind) Int)  -- ^ allies lost
   , theirVictims :: !(EM.EnumMap (Kind.Id ActorKind) Int)  -- ^ foes killed
   }
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Show)
 
 -- TODO: move all to Text
 -- | Show a single high score, from the given ranking in the high score table.
@@ -58,15 +61,16 @@ showScore (pos, score) =
      -- TODO: the spaces at the end are hand-crafted. Remove when display
      -- of overlays adds such spaces automatically.
   in map T.pack
-       [ ""
-       , printf "%3d. %6d The %s team %s%s,"
+       [ printf "%3d. %6d The %s team %s%s,"
                 pos (points score) (T.unpack $ gplayerName score) died victims
        , "            "
          ++ printf "%safter %d turns on %s." diffText turns curDate
        ]
 
 getRecord :: Int -> ScoreTable -> ScoreRecord
-getRecord pos (ScoreTable table) = table !! pred pos
+getRecord pos (ScoreTable table) =
+  fromMaybe (assert `failure` (pos, table))
+  $ listToMaybe $ drop (pred pos) table
 
 -- | The list of scores, in decreasing order.
 newtype ScoreTable = ScoreTable [ScoreRecord]
@@ -131,7 +135,7 @@ tshowable :: ScoreTable -> Int -> Int -> [Text]
 tshowable (ScoreTable table) start height =
   let zipped    = zip [1..] table
       screenful = take height . drop (start - 1) $ zipped
-  in concatMap showScore screenful ++ [moreMsg]
+  in (intercalate ["\n"] $ map showScore screenful) ++ [moreMsg]
 
 -- | Produce a couple of renderings of the high scores table.
 showCloseScores :: Int -> ScoreTable -> Int -> [[Text]]
@@ -144,14 +148,14 @@ showCloseScores pos h height =
 -- | Generate a slideshow with the current and previous scores.
 highSlideshow :: ScoreTable -- ^ current score table
               -> Int        -- ^ position of the current score in the table
-              -> Status     -- ^ reason of the game interruption
               -> Slideshow
-highSlideshow table pos status =
+highSlideshow table pos =
   let (_, nlines) = normalLevelBound  -- TODO: query terminal size instead
       height = nlines `div` 3
+      posStatus = status $ getRecord pos table
       (subject, person, msgUnless) =
-        case stOutcome status of
-          Killed | stDepth status <= 1 ->
+        case stOutcome posStatus of
+          Killed | stDepth posStatus <= 1 ->
             ("your short-lived struggle", MU.Sg3rd, "(no bonus)")
           Killed ->
             ("your heroic deeds", MU.PlEtc, "(no bonus)")
@@ -177,7 +181,7 @@ highSlideshow table pos status =
         [ MU.SubjectVerb person MU.Yes subject "award you"
         , MU.Ordinal pos, "place"
         , msgUnless ]
-  in toSlideshow True $ map ([msg] ++) $ showCloseScores pos table height
+  in toSlideshow True $ map ([msg, "\n"] ++) $ showCloseScores pos table height
 
 instance Binary ScoreRecord where
   put (ScoreRecord p n (TOD cs cp) s difficulty gplayerName ourVictims theirVictims) = do
