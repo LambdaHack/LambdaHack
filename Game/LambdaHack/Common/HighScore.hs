@@ -48,8 +48,9 @@ showScore (pos, score) =
       turns = - (negTime score `timeFit` timeTurn)
       diff = 5 - difficulty score
       victims :: String
-      victims = printf ", killed %d, lost %d" (EM.size $ theirVictims score)
-                                              (EM.size $ ourVictims score)
+      victims = printf ", killed %d, lost %d"
+                       (sum (EM.elems $ theirVictims score))
+                       (sum (EM.elems $ ourVictims score))
       diffText :: String
       diffText | diff == 5 = ""
                | otherwise = printf ", difficulty %d" diff
@@ -94,27 +95,28 @@ register :: ScoreTable  -- ^ old table
          -> Maybe (ScoreTable, Int)
 register table total time status@Status{stOutcome} date difficulty
          ourVictims theirVictims fightsAgainstSpawners =
-  let pUnscaled =
+  let pBase =
+        if fightsAgainstSpawners
+        then total
+        else 100 * sum (EM.elems theirVictims)
+      pBonus =
         if fightsAgainstSpawners
         -- Heroes gather loot and mourn their victims.
-        then total - 100 * EM.size ourVictims
+        then max 0 (500 - 100 * sum (EM.elems ourVictims))
         -- Spawners or skirmishers get no bonus from loot and no malus
         -- from loses, but try to kill opponents fast and blodily.
         else let turnsSpent = timeFit time timeTurn
                  speedup = 10000 - 5 * turnsSpent
-                 bonus = sqrt $ fromIntegral speedup :: Double
-             in 100 * EM.size theirVictims
-                + if stOutcome == Conquer
-                  then 10 + floor bonus
-                  else 0
+             in max 0 (floor (sqrt $ fromIntegral speedup :: Double))
       pHalved = if stOutcome `elem` [Killed, Defeated, Restart]
-                then pUnscaled `divUp` 2
-                else pUnscaled
-      points = (round :: Double -> Int)
-               $ fromIntegral pHalved * 1.5 ^^ difficulty
+                -- No bonus and base score halved.
+                then pBase `divUp` 2
+                else pBase + pBonus
+      points = (ceiling :: Double -> Int)
+               $ fromIntegral pHalved * 1.5 ^^ (-difficulty)
       negTime = timeNegate time
       score = ScoreRecord{..}
-  in if points > 0 then Just $ insertPos score table else Nothing
+  in if pBase > 0 then Just $ insertPos score table else Nothing
 
 -- | Show a screenful of the high scores table.
 -- Parameter height is the number of (3-line) scores to be shown.

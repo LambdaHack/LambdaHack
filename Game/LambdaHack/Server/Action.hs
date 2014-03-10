@@ -246,7 +246,7 @@ registerScore status mbody fid = do
       theirVic (fi, fa) | isAtWar fact fi = Just $ gvictims fa
                         | otherwise = Nothing
       theirVictims = EM.unionsWith (+) $ mapMaybe theirVic $ EM.assocs factionD
-      ourVic (fi, fa) | isAllied fact fi = Just $ gvictims fa
+      ourVic (fi, fa) | isAllied fact fi || fi == fid = Just $ gvictims fa
                       | otherwise = Nothing
       ourVictims = EM.unionsWith (+) $ mapMaybe ourVic $ EM.assocs factionD
       fightsAgainstSpawners =
