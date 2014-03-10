@@ -341,11 +341,11 @@ dieSer aid b hit = do
     b2 <- getsState $ getActorBody aid
     execCmdAtomic $ DestroyActorA aid b2 []
   else do
+    execCmdAtomic $ RecordKillA aid 1
     electLeader (bfid b) (blid b) aid
     deduceKilled b
     dropAllItems aid b False
     b2 <- getsState $ getActorBody aid
-    execCmdAtomic $ RecordKillA aid 1
     execCmdAtomic $ DestroyActorA aid b2 []
 
 -- | Drop all actor's items. If the actor hits another actor and this
