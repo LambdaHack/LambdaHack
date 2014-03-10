@@ -256,7 +256,8 @@ addActor mk bfid pos lid hp stamina bsymbol bname bcolor time = do
   nU <- nUI
   -- If no UI factions, the difficulty applies to heroes (for testing).
   let diffHP | playerUI gplayer || nU == 0 && mk == heroKindId coactor =
-        (ceiling :: Double -> Int) $ fromIntegral hp * 1.5 ^^ sdifficultySer
+        (ceiling :: Double -> Int) $ fromIntegral hp
+                                     * 1.5 ^^ difficultyCoeff sdifficultySer
              | otherwise = hp
       kind = okind mk
       speed = aspeed kind

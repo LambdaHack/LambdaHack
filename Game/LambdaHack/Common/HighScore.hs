@@ -47,13 +47,13 @@ showScore (pos, score) =
         Restart  -> "resigned prematurely"
       curDate = calendarTimeToString . toUTCTime . date $ score
       turns = - (negTime score `timeFit` timeTurn)
-      diff = 5 - difficulty score
+      diff = difficulty score
       victims :: String
       victims = printf ", killed %d, lost %d"
                        (sum (EM.elems $ theirVictims score))
                        (sum (EM.elems $ ourVictims score))
       diffText :: String
-      diffText | diff == 5 = ""
+      diffText | diff == difficultyDefault = ""
                | otherwise = printf "difficulty %d, " diff
      -- TODO: the spaces at the end are hand-crafted. Remove when display
      -- of overlays adds such spaces automatically.
@@ -116,7 +116,7 @@ register table total time status@Status{stOutcome} date difficulty gplayerName
                 then pBase `divUp` 2
                 else pBase + pBonus
       points = (ceiling :: Double -> Int)
-               $ fromIntegral pHalved * 1.5 ^^ (-difficulty)
+               $ fromIntegral pHalved * 1.5 ^^ (- (difficultyCoeff difficulty))
       negTime = timeNegate time
       score = ScoreRecord{..}
   in if pBase > 0 then Just $ insertPos score table else Nothing

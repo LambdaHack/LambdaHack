@@ -343,7 +343,7 @@ scoreToSlideshow total status = do
   factionD <- getsState sfactionD
   dungeon <- getsState sdungeon
   let showScore (ntable, pos) = HighScore.highSlideshow ntable pos status
-      diff | not $ playerUI $ gplayer fact = 0
+      diff | not $ playerUI $ gplayer fact = difficultyDefault
            | otherwise = scurDifficulty
       theirVic (fi, fa) | isAtWar fact fi = Just $ gvictims fa
                         | otherwise = Nothing

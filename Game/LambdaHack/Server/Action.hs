@@ -241,7 +241,7 @@ registerScore status mbody fid = do
   let path = dataDir </> scoresFile
       saveScore (ntable, _) =
         liftIO $ encodeEOF path (ntable :: HighScore.ScoreTable)
-      diff | not $ playerUI $ gplayer fact = 0
+      diff | not $ playerUI $ gplayer fact = difficultyDefault
            | otherwise = sdifficultySer
       theirVic (fi, fa) | isAtWar fact fi = Just $ gvictims fa
                         | otherwise = Nothing

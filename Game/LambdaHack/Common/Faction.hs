@@ -3,6 +3,7 @@
 module Game.LambdaHack.Common.Faction
   ( FactionId, FactionDict, Faction(..), Diplomacy(..), Outcome(..), Status(..)
   , isHeroFact, isHorrorFact, isSpawnFact, isSummonFact, isAtWar, isAllied
+  , difficultyBound, difficultyDefault, difficultyCoeff
   ) where
 
 import Data.Binary
@@ -89,6 +90,16 @@ isAtWar fact fid = War == EM.findWithDefault Unknown fid (gdipl fact)
 -- | Check if factions are allied. Assumes symmetry.
 isAllied :: Faction -> FactionId -> Bool
 isAllied fact fid = Alliance == EM.findWithDefault Unknown fid (gdipl fact)
+
+difficultyBound :: Int
+difficultyBound = 9
+
+difficultyDefault :: Int
+difficultyDefault = 1 + (difficultyBound - 1) `div` 2
+
+-- The function is its own inverse.
+difficultyCoeff :: Int -> Int
+difficultyCoeff n = difficultyDefault - n
 
 instance Binary Faction where
   put Faction{..} = do

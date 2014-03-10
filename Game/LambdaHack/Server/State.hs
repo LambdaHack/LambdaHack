@@ -119,7 +119,7 @@ defDebugModeSer = DebugModeSer { sknowMap = False
                                , smainRng = Nothing
                                , sfovMode = Nothing
                                , snewGameSer = False
-                               , sdifficultySer = 0
+                               , sdifficultySer = difficultyDefault
                                , sdumpInitRngs = False
                                , ssavePrefixSer = Nothing
                                , sdbgMsgSer = False

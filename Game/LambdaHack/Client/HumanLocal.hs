@@ -73,9 +73,9 @@ failWith msg = do
 gameDifficultyCycle :: MonadClientUI m => m ()
 gameDifficultyCycle = do
   DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
-  let d = if sdifficultyCli <= -4 then 4 else sdifficultyCli - 1
+  let d = if sdifficultyCli > difficultyBound then 1 else sdifficultyCli + 1
   modifyClient $ \cli -> cli {sdebugCli = (sdebugCli cli) {sdifficultyCli = d}}
-  msgAdd $ "Next game difficulty set to" <+> tshow (5 - d) <> "."
+  msgAdd $ "Next game difficulty set to" <+> tshow d <> "."
 
 -- * PickLeader
 
@@ -397,9 +397,9 @@ mainMenuHuman = do
            ++ cmds
            ++ [ (fst ( revLookup HumanCmd.GameDifficultyCycle)
                      , "next game difficulty"
-                       <+> tshow (5 - sdifficultyCli)
+                       <+> tshow sdifficultyCli
                        <+> "(current"
-                       <+> tshow (5 - scurDifficulty) <> ")" ) ]
+                       <+> tshow scurDifficulty <> ")" ) ]
       bindingLen = 25
       bindings =  -- key bindings to display
         let fmt (k, d) = T.justifyLeft bindingLen ' '

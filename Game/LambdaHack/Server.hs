@@ -102,7 +102,7 @@ debugArgs = do
                     , sdebugCli = (sdebugCli debugSer) {snewGameCli = True}}
       parseArgs ("--difficulty" : s : rest) =
         let debugSer = parseArgs rest
-            diff = 5 - read s
+            diff = read s
         in debugSer { sdifficultySer = diff
                     , sdebugCli = (sdebugCli debugSer) {sdifficultyCli = diff}}
       parseArgs ("--stopAfter" : s : rest) =

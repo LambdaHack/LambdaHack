@@ -26,6 +26,7 @@ import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Color
 import qualified Game.LambdaHack.Common.Color as Color
+import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
@@ -275,7 +276,7 @@ defDebugModeCli = DebugModeCli
   , snoMore = False
   , snoAnim = Nothing
   , snewGameCli = False
-  , sdifficultyCli = 0
+  , sdifficultyCli = difficultyDefault
   , ssavePrefixCli = Nothing
   , sfrontendStd = False
   , sfrontendNo = False
