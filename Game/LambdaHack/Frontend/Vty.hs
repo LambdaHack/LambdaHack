@@ -53,7 +53,7 @@ fdisplay FrontendSession{svty} _ (Just rawSF) =
 -- | Input key via the frontend.
 nextEvent :: FrontendSession -> IO K.KM
 nextEvent sess@FrontendSession{svty, sdebugCli=DebugModeCli{snoMore}} =
-  if snoMore then return K.escKey
+  if snoMore then return K.spaceKey
   else do
     e <- next_event svty
     case e of

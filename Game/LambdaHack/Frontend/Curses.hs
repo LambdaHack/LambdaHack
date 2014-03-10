@@ -82,7 +82,7 @@ fdisplay FrontendSession{..}  _ (Just rawSF) = do
 -- | Input key via the frontend.
 nextEvent :: FrontendSession -> IO K.KM
 nextEvent FrontendSession{sdebugCli=DebugModeCli{snoMore}} =
-  if snoMore then return K.escKey
+  if snoMore then return K.spaceKey
   else keyTranslate `fmap` C.getKey C.refresh
 
 -- | Display a prompt, wait for any key.

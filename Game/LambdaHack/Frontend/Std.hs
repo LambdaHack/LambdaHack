@@ -43,7 +43,7 @@ fdisplay _ _ (Just rawSF) =
 -- | Input key via the frontend.
 nextEvent :: FrontendSession -> IO K.KM
 nextEvent FrontendSession{sdebugCli=DebugModeCli{snoMore}} =
-  if snoMore then return K.escKey
+  if snoMore then return K.spaceKey
   else do
     l <- BS.hGetLine SIO.stdin
     let c = case BS.uncons l of

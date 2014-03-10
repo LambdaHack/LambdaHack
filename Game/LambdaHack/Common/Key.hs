@@ -2,7 +2,8 @@
 -- | Frontend-independent keyboard input operations.
 module Game.LambdaHack.Common.Key
   ( Key(..), handleDir, dirAllKey
-  , moveBinding, mkKM, keyTranslate, Modifier(..), KM(..), showKM, escKey
+  , moveBinding, mkKM, keyTranslate
+  , Modifier(..), KM(..), showKM, escKey, spaceKey
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -86,6 +87,9 @@ showKM KM{modifier=NoModifier, key} = showKey key
 
 escKey :: KM
 escKey = KM {modifier = NoModifier, key = Esc}
+
+spaceKey :: KM
+spaceKey = KM {modifier = NoModifier, key = Space}
 
 dirKeypadKey :: [Key]
 dirKeypadKey = [Home, Up, PgUp, Right, PgDn, Down, End, Left]

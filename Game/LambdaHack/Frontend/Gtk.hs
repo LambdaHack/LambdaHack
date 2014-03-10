@@ -403,7 +403,7 @@ fpromptGetKey sess@FrontendSession{sdebugCli=DebugModeCli{snoMore}, ..}
     fs <- takeMVar sframeState
     displayAllFramesSync sess fs
     putMVar sframeState FNone
-    return K.escKey
+    return K.spaceKey
   else do
     km <- readChan schanKey
     case km of
