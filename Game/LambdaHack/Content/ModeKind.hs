@@ -43,7 +43,6 @@ data Player = Player
   , playerEntry    :: !LevelId  -- ^ level where the initial members start
   , playerInitial  :: !Int      -- ^ number of initial members
   , playerAiLeader :: !Bool     -- ^ is the leader under AI control?
-  , playerAiOther  :: !Bool     -- ^ are the others under AI control?
   , playerHuman    :: !Bool     -- ^ is the player considered human
                                 -- and so, e.g., eligible for a high score?
   , playerUI       :: !Bool     -- ^ does the faction have a UI client
@@ -67,7 +66,6 @@ instance Binary Player where
     put playerEntry
     put playerInitial
     put playerAiLeader
-    put playerAiOther
     put playerHuman
     put playerUI
   get = do
@@ -77,7 +75,6 @@ instance Binary Player where
     playerEntry <- get
     playerInitial <- get
     playerAiLeader <- get
-    playerAiOther <- get
     playerHuman <- get
     playerUI <- get
     return $! Player{..}

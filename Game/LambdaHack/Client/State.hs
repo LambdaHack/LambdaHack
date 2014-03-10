@@ -78,7 +78,7 @@ data StateClient = StateClient
   , smarkSmell   :: !Bool          -- ^ mark smell, if the leader can smell
   , smarkSuspect :: !Bool          -- ^ mark suspect features
   , scurDifficulty :: !Int         -- ^ current game difficulty level
-  , sslots        :: !ItemSlots    -- ^ map from slots to items
+  , sslots       :: !ItemSlots     -- ^ map from slots to items
   , sfreeSlot    :: !SlotChar      -- ^ first free slot
   , sdebugCli    :: !DebugModeCli  -- ^ client debugging mode
   }

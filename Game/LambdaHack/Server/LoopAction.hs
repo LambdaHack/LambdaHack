@@ -230,8 +230,7 @@ handleActors cmdSerSem lid = do
           fact = factionD EM.! side
           mleader = gleader fact
           aidIsLeader = mleader == Just aid
-          queryUI | aidIsLeader = not $ playerAiLeader $ gplayer fact
-                  | otherwise = not $ playerAiOther $ gplayer fact
+          queryUI = aidIsLeader && not (playerAiLeader $ gplayer fact)
           switchLeader cmdS = do
             -- TODO: check that the command is legal first, report and reject,
             -- but do not crash (currently server asserts things and crashes)

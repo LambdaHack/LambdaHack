@@ -253,7 +253,6 @@ playerHero = Player
   , playerEntry = toEnum (-1)
   , playerInitial = 3
   , playerAiLeader = False
-  , playerAiOther = True
   , playerHuman = True
   , playerUI = True
   }
@@ -271,7 +270,6 @@ playerMonster = Player
   , playerEntry = toEnum (-3)
   , playerInitial = 5
   , playerAiLeader = True
-  , playerAiOther = True
   , playerHuman = False
   , playerUI = False
   }
@@ -283,7 +281,6 @@ playerHorror = Player
   , playerEntry = toEnum (-1)
   , playerInitial = 0
   , playerAiLeader = True
-  , playerAiOther = True
   , playerHuman = False
   , playerUI = False
   }
