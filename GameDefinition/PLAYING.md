@@ -197,7 +197,7 @@ that can be specified on the command line when starting the game server.
 Use at your own peril! :) Of these, you may find the screensaver modes
 the least spoilery and the most fun, e.g.:
 
-    LambdaHack --newGame --noMore --maxFps 45 --savePrefix test --gameMode testCampaign --difficulty 1
+    LambdaHack --newGame --noMore --maxFps 45 --savePrefix test --automateAll --gameMode campaign --difficulty 1
 
 
 Monsters
