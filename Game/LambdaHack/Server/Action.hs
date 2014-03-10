@@ -160,9 +160,9 @@ sendPingAI fid = do
   -- debugPrint $ "AI client" <+> tshow fid <+> "pinged..."
   cmdHack <- readTQueueAI $ toServer conn
   -- debugPrint $ "AI client" <+> tshow fid <+> "responded."
-  assert (case cmdHack of
-            PongHackSer -> True
-            _ -> False) skip
+  case cmdHack of
+    PongHackSer ats -> mapM_ execAtomic ats
+    _ -> assert `failure` (fid, cmdHack)
 
 sendUpdateUI :: MonadConnServer m => FactionId -> CmdClientUI -> m ()
 sendUpdateUI fid cmd = do
@@ -182,7 +182,7 @@ sendQueryUI fid aid = do
       writeTQueueUI (CmdQueryUI aid) $ fromServer conn
       readTQueueUI $ toServer conn
 
-sendPingUI :: MonadConnServer m => FactionId -> m ()
+sendPingUI :: (MonadAtomic m, MonadConnServer m) => FactionId -> m ()
 sendPingUI fid = do
   cs <- getsDict $ fst . (EM.! fid)
   case cs of
@@ -192,9 +192,9 @@ sendPingUI fid = do
       -- debugPrint $ "UI client" <+> tshow fid <+> "pinged..."
       cmdHack <- readTQueueUI $ toServer conn
       -- debugPrint $ "UI client" <+> tshow fid <+> "responded."
-      assert (case cmdHack of
-                CmdTakeTimeSer PongHackSer -> True
-                _ -> False) skip
+      case cmdHack of
+        CmdTakeTimeSer (PongHackSer ats) -> mapM_ execAtomic ats
+        _ -> assert `failure` (fid, cmdHack)
 
 -- TODO: refactor wrt Game.LambdaHack.Common.Save
 -- | Read the high scores table. Return the empty table if no file.

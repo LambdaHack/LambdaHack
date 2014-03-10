@@ -10,6 +10,7 @@ import Control.Exception.Assert.Sugar
 import Data.Text (Text)
 
 import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.AtomicCmd
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Level
@@ -40,7 +41,7 @@ data CmdTakeTimeSer =
   | ApplySer !ActorId !ItemId !Container
   | TriggerSer !ActorId !(Maybe F.Feature)
   | SetTrajectorySer !ActorId
-  | PongHackSer
+  | PongHackSer [Atomic]
   deriving (Show, Eq)
 
 -- | The actor that starts performing the command (may be dead, after
@@ -68,7 +69,7 @@ aidCmdTakeTimeSer cmd = case cmd of
   ApplySer aid _ _ -> aid
   TriggerSer aid _ -> aid
   SetTrajectorySer aid -> aid
-  PongHackSer -> assert `failure` cmd
+  PongHackSer _ -> assert `failure` cmd
 
 data FailureSer =
     MoveNothing

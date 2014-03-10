@@ -47,7 +47,7 @@ cmdClientAISem cmd = case cmd of
     cmdC <- queryAI aid
     writeServer cmdC
   CmdPingAI ->
-    writeServer PongHackSer
+    writeServer $ PongHackSer []
 
 cmdClientUISem :: ( MonadAtomic m, MonadClientUI m
                   , MonadClientWriteServer CmdSer m )
@@ -72,7 +72,7 @@ cmdClientUISem cmd = case cmd of
     snoMore <- getsClient $ snoMore . sdebugCli
     when snoMore $ void $ displayMore ColorFull "Flushing frames."
     -- Return the ping.
-    writeServer $ CmdTakeTimeSer PongHackSer
+    writeServer $ CmdTakeTimeSer $ PongHackSer []
 
 -- | Wire together game content, the main loop of game clients,
 -- the main game loop assigned to this frontend (possibly containing
