@@ -355,10 +355,11 @@ scoreToSlideshow total status = do
         let escape = any lescape $ EM.elems dungeon
             isSpawner = isSpawnFact fact
         in escape && not isSpawner
-  return $! maybe mempty showScore
-            $ HighScore.register table total time status date diff
-                                 (playerName $ gplayer fact)
-                                 ourVictims theirVictims fightsAgainstSpawners
+      (pBase, rScore) =
+        HighScore.register table total time status date diff
+                           (playerName $ gplayer fact)
+                           ourVictims theirVictims fightsAgainstSpawners
+  return $! if pBase > 0 then showScore rScore else mempty
 
 restoreGame :: MonadClient m => m (Maybe (State, StateClient))
 restoreGame = do

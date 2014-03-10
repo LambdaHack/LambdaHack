@@ -98,7 +98,7 @@ register :: ScoreTable  -- ^ old table
          -> EM.EnumMap (Kind.Id ActorKind) Int  -- ^ allies lost
          -> EM.EnumMap (Kind.Id ActorKind) Int  -- ^ foes killed
          -> Bool        -- ^ whether the faction fights against spawners
-         -> Maybe (ScoreTable, Int)
+         -> (Int, (ScoreTable, Int))
 register table total time status@Status{stOutcome} date difficulty gplayerName
          ourVictims theirVictims fightsAgainstSpawners =
   let pBase =
@@ -123,7 +123,7 @@ register table total time status@Status{stOutcome} date difficulty gplayerName
                $ fromIntegral pSum * 1.5 ^^ (- (difficultyCoeff difficulty))
       negTime = timeNegate time
       score = ScoreRecord{..}
-  in if pBase > 0 then Just $ insertPos score table else Nothing
+  in (pBase, insertPos score table)
 
 -- | Show a screenful of the high scores table.
 -- Parameter height is the number of (3-line) scores to be shown.

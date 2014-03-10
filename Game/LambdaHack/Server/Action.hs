@@ -238,10 +238,12 @@ registerScore status mbody fid = do
   factionD <- getsState sfactionD
   dungeon <- getsState sdungeon
   let path = dataDir </> scoresFile
-      outputScore (ntable, pos) =
+      outputScore (pBase, (ntable, pos)) =
         -- If not human, probably debugging, so dump instead of registering.
         if playerHuman $ gplayer fact then
-          liftIO $ encodeEOF path (ntable :: HighScore.ScoreTable)
+          if pBase > 0 then
+            liftIO $ encodeEOF path (ntable :: HighScore.ScoreTable)
+          else return ()
         else
           debugPrint $ T.unlines
           $ HighScore.showScore (pos, HighScore.getRecord pos ntable)
@@ -257,10 +259,11 @@ registerScore status mbody fid = do
         let escape = any lescape $ EM.elems dungeon
             isSpawner = isSpawnFact fact
         in escape && not isSpawner
-  maybe skip outputScore $
-    HighScore.register table total time status date diff
-                       (playerName $ gplayer fact)
-                       ourVictims theirVictims fightsAgainstSpawners
+      registeredScore =
+        HighScore.register table total time status date diff
+                           (playerName $ gplayer fact)
+                           ourVictims theirVictims fightsAgainstSpawners
+  outputScore registeredScore
 
 resetSessionStart :: MonadServer m => m ()
 resetSessionStart = do
