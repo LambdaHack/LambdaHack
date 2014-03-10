@@ -220,7 +220,6 @@ registerScore status mbody fid = do
   cops@Kind.COps{corule} <- getsState scops
   assert (maybe True ((fid ==) . bfid) mbody) skip
   fact <- getsState $ (EM.! fid) . sfactionD
-  assert (playerHuman $ gplayer fact) skip
   total <- case mbody of
     Just body -> getsState $ snd . calculateTotal body
     Nothing -> case gleader fact of
@@ -239,8 +238,13 @@ registerScore status mbody fid = do
   factionD <- getsState sfactionD
   dungeon <- getsState sdungeon
   let path = dataDir </> scoresFile
-      saveScore (ntable, _) =
-        liftIO $ encodeEOF path (ntable :: HighScore.ScoreTable)
+      outputScore (ntable, pos) =
+        -- If not human, probably debugging, so dump instead of registering.
+        if playerHuman $ gplayer fact then
+          liftIO $ encodeEOF path (ntable :: HighScore.ScoreTable)
+        else
+          debugPrint $ T.unlines
+          $ HighScore.showScore (pos, HighScore.getRecord pos ntable)
       diff | not $ playerUI $ gplayer fact = difficultyDefault
            | otherwise = sdifficultySer
       theirVic (fi, fa) | isAtWar fact fi = Just $ gvictims fa
@@ -253,7 +257,7 @@ registerScore status mbody fid = do
         let escape = any lescape $ EM.elems dungeon
             isSpawner = isSpawnFact fact
         in escape && not isSpawner
-  maybe skip saveScore $
+  maybe skip outputScore $
     HighScore.register table total time status date diff
                        (playerName $ gplayer fact)
                        ourVictims theirVictims fightsAgainstSpawners
@@ -337,7 +341,6 @@ quitF mbody status fid = do
     _ -> do
       when (playerUI $ gplayer fact) $ do
         revealItems (Just fid) mbody
-      when (playerHuman $ gplayer fact) $ do
         registerScore status mbody fid
       execCmdAtomic $ QuitFactionA fid mbody oldSt $ Just status
       modifyServer $ \ser -> ser {squit = True}  -- end turn ASAP

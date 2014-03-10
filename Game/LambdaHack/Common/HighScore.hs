@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | High score table operations.
 module Game.LambdaHack.Common.HighScore
-  ( ScoreTable, empty, register, highSlideshow
+  ( ScoreTable, empty, register, showScore, getRecord, highSlideshow
   ) where
 
 import Data.Binary
@@ -64,6 +64,9 @@ showScore (pos, score) =
        , "             "
          ++ printf "%safter %d turns on %s." diffText turns curDate
        ]
+
+getRecord :: Int -> ScoreTable -> ScoreRecord
+getRecord pos (ScoreTable table) = table !! pred pos
 
 -- | The list of scores, in decreasing order.
 newtype ScoreTable = ScoreTable [ScoreRecord]
