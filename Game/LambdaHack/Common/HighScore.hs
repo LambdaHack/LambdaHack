@@ -61,7 +61,7 @@ showScore (pos, score) =
        [ ""
        , printf "%3d. %6d The %s team %s%s,"
                 pos (points score) (T.unpack $ gplayerName score) died victims
-       , "             "
+       , "            "
          ++ printf "%safter %d turns on %s." diffText turns curDate
        ]
 
@@ -103,23 +103,24 @@ register table total time status@Status{stOutcome} date difficulty gplayerName
          ourVictims theirVictims fightsAgainstSpawners =
   let pBase =
         if fightsAgainstSpawners
+        -- Heroes rejoice in loot and mourn their victims.
         then total
-        else 100 * sum (EM.elems theirVictims)
-      pBonus =
-        if fightsAgainstSpawners
-        -- Heroes gather loot and mourn their victims.
-        then max 0 (500 - 100 * sum (EM.elems ourVictims))
         -- Spawners or skirmishers get no bonus from loot and no malus
         -- from loses, but try to kill opponents fast and blodily.
         else let turnsSpent = timeFit time timeTurn
-                 speedup = 10000 - 5 * turnsSpent
-             in max 0 (floor (sqrt $ fromIntegral speedup :: Double))
-      pHalved = if stOutcome `elem` [Killed, Defeated, Restart]
-                -- No bonus and base score halved.
-                then pBase `divUp` 2
-                else pBase + pBonus
+                 speedup = max 0 $ 10000 - 3 * turnsSpent
+             in if EM.null theirVictims
+                then 0
+                else (floor (sqrt $ fromIntegral speedup :: Double))
+      pBonus =
+        if fightsAgainstSpawners
+        then max 0 (500 - 100 * sum (EM.elems ourVictims))
+        else 100 * sum (EM.elems theirVictims)
+      pSum = if stOutcome `elem` [Killed, Defeated, Restart]
+             then pBase
+             else pBase + pBonus
       points = (ceiling :: Double -> Int)
-               $ fromIntegral pHalved * 1.5 ^^ (- (difficultyCoeff difficulty))
+               $ fromIntegral pSum * 1.5 ^^ (- (difficultyCoeff difficulty))
       negTime = timeNegate time
       score = ScoreRecord{..}
   in if pBase > 0 then Just $ insertPos score table else Nothing
@@ -151,11 +152,11 @@ highSlideshow table pos status =
       (subject, person, msgUnless) =
         case stOutcome status of
           Killed | stDepth status <= 1 ->
-            ("your short-lived struggle", MU.Sg3rd, "(score halved)")
+            ("your short-lived struggle", MU.Sg3rd, "(no bonus)")
           Killed ->
-            ("your heroic deeds", MU.PlEtc, "(score halved)")
+            ("your heroic deeds", MU.PlEtc, "(no bonus)")
           Defeated ->
-            ("your futile efforts", MU.PlEtc, "(score halved)")
+            ("your futile efforts", MU.PlEtc, "(no bonus)")
           Camping ->
             -- TODO: this is only according to the limited player knowledge;
             -- the final score can be different; say this somewhere
@@ -171,7 +172,7 @@ highSlideshow table pos status =
              then "among the greatest heroes"
              else "")
           Restart ->
-            ("your abortive attempt", MU.Sg3rd, "(score halved)")
+            ("your abortive attempt", MU.Sg3rd, "(no bonus)")
       msg = makeSentence
         [ MU.SubjectVerb person MU.Yes subject "award you"
         , MU.Ordinal pos, "place"
