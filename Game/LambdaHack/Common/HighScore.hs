@@ -27,6 +27,7 @@ data ScoreRecord = ScoreRecord
   , date         :: !ClockTime  -- ^ date of the last game interruption
   , status       :: !Status     -- ^ reason of the game interruption
   , difficulty   :: !Int        -- ^ difficulty of the game
+  , gplayerName  :: !Text       -- ^ name of the faction's gplayer
   , ourVictims   :: !(EM.EnumMap (Kind.Id ActorKind) Int)  -- ^ allies lost
   , theirVictims :: !(EM.EnumMap (Kind.Id ActorKind) Int)  -- ^ foes killed
   }
@@ -38,12 +39,12 @@ showScore :: (Int, ScoreRecord) -> [Text]
 showScore (pos, score) =
   let Status{stOutcome, stDepth} = status score
       died = case stOutcome of
-        Killed   -> "Perished on level " ++ show (abs stDepth)
-        Defeated -> "Was defeated"
-        Camping  -> "Camps somewhere"
-        Conquer  -> "Slew all opposition"
-        Escape   -> "Emerged victorious"
-        Restart  -> "Resigned prematurely"
+        Killed   -> "perished on level " ++ show (abs stDepth)
+        Defeated -> "was defeated"
+        Camping  -> "camps somewhere"
+        Conquer  -> "slew all opposition"
+        Escape   -> "emerged victorious"
+        Restart  -> "resigned prematurely"
       curDate = calendarTimeToString . toUTCTime . date $ score
       turns = - (negTime score `timeFit` timeTurn)
       diff = 5 - difficulty score
@@ -53,14 +54,15 @@ showScore (pos, score) =
                        (sum (EM.elems $ ourVictims score))
       diffText :: String
       diffText | diff == 5 = ""
-               | otherwise = printf ", difficulty %d" diff
+               | otherwise = printf "difficulty %d, " diff
      -- TODO: the spaces at the end are hand-crafted. Remove when display
      -- of overlays adds such spaces automatically.
   in map T.pack
        [ ""
-       , printf "%4d. %6d  %s%s%s"
-                pos (points score) died victims diffText
-       , "              " ++ printf "after %d turns on %s." turns curDate
+       , printf "%3d. %6d The %s team %s%s,"
+                pos (points score) (T.unpack $ gplayerName score) died victims
+       , "             "
+         ++ printf "%safter %d turns on %s." diffText turns curDate
        ]
 
 -- | The list of scores, in decreasing order.
@@ -89,11 +91,12 @@ register :: ScoreTable  -- ^ old table
          -> Status      -- ^ reason of the game interruption
          -> ClockTime   -- ^ current date
          -> Int         -- ^ difficulty level
+         -> Text        -- ^ name of the faction's gplayer
          -> EM.EnumMap (Kind.Id ActorKind) Int  -- ^ allies lost
          -> EM.EnumMap (Kind.Id ActorKind) Int  -- ^ foes killed
          -> Bool        -- ^ whether the faction fights against spawners
          -> Maybe (ScoreTable, Int)
-register table total time status@Status{stOutcome} date difficulty
+register table total time status@Status{stOutcome} date difficulty gplayerName
          ourVictims theirVictims fightsAgainstSpawners =
   let pBase =
         if fightsAgainstSpawners
@@ -173,13 +176,14 @@ highSlideshow table pos status =
   in toSlideshow True $ map ([msg] ++) $ showCloseScores pos table height
 
 instance Binary ScoreRecord where
-  put (ScoreRecord p n (TOD cs cp) s difficulty ourVictims theirVictims) = do
+  put (ScoreRecord p n (TOD cs cp) s difficulty gplayerName ourVictims theirVictims) = do
     put p
     put n
     put cs
     put cp
     put s
     put difficulty
+    put gplayerName
     put ourVictims
     put theirVictims
   get = do
@@ -189,6 +193,7 @@ instance Binary ScoreRecord where
     cp <- get
     s <- get
     difficulty <- get
+    gplayerName <- get
     ourVictims <- get
     theirVictims <- get
-    return $! ScoreRecord p n (TOD cs cp) s difficulty ourVictims theirVictims
+    return $! ScoreRecord p n (TOD cs cp) s difficulty gplayerName ourVictims theirVictims

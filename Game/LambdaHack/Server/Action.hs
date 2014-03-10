@@ -255,6 +255,7 @@ registerScore status mbody fid = do
         in escape && not isSpawner
   maybe skip saveScore $
     HighScore.register table total time status date diff
+                       (playerName $ gplayer fact)
                        ourVictims theirVictims fightsAgainstSpawners
 
 resetSessionStart :: MonadServer m => m ()

@@ -357,6 +357,7 @@ scoreToSlideshow total status = do
         in escape && not isSpawner
   return $! maybe mempty showScore
             $ HighScore.register table total time status date diff
+                                 (playerName $ gplayer fact)
                                  ourVictims theirVictims fightsAgainstSpawners
 
 restoreGame :: MonadClient m => m (Maybe (State, StateClient))
