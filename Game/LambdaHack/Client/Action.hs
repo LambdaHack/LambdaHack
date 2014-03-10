@@ -330,6 +330,7 @@ displayPush = do
 
 scoreToSlideshow :: MonadClientUI m => Int -> Status -> m Slideshow
 scoreToSlideshow total status = do
+  cops <- getsState scops
   fid <- getsClient sside
   fact <- getsState $ (EM.! fid) . sfactionD
   -- TODO: Re-read the table in case it's changed by a concurrent game.
@@ -345,7 +346,8 @@ scoreToSlideshow total status = do
   let showScore (ntable, pos) = HighScore.highSlideshow ntable pos
       diff | not $ playerUI $ gplayer fact = difficultyDefault
            | otherwise = scurDifficulty
-      theirVic (fi, fa) | isAtWar fact fi = Just $ gvictims fa
+      theirVic (fi, fa) | isAtWar fact fi
+                          && not (isHorrorFact cops fa) = Just $ gvictims fa
                         | otherwise = Nothing
       theirVictims = EM.unionsWith (+) $ mapMaybe theirVic $ EM.assocs factionD
       ourVic (fi, fa) | isAllied fact fi || fi == fid = Just $ gvictims fa
