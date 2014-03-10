@@ -102,32 +102,40 @@ register :: ScoreTable  -- ^ old table
          -> EM.EnumMap (Kind.Id ActorKind) Int  -- ^ allies lost
          -> EM.EnumMap (Kind.Id ActorKind) Int  -- ^ foes killed
          -> Bool        -- ^ whether the faction fights against spawners
-         -> (Int, (ScoreTable, Int))
+         -> (Bool, (ScoreTable, Int))
 register table total time status@Status{stOutcome} date difficulty gplayerName
          ourVictims theirVictims fightsAgainstSpawners =
   let pBase =
         if fightsAgainstSpawners
         -- Heroes rejoice in loot and mourn their victims.
-        then total
+        then fromIntegral total
         -- Spawners or skirmishers get no bonus from loot and no malus
-        -- from loses, but try to kill opponents fast and blodily.
+        -- from loses, but try to kill opponents fast and blodily,
+        -- or at least hold up for long and incur heavy losses.
         else let turnsSpent = timeFit time timeTurn
-                 speedup = max 0 $ 10000 - 3 * turnsSpent
-             in if EM.null theirVictims
-                then 0
-                else (floor (sqrt $ fromIntegral speedup :: Double))
+                 speedup = max 0 $ 1000000 - 100 * turnsSpent
+                 survival = 100 * turnsSpent
+             in if stOutcome `elem` [Conquer, Escape]
+                -- Up to 1000 points for quick victory, so up to 10000 turns.
+                then sqrt $ fromIntegral speedup
+                -- Up to 1000 points for surviving long, so up to 10000 turns.
+                else min 1000
+                     $ sqrt $ fromIntegral survival
       pBonus =
         if fightsAgainstSpawners
-        then max 0 (500 - 100 * sum (EM.elems ourVictims))
-        else 100 * sum (EM.elems theirVictims)
-      pSum = if stOutcome `elem` [Killed, Defeated, Restart]
-             then pBase
-             else pBase + pBonus
+        then max 0 (1000 - 100 * sum (EM.elems ourVictims))
+        else 1000 + 100 * sum (EM.elems theirVictims)
+      pSum :: Double
+      pSum = if stOutcome `elem` [Conquer, Escape]
+             then pBase + fromIntegral pBonus
+             else pBase
+      worthMentioning =
+        if fightsAgainstSpawners then total > 0 else not (EM.null theirVictims)
       points = (ceiling :: Double -> Int)
-               $ fromIntegral pSum * 1.5 ^^ (- (difficultyCoeff difficulty))
+               $ pSum * 1.5 ^^ (- (difficultyCoeff difficulty))
       negTime = timeNegate time
       score = ScoreRecord{..}
-  in (pBase, insertPos score table)
+  in (worthMentioning, insertPos score table)
 
 -- | Show a screenful of the high scores table.
 -- Parameter height is the number of (3-line) scores to be shown.
@@ -164,17 +172,17 @@ highSlideshow table pos =
           Camping ->
             -- TODO: this is only according to the limited player knowledge;
             -- the final score can be different; say this somewhere
-            ("your valiant exploits", MU.PlEtc, "(unless you are slain)")
+            ("your valiant exploits", MU.PlEtc, "")
           Conquer ->
             ("your ruthless victory", MU.Sg3rd,
              if pos <= height
              then "among the greatest heroes"
-             else "(score based on time)")
+             else "(bonus included)")
           Escape ->
             ("your dashing coup", MU.Sg3rd,
              if pos <= height
              then "among the greatest heroes"
-             else "")
+             else "(bonus included)")
           Restart ->
             ("your abortive attempt", MU.Sg3rd, "(no bonus)")
       msg = makeSentence

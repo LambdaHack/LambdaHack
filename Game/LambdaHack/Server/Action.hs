@@ -238,10 +238,10 @@ registerScore status mbody fid = do
   factionD <- getsState sfactionD
   dungeon <- getsState sdungeon
   let path = dataDir </> scoresFile
-      outputScore (pBase, (ntable, pos)) =
+      outputScore (worthMentioning, (ntable, pos)) =
         -- If not human, probably debugging, so dump instead of registering.
         if playerHuman $ gplayer fact then
-          if pBase > 0 then
+          if worthMentioning then
             liftIO $ encodeEOF path (ntable :: HighScore.ScoreTable)
           else return ()
         else
