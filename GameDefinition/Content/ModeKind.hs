@@ -176,7 +176,6 @@ playersCoop = Players
 playersDefense = Players
   { playersList = [ playerMonster { playerInitial = 1
                                   , playerAiLeader = False
-                                  , playerHuman = True
                                   , playerUI = True }
                   , playerAntiHero {playerName = "Green"}
                   , playerAntiHero {playerName = "Yellow"}
@@ -190,40 +189,33 @@ playersDefense = Players
 
 playersTestCampaign = playersCampaign
   { playersList = [ playerHero { playerInitial = 5
-                               , playerAiLeader = True
-                               , playerHuman = False }
+                               , playerAiLeader = True }
                   , playerMonster ] }
 
 playersTestSkirmish = playersSkirmish
   { playersList = [ playerHero { playerName = "White"
-                               , playerAiLeader = True
-                               , playerHuman = False }
+                               , playerAiLeader = True }
                   , playerAntiHero { playerName = "Purple" }
                   , playerHorror ] }
 
 playersTestBattle = playersBattle
   { playersList = [ playerHero { playerInitial = 5
-                               , playerAiLeader = True
-                               , playerHuman = False }
+                               , playerAiLeader = True }
                   , playerMonster { playerInitial = 30
                                   , playerSpawn = 0 } ] }
 
 playersTestPvP = playersPvP
   { playersList = [ playerHero { playerName = "Red"
-                               , playerAiLeader = True
-                               , playerHuman = False }
+                               , playerAiLeader = True }
                   , playerHero { playerName = "Blue"
-                               , playerAiLeader = True
-                               , playerHuman = False }
+                               , playerAiLeader = True }
                   , playerHorror ] }
 
 playersTestCoop = playersCoop
   { playersList = [ playerHero { playerName = "Coral"
-                               , playerAiLeader = True
-                               , playerHuman = False }
+                               , playerAiLeader = True }
                   , playerHero { playerName = "Amber"
-                               , playerAiLeader = True
-                               , playerHuman = False }
+                               , playerAiLeader = True }
                   , playerMonster ] }
 
 playersTestDefense = playersDefense
@@ -253,13 +245,11 @@ playerHero = Player
   , playerEntry = toEnum (-1)
   , playerInitial = 3
   , playerAiLeader = False
-  , playerHuman = True
   , playerUI = True
   }
 
 playerAntiHero = playerHero
   { playerAiLeader = True
-  , playerHuman = False
   , playerUI = False
   }
 
@@ -270,7 +260,6 @@ playerMonster = Player
   , playerEntry = toEnum (-3)
   , playerInitial = 5
   , playerAiLeader = True
-  , playerHuman = False
   , playerUI = False
   }
 
@@ -281,7 +270,6 @@ playerHorror = Player
   , playerEntry = toEnum (-1)
   , playerInitial = 0
   , playerAiLeader = True
-  , playerHuman = False
   , playerUI = False
   }
 
