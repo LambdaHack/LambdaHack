@@ -54,6 +54,7 @@ data DebugModeSer = DebugModeSer
   , sniffOut       :: !Bool
   , sallClear      :: !Bool
   , sgameMode      :: !Text
+  , sautomateAll   :: !Bool
   , sstopAfter     :: !(Maybe Int)
   , sbenchmark     :: !Bool
   , sdungeonRng    :: !(Maybe R.StdGen)
@@ -113,6 +114,7 @@ defDebugModeSer = DebugModeSer { sknowMap = False
                                , sniffOut = False
                                , sallClear = False
                                , sgameMode = "campaign"
+                               , sautomateAll = False
                                , sstopAfter = Nothing
                                , sbenchmark = False
                                , sdungeonRng = Nothing
@@ -169,6 +171,7 @@ instance Binary DebugModeSer where
     put sniffOut
     put sallClear
     put sgameMode
+    put sautomateAll
     put sdifficultySer
     put sfovMode
     put ssavePrefixSer
@@ -181,6 +184,7 @@ instance Binary DebugModeSer where
     sniffOut <- get
     sallClear <- get
     sgameMode <- get
+    sautomateAll <- get
     sdifficultySer <- get
     sfovMode <- get
     ssavePrefixSer <- get

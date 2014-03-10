@@ -61,6 +61,7 @@ debugArgs = do
         , "  --sniffOut  display all outgoing commands on console "
         , "  --allClear  let all map tiles be translucent"
         , "  --gameMode m  start next game in the given mode"
+        , "  --automateAll  give control of all UI teams to computer"
         , "  --newGame  start a new game, overwriting the save file"
         , "  --difficulty n  set difficulty for all UI players to n"
         , "  --stopAfter n  exit this game session after around n seconds"
@@ -97,6 +98,8 @@ debugArgs = do
         (parseArgs rest) {sallClear = True}
       parseArgs ("--gameMode" : s : rest) =
         (parseArgs rest) {sgameMode = T.pack s}
+      parseArgs ("--automateAll" : rest) =
+        (parseArgs rest) {sautomateAll = True}
       parseArgs ("--newGame" : rest) =
         let debugSer = parseArgs rest
         in debugSer { snewGameSer = True

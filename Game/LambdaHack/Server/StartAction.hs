@@ -185,7 +185,12 @@ gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}}
         modeKind <- fmap (fromMaybe $ assert `failure` smode)
                     $ opick smode (const True)
         let mode = okind modeKind
-        faction <- createFactions cops $ mplayers mode
+            automate p = p {playerAiLeader = True}
+            automatePS ps = ps {playersList = map automate $ playersList ps}
+            players = if sautomateAll sdebug
+                      then automatePS $ mplayers mode
+                      else mplayers mode
+        faction <- createFactions cops players
         sflavour <- dungeonFlavourMap coitem
         (sdisco, sdiscoRev) <- serverDiscos coitem
         freshDng <- DungeonGen.dungeonGen cops $ mcaves mode
