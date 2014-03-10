@@ -112,5 +112,5 @@ Have fun!
 [3]: http://hackage.haskell.org/package/LambdaHack
 [4]: https://github.com/kosmikus/LambdaHack/wiki
 [5]: http://github.com/kosmikus/LambdaHack
-[6]: http://hackage.haskell.org/package/Allure
+[6]: http://allureofthestars.com
 [7]: http://www.haskell.org/platform
