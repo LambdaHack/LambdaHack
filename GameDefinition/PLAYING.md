@@ -171,7 +171,7 @@ Assorted remaining keys and commands follow.
                 CTRL-p         play back last keys 1000 times
                 CTRL-P         play back last keys 10 times
                 '              start recording a macro
-                SPACE          clear messages
+                CTRL-A         automate faction (ESC to retake control)                         SPACE          clear messages
                 ESC            cancel action
                 RET            accept choice
                 0--6           pick a new hero leader anywhere in the dungeon

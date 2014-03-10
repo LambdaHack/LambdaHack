@@ -200,6 +200,7 @@ standard = RuleKind
       , ("CTRL-p", (CmdMeta, Repeat 1000))
       , ("CTRL-P", (CmdMeta, Repeat 10))
       , ("apostrophe", (CmdMeta, Record))
+      , ("CTRL-A", (CmdMeta, Automate))
       , ("space", (CmdMeta, Clear))
       , ("Escape", (CmdMeta, Cancel))
       , ("Return", (CmdMeta, Accept))

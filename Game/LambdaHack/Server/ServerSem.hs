@@ -553,3 +553,10 @@ gameSaveSer :: MonadServer m => m ()
 gameSaveSer = do
   modifyServer $ \ser -> ser {sbkpSave = True}
   modifyServer $ \ser -> ser {squit = True}  -- do this at once
+
+-- * AutomateSer
+
+automateSer :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
+automateSer aid = do
+  b <- getsState $ getActorBody aid
+  execCmdAtomic $ AutoFactionA (bfid b) True

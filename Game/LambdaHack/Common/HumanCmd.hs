@@ -43,8 +43,9 @@ data HumanCmd =
   | GameRestart !Text
   | GameExit
   | GameSave
-  | GameDifficultyCycle
+  | Automate
     -- Below this line, commands do not notify the server.
+  | GameDifficultyCycle
   | PickLeader !Int
   | MemberCycle
   | MemberBack
@@ -119,6 +120,7 @@ cmdDescription cmd = case cmd of
   GameRestart t -> "new" <+> t <+> "game"
   GameExit    -> "save and exit"
   GameSave    -> "save game"
+  Automate    -> "automate faction (ESC to retake control)"
 
   GameDifficultyCycle -> "cycle difficulty of the next game"
   PickLeader{} -> "pick leader"

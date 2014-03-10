@@ -7,7 +7,7 @@ module Game.LambdaHack.Client.HumanGlobal
   , projectHuman, applyHuman, alterDirHuman, triggerTileHuman
   , stepToTargetHuman, resendHuman
     -- * Commands that never take time
-  , gameRestartHuman, gameExitHuman, gameSaveHuman
+  , gameRestartHuman, gameExitHuman, gameSaveHuman, automateHuman
     -- * Helper definitions
   , SlideOrCmd, failWith
   ) where
@@ -705,3 +705,14 @@ gameSaveHuman = do
   -- TODO: do not save to history:
   msgAdd "Saving game backup."
   return $! GameSaveSer leader
+
+-- * Automate; does not take time
+
+automateHuman :: MonadClientUI m => m (SlideOrCmd CmdSer)
+automateHuman = do
+  leader <- getLeaderUI
+  -- TODO: do not save to history:
+  go <- displayMore ColorBW "Ceding control to AI (ESC to regain)."
+  if not go
+    then failWith "Automation canceled."
+    else return $ Right $ AutomateSer leader

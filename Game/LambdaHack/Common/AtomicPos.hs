@@ -82,6 +82,7 @@ posCmdAtomic cmd = case cmd of
   QuitFactionA{} -> return PosAll
   LeadFactionA fid _ _ -> return $! PosFidAndSer fid
   DiplFactionA{} -> return PosAll
+  AutoFactionA{} -> return PosAll
   RecordKillA aid _ -> singleFidAndAid aid
   AlterTileA lid p _ _ -> return $! PosSight lid [p]
   SearchTileA aid p _ _ -> do

@@ -73,6 +73,7 @@ data CmdAtomic =
   | QuitFactionA !FactionId !(Maybe Actor) !(Maybe Status) !(Maybe Status)
   | LeadFactionA !FactionId !(Maybe ActorId) !(Maybe ActorId)
   | DiplFactionA !FactionId !FactionId !Diplomacy !Diplomacy
+  | AutoFactionA !FactionId !Bool
   | RecordKillA !ActorId !Int
   -- Alter map.
   | AlterTileA !LevelId !Point !(Kind.Id TileKind) !(Kind.Id TileKind)
@@ -146,6 +147,7 @@ undoCmdAtomic cmd = case cmd of
   LeadFactionA fid source target -> Just $ LeadFactionA fid target source
   DiplFactionA fid1 fid2 fromDipl toDipl ->
     Just $ DiplFactionA fid1 fid2 toDipl fromDipl
+  AutoFactionA fid st -> Just $ AutoFactionA fid (not st)
   RecordKillA aid k -> Just $ RecordKillA aid (-k)
   AlterTileA lid p fromTile toTile -> Just $ AlterTileA lid p toTile fromTile
   SearchTileA aid p fromTile toTile -> Just $ SearchTileA aid p toTile fromTile

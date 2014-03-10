@@ -28,6 +28,7 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.ModeKind as ModeKind
 import Game.LambdaHack.Content.TileKind as TileKind
 
 cmdAtomicSem :: MonadAction m => CmdAtomic -> m ()
@@ -53,6 +54,7 @@ cmdAtomicSem cmd = case cmd of
   LeadFactionA fid source target -> leadFactionA fid source target
   DiplFactionA fid1 fid2 fromDipl toDipl ->
     diplFactionA fid1 fid2 fromDipl toDipl
+  AutoFactionA fid st -> autoFactionA fid st
   RecordKillA aid k -> recordKillA aid k
   AlterTileA lid p fromTile toTile -> alterTileA lid p fromTile toTile
   SearchTileA _ _ fromTile toTile ->
@@ -309,6 +311,14 @@ diplFactionA fid1 fid2 fromDipl toDipl =
     let adj fid fact = fact {gdipl = EM.insert fid toDipl (gdipl fact)}
     modifyState $ updateFactionBody fid1 (adj fid2)
     modifyState $ updateFactionBody fid2 (adj fid1)
+
+autoFactionA:: MonadAction m => FactionId -> Bool -> m ()
+autoFactionA fid st = do
+  let adj fact =
+        let player = gplayer fact
+        in assert (playerAiLeader player == not st)
+           $ fact {gplayer = player {playerAiLeader = st}}
+  modifyState $ updateFactionBody fid adj
 
 -- | Record a given number (usually just 1, or -1 for undo) of actor kills
 -- for score calculation.

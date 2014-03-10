@@ -22,6 +22,7 @@ data CmdSer =
   | GameRestartSer !ActorId !Text !Int ![(Int, Text)]
   | GameExitSer !ActorId !Int
   | GameSaveSer !ActorId
+  | AutomateSer !ActorId
   deriving (Show, Eq)
 
 data CmdTakeTimeSer =
@@ -48,6 +49,7 @@ aidCmdSer cmd = case cmd of
   GameRestartSer aid _ _ _ -> aid
   GameExitSer aid _ -> aid
   GameSaveSer aid -> aid
+  AutomateSer aid -> aid
 
 aidCmdTakeTimeSer :: CmdTakeTimeSer -> ActorId
 aidCmdTakeTimeSer cmd = case cmd of
