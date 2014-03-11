@@ -122,19 +122,18 @@ displayFrame isRunning mf = do
 
 promptGetKey :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
 promptGetKey frontKM frontFr = do
+  escPressed <- tryTakeMVarSescMVar  -- this also clears the ESC marker
   lastPlayOld <- getsClient slastPlay
   km <- case lastPlayOld of
-    km : kms | null frontKM || km `elem` frontKM -> do
+    km : kms | not escPressed && (null frontKM || km `elem` frontKM) -> do
       displayFrame False $ Just frontFr
       modifyClient $ \cli -> cli {slastPlay = kms}
       return km
     _ -> do
-      unless (null lastPlayOld) stopPlayBack  -- something went wrong
+      unless (null lastPlayOld) stopPlayBack  -- we can't continue playback
       ConnFrontend{..} <- getsSession sfconn
       writeConnFrontend Frontend.FrontKey {..}
-      km <- readConnFrontend
-      void $ tryTakeMVarSescMVar  -- clear ESC marker from regular keypress
-      return km
+      readConnFrontend
   (seqCurrent, seqPrevious, k) <- getsClient slastRecord
   let slastRecord = (km : seqCurrent, seqPrevious, k)
   modifyClient $ \cli -> cli {slastRecord}
