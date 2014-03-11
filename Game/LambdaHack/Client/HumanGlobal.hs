@@ -200,12 +200,11 @@ pickupHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
 pickupHuman = do
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
-  lvl <- getLevel $ blid body
-  -- Check if something is here to pick up. Items are never invisible.
-  case EM.minViewWithKey $ lvl `atI` bpos body of
-    Nothing -> failWith "nothing here"
-    Just ((iid, k), _) -> do  -- pick up first item; TODO: let pl select item
-      item <- getsState $ getItemBody iid
+  ggi <- getAnyItem False "What to pick up?"
+                    [CFloor (blid body) (bpos body)] False True
+                    "from the floor"
+  case ggi of
+    Right ((iid, item), (k, _)) -> do
       slots <- getsClient sslots
       freeSlot <- getsClient sfreeSlot
       let l = if jsymbol item == '$' then Just $ SlotChar '$' else Nothing
@@ -217,6 +216,7 @@ pickupHuman = do
                 , sfreeSlot = max l2 (sfreeSlot cli) }
           return $ Right $ PickupSer leader iid k
         Nothing -> failSer PickupOverfull
+    Left slides -> return $ Left slides
 
 -- * Drop
 
@@ -228,7 +228,7 @@ dropHuman = do
   -- TODO: allow dropping a given number of identical items.
   Kind.COps{coitem} <- getsState scops
   leader <- getLeaderUI
-  ggi <- getAnyItem "What to drop?" [CInv leader, CEqp leader] True True
+  ggi <- getAnyItem True "What to drop?" [CInv leader, CEqp leader] True True
                     "in inventory"
   case ggi of
     Right ((iid, item), (k, container)) ->
@@ -263,17 +263,19 @@ getGroupItem :: MonadClientUI m
 getGroupItem object syms prompt = do
   let choice i = jsymbol i `elem` syms
       header = makePhrase [MU.Capitalize (MU.Ws object)]
-  getItem prompt choice header
+  getItem True prompt choice header
 
 -- | Let the human player choose any item from a list of items.
 getAnyItem :: MonadClientUI m
-           => Text
+           => Bool
+           -> Text
            -> [Container]
            -> Bool
            -> Bool
            -> Text
            -> m (SlideOrCmd ((ItemId, Item), (Int, Container)))
-getAnyItem prompt = getItem prompt (const True) allObjectsName
+getAnyItem askWhenLone prompt =
+  getItem askWhenLone prompt (const True) allObjectsName
 
 data ItemDialogState = INone | ISuitable | IAll deriving Eq
 
@@ -282,7 +284,9 @@ data ItemDialogState = INone | ISuitable | IAll deriving Eq
 -- For now the fourth argument can contain at most the inventory,
 -- equipment and floor of the current leader.
 getItem :: forall m. MonadClientUI m
-        => Text            -- ^ prompt message
+        => Bool            -- ^ whether to ask if the item alone
+                           --   in the starting container and suitable
+        -> Text            -- ^ prompt message
         -> (Item -> Bool)  -- ^ which items to consider suitable
         -> Text            -- ^ how to describe suitable items
         -> [Container]     -- ^ legal containers
@@ -290,21 +294,28 @@ getItem :: forall m. MonadClientUI m
         -> Bool            -- ^ whether the default is all, instead of one
         -> Text            -- ^ how to refer to the collection of items
         -> m (SlideOrCmd ((ItemId, Item), (Int, Container)))
-getItem prompt p ptext cLegal askNumber allNumber isn = do
+getItem askWhenLone prompt p ptext cLegal askNumber allNumber isn = do
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
+  s <- getState
   let cStart = case cLegal of
         [] -> assert `failure` prompt
         c : _ -> c
       cFloor = CFloor (blid body) (bpos body)
       cInv = CInv leader
       cEqp = CEqp leader
+      mloneItem = case EM.assocs (getCBag cStart s) of
+                    [(iid, k)] -> Just ((iid, getItemBody iid s), k)
+                    _ -> Nothing
   assert (all (`elem` [cFloor, cInv, cEqp]) cLegal) skip
   slots <- getsClient sslots
-  s <- getState
   let ask = do
         if all (null . EM.elems) $ map (flip getCBag s) cLegal
         then failWith $ "nothing" <+> isn
+        else if not askWhenLone && fmap (p . snd . fst) mloneItem == Just True
+        then case mloneItem of
+          Nothing -> assert `failure` cStart
+          Just (iidItem, k) -> return $ Right (iidItem, (k, cStart))
         else do
           soc <- perform INone cStart cStart
           case soc of
@@ -329,7 +340,9 @@ getItem prompt p ptext cLegal askNumber allNumber isn = do
                       K.Return -> kRet kDefault
                       _ -> assert `failure` "unexpected key:" `twith` kkm
               else kRet kDefault
-      isCFull c = c `elem` cLegal && not (EM.null (getCBag c s))
+      isCFull c = length cLegal > 1
+                  && c `elem` cLegal
+                  && not (EM.null (getCBag c s))
       perform :: ItemDialogState -> Container -> Container
               -> m (SlideOrCmd ((ItemId, Item), (Int, Container)))
       perform itemDialogState cCur cPrev = do
@@ -405,7 +418,7 @@ wieldHuman = do
   Kind.COps{coitem} <- getsState scops
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  ggi <- getAnyItem "What to wield/wear?"
+  ggi <- getAnyItem True "What to wield/wear?"
                     [CInv leader, CFloor (blid b) (bpos b)] True True
                     "in inventory"
   case ggi of
@@ -432,7 +445,8 @@ yieldHuman = do
   -- TODO: allow dropping a given number of identical items.
   Kind.COps{coitem} <- getsState scops
   leader <- getLeaderUI
-  ggi <- getAnyItem "What to take off?" [CEqp leader] True True "in equipment"
+  ggi <- getAnyItem True "What to take off?"
+                    [CEqp leader] True True "in equipment"
   case ggi of
     Right ((iid, item), (k, container)) ->
       case container of
