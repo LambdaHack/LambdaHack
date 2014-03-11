@@ -4,7 +4,7 @@ module Game.LambdaHack.Frontend.Gtk
   ( -- * Session data type for the frontend
     FrontendSession(sescMVar)
     -- * The output and input operations
-  , fdisplay, fpromptGetKey
+  , fdisplay, fpromptGetKey, fsyncFrames
     -- * Frontend administration tools
   , frontendName, startup
   ) where
@@ -395,6 +395,12 @@ displayAllFramesSync sess@FrontendSession{sdebugCli=DebugModeCli{..}} fs = do
     _ ->
       -- Not in Push state to start with.
       return ()
+
+fsyncFrames :: FrontendSession -> IO ()
+fsyncFrames sess@FrontendSession{sframeState} = do
+  fs <- takeMVar sframeState
+  displayAllFramesSync sess fs
+  putMVar sframeState FNone
 
 -- | Display a prompt, wait for any key.
 -- Starts in Push mode, ends in Push or None mode.

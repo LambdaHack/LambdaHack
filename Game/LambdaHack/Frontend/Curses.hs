@@ -5,7 +5,7 @@ module Game.LambdaHack.Frontend.Curses
   ( -- * Session data type for the frontend
     FrontendSession(sescMVar)
     -- * The output and input operations
-  , fdisplay, fpromptGetKey
+  , fdisplay, fpromptGetKey, fsyncFrames
     -- * Frontend administration tools
   , frontendName, startup
   ) where
@@ -86,6 +86,9 @@ nextEvent :: FrontendSession -> IO K.KM
 nextEvent FrontendSession{sdebugCli=DebugModeCli{snoMore}} =
   if snoMore then return K.spaceKey
   else keyTranslate `fmap` C.getKey C.refresh
+
+fsyncFrames :: FrontendSession -> IO ()
+fsyncFrames _ = return ()
 
 -- | Display a prompt, wait for any key.
 fpromptGetKey :: FrontendSession -> SingleFrame -> IO K.KM

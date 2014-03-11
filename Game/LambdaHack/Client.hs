@@ -16,7 +16,6 @@ import Game.LambdaHack.Client.AtomicSemCli
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.ClientSem
 import Game.LambdaHack.Client.ConfigUI
-import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.LoopAction
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
@@ -70,7 +69,7 @@ cmdClientUISem cmd = case cmd of
   CmdPingUI -> do
     -- Hack: in noMore mode, ping the frontend, too.
     snoMore <- getsClient $ snoMore . sdebugCli
-    when snoMore $ void $ displayMore ColorFull "Flushing frames."
+    when snoMore syncFrames
     pongUI
 
 -- | Wire together game content, the main loop of game clients,

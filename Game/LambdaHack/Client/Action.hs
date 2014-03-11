@@ -31,7 +31,7 @@ module Game.LambdaHack.Client.Action
   , partAidLeader, partActorLeader, unexploredDepth
   , getCacheBfsAndPath, getCacheBfs, accessCacheBfs
   , closestUnknown, closestSmell, furthestKnown, closestTriggers
-  , closestItems, closestFoes, actorAbilities, pongUI
+  , closestItems, closestFoes, actorAbilities, pongUI, syncFrames
   , debugPrint
   ) where
 
@@ -184,6 +184,15 @@ getInitConfirms dm frontClear slides = do
       -- block a ping and the ping would not see the ESC.
       return $! km /= K.escKey
 
+-- | Sync frames display with the frontend.
+syncFrames :: MonadClientUI m => m ()
+syncFrames = do
+  ConnFrontend{..} <- getsSession sfconn
+  -- Hack.
+  writeConnFrontend Frontend.FrontSlides{frontClear=[], frontSlides=[]}
+  km <- readConnFrontend
+  assert (km == K.spaceKey) skip
+
 -- | Get the key binding.
 askBinding :: MonadClientUI m => m Binding
 askBinding = getsSession sbinding
@@ -262,9 +271,7 @@ displayChoiceUI :: MonadClientUI m
                 => Msg -> Overlay -> [K.KM] -> m (Either Slideshow K.KM)
 displayChoiceUI prompt ov keys = do
   (_, ovs) <- fmap slideshow $ overlayToSlideshow (prompt <> ", ESC]") ov
-  let legalKeys =
-        [ K.KM {key=K.Space, modifier=K.NoModifier}
-        , K.escKey ]
+  let legalKeys = [K.spaceKey, K.escKey]
         ++ keys
       loop [] = fmap Left $ promptToSlideshow "never mind"
       loop (x : xs) = do

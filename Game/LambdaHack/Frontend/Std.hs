@@ -3,7 +3,7 @@ module Game.LambdaHack.Frontend.Std
   ( -- * Session data type for the frontend
     FrontendSession(sescMVar)
     -- * The output and input operations
-  , fdisplay, fpromptGetKey
+  , fdisplay, fpromptGetKey, fsyncFrames
     -- * Frontend administration tools
   , frontendName, startup
   ) where
@@ -52,6 +52,9 @@ nextEvent FrontendSession{sdebugCli=DebugModeCli{snoMore}} =
           Nothing -> '\n'  -- empty line counts as RET
           Just (hd, _) -> hd
     return $! keyTranslate c
+
+fsyncFrames :: FrontendSession -> IO ()
+fsyncFrames _ = return ()
 
 -- | Display a prompt, wait for any key.
 fpromptGetKey :: FrontendSession -> SingleFrame -> IO K.KM

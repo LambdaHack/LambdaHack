@@ -3,7 +3,7 @@ module Game.LambdaHack.Frontend.Vty
   ( -- * Session data type for the frontend
     FrontendSession(sescMVar)
     -- * The output and input operations
-  , fdisplay, fpromptGetKey
+  , fdisplay, fpromptGetKey, fsyncFrames
     -- * Frontend administration tools
   , frontendName, startup
   ) where
@@ -66,6 +66,9 @@ nextEvent sess@FrontendSession{svty, sdebugCli=DebugModeCli{snoMore}} =
             modifier = modifierTranslate mods
         return $! K.KM {key, modifier}
       _ -> nextEvent sess
+
+fsyncFrames :: FrontendSession -> IO ()
+fsyncFrames _ = return ()
 
 -- | Display a prompt, wait for any key.
 fpromptGetKey :: FrontendSession -> SingleFrame -> IO K.KM

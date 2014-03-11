@@ -101,8 +101,7 @@ getConfirmGeneric :: Monad m
                   => ([K.KM] -> a -> m K.KM)
                   -> [K.KM] -> a -> m Bool
 getConfirmGeneric pGetKey clearKeys x = do
-  let extraKeys = [ K.KM {key=K.Space, modifier=K.NoModifier}
-                  , K.escKey ]
+  let extraKeys = [K.spaceKey, K.escKey]
   km <- pGetKey (clearKeys ++ extraKeys) x
   return $! km /= K.escKey
 
@@ -210,7 +209,11 @@ loopFrontend fs ConnMulti{..} = loop Nothing EM.empty
         km <- promptGetKey fs frontKM frontFr
         writeKM fid km
         loop (Just (fid, frontFr)) reqMap2
-      FrontSlides{frontSlides = []} -> return ()
+      FrontSlides{frontSlides = []} -> do
+        -- Hack.
+        fsyncFrames fs
+        writeKM fid K.spaceKey
+        loop oldFidFrame reqMap
       FrontSlides{frontSlides = frontSlides@(fr1 : _), ..} -> do
         reqMap2 <- flushFade fr1 oldFidFrame reqMap fid
         let displayFrs frs =
@@ -218,7 +221,7 @@ loopFrontend fs ConnMulti{..} = loop Nothing EM.empty
                 [] -> assert `failure` "null slides" `twith` fid
                 [x] -> do
                   fdisplay fs False (Just x)
-                  writeKM fid K.KM {key=K.Space, modifier=K.NoModifier}
+                  writeKM fid K.spaceKey
                   return x
                 x : xs -> do
                   go <- getConfirmGeneric (promptGetKey fs) frontClear x

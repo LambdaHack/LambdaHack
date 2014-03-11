@@ -27,6 +27,7 @@ frontendName = Chosen.frontendName
 data Frontend = Frontend
   { fdisplay      :: Bool -> Maybe SingleFrame -> IO ()
   , fpromptGetKey :: SingleFrame -> IO K.KM
+  , fsyncFrames   :: IO ()
   , fescMVar      :: !(Maybe (MVar ()))
   , fdebugCli     :: !DebugModeCli
   }
@@ -37,6 +38,7 @@ chosenStartup fdebugCli cont =
     cont $ Frontend
       { fdisplay = Chosen.fdisplay fs
       , fpromptGetKey = Chosen.fpromptGetKey fs
+      , fsyncFrames = Chosen.fsyncFrames fs
       , fescMVar = Chosen.sescMVar fs
       , fdebugCli
       }
@@ -47,6 +49,7 @@ stdStartup fdebugCli cont =
     cont $ Frontend
       { fdisplay = Std.fdisplay fs
       , fpromptGetKey = Std.fpromptGetKey fs
+      , fsyncFrames = Std.fsyncFrames fs
       , fescMVar = Std.sescMVar fs
       , fdebugCli
       }
@@ -56,6 +59,7 @@ noStartup fdebugCli cont =
     cont $ Frontend
       { fdisplay = \_ _ -> return ()
       , fpromptGetKey = \_ -> return K.escKey
+      , fsyncFrames = return ()
       , fescMVar = Nothing
       , fdebugCli
       }
