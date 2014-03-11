@@ -1,4 +1,4 @@
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE FlexibleContexts, TupleSections #-}
 -- | Game action monads and basic building blocks for human and computer
 -- player actions. Has no access to the the main action type.
 -- Does not export the @liftIO@ operation nor a few other implementation
@@ -31,7 +31,7 @@ module Game.LambdaHack.Client.Action
   , partAidLeader, partActorLeader, unexploredDepth
   , getCacheBfsAndPath, getCacheBfs, accessCacheBfs
   , closestUnknown, closestSmell, furthestKnown, closestTriggers
-  , closestItems, closestFoes, actorAbilities, tryTakeMVarSescMVar
+  , closestItems, closestFoes, actorAbilities, pongUI
   , debugPrint
   ) where
 
@@ -70,6 +70,7 @@ import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Animation
+import Game.LambdaHack.Common.AtomicCmd
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
@@ -83,6 +84,7 @@ import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Save as Save
+import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
@@ -939,3 +941,15 @@ tryTakeMVarSescMVar = do
     Just escMVar -> do
       mUnit <- liftIO $ tryTakeMVar escMVar
       return $ isJust mUnit
+
+pongUI :: (MonadClientUI m, MonadClientWriteServer CmdSer m) => m ()
+pongUI = do
+  let sendPong ats = writeServer $ CmdTakeTimeSer $ PongHackSer ats
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
+  if not $ playerAiLeader $ gplayer fact then sendPong []
+  else do
+    escPressed <- tryTakeMVarSescMVar
+    if not escPressed then sendPong []
+    else let atomicCmd = CmdAtomic $ AutoFactionA side False
+         in sendPong [atomicCmd]

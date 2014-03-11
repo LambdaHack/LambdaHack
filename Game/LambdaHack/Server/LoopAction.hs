@@ -310,7 +310,11 @@ handleActors cmdSerSem lid = do
         -- to display a new frame so that player does not see moves
         -- of all his AI party members cumulated in a single frame,
         -- but one by one.
-        execSfxAtomic $ DisplayPushD side
+        when (playerUI $ gplayer fact) $ do
+          execSfxAtomic $ DisplayPushD side
+          -- If UI client for a faction under AI control. ping often
+          -- to catch ESC and sync frames.
+          when (playerAiLeader $ gplayer fact) $ sendPingUI side
         -- Clear messages in the UI client (if any), if the actor
         -- is a leader (which happens when a UI client is fully
         -- computer-controlled). We could record history more often,

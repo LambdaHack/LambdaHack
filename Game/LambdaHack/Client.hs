@@ -9,7 +9,6 @@ module Game.LambdaHack.Client
 
 import Control.Exception.Assert.Sugar
 import Control.Monad
-import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 
 import Game.LambdaHack.Client.Action
@@ -28,7 +27,6 @@ import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
-import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Frontend
 
@@ -73,15 +71,7 @@ cmdClientUISem cmd = case cmd of
     -- Hack: in noMore mode, ping the frontend, too.
     snoMore <- getsClient $ snoMore . sdebugCli
     when snoMore $ void $ displayMore ColorFull "Flushing frames."
-    let pong ats = writeServer $ CmdTakeTimeSer $ PongHackSer ats
-    side <- getsClient sside
-    fact <- getsState $ (EM.! side) . sfactionD
-    if not $ playerAiLeader $ gplayer fact then pong []
-    else do
-      escPressed <- tryTakeMVarSescMVar
-      if not escPressed then pong []
-      else let atomicCmd = CmdAtomic $ AutoFactionA side False
-           in pong [atomicCmd]
+    pongUI
 
 -- | Wire together game content, the main loop of game clients,
 -- the main game loop assigned to this frontend (possibly containing
