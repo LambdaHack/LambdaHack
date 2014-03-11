@@ -14,6 +14,7 @@ module Game.LambdaHack.Client.HumanGlobal
 
 import Control.Exception.Assert.Sugar
 import Control.Monad
+import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Function
@@ -227,9 +228,9 @@ dropHuman = do
   -- TODO: allow dropping a given number of identical items.
   Kind.COps{coitem} <- getsState scops
   leader <- getLeaderUI
-  ggi <- getAnyItem "What to drop?" True "in inventory"
+  ggi <- getAnyItem "What to drop?" True True True "in inventory"
   case ggi of
-    Right ((iid, item), (_, container)) ->
+    Right ((iid, item), (k, container)) ->
       case container of
         CInv aid -> do
           assert (aid == leader) skip
@@ -237,36 +238,56 @@ dropHuman = do
           subject <- partAidLeader leader
           msgAdd $ makeSentence
             [ MU.SubjectVerbSg subject "drop"
-            , partItemWs coitem disco 1 item ]
+            , partItemWs coitem disco k item ]
           -- Do not remove from item slots, only from the bag.
-          return $ Right $ DropSer leader iid 1
+          return $ Right $ DropSer leader iid k
         _ -> failWith "never mind"
     Left slides -> return $ Left slides
 
 allObjectsName :: Text
 allObjectsName = "Objects"
 
+-- | Let a human player choose any item with a given group name.
+-- Note that this does not guarantee the chosen item belongs to the group,
+-- as the player can override the choice.
+getGroupItem :: MonadClientUI m
+             => MU.Part  -- ^ name of the group
+             -> [Char]   -- ^ accepted item symbols
+             -> Text     -- ^ prompt
+             -> Bool     -- ^ whether to start with inventory
+             -> Bool     -- ^ whether to ask for the number of items
+             -> Bool     -- ^ whether the default is all, instead of one
+             -> Text     -- ^ how to refer to the collection of objects
+             -> m (SlideOrCmd ((ItemId, Item), (Int, Container)))
+getGroupItem object syms prompt = do
+  let choice i = jsymbol i `elem` syms
+      header = makePhrase [MU.Capitalize (MU.Ws object)]
+  getItem prompt choice header
+
 -- | Let the human player choose any item from a list of items.
 getAnyItem :: MonadClientUI m
-           => Text       -- ^ prompt
-           -> Bool       -- ^ whether to start with inventory
-           -> Text       -- ^ how to refer to the collection of items
-           -> m (SlideOrCmd ((ItemId, Item), (Int, Container)))
-getAnyItem prompt startWithInv =
-  getItem prompt (const True) allObjectsName startWithInv
+           => Text
+           -> Bool
+           -> Bool
+           -> Bool
+           -> Text
+          -> m (SlideOrCmd ((ItemId, Item), (Int, Container)))
+getAnyItem prompt = getItem prompt (const True) allObjectsName
 
 data ItemDialogState = INone | ISuitable | IAll deriving Eq
 
 -- | Let the human player choose a single, preferably suitable,
 -- item from a list of items.
-getItem :: MonadClientUI m
+getItem :: forall m. MonadClientUI m
         => Text            -- ^ prompt message
         -> (Item -> Bool)  -- ^ which items to consider suitable
         -> Text            -- ^ how to describe suitable items
         -> Bool            -- ^ whether to start with inventory
+        -> Bool            -- ^ whether to ask for the number of items
+        -> Bool            -- ^ whether the default is all, instead of one
         -> Text            -- ^ how to refer to the collection of items
         -> m (SlideOrCmd ((ItemId, Item), (Int, Container)))
-getItem prompt p ptext startWithInv isn = do
+getItem prompt p ptext startWithInv askNumber allNumber isn = do
   leader <- getLeaderUI
   slots <- getsClient sslots
   body <- getsState $ getActorBody leader
@@ -304,10 +325,35 @@ getItem prompt p ptext startWithInv isn = do
       ask = do
         if null is0 && EM.null tis
         then failWith $ "nothing" <+> isn
-        else perform INone
+        else do
+          soc <- perform INone
+          case soc of
+            Left slides -> return $ Left slides
+            Right (iidItem, (kAll, c)) -> do
+              let kDefault = if allNumber then kAll else 1
+                  kRet k = return $ Right (iidItem, (k, c))
+              if askNumber then do
+                let tDefault = tshow kDefault
+                    kbound = min 9 kDefault
+                    kprompt = "Choose number [1-" <> tshow kbound
+                              <> ", RET(" <> tDefault <> ")"
+                    kkeys = zipWith K.KM (repeat K.NoModifier)
+                            $ map (K.Char . Char.intToDigit) [1..kbound]
+                              ++ bestKey
+                kkm <- displayChoiceUI kprompt emptyOverlay kkeys
+                case kkm of
+                  Left slides -> failSlides slides
+                  Right K.KM{key} ->
+                    case key of
+                      K.Char l -> kRet $! Char.digitToInt l
+                      K.Return -> kRet kDefault
+                      _ -> assert `failure` "unexpected key:" `twith` kkm
+              else kRet kDefault
       invP = EM.filter (\iid -> p (getItemBody iid s)) inv
       makeActorContainer | startWithInv = CInv
                          | otherwise = CEqp
+      perform :: ItemDialogState
+              -> m (SlideOrCmd ((ItemId, Item), (Int, Container)))
       perform itemDialogState = do
         let (ims, invOver, msg) = case itemDialogState of
               INone     -> (isp, EM.empty, prompt)
@@ -317,7 +363,7 @@ getItem prompt p ptext startWithInv isn = do
         akm <- displayChoiceUI (msg <+> choice ims) io (keys is0)
         case akm of
           Left slides -> failSlides slides
-          Right (km@K.KM {..}) -> do
+          Right km@K.KM{..} -> do
             assert (modifier == K.NoModifier) skip
             case key of
               K.Char '?' -> case itemDialogState of
@@ -343,7 +389,7 @@ getItem prompt p ptext startWithInv isn = do
               K.Return | bestFull ->
                 let (iidItem, (k, _)) = maximumBy (compare `on` snd . snd) isp
                 in return $ Right (iidItem, (k, makeActorContainer leader))
-              _ -> assert `failure` "unexpected key:" `twith` km
+              _ -> assert `failure` "unexpected key:" `twith` akm
   ask
 
 -- * Wield
@@ -353,9 +399,9 @@ wieldHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
 wieldHuman = do
   Kind.COps{coitem} <- getsState scops
   leader <- getLeaderUI
-  ggi <- getAnyItem "What to wield/wear?" True "in inventory"
+  ggi <- getAnyItem "What to wield/wear?" True True True "in inventory"
   case ggi of
-    Right ((iid, item), (_, container)) ->
+    Right ((iid, item), (k, container)) ->
       case container of
         CInv aid -> do
           assert (aid == leader) skip
@@ -363,8 +409,8 @@ wieldHuman = do
           subject <- partAidLeader leader
           msgAdd $ makeSentence
             [ MU.SubjectVerbSg subject "wield"
-            , partItemWs coitem disco 1 item ]
-          return $ Right $ WieldSer leader iid 1
+            , partItemWs coitem disco k item ]
+          return $ Right $ WieldSer leader iid k
         _ -> failWith "never mind"
     Left slides -> return $ Left slides
 
@@ -378,9 +424,9 @@ yieldHuman = do
   -- TODO: allow dropping a given number of identical items.
   Kind.COps{coitem} <- getsState scops
   leader <- getLeaderUI
-  ggi <- getAnyItem "What to take off?" False "in equipment"
+  ggi <- getAnyItem "What to take off?" False True True "in equipment"
   case ggi of
-    Right ((iid, item), (_, container)) ->
+    Right ((iid, item), (k, container)) ->
       case container of
         CEqp aid -> do
           assert (aid == leader) skip
@@ -388,8 +434,8 @@ yieldHuman = do
           subject <- partAidLeader leader
           msgAdd $ makeSentence
             [ MU.SubjectVerbSg subject "take off"
-            , partItemWs coitem disco 1 item ]
-          return $ Right $ YieldSer leader iid 1
+            , partItemWs coitem disco k item ]
+          return $ Right $ YieldSer leader iid k
         _ -> failWith "never mind"
     Left slides -> return $ Left slides
 
@@ -407,12 +453,12 @@ projectHuman ts = do
     Just pos -> do
       canAim <- leaderTgtAims
       case canAim of
-        Nothing -> projectAid ts pos
+        Nothing -> projectPos ts pos
         Just cause -> failWith cause
 
-projectAid :: MonadClientUI m
+projectPos :: MonadClientUI m
            => [Trigger] -> Point -> m (SlideOrCmd CmdTakeTimeSer)
-projectAid ts tpos = do
+projectPos ts tpos = do
   Kind.COps{coactor=Kind.Ops{okind}, cotile} <- getsState scops
   leader <- getLeaderUI
   eps <- getsClient seps
@@ -439,20 +485,21 @@ projectAid ts tpos = do
               if maybe True (bproj . snd . fst) mab
               then if not (asight $ okind $ bkind sb)
                    then failSer ProjectBlind
-                   else projectBla tpos eps ts
+                   else projectEps ts tpos eps
               else failSer ProjectBlockActor
 
-projectBla :: MonadClientUI m
-           => Point -> Int -> [Trigger]
+projectEps :: MonadClientUI m
+           => [Trigger] -> Point -> Int
            -> m (SlideOrCmd CmdTakeTimeSer)
-projectBla tpos eps ts = do
+projectEps ts tpos eps = do
   let (verb1, object1) = case ts of
         [] -> ("aim", "object")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
   leader <- getLeaderUI
   ggi <- getGroupItem object1 triggerSyms
-           (makePhrase ["What to", verb1 MU.:> "?"]) "in inventory" True
+           (makePhrase ["What to", verb1 MU.:> "?"])
+           True False False "in inventory"
   case ggi of
     Right ((iid, _), (_, container)) ->
       return $ Right $ ProjectSer leader tpos eps iid container
@@ -473,26 +520,12 @@ applyHuman ts = do
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
   ggi <- getGroupItem object1 triggerSyms
-           (makePhrase ["What to", verb1 MU.:> "?"]) "in inventory" True
+           (makePhrase ["What to", verb1 MU.:> "?"])
+           True False False "in inventory"
   case ggi of
     Right ((iid, _), (_, container)) ->
       return $ Right $ ApplySer leader iid container
     Left slides -> return $ Left slides
-
--- | Let a human player choose any item with a given group name.
--- Note that this does not guarantee the chosen item belongs to the group,
--- as the player can override the choice.
-getGroupItem :: MonadClientUI m
-             => MU.Part  -- ^ name of the group
-             -> [Char]   -- ^ accepted item symbols
-             -> Text     -- ^ prompt
-             -> Text     -- ^ how to refer to the collection of objects
-             -> Bool     -- ^ whether to start with inventory
-             -> m (SlideOrCmd ((ItemId, Item), (Int, Container)))
-getGroupItem object syms prompt packName startWithInv = do
-  let choice i = jsymbol i `elem` syms
-      header = makePhrase [MU.Capitalize (MU.Ws object)]
-  getItem prompt choice header startWithInv packName
 
 -- * AlterDir
 
