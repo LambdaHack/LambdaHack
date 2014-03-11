@@ -671,8 +671,7 @@ getArenaUI = do
     Just leader -> getsState $ blid . getActorBody leader
     Nothing -> do
       side <- getsClient sside
-      factionD <- getsState sfactionD
-      let fact = factionD EM.! side
+      fact <- getsState $ (EM.! side) . sfactionD
       case gquit fact of
         Just Status{stDepth} -> return $! toEnum stDepth
         Nothing -> do
@@ -956,13 +955,15 @@ pongUI :: (MonadClientUI m, MonadClientWriteServer CmdSer m) => m ()
 pongUI = do
   -- Ping the frontend, too.
   syncFrames
-  let sendPong ats = writeServer $ CmdTakeTimeSer $ PongHackSer ats
   escPressed <- tryTakeMVarSescMVar
-  if not escPressed then
-    -- Respond to the server normally.
-    sendPong []
-  else do
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
+  let sendPong ats = writeServer $ CmdTakeTimeSer $ PongHackSer ats
+      hasAiLeader = playerAiLeader $ gplayer fact
+  if escPressed && hasAiLeader then do
     -- Ask server to turn off AI for the faction's leader.
-    side <- getsClient sside
     let atomicCmd = CmdAtomic $ AutoFactionA side False
     sendPong [atomicCmd]
+  else
+    -- Respond to the server normally.
+    sendPong []
