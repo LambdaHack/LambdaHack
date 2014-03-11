@@ -185,6 +185,16 @@ standard = RuleKind
       , ("CTRL-braceleft", (CmdTgt, TgtStair True))
       , ("CTRL-braceright", (CmdTgt, TgtStair False))
 
+      -- Automation
+      , ("equal", (CmdAuto, SelectActor))
+      , ("underscore", (CmdAuto, SelectNone))
+      , ("p", (CmdAuto, Repeat 1))
+      , ("P", (CmdAuto, Repeat 100))
+      , ("CTRL-p", (CmdAuto, Repeat 1000))
+      , ("CTRL-P", (CmdAuto, Repeat 10))
+      , ("apostrophe", (CmdAuto, Record))
+      , ("CTRL-A", (CmdAuto, Automate))
+
       -- Assorted
       , ("question", (CmdMeta, Help))
       , ("D", (CmdMeta, History))
@@ -193,14 +203,6 @@ standard = RuleKind
       , ("S", (CmdMeta, MarkSmell))
       , ("Tab", (CmdMeta, MemberCycle))
       , ("ISO_Left_Tab", (CmdMeta, MemberBack))
-      , ("equal", (CmdMeta, SelectActor))
-      , ("underscore", (CmdMeta, SelectNone))
-      , ("p", (CmdMeta, Repeat 1))
-      , ("P", (CmdMeta, Repeat 100))
-      , ("CTRL-p", (CmdMeta, Repeat 1000))
-      , ("CTRL-P", (CmdMeta, Repeat 10))
-      , ("apostrophe", (CmdMeta, Record))
-      , ("CTRL-A", (CmdMeta, Automate))
       , ("space", (CmdMeta, Clear))
       , ("Escape", (CmdMeta, Cancel))
       , ("Return", (CmdMeta, Accept))

@@ -12,7 +12,8 @@ import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Vector
 
-data CmdCategory = CmdMenu | CmdMove | CmdItem | CmdTgt | CmdMeta | CmdDebug
+data CmdCategory =
+    CmdMenu | CmdMove | CmdItem | CmdTgt | CmdAuto | CmdMeta | CmdDebug
   deriving (Show, Read, Eq)
 
 categoryDescription :: CmdCategory -> Text
@@ -20,6 +21,7 @@ categoryDescription CmdMenu = "Main Menu"
 categoryDescription CmdMove = "Movement and terrain alteration"
 categoryDescription CmdItem = "Inventory and items"
 categoryDescription CmdTgt = "Targeting"
+categoryDescription CmdAuto = "Automation"
 categoryDescription CmdMeta = "Assorted"
 categoryDescription CmdDebug = "Debug"
 

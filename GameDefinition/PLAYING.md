@@ -154,6 +154,18 @@ All targeting keys are listed below.
                 CTRL-{         target the closest stairs up
                 CTRL-}         target the closest stairs down
 
+Commands for automating the actions of one or more members of the team.
+
+                keys           command
+                =              select (or deselect) a party member
+                _              deselect (or select) all on the level
+                p              play back last keys
+                P              play back last keys 100 times
+                CTRL-p         play back last keys 1000 times
+                CTRL-P         play back last keys 10 times
+                '              start recording a macro
+                CTRL-A         automate faction (ESC to retake control)
+
 Assorted remaining keys and commands follow.
 
                 keys           command
@@ -164,14 +176,7 @@ Assorted remaining keys and commands follow.
                 S              mark smell
                 TAB            cycle among party members on the level
                 SHIFT-TAB      cycle among party members in the dungeon
-                =              select (or deselect) a party member
-                _              deselect (or select) all on the level
-                p              play back last keys
-                P              play back last keys 100 times
-                CTRL-p         play back last keys 1000 times
-                CTRL-P         play back last keys 10 times
-                '              start recording a macro
-                CTRL-A         automate faction (ESC to retake control)                         SPACE          clear messages
+                SPACE          clear messages
                 ESC            cancel action
                 RET            accept choice
                 0--6           pick a new hero leader anywhere in the dungeon

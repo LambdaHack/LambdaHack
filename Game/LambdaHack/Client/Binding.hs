@@ -109,6 +109,8 @@ keyHelp Binding{bcmdList} =
       ++ [keyCaption] ++ keys CmdItem ++ categoryText ++ [moreMsg]
     , [categoryDescription CmdTgt <> ". [press SPACE to advance]"] ++ [""]
       ++ [keyCaption] ++ keys CmdTgt ++ categoryText ++ [moreMsg]
+    , [categoryDescription CmdAuto <> ". [press SPACE to advance]"] ++ [""]
+      ++ [keyCaption] ++ keys CmdAuto ++ categoryText ++ [moreMsg]
     , [categoryDescription CmdMeta <> "."] ++ [""]
       ++ [keyCaption] ++ keys CmdMeta ++ lastText
     ]
