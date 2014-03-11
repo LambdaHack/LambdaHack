@@ -185,7 +185,7 @@ output FrontendSession{sview, stags} GtkFrame{..} = do  -- new frame
   mapM_ (setTo tb defAttr 0) attrs
 
 setTo :: TextBuffer -> TextTag -> Int -> (Int, [TextTag]) -> IO ()
-setTo _  _   _  (_,  [])         = return ()
+setTo _ _ _ (_,  []) = return ()
 setTo tb defAttr lx (ly, attr:attrs) = do
   ib <- textBufferGetIterAtLineOffset tb ly lx
   ie <- textIterCopy ib
@@ -406,29 +406,22 @@ fsyncFrames sess@FrontendSession{sframeState} = do
 -- Starts in Push mode, ends in Push or None mode.
 -- Syncs with the drawing threads by showing the last or all queued frames.
 fpromptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
-fpromptGetKey sess@FrontendSession{sdebugCli=DebugModeCli{snoMore}, ..}
+fpromptGetKey sess@FrontendSession{..}
               frame = do
   pushFrame sess True True $ Just frame
-  if snoMore then do
-    -- Show all frames synchronously. Keys completely ignored. TODO: K.Space
-    fs <- takeMVar sframeState
-    displayAllFramesSync sess fs
-    putMVar sframeState FNone
-    return K.spaceKey
-  else do
-    km <- readChan schanKey
-    case km of
-      K.KM{key=K.Space, modifier=K.NoModifier} ->
-        -- Drop frames up to the first empty frame.
-        -- Keep the last non-empty frame, if any.
-        -- Pressing SPACE repeatedly can be used to step
-        -- through intermediate stages of an animation,
-        -- whereas any other key skips the whole animation outright.
-        onQueue dropStartLQueue sess
-      _ ->
-        -- Show the last non-empty frame and empty the queue.
-        trimFrameState sess
-    return km
+  km <- readChan schanKey
+  case km of
+    K.KM{key=K.Space, modifier=K.NoModifier} ->
+      -- Drop frames up to the first empty frame.
+      -- Keep the last non-empty frame, if any.
+      -- Pressing SPACE repeatedly can be used to step
+      -- through intermediate stages of an animation,
+      -- whereas any other key skips the whole animation outright.
+      onQueue dropStartLQueue sess
+    _ ->
+      -- Show the last non-empty frame and empty the queue.
+      trimFrameState sess
+  return km
 
 -- | Tells a dead key.
 deadKey :: String -> Bool

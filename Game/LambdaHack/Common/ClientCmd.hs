@@ -84,7 +84,7 @@ data DebugAid a = DebugAid
 debugAid :: (MonadActionRO m, Show a) => ActorId -> Text -> a -> m Text
 debugAid aid label cmd =
   if aid == toEnum (-1) then
-    return ""
+    return $ "Pong:" <+> tshow label <+> tshow cmd
   else do
     b <- getsState $ getActorBody aid
     time <- getsState $ getLocalTime (blid b)

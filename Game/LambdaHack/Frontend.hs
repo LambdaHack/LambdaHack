@@ -79,14 +79,11 @@ startupF dbg cont =
 -- if the list is empty). Repeat if an unexpected key received.
 promptGetKey :: Frontend -> [K.KM] -> SingleFrame -> IO K.KM
 promptGetKey fs [] frame = fpromptGetKey fs frame
-promptGetKey fs keys@(firstKM:_) frame = do
+promptGetKey fs keys frame = do
   km <- fpromptGetKey fs frame
   if km `elem` keys
-    then return $! km
-    else do
-      let DebugModeCli{snoMore} = fdebugCli fs
-      if snoMore then return firstKM
-      else promptGetKey fs keys frame
+    then return km
+    else promptGetKey fs keys frame
 
 -- TODO: avoid unsafePerformIO; but server state is a wrong idea, too
 connMulti :: ConnMulti
@@ -98,9 +95,16 @@ connMulti = unsafePerformIO $ do
 
 getConfirmGeneric :: Frontend -> [K.KM] -> SingleFrame -> IO Bool
 getConfirmGeneric fs clearKeys frame = do
-  let extraKeys = [K.spaceKey, K.escKey]
-  km <- promptGetKey fs (clearKeys ++ extraKeys) frame
-  return $! km /= K.escKey
+  let DebugModeCli{snoMore} = fdebugCli fs
+  -- TODO: turn noMore off somehow when faction not under computer control;
+  -- perhaps by adding a FrontReq request that turns it off/on?
+  if snoMore then do
+    fdisplay fs True (Just frame)
+    return True
+  else do
+    let extraKeys = [K.spaceKey, K.escKey]
+    km <- promptGetKey fs (clearKeys ++ extraKeys) frame
+    return $! km /= K.escKey
 
 flushFrames :: Frontend -> FactionId -> ReqMap -> IO ReqMap
 flushFrames fs fid reqMap = do

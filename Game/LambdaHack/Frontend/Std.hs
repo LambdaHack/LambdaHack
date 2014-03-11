@@ -43,15 +43,13 @@ fdisplay _ _ (Just rawSF) =
   in mapM_ BS.putStrLn bs
 
 -- | Input key via the frontend.
-nextEvent :: FrontendSession -> IO K.KM
-nextEvent FrontendSession{sdebugCli=DebugModeCli{snoMore}} =
-  if snoMore then return K.spaceKey
-  else do
-    l <- BS.hGetLine SIO.stdin
-    let c = case BS.uncons l of
-          Nothing -> '\n'  -- empty line counts as RET
-          Just (hd, _) -> hd
-    return $! keyTranslate c
+nextEvent :: IO K.KM
+nextEvent = do
+  l <- BS.hGetLine SIO.stdin
+  let c = case BS.uncons l of
+        Nothing -> '\n'  -- empty line counts as RET
+        Just (hd, _) -> hd
+  return $! keyTranslate c
 
 fsyncFrames :: FrontendSession -> IO ()
 fsyncFrames _ = return ()
@@ -60,7 +58,7 @@ fsyncFrames _ = return ()
 fpromptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
 fpromptGetKey sess frame = do
   fdisplay sess True $ Just frame
-  nextEvent sess
+  nextEvent
 
 keyTranslate :: Char -> K.KM
 keyTranslate e = (\(key, modifier) -> K.KM {..}) $

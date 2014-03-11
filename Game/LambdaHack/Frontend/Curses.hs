@@ -82,10 +82,8 @@ fdisplay FrontendSession{..}  _ (Just rawSF) = do
   C.refresh
 
 -- | Input key via the frontend.
-nextEvent :: FrontendSession -> IO K.KM
-nextEvent FrontendSession{sdebugCli=DebugModeCli{snoMore}} =
-  if snoMore then return K.spaceKey
-  else keyTranslate `fmap` C.getKey C.refresh
+nextEvent :: IO K.KM
+nextEvent = keyTranslate `fmap` C.getKey C.refresh
 
 fsyncFrames :: FrontendSession -> IO ()
 fsyncFrames _ = return ()
@@ -94,7 +92,7 @@ fsyncFrames _ = return ()
 fpromptGetKey :: FrontendSession -> SingleFrame -> IO K.KM
 fpromptGetKey sess frame = do
   fdisplay sess True $ Just frame
-  nextEvent sess
+  nextEvent
 
 keyTranslate :: C.Key -> K.KM
 keyTranslate e = (\(key, modifier) -> K.KM {..}) $

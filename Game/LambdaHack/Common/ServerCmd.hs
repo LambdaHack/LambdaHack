@@ -6,7 +6,6 @@ module Game.LambdaHack.Common.ServerCmd
   , FailureSer(..), showFailureSer
   ) where
 
-import Control.Exception.Assert.Sugar
 import Data.Text (Text)
 
 import Game.LambdaHack.Common.Actor
@@ -69,7 +68,7 @@ aidCmdTakeTimeSer cmd = case cmd of
   ApplySer aid _ _ -> aid
   TriggerSer aid _ -> aid
   SetTrajectorySer aid -> aid
-  PongHackSer _ -> assert `failure` cmd
+  PongHackSer _ -> toEnum (-1)  -- needed for --sniffIn
 
 data FailureSer =
     MoveNothing

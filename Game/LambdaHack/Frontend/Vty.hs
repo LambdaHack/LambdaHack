@@ -56,16 +56,14 @@ fdisplay FrontendSession{svty} _ (Just rawSF) =
 
 -- | Input key via the frontend.
 nextEvent :: FrontendSession -> IO K.KM
-nextEvent sess@FrontendSession{svty, sdebugCli=DebugModeCli{snoMore}} =
-  if snoMore then return K.spaceKey
-  else do
-    e <- next_event svty
-    case e of
-      EvKey n mods -> do
-        let key = keyTranslate n
-            modifier = modifierTranslate mods
-        return $! K.KM {key, modifier}
-      _ -> nextEvent sess
+nextEvent sess@FrontendSession{svty} = do
+  e <- next_event svty
+  case e of
+    EvKey n mods -> do
+      let key = keyTranslate n
+          modifier = modifierTranslate mods
+      return $! K.KM {key, modifier}
+    _ -> nextEvent sess
 
 fsyncFrames :: FrontendSession -> IO ()
 fsyncFrames _ = return ()

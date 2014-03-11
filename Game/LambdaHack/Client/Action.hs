@@ -960,6 +960,10 @@ pongUI = do
   if not $ playerAiLeader $ gplayer fact then sendPong []
   else do
     escPressed <- tryTakeMVarSescMVar
-    if not escPressed then sendPong []
-    else let atomicCmd = CmdAtomic $ AutoFactionA side False
-         in sendPong [atomicCmd]
+    if not escPressed then do
+      -- Ping the frontend, too.
+      syncFrames
+      sendPong []
+    else do
+      let atomicCmd = CmdAtomic $ AutoFactionA side False
+      sendPong [atomicCmd]

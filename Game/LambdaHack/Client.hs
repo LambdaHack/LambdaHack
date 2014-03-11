@@ -45,8 +45,7 @@ cmdClientAISem cmd = case cmd of
   CmdQueryAI aid -> do
     cmdC <- queryAI aid
     writeServer cmdC
-  CmdPingAI ->
-    writeServer $ PongHackSer []
+  CmdPingAI -> writeServer $ PongHackSer []
 
 cmdClientUISem :: ( MonadAtomic m, MonadClientUI m
                   , MonadClientWriteServer CmdSer m )
@@ -66,11 +65,7 @@ cmdClientUISem cmd = case cmd of
     assert (isJust mleader `blame` "query without leader" `twith` cmd) skip
     cmdH <- queryUI aid
     writeServer cmdH
-  CmdPingUI -> do
-    -- Hack: in noMore mode, ping the frontend, too.
-    snoMore <- getsClient $ snoMore . sdebugCli
-    when snoMore syncFrames
-    pongUI
+  CmdPingUI -> pongUI
 
 -- | Wire together game content, the main loop of game clients,
 -- the main game loop assigned to this frontend (possibly containing
