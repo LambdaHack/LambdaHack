@@ -228,7 +228,8 @@ dropHuman = do
   -- TODO: allow dropping a given number of identical items.
   Kind.COps{coitem} <- getsState scops
   leader <- getLeaderUI
-  ggi <- getAnyItem "What to drop?" True True True "in inventory"
+  ggi <- getAnyItem "What to drop?" [CInv leader, CEqp leader] True True
+                    "in inventory"
   case ggi of
     Right ((iid, item), (k, container)) ->
       case container of
@@ -254,7 +255,7 @@ getGroupItem :: MonadClientUI m
              => MU.Part  -- ^ name of the group
              -> [Char]   -- ^ accepted item symbols
              -> Text     -- ^ prompt
-             -> Bool     -- ^ whether to start with inventory
+             -> [Container]  -- ^ legal containers
              -> Bool     -- ^ whether to ask for the number of items
              -> Bool     -- ^ whether the default is all, instead of one
              -> Text     -- ^ how to refer to the collection of objects
@@ -267,79 +268,58 @@ getGroupItem object syms prompt = do
 -- | Let the human player choose any item from a list of items.
 getAnyItem :: MonadClientUI m
            => Text
-           -> Bool
+           -> [Container]
            -> Bool
            -> Bool
            -> Text
-          -> m (SlideOrCmd ((ItemId, Item), (Int, Container)))
+           -> m (SlideOrCmd ((ItemId, Item), (Int, Container)))
 getAnyItem prompt = getItem prompt (const True) allObjectsName
 
 data ItemDialogState = INone | ISuitable | IAll deriving Eq
 
 -- | Let the human player choose a single, preferably suitable,
 -- item from a list of items.
+-- For now the fourth argument can contain at most the inventory,
+-- equipment and floor of the current leader.
 getItem :: forall m. MonadClientUI m
         => Text            -- ^ prompt message
         -> (Item -> Bool)  -- ^ which items to consider suitable
         -> Text            -- ^ how to describe suitable items
-        -> Bool            -- ^ whether to start with inventory
+        -> [Container]     -- ^ legal containers
         -> Bool            -- ^ whether to ask for the number of items
         -> Bool            -- ^ whether the default is all, instead of one
         -> Text            -- ^ how to refer to the collection of items
         -> m (SlideOrCmd ((ItemId, Item), (Int, Container)))
-getItem prompt p ptext startWithInv askNumber allNumber isn = do
+getItem prompt p ptext cLegal askNumber allNumber isn = do
   leader <- getLeaderUI
-  slots <- getsClient sslots
   body <- getsState $ getActorBody leader
-  bag <- if startWithInv
-         then getsState $ getInvBag body
-         else return $ beqp body
-  lvl <- getLevel $ blid body
+  let cStart = case cLegal of
+        [] -> assert `failure` prompt
+        c : _ -> c
+      cFloor = CFloor (blid body) (bpos body)
+      cInv = CInv leader
+      cEqp = CEqp leader
+  assert (all (`elem` [cFloor, cInv, cEqp]) cLegal) skip
+  slots <- getsClient sslots
   s <- getState
-  let inv = EM.filter (`EM.member` bag) slots
-      checkItem (l, iid) = ((iid, getItemBody iid s), (bag EM.! iid, l))
-      is0 = map checkItem $ EM.assocs inv
-      pos = bpos body
-      tis = lvl `atI` pos
-      floorFull = not $ EM.null tis
-      (floorMsg, floorKey) | floorFull = (", -", [K.Char '-'])
-                           | otherwise = ("", [])
-      isp = filter (p . snd . fst) is0
-      bestFull = not $ null isp
-      (bestMsg, bestKey)
-        | bestFull =
-          let bestSlot = slotChar $ maximum $ map (snd . snd) isp
-          in (", RET(" <> T.singleton bestSlot <> ")", [K.Return])
-        | otherwise = ("", [])
-      keys ims =
-        let mls = map (snd . snd) ims
-            ks = bestKey ++ floorKey ++ [K.Char '?']
-                 ++ map (K.Char . slotChar) mls
-        in zipWith K.KM (repeat K.NoModifier) ks
-      choice ims =
-        if null ims
-        then "[?" <> floorMsg
-        else let mls = map (snd . snd) ims
-                 r = slotRange mls
-             in "[" <> r <> ", ?" <> floorMsg <> bestMsg
-      ask = do
-        if null is0 && EM.null tis
+  let ask = do
+        if all (null . EM.elems) $ map (flip getCBag s) cLegal
         then failWith $ "nothing" <+> isn
         else do
-          soc <- perform INone
+          soc <- perform INone cStart cStart
           case soc of
             Left slides -> return $ Left slides
             Right (iidItem, (kAll, c)) -> do
               let kDefault = if allNumber then kAll else 1
                   kRet k = return $ Right (iidItem, (k, c))
-              if askNumber then do
+              if askNumber && kAll > 1 then do
                 let tDefault = tshow kDefault
-                    kbound = min 9 kDefault
+                    kbound = min 9 kAll
                     kprompt = "Choose number [1-" <> tshow kbound
                               <> ", RET(" <> tDefault <> ")"
                     kkeys = zipWith K.KM (repeat K.NoModifier)
                             $ map (K.Char . Char.intToDigit) [1..kbound]
-                              ++ bestKey
+                              ++ [K.Return]
                 kkm <- displayChoiceUI kprompt emptyOverlay kkeys
                 case kkm of
                   Left slides -> failSlides slides
@@ -349,13 +329,40 @@ getItem prompt p ptext startWithInv askNumber allNumber isn = do
                       K.Return -> kRet kDefault
                       _ -> assert `failure` "unexpected key:" `twith` kkm
               else kRet kDefault
-      invP = EM.filter (\iid -> p (getItemBody iid s)) inv
-      makeActorContainer | startWithInv = CInv
-                         | otherwise = CEqp
-      perform :: ItemDialogState
+      isCFull c = c `elem` cLegal && not (EM.null (getCBag c s))
+      perform :: ItemDialogState -> Container -> Container
               -> m (SlideOrCmd ((ItemId, Item), (Int, Container)))
-      perform itemDialogState = do
-        let (ims, invOver, msg) = case itemDialogState of
+      perform itemDialogState cCur cPrev = do
+        bag <- getsState $ getCBag cCur
+        let inv = EM.filter (`EM.member` bag) slots
+            invP = EM.filter (\iid -> p (getItemBody iid s)) inv
+            checkItem (l, iid) = ((iid, getItemBody iid s), (bag EM.! iid, l))
+            is0 = map checkItem $ EM.assocs inv
+            floorFull = isCFull cFloor
+            (floorMsg, floorKey) | floorFull = (", -", [K.Char '-'])
+                                 | otherwise = ("", [])
+            invEqpFull = isCFull cInv && isCFull cEqp
+            (invEqpMsg, invEqpKey) | invEqpFull = (", /", [K.Char '/'])
+                                   | otherwise = ("", [])
+            isp = filter (p . snd . fst) is0
+            bestFull = not $ null isp
+            (bestMsg, bestKey)
+              | bestFull =
+                let bestSlot = slotChar $ maximum $ map (snd . snd) isp
+                in (", RET(" <> T.singleton bestSlot <> ")", [K.Return])
+              | otherwise = ("", [])
+            keys ims2 =
+              let mls = map (snd . snd) ims2
+                  ks = map (K.Char . slotChar) mls
+                       ++ [K.Char '?'] ++ floorKey ++ invEqpKey ++ bestKey
+              in zipWith K.KM (repeat K.NoModifier) ks
+            choice ims2 =
+              if null ims2
+              then "[?" <> floorMsg <> invEqpMsg
+              else let mls = map (snd . snd) ims2
+                       r = slotRange mls
+                   in "[" <> r <> ", ?" <> floorMsg <> invEqpMsg <> bestMsg
+            (ims, invOver, msg) = case itemDialogState of
               INone     -> (isp, EM.empty, prompt)
               ISuitable -> (isp, invP, ptext <+> isn <> ".")
               IAll      -> (is0, inv, allObjectsName <+> isn <> ".")
@@ -368,27 +375,25 @@ getItem prompt p ptext startWithInv askNumber allNumber isn = do
             case key of
               K.Char '?' -> case itemDialogState of
                 INone -> if EM.null invP
-                         then perform IAll
-                         else perform ISuitable
-                ISuitable | ptext /= allObjectsName -> perform IAll
-                _ -> perform INone
+                         then perform IAll cCur cPrev
+                         else perform ISuitable cCur cPrev
+                ISuitable | ptext /= allObjectsName -> perform IAll cCur cPrev
+                _ -> perform INone cCur cPrev
               K.Char '-' | floorFull ->
-                -- TODO: let player select item
-                return $ Right
-                       $ maximumBy (compare `on` fst . fst)
-                       $ map (\(iid, k) ->
-                               ((iid, getItemBody iid s),
-                                (k, CFloor (blid body) pos)))
-                       $ EM.assocs tis
+                let cNext = if cCur == cFloor then cPrev else cFloor
+                in perform itemDialogState cNext cCur
+              K.Char '/' | invEqpFull ->
+                let cNext = if cCur == cInv then cEqp else cInv
+                in perform itemDialogState cNext cCur
               K.Char l ->
                 case find ((SlotChar l ==) . snd . snd) is0 of
                   Nothing -> assert `failure` "unexpected inventory slot"
                                     `twith` (km, l,  is0)
                   Just (iidItem, (k, _)) ->
-                    return $ Right (iidItem, (k, makeActorContainer leader))
+                    return $ Right (iidItem, (k, cCur))
               K.Return | bestFull ->
                 let (iidItem, (k, _)) = maximumBy (compare `on` snd . snd) isp
-                in return $ Right (iidItem, (k, makeActorContainer leader))
+                in return $ Right (iidItem, (k, cCur))
               _ -> assert `failure` "unexpected key:" `twith` akm
   ask
 
@@ -399,7 +404,10 @@ wieldHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
 wieldHuman = do
   Kind.COps{coitem} <- getsState scops
   leader <- getLeaderUI
-  ggi <- getAnyItem "What to wield/wear?" True True True "in inventory"
+  b <- getsState $ getActorBody leader
+  ggi <- getAnyItem "What to wield/wear?"
+                    [CInv leader, CFloor (blid b) (bpos b)] True True
+                    "in inventory"
   case ggi of
     Right ((iid, item), (k, container)) ->
       case container of
@@ -424,7 +432,7 @@ yieldHuman = do
   -- TODO: allow dropping a given number of identical items.
   Kind.COps{coitem} <- getsState scops
   leader <- getLeaderUI
-  ggi <- getAnyItem "What to take off?" False True True "in equipment"
+  ggi <- getAnyItem "What to take off?" [CEqp leader] True True "in equipment"
   case ggi of
     Right ((iid, item), (k, container)) ->
       case container of
@@ -497,9 +505,10 @@ projectEps ts tpos eps = do
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
   leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
   ggi <- getGroupItem object1 triggerSyms
            (makePhrase ["What to", verb1 MU.:> "?"])
-           True False False "in inventory"
+           [CInv leader, CFloor (blid b) (bpos b)] False False "in inventory"
   case ggi of
     Right ((iid, _), (_, container)) ->
       return $ Right $ ProjectSer leader tpos eps iid container
@@ -515,13 +524,14 @@ triggerSymbols (_ : ts) = triggerSymbols ts
 applyHuman :: MonadClientUI m => [Trigger] -> m (SlideOrCmd CmdTakeTimeSer)
 applyHuman ts = do
   leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
   let (verb1, object1) = case ts of
         [] -> ("activate", "object")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
   ggi <- getGroupItem object1 triggerSyms
            (makePhrase ["What to", verb1 MU.:> "?"])
-           True False False "in inventory"
+           [CInv leader, CFloor (blid b) (bpos b)] False False "in inventory"
   case ggi of
     Right ((iid, _), (_, container)) ->
       return $ Right $ ApplySer leader iid container

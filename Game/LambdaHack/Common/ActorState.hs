@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.ActorState
   ( fidActorNotProjAssocs, actorAssocsLvl, actorAssocs, actorList
   , actorNotProjAssocsLvl, actorNotProjAssocs, actorNotProjList
   , calculateTotal, sharedInv, sharedAllOwned
-  , getInvBag, nearbyFreePoints, whereTo
+  , getInvBag, getCBag, nearbyFreePoints, whereTo
   , posToActors, posToActor, getItemBody, memActor
   , getActorBody, updateActorBody, updateFactionBody
   , getCarriedAssocs, getEqpAssocs, getInvAssocs, getFloorAssocs
@@ -270,6 +270,12 @@ getInvBag b s =
   in if rsharedInventory
      then sharedInv b s
      else binv b
+
+getCBag :: Container -> State -> ItemBag
+getCBag c s = case c of
+  CFloor lid p -> sdungeon s EM.! lid `atI` p
+  CInv aid -> getInvBag (getActorBody aid s) s
+  CEqp aid -> beqp $ getActorBody aid s
 
 getFloorAssocs :: LevelId -> Point -> State -> [(ItemId, Item)]
 getFloorAssocs lid pos s =
