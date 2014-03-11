@@ -4,12 +4,13 @@
 -- and 'TypeAction'.
 module Game.LambdaHack.Client.Action.ActionClass where
 
-import qualified Game.LambdaHack.Common.Key as K
+import Control.Concurrent
 
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Faction
+import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Frontend (FrontReq)
 
 -- | The information that is constant across a client playing session,
@@ -19,6 +20,7 @@ import Game.LambdaHack.Frontend (FrontReq)
 data SessionUI = SessionUI
   { sfconn   :: !ConnFrontend  -- ^ connection with the frontend
   , sbinding :: !Binding       -- ^ binding of keys to commands
+  , sescMVar :: !(Maybe (MVar ()))
   }
 
 -- | Connection method between a client and a frontend.

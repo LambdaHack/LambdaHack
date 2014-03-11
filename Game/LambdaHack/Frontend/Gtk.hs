@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Game.LambdaHack.Frontend.Gtk
   ( -- * Session data type for the frontend
-    FrontendSession
+    FrontendSession(sescMVar)
     -- * The output and input operations
   , fdisplay, fpromptGetKey
     -- * Frontend administration tools
@@ -50,6 +50,7 @@ data FrontendSession = FrontendSession
       -- add frames in an orderly manner, which is not done in real time,
       -- though sometimes the frame display subsystem has to poll
       -- for a frame, in which case the locking interval becomes meaningful.
+  , sescMVar    :: !(Maybe (MVar ()))
   , sdebugCli   :: !DebugModeCli  -- ^ client configuration
   }
 
@@ -113,7 +114,8 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
   -- Create the session record.
   sframeState <- newMVar frameState
   slastFull <- newMVar (dummyFrame, False)
-  let sess = FrontendSession{..}
+  escMVar <- newEmptyMVar
+  let sess = FrontendSession{sescMVar = Just escMVar, ..}
   -- Fork the game logic thread. When logic ends, game exits.
   -- TODO: is postGUIAsync needed here?
   forkIO $ cont sess >> postGUIAsync mainQuit
@@ -126,7 +128,10 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
     let !key = K.keyTranslate n
         !modifier = modifierTranslate mods
     liftIO $ do
-      unless (deadKey n) $
+      unless (deadKey n) $ do
+        -- If ESC, also mark it specially.
+        when (key == K.Esc) $
+          void $ tryPutMVar escMVar ()
         -- Store the key in the channel.
         writeChan schanKey K.KM{key, modifier}
       return True

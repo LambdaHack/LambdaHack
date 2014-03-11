@@ -3,13 +3,14 @@
 -- of the last line).
 module Game.LambdaHack.Frontend.Curses
   ( -- * Session data type for the frontend
-    FrontendSession
+    FrontendSession(sescMVar)
     -- * The output and input operations
   , fdisplay, fpromptGetKey
     -- * Frontend administration tools
   , frontendName, startup
   ) where
 
+import Control.Concurrent
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Char (chr, ord)
@@ -28,6 +29,7 @@ data FrontendSession = FrontendSession
   { swin      :: !C.Window  -- ^ the window to draw to
   , sstyles   :: !(M.Map Color.Attr C.CursesStyle)
       -- ^ map from fore/back colour pairs to defined curses styles
+  , sescMVar  :: !(Maybe (MVar ()))
   , sdebugCli :: !DebugModeCli  -- ^ client configuration
   }
 
@@ -52,7 +54,7 @@ startup sdebugCli k = do
   ws <- C.convertStyles vs
   let swin = C.stdScr
       sstyles = M.fromList (zip ks ws)
-  k FrontendSession{..}
+  k FrontendSession{sescMVar = Nothing, ..}
   C.end
 
 -- | Output to the screen via the frontend.

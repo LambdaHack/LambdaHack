@@ -31,7 +31,7 @@ module Game.LambdaHack.Client.Action
   , partAidLeader, partActorLeader, unexploredDepth
   , getCacheBfsAndPath, getCacheBfs, accessCacheBfs
   , closestUnknown, closestSmell, furthestKnown, closestTriggers
-  , closestItems, closestFoes, actorAbilities
+  , closestItems, closestFoes, actorAbilities, tryTakeMVarSescMVar
   , debugPrint
   ) where
 
@@ -930,3 +930,12 @@ actorAbilities aid mleader = do
         | Just aid == mleader = fAbilityLeader $ fokind $ gkind fact
         | otherwise = fAbilityOther $ fokind $ gkind fact
   return $! acanDo (okind $ bkind body) `intersect` factionAbilities
+
+tryTakeMVarSescMVar :: MonadClientUI m => m Bool
+tryTakeMVarSescMVar = do
+  mescMVar <- getsSession sescMVar
+  case mescMVar of
+    Nothing -> return False
+    Just escMVar -> do
+      mUnit <- liftIO $ tryTakeMVar escMVar
+      return $ isJust mUnit

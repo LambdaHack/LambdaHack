@@ -57,7 +57,7 @@ data ConnMulti = ConnMulti
   , toMulti   :: !ToMulti
   }
 
-startupF :: DebugModeCli -> IO () -> IO ()
+startupF :: DebugModeCli -> (Maybe (MVar ()) -> IO ()) -> IO ()
 startupF dbg cont =
   (if sfrontendNo dbg then noStartup
    else if sfrontendStd dbg then stdStartup
@@ -67,7 +67,7 @@ startupF dbg cont =
           hFlush stderr
     children <- newMVar []
     void $ forkChild children $ loopFrontend fs connMulti
-    cont
+    cont (fescMVar fs)
     debugPrint "Server shuts down"
     let toF = toMulti connMulti
     -- TODO: instead of this, wait for clients to send FrontFinish or timeout

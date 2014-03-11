@@ -1,13 +1,14 @@
 -- | Text frontend based on Vty.
 module Game.LambdaHack.Frontend.Vty
   ( -- * Session data type for the frontend
-    FrontendSession
+    FrontendSession(sescMVar)
     -- * The output and input operations
   , fdisplay, fpromptGetKey
     -- * Frontend administration tools
   , frontendName, startup
   ) where
 
+import Control.Concurrent
 import Graphics.Vty
 import qualified Graphics.Vty as Vty
 
@@ -19,6 +20,7 @@ import Game.LambdaHack.Common.Msg
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
   { svty      :: !Vty  -- internal vty session
+  , sescMVar  :: !(Maybe (MVar ()))
   , sdebugCli :: !DebugModeCli  -- ^ client configuration
       -- ^ Configuration of the frontend session.
   }
@@ -31,7 +33,9 @@ frontendName = "vty"
 startup :: DebugModeCli -> (FrontendSession -> IO ()) -> IO ()
 startup sdebugCli k = do
   svty <- mkVty
-  k FrontendSession{..}
+  -- TODO: implement sescMVar, when we switch to a new vty that has
+  -- a separate key listener thread or something. Avoid polling.
+  k FrontendSession{sescMVar = Nothing, ..}
   Vty.shutdown svty
 
 -- | Output to the screen via the frontend.

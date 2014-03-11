@@ -1,13 +1,14 @@
 -- | Text frontend based on stdin/stdout, intended for bots.
 module Game.LambdaHack.Frontend.Std
   ( -- * Session data type for the frontend
-    FrontendSession
+    FrontendSession(sescMVar)
     -- * The output and input operations
   , fdisplay, fpromptGetKey
     -- * Frontend administration tools
   , frontendName, startup
   ) where
 
+import Control.Concurrent
 import qualified Data.ByteString.Char8 as BS
 import Data.Char (chr, ord)
 import qualified System.IO as SIO
@@ -19,6 +20,7 @@ import qualified Game.LambdaHack.Common.Key as K
 -- | No session data needs to be maintained by this frontend.
 data FrontendSession = FrontendSession
   { sdebugCli :: !DebugModeCli  -- ^ client configuration
+  , sescMVar  :: !(Maybe (MVar ()))
   }
 
 -- | The name of the frontend.
@@ -27,7 +29,7 @@ frontendName = "std"
 
 -- | Starts the main program loop using the frontend input and output.
 startup :: DebugModeCli -> (FrontendSession -> IO ()) -> IO ()
-startup sdebugCli k = k FrontendSession{..}
+startup sdebugCli k = k FrontendSession{sescMVar = Nothing, ..}
 
 -- | Output to the screen via the frontend.
 fdisplay :: FrontendSession    -- ^ frontend session data

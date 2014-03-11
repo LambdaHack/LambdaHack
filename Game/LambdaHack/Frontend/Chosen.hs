@@ -6,6 +6,7 @@ module Game.LambdaHack.Frontend.Chosen
   , frontendName
   ) where
 
+import Control.Concurrent
 import Game.LambdaHack.Common.Animation (DebugModeCli (..), SingleFrame (..))
 import qualified Game.LambdaHack.Common.Key as K
 
@@ -26,6 +27,7 @@ frontendName = Chosen.frontendName
 data Frontend = Frontend
   { fdisplay      :: Bool -> Maybe SingleFrame -> IO ()
   , fpromptGetKey :: SingleFrame -> IO K.KM
+  , fescMVar      :: !(Maybe (MVar ()))
   , fdebugCli     :: !DebugModeCli
   }
 
@@ -35,6 +37,7 @@ chosenStartup fdebugCli cont =
     cont $ Frontend
       { fdisplay = Chosen.fdisplay fs
       , fpromptGetKey = Chosen.fpromptGetKey fs
+      , fescMVar = Chosen.sescMVar fs
       , fdebugCli
       }
 
@@ -44,6 +47,7 @@ stdStartup fdebugCli cont =
     cont $ Frontend
       { fdisplay = Std.fdisplay fs
       , fpromptGetKey = Std.fpromptGetKey fs
+      , fescMVar = Std.sescMVar fs
       , fdebugCli
       }
 
@@ -52,5 +56,6 @@ noStartup fdebugCli cont =
     cont $ Frontend
       { fdisplay = \_ _ -> return ()
       , fpromptGetKey = \_ -> return K.escKey
+      , fescMVar = Nothing
       , fdebugCli
       }
