@@ -954,16 +954,15 @@ tryTakeMVarSescMVar = do
 
 pongUI :: (MonadClientUI m, MonadClientWriteServer CmdSer m) => m ()
 pongUI = do
+  -- Ping the frontend, too.
+  syncFrames
   let sendPong ats = writeServer $ CmdTakeTimeSer $ PongHackSer ats
-  side <- getsClient sside
-  fact <- getsState $ (EM.! side) . sfactionD
-  if not $ playerAiLeader $ gplayer fact then sendPong []
+  escPressed <- tryTakeMVarSescMVar
+  if not escPressed then
+    -- Respond to the server normally.
+    sendPong []
   else do
-    escPressed <- tryTakeMVarSescMVar
-    if not escPressed then do
-      -- Ping the frontend, too.
-      syncFrames
-      sendPong []
-    else do
-      let atomicCmd = CmdAtomic $ AutoFactionA side False
-      sendPong [atomicCmd]
+    -- Ask server to turn off AI for the faction's leader.
+    side <- getsClient sside
+    let atomicCmd = CmdAtomic $ AutoFactionA side False
+    sendPong [atomicCmd]

@@ -100,13 +100,13 @@ reinitGame = do
 -- which greatly reduced the chance of saves being out of sync.
 saveBkpAll :: (MonadAtomic m, MonadServer m, MonadConnServer m) => Bool -> m ()
 saveBkpAll unconditional = do
-  factionD <- getsState sfactionD
-  let ping fid _ = do
-        sendPingAI fid
-        when (playerUI $ gplayer $ factionD EM.! fid) $ sendPingUI fid
-  mapWithKeyM_ ping factionD
   bench <- getsServer $ sbenchmark . sdebugSer
   when (unconditional || not bench) $ do
+    factionD <- getsState sfactionD
+    let ping fid _ = do
+          sendPingAI fid
+          when (playerUI $ gplayer $ factionD EM.! fid) $ sendPingUI fid
+    mapWithKeyM_ ping factionD
     execCmdAtomic SaveBkpA
     saveServer
 

@@ -230,8 +230,20 @@ handleActors cmdSerSem lid = do
           fact = factionD EM.! side
           mleader = gleader fact
           aidIsLeader = mleader == Just aid
-          queryUI = aidIsLeader && not (playerAiLeader $ gplayer fact)
-          switchLeader cmdS = do
+      queryUI <-
+        if aidIsLeader && playerUI (gplayer fact) then do
+          let hasAiLeader = playerAiLeader $ gplayer fact
+          if hasAiLeader then do
+            -- If UI client for the faction completely under AI control,
+            -- ping often to sync frames and to catch ESC,
+            -- which switches off Ai control.
+            sendPingUI side
+            fact2 <- getsState $ (EM.! side) . sfactionD
+            let hasAiLeader2 = playerAiLeader $ gplayer fact2
+            return $! not hasAiLeader2
+          else return True
+        else return False
+      let switchLeader cmdS = do
             -- TODO: check that the command is legal first, report and reject,
             -- but do not crash (currently server asserts things and crashes)
             let aidNew = aidCmdSer cmdS
@@ -310,11 +322,8 @@ handleActors cmdSerSem lid = do
         -- to display a new frame so that player does not see moves
         -- of all his AI party members cumulated in a single frame,
         -- but one by one.
-        when (playerUI $ gplayer fact) $ do
+        when (playerUI $ gplayer fact) $
           execSfxAtomic $ DisplayPushD side
-          -- If UI client for a faction under AI control. ping often
-          -- to catch ESC and sync frames.
-          when (playerAiLeader $ gplayer fact) $ sendPingUI side
         -- Clear messages in the UI client (if any), if the actor
         -- is a leader (which happens when a UI client is fully
         -- computer-controlled). We could record history more often,
