@@ -132,7 +132,9 @@ promptGetKey frontKM frontFr = do
       unless (null lastPlayOld) stopPlayBack  -- something went wrong
       ConnFrontend{..} <- getsSession sfconn
       writeConnFrontend Frontend.FrontKey {..}
-      readConnFrontend
+      km <- readConnFrontend
+      void $ tryTakeMVarSescMVar  -- clear ESC marker from regular keypress
+      return km
   (seqCurrent, seqPrevious, k) <- getsClient slastRecord
   let slastRecord = (km : seqCurrent, seqPrevious, k)
   modifyClient $ \cli -> cli {slastRecord}
@@ -179,6 +181,8 @@ getInitConfirms dm frontClear slides = do
     _ -> do
       writeConnFrontend Frontend.FrontSlides{..}
       km <- readConnFrontend
+      -- Don't clear ESC marker here, because the wait for confirms may
+      -- block a ping and the ping would not see the ESC.
       return $! km /= K.escKey
 
 -- | Get the key binding.
