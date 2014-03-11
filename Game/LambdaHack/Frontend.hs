@@ -96,13 +96,10 @@ connMulti = unsafePerformIO $ do
   toMulti <- newTQueueIO
   return $! ConnMulti{..}
 
--- | Augment a function that takes and returns keys.
-getConfirmGeneric :: Monad m
-                  => ([K.KM] -> a -> m K.KM)
-                  -> [K.KM] -> a -> m Bool
-getConfirmGeneric pGetKey clearKeys x = do
+getConfirmGeneric :: Frontend -> [K.KM] -> SingleFrame -> IO Bool
+getConfirmGeneric fs clearKeys frame = do
   let extraKeys = [K.spaceKey, K.escKey]
-  km <- pGetKey (clearKeys ++ extraKeys) x
+  km <- promptGetKey fs (clearKeys ++ extraKeys) frame
   return $! km /= K.escKey
 
 flushFrames :: Frontend -> FactionId -> ReqMap -> IO ReqMap
@@ -113,7 +110,7 @@ flushFrames fs fid reqMap = do
   return $! reqMap2
 
 displayAc :: Frontend -> AcFrame -> IO ()
-displayAc fs (AcConfirm fr) = void $ getConfirmGeneric (promptGetKey fs) [] fr
+displayAc fs (AcConfirm fr) = void $ getConfirmGeneric fs [] fr
 displayAc fs (AcRunning fr) = fdisplay fs True (Just fr)
 displayAc fs (AcNormal fr) = fdisplay fs False (Just fr)
 displayAc fs AcDelay = fdisplay fs False Nothing
@@ -224,7 +221,7 @@ loopFrontend fs ConnMulti{..} = loop Nothing EM.empty
                   writeKM fid K.spaceKey
                   return x
                 x : xs -> do
-                  go <- getConfirmGeneric (promptGetKey fs) frontClear x
+                  go <- getConfirmGeneric fs frontClear x
                   if go then displayFrs xs
                   else do
                     writeKM fid K.escKey
