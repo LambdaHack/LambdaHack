@@ -51,7 +51,8 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Content.TileKind as TileKind
+import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.Content.TileKind
 
 type SlideOrCmd a = Either Slideshow a
 
@@ -199,23 +200,23 @@ waitHuman = do
 pickupHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
 pickupHuman = do
   leader <- getLeaderUI
-  body <- getsState $ getActorBody leader
-  ggi <- getAnyItem False "What to pick up?"
-                    [CGround] False True
-                    "from the floor"
+  b <- getsState $ getActorBody leader
+  let cLegal = [CGround]
+      toCStore = CEqp
+      verb = "pick up"
+  ggi <- getAnyItem False verb cLegal False True
   case ggi of
-    Right ((iid, item), (k, cstore)) -> do
-      assert (cstore == CGround) skip
+    Right ((iid, item), (k, fromCStore)) -> do
       slots <- getsClient sslots
       freeSlot <- getsClient sfreeSlot
       let l = if jsymbol item == '$' then Just $ SlotChar '$' else Nothing
-      mc <- getsState $ assignSlot iid l body slots freeSlot
+      mc <- getsState $ assignSlot iid l b slots freeSlot
       case mc of
         Just l2 -> do
           modifyClient $ \cli ->
             cli { sslots = EM.insert l2 iid (sslots cli)
                 , sfreeSlot = max l2 (sfreeSlot cli) }
-          return $ Right $ MoveItemSer leader iid k CGround CEqp
+          return $ Right $ MoveItemSer leader iid k fromCStore toCStore
         Nothing -> failSer PickupOverfull
     Left slides -> return $ Left slides
 
@@ -229,17 +230,17 @@ dropHuman = do
   b <- getsState $ getActorBody leader
   let kind = okind $ bkind b
       cLegal = [CEqp] ++ [CInv | calmEnough b kind]
-  ggi <- getAnyItem True "What to drop?" cLegal True True
-                    "in inventory"
+      toCStore = CGround
+      verb = "drop"
+  ggi <- getAnyItem True verb cLegal True True
   case ggi of
-    Right ((iid, item), (k, cstore)) -> do
+    Right ((iid, item), (k, fromCStore)) -> do
       disco <- getsClient sdisco
       subject <- partAidLeader leader
       msgAdd $ makeSentence
-        [ MU.SubjectVerbSg subject "drop"
+        [ MU.SubjectVerbSg subject verb
         , partItemWs coitem disco k item ]
-      -- Do not remove from item slots, only from the bag.
-      return $ Right $ MoveItemSer leader iid k cstore CGround
+      return $ Right $ MoveItemSer leader iid k fromCStore toCStore
     Left slides -> return $ Left slides
 
 allObjectsName :: Text
@@ -251,11 +252,10 @@ allObjectsName = "Objects"
 getGroupItem :: MonadClientUI m
              => MU.Part  -- ^ name of the group
              -> [Char]   -- ^ accepted item symbols
-             -> Text     -- ^ prompt
+             -> MU.Part  -- ^ the verb of the prompt
              -> [CStore] -- ^ legal containers
              -> Bool     -- ^ whether to ask for the number of items
              -> Bool     -- ^ whether the default is all, instead of one
-             -> Text     -- ^ how to refer to the collection of objects
              -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
 getGroupItem object syms prompt = do
   let choice i = jsymbol i `elem` syms
@@ -265,11 +265,10 @@ getGroupItem object syms prompt = do
 -- | Let the human player choose any item from a list of items.
 getAnyItem :: MonadClientUI m
            => Bool
-           -> Text
+           -> MU.Part
            -> [CStore]
            -> Bool
            -> Bool
-           -> Text
            -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
 getAnyItem askWhenLone prompt =
   getItem askWhenLone prompt (const True) allObjectsName
@@ -281,16 +280,17 @@ data ItemDialogState = INone | ISuitable | IAll deriving Eq
 getItem :: forall m. MonadClientUI m
         => Bool            -- ^ whether to ask if the item alone
                            --   in the starting container and suitable
-        -> Text            -- ^ prompt message
+        -> MU.Part         -- ^ the verb of the prompt
         -> (Item -> Bool)  -- ^ which items to consider suitable
         -> Text            -- ^ how to describe suitable items
         -> [CStore]        -- ^ legal containers
         -> Bool            -- ^ whether to ask for the number of items
         -> Bool            -- ^ whether the default is all, instead of one
-        -> Text            -- ^ how to refer to the collection of items
         -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
-getItem _ _ _ _ [] _ _ _ = failSer ItemNotCalm
-getItem askWhenLone prompt p ptext cLegalRaw askNumber allNumber isn = do
+getItem _ _ _ _ [] _ _ = failSer ItemNotCalm
+getItem askWhenLone verb p ptext cLegalRaw askNumber allNumber = do
+ Kind.COps{corule} <- getsState scops
+ let RuleKind{rsharedInventory} = Kind.stdRuleset corule
  leader <- getLeaderUI
  s <- getState
  let cNotEmpty cstore = not (EM.null (getCBag (CActor leader cstore) s))
@@ -305,7 +305,7 @@ getItem askWhenLone prompt p ptext cLegalRaw askNumber allNumber isn = do
   let ask = do
         if all (null . EM.elems)
            $ map (\cstore -> getCBag (CActor leader cstore) s) cLegal
-        then failWith $ "nothing" <+> isn
+        then failWith "no objects found"
         else if not askWhenLone && fmap (p . snd . fst) mloneItem == Just True
         then case mloneItem of
           Nothing -> assert `failure` cStart
@@ -372,6 +372,13 @@ getItem askWhenLone prompt p ptext cLegalRaw askNumber allNumber isn = do
               else let mls = map (snd . snd) ims2
                        r = slotRange mls
                    in "[" <> r <> ", ?" <> floorMsg <> invEqpMsg <> bestMsg
+            isn = case cCur of
+              CEqp -> "in personal equipment"
+              CInv -> if rsharedInventory
+                      then "in shared inventory"
+                      else "in inventory"
+              CGround -> "on the floor"
+            prompt = makePhrase ["What to", verb MU.:> "?"]
             (ims, invOver, msg) = case itemDialogState of
               INone     -> (isp, EM.empty, prompt)
               ISuitable -> (isp, invP, ptext <+> isn <> ".")
@@ -416,18 +423,18 @@ wieldHuman = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   let kind = okind $ bkind b
-      cLegal = [CGround] ++ [CInv | calmEnough b kind]
-  ggi <- getAnyItem True "What to wield/wear?"
-                    cLegal True True
-                    "in inventory"
+      cLegal = [CInv | calmEnough b kind] ++ [CGround]
+      toCStore = CEqp
+      verb = "wield"
+  ggi <- getAnyItem True verb cLegal True True
   case ggi of
-    Right ((iid, item), (k, cstore)) -> do
+    Right ((iid, item), (k, fromCStore)) -> do
       disco <- getsClient sdisco
       subject <- partAidLeader leader
       msgAdd $ makeSentence
-        [ MU.SubjectVerbSg subject "wield"
+        [ MU.SubjectVerbSg subject verb
         , partItemWs coitem disco k item ]
-      return $ Right $ MoveItemSer leader iid k cstore CEqp
+      return $ Right $ MoveItemSer leader iid k fromCStore toCStore
     Left slides -> return $ Left slides
 
 -- * Yield
@@ -440,17 +447,17 @@ yieldHuman = do
   b <- getsState $ getActorBody leader
   let kind = okind $ bkind b
       cLegal = [CEqp | calmEnough b kind]
-  ggi <- getAnyItem True "What to take off?"
-                    cLegal True True "in equipment"
+      toCStore = CInv
+      verb = "take off"
+  ggi <- getAnyItem True verb cLegal True True
   case ggi of
-    Right ((iid, item), (k, cstore)) -> do
-      assert (cstore == CEqp) skip
+    Right ((iid, item), (k, fromCStore)) -> do
       disco <- getsClient sdisco
       subject <- partAidLeader leader
       msgAdd $ makeSentence
-        [ MU.SubjectVerbSg subject "take off"
+        [ MU.SubjectVerbSg subject verb
         , partItemWs coitem disco k item ]
-      return $ Right $ MoveItemSer leader iid k CEqp CInv
+      return $ Right $ MoveItemSer leader iid k fromCStore toCStore
     Left slides -> return $ Left slides
 
 -- * Project
@@ -512,8 +519,7 @@ projectEps ts tpos eps = do
   leader <- getLeaderUI
   let cLegal = [CEqp, CInv, CGround]  -- calm enough at this stage
   ggi <- getGroupItem object1 triggerSyms
-           (makePhrase ["What to", verb1 MU.:> "?"])
-           cLegal False False "in inventory"
+           verb1 cLegal False False
   case ggi of
     Right ((iid, _), (_, cstore)) ->
       return $ Right $ ProjectSer leader tpos eps iid cstore
@@ -532,14 +538,13 @@ applyHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   let kind = okind $ bkind b
-      cLegal = [CGround, CEqp] ++ [CInv | calmEnough b kind]
+      cLegal = [CEqp] ++ [CInv | calmEnough b kind] ++ [CGround]
   let (verb1, object1) = case ts of
         [] -> ("activate", "object")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
   ggi <- getGroupItem object1 triggerSyms
-           (makePhrase ["What to", verb1 MU.:> "?"])
-           cLegal False False "in inventory"
+           verb1 cLegal False False
   case ggi of
     Right ((iid, _), (_, cstore)) ->
       return $ Right $ ApplySer leader iid cstore

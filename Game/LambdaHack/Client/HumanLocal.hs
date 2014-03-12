@@ -188,8 +188,11 @@ inventoryHuman = do
       [ MU.SubjectVerbSg subject "have"
       , "nothing in inventory" ]
     else do
-      let blurb = makePhrase
-            [MU.Capitalize $ MU.SubjectVerbSg subject "keep in inventory:"]
+      let keepInv = if rsharedInventory
+                    then "keep in shared inventory:"
+                    else "keep in inventory:"
+          blurb = makePhrase
+            [MU.Capitalize $ MU.SubjectVerbSg subject keepInv]
           inv = EM.filter (`EM.member` bag) slots
       io <- itemOverlay bag inv
       overlayToSlideshow blurb io
@@ -212,7 +215,8 @@ equipmentHuman = do
       , "no equipment" ]
     else do
       let blurb = makePhrase
-            [MU.Capitalize $ MU.SubjectVerbSg subject "hold as equipment:"]
+            [MU.Capitalize
+             $ MU.SubjectVerbSg subject "hold as personal equipment:"]
           inv = EM.filter (`EM.member` bag) slots
       io <- itemOverlay bag inv
       overlayToSlideshow blurb io

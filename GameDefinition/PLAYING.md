@@ -122,10 +122,10 @@ Below are the remaining keys for movement and terrain alteration.
 Inventory and items-related keys are as follows.
 
                 keys           command
-                I              display inventory
+                I              display shared inventory
                 g and ,        get an object
                 d              drop an object
-                E              display equipment
+                E              display personal equipment
                 w              wield/wear an object
                 t              take off an object
                 A              display all owned objects
