@@ -192,7 +192,7 @@ testBattle-long:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 580 --dumpInitRngs --automateAll --gameMode battle --difficulty 1 > /tmp/stdtest.log
 
 testBattle-medium:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 280 --dumpInitRngs --automateAll --gameMode battle --difficulty 1 --setDungeonRng "1517563103 316655016" --setMainRng "1517563103 316655016" > /tmp/stdtest.log
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 280 --dumpInitRngs --automateAll --gameMode battle --difficulty 1 > /tmp/stdtest.log
 
 testPvP-long:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 58 --dumpInitRngs --automateAll --gameMode PvP > /tmp/stdtest.log
