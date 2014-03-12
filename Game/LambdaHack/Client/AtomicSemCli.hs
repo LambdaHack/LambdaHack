@@ -551,7 +551,7 @@ moveItemUI :: MonadClientUI m
 moveItemUI verbose iid k c1 c2 = do
   Kind.COps{coitem} <- getsState scops
   case (c1, c2) of
-    (CActor _ CGround, CActor aid _) -> do
+    (CActor _ CGround, CActor aid cstore) -> do
       b <- getsState $ getActorBody aid
       unless (bproj b) $ do
         side <- getsClient sside
@@ -559,7 +559,8 @@ moveItemUI verbose iid k c1 c2 = do
           item <- getsState $ getItemBody iid
           disco <- getsClient sdisco
           slots <- getsClient sslots
-          let n = binv b EM.! iid
+          bag <- getsState $ getCBag $ CActor aid cstore
+          let n = bag EM.! iid
           case lookup iid $ map swap $ EM.assocs slots of
             Just l -> msgAdd $ makePhrase
                         [ slotLabel l

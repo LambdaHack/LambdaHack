@@ -282,14 +282,14 @@ waitSer _ = return ()
 pickupSer :: (MonadAtomic m, MonadServer m)
           => ActorId -> ItemId -> Int -> m ()
 pickupSer aid iid k = assert (k > 0) $ do
-  execCmdAtomic $ MoveItemA iid k (CActor aid CGround) (CActor aid CInv)
+  execCmdAtomic $ MoveItemA iid k (CActor aid CGround) (CActor aid CEqp)
 
 -- * DropSer
 
 dropSer :: (MonadAtomic m, MonadServer m)
-        => ActorId -> ItemId -> Int -> m ()
-dropSer aid iid k = assert (k > 0) $ do
-  cs <- actorConts iid k aid CInv
+        => ActorId -> ItemId -> Int -> CStore -> m ()
+dropSer aid iid k cstore = assert (k > 0) $ do
+  cs <- actorConts iid k aid cstore
   mapM_ (\(ck, c) -> execCmdAtomic $ MoveItemA iid ck c (CActor aid CGround)) cs
 
 actorInvs :: MonadServer m
@@ -320,9 +320,9 @@ actorConts iid k aid cstore = case cstore of
 -- * WieldSer
 
 wieldSer :: (MonadAtomic m, MonadServer m)
-         => ActorId -> ItemId -> Int -> m ()
-wieldSer aid iid k = assert (k > 0) $ do
-  cs <- actorConts iid k aid CInv
+         => ActorId -> ItemId -> Int -> CStore -> m ()
+wieldSer aid iid k cstore = assert (k > 0) $ do
+  cs <- actorConts iid k aid cstore
   mapM_ (\(ck, c) -> execCmdAtomic $ MoveItemA iid ck c (CActor aid CEqp)) cs
 
 -- * YieldSer
@@ -409,7 +409,7 @@ projectBla source pos rest iid cstore = do
   unless (bproj sb) $ execSfxAtomic $ ProjectD source iid
   projId <- addProjectile pos rest iid lid (bfid sb) time
   cs <- actorConts iid 1 source cstore
-  mapM_ (\(_, c) -> execCmdAtomic $ MoveItemA iid 1 c (CActor projId CInv)) cs
+  mapM_ (\(_, c) -> execCmdAtomic $ MoveItemA iid 1 c (CActor projId CEqp)) cs
 
 -- | Create a projectile actor containing the given missile.
 addProjectile :: (MonadAtomic m, MonadServer m)

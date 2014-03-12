@@ -228,20 +228,20 @@ dropHuman = do
   -- TODO: allow dropping a given number of identical items.
   Kind.COps{coitem} <- getsState scops
   leader <- getLeaderUI
-  ggi <- getAnyItem True "What to drop?" [CInv, CEqp] True True
+  ggi <- getAnyItem True "What to drop?" [CEqp, CInv] True True
                     "in inventory"
   case ggi of
-    Right ((iid, item), (k, cstore)) ->
-      case cstore of
-        CInv -> do
-          disco <- getsClient sdisco
-          subject <- partAidLeader leader
-          msgAdd $ makeSentence
-            [ MU.SubjectVerbSg subject "drop"
-            , partItemWs coitem disco k item ]
-          -- Do not remove from item slots, only from the bag.
-          return $ Right $ DropSer leader iid k
-        _ -> failWith "never mind"
+    Right ((iid, item), (k, cstore)) -> do
+      let _cost = case cstore of
+            CInv -> undefined
+            _ -> undefined
+      disco <- getsClient sdisco
+      subject <- partAidLeader leader
+      msgAdd $ makeSentence
+        [ MU.SubjectVerbSg subject "drop"
+        , partItemWs coitem disco k item ]
+      -- Do not remove from item slots, only from the bag.
+      return $ Right $ DropSer leader iid k cstore
     Left slides -> return $ Left slides
 
 allObjectsName :: Text
@@ -414,16 +414,16 @@ wieldHuman = do
                     [CInv, CGround] True True
                     "in inventory"
   case ggi of
-    Right ((iid, item), (k, cstore)) ->
-      case cstore of
-        CInv -> do
-          disco <- getsClient sdisco
-          subject <- partAidLeader leader
-          msgAdd $ makeSentence
-            [ MU.SubjectVerbSg subject "wield"
-            , partItemWs coitem disco k item ]
-          return $ Right $ WieldSer leader iid k
-        _ -> failWith "never mind"
+    Right ((iid, item), (k, cstore)) -> do
+      let _cost = case cstore of
+            CInv -> undefined
+            _ -> undefined
+      disco <- getsClient sdisco
+      subject <- partAidLeader leader
+      msgAdd $ makeSentence
+        [ MU.SubjectVerbSg subject "wield"
+        , partItemWs coitem disco k item ]
+      return $ Right $ WieldSer leader iid k cstore
     Left slides -> return $ Left slides
 
 -- * Yield
@@ -448,7 +448,7 @@ yieldHuman = do
             [ MU.SubjectVerbSg subject "take off"
             , partItemWs coitem disco k item ]
           return $ Right $ YieldSer leader iid k
-        _ -> failWith "never mind"
+        _ -> assert `failure` cstore
     Left slides -> return $ Left slides
 
 -- * Project
@@ -511,7 +511,7 @@ projectEps ts tpos eps = do
   leader <- getLeaderUI
   ggi <- getGroupItem object1 triggerSyms
            (makePhrase ["What to", verb1 MU.:> "?"])
-           [CInv, CGround] False False "in inventory"
+           [CEqp, CInv, CGround] False False "in inventory"
   case ggi of
     Right ((iid, _), (_, cstore)) ->
       return $ Right $ ProjectSer leader tpos eps iid cstore
@@ -533,7 +533,7 @@ applyHuman ts = do
       triggerSyms = triggerSymbols ts
   ggi <- getGroupItem object1 triggerSyms
            (makePhrase ["What to", verb1 MU.:> "?"])
-           [CInv, CGround] False False "in inventory"
+           [CEqp, CInv, CGround] False False "in inventory"
   case ggi of
     Right ((iid, _), (_, cstore)) ->
       return $ Right $ ApplySer leader iid cstore

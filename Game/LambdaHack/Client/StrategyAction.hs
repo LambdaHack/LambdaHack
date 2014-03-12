@@ -389,7 +389,7 @@ pickup aid = do
                 bestEqp = strongestItem eqpAssocs $ pSymbol cops symbol
             in case (bestInv, bestEqp) of
               (Just (_, (iidInv, _)), Nothing) ->
-                returN "wield" $ WieldSer aid iidInv 1
+                returN "wield" $ WieldSer aid iidInv 1 CInv
               (Just (vInv, (_, _)), Just (vEqp, (iidEqp, _))) | vInv > vEqp ->
                 returN "yield" $ YieldSer aid iidEqp 1
               _ -> reject
@@ -498,7 +498,7 @@ rangedFreq aid = do
                 } <- getsState scops
   btarget <- getsClient $ getTarget aid
   b@Actor{bkind, bpos, blid} <- getsState $ getActorBody aid
-  invBag <- getsState $ getInvBag b
+  let eqpBag = beqp b
   mfpos <- aidTgtToPos aid blid btarget
   case (btarget, mfpos) of
     (Just TEnemy{}, Just fpos) -> do
@@ -548,7 +548,7 @@ rangedFreq aid = do
                -- and no actors or obstracles along the path
                && steps == chessDist bpos fpos
             then toFreq "throwFreq"
-                 $ throwFreq invBag 4 CInv
+                 $ throwFreq eqpBag 4 CEqp
                    ++ throwFreq tis 8 CGround
             else toFreq "throwFreq: not possible" []
       return $! freq
@@ -560,7 +560,7 @@ toolsFreq aid = do
   cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   disco <- getsClient sdisco
   b@Actor{bkind, bpos, blid} <- getsState $ getActorBody aid
-  invBag <- getsState $ getInvBag b
+  let eqpBag = beqp b
   lvl <- getLevel blid
   s <- getState
   let tis = lvl `atI` bpos
@@ -579,7 +579,7 @@ toolsFreq aid = do
         , benefit > 0
         , jsymbol i `elem` mastered ]
   return $! toFreq "useFreq" $
-    useFreq invBag 1 CInv
+    useFreq eqpBag 1 CEqp
     ++ useFreq tis 2 CGround
 
 displace :: MonadClient m => ActorId -> m (Strategy CmdTakeTimeSer)

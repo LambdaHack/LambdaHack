@@ -370,9 +370,9 @@ dropAllItems :: (MonadAtomic m, MonadServer m)
 dropAllItems aid b hit = do
   Kind.COps{coitem} <- getsState scops
   discoS <- getsServer sdisco
-  let container = CActor aid CInv
-      g iid k = execCmdAtomic $ MoveItemA iid k (CActor aid CEqp) container
-  mapActorEqp_ g b
+  let container = CActor aid CEqp
+      g iid k = execCmdAtomic $ MoveItemA iid k (CActor aid CInv) container
+  mapActorInv_ g b
   let isDestroyed item = hit || bproj b && isFragile coitem discoS item
       f iid k = do
         item <- getsState $ getItemBody iid
@@ -383,14 +383,14 @@ dropAllItems aid b hit = do
               let ik = fromJust $ jkind discoS item
               execCmdAtomic $ DiscoverA (blid b) (bpos b) iid ik
               execCmdAtomic $ DestroyItemA iid item k container
-              explodeItem aid b CInv cgroup
+              explodeItem aid b cgroup
         else
           execCmdAtomic $ MoveItemA iid k container (CActor aid CGround)
   mapActorInv_ f b
 
 explodeItem :: (MonadAtomic m, MonadServer m)
-            => ActorId -> Actor -> CStore -> Text -> m ()
-explodeItem aid b cstore cgroup = do
+            => ActorId -> Actor -> Text -> m ()
+explodeItem aid b cgroup = do
   Kind.COps{coitem} <- getsState scops
   flavour <- getsServer sflavour
   discoRev <- getsServer sdiscoRev
@@ -399,7 +399,7 @@ explodeItem aid b cstore cgroup = do
   let itemFreq = toFreq "shrapnel group" [(1, cgroup)]
   (item, n1, _) <- rndToAction
                    $ newItem coitem flavour discoRev itemFreq ldepth depth
-  let container = CActor aid cstore
+  let container = CActor aid CEqp
   iid <- registerItem item n1 container False
   let Point x y = bpos b
       projectN n = replicateM_ n $ do
@@ -416,16 +416,16 @@ explodeItem aid b cstore cgroup = do
             4 -> fmap (flip Point (y + 10)) $ randomR (x - 10, x + 10)
             _ -> assert `failure` border
         let eps = px tpxy + py tpxy
-        mfail <- projectFail aid tpxy eps iid cstore True
+        mfail <- projectFail aid tpxy eps iid CEqp True
         case mfail of
           Nothing -> return ()
           Just ProjectBlockTerrain -> return ()
           Just failMsg -> execFailure aid failMsg
   projectN n1
-  bag2 <- getsState $ binv . getActorBody aid
+  bag2 <- getsState $ beqp . getActorBody aid
   let mn2 = EM.lookup iid bag2
   maybe skip projectN mn2  -- assume all shrapnels bounce off obstacles once
-  bag3 <- getsState $ binv . getActorBody aid
+  bag3 <- getsState $ beqp . getActorBody aid
   let mn3 = EM.lookup iid bag3
   maybe skip (\k -> execCmdAtomic $ LoseItemA iid item k container) mn3
 

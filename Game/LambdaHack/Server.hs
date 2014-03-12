@@ -42,8 +42,8 @@ cmdSerSemTakeTime cmd = case cmd of
   AlterSer source tpos mfeat -> alterSer source tpos mfeat
   WaitSer aid -> waitSer aid
   PickupSer aid i k -> pickupSer aid i k
-  DropSer aid iid k -> dropSer aid iid k
-  WieldSer aid i k -> wieldSer aid i k
+  DropSer aid iid k cstore -> dropSer aid iid k cstore
+  WieldSer aid iid k cstore -> wieldSer aid iid k cstore
   YieldSer aid iid k -> yieldSer aid iid k
   ProjectSer aid p eps iid cstore -> projectSer aid p eps iid cstore
   ApplySer aid iid cstore -> applySer aid iid cstore
