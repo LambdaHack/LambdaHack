@@ -277,19 +277,11 @@ alterSer source tpos mfeat = do
 waitSer :: MonadAtomic m => ActorId -> m ()
 waitSer _ = return ()
 
--- * PickupSer
+-- * MoveItemSer
 
-pickupSer :: (MonadAtomic m, MonadServer m)
-          => ActorId -> ItemId -> Int -> m ()
-pickupSer aid iid k = assert (k > 0) $ do
-  execCmdAtomic $ MoveItemA iid k (CActor aid CGround) (CActor aid CEqp)
-
--- * DropSer
-
-dropSer :: (MonadAtomic m, MonadServer m)
-        => ActorId -> ItemId -> Int -> CStore -> m ()
-dropSer aid iid k fromCStore = do
-  let toCStore = CGround
+moveItemSer :: (MonadAtomic m, MonadServer m)
+            => ActorId -> ItemId -> Int -> CStore -> CStore -> m ()
+moveItemSer aid iid k fromCStore toCStore = do
   let moveItem = do
         cs <- actorConts iid k aid fromCStore
         mapM_ (\(ck, c) -> execCmdAtomic
@@ -327,45 +319,6 @@ actorConts iid k aid cstore = case cstore of
   CInv -> do
     invs <- actorInvs iid k aid
     return $! map (\(n, aid2) -> (n, CActor aid2 CInv)) invs
-
--- * WieldSer
-
-wieldSer :: (MonadAtomic m, MonadServer m)
-         => ActorId -> ItemId -> Int -> CStore -> m ()
-wieldSer aid iid k fromCStore = do
-  let toCStore = CEqp
-  let moveItem = do
-        cs <- actorConts iid k aid fromCStore
-        mapM_ (\(ck, c) -> execCmdAtomic
-                           $ MoveItemA iid ck c (CActor aid toCStore)) cs
-  if k < 1 || fromCStore == toCStore then execFailure aid ItemNothing
-  else if fromCStore /= CInv && toCStore /= CInv then moveItem
-  else do
-    Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-    b <- getsState $ getActorBody aid
-    let kind = okind $ bkind b
-    if calmEnough b kind then moveItem
-    else execFailure aid ItemNotCalm
-
--- * YieldSer
-
-yieldSer :: (MonadAtomic m, MonadServer m)
-         => ActorId -> ItemId -> Int -> m ()
-yieldSer aid iid k = do
-  let fromCStore = CEqp
-      toCStore = CInv
-  let moveItem = do
-        cs <- actorConts iid k aid fromCStore
-        mapM_ (\(ck, c) -> execCmdAtomic
-                           $ MoveItemA iid ck c (CActor aid toCStore)) cs
-  if k < 1 || fromCStore == toCStore then execFailure aid ItemNothing
-  else if fromCStore /= CInv && toCStore /= CInv then moveItem
-  else do
-    Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-    b <- getsState $ getActorBody aid
-    let kind = okind $ bkind b
-    if calmEnough b kind then moveItem
-    else execFailure aid ItemNotCalm
 
 -- * ProjectSer
 

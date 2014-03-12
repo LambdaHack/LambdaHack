@@ -41,10 +41,8 @@ cmdSerSemTakeTime cmd = case cmd of
   DisplaceSer source target -> displaceSer source target
   AlterSer source tpos mfeat -> alterSer source tpos mfeat
   WaitSer aid -> waitSer aid
-  PickupSer aid i k -> pickupSer aid i k
-  DropSer aid iid k cstore -> dropSer aid iid k cstore
-  WieldSer aid iid k cstore -> wieldSer aid iid k cstore
-  YieldSer aid iid k -> yieldSer aid iid k
+  MoveItemSer aid iid k fromCStore toCStore ->
+    moveItemSer aid iid k fromCStore toCStore
   ProjectSer aid p eps iid cstore -> projectSer aid p eps iid cstore
   ApplySer aid iid cstore -> applySer aid iid cstore
   TriggerSer aid mfeat -> triggerSer aid mfeat

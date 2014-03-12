@@ -378,7 +378,7 @@ pickup aid = do
           modifyClient $ \cli ->
             cli { sslots = EM.insert l2 iid (sslots cli)
                 , sfreeSlot = max l2 (sfreeSlot cli) }
-          return $! returN "pickup" $ PickupSer aid iid k
+          return $! returN "pickup" $ MoveItemSer aid iid k CGround CEqp
         Nothing -> assert `failure` fact  -- TODO: return mzero  -- PickupOverfull
     [] -> do
       let RuleKind{ritemEqp, rsharedInventory} = Kind.stdRuleset corule
@@ -389,16 +389,16 @@ pickup aid = do
                 bestEqp = strongestItems eqpKA $ pSymbol cops symbol
             in case (bestInv, bestEqp) of
               (Just (_, (iidInv, _)), []) ->
-                returN "wield" $ WieldSer aid iidInv 1 CInv
+                returN "wield" $ MoveItemSer aid iidInv 1 CInv CEqp
               (Just (vInv, (iidInv, _)), (_, (vEqp, _)) : _)
                 | vInv > vEqp ->
-                returN "wield" $ WieldSer aid iidInv 1 CInv
+                returN "wield" $ MoveItemSer aid iidInv 1 CInv CEqp
               (_, (_, (k, (iidEqp, _))) : _) | k > 1 && rsharedInventory ->
                 -- To share the best items with others.
-                returN "yield" $ YieldSer aid iidEqp (k - 1)
+                returN "yield" $ MoveItemSer aid iidEqp (k - 1) CEqp CInv
               (_, _ : (_, (k, (iidEqp, _))) : _) ->
                 -- To make room in limited equipment store or to share.
-                returN "yield" $ YieldSer aid iidEqp k
+                returN "yield" $ MoveItemSer aid iidEqp k CEqp CInv
               _ -> reject
       return $ msum $ map improve ritemEqp
 

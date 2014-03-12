@@ -204,7 +204,8 @@ pickupHuman = do
                     [CGround] False True
                     "from the floor"
   case ggi of
-    Right ((iid, item), (k, _)) -> do
+    Right ((iid, item), (k, cstore)) -> do
+      assert (cstore == CGround) skip
       slots <- getsClient sslots
       freeSlot <- getsClient sfreeSlot
       let l = if jsymbol item == '$' then Just $ SlotChar '$' else Nothing
@@ -214,7 +215,7 @@ pickupHuman = do
           modifyClient $ \cli ->
             cli { sslots = EM.insert l2 iid (sslots cli)
                 , sfreeSlot = max l2 (sfreeSlot cli) }
-          return $ Right $ PickupSer leader iid k
+          return $ Right $ MoveItemSer leader iid k CGround CEqp
         Nothing -> failSer PickupOverfull
     Left slides -> return $ Left slides
 
@@ -238,7 +239,7 @@ dropHuman = do
         [ MU.SubjectVerbSg subject "drop"
         , partItemWs coitem disco k item ]
       -- Do not remove from item slots, only from the bag.
-      return $ Right $ DropSer leader iid k cstore
+      return $ Right $ MoveItemSer leader iid k cstore CGround
     Left slides -> return $ Left slides
 
 allObjectsName :: Text
@@ -419,7 +420,7 @@ wieldHuman = do
       msgAdd $ makeSentence
         [ MU.SubjectVerbSg subject "wield"
         , partItemWs coitem disco k item ]
-      return $ Right $ WieldSer leader iid k cstore
+      return $ Right $ MoveItemSer leader iid k cstore CEqp
     Left slides -> return $ Left slides
 
 -- * Yield
@@ -435,16 +436,14 @@ yieldHuman = do
   ggi <- getAnyItem True "What to take off?"
                     cLegal True True "in equipment"
   case ggi of
-    Right ((iid, item), (k, cstore)) ->
-      case cstore of
-        CEqp -> do
-          disco <- getsClient sdisco
-          subject <- partAidLeader leader
-          msgAdd $ makeSentence
-            [ MU.SubjectVerbSg subject "take off"
-            , partItemWs coitem disco k item ]
-          return $ Right $ YieldSer leader iid k
-        _ -> assert `failure` cstore
+    Right ((iid, item), (k, cstore)) -> do
+      assert (cstore == CEqp) skip
+      disco <- getsClient sdisco
+      subject <- partAidLeader leader
+      msgAdd $ makeSentence
+        [ MU.SubjectVerbSg subject "take off"
+        , partItemWs coitem disco k item ]
+      return $ Right $ MoveItemSer leader iid k CEqp CInv
     Left slides -> return $ Left slides
 
 -- * Project
