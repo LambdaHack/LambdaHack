@@ -343,7 +343,7 @@ track aid = do
 -- TODO: pick up best weapons first
 pickup :: MonadClient m => ActorId -> m (Strategy CmdTakeTimeSer)
 pickup aid = do
-  cops@Kind.COps{corule} <- getsState scops
+  cops@Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
   body@Actor{bpos, blid} <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
   dungeon <- getsState sdungeon
@@ -367,6 +367,7 @@ pickup aid = do
                               in if desirableItem item k
                                  then Just (iid, item, k)
                                  else Nothing
+      kind = okind $ bkind body
   case mapMaybe mapDesirable $ EM.assocs $ lvl `atI` bpos of
     (iid, item, k) : _ -> do  -- pick up first desirable item, if any
       slots <- getsClient sslots
@@ -380,7 +381,7 @@ pickup aid = do
                 , sfreeSlot = max l2 (sfreeSlot cli) }
           return $! returN "pickup" $ MoveItemSer aid iid k CGround CEqp
         Nothing -> assert `failure` fact  -- TODO: return mzero  -- PickupOverfull
-    [] -> do
+    [] | calmEnough body kind -> do
       let RuleKind{ritemEqp, rsharedInventory} = Kind.stdRuleset corule
       invAssocs <- getsState $ getInvAssocs body
       eqpKA <- getsState $ getEqpKA body
@@ -390,7 +391,7 @@ pickup aid = do
             in case (bestInv, bestEqp) of
               (Just (_, (iidInv, _)), []) ->
                 returN "wield" $ MoveItemSer aid iidInv 1 CInv CEqp
-              (Just (vInv, (iidInv, _)), (_, (vEqp, _)) : _)
+              (Just (vInv, (iidInv, _)), (vEqp, _) : _)
                 | vInv > vEqp ->
                 returN "wield" $ MoveItemSer aid iidInv 1 CInv CEqp
               (_, (_, (k, (iidEqp, _))) : _) | k > 1 && rsharedInventory ->
@@ -401,6 +402,7 @@ pickup aid = do
                 returN "yield" $ MoveItemSer aid iidEqp k CEqp CInv
               _ -> reject
       return $ msum $ map improve ritemEqp
+    _ -> return reject
 
 pSymbol :: Kind.COps -> Char -> Item -> Maybe Int
 pSymbol cops c = case c of
@@ -511,12 +513,9 @@ rangedFreq aid = do
     (Just TEnemy{}, Just fpos) -> do
       disco <- getsClient sdisco
       itemD <- getsState sitemD
-      lvl@Level{lxsize, lysize} <- getLevel blid
+      lvl <- getLevel blid
       let mk = okind bkind
           tis = lvl `atI` bpos
-      fact <- getsState $ (EM.! bfid b) . sfactionD
-      foes <- getsState $ actorNotProjList (isAtWar fact) blid
-      let foesAdj = foesAdjacent lxsize lysize bpos foes
           initalEps = 0
       (steps, eps) <- makeLine b fpos initalEps
       let permitted = (if aiq mk >= 10 then ritemProject else ritemRanged)
@@ -550,7 +549,7 @@ rangedFreq aid = do
             , itemReaches i ]
           freq =
             if asight mk  -- ProjectBlind
-               && not foesAdj  -- ProjectBlockFoes
+               && calmEnough b mk  -- ProjectNotCalm
                -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
                -- and no actors or obstracles along the path
                && steps == chessDist bpos fpos
