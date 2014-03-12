@@ -301,7 +301,7 @@ dropSer aid iid k fromCStore = do
     b <- getsState $ getActorBody aid
     let kind = okind $ bkind b
     if calmEnough b kind then moveItem
-    else execFailure aid NotCalmEnough
+    else execFailure aid ItemNotCalm
 
 actorInvs :: MonadServer m
           => ItemId -> Int -> ActorId -> m [(Int, ActorId)]
@@ -345,7 +345,7 @@ wieldSer aid iid k fromCStore = do
     b <- getsState $ getActorBody aid
     let kind = okind $ bkind b
     if calmEnough b kind then moveItem
-    else execFailure aid NotCalmEnough
+    else execFailure aid ItemNotCalm
 
 -- * YieldSer
 
@@ -365,7 +365,7 @@ yieldSer aid iid k = do
     b <- getsState $ getActorBody aid
     let kind = okind $ bkind b
     if calmEnough b kind then moveItem
-    else execFailure aid NotCalmEnough
+    else execFailure aid ItemNotCalm
 
 -- * ProjectSer
 
@@ -412,7 +412,7 @@ projectFail source tpxy eps iid cstore isShrapnel = do
                    return Nothing
                  else return $ Just ProjectBlockActor
             else if not (isShrapnel || calmEnough sb kind) then
-                   return $ Just NotCalmEnough
+                   return $ Just ProjectNotCalm
                  else if not (asight kind || bproj sb) then
                    return $ Just ProjectBlind
                  else do
@@ -490,7 +490,7 @@ applySer aid iid cstore = do
     b <- getsState $ getActorBody aid
     let kind = okind $ bkind b
     if calmEnough b kind then applyItem
-    else execFailure aid NotCalmEnough
+    else execFailure aid ItemNotCalm
 
 -- * TriggerSer
 

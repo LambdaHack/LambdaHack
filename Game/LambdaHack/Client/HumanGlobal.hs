@@ -288,7 +288,7 @@ getItem :: forall m. MonadClientUI m
         -> Bool            -- ^ whether the default is all, instead of one
         -> Text            -- ^ how to refer to the collection of items
         -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
-getItem _ _ _ _ [] _ _ _ = failSer NotCalmEnough
+getItem _ _ _ _ [] _ _ _ = failSer ItemNotCalm
 getItem askWhenLone prompt p ptext cLegal@(cStart:_)
         askNumber allNumber isn = do
   leader <- getLeaderUI
@@ -476,7 +476,7 @@ projectPos ts tpos = do
       kind = okind $ bkind sb
   Level{lxsize, lysize} <- getLevel lid
   if not $ calmEnough sb kind
-    then failSer NotCalmEnough
+    then failSer ProjectNotCalm
     else do
       case bla lxsize lysize eps spos tpos of
         Nothing -> failSer ProjectAimOnself

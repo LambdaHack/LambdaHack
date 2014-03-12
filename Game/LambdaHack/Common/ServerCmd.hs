@@ -83,11 +83,12 @@ data FailureSer =
   | AlterNothing
   | PickupOverfull
   | ItemNothing
-  | NotCalmEnough
+  | ItemNotCalm
   | ProjectAimOnself
   | ProjectBlockTerrain
   | ProjectBlockActor
   | ProjectBlind
+  | ProjectNotCalm
   | TriggerNothing
 
 showFailureSer :: FailureSer -> Msg
@@ -104,9 +105,10 @@ showFailureSer failureSer = case failureSer of
   AlterNothing -> "wasting time on altering nothing"
   PickupOverfull -> "cannot carry any more"
   ItemNothing -> "wasting time on void item manipulation"
-  NotCalmEnough -> "your hands are shaking too much"
+  ItemNotCalm -> "you hands are shaking too much to sort through inventory"
   ProjectAimOnself -> "cannot aim at oneself"
   ProjectBlockTerrain -> "aiming obstructed by terrain"
   ProjectBlockActor -> "aiming blocked by an actor"
   ProjectBlind -> "blind actors cannot aim"
+  ProjectNotCalm -> "your hands are shaking too much to aim"
   TriggerNothing -> "wasting time on triggering nothing"
