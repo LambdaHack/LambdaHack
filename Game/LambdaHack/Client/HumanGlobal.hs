@@ -290,10 +290,14 @@ getItem :: forall m. MonadClientUI m
         -> Text            -- ^ how to refer to the collection of items
         -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
 getItem _ _ _ _ [] _ _ _ = failSer ItemNotCalm
-getItem askWhenLone prompt p ptext cLegal@(cStart:_)
-        askNumber allNumber isn = do
-  leader <- getLeaderUI
-  s <- getState
+getItem askWhenLone prompt p ptext cLegalRaw askNumber allNumber isn = do
+ leader <- getLeaderUI
+ s <- getState
+ let cNotEmpty cstore = not (EM.null (getCBag (CActor leader cstore) s))
+     cLegal = filter cNotEmpty cLegalRaw
+ if null cLegal then failWith "no objects found"  -- TODO: sometimes ItemNotCalm
+ else do
+  let cStart = head cLegal
   let mloneItem = case EM.assocs (getCBag (CActor leader cStart) s) of
                     [(iid, k)] -> Just ((iid, getItemBody iid s), k)
                     _ -> Nothing
@@ -307,7 +311,10 @@ getItem askWhenLone prompt p ptext cLegal@(cStart:_)
           Nothing -> assert `failure` cStart
           Just (iidItem, k) -> return $ Right (iidItem, (k, cStart))
         else do
-          soc <- perform INone cStart cStart
+          let cStartPrev = if cStart == CGround
+                           then if isCFull CEqp then CEqp else CInv
+                           else cStart
+          soc <- perform INone cStart cStartPrev
           case soc of
             Left slides -> return $ Left slides
             Right (iidItem, (kAll, c)) -> do
@@ -332,7 +339,7 @@ getItem askWhenLone prompt p ptext cLegal@(cStart:_)
               else kRet kDefault
       isCFull c = length cLegal > 1
                   && c `elem` cLegal
-                  && not (EM.null (getCBag (CActor leader c) s))
+                  && cNotEmpty c
       perform :: ItemDialogState -> CStore -> CStore
               -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
       perform itemDialogState cCur cPrev = do
@@ -382,7 +389,7 @@ getItem askWhenLone prompt p ptext cLegal@(cStart:_)
                          else perform ISuitable cCur cPrev
                 ISuitable | ptext /= allObjectsName -> perform IAll cCur cPrev
                 _ -> perform INone cCur cPrev
-              K.Char '-' | floorFull ->
+              K.Char '-' | floorFull && (isCFull CInv || isCFull CEqp) ->
                 let cNext = if cCur == CGround then cPrev else CGround
                 in perform itemDialogState cNext cCur
               K.Char '/' | invEqpFull ->
