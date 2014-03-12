@@ -122,6 +122,7 @@ effectWound :: (MonadAtomic m, MonadServer m)
             => RollDice -> Int -> ActorId -> ActorId
             -> m Bool
 effectWound nDm power source target = do
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   n <- rndToAction $ castDice nDm
   let deltaHP = - (n + power)
   if deltaHP >= 0
@@ -131,6 +132,11 @@ effectWound nDm power source target = do
     else do
       -- Damage the target.
       execCmdAtomic $ HealActorA target deltaHP
+      tb <- getsState $ getActorBody target
+      let calmMax = maxDice $ acalm $ okind $ bkind tb
+          calmCur = bcalm tb
+          deltaCalm = calmMax `div` 2 - calmCur
+      when (deltaCalm < 0) $ execCmdAtomic $ CalmActorA target deltaCalm
       execSfxAtomic $ EffectD target $
         if source == target
         then Effect.Heal deltaHP
@@ -142,7 +148,7 @@ effectWound nDm power source target = do
 effectMindprobe :: MonadAtomic m
                 => ActorId -> m Bool
 effectMindprobe target = do
-  tb <- getsState (getActorBody target)
+  tb <- getsState $ getActorBody target
   let lid = blid tb
   fact <- getsState $ (EM.! bfid tb) . sfactionD
   lb <- getsState $ actorNotProjList (isAtWar fact) lid

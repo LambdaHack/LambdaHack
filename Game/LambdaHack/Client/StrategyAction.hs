@@ -74,7 +74,7 @@ targetStrategy oldLeader aid = do
     Nothing -> return Nothing  -- no target assigned yet
   lvl <- getLevel $ blid b
   assert (not $ bproj b) skip  -- would work, but is probably a bug
-  fact <- getsState $ \s -> sfactionD s EM.! bfid b
+  fact <- getsState $ (EM.! bfid b) . sfactionD
   allFoes <- getsState $ actorNotProjAssocs (isAtWar fact) (blid b)
   dungeon <- getsState sdungeon
   itemD <- getsState sitemD

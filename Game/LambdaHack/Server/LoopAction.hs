@@ -441,12 +441,22 @@ explodeItem aid b cgroup = do
   let mn3 = EM.lookup iid bag3
   maybe skip (\k -> execCmdAtomic $ LoseItemA iid item k container) mn3
 
--- | Advance the move time for the given actor.
+-- | Advance the move time for the given actor and his status effects
+-- that are updated once per his move (as opposed to once per a time unit).
 advanceTime :: MonadAtomic m => ActorId -> m ()
 advanceTime aid = do
   b <- getsState $ getActorBody aid
   let t = ticksPerMeter $ bspeed b
   execCmdAtomic $ AgeActorA aid t
+  -- Calm or worry actor by enemies felt (even if not seen)
+  -- on the level within 3 tiles.
+  fact <- getsState $ (EM.! bfid b) . sfactionD
+  allFoes <- getsState $ actorNotProjList (isAtWar fact) (blid b)
+  let closeFoes = filter ((<= 3) . chessDist (bpos b) . bpos) allFoes
+  if null closeFoes then
+    execCmdAtomic $ CalmActorA aid 1
+  else
+    execCmdAtomic $ CalmActorA aid (-1)
 
 -- | Generate a monster, possibly.
 generateMonster :: (MonadAtomic m, MonadServer m) => LevelId -> m ()

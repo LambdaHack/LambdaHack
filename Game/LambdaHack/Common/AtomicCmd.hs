@@ -66,6 +66,7 @@ data CmdAtomic =
   -- Change actor attributes.
   | AgeActorA !ActorId !Time
   | HealActorA !ActorId !Int
+  | CalmActorA !ActorId !Int
   | HasteActorA !ActorId !Speed
   | TrajectoryActorA !ActorId !(Maybe [Vector]) !(Maybe [Vector])
   | ColorActorA !ActorId !Color.Color !Color.Color
@@ -140,6 +141,7 @@ undoCmdAtomic cmd = case cmd of
   MoveItemA iid k c1 c2 -> Just $ MoveItemA iid k c2 c1
   AgeActorA aid t -> Just $ AgeActorA aid (timeNegate t)
   HealActorA aid n -> Just $ HealActorA aid (-n)
+  CalmActorA aid n -> Just $ CalmActorA aid (-n)
   HasteActorA aid delta -> Just $ HasteActorA aid (speedNegate delta)
   TrajectoryActorA aid fromT toT -> Just $ TrajectoryActorA aid toT fromT
   ColorActorA aid fromCol toCol -> Just $ ColorActorA aid toCol fromCol

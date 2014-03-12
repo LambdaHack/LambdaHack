@@ -76,6 +76,7 @@ posCmdAtomic cmd = case cmd of
     return $! assert (lid1 == lid2) $ PosSight lid1 [p1, p2]
   AgeActorA aid _ -> singleAid aid
   HealActorA aid _ -> singleAid aid
+  CalmActorA aid _ -> singleAid aid
   HasteActorA aid _ -> singleAid aid
   TrajectoryActorA aid _ _ -> singleAid aid
   ColorActorA aid _ _ -> singleAid aid

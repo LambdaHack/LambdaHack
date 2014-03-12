@@ -47,6 +47,7 @@ cmdAtomicSem cmd = case cmd of
   MoveItemA iid k c1 c2 -> moveItemA iid k c1 c2
   AgeActorA aid t -> ageActorA aid t
   HealActorA aid n -> healActorA aid n
+  CalmActorA aid n -> calmActorA aid n
   HasteActorA aid delta -> hasteActorA aid delta
   TrajectoryActorA aid fromT toT -> trajectoryActorA aid fromT toT
   ColorActorA aid fromCol toCol -> colorActorA aid fromCol toCol
@@ -259,7 +260,11 @@ ageActorA aid t = assert (t /= timeZero) $ do
 
 healActorA :: MonadAction m => ActorId -> Int -> m ()
 healActorA aid n = assert (n /= 0) $
-  modifyState $ updateActorBody aid $ \b -> b {bhp = n + bhp b}
+  modifyState $ updateActorBody aid $ \b -> b {bhp = bhp b + n}
+
+calmActorA :: MonadAction m => ActorId -> Int -> m ()
+calmActorA aid n = assert (n /= 0) $
+  modifyState $ updateActorBody aid $ \b -> b {bcalm = bcalm b + n}
 
 hasteActorA :: MonadAction m => ActorId -> Speed -> m ()
 hasteActorA aid delta = assert (delta /= speedZero) $ do
