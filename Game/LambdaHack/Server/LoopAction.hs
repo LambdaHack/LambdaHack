@@ -445,6 +445,7 @@ explodeItem aid b cgroup = do
 -- that are updated once per his move (as opposed to once per a time unit).
 advanceTime :: MonadAtomic m => ActorId -> m ()
 advanceTime aid = do
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   b <- getsState $ getActorBody aid
   let t = ticksPerMeter $ bspeed b
   execCmdAtomic $ AgeActorA aid t
@@ -453,10 +454,12 @@ advanceTime aid = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   allFoes <- getsState $ actorNotProjList (isAtWar fact) (blid b)
   let closeFoes = filter ((<= 3) . chessDist (bpos b) . bpos) allFoes
-  if null closeFoes then
-    execCmdAtomic $ CalmActorA aid 1
-  else
-    execCmdAtomic $ CalmActorA aid (-1)
+      calmMax = maxDice $ acalm $ okind $ bkind b
+      calmCur = bcalm b
+      deltaCalm = if null closeFoes
+                  then max 0 $ min 1 (calmMax - calmCur)
+                  else max (-1) (-calmCur)
+  when (deltaCalm /= 0) $ execCmdAtomic $ CalmActorA aid deltaCalm
 
 -- | Generate a monster, possibly.
 generateMonster :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
