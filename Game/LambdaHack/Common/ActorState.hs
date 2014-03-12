@@ -8,7 +8,7 @@ module Game.LambdaHack.Common.ActorState
   , getInvBag, getCBag, nearbyFreePoints, whereTo
   , posToActors, posToActor, getItemBody, memActor
   , getActorBody, updateActorBody, updateFactionBody
-  , getCarriedAssocs, getEqpAssocs, getInvAssocs, getFloorAssocs
+  , getCarriedAssocs, getEqpAssocs, getEqpKA, getInvAssocs, getFloorAssocs
   , actorContainer, actorContainerB
   , tryFindHeroK, foesAdjacent
   , allSlots, assignSlot, slotLabel, itemPrice
@@ -258,6 +258,11 @@ getEqpAssocs :: Actor -> State -> [(ItemId, Item)]
 getEqpAssocs b s =
   let f iid = (iid, getItemBody iid s)
   in map f $ EM.keys $ beqp b
+
+getEqpKA :: Actor -> State -> [(Int, (ItemId, Item))]
+getEqpKA b s =
+  let f (iid, k) = (k, (iid, getItemBody iid s))
+  in map f $ EM.assocs $ beqp b
 
 getInvAssocs :: Actor -> State -> [(ItemId, Item)]
 getInvAssocs b s =

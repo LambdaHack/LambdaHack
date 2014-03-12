@@ -381,17 +381,24 @@ pickup aid = do
           return $! returN "pickup" $ PickupSer aid iid k
         Nothing -> assert `failure` fact  -- TODO: return mzero  -- PickupOverfull
     [] -> do
-      let RuleKind{ritemEqp} = Kind.stdRuleset corule
+      let RuleKind{ritemEqp, rsharedInventory} = Kind.stdRuleset corule
       invAssocs <- getsState $ getInvAssocs body
-      eqpAssocs <- getsState $ getEqpAssocs body
+      eqpKA <- getsState $ getEqpKA body
       let improve symbol =
             let bestInv = strongestItem invAssocs $ pSymbol cops symbol
-                bestEqp = strongestItem eqpAssocs $ pSymbol cops symbol
+                bestEqp = strongestItems eqpKA $ pSymbol cops symbol
             in case (bestInv, bestEqp) of
-              (Just (_, (iidInv, _)), Nothing) ->
+              (Just (_, (iidInv, _)), []) ->
                 returN "wield" $ WieldSer aid iidInv 1 CInv
-              (Just (vInv, (_, _)), Just (vEqp, (iidEqp, _))) | vInv > vEqp ->
-                returN "yield" $ YieldSer aid iidEqp 1
+              (Just (vInv, (iidInv, _)), (_, (vEqp, _)) : _)
+                | vInv > vEqp ->
+                returN "wield" $ WieldSer aid iidInv 1 CInv
+              (_, (_, (k, (iidEqp, _))) : _) | k > 1 && rsharedInventory ->
+                -- To share the best items with others.
+                returN "yield" $ YieldSer aid iidEqp (k - 1)
+              (_, _ : (_, (k, (iidEqp, _))) : _) ->
+                -- To make room in limited equipment store or to share.
+                returN "yield" $ YieldSer aid iidEqp k
               _ -> reject
       return $ msum $ map improve ritemEqp
 

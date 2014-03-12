@@ -8,7 +8,8 @@ module Game.LambdaHack.Common.Item
   ( -- * Teh @Item@ type
     ItemId, Item(..), jkind, buildItem, newItem
     -- * Inventory search
-  , strongestItem, strongestSearch, strongestSword, strongestRegen
+  , strongestItem, strongestItems
+  , strongestSearch, strongestSword, strongestRegen
   , pMelee, pRegen
    -- * The item discovery types
   , ItemKindIx, Discovery, DiscoRev, serverDiscos
@@ -179,6 +180,14 @@ strongestItem is p =
     kis -> case maximum kis of
       (Nothing, _) -> Nothing
       (Just k, iki) -> Just (k, iki)
+
+strongestItems :: [(Int, (ItemId, Item))] -> (Item -> Maybe Int)
+               -> [(Int, (Int, (ItemId, Item)))]
+strongestItems is p =
+  let kis = mapMaybe (\(k, (iid, item)) -> case p item of
+                         Nothing -> Nothing
+                         Just v -> Just (v, (k, (iid, item)))) is
+  in reverse $ sort kis
 
 strongestSearch :: [(ItemId, Item)] -> Maybe (Int, (ItemId, Item))
 strongestSearch is =
