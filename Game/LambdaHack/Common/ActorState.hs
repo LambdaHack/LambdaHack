@@ -11,7 +11,7 @@ module Game.LambdaHack.Common.ActorState
   , getCarriedAssocs, getEqpAssocs, getEqpKA, getInvAssocs, getFloorAssocs
   , actorContainer, actorContainerB
   , tryFindHeroK, foesAdjacent
-  , allSlots, assignSlot, slotLabel, itemPrice
+  , allSlots, assignSlot, slotLabel, itemPrice, calmEnough
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -30,9 +30,11 @@ import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 
@@ -301,3 +303,9 @@ getItemBody iid s =
 memActor :: ActorId -> LevelId -> State -> Bool
 memActor aid lid s =
   maybe False ((== lid) . blid) $ EM.lookup aid $ sactorD s
+
+calmEnough :: Actor -> ActorKind -> Bool
+calmEnough b kind =
+  let calmMax = maxDice $ acalm kind
+      calmCur = bcalm b
+  in 60 * calmMax <= 100 * calmCur

@@ -82,10 +82,11 @@ data FailureSer =
   | AlterBlockItem
   | AlterNothing
   | PickupOverfull
+  | ItemNothing
+  | NotCalmEnough
   | ProjectAimOnself
   | ProjectBlockTerrain
   | ProjectBlockActor
-  | ProjectBlockFoes
   | ProjectBlind
   | TriggerNothing
 
@@ -102,9 +103,10 @@ showFailureSer failureSer = case failureSer of
   AlterBlockItem -> "jammed by an item"
   AlterNothing -> "wasting time on altering nothing"
   PickupOverfull -> "cannot carry any more"
+  ItemNothing -> "wasting time on void item manipulation"
+  NotCalmEnough -> "your hands are shaking too much"
   ProjectAimOnself -> "cannot aim at oneself"
   ProjectBlockTerrain -> "aiming obstructed by terrain"
   ProjectBlockActor -> "aiming blocked by an actor"
-  ProjectBlockFoes -> "aiming interrupted by foes"
   ProjectBlind -> "blind actors cannot aim"
   TriggerNothing -> "wasting time on triggering nothing"

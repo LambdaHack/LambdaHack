@@ -220,21 +220,18 @@ pickupHuman = do
 
 -- * Drop
 
--- TODO: you can drop an item already on the floor (the '-' is there),
--- which is weird and useless.
 -- | Drop a single item.
 dropHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
 dropHuman = do
-  -- TODO: allow dropping a given number of identical items.
-  Kind.COps{coitem} <- getsState scops
+  Kind.COps{coactor=Kind.Ops{okind}, coitem} <- getsState scops
   leader <- getLeaderUI
-  ggi <- getAnyItem True "What to drop?" [CEqp, CInv] True True
+  b <- getsState $ getActorBody leader
+  let kind = okind $ bkind b
+      cLegal = [CEqp] ++ [CInv | calmEnough b kind]
+  ggi <- getAnyItem True "What to drop?" cLegal True True
                     "in inventory"
   case ggi of
     Right ((iid, item), (k, cstore)) -> do
-      let _cost = case cstore of
-            CInv -> undefined
-            _ -> undefined
       disco <- getsClient sdisco
       subject <- partAidLeader leader
       msgAdd $ makeSentence
@@ -291,13 +288,12 @@ getItem :: forall m. MonadClientUI m
         -> Bool            -- ^ whether the default is all, instead of one
         -> Text            -- ^ how to refer to the collection of items
         -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
-getItem askWhenLone prompt p ptext cLegal askNumber allNumber isn = do
+getItem _ _ _ _ [] _ _ _ = failSer NotCalmEnough
+getItem askWhenLone prompt p ptext cLegal@(cStart:_)
+        askNumber allNumber isn = do
   leader <- getLeaderUI
   s <- getState
-  let cStart = case cLegal of
-        [] -> assert `failure` prompt
-        c : _ -> c
-      mloneItem = case EM.assocs (getCBag (CActor leader cStart) s) of
+  let mloneItem = case EM.assocs (getCBag (CActor leader cStart) s) of
                     [(iid, k)] -> Just ((iid, getItemBody iid s), k)
                     _ -> Nothing
   slots <- getsClient sslots
@@ -408,16 +404,16 @@ getItem askWhenLone prompt p ptext cLegal askNumber allNumber isn = do
 -- Wield/wear a single item.
 wieldHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
 wieldHuman = do
-  Kind.COps{coitem} <- getsState scops
+  Kind.COps{coactor=Kind.Ops{okind}, coitem} <- getsState scops
   leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  let kind = okind $ bkind b
+      cLegal = [CGround] ++ [CInv | calmEnough b kind]
   ggi <- getAnyItem True "What to wield/wear?"
-                    [CInv, CGround] True True
+                    cLegal True True
                     "in inventory"
   case ggi of
     Right ((iid, item), (k, cstore)) -> do
-      let _cost = case cstore of
-            CInv -> undefined
-            _ -> undefined
       disco <- getsClient sdisco
       subject <- partAidLeader leader
       msgAdd $ makeSentence
@@ -428,16 +424,16 @@ wieldHuman = do
 
 -- * Yield
 
--- TODO: you can specify an item already on the floor (the '-' is there),
--- which is weird and useless.
 -- | Take off a single item.
 yieldHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
 yieldHuman = do
-  -- TODO: allow dropping a given number of identical items.
-  Kind.COps{coitem} <- getsState scops
+  Kind.COps{coactor=Kind.Ops{okind}, coitem} <- getsState scops
   leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  let kind = okind $ bkind b
+      cLegal = [CEqp | calmEnough b kind]
   ggi <- getAnyItem True "What to take off?"
-                    [CEqp] True True "in equipment"
+                    cLegal True True "in equipment"
   case ggi of
     Right ((iid, item), (k, cstore)) ->
       case cstore of
@@ -477,11 +473,10 @@ projectPos ts tpos = do
   sb <- getsState $ getActorBody leader
   let lid = blid sb
       spos = bpos sb
-  fact <- getsState $ (EM.! bfid sb) . sfactionD
+      kind = okind $ bkind sb
   Level{lxsize, lysize} <- getLevel lid
-  foes <- getsState $ actorNotProjList (isAtWar fact) lid
-  if foesAdjacent lxsize lysize spos foes
-    then failSer ProjectBlockFoes
+  if not $ calmEnough sb kind
+    then failSer NotCalmEnough
     else do
       case bla lxsize lysize eps spos tpos of
         Nothing -> failSer ProjectAimOnself
@@ -509,9 +504,10 @@ projectEps ts tpos eps = do
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
   leader <- getLeaderUI
+  let cLegal = [CEqp, CInv, CGround]  -- calm enough at this stage
   ggi <- getGroupItem object1 triggerSyms
            (makePhrase ["What to", verb1 MU.:> "?"])
-           [CEqp, CInv, CGround] False False "in inventory"
+           cLegal False False "in inventory"
   case ggi of
     Right ((iid, _), (_, cstore)) ->
       return $ Right $ ProjectSer leader tpos eps iid cstore
@@ -526,14 +522,18 @@ triggerSymbols (_ : ts) = triggerSymbols ts
 
 applyHuman :: MonadClientUI m => [Trigger] -> m (SlideOrCmd CmdTakeTimeSer)
 applyHuman ts = do
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  let kind = okind $ bkind b
+      cLegal = [CGround, CEqp] ++ [CInv | calmEnough b kind]
   let (verb1, object1) = case ts of
         [] -> ("activate", "object")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
   ggi <- getGroupItem object1 triggerSyms
            (makePhrase ["What to", verb1 MU.:> "?"])
-           [CEqp, CInv, CGround] False False "in inventory"
+           cLegal False False "in inventory"
   case ggi of
     Right ((iid, _), (_, cstore)) ->
       return $ Right $ ApplySer leader iid cstore

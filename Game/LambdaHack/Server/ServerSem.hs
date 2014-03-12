@@ -288,9 +288,20 @@ pickupSer aid iid k = assert (k > 0) $ do
 
 dropSer :: (MonadAtomic m, MonadServer m)
         => ActorId -> ItemId -> Int -> CStore -> m ()
-dropSer aid iid k cstore = assert (k > 0) $ do
-  cs <- actorConts iid k aid cstore
-  mapM_ (\(ck, c) -> execCmdAtomic $ MoveItemA iid ck c (CActor aid CGround)) cs
+dropSer aid iid k fromCStore = do
+  let toCStore = CGround
+  let moveItem = do
+        cs <- actorConts iid k aid fromCStore
+        mapM_ (\(ck, c) -> execCmdAtomic
+                           $ MoveItemA iid ck c (CActor aid toCStore)) cs
+  if k < 1 || fromCStore == toCStore then execFailure aid ItemNothing
+  else if fromCStore /= CInv && toCStore /= CInv then moveItem
+  else do
+    Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+    b <- getsState $ getActorBody aid
+    let kind = okind $ bkind b
+    if calmEnough b kind then moveItem
+    else execFailure aid NotCalmEnough
 
 actorInvs :: MonadServer m
           => ItemId -> Int -> ActorId -> m [(Int, ActorId)]
@@ -321,16 +332,40 @@ actorConts iid k aid cstore = case cstore of
 
 wieldSer :: (MonadAtomic m, MonadServer m)
          => ActorId -> ItemId -> Int -> CStore -> m ()
-wieldSer aid iid k cstore = assert (k > 0) $ do
-  cs <- actorConts iid k aid cstore
-  mapM_ (\(ck, c) -> execCmdAtomic $ MoveItemA iid ck c (CActor aid CEqp)) cs
+wieldSer aid iid k fromCStore = do
+  let toCStore = CEqp
+  let moveItem = do
+        cs <- actorConts iid k aid fromCStore
+        mapM_ (\(ck, c) -> execCmdAtomic
+                           $ MoveItemA iid ck c (CActor aid toCStore)) cs
+  if k < 1 || fromCStore == toCStore then execFailure aid ItemNothing
+  else if fromCStore /= CInv && toCStore /= CInv then moveItem
+  else do
+    Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+    b <- getsState $ getActorBody aid
+    let kind = okind $ bkind b
+    if calmEnough b kind then moveItem
+    else execFailure aid NotCalmEnough
 
 -- * YieldSer
 
 yieldSer :: (MonadAtomic m, MonadServer m)
          => ActorId -> ItemId -> Int -> m ()
-yieldSer aid iid k = assert (k > 0) $ do
-  execCmdAtomic $ MoveItemA iid k (CActor aid CEqp) (CActor aid CInv)
+yieldSer aid iid k = do
+  let fromCStore = CEqp
+      toCStore = CInv
+  let moveItem = do
+        cs <- actorConts iid k aid fromCStore
+        mapM_ (\(ck, c) -> execCmdAtomic
+                           $ MoveItemA iid ck c (CActor aid toCStore)) cs
+  if k < 1 || fromCStore == toCStore then execFailure aid ItemNothing
+  else if fromCStore /= CInv && toCStore /= CInv then moveItem
+  else do
+    Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+    b <- getsState $ getActorBody aid
+    let kind = okind $ bkind b
+    if calmEnough b kind then moveItem
+    else execFailure aid NotCalmEnough
 
 -- * ProjectSer
 
@@ -358,6 +393,7 @@ projectFail source tpxy eps iid cstore isShrapnel = do
   sb <- getsState $ getActorBody source
   let lid = blid sb
       spos = bpos sb
+      kind = okind $ bkind sb
   lvl@Level{lxsize, lysize} <- getLevel lid
   case bla lxsize lysize eps spos tpxy of
     Nothing -> return $ Just ProjectAimOnself
@@ -370,30 +406,22 @@ projectFail source tpxy eps iid cstore isShrapnel = do
         else do
           mab <- getsState $ posToActor pos lid
           if not $ maybe True (bproj . snd . fst) mab
-            then
-              if isShrapnel then do
-                -- Hit the blocking actor.
-                projectBla source spos (pos : rest) iid cstore
-                return Nothing
-              else return $ Just ProjectBlockActor
-            else do
-              blockedByFoes <-
-                if isShrapnel then return False
-                else do
-                  fact <- getsState $ (EM.! bfid sb) . sfactionD
-                  foes <- getsState $ actorNotProjList (isAtWar fact) lid
-                  return $! foesAdjacent lxsize lysize spos foes
-              if blockedByFoes then
-                return $ Just ProjectBlockFoes
-              else if not (asight (okind $ bkind sb) || bproj sb)
-                   then return $ Just ProjectBlind
-                   else do
-                     if isShrapnel && eps `mod` 2 == 0 then
-                       -- Make the explosion a bit less regular.
-                       projectBla source spos (pos:rest) iid cstore
-                     else
-                       projectBla source pos rest iid cstore
-                     return Nothing
+            then if isShrapnel then do
+                   -- Hit the blocking actor.
+                   projectBla source spos (pos : rest) iid cstore
+                   return Nothing
+                 else return $ Just ProjectBlockActor
+            else if not (isShrapnel || calmEnough sb kind) then
+                   return $ Just NotCalmEnough
+                 else if not (asight kind || bproj sb) then
+                   return $ Just ProjectBlind
+                 else do
+                   if isShrapnel && eps `mod` 2 == 0 then
+                     -- Make the explosion a bit less regular.
+                     projectBla source spos (pos:rest) iid cstore
+                   else
+                     projectBla source pos rest iid cstore
+                   return Nothing
 
 projectBla :: (MonadAtomic m, MonadServer m)
            => ActorId    -- ^ actor projecting the item (is on current lvl)
@@ -444,17 +472,25 @@ addProjectile bpos rest iid blid bfid btime = do
 
 -- TODO: check actor has access to the item
 applySer :: (MonadAtomic m, MonadServer m)
-         => ActorId    -- ^ actor applying the item (is on current level)
-         -> ItemId     -- ^ the item to be applied
-         -> CStore  -- ^ the location of the item
+         => ActorId  -- ^ actor applying the item (is on current level)
+         -> ItemId   -- ^ the item to be applied
+         -> CStore   -- ^ the location of the item
          -> m ()
 applySer aid iid cstore = do
-  item <- getsState $ getItemBody iid
-  execSfxAtomic $ ActivateD aid iid
-  itemEffect aid aid (Just iid) item
-  -- TODO: don't destroy if not really used up; also, don't take time?
-  cs <- actorConts iid 1 aid cstore
-  mapM_ (\(_, c) -> execCmdAtomic $ DestroyItemA iid item 1 c) cs
+  let applyItem = do
+        item <- getsState $ getItemBody iid
+        execSfxAtomic $ ActivateD aid iid
+        itemEffect aid aid (Just iid) item
+        -- TODO: don't destroy if not really used up; also, don't take time?
+        cs <- actorConts iid 1 aid cstore
+        mapM_ (\(_, c) -> execCmdAtomic $ DestroyItemA iid item 1 c) cs
+  if cstore /= CInv then applyItem
+  else do
+    Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+    b <- getsState $ getActorBody aid
+    let kind = okind $ bkind b
+    if calmEnough b kind then applyItem
+    else execFailure aid NotCalmEnough
 
 -- * TriggerSer
 
