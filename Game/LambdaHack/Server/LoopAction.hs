@@ -370,8 +370,8 @@ dropAllItems :: (MonadAtomic m, MonadServer m)
 dropAllItems aid b hit = do
   Kind.COps{coitem} <- getsState scops
   discoS <- getsServer sdisco
-  let container = CInv aid
-      g iid k = execCmdAtomic $ MoveItemA iid k (CEqp aid) container
+  let container = CActor aid CInv
+      g iid k = execCmdAtomic $ MoveItemA iid k (CActor aid CEqp) container
   mapActorEqp_ g b
   let isDestroyed item = hit || bproj b && isFragile coitem discoS item
       f iid k = do
@@ -383,14 +383,14 @@ dropAllItems aid b hit = do
               let ik = fromJust $ jkind discoS item
               execCmdAtomic $ DiscoverA (blid b) (bpos b) iid ik
               execCmdAtomic $ DestroyItemA iid item k container
-              explodeItem aid b container cgroup
+              explodeItem aid b CInv cgroup
         else
-          execCmdAtomic $ MoveItemA iid k container (CFloor (blid b) (bpos b))
+          execCmdAtomic $ MoveItemA iid k container (CActor aid CGround)
   mapActorInv_ f b
 
 explodeItem :: (MonadAtomic m, MonadServer m)
-            => ActorId -> Actor -> Container -> Text -> m ()
-explodeItem aid b container cgroup = do
+            => ActorId -> Actor -> CStore -> Text -> m ()
+explodeItem aid b cstore cgroup = do
   Kind.COps{coitem} <- getsState scops
   flavour <- getsServer sflavour
   discoRev <- getsServer sdiscoRev
@@ -399,6 +399,7 @@ explodeItem aid b container cgroup = do
   let itemFreq = toFreq "shrapnel group" [(1, cgroup)]
   (item, n1, _) <- rndToAction
                    $ newItem coitem flavour discoRev itemFreq ldepth depth
+  let container = CActor aid cstore
   iid <- registerItem item n1 container False
   let Point x y = bpos b
       projectN n = replicateM_ n $ do
@@ -415,7 +416,7 @@ explodeItem aid b container cgroup = do
             4 -> fmap (flip Point (y + 10)) $ randomR (x - 10, x + 10)
             _ -> assert `failure` border
         let eps = px tpxy + py tpxy
-        mfail <- projectFail aid tpxy eps iid container True
+        mfail <- projectFail aid tpxy eps iid cstore True
         case mfail of
           Nothing -> return ()
           Just ProjectBlockTerrain -> return ()

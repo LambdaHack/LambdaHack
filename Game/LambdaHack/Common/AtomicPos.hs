@@ -164,8 +164,7 @@ posOfAid aid = do
 
 posOfContainer :: MonadActionRO m => Container -> m (LevelId, Point)
 posOfContainer (CFloor lid p) = return (lid, p)
-posOfContainer (CInv aid) = posOfAid aid
-posOfContainer (CEqp aid) = posOfAid aid
+posOfContainer (CActor aid _) = posOfAid aid
 
 singleContainer :: MonadActionRO m => Container -> m PosAtomic
 singleContainer c = do

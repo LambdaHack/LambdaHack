@@ -282,52 +282,55 @@ waitSer _ = return ()
 pickupSer :: (MonadAtomic m, MonadServer m)
           => ActorId -> ItemId -> Int -> m ()
 pickupSer aid iid k = assert (k > 0) $ do
-  b <- getsState $ getActorBody aid
-  execCmdAtomic $ MoveItemA iid k (CFloor (blid b) (bpos b)) (CInv aid)
+  execCmdAtomic $ MoveItemA iid k (CActor aid CGround) (CActor aid CInv)
 
 -- * DropSer
 
 dropSer :: (MonadAtomic m, MonadServer m)
         => ActorId -> ItemId -> Int -> m ()
 dropSer aid iid k = assert (k > 0) $ do
-  b <- getsState $ getActorBody aid
-  inventoryC <- inventoryContainers iid k (CInv aid)
-  mapM_ (\(ck, c) -> execCmdAtomic
-                     $ MoveItemA iid ck c (CFloor (blid b) (bpos b)))
-        inventoryC
+  cs <- actorConts iid k aid CInv
+  mapM_ (\(ck, c) -> execCmdAtomic $ MoveItemA iid ck c (CActor aid CGround)) cs
 
-inventoryContainers :: MonadServer m
-                    => ItemId -> Int -> Container -> m [(Int, Container)]
-inventoryContainers iid k container =
-  case container of
-    CInv aid -> do
-      let takeFromInv :: Int -> [(ActorId, Actor)] -> [(Int, Container)]
-          takeFromInv 0 _ = []
-          takeFromInv _ [] = assert `failure` (iid, k, container)
-          takeFromInv n ((aid2, b2) : as) =
-            case EM.lookup iid $ binv b2 of
-              Nothing -> takeFromInv n as
-              Just m -> let ck = min n m
-                        in (ck, CInv aid2) : takeFromInv (n - ck) as
-      b <- getsState $ getActorBody aid
-      as <- getsState $ fidActorNotProjAssocs (bfid b)
-      return $ takeFromInv k $ (aid, b) : filter ((/= aid) . fst) as
-    _ -> return [(k, container)]
+actorInvs :: MonadServer m
+          => ItemId -> Int -> ActorId -> m [(Int, ActorId)]
+actorInvs iid k aid = do
+  let takeFromInv :: Int -> [(ActorId, Actor)] -> [(Int, ActorId)]
+      takeFromInv 0 _ = []
+      takeFromInv _ [] = assert `failure` (iid, k, aid)
+      takeFromInv n ((aid2, b2) : as) =
+        case EM.lookup iid $ binv b2 of
+          Nothing -> takeFromInv n as
+          Just m -> let ck = min n m
+                    in (ck, aid2) : takeFromInv (n - ck) as
+  b <- getsState $ getActorBody aid
+  as <- getsState $ fidActorNotProjAssocs (bfid b)
+  return $ takeFromInv k $ (aid, b) : filter ((/= aid) . fst) as
+
+actorConts :: MonadServer m
+           => ItemId -> Int -> ActorId -> CStore
+           -> m [(Int, Container)]
+actorConts iid k aid cstore = case cstore of
+  CGround -> return [(k, CActor aid CGround)]
+  CEqp -> return [(k, CActor aid CEqp)]
+  CInv -> do
+    invs <- actorInvs iid k aid
+    return $! map (\(n, aid2) -> (n, CActor aid2 CInv)) invs
 
 -- * WieldSer
 
 wieldSer :: (MonadAtomic m, MonadServer m)
-        => ActorId -> ItemId -> Int -> m ()
+         => ActorId -> ItemId -> Int -> m ()
 wieldSer aid iid k = assert (k > 0) $ do
-  inventoryC <- inventoryContainers iid k (CInv aid)
-  mapM_ (\(ck, c) -> execCmdAtomic $ MoveItemA iid ck c (CEqp aid)) inventoryC
+  cs <- actorConts iid k aid CInv
+  mapM_ (\(ck, c) -> execCmdAtomic $ MoveItemA iid ck c (CActor aid CEqp)) cs
 
 -- * YieldSer
 
 yieldSer :: (MonadAtomic m, MonadServer m)
          => ActorId -> ItemId -> Int -> m ()
 yieldSer aid iid k = assert (k > 0) $ do
-  execCmdAtomic $ MoveItemA iid k (CEqp aid) (CInv aid)
+  execCmdAtomic $ MoveItemA iid k (CActor aid CEqp) (CActor aid CInv)
 
 -- * ProjectSer
 
@@ -336,10 +339,10 @@ projectSer :: (MonadAtomic m, MonadServer m)
            -> Point      -- ^ target position of the projectile
            -> Int        -- ^ digital line parameter
            -> ItemId     -- ^ the item to be projected
-           -> Container  -- ^ whether the items comes from floor or inventory
+           -> CStore     -- ^ whether the items comes from floor or inventory
            -> m ()
-projectSer source tpxy eps iid container = do
-  mfail <- projectFail source tpxy eps iid container False
+projectSer source tpxy eps iid cstore = do
+  mfail <- projectFail source tpxy eps iid cstore False
   maybe skip (execFailure source) mfail
 
 projectFail :: (MonadAtomic m, MonadServer m)
@@ -347,10 +350,10 @@ projectFail :: (MonadAtomic m, MonadServer m)
             -> Point      -- ^ target position of the projectile
             -> Int        -- ^ digital line parameter
             -> ItemId     -- ^ the item to be projected
-            -> Container  -- ^ whether the items comes from floor or inventory
+            -> CStore     -- ^ whether the items comes from floor or inventory
             -> Bool       -- ^ whether the item is a shrapnel
             -> m (Maybe FailureSer)
-projectFail source tpxy eps iid container isShrapnel = do
+projectFail source tpxy eps iid cstore isShrapnel = do
   Kind.COps{coactor=Kind.Ops{okind}, cotile} <- getsState scops
   sb <- getsState $ getActorBody source
   let lid = blid sb
@@ -370,7 +373,7 @@ projectFail source tpxy eps iid container isShrapnel = do
             then
               if isShrapnel then do
                 -- Hit the blocking actor.
-                projectBla source spos (pos : rest) iid container
+                projectBla source spos (pos : rest) iid cstore
                 return Nothing
               else return $ Just ProjectBlockActor
             else do
@@ -387,9 +390,9 @@ projectFail source tpxy eps iid container isShrapnel = do
                    else do
                      if isShrapnel && eps `mod` 2 == 0 then
                        -- Make the explosion a bit less regular.
-                       projectBla source spos (pos:rest) iid container
+                       projectBla source spos (pos:rest) iid cstore
                      else
-                       projectBla source pos rest iid container
+                       projectBla source pos rest iid cstore
                      return Nothing
 
 projectBla :: (MonadAtomic m, MonadServer m)
@@ -397,16 +400,16 @@ projectBla :: (MonadAtomic m, MonadServer m)
            -> Point      -- ^ starting point of the projectile
            -> [Point]    -- ^ rest of the trajectory of the projectile
            -> ItemId     -- ^ the item to be projected
-           -> Container  -- ^ whether the items comes from floor or inventory
+           -> CStore     -- ^ whether the items comes from floor or inventory
            -> m ()
-projectBla source pos rest iid container = do
+projectBla source pos rest iid cstore = do
   sb <- getsState $ getActorBody source
   let lid = blid sb
       time = btime sb
   unless (bproj sb) $ execSfxAtomic $ ProjectD source iid
   projId <- addProjectile pos rest iid lid (bfid sb) time
-  inventoryC <- inventoryContainers iid 1 container
-  mapM_ (\(_, c) -> execCmdAtomic $ MoveItemA iid 1 c (CInv projId)) inventoryC
+  cs <- actorConts iid 1 source cstore
+  mapM_ (\(_, c) -> execCmdAtomic $ MoveItemA iid 1 c (CActor projId CInv)) cs
 
 -- | Create a projectile actor containing the given missile.
 addProjectile :: (MonadAtomic m, MonadServer m)
@@ -443,15 +446,15 @@ addProjectile bpos rest iid blid bfid btime = do
 applySer :: (MonadAtomic m, MonadServer m)
          => ActorId    -- ^ actor applying the item (is on current level)
          -> ItemId     -- ^ the item to be applied
-         -> Container  -- ^ the location of the item
+         -> CStore  -- ^ the location of the item
          -> m ()
-applySer actor iid container = do
+applySer aid iid cstore = do
   item <- getsState $ getItemBody iid
-  execSfxAtomic $ ActivateD actor iid
-  itemEffect actor actor (Just iid) item
+  execSfxAtomic $ ActivateD aid iid
+  itemEffect aid aid (Just iid) item
   -- TODO: don't destroy if not really used up; also, don't take time?
-  inventoryC <- inventoryContainers iid 1 container
-  mapM_ (\(_, c) -> execCmdAtomic $ DestroyItemA iid item 1 c) inventoryC
+  cs <- actorConts iid 1 aid cstore
+  mapM_ (\(_, c) -> execCmdAtomic $ DestroyItemA iid item 1 c) cs
 
 -- * TriggerSer
 

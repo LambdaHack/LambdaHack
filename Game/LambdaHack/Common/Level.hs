@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.Level
   ( -- * Dungeon
     LevelId, Dungeon, ascendInBranch
     -- * Item containers
-  , Container(..)
+  , Container(..), CStore(..)
     -- * The @Level@ type and its components
   , SmellMap, ItemFloor, TileMap
   , Level(..)
@@ -58,11 +58,18 @@ ascendInBranch dungeon k lid =
 -- | Item container type.
 data Container =
     CFloor !LevelId !Point
-  | CInv !ActorId
-  | CEqp !ActorId
+  | CActor !ActorId !CStore
   deriving (Show, Eq, Ord, Generic)
 
 instance Binary Container
+
+data CStore =
+    CGround
+  | CEqp
+  | CInv
+  deriving (Show, Eq, Ord, Generic)
+
+instance Binary CStore
 
 -- | Actor time priority queue.
 type ActorPrio = EM.EnumMap Time [ActorId]

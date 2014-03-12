@@ -45,8 +45,8 @@ cmdSerSemTakeTime cmd = case cmd of
   DropSer aid iid k -> dropSer aid iid k
   WieldSer aid i k -> wieldSer aid i k
   YieldSer aid iid k -> yieldSer aid iid k
-  ProjectSer aid p eps iid container -> projectSer aid p eps iid container
-  ApplySer aid iid container -> applySer aid iid container
+  ProjectSer aid p eps iid cstore -> projectSer aid p eps iid cstore
+  ApplySer aid iid cstore -> applySer aid iid cstore
   TriggerSer aid mfeat -> triggerSer aid mfeat
   SetTrajectorySer aid -> setTrajectorySer aid
   PongHackSer _ -> return ()

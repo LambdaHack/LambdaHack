@@ -548,8 +548,8 @@ rangedFreq aid = do
                -- and no actors or obstracles along the path
                && steps == chessDist bpos fpos
             then toFreq "throwFreq"
-                 $ throwFreq invBag 4 (CInv aid)
-                   ++ throwFreq tis 8 (CFloor blid bpos)
+                 $ throwFreq invBag 4 CInv
+                   ++ throwFreq tis 8 CGround
             else toFreq "throwFreq: not possible" []
       return $! freq
     _ -> return $! toFreq "throwFreq: no enemy target" []
@@ -579,8 +579,8 @@ toolsFreq aid = do
         , benefit > 0
         , jsymbol i `elem` mastered ]
   return $! toFreq "useFreq" $
-    useFreq invBag 1 (CInv aid)
-    ++ useFreq tis 2 (CFloor blid bpos)
+    useFreq invBag 1 CInv
+    ++ useFreq tis 2 CGround
 
 displace :: MonadClient m => ActorId -> m (Strategy CmdTakeTimeSer)
 displace aid = do

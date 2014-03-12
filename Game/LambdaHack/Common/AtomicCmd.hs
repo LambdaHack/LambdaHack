@@ -137,7 +137,7 @@ undoCmdAtomic cmd = case cmd of
   MoveActorA aid fromP toP -> Just $ MoveActorA aid toP fromP
   WaitActorA aid fromWait toWait -> Just $ WaitActorA aid toWait fromWait
   DisplaceActorA source target -> Just $ DisplaceActorA target source
-  MoveItemA iid k c1 c2 ->Just $  MoveItemA iid k c2 c1
+  MoveItemA iid k c1 c2 -> Just $ MoveItemA iid k c2 c1
   AgeActorA aid t -> Just $ AgeActorA aid (timeNegate t)
   HealActorA aid n -> Just $ HealActorA aid (-n)
   HasteActorA aid delta -> Just $ HasteActorA aid (speedNegate delta)

@@ -36,8 +36,8 @@ data CmdTakeTimeSer =
   | DropSer !ActorId !ItemId !Int
   | WieldSer !ActorId !ItemId !Int
   | YieldSer !ActorId !ItemId !Int
-  | ProjectSer !ActorId !Point !Int !ItemId !Container
-  | ApplySer !ActorId !ItemId !Container
+  | ProjectSer !ActorId !Point !Int !ItemId !CStore
+  | ApplySer !ActorId !ItemId !CStore
   | TriggerSer !ActorId !(Maybe F.Feature)
   | SetTrajectorySer !ActorId
   | PongHackSer [Atomic]

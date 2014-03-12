@@ -274,8 +274,10 @@ getInvBag b s =
 getCBag :: Container -> State -> ItemBag
 getCBag c s = case c of
   CFloor lid p -> sdungeon s EM.! lid `atI` p
-  CInv aid -> getInvBag (getActorBody aid s) s
-  CEqp aid -> beqp $ getActorBody aid s
+  CActor aid CInv -> getInvBag (getActorBody aid s) s
+  CActor aid CEqp -> beqp $ getActorBody aid s
+  CActor aid CGround -> let b = getActorBody aid s
+                        in sdungeon s EM.! blid b `atI` bpos b
 
 getFloorAssocs :: LevelId -> Point -> State -> [(ItemId, Item)]
 getFloorAssocs lid pos s =

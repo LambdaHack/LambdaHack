@@ -201,7 +201,7 @@ pickupHuman = do
   leader <- getLeaderUI
   body <- getsState $ getActorBody leader
   ggi <- getAnyItem False "What to pick up?"
-                    [CFloor (blid body) (bpos body)] False True
+                    [CGround] False True
                     "from the floor"
   case ggi of
     Right ((iid, item), (k, _)) -> do
@@ -228,13 +228,12 @@ dropHuman = do
   -- TODO: allow dropping a given number of identical items.
   Kind.COps{coitem} <- getsState scops
   leader <- getLeaderUI
-  ggi <- getAnyItem True "What to drop?" [CInv leader, CEqp leader] True True
+  ggi <- getAnyItem True "What to drop?" [CInv, CEqp] True True
                     "in inventory"
   case ggi of
-    Right ((iid, item), (k, container)) ->
-      case container of
-        CInv aid -> do
-          assert (aid == leader) skip
+    Right ((iid, item), (k, cstore)) ->
+      case cstore of
+        CInv -> do
           disco <- getsClient sdisco
           subject <- partAidLeader leader
           msgAdd $ makeSentence
@@ -255,11 +254,11 @@ getGroupItem :: MonadClientUI m
              => MU.Part  -- ^ name of the group
              -> [Char]   -- ^ accepted item symbols
              -> Text     -- ^ prompt
-             -> [Container]  -- ^ legal containers
+             -> [CStore] -- ^ legal containers
              -> Bool     -- ^ whether to ask for the number of items
              -> Bool     -- ^ whether the default is all, instead of one
              -> Text     -- ^ how to refer to the collection of objects
-             -> m (SlideOrCmd ((ItemId, Item), (Int, Container)))
+             -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
 getGroupItem object syms prompt = do
   let choice i = jsymbol i `elem` syms
       header = makePhrase [MU.Capitalize (MU.Ws object)]
@@ -269,11 +268,11 @@ getGroupItem object syms prompt = do
 getAnyItem :: MonadClientUI m
            => Bool
            -> Text
-           -> [Container]
+           -> [CStore]
            -> Bool
            -> Bool
            -> Text
-           -> m (SlideOrCmd ((ItemId, Item), (Int, Container)))
+           -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
 getAnyItem askWhenLone prompt =
   getItem askWhenLone prompt (const True) allObjectsName
 
@@ -281,36 +280,30 @@ data ItemDialogState = INone | ISuitable | IAll deriving Eq
 
 -- | Let the human player choose a single, preferably suitable,
 -- item from a list of items.
--- For now the fourth argument can contain at most the inventory,
--- equipment and floor of the current leader.
 getItem :: forall m. MonadClientUI m
         => Bool            -- ^ whether to ask if the item alone
                            --   in the starting container and suitable
         -> Text            -- ^ prompt message
         -> (Item -> Bool)  -- ^ which items to consider suitable
         -> Text            -- ^ how to describe suitable items
-        -> [Container]     -- ^ legal containers
+        -> [CStore]        -- ^ legal containers
         -> Bool            -- ^ whether to ask for the number of items
         -> Bool            -- ^ whether the default is all, instead of one
         -> Text            -- ^ how to refer to the collection of items
-        -> m (SlideOrCmd ((ItemId, Item), (Int, Container)))
+        -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
 getItem askWhenLone prompt p ptext cLegal askNumber allNumber isn = do
   leader <- getLeaderUI
-  body <- getsState $ getActorBody leader
   s <- getState
   let cStart = case cLegal of
         [] -> assert `failure` prompt
         c : _ -> c
-      cFloor = CFloor (blid body) (bpos body)
-      cInv = CInv leader
-      cEqp = CEqp leader
-      mloneItem = case EM.assocs (getCBag cStart s) of
+      mloneItem = case EM.assocs (getCBag (CActor leader cStart) s) of
                     [(iid, k)] -> Just ((iid, getItemBody iid s), k)
                     _ -> Nothing
-  assert (all (`elem` [cFloor, cInv, cEqp]) cLegal) skip
   slots <- getsClient sslots
   let ask = do
-        if all (null . EM.elems) $ map (flip getCBag s) cLegal
+        if all (null . EM.elems)
+           $ map (\cstore -> getCBag (CActor leader cstore) s) cLegal
         then failWith $ "nothing" <+> isn
         else if not askWhenLone && fmap (p . snd . fst) mloneItem == Just True
         then case mloneItem of
@@ -342,19 +335,19 @@ getItem askWhenLone prompt p ptext cLegal askNumber allNumber isn = do
               else kRet kDefault
       isCFull c = length cLegal > 1
                   && c `elem` cLegal
-                  && not (EM.null (getCBag c s))
-      perform :: ItemDialogState -> Container -> Container
-              -> m (SlideOrCmd ((ItemId, Item), (Int, Container)))
+                  && not (EM.null (getCBag (CActor leader c) s))
+      perform :: ItemDialogState -> CStore -> CStore
+              -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
       perform itemDialogState cCur cPrev = do
-        bag <- getsState $ getCBag cCur
+        bag <- getsState $ getCBag $ CActor leader cCur
         let inv = EM.filter (`EM.member` bag) slots
             invP = EM.filter (\iid -> p (getItemBody iid s)) inv
             checkItem (l, iid) = ((iid, getItemBody iid s), (bag EM.! iid, l))
             is0 = map checkItem $ EM.assocs inv
-            floorFull = isCFull cFloor
+            floorFull = isCFull CGround
             (floorMsg, floorKey) | floorFull = (", -", [K.Char '-'])
                                  | otherwise = ("", [])
-            invEqpFull = isCFull cInv && isCFull cEqp
+            invEqpFull = isCFull CInv && isCFull CEqp
             (invEqpMsg, invEqpKey) | invEqpFull = (", /", [K.Char '/'])
                                    | otherwise = ("", [])
             isp = filter (p . snd . fst) is0
@@ -393,10 +386,10 @@ getItem askWhenLone prompt p ptext cLegal askNumber allNumber isn = do
                 ISuitable | ptext /= allObjectsName -> perform IAll cCur cPrev
                 _ -> perform INone cCur cPrev
               K.Char '-' | floorFull ->
-                let cNext = if cCur == cFloor then cPrev else cFloor
+                let cNext = if cCur == CGround then cPrev else CGround
                 in perform itemDialogState cNext cCur
               K.Char '/' | invEqpFull ->
-                let cNext = if cCur == cInv then cEqp else cInv
+                let cNext = if cCur == CInv then CEqp else CInv
                 in perform itemDialogState cNext cCur
               K.Char l ->
                 case find ((SlotChar l ==) . snd . snd) is0 of
@@ -417,15 +410,13 @@ wieldHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
 wieldHuman = do
   Kind.COps{coitem} <- getsState scops
   leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
   ggi <- getAnyItem True "What to wield/wear?"
-                    [CInv leader, CFloor (blid b) (bpos b)] True True
+                    [CInv, CGround] True True
                     "in inventory"
   case ggi of
-    Right ((iid, item), (k, container)) ->
-      case container of
-        CInv aid -> do
-          assert (aid == leader) skip
+    Right ((iid, item), (k, cstore)) ->
+      case cstore of
+        CInv -> do
           disco <- getsClient sdisco
           subject <- partAidLeader leader
           msgAdd $ makeSentence
@@ -446,12 +437,11 @@ yieldHuman = do
   Kind.COps{coitem} <- getsState scops
   leader <- getLeaderUI
   ggi <- getAnyItem True "What to take off?"
-                    [CEqp leader] True True "in equipment"
+                    [CEqp] True True "in equipment"
   case ggi of
-    Right ((iid, item), (k, container)) ->
-      case container of
-        CEqp aid -> do
-          assert (aid == leader) skip
+    Right ((iid, item), (k, cstore)) ->
+      case cstore of
+        CEqp -> do
           disco <- getsClient sdisco
           subject <- partAidLeader leader
           msgAdd $ makeSentence
@@ -519,13 +509,12 @@ projectEps ts tpos eps = do
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
   leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
   ggi <- getGroupItem object1 triggerSyms
            (makePhrase ["What to", verb1 MU.:> "?"])
-           [CInv leader, CFloor (blid b) (bpos b)] False False "in inventory"
+           [CInv, CGround] False False "in inventory"
   case ggi of
-    Right ((iid, _), (_, container)) ->
-      return $ Right $ ProjectSer leader tpos eps iid container
+    Right ((iid, _), (_, cstore)) ->
+      return $ Right $ ProjectSer leader tpos eps iid cstore
     Left slides -> return $ Left slides
 
 triggerSymbols :: [Trigger] -> [Char]
@@ -538,17 +527,16 @@ triggerSymbols (_ : ts) = triggerSymbols ts
 applyHuman :: MonadClientUI m => [Trigger] -> m (SlideOrCmd CmdTakeTimeSer)
 applyHuman ts = do
   leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
   let (verb1, object1) = case ts of
         [] -> ("activate", "object")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
   ggi <- getGroupItem object1 triggerSyms
            (makePhrase ["What to", verb1 MU.:> "?"])
-           [CInv leader, CFloor (blid b) (bpos b)] False False "in inventory"
+           [CInv, CGround] False False "in inventory"
   case ggi of
-    Right ((iid, _), (_, container)) ->
-      return $ Right $ ApplySer leader iid container
+    Right ((iid, _), (_, cstore)) ->
+      return $ Right $ ApplySer leader iid cstore
     Left slides -> return $ Left slides
 
 -- * AlterDir
