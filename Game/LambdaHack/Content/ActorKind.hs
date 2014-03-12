@@ -25,7 +25,7 @@ data ActorKind = ActorKind
   , acolor   :: !Color            -- ^ map color
   , aspeed   :: !Speed            -- ^ natural speed in m/s
   , ahp      :: !Random.RollDice  -- ^ encodes initial and maximal hp
-  , astamina :: !Random.RollDice  -- ^ encodes initial and maximal stamina
+  , acalm :: !Random.RollDice  -- ^ encodes initial and maximal calm
   , asight   :: !Bool             -- ^ can it see?
   , asmell   :: !Bool             -- ^ can it smell?
   , aiq      :: !Int              -- ^ intelligence

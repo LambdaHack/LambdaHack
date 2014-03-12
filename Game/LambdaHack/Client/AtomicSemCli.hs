@@ -379,9 +379,9 @@ drawCmdAtomicUI verbose cmd = case cmd of
     when (Just aid == mleader) $ do
       Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
       b <- getsState $ getActorBody aid
-      let ActorKind{ahp, astamina} = okind $ bkind b
+      let ActorKind{ahp, acalm} = okind $ bkind b
       -- TODO: if one of these does not regenerate, ignore it
-      when (bhp b == maxDice ahp && bstamina b == maxDice astamina) $ do
+      when (bhp b == maxDice ahp && bcalm b == maxDice acalm) $ do
         actorVerbMU aid b "recover fully"
         stopPlayBack
   HasteActorA aid delta ->

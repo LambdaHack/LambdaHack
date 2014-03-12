@@ -219,12 +219,12 @@ drawLeaderStatus cops s waitTimes mleader _width =
       stats = case mleader of
         Just leader ->
           let Kind.COps{coactor=Kind.Ops{okind}} = cops
-              (bracedL, ahpS, bhpS, astaminaS, bstaminaS) =
-                let b@Actor{bkind, bhp, bstamina} = getActorBody leader s
-                    ActorKind{ahp, astamina} = okind bkind
+              (bracedL, ahpS, bhpS, acalmS, bcalmS) =
+                let b@Actor{bkind, bhp, bcalm} = getActorBody leader s
+                    ActorKind{ahp, acalm} = okind bkind
                 in ( braced b
                    , tshow (maxDice ahp), tshow bhp
-                   , tshow (maxDice astamina), tshow bstamina )
+                   , tshow (maxDice acalm), tshow bcalm )
               -- Indicate the actor is braced (was waiting last move).
               -- It's a useful feedback for the otherwise hard to observe
               -- 'wait' command.
@@ -235,11 +235,11 @@ drawLeaderStatus cops s waitTimes mleader _width =
               bracePick | bracedL   = "}"
                         | otherwise = ":"
               hpText = bhpS <> slashPick <> ahpS
-              staminaText = bstaminaS <> "/" <> astaminaS
-          in "S:" <> T.justifyRight 6 ' ' staminaText
+              calmText = bcalmS <> "/" <> acalmS
+          in "C:" <> T.justifyRight 6 ' ' calmText
              <+> "H" <> bracePick <> T.justifyRight 6 ' ' hpText
         Nothing ->
-             "S: --/--"
+             "C: --/--"
              <+> "H: --/--"
   in addAttr $ stats <> " "
 

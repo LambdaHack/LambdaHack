@@ -35,10 +35,10 @@ which in its most complex form may look as follows.
 
 The line starts with the list of party members (unless only one member
 resides on the currently displayed level) and the shortened name of the team.
-After 'D' comes the damage of the leader's weapon, after 'S' his current
-and maximum stamina and after 'H' his current and maximum hit points.
-At the end, the personal target of the leader is described
-and the length of the shortest path to the target.
+After 'D' comes the damage of the leader's weapon, after 'C' his current
+and maximum calm (composure, focus) and after 'H' his current and maximum
+hit points (health). At the end, the personal target of the leader
+is described and the length of the shortest path to the target.
 
 The other status line relates to the dungeon and to the whole party.
 

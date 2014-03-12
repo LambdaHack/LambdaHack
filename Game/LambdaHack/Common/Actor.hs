@@ -56,7 +56,7 @@ data Actor = Actor
   , bcolor      :: !Color.Color          -- ^ individual map color
   , bspeed      :: !Speed                -- ^ individual speed
   , bhp         :: !Int                  -- ^ current hit points
-  , bstamina    :: !Int                  -- ^ current stamina
+  , bcalm    :: !Int                  -- ^ current calm
   , btrajectory :: !(Maybe [Vector])     -- ^ trajectory the actor must travel
   , bpos        :: !Point                -- ^ current position
   , boldpos     :: !Point                -- ^ previous position
@@ -97,7 +97,7 @@ partActor b = MU.Text $ bname b
 actorTemplate :: Kind.Id ActorKind -> Char -> Text
               -> Color.Color -> Speed -> Int -> Int -> Maybe [Vector]
               -> Point -> LevelId -> Time -> FactionId -> Bool -> Actor
-actorTemplate bkind bsymbol bname bcolor bspeed bhp bstamina btrajectory
+actorTemplate bkind bsymbol bname bcolor bspeed bhp bcalm btrajectory
               bpos blid btime bfid bproj =
   let boldpos = Point 0 0  -- make sure /= bpos, to tell it didn't switch level
       boldlid = blid
@@ -220,7 +220,7 @@ instance Binary Actor where
     put bcolor
     put bspeed
     put bhp
-    put bstamina
+    put bcalm
     put btrajectory
     put bpos
     put boldpos
@@ -239,7 +239,7 @@ instance Binary Actor where
     bcolor <- get
     bspeed <- get
     bhp <- get
-    bstamina <- get
+    bcalm <- get
     btrajectory <- get
     bpos <- get
     boldpos <- get

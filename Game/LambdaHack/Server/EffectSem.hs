@@ -249,7 +249,7 @@ addActor :: (MonadAtomic m, MonadServer m)
          => Kind.Id ActorKind -> FactionId -> Point -> LevelId -> Int -> Int
          -> Char -> Text -> Color.Color -> Time
          -> m ActorId
-addActor mk bfid pos lid hp stamina bsymbol bname bcolor time = do
+addActor mk bfid pos lid hp calm bsymbol bname bcolor time = do
   Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
   Faction{gplayer} <- getsState $ (EM.! bfid) . sfactionD
   DebugModeSer{sdifficultySer} <- getsServer sdebugSer
@@ -261,7 +261,7 @@ addActor mk bfid pos lid hp stamina bsymbol bname bcolor time = do
              | otherwise = hp
       kind = okind mk
       speed = aspeed kind
-      m = actorTemplate mk bsymbol bname bcolor speed diffHP stamina
+      m = actorTemplate mk bsymbol bname bcolor speed diffHP calm
                         Nothing pos lid time bfid False
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
@@ -277,7 +277,7 @@ addHero bfid ppos lid heroNames mNumber time = do
   Faction{gcolor, gplayer} <- getsState $ (EM.! bfid) . sfactionD
   let kId = heroKindId coactor
   hp <- rndToAction $ castDice $ ahp $ okind kId
-  stamina <- rndToAction $ castDice $ astamina $ okind kId
+  calm <- rndToAction $ castDice $ acalm $ okind kId
   mhs <- mapM (\n -> getsState $ \s -> tryFindHeroK s bfid n) [0..9]
   let freeHeroK = elemIndex Nothing mhs
       n = fromMaybe (fromMaybe 100 freeHeroK) mNumber
@@ -289,7 +289,7 @@ addHero bfid ppos lid heroNames mNumber time = do
            | otherwise =
         playerName gplayer <+> nameFromNumber n
       startHP = hp - (min 10 $ hp `div` 10) * min 5 n
-  addActor kId bfid ppos lid startHP stamina symbol name gcolor time
+  addActor kId bfid ppos lid startHP calm symbol name gcolor time
 
 -- ** SpawnMonster
 
@@ -351,8 +351,8 @@ addMonster mk bfid ppos lid time = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   let kind = okind mk
   hp <- rndToAction $ castDice $ ahp kind
-  stamina <- rndToAction $ castDice $ astamina kind
-  addActor mk bfid ppos lid hp stamina (asymbol kind) (aname kind)
+  calm <- rndToAction $ castDice $ acalm kind
+  addActor mk bfid ppos lid hp calm (asymbol kind) (aname kind)
            (acolor kind) time
 
 -- ** CreateItem
