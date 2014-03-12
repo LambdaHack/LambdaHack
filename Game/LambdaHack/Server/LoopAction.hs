@@ -368,11 +368,23 @@ dieSer aid b hit = do
 dropAllItems :: (MonadAtomic m, MonadServer m)
              => ActorId -> Actor -> Bool -> m ()
 dropAllItems aid b hit = do
-  Kind.COps{coitem} <- getsState scops
+  Kind.COps{coitem, corule} <- getsState scops
+  let RuleKind{rsharedInventory} = Kind.stdRuleset corule
   discoS <- getsServer sdisco
   let container = CActor aid CEqp
-      g iid k = execCmdAtomic $ MoveItemA iid k (CActor aid CInv) container
-  mapActorInv_ g b
+      loseInv = do
+        let g iid k = execCmdAtomic
+                      $ MoveItemA iid k (CActor aid CInv) container
+        mapActorInv_ g b
+  if not rsharedInventory then loseInv
+  else do
+    fact <- getsState $ (EM.! bfid b) . sfactionD
+    case gleader fact of
+      Nothing -> loseInv
+      Just leader -> do
+        let g iid k = execCmdAtomic
+                      $ MoveItemA iid k (CActor aid CInv) (CActor leader CInv)
+        mapActorInv_ g b
   let isDestroyed item = hit || bproj b && isFragile coitem discoS item
       f iid k = do
         item <- getsState $ getItemBody iid
