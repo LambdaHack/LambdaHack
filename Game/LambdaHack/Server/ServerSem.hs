@@ -408,7 +408,7 @@ addProjectile bpos rest iid blid bfid btime = do
       range = rangeFromSpeed speed
       adj | range < 5 = "falling"
           | otherwise = "flying"
-      -- Not much details about a fast flying object.
+      -- Not much detail about a fast flying item.
       (object1, object2) = partItem coitem EM.empty item
       name = makePhrase [MU.AW $ MU.Text adj, object1, object2]
       trajectoryLength = lingerPercent * range `div` 100

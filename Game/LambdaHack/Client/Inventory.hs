@@ -55,8 +55,8 @@ itemOverlay bag sl = do
          <> " "
   return $! toOverlay $ map pr $ EM.assocs sl
 
-allObjectsName :: Text
-allObjectsName = "Objects"
+allItemsName :: Text
+allItemsName = "Items"
 
 -- | Let a human player choose any item with a given group name.
 -- Note that this does not guarantee the chosen item belongs to the group,
@@ -69,9 +69,9 @@ getGroupItem :: MonadClientUI m
              -> Bool     -- ^ whether to ask for the number of items
              -> Bool     -- ^ whether the default is all, instead of one
              -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
-getGroupItem object syms prompt = do
+getGroupItem itemsName syms prompt = do
   let choice i = jsymbol i `elem` syms
-      header = makePhrase [MU.Capitalize (MU.Ws object)]
+      header = makePhrase [MU.Capitalize (MU.Ws itemsName)]
   getItem True prompt choice header
 
 -- | Let the human player choose any item from a list of items.
@@ -83,7 +83,7 @@ getAnyItem :: MonadClientUI m
            -> Bool
            -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
 getAnyItem askWhenLone prompt =
-  getItem askWhenLone prompt (const True) allObjectsName
+  getItem askWhenLone prompt (const True) allItemsName
 
 data ItemDialogState = INone | ISuitable | IAll deriving Eq
 
@@ -107,7 +107,7 @@ getItem askWhenLone verb p ptext cLegalRaw askNumber allNumber = do
  s <- getState
  let cNotEmpty cstore = not (EM.null (getCBag (CActor leader cstore) s))
      cLegal = filter cNotEmpty cLegalRaw
- if null cLegal then failWith "no objects found"  -- TODO: sometimes ItemNotCalm
+ if null cLegal then failWith "no items found"  -- TODO: sometimes ItemNotCalm
  else do
   let cStart = head cLegal
   let storeAssocs cstore = EM.assocs (getCBag (CActor leader cstore) s)
@@ -118,7 +118,7 @@ getItem askWhenLone verb p ptext cLegalRaw askNumber allNumber = do
   let ask = do
         if all (null . EM.elems)
            $ map (\cstore -> getCBag (CActor leader cstore) s) cLegal
-        then failWith "no objects found"
+        then failWith "no items found"
         else if not askWhenLone && fmap (p . snd . fst) mloneItem == Just True
         then case mloneItem of
           Nothing -> assert `failure` cStart
@@ -195,7 +195,7 @@ getItem askWhenLone verb p ptext cLegalRaw askNumber allNumber = do
             (ims, slOver, msg) = case itemDialogState of
               INone     -> (isp, EM.empty, prompt)
               ISuitable -> (isp, slP, ptext <+> isn <> ".")
-              IAll      -> (is0, sl, allObjectsName <+> isn <> ".")
+              IAll      -> (is0, sl, allItemsName <+> isn <> ".")
         io <- itemOverlay bag slOver
         akm <- displayChoiceUI (msg <+> choice ims) io (keys is0)
         case akm of
@@ -207,7 +207,7 @@ getItem askWhenLone verb p ptext cLegalRaw askNumber allNumber = do
                 INone -> if EM.null slP
                          then perform IAll cCur cPrev
                          else perform ISuitable cCur cPrev
-                ISuitable | ptext /= allObjectsName -> perform IAll cCur cPrev
+                ISuitable | ptext /= allItemsName -> perform IAll cCur cPrev
                 _ -> perform INone cCur cPrev
               K.Char '-' | floorFull && (isCFull CInv || isCFull CEqp) ->
                 let cNext = if cCur == CGround then cPrev else CGround

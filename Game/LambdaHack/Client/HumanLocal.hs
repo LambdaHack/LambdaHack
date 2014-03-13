@@ -487,8 +487,8 @@ lookAt detailed tilePrefix canSee pos aid msg = do
               _ | EM.size is <= 2 ->
                 makeSentence [ MU.SubjectVerbSg subject verb
                              , MU.WWandW $ map nWs $ EM.assocs is]
-              True -> "Objects:"
-              _ -> "Objects here."
+              True -> "Items:"
+              _ -> "Items here."
       tile = lvl `at` pos
       obscured | tile /= hideTile cotile lvl pos = "partially obscured"
                | otherwise = ""

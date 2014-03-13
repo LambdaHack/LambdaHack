@@ -155,13 +155,13 @@ standard = RuleKind
 
       -- Item use
       , ("I", (CmdItem, Inventory))
-      , ("g", (CmdItem, MoveItem [CGround] CEqp "get" "an object" True))
-      , ("d", (CmdItem, MoveItem [CEqp, CInv] CGround "drop" "an object" False))
+      , ("g", (CmdItem, MoveItem [CGround] CEqp "get" "an item" True))
+      , ("d", (CmdItem, MoveItem [CEqp, CInv] CGround "drop" "an item" False))
       , ("E", (CmdItem, Equipment))
       , ("e", (CmdItem, MoveItem [CInv, CGround] CEqp
-                                 "equip" "an object" False))
+                                 "equip" "an item" False))
       , ("s", (CmdItem, MoveItem [CEqp] CInv
-                                 "stash" "and share an object" False))
+                                 "stash" "and share an item" False))
       , ("A", (CmdItem, AllOwned))
       , ("q", (CmdItem, Apply [ApplyItem { verb = "quaff"
                                          , object = "potion"

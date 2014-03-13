@@ -123,12 +123,12 @@ Item use related keys are as follows.
 
                 keys           command
                 I              display shared inventory
-                g and ,        get an object
-                d              drop an object
+                g and ,        get an item
+                d              drop an item
                 E              display personal equipment
-                e              equip an object
-                s              stash and share an object
-                A              display all owned objects
+                e              equip an item
+                s              stash and share an item
+                A              display all owned items
                 q              quaff potion
                 r              read scroll
                 t              throw missile
@@ -225,9 +225,9 @@ This gives the opponent a free blow, but can improve the tactical situation
 or aid escape.
 
 Slinging missiles at targets wounds them, consuming the weapon in the process.
-You may sling any object in your possession (press `?` to choose
-an object and press it again for a non-standard choice) or on the floor
-(press `-`). Only objects of a few kinds inflict any damage.
+You may sling any item in your possession (press `?` to choose
+an item and press it again for a non-standard choice) or on the floor
+(press `-`). Only items of a few kinds inflict any damage.
 Whenever the monster's or hero's hit points reach zero, the combatant dies.
 When the last hero dies, the game ends.
 

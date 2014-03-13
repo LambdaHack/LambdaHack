@@ -123,7 +123,7 @@ cmdDescription cmd = case cmd of
   MemberBack  -> "cycle among party members in the dungeon"
   Inventory   -> "display shared inventory"
   Equipment   -> "display personal equipment"
-  AllOwned    -> "display all owned objects"
+  AllOwned    -> "display all owned items"
   SelectActor -> "select (or deselect) a party member"
   SelectNone  -> "deselect (or select) all on the level"
   Clear       -> "clear messages"
