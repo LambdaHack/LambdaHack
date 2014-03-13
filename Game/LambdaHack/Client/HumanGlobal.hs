@@ -197,30 +197,6 @@ waitHuman = do
 
 -- * Pickup
 
--- | Get a single item.
-pickupHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
-pickupHuman = do
-  let cLegal = [CGround]
-      toCStore = CEqp
-      verb = "get"
-  leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
-  ggi <- getAnyItem False verb cLegal False True
-  case ggi of
-    Right ((iid, item), (k, fromCStore)) -> do
-      slots <- getsClient sslots
-      freeSlot <- getsClient sfreeSlot
-      let l = if jsymbol item == '$' then Just $ SlotChar '$' else Nothing
-      mc <- getsState $ assignSlot iid l b slots freeSlot
-      case mc of
-        Just l2 -> do
-          modifyClient $ \cli ->
-            cli { sslots = EM.insert l2 iid (sslots cli)
-                , sfreeSlot = max l2 (sfreeSlot cli) }
-          return $ Right $ MoveItemSer leader iid k fromCStore toCStore
-        Nothing -> failSer PickupOverfull
-    Left slides -> return $ Left slides
-
 allObjectsName :: Text
 allObjectsName = "Objects"
 
@@ -276,7 +252,8 @@ getItem askWhenLone verb p ptext cLegalRaw askNumber allNumber = do
  if null cLegal then failWith "no objects found"  -- TODO: sometimes ItemNotCalm
  else do
   let cStart = head cLegal
-  let mloneItem = case EM.assocs (getCBag (CActor leader cStart) s) of
+  let storeAssocs cstore = EM.assocs (getCBag (CActor leader cstore) s)
+      mloneItem = case concatMap storeAssocs cLegal of
                     [(iid, k)] -> Just ((iid, getItemBody iid s), k)
                     _ -> Nothing
   slots <- getsClient sslots
@@ -392,11 +369,10 @@ getItem askWhenLone verb p ptext cLegalRaw askNumber allNumber = do
               _ -> assert `failure` "unexpected key:" `twith` akm
   ask
 
--- * Drop
-
 moveItemHuman :: MonadClientUI m
-              => [CStore] -> CStore -> MU.Part -> m (SlideOrCmd CmdTakeTimeSer)
-moveItemHuman cLegalRaw toCStore verb = do
+              => [CStore] -> CStore -> MU.Part -> Bool
+              -> m (SlideOrCmd CmdTakeTimeSer)
+moveItemHuman cLegalRaw toCStore verb auto = do
   Kind.COps{coactor=Kind.Ops{okind}, coitem} <- getsState scops
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -406,32 +382,54 @@ moveItemHuman cLegalRaw toCStore verb = do
                else if toCStore == CInv
                     then []
                     else delete CInv cLegalRaw
-  ggi <- getAnyItem True verb cLegal True True
+  ggi <- if auto
+         then getAnyItem False verb cLegal False True
+         else getAnyItem True  verb cLegal True  True
   case ggi of
     Right ((iid, item), (k, fromCStore)) -> do
-      disco <- getsClient sdisco
-      subject <- partAidLeader leader
-      msgAdd $ makeSentence
-        [ MU.SubjectVerbSg subject verb
-        , partItemWs coitem disco k item ]
-      return $ Right $ MoveItemSer leader iid k fromCStore toCStore
+      let msgAndSer = do
+            disco <- getsClient sdisco
+            subject <- partAidLeader leader
+            msgAdd $ makeSentence
+              [ MU.SubjectVerbSg subject verb
+              , partItemWs coitem disco k item ]
+            return $ Right $ MoveItemSer leader iid k fromCStore toCStore
+      if fromCStore /= CGround then msgAndSer  -- slot already assigned
+      else do
+        slots <- getsClient sslots
+        freeSlot <- getsClient sfreeSlot
+        let l = if jsymbol item == '$' then Just $ SlotChar '$' else Nothing
+        mc <- getsState $ assignSlot iid l b slots freeSlot
+        case mc of
+          Just l2 -> do
+            modifyClient $ \cli ->
+              cli { sslots = EM.insert l2 iid (sslots cli)
+                  , sfreeSlot = max l2 (sfreeSlot cli) }
+            msgAndSer
+          Nothing -> failSer PickupOverfull
     Left slides -> return $ Left slides
+
+-- | Get a single item.
+pickupHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
+pickupHuman = moveItemHuman [CGround] CEqp "get" True
+
+-- * Drop
 
 -- | Drop a single item.
 dropHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
-dropHuman = moveItemHuman [CEqp, CInv] CGround "drop"
+dropHuman = moveItemHuman [CEqp, CInv] CGround "drop" False
 
 -- * Wield
 
 -- Equip a single item.
 wieldHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
-wieldHuman = moveItemHuman [CInv, CGround] CEqp "equip"
+wieldHuman = moveItemHuman [CInv, CGround] CEqp "equip" False
 
 -- * Yield
 
 -- | Stash a single item.
 yieldHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
-yieldHuman = moveItemHuman [CEqp] CInv "stash"
+yieldHuman = moveItemHuman [CEqp] CInv "stash" False
 
 -- * Project
 
