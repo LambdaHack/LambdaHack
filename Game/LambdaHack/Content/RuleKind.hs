@@ -73,6 +73,16 @@ data FovMode =
   | Blind         -- ^ only feeling out adjacent tiles by touch
   deriving (Show, Read)
 
+-- | A dummy instance of the 'Show' class, to satisfy general requirments
+-- about content. We won't have many rule sets and they contain functions,
+-- so defining a proper instance is not practical.
+instance Show RuleKind where
+  show _ = "The game ruleset specification."
+
+-- | Validates the ASCII art format (TODO).
+validateRuleKind :: [RuleKind] -> [RuleKind]
+validateRuleKind _ = []
+
 instance Binary FovMode where
   put Shadow      = putWord8 0
   put Permissive  = putWord8 1
@@ -86,13 +96,3 @@ instance Binary FovMode where
       2 -> fmap Digital get
       3 -> return Blind
       _ -> fail "no parse (FovMode)"
-
--- | A dummy instance of the 'Show' class, to satisfy general requirments
--- about content. We won't have many rule sets and they contain functions,
--- so defining a proper instance is not practical.
-instance Show RuleKind where
-  show _ = "The game ruleset specification."
-
--- | Validates the ASCII art format (TODO).
-validateRuleKind :: [RuleKind] -> [RuleKind]
-validateRuleKind _ = []

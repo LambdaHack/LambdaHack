@@ -10,7 +10,6 @@ module Game.LambdaHack.Common.Animation
   ) where
 
 import Control.Exception.Assert.Sugar
-import Control.Monad
 import Data.Binary
 import Data.Bits
 import qualified Data.EnumMap.Strict as EM
@@ -47,7 +46,9 @@ data SingleFrame = SingleFrame
   , sfBottom :: ![ScreenLine]  -- ^ some extra lines to show at the bottom
   , sfBlank  :: !Bool          -- ^ display only @sfTop@, on blank screen
   }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
+
+instance Binary SingleFrame
 
 -- | Overlays the @sfTop@ and @sfBottom@ fields onto the @sfLevel@ field.
 -- The resulting frame has empty @sfTop@ and @sfBottom@.
@@ -235,7 +236,9 @@ data AcFrame =
   | AcRunning !SingleFrame
   | AcNormal !SingleFrame
   | AcDelay
-  deriving (Show, Eq)
+  deriving (Show, Eq, Generic)
+
+instance Binary AcFrame
 
 data DebugModeCli = DebugModeCli
   { sfont          :: !(Maybe String)
@@ -268,6 +271,8 @@ data DebugModeCli = DebugModeCli
   }
   deriving (Show, Eq, Generic)
 
+instance Binary DebugModeCli
+
 defDebugModeCli :: DebugModeCli
 defDebugModeCli = DebugModeCli
   { sfont = Nothing
@@ -282,32 +287,3 @@ defDebugModeCli = DebugModeCli
   , sfrontendNo = False
   , sdbgMsgCli = False
   }
-
-instance Binary AcFrame where
-  put (AcConfirm fr) = putWord8 0 >> put fr
-  put (AcRunning fr) = putWord8 1 >> put fr
-  put (AcNormal fr)  = putWord8 2 >> put fr
-  put AcDelay        = putWord8 3
-  get = do
-    tag <- getWord8
-    case tag of
-      0 -> liftM AcConfirm get
-      1 -> liftM AcRunning get
-      2 -> liftM AcNormal get
-      3 -> return AcDelay
-      _ -> fail "no parse (AcFrame)"
-
-instance Binary SingleFrame where
-  put SingleFrame{..} = do
-    put sfLevel
-    put sfTop
-    put sfBottom
-    put sfBlank
-  get = do
-    sfLevel <- get
-    sfTop <- get
-    sfBottom <- get
-    sfBlank <- get
-    return $! SingleFrame{..}
-
-instance Binary DebugModeCli

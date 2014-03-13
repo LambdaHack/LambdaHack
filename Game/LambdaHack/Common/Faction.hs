@@ -39,7 +39,7 @@ data Diplomacy =
   | Neutral
   | Alliance
   | War
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Enum)
 
 type Dipl = EM.EnumMap FactionId Diplomacy
 
@@ -51,7 +51,7 @@ data Outcome =
   | Conquer   -- ^ the player won by eliminating all rivals
   | Escape    -- ^ the player escaped the dungeon alive
   | Restart   -- ^ game is restarted
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Enum)
 
 -- | Current game status.
 data Status = Status
@@ -123,36 +123,12 @@ instance Binary Faction where
     return $! Faction{..}
 
 instance Binary Diplomacy where
-  put Unknown  = putWord8 0
-  put Neutral  = putWord8 1
-  put Alliance = putWord8 2
-  put War      = putWord8 3
-  get = do
-    tag <- getWord8
-    case tag of
-      0 -> return Unknown
-      1 -> return Neutral
-      2 -> return Alliance
-      3 -> return War
-      _ -> fail "no parse (Diplomacy)"
+  put = putWord8 . toEnum . fromEnum
+  get = fmap (toEnum . fromEnum) getWord8
 
 instance Binary Outcome where
-  put Killed = putWord8 0
-  put Defeated = putWord8 1
-  put Camping = putWord8 2
-  put Conquer = putWord8 3
-  put Escape = putWord8 4
-  put Restart = putWord8 5
-  get = do
-    tag <- getWord8
-    case tag of
-      0 -> return Killed
-      1 -> return Defeated
-      2 -> return Camping
-      3 -> return Conquer
-      4 -> return Escape
-      5 -> return Restart
-      _ -> fail "no parse (Outcome)"
+  put = putWord8 . toEnum . fromEnum
+  get = fmap (toEnum . fromEnum) getWord8
 
 instance Binary Status where
   put Status{..} = do

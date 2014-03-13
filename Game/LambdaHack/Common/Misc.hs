@@ -59,27 +59,15 @@ instance Binary CStore
 
 -- | A unique identifier of a faction in a game.
 newtype FactionId = FactionId Int
-  deriving (Show, Eq, Ord, Enum)
-
-instance Binary FactionId where
-  put (FactionId n) = put n
-  get = fmap FactionId get
+  deriving (Show, Eq, Ord, Enum, Binary)
 
 -- | Abstract level identifiers.
 newtype LevelId = LevelId Int
-  deriving (Show, Eq, Ord, Enum)
-
-instance Binary LevelId where
-  put (LevelId n) = put n
-  get = fmap LevelId get
+  deriving (Show, Eq, Ord, Enum, Binary)
 
 -- | A unique identifier of an actor in the dungeon.
 newtype ActorId = ActorId Int
-  deriving (Show, Eq, Ord, Enum)
-
-instance Binary ActorId where
-  put (ActorId n) = put n
-  get = fmap ActorId get
+  deriving (Show, Eq, Ord, Enum, Binary)
 
 -- Data.Binary
 

@@ -1,4 +1,5 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | High score table operations.
 module Game.LambdaHack.Common.HighScore
   ( ScoreTable, empty, register, showScore, getRecord, highSlideshow
@@ -12,6 +13,7 @@ import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Game.LambdaHack.Common.Kind as Kind
+import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 import System.Time
 import Text.Printf
@@ -34,7 +36,18 @@ data ScoreRecord = ScoreRecord
   , ourVictims   :: !(EM.EnumMap (Kind.Id ActorKind) Int)  -- ^ allies lost
   , theirVictims :: !(EM.EnumMap (Kind.Id ActorKind) Int)  -- ^ foes killed
   }
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Generic)
+
+instance Binary ClockTime where
+  put (TOD cs cp) = do
+    put cs
+    put cp
+  get = do
+    cs <- get
+    cp <- get
+    return $! TOD cs cp
+
+instance Binary ScoreRecord
 
 -- TODO: move all to Text
 -- | Show a single high score, from the given ranking in the high score table.
@@ -190,26 +203,3 @@ highSlideshow table pos =
         , MU.Ordinal pos, "place"
         , msgUnless ]
   in toSlideshow True $ map ([msg, "\n"] ++) $ showCloseScores pos table height
-
-instance Binary ScoreRecord where
-  put (ScoreRecord p n (TOD cs cp) s difficulty gplayerName ourVictims theirVictims) = do
-    put p
-    put n
-    put cs
-    put cp
-    put s
-    put difficulty
-    put gplayerName
-    put ourVictims
-    put theirVictims
-  get = do
-    p <- get
-    n <- get
-    cs <- get
-    cp <- get
-    s <- get
-    difficulty <- get
-    gplayerName <- get
-    ourVictims <- get
-    theirVictims <- get
-    return $! ScoreRecord p n (TOD cs cp) s difficulty gplayerName ourVictims theirVictims

@@ -18,11 +18,7 @@ import Game.LambdaHack.Common.Misc
 -- One tick is 1 microsecond (one millionth of a second),
 -- one turn is 0.5 s.
 newtype Time = Time Int64
-  deriving (Show, Eq, Ord, Enum)
-
-instance Binary Time where
-  put (Time n) = put n
-  get = fmap Time get
+  deriving (Show, Eq, Ord, Enum, Binary)
 
 -- | Start of the game time, or zero lenght time interval.
 timeZero :: Time
@@ -96,11 +92,7 @@ timeToDigit (Time maxT) (Time t) =
 -- Actors at normal speed (2 m/s) take one time turn (0.5 s)
 -- to move one tile (1 m by 1 m).
 newtype Speed = Speed Int64
-  deriving (Show, Eq, Ord)
-
-instance Binary Speed where
-  put (Speed n) = put n
-  get = fmap Speed get
+  deriving (Show, Eq, Ord, Binary)
 
 -- | Number of seconds in a mega-second.
 sInMs :: Int64

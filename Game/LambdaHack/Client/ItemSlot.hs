@@ -26,15 +26,11 @@ import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.State
 
 newtype SlotChar = SlotChar {slotChar :: Char}
-  deriving (Show, Eq, Enum)
+  deriving (Show, Eq, Enum, Binary)
 
 instance Ord SlotChar where
   compare (SlotChar x) (SlotChar y) =
     compare (isUpper x, toLower x) (isUpper y, toLower y)
-
-instance Binary SlotChar where
-  put (SlotChar x) = put x
-  get = fmap SlotChar get
 
 type ItemSlots = EM.EnumMap SlotChar ItemId
 
