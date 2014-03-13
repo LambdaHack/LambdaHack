@@ -200,11 +200,11 @@ waitHuman = do
 -- | Get a single item.
 pickupHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
 pickupHuman = do
-  leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
   let cLegal = [CGround]
       toCStore = CEqp
       verb = "get"
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
   ggi <- getAnyItem False verb cLegal False True
   case ggi of
     Right ((iid, item), (k, fromCStore)) -> do
@@ -219,29 +219,6 @@ pickupHuman = do
                 , sfreeSlot = max l2 (sfreeSlot cli) }
           return $ Right $ MoveItemSer leader iid k fromCStore toCStore
         Nothing -> failSer PickupOverfull
-    Left slides -> return $ Left slides
-
--- * Drop
-
--- | Drop a single item.
-dropHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
-dropHuman = do
-  Kind.COps{coactor=Kind.Ops{okind}, coitem} <- getsState scops
-  leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
-  let kind = okind $ bkind b
-      cLegal = [CEqp] ++ [CInv | calmEnough b kind]
-      toCStore = CGround
-      verb = "drop"
-  ggi <- getAnyItem True verb cLegal True True
-  case ggi of
-    Right ((iid, item), (k, fromCStore)) -> do
-      disco <- getsClient sdisco
-      subject <- partAidLeader leader
-      msgAdd $ makeSentence
-        [ MU.SubjectVerbSg subject verb
-        , partItemWs coitem disco k item ]
-      return $ Right $ MoveItemSer leader iid k fromCStore toCStore
     Left slides -> return $ Left slides
 
 allObjectsName :: Text
@@ -415,18 +392,20 @@ getItem askWhenLone verb p ptext cLegalRaw askNumber allNumber = do
               _ -> assert `failure` "unexpected key:" `twith` akm
   ask
 
--- * Wield
+-- * Drop
 
--- Equip a single item.
-wieldHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
-wieldHuman = do
+moveItemHuman :: MonadClientUI m
+              => [CStore] -> CStore -> MU.Part -> m (SlideOrCmd CmdTakeTimeSer)
+moveItemHuman cLegalRaw toCStore verb = do
   Kind.COps{coactor=Kind.Ops{okind}, coitem} <- getsState scops
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   let kind = okind $ bkind b
-      cLegal = [CInv | calmEnough b kind] ++ [CGround]
-      toCStore = CEqp
-      verb = "equip"
+      cLegal = if calmEnough b kind
+               then cLegalRaw
+               else if toCStore == CInv
+                    then []
+                    else delete CInv cLegalRaw
   ggi <- getAnyItem True verb cLegal True True
   case ggi of
     Right ((iid, item), (k, fromCStore)) -> do
@@ -437,29 +416,22 @@ wieldHuman = do
         , partItemWs coitem disco k item ]
       return $ Right $ MoveItemSer leader iid k fromCStore toCStore
     Left slides -> return $ Left slides
+
+-- | Drop a single item.
+dropHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
+dropHuman = moveItemHuman [CEqp, CInv] CGround "drop"
+
+-- * Wield
+
+-- Equip a single item.
+wieldHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
+wieldHuman = moveItemHuman [CInv, CGround] CEqp "equip"
 
 -- * Yield
 
 -- | Stash a single item.
 yieldHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
-yieldHuman = do
-  Kind.COps{coactor=Kind.Ops{okind}, coitem} <- getsState scops
-  leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
-  let kind = okind $ bkind b
-      cLegal = [CEqp | calmEnough b kind]
-      toCStore = CInv
-      verb = "stash"
-  ggi <- getAnyItem True verb cLegal True True
-  case ggi of
-    Right ((iid, item), (k, fromCStore)) -> do
-      disco <- getsClient sdisco
-      subject <- partAidLeader leader
-      msgAdd $ makeSentence
-        [ MU.SubjectVerbSg subject verb
-        , partItemWs coitem disco k item ]
-      return $ Right $ MoveItemSer leader iid k fromCStore toCStore
-    Left slides -> return $ Left slides
+yieldHuman = moveItemHuman [CEqp] CInv "stash"
 
 -- * Project
 
@@ -513,17 +485,17 @@ projectEps :: MonadClientUI m
            => [Trigger] -> Point -> Int
            -> m (SlideOrCmd CmdTakeTimeSer)
 projectEps ts tpos eps = do
-  let (verb1, object1) = case ts of
+  let cLegal = [CEqp, CInv, CGround]  -- calm enough at this stage
+      (verb1, object1) = case ts of
         [] -> ("aim", "object")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
   leader <- getLeaderUI
-  let cLegal = [CEqp, CInv, CGround]  -- calm enough at this stage
-  ggi <- getGroupItem object1 triggerSyms
-           verb1 cLegal False False
+  ggi <- getGroupItem object1 triggerSyms verb1 cLegal False False
   case ggi of
-    Right ((iid, _), (_, cstore)) ->
-      return $ Right $ ProjectSer leader tpos eps iid cstore
+    Right ((iid, _), (k, fromCStore)) -> do
+      assert (k == 1) skip
+      return $ Right $ ProjectSer leader tpos eps iid fromCStore
     Left slides -> return $ Left slides
 
 triggerSymbols :: [Trigger] -> [Char]
@@ -535,20 +507,23 @@ triggerSymbols (_ : ts) = triggerSymbols ts
 
 applyHuman :: MonadClientUI m => [Trigger] -> m (SlideOrCmd CmdTakeTimeSer)
 applyHuman ts = do
+  let cLegalRaw = [CEqp, CInv, CGround]
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   let kind = okind $ bkind b
-      cLegal = [CEqp] ++ [CInv | calmEnough b kind] ++ [CGround]
-  let (verb1, object1) = case ts of
+      cLegal = if calmEnough b kind
+               then cLegalRaw
+               else delete CInv cLegalRaw
+      (verb1, object1) = case ts of
         [] -> ("activate", "object")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
-  ggi <- getGroupItem object1 triggerSyms
-           verb1 cLegal False False
+  ggi <- getGroupItem object1 triggerSyms verb1 cLegal False False
   case ggi of
-    Right ((iid, _), (_, cstore)) ->
-      return $ Right $ ApplySer leader iid cstore
+    Right ((iid, _), (k, fromCStore)) -> do
+      assert (k == 1) skip
+      return $ Right $ ApplySer leader iid fromCStore
     Left slides -> return $ Left slides
 
 -- * AlterDir
