@@ -567,7 +567,7 @@ moveItemUI verbose iid k c1 c2 = do
                         , partItemWs coitem disco n item
                         , "\n" ]
             Nothing -> assert `failure` (aid, b, iid, slots)
-        else aiVerbMU aid "pick up" iid k
+        else aiVerbMU aid "get" iid k
     (CActor aid _, CActor _ CGround) | verbose ->
       aiVerbMU aid "drop" iid k
     _ -> return ()

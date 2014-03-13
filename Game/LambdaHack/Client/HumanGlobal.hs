@@ -197,13 +197,14 @@ waitHuman = do
 
 -- * Pickup
 
+-- | Get a single item.
 pickupHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
 pickupHuman = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   let cLegal = [CGround]
       toCStore = CEqp
-      verb = "pick up"
+      verb = "get"
   ggi <- getAnyItem False verb cLegal False True
   case ggi of
     Right ((iid, item), (k, fromCStore)) -> do
@@ -416,7 +417,7 @@ getItem askWhenLone verb p ptext cLegalRaw askNumber allNumber = do
 
 -- * Wield
 
--- Wield/wear a single item.
+-- Equip a single item.
 wieldHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
 wieldHuman = do
   Kind.COps{coactor=Kind.Ops{okind}, coitem} <- getsState scops
@@ -425,7 +426,7 @@ wieldHuman = do
   let kind = okind $ bkind b
       cLegal = [CInv | calmEnough b kind] ++ [CGround]
       toCStore = CEqp
-      verb = "wield"
+      verb = "equip"
   ggi <- getAnyItem True verb cLegal True True
   case ggi of
     Right ((iid, item), (k, fromCStore)) -> do
@@ -439,7 +440,7 @@ wieldHuman = do
 
 -- * Yield
 
--- | Take off a single item.
+-- | Stash a single item.
 yieldHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
 yieldHuman = do
   Kind.COps{coactor=Kind.Ops{okind}, coitem} <- getsState scops
@@ -448,7 +449,7 @@ yieldHuman = do
   let kind = okind $ bkind b
       cLegal = [CEqp | calmEnough b kind]
       toCStore = CInv
-      verb = "take off"
+      verb = "stash"
   ggi <- getAnyItem True verb cLegal True True
   case ggi of
     Right ((iid, item), (k, fromCStore)) -> do

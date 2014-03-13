@@ -126,12 +126,12 @@ Inventory and items-related keys are as follows.
                 g and ,        get an object
                 d              drop an object
                 E              display personal equipment
-                w              wield/wear an object
-                t              take off an object
+                e              equip an object
+                s              stash and share an object
                 A              display all owned objects
                 q              quaff potion
                 r              read scroll
-                s              sling missile
+                t              throw missile
                 z              zap wand
 
 To make a ranged attack, as in the last few commands above,
