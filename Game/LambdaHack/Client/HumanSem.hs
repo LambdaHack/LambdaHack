@@ -34,10 +34,8 @@ cmdAction cmd = case cmd of
   Move v -> fmap (fmap CmdTakeTimeSer) $ moveRunHuman False v
   Run v -> fmap (fmap CmdTakeTimeSer) $ moveRunHuman True v
   Wait -> fmap Right $ fmap CmdTakeTimeSer waitHuman
-  Pickup -> fmap (fmap CmdTakeTimeSer) pickupHuman
-  Drop -> fmap (fmap CmdTakeTimeSer) dropHuman
-  Wield -> fmap (fmap CmdTakeTimeSer) wieldHuman
-  Yield -> fmap (fmap CmdTakeTimeSer) yieldHuman
+  MoveItem cLegalRaw toCStore verbRaw _ auto ->
+    fmap (fmap CmdTakeTimeSer) $ moveItemHuman cLegalRaw toCStore verbRaw auto
   Project ts -> fmap (fmap CmdTakeTimeSer) $ projectHuman ts
   Apply ts -> fmap (fmap CmdTakeTimeSer) $ applyHuman ts
   AlterDir ts -> fmap (fmap CmdTakeTimeSer) $ alterDirHuman ts

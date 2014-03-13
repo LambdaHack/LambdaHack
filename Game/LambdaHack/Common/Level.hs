@@ -1,11 +1,8 @@
-{-# LANGUAGE DeriveGeneric #-}
 -- | Inhabited dungeon levels and the operations to query and change them
 -- as the game progresses.
 module Game.LambdaHack.Common.Level
   ( -- * Dungeon
     LevelId, Dungeon, ascendInBranch
-    -- * Item containers
-  , Container(..), CStore(..)
     -- * The @Level@ type and its components
   , SmellMap, ItemFloor, TileMap
   , Level(..)
@@ -23,7 +20,6 @@ import qualified Data.Bits as Bits
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 import Data.Text (Text)
-import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Actor
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -54,22 +50,6 @@ ascendInBranch dungeon k lid =
   in case EM.lookup ln dungeon of
     Just _ | ln /= lid -> [ln]
     _ -> []
-
--- | Item container type.
-data Container =
-    CFloor !LevelId !Point
-  | CActor !ActorId !CStore
-  deriving (Show, Eq, Ord, Generic)
-
-instance Binary Container
-
-data CStore =
-    CGround
-  | CEqp
-  | CInv
-  deriving (Show, Eq, Ord, Generic)
-
-instance Binary CStore
 
 -- | Actor time priority queue.
 type ActorPrio = EM.EnumMap Time [ActorId]

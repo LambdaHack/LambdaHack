@@ -37,14 +37,6 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ActorKind
 
--- | A unique identifier of an actor in the dungeon.
-newtype ActorId = ActorId Int
-  deriving (Show, Eq, Ord, Enum)
-
-instance Binary ActorId where
-  put (ActorId n) = put n
-  get = fmap ActorId get
-
 -- | Actor properties that are changing throughout the game.
 -- If they are dublets of properties from @ActorKind@,
 -- they are usually modified temporarily, but tend to return
@@ -56,7 +48,7 @@ data Actor = Actor
   , bcolor      :: !Color.Color          -- ^ individual map color
   , bspeed      :: !Speed                -- ^ individual speed
   , bhp         :: !Int                  -- ^ current hit points
-  , bcalm    :: !Int                  -- ^ current calm
+  , bcalm       :: !Int                  -- ^ current calm
   , btrajectory :: !(Maybe [Vector])     -- ^ trajectory the actor must travel
   , bpos        :: !Point                -- ^ current position
   , boldpos     :: !Point                -- ^ previous position

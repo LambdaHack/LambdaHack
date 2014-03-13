@@ -3,7 +3,7 @@
 -- TODO: document
 module Game.LambdaHack.Client.HumanGlobal
   ( -- * Commands that usually take time
-    moveRunHuman, waitHuman, pickupHuman, dropHuman, wieldHuman, yieldHuman
+    moveRunHuman, waitHuman, moveItemHuman
   , projectHuman, applyHuman, alterDirHuman, triggerTileHuman
   , stepToTargetHuman, resendHuman
     -- * Commands that never take time
@@ -43,6 +43,7 @@ import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Key as K
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
@@ -195,7 +196,49 @@ waitHuman = do
   leader <- getLeaderUI
   return $! WaitSer leader
 
--- * Pickup
+-- * MoveItem
+
+moveItemHuman :: MonadClientUI m
+              => [CStore] -> CStore -> Text -> Bool
+              -> m (SlideOrCmd CmdTakeTimeSer)
+moveItemHuman cLegalRaw toCStore verbRaw auto = do
+  assert (toCStore `notElem` cLegalRaw) skip
+  Kind.COps{coactor=Kind.Ops{okind}, coitem} <- getsState scops
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
+  let kind = okind $ bkind b
+      cLegal = if calmEnough b kind
+               then cLegalRaw
+               else if toCStore == CInv
+                    then []
+                    else delete CInv cLegalRaw
+      verb = MU.Text verbRaw
+  ggi <- if auto
+         then getAnyItem False verb cLegal False True
+         else getAnyItem True  verb cLegal True  True
+  case ggi of
+    Right ((iid, item), (k, fromCStore)) -> do
+      let msgAndSer = do
+            disco <- getsClient sdisco
+            subject <- partAidLeader leader
+            msgAdd $ makeSentence
+              [ MU.SubjectVerbSg subject verb
+              , partItemWs coitem disco k item ]
+            return $ Right $ MoveItemSer leader iid k fromCStore toCStore
+      if fromCStore /= CGround then msgAndSer  -- slot already assigned
+      else do
+        slots <- getsClient sslots
+        freeSlot <- getsClient sfreeSlot
+        let l = if jsymbol item == '$' then Just $ SlotChar '$' else Nothing
+        mc <- getsState $ assignSlot iid l b slots freeSlot
+        case mc of
+          Just l2 -> do
+            modifyClient $ \cli ->
+              cli { sslots = EM.insert l2 iid (sslots cli)
+                  , sfreeSlot = max l2 (sfreeSlot cli) }
+            msgAndSer
+          Nothing -> failSer PickupOverfull
+    Left slides -> return $ Left slides
 
 allObjectsName :: Text
 allObjectsName = "Objects"
@@ -368,68 +411,6 @@ getItem askWhenLone verb p ptext cLegalRaw askNumber allNumber = do
                 in return $ Right (iidItem, (k, cCur))
               _ -> assert `failure` "unexpected key:" `twith` akm
   ask
-
-moveItemHuman :: MonadClientUI m
-              => [CStore] -> CStore -> MU.Part -> Bool
-              -> m (SlideOrCmd CmdTakeTimeSer)
-moveItemHuman cLegalRaw toCStore verb auto = do
-  Kind.COps{coactor=Kind.Ops{okind}, coitem} <- getsState scops
-  leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
-  let kind = okind $ bkind b
-      cLegal = if calmEnough b kind
-               then cLegalRaw
-               else if toCStore == CInv
-                    then []
-                    else delete CInv cLegalRaw
-  ggi <- if auto
-         then getAnyItem False verb cLegal False True
-         else getAnyItem True  verb cLegal True  True
-  case ggi of
-    Right ((iid, item), (k, fromCStore)) -> do
-      let msgAndSer = do
-            disco <- getsClient sdisco
-            subject <- partAidLeader leader
-            msgAdd $ makeSentence
-              [ MU.SubjectVerbSg subject verb
-              , partItemWs coitem disco k item ]
-            return $ Right $ MoveItemSer leader iid k fromCStore toCStore
-      if fromCStore /= CGround then msgAndSer  -- slot already assigned
-      else do
-        slots <- getsClient sslots
-        freeSlot <- getsClient sfreeSlot
-        let l = if jsymbol item == '$' then Just $ SlotChar '$' else Nothing
-        mc <- getsState $ assignSlot iid l b slots freeSlot
-        case mc of
-          Just l2 -> do
-            modifyClient $ \cli ->
-              cli { sslots = EM.insert l2 iid (sslots cli)
-                  , sfreeSlot = max l2 (sfreeSlot cli) }
-            msgAndSer
-          Nothing -> failSer PickupOverfull
-    Left slides -> return $ Left slides
-
--- | Get a single item.
-pickupHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
-pickupHuman = moveItemHuman [CGround] CEqp "get" True
-
--- * Drop
-
--- | Drop a single item.
-dropHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
-dropHuman = moveItemHuman [CEqp, CInv] CGround "drop" False
-
--- * Wield
-
--- Equip a single item.
-wieldHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
-wieldHuman = moveItemHuman [CInv, CGround] CEqp "equip" False
-
--- * Yield
-
--- | Stash a single item.
-yieldHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
-yieldHuman = moveItemHuman [CEqp] CInv "stash" False
 
 -- * Project
 

@@ -12,7 +12,7 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.AtomicCmd
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
-import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Vector

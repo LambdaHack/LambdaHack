@@ -1,9 +1,11 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, TypeFamilies #-}
+{-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving, TypeFamilies #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | Hacks that haven't found their home yet.
 module Game.LambdaHack.Common.Misc
   ( normalLevelBound, divUp, Freqs, breturn
-  , FactionId, LevelId
+  , FactionId, LevelId, ActorId
+    -- * Item containers
+  , Container(..), CStore(..)
   ) where
 
 import Control.Monad
@@ -16,6 +18,9 @@ import qualified Data.HashMap.Strict as HM
 import Data.Key
 import Data.Text (Text)
 import Data.Traversable (traverse)
+import GHC.Generics (Generic)
+
+import Game.LambdaHack.Common.Point
 
 -- | Level bounds. TODO: query terminal size instead and scroll view.
 normalLevelBound :: (Int, Int)
@@ -35,6 +40,46 @@ type Freqs = [(Text, Int)]
 breturn :: MonadPlus m => Bool -> a -> m a
 breturn True a  = return a
 breturn False _ = mzero
+
+-- | Item container type.
+data Container =
+    CFloor !LevelId !Point
+  | CActor !ActorId !CStore
+  deriving (Show, Eq, Ord, Generic)
+
+instance Binary Container
+
+data CStore =
+    CGround
+  | CEqp
+  | CInv
+  deriving (Show, Read, Eq, Ord, Generic)
+
+instance Binary CStore
+
+-- | A unique identifier of a faction in a game.
+newtype FactionId = FactionId Int
+  deriving (Show, Eq, Ord, Enum)
+
+instance Binary FactionId where
+  put (FactionId n) = put n
+  get = fmap FactionId get
+
+-- | Abstract level identifiers.
+newtype LevelId = LevelId Int
+  deriving (Show, Eq, Ord, Enum)
+
+instance Binary LevelId where
+  put (LevelId n) = put n
+  get = fmap LevelId get
+
+-- | A unique identifier of an actor in the dungeon.
+newtype ActorId = ActorId Int
+  deriving (Show, Eq, Ord, Enum)
+
+instance Binary ActorId where
+  put (ActorId n) = put n
+  get = fmap ActorId get
 
 -- Data.Binary
 
@@ -79,19 +124,3 @@ instance Enum k => Lookup (EM.EnumMap k) where
 
 instance Enum k => Adjustable (EM.EnumMap k) where
   adjust = EM.adjust
-
--- | A unique identifier of a faction in a game.
-newtype FactionId = FactionId Int
-  deriving (Show, Eq, Ord, Enum)
-
-instance Binary FactionId where
-  put (FactionId n) = put n
-  get = fmap FactionId get
-
--- | Abstract level identifiers.
-newtype LevelId = LevelId Int
-  deriving (Show, Eq, Ord, Enum)
-
-instance Binary LevelId where
-  put (LevelId n) = put n
-  get = fmap LevelId get

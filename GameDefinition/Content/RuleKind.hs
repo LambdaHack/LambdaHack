@@ -14,6 +14,7 @@ import qualified Game.LambdaHack.Common.Effect as Effect
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.HumanCmd
 import qualified Game.LambdaHack.Common.Key as K
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.RuleKind
 
@@ -154,11 +155,13 @@ standard = RuleKind
 
       -- Inventory and items
       , ("I", (CmdItem, Inventory))
-      , ("g", (CmdItem, Pickup))
-      , ("d", (CmdItem, Drop))
+      , ("g", (CmdItem, MoveItem [CGround] CEqp "get" "an object" True))
+      , ("d", (CmdItem, MoveItem [CEqp, CInv] CGround "drop" "an object" False))
       , ("E", (CmdItem, Equipment))
-      , ("e", (CmdItem, Wield))
-      , ("s", (CmdItem, Yield))
+      , ("e", (CmdItem, MoveItem [CInv, CGround] CEqp
+                                 "equip" "an object" False))
+      , ("s", (CmdItem, MoveItem [CEqp] CInv
+                                 "stash" "and share an object" False))
       , ("A", (CmdItem, AllOwned))
       , ("q", (CmdItem, Apply [ApplyItem { verb = "quaff"
                                          , object = "potion"

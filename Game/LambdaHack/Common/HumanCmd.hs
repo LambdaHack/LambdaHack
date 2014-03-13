@@ -9,6 +9,7 @@ import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Common.Feature as F
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Vector
 
@@ -31,10 +32,7 @@ data HumanCmd =
     Move !Vector
   | Run !Vector
   | Wait
-  | Pickup
-  | Drop
-  | Wield
-  | Yield
+  | MoveItem ![CStore] !CStore !Text !Text !Bool
   | Project     ![Trigger]
   | Apply       ![Trigger]
   | AlterDir    ![Trigger]
@@ -78,7 +76,7 @@ data HumanCmd =
   | TgtClear
   | Cancel
   | Accept
-  deriving (Eq, Ord, Show, Read)
+  deriving (Show, Read, Eq, Ord)
 
 data Trigger =
     ApplyItem {verb :: !MU.Part, object :: !MU.Part, symbol :: !Char}
@@ -93,9 +91,7 @@ data Trigger =
 noRemoteHumanCmd :: HumanCmd -> Bool
 noRemoteHumanCmd cmd = case cmd of
   Wait          -> True
-  Pickup        -> True
-  Drop          -> True
-  Project{}     -> True
+  MoveItem{}    -> True
   Apply{}       -> True
   AlterDir{}    -> True
   StepToTarget  -> True
@@ -108,10 +104,7 @@ cmdDescription cmd = case cmd of
   Move v      -> "move" <+> compassText v
   Run v       -> "run" <+> compassText v
   Wait        -> "wait"
-  Pickup      -> "get an object"
-  Drop        -> "drop an object"
-  Wield       -> "equip an object"
-  Yield       -> "stash and share an object"
+  MoveItem _ _ verb object _ -> verb <+> object
   Project ts  -> triggerDescription ts
   Apply ts    -> triggerDescription ts
   AlterDir ts -> triggerDescription ts
