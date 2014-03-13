@@ -12,7 +12,7 @@ import System.Environment (getArgs)
 
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Animation
-import Game.LambdaHack.Common.ClientCmd
+import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Request
@@ -167,9 +167,9 @@ mainSer :: (MonadAtomic m, MonadConnServer m)
         => Kind.COps
         -> (m () -> IO ())
         -> (Kind.COps -> DebugModeCli
-            -> ((FactionId -> ChanFrontend -> ChanServer CmdClientUI Request
+            -> ((FactionId -> ChanFrontend -> ChanServer ResponseUI Request
                  -> IO ())
-                -> (FactionId -> ChanServer CmdClientAI RequestTimed
+                -> (FactionId -> ChanServer ResponseAI RequestTimed
                     -> IO ())
                 -> IO ())
             -> IO ())

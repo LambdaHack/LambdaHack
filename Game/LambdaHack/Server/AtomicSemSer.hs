@@ -17,7 +17,7 @@ import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.AtomicPos
 import Game.LambdaHack.Common.AtomicSem
-import Game.LambdaHack.Common.ClientCmd
+import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -77,10 +77,10 @@ atomicSendSem atomic = do
         when (playerUI $ gplayer $ factionD EM.! fid) $ sendUpdateUI fid cmdUI
       sendAI fid cmdAI = sendUpdateAI fid cmdAI
       sendA fid cmd = do
-        sendUI fid $ CmdAtomicUI cmd
-        sendAI fid $ CmdAtomicAI cmd
+        sendUI fid $ RespCmdAtomicUI cmd
+        sendAI fid $ RespCmdAtomicAI cmd
       sendUpdate fid (CmdAtomic cmd) = sendA fid cmd
-      sendUpdate fid (SfxAtomic sfx) = sendUI fid $ SfxAtomicUI sfx
+      sendUpdate fid (SfxAtomic sfx) = sendUI fid $ RespSfxAtomicUI sfx
       breakSend fid perNew = do
         let send2 (atomic2, ps2) =
               if seenAtomicCli knowEvents fid perNew ps2

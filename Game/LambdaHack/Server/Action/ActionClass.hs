@@ -4,8 +4,8 @@
 module Game.LambdaHack.Server.Action.ActionClass where
 
 import Game.LambdaHack.Common.Action
-import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Server.State
 
 class MonadActionRO m => MonadServer m where

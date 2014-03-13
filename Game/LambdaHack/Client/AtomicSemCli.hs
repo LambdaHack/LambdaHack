@@ -3,7 +3,7 @@
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Client.AtomicSemCli
   ( cmdAtomicSem, cmdAtomicSemCli, cmdAtomicFilterCli
-  , drawCmdAtomicUI, drawSfxAtomicUI
+  , drawRespCmdAtomicUI, drawRespSfxAtomicUI
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -46,7 +46,7 @@ import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind
 
--- * CmdAtomicAI
+-- * RespCmdAtomicAI
 
 -- | Clients keep a subset of atomic commands sent by the server
 -- and add some of their own. The result of this function is the list
@@ -316,7 +316,7 @@ coverA lid p iid ik = do
 killExitA :: MonadClient m => m ()
 killExitA = modifyClient $ \cli -> cli {squit = True}
 
--- * CmdAtomicUI
+-- * RespCmdAtomicUI
 
 -- TODO: let user configure which messages are not created, which are
 -- slightly hidden, which are shown and which flash and center screen
@@ -330,8 +330,8 @@ killExitA = modifyClient $ \cli -> cli {squit = True}
 -- | Visualization of atomic actions for the client is perfomed
 -- in the global state after the command is executed and after
 -- the client state is modified by the command.
-drawCmdAtomicUI :: MonadClientUI m => Bool -> CmdAtomic -> m ()
-drawCmdAtomicUI verbose cmd = case cmd of
+drawRespCmdAtomicUI :: MonadClientUI m => Bool -> CmdAtomic -> m ()
+drawRespCmdAtomicUI verbose cmd = case cmd of
   CreateActorA aid body _ -> createActorUI aid body verbose "appear"
   DestroyActorA aid body _ -> do
     destroyActorUI aid body "die" "be destroyed" verbose
@@ -650,10 +650,10 @@ quitFactionUI fid mbody toSt = do
           <> scoreSlides <> partingSlide <> shutdownSlide
     _ -> return ()
 
--- * SfxAtomicUI
+-- * RespSfxAtomicUI
 
-drawSfxAtomicUI :: MonadClientUI m => Bool -> SfxAtomic -> m ()
-drawSfxAtomicUI verbose sfx = case sfx of
+drawRespSfxAtomicUI :: MonadClientUI m => Bool -> SfxAtomic -> m ()
+drawRespSfxAtomicUI verbose sfx = case sfx of
   StrikeD source target item b -> strikeD source target item b
   RecoilD source target _ _ -> do
     spart <- partAidLeader source

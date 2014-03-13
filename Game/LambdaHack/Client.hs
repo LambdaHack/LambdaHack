@@ -3,7 +3,7 @@
 -- See
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Client
-  ( cmdClientAISem, cmdClientUISem, exeFrontend
+  ( exeFrontend
   , MonadClient, MonadClientUI, MonadClientReadServer, MonadClientWriteServer
   ) where
 
@@ -21,10 +21,10 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Animation (DebugModeCli (..))
 import Game.LambdaHack.Common.AtomicCmd
-import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Request
+import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Frontend
@@ -34,59 +34,59 @@ storeUndo _atomic =
   maybe skip (\a -> modifyClient $ \cli -> cli {sundo = a : sundo cli})
     $ Nothing   -- TODO: undoAtomic atomic
 
-cmdClientAISem :: (MonadAtomic m, MonadClientWriteServer RequestTimed m)
-               => CmdClientAI -> m ()
-cmdClientAISem cmd = case cmd of
-  CmdAtomicAI cmdA -> do
+handleResponseAI :: (MonadAtomic m, MonadClientWriteServer RequestTimed m)
+                 => ResponseAI -> m ()
+handleResponseAI cmd = case cmd of
+  RespCmdAtomicAI cmdA -> do
     cmds <- cmdAtomicFilterCli cmdA
     mapM_ (\c -> cmdAtomicSemCli c
                  >> execCmdAtomic c) cmds
     mapM_ (storeUndo . CmdAtomic) cmds
-  CmdQueryAI aid -> do
+  RespQueryAI aid -> do
     cmdC <- queryAI aid
     writeServer cmdC
-  CmdPingAI -> writeServer $ ReqPongHack []
+  RespPingAI -> writeServer $ ReqPongHack []
 
-cmdClientUISem :: ( MonadAtomic m, MonadClientUI m
-                  , MonadClientWriteServer Request m )
-               => CmdClientUI -> m ()
-cmdClientUISem cmd = case cmd of
-  CmdAtomicUI cmdA -> do
+handleResponseUI :: ( MonadAtomic m, MonadClientUI m
+                    , MonadClientWriteServer Request m )
+                 => ResponseUI -> m ()
+handleResponseUI cmd = case cmd of
+  RespCmdAtomicUI cmdA -> do
     cmds <- cmdAtomicFilterCli cmdA
     mapM_ (\c -> cmdAtomicSemCli c
                  >> execCmdAtomic c
-                 >> drawCmdAtomicUI False c) cmds
+                 >> drawRespCmdAtomicUI False c) cmds
     mapM_ (storeUndo . CmdAtomic) cmds  -- TODO: only store cmdA?
-  SfxAtomicUI sfx -> do
-    drawSfxAtomicUI False sfx
+  RespSfxAtomicUI sfx -> do
+    drawRespSfxAtomicUI False sfx
     storeUndo $ SfxAtomic sfx
-  CmdQueryUI aid -> do
+  RespQueryUI aid -> do
     mleader <- getsClient _sleader
     assert (isJust mleader `blame` "query without leader" `twith` cmd) skip
     cmdH <- queryUI aid
     writeServer cmdH
-  CmdPingUI -> pongUI
+  RespPingUI -> pongUI
 
 -- | Wire together game content, the main loop of game clients,
 -- the main game loop assigned to this frontend (possibly containing
 -- the server loop, if the whole game runs in one process),
 -- UI config and the definitions of game commands.
 exeFrontend :: ( MonadAtomic m, MonadClientUI m
-               , MonadClientReadServer CmdClientUI m
+               , MonadClientReadServer ResponseUI m
                , MonadClientWriteServer Request m
                , MonadAtomic n
-               , MonadClientReadServer CmdClientAI n
+               , MonadClientReadServer ResponseAI n
                , MonadClientWriteServer RequestTimed n )
             => (m () -> SessionUI -> State -> StateClient
-                -> ChanServer CmdClientUI Request
+                -> ChanServer ResponseUI Request
                 -> IO ())
             -> (n () -> SessionUI -> State -> StateClient
-                -> ChanServer CmdClientAI RequestTimed
+                -> ChanServer ResponseAI RequestTimed
                 -> IO ())
             -> Kind.COps -> DebugModeCli
-            -> ((FactionId -> ChanFrontend -> ChanServer CmdClientUI Request
+            -> ((FactionId -> ChanFrontend -> ChanServer ResponseUI Request
                  -> IO ())
-               -> (FactionId -> ChanServer CmdClientAI RequestTimed
+               -> (FactionId -> ChanServer ResponseAI RequestTimed
                    -> IO ())
                -> IO ())
             -> IO ()
@@ -107,8 +107,8 @@ exeFrontend executorUI executorAI
             ssavePrefixCli dbg `mplus` Just (rsavePrefix stdRuleset)})
         $ sdebugCli
   defHist <- defHistory
-  let exeClientUI = executorUI $ loopUI sdebugMode cmdClientUISem
-      exeClientAI = executorAI $ loopAI sdebugMode cmdClientAISem
+  let exeClientUI = executorUI $ loopUI sdebugMode handleResponseUI
+      exeClientAI = executorAI $ loopAI sdebugMode handleResponseAI
       cli = defStateClient defHist sconfigUI
       s = updateCOps (const cops) emptyState
       eClientAI fid =

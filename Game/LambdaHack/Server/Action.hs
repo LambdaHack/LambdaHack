@@ -45,7 +45,7 @@ import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.AtomicCmd
-import Game.LambdaHack.Common.ClientCmd
+import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import Game.LambdaHack.Common.Item
@@ -105,19 +105,19 @@ dumpRngs = do
     T.hPutStrLn stderr $ tshow rngs
     hFlush stderr
 
-writeTQueueAI :: MonadConnServer m => CmdClientAI -> TQueue CmdClientAI -> m ()
+writeTQueueAI :: MonadConnServer m => ResponseAI -> TQueue ResponseAI -> m ()
 writeTQueueAI cmd fromServer = do
   debug <- getsServer $ sniffOut . sdebugSer
   when debug $ do
-    d <- debugCmdClientAI cmd
+    d <- debugResponseAI cmd
     liftIO $ T.hPutStrLn stderr d
   liftIO $ atomically $ STM.writeTQueue fromServer cmd
 
-writeTQueueUI :: MonadConnServer m => CmdClientUI -> TQueue CmdClientUI -> m ()
+writeTQueueUI :: MonadConnServer m => ResponseUI -> TQueue ResponseUI -> m ()
 writeTQueueUI cmd fromServer = do
   debug <- getsServer $ sniffOut . sdebugSer
   when debug $ do
-    d <- debugCmdClientUI cmd
+    d <- debugResponseUI cmd
     liftIO $ T.hPutStrLn stderr d
   liftIO $ atomically $ STM.writeTQueue fromServer cmd
 
@@ -141,7 +141,7 @@ readTQueueUI toServer = do
     liftIO $ T.hPutStrLn stderr d
   return $! cmd
 
-sendUpdateAI :: MonadConnServer m => FactionId -> CmdClientAI -> m ()
+sendUpdateAI :: MonadConnServer m => FactionId -> ResponseAI -> m ()
 sendUpdateAI fid cmd = do
   conn <- getsDict $ snd . (EM.! fid)
   writeTQueueAI cmd $ fromServer conn
@@ -149,14 +149,14 @@ sendUpdateAI fid cmd = do
 sendQueryAI :: MonadConnServer m => FactionId -> ActorId -> m RequestTimed
 sendQueryAI fid aid = do
   conn <- getsDict $ snd . (EM.! fid)
-  writeTQueueAI (CmdQueryAI aid) $ fromServer conn
+  writeTQueueAI (RespQueryAI aid) $ fromServer conn
   readTQueueAI $ toServer conn
 
 sendPingAI :: (MonadAtomic m, MonadConnServer m)
            => FactionId -> m ()
 sendPingAI fid = do
   conn <- getsDict $ snd . (EM.! fid)
-  writeTQueueAI CmdPingAI $ fromServer conn
+  writeTQueueAI RespPingAI $ fromServer conn
   -- debugPrint $ "AI client" <+> tshow fid <+> "pinged..."
   cmdHack <- readTQueueAI $ toServer conn
   -- debugPrint $ "AI client" <+> tshow fid <+> "responded."
@@ -164,7 +164,7 @@ sendPingAI fid = do
     ReqPongHack ats -> mapM_ execAtomic ats
     _ -> assert `failure` (fid, cmdHack)
 
-sendUpdateUI :: MonadConnServer m => FactionId -> CmdClientUI -> m ()
+sendUpdateUI :: MonadConnServer m => FactionId -> ResponseUI -> m ()
 sendUpdateUI fid cmd = do
   cs <- getsDict $ fst . (EM.! fid)
   case cs of
@@ -179,7 +179,7 @@ sendQueryUI fid aid = do
   case cs of
     Nothing -> assert `failure` "no channel for faction" `twith` fid
     Just (_, conn) -> do
-      writeTQueueUI (CmdQueryUI aid) $ fromServer conn
+      writeTQueueUI (RespQueryUI aid) $ fromServer conn
       readTQueueUI $ toServer conn
 
 sendPingUI :: (MonadAtomic m, MonadConnServer m) => FactionId -> m ()
@@ -188,7 +188,7 @@ sendPingUI fid = do
   case cs of
     Nothing -> assert `failure` "no channel for faction" `twith` fid
     Just (_, conn) -> do
-      writeTQueueUI CmdPingUI $ fromServer conn
+      writeTQueueUI RespPingUI $ fromServer conn
       -- debugPrint $ "UI client" <+> tshow fid <+> "pinged..."
       cmdHack <- readTQueueUI $ toServer conn
       -- debugPrint $ "UI client" <+> tshow fid <+> "responded."
@@ -417,10 +417,10 @@ childrenServer = unsafePerformIO (newMVar [])
 updateConn :: (MonadAtomic m, MonadConnServer m)
            => (FactionId
                -> Frontend.ChanFrontend
-               -> ChanServer CmdClientUI Request
+               -> ChanServer ResponseUI Request
                -> IO ())
            -> (FactionId
-               -> ChanServer CmdClientAI RequestTimed
+               -> ChanServer ResponseAI RequestTimed
                -> IO ())
            -> m ()
 updateConn executorUI executorAI = do
@@ -480,8 +480,8 @@ killAllClients = do
   let sendKill fid _ = do
         -- We can't check in sfactionD, because client can be from an old game.
         when (fromEnum fid > 0) $
-          sendUpdateUI fid $ CmdAtomicUI $ KillExitA fid
-        sendUpdateAI fid $ CmdAtomicAI $ KillExitA fid
+          sendUpdateUI fid $ RespCmdAtomicUI $ KillExitA fid
+        sendUpdateAI fid $ RespCmdAtomicAI $ KillExitA fid
   mapWithKeyM_ sendKill d
 
 -- | Compute and insert auxiliary optimized components into game content,

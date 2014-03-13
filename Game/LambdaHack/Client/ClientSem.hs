@@ -1,4 +1,4 @@
--- | Semantics of most 'CmdClientAI' client commands.
+-- | Semantics of most 'ResponseAI' client commands.
 module Game.LambdaHack.Client.ClientSem where
 
 import Control.Exception.Assert.Sugar

@@ -15,7 +15,7 @@ import Data.Maybe
 import System.FilePath
 
 import Game.LambdaHack.Common.Action
-import Game.LambdaHack.Common.ClientCmd
+import Game.LambdaHack.Common.Response
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Server.Action.ActionClass

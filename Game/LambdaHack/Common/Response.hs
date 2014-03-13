@@ -1,9 +1,9 @@
 -- | Abstract syntax of client commands.
 -- See
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
-module Game.LambdaHack.Common.ClientCmd
-  ( CmdClientAI(..), CmdClientUI(..)
-  , debugCmdClientAI, debugCmdClientUI, debugAid
+module Game.LambdaHack.Common.Response
+  ( ResponseAI(..), ResponseUI(..)
+  , debugResponseAI, debugResponseUI, debugAid
   , ChanServer(..), ConnServerFaction, ConnServerDict
   ) where
 
@@ -26,40 +26,45 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Frontend
 
 -- | Abstract syntax of client commands that don't use the UI.
-data CmdClientAI =
-    CmdAtomicAI !CmdAtomic
-  | CmdQueryAI !ActorId
-  | CmdPingAI
+data ResponseAI =
+    RespCmdAtomicAI !CmdAtomic
+  | RespQueryAI !ActorId
+  | RespPingAI
   deriving Show
 
 -- | Abstract syntax of client commands that use the UI.
-data CmdClientUI =
-    CmdAtomicUI !CmdAtomic
-  | SfxAtomicUI !SfxAtomic
-  | CmdQueryUI !ActorId
-  | CmdPingUI
+data ResponseUI =
+    RespCmdAtomicUI !CmdAtomic
+  | RespSfxAtomicUI !SfxAtomic
+  | RespQueryUI !ActorId
+  | RespPingUI
   deriving Show
 
-debugCmdClientAI :: MonadActionRO m => CmdClientAI -> m Text
-debugCmdClientAI cmd = case cmd of
-  CmdAtomicAI cmdA@PerceptionA{} -> debugPlain cmd cmdA
-  CmdAtomicAI cmdA@ResumeA{} -> debugPlain cmd cmdA
-  CmdAtomicAI cmdA@SpotTileA{} -> debugPlain cmd cmdA
-  CmdAtomicAI cmdA -> debugPretty cmd cmdA
-  CmdQueryAI aid -> debugAid aid "CmdQueryAI" cmd
-  CmdPingAI -> return $! tshow cmd
+-- These can't use MonadClient and print more information,
+-- because they are used by the server, because we want a single log
+-- knowing the order server received requests and sent responses
+-- and clients interleave and block non-deterministically so their logs
+-- would not be so valuable.
+debugResponseAI :: MonadActionRO m => ResponseAI -> m Text
+debugResponseAI cmd = case cmd of
+  RespCmdAtomicAI cmdA@PerceptionA{} -> debugPlain cmd cmdA
+  RespCmdAtomicAI cmdA@ResumeA{} -> debugPlain cmd cmdA
+  RespCmdAtomicAI cmdA@SpotTileA{} -> debugPlain cmd cmdA
+  RespCmdAtomicAI cmdA -> debugPretty cmd cmdA
+  RespQueryAI aid -> debugAid aid "RespQueryAI" cmd
+  RespPingAI -> return $! tshow cmd
 
-debugCmdClientUI :: MonadActionRO m => CmdClientUI -> m Text
-debugCmdClientUI cmd = case cmd of
-  CmdAtomicUI cmdA@PerceptionA{} -> debugPlain cmd cmdA
-  CmdAtomicUI cmdA@ResumeA{} -> debugPlain cmd cmdA
-  CmdAtomicUI cmdA@SpotTileA{} -> debugPlain cmd cmdA
-  CmdAtomicUI cmdA -> debugPretty cmd cmdA
-  SfxAtomicUI sfx -> do
+debugResponseUI :: MonadActionRO m => ResponseUI -> m Text
+debugResponseUI cmd = case cmd of
+  RespCmdAtomicUI cmdA@PerceptionA{} -> debugPlain cmd cmdA
+  RespCmdAtomicUI cmdA@ResumeA{} -> debugPlain cmd cmdA
+  RespCmdAtomicUI cmdA@SpotTileA{} -> debugPlain cmd cmdA
+  RespCmdAtomicUI cmdA -> debugPretty cmd cmdA
+  RespSfxAtomicUI sfx -> do
     ps <- posSfxAtomic sfx
     return $! tshow (cmd, ps)
-  CmdQueryUI aid -> debugAid aid "CmdQueryUI" cmd
-  CmdPingUI -> return $! tshow cmd
+  RespQueryUI aid -> debugAid aid "RespQueryUI" cmd
+  RespPingUI -> return $! tshow cmd
 
 debugPretty :: (MonadActionRO m, Show a) => a -> CmdAtomic -> m Text
 debugPretty cmd cmdA = do
@@ -103,8 +108,8 @@ data ChanServer c d = ChanServer
 
 -- | Connections to the human-controlled client of a faction and
 -- to the AI client for the same faction.
-type ConnServerFaction = ( Maybe (ChanFrontend, ChanServer CmdClientUI Request)
-                         , ChanServer CmdClientAI RequestTimed )
+type ConnServerFaction = ( Maybe (ChanFrontend, ChanServer ResponseUI Request)
+                         , ChanServer ResponseAI RequestTimed )
 
 -- | Connection information for all factions, indexed by faction identifier.
 type ConnServerDict = EM.EnumMap FactionId ConnServerFaction
