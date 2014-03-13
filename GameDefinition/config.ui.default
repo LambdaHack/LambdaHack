@@ -15,6 +15,7 @@
 ; HeroName_3 = Ernst Abraham
 ; HeroName_4 = Samuel Saunders
 ; HeroName_5 = Roger Robin
+; HeroName_6 = Christopher Flatt
 
 ; [ui]
 ; movementViKeys_hjklyubn = False
