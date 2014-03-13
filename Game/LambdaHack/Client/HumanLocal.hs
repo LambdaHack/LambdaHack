@@ -171,7 +171,7 @@ memberBackHuman = do
 -- | Display the common inventory of the whole party.
 inventoryHuman :: MonadClientUI m => m Slideshow
 inventoryHuman = do
-  Kind.COps{corule} <- getsState scops
+  Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
   let RuleKind{rsharedInventory} = Kind.stdRuleset corule
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -188,11 +188,15 @@ inventoryHuman = do
       [ MU.SubjectVerbSg subject "have"
       , "nothing in inventory" ]
     else do
-      let keepInv = if rsharedInventory
-                    then "keep in shared inventory:"
-                    else "keep in inventory:"
+      let kind = okind $ bkind b
+          verbInv = if calmEnough b kind
+                    then "see in"
+                    else "distractedly peek at"
+          nameInv = if rsharedInventory
+                    then "the shared inventory:"
+                    else "inventory:"
           blurb = makePhrase
-            [MU.Capitalize $ MU.SubjectVerbSg subject keepInv]
+            [MU.Capitalize $ MU.SubjectVerbSg subject verbInv, nameInv]
           inv = EM.filter (`EM.member` bag) slots
       io <- itemOverlay bag inv
       overlayToSlideshow blurb io

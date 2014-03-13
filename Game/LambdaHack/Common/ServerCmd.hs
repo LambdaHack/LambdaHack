@@ -99,7 +99,7 @@ showFailureSer failureSer = case failureSer of
   AlterNothing -> "wasting time on altering nothing"
   PickupOverfull -> "cannot carry any more"
   ItemNothing -> "wasting time on void item manipulation"
-  ItemNotCalm -> "you hands are shaking too much to sort through inventory"
+  ItemNotCalm -> "you are too alarmed to sort through inventory"
   ProjectAimOnself -> "cannot aim at oneself"
   ProjectBlockTerrain -> "aiming obstructed by terrain"
   ProjectBlockActor -> "aiming blocked by an actor"
