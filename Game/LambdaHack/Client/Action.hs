@@ -79,6 +79,7 @@ import Game.LambdaHack.Common.HumanCmd
 import qualified Game.LambdaHack.Common.Key as K
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point

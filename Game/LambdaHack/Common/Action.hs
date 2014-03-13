@@ -3,13 +3,13 @@
 module Game.LambdaHack.Common.Action
   ( -- * Action monads
     MonadActionRO(..), MonadAction(..), MonadAtomic(..)
+  , broadcastCmdAtomic,  broadcastSfxAtomic
     -- * Shorthands
   , getLevel, nUI
-    -- * Assorted
-  , serverSaveName
   ) where
 
 import qualified Data.EnumMap.Strict as EM
+import Data.Key (mapWithKeyM_)
 
 import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.Faction
@@ -32,6 +32,18 @@ class MonadActionRO m => MonadAtomic m where
   execSfxAtomic :: SfxAtomic -> m ()
   execSfxAtomic = execAtomic . SfxAtomic
 
+broadcastCmdAtomic :: MonadAtomic m
+                   => (FactionId -> CmdAtomic) -> m ()
+broadcastCmdAtomic fcmd = do
+  factionD <- getsState sfactionD
+  mapWithKeyM_ (\fid _ -> execCmdAtomic $ fcmd fid) factionD
+
+broadcastSfxAtomic :: MonadAtomic m
+                   => (FactionId -> SfxAtomic) -> m ()
+broadcastSfxAtomic fcmd = do
+  factionD <- getsState sfactionD
+  mapWithKeyM_ (\fid _ -> execSfxAtomic $ fcmd fid) factionD
+
 getLevel :: MonadActionRO m => LevelId -> m Level
 getLevel lid = getsState $ (EM.! lid) . sdungeon
 
@@ -39,6 +51,3 @@ nUI :: MonadActionRO m => m Int
 nUI = do
   factionD <- getsState sfactionD
   return $! length $ filter (playerUI . gplayer) $ EM.elems factionD
-
-serverSaveName :: String
-serverSaveName = "server.sav"

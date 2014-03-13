@@ -44,7 +44,6 @@ import Game.LambdaHack.Server.Action hiding (sendUpdateAI, sendUpdateUI)
 import qualified Game.LambdaHack.Server.DungeonGen as DungeonGen
 import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.Fov
-import Game.LambdaHack.Server.ServerSem
 import Game.LambdaHack.Server.State
 
 -- | Apply debug options that don't need a new game.

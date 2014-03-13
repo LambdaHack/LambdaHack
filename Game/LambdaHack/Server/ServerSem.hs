@@ -12,7 +12,6 @@ module Game.LambdaHack.Server.ServerSem where
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
-import Data.Key (mapWithKeyM_)
 import Data.Maybe
 import Data.Ratio
 import Data.Text (Text)
@@ -60,18 +59,6 @@ execFailure aid failureSer = do
     $ "execFailure:" <+> tshow fid <+> ":" <+> msg <> "\n" <> tshow body
   execSfxAtomic $ MsgFidD fid $ "Unexpected problem:" <+> msg <> "."
     -- TODO: --more--, but keep in history
-
-broadcastCmdAtomic :: MonadAtomic m
-                   => (FactionId -> CmdAtomic) -> m ()
-broadcastCmdAtomic fcmd = do
-  factionD <- getsState sfactionD
-  mapWithKeyM_ (\fid _ -> execCmdAtomic $ fcmd fid) factionD
-
-broadcastSfxAtomic :: MonadAtomic m
-                   => (FactionId -> SfxAtomic) -> m ()
-broadcastSfxAtomic fcmd = do
-  factionD <- getsState sfactionD
-  mapWithKeyM_ (\fid _ -> execSfxAtomic $ fcmd fid) factionD
 
 -- * MoveSer
 

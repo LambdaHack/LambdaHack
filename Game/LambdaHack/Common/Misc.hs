@@ -2,10 +2,13 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 -- | Hacks that haven't found their home yet.
 module Game.LambdaHack.Common.Misc
-  ( normalLevelBound, divUp, Freqs, breturn
-  , FactionId, LevelId, ActorId
+  ( -- * Game object identifiers
+    FactionId, LevelId, ActorId
     -- * Item containers
   , Container(..), CStore(..)
+    -- * Assorted
+  , normalLevelBound, divUp, Freqs, breturn
+  , serverSaveName
   ) where
 
 import Control.Monad
@@ -21,6 +24,9 @@ import Data.Traversable (traverse)
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Point
+
+serverSaveName :: String
+serverSaveName = "server.sav"
 
 -- | Level bounds. TODO: query terminal size instead and scroll view.
 normalLevelBound :: (Int, Int)
