@@ -651,8 +651,8 @@ quitFactionUI fid mbody toSt = do
         if EM.null bag then return mempty
         else do
           slots <- getsClient sslots
-          let inv = EM.filter (`EM.member` bag) slots
-          io <- itemOverlay bag inv
+          let sl = EM.filter (`EM.member` bag) slots
+          io <- itemOverlay bag sl
           overlayToSlideshow itemMsg io
       -- Show score for any UI client, even though it is saved only
       -- for human UI clients.

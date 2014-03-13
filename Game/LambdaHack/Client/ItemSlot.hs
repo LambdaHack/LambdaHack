@@ -1,5 +1,5 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
--- | Item slots for UI and AI inventories.
+-- | Item slots for UI and AI item collections.
 -- TODO: document
 module Game.LambdaHack.Client.ItemSlot
   ( ItemSlots, SlotChar(..)
@@ -58,7 +58,7 @@ slotRange ls =
 allSlots :: [SlotChar]
 allSlots = map SlotChar $ ['a'..'z'] ++ ['A'..'Z']
 
--- | Assigns a slot to an item, for inclusion in the inventory
+-- | Assigns a slot to an item, for inclusion in the inventory or equipment
 -- of a hero. Tries to to use the requested slot, if any.
 assignSlot :: ItemId -> Maybe SlotChar -> Actor -> ItemSlots -> SlotChar
            -> State
@@ -82,7 +82,7 @@ actorContainer :: ActorId -> ItemSlots -> ItemId -> SlotChar
 actorContainer aid slotChars iid =
   case find ((== iid) . snd) $ EM.assocs slotChars of
     Just (l, _) -> l
-    Nothing -> assert `failure` "item not in inventory"
+    Nothing -> assert `failure` "item not present"
                       `twith` (aid, slotChars, iid)
 
 actorContainerB :: Actor -> ItemSlots -> SlotChar

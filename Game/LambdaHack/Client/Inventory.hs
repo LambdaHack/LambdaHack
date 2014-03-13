@@ -44,7 +44,7 @@ floorItemOverlay bag = do
 
 -- | Create a list of item names.
 itemOverlay :: MonadClient m => ItemBag -> ItemSlots -> m Overlay
-itemOverlay bag inv = do
+itemOverlay bag sl = do
   Kind.COps{coitem} <- getsState scops
   s <- getState
   disco <- getsClient sdisco
@@ -53,7 +53,7 @@ itemOverlay bag inv = do
                     , partItemWs coitem disco (bag EM.! iid)
                                  (getItemBody iid s) ]
          <> " "
-  return $! toOverlay $ map pr $ EM.assocs inv
+  return $! toOverlay $ map pr $ EM.assocs sl
 
 allObjectsName :: Text
 allObjectsName = "Objects"
@@ -157,10 +157,10 @@ getItem askWhenLone verb p ptext cLegalRaw askNumber allNumber = do
               -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
       perform itemDialogState cCur cPrev = do
         bag <- getsState $ getCBag $ CActor leader cCur
-        let inv = EM.filter (`EM.member` bag) slots
-            invP = EM.filter (\iid -> p (getItemBody iid s)) inv
+        let sl = EM.filter (`EM.member` bag) slots
+            slP = EM.filter (\iid -> p (getItemBody iid s)) sl
             checkItem (l, iid) = ((iid, getItemBody iid s), (bag EM.! iid, l))
-            is0 = map checkItem $ EM.assocs inv
+            is0 = map checkItem $ EM.assocs sl
             floorFull = isCFull CGround
             (floorMsg, floorKey) | floorFull = (", -", [K.Char '-'])
                                  | otherwise = ("", [])
@@ -192,11 +192,11 @@ getItem askWhenLone verb p ptext cLegalRaw askNumber allNumber = do
                       else "in inventory"
               CGround -> "on the floor"
             prompt = makePhrase ["What to", verb MU.:> "?"]
-            (ims, invOver, msg) = case itemDialogState of
+            (ims, slOver, msg) = case itemDialogState of
               INone     -> (isp, EM.empty, prompt)
-              ISuitable -> (isp, invP, ptext <+> isn <> ".")
-              IAll      -> (is0, inv, allObjectsName <+> isn <> ".")
-        io <- itemOverlay bag invOver
+              ISuitable -> (isp, slP, ptext <+> isn <> ".")
+              IAll      -> (is0, sl, allObjectsName <+> isn <> ".")
+        io <- itemOverlay bag slOver
         akm <- displayChoiceUI (msg <+> choice ims) io (keys is0)
         case akm of
           Left slides -> failSlides slides
@@ -204,7 +204,7 @@ getItem askWhenLone verb p ptext cLegalRaw askNumber allNumber = do
             assert (modifier == K.NoModifier) skip
             case key of
               K.Char '?' -> case itemDialogState of
-                INone -> if EM.null invP
+                INone -> if EM.null slP
                          then perform IAll cCur cPrev
                          else perform ISuitable cCur cPrev
                 ISuitable | ptext /= allObjectsName -> perform IAll cCur cPrev
@@ -217,7 +217,7 @@ getItem askWhenLone verb p ptext cLegalRaw askNumber allNumber = do
                 in perform itemDialogState cNext cCur
               K.Char l ->
                 case find ((SlotChar l ==) . snd . snd) is0 of
-                  Nothing -> assert `failure` "unexpected inventory slot"
+                  Nothing -> assert `failure` "unexpected slot"
                                     `twith` (km, l,  is0)
                   Just (iidItem, (k, _)) ->
                     return $ Right (iidItem, (k, cCur))

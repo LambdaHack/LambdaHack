@@ -197,8 +197,8 @@ inventoryHuman = do
                     else "inventory:"
           blurb = makePhrase
             [MU.Capitalize $ MU.SubjectVerbSg subject verbInv, nameInv]
-          inv = EM.filter (`EM.member` bag) slots
-      io <- itemOverlay bag inv
+          sl = EM.filter (`EM.member` bag) slots
+      io <- itemOverlay bag sl
       overlayToSlideshow blurb io
 
 -- * Equipment
@@ -221,13 +221,13 @@ equipmentHuman = do
       let blurb = makePhrase
             [MU.Capitalize
              $ MU.SubjectVerbSg subject "hold as personal equipment:"]
-          inv = EM.filter (`EM.member` bag) slots
-      io <- itemOverlay bag inv
+          sl = EM.filter (`EM.member` bag) slots
+      io <- itemOverlay bag sl
       overlayToSlideshow blurb io
 
 -- * AllOwned
 
--- | Display the common inventory of the whole party.
+-- | Display the sum of equipments and inventory of the whole party.
 allOwnedHuman :: MonadClientUI m => m Slideshow
 allOwnedHuman = do
   leader <- getLeaderUI
@@ -243,8 +243,8 @@ allOwnedHuman = do
     else do
       let blurb = makePhrase
             [MU.Capitalize $ MU.SubjectVerbSg subject "own:"]
-          inv = EM.filter (`EM.member` bag) slots
-      io <- itemOverlay bag inv
+          sl = EM.filter (`EM.member` bag) slots
+      io <- itemOverlay bag sl
       overlayToSlideshow blurb io
 
 -- * SelectActor

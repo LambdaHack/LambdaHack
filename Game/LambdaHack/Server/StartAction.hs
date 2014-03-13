@@ -110,8 +110,8 @@ saveBkpAll unconditional = do
     execCmdAtomic SaveBkpA
     saveServer
 
-mapFromInvFuns :: (Bounded a, Enum a, Ord b) => [a -> b] -> M.Map b a
-mapFromInvFuns =
+mapFromFuns :: (Bounded a, Enum a, Ord b) => [a -> b] -> M.Map b a
+mapFromFuns =
   let fromFun f m1 =
         let invAssocs = map (\c -> (f c, c)) [minBound..maxBound]
             m2 = M.fromList invAssocs
@@ -124,7 +124,7 @@ lowercase = T.pack . map Char.toLower . T.unpack
 createFactions :: Kind.COps -> Players -> Rnd FactionDict
 createFactions Kind.COps{cofaction=Kind.Ops{opick}} players = do
   let rawCreate gplayer@Player{..} = do
-        let cmap = mapFromInvFuns
+        let cmap = mapFromFuns
                      [colorToTeamName, colorToPlainName, colorToFancyName]
             nameoc = lowercase playerName
             prefix | playerAiLeader = "Autonomous"

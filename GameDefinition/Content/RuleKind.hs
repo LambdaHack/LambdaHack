@@ -153,7 +153,7 @@ standard = RuleKind
       , ("period", (CmdMove, Macro "" ["KP_Begin"]))
       , ("i", (CmdMove, Macro "" ["KP_Begin"]))
 
-      -- Inventory and items
+      -- Item use
       , ("I", (CmdItem, Inventory))
       , ("g", (CmdItem, MoveItem [CGround] CEqp "get" "an object" True))
       , ("d", (CmdItem, MoveItem [CEqp, CInv] CGround "drop" "an object" False))

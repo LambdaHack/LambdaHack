@@ -20,7 +20,7 @@ data CmdCategory =
 categoryDescription :: CmdCategory -> Text
 categoryDescription CmdMenu = "Main Menu"
 categoryDescription CmdMove = "Movement and terrain alteration"
-categoryDescription CmdItem = "Inventory and items"
+categoryDescription CmdItem = "Item use"
 categoryDescription CmdTgt = "Targeting"
 categoryDescription CmdAuto = "Automation"
 categoryDescription CmdMeta = "Assorted"

@@ -7,7 +7,7 @@
 module Game.LambdaHack.Common.Item
   ( -- * Teh @Item@ type
     ItemId, Item(..), jkind, buildItem, newItem
-    -- * Inventory search
+    -- * Item search
   , strongestItem, strongestItems
   , strongestSearch, strongestSword, strongestRegen
   , pMelee, pRegen
@@ -61,7 +61,7 @@ type Discovery = EM.EnumMap ItemKindIx (Kind.Id ItemKind)
 type DiscoRev = EM.EnumMap (Kind.Id ItemKind) ItemKindIx
 
 -- TODO: somehow hide from clients jeffect of unidentified items.
--- | Game items in inventories or strewn around the dungeon.
+-- | Game items in actor possesion or strewn around the dungeon.
 -- The fields @jsymbol@, @jname@ and @jflavour@ make it possible to refer to
 -- and draw an unidentified item. Full information about item is available
 -- through the @jkindIx@ index as soon as the item is identified.

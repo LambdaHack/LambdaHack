@@ -119,7 +119,7 @@ Below are the remaining keys for movement and terrain alteration.
                 CTRL-R         rest (wait 10 times)
                 c              close door
 
-Inventory and items-related keys are as follows.
+Item use related keys are as follows.
 
                 keys           command
                 I              display shared inventory
