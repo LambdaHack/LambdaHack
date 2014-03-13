@@ -3,11 +3,9 @@
 -- TODO: document
 module Game.LambdaHack.Client.ItemSlot
   ( ItemSlots, SlotChar(..)
-  , allSlots, assignSlot, slotLabel, slotRange
-  , actorContainer, actorContainerB
+  , allSlots, slotLabel, slotRange, assignSlot
   ) where
 
-import Control.Exception.Assert.Sugar
 import Data.Binary
 import Data.Char
 import qualified Data.EnumMap.Strict as EM
@@ -17,7 +15,6 @@ import Data.Maybe
 import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Tuple
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Common.Actor
@@ -60,15 +57,13 @@ allSlots = map SlotChar $ ['a'..'z'] ++ ['A'..'Z']
 
 -- | Assigns a slot to an item, for inclusion in the inventory or equipment
 -- of a hero. Tries to to use the requested slot, if any.
-assignSlot :: ItemId -> Maybe SlotChar -> Actor -> ItemSlots -> SlotChar
+assignSlot :: Item -> Actor -> ItemSlots -> SlotChar
            -> State
            -> Maybe SlotChar
-assignSlot iid r body slots freeSlot s =
-  case lookup iid $ map swap $ EM.assocs slots of
-    Just l -> Just l
-    Nothing -> case r of
-      Just l | l `elem` allowed -> Just l
-      _ -> listToMaybe free
+assignSlot item body slots freeSlot s =
+  if jsymbol item == '$' && dollarChar `elem` allowed
+  then Just dollarChar
+  else listToMaybe free
  where
   candidates = take (length allSlots)
                $ drop (fromJust (elemIndex freeSlot allSlots))
@@ -76,26 +71,8 @@ assignSlot iid r body slots freeSlot s =
   inBag = EM.keysSet $ sharedAllOwned body s
   f l = maybe True (`ES.notMember` inBag) $ EM.lookup l slots
   free = filter f candidates
-  allowed = SlotChar '$' : free
-
-actorContainer :: ActorId -> ItemSlots -> ItemId -> SlotChar
-actorContainer aid slotChars iid =
-  case find ((== iid) . snd) $ EM.assocs slotChars of
-    Just (l, _) -> l
-    Nothing -> assert `failure` "item not present"
-                      `twith` (aid, slotChars, iid)
-
-actorContainerB :: Actor -> ItemSlots -> SlotChar
-                -> ItemId -> Item -> State
-                -> Maybe SlotChar
-actorContainerB body slots freeSlot iid item s =
-  case find ((== iid) . snd) $ EM.assocs slots of
-    Just (l, _) -> Just l
-    Nothing ->
-      let l = if jsymbol item == '$' then Just $ SlotChar '$' else Nothing
-      in case assignSlot iid l body slots freeSlot s of
-        Just l2 -> Just l2
-        Nothing -> Nothing
+  allowed = dollarChar : free
+  dollarChar = SlotChar '$'
 
 slotLabel :: SlotChar -> MU.Part
 slotLabel c = MU.Text $ T.pack $ slotChar c : " -"

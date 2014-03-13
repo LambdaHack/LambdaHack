@@ -14,7 +14,7 @@ import Data.Ord
 import qualified Data.Traversable as Traversable
 
 import Game.LambdaHack.Client.Action
-import Game.LambdaHack.Client.ItemSlot
+import Game.LambdaHack.Client.Inventory
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.Strategy
 import Game.LambdaHack.Common.Ability (Ability)
@@ -367,22 +367,16 @@ pickup aid = do
                            | otherwise = itemUsefulness item /= 0
       mapDesirable (iid, k) = let item = itemD EM.! iid
                               in if desirableItem item k
-                                 then Just (iid, item, k)
+                                 then Just (iid, k)
                                  else Nothing
       kind = okind $ bkind body
   case mapMaybe mapDesirable $ EM.assocs $ lvl `atI` bpos of
-    (iid, item, k) : _ -> do  -- pick up first desirable item, if any
-      slots <- getsClient sslots
-      freeSlot <- getsClient sfreeSlot
-      let l = if jsymbol item == '$' then Just $ SlotChar '$' else Nothing
-      mv <- getsState $ assignSlot iid l body slots freeSlot
-      case mv of
-        Just l2 -> do
-          modifyClient $ \cli ->
-            cli { sslots = EM.insert l2 iid (sslots cli)
-                , sfreeSlot = max l2 (sfreeSlot cli) }
-          return $! returN "pickup" $ MoveItemSer aid iid k CGround CEqp
-        Nothing -> assert `failure` fact  -- TODO: return mzero  -- PickupOverfull
+    (iid, k) : _ -> do  -- pick up first desirable item, if any
+      notOverfull <- updateItemSlot aid iid
+      if notOverfull then
+        return $! returN "pickup" $ MoveItemSer aid iid k CGround CEqp
+      else
+        assert `failure` fact  -- TODO: return mzero  -- PickupOverfull
     [] | calmEnough body kind -> do
       let RuleKind{ritemEqp, rsharedInventory} = Kind.stdRuleset corule
       invAssocs <- getsState $ getInvAssocs body

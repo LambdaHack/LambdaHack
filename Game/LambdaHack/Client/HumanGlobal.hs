@@ -25,7 +25,6 @@ import Game.LambdaHack.Client.ConfigUI
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.HumanLocal
 import Game.LambdaHack.Client.Inventory
-import Game.LambdaHack.Client.ItemSlot
 import Game.LambdaHack.Client.RunAction
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
@@ -206,17 +205,9 @@ moveItemHuman cLegalRaw toCStore verbRaw auto = do
             return $ Right $ MoveItemSer leader iid k fromCStore toCStore
       if fromCStore /= CGround then msgAndSer  -- slot already assigned
       else do
-        slots <- getsClient sslots
-        freeSlot <- getsClient sfreeSlot
-        let l = if jsymbol item == '$' then Just $ SlotChar '$' else Nothing
-        mc <- getsState $ assignSlot iid l b slots freeSlot
-        case mc of
-          Just l2 -> do
-            modifyClient $ \cli ->
-              cli { sslots = EM.insert l2 iid (sslots cli)
-                  , sfreeSlot = max l2 (sfreeSlot cli) }
-            msgAndSer
-          Nothing -> failSer PickupOverfull
+        notOverfull <- updateItemSlot leader iid
+        if notOverfull then msgAndSer
+        else failSer PickupOverfull
     Left slides -> return $ Left slides
 
 -- * Project
