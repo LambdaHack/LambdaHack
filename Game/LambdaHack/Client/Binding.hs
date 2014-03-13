@@ -1,7 +1,7 @@
 -- | Binding of keys to commands.
 -- No operation in this module involves the 'State' or 'Action' type.
 module Game.LambdaHack.Client.Binding
-  ( Binding(..), stdBinding, keyHelp,
+  ( Binding(..), stdBinding, keyHelp
   ) where
 
 import Control.Arrow (second)

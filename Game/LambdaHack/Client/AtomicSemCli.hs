@@ -18,6 +18,8 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.HumanLocal
+import Game.LambdaHack.Client.Inventory
+import Game.LambdaHack.Client.ItemSlot
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor

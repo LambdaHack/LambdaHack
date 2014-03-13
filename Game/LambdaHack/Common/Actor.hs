@@ -8,8 +8,8 @@ module Game.LambdaHack.Common.Actor
   , Actor(..), actorTemplate, timeAddFromSpeed, braced, waitedLastTurn
   , unoccupied, heroKindId, projectileKindId
     -- * Inventory management
-  , ItemBag, ItemSlots, SlotChar(..), ItemDict, ItemRev
-  , slotRange, rmFromBag
+  , ItemBag, ItemDict, ItemRev
+  , rmFromBag
     -- * Assorted
   , ActorDict, smellTimeout, checkAdjacent
   , mapActorItems_, mapActorInv_, mapActorEqp_
@@ -17,20 +17,16 @@ module Game.LambdaHack.Common.Actor
 
 import Control.Exception.Assert.Sugar
 import Data.Binary
-import Data.Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.HashMap.Strict as HM
-import Data.List
 import Data.Ratio
 import Data.Text (Text)
-import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Time
@@ -130,20 +126,7 @@ projectileKindId Kind.Ops{ouniqGroup} = ouniqGroup "projectile"
 smellTimeout :: Time
 smellTimeout = timeScale timeTurn 100
 
-newtype SlotChar = SlotChar {slotChar :: Char}
-  deriving (Show, Eq, Enum)
-
-instance Ord SlotChar where
-  compare (SlotChar x) (SlotChar y) =
-    compare (isUpper x, toLower x) (isUpper y, toLower y)
-
-instance Binary SlotChar where
-  put (SlotChar x) = put x
-  get = fmap SlotChar get
-
 type ItemBag = EM.EnumMap ItemId Int
-
-type ItemSlots = EM.EnumMap SlotChar ItemId
 
 -- | All items in the dungeon (including in actor inventories),
 -- indexed by item identifier.
@@ -155,27 +138,6 @@ type ActorDict = EM.EnumMap ActorId Actor
 -- | Reverse item map, for item creation, to keep items and item identifiers
 -- in bijection.
 type ItemRev = HM.HashMap Item ItemId
-
-cmpSlot :: SlotChar -> SlotChar -> Ordering
-cmpSlot (SlotChar x) (SlotChar y) =
-  compare (isUpper x, toLower x) (isUpper y, toLower y)
-
-slotRange :: [SlotChar] -> Text
-slotRange ls =
-  sectionBy (sortBy cmpSlot ls) Nothing
- where
-  succSlot c d = ord (slotChar d) - ord (slotChar c) == 1
-
-  sectionBy []     Nothing       = T.empty
-  sectionBy []     (Just (c, d)) = finish (c,d)
-  sectionBy (x:xs) Nothing       = sectionBy xs (Just (x, x))
-  sectionBy (x:xs) (Just (c, d))
-    | succSlot d x             = sectionBy xs (Just (c, x))
-    | otherwise                  = finish (c,d) <> sectionBy xs (Just (x, x))
-
-  finish (c, d) | c == d         = T.pack [slotChar c]
-                | succSlot c d = T.pack [slotChar c, slotChar d]
-                | otherwise      = T.pack [slotChar c, '-', slotChar d]
 
 rmFromBag :: Int -> ItemId -> ItemBag -> ItemBag
 rmFromBag k iid bag =

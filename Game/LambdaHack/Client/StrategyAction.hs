@@ -14,6 +14,7 @@ import Data.Ord
 import qualified Data.Traversable as Traversable
 
 import Game.LambdaHack.Client.Action
+import Game.LambdaHack.Client.ItemSlot
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.Strategy
 import Game.LambdaHack.Common.Ability (Ability)

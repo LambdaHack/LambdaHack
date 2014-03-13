@@ -14,7 +14,6 @@ module Game.LambdaHack.Client.HumanLocal
   , tgtUnknownHuman, tgtItemHuman, tgtStairHuman, tgtAscendHuman
   , epsIncrHuman, tgtClearHuman, cancelHuman, acceptHuman
     -- * Helper definitions
-  , floorItemOverlay, itemOverlay
   , pickLeader, lookAt
   ) where
 
@@ -39,6 +38,7 @@ import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.Binding
+import Game.LambdaHack.Client.Inventory
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
@@ -62,8 +62,8 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 
-failWith :: MonadClientUI m => Msg -> m Slideshow
-failWith msg = do
+failMsg :: MonadClientUI m => Msg -> m Slideshow
+failMsg msg = do
   modifyClient $ \cli -> cli {slastKey = Nothing}
   stopPlayBack
   assert (not $ T.null msg) $ promptToSlideshow msg
@@ -85,8 +85,8 @@ pickLeaderHuman k = do
   fact <- getsState $ (EM.! side) . sfactionD
   s <- getState
   case tryFindHeroK s side k of
-    _ | isSpawnFact fact -> failWith "spawners cannot manually change leaders"
-    Nothing -> failWith "No such member of the party."
+    _ | isSpawnFact fact -> failMsg "spawners cannot manually change leaders"
+    Nothing -> failMsg "No such member of the party."
     Just (aid, _) -> do
       void $ pickLeader aid
       return mempty
@@ -102,8 +102,8 @@ memberCycleHuman = do
   body <- getsState $ getActorBody leader
   hs <- partyAfterLeader leader
   case filter (\(_, b) -> blid b == blid body) hs of
-    _ | isSpawnFact fact -> failWith "spawners cannot manually change leaders"
-    [] -> failWith "Cannot pick any other member on this level."
+    _ | isSpawnFact fact -> failMsg "spawners cannot manually change leaders"
+    [] -> failMsg "Cannot pick any other member on this level."
     (np, b) : _ -> do
       success <- pickLeader np
       assert (success `blame` "same leader" `twith` (leader, np, b)) skip
@@ -159,8 +159,8 @@ memberBackHuman = do
   leader <- getLeaderUI
   hs <- partyAfterLeader leader
   case reverse hs of
-    _ | isSpawnFact fact -> failWith "spawners cannot manually change leaders"
-    [] -> failWith "No other member in the party."
+    _ | isSpawnFact fact -> failMsg "spawners cannot manually change leaders"
+    [] -> failMsg "No other member in the party."
     (np, b) : _ -> do
       success <- pickLeader np
       assert (success `blame` "same leader" `twith` (leader, np, b)) skip
@@ -255,7 +255,7 @@ selectActorHuman :: MonadClientUI m => m Slideshow
 selectActorHuman = do
   mleader <- getsClient _sleader
   case mleader of
-    Nothing -> failWith "no leader picked, cannot select"
+    Nothing -> failMsg "no leader picked, cannot select"
     Just leader -> do
       body <- getsState $ getActorBody leader
       wasMemeber <- getsClient $ ES.member leader . sselected
@@ -452,7 +452,7 @@ moveCursorHuman dir n = do
   let cpos = fromMaybe lpos cursorPos
       shiftB pos = shiftBounded lxsize lysize pos dir
       newPos = iterate shiftB cpos !! n
-  if newPos == cpos then failWith "never mind"
+  if newPos == cpos then failMsg "never mind"
   else do
     let tgt = case scursor of
           TVector{} -> TVector $ displacement lpos newPos
@@ -544,32 +544,6 @@ doLook = do
     io <- floorItemOverlay is
     overlayToSlideshow lookMsg io
 
--- | Create a list of item names.
-floorItemOverlay :: MonadClient m => ItemBag -> m Overlay
-floorItemOverlay bag = do
-  Kind.COps{coitem} <- getsState scops
-  s <- getState
-  disco <- getsClient sdisco
-  let is = zip (EM.assocs bag) (allSlots ++ repeat (SlotChar ' '))
-      pr ((iid, k), l) =
-         makePhrase [ slotLabel l
-                    , partItemWs coitem disco k (getItemBody iid s) ]
-         <> " "
-  return $! toOverlay $ map pr is
-
--- | Create a list of item names.
-itemOverlay :: MonadClient m => ItemBag -> ItemSlots -> m Overlay
-itemOverlay bag inv = do
-  Kind.COps{coitem} <- getsState scops
-  s <- getState
-  disco <- getsClient sdisco
-  let pr (l, iid) =
-         makePhrase [ slotLabel l
-                    , partItemWs coitem disco (bag EM.! iid)
-                                 (getItemBody iid s) ]
-         <> " "
-  return $! toOverlay $ map pr $ EM.assocs inv
-
 -- * TgtFloor
 
 -- | Cycle targeting mode. Do not change position of the cursor,
@@ -656,7 +630,7 @@ tgtUnknownHuman = do
   b <- getsState $ getActorBody leader
   mpos <- closestUnknown leader
   case mpos of
-    Nothing -> failWith "no more unknown spots left"
+    Nothing -> failMsg "no more unknown spots left"
     Just p -> do
       let tgt = TPoint (blid b) p
       modifyClient $ \cli -> cli {scursor = tgt}
@@ -670,7 +644,7 @@ tgtItemHuman = do
   b <- getsState $ getActorBody leader
   items <- closestItems leader
   case items of
-    [] -> failWith "no more items remembered or visible"
+    [] -> failMsg "no more items remembered or visible"
     (_, (p, _)) : _ -> do
       let tgt = TPoint (blid b) p
       modifyClient $ \cli -> cli {scursor = tgt}
@@ -684,7 +658,7 @@ tgtStairHuman up = do
   b <- getsState $ getActorBody leader
   stairs <- closestTriggers (Just up) False leader
   case stairs of
-    [] -> failWith $ "no stairs"
+    [] -> failMsg $ "no stairs"
                      <+> if up then "up" else "down"
     p : _ -> do
       let tgt = TPoint (blid b) p
@@ -726,7 +700,7 @@ tgtAscendHuman k = do
       doLook
     Nothing ->  -- no stairs in the right direction
       case ascendInBranch dungeon k lidV of
-        [] -> failWith "no more levels in this direction"
+        [] -> failMsg "no more levels in this direction"
         nln : _ -> do
           modifyClient $ \cli -> cli {stgtMode = Just (TgtMode nln)}
           doLook
@@ -741,7 +715,7 @@ epsIncrHuman b = do
     then do
       modifyClient $ \cli -> cli {seps = seps cli + if b then 1 else -1}
       return mempty
-    else failWith "never mind"  -- no visual feedback, so no sense
+    else failMsg "never mind"  -- no visual feedback, so no sense
 
 -- * TgtClear
 
@@ -779,7 +753,7 @@ cancelHuman h = do
 targetReject :: MonadClientUI m => m Slideshow
 targetReject = do
   modifyClient $ \cli -> cli {stgtMode = Nothing}
-  failWith "targeting canceled"
+  failMsg "targeting canceled"
 
 -- * Accept
 

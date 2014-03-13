@@ -76,6 +76,8 @@ library
                       Game.LambdaHack.Client.HumanGlobal,
                       Game.LambdaHack.Client.HumanLocal,
                       Game.LambdaHack.Client.HumanSem,
+                      Game.LambdaHack.Client.Inventory,
+                      Game.LambdaHack.Client.ItemSlot,
                       Game.LambdaHack.Client.LoopAction,
                       Game.LambdaHack.Client.RunAction,
                       Game.LambdaHack.Client.State,

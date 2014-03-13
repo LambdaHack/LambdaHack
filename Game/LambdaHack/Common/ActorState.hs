@@ -9,9 +9,8 @@ module Game.LambdaHack.Common.ActorState
   , posToActors, posToActor, getItemBody, memActor
   , getActorBody, updateActorBody, updateFactionBody
   , getCarriedAssocs, getEqpAssocs, getEqpKA, getInvAssocs, getFloorAssocs
-  , actorContainer, actorContainerB
   , tryFindHeroK, foesAdjacent
-  , allSlots, assignSlot, slotLabel, itemPrice, calmEnough
+  , itemPrice, calmEnough
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -20,9 +19,6 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.List
 import Data.Maybe
-import qualified Data.Text as T
-import Data.Tuple
-import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Faction
@@ -206,51 +202,6 @@ updateFactionBody fid f s =
   let alt Nothing = assert `failure` "no faction to update" `twith` (fid, s)
       alt (Just fact) = Just $ f fact
   in updateFactionD (EM.alter alt fid) s
-
-allSlots :: [SlotChar]
-allSlots = map SlotChar $ ['a'..'z'] ++ ['A'..'Z']
-
--- | Assigns a slot to an item, for inclusion in the inventory
--- of a hero. Tries to to use the requested slot, if any.
-assignSlot :: ItemId -> Maybe SlotChar -> Actor -> ItemSlots -> SlotChar
-           -> State
-           -> Maybe SlotChar
-assignSlot iid r body slots freeSlot s =
-  case lookup iid $ map swap $ EM.assocs slots of
-    Just l -> Just l
-    Nothing -> case r of
-      Just l | l `elem` allowed -> Just l
-      _ -> listToMaybe free
- where
-  candidates = take (length allSlots)
-               $ drop (fromJust (elemIndex freeSlot allSlots))
-               $ cycle allSlots
-  inBag = EM.keysSet $ sharedAllOwned body s
-  f l = maybe True (`ES.notMember` inBag) $ EM.lookup l slots
-  free = filter f candidates
-  allowed = SlotChar '$' : free
-
-actorContainer :: ActorId -> ItemSlots -> ItemId -> SlotChar
-actorContainer aid slotChars iid =
-  case find ((== iid) . snd) $ EM.assocs slotChars of
-    Just (l, _) -> l
-    Nothing -> assert `failure` "item not in inventory"
-                      `twith` (aid, slotChars, iid)
-
-actorContainerB :: Actor -> ItemSlots -> SlotChar
-                -> ItemId -> Item -> State
-                -> Maybe SlotChar
-actorContainerB body slots freeSlot iid item s =
-  case find ((== iid) . snd) $ EM.assocs slots of
-    Just (l, _) -> Just l
-    Nothing ->
-      let l = if jsymbol item == '$' then Just $ SlotChar '$' else Nothing
-      in case assignSlot iid l body slots freeSlot s of
-        Just l2 -> Just l2
-        Nothing -> Nothing
-
-slotLabel :: SlotChar -> MU.Part
-slotLabel c = MU.Text $ T.pack $ slotChar c : " -"
 
 getCarriedAssocs :: Actor -> State -> [(ItemId, Item)]
 getCarriedAssocs b s =
