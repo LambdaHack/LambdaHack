@@ -1,4 +1,4 @@
--- | Semantics of 'CmdSer' server commands.
+-- | Semantics of request.
 -- A couple of them do not take time, the rest does.
 -- Note that since the results are atomic commands, which are executed
 -- only later (on the server and some of the clients), all condition
@@ -7,7 +7,7 @@
 -- are already issued by the point an expression is evaluated, they do not
 -- influence the outcome of the evaluation.
 -- TODO: document
-module Game.LambdaHack.Server.ServerSem where
+module Game.LambdaHack.Server.HandleRequestServer where
 
 import Control.Exception.Assert.Sugar
 import Control.Monad
@@ -33,7 +33,7 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Common.ServerCmd
+import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
@@ -47,20 +47,20 @@ import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.State
 
 execFailure :: (MonadAtomic m, MonadServer m)
-            => ActorId -> FailureSer -> m ()
+            => ActorId -> ReqFailure -> m ()
 execFailure aid failureSer = do
   -- Clients should rarely do that (only in case of invisible actors)
   -- so we report it, send a --more-- meeesage (if not AI), but do not crash
   -- (server should work OK with stupid clients, too).
   body <- getsState $ getActorBody aid
   let fid = bfid body
-      msg = showFailureSer failureSer
+      msg = showReqFailure failureSer
   debugPrint
     $ "execFailure:" <+> tshow fid <+> ":" <+> msg <> "\n" <> tshow body
   execSfxAtomic $ MsgFidD fid $ "Unexpected problem:" <+> msg <> "."
     -- TODO: --more--, but keep in history
 
--- * MoveSer
+-- * ReqMove
 
 -- TODO: let only some actors/items leave smell, e.g., a Smelly Hide Armour.
 -- | Add a smell trace for the actor to the level. For now, only heroes
@@ -84,8 +84,8 @@ addSmell aid = do
 -- Also, only the server is authorized to check if a move is legal
 -- and it needs full context for that, e.g., the initial actor position
 -- to check if melee attack does not try to reach to a distant tile.
-moveSer :: (MonadAtomic m, MonadServer m) => ActorId -> Vector -> m ()
-moveSer source dir = do
+reqMove :: (MonadAtomic m, MonadServer m) => ActorId -> Vector -> m ()
+reqMove source dir = do
   cops <- getsState scops
   sb <- getsState $ getActorBody source
   let lid = blid sb
@@ -98,7 +98,7 @@ moveSer source dir = do
     Just ((target, tb), _) | not (bproj sb && bproj tb) ->  -- visible or not
       -- Attacking does not require full access, adjacency is enough.
       -- Projectiles are too small to hit each other.
-      meleeSer source target
+      reqMelee source target
     _
       | accessible cops lvl spos tpos -> do
           -- Movement requires full access.
@@ -108,7 +108,7 @@ moveSer source dir = do
           -- Client foolishly tries to move into blocked, boring tile.
           execFailure source MoveNothing
 
--- * MeleeSer
+-- * ReqMelee
 
 -- | Resolves the result of an actor moving into another.
 -- Actors on blocked positions can be attacked without any restrictions.
@@ -117,8 +117,8 @@ moveSer source dir = do
 -- but for melee and not using up the weapon.
 -- No problem if there are many projectiles at the spot. We just
 -- attack the one specified.
-meleeSer :: (MonadAtomic m, MonadServer m) => ActorId -> ActorId -> m ()
-meleeSer source target = do
+reqMelee :: (MonadAtomic m, MonadServer m) => ActorId -> ActorId -> m ()
+reqMelee source target = do
   cops@Kind.COps{coitem=coitem@Kind.Ops{opick, okind}} <- getsState scops
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
@@ -176,11 +176,11 @@ meleeSer source target = do
     unless (friendlyFire || isAtWar sfact tfid || sfid == tfid) $
       execCmdAtomic $ DiplFactionA sfid tfid fromDipl War
 
--- * DisplaceSer
+-- * ReqDisplace
 
 -- | Actor tries to swap positions with another.
-displaceSer :: (MonadAtomic m, MonadServer m) => ActorId -> ActorId -> m ()
-displaceSer source target = do
+reqDisplace :: (MonadAtomic m, MonadServer m) => ActorId -> ActorId -> m ()
+reqDisplace source target = do
   cops <- getsState scops
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
@@ -205,15 +205,15 @@ displaceSer source target = do
       -- Client foolishly tries to displace an actor without access.
       execFailure source DisplaceAccess
 
--- * AlterSer
+-- * ReqAlter
 
 -- | Search and/or alter the tile.
 --
 -- Note that if @serverTile /= freshClientTile@, @freshClientTile@
 -- should not be alterable (but @serverTile@ may be).
-alterSer :: (MonadAtomic m, MonadServer m)
+reqAlter :: (MonadAtomic m, MonadServer m)
          => ActorId -> Point -> Maybe F.Feature -> m ()
-alterSer source tpos mfeat = do
+reqAlter source tpos mfeat = do
   Kind.COps{cotile=cotile@Kind.Ops{okind, opick}} <- getsState scops
   sb <- getsState $ getActorBody source
   let lid = blid sb
@@ -257,19 +257,19 @@ alterSer source tpos mfeat = do
         else execFailure source AlterBlockActor
       else execFailure source AlterBlockItem
 
--- * WaitSer
+-- * ReqWait
 
 -- | Do nothing.
 --
 -- Something is sometimes done in 'LoopAction.setBWait'.
-waitSer :: MonadAtomic m => ActorId -> m ()
-waitSer _ = return ()
+reqWait :: MonadAtomic m => ActorId -> m ()
+reqWait _ = return ()
 
--- * MoveItemSer
+-- * ReqMoveItem
 
-moveItemSer :: (MonadAtomic m, MonadServer m)
+reqMoveItem :: (MonadAtomic m, MonadServer m)
             => ActorId -> ItemId -> Int -> CStore -> CStore -> m ()
-moveItemSer aid iid k fromCStore toCStore = do
+reqMoveItem aid iid k fromCStore toCStore = do
   let moveItem = do
         cs <- actorConts iid k aid fromCStore
         mapM_ (\(ck, c) -> execCmdAtomic
@@ -308,16 +308,16 @@ actorConts iid k aid cstore = case cstore of
     invs <- actorInvs iid k aid
     return $! map (\(n, aid2) -> (n, CActor aid2 CInv)) invs
 
--- * ProjectSer
+-- * ReqProject
 
-projectSer :: (MonadAtomic m, MonadServer m)
+reqProject :: (MonadAtomic m, MonadServer m)
            => ActorId    -- ^ actor projecting the item (is on current lvl)
            -> Point      -- ^ target position of the projectile
            -> Int        -- ^ digital line parameter
            -> ItemId     -- ^ the item to be projected
            -> CStore     -- ^ whether the items comes from floor or inventory
            -> m ()
-projectSer source tpxy eps iid cstore = do
+reqProject source tpxy eps iid cstore = do
   mfail <- projectFail source tpxy eps iid cstore False
   maybe skip (execFailure source) mfail
 
@@ -328,7 +328,7 @@ projectFail :: (MonadAtomic m, MonadServer m)
             -> ItemId     -- ^ the item to be projected
             -> CStore     -- ^ whether the items comes from floor or inventory
             -> Bool       -- ^ whether the item is a shrapnel
-            -> m (Maybe FailureSer)
+            -> m (Maybe ReqFailure)
 projectFail source tpxy eps iid cstore isShrapnel = do
   Kind.COps{coactor=Kind.Ops{okind}, cotile} <- getsState scops
   sb <- getsState $ getActorBody source
@@ -409,15 +409,15 @@ addProjectile bpos rest iid blid bfid btime = do
   execCmdAtomic $ CreateActorA acounter m [(iid, item)]
   return $! acounter
 
--- * ApplySer
+-- * ReqApply
 
 -- TODO: check actor has access to the item
-applySer :: (MonadAtomic m, MonadServer m)
+reqApply :: (MonadAtomic m, MonadServer m)
          => ActorId  -- ^ actor applying the item (is on current level)
          -> ItemId   -- ^ the item to be applied
          -> CStore   -- ^ the location of the item
          -> m ()
-applySer aid iid cstore = do
+reqApply aid iid cstore = do
   let applyItem = do
         item <- getsState $ getItemBody iid
         execSfxAtomic $ ActivateD aid iid
@@ -433,12 +433,12 @@ applySer aid iid cstore = do
     if calmEnough b kind then applyItem
     else execFailure aid ItemNotCalm
 
--- * TriggerSer
+-- * ReqTrigger
 
 -- | Perform the effect specified for the tile in case it's triggered.
-triggerSer :: (MonadAtomic m, MonadServer m)
+reqTrigger :: (MonadAtomic m, MonadServer m)
            => ActorId -> Maybe F.Feature -> m ()
-triggerSer aid mfeat = do
+reqTrigger aid mfeat = do
   Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
   sb <- getsState $ getActorBody aid
   let lid = blid sb
@@ -468,10 +468,10 @@ triggerEffect aid feats = do
   goes <- mapM triggerFeat feats
   return $! or goes
 
--- * SetTrajectorySer
+-- * ReqSetTrajectory
 
-setTrajectorySer :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
-setTrajectorySer aid = do
+reqSetTrajectory :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
+reqSetTrajectory aid = do
   cops <- getsState scops
   b@Actor{bpos, btrajectory, blid, bcolor} <- getsState $ getActorBody aid
   lvl <- getLevel blid
@@ -486,18 +486,18 @@ setTrajectorySer aid = do
           let toColor = Color.BrBlack
           when (bcolor /= toColor) $
             execCmdAtomic $ ColorActorA aid bcolor toColor
-        moveSer aid d
+        reqMove aid d
         execCmdAtomic $ TrajectoryActorA aid btrajectory (Just lv)
     _ -> assert `failure` "null trajectory" `twith` (aid, b)
 
--- * GameRestart
+-- * ReqGameRestart
 
 -- TODO: implement a handshake and send hero names there,
 -- so that they are available in the first game too,
 -- not only in subsequent, restarted, games.
-gameRestartSer :: (MonadAtomic m, MonadServer m)
+reqGameRestart :: (MonadAtomic m, MonadServer m)
                => ActorId -> Text -> Int -> [(Int, Text)] -> m ()
-gameRestartSer aid stInfo d configHeroNames = do
+reqGameRestart aid stInfo d configHeroNames = do
   modifyServer $ \ser ->
     ser {sdebugNxt = (sdebugNxt ser) { sdifficultySer = d
                                      , sdebugCli = (sdebugCli (sdebugNxt ser))
@@ -513,10 +513,10 @@ gameRestartSer aid stInfo d configHeroNames = do
   execCmdAtomic $ QuitFactionA fid (Just b) oldSt
                 $ Just $ Status Restart (fromEnum $ blid b) stInfo
 
--- * GameExit
+-- * ReqGameExit
 
-gameExitSer :: (MonadAtomic m, MonadServer m) => ActorId -> Int -> m ()
-gameExitSer aid d = do
+reqGameExit :: (MonadAtomic m, MonadServer m) => ActorId -> Int -> m ()
+reqGameExit aid d = do
   modifyServer $ \ser ->
     ser {sdebugNxt = (sdebugNxt ser) { sdifficultySer = d
                                      , sdebugCli = (sdebugCli (sdebugNxt ser))
@@ -529,16 +529,16 @@ gameExitSer aid d = do
   execCmdAtomic $ QuitFactionA fid (Just b) oldSt
                 $ Just $ Status Camping (fromEnum $ blid b) ""
 
--- * GameSaveSer
+-- * ReqGameSave
 
-gameSaveSer :: MonadServer m => m ()
-gameSaveSer = do
+reqGameSave :: MonadServer m => m ()
+reqGameSave = do
   modifyServer $ \ser -> ser {sbkpSave = True}
   modifyServer $ \ser -> ser {squit = True}  -- do this at once
 
--- * AutomateSer
+-- * ReqAutomate
 
-automateSer :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
-automateSer aid = do
+reqAutomate :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
+reqAutomate aid = do
   b <- getsState $ getActorBody aid
   execCmdAtomic $ AutoFactionA (bfid b) True

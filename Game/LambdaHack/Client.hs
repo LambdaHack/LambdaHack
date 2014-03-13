@@ -24,7 +24,7 @@ import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.ServerCmd
+import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Frontend
@@ -34,7 +34,7 @@ storeUndo _atomic =
   maybe skip (\a -> modifyClient $ \cli -> cli {sundo = a : sundo cli})
     $ Nothing   -- TODO: undoAtomic atomic
 
-cmdClientAISem :: (MonadAtomic m, MonadClientWriteServer CmdTakeTimeSer m)
+cmdClientAISem :: (MonadAtomic m, MonadClientWriteServer RequestTimed m)
                => CmdClientAI -> m ()
 cmdClientAISem cmd = case cmd of
   CmdAtomicAI cmdA -> do
@@ -45,10 +45,10 @@ cmdClientAISem cmd = case cmd of
   CmdQueryAI aid -> do
     cmdC <- queryAI aid
     writeServer cmdC
-  CmdPingAI -> writeServer $ PongHackSer []
+  CmdPingAI -> writeServer $ ReqPongHack []
 
 cmdClientUISem :: ( MonadAtomic m, MonadClientUI m
-                  , MonadClientWriteServer CmdSer m )
+                  , MonadClientWriteServer Request m )
                => CmdClientUI -> m ()
 cmdClientUISem cmd = case cmd of
   CmdAtomicUI cmdA -> do
@@ -73,20 +73,20 @@ cmdClientUISem cmd = case cmd of
 -- UI config and the definitions of game commands.
 exeFrontend :: ( MonadAtomic m, MonadClientUI m
                , MonadClientReadServer CmdClientUI m
-               , MonadClientWriteServer CmdSer m
+               , MonadClientWriteServer Request m
                , MonadAtomic n
                , MonadClientReadServer CmdClientAI n
-               , MonadClientWriteServer CmdTakeTimeSer n )
+               , MonadClientWriteServer RequestTimed n )
             => (m () -> SessionUI -> State -> StateClient
-                -> ChanServer CmdClientUI CmdSer
+                -> ChanServer CmdClientUI Request
                 -> IO ())
             -> (n () -> SessionUI -> State -> StateClient
-                -> ChanServer CmdClientAI CmdTakeTimeSer
+                -> ChanServer CmdClientAI RequestTimed
                 -> IO ())
             -> Kind.COps -> DebugModeCli
-            -> ((FactionId -> ChanFrontend -> ChanServer CmdClientUI CmdSer
+            -> ((FactionId -> ChanFrontend -> ChanServer CmdClientUI Request
                  -> IO ())
-               -> (FactionId -> ChanServer CmdClientAI CmdTakeTimeSer
+               -> (FactionId -> ChanServer CmdClientAI RequestTimed
                    -> IO ())
                -> IO ())
             -> IO ()

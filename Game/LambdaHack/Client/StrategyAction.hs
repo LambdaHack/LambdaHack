@@ -32,7 +32,7 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Random as Random
-import Game.LambdaHack.Common.ServerCmd
+import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
@@ -260,7 +260,7 @@ targetStrategy oldLeader aid = do
 -- | AI strategy based on actor's sight, smell, intelligence, etc.
 -- Never empty.
 actionStrategy :: forall m. MonadClient m
-               => ActorId -> m (Strategy CmdTakeTimeSer)
+               => ActorId -> m (Strategy RequestTimed)
 actionStrategy aid = do
   cops <- getsState scops
   btarget <- getsClient $ getTarget aid
@@ -286,7 +286,7 @@ actionStrategy aid = do
       -- TODO: this is too fragile --- depends on order of abilities
       (prefix, rest)    = break isDistant actorAbs
       (distant, suffix) = partition isDistant rest
-      aFrequency :: Ability -> m (Frequency CmdTakeTimeSer)
+      aFrequency :: Ability -> m (Frequency RequestTimed)
       aFrequency Ability.Trigger = if foeVisible then return mzero
                                    else triggerFreq aid
       aFrequency Ability.Ranged  = rangedFreq aid
@@ -296,11 +296,11 @@ actionStrategy aid = do
                                    else chaseFreq
       aFrequency ab              = assert `failure` "unexpected ability"
                                           `twith` (ab, distant, actorAbs)
-      chaseFreq :: MonadActionRO m => m (Frequency CmdTakeTimeSer)
+      chaseFreq :: MonadActionRO m => m (Frequency RequestTimed)
       chaseFreq = do
         st <- chase aid True
         return $! scaleFreq 30 $ bestVariant st
-      aStrategy :: Ability -> m (Strategy CmdTakeTimeSer)
+      aStrategy :: Ability -> m (Strategy RequestTimed)
       aStrategy Ability.Track  = track aid
       aStrategy Ability.Heal   = return reject  -- TODO
       aStrategy Ability.Flee   = return reject  -- TODO
@@ -330,20 +330,20 @@ actionStrategy aid = do
             .| waitBlockNow aid
 
 -- | A strategy to always just wait.
-waitBlockNow :: ActorId -> Strategy CmdTakeTimeSer
-waitBlockNow aid = returN "wait" $ WaitSer aid
+waitBlockNow :: ActorId -> Strategy RequestTimed
+waitBlockNow aid = returN "wait" $ ReqWait aid
 
 -- | Strategy for a dumb missile or a strongly hurled actor.
-track :: MonadActionRO m => ActorId -> m (Strategy CmdTakeTimeSer)
+track :: MonadActionRO m => ActorId -> m (Strategy RequestTimed)
 track aid = do
   btrajectory <- getsState $ btrajectory . getActorBody aid
   return $! if isNothing btrajectory
             then reject
-            else returN "SetTrajectorySer" $ SetTrajectorySer aid
+            else returN "SetTrajectorySer" $ ReqSetTrajectory aid
 
 -- TODO: (most?) animals don't pick up. Everybody else does.
 -- TODO: pick up best weapons first
-pickup :: MonadClient m => ActorId -> m (Strategy CmdTakeTimeSer)
+pickup :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 pickup aid = do
   cops@Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
   body@Actor{bpos, blid} <- getsState $ getActorBody aid
@@ -374,7 +374,7 @@ pickup aid = do
     (iid, k) : _ -> do  -- pick up first desirable item, if any
       notOverfull <- updateItemSlot aid iid
       if notOverfull then
-        return $! returN "pickup" $ MoveItemSer aid iid k CGround CEqp
+        return $! returN "pickup" $ ReqMoveItem aid iid k CGround CEqp
       else
         assert `failure` fact  -- TODO: return mzero  -- PickupOverfull
     [] | calmEnough body kind -> do
@@ -386,16 +386,16 @@ pickup aid = do
                 bestEqp = strongestItems eqpKA $ pSymbol cops symbol
             in case (bestInv, bestEqp) of
               (Just (_, (iidInv, _)), []) ->
-                returN "wield" $ MoveItemSer aid iidInv 1 CInv CEqp
+                returN "wield" $ ReqMoveItem aid iidInv 1 CInv CEqp
               (Just (vInv, (iidInv, _)), (vEqp, _) : _)
                 | vInv > vEqp ->
-                returN "wield" $ MoveItemSer aid iidInv 1 CInv CEqp
+                returN "wield" $ ReqMoveItem aid iidInv 1 CInv CEqp
               (_, (_, (k, (iidEqp, _))) : _) | k > 1 && rsharedInventory ->
                 -- To share the best items with others.
-                returN "yield" $ MoveItemSer aid iidEqp (k - 1) CEqp CInv
+                returN "yield" $ ReqMoveItem aid iidEqp (k - 1) CEqp CInv
               (_, _ : (_, (k, (iidEqp, _))) : _) ->
                 -- To make room in limited equipment store or to share.
-                returN "yield" $ MoveItemSer aid iidEqp k CEqp CInv
+                returN "yield" $ ReqMoveItem aid iidEqp k CEqp CInv
               _ -> reject
       return $ msum $ map improve ritemEqp
     _ -> return reject
@@ -407,7 +407,7 @@ pSymbol cops c = case c of
   _ -> \_ -> Just 0
 
 -- Everybody melees in a pinch, even though some prefer ranged attacks.
-melee :: MonadClient m => ActorId -> m (Strategy CmdTakeTimeSer)
+melee :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 melee aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
@@ -428,7 +428,7 @@ melee aid = do
           -- attack the first one.
           body2 <- getsState $ getActorBody aid2
           if isAtWar fact (bfid body2) then
-            return $! returN "melee in the way" (MeleeSer aid aid2)
+            return $! returN "melee in the way" (ReqMelee aid aid2)
           else return reject
         Nothing -> return reject
     _ -> return reject  -- probably no path to the foe, if any
@@ -440,11 +440,11 @@ melee aid = do
     let vic = vicinity lxsize lysize $ bpos b
         adjFoes = filter ((`elem` vic) . bpos . snd) allFoes
         -- TODO: prioritize somehow
-        freq = uniformFreq "melee adjacent" $ map (MeleeSer aid . fst) adjFoes
+        freq = uniformFreq "melee adjacent" $ map (ReqMelee aid . fst) adjFoes
     return $ liftFrequency freq
 
 -- Fast monsters don't pay enough attention to features.
-triggerFreq :: MonadClient m => ActorId -> m (Frequency CmdTakeTimeSer)
+triggerFreq :: MonadClient m => ActorId -> m (Frequency RequestTimed)
 triggerFreq aid = do
   cops@Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
   dungeon <- getsState sdungeon
@@ -488,14 +488,14 @@ triggerFreq aid = do
         F.Cause ef -> effectToBenefit cops b ef
         _ -> 0
       benFeat = zip (map ben feats) feats
-  return $! toFreq "triggerFreq" $ [ (benefit, TriggerSer aid (Just feat))
+  return $! toFreq "triggerFreq" $ [ (benefit, ReqTrigger aid (Just feat))
                                    | (benefit, feat) <- benFeat
                                    , benefit > 0 ]
 
 -- Actors require sight to use ranged combat and intelligence to throw
 -- or zap anything else than obvious physical missiles.
 rangedFreq :: MonadClient m
-           => ActorId -> m (Frequency CmdTakeTimeSer)
+           => ActorId -> m (Frequency RequestTimed)
 rangedFreq aid = do
   cops@Kind.COps{ coactor=Kind.Ops{okind}
                 , coitem=coitem@Kind.Ops{okind=iokind}
@@ -529,7 +529,7 @@ rangedFreq aid = do
                               `twith` (iid, itemD)) $ EM.lookup iid itemD
           throwFreq bag multi container =
             [ (- benefit * multi,
-              ProjectSer aid fpos eps iid container)
+              ReqProject aid fpos eps iid container)
             | (iid, i) <- map (\iid -> (iid, getItemB iid))
                           $ EM.keys bag
             , let benefit =
@@ -557,7 +557,7 @@ rangedFreq aid = do
     _ -> return $! toFreq "throwFreq: no enemy target" []
 
 -- Tools use requires significant intelligence and sometimes literacy.
-toolsFreq :: MonadClient m => ActorId -> m (Frequency CmdTakeTimeSer)
+toolsFreq :: MonadClient m => ActorId -> m (Frequency RequestTimed)
 toolsFreq aid = do
   cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   disco <- getsClient sdisco
@@ -571,7 +571,7 @@ toolsFreq aid = do
                | aiq mk < 10 = "!"
                | otherwise = "!?"  -- literacy required
       useFreq bag multi container =
-        [ (benefit * multi, ApplySer aid iid container)
+        [ (benefit * multi, ReqApply aid iid container)
         | (iid, i) <- map (\iid -> (iid, getItemBody iid s))
                       $ EM.keys bag
         , let benefit =
@@ -584,7 +584,7 @@ toolsFreq aid = do
     useFreq eqpBag 1 CEqp
     ++ useFreq tis 2 CGround
 
-displace :: MonadClient m => ActorId -> m (Strategy CmdTakeTimeSer)
+displace :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 displace aid = do
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   str <- case mtgtMPath of
@@ -621,7 +621,7 @@ displaceTowards aid source target = do
       _ -> return reject  -- many projectiles, can't displace
   else return reject
 
-chase :: MonadClient m => ActorId -> Bool -> m (Strategy CmdTakeTimeSer)
+chase :: MonadClient m => ActorId -> Bool -> m (Strategy RequestTimed)
 chase aid foeVisible = do
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   str <- case mtgtMPath of
@@ -669,7 +669,7 @@ moveTowards aid source target goal = do
 
 -- | Actor moves or searches or alters or attacks. Displaces if @run@.
 moveOrRunAid :: MonadActionRO m
-             => Bool -> ActorId -> Vector -> m CmdTakeTimeSer
+             => Bool -> ActorId -> Vector -> m RequestTimed
 moveOrRunAid run source dir = do
   cops@Kind.COps{cotile} <- getsState scops
   sb <- getsState $ getActorBody source
@@ -687,19 +687,19 @@ moveOrRunAid run source dir = do
     [((target, _), _)] | run ->  -- can be a foe, as well as a friend
       if accessible cops lvl spos tpos then
         -- Displacing requires accessibility.
-        return $! DisplaceSer source target
+        return $! ReqDisplace source target
       else
         -- If cannot displace, hit. No DisplaceAccess.
-        return $! MeleeSer source target
+        return $! ReqMelee source target
     ((target, _), _) : _ ->  -- can be a foe, as well as a friend (e.g., proj.)
       -- No problem if there are many projectiles at the spot. We just
       -- attack the first one.
       -- Attacking does not require full access, adjacency is enough.
-      return $! MeleeSer source target
+      return $! ReqMelee source target
     [] -> do  -- move or search or alter
       if accessible cops lvl spos tpos then
         -- Movement requires full access.
-        return $! MoveSer source dir
+        return $! ReqMove source dir
         -- The potential invisible actor is hit.
       else if not $ EM.null $ lvl `atI` tpos then
         -- This is, e.g., inaccessible open door with an item in it.
@@ -710,7 +710,7 @@ moveOrRunAid run source dir = do
                   || Tile.isClosable cotile t
                   || Tile.isChangeable cotile t) then
         -- No access, so search and/or alter the tile.
-        return $! AlterSer source tpos Nothing
+        return $! ReqAlter source tpos Nothing
       else
         -- Boring tile, no point bumping into it, do WaitSer if really idle.
         assert `failure` "AI causes MoveNothing or AlterNothing"

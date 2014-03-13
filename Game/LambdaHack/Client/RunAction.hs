@@ -31,7 +31,7 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.ServerCmd
+import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
@@ -39,7 +39,7 @@ import Game.LambdaHack.Content.TileKind
 
 -- | Continue running in the given direction.
 continueRun :: MonadClient m
-            => RunParams -> m (Either Msg (RunParams, CmdTakeTimeSer))
+            => RunParams -> m (Either Msg (RunParams, RequestTimed))
 continueRun paramOld =
   case paramOld of
     RunParams{ runMembers = []
@@ -89,13 +89,13 @@ continueRun paramOld =
                               , runStopMsg = runStopMsgNew }
       case mdirOrRunStopMsgCurrent of
         Left _ -> continueRun paramNew  -- run all undisturbed; only one time
-        Right dir -> return $ Right (paramNew, MoveSer r dir)
+        Right dir -> return $ Right (paramNew, ReqMove r dir)
       -- The potential invisible actor is hit. War is started without asking.
     _ -> assert `failure` paramOld
 
 -- | Actor moves or searches or alters. No visible actor at the position.
 moveRunAid :: MonadClient m
-           => ActorId -> Vector -> m (Either Msg CmdTakeTimeSer)
+           => ActorId -> Vector -> m (Either Msg RequestTimed)
 moveRunAid source dir = do
   cops@Kind.COps{cotile} <- getsState scops
   sb <- getsState $ getActorBody source
@@ -108,7 +108,7 @@ moveRunAid source dir = do
         -- Movement requires full access.
         if accessible cops lvl spos tpos then
           -- The potential invisible actor is hit. War started without asking.
-          Right $ MoveSer source dir
+          Right $ ReqMove source dir
         -- No access, so search and/or alter the tile. Non-walkability is
         -- not implied by the lack of access.
         else if not (Tile.isWalkable cotile t)
@@ -119,9 +119,9 @@ moveRunAid source dir = do
                     || Tile.isClosable cotile t
                     || Tile.isChangeable cotile t) then
           if not $ EM.null $ lvl `atI` tpos then
-            Left $ showFailureSer AlterBlockItem
+            Left $ showReqFailure AlterBlockItem
           else
-            Right $ AlterSer source tpos Nothing
+            Right $ ReqAlter source tpos Nothing
             -- We don't use MoveSer, because we don't hit invisible actors.
             -- The potential invisible actor, e.g., in a wall or in
             -- an inaccessible doorway, is made known, taking a turn.

@@ -43,7 +43,7 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Common.ServerCmd
+import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
@@ -53,7 +53,7 @@ import Game.LambdaHack.Content.TileKind
 -- * Move and Run
 
 moveRunHuman :: MonadClientUI m
-             => Bool -> Vector -> m (SlideOrCmd CmdTakeTimeSer)
+             => Bool -> Vector -> m (SlideOrCmd RequestTimed)
 moveRunHuman run dir = do
   tgtMode <- getsClient stgtMode
   if isJust tgtMode then
@@ -120,12 +120,12 @@ moveRunHuman run dir = do
 
 -- | Actor atttacks an enemy actor or his own projectile.
 meleeAid :: MonadClientUI m
-         => ActorId -> ActorId -> m (SlideOrCmd CmdTakeTimeSer)
+         => ActorId -> ActorId -> m (SlideOrCmd RequestTimed)
 meleeAid source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   sfact <- getsState $ (EM.! bfid sb) . sfactionD
-  let returnCmd = return $ Right $ MeleeSer source target
+  let returnCmd = return $ Right $ ReqMelee source target
   if not (bproj tb || isAtWar sfact (bfid tb)) then do
     go1 <- displayYesNo ColorBW
              "This attack will start a war. Are you sure?"
@@ -143,7 +143,7 @@ meleeAid source target = do
 
 -- | Actor swaps position with another.
 displaceAid :: MonadClientUI m
-            => ActorId -> ActorId -> m (SlideOrCmd CmdTakeTimeSer)
+            => ActorId -> ActorId -> m (SlideOrCmd RequestTimed)
 displaceAid source target = do
   cops <- getsState scops
   sb <- getsState $ getActorBody source
@@ -161,24 +161,24 @@ displaceAid source target = do
       case tgts of
         [] -> assert `failure` (source, sb, target, tb)
         [_] -> do
-          return $ Right $ DisplaceSer source target
+          return $ Right $ ReqDisplace source target
         _ -> failSer DisplaceProjectiles
     else failSer DisplaceAccess
 
 -- * Wait
 
 -- | Leader waits a turn (and blocks, etc.).
-waitHuman :: MonadClientUI m => m CmdTakeTimeSer
+waitHuman :: MonadClientUI m => m RequestTimed
 waitHuman = do
   modifyClient $ \cli -> cli {swaitTimes = abs (swaitTimes cli) + 1}
   leader <- getLeaderUI
-  return $! WaitSer leader
+  return $! ReqWait leader
 
 -- * MoveItem
 
 moveItemHuman :: MonadClientUI m
               => [CStore] -> CStore -> Text -> Bool
-              -> m (SlideOrCmd CmdTakeTimeSer)
+              -> m (SlideOrCmd RequestTimed)
 moveItemHuman cLegalRaw toCStore verbRaw auto = do
   assert (toCStore `notElem` cLegalRaw) skip
   Kind.COps{coactor=Kind.Ops{okind}, coitem} <- getsState scops
@@ -202,7 +202,7 @@ moveItemHuman cLegalRaw toCStore verbRaw auto = do
             msgAdd $ makeSentence
               [ MU.SubjectVerbSg subject verb
               , partItemWs coitem disco k item ]
-            return $ Right $ MoveItemSer leader iid k fromCStore toCStore
+            return $ Right $ ReqMoveItem leader iid k fromCStore toCStore
       if fromCStore /= CGround then msgAndSer  -- slot already assigned
       else do
         notOverfull <- updateItemSlot leader iid
@@ -213,7 +213,7 @@ moveItemHuman cLegalRaw toCStore verbRaw auto = do
 -- * Project
 
 projectHuman :: MonadClientUI m
-             => [Trigger] -> m (SlideOrCmd CmdTakeTimeSer)
+             => [Trigger] -> m (SlideOrCmd RequestTimed)
 projectHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -228,7 +228,7 @@ projectHuman ts = do
         Just cause -> failWith cause
 
 projectPos :: MonadClientUI m
-           => [Trigger] -> Point -> m (SlideOrCmd CmdTakeTimeSer)
+           => [Trigger] -> Point -> m (SlideOrCmd RequestTimed)
 projectPos ts tpos = do
   Kind.COps{coactor=Kind.Ops{okind}, cotile} <- getsState scops
   leader <- getLeaderUI
@@ -260,7 +260,7 @@ projectPos ts tpos = do
 
 projectEps :: MonadClientUI m
            => [Trigger] -> Point -> Int
-           -> m (SlideOrCmd CmdTakeTimeSer)
+           -> m (SlideOrCmd RequestTimed)
 projectEps ts tpos eps = do
   let cLegal = [CEqp, CInv, CGround]  -- calm enough at this stage
       (verb1, object1) = case ts of
@@ -272,7 +272,7 @@ projectEps ts tpos eps = do
   case ggi of
     Right ((iid, _), (k, fromCStore)) -> do
       assert (k == 1) skip
-      return $ Right $ ProjectSer leader tpos eps iid fromCStore
+      return $ Right $ ReqProject leader tpos eps iid fromCStore
     Left slides -> return $ Left slides
 
 triggerSymbols :: [Trigger] -> [Char]
@@ -282,7 +282,7 @@ triggerSymbols (_ : ts) = triggerSymbols ts
 
 -- * Apply
 
-applyHuman :: MonadClientUI m => [Trigger] -> m (SlideOrCmd CmdTakeTimeSer)
+applyHuman :: MonadClientUI m => [Trigger] -> m (SlideOrCmd RequestTimed)
 applyHuman ts = do
   let cLegalRaw = [CEqp, CInv, CGround]
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
@@ -300,13 +300,13 @@ applyHuman ts = do
   case ggi of
     Right ((iid, _), (k, fromCStore)) -> do
       assert (k == 1) skip
-      return $ Right $ ApplySer leader iid fromCStore
+      return $ Right $ ReqApply leader iid fromCStore
     Left slides -> return $ Left slides
 
 -- * AlterDir
 
 -- | Ask for a direction and alter a tile, if possible.
-alterDirHuman :: MonadClientUI m => [Trigger] -> m (SlideOrCmd CmdTakeTimeSer)
+alterDirHuman :: MonadClientUI m => [Trigger] -> m (SlideOrCmd RequestTimed)
 alterDirHuman ts = do
   ConfigUI{configVi, configLaptop} <- getsClient sconfigUI
   let verb1 = case ts of
@@ -326,7 +326,7 @@ alterDirHuman ts = do
 -- | Player tries to alter a tile using a feature.
 alterTile :: MonadClientUI m
           => ActorId -> Vector -> [Trigger]
-          -> m (SlideOrCmd CmdTakeTimeSer)
+          -> m (SlideOrCmd RequestTimed)
 alterTile source dir ts = do
   Kind.COps{cotile} <- getsState scops
   b <- getsState $ getActorBody source
@@ -336,7 +336,7 @@ alterTile source dir ts = do
       alterFeats = alterFeatures ts
   case filter (\feat -> Tile.hasFeature cotile feat t) alterFeats of
     [] -> failWith $ guessAlter cotile alterFeats t
-    feat : _ -> return $ Right $ AlterSer source tpos $ Just feat
+    feat : _ -> return $ Right $ ReqAlter source tpos $ Just feat
 
 alterFeatures :: [Trigger] -> [F.Feature]
 alterFeatures [] = []
@@ -357,7 +357,7 @@ guessAlter _ _ _ = "never mind"
 
 -- | Leader tries to trigger the tile he's standing on.
 triggerTileHuman :: MonadClientUI m
-                 => [Trigger] -> m (SlideOrCmd CmdTakeTimeSer)
+                 => [Trigger] -> m (SlideOrCmd RequestTimed)
 triggerTileHuman ts = do
   tgtMode <- getsClient stgtMode
   if isJust tgtMode then do
@@ -376,7 +376,7 @@ triggerTileHuman ts = do
 -- | Player tries to trigger a tile using a feature.
 triggerTile :: MonadClientUI m
             => ActorId -> [Trigger]
-            -> m (SlideOrCmd CmdTakeTimeSer)
+            -> m (SlideOrCmd RequestTimed)
 triggerTile leader ts = do
   Kind.COps{cotile} <- getsState scops
   b <- getsState $ getActorBody leader
@@ -388,7 +388,7 @@ triggerTile leader ts = do
     feat : _ -> do
       go <- verifyTrigger leader feat
       case go of
-        Right () -> return $ Right $ TriggerSer leader $ Just feat
+        Right () -> return $ Right $ ReqTrigger leader $ Just feat
         Left slides -> return $ Left slides
 
 triggerFeatures :: [Trigger] -> [F.Feature]
@@ -441,7 +441,7 @@ guessTrigger _ _ _ = "never mind"
 
 -- * StepToTarget
 
-stepToTargetHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
+stepToTargetHuman :: MonadClientUI m => m (SlideOrCmd RequestTimed)
 stepToTargetHuman = do
   tgtMode <- getsClient stgtMode
   -- Movement is legal only outside targeting mode.
@@ -468,7 +468,7 @@ stepToTargetHuman = do
 
 -- * Resend
 
-resendHuman :: MonadClientUI m => m (SlideOrCmd CmdTakeTimeSer)
+resendHuman :: MonadClientUI m => m (SlideOrCmd RequestTimed)
 resendHuman = do
   slastCmd <- getsClient slastCmd
   case slastCmd of
@@ -477,7 +477,7 @@ resendHuman = do
 
 -- * GameRestart; does not take time
 
-gameRestartHuman :: MonadClientUI m => Text -> m (SlideOrCmd CmdSer)
+gameRestartHuman :: MonadClientUI m => Text -> m (SlideOrCmd Request)
 gameRestartHuman t = do
   let msg = "You just requested a new" <+> t <+> "game."
   b1 <- displayMore ColorFull msg
@@ -493,35 +493,35 @@ gameRestartHuman t = do
       leader <- getLeaderUI
       DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
       ConfigUI{configHeroNames} <- getsClient sconfigUI
-      return $ Right $ GameRestartSer leader t sdifficultyCli configHeroNames
+      return $ Right $ ReqGameRestart leader t sdifficultyCli configHeroNames
 
 -- * GameExit; does not take time
 
-gameExitHuman :: MonadClientUI m => m (SlideOrCmd CmdSer)
+gameExitHuman :: MonadClientUI m => m (SlideOrCmd Request)
 gameExitHuman = do
   go <- displayYesNo ColorFull "Really save and exit?"
   if go then do
     leader <- getLeaderUI
     DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
-    return $ Right $ GameExitSer leader sdifficultyCli
+    return $ Right $ ReqGameExit leader sdifficultyCli
   else failWith "Save and exit canceled."
 
 -- * GameSave; does not take time
 
-gameSaveHuman :: MonadClientUI m => m CmdSer
+gameSaveHuman :: MonadClientUI m => m Request
 gameSaveHuman = do
   leader <- getLeaderUI
   -- TODO: do not save to history:
   msgAdd "Saving game backup."
-  return $! GameSaveSer leader
+  return $! ReqGameSave leader
 
 -- * Automate; does not take time
 
-automateHuman :: MonadClientUI m => m (SlideOrCmd CmdSer)
+automateHuman :: MonadClientUI m => m (SlideOrCmd Request)
 automateHuman = do
   leader <- getLeaderUI
   -- TODO: do not save to history:
   go <- displayMore ColorBW "Ceding control to AI (ESC to regain)."
   if not go
     then failWith "Automation canceled."
-    else return $ Right $ AutomateSer leader
+    else return $ Right $ ReqAutomate leader

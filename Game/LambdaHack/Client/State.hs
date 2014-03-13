@@ -32,7 +32,7 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
-import Game.LambdaHack.Common.ServerCmd
+import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Vector
 
@@ -67,7 +67,7 @@ data StateClient = StateClient
   , slastKey     :: !(Maybe K.KM)  -- ^ last command key pressed
   , slastRecord  :: !LastRecord    -- ^ state of key sequence recording
   , slastPlay    :: ![K.KM]        -- ^ state of key sequence playback
-  , slastCmd     :: !(Maybe CmdTakeTimeSer)
+  , slastCmd     :: !(Maybe RequestTimed)
                                    -- ^ last command sent to the server
   , swaitTimes   :: !Int           -- ^ player just waited this many times
   , _sleader     :: !(Maybe ActorId)

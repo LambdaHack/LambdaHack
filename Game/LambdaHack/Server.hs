@@ -15,39 +15,39 @@ import Game.LambdaHack.Common.Animation
 import Game.LambdaHack.Common.ClientCmd
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.ServerCmd
+import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Frontend
 import Game.LambdaHack.Server.Action
+import Game.LambdaHack.Server.HandleRequestServer
 import Game.LambdaHack.Server.LoopAction
-import Game.LambdaHack.Server.ServerSem
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.Utils.Thread
 
 -- | The semantics of server commands. The resulting boolean value
 -- indicates if the command took some time.
-cmdSerSem :: (MonadAtomic m, MonadServer m) => CmdSer -> m Bool
-cmdSerSem cmd = case cmd of
-  CmdTakeTimeSer cmd2 -> cmdSerSemTakeTime cmd2 >> return True
-  GameRestartSer aid t d names -> gameRestartSer aid t d names >> return False
-  GameExitSer aid d -> gameExitSer aid d >> return False
-  GameSaveSer _ -> gameSaveSer >> return False
-  AutomateSer aid -> automateSer aid >> return False
+handleRequest :: (MonadAtomic m, MonadServer m) => Request -> m Bool
+handleRequest cmd = case cmd of
+  ReqTimed cmd2 -> handleRequestTimed cmd2 >> return True
+  ReqGameRestart aid t d names -> reqGameRestart aid t d names >> return False
+  ReqGameExit aid d -> reqGameExit aid d >> return False
+  ReqGameSave _ -> reqGameSave >> return False
+  ReqAutomate aid -> reqAutomate aid >> return False
 
-cmdSerSemTakeTime :: (MonadAtomic m, MonadServer m) => CmdTakeTimeSer -> m ()
-cmdSerSemTakeTime cmd = case cmd of
-  MoveSer source target -> moveSer source target
-  MeleeSer source target -> meleeSer source target
-  DisplaceSer source target -> displaceSer source target
-  AlterSer source tpos mfeat -> alterSer source tpos mfeat
-  WaitSer aid -> waitSer aid
-  MoveItemSer aid iid k fromCStore toCStore ->
-    moveItemSer aid iid k fromCStore toCStore
-  ProjectSer aid p eps iid cstore -> projectSer aid p eps iid cstore
-  ApplySer aid iid cstore -> applySer aid iid cstore
-  TriggerSer aid mfeat -> triggerSer aid mfeat
-  SetTrajectorySer aid -> setTrajectorySer aid
-  PongHackSer _ -> return ()
+handleRequestTimed :: (MonadAtomic m, MonadServer m) => RequestTimed -> m ()
+handleRequestTimed cmd = case cmd of
+  ReqMove source target -> reqMove source target
+  ReqMelee source target -> reqMelee source target
+  ReqDisplace source target -> reqDisplace source target
+  ReqAlter source tpos mfeat -> reqAlter source tpos mfeat
+  ReqWait aid -> reqWait aid
+  ReqMoveItem aid iid k fromCStore toCStore ->
+    reqMoveItem aid iid k fromCStore toCStore
+  ReqProject aid p eps iid cstore -> reqProject aid p eps iid cstore
+  ReqApply aid iid cstore -> reqApply aid iid cstore
+  ReqTrigger aid mfeat -> reqTrigger aid mfeat
+  ReqSetTrajectory aid -> reqSetTrajectory aid
+  ReqPongHack _ -> return ()
 
 debugArgs :: IO DebugModeSer
 debugArgs = do
@@ -167,9 +167,9 @@ mainSer :: (MonadAtomic m, MonadConnServer m)
         => Kind.COps
         -> (m () -> IO ())
         -> (Kind.COps -> DebugModeCli
-            -> ((FactionId -> ChanFrontend -> ChanServer CmdClientUI CmdSer
+            -> ((FactionId -> ChanFrontend -> ChanServer CmdClientUI Request
                  -> IO ())
-                -> (FactionId -> ChanServer CmdClientAI CmdTakeTimeSer
+                -> (FactionId -> ChanServer CmdClientAI RequestTimed
                     -> IO ())
                 -> IO ())
             -> IO ())
@@ -178,7 +178,7 @@ mainSer !copsSlow  -- evaluate fully to discover errors ASAP and free memory
         exeSer exeFront = do
   sdebugNxt <- debugArgs
   let cops = speedupCOps False copsSlow
-      loopServer = loopSer sdebugNxt cmdSerSem
+      loopServer = loopSer sdebugNxt handleRequest
       exeServer executorUI executorAI = do
         -- Wait for clients to exit even in case of server crash
         -- (or server and client crash), which gives them time to save.

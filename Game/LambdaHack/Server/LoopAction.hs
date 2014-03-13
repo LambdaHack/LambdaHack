@@ -26,7 +26,7 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Common.ServerCmd
+import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
@@ -37,7 +37,7 @@ import Game.LambdaHack.Frontend
 import Game.LambdaHack.Server.Action hiding (sendUpdateAI, sendUpdateUI)
 import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.Fov
-import Game.LambdaHack.Server.ServerSem
+import Game.LambdaHack.Server.HandleRequestServer
 import Game.LambdaHack.Server.StartAction
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.Utils.Frequency
@@ -45,14 +45,14 @@ import Game.LambdaHack.Utils.Frequency
 -- | Start a game session. Loop, communicating with clients.
 loopSer :: (MonadAtomic m, MonadConnServer m)
         => DebugModeSer
-        -> (CmdSer -> m Bool)
-        -> (FactionId -> ChanFrontend -> ChanServer CmdClientUI CmdSer
+        -> (Request -> m Bool)
+        -> (FactionId -> ChanFrontend -> ChanServer CmdClientUI Request
             -> IO ())
-        -> (FactionId -> ChanServer CmdClientAI CmdTakeTimeSer
+        -> (FactionId -> ChanServer CmdClientAI RequestTimed
             -> IO ())
         -> Kind.COps
         -> m ()
-loopSer sdebug cmdSerSem executorUI executorAI !cops = do
+loopSer sdebug handleRequest executorUI executorAI !cops = do
   -- Recover states and launch clients.
   restored <- tryRestore cops sdebug
   case restored of
@@ -109,7 +109,7 @@ loopSer sdebug cmdSerSem executorUI executorAI !cops = do
         marenas <- mapM factionArena $ EM.elems factionD
         let arenas = ES.toList $ ES.fromList $ catMaybes marenas
         assert (not $ null arenas) skip  -- game over not caught earlier
-        mapM_ (handleActors cmdSerSem) arenas
+        mapM_ (handleActors handleRequest) arenas
         quit <- getsServer squit
         if quit then do
           -- In case of game save+exit or restart, don't age levels (endClip)
@@ -181,10 +181,10 @@ endClip arenas = do
 -- we introduce subclips and produce many frames per clip to avoid
 -- jerky movement. But most often we push exactly one frame or frame delay.
 handleActors :: (MonadAtomic m, MonadConnServer m)
-             => (CmdSer -> m Bool)
+             => (Request -> m Bool)
              -> LevelId
              -> m ()
-handleActors cmdSerSem lid = do
+handleActors handleRequest lid = do
   time <- getsState $ getLocalTime lid  -- the end of this clip, inclusive
   Level{lprio} <- getLevel lid
   quit <- getsServer squit
@@ -213,19 +213,19 @@ handleActors cmdSerSem lid = do
       dieSer aid b True
       -- The attack animation for the projectile hit subsumes @DisplayPushD@,
       -- so not sending an extra @DisplayPushD@ here.
-      handleActors cmdSerSem lid
+      handleActors handleRequest lid
     Just (aid, b) | maybe False null (btrajectory b) -> do
       assert (bproj b) skip
       execSfxAtomic $ DisplayPushD (bfid b)  -- show last position before drop
       -- A projectile drops to the ground due to obstacles or range.
       dieSer aid b False
-      handleActors cmdSerSem lid
+      handleActors handleRequest lid
     Just (aid, b) | bhp b <= 0 && not (bproj b) -> do
       -- An actor dies. Items drop to the ground
       -- and possibly a new leader is elected.
       dieSer aid b False
       -- The death animation subsumes @DisplayPushD@, so not sending it here.
-      handleActors cmdSerSem lid
+      handleActors handleRequest lid
     Just (aid, body) -> do
       let side = bfid body
           fact = factionD EM.! side
@@ -247,7 +247,7 @@ handleActors cmdSerSem lid = do
       let switchLeader cmdS = do
             -- TODO: check that the command is legal first, report and reject,
             -- but do not crash (currently server asserts things and crashes)
-            let aidNew = aidCmdSer cmdS
+            let aidNew = aidOfRequest cmdS
             bPre <- getsState $ getActorBody aidNew
             let leadAtoms =
                   if aidNew /= aid  -- switched, so aid must be leader
@@ -266,7 +266,7 @@ handleActors cmdSerSem lid = do
                     `blame` "client tries to move other faction actors"
                     `twith` (bPre, side)) skip
             return (aidNew, bPre)
-          setBWait (CmdTakeTimeSer WaitSer{}) aidNew bPre = do
+          setBWait (ReqTimed ReqWait{}) aidNew bPre = do
             let fromWait = bwait bPre
             unless fromWait $ execCmdAtomic $ WaitActorA aidNew fromWait True
           setBWait _ aidNew bPre = do
@@ -284,8 +284,8 @@ handleActors cmdSerSem lid = do
               broadcastSfxAtomic DisplayPushD
       if bproj body then do  -- TODO: perhaps check Track, not bproj
         execSfxAtomic $ DisplayPushD side
-        let cmdS = CmdTakeTimeSer $ SetTrajectorySer aid
-        timed <- cmdSerSem cmdS
+        let cmdS = ReqTimed $ ReqSetTrajectory aid
+        timed <- handleRequest cmdS
         assert timed skip
         b <- getsState $ getActorBody aid
         -- Colliding with a wall or actor doesn't take time, because
@@ -293,7 +293,7 @@ handleActors cmdSerSem lid = do
         -- Not advancing time forces dead projectiles to be destroyed ASAP.
         -- Otherwise it would be displayed in the same place twice.
         -- If ever needed this can be implemented properly by moving
-        -- SetTrajectorySer out of CmdTakeTimeSer.
+        -- SetTrajectorySer out of RequestTimed.
         unless (bhp b < 0 || maybe False null (btrajectory b)) $ do
           advanceTime aid
           extraFrames b
@@ -306,7 +306,7 @@ handleActors cmdSerSem lid = do
             execSfxAtomic
               $ MsgFidD side "You strain, fumble and faint from the exertion."
             return False
-          else cmdSerSem cmdS
+          else handleRequest cmdS
         setBWait cmdS aidNew bPre
         -- Advance time once, after the leader switched perhaps many times.
         -- TODO: this is correct only when all heroes have the same
@@ -332,18 +332,18 @@ handleActors cmdSerSem lid = do
         let mainUIactor = playerUI (gplayer fact) && aidIsLeader
         when mainUIactor $ execSfxAtomic $ RecordHistoryD side
         cmdTimed <- sendQueryAI side aid
-        let cmdS = CmdTakeTimeSer cmdTimed
+        let cmdS = ReqTimed cmdTimed
         (aidNew, bPre) <- switchLeader cmdS
         assert (not (bhp bPre <= 0 && not (bproj bPre))
                 `blame` "AI switches to an incapacitated actor"
                 `twith` (cmdS, bPre, side)) skip
-        timed <- cmdSerSem cmdS
+        timed <- handleRequest cmdS
         assert timed skip
         setBWait cmdS aidNew bPre
         -- AI always takes time and so doesn't loop.
         advanceTime aidNew
         extraFrames bPre
-      handleActors cmdSerSem lid
+      handleActors handleRequest lid
 
 dieSer :: (MonadAtomic m, MonadServer m) => ActorId -> Actor -> Bool -> m ()
 dieSer aid b hit = do

@@ -9,14 +9,14 @@ import Game.LambdaHack.Client.Action
 import Game.LambdaHack.Client.HumanGlobal
 import Game.LambdaHack.Client.HumanLocal
 import Game.LambdaHack.Common.HumanCmd
-import Game.LambdaHack.Common.ServerCmd
+import Game.LambdaHack.Common.Request
 
 -- | The semantics of human player commands in terms of the @Action@ monad.
 -- Decides if the action takes time and what action to perform.
 -- Some time cosuming commands are enabled in targeting mode, but cannot be
 -- invoked in targeting mode on a remote level (level different than
 -- the level of the leader).
-cmdHumanSem :: MonadClientUI m => HumanCmd -> m (SlideOrCmd CmdSer)
+cmdHumanSem :: MonadClientUI m => HumanCmd -> m (SlideOrCmd Request)
 cmdHumanSem cmd = do
   if noRemoteHumanCmd cmd then do
     -- If in targeting mode, check if the current level is the same
@@ -29,19 +29,19 @@ cmdHumanSem cmd = do
   else cmdAction cmd
 
 -- | Compute the basic action for a command and mark whether it takes time.
-cmdAction :: MonadClientUI m => HumanCmd -> m (SlideOrCmd CmdSer)
+cmdAction :: MonadClientUI m => HumanCmd -> m (SlideOrCmd Request)
 cmdAction cmd = case cmd of
-  Move v -> fmap (fmap CmdTakeTimeSer) $ moveRunHuman False v
-  Run v -> fmap (fmap CmdTakeTimeSer) $ moveRunHuman True v
-  Wait -> fmap Right $ fmap CmdTakeTimeSer waitHuman
+  Move v -> fmap (fmap ReqTimed) $ moveRunHuman False v
+  Run v -> fmap (fmap ReqTimed) $ moveRunHuman True v
+  Wait -> fmap Right $ fmap ReqTimed waitHuman
   MoveItem cLegalRaw toCStore verbRaw _ auto ->
-    fmap (fmap CmdTakeTimeSer) $ moveItemHuman cLegalRaw toCStore verbRaw auto
-  Project ts -> fmap (fmap CmdTakeTimeSer) $ projectHuman ts
-  Apply ts -> fmap (fmap CmdTakeTimeSer) $ applyHuman ts
-  AlterDir ts -> fmap (fmap CmdTakeTimeSer) $ alterDirHuman ts
-  TriggerTile ts -> fmap (fmap CmdTakeTimeSer) $ triggerTileHuman ts
-  StepToTarget -> fmap (fmap CmdTakeTimeSer) stepToTargetHuman
-  Resend -> fmap (fmap CmdTakeTimeSer) resendHuman
+    fmap (fmap ReqTimed) $ moveItemHuman cLegalRaw toCStore verbRaw auto
+  Project ts -> fmap (fmap ReqTimed) $ projectHuman ts
+  Apply ts -> fmap (fmap ReqTimed) $ applyHuman ts
+  AlterDir ts -> fmap (fmap ReqTimed) $ alterDirHuman ts
+  TriggerTile ts -> fmap (fmap ReqTimed) $ triggerTileHuman ts
+  StepToTarget -> fmap (fmap ReqTimed) stepToTargetHuman
+  Resend -> fmap (fmap ReqTimed) resendHuman
 
   GameRestart t -> gameRestartHuman t
   GameExit -> gameExitHuman
@@ -80,5 +80,5 @@ cmdAction cmd = case cmd of
   Cancel -> fmap Left $ cancelHuman mainMenuHuman
   Accept -> fmap Left $ acceptHuman helpHuman
 
-addNoSlides :: Monad m => m () -> m (SlideOrCmd CmdSer)
+addNoSlides :: Monad m => m () -> m (SlideOrCmd Request)
 addNoSlides cmdCli = cmdCli >> return (Left mempty)

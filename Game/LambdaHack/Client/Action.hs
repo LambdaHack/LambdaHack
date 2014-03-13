@@ -85,8 +85,8 @@ import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Common.Request
 import qualified Game.LambdaHack.Common.Save as Save
-import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
@@ -953,14 +953,14 @@ tryTakeMVarSescMVar = do
       mUnit <- liftIO $ tryTakeMVar escMVar
       return $ isJust mUnit
 
-pongUI :: (MonadClientUI m, MonadClientWriteServer CmdSer m) => m ()
+pongUI :: (MonadClientUI m, MonadClientWriteServer Request m) => m ()
 pongUI = do
   -- Ping the frontend, too.
   syncFrames
   escPressed <- tryTakeMVarSescMVar
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  let sendPong ats = writeServer $ CmdTakeTimeSer $ PongHackSer ats
+  let sendPong ats = writeServer $ ReqTimed $ ReqPongHack ats
       hasAiLeader = playerAiLeader $ gplayer fact
   if escPressed && hasAiLeader then do
     -- Ask server to turn off AI for the faction's leader.
@@ -984,5 +984,5 @@ failSlides slides = do
   stopPlayBack
   return $ Left slides
 
-failSer :: MonadClientUI m => FailureSer -> m (SlideOrCmd a)
-failSer = failWith . showFailureSer
+failSer :: MonadClientUI m => ReqFailure -> m (SlideOrCmd a)
+failSer = failWith . showReqFailure

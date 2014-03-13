@@ -54,9 +54,9 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Save
 import qualified Game.LambdaHack.Common.Save as Save
-import Game.LambdaHack.Common.ServerCmd
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
@@ -121,23 +121,23 @@ writeTQueueUI cmd fromServer = do
     liftIO $ T.hPutStrLn stderr d
   liftIO $ atomically $ STM.writeTQueue fromServer cmd
 
-readTQueueAI :: MonadConnServer m => TQueue CmdTakeTimeSer -> m CmdTakeTimeSer
+readTQueueAI :: MonadConnServer m => TQueue RequestTimed -> m RequestTimed
 readTQueueAI toServer = do
   cmd <- liftIO $ atomically $ STM.readTQueue toServer
   debug <- getsServer $ sniffIn . sdebugSer
   when debug $ do
-    let aid = aidCmdTakeTimeSer cmd
-    d <- debugAid aid "CmdTakeTimeSer" cmd
+    let aid = aidOfRequestTimed cmd
+    d <- debugAid aid "RequestTimed" cmd
     liftIO $ T.hPutStrLn stderr d
   return $! cmd
 
-readTQueueUI :: MonadConnServer m => TQueue CmdSer -> m CmdSer
+readTQueueUI :: MonadConnServer m => TQueue Request -> m Request
 readTQueueUI toServer = do
   cmd <- liftIO $ atomically $ STM.readTQueue toServer
   debug <- getsServer $ sniffIn . sdebugSer
   when debug $ do
-    let aid = aidCmdSer cmd
-    d <- debugAid aid "CmdSer" cmd
+    let aid = aidOfRequest cmd
+    d <- debugAid aid "Request" cmd
     liftIO $ T.hPutStrLn stderr d
   return $! cmd
 
@@ -146,7 +146,7 @@ sendUpdateAI fid cmd = do
   conn <- getsDict $ snd . (EM.! fid)
   writeTQueueAI cmd $ fromServer conn
 
-sendQueryAI :: MonadConnServer m => FactionId -> ActorId -> m CmdTakeTimeSer
+sendQueryAI :: MonadConnServer m => FactionId -> ActorId -> m RequestTimed
 sendQueryAI fid aid = do
   conn <- getsDict $ snd . (EM.! fid)
   writeTQueueAI (CmdQueryAI aid) $ fromServer conn
@@ -161,7 +161,7 @@ sendPingAI fid = do
   cmdHack <- readTQueueAI $ toServer conn
   -- debugPrint $ "AI client" <+> tshow fid <+> "responded."
   case cmdHack of
-    PongHackSer ats -> mapM_ execAtomic ats
+    ReqPongHack ats -> mapM_ execAtomic ats
     _ -> assert `failure` (fid, cmdHack)
 
 sendUpdateUI :: MonadConnServer m => FactionId -> CmdClientUI -> m ()
@@ -173,7 +173,7 @@ sendUpdateUI fid cmd = do
       writeTQueueUI cmd $ fromServer conn
 
 sendQueryUI :: (MonadAtomic m, MonadConnServer m)
-            => FactionId -> ActorId -> m CmdSer
+            => FactionId -> ActorId -> m Request
 sendQueryUI fid aid = do
   cs <- getsDict $ fst . (EM.! fid)
   case cs of
@@ -193,7 +193,7 @@ sendPingUI fid = do
       cmdHack <- readTQueueUI $ toServer conn
       -- debugPrint $ "UI client" <+> tshow fid <+> "responded."
       case cmdHack of
-        CmdTakeTimeSer (PongHackSer ats) -> mapM_ execAtomic ats
+        ReqTimed (ReqPongHack ats) -> mapM_ execAtomic ats
         _ -> assert `failure` (fid, cmdHack)
 
 -- TODO: refactor wrt Game.LambdaHack.Common.Save
@@ -417,10 +417,10 @@ childrenServer = unsafePerformIO (newMVar [])
 updateConn :: (MonadAtomic m, MonadConnServer m)
            => (FactionId
                -> Frontend.ChanFrontend
-               -> ChanServer CmdClientUI CmdSer
+               -> ChanServer CmdClientUI Request
                -> IO ())
            -> (FactionId
-               -> ChanServer CmdClientAI CmdTakeTimeSer
+               -> ChanServer CmdClientAI RequestTimed
                -> IO ())
            -> m ()
 updateConn executorUI executorAI = do

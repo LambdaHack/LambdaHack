@@ -30,14 +30,14 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Common.ServerCmd
+import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Utils.Frequency
 
-queryAI :: MonadClient m => ActorId -> m CmdTakeTimeSer
+queryAI :: MonadClient m => ActorId -> m RequestTimed
 queryAI oldAid = do
   Kind.COps{cotile, cofaction=Kind.Ops{okind}} <- getsState scops
   oldBody <- getsState $ getActorBody oldAid
@@ -191,7 +191,7 @@ refreshTarget oldLeader (aid, body) = do
     Just (tgt, Just pathEtc) -> Just ((aid, body), (tgt, pathEtc))
     _ -> Nothing
 
-queryAIPick :: MonadClient m => (ActorId, Actor) -> m CmdTakeTimeSer
+queryAIPick :: MonadClient m => (ActorId, Actor) -> m RequestTimed
 queryAIPick (aid, body) = do
   side <- getsClient sside
   assert (bfid body == side `blame` "AI tries to move enemy actor"
@@ -203,7 +203,7 @@ queryAIPick (aid, body) = do
   rndToAction $ frequency $ bestVariant stratAction
 
 -- | Handle the move of a UI player.
-queryUI :: MonadClientUI m => ActorId -> m CmdSer
+queryUI :: MonadClientUI m => ActorId -> m Request
 queryUI aid = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
@@ -234,19 +234,19 @@ queryUI aid = do
           humanCommand msg
         Right (paramNew, runCmd) -> do
           modifyClient $ \cli -> cli {srunning = Just paramNew}
-          return $! CmdTakeTimeSer runCmd
+          return $! ReqTimed runCmd
 
 -- | Determine and process the next human player command. The argument is
 -- the last stop message due to running, if any.
 humanCommand :: forall m. MonadClientUI m
              => Maybe Msg
-             -> m CmdSer
+             -> m Request
 humanCommand msgRunStop = do
   -- For human UI we invalidate whole @sbfsD@ at the start of each
   -- UI player input, which is an overkill, but doesn't affects
   -- screensavers, because they are UI, but not human.
   modifyClient $ \cli -> cli {sbfsD = EM.empty}
-  let loop :: Maybe (Bool, Overlay) -> m CmdSer
+  let loop :: Maybe (Bool, Overlay) -> m Request
       loop mover = do
         (lastBlank, over) <- case mover of
           Nothing -> do
@@ -298,7 +298,7 @@ humanCommand msgRunStop = do
             -- and no slides could have been generated.
             modifyClient $ \cli -> cli {slastKey = Nothing}
             case cmdS of
-              CmdTakeTimeSer cmd ->
+              ReqTimed cmd ->
                 modifyClient $ \cli -> cli {slastCmd = Just cmd}
               _ -> return ()
             return cmdS

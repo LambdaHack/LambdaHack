@@ -20,7 +20,7 @@ import Game.LambdaHack.Common.AtomicPos
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
-import Game.LambdaHack.Common.ServerCmd
+import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Frontend
@@ -103,8 +103,8 @@ data ChanServer c d = ChanServer
 
 -- | Connections to the human-controlled client of a faction and
 -- to the AI client for the same faction.
-type ConnServerFaction = ( Maybe (ChanFrontend, ChanServer CmdClientUI CmdSer)
-                         , ChanServer CmdClientAI CmdTakeTimeSer )
+type ConnServerFaction = ( Maybe (ChanFrontend, ChanServer CmdClientUI Request)
+                         , ChanServer CmdClientAI RequestTimed )
 
 -- | Connection information for all factions, indexed by faction identifier.
 type ConnServerDict = EM.EnumMap FactionId ConnServerFaction

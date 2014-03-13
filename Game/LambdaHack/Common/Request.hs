@@ -1,9 +1,9 @@
 -- | Abstract syntax of server commands.
 -- See
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
-module Game.LambdaHack.Common.ServerCmd
-  ( CmdSer(..), CmdTakeTimeSer(..), aidCmdSer, aidCmdTakeTimeSer
-  , FailureSer(..), showFailureSer
+module Game.LambdaHack.Common.Request
+  ( Request(..), RequestTimed(..), aidOfRequest, aidOfRequestTimed
+  , ReqFailure(..), showReqFailure
   ) where
 
 import Data.Text (Text)
@@ -18,53 +18,53 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Vector
 
 -- | Abstract syntax of server commands.
-data CmdSer =
-    CmdTakeTimeSer !CmdTakeTimeSer
-  | GameRestartSer !ActorId !Text !Int ![(Int, Text)]
-  | GameExitSer !ActorId !Int
-  | GameSaveSer !ActorId
-  | AutomateSer !ActorId
+data Request =
+    ReqTimed !RequestTimed
+  | ReqGameRestart !ActorId !Text !Int ![(Int, Text)]
+  | ReqGameExit !ActorId !Int
+  | ReqGameSave !ActorId
+  | ReqAutomate !ActorId
   deriving (Show, Eq)
 
-data CmdTakeTimeSer =
-    MoveSer !ActorId !Vector
-  | MeleeSer !ActorId !ActorId
-  | DisplaceSer !ActorId !ActorId
-  | AlterSer !ActorId !Point !(Maybe F.Feature)
-  | WaitSer !ActorId
-  | MoveItemSer !ActorId !ItemId !Int !CStore !CStore
-  | ProjectSer !ActorId !Point !Int !ItemId !CStore
-  | ApplySer !ActorId !ItemId !CStore
-  | TriggerSer !ActorId !(Maybe F.Feature)
-  | SetTrajectorySer !ActorId
-  | PongHackSer [Atomic]
+data RequestTimed =
+    ReqMove !ActorId !Vector
+  | ReqMelee !ActorId !ActorId
+  | ReqDisplace !ActorId !ActorId
+  | ReqAlter !ActorId !Point !(Maybe F.Feature)
+  | ReqWait !ActorId
+  | ReqMoveItem !ActorId !ItemId !Int !CStore !CStore
+  | ReqProject !ActorId !Point !Int !ItemId !CStore
+  | ReqApply !ActorId !ItemId !CStore
+  | ReqTrigger !ActorId !(Maybe F.Feature)
+  | ReqSetTrajectory !ActorId
+  | ReqPongHack [Atomic]
   deriving (Show, Eq)
 
 -- | The actor that starts performing the command (may be dead, after
 -- the command is performed).
-aidCmdSer :: CmdSer -> ActorId
-aidCmdSer cmd = case cmd of
-  CmdTakeTimeSer cmd2 -> aidCmdTakeTimeSer cmd2
-  GameRestartSer aid _ _ _ -> aid
-  GameExitSer aid _ -> aid
-  GameSaveSer aid -> aid
-  AutomateSer aid -> aid
+aidOfRequest :: Request -> ActorId
+aidOfRequest cmd = case cmd of
+  ReqTimed cmd2 -> aidOfRequestTimed cmd2
+  ReqGameRestart aid _ _ _ -> aid
+  ReqGameExit aid _ -> aid
+  ReqGameSave aid -> aid
+  ReqAutomate aid -> aid
 
-aidCmdTakeTimeSer :: CmdTakeTimeSer -> ActorId
-aidCmdTakeTimeSer cmd = case cmd of
-  MoveSer aid _ -> aid
-  MeleeSer aid _ -> aid
-  DisplaceSer aid _ -> aid
-  AlterSer aid _ _ -> aid
-  WaitSer aid -> aid
-  MoveItemSer aid _ _ _ _ -> aid
-  ProjectSer aid _ _ _ _ -> aid
-  ApplySer aid _ _ -> aid
-  TriggerSer aid _ -> aid
-  SetTrajectorySer aid -> aid
-  PongHackSer _ -> toEnum (-1)  -- needed for --sniffIn
+aidOfRequestTimed :: RequestTimed -> ActorId
+aidOfRequestTimed cmd = case cmd of
+  ReqMove aid _ -> aid
+  ReqMelee aid _ -> aid
+  ReqDisplace aid _ -> aid
+  ReqAlter aid _ _ -> aid
+  ReqWait aid -> aid
+  ReqMoveItem aid _ _ _ _ -> aid
+  ReqProject aid _ _ _ _ -> aid
+  ReqApply aid _ _ -> aid
+  ReqTrigger aid _ -> aid
+  ReqSetTrajectory aid -> aid
+  ReqPongHack _ -> toEnum (-1)  -- needed for --sniffIn
 
-data FailureSer =
+data ReqFailure =
     MoveNothing
   | MeleeSelf
   | MeleeDistant
@@ -85,8 +85,8 @@ data FailureSer =
   | ProjectNotCalm
   | TriggerNothing
 
-showFailureSer :: FailureSer -> Msg
-showFailureSer failureSer = case failureSer of
+showReqFailure :: ReqFailure -> Msg
+showReqFailure reqFailure = case reqFailure of
   MoveNothing -> "wasting time on moving into obstacle"
   MeleeSelf -> "trying to melee oneself"
   MeleeDistant -> "trying to melee a distant foe"
