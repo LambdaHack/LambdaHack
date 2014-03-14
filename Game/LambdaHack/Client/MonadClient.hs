@@ -1,12 +1,16 @@
-{-# LANGUAGE FlexibleContexts, TupleSections #-}
+{-# LANGUAGE FlexibleContexts, FunctionalDependencies, RankNTypes, TupleSections
+             #-}
 -- | Game action monads and basic building blocks for human and computer
 -- player actions. Has no access to the the main action type.
 -- Does not export the @liftIO@ operation nor a few other implementation
 -- details.
 module Game.LambdaHack.Client.MonadClient
   ( -- * Action monads
-    MonadClient( getClient, getsClient, putClient, modifyClient, saveClient )
-  , MonadClientUI
+    MonadClient( getClient, getsClient, modifyClient, putClient, saveClient
+               , liftIO  -- ^ exposed only to be implemented, not used
+               )
+  , MonadClientUI( getsSession  -- ^ exposed only to be implemented, not used
+                 )
   , MonadClientReadServer(..), MonadClientWriteServer(..)
   , SessionUI(..), ConnFrontend(..), connFrontend
     -- * Executing actions
@@ -26,7 +30,7 @@ module Game.LambdaHack.Client.MonadClient
     -- * Assorted primitives
   , restoreGame, removeServerSave, displayPush, scoreToSlideshow
   , rndToAction, getArenaUI, getLeaderUI, targetDescLeader, viewedLevel
-  , aidTgtToPos, aidTgtAims, makeLine
+  , aidTgtToPos, aidTgtAims, makeLine, saveName
   , leaderTgtToPos, leaderTgtAims, cursorToPos
   , partAidLeader, partActorLeader, unexploredDepth
   , getCacheBfsAndPath, getCacheBfs, accessCacheBfs
@@ -64,7 +68,6 @@ import Text.Read
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.ConfigUI
 import Game.LambdaHack.Client.Draw
-import Game.LambdaHack.Client.MonadClient.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Ability (Ability)
 import Game.LambdaHack.Common.Action
@@ -98,6 +101,51 @@ import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Frontend as Frontend
 import Game.LambdaHack.Utils.File
+
+-- | The information that is constant across a client playing session,
+-- including many consecutive games in a single session,
+-- but is completely disregarded and reset when a new playing session starts.
+-- Auxiliary AI and computer player clients have no @sfs@ nor @sbinding@.
+data SessionUI = SessionUI
+  { sfconn   :: !ConnFrontend  -- ^ connection with the frontend
+  , sbinding :: !Binding       -- ^ binding of keys to commands
+  , sescMVar :: !(Maybe (MVar ()))
+  }
+
+-- | Connection method between a client and a frontend.
+data ConnFrontend = ConnFrontend
+  { readConnFrontend  :: MonadClientUI m => m K.KM
+      -- ^ read a keystroke received from the frontend
+  , writeConnFrontend :: MonadClientUI m => Frontend.FrontReq -> m ()
+      -- ^ write a UI request to the frontend
+  }
+
+class MonadActionRO m => MonadClient m where
+  getClient    :: m StateClient
+  getsClient   :: (StateClient -> a) -> m a
+  modifyClient :: (StateClient -> StateClient) -> m ()
+  putClient    :: StateClient -> m ()
+  -- We do not provide a MonadIO instance, so that outside of Action/
+  -- nobody can subvert the action monads by invoking arbitrary IO.
+  liftIO       :: IO a -> m a
+  saveClient   :: m ()
+
+class MonadClient m => MonadClientUI m where
+  getsSession  :: (SessionUI -> a) -> m a
+
+class MonadClient m => MonadClientReadServer c m | m -> c where
+  readServer  :: m c
+
+class MonadClient m => MonadClientWriteServer d m | m -> d where
+  writeServer  :: d -> m ()
+
+saveName :: FactionId -> Bool -> String
+saveName side isAI =
+  let n = fromEnum side  -- we depend on the numbering hack to number saves
+  in (if n > 0
+      then "human_" ++ show n
+      else "computer_" ++ show (-n))
+     ++ if isAI then ".ai.sav" else ".ui.sav"
 
 debugPrint :: MonadClient m => Text -> m ()
 debugPrint t = do

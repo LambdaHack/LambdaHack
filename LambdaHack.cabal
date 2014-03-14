@@ -66,8 +66,6 @@ flag curses
 library
   exposed-modules:    Game.LambdaHack.Client,
                       Game.LambdaHack.Client.MonadClient,
-                      Game.LambdaHack.Client.MonadClient.MonadClient,
-                      Game.LambdaHack.Client.MonadClient.SampleImplementationMonadClient,
                       Game.LambdaHack.Client.AtomicSemCli,
                       Game.LambdaHack.Client.Binding,
                       Game.LambdaHack.Client.ClientSem,
@@ -128,10 +126,10 @@ library
                       Game.LambdaHack.Frontend,
                       Game.LambdaHack.Frontend.Chosen,
                       Game.LambdaHack.Frontend.Std,
+                      Game.LambdaHack.SampleImplementation.SampleImplementationMonadClient,
+                      Game.LambdaHack.SampleImplementation.SampleImplementationMonadServer,
                       Game.LambdaHack.Server,
                       Game.LambdaHack.Server.MonadServer,
-                      Game.LambdaHack.Server.MonadServer.MonadServer,
-                      Game.LambdaHack.Server.MonadServer.SampleImplementationMonadServer,
                       Game.LambdaHack.Server.AtomicSemSer,
                       Game.LambdaHack.Server.DungeonGen,
                       Game.LambdaHack.Server.DungeonGen.Area

@@ -4,8 +4,14 @@
 -- details.
 module Game.LambdaHack.Server.MonadServer
   ( -- * Action monads
-    MonadServer( getServer, getsServer, putServer, modifyServer, saveServer )
-  , MonadConnServer
+    MonadServer( getServer, getsServer, modifyServer, putServer, saveServer
+               , liftIO  -- ^ exposed only to be implemented, not used
+               )
+  , MonadConnServer( getDict -- ^ exposed only to be implemented, not used
+                   , getsDict  -- ^ exposed only to be implemented, not used
+                   , modifyDict  -- ^ exposed only to be implemented, not used
+                   , putDict  -- ^ exposed only to be implemented, not used
+                   )
   , tryRestore, updateConn, killAllClients, speedupCOps
     -- * Communication
   , sendUpdateAI, sendQueryAI, sendPingAI
@@ -16,7 +22,7 @@ module Game.LambdaHack.Server.MonadServer
   , rndToAction, resetSessionStart, resetGameStart, elapsedSessionTimeGT
   , tellAllClipPS, tellGameClipPS
   , resetFidPerception, getPerFid
-  , childrenServer
+  , childrenServer, saveName
   ) where
 
 import Control.Concurrent
@@ -50,6 +56,7 @@ import qualified Game.LambdaHack.Common.HighScore as HighScore
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Random
@@ -64,9 +71,27 @@ import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Frontend as Frontend
 import Game.LambdaHack.Server.Fov
-import Game.LambdaHack.Server.MonadServer.MonadServer
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.Utils.File
+
+class MonadActionRO m => MonadServer m where
+  getServer    :: m StateServer
+  getsServer   :: (StateServer -> a) -> m a
+  modifyServer :: (StateServer -> StateServer) -> m ()
+  putServer    :: StateServer -> m ()
+  -- We do not provide a MonadIO instance, so that outside of Action/
+  -- nobody can subvert the action monads by invoking arbitrary IO.
+  liftIO       :: IO a -> m a
+  saveServer   :: m ()
+
+class MonadServer m => MonadConnServer m where
+  getDict      :: m ConnServerDict
+  getsDict     :: (ConnServerDict -> a) -> m a
+  modifyDict   :: (ConnServerDict -> ConnServerDict) -> m ()
+  putDict      :: ConnServerDict -> m ()
+
+saveName :: String
+saveName = serverSaveName
 
 debugPrint :: MonadServer m => Text -> m ()
 debugPrint t = do

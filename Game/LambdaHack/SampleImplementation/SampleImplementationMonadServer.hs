@@ -3,7 +3,7 @@
 -- component of the library, this implementation can be substituted.
 -- This module should not be imported anywhere except in 'Action'
 -- to expose the executor to any code using the library.
-module Game.LambdaHack.Server.MonadServer.SampleImplementationMonadServer
+module Game.LambdaHack.SampleImplementation.SampleImplementationMonadServer
   ( executorSer
   ) where
 
@@ -19,7 +19,7 @@ import Game.LambdaHack.Common.Response
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Server.AtomicSemSer
-import Game.LambdaHack.Server.MonadServer.MonadServer
+import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
 
 data SerState = SerState

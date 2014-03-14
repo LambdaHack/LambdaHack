@@ -12,10 +12,10 @@ import qualified Content.PlaceKind
 import qualified Content.RuleKind
 import qualified Content.TileKind
 import Game.LambdaHack.Client
-import Game.LambdaHack.Client.MonadClient.SampleImplementationMonadClient
 import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.SampleImplementation.SampleImplementationMonadClient
+import Game.LambdaHack.SampleImplementation.SampleImplementationMonadServer
 import Game.LambdaHack.Server
-import Game.LambdaHack.Server.MonadServer.SampleImplementationMonadServer
 
 -- | Tie the LambdaHack engine clients and server code
 -- with the LambdaHack-specific content defintions and run the game.
