@@ -41,7 +41,7 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind as TileKind
-import Game.LambdaHack.Server.EffectSem
+import Game.LambdaHack.Server.HandleEffectServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
 

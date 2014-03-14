@@ -140,7 +140,7 @@ library
                       Game.LambdaHack.Server.DungeonGen.AreaRnd,
                       Game.LambdaHack.Server.DungeonGen.Cave,
                       Game.LambdaHack.Server.DungeonGen.Place,
-                      Game.LambdaHack.Server.EffectSem,
+                      Game.LambdaHack.Server.HandleEffectServer,
                       Game.LambdaHack.Server.Fov,
                       Game.LambdaHack.Server.Fov.Common,
                       Game.LambdaHack.Server.Fov.Digital,

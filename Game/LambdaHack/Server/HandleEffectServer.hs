@@ -1,6 +1,5 @@
--- | Effect semantics.
--- TODO: document
-module Game.LambdaHack.Server.EffectSem
+-- | Handle effects (most often caused by requests sent by clients).
+module Game.LambdaHack.Server.HandleEffectServer
   ( -- + Semantics of effects
     itemEffect, effectSem
     -- * Assorted operations
