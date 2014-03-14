@@ -20,6 +20,7 @@ import Game.LambdaHack.Atomic.MonadAtomic
 import Game.LambdaHack.Common.Action
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Server.CommonServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.ProtocolServer
 import Game.LambdaHack.Server.State

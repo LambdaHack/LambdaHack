@@ -19,7 +19,7 @@ import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Frontend
 import Game.LambdaHack.Server.HandleRequestServer
-import Game.LambdaHack.Server.LoopAction
+import Game.LambdaHack.Server.LoopServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.ProtocolServer
 import Game.LambdaHack.Server.State

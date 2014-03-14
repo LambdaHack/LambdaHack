@@ -1,19 +1,12 @@
 -- | Handle effects (most often caused by requests sent by clients).
 module Game.LambdaHack.Server.HandleEffectServer
-  ( -- + Semantics of effects
-    itemEffect, effectSem
-    -- * Assorted operations
-  , registerItem, createItems, addHero, spawnMonsters
-  , electLeader, deduceKilled
+  ( itemEffect, effectSem
   ) where
 
 import Control.Exception.Assert.Sugar
 import Control.Monad
-import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.HashMap.Strict as HM
 import Data.Key (mapWithKeyM_)
-import Data.List
 import Data.Maybe
 import Data.Ratio ((%))
 import Data.Text (Text)
@@ -23,13 +16,11 @@ import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
-import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
@@ -37,9 +28,9 @@ import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
-import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.Server.CommonServer
 import Game.LambdaHack.Server.MonadServer
+import Game.LambdaHack.Server.PeriodicServer
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.Utils.Frequency
 
@@ -192,32 +183,6 @@ effectDominate source target = do
     execUpdAtomic $ UpdLeadFaction (bfid sb) leaderOld (Just target)
     return True
 
-electLeader :: MonadAtomic m => FactionId -> LevelId -> ActorId -> m ()
-electLeader fid lid aidDead = do
-  mleader <- getsState $ gleader . (EM.! fid) . sfactionD
-  when (isNothing mleader || mleader == Just aidDead) $ do
-    actorD <- getsState sactorD
-    let ours (_, b) = bfid b == fid && not (bproj b)
-        party = filter ours $ EM.assocs actorD
-    onLevel <- getsState $ actorNotProjAssocs (== fid) lid
-    let mleaderNew = listToMaybe $ filter (/= aidDead)
-                     $ map fst $ onLevel ++ party
-    unless (mleader == mleaderNew) $
-      execUpdAtomic $ UpdLeadFaction fid mleader mleaderNew
-
-deduceKilled :: (MonadAtomic m, MonadServer m) => Actor -> m ()
-deduceKilled body = do
-  cops@Kind.COps{corule} <- getsState scops
-  let firstDeathEnds = rfirstDeathEnds $ Kind.stdRuleset corule
-      fid = bfid body
-  spawn <- getsState $ isSpawnFaction fid
-  fact <- getsState $ (EM.! fid) . sfactionD
-  let horror = isHorrorFact cops fact
-  mleader <- getsState $ gleader . (EM.! fid) . sfactionD
-  when (not spawn && not horror
-        && (isNothing mleader || firstDeathEnds)) $
-    deduceQuits body $ Status Killed (fromEnum $ blid body) ""
-
 -- ** SummonFriend
 
 effectCallFriend :: (MonadAtomic m, MonadServer m)
@@ -251,52 +216,6 @@ summonFriends bfid ps lid = do
   -- No leader election needed, bebause an alive actor of the same faction
   -- causes the effect, so there is already a leader.
 
-addActor :: (MonadAtomic m, MonadServer m)
-         => Kind.Id ActorKind -> FactionId -> Point -> LevelId -> Int -> Int
-         -> Char -> Text -> Color.Color -> Time
-         -> m ActorId
-addActor mk bfid pos lid hp calm bsymbol bname bcolor time = do
-  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
-  Faction{gplayer} <- getsState $ (EM.! bfid) . sfactionD
-  DebugModeSer{sdifficultySer} <- getsServer sdebugSer
-  nU <- nUI
-  -- If no UI factions, the difficulty applies to heroes (for testing).
-  let diffHP | playerUI gplayer || nU == 0 && mk == heroKindId coactor =
-        (ceiling :: Double -> Int) $ fromIntegral hp
-                                     * 1.5 ^^ difficultyCoeff sdifficultySer
-             | otherwise = hp
-      kind = okind mk
-      speed = aspeed kind
-      m = actorTemplate mk bsymbol bname bcolor speed diffHP calm
-                        Nothing pos lid time bfid False
-  acounter <- getsServer sacounter
-  modifyServer $ \ser -> ser {sacounter = succ acounter}
-  execUpdAtomic $ UpdCreateActor acounter m []
-  return $! acounter
-
--- | Create a new hero on the current level, close to the given position.
-addHero :: (MonadAtomic m, MonadServer m)
-        => FactionId -> Point -> LevelId -> [(Int, Text)] -> Maybe Int -> Time
-        -> m ActorId
-addHero bfid ppos lid heroNames mNumber time = do
-  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
-  Faction{gcolor, gplayer} <- getsState $ (EM.! bfid) . sfactionD
-  let kId = heroKindId coactor
-  hp <- rndToAction $ castDice $ ahp $ okind kId
-  calm <- rndToAction $ castDice $ acalm $ okind kId
-  mhs <- mapM (\n -> getsState $ \s -> tryFindHeroK s bfid n) [0..9]
-  let freeHeroK = elemIndex Nothing mhs
-      n = fromMaybe (fromMaybe 100 freeHeroK) mNumber
-      symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
-      nameFromNumber 0 = "Captain"
-      nameFromNumber k = "Hero" <+> tshow k
-      name | gcolor == Color.BrWhite =
-        fromMaybe (nameFromNumber n) $ lookup n heroNames
-           | otherwise =
-        playerName gplayer <+> nameFromNumber n
-      startHP = hp - (min 10 $ hp `div` 10) * min 5 n
-  addActor kId bfid ppos lid startHP calm symbol name gcolor time
-
 -- ** SpawnMonster
 
 effectSummon :: (MonadAtomic m, MonadServer m)
@@ -314,24 +233,6 @@ effectSummon power target = assert (power > 0) $ do
       spawnMonsters (take power ps) (blid tm) time fid
       return True
 
--- | Spawn non-hero actors of any faction, friendly or not.
--- To be used for initial dungeon population, spontaneous spawning
--- of monsters and for the summon effect.
-spawnMonsters :: (MonadAtomic m, MonadServer m)
-              => [Point] -> LevelId -> Time -> FactionId
-              -> m ()
-spawnMonsters ps lid time fid = assert (not $ null ps) $ do
-  Kind.COps{coactor=Kind.Ops{opick}, cofaction=Kind.Ops{okind}} <- getsState scops
-  fact <- getsState $ (EM.! fid) . sfactionD
-  let spawnName = fname $ okind $ gkind fact
-  laid <- forM ps $ \ p -> do
-    mk <- rndToAction $ fmap (fromMaybe $ assert `failure` spawnName)
-                        $ opick spawnName (const True)
-    addMonster mk fid p lid time
-  mleader <- getsState $ gleader . (EM.! fid) . sfactionD  -- just changed
-  when (isNothing mleader) $
-    execUpdAtomic $ UpdLeadFaction fid Nothing (Just $ head laid)
-
 -- | Roll a faction based on faction kind frequency key.
 pickFaction :: MonadServer m
             => Text
@@ -348,19 +249,6 @@ pickFaction freqChoice ffilter = do
   if nullFreq freq then return Nothing
   else fmap Just $ rndToAction $ frequency freq
 
--- | Create a new monster on the level, at a given position
--- and with a given actor kind and HP.
-addMonster :: (MonadAtomic m, MonadServer m)
-           => Kind.Id ActorKind -> FactionId -> Point -> LevelId -> Time
-           -> m ActorId
-addMonster mk bfid ppos lid time = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-  let kind = okind mk
-  hp <- rndToAction $ castDice $ ahp kind
-  calm <- rndToAction $ castDice $ acalm kind
-  addActor mk bfid ppos lid hp calm (asymbol kind) (aname kind)
-           (acolor kind) time
-
 -- ** CreateItem
 
 effectCreateItem :: (MonadAtomic m, MonadServer m)
@@ -370,39 +258,6 @@ effectCreateItem power target = assert (power > 0) $ do
   tm <- getsState $ getActorBody target
   void $ createItems power (bpos tm) (blid tm)
   return True
-
-createItems :: (MonadAtomic m, MonadServer m)
-            => Int -> Point -> LevelId -> m ()
-createItems n pos lid = do
-  Kind.COps{coitem} <- getsState scops
-  flavour <- getsServer sflavour
-  discoRev <- getsServer sdiscoRev
-  Level{ldepth, litemFreq} <- getLevel lid
-  depth <- getsState sdepth
-  let container = CFloor lid pos
-  replicateM_ n $ do
-    (item, k, _) <- rndToAction
-                    $ newItem coitem flavour discoRev litemFreq ldepth depth
-    void $ registerItem item k container True
-
-registerItem :: (MonadAtomic m, MonadServer m)
-             => Item -> Int -> Container -> Bool -> m ItemId
-registerItem item k container verbose = do
-  itemRev <- getsServer sitemRev
-  let cmd = if verbose then UpdCreateItem else UpdSpotItem
-  case HM.lookup item itemRev of
-    Just iid -> do
-      -- TODO: try to avoid this case for createItems,
-      -- to make items more interesting
-      execUpdAtomic $ cmd iid item k container
-      return iid
-    Nothing -> do
-      icounter <- getsServer sicounter
-      modifyServer $ \ser ->
-        ser { sicounter = succ icounter
-            , sitemRev = HM.insert item icounter (sitemRev ser) }
-      execUpdAtomic $ cmd icounter item k container
-      return $! icounter
 
 -- ** ApplyPerfume
 

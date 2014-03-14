@@ -1,6 +1,6 @@
 -- | Operations for starting and restarting the game.
-module Game.LambdaHack.Server.StartAction
-  ( applyDebug, gameReset, reinitGame, saveBkpAll, initPer
+module Game.LambdaHack.Server.StartServer
+  ( gameReset, reinitGame, initPer, applyDebug, initDebug
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -40,27 +40,12 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
+import Game.LambdaHack.Server.CommonServer
 import qualified Game.LambdaHack.Server.DungeonGen as DungeonGen
 import Game.LambdaHack.Server.Fov
-import Game.LambdaHack.Server.HandleEffectServer
 import Game.LambdaHack.Server.MonadServer
-import Game.LambdaHack.Server.ProtocolServer
+import Game.LambdaHack.Server.PeriodicServer
 import Game.LambdaHack.Server.State
-
--- | Apply debug options that don't need a new game.
-applyDebug :: MonadServer m => m ()
-applyDebug = do
-  DebugModeSer{..} <- getsServer sdebugNxt
-  modifyServer $ \ser ->
-    ser {sdebugSer = (sdebugSer ser) { sniffIn
-                                     , sniffOut
-                                     , sallClear
-                                     , sfovMode
-                                     , sstopAfter
-                                     , sdbgMsgSer
-                                     , snewGameSer
-                                     , sdumpInitRngs
-                                     , sdebugCli }}
 
 initPer :: MonadServer m => m ()
 initPer = do
@@ -69,7 +54,7 @@ initPer = do
   pers <- getsState $ dungeonPerception cops (fromMaybe (Digital 12) fovMode)
   modifyServer $ \ser1 -> ser1 {sper = pers}
 
-reinitGame :: (MonadAtomic m, MonadServerReadRequest m) => m ()
+reinitGame :: (MonadAtomic m, MonadServer m) => m ()
 reinitGame = do
   Kind.COps{coitem=Kind.Ops{okind}, corule} <- getsState scops
   pers <- getsServer sper
@@ -90,25 +75,6 @@ reinitGame = do
   broadcastUpdAtomic
     $ \fid -> UpdRestart fid sdisco (pers EM.! fid) defLoc sdebugCli modeName
   populateDungeon
-  saveBkpAll False
-
--- TODO: This can be improved by adding a timeout
--- and by asking clients to prepare
--- a save (in this way checking they have permissions, enough space, etc.)
--- and when all report back, asking them to commit the save.
--- | Save game on server and all clients. Clients are pinged first,
--- which greatly reduced the chance of saves being out of sync.
-saveBkpAll :: (MonadAtomic m, MonadServerReadRequest m) => Bool -> m ()
-saveBkpAll unconditional = do
-  bench <- getsServer $ sbenchmark . sdebugSer
-  when (unconditional || not bench) $ do
-    factionD <- getsState sfactionD
-    let ping fid _ = do
-          sendPingAI fid
-          when (playerUI $ gplayer $ factionD EM.! fid) $ sendPingUI fid
-    mapWithKeyM_ ping factionD
-    execUpdAtomic UpdSaveBkp
-    saveServer
 
 mapFromFuns :: (Bounded a, Enum a, Ord b) => [a -> b] -> M.Map b a
 mapFromFuns =
@@ -289,3 +255,28 @@ findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lysize, lstair} k = do
          tryFind [middlePos] k
     _ | k > 2 -> tryFind [] k
     _ -> assert `failure` k
+
+initDebug :: MonadReadState m => Kind.COps -> DebugModeSer -> m DebugModeSer
+initDebug Kind.COps{corule} sdebugSer = do
+  let stdRuleset = Kind.stdRuleset corule
+  return $!
+    (\dbg -> dbg {sfovMode =
+        sfovMode dbg `mplus` Just (rfovMode stdRuleset)}) .
+    (\dbg -> dbg {ssavePrefixSer =
+        ssavePrefixSer dbg `mplus` Just (rsavePrefix stdRuleset)})
+    $ sdebugSer
+
+-- | Apply debug options that don't need a new game.
+applyDebug :: MonadServer m => m ()
+applyDebug = do
+  DebugModeSer{..} <- getsServer sdebugNxt
+  modifyServer $ \ser ->
+    ser {sdebugSer = (sdebugSer ser) { sniffIn
+                                     , sniffOut
+                                     , sallClear
+                                     , sfovMode
+                                     , sstopAfter
+                                     , sdbgMsgSer
+                                     , snewGameSer
+                                     , sdumpInitRngs
+                                     , sdebugCli }}

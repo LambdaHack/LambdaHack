@@ -7,13 +7,12 @@ module Game.LambdaHack.Server.MonadServer
     MonadServer( getServer, getsServer, modifyServer, putServer, saveServer
                , liftIO  -- exposed only to be implemented, not used
                )
-  , tryRestore, speedupCOps
     -- * Assorted primitives
-  , debugPrint, dumpRngs
-  , getSetGen, restoreScore, revealItems, deduceQuits
-  , rndToAction, resetSessionStart, resetGameStart, elapsedSessionTimeGT
+  , debugPrint, saveName, dumpRngs
+  , restoreScore, registerScore
+  , resetSessionStart, resetGameStart, elapsedSessionTimeGT
   , tellAllClipPS, tellGameClipPS
-  , resetFidPerception, getPerFid, saveName
+  , tryRestore, speedupCOps, rndToAction, getSetGen
   ) where
 
 import qualified Control.Exception as Ex hiding (handle)
@@ -21,6 +20,7 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.HashMap.Strict as HM
 import Data.List
 import Data.Maybe
 import Data.Text (Text)
@@ -45,6 +45,7 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Save
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
@@ -66,9 +67,6 @@ class MonadReadState m => MonadServer m where
   liftIO       :: IO a -> m a
   saveServer   :: m ()
 
-saveName :: String
-saveName = serverSaveName
-
 debugPrint :: MonadServer m => Text -> m ()
 debugPrint t = do
   debug <- getsServer $ sdbgMsgSer . sdebugSer
@@ -76,28 +74,8 @@ debugPrint t = do
     T.hPutStrLn stderr t
     hFlush stderr
 
--- | Update the cached perception for the selected level, for a faction.
--- The assumption is the level, and only the level, has changed since
--- the previous perception calculation.
-resetFidPerception :: MonadServer m => FactionId -> LevelId -> m Perception
-resetFidPerception fid lid = do
-  cops <- getsState scops
-  lvl <- getLevel lid
-  fovMode <- getsServer $ sfovMode . sdebugSer
-  per <- getsState
-         $ levelPerception cops (fromMaybe (Digital 12) fovMode) fid lid lvl
-  let upd = EM.adjust (EM.adjust (const per) lid) fid
-  modifyServer $ \ser -> ser {sper = upd (sper ser)}
-  return $! per
-
-getPerFid :: MonadServer m => FactionId -> LevelId -> m Perception
-getPerFid fid lid = do
-  pers <- getsServer sper
-  let fper = fromMaybe (assert `failure` "no perception for faction"
-                               `twith` (lid, fid)) $ EM.lookup fid pers
-      per = fromMaybe (assert `failure` "no perception for level"
-                              `twith` (lid, fid)) $ EM.lookup lid fper
-  return $! per
+saveName :: String
+saveName = serverSaveName
 
 -- | Dumps RNG states from the start of the game to stderr.
 dumpRngs :: MonadServer m => m ()
@@ -231,79 +209,6 @@ tellGameClipPS = do
           cps = fromIntegral (timeFit time timeClip) / diff :: Double
       debugPrint $ "Game time:" <+> tshow diff <> "s."
                    <+> "Average clips per second:" <+> tshow cps <> "."
-
-revealItems :: (MonadAtomic m, MonadServer m)
-            => Maybe FactionId -> Maybe Actor -> m ()
-revealItems mfid mbody = do
-  dungeon <- getsState sdungeon
-  discoS <- getsServer sdisco
-  let discover b iid _numPieces = do
-        item <- getsState $ getItemBody iid
-        let ik = fromJust $ jkind discoS item
-        execUpdAtomic $ UpdDiscover (blid b) (bpos b) iid ik
-      f aid = do
-        b <- getsState $ getActorBody aid
-        let ourSide = maybe True (== bfid b) mfid
-        when (ourSide && Just b /= mbody) $ mapActorItems_ (discover b) b
-  mapDungeonActors_ f dungeon
-  maybe skip (\b -> mapActorItems_ (discover b) b) mbody
-
-quitF :: (MonadAtomic m, MonadServer m)
-      => Maybe Actor -> Status -> FactionId -> m ()
-quitF mbody status fid = do
-  assert (maybe True ((fid ==) . bfid) mbody) skip
-  fact <- getsState $ (EM.! fid) . sfactionD
-  let oldSt = gquit fact
-  case fmap stOutcome $ oldSt of
-    Just Killed -> return ()    -- Do not overwrite in case
-    Just Defeated -> return ()  -- many things happen in 1 turn.
-    Just Conquer -> return ()
-    Just Escape -> return ()
-    _ -> do
-      when (playerUI $ gplayer fact) $ do
-        revealItems (Just fid) mbody
-        registerScore status mbody fid
-      execUpdAtomic $ UpdQuitFaction fid mbody oldSt $ Just status
-      modifyServer $ \ser -> ser {squit = True}  -- end turn ASAP
-
--- Send any QuitFactionA actions that can be deduced from their current state.
-deduceQuits :: (MonadAtomic m, MonadServer m) => Actor -> Status -> m ()
-deduceQuits body status@Status{stOutcome}
-  | stOutcome `elem` [Defeated, Camping, Restart, Conquer] =
-    assert `failure` "no quitting to deduce" `twith` (status, body)
-deduceQuits body status = do
-  cops <- getsState scops
-  let fid = bfid body
-      mapQuitF statusF fids = mapM_ (quitF Nothing statusF) $ delete fid fids
-  quitF (Just body) status fid
-  let inGame fact = case fmap stOutcome $ gquit fact of
-        Just Killed -> False
-        Just Defeated -> False
-        Just Restart -> False  -- effectively, commits suicide
-        _ -> True
-  factionD <- getsState sfactionD
-  let assocsInGame = filter (inGame . snd) $ EM.assocs factionD
-      keysInGame = map fst assocsInGame
-      assocsNotHorror = filter (not . isHorrorFact cops . snd) assocsInGame
-      assocsUI = filter (playerUI . gplayer . snd) assocsInGame
-  case assocsNotHorror of
-    _ | null assocsUI ->
-      -- Only non-UI players left in the game and they all win.
-      mapQuitF status{stOutcome=Conquer} keysInGame
-    [] ->
-      -- Only horrors remain, so they win.
-      mapQuitF status{stOutcome=Conquer} keysInGame
-    (_, fact1) : rest | all (not . isAtWar fact1 . fst) rest ->
-      -- Nobody is at war any more, so all win.
-      -- TODO: check not at war with each other.
-      mapQuitF status{stOutcome=Conquer} keysInGame
-    _ | stOutcome status == Escape -> do
-      -- Otherwise, in a game with many warring teams alive,
-      -- only complete Victory matters, until enough of them die.
-      let (victors, losers) = partition (flip isAllied fid . snd) assocsInGame
-      mapQuitF status{stOutcome=Escape} $ map fst victors
-      mapQuitF status{stOutcome=Defeated} $ map fst losers
-    _ -> return ()
 
 tryRestore :: MonadServer m
            => Kind.COps -> DebugModeSer -> m (Maybe (State, StateServer))

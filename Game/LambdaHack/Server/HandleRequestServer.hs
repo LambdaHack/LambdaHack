@@ -15,7 +15,6 @@ import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 import Data.Ratio
 import Data.Text (Text)
-import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Action
@@ -30,7 +29,6 @@ import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
-import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request
@@ -39,25 +37,11 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind as TileKind
+import Game.LambdaHack.Server.CommonServer
 import Game.LambdaHack.Server.HandleEffectServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
-
-execFailure :: (MonadAtomic m, MonadServer m)
-            => ActorId -> ReqFailure -> m ()
-execFailure aid failureSer = do
-  -- Clients should rarely do that (only in case of invisible actors)
-  -- so we report it, send a --more-- meeesage (if not AI), but do not crash
-  -- (server should work OK with stupid clients, too).
-  body <- getsState $ getActorBody aid
-  let fid = bfid body
-      msg = showReqFailure failureSer
-  debugPrint
-    $ "execFailure:" <+> tshow fid <+> ":" <+> msg <> "\n" <> tshow body
-  execSfxAtomic $ SfxMsgFid fid $ "Unexpected problem:" <+> msg <> "."
-    -- TODO: --more--, but keep in history
 
 -- * ReqMove
 
@@ -282,31 +266,6 @@ reqMoveItem aid iid k fromCStore toCStore = do
     if calmEnough b kind then moveItem
     else execFailure aid ItemNotCalm
 
-actorInvs :: MonadServer m
-          => ItemId -> Int -> ActorId -> m [(Int, ActorId)]
-actorInvs iid k aid = do
-  let takeFromInv :: Int -> [(ActorId, Actor)] -> [(Int, ActorId)]
-      takeFromInv 0 _ = []
-      takeFromInv _ [] = assert `failure` (iid, k, aid)
-      takeFromInv n ((aid2, b2) : as) =
-        case EM.lookup iid $ binv b2 of
-          Nothing -> takeFromInv n as
-          Just m -> let ck = min n m
-                    in (ck, aid2) : takeFromInv (n - ck) as
-  b <- getsState $ getActorBody aid
-  as <- getsState $ fidActorNotProjAssocs (bfid b)
-  return $ takeFromInv k $ (aid, b) : filter ((/= aid) . fst) as
-
-actorConts :: MonadServer m
-           => ItemId -> Int -> ActorId -> CStore
-           -> m [(Int, Container)]
-actorConts iid k aid cstore = case cstore of
-  CGround -> return [(k, CActor aid CGround)]
-  CEqp -> return [(k, CActor aid CEqp)]
-  CInv -> do
-    invs <- actorInvs iid k aid
-    return $! map (\(n, aid2) -> (n, CActor aid2 CInv)) invs
-
 -- * ReqProject
 
 reqProject :: (MonadAtomic m, MonadServer m)
@@ -319,94 +278,6 @@ reqProject :: (MonadAtomic m, MonadServer m)
 reqProject source tpxy eps iid cstore = do
   mfail <- projectFail source tpxy eps iid cstore False
   maybe skip (execFailure source) mfail
-
-projectFail :: (MonadAtomic m, MonadServer m)
-            => ActorId    -- ^ actor projecting the item (is on current lvl)
-            -> Point      -- ^ target position of the projectile
-            -> Int        -- ^ digital line parameter
-            -> ItemId     -- ^ the item to be projected
-            -> CStore     -- ^ whether the items comes from floor or inventory
-            -> Bool       -- ^ whether the item is a shrapnel
-            -> m (Maybe ReqFailure)
-projectFail source tpxy eps iid cstore isShrapnel = do
-  Kind.COps{coactor=Kind.Ops{okind}, cotile} <- getsState scops
-  sb <- getsState $ getActorBody source
-  let lid = blid sb
-      spos = bpos sb
-      kind = okind $ bkind sb
-  lvl@Level{lxsize, lysize} <- getLevel lid
-  case bla lxsize lysize eps spos tpxy of
-    Nothing -> return $ Just ProjectAimOnself
-    Just [] -> assert `failure` "projecting from the edge of level"
-                      `twith` (spos, tpxy)
-    Just (pos : rest) -> do
-      let t = lvl `at` pos
-      if not $ Tile.isClear cotile t
-        then return $ Just ProjectBlockTerrain
-        else do
-          mab <- getsState $ posToActor pos lid
-          if not $ maybe True (bproj . snd . fst) mab
-            then if isShrapnel then do
-                   -- Hit the blocking actor.
-                   projectBla source spos (pos : rest) iid cstore
-                   return Nothing
-                 else return $ Just ProjectBlockActor
-            else if not (isShrapnel || calmEnough sb kind) then
-                   return $ Just ProjectNotCalm
-                 else if not (asight kind || bproj sb) then
-                   return $ Just ProjectBlind
-                 else do
-                   if isShrapnel && eps `mod` 2 == 0 then
-                     -- Make the explosion a bit less regular.
-                     projectBla source spos (pos:rest) iid cstore
-                   else
-                     projectBla source pos rest iid cstore
-                   return Nothing
-
-projectBla :: (MonadAtomic m, MonadServer m)
-           => ActorId    -- ^ actor projecting the item (is on current lvl)
-           -> Point      -- ^ starting point of the projectile
-           -> [Point]    -- ^ rest of the trajectory of the projectile
-           -> ItemId     -- ^ the item to be projected
-           -> CStore     -- ^ whether the items comes from floor or inventory
-           -> m ()
-projectBla source pos rest iid cstore = do
-  sb <- getsState $ getActorBody source
-  let lid = blid sb
-      time = btime sb
-  unless (bproj sb) $ execSfxAtomic $ SfxProject source iid
-  projId <- addProjectile pos rest iid lid (bfid sb) time
-  cs <- actorConts iid 1 source cstore
-  mapM_ (\(_, c) -> execUpdAtomic $ UpdMoveItem iid 1 c (CActor projId CEqp)) cs
-
--- | Create a projectile actor containing the given missile.
-addProjectile :: (MonadAtomic m, MonadServer m)
-              => Point -> [Point] -> ItemId -> LevelId -> FactionId -> Time
-              -> m ActorId
-addProjectile bpos rest iid blid bfid btime = do
-  Kind.COps{ coactor=coactor@Kind.Ops{okind}
-           , coitem=coitem@Kind.Ops{okind=iokind} } <- getsState scops
-  disco <- getsServer sdisco
-  item <- getsState $ getItemBody iid
-  let lingerPercent = isLingering coitem disco item
-      ik = iokind (fromJust $ jkind disco item)
-      speed = speedFromWeight (jweight item) (itoThrow ik)
-      range = rangeFromSpeed speed
-      adj | range < 5 = "falling"
-          | otherwise = "flying"
-      -- Not much detail about a fast flying item.
-      (object1, object2) = partItem coitem EM.empty item
-      name = makePhrase [MU.AW $ MU.Text adj, object1, object2]
-      trajectoryLength = lingerPercent * range `div` 100
-      dirTrajectory = take trajectoryLength $ pathToTrajectory (bpos : rest)
-      kind = okind $ projectileKindId coactor
-      m = actorTemplate (projectileKindId coactor) (asymbol kind) name
-                        (acolor kind) speed 0 maxBound (Just dirTrajectory)
-                        bpos blid btime bfid True
-  acounter <- getsServer sacounter
-  modifyServer $ \ser -> ser {sacounter = succ acounter}
-  execUpdAtomic $ UpdCreateActor acounter m [(iid, item)]
-  return $! acounter
 
 -- * ReqApply
 
