@@ -17,7 +17,7 @@ import System.FilePath
 
 import Game.LambdaHack.Atomic.HandleCmdAtomicWrite
 import Game.LambdaHack.Atomic.MonadAtomic
-import Game.LambdaHack.Atomic.MonadWriteState
+import Game.LambdaHack.Atomic.MonadStateWrite
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.MonadClientUI
 import Game.LambdaHack.Client.ProtocolClient
@@ -43,11 +43,11 @@ newtype CliImplementation resp req a =
     CliImplementation {runCliImplementation :: StateT (CliState resp req) IO a}
   deriving (Monad, Functor, Applicative)
 
-instance MonadReadState (CliImplementation resp req) where
+instance MonadStateRead (CliImplementation resp req) where
   getState    = CliImplementation $ gets cliState
   getsState f = CliImplementation $ gets $ f . cliState
 
-instance MonadWriteState (CliImplementation resp req) where
+instance MonadStateWrite (CliImplementation resp req) where
   modifyState f = CliImplementation $ state $ \cliS ->
     let newCliS = cliS {cliState = f $ cliState cliS}
     in newCliS `seq` ((), newCliS)

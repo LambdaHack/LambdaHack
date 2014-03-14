@@ -1,6 +1,6 @@
 -- | The monad for writing to the game state and related operations.
-module Game.LambdaHack.Atomic.MonadWriteState
-  ( MonadWriteState(..)
+module Game.LambdaHack.Atomic.MonadStateWrite
+  ( MonadStateWrite(..)
   , updateLevel, updateActor, updateFaction
   , insertItemContainer, deleteItemContainer
   ) where
@@ -18,40 +18,40 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 
-class MonadReadState m => MonadWriteState m where
+class MonadStateRead m => MonadStateWrite m where
   modifyState :: (State -> State) -> m ()
   putState    :: State -> m ()
 
 -- | Update a given level data within state.
-updateLevel :: MonadWriteState m => LevelId -> (Level -> Level) -> m ()
+updateLevel :: MonadStateWrite m => LevelId -> (Level -> Level) -> m ()
 updateLevel lid f = modifyState $ updateDungeon $ EM.adjust f lid
 
-updateActor :: MonadWriteState m => ActorId -> (Actor -> Actor) -> m ()
+updateActor :: MonadStateWrite m => ActorId -> (Actor -> Actor) -> m ()
 updateActor aid f = do
   let alt Nothing = assert `failure` "no body to update" `twith` aid
       alt (Just b) = Just $ f b
   modifyState $ updateActorD $ EM.alter alt aid
 
-updateFaction :: MonadWriteState m => FactionId -> (Faction -> Faction) -> m ()
+updateFaction :: MonadStateWrite m => FactionId -> (Faction -> Faction) -> m ()
 updateFaction fid f = do
   let alt Nothing = assert `failure` "no faction to update" `twith` fid
       alt (Just fact) = Just $ f fact
   modifyState $ updateFactionD $ EM.alter alt fid
 
-insertItemContainer :: MonadWriteState m
+insertItemContainer :: MonadStateWrite m
                     => ItemId -> Int -> Container -> m ()
 insertItemContainer iid k c = case c of
   CFloor lid pos -> insertItemFloor iid k lid pos
   CActor aid store -> insertItemActor iid k aid store
 
-insertItemFloor :: MonadWriteState m
+insertItemFloor :: MonadStateWrite m
                 => ItemId -> Int -> LevelId -> Point -> m ()
 insertItemFloor iid k lid pos =
   let bag = EM.singleton iid k
       mergeBag = EM.insertWith (EM.unionWith (+)) pos bag
   in updateLevel lid $ updateFloor mergeBag
 
-insertItemActor :: MonadWriteState m
+insertItemActor :: MonadStateWrite m
                 => ItemId -> Int -> ActorId -> CStore -> m ()
 insertItemActor iid k aid cstore = case cstore of
   CGround -> do
@@ -60,25 +60,25 @@ insertItemActor iid k aid cstore = case cstore of
   CEqp -> insertItemEqp iid k aid
   CInv -> insertItemInv iid k aid
 
-insertItemEqp :: MonadWriteState m => ItemId -> Int -> ActorId -> m ()
+insertItemEqp :: MonadStateWrite m => ItemId -> Int -> ActorId -> m ()
 insertItemEqp iid k aid = do
   let bag = EM.singleton iid k
       upd = EM.unionWith (+) bag
   updateActor aid $ \b -> b {beqp = upd (beqp b)}
 
-insertItemInv :: MonadWriteState m => ItemId -> Int -> ActorId -> m ()
+insertItemInv :: MonadStateWrite m => ItemId -> Int -> ActorId -> m ()
 insertItemInv iid k aid = do
   let bag = EM.singleton iid k
       upd = EM.unionWith (+) bag
   updateActor aid $ \b -> b {binv = upd (binv b)}
 
-deleteItemContainer :: MonadWriteState m
+deleteItemContainer :: MonadStateWrite m
                     => ItemId -> Int -> Container -> m ()
 deleteItemContainer iid k c = case c of
     CFloor lid pos -> deleteItemFloor iid k lid pos
     CActor aid store -> deleteItemActor iid k aid store
 
-deleteItemFloor :: MonadWriteState m
+deleteItemFloor :: MonadStateWrite m
                 => ItemId -> Int -> LevelId -> Point -> m ()
 deleteItemFloor iid k lid pos =
   let rmFromFloor (Just bag) =
@@ -88,7 +88,7 @@ deleteItemFloor iid k lid pos =
                                    `twith` (iid, k, lid, pos)
   in updateLevel lid $ updateFloor $ EM.alter rmFromFloor pos
 
-deleteItemActor :: MonadWriteState m => ItemId -> Int -> ActorId -> CStore -> m ()
+deleteItemActor :: MonadStateWrite m => ItemId -> Int -> ActorId -> CStore -> m ()
 deleteItemActor iid k aid cstore = case cstore of
   CGround -> do
     b <- getsState $ getActorBody aid
@@ -96,10 +96,10 @@ deleteItemActor iid k aid cstore = case cstore of
   CEqp -> deleteItemEqp iid k aid
   CInv -> deleteItemInv iid k aid
 
-deleteItemEqp :: MonadWriteState m => ItemId -> Int -> ActorId -> m ()
+deleteItemEqp :: MonadStateWrite m => ItemId -> Int -> ActorId -> m ()
 deleteItemEqp iid k aid = do
   updateActor aid $ \b -> b {beqp = rmFromBag k iid (beqp b)}
 
-deleteItemInv :: MonadWriteState m => ItemId -> Int -> ActorId -> m ()
+deleteItemInv :: MonadStateWrite m => ItemId -> Int -> ActorId -> m ()
 deleteItemInv iid k aid = do
   updateActor aid $ \b -> b {binv = rmFromBag k iid (binv b)}

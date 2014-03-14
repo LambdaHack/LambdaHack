@@ -256,7 +256,7 @@ findEntryPoss Kind.COps{cotile} Level{ltile, lxsize, lysize, lstair} k = do
     _ | k > 2 -> tryFind [] k
     _ -> assert `failure` k
 
-initDebug :: MonadReadState m => Kind.COps -> DebugModeSer -> m DebugModeSer
+initDebug :: MonadStateRead m => Kind.COps -> DebugModeSer -> m DebugModeSer
 initDebug Kind.COps{corule} sdebugSer = do
   let stdRuleset = Kind.stdRuleset corule
   return $!

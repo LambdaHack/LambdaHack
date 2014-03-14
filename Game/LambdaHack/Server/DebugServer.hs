@@ -81,7 +81,7 @@ data DebugAid a = DebugAid
   }
   deriving Show
 
-debugAid :: (MonadReadState m, Show a) => ActorId -> Text -> a -> m Text
+debugAid :: (MonadStateRead m, Show a) => ActorId -> Text -> a -> m Text
 debugAid aid label cmd =
   if aid == toEnum (-1) then
     return $ "Pong:" <+> tshow label <+> tshow cmd

@@ -17,7 +17,7 @@ import System.FilePath
 import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Atomic.HandleAndBroadcastWrite
 import Game.LambdaHack.Atomic.MonadAtomic
-import Game.LambdaHack.Atomic.MonadWriteState
+import Game.LambdaHack.Atomic.MonadStateWrite
 import Game.LambdaHack.Common.Action
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
@@ -39,11 +39,11 @@ newtype SerImplementation a =
     SerImplementation {runSerImplementation :: StateT SerState IO a}
   deriving (Monad, Functor, Applicative)
 
-instance MonadReadState SerImplementation where
+instance MonadStateRead SerImplementation where
   getState    = SerImplementation $ gets serState
   getsState f = SerImplementation $ gets $ f . serState
 
-instance MonadWriteState SerImplementation where
+instance MonadStateWrite SerImplementation where
   modifyState f = SerImplementation $ state $ \serS ->
     let newSerS = serS {serState = f $ serState serS}
     in newSerS `seq` ((), newSerS)
@@ -82,7 +82,7 @@ instance MonadAtomic SerImplementation where
   execAtomic = handleAndBroadcastServer
 
 -- | Send an atomic action to all clients that can see it.
-handleAndBroadcastServer :: (MonadWriteState m, MonadServerReadRequest m)
+handleAndBroadcastServer :: (MonadStateWrite m, MonadServerReadRequest m)
                          => CmdAtomic -> m ()
 handleAndBroadcastServer atomic = do
   persOld <- getsServer sper

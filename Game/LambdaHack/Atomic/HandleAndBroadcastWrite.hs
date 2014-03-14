@@ -14,7 +14,7 @@ import Data.Maybe
 
 import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Atomic.HandleCmdAtomicWrite
-import Game.LambdaHack.Atomic.MonadWriteState
+import Game.LambdaHack.Atomic.MonadStateWrite
 import Game.LambdaHack.Atomic.PosCmdAtomicRead
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.ActorState
@@ -34,7 +34,7 @@ import Game.LambdaHack.Content.ModeKind
 --  maybe skip (\a -> modifyServer $ \ser -> ser {sundo = a : sundo ser})
 --    $ Nothing   -- TODO: undoCmdAtomic atomic
 
-handleCmdAtomicServer :: forall m. MonadWriteState m
+handleCmdAtomicServer :: forall m. MonadStateWrite m
                       => PosAtomic -> CmdAtomic -> m ()
 handleCmdAtomicServer posAtomic atomic =
   when (seenAtomicSer posAtomic) $ do
@@ -42,7 +42,7 @@ handleCmdAtomicServer posAtomic atomic =
     handleCmdAtomic atomic
 
 -- | Send an atomic action to all clients that can see it.
-handleAndBroadcast :: forall m. MonadWriteState m
+handleAndBroadcast :: forall m. MonadStateWrite m
                    => Bool -> Pers
                    -> (FactionId -> LevelId -> m Perception)
                    -> (FactionId -> ResponseAI -> m ())

@@ -11,7 +11,7 @@ import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.State
 
-class MonadReadState m => MonadAtomic m where
+class MonadStateRead m => MonadAtomic m where
   execAtomic    :: CmdAtomic -> m ()
   execUpdAtomic :: UpdAtomic -> m ()
   execUpdAtomic = execAtomic . UpdAtomic

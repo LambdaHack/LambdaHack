@@ -13,7 +13,7 @@ import Data.List
 import Data.Maybe
 
 import Game.LambdaHack.Atomic.CmdAtomic
-import Game.LambdaHack.Atomic.MonadWriteState
+import Game.LambdaHack.Atomic.MonadStateWrite
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -35,12 +35,12 @@ import Game.LambdaHack.Content.TileKind as TileKind
 
 -- | The game-state semantics of atomic game commands.
 -- Special effects (@SfxAtomic@) don't modify state.
-handleCmdAtomic :: MonadWriteState m => CmdAtomic -> m ()
+handleCmdAtomic :: MonadStateWrite m => CmdAtomic -> m ()
 handleCmdAtomic cmd = case cmd of
   UpdAtomic upd -> handleUpdAtomic upd
   SfxAtomic _ -> return ()
 
-handleUpdAtomic :: MonadWriteState m => UpdAtomic -> m ()
+handleUpdAtomic :: MonadStateWrite m => UpdAtomic -> m ()
 handleUpdAtomic cmd = case cmd of
   UpdCreateActor aid body ais -> updCreateActor aid body ais
   UpdDestroyActor aid body ais -> updDestroyActor aid body ais
@@ -91,7 +91,7 @@ handleUpdAtomic cmd = case cmd of
 
 -- | Creates an actor. Note: after this command, usually a new leader
 -- for the party should be elected (in case this actor is the only one alive).
-updCreateActor :: MonadWriteState m
+updCreateActor :: MonadStateWrite m
                => ActorId -> Actor -> [(ItemId, Item)] -> m ()
 updCreateActor aid body ais = do
   -- Add actor to @sactorD@.
@@ -115,7 +115,7 @@ updCreateActor aid body ais = do
     modifyState $ updateItemD $ EM.insertWith h iid item
 
 -- | Kills an actor.
-updDestroyActor :: MonadWriteState m
+updDestroyActor :: MonadStateWrite m
                 => ActorId -> Actor -> [(ItemId, Item)] -> m ()
 updDestroyActor aid body ais = do
   -- If a leader dies, a new leader should be elected on the server
@@ -144,7 +144,7 @@ updDestroyActor aid body ais = do
 
 -- | Create a few copies of an item that is already registered for the dungeon
 -- (in @sitemRev@ field of @StateServer@).
-updCreateItem :: MonadWriteState m => ItemId -> Item -> Int -> Container -> m ()
+updCreateItem :: MonadStateWrite m => ItemId -> Item -> Int -> Container -> m ()
 updCreateItem iid item k c = assert (k > 0) $ do
   -- The item may or may not be already present in @sitemD@,
   -- regardless if it's actually present in the dungeon.
@@ -155,7 +155,7 @@ updCreateItem iid item k c = assert (k > 0) $ do
   insertItemContainer iid k c
 
 -- | Destroy some copies (possibly not all) of an item.
-updDestroyItem :: MonadWriteState m
+updDestroyItem :: MonadStateWrite m
                => ItemId -> Item -> Int -> Container -> m ()
 updDestroyItem iid item k c = assert (k > 0) $ do
   -- Do not remove the item from @sitemD@ nor from @sitemRev@,
@@ -166,35 +166,35 @@ updDestroyItem iid item k c = assert (k > 0) $ do
                                              `twith` (iid, item, itemD)) skip
   deleteItemContainer iid k c
 
-updMoveActor :: MonadWriteState m => ActorId -> Point -> Point -> m ()
+updMoveActor :: MonadStateWrite m => ActorId -> Point -> Point -> m ()
 updMoveActor aid fromP toP = assert (fromP /= toP) $ do
   b <- getsState $ getActorBody aid
   assert (fromP == bpos b `blame` "unexpected moved actor position"
                           `twith` (aid, fromP, toP, bpos b, b)) skip
   updateActor aid $ \body -> body {bpos = toP, boldpos = fromP}
 
-updWaitActor :: MonadWriteState m => ActorId -> Bool -> Bool -> m ()
+updWaitActor :: MonadStateWrite m => ActorId -> Bool -> Bool -> m ()
 updWaitActor aid fromWait toWait = assert (fromWait /= toWait) $ do
   b <- getsState $ getActorBody aid
   assert (fromWait == bwait b `blame` "unexpected waited actor time"
                               `twith` (aid, fromWait, toWait, bwait b, b)) skip
   updateActor aid $ \body -> body {bwait = toWait}
 
-updDisplaceActor :: MonadWriteState m => ActorId -> ActorId -> m ()
+updDisplaceActor :: MonadStateWrite m => ActorId -> ActorId -> m ()
 updDisplaceActor source target = assert (source /= target) $ do
   spos <- getsState $ bpos . getActorBody source
   tpos <- getsState $ bpos . getActorBody target
   updateActor source $ \b -> b {bpos = tpos, boldpos = spos}
   updateActor target $ \b -> b {bpos = spos, boldpos = tpos}
 
-updMoveItem :: MonadWriteState m
+updMoveItem :: MonadStateWrite m
             => ItemId -> Int -> Container -> Container -> m ()
 updMoveItem iid k c1 c2 = assert (k > 0 && c1 /= c2) $ do
   deleteItemContainer iid k c1
   insertItemContainer iid k c2
 
 -- TODO: optimize (a single call to updatePrio is enough)
-updAgeActor :: MonadWriteState m => ActorId -> Time -> m ()
+updAgeActor :: MonadStateWrite m => ActorId -> Time -> m ()
 updAgeActor aid t = assert (t /= timeZero) $ do
   body <- getsState $ getActorBody aid
   ais <- getsState $ getCarriedAssocs body
@@ -202,15 +202,15 @@ updAgeActor aid t = assert (t /= timeZero) $ do
   let newBody = body {btime = timeAdd (btime body) t}
   updCreateActor aid newBody ais
 
-updHealActor :: MonadWriteState m => ActorId -> Int -> m ()
+updHealActor :: MonadStateWrite m => ActorId -> Int -> m ()
 updHealActor aid n = assert (n /= 0) $
   updateActor aid $ \b -> b {bhp = bhp b + n}
 
-updCalmActor :: MonadWriteState m => ActorId -> Int -> m ()
+updCalmActor :: MonadStateWrite m => ActorId -> Int -> m ()
 updCalmActor aid n = assert (n /= 0) $
   updateActor aid $ \b -> b {bcalm = bcalm b + n}
 
-updHasteActor :: MonadWriteState m => ActorId -> Speed -> m ()
+updHasteActor :: MonadStateWrite m => ActorId -> Speed -> m ()
 updHasteActor aid delta = assert (delta /= speedZero) $ do
   updateActor aid $ \ b ->
     let newSpeed = speedAdd (bspeed b) delta
@@ -219,7 +219,7 @@ updHasteActor aid delta = assert (delta /= speedZero) $ do
                `twith` (aid, delta, b, newSpeed))
        $ b {bspeed = newSpeed}
 
-updTrajectoryActor :: MonadWriteState m
+updTrajectoryActor :: MonadStateWrite m
            => ActorId -> Maybe [Vector] -> Maybe [Vector] -> m ()
 updTrajectoryActor aid fromT toT = assert (fromT /= toT) $ do
   body <- getsState $ getActorBody aid
@@ -227,7 +227,7 @@ updTrajectoryActor aid fromT toT = assert (fromT /= toT) $ do
                                     `twith` (aid, fromT, toT, body)) skip
   updateActor aid $ \b -> b {btrajectory = toT}
 
-updColorActor :: MonadWriteState m
+updColorActor :: MonadStateWrite m
             => ActorId -> Color.Color -> Color.Color -> m ()
 updColorActor aid fromCol toCol = assert (fromCol /= toCol) $ do
   body <- getsState $ getActorBody aid
@@ -235,7 +235,7 @@ updColorActor aid fromCol toCol = assert (fromCol /= toCol) $ do
                                  `twith` (aid, fromCol, toCol, body)) skip
   updateActor aid $ \b -> b {bcolor = toCol}
 
-updQuitFaction :: MonadWriteState m
+updQuitFaction :: MonadStateWrite m
              => FactionId -> Maybe Actor -> Maybe Status -> Maybe Status
              -> m ()
 updQuitFaction fid mbody fromSt toSt = assert (fromSt /= toSt) $ do
@@ -247,7 +247,7 @@ updQuitFaction fid mbody fromSt toSt = assert (fromSt /= toSt) $ do
   updateFaction fid adj
 
 -- The previous leader is assumed to be alive.
-updLeadFaction :: MonadWriteState m
+updLeadFaction :: MonadStateWrite m
              => FactionId -> Maybe ActorId -> Maybe ActorId -> m ()
 updLeadFaction fid source target = assert (source /= target) $ do
   fact <- getsState $ (EM.! fid) . sfactionD
@@ -259,7 +259,7 @@ updLeadFaction fid source target = assert (source /= target) $ do
   let adj fa = fa {gleader = target}
   updateFaction fid adj
 
-updDiplFaction :: MonadWriteState m
+updDiplFaction :: MonadStateWrite m
              => FactionId -> FactionId -> Diplomacy -> Diplomacy -> m ()
 updDiplFaction fid1 fid2 fromDipl toDipl =
   assert (fid1 /= fid2 && fromDipl /= toDipl) $ do
@@ -273,7 +273,7 @@ updDiplFaction fid1 fid2 fromDipl toDipl =
     updateFaction fid1 (adj fid2)
     updateFaction fid2 (adj fid1)
 
-updAutoFaction :: MonadWriteState m => FactionId -> Bool -> m ()
+updAutoFaction :: MonadStateWrite m => FactionId -> Bool -> m ()
 updAutoFaction fid st = do
   let adj fact =
         let player = gplayer fact
@@ -283,7 +283,7 @@ updAutoFaction fid st = do
 
 -- | Record a given number (usually just 1, or -1 for undo) of actor kills
 -- for score calculation.
-updRecordKill :: MonadWriteState m => ActorId -> Int -> m ()
+updRecordKill :: MonadStateWrite m => ActorId -> Int -> m ()
 updRecordKill aid k = do
   b <- getsState $ getActorBody aid
   assert (not (bproj b) `blame` (aid, b)) skip
@@ -298,7 +298,7 @@ updRecordKill aid k = do
 -- We do not modify @lclear@ here, because we can't keep track of
 -- alterations to unknown tiles. The server would need to send @lclear@
 -- updates for each invisible tile alteration that affects it.
-updAlterTile :: MonadWriteState m
+updAlterTile :: MonadStateWrite m
            => LevelId -> Point -> Kind.Id TileKind -> Kind.Id TileKind
            -> m ()
 updAlterTile lid p fromTile toTile = assert (fromTile /= toTile) $ do
@@ -327,7 +327,7 @@ updAlterTile lid p fromTile toTile = assert (fromTile /= toTile) $ do
 -- to save computation, especially for clients that remember tiles
 -- at previously seen positions. Similarly, when updating the @lseen@
 -- field we don't assume the tiles were unknown previously.
-updSpotTile :: MonadWriteState m
+updSpotTile :: MonadStateWrite m
             => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
 updSpotTile lid ts = assert (not $ null ts) $ do
   Kind.COps{cotile} <- getsState scops
@@ -344,7 +344,7 @@ updSpotTile lid ts = assert (not $ null ts) $ do
 
 -- Stop noticing previously visible tiles. Unlike @spotTileA@, it verifies
 -- the state of the tiles before changing them.
-updLoseTile :: MonadWriteState m
+updLoseTile :: MonadStateWrite m
             => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
 updLoseTile lid ts = assert (not $ null ts) $ do
   Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getsState scops
@@ -360,14 +360,14 @@ updLoseTile lid ts = assert (not $ null ts) $ do
           updateLevel lid $ \lvl -> lvl {lseen = lseen lvl - 1}
   mapM_ f ts
 
-updAlterSmell :: MonadWriteState m
+updAlterSmell :: MonadStateWrite m
             => LevelId -> Point -> Maybe Time -> Maybe Time -> m ()
 updAlterSmell lid p fromSm toSm = do
   let alt sm = assert (sm == fromSm `blame` "unexpected tile smell"
                                     `twith` (lid, p, fromSm, toSm, sm)) toSm
   updateLevel lid $ updateSmell $ EM.alter alt p
 
-updSpotSmell :: MonadWriteState m => LevelId -> [(Point, Time)] -> m ()
+updSpotSmell :: MonadStateWrite m => LevelId -> [(Point, Time)] -> m ()
 updSpotSmell lid sms = assert (not $ null sms) $ do
   let alt sm Nothing = Just sm
       alt sm (Just oldSm) = assert `failure` "smell already added"
@@ -376,7 +376,7 @@ updSpotSmell lid sms = assert (not $ null sms) $ do
       upd m = foldr f m sms
   updateLevel lid $ updateSmell upd
 
-updLoseSmell :: MonadWriteState m => LevelId -> [(Point, Time)] -> m ()
+updLoseSmell :: MonadStateWrite m => LevelId -> [(Point, Time)] -> m ()
 updLoseSmell lid sms = assert (not $ null sms) $ do
   let alt sm Nothing = assert `failure` "smell already removed"
                               `twith` (lid, sms, sm)
@@ -392,20 +392,20 @@ updLoseSmell lid sms = assert (not $ null sms) $ do
 -- Not aging the game here, since not all factions see the level,
 -- so not all get this command (it would lead information that
 -- there is somebody's leader on the level).
-updAgeLevel :: MonadWriteState m => LevelId -> Time -> m ()
+updAgeLevel :: MonadStateWrite m => LevelId -> Time -> m ()
 updAgeLevel lid delta = assert (delta /= timeZero) $
   updateLevel lid $ \lvl -> lvl {ltime = timeAdd (ltime lvl) delta}
 
-updAgeGame :: MonadWriteState m => Time -> m ()
+updAgeGame :: MonadStateWrite m => Time -> m ()
 updAgeGame delta = assert (delta /= timeZero) $
   modifyState $ updateTime $ timeAdd delta
 
-updRestart :: MonadWriteState m
+updRestart :: MonadStateWrite m
            => FactionId -> Discovery -> FactionPers -> State -> m ()
 updRestart _ _ _ = putState
 
-updRestartServer :: MonadWriteState m =>  State -> m ()
+updRestartServer :: MonadStateWrite m =>  State -> m ()
 updRestartServer = putState
 
-updResumeServer :: MonadWriteState m =>  State -> m ()
+updResumeServer :: MonadStateWrite m =>  State -> m ()
 updResumeServer = putState

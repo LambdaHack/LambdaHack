@@ -1,7 +1,7 @@
 -- | Game action monads and basic building blocks for human and computer
 -- player actions. Has no access to the the main action type.
 module Game.LambdaHack.Common.Action
-  ( MonadReadState(..)
+  ( MonadStateRead(..)
   , getLevel, nUI, posOfContainer, posOfAid, actorConts
   ) where
 
@@ -18,28 +18,28 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
 
-class (Monad m, Functor m) => MonadReadState m where
+class (Monad m, Functor m) => MonadStateRead m where
   getState    :: m State
   getsState   :: (State -> a) -> m a
 
-getLevel :: MonadReadState m => LevelId -> m Level
+getLevel :: MonadStateRead m => LevelId -> m Level
 getLevel lid = getsState $ (EM.! lid) . sdungeon
 
-nUI :: MonadReadState m => m Int
+nUI :: MonadStateRead m => m Int
 nUI = do
   factionD <- getsState sfactionD
   return $! length $ filter (playerUI . gplayer) $ EM.elems factionD
 
-posOfAid :: MonadReadState m => ActorId -> m (LevelId, Point)
+posOfAid :: MonadStateRead m => ActorId -> m (LevelId, Point)
 posOfAid aid = do
   b <- getsState $ getActorBody aid
   return (blid b, bpos b)
 
-posOfContainer :: MonadReadState m => Container -> m (LevelId, Point)
+posOfContainer :: MonadStateRead m => Container -> m (LevelId, Point)
 posOfContainer (CFloor lid p) = return (lid, p)
 posOfContainer (CActor aid _) = posOfAid aid
 
-actorInvs :: MonadReadState m
+actorInvs :: MonadStateRead m
           => ItemId -> Int -> ActorId -> m [(Int, ActorId)]
 actorInvs iid k aid = do
   let takeFromInv :: Int -> [(ActorId, Actor)] -> [(Int, ActorId)]
@@ -54,7 +54,7 @@ actorInvs iid k aid = do
   as <- getsState $ fidActorNotProjAssocs (bfid b)
   return $ takeFromInv k $ (aid, b) : filter ((/= aid) . fst) as
 
-actorConts :: MonadReadState m
+actorConts :: MonadStateRead m
            => ItemId -> Int -> ActorId -> CStore
            -> m [(Int, Container)]
 actorConts iid k aid cstore = case cstore of

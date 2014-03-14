@@ -67,7 +67,7 @@ import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Utils.File
 
-class MonadReadState m => MonadClient m where
+class MonadStateRead m => MonadClient m where
   getClient    :: m StateClient
   getsClient   :: (StateClient -> a) -> m a
   modifyClient :: (StateClient -> StateClient) -> m ()

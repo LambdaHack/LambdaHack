@@ -50,7 +50,7 @@ import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.Utils.File
 
-class MonadReadState m => MonadServer m where
+class MonadStateRead m => MonadServer m where
   getServer    :: m StateServer
   getsServer   :: (StateServer -> a) -> m a
   modifyServer :: (StateServer -> StateServer) -> m ()

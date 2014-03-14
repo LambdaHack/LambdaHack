@@ -53,7 +53,7 @@ data PosAtomic =
 -- requirements to @MoveActorA@ as to @DisplaceActorA@ and fall back
 -- to @SpotActorA@ (which provides minimal information that does not
 -- contradict state) if the visibility is lower.
-posUpdAtomic :: MonadReadState m => UpdAtomic -> m PosAtomic
+posUpdAtomic :: MonadStateRead m => UpdAtomic -> m PosAtomic
 posUpdAtomic cmd = case cmd of
   UpdCreateActor _ body _ -> posProjBody body
   UpdDestroyActor _ body _ -> posProjBody body
@@ -116,7 +116,7 @@ posUpdAtomic cmd = case cmd of
   UpdSaveBkp -> return PosAll
   UpdMsgAll{} -> return PosAll
 
-posSfxAtomic :: MonadReadState m => SfxAtomic -> m PosAtomic
+posSfxAtomic :: MonadStateRead m => SfxAtomic -> m PosAtomic
 posSfxAtomic cmd = case cmd of
   SfxStrike source target _ _ -> do
     (slid, sp) <- posOfAid source
@@ -149,17 +149,17 @@ posProjBody body = return $!
   then PosSight (blid body) [bpos body]
   else PosFidAndSight (bfid body) (blid body) [bpos body]
 
-singleFidAndAid :: MonadReadState m => ActorId -> m PosAtomic
+singleFidAndAid :: MonadStateRead m => ActorId -> m PosAtomic
 singleFidAndAid aid = do
   body <- getsState $ getActorBody aid
   return $! PosFidAndSight (bfid body) (blid body) [bpos body]
 
-singleAid :: MonadReadState m => ActorId -> m PosAtomic
+singleAid :: MonadStateRead m => ActorId -> m PosAtomic
 singleAid aid = do
   (lid, p) <- posOfAid aid
   return $! PosSight lid [p]
 
-singleContainer :: MonadReadState m => Container -> m PosAtomic
+singleContainer :: MonadStateRead m => Container -> m PosAtomic
 singleContainer c = do
   (lid, p) <- posOfContainer c
   return $! PosSight lid [p]
@@ -172,7 +172,7 @@ singleContainer c = do
 -- to reset Fov, perception (@ptotal@ to be precise, @psmell@ is irrelevant)
 -- of that faction does not change upon recomputation. Otherwise,
 -- save/restore would change game state.
-resetsFovCmdAtomic :: MonadReadState m => UpdAtomic -> m (Maybe [FactionId])
+resetsFovCmdAtomic :: MonadStateRead m => UpdAtomic -> m (Maybe [FactionId])
 resetsFovCmdAtomic cmd = case cmd of
   UpdCreateActor _ body _ -> return $ Just [bfid body]
   UpdDestroyActor _ body _ -> return $ Just [bfid body]
@@ -192,7 +192,7 @@ resetsFovCmdAtomic cmd = case cmd of
   UpdAlterTile{} -> return Nothing  -- even if pos not visible initially
   _ -> return $ Just []
 
-fidOfAid :: MonadReadState m => ActorId -> m [FactionId]
+fidOfAid :: MonadStateRead m => ActorId -> m [FactionId]
 fidOfAid aid = getsState $ (: []) . bfid . getActorBody aid
 
 -- | Decompose an atomic action. The original action is visible
@@ -205,7 +205,7 @@ fidOfAid aid = getsState $ (: []) . bfid . getActorBody aid
 -- potentially more positions than those visible. E.g., @MoveActorA@
 -- informs about the continued existence of the actor between
 -- moves, v.s., popping out of existence and then back in.
-breakUpdAtomic :: MonadReadState m => UpdAtomic -> m [UpdAtomic]
+breakUpdAtomic :: MonadStateRead m => UpdAtomic -> m [UpdAtomic]
 breakUpdAtomic cmd = case cmd of
   UpdMoveActor aid _ toP -> do
     b <- getsState $ getActorBody aid

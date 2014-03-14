@@ -69,7 +69,7 @@ library
                       Game.LambdaHack.Atomic.HandleAndBroadcastWrite,
                       Game.LambdaHack.Atomic.HandleCmdAtomicWrite,
                       Game.LambdaHack.Atomic.MonadAtomic,
-                      Game.LambdaHack.Atomic.MonadWriteState,
+                      Game.LambdaHack.Atomic.MonadStateWrite,
                       Game.LambdaHack.Atomic.PosCmdAtomicRead,
                       Game.LambdaHack.Client,
                       Game.LambdaHack.Client.AtomicSemCli,
