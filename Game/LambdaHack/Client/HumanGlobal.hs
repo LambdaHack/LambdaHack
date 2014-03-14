@@ -20,7 +20,7 @@ import Data.Monoid
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Client.Action
+import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.ConfigUI
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.HumanLocal

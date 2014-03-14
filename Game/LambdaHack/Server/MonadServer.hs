@@ -2,7 +2,7 @@
 -- player actions. Has no access to the the main action type.
 -- Does not export the @liftIO@ operation nor a few other implementation
 -- details.
-module Game.LambdaHack.Server.Action
+module Game.LambdaHack.Server.MonadServer
   ( -- * Action monads
     MonadServer( getServer, getsServer, putServer, modifyServer, saveServer )
   , MonadConnServer
@@ -45,7 +45,6 @@ import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.AtomicCmd
-import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import Game.LambdaHack.Common.Item
@@ -55,6 +54,7 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request
+import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.Save
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
@@ -63,8 +63,8 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Frontend as Frontend
-import Game.LambdaHack.Server.Action.ActionClass
 import Game.LambdaHack.Server.Fov
+import Game.LambdaHack.Server.MonadServer.MonadServer
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.Utils.File
 

@@ -3,7 +3,7 @@
 -- player actions. Has no access to the the main action type.
 -- Does not export the @liftIO@ operation nor a few other implementation
 -- details.
-module Game.LambdaHack.Client.Action
+module Game.LambdaHack.Client.MonadClient
   ( -- * Action monads
     MonadClient( getClient, getsClient, putClient, modifyClient, saveClient )
   , MonadClientUI
@@ -61,10 +61,10 @@ import System.FilePath
 import System.Time
 import Text.Read
 
-import Game.LambdaHack.Client.Action.ActionClass
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.ConfigUI
 import Game.LambdaHack.Client.Draw
+import Game.LambdaHack.Client.MonadClient.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Ability (Ability)
 import Game.LambdaHack.Common.Action

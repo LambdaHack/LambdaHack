@@ -1,7 +1,7 @@
 -- | Basic type classes for server game actions.
 -- This module should not be imported anywhere except in 'Action'
 -- and 'TypeAction'.
-module Game.LambdaHack.Server.Action.ActionClass where
+module Game.LambdaHack.Server.MonadServer.MonadServer where
 
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Misc

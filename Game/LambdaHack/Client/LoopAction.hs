@@ -8,7 +8,7 @@ import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 
-import Game.LambdaHack.Client.Action
+import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action

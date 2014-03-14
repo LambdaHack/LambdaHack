@@ -13,7 +13,7 @@ import Data.Maybe
 import Data.Ord
 import qualified Data.Traversable as Traversable
 
-import Game.LambdaHack.Client.Action
+import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.Inventory
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.Strategy

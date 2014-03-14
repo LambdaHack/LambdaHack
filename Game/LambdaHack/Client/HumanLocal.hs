@@ -36,7 +36,7 @@ import Data.Version
 import Game.LambdaHack.Frontend (frontendName)
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Client.Action
+import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.Inventory
 import Game.LambdaHack.Client.State

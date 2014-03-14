@@ -2,7 +2,7 @@
 -- | Basic type classes for game actions.
 -- This module should not be imported anywhere except in 'Action'
 -- and 'TypeAction'.
-module Game.LambdaHack.Client.Action.ActionClass where
+module Game.LambdaHack.Client.MonadClient.MonadClient where
 
 import Control.Concurrent
 

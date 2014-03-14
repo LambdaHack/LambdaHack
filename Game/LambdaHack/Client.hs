@@ -11,7 +11,7 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Maybe
 
-import Game.LambdaHack.Client.Action
+import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.AtomicSemCli
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.ClientSem

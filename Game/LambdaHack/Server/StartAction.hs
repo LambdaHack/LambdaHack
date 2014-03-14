@@ -40,7 +40,7 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Server.Action hiding (sendUpdateAI, sendUpdateUI)
+import Game.LambdaHack.Server.MonadServer hiding (sendUpdateAI, sendUpdateUI)
 import qualified Game.LambdaHack.Server.DungeonGen as DungeonGen
 import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.Fov

@@ -4,7 +4,7 @@
 -- component of the library, this implementation can be substituted.
 -- This module should not be imported anywhere except in 'Action'
 -- to expose the executor to any code using the library.
-module Game.LambdaHack.Client.Action.ActionType
+module Game.LambdaHack.Client.MonadClient.SampleImplementationMonadClient
   ( ActionCli, executorCli
   ) where
 
@@ -15,7 +15,7 @@ import Control.Monad.Trans.State.Strict hiding (State)
 import Data.Maybe
 import System.FilePath
 
-import Game.LambdaHack.Client.Action.ActionClass
+import Game.LambdaHack.Client.MonadClient.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Animation

@@ -13,13 +13,13 @@ import qualified Content.PlaceKind
 import qualified Content.RuleKind
 import qualified Content.TileKind
 import Game.LambdaHack.Client
-import Game.LambdaHack.Client.Action.ActionType
+import Game.LambdaHack.Client.MonadClient.SampleImplementationMonadClient
 import Game.LambdaHack.Common.Action (MonadAtomic (..))
 import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.AtomicSem
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Server
-import Game.LambdaHack.Server.Action.ActionType
+import Game.LambdaHack.Server.MonadServer.SampleImplementationMonadServer
 import Game.LambdaHack.Server.AtomicSemSer
 
 -- | The game-state semantics of atomic game commands

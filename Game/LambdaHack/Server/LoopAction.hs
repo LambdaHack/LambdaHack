@@ -34,7 +34,7 @@ import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Frontend
-import Game.LambdaHack.Server.Action hiding (sendUpdateAI, sendUpdateUI)
+import Game.LambdaHack.Server.MonadServer hiding (sendUpdateAI, sendUpdateUI)
 import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.HandleRequestServer

@@ -40,7 +40,7 @@ import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Server.Action
+import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.Utils.Frequency
 
