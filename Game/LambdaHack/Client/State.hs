@@ -19,7 +19,7 @@ import qualified System.Random as R
 import System.Time
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Client.ConfigUI
+import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.ItemSlot
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -63,7 +63,7 @@ data StateClient = StateClient
   , sdisco       :: !Discovery     -- ^ remembered item discoveries
   , sfper        :: !FactionPers   -- ^ faction perception indexed by levels
   , srandom      :: !R.StdGen      -- ^ current random generator
-  , sconfigUI    :: ConfigUI       -- ^ client config (including initial RNG)
+  , sconfigUI    :: Config       -- ^ client config (including initial RNG)
   , slastKey     :: !(Maybe K.KM)  -- ^ last command key pressed
   , slastRecord  :: !LastRecord    -- ^ state of key sequence recording
   , slastPlay    :: ![K.KM]        -- ^ state of key sequence playback
@@ -118,7 +118,7 @@ type LastRecord = ( [K.KM]  -- accumulated keys of the current command
                   )
 
 -- | Initial game client state.
-defStateClient :: History -> ConfigUI -> FactionId -> Bool
+defStateClient :: History -> Config -> FactionId -> Bool
                -> StateClient
 defStateClient shistory sconfigUI _sside sisAI =
   StateClient

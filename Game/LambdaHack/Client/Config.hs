@@ -1,6 +1,6 @@
 -- | Personal game configuration file type definitions.
-module Game.LambdaHack.Client.ConfigUI
-  ( ConfigUI(..)
+module Game.LambdaHack.Client.Config
+  ( Config(..)
   ) where
 
 import Control.DeepSeq
@@ -11,7 +11,7 @@ import qualified Game.LambdaHack.Common.Key as K
 
 -- | Fully typed contents of the UI config file. This config
 -- is a part of a game client.
-data ConfigUI = ConfigUI
+data Config = Config
   { -- commands
     configCommands    :: ![(K.KM, (CmdCategory, HumanCmd))]
     -- hero names
@@ -27,4 +27,4 @@ data ConfigUI = ConfigUI
   }
   deriving Show
 
-instance NFData ConfigUI
+instance NFData Config

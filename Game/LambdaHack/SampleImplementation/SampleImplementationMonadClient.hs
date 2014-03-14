@@ -19,6 +19,7 @@ import Game.LambdaHack.Atomic
 import Game.LambdaHack.Atomic.HandleCmdAtomicWrite
 import Game.LambdaHack.Atomic.MonadAtomic
 import Game.LambdaHack.Client.MonadClient
+import Game.LambdaHack.Client.MonadClientUI
 import Game.LambdaHack.Client.ProtocolClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
@@ -71,6 +72,7 @@ instance MonadClient (CliImplementation c d) where
 
 instance MonadClientUI (CliImplementation c d) where
   getsSession f  = CliImplementation $ gets $ f . cliSession
+  liftIO         = CliImplementation . IO.liftIO
 
 instance MonadClientReadServer c (CliImplementation c d) where
   readServer     = CliImplementation $ do

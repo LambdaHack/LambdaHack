@@ -12,7 +12,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Tuple (swap)
 
-import Game.LambdaHack.Client.ConfigUI
+import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Common.HumanCmd
 import qualified Game.LambdaHack.Common.Key as K
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -32,9 +32,9 @@ data Binding = Binding
 -- | Binding of keys to movement and other standard commands,
 -- as well as commands defined in the config file.
 stdBinding :: Kind.Ops RuleKind  -- ^ default game rules
-           -> ConfigUI           -- ^ game config
+           -> Config           -- ^ game config
            -> Binding            -- ^ concrete binding
-stdBinding corule !ConfigUI{configCommands, configVi, configLaptop} =
+stdBinding corule !Config{configCommands, configVi, configLaptop} =
   let stdRuleset = Kind.stdRuleset corule
       heroSelect k = ( K.KM { key=K.Char (Char.intToDigit k)
                             , modifier=K.NoModifier }

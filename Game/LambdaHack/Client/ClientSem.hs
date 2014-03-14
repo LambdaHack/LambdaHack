@@ -10,11 +10,12 @@ import Data.Maybe
 import Data.Ord
 import qualified Data.Text as T
 
-import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.Binding
-import Game.LambdaHack.Client.ConfigUI
+import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.HumanSem
+import Game.LambdaHack.Client.MonadClient
+import Game.LambdaHack.Client.MonadClientUI
 import Game.LambdaHack.Client.RunAction
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.Strategy
@@ -217,7 +218,7 @@ queryUI aid = do
     Nothing -> humanCommand Nothing
     Just RunParams{runMembers} | isSpawnFact fact && runMembers /= [aid] -> do
       stopRunning
-      ConfigUI{configRunStopMsgs} <- getsClient sconfigUI
+      Config{configRunStopMsgs} <- getsClient sconfigUI
       let msg = if configRunStopMsgs
                 then Just $ "Run stop: spawner leader change"
                 else Nothing
@@ -227,7 +228,7 @@ queryUI aid = do
       case runOutcome of
         Left stopMsg -> do
           stopRunning
-          ConfigUI{configRunStopMsgs} <- getsClient sconfigUI
+          Config{configRunStopMsgs} <- getsClient sconfigUI
           let msg = if configRunStopMsgs
                     then Just $ "Run stop:" <+> stopMsg
                     else Nothing

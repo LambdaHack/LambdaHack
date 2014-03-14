@@ -15,9 +15,10 @@ import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.AtomicSemCli
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.ClientSem
-import Game.LambdaHack.Client.ConfigUI
+import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.LoopAction
 import Game.LambdaHack.Client.MonadClient
+import Game.LambdaHack.Client.MonadClientUI
 import Game.LambdaHack.Client.ProtocolClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Animation (DebugModeCli (..))
@@ -93,7 +94,7 @@ exeFrontend :: ( MonadAtomic m, MonadClientUI m
 exeFrontend executorUI executorAI
             cops@Kind.COps{corule} sdebugCli exeServer = do
   -- UI config reloaded at each client start.
-  sconfigUI <- mkConfigUI corule
+  sconfigUI <- mkConfig corule
   let stdRuleset = Kind.stdRuleset corule
       !sbinding = stdBinding corule sconfigUI  -- evaluate to check for errors
       sdebugMode =

@@ -21,6 +21,7 @@ import Game.LambdaHack.Client.HumanLocal
 import Game.LambdaHack.Client.Inventory
 import Game.LambdaHack.Client.ItemSlot
 import Game.LambdaHack.Client.MonadClient
+import Game.LambdaHack.Client.MonadClientUI
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor

@@ -20,11 +20,12 @@ import Data.Monoid
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Client.MonadClient
-import Game.LambdaHack.Client.ConfigUI
+import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.HumanLocal
 import Game.LambdaHack.Client.Inventory
+import Game.LambdaHack.Client.MonadClient
+import Game.LambdaHack.Client.MonadClientUI
 import Game.LambdaHack.Client.RunAction
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
@@ -308,7 +309,7 @@ applyHuman ts = do
 -- | Ask for a direction and alter a tile, if possible.
 alterDirHuman :: MonadClientUI m => [Trigger] -> m (SlideOrCmd RequestTimed)
 alterDirHuman ts = do
-  ConfigUI{configVi, configLaptop} <- getsClient sconfigUI
+  Config{configVi, configLaptop} <- getsClient sconfigUI
   let verb1 = case ts of
         [] -> "alter"
         tr : _ -> verb tr
@@ -492,7 +493,7 @@ gameRestartHuman t = do
     else do
       leader <- getLeaderUI
       DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
-      ConfigUI{configHeroNames} <- getsClient sconfigUI
+      Config{configHeroNames} <- getsClient sconfigUI
       return $ Right $ ReqGameRestart leader t sdifficultyCli configHeroNames
 
 -- * GameExit; does not take time

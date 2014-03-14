@@ -5,9 +5,9 @@ module Game.LambdaHack.Client.HumanSem
 
 import Data.Monoid
 
-import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.HumanGlobal
 import Game.LambdaHack.Client.HumanLocal
+import Game.LambdaHack.Client.MonadClientUI
 import Game.LambdaHack.Common.HumanCmd
 import Game.LambdaHack.Common.Request
 
