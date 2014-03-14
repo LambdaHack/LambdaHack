@@ -26,9 +26,7 @@ import qualified Data.EnumMap.Strict as EM
 import Data.Key (mapWithKeyM, mapWithKeyM_)
 import Data.Maybe
 import qualified Data.Text as T
-import qualified Data.Text.IO as T
 import Game.LambdaHack.Utils.Thread
-import System.IO
 import System.IO.Unsafe (unsafePerformIO)
 
 import Game.LambdaHack.Atomic
@@ -41,6 +39,7 @@ import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Frontend
 import qualified Game.LambdaHack.Frontend as Frontend
+import Game.LambdaHack.Server.DebugServer
 import Game.LambdaHack.Server.MonadServer hiding (liftIO)
 import Game.LambdaHack.Server.State
 
@@ -69,37 +68,27 @@ class MonadServer m => MonadConnServer m where
 writeTQueueAI :: MonadConnServer m => ResponseAI -> TQueue ResponseAI -> m ()
 writeTQueueAI cmd fromServer = do
   debug <- getsServer $ sniffOut . sdebugSer
-  when debug $ do
-    d <- debugResponseAI cmd
-    liftIO $ T.hPutStrLn stderr d
+  when debug $ debugResponseAI cmd
   liftIO $ atomically $ STM.writeTQueue fromServer cmd
 
 writeTQueueUI :: MonadConnServer m => ResponseUI -> TQueue ResponseUI -> m ()
 writeTQueueUI cmd fromServer = do
   debug <- getsServer $ sniffOut . sdebugSer
-  when debug $ do
-    d <- debugResponseUI cmd
-    liftIO $ T.hPutStrLn stderr d
+  when debug $ debugResponseUI cmd
   liftIO $ atomically $ STM.writeTQueue fromServer cmd
 
 readTQueueAI :: MonadConnServer m => TQueue RequestTimed -> m RequestTimed
 readTQueueAI toServer = do
   cmd <- liftIO $ atomically $ STM.readTQueue toServer
   debug <- getsServer $ sniffIn . sdebugSer
-  when debug $ do
-    let aid = aidOfRequestTimed cmd
-    d <- debugAid aid "RequestTimed" cmd
-    liftIO $ T.hPutStrLn stderr d
+  when debug $ debugRequestTimed cmd
   return $! cmd
 
 readTQueueUI :: MonadConnServer m => TQueue Request -> m Request
 readTQueueUI toServer = do
   cmd <- liftIO $ atomically $ STM.readTQueue toServer
   debug <- getsServer $ sniffIn . sdebugSer
-  when debug $ do
-    let aid = aidOfRequest cmd
-    d <- debugAid aid "Request" cmd
-    liftIO $ T.hPutStrLn stderr d
+  when debug $ debugRequest cmd
   return $! cmd
 
 sendUpdateAI :: MonadConnServer m => FactionId -> ResponseAI -> m ()

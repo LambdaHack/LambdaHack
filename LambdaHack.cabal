@@ -134,6 +134,7 @@ library
                       Game.LambdaHack.SampleImplementation.SampleImplementationMonadServer,
                       Game.LambdaHack.Server,
                       Game.LambdaHack.Server.AtomicSemSer,
+                      Game.LambdaHack.Server.DebugServer
                       Game.LambdaHack.Server.DungeonGen,
                       Game.LambdaHack.Server.DungeonGen.Area
                       Game.LambdaHack.Server.DungeonGen.AreaRnd,
