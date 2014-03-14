@@ -17,6 +17,7 @@ import Data.Ratio
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
+import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -41,9 +42,9 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind as TileKind
-import Game.LambdaHack.Server.MonadServer hiding (sendQueryAI, sendQueryUI,
-                                      sendUpdateAI, sendUpdateUI)
 import Game.LambdaHack.Server.EffectSem
+import Game.LambdaHack.Server.MonadServer hiding (sendQueryAI, sendQueryUI,
+                                           sendUpdateAI, sendUpdateUI)
 import Game.LambdaHack.Server.State
 
 execFailure :: (MonadAtomic m, MonadServer m)

@@ -64,7 +64,9 @@ flag curses
   default:            False
 
 library
-  exposed-modules:    Game.LambdaHack.Client,
+  exposed-modules:    Game.LambdaHack.Atomic
+                      Game.LambdaHack.Atomic.MonadAtomic
+                      Game.LambdaHack.Client,
                       Game.LambdaHack.Client.MonadClient,
                       Game.LambdaHack.Client.AtomicSemCli,
                       Game.LambdaHack.Client.Binding,

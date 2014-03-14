@@ -18,6 +18,7 @@ import qualified Data.Text as T
 import Data.Tuple (swap)
 import qualified System.Random as R
 
+import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Animation
@@ -40,10 +41,10 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Server.MonadServer hiding (sendUpdateAI, sendUpdateUI)
 import qualified Game.LambdaHack.Server.DungeonGen as DungeonGen
 import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.Fov
+import Game.LambdaHack.Server.MonadServer hiding (sendUpdateAI, sendUpdateUI)
 import Game.LambdaHack.Server.State
 
 -- | Apply debug options that don't need a new game.

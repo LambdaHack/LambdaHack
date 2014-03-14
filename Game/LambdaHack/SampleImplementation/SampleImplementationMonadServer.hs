@@ -14,6 +14,7 @@ import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 import System.FilePath
 
+import Game.LambdaHack.Atomic.MonadAtomic
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Response
 import qualified Game.LambdaHack.Common.Save as Save

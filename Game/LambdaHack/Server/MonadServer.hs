@@ -47,6 +47,7 @@ import System.IO.Unsafe (unsafePerformIO)
 import qualified System.Random as R
 import System.Time
 
+import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState

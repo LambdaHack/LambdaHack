@@ -12,6 +12,7 @@ import qualified Data.EnumMap.Strict as EM
 import Data.List
 import Data.Maybe
 
+import Game.LambdaHack.Atomic.MonadAtomic
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState

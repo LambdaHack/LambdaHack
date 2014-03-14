@@ -20,6 +20,7 @@ import Data.Ratio ((%))
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
+import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState

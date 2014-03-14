@@ -10,17 +10,17 @@ import qualified Control.Exception as Ex hiding (handle)
 import qualified Data.Text as T
 import System.Environment (getArgs)
 
-import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Animation
-import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Request
+import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Frontend
-import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.HandleRequestServer
 import Game.LambdaHack.Server.LoopAction
+import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.Utils.Thread
 

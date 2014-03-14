@@ -11,14 +11,14 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Maybe
 
-import Game.LambdaHack.Client.MonadClient
+import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.AtomicSemCli
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.ClientSem
 import Game.LambdaHack.Client.ConfigUI
 import Game.LambdaHack.Client.LoopAction
+import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Animation (DebugModeCli (..))
 import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.Faction

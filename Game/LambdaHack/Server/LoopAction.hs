@@ -12,11 +12,11 @@ import Data.Maybe
 import qualified Data.Ord as Ord
 import Data.Text (Text)
 
+import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.AtomicCmd
-import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
@@ -27,6 +27,7 @@ import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request
+import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
@@ -34,10 +35,10 @@ import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Frontend
-import Game.LambdaHack.Server.MonadServer hiding (sendUpdateAI, sendUpdateUI)
 import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.HandleRequestServer
+import Game.LambdaHack.Server.MonadServer hiding (sendUpdateAI, sendUpdateUI)
 import Game.LambdaHack.Server.StartAction
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.Utils.Frequency
