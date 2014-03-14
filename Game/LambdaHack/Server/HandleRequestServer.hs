@@ -7,7 +7,9 @@
 -- are already issued by the point an expression is evaluated, they do not
 -- influence the outcome of the evaluation.
 -- TODO: document
-module Game.LambdaHack.Server.HandleRequestServer where
+module Game.LambdaHack.Server.HandleRequestServer
+  ( handleRequest, handleRequestTimed
+  ) where
 
 import Control.Exception.Assert.Sugar
 import Control.Monad
@@ -42,6 +44,31 @@ import Game.LambdaHack.Server.CommonServer
 import Game.LambdaHack.Server.HandleEffectServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
+
+-- | The semantics of server commands. The resulting boolean value
+-- indicates if the command took some time.
+handleRequest :: (MonadAtomic m, MonadServer m) => Request -> m Bool
+handleRequest cmd = case cmd of
+  ReqTimed cmd2 -> handleRequestTimed cmd2 >> return True
+  ReqGameRestart aid t d names -> reqGameRestart aid t d names >> return False
+  ReqGameExit aid d -> reqGameExit aid d >> return False
+  ReqGameSave _ -> reqGameSave >> return False
+  ReqAutomate aid -> reqAutomate aid >> return False
+
+handleRequestTimed :: (MonadAtomic m, MonadServer m) => RequestTimed -> m ()
+handleRequestTimed cmd = case cmd of
+  ReqMove source target -> reqMove source target
+  ReqMelee source target -> reqMelee source target
+  ReqDisplace source target -> reqDisplace source target
+  ReqAlter source tpos mfeat -> reqAlter source tpos mfeat
+  ReqWait aid -> reqWait aid
+  ReqMoveItem aid iid k fromCStore toCStore ->
+    reqMoveItem aid iid k fromCStore toCStore
+  ReqProject aid p eps iid cstore -> reqProject aid p eps iid cstore
+  ReqApply aid iid cstore -> reqApply aid iid cstore
+  ReqTrigger aid mfeat -> reqTrigger aid mfeat
+  ReqSetTrajectory aid -> reqSetTrajectory aid
+  ReqPongHack _ -> return ()
 
 -- * ReqMove
 

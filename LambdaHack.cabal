@@ -134,10 +134,11 @@ library
                       Game.LambdaHack.SampleImplementation.SampleImplementationMonadClient,
                       Game.LambdaHack.SampleImplementation.SampleImplementationMonadServer,
                       Game.LambdaHack.Server,
-                      Game.LambdaHack.Server.CommonServer
-                      Game.LambdaHack.Server.DebugServer
+                      Game.LambdaHack.Server.Commandline,
+                      Game.LambdaHack.Server.CommonServer,
+                      Game.LambdaHack.Server.DebugServer,
                       Game.LambdaHack.Server.DungeonGen,
-                      Game.LambdaHack.Server.DungeonGen.Area
+                      Game.LambdaHack.Server.DungeonGen.Area,
                       Game.LambdaHack.Server.DungeonGen.AreaRnd,
                       Game.LambdaHack.Server.DungeonGen.Cave,
                       Game.LambdaHack.Server.DungeonGen.Place,
@@ -151,7 +152,7 @@ library
                       Game.LambdaHack.Server.HandleRequestServer,
                       Game.LambdaHack.Server.LoopServer,
                       Game.LambdaHack.Server.MonadServer,
-                      Game.LambdaHack.Server.PeriodicServer
+                      Game.LambdaHack.Server.PeriodicServer,
                       Game.LambdaHack.Server.ProtocolServer,
                       Game.LambdaHack.Server.StartServer,
                       Game.LambdaHack.Server.State,
