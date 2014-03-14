@@ -5,7 +5,7 @@
 -- This module should not be imported anywhere except in 'Action'
 -- to expose the executor to any code using the library.
 module Game.LambdaHack.Client.MonadClient.SampleImplementationMonadClient
-  ( ActionCli, executorCli
+  ( executorCli
   ) where
 
 import Control.Applicative
@@ -19,6 +19,8 @@ import Game.LambdaHack.Client.MonadClient.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Animation
+import Game.LambdaHack.Common.AtomicCmd
+import Game.LambdaHack.Common.AtomicSem
 import Game.LambdaHack.Common.Response
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
@@ -33,54 +35,60 @@ data CliState c d = CliState
   }
 
 -- | Server state transformation monad.
-newtype ActionCli c d a =
-    ActionCli {runActionCli :: StateT (CliState c d) IO a}
+newtype CliImplementation c d a =
+    CliImplementation {runCliImplementation :: StateT (CliState c d) IO a}
   deriving (Monad, Functor, Applicative)
 
-instance MonadActionRO (ActionCli c d) where
-  getState    = ActionCli $ gets cliState
-  getsState f = ActionCli $ gets $ f . cliState
+instance MonadActionRO (CliImplementation c d) where
+  getState    = CliImplementation $ gets cliState
+  getsState f = CliImplementation $ gets $ f . cliState
 
-instance MonadAction (ActionCli c d) where
-  modifyState f = ActionCli $ state $ \cliS ->
+instance MonadAction (CliImplementation c d) where
+  modifyState f = CliImplementation $ state $ \cliS ->
     let newCliS = cliS {cliState = f $ cliState cliS}
     in newCliS `seq` ((), newCliS)
-  putState    s = ActionCli $ state $ \cliS ->
+  putState    s = CliImplementation $ state $ \cliS ->
     let newCliS = cliS {cliState = s}
     in newCliS `seq` ((), newCliS)
 
-instance MonadClient (ActionCli c d) where
-  getClient      = ActionCli $ gets cliClient
-  getsClient   f = ActionCli $ gets $ f . cliClient
-  modifyClient f = ActionCli $ state $ \cliS ->
+instance MonadClient (CliImplementation c d) where
+  getClient      = CliImplementation $ gets cliClient
+  getsClient   f = CliImplementation $ gets $ f . cliClient
+  modifyClient f = CliImplementation $ state $ \cliS ->
     let newCliS = cliS {cliClient = f $ cliClient cliS}
     in newCliS `seq` ((), newCliS)
-  putClient    s = ActionCli $ state $ \cliS ->
+  putClient    s = CliImplementation $ state $ \cliS ->
     let newCliS = cliS {cliClient = s}
     in newCliS `seq` ((), newCliS)
-  liftIO         = ActionCli . IO.liftIO
-  saveClient     = ActionCli $ do
+  liftIO         = CliImplementation . IO.liftIO
+  saveClient     = CliImplementation $ do
     s <- gets cliState
     cli <- gets cliClient
     toSave <- gets cliToSave
     IO.liftIO $ Save.saveToChan toSave (s, cli)
 
-instance MonadClientUI (ActionCli c d) where
-  getsSession f  = ActionCli $ gets $ f . cliSession
+instance MonadClientUI (CliImplementation c d) where
+  getsSession f  = CliImplementation $ gets $ f . cliSession
 
-instance MonadClientReadServer c (ActionCli c d) where
-  readServer     = ActionCli $ do
+instance MonadClientReadServer c (CliImplementation c d) where
+  readServer     = CliImplementation $ do
     ChanServer{fromServer} <- gets cliDict
     IO.liftIO $ atomically . readTQueue $ fromServer
 
-instance MonadClientWriteServer d (ActionCli c d) where
-  writeServer scmd = ActionCli $ do
+instance MonadClientWriteServer d (CliImplementation c d) where
+  writeServer scmd = CliImplementation $ do
     ChanServer{toServer} <- gets cliDict
     IO.liftIO $ atomically . writeTQueue toServer $ scmd
 
+-- | The game-state semantics of atomic game commands
+-- as computed on clients. Special effects (@SfxAtomic@) don't modify state.
+instance MonadAtomic (CliImplementation c d) where
+  execAtomic (CmdAtomic cmd) = cmdAtomicSem cmd
+  execAtomic (SfxAtomic _) = return ()
+
 -- | Init the client, then run an action, with a given session,
 -- state and history, in the @IO@ monad.
-executorCli :: ActionCli c d ()
+executorCli :: CliImplementation c d ()
             -> SessionUI -> State -> StateClient -> ChanServer c d
             -> IO ()
 executorCli m cliSession cliState cliClient cliDict =
@@ -88,5 +96,5 @@ executorCli m cliSession cliState cliClient cliDict =
         fromMaybe "save" (ssavePrefixCli (sdebugCli cli2))
         <.> saveName (sside cli2) (sisAI cli2)
       exe cliToSave =
-        evalStateT (runActionCli m) CliState{..}
+        evalStateT (runCliImplementation m) CliState{..}
   in Save.wrapInSaves saveFile exe

@@ -4,7 +4,7 @@
 -- This module should not be imported anywhere except in 'Action'
 -- to expose the executor to any code using the library.
 module Game.LambdaHack.Server.MonadServer.SampleImplementationMonadServer
-  ( ActionSer, executorSer
+  ( executorSer
   ) where
 
 import Control.Applicative
@@ -18,6 +18,7 @@ import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Response
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Server.AtomicSemSer
 import Game.LambdaHack.Server.MonadServer.MonadServer
 import Game.LambdaHack.Server.State
 
@@ -30,53 +31,59 @@ data SerState = SerState
   }
 
 -- | Server state transformation monad.
-newtype ActionSer a = ActionSer {runActionSer :: StateT SerState IO a}
+newtype SerImplementation a =
+    SerImplementation {runSerImplementation :: StateT SerState IO a}
   deriving (Monad, Functor, Applicative)
 
-instance MonadActionRO ActionSer where
-  getState    = ActionSer $ gets serState
-  getsState f = ActionSer $ gets $ f . serState
+instance MonadActionRO SerImplementation where
+  getState    = SerImplementation $ gets serState
+  getsState f = SerImplementation $ gets $ f . serState
 
-instance MonadAction ActionSer where
-  modifyState f = ActionSer $ state $ \serS ->
+instance MonadAction SerImplementation where
+  modifyState f = SerImplementation $ state $ \serS ->
     let newSerS = serS {serState = f $ serState serS}
     in newSerS `seq` ((), newSerS)
-  putState    s = ActionSer $ state $ \serS ->
+  putState    s = SerImplementation $ state $ \serS ->
     let newSerS = serS {serState = s}
     in newSerS `seq` ((), newSerS)
 
-instance MonadServer ActionSer where
-  getServer      = ActionSer $ gets serServer
-  getsServer   f = ActionSer $ gets $ f . serServer
-  modifyServer f = ActionSer $ state $ \serS ->
+instance MonadServer SerImplementation where
+  getServer      = SerImplementation $ gets serServer
+  getsServer   f = SerImplementation $ gets $ f . serServer
+  modifyServer f = SerImplementation $ state $ \serS ->
     let newSerS = serS {serServer = f $ serServer serS}
     in newSerS `seq` ((), newSerS)
-  putServer    s = ActionSer $ state $ \serS ->
+  putServer    s = SerImplementation $ state $ \serS ->
     let newSerS = serS {serServer = s}
     in newSerS `seq` ((), newSerS)
-  liftIO         = ActionSer . IO.liftIO
-  saveServer     = ActionSer $ do
+  liftIO         = SerImplementation . IO.liftIO
+  saveServer     = SerImplementation $ do
     s <- gets serState
     ser <- gets serServer
     toSave <- gets serToSave
     IO.liftIO $ Save.saveToChan toSave (s, ser)
 
-instance MonadConnServer ActionSer where
-  getDict      = ActionSer $ gets serDict
-  getsDict   f = ActionSer $ gets $ f . serDict
+instance MonadConnServer SerImplementation where
+  getDict      = SerImplementation $ gets serDict
+  getsDict   f = SerImplementation $ gets $ f . serDict
   modifyDict f =
-    ActionSer $ modify $ \serS -> serS {serDict = f $ serDict serS}
+    SerImplementation $ modify $ \serS -> serS {serDict = f $ serDict serS}
   putDict    s =
-    ActionSer $ modify $ \serS -> serS {serDict = s}
+    SerImplementation $ modify $ \serS -> serS {serDict = s}
+
+-- | The game-state semantics of atomic game commands
+-- as computed on the server.
+instance MonadAtomic SerImplementation where
+  execAtomic = atomicSendSem
 
 -- | Run an action in the @IO@ monad, with undefined state.
-executorSer :: ActionSer () -> IO ()
+executorSer :: SerImplementation () -> IO ()
 executorSer m =
   let saveFile (_, ser) =
         fromMaybe "save" (ssavePrefixSer (sdebugSer ser))
         <.> saveName
       exe serToSave =
-        evalStateT (runActionSer m)
+        evalStateT (runSerImplementation m)
           SerState { serState = emptyState
                    , serServer = emptyStateServer
                    , serDict = EM.empty
