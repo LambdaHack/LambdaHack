@@ -7,8 +7,7 @@ module Game.LambdaHack.Common.State
     -- * State operations
   , defStateGlobal, emptyState, localFromGlobal
   , updateDungeon, updateDepth, updateActorD, updateItemD
-  , updateFactionD, updateTime, updateCOps, getLocalTime
-  , isSpawnFaction
+  , updateFactionD, updateTime, updateCOps
   ) where
 
 import Data.Binary
@@ -148,14 +147,6 @@ updateTime f s = s {_stime = f (_stime s)}
 -- | Update content data within state.
 updateCOps :: (Kind.COps -> Kind.COps) -> State -> State
 updateCOps f s = s {_scops = f (_scops s)}
-
--- | Get current time from the dungeon data.
-getLocalTime :: LevelId -> State -> Time
-getLocalTime lid s = ltime $ _sdungeon s EM.! lid
-
--- | Tell whether the faction can spawn actors.
-isSpawnFaction :: FactionId -> State -> Bool
-isSpawnFaction fid s = isSpawnFact $ _sfactionD s EM.! fid
 
 sdungeon :: State -> Dungeon
 sdungeon = _sdungeon

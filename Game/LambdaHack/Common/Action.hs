@@ -2,13 +2,19 @@
 -- player actions. Has no access to the the main action type.
 module Game.LambdaHack.Common.Action
   ( MonadReadState(..)
-  , getLevel, nUI
+  , getLevel, nUI, posOfContainer, posOfAid, actorConts
   ) where
 
+import Control.Exception.Assert.Sugar
 import qualified Data.EnumMap.Strict as EM
 
+import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
 
@@ -23,3 +29,37 @@ nUI :: MonadReadState m => m Int
 nUI = do
   factionD <- getsState sfactionD
   return $! length $ filter (playerUI . gplayer) $ EM.elems factionD
+
+posOfAid :: MonadReadState m => ActorId -> m (LevelId, Point)
+posOfAid aid = do
+  b <- getsState $ getActorBody aid
+  return (blid b, bpos b)
+
+posOfContainer :: MonadReadState m => Container -> m (LevelId, Point)
+posOfContainer (CFloor lid p) = return (lid, p)
+posOfContainer (CActor aid _) = posOfAid aid
+
+actorInvs :: MonadReadState m
+          => ItemId -> Int -> ActorId -> m [(Int, ActorId)]
+actorInvs iid k aid = do
+  let takeFromInv :: Int -> [(ActorId, Actor)] -> [(Int, ActorId)]
+      takeFromInv 0 _ = []
+      takeFromInv _ [] = assert `failure` (iid, k, aid)
+      takeFromInv n ((aid2, b2) : as) =
+        case EM.lookup iid $ binv b2 of
+          Nothing -> takeFromInv n as
+          Just m -> let ck = min n m
+                    in (ck, aid2) : takeFromInv (n - ck) as
+  b <- getsState $ getActorBody aid
+  as <- getsState $ fidActorNotProjAssocs (bfid b)
+  return $ takeFromInv k $ (aid, b) : filter ((/= aid) . fst) as
+
+actorConts :: MonadReadState m
+           => ItemId -> Int -> ActorId -> CStore
+           -> m [(Int, Container)]
+actorConts iid k aid cstore = case cstore of
+  CGround -> return [(k, CActor aid CGround)]
+  CEqp -> return [(k, CActor aid CEqp)]
+  CInv -> do
+    invs <- actorInvs iid k aid
+    return $! map (\(n, aid2) -> (n, CActor aid2 CInv)) invs

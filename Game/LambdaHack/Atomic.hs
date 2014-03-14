@@ -6,7 +6,7 @@ module Game.LambdaHack.Atomic
     -- * CmdAtomic
   , CmdAtomic(..), UpdAtomic(..), SfxAtomic(..), HitAtomic(..)
     -- * PosCmdAtomicRead
-  , PosAtomic(..), posUpdAtomic, posSfxAtomic, seenAtomicCli, posOfContainer
+  , PosAtomic(..), posUpdAtomic, posSfxAtomic, seenAtomicCli
   ) where
 
 import Game.LambdaHack.Atomic.CmdAtomic

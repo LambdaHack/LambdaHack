@@ -4,7 +4,7 @@
 module Game.LambdaHack.Atomic.PosCmdAtomicRead
   ( PosAtomic(..), posUpdAtomic, posSfxAtomic
   , resetsFovCmdAtomic, breakUpdAtomic, loudUpdAtomic
-  , seenAtomicCli, seenAtomicSer, posOfContainer
+  , seenAtomicCli, seenAtomicSer
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -156,17 +156,8 @@ singleFidAndAid aid = do
 
 singleAid :: MonadReadState m => ActorId -> m PosAtomic
 singleAid aid = do
-  b <- getsState $ getActorBody aid
-  return $! PosSight (blid b) [bpos b]
-
-posOfAid :: MonadReadState m => ActorId -> m (LevelId, Point)
-posOfAid aid = do
-  b <- getsState $ getActorBody aid
-  return (blid b, bpos b)
-
-posOfContainer :: MonadReadState m => Container -> m (LevelId, Point)
-posOfContainer (CFloor lid p) = return (lid, p)
-posOfContainer (CActor aid _) = posOfAid aid
+  (lid, p) <- posOfAid aid
+  return $! PosSight lid [p]
 
 singleContainer :: MonadReadState m => Container -> m PosAtomic
 singleContainer c = do
