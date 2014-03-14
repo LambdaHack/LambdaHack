@@ -122,7 +122,7 @@ loopSer sdebug handleRequest executorUI executorAI !cops = do
           when continue loop
   loop
 
-initDebug :: MonadActionRO m => Kind.COps -> DebugModeSer -> m DebugModeSer
+initDebug :: MonadReadState m => Kind.COps -> DebugModeSer -> m DebugModeSer
 initDebug Kind.COps{corule} sdebugSer = do
   let stdRuleset = Kind.stdRuleset corule
   return $!

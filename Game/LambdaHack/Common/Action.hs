@@ -1,7 +1,7 @@
 -- | Game action monads and basic building blocks for human and computer
 -- player actions. Has no access to the the main action type.
 module Game.LambdaHack.Common.Action
-  ( MonadActionRO(..)
+  ( MonadReadState(..)
   , getLevel, nUI
   ) where
 
@@ -12,14 +12,14 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
 
-class (Monad m, Functor m) => MonadActionRO m where
+class (Monad m, Functor m) => MonadReadState m where
   getState    :: m State
   getsState   :: (State -> a) -> m a
 
-getLevel :: MonadActionRO m => LevelId -> m Level
+getLevel :: MonadReadState m => LevelId -> m Level
 getLevel lid = getsState $ (EM.! lid) . sdungeon
 
-nUI :: MonadActionRO m => m Int
+nUI :: MonadReadState m => m Int
 nUI = do
   factionD <- getsState sfactionD
   return $! length $ filter (playerUI . gplayer) $ EM.elems factionD

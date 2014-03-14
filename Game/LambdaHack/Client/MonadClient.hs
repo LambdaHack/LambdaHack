@@ -120,7 +120,7 @@ data ConnFrontend = ConnFrontend
       -- ^ write a UI request to the frontend
   }
 
-class MonadActionRO m => MonadClient m where
+class MonadReadState m => MonadClient m where
   getClient    :: m StateClient
   getsClient   :: (StateClient -> a) -> m a
   modifyClient :: (StateClient -> StateClient) -> m ()

@@ -33,7 +33,7 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind as ModeKind
 import Game.LambdaHack.Content.TileKind as TileKind
 
-cmdAtomicSem :: MonadAction m => CmdAtomic -> m ()
+cmdAtomicSem :: MonadWriteState m => CmdAtomic -> m ()
 cmdAtomicSem cmd = case cmd of
   CreateActorA aid body ais -> createActorA aid body ais
   DestroyActorA aid body ais -> destroyActorA aid body ais
@@ -83,7 +83,7 @@ cmdAtomicSem cmd = case cmd of
 
 -- | Creates an actor. Note: after this command, usually a new leader
 -- for the party should be elected (in case this actor is the only one alive).
-createActorA :: MonadAction m => ActorId -> Actor -> [(ItemId, Item)] -> m ()
+createActorA :: MonadWriteState m => ActorId -> Actor -> [(ItemId, Item)] -> m ()
 createActorA aid body ais = do
   -- Add actor to @sactorD@.
   let f Nothing = Just body
@@ -106,11 +106,11 @@ createActorA aid body ais = do
     modifyState $ updateItemD $ EM.insertWith h iid item
 
 -- | Update a given level data within state.
-updateLevel :: MonadAction m => LevelId -> (Level -> Level) -> m ()
+updateLevel :: MonadWriteState m => LevelId -> (Level -> Level) -> m ()
 updateLevel lid f = modifyState $ updateDungeon $ EM.adjust f lid
 
 -- | Kills an actor.
-destroyActorA :: MonadAction m => ActorId -> Actor -> [(ItemId, Item)] -> m ()
+destroyActorA :: MonadWriteState m => ActorId -> Actor -> [(ItemId, Item)] -> m ()
 destroyActorA aid body ais = do
   -- If a leader dies, a new leader should be elected on the server
   -- before this command is executed.
@@ -138,7 +138,7 @@ destroyActorA aid body ais = do
 
 -- | Create a few copies of an item that is already registered for the dungeon
 -- (in @sitemRev@ field of @StateServer@).
-createItemA :: MonadAction m => ItemId -> Item -> Int -> Container -> m ()
+createItemA :: MonadWriteState m => ItemId -> Item -> Int -> Container -> m ()
 createItemA iid item k c = assert (k > 0) $ do
   -- The item may or may not be already present in @sitemD@,
   -- regardless if it's actually present in the dungeon.
@@ -150,14 +150,14 @@ createItemA iid item k c = assert (k > 0) $ do
     CFloor lid pos -> insertItemFloor iid k lid pos
     CActor aid store -> insertItemActor iid k aid store
 
-insertItemFloor :: MonadAction m
+insertItemFloor :: MonadWriteState m
                 => ItemId -> Int -> LevelId -> Point -> m ()
 insertItemFloor iid k lid pos =
   let bag = EM.singleton iid k
       mergeBag = EM.insertWith (EM.unionWith (+)) pos bag
   in updateLevel lid $ updateFloor mergeBag
 
-insertItemActor :: MonadAction m => ItemId -> Int -> ActorId -> CStore -> m ()
+insertItemActor :: MonadWriteState m => ItemId -> Int -> ActorId -> CStore -> m ()
 insertItemActor iid k aid cstore = case cstore of
   CGround -> do
     b <- getsState $ getActorBody aid
@@ -165,14 +165,14 @@ insertItemActor iid k aid cstore = case cstore of
   CEqp -> insertItemEqp iid k aid
   CInv -> insertItemInv iid k aid
 
-insertItemEqp :: MonadAction m => ItemId -> Int -> ActorId -> m ()
+insertItemEqp :: MonadWriteState m => ItemId -> Int -> ActorId -> m ()
 insertItemEqp iid k aid = do
   let bag = EM.singleton iid k
       upd = EM.unionWith (+) bag
   modifyState $ updateActorBody aid $ \b ->
     b {beqp = upd (beqp b)}
 
-insertItemInv :: MonadAction m => ItemId -> Int -> ActorId -> m ()
+insertItemInv :: MonadWriteState m => ItemId -> Int -> ActorId -> m ()
 insertItemInv iid k aid = do
   let bag = EM.singleton iid k
       upd = EM.unionWith (+) bag
@@ -180,7 +180,7 @@ insertItemInv iid k aid = do
     b {binv = upd (binv b)}
 
 -- | Destroy some copies (possibly not all) of an item.
-destroyItemA :: MonadAction m => ItemId -> Item -> Int -> Container -> m ()
+destroyItemA :: MonadWriteState m => ItemId -> Item -> Int -> Container -> m ()
 destroyItemA iid item k c = assert (k > 0) $ do
   -- Do not remove the item from @sitemD@ nor from @sitemRev@,
   -- It's incredibly costly and not noticeable for the player.
@@ -192,7 +192,7 @@ destroyItemA iid item k c = assert (k > 0) $ do
     CFloor lid pos -> deleteItemFloor iid k lid pos
     CActor aid store -> deleteItemActor iid k aid store
 
-deleteItemFloor :: MonadAction m
+deleteItemFloor :: MonadWriteState m
                 => ItemId -> Int -> LevelId -> Point -> m ()
 deleteItemFloor iid k lid pos =
   let rmFromFloor (Just bag) =
@@ -202,7 +202,7 @@ deleteItemFloor iid k lid pos =
                                    `twith` (iid, k, lid, pos)
   in updateLevel lid $ updateFloor $ EM.alter rmFromFloor pos
 
-deleteItemActor :: MonadAction m => ItemId -> Int -> ActorId -> CStore -> m ()
+deleteItemActor :: MonadWriteState m => ItemId -> Int -> ActorId -> CStore -> m ()
 deleteItemActor iid k aid cstore = case cstore of
   CGround -> do
     b <- getsState $ getActorBody aid
@@ -210,17 +210,17 @@ deleteItemActor iid k aid cstore = case cstore of
   CEqp -> deleteItemEqp iid k aid
   CInv -> deleteItemInv iid k aid
 
-deleteItemEqp :: MonadAction m => ItemId -> Int -> ActorId -> m ()
+deleteItemEqp :: MonadWriteState m => ItemId -> Int -> ActorId -> m ()
 deleteItemEqp iid k aid = do
   modifyState $ updateActorBody aid $ \b ->
     b {beqp = rmFromBag k iid (beqp b)}
 
-deleteItemInv :: MonadAction m => ItemId -> Int -> ActorId -> m ()
+deleteItemInv :: MonadWriteState m => ItemId -> Int -> ActorId -> m ()
 deleteItemInv iid k aid = do
   modifyState $ updateActorBody aid $ \b ->
     b {binv = rmFromBag k iid (binv b)}
 
-moveActorA :: MonadAction m => ActorId -> Point -> Point -> m ()
+moveActorA :: MonadWriteState m => ActorId -> Point -> Point -> m ()
 moveActorA aid fromP toP = assert (fromP /= toP) $ do
   b <- getsState $ getActorBody aid
   assert (fromP == bpos b `blame` "unexpected moved actor position"
@@ -228,21 +228,21 @@ moveActorA aid fromP toP = assert (fromP /= toP) $ do
   modifyState $ updateActorBody aid
               $ \body -> body {bpos = toP, boldpos = fromP}
 
-waitActorA :: MonadAction m => ActorId -> Bool -> Bool -> m ()
+waitActorA :: MonadWriteState m => ActorId -> Bool -> Bool -> m ()
 waitActorA aid fromWait toWait = assert (fromWait /= toWait) $ do
   b <- getsState $ getActorBody aid
   assert (fromWait == bwait b `blame` "unexpected waited actor time"
                               `twith` (aid, fromWait, toWait, bwait b, b)) skip
   modifyState $ updateActorBody aid $ \body -> body {bwait = toWait}
 
-displaceActorA :: MonadAction m => ActorId -> ActorId -> m ()
+displaceActorA :: MonadWriteState m => ActorId -> ActorId -> m ()
 displaceActorA source target = assert (source /= target) $ do
   spos <- getsState $ bpos . getActorBody source
   tpos <- getsState $ bpos . getActorBody target
   modifyState $ updateActorBody source $ \b -> b {bpos = tpos, boldpos = spos}
   modifyState $ updateActorBody target $ \b -> b {bpos = spos, boldpos = tpos}
 
-moveItemA :: MonadAction m => ItemId -> Int -> Container -> Container -> m ()
+moveItemA :: MonadWriteState m => ItemId -> Int -> Container -> Container -> m ()
 moveItemA iid k c1 c2 = assert (k > 0 && c1 /= c2) $ do
   case c1 of
     CFloor lid pos -> deleteItemFloor iid k lid pos
@@ -252,7 +252,7 @@ moveItemA iid k c1 c2 = assert (k > 0 && c1 /= c2) $ do
     CActor aid cstore -> insertItemActor iid k aid cstore
 
 -- TODO: optimize (a single call to updatePrio is enough)
-ageActorA :: MonadAction m => ActorId -> Time -> m ()
+ageActorA :: MonadWriteState m => ActorId -> Time -> m ()
 ageActorA aid t = assert (t /= timeZero) $ do
   body <- getsState $ getActorBody aid
   ais <- getsState $ getCarriedAssocs body
@@ -260,15 +260,15 @@ ageActorA aid t = assert (t /= timeZero) $ do
   let newBody = body {btime = timeAdd (btime body) t}
   createActorA aid newBody ais
 
-healActorA :: MonadAction m => ActorId -> Int -> m ()
+healActorA :: MonadWriteState m => ActorId -> Int -> m ()
 healActorA aid n = assert (n /= 0) $
   modifyState $ updateActorBody aid $ \b -> b {bhp = bhp b + n}
 
-calmActorA :: MonadAction m => ActorId -> Int -> m ()
+calmActorA :: MonadWriteState m => ActorId -> Int -> m ()
 calmActorA aid n = assert (n /= 0) $
   modifyState $ updateActorBody aid $ \b -> b {bcalm = bcalm b + n}
 
-hasteActorA :: MonadAction m => ActorId -> Speed -> m ()
+hasteActorA :: MonadWriteState m => ActorId -> Speed -> m ()
 hasteActorA aid delta = assert (delta /= speedZero) $ do
   modifyState $ updateActorBody aid $ \ b ->
     let newSpeed = speedAdd (bspeed b) delta
@@ -277,7 +277,7 @@ hasteActorA aid delta = assert (delta /= speedZero) $ do
                `twith` (aid, delta, b, newSpeed))
        $ b {bspeed = newSpeed}
 
-trajectoryActorA :: MonadAction m
+trajectoryActorA :: MonadWriteState m
            => ActorId -> Maybe [Vector] -> Maybe [Vector] -> m ()
 trajectoryActorA aid fromT toT = assert (fromT /= toT) $ do
   body <- getsState $ getActorBody aid
@@ -285,7 +285,7 @@ trajectoryActorA aid fromT toT = assert (fromT /= toT) $ do
                                     `twith` (aid, fromT, toT, body)) skip
   modifyState $ updateActorBody aid $ \b -> b {btrajectory = toT}
 
-colorActorA :: MonadAction m
+colorActorA :: MonadWriteState m
             => ActorId -> Color.Color -> Color.Color -> m ()
 colorActorA aid fromCol toCol = assert (fromCol /= toCol) $ do
   body <- getsState $ getActorBody aid
@@ -293,7 +293,7 @@ colorActorA aid fromCol toCol = assert (fromCol /= toCol) $ do
                                  `twith` (aid, fromCol, toCol, body)) skip
   modifyState $ updateActorBody aid $ \b -> b {bcolor = toCol}
 
-quitFactionA :: MonadAction m
+quitFactionA :: MonadWriteState m
              => FactionId -> Maybe Actor -> Maybe Status -> Maybe Status
              -> m ()
 quitFactionA fid mbody fromSt toSt = assert (fromSt /= toSt) $ do
@@ -305,7 +305,7 @@ quitFactionA fid mbody fromSt toSt = assert (fromSt /= toSt) $ do
   modifyState $ updateFactionBody fid adj
 
 -- The previous leader is assumed to be alive.
-leadFactionA :: MonadAction m
+leadFactionA :: MonadWriteState m
              => FactionId -> Maybe ActorId -> Maybe ActorId -> m ()
 leadFactionA fid source target = assert (source /= target) $ do
   fact <- getsState $ (EM.! fid) . sfactionD
@@ -317,7 +317,7 @@ leadFactionA fid source target = assert (source /= target) $ do
   let adj fa = fa {gleader = target}
   modifyState $ updateFactionBody fid adj
 
-diplFactionA :: MonadAction m
+diplFactionA :: MonadWriteState m
              => FactionId -> FactionId -> Diplomacy -> Diplomacy -> m ()
 diplFactionA fid1 fid2 fromDipl toDipl =
   assert (fid1 /= fid2 && fromDipl /= toDipl) $ do
@@ -331,7 +331,7 @@ diplFactionA fid1 fid2 fromDipl toDipl =
     modifyState $ updateFactionBody fid1 (adj fid2)
     modifyState $ updateFactionBody fid2 (adj fid1)
 
-autoFactionA:: MonadAction m => FactionId -> Bool -> m ()
+autoFactionA:: MonadWriteState m => FactionId -> Bool -> m ()
 autoFactionA fid st = do
   let adj fact =
         let player = gplayer fact
@@ -341,7 +341,7 @@ autoFactionA fid st = do
 
 -- | Record a given number (usually just 1, or -1 for undo) of actor kills
 -- for score calculation.
-recordKillA :: MonadAction m => ActorId -> Int -> m ()
+recordKillA :: MonadWriteState m => ActorId -> Int -> m ()
 recordKillA aid k = do
   b <- getsState $ getActorBody aid
   assert (not (bproj b) `blame` (aid, b)) skip
@@ -356,7 +356,7 @@ recordKillA aid k = do
 -- We do not modify @lclear@ here, because we can't keep track of
 -- alterations to unknown tiles. The server would need to send @lclear@
 -- updates for each invisible tile alteration that affects it.
-alterTileA :: MonadAction m
+alterTileA :: MonadWriteState m
            => LevelId -> Point -> Kind.Id TileKind -> Kind.Id TileKind
            -> m ()
 alterTileA lid p fromTile toTile = assert (fromTile /= toTile) $ do
@@ -385,7 +385,7 @@ alterTileA lid p fromTile toTile = assert (fromTile /= toTile) $ do
 -- to save computation, especially for clients that remember tiles
 -- at previously seen positions. Similarly, when updating the @lseen@
 -- field we don't assume the tiles were unknown previously.
-spotTileA :: MonadAction m => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
+spotTileA :: MonadWriteState m => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
 spotTileA lid ts = assert (not $ null ts) $ do
   Kind.COps{cotile} <- getsState scops
   Level{ltile} <- getLevel lid
@@ -401,7 +401,7 @@ spotTileA lid ts = assert (not $ null ts) $ do
 
 -- Stop noticing previously visible tiles. Unlike @spotTileA@, it verifies
 -- the state of the tiles before changing them.
-loseTileA :: MonadAction m => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
+loseTileA :: MonadWriteState m => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
 loseTileA lid ts = assert (not $ null ts) $ do
   Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getsState scops
   let unknownId = ouniqGroup "unknown space"
@@ -416,14 +416,14 @@ loseTileA lid ts = assert (not $ null ts) $ do
           updateLevel lid $ \lvl -> lvl {lseen = lseen lvl - 1}
   mapM_ f ts
 
-alterSmellA :: MonadAction m
+alterSmellA :: MonadWriteState m
             => LevelId -> Point -> Maybe Time -> Maybe Time -> m ()
 alterSmellA lid p fromSm toSm = do
   let alt sm = assert (sm == fromSm `blame` "unexpected tile smell"
                                     `twith` (lid, p, fromSm, toSm, sm)) toSm
   updateLevel lid $ updateSmell $ EM.alter alt p
 
-spotSmellA :: MonadAction m => LevelId -> [(Point, Time)] -> m ()
+spotSmellA :: MonadWriteState m => LevelId -> [(Point, Time)] -> m ()
 spotSmellA lid sms = assert (not $ null sms) $ do
   let alt sm Nothing = Just sm
       alt sm (Just oldSm) = assert `failure` "smell already added"
@@ -432,7 +432,7 @@ spotSmellA lid sms = assert (not $ null sms) $ do
       upd m = foldr f m sms
   updateLevel lid $ updateSmell upd
 
-loseSmellA :: MonadAction m => LevelId -> [(Point, Time)] -> m ()
+loseSmellA :: MonadWriteState m => LevelId -> [(Point, Time)] -> m ()
 loseSmellA lid sms = assert (not $ null sms) $ do
   let alt sm Nothing = assert `failure` "smell already removed"
                               `twith` (lid, sms, sm)
@@ -448,20 +448,20 @@ loseSmellA lid sms = assert (not $ null sms) $ do
 -- Not aging the game here, since not all factions see the level,
 -- so not all get this command (it would lead information that
 -- there is somebody's leader on the level).
-ageLevelA :: MonadAction m => LevelId -> Time -> m ()
+ageLevelA :: MonadWriteState m => LevelId -> Time -> m ()
 ageLevelA lid delta = assert (delta /= timeZero) $
   updateLevel lid $ \lvl -> lvl {ltime = timeAdd (ltime lvl) delta}
 
-ageGameA :: MonadAction m => Time -> m ()
+ageGameA :: MonadWriteState m => Time -> m ()
 ageGameA delta = assert (delta /= timeZero) $
   modifyState $ updateTime $ timeAdd delta
 
-restartA :: MonadAction m
+restartA :: MonadWriteState m
          => FactionId -> Discovery -> FactionPers -> State -> m ()
 restartA _ _ _ = putState
 
-restartServerA :: MonadAction m =>  State -> m ()
+restartServerA :: MonadWriteState m =>  State -> m ()
 restartServerA = putState
 
-resumeServerA :: MonadAction m =>  State -> m ()
+resumeServerA :: MonadWriteState m =>  State -> m ()
 resumeServerA = putState

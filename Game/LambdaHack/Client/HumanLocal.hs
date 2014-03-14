@@ -109,7 +109,7 @@ memberCycleHuman = do
       assert (success `blame` "same leader" `twith` (leader, np, b)) skip
       return mempty
 
-partyAfterLeader :: MonadActionRO m => ActorId -> m [(ActorId, Actor)]
+partyAfterLeader :: MonadReadState m => ActorId -> m [(ActorId, Actor)]
 partyAfterLeader leader = do
   faction <- getsState $ bfid . getActorBody leader
   allA <- getsState $ EM.assocs . sactorD

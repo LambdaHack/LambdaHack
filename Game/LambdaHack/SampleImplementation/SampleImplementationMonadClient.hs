@@ -40,11 +40,11 @@ newtype CliImplementation c d a =
     CliImplementation {runCliImplementation :: StateT (CliState c d) IO a}
   deriving (Monad, Functor, Applicative)
 
-instance MonadActionRO (CliImplementation c d) where
+instance MonadReadState (CliImplementation c d) where
   getState    = CliImplementation $ gets cliState
   getsState f = CliImplementation $ gets $ f . cliState
 
-instance MonadAction (CliImplementation c d) where
+instance MonadWriteState (CliImplementation c d) where
   modifyState f = CliImplementation $ state $ \cliS ->
     let newCliS = cliS {cliState = f $ cliState cliS}
     in newCliS `seq` ((), newCliS)

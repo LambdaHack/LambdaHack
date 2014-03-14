@@ -45,7 +45,7 @@ data ResponseUI =
 -- knowing the order server received requests and sent responses
 -- and clients interleave and block non-deterministically so their logs
 -- would not be so valuable.
-debugResponseAI :: MonadActionRO m => ResponseAI -> m Text
+debugResponseAI :: MonadReadState m => ResponseAI -> m Text
 debugResponseAI cmd = case cmd of
   RespCmdAtomicAI cmdA@PerceptionA{} -> debugPlain cmd cmdA
   RespCmdAtomicAI cmdA@ResumeA{} -> debugPlain cmd cmdA
@@ -54,7 +54,7 @@ debugResponseAI cmd = case cmd of
   RespQueryAI aid -> debugAid aid "RespQueryAI" cmd
   RespPingAI -> return $! tshow cmd
 
-debugResponseUI :: MonadActionRO m => ResponseUI -> m Text
+debugResponseUI :: MonadReadState m => ResponseUI -> m Text
 debugResponseUI cmd = case cmd of
   RespCmdAtomicUI cmdA@PerceptionA{} -> debugPlain cmd cmdA
   RespCmdAtomicUI cmdA@ResumeA{} -> debugPlain cmd cmdA
@@ -66,12 +66,12 @@ debugResponseUI cmd = case cmd of
   RespQueryUI aid -> debugAid aid "RespQueryUI" cmd
   RespPingUI -> return $! tshow cmd
 
-debugPretty :: (MonadActionRO m, Show a) => a -> CmdAtomic -> m Text
+debugPretty :: (MonadReadState m, Show a) => a -> CmdAtomic -> m Text
 debugPretty cmd cmdA = do
   ps <- posCmdAtomic cmdA
   return $! tshow (cmd, ps)
 
-debugPlain :: (MonadActionRO m, Show a) => a -> CmdAtomic -> m Text
+debugPlain :: (MonadReadState m, Show a) => a -> CmdAtomic -> m Text
 debugPlain cmd cmdA = do
   ps <- posCmdAtomic cmdA
   return $! T.pack $ show (cmd, ps)  -- too large for pretty show
@@ -86,7 +86,7 @@ data DebugAid a = DebugAid
   }
   deriving Show
 
-debugAid :: (MonadActionRO m, Show a) => ActorId -> Text -> a -> m Text
+debugAid :: (MonadReadState m, Show a) => ActorId -> Text -> a -> m Text
 debugAid aid label cmd =
   if aid == toEnum (-1) then
     return $ "Pong:" <+> tshow label <+> tshow cmd

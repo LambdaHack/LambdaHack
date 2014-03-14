@@ -36,11 +36,11 @@ newtype SerImplementation a =
     SerImplementation {runSerImplementation :: StateT SerState IO a}
   deriving (Monad, Functor, Applicative)
 
-instance MonadActionRO SerImplementation where
+instance MonadReadState SerImplementation where
   getState    = SerImplementation $ gets serState
   getsState f = SerImplementation $ gets $ f . serState
 
-instance MonadAction SerImplementation where
+instance MonadWriteState SerImplementation where
   modifyState f = SerImplementation $ state $ \serS ->
     let newSerS = serS {serState = f $ serState serS}
     in newSerS `seq` ((), newSerS)

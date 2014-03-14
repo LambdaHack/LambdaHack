@@ -34,7 +34,7 @@ storeUndo _atomic =
   maybe skip (\a -> modifyServer $ \ser -> ser {sundo = a : sundo ser})
     $ Nothing   -- TODO: undoAtomic atomic
 
-atomicServerSem :: (MonadAction m, MonadServer m)
+atomicServerSem :: (MonadWriteState m, MonadServer m)
                 => PosAtomic -> Atomic -> m ()
 atomicServerSem posAtomic atomic =
   when (seenAtomicSer posAtomic) $ do
@@ -44,7 +44,7 @@ atomicServerSem posAtomic atomic =
       SfxAtomic _ -> return ()
 
 -- | Send an atomic action to all clients that can see it.
-atomicSendSem :: (MonadAction m, MonadConnServer m) => Atomic -> m ()
+atomicSendSem :: (MonadWriteState m, MonadConnServer m) => Atomic -> m ()
 atomicSendSem atomic = do
   -- Gather data from the old state.
   sOld <- getState

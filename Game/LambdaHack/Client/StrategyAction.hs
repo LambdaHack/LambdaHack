@@ -296,7 +296,7 @@ actionStrategy aid = do
                                    else chaseFreq
       aFrequency ab              = assert `failure` "unexpected ability"
                                           `twith` (ab, distant, actorAbs)
-      chaseFreq :: MonadActionRO m => m (Frequency RequestTimed)
+      chaseFreq :: MonadReadState m => m (Frequency RequestTimed)
       chaseFreq = do
         st <- chase aid True
         return $! scaleFreq 30 $ bestVariant st
@@ -334,7 +334,7 @@ waitBlockNow :: ActorId -> Strategy RequestTimed
 waitBlockNow aid = returN "wait" $ ReqWait aid
 
 -- | Strategy for a dumb missile or a strongly hurled actor.
-track :: MonadActionRO m => ActorId -> m (Strategy RequestTimed)
+track :: MonadReadState m => ActorId -> m (Strategy RequestTimed)
 track aid = do
   btrajectory <- getsState $ btrajectory . getActorBody aid
   return $! if isNothing btrajectory
@@ -668,7 +668,7 @@ moveTowards aid source target goal = do
     return $! foldr (.|) reject freqs
 
 -- | Actor moves or searches or alters or attacks. Displaces if @run@.
-moveOrRunAid :: MonadActionRO m
+moveOrRunAid :: MonadReadState m
              => Bool -> ActorId -> Vector -> m RequestTimed
 moveOrRunAid run source dir = do
   cops@Kind.COps{cotile} <- getsState scops
