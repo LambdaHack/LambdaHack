@@ -13,7 +13,7 @@ import Data.List
 import Data.Maybe
 
 import Game.LambdaHack.Atomic.CmdAtomic
-import Game.LambdaHack.Atomic.MonadAtomic
+import Game.LambdaHack.Atomic.MonadWriteState
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -114,10 +114,6 @@ updCreateActor aid body ais = do
                                  `twith` (aid, body, iid, item1, item2)) item1
     modifyState $ updateItemD $ EM.insertWith h iid item
 
--- | Update a given level data within state.
-updateLevel :: MonadWriteState m => LevelId -> (Level -> Level) -> m ()
-updateLevel lid f = modifyState $ updateDungeon $ EM.adjust f lid
-
 -- | Kills an actor.
 updDestroyActor :: MonadWriteState m
                 => ActorId -> Actor -> [(ItemId, Item)] -> m ()
@@ -156,38 +152,7 @@ updCreateItem iid item k c = assert (k > 0) $ do
                               `blame` "inconsistent created item"
                               `twith` (iid, item, k, c)) item1
   modifyState $ updateItemD $ EM.insertWith f iid item
-  case c of
-    CFloor lid pos -> insertItemFloor iid k lid pos
-    CActor aid store -> insertItemActor iid k aid store
-
-insertItemFloor :: MonadWriteState m
-                => ItemId -> Int -> LevelId -> Point -> m ()
-insertItemFloor iid k lid pos =
-  let bag = EM.singleton iid k
-      mergeBag = EM.insertWith (EM.unionWith (+)) pos bag
-  in updateLevel lid $ updateFloor mergeBag
-
-insertItemActor :: MonadWriteState m => ItemId -> Int -> ActorId -> CStore -> m ()
-insertItemActor iid k aid cstore = case cstore of
-  CGround -> do
-    b <- getsState $ getActorBody aid
-    insertItemFloor iid k (blid b) (bpos b)
-  CEqp -> insertItemEqp iid k aid
-  CInv -> insertItemInv iid k aid
-
-insertItemEqp :: MonadWriteState m => ItemId -> Int -> ActorId -> m ()
-insertItemEqp iid k aid = do
-  let bag = EM.singleton iid k
-      upd = EM.unionWith (+) bag
-  modifyState $ updateActorBody aid $ \b ->
-    b {beqp = upd (beqp b)}
-
-insertItemInv :: MonadWriteState m => ItemId -> Int -> ActorId -> m ()
-insertItemInv iid k aid = do
-  let bag = EM.singleton iid k
-      upd = EM.unionWith (+) bag
-  modifyState $ updateActorBody aid $ \b ->
-    b {binv = upd (binv b)}
+  insertItemContainer iid k c
 
 -- | Destroy some copies (possibly not all) of an item.
 updDestroyItem :: MonadWriteState m
@@ -199,69 +164,34 @@ updDestroyItem iid item k c = assert (k > 0) $ do
   itemD <- getsState sitemD
   assert (iid `EM.lookup` itemD == Just item `blame` "item already removed"
                                              `twith` (iid, item, itemD)) skip
-  case c of
-    CFloor lid pos -> deleteItemFloor iid k lid pos
-    CActor aid store -> deleteItemActor iid k aid store
-
-deleteItemFloor :: MonadWriteState m
-                => ItemId -> Int -> LevelId -> Point -> m ()
-deleteItemFloor iid k lid pos =
-  let rmFromFloor (Just bag) =
-        let nbag = rmFromBag k iid bag
-        in if EM.null nbag then Nothing else Just nbag
-      rmFromFloor Nothing = assert `failure` "item already removed"
-                                   `twith` (iid, k, lid, pos)
-  in updateLevel lid $ updateFloor $ EM.alter rmFromFloor pos
-
-deleteItemActor :: MonadWriteState m => ItemId -> Int -> ActorId -> CStore -> m ()
-deleteItemActor iid k aid cstore = case cstore of
-  CGround -> do
-    b <- getsState $ getActorBody aid
-    deleteItemFloor iid k (blid b) (bpos b)
-  CEqp -> deleteItemEqp iid k aid
-  CInv -> deleteItemInv iid k aid
-
-deleteItemEqp :: MonadWriteState m => ItemId -> Int -> ActorId -> m ()
-deleteItemEqp iid k aid = do
-  modifyState $ updateActorBody aid $ \b ->
-    b {beqp = rmFromBag k iid (beqp b)}
-
-deleteItemInv :: MonadWriteState m => ItemId -> Int -> ActorId -> m ()
-deleteItemInv iid k aid = do
-  modifyState $ updateActorBody aid $ \b ->
-    b {binv = rmFromBag k iid (binv b)}
+  deleteItemContainer iid k c
 
 updMoveActor :: MonadWriteState m => ActorId -> Point -> Point -> m ()
 updMoveActor aid fromP toP = assert (fromP /= toP) $ do
   b <- getsState $ getActorBody aid
   assert (fromP == bpos b `blame` "unexpected moved actor position"
                           `twith` (aid, fromP, toP, bpos b, b)) skip
-  modifyState $ updateActorBody aid
-              $ \body -> body {bpos = toP, boldpos = fromP}
+  updateActor aid $ \body -> body {bpos = toP, boldpos = fromP}
 
 updWaitActor :: MonadWriteState m => ActorId -> Bool -> Bool -> m ()
 updWaitActor aid fromWait toWait = assert (fromWait /= toWait) $ do
   b <- getsState $ getActorBody aid
   assert (fromWait == bwait b `blame` "unexpected waited actor time"
                               `twith` (aid, fromWait, toWait, bwait b, b)) skip
-  modifyState $ updateActorBody aid $ \body -> body {bwait = toWait}
+  updateActor aid $ \body -> body {bwait = toWait}
 
 updDisplaceActor :: MonadWriteState m => ActorId -> ActorId -> m ()
 updDisplaceActor source target = assert (source /= target) $ do
   spos <- getsState $ bpos . getActorBody source
   tpos <- getsState $ bpos . getActorBody target
-  modifyState $ updateActorBody source $ \b -> b {bpos = tpos, boldpos = spos}
-  modifyState $ updateActorBody target $ \b -> b {bpos = spos, boldpos = tpos}
+  updateActor source $ \b -> b {bpos = tpos, boldpos = spos}
+  updateActor target $ \b -> b {bpos = spos, boldpos = tpos}
 
 updMoveItem :: MonadWriteState m
             => ItemId -> Int -> Container -> Container -> m ()
 updMoveItem iid k c1 c2 = assert (k > 0 && c1 /= c2) $ do
-  case c1 of
-    CFloor lid pos -> deleteItemFloor iid k lid pos
-    CActor aid cstore -> deleteItemActor iid k aid cstore
-  case c2 of
-    CFloor lid pos -> insertItemFloor iid k lid pos
-    CActor aid cstore -> insertItemActor iid k aid cstore
+  deleteItemContainer iid k c1
+  insertItemContainer iid k c2
 
 -- TODO: optimize (a single call to updatePrio is enough)
 updAgeActor :: MonadWriteState m => ActorId -> Time -> m ()
@@ -274,15 +204,15 @@ updAgeActor aid t = assert (t /= timeZero) $ do
 
 updHealActor :: MonadWriteState m => ActorId -> Int -> m ()
 updHealActor aid n = assert (n /= 0) $
-  modifyState $ updateActorBody aid $ \b -> b {bhp = bhp b + n}
+  updateActor aid $ \b -> b {bhp = bhp b + n}
 
 updCalmActor :: MonadWriteState m => ActorId -> Int -> m ()
 updCalmActor aid n = assert (n /= 0) $
-  modifyState $ updateActorBody aid $ \b -> b {bcalm = bcalm b + n}
+  updateActor aid $ \b -> b {bcalm = bcalm b + n}
 
 updHasteActor :: MonadWriteState m => ActorId -> Speed -> m ()
 updHasteActor aid delta = assert (delta /= speedZero) $ do
-  modifyState $ updateActorBody aid $ \ b ->
+  updateActor aid $ \ b ->
     let newSpeed = speedAdd (bspeed b) delta
     in assert (newSpeed >= speedZero
                `blame` "actor slowed below zero"
@@ -295,7 +225,7 @@ updTrajectoryActor aid fromT toT = assert (fromT /= toT) $ do
   body <- getsState $ getActorBody aid
   assert (fromT == btrajectory body `blame` "unexpected actor trajectory"
                                     `twith` (aid, fromT, toT, body)) skip
-  modifyState $ updateActorBody aid $ \b -> b {btrajectory = toT}
+  updateActor aid $ \b -> b {btrajectory = toT}
 
 updColorActor :: MonadWriteState m
             => ActorId -> Color.Color -> Color.Color -> m ()
@@ -303,7 +233,7 @@ updColorActor aid fromCol toCol = assert (fromCol /= toCol) $ do
   body <- getsState $ getActorBody aid
   assert (fromCol == bcolor body `blame` "unexpected actor color"
                                  `twith` (aid, fromCol, toCol, body)) skip
-  modifyState $ updateActorBody aid $ \b -> b {bcolor = toCol}
+  updateActor aid $ \b -> b {bcolor = toCol}
 
 updQuitFaction :: MonadWriteState m
              => FactionId -> Maybe Actor -> Maybe Status -> Maybe Status
@@ -314,7 +244,7 @@ updQuitFaction fid mbody fromSt toSt = assert (fromSt /= toSt) $ do
   assert (fromSt == gquit fact `blame` "unexpected actor quit status"
                                `twith` (fid, fromSt, toSt, fact)) skip
   let adj fa = fa {gquit = toSt}
-  modifyState $ updateFactionBody fid adj
+  updateFaction fid adj
 
 -- The previous leader is assumed to be alive.
 updLeadFaction :: MonadWriteState m
@@ -327,7 +257,7 @@ updLeadFaction fid source target = assert (source /= target) $ do
   assert (source == gleader fact `blame` "unexpected actor leader"
                                  `twith` (fid, source, target, mtb, fact)) skip
   let adj fa = fa {gleader = target}
-  modifyState $ updateFactionBody fid adj
+  updateFaction fid adj
 
 updDiplFaction :: MonadWriteState m
              => FactionId -> FactionId -> Diplomacy -> Diplomacy -> m ()
@@ -340,8 +270,8 @@ updDiplFaction fid1 fid2 fromDipl toDipl =
             `blame` "unexpected actor diplomacy status"
             `twith` (fid1, fid2, fromDipl, toDipl, fact1, fact2)) skip
     let adj fid fact = fact {gdipl = EM.insert fid toDipl (gdipl fact)}
-    modifyState $ updateFactionBody fid1 (adj fid2)
-    modifyState $ updateFactionBody fid2 (adj fid1)
+    updateFaction fid1 (adj fid2)
+    updateFaction fid2 (adj fid1)
 
 updAutoFaction :: MonadWriteState m => FactionId -> Bool -> m ()
 updAutoFaction fid st = do
@@ -349,7 +279,7 @@ updAutoFaction fid st = do
         let player = gplayer fact
         in assert (playerAiLeader player == not st)
            $ fact {gplayer = player {playerAiLeader = st}}
-  modifyState $ updateFactionBody fid adj
+  updateFaction fid adj
 
 -- | Record a given number (usually just 1, or -1 for undo) of actor kills
 -- for score calculation.
@@ -361,7 +291,7 @@ updRecordKill aid k = do
                      in if n == 0 then Nothing else Just n
       adjFact fact = fact {gvictims = EM.alter alterKind (bkind b)
                                       $ gvictims fact}
-  modifyState $ updateFactionBody (bfid b) adjFact
+  updateFaction (bfid b) adjFact
 
 -- | Alter an attribute (actually, the only, the defining attribute)
 -- of a visible tile. This is similar to e.g., @TrajectoryActorA@.

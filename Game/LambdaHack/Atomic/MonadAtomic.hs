@@ -1,7 +1,6 @@
 -- | Atomic monads.
 module Game.LambdaHack.Atomic.MonadAtomic
   ( MonadAtomic(..)
-  , MonadWriteState(..)  -- exposed only to be implemented, not used
   , broadcastUpdAtomic,  broadcastSfxAtomic
   ) where
 
@@ -11,10 +10,6 @@ import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.State
-
-class MonadReadState m => MonadWriteState m where
-  modifyState :: (State -> State) -> m ()
-  putState    :: State -> m ()
 
 class MonadReadState m => MonadAtomic m where
   execAtomic    :: CmdAtomic -> m ()

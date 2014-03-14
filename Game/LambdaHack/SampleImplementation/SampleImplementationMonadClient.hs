@@ -15,9 +15,9 @@ import Control.Monad.Trans.State.Strict hiding (State)
 import Data.Maybe
 import System.FilePath
 
-import Game.LambdaHack.Atomic
 import Game.LambdaHack.Atomic.HandleCmdAtomicWrite
 import Game.LambdaHack.Atomic.MonadAtomic
+import Game.LambdaHack.Atomic.MonadWriteState
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.MonadClientUI
 import Game.LambdaHack.Client.ProtocolClient

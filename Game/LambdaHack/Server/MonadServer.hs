@@ -20,8 +20,6 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.HashMap.Strict as HM
-import Data.List
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -32,20 +30,16 @@ import System.IO
 import qualified System.Random as R
 import System.Time
 
-import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
-import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
-import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Random
-import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Save
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
@@ -53,7 +47,6 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.Utils.File
 

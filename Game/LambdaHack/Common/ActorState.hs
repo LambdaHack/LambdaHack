@@ -6,8 +6,7 @@ module Game.LambdaHack.Common.ActorState
   , actorNotProjAssocsLvl, actorNotProjAssocs, actorNotProjList
   , calculateTotal, sharedInv, sharedAllOwned
   , getInvBag, getCBag, nearbyFreePoints, whereTo
-  , posToActors, posToActor, getItemBody, memActor
-  , getActorBody, updateActorBody, updateFactionBody
+  , posToActors, posToActor, getItemBody, memActor, getActorBody
   , getCarriedAssocs, getEqpAssocs, getEqpKA, getInvAssocs, getFloorAssocs
   , tryFindHeroK, foesAdjacent
   , itemPrice, calmEnough, actorConts
@@ -191,18 +190,6 @@ getActorBody :: ActorId -> State -> Actor
 getActorBody aid s =
   fromMaybe (assert `failure` "body not found" `twith` (aid, s))
   $ EM.lookup aid $ sactorD s
-
-updateActorBody :: ActorId -> (Actor -> Actor) -> State -> State
-updateActorBody aid f s =
-  let alt Nothing = assert `failure` "no body to update" `twith` (aid, s)
-      alt (Just b) = Just $ f b
-  in updateActorD (EM.alter alt aid) s
-
-updateFactionBody :: FactionId -> (Faction -> Faction) -> State -> State
-updateFactionBody fid f s =
-  let alt Nothing = assert `failure` "no faction to update" `twith` (fid, s)
-      alt (Just fact) = Just $ f fact
-  in updateFactionD (EM.alter alt fid) s
 
 getCarriedAssocs :: Actor -> State -> [(ItemId, Item)]
 getCarriedAssocs b s =

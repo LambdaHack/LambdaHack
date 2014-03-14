@@ -14,7 +14,7 @@ import Data.Maybe
 
 import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Atomic.HandleCmdAtomicWrite
-import Game.LambdaHack.Atomic.MonadAtomic
+import Game.LambdaHack.Atomic.MonadWriteState
 import Game.LambdaHack.Atomic.PosCmdAtomicRead
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.ActorState
