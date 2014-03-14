@@ -21,6 +21,7 @@ import Game.LambdaHack.Frontend
 import Game.LambdaHack.Server.HandleRequestServer
 import Game.LambdaHack.Server.LoopAction
 import Game.LambdaHack.Server.MonadServer
+import Game.LambdaHack.Server.ProtocolServer
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.Utils.Thread
 

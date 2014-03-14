@@ -27,6 +27,7 @@ import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.MonadServer
+import Game.LambdaHack.Server.ProtocolServer
 import Game.LambdaHack.Server.State
 
 storeUndo :: MonadServer m => CmdAtomic -> m ()

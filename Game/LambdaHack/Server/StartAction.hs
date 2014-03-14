@@ -43,7 +43,8 @@ import Game.LambdaHack.Content.RuleKind
 import qualified Game.LambdaHack.Server.DungeonGen as DungeonGen
 import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.Fov
-import Game.LambdaHack.Server.MonadServer hiding (sendUpdateAI, sendUpdateUI)
+import Game.LambdaHack.Server.MonadServer
+import Game.LambdaHack.Server.ProtocolServer
 import Game.LambdaHack.Server.State
 
 -- | Apply debug options that don't need a new game.
@@ -97,7 +98,7 @@ reinitGame = do
 -- and when all report back, asking them to commit the save.
 -- | Save game on server and all clients. Clients are pinged first,
 -- which greatly reduced the chance of saves being out of sync.
-saveBkpAll :: (MonadAtomic m, MonadServer m, MonadConnServer m) => Bool -> m ()
+saveBkpAll :: (MonadAtomic m, MonadConnServer m) => Bool -> m ()
 saveBkpAll unconditional = do
   bench <- getsServer $ sbenchmark . sdebugSer
   when (unconditional || not bench) $ do

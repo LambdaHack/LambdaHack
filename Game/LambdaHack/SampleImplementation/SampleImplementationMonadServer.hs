@@ -21,6 +21,7 @@ import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Server.AtomicSemSer
 import Game.LambdaHack.Server.MonadServer
+import Game.LambdaHack.Server.ProtocolServer
 import Game.LambdaHack.Server.State
 
 data SerState = SerState
@@ -71,6 +72,7 @@ instance MonadConnServer SerImplementation where
     SerImplementation $ modify $ \serS -> serS {serDict = f $ serDict serS}
   putDict    s =
     SerImplementation $ modify $ \serS -> serS {serDict = s}
+  liftIO       = SerImplementation . IO.liftIO
 
 -- | The game-state semantics of atomic game commands
 -- as computed on the server.

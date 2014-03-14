@@ -37,7 +37,8 @@ import Game.LambdaHack.Frontend
 import Game.LambdaHack.Server.EffectSem
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.HandleRequestServer
-import Game.LambdaHack.Server.MonadServer hiding (sendUpdateAI, sendUpdateUI)
+import Game.LambdaHack.Server.MonadServer
+import Game.LambdaHack.Server.ProtocolServer
 import Game.LambdaHack.Server.StartAction
 import Game.LambdaHack.Server.State
 import Game.LambdaHack.Utils.Frequency
