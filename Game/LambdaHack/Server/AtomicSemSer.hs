@@ -12,12 +12,12 @@ import qualified Data.EnumSet as ES
 import Data.Key (mapWithKeyM_)
 import Data.Maybe
 
+import Game.LambdaHack.Atomic.CmdAtomic
+import Game.LambdaHack.Atomic.HandleCmdAtomicWrite
 import Game.LambdaHack.Atomic.MonadAtomic
+import Game.LambdaHack.Atomic.PosCmdAtomicRead
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.AtomicCmd
-import Game.LambdaHack.Common.AtomicPos
-import Game.LambdaHack.Common.AtomicSem
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level

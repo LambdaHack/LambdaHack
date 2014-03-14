@@ -20,7 +20,6 @@ import Game.LambdaHack.Client.LoopAction
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Animation (DebugModeCli (..))
-import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Request

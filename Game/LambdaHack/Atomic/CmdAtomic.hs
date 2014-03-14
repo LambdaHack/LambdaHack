@@ -12,7 +12,7 @@
 --
 -- See
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
-module Game.LambdaHack.Common.AtomicCmd
+module Game.LambdaHack.Atomic.CmdAtomic
   ( Atomic(..), CmdAtomic(..), SfxAtomic(..), HitAtomic(..)
   , undoCmdAtomic, undoSfxAtomic, undoAtomic
   ) where

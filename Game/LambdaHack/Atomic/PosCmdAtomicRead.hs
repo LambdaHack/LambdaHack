@@ -1,7 +1,7 @@
 -- | Semantics of atomic commands shared by client and server.
 -- See
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
-module Game.LambdaHack.Common.AtomicPos
+module Game.LambdaHack.Atomic.PosCmdAtomicRead
   ( PosAtomic(..), posCmdAtomic, posSfxAtomic
   , resetsFovAtomic, breakCmdAtomic, loudCmdAtomic
   , seenAtomicCli, seenAtomicSer, posOfContainer
@@ -10,10 +10,10 @@ module Game.LambdaHack.Common.AtomicPos
 import Control.Exception.Assert.Sugar
 import qualified Data.EnumSet as ES
 
+import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc

@@ -65,6 +65,7 @@ import System.FilePath
 import System.Time
 import Text.Read
 
+import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.ConfigUI
 import Game.LambdaHack.Client.Draw
@@ -74,7 +75,6 @@ import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Animation
-import Game.LambdaHack.Common.AtomicCmd
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore

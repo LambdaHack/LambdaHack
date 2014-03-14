@@ -7,8 +7,8 @@ module Game.LambdaHack.Atomic.MonadAtomic
 
 import Data.Key (mapWithKeyM_)
 
+import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Common.Action
-import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.State
 

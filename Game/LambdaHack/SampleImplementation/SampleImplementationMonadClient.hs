@@ -15,13 +15,13 @@ import Control.Monad.Trans.State.Strict hiding (State)
 import Data.Maybe
 import System.FilePath
 
+import Game.LambdaHack.Atomic
+import Game.LambdaHack.Atomic.HandleCmdAtomicWrite
 import Game.LambdaHack.Atomic.MonadAtomic
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Animation
-import Game.LambdaHack.Common.AtomicCmd
-import Game.LambdaHack.Common.AtomicSem
 import Game.LambdaHack.Common.Response
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State

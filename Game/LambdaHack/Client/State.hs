@@ -18,12 +18,12 @@ import qualified NLP.Miniutter.English as MU
 import qualified System.Random as R
 import System.Time
 
+import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.ConfigUI
 import Game.LambdaHack.Client.ItemSlot
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Animation
-import Game.LambdaHack.Common.AtomicCmd
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Key as K

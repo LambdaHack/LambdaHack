@@ -2,7 +2,7 @@
 -- See
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Client.AtomicSemCli
-  ( cmdAtomicSem, cmdAtomicSemCli, cmdAtomicFilterCli
+  ( cmdAtomicSemCli, cmdAtomicFilterCli
   , drawRespCmdAtomicUI, drawRespSfxAtomicUI
   ) where
 
@@ -15,19 +15,17 @@ import Data.Monoid
 import Data.Tuple
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Client.MonadClient
+import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.HumanLocal
 import Game.LambdaHack.Client.Inventory
 import Game.LambdaHack.Client.ItemSlot
+import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Animation
-import Game.LambdaHack.Common.AtomicCmd
-import Game.LambdaHack.Common.AtomicPos
-import Game.LambdaHack.Common.AtomicSem
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction

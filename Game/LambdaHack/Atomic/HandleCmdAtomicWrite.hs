@@ -1,7 +1,7 @@
 -- | Semantics of atomic commands shared by client and server.
 -- See
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
-module Game.LambdaHack.Common.AtomicSem
+module Game.LambdaHack.Atomic.HandleCmdAtomicWrite
   ( cmdAtomicSem
   ) where
 
@@ -12,11 +12,11 @@ import qualified Data.EnumMap.Strict as EM
 import Data.List
 import Data.Maybe
 
+import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Atomic.MonadAtomic
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.AtomicCmd
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item

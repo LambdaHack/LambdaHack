@@ -65,7 +65,10 @@ flag curses
 
 library
   exposed-modules:    Game.LambdaHack.Atomic
-                      Game.LambdaHack.Atomic.MonadAtomic
+                      Game.LambdaHack.Atomic.CmdAtomic,
+                      Game.LambdaHack.Atomic.HandleCmdAtomicWrite,
+                      Game.LambdaHack.Atomic.MonadAtomic,
+                      Game.LambdaHack.Atomic.PosCmdAtomicRead,
                       Game.LambdaHack.Client,
                       Game.LambdaHack.Client.MonadClient,
                       Game.LambdaHack.Client.AtomicSemCli,
@@ -88,9 +91,6 @@ library
                       Game.LambdaHack.Common.Actor,
                       Game.LambdaHack.Common.ActorState,
                       Game.LambdaHack.Common.Animation,
-                      Game.LambdaHack.Common.AtomicCmd,
-                      Game.LambdaHack.Common.AtomicPos,
-                      Game.LambdaHack.Common.AtomicSem,
                       Game.LambdaHack.Common.Color,
                       Game.LambdaHack.Common.ContentDef,
                       Game.LambdaHack.Common.Effect,
