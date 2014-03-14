@@ -2,11 +2,11 @@
 module Game.LambdaHack.Atomic
   ( -- * MonadAtomic
     MonadAtomic(..)
-  , broadcastCmdAtomic,  broadcastSfxAtomic
+  , broadcastUpdAtomic,  broadcastSfxAtomic
     -- * CmdAtomic
-  , Atomic(..), CmdAtomic(..), SfxAtomic(..), HitAtomic(..)
+  , CmdAtomic(..), UpdAtomic(..), SfxAtomic(..), HitAtomic(..)
     -- * PosCmdAtomicRead
-  , PosAtomic(..), posCmdAtomic, posSfxAtomic, seenAtomicCli, posOfContainer
+  , PosAtomic(..), posUpdAtomic, posSfxAtomic, seenAtomicCli, posOfContainer
   ) where
 
 import Game.LambdaHack.Atomic.CmdAtomic

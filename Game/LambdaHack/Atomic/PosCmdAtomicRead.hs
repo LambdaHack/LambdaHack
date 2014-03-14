@@ -2,8 +2,8 @@
 -- See
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Atomic.PosCmdAtomicRead
-  ( PosAtomic(..), posCmdAtomic, posSfxAtomic
-  , resetsFovAtomic, breakCmdAtomic, loudCmdAtomic
+  ( PosAtomic(..), posUpdAtomic, posSfxAtomic
+  , resetsFovAtomic, breakUpdAtomic, loudUpdAtomic
   , seenAtomicCli, seenAtomicSer, posOfContainer
   ) where
 
@@ -53,8 +53,8 @@ data PosAtomic =
 -- requirements to @MoveActorA@ as to @DisplaceActorA@ and fall back
 -- to @SpotActorA@ (which provides minimal information that does not
 -- contradict state) if the visibility is lower.
-posCmdAtomic :: MonadReadState m => CmdAtomic -> m PosAtomic
-posCmdAtomic cmd = case cmd of
+posUpdAtomic :: MonadReadState m => UpdAtomic -> m PosAtomic
+posUpdAtomic cmd = case cmd of
   CreateActorA _ body _ -> posProjBody body
   DestroyActorA _ body _ -> posProjBody body
   CreateItemA _ _ _ c -> singleContainer c
@@ -181,7 +181,7 @@ singleContainer c = do
 -- to reset Fov, perception (@ptotal@ to be precise, @psmell@ is irrelevant)
 -- of that faction does not change upon recomputation. Otherwise,
 -- save/restore would change game state.
-resetsFovAtomic :: MonadReadState m => CmdAtomic -> m (Maybe [FactionId])
+resetsFovAtomic :: MonadReadState m => UpdAtomic -> m (Maybe [FactionId])
 resetsFovAtomic cmd = case cmd of
   CreateActorA _ body _ -> return $ Just [bfid body]
   DestroyActorA _ body _ -> return $ Just [bfid body]
@@ -209,13 +209,13 @@ fidOfAid aid = getsState $ (: []) . bfid . getActorBody aid
 -- (in between the FOV might have changed). The decomposed actions
 -- are only tested vs the FOV after the action and they give reduced
 -- information that still modifies client's state to match the server state
--- wrt the current FOV and the subset of @posCmdAtomic@ that is visible.
+-- wrt the current FOV and the subset of @posUpdAtomic@ that is visible.
 -- The original actions give more information not only due to spanning
 -- potentially more positions than those visible. E.g., @MoveActorA@
 -- informs about the continued existence of the actor between
 -- moves, v.s., popping out of existence and then back in.
-breakCmdAtomic :: MonadReadState m => CmdAtomic -> m [CmdAtomic]
-breakCmdAtomic cmd = case cmd of
+breakUpdAtomic :: MonadReadState m => UpdAtomic -> m [UpdAtomic]
+breakUpdAtomic cmd = case cmd of
   MoveActorA aid _ toP -> do
     b <- getsState $ getActorBody aid
     ais <- getsState $ getCarriedAssocs b
@@ -236,8 +236,8 @@ breakCmdAtomic cmd = case cmd of
     return [LoseItemA iid item k c1, SpotItemA iid item k c2]
   _ -> return [cmd]
 
-loudCmdAtomic :: FactionId -> CmdAtomic -> Bool
-loudCmdAtomic fid cmd = case cmd of
+loudUpdAtomic :: FactionId -> UpdAtomic -> Bool
+loudUpdAtomic fid cmd = case cmd of
   DestroyActorA _ body _ ->
     -- Death of a party member does not need to be heard, because it's seen.
     not $ fid == bfid body || bproj body

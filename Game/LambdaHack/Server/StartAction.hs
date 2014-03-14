@@ -86,7 +86,7 @@ reinitGame = do
                in EM.filter f discoS
   sdebugCli <- getsServer $ sdebugCli . sdebugSer
   modeName <- getsServer $ sgameMode . sdebugSer
-  broadcastCmdAtomic
+  broadcastUpdAtomic
     $ \fid -> RestartA fid sdisco (pers EM.! fid) defLoc sdebugCli modeName
   populateDungeon
   saveBkpAll False
@@ -106,7 +106,7 @@ saveBkpAll unconditional = do
           sendPingAI fid
           when (playerUI $ gplayer $ factionD EM.! fid) $ sendPingUI fid
     mapWithKeyM_ ping factionD
-    execCmdAtomic SaveBkpA
+    execUpdAtomic SaveBkpA
     saveServer
 
 mapFromFuns :: (Bounded a, Enum a, Ord b) => [a -> b] -> M.Map b a
@@ -258,7 +258,7 @@ populateDungeon = do
             mleader <- getsState
                        $ gleader . (EM.! side) . sfactionD  -- just changed
             when (isNothing mleader) $
-              execCmdAtomic $ LeadFactionA side Nothing (Just aid)
+              execUpdAtomic $ LeadFactionA side Nothing (Just aid)
   mapM_ initialActors arenas
 
 -- | Find starting postions for all factions. Try to make them distant

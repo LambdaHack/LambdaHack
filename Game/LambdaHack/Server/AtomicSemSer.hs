@@ -29,22 +29,22 @@ import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
 
-storeUndo :: MonadServer m => Atomic -> m ()
+storeUndo :: MonadServer m => CmdAtomic -> m ()
 storeUndo _atomic =
   maybe skip (\a -> modifyServer $ \ser -> ser {sundo = a : sundo ser})
-    $ Nothing   -- TODO: undoAtomic atomic
+    $ Nothing   -- TODO: undoCmdAtomic atomic
 
 atomicServerSem :: (MonadWriteState m, MonadServer m)
-                => PosAtomic -> Atomic -> m ()
+                => PosAtomic -> CmdAtomic -> m ()
 atomicServerSem posAtomic atomic =
   when (seenAtomicSer posAtomic) $ do
     storeUndo atomic
     case atomic of
-      CmdAtomic cmd -> cmdAtomicSem cmd
+      UpdAtomic cmd -> cmdAtomicSem cmd
       SfxAtomic _ -> return ()
 
 -- | Send an atomic action to all clients that can see it.
-atomicSendSem :: (MonadWriteState m, MonadConnServer m) => Atomic -> m ()
+atomicSendSem :: (MonadWriteState m, MonadConnServer m) => CmdAtomic -> m ()
 atomicSendSem atomic = do
   -- Gather data from the old state.
   sOld <- getState
@@ -52,11 +52,11 @@ atomicSendSem atomic = do
   persOld <- getsServer sper
   (ps, resets, atomicBroken, psBroken) <-
     case atomic of
-      CmdAtomic cmd -> do
-        ps <- posCmdAtomic cmd
+      UpdAtomic cmd -> do
+        ps <- posUpdAtomic cmd
         resets <- resetsFovAtomic cmd
-        atomicBroken <- breakCmdAtomic cmd
-        psBroken <- mapM posCmdAtomic atomicBroken
+        atomicBroken <- breakUpdAtomic cmd
+        psBroken <- mapM posUpdAtomic atomicBroken
         return (ps, resets, atomicBroken, psBroken)
       SfxAtomic sfx -> do
         ps <- posSfxAtomic sfx
@@ -69,7 +69,7 @@ atomicSendSem atomic = do
             PosFidAndSight{} -> True
             _ -> resets == Just []
                  && (null atomicBroken
-                     || fmap CmdAtomic atomicBroken == [atomic])) skip
+                     || fmap UpdAtomic atomicBroken == [atomic])) skip
   -- Perform the action on the server.
   atomicServerSem ps atomic
   -- Send some actions to the clients, one faction at a time.
@@ -78,15 +78,15 @@ atomicSendSem atomic = do
         when (playerUI $ gplayer $ factionD EM.! fid) $ sendUpdateUI fid cmdUI
       sendAI fid cmdAI = sendUpdateAI fid cmdAI
       sendA fid cmd = do
-        sendUI fid $ RespCmdAtomicUI cmd
-        sendAI fid $ RespCmdAtomicAI cmd
-      sendUpdate fid (CmdAtomic cmd) = sendA fid cmd
+        sendUI fid $ RespUpdAtomicUI cmd
+        sendAI fid $ RespUpdAtomicAI cmd
+      sendUpdate fid (UpdAtomic cmd) = sendA fid cmd
       sendUpdate fid (SfxAtomic sfx) = sendUI fid $ RespSfxAtomicUI sfx
       breakSend fid perNew = do
         let send2 (atomic2, ps2) =
               if seenAtomicCli knowEvents fid perNew ps2
-                then sendUpdate fid $ CmdAtomic atomic2
-                else when (loudCmdAtomic fid atomic2) $
+                then sendUpdate fid $ UpdAtomic atomic2
+                else when (loudUpdAtomic fid atomic2) $
                        sendUpdate fid
                        $ SfxAtomic $ MsgAllD "You hear some noises."
         mapM_ send2 atomicPsBroken
@@ -113,7 +113,7 @@ atomicSendSem atomic = do
                     seenNew = seenAtomicCli False fid perNew
                     seenOld = seenAtomicCli False fid perOld
                 -- TODO: these assertions are probably expensive
-                psRem <- mapM posCmdAtomic remember
+                psRem <- mapM posUpdAtomic remember
                 -- Verify that we remember only currently seen things.
                 assert (allB seenNew psRem) skip
                 -- Verify that we remember only new things.
@@ -136,7 +136,7 @@ atomicSendSem atomic = do
         PosNone -> assert `failure` "illegal sending" `twith` (atomic, fid)
   mapWithKeyM_ (\fid _ -> send fid) factionD
 
-atomicRemember :: LevelId -> Perception -> State -> [CmdAtomic]
+atomicRemember :: LevelId -> Perception -> State -> [UpdAtomic]
 atomicRemember lid inPer s =
   -- No @LoseItemA@ is sent for items that became out of sight.
   -- The client will create these atomic actions based on @outPer@,

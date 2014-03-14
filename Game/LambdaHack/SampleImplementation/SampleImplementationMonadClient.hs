@@ -84,7 +84,7 @@ instance MonadClientWriteServer d (CliImplementation c d) where
 -- | The game-state semantics of atomic game commands
 -- as computed on clients. Special effects (@SfxAtomic@) don't modify state.
 instance MonadAtomic (CliImplementation c d) where
-  execAtomic (CmdAtomic cmd) = cmdAtomicSem cmd
+  execAtomic (UpdAtomic cmd) = cmdAtomicSem cmd
   execAtomic (SfxAtomic _) = return ()
 
 -- | Init the client, then run an action, with a given session,

@@ -28,19 +28,19 @@ import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Frontend
 
-storeUndo :: MonadClient m => Atomic -> m ()
+storeUndo :: MonadClient m => CmdAtomic -> m ()
 storeUndo _atomic =
   maybe skip (\a -> modifyClient $ \cli -> cli {sundo = a : sundo cli})
-    $ Nothing   -- TODO: undoAtomic atomic
+    $ Nothing   -- TODO: undoCmdAtomic atomic
 
 handleResponseAI :: (MonadAtomic m, MonadClientWriteServer RequestTimed m)
                  => ResponseAI -> m ()
 handleResponseAI cmd = case cmd of
-  RespCmdAtomicAI cmdA -> do
+  RespUpdAtomicAI cmdA -> do
     cmds <- cmdAtomicFilterCli cmdA
     mapM_ (\c -> cmdAtomicSemCli c
-                 >> execCmdAtomic c) cmds
-    mapM_ (storeUndo . CmdAtomic) cmds
+                 >> execUpdAtomic c) cmds
+    mapM_ (storeUndo . UpdAtomic) cmds
   RespQueryAI aid -> do
     cmdC <- queryAI aid
     writeServer cmdC
@@ -50,12 +50,12 @@ handleResponseUI :: ( MonadAtomic m, MonadClientUI m
                     , MonadClientWriteServer Request m )
                  => ResponseUI -> m ()
 handleResponseUI cmd = case cmd of
-  RespCmdAtomicUI cmdA -> do
+  RespUpdAtomicUI cmdA -> do
     cmds <- cmdAtomicFilterCli cmdA
     mapM_ (\c -> cmdAtomicSemCli c
-                 >> execCmdAtomic c
-                 >> drawRespCmdAtomicUI False c) cmds
-    mapM_ (storeUndo . CmdAtomic) cmds  -- TODO: only store cmdA?
+                 >> execUpdAtomic c
+                 >> drawRespUpdAtomicUI False c) cmds
+    mapM_ (storeUndo . UpdAtomic) cmds  -- TODO: only store cmdA?
   RespSfxAtomicUI sfx -> do
     drawRespSfxAtomicUI False sfx
     storeUndo $ SfxAtomic sfx

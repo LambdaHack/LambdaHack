@@ -64,7 +64,7 @@ itemEffect source target miid item = do
   -- note that the actor may be moved by the effect; the item is destroyed,
   -- if ever, after the discovery happens).
   postb <- getsState $ getActorBody source
-  let atomic iid = execCmdAtomic $ DiscoverA (blid postb) (bpos postb) iid ik
+  let atomic iid = execUpdAtomic $ DiscoverA (blid postb) (bpos postb) iid ik
   when b $ maybe skip atomic miid
 
 -- | The source actor affects the target actor, with a given effect and power.
@@ -113,7 +113,7 @@ effectHeal power target = do
       return False
     else do
       let deltaHP = min power (bhpMax - bhp tm)
-      execCmdAtomic $ HealActorA target deltaHP
+      execUpdAtomic $ HealActorA target deltaHP
       execSfxAtomic $ EffectD target $ Effect.Heal deltaHP
       return True
 
@@ -132,12 +132,12 @@ effectWound nDm power source target = do
       return False
     else do
       -- Damage the target.
-      execCmdAtomic $ HealActorA target deltaHP
+      execUpdAtomic $ HealActorA target deltaHP
       tb <- getsState $ getActorBody target
       let calmMax = maxDice $ acalm $ okind $ bkind tb
           calmCur = bcalm tb
           deltaCalm = calmMax `div` 2 - calmCur
-      when (deltaCalm < 0) $ execCmdAtomic $ CalmActorA target deltaCalm
+      when (deltaCalm < 0) $ execUpdAtomic $ CalmActorA target deltaCalm
       execSfxAtomic $ EffectD target $
         if source == target
         then Effect.Heal deltaHP
@@ -178,19 +178,19 @@ effectDominate source target = do
     electLeader (bfid tb) (blid tb) target
     deduceKilled tb
     ais <- getsState $ getCarriedAssocs tb
-    execCmdAtomic $ LoseActorA target tb ais
+    execUpdAtomic $ LoseActorA target tb ais
     -- TODO: if domination stays permanent (undecided yet), perhaps increase
     -- kill count here or record original factions and increase count only
     -- when the recreated actor really dies.
     let bNew = tb {bfid = bfid sb}
-    execCmdAtomic $ CreateActorA target bNew ais
+    execUpdAtomic $ CreateActorA target bNew ais
     leaderOld <- getsState $ gleader . (EM.! bfid sb) . sfactionD
     -- Halve the speed as a side-effect of domination.
     let speed = bspeed bNew
         delta = speedScale (1%2) speed
     when (delta > speedZero) $
-      execCmdAtomic $ HasteActorA target (speedNegate delta)
-    execCmdAtomic $ LeadFactionA (bfid sb) leaderOld (Just target)
+      execUpdAtomic $ HasteActorA target (speedNegate delta)
+    execUpdAtomic $ LeadFactionA (bfid sb) leaderOld (Just target)
     return True
 
 electLeader :: MonadAtomic m => FactionId -> LevelId -> ActorId -> m ()
@@ -204,7 +204,7 @@ electLeader fid lid aidDead = do
     let mleaderNew = listToMaybe $ filter (/= aidDead)
                      $ map fst $ onLevel ++ party
     unless (mleader == mleaderNew) $
-      execCmdAtomic $ LeadFactionA fid mleader mleaderNew
+      execUpdAtomic $ LeadFactionA fid mleader mleaderNew
 
 deduceKilled :: (MonadAtomic m, MonadServer m) => Actor -> m ()
 deduceKilled body = do
@@ -272,7 +272,7 @@ addActor mk bfid pos lid hp calm bsymbol bname bcolor time = do
                         Nothing pos lid time bfid False
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
-  execCmdAtomic $ CreateActorA acounter m []
+  execUpdAtomic $ CreateActorA acounter m []
   return $! acounter
 
 -- | Create a new hero on the current level, close to the given position.
@@ -331,7 +331,7 @@ spawnMonsters ps lid time fid = assert (not $ null ps) $ do
     addMonster mk fid p lid time
   mleader <- getsState $ gleader . (EM.! fid) . sfactionD  -- just changed
   when (isNothing mleader) $
-    execCmdAtomic $ LeadFactionA fid Nothing (Just $ head laid)
+    execUpdAtomic $ LeadFactionA fid Nothing (Just $ head laid)
 
 -- | Roll a faction based on faction kind frequency key.
 pickFaction :: MonadServer m
@@ -395,14 +395,14 @@ registerItem item k container verbose = do
     Just iid -> do
       -- TODO: try to avoid this case for createItems,
       -- to make items more interesting
-      execCmdAtomic $ cmd iid item k container
+      execUpdAtomic $ cmd iid item k container
       return iid
     Nothing -> do
       icounter <- getsServer sicounter
       modifyServer $ \ser ->
         ser { sicounter = succ icounter
             , sitemRev = HM.insert item icounter (sitemRev ser) }
-      execCmdAtomic $ cmd icounter item k container
+      execUpdAtomic $ cmd icounter item k container
       return $! icounter
 
 -- ** ApplyPerfume
@@ -418,7 +418,7 @@ effectApplyPerfume source target =
     tm <- getsState $ getActorBody target
     Level{lsmell} <- getLevel $ blid tm
     let f p fromSm =
-          execCmdAtomic $ AlterSmellA (blid tm) p (Just fromSm) Nothing
+          execUpdAtomic $ AlterSmellA (blid tm) p (Just fromSm) Nothing
     mapWithKeyM_ f lsmell
     execSfxAtomic $ EffectD target Effect.ApplyPerfume
     return True
@@ -498,11 +498,11 @@ switchLevels1 ((aid, bOld), ais) = do
   -- Prevent leader pointing to a non-existing actor.
   when (not (bproj bOld) && isJust mleader) $
     -- Trouble, if the actors are of the same faction.
-    execCmdAtomic $ LeadFactionA side mleader Nothing
+    execUpdAtomic $ LeadFactionA side mleader Nothing
   -- Remove the actor from the old level.
   -- Onlookers see somebody disappear suddenly.
   -- @DestroyActorA@ is too loud, so use @LoseActorA@ instead.
-  execCmdAtomic $ LoseActorA aid bOld ais
+  execUpdAtomic $ LoseActorA aid bOld ais
 
 switchLevels2 :: MonadAtomic m
               => LevelId -> Point -> ((ActorId, Actor), [(ItemId, Item)])
@@ -527,13 +527,13 @@ switchLevels2 lidNew posNew ((aid, bOld), ais) = do
   -- Materialize the actor at the new location.
   -- Onlookers see somebody appear suddenly. The actor himself
   -- sees new surroundings and has to reset his perception.
-  execCmdAtomic $ CreateActorA aid bNew ais
+  execUpdAtomic $ CreateActorA aid bNew ais
   -- Changing levels is so important, that the leader changes.
   -- This also helps the actor clear the staircase and so avoid
   -- being pushed back to the level he came from by another actor.
   when (not (bproj bOld) && isNothing mleader) $
     -- Trouble, if the actors are of the same faction.
-    execCmdAtomic $ LeadFactionA side Nothing (Just aid)
+    execUpdAtomic $ LeadFactionA side Nothing (Just aid)
 
 -- ** Escape
 

@@ -26,14 +26,14 @@ import Game.LambdaHack.Frontend
 
 -- | Abstract syntax of client commands that don't use the UI.
 data ResponseAI =
-    RespCmdAtomicAI !CmdAtomic
+    RespUpdAtomicAI !UpdAtomic
   | RespQueryAI !ActorId
   | RespPingAI
   deriving Show
 
 -- | Abstract syntax of client commands that use the UI.
 data ResponseUI =
-    RespCmdAtomicUI !CmdAtomic
+    RespUpdAtomicUI !UpdAtomic
   | RespSfxAtomicUI !SfxAtomic
   | RespQueryUI !ActorId
   | RespPingUI
@@ -46,33 +46,33 @@ data ResponseUI =
 -- would not be so valuable.
 debugResponseAI :: MonadReadState m => ResponseAI -> m Text
 debugResponseAI cmd = case cmd of
-  RespCmdAtomicAI cmdA@PerceptionA{} -> debugPlain cmd cmdA
-  RespCmdAtomicAI cmdA@ResumeA{} -> debugPlain cmd cmdA
-  RespCmdAtomicAI cmdA@SpotTileA{} -> debugPlain cmd cmdA
-  RespCmdAtomicAI cmdA -> debugPretty cmd cmdA
+  RespUpdAtomicAI cmdA@PerceptionA{} -> debugPlain cmd cmdA
+  RespUpdAtomicAI cmdA@ResumeA{} -> debugPlain cmd cmdA
+  RespUpdAtomicAI cmdA@SpotTileA{} -> debugPlain cmd cmdA
+  RespUpdAtomicAI cmdA -> debugPretty cmd cmdA
   RespQueryAI aid -> debugAid aid "RespQueryAI" cmd
   RespPingAI -> return $! tshow cmd
 
 debugResponseUI :: MonadReadState m => ResponseUI -> m Text
 debugResponseUI cmd = case cmd of
-  RespCmdAtomicUI cmdA@PerceptionA{} -> debugPlain cmd cmdA
-  RespCmdAtomicUI cmdA@ResumeA{} -> debugPlain cmd cmdA
-  RespCmdAtomicUI cmdA@SpotTileA{} -> debugPlain cmd cmdA
-  RespCmdAtomicUI cmdA -> debugPretty cmd cmdA
+  RespUpdAtomicUI cmdA@PerceptionA{} -> debugPlain cmd cmdA
+  RespUpdAtomicUI cmdA@ResumeA{} -> debugPlain cmd cmdA
+  RespUpdAtomicUI cmdA@SpotTileA{} -> debugPlain cmd cmdA
+  RespUpdAtomicUI cmdA -> debugPretty cmd cmdA
   RespSfxAtomicUI sfx -> do
     ps <- posSfxAtomic sfx
     return $! tshow (cmd, ps)
   RespQueryUI aid -> debugAid aid "RespQueryUI" cmd
   RespPingUI -> return $! tshow cmd
 
-debugPretty :: (MonadReadState m, Show a) => a -> CmdAtomic -> m Text
+debugPretty :: (MonadReadState m, Show a) => a -> UpdAtomic -> m Text
 debugPretty cmd cmdA = do
-  ps <- posCmdAtomic cmdA
+  ps <- posUpdAtomic cmdA
   return $! tshow (cmd, ps)
 
-debugPlain :: (MonadReadState m, Show a) => a -> CmdAtomic -> m Text
+debugPlain :: (MonadReadState m, Show a) => a -> UpdAtomic -> m Text
 debugPlain cmd cmdA = do
-  ps <- posCmdAtomic cmdA
+  ps <- posUpdAtomic cmdA
   return $! T.pack $ show (cmd, ps)  -- too large for pretty show
 
 data DebugAid a = DebugAid

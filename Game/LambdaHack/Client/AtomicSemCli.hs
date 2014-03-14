@@ -3,7 +3,7 @@
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Client.AtomicSemCli
   ( cmdAtomicSemCli, cmdAtomicFilterCli
-  , drawRespCmdAtomicUI, drawRespSfxAtomicUI
+  , drawRespUpdAtomicUI, drawRespSfxAtomicUI
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -44,12 +44,12 @@ import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind
 
--- * RespCmdAtomicAI
+-- * RespUpdAtomicAI
 
 -- | Clients keep a subset of atomic commands sent by the server
 -- and add some of their own. The result of this function is the list
 -- of commands kept for each command received.
-cmdAtomicFilterCli :: MonadClient m => CmdAtomic -> m [CmdAtomic]
+cmdAtomicFilterCli :: MonadClient m => UpdAtomic -> m [UpdAtomic]
 cmdAtomicFilterCli cmd = case cmd of
   MoveActorA aid _ toP -> do
     cmdSml <- deleteSmell aid toP
@@ -136,7 +136,7 @@ cmdAtomicFilterCli cmd = case cmd of
     -- Here we cheat by setting a new perception outright instead of
     -- in @cmdAtomicSemCli@, to avoid computing perception twice.
     -- TODO: try to assert similar things as for @atomicRemember@:
-    -- that posCmdAtomic of all the Lose* commands was visible in old Per,
+    -- that posUpdAtomic of all the Lose* commands was visible in old Per,
     -- but is not visible any more.
     perOld <- getPerFid lid
     perceptionA lid outPer inPer
@@ -174,12 +174,12 @@ cmdAtomicFilterCli cmd = case cmd of
     let seenNew = seenAtomicCli False fid perNew
         seenOld = seenAtomicCli False fid perOld
     -- TODO: these assertions are probably expensive
-    psActor <- mapM posCmdAtomic outActor
+    psActor <- mapM posUpdAtomic outActor
     -- Verify that we forget only previously seen actors.
     assert (allB seenOld psActor) skip
     -- Verify that we forget only currently invisible actors.
     assert (allB (not . seenNew) psActor) skip
-    psItemSmell <- mapM posCmdAtomic $ inItem ++ inSmell
+    psItemSmell <- mapM posUpdAtomic $ inItem ++ inSmell
     -- Verify that we forget only previously invisible items and smell.
     assert (allB (not . seenOld) psItemSmell) skip
     -- Verify that we forget only currently seen items and smell.
@@ -187,7 +187,7 @@ cmdAtomicFilterCli cmd = case cmd of
     return $! cmd : outActor ++ inItem ++ inSmell
   _ -> return [cmd]
 
-deleteSmell :: MonadClient m => ActorId -> Point -> m [CmdAtomic]
+deleteSmell :: MonadClient m => ActorId -> Point -> m [UpdAtomic]
 deleteSmell aid pos = do
   Kind.COps{coactor = Kind.Ops{okind}} <- getsState scops
   b <- getsState $ getActorBody aid
@@ -201,7 +201,7 @@ deleteSmell aid pos = do
 
 -- | Effect of atomic actions on client state is calculated
 -- in the global state before the command is executed.
-cmdAtomicSemCli :: MonadClient m => CmdAtomic -> m ()
+cmdAtomicSemCli :: MonadClient m => UpdAtomic -> m ()
 cmdAtomicSemCli cmd = case cmd of
   CreateActorA aid body _ -> createActorA aid body
   DestroyActorA aid b _ -> destroyActorA aid b True
@@ -226,7 +226,7 @@ cmdAtomicSemCli cmd = case cmd of
     let cli = defStateClient shistory sconfigUI side isAI
     putClient cli { sdisco
                   , sfper
-                  -- , sundo = [CmdAtomic cmd]
+                  -- , sundo = [UpdAtomic cmd]
                   , scurDifficulty = sdifficultyCli sdebugCli
                   , sdebugCli }
   ResumeA _fid sfper -> modifyClient $ \cli -> cli {sfper}
@@ -314,7 +314,7 @@ coverA lid p iid ik = do
 killExitA :: MonadClient m => m ()
 killExitA = modifyClient $ \cli -> cli {squit = True}
 
--- * RespCmdAtomicUI
+-- * RespUpdAtomicUI
 
 -- TODO: let user configure which messages are not created, which are
 -- slightly hidden, which are shown and which flash and center screen
@@ -328,8 +328,8 @@ killExitA = modifyClient $ \cli -> cli {squit = True}
 -- | Visualization of atomic actions for the client is perfomed
 -- in the global state after the command is executed and after
 -- the client state is modified by the command.
-drawRespCmdAtomicUI :: MonadClientUI m => Bool -> CmdAtomic -> m ()
-drawRespCmdAtomicUI verbose cmd = case cmd of
+drawRespUpdAtomicUI :: MonadClientUI m => Bool -> UpdAtomic -> m ()
+drawRespUpdAtomicUI verbose cmd = case cmd of
   CreateActorA aid body _ -> createActorUI aid body verbose "appear"
   DestroyActorA aid body _ -> do
     destroyActorUI aid body "die" "be destroyed" verbose

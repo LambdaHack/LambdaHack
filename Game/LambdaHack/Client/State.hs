@@ -59,7 +59,7 @@ data StateClient = StateClient
                                    -- ^ parameters of the current run, if any
   , sreport      :: !Report        -- ^ current messages
   , shistory     :: !History       -- ^ history of messages
-  , sundo        :: ![Atomic]      -- ^ atomic commands performed to date
+  , sundo        :: ![CmdAtomic]   -- ^ atomic commands performed to date
   , sdisco       :: !Discovery     -- ^ remembered item discoveries
   , sfper        :: !FactionPers   -- ^ faction perception indexed by levels
   , srandom      :: !R.StdGen      -- ^ current random generator

@@ -30,7 +30,7 @@ data StateServer = StateServer
   , sflavour   :: !FlavourMap    -- ^ association of flavour to items
   , sacounter  :: !ActorId       -- ^ stores next actor index
   , sicounter  :: !ItemId        -- ^ stores next item index
-  , sundo      :: ![Atomic]      -- ^ atomic commands performed to date
+  , sundo      :: ![CmdAtomic]   -- ^ atomic commands performed to date
   , sper       :: !Pers          -- ^ perception of all factions
   , srandom    :: !R.StdGen      -- ^ current random generator
   , srngs      :: !RNGs          -- ^ initial random generators

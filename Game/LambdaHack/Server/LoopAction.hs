@@ -59,7 +59,7 @@ loopSer sdebug handleRequest executorUI executorAI !cops = do
     Just (sRaw, ser) | not $ snewGameSer sdebug -> do  -- run a restored game
       -- First, set the previous cops, to send consistent info to clients.
       let setPreviousCops = const cops
-      execCmdAtomic $ ResumeServerA $ updateCOps setPreviousCops sRaw
+      execUpdAtomic $ ResumeServerA $ updateCOps setPreviousCops sRaw
       putServer ser
       sdebugNxt <- initDebug cops sdebug
       modifyServer $ \ser2 -> ser2 {sdebugNxt}
@@ -67,11 +67,11 @@ loopSer sdebug handleRequest executorUI executorAI !cops = do
       updateConn executorUI executorAI
       initPer
       pers <- getsServer sper
-      broadcastCmdAtomic $ \fid -> ResumeA fid (pers EM.! fid)
+      broadcastUpdAtomic $ \fid -> ResumeA fid (pers EM.! fid)
       -- Second, set the current cops and reinit perception.
       let setCurrentCops = const (speedupCOps (sallClear sdebugNxt) cops)
       -- @sRaw@ is correct here, because none of the above changes State.
-      execCmdAtomic $ ResumeServerA $ updateCOps setCurrentCops sRaw
+      execUpdAtomic $ ResumeServerA $ updateCOps setCurrentCops sRaw
       -- We dump RNG seeds here, in case the game wasn't run
       -- with --dumpInitRngs previously and we need to seeds.
       when (sdumpInitRngs sdebug) $ dumpRngs
@@ -86,7 +86,7 @@ loopSer sdebug handleRequest executorUI executorAI !cops = do
       modifyServer $ \ser -> ser { sdebugNxt = debugBarRngs
                                  , sdebugSer = debugBarRngs }
       let speedup = speedupCOps (sallClear sdebugNxt)
-      execCmdAtomic $ RestartServerA $ updateCOps speedup s
+      execUpdAtomic $ RestartServerA $ updateCOps speedup s
       updateConn executorUI executorAI
       initPer
       reinitGame
@@ -143,8 +143,8 @@ endClip arenas = do
   -- until a different command needs to be sent. Include HealActorA
   -- from regenerateLevelHP, but keep it before AgeGameA.
   -- TODO: this is also needed to keep savefiles small (undo info).
-  mapM_ (\lid -> execCmdAtomic $ AgeLevelA lid timeClip) arenas
-  execCmdAtomic $ AgeGameA timeClip
+  mapM_ (\lid -> execUpdAtomic $ AgeLevelA lid timeClip) arenas
+  execUpdAtomic $ AgeGameA timeClip
   -- Perform periodic dungeon maintenance.
   time <- getsState stime
   let clipN = time `timeFit` timeClip
@@ -261,17 +261,17 @@ handleActors handleRequest lid = do
                                `blame` (aid, body, aidNew, bPre, cmdS, fact))
                          [LeadFactionA side mleader (Just aidNew)]
                   else []
-            mapM_ execCmdAtomic leadAtoms
+            mapM_ execUpdAtomic leadAtoms
             assert (bfid bPre == side
                     `blame` "client tries to move other faction actors"
                     `twith` (bPre, side)) skip
             return (aidNew, bPre)
           setBWait (ReqTimed ReqWait{}) aidNew bPre = do
             let fromWait = bwait bPre
-            unless fromWait $ execCmdAtomic $ WaitActorA aidNew fromWait True
+            unless fromWait $ execUpdAtomic $ WaitActorA aidNew fromWait True
           setBWait _ aidNew bPre = do
             let fromWait = bwait bPre
-            when fromWait $ execCmdAtomic $ WaitActorA aidNew fromWait False
+            when fromWait $ execUpdAtomic $ WaitActorA aidNew fromWait False
           extraFrames bPre = do
             -- Generate extra frames if the actor has already moved during
             -- this clip, so his multiple moves would be collapsed
@@ -352,14 +352,14 @@ dieSer aid b hit = do
   if bproj b then do
     dropAllItems aid b hit
     b2 <- getsState $ getActorBody aid
-    execCmdAtomic $ DestroyActorA aid b2 []
+    execUpdAtomic $ DestroyActorA aid b2 []
   else do
-    execCmdAtomic $ RecordKillA aid 1
+    execUpdAtomic $ RecordKillA aid 1
     electLeader (bfid b) (blid b) aid
     deduceKilled b
     dropAllItems aid b False
     b2 <- getsState $ getActorBody aid
-    execCmdAtomic $ DestroyActorA aid b2 []
+    execUpdAtomic $ DestroyActorA aid b2 []
 
 -- | Drop all actor's items. If the actor hits another actor and this
 -- collision results in all item being dropped, all items are destroyed.
@@ -374,7 +374,7 @@ dropAllItems aid b hit = do
   discoS <- getsServer sdisco
   let container = CActor aid CEqp
       loseInv = do
-        let g iid k = execCmdAtomic
+        let g iid k = execUpdAtomic
                       $ MoveItemA iid k (CActor aid CInv) container
         mapActorInv_ g b
   if not rsharedInventory then loseInv
@@ -383,7 +383,7 @@ dropAllItems aid b hit = do
     case gleader fact of
       Nothing -> loseInv
       Just leader -> do
-        let g iid k = execCmdAtomic
+        let g iid k = execUpdAtomic
                       $ MoveItemA iid k (CActor aid CInv) (CActor leader CInv)
         mapActorInv_ g b
   let isDestroyed item = hit || bproj b && isFragile coitem discoS item
@@ -391,14 +391,14 @@ dropAllItems aid b hit = do
         item <- getsState $ getItemBody iid
         if isDestroyed item then
           case isExplosive coitem discoS item of
-            Nothing -> execCmdAtomic $ DestroyItemA iid item k container
+            Nothing -> execUpdAtomic $ DestroyItemA iid item k container
             Just cgroup -> do
               let ik = fromJust $ jkind discoS item
-              execCmdAtomic $ DiscoverA (blid b) (bpos b) iid ik
-              execCmdAtomic $ DestroyItemA iid item k container
+              execUpdAtomic $ DiscoverA (blid b) (bpos b) iid ik
+              execUpdAtomic $ DestroyItemA iid item k container
               explodeItem aid b cgroup
         else
-          execCmdAtomic $ MoveItemA iid k container (CActor aid CGround)
+          execUpdAtomic $ MoveItemA iid k container (CActor aid CGround)
   mapActorInv_ f b
 
 explodeItem :: (MonadAtomic m, MonadServer m)
@@ -440,7 +440,7 @@ explodeItem aid b cgroup = do
   maybe skip projectN mn2  -- assume all shrapnels bounce off obstacles once
   bag3 <- getsState $ beqp . getActorBody aid
   let mn3 = EM.lookup iid bag3
-  maybe skip (\k -> execCmdAtomic $ LoseItemA iid item k container) mn3
+  maybe skip (\k -> execUpdAtomic $ LoseItemA iid item k container) mn3
 
 -- | Advance the move time for the given actor and his status effects
 -- that are updated once per his move (as opposed to once per a time unit).
@@ -449,7 +449,7 @@ advanceTime aid = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   b <- getsState $ getActorBody aid
   let t = ticksPerMeter $ bspeed b
-  execCmdAtomic $ AgeActorA aid t
+  execUpdAtomic $ AgeActorA aid t
   -- Calm or worry actor by enemies felt (even if not seen)
   -- on the level within 3 tiles.
   fact <- getsState $ (EM.! bfid b) . sfactionD
@@ -460,7 +460,7 @@ advanceTime aid = do
       deltaCalm = if null closeFoes
                   then max 0 $ min 1 (calmMax - calmCur)
                   else max (-1) (-calmCur)
-  when (deltaCalm /= 0) $ execCmdAtomic $ CalmActorA aid deltaCalm
+  when (deltaCalm /= 0) $ execUpdAtomic $ CalmActorA aid deltaCalm
 
 -- | Generate a monster, possibly.
 generateMonster :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
@@ -546,7 +546,7 @@ regenerateLevelHP lid = do
            then Nothing
            else Just a
   toRegen <- getsState $ mapMaybe approve . actorNotProjAssocs (const True) lid
-  mapM_ (\aid -> execCmdAtomic $ HealActorA aid 1) toRegen
+  mapM_ (\aid -> execUpdAtomic $ HealActorA aid 1) toRegen
 
 leadLevelFlip :: (MonadAtomic m, MonadServer m) => m ()
 leadLevelFlip = do
@@ -588,7 +588,7 @@ leadLevelFlip = do
                 (lid, a) <- rndToAction $ frequency
                                         $ toFreq "leadLevel" freqList
                 unless (lid == blid body) $
-                  execCmdAtomic
+                  execUpdAtomic
                   $ LeadFactionA (bfid body) (Just leader) (Just a)
   factionD <- getsState sfactionD
   mapM_ flipFaction $ EM.elems factionD
@@ -619,7 +619,7 @@ endOrLoop updConn loopServer = do
     ([], _ : _) -> do
       -- Wipe out the quit flag for the savegame files.
       mapM_ (\(fid, fact) ->
-              execCmdAtomic
+              execUpdAtomic
               $ QuitFactionA fid Nothing (gquit fact) Nothing) campers
       saveAndExit
       -- Don't call @loopServer@, that is, quit the game loop.
@@ -655,7 +655,7 @@ restartGame updConn loopServer = do
   let debugBarRngs = sdebugNxt {sdungeonRng = Nothing, smainRng = Nothing}
   modifyServer $ \ser -> ser { sdebugNxt = debugBarRngs
                              , sdebugSer = debugBarRngs }
-  execCmdAtomic $ RestartServerA s
+  execUpdAtomic $ RestartServerA s
   updConn
   initPer
   reinitGame

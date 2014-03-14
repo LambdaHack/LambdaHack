@@ -354,7 +354,7 @@ revealItems mfid mbody = do
   let discover b iid _numPieces = do
         item <- getsState $ getItemBody iid
         let ik = fromJust $ jkind discoS item
-        execCmdAtomic $ DiscoverA (blid b) (bpos b) iid ik
+        execUpdAtomic $ DiscoverA (blid b) (bpos b) iid ik
       f aid = do
         b <- getsState $ getActorBody aid
         let ourSide = maybe True (== bfid b) mfid
@@ -377,7 +377,7 @@ quitF mbody status fid = do
       when (playerUI $ gplayer fact) $ do
         revealItems (Just fid) mbody
         registerScore status mbody fid
-      execCmdAtomic $ QuitFactionA fid mbody oldSt $ Just status
+      execUpdAtomic $ QuitFactionA fid mbody oldSt $ Just status
       modifyServer $ \ser -> ser {squit = True}  -- end turn ASAP
 
 -- Send any QuitFactionA actions that can be deduced from their current state.
@@ -505,8 +505,8 @@ killAllClients = do
   let sendKill fid _ = do
         -- We can't check in sfactionD, because client can be from an old game.
         when (fromEnum fid > 0) $
-          sendUpdateUI fid $ RespCmdAtomicUI $ KillExitA fid
-        sendUpdateAI fid $ RespCmdAtomicAI $ KillExitA fid
+          sendUpdateUI fid $ RespUpdAtomicUI $ KillExitA fid
+        sendUpdateAI fid $ RespUpdAtomicAI $ KillExitA fid
   mapWithKeyM_ sendKill d
 
 -- | Compute and insert auxiliary optimized components into game content,

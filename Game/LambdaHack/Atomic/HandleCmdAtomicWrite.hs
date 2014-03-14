@@ -33,7 +33,7 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind as ModeKind
 import Game.LambdaHack.Content.TileKind as TileKind
 
-cmdAtomicSem :: MonadWriteState m => CmdAtomic -> m ()
+cmdAtomicSem :: MonadWriteState m => UpdAtomic -> m ()
 cmdAtomicSem cmd = case cmd of
   CreateActorA aid body ais -> createActorA aid body ais
   DestroyActorA aid body ais -> destroyActorA aid body ais

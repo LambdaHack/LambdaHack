@@ -2,7 +2,7 @@
 module Game.LambdaHack.Atomic.MonadAtomic
   ( MonadAtomic(..)
   , MonadWriteState(..)  -- ^ exposed only to be implemented, not used
-  , broadcastCmdAtomic,  broadcastSfxAtomic
+  , broadcastUpdAtomic,  broadcastSfxAtomic
   ) where
 
 import Data.Key (mapWithKeyM_)
@@ -17,17 +17,17 @@ class MonadReadState m => MonadWriteState m where
   putState    :: State -> m ()
 
 class MonadReadState m => MonadAtomic m where
-  execAtomic    :: Atomic -> m ()
-  execCmdAtomic :: CmdAtomic -> m ()
-  execCmdAtomic = execAtomic . CmdAtomic
+  execAtomic    :: CmdAtomic -> m ()
+  execUpdAtomic :: UpdAtomic -> m ()
+  execUpdAtomic = execAtomic . UpdAtomic
   execSfxAtomic :: SfxAtomic -> m ()
   execSfxAtomic = execAtomic . SfxAtomic
 
-broadcastCmdAtomic :: MonadAtomic m
-                   => (FactionId -> CmdAtomic) -> m ()
-broadcastCmdAtomic fcmd = do
+broadcastUpdAtomic :: MonadAtomic m
+                   => (FactionId -> UpdAtomic) -> m ()
+broadcastUpdAtomic fcmd = do
   factionD <- getsState sfactionD
-  mapWithKeyM_ (\fid _ -> execCmdAtomic $ fcmd fid) factionD
+  mapWithKeyM_ (\fid _ -> execUpdAtomic $ fcmd fid) factionD
 
 broadcastSfxAtomic :: MonadAtomic m
                    => (FactionId -> SfxAtomic) -> m ()

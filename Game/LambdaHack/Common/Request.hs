@@ -37,7 +37,7 @@ data RequestTimed =
   | ReqApply !ActorId !ItemId !CStore
   | ReqTrigger !ActorId !(Maybe F.Feature)
   | ReqSetTrajectory !ActorId
-  | ReqPongHack [Atomic]
+  | ReqPongHack [CmdAtomic]
   deriving (Show, Eq)
 
 -- | The actor that starts performing the command (may be dead, after

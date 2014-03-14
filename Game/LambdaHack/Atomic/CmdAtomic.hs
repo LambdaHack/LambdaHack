@@ -13,8 +13,8 @@
 -- See
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Atomic.CmdAtomic
-  ( Atomic(..), CmdAtomic(..), SfxAtomic(..), HitAtomic(..)
-  , undoCmdAtomic, undoSfxAtomic, undoAtomic
+  ( CmdAtomic(..), UpdAtomic(..), SfxAtomic(..), HitAtomic(..)
+  , undoUpdAtomic, undoSfxAtomic, undoCmdAtomic
   ) where
 
 import Data.Binary
@@ -41,15 +41,15 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ItemKind as ItemKind
 import Game.LambdaHack.Content.TileKind as TileKind
 
-data Atomic =
-    CmdAtomic !CmdAtomic
+data CmdAtomic =
+    UpdAtomic !UpdAtomic
   | SfxAtomic !SfxAtomic
   deriving (Show, Eq, Generic)
 
-instance Binary Atomic
+instance Binary CmdAtomic
 
 -- | Abstract syntax of atomic commands.
-data CmdAtomic =
+data UpdAtomic =
   -- Create/destroy actors and items.
     CreateActorA !ActorId !Actor ![(ItemId, Item)]
   | DestroyActorA !ActorId !Actor ![(ItemId, Item)]
@@ -100,7 +100,7 @@ data CmdAtomic =
   | MsgAllA !Msg
   deriving (Show, Eq, Generic)
 
-instance Binary CmdAtomic
+instance Binary UpdAtomic
 
 data SfxAtomic =
     StrikeD !ActorId !ActorId !Item !HitAtomic
@@ -126,8 +126,8 @@ data HitAtomic = HitD | HitBlockD | MissBlockD
 
 instance Binary HitAtomic
 
-undoCmdAtomic :: CmdAtomic -> Maybe CmdAtomic
-undoCmdAtomic cmd = case cmd of
+undoUpdAtomic :: UpdAtomic -> Maybe UpdAtomic
+undoUpdAtomic cmd = case cmd of
   CreateActorA aid body ais -> Just $ DestroyActorA aid body ais
   DestroyActorA aid body ais -> Just $ CreateActorA aid body ais
   CreateItemA iid item k c -> Just $ DestroyItemA iid item k c
@@ -189,6 +189,6 @@ undoSfxAtomic cmd = case cmd of
   DisplayDelayD{} -> cmd
   RecordHistoryD{} -> cmd
 
-undoAtomic :: Atomic -> Maybe Atomic
-undoAtomic (CmdAtomic cmd) = fmap CmdAtomic $ undoCmdAtomic cmd
-undoAtomic (SfxAtomic sfx) = Just $ SfxAtomic $ undoSfxAtomic sfx
+undoCmdAtomic :: CmdAtomic -> Maybe CmdAtomic
+undoCmdAtomic (UpdAtomic cmd) = fmap UpdAtomic $ undoUpdAtomic cmd
+undoCmdAtomic (SfxAtomic sfx) = Just $ SfxAtomic $ undoSfxAtomic sfx
