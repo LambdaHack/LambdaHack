@@ -45,7 +45,7 @@ handleResponseAI cmd = case cmd of
     mapM_ (storeUndo . UpdAtomic) cmds
   RespQueryAI aid -> do
     cmdC <- queryAI aid
-    writeServer cmdC
+    sendRequest cmdC
   RespPingAI -> pongAI
 
 handleResponseUI :: ( MonadAtomic m, MonadClientUI m
@@ -65,7 +65,7 @@ handleResponseUI cmd = case cmd of
     mleader <- getsClient _sleader
     assert (isJust mleader `blame` "query without leader" `twith` cmd) skip
     cmdH <- queryUI aid
-    writeServer cmdH
+    sendRequest cmdH
   RespPingUI -> pongUI
 
 -- | Wire together game content, the main loop of game clients,

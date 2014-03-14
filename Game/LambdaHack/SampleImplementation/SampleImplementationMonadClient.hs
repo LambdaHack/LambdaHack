@@ -28,25 +28,26 @@ import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Server.ProtocolServer
 
-data CliState c d = CliState
-  { cliState   :: !State             -- ^ current global state
-  , cliClient  :: !StateClient       -- ^ current client state
-  , cliDict    :: !(ChanServer c d)  -- ^ this client connection information
+data CliState resp req = CliState
+  { cliState   :: !State        -- ^ current global state
+  , cliClient  :: !StateClient  -- ^ current client state
+  , cliDict    :: !(ChanServer resp req)
+                                -- ^ this client connection information
   , cliToSave  :: !(Save.ChanSave (State, StateClient))
-                                     -- ^ connection to the save thread
-  , cliSession :: SessionUI          -- ^ UI setup data, empty for AI clients
+                                -- ^ connection to the save thread
+  , cliSession :: SessionUI     -- ^ UI setup data, empty for AI clients
   }
 
 -- | Server state transformation monad.
-newtype CliImplementation c d a =
-    CliImplementation {runCliImplementation :: StateT (CliState c d) IO a}
+newtype CliImplementation resp req a =
+    CliImplementation {runCliImplementation :: StateT (CliState resp req) IO a}
   deriving (Monad, Functor, Applicative)
 
-instance MonadReadState (CliImplementation c d) where
+instance MonadReadState (CliImplementation resp req) where
   getState    = CliImplementation $ gets cliState
   getsState f = CliImplementation $ gets $ f . cliState
 
-instance MonadWriteState (CliImplementation c d) where
+instance MonadWriteState (CliImplementation resp req) where
   modifyState f = CliImplementation $ state $ \cliS ->
     let newCliS = cliS {cliState = f $ cliState cliS}
     in newCliS `seq` ((), newCliS)
@@ -54,7 +55,7 @@ instance MonadWriteState (CliImplementation c d) where
     let newCliS = cliS {cliState = s}
     in newCliS `seq` ((), newCliS)
 
-instance MonadClient (CliImplementation c d) where
+instance MonadClient (CliImplementation resp req) where
   getClient      = CliImplementation $ gets cliClient
   getsClient   f = CliImplementation $ gets $ f . cliClient
   modifyClient f = CliImplementation $ state $ \cliS ->
@@ -70,27 +71,27 @@ instance MonadClient (CliImplementation c d) where
     toSave <- gets cliToSave
     IO.liftIO $ Save.saveToChan toSave (s, cli)
 
-instance MonadClientUI (CliImplementation c d) where
+instance MonadClientUI (CliImplementation resp req) where
   getsSession f  = CliImplementation $ gets $ f . cliSession
   liftIO         = CliImplementation . IO.liftIO
 
-instance MonadClientReadServer c (CliImplementation c d) where
-  readServer     = CliImplementation $ do
-    ChanServer{fromServer} <- gets cliDict
-    IO.liftIO $ atomically . readTQueue $ fromServer
+instance MonadClientReadServer resp (CliImplementation resp req) where
+  receiveResponse     = CliImplementation $ do
+    ChanServer{responseQ} <- gets cliDict
+    IO.liftIO $ atomically . readTQueue $ responseQ
 
-instance MonadClientWriteServer d (CliImplementation c d) where
-  writeServer scmd = CliImplementation $ do
-    ChanServer{toServer} <- gets cliDict
-    IO.liftIO $ atomically . writeTQueue toServer $ scmd
+instance MonadClientWriteServer req (CliImplementation resp req) where
+  sendRequest scmd = CliImplementation $ do
+    ChanServer{requestQ} <- gets cliDict
+    IO.liftIO $ atomically . writeTQueue requestQ $ scmd
 
-instance MonadAtomic (CliImplementation c d) where
+instance MonadAtomic (CliImplementation resp req) where
   execAtomic = handleCmdAtomic
 
 -- | Init the client, then run an action, with a given session,
 -- state and history, in the @IO@ monad.
-executorCli :: CliImplementation c d ()
-            -> SessionUI -> State -> StateClient -> ChanServer c d
+executorCli :: CliImplementation resp req ()
+            -> SessionUI -> State -> StateClient -> ChanServer resp req
             -> IO ()
 executorCli m cliSession cliState cliClient cliDict =
   let saveFile (_, cli2) =

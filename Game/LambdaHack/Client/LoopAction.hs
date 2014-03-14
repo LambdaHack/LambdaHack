@@ -47,7 +47,7 @@ loopAI sdebugCli cmdClientAISem = do
   side <- getsClient sside
   restored <- initCli sdebugCli
               $ \s -> cmdClientAISem $ RespUpdAtomicAI $ UpdResumeServer s
-  cmd1 <- readServer
+  cmd1 <- receiveResponse
   case (restored, cmd1) of
     (True, RespUpdAtomicAI UpdResume{}) -> return ()
     (True, RespUpdAtomicAI UpdRestart{}) -> return ()
@@ -65,7 +65,7 @@ loopAI sdebugCli cmdClientAISem = do
   debugPrint $ "AI client" <+> tshow side <+> "stopped."
  where
   loop = do
-    cmd <- readServer
+    cmd <- receiveResponse
     cmdClientAISem cmd
     quit <- getsClient squit
     unless quit loop
@@ -78,7 +78,7 @@ loopUI sdebugCli cmdClientUISem = do
   side <- getsClient sside
   restored <- initCli sdebugCli
               $ \s -> cmdClientUISem $ RespUpdAtomicUI $ UpdResumeServer s
-  cmd1 <- readServer
+  cmd1 <- receiveResponse
   msg <- case (restored, cmd1) of
     (True, RespUpdAtomicUI UpdResume{}) -> do
       cmdClientUISem cmd1
@@ -107,7 +107,7 @@ loopUI sdebugCli cmdClientUISem = do
   debugPrint $ "UI client" <+> tshow side <+> "stopped."
  where
   loop = do
-    cmd <- readServer
+    cmd <- receiveResponse
     cmdClientUISem cmd
     quit <- getsClient squit
     unless quit loop

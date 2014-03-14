@@ -23,14 +23,14 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
 
-class MonadClient m => MonadClientReadServer c m | m -> c where
-  readServer  :: m c
+class MonadClient m => MonadClientReadServer resp m | m -> resp where
+  receiveResponse  :: m resp
 
-class MonadClient m => MonadClientWriteServer d m | m -> d where
-  writeServer  :: d -> m ()
+class MonadClient m => MonadClientWriteServer req m | m -> req where
+  sendRequest  :: req -> m ()
 
 pongAI :: (MonadClientWriteServer RequestTimed m) => m ()
-pongAI = writeServer $ ReqPongHack []
+pongAI = sendRequest $ ReqPongHack []
 
 pongUI :: (MonadClientUI m, MonadClientWriteServer Request m) => m ()
 pongUI = do
@@ -39,7 +39,7 @@ pongUI = do
   escPressed <- tryTakeMVarSescMVar
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  let sendPong ats = writeServer $ ReqTimed $ ReqPongHack ats
+  let sendPong ats = sendRequest $ ReqTimed $ ReqPongHack ats
       hasAiLeader = playerAiLeader $ gplayer fact
   if escPressed && hasAiLeader then do
     -- Ask server to turn off AI for the faction's leader.
