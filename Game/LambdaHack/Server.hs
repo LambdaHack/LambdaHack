@@ -164,7 +164,7 @@ debugArgs = do
 -- the types are different and so the whole pattern of computation
 -- is different. Which of the frontends is run depends on the flags supplied
 -- when compiling the engine library.
-mainSer :: (MonadAtomic m, MonadConnServer m)
+mainSer :: (MonadAtomic m, MonadServerReadRequest m)
         => Kind.COps
         -> (m () -> IO ())
         -> (Kind.COps -> DebugModeCli

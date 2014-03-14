@@ -65,7 +65,7 @@ instance MonadServer SerImplementation where
     toSave <- gets serToSave
     IO.liftIO $ Save.saveToChan toSave (s, ser)
 
-instance MonadConnServer SerImplementation where
+instance MonadServerReadRequest SerImplementation where
   getDict      = SerImplementation $ gets serDict
   getsDict   f = SerImplementation $ gets $ f . serDict
   modifyDict f =
@@ -80,7 +80,7 @@ instance MonadAtomic SerImplementation where
   execAtomic = handleAndBroadcastServer
 
 -- | Send an atomic action to all clients that can see it.
-handleAndBroadcastServer :: (MonadWriteState m, MonadConnServer m)
+handleAndBroadcastServer :: (MonadWriteState m, MonadServerReadRequest m)
                          => CmdAtomic -> m ()
 handleAndBroadcastServer atomic = do
   persOld <- getsServer sper

@@ -41,7 +41,7 @@ initCli sdebugCli putSt = do
     _ ->  -- First visit ever, use the initial state.
       return False
 
-loopAI :: (MonadClientReadServer ResponseAI m)
+loopAI :: (MonadClientReadResponse ResponseAI m)
        => DebugModeCli -> (ResponseAI -> m ()) -> m ()
 loopAI sdebugCli cmdClientAISem = do
   side <- getsClient sside
@@ -70,7 +70,7 @@ loopAI sdebugCli cmdClientAISem = do
     quit <- getsClient squit
     unless quit loop
 
-loopUI :: (MonadClientUI m, MonadClientReadServer ResponseUI m)
+loopUI :: (MonadClientUI m, MonadClientReadResponse ResponseUI m)
        => DebugModeCli -> (ResponseUI -> m ()) -> m ()
 loopUI sdebugCli cmdClientUISem = do
   Kind.COps{corule} <- getsState scops

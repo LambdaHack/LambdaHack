@@ -4,7 +4,7 @@
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Client
   ( exeFrontend
-  , MonadClient, MonadClientUI, MonadClientReadServer, MonadClientWriteServer
+  , MonadClient, MonadClientUI, MonadClientReadResponse, MonadClientWriteRequest
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -35,7 +35,7 @@ storeUndo _atomic =
   maybe skip (\a -> modifyClient $ \cli -> cli {sundo = a : sundo cli})
     $ Nothing   -- TODO: undoCmdAtomic atomic
 
-handleResponseAI :: (MonadAtomic m, MonadClientWriteServer RequestTimed m)
+handleResponseAI :: (MonadAtomic m, MonadClientWriteRequest RequestTimed m)
                  => ResponseAI -> m ()
 handleResponseAI cmd = case cmd of
   RespUpdAtomicAI cmdA -> do
@@ -49,7 +49,7 @@ handleResponseAI cmd = case cmd of
   RespPingAI -> pongAI
 
 handleResponseUI :: ( MonadAtomic m, MonadClientUI m
-                    , MonadClientWriteServer Request m )
+                    , MonadClientWriteRequest Request m )
                  => ResponseUI -> m ()
 handleResponseUI cmd = case cmd of
   RespUpdAtomicUI cmdA -> do
@@ -73,11 +73,11 @@ handleResponseUI cmd = case cmd of
 -- the server loop, if the whole game runs in one process),
 -- UI config and the definitions of game commands.
 exeFrontend :: ( MonadAtomic m, MonadClientUI m
-               , MonadClientReadServer ResponseUI m
-               , MonadClientWriteServer Request m
+               , MonadClientReadResponse ResponseUI m
+               , MonadClientWriteRequest Request m
                , MonadAtomic n
-               , MonadClientReadServer ResponseAI n
-               , MonadClientWriteServer RequestTimed n )
+               , MonadClientReadResponse ResponseAI n
+               , MonadClientWriteRequest RequestTimed n )
             => (m () -> SessionUI -> State -> StateClient
                 -> chanServerUI
                 -> IO ())

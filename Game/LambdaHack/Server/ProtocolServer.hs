@@ -4,12 +4,13 @@ module Game.LambdaHack.Server.ProtocolServer
     ChanServer(..)
   , ConnServerDict  -- exposed only to be implemented, not used
     -- * The server-client communication monad
-  , MonadConnServer( getDict  -- exposed only to be implemented, not used
-                   , getsDict  -- exposed only to be implemented, not used
-                   , modifyDict  -- exposed only to be implemented, not used
-                   , putDict  -- exposed only to be implemented, not used
-                   , liftIO  -- exposed only to be implemented, not used
-                   )
+  , MonadServerReadRequest
+      ( getDict  -- exposed only to be implemented, not used
+      , getsDict  -- exposed only to be implemented, not used
+      , modifyDict  -- exposed only to be implemented, not used
+      , putDict  -- exposed only to be implemented, not used
+      , liftIO  -- exposed only to be implemented, not used
+      )
     -- * Protocol
   , sendUpdateAI, sendQueryAI, sendPingAI
   , sendUpdateUI, sendQueryUI, sendPingUI
@@ -43,11 +44,7 @@ import Game.LambdaHack.Server.DebugServer
 import Game.LambdaHack.Server.MonadServer hiding (liftIO)
 import Game.LambdaHack.Server.State
 
--- TODO: refactor so that the monad is split in 2 and looks analogously
--- to the Client monads. Restrict the Dict to implementation modules.
--- Then on top of that implement sendQueryAI, etc.
-
--- | Connection channels between the server and a single client.
+-- | Connection channel between the server and a single client.
 data ChanServer resp req = ChanServer
   { responseQ :: !(TQueue resp)
   , requestQ  :: !(TQueue req)
@@ -61,52 +58,64 @@ type ConnServerFaction = ( Maybe (ChanFrontend, ChanServer ResponseUI Request)
 -- | Connection information for all factions, indexed by faction identifier.
 type ConnServerDict = EM.EnumMap FactionId ConnServerFaction
 
+-- TODO: refactor so that the monad is split in 2 and looks analogously
+-- to the Client monads. Restrict the Dict to implementation modules.
+-- Then on top of that implement sendQueryAI, etc.
+-- For now we call it MonadServerReadRequest
+-- though it also has the functionality of MonadServerWriteResponse.
+
 -- | The server monad with the ability to communicate with clients.
-class MonadServer m => MonadConnServer m where
+class MonadServer m => MonadServerReadRequest m where
   getDict      :: m ConnServerDict
   getsDict     :: (ConnServerDict -> a) -> m a
   modifyDict   :: (ConnServerDict -> ConnServerDict) -> m ()
   putDict      :: ConnServerDict -> m ()
   liftIO       :: IO a -> m a
 
-writeTQueueAI :: MonadConnServer m => ResponseAI -> TQueue ResponseAI -> m ()
+writeTQueueAI :: MonadServerReadRequest m
+              => ResponseAI -> TQueue ResponseAI -> m ()
 writeTQueueAI cmd responseQ = do
   debug <- getsServer $ sniffOut . sdebugSer
   when debug $ debugResponseAI cmd
   liftIO $ atomically $ STM.writeTQueue responseQ cmd
 
-writeTQueueUI :: MonadConnServer m => ResponseUI -> TQueue ResponseUI -> m ()
+writeTQueueUI :: MonadServerReadRequest m
+              => ResponseUI -> TQueue ResponseUI -> m ()
 writeTQueueUI cmd responseQ = do
   debug <- getsServer $ sniffOut . sdebugSer
   when debug $ debugResponseUI cmd
   liftIO $ atomically $ STM.writeTQueue responseQ cmd
 
-readTQueueAI :: MonadConnServer m => TQueue RequestTimed -> m RequestTimed
+readTQueueAI :: MonadServerReadRequest m
+             => TQueue RequestTimed -> m RequestTimed
 readTQueueAI requestQ = do
   cmd <- liftIO $ atomically $ STM.readTQueue requestQ
   debug <- getsServer $ sniffIn . sdebugSer
   when debug $ debugRequestTimed cmd
   return $! cmd
 
-readTQueueUI :: MonadConnServer m => TQueue Request -> m Request
+readTQueueUI :: MonadServerReadRequest m
+             => TQueue Request -> m Request
 readTQueueUI requestQ = do
   cmd <- liftIO $ atomically $ STM.readTQueue requestQ
   debug <- getsServer $ sniffIn . sdebugSer
   when debug $ debugRequest cmd
   return $! cmd
 
-sendUpdateAI :: MonadConnServer m => FactionId -> ResponseAI -> m ()
+sendUpdateAI :: MonadServerReadRequest m
+             => FactionId -> ResponseAI -> m ()
 sendUpdateAI fid cmd = do
   conn <- getsDict $ snd . (EM.! fid)
   writeTQueueAI cmd $ responseQ conn
 
-sendQueryAI :: MonadConnServer m => FactionId -> ActorId -> m RequestTimed
+sendQueryAI :: MonadServerReadRequest m
+            => FactionId -> ActorId -> m RequestTimed
 sendQueryAI fid aid = do
   conn <- getsDict $ snd . (EM.! fid)
   writeTQueueAI (RespQueryAI aid) $ responseQ conn
   readTQueueAI $ requestQ conn
 
-sendPingAI :: (MonadAtomic m, MonadConnServer m)
+sendPingAI :: (MonadAtomic m, MonadServerReadRequest m)
            => FactionId -> m ()
 sendPingAI fid = do
   conn <- getsDict $ snd . (EM.! fid)
@@ -118,7 +127,8 @@ sendPingAI fid = do
     ReqPongHack ats -> mapM_ execAtomic ats
     _ -> assert `failure` (fid, cmdHack)
 
-sendUpdateUI :: MonadConnServer m => FactionId -> ResponseUI -> m ()
+sendUpdateUI :: MonadServerReadRequest m
+             => FactionId -> ResponseUI -> m ()
 sendUpdateUI fid cmd = do
   cs <- getsDict $ fst . (EM.! fid)
   case cs of
@@ -126,7 +136,7 @@ sendUpdateUI fid cmd = do
     Just (_, conn) ->
       writeTQueueUI cmd $ responseQ conn
 
-sendQueryUI :: (MonadAtomic m, MonadConnServer m)
+sendQueryUI :: (MonadAtomic m, MonadServerReadRequest m)
             => FactionId -> ActorId -> m Request
 sendQueryUI fid aid = do
   cs <- getsDict $ fst . (EM.! fid)
@@ -136,7 +146,8 @@ sendQueryUI fid aid = do
       writeTQueueUI (RespQueryUI aid) $ responseQ conn
       readTQueueUI $ requestQ conn
 
-sendPingUI :: (MonadAtomic m, MonadConnServer m) => FactionId -> m ()
+sendPingUI :: (MonadAtomic m, MonadServerReadRequest m)
+           => FactionId -> m ()
 sendPingUI fid = do
   cs <- getsDict $ fst . (EM.! fid)
   case cs of
@@ -150,7 +161,7 @@ sendPingUI fid = do
         ReqTimed (ReqPongHack ats) -> mapM_ execAtomic ats
         _ -> assert `failure` (fid, cmdHack)
 
-killAllClients :: (MonadAtomic m, MonadConnServer m) => m ()
+killAllClients :: (MonadAtomic m, MonadServerReadRequest m) => m ()
 killAllClients = do
   d <- getDict
   let sendKill fid _ = do
@@ -168,7 +179,7 @@ childrenServer = unsafePerformIO (newMVar [])
 -- | Update connections to the new definition of factions.
 -- Connect to clients in old or newly spawned threads
 -- that read and write directly to the channels.
-updateConn :: (MonadAtomic m, MonadConnServer m)
+updateConn :: (MonadAtomic m, MonadServerReadRequest m)
            => (FactionId
                -> Frontend.ChanFrontend
                -> ChanServer ResponseUI Request

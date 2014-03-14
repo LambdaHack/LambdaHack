@@ -69,7 +69,7 @@ initPer = do
   pers <- getsState $ dungeonPerception cops (fromMaybe (Digital 12) fovMode)
   modifyServer $ \ser1 -> ser1 {sper = pers}
 
-reinitGame :: (MonadAtomic m, MonadConnServer m) => m ()
+reinitGame :: (MonadAtomic m, MonadServerReadRequest m) => m ()
 reinitGame = do
   Kind.COps{coitem=Kind.Ops{okind}, corule} <- getsState scops
   pers <- getsServer sper
@@ -98,7 +98,7 @@ reinitGame = do
 -- and when all report back, asking them to commit the save.
 -- | Save game on server and all clients. Clients are pinged first,
 -- which greatly reduced the chance of saves being out of sync.
-saveBkpAll :: (MonadAtomic m, MonadConnServer m) => Bool -> m ()
+saveBkpAll :: (MonadAtomic m, MonadServerReadRequest m) => Bool -> m ()
 saveBkpAll unconditional = do
   bench <- getsServer $ sbenchmark . sdebugSer
   when (unconditional || not bench) $ do

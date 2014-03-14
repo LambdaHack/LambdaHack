@@ -44,7 +44,7 @@ import Game.LambdaHack.Server.State
 import Game.LambdaHack.Utils.Frequency
 
 -- | Start a game session. Loop, communicating with clients.
-loopSer :: (MonadAtomic m, MonadConnServer m)
+loopSer :: (MonadAtomic m, MonadServerReadRequest m)
         => DebugModeSer
         -> (Request -> m Bool)
         -> (FactionId -> ChanFrontend -> ChanServer ResponseUI Request -> IO ())
@@ -130,7 +130,7 @@ initDebug Kind.COps{corule} sdebugSer = do
         ssavePrefixSer dbg `mplus` Just (rsavePrefix stdRuleset)})
     $ sdebugSer
 
-endClip :: (MonadAtomic m, MonadServer m, MonadConnServer m)
+endClip :: (MonadAtomic m, MonadServer m, MonadServerReadRequest m)
         => [LevelId] -> m Bool
 endClip arenas = do
   Kind.COps{corule} <- getsState scops
@@ -179,7 +179,7 @@ endClip arenas = do
 -- Some very fast actors may move many times a clip and then
 -- we introduce subclips and produce many frames per clip to avoid
 -- jerky movement. But most often we push exactly one frame or frame delay.
-handleActors :: (MonadAtomic m, MonadConnServer m)
+handleActors :: (MonadAtomic m, MonadServerReadRequest m)
              => (Request -> m Bool)
              -> LevelId
              -> m ()
@@ -593,7 +593,7 @@ leadLevelFlip = do
   mapM_ flipFaction $ EM.elems factionD
 
 -- | Continue or exit or restart the game.
-endOrLoop :: (MonadAtomic m, MonadConnServer m) => m () -> m () -> m ()
+endOrLoop :: (MonadAtomic m, MonadServerReadRequest m) => m () -> m () -> m ()
 endOrLoop updConn loopServer = do
   factionD <- getsState sfactionD
   let inGame fact = case gquit fact of
@@ -624,7 +624,7 @@ endOrLoop updConn loopServer = do
       -- Don't call @loopServer@, that is, quit the game loop.
       -- debugPrint "Server loop finished"
 
-saveAndExit :: (MonadAtomic m, MonadConnServer m) => m ()
+saveAndExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()
 saveAndExit = do
   cops <- getsState scops
   -- Save client and server data.
@@ -643,7 +643,7 @@ saveAndExit = do
   assert (persSaved == pers `blame` "wrong saved perception"
                             `twith` (persSaved, pers)) skip
 
-restartGame :: (MonadAtomic m, MonadConnServer m)
+restartGame :: (MonadAtomic m, MonadServerReadRequest m)
             => m () -> m () -> m ()
 restartGame updConn loopServer = do
   tellGameClipPS

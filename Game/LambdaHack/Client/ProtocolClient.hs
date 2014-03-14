@@ -6,7 +6,7 @@
 -- details.
 module Game.LambdaHack.Client.ProtocolClient
   ( -- * The client-server communication monads
-    MonadClientReadServer(..), MonadClientWriteServer(..)
+    MonadClientReadResponse(..), MonadClientWriteRequest(..)
     -- * Protocol
   , pongAI, pongUI
   ) where
@@ -23,16 +23,16 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
 
-class MonadClient m => MonadClientReadServer resp m | m -> resp where
+class MonadClient m => MonadClientReadResponse resp m | m -> resp where
   receiveResponse  :: m resp
 
-class MonadClient m => MonadClientWriteServer req m | m -> req where
+class MonadClient m => MonadClientWriteRequest req m | m -> req where
   sendRequest  :: req -> m ()
 
-pongAI :: (MonadClientWriteServer RequestTimed m) => m ()
+pongAI :: (MonadClientWriteRequest RequestTimed m) => m ()
 pongAI = sendRequest $ ReqPongHack []
 
-pongUI :: (MonadClientUI m, MonadClientWriteServer Request m) => m ()
+pongUI :: (MonadClientUI m, MonadClientWriteRequest Request m) => m ()
 pongUI = do
   -- Ping the frontend, too.
   syncFrames
