@@ -4,7 +4,6 @@
 module Game.LambdaHack.Common.Response
   ( ResponseAI(..), ResponseUI(..)
   , debugResponseAI, debugResponseUI, debugAid
-  , ChanServer(..), ConnServerFaction, ConnServerDict
   ) where
 
 import Control.Concurrent.STM.TQueue
@@ -98,17 +97,3 @@ debugAid aid label cmd =
                              , time
                              , aid
                              , faction = bfid b }
-
--- | Connection channels between the server and a single client.
-data ChanServer c d = ChanServer
-  { fromServer :: !(TQueue c)
-  , toServer   :: !(TQueue d)
-  }
-
--- | Connections to the human-controlled client of a faction and
--- to the AI client for the same faction.
-type ConnServerFaction = ( Maybe (ChanFrontend, ChanServer ResponseUI Request)
-                         , ChanServer ResponseAI RequestTimed )
-
--- | Connection information for all factions, indexed by faction identifier.
-type ConnServerDict = EM.EnumMap FactionId ConnServerFaction

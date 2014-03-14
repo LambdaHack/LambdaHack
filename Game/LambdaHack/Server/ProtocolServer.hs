@@ -1,10 +1,10 @@
--- | Game action monads and basic building blocks for human and computer
--- player actions. Has no access to the the main action type.
--- Does not export the @liftIO@ operation nor a few other implementation
--- details.
+-- | The server definitions for the server-client communication protocol.
 module Game.LambdaHack.Server.ProtocolServer
-  ( -- * The server-client communication monad
-    MonadConnServer( getDict -- exposed only to be implemented, not used
+  ( -- * The communication channels.
+    ChanServer(..)
+  , ConnServerDict  -- exposed only to be implemented, not used
+    -- * The server-client communication monad
+  , MonadConnServer( getDict  -- exposed only to be implemented, not used
                    , getsDict  -- exposed only to be implemented, not used
                    , modifyDict  -- exposed only to be implemented, not used
                    , putDict  -- exposed only to be implemented, not used
@@ -39,10 +39,26 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
+import Game.LambdaHack.Frontend
 import qualified Game.LambdaHack.Frontend as Frontend
 import Game.LambdaHack.Server.MonadServer hiding (liftIO)
 import Game.LambdaHack.Server.State
 
+-- | Connection channels between the server and a single client.
+data ChanServer c d = ChanServer
+  { fromServer :: !(TQueue c)
+  , toServer   :: !(TQueue d)
+  }
+
+-- | Connections to the human-controlled client of a faction and
+-- to the AI client for the same faction.
+type ConnServerFaction = ( Maybe (ChanFrontend, ChanServer ResponseUI Request)
+                         , ChanServer ResponseAI RequestTimed )
+
+-- | Connection information for all factions, indexed by faction identifier.
+type ConnServerDict = EM.EnumMap FactionId ConnServerFaction
+
+-- | The server monad with the ability to communicate with clients.
 class MonadServer m => MonadConnServer m where
   getDict      :: m ConnServerDict
   getsDict     :: (ConnServerDict -> a) -> m a

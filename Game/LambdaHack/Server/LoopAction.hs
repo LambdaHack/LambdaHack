@@ -47,10 +47,8 @@ import Game.LambdaHack.Utils.Frequency
 loopSer :: (MonadAtomic m, MonadConnServer m)
         => DebugModeSer
         -> (Request -> m Bool)
-        -> (FactionId -> ChanFrontend -> ChanServer ResponseUI Request
-            -> IO ())
-        -> (FactionId -> ChanServer ResponseAI RequestTimed
-            -> IO ())
+        -> (FactionId -> ChanFrontend -> ChanServer ResponseUI Request -> IO ())
+        -> (FactionId -> ChanServer ResponseAI RequestTimed -> IO ())
         -> Kind.COps
         -> m ()
 loopSer sdebug handleRequest executorUI executorAI !cops = do

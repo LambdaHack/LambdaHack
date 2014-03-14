@@ -16,7 +16,6 @@ import System.FilePath
 
 import Game.LambdaHack.Atomic.MonadAtomic
 import Game.LambdaHack.Common.Action
-import Game.LambdaHack.Common.Response
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Server.AtomicSemSer

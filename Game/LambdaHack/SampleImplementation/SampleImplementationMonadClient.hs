@@ -22,9 +22,9 @@ import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Animation
-import Game.LambdaHack.Common.Response
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Server.ProtocolServer
 
 data CliState c d = CliState
   { cliState   :: !State             -- ^ current global state

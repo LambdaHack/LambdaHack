@@ -77,15 +77,15 @@ exeFrontend :: ( MonadAtomic m, MonadClientUI m
                , MonadClientReadServer ResponseAI n
                , MonadClientWriteServer RequestTimed n )
             => (m () -> SessionUI -> State -> StateClient
-                -> ChanServer ResponseUI Request
+                -> chanServerUI
                 -> IO ())
             -> (n () -> SessionUI -> State -> StateClient
-                -> ChanServer ResponseAI RequestTimed
+                -> chanServerAI
                 -> IO ())
             -> Kind.COps -> DebugModeCli
-            -> ((FactionId -> ChanFrontend -> ChanServer ResponseUI Request
+            -> ((FactionId -> ChanFrontend -> chanServerUI
                  -> IO ())
-               -> (FactionId -> ChanServer ResponseAI RequestTimed
+               -> (FactionId -> chanServerAI
                    -> IO ())
                -> IO ())
             -> IO ()
