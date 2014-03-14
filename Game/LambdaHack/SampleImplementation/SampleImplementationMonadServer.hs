@@ -14,11 +14,12 @@ import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 import System.FilePath
 
+import Game.LambdaHack.Atomic.CmdAtomic
+import Game.LambdaHack.Atomic.HandleAndBroadcastWrite
 import Game.LambdaHack.Atomic.MonadAtomic
 import Game.LambdaHack.Common.Action
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
-import Game.LambdaHack.Server.AtomicSemSer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.ProtocolServer
 import Game.LambdaHack.Server.State
@@ -76,7 +77,16 @@ instance MonadConnServer SerImplementation where
 -- | The game-state semantics of atomic game commands
 -- as computed on the server.
 instance MonadAtomic SerImplementation where
-  execAtomic = atomicSendSem
+  execAtomic = handleAndBroadcastServer
+
+-- | Send an atomic action to all clients that can see it.
+handleAndBroadcastServer :: (MonadWriteState m, MonadConnServer m)
+                         => CmdAtomic -> m ()
+handleAndBroadcastServer atomic = do
+  persOld <- getsServer sper
+  knowEvents <- getsServer $ sknowEvents . sdebugSer
+  handleAndBroadcast knowEvents persOld resetFidPerception
+                     sendUpdateAI sendUpdateUI atomic
 
 -- | Run an action in the @IO@ monad, with undefined state.
 executorSer :: SerImplementation () -> IO ()

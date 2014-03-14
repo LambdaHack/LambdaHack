@@ -79,7 +79,7 @@ debugPrint t = do
 -- | Update the cached perception for the selected level, for a faction.
 -- The assumption is the level, and only the level, has changed since
 -- the previous perception calculation.
-resetFidPerception :: MonadServer m => FactionId -> LevelId -> m ()
+resetFidPerception :: MonadServer m => FactionId -> LevelId -> m Perception
 resetFidPerception fid lid = do
   cops <- getsState scops
   lvl <- getLevel lid
@@ -88,6 +88,7 @@ resetFidPerception fid lid = do
          $ levelPerception cops (fromMaybe (Digital 12) fovMode) fid lid lvl
   let upd = EM.adjust (EM.adjust (const per) lid) fid
   modifyServer $ \ser -> ser {sper = upd (sper ser)}
+  return $! per
 
 getPerFid :: MonadServer m => FactionId -> LevelId -> m Perception
 getPerFid fid lid = do

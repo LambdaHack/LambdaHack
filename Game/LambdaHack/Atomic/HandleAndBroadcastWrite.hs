@@ -1,8 +1,8 @@
 -- | Sending atomic commands to clients and executing them on the server.
 -- See
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
-module Game.LambdaHack.Server.AtomicSemSer
-  ( atomicSendSem
+module Game.LambdaHack.Atomic.HandleAndBroadcastWrite
+  ( handleAndBroadcast
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -26,29 +26,34 @@ import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Server.MonadServer
-import Game.LambdaHack.Server.ProtocolServer
-import Game.LambdaHack.Server.State
 
-storeUndo :: MonadServer m => CmdAtomic -> m ()
-storeUndo _atomic =
-  maybe skip (\a -> modifyServer $ \ser -> ser {sundo = a : sundo ser})
-    $ Nothing   -- TODO: undoCmdAtomic atomic
+-- TODO: split into simpler pieces
 
-atomicServerSem :: (MonadWriteState m, MonadServer m)
-                => PosAtomic -> CmdAtomic -> m ()
-atomicServerSem posAtomic atomic =
+--storeUndo :: MonadServer m => CmdAtomic -> m ()
+--storeUndo _atomic =
+--  maybe skip (\a -> modifyServer $ \ser -> ser {sundo = a : sundo ser})
+--    $ Nothing   -- TODO: undoCmdAtomic atomic
+
+handleCmdAtomicServer :: forall m. MonadWriteState m
+                      => PosAtomic -> CmdAtomic -> m ()
+handleCmdAtomicServer posAtomic atomic =
   when (seenAtomicSer posAtomic) $ do
-    storeUndo atomic
+--    storeUndo atomic
     handleCmdAtomic atomic
 
 -- | Send an atomic action to all clients that can see it.
-atomicSendSem :: (MonadWriteState m, MonadConnServer m) => CmdAtomic -> m ()
-atomicSendSem atomic = do
+handleAndBroadcast :: forall m. MonadWriteState m
+                   => Bool -> Pers
+                   -> (FactionId -> LevelId -> m Perception)
+                   -> (FactionId -> ResponseAI -> m ())
+                   -> (FactionId -> ResponseUI -> m ())
+                   -> CmdAtomic
+                   -> m ()
+handleAndBroadcast knowEvents persOld doResetFidPerception
+                   doSendUpdateAI doSendUpdateUI atomic = do
   -- Gather data from the old state.
   sOld <- getState
   factionD <- getsState sfactionD
-  persOld <- getsServer sper
   (ps, resets, atomicBroken, psBroken) <-
     case atomic of
       UpdAtomic cmd -> do
@@ -70,12 +75,11 @@ atomicSendSem atomic = do
                  && (null atomicBroken
                      || fmap UpdAtomic atomicBroken == [atomic])) skip
   -- Perform the action on the server.
-  atomicServerSem ps atomic
+  handleCmdAtomicServer ps atomic
   -- Send some actions to the clients, one faction at a time.
-  knowEvents <- getsServer $ sknowEvents . sdebugSer
   let sendUI fid cmdUI =
-        when (playerUI $ gplayer $ factionD EM.! fid) $ sendUpdateUI fid cmdUI
-      sendAI fid cmdAI = sendUpdateAI fid cmdAI
+        when (playerUI $ gplayer $ factionD EM.! fid) $ doSendUpdateUI fid cmdUI
+      sendAI fid cmdAI = doSendUpdateAI fid cmdAI
       sendA fid cmd = do
         sendUI fid $ RespUpdAtomicUI cmd
         sendAI fid $ RespUpdAtomicAI cmd
@@ -99,8 +103,7 @@ atomicSendSem atomic = do
         let perOld = persOld EM.! fid EM.! lid
             resetsFid = maybe True (fid `elem`) resets
         if resetsFid then do
-          resetFidPerception fid lid
-          perNew <- getPerFid fid lid
+          perNew <- doResetFidPerception fid lid
           let inPer = diffPer perNew perOld
               outPer = diffPer perOld perNew
           if nullPer outPer && nullPer inPer
