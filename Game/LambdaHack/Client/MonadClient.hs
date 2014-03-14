@@ -11,7 +11,6 @@ module Game.LambdaHack.Client.MonadClient
                )
   , MonadClientUI( getsSession  -- exposed only to be implemented, not used
                  )
-  , MonadClientReadServer(..), MonadClientWriteServer(..)
   , SessionUI(..), ConnFrontend(..), connFrontend
     -- * Executing actions
   , mkConfigUI
@@ -30,12 +29,12 @@ module Game.LambdaHack.Client.MonadClient
     -- * Assorted primitives
   , restoreGame, removeServerSave, displayPush, scoreToSlideshow
   , rndToAction, getArenaUI, getLeaderUI, targetDescLeader, viewedLevel
-  , aidTgtToPos, aidTgtAims, makeLine, saveName
+  , aidTgtToPos, aidTgtAims, makeLine, saveName, tryTakeMVarSescMVar
   , leaderTgtToPos, leaderTgtAims, cursorToPos
   , partAidLeader, partActorLeader, unexploredDepth
   , getCacheBfsAndPath, getCacheBfs, accessCacheBfs
   , closestUnknown, closestSmell, furthestKnown, closestTriggers
-  , closestItems, closestFoes, actorAbilities, pongUI, syncFrames
+  , closestItems, closestFoes, actorAbilities, syncFrames
   , debugPrint
   , SlideOrCmd, failWith, failSlides, failSer
   ) where
@@ -65,7 +64,6 @@ import System.FilePath
 import System.Time
 import Text.Read
 
-import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.Binding
 import Game.LambdaHack.Client.ConfigUI
 import Game.LambdaHack.Client.Draw
@@ -132,12 +130,6 @@ class MonadReadState m => MonadClient m where
 
 class MonadClient m => MonadClientUI m where
   getsSession  :: (SessionUI -> a) -> m a
-
-class MonadClient m => MonadClientReadServer c m | m -> c where
-  readServer  :: m c
-
-class MonadClient m => MonadClientWriteServer d m | m -> d where
-  writeServer  :: d -> m ()
 
 saveName :: FactionId -> Bool -> String
 saveName side isAI =
@@ -1000,23 +992,6 @@ tryTakeMVarSescMVar = do
     Just escMVar -> do
       mUnit <- liftIO $ tryTakeMVar escMVar
       return $ isJust mUnit
-
-pongUI :: (MonadClientUI m, MonadClientWriteServer Request m) => m ()
-pongUI = do
-  -- Ping the frontend, too.
-  syncFrames
-  escPressed <- tryTakeMVarSescMVar
-  side <- getsClient sside
-  fact <- getsState $ (EM.! side) . sfactionD
-  let sendPong ats = writeServer $ ReqTimed $ ReqPongHack ats
-      hasAiLeader = playerAiLeader $ gplayer fact
-  if escPressed && hasAiLeader then do
-    -- Ask server to turn off AI for the faction's leader.
-    let atomicCmd = UpdAtomic $ UpdAutoFaction side False
-    sendPong [atomicCmd]
-  else
-    -- Respond to the server normally.
-    sendPong []
 
 type SlideOrCmd a = Either Slideshow a
 

@@ -1,6 +1,6 @@
 -- | The server definitions for the server-client communication protocol.
 module Game.LambdaHack.Server.ProtocolServer
-  ( -- * The communication channels.
+  ( -- * The communication channels
     ChanServer(..)
   , ConnServerDict  -- exposed only to be implemented, not used
     -- * The server-client communication monad

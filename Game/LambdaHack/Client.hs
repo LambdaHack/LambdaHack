@@ -18,6 +18,7 @@ import Game.LambdaHack.Client.ClientSem
 import Game.LambdaHack.Client.ConfigUI
 import Game.LambdaHack.Client.LoopAction
 import Game.LambdaHack.Client.MonadClient
+import Game.LambdaHack.Client.ProtocolClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Animation (DebugModeCli (..))
 import Game.LambdaHack.Common.Faction
@@ -44,7 +45,7 @@ handleResponseAI cmd = case cmd of
   RespQueryAI aid -> do
     cmdC <- queryAI aid
     writeServer cmdC
-  RespPingAI -> writeServer $ ReqPongHack []
+  RespPingAI -> pongAI
 
 handleResponseUI :: ( MonadAtomic m, MonadClientUI m
                     , MonadClientWriteServer Request m )

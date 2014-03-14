@@ -82,6 +82,7 @@ library
                       Game.LambdaHack.Client.ItemSlot,
                       Game.LambdaHack.Client.LoopAction,
                       Game.LambdaHack.Client.MonadClient,
+                      Game.LambdaHack.Client.ProtocolClient,
                       Game.LambdaHack.Client.RunAction,
                       Game.LambdaHack.Client.State,
                       Game.LambdaHack.Client.Strategy,
