@@ -121,7 +121,7 @@ data SfxAtomic =
 
 instance Binary SfxAtomic
 
-data HitAtomic = HitD | HitBlockD | MissBlockD
+data HitAtomic = Hit | HitBlock | MissBlock
   deriving (Show, Eq, Generic)
 
 instance Binary HitAtomic

@@ -2,7 +2,7 @@
 -- See
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Atomic.HandleCmdAtomicWrite
-  ( cmdAtomicSem
+  ( handleCmdAtomic
   ) where
 
 import Control.Arrow (second)
@@ -33,8 +33,15 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ModeKind as ModeKind
 import Game.LambdaHack.Content.TileKind as TileKind
 
-cmdAtomicSem :: MonadWriteState m => UpdAtomic -> m ()
-cmdAtomicSem cmd = case cmd of
+-- | The game-state semantics of atomic game commands.
+-- Special effects (@SfxAtomic@) don't modify state.
+handleCmdAtomic :: MonadWriteState m => CmdAtomic -> m ()
+handleCmdAtomic cmd = case cmd of
+  UpdAtomic upd -> handleUpdAtomic upd
+  SfxAtomic _ -> return ()
+
+handleUpdAtomic :: MonadWriteState m => UpdAtomic -> m ()
+handleUpdAtomic cmd = case cmd of
   UpdCreateActor aid body ais -> updCreateActor aid body ais
   UpdDestroyActor aid body ais -> updDestroyActor aid body ais
   UpdCreateItem iid item k c -> updCreateItem iid item k c

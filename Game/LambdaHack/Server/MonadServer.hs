@@ -5,12 +5,12 @@
 module Game.LambdaHack.Server.MonadServer
   ( -- * Action monads
     MonadServer( getServer, getsServer, modifyServer, putServer, saveServer
-               , liftIO  -- ^ exposed only to be implemented, not used
+               , liftIO  -- exposed only to be implemented, not used
                )
-  , MonadConnServer( getDict -- ^ exposed only to be implemented, not used
-                   , getsDict  -- ^ exposed only to be implemented, not used
-                   , modifyDict  -- ^ exposed only to be implemented, not used
-                   , putDict  -- ^ exposed only to be implemented, not used
+  , MonadConnServer( getDict -- exposed only to be implemented, not used
+                   , getsDict  -- exposed only to be implemented, not used
+                   , modifyDict  -- exposed only to be implemented, not used
+                   , putDict  -- exposed only to be implemented, not used
                    )
   , tryRestore, updateConn, killAllClients, speedupCOps
     -- * Communication

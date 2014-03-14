@@ -7,9 +7,9 @@
 module Game.LambdaHack.Client.MonadClient
   ( -- * Action monads
     MonadClient( getClient, getsClient, modifyClient, putClient, saveClient
-               , liftIO  -- ^ exposed only to be implemented, not used
+               , liftIO  -- exposed only to be implemented, not used
                )
-  , MonadClientUI( getsSession  -- ^ exposed only to be implemented, not used
+  , MonadClientUI( getsSession  -- exposed only to be implemented, not used
                  )
   , MonadClientReadServer(..), MonadClientWriteServer(..)
   , SessionUI(..), ConnFrontend(..), connFrontend

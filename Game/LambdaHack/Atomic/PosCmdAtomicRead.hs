@@ -3,7 +3,7 @@
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Atomic.PosCmdAtomicRead
   ( PosAtomic(..), posUpdAtomic, posSfxAtomic
-  , resetsFovAtomic, breakUpdAtomic, loudUpdAtomic
+  , resetsFovCmdAtomic, breakUpdAtomic, loudUpdAtomic
   , seenAtomicCli, seenAtomicSer, posOfContainer
   ) where
 
@@ -177,12 +177,12 @@ singleContainer c = do
 -- A list of faction means it does for each of the factions.
 -- This is only an optimization to save perception and spot/lose computation.
 --
--- Invariant: if @resetsFovAtomic@ determines a faction does not need
+-- Invariant: if @resetsFovCmdAtomic@ determines a faction does not need
 -- to reset Fov, perception (@ptotal@ to be precise, @psmell@ is irrelevant)
 -- of that faction does not change upon recomputation. Otherwise,
 -- save/restore would change game state.
-resetsFovAtomic :: MonadReadState m => UpdAtomic -> m (Maybe [FactionId])
-resetsFovAtomic cmd = case cmd of
+resetsFovCmdAtomic :: MonadReadState m => UpdAtomic -> m (Maybe [FactionId])
+resetsFovCmdAtomic cmd = case cmd of
   UpdCreateActor _ body _ -> return $ Just [bfid body]
   UpdDestroyActor _ body _ -> return $ Just [bfid body]
   UpdSpotActor _ body _ -> return $ Just [bfid body]

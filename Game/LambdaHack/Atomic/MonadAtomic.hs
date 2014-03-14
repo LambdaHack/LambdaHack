@@ -1,7 +1,7 @@
 -- | Atomic monads.
 module Game.LambdaHack.Atomic.MonadAtomic
   ( MonadAtomic(..)
-  , MonadWriteState(..)  -- ^ exposed only to be implemented, not used
+  , MonadWriteState(..)  -- exposed only to be implemented, not used
   , broadcastUpdAtomic,  broadcastSfxAtomic
   ) where
 

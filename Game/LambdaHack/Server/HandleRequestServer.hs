@@ -154,7 +154,7 @@ reqMelee source target = do
           return ( Nothing
                  , buildItem flavour discoRev h2hKind kind effect )
     let performHit block = do
-          let hitA = if block then HitBlockD else HitD
+          let hitA = if block then HitBlock else Hit
           execSfxAtomic $ SfxStrike source target item hitA
           -- Deduct a hitpoint for a pierce of a projectile.
           when (bproj sb) $ execUpdAtomic $ UpdHealActor source (-1)
@@ -166,7 +166,7 @@ reqMelee source target = do
       then do
         blocked <- rndToAction $ chance $ 1%2
         if blocked
-          then execSfxAtomic $ SfxStrike source target item MissBlockD
+          then execSfxAtomic $ SfxStrike source target item MissBlock
           else performHit True
       else performHit False
     -- The only way to start a war is to slap an enemy. Being hit by

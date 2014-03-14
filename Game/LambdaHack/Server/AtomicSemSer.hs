@@ -39,9 +39,7 @@ atomicServerSem :: (MonadWriteState m, MonadServer m)
 atomicServerSem posAtomic atomic =
   when (seenAtomicSer posAtomic) $ do
     storeUndo atomic
-    case atomic of
-      UpdAtomic cmd -> cmdAtomicSem cmd
-      SfxAtomic _ -> return ()
+    handleCmdAtomic atomic
 
 -- | Send an atomic action to all clients that can see it.
 atomicSendSem :: (MonadWriteState m, MonadConnServer m) => CmdAtomic -> m ()
@@ -54,7 +52,7 @@ atomicSendSem atomic = do
     case atomic of
       UpdAtomic cmd -> do
         ps <- posUpdAtomic cmd
-        resets <- resetsFovAtomic cmd
+        resets <- resetsFovCmdAtomic cmd
         atomicBroken <- breakUpdAtomic cmd
         psBroken <- mapM posUpdAtomic atomicBroken
         return (ps, resets, atomicBroken, psBroken)

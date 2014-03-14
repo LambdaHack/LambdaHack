@@ -766,7 +766,7 @@ strike source target item b = assert (source /= target) $ do
           Just ik -> let kind = okind ik
                      in ( iverbApply kind
                         , isNothing $ lookup "hth" $ ifreq kind )
-      msg MissBlockD =
+      msg MissBlock =
         let (partBlock1, partBlock2) =
               if withWhat
               then ("swing", partItemAW coitem disco item)
@@ -783,8 +783,8 @@ strike source target item b = assert (source /= target) $ do
            else []
   msgAdd $ msg b
   let ps = (bpos tb, bpos sb)
-      anim HitD = twirlSplash ps Color.BrRed Color.Red
-      anim HitBlockD = blockHit ps Color.BrRed Color.Red
-      anim MissBlockD = blockMiss ps
+      anim Hit = twirlSplash ps Color.BrRed Color.Red
+      anim HitBlock = blockHit ps Color.BrRed Color.Red
+      anim MissBlock = blockMiss ps
   animFrs <- animate (blid sb) $ anim b
   displayFrames $ Nothing : animFrs
