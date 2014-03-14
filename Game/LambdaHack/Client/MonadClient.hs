@@ -1012,7 +1012,7 @@ pongUI = do
       hasAiLeader = playerAiLeader $ gplayer fact
   if escPressed && hasAiLeader then do
     -- Ask server to turn off AI for the faction's leader.
-    let atomicCmd = UpdAtomic $ AutoFactionA side False
+    let atomicCmd = UpdAtomic $ UpdAutoFaction side False
     sendPong [atomicCmd]
   else
     -- Respond to the server normally.

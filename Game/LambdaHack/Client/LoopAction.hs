@@ -44,17 +44,17 @@ loopAI :: (MonadClientReadServer ResponseAI m)
 loopAI sdebugCli cmdClientAISem = do
   side <- getsClient sside
   restored <- initCli sdebugCli
-              $ \s -> cmdClientAISem $ RespUpdAtomicAI $ ResumeServerA s
+              $ \s -> cmdClientAISem $ RespUpdAtomicAI $ UpdResumeServer s
   cmd1 <- readServer
   case (restored, cmd1) of
-    (True, RespUpdAtomicAI ResumeA{}) -> return ()
-    (True, RespUpdAtomicAI RestartA{}) -> return ()
-    (False, RespUpdAtomicAI ResumeA{}) -> do
+    (True, RespUpdAtomicAI UpdResume{}) -> return ()
+    (True, RespUpdAtomicAI UpdRestart{}) -> return ()
+    (False, RespUpdAtomicAI UpdResume{}) -> do
       removeServerSave
       error $ T.unpack $
         "Savefile of client" <+> tshow side
         <+> "not usable. Removing server savefile. Please restart now."
-    (False, RespUpdAtomicAI RestartA{}) -> return ()
+    (False, RespUpdAtomicAI UpdRestart{}) -> return ()
     _ -> assert `failure` "unexpected command" `twith` (side, restored, cmd1)
   cmdClientAISem cmd1
   -- State and client state now valid.
@@ -75,21 +75,21 @@ loopUI sdebugCli cmdClientUISem = do
   let title = rtitle $ Kind.stdRuleset corule
   side <- getsClient sside
   restored <- initCli sdebugCli
-              $ \s -> cmdClientUISem $ RespUpdAtomicUI $ ResumeServerA s
+              $ \s -> cmdClientUISem $ RespUpdAtomicUI $ UpdResumeServer s
   cmd1 <- readServer
   msg <- case (restored, cmd1) of
-    (True, RespUpdAtomicUI ResumeA{}) -> do
+    (True, RespUpdAtomicUI UpdResume{}) -> do
       cmdClientUISem cmd1
       return $! "Welcome back to" <+> title <> "."
-    (True, RespUpdAtomicUI RestartA{}) -> do
+    (True, RespUpdAtomicUI UpdRestart{}) -> do
       cmdClientUISem cmd1
       return $! "Starting a new" <+> title <+> "game."  -- ignore old savefile
-    (False, RespUpdAtomicUI ResumeA{}) -> do
+    (False, RespUpdAtomicUI UpdResume{}) -> do
       removeServerSave
       error $ T.unpack $
         "Savefile of client" <+> tshow side
         <+> "not usable. Removing server savefile. Please restart now."
-    (False, RespUpdAtomicUI RestartA{}) -> do
+    (False, RespUpdAtomicUI UpdRestart{}) -> do
       cmdClientUISem cmd1
       return $! "Welcome to" <+> title <> "!"
     _ -> assert `failure` "unexpected command" `twith` (side, restored, cmd1)

@@ -57,7 +57,7 @@ execFailure aid failureSer = do
       msg = showReqFailure failureSer
   debugPrint
     $ "execFailure:" <+> tshow fid <+> ":" <+> msg <> "\n" <> tshow body
-  execSfxAtomic $ MsgFidD fid $ "Unexpected problem:" <+> msg <> "."
+  execSfxAtomic $ SfxMsgFid fid $ "Unexpected problem:" <+> msg <> "."
     -- TODO: --more--, but keep in history
 
 -- * ReqMove
@@ -76,7 +76,7 @@ addSmell aid = do
     lvl <- getLevel $ blid b
     let oldS = EM.lookup (bpos b) . lsmell $ lvl
         newTime = timeAdd time smellTimeout
-    execUpdAtomic $ AlterSmellA (blid b) (bpos b) oldS (Just newTime)
+    execUpdAtomic $ UpdAlterSmell (blid b) (bpos b) oldS (Just newTime)
 
 -- | Actor moves or attacks.
 -- Note that client may not be able to see an invisible monster
@@ -102,7 +102,7 @@ reqMove source dir = do
     _
       | accessible cops lvl spos tpos -> do
           -- Movement requires full access.
-          execUpdAtomic $ MoveActorA source spos tpos
+          execUpdAtomic $ UpdMoveActor source spos tpos
           addSmell source
       | otherwise ->
           -- Client foolishly tries to move into blocked, boring tile.
@@ -155,9 +155,9 @@ reqMelee source target = do
                  , buildItem flavour discoRev h2hKind kind effect )
     let performHit block = do
           let hitA = if block then HitBlockD else HitD
-          execSfxAtomic $ StrikeD source target item hitA
+          execSfxAtomic $ SfxStrike source target item hitA
           -- Deduct a hitpoint for a pierce of a projectile.
-          when (bproj sb) $ execUpdAtomic $ HealActorA source (-1)
+          when (bproj sb) $ execUpdAtomic $ UpdHealActor source (-1)
           -- Msgs inside itemEffect describe the target part.
           itemEffect source target miid item
     -- Projectiles can't be blocked (though can be sidestepped).
@@ -166,7 +166,7 @@ reqMelee source target = do
       then do
         blocked <- rndToAction $ chance $ 1%2
         if blocked
-          then execSfxAtomic $ StrikeD source target item MissBlockD
+          then execSfxAtomic $ SfxStrike source target item MissBlockD
           else performHit True
       else performHit False
     -- The only way to start a war is to slap an enemy. Being hit by
@@ -174,7 +174,7 @@ reqMelee source target = do
     let friendlyFire = bproj sb || bproj tb
         fromDipl = EM.findWithDefault Unknown tfid (gdipl sfact)
     unless (friendlyFire || isAtWar sfact tfid || sfid == tfid) $
-      execUpdAtomic $ DiplFactionA sfid tfid fromDipl War
+      execUpdAtomic $ UpdDiplFaction sfid tfid fromDipl War
 
 -- * ReqDisplace
 
@@ -197,7 +197,7 @@ reqDisplace source target = do
       case tgts of
         [] -> assert `failure` (source, sb, target, tb)
         [_] -> do
-          execUpdAtomic $ DisplaceActorA source target
+          execUpdAtomic $ UpdDisplaceActor source target
           addSmell source
           addSmell target
         _ -> execFailure source DisplaceProjectiles
@@ -228,7 +228,7 @@ reqAlter source tpos mfeat = do
           toTile <- rndToAction $ fmap (fromMaybe $ assert `failure` tgroup)
                                   $ opick tgroup (const True)
           unless (toTile == serverTile) $
-            execUpdAtomic $ AlterTileA lid tpos serverTile toTile
+            execUpdAtomic $ UpdAlterTile lid tpos serverTile toTile
         feats = case mfeat of
           Nothing -> TileKind.tfeature $ okind serverTile
           Just feat2 | Tile.hasFeature cotile feat2 serverTile -> [feat2]
@@ -250,7 +250,7 @@ reqAlter source tpos mfeat = do
           when (serverTile /= freshClientTile) $ do
             -- Search, in case some actors (of other factions?)
             -- don't know this tile.
-            execUpdAtomic $ SearchTileA source tpos freshClientTile serverTile
+            execUpdAtomic $ UpdSearchTile source tpos freshClientTile serverTile
           mapM_ changeTo groupsToAlter
           -- Perform an effect, if any permitted.
           void $ triggerEffect source feats
@@ -273,7 +273,7 @@ reqMoveItem aid iid k fromCStore toCStore = do
   let moveItem = do
         cs <- actorConts iid k aid fromCStore
         mapM_ (\(ck, c) -> execUpdAtomic
-                           $ MoveItemA iid ck c (CActor aid toCStore)) cs
+                           $ UpdMoveItem iid ck c (CActor aid toCStore)) cs
   if k < 1 || fromCStore == toCStore then execFailure aid ItemNothing
   else if fromCStore /= CInv && toCStore /= CInv then moveItem
   else do
@@ -375,10 +375,10 @@ projectBla source pos rest iid cstore = do
   sb <- getsState $ getActorBody source
   let lid = blid sb
       time = btime sb
-  unless (bproj sb) $ execSfxAtomic $ ProjectD source iid
+  unless (bproj sb) $ execSfxAtomic $ SfxProject source iid
   projId <- addProjectile pos rest iid lid (bfid sb) time
   cs <- actorConts iid 1 source cstore
-  mapM_ (\(_, c) -> execUpdAtomic $ MoveItemA iid 1 c (CActor projId CEqp)) cs
+  mapM_ (\(_, c) -> execUpdAtomic $ UpdMoveItem iid 1 c (CActor projId CEqp)) cs
 
 -- | Create a projectile actor containing the given missile.
 addProjectile :: (MonadAtomic m, MonadServer m)
@@ -406,7 +406,7 @@ addProjectile bpos rest iid blid bfid btime = do
                         bpos blid btime bfid True
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
-  execUpdAtomic $ CreateActorA acounter m [(iid, item)]
+  execUpdAtomic $ UpdCreateActor acounter m [(iid, item)]
   return $! acounter
 
 -- * ReqApply
@@ -420,11 +420,11 @@ reqApply :: (MonadAtomic m, MonadServer m)
 reqApply aid iid cstore = do
   let applyItem = do
         item <- getsState $ getItemBody iid
-        execSfxAtomic $ ActivateD aid iid
+        execSfxAtomic $ SfxActivate aid iid
         itemEffect aid aid (Just iid) item
         -- TODO: don't destroy if not really used up; also, don't take time?
         cs <- actorConts iid 1 aid cstore
-        mapM_ (\(_, c) -> execUpdAtomic $ DestroyItemA iid item 1 c) cs
+        mapM_ (\(_, c) -> execUpdAtomic $ UpdDestroyItem iid item 1 c) cs
   if cstore /= CInv then applyItem
   else do
     Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
@@ -461,7 +461,7 @@ triggerEffect aid feats = do
         case feat of
           F.Cause ef -> do
             -- No block against tile, hence unconditional.
-            execSfxAtomic $ TriggerD aid tpos feat
+            execSfxAtomic $ SfxTrigger aid tpos feat
             void $ effectSem ef aid aid
             return True
           _ -> return False
@@ -476,7 +476,7 @@ reqSetTrajectory aid = do
   b@Actor{bpos, btrajectory, blid, bcolor} <- getsState $ getActorBody aid
   lvl <- getLevel blid
   let clearTrajectory =
-        execUpdAtomic $ TrajectoryActorA aid btrajectory (Just [])
+        execUpdAtomic $ UpdTrajectoryActor aid btrajectory (Just [])
   case btrajectory of
     Just (d : lv) ->
       if not $ accessibleDir cops lvl bpos d
@@ -485,9 +485,9 @@ reqSetTrajectory aid = do
         when (length lv <= 1) $ do
           let toColor = Color.BrBlack
           when (bcolor /= toColor) $
-            execUpdAtomic $ ColorActorA aid bcolor toColor
+            execUpdAtomic $ UpdColorActor aid bcolor toColor
         reqMove aid d
-        execUpdAtomic $ TrajectoryActorA aid btrajectory (Just lv)
+        execUpdAtomic $ UpdTrajectoryActor aid btrajectory (Just lv)
     _ -> assert `failure` "null trajectory" `twith` (aid, b)
 
 -- * ReqGameRestart
@@ -510,7 +510,7 @@ reqGameRestart aid stInfo d configHeroNames = do
     ser { squit = True  -- do this at once
         , sheroNames = EM.insert fid configHeroNames $ sheroNames ser }
   revealItems Nothing Nothing
-  execUpdAtomic $ QuitFactionA fid (Just b) oldSt
+  execUpdAtomic $ UpdQuitFaction fid (Just b) oldSt
                 $ Just $ Status Restart (fromEnum $ blid b) stInfo
 
 -- * ReqGameExit
@@ -526,7 +526,7 @@ reqGameExit aid d = do
   let fid = bfid b
   oldSt <- getsState $ gquit . (EM.! fid) . sfactionD
   modifyServer $ \ser -> ser {squit = True}  -- do this at once
-  execUpdAtomic $ QuitFactionA fid (Just b) oldSt
+  execUpdAtomic $ UpdQuitFaction fid (Just b) oldSt
                 $ Just $ Status Camping (fromEnum $ blid b) ""
 
 -- * ReqGameSave
@@ -541,4 +541,4 @@ reqGameSave = do
 reqAutomate :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 reqAutomate aid = do
   b <- getsState $ getActorBody aid
-  execUpdAtomic $ AutoFactionA (bfid b) True
+  execUpdAtomic $ UpdAutoFaction (bfid b) True

@@ -88,7 +88,7 @@ atomicSendSem atomic = do
                 then sendUpdate fid $ UpdAtomic atomic2
                 else when (loudUpdAtomic fid atomic2) $
                        sendUpdate fid
-                       $ SfxAtomic $ MsgAllD "You hear some noises."
+                       $ SfxAtomic $ SfxMsgAll "You hear some noises."
         mapM_ send2 atomicPsBroken
       anySend fid perOld perNew = do
         let startSeen = seenAtomicCli knowEvents fid perOld ps
@@ -108,7 +108,7 @@ atomicSendSem atomic = do
             then anySend fid perOld perOld
             else do
               unless knowEvents $ do  -- inconsistencies would quickly manifest
-                sendA fid $ PerceptionA lid outPer inPer
+                sendA fid $ UpdPerception lid outPer inPer
                 let remember = atomicRemember lid inPer sOld
                     seenNew = seenAtomicCli False fid perNew
                     seenOld = seenAtomicCli False fid perOld
@@ -148,18 +148,18 @@ atomicRemember lid inPer s =
       lvl = sdungeon s EM.! lid
       -- Actors.
       inPrio = concatMap (\p -> posToActors p lid s) inFov
-      fActor ((aid, b), ais) = SpotActorA aid b ais
+      fActor ((aid, b), ais) = UpdSpotActor aid b ais
       inActor = map fActor inPrio
       -- Items.
       pMaybe p = maybe Nothing (\x -> Just (p, x))
       inFloor = mapMaybe (\p -> pMaybe p $ EM.lookup p (lfloor lvl)) inFov
-      fItem p (iid, k) = SpotItemA iid (getItemBody iid s) k (CFloor lid p)
+      fItem p (iid, k) = UpdSpotItem iid (getItemBody iid s) k (CFloor lid p)
       fBag (p, bag) = map (fItem p) $ EM.assocs bag
       inItem = concatMap fBag inFloor
       -- Tiles.
       cotile = Kind.cotile (scops s)
       inTileMap = map (\p -> (p, hideTile cotile lvl p)) inFov
-      atomicTile = if null inTileMap then [] else [SpotTileA lid inTileMap]
+      atomicTile = if null inTileMap then [] else [UpdSpotTile lid inTileMap]
       -- TODO: somehow also use this
       -- bonus = case strongestSearch itemAssocs of
       --          Just (k, _)  -> k + 1
@@ -174,5 +174,5 @@ atomicRemember lid inPer s =
       -- Smells.
       inSmellFov = ES.elems $ smellVisible inPer
       inSm = mapMaybe (\p -> pMaybe p $ EM.lookup p (lsmell lvl)) inSmellFov
-      atomicSmell = if null inSm then [] else [SpotSmellA lid inSm]
+      atomicSmell = if null inSm then [] else [UpdSpotSmell lid inSm]
   in inItem ++ inActor ++ atomicTile ++ atomicSmell

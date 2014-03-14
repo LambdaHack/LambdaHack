@@ -46,18 +46,18 @@ data ResponseUI =
 -- would not be so valuable.
 debugResponseAI :: MonadReadState m => ResponseAI -> m Text
 debugResponseAI cmd = case cmd of
-  RespUpdAtomicAI cmdA@PerceptionA{} -> debugPlain cmd cmdA
-  RespUpdAtomicAI cmdA@ResumeA{} -> debugPlain cmd cmdA
-  RespUpdAtomicAI cmdA@SpotTileA{} -> debugPlain cmd cmdA
+  RespUpdAtomicAI cmdA@UpdPerception{} -> debugPlain cmd cmdA
+  RespUpdAtomicAI cmdA@UpdResume{} -> debugPlain cmd cmdA
+  RespUpdAtomicAI cmdA@UpdSpotTile{} -> debugPlain cmd cmdA
   RespUpdAtomicAI cmdA -> debugPretty cmd cmdA
   RespQueryAI aid -> debugAid aid "RespQueryAI" cmd
   RespPingAI -> return $! tshow cmd
 
 debugResponseUI :: MonadReadState m => ResponseUI -> m Text
 debugResponseUI cmd = case cmd of
-  RespUpdAtomicUI cmdA@PerceptionA{} -> debugPlain cmd cmdA
-  RespUpdAtomicUI cmdA@ResumeA{} -> debugPlain cmd cmdA
-  RespUpdAtomicUI cmdA@SpotTileA{} -> debugPlain cmd cmdA
+  RespUpdAtomicUI cmdA@UpdPerception{} -> debugPlain cmd cmdA
+  RespUpdAtomicUI cmdA@UpdResume{} -> debugPlain cmd cmdA
+  RespUpdAtomicUI cmdA@UpdSpotTile{} -> debugPlain cmd cmdA
   RespUpdAtomicUI cmdA -> debugPretty cmd cmdA
   RespSfxAtomicUI sfx -> do
     ps <- posSfxAtomic sfx

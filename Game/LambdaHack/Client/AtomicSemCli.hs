@@ -51,16 +51,16 @@ import Game.LambdaHack.Content.TileKind
 -- of commands kept for each command received.
 cmdAtomicFilterCli :: MonadClient m => UpdAtomic -> m [UpdAtomic]
 cmdAtomicFilterCli cmd = case cmd of
-  MoveActorA aid _ toP -> do
+  UpdMoveActor aid _ toP -> do
     cmdSml <- deleteSmell aid toP
     return $ [cmd] ++ cmdSml
-  DisplaceActorA source target -> do
+  UpdDisplaceActor source target -> do
     bs <- getsState $ getActorBody source
     bt <- getsState $ getActorBody target
     cmdSource <- deleteSmell source (bpos bt)
     cmdTarget <- deleteSmell target (bpos bs)
     return $ [cmd] ++ cmdSource ++ cmdTarget
-  AlterTileA lid p fromTile toTile -> do
+  UpdAlterTile lid p fromTile toTile -> do
     Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
     lvl <- getLevel lid
     let t = lvl `at` p
@@ -80,9 +80,9 @@ cmdAtomicFilterCli cmd = case cmd of
                                , MU.SubjectVerbSg subject verb
                                , MU.AW $ MU.Text $ tname $ okind toTile ]
         return [ cmd  -- reveal the tile
-               , MsgAllA msg  -- show the message
+               , UpdMsgAll msg  -- show the message
                ]
-  SearchTileA aid p fromTile toTile -> do
+  UpdSearchTile aid p fromTile toTile -> do
     b <- getsState $ getActorBody aid
     lvl <- getLevel $ blid b
     let t = lvl `at` p
@@ -90,14 +90,14 @@ cmdAtomicFilterCli cmd = case cmd of
       if t == fromTile
       then -- Fully ignorant. (No intermediate knowledge possible.)
            [ cmd  -- show the message
-           , AlterTileA (blid b) p fromTile toTile  -- reveal tile
+           , UpdAlterTile (blid b) p fromTile toTile  -- reveal tile
            ]
       else if t == toTile
            then [cmd]  -- Already knows the tile fully, only confirm.
            else -- Misguided.
                 assert `failure` "LoseTile fails to reset memory"
                        `twith` (aid, p, fromTile, toTile, b, t, cmd)
-  SpotTileA lid ts -> do
+  UpdSpotTile lid ts -> do
     Kind.COps{cotile} <- getsState scops
     lvl <- getLevel lid
     -- We ignore the server resending us hidden versions of the tiles
@@ -109,42 +109,42 @@ cmdAtomicFilterCli cmd = case cmd of
                              && (not (isSecretPos lvl p)
                                  || t /= Tile.hideAs cotile tClient)
         newTs = filter notKnown ts
-    return $! if null newTs then [] else [SpotTileA lid newTs]
-  AlterSmellA lid p fromSm _toSm -> do
+    return $! if null newTs then [] else [UpdSpotTile lid newTs]
+  UpdAlterSmell lid p fromSm _toSm -> do
     lvl <- getLevel lid
     let msml = EM.lookup p $ lsmell lvl
     return $ if msml /= fromSm then
                -- Revert to the server smell before server command executes.
                -- This is needed due to our hacky removal of traversed smells
                -- in @deleteSmell@.
-               [AlterSmellA lid p msml fromSm, cmd]
+               [UpdAlterSmell lid p msml fromSm, cmd]
              else
                [cmd]
-  DiscoverA _ _ iid _ -> do
+  UpdDiscover _ _ iid _ -> do
     disco <- getsClient sdisco
     item <- getsState $ getItemBody iid
     if jkindIx item `EM.member` disco
       then return []
       else return [cmd]
-  CoverA _ _ iid _ -> do
+  UpdCover _ _ iid _ -> do
     disco <- getsClient sdisco
     item <- getsState $ getItemBody iid
     if jkindIx item `EM.notMember` disco
       then return []
       else return [cmd]
-  PerceptionA lid outPer inPer -> do
+  UpdPerception lid outPer inPer -> do
     -- Here we cheat by setting a new perception outright instead of
     -- in @cmdAtomicSemCli@, to avoid computing perception twice.
     -- TODO: try to assert similar things as for @atomicRemember@:
     -- that posUpdAtomic of all the Lose* commands was visible in old Per,
     -- but is not visible any more.
     perOld <- getPerFid lid
-    perceptionA lid outPer inPer
+    perception lid outPer inPer
     perNew <- getPerFid lid
     s <- getState
     fid <- getsClient sside
     -- Wipe out actors that just became invisible due to changed FOV.
-    -- TODO: perhaps instead create LoseActorA for all actors in lprio,
+    -- TODO: perhaps instead create LoseActor for all actors in lprio,
     -- and keep only those where seenAtomicCli is True; this is even
     -- cheaper than repeated posToActor (until it's optimized).
     let outFov = totalVisible perOld ES.\\ totalVisible perNew
@@ -154,7 +154,7 @@ cmdAtomicFilterCli cmd = case cmd of
           if not (bproj b) && bfid b == fid
           then Nothing  -- optimization: the actor is soon lost anyway,
                         -- e.g., via DominateActorA, so don't bother
-          else Just $ LoseActorA aid b ais
+          else Just $ UpdLoseActor aid b ais
         outActor = mapMaybe fActor outPrio
     -- Wipe out remembered items on tiles that now came into view.
     Level{lfloor, lsmell} <- getLevel lid
@@ -162,7 +162,7 @@ cmdAtomicFilterCli cmd = case cmd of
         pMaybe p = maybe Nothing (\x -> Just (p, x))
         inFloor = mapMaybe (\p -> pMaybe p $ EM.lookup p lfloor)
                            (ES.elems inFov)
-        fItem p (iid, k) = LoseItemA iid (getItemBody iid s) k (CFloor lid p)
+        fItem p (iid, k) = UpdLoseItem iid (getItemBody iid s) k (CFloor lid p)
         fBag (p, bag) = map (fItem p) $ EM.assocs bag
         inItem = concatMap fBag inFloor
     -- Remembered map tiles not wiped out, due to optimization in @spotTileA@.
@@ -170,7 +170,7 @@ cmdAtomicFilterCli cmd = case cmd of
     let inSmellFov = smellVisible perNew ES.\\ smellVisible perOld
         inSm = mapMaybe (\p -> pMaybe p $ EM.lookup p lsmell)
                         (ES.elems inSmellFov)
-        inSmell = if null inSm then [] else [LoseSmellA lid inSm]
+        inSmell = if null inSm then [] else [UpdLoseSmell lid inSm]
     let seenNew = seenAtomicCli False fid perNew
         seenOld = seenAtomicCli False fid perOld
     -- TODO: these assertions are probably expensive
@@ -196,19 +196,19 @@ deleteSmell aid pos = do
     lvl <- getLevel $ blid b
     let msml = EM.lookup pos $ lsmell lvl
     return $
-      maybe [] (\sml -> [AlterSmellA (blid b) pos (Just sml) Nothing]) msml
+      maybe [] (\sml -> [UpdAlterSmell (blid b) pos (Just sml) Nothing]) msml
   else return []
 
 -- | Effect of atomic actions on client state is calculated
 -- in the global state before the command is executed.
 cmdAtomicSemCli :: MonadClient m => UpdAtomic -> m ()
 cmdAtomicSemCli cmd = case cmd of
-  CreateActorA aid body _ -> createActorA aid body
-  DestroyActorA aid b _ -> destroyActorA aid b True
-  SpotActorA aid body _ -> createActorA aid body
-  LoseActorA aid b _ -> destroyActorA aid b False
-  MoveItemA iid _ c1 c2 -> moveItem iid c1 c2
-  LeadFactionA fid source target -> do
+  UpdCreateActor aid body _ -> createActor aid body
+  UpdDestroyActor aid b _ -> destroyActor aid b True
+  UpdSpotActor aid body _ -> createActor aid body
+  UpdLoseActor aid b _ -> destroyActor aid b False
+  UpdMoveItem iid _ c1 c2 -> moveItem iid c1 c2
+  UpdLeadFaction fid source target -> do
     side <- getsClient sside
     when (side == fid) $ do
       mleader <- getsClient _sleader
@@ -216,10 +216,10 @@ cmdAtomicSemCli cmd = case cmd of
               || mleader == target  -- we changed the leader originally
               `blame` "unexpected leader" `twith` (cmd, mleader)) skip
       modifyClient $ \cli -> cli {_sleader = target}
-  DiscoverA lid p iid ik -> discoverA lid p iid ik
-  CoverA lid p iid ik -> coverA lid p iid ik
-  PerceptionA lid outPer inPer -> perceptionA lid outPer inPer
-  RestartA side sdisco sfper _ sdebugCli _ -> do
+  UpdDiscover lid p iid ik -> discover lid p iid ik
+  UpdCover lid p iid ik -> cover lid p iid ik
+  UpdPerception lid outPer inPer -> perception lid outPer inPer
+  UpdRestart side sdisco sfper _ sdebugCli _ -> do
     shistory <- getsClient shistory
     sconfigUI <- getsClient sconfigUI
     isAI <- getsClient sisAI
@@ -229,13 +229,13 @@ cmdAtomicSemCli cmd = case cmd of
                   -- , sundo = [UpdAtomic cmd]
                   , scurDifficulty = sdifficultyCli sdebugCli
                   , sdebugCli }
-  ResumeA _fid sfper -> modifyClient $ \cli -> cli {sfper}
-  KillExitA _fid -> killExitA
-  SaveBkpA -> saveClient
+  UpdResume _fid sfper -> modifyClient $ \cli -> cli {sfper}
+  UpdKillExit _fid -> killExit
+  UpdSaveBkp -> saveClient
   _ -> return ()
 
-createActorA :: MonadClient m => ActorId -> Actor -> m ()
-createActorA aid _b = do
+createActor :: MonadClient m => ActorId -> Actor -> m ()
+createActor aid _b = do
   let affect tgt = case tgt of
         TEnemyPos a _ _ permit | a == aid -> TEnemy a permit
         _ -> tgt
@@ -245,8 +245,8 @@ createActorA aid _b = do
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
   modifyClient $ \cli -> cli {scursor = affect $ scursor cli}
 
-destroyActorA :: MonadClient m => ActorId -> Actor -> Bool -> m ()
-destroyActorA aid b destroy = do
+destroyActor :: MonadClient m => ActorId -> Actor -> Bool -> m ()
+destroyActor aid b destroy = do
   when destroy $ modifyClient $ updateTarget aid (const Nothing)  -- gc
   modifyClient $ \cli -> cli {sbfsD = EM.delete aid $ sbfsD cli}  -- gc
   let affect tgt = case tgt of
@@ -270,8 +270,8 @@ moveItem iid c1 c2 =
         when (bfid b == side) $ void $ updateItemSlot aid iid
     _ -> return ()
 
-perceptionA :: MonadClient m => LevelId -> Perception -> Perception -> m ()
-perceptionA lid outPer inPer = do
+perception :: MonadClient m => LevelId -> Perception -> Perception -> m ()
+perception lid outPer inPer = do
   -- Clients can't compute FOV on their own, because they don't know
   -- if unknown tiles are clear or not. Server would need to send
   -- info about properties of unknown tiles, which complicates
@@ -293,26 +293,26 @@ perceptionA lid outPer inPer = do
         f = EM.alter adj lid
     modifyClient $ \cli -> cli {sfper = f (sfper cli)}
 
-discoverA :: MonadClient m
+discover :: MonadClient m
           => LevelId -> Point -> ItemId -> Kind.Id ItemKind -> m ()
-discoverA lid p iid ik = do
+discover lid p iid ik = do
   item <- getsState $ getItemBody iid
   let f Nothing = Just ik
       f (Just ik2) = assert `failure` "already discovered"
                             `twith` (lid, p, iid, ik, ik2)
   modifyClient $ \cli -> cli {sdisco = EM.alter f (jkindIx item) (sdisco cli)}
 
-coverA :: MonadClient m
+cover :: MonadClient m
        => LevelId -> Point -> ItemId -> Kind.Id ItemKind -> m ()
-coverA lid p iid ik = do
+cover lid p iid ik = do
   item <- getsState $ getItemBody iid
   let f Nothing = assert `failure` "already covered" `twith` (lid, p, iid, ik)
       f (Just ik2) = assert (ik == ik2 `blame` "unexpected covered item kind"
                                        `twith` (ik, ik2)) Nothing
   modifyClient $ \cli -> cli {sdisco = EM.alter f (jkindIx item) (sdisco cli)}
 
-killExitA :: MonadClient m => m ()
-killExitA = modifyClient $ \cli -> cli {squit = True}
+killExit :: MonadClient m => m ()
+killExit = modifyClient $ \cli -> cli {squit = True}
 
 -- * RespUpdAtomicUI
 
@@ -330,17 +330,17 @@ killExitA = modifyClient $ \cli -> cli {squit = True}
 -- the client state is modified by the command.
 drawRespUpdAtomicUI :: MonadClientUI m => Bool -> UpdAtomic -> m ()
 drawRespUpdAtomicUI verbose cmd = case cmd of
-  CreateActorA aid body _ -> createActorUI aid body verbose "appear"
-  DestroyActorA aid body _ -> do
+  UpdCreateActor aid body _ -> createActorUI aid body verbose "appear"
+  UpdDestroyActor aid body _ -> do
     destroyActorUI aid body "die" "be destroyed" verbose
     side <- getsClient sside
     when (bfid body == side && not (bproj body)) stopPlayBack
-  CreateItemA _ item k _ -> itemVerbMU item k "drop to the ground"
-  DestroyItemA _ item k _ -> itemVerbMU item k "disappear"
-  SpotActorA aid body _ -> createActorUI aid body verbose "be spotted"
-  LoseActorA aid body _ ->
+  UpdCreateItem _ item k _ -> itemVerbMU item k "drop to the ground"
+  UpdDestroyItem _ item k _ -> itemVerbMU item k "disappear"
+  UpdSpotActor aid body _ -> createActorUI aid body verbose "be spotted"
+  UpdLoseActor aid body _ ->
     destroyActorUI aid body "be missing in action" "be lost" verbose
-  SpotItemA _ item k c -> do
+  UpdSpotItem _ item k c -> do
     scursorOld <- getsClient scursor
     case scursorOld of
       TEnemy{} -> return ()  -- probably too important to overwrite
@@ -351,11 +351,11 @@ drawRespUpdAtomicUI verbose cmd = case cmd of
         stopPlayBack
         -- TODO: perhaps don't spam for already seen items; very hard to do
         itemVerbMU item k "be spotted"
-  MoveActorA aid _ _ -> lookAtMove aid
-  WaitActorA aid _ _| verbose -> aVerbMU aid "wait"
-  DisplaceActorA source target -> displaceActorUI source target
-  MoveItemA iid k c1 c2 -> moveItemUI verbose iid k c1 c2
-  HealActorA aid n -> do
+  UpdMoveActor aid _ _ -> lookAtMove aid
+  UpdWaitActor aid _ _| verbose -> aVerbMU aid "wait"
+  UpdDisplaceActor source target -> displaceActorUI source target
+  UpdMoveItem iid k c1 c2 -> moveItemUI verbose iid k c1 c2
+  UpdHealActor aid n -> do
     when verbose $
       aVerbMU aid $ MU.Text $ (if n > 0 then "heal" else "lose")
                               <+> tshow (abs n) <> "HP"
@@ -368,11 +368,11 @@ drawRespUpdAtomicUI verbose cmd = case cmd of
       when (bhp b == maxDice ahp && bcalm b == maxDice acalm) $ do
         actorVerbMU aid b "recover fully"
         stopPlayBack
-  HasteActorA aid delta ->
+  UpdHasteActor aid delta ->
     aVerbMU aid $ if delta > speedZero
                   then "speed up"
                   else "slow down"
-  LeadFactionA fid (Just source) (Just target) -> do
+  UpdLeadFaction fid (Just source) (Just target) -> do
     side <- getsClient sside
     when (fid == side) $ do
       actorD <- getsState sactorD
@@ -385,7 +385,7 @@ drawRespUpdAtomicUI verbose cmd = case cmd of
           msgAdd $ makeSentence [ MU.SubjectVerbSg subject "take command"
                                 , "from", object ]
         _ -> skip
-  DiplFactionA fid1 fid2 _ toDipl -> do
+  UpdDiplFaction fid1 fid2 _ toDipl -> do
     name1 <- getsState $ gname . (EM.! fid1) . sfactionD
     name2 <- getsState $ gname . (EM.! fid2) . sfactionD
     let showDipl Unknown = "unknown to each other"
@@ -393,10 +393,10 @@ drawRespUpdAtomicUI verbose cmd = case cmd of
         showDipl Alliance = "allied"
         showDipl War = "at war"
     msgAdd $ name1 <+> "and" <+> name2 <+> "are now" <+> showDipl toDipl <> "."
-  QuitFactionA fid mbody _ toSt -> quitFactionUI fid mbody toSt
-  AlterTileA{} | verbose ->
+  UpdQuitFaction fid mbody _ toSt -> quitFactionUI fid mbody toSt
+  UpdAlterTile{} | verbose ->
     return ()  -- TODO: door opens
-  SearchTileA aid p fromTile toTile -> do
+  UpdSearchTile aid p fromTile toTile -> do
     Kind.COps{cotile = Kind.Ops{okind}} <- getsState scops
     b <- getsState $ getActorBody aid
     lvl <- getLevel $ blid b
@@ -412,7 +412,7 @@ drawRespUpdAtomicUI verbose cmd = case cmd of
                            , "a hidden"
                            , MU.Text $ tname $ okind toTile ]
     msgAdd msg
-  AgeGameA t -> do
+  UpdAgeGame t -> do
     when (t > timeClip) $ displayFrames [Nothing]  -- show delay
     -- TODO: shows messages on leader level, instead of recently shown
     -- level (e.g., between animations); perhaps draw messages separately
@@ -420,7 +420,7 @@ drawRespUpdAtomicUI verbose cmd = case cmd of
     -- and only overlay messages on it when needed; or store the level
     -- of last shown
     displayPush  -- TODO: is this really needed? write why
-  DiscoverA _ _ iid _ -> do
+  UpdDiscover _ _ iid _ -> do
     disco <- getsClient sdisco
     item <- getsState $ getItemBody iid
     let ix = jkindIx item
@@ -432,7 +432,7 @@ drawRespUpdAtomicUI verbose cmd = case cmd of
                                     "turn out to be"
           , partItemAW coitem disco item ]
     msgAdd msg
-  CoverA _ _ iid ik -> do
+  UpdCover _ _ iid ik -> do
     discoUnknown <- getsClient sdisco
     item <- getsState $ getItemBody iid
     let ix = jkindIx item
@@ -445,9 +445,9 @@ drawRespUpdAtomicUI verbose cmd = case cmd of
                                     "look like an ordinary"
           , objUnkown1, objUnkown2 ]
     msgAdd msg
-  RestartA _ _ _ _ _ t -> msgAdd $ "New game started in" <+> t <+> "mode."
-  SaveBkpA | verbose -> msgAdd "Saving backup."
-  MsgAllA msg -> msgAdd msg
+  UpdRestart _ _ _ _ _ t -> msgAdd $ "New game started in" <+> t <+> "mode."
+  UpdSaveBkp | verbose -> msgAdd "Saving backup."
+  UpdMsgAll msg -> msgAdd msg
   _ -> return ()
 
 lookAtMove :: MonadClientUI m => ActorId -> m ()
@@ -652,20 +652,20 @@ quitFactionUI fid mbody toSt = do
 
 drawRespSfxAtomicUI :: MonadClientUI m => Bool -> SfxAtomic -> m ()
 drawRespSfxAtomicUI verbose sfx = case sfx of
-  StrikeD source target item b -> strikeD source target item b
-  RecoilD source target _ _ -> do
+  SfxStrike source target item b -> strike source target item b
+  SfxRecoil source target _ _ -> do
     spart <- partAidLeader source
     tpart <- partAidLeader target
     msgAdd $ makeSentence [MU.SubjectVerbSg spart "shrink away from", tpart]
-  ProjectD aid iid -> aiVerbMU aid "aim" iid 1
-  CatchD aid iid -> aiVerbMU aid "catch" iid 1
-  ActivateD aid iid -> aiVerbMU aid "activate"{-TODO-} iid 1
-  CheckD aid iid -> aiVerbMU aid "check" iid 1
-  TriggerD aid _p _feat | verbose ->
+  SfxProject aid iid -> aiVerbMU aid "aim" iid 1
+  SfxCatch aid iid -> aiVerbMU aid "catch" iid 1
+  SfxActivate aid iid -> aiVerbMU aid "activate"{-TODO-} iid 1
+  SfxCheck aid iid -> aiVerbMU aid "check" iid 1
+  SfxTrigger aid _p _feat | verbose ->
     aVerbMU aid "trigger"  -- TODO: opens door
-  ShunD aid _p _ | verbose ->
+  SfxShun aid _p _ | verbose ->
     aVerbMU aid "shun"  -- TODO: shuns stairs down
-  EffectD aid effect -> do
+  SfxEffect aid effect -> do
     b <- getsState $ getActorBody aid
     side <- getsClient sside
     let fid = bfid b
@@ -737,22 +737,22 @@ drawRespSfxAtomicUI verbose sfx = case sfx of
         Effect.Ascend k | k < 0 -> actorVerbMU aid b "find a way downstairs"
         Effect.Ascend{} -> assert `failure` sfx
         _ -> return ()
-  MsgFidD _ msg -> msgAdd msg
-  MsgAllD msg -> msgAdd msg
-  DisplayPushD _ ->
+  SfxMsgFid _ msg -> msgAdd msg
+  SfxMsgAll msg -> msgAdd msg
+  SfxDisplayPush _ ->
     -- TODO: shows messages on leader level, instead of recently shown
     -- level (e.g., between animations); perhaps draw messages separately
     -- from level (but on the same text window) or keep last level frame
     -- and only overlay messages on it when needed; or store the level
     -- of last shown
     displayPush
-  DisplayDelayD _ -> displayFrames [Nothing]
-  RecordHistoryD _ -> recordHistory
+  SfxDisplayDelay _ -> displayFrames [Nothing]
+  SfxRecordHistory _ -> recordHistory
   _ -> return ()
 
-strikeD :: MonadClientUI m
+strike :: MonadClientUI m
         => ActorId -> ActorId -> Item -> HitAtomic -> m ()
-strikeD source target item b = assert (source /= target) $ do
+strike source target item b = assert (source /= target) $ do
   Kind.COps{coitem=coitem@Kind.Ops{okind}} <- getsState scops
   disco <- getsClient sdisco
   sb <- getsState $ getActorBody source

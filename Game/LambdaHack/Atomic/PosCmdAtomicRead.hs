@@ -55,93 +55,93 @@ data PosAtomic =
 -- contradict state) if the visibility is lower.
 posUpdAtomic :: MonadReadState m => UpdAtomic -> m PosAtomic
 posUpdAtomic cmd = case cmd of
-  CreateActorA _ body _ -> posProjBody body
-  DestroyActorA _ body _ -> posProjBody body
-  CreateItemA _ _ _ c -> singleContainer c
-  DestroyItemA _ _ _ c -> singleContainer c
-  SpotActorA _ body _ -> posProjBody body
-  LoseActorA _ body _ -> posProjBody body
-  SpotItemA _ _ _ c -> singleContainer c
-  LoseItemA _ _ _ c -> singleContainer c
-  MoveActorA aid fromP toP -> do
+  UpdCreateActor _ body _ -> posProjBody body
+  UpdDestroyActor _ body _ -> posProjBody body
+  UpdCreateItem _ _ _ c -> singleContainer c
+  UpdDestroyItem _ _ _ c -> singleContainer c
+  UpdSpotActor _ body _ -> posProjBody body
+  UpdLoseActor _ body _ -> posProjBody body
+  UpdSpotItem _ _ _ c -> singleContainer c
+  UpdLoseItem _ _ _ c -> singleContainer c
+  UpdMoveActor aid fromP toP -> do
     (lid, _) <- posOfAid aid
     return $! PosSight lid [fromP, toP]
-  WaitActorA aid _ _ -> singleAid aid
-  DisplaceActorA source target -> do
+  UpdWaitActor aid _ _ -> singleAid aid
+  UpdDisplaceActor source target -> do
     (slid, sp) <- posOfAid source
     (tlid, tp) <- posOfAid target
     return $! assert (slid == tlid) $ PosSight slid [sp, tp]
-  MoveItemA _ _ c1 c2 -> do  -- works even if moved between positions
+  UpdMoveItem _ _ c1 c2 -> do  -- works even if moved between positions
     (lid1, p1) <- posOfContainer c1
     (lid2, p2) <- posOfContainer c2
     return $! assert (lid1 == lid2) $ PosSight lid1 [p1, p2]
-  AgeActorA aid _ -> singleAid aid
-  HealActorA aid _ -> singleAid aid
-  CalmActorA aid _ -> singleAid aid
-  HasteActorA aid _ -> singleAid aid
-  TrajectoryActorA aid _ _ -> singleAid aid
-  ColorActorA aid _ _ -> singleAid aid
-  QuitFactionA{} -> return PosAll
-  LeadFactionA fid _ _ -> return $! PosFidAndSer fid
-  DiplFactionA{} -> return PosAll
-  AutoFactionA{} -> return PosAll
-  RecordKillA aid _ -> singleFidAndAid aid
-  AlterTileA lid p _ _ -> return $! PosSight lid [p]
-  SearchTileA aid p _ _ -> do
+  UpdAgeActor aid _ -> singleAid aid
+  UpdHealActor aid _ -> singleAid aid
+  UpdCalmActor aid _ -> singleAid aid
+  UpdHasteActor aid _ -> singleAid aid
+  UpdTrajectoryActor aid _ _ -> singleAid aid
+  UpdColorActor aid _ _ -> singleAid aid
+  UpdQuitFaction{} -> return PosAll
+  UpdLeadFaction fid _ _ -> return $! PosFidAndSer fid
+  UpdDiplFaction{} -> return PosAll
+  UpdAutoFaction{} -> return PosAll
+  UpdRecordKill aid _ -> singleFidAndAid aid
+  UpdAlterTile lid p _ _ -> return $! PosSight lid [p]
+  UpdSearchTile aid p _ _ -> do
     (lid, pos) <- posOfAid aid
     return $! PosSight lid [pos, p]
-  SpotTileA lid ts -> do
+  UpdSpotTile lid ts -> do
     let ps = map fst ts
     return $! PosSight lid ps
-  LoseTileA lid ts -> do
+  UpdLoseTile lid ts -> do
     let ps = map fst ts
     return $! PosSight lid ps
-  AlterSmellA lid p _ _ -> return $! PosSmell lid [p]
-  SpotSmellA lid sms -> do
+  UpdAlterSmell lid p _ _ -> return $! PosSmell lid [p]
+  UpdSpotSmell lid sms -> do
     let ps = map fst sms
     return $! PosSmell lid ps
-  LoseSmellA lid sms -> do
+  UpdLoseSmell lid sms -> do
     let ps = map fst sms
     return $! PosSmell lid ps
-  AgeLevelA lid _ -> return $! PosSight lid []
-  AgeGameA _ -> return PosAll
-  DiscoverA lid p _ _ -> return $! PosSight lid [p]
-  CoverA lid p _ _ -> return $! PosSight lid [p]
-  PerceptionA{} -> return PosNone
-  RestartA fid _ _ _ _ _ -> return $! PosFid fid
-  RestartServerA _ -> return PosSer
-  ResumeA fid _ -> return $! PosFid fid
-  ResumeServerA _ -> return PosSer
-  KillExitA fid -> return $! PosFid fid
-  SaveBkpA -> return PosAll
-  MsgAllA{} -> return PosAll
+  UpdAgeLevel lid _ -> return $! PosSight lid []
+  UpdAgeGame _ -> return PosAll
+  UpdDiscover lid p _ _ -> return $! PosSight lid [p]
+  UpdCover lid p _ _ -> return $! PosSight lid [p]
+  UpdPerception{} -> return PosNone
+  UpdRestart fid _ _ _ _ _ -> return $! PosFid fid
+  UpdRestartServer _ -> return PosSer
+  UpdResume fid _ -> return $! PosFid fid
+  UpdResumeServer _ -> return PosSer
+  UpdKillExit fid -> return $! PosFid fid
+  UpdSaveBkp -> return PosAll
+  UpdMsgAll{} -> return PosAll
 
 posSfxAtomic :: MonadReadState m => SfxAtomic -> m PosAtomic
 posSfxAtomic cmd = case cmd of
-  StrikeD source target _ _ -> do
+  SfxStrike source target _ _ -> do
     (slid, sp) <- posOfAid source
     (tlid, tp) <- posOfAid target
     return $! assert (slid == tlid) $ PosSight slid [sp, tp]
-  RecoilD source target _ _ -> do
+  SfxRecoil source target _ _ -> do
     (slid, sp) <- posOfAid source
     (tlid, tp) <- posOfAid target
     return $! assert (slid == tlid) $ PosSight slid [sp, tp]
-  ProjectD aid _ -> singleAid aid
-  CatchD aid _ -> singleAid aid
-  ActivateD aid _ -> singleAid aid
-  CheckD aid _ -> singleAid aid
-  TriggerD aid p _ -> do
+  SfxProject aid _ -> singleAid aid
+  SfxCatch aid _ -> singleAid aid
+  SfxActivate aid _ -> singleAid aid
+  SfxCheck aid _ -> singleAid aid
+  SfxTrigger aid p _ -> do
     (lid, pa) <- posOfAid aid
     return $! PosSight lid [pa, p]
-  ShunD aid p _ -> do
+  SfxShun aid p _ -> do
     (lid, pa) <- posOfAid aid
     return $! PosSight lid [pa, p]
-  EffectD aid _ -> singleAid aid
-  MsgFidD fid _ -> return $! PosFid fid
-  MsgAllD _ -> return PosAll
-  DisplayPushD fid -> return $! PosFid fid
-  DisplayDelayD fid -> return $! PosFid fid
-  RecordHistoryD fid -> return $! PosFid fid
+  SfxEffect aid _ -> singleAid aid
+  SfxMsgFid fid _ -> return $! PosFid fid
+  SfxMsgAll _ -> return PosAll
+  SfxDisplayPush fid -> return $! PosFid fid
+  SfxDisplayDelay fid -> return $! PosFid fid
+  SfxRecordHistory fid -> return $! PosFid fid
 
 posProjBody :: Monad m => Actor -> m PosAtomic
 posProjBody body = return $!
@@ -183,22 +183,22 @@ singleContainer c = do
 -- save/restore would change game state.
 resetsFovAtomic :: MonadReadState m => UpdAtomic -> m (Maybe [FactionId])
 resetsFovAtomic cmd = case cmd of
-  CreateActorA _ body _ -> return $ Just [bfid body]
-  DestroyActorA _ body _ -> return $ Just [bfid body]
-  SpotActorA _ body _ -> return $ Just [bfid body]
-  LoseActorA _ body _ -> return $ Just [bfid body]
-  CreateItemA{} -> return $ Just []  -- unless shines
-  DestroyItemA{} -> return $ Just []  -- ditto
-  MoveActorA aid _ _ -> fmap Just $ fidOfAid aid  -- assumption: has no light
--- TODO: MoveActorCarryingLIghtA _ _ _ -> return Nothing
-  DisplaceActorA source target -> do
+  UpdCreateActor _ body _ -> return $ Just [bfid body]
+  UpdDestroyActor _ body _ -> return $ Just [bfid body]
+  UpdSpotActor _ body _ -> return $ Just [bfid body]
+  UpdLoseActor _ body _ -> return $ Just [bfid body]
+  UpdCreateItem{} -> return $ Just []  -- unless shines
+  UpdDestroyItem{} -> return $ Just []  -- ditto
+  UpdMoveActor aid _ _ -> fmap Just $ fidOfAid aid  -- assumption: has no light
+-- TODO: MoveActorCarryingLIght _ _ _ -> return Nothing
+  UpdDisplaceActor source target -> do
     sfid <- fidOfAid source
     tfid <- fidOfAid target
     return $ Just $ if source == target
                     then []
                     else sfid ++ tfid
-  MoveItemA{} -> return $ Just []  -- unless shiny
-  AlterTileA{} -> return Nothing  -- even if pos not visible initially
+  UpdMoveItem{} -> return $ Just []  -- unless shiny
+  UpdAlterTile{} -> return Nothing  -- even if pos not visible initially
   _ -> return $ Just []
 
 fidOfAid :: MonadReadState m => ActorId -> m [FactionId]
@@ -216,29 +216,29 @@ fidOfAid aid = getsState $ (: []) . bfid . getActorBody aid
 -- moves, v.s., popping out of existence and then back in.
 breakUpdAtomic :: MonadReadState m => UpdAtomic -> m [UpdAtomic]
 breakUpdAtomic cmd = case cmd of
-  MoveActorA aid _ toP -> do
+  UpdMoveActor aid _ toP -> do
     b <- getsState $ getActorBody aid
     ais <- getsState $ getCarriedAssocs b
-    return [ LoseActorA aid b ais
-           , SpotActorA aid b {bpos = toP, boldpos = bpos b} ais ]
-  DisplaceActorA source target -> do
+    return [ UpdLoseActor aid b ais
+           , UpdSpotActor aid b {bpos = toP, boldpos = bpos b} ais ]
+  UpdDisplaceActor source target -> do
     sb <- getsState $ getActorBody source
     sais <- getsState $ getCarriedAssocs sb
     tb <- getsState $ getActorBody target
     tais <- getsState $ getCarriedAssocs tb
-    return [ LoseActorA source sb sais
-           , SpotActorA source sb {bpos = bpos tb, boldpos = bpos sb} sais
-           , LoseActorA target tb tais
-           , SpotActorA target tb {bpos = bpos sb, boldpos = bpos tb} tais
+    return [ UpdLoseActor source sb sais
+           , UpdSpotActor source sb {bpos = bpos tb, boldpos = bpos sb} sais
+           , UpdLoseActor target tb tais
+           , UpdSpotActor target tb {bpos = bpos sb, boldpos = bpos tb} tais
            ]
-  MoveItemA iid k c1 c2 -> do
+  UpdMoveItem iid k c1 c2 -> do
     item <- getsState $ getItemBody iid
-    return [LoseItemA iid item k c1, SpotItemA iid item k c2]
+    return [UpdLoseItem iid item k c1, UpdSpotItem iid item k c2]
   _ -> return [cmd]
 
 loudUpdAtomic :: FactionId -> UpdAtomic -> Bool
 loudUpdAtomic fid cmd = case cmd of
-  DestroyActorA _ body _ ->
+  UpdDestroyActor _ body _ ->
     -- Death of a party member does not need to be heard, because it's seen.
     not $ fid == bfid body || bproj body
   _ -> False

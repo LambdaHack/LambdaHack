@@ -51,72 +51,72 @@ instance Binary CmdAtomic
 -- | Abstract syntax of atomic commands.
 data UpdAtomic =
   -- Create/destroy actors and items.
-    CreateActorA !ActorId !Actor ![(ItemId, Item)]
-  | DestroyActorA !ActorId !Actor ![(ItemId, Item)]
-  | CreateItemA !ItemId !Item !Int !Container
-  | DestroyItemA !ItemId !Item !Int !Container
-  | SpotActorA !ActorId !Actor ![(ItemId, Item)]
-  | LoseActorA !ActorId !Actor ![(ItemId, Item)]
-  | SpotItemA !ItemId !Item !Int !Container
-  | LoseItemA !ItemId !Item !Int !Container
+    UpdCreateActor !ActorId !Actor ![(ItemId, Item)]
+  | UpdDestroyActor !ActorId !Actor ![(ItemId, Item)]
+  | UpdCreateItem !ItemId !Item !Int !Container
+  | UpdDestroyItem !ItemId !Item !Int !Container
+  | UpdSpotActor !ActorId !Actor ![(ItemId, Item)]
+  | UpdLoseActor !ActorId !Actor ![(ItemId, Item)]
+  | UpdSpotItem !ItemId !Item !Int !Container
+  | UpdLoseItem !ItemId !Item !Int !Container
   -- Move actors and items.
-  | MoveActorA !ActorId !Point !Point
-  | WaitActorA !ActorId !Bool !Bool
-  | DisplaceActorA !ActorId !ActorId
-  | MoveItemA !ItemId !Int !Container !Container
+  | UpdMoveActor !ActorId !Point !Point
+  | UpdWaitActor !ActorId !Bool !Bool
+  | UpdDisplaceActor !ActorId !ActorId
+  | UpdMoveItem !ItemId !Int !Container !Container
   -- Change actor attributes.
-  | AgeActorA !ActorId !Time
-  | HealActorA !ActorId !Int
-  | CalmActorA !ActorId !Int
-  | HasteActorA !ActorId !Speed
-  | TrajectoryActorA !ActorId !(Maybe [Vector]) !(Maybe [Vector])
-  | ColorActorA !ActorId !Color.Color !Color.Color
+  | UpdAgeActor !ActorId !Time
+  | UpdHealActor !ActorId !Int
+  | UpdCalmActor !ActorId !Int
+  | UpdHasteActor !ActorId !Speed
+  | UpdTrajectoryActor !ActorId !(Maybe [Vector]) !(Maybe [Vector])
+  | UpdColorActor !ActorId !Color.Color !Color.Color
   -- Change faction attributes.
-  | QuitFactionA !FactionId !(Maybe Actor) !(Maybe Status) !(Maybe Status)
-  | LeadFactionA !FactionId !(Maybe ActorId) !(Maybe ActorId)
-  | DiplFactionA !FactionId !FactionId !Diplomacy !Diplomacy
-  | AutoFactionA !FactionId !Bool
-  | RecordKillA !ActorId !Int
+  | UpdQuitFaction !FactionId !(Maybe Actor) !(Maybe Status) !(Maybe Status)
+  | UpdLeadFaction !FactionId !(Maybe ActorId) !(Maybe ActorId)
+  | UpdDiplFaction !FactionId !FactionId !Diplomacy !Diplomacy
+  | UpdAutoFaction !FactionId !Bool
+  | UpdRecordKill !ActorId !Int
   -- Alter map.
-  | AlterTileA !LevelId !Point !(Kind.Id TileKind) !(Kind.Id TileKind)
-  | SearchTileA !ActorId !Point !(Kind.Id TileKind) !(Kind.Id TileKind)
-  | SpotTileA !LevelId ![(Point, Kind.Id TileKind)]
-  | LoseTileA !LevelId ![(Point, Kind.Id TileKind)]
-  | AlterSmellA !LevelId !Point !(Maybe Time) !(Maybe Time)
-  | SpotSmellA !LevelId ![(Point, Time)]
-  | LoseSmellA !LevelId ![(Point, Time)]
+  | UpdAlterTile !LevelId !Point !(Kind.Id TileKind) !(Kind.Id TileKind)
+  | UpdSearchTile !ActorId !Point !(Kind.Id TileKind) !(Kind.Id TileKind)
+  | UpdSpotTile !LevelId ![(Point, Kind.Id TileKind)]
+  | UpdLoseTile !LevelId ![(Point, Kind.Id TileKind)]
+  | UpdAlterSmell !LevelId !Point !(Maybe Time) !(Maybe Time)
+  | UpdSpotSmell !LevelId ![(Point, Time)]
+  | UpdLoseSmell !LevelId ![(Point, Time)]
   -- Assorted.
-  | AgeLevelA !LevelId !Time
-  | AgeGameA !Time
-  | DiscoverA !LevelId !Point !ItemId !(Kind.Id ItemKind)
-  | CoverA !LevelId !Point !ItemId !(Kind.Id ItemKind)
-  | PerceptionA !LevelId !Perception !Perception
-  | RestartA !FactionId !Discovery !FactionPers !State !DebugModeCli !Text
-  | RestartServerA !State
-  | ResumeA !FactionId !FactionPers
-  | ResumeServerA !State
-  | KillExitA !FactionId
-  | SaveBkpA
-  | MsgAllA !Msg
+  | UpdAgeLevel !LevelId !Time
+  | UpdAgeGame !Time
+  | UpdDiscover !LevelId !Point !ItemId !(Kind.Id ItemKind)
+  | UpdCover !LevelId !Point !ItemId !(Kind.Id ItemKind)
+  | UpdPerception !LevelId !Perception !Perception
+  | UpdRestart !FactionId !Discovery !FactionPers !State !DebugModeCli !Text
+  | UpdRestartServer !State
+  | UpdResume !FactionId !FactionPers
+  | UpdResumeServer !State
+  | UpdKillExit !FactionId
+  | UpdSaveBkp
+  | UpdMsgAll !Msg
   deriving (Show, Eq, Generic)
 
 instance Binary UpdAtomic
 
 data SfxAtomic =
-    StrikeD !ActorId !ActorId !Item !HitAtomic
-  | RecoilD !ActorId !ActorId !Item !HitAtomic
-  | ProjectD !ActorId !ItemId
-  | CatchD !ActorId !ItemId
-  | ActivateD !ActorId !ItemId
-  | CheckD !ActorId !ItemId
-  | TriggerD !ActorId !Point !F.Feature
-  | ShunD !ActorId !Point !F.Feature
-  | EffectD !ActorId !(Effect.Effect Int)
-  | MsgFidD !FactionId !Msg
-  | MsgAllD !Msg
-  | DisplayPushD !FactionId
-  | DisplayDelayD !FactionId
-  | RecordHistoryD !FactionId
+    SfxStrike !ActorId !ActorId !Item !HitAtomic
+  | SfxRecoil !ActorId !ActorId !Item !HitAtomic
+  | SfxProject !ActorId !ItemId
+  | SfxCatch !ActorId !ItemId
+  | SfxActivate !ActorId !ItemId
+  | SfxCheck !ActorId !ItemId
+  | SfxTrigger !ActorId !Point !F.Feature
+  | SfxShun !ActorId !Point !F.Feature
+  | SfxEffect !ActorId !(Effect.Effect Int)
+  | SfxMsgFid !FactionId !Msg
+  | SfxMsgAll !Msg
+  | SfxDisplayPush !FactionId
+  | SfxDisplayDelay !FactionId
+  | SfxRecordHistory !FactionId
   deriving (Show, Eq, Generic)
 
 instance Binary SfxAtomic
@@ -128,66 +128,68 @@ instance Binary HitAtomic
 
 undoUpdAtomic :: UpdAtomic -> Maybe UpdAtomic
 undoUpdAtomic cmd = case cmd of
-  CreateActorA aid body ais -> Just $ DestroyActorA aid body ais
-  DestroyActorA aid body ais -> Just $ CreateActorA aid body ais
-  CreateItemA iid item k c -> Just $ DestroyItemA iid item k c
-  DestroyItemA iid item k c -> Just $ CreateItemA iid item k c
-  SpotActorA aid body ais -> Just $ LoseActorA aid body ais
-  LoseActorA aid body ais -> Just $ SpotActorA aid body ais
-  SpotItemA iid item k c -> Just $ LoseItemA iid item k c
-  LoseItemA iid item k c -> Just $ SpotItemA iid item k c
-  MoveActorA aid fromP toP -> Just $ MoveActorA aid toP fromP
-  WaitActorA aid fromWait toWait -> Just $ WaitActorA aid toWait fromWait
-  DisplaceActorA source target -> Just $ DisplaceActorA target source
-  MoveItemA iid k c1 c2 -> Just $ MoveItemA iid k c2 c1
-  AgeActorA aid t -> Just $ AgeActorA aid (timeNegate t)
-  HealActorA aid n -> Just $ HealActorA aid (-n)
-  CalmActorA aid n -> Just $ CalmActorA aid (-n)
-  HasteActorA aid delta -> Just $ HasteActorA aid (speedNegate delta)
-  TrajectoryActorA aid fromT toT -> Just $ TrajectoryActorA aid toT fromT
-  ColorActorA aid fromCol toCol -> Just $ ColorActorA aid toCol fromCol
-  QuitFactionA fid mb fromSt toSt -> Just $ QuitFactionA fid mb toSt fromSt
-  LeadFactionA fid source target -> Just $ LeadFactionA fid target source
-  DiplFactionA fid1 fid2 fromDipl toDipl ->
-    Just $ DiplFactionA fid1 fid2 toDipl fromDipl
-  AutoFactionA fid st -> Just $ AutoFactionA fid (not st)
-  RecordKillA aid k -> Just $ RecordKillA aid (-k)
-  AlterTileA lid p fromTile toTile -> Just $ AlterTileA lid p toTile fromTile
-  SearchTileA aid p fromTile toTile -> Just $ SearchTileA aid p toTile fromTile
-  SpotTileA lid ts -> Just $ LoseTileA lid ts
-  LoseTileA lid ts -> Just $ SpotTileA lid ts
-  AlterSmellA lid p fromSm toSm -> Just $ AlterSmellA lid p toSm fromSm
-  SpotSmellA lid sms -> Just $ LoseSmellA lid sms
-  LoseSmellA lid sms -> Just $ SpotSmellA lid sms
-  AgeLevelA lid t -> Just $ AgeLevelA lid (timeNegate t)
-  AgeGameA t -> Just $ AgeGameA (timeNegate t)
-  DiscoverA lid p iid ik -> Just $ CoverA lid p iid ik
-  CoverA lid p iid ik -> Just $ DiscoverA lid p iid ik
-  PerceptionA lid outPer inPer -> Just $ PerceptionA lid inPer outPer
-  RestartA{} -> Just cmd  -- here history ends; change direction
-  RestartServerA{} -> Just cmd  -- here history ends; change direction
-  ResumeA{} -> Nothing
-  ResumeServerA{} -> Nothing
-  KillExitA{} -> Nothing
-  SaveBkpA -> Nothing
-  MsgAllA{} -> Nothing  -- only generated by @cmdAtomicFilterCli@
+  UpdCreateActor aid body ais -> Just $ UpdDestroyActor aid body ais
+  UpdDestroyActor aid body ais -> Just $ UpdCreateActor aid body ais
+  UpdCreateItem iid item k c -> Just $ UpdDestroyItem iid item k c
+  UpdDestroyItem iid item k c -> Just $ UpdCreateItem iid item k c
+  UpdSpotActor aid body ais -> Just $ UpdLoseActor aid body ais
+  UpdLoseActor aid body ais -> Just $ UpdSpotActor aid body ais
+  UpdSpotItem iid item k c -> Just $ UpdLoseItem iid item k c
+  UpdLoseItem iid item k c -> Just $ UpdSpotItem iid item k c
+  UpdMoveActor aid fromP toP -> Just $ UpdMoveActor aid toP fromP
+  UpdWaitActor aid fromWait toWait -> Just $ UpdWaitActor aid toWait fromWait
+  UpdDisplaceActor source target -> Just $ UpdDisplaceActor target source
+  UpdMoveItem iid k c1 c2 -> Just $ UpdMoveItem iid k c2 c1
+  UpdAgeActor aid t -> Just $ UpdAgeActor aid (timeNegate t)
+  UpdHealActor aid n -> Just $ UpdHealActor aid (-n)
+  UpdCalmActor aid n -> Just $ UpdCalmActor aid (-n)
+  UpdHasteActor aid delta -> Just $ UpdHasteActor aid (speedNegate delta)
+  UpdTrajectoryActor aid fromT toT -> Just $ UpdTrajectoryActor aid toT fromT
+  UpdColorActor aid fromCol toCol -> Just $ UpdColorActor aid toCol fromCol
+  UpdQuitFaction fid mb fromSt toSt -> Just $ UpdQuitFaction fid mb toSt fromSt
+  UpdLeadFaction fid source target -> Just $ UpdLeadFaction fid target source
+  UpdDiplFaction fid1 fid2 fromDipl toDipl ->
+    Just $ UpdDiplFaction fid1 fid2 toDipl fromDipl
+  UpdAutoFaction fid st -> Just $ UpdAutoFaction fid (not st)
+  UpdRecordKill aid k -> Just $ UpdRecordKill aid (-k)
+  UpdAlterTile lid p fromTile toTile ->
+    Just $ UpdAlterTile lid p toTile fromTile
+  UpdSearchTile aid p fromTile toTile ->
+    Just $ UpdSearchTile aid p toTile fromTile
+  UpdSpotTile lid ts -> Just $ UpdLoseTile lid ts
+  UpdLoseTile lid ts -> Just $ UpdSpotTile lid ts
+  UpdAlterSmell lid p fromSm toSm -> Just $ UpdAlterSmell lid p toSm fromSm
+  UpdSpotSmell lid sms -> Just $ UpdLoseSmell lid sms
+  UpdLoseSmell lid sms -> Just $ UpdSpotSmell lid sms
+  UpdAgeLevel lid t -> Just $ UpdAgeLevel lid (timeNegate t)
+  UpdAgeGame t -> Just $ UpdAgeGame (timeNegate t)
+  UpdDiscover lid p iid ik -> Just $ UpdCover lid p iid ik
+  UpdCover lid p iid ik -> Just $ UpdDiscover lid p iid ik
+  UpdPerception lid outPer inPer -> Just $ UpdPerception lid inPer outPer
+  UpdRestart{} -> Just cmd  -- here history ends; change direction
+  UpdRestartServer{} -> Just cmd  -- here history ends; change direction
+  UpdResume{} -> Nothing
+  UpdResumeServer{} -> Nothing
+  UpdKillExit{} -> Nothing
+  UpdSaveBkp -> Nothing
+  UpdMsgAll{} -> Nothing  -- only generated by @cmdAtomicFilterCli@
 
 undoSfxAtomic :: SfxAtomic -> SfxAtomic
 undoSfxAtomic cmd = case cmd of
-  StrikeD source target item b -> RecoilD source target item b
-  RecoilD source target item b -> StrikeD source target item b
-  ProjectD aid iid -> CatchD aid iid
-  CatchD aid iid -> ProjectD aid iid
-  ActivateD aid iid -> CheckD aid iid
-  CheckD aid iid -> ActivateD aid iid
-  TriggerD aid p feat -> ShunD aid p feat
-  ShunD aid p feat -> TriggerD aid p feat
-  EffectD{} -> cmd  -- not ideal?
-  MsgFidD{} -> cmd
-  MsgAllD{} -> cmd
-  DisplayPushD{} -> cmd
-  DisplayDelayD{} -> cmd
-  RecordHistoryD{} -> cmd
+  SfxStrike source target item b -> SfxRecoil source target item b
+  SfxRecoil source target item b -> SfxStrike source target item b
+  SfxProject aid iid -> SfxCatch aid iid
+  SfxCatch aid iid -> SfxProject aid iid
+  SfxActivate aid iid -> SfxCheck aid iid
+  SfxCheck aid iid -> SfxActivate aid iid
+  SfxTrigger aid p feat -> SfxShun aid p feat
+  SfxShun aid p feat -> SfxTrigger aid p feat
+  SfxEffect{} -> cmd  -- not ideal?
+  SfxMsgFid{} -> cmd
+  SfxMsgAll{} -> cmd
+  SfxDisplayPush{} -> cmd
+  SfxDisplayDelay{} -> cmd
+  SfxRecordHistory{} -> cmd
 
 undoCmdAtomic :: CmdAtomic -> Maybe CmdAtomic
 undoCmdAtomic (UpdAtomic cmd) = fmap UpdAtomic $ undoUpdAtomic cmd
