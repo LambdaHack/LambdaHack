@@ -19,7 +19,7 @@ import Data.Ratio
 import Data.Text (Text)
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Animation

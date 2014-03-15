@@ -16,7 +16,7 @@ import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Atomic.HandleCmdAtomicWrite
 import Game.LambdaHack.Atomic.MonadStateWrite
 import Game.LambdaHack.Atomic.PosCmdAtomicRead
-import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind

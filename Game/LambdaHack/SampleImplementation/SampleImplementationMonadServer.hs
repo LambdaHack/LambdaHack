@@ -18,7 +18,7 @@ import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Atomic.HandleAndBroadcastWrite
 import Game.LambdaHack.Atomic.MonadAtomic
 import Game.LambdaHack.Atomic.MonadStateWrite
-import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.MonadStateRead
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Server.CommonServer

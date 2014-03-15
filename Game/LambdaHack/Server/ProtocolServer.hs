@@ -31,7 +31,7 @@ import Game.LambdaHack.Utils.Thread
 import System.IO.Unsafe (unsafePerformIO)
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Request

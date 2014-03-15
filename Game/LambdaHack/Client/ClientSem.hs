@@ -20,7 +20,7 @@ import Game.LambdaHack.Client.RunAction
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.Strategy
 import Game.LambdaHack.Client.StrategyAction
-import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction

@@ -3,24 +3,41 @@ module Game.LambdaHack.Atomic.MonadStateWrite
   ( MonadStateWrite(..)
   , updateLevel, updateActor, updateFaction
   , insertItemContainer, deleteItemContainer
+  , updatePrio, updateFloor, updateTile, updateSmell
   ) where
 
 import Control.Exception.Assert.Sugar
 import qualified Data.EnumMap.Strict as EM
 
-import Game.LambdaHack.Common.Action
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 
 class MonadStateRead m => MonadStateWrite m where
   modifyState :: (State -> State) -> m ()
   putState    :: State -> m ()
+
+-- | Update the actor time priority queue.
+updatePrio :: (ActorPrio -> ActorPrio) -> Level -> Level
+updatePrio f lvl = lvl {lprio = f (lprio lvl)}
+
+-- | Update the items on the ground map.
+updateFloor :: (ItemFloor -> ItemFloor) -> Level -> Level
+updateFloor f lvl = lvl {lfloor = f (lfloor lvl)}
+
+-- | Update the tile map.
+updateTile :: (TileMap -> TileMap) -> Level -> Level
+updateTile f lvl = lvl {ltile = f (ltile lvl)}
+
+-- | Update the smell map.
+updateSmell :: (SmellMap -> SmellMap) -> Level -> Level
+updateSmell f lvl = lvl {lsmell = f (lsmell lvl)}
 
 -- | Update a given level data within state.
 updateLevel :: MonadStateWrite m => LevelId -> (Level -> Level) -> m ()

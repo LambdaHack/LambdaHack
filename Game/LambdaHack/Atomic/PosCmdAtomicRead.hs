@@ -11,7 +11,7 @@ import Control.Exception.Assert.Sugar
 import qualified Data.EnumSet as ES
 
 import Game.LambdaHack.Atomic.CmdAtomic
-import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction

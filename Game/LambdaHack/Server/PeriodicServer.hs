@@ -15,7 +15,7 @@ import Data.Maybe
 import Data.Text (Text)
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color

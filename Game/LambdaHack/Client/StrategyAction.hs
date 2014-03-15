@@ -19,7 +19,7 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.Strategy
 import Game.LambdaHack.Common.Ability (Ability)
 import qualified Game.LambdaHack.Common.Ability as Ability
-import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Effect as Effect

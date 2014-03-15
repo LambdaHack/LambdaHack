@@ -13,7 +13,7 @@ import Data.Maybe
 import qualified Data.Ord as Ord
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction

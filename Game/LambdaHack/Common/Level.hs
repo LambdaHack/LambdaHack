@@ -4,10 +4,7 @@ module Game.LambdaHack.Common.Level
   ( -- * Dungeon
     LevelId, Dungeon, ascendInBranch
     -- * The @Level@ type and its components
-  , SmellMap, ItemFloor, TileMap
-  , Level(..)
-    -- * Level update
-  , updatePrio, updateSmell, updateFloor, updateTile
+  , Level(..), ActorPrio, ItemFloor, TileMap, SmellMap
     -- * Level query
   , at, atI, checkAccess, checkDoorAccess, accessible, accessibleDir
   , isSecretPos, hideTile
@@ -88,22 +85,6 @@ data Level = Level
   , lescape   :: !Bool       -- ^ has an Effect.Escape tile
   }
   deriving (Show, Eq)
-
--- | Update the actor time priority queue.
-updatePrio :: (ActorPrio -> ActorPrio) -> Level -> Level
-updatePrio f lvl = lvl {lprio = f (lprio lvl)}
-
--- | Update the smell map.
-updateSmell :: (SmellMap -> SmellMap) -> Level -> Level
-updateSmell f lvl = lvl {lsmell = f (lsmell lvl)}
-
--- | Update the items on the ground map.
-updateFloor :: (ItemFloor -> ItemFloor) -> Level -> Level
-updateFloor f lvl = lvl {lfloor = f (lfloor lvl)}
-
--- | Update the tile map.
-updateTile :: (TileMap -> TileMap) -> Level -> Level
-updateTile f lvl = lvl {ltile = f (ltile lvl)}
 
 assertSparseItems :: ItemFloor -> ItemFloor
 assertSparseItems m =

@@ -40,7 +40,7 @@ import Text.Read
 import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Ability (Ability)
-import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Animation

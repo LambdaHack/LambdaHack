@@ -42,7 +42,7 @@ import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.Draw
 import Game.LambdaHack.Client.MonadClient hiding (liftIO)
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Animation

@@ -24,7 +24,7 @@ import Data.Maybe
 
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Kind as Kind

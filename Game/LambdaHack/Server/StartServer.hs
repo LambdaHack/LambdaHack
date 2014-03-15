@@ -19,7 +19,7 @@ import Data.Tuple (swap)
 import qualified System.Random as R
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Common.Action
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Animation
 import qualified Game.LambdaHack.Common.Color as Color

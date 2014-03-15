@@ -1,6 +1,6 @@
 -- | Game action monads and basic building blocks for human and computer
 -- player actions. Has no access to the the main action type.
-module Game.LambdaHack.Common.Action
+module Game.LambdaHack.Common.MonadStateRead
   ( MonadStateRead(..)
   , getLevel, nUI, posOfContainer, posOfAid, actorConts
   ) where
