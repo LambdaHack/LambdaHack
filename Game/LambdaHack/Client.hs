@@ -9,13 +9,11 @@ module Game.LambdaHack.Client
 
 import Control.Exception.Assert.Sugar
 import Control.Monad
-import Data.Maybe
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Client.AtomicSemCli
 import Game.LambdaHack.Client.Binding
-import Game.LambdaHack.Client.ClientSem
 import Game.LambdaHack.Client.Config
+import Game.LambdaHack.Client.HandleResponseClient
 import Game.LambdaHack.Client.LoopAction
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.MonadClientUI
@@ -29,44 +27,6 @@ import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Frontend
-
-storeUndo :: MonadClient m => CmdAtomic -> m ()
-storeUndo _atomic =
-  maybe skip (\a -> modifyClient $ \cli -> cli {sundo = a : sundo cli})
-    $ Nothing   -- TODO: undoCmdAtomic atomic
-
-handleResponseAI :: (MonadAtomic m, MonadClientWriteRequest RequestTimed m)
-                 => ResponseAI -> m ()
-handleResponseAI cmd = case cmd of
-  RespUpdAtomicAI cmdA -> do
-    cmds <- cmdAtomicFilterCli cmdA
-    mapM_ (\c -> cmdAtomicSemCli c
-                 >> execUpdAtomic c) cmds
-    mapM_ (storeUndo . UpdAtomic) cmds
-  RespQueryAI aid -> do
-    cmdC <- queryAI aid
-    sendRequest cmdC
-  RespPingAI -> pongAI
-
-handleResponseUI :: ( MonadAtomic m, MonadClientUI m
-                    , MonadClientWriteRequest Request m )
-                 => ResponseUI -> m ()
-handleResponseUI cmd = case cmd of
-  RespUpdAtomicUI cmdA -> do
-    cmds <- cmdAtomicFilterCli cmdA
-    mapM_ (\c -> cmdAtomicSemCli c
-                 >> execUpdAtomic c
-                 >> drawRespUpdAtomicUI False c) cmds
-    mapM_ (storeUndo . UpdAtomic) cmds  -- TODO: only store cmdA?
-  RespSfxAtomicUI sfx -> do
-    drawRespSfxAtomicUI False sfx
-    storeUndo $ SfxAtomic sfx
-  RespQueryUI aid -> do
-    mleader <- getsClient _sleader
-    assert (isJust mleader `blame` "query without leader" `twith` cmd) skip
-    cmdH <- queryUI aid
-    sendRequest cmdH
-  RespPingUI -> pongUI
 
 -- | Wire together game content, the main loop of game clients,
 -- the main game loop assigned to this frontend (possibly containing
