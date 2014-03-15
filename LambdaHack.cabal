@@ -75,6 +75,9 @@ library
                       Game.LambdaHack.Client.AI
                       Game.LambdaHack.Client.AI.HandleAbilityClient,
                       Game.LambdaHack.Client.AI.Strategy,
+                      Game.LambdaHack.Client.Bfs,
+                      Game.LambdaHack.Client.BfsClient,
+                      Game.LambdaHack.Client.CommonClient,
                       Game.LambdaHack.Client.HandleCmdAtomicClient,
                       Game.LambdaHack.Client.HandleResponseClient,
                       Game.LambdaHack.Client.ItemSlot,

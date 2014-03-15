@@ -19,6 +19,7 @@ import qualified System.Random as R
 import System.Time
 
 import Game.LambdaHack.Atomic
+import Game.LambdaHack.Client.Bfs
 import Game.LambdaHack.Client.ItemSlot
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState

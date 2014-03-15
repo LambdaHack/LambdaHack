@@ -14,6 +14,9 @@ import Data.Ord
 import qualified Data.Traversable as Traversable
 
 import Game.LambdaHack.Client.AI.Strategy
+import Game.LambdaHack.Client.Bfs
+import Game.LambdaHack.Client.BfsClient
+import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Ability (Ability)

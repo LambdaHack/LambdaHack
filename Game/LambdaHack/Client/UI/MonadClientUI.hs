@@ -39,6 +39,8 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import qualified NLP.Miniutter.English as MU
 import System.Time
 
+import Game.LambdaHack.Client.BfsClient
+import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.ItemSlot
 import Game.LambdaHack.Client.MonadClient hiding (liftIO)
 import Game.LambdaHack.Client.State

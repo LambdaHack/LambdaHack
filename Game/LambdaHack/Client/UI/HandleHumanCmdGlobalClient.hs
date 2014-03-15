@@ -20,6 +20,8 @@ import Data.Monoid
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
+import Game.LambdaHack.Client.BfsClient
+import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Config
