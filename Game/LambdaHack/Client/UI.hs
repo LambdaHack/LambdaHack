@@ -22,7 +22,9 @@ import Game.LambdaHack.Client.UI.DisplayCmdAtomicClient
 import Game.LambdaHack.Client.UI.HandleHumanCmdClient
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
+import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.RunClient
+import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Animation
 import Game.LambdaHack.Common.Faction
@@ -48,7 +50,7 @@ queryUI aid = do
     Nothing -> humanCommand Nothing
     Just RunParams{runMembers} | isSpawnFact fact && runMembers /= [aid] -> do
       stopRunning
-      Config{configRunStopMsgs} <- getConfig
+      Config{configRunStopMsgs} <- askConfig
       let msg = if configRunStopMsgs
                 then Just $ "Run stop: spawner leader change"
                 else Nothing
@@ -58,7 +60,7 @@ queryUI aid = do
       case runOutcome of
         Left stopMsg -> do
           stopRunning
-          Config{configRunStopMsgs} <- getConfig
+          Config{configRunStopMsgs} <- askConfig
           let msg = if configRunStopMsgs
                     then Just $ "Run stop:" <+> stopMsg
                     else Nothing

@@ -28,7 +28,9 @@ import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.HandleHumanCmdLocalClient
 import Game.LambdaHack.Client.UI.InventoryClient
 import Game.LambdaHack.Client.UI.MonadClientUI
+import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.RunClient
+import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Animation
@@ -310,7 +312,7 @@ applyHuman ts = do
 -- | Ask for a direction and alter a tile, if possible.
 alterDirHuman :: MonadClientUI m => [Trigger] -> m (SlideOrCmd RequestTimed)
 alterDirHuman ts = do
-  Config{configVi, configLaptop} <- getConfig
+  Config{configVi, configLaptop} <- askConfig
   let verb1 = case ts of
         [] -> "alter"
         tr : _ -> verb tr
@@ -494,7 +496,7 @@ gameRestartHuman t = do
     else do
       leader <- getLeaderUI
       DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
-      Config{configHeroNames} <- getConfig
+      Config{configHeroNames} <- askConfig
       return $ Right $ ReqGameRestart leader t sdifficultyCli configHeroNames
 
 -- * GameExit; does not take time

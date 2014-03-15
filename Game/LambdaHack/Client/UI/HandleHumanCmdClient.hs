@@ -8,6 +8,7 @@ import Data.Monoid
 import Game.LambdaHack.Client.UI.HandleHumanCmdGlobalClient
 import Game.LambdaHack.Client.UI.HandleHumanCmdLocalClient
 import Game.LambdaHack.Client.UI.MonadClientUI
+import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Common.HumanCmd
 import Game.LambdaHack.Common.Request
 
