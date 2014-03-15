@@ -14,9 +14,6 @@ Once the few basic command keys and on-screen symbols are learned,
 mastery and enjoyment of the game is the matter of tactical skill
 and literary imagination. To be honest, a lot of imagination is required
 for this rudimentary game, but it's playable and winnable.
-The game also features experimental multiplayer cooperative and competitive
-modes, but they are troublesome to play with the shared-screen
-and shared-keyboard interface available at this time.
 Contributions welcome.
 
 
@@ -183,8 +180,6 @@ Assorted remaining keys and commands follow.
 
 Commands for saving and exiting the current game, starting a new game, etc.,
 are listed in the Main Menu, brought up by the `ESC` key.
-All but the campaign and skirmish game modes are experimental
-and feature multiple human or computer players (allied or not).
 Game difficulty setting affects hitpoints at birth for any actors
 of any UI-using faction.
 
@@ -192,8 +187,6 @@ of any UI-using faction.
                 CTRL-x         save and exit
                 CTRL-a         new campaign game
                 CTRL-k         new skirmish game
-                CTRL-v         new PvP game
-                CTRL-o         new Coop game
                 CTRL-e         new defense game
                 CTRL-d         cycle next game difficulty
 

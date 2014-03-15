@@ -25,8 +25,6 @@ standardKeys = KeyKind
       [ ("CTRL-x", (CmdMenu, GameExit))
       , ("CTRL-a", (CmdMenu, GameRestart "campaign"))
       , ("CTRL-k", (CmdMenu, GameRestart "skirmish"))
-      , ("CTRL-v", (CmdMenu, GameRestart "PvP"))
-      , ("CTRL-o", (CmdMenu, GameRestart "Coop"))
       , ("CTRL-e", (CmdMenu, GameRestart "defense"))
       , ("CTRL-d", (CmdMenu, GameDifficultyCycle))
 
