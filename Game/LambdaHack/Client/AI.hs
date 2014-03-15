@@ -12,6 +12,7 @@ import Data.Ord
 import qualified Data.Text as T
 
 import Game.LambdaHack.Client.AI.HandleAbilityClient
+import Game.LambdaHack.Client.AI.PickActorTargetClient
 import Game.LambdaHack.Client.AI.Strategy
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
