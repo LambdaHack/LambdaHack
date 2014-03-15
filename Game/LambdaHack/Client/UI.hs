@@ -12,11 +12,11 @@ import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.MonadClientUI
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Client.UI.DrawClient
 import Game.LambdaHack.Client.UI.HandleHumanCmdClient
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.RunClient
 import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.Animation
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.HumanCmd
 import qualified Game.LambdaHack.Common.Key as K
@@ -57,7 +57,7 @@ queryUI aid = do
           humanCommand msg
         Right (paramNew, runCmd) -> do
           modifyClient $ \cli -> cli {srunning = Just paramNew}
-          return $! ReqTimed runCmd
+          return $ ReqTimed runCmd
 
 -- | Determine and process the next human player command. The argument is
 -- the last stop message due to running, if any.

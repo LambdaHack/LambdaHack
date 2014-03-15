@@ -12,7 +12,7 @@ module Game.LambdaHack.Client.MonadClient
   , partAidLeader, partActorLeader, unexploredDepth
   , getCacheBfsAndPath, getCacheBfs, accessCacheBfs
   , closestUnknown, closestSmell, furthestKnown, closestTriggers
-  , closestItems, closestFoes, actorAbilities
+  , closestItems, closestFoes, actorAbilities, updateItemSlot
   , debugPrint
   ) where
 
@@ -32,25 +32,28 @@ import Data.Maybe
 import Data.Ord
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Tuple
 import qualified NLP.Miniutter.English as MU
 import System.Directory
 import System.FilePath
 import Text.Read
 
 import Game.LambdaHack.Client.Config
+import Game.LambdaHack.Client.ItemSlot
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Ability (Ability)
-import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Animation
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.HumanCmd
+import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Key as K
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
@@ -541,3 +544,21 @@ actorAbilities aid mleader = do
         | Just aid == mleader = fAbilityLeader $ fokind $ gkind fact
         | otherwise = fAbilityOther $ fokind $ gkind fact
   return $! acanDo (okind $ bkind body) `intersect` factionAbilities
+
+updateItemSlot :: MonadClient m => ActorId -> ItemId -> m Bool
+updateItemSlot aid iid = do
+  b <- getsState $ getActorBody aid
+  slots <- getsClient sslots
+  case lookup iid $ map swap $ EM.assocs slots of
+    Just _ -> return True  -- slot already assigned
+    Nothing -> do
+      item <- getsState $ getItemBody iid
+      freeSlot <- getsClient sfreeSlot
+      mc <- getsState $ assignSlot item b slots freeSlot
+      case mc of
+        Just l2 -> do
+          modifyClient $ \cli ->
+            cli { sslots = EM.insert l2 iid (sslots cli)
+                , sfreeSlot = max l2 (sfreeSlot cli) }
+          return True
+        Nothing -> return False  -- overfull

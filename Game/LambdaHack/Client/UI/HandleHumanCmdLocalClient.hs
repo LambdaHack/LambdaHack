@@ -14,7 +14,7 @@ module Game.LambdaHack.Client.UI.HandleHumanCmdLocalClient
   , tgtUnknownHuman, tgtItemHuman, tgtStairHuman, tgtAscendHuman
   , epsIncrHuman, tgtClearHuman, cancelHuman, acceptHuman
     -- * Helper definitions
-  , pickLeader, lookAt
+  , pickLeader
   ) where
 
 -- Cabal
@@ -30,7 +30,6 @@ import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Monoid
 import Data.Ord
-import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Version
 import Game.LambdaHack.Frontend (frontendName)
@@ -48,7 +47,6 @@ import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import qualified Game.LambdaHack.Common.HumanCmd as HumanCmd
-import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Key as K
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -460,50 +458,6 @@ moveCursorHuman dir n = do
           _ -> TPoint lidV newPos
     modifyClient $ \cli -> cli {scursor = tgt}
     doLook
-
--- TODO: probably move somewhere (Level?)
--- | Produces a textual description of the terrain and items at an already
--- explored position. Mute for unknown positions.
--- The detailed variant is for use in the targeting mode.
-lookAt :: MonadClientUI m
-       => Bool       -- ^ detailed?
-       -> Text       -- ^ how to start tile description
-       -> Bool       -- ^ can be seen right now?
-       -> Point      -- ^ position to describe
-       -> ActorId    -- ^ the actor that looks
-       -> Text       -- ^ an extra sentence to print
-       -> m Text
-lookAt detailed tilePrefix canSee pos aid msg = do
-  Kind.COps{coitem, cotile=cotile@Kind.Ops{okind}} <- getsState scops
-  lidV <- viewedLevel
-  lvl <- getLevel lidV
-  subject <- partAidLeader aid
-  s <- getState
-  let is = lvl `atI` pos
-      verb = MU.Text $ if canSee then "notice" else "remember"
-  disco <- getsClient sdisco
-  let nWs (iid, k) = partItemWs coitem disco k (getItemBody iid s)
-      isd = case detailed of
-              _ | EM.size is == 0 -> ""
-              _ | EM.size is <= 2 ->
-                makeSentence [ MU.SubjectVerbSg subject verb
-                             , MU.WWandW $ map nWs $ EM.assocs is]
-              True -> "Items:"
-              _ -> "Items here."
-      tile = lvl `at` pos
-      obscured | tile /= hideTile cotile lvl pos = "partially obscured"
-               | otherwise = ""
-      tileText = obscured <+> tname (okind tile)
-      tilePart | T.null tilePrefix = MU.Text tileText
-               | otherwise = MU.AW $ MU.Text tileText
-      tileDesc = [MU.Text tilePrefix, tilePart]
-  if not (null (Tile.causeEffects cotile tile)) then
-    return $! makeSentence ("activable:" : tileDesc)
-              <+> msg <+> isd
-  else if detailed then
-    return $! makeSentence tileDesc
-              <+> msg <+> isd
-  else return $! msg <+> isd
 
 -- | Perform look around in the current position of the cursor.
 -- Assumes targeting mode and so assumes that a leader is picked.

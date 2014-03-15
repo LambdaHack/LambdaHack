@@ -13,10 +13,9 @@ import Data.Maybe
 import Data.Ord
 import qualified Data.Traversable as Traversable
 
-import Game.LambdaHack.Client.UI.InventoryClient
+import Game.LambdaHack.Client.AI.Strategy
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Client.AI.Strategy
 import Game.LambdaHack.Common.Ability (Ability)
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor

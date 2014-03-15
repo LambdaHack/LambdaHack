@@ -1,7 +1,7 @@
 -- | Inventory management.
 -- TODO: document
 module Game.LambdaHack.Client.UI.InventoryClient
-  ( floorItemOverlay, itemOverlay, getGroupItem, getAnyItem, updateItemSlot
+  ( floorItemOverlay, getGroupItem, getAnyItem
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -12,7 +12,6 @@ import Data.List
 import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Tuple
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.ItemSlot
@@ -43,19 +42,6 @@ floorItemOverlay bag = do
                     , partItemWs coitem disco k (getItemBody iid s) ]
          <> " "
   return $! toOverlay $ map pr is
-
--- | Create a list of item names.
-itemOverlay :: MonadClient m => ItemBag -> ItemSlots -> m Overlay
-itemOverlay bag sl = do
-  Kind.COps{coitem} <- getsState scops
-  s <- getState
-  disco <- getsClient sdisco
-  let pr (l, iid) =
-         makePhrase [ slotLabel l
-                    , partItemWs coitem disco (bag EM.! iid)
-                                 (getItemBody iid s) ]
-         <> " "
-  return $! toOverlay $ map pr $ EM.assocs sl
 
 allItemsName :: Text
 allItemsName = "Items"
@@ -228,21 +214,3 @@ getItem askWhenLone verb p ptext cLegalRaw askNumber allNumber = do
                 in return $ Right (iidItem, (k, cCur))
               _ -> assert `failure` "unexpected key:" `twith` akm
   ask
-
-updateItemSlot :: MonadClient m => ActorId -> ItemId -> m Bool
-updateItemSlot aid iid = do
-  b <- getsState $ getActorBody aid
-  slots <- getsClient sslots
-  case lookup iid $ map swap $ EM.assocs slots of
-    Just _ -> return True  -- slot already assigned
-    Nothing -> do
-      item <- getsState $ getItemBody iid
-      freeSlot <- getsClient sfreeSlot
-      mc <- getsState $ assignSlot item b slots freeSlot
-      case mc of
-        Just l2 -> do
-          modifyClient $ \cli ->
-            cli { sslots = EM.insert l2 iid (sslots cli)
-                , sfreeSlot = max l2 (sfreeSlot cli) }
-          return True
-        Nothing -> return False  -- overfull

@@ -9,7 +9,6 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Client.UI.DrawClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.MonadClientUI
 import Game.LambdaHack.Client.ProtocolClient

@@ -2,6 +2,7 @@
 -- | Screen frames and animations.
 module Game.LambdaHack.Common.Animation
   ( SingleFrame(..), decodeLine, encodeLine
+  , ColorMode(..)
   , overlayOverlay, xsizeSingleFrame, ysizeSingleFrame
   , Animation, Frames, renderAnim, restrictAnim
   , twirlSplash, blockHit, blockMiss, deathBody, swapPlaces, fadeout
@@ -49,6 +50,11 @@ data SingleFrame = SingleFrame
   deriving (Eq, Show, Generic)
 
 instance Binary SingleFrame
+
+-- | Color mode for the display.
+data ColorMode =
+    ColorFull  -- ^ normal, with full colours
+  | ColorBW    -- ^ black+white only
 
 -- | Overlays the @sfTop@ and @sfBottom@ fields onto the @sfLevel@ field.
 -- The resulting frame has empty @sfTop@ and @sfBottom@.

@@ -23,7 +23,7 @@ module Game.LambdaHack.Client.MonadClientUI
   , tryTakeMVarSescMVar
   , leaderTgtToPos, leaderTgtAims, cursorToPos, askBinding, syncFrames
   , debugPrint
-  , SlideOrCmd, failWith, failSlides, failSer
+  , SlideOrCmd, failWith, failSlides, failSer, lookAt, itemOverlay
   ) where
 
 import Control.Concurrent
@@ -35,28 +35,33 @@ import Data.Maybe
 import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified Game.LambdaHack.Common.Kind as Kind
+import qualified NLP.Miniutter.English as MU
 import System.Time
 
-import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.Config
-import Game.LambdaHack.Client.UI.DrawClient
+import Game.LambdaHack.Client.ItemSlot
 import Game.LambdaHack.Client.MonadClient hiding (liftIO)
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Common.MonadStateRead
+import Game.LambdaHack.Client.UI.DrawClient
+import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Animation
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
+import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Content.ModeKind
+import Game.LambdaHack.Content.TileKind
 import qualified Game.LambdaHack.Frontend as Frontend
-
 
 -- | The information that is constant across a client playing session,
 -- including many consecutive games in a single session,
@@ -493,3 +498,60 @@ failSlides slides = do
 
 failSer :: MonadClientUI m => ReqFailure -> m (SlideOrCmd a)
 failSer = failWith . showReqFailure
+
+-- TODO: probably move somewhere (Level?)
+-- | Produces a textual description of the terrain and items at an already
+-- explored position. Mute for unknown positions.
+-- The detailed variant is for use in the targeting mode.
+lookAt :: MonadClientUI m
+       => Bool       -- ^ detailed?
+       -> Text       -- ^ how to start tile description
+       -> Bool       -- ^ can be seen right now?
+       -> Point      -- ^ position to describe
+       -> ActorId    -- ^ the actor that looks
+       -> Text       -- ^ an extra sentence to print
+       -> m Text
+lookAt detailed tilePrefix canSee pos aid msg = do
+  Kind.COps{coitem, cotile=cotile@Kind.Ops{okind}} <- getsState scops
+  lidV <- viewedLevel
+  lvl <- getLevel lidV
+  subject <- partAidLeader aid
+  s <- getState
+  let is = lvl `atI` pos
+      verb = MU.Text $ if canSee then "notice" else "remember"
+  disco <- getsClient sdisco
+  let nWs (iid, k) = partItemWs coitem disco k (getItemBody iid s)
+      isd = case detailed of
+              _ | EM.size is == 0 -> ""
+              _ | EM.size is <= 2 ->
+                makeSentence [ MU.SubjectVerbSg subject verb
+                             , MU.WWandW $ map nWs $ EM.assocs is]
+              True -> "Items:"
+              _ -> "Items here."
+      tile = lvl `at` pos
+      obscured | tile /= hideTile cotile lvl pos = "partially obscured"
+               | otherwise = ""
+      tileText = obscured <+> tname (okind tile)
+      tilePart | T.null tilePrefix = MU.Text tileText
+               | otherwise = MU.AW $ MU.Text tileText
+      tileDesc = [MU.Text tilePrefix, tilePart]
+  if not (null (Tile.causeEffects cotile tile)) then
+    return $! makeSentence ("activable:" : tileDesc)
+              <+> msg <+> isd
+  else if detailed then
+    return $! makeSentence tileDesc
+              <+> msg <+> isd
+  else return $! msg <+> isd
+
+-- | Create a list of item names.
+itemOverlay :: MonadClient m => ItemBag -> ItemSlots -> m Overlay
+itemOverlay bag sl = do
+  Kind.COps{coitem} <- getsState scops
+  s <- getState
+  disco <- getsClient sdisco
+  let pr (l, iid) =
+         makePhrase [ slotLabel l
+                    , partItemWs coitem disco (bag EM.! iid)
+                                 (getItemBody iid s) ]
+         <> " "
+  return $! toOverlay $ map pr $ EM.assocs sl
