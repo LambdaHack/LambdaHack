@@ -2,7 +2,7 @@
 -- | Re-export the operations of the chosen raw frontend
 -- (determined at compile time with cabal flags).
 module Game.LambdaHack.Frontend.Chosen
-  ( Frontend(..), chosenStartup, stdStartup, noStartup
+  ( Frontend(..), chosenStartup, stdStartup, nullStartup
   , frontendName
   ) where
 
@@ -54,8 +54,8 @@ stdStartup fdebugCli cont =
       , fdebugCli
       }
 
-noStartup :: DebugModeCli -> (Frontend -> IO ()) -> IO ()
-noStartup fdebugCli cont =
+nullStartup :: DebugModeCli -> (Frontend -> IO ()) -> IO ()
+nullStartup fdebugCli cont =
     cont $ Frontend
       { fdisplay = \_ _ -> return ()
       , fpromptGetKey = \_ -> return K.escKey

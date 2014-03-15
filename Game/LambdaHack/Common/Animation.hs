@@ -269,9 +269,9 @@ data DebugModeCli = DebugModeCli
   , ssavePrefixCli :: !(Maybe String)
       -- ^ Prefix of the save game file.
   , sfrontendStd   :: !Bool
-      -- ^ Whether to use the stdout/stdin frontend.
-  , sfrontendNo    :: !Bool
-      -- ^ Whether to use no frontend at all (for benchmarking, etc.).
+      -- ^ Whether to use the stdout/stdin frontend for all clients.
+  , sfrontendNull  :: !Bool
+      -- ^ Whether to use void (no input/output) frontend for all clients.
   , sdbgMsgCli     :: !Bool
       -- ^ Show clients' internal debug messages.
   }
@@ -290,6 +290,6 @@ defDebugModeCli = DebugModeCli
   , sdifficultyCli = difficultyDefault
   , ssavePrefixCli = Nothing
   , sfrontendStd = False
-  , sfrontendNo = False
+  , sfrontendNull = False
   , sdbgMsgCli = False
   }

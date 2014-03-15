@@ -19,7 +19,6 @@ import Data.Tuple (swap)
 import qualified System.Random as R
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Animation
 import qualified Game.LambdaHack.Common.Color as Color
@@ -30,6 +29,7 @@ import qualified Game.LambdaHack.Common.HighScore as HighScore
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
@@ -137,7 +137,7 @@ gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}}
           sdebug mrandom = do
   dungeonSeed <- getSetGen $ sdungeonRng sdebug `mplus` mrandom
   srandom <- getSetGen $ smainRng sdebug `mplus` mrandom
-  scoreTable <- if sfrontendNo $ sdebugCli sdebug then
+  scoreTable <- if sfrontendNull $ sdebugCli sdebug then
                   return HighScore.empty
                 else
                   restoreScore cops

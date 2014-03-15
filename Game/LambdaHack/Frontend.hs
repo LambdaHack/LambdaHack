@@ -59,7 +59,7 @@ data ConnMulti = ConnMulti
 
 startupF :: DebugModeCli -> (Maybe (MVar ()) -> IO ()) -> IO ()
 startupF dbg cont =
-  (if sfrontendNo dbg then noStartup
+  (if sfrontendNull dbg then nullStartup
    else if sfrontendStd dbg then stdStartup
         else chosenStartup) dbg $ \fs -> do
     let debugPrint t = when (sdbgMsgCli dbg) $ do
