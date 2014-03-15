@@ -7,7 +7,7 @@ module Game.LambdaHack.Client.MonadClient
                , liftIO  -- exposed only to be implemented, not used
                )
     -- * Assorted primitives
-  , mkConfig, restoreGame, removeServerSave, getPerFid
+  , restoreGame, removeServerSave, getPerFid
   , rndToAction, aidTgtToPos, aidTgtAims, makeLine, saveName
   , partAidLeader, partActorLeader, unexploredDepth
   , getCacheBfsAndPath, getCacheBfs, accessCacheBfs
@@ -17,28 +17,20 @@ module Game.LambdaHack.Client.MonadClient
   ) where
 
 import Control.Arrow ((&&&))
-import Control.DeepSeq
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Control.Monad.State as St
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import qualified Data.Ini as Ini
-import qualified Data.Ini.Reader as Ini
-import qualified Data.Ini.Types as Ini
 import Data.List
-import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Ord
 import Data.Text (Text)
-import qualified Data.Text as T
 import Data.Tuple
 import qualified NLP.Miniutter.English as MU
 import System.Directory
 import System.FilePath
-import Text.Read
 
-import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.ItemSlot
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Ability (Ability)
@@ -47,14 +39,11 @@ import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Animation
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.HumanCmd
 import Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.Key as K
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
-import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
@@ -151,65 +140,6 @@ partAidLeader :: MonadClient m => ActorId -> m MU.Part
 partAidLeader aid = do
   b <- getsState $ getActorBody aid
   partActorLeader aid b
-
-parseConfig :: Ini.Config -> Config
-parseConfig cfg =
-  let configCommands =
-        let mkCommand (ident, keydef) =
-              case stripPrefix "Macro_" ident of
-                Just _ ->
-                  let (key, def) = read keydef
-                  in (K.mkKM key, def :: (CmdCategory, HumanCmd))
-                Nothing -> assert `failure` "wrong macro id" `twith` ident
-            section = Ini.allItems "extra_commands" cfg
-        in map mkCommand section
-      configHeroNames =
-        let toNumber (ident, name) =
-              case stripPrefix "HeroName_" ident of
-                Just n -> (read n, T.pack name)
-                Nothing -> assert `failure` "wrong hero name id" `twith` ident
-            section = Ini.allItems "hero_names" cfg
-        in map toNumber section
-      getOption :: forall a. Read a => String -> a
-      getOption optionName =
-        let lookupFail :: forall b. String -> b
-            lookupFail err =
-              assert `failure` ("config file access failed:" <+> T.pack err)
-                     `twith` (optionName, cfg)
-            s = fromMaybe (lookupFail "") $ Ini.getOption "ui" optionName cfg
-        in either lookupFail id $ readEither s
-      configVi = getOption "movementViKeys_hjklyubn"
-      -- The option for Vi keys takes precendence,
-      -- because the laptop keys are the default.
-      configLaptop = not configVi && getOption "movementLaptopKeys_uk8o79jl"
-      configFont = getOption "font"
-      configHistoryMax = getOption "historyMax"
-      configMaxFps = getOption "maxFps"
-      configNoAnim = getOption "noAnim"
-      configRunStopMsgs = getOption "runStopMsgs"
-  in Config{..}
-
--- | Read and parse UI config file.
-mkConfig :: Kind.Ops RuleKind -> IO Config
-mkConfig corule = do
-  let stdRuleset = Kind.stdRuleset corule
-      cfgUIName = rcfgUIName stdRuleset
-      commentsUIDefault = init $ map (drop 2) $ lines $ rcfgUIDefault stdRuleset  -- TODO: init is a hack until Ini accepts empty files
-      sUIDefault = unlines commentsUIDefault
-      cfgUIDefault = either (assert `failure`) id $ Ini.parse sUIDefault
-  dataDir <- appDataDir
-  let userPath = dataDir </> cfgUIName <.> "ini"
-  cfgUser <- do
-    cpExists <- doesFileExist userPath
-    if not cpExists
-      then return Ini.emptyConfig
-      else do
-        sUser <- readFile userPath
-        return $! either (assert `failure`) id $ Ini.parse sUser
-  let cfgUI = M.unionWith M.union cfgUser cfgUIDefault  -- user cfg preferred
-      conf = parseConfig cfgUI
-  -- Catch syntax errors in complex expressions ASAP,
-  return $! deepseq conf conf
 
 -- | Get cached BFS data and path or, if not stored, generate,
 -- store and return. Due to laziness, they are not calculated until needed.

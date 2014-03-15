@@ -63,7 +63,7 @@ data StateClient = StateClient
   , sdisco       :: !Discovery     -- ^ remembered item discoveries
   , sfper        :: !FactionPers   -- ^ faction perception indexed by levels
   , srandom      :: !R.StdGen      -- ^ current random generator
-  , sconfigUI    :: Config       -- ^ client config (including initial RNG)
+  , sconfigUI    :: Config         -- ^ client config
   , slastKey     :: !(Maybe K.KM)  -- ^ last command key pressed
   , slastRecord  :: !LastRecord    -- ^ state of key sequence recording
   , slastPlay    :: ![K.KM]        -- ^ state of key sequence playback

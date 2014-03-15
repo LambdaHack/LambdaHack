@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.UI
   , queryUI
     -- TODO: get rid of those:
   , SessionUI(..), connFrontend
-  , syncFrames, tryTakeMVarSescMVar, displayMore, msgAdd, stdBinding
+  , syncFrames, tryTakeMVarSescMVar, displayMore, msgAdd, stdBinding, mkConfig
   ) where
 
 import Control.Exception.Assert.Sugar
