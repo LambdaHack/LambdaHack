@@ -1,10 +1,11 @@
 -- | Personal game configuration file type definitions.
 module Game.LambdaHack.Client.UI.Config
-  ( Config(..), mkConfig
+  ( Config(..), mkConfig, applyConfigToDebug
   ) where
 
 import Control.DeepSeq
 import Control.Exception.Assert.Sugar
+import Control.Monad
 import qualified Data.Ini as Ini
 import qualified Data.Ini.Reader as Ini
 import qualified Data.Ini.Types as Ini
@@ -13,6 +14,7 @@ import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
+import Game.LambdaHack.Common.Animation (DebugModeCli (..))
 import System.Directory
 import System.FilePath
 import Text.Read
@@ -102,3 +104,17 @@ mkConfig corule = do
       conf = parseConfig cfgUI
   -- Catch syntax errors in complex expressions ASAP,
   return $! deepseq conf conf
+
+applyConfigToDebug :: Config -> DebugModeCli -> Kind.Ops RuleKind
+                   -> DebugModeCli
+applyConfigToDebug sconfig sdebugCli corule =
+  let stdRuleset = Kind.stdRuleset corule
+  in (\dbg -> dbg {sfont =
+        sfont dbg `mplus` Just (configFont sconfig)}) .
+     (\dbg -> dbg {smaxFps =
+        smaxFps dbg `mplus` Just (configMaxFps sconfig)}) .
+     (\dbg -> dbg {snoAnim =
+        snoAnim dbg `mplus` Just (configNoAnim sconfig)}) .
+     (\dbg -> dbg {ssavePrefixCli =
+        ssavePrefixCli dbg `mplus` Just (rsavePrefix stdRuleset)})
+     $ sdebugCli

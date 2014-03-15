@@ -8,7 +8,6 @@ module Game.LambdaHack.Client
   ) where
 
 import Control.Exception.Assert.Sugar
-import Control.Monad
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.HandleResponseClient
@@ -23,7 +22,6 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.State
-import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Frontend
 
 -- | Wire together game content, the main loop of game clients,
@@ -53,18 +51,8 @@ exeFrontend executorUI executorAI
             cops@Kind.COps{corule} sdebugCli exeServer = do
   -- UI config reloaded at each client start.
   sconfig <- mkConfig corule
-  let stdRuleset = Kind.stdRuleset corule
-      !sbinding = stdBinding corule sconfig  -- evaluate to check for errors
-      sdebugMode =
-        (\dbg -> dbg {sfont =
-            sfont dbg `mplus` Just (configFont sconfig)}) .
-        (\dbg -> dbg {smaxFps =
-            smaxFps dbg `mplus` Just (configMaxFps sconfig)}) .
-        (\dbg -> dbg {snoAnim =
-            snoAnim dbg `mplus` Just (configNoAnim sconfig)}) .
-        (\dbg -> dbg {ssavePrefixCli =
-            ssavePrefixCli dbg `mplus` Just (rsavePrefix stdRuleset)})
-        $ sdebugCli
+  let !sbinding = stdBinding corule sconfig  -- evaluate to check for errors
+      sdebugMode = applyConfigToDebug sconfig sdebugCli corule
   defHist <- defHistory
   let exeClientUI = executorUI $ loopUI sdebugMode handleResponseUI
       exeClientAI = executorAI $ loopAI sdebugMode handleResponseAI

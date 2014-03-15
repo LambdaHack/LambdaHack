@@ -3,7 +3,7 @@ module Game.LambdaHack.Client.UI
   ( -- * Client UI monad
     MonadClientUI
   , queryUI
-  , Config(..), mkConfig
+  , Config, mkConfig, applyConfigToDebug
   , displayRespUpdAtomicUI, displayRespSfxAtomicUI
     -- TODO: get rid of those:
   , SessionUI(..), connFrontend
