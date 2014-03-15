@@ -75,7 +75,7 @@ library
                       Game.LambdaHack.Client.AI
                       Game.LambdaHack.Client.AI.HandleAbilityClient,
                       Game.LambdaHack.Client.AI.Strategy,
-                      Game.LambdaHack.Client.AtomicSemCli,
+                      Game.LambdaHack.Client.HandleCmdAtomicClient,
                       Game.LambdaHack.Client.HandleResponseClient,
                       Game.LambdaHack.Client.ItemSlot,
                       Game.LambdaHack.Client.LoopClient,
@@ -85,6 +85,7 @@ library
                       Game.LambdaHack.Client.UI,
                       Game.LambdaHack.Client.UI.Config,
                       Game.LambdaHack.Client.UI.DrawClient,
+                      Game.LambdaHack.Client.UI.DisplayCmdAtomicClient,
                       Game.LambdaHack.Client.UI.HandleHumanCmdGlobalClient,
                       Game.LambdaHack.Client.UI.HandleHumanCmdLocalClient,
                       Game.LambdaHack.Client.UI.HandleHumanCmdClient,

@@ -4,6 +4,7 @@ module Game.LambdaHack.Client.UI
     MonadClientUI
   , queryUI
   , Config(..), mkConfig
+  , displayRespUpdAtomicUI, displayRespSfxAtomicUI
     -- TODO: get rid of those:
   , SessionUI(..), connFrontend
   , syncFrames, tryTakeMVarSescMVar, displayMore, msgAdd, stdBinding
@@ -17,6 +18,7 @@ import Data.Maybe
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Config
+import Game.LambdaHack.Client.UI.DisplayCmdAtomicClient
 import Game.LambdaHack.Client.UI.HandleHumanCmdClient
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI

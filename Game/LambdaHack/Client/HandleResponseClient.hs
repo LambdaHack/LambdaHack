@@ -9,7 +9,7 @@ import Data.Maybe
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.AI
-import Game.LambdaHack.Client.AtomicSemCli
+import Game.LambdaHack.Client.HandleCmdAtomicClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.ProtocolClient
 import Game.LambdaHack.Client.State
@@ -43,10 +43,10 @@ handleResponseUI cmd = case cmd of
     cmds <- cmdAtomicFilterCli cmdA
     mapM_ (\c -> cmdAtomicSemCli c
                  >> execUpdAtomic c
-                 >> drawRespUpdAtomicUI False c) cmds
+                 >> displayRespUpdAtomicUI False c) cmds
     mapM_ (storeUndo . UpdAtomic) cmds  -- TODO: only store cmdA?
   RespSfxAtomicUI sfx -> do
-    drawRespSfxAtomicUI False sfx
+    displayRespSfxAtomicUI False sfx
     storeUndo $ SfxAtomic sfx
   RespQueryUI aid -> do
     mleader <- getsClient _sleader
