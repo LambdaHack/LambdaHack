@@ -7,8 +7,6 @@ import Data.Binary
 import Data.Text (Text)
 import Data.Version
 
-import Game.LambdaHack.Common.HumanCmd
-import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
 
@@ -51,8 +49,6 @@ data RuleKind = RuleKind
   , rcfgUIName       :: !FilePath  -- ^ base name of the UI config file
   , rcfgUIDefault    :: !String    -- ^ the default UI settings config file
   , rmainMenuArt     :: !Text      -- ^ the ASCII art for the Main Menu
-  , rhumanCommands   :: ![(K.KM, (CmdCategory, HumanCmd))]
-                                   -- ^ default client commands
   , rfirstDeathEnds  :: !Bool      -- ^ whether first non-spawner actor death
                                    --   ends the game
   , rfovMode         :: !FovMode   -- ^ FOV calculation mode

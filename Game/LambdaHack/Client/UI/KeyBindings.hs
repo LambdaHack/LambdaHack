@@ -13,11 +13,10 @@ import qualified Data.Text as T
 import Data.Tuple (swap)
 
 import Game.LambdaHack.Client.UI.Config
+import Game.LambdaHack.Client.UI.Content.KeyKind
 import Game.LambdaHack.Common.HumanCmd
 import qualified Game.LambdaHack.Common.Key as K
-import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Msg
-import Game.LambdaHack.Content.RuleKind
 
 -- | Bindings and other information about human player commands.
 data Binding = Binding
@@ -31,15 +30,14 @@ data Binding = Binding
 
 -- | Binding of keys to movement and other standard commands,
 -- as well as commands defined in the config file.
-stdBinding :: Kind.Ops RuleKind  -- ^ default game rules
-           -> Config           -- ^ game config
-           -> Binding            -- ^ concrete binding
-stdBinding corule !Config{configCommands, configVi, configLaptop} =
-  let stdRuleset = Kind.stdRuleset corule
-      heroSelect k = ( K.KM { key=K.Char (Char.intToDigit k)
+stdBinding :: KeyKind  -- ^ default key bindings from the content
+           -> Config   -- ^ game config
+           -> Binding  -- ^ concrete binding
+stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
+  let heroSelect k = ( K.KM { key=K.Char (Char.intToDigit k)
                             , modifier=K.NoModifier }
                      , (CmdMeta, PickLeader k) )
-      cmdWithHelp = rhumanCommands stdRuleset ++ configCommands
+      cmdWithHelp = rhumanCommands copsClient ++ configCommands
       cmdAll =
         cmdWithHelp
         ++ [(K.mkKM "KP_Begin", (CmdMove, Wait))]

@@ -3,6 +3,7 @@
 -- resulting in an executable game.
 module Main ( main ) where
 
+import qualified Client.UI.Content.KeyKind as KeyKind
 import qualified Content.ActorKind
 import qualified Content.CaveKind
 import qualified Content.FactionKind
@@ -31,4 +32,6 @@ main =
         , corule    = Kind.createOps Content.RuleKind.cdefs
         , cotile    = Kind.createOps Content.TileKind.cdefs
         }
-  in mainSer copsSlow executorSer $ exeFrontend executorCli executorCli
+      copsClient = KeyKind.standardKeys
+  in mainSer copsSlow executorSer
+     $ exeFrontend copsClient executorCli executorCli

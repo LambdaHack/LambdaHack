@@ -16,6 +16,7 @@ import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.ProtocolClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI
+import Game.LambdaHack.Client.UI.Content.KeyKind
 import Game.LambdaHack.Common.Animation (DebugModeCli (..))
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -34,7 +35,8 @@ exeFrontend :: ( MonadAtomic m, MonadClientUI m
                , MonadAtomic n
                , MonadClientReadResponse ResponseAI n
                , MonadClientWriteRequest RequestTimed n )
-            => (m () -> SessionUI -> State -> StateClient
+            => KeyKind
+            -> (m () -> SessionUI -> State -> StateClient
                 -> chanServerUI
                 -> IO ())
             -> (n () -> SessionUI -> State -> StateClient
@@ -47,11 +49,11 @@ exeFrontend :: ( MonadAtomic m, MonadClientUI m
                    -> IO ())
                -> IO ())
             -> IO ()
-exeFrontend executorUI executorAI
+exeFrontend copsClient executorUI executorAI
             cops@Kind.COps{corule} sdebugCli exeServer = do
   -- UI config reloaded at each client start.
   sconfig <- mkConfig corule
-  let !sbinding = stdBinding corule sconfig  -- evaluate to check for errors
+  let !sbinding = stdBinding copsClient sconfig  -- evaluate to check for errors
       sdebugMode = applyConfigToDebug sconfig sdebugCli corule
   defHist <- defHistory
   let exeClientUI = executorUI $ loopUI sdebugMode handleResponseUI

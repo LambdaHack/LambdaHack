@@ -90,6 +90,7 @@ library
                       Game.LambdaHack.Client.State,
                       Game.LambdaHack.Client.UI,
                       Game.LambdaHack.Client.UI.Config,
+                      Game.LambdaHack.Client.UI.Content.KeyKind
                       Game.LambdaHack.Client.UI.DrawClient,
                       Game.LambdaHack.Client.UI.DisplayCmdAtomicClient,
                       Game.LambdaHack.Client.UI.HandleHumanCmdGlobalClient,
@@ -230,7 +231,8 @@ library
 executable LambdaHack
   hs-source-dirs:     GameDefinition
   main-is:            Main.hs
-  other-modules:      Content.ActorKind,
+  other-modules:      Client.UI.Content.KeyKind
+                      Content.ActorKind,
                       Content.CaveKind,
                       Content.FactionKind,
                       Content.ItemKind,
