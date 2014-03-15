@@ -1,6 +1,11 @@
 -- | Semantics of most 'ResponseAI' client commands.
 module Game.LambdaHack.Client.UI
-  ( queryUI
+  ( -- * Client UI monad
+    MonadClientUI
+  , queryUI
+    -- TODO: get rid of those:
+  , SessionUI(..), connFrontend
+  , syncFrames, tryTakeMVarSescMVar, displayMore, msgAdd, stdBinding
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -10,10 +15,10 @@ import Data.Maybe
 
 import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.MonadClient
-import Game.LambdaHack.Client.MonadClientUI
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.HandleHumanCmdClient
 import Game.LambdaHack.Client.UI.KeyBindings
+import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.RunClient
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Animation

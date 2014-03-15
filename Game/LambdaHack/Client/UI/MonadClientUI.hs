@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts, FunctionalDependencies, RankNTypes, TupleSections
              #-}
 -- | Client monad for interacting with a human through UI.
-module Game.LambdaHack.Client.MonadClientUI
+module Game.LambdaHack.Client.UI.MonadClientUI
   ( -- * Client UI monad
     MonadClientUI( getsSession  -- exposed only to be implemented, not used
                  , liftIO  -- exposed only to be implemented, not used

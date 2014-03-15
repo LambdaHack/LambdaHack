@@ -19,11 +19,11 @@ import Game.LambdaHack.Atomic.HandleCmdAtomicWrite
 import Game.LambdaHack.Atomic.MonadAtomic
 import Game.LambdaHack.Atomic.MonadStateWrite
 import Game.LambdaHack.Client.MonadClient
-import Game.LambdaHack.Client.MonadClientUI
 import Game.LambdaHack.Client.ProtocolClient
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Common.MonadStateRead
+import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Common.Animation
+import Game.LambdaHack.Common.MonadStateRead
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Server.ProtocolServer

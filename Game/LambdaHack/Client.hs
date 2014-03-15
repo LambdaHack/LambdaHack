@@ -15,10 +15,9 @@ import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.HandleResponseClient
 import Game.LambdaHack.Client.LoopClient
 import Game.LambdaHack.Client.MonadClient
-import Game.LambdaHack.Client.MonadClientUI
 import Game.LambdaHack.Client.ProtocolClient
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Client.UI.KeyBindings
+import Game.LambdaHack.Client.UI
 import Game.LambdaHack.Common.Animation (DebugModeCli (..))
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
