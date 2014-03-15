@@ -11,7 +11,6 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.HandleResponseClient
 import Game.LambdaHack.Client.LoopClient
 import Game.LambdaHack.Client.MonadClient

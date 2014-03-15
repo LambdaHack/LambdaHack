@@ -12,7 +12,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Tuple (swap)
 
-import Game.LambdaHack.Client.Config
+import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Common.HumanCmd
 import qualified Game.LambdaHack.Common.Key as K
 import qualified Game.LambdaHack.Common.Kind as Kind

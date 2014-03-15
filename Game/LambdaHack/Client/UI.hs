@@ -3,9 +3,10 @@ module Game.LambdaHack.Client.UI
   ( -- * Client UI monad
     MonadClientUI
   , queryUI
+  , Config(..), mkConfig
     -- TODO: get rid of those:
   , SessionUI(..), connFrontend
-  , syncFrames, tryTakeMVarSescMVar, displayMore, msgAdd, stdBinding, mkConfig
+  , syncFrames, tryTakeMVarSescMVar, displayMore, msgAdd, stdBinding
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -13,9 +14,9 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
 import Data.Maybe
 
-import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
+import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.HandleHumanCmdClient
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
