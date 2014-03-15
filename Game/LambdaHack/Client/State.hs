@@ -19,7 +19,6 @@ import qualified System.Random as R
 import System.Time
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.ItemSlot
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
@@ -63,7 +62,6 @@ data StateClient = StateClient
   , sdisco       :: !Discovery     -- ^ remembered item discoveries
   , sfper        :: !FactionPers   -- ^ faction perception indexed by levels
   , srandom      :: !R.StdGen      -- ^ current random generator
-  , sconfigUI    :: Config         -- ^ client config
   , slastKey     :: !(Maybe K.KM)  -- ^ last command key pressed
   , slastRecord  :: !LastRecord    -- ^ state of key sequence recording
   , slastPlay    :: ![K.KM]        -- ^ state of key sequence playback
@@ -118,9 +116,8 @@ type LastRecord = ( [K.KM]  -- accumulated keys of the current command
                   )
 
 -- | Initial game client state.
-defStateClient :: History -> Config -> FactionId -> Bool
-               -> StateClient
-defStateClient shistory sconfigUI _sside sisAI =
+defStateClient :: History -> FactionId -> Bool -> StateClient
+defStateClient shistory _sside sisAI =
   StateClient
     { stgtMode = Nothing
     , scursor = if sisAI
@@ -137,7 +134,6 @@ defStateClient shistory sconfigUI _sside sisAI =
     , sundo = []
     , sdisco = EM.empty
     , sfper = EM.empty
-    , sconfigUI
     , srandom = R.mkStdGen 42  -- will be set later
     , slastKey = Nothing
     , slastRecord = ([], [], 0)
@@ -255,7 +251,6 @@ instance Binary StateClient where
         slastCmd = Nothing
         swaitTimes = 0
         squit = False
-        sconfigUI = undefined
     return $! StateClient{..}
 
 instance Binary RunParams where

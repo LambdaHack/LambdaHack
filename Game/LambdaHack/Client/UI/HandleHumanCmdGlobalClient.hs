@@ -308,7 +308,7 @@ applyHuman ts = do
 -- | Ask for a direction and alter a tile, if possible.
 alterDirHuman :: MonadClientUI m => [Trigger] -> m (SlideOrCmd RequestTimed)
 alterDirHuman ts = do
-  Config{configVi, configLaptop} <- getsClient sconfigUI
+  Config{configVi, configLaptop} <- getConfig
   let verb1 = case ts of
         [] -> "alter"
         tr : _ -> verb tr
@@ -492,7 +492,7 @@ gameRestartHuman t = do
     else do
       leader <- getLeaderUI
       DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
-      Config{configHeroNames} <- getsClient sconfigUI
+      Config{configHeroNames} <- getConfig
       return $ Right $ ReqGameRestart leader t sdifficultyCli configHeroNames
 
 -- * GameExit; does not take time

@@ -28,14 +28,13 @@ initCli sdebugCli putSt = do
   -- Warning: state and client state are invalid here, e.g., sdungeon
   -- and sper are empty.
   cops <- getsState scops
-  sconfigUI <- getsClient sconfigUI  -- config from file, not savegame
   modifyClient $ \cli -> cli {sdebugCli}
   restored <- restoreGame
   case restored of
     Just (s, cli) | not $ snewGameCli sdebugCli -> do  -- Restore the game.
       let sCops = updateCOps (const cops) s
       putSt sCops
-      putClient cli {sdebugCli, sconfigUI}
+      putClient cli {sdebugCli}
       return True
     _ ->  -- First visit ever, use the initial state.
       return False

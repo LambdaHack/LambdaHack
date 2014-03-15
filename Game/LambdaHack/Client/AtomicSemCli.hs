@@ -219,9 +219,8 @@ cmdAtomicSemCli cmd = case cmd of
   UpdPerception lid outPer inPer -> perception lid outPer inPer
   UpdRestart side sdisco sfper _ sdebugCli _ -> do
     shistory <- getsClient shistory
-    sconfigUI <- getsClient sconfigUI
     isAI <- getsClient sisAI
-    let cli = defStateClient shistory sconfigUI side isAI
+    let cli = defStateClient shistory side isAI
     putClient cli { sdisco
                   , sfper
                   -- , sundo = [UpdAtomic cmd]

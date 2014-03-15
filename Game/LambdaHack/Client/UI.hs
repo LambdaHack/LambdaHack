@@ -45,7 +45,7 @@ queryUI aid = do
     Nothing -> humanCommand Nothing
     Just RunParams{runMembers} | isSpawnFact fact && runMembers /= [aid] -> do
       stopRunning
-      Config{configRunStopMsgs} <- getsClient sconfigUI
+      Config{configRunStopMsgs} <- getConfig
       let msg = if configRunStopMsgs
                 then Just $ "Run stop: spawner leader change"
                 else Nothing
@@ -55,7 +55,7 @@ queryUI aid = do
       case runOutcome of
         Left stopMsg -> do
           stopRunning
-          Config{configRunStopMsgs} <- getsClient sconfigUI
+          Config{configRunStopMsgs} <- getConfig
           let msg = if configRunStopMsgs
                     then Just $ "Run stop:" <+> stopMsg
                     else Nothing

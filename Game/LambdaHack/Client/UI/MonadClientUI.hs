@@ -23,7 +23,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
   , tryTakeMVarSescMVar
   , leaderTgtToPos, leaderTgtAims, cursorToPos, askBinding, syncFrames
   , debugPrint
-  , SlideOrCmd, failWith, failSlides, failSer, lookAt, itemOverlay
+  , SlideOrCmd, failWith, failSlides, failSer, lookAt, itemOverlay, getConfig
   ) where
 
 import Control.Concurrent
@@ -71,6 +71,7 @@ data SessionUI = SessionUI
   { sfconn   :: !ConnFrontend  -- ^ connection with the frontend
   , sbinding :: !Binding       -- ^ binding of keys to commands
   , sescMVar :: !(Maybe (MVar ()))
+  , sconfig  :: !Config
   }
 
 -- | Connection method between a client and a frontend.
@@ -93,6 +94,9 @@ connFrontend fid fromF = ConnFrontend
       let toF = Frontend.toMulti Frontend.connMulti
       liftIO $ atomically $ writeTQueue toF (fid, efr)
   }
+
+getConfig :: MonadClientUI m => m Config
+getConfig = getsSession sconfig
 
 displayFrame :: MonadClientUI m => Bool -> Maybe SingleFrame -> m ()
 displayFrame isRunning mf = do
@@ -193,7 +197,7 @@ recordHistory :: MonadClientUI m => m ()
 recordHistory = do
   StateClient{sreport, shistory} <- getClient
   unless (nullReport sreport) $ do
-    Config{configHistoryMax} <- getsClient sconfigUI
+    Config{configHistoryMax} <- getConfig
     msgReset ""
     let nhistory = takeHistory configHistoryMax $! addReport sreport shistory
     modifyClient $ \cli -> cli {shistory = nhistory}

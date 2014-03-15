@@ -53,23 +53,23 @@ exeFrontend :: ( MonadAtomic m, MonadClientUI m
 exeFrontend executorUI executorAI
             cops@Kind.COps{corule} sdebugCli exeServer = do
   -- UI config reloaded at each client start.
-  sconfigUI <- mkConfig corule
+  sconfig <- mkConfig corule
   let stdRuleset = Kind.stdRuleset corule
-      !sbinding = stdBinding corule sconfigUI  -- evaluate to check for errors
+      !sbinding = stdBinding corule sconfig  -- evaluate to check for errors
       sdebugMode =
         (\dbg -> dbg {sfont =
-            sfont dbg `mplus` Just (configFont sconfigUI)}) .
+            sfont dbg `mplus` Just (configFont sconfig)}) .
         (\dbg -> dbg {smaxFps =
-            smaxFps dbg `mplus` Just (configMaxFps sconfigUI)}) .
+            smaxFps dbg `mplus` Just (configMaxFps sconfig)}) .
         (\dbg -> dbg {snoAnim =
-            snoAnim dbg `mplus` Just (configNoAnim sconfigUI)}) .
+            snoAnim dbg `mplus` Just (configNoAnim sconfig)}) .
         (\dbg -> dbg {ssavePrefixCli =
             ssavePrefixCli dbg `mplus` Just (rsavePrefix stdRuleset)})
         $ sdebugCli
   defHist <- defHistory
   let exeClientUI = executorUI $ loopUI sdebugMode handleResponseUI
       exeClientAI = executorAI $ loopAI sdebugMode handleResponseAI
-      cli = defStateClient defHist sconfigUI
+      cli = defStateClient defHist
       s = updateCOps (const cops) emptyState
       eClientAI fid =
         let noSession = assert `failure` "AI client needs no UI session"
