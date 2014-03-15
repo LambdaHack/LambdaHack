@@ -202,4 +202,4 @@ highSlideshow table pos =
         [ MU.SubjectVerb person MU.Yes subject "award you"
         , MU.Ordinal pos, "place"
         , msgUnless ]
-  in toSlideshow True $ map ([msg, "\n"] ++) $ showCloseScores pos table height
+  in toSlideshow False $ map ([msg, "\n"] ++) $ showCloseScores pos table height

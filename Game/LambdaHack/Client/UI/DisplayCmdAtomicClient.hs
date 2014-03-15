@@ -169,7 +169,11 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
                                     "look like an ordinary"
           , objUnkown1, objUnkown2 ]
     msgAdd msg
-  UpdRestart _ _ _ _ _ t -> msgAdd $ "New game started in" <+> t <+> "mode."
+  UpdRestart _ _ _ _ _ t -> do
+    msgAdd $ "New game started in" <+> t <+> "mode."
+    -- TODO: use a vertical animation instead, e.g., roll down,
+    -- and reveal the first frame of a new game, not blank screen.
+    fadeOutOrIn False
   UpdSaveBkp | verbose -> msgAdd "Saving backup."
   UpdMsgAll msg -> msgAdd msg
   _ -> return ()
@@ -370,6 +374,9 @@ quitFactionUI fid mbody toSt = do
       -- TODO: Second ESC cancels high score and parting message display.
       -- The last slide stays onscreen during shutdown, etc.
           <> scoreSlides <> partingSlide <> shutdownSlide
+      -- TODO: perhaps use a vertical animation instead, e.g., roll down
+      -- and put it before item and score screens (on blank background)
+      unless (fmap stOutcome toSt == Just Camping) $ fadeOutOrIn True
     _ -> return ()
 
 -- * RespSfxAtomicUI

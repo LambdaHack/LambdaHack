@@ -2,7 +2,7 @@
 module Game.LambdaHack.Client.UI.WidgetClient
   ( displayMore, displayYesNo, displayChoiceUI, displayPush
   , promptToSlideshow, overlayToSlideshow, overlayToBlankSlideshow
-  , animate
+  , animate, fadeOutOrIn
   ) where
 
 import Data.Maybe
@@ -135,3 +135,12 @@ animate arena anim = do
   return $! if fromMaybe False snoAnim
             then [Just basicFrame]
             else renderAnim lxsize lysize basicFrame anim
+
+fadeOutOrIn :: MonadClientUI m => Bool -> m ()
+fadeOutOrIn out = do
+  let topRight = True
+  lid <- getArenaUI
+  Level{lxsize, lysize} <- getLevel lid
+  animMap <- rndToAction $ fadeout out topRight lxsize lysize
+  animFrs <- animate lid animMap
+  displayFrames $ Nothing : animFrs
