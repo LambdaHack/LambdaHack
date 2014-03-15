@@ -13,9 +13,9 @@ cdefs = ContentDef
   , getFreq = mfreq
   , validate = validateModeKind
   , content =
-      [campaign, skirmish, battle, pvp, coop, defense, peekCampaign, peekSkirmish]
+      [campaign, skirmish, battle, pvp, coop, defense]
   }
-campaign,        skirmish, battle, pvp, coop, defense, peekCampaign, peekSkirmish :: ModeKind
+campaign,        skirmish, battle, pvp, coop, defense :: ModeKind
 
 campaign = ModeKind
   { msymbol  = 'r'
@@ -65,24 +65,8 @@ defense = ModeKind
   , mcaves   = cavesCampaign
   }
 
-peekCampaign = ModeKind
-  { msymbol  = 'p'
-  , mname    = "peekCampaign"
-  , mfreq    = [("peekCampaign", 1)]
-  , mplayers = playersPeekCampaign
-  , mcaves   = cavesCampaign
-  }
 
-peekSkirmish = ModeKind
-  { msymbol  = 'p'
-  , mname    = "peekSkirmish"
-  , mfreq    = [("peekSkirmish", 1)]
-  , mplayers = playersPeekSkirmish
-  , mcaves   = cavesCombat
-  }
-
-
-playersCampaign, playersSkirmish, playersBattle, playersPvP, playersCoop, playersDefense, playersPeekCampaign, playersPeekSkirmish :: Players
+playersCampaign, playersSkirmish, playersBattle, playersPvP, playersCoop, playersDefense :: Players
 
 playersCampaign = Players
   { playersList = [ playerHero
@@ -136,16 +120,6 @@ playersDefense = Players
   , playersAlly = [ ("Green", "Yellow")
                   , ("Green", "Cyan")
                   , ("Yellow", "Cyan") ] }
-
-playersPeekCampaign = playersCampaign
-  { playersList = [ playerHero {playerInitial = 1}
-                  , playerMonster {playerUI = True} ] }
-
-playersPeekSkirmish = playersSkirmish
-  { playersList = [ playerHero {playerName = "White"}
-                  , playerAntiHero { playerName = "Purple"
-                                   , playerUI = True }
-                  , playerHorror ] }
 
 
 playerHero, playerAntiHero, playerMonster, playerHorror :: Player

@@ -26,14 +26,13 @@ import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.Key (mapWithKeyM, mapWithKeyM_)
 import Data.Maybe
-import qualified Data.Text as T
 import Game.LambdaHack.Utils.Thread
 import System.IO.Unsafe (unsafePerformIO)
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.State
@@ -215,14 +214,11 @@ updateConn executorUI executorAI = do
   putDict newD
   -- Spawn client threads.
   let toSpawn = newD EM.\\ oldD
-      fdict fid = ( fst
-                    $ fromMaybe (assert `failure` "no channel" `twith` fid)
-                    $ fst
-                    $ fromMaybe (assert `failure` "no faction" `twith` fid)
-                    $ EM.lookup fid newD
-                  , maybe T.empty gname  -- a faction can go inactive
-                    $ EM.lookup fid factionD
-                  )
+      fdict fid = fst
+                  $ fromMaybe (assert `failure` "no channel" `twith` fid)
+                  $ fst
+                  $ fromMaybe (assert `failure` "no faction" `twith` fid)
+                  $ EM.lookup fid newD
       fromM = Frontend.fromMulti Frontend.connMulti
   liftIO $ void $ takeMVar fromM  -- stop Frontend
   let forkUI fid (connF, connS) =
@@ -236,5 +232,4 @@ updateConn executorUI executorAI = do
         forkAI fid connAI  -- AI clients always needed, e.g., for auto-explore
         maybe skip (forkUI fid) connUI
   liftIO $ mapWithKeyM_ forkClient toSpawn
-  nU <- nUI
-  liftIO $ putMVar fromM (nU, fdict)  -- restart Frontend
+  liftIO $ putMVar fromM fdict  -- restart Frontend
