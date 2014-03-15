@@ -11,10 +11,10 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Client.Binding
+import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.Config
 import Game.LambdaHack.Client.HandleResponseClient
-import Game.LambdaHack.Client.LoopAction
+import Game.LambdaHack.Client.LoopClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.MonadClientUI
 import Game.LambdaHack.Client.ProtocolClient

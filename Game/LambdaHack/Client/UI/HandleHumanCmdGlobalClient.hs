@@ -1,7 +1,7 @@
 -- | Semantics of 'Command.Cmd' client commands that return server commands.
 -- A couple of them do not take time, the rest does.
 -- TODO: document
-module Game.LambdaHack.Client.HumanGlobal
+module Game.LambdaHack.Client.UI.HandleHumanCmdGlobalClient
   ( -- * Commands that usually take time
     moveRunHuman, waitHuman, moveItemHuman
   , projectHuman, applyHuman, alterDirHuman, triggerTileHuman
@@ -21,14 +21,13 @@ import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.Config
-import Game.LambdaHack.Client.Draw
-import Game.LambdaHack.Client.HumanLocal
-import Game.LambdaHack.Client.Inventory
+import Game.LambdaHack.Client.UI.DrawClient
+import Game.LambdaHack.Client.UI.HandleHumanCmdLocalClient
+import Game.LambdaHack.Client.UI.InventoryClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.MonadClientUI
-import Game.LambdaHack.Client.RunAction
+import Game.LambdaHack.Client.UI.RunClient
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Animation
@@ -41,6 +40,7 @@ import qualified Game.LambdaHack.Common.Key as K
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random

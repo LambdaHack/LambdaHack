@@ -1,6 +1,6 @@
 -- | Inventory management.
 -- TODO: document
-module Game.LambdaHack.Client.Inventory
+module Game.LambdaHack.Client.UI.InventoryClient
   ( floorItemOverlay, itemOverlay, getGroupItem, getAnyItem, updateItemSlot
   ) where
 
@@ -19,13 +19,13 @@ import Game.LambdaHack.Client.ItemSlot
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.MonadClientUI
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Key as K
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State

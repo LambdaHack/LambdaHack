@@ -16,9 +16,9 @@ import Data.Tuple
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Client.Draw
-import Game.LambdaHack.Client.HumanLocal
-import Game.LambdaHack.Client.Inventory
+import Game.LambdaHack.Client.UI.DrawClient
+import Game.LambdaHack.Client.UI.HandleHumanCmdLocalClient
+import Game.LambdaHack.Client.UI.InventoryClient
 import Game.LambdaHack.Client.ItemSlot
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.MonadClientUI

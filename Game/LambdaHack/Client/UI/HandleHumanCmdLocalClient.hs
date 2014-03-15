@@ -1,7 +1,7 @@
 -- | Semantics of 'HumanCmd' client commands that do not return
 -- server commands. None of such commands takes game time.
 -- TODO: document
-module Game.LambdaHack.Client.HumanLocal
+module Game.LambdaHack.Client.UI.HandleHumanCmdLocalClient
   ( -- * Assorted commands
     gameDifficultyCycle
   , pickLeaderHuman, memberCycleHuman, memberBackHuman
@@ -36,12 +36,11 @@ import Data.Version
 import Game.LambdaHack.Frontend (frontendName)
 import qualified NLP.Miniutter.English as MU
 
-import Game.LambdaHack.Client.Binding
-import Game.LambdaHack.Client.Inventory
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.MonadClientUI
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Common.MonadStateRead
+import Game.LambdaHack.Client.UI.InventoryClient
+import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Animation
@@ -53,6 +52,7 @@ import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Key as K
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point

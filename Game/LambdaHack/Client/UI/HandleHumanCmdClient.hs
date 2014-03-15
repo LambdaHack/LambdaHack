@@ -1,12 +1,12 @@
 -- | Semantics of human player commands.
-module Game.LambdaHack.Client.HumanSem
+module Game.LambdaHack.Client.UI.HandleHumanCmdClient
   ( cmdHumanSem
   ) where
 
 import Data.Monoid
 
-import Game.LambdaHack.Client.HumanGlobal
-import Game.LambdaHack.Client.HumanLocal
+import Game.LambdaHack.Client.UI.HandleHumanCmdGlobalClient
+import Game.LambdaHack.Client.UI.HandleHumanCmdLocalClient
 import Game.LambdaHack.Client.MonadClientUI
 import Game.LambdaHack.Common.HumanCmd
 import Game.LambdaHack.Common.Request
@@ -31,6 +31,7 @@ cmdHumanSem cmd = do
 -- | Compute the basic action for a command and mark whether it takes time.
 cmdAction :: MonadClientUI m => HumanCmd -> m (SlideOrCmd Request)
 cmdAction cmd = case cmd of
+  -- Global.
   Move v -> fmap (fmap ReqTimed) $ moveRunHuman False v
   Run v -> fmap (fmap ReqTimed) $ moveRunHuman True v
   Wait -> fmap Right $ fmap ReqTimed waitHuman
@@ -48,6 +49,7 @@ cmdAction cmd = case cmd of
   GameSave -> fmap Right gameSaveHuman
   Automate -> automateHuman
 
+  -- Local.
   GameDifficultyCycle -> addNoSlides gameDifficultyCycle
   PickLeader k -> fmap Left $ pickLeaderHuman k
   MemberCycle -> fmap Left memberCycleHuman

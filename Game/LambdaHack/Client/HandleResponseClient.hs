@@ -8,12 +8,13 @@ import Control.Exception.Assert.Sugar
 import Data.Maybe
 
 import Game.LambdaHack.Atomic
+import Game.LambdaHack.Client.AI
 import Game.LambdaHack.Client.AtomicSemCli
-import Game.LambdaHack.Client.ClientSem
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.MonadClientUI
 import Game.LambdaHack.Client.ProtocolClient
 import Game.LambdaHack.Client.State
+import Game.LambdaHack.Client.UI
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response
 

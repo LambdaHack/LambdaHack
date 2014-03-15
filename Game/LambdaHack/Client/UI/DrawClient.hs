@@ -1,6 +1,6 @@
 -- | Display game data on the screen using one of the available frontends
 -- (determined at compile time with cabal flags).
-module Game.LambdaHack.Client.Draw
+module Game.LambdaHack.Client.UI.DrawClient
   ( ColorMode(..), draw
   ) where
 

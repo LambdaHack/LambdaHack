@@ -1,5 +1,5 @@
 -- | AI strategy operations implemented with the 'Action' monad.
-module Game.LambdaHack.Client.StrategyAction
+module Game.LambdaHack.Client.AI.HandleAbilityClient
   ( targetStrategy, actionStrategy
   ) where
 
@@ -13,13 +13,12 @@ import Data.Maybe
 import Data.Ord
 import qualified Data.Traversable as Traversable
 
+import Game.LambdaHack.Client.UI.InventoryClient
 import Game.LambdaHack.Client.MonadClient
-import Game.LambdaHack.Client.Inventory
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Client.Strategy
+import Game.LambdaHack.Client.AI.Strategy
 import Game.LambdaHack.Common.Ability (Ability)
 import qualified Game.LambdaHack.Common.Ability as Ability
-import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Effect as Effect
@@ -29,6 +28,7 @@ import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Random as Random

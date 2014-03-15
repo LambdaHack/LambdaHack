@@ -28,6 +28,7 @@ categoryDescription CmdDebug = "Debug"
 
 -- | Abstract syntax of player commands.
 data HumanCmd =
+    -- Global.
     -- These usually take time.
     Move !Vector
   | Run !Vector
@@ -44,6 +45,7 @@ data HumanCmd =
   | GameExit
   | GameSave
   | Automate
+    -- Local.
     -- Below this line, commands do not notify the server.
   | GameDifficultyCycle
   | PickLeader !Int

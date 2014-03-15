@@ -37,9 +37,9 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import System.Time
 
-import Game.LambdaHack.Client.Binding
+import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.Config
-import Game.LambdaHack.Client.Draw
+import Game.LambdaHack.Client.UI.DrawClient
 import Game.LambdaHack.Client.MonadClient hiding (liftIO)
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.MonadStateRead

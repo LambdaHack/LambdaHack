@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 -- | The main loop of the client, processing human and computer player
 -- moves turn by turn.
-module Game.LambdaHack.Client.LoopAction (loopAI, loopUI) where
+module Game.LambdaHack.Client.LoopClient (loopAI, loopUI) where
 
 import Control.Exception.Assert.Sugar
 import Control.Monad
@@ -9,15 +9,15 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Client.Draw
+import Game.LambdaHack.Client.UI.DrawClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.MonadClientUI
 import Game.LambdaHack.Client.ProtocolClient
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Animation
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.State
