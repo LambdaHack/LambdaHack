@@ -74,6 +74,7 @@ library
                       Game.LambdaHack.Client,
                       Game.LambdaHack.Client.AI
                       Game.LambdaHack.Client.AI.HandleAbilityClient,
+                      Game.LambdaHack.Client.AI.PickActorClient
                       Game.LambdaHack.Client.AI.PickActorTargetClient
                       Game.LambdaHack.Client.AI.Preferences
                       Game.LambdaHack.Client.AI.Strategy,

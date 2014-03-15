@@ -5,7 +5,6 @@ module Game.LambdaHack.Client.HandleResponseClient
   ) where
 
 import Control.Exception.Assert.Sugar
-import Data.Maybe
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.AI
@@ -49,8 +48,6 @@ handleResponseUI cmd = case cmd of
     displayRespSfxAtomicUI False sfx
     storeUndo $ SfxAtomic sfx
   RespQueryUI aid -> do
-    mleader <- getsClient _sleader
-    assert (isJust mleader `blame` "query without leader" `twith` cmd) skip
     cmdH <- queryUI aid
     sendRequest cmdH
   RespPingUI -> pongUI
