@@ -204,8 +204,8 @@ swapPlaces poss = Animation $ map (EM.fromList . mzipPairs poss)
   , (coloredSymbol Magenta   'o', blank)
   ]
 
-fadeout :: Bool -> Bool -> X -> Y -> Rnd Animation
-fadeout out topRight lxsize lysize = do
+fadeout :: Bool -> Bool -> Int -> X -> Y -> Rnd Animation
+fadeout out topRight step lxsize lysize = do
   let xbound = lxsize - 1
       ybound = lysize - 1
       edge = EM.fromDistinctAscList $ zip [1..] ".%&%;:,."
@@ -233,7 +233,7 @@ fadeout out topRight lxsize lysize = do
                 ]
         return $! EM.fromList l
       startN = if out then 3 else 1
-      fs = [startN..3 * lxsize `divUp` 4 + 2]
+      fs = [startN, startN + step .. 3 * lxsize `divUp` 4 + 2]
   as <- mapM rollFrame $ if out then fs else reverse fs
   return $! Animation as
 

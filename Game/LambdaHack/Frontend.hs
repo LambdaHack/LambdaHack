@@ -138,7 +138,7 @@ fadeF fs out side pname frame = do
       msg = "Player" <+> tshow (fromEnum side) <> ","
             <+> pname <> (if T.null pname then "" else ",")
             <+> "get ready!"
-  animMap <- rndToIO $ fadeout out topRight lxsize lysize
+  animMap <- rndToIO $ fadeout out topRight 1 lxsize lysize
   let sfTop = truncateToOverlay lxsize msg
       basicFrame = frame {sfTop}  -- overwrite the whole original overlay
       animFrs = renderAnim lxsize lysize basicFrame animMap

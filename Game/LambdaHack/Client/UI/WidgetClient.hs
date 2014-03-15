@@ -141,6 +141,6 @@ fadeOutOrIn out = do
   let topRight = True
   lid <- getArenaUI
   Level{lxsize, lysize} <- getLevel lid
-  animMap <- rndToAction $ fadeout out topRight lxsize lysize
+  animMap <- rndToAction $ fadeout out topRight 2 lxsize lysize
   animFrs <- animate lid animMap
-  displayFrames $ Nothing : animFrs
+  displayFrames animFrs
