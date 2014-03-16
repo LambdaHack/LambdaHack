@@ -5,6 +5,7 @@ module Game.LambdaHack.Client.UI.WidgetClient
   , animate, fadeOutOrIn
   ) where
 
+import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 import Data.Monoid
 
@@ -13,15 +14,17 @@ import Game.LambdaHack.Client.CommonClient
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient hiding (liftIO)
 import Game.LambdaHack.Client.State
+import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Client.UI.DrawClient
 import Game.LambdaHack.Client.UI.MonadClientUI
-import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Common.ClientOptions
+import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Content.ModeKind
 
 -- | A yes-no confirmation.
 getYesNo :: MonadClientUI m => SingleFrame -> m Bool
@@ -78,13 +81,18 @@ displayChoiceUI prompt ov keys = do
 -- Only one screenful of the report is shown, the rest is ignored.
 displayPush :: MonadClientUI m => m ()
 displayPush = do
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
   sls <- promptToSlideshow ""
   let slide = head . snd $ slideshow sls
+      hasAiLeader = playerAiLeader $ gplayer fact
   frame <- drawOverlay False ColorFull slide
   -- Visually speed up (by remving all empty frames) the show of the sequence
   -- of the move frames if the player is running.
   srunning <- getsClient srunning
-  displayFrame (isJust srunning) $ Just frame
+  lastPlay <- getsClient slastPlay
+  displayFrame (isJust srunning || not (null lastPlay) || hasAiLeader)
+               (Just frame)
 
 -- | The prompt is shown after the current message, but not added to history.
 -- This is useful, e.g., in targeting mode, not to spam history.

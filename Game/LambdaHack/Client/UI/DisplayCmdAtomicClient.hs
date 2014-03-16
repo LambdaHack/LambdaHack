@@ -137,13 +137,12 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
                            , MU.Text $ tname $ okind toTile ]
     msgAdd msg
   UpdAgeGame t -> do
-    when (t > timeClip) $ displayFrames [Nothing]  -- show delay
-    -- TODO: shows messages on leader level, instead of recently shown
-    -- level (e.g., between animations); perhaps display messages separately
-    -- from level (but on the same text window) or keep last level frame
-    -- and only overlay messages on it when needed; or store the level
-    -- of last shown
-    displayPush  -- TODO: is this really needed? write why
+    -- Some time passed, show delay.
+    when (t > timeClip) $ displayFrames [Nothing]
+    -- Something new is gonna happen (otherwise we'd send @UpdAgeGame@
+    -- later on, with a larger time increment), so show crrent game state,
+    -- before it changes.
+    displayPush
   UpdDiscover _ _ iid _ -> do
     disco <- getsClient sdisco
     item <- getsState $ getItemBody iid
