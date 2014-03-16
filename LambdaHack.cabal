@@ -101,6 +101,7 @@ library
                       Game.LambdaHack.Client.UI.MonadClientUI,
                       Game.LambdaHack.Client.UI.MsgClient,
                       Game.LambdaHack.Client.UI.RunClient,
+                      Game.LambdaHack.Client.UI.StartupFrontendClient
                       Game.LambdaHack.Client.UI.WidgetClient,
                       Game.LambdaHack.Common.Ability,
                       Game.LambdaHack.Common.Actor,

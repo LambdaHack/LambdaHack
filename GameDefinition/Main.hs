@@ -34,4 +34,4 @@ main =
         }
       copsClient = KeyKind.standardKeys
   in mainSer copsSlow executorSer
-     $ exeFrontend copsClient executorCli executorCli
+     $ exeFrontend executorCli executorCli copsClient

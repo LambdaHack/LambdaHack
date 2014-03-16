@@ -40,8 +40,8 @@ initCli sdebugCli putSt = do
       return False
 
 loopAI :: (MonadClientReadResponse ResponseAI m)
-       => DebugModeCli -> (ResponseAI -> m ()) -> m ()
-loopAI sdebugCli cmdClientAISem = do
+       => (ResponseAI -> m ()) -> DebugModeCli -> m ()
+loopAI cmdClientAISem sdebugCli = do
   side <- getsClient sside
   restored <- initCli sdebugCli
               $ \s -> cmdClientAISem $ RespUpdAtomicAI $ UpdResumeServer s
@@ -69,8 +69,8 @@ loopAI sdebugCli cmdClientAISem = do
     unless quit loop
 
 loopUI :: (MonadClientUI m, MonadClientReadResponse ResponseUI m)
-       => DebugModeCli -> (ResponseUI -> m ()) -> m ()
-loopUI sdebugCli cmdClientUISem = do
+       => (ResponseUI -> m ()) -> DebugModeCli -> m ()
+loopUI cmdClientUISem sdebugCli = do
   Kind.COps{corule} <- getsState scops
   let title = rtitle $ Kind.stdRuleset corule
   side <- getsClient sside

@@ -2,12 +2,13 @@
 module Game.LambdaHack.Client.UI
   ( -- * Client UI monad
     MonadClientUI
-  , queryUI
-  , Config, mkConfig, applyConfigToDebug
+    -- * Assorted UI operations
+  , queryUI, pongUI
   , displayRespUpdAtomicUI, displayRespSfxAtomicUI
-    -- TODO: get rid of those:
-  , SessionUI(..)
-  , syncFrames, tryTakeMVarSescMVar, displayMore, msgAdd, stdBinding
+    -- * Startup
+  , srtFrontend, KeyKind, SessionUI
+    -- * Operations exposed for the LoopClient
+  , displayMore, msgAdd
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -15,15 +16,18 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
 import Data.Maybe
 
+import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Config
+import Game.LambdaHack.Client.UI.Content.KeyKind
 import Game.LambdaHack.Client.UI.DisplayCmdAtomicClient
 import Game.LambdaHack.Client.UI.HandleHumanCmdClient
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.RunClient
+import Game.LambdaHack.Client.UI.StartupFrontendClient
 import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Animation
@@ -34,6 +38,7 @@ import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Content.ModeKind
 
 -- | Handle the move of a UI player.
 queryUI :: MonadClientUI m => ActorId -> m Request
@@ -156,3 +161,20 @@ humanCommand msgRunStop = do
     Just msg -> do
       sli <- promptToSlideshow msg
       loop $ Just (False, head . snd $ slideshow sli)
+
+pongUI :: MonadClientUI m => m Request
+pongUI = do
+  -- Ping the frontend, too.
+  syncFrames
+  escPressed <- tryTakeMVarSescMVar
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
+  let pong ats = return $ ReqTimed $ ReqPongHack ats
+      hasAiLeader = playerAiLeader $ gplayer fact
+  if escPressed && hasAiLeader then do
+    -- Ask server to turn off AI for the faction's leader.
+    let atomicCmd = UpdAtomic $ UpdAutoFaction side False
+    pong [atomicCmd]
+  else
+    -- Respond to the server normally.
+    pong []

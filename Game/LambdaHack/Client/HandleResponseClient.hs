@@ -32,7 +32,9 @@ handleResponseAI cmd = case cmd of
   RespQueryAI aid -> do
     cmdC <- queryAI aid
     sendRequest cmdC
-  RespPingAI -> pongAI
+  RespPingAI -> do
+    pong <- pongAI
+    sendRequest pong
 
 handleResponseUI :: ( MonadAtomic m, MonadClientUI m
                     , MonadClientWriteRequest Request m )
@@ -50,4 +52,6 @@ handleResponseUI cmd = case cmd of
   RespQueryUI aid -> do
     cmdH <- queryUI aid
     sendRequest cmdH
-  RespPingUI -> pongUI
+  RespPingUI -> do
+    pong <- pongUI
+    sendRequest pong

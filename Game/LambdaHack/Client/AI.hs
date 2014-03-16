@@ -1,6 +1,6 @@
 -- | Semantics of most 'ResponseAI' client commands.
 module Game.LambdaHack.Client.AI
-  ( queryAI
+  ( queryAI, pongAI
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -22,6 +22,9 @@ queryAI :: MonadClient m => ActorId -> m RequestTimed
 queryAI oldAid = do
   (aidToMove, bToMove) <- pickActorToMove refreshTarget oldAid
   pickAction (aidToMove, bToMove)
+
+pongAI :: MonadClient m => m RequestTimed
+pongAI = return $ ReqPongHack []
 
 refreshTarget :: MonadClient m
               => ActorId -> (ActorId, Actor)

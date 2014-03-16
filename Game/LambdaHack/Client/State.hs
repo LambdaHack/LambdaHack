@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Server and client game state types and operations.
 module Game.LambdaHack.Client.State
-  ( StateClient(..), defStateClient, defHistory
+  ( StateClient(..), defStateClient, defaultHistory
   , updateTarget, getTarget, updateLeader, sside
   , PathEtc, TgtMode(..), Target(..), RunParams(..), LastRecord
   , toggleMarkVision, toggleMarkSmell, toggleMarkSuspect
@@ -154,8 +154,8 @@ defStateClient shistory _sside sisAI =
     , sdebugCli = defDebugModeCli
     }
 
-defHistory :: IO History
-defHistory = do
+defaultHistory :: IO History
+defaultHistory = do
   dateTime <- getClockTime
   let curDate = MU.Text $ T.pack $ calendarTimeToString $ toUTCTime dateTime
   return $! singletonHistory $ singletonReport
