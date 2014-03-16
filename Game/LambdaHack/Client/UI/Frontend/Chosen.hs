@@ -8,7 +8,7 @@ module Game.LambdaHack.Client.UI.Frontend.Chosen
 
 import Control.Concurrent
 import qualified Game.LambdaHack.Client.Key as K
-import Game.LambdaHack.Common.Animation (SingleFrame (..))
+import Game.LambdaHack.Client.UI.Animation (SingleFrame (..))
 import Game.LambdaHack.Common.ClientOptions
 
 #ifdef VTY

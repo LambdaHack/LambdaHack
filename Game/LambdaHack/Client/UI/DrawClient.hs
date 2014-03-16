@@ -16,7 +16,7 @@ import Game.LambdaHack.Client.Bfs
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Actor as Actor
 import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.Animation
+import Game.LambdaHack.Client.UI.Animation
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Faction

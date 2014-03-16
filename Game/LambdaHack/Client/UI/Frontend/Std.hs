@@ -15,7 +15,7 @@ import Data.Char (chr, ord)
 import qualified System.IO as SIO
 
 import qualified Game.LambdaHack.Client.Key as K
-import Game.LambdaHack.Common.Animation
+import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Utils.Thread

@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric, GeneralizedNewtypeDeriving #-}
 -- | Screen frames and animations.
-module Game.LambdaHack.Common.Animation
+module Game.LambdaHack.Client.UI.Animation
   ( SingleFrame(..), decodeLine, encodeLine
   , overlayOverlay
   , Animation, Frames, renderAnim, restrictAnim
