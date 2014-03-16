@@ -17,6 +17,7 @@ import Game.LambdaHack.Common.Animation
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Utils.Thread
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
@@ -36,7 +37,10 @@ startup sdebugCli k = do
   svty <- mkVty
   -- TODO: implement sescMVar, when we switch to a new vty that has
   -- a separate key listener thread or something. Avoid polling.
-  void $ forkIO $ k FrontendSession{sescMVar = Nothing, ..} >> Vty.shutdown svty
+  children <- newMVar []
+  void $ forkChild children $ k FrontendSession{sescMVar = Nothing, ..}
+  waitForChildren children
+  Vty.shutdown svty
 
 -- | Output to the screen via the frontend.
 fdisplay :: FrontendSession    -- ^ frontend session data

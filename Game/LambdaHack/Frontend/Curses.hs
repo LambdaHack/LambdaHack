@@ -23,6 +23,7 @@ import Game.LambdaHack.Common.Animation
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Utils.Thread
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
@@ -54,7 +55,10 @@ startup sdebugCli k = do
   ws <- C.convertStyles vs
   let swin = C.stdScr
       sstyles = M.fromList (zip ks ws)
-  void $ forkIO $ k FrontendSession{sescMVar = Nothing, ..} >> C.end
+  children <- newMVar []
+  void $ forkChild children $ k FrontendSession{sescMVar = Nothing, ..}
+  waitForChildren children
+  C.end
 
 -- | Output to the screen via the frontend.
 fdisplay :: FrontendSession    -- ^ frontend session data
