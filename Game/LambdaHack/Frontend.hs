@@ -1,12 +1,12 @@
 -- | Display game data on the screen and receive user input
--- using one of the available raw frontends and derived  operations.
+-- using one of the available raw frontends and derived operations.
 module Game.LambdaHack.Frontend
-  ( -- * Re-exported part of the raw frontend
-    frontendName
-    -- * Derived operation
+  ( -- * Connection types.
+    FrontReq(..), ChanFrontend(..)
+    -- * Re-exported part of the raw frontend
+  , frontendName
+    -- * A derived operation
   , startupF
-    -- * Connection channels
-  , FrontReq(..), ConnMulti(..)
   ) where
 
 import Control.Concurrent
@@ -20,10 +20,6 @@ import Game.LambdaHack.Common.Animation
 import qualified Game.LambdaHack.Common.Key as K
 import Game.LambdaHack.Frontend.Chosen
 
-type FromMulti = STM.TQueue K.KM
-
-type ToMulti = STM.TQueue FrontReq
-
 data FrontReq =
     FrontFrame {frontAc :: !AcFrame}
       -- ^ show a frame, if the fid active, or save it to the client's queue
@@ -34,15 +30,15 @@ data FrontReq =
   | FrontFinish
       -- ^ exit frontend loop
 
--- | Multiplex connection channels, for the case of a frontend shared
--- among clients. This is transparent to the clients themselves.
-data ConnMulti = ConnMulti
-  { fromMulti :: !FromMulti
-  , toMulti   :: !ToMulti
+-- | Connection channel between a frontend and a client. Frontend acts
+-- as a server, serving keys, when given frames to display.
+data ChanFrontend = ChanFrontend
+  { responseF :: !(STM.TQueue K.KM)
+  , requestF  :: !(STM.TQueue FrontReq)
   }
 
 startupF :: DebugModeCli
-         -> (Maybe (MVar ()) -> (ConnMulti -> IO ()) -> IO ())
+         -> (Maybe (MVar ()) -> (ChanFrontend -> IO ()) -> IO ())
          -> IO ()
 startupF dbg cont =
   (if sfrontendNull dbg then nullStartup
@@ -83,20 +79,16 @@ displayAc fs (AcRunning fr) = fdisplay fs True (Just fr)
 displayAc fs (AcNormal fr) = fdisplay fs False (Just fr)
 displayAc fs AcDelay = fdisplay fs False Nothing
 
--- Read UI requests from clients and send them to the frontend,
--- separated by fadeout/fadein frame sequences, if needed.
--- There may be many UI clients, but this function is only ever
--- executed on one thread, so the frontend receives requests
--- in a sequential way, without any random interleaving.
-loopFrontend :: Frontend -> ConnMulti -> IO ()
-loopFrontend fs ConnMulti{..} = loop
+-- Read UI requests from the client and send them to the frontend,
+loopFrontend :: Frontend -> ChanFrontend -> IO ()
+loopFrontend fs ChanFrontend{..} = loop
  where
   writeKM :: K.KM -> IO ()
-  writeKM km = STM.atomically $ STM.writeTQueue fromMulti km
+  writeKM km = STM.atomically $ STM.writeTQueue responseF km
 
   loop :: IO ()
   loop = do
-    efr <- STM.atomically $ STM.readTQueue toMulti
+    efr <- STM.atomically $ STM.readTQueue requestF
     case efr of
       FrontFrame{..} -> do
         displayAc fs frontAc
@@ -113,7 +105,7 @@ loopFrontend fs ConnMulti{..} = loop
       FrontSlides{..} -> do
         let displayFrs frs =
               case frs of
-                [] -> assert `failure` "null slides" `twith` ()
+                [] -> assert `failure` "null slides" `twith` frs
                 [x] -> do
                   fdisplay fs False (Just x)
                   writeKM K.spaceKey

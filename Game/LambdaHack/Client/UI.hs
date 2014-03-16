@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.UI
   , Config, mkConfig, applyConfigToDebug
   , displayRespUpdAtomicUI, displayRespSfxAtomicUI
     -- TODO: get rid of those:
-  , SessionUI(..), connFrontend
+  , SessionUI(..)
   , syncFrames, tryTakeMVarSescMVar, displayMore, msgAdd, stdBinding
   ) where
 

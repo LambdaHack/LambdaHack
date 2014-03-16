@@ -66,15 +66,19 @@ exeFrontend copsClient executorUI executorAI
         let noSession = assert `failure` "AI client needs no UI session"
                                `twith` fid
         in exeClientAI noSession s (cli fid True)
-      eClientUI sescMVar sloopFrontend fid chanServerUI = do
-        fromMulti <- STM.newTQueueIO
-        toMulti <- STM.newTQueueIO
-        let connMulti = ConnMulti{..}
-            sfconn = connFrontend connMulti
+      eClientUI sescMVar loopFrontend fid chanServerUI = do
+        responseF <- STM.newTQueueIO
+        requestF <- STM.newTQueueIO
+        let schanF = ChanFrontend{..}
         children <- newMVar []
-        void $ forkChild children $ sloopFrontend connMulti
+        void $ forkChild children $ loopFrontend schanF
         exeClientUI SessionUI{..} s (cli fid False) chanServerUI
-        STM.atomically $ STM.writeTQueue toMulti FrontFinish
+        STM.atomically $ STM.writeTQueue requestF FrontFinish
         waitForChildren children
-  startupF sdebugMode $ \sescMVar sloopFrontend ->
-    exeServer (eClientUI sescMVar sloopFrontend) eClientAI
+  -- TODO: let each client start his own raw frontend (e.g., gtk, though
+  -- that leads to disaster); then don't give server as the argument
+  -- to startupF, but the Client.hs (when it ends, gtk ends); server is
+  -- then forked separately and client doesn't need to know about
+  -- starting servers.
+  startupF sdebugMode $ \sescMVar loopFrontend ->
+    exeServer (eClientUI sescMVar loopFrontend) eClientAI

@@ -77,13 +77,13 @@ instance MonadClientUI (CliImplementation resp req) where
 
 instance MonadClientReadResponse resp (CliImplementation resp req) where
   receiveResponse     = CliImplementation $ do
-    ChanServer{responseQ} <- gets cliDict
-    IO.liftIO $ atomically . readTQueue $ responseQ
+    ChanServer{responseS} <- gets cliDict
+    IO.liftIO $ atomically . readTQueue $ responseS
 
 instance MonadClientWriteRequest req (CliImplementation resp req) where
   sendRequest scmd = CliImplementation $ do
-    ChanServer{requestQ} <- gets cliDict
-    IO.liftIO $ atomically . writeTQueue requestQ $ scmd
+    ChanServer{requestS} <- gets cliDict
+    IO.liftIO $ atomically . writeTQueue requestS $ scmd
 
 instance MonadAtomic (CliImplementation resp req) where
   execAtomic = handleCmdAtomic

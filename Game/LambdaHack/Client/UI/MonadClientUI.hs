@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
     MonadClientUI( getsSession  -- exposed only to be implemented, not used
                  , liftIO  -- exposed only to be implemented, not used
                  )
-  , SessionUI(..), connFrontend
+  , SessionUI(..)
     -- * Display and key input
   , promptGetKey, getKeyOverlayCommand, getInitConfirms
   , displayFrame, displayFrames, drawOverlay
@@ -47,39 +47,34 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
-import qualified Game.LambdaHack.Frontend as Frontend
+import Game.LambdaHack.Frontend as Frontend
 
 -- | The information that is constant across a client playing session,
 -- including many consecutive games in a single session,
 -- but is completely disregarded and reset when a new playing session starts.
 -- Auxiliary AI and computer player clients have no @sfs@ nor @sbinding@.
 data SessionUI = SessionUI
-  { sfconn   :: !ConnFrontend  -- ^ connection with the frontend
-  , sbinding :: !Binding       -- ^ binding of keys to commands
+  { schanF   :: !ChanFrontend       -- ^ connection with the frontend
+  , sbinding :: !Binding            -- ^ binding of keys to commands
   , sescMVar :: !(Maybe (MVar ()))
   , sconfig  :: !Config
-  }
-
--- | Connection method between a client and a frontend.
-data ConnFrontend = ConnFrontend
-  { readConnFrontend  :: MonadClientUI m => m K.KM
-      -- ^ read a keystroke received from the frontend
-  , writeConnFrontend :: MonadClientUI m => Frontend.FrontReq -> m ()
-      -- ^ write a UI request to the frontend
   }
 
 class MonadClient m => MonadClientUI m where
   getsSession  :: (SessionUI -> a) -> m a
   liftIO       :: IO a -> m a
 
-connFrontend :: Frontend.ConnMulti -> ConnFrontend
-connFrontend connMulti = ConnFrontend
-  { readConnFrontend =
-      liftIO $ atomically $ readTQueue $ Frontend.fromMulti connMulti
-  , writeConnFrontend = \efr -> do
-      let toF = Frontend.toMulti connMulti
-      liftIO $ atomically $ writeTQueue toF efr
-  }
+-- | Read a keystroke received from the frontend.
+readConnFrontend :: MonadClientUI m => m K.KM
+readConnFrontend = do
+  ChanFrontend{responseF} <- getsSession schanF
+  liftIO $ atomically $ readTQueue responseF
+
+-- | Write a UI request to the frontend.
+writeConnFrontend :: MonadClientUI m => FrontReq -> m ()
+writeConnFrontend efr = do
+  ChanFrontend{requestF} <- getsSession schanF
+  liftIO $ atomically $ writeTQueue requestF efr
 
 promptGetKey :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
 promptGetKey frontKM frontFr = do
@@ -92,8 +87,7 @@ promptGetKey frontKM frontFr = do
       return km
     _ -> do
       unless (null lastPlayOld) stopPlayBack  -- we can't continue playback
-      ConnFrontend{..} <- getsSession sfconn
-      writeConnFrontend Frontend.FrontKey {..}
+      writeConnFrontend FrontKey{..}
       readConnFrontend
   (seqCurrent, seqPrevious, k) <- getsClient slastRecord
   let slastRecord = (km : seqCurrent, seqPrevious, k)
@@ -112,7 +106,6 @@ getKeyOverlayCommand onBlank overlay = do
 getInitConfirms :: MonadClientUI m
                 => ColorMode -> [K.KM] -> Slideshow -> m Bool
 getInitConfirms dm frontClear slides = do
-  ConnFrontend{..} <- getsSession sfconn
   let (onBlank, ovs) = slideshow slides
   frontSlides <- mapM (drawOverlay onBlank dm) ovs
   -- The first two cases are optimizations:
@@ -122,7 +115,7 @@ getInitConfirms dm frontClear slides = do
       displayFrame False $ Just x
       return True
     _ -> do
-      writeConnFrontend Frontend.FrontSlides{..}
+      writeConnFrontend FrontSlides{..}
       km <- readConnFrontend
       -- Don't clear ESC marker here, because the wait for confirms may
       -- block a ping and the ping would not see the ESC.
@@ -130,12 +123,11 @@ getInitConfirms dm frontClear slides = do
 
 displayFrame :: MonadClientUI m => Bool -> Maybe SingleFrame -> m ()
 displayFrame isRunning mf = do
-  ConnFrontend{writeConnFrontend} <- getsSession sfconn
   let frame = case mf of
         Nothing -> AcDelay
         Just fr | isRunning -> AcRunning fr
         Just fr -> AcNormal fr
-  writeConnFrontend $ Frontend.FrontFrame frame
+  writeConnFrontend $ FrontFrame frame
 
 -- | Push frames or delays to the frame queue.
 displayFrames :: MonadClientUI m => Frames -> m ()
@@ -195,9 +187,8 @@ askBinding = getsSession sbinding
 -- | Sync frames display with the frontend.
 syncFrames :: MonadClientUI m => m ()
 syncFrames = do
-  ConnFrontend{..} <- getsSession sfconn
   -- Hack.
-  writeConnFrontend Frontend.FrontSlides{frontClear=[], frontSlides=[]}
+  writeConnFrontend FrontSlides{frontClear=[], frontSlides=[]}
   km <- readConnFrontend
   assert (km == K.spaceKey) skip
 
