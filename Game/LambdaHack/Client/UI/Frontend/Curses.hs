@@ -21,7 +21,7 @@ import qualified UI.HSCurses.CursesHelper as C
 
 import Game.LambdaHack.Common.Animation
 import qualified Game.LambdaHack.Common.Color as Color
-import qualified Game.LambdaHack.Common.Key as K
+import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Utils.Thread
 

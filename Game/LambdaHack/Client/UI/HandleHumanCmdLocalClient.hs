@@ -50,8 +50,8 @@ import Game.LambdaHack.Common.Animation
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
-import qualified Game.LambdaHack.Common.HumanCmd as HumanCmd
-import qualified Game.LambdaHack.Common.Key as K
+import qualified Game.LambdaHack.Client.UI.HumanCmd as HumanCmd
+import qualified Game.LambdaHack.Client.Key as K
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.MonadStateRead

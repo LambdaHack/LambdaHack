@@ -18,7 +18,7 @@ import System.IO
 
 import Game.LambdaHack.Client.UI.Frontend.Chosen
 import Game.LambdaHack.Common.Animation
-import qualified Game.LambdaHack.Common.Key as K
+import qualified Game.LambdaHack.Client.Key as K
 
 data FrontReq =
     FrontFrame {frontAc :: !AcFrame}

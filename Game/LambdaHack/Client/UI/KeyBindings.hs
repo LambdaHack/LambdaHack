@@ -14,8 +14,8 @@ import Data.Tuple (swap)
 
 import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.Content.KeyKind
-import Game.LambdaHack.Common.HumanCmd
-import qualified Game.LambdaHack.Common.Key as K
+import Game.LambdaHack.Client.UI.HumanCmd
+import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Common.Msg
 
 -- | Bindings and other information about human player commands.

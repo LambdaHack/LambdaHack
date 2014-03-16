@@ -32,8 +32,8 @@ import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Animation
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.HumanCmd
-import qualified Game.LambdaHack.Common.Key as K
+import Game.LambdaHack.Client.UI.HumanCmd
+import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Request

@@ -7,8 +7,8 @@ import Control.Arrow (first)
 import Game.LambdaHack.Client.UI.Content.KeyKind
 import qualified Game.LambdaHack.Common.Effect as Effect
 import qualified Game.LambdaHack.Common.Feature as F
-import Game.LambdaHack.Common.HumanCmd
-import qualified Game.LambdaHack.Common.Key as K
+import Game.LambdaHack.Client.UI.HumanCmd
+import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Common.Misc
 
 standardKeys :: KeyKind

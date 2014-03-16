@@ -9,7 +9,7 @@ import Game.LambdaHack.Client.UI.HandleHumanCmdGlobalClient
 import Game.LambdaHack.Client.UI.HandleHumanCmdLocalClient
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgClient
-import Game.LambdaHack.Common.HumanCmd
+import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Common.Request
 
 -- | The semantics of human player commands in terms of the @Action@ monad.

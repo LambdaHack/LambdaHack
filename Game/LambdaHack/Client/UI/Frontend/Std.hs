@@ -16,7 +16,7 @@ import qualified System.IO as SIO
 
 import Game.LambdaHack.Common.Animation
 import qualified Game.LambdaHack.Common.Color as Color
-import qualified Game.LambdaHack.Common.Key as K
+import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Utils.Thread
 
 -- | No session data needs to be maintained by this frontend.

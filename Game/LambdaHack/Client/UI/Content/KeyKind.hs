@@ -3,8 +3,8 @@ module Game.LambdaHack.Client.UI.Content.KeyKind
   ( KeyKind(..)
   ) where
 
-import Game.LambdaHack.Common.HumanCmd
-import qualified Game.LambdaHack.Common.Key as K
+import Game.LambdaHack.Client.UI.HumanCmd
+import qualified Game.LambdaHack.Client.Key as K
 
 data KeyKind = KeyKind
   { rhumanCommands :: ![(K.KM, (CmdCategory, HumanCmd))]

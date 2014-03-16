@@ -19,8 +19,8 @@ import System.Directory
 import System.FilePath
 import Text.Read
 
-import Game.LambdaHack.Common.HumanCmd
-import qualified Game.LambdaHack.Common.Key as K
+import Game.LambdaHack.Client.UI.HumanCmd
+import qualified Game.LambdaHack.Client.Key as K
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Content.RuleKind

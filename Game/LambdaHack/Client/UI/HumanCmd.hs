@@ -1,5 +1,5 @@
 -- | Abstract syntax human player commands.
-module Game.LambdaHack.Common.HumanCmd
+module Game.LambdaHack.Client.UI.HumanCmd
   ( CmdCategory(..), HumanCmd(..), Trigger(..)
   , noRemoteHumanCmd, categoryDescription, cmdDescription
   ) where

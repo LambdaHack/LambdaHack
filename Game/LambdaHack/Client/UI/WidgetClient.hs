@@ -15,7 +15,7 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.DrawClient
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Common.Animation
-import qualified Game.LambdaHack.Common.Key as K
+import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
