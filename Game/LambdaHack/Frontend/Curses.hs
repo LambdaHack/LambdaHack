@@ -54,8 +54,7 @@ startup sdebugCli k = do
   ws <- C.convertStyles vs
   let swin = C.stdScr
       sstyles = M.fromList (zip ks ws)
-  k FrontendSession{sescMVar = Nothing, ..}
-  C.end
+  void $ forkIO $ k FrontendSession{sescMVar = Nothing, ..} >> C.end
 
 -- | Output to the screen via the frontend.
 fdisplay :: FrontendSession    -- ^ frontend session data

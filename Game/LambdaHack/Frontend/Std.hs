@@ -9,6 +9,7 @@ module Game.LambdaHack.Frontend.Std
   ) where
 
 import Control.Concurrent
+import Control.Monad
 import qualified Data.ByteString.Char8 as BS
 import Data.Char (chr, ord)
 import qualified System.IO as SIO
@@ -29,7 +30,7 @@ frontendName = "std"
 
 -- | Starts the main program loop using the frontend input and output.
 startup :: DebugModeCli -> (FrontendSession -> IO ()) -> IO ()
-startup sdebugCli k = k FrontendSession{sescMVar = Nothing, ..}
+startup sdebugCli k = void $ forkIO $ k FrontendSession{sescMVar = Nothing, ..}
 
 -- | Output to the screen via the frontend.
 fdisplay :: FrontendSession    -- ^ frontend session data
