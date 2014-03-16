@@ -7,6 +7,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
                  )
   , SessionUI(..)
     -- * Display and key input
+  , ColorMode(..)
   , promptGetKey, getKeyOverlayCommand, getInitConfirms
   , displayFrame, displayFrames, drawOverlay
     -- * Assorted primitives

@@ -8,7 +8,7 @@ module Game.LambdaHack.Client.UI
     -- * Startup
   , srtFrontend, KeyKind, SessionUI
     -- * Operations exposed for the LoopClient
-  , displayMore, msgAdd
+  , ColorMode(..), displayMore, msgAdd
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -17,12 +17,14 @@ import qualified Data.Map.Strict as M
 import Data.Maybe
 
 import Game.LambdaHack.Atomic
+import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.Content.KeyKind
 import Game.LambdaHack.Client.UI.DisplayCmdAtomicClient
 import Game.LambdaHack.Client.UI.HandleHumanCmdClient
+import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgClient
@@ -30,10 +32,7 @@ import Game.LambdaHack.Client.UI.RunClient
 import Game.LambdaHack.Client.UI.StartupFrontendClient
 import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.Animation
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Client.UI.HumanCmd
-import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Request
