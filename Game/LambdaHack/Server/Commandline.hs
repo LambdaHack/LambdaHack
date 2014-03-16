@@ -6,7 +6,7 @@ module Game.LambdaHack.Server.Commandline
 import qualified Data.Text as T
 import System.Environment (getArgs)
 
-import Game.LambdaHack.Common.Animation
+import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.State
 

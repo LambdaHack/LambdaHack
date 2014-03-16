@@ -107,6 +107,7 @@ library
                       Game.LambdaHack.Common.Actor,
                       Game.LambdaHack.Common.ActorState,
                       Game.LambdaHack.Common.Animation,
+                      Game.LambdaHack.Common.ClientOptions,
                       Game.LambdaHack.Common.Color,
                       Game.LambdaHack.Common.ContentDef,
                       Game.LambdaHack.Common.Effect,

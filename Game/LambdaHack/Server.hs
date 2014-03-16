@@ -9,7 +9,7 @@ import Control.Concurrent
 import qualified Control.Exception as Ex hiding (handle)
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Common.Animation
+import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Request

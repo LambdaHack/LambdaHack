@@ -13,9 +13,10 @@ import Control.Monad
 import Graphics.Vty
 import qualified Graphics.Vty as Vty
 
-import Game.LambdaHack.Common.Animation
-import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Client.Key as K
+import Game.LambdaHack.Common.Animation
+import Game.LambdaHack.Common.ClientOptions
+import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Utils.Thread
 

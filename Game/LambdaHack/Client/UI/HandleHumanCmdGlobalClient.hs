@@ -22,10 +22,12 @@ import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.BfsClient
 import Game.LambdaHack.Client.CommonClient
+import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.HandleHumanCmdLocalClient
+import Game.LambdaHack.Client.UI.HumanCmd (Trigger (..))
 import Game.LambdaHack.Client.UI.InventoryClient
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgClient
@@ -34,12 +36,11 @@ import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Animation
+import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
-import Game.LambdaHack.Client.UI.HumanCmd (Trigger (..))
 import Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Client.Key as K
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc

@@ -20,7 +20,7 @@ import qualified System.Random as R
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.Animation
+import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F

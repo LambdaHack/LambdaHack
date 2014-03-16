@@ -22,7 +22,7 @@ import Data.Text (Text)
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Actor
-import Game.LambdaHack.Common.Animation
+import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
@@ -37,7 +37,6 @@ import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
-
 import Game.LambdaHack.Content.ItemKind as ItemKind
 import Game.LambdaHack.Content.TileKind as TileKind
 

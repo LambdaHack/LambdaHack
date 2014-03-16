@@ -7,8 +7,9 @@ module Game.LambdaHack.Client.UI.Frontend.Chosen
   ) where
 
 import Control.Concurrent
-import Game.LambdaHack.Common.Animation (DebugModeCli (..), SingleFrame (..))
 import qualified Game.LambdaHack.Client.Key as K
+import Game.LambdaHack.Common.Animation (SingleFrame (..))
+import Game.LambdaHack.Common.ClientOptions
 
 #ifdef VTY
 import qualified Game.LambdaHack.Client.UI.Frontend.Vty as Chosen

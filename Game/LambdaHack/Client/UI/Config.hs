@@ -14,13 +14,13 @@ import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.Text (Text)
 import qualified Data.Text as T
-import Game.LambdaHack.Common.Animation (DebugModeCli (..))
+import Game.LambdaHack.Common.ClientOptions
 import System.Directory
 import System.FilePath
 import Text.Read
 
-import Game.LambdaHack.Client.UI.HumanCmd
 import qualified Game.LambdaHack.Client.Key as K
+import Game.LambdaHack.Client.UI.HumanCmd
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Content.RuleKind

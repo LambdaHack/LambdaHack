@@ -10,12 +10,13 @@ import Data.Monoid
 
 import Game.LambdaHack.Client.BfsClient
 import Game.LambdaHack.Client.CommonClient
+import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient hiding (liftIO)
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.DrawClient
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Common.Animation
-import qualified Game.LambdaHack.Client.Key as K
+import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg

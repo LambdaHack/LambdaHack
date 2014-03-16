@@ -21,12 +21,12 @@ import System.Time
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.Bfs
 import Game.LambdaHack.Client.ItemSlot
+import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Common.Animation
+import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
