@@ -6,7 +6,6 @@ module Game.LambdaHack.Common.Animation
   , overlayOverlay, xsizeSingleFrame, ysizeSingleFrame
   , Animation, Frames, renderAnim, restrictAnim
   , twirlSplash, blockHit, blockMiss, deathBody, swapPlaces, fadeout
-  , AcFrame(..)
   , DebugModeCli(..), defDebugModeCli
   ) where
 
@@ -236,15 +235,6 @@ fadeout out topRight step lxsize lysize = do
       fs = [startN, startN + step .. 3 * lxsize `divUp` 4 + 2]
   as <- mapM rollFrame $ if out then fs else reverse fs
   return $! Animation as
-
-data AcFrame =
-    AcConfirm !SingleFrame
-  | AcRunning !SingleFrame
-  | AcNormal !SingleFrame
-  | AcDelay
-  deriving (Show, Eq, Generic)
-
-instance Binary AcFrame
 
 data DebugModeCli = DebugModeCli
   { sfont          :: !(Maybe String)

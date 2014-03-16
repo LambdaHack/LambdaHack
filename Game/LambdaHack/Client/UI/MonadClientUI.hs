@@ -30,24 +30,24 @@ import System.Time
 
 import Game.LambdaHack.Client.BfsClient
 import Game.LambdaHack.Client.CommonClient
+import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient hiding (liftIO)
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.DrawClient
+import Game.LambdaHack.Client.UI.Frontend as Frontend
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Animation
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
-import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Client.UI.Frontend as Frontend
 
 -- | The information that is constant across a client playing session,
 -- including many consecutive games in a single session,
@@ -124,10 +124,10 @@ getInitConfirms dm frontClear slides = do
 displayFrame :: MonadClientUI m => Bool -> Maybe SingleFrame -> m ()
 displayFrame isRunning mf = do
   let frame = case mf of
-        Nothing -> AcDelay
-        Just fr | isRunning -> AcRunning fr
-        Just fr -> AcNormal fr
-  writeConnFrontend $ FrontFrame frame
+        Nothing -> FrontDelay
+        Just fr | isRunning -> FrontRunningFrame fr
+        Just fr -> FrontNormalFrame fr
+  writeConnFrontend frame
 
 -- | Push frames or delays to the frame queue.
 displayFrames :: MonadClientUI m => Frames -> m ()

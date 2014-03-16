@@ -16,13 +16,17 @@ import Control.Monad
 import qualified Data.Text.IO as T
 import System.IO
 
+import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Frontend.Chosen
 import Game.LambdaHack.Common.Animation
-import qualified Game.LambdaHack.Client.Key as K
 
 data FrontReq =
-    FrontFrame {frontAc :: !AcFrame}
-      -- ^ show a frame, if the fid active, or save it to the client's queue
+    FrontNormalFrame {frontFrame :: !SingleFrame}
+      -- ^ show a frame
+  | FrontRunningFrame {frontFrame :: !SingleFrame}
+      -- ^ show a frame in running mode (don't insert delay between frames)
+  | FrontDelay
+      -- ^ perform a single explicit delay
   | FrontKey {frontKM :: ![K.KM], frontFr :: !SingleFrame}
       -- ^ flush frames, possibly show fadeout/fadein and ask for a keypress
   | FrontSlides {frontClear :: ![K.KM], frontSlides :: ![SingleFrame]}
@@ -73,12 +77,6 @@ getConfirmGeneric fs clearKeys frame = do
     km <- promptGetKey fs (clearKeys ++ extraKeys) frame
     return $! km /= K.escKey
 
-displayAc :: RawFrontend -> AcFrame -> IO ()
-displayAc fs (AcConfirm fr) = void $ getConfirmGeneric fs [] fr
-displayAc fs (AcRunning fr) = fdisplay fs True (Just fr)
-displayAc fs (AcNormal fr) = fdisplay fs False (Just fr)
-displayAc fs AcDelay = fdisplay fs False Nothing
-
 -- Read UI requests from the client and send them to the frontend,
 loopFrontend :: RawFrontend -> ChanFrontend -> IO ()
 loopFrontend fs ChanFrontend{..} = loop
@@ -90,8 +88,14 @@ loopFrontend fs ChanFrontend{..} = loop
   loop = do
     efr <- STM.atomically $ STM.readTQueue requestF
     case efr of
-      FrontFrame{..} -> do
-        displayAc fs frontAc
+      FrontNormalFrame{..} -> do
+        fdisplay fs False (Just frontFrame)
+        loop
+      FrontRunningFrame{..} -> do
+        fdisplay fs True (Just frontFrame)
+        loop
+      FrontDelay -> do
+        fdisplay fs False Nothing
         loop
       FrontKey{..} -> do
         km <- promptGetKey fs frontKM frontFr
