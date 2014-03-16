@@ -1,6 +1,6 @@
 -- | Display game data on the screen and receive user input
 -- using one of the available raw frontends and derived operations.
-module Game.LambdaHack.Frontend
+module Game.LambdaHack.Client.UI.Frontend
   ( -- * Connection types.
     FrontReq(..), ChanFrontend(..)
     -- * Re-exported part of the raw frontend
@@ -16,9 +16,9 @@ import Control.Monad
 import qualified Data.Text.IO as T
 import System.IO
 
+import Game.LambdaHack.Client.UI.Frontend.Chosen
 import Game.LambdaHack.Common.Animation
 import qualified Game.LambdaHack.Common.Key as K
-import Game.LambdaHack.Frontend.Chosen
 
 data FrontReq =
     FrontFrame {frontAc :: !AcFrame}
@@ -44,15 +44,15 @@ startupF dbg cont =
   (if sfrontendNull dbg then nullStartup
    else if sfrontendStd dbg then stdStartup
         else chosenStartup) dbg $ \fs -> do
+    cont (fescMVar fs) (loopFrontend fs)
     let debugPrint t = when (sdbgMsgCli dbg) $ do
           T.hPutStrLn stderr t
           hFlush stderr
-    cont (fescMVar fs) (loopFrontend fs)
     debugPrint "Server shuts down"
 
 -- | Display a prompt, wait for any of the specified keys (for any key,
 -- if the list is empty). Repeat if an unexpected key received.
-promptGetKey :: Frontend -> [K.KM] -> SingleFrame -> IO K.KM
+promptGetKey :: RawFrontend -> [K.KM] -> SingleFrame -> IO K.KM
 promptGetKey fs [] frame = fpromptGetKey fs frame
 promptGetKey fs keys frame = do
   km <- fpromptGetKey fs frame
@@ -60,7 +60,7 @@ promptGetKey fs keys frame = do
     then return km
     else promptGetKey fs keys frame
 
-getConfirmGeneric :: Frontend -> [K.KM] -> SingleFrame -> IO Bool
+getConfirmGeneric :: RawFrontend -> [K.KM] -> SingleFrame -> IO Bool
 getConfirmGeneric fs clearKeys frame = do
   let DebugModeCli{snoMore} = fdebugCli fs
   -- TODO: turn noMore off somehow when faction not under computer control;
@@ -73,14 +73,14 @@ getConfirmGeneric fs clearKeys frame = do
     km <- promptGetKey fs (clearKeys ++ extraKeys) frame
     return $! km /= K.escKey
 
-displayAc :: Frontend -> AcFrame -> IO ()
+displayAc :: RawFrontend -> AcFrame -> IO ()
 displayAc fs (AcConfirm fr) = void $ getConfirmGeneric fs [] fr
 displayAc fs (AcRunning fr) = fdisplay fs True (Just fr)
 displayAc fs (AcNormal fr) = fdisplay fs False (Just fr)
 displayAc fs AcDelay = fdisplay fs False Nothing
 
 -- Read UI requests from the client and send them to the frontend,
-loopFrontend :: Frontend -> ChanFrontend -> IO ()
+loopFrontend :: RawFrontend -> ChanFrontend -> IO ()
 loopFrontend fs ChanFrontend{..} = loop
  where
   writeKM :: K.KM -> IO ()

@@ -1,5 +1,5 @@
 -- | Text frontend based on Vty.
-module Game.LambdaHack.Frontend.Vty
+module Game.LambdaHack.Client.UI.Frontend.Vty
   ( -- * Session data type for the frontend
     FrontendSession(sescMVar)
     -- * The output and input operations

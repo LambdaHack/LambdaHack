@@ -142,9 +142,9 @@ library
                       Game.LambdaHack.Content.PlaceKind,
                       Game.LambdaHack.Content.RuleKind,
                       Game.LambdaHack.Content.TileKind,
-                      Game.LambdaHack.Frontend,
-                      Game.LambdaHack.Frontend.Chosen,
-                      Game.LambdaHack.Frontend.Std,
+                      Game.LambdaHack.Client.UI.Frontend,
+                      Game.LambdaHack.Client.UI.Frontend.Chosen,
+                      Game.LambdaHack.Client.UI.Frontend.Std,
                       Game.LambdaHack.SampleImplementation.SampleImplementationMonadClient,
                       Game.LambdaHack.SampleImplementation.SampleImplementationMonadServer,
                       Game.LambdaHack.Server,
@@ -217,15 +217,15 @@ library
   ghc-prof-options:   -fprof-auto-calls
 
   if flag(curses) {
-    other-modules:    Game.LambdaHack.Frontend.Curses
+    other-modules:    Game.LambdaHack.Client.UI.Frontend.Curses
     build-depends:    hscurses >= 1.4.1 && < 2
     cpp-options:      -DCURSES
   } else { if flag(vty) {
-    other-modules:    Game.LambdaHack.Frontend.Vty
+    other-modules:    Game.LambdaHack.Client.UI.Frontend.Vty
     build-depends:    vty >= 4.7.0.6 && < 5
     cpp-options:      -DVTY
   } else {
-    other-modules:    Game.LambdaHack.Frontend.Gtk
+    other-modules:    Game.LambdaHack.Client.UI.Frontend.Gtk
     build-depends:    gtk >= 0.12.1 && < 0.13
   } }
 

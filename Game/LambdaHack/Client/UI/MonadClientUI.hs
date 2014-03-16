@@ -47,7 +47,7 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Frontend as Frontend
+import Game.LambdaHack.Client.UI.Frontend as Frontend
 
 -- | The information that is constant across a client playing session,
 -- including many consecutive games in a single session,

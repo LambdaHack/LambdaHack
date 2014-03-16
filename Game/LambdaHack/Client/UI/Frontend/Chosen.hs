@@ -1,8 +1,8 @@
 {-# LANGUAGE CPP #-}
 -- | Re-export the operations of the chosen raw frontend
 -- (determined at compile time with cabal flags).
-module Game.LambdaHack.Frontend.Chosen
-  ( Frontend(..), chosenStartup, stdStartup, nullStartup
+module Game.LambdaHack.Client.UI.Frontend.Chosen
+  ( RawFrontend(..), chosenStartup, stdStartup, nullStartup
   , frontendName
   ) where
 
@@ -11,20 +11,20 @@ import Game.LambdaHack.Common.Animation (DebugModeCli (..), SingleFrame (..))
 import qualified Game.LambdaHack.Common.Key as K
 
 #ifdef VTY
-import qualified Game.LambdaHack.Frontend.Vty as Chosen
+import qualified Game.LambdaHack.Client.UI.Frontend.Vty as Chosen
 #elif CURSES
-import qualified Game.LambdaHack.Frontend.Curses as Chosen
+import qualified Game.LambdaHack.Client.UI.Frontend.Curses as Chosen
 #else
-import qualified Game.LambdaHack.Frontend.Gtk as Chosen
+import qualified Game.LambdaHack.Client.UI.Frontend.Gtk as Chosen
 #endif
 
-import qualified Game.LambdaHack.Frontend.Std as Std
+import qualified Game.LambdaHack.Client.UI.Frontend.Std as Std
 
 -- | The name of the chosen frontend.
 frontendName :: String
 frontendName = Chosen.frontendName
 
-data Frontend = Frontend
+data RawFrontend = RawFrontend
   { fdisplay      :: Bool -> Maybe SingleFrame -> IO ()
   , fpromptGetKey :: SingleFrame -> IO K.KM
   , fsyncFrames   :: IO ()
@@ -32,10 +32,10 @@ data Frontend = Frontend
   , fdebugCli     :: !DebugModeCli
   }
 
-chosenStartup :: DebugModeCli -> (Frontend -> IO ()) -> IO ()
+chosenStartup :: DebugModeCli -> (RawFrontend -> IO ()) -> IO ()
 chosenStartup fdebugCli cont =
   Chosen.startup fdebugCli $ \fs ->
-    cont $ Frontend
+    cont $ RawFrontend
       { fdisplay = Chosen.fdisplay fs
       , fpromptGetKey = Chosen.fpromptGetKey fs
       , fsyncFrames = Chosen.fsyncFrames fs
@@ -43,10 +43,10 @@ chosenStartup fdebugCli cont =
       , fdebugCli
       }
 
-stdStartup :: DebugModeCli -> (Frontend -> IO ()) -> IO ()
+stdStartup :: DebugModeCli -> (RawFrontend -> IO ()) -> IO ()
 stdStartup fdebugCli cont =
   Std.startup fdebugCli $ \fs ->
-    cont $ Frontend
+    cont $ RawFrontend
       { fdisplay = Std.fdisplay fs
       , fpromptGetKey = Std.fpromptGetKey fs
       , fsyncFrames = Std.fsyncFrames fs
@@ -54,11 +54,11 @@ stdStartup fdebugCli cont =
       , fdebugCli
       }
 
-nullStartup :: DebugModeCli -> (Frontend -> IO ()) -> IO ()
+nullStartup :: DebugModeCli -> (RawFrontend -> IO ()) -> IO ()
 nullStartup fdebugCli cont =
   -- Std used to fork the server thread, to avoid bound thread overhead.
   Std.startup fdebugCli $ \_ ->
-    cont $ Frontend
+    cont $ RawFrontend
       { fdisplay = \_ _ -> return ()
       , fpromptGetKey = \_ -> return K.escKey
       , fsyncFrames = return ()

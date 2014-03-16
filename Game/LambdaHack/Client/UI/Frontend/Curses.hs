@@ -1,7 +1,7 @@
 -- | Text frontend based on HSCurses. This frontend is not fully supported
 -- due to the limitations of the curses library (keys, colours, last character
 -- of the last line).
-module Game.LambdaHack.Frontend.Curses
+module Game.LambdaHack.Client.UI.Frontend.Curses
   ( -- * Session data type for the frontend
     FrontendSession(sescMVar)
     -- * The output and input operations

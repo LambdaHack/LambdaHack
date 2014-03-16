@@ -17,7 +17,7 @@ import Game.LambdaHack.Common.Animation (DebugModeCli (..))
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.State
-import Game.LambdaHack.Frontend
+import Game.LambdaHack.Client.UI.Frontend
 import Game.LambdaHack.Utils.Thread
 
 -- | Wire together game content, the main loop of game clients,

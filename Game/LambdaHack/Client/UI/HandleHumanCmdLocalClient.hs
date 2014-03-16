@@ -32,7 +32,7 @@ import Data.Monoid
 import Data.Ord
 import qualified Data.Text as T
 import Data.Version
-import Game.LambdaHack.Frontend (frontendName)
+import Game.LambdaHack.Client.UI.Frontend (frontendName)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.BfsClient
