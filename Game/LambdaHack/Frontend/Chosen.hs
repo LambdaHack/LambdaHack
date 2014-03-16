@@ -56,6 +56,8 @@ stdStartup fdebugCli cont =
 
 nullStartup :: DebugModeCli -> (Frontend -> IO ()) -> IO ()
 nullStartup fdebugCli cont =
+  -- Std used to fork the server thread, to avoid bound thread overhead.
+  Std.startup fdebugCli $ \_ ->
     cont $ Frontend
       { fdisplay = \_ _ -> return ()
       , fpromptGetKey = \_ -> return K.escKey
