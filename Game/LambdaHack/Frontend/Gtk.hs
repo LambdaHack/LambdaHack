@@ -117,8 +117,8 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
   escMVar <- newEmptyMVar
   let sess = FrontendSession{sescMVar = Just escMVar, ..}
   -- Fork the game logic thread. When logic ends, game exits.
-  -- TODO: is postGUIAsync needed here?
-  forkIO $ cont sess >> postGUIAsync mainQuit
+  -- TODO: is postGUISync needed here?
+  forkIO $ cont sess >> postGUISync mainQuit
   -- Fork the thread that periodically draws a frame from a queue, if any.
   forkIO $ pollFrames sess Nothing
   -- Fill the keyboard channel.

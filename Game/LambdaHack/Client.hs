@@ -7,7 +7,10 @@ module Game.LambdaHack.Client
   , MonadClient, MonadClientUI, MonadClientReadResponse, MonadClientWriteRequest
   ) where
 
+import Control.Concurrent
+import qualified Control.Concurrent.STM as STM
 import Control.Exception.Assert.Sugar
+import Control.Monad
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.HandleResponseClient
@@ -24,6 +27,7 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Frontend
+import Game.LambdaHack.Utils.Thread
 
 -- | Wire together game content, the main loop of game clients,
 -- the main game loop assigned to this frontend (possibly containing
@@ -43,10 +47,8 @@ exeFrontend :: ( MonadAtomic m, MonadClientUI m
                 -> chanServerAI
                 -> IO ())
             -> Kind.COps -> DebugModeCli
-            -> ((FactionId -> ChanFrontend -> chanServerUI
-                 -> IO ())
-               -> (FactionId -> chanServerAI
-                   -> IO ())
+            -> ((FactionId -> chanServerUI -> IO ())
+               -> (FactionId -> chanServerAI -> IO ())
                -> IO ())
             -> IO ()
 exeFrontend copsClient executorUI executorAI
@@ -64,7 +66,15 @@ exeFrontend copsClient executorUI executorAI
         let noSession = assert `failure` "AI client needs no UI session"
                                `twith` fid
         in exeClientAI noSession s (cli fid True)
-      eClientUI sescMVar fid fromF =
-        let sfconn = connFrontend fid fromF
-        in exeClientUI SessionUI{..} s (cli fid False)
-  startupF sdebugMode $ \sescMVar -> exeServer (eClientUI sescMVar) eClientAI
+      eClientUI sescMVar sloopFrontend fid chanServerUI = do
+        fromMulti <- STM.newTQueueIO
+        toMulti <- STM.newTQueueIO
+        let connMulti = ConnMulti{..}
+            sfconn = connFrontend connMulti
+        children <- newMVar []
+        void $ forkChild children $ sloopFrontend connMulti
+        exeClientUI SessionUI{..} s (cli fid False) chanServerUI
+        STM.atomically $ STM.writeTQueue toMulti FrontFinish
+        waitForChildren children
+  startupF sdebugMode $ \sescMVar sloopFrontend ->
+    exeServer (eClientUI sescMVar sloopFrontend) eClientAI

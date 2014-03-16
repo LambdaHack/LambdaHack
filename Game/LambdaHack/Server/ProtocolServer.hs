@@ -25,7 +25,6 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.Key (mapWithKeyM, mapWithKeyM_)
-import Data.Maybe
 import Game.LambdaHack.Utils.Thread
 import System.IO.Unsafe (unsafePerformIO)
 
@@ -37,8 +36,6 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
-import Game.LambdaHack.Frontend
-import qualified Game.LambdaHack.Frontend as Frontend
 import Game.LambdaHack.Server.DebugServer
 import Game.LambdaHack.Server.MonadServer hiding (liftIO)
 import Game.LambdaHack.Server.State
@@ -51,7 +48,7 @@ data ChanServer resp req = ChanServer
 
 -- | Connections to the human-controlled client of a faction and
 -- to the AI client for the same faction.
-type ConnServerFaction = ( Maybe (ChanFrontend, ChanServer ResponseUI Request)
+type ConnServerFaction = ( Maybe (ChanServer ResponseUI Request)
                          , ChanServer ResponseAI RequestTimed )
 
 -- | Connection information for all factions, indexed by faction identifier.
@@ -132,7 +129,7 @@ sendUpdateUI fid cmd = do
   cs <- getsDict $ fst . (EM.! fid)
   case cs of
     Nothing -> assert `failure` "no channel for faction" `twith` fid
-    Just (_, conn) ->
+    Just conn ->
       writeTQueueUI cmd $ responseQ conn
 
 sendQueryUI :: (MonadAtomic m, MonadServerReadRequest m)
@@ -141,7 +138,7 @@ sendQueryUI fid aid = do
   cs <- getsDict $ fst . (EM.! fid)
   case cs of
     Nothing -> assert `failure` "no channel for faction" `twith` fid
-    Just (_, conn) -> do
+    Just conn -> do
       writeTQueueUI (RespQueryUI aid) $ responseQ conn
       readTQueueUI $ requestQ conn
 
@@ -151,7 +148,7 @@ sendPingUI fid = do
   cs <- getsDict $ fst . (EM.! fid)
   case cs of
     Nothing -> assert `failure` "no channel for faction" `twith` fid
-    Just (_, conn) -> do
+    Just conn -> do
       writeTQueueUI RespPingUI $ responseQ conn
       -- debugPrint $ "UI client" <+> tshow fid <+> "pinged..."
       cmdHack <- readTQueueUI $ requestQ conn
@@ -180,7 +177,6 @@ childrenServer = unsafePerformIO (newMVar [])
 -- that read and write directly to the channels.
 updateConn :: (MonadAtomic m, MonadServerReadRequest m)
            => (FactionId
-               -> Frontend.ChanFrontend
                -> ChanServer ResponseUI Request
                -> IO ())
            -> (FactionId
@@ -195,16 +191,13 @@ updateConn executorUI executorAI = do
         responseQ <- STM.newTQueueIO
         requestQ <- STM.newTQueueIO
         return $! ChanServer{..}
-      mkChanFrontend :: IO Frontend.ChanFrontend
-      mkChanFrontend = STM.newTQueueIO
       addConn :: FactionId -> Faction -> IO ConnServerFaction
       addConn fid fact = case EM.lookup fid oldD of
         Just conns -> return conns  -- share old conns and threads
         Nothing | playerUI $ gplayer fact -> do
-          connF <- mkChanFrontend
           connS <- mkChanServer
           connAI <- mkChanServer
-          return (Just (connF, connS), connAI)
+          return (Just connS, connAI)
         Nothing -> do
           connAI <- mkChanServer
           return (Nothing, connAI)
@@ -214,15 +207,8 @@ updateConn executorUI executorAI = do
   putDict newD
   -- Spawn client threads.
   let toSpawn = newD EM.\\ oldD
-      fdict fid = fst
-                  $ fromMaybe (assert `failure` "no channel" `twith` fid)
-                  $ fst
-                  $ fromMaybe (assert `failure` "no faction" `twith` fid)
-                  $ EM.lookup fid newD
-      fromM = Frontend.fromMulti Frontend.connMulti
-  liftIO $ void $ takeMVar fromM  -- stop Frontend
-  let forkUI fid (connF, connS) =
-        void $ forkChild childrenServer $ executorUI fid connF connS
+  let forkUI fid connS =
+        void $ forkChild childrenServer $ executorUI fid connS
       forkAI fid connS =
         void $ forkChild childrenServer $ executorAI fid connS
       forkClient fid (connUI, connAI) = do
@@ -232,4 +218,3 @@ updateConn executorUI executorAI = do
         forkAI fid connAI  -- AI clients always needed, e.g., for auto-explore
         maybe skip (forkUI fid) connUI
   liftIO $ mapWithKeyM_ forkClient toSpawn
-  liftIO $ putMVar fromM fdict  -- restart Frontend

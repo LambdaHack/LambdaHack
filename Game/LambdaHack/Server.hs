@@ -14,7 +14,6 @@ import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response
-import Game.LambdaHack.Frontend
 import Game.LambdaHack.Server.Commandline
 import Game.LambdaHack.Server.HandleRequestServer
 import Game.LambdaHack.Server.LoopServer
@@ -33,7 +32,7 @@ mainSer :: (MonadAtomic m, MonadServerReadRequest m)
         => Kind.COps
         -> (m () -> IO ())
         -> (Kind.COps -> DebugModeCli
-            -> ((FactionId -> ChanFrontend -> ChanServer ResponseUI Request
+            -> ((FactionId -> ChanServer ResponseUI Request
                  -> IO ())
                 -> (FactionId -> ChanServer ResponseAI RequestTimed
                     -> IO ())
@@ -52,6 +51,6 @@ mainSer !copsSlow  -- evaluate fully to discover errors ASAP and free memory
         -- and then let them exit.
         Ex.finally
           (exeSer (loopServer executorUI executorAI cops))
-          (threadDelay 1000000)  -- server crash, show the error eventually
+          (threadDelay 1000000)  -- server crashed, show the error eventually
         waitForChildren childrenServer  -- no crash, wait indefinitely
   exeFront cops (sdebugCli sdebugNxt) exeServer

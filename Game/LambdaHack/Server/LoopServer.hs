@@ -13,12 +13,12 @@ import Data.Maybe
 import qualified Data.Ord as Ord
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response
@@ -26,7 +26,6 @@ import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Frontend
 import Game.LambdaHack.Server.EndServer
 import Game.LambdaHack.Server.Fov
 import Game.LambdaHack.Server.MonadServer
@@ -39,12 +38,13 @@ import Game.LambdaHack.Server.State
 loopSer :: (MonadAtomic m, MonadServerReadRequest m)
         => DebugModeSer
         -> (Request -> m Bool)
-        -> (FactionId -> ChanFrontend -> ChanServer ResponseUI Request -> IO ())
+        -> (FactionId -> ChanServer ResponseUI Request -> IO ())
         -> (FactionId -> ChanServer ResponseAI RequestTimed -> IO ())
         -> Kind.COps
         -> m ()
 loopSer sdebug handleRequest executorUI executorAI !cops = do
   -- Recover states and launch clients.
+  let updConn = updateConn executorUI executorAI
   restored <- tryRestore cops sdebug
   case restored of
     Just (sRaw, ser) | not $ snewGameSer sdebug -> do  -- run a restored game
@@ -55,7 +55,7 @@ loopSer sdebug handleRequest executorUI executorAI !cops = do
       sdebugNxt <- initDebug cops sdebug
       modifyServer $ \ser2 -> ser2 {sdebugNxt}
       applyDebug
-      updateConn executorUI executorAI
+      updConn
       initPer
       pers <- getsServer sper
       broadcastUpdAtomic $ \fid -> UpdResume fid (pers EM.! fid)
@@ -78,7 +78,7 @@ loopSer sdebug handleRequest executorUI executorAI !cops = do
                                  , sdebugSer = debugBarRngs }
       let speedup = speedupCOps (sallClear sdebugNxt)
       execUpdAtomic $ UpdRestartServer $ updateCOps speedup s
-      updateConn executorUI executorAI
+      updConn
       initPer
       reinitGame
       saveBkpAll False
@@ -107,7 +107,6 @@ loopSer sdebug handleRequest executorUI executorAI !cops = do
           -- In case of game save+exit or restart, don't age levels (endClip)
           -- since possibly not all actors have moved yet.
           modifyServer $ \ser -> ser {squit = False}
-          let updConn = updateConn executorUI executorAI
           endOrLoop loop (restartGame updConn loop) saveAndExit
         else do
           continue <- endClip arenas

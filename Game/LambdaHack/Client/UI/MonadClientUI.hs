@@ -72,13 +72,13 @@ class MonadClient m => MonadClientUI m where
   getsSession  :: (SessionUI -> a) -> m a
   liftIO       :: IO a -> m a
 
-connFrontend :: FactionId -> Frontend.ChanFrontend -> ConnFrontend
-connFrontend fid fromF = ConnFrontend
+connFrontend :: Frontend.ConnMulti -> ConnFrontend
+connFrontend connMulti = ConnFrontend
   { readConnFrontend =
-      liftIO $ atomically $ readTQueue fromF
+      liftIO $ atomically $ readTQueue $ Frontend.fromMulti connMulti
   , writeConnFrontend = \efr -> do
-      let toF = Frontend.toMulti Frontend.connMulti
-      liftIO $ atomically $ writeTQueue toF (fid, efr)
+      let toF = Frontend.toMulti connMulti
+      liftIO $ atomically $ writeTQueue toF efr
   }
 
 promptGetKey :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
