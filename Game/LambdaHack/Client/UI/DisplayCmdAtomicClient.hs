@@ -54,6 +54,7 @@ import Game.LambdaHack.Content.TileKind
 -- the client state is modified by the command.
 displayRespUpdAtomicUI :: MonadClientUI m => Bool -> UpdAtomic -> m ()
 displayRespUpdAtomicUI verbose cmd = case cmd of
+  -- Create/destroy actors and items.
   UpdCreateActor aid body _ -> createActorUI aid body verbose "appear"
   UpdDestroyActor aid body _ -> do
     destroyActorUI aid body "die" "be destroyed" verbose
@@ -75,10 +76,14 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
         stopPlayBack
         -- TODO: perhaps don't spam for already seen items; very hard to do
         itemVerbMU item k "be spotted"
+  UpdLoseItem{} -> skip
+  -- Move actors and items.
   UpdMoveActor aid _ _ -> lookAtMove aid
-  UpdWaitActor aid _ _| verbose -> aVerbMU aid "wait"
+  UpdWaitActor aid _ _ -> when verbose $ aVerbMU aid "wait"
   UpdDisplaceActor source target -> displaceActorUI source target
   UpdMoveItem iid k c1 c2 -> moveItemUI verbose iid k c1 c2
+  -- Change actor attributes.
+  UpdAgeActor{} -> skip
   UpdHealActor aid n -> do
     when verbose $
       aVerbMU aid $ MU.Text $ (if n > 0 then "heal" else "lose")
@@ -92,10 +97,15 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
       when (bhp b == maxDice ahp && bcalm b == maxDice acalm) $ do
         actorVerbMU aid b "recover fully"
         stopPlayBack
+  UpdCalmActor{} -> skip
   UpdHasteActor aid delta ->
     aVerbMU aid $ if delta > speedZero
                   then "speed up"
                   else "slow down"
+  UpdTrajectoryActor{} -> skip
+  UpdColorActor{} -> skip
+  -- Change faction attributes.
+  UpdQuitFaction fid mbody _ toSt -> quitFactionUI fid mbody toSt
   UpdLeadFaction fid (Just source) (Just target) -> do
     side <- getsClient sside
     when (fid == side) $ do
@@ -114,6 +124,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
           -- TODO: report when server changes spawner's leader;
           -- perhaps don't switch _sleader in HandleCmdAtomicClient,
           -- compare here and switch here? too hacky? fails for AI?
+  UpdLeadFaction{} -> skip
   UpdDiplFaction fid1 fid2 _ toDipl -> do
     name1 <- getsState $ gname . (EM.! fid1) . sfactionD
     name2 <- getsState $ gname . (EM.! fid2) . sfactionD
@@ -122,9 +133,10 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
         showDipl Alliance = "allied"
         showDipl War = "at war"
     msgAdd $ name1 <+> "and" <+> name2 <+> "are now" <+> showDipl toDipl <> "."
-  UpdQuitFaction fid mbody _ toSt -> quitFactionUI fid mbody toSt
-  UpdAlterTile{} | verbose ->
-    return ()  -- TODO: door opens
+  UpdAutoFaction{} -> skip
+  UpdRecordKill{} -> skip
+  -- Alter map.
+  UpdAlterTile{} -> when verbose $ return ()  -- TODO: door opens
   UpdSearchTile aid p fromTile toTile -> do
     Kind.COps{cotile = Kind.Ops{okind}} <- getsState scops
     b <- getsState $ getActorBody aid
@@ -141,6 +153,13 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
                            , "a hidden"
                            , MU.Text $ tname $ okind toTile ]
     msgAdd msg
+  UpdSpotTile{} -> skip
+  UpdLoseTile{} -> skip
+  UpdAlterSmell{} -> skip
+  UpdSpotSmell{} -> skip
+  UpdLoseSmell{} -> skip
+  -- Assorted.
+  UpdAgeLevel{} -> skip
   UpdAgeGame t -> do
     -- Some time passed, show delay.
     when (t > timeClip) $ displayFrames [Nothing]
@@ -154,9 +173,9 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
     let ix = jkindIx item
     Kind.COps{coitem} <- getsState scops
     let discoUnknown = EM.delete ix disco
-        (objUnkown1, objUnkown2) = partItem coitem discoUnknown item
+        (objUnknown1, objUnknown2) = partItem coitem discoUnknown item
         msg = makeSentence
-          [ "the", MU.SubjectVerbSg (MU.Phrase [objUnkown1, objUnkown2])
+          [ "the", MU.SubjectVerbSg (MU.Phrase [objUnknown1, objUnknown2])
                                     "turn out to be"
           , partItemAW coitem disco item ]
     msgAdd msg
@@ -166,21 +185,26 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
     let ix = jkindIx item
     Kind.COps{coitem} <- getsState scops
     let disco = EM.insert ix ik discoUnknown
-        (objUnkown1, objUnkown2) = partItem coitem discoUnknown item
+        (objUnknown1, objUnknown2) = partItem coitem discoUnknown item
         (obj1, obj2) = partItem coitem disco item
         msg = makeSentence
           [ "the", MU.SubjectVerbSg (MU.Phrase [obj1, obj2])
                                     "look like an ordinary"
-          , objUnkown1, objUnkown2 ]
+          , objUnknown1, objUnknown2 ]
     msgAdd msg
+  UpdPerception{} -> skip
   UpdRestart _ _ _ _ _ t -> do
     msgAdd $ "New game started in" <+> t <+> "mode."
     -- TODO: use a vertical animation instead, e.g., roll down,
     -- and reveal the first frame of a new game, not blank screen.
     fadeOutOrIn False
-  UpdSaveBkp | verbose -> msgAdd "Saving backup."
+  UpdRestartServer{} -> skip
+  UpdResume{} -> skip
+  UpdResumeServer{} -> skip
+  UpdKillExit{} -> skip
+  UpdSaveBkp -> when verbose $ msgAdd "Saving backup."
   UpdMsgAll msg -> msgAdd msg
-  _ -> return ()
+  UpdRecordHistory _ -> recordHistory
 
 lookAtMove :: MonadClientUI m => ActorId -> m ()
 lookAtMove aid = do
@@ -396,10 +420,10 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
   SfxCatch aid iid -> aiVerbMU aid "catch" iid 1
   SfxActivate aid iid -> aiVerbMU aid "activate"{-TODO-} iid 1
   SfxCheck aid iid -> aiVerbMU aid "check" iid 1
-  SfxTrigger aid _p _feat | verbose ->
-    aVerbMU aid "trigger"  -- TODO: opens door
-  SfxShun aid _p _ | verbose ->
-    aVerbMU aid "shun"  -- TODO: shuns stairs down
+  SfxTrigger aid _p _feat ->
+    when verbose $ aVerbMU aid "trigger"  -- TODO: opens door, etc.
+  SfxShun aid _p _ ->
+    when verbose $ aVerbMU aid "shun"  -- TODO: shuns stairs down
   SfxEffect aid effect -> do
     b <- getsState $ getActorBody aid
     side <- getsClient sside
@@ -449,6 +473,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           let ps = (bpos b, bpos b)
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
           displayFrames $ Nothing : animFrs
+        Effect.Hurt{} -> skip
         Effect.Mindprobe nEnemy -> do
           let msg = makeSentence
                 [MU.CardinalWs nEnemy "howl", "of anger", "can be heard"]
@@ -460,8 +485,12 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           else do
             fidName <- getsState $ gname . (EM.! fid) . sfactionD
             aVerbMU aid $ MU.Text $ "be no longer controlled by" <+> fidName
+        Effect.CallFriend{} -> skip
+        Effect.Summon{} -> skip
+        Effect.CreateItem{} -> skip
         Effect.ApplyPerfume ->
           msgAdd "The fragrance quells all scents in the vicinity."
+        Effect.Regeneration{} -> skip
         Effect.Searching{} -> do
           subject <- partActorLeader aid b
           let msg = makeSentence
@@ -471,19 +500,10 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         Effect.Ascend k | k > 0 -> actorVerbMU aid b "find a way upstairs"
         Effect.Ascend k | k < 0 -> actorVerbMU aid b "find a way downstairs"
         Effect.Ascend{} -> assert `failure` sfx
-        _ -> return ()
+        Effect.Escape{} -> skip
   SfxMsgFid _ msg -> msgAdd msg
   SfxMsgAll msg -> msgAdd msg
-  SfxDisplayPush _ ->
-    -- TODO: shows messages on leader level, instead of recently shown
-    -- level (e.g., between animations); perhaps display messages separately
-    -- from level (but on the same text window) or keep last level frame
-    -- and only overlay messages on it when needed; or store the level
-    -- of last shown
-    displayPush
-  SfxDisplayDelay _ -> displayFrames [Nothing]
-  SfxRecordHistory _ -> recordHistory
-  _ -> return ()
+  SfxDisplayPush{} -> displayPush
 
 strike :: MonadClientUI m
         => ActorId -> ActorId -> Item -> HitAtomic -> m ()

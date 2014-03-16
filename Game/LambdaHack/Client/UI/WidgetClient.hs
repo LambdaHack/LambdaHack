@@ -1,10 +1,11 @@
 -- | A set of widgets for UI clients.
 module Game.LambdaHack.Client.UI.WidgetClient
-  ( displayMore, displayYesNo, displayChoiceUI, displayPush
+  ( displayMore, displayYesNo, displayChoiceUI, displayPush, displayPushIfLid
   , promptToSlideshow, overlayToSlideshow, overlayToBlankSlideshow
   , animate, fadeOutOrIn
   ) where
 
+import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 import Data.Monoid
@@ -93,6 +94,11 @@ displayPush = do
   lastPlay <- getsClient slastPlay
   displayFrame (isJust srunning || not (null lastPlay) || hasAiLeader)
                (Just frame)
+
+displayPushIfLid :: MonadClientUI m => LevelId -> m ()
+displayPushIfLid lid = do
+  arena <- getArenaUI
+  when (arena == lid) displayPush
 
 -- | The prompt is shown after the current message, but not added to history.
 -- This is useful, e.g., in targeting mode, not to spam history.

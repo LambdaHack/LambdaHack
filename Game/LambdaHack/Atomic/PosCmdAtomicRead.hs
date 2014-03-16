@@ -4,19 +4,19 @@
 module Game.LambdaHack.Atomic.PosCmdAtomicRead
   ( PosAtomic(..), posUpdAtomic, posSfxAtomic
   , resetsFovCmdAtomic, breakUpdAtomic, loudUpdAtomic
-  , seenAtomicCli, seenAtomicSer
+  , seenAtomicCli, seenAtomicSer, lidOfPosAtomic
   ) where
 
 import Control.Exception.Assert.Sugar
 import qualified Data.EnumSet as ES
 
 import Game.LambdaHack.Atomic.CmdAtomic
-import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 
@@ -115,6 +115,7 @@ posUpdAtomic cmd = case cmd of
   UpdKillExit fid -> return $! PosFid fid
   UpdSaveBkp -> return PosAll
   UpdMsgAll{} -> return PosAll
+  UpdRecordHistory fid -> return $! PosFid fid
 
 posSfxAtomic :: MonadStateRead m => SfxAtomic -> m PosAtomic
 posSfxAtomic cmd = case cmd of
@@ -140,8 +141,6 @@ posSfxAtomic cmd = case cmd of
   SfxMsgFid fid _ -> return $! PosFid fid
   SfxMsgAll _ -> return PosAll
   SfxDisplayPush fid -> return $! PosFid fid
-  SfxDisplayDelay fid -> return $! PosFid fid
-  SfxRecordHistory fid -> return $! PosFid fid
 
 posProjBody :: Monad m => Actor -> m PosAtomic
 posProjBody body = return $!
@@ -253,3 +252,10 @@ seenAtomicSer posAtomic =
     PosFid _ -> False
     PosNone -> assert `failure` "wrong position for server" `twith` posAtomic
     _ -> True
+
+lidOfPosAtomic :: PosAtomic -> Maybe LevelId
+lidOfPosAtomic pos = case pos of
+  PosSight lid _ -> Just lid
+  PosFidAndSight _ lid _ -> Just lid
+  PosSmell lid _ -> Just lid
+  _ -> Nothing

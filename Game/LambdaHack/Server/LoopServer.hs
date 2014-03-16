@@ -120,11 +120,6 @@ endClip arenas = do
   let stdRuleset = Kind.stdRuleset corule
       saveBkpClips = rsaveBkpClips stdRuleset
       leadLevelClips = rleadLevelClips stdRuleset
-  -- TODO: a couple messages each clip to many clients is too costly.
-  -- Store these on a queue and sum times instead of sending,
-  -- until a different command needs to be sent. Include HealActorA
-  -- from regenerateLevelHP, but keep it before AgeGameA.
-  -- TODO: this is also needed to keep savefiles small (undo info).
   mapM_ (\lid -> execUpdAtomic $ UpdAgeLevel lid timeClip) arenas
   execUpdAtomic $ UpdAgeGame timeClip
   -- Perform periodic dungeon maintenance.
@@ -312,7 +307,7 @@ handleActors handleRequest lid = do
         -- computer-controlled). We could record history more often,
         -- to avoid long reports, but we'd have to add -more- prompts.
         let mainUIactor = playerUI (gplayer fact) && aidIsLeader
-        when mainUIactor $ execSfxAtomic $ SfxRecordHistory side
+        when mainUIactor $ execUpdAtomic $ UpdRecordHistory side
         cmdTimed <- sendQueryAI side aid
         let cmdS = ReqTimed cmdTimed
         (aidNew, bPre) <- switchLeader cmdS

@@ -14,7 +14,6 @@ import Data.Maybe
 
 import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Atomic.MonadStateWrite
-import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
@@ -23,6 +22,7 @@ import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
@@ -88,6 +88,7 @@ handleUpdAtomic cmd = case cmd of
   UpdKillExit{} -> return ()
   UpdSaveBkp -> return ()
   UpdMsgAll{} -> return ()
+  UpdRecordHistory{} -> return ()
 
 -- | Creates an actor. Note: after this command, usually a new leader
 -- for the party should be elected (in case this actor is the only one alive).
