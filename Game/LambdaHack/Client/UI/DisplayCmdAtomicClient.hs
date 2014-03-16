@@ -99,6 +99,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
   UpdLeadFaction fid (Just source) (Just target) -> do
     side <- getsClient sside
     when (fid == side) $ do
+      stopPlayBack
       actorD <- getsState sactorD
       case EM.lookup source actorD of
         Just sb | bhp sb <= 0 -> assert (not $ bproj sb) $ do
@@ -108,7 +109,11 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
               object  = partActor sb
           msgAdd $ makeSentence [ MU.SubjectVerbSg subject "take command"
                                 , "from", object ]
-        _ -> skip
+        _ ->
+          return ()
+          -- TODO: report when server changes spawner's leader;
+          -- perhaps don't switch _sleader in HandleCmdAtomicClient,
+          -- compare here and switch here? too hacky? fails for AI?
   UpdDiplFaction fid1 fid2 _ toDipl -> do
     name1 <- getsState $ gname . (EM.! fid1) . sfactionD
     name2 <- getsState $ gname . (EM.! fid2) . sfactionD
