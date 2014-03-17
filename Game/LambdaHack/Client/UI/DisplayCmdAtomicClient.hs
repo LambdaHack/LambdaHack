@@ -36,6 +36,7 @@ import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.TileKind
 
 -- * RespUpdAtomicUI
@@ -520,12 +521,16 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         -- If considerable time passed, show delay.
         let delta = timeAdd (btime b) (timeNegate timeCutOff)
         when (delta > timeClip) $ displayFrames [Nothing]
-        -- Something new is gonna happen on this level (otherwise we'd send
-        -- @UpdAgeLevel@ later on, with a larger time increment),
-        -- so show crrent game state, before it changes.
-        displayPush
-        -- Delay on the other side. You never know.
-        when (delta > timeClip) $ displayFrames [Nothing]
+        -- If key will be requested, don't show the frame, because during
+        -- the request extra message may be shown, so the other frame is better.
+        mleader <- getsClient _sleader
+        fact <- getsState $ (EM.! bfid b) . sfactionD
+        let hasAiLeader = playerAiLeader $ gplayer fact
+        unless (Just aid == mleader && not hasAiLeader) $
+          -- Something new is gonna happen on this level (otherwise we'd send
+          -- @UpdAgeLevel@ later on, with a larger time increment),
+          -- so show crrent game state, before it changes.
+          displayPush
 
 strike :: MonadClientUI m
         => ActorId -> ActorId -> Item -> HitAtomic -> m ()
