@@ -11,7 +11,6 @@ import Data.Maybe
 import Data.Text (Text)
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
@@ -19,6 +18,7 @@ import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request
@@ -115,7 +115,7 @@ dropAllItems aid b hit = do
               explodeItem aid b cgroup
         else
           execUpdAtomic $ UpdMoveItem iid k container (CActor aid CGround)
-  mapActorInv_ f b
+  mapActorEqp_ f b
 
 explodeItem :: (MonadAtomic m, MonadServer m)
             => ActorId -> Actor -> Text -> m ()
