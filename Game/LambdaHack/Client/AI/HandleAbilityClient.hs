@@ -88,7 +88,7 @@ actionStrategy aid = do
         st <- chase aid True
         return $! scaleFreq 30 $ bestVariant st
       aStrategy :: Ability -> m (Strategy RequestTimed)
-      aStrategy Ability.Track  = track aid
+      aStrategy Ability.Track  = return reject  -- TODO (remove?)
       aStrategy Ability.Heal   = return reject  -- TODO
       aStrategy Ability.Flee   = return reject  -- TODO
       aStrategy Ability.Melee | foeVisible = melee aid
@@ -119,14 +119,6 @@ actionStrategy aid = do
 -- | A strategy to always just wait.
 waitBlockNow :: ActorId -> Strategy RequestTimed
 waitBlockNow aid = returN "wait" $ ReqWait aid
-
--- | Strategy for a dumb missile or a strongly hurled actor.
-track :: MonadStateRead m => ActorId -> m (Strategy RequestTimed)
-track aid = do
-  btrajectory <- getsState $ btrajectory . getActorBody aid
-  return $! if isNothing btrajectory
-            then reject
-            else returN "SetTrajectorySer" $ ReqSetTrajectory aid
 
 -- TODO: (most?) animals don't pick up. Everybody else does.
 -- TODO: pick up best weapons first

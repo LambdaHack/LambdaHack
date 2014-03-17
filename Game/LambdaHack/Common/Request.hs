@@ -24,6 +24,7 @@ data Request =
   | ReqGameExit !ActorId !Int
   | ReqGameSave !ActorId
   | ReqAutomate !ActorId
+  | ReqSetTrajectory !ActorId
   deriving (Show, Eq)
 
 data RequestTimed =
@@ -36,7 +37,6 @@ data RequestTimed =
   | ReqProject !ActorId !Point !Int !ItemId !CStore
   | ReqApply !ActorId !ItemId !CStore
   | ReqTrigger !ActorId !(Maybe F.Feature)
-  | ReqSetTrajectory !ActorId
   | ReqPongHack [CmdAtomic]
   deriving (Show, Eq)
 
@@ -49,6 +49,7 @@ aidOfRequest cmd = case cmd of
   ReqGameExit aid _ -> aid
   ReqGameSave aid -> aid
   ReqAutomate aid -> aid
+  ReqSetTrajectory aid -> aid
 
 aidOfRequestTimed :: RequestTimed -> ActorId
 aidOfRequestTimed cmd = case cmd of
@@ -61,7 +62,6 @@ aidOfRequestTimed cmd = case cmd of
   ReqProject aid _ _ _ _ -> aid
   ReqApply aid _ _ -> aid
   ReqTrigger aid _ -> aid
-  ReqSetTrajectory aid -> aid
   ReqPongHack _ -> toEnum (-1)  -- needed for --sniffIn
 
 data ReqFailure =

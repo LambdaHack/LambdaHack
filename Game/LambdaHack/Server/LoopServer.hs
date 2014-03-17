@@ -255,10 +255,9 @@ handleActors handleRequest lid = do
             let fromWait = bwait bPre
             when fromWait $ execUpdAtomic $ UpdWaitActor aidNew fromWait False
       if bproj body then do  -- TODO: perhaps check Track, not bproj
-        let cmdS = ReqTimed $ ReqSetTrajectory aid
+        let cmdS = ReqSetTrajectory aid
         timed <- handleRequest cmdS
-        assert timed skip
-        advanceTime aid
+        when timed $ advanceTime aid
       else if queryUI then do
         -- The client always displays a frame in this case.
         cmdS <- sendQueryUI side aid

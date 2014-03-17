@@ -54,6 +54,7 @@ handleRequest cmd = case cmd of
   ReqGameExit aid d -> reqGameExit aid d >> return False
   ReqGameSave _ -> reqGameSave >> return False
   ReqAutomate aid -> reqAutomate aid >> return False
+  ReqSetTrajectory aid -> reqSetTrajectory aid
 
 handleRequestTimed :: (MonadAtomic m, MonadServer m) => RequestTimed -> m ()
 handleRequestTimed cmd = case cmd of
@@ -67,7 +68,6 @@ handleRequestTimed cmd = case cmd of
   ReqProject aid p eps iid cstore -> reqProject aid p eps iid cstore
   ReqApply aid iid cstore -> reqApply aid iid cstore
   ReqTrigger aid mfeat -> reqTrigger aid mfeat
-  ReqSetTrajectory aid -> reqSetTrajectory aid
   ReqPongHack _ -> return ()
 
 -- * ReqMove
@@ -367,13 +367,21 @@ triggerEffect aid feats = do
 
 -- * ReqSetTrajectory
 
-reqSetTrajectory :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
+-- | Manage trajectory of a projectile.
+--
+-- Colliding with a wall or actor doesn't take time, because
+-- the projectile does not move (the move is blocked).
+-- Not advancing time forces dead projectiles to be destroyed ASAP.
+-- Otherwise, with some timings, it can stay on the game map dead,
+-- blocking path of human-controlled actors and alarming the hapless human.
+reqSetTrajectory :: (MonadAtomic m, MonadServer m) => ActorId -> m Bool
 reqSetTrajectory aid = do
   cops <- getsState scops
   b@Actor{bpos, btrajectory, blid, bcolor} <- getsState $ getActorBody aid
   lvl <- getLevel blid
-  let clearTrajectory =
+  let clearTrajectory = do
         execUpdAtomic $ UpdTrajectoryActor aid btrajectory (Just [])
+        return False
   case btrajectory of
     Just (d : lv) ->
       if not $ accessibleDir cops lvl bpos d
@@ -384,7 +392,11 @@ reqSetTrajectory aid = do
           when (bcolor /= toColor) $
             execUpdAtomic $ UpdColorActor aid bcolor toColor
         reqMove aid d
-        execUpdAtomic $ UpdTrajectoryActor aid btrajectory (Just lv)
+        b2 <- getsState $ getActorBody aid
+        if actorDying b2 then return False
+        else do
+          execUpdAtomic $ UpdTrajectoryActor aid btrajectory (Just lv)
+          return True
     _ -> assert `failure` "null trajectory" `twith` (aid, b)
 
 -- * ReqGameRestart
