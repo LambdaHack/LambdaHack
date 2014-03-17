@@ -159,14 +159,16 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
   UpdSpotSmell{} -> skip
   UpdLoseSmell{} -> skip
   -- Assorted.
-  UpdAgeLevel{} -> skip
-  UpdAgeGame t -> do
-    -- Some time passed, show delay.
-    when (t > timeClip) $ displayFrames [Nothing]
-    -- Something new is gonna happen (otherwise we'd send @UpdAgeGame@
-    -- later on, with a larger time increment), so show crrent game state,
-    -- before it changes.
-    displayPush
+  UpdAgeLevel lid t -> do
+    arena <- getArenaUI
+    when (lid == arena) $ do
+      -- Some time passed, show delay.
+      when (t > timeClip) $ displayFrames [Nothing]
+      -- Something new is gonna happen on this level (otherwise we'd send
+      -- @UpdAgeLevel@ later on, with a larger time increment),
+      -- so show crrent game state, before it changes.
+      displayPush
+  UpdAgeGame {} -> skip
   UpdDiscover _ _ iid _ -> do
     disco <- getsClient sdisco
     item <- getsState $ getItemBody iid
@@ -222,8 +224,8 @@ lookAtMove aid = do
     foes <- getsState $ actorList (isAtWar fact) (blid body)
     when (foesAdjacent lxsize lysize (bpos body) foes) stopPlayBack
   else when (isAtWar fact side) $ do
-    foes <- getsState $ actorNotProjList (== side) (blid body)
-    when (foesAdjacent lxsize lysize (bpos body) foes) stopPlayBack
+    friends <- getsState $ actorNotProjList (== side) (blid body)
+    when (foesAdjacent lxsize lysize (bpos body) friends) stopPlayBack
 
 -- | Sentences such as \"Dog barks loudly.\".
 actorVerbMU :: MonadClientUI m => ActorId -> Actor -> MU.Part -> m ()
