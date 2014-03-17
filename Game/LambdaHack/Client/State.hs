@@ -34,6 +34,7 @@ import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 
 -- | Client state, belonging to a single faction.
@@ -59,6 +60,8 @@ data StateClient = StateClient
                                    -- ^ parameters of the current run, if any
   , sreport      :: !Report        -- ^ current messages
   , shistory     :: !History       -- ^ history of messages
+  , sdisplayed   :: !(EM.EnumMap LevelId Time)
+                                   -- ^ actor moves displayed up to this time
   , sundo        :: ![CmdAtomic]   -- ^ atomic commands performed to date
   , sdisco       :: !Discovery     -- ^ remembered item discoveries
   , sfper        :: !FactionPers   -- ^ faction perception indexed by levels
@@ -132,6 +135,7 @@ defStateClient shistory _sside sisAI =
     , srunning = Nothing
     , sreport = emptyReport
     , shistory
+    , sdisplayed = EM.empty
     , sundo = []
     , sdisco = EM.empty
     , sfper = EM.empty
@@ -208,6 +212,7 @@ instance Binary StateClient where
     put sreport
     put shistory
     put sundo
+    put sdisplayed
     put sdisco
     put (show srandom)
     put _sleader
@@ -231,6 +236,7 @@ instance Binary StateClient where
     sreport <- get
     shistory <- get
     sundo <- get
+    sdisplayed <- get
     sdisco <- get
     g <- get
     _sleader <- get

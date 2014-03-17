@@ -18,6 +18,7 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.RuleKind
@@ -30,6 +31,8 @@ data StateServer = StateServer
   , sflavour   :: !FlavourMap    -- ^ association of flavour to items
   , sacounter  :: !ActorId       -- ^ stores next actor index
   , sicounter  :: !ItemId        -- ^ stores next item index
+  , sprocessed :: !(EM.EnumMap LevelId Time)
+                                 -- ^ actors processed up to this time
   , sundo      :: ![CmdAtomic]   -- ^ atomic commands performed to date
   , sper       :: !Pers          -- ^ perception of all factions
   , srandom    :: !R.StdGen      -- ^ current random generator
@@ -92,6 +95,7 @@ emptyStateServer =
     , sflavour = emptyFlavourMap
     , sacounter = toEnum 0
     , sicounter = toEnum 0
+    , sprocessed = EM.empty
     , sundo = []
     , sper = EM.empty
     , srandom = R.mkStdGen 42
@@ -136,6 +140,7 @@ instance Binary StateServer where
     put sflavour
     put sacounter
     put sicounter
+    put sprocessed
     put sundo
     put (show srandom)
     put srngs
@@ -148,6 +153,7 @@ instance Binary StateServer where
     sflavour <- get
     sacounter <- get
     sicounter <- get
+    sprocessed <- get
     sundo <- get
     g <- get
     srngs <- get

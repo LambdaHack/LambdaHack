@@ -120,6 +120,9 @@ endClip arenas = do
   let stdRuleset = Kind.stdRuleset corule
       saveBkpClips = rsaveBkpClips stdRuleset
       leadLevelClips = rleadLevelClips stdRuleset
+      ageProcessed lid processed = EM.insertWith timeAdd lid timeClip processed
+      ageServer lid ser = ser {sprocessed = ageProcessed lid $ sprocessed ser}
+  mapM_ (modifyServer . ageServer) arenas
   mapM_ (\lid -> execUpdAtomic $ UpdAgeLevel lid timeClip) arenas
   execUpdAtomic $ UpdAgeGame timeClip
   -- Perform periodic dungeon maintenance.
@@ -153,18 +156,15 @@ endClip arenas = do
   else return True
 
 -- | Perform moves for individual actors, as long as there are actors
--- with the next move time within one clip (inclusive) from the current
--- level time.
--- Some very fast actors may move many times a clip and then
--- we introduce subclips and produce many frames per clip to avoid
--- jerky movement. But most often we push at most one frame or frame delay.
+-- with the next move time less or equal to the end of current cut-off.
 handleActors :: (MonadAtomic m, MonadServerReadRequest m)
              => (Request -> m Bool)
              -> LevelId
              -> m ()
 handleActors handleRequest lid = do
-  timeCurrent <- getsState $ getLocalTime lid
-  let time = timeAdd timeCurrent timeClip  -- the end of this clip, inclusive
+  -- The end of this clip, inclusive. This is used exclusively
+  -- to decide which actors to process this time. Transparent to clients.
+  timeCutOff <- getsServer $ EM.findWithDefault timeClip lid . sprocessed
   Level{lprio} <- getLevel lid
   quit <- getsServer squit
   factionD <- getsState sfactionD
@@ -177,9 +177,10 @@ handleActors handleRequest lid = do
       (atime, as) = EM.findMin lprio
       ams = map (\a -> (a, getActorBody a s)) as
       mnext | EM.null lprio = Nothing  -- no actor alive, wait until it spawns
-            | otherwise = if atime > time
+            | otherwise = if atime > timeCutOff
                           then Nothing  -- no actor is ready for another move
                           else Just $ minimumBy order ams
+      startActor aid = execSfxAtomic $ SfxActorStart aid
   case mnext of
     _ | quit -> return ()
     Nothing -> return ()
@@ -189,23 +190,26 @@ handleActors handleRequest lid = do
       -- to help testing items. But OTOH, we want most items to have
       -- some effect, even silly, for flavour. Anyway, if the silly
       -- effect identifies an item, the hit is not wasted, so this makes sense.
+      startActor aid
       dieSer aid b True
       -- The attack animation for the projectile hit subsumes @DisplayPushD@,
       -- so not sending an extra @DisplayPushD@ here.
       handleActors handleRequest lid
     Just (aid, b) | maybe False null (btrajectory b) -> do
-      assert (bproj b) skip
-      execSfxAtomic $ SfxDisplayPush (bfid b)  -- show last position before drop
       -- A projectile drops to the ground due to obstacles or range.
+      assert (bproj b) skip
+      startActor aid
       dieSer aid b False
       handleActors handleRequest lid
     Just (aid, b) | bhp b <= 0 && not (bproj b) -> do
       -- An actor dies. Items drop to the ground
       -- and possibly a new leader is elected.
+      startActor aid
       dieSer aid b False
       -- The death animation subsumes @DisplayPushD@, so not sending it here.
       handleActors handleRequest lid
     Just (aid, body) -> do
+      startActor aid
       let side = bfid body
           fact = factionD EM.! side
           mleader = gleader fact
@@ -251,31 +255,11 @@ handleActors handleRequest lid = do
           setBWait _ aidNew bPre = do
             let fromWait = bwait bPre
             when fromWait $ execUpdAtomic $ UpdWaitActor aidNew fromWait False
-          extraFrames bPre = do
-            -- Generate extra frames if the actor has already moved during
-            -- this clip, so his multiple moves would be collapsed
-            -- in one frame.
-            -- If the actor changes his speed this very turn,
-            -- the test can fail, but it's a minor UI issue, so let it be.
-            let previousClipEnd = timeAdd time $ timeNegate timeClip
-                lastSingleMove = timeAddFromSpeed bPre previousClipEnd
-            when (btime bPre > lastSingleMove) $
-              broadcastSfxAtomic SfxDisplayPush
       if bproj body then do  -- TODO: perhaps check Track, not bproj
-        execSfxAtomic $ SfxDisplayPush side
         let cmdS = ReqTimed $ ReqSetTrajectory aid
         timed <- handleRequest cmdS
         assert timed skip
-        b <- getsState $ getActorBody aid
-        -- Colliding with a wall or actor doesn't take time, because
-        -- the projectile does not move (the move is blocked).
-        -- Not advancing time forces dead projectiles to be destroyed ASAP.
-        -- Otherwise it would be displayed in the same place twice.
-        -- If ever needed this can be implemented properly by moving
-        -- SetTrajectorySer out of RequestTimed.
-        unless (bhp b < 0 || maybe False null (btrajectory b)) $ do
-          advanceTime aid
-          extraFrames b
+        advanceTime aid
       else if queryUI then do
         -- The client always displays a frame in this case.
         cmdS <- sendQueryUI side aid
@@ -296,14 +280,7 @@ handleActors handleRequest lid = do
         -- Any other key does the .3s wait and the action from the key
         -- at once.
         when timed $ advanceTime aidNew
-        extraFrames bPre
       else do
-        -- Order the UI client (if any) corresponding to the AI client
-        -- to display a new frame so that player does not see moves
-        -- of all his AI party members cumulated in a single frame,
-        -- but one by one.
-        when (playerUI $ gplayer fact) $
-          execSfxAtomic $ SfxDisplayPush side
         -- Clear messages in the UI client (if any), if the actor
         -- is a leader (which happens when a UI client is fully
         -- computer-controlled). We could record history more often,
@@ -321,7 +298,6 @@ handleActors handleRequest lid = do
         setBWait cmdS aidNew bPre
         -- AI always takes time and so doesn't loop.
         advanceTime aidNew
-        extraFrames bPre
       handleActors handleRequest lid
 
 saveAndExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()

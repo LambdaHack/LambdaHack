@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.Actor
     ActorId, monsterGenChance, partActor
     -- * The@ Acto@r type
   , Actor(..), actorTemplate, timeAddFromSpeed, braced, waitedLastTurn
-  , unoccupied, heroKindId, projectileKindId
+  , actorDying, actorNewBorn, unoccupied, heroKindId, projectileKindId
     -- * Inventory management
   , ItemBag, ItemDict, ItemRev
   , rmFromBag
@@ -108,6 +108,15 @@ braced b = bwait b
 -- | The actor waited last turn.
 waitedLastTurn :: Actor -> Bool
 waitedLastTurn b = bwait b
+
+actorDying :: Actor -> Bool
+actorDying b = if bproj b
+               then bhp b < 0
+                    || maybe True null (btrajectory b)
+               else bhp b <= 0
+
+actorNewBorn :: Actor -> Bool
+actorNewBorn b = boldpos b == Point 0 0 && not (waitedLastTurn b)
 
 -- | Checks for the presence of actors in a position.
 -- Does not check if the tile is walkable.

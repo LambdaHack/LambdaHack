@@ -140,7 +140,7 @@ posSfxAtomic cmd = case cmd of
   SfxEffect aid _ -> singleAid aid
   SfxMsgFid fid _ -> return $! PosFid fid
   SfxMsgAll _ -> return PosAll
-  SfxDisplayPush fid -> return $! PosFid fid
+  SfxActorStart aid -> singleAid aid
 
 posProjBody :: Monad m => Actor -> m PosAtomic
 posProjBody body = return $!

@@ -159,15 +159,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
   UpdSpotSmell{} -> skip
   UpdLoseSmell{} -> skip
   -- Assorted.
-  UpdAgeLevel lid t -> do
-    arena <- getArenaUI
-    when (lid == arena) $ do
-      -- Some time passed, show delay.
-      when (t > timeClip) $ displayFrames [Nothing]
-      -- Something new is gonna happen on this level (otherwise we'd send
-      -- @UpdAgeLevel@ later on, with a larger time increment),
-      -- so show crrent game state, before it changes.
-      displayPush
+  UpdAgeLevel{} -> skip
   UpdAgeGame {} -> skip
   UpdDiscover _ _ iid _ -> do
     disco <- getsClient sdisco
@@ -505,7 +497,35 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         Effect.Escape{} -> skip
   SfxMsgFid _ msg -> msgAdd msg
   SfxMsgAll msg -> msgAdd msg
-  SfxDisplayPush{} -> displayPush
+  SfxActorStart aid -> do
+    arena <- getArenaUI
+    b <- getsState $ getActorBody aid
+    when (blid b == arena) $ do
+      -- If time clip has passed since any actor advanced level time
+      -- or if the actor is so fast that he was capable of already moving
+      -- this clip (for simplicity, we don't check if he actually did)
+      -- or if the actor is newborn or is about to die,
+      -- we end the frame early, before his current move.
+      -- In the result, he moves at most once per frame, and thanks to this,
+      -- his multiple moves are not collapsed into one frame.
+      -- If the actor changes his speed this very clip, the test can faii,
+      -- but it's rare and results in a minor UI issue, so we don't care.
+      timeCutOff <- getsClient $ EM.findWithDefault timeZero arena . sdisplayed
+      when (btime b >= timeAdd timeClip timeCutOff
+            || btime b >= timeAddFromSpeed b timeCutOff
+            || actorNewBorn b
+            || actorDying b) $ do
+        let ageDisp displayed = EM.insert arena (btime b) displayed
+        modifyClient $ \cli -> cli {sdisplayed = ageDisp $ sdisplayed cli}
+        -- If considerable time passed, show delay.
+        let delta = timeAdd (btime b) (timeNegate timeCutOff)
+        when (delta > timeClip) $ displayFrames [Nothing]
+        -- Something new is gonna happen on this level (otherwise we'd send
+        -- @UpdAgeLevel@ later on, with a larger time increment),
+        -- so show crrent game state, before it changes.
+        displayPush
+        -- Delay on the other side. You never know.
+        when (delta > timeClip) $ displayFrames [Nothing]
 
 strike :: MonadClientUI m
         => ActorId -> ActorId -> Item -> HitAtomic -> m ()
