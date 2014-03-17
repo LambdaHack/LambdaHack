@@ -15,6 +15,7 @@ import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Client.ItemSlot
+import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.MonadClientUI
@@ -23,7 +24,6 @@ import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Client.Key as K
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
@@ -52,12 +52,13 @@ allItemsName = "Items"
 -- Note that this does not guarantee the chosen item belongs to the group,
 -- as the player can override the choice.
 getGroupItem :: MonadClientUI m
-             => MU.Part  -- ^ name of the group
-             -> [Char]   -- ^ accepted item symbols
-             -> MU.Part  -- ^ the verb of the prompt
-             -> [CStore] -- ^ legal containers
-             -> Bool     -- ^ whether to ask for the number of items
-             -> Bool     -- ^ whether the default is all, instead of one
+             => MU.Part   -- ^ name of the group
+             -> [Char]    -- ^ accepted item symbols
+             -> MU.Part   -- ^ the verb of the prompt
+             -> [CStore]  -- ^ initial legal containers
+             -> [CStore]  -- ^ legal containers after Calm taken into account
+             -> Bool      -- ^ whether to ask for the number of items
+             -> Bool      -- ^ whether the default is all, instead of one
              -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
 getGroupItem itemsName syms prompt = do
   let choice i = jsymbol i `elem` syms
@@ -68,6 +69,7 @@ getGroupItem itemsName syms prompt = do
 getAnyItem :: MonadClientUI m
            => Bool
            -> MU.Part
+           -> [CStore]
            -> [CStore]
            -> Bool
            -> Bool
@@ -85,19 +87,32 @@ getItem :: forall m. MonadClientUI m
         -> MU.Part         -- ^ the verb of the prompt
         -> (Item -> Bool)  -- ^ which items to consider suitable
         -> Text            -- ^ how to describe suitable items
-        -> [CStore]        -- ^ legal containers
+        -> [CStore]        -- ^ initial legal containers
+        -> [CStore]        -- ^ legal containers after Calm taken into account
         -> Bool            -- ^ whether to ask for the number of items
         -> Bool            -- ^ whether the default is all, instead of one
         -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
-getItem _ _ _ _ [] _ _ = failSer ItemNotCalm
-getItem askWhenLone verb p ptext cLegalRaw askNumber allNumber = do
+getItem _ _ _ _ _ [] _ _ = failSer ItemNotCalm
+getItem askWhenLone verb p ptext cLegalRaw cLegalAfterCalm
+        askNumber allNumber = do
  Kind.COps{corule} <- getsState scops
  let RuleKind{rsharedInventory} = Kind.stdRuleset corule
+     ppCStore CEqp = "in personal equipment"
+     ppCStore CInv = if rsharedInventory
+                     then "in shared inventory"
+                     else "in inventory"
+     ppCStore CGround = "on the floor"
  leader <- getLeaderUI
  s <- getState
  let cNotEmpty cstore = not (EM.null (getCBag (CActor leader cstore) s))
-     cLegal = filter cNotEmpty cLegalRaw
- if null cLegal then failWith "no items found"  -- TODO: sometimes ItemNotCalm
+     cLegal = filter cNotEmpty cLegalAfterCalm
+ if null cLegal then do
+   let cLegalInitial = filter cNotEmpty cLegalRaw
+   if null cLegalInitial then do
+     let ppLegal = makePhrase
+           [MU.WWxW "nor" $ map (MU.Text . ppCStore) cLegalRaw]
+     failWith $ "no items" <+> ppLegal
+   else failSer ItemNotCalm
  else do
   let cStart = head cLegal
   let storeAssocs cstore = EM.assocs (getCBag (CActor leader cstore) s)
@@ -106,10 +121,7 @@ getItem askWhenLone verb p ptext cLegalRaw askNumber allNumber = do
                     _ -> Nothing
   slots <- getsClient sslots
   let ask = do
-        if all (null . EM.elems)
-           $ map (\cstore -> getCBag (CActor leader cstore) s) cLegal
-        then failWith "no items found"
-        else if not askWhenLone && fmap (p . snd . fst) mloneItem == Just True
+        if not askWhenLone && fmap (p . snd . fst) mloneItem == Just True
         then case mloneItem of
           Nothing -> assert `failure` cStart
           Just (iidItem, k) -> return $ Right (iidItem, (k, cStart))
@@ -175,12 +187,7 @@ getItem askWhenLone verb p ptext cLegalRaw askNumber allNumber = do
               else let mls = map (snd . snd) ims2
                        r = slotRange mls
                    in "[" <> r <> ", ?" <> floorMsg <> invEqpMsg <> bestMsg
-            isn = case cCur of
-              CEqp -> "in personal equipment"
-              CInv -> if rsharedInventory
-                      then "in shared inventory"
-                      else "in inventory"
-              CGround -> "on the floor"
+            isn = ppCStore cCur
             prompt = makePhrase ["What to", verb MU.:> "?"]
             (ims, slOver, msg) = case itemDialogState of
               INone     -> (isp, EM.empty, prompt)

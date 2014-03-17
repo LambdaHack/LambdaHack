@@ -196,8 +196,8 @@ moveItemHuman cLegalRaw toCStore verbRaw auto = do
                     else delete CInv cLegalRaw
       verb = MU.Text verbRaw
   ggi <- if auto
-         then getAnyItem False verb cLegal False True
-         else getAnyItem True  verb cLegal True  True
+         then getAnyItem False verb cLegalRaw cLegal False True
+         else getAnyItem True  verb cLegalRaw cLegal True  True
   case ggi of
     Right ((iid, item), (k, fromCStore)) -> do
       let msgAndSer = do
@@ -272,7 +272,7 @@ projectEps ts tpos eps = do
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
   leader <- getLeaderUI
-  ggi <- getGroupItem object1 triggerSyms verb1 cLegal False False
+  ggi <- getGroupItem object1 triggerSyms verb1 cLegal cLegal False False
   case ggi of
     Right ((iid, _), (k, fromCStore)) -> do
       assert (k == 1) skip
@@ -300,7 +300,7 @@ applyHuman ts = do
         [] -> ("activate", "object")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
-  ggi <- getGroupItem object1 triggerSyms verb1 cLegal False False
+  ggi <- getGroupItem object1 triggerSyms verb1 cLegalRaw cLegal False False
   case ggi of
     Right ((iid, _), (k, fromCStore)) -> do
       assert (k == 1) skip
