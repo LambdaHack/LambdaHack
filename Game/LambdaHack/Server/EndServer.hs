@@ -30,8 +30,9 @@ import Game.LambdaHack.Server.State
 import Game.LambdaHack.Utils.Frequency
 
 -- | Continue or exit or restart the game.
-endOrLoop :: (MonadAtomic m, MonadServer m) => m () -> m () -> m () -> m ()
-endOrLoop loop restart saveExit = do
+endOrLoop :: (MonadAtomic m, MonadServer m)
+          => m () -> m () -> m () -> m () -> m ()
+endOrLoop loop restart gameExit gameSave = do
   factionD <- getsState sfactionD
   let inGame fact = case gquit fact of
         Nothing -> True
@@ -46,20 +47,21 @@ endOrLoop loop restart saveExit = do
         Just Status{stOutcome=Camping} -> True
         _ -> False
       campers = filter (isCamper . snd) $ EM.assocs factionD
+  -- Wipe out the quit flag for the savegame files.
+  mapM_ (\(fid, fact) ->
+            execUpdAtomic
+            $ UpdQuitFaction fid Nothing (gquit fact) Nothing) campers
+  bkpSave <- getsServer sbkpSave
+  when bkpSave $ do
+    modifyServer $ \ser -> ser {sbkpSave = False}
+    gameSave
   case (quitters, campers) of
     (sgameMode : _, _) -> do
       modifyServer $ \ser -> ser {sdebugNxt = (sdebugNxt ser) {sgameMode}}
       restart
     _ | gameOver -> restart
     ([], []) -> loop  -- continue current game
-    ([], _ : _) -> do
-      -- Wipe out the quit flag for the savegame files.
-      mapM_ (\(fid, fact) ->
-              execUpdAtomic
-              $ UpdQuitFaction fid Nothing (gquit fact) Nothing) campers
-      saveExit
-      -- Don't call @loop@, that is, quit the game loop.
-      -- debugPrint "Server loop finished"
+    ([], _ : _) -> gameExit  -- don't call @loop@, that is, quit the game loop
 
 dieSer :: (MonadAtomic m, MonadServer m) => ActorId -> Actor -> Bool -> m ()
 dieSer aid b hit = do

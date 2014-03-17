@@ -107,7 +107,7 @@ loopSer sdebug handleRequest executorUI executorAI !cops = do
           -- In case of game save+exit or restart, don't age levels (endClip)
           -- since possibly not all actors have moved yet.
           modifyServer $ \ser -> ser {squit = False}
-          endOrLoop loop (restartGame updConn loop) saveAndExit
+          endOrLoop loop (restartGame updConn loop) gameExit (saveBkpAll True)
         else do
           continue <- endClip arenas
           when continue loop
@@ -131,8 +131,7 @@ endClip arenas = do
       clipInTurn = let r = timeTurn `timeFit` timeClip
                    in assert (r > 2) r
       clipMod = clipN `mod` clipInTurn
-  bkpSave <- getsServer sbkpSave
-  when (bkpSave || clipN `mod` saveBkpClips == 0) $ do
+  when (clipN `mod` saveBkpClips == 0) $ do
     modifyServer $ \ser -> ser {sbkpSave = False}
     saveBkpAll False
   when (clipN `mod` leadLevelClips == 0) leadLevelFlip
@@ -150,7 +149,7 @@ endClip arenas = do
         exit <- elapsedSessionTimeGT stopA
         if exit then do
           tellAllClipPS
-          saveAndExit
+          gameExit
           return False  -- don't re-enter the game loop
         else return True
   else return True
@@ -300,12 +299,9 @@ handleActors handleRequest lid = do
         advanceTime aidNew
       handleActors handleRequest lid
 
-saveAndExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()
-saveAndExit = do
+gameExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()
+gameExit = do
   cops <- getsState scops
-  -- Save client and server data.
-  saveBkpAll True
-  -- debugPrint "Server saves game before exit"
   -- Kill all clients, including those that did not take part
   -- in the current game.
   -- Clients exit not now, but after they print all ending screens.

@@ -239,7 +239,8 @@ updColorActor aid fromCol toCol = assert (fromCol /= toCol) $ do
 updQuitFaction :: MonadStateWrite m
              => FactionId -> Maybe Actor -> Maybe Status -> Maybe Status
              -> m ()
-updQuitFaction fid mbody fromSt toSt = assert (fromSt /= toSt) $ do
+updQuitFaction fid mbody fromSt toSt = do
+  assert (fromSt /= toSt `blame` (fid, mbody, fromSt, toSt)) skip
   assert (maybe True ((fid ==) . bfid) mbody) skip
   fact <- getsState $ (EM.! fid) . sfactionD
   assert (fromSt == gquit fact `blame` "unexpected actor quit status"

@@ -422,6 +422,7 @@ reqGameExit aid d = do
   b <- getsState $ getActorBody aid
   let fid = bfid b
   oldSt <- getsState $ gquit . (EM.! fid) . sfactionD
+  modifyServer $ \ser -> ser {sbkpSave = True}
   modifyServer $ \ser -> ser {squit = True}  -- do this at once
   execUpdAtomic $ UpdQuitFaction fid (Just b) oldSt
                 $ Just $ Status Camping (fromEnum $ blid b) ""
