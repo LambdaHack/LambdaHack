@@ -153,16 +153,18 @@ endClip arenas = do
   else return True
 
 -- | Perform moves for individual actors, as long as there are actors
--- with the next move time less than or equal to the current level time.
+-- with the next move time within one clip (inclusive) from the current
+-- level time.
 -- Some very fast actors may move many times a clip and then
 -- we introduce subclips and produce many frames per clip to avoid
--- jerky movement. But most often we push exactly one frame or frame delay.
+-- jerky movement. But most often we push at most one frame or frame delay.
 handleActors :: (MonadAtomic m, MonadServerReadRequest m)
              => (Request -> m Bool)
              -> LevelId
              -> m ()
 handleActors handleRequest lid = do
-  time <- getsState $ getLocalTime lid  -- the end of this clip, inclusive
+  timeCurrent <- getsState $ getLocalTime lid
+  let time = timeAdd timeCurrent timeClip  -- the end of this clip, inclusive
   Level{lprio} <- getLevel lid
   quit <- getsServer squit
   factionD <- getsState sfactionD
