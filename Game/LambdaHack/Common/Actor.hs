@@ -116,7 +116,9 @@ actorDying b = if bproj b
                else bhp b <= 0
 
 actorNewBorn :: Actor -> Bool
-actorNewBorn b = boldpos b == Point 0 0 && not (waitedLastTurn b)
+actorNewBorn b = boldpos b == Point 0 0
+                 && not (waitedLastTurn b)
+                 && not (btime b < timeTurn)
 
 -- | Checks for the presence of actors in a position.
 -- Does not check if the tile is walkable.
