@@ -62,7 +62,7 @@ showScore (pos, score) =
         Escape   -> "emerged victorious"
         Restart  -> "resigned prematurely"
       curDate = calendarTimeToString . toUTCTime . date $ score
-      turns = - (negTime score `timeFit` timeTurn)
+      turns = (timeNegate (negTime score)) `timeFitUp` timeTurn
       diff = difficulty score
       victims :: String
       victims = printf ", killed %d, lost %d"
@@ -125,7 +125,7 @@ register table total time status@Status{stOutcome} date difficulty gplayerName
         -- Spawners or skirmishers get no bonus from loot and no malus
         -- from loses, but try to kill opponents fast and blodily,
         -- or at least hold up for long and incur heavy losses.
-        else let turnsSpent = timeFit time timeTurn
+        else let turnsSpent = timeFitUp time timeTurn
                  speedup = max 0 $ 1000000 - 100 * turnsSpent
                  survival = 100 * turnsSpent
              in if stOutcome `elem` [Conquer, Escape]

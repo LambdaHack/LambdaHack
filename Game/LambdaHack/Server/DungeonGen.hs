@@ -162,7 +162,7 @@ levelFromCaveKind Kind.COps{cotile}
     , lclear = let f n t | Tile.isExplorable cotile t = n + 1
                          | otherwise = n
                in PointArray.foldlA f 0 ltile
-    , ltime = timeTurn
+    , ltime = timeZero
     , litemNum
     , litemFreq
     , lsecret

@@ -2,7 +2,7 @@
 -- | Game time and speed.
 module Game.LambdaHack.Common.Time
   ( Time, timeZero, timeClip, timeTurn
-  , timeAdd, timeFit, timeNegate, timeScale, timeEpsilon
+  , timeAdd, timeFit, timeFitUp, timeNegate, timeScale, timeEpsilon
   , timeToDigit
   , Speed, toSpeed, speedZero, speedNormal, speedScale, speedAdd, speedNegate
   , ticksPerMeter, speedFromWeight, rangeFromSpeed
@@ -68,6 +68,11 @@ timeAdd (Time t1) (Time t2) = Time (t1 + t2)
 -- of the former kind.
 timeFit :: Time -> Time -> Int
 timeFit (Time t1) (Time t2) = fromIntegral $ t1 `div` t2
+
+-- | How many time intervals of the latter kind cover an interval
+-- of the former kind (rounded up).
+timeFitUp :: Time -> Time -> Int
+timeFitUp (Time t1) (Time t2) = fromIntegral $ t1 `divUp` t2
 
 -- | Negate a time interval. Can be used to subtract from a time
 -- or to reverse the ordering on time.

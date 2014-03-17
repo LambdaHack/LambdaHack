@@ -341,9 +341,9 @@ historyHuman = do
   global <- getsState stime
   let  msg = makeSentence
         [ "You survived for"
-        , MU.CarWs (global `timeFit` timeTurn) "half-second turn"
+        , MU.CarWs (global `timeFitUp` timeTurn) "half-second turn"
         , "(this level:"
-        , MU.Text (tshow (local `timeFit` timeTurn)) MU.:> ")" ]
+        , MU.Text (tshow (local `timeFitUp` timeTurn)) MU.:> ")" ]
         <+> "Past messages:"
   overlayToBlankSlideshow msg $ renderHistory history
 

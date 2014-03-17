@@ -60,7 +60,7 @@ unknownLevel Kind.Ops{ouniqGroup} ldepth lxsize lysize ldesc lstair lclear
            , lstair
            , lseen = 0
            , lclear
-           , ltime = timeTurn
+           , ltime = timeZero
            , litemNum = 0
            , litemFreq = toFreq "client item freq" []
            , lsecret
@@ -86,7 +86,7 @@ defStateGlobal _sdungeon _sdepth _sfactionD _scops _shigh =
   State
     { _sactorD = EM.empty
     , _sitemD = EM.empty
-    , _stime = timeTurn
+    , _stime = timeZero
     , ..
     }
 
@@ -99,7 +99,7 @@ emptyState =
     , _sactorD = EM.empty
     , _sitemD = EM.empty
     , _sfactionD = EM.empty
-    , _stime = timeTurn
+    , _stime = timeZero
     , _scops = undefined
     , _shigh = HighScore.empty
     }
