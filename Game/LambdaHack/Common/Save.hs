@@ -4,6 +4,7 @@ module Game.LambdaHack.Common.Save
   ) where
 
 import Control.Concurrent
+import Control.Concurrent.Async
 import qualified Control.Exception as Ex hiding (handle)
 import Control.Monad
 import Data.Binary
@@ -17,7 +18,6 @@ import qualified System.Random as R
 
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Utils.File
-import Game.LambdaHack.Utils.Thread
 
 type ChanSave a = MVar (Maybe a)
 
@@ -58,15 +58,15 @@ wrapInSaves saveFile exe = do
   -- We don't merge this with the other calls to waitForChildren,
   -- because, e.g., for server, we don't want to wait for clients to exit,
   -- if the server crashes (but we wait for the save to finish).
-  children <- newMVar []
   toSave <- newEmptyMVar
-  void $ forkChild children $ loopSave saveFile toSave
+  a <- async $ loopSave saveFile toSave
+  link a
   let fin = do
         -- Wait until the last save (if any) starts
         -- and tell the save thread to end.
         putMVar toSave Nothing
         -- Wait until the save thread ends.
-        waitForChildren children
+        wait a
   exe toSave `Ex.finally` fin
   -- The creation of, e.g., the initial client state, is outside the 'finally'
   -- clause, but this is OK, since no saves are ordered until 'runActionCli'.

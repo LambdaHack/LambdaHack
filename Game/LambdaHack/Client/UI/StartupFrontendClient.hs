@@ -3,10 +3,9 @@ module Game.LambdaHack.Client.UI.StartupFrontendClient
   ( srtFrontend
   ) where
 
-import Control.Concurrent
+import Control.Concurrent.Async
 import qualified Control.Concurrent.STM as STM
 import Control.Exception.Assert.Sugar
-import Control.Monad
 
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Config
@@ -18,7 +17,6 @@ import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.State
-import Game.LambdaHack.Utils.Thread
 
 -- | Wire together game content, the main loop of game clients,
 -- the main game loop assigned to this frontend (possibly containing
@@ -52,11 +50,11 @@ srtFrontend executorUI executorAI
         responseF <- STM.newTQueueIO
         requestF <- STM.newTQueueIO
         let schanF = ChanFrontend{..}
-        children <- newMVar []
-        void $ forkChild children $ loopFrontend schanF
+        a <- async $ loopFrontend schanF
+        link a
         executorUI sdebugMode SessionUI{..} s (cli fid False) chanServerUI
         STM.atomically $ STM.writeTQueue requestF FrontFinish
-        waitForChildren children
+        wait a
   -- TODO: let each client start his own raw frontend (e.g., gtk, though
   -- that leads to disaster); then don't give server as the argument
   -- to startupF, but the Client.hs (when it ends, gtk ends); server is

@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.UI.Frontend.Std
   ) where
 
 import Control.Concurrent
-import Control.Monad
+import Control.Concurrent.Async
 import qualified Data.ByteString.Char8 as BS
 import Data.Char (chr, ord)
 import qualified System.IO as SIO
@@ -18,7 +18,6 @@ import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
-import Game.LambdaHack.Utils.Thread
 
 -- | No session data needs to be maintained by this frontend.
 data FrontendSession = FrontendSession
@@ -33,9 +32,8 @@ frontendName = "std"
 -- | Starts the main program loop using the frontend input and output.
 startup :: DebugModeCli -> (FrontendSession -> IO ()) -> IO ()
 startup sdebugCli k = do
-  children <- newMVar []
-  void $ forkChild children $ k FrontendSession{sescMVar = Nothing, ..}
-  waitForChildren children
+  a <- async $ k FrontendSession{sescMVar = Nothing, ..}
+  wait a
 
 -- | Output to the screen via the frontend.
 fdisplay :: FrontendSession    -- ^ frontend session data

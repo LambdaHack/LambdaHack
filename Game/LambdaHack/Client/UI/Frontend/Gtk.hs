@@ -10,6 +10,7 @@ module Game.LambdaHack.Client.UI.Frontend.Gtk
   ) where
 
 import Control.Concurrent
+import Control.Concurrent.Async
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import Control.Monad.Reader
@@ -119,9 +120,11 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
   let sess = FrontendSession{sescMVar = Just escMVar, ..}
   -- Fork the game logic thread. When logic ends, game exits.
   -- TODO: is postGUISync needed here?
-  forkIO $ cont sess >> postGUISync mainQuit
+  aCont <- async $ cont sess >> postGUISync mainQuit
+  link aCont
   -- Fork the thread that periodically draws a frame from a queue, if any.
-  forkIO $ pollFrames sess Nothing
+  aPoll <- async $ pollFrames sess Nothing
+  link aPoll
   -- Fill the keyboard channel.
   sview `on` keyPressEvent $ do
     n <- eventKeyName

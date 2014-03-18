@@ -11,6 +11,7 @@ module Game.LambdaHack.Client.UI.Frontend.Curses
   ) where
 
 import Control.Concurrent
+import Control.Concurrent.Async
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Char (chr, ord)
@@ -56,9 +57,8 @@ startup sdebugCli k = do
   ws <- C.convertStyles vs
   let swin = C.stdScr
       sstyles = M.fromList (zip ks ws)
-  children <- newMVar []
-  void $ forkChild children $ k FrontendSession{sescMVar = Nothing, ..}
-  waitForChildren children
+  a <- async $ k FrontendSession{sescMVar = Nothing, ..}
+  wait a
   C.end
 
 -- | Output to the screen via the frontend.

@@ -178,6 +178,7 @@ library
   other-modules:      Paths_LambdaHack
   build-depends:      array      >= 0.3.0.3 && < 1,
                       assert-failure >= 0.1 && < 1,
+                      async      >= 2       && < 3,
                       base       >= 4       && < 5,
                       binary     >= 0.7     && < 1,
                       bytestring >= 0.9.2   && < 1,
@@ -248,6 +249,7 @@ executable LambdaHack
 
                       array      >= 0.3.0.3 && < 1,
                       assert-failure >= 0.1 && < 1,
+                      async      >= 2       && < 3,
                       base       >= 4       && < 5,
                       binary     >= 0.7     && < 1,
                       bytestring >= 0.9.2   && < 1,
