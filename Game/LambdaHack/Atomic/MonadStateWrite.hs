@@ -120,3 +120,12 @@ deleteItemEqp iid k aid = do
 deleteItemInv :: MonadStateWrite m => ItemId -> Int -> ActorId -> m ()
 deleteItemInv iid k aid = do
   updateActor aid $ \b -> b {binv = rmFromBag k iid (binv b)}
+
+rmFromBag :: Int -> ItemId -> ItemBag -> ItemBag
+rmFromBag k iid bag =
+  let rfb Nothing = assert `failure` "rm from empty bag" `twith` (k, iid, bag)
+      rfb (Just n) = case compare n k of
+        LT -> assert `failure` "rm more than there is" `twith` (n, k, iid, bag)
+        EQ -> Nothing
+        GT -> Just (n - k)
+  in EM.alter rfb iid bag

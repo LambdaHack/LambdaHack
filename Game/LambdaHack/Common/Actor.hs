@@ -7,18 +7,13 @@ module Game.LambdaHack.Common.Actor
     -- * The@ Acto@r type
   , Actor(..), actorTemplate, timeAddFromSpeed, braced, waitedLastTurn
   , actorDying, actorNewBorn, unoccupied, heroKindId, projectileKindId
-    -- * Inventory management
-  , ItemBag, ItemDict, ItemRev
-  , rmFromBag
     -- * Assorted
   , ActorDict, smellTimeout, checkAdjacent
   , mapActorItems_, mapActorInv_, mapActorEqp_
   ) where
 
-import Control.Exception.Assert.Sugar
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.HashMap.Strict as HM
 import Data.Ratio
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
@@ -137,27 +132,8 @@ projectileKindId Kind.Ops{ouniqGroup} = ouniqGroup "projectile"
 smellTimeout :: Time
 smellTimeout = timeScale timeTurn 100
 
-type ItemBag = EM.EnumMap ItemId Int
-
--- | All items in the dungeon (including in actor inventories),
--- indexed by item identifier.
-type ItemDict = EM.EnumMap ItemId Item
-
 -- | All actors on the level, indexed by actor identifier.
 type ActorDict = EM.EnumMap ActorId Actor
-
--- | Reverse item map, for item creation, to keep items and item identifiers
--- in bijection.
-type ItemRev = HM.HashMap Item ItemId
-
-rmFromBag :: Int -> ItemId -> ItemBag -> ItemBag
-rmFromBag k iid bag =
-  let rib Nothing = assert `failure` "rm from empty bag" `twith` (k, iid, bag)
-      rib (Just n) = case compare n k of
-        LT -> assert `failure` "rm more than there is" `twith` (n, k, iid, bag)
-        EQ -> Nothing
-        GT -> Just (n - k)
-  in EM.alter rib iid bag
 
 checkAdjacent :: Actor -> Actor -> Bool
 checkAdjacent sb tb = blid sb == blid tb && adjacent (bpos sb) (bpos tb)

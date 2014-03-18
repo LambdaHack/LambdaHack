@@ -19,6 +19,7 @@ import Data.Maybe
 import Data.Text (Text)
 
 import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point

@@ -5,16 +5,18 @@
 -- TODO: Document after it's rethought and rewritten wrt separating
 -- inventory manangement and items proper.
 module Game.LambdaHack.Common.Item
-  ( -- * Teh @Item@ type
+  ( -- * The @Item@ type
     ItemId, Item(..), jkind, buildItem, newItem
     -- * Item search
   , strongestItem, strongestItems
   , strongestSearch, strongestSword, strongestRegen
   , pMelee, pRegen
-   -- * The item discovery types
+   -- * Item discovery types
   , ItemKindIx, Discovery, DiscoRev, serverDiscos
     -- * The @FlavourMap@ type
   , FlavourMap, emptyFlavourMap, dungeonFlavourMap
+    -- * Inventory management types
+  , ItemBag, ItemDict, ItemRev
     -- * Textual description
   , partItem, partItemWs, partItemAW
     -- * Assorted
@@ -26,6 +28,7 @@ import Control.Monad
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Hashable as Hashable
+import qualified Data.HashMap.Strict as HM
 import qualified Data.Ix as Ix
 import Data.List
 import Data.Maybe
@@ -170,6 +173,16 @@ dungeonFlavourMap :: Kind.Ops ItemKind -> Rnd FlavourMap
 dungeonFlavourMap Kind.Ops{ofoldrWithKey} =
   liftM (FlavourMap . fst) $
     ofoldrWithKey rollFlavourMap (return (EM.empty, S.fromList stdFlav))
+
+type ItemBag = EM.EnumMap ItemId Int
+
+-- | All items in the dungeon (including in actor inventories),
+-- indexed by item identifier.
+type ItemDict = EM.EnumMap ItemId Item
+
+-- | Reverse item map, for item creation, to keep items and item identifiers
+-- in bijection.
+type ItemRev = HM.HashMap Item ItemId
 
 strongestItem :: [(ItemId, Item)] -> (Item -> Maybe Int)
               -> Maybe (Int, (ItemId, Item))
