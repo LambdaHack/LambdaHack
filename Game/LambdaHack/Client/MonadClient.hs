@@ -1,11 +1,12 @@
 -- | Basic client monad and related operations.
 module Game.LambdaHack.Client.MonadClient
   ( -- * Basic client monad
-    MonadClient( getClient, getsClient, modifyClient, putClient, saveClient
+    MonadClient( getClient, getsClient, modifyClient, putClient
+               , saveChanClient  -- exposed only to be implemented, not used
                , liftIO  -- exposed only to be implemented, not used
                )
     -- * Assorted primitives
-  , restoreGame, removeServerSave, rndToAction, saveName, debugPrint
+  , debugPrint, saveClient, saveName, restoreGame, removeServerSave, rndToAction
   ) where
 
 import Control.Monad
@@ -28,14 +29,26 @@ import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Utils.File
 
 class MonadStateRead m => MonadClient m where
-  getClient    :: m StateClient
-  getsClient   :: (StateClient -> a) -> m a
-  modifyClient :: (StateClient -> StateClient) -> m ()
-  putClient    :: StateClient -> m ()
+  getClient      :: m StateClient
+  getsClient     :: (StateClient -> a) -> m a
+  modifyClient   :: (StateClient -> StateClient) -> m ()
+  putClient      :: StateClient -> m ()
   -- We do not provide a MonadIO instance, so that outside of Action/
   -- nobody can subvert the action monads by invoking arbitrary IO.
-  liftIO       :: IO a -> m a
-  saveClient   :: m ()
+  liftIO         :: IO a -> m a
+  saveChanClient :: m (Save.ChanSave (State, StateClient))
+
+debugPrint :: MonadClient m => Text -> m ()
+debugPrint t = do
+  sdbgMsgCli <- getsClient $ sdbgMsgCli . sdebugCli
+  when sdbgMsgCli $ liftIO $ Save.delayPrint t
+
+saveClient :: MonadClient m => m ()
+saveClient = do
+  s <- getState
+  cli <- getClient
+  toSave <- saveChanClient
+  liftIO $ Save.saveToChan toSave (s, cli)
 
 saveName :: FactionId -> Bool -> String
 saveName side isAI =
@@ -44,11 +57,6 @@ saveName side isAI =
       then "human_" ++ show n
       else "computer_" ++ show (-n))
      ++ if isAI then ".ai.sav" else ".ui.sav"
-
-debugPrint :: MonadClient m => Text -> m ()
-debugPrint t = do
-  sdbgMsgCli <- getsClient $ sdbgMsgCli . sdebugCli
-  when sdbgMsgCli $ liftIO $ Save.delayPrint t
 
 restoreGame :: MonadClient m => m (Maybe (State, StateClient))
 restoreGame = do

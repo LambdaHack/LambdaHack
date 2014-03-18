@@ -4,11 +4,12 @@
 -- details.
 module Game.LambdaHack.Server.MonadServer
   ( -- * The server monad
-    MonadServer( getServer, getsServer, modifyServer, putServer, saveServer
+    MonadServer( getServer, getsServer, modifyServer, putServer
+               , saveChanServer  -- exposed only to be implemented, not used
                , liftIO  -- exposed only to be implemented, not used
                )
     -- * Assorted primitives
-  , debugPrint, saveName, dumpRngs
+  , debugPrint, saveServer, saveName, dumpRngs
   , restoreScore, registerScore
   , resetSessionStart, resetGameStart, elapsedSessionTimeGT
   , tellAllClipPS, tellGameClipPS
@@ -30,7 +31,6 @@ import System.IO
 import qualified System.Random as R
 import System.Time
 
-import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
@@ -38,6 +38,7 @@ import qualified Game.LambdaHack.Common.HighScore as HighScore
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Save
@@ -51,14 +52,14 @@ import Game.LambdaHack.Server.State
 import Game.LambdaHack.Utils.File
 
 class MonadStateRead m => MonadServer m where
-  getServer    :: m StateServer
-  getsServer   :: (StateServer -> a) -> m a
-  modifyServer :: (StateServer -> StateServer) -> m ()
-  putServer    :: StateServer -> m ()
+  getServer      :: m StateServer
+  getsServer     :: (StateServer -> a) -> m a
+  modifyServer   :: (StateServer -> StateServer) -> m ()
+  putServer      :: StateServer -> m ()
   -- We do not provide a MonadIO instance, so that outside of Action/
   -- nobody can subvert the action monads by invoking arbitrary IO.
-  liftIO       :: IO a -> m a
-  saveServer   :: m ()
+  liftIO         :: IO a -> m a
+  saveChanServer :: m (Save.ChanSave (State, StateServer))
 
 debugPrint :: MonadServer m => Text -> m ()
 debugPrint t = do
@@ -66,6 +67,13 @@ debugPrint t = do
   when debug $ liftIO $ do
     T.hPutStrLn stderr t
     hFlush stderr
+
+saveServer :: MonadServer m => m ()
+saveServer = do
+  s <- getState
+  ser <- getServer
+  toSave <- saveChanServer
+  liftIO $ Save.saveToChan toSave (s, ser)
 
 saveName :: String
 saveName = serverSaveName

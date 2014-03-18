@@ -61,11 +61,7 @@ instance MonadServer SerImplementation where
     let newSerS = serS {serServer = s}
     in newSerS `seq` ((), newSerS)
   liftIO         = SerImplementation . IO.liftIO
-  saveServer     = SerImplementation $ do
-    s <- gets serState
-    ser <- gets serServer
-    toSave <- gets serToSave
-    IO.liftIO $ Save.saveToChan toSave (s, ser)
+  saveChanServer = SerImplementation $ gets serToSave
 
 instance MonadServerReadRequest SerImplementation where
   getDict      = SerImplementation $ gets serDict

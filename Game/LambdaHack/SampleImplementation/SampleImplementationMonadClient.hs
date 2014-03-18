@@ -65,11 +65,7 @@ instance MonadClient (CliImplementation resp req) where
     let newCliS = cliS {cliClient = s}
     in newCliS `seq` ((), newCliS)
   liftIO         = CliImplementation . IO.liftIO
-  saveClient     = CliImplementation $ do
-    s <- gets cliState
-    cli <- gets cliClient
-    toSave <- gets cliToSave
-    IO.liftIO $ Save.saveToChan toSave (s, cli)
+  saveChanClient = CliImplementation $ gets cliToSave
 
 instance MonadClientUI (CliImplementation resp req) where
   getsSession f  = CliImplementation $ gets $ f . cliSession
