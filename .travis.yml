@@ -1,13 +1,15 @@
 language: haskell
 
 install:
-  - cabal install gtk2hs-buildtools
   - cabal install -f-vty -fcurses --only-dependencies
+  - cabal configure -f-vty -fcurses
+  - cabal build
   - cabal install -fvty -f-curses --only-dependencies
+  - cabal configure -fvty -f-curses
+  - cabal build
+  - cabal install gtk2hs-buildtools
   - cabal install -f-vty -f-curses --only-dependencies
+  - cabal install -f-vty -f-curses
 
 script:
-  - cabal install -f-vty -fcurses
-  - cabal install -fvty -f-curses
-  - cabal install -f-vty -f-curses
   - make test-travis || (tail -n 200 /tmp/stdtest.log ; exit 77)
