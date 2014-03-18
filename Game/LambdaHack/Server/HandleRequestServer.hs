@@ -316,12 +316,17 @@ reqApply :: (MonadAtomic m, MonadServer m)
          -> m ()
 reqApply aid iid cstore = do
   let applyItem = do
+        -- We have to destroy the item before the effect affects the item
+        -- or the actor holding it or standing on it (later on we could
+        -- lose track of the item and wouldn't be able to destroy it) .
+        -- This is OK, because we don't remove the item type
+        -- from the item dictionary, just an individual copy from the container.
         item <- getsState $ getItemBody iid
-        execSfxAtomic $ SfxActivate aid iid
-        itemEffect aid aid (Just iid) item
         -- TODO: don't destroy if not really used up; also, don't take time?
         cs <- actorConts iid 1 aid cstore
         mapM_ (\(_, c) -> execUpdAtomic $ UpdDestroyItem iid item 1 c) cs
+        execSfxAtomic $ SfxActivate aid iid
+        itemEffect aid aid (Just iid) item
   if cstore /= CInv then applyItem
   else do
     Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops

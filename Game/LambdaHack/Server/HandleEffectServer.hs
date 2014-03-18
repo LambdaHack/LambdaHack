@@ -45,15 +45,16 @@ itemEffect :: (MonadAtomic m, MonadServer m)
            => ActorId -> ActorId -> Maybe ItemId -> Item
            -> m ()
 itemEffect source target miid item = do
+  postb <- getsState $ getActorBody source
   discoS <- getsServer sdisco
   let ik = fromJust $ jkind discoS item
       ef = jeffect item
   b <- effectSem ef source target
   -- The effect is interesting so the item gets identified, if seen
-  -- (the item is in source actor's posession, so his position is given,
-  -- note that the actor may be moved by the effect; the item is destroyed,
-  -- if ever, after the discovery happens).
-  postb <- getsState $ getActorBody source
+  -- (the item was at the source actor's position, so his old position
+  -- is given, since the actor and/or the item may be moved by the effect;
+  -- we'd need to track not only position of atomic commands and factions,
+  -- but also which items they relate to, to be fully accurate).
   let atomic iid = execUpdAtomic $ UpdDiscover (blid postb) (bpos postb) iid ik
   when b $ maybe skip atomic miid
 

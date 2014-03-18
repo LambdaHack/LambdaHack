@@ -108,17 +108,23 @@ cmdAtomicFilterCli cmd = case cmd of
              else
                [cmd]
   UpdDiscover _ _ iid _ -> do
-    disco <- getsClient sdisco
-    item <- getsState $ getItemBody iid
-    if jkindIx item `EM.member` disco
-      then return []
-      else return [cmd]
+    itemD <- getsState sitemD
+    case EM.lookup iid itemD of
+      Nothing -> return []
+      Just item -> do
+        disco <- getsClient sdisco
+        if jkindIx item `EM.member` disco
+          then return []
+          else return [cmd]
   UpdCover _ _ iid _ -> do
-    disco <- getsClient sdisco
-    item <- getsState $ getItemBody iid
-    if jkindIx item `EM.notMember` disco
-      then return []
-      else return [cmd]
+    itemD <- getsState sitemD
+    case EM.lookup iid itemD of
+      Nothing -> return []
+      Just item -> do
+        disco <- getsClient sdisco
+        if jkindIx item `EM.notMember` disco
+          then return []
+          else return [cmd]
   UpdPerception lid outPer inPer -> do
     -- Here we cheat by setting a new perception outright instead of
     -- in @cmdAtomicSemCli@, to avoid computing perception twice.
