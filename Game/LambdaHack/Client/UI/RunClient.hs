@@ -160,7 +160,7 @@ continueRunDir aid distLast mdir = do
     lvl <- getLevel lid
     let posHere = bpos body
         posLast = boldpos body
-        dirLast = displacement posLast posHere
+        dirLast = posHere `vectorToFrom` posLast
         dir = fromMaybe dirLast mdir
         posThere = posHere `shift` dir
     actorsThere <- getsState $ posToActors posThere lid
@@ -193,7 +193,7 @@ tryTurning aid = do
   lvl <- getLevel lid
   let posHere = bpos body
       posLast = boldpos body
-      dirLast = displacement posLast posHere
+      dirLast = posHere `vectorToFrom` posLast
   let openableDir dir = Tile.isOpenable cotile (lvl `at` (posHere `shift` dir))
       dirEnterable dir = accessibleDir cops lvl posHere dir || openableDir dir
       dirNearby dir1 dir2 = euclidDistSqVector dir1 dir2 `elem` [1, 2]
@@ -224,7 +224,7 @@ checkAndRun aid dir = do
       posThere = posHere `shift` dir
   actorsThere <- getsState $ posToActors posThere lid
   let posLast = boldpos body
-      dirLast = displacement posLast posHere
+      dirLast = posHere `vectorToFrom` posLast
       -- This is supposed to work on unit vectors --- diagonal, as well as,
       -- vertical and horizontal.
       anglePos :: Point -> Vector -> RadianAngle -> Point

@@ -518,7 +518,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         let ageDisp displayed = EM.insert arena (btime b) displayed
         modifyClient $ \cli -> cli {sdisplayed = ageDisp $ sdisplayed cli}
         -- If considerable time passed, show delay.
-        let delta = timeDeltaToFrom (btime b) timeCutOff
+        let delta = btime b `timeDeltaToFrom` timeCutOff
         when (delta > Delta timeClip) $ displayFrames [Nothing]
         -- If key will be requested, don't show the frame, because during
         -- the request extra message may be shown, so the other frame is better.

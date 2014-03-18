@@ -459,7 +459,7 @@ moveCursorHuman dir n = do
   if newPos == cpos then failMsg "never mind"
   else do
     let tgt = case scursor of
-          TVector{} -> TVector $ displacement lpos newPos
+          TVector{} -> TVector $ newPos `vectorToFrom` lpos
           _ -> TPoint lidV newPos
     modifyClient $ \cli -> cli {scursor = tgt}
     doLook
@@ -529,7 +529,7 @@ tgtFloorHuman = do
         TEnemy a False -> TEnemy a True
         TEnemy{} -> TPoint lidV cursor
         TEnemyPos{} -> TPoint lidV cursor
-        TPoint{} -> TVector $ displacement lpos cursor
+        TPoint{} -> TVector $ cursor `vectorToFrom` lpos
         TVector{} ->
           let isEnemy b = isAtWar fact (bfid b)
                           && not (bproj b)

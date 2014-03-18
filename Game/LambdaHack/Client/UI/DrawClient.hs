@@ -84,7 +84,7 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
             tk = tokind tile
             items = lvl `atI` pos0
             sml = EM.findWithDefault timeZero pos0 lsmell
-            smlt = timeDeltaToFrom sml ltime
+            smlt = sml `timeDeltaToFrom` ltime
             viewActor aid Actor{bsymbol, bcolor, bhp, bproj}
               | Just aid == mleader = (symbol, inverseVideo)
               | otherwise = (symbol, Color.defAttr {Color.fg = bcolor})

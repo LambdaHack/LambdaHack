@@ -4,7 +4,7 @@
 module Game.LambdaHack.Common.Vector
   ( Vector(..), isUnit, isDiagonal, neg, chessDistVector, euclidDistSqVector
   , moves, compassText, vicinity, vicinityCardinal
-  , shift, shiftBounded, trajectoryToPath, displacement, pathToTrajectory
+  , shift, shiftBounded, trajectoryToPath, vectorToFrom, pathToTrajectory
   , RadianAngle, rotate, towards
   ) where
 
@@ -139,18 +139,19 @@ trajectoryToPath _ [] = []
 trajectoryToPath start (v : vs) = let next = shift start v
                            in next : trajectoryToPath next vs
 
--- | A vector from a point to another. We have
+-- | The vector between the second point and the first. We have
 --
--- > shift pos1 (displacement pos1 pos2) == pos2
-displacement :: Point -> Point -> Vector
-{-# INLINE displacement #-}
-displacement (Point x0 y0) (Point x1 y1) = Vector (x1 - x0) (y1 - y0)
+-- > shift pos1 (pos2 `vectorToFrom` pos1) == pos2
+--
+-- The arguments are in the same order as in the underlying scalar subtraction.
+vectorToFrom :: Point -> Point -> Vector
+{-# INLINE vectorToFrom #-}
+vectorToFrom (Point x0 y0) (Point x1 y1) = Vector (x0 - x1) (y0 - y1)
 
 -- | A list of vectors between a list of points.
 pathToTrajectory :: [Point] -> [Vector]
 pathToTrajectory [] = []
-pathToTrajectory lp1@(_ : lp2) = zipWith displacement lp1 lp2
-
+pathToTrajectory lp1@(_ : lp2) = zipWith vectorToFrom lp2 lp1
 type RadianAngle = Double
 
 -- | Rotate a vector by the given angle (expressed in radians)
@@ -208,4 +209,4 @@ normalizeVector v@(Vector vx vy) =
 towards :: Point -> Point -> Vector
 towards pos0 pos1 =
   assert (pos0 /= pos1 `blame` "towards self" `twith` (pos0, pos1))
-  $ normalizeVector $ displacement pos0 pos1
+  $ normalizeVector $ pos1 `vectorToFrom` pos0

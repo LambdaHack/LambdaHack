@@ -32,8 +32,8 @@ standard = RuleKind
   -- Apart of checking the target tile, we forbid diagonal movement
   -- to and from doors.
   , raccessible    = Nothing
-  , raccessibleDoor = Just $ \spos tpos ->
-                                not $ isDiagonal $ displacement spos tpos
+  , raccessibleDoor =
+      Just $ \spos tpos -> not $ isDiagonal $ spos `vectorToFrom` tpos
   , rtitle         = "LambdaHack"
   , rpathsDataFile = Self.getDataFileName
   , rpathsVersion  = Self.version

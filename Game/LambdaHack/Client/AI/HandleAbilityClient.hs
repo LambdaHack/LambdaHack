@@ -393,10 +393,12 @@ displaceTowards aid source target = do
               let newTgt = Just (tgt, Just (q : rest, (goal, len - 1)))
               modifyClient $ \cli ->
                 cli {stargetD = EM.alter (const $ newTgt) aid (stargetD cli)}
-              return $! returN "displace friend" $ displacement source target
+              return $! returN "displace friend"
+                     $ target `vectorToFrom` source
           Just _ -> return reject
           Nothing ->
-            return $! returN "displace other" $ displacement source target
+            return $! returN "displace other"
+                   $ target `vectorToFrom` source
       _ -> return reject  -- many projectiles, can't displace
   else return reject
 
@@ -434,9 +436,9 @@ moveTowards aid source target goal = do
         in Tile.isOpenable cotile t || Tile.isSuspect cotile t
       enterableHere p = accessibleHere p || bumpableHere p
   if noFriends target && enterableHere target then
-    return $! returN "moveTowards adjacent" $ displacement source target
+    return $! returN "moveTowards adjacent" $ target `vectorToFrom` source
   else do
-    let goesBack v = v == displacement source (boldpos b)
+    let goesBack v = v == boldpos b `vectorToFrom` source
         nonincreasing p = chessDist source goal >= chessDist p goal
         isSensible p = nonincreasing p && noFriends p && enterableHere p
         sensible = [ ((goesBack v, chessDist p goal), v)

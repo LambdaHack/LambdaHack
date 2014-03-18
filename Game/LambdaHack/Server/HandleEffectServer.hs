@@ -376,7 +376,7 @@ switchLevels2 lidNew posNew ((aid, bOld), ais) = do
   -- This time calculation may cause a double move of a foe of the same
   -- speed, but this is OK --- the foe didn't have a chance to move
   -- before, because the arena went inactive, so he moves now one more time.
-  let delta = timeDeltaToFrom (btime bOld) timeOld
+  let delta = btime bOld `timeDeltaToFrom` timeOld
       bNew = bOld { blid = lidNew
                   , btime = timeShift timeLastVisited delta
                   , bpos = posNew

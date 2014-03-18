@@ -101,9 +101,9 @@ pickActorToMove refreshTarget oldAid = do
                 minSpread = 7
                 maxSpread = 12 * 2
                 dcaptain p =
-                  chessDistVector $ displacement p (bpos captainBody)
+                  chessDistVector $ bpos captainBody `vectorToFrom` p
                 dsergeant p =
-                  chessDistVector $ displacement p (bpos sergeantBody)
+                  chessDistVector $ bpos sergeantBody `vectorToFrom` p
                 minDist | aid == captain = dsergeant (bpos b)
                         | aid == sergeant = dcaptain (bpos b)
                         | otherwise = dsergeant (bpos b)

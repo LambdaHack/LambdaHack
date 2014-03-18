@@ -199,7 +199,7 @@ targetStrategy oldLeader aid = do
                     || pos == bpos b  -- in case server resends deleted smell
                     || let sml =
                              EM.findWithDefault timeZero pos (lsmell lvl)
-                       in timeDeltaToFrom sml (ltime lvl) <= Delta timeZero)
+                       in sml `timeDeltaToFrom` ltime lvl <= Delta timeZero)
                 && let t = lvl `at` pos
                    in if ES.notMember lid explored
                       then  -- closestUnknown
