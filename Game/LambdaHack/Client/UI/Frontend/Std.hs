@@ -10,6 +10,7 @@ module Game.LambdaHack.Client.UI.Frontend.Std
 
 import Control.Concurrent
 import Control.Concurrent.Async
+import qualified Control.Exception as Ex hiding (handle)
 import qualified Data.ByteString.Char8 as BS
 import Data.Char (chr, ord)
 import qualified System.IO as SIO
@@ -33,6 +34,7 @@ frontendName = "std"
 startup :: DebugModeCli -> (FrontendSession -> IO ()) -> IO ()
 startup sdebugCli k = do
   a <- async $ k FrontendSession{sescMVar = Nothing, ..}
+               `Ex.finally` (SIO.hFlush SIO.stdout >> SIO.hFlush SIO.stderr)
   wait a
 
 -- | Output to the screen via the frontend.

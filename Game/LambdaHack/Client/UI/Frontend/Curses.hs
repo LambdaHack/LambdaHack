@@ -12,6 +12,7 @@ module Game.LambdaHack.Client.UI.Frontend.Curses
 
 import Control.Concurrent
 import Control.Concurrent.Async
+import qualified Control.Exception as Ex hiding (handle)
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Char (chr, ord)
@@ -57,9 +58,8 @@ startup sdebugCli k = do
   ws <- C.convertStyles vs
   let swin = C.stdScr
       sstyles = M.fromList (zip ks ws)
-  a <- async $ k FrontendSession{sescMVar = Nothing, ..}
+  a <- async $ k FrontendSession{sescMVar = Nothing, ..} `Ex.finally` C.end
   wait a
-  C.end
 
 -- | Output to the screen via the frontend.
 fdisplay :: FrontendSession    -- ^ frontend session data

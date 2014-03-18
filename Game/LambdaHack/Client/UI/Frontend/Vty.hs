@@ -10,6 +10,7 @@ module Game.LambdaHack.Client.UI.Frontend.Vty
 
 import Control.Concurrent
 import Control.Concurrent.Async
+import qualified Control.Exception as Ex hiding (handle)
 import Graphics.Vty
 import qualified Graphics.Vty as Vty
 
@@ -38,8 +39,8 @@ startup sdebugCli k = do
   -- TODO: implement sescMVar, when we switch to a new vty that has
   -- a separate key listener thread or something. Avoid polling.
   a <- async $ k FrontendSession{sescMVar = Nothing, ..}
+               `Ex.finally` Vty.shutdown svty
   wait a
-  Vty.shutdown svty
 
 -- | Output to the screen via the frontend.
 fdisplay :: FrontendSession    -- ^ frontend session data
