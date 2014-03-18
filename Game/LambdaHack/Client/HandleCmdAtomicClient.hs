@@ -250,10 +250,9 @@ moveItem iid c1 c2 =
     (CActor _ CGround, CActor aid _) -> do
       -- Update items slots, in case the item was picked up by
       -- the other client for the same faction.
+      side <- getsClient sside
       b <- getsState $ getActorBody aid
-      unless (bproj b) $ do
-        side <- getsClient sside
-        when (bfid b == side) $ void $ updateItemSlot aid iid
+      when (bfid b == side && not (bproj b)) $ void $ updateItemSlot aid iid
     _ -> return ()
 
 perception :: MonadClient m => LevelId -> Perception -> Perception -> m ()

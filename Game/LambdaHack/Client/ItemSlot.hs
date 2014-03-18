@@ -20,6 +20,7 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Item
+import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.State
 
 newtype SlotChar = SlotChar {slotChar :: Char}
@@ -68,8 +69,10 @@ assignSlot item body slots freeSlot s =
   candidates = take (length allSlots)
                $ drop (fromJust (elemIndex freeSlot allSlots))
                $ cycle allSlots
-  inBag = EM.keysSet $ sharedAllOwned body s
-  f l = maybe True (`ES.notMember` inBag) $ EM.lookup l slots
+  onPerson = sharedAllOwned body s
+  onGroud = sdungeon s EM.! blid body `atI` bpos body
+  inBags = ES.unions $ map EM.keysSet [onPerson, onGroud]
+  f l = maybe True (`ES.notMember` inBags) $ EM.lookup l slots
   free = filter f candidates
   allowed = dollarChar : free
   dollarChar = SlotChar '$'

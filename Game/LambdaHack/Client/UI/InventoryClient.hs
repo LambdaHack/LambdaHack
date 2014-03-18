@@ -14,6 +14,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
+import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.ItemSlot
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient
@@ -105,120 +106,124 @@ getItem askWhenLone verb p ptext cLegalRaw cLegalAfterCalm
  s <- getState
  let cNotEmpty cstore = not (EM.null (getCBag (CActor leader cstore) s))
      cLegal = filter cNotEmpty cLegalAfterCalm
- if null cLegal then do
-   let cLegalInitial = filter cNotEmpty cLegalRaw
-   if null cLegalInitial then do
-     let ppLegal = makePhrase
-           [MU.WWxW "nor" $ map (MU.Text . ppCStore) cLegalRaw]
-     failWith $ "no items" <+> ppLegal
-   else failSer ItemNotCalm
- else do
-  let cStart = head cLegal
-  let storeAssocs cstore = EM.assocs (getCBag (CActor leader cstore) s)
-      mloneItem = case concatMap storeAssocs cLegal of
-                    [(iid, k)] -> Just ((iid, getItemBody iid s), k)
-                    _ -> Nothing
-  slots <- getsClient sslots
-  let ask = do
-        if not askWhenLone && fmap (p . snd . fst) mloneItem == Just True
-        then case mloneItem of
-          Nothing -> assert `failure` cStart
-          Just (iidItem, k) -> return $ Right (iidItem, (k, cStart))
-        else do
-          let cStartPrev = if cStart == CGround
-                           then if isCFull CEqp then CEqp else CInv
-                           else cStart
-          soc <- perform INone cStart cStartPrev
-          case soc of
-            Left slides -> return $ Left slides
-            Right (iidItem, (kAll, c)) -> do
-              let kDefault = if allNumber then kAll else 1
-                  kRet k = return $ Right (iidItem, (k, c))
-              if askNumber && kAll > 1 then do
-                let tDefault = tshow kDefault
-                    kbound = min 9 kAll
-                    kprompt = "Choose number [1-" <> tshow kbound
-                              <> ", RET(" <> tDefault <> ")"
-                    kkeys = zipWith K.KM (repeat K.NoModifier)
-                            $ map (K.Char . Char.intToDigit) [1..kbound]
-                              ++ [K.Return]
-                kkm <- displayChoiceUI kprompt emptyOverlay kkeys
-                case kkm of
-                  Left slides -> failSlides slides
-                  Right K.KM{key} ->
-                    case key of
-                      K.Char l -> kRet $! Char.digitToInt l
-                      K.Return -> kRet kDefault
-                      _ -> assert `failure` "unexpected key:" `twith` kkm
-              else kRet kDefault
-      isCFull c = length cLegal > 1
-                  && c `elem` cLegal
-                  && cNotEmpty c
-      perform :: ItemDialogState -> CStore -> CStore
-              -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
-      perform itemDialogState cCur cPrev = do
-        bag <- getsState $ getCBag $ CActor leader cCur
-        let sl = EM.filter (`EM.member` bag) slots
-            slP = EM.filter (\iid -> p (getItemBody iid s)) sl
-            checkItem (l, iid) = ((iid, getItemBody iid s), (bag EM.! iid, l))
-            is0 = map checkItem $ EM.assocs sl
-            floorFull = isCFull CGround
-            (floorMsg, floorKey) | floorFull = (", -", [K.Char '-'])
-                                 | otherwise = ("", [])
-            invEqpFull = isCFull CInv && isCFull CEqp
-            (invEqpMsg, invEqpKey) | invEqpFull = (", /", [K.Char '/'])
-                                   | otherwise = ("", [])
-            isp = filter (p . snd . fst) is0
-            bestFull = not $ null isp
-            (bestMsg, bestKey)
-              | bestFull =
-                let bestSlot = slotChar $ maximum $ map (snd . snd) isp
-                in (", RET(" <> T.singleton bestSlot <> ")", [K.Return])
-              | otherwise = ("", [])
-            keys ims2 =
-              let mls = map (snd . snd) ims2
-                  ks = map (K.Char . slotChar) mls
-                       ++ [K.Char '?'] ++ floorKey ++ invEqpKey ++ bestKey
-              in zipWith K.KM (repeat K.NoModifier) ks
-            choice ims2 =
-              if null ims2
-              then "[?" <> floorMsg <> invEqpMsg
-              else let mls = map (snd . snd) ims2
-                       r = slotRange mls
-                   in "[" <> r <> ", ?" <> floorMsg <> invEqpMsg <> bestMsg
-            isn = ppCStore cCur
-            prompt = makePhrase ["What to", verb MU.:> "?"]
-            (ims, slOver, msg) = case itemDialogState of
-              INone     -> (isp, EM.empty, prompt)
-              ISuitable -> (isp, slP, ptext <+> isn <> ".")
-              IAll      -> (is0, sl, allItemsName <+> isn <> ".")
-        io <- itemOverlay bag slOver
-        akm <- displayChoiceUI (msg <+> choice ims) io (keys is0)
-        case akm of
-          Left slides -> failSlides slides
-          Right km@K.KM{..} -> do
-            assert (modifier == K.NoModifier) skip
-            case key of
-              K.Char '?' -> case itemDialogState of
-                INone -> if EM.null slP
-                         then perform IAll cCur cPrev
-                         else perform ISuitable cCur cPrev
-                ISuitable | ptext /= allItemsName -> perform IAll cCur cPrev
-                _ -> perform INone cCur cPrev
-              K.Char '-' | floorFull && (isCFull CInv || isCFull CEqp) ->
-                let cNext = if cCur == CGround then cPrev else CGround
-                in perform itemDialogState cNext cCur
-              K.Char '/' | invEqpFull ->
-                let cNext = if cCur == CInv then CEqp else CInv
-                in perform itemDialogState cNext cCur
-              K.Char l ->
-                case find ((SlotChar l ==) . snd . snd) is0 of
-                  Nothing -> assert `failure` "unexpected slot"
-                                    `twith` (km, l,  is0)
-                  Just (iidItem, (k, _)) ->
-                    return $ Right (iidItem, (k, cCur))
-              K.Return | bestFull ->
-                let (iidItem, (k, _)) = maximumBy (compare `on` snd . snd) isp
-                in return $ Right (iidItem, (k, cCur))
-              _ -> assert `failure` "unexpected key:" `twith` akm
-  ask
+     storeAssocs cstore = EM.assocs (getCBag (CActor leader cstore) s)
+     allAssocs = concatMap storeAssocs cLegal
+ case (cLegal, allAssocs) of
+   ([], _) -> do
+     let cLegalInitial = filter cNotEmpty cLegalRaw
+     if null cLegalInitial then do
+       let ppLegal = makePhrase
+             [MU.WWxW "nor" $ map (MU.Text . ppCStore) cLegalRaw]
+       failWith $ "no items" <+> ppLegal
+     else failSer ItemNotCalm
+   ([cStart], [(iid, k)]) | not askWhenLone ->
+     return $ Right ((iid, getItemBody iid s), (k, cStart))
+   (cStart : _, _) -> do
+     slotsOK <- if CGround `notElem` cLegal then return True
+                else fmap and
+                     $ mapM (updateItemSlot leader)
+                     $ EM.keys $ getCBag (CActor leader CGround) s
+     if not slotsOK then failSer PickupOverfull
+     else do
+       slots <- getsClient sslots
+       let pickNumber soc =
+             case soc of
+               Left slides -> return $ Left slides
+               Right (iidItem, (kAll, c)) -> do
+                 let kDefault = if allNumber then kAll else 1
+                     kRet k = return $ Right (iidItem, (k, c))
+                 if askNumber && kAll > 1 then do
+                   let tDefault = tshow kDefault
+                       kbound = min 9 kAll
+                       kprompt = "Choose number [1-" <> tshow kbound
+                                 <> ", RET(" <> tDefault <> ")"
+                       kkeys = zipWith K.KM (repeat K.NoModifier)
+                               $ map (K.Char . Char.intToDigit) [1..kbound]
+                                 ++ [K.Return]
+                   kkm <- displayChoiceUI kprompt emptyOverlay kkeys
+                   case kkm of
+                     Left slides -> failSlides slides
+                     Right K.KM{key} ->
+                       case key of
+                         K.Char l -> kRet $! Char.digitToInt l
+                         K.Return -> kRet kDefault
+                         _ -> assert `failure` "unexpected key:" `twith` kkm
+                 else kRet kDefault
+           isCFull c = length cLegal > 1
+                       && c `elem` cLegal
+                       && cNotEmpty c
+           perform :: ItemDialogState -> CStore -> CStore
+                   -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
+           perform itemDialogState cCur cPrev = do
+             bag <- getsState $ getCBag $ CActor leader cCur
+             let sl = EM.filter (`EM.member` bag) slots
+                 slP = EM.filter (\iid -> p (getItemBody iid s)) sl
+                 checkItem (l, iid) =
+                   ((iid, getItemBody iid s), (bag EM.! iid, l))
+                 is0 = map checkItem $ EM.assocs sl
+                 floorFull = isCFull CGround
+                 (floorMsg, floorKey) | floorFull = (", -", [K.Char '-'])
+                                      | otherwise = ("", [])
+                 invEqpFull = isCFull CInv && isCFull CEqp
+                 (invEqpMsg, invEqpKey) | invEqpFull = (", /", [K.Char '/'])
+                                        | otherwise = ("", [])
+                 isp = filter (p . snd . fst) is0
+                 bestFull = not $ null isp
+                 (bestMsg, bestKey)
+                   | bestFull =
+                     let bestSlot = slotChar $ maximum $ map (snd . snd) isp
+                     in (", RET(" <> T.singleton bestSlot <> ")", [K.Return])
+                   | otherwise = ("", [])
+                 keys ims2 =
+                   let mls = map (snd . snd) ims2
+                       ks = map (K.Char . slotChar) mls
+                            ++ [K.Char '?'] ++ floorKey ++ invEqpKey ++ bestKey
+                   in zipWith K.KM (repeat K.NoModifier) ks
+                 choice ims2 =
+                   if null ims2
+                   then "[?" <> floorMsg <> invEqpMsg
+                   else let mls = map (snd . snd) ims2
+                            r = slotRange mls
+                        in "[" <> r <> ", ?" <> floorMsg <> invEqpMsg <> bestMsg
+                 isn = ppCStore cCur
+                 prompt = makePhrase ["What to", verb MU.:> "?"]
+                 (ims, slOver, msg) = case itemDialogState of
+                   INone     -> (isp, EM.empty, prompt)
+                   ISuitable -> (isp, slP, ptext <+> isn <> ".")
+                   IAll      -> (is0, sl, allItemsName <+> isn <> ".")
+             io <- itemOverlay bag slOver
+             akm <- displayChoiceUI (msg <+> choice ims) io (keys is0)
+             case akm of
+               Left slides -> failSlides slides
+               Right km@K.KM{..} -> do
+                 assert (modifier == K.NoModifier) skip
+                 case key of
+                   K.Char '?' -> case itemDialogState of
+                     INone -> if EM.null slP
+                              then perform IAll cCur cPrev
+                              else perform ISuitable cCur cPrev
+                     ISuitable | ptext /= allItemsName ->
+                       perform IAll cCur cPrev
+                     _ -> perform INone cCur cPrev
+                   K.Char '-' | floorFull && (isCFull CInv || isCFull CEqp) ->
+                     let cNext = if cCur == CGround then cPrev else CGround
+                     in perform itemDialogState cNext cCur
+                   K.Char '/' | invEqpFull ->
+                     let cNext = if cCur == CInv then CEqp else CInv
+                     in perform itemDialogState cNext cCur
+                   K.Char l ->
+                     case find ((SlotChar l ==) . snd . snd) is0 of
+                       Nothing -> assert `failure` "unexpected slot"
+                                         `twith` (km, l,  is0)
+                       Just (iidItem, (k, _)) ->
+                         return $ Right (iidItem, (k, cCur))
+                   K.Return | bestFull ->
+                     let (iidItem, (k, _)) =
+                           maximumBy (compare `on` snd . snd) isp
+                     in return $ Right (iidItem, (k, cCur))
+                   _ -> assert `failure` "unexpected key:" `twith` akm
+       let cStartPrev = if cStart == CGround
+                        then if isCFull CEqp then CEqp else CInv
+                        else cStart
+       soc <- perform INone cStart cStartPrev
+       pickNumber soc
