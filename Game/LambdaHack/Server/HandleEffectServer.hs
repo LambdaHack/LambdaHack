@@ -13,7 +13,6 @@ import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Effect as Effect
@@ -21,6 +20,7 @@ import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
@@ -91,21 +91,30 @@ effectNoEffect target = do
 
 -- ** Heal
 
-effectHeal :: MonadAtomic m
-           => Int -> ActorId -> m Bool
+effectHeal :: MonadAtomic m => Int -> ActorId -> m Bool
 effectHeal power target = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   tm <- getsState $ getActorBody target
   let bhpMax = maxDice (ahp $ okind $ bkind tm)
-  if power > 0 && bhp tm >= bhpMax
+      deltaHP = min power (max 0 $ bhpMax - bhp tm)
+  if deltaHP == 0
     then do
       execSfxAtomic $ SfxEffect target Effect.NoEffect
       return False
     else do
-      let deltaHP = min power (bhpMax - bhp tm)
       execUpdAtomic $ UpdHealActor target deltaHP
+      when (deltaHP < 0) $ halveCalm target
       execSfxAtomic $ SfxEffect target $ Effect.Heal deltaHP
       return True
+
+halveCalm :: MonadAtomic m => ActorId -> m ()
+halveCalm target = do
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  tb <- getsState $ getActorBody target
+  let calmMax = maxDice $ acalm $ okind $ bkind tb
+      calmCur = bcalm tb
+      deltaCalm = calmMax `div` 2 - calmCur
+  when (deltaCalm < 0) $ execUpdAtomic $ UpdCalmActor target deltaCalm
 
 -- ** Wound
 
@@ -113,7 +122,6 @@ effectWound :: (MonadAtomic m, MonadServer m)
             => RollDice -> Int -> ActorId -> ActorId
             -> m Bool
 effectWound nDm power source target = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   n <- rndToAction $ castDice nDm
   let deltaHP = - (n + power)
   if deltaHP >= 0
@@ -123,11 +131,7 @@ effectWound nDm power source target = do
     else do
       -- Damage the target.
       execUpdAtomic $ UpdHealActor target deltaHP
-      tb <- getsState $ getActorBody target
-      let calmMax = maxDice $ acalm $ okind $ bkind tb
-          calmCur = bcalm tb
-          deltaCalm = calmMax `div` 2 - calmCur
-      when (deltaCalm < 0) $ execUpdAtomic $ UpdCalmActor target deltaCalm
+      halveCalm target
       execSfxAtomic $ SfxEffect target $
         if source == target
         then Effect.Heal deltaHP
