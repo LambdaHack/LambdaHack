@@ -61,13 +61,13 @@ allSlots = map SlotChar $ ['a'..'z'] ++ ['A'..'Z']
 assignSlot :: Item -> Actor -> ItemSlots -> SlotChar
            -> State
            -> Maybe SlotChar
-assignSlot item body slots freeSlot s =
+assignSlot item body slots lastSlot s =
   if jsymbol item == '$' && dollarChar `elem` allowed
   then Just dollarChar
   else listToMaybe free
  where
   candidates = take (length allSlots)
-               $ drop (fromJust (elemIndex freeSlot allSlots))
+               $ drop (1 + fromJust (elemIndex lastSlot allSlots))
                $ cycle allSlots
   onPerson = sharedAllOwned body s
   onGroud = sdungeon s EM.! blid body `atI` bpos body

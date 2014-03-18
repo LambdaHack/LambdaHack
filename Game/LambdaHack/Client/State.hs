@@ -82,7 +82,7 @@ data StateClient = StateClient
   , smarkSuspect :: !Bool          -- ^ mark suspect features
   , scurDifficulty :: !Int         -- ^ current game difficulty level
   , sslots       :: !ItemSlots     -- ^ map from slots to items
-  , sfreeSlot    :: !SlotChar      -- ^ first free slot
+  , slastSlot    :: !SlotChar      -- ^ last used slot
   , sdebugCli    :: !DebugModeCli  -- ^ client debugging mode
   }
   deriving Show
@@ -154,7 +154,7 @@ defStateClient shistory _sside sisAI =
     , smarkSuspect = False
     , scurDifficulty = difficultyDefault
     , sslots = EM.empty
-    , sfreeSlot = SlotChar 'a'
+    , slastSlot = SlotChar 'a'
     , sdebugCli = defDebugModeCli
     }
 
@@ -223,7 +223,7 @@ instance Binary StateClient where
     put smarkSuspect
     put scurDifficulty
     put sslots
-    put sfreeSlot
+    put slastSlot
     put sdebugCli  -- TODO: this is overwritten at once
   get = do
     stgtMode <- get
@@ -247,7 +247,7 @@ instance Binary StateClient where
     smarkSuspect <- get
     scurDifficulty <- get
     sslots <- get
-    sfreeSlot <- get
+    slastSlot <- get
     sdebugCli <- get
     let sbfsD = EM.empty
         sfper = EM.empty

@@ -154,12 +154,12 @@ updateItemSlot aid iid = do
     Just _ -> return True  -- slot already assigned
     Nothing -> do
       item <- getsState $ getItemBody iid
-      freeSlot <- getsClient sfreeSlot
-      mc <- getsState $ assignSlot item b slots freeSlot
+      lastSlot <- getsClient slastSlot
+      mc <- getsState $ assignSlot item b slots lastSlot
       case mc of
         Just l2 -> do
           modifyClient $ \cli ->
             cli { sslots = EM.insert l2 iid (sslots cli)
-                , sfreeSlot = max l2 (sfreeSlot cli) }
+                , slastSlot = max l2 (slastSlot cli) }
           return True
         Nothing -> return False  -- overfull
