@@ -443,6 +443,7 @@ macroHuman kms =
 
 -- * MoveCursor
 
+-- | Move the cursor. Assumes targeting mode.
 moveCursorHuman :: MonadClientUI m => Vector -> Int -> m Slideshow
 moveCursorHuman dir n = do
   leader <- getLeaderUI
@@ -464,44 +465,47 @@ moveCursorHuman dir n = do
     doLook
 
 -- | Perform look around in the current position of the cursor.
--- Assumes targeting mode and so assumes that a leader is picked.
+-- Normally expects targeting mode and so that a leader is picked.
 doLook :: MonadClientUI m => m Slideshow
 doLook = do
-  leader <- getLeaderUI
   stgtMode <- getsClient stgtMode
-  let lidV = maybe (assert `failure` leader) tgtLevelId stgtMode
-  lvl <- getLevel lidV
-  cursorPos <- cursorToPos
-  per <- getPerFid lidV
-  b <- getsState $ getActorBody leader
-  let p = fromMaybe (bpos b) cursorPos
-      canSee = ES.member p (totalVisible per)
-  inhabitants <- if canSee
-                 then getsState $ posToActors p lidV
-                 else return []
-  seps <- getsClient seps
-  (steps, _eps) <- makeLine b p seps
-  let aims = steps == chessDist (bpos b) p
-      enemyMsg = case inhabitants of
-        [] -> ""
-        _ -> -- Even if it's the leader, give his proper name, not 'you'.
-             let subjects = map (partActor . snd . fst) inhabitants
-                 subject = MU.WWandW subjects
-                 verb = "be here"
-             in makeSentence [MU.SubjectVerbSg subject verb]
-      vis | not canSee = "you cannot see"
-          | not aims = "you cannot penetrate"
-          | otherwise = "you see"
-  -- Show general info about current position.
-  lookMsg <- lookAt True vis canSee p leader enemyMsg
-  modifyClient $ \cli -> cli {slastKey = Nothing}
-  -- Check if there's something lying around at current position.
-  let is = lvl `atI` p
-  if EM.size is <= 2 then
-    promptToSlideshow lookMsg
-  else do
-    io <- floorItemOverlay is
-    overlayToSlideshow lookMsg io
+  case stgtMode of
+    Nothing -> return mempty
+    Just tgtMode -> do
+      leader <- getLeaderUI
+      let lidV = tgtLevelId tgtMode
+      lvl <- getLevel lidV
+      cursorPos <- cursorToPos
+      per <- getPerFid lidV
+      b <- getsState $ getActorBody leader
+      let p = fromMaybe (bpos b) cursorPos
+          canSee = ES.member p (totalVisible per)
+      inhabitants <- if canSee
+                     then getsState $ posToActors p lidV
+                     else return []
+      seps <- getsClient seps
+      (steps, _eps) <- makeLine b p seps
+      let aims = steps == chessDist (bpos b) p
+          enemyMsg = case inhabitants of
+            [] -> ""
+            _ -> -- Even if it's the leader, give his proper name, not 'you'.
+                 let subjects = map (partActor . snd . fst) inhabitants
+                     subject = MU.WWandW subjects
+                     verb = "be here"
+                 in makeSentence [MU.SubjectVerbSg subject verb]
+          vis | not canSee = "you cannot see"
+              | not aims = "you cannot penetrate"
+              | otherwise = "you see"
+      -- Show general info about current position.
+      lookMsg <- lookAt True vis canSee p leader enemyMsg
+      modifyClient $ \cli -> cli {slastKey = Nothing}
+      -- Check if there's something lying around at current position.
+      let is = lvl `atI` p
+      if EM.size is <= 2 then
+        promptToSlideshow lookMsg
+      else do
+        io <- floorItemOverlay is
+        overlayToSlideshow lookMsg io
 
 -- * TgtFloor
 
@@ -593,7 +597,7 @@ tgtUnknownHuman = do
     Just p -> do
       let tgt = TPoint (blid b) p
       modifyClient $ \cli -> cli {scursor = tgt}
-      return mempty
+      doLook
 
 -- * TgtItem
 
@@ -607,7 +611,7 @@ tgtItemHuman = do
     (_, (p, _)) : _ -> do
       let tgt = TPoint (blid b) p
       modifyClient $ \cli -> cli {scursor = tgt}
-      return mempty
+      doLook
 
 -- * TgtStair
 
@@ -622,7 +626,7 @@ tgtStairHuman up = do
     p : _ -> do
       let tgt = TPoint (blid b) p
       modifyClient $ \cli -> cli {scursor = tgt}
-      return mempty
+      doLook
 
 -- * TgtAscend
 
@@ -678,15 +682,17 @@ epsIncrHuman b = do
 
 -- * TgtClear
 
-tgtClearHuman :: MonadClient m => m ()
+tgtClearHuman :: MonadClientUI m => m Slideshow
 tgtClearHuman = do
   mleader <- getsClient _sleader
   case mleader of
-    Nothing -> return ()
+    Nothing -> return mempty
     Just leader -> do
       tgt <- getsClient $ getTarget leader
       case tgt of
-        Just _ -> modifyClient $ updateTarget leader (const Nothing)
+        Just _ -> do
+          modifyClient $ updateTarget leader (const Nothing)
+          return mempty
         Nothing -> do
           scursorOld <- getsClient scursor
           b <- getsState $ getActorBody leader
@@ -696,6 +702,7 @@ tgtClearHuman = do
                 TPoint{} -> TPoint (blid b) (bpos b)
                 TVector{} -> TVector (Vector 0 0)
           modifyClient $ \cli -> cli {scursor}
+          doLook
 
 -- * Cancel
 

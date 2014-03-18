@@ -7,9 +7,9 @@ import Data.Monoid
 
 import Game.LambdaHack.Client.UI.HandleHumanCmdGlobalClient
 import Game.LambdaHack.Client.UI.HandleHumanCmdLocalClient
+import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgClient
-import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Common.Request
 
 -- | The semantics of human player commands in terms of the @Action@ monad.
@@ -79,7 +79,7 @@ cmdAction cmd = case cmd of
   TgtStair up -> fmap Left $ tgtStairHuman up
   TgtAscend k -> fmap Left $ tgtAscendHuman k
   EpsIncr b -> fmap Left $ epsIncrHuman b
-  TgtClear -> addNoSlides tgtClearHuman
+  TgtClear -> fmap Left $ tgtClearHuman
   Cancel -> fmap Left $ cancelHuman mainMenuHuman
   Accept -> fmap Left $ acceptHuman helpHuman
 
