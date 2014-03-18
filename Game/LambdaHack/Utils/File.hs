@@ -4,7 +4,7 @@ module Game.LambdaHack.Utils.File
   ) where
 
 import qualified Codec.Compression.Zlib as Z
-import qualified Control.Exception as Ex
+import qualified Control.Exception as Ex hiding (handle)
 import Control.Monad
 import Data.Binary
 import qualified Data.ByteString.Lazy as LBS

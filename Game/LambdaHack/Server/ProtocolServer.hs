@@ -19,6 +19,7 @@ module Game.LambdaHack.Server.ProtocolServer
   ) where
 
 import Control.Concurrent
+import Control.Concurrent.Async
 import Control.Concurrent.STM (TQueue, atomically)
 import qualified Control.Concurrent.STM as STM
 import Control.Exception.Assert.Sugar
@@ -168,7 +169,7 @@ killAllClients = do
   mapWithKeyM_ sendKill d
 
 -- Global variable for all children threads of the server.
-childrenServer :: MVar [MVar ()]
+childrenServer :: MVar [Async ()]
 {-# NOINLINE childrenServer #-}
 childrenServer = unsafePerformIO (newMVar [])
 
@@ -208,9 +209,9 @@ updateConn executorUI executorAI = do
   -- Spawn client threads.
   let toSpawn = newD EM.\\ oldD
   let forkUI fid connS =
-        void $ forkChild childrenServer $ executorUI fid connS
+        forkChild childrenServer $ executorUI fid connS
       forkAI fid connS =
-        void $ forkChild childrenServer $ executorAI fid connS
+        forkChild childrenServer $ executorAI fid connS
       forkClient fid (connUI, connAI) = do
         -- When a connection is reused, clients are not respawned,
         -- even if UI usage changes, but it works OK thanks to UI faction

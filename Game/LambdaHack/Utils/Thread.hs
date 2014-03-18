@@ -3,27 +3,24 @@ module Game.LambdaHack.Utils.Thread
   ( forkChild, waitForChildren
   ) where
 
-import Control.Concurrent (ThreadId, forkIO)
+import Control.Concurrent.Async
 import Control.Concurrent.MVar
-import Control.Exception (finally)
 
--- Swiped from http://www.haskell.org/ghc/docs/latest/html/libraries/base/Control-Concurrent.html
+-- Swiped from http://www.haskell.org/ghc/docs/latest/html/libraries/base/Control-Concurrent.html. Ported to Async to link exceptions, to let travis tests fail.
 
-forkChild :: MVar [MVar ()] -> IO () -> IO ThreadId
+forkChild :: MVar [Async ()] -> IO () -> IO ()
 forkChild children io = do
-  mvar <- newEmptyMVar
+  a <- async io
+  link a
   childs <- takeMVar children
-  putMVar children (mvar : childs)
-  -- @forkFinally@ causes the program not to print client assertion failures
-  -- forkFinally io (\_ -> putMVar mvar ())
-  forkIO (io `finally` putMVar mvar ())
+  putMVar children (a : childs)
 
-waitForChildren :: MVar [MVar ()] -> IO ()
+waitForChildren :: MVar [Async ()] -> IO ()
 waitForChildren children = do
   cs <- takeMVar children
   case cs of
     [] -> return ()
     m : ms -> do
       putMVar children ms
-      takeMVar m
+      wait m
       waitForChildren children
