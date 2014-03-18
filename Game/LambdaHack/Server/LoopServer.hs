@@ -123,8 +123,7 @@ endClip arenas = do
       ageProcessed lid processed = EM.insertWith timeAdd lid timeClip processed
       ageServer lid ser = ser {sprocessed = ageProcessed lid $ sprocessed ser}
   mapM_ (modifyServer . ageServer) arenas
-  mapM_ (\lid -> execUpdAtomic $ UpdAgeLevel lid timeClip) arenas
-  execUpdAtomic $ UpdAgeGame timeClip
+  execUpdAtomic $ UpdAgeGame timeClip arenas
   -- Perform periodic dungeon maintenance.
   time <- getsState stime
   let clipN = time `timeFit` timeClip

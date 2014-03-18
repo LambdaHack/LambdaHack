@@ -85,8 +85,7 @@ data UpdAtomic =
   | UpdSpotSmell !LevelId ![(Point, Time)]
   | UpdLoseSmell !LevelId ![(Point, Time)]
   -- Assorted.
-  | UpdAgeLevel !LevelId !Time
-  | UpdAgeGame !Time
+  | UpdAgeGame !Time ![LevelId]
   | UpdDiscover !LevelId !Point !ItemId !(Kind.Id ItemKind)
   | UpdCover !LevelId !Point !ItemId !(Kind.Id ItemKind)
   | UpdPerception !LevelId !Perception !Perception
@@ -159,8 +158,7 @@ undoUpdAtomic cmd = case cmd of
   UpdAlterSmell lid p fromSm toSm -> Just $ UpdAlterSmell lid p toSm fromSm
   UpdSpotSmell lid sms -> Just $ UpdLoseSmell lid sms
   UpdLoseSmell lid sms -> Just $ UpdSpotSmell lid sms
-  UpdAgeLevel lid t -> Just $ UpdAgeLevel lid (timeNegate t)
-  UpdAgeGame t -> Just $ UpdAgeGame (timeNegate t)
+  UpdAgeGame t lids -> Just $ UpdAgeGame (timeNegate t) lids
   UpdDiscover lid p iid ik -> Just $ UpdCover lid p iid ik
   UpdCover lid p iid ik -> Just $ UpdDiscover lid p iid ik
   UpdPerception lid outPer inPer -> Just $ UpdPerception lid inPer outPer

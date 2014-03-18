@@ -74,8 +74,7 @@ handleUpdAtomic cmd = case cmd of
   UpdAlterSmell lid p fromSm toSm -> updAlterSmell lid p fromSm toSm
   UpdSpotSmell lid sms -> updSpotSmell lid sms
   UpdLoseSmell lid sms -> updLoseSmell lid sms
-  UpdAgeLevel lid t -> updAgeLevel lid t
-  UpdAgeGame t -> updAgeGame t
+  UpdAgeGame t lids -> updAgeGame t lids
   UpdDiscover{} -> return ()
     -- Server keeps all atomic comands so the semantics
   UpdCover{} -> return ()     -- of inverses has to be reasonably inverse.
@@ -389,25 +388,26 @@ updLoseSmell lid sms = assert (not $ null sms) $ do
       upd m = foldr f m sms
   updateLevel lid $ updateSmell upd
 
--- | Age the level.
+-- | Age the game.
 --
--- Not aging the game here, since not all factions see the level,
--- so not all get this command (it would lead information that
--- there is somebody's leader on the level).
-updAgeLevel :: MonadStateWrite m => LevelId -> Time -> m ()
-updAgeLevel lid delta = assert (delta /= timeZero) $
-  updateLevel lid $ \lvl -> lvl {ltime = timeAdd (ltime lvl) delta}
-
-updAgeGame :: MonadStateWrite m => Time -> m ()
-updAgeGame delta = assert (delta /= timeZero) $
+-- TODO: It leaks information that there is activity on various level,
+-- even if the faction has no actors there, so show this on UI somewhere,
+-- e.g., in the @~@ menu of seen level indicate recent activity.
+updAgeGame :: MonadStateWrite m => Time -> [LevelId] -> m ()
+updAgeGame delta lids = assert (delta /= timeZero) $ do
   modifyState $ updateTime $ timeAdd delta
+  mapM_ (ageLevel delta) lids
+
+ageLevel :: MonadStateWrite m => Time -> LevelId -> m ()
+ageLevel delta lid =
+  updateLevel lid $ \lvl -> lvl {ltime = timeAdd (ltime lvl) delta}
 
 updRestart :: MonadStateWrite m
            => FactionId -> Discovery -> FactionPers -> State -> m ()
 updRestart _ _ _ = putState
 
-updRestartServer :: MonadStateWrite m =>  State -> m ()
+updRestartServer :: MonadStateWrite m => State -> m ()
 updRestartServer = putState
 
-updResumeServer :: MonadStateWrite m =>  State -> m ()
+updResumeServer :: MonadStateWrite m => State -> m ()
 updResumeServer = putState

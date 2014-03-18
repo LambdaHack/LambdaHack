@@ -103,8 +103,7 @@ posUpdAtomic cmd = case cmd of
   UpdLoseSmell lid sms -> do
     let ps = map fst sms
     return $! PosSmell lid ps
-  UpdAgeLevel lid _ -> return $! PosSight lid []
-  UpdAgeGame _ -> return PosAll
+  UpdAgeGame _ _ -> return PosAll
   UpdDiscover lid p _ _ -> return $! PosSight lid [p]
   UpdCover lid p _ _ -> return $! PosSight lid [p]
   UpdPerception{} -> return PosNone

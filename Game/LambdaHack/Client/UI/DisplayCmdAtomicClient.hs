@@ -160,7 +160,6 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
   UpdSpotSmell{} -> skip
   UpdLoseSmell{} -> skip
   -- Assorted.
-  UpdAgeLevel{} -> skip
   UpdAgeGame {} -> skip
   UpdDiscover _ _ iid _ -> do
     disco <- getsClient sdisco
