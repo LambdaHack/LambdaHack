@@ -62,7 +62,7 @@ showScore (pos, score) =
         Escape   -> "emerged victorious"
         Restart  -> "resigned prematurely"
       curDate = calendarTimeToString . toUTCTime . date $ score
-      turns = (timeNegate (negTime score)) `timeFitUp` timeTurn
+      turns = (absoluteTimeNegate (negTime score)) `timeFitUp` timeTurn
       diff = difficulty score
       victims :: String
       victims = printf ", killed %d, lost %d"
@@ -146,7 +146,7 @@ register table total time status@Status{stOutcome} date difficulty gplayerName
         if fightsAgainstSpawners then total > 0 else not (EM.null theirVictims)
       points = (ceiling :: Double -> Int)
                $ pSum * 1.5 ^^ (- (difficultyCoeff difficulty))
-      negTime = timeNegate time
+      negTime = absoluteTimeNegate time
       score = ScoreRecord{..}
   in (worthMentioning, insertPos score table)
 

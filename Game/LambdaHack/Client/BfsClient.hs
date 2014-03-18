@@ -197,7 +197,7 @@ closestSmell aid = do
       bfs <- getCacheBfs aid
       let ts = mapMaybe (\x@(p, _) -> fmap (,x) (accessBfs bfs p)) smells
           ds = filter (\(d, _) -> d /= 0) ts  -- bpos of aid
-      return $! sortBy (comparing (fst &&& timeNegate . snd . snd)) ds
+      return $! sortBy (comparing (fst &&& absoluteTimeNegate . snd . snd)) ds
 
 -- TODO: We assume linear dungeon in @unexploredD@,
 -- because otherwise we'd need to calculate shortest paths in a graph, etc.

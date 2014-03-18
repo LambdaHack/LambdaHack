@@ -194,12 +194,12 @@ updMoveItem iid k c1 c2 = assert (k > 0 && c1 /= c2) $ do
   insertItemContainer iid k c2
 
 -- TODO: optimize (a single call to updatePrio is enough)
-updAgeActor :: MonadStateWrite m => ActorId -> Time -> m ()
-updAgeActor aid t = assert (t /= timeZero) $ do
+updAgeActor :: MonadStateWrite m => ActorId -> Delta Time -> m ()
+updAgeActor aid delta = assert (delta /= Delta timeZero) $ do
   body <- getsState $ getActorBody aid
   ais <- getsState $ getCarriedAssocs body
   updDestroyActor aid body ais
-  let newBody = body {btime = timeAdd (btime body) t}
+  let newBody = body {btime = timeShift (btime body) delta}
   updCreateActor aid newBody ais
 
 updHealActor :: MonadStateWrite m => ActorId -> Int -> m ()
@@ -393,14 +393,14 @@ updLoseSmell lid sms = assert (not $ null sms) $ do
 -- TODO: It leaks information that there is activity on various level,
 -- even if the faction has no actors there, so show this on UI somewhere,
 -- e.g., in the @~@ menu of seen level indicate recent activity.
-updAgeGame :: MonadStateWrite m => Time -> [LevelId] -> m ()
-updAgeGame delta lids = assert (delta /= timeZero) $ do
-  modifyState $ updateTime $ timeAdd delta
+updAgeGame :: MonadStateWrite m => Delta Time -> [LevelId] -> m ()
+updAgeGame delta lids = assert (delta /= Delta timeZero) $ do
+  modifyState $ updateTime $ flip timeShift delta
   mapM_ (ageLevel delta) lids
 
-ageLevel :: MonadStateWrite m => Time -> LevelId -> m ()
+ageLevel :: MonadStateWrite m => Delta Time -> LevelId -> m ()
 ageLevel delta lid =
-  updateLevel lid $ \lvl -> lvl {ltime = timeAdd (ltime lvl) delta}
+  updateLevel lid $ \lvl -> lvl {ltime = timeShift (ltime lvl) delta}
 
 updRestart :: MonadStateWrite m
            => FactionId -> Discovery -> FactionPers -> State -> m ()

@@ -85,7 +85,7 @@ addSmell aid = do
     time <- getsState $ getLocalTime $ blid b
     lvl <- getLevel $ blid b
     let oldS = EM.lookup (bpos b) . lsmell $ lvl
-        newTime = timeAdd time smellTimeout
+        newTime = timeShift time smellTimeout
     execUpdAtomic $ UpdAlterSmell (blid b) (bpos b) oldS (Just newTime)
 
 -- | Actor moves or attacks.

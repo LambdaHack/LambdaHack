@@ -64,7 +64,7 @@ data UpdAtomic =
   | UpdDisplaceActor !ActorId !ActorId
   | UpdMoveItem !ItemId !Int !Container !Container
   -- Change actor attributes.
-  | UpdAgeActor !ActorId !Time
+  | UpdAgeActor !ActorId !(Delta Time)
   | UpdHealActor !ActorId !Int
   | UpdCalmActor !ActorId !Int
   | UpdHasteActor !ActorId !Speed
@@ -85,7 +85,7 @@ data UpdAtomic =
   | UpdSpotSmell !LevelId ![(Point, Time)]
   | UpdLoseSmell !LevelId ![(Point, Time)]
   -- Assorted.
-  | UpdAgeGame !Time ![LevelId]
+  | UpdAgeGame !(Delta Time) ![LevelId]
   | UpdDiscover !LevelId !Point !ItemId !(Kind.Id ItemKind)
   | UpdCover !LevelId !Point !ItemId !(Kind.Id ItemKind)
   | UpdPerception !LevelId !Perception !Perception
@@ -137,7 +137,7 @@ undoUpdAtomic cmd = case cmd of
   UpdWaitActor aid fromWait toWait -> Just $ UpdWaitActor aid toWait fromWait
   UpdDisplaceActor source target -> Just $ UpdDisplaceActor target source
   UpdMoveItem iid k c1 c2 -> Just $ UpdMoveItem iid k c2 c1
-  UpdAgeActor aid t -> Just $ UpdAgeActor aid (timeNegate t)
+  UpdAgeActor aid delta -> Just $ UpdAgeActor aid (timeDeltaReverse delta)
   UpdHealActor aid n -> Just $ UpdHealActor aid (-n)
   UpdCalmActor aid n -> Just $ UpdCalmActor aid (-n)
   UpdHasteActor aid delta -> Just $ UpdHasteActor aid (speedNegate delta)
@@ -158,7 +158,7 @@ undoUpdAtomic cmd = case cmd of
   UpdAlterSmell lid p fromSm toSm -> Just $ UpdAlterSmell lid p toSm fromSm
   UpdSpotSmell lid sms -> Just $ UpdLoseSmell lid sms
   UpdLoseSmell lid sms -> Just $ UpdSpotSmell lid sms
-  UpdAgeGame t lids -> Just $ UpdAgeGame (timeNegate t) lids
+  UpdAgeGame delta lids -> Just $ UpdAgeGame (timeDeltaReverse delta) lids
   UpdDiscover lid p iid ik -> Just $ UpdCover lid p iid ik
   UpdCover lid p iid ik -> Just $ UpdDiscover lid p iid ik
   UpdPerception lid outPer inPer -> Just $ UpdPerception lid inPer outPer

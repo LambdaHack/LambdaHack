@@ -511,15 +511,15 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
       -- If the actor changes his speed this very clip, the test can faii,
       -- but it's rare and results in a minor UI issue, so we don't care.
       timeCutOff <- getsClient $ EM.findWithDefault timeZero arena . sdisplayed
-      when (btime b >= timeAdd timeClip timeCutOff
-            || btime b >= timeAddFromSpeed b timeCutOff
+      when (btime b >= timeShift timeCutOff (Delta timeClip)
+            || btime b >= timeShiftFromSpeed b timeCutOff
             || actorNewBorn b
             || actorDying b) $ do
         let ageDisp displayed = EM.insert arena (btime b) displayed
         modifyClient $ \cli -> cli {sdisplayed = ageDisp $ sdisplayed cli}
         -- If considerable time passed, show delay.
-        let delta = timeAdd (btime b) (timeNegate timeCutOff)
-        when (delta > timeClip) $ displayFrames [Nothing]
+        let delta = timeDeltaToFrom (btime b) timeCutOff
+        when (delta > Delta timeClip) $ displayFrames [Nothing]
         -- If key will be requested, don't show the frame, because during
         -- the request extra message may be shown, so the other frame is better.
         mleader <- getsClient _sleader

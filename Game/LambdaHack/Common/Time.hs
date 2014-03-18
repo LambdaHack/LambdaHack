@@ -1,11 +1,12 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- | Game time and speed.
 module Game.LambdaHack.Common.Time
-  ( Time, timeZero, timeClip, timeTurn
-  , timeAdd, timeFit, timeFitUp, timeNegate, timeScale, timeEpsilon
-  , timeToDigit
+  ( Time, timeZero, timeClip, timeTurn, timeEpsilon
+  , absoluteTimeAdd, absoluteTimeNegate, timeFit, timeFitUp
+  , Delta(..), timeShift, timeDeltaToFrom, timeDeltaReverse, timeDeltaScale
+  , timeDeltaToDigit, ticksPerMeter
   , Speed, toSpeed, speedZero, speedNormal, speedScale, speedAdd, speedNegate
-  , ticksPerMeter, speedFromWeight, rangeFromSpeed
+  , speedFromWeight, rangeFromSpeed
   ) where
 
 import Data.Binary
@@ -18,7 +19,15 @@ import Game.LambdaHack.Common.Misc
 -- One tick is 1 microsecond (one millionth of a second),
 -- one turn is 0.5 s.
 newtype Time = Time Int64
-  deriving (Show, Eq, Ord, Enum, Binary)
+  deriving (Show, Eq, Ord, Enum, Bounded, Binary)
+
+-- | One-dimentional vectors. Introduced to tell apart the 2 uses of Time:
+-- as an absolute game time and as an increment.
+newtype Delta a = Delta a
+  deriving (Show, Eq, Ord, Enum, Bounded, Binary)
+
+instance Functor Delta where
+  fmap f (Delta a) = Delta (f a)
 
 -- | Start of the game time, or zero lenght time interval.
 timeZero :: Time
@@ -60,9 +69,14 @@ _ticksInSecond =
   let Time ticksInTurn = timeTurn
   in ticksInTurn * turnsInSecond
 
--- | Time addition.
-timeAdd :: Time -> Time -> Time
-timeAdd (Time t1) (Time t2) = Time (t1 + t2)
+-- | Absolute time addition, e.g., for summing the total game session time
+-- from the times of individual games.
+absoluteTimeAdd :: Time -> Time -> Time
+absoluteTimeAdd (Time t1) (Time t2) = Time (t1 + t2)
+
+-- | Shifting an absolute time by a time vector.
+timeShift :: Time -> Delta Time -> Time
+timeShift (Time t1) (Delta (Time t2)) = Time (t1 + t2)
 
 -- | How many time intervals of the latter kind fits in an interval
 -- of the former kind.
@@ -74,19 +88,28 @@ timeFit (Time t1) (Time t2) = fromIntegral $ t1 `div` t2
 timeFitUp :: Time -> Time -> Int
 timeFitUp (Time t1) (Time t2) = fromIntegral $ t1 `divUp` t2
 
--- | Negate a time interval. Can be used to subtract from a time
--- or to reverse the ordering on time.
-timeNegate :: Time -> Time
-timeNegate (Time t) = Time (-t)
+-- | Reverse a time vector.
+timeDeltaReverse :: Delta Time -> Delta Time
+timeDeltaReverse (Delta (Time t)) = Delta (Time (-t))
 
--- | Scale time by an @Int@ scalar value.
-timeScale :: Time -> Int -> Time
-timeScale (Time t) s = Time (t * fromIntegral s)
+-- | Absolute time negation. To be used for reversing time flow,
+-- e.g., for comparing absolute times in the reverse order.
+absoluteTimeNegate :: Time -> Time
+absoluteTimeNegate (Time t) = Time (-t)
+
+-- | Time time vector between the second and the first absolute times.
+-- The arguments are in the same order as in the underlying scalar subtraction.
+timeDeltaToFrom :: Time -> Time -> Delta Time
+timeDeltaToFrom (Time t1) (Time t2) = Delta $ Time (t1 - t2)
+
+-- | Scale the time vector by an @Int@ scalar value.
+timeDeltaScale :: Delta Time -> Int -> Delta Time
+timeDeltaScale (Delta (Time t)) s = Delta (Time (t * fromIntegral s))
 
 -- | Represent the main 10 thresholds of a time range by digits,
 -- given the total length of the time range.
-timeToDigit :: Time -> Time -> Char
-timeToDigit (Time maxT) (Time t) =
+timeDeltaToDigit :: Delta Time -> Delta Time -> Char
+timeDeltaToDigit (Delta (Time maxT)) (Delta (Time t)) =
   let k = 10 * t `div` maxT
       digit | k > 9     = '*'
             | k < 0     = '-'
@@ -128,8 +151,8 @@ speedNegate :: Speed -> Speed
 speedNegate (Speed n) = Speed (-n)
 
 -- | The number of time ticks it takes to walk 1 meter at the given speed.
-ticksPerMeter :: Speed -> Time
-ticksPerMeter (Speed v) = Time $ _ticksInSecond * sInMs `divUp` v
+ticksPerMeter :: Speed -> Delta Time
+ticksPerMeter (Speed v) = Delta $ Time $ _ticksInSecond * sInMs `divUp` v
 
 -- | Calculate projectile speed from item weight in grams
 -- and speed bonus in percents.

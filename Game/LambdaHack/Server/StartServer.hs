@@ -212,7 +212,7 @@ populateDungeon = do
       arenaActors lid ((side, fact), ppos) = do
         time <- getsState $ getLocalTime lid
         let nmult = 1 + fromEnum side `mod` 4  -- always positive
-            ntime = timeAdd time (timeScale timeClip nmult)
+            ntime = timeShift time (timeDeltaScale (Delta timeClip) nmult)
             validTile t = Tile.hasFeature cotile F.CanActor t
         psFree <- getsState $ nearbyFreePoints cotile validTile ppos lid
         let ps = take (playerInitial $ gplayer fact) $ zip [0..] psFree

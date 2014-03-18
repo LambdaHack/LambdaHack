@@ -120,10 +120,11 @@ endClip arenas = do
   let stdRuleset = Kind.stdRuleset corule
       saveBkpClips = rsaveBkpClips stdRuleset
       leadLevelClips = rleadLevelClips stdRuleset
-      ageProcessed lid processed = EM.insertWith timeAdd lid timeClip processed
+      ageProcessed lid processed =
+        EM.insertWith absoluteTimeAdd lid timeClip processed
       ageServer lid ser = ser {sprocessed = ageProcessed lid $ sprocessed ser}
   mapM_ (modifyServer . ageServer) arenas
-  execUpdAtomic $ UpdAgeGame timeClip arenas
+  execUpdAtomic $ UpdAgeGame (Delta timeClip) arenas
   -- Perform periodic dungeon maintenance.
   time <- getsState stime
   let clipN = time `timeFit` timeClip

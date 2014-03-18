@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.Actor
   ( -- * Actor identifiers and related operations
     ActorId, monsterGenChance, partActor
     -- * The@ Acto@r type
-  , Actor(..), actorTemplate, timeAddFromSpeed, braced, waitedLastTurn
+  , Actor(..), actorTemplate, timeShiftFromSpeed, braced, waitedLastTurn
   , actorDying, actorNewBorn, unoccupied, heroKindId, projectileKindId
     -- * Assorted
   , ActorDict, smellTimeout, checkAdjacent
@@ -90,11 +90,11 @@ actorTemplate bkind bsymbol bname bcolor bspeed bhp bcalm btrajectory
   in Actor{..}
 
 -- | Add time taken by a single step at the actor's current speed.
-timeAddFromSpeed :: Actor -> Time -> Time
-timeAddFromSpeed b time =
+timeShiftFromSpeed :: Actor -> Time -> Time
+timeShiftFromSpeed b time =
   let speed = bspeed b
       delta = ticksPerMeter speed
-  in timeAdd time delta
+  in timeShift time delta
 
 -- | Whether an actor is braced for combat this clip.
 braced :: Actor -> Bool
@@ -129,8 +129,8 @@ projectileKindId :: Kind.Ops ActorKind -> Kind.Id ActorKind
 projectileKindId Kind.Ops{ouniqGroup} = ouniqGroup "projectile"
 
 -- | How long until an actor's smell vanishes from a tile.
-smellTimeout :: Time
-smellTimeout = timeScale timeTurn 100
+smellTimeout :: Delta Time
+smellTimeout = timeDeltaScale (Delta timeTurn) 100
 
 -- | All actors on the level, indexed by actor identifier.
 type ActorDict = EM.EnumMap ActorId Actor

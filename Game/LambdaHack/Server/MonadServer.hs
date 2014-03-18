@@ -174,7 +174,7 @@ resetGameStart = do
   sgstart <- liftIO getClockTime
   time <- getsState stime
   modifyServer $ \ser ->
-    ser {sgstart, sallTime = timeAdd (sallTime ser) time}
+    ser {sgstart, sallTime = absoluteTimeAdd (sallTime ser) time}
 
 elapsedSessionTimeGT :: MonadServer m => Int -> m Bool
 elapsedSessionTimeGT stopAfter = do
@@ -190,7 +190,7 @@ tellAllClipPS = do
     TOD sCur pCur <- liftIO getClockTime
     allTime <- getsServer sallTime
     gtime <- getsState stime
-    let time = timeAdd allTime gtime
+    let time = absoluteTimeAdd allTime gtime
     let diff = fromIntegral sCur + fromIntegral pCur / 10e12
                - fromIntegral s - fromIntegral p / 10e12
         cps = fromIntegral (timeFit time timeClip) / diff :: Double

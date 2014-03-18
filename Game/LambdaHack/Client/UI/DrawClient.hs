@@ -14,9 +14,9 @@ import qualified Data.Text as T
 
 import Game.LambdaHack.Client.Bfs
 import Game.LambdaHack.Client.State
+import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Common.Actor as Actor
 import Game.LambdaHack.Common.ActorState
-import Game.LambdaHack.Client.UI.Animation
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Faction
@@ -84,7 +84,7 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
             tk = tokind tile
             items = lvl `atI` pos0
             sml = EM.findWithDefault timeZero pos0 lsmell
-            smlt = sml `timeAdd` timeNegate ltime
+            smlt = timeDeltaToFrom sml ltime
             viewActor aid Actor{bsymbol, bcolor, bhp, bproj}
               | Just aid == mleader = (symbol, inverseVideo)
               | otherwise = (symbol, Color.defAttr {Color.fg = bcolor})
@@ -121,8 +121,8 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
                     && (maybe False (elem pos0) mpath) ->
                   (';', atttrOnPathOrLine)
                 Just (aid, m) -> viewActor aid m
-                _ | smarkSmell && smlt > timeZero ->
-                  (timeToDigit smellTimeout smlt, rainbow pos0)
+                _ | smarkSmell && smlt > Delta timeZero ->
+                  (timeDeltaToDigit smellTimeout smlt, rainbow pos0)
                   | otherwise ->
                   case EM.keys items of
                     [] -> (tsymbol tk, Color.defAttr {Color.fg = vcolor})
