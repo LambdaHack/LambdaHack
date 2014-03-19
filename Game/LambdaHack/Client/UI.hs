@@ -71,6 +71,7 @@ queryUI aid = do
           humanCommand msg
         Right (paramNew, runCmd) -> do
           modifyClient $ \cli -> cli {srunning = Just paramNew}
+          displayPush
           return $ ReqTimed runCmd
 
 -- | Determine and process the next human player command. The argument is

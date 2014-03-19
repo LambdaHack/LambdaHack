@@ -259,7 +259,6 @@ handleActors handleRequest lid = do
         timed <- handleRequest cmdS
         when timed $ advanceTime aid
       else if queryUI then do
-        -- The client always displays a frame in this case.
         cmdS <- sendQueryUI side aid
         (aidNew, bPre) <- switchLeader cmdS
         timed <-
