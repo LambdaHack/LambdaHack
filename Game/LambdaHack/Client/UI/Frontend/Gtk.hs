@@ -124,7 +124,7 @@ runGtk sdebugCli@DebugModeCli{sfont} cont = do
   aCont <- async $ cont sess `Ex.finally` postGUISync mainQuit
   link aCont
   -- Fork the thread that periodically draws a frame from a queue, if any.
-  aPoll <- async $ pollFrames sess Nothing `Ex.finally` postGUISync mainQuit
+  aPoll <- async $ pollFramesAct sess `Ex.finally` postGUISync mainQuit
   link aPoll
   -- Fill the keyboard channel.
   sview `on` keyPressEvent $ do
@@ -234,9 +234,9 @@ defaultMaxFps :: Int
 defaultMaxFps = 15
 
 -- | Poll the frame queue often and draw frames at fixed intervals.
-pollFrames :: FrontendSession -> Maybe ClockTime -> IO ()
-pollFrames sess@FrontendSession{sdebugCli=DebugModeCli{smaxFps}}
-           (Just setTime) = do
+pollFramesWait :: FrontendSession -> ClockTime -> IO ()
+pollFramesWait sess@FrontendSession{sdebugCli=DebugModeCli{smaxFps}}
+               setTime = do
   -- Check if the time is up.
   let maxFps = fromMaybe defaultMaxFps smaxFps
   curTime <- getClockTime
@@ -245,12 +245,14 @@ pollFrames sess@FrontendSession{sdebugCli=DebugModeCli{smaxFps}}
     then do
       -- Delay half of the time difference.
       threadDelay $ diffTime curTime setTime `div` 2
-      pollFrames sess $ Just setTime
+      pollFramesWait sess setTime
     else
       -- Don't delay, because time is up!
-      pollFrames sess Nothing
-pollFrames sess@FrontendSession{sframeState, sdebugCli=DebugModeCli{..}}
-           Nothing = do
+      pollFramesAct sess
+
+-- | Poll the frame queue often and draw frames at fixed intervals.
+pollFramesAct :: FrontendSession -> IO ()
+pollFramesAct sess@FrontendSession{sframeState, sdebugCli=DebugModeCli{..}} = do
   -- Time is up, check if we actually wait for anyting.
   let maxFps = fromMaybe defaultMaxFps smaxFps
   fs <- takeMVar sframeState
@@ -270,21 +272,21 @@ pollFrames sess@FrontendSession{sframeState, sdebugCli=DebugModeCli{..}}
           -- If the main GTK thread doesn't lag, large-scale rhythm will be OK.
           -- TODO: anyway, it's GC that causes visible snags, most probably.
           threadDelay $ microInSec `div` (maxFps * 2)
-          pollFrames sess $ Just $ addTime curTime $ microInSec `div` maxFps
+          pollFramesWait sess $ addTime curTime $ microInSec `div` maxFps
         Just (Nothing, queue) -> do
           -- Delay requested via an empty frame.
           putMVar sframeState FPushed{fpushed = queue, ..}
           unless snoDelay $
             -- There is no problem if the delay is a bit delayed.
             threadDelay $ microInSec `div` maxFps
-          pollFrames sess Nothing
+          pollFramesAct sess
         Nothing -> do
           -- The queue is empty, the game logic thread lags.
           putMVar sframeState fs
           -- Time is up, the game thread is going to send a frame,
           -- (otherwise it would change the state), so poll often.
           threadDelay $ microInSec `div` maxPolls maxFps
-          pollFrames sess Nothing
+          pollFramesAct sess
     _ -> do
       putMVar sframeState fs
       -- Not in the Push state, so poll lazily to catch the next state change.
@@ -292,7 +294,7 @@ pollFrames sess@FrontendSession{sframeState, sdebugCli=DebugModeCli{..}}
       -- in creating frames in case one of the further frames is slow
       -- to generate and would normally cause a jerky delay in drawing.
       threadDelay $ microInSec `div` (maxFps * 2)
-      pollFrames sess Nothing
+      pollFramesAct sess
 
 -- | Add a game screen frame to the frame drawing channel, or show
 -- it ASAP if @immediate@ display is requested and the channel is empty.
