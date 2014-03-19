@@ -117,5 +117,6 @@ debugArgs = do
       parseArgs ("--dbgMsgCli" : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli = (sdebugCli debugSer) {sdbgMsgCli = True}}
-      parseArgs _ = error $ unlines usage
+      parseArgs (wrong : _rest) =
+        error $ "Unrecognized: " ++ wrong ++ "\n" ++ unlines usage
   return $! parseArgs args
