@@ -191,13 +191,17 @@ toOverlay = Overlay
 -- fits on the screen wrt height (but lines may be too wide).
 splitOverlay :: Bool -> Y -> Overlay -> Overlay -> Slideshow
 splitOverlay onBlank yspace (Overlay msg) (Overlay ls) =
-  let over = msg ++ ls
-  in if length over <= yspace
-     then Slideshow (onBlank, [Overlay over])  -- all fits on one screen
-     else let (pre, post) = splitAt (yspace - 1) over
-              Slideshow (_, slides) =
-                splitOverlay onBlank yspace (Overlay msg) (Overlay post)
-          in Slideshow $ (onBlank, (Overlay $ pre ++ [moreMsg]) : slides)
+  let len = length msg
+  in if len >= yspace
+     then  -- no space left for @ls@
+       Slideshow (onBlank, [Overlay $ take (yspace - 1) msg ++ [moreMsg]])
+     else let splitO over =
+                if len + length over <= yspace
+                then [Overlay $ msg ++ over]  -- all fits on one screen
+                else let (pre, post) = splitAt (yspace - 1) $ msg ++ over
+                         rest = splitO post
+                     in Overlay (pre ++ [moreMsg]) : rest
+          in Slideshow (onBlank, splitO ls)
 
 -- | A few overlays, displayed one by one upon keypress.
 -- When displayed, they are trimmed, not wrapped

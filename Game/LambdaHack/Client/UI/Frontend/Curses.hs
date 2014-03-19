@@ -17,7 +17,6 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Char (chr, ord)
 import qualified Data.Map.Strict as M
-import qualified Data.Text as T
 import qualified UI.HSCurses.Curses as C
 import qualified UI.HSCurses.CursesHelper as C
 
@@ -26,7 +25,6 @@ import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Msg
-import Game.LambdaHack.Utils.Thread
 
 -- | Session data maintained by the frontend.
 data FrontendSession = FrontendSession
