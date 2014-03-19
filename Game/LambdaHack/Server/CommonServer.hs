@@ -14,7 +14,6 @@ import Data.Maybe
 import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
@@ -22,6 +21,7 @@ import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
@@ -259,17 +259,18 @@ projectBla :: (MonadAtomic m, MonadServer m)
            -> m ()
 projectBla source pos rest iid cstore = do
   sb <- getsState $ getActorBody source
+  item <- getsState $ getItemBody iid
   let lid = blid sb
       time = btime sb
   unless (bproj sb) $ execSfxAtomic $ SfxProject source iid
-  projId <- addProjectile pos rest iid lid (bfid sb) time
+  addProjectile pos rest iid lid (bfid sb) time
   cs <- actorConts iid 1 source cstore
-  mapM_ (\(_, c) -> execUpdAtomic $ UpdMoveItem iid 1 c (CActor projId CEqp)) cs
+  mapM_ (\(_, c) -> execUpdAtomic $ UpdLoseItem iid item 1 c) cs
 
 -- | Create a projectile actor containing the given missile.
 addProjectile :: (MonadAtomic m, MonadServer m)
               => Point -> [Point] -> ItemId -> LevelId -> FactionId -> Time
-              -> m ActorId
+              -> m ()
 addProjectile bpos rest iid blid bfid btime = do
   Kind.COps{ coactor=coactor@Kind.Ops{okind}
            , coitem=coitem@Kind.Ops{okind=iokind} } <- getsState scops
@@ -289,8 +290,7 @@ addProjectile bpos rest iid blid bfid btime = do
       kind = okind $ projectileKindId coactor
       m = actorTemplate (projectileKindId coactor) (asymbol kind) name
                         (acolor kind) speed 0 maxBound (Just dirTrajectory)
-                        bpos blid btime bfid True
+                        bpos blid btime bfid (EM.singleton iid 1) True
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
   execUpdAtomic $ UpdCreateActor acounter m [(iid, item)]
-  return $! acounter

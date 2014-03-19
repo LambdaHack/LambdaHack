@@ -5,6 +5,7 @@ module Game.LambdaHack.Atomic.PosCmdAtomicRead
   ( PosAtomic(..), posUpdAtomic, posSfxAtomic
   , resetsFovCmdAtomic, breakUpdAtomic, loudUpdAtomic
   , seenAtomicCli, seenAtomicSer, lidOfPosAtomic
+  , generalMoveItem
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -14,6 +15,7 @@ import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
@@ -71,10 +73,7 @@ posUpdAtomic cmd = case cmd of
     (slid, sp) <- posOfAid source
     (tlid, tp) <- posOfAid target
     return $! assert (slid == tlid) $ PosSight slid [sp, tp]
-  UpdMoveItem _ _ c1 c2 -> do  -- works even if moved between positions
-    (lid1, p1) <- posOfContainer c1
-    (lid2, p2) <- posOfContainer c2
-    return $! assert (lid1 == lid2) $ PosSight lid1 [p1, p2]
+  UpdMoveItem _ _ aid _ _ -> singleAid aid
   UpdAgeActor aid _ -> singleAid aid
   UpdHealActor aid _ -> singleAid aid
   UpdCalmActor aid _ -> singleAid aid
@@ -220,9 +219,11 @@ breakUpdAtomic cmd = case cmd of
            , UpdLoseActor target tb tais
            , UpdSpotActor target tb {bpos = bpos sb, boldpos = bpos tb} tais
            ]
-  UpdMoveItem iid k c1 c2 -> do
-    item <- getsState $ getItemBody iid
-    return [UpdLoseItem iid item k c1, UpdSpotItem iid item k c2]
+  -- No need to cover @UpdSearchTile@, because if an actor sees only
+  -- one of the positions and so doesn't notice the search results,
+  -- he's left with a hidden tile, which doesn't cause any trouble
+  -- (because the commands doesn't change @State@ and the client-side
+  -- processing of the command is lenient).
   _ -> return [cmd]
 
 loudUpdAtomic :: FactionId -> UpdAtomic -> Bool
@@ -258,3 +259,14 @@ lidOfPosAtomic pos = case pos of
   PosFidAndSight _ lid _ -> Just lid
   PosSmell lid _ -> Just lid
   _ -> Nothing
+
+generalMoveItem :: MonadStateRead m
+                => ItemId -> Int -> Container -> Container
+                -> m [UpdAtomic]
+generalMoveItem iid k c1 c2 = do
+  case (c1, c2) of
+    (CActor aid1 cstore1, CActor aid2 cstore2) | aid1 == aid2 ->
+      return [UpdMoveItem iid k aid1 cstore1 cstore2]
+    _ -> do
+      item <- getsState $ getItemBody iid
+      return [UpdLoseItem iid item k c1, UpdSpotItem iid item k c2]

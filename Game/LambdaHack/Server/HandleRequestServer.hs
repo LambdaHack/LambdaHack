@@ -282,8 +282,10 @@ reqMoveItem :: (MonadAtomic m, MonadServer m)
 reqMoveItem aid iid k fromCStore toCStore = do
   let moveItem = do
         cs <- actorConts iid k aid fromCStore
-        mapM_ (\(ck, c) -> execUpdAtomic
-                           $ UpdMoveItem iid ck c (CActor aid toCStore)) cs
+        let gmove (ck, c) = do
+              upds <- generalMoveItem iid ck c (CActor aid toCStore)
+              mapM_ execUpdAtomic upds
+        mapM_ gmove cs
   if k < 1 || fromCStore == toCStore then execFailure aid ItemNothing
   else if fromCStore /= CInv && toCStore /= CInv then moveItem
   else do

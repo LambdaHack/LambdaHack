@@ -61,33 +61,39 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
     destroyActorUI aid body "die" "be destroyed" verbose
     side <- getsClient sside
     when (bfid body == side && not (bproj body)) stopPlayBack
-  UpdCreateItem _ item k _ -> itemVerbMU item k "drop to the ground"
+  UpdCreateItem iid item k c -> do
+    case c of
+      CActor aid cstore -> updateItemSlots aid iid cstore
+      _ -> return ()
+    stopPlayBack
+    itemVerbMU item k "drop to the ground"
   UpdDestroyItem _ item k _ -> itemVerbMU item k "disappear"
   UpdSpotActor aid body _ -> createActorUI aid body verbose "be spotted"
   UpdLoseActor aid body _ ->
     destroyActorUI aid body "be missing in action" "be lost" verbose
-  UpdSpotItem _ item k c -> do
-    let itemOnGround = case c of
-          CFloor{} -> True
-          CActor _ CGround -> True
-          _ -> False
-    when itemOnGround $ do
-      scursorOld <- getsClient scursor
-      case scursorOld of
-        TEnemy{} -> return ()  -- probably too important to overwrite
-        TEnemyPos{} -> return ()
-        _ -> do
-          (lid, p) <- posOfContainer c
-          modifyClient $ \cli -> cli {scursor = TPoint lid p}
+  UpdSpotItem iid item k c -> do
+    let spotOnGround = do
+          scursorOld <- getsClient scursor
+          case scursorOld of
+            TEnemy{} -> return ()  -- probably too important to overwrite
+            TEnemyPos{} -> return ()
+            _ -> do
+              (lid, p) <- posOfContainer c
+              modifyClient $ \cli -> cli {scursor = TPoint lid p}
           stopPlayBack
-          -- TODO: perhaps don't spam for already seen items; very hard to do
+          -- TODO: perhaps don't spam for already seen items;
+          -- very hard to do
           itemVerbMU item k "be spotted"
+    case c of
+      CFloor{} -> spotOnGround
+      CActor _ CGround -> spotOnGround
+      CActor aid cstore -> updateItemSlots aid iid cstore
   UpdLoseItem{} -> skip
   -- Move actors and items.
   UpdMoveActor aid _ _ -> lookAtMove aid
   UpdWaitActor aid _ _ -> when verbose $ aVerbMU aid "wait"
   UpdDisplaceActor source target -> displaceActorUI source target
-  UpdMoveItem iid k c1 c2 -> moveItemUI verbose iid k c1 c2
+  UpdMoveItem iid k aid c1 c2 -> moveItemUI verbose iid k aid c1 c2
   -- Change actor attributes.
   UpdAgeActor{} -> skip
   UpdHealActor aid n -> do
@@ -286,11 +292,12 @@ destroyActorUI aid body verb verboseVerb verbose = do
   else when verbose $ actorVerbMU aid body verboseVerb
 
 moveItemUI :: MonadClientUI m
-           => Bool -> ItemId -> Int -> Container -> Container -> m ()
-moveItemUI verbose iid k c1 c2 = do
+           => Bool -> ItemId -> Int -> ActorId -> CStore -> CStore -> m ()
+moveItemUI verbose iid k aid c1 c2 = do
   Kind.COps{coitem} <- getsState scops
   case (c1, c2) of
-    (CActor _ CGround, CActor aid cstore) -> do
+    (CGround, cstore) -> do
+      updateItemSlots aid iid cstore
       b <- getsState $ getActorBody aid
       unless (bproj b) $ do
         side <- getsClient sside
@@ -307,9 +314,18 @@ moveItemUI verbose iid k c1 c2 = do
                         , "\n" ]
             Nothing -> assert `failure` (aid, b, iid, slots)
         else aiVerbMU aid "get" iid k
-    (CActor aid _, CActor _ CGround) | verbose ->
+    (_, CGround) | verbose ->
       aiVerbMU aid "drop" iid k
     _ -> return ()
+
+updateItemSlots :: MonadClientUI m => ActorId -> ItemId -> CStore -> m ()
+updateItemSlots aid iid cstore = do
+  when (cstore /= CGround) $ do
+    -- Update items slots, in case the item was picked up by
+    -- the AI client for the same faction.
+    side <- getsClient sside
+    b <- getsState $ getActorBody aid
+    when (bfid b == side && not (bproj b)) $ void $ updateItemSlot aid iid
 
 displaceActorUI :: MonadClientUI m => ActorId -> ActorId -> m ()
 displaceActorUI source target = do

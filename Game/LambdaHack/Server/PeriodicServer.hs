@@ -15,7 +15,6 @@ import Data.Maybe
 import Data.Text (Text)
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
@@ -24,6 +23,7 @@ import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
@@ -137,7 +137,7 @@ addActor mk bfid pos lid hp calm bsymbol bname bcolor time = do
       kind = okind mk
       speed = aspeed kind
       m = actorTemplate mk bsymbol bname bcolor speed diffHP calm
-                        Nothing pos lid time bfid False
+                        Nothing pos lid time bfid EM.empty False
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
   execUpdAtomic $ UpdCreateActor acounter m []

@@ -93,7 +93,7 @@ dropAllItems aid b hit = do
   let container = CActor aid CEqp
       loseInv = do
         let g iid k = execUpdAtomic
-                      $ UpdMoveItem iid k (CActor aid CInv) container
+                      $ UpdMoveItem iid k aid CInv CEqp
         mapActorInv_ g b
   if not rsharedInventory then loseInv
   else do
@@ -101,8 +101,10 @@ dropAllItems aid b hit = do
     case gleader fact of
       Nothing -> loseInv
       Just leader -> do
-        let g iid k = execUpdAtomic
-                      $ UpdMoveItem iid k (CActor aid CInv) (CActor leader CInv)
+        let g iid k = do
+              upds <- generalMoveItem iid k (CActor aid CInv)
+                                            (CActor leader CInv)
+              mapM_ execUpdAtomic upds
         mapActorInv_ g b
   let isDestroyed item = hit || bproj b && isFragile coitem discoS item
       f iid k = do
@@ -116,7 +118,7 @@ dropAllItems aid b hit = do
               execUpdAtomic $ UpdDestroyItem iid item k container
               explodeItem aid b cgroup
         else
-          execUpdAtomic $ UpdMoveItem iid k container (CActor aid CGround)
+          execUpdAtomic $ UpdMoveItem iid k aid CEqp CGround
   mapActorEqp_ f b
 
 explodeItem :: (MonadAtomic m, MonadServer m)

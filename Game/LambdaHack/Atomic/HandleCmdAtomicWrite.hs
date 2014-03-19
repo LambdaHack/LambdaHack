@@ -53,7 +53,7 @@ handleUpdAtomic cmd = case cmd of
   UpdMoveActor aid fromP toP -> updMoveActor aid fromP toP
   UpdWaitActor aid fromWait toWait -> updWaitActor aid fromWait toWait
   UpdDisplaceActor source target -> updDisplaceActor source target
-  UpdMoveItem iid k c1 c2 -> updMoveItem iid k c1 c2
+  UpdMoveItem iid k aid c1 c2 -> updMoveItem iid k aid c1 c2
   UpdAgeActor aid t -> updAgeActor aid t
   UpdHealActor aid n -> updHealActor aid n
   UpdCalmActor aid n -> updCalmActor aid n
@@ -188,10 +188,10 @@ updDisplaceActor source target = assert (source /= target) $ do
   updateActor target $ \b -> b {bpos = spos, boldpos = tpos}
 
 updMoveItem :: MonadStateWrite m
-            => ItemId -> Int -> Container -> Container -> m ()
-updMoveItem iid k c1 c2 = assert (k > 0 && c1 /= c2) $ do
-  deleteItemContainer iid k c1
-  insertItemContainer iid k c2
+            => ItemId -> Int -> ActorId -> CStore -> CStore -> m ()
+updMoveItem iid k aid c1 c2 = assert (k > 0 && c1 /= c2) $ do
+  deleteItemActor iid k aid c1
+  insertItemActor iid k aid c2
 
 -- TODO: optimize (a single call to updatePrio is enough)
 updAgeActor :: MonadStateWrite m => ActorId -> Delta Time -> m ()

@@ -200,7 +200,6 @@ cmdAtomicSemCli cmd = case cmd of
   UpdDestroyActor aid b _ -> destroyActor aid b True
   UpdSpotActor aid body _ -> createActor aid body
   UpdLoseActor aid b _ -> destroyActor aid b False
-  UpdMoveItem iid _ c1 c2 -> moveItem iid c1 c2
   UpdLeadFaction fid source target -> do
     side <- getsClient sside
     when (side == fid) $ do
@@ -249,17 +248,6 @@ destroyActor aid b destroy = do
       affect3 (tgt, mpath) = (affect tgt, mpath)  -- old path always good
   modifyClient $ \cli -> cli {stargetD = EM.map affect3 (stargetD cli)}
   modifyClient $ \cli -> cli {scursor = affect $ scursor cli}
-
-moveItem :: MonadClient m => ItemId -> Container -> Container -> m ()
-moveItem iid c1 c2 =
-  case (c1, c2) of
-    (CActor _ CGround, CActor aid _) -> do
-      -- Update items slots, in case the item was picked up by
-      -- the other client for the same faction.
-      side <- getsClient sside
-      b <- getsState $ getActorBody aid
-      when (bfid b == side && not (bproj b)) $ void $ updateItemSlot aid iid
-    _ -> return ()
 
 perception :: MonadClient m => LevelId -> Perception -> Perception -> m ()
 perception lid outPer inPer = do

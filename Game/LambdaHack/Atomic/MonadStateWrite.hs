@@ -2,7 +2,7 @@
 module Game.LambdaHack.Atomic.MonadStateWrite
   ( MonadStateWrite(..)
   , updateLevel, updateActor, updateFaction
-  , insertItemContainer, deleteItemContainer
+  , insertItemContainer, insertItemActor, deleteItemContainer, deleteItemActor
   , updatePrio, updateFloor, updateTile, updateSmell
   ) where
 

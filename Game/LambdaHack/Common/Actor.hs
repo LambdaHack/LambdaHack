@@ -79,13 +79,13 @@ partActor b = MU.Text $ bname b
 -- | A template for a new actor.
 actorTemplate :: Kind.Id ActorKind -> Char -> Text
               -> Color.Color -> Speed -> Int -> Int -> Maybe [Vector]
-              -> Point -> LevelId -> Time -> FactionId -> Bool -> Actor
+              -> Point -> LevelId -> Time -> FactionId -> ItemBag -> Bool
+              -> Actor
 actorTemplate bkind bsymbol bname bcolor bspeed bhp bcalm btrajectory
-              bpos blid btime bfid bproj =
+              bpos blid btime bfid beqp bproj =
   let boldpos = Point 0 0  -- make sure /= bpos, to tell it didn't switch level
       boldlid = blid
       binv    = EM.empty
-      beqp    = EM.empty
       bwait   = False
   in Actor{..}
 
