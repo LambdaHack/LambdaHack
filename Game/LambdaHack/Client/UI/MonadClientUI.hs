@@ -9,7 +9,7 @@ module Game.LambdaHack.Client.UI.MonadClientUI
     -- * Display and key input
   , ColorMode(..)
   , promptGetKey, getKeyOverlayCommand, getInitConfirms
-  , displayFrame, displayFrames, drawOverlay
+  , displayFrame, displayDelay, displayFrames, displayActorStart, drawOverlay
     -- * Assorted primitives
   , stopPlayBack, stopRunning, askConfig, askBinding
   , syncFrames, tryTakeMVarSescMVar, scoreToSlideshow
@@ -130,9 +130,22 @@ displayFrame isRunning mf = do
         Just fr -> FrontNormalFrame fr
   writeConnFrontend frame
 
+displayDelay :: MonadClientUI m =>  m ()
+displayDelay = writeConnFrontend FrontDelay
+
 -- | Push frames or delays to the frame queue.
 displayFrames :: MonadClientUI m => Frames -> m ()
 displayFrames = mapM_ (displayFrame False)
+
+-- | Push frames or delays to the frame queue. Additionally set @sdisplayed@.
+-- because animations not always happen after @SfxActorStart@ on the leader's
+-- level (e.g., death can lead to leader change to another level mid-turn,
+-- and there could be melee and animations on that level at the same moment).
+displayActorStart :: MonadClientUI m => Actor -> Frames -> m ()
+displayActorStart b frs = do
+  mapM_ (displayFrame False) frs
+  let ageDisp displayed = EM.insert (blid b) (btime b) displayed
+  modifyClient $ \cli -> cli {sdisplayed = ageDisp $ sdisplayed cli}
 
 -- | Draw the current level with the overlay on top.
 drawOverlay :: MonadClientUI m => Bool -> ColorMode -> Overlay -> m SingleFrame

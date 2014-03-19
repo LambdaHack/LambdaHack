@@ -341,7 +341,7 @@ displaceActorUI source target = do
     lookAtMove target
   let ps = (bpos tb, bpos sb)
   animFrs <- animate (blid sb) $ swapPlaces ps
-  displayFrames $ Nothing : animFrs
+  displayActorStart sb $ Nothing : animFrs
 
 quitFactionUI :: MonadClientUI m
               => FactionId -> Maybe Actor -> Maybe Status -> m ()
@@ -422,7 +422,7 @@ quitFactionUI fid mbody toSt = do
       -- and put it before item and score screens (on blank background)
       unless (fmap stOutcome toSt == Just Camping) $ do
         fadeOutOrIn True
-        displayFrames [Nothing]  -- let SPACE skip to the fade-in
+        displayDelay  -- let SPACE skip to the fade-in
     _ -> return ()
 
 -- * RespSfxAtomicUI
@@ -472,7 +472,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
                    then animate (blid b)
                         $ twirlSplash (bpos b, bpos b) Color.Red Color.Red
                    else animate (blid b) $ deathBody $ bpos b
-        displayFrames animDie
+        displayActorStart b animDie
     else case effect of
         Effect.NoEffect -> msgAdd "Nothing happens."
         Effect.Heal p | p > 0 -> do
@@ -482,7 +482,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             actorVerbMU aid b "look healthier"
           let ps = (bpos b, bpos b)
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrBlue Color.Blue
-          displayFrames $ Nothing : animFrs
+          displayActorStart b $ Nothing : animFrs
         Effect.Heal _ -> do
           if fid == side then
             actorVerbMU aid b "feel wounded"
@@ -490,7 +490,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             actorVerbMU aid b "look wounded"
           let ps = (bpos b, bpos b)
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
-          displayFrames $ Nothing : animFrs
+          displayActorStart b $ Nothing : animFrs
         Effect.Hurt{} -> skip
         Effect.Mindprobe nEnemy -> do
           let msg = makeSentence
@@ -543,7 +543,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         modifyClient $ \cli -> cli {sdisplayed = ageDisp $ sdisplayed cli}
         -- If considerable time passed, show delay.
         let delta = btime b `timeDeltaToFrom` timeCutOff
-        when (delta > Delta timeClip) $ displayFrames [Nothing]
+        when (delta > Delta timeClip) displayDelay
         -- If key will be requested, don't show the frame, because during
         -- the request extra message may be shown, so the other frame is better.
         mleader <- getsClient _sleader
@@ -592,4 +592,4 @@ strike source target item b = assert (source /= target) $ do
       anim HitBlock = blockHit ps Color.BrRed Color.Red
       anim MissBlock = blockMiss ps
   animFrs <- animate (blid sb) $ anim b
-  displayFrames $ Nothing : animFrs
+  displayActorStart sb $ Nothing : animFrs
