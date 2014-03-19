@@ -77,28 +77,26 @@ loopUI cmdClientUISem sdebugCli = do
   restored <- initCli sdebugCli
               $ \s -> cmdClientUISem $ RespUpdAtomicUI $ UpdResumeServer s
   cmd1 <- receiveResponse
-  msg <- case (restored, cmd1) of
+  case (restored, cmd1) of
     (True, RespUpdAtomicUI UpdResume{}) -> do
+      msgAdd $ "Welcome back to" <+> title <> "."
       cmdClientUISem cmd1
-      return $! "Welcome back to" <+> title <> "."
     (True, RespUpdAtomicUI UpdRestart{}) -> do
+      msgAdd $ "Starting a new" <+> title <+> "game."  -- ignore old savefile
       cmdClientUISem cmd1
-      return $! "Starting a new" <+> title <+> "game."  -- ignore old savefile
     (False, RespUpdAtomicUI UpdResume{}) -> do
       removeServerSave
       error $ T.unpack $
         "Savefile of client" <+> tshow side
         <+> "not usable. Removing server savefile. Please restart now."
     (False, RespUpdAtomicUI UpdRestart{}) -> do
+      msgAdd $ "Welcome to" <+> title <> "!"
       cmdClientUISem cmd1
-      return $! "Welcome to" <+> title <> "!"
     _ -> assert `failure` "unexpected command" `twith` (side, restored, cmd1)
   fact <- getsState $ (EM.! side) . sfactionD
-  if playerAiLeader $ gplayer fact then
+  when (playerAiLeader $ gplayer fact) $
     -- Prod the frontend to flush frames and start showing then continuously.
     void $ displayMore ColorFull "The team is under AI control (ESC to stop)."
-  else
-    msgAdd msg
   -- State and client state now valid.
   debugPrint $ "UI client" <+> tshow side <+> "started."
   loop

@@ -120,8 +120,8 @@ type LastRecord = ( [K.KM]  -- accumulated keys of the current command
                   )
 
 -- | Initial game client state.
-defStateClient :: History -> FactionId -> Bool -> StateClient
-defStateClient shistory _sside sisAI =
+defStateClient :: History -> Report -> FactionId -> Bool -> StateClient
+defStateClient shistory sreport _sside sisAI =
   StateClient
     { stgtMode = Nothing
     , scursor = if sisAI
@@ -133,7 +133,7 @@ defStateClient shistory _sside sisAI =
     , sbfsD = EM.empty
     , sselected = ES.empty
     , srunning = Nothing
-    , sreport = emptyReport
+    , sreport
     , shistory
     , sdisplayed = EM.empty
     , sundo = []

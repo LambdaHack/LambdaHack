@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.Msg
   , Msg, (<>), (<+>), tshow, toWidth, moreMsg, yesnoMsg, truncateMsg
   , Report, emptyReport, nullReport, singletonReport, addMsg
   , splitReport, renderReport, findInReport
-  , History, emptyHistory, singletonHistory, mergeHistory
+  , History, emptyHistory, lengthHistory, singletonHistory, mergeHistory
   , addReport, renderHistory, takeHistory
   , Overlay(overlay), emptyOverlay, truncateToOverlay, toOverlay
   , Slideshow(slideshow), splitOverlay, toSlideshow)
@@ -139,6 +139,9 @@ newtype History = History [Report]
 -- | Empty history of reports.
 emptyHistory :: History
 emptyHistory = History []
+
+lengthHistory :: History -> Int
+lengthHistory (History rs) = length rs
 
 -- | Construct a singleton history of reports.
 singletonHistory :: Report -> History

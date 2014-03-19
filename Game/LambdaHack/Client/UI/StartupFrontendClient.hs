@@ -16,6 +16,7 @@ import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.State
 
 -- | Wire together game content, the main loop of game clients,
@@ -40,7 +41,7 @@ srtFrontend executorUI executorAI
   let !sbinding = stdBinding copsClient sconfig  -- evaluate to check for errors
       sdebugMode = applyConfigToDebug sconfig sdebugCli corule
   defaultHist <- defaultHistory
-  let cli = defStateClient defaultHist
+  let cli = defStateClient defaultHist emptyReport
       s = updateCOps (const cops) emptyState
       exeClientAI fid =
         let noSession = assert `failure` "AI client needs no UI session"

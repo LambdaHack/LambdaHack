@@ -202,7 +202,8 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
     msgAdd $ "New game started in" <+> t <+> "mode."
     -- TODO: use a vertical animation instead, e.g., roll down,
     -- and reveal the first frame of a new game, not blank screen.
-    fadeOutOrIn False
+    history <- getsClient shistory
+    when (lengthHistory history > 1) $ fadeOutOrIn False
   UpdRestartServer{} -> skip
   UpdResume{} -> skip
   UpdResumeServer{} -> skip
