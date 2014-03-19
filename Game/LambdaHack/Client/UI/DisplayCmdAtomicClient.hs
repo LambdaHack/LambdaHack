@@ -67,16 +67,21 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
   UpdLoseActor aid body _ ->
     destroyActorUI aid body "be missing in action" "be lost" verbose
   UpdSpotItem _ item k c -> do
-    scursorOld <- getsClient scursor
-    case scursorOld of
-      TEnemy{} -> return ()  -- probably too important to overwrite
-      TEnemyPos{} -> return ()
-      _ -> do
-        (lid, p) <- posOfContainer c
-        modifyClient $ \cli -> cli {scursor = TPoint lid p}
-        stopPlayBack
-        -- TODO: perhaps don't spam for already seen items; very hard to do
-        itemVerbMU item k "be spotted"
+    let itemOnGround = case c of
+          CFloor{} -> True
+          CActor _ CGround -> True
+          _ -> False
+    when itemOnGround $ do
+      scursorOld <- getsClient scursor
+      case scursorOld of
+        TEnemy{} -> return ()  -- probably too important to overwrite
+        TEnemyPos{} -> return ()
+        _ -> do
+          (lid, p) <- posOfContainer c
+          modifyClient $ \cli -> cli {scursor = TPoint lid p}
+          stopPlayBack
+          -- TODO: perhaps don't spam for already seen items; very hard to do
+          itemVerbMU item k "be spotted"
   UpdLoseItem{} -> skip
   -- Move actors and items.
   UpdMoveActor aid _ _ -> lookAtMove aid
