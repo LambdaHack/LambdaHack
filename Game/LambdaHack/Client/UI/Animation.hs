@@ -138,34 +138,35 @@ restrictAnim vis (Animation as) =
 -- | Attack animation. A part of it also reused for self-damage and healing.
 twirlSplash :: (Point, Point) -> Color -> Color -> Animation
 twirlSplash poss c1 c2 = Animation $ map (EM.fromList . mzipPairs poss)
-  [ (coloredSymbol BrWhite '*', blank)
-  , (coloredSymbol c1      '/', coloredSymbol BrCyan '^')
+  [ (coloredSymbol BrWhite '*', coloredSymbol BrCyan '\'')
+  , (coloredSymbol c1      '/', blank)
   , (coloredSymbol c1      '-', blank)
   , (coloredSymbol c1      '\\',blank)
   , (coloredSymbol c1      '|', blank)
   , (coloredSymbol c2      '%', blank)
-  , (coloredSymbol c2      '%', blank)
+  , (coloredSymbol c2      '/', blank)
   , (blank                    , blank)
   ]
 
 -- | Attack that hits through a block.
 blockHit :: (Point, Point) -> Color -> Color -> Animation
 blockHit poss c1 c2 = Animation $ map (EM.fromList . mzipPairs poss)
-  [ (coloredSymbol BrWhite '*', blank)
-  , (coloredSymbol BrBlue  '{', coloredSymbol BrCyan '^')
+  [ (coloredSymbol BrWhite '*', coloredSymbol BrCyan '\'')
+  , (coloredSymbol BrBlue  '{', blank)
   , (coloredSymbol BrBlue  '{', blank)
   , (coloredSymbol BrBlue  '}', blank)
-  , (coloredSymbol c1      '/', blank)
+  , (coloredSymbol BrBlue  '}', blank)
+  , (coloredSymbol c1      '|', blank)
   , (coloredSymbol c2      '%', blank)
-  , (coloredSymbol c2      '%', blank)
+  , (coloredSymbol c2      '/', blank)
   , (blank                    , blank)
   ]
 
 -- | Attack that is blocked.
 blockMiss :: (Point, Point) -> Animation
 blockMiss poss = Animation $ map (EM.fromList . mzipPairs poss)
-  [ (coloredSymbol BrWhite '*', blank)
-  , (coloredSymbol BrBlue  '{', coloredSymbol BrCyan '\'')
+  [ (coloredSymbol BrWhite '*', coloredSymbol BrCyan '\'')
+  , (coloredSymbol BrBlue  '{', blank)
   , (coloredSymbol BrBlue  '}', blank)
   , (blank                    , blank)
   ]
@@ -181,6 +182,7 @@ deathBody pos = Animation $ map (maybe EM.empty (EM.singleton pos))
   , coloredSymbol BrRed '%'
   , coloredSymbol Red   '%'
   , coloredSymbol Red   '%'
+  , coloredSymbol Red   '%'
   , coloredSymbol Red   ';'
   , coloredSymbol Red   ';'
   , coloredSymbol Red   ','
@@ -189,7 +191,7 @@ deathBody pos = Animation $ map (maybe EM.empty (EM.singleton pos))
 -- | Swap-places animation, both hostile and friendly.
 swapPlaces :: (Point, Point) -> Animation
 swapPlaces poss = Animation $ map (EM.fromList . mzipPairs poss)
-  [ (coloredSymbol BrMagenta '.', coloredSymbol Magenta   'o')
+  [ (coloredSymbol BrMagenta 'o', coloredSymbol Magenta   'o')
   , (coloredSymbol BrMagenta 'd', coloredSymbol Magenta   'p')
   , (coloredSymbol Magenta   'p', coloredSymbol BrMagenta 'd')
   , (coloredSymbol Magenta   'o', blank)
