@@ -416,7 +416,7 @@ fpromptGetKey sess@FrontendSession{..}
   pushFrame sess True True $ Just frame
   km <- readChan schanKey
   case km of
-    K.KM{key=K.Space, modifier=K.NoModifier} ->
+    K.KM{key=K.Space} ->
       -- Drop frames up to the first empty frame.
       -- Keep the last non-empty frame, if any.
       -- Pressing SPACE repeatedly can be used to step
