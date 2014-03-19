@@ -420,7 +420,9 @@ quitFactionUI fid mbody toSt = do
           <> scoreSlides <> partingSlide <> shutdownSlide
       -- TODO: perhaps use a vertical animation instead, e.g., roll down
       -- and put it before item and score screens (on blank background)
-      unless (fmap stOutcome toSt == Just Camping) $ fadeOutOrIn True
+      unless (fmap stOutcome toSt == Just Camping) $ do
+        fadeOutOrIn True
+        displayFrames [Nothing]  -- let SPACE skip to the fade-in
     _ -> return ()
 
 -- * RespSfxAtomicUI

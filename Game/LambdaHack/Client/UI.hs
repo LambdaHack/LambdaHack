@@ -12,6 +12,7 @@ module Game.LambdaHack.Client.UI
   ) where
 
 import Control.Exception.Assert.Sugar
+import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Map.Strict as M
 import Data.Maybe
@@ -164,8 +165,6 @@ humanCommand msgRunStop = do
 
 pongUI :: MonadClientUI m => m Request
 pongUI = do
-  -- Ping the frontend, too.
-  syncFrames
   escPressed <- tryTakeMVarSescMVar
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
@@ -175,6 +174,7 @@ pongUI = do
     -- Ask server to turn off AI for the faction's leader.
     let atomicCmd = UpdAtomic $ UpdAutoFaction side False
     pong [atomicCmd]
-  else
+  else do
     -- Respond to the server normally.
+    when hasAiLeader syncFrames -- ping the frontend, too
     pong []
