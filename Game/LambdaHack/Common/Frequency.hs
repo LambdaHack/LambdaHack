@@ -41,15 +41,18 @@ instance Monad Frequency where
   return x = Frequency "return" [(1, x)]
   Frequency name xs >>= f =
     Frequency ("bind (" <> name <> ")")
-              [(p * q, y) | (p, x) <- xs
-                          , (q, y) <- runFrequency (f x) ]
+              [ (p * q, y) | (p, x) <- xs
+                           , (q, y) <- runFrequency (f x) ]
 
 instance Functor Frequency where
   fmap f (Frequency name xs) = Frequency name (map (second f) xs)
 
 instance Applicative Frequency where
   pure  = return
-  (<*>) = ap
+  Frequency fname fs <*> Frequency yname ys =
+    Frequency ("(" <> fname <> ") <*> (" <> yname <> ")")
+              [ (p * q, f y) | (p, f) <- fs
+                             , (q, y) <- ys ]
 
 instance MonadPlus Frequency where
   mplus (Frequency xname xs) (Frequency yname ys) =
