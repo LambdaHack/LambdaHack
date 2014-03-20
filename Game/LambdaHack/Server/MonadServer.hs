@@ -49,7 +49,7 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.State
-import Game.LambdaHack.Utils.File
+import Game.LambdaHack.Common.File
 
 class MonadStateRead m => MonadServer m where
   getServer      :: m StateServer

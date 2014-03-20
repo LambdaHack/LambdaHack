@@ -17,7 +17,7 @@ import System.IO
 import qualified System.Random as R
 
 import Game.LambdaHack.Common.Msg
-import Game.LambdaHack.Utils.File
+import Game.LambdaHack.Common.File
 
 type ChanSave a = MVar (Maybe a)
 

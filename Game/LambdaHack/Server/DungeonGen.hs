@@ -25,7 +25,7 @@ import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Server.DungeonGen.Area
 import Game.LambdaHack.Server.DungeonGen.Cave
 import Game.LambdaHack.Server.DungeonGen.Place
-import Game.LambdaHack.Utils.Frequency
+import Game.LambdaHack.Common.Frequency
 
 convertTileMaps :: Rnd (Kind.Id TileKind) -> Int -> Int -> TileMapEM
                 -> Rnd TileMap

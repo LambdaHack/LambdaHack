@@ -42,7 +42,7 @@ import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind as TileKind
-import Game.LambdaHack.Utils.Frequency
+import Game.LambdaHack.Common.Frequency
 
 -- | AI strategy based on actor's sight, smell, intelligence, etc.
 -- Never empty.

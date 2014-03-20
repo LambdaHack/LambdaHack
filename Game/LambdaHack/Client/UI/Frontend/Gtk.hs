@@ -27,7 +27,7 @@ import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
-import Game.LambdaHack.Utils.LQueue
+import Game.LambdaHack.Common.LQueue
 
 data FrameState =
     FPushed  -- frames stored in a queue, to be drawn in equal time intervals

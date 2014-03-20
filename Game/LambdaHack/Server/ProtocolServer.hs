@@ -26,7 +26,7 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.Key (mapWithKeyM, mapWithKeyM_)
-import Game.LambdaHack.Utils.Thread
+import Game.LambdaHack.Common.Thread
 import System.IO.Unsafe (unsafePerformIO)
 
 import Game.LambdaHack.Atomic

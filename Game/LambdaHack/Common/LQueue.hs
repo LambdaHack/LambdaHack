@@ -1,5 +1,5 @@
 -- | Queues implemented with two stacks to ensure fast writes.
-module Game.LambdaHack.Utils.LQueue
+module Game.LambdaHack.Common.LQueue
   ( LQueue
   , newLQueue, nullLQueue, lengthLQueue, tryReadLQueue, writeLQueue
   , trimLQueue, dropStartLQueue, lastLQueue, toListLQueue

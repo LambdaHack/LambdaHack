@@ -20,7 +20,7 @@ import Game.LambdaHack.Server.LoopServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.ProtocolServer
 import Game.LambdaHack.Server.State
-import Game.LambdaHack.Utils.Thread
+import Game.LambdaHack.Common.Thread
 
 -- | Fire up the frontend with the engine fueled by content.
 -- The action monad types to be used are determined by the 'exeSer'

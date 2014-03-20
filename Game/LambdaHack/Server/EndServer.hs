@@ -27,7 +27,7 @@ import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.CommonServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
-import Game.LambdaHack.Utils.Frequency
+import Game.LambdaHack.Common.Frequency
 
 -- | Continue or exit or restart the game.
 endOrLoop :: (MonadAtomic m, MonadServer m)

@@ -32,7 +32,7 @@ import Game.LambdaHack.Server.CommonServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.PeriodicServer
 import Game.LambdaHack.Server.State
-import Game.LambdaHack.Utils.Frequency
+import Game.LambdaHack.Common.Frequency
 
 -- + Semantics of effects
 

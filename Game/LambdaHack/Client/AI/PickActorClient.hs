@@ -24,7 +24,7 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.FactionKind
-import Game.LambdaHack.Utils.Frequency
+import Game.LambdaHack.Common.Frequency
 
 pickActorToMove :: MonadClient m
                 => (ActorId -> (ActorId, Actor)

@@ -45,7 +45,7 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Utils.Frequency
+import Game.LambdaHack.Common.Frequency
 
 -- | A unique identifier of an item in the dungeon.
 newtype ItemId = ItemId Int

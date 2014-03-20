@@ -24,7 +24,7 @@ import Game.LambdaHack.Client.UI.HumanCmd
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Utils.File
+import Game.LambdaHack.Common.File
 
 -- | Fully typed contents of the UI config file. This config
 -- is a part of a game client.

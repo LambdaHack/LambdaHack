@@ -26,7 +26,7 @@ import Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Utils.File
+import Game.LambdaHack.Common.File
 
 class MonadStateRead m => MonadClient m where
   getClient      :: m StateClient

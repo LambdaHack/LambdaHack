@@ -13,7 +13,7 @@ import Data.Text (Text)
 import Data.Traversable (Traversable)
 
 import Game.LambdaHack.Common.Msg
-import Game.LambdaHack.Utils.Frequency as Frequency
+import Game.LambdaHack.Common.Frequency as Frequency
 
 -- | A strategy is a choice of (non-empty) frequency tables
 -- of possible actions.

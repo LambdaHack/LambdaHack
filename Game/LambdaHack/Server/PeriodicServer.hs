@@ -36,7 +36,7 @@ import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
-import Game.LambdaHack.Utils.Frequency
+import Game.LambdaHack.Common.Frequency
 
 -- | Spawn non-hero actors of any faction, friendly or not.
 -- To be used for initial dungeon population, spontaneous spawning

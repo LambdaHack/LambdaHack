@@ -113,7 +113,9 @@ library
                       Game.LambdaHack.Common.Effect,
                       Game.LambdaHack.Common.Faction,
                       Game.LambdaHack.Common.Feature,
+                      Game.LambdaHack.Common.File,
                       Game.LambdaHack.Common.Flavour,
+                      Game.LambdaHack.Common.Frequency,
                       Game.LambdaHack.Common.HighScore,
                       Game.LambdaHack.Client.UI.HumanCmd,
                       Game.LambdaHack.Common.Item,
@@ -121,6 +123,7 @@ library
                       Game.LambdaHack.Client.Key,
                       Game.LambdaHack.Common.Kind,
                       Game.LambdaHack.Common.Level,
+                      Game.LambdaHack.Common.LQueue,
                       Game.LambdaHack.Common.Misc,
                       Game.LambdaHack.Common.MonadStateRead,
                       Game.LambdaHack.Common.Msg,
@@ -132,6 +135,7 @@ library
                       Game.LambdaHack.Common.Request,
                       Game.LambdaHack.Common.Response,
                       Game.LambdaHack.Common.State,
+                      Game.LambdaHack.Common.Thread,
                       Game.LambdaHack.Common.Tile,
                       Game.LambdaHack.Common.Time,
                       Game.LambdaHack.Common.Vector,
@@ -170,11 +174,7 @@ library
                       Game.LambdaHack.Server.PeriodicServer,
                       Game.LambdaHack.Server.ProtocolServer,
                       Game.LambdaHack.Server.StartServer,
-                      Game.LambdaHack.Server.State,
-                      Game.LambdaHack.Utils.File,
-                      Game.LambdaHack.Utils.Frequency,
-                      Game.LambdaHack.Utils.LQueue,
-                      Game.LambdaHack.Utils.Thread
+                      Game.LambdaHack.Server.State
   other-modules:      Paths_LambdaHack
   build-depends:      array      >= 0.3.0.3 && < 1,
                       assert-failure >= 0.1 && < 1,

@@ -1,5 +1,5 @@
 -- | Keeping track of forked threads.
-module Game.LambdaHack.Utils.Thread
+module Game.LambdaHack.Common.Thread
   ( forkChild, waitForChildren
   ) where
 

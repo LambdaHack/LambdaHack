@@ -28,7 +28,7 @@ import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.Utils.Frequency
+import Game.LambdaHack.Common.Frequency
 
 -- | Content identifiers for the content type @c@.
 newtype Id c = Id Word8

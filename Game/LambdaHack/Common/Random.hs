@@ -24,7 +24,7 @@ import Data.Ratio
 import GHC.Generics (Generic)
 import qualified System.Random as R
 
-import Game.LambdaHack.Utils.Frequency
+import Game.LambdaHack.Common.Frequency
 
 -- | The monad of computations with random generator state.
 -- The lazy state monad is OK here: the state is small and regularly forced.

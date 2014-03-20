@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveFoldable, DeriveTraversable #-}
 -- | A list of items with relative frequencies of appearance.
-module Game.LambdaHack.Utils.Frequency
+module Game.LambdaHack.Common.Frequency
   ( -- * The @Frequency@ type
     Frequency
     -- * Construction
@@ -24,7 +24,12 @@ import qualified System.Random as R
 import Game.LambdaHack.Common.Msg
 
 -- TODO: do not expose runFrequency
--- | The frequency distribution type.
+-- | The frequency distribution type. Not normalized (operations may
+-- or may not group the same elements and sum their frequencies).
+--
+-- The @Eq@ instance compares raw representations, not relative,
+-- normalized frequencies, so operations don't need to preserve
+-- the expected equalities, even if they do after normalization.
 data Frequency a = Frequency
   { nameFrequency :: !Text        -- ^ short description for debug, etc.
   , runFrequency  :: ![(Int, a)]  -- ^ give acces to raw frequency values
@@ -62,7 +67,7 @@ instance Alternative Frequency where
 
 -- | Uniform discrete frequency distribution.
 uniformFreq :: Text -> [a] -> Frequency a
-uniformFreq name = Frequency name . map (\ x -> (1, x))
+uniformFreq name = Frequency name . map (\x -> (1, x))
 
 -- | Takes a name and a list of frequencies and items
 -- into the frequency distribution.
