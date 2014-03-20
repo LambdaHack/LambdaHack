@@ -110,6 +110,7 @@ library
                       Game.LambdaHack.Common.ClientOptions,
                       Game.LambdaHack.Common.Color,
                       Game.LambdaHack.Common.ContentDef,
+                      Game.LambdaHack.Common.Dice,
                       Game.LambdaHack.Common.Effect,
                       Game.LambdaHack.Common.Faction,
                       Game.LambdaHack.Common.Feature,

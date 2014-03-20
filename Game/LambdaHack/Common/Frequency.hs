@@ -8,7 +8,8 @@ module Game.LambdaHack.Common.Frequency
     -- * Transformation
   , scaleFreq, renameFreq, setFreq
     -- * Consumption
-  , rollFreq, nullFreq, runFrequency, nameFrequency
+  , nullFreq, runFrequency, nameFrequency
+  , maxFreq, minFreq, meanFreq
   ) where
 
 import Control.Applicative
@@ -17,9 +18,9 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Binary
 import Data.Foldable (Foldable)
+import Data.Ratio
 import Data.Text (Text)
 import Data.Traversable (Traversable)
-import qualified System.Random as R
 
 import Game.LambdaHack.Common.Msg
 
@@ -96,28 +97,26 @@ setFreq (Frequency name xs) x n =
       f my = my
   in Frequency name $ map f xs
 
--- | Randomly choose an item according to the distribution.
-rollFreq :: Show a => Frequency a -> R.StdGen -> (a, R.StdGen)
-rollFreq (Frequency name []) _ =
-  assert `failure` "choice from an empty frequency" `twith` name
-rollFreq (Frequency name [(n, x)]) _ | n <= 0 =
-  assert `failure` "singleton void frequency" `twith` (name, n, x)
-rollFreq (Frequency _ [(_, x)]) g = (x, g)  -- speedup
-rollFreq (Frequency name fs) g =
-  assert (sumf > 0 `blame` "frequency with nothing to pick" `twith` (name, fs))
-    (frec r fs, ng)
- where
-  sumf = sum (map fst fs)
-  (r, ng) = R.randomR (1, sumf) g
-  frec :: Int -> [(Int, a)] -> a
-  frec m []                     = assert `failure` "impossible roll"
-                                         `twith` (name, fs, m)
-  frec m ((n, x) : _)  | m <= n = x
-  frec m ((n, _) : xs)          = frec (m - n) xs
-
 -- | Test if the frequency distribution is empty.
 nullFreq :: Frequency a -> Bool
-nullFreq (Frequency _ fs) = all (== 0) $ map fst fs
+nullFreq (Frequency _ fs) = all (<= 0) $ map fst fs
+
+maxFreq :: (Show a, Ord a) => Frequency a -> a
+maxFreq fr@(Frequency _ xs) = case filter ((> 0 ) . fst) xs of
+  [] -> assert `failure` fr
+  ys -> maximum $ map snd ys
+
+minFreq :: (Show a, Ord a) => Frequency a -> a
+minFreq fr@(Frequency _ xs) = case filter ((> 0 ) . fst) xs of
+  [] -> assert `failure` fr
+  ys -> minimum $ map snd ys
+
+meanFreq :: (Show a, Integral a) => Frequency a -> Rational
+meanFreq fr@(Frequency _ xs) = case filter ((> 0 ) . fst) xs of
+  [] -> assert `failure` fr
+  ys -> let sumP = sum $ map fst ys
+            sumX = sum [ fromIntegral p * x | (p, x) <- ys ]
+        in fromIntegral sumP % fromIntegral sumX
 
 instance Binary a => Binary (Frequency a) where
   put Frequency{..} = do

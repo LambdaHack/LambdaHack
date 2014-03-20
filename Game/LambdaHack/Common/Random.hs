@@ -1,34 +1,34 @@
-{-# LANGUAGE DeriveGeneric, FlexibleInstances, TypeSynonymInstances #-}
+{-# LANGUAGE DeriveGeneric #-}
 -- | Representation of probabilities and random computations.
 module Game.LambdaHack.Common.Random
   ( -- * The @Rng@ monad
     Rnd
     -- * Random operations
-  , randomR, random, oneOf, frequency, cast
+  , randomR, random, oneOf, frequency
+    -- * Fractional chance
+  , Chance, chance
+    -- * Casting dice scaled with level
+
+
+
     -- * Casting dice
   , RollDice, rollDice, castDice, maxDice, minDice, meanDice
     -- * Casting 2D coordinates
   , RollDiceXY, rollDiceXY, castDiceXY, maxDiceXY, minDiceXY, meanDiceXY
     -- * Casting dependent on depth
   , RollDeep, rollDeep, castDeep, chanceDeep, intToDeep, maxDeep
-    -- * Fractional chance
-  , Chance, chance
-    -- * Frequency distribution for casting dice
-  , Dice
   ) where
 
-import Control.Applicative
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Control.Monad.State as St
 import Data.Binary
 import qualified Data.Hashable as Hashable
-import qualified Data.IntMap.Strict as IM
 import Data.Ratio
-import Data.Tuple
 import GHC.Generics (Generic)
 import qualified System.Random as R
 
+import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Frequency
 
 -- | The monad of computations with random generator state.
@@ -54,30 +54,49 @@ oneOf xs = do
 frequency :: Show a => Frequency a -> Rnd a
 frequency fr = St.state $ rollFreq fr
 
+-- | Randomly choose an item according to the distribution.
+rollFreq :: Show a => Frequency a -> R.StdGen -> (a, R.StdGen)
+rollFreq fr g = case runFrequency fr of
+  [] -> assert `failure` "choice from an empty frequency"
+               `twith` nameFrequency fr
+  [(n, x)] | n <= 0 -> assert `failure` "singleton void frequency"
+                                 `twith` (nameFrequency fr, n, x)
+  [(_, x)] -> (x, g)  -- speedup
+  fs -> let sumf = sum (map fst fs)
+            (r, ng) = R.randomR (1, sumf) g
+            frec :: Int -> [(Int, a)] -> a
+            frec m [] = assert `failure` "impossible roll"
+                               `twith` (nameFrequency fr, fs, m)
+            frec m ((n, x) : _)  | m <= n = x
+            frec m ((n, _) : xs) = frec (m - n) xs
+        in assert (sumf > 0 `blame` "frequency with nothing to pick"
+                            `twith` (nameFrequency fr, fs))
+             (frec r fs, ng)
+
+-- | Fractional chance.
+type Chance = Rational
+
+-- | Give @True@, with probability determined by the fraction.
+chance :: Chance -> Rnd Bool
+chance r = do
+  let n = numerator r
+      d = denominator r
+  k <- randomR (1, d)
+  return (k <= n)
+
+
+
+
+
+
+
+
+
+
+
 -- | Cast a single die.
 cast :: Int -> Rnd Int
 cast x = if x <= 0 then return 0 else randomR (1, x)
-
-type Dice = Frequency Int
-
-normalize :: Dice -> Dice
-normalize dice = toFreq ("normalized" <+> nameFrequency dice)
-                 $ map swap $ IM.toAscList $ IM.fromListWith (+)
-                 $ map swap $ runFrequency dice
-
--- Normalized mainly as an optimization, but it also makes many expected
--- algeraic laws hold (wrt @Eq@), except for some laws about
--- multiplication.
-instance Num Dice where
-  fr1 + fr2 = normalize $ liftA2 (+) fr1 fr2  -- may be faster than @liftM2@
-  fr1 * fr2 = do
-    n <- fr1
-    sum <$> replicateM n fr2  -- not commutative!
-  fr1 - fr2 = normalize $ liftA2 (-) fr1 fr2
-  negate = liftA negate
-  abs = normalize . liftA abs
-  signum = normalize . liftA signum
-  fromInteger = pure . fromInteger
 
 -- | Dice: 1d7, 3d3, 1d0, etc.
 -- @RollDice a b@ represents @a@ rolls of @b@-sided die.
@@ -201,14 +220,3 @@ intToDeep n' = if n' > fromEnum (maxBound :: Word8)
 -- | Maximal value of scaled dice.
 maxDeep :: RollDeep -> Int
 maxDeep (RollDeep d1 d2) = maxDice d1 + maxDice d2
-
--- | Fractional chance.
-type Chance = Rational
-
--- | Give @True@, with probability determined by the fraction.
-chance :: Chance -> Rnd Bool
-chance r = do
-  let n = numerator r
-      d = denominator r
-  k <- randomR (1, d)
-  return (k <= n)
