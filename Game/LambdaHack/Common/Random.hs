@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric, FlexibleInstances, TypeSynonymInstances #-}
 -- | Representation of probabilities and random computations.
 module Game.LambdaHack.Common.Random
   ( -- * The @Rng@ monad
@@ -13,14 +13,19 @@ module Game.LambdaHack.Common.Random
   , RollDeep, rollDeep, castDeep, chanceDeep, intToDeep, maxDeep
     -- * Fractional chance
   , Chance, chance
+    -- * Frequency distribution for casting dice
+  , Dice
   ) where
 
+import Control.Applicative
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Control.Monad.State as St
 import Data.Binary
 import qualified Data.Hashable as Hashable
+import qualified Data.IntMap.Strict as IM
 import Data.Ratio
+import Data.Tuple
 import GHC.Generics (Generic)
 import qualified System.Random as R
 
@@ -52,6 +57,27 @@ frequency fr = St.state $ rollFreq fr
 -- | Cast a single die.
 cast :: Int -> Rnd Int
 cast x = if x <= 0 then return 0 else randomR (1, x)
+
+type Dice = Frequency Int
+
+normalize :: Dice -> Dice
+normalize dice = toFreq ("normalized" <+> nameFrequency dice)
+                 $ map swap $ IM.toAscList $ IM.fromListWith (+)
+                 $ map swap $ runFrequency dice
+
+-- Normalized mainly as an optimization, but it also makes many expected
+-- algeraic laws hold (wrt @Eq@), except for some laws about
+-- multiplication.
+instance Num Dice where
+  fr1 + fr2 = normalize $ liftA2 (+) fr1 fr2  -- may be faster than @liftM2@
+  fr1 * fr2 = do
+    n <- fr1
+    sum <$> replicateM n fr2  -- not commutative!
+  fr1 - fr2 = normalize $ liftA2 (-) fr1 fr2
+  negate = liftA negate
+  abs = normalize . liftA abs
+  signum = normalize . liftA signum
+  fromInteger = pure . fromInteger
 
 -- | Dice: 1d7, 3d3, 1d0, etc.
 -- @RollDice a b@ represents @a@ rolls of @b@-sided die.

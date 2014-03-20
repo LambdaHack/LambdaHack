@@ -29,7 +29,8 @@ import Game.LambdaHack.Common.Msg
 --
 -- The @Eq@ instance compares raw representations, not relative,
 -- normalized frequencies, so operations don't need to preserve
--- the expected equalities, even if they do after normalization.
+-- the expected equalities, unless they do some kind of normalization
+-- (see 'Dice').
 data Frequency a = Frequency
   { nameFrequency :: !Text        -- ^ short description for debug, etc.
   , runFrequency  :: ![(Int, a)]  -- ^ give acces to raw frequency values
