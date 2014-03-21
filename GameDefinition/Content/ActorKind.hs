@@ -4,7 +4,7 @@ module Content.ActorKind ( cdefs ) where
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.ContentDef
-import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Common.Dice
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ActorKind
 
@@ -24,8 +24,8 @@ hero = ActorKind
   , aname   = "hero"
   , afreq   = [("hero", 1)]
   , acolor  = BrWhite  -- modified if many hero factions
-  , ahp     = rollDice 50 1
-  , acalm = rollDice 50 1
+  , ahp     = 50
+  , acalm   = 50
   , aspeed  = toSpeed 2
   , asight  = True
   , asmell  = False
@@ -39,8 +39,8 @@ projectile = ActorKind  -- includes homing missiles
   , aname   = "projectile"
   , afreq   = [("projectile", 1)]  -- Does not appear randomly in the dungeon.
   , acolor  = BrWhite
-  , ahp     = rollDice 0 0
-  , acalm = rollDice 0 0
+  , ahp     = 0
+  , acalm   = 0
   , aspeed  = toSpeed 0
   , asight  = False
   , asmell  = False
@@ -54,8 +54,8 @@ eye = ActorKind
   , aname   = "reducible eye"
   , afreq   = [("monster", 60), ("horror", 60)]
   , acolor  = BrRed
-  , ahp     = rollDice 7 4
-  , acalm = rollDice 50 1
+  , ahp     = 7 * d 4
+  , acalm   = 50
   , aspeed  = toSpeed 2
   , asight  = True
   , asmell  = False
@@ -68,8 +68,8 @@ fastEye = ActorKind
   , aname   = "super-fast eye"
   , afreq   = [("monster", 15), ("horror", 15)]
   , acolor  = BrBlue
-  , ahp     = rollDice 1 6
-  , acalm = rollDice 50 1
+  , ahp     = d 6
+  , acalm   = 50
   , aspeed  = toSpeed 4
   , asight  = True
   , asmell  = False
@@ -82,8 +82,8 @@ nose = ActorKind
   , aname   = "point-free nose"
   , afreq   = [("monster", 20), ("horror", 20)]
   , acolor  = Green
-  , ahp     = rollDice 17 2
-  , acalm = rollDice 50 1
+  , ahp     = 17 * d 2
+  , acalm   = 50
   , aspeed  = toSpeed 1.8
   , asight  = False
   , asmell  = True

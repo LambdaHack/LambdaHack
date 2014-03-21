@@ -66,7 +66,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                         , coplace=Kind.Ops{okind=pokind} }
           ln depth dkind = do
   let kc@CaveKind{..} = okind dkind
-  lgrid@(gx, gy) <- castDiceXY cgrid
+  lgrid@(gx, gy) <- castDiceXY ln depth cgrid
   -- Make sure that in caves not filled with rock, there is a passage
   -- across the cave, even if a single room blocks most of the cave.
   -- Also, ensure fancy outer fences are not obstructed by room walls.
@@ -89,8 +89,8 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
        voidPl <- replicateM voidNum $ xyInArea gridArea  -- repetitions are OK
        return (addedC, voidPl)
     else return ([], [])
-  minPlaceSize <- castDiceXY cminPlaceSize
-  maxPlaceSize <- castDiceXY cmaxPlaceSize
+  minPlaceSize <- castDiceXY ln depth cminPlaceSize
+  maxPlaceSize <- castDiceXY ln depth cmaxPlaceSize
   places0 <- mapM (\ (i, r) -> do
                      -- Reserved for corridors and the global fence.
                      let innerArea = fromMaybe (assert `failure` (i, r))
@@ -101,7 +101,7 @@ buildCave cops@Kind.COps{ cotile=cotile@Kind.Ops{opick}
                                                     maxPlaceSize innerArea
                      return (i, r')) gs
   fence <- buildFenceRnd cops couterFenceTile subFullArea
-  dnight <- chanceDeep ln depth cnightChance
+  dnight <- chanceDice ln depth cnightChance
   darkCorTile <- fmap (fromMaybe $ assert `failure` cdarkCorTile)
                  $ opick cdarkCorTile (const True)
   litCorTile <- fmap (fromMaybe $ assert `failure` clitCorTile)

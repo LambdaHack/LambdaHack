@@ -63,7 +63,7 @@ data Actor = Actor
 -- will also depend on the cave kind used to build the level.
 monsterGenChance :: Int -> Int -> Int -> Rnd Bool
 monsterGenChance n' depth' numMonsters =
-  -- Mimics @castDeep@.
+  -- Mimics @castDice@.
   let n = abs n'
       depth = abs depth'
       -- On level 1, First 2 monsters appear fast.

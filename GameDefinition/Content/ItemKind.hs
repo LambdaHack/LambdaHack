@@ -3,10 +3,10 @@ module Content.ItemKind ( cdefs ) where
 
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.ContentDef
+import Game.LambdaHack.Common.Dice
 import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.ItemFeature
-import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Content.ItemKind
 
 cdefs :: ContentDef ItemKind
@@ -22,38 +22,36 @@ amulet,        dart, gem1, gem2, gem3, currency, harpoon, potion1, potion2, poti
 
 gem, potion, scroll, wand :: ItemKind  -- generic templates
 
--- castDeep (aDb, xDy) = castDice aDb + (lvl - 1) * castDice xDy / (depth - 1)
-
 amulet = ItemKind
   { isymbol  = '"'
   , iname    = "amulet"
   , ifreq    = [("useful", 6)]
   , iflavour = zipFancy [BrGreen]
-  , icount   = intToDeep 1
+  , icount   = 1
   , iverbApply   = "tear down"
   , iverbProject = "cast"
   , iweight  = 30
   , itoThrow = -50  -- not dense enough
-  , ifeature = [Cause $ Regeneration (rollDeep (2, 3) (1, 10))]
+  , ifeature = [Cause $ Regeneration (2 * d 3 + dl 10)]
   }
 dart = ItemKind
   { isymbol  = '|'
   , iname    = "dart"
   , ifreq    = [("useful", 20)]
   , iflavour = zipPlain [Cyan]
-  , icount   = rollDeep (3, 3) (0, 0)
+  , icount   = 3 * d 3
   , iverbApply   = "snap"
   , iverbProject = "hurl"
   , iweight  = 50
   , itoThrow = 0  -- a cheap dart
-  , ifeature = [Cause $ Hurt (rollDice 1 2) (rollDeep (1, 2) (1, 2))]
+  , ifeature = [Cause $ Hurt (d 2) (d 2 + dl 2)]
   }
 gem = ItemKind
   { isymbol  = '*'
   , iname    = "gem"
   , ifreq    = [("treasure", 20)]  -- x3, but rare on shallow levels
   , iflavour = zipPlain brightCol  -- natural, so not fancy
-  , icount   = intToDeep 0
+  , icount   = 0
   , iverbApply   = "crush"
   , iverbProject = "toss"
   , iweight  = 50
@@ -61,20 +59,20 @@ gem = ItemKind
   , ifeature = []
   }
 gem1 = gem
-  { icount   = rollDeep (0, 0) (1, 1)  -- appears on max depth
+  { icount   = dl 1  -- appears on max depth
   }
 gem2 = gem
-  { icount   = rollDeep (0, 0) (1, 2)  -- appears halfway
+  { icount   = dl 2  -- appears halfway
   }
 gem3 = gem
-  { icount   = rollDeep (0, 0) (1, 3)  -- appears early
+  { icount   = dl 3  -- appears early
   }
 currency = ItemKind
   { isymbol  = '$'
   , iname    = "gold piece"
   , ifreq    = [("treasure", 20), ("currency", 1)]
   , iflavour = zipPlain [BrYellow]
-  , icount   = rollDeep (0, 0) (10, 10)  -- appears on lvl 2
+  , icount   = 0 -- TODO: 10 * dl 10  -- appears on lvl 2
   , iverbApply   = "grind"
   , iverbProject = "toss"
   , iweight  = 31
@@ -86,19 +84,19 @@ harpoon = ItemKind
   , iname    = "harpoon"
   , ifreq    = [("useful", 25)]
   , iflavour = zipPlain [Brown]
-  , icount   = rollDeep (0, 0) (2, 2)
+  , icount   = 2 * dl 2
   , iverbApply   = "break up"
   , iverbProject = "hurl"
   , iweight  = 4000
   , itoThrow = 0  -- cheap but deadly
-  , ifeature = [Cause $ Hurt (rollDice 2 2) (rollDeep (1, 2) (2, 2))]
+  , ifeature = [Cause $ Hurt (2 * d 2) (d 2 + 2 * dl 2)]
   }
 potion = ItemKind
   { isymbol  = '!'
   , iname    = "potion"
   , ifreq    = [("useful", 15)]
   , iflavour = zipFancy stdCol
-  , icount   = intToDeep 1
+  , icount   = 1
   , iverbApply   = "gulp down"
   , iverbProject = "lob"
   , iweight  = 200
@@ -121,19 +119,19 @@ ring = ItemKind
   , iname    = "ring"
   , ifreq    = []  -- [("useful", 10)]  -- TODO: make it useful
   , iflavour = zipPlain [White]
-  , icount   = intToDeep 1
+  , icount   = 1
   , iverbApply   = "squeeze down"
   , iverbProject = "toss"
   , iweight  = 15
   , itoThrow = 0
-  , ifeature = [Cause $ Searching (rollDeep (1, 6) (3, 2))]
+  , ifeature = [Cause $ Searching (d 6 + 3 * dl 2)]
   }
 scroll = ItemKind
   { isymbol  = '?'
   , iname    = "scroll"
   , ifreq    = [("useful", 4)]
   , iflavour = zipFancy darkCol  -- arcane and old
-  , icount   = intToDeep 1
+  , icount   = 1
   , iverbApply   = "decipher"
   , iverbProject = "lob"
   , iweight  = 50
@@ -155,19 +153,19 @@ sword = ItemKind
   , iname    = "sword"
   , ifreq    = [("useful", 40)]
   , iflavour = zipPlain [BrCyan]
-  , icount   = intToDeep 1
+  , icount   = 1
   , iverbApply   = "hit"
   , iverbProject = "heave"
   , iweight  = 2000
   , itoThrow = -50  -- ensuring it hits with the tip costs speed
-  , ifeature = [Cause $ Hurt (rollDice 5 1) (rollDeep (1, 2) (4, 2))]
+  , ifeature = [Cause $ Hurt 5 (d 2 + 4 * dl 2)]
   }
 wand = ItemKind
   { isymbol  = '/'
   , iname    = "wand"
   , ifreq    = [("useful", 5)]
   , iflavour = zipFancy brightCol
-  , icount   = intToDeep 1
+  , icount   = 1
   , iverbApply   = "snap"
   , iverbProject = "zap"
   , iweight  = 300
@@ -187,7 +185,7 @@ fist = sword
   , ifreq    = [("hth", 1), ("unarmed", 100)]
   , iverbApply   = "punch"
   , iverbProject = "ERROR, please report: iverbProject fist"
-  , ifeature = [Cause $ Hurt (rollDice 5 1) (intToDeep 0)]
+  , ifeature = [Cause $ Hurt 5 0]
   }
 foot = sword
   { isymbol  = '@'
@@ -195,7 +193,7 @@ foot = sword
   , ifreq    = [("hth", 1), ("unarmed", 50)]
   , iverbApply   = "kick"
   , iverbProject = "ERROR, please report: iverbProject foot"
-  , ifeature = [Cause $ Hurt (rollDice 5 1) (intToDeep 0)]
+  , ifeature = [Cause $ Hurt 5 0]
   }
 tentacle = sword
   { isymbol  = 'S'
@@ -203,14 +201,14 @@ tentacle = sword
   , ifreq    = [("hth", 1), ("monstrous", 100)]
   , iverbApply   = "hit"
   , iverbProject = "ERROR, please report: iverbProject tentacle"
-  , ifeature = [Cause $ Hurt (rollDice 5 1) (intToDeep 0)]
+  , ifeature = [Cause $ Hurt 5 0]
   }
 fragrance = ItemKind
   { isymbol  = '\''
   , iname    = "fragrance"
   , ifreq    = [("fragrance", 1)]
   , iflavour = zipFancy [BrMagenta]
-  , icount   = rollDeep (5, 2) (0, 0)
+  , icount   = 5 * d 2
   , iverbApply   = "smell"
   , iverbProject = "exude"
   , iweight  = 1
@@ -222,7 +220,7 @@ mist_healing = ItemKind
   , iname    = "mist"
   , ifreq    = [("mist healing", 1)]
   , iflavour = zipFancy [White]
-  , icount   = rollDeep (12, 2) (0, 0)
+  , icount   = 12 * d 2
   , iverbApply   = "inhale"
   , iverbProject = "blow"
   , iweight  = 1
@@ -234,7 +232,7 @@ mist_wounding = ItemKind
   , iname    = "mist"
   , ifreq    = [("mist wounding", 1)]
   , iflavour = zipFancy [White]
-  , icount   = rollDeep (12, 2) (0, 0)
+  , icount   = 12 * d 2
   , iverbApply   = "inhale"
   , iverbProject = "blow"
   , iweight  = 1
@@ -246,19 +244,19 @@ glass_piece = ItemKind
   , iname    = "glass piece"
   , ifreq    = [("glass piece", 1)]
   , iflavour = zipPlain [BrBlue]
-  , icount   = rollDeep (10, 2) (0, 0)
+  , icount   = 10 * d 2
   , iverbApply   = "grate"
   , iverbProject = "toss"
   , iweight  = 10
   , itoThrow = 0
-  , ifeature = [Cause $ Hurt (rollDice 1 1) (intToDeep 0), Fragile, Linger 20]
+  , ifeature = [Cause $ Hurt 1 0, Fragile, Linger 20]
   }
 smoke = ItemKind
   { isymbol  = '\''
   , iname    = "smoke"
   , ifreq    = [("smoke", 1)]
   , iflavour = zipPlain [BrBlack]
-  , icount   = rollDeep (12, 2) (0, 0)
+  , icount   = 12 * d 2
   , iverbApply   = "inhale"
   , iverbProject = "blow"
   , iweight  = 1

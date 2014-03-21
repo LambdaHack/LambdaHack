@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFoldable, DeriveTraversable #-}
+{-# LANGUAGE DeriveFoldable, DeriveGeneric, DeriveTraversable #-}
 -- | A list of items with relative frequencies of appearance.
 module Game.LambdaHack.Common.Frequency
   ( -- * The @Frequency@ type
@@ -18,9 +18,11 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Binary
 import Data.Foldable (Foldable)
+import qualified Data.Hashable as Hashable
 import Data.Ratio
 import Data.Text (Text)
 import Data.Traversable (Traversable)
+import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Msg
 
@@ -36,7 +38,7 @@ data Frequency a = Frequency
   { nameFrequency :: !Text        -- ^ short description for debug, etc.
   , runFrequency  :: ![(Int, a)]  -- ^ give acces to raw frequency values
   }
-  deriving (Show, Eq, Foldable, Traversable)
+  deriving (Show, Read, Eq, Ord, Foldable, Traversable, Generic)
 
 instance Monad Frequency where
   {-# INLINE return #-}
@@ -69,6 +71,10 @@ instance MonadPlus Frequency where
 instance Alternative Frequency where
   (<|>) = mplus
   empty = mzero
+
+instance Hashable.Hashable a => Hashable.Hashable (Frequency a)
+
+instance Binary a => Binary (Frequency a)
 
 -- | Uniform discrete frequency distribution.
 uniformFreq :: Text -> [a] -> Frequency a
@@ -116,13 +122,4 @@ meanFreq fr@(Frequency _ xs) = case filter ((> 0 ) . fst) xs of
   [] -> assert `failure` fr
   ys -> let sumP = sum $ map fst ys
             sumX = sum [ fromIntegral p * x | (p, x) <- ys ]
-        in fromIntegral sumP % fromIntegral sumX
-
-instance Binary a => Binary (Frequency a) where
-  put Frequency{..} = do
-    put nameFrequency
-    put runFrequency
-  get = do
-    nameFrequency <- get
-    runFrequency <- get
-    return $! Frequency{..}
+        in if sumX == 0 then 0 else fromIntegral sumP % fromIntegral sumX

@@ -91,7 +91,7 @@ buildPlace Kind.COps{ cotile=cotile@Kind.Ops{opick=opick}
            CaveKind{..} dnight darkCorTile litCorTile ln depth r = do
   qsolidFence <- fmap (fromMaybe $ assert `failure` cfillerTile)
                  $ opick cfillerTile (const True)
-  dark <- chanceDeep ln depth cdarkChance
+  dark <- chanceDice ln depth cdarkChance
   let cave = "rogue"
   qkind <- fmap (fromMaybe $ assert `failure` (cave, r))
            $ popick cave (placeCheck r)

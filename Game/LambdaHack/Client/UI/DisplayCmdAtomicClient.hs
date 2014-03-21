@@ -23,6 +23,7 @@ import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
+import qualified Game.LambdaHack.Common.Dice as Dice
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
@@ -31,7 +32,6 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
-import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ActorKind
@@ -106,7 +106,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
       b <- getsState $ getActorBody aid
       let ActorKind{ahp, acalm} = okind $ bkind b
       -- TODO: if one of these does not regenerate, ignore it
-      when (bhp b == maxDice ahp && bcalm b == maxDice acalm) $ do
+      when (bhp b == Dice.maxDice ahp && bcalm b == Dice.maxDice acalm) $ do
         actorVerbMU aid b "recover fully"
         stopPlayBack
   UpdCalmActor{} -> skip

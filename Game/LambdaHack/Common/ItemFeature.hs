@@ -8,12 +8,12 @@ import Data.Binary
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
+import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Effect
-import Game.LambdaHack.Common.Random
 
 -- | All possible item features.
 data Feature =
-    Cause !(Effect RollDeep)  -- ^ causes the effect when triggered
+    Cause !(Effect Dice.Dice)  -- ^ causes the effect when triggered
   | ChangeTo !Text            -- ^ changes to this item kind group when altered
   | Explode !Text             -- ^ explode, producing this group of shrapnel
   | Fragile                   -- ^ breaks even when not hitting an enemy

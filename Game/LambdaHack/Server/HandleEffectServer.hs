@@ -15,8 +15,10 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import qualified Game.LambdaHack.Common.Dice as Dice
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -32,7 +34,6 @@ import Game.LambdaHack.Server.CommonServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.PeriodicServer
 import Game.LambdaHack.Server.State
-import Game.LambdaHack.Common.Frequency
 
 -- + Semantics of effects
 
@@ -96,7 +97,7 @@ effectHeal :: MonadAtomic m => Int -> ActorId -> m Bool
 effectHeal power target = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   tm <- getsState $ getActorBody target
-  let bhpMax = maxDice (ahp $ okind $ bkind tm)
+  let bhpMax = Dice.maxDice (ahp $ okind $ bkind tm)
       deltaHP = min power (max 0 $ bhpMax - bhp tm)
   if deltaHP == 0
     then do
@@ -112,7 +113,7 @@ halveCalm :: MonadAtomic m => ActorId -> m ()
 halveCalm target = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   tb <- getsState $ getActorBody target
-  let calmMax = maxDice $ acalm $ okind $ bkind tb
+  let calmMax = Dice.maxDice $ acalm $ okind $ bkind tb
       calmCur = bcalm tb
       deltaCalm = calmMax `div` 2 - calmCur
   when (deltaCalm < 0) $ execUpdAtomic $ UpdCalmActor target deltaCalm
@@ -120,10 +121,10 @@ halveCalm target = do
 -- ** Wound
 
 effectWound :: (MonadAtomic m, MonadServer m)
-            => RollDice -> Int -> ActorId -> ActorId
+            => Dice.Dice -> Int -> ActorId -> ActorId
             -> m Bool
 effectWound nDm power source target = do
-  n <- rndToAction $ castDice nDm
+  n <- rndToAction $ castDice 0 0 nDm
   let deltaHP = - (n + power)
   if deltaHP >= 0
     then do

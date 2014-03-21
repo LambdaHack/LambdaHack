@@ -4,9 +4,9 @@ module Game.LambdaHack.Client.AI.Preferences
   ) where
 
 import Game.LambdaHack.Common.Actor
+import qualified Game.LambdaHack.Common.Dice as Dice
 import qualified Game.LambdaHack.Common.Effect as Effect
 import qualified Game.LambdaHack.Common.Kind as Kind
-import qualified Game.LambdaHack.Common.Random as Random
 import Game.LambdaHack.Content.ActorKind
 
 -- | How much AI benefits from applying the effect. Multipllied by item p.
@@ -17,7 +17,7 @@ effectToBenefit Kind.COps{coactor=Kind.Ops{okind}} b eff =
   let kind = okind $ bkind b
   in case eff of
     Effect.NoEffect -> 0
-    (Effect.Heal p) -> 10 * min p (Random.maxDice (ahp kind) - bhp b)
+    (Effect.Heal p) -> 10 * min p (Dice.maxDice (ahp kind) - bhp b)
     (Effect.Hurt _ p) -> -(p * 10)     -- TODO: dice ignored, not capped
     Effect.Mindprobe{} -> 0            -- AI can't benefit yet
     Effect.Dominate -> -100

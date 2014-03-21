@@ -3,12 +3,14 @@
 -- | Representation of dice for parameters scaled with current level depth.
 module Game.LambdaHack.Common.Dice
   ( -- * Frequency distribution for casting dice scaled with level depth
-    Dice, d, z, dl, zl
+    Dice, diceConst, diceLevel
+  , d, z, dl, zl, intToDice
   , maxDice, minDice, meanDice
+    -- * Dice for rolling a pair of integer parameters representing coordinates.
+  , DiceXY(..), maxDiceXY, minDiceXY, meanDiceXY
   ) where
 
 import Control.Applicative
-import Control.Exception.Assert.Sugar
 import Control.Monad
 import Data.Binary
 import qualified Data.Hashable as Hashable
@@ -54,7 +56,11 @@ data Dice = Dice
   { diceConst :: Frequency Int
   , diceLevel :: Frequency Int
   }
-  deriving (Show, Eq)
+  deriving (Show, Read, Eq, Ord, Generic)
+
+instance Hashable.Hashable Dice
+
+instance Binary Dice
 
 instance Num Dice where
   (Dice dc1 ds1) + (Dice dc2 ds2) = Dice (dc1 + dc2) (ds1 + ds2)
@@ -80,6 +86,9 @@ dl n = Dice (fromInteger 0) (dieSimple n)
 zl :: Int -> Dice
 zl n = Dice (fromInteger 0) (zdieSimple n)
 
+intToDice :: Int -> Dice
+intToDice = fromInteger . fromIntegral
+
 -- | Maximal value of dice. The scaled part taken assuming maximum level.
 -- Assumes the frequencies are not null.
 maxDice :: Dice -> Int
@@ -94,3 +103,24 @@ minDice Dice{diceConst} = minFreq diceConst
 -- Assumes the frequencies are not null.
 meanDice :: Dice -> Rational
 meanDice Dice{..} = meanFreq diceConst + meanFreq diceLevel * (1%2)
+
+-- | Dice for rolling a pair of integer parameters pertaining to,
+-- respectively, the X and Y cartesian 2D coordinates.
+data DiceXY = DiceXY !Dice !Dice
+  deriving (Show, Eq, Ord, Generic)
+
+instance Hashable.Hashable DiceXY
+
+instance Binary DiceXY
+
+-- | Maximal value of DiceXY.
+maxDiceXY :: DiceXY -> (Int, Int)
+maxDiceXY (DiceXY x y) = (maxDice x, maxDice y)
+
+-- | Minimal value of DiceXY.
+minDiceXY :: DiceXY -> (Int, Int)
+minDiceXY (DiceXY x y) = (minDice x, minDice y)
+
+-- | Mean value of DiceXY.
+meanDiceXY :: DiceXY -> (Rational, Rational)
+meanDiceXY (DiceXY x y) = (meanDice x, meanDice y)

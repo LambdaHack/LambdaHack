@@ -12,8 +12,8 @@ import qualified Data.Hashable as Hashable
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
+import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Msg
-import Game.LambdaHack.Common.Random
 
 -- TODO: document each constructor
 -- Effects of items, tiles, etc. The type argument represents power.
@@ -21,7 +21,7 @@ import Game.LambdaHack.Common.Random
 data Effect a =
     NoEffect
   | Heal !Int
-  | Hurt !RollDice !a
+  | Hurt !Dice.Dice !a
   | Mindprobe Int    -- the @Int@ is a lazy hack to send the result to clients
   | Dominate
   | CallFriend !Int

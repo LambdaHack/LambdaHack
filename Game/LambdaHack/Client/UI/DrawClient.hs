@@ -18,6 +18,7 @@ import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Common.Actor as Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
+import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Flavour
@@ -29,7 +30,6 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
-import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
@@ -225,8 +225,8 @@ drawLeaderStatus cops s waitTimes mleader _width =
                 let b@Actor{bkind, bhp, bcalm} = getActorBody leader s
                     ActorKind{ahp, acalm} = okind bkind
                 in ( braced b
-                   , tshow (maxDice ahp), tshow bhp
-                   , tshow (maxDice acalm), tshow bcalm )
+                   , tshow (Dice.maxDice ahp), tshow bhp
+                   , tshow (Dice.maxDice acalm), tshow bcalm )
               -- Indicate the actor is braced (was waiting last move).
               -- It's a useful feedback for the otherwise hard to observe
               -- 'wait' command.

@@ -20,13 +20,13 @@ import Data.List
 import Data.Maybe
 
 import Game.LambdaHack.Common.Actor
+import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
@@ -246,7 +246,7 @@ memActor aid lid s =
 
 calmEnough :: Actor -> ActorKind -> Bool
 calmEnough b kind =
-  let calmMax = maxDice $ acalm kind
+  let calmMax = Dice.maxDice $ acalm kind
       calmCur = bcalm b
   in 60 * calmMax <= 100 * calmCur
 

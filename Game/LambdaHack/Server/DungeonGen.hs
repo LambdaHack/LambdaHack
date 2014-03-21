@@ -12,6 +12,7 @@ import Data.Text (Text)
 
 import qualified Game.LambdaHack.Common.Effect as Effect
 import qualified Game.LambdaHack.Common.Feature as F
+import Game.LambdaHack.Common.Frequency
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Point
@@ -25,7 +26,6 @@ import Game.LambdaHack.Content.TileKind
 import Game.LambdaHack.Server.DungeonGen.Area
 import Game.LambdaHack.Server.DungeonGen.Cave
 import Game.LambdaHack.Server.DungeonGen.Place
-import Game.LambdaHack.Common.Frequency
 
 convertTileMaps :: Rnd (Kind.Id TileKind) -> Int -> Int -> TileMapEM
                 -> Rnd TileMap
@@ -134,7 +134,7 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
       lstair = ( map fst $ stairsUp ++ stairsUpDown
                , map fst $ stairsUpDown ++ stairsDown )
   -- traceShow (ldepth, nstairUp, (stairsUp, stairsDown, stairsUpDown)) skip
-  litemNum <- castDice citemNum
+  litemNum <- castDice ldepth maxD citemNum
   let itemFreq = toFreq cname citemFreq
   assert (not $ nullFreq itemFreq) skip
   lsecret <- random

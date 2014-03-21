@@ -11,26 +11,26 @@ import qualified Data.Text as T
 
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Color
+import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Misc
-import qualified Game.LambdaHack.Common.Random as Random
 import Game.LambdaHack.Common.Time
 
 -- TODO: make all but a few fields optional in some way, so that, a.g.,
 -- a game content with no regeneration does not ever need to mention aregen.
 -- | Actor properties that are fixed for a given kind of actors.
 data ActorKind = ActorKind
-  { asymbol  :: !Char             -- ^ map symbol
-  , aname    :: !Text             -- ^ short description
-  , afreq    :: !Freqs            -- ^ frequency within groups
-  , acolor   :: !Color            -- ^ map color
-  , aspeed   :: !Speed            -- ^ natural speed in m/s
-  , ahp      :: !Random.RollDice  -- ^ encodes initial and maximal hp
-  , acalm :: !Random.RollDice  -- ^ encodes initial and maximal calm
-  , asight   :: !Bool             -- ^ can it see?
-  , asmell   :: !Bool             -- ^ can it smell?
-  , aiq      :: !Int              -- ^ intelligence
-  , aregen   :: !Int              -- ^ number of turns to regenerate 1 HP
-  , acanDo   :: ![Ability]        -- ^ the set of supported abilities
+  { asymbol :: !Char       -- ^ map symbol
+  , aname   :: !Text       -- ^ short description
+  , afreq   :: !Freqs      -- ^ frequency within groups
+  , acolor  :: !Color      -- ^ map color
+  , aspeed  :: !Speed      -- ^ natural speed in m/s
+  , ahp     :: !Dice.Dice  -- ^ encodes initial and maximal hp
+  , acalm   :: !Dice.Dice  -- ^ encodes initial and maximal calm
+  , asight  :: !Bool       -- ^ can it see?
+  , asmell  :: !Bool       -- ^ can it smell?
+  , aiq     :: !Int        -- ^ intelligence
+  , aregen  :: !Int        -- ^ number of turns to regenerate 1 HP
+  , acanDo  :: ![Ability]  -- ^ the set of supported abilities
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 

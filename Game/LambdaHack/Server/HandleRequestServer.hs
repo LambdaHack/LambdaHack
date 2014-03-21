@@ -23,6 +23,7 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Color as Color
+import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
@@ -160,7 +161,7 @@ reqMelee source target = do
           let kindEffect = case causeIEffects coitem h2hKind of
                 [] -> NoEffect
                 eff : _TODO -> eff
-              effect = fmap maxDeep kindEffect
+              effect = fmap Dice.maxDice kindEffect
           return ( Nothing
                  , buildItem flavour discoRev h2hKind kind effect )
     let performHit block = do

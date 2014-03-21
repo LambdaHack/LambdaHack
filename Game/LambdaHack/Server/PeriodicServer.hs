@@ -18,8 +18,10 @@ import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
+import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
+import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -36,7 +38,6 @@ import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
-import Game.LambdaHack.Common.Frequency
 
 -- | Spawn non-hero actors of any faction, friendly or not.
 -- To be used for initial dungeon population, spontaneous spawning
@@ -92,8 +93,8 @@ addMonster :: (MonadAtomic m, MonadServer m)
 addMonster mk bfid ppos lid time = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   let kind = okind mk
-  hp <- rndToAction $ castDice $ ahp kind
-  calm <- rndToAction $ castDice $ acalm kind
+  hp <- rndToAction $ castDice 0 0 $ ahp kind
+  calm <- rndToAction $ castDice 0 0 $ acalm kind
   addActor mk bfid ppos lid hp calm (asymbol kind) (aname kind)
            (acolor kind) time
 
@@ -105,8 +106,8 @@ addHero bfid ppos lid heroNames mNumber time = do
   Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
   Faction{gcolor, gplayer} <- getsState $ (EM.! bfid) . sfactionD
   let kId = heroKindId coactor
-  hp <- rndToAction $ castDice $ ahp $ okind kId
-  calm <- rndToAction $ castDice $ acalm $ okind kId
+  hp <- rndToAction $ castDice 0 0 $ ahp $ okind kId
+  calm <- rndToAction $ castDice 0 0 $ acalm $ okind kId
   mhs <- mapM (\n -> getsState $ \s -> tryFindHeroK s bfid n) [0..9]
   let freeHeroK = elemIndex Nothing mhs
       n = fromMaybe (fromMaybe 100 freeHeroK) mNumber
@@ -180,7 +181,7 @@ advanceTime aid = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   allFoes <- getsState $ actorNotProjList (isAtWar fact) (blid b)
   let closeFoes = filter ((<= 3) . chessDist (bpos b) . bpos) allFoes
-      calmMax = maxDice $ acalm $ okind $ bkind b
+      calmMax = Dice.maxDice $ acalm $ okind $ bkind b
       calmCur = bcalm b
       deltaCalm = if null closeFoes
                   then max 0 $ min 1 (calmMax - calmCur)
@@ -211,7 +212,7 @@ regenerateLevelHP lid = do
                       case strongestRegen eqpAssocs of
                         Just (k, _)  -> k + 1
                         Nothing -> 1
-            bhpMax = maxDice (ahp ak)
+            bhpMax = Dice.maxDice (ahp ak)
             deltaHP = min 1 (bhpMax - bhp m)
         in if (time `timeFit` timeTurn) `mod` regen /= 0
               || deltaHP <= 0

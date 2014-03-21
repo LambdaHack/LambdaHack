@@ -8,24 +8,12 @@ module Game.LambdaHack.Common.Random
     -- * Fractional chance
   , Chance, chance
     -- * Casting dice scaled with level
-
-
-
-    -- * Casting dice
-  , RollDice, rollDice, castDice, maxDice, minDice, meanDice
-    -- * Casting 2D coordinates
-  , RollDiceXY, rollDiceXY, castDiceXY, maxDiceXY, minDiceXY, meanDiceXY
-    -- * Casting dependent on depth
-  , RollDeep, rollDeep, castDeep, chanceDeep, intToDeep, maxDeep
+  , castDice, chanceDice, castDiceXY
   ) where
 
 import Control.Exception.Assert.Sugar
-import Control.Monad
 import qualified Control.Monad.State as St
-import Data.Binary
-import qualified Data.Hashable as Hashable
 import Data.Ratio
-import GHC.Generics (Generic)
 import qualified System.Random as R
 
 import qualified Game.LambdaHack.Common.Dice as Dice
@@ -84,139 +72,28 @@ chance r = do
   k <- randomR (1, d)
   return (k <= n)
 
-
-
-
-
-
-
-
-
-
-
--- | Cast a single die.
-cast :: Int -> Rnd Int
-cast x = if x <= 0 then return 0 else randomR (1, x)
-
--- | Dice: 1d7, 3d3, 1d0, etc.
--- @RollDice a b@ represents @a@ rolls of @b@-sided die.
-data RollDice = RollDice !Word8 !Word8
-  deriving (Eq, Ord, Generic)
-
-instance Show RollDice where
-  show (RollDice a b) = show a ++ "d" ++ show b
-
-instance Read RollDice where
-  readsPrec d s =
-    let (a, db) = break (== 'd') s
-        av = read a
-    in case db of
-      'd' : b -> [ (RollDice av bv, rest) | (bv, rest) <- readsPrec d b ]
-      _ -> []
-
-instance Hashable.Hashable RollDice
-
-instance Binary RollDice
-
-rollDice :: Int -> Int -> RollDice
-rollDice a b = assert (a >= 0 && a <= 255 && b >= 0 && b <= 255
-                       `blame` "dice out of bounds" `twith` (a, b))
-               $ RollDice (toEnum a) (toEnum b)
-
--- | Cast dice and sum the results.
-castDice :: RollDice -> Rnd Int
-castDice (RollDice a' 1)  = return $! fromEnum a'  -- optimization
-castDice (RollDice a' b') =
-  let (a, b) = (fromEnum a', fromEnum b')
-  in liftM sum (replicateM a (cast b))
-
--- | Maximal value of dice.
-maxDice :: RollDice -> Int
-maxDice (RollDice a' b') =
-  let (a, b) = (fromEnum a', fromEnum b')
-  in a * b
-
--- | Minimal value of dice.
-minDice :: RollDice -> Int
-minDice (RollDice a' b') =
-  let (a, b) = (fromEnum a', fromEnum b')
-  in if b == 0 then 0 else a
-
--- | Mean value of dice.
-meanDice :: RollDice -> Rational
-meanDice (RollDice a' b') =
-  let (a, b) = (fromIntegral a', fromIntegral b')
-  in if b' == 0 then 0 else a * (b + 1) % 2
-
--- | Dice for rolling a pair of integer parameters pertaining to,
--- respectively, the X and Y cartesian 2D coordinates.
-data RollDiceXY = RollDiceXY ![RollDice] ![RollDice]
-  deriving Show
-
-rollDiceXY :: [(Int, Int)] -> [(Int, Int)] -> RollDiceXY
-rollDiceXY lx ly = RollDiceXY (map (uncurry rollDice) lx)
-                              (map (uncurry rollDice) ly)
-
--- | Cast the two sets of dice.
-castDiceXY :: RollDiceXY -> Rnd (Int, Int)
-castDiceXY (RollDiceXY lx ly) = do
-  cx <- mapM castDice lx
-  cy <- mapM castDice ly
-  return (sum cx, sum cy)
-
--- | Maximal value of RollDiceXY.
-maxDiceXY :: RollDiceXY -> (Int, Int)
-maxDiceXY (RollDiceXY lx ly) = (sum (map maxDice lx), sum (map maxDice ly))
-
--- | Minimal value of RollDiceXY.
-minDiceXY :: RollDiceXY -> (Int, Int)
-minDiceXY (RollDiceXY lx ly) = (sum (map minDice lx), sum (map minDice ly))
-
--- | Mean value of RollDiceXY.
-meanDiceXY :: RollDiceXY -> (Rational, Rational)
-meanDiceXY (RollDiceXY lx ly) = (sum (map meanDice lx), sum (map meanDice ly))
-
--- | Dice for parameters scaled with current level depth.
--- To the result of rolling the first set of dice we add the second,
--- scaled in proportion to current depth divided by maximal dungeon depth.
-data RollDeep = RollDeep !RollDice !RollDice
-  deriving (Show, Eq, Ord, Generic)
-
-instance Binary RollDeep
-
-rollDeep :: (Int, Int) -> (Int, Int) -> RollDeep
-rollDeep (a, b) (c, d) = RollDeep (rollDice a b) (rollDice c d)
-
 -- | Cast dice scaled with current level depth.
 -- Note that at the first level, the scaled dice are always ignored.
-castDeep :: Int -> Int -> RollDeep -> Rnd Int
-castDeep n' depth' (RollDeep d1 d2) = do
+castDice :: Int -> Int -> Dice.Dice -> Rnd Int
+castDice n' maxDepth' dice = do
   let n = abs n'
-      depth = abs depth'
-  assert (n > 0 && n <= depth `blame` "invalid current depth for dice rolls"
-                              `twith` (n, depth)) skip
-  r1 <- castDice d1
-  r2 <- castDice d2
-  return $! r1 + ((n - 1) * r2) `div` max 1 (depth - 1)
+      maxDepth = abs maxDepth'
+  assert (n >= 0 && n <= maxDepth `blame` "invalid depth for dice rolls"
+                                  `twith` (n', maxDepth')) skip
+  dc <- frequency $ Dice.diceConst dice
+  dl <- frequency $ Dice.diceLevel dice
+  return $! dc + (dl * max 0 (n - 1)) `div` max 1 (maxDepth - 1)
 
 -- | Cast dice scaled with current level depth and return @True@
 -- if the results if greater than 50.
-chanceDeep :: Int -> Int -> RollDeep -> Rnd Bool
-chanceDeep n' depth' deep = do
-  let n = abs n'
-      depth = abs depth'
-  c <- castDeep n depth deep
+chanceDice :: Int -> Int -> Dice.Dice -> Rnd Bool
+chanceDice n' maxDepth' dice = do
+  c <- castDice n' maxDepth' dice
   return $! c > 50
 
--- | Generate a @RollDeep@ that always gives a constant integer.
-intToDeep :: Int -> RollDeep
-intToDeep 0  = RollDeep (RollDice 0 0) (RollDice 0 0)
-intToDeep n' = if n' > fromEnum (maxBound :: Word8)
-                  || n' < fromEnum (minBound :: Word8)
-               then assert `failure` "Deep out of bound" `twith` n'
-               else let n = toEnum n'
-                    in RollDeep (RollDice n 1) (RollDice 0 0)
-
--- | Maximal value of scaled dice.
-maxDeep :: RollDeep -> Int
-maxDeep (RollDeep d1 d2) = maxDice d1 + maxDice d2
+-- | Cast dice, scaled with current level depth, for coordinates.
+castDiceXY :: Int -> Int -> Dice.DiceXY -> Rnd (Int, Int)
+castDiceXY n' maxDepth' (Dice.DiceXY dx dy) = do
+  x <- castDice n' maxDepth' dx
+  y <- castDice n' maxDepth' dy
+  return (x, y)

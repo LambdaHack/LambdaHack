@@ -37,15 +37,16 @@ import Data.Text (Text)
 import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
+import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Flavour
+import Game.LambdaHack.Common.Frequency
 import qualified Game.LambdaHack.Common.ItemFeature as IF
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Common.Frequency
 
 -- | A unique identifier of an item in the dungeon.
 newtype ItemId = ItemId Int
@@ -133,14 +134,14 @@ newItem coitem@Kind.Ops{opick, okind} flavour discoRev itemFreq lvl depth = do
         ikChosen <- fmap (fromMaybe $ assert `failure` itemGroup)
                     $ opick itemGroup (const True)
         let kind = okind ikChosen
-        jcount <- castDeep lvl depth (icount kind)
+        jcount <- castDice lvl depth (icount kind)
         if jcount == 0 then
           castItem $ count - 1
         else do
           let kindEffect = case causeIEffects coitem ikChosen of
                 [] -> NoEffect
                 eff : _TODO -> eff
-          effect <- effectTrav kindEffect (castDeep lvl depth)
+          effect <- effectTrav kindEffect (castDice lvl depth)
           return ( buildItem flavour discoRev ikChosen kind effect
                  , jcount
                  , kind )
@@ -211,7 +212,7 @@ pMelee :: Kind.COps -> Item -> Maybe Int
 pMelee Kind.COps{corule} i =
   case jeffect i of
     Hurt d k | jsymbol i `elem` ritemMelee (Kind.stdRuleset corule)
-      -> Just $ floor (meanDice d) + k
+      -> Just $ floor (Dice.meanDice d) + k
     _ -> Nothing
 
 strongestSword :: Kind.COps -> [(ItemId, Item)] -> Maybe (Int, (ItemId, Item))
@@ -251,7 +252,7 @@ isLingering Kind.Ops{okind} disco i =
           getTo _ acc = acc
       in foldr getTo 100 $ ifeature $ okind ik
 
-causeIEffects :: Kind.Ops ItemKind -> Kind.Id ItemKind -> [Effect RollDeep]
+causeIEffects :: Kind.Ops ItemKind -> Kind.Id ItemKind -> [Effect Dice.Dice]
 causeIEffects Kind.Ops{okind} ik = do
   let getTo (IF.Cause eff) acc = eff : acc
       getTo _ acc = acc
