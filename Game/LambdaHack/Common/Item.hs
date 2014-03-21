@@ -122,26 +122,26 @@ buildItem (FlavourMap flavour) discoRev ikChosen kind jeffect =
 newItem :: Kind.Ops ItemKind -> FlavourMap -> DiscoRev
         -> Frequency Text -> Int -> Int
         -> Rnd (Item, Int, ItemKind)
-newItem coitem@Kind.Ops{opick, okind} flavour discoRev itemFreq lvl depth = do
+newItem coitem@Kind.Ops{opick, okind} flavour discoRev itemFreq ln depth = do
   itemGroup <- frequency itemFreq
   let castItem :: Int -> Rnd (Item, Int, ItemKind)
       castItem 0 | nullFreq itemFreq = assert `failure` "no fallback items"
-                                              `twith` (itemFreq, lvl, depth)
+                                              `twith` (itemFreq, ln, depth)
       castItem 0 = do
         let newFreq = setFreq itemFreq itemGroup 0
-        newItem coitem flavour discoRev newFreq lvl depth
+        newItem coitem flavour discoRev newFreq ln depth
       castItem count = do
         ikChosen <- fmap (fromMaybe $ assert `failure` itemGroup)
                     $ opick itemGroup (const True)
         let kind = okind ikChosen
-        jcount <- castDice lvl depth (icount kind)
+        jcount <- castDice ln depth (icount kind)
         if jcount == 0 then
           castItem $ count - 1
         else do
           let kindEffect = case causeIEffects coitem ikChosen of
                 [] -> NoEffect
                 eff : _TODO -> eff
-          effect <- effectTrav kindEffect (castDice lvl depth)
+          effect <- effectTrav kindEffect (castDice ln depth)
           return ( buildItem flavour discoRev ikChosen kind effect
                  , jcount
                  , kind )

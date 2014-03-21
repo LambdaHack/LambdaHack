@@ -50,11 +50,11 @@ placeStairs cotile cmap CaveKind{..} ps = do
     ]
 
 -- | Create a level from a cave, from a cave kind.
-buildLevel :: Kind.COps -> Cave -> Int -> Int -> Int -> Int -> Maybe Bool
+buildLevel :: Kind.COps -> Cave -> Int -> Int -> Int -> Int -> Int -> Maybe Bool
            -> Rnd Level
 buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
                          , cocave=Kind.Ops{okind=cokind} }
-           Cave{..} ldepth minD maxD nstairUp escapeFeature = do
+           Cave{..} ldepth minD maxD totalDepth nstairUp escapeFeature = do
   let kc@CaveKind{..} = cokind dkind
       fitArea pos = inside pos . fromArea . qarea
       findLegend pos = maybe clegendLitTile qlegend
@@ -134,7 +134,7 @@ buildLevel cops@Kind.COps{ cotile=cotile@Kind.Ops{opick, okind}
       lstair = ( map fst $ stairsUp ++ stairsUpDown
                , map fst $ stairsUpDown ++ stairsDown )
   -- traceShow (ldepth, nstairUp, (stairsUp, stairsDown, stairsUpDown)) skip
-  litemNum <- castDice ldepth maxD citemNum
+  litemNum <- castDice ldepth totalDepth citemNum
   let itemFreq = toFreq cname citemFreq
   assert (not $ nullFreq itemFreq) skip
   lsecret <- random
@@ -181,8 +181,8 @@ findGenerator cops caves ldepth minD maxD totalDepth nstairUp = do
         $ opick genName (const True)
   cave <- buildCave cops (fromEnum ldepth) totalDepth ci
   buildLevel cops cave
-             (fromEnum ldepth) (fromEnum minD) (fromEnum maxD) nstairUp
-             escapeFeature
+             (fromEnum ldepth) (fromEnum minD) (fromEnum maxD) totalDepth
+             nstairUp escapeFeature
 
 -- | Freshly generated and not yet populated dungeon.
 data FreshDungeon = FreshDungeon
@@ -197,9 +197,10 @@ dungeonGen cops caves = do
         case (EM.minViewWithKey caves, EM.maxViewWithKey caves) of
           (Just ((s, _), _), Just ((e, _), _)) -> (s, e)
           _ -> assert `failure` "no caves" `twith` caves
-      totalDepth = if minD == maxD
-                   then 10
-                   else fromEnum maxD - fromEnum minD + 1
+      totalDepth = if abs (fromEnum minD) /= 1 && abs (fromEnum maxD) /= 1
+                   then signum (fromEnum minD) * 10
+                   else signum (fromEnum minD)
+                        * (abs (fromEnum maxD - fromEnum minD) + 1)
   let gen :: (Int, [(LevelId, Level)]) -> LevelId
           -> Rnd (Int, [(LevelId, Level)])
       gen (nstairUp, l) ldepth = do
