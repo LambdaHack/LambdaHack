@@ -47,7 +47,7 @@ dieSimple :: Int -> SimpleDice
 dieSimple n = uniformFreq "dieSimple" [1..n]
 
 zdieSimple :: Int -> SimpleDice
-zdieSimple n = uniformFreq "dieSimple" [1..n-1]
+zdieSimple n = uniformFreq "dieSimple" [0..n-1]
 
 -- | Dice for parameters scaled with current level depth.
 -- To the result of rolling the first set of dice we add the second,
@@ -64,7 +64,21 @@ instance Binary Dice
 
 instance Num Dice where
   (Dice dc1 ds1) + (Dice dc2 ds2) = Dice (dc1 + dc2) (ds1 + ds2)
-  (Dice dc1 ds1) * (Dice dc2 ds2) = Dice (dc1 * dc2) (ds1 * ds2)
+  (Dice dc1 ds1) * (Dice dc2 ds2) =
+    -- Hacky, but necessary (unless we forgo general multiplication and
+    -- stick to multiplications by a scalar from the left and from the right).
+    -- The pseudo-reasoning goes (remember the multiplication
+    -- is not commutative, so we take all kinds of liberties):
+    -- (dc1 + ds1 * l) * (dc2 + ds2 * l)
+    -- = dc1 * dc2 + dc1 * ds2 * l + ds1 * l * dc2 + ds1 * l * ds2 * l
+    -- = dc1 * dc2 + (dc1 * ds2) * l + (ds1 * dc2) * l + (ds1 * ds2) * l * l
+    -- Now, we don't have a slot to put the coefficient of l * l into
+    -- (and we don't know l yet, so we can't eliminate it by division),
+    -- so we happily ingore it. Done. It works well in the cases that interest
+    -- us, that is, multiplication by a scalar (a one-element frequency
+    -- distribution) from any side, unscaled and scaled by level depth
+    -- (but when we multiply two scaled scalars, we get 0).
+    Dice (dc1 * dc2) (dc1 * ds2 + ds1 * dc2)
   (Dice dc1 ds1) - (Dice dc2 ds2) = Dice (dc1 - dc2) (ds1 - ds2)
   negate = affectBothDice negate
   abs = affectBothDice abs
