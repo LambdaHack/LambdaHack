@@ -35,7 +35,8 @@ import Game.LambdaHack.Common.Msg
 -- the expected equalities, unless they do some kind of normalization
 -- (see 'Dice').
 data Frequency a = Frequency
-  { nameFrequency :: !Text        -- ^ short description for debug, etc.
+  { nameFrequency :: Text         -- ^ short description for debug, etc.;
+                                  --   keep it lazy, because it's rarely used
   , runFrequency  :: ![(Int, a)]  -- ^ give acces to raw frequency values
   }
   deriving (Show, Read, Eq, Ord, Foldable, Traversable, Generic)
