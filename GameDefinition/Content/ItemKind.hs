@@ -158,7 +158,7 @@ sword = ItemKind
   , iverbProject = "heave"
   , iweight  = 2000
   , itoThrow = -50  -- ensuring it hits with the tip costs speed
-  , ifeature = [Cause $ Hurt 5 (d 2 + 4 * dl 2)]
+  , ifeature = [Cause $ Hurt (5 * d 1) (d 2 + 4 * dl 2)]
   }
 wand = ItemKind
   { isymbol  = '/'
@@ -185,7 +185,7 @@ fist = sword
   , ifreq    = [("hth", 1), ("unarmed", 100)]
   , iverbApply   = "punch"
   , iverbProject = "ERROR, please report: iverbProject fist"
-  , ifeature = [Cause $ Hurt 5 0]
+  , ifeature = [Cause $ Hurt (5 * d 1) 0]
   }
 foot = sword
   { isymbol  = '@'
@@ -193,7 +193,7 @@ foot = sword
   , ifreq    = [("hth", 1), ("unarmed", 50)]
   , iverbApply   = "kick"
   , iverbProject = "ERROR, please report: iverbProject foot"
-  , ifeature = [Cause $ Hurt 5 0]
+  , ifeature = [Cause $ Hurt (5 * d 1) 0]
   }
 tentacle = sword
   { isymbol  = 'S'
@@ -201,7 +201,7 @@ tentacle = sword
   , ifreq    = [("hth", 1), ("monstrous", 100)]
   , iverbApply   = "hit"
   , iverbProject = "ERROR, please report: iverbProject tentacle"
-  , ifeature = [Cause $ Hurt 5 0]
+  , ifeature = [Cause $ Hurt (5 * d 1) 0]
   }
 fragrance = ItemKind
   { isymbol  = '\''
@@ -249,7 +249,7 @@ glass_piece = ItemKind
   , iverbProject = "toss"
   , iweight  = 10
   , itoThrow = 0
-  , ifeature = [Cause $ Hurt 1 0, Fragile, Linger 20]
+  , ifeature = [Cause $ Hurt (d 1) 0, Fragile, Linger 20]
   }
 smoke = ItemKind
   { isymbol  = '\''

@@ -13,9 +13,12 @@ module Game.LambdaHack.Common.Dice
 import Control.Applicative
 import Control.Monad
 import Data.Binary
+import qualified Data.Char as Char
 import qualified Data.Hashable as Hashable
 import qualified Data.IntMap.Strict as IM
 import Data.Ratio
+import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Tuple
 import GHC.Generics (Generic)
 
@@ -25,38 +28,74 @@ import Game.LambdaHack.Common.Msg
 type SimpleDice = Frequency Int
 
 normalizeSimple :: SimpleDice -> SimpleDice
-normalizeSimple fr = toFreq ("normalized" <+> nameFrequency fr)
+normalizeSimple fr = toFreq (nameFrequency fr)
                      $ map swap $ IM.toAscList $ IM.fromListWith (+)
                      $ map swap $ runFrequency fr
 
 -- Normalized mainly as an optimization, but it also makes many expected
 -- algeraic laws hold (wrt @Eq@), except for some laws about
--- multiplication.
+-- multiplication. We use @liftA2@ instead of @liftM2@, because it's probably
+-- faster in this case.
 instance Num SimpleDice where
-  fr1 + fr2 = normalizeSimple $ liftA2 (+) fr1 fr2  -- faster than @liftM2@
-  fr1 * fr2 = do
-    n <- fr1
-    sum <$> replicateM n fr2  -- not commutative!
-  fr1 - fr2 = normalizeSimple $ liftA2 (-) fr1 fr2
-  negate = liftA negate
-  abs = normalizeSimple . liftA abs
-  signum = normalizeSimple . liftA signum
-  fromInteger = pure . fromInteger
+  fr1 + fr2 = normalizeSimple $ liftA2AdditiveName "+" (+) fr1 fr2
+  fr1 * fr2 =
+    let frRes = do
+          n <- fr1
+          sum <$> replicateM n fr2  -- not commutative!
+        nameRes =
+          case T.uncons $ nameFrequency fr2 of
+            _ | nameFrequency fr1 == "0" || nameFrequency fr2 == "0" -> "0"
+            Just ('d', _) | T.all Char.isDigit $ nameFrequency fr1 ->
+              nameFrequency fr1 <> nameFrequency fr2
+            _ -> nameFrequency fr1 <+> "*" <+> nameFrequency fr2
+    in renameFreq nameRes frRes
+  fr1 - fr2 = normalizeSimple $ liftA2AdditiveName "-" (-) fr1 fr2
+  negate = liftAName "-" negate
+  abs = normalizeSimple . liftAName "abs" abs
+  signum = normalizeSimple . liftAName "signum" signum
+  fromInteger n = renameFreq (tshow n) $ pure $ fromInteger n
+
+instance Show SimpleDice where
+  show = T.unpack . nameFrequency
+
+liftAName :: Text -> (Int -> Int) -> SimpleDice -> SimpleDice
+liftAName name f fr =
+  let frRes = liftA f fr
+      nameRes = name <> " (" <> nameFrequency fr  <> ")"
+  in renameFreq nameRes frRes
+
+liftA2AdditiveName :: Text
+                   -> (Int -> Int -> Int)
+                   -> SimpleDice -> SimpleDice -> SimpleDice
+liftA2AdditiveName name f fra frb =
+  let frRes = liftA2 f fra frb
+      nameRes =
+        if nameFrequency fra == "0" then nameFrequency frb
+        else if nameFrequency frb == "0" then nameFrequency fra
+        else nameFrequency fra <+> name <+> nameFrequency frb
+  in renameFreq nameRes frRes
 
 dieSimple :: Int -> SimpleDice
-dieSimple n = uniformFreq "dieSimple" [1..n]
+dieSimple n = uniformFreq ("d" <> tshow n) [1..n]
 
 zdieSimple :: Int -> SimpleDice
-zdieSimple n = uniformFreq "dieSimple" [0..n-1]
+zdieSimple n = uniformFreq ("z" <> tshow n) [0..n-1]
 
 -- | Dice for parameters scaled with current level depth.
 -- To the result of rolling the first set of dice we add the second,
 -- scaled in proportion to current depth divided by maximal dungeon depth.
 data Dice = Dice
-  { diceConst :: Frequency Int
-  , diceLevel :: Frequency Int
+  { diceConst :: SimpleDice
+  , diceLevel :: SimpleDice
   }
-  deriving (Show, Read, Eq, Ord, Generic)
+  deriving (Read, Eq, Ord, Generic)
+
+instance Show Dice where
+  show Dice{..} = T.unpack $
+    let scaled = "scaled(" <> nameFrequency diceLevel <> ")"
+    in if nameFrequency diceLevel == "0" then nameFrequency diceConst
+       else if nameFrequency diceConst == "0" then scaled
+       else nameFrequency diceConst <+> "+" <+> scaled
 
 instance Hashable.Hashable Dice
 
@@ -85,7 +124,7 @@ instance Num Dice where
   signum = affectBothDice signum
   fromInteger n = Dice (fromInteger n) (fromInteger 0)
 
-affectBothDice :: (Frequency Int -> Frequency Int) -> Dice -> Dice
+affectBothDice :: (SimpleDice -> SimpleDice) -> Dice -> Dice
 affectBothDice f (Dice dc ds) = Dice (f dc) (f ds)
 
 d :: Int -> Dice
