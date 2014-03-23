@@ -11,7 +11,6 @@ module Game.LambdaHack.Common.Dice
   ) where
 
 import Control.Applicative
-import Control.Monad
 import Data.Binary
 import qualified Data.Char as Char
 import qualified Data.Hashable as Hashable
@@ -39,9 +38,9 @@ normalizeSimple fr = toFreq (nameFrequency fr)
 instance Num SimpleDice where
   fr1 + fr2 = normalizeSimple $ liftA2AdditiveName "+" (+) fr1 fr2
   fr1 * fr2 =
-    let frRes = do
+    let frRes = normalizeSimple $ do
           n <- fr1
-          sum <$> replicateM n fr2  -- not commutative!
+          sum $ replicate n fr2  -- not commutative!
         nameRes =
           case T.uncons $ nameFrequency fr2 of
             _ | nameFrequency fr1 == "0" || nameFrequency fr2 == "0" -> "0"
