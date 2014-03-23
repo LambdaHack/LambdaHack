@@ -14,13 +14,13 @@ import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response
+import Game.LambdaHack.Common.Thread
 import Game.LambdaHack.Server.Commandline
 import Game.LambdaHack.Server.HandleRequestServer
 import Game.LambdaHack.Server.LoopServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.ProtocolServer
 import Game.LambdaHack.Server.State
-import Game.LambdaHack.Common.Thread
 
 -- | Fire up the frontend with the engine fueled by content.
 -- The action monad types to be used are determined by the 'exeSer'
@@ -51,6 +51,6 @@ mainSer !copsSlow  -- evaluate fully to discover errors ASAP and free memory
         -- and then let them exit.
         Ex.finally
           (exeSer (loopServer executorUI executorAI cops))
-          (threadDelay 1000000)  -- server crashed, show the error eventually
+          (threadDelay 100000)  -- server crashed, show the error eventually
         waitForChildren childrenServer  -- no crash, wait indefinitely
   exeFront cops (sdebugCli sdebugNxt) exeServer

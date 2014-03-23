@@ -99,8 +99,6 @@ promptGetKey frontKM frontFr = do
 getKeyOverlayCommand :: MonadClientUI m => Bool -> Overlay -> m K.KM
 getKeyOverlayCommand onBlank overlay = do
   frame <- drawOverlay onBlank ColorFull overlay
-  -- Give the previous client time to display his frames.  TODO: remove
-  liftIO $ threadDelay 1000
   promptGetKey [] frame
 
 -- | Display a slideshow, awaiting confirmation for each slide except the last.
