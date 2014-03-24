@@ -139,7 +139,7 @@ restrictAnim vis (Animation as) =
 twirlSplash :: (Point, Point) -> Color -> Color -> Animation
 twirlSplash poss c1 c2 = Animation $ map (EM.fromList . mzipPairs poss)
   [ (coloredSymbol BrWhite '*', coloredSymbol BrCyan '\'')
-  , (coloredSymbol c1      '/', blank)
+  , (coloredSymbol c1      '/', coloredSymbol BrYellow '\'')
   , (coloredSymbol c1      '-', blank)
   , (coloredSymbol c1      '\\',blank)
   , (coloredSymbol c1      '|', blank)
@@ -152,7 +152,7 @@ twirlSplash poss c1 c2 = Animation $ map (EM.fromList . mzipPairs poss)
 blockHit :: (Point, Point) -> Color -> Color -> Animation
 blockHit poss c1 c2 = Animation $ map (EM.fromList . mzipPairs poss)
   [ (coloredSymbol BrWhite '*', coloredSymbol BrCyan '\'')
-  , (coloredSymbol BrBlue  '{', blank)
+  , (coloredSymbol BrBlue  '{', coloredSymbol BrYellow '\'')
   , (coloredSymbol BrBlue  '{', blank)
   , (coloredSymbol BrBlue  '}', blank)
   , (coloredSymbol BrBlue  '}', blank)
