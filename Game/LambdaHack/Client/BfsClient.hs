@@ -269,7 +269,8 @@ closestFoes :: MonadClient m => ActorId -> m [(Int, (ActorId, Actor))]
 closestFoes aid = do
   body <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid body
-  foes <- getsState $ actorNotProjAssocs (isAtWar fact) (blid body)
+  foes <- getsState $ filter (not . actorDying . snd)
+                      . actorNotProjAssocs (isAtWar fact) (blid body)
   case foes of
     [] -> return []
     _ -> do

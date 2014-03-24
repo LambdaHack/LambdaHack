@@ -162,6 +162,7 @@ targetStrategy oldLeader aid = do
              && not (null nearbyFoes)  -- foes nearby
              && a `notElem` map fst nearbyFoes  -- old one not close enough
              || blid body /= blid b  -- wrong level
+             || actorDying body  -- foe already dying
           then pickNewTarget
           else if bpos body == fst (snd updatedPath)
                then return $! returN "TEnemy" (oldTgt, updatedPath)

@@ -203,7 +203,7 @@ melee aid = do
           -- No problem if there are many projectiles at the spot. We just
           -- attack the first one.
           body2 <- getsState $ getActorBody aid2
-          if isAtWar fact (bfid body2) then
+          if isAtWar fact (bfid body2) && not (actorDying body2) then
             return $! returN "melee in the way" (ReqMelee aid aid2)
           else return reject
         Nothing -> return reject
@@ -212,7 +212,8 @@ melee aid = do
   -- to a place after movement
   if not $ nullStrategy str1 then return str1 else do
     Level{lxsize, lysize} <- getLevel $ blid b
-    allFoes <- getsState $ actorNotProjAssocs (isAtWar fact) (blid b)
+    allFoes <- getsState $ filter (not . actorDying . snd)
+                           . actorNotProjAssocs (isAtWar fact) (blid b)
     let vic = vicinity lxsize lysize $ bpos b
         adjFoes = filter ((`elem` vic) . bpos . snd) allFoes
         -- TODO: prioritize somehow
