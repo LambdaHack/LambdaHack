@@ -5,9 +5,11 @@ module Game.LambdaHack.Client.UI.InventoryClient
   ) where
 
 import Control.Exception.Assert.Sugar
+import Control.Monad
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import Data.Function
+import qualified Data.IntMap.Strict as IM
 import Data.List
 import Data.Monoid
 import Data.Text (Text)
@@ -38,7 +40,7 @@ floorItemOverlay bag = do
   Kind.COps{coitem} <- getsState scops
   s <- getState
   disco <- getsClient sdisco
-  let is = zip (EM.assocs bag) (allSlots ++ repeat (SlotChar ' '))
+  let is = zip (EM.assocs bag) (map Left allSlots ++ map Right [0..])
       pr ((iid, k), l) =
          makePhrase [ slotLabel l
                     , partItemWs coitem disco k (getItemBody iid s) ]
@@ -119,13 +121,12 @@ getItem askWhenLone verb p ptext cLegalRaw cLegalAfterCalm
    ([cStart], [(iid, k)]) | not askWhenLone ->
      return $ Right ((iid, getItemBody iid s), (k, cStart))
    (cStart : _, _) -> do
-     slotsOK <- if CGround `notElem` cLegal then return True
-                else fmap and
-                     $ mapM (updateItemSlot leader)
-                     $ EM.keys $ getCBag (CActor leader CGround) s
-     if not slotsOK then failSer PickupOverfull
+     when (CGround `elem` cLegal) $
+       mapM_ (updateItemSlot leader)
+       $ EM.keys $ getCBag (CActor leader CGround) s
+     if False then failSer PickupOverfull  -- TODO, when eqp size is limited
      else do
-       slots <- getsClient sslots
+       (letterSlots, numberSlots) <- getsClient sslots
        let pickNumber soc =
              case soc of
                Left slides -> return $ Left slides
@@ -156,7 +157,8 @@ getItem askWhenLone verb p ptext cLegalRaw cLegalAfterCalm
                    -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
            perform itemDialogState cCur cPrev = do
              bag <- getsState $ getCBag $ CActor leader cCur
-             let sl = EM.filter (`EM.member` bag) slots
+             let sl = EM.filter (`EM.member` bag) letterSlots
+                 slNumberSlots = IM.filter (`EM.member` bag) numberSlots
                  slP = EM.filter (\iid -> p (getItemBody iid s)) sl
                  checkItem (l, iid) =
                    ((iid, getItemBody iid s), (bag EM.! iid, l))
@@ -174,10 +176,12 @@ getItem askWhenLone verb p ptext cLegalRaw cLegalAfterCalm
                      let bestSlot = slotChar $ maximum $ map (snd . snd) isp
                      in (", RET(" <> T.singleton bestSlot <> ")", [K.Return])
                    | otherwise = ("", [])
+                 numberKey = if IM.null slNumberSlots then [] else [K.Char '.']
                  keys ims2 =
                    let mls = map (snd . snd) ims2
                        ks = map (K.Char . slotChar) mls
-                            ++ [K.Char '?'] ++ floorKey ++ invEqpKey ++ bestKey
+                            ++ [K.Char '?'] ++ floorKey ++ invEqpKey
+                            ++ bestKey ++ numberKey
                    in zipWith K.KM (repeat K.NoModifier) ks
                  choice ims2 =
                    if null ims2
@@ -191,7 +195,7 @@ getItem askWhenLone verb p ptext cLegalRaw cLegalAfterCalm
                    INone     -> (isp, EM.empty, prompt)
                    ISuitable -> (isp, slP, ptext <+> isn <> ".")
                    IAll      -> (is0, sl, allItemsName <+> isn <> ".")
-             io <- itemOverlay bag slOver
+             io <- itemOverlay bag (slOver, IM.empty)
              akm <- displayChoiceUI (msg <+> choice ims) io (keys is0)
              case akm of
                Left slides -> failSlides slides
@@ -211,6 +215,13 @@ getItem askWhenLone verb p ptext cLegalRaw cLegalAfterCalm
                    K.Char '/' | invEqpFull ->
                      let cNext = if cCur == CInv then CEqp else CInv
                      in perform itemDialogState cNext cCur
+                   K.Char '.' | not $ IM.null slNumberSlots ->
+                     case IM.minViewWithKey numberSlots of
+                       Nothing -> assert `failure` "no numbered items"
+                                         `twith` (km, slNumberSlots)
+                       Just ((_, iid), _) ->
+                         return $ Right ( (iid, getItemBody iid s)
+                                        , (bag EM.! iid, cCur) )
                    K.Char l ->
                      case find ((SlotChar l ==) . snd . snd) is0 of
                        Nothing -> assert `failure` "unexpected slot"

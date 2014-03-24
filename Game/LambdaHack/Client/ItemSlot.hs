@@ -10,6 +10,7 @@ import Data.Binary
 import Data.Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import qualified Data.IntMap.Strict as IM
 import Data.List
 import Data.Maybe
 import Data.Monoid
@@ -30,7 +31,7 @@ instance Ord SlotChar where
   compare (SlotChar x) (SlotChar y) =
     compare (isUpper x, toLower x) (isUpper y, toLower y)
 
-type ItemSlots = EM.EnumMap SlotChar ItemId
+type ItemSlots = (EM.EnumMap SlotChar ItemId, IM.IntMap ItemId)
 
 cmpSlot :: SlotChar -> SlotChar -> Ordering
 cmpSlot (SlotChar x) (SlotChar y) =
@@ -60,11 +61,15 @@ allSlots = map SlotChar $ ['a'..'z'] ++ ['A'..'Z']
 -- of a hero. Tries to to use the requested slot, if any.
 assignSlot :: Item -> Actor -> ItemSlots -> SlotChar
            -> State
-           -> Maybe SlotChar
-assignSlot item body slots lastSlot s =
-  if jsymbol item == '$' && dollarChar `elem` allowed
-  then Just dollarChar
-  else listToMaybe free
+           -> Either SlotChar Int
+assignSlot item body (letterSlots, numberSlots) lastSlot s =
+  if jsymbol item == '$'
+  then Left $ SlotChar '$'
+  else case free of
+    [] -> Right $ case IM.maxViewWithKey numberSlots of
+      Nothing -> 0
+      Just ((maxK, _), _) -> maxK + 1
+    freeChar : _ -> Left freeChar
  where
   candidates = take (length allSlots)
                $ drop (1 + fromJust (elemIndex lastSlot allSlots))
@@ -72,10 +77,9 @@ assignSlot item body slots lastSlot s =
   onPerson = sharedAllOwned body s
   onGroud = sdungeon s EM.! blid body `atI` bpos body
   inBags = ES.unions $ map EM.keysSet [onPerson, onGroud]
-  f l = maybe True (`ES.notMember` inBags) $ EM.lookup l slots
+  f l = maybe True (`ES.notMember` inBags) $ EM.lookup l letterSlots
   free = filter f candidates
-  allowed = dollarChar : free
-  dollarChar = SlotChar '$'
 
-slotLabel :: SlotChar -> MU.Part
-slotLabel c = MU.Text $ T.pack $ slotChar c : " -"
+slotLabel :: Either SlotChar Int -> MU.Part
+slotLabel (Left c) = MU.Text $ T.pack $ slotChar c : " -"
+slotLabel Right{} = ". -"

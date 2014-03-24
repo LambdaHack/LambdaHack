@@ -6,6 +6,7 @@ module Game.LambdaHack.Client.UI.DisplayCmdAtomicClient
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.IntMap.Strict as IM
 import Data.Maybe
 import Data.Monoid
 import Data.Tuple
@@ -305,16 +306,16 @@ moveItemUI verbose iid k aid c1 c2 = do
         if Just aid == mleader then do
           item <- getsState $ getItemBody iid
           disco <- getsClient sdisco
-          slots <- getsClient sslots
+          (letterSlots, _) <- getsClient sslots
           bag <- getsState $ getCBag $ CActor aid cstore
           let n = bag EM.! iid
-          case lookup iid $ map swap $ EM.assocs slots of
+          case lookup iid $ map swap $ EM.assocs letterSlots of
             Just l -> msgAdd $ makePhrase
                         [ "\n"
-                        , slotLabel l
+                        , slotLabel $ Left l
                         , partItemWs coitem disco n item
                         , "\n" ]
-            Nothing -> assert `failure` (aid, b, iid, slots)
+            Nothing -> return ()
         else aiVerbMU aid "get" iid k
     (_, CGround) | verbose ->
       aiVerbMU aid "drop" iid k
@@ -404,9 +405,10 @@ quitFactionUI fid mbody toSt = do
       itemSlides <-
         if EM.null bag then return mempty
         else do
-          slots <- getsClient sslots
-          let sl = EM.filter (`EM.member` bag) slots
-          io <- itemOverlay bag sl
+          (letterSlots, numberSlots) <- getsClient sslots
+          let sl = EM.filter (`EM.member` bag) letterSlots
+              slN = IM.filter (`EM.member` bag) numberSlots
+          io <- itemOverlay bag (sl, slN)
           overlayToSlideshow itemMsg io
       -- Show score for any UI client, even though it is saved only
       -- for human UI clients.

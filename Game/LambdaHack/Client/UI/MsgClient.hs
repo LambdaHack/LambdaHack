@@ -5,9 +5,11 @@ module Game.LambdaHack.Client.UI.MsgClient
   , lookAt, itemOverlay
   ) where
 
+import Control.Arrow (first)
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.IntMap.Strict as IM
 import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -114,7 +116,7 @@ lookAt detailed tilePrefix canSee pos aid msg = do
 
 -- | Create a list of item names.
 itemOverlay :: MonadClient m => ItemBag -> ItemSlots -> m Overlay
-itemOverlay bag sl = do
+itemOverlay bag (letterSlots, numberSlots) = do
   Kind.COps{coitem} <- getsState scops
   s <- getState
   disco <- getsClient sdisco
@@ -123,4 +125,5 @@ itemOverlay bag sl = do
                     , partItemWs coitem disco (bag EM.! iid)
                                  (getItemBody iid s) ]
          <> " "
-  return $! toOverlay $ map pr $ EM.assocs sl
+  return $! toOverlay $ map pr $ map (first Left) (EM.assocs letterSlots)
+                                 ++ (map (first Right) (IM.assocs numberSlots))

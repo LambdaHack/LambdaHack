@@ -6,6 +6,7 @@ module Game.LambdaHack.Client.CommonClient
 
 import Control.Exception.Assert.Sugar
 import qualified Data.EnumMap.Strict as EM
+import qualified Data.IntMap.Strict as IM
 import Data.List
 import Data.Maybe
 import Data.Text (Text)
@@ -146,20 +147,23 @@ actorAbilities aid mleader = do
         | otherwise = fAbilityOther $ fokind $ gkind fact
   return $! acanDo (okind $ bkind body) `intersect` factionAbilities
 
-updateItemSlot :: MonadClient m => ActorId -> ItemId -> m Bool
+updateItemSlot :: MonadClient m => ActorId -> ItemId -> m ()
 updateItemSlot aid iid = do
   b <- getsState $ getActorBody aid
-  slots <- getsClient sslots
-  case lookup iid $ map swap $ EM.assocs slots of
-    Just _ -> return True  -- slot already assigned
-    Nothing -> do
-      item <- getsState $ getItemBody iid
-      lastSlot <- getsClient slastSlot
-      mc <- getsState $ assignSlot item b slots lastSlot
-      case mc of
-        Just l2 -> do
-          modifyClient $ \cli ->
-            cli { sslots = EM.insert l2 iid (sslots cli)
-                , slastSlot = max l2 (slastSlot cli) }
-          return True
-        Nothing -> return False  -- overfull
+  slots@(letterSlots, numberSlots) <- getsClient sslots
+  case lookup iid $ map swap $ EM.assocs letterSlots of
+    Just _ -> return ()  -- slot already assigned a letter
+    Nothing -> case lookup iid $ map swap $ IM.assocs numberSlots of
+      Just _ -> return ()  -- slot already assigned a number
+      Nothing -> do
+        item <- getsState $ getItemBody iid
+        lastSlot <- getsClient slastSlot
+        mc <- getsState $ assignSlot item b slots lastSlot
+        case mc of
+          Left l2 ->
+            modifyClient $ \cli ->
+              cli { sslots = (EM.insert l2 iid letterSlots, numberSlots)
+                  , slastSlot = max l2 (slastSlot cli) }
+          Right l2 ->
+            modifyClient $ \cli ->
+              cli { sslots = (letterSlots, IM.insert l2 iid numberSlots) }

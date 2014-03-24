@@ -209,9 +209,11 @@ moveItemHuman cLegalRaw toCStore verbRaw auto = do
             return $ Right $ ReqMoveItem leader iid k fromCStore toCStore
       if fromCStore /= CGround then msgAndSer  -- slot already assigned
       else do
-        notOverfull <- updateItemSlot leader iid
-        if notOverfull then msgAndSer
-        else failSer PickupOverfull
+        updateItemSlot leader iid
+        msgAndSer
+        -- TODO:
+        -- if notOverfull then msgAndSer
+        -- else failSer PickupOverfull
     Left slides -> return $ Left slides
 
 -- * Project

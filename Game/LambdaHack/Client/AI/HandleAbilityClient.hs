@@ -27,6 +27,7 @@ import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
+import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -42,7 +43,6 @@ import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind as TileKind
-import Game.LambdaHack.Common.Frequency
 
 -- | AI strategy based on actor's sight, smell, intelligence, etc.
 -- Never empty.
@@ -151,11 +151,8 @@ pickup aid = do
       kind = okind $ bkind body
   case mapMaybe mapDesirable $ EM.assocs $ lvl `atI` bpos of
     (iid, k) : _ -> do  -- pick up first desirable item, if any
-      notOverfull <- updateItemSlot aid iid
-      if notOverfull then
-        return $! returN "pickup" $ ReqMoveItem aid iid k CGround CEqp
-      else
-        assert `failure` fact  -- TODO: return mzero  -- PickupOverfull
+      updateItemSlot aid iid
+      return $! returN "pickup" $ ReqMoveItem aid iid k CGround CEqp
     [] | calmEnough body kind -> do
       let RuleKind{ritemEqp, rsharedInventory} = Kind.stdRuleset corule
       invAssocs <- getsState $ getInvAssocs body

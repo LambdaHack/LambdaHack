@@ -25,6 +25,7 @@ import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Function
+import qualified Data.IntMap.Strict as IM
 import Data.List
 import qualified Data.Map.Strict as M
 import Data.Maybe
@@ -185,7 +186,7 @@ inventoryHuman = do
   bag <- if rsharedInventory
          then getsState $ sharedInv b
          else return $ binv b
-  slots <- getsClient sslots
+  (letterSlots, numberSlots) <- getsClient sslots
   if EM.null bag
     then promptToSlideshow $ makeSentence
       [ MU.SubjectVerbSg subject "have"
@@ -200,8 +201,9 @@ inventoryHuman = do
                     else "inventory:"
           blurb = makePhrase
             [MU.Capitalize $ MU.SubjectVerbSg subject verbInv, nameInv]
-          sl = EM.filter (`EM.member` bag) slots
-      io <- itemOverlay bag sl
+          sl = EM.filter (`EM.member` bag) letterSlots
+          slN = IM.filter (`EM.member` bag) numberSlots
+      io <- itemOverlay bag (sl, slN)
       overlayToSlideshow blurb io
 
 -- * Equipment
@@ -215,7 +217,7 @@ equipmentHuman = do
   subject <- partAidLeader leader
   b <- getsState $ getActorBody leader
   let bag = beqp b
-  slots <- getsClient sslots
+  (letterSlots, numberSlots) <- getsClient sslots
   if EM.null bag
     then promptToSlideshow $ makeSentence
       [ MU.SubjectVerbSg subject "have"
@@ -224,8 +226,9 @@ equipmentHuman = do
       let blurb = makePhrase
             [MU.Capitalize
              $ MU.SubjectVerbSg subject "hold as personal equipment:"]
-          sl = EM.filter (`EM.member` bag) slots
-      io <- itemOverlay bag sl
+          sl = EM.filter (`EM.member` bag) letterSlots
+          slN = IM.filter (`EM.member` bag) numberSlots
+      io <- itemOverlay bag (sl, slN)
       overlayToSlideshow blurb io
 
 -- * AllOwned
@@ -238,7 +241,7 @@ allOwnedHuman = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let subject = MU.Text $ gname fact
   bag <- getsState $ sharedAllOwned b
-  slots <- getsClient sslots
+  (letterSlots, numberSlots) <- getsClient sslots
   if EM.null bag
     then promptToSlideshow $ makeSentence
       [ MU.SubjectVerbSg subject "have"
@@ -246,8 +249,9 @@ allOwnedHuman = do
     else do
       let blurb = makePhrase
             [MU.Capitalize $ MU.SubjectVerbSg subject "own:"]
-          sl = EM.filter (`EM.member` bag) slots
-      io <- itemOverlay bag sl
+          sl = EM.filter (`EM.member` bag) letterSlots
+          slN = IM.filter (`EM.member` bag) numberSlots
+      io <- itemOverlay bag (sl, slN)
       overlayToSlideshow blurb io
 
 -- * SelectActor
