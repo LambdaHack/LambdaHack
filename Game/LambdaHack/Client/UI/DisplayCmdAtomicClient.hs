@@ -301,8 +301,8 @@ moveItemUI verbose iid k aid c1 c2 = do
       updateItemSlots aid iid cstore
       b <- getsState $ getActorBody aid
       unless (bproj b) $ do
-        side <- getsClient sside
-        if bfid b == side then do
+        mleader <- getsClient _sleader
+        if Just aid == mleader then do
           item <- getsState $ getItemBody iid
           disco <- getsClient sdisco
           slots <- getsClient sslots
@@ -310,7 +310,8 @@ moveItemUI verbose iid k aid c1 c2 = do
           let n = bag EM.! iid
           case lookup iid $ map swap $ EM.assocs slots of
             Just l -> msgAdd $ makePhrase
-                        [ slotLabel l
+                        [ "\n"
+                        , slotLabel l
                         , partItemWs coitem disco n item
                         , "\n" ]
             Nothing -> assert `failure` (aid, b, iid, slots)
