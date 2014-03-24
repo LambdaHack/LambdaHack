@@ -196,8 +196,8 @@ moveItemHuman cLegalRaw toCStore verbRaw auto = do
                     else delete CInv cLegalRaw
       verb = MU.Text verbRaw
   ggi <- if auto
-         then getAnyItem False verb cLegalRaw cLegal False True
-         else getAnyItem True  verb cLegalRaw cLegal True  True
+         then getAnyItem verb cLegalRaw cLegal False False
+         else getAnyItem verb cLegalRaw cLegal True True
   case ggi of
     Right ((iid, item), (k, fromCStore)) -> do
       let msgAndSer = do
@@ -270,14 +270,13 @@ projectEps :: MonadClientUI m
 projectEps ts tpos eps = do
   let cLegal = [CEqp, CInv, CGround]  -- calm enough at this stage
       (verb1, object1) = case ts of
-        [] -> ("aim", "object")
+        [] -> ("aim", "item")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
   leader <- getLeaderUI
-  ggi <- getGroupItem object1 triggerSyms verb1 cLegal cLegal False False
+  ggi <- getGroupItem triggerSyms object1 verb1 cLegal cLegal
   case ggi of
-    Right ((iid, _), (k, fromCStore)) -> do
-      assert (k == 1) skip
+    Right ((iid, _), (_, fromCStore)) -> do
       return $ Right $ ReqProject leader tpos eps iid fromCStore
     Left slides -> return $ Left slides
 
@@ -299,13 +298,12 @@ applyHuman ts = do
                then cLegalRaw
                else delete CInv cLegalRaw
       (verb1, object1) = case ts of
-        [] -> ("activate", "object")
+        [] -> ("activate", "item")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
-  ggi <- getGroupItem object1 triggerSyms verb1 cLegalRaw cLegal False False
+  ggi <- getGroupItem triggerSyms object1 verb1 cLegalRaw cLegal
   case ggi of
-    Right ((iid, _), (k, fromCStore)) -> do
-      assert (k == 1) skip
+    Right ((iid, _), (_, fromCStore)) -> do
       return $ Right $ ReqApply leader iid fromCStore
     Left slides -> return $ Left slides
 

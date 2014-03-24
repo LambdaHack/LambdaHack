@@ -82,4 +82,4 @@ assignSlot item body (letterSlots, numberSlots) lastSlot s =
 
 slotLabel :: Either SlotChar Int -> MU.Part
 slotLabel (Left c) = MU.Text $ T.pack $ slotChar c : " -"
-slotLabel Right{} = ". -"
+slotLabel Right{} = "0 -"
