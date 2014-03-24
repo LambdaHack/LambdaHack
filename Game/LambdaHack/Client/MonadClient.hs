@@ -19,6 +19,7 @@ import System.FilePath
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.ClientOptions
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
@@ -26,7 +27,6 @@ import Game.LambdaHack.Common.Random
 import qualified Game.LambdaHack.Common.Save as Save
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Common.File
 
 class MonadStateRead m => MonadClient m where
   getClient      :: m StateClient
@@ -76,9 +76,11 @@ restoreGame = do
 -- user as the server, move the server savegame out of the way.
 removeServerSave :: MonadClient m => m ()
 removeServerSave = do
-  prefix <- getsClient $ ssavePrefixCli . sdebugCli  -- hack: assume the same
+  -- Hack: assume the same prefix for client as for the server.
+  prefix <- getsClient $ ssavePrefixCli . sdebugCli
   dataDir <- liftIO appDataDir
   let serverSaveFile = dataDir
+                       </> "saves"
                        </> fromMaybe "save" prefix
                        <.> serverSaveName
   bSer <- liftIO $ doesFileExist serverSaveFile
