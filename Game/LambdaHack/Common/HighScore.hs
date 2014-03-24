@@ -16,7 +16,6 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 import System.Time
-import Text.Printf
 
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Misc
@@ -49,36 +48,33 @@ instance Binary ClockTime where
 
 instance Binary ScoreRecord
 
--- TODO: move all to Text
 -- | Show a single high score, from the given ranking in the high score table.
 showScore :: (Int, ScoreRecord) -> [Text]
 showScore (pos, score) =
   let Status{stOutcome, stDepth} = status score
       died = case stOutcome of
-        Killed   -> "perished on level " ++ show (abs stDepth)
+        Killed   -> "perished on level" <+> tshow (abs stDepth)
         Defeated -> "was defeated"
         Camping  -> "camps somewhere"
         Conquer  -> "slew all opposition"
         Escape   -> "emerged victorious"
         Restart  -> "resigned prematurely"
-      curDate = calendarTimeToString . toUTCTime . date $ score
-      turns = (absoluteTimeNegate (negTime score)) `timeFitUp` timeTurn
+      curDate = T.pack $ calendarTimeToString . toUTCTime . date $ score
+      turns = absoluteTimeNegate (negTime score) `timeFitUp` timeTurn
+      tpos = T.justifyRight 3 ' ' $ tshow pos
+      tscore = T.justifyRight 6 ' ' $ tshow $ points score
+      victims = let nkilled = sum $ EM.elems $ theirVictims score
+                    nlost = sum $ EM.elems $ ourVictims score
+                in "killed" <+> tshow nkilled <> ", lost" <+> tshow nlost
       diff = difficulty score
-      victims :: String
-      victims = printf ", killed %d, lost %d"
-                       (sum (EM.elems $ theirVictims score))
-                       (sum (EM.elems $ ourVictims score))
-      diffText :: String
       diffText | diff == difficultyDefault = ""
-               | otherwise = printf "difficulty %d, " diff
-     -- TODO: the spaces at the end are hand-crafted. Remove when display
-     -- of overlays adds such spaces automatically.
-  in map T.pack
-       [ printf "%3d. %6d The %s team %s%s,"
-                pos (points score) (T.unpack $ gplayerName score) died victims
-       , "            "
-         ++ printf "%safter %d turns on %s." diffText turns curDate
-       ]
+               | otherwise = "difficulty" <+> tshow diff <> ", "
+      tturns = makePhrase $ [MU.CarWs turns "turn"]
+  in [ tpos <> "." <+> tscore <+> "The" <+> gplayerName score <+> "team"
+       <+> died <> "," <+> victims <> ","
+     , "            "
+       <> diffText <> "after" <+> tturns <+> "on" <+> curDate <> "."
+     ]
 
 getRecord :: Int -> ScoreTable -> ScoreRecord
 getRecord pos (ScoreTable table) =
