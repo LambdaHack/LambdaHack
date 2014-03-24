@@ -110,7 +110,7 @@ renderAnim lxsize lysize basicFrame (Animation anim) =
                  $ foldl' f [] (zip [lysize-1,lysize-2..0]
                                 $ reverse $ map decodeLine levelOld)
         in Just SingleFrame{..}  -- a thunk within Just
-  in map (modifyFrame basicFrame) anim
+  in Nothing : map (modifyFrame basicFrame) anim ++ [Nothing]
 
 blank :: Maybe AttrChar
 blank = Nothing
@@ -138,37 +138,40 @@ restrictAnim vis (Animation as) =
 -- | Attack animation. A part of it also reused for self-damage and healing.
 twirlSplash :: (Point, Point) -> Color -> Color -> Animation
 twirlSplash poss c1 c2 = Animation $ map (EM.fromList . mzipPairs poss)
-  [ (coloredSymbol BrWhite '*', coloredSymbol BrCyan '\'')
-  , (coloredSymbol c1      '/', coloredSymbol BrYellow '\'')
+  [ (blank                    , coloredSymbol BrCyan '\'')
+  , (blank                    , coloredSymbol BrYellow '^')
+  , (coloredSymbol c1      '/', coloredSymbol BrCyan '^')
   , (coloredSymbol c1      '-', blank)
   , (coloredSymbol c1      '\\',blank)
   , (coloredSymbol c1      '|', blank)
   , (coloredSymbol c2      '%', blank)
   , (coloredSymbol c2      '/', blank)
-  , (blank                    , blank)
   ]
 
 -- | Attack that hits through a block.
 blockHit :: (Point, Point) -> Color -> Color -> Animation
 blockHit poss c1 c2 = Animation $ map (EM.fromList . mzipPairs poss)
-  [ (coloredSymbol BrWhite '*', coloredSymbol BrCyan '\'')
+  [ (blank                    , coloredSymbol BrCyan '\'')
+  , (blank                    , coloredSymbol BrYellow '^')
+  , (blank                    , coloredSymbol BrCyan '^')
   , (coloredSymbol BrBlue  '{', coloredSymbol BrYellow '\'')
   , (coloredSymbol BrBlue  '{', blank)
   , (coloredSymbol BrBlue  '}', blank)
   , (coloredSymbol BrBlue  '}', blank)
+  , (coloredSymbol c1      '\\',blank)
   , (coloredSymbol c1      '|', blank)
   , (coloredSymbol c2      '%', blank)
   , (coloredSymbol c2      '/', blank)
-  , (blank                    , blank)
   ]
 
 -- | Attack that is blocked.
 blockMiss :: (Point, Point) -> Animation
 blockMiss poss = Animation $ map (EM.fromList . mzipPairs poss)
-  [ (coloredSymbol BrWhite '*', coloredSymbol BrCyan '\'')
+  [ (blank                    , coloredSymbol BrCyan '\'')
+  , (coloredSymbol BrBlue  '{', coloredSymbol BrYellow '^')
   , (coloredSymbol BrBlue  '{', blank)
   , (coloredSymbol BrBlue  '}', blank)
-  , (blank                    , blank)
+  , (coloredSymbol Blue    '}', blank)
   ]
 
 -- | Death animation for an organic body.

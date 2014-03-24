@@ -343,7 +343,7 @@ displaceActorUI source target = do
     lookAtMove target
   let ps = (bpos tb, bpos sb)
   animFrs <- animate (blid sb) $ swapPlaces ps
-  displayActorStart sb $ Nothing : animFrs
+  displayActorStart sb animFrs
 
 quitFactionUI :: MonadClientUI m
               => FactionId -> Maybe Actor -> Maybe Status -> m ()
@@ -423,9 +423,7 @@ quitFactionUI fid mbody toSt = do
           <> scoreSlides <> partingSlide <> shutdownSlide
       -- TODO: perhaps use a vertical animation instead, e.g., roll down
       -- and put it before item and score screens (on blank background)
-      unless (fmap stOutcome toSt == Just Camping) $ do
-        fadeOutOrIn True
-        displayDelay  -- let SPACE skip to the fade-in
+      unless (fmap stOutcome toSt == Just Camping) $ fadeOutOrIn True
     _ -> return ()
 
 -- * RespSfxAtomicUI
@@ -485,7 +483,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             actorVerbMU aid b "look healthier"
           let ps = (bpos b, bpos b)
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrBlue Color.Blue
-          displayActorStart b $ Nothing : animFrs
+          displayActorStart b animFrs
         Effect.Heal _ -> do
           if fid == side then
             actorVerbMU aid b "feel wounded"
@@ -493,7 +491,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             actorVerbMU aid b "look wounded"
           let ps = (bpos b, bpos b)
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
-          displayActorStart b $ Nothing : animFrs
+          displayActorStart b animFrs
         Effect.Hurt{} -> skip
         Effect.Mindprobe nEnemy -> do
           let msg = makeSentence
@@ -595,4 +593,4 @@ strike source target item b = assert (source /= target) $ do
       anim HitBlock = blockHit ps Color.BrRed Color.Red
       anim MissBlock = blockMiss ps
   animFrs <- animate (blid sb) $ anim b
-  displayActorStart sb $ Nothing : animFrs
+  displayActorStart sb animFrs
