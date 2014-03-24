@@ -14,6 +14,7 @@ import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -27,7 +28,6 @@ import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.CommonServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
-import Game.LambdaHack.Common.Frequency
 
 -- | Continue or exit or restart the game.
 endOrLoop :: (MonadAtomic m, MonadServer m)
@@ -74,10 +74,10 @@ dieSer aid b hit = do
   else do
     execUpdAtomic $ UpdRecordKill aid 1
     electLeader (bfid b) (blid b) aid
-    deduceKilled b
     dropAllItems aid b False
     b2 <- getsState $ getActorBody aid
     execUpdAtomic $ UpdDestroyActor aid b2 []
+    deduceKilled b
 
 -- | Drop all actor's items. If the actor hits another actor and this
 -- collision results in all item being dropped, all items are destroyed.
