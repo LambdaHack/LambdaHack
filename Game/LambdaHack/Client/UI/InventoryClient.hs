@@ -126,7 +126,7 @@ getItem p tsuitable verb cLegalRaw cLegalAfterCalm askWhenLone = do
       let cStartPrev = if cStart == CGround
                        then if CEqp `elem` cLegal then CEqp else CInv
                        else cStart
-      perform p tsuitable verb cLegal INone cStart cStartPrev
+      transition p tsuitable verb cLegal INone cStart cStartPrev
 
 ppCStore :: Bool -> CStore -> Text
 ppCStore _ CEqp = "in personal equipment"
@@ -135,16 +135,22 @@ ppCStore rsharedInventory CInv = if rsharedInventory
                                  else "in inventory"
 ppCStore _ CGround = "on the floor"
 
-perform :: MonadClientUI m
-        => (Item -> Bool)  -- ^ which items to consider suitable
-        -> Text            -- ^ how to describe suitable items
-        -> MU.Part         -- ^ the verb describing the action
-        -> [CStore]
-        -> ItemDialogState
-        -> CStore
-        -> CStore
-        -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
-perform p tsuitable verb cLegal itemDialogState cCur cPrev = do
+data DefItemKey m = DefItemKey
+  { defLabel  :: Text
+  , defCond   :: Bool
+  , defAction :: K.Key -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
+  }
+
+transition :: forall m. MonadClientUI m
+           => (Item -> Bool)  -- ^ which items to consider suitable
+           -> Text            -- ^ how to describe suitable items
+           -> MU.Part         -- ^ the verb describing the action
+           -> [CStore]
+           -> ItemDialogState
+           -> CStore
+           -> CStore
+           -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
+transition p tsuitable verb cLegal itemDialogState cCur cPrev = do
   assert (not $ null cLegal) skip
   Kind.COps{corule} <- getsState scops
   let RuleKind{rsharedInventory} = Kind.stdRuleset corule
@@ -163,77 +169,96 @@ perform p tsuitable verb cLegal itemDialogState cCur cPrev = do
   isN0 <- mapM (getsState . getItemData) $ IM.assocs slNumberSlots
   let slP = EM.fromAscList $ map (snd . snd &&& fst . fst)
                            $ filter (\((_, item), _) -> p item) is0
-      floorFull = isCFull CGround
-      (floorMsg, floorKey)
-        | floorFull && (isCFull CInv || isCFull CEqp) = (", -", [K.Char '-'])
-        | otherwise = ("", [])
-      invEqpFull = isCFull CInv && isCFull CEqp
-      (invEqpMsg, invEqpKey) | invEqpFull = (", /", [K.Char '/'])
-                             | otherwise = ("", [])
-      (numberMsg, numberKey)
-        | not $ IM.null slNumberSlots = (", 0", [K.Char '0'])
-        | otherwise = ("", [])
       isp = filter (p . snd . fst) is0
-      bestFull = not $ null isp
-      (bestMsg, bestKey)
-        | bestFull =
-          let bestSlot = slotChar $ maximum $ map (snd . snd) isp
-          in (", RET(" <> T.singleton bestSlot <> ")", [K.Return])
-        | otherwise = ("", [])
-      keys ims2 =
-        let mls = map (snd . snd) ims2
-            ks = map (K.Char . slotChar) mls
-                 ++ [K.Char '?'] ++ floorKey ++ invEqpKey
-                 ++ bestKey ++ numberKey
-        in zipWith K.KM (repeat K.NoModifier) ks
-      choice ims2 =
-        if null ims2
-        then "[?" <> floorMsg <> invEqpMsg <> numberMsg
-        else let mls = map (snd . snd) ims2
-                 r = slotRange mls
-             in "[" <> r <> ", ?"
-                <> floorMsg <> invEqpMsg <> bestMsg <> numberMsg
-      isn = ppCStore rsharedInventory cCur
-      prompt = makePhrase ["What to", verb MU.:> "?"]
-      (ims, slOver, msg) = case itemDialogState of
-        INone     -> (isp, EM.empty, prompt)
-        ISuitable -> (isp, slP, tsuitable <+> isn <> ".")
-        IAll      -> (is0, sl, allItemsName <+> isn <> ".")
+      keyDefs :: [(K.Key, DefItemKey m)]
+      keyDefs = filter (defCond . snd)
+        [ (K.Char '?', DefItemKey
+           { defLabel = "?"
+           , defCond = True
+           , defAction = \_ -> case itemDialogState of
+               INone ->
+                 if EM.null slP
+                 then transition p tsuitable verb cLegal IAll cCur cPrev
+                 else transition p tsuitable verb cLegal ISuitable cCur cPrev
+               ISuitable | tsuitable /= allItemsName ->
+                 transition p tsuitable verb cLegal IAll cCur cPrev
+               _ -> transition p tsuitable verb cLegal INone cCur cPrev
+           })
+        , (K.Char '-', DefItemKey
+           { defLabel = "-"
+           , defCond = isCFull CGround && (isCFull CInv || isCFull CEqp)
+           , defAction = \_ ->
+               let cNext = if cCur == CGround then cPrev else CGround
+               in transition p tsuitable verb cLegal itemDialogState cNext cCur
+           })
+        , (K.Char '/', DefItemKey
+           { defLabel = "/"
+           , defCond = isCFull CInv && isCFull CEqp
+           , defAction = \_ ->
+               let cNext = if cCur == CInv then CEqp else CInv
+               in transition p tsuitable verb cLegal itemDialogState cNext cCur
+           })
+        , (K.Return, DefItemKey
+           { defLabel = let bestSlot = slotChar $ maximum $ map (snd . snd) isp
+                        in "RET(" <> T.singleton bestSlot <> ")"
+           , defCond = not $ null isp
+           , defAction = \_ ->
+               let (iidItem, (k, _)) = maximumBy (compare `on` snd . snd) isp
+               in return $ Right (iidItem, (k, cCur))
+           })
+        , (K.Char '0', DefItemKey
+           { defLabel = "0"
+           , defCond = not $ IM.null slNumberSlots
+           , defAction = \_ -> case isN0 of
+               [] -> assert `failure` "no numbered items"
+                            `twith` (slNumberSlots, isN0)
+               ((iidItem), (k, _)) : _ ->
+                 return $ Right (iidItem, (k, cCur))
+           })
+        ]
+      lettersDef :: DefItemKey m
+      lettersDef = DefItemKey
+        { defLabel = slotRange $ map (snd . snd) ims
+        , defCond = True
+        , defAction = \key -> case key of
+            K.Char l -> case find ((SlotChar l ==) . snd . snd) is0 of
+              Nothing -> assert `failure` "unexpected slot"
+                                `twith` (l, is0)
+              Just (iidItem, (k, _)) -> return $ Right (iidItem, (k, cCur))
+            _ -> assert `failure` "unexpected key:" `twith` K.showKey key
+        }
+      ppCur = ppCStore rsharedInventory cCur
+      (ims, slOver, prompt) = case itemDialogState of
+        INone     -> (isp, EM.empty, makePhrase ["What to", verb MU.:> "?"])
+        ISuitable -> (isp, slP, tsuitable <+> ppCur <> ".")
+        IAll      -> (is0, sl, allItemsName <+> ppCur <> ".")
   io <- itemOverlay bag (slOver, IM.empty)
-  akm <- displayChoiceUI (msg <+> choice ims) io (keys is0)
+  runDefItemKey keyDefs lettersDef io ims prompt
+
+runDefItemKey :: MonadClientUI m
+              => [(K.Key, DefItemKey m)]
+              -> DefItemKey m
+              -> Overlay
+              -> [((ItemId, Item), (Int, SlotChar))]
+              -> Text
+              -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
+runDefItemKey keyDefs lettersDef io ims prompt = do
+  let itemKeys = let mls = map (snd . snd) ims
+                     ks = map (K.Char . slotChar) mls ++ map fst keyDefs
+                 in zipWith K.KM (repeat K.NoModifier) ks
+      choice = let letterRange = defLabel lettersDef
+                   letterLabel | T.null letterRange = []
+                               | otherwise = [letterRange]
+                   keyLabels = letterLabel ++ map (defLabel . snd) keyDefs
+               in "[" <> T.intercalate ", " keyLabels
+  akm <- displayChoiceUI (prompt <+> choice) io itemKeys
   case akm of
     Left slides -> failSlides slides
-    Right km@K.KM{..} -> do
+    Right K.KM{..} -> do
       assert (modifier == K.NoModifier) skip
-      case key of
-        K.Char '?' -> case itemDialogState of
-          INone -> if EM.null slP
-                   then perform p tsuitable verb cLegal IAll cCur cPrev
-                   else perform p tsuitable verb cLegal ISuitable cCur cPrev
-          ISuitable | tsuitable /= allItemsName ->
-            perform p tsuitable verb cLegal IAll cCur cPrev
-          _ -> perform p tsuitable verb cLegal INone cCur cPrev
-        K.Char '-' ->
-          let cNext = if cCur == CGround then cPrev else CGround
-          in perform p tsuitable verb cLegal itemDialogState cNext cCur
-        K.Char '/' ->
-          let cNext = if cCur == CInv then CEqp else CInv
-          in perform p tsuitable verb cLegal itemDialogState cNext cCur
-        K.Char '0' ->
-          case isN0 of
-            [] -> assert `failure` "no numbered items"
-                              `twith` (km, slNumberSlots)
-            ((iidItem), (k, _)) : _ -> return $ Right (iidItem, (k, cCur))
-        K.Char l ->
-          case find ((SlotChar l ==) . snd . snd) is0 of
-            Nothing -> assert `failure` "unexpected slot"
-                              `twith` (km, l,  is0)
-            Just (iidItem, (k, _)) -> return $ Right (iidItem, (k, cCur))
-        K.Return ->
-          let (iidItem, (k, _)) =
-                maximumBy (compare `on` snd . snd) isp
-          in return $ Right (iidItem, (k, cCur))
-        _ -> assert `failure` "unexpected key:" `twith` akm
+      case lookup key keyDefs of
+        Just keyDef -> defAction keyDef key
+        Nothing -> defAction lettersDef key
 
 pickNumber :: MonadClientUI m => Bool -> Int -> m (SlideOrCmd Int)
 pickNumber askNumber kAll = do
