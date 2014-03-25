@@ -510,12 +510,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         Effect.ApplyPerfume ->
           msgAdd "The fragrance quells all scents in the vicinity."
         Effect.Regeneration{} -> skip
-        Effect.Searching{} -> do
-          subject <- partActorLeader aid b
-          let msg = makeSentence
-                [ "It gets lost and"
-                , MU.SubjectVerbSg subject "search in vain" ]
-          msgAdd msg
+        Effect.Steadfastness{} -> skip
         Effect.Ascend k | k > 0 -> actorVerbMU aid b "find a way upstairs"
         Effect.Ascend k | k < 0 -> actorVerbMU aid b "find a way downstairs"
         Effect.Ascend{} -> assert `failure` sfx

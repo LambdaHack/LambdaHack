@@ -180,6 +180,7 @@ pSymbol :: Kind.COps -> Char -> Item -> Maybe Int
 pSymbol cops c = case c of
   ')' -> pMelee cops
   '\"' -> pRegen
+  '=' -> pStead
   _ -> \_ -> Just 0
 
 -- Everybody melees in a pinch, even though some prefer ranged attacks.

@@ -78,7 +78,7 @@ effectSem effect source target = case effect of
   Effect.CreateItem p -> effectCreateItem p target
   Effect.ApplyPerfume -> effectApplyPerfume source target
   Effect.Regeneration p -> effectSem (Effect.Heal p) source target
-  Effect.Searching p -> effectSearching p source
+  Effect.Steadfastness p -> effectSteadfastness p target
   Effect.Ascend p -> effectAscend p target
   Effect.Escape{} -> effectEscape target
 
@@ -285,13 +285,22 @@ effectApplyPerfume source target =
 
 -- ** Regeneration
 
--- ** Searching
+-- ** Steadfastness
 
--- TODO or to remove.
-effectSearching :: MonadAtomic m => Int -> ActorId -> m Bool
-effectSearching power source = do
-  execSfxAtomic $ SfxEffect source $ Effect.Searching power
-  return True
+effectSteadfastness :: MonadAtomic m => Int -> ActorId -> m Bool
+effectSteadfastness power target = do
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  tm <- getsState $ getActorBody target
+  let bcalmMax = Dice.maxDice (acalm $ okind $ bkind tm)
+      deltaCalm = min power (max 0 $ bcalmMax - bcalm tm)
+  if deltaCalm == 0
+    then do
+      execSfxAtomic $ SfxEffect target Effect.NoEffect
+      return False
+    else do
+      execUpdAtomic $ UpdCalmActor target deltaCalm
+      execSfxAtomic $ SfxEffect target $ Effect.Steadfastness deltaCalm
+      return True
 
 -- ** Ascend
 

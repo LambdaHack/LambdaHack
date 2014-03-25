@@ -9,8 +9,8 @@ module Game.LambdaHack.Common.Item
     ItemId, Item(..), jkind, buildItem, newItem
     -- * Item search
   , strongestItem, strongestItems
-  , strongestSearch, strongestSword, strongestRegen
-  , pMelee, pRegen
+  , strongestSword, strongestRegen, strongestStead
+  , pMelee, pRegen, pStead
    -- * Item discovery types
   , ItemKindIx, Discovery, DiscoRev, serverDiscos
     -- * The @FlavourMap@ type
@@ -203,11 +203,6 @@ strongestItems is p =
                          Just v -> Just (v, (k, (iid, item)))) is
   in reverse $ sort kis
 
-strongestSearch :: [(ItemId, Item)] -> Maybe (Int, (ItemId, Item))
-strongestSearch is =
-  strongestItem is $ \i ->
-    case jeffect i of Searching k -> Just k; _ -> Nothing
-
 pMelee :: Kind.COps -> Item -> Maybe Int
 pMelee Kind.COps{corule} i =
   case jeffect i of
@@ -223,6 +218,12 @@ pRegen i =  case jeffect i of Regeneration k -> Just k; _ -> Nothing
 
 strongestRegen :: [(ItemId, Item)] -> Maybe (Int, (ItemId, Item))
 strongestRegen is = strongestItem is pRegen
+
+pStead :: Item -> Maybe Int
+pStead i =  case jeffect i of Steadfastness k -> Just k; _ -> Nothing
+
+strongestStead :: [(ItemId, Item)] -> Maybe (Int, (ItemId, Item))
+strongestStead is = strongestItem is pStead
 
 isFragile :: Kind.Ops ItemKind -> Discovery -> Item -> Bool
 isFragile Kind.Ops{okind} disco i =

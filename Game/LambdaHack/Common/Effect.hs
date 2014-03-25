@@ -29,7 +29,7 @@ data Effect a =
   | CreateItem !Int
   | ApplyPerfume
   | Regeneration !a
-  | Searching !a
+  | Steadfastness !a
   | Ascend !Int
   | Escape !Int
   deriving (Show, Read, Eq, Ord, Generic, Functor)
@@ -55,9 +55,9 @@ effectTrav ApplyPerfume _ = return ApplyPerfume
 effectTrav (Regeneration a) f = do
   b <- f a
   return $! Regeneration b
-effectTrav (Searching a) f = do
+effectTrav (Steadfastness a) f = do
   b <- f a
-  return $! Searching b
+  return $! Steadfastness b
 effectTrav (Ascend p) _ = return $! Ascend p
 effectTrav (Escape p) _ = return $! Escape p
 
@@ -77,7 +77,7 @@ effectToSuff effect f =
     CreateItem p -> "of item creation" <> affixPower p
     ApplyPerfume -> "of rose water"
     Regeneration t -> "of regeneration" <> t
-    Searching t -> "of searching" <> t
+    Steadfastness t -> "of steadfastness" <> t
     Ascend p | p > 0 -> "of ascending" <> affixPower p
     Ascend p | p < 0 -> "of descending" <> affixPower (- p)
     Ascend{} -> assert `failure` effect

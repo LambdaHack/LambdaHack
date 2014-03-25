@@ -123,15 +123,15 @@ potion3 = potion
 ring = ItemKind
   { isymbol  = '='
   , iname    = "ring"
-  , ifreq    = []  -- [("useful", 10)]  -- TODO: make it useful
+  , ifreq    = [("useful", 6)]
   , iflavour = zipPlain [White]
   , icount   = 1
   , iverbApply   = "squeeze down"
   , iverbProject = "toss"
   , iweight  = 15
   , itoThrow = 0
-  , ifeature = [Cause $ Searching (d 6 + 3 * dl 2)]
-  , idesc    = "Cold, solid to the touch, perfectly round, engraved on the inside, Animals don't wear those."
+  , ifeature = [Cause $ Steadfastness (d 2 + 2 * dl 2)]
+  , idesc    = "Cold, solid to the touch, perfectly round, engraved with the reminder of purpose."
   }
 scroll = ItemKind
   { isymbol  = '?'

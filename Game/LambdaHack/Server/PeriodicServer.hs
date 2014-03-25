@@ -174,6 +174,7 @@ advanceTime :: MonadAtomic m => ActorId -> m ()
 advanceTime aid = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   b <- getsState $ getActorBody aid
+  eqpAssocs <- getsState $ getEqpAssocs b
   let t = ticksPerMeter $ bspeed b
   execUpdAtomic $ UpdAgeActor aid t
   -- Calm or worry actor by enemies felt (even if not seen)
@@ -183,8 +184,11 @@ advanceTime aid = do
   let closeFoes = filter ((<= 3) . chessDist (bpos b) . bpos) allFoes
       calmMax = Dice.maxDice $ acalm $ okind $ bkind b
       calmCur = bcalm b
+      calmIncr = case strongestStead eqpAssocs of
+                   Just (k, _)  -> k + 1
+                   Nothing -> 1
       deltaCalm = if null closeFoes
-                  then max 0 $ min 1 (calmMax - calmCur)
+                  then max 0 $ min calmIncr (calmMax - calmCur)
                   else max (-1) (-calmCur)
   when (deltaCalm /= 0) $ execUpdAtomic $ UpdCalmActor aid deltaCalm
 

@@ -26,6 +26,6 @@ effectToBenefit Kind.COps{coactor=Kind.Ops{okind}} b eff =
     (Effect.CreateItem p) -> p * 20
     Effect.ApplyPerfume -> 1           -- TODO: tweak vs smell mechanics
     Effect.Regeneration p -> p
-    Effect.Searching{} -> 0
+    Effect.Steadfastness{} -> 1
     Effect.Ascend{} -> 1               -- change levels sensibly, in teams
     Effect.Escape{} -> 10000           -- AI wants to win; spawners to guard
