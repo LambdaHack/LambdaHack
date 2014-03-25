@@ -1,7 +1,7 @@
 -- | Inventory management.
 -- TODO: document
 module Game.LambdaHack.Client.UI.InventoryClient
-  ( floorItemOverlay, getGroupItem, getAnyItem, getStoreItem
+  ( getGroupItem, getAnyItem, getStoreItem
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -32,19 +32,6 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.RuleKind
-
--- | Create a list of item names.
-floorItemOverlay :: MonadClient m => ItemBag -> m Overlay
-floorItemOverlay bag = do
-  Kind.COps{coitem} <- getsState scops
-  s <- getState
-  disco <- getsClient sdisco
-  let is = zip (EM.assocs bag) (map Left allSlots ++ map Right [0..])
-      pr ((iid, k), l) =
-         makePhrase [ slotLabel l
-                    , partItemWs coitem disco k (getItemBody iid s) ]
-         <> " "
-  return $! toOverlay $ map pr is
 
 -- | Let a human player choose any item from a given group.
 -- Note that this does not guarantee the chosen item belongs to the group,

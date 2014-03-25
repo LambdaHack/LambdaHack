@@ -125,12 +125,12 @@ waitBlockNow aid = returN "wait" $ ReqWait aid
 pickup :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 pickup aid = do
   cops@Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
-  body@Actor{bpos, blid} <- getsState $ getActorBody aid
+  body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
   dungeon <- getsState sdungeon
   itemD <- getsState sitemD
   disco <- getsClient sdisco
-  lvl <- getLevel blid
+  floorItems <- getsState $ getActorBag aid CGround
   let fightsAgainstSpawners =
         let escape = any lescape $ EM.elems dungeon
             isSpawner = isSpawnFact fact
@@ -149,7 +149,7 @@ pickup aid = do
                                  then Just (iid, k)
                                  else Nothing
       kind = okind $ bkind body
-  case mapMaybe mapDesirable $ EM.assocs $ lvl `atI` bpos of
+  case mapMaybe mapDesirable $ EM.assocs floorItems of
     (iid, k) : _ -> do  -- pick up first desirable item, if any
       updateItemSlot aid iid
       return $! returN "pickup" $ ReqMoveItem aid iid k CGround CEqp
@@ -280,15 +280,14 @@ rangedFreq aid = do
                 } <- getsState scops
   btarget <- getsClient $ getTarget aid
   b@Actor{bkind, bpos, blid} <- getsState $ getActorBody aid
+  floorItems <- getsState $ getActorBag aid CGround
   let eqpBag = beqp b
   mfpos <- aidTgtToPos aid blid btarget
   case (btarget, mfpos) of
     (Just TEnemy{}, Just fpos) -> do
       disco <- getsClient sdisco
       itemD <- getsState sitemD
-      lvl <- getLevel blid
       let mk = okind bkind
-          tis = lvl `atI` bpos
           initalEps = 0
       (steps, eps) <- makeLine b fpos initalEps
       let permitted = (if aiq mk >= 10 then ritemProject else ritemRanged)
@@ -328,7 +327,7 @@ rangedFreq aid = do
                && steps == chessDist bpos fpos
             then toFreq "throwFreq"
                  $ throwFreq eqpBag 4 CEqp
-                   ++ throwFreq tis 8 CGround
+                   ++ throwFreq floorItems 8 CGround
             else toFreq "throwFreq: not possible" []
       return $! freq
     _ -> return $! toFreq "throwFreq: no enemy target" []
@@ -338,12 +337,11 @@ toolsFreq :: MonadClient m => ActorId -> m (Frequency RequestTimed)
 toolsFreq aid = do
   cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   disco <- getsClient sdisco
-  b@Actor{bkind, bpos, blid} <- getsState $ getActorBody aid
+  b <- getsState $ getActorBody aid
+  floorItems <- getsState $ getActorBag aid CGround
   let eqpBag = beqp b
-  lvl <- getLevel blid
   s <- getState
-  let tis = lvl `atI` bpos
-      mk = okind bkind
+  let mk = okind $ bkind b
       mastered | aiq mk < 5 = ""
                | aiq mk < 10 = "!"
                | otherwise = "!?"  -- literacy required
@@ -359,7 +357,7 @@ toolsFreq aid = do
         , jsymbol i `elem` mastered ]
   return $! toFreq "useFreq" $
     useFreq eqpBag 1 CEqp
-    ++ useFreq tis 2 CGround
+    ++ useFreq floorItems 2 CGround
 
 displace :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 displace aid = do

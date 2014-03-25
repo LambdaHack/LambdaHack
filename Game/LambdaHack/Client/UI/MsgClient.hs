@@ -2,7 +2,7 @@
 module Game.LambdaHack.Client.UI.MsgClient
   ( msgAdd, msgReset, recordHistory
   , SlideOrCmd, failWith, failSlides, failSer
-  , lookAt, itemOverlay
+  , lookAt, itemOverlay, floorItemOverlay
   ) where
 
 import Control.Arrow (first)
@@ -127,3 +127,12 @@ itemOverlay bag (letterSlots, numberSlots) = do
          <> " "
   return $! toOverlay $ map pr $ map (first Left) (EM.assocs letterSlots)
                                  ++ (map (first Right) (IM.assocs numberSlots))
+
+-- | Create a list of item names.
+floorItemOverlay :: MonadClient m => ItemBag -> m Overlay
+floorItemOverlay bag = do
+  let len = length allSlots
+      iids = EM.keys bag
+      letterSlots = EM.fromAscList $ zip allSlots iids
+      numberSlots = IM.fromAscList $ zip [0..] (drop len iids)
+  itemOverlay bag (letterSlots, numberSlots)

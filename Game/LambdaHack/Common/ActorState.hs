@@ -5,7 +5,7 @@ module Game.LambdaHack.Common.ActorState
   ( fidActorNotProjAssocs, actorAssocsLvl, actorAssocs, actorList
   , actorNotProjAssocsLvl, actorNotProjAssocs, actorNotProjList
   , calculateTotal, sharedInv, sharedAllOwned
-  , getInvBag, getCBag, nearbyFreePoints, whereTo
+  , getInvBag, getCBag, getActorBag, nearbyFreePoints, whereTo
   , posToActors, posToActor, getItemBody, memActor, getActorBody
   , getCarriedAssocs, getEqpAssocs, getEqpKA, getInvAssocs, getFloorAssocs
   , tryFindHeroK, foesAdjacent, getLocalTime, isSpawnFaction
@@ -221,10 +221,13 @@ getInvBag b s =
 getCBag :: Container -> State -> ItemBag
 getCBag c s = case c of
   CFloor lid p -> sdungeon s EM.! lid `atI` p
-  CActor aid CInv -> getInvBag (getActorBody aid s) s
-  CActor aid CEqp -> beqp $ getActorBody aid s
-  CActor aid CGround -> let b = getActorBody aid s
-                        in sdungeon s EM.! blid b `atI` bpos b
+  CActor aid cstore -> getActorBag aid cstore s
+
+getActorBag :: ActorId -> CStore -> State -> ItemBag
+getActorBag aid CInv s = getInvBag (getActorBody aid s) s
+getActorBag aid CEqp s = beqp $ getActorBody aid s
+getActorBag aid CGround s = let b = getActorBody aid s
+                            in sdungeon s EM.! blid b `atI` bpos b
 
 getFloorAssocs :: LevelId -> Point -> State -> [(ItemId, Item)]
 getFloorAssocs lid pos s =
