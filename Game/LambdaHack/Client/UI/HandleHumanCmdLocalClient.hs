@@ -55,6 +55,7 @@ import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
@@ -180,31 +181,20 @@ inventoryHuman = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  subject <- if rsharedInventory
-             then return $ MU.Text $ gname fact
-             else partAidLeader leader
-  bag <- if rsharedInventory
-         then getsState $ sharedInv b
-         else return $ binv b
-  (letterSlots, numberSlots) <- getsClient sslots
-  if EM.null bag
-    then promptToSlideshow $ makeSentence
-      [ MU.SubjectVerbSg subject "have"
-      , "nothing in inventory" ]
-    else do
-      let kind = okind $ bkind b
-          verbInv = if calmEnough b kind
-                    then "see in"
-                    else "distractedly peek at"
-          nameInv = if rsharedInventory
-                    then "the shared inventory:"
-                    else "inventory:"
-          blurb = makePhrase
-            [MU.Capitalize $ MU.SubjectVerbSg subject verbInv, nameInv]
-          sl = EM.filter (`EM.member` bag) letterSlots
-          slN = IM.filter (`EM.member` bag) numberSlots
-      io <- itemOverlay bag (sl, slN)
-      overlayToSlideshow blurb io
+  let kind = okind $ bkind b
+      verbInv = if calmEnough b kind
+                then "see"
+                else "paw absent-mindedly"
+      subject = if rsharedInventory
+                then MU.Text $ gname fact
+                else partActor b
+      itemDescr = makePhrase [MU.Capitalize $ MU.SubjectVerbSg subject verbInv]
+      verb = "describe"
+  ggi <- getStoreItem itemDescr verb CInv
+  case ggi of
+    Right _ ->
+      promptToSlideshow "This item is as unremarkable as can be."  -- TODO
+    Left slides -> return slides
 
 -- * Equipment
 
@@ -214,25 +204,19 @@ inventoryHuman = do
 equipmentHuman :: MonadClientUI m => m Slideshow
 equipmentHuman = do
   leader <- getLeaderUI
-  subject <- partAidLeader leader
   b <- getsState $ getActorBody leader
-  let bag = beqp b
-  (letterSlots, numberSlots) <- getsClient sslots
-  if EM.null bag
-    then promptToSlideshow $ makeSentence
-      [ MU.SubjectVerbSg subject "have"
-      , "no equipment" ]
-    else do
-      let blurb = makePhrase
-            [MU.Capitalize
-             $ MU.SubjectVerbSg subject "hold as personal equipment:"]
-          sl = EM.filter (`EM.member` bag) letterSlots
-          slN = IM.filter (`EM.member` bag) numberSlots
-      io <- itemOverlay bag (sl, slN)
-      overlayToSlideshow blurb io
+  let subject = partActor b
+      itemDescr = makePhrase [MU.Capitalize $ MU.SubjectVerbSg subject "have"]
+      verb = "describe"
+  ggi <- getStoreItem itemDescr verb CEqp
+  case ggi of
+    Right _ ->
+      promptToSlideshow "This item is as unremarkable as can be."  -- TODO
+    Left slides -> return slides
 
 -- * AllOwned
 
+-- TODO: express with getStoreItem somehow
 -- | Display the sum of equipments and inventory of the whole party.
 allOwnedHuman :: MonadClientUI m => m Slideshow
 allOwnedHuman = do

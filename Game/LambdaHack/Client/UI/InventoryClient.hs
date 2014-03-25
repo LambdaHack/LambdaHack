@@ -1,7 +1,7 @@
 -- | Inventory management.
 -- TODO: document
 module Game.LambdaHack.Client.UI.InventoryClient
-  ( floorItemOverlay, getGroupItem, getAnyItem
+  ( floorItemOverlay, getGroupItem, getAnyItem, getStoreItem
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -9,6 +9,7 @@ import Control.Monad
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.IntMap.Strict as IM
+import Data.List
 import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -45,9 +46,6 @@ floorItemOverlay bag = do
          <> " "
   return $! toOverlay $ map pr is
 
-allItemsName :: Text
-allItemsName = "Items"
-
 -- | Let a human player choose any item from a given group.
 -- Note that this does not guarantee the chosen item belongs to the group,
 -- as the player can override the choice.
@@ -59,12 +57,16 @@ getGroupItem :: MonadClientUI m
              -> [CStore]  -- ^ legal containers after Calm taken into account
              -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
 getGroupItem syms itemsName verb cLegalRaw cLegalAfterCalm = do
-  let p i = jsymbol i `elem` syms
+  leader <- getLeaderUI
+  getCStoreBag <- getsState $ \s cstore -> getCBag (CActor leader cstore) s
+  let cNotEmpty = not . EM.null . getCStoreBag
+      cLegal = filter cNotEmpty cLegalAfterCalm  -- don't display empty stores
+      p i = jsymbol i `elem` syms
       tsuitable = makePhrase [MU.Capitalize (MU.Ws itemsName)]
-  getItem p tsuitable verb cLegalRaw cLegalAfterCalm True
+  getItem p tsuitable verb cLegalRaw cLegal True INone
 
 -- | Let the human player choose any item from a list of items
--- and let his specify the number of items.
+-- and let him specify the number of items.
 getAnyItem :: MonadClientUI m
            => MU.Part   -- ^ the verb describing the action
            -> [CStore]  -- ^ initial legal containers
@@ -74,8 +76,8 @@ getAnyItem :: MonadClientUI m
            -> Bool      -- ^ whether to ask for the number of items
            -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
 getAnyItem verb cLegalRaw cLegalAfterCalm askWhenLone askNumber = do
-  soc <- getItem (const True) allItemsName verb
-                 cLegalRaw cLegalAfterCalm askWhenLone
+  soc <- getItem (const True) "Items" verb
+                 cLegalRaw cLegalAfterCalm askWhenLone INone
   case soc of
     Left slides -> return $ Left slides
     Right (iidItem, (kAll, c)) -> do
@@ -84,46 +86,55 @@ getAnyItem verb cLegalRaw cLegalAfterCalm askWhenLone askNumber = do
         Left slides -> return $ Left slides
         Right k -> return $ Right (iidItem, (k, c))
 
+-- | Display all items from a store and let the human player choose any
+-- or switch to any other non-empty store.
+getStoreItem :: MonadClientUI m
+             => Text      -- ^ how to describe displayed items
+             -> MU.Part   -- ^ the verb describing the action
+             -> CStore  -- ^ initial container
+             -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
+getStoreItem itemDescr verb cInitial = do
+  let cLegalRaw = cInitial : delete cInitial [minBound..maxBound]
+  getItem (const True) itemDescr verb cLegalRaw cLegalRaw True ISuitable
+
 data ItemDialogState = INone | ISuitable | IAll deriving Eq
 
 -- | Let the human player choose a single, preferably suitable,
 -- item from a list of items.
 getItem :: MonadClientUI m
-        => (Item -> Bool)  -- ^ which items to consider suitable
-        -> Text            -- ^ how to describe suitable items
-        -> MU.Part         -- ^ the verb describing the action
-        -> [CStore]        -- ^ initial legal containers
-        -> [CStore]        -- ^ legal containers after Calm taken into account
-        -> Bool            -- ^ whether to ask, when the only item
-                           --   in the starting container is suitable
+        => (Item -> Bool)   -- ^ which items to consider suitable
+        -> Text             -- ^ how to describe suitable items
+        -> MU.Part          -- ^ the verb describing the action
+        -> [CStore]         -- ^ initial legal containers
+        -> [CStore]         -- ^ legal containers after Calm taken into account
+        -> Bool             -- ^ whether to ask, when the only item
+                            --   in the starting container is suitable
+        -> ItemDialogState  -- ^ the dialog state to start in
         -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
-getItem p tsuitable verb cLegalRaw cLegalAfterCalm askWhenLone = do
+getItem p tsuitable verb cLegalRaw cLegal askWhenLone initalState = do
   Kind.COps{corule} <- getsState scops
   let RuleKind{rsharedInventory} = Kind.stdRuleset corule
   leader <- getLeaderUI
   getCStoreBag <- getsState $ \s cstore -> getCBag (CActor leader cstore) s
-  let cNotEmpty = not . EM.null . getCStoreBag
-      cLegal = filter cNotEmpty cLegalAfterCalm
-      storeAssocs = EM.assocs . getCStoreBag
+  let storeAssocs = EM.assocs . getCStoreBag
       allAssocs = concatMap storeAssocs cLegal
+      rawAssocs = concatMap storeAssocs cLegalRaw
   case (cLegal, allAssocs) of
-    ([], _) -> do
-      let cLegalInitial = filter cNotEmpty cLegalRaw
-      if null cLegalInitial then do
-        let tLegal = map (MU.Text . ppCStore rsharedInventory) cLegalRaw
-            ppLegal = makePhrase [MU.WWxW "nor" tLegal]
-        failWith $ "no items" <+> ppLegal
-      else failSer ItemNotCalm
     ([cStart], [(iid, k)]) | not askWhenLone -> do
       item <- getsState $ getItemBody iid
       return $ Right ((iid, item), (k, cStart))
-    (cStart : _, _) -> do
+    (cStart : _, _ : _) -> do
       when (CGround `elem` cLegal) $
         mapM_ (updateItemSlot leader) $ EM.keys $ getCStoreBag CGround
       let cStartPrev = if cStart == CGround
                        then if CEqp `elem` cLegal then CEqp else CInv
                        else cStart
-      transition p tsuitable verb cLegal INone cStart cStartPrev
+      transition p tsuitable verb cLegal initalState cStart cStartPrev
+    _ -> if null rawAssocs then do
+           let tLegal = map (MU.Text . ppCStore rsharedInventory) cLegalRaw
+               ppLegal = makePhrase [MU.WWxW "nor" tLegal]
+           failWith $ "no items" <+> ppLegal
+         else failSer ItemNotCalm
 
 ppCStore :: Bool -> CStore -> Text
 ppCStore _ CEqp = "in personal equipment"
@@ -169,10 +180,11 @@ transition p tsuitable verb cLegal itemDialogState cCur cPrev = do
            , defCond = True
            , defAction = \_ -> case itemDialogState of
                INone ->
-                 if EM.null suitableLetterSlots
+                 if EM.null suitableLetterSlots && IM.null suitableNumberSlots
                  then transition p tsuitable verb cLegal IAll cCur cPrev
                  else transition p tsuitable verb cLegal ISuitable cCur cPrev
-               ISuitable | tsuitable /= allItemsName ->
+               ISuitable | suitableLetterSlots /= bagLetterSlots
+                           || suitableNumberSlots /= bagNumberSlots ->
                  transition p tsuitable verb cLegal IAll cCur cPrev
                _ -> transition p tsuitable verb cLegal INone cCur cPrev
            })
@@ -230,10 +242,10 @@ transition p tsuitable verb cLegal itemDialogState cCur cPrev = do
                         makePhrase ["What to", verb MU.:> "?"])
           ISuitable -> (suitableLetterSlots,
                         suitableLetterSlots, suitableNumberSlots,
-                        tsuitable <+> ppCur <> ".")
+                        tsuitable <+> ppCur <> ":")
           IAll      -> (bagLetterSlots,
                         bagLetterSlots, bagNumberSlots,
-                        allItemsName <+> ppCur <> ".")
+                        "Items" <+> ppCur <> ":")
   io <- itemOverlay bag (overLetterSlots, overNumberSlots)
   runDefItemKey keyDefs lettersDef io labelLetterSlots prompt
 

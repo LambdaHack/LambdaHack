@@ -59,7 +59,7 @@ data CStore =
     CGround
   | CEqp
   | CInv
-  deriving (Show, Read, Eq, Ord, Generic)
+  deriving (Show, Read, Eq, Ord, Enum, Bounded, Generic)
 
 instance Binary CStore
 
