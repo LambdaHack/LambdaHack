@@ -128,7 +128,7 @@ ppCStore _ CEqp = "in personal equipment"
 ppCStore rsharedInventory CInv = if rsharedInventory
                                  then "in shared inventory"
                                  else "in inventory"
-ppCStore _ CGround = "on the floor"
+ppCStore _ CGround = "on the ground"
 
 data DefItemKey m = DefItemKey
   { defLabel  :: Text

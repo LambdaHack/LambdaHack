@@ -56,7 +56,7 @@ The dungeon of the campaign mode game consists of 10 levels and each level
 consists of a large number of tiles. The basic tile kinds are as follows.
 
                dungeon terrain type               on-screen symbol
-               floor                              .
+               ground                             .
                corridor                           #
                wall (horizontal and vertical)     - and |
                rock or tree                       O
@@ -219,7 +219,7 @@ or aid escape.
 
 Slinging missiles at targets wounds them, consuming the weapon in the process.
 You may sling any item in your possession (press `?` to choose
-an item and press it again for a non-standard choice) or on the floor
+an item and press it again for a non-standard choice) or on the ground
 (press `-`). Only items of a few kinds inflict any damage.
 Whenever the monster's or hero's hit points reach zero, the combatant dies.
 When the last hero dies, the game ends.

@@ -453,8 +453,8 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
                     | fid == side = "fall down"
                     | bproj b = "break up"
                     | otherwise = "collapse"
-          hurtExtra | fid == side && bproj b = "be stomped flat"
-                    | fid == side = "be ground into the floor"
+          hurtExtra | fid == side && bproj b = "be reduced to dust"
+                    | fid == side = "be stomped flat"
                     | bproj b = "be shattered into little pieces"
                     | otherwise = "be reduced to a bloody pulp"
       subject <- partActorLeader aid b

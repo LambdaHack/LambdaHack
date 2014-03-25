@@ -82,7 +82,7 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
       dis pos0 =
         let tile = lvl `at` pos0
             tk = tokind tile
-            items = lvl `atI` pos0
+            floorItems = lvl `atI` pos0
             sml = EM.findWithDefault timeZero pos0 lsmell
             smlt = sml `timeDeltaToFrom` ltime
             viewActor aid Actor{bsymbol, bcolor, bhp, bproj}
@@ -124,7 +124,7 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
                 _ | smarkSmell && smlt > Delta timeZero ->
                   (timeDeltaToDigit smellTimeout smlt, rainbow pos0)
                   | otherwise ->
-                  case EM.keys items of
+                  case EM.keys floorItems of
                     [] -> (tsymbol tk, Color.defAttr {Color.fg = vcolor})
                     i : _ -> viewItem $ getItemBody i s
             vis = ES.member pos0 $ totalVisible per
