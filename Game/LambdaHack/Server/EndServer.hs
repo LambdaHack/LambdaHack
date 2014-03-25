@@ -111,11 +111,14 @@ dropAllItems aid b hit = do
         item <- getsState $ getItemBody iid
         if isDestroyed item then
           case isExplosive coitem discoS item of
-            Nothing -> execUpdAtomic $ UpdDestroyItem iid item k container
+            Nothing ->
+              -- Feedback from hit, or it's shrapnel, so no @UpdDestroyItem@.
+              execUpdAtomic $ UpdLoseItem iid item k container
             Just cgroup -> do
               let ik = fromJust $ jkind discoS item
               execUpdAtomic $ UpdDiscover (blid b) (bpos b) iid ik
-              execUpdAtomic $ UpdDestroyItem iid item k container
+              -- Explosion provides feedback, so no @UpdDestroyItem@.
+              execUpdAtomic $ UpdLoseItem iid item k container
               explodeItem aid b cgroup
         else
           execUpdAtomic $ UpdMoveItem iid k aid CEqp CGround
