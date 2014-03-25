@@ -33,6 +33,7 @@ amulet = ItemKind
   , iweight  = 30
   , itoThrow = -50  -- not dense enough
   , ifeature = [Cause $ Regeneration (2 * d 3 + dl 10)]
+  , idesc    = "A necklace of dried herbs and healing berries."
   }
 dart = ItemKind
   { isymbol  = '|'
@@ -45,6 +46,7 @@ dart = ItemKind
   , iweight  = 50
   , itoThrow = 0  -- a cheap dart
   , ifeature = [Cause $ Hurt (d 2) (d 2 + dl 2)]
+  , idesc    = "Little, but sharp and easy to throw with great speed."
   }
 gem = ItemKind
   { isymbol  = '*'
@@ -57,6 +59,7 @@ gem = ItemKind
   , iweight  = 50
   , itoThrow = 0
   , ifeature = []
+  , idesc    = "Precious, though useless. Worth around 100 gold."
   }
 gem1 = gem
   { icount   = dl 1  -- appears on max depth
@@ -78,6 +81,7 @@ currency = ItemKind
   , iweight  = 31
   , itoThrow = 0
   , ifeature = []
+  , idesc    = "Reliably valuable in every civilized place."
   }
 harpoon = ItemKind
   { isymbol  = '|'
@@ -90,6 +94,7 @@ harpoon = ItemKind
   , iweight  = 4000
   , itoThrow = 0  -- cheap but deadly
   , ifeature = [Cause $ Hurt (2 * d 2) (d 2 + 2 * dl 2)]
+  , idesc    = "A long, well balanced rod, with a cruel, barbed head."
   }
 potion = ItemKind
   { isymbol  = '!'
@@ -102,6 +107,7 @@ potion = ItemKind
   , iweight  = 200
   , itoThrow = -50  -- oily, bad grip
   , ifeature = []
+  , idesc    = "A flask of bubbly, and a little oily liquid of a suspect color."
   }
 potion1 = potion
   { ifreq    = [("useful", 5)]
@@ -125,6 +131,7 @@ ring = ItemKind
   , iweight  = 15
   , itoThrow = 0
   , ifeature = [Cause $ Searching (d 6 + 3 * dl 2)]
+  , idesc    = "Cold, solid to the touch, perfectly round, engraved on the inside, Animals don't wear those."
   }
 scroll = ItemKind
   { isymbol  = '?'
@@ -137,6 +144,7 @@ scroll = ItemKind
   , iweight  = 50
   , itoThrow = -75  -- bad shape, even rolled up
   , ifeature = []
+  , idesc    = "A haphazardly scribbled piece of parchment. May contain directions or a secret call sign."
   }
 scroll1 = scroll
   { ifreq    = [("useful", 2)]
@@ -159,6 +167,7 @@ sword = ItemKind
   , iweight  = 2000
   , itoThrow = -50  -- ensuring it hits with the tip costs speed
   , ifeature = [Cause $ Hurt (5 * d 1) (d 2 + 4 * dl 2)]
+  , idesc    = "A standard heavy weapon. Does not penetrate very effectively, but hard to block."
   }
 wand = ItemKind
   { isymbol  = '/'
@@ -171,6 +180,7 @@ wand = ItemKind
   , iweight  = 300
   , itoThrow = 25  -- magic
   , ifeature = [Fragile]
+  , idesc    = "Buzzing with dazzling light that shines even through hands that handle it."
   }
 wand1 = wand
   { ifeature = ifeature wand ++ [Cause Dominate]
@@ -186,6 +196,7 @@ fist = sword
   , iverbApply   = "punch"
   , iverbProject = "ERROR, please report: iverbProject fist"
   , ifeature = [Cause $ Hurt (5 * d 1) 0]
+  , idesc    = ""
   }
 foot = sword
   { isymbol  = '@'
@@ -194,6 +205,7 @@ foot = sword
   , iverbApply   = "kick"
   , iverbProject = "ERROR, please report: iverbProject foot"
   , ifeature = [Cause $ Hurt (5 * d 1) 0]
+  , idesc    = ""
   }
 tentacle = sword
   { isymbol  = 'S'
@@ -202,6 +214,7 @@ tentacle = sword
   , iverbApply   = "hit"
   , iverbProject = "ERROR, please report: iverbProject tentacle"
   , ifeature = [Cause $ Hurt (5 * d 1) 0]
+  , idesc    = ""
   }
 fragrance = ItemKind
   { isymbol  = '\''
@@ -214,6 +227,7 @@ fragrance = ItemKind
   , iweight  = 1
   , itoThrow = -93  -- the slowest that gets anywhere (1 step only)
   , ifeature = [Fragile]
+  , idesc    = ""
   }
 mist_healing = ItemKind
   { isymbol  = '\''
@@ -226,6 +240,7 @@ mist_healing = ItemKind
   , iweight  = 1
   , itoThrow = -87  -- the slowest that travels at least 2 steps
   , ifeature = [Cause $ Heal 1, Fragile]
+  , idesc    = ""
   }
 mist_wounding = ItemKind
   { isymbol  = '\''
@@ -238,6 +253,7 @@ mist_wounding = ItemKind
   , iweight  = 1
   , itoThrow = -87
   , ifeature = [Cause $ Heal (-1), Fragile]
+  , idesc    = ""
   }
 glass_piece = ItemKind
   { isymbol  = '\''
@@ -250,6 +266,7 @@ glass_piece = ItemKind
   , iweight  = 10
   , itoThrow = 0
   , ifeature = [Cause $ Hurt (d 1) 0, Fragile, Linger 20]
+  , idesc    = ""
   }
 smoke = ItemKind
   { isymbol  = '\''
@@ -262,4 +279,5 @@ smoke = ItemKind
   , iweight  = 1
   , itoThrow = -70
   , ifeature = [Fragile]
+  , idesc    = ""
   }

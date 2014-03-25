@@ -24,6 +24,7 @@ data ItemKind = ItemKind
   , iweight      :: !Int           -- ^ weight in grams
   , itoThrow     :: !Int           -- ^ percentage bonus to throw speed
   , ifeature     :: ![IF.Feature]  -- ^ properties
+  , idesc        :: !Text          -- ^ description
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 

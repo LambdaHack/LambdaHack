@@ -22,7 +22,7 @@ import Game.LambdaHack.Server (mainSer)
 -- with the LambdaHack-specific content definitions, and run the game.
 main :: IO ()
 main =
-  let -- Server content operations, created from server content definitions.
+  let -- Common content operations, created from content definitions.
       copsServer = Kind.COps
         { coactor   = Kind.createOps Content.ActorKind.cdefs
         , cocave    = Kind.createOps Content.CaveKind.cdefs

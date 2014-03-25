@@ -18,7 +18,7 @@ module Game.LambdaHack.Common.Item
     -- * Inventory management types
   , ItemBag, ItemDict, ItemRev
     -- * Textual description
-  , partItem, partItemWs, partItemAW
+  , partItem, partItemWs, partItemAW, itemDesc
     -- * Assorted
   , isFragile, isExplosive, isLingering, causeIEffects
   ) where
@@ -70,12 +70,12 @@ type DiscoRev = EM.EnumMap (Kind.Id ItemKind) ItemKindIx
 -- and draw an unidentified item. Full information about item is available
 -- through the @jkindIx@ index as soon as the item is identified.
 data Item = Item
-  { jkindIx  :: !ItemKindIx  -- ^ index pointing to the kind of the item
-  , jsymbol  :: !Char        -- ^ individual map symbol
-  , jname    :: !Text        -- ^ individual generic name
-  , jflavour :: !Flavour     -- ^ individual flavour
+  { jkindIx  :: !ItemKindIx    -- ^ index pointing to the kind of the item
+  , jsymbol  :: !Char          -- ^ individual map symbol
+  , jname    :: !Text          -- ^ individual generic name
+  , jflavour :: !Flavour       -- ^ individual flavour
   , jeffect  :: !(Effect Int)  -- ^ the effect when activated
-  , jweight  :: !Int         -- ^ weight in grams, obvious enough
+  , jweight  :: !Int           -- ^ weight in grams, obvious enough
   }
   deriving (Show, Eq, Ord, Generic)
 
@@ -282,3 +282,12 @@ partItemAW :: Kind.Ops ItemKind -> Discovery -> Item -> MU.Part
 partItemAW coitem disco i =
   let (name, stats) = partItem coitem disco i
   in MU.AW $ MU.Phrase [name, stats]
+
+-- TODO: also print some data from kind and from item
+itemDesc :: Kind.Ops ItemKind -> Discovery -> Item -> Text
+itemDesc coitem@Kind.Ops{okind} disco i =
+  case jkind disco i of
+    Nothing -> "This item is as unremarkable as can be."
+    Just ik ->
+      let (name, stats) = partItem coitem disco i
+      in makePhrase [name, stats MU.:> ":"] <+> idesc (okind ik)

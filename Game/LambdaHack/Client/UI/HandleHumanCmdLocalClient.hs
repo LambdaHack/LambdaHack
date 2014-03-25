@@ -53,6 +53,7 @@ import Game.LambdaHack.Common.ClientOptions
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
+import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -176,7 +177,7 @@ memberBackHuman = do
 -- | Display the common inventory of the whole party.
 inventoryHuman :: MonadClientUI m => m Slideshow
 inventoryHuman = do
-  Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
+  Kind.COps{coactor=Kind.Ops{okind}, coitem, corule} <- getsState scops
   let RuleKind{rsharedInventory} = Kind.stdRuleset corule
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -184,16 +185,16 @@ inventoryHuman = do
   let kind = okind $ bkind b
       verbInv = if calmEnough b kind
                 then "see"
-                else "paw absent-mindedly"
+                else "watch distractedly"
       subject = if rsharedInventory
                 then MU.Text $ gname fact
                 else partActor b
       itemDescr = makePhrase [MU.Capitalize $ MU.SubjectVerbSg subject verbInv]
       verb = "describe"
   ggi <- getStoreItem itemDescr verb CInv
+  disco <- getsClient sdisco
   case ggi of
-    Right _ ->
-      promptToSlideshow "This item is as unremarkable as can be."  -- TODO
+    Right ((_, item), _) -> promptToSlideshow $ itemDesc coitem disco item
     Left slides -> return slides
 
 -- * Equipment
@@ -203,15 +204,16 @@ inventoryHuman = do
 -- | Display equipment of the leader.
 equipmentHuman :: MonadClientUI m => m Slideshow
 equipmentHuman = do
+  Kind.COps{coitem} <- getsState scops
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   let subject = partActor b
       itemDescr = makePhrase [MU.Capitalize $ MU.SubjectVerbSg subject "have"]
       verb = "describe"
   ggi <- getStoreItem itemDescr verb CEqp
+  disco <- getsClient sdisco
   case ggi of
-    Right _ ->
-      promptToSlideshow "This item is as unremarkable as can be."  -- TODO
+    Right ((_, item), _) -> promptToSlideshow $ itemDesc coitem disco item
     Left slides -> return slides
 
 -- * AllOwned
