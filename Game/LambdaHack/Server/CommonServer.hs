@@ -39,16 +39,17 @@ import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
 
 execFailure :: (MonadAtomic m, MonadServer m)
-            => ActorId -> ReqFailure -> m ()
-execFailure aid failureSer = do
+            => RequestTimed -> ReqFailure -> m ()
+execFailure req failureSer = do
   -- Clients should rarely do that (only in case of invisible actors)
   -- so we report it, send a --more-- meeesage (if not AI), but do not crash
   -- (server should work OK with stupid clients, too).
+  let aid = aidOfRequestTimed req
   body <- getsState $ getActorBody aid
   let fid = bfid body
       msg = showReqFailure failureSer
-  debugPrint
-    $ "execFailure:" <+> tshow fid <+> ":" <+> msg <> "\n" <> tshow body
+  debugPrint $ "execFailure:" <+> msg <> "\n"
+               <> tshow body <> "\n" <> tshow req
   execSfxAtomic $ SfxMsgFid fid $ "Unexpected problem:" <+> msg <> "."
     -- TODO: --more--, but keep in history
 

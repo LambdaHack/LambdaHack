@@ -149,11 +149,12 @@ explodeItem aid b cgroup = do
             4 -> fmap (flip Point (y + 10)) $ randomR (x - 10, x + 10)
             _ -> assert `failure` border
         let eps = px tpxy + py tpxy
+            req = ReqProject aid tpxy eps iid CEqp
         mfail <- projectFail aid tpxy eps iid CEqp True
         case mfail of
           Nothing -> return ()
           Just ProjectBlockTerrain -> return ()
-          Just failMsg -> execFailure aid failMsg
+          Just failMsg -> execFailure req failMsg
   projectN n1
   bag2 <- getsState $ beqp . getActorBody aid
   let mn2 = EM.lookup iid bag2

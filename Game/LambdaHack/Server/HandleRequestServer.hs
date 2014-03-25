@@ -117,7 +117,7 @@ reqMove source dir = do
           addSmell source
       | otherwise ->
           -- Client foolishly tries to move into blocked, boring tile.
-          execFailure source MoveNothing
+          execFailure (ReqMove source dir) MoveNothing
 
 -- * ReqMelee
 
@@ -134,8 +134,9 @@ reqMelee source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   let adj = checkAdjacent sb tb
-  if source == target then execFailure source MeleeSelf
-  else if not adj then execFailure source MeleeDistant
+      req = ReqMelee source target
+  if source == target then execFailure req MeleeSelf
+  else if not adj then execFailure req MeleeDistant
   else do
     let sfid = bfid sb
         tfid = bfid tb
@@ -196,7 +197,8 @@ reqDisplace source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   let adj = checkAdjacent sb tb
-  if not adj then execFailure source DisplaceDistant
+      req = ReqDisplace source target
+  if not adj then execFailure req DisplaceDistant
   else do
     let lid = blid sb
     lvl <- getLevel lid
@@ -211,10 +213,10 @@ reqDisplace source target = do
           execUpdAtomic $ UpdDisplaceActor source target
           addSmell source
           addSmell target
-        _ -> execFailure source DisplaceProjectiles
+        _ -> execFailure req DisplaceProjectiles
     else do
       -- Client foolishly tries to displace an actor without access.
-      execFailure source DisplaceAccess
+      execFailure req DisplaceAccess
 
 -- * ReqAlter
 
@@ -229,7 +231,8 @@ reqAlter source tpos mfeat = do
   sb <- getsState $ getActorBody source
   let lid = blid sb
       spos = bpos sb
-  if not $ adjacent spos tpos then execFailure source AlterDistant
+      req = ReqAlter source tpos mfeat
+  if not $ adjacent spos tpos then execFailure req AlterDistant
   else do
     lvl <- getLevel lid
     let serverTile = lvl `at` tpos
@@ -254,7 +257,7 @@ reqAlter source tpos mfeat = do
     as <- getsState $ actorList (const True) lid
     if null groupsToAlter && serverTile == freshClientTile then
       -- Neither searching nor altering possible; silly client.
-      execFailure source AlterNothing
+      execFailure req AlterNothing
     else do
       if EM.null $ lvl `atI` tpos then
         if unoccupied as tpos then do
@@ -265,8 +268,8 @@ reqAlter source tpos mfeat = do
           mapM_ changeTo groupsToAlter
           -- Perform an effect, if any permitted.
           void $ triggerEffect source feats
-        else execFailure source AlterBlockActor
-      else execFailure source AlterBlockItem
+        else execFailure req AlterBlockActor
+      else execFailure req AlterBlockItem
 
 -- * ReqWait
 
@@ -287,14 +290,15 @@ reqMoveItem aid iid k fromCStore toCStore = do
               upds <- generalMoveItem iid ck c (CActor aid toCStore)
               mapM_ execUpdAtomic upds
         mapM_ gmove cs
-  if k < 1 || fromCStore == toCStore then execFailure aid ItemNothing
+      req = ReqMoveItem aid iid k fromCStore toCStore
+  if k < 1 || fromCStore == toCStore then execFailure req ItemNothing
   else if fromCStore /= CInv && toCStore /= CInv then moveItem
   else do
     Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
     b <- getsState $ getActorBody aid
     let kind = okind $ bkind b
     if calmEnough b kind then moveItem
-    else execFailure aid ItemNotCalm
+    else execFailure req ItemNotCalm
 
 -- * ReqProject
 
@@ -307,7 +311,8 @@ reqProject :: (MonadAtomic m, MonadServer m)
            -> m ()
 reqProject source tpxy eps iid cstore = do
   mfail <- projectFail source tpxy eps iid cstore False
-  maybe skip (execFailure source) mfail
+  let req = ReqProject source tpxy eps iid cstore
+  maybe skip (execFailure req) mfail
 
 -- * ReqApply
 
@@ -330,13 +335,14 @@ reqApply aid iid cstore = do
         mapM_ (\(_, c) -> execUpdAtomic $ UpdDestroyItem iid item 1 c) cs
         execSfxAtomic $ SfxActivate aid iid
         itemEffect aid aid (Just iid) item
+      req = ReqApply aid iid cstore
   if cstore /= CInv then applyItem
   else do
     Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
     b <- getsState $ getActorBody aid
     let kind = okind $ bkind b
     if calmEnough b kind then applyItem
-    else execFailure aid ItemNotCalm
+    else execFailure req ItemNotCalm
 
 -- * ReqTrigger
 
@@ -354,8 +360,9 @@ reqTrigger aid mfeat = do
         Nothing -> TileKind.tfeature $ okind serverTile
         Just feat2 | Tile.hasFeature cotile feat2 serverTile -> [feat2]
         Just _ -> []
+      req = ReqTrigger aid mfeat
   go <- triggerEffect aid feats
-  unless go $ execFailure aid TriggerNothing
+  unless go $ execFailure req TriggerNothing
 
 triggerEffect :: (MonadAtomic m, MonadServer m)
               => ActorId -> [F.Feature] -> m Bool
