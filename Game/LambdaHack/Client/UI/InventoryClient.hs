@@ -4,7 +4,6 @@ module Game.LambdaHack.Client.UI.InventoryClient
   ( floorItemOverlay, getGroupItem, getAnyItem
   ) where
 
-import Control.Arrow ((&&&))
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.Char as Char
@@ -151,25 +150,22 @@ transition :: forall m. MonadClientUI m
            -> CStore
            -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
 transition p tsuitable verb cLegal itemDialogState cCur cPrev = do
-  assert (not $ null cLegal) skip
+  assert (not $ null cLegal) skip  -- and all in cLegal are non-empty
   Kind.COps{corule} <- getsState scops
   let RuleKind{rsharedInventory} = Kind.stdRuleset corule
   (letterSlots, numberSlots) <- getsClient sslots
   leader <- getLeaderUI
-  getCStoreBag <- getsState $ \s cstore -> getCBag (CActor leader cstore) s
-  let cNotEmpty = not . EM.null . getCStoreBag
-      isCFull c = c `elem` cLegal && cNotEmpty c
-      bag = getCStoreBag cCur
-      sl = EM.filter (`EM.member` bag) letterSlots
-      slNumberSlots = IM.filter (`EM.member` bag) numberSlots
-      getItemData :: (a, ItemId) -> State -> ((ItemId, Item), (Int, a))
-      getItemData (l, iid) s =
-        ((iid, getItemBody iid s), (bag EM.! iid, l))
-  is0 <- mapM (getsState . getItemData) $ EM.assocs sl
-  isN0 <- mapM (getsState . getItemData) $ IM.assocs slNumberSlots
-  let slP = EM.fromAscList $ map (snd . snd &&& fst . fst)
-                           $ filter (\((_, item), _) -> p item) is0
-      isp = filter (p . snd . fst) is0
+  bag <- getsState $ getCBag (CActor leader cCur)
+  let bagLetterSlots = EM.filter (`EM.member` bag) letterSlots
+      bagNumberSlots = IM.filter (`EM.member` bag) numberSlots
+      getItemData :: (a, ItemId) -> State -> ((a, ItemId), (Item, Int))
+      getItemData (l, iid) s = ((l, iid), (getItemBody iid s, bag EM.! iid))
+  is0 <- mapM (getsState . getItemData) $ EM.assocs bagLetterSlots
+  isN0 <- mapM (getsState . getItemData) $ IM.assocs bagNumberSlots
+  let isp = filter (p . fst . snd) is0
+      bagLetterSlotsP = EM.fromAscList $ map fst isp
+      isNp = filter (p . fst . snd) isN0
+      bagNumberSlotsP = IM.fromAscList $ map fst isNp
       keyDefs :: [(K.Key, DefItemKey m)]
       keyDefs = filter (defCond . snd)
         [ (K.Char '?', DefItemKey
@@ -177,7 +173,7 @@ transition p tsuitable verb cLegal itemDialogState cCur cPrev = do
            , defCond = True
            , defAction = \_ -> case itemDialogState of
                INone ->
-                 if EM.null slP
+                 if EM.null bagLetterSlotsP
                  then transition p tsuitable verb cLegal IAll cCur cPrev
                  else transition p tsuitable verb cLegal ISuitable cCur cPrev
                ISuitable | tsuitable /= allItemsName ->
@@ -186,66 +182,72 @@ transition p tsuitable verb cLegal itemDialogState cCur cPrev = do
            })
         , (K.Char '-', DefItemKey
            { defLabel = "-"
-           , defCond = isCFull CGround && (isCFull CInv || isCFull CEqp)
+           , defCond = CGround `elem` cLegal
+                       && (CInv `elem` cLegal || CEqp `elem` cLegal)
            , defAction = \_ ->
                let cNext = if cCur == CGround then cPrev else CGround
                in transition p tsuitable verb cLegal itemDialogState cNext cCur
            })
         , (K.Char '/', DefItemKey
            { defLabel = "/"
-           , defCond = isCFull CInv && isCFull CEqp
+           , defCond = CInv `elem` cLegal && CEqp `elem` cLegal
            , defAction = \_ ->
                let cNext = if cCur == CInv then CEqp else CInv
                in transition p tsuitable verb cLegal itemDialogState cNext cCur
            })
         , (K.Return, DefItemKey
-           { defLabel = let bestSlot = slotChar $ maximum $ map (snd . snd) isp
+           { defLabel = let bestSlot = slotChar $ maximum $ map (fst . fst) isp
                         in "RET(" <> T.singleton bestSlot <> ")"
            , defCond = not $ null isp
            , defAction = \_ ->
-               let (iidItem, (k, _)) = maximumBy (compare `on` snd . snd) isp
-               in return $ Right (iidItem, (k, cCur))
+               let ((_, iid), (item, k)) =
+                     maximumBy (compare `on` fst . fst) isp
+               in return $ Right ((iid, item), (k, cCur))
            })
-        , (K.Char '0', DefItemKey
+        , (K.Char '0', DefItemKey  -- TODO: accept any number and pick the item
            { defLabel = "0"
-           , defCond = not $ IM.null slNumberSlots
+           , defCond = not $ IM.null bagNumberSlots
            , defAction = \_ -> case isN0 of
                [] -> assert `failure` "no numbered items"
-                            `twith` (slNumberSlots, isN0)
-               ((iidItem), (k, _)) : _ ->
-                 return $ Right (iidItem, (k, cCur))
+                            `twith` (bagNumberSlots, isN0)
+               ((_, iid), (item, k)) : _ ->
+                 return $ Right ((iid, item), (k, cCur))
            })
         ]
       lettersDef :: DefItemKey m
       lettersDef = DefItemKey
-        { defLabel = slotRange $ map (snd . snd) ims
+        { defLabel = slotRange $ EM.keys ims
         , defCond = True
         , defAction = \key -> case key of
-            K.Char l -> case find ((SlotChar l ==) . snd . snd) is0 of
+            K.Char l -> case find ((SlotChar l ==) . fst . fst) is0 of
               Nothing -> assert `failure` "unexpected slot"
                                 `twith` (l, is0)
-              Just (iidItem, (k, _)) -> return $ Right (iidItem, (k, cCur))
+              Just ((_, iid), (item, k)) ->
+                return $ Right ((iid, item), (k, cCur))
             _ -> assert `failure` "unexpected key:" `twith` K.showKey key
         }
       ppCur = ppCStore rsharedInventory cCur
-      (ims, slOver, prompt) = case itemDialogState of
-        INone     -> (isp, EM.empty, makePhrase ["What to", verb MU.:> "?"])
-        ISuitable -> (isp, slP, tsuitable <+> ppCur <> ".")
-        IAll      -> (is0, sl, allItemsName <+> ppCur <> ".")
-  io <- itemOverlay bag (slOver, IM.empty)
+      (ims, overLetterSlots, overNumberSlots, prompt) = case itemDialogState of
+        INone     -> (bagLetterSlotsP, EM.empty, IM.empty,
+                      makePhrase ["What to", verb MU.:> "?"])
+        ISuitable -> (bagLetterSlotsP, bagLetterSlotsP, bagNumberSlotsP,
+                      tsuitable <+> ppCur <> ".")
+        IAll      -> (bagLetterSlots, bagLetterSlots, bagNumberSlots,
+                      allItemsName <+> ppCur <> ".")
+  io <- itemOverlay bag (overLetterSlots, overNumberSlots)
   runDefItemKey keyDefs lettersDef io ims prompt
 
 runDefItemKey :: MonadClientUI m
               => [(K.Key, DefItemKey m)]
               -> DefItemKey m
               -> Overlay
-              -> [((ItemId, Item), (Int, SlotChar))]
+              -> EM.EnumMap SlotChar ItemId
               -> Text
               -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
 runDefItemKey keyDefs lettersDef io ims prompt = do
-  let itemKeys = let mls = map (snd . snd) ims
-                     ks = map (K.Char . slotChar) mls ++ map fst keyDefs
-                 in zipWith K.KM (repeat K.NoModifier) ks
+  let itemKeys = let slotKeys = map (K.Char . slotChar) (EM.keys ims)
+                     defKeys = map fst keyDefs
+                 in zipWith K.KM (repeat K.NoModifier) $ slotKeys ++ defKeys
       choice = let letterRange = defLabel lettersDef
                    letterLabel | T.null letterRange = []
                                | otherwise = [letterRange]
