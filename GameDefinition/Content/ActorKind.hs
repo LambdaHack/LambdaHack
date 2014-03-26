@@ -30,7 +30,7 @@ hero = ActorKind
   , asight  = True
   , asmell  = False
   , aiq     = 15  -- higher that that leads to looping movement
-  , aregen  = 500
+  , aregen  = maxBound
   , acanDo  = [minBound..maxBound]
   }
 
@@ -60,7 +60,7 @@ eye = ActorKind
   , asight  = True
   , asmell  = False
   , aiq     = 8
-  , aregen  = 100
+  , aregen  = maxBound
   , acanDo  = [minBound..maxBound]
   }
 fastEye = ActorKind
@@ -88,6 +88,6 @@ nose = ActorKind
   , asight  = False
   , asmell  = True
   , aiq     = 0
-  , aregen  = 100
+  , aregen  = maxBound
   , acanDo  = [minBound..maxBound]
   }
