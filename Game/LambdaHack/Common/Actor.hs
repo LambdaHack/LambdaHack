@@ -51,6 +51,7 @@ data Actor = Actor
   , btime       :: !Time                 -- ^ absolute time of next action
   , bwait       :: !Bool                 -- ^ is the actor waiting right now?
   , bfid        :: !FactionId            -- ^ faction the actor belongs to
+  , boldfid     :: !FactionId            -- ^ previous faction of the actor
   , bproj       :: !Bool                 -- ^ is a projectile? (shorthand only,
                                          --   this can be deduced from bkind)
   }
@@ -88,6 +89,7 @@ actorTemplate bkind bsymbol bname bcolor bspeed bhp bcalm btrajectory
       boldlid = blid
       binv    = EM.empty
       bwait   = False
+      boldfid = bfid
   in Actor{..}
 
 -- | Add time taken by a single step at the actor's current speed.
@@ -184,6 +186,7 @@ instance Binary Actor where
     put btime
     put bwait
     put bfid
+    put boldfid
     put bproj
   get = do
     bkind <- get
@@ -203,5 +206,6 @@ instance Binary Actor where
     btime <- get
     bwait <- get
     bfid <- get
+    boldfid <- get
     bproj <- get
     return $! Actor{..}

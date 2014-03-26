@@ -162,9 +162,10 @@ effectMindprobe target = do
 effectDominate :: (MonadAtomic m, MonadServer m)
                => ActorId -> ActorId -> m Bool
 effectDominate source target = do
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   sb <- getsState (getActorBody source)
   tb <- getsState (getActorBody target)
-  if bfid tb == bfid sb || bproj tb then do  -- TODO: drop the projectile?
+  if bfid tb == bfid sb || bproj tb then do
     execSfxAtomic $ SfxEffect target Effect.NoEffect
     return False
   else do
@@ -175,17 +176,20 @@ effectDominate source target = do
     deduceKilled tb
     ais <- getsState $ getCarriedAssocs tb
     execUpdAtomic $ UpdLoseActor target tb ais
-    -- TODO: if domination stays permanent (undecided yet), perhaps increase
+    -- TODO:  perhaps increase
     -- kill count here or record original factions and increase count only
     -- when the recreated actor really dies.
-    let bNew = tb {bfid = bfid sb}
+    let baseSpeed = aspeed $ okind $ bkind tb
+        bNew = tb {bfid = bfid sb, boldfid = bfid tb,
+                   bcalm = 0, bspeed = baseSpeed}
     execUpdAtomic $ UpdCreateActor target bNew ais
     leaderOld <- getsState $ gleader . (EM.! bfid sb) . sfactionD
-    -- Halve the speed as a side-effect of domination.
-    let speed = bspeed bNew
-        delta = speedScale (1%2) speed
-    when (delta > speedZero) $
-      execUpdAtomic $ UpdHasteActor target (speedNegate delta)
+    -- Halve the speed as a side-effect of first domination, or keep it reset
+    -- if dominating again. TODO: teach AI to prefer dominating again.
+    let halfSpeed = speedScale (1%2) baseSpeed
+        delta | boldfid tb == bfid tb = speedNegate halfSpeed  -- slow down
+              | otherwise = speedZero
+    when (delta /= speedZero) $ execUpdAtomic $ UpdHasteActor target delta
     execUpdAtomic $ UpdLeadFaction (bfid sb) leaderOld (Just target)
     return True
 
