@@ -86,10 +86,13 @@ lookAt detailed tilePrefix canSee pos aid msg = do
   Kind.COps{coitem, cotile=cotile@Kind.Ops{okind}} <- getsState scops
   lidV <- viewedLevel
   lvl <- getLevel lidV
+  b <- getsState $ getActorBody aid
   subject <- partAidLeader aid
   s <- getState
   let is = lvl `atI` pos
-      verb = MU.Text $ if canSee then "notice" else "remember"
+      verb = MU.Text $ if pos == bpos b
+                       then "stand on"
+                       else if canSee then "notice" else "remember"
   disco <- getsClient sdisco
   let nWs (iid, k) = partItemWs coitem disco k (getItemBody iid s)
       isd = case detailed of
