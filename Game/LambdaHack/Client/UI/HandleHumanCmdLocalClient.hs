@@ -174,24 +174,26 @@ memberBackHuman = do
 
 -- * Inventory
 
+-- TODO: When equipment is displayed, let TAB switch the leader (without
+-- announcing that) and show the equipment of the new leader.
 -- | Display the common inventory of the whole party.
 inventoryHuman :: MonadClientUI m => m Slideshow
-inventoryHuman = do
-  Kind.COps{coactor=Kind.Ops{okind}, coitem, corule} <- getsState scops
-  let RuleKind{rsharedInventory} = Kind.stdRuleset corule
+inventoryHuman = cstoreMenu CInv
+
+cstoreMenu :: MonadClientUI m => CStore -> m Slideshow
+cstoreMenu cstore = do
+  Kind.COps{coactor=Kind.Ops{okind}, coitem} <- getsState scops
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
-  fact <- getsState $ (EM.! bfid b) . sfactionD
-  let kind = okind $ bkind b
+  let subject = partActor b
+      kind = okind $ bkind b
       verbInv = if calmEnough b kind
-                then "see"
-                else "watch distractedly"
-      subject = if rsharedInventory
-                then MU.Text $ gname fact
-                else partActor b
-      itemDescr = makePhrase [MU.Capitalize $ MU.SubjectVerbSg subject verbInv]
+                then "notice"
+                else "paw distractedly"
+      invBlurb = makePhrase [MU.Capitalize $ MU.SubjectVerbSg subject verbInv]
+      stdBlurb = makePhrase [MU.Capitalize $ MU.SubjectVerbSg subject "see"]
       verb = "describe"
-  ggi <- getStoreItem itemDescr verb CInv
+  ggi <- getStoreItem invBlurb stdBlurb verb cstore
   disco <- getsClient sdisco
   case ggi of
     Right ((_, item), _) -> promptToSlideshow $ itemDesc coitem disco item
@@ -199,22 +201,9 @@ inventoryHuman = do
 
 -- * Equipment
 
--- TODO: When equipment is displayed, let TAB switch the leader (without
--- announcing that) and show the equipment of the new leader.
 -- | Display equipment of the leader.
 equipmentHuman :: MonadClientUI m => m Slideshow
-equipmentHuman = do
-  Kind.COps{coitem} <- getsState scops
-  leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
-  let subject = partActor b
-      itemDescr = makePhrase [MU.Capitalize $ MU.SubjectVerbSg subject "have"]
-      verb = "describe"
-  ggi <- getStoreItem itemDescr verb CEqp
-  disco <- getsClient sdisco
-  case ggi of
-    Right ((_, item), _) -> promptToSlideshow $ itemDesc coitem disco item
-    Left slides -> return slides
+equipmentHuman = cstoreMenu CEqp
 
 -- * AllOwned
 

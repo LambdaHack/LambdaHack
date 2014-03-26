@@ -50,7 +50,7 @@ getGroupItem syms itemsName verb cLegalRaw cLegalAfterCalm = do
       cLegal = filter cNotEmpty cLegalAfterCalm  -- don't display empty stores
       p i = jsymbol i `elem` syms
       tsuitable = makePhrase [MU.Capitalize (MU.Ws itemsName)]
-  getItem p tsuitable verb cLegalRaw cLegal True INone
+  getItem p tsuitable tsuitable verb cLegalRaw cLegal True INone
 
 -- | Let the human player choose any item from a list of items
 -- and let him specify the number of items.
@@ -63,7 +63,7 @@ getAnyItem :: MonadClientUI m
            -> Bool      -- ^ whether to ask for the number of items
            -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
 getAnyItem verb cLegalRaw cLegalAfterCalm askWhenLone askNumber = do
-  soc <- getItem (const True) "Items" verb
+  soc <- getItem (const True) "Items" "Items" verb
                  cLegalRaw cLegalAfterCalm askWhenLone INone
   case soc of
     Left slides -> return $ Left slides
@@ -76,13 +76,14 @@ getAnyItem verb cLegalRaw cLegalAfterCalm askWhenLone askNumber = do
 -- | Display all items from a store and let the human player choose any
 -- or switch to any other non-empty store.
 getStoreItem :: MonadClientUI m
-             => Text      -- ^ how to describe displayed items
+             => Text      -- ^ how to describe displayed items in inventory
+             -> Text      -- ^ how to describe displayed items elsewhere
              -> MU.Part   -- ^ the verb describing the action
              -> CStore  -- ^ initial container
              -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
-getStoreItem itemDescr verb cInitial = do
+getStoreItem invBlurb stdBlurb verb cInitial = do
   let cLegalRaw = cInitial : delete cInitial [minBound..maxBound]
-  getItem (const True) itemDescr verb cLegalRaw cLegalRaw True ISuitable
+  getItem (const True) invBlurb stdBlurb verb cLegalRaw cLegalRaw True ISuitable
 
 data ItemDialogState = INone | ISuitable | IAll deriving Eq
 
@@ -90,7 +91,8 @@ data ItemDialogState = INone | ISuitable | IAll deriving Eq
 -- item from a list of items.
 getItem :: MonadClientUI m
         => (Item -> Bool)   -- ^ which items to consider suitable
-        -> Text             -- ^ how to describe suitable items
+        -> Text             -- ^ how to describe suitable items in inventory
+        -> Text             -- ^ how to describe suitable items elsewhere
         -> MU.Part          -- ^ the verb describing the action
         -> [CStore]         -- ^ initial legal containers
         -> [CStore]         -- ^ legal containers after Calm taken into account
@@ -98,7 +100,8 @@ getItem :: MonadClientUI m
                             --   in the starting container is suitable
         -> ItemDialogState  -- ^ the dialog state to start in
         -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
-getItem p tsuitable verb cLegalRaw cLegal askWhenLone initalState = do
+getItem p tinvSuitable tsuitable verb
+        cLegalRaw cLegal askWhenLone initalState = do
   Kind.COps{corule} <- getsState scops
   let RuleKind{rsharedInventory} = Kind.stdRuleset corule
   leader <- getLeaderUI
@@ -116,7 +119,8 @@ getItem p tsuitable verb cLegalRaw cLegal askWhenLone initalState = do
       let cStartPrev = if cStart == CGround
                        then if CEqp `elem` cLegal then CEqp else CInv
                        else cStart
-      transition p tsuitable verb cLegal initalState cStart cStartPrev
+      transition p tinvSuitable tsuitable verb
+                 cLegal initalState cStart cStartPrev
     _ -> if null rawAssocs then do
            let tLegal = map (MU.Text . ppCStore rsharedInventory) cLegalRaw
                ppLegal = makePhrase [MU.WWxW "nor" tLegal]
@@ -138,14 +142,15 @@ data DefItemKey m = DefItemKey
 
 transition :: forall m. MonadClientUI m
            => (Item -> Bool)  -- ^ which items to consider suitable
-           -> Text            -- ^ how to describe suitable items
+           -> Text            -- ^ how to describe suitable items in inventory
+           -> Text            -- ^ how to describe suitable items elsewhere
            -> MU.Part         -- ^ the verb describing the action
            -> [CStore]
            -> ItemDialogState
            -> CStore
            -> CStore
            -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
-transition p tsuitable verb cLegal itemDialogState cCur cPrev = do
+transition p tinvSuitable tsuitable verb cLegal itemDialogState cCur cPrev = do
   assert (not $ null cLegal) skip  -- and all in cLegal are non-empty
   Kind.COps{corule} <- getsState scops
   let RuleKind{rsharedInventory} = Kind.stdRuleset corule
@@ -168,12 +173,16 @@ transition p tsuitable verb cLegal itemDialogState cCur cPrev = do
            , defAction = \_ -> case itemDialogState of
                INone ->
                  if EM.null suitableLetterSlots && IM.null suitableNumberSlots
-                 then transition p tsuitable verb cLegal IAll cCur cPrev
-                 else transition p tsuitable verb cLegal ISuitable cCur cPrev
+                 then transition p tinvSuitable tsuitable verb
+                                 cLegal IAll cCur cPrev
+                 else transition p tinvSuitable tsuitable verb
+                                 cLegal ISuitable cCur cPrev
                ISuitable | suitableLetterSlots /= bagLetterSlots
                            || suitableNumberSlots /= bagNumberSlots ->
-                 transition p tsuitable verb cLegal IAll cCur cPrev
-               _ -> transition p tsuitable verb cLegal INone cCur cPrev
+                 transition p tinvSuitable tsuitable verb
+                            cLegal IAll cCur cPrev
+               _ -> transition p tinvSuitable tsuitable verb
+                               cLegal INone cCur cPrev
            })
         , (K.Char '-', DefItemKey
            { defLabel = "-"
@@ -181,14 +190,16 @@ transition p tsuitable verb cLegal itemDialogState cCur cPrev = do
                        && (CInv `elem` cLegal || CEqp `elem` cLegal)
            , defAction = \_ ->
                let cNext = if cCur == CGround then cPrev else CGround
-               in transition p tsuitable verb cLegal itemDialogState cNext cCur
+               in transition p tinvSuitable tsuitable verb
+                             cLegal itemDialogState cNext cCur
            })
         , (K.Char '/', DefItemKey
            { defLabel = "/"
            , defCond = CInv `elem` cLegal && CEqp `elem` cLegal
            , defAction = \_ ->
                let cNext = if cCur == CInv then CEqp else CInv
-               in transition p tsuitable verb cLegal itemDialogState cNext cCur
+               in transition p tinvSuitable tsuitable verb
+                             cLegal itemDialogState cNext cCur
            })
         , (K.Return, DefItemKey
            { defLabel = case EM.maxViewWithKey suitableLetterSlots of
@@ -222,6 +233,7 @@ transition p tsuitable verb cLegal itemDialogState cCur cPrev = do
             _ -> assert `failure` "unexpected key:" `twith` K.showKey key
         }
       ppCur = ppCStore rsharedInventory cCur
+      tsuit = if cCur == CInv then tinvSuitable else tsuitable
       (labelLetterSlots, overLetterSlots, overNumberSlots, prompt) =
         case itemDialogState of
           INone     -> (suitableLetterSlots,
@@ -229,7 +241,7 @@ transition p tsuitable verb cLegal itemDialogState cCur cPrev = do
                         makePhrase ["What to", verb MU.:> "?"])
           ISuitable -> (suitableLetterSlots,
                         suitableLetterSlots, suitableNumberSlots,
-                        tsuitable <+> ppCur <> ":")
+                        tsuit <+> ppCur <> ":")
           IAll      -> (bagLetterSlots,
                         bagLetterSlots, bagNumberSlots,
                         "Items" <+> ppCur <> ":")
