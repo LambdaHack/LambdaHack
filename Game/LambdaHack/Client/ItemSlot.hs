@@ -20,6 +20,7 @@ import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.State
@@ -59,10 +60,10 @@ allSlots = map SlotChar $ ['a'..'z'] ++ ['A'..'Z']
 
 -- | Assigns a slot to an item, for inclusion in the inventory or equipment
 -- of a hero. Tries to to use the requested slot, if any.
-assignSlot :: Item -> Actor -> ItemSlots -> SlotChar
+assignSlot :: Item -> FactionId -> Maybe Actor -> ItemSlots -> SlotChar
            -> State
            -> Either SlotChar Int
-assignSlot item body (letterSlots, numberSlots) lastSlot s =
+assignSlot item fid mbody (letterSlots, numberSlots) lastSlot s =
   if jsymbol item == '$'
   then Left $ SlotChar '$'
   else case free of
@@ -74,8 +75,12 @@ assignSlot item body (letterSlots, numberSlots) lastSlot s =
   candidates = take (length allSlots)
                $ drop (1 + fromJust (elemIndex lastSlot allSlots))
                $ cycle allSlots
-  onPerson = sharedAllOwned body s
-  onGroud = sdungeon s EM.! blid body `atI` bpos body
+  onPerson = maybe (sharedAllOwnedFid fid s)
+                   (\body -> sharedAllOwned body s)
+                   mbody
+  onGroud = maybe EM.empty
+                  (\body -> sdungeon s EM.! blid body `atI` bpos body)
+                  mbody
   inBags = ES.unions $ map EM.keysSet [onPerson, onGroud]
   f l = maybe True (`ES.notMember` inBags) $ EM.lookup l letterSlots
   free = filter f candidates

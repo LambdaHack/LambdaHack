@@ -23,6 +23,7 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.WidgetClient
+import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -115,20 +116,13 @@ getItem p tinvSuit tsuitable verb cLegalRaw cLegal askWhenLone initalState = do
       return $ Right ((iid, item), (k, cStart))
     (_ : _, _ : _) -> do
       when (CGround `elem` cLegal) $
-        mapM_ (updateItemSlot leader) $ EM.keys $ getCStoreBag CGround
+        mapM_ (updateItemSlot (Just leader)) $ EM.keys $ getCStoreBag CGround
       transition p tinvSuit tsuitable verb cLegal initalState
     _ -> if null rawAssocs then do
            let tLegal = map (MU.Text . ppCStore rsharedInventory) cLegalRaw
                ppLegal = makePhrase [MU.WWxW "nor" tLegal]
            failWith $ "no items" <+> ppLegal
          else failSer ItemNotCalm
-
-ppCStore :: Bool -> CStore -> Text
-ppCStore _ CEqp = "in personal equipment"
-ppCStore rsharedInventory CInv = if rsharedInventory
-                                 then "in shared inventory"
-                                 else "in inventory"
-ppCStore _ CGround = "on the ground"
 
 data DefItemKey m = DefItemKey
   { defLabel  :: Text

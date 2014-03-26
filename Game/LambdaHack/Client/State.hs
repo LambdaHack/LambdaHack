@@ -62,7 +62,7 @@ data StateClient = StateClient
   , sreport      :: !Report        -- ^ current messages
   , shistory     :: !History       -- ^ history of messages
   , sdisplayed   :: !(EM.EnumMap LevelId Time)
-                                   -- ^ actor moves displayed up to this time
+                                   -- ^ moves are displayed up to this time
   , sundo        :: ![CmdAtomic]   -- ^ atomic commands performed to date
   , sdisco       :: !Discovery     -- ^ remembered item discoveries
   , sfper        :: !FactionPers   -- ^ faction perception indexed by levels

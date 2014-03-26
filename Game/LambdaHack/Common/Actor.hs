@@ -10,6 +10,7 @@ module Game.LambdaHack.Common.Actor
     -- * Assorted
   , ActorDict, smellTimeout, checkAdjacent
   , mapActorItems_, mapActorInv_, mapActorEqp_
+  , ppCStore, ppContainer
   ) where
 
 import Data.Binary
@@ -152,6 +153,17 @@ mapActorEqp_ :: Monad m => (ItemId -> Int -> m a) -> Actor -> m ()
 mapActorEqp_ f Actor{beqp} = do
   let is = EM.assocs beqp
   mapM_ (uncurry f) is
+
+ppCStore :: Bool -> CStore -> Text
+ppCStore _ CEqp = "in personal equipment"
+ppCStore rsharedInventory CInv = if rsharedInventory
+                                 then "in shared inventory"
+                                 else "in inventory"
+ppCStore _ CGround = "on the ground"
+
+ppContainer :: Bool -> Container -> Text
+ppContainer _ CFloor{} = "on the ground nearby"
+ppContainer shared (CActor _ cstore) = ppCStore shared cstore
 
 instance Binary Actor where
   put Actor{..} = do

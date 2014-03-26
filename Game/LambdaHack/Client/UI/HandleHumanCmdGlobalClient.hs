@@ -209,7 +209,7 @@ moveItemHuman cLegalRaw toCStore verbRaw auto = do
             return $ Right $ ReqMoveItem leader iid k fromCStore toCStore
       if fromCStore /= CGround then msgAndSer  -- slot already assigned
       else do
-        updateItemSlot leader iid
+        updateItemSlot (Just leader) iid
         msgAndSer
         -- TODO:
         -- if notOverfull then msgAndSer

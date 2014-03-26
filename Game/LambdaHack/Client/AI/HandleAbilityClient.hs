@@ -151,7 +151,7 @@ pickup aid = do
       kind = okind $ bkind body
   case mapMaybe mapDesirable $ EM.assocs floorItems of
     (iid, k) : _ -> do  -- pick up first desirable item, if any
-      updateItemSlot aid iid
+      updateItemSlot (Just aid) iid
       return $! returN "pickup" $ ReqMoveItem aid iid k CGround CEqp
     [] | calmEnough body kind -> do
       let RuleKind{ritemEqp, rsharedInventory} = Kind.stdRuleset corule

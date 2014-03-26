@@ -60,12 +60,11 @@ reinitGame = do
   pers <- getsServer sper
   knowMap <- getsServer $ sknowMap . sdebugSer
   -- This state is quite small, fit for transmition to the client.
-  -- The biggest part is content, which really needs to be updated
+  -- The biggest part is content, which needs to be updated
   -- at this point to keep clients in sync with server improvements.
-  fromGlobal <- getsState localFromGlobal
   s <- getState
-  let defLoc | knowMap = s
-             | otherwise = fromGlobal
+  let defLocal | knowMap = s
+               | otherwise = localFromGlobal s
   discoS <- getsServer sdisco
   let misteriousSymbols = ritemProject $ Kind.stdRuleset corule
       sdisco = let f ik = isymbol (okind ik) `notElem` misteriousSymbols
@@ -73,7 +72,7 @@ reinitGame = do
   sdebugCli <- getsServer $ sdebugCli . sdebugSer
   modeName <- getsServer $ sgameMode . sdebugSer
   broadcastUpdAtomic
-    $ \fid -> UpdRestart fid sdisco (pers EM.! fid) defLoc sdebugCli modeName
+    $ \fid -> UpdRestart fid sdisco (pers EM.! fid) defLocal sdebugCli modeName
   populateDungeon
 
 mapFromFuns :: (Bounded a, Enum a, Ord b) => [a -> b] -> M.Map b a

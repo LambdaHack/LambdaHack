@@ -4,7 +4,7 @@
 module Game.LambdaHack.Common.ActorState
   ( fidActorNotProjAssocs, actorAssocsLvl, actorAssocs, actorList
   , actorNotProjAssocsLvl, actorNotProjAssocs, actorNotProjList
-  , calculateTotal, sharedInv, sharedAllOwned
+  , calculateTotal, sharedInv, sharedAllOwned, sharedAllOwnedFid
   , getInvBag, getCBag, getActorBag, nearbyFreePoints, whereTo
   , posToActors, posToActor, getItemBody, memActor, getActorBody
   , getCarriedAssocs, getEqpAssocs, getEqpKA, getInvAssocs, getFloorAssocs
@@ -128,6 +128,11 @@ sharedEqp body s =
 
 sharedAllOwned :: Actor -> State -> ItemBag
 sharedAllOwned body s = EM.unionWith (+) (sharedInv body s) (sharedEqp body s)
+
+sharedAllOwnedFid :: FactionId -> State -> ItemBag
+sharedAllOwnedFid fid s =
+  let bs = fidActorNotProjList fid s
+  in EM.unionsWith (+) $ map binv bs ++ map beqp bs
 
 -- | Price an item, taking count into consideration.
 itemPrice :: (Item, Int) -> Int

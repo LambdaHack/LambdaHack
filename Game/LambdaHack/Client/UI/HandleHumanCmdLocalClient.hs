@@ -241,21 +241,18 @@ allOwnedHuman = do
 -- optional, since they have a clear representation in the UI elsewhere.
 selectActorHuman :: MonadClientUI m => m Slideshow
 selectActorHuman = do
-  mleader <- getsClient _sleader
-  case mleader of
-    Nothing -> failMsg "no leader picked, cannot select"
-    Just leader -> do
-      body <- getsState $ getActorBody leader
-      wasMemeber <- getsClient $ ES.member leader . sselected
-      let upd = if wasMemeber
-                then ES.delete leader  -- already selected, deselect instead
-                else ES.insert leader
-      modifyClient $ \cli -> cli {sselected = upd $ sselected cli}
-      let subject = partActor body
-      msgAdd $ makeSentence [subject, if wasMemeber
-                                      then "deselected"
-                                      else "selected"]
-      return mempty
+  leader <- getLeaderUI
+  body <- getsState $ getActorBody leader
+  wasMemeber <- getsClient $ ES.member leader . sselected
+  let upd = if wasMemeber
+            then ES.delete leader  -- already selected, deselect instead
+            else ES.insert leader
+  modifyClient $ \cli -> cli {sselected = upd $ sselected cli}
+  let subject = partActor body
+  msgAdd $ makeSentence [subject, if wasMemeber
+                                  then "deselected"
+                                  else "selected"]
+  return mempty
 
 -- * SelectNone
 
@@ -669,25 +666,22 @@ epsIncrHuman b = do
 
 tgtClearHuman :: MonadClientUI m => m Slideshow
 tgtClearHuman = do
-  mleader <- getsClient _sleader
-  case mleader of
-    Nothing -> return mempty
-    Just leader -> do
-      tgt <- getsClient $ getTarget leader
-      case tgt of
-        Just _ -> do
-          modifyClient $ updateTarget leader (const Nothing)
-          return mempty
-        Nothing -> do
-          scursorOld <- getsClient scursor
-          b <- getsState $ getActorBody leader
-          let scursor = case scursorOld of
-                TEnemy _ permit -> TEnemy leader permit
-                TEnemyPos _ _ _ permit -> TEnemy leader permit
-                TPoint{} -> TPoint (blid b) (bpos b)
-                TVector{} -> TVector (Vector 0 0)
-          modifyClient $ \cli -> cli {scursor}
-          doLook
+  leader <- getLeaderUI
+  tgt <- getsClient $ getTarget leader
+  case tgt of
+    Just _ -> do
+      modifyClient $ updateTarget leader (const Nothing)
+      return mempty
+    Nothing -> do
+      scursorOld <- getsClient scursor
+      b <- getsState $ getActorBody leader
+      let scursor = case scursorOld of
+            TEnemy _ permit -> TEnemy leader permit
+            TEnemyPos _ _ _ permit -> TEnemy leader permit
+            TPoint{} -> TPoint (blid b) (bpos b)
+            TVector{} -> TVector (Vector 0 0)
+      modifyClient $ \cli -> cli {scursor}
+      doLook
 
 -- * Cancel
 

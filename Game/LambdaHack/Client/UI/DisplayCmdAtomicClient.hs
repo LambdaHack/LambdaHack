@@ -38,6 +38,7 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.ModeKind
+import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 
 -- * RespUpdAtomicUI
@@ -63,32 +64,33 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
     side <- getsClient sside
     when (bfid body == side && not (bproj body)) stopPlayBack
   UpdCreateItem iid item k c -> do
-    case c of
-      CActor aid cstore -> updateItemSlots aid iid cstore
-      _ -> return ()
+    Kind.COps{corule} <- getsState scops
+    let RuleKind{rsharedInventory} = Kind.stdRuleset corule
+    updateItemSlot Nothing iid
+    itemVerbMU item k $ MU.Text $ "appear" <+> ppContainer rsharedInventory c
     stopPlayBack
-    itemVerbMU item k "drop to the ground"
   UpdDestroyItem _ item k _ -> itemVerbMU item k "disappear"
   UpdSpotActor aid body _ -> createActorUI aid body verbose "be spotted"
   UpdLoseActor aid body _ ->
     destroyActorUI aid body "be missing in action" "be lost" verbose
   UpdSpotItem iid item k c -> do
-    let spotOnGround = do
-          scursorOld <- getsClient scursor
-          case scursorOld of
-            TEnemy{} -> return ()  -- probably too important to overwrite
-            TEnemyPos{} -> return ()
-            _ -> do
-              (lid, p) <- posOfContainer c
-              modifyClient $ \cli -> cli {scursor = TPoint lid p}
-          stopPlayBack
-          -- TODO: perhaps don't spam for already seen items;
-          -- very hard to do
-          itemVerbMU item k "be spotted"
-    case c of
-      CFloor{} -> spotOnGround
-      CActor _ CGround -> spotOnGround
-      CActor aid cstore -> updateItemSlots aid iid cstore
+    -- We assign slots to all items visible on the floor, but some of the slots
+    -- are later on recycled and then we report spotting the items again.
+    (letterSlots, numberSlots) <- getsClient sslots
+    case ( lookup iid $ map swap $ EM.assocs letterSlots
+         , lookup iid $ map swap $ IM.assocs numberSlots ) of
+      (Nothing, Nothing) -> do
+        updateItemSlot Nothing iid
+        scursorOld <- getsClient scursor
+        case scursorOld of
+          TEnemy{} -> return ()  -- probably too important to overwrite
+          TEnemyPos{} -> return ()
+          _ -> do
+            (lid, p) <- posOfContainer c
+            modifyClient $ \cli -> cli {scursor = TPoint lid p}
+        itemVerbMU item k "be spotted"
+        stopPlayBack
+      _ -> return ()  -- seen recently (still has a slot assigned)
   UpdLoseItem{} -> skip
   -- Move actors and items.
   UpdMoveActor aid _ _ -> lookAtMove aid
@@ -297,38 +299,32 @@ moveItemUI :: MonadClientUI m
            => Bool -> ItemId -> Int -> ActorId -> CStore -> CStore -> m ()
 moveItemUI verbose iid k aid c1 c2 = do
   Kind.COps{coitem} <- getsState scops
+  side <- getsClient sside
+  b <- getsState $ getActorBody aid
   case (c1, c2) of
     (CGround, cstore) -> do
-      updateItemSlots aid iid cstore
-      b <- getsState $ getActorBody aid
-      unless (bproj b) $ do
-        mleader <- getsClient _sleader
-        if Just aid == mleader then do
-          item <- getsState $ getItemBody iid
-          disco <- getsClient sdisco
-          (letterSlots, _) <- getsClient sslots
-          bag <- getsState $ getCBag $ CActor aid cstore
-          let n = bag EM.! iid
-          case lookup iid $ map swap $ EM.assocs letterSlots of
-            Just l -> msgAdd $ makePhrase
-                        [ "\n"
-                        , slotLabel $ Left l
-                        , partItemWs coitem disco n item
-                        , "\n" ]
-            Nothing -> return ()
-        else aiVerbMU aid "get" iid k
-    (_, CGround) | verbose ->
-      aiVerbMU aid "drop" iid k
+      when (bfid b == side) $ updateItemSlot (Just aid) iid
+      mleader <- getsClient _sleader
+      if Just aid == mleader then do
+        item <- getsState $ getItemBody iid
+        disco <- getsClient sdisco
+        (letterSlots, _) <- getsClient sslots
+        bag <- getsState $ getCBag $ CActor aid cstore
+        let n = bag EM.! iid
+        case lookup iid $ map swap $ EM.assocs letterSlots of
+          Just l -> msgAdd $ makePhrase
+                      [ "\n"
+                      , slotLabel $ Left l
+                      , partItemWs coitem disco n item
+                      , "\n" ]
+          Nothing -> return ()
+      else aiVerbMU aid "get" iid k
+    (_, CGround) -> do
+      when verbose $ aiVerbMU aid "drop" iid k
+      if bfid b == side
+        then updateItemSlot (Just aid) iid
+        else updateItemSlot Nothing iid
     _ -> return ()
-
-updateItemSlots :: MonadClientUI m => ActorId -> ItemId -> CStore -> m ()
-updateItemSlots aid iid cstore = do
-  when (cstore /= CGround) $ do
-    -- Update items slots, in case the item was picked up by
-    -- the AI client for the same faction.
-    side <- getsClient sside
-    b <- getsState $ getActorBody aid
-    when (bfid b == side && not (bproj b)) $ void $ updateItemSlot aid iid
 
 displaceActorUI :: MonadClientUI m => ActorId -> ActorId -> m ()
 displaceActorUI source target = do
