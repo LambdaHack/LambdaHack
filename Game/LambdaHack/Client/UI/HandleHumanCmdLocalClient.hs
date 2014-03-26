@@ -450,6 +450,8 @@ moveCursorHuman dir n = do
 -- Normally expects targeting mode and so that a leader is picked.
 doLook :: MonadClientUI m => m Slideshow
 doLook = do
+  Kind.COps{cotile=Kind.Ops{ouniqGroup}} <- getsState scops
+  let unknownId = ouniqGroup "unknown space"
   stgtMode <- getsClient stgtMode
   case stgtMode of
     Nothing -> return mempty
@@ -475,8 +477,9 @@ doLook = do
                      subject = MU.WWandW subjects
                      verb = "be here"
                  in makeSentence [MU.SubjectVerbSg subject verb]
-          vis | not canSee = "you cannot see"
-              | not aims = "you cannot penetrate"
+          vis | lvl `at` p == unknownId = "that is"
+              | not canSee = "you remember"
+              | not aims = "you are aware of"
               | otherwise = "you see"
       -- Show general info about current position.
       lookMsg <- lookAt True vis canSee p leader enemyMsg
