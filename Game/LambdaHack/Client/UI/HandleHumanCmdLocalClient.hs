@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.UI.HandleHumanCmdLocalClient
   ( -- * Assorted commands
     gameDifficultyCycle
   , pickLeaderHuman, memberCycleHuman, memberBackHuman
-  , inventoryHuman, equipmentHuman, allOwnedHuman
+  , inventoryHuman, equipmentHuman, groundHuman, allOwnedHuman
   , selectActorHuman, selectNoneHuman, clearHuman, repeatHuman, recordHuman
   , historyHuman, markVisionHuman, markSmellHuman, markSuspectHuman
   , helpHuman, mainMenuHuman, macroHuman
@@ -204,6 +204,12 @@ cstoreMenu cstore = do
 -- | Display equipment of the leader.
 equipmentHuman :: MonadClientUI m => m Slideshow
 equipmentHuman = cstoreMenu CEqp
+
+-- * Ground
+
+-- | Display items on the ground under the leader.
+groundHuman :: MonadClientUI m => m Slideshow
+groundHuman = cstoreMenu CGround
 
 -- * AllOwned
 

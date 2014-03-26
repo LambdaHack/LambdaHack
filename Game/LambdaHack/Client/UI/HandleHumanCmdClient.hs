@@ -57,6 +57,7 @@ cmdAction cmd = case cmd of
   MemberBack -> fmap Left memberBackHuman
   Inventory -> fmap Left inventoryHuman
   Equipment -> fmap Left equipmentHuman
+  Ground -> fmap Left groundHuman
   AllOwned -> fmap Left allOwnedHuman
   SelectActor -> fmap Left selectActorHuman
   SelectNone -> addNoSlides selectNoneHuman

@@ -4,11 +4,11 @@ module Client.UI.Content.KeyKind ( standardKeys ) where
 
 import Control.Arrow (first)
 
+import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Content.KeyKind
+import Game.LambdaHack.Client.UI.HumanCmd
 import qualified Game.LambdaHack.Common.Effect as Effect
 import qualified Game.LambdaHack.Common.Feature as F
-import Game.LambdaHack.Client.UI.HumanCmd
-import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Common.Misc
 
 standardKeys :: KeyKind
@@ -97,6 +97,7 @@ standardKeys = KeyKind
                                  "equip" "an item" False))
       , ("s", (CmdItem, MoveItem [CEqp] CInv
                                  "stash" "and share an item" False))
+      , ("G", (CmdItem, Ground))
       , ("A", (CmdItem, AllOwned))
       , ("q", (CmdItem, Apply [ApplyItem { verb = "quaff"
                                          , object = "potion"
