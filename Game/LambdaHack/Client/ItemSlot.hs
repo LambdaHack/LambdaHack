@@ -67,10 +67,8 @@ assignSlot item fid mbody (letterSlots, numberSlots) lastSlot s =
   if jsymbol item == '$'
   then Left $ SlotChar '$'
   else case free of
-    [] -> Right $ case IM.maxViewWithKey numberSlots of
-      Nothing -> 0
-      Just ((maxK, _), _) -> maxK + 1
     freeChar : _ -> Left freeChar
+    [] -> Right $ head freeNumbers
  where
   candidates = take (length allSlots)
                $ drop (1 + fromJust (elemIndex lastSlot allSlots))
@@ -84,6 +82,8 @@ assignSlot item fid mbody (letterSlots, numberSlots) lastSlot s =
   inBags = ES.unions $ map EM.keysSet [onPerson, onGroud]
   f l = maybe True (`ES.notMember` inBags) $ EM.lookup l letterSlots
   free = filter f candidates
+  g l = maybe True (`ES.notMember` inBags) $ IM.lookup l numberSlots
+  freeNumbers = filter g [0..]
 
 slotLabel :: Either SlotChar Int -> MU.Part
 slotLabel (Left c) = MU.Text $ T.pack $ slotChar c : " -"
