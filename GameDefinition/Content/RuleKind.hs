@@ -76,5 +76,5 @@ standard = RuleKind
   , rleadLevelClips = 100
   , rscoresFile = "scores"
   , rsavePrefix = "save"
-  , rsharedInventory = False
+  , rsharedInventory = True
   }
