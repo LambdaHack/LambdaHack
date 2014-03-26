@@ -7,6 +7,7 @@ module Game.LambdaHack.Client.UI.DrawClient
 
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import qualified Data.IntMap.Strict as IM
 import Data.List
 import Data.Maybe
 import Data.Text (Text)
@@ -82,7 +83,12 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
       dis pos0 =
         let tile = lvl `at` pos0
             tk = tokind tile
-            floorItems = lvl `atI` pos0
+            floorBag = lvl `atI` pos0
+            (letterSlots, numberSlots) = sslots cli
+            bagLetterSlots = EM.filter (`EM.member` floorBag) letterSlots
+            bagNumberSlots = IM.filter (`EM.member` floorBag) numberSlots
+            floorIids = reverse (EM.elems bagLetterSlots)
+                        ++ IM.elems bagNumberSlots
             sml = EM.findWithDefault timeZero pos0 lsmell
             smlt = sml `timeDeltaToFrom` ltime
             viewActor aid Actor{bsymbol, bcolor, bhp, bproj}
@@ -124,9 +130,9 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
                 _ | smarkSmell && smlt > Delta timeZero ->
                   (timeDeltaToDigit smellTimeout smlt, rainbow pos0)
                   | otherwise ->
-                  case EM.keys floorItems of
+                  case floorIids of
                     [] -> (tsymbol tk, Color.defAttr {Color.fg = vcolor})
-                    i : _ -> viewItem $ getItemBody i s
+                    iid : _ -> viewItem $ getItemBody iid s
             vis = ES.member pos0 $ totalVisible per
             a = case dm of
                   ColorBW -> Color.defAttr
