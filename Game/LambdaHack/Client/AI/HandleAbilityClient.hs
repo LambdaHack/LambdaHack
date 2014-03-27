@@ -70,12 +70,18 @@ actionStrategy aid = do
       condhpTooLow = hpTooLow  -- require the actor's HP low enough
   mleader <- getsClient _sleader
   actorAbs <- actorAbilities aid mleader
-  let prefix :: [(Ability, Bool, m (Strategy RequestTimed))]
+  let stratToFreq :: MonadStateRead m
+                  => Int -> m (Strategy RequestTimed)
+                  -> m (Frequency RequestTimed)
+      stratToFreq scale mstrat = do
+        st <- mstrat
+        return $! scaleFreq scale $ bestVariant st  -- TODO: flatten instead?
+      prefix :: [(Ability, Bool, m (Strategy RequestTimed))]
       prefix =
         [ (Ability.Heal, not condAnyAdjacent && condhpTooLow,
            return reject)  -- TODO
         , (Ability.Trigger, condhpTooLow,
-           fmap liftFrequency $ triggerFreq aid)  -- flee via stairs
+           triggerFreq aid)  -- flee via stairs
         , (Ability.Flee, condAnyAdjacent && condhpTooLow,
            return reject)  -- TODO
         , (Ability.Displace, condAnyAdjacent,
@@ -85,18 +91,17 @@ actionStrategy aid = do
         , (Ability.Melee, condAnyAdjacent,
            melee aid)  -- melee target or blocker only
         , (Ability.Pickup, True, pickup aid)  -- unconditionally
-        , (Ability.Displace, True, displace aid) ]  -- when path blocked
+        , (Ability.Displace, True, displace aid)  -- when path blocked
+        , (Ability.Trigger, condAbsent,
+           triggerFreq aid) ]
       distant :: [(Ability, Bool, m (Frequency RequestTimed))]
       distant =
-        [ (Ability.Trigger, condAbsent,
-           triggerFreq aid)  -- no fleeing if foe close
-        , (Ability.Ranged, condPresent, rangedFreq aid)
-        , (Ability.Tools, condPresent, toolsFreq aid)  -- tool can affect foe
-        , (Ability.Chase, condPresent, chaseFreq) ]
-      chaseFreq :: MonadStateRead m => m (Frequency RequestTimed)
-      chaseFreq = do
-        st <- chase aid True
-        return $! scaleFreq 30 $ bestVariant st
+        [ (Ability.Ranged, condPresent,
+           stratToFreq 4 (rangedFreq aid))
+        , (Ability.Tools, condPresent,
+           stratToFreq 1 (toolsFreq aid))  -- tools can affect the foe
+        , (Ability.Chase, condPresent,
+           stratToFreq 30 (chase aid True)) ]
       suffix =
         [ (Ability.Melee, condAnyAdjacent, melee aid)  -- TODO: melee any
         , (Ability.Flee, condhpTooLow,
@@ -239,7 +244,7 @@ melee aid = do
     return $ liftFrequency freq
 
 -- Fast monsters don't pay enough attention to features.
-triggerFreq :: MonadClient m => ActorId -> m (Frequency RequestTimed)
+triggerFreq :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 triggerFreq aid = do
   cops@Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
   dungeon <- getsState sdungeon
@@ -283,14 +288,15 @@ triggerFreq aid = do
         F.Cause ef -> effectToBenefit cops b ef
         _ -> 0
       benFeat = zip (map ben feats) feats
-  return $! toFreq "triggerFreq" $ [ (benefit, ReqTrigger aid (Just feat))
-                                   | (benefit, feat) <- benFeat
-                                   , benefit > 0 ]
+  return $! liftFrequency $ toFreq "triggerFreq"
+         $ [ (benefit, ReqTrigger aid (Just feat))
+           | (benefit, feat) <- benFeat
+           , benefit > 0 ]
 
 -- Actors require sight to use ranged combat and intelligence to throw
 -- or zap anything else than obvious physical missiles.
 rangedFreq :: MonadClient m
-           => ActorId -> m (Frequency RequestTimed)
+           => ActorId -> m (Strategy RequestTimed)
 rangedFreq aid = do
   cops@Kind.COps{ coactor=Kind.Ops{okind}
                 , coitem=coitem@Kind.Ops{okind=iokind}
@@ -343,14 +349,14 @@ rangedFreq aid = do
                -- and no actors or obstracles along the path
                && steps == chessDist bpos fpos
             then toFreq "throwFreq"
-                 $ throwFreq eqpBag 4 CEqp
-                   ++ throwFreq floorItems 8 CGround
+                 $ throwFreq eqpBag 1 CEqp
+                   ++ throwFreq floorItems 2 CGround
             else toFreq "throwFreq: not possible" []
-      return $! freq
-    _ -> return $! toFreq "throwFreq: no enemy target" []
+      return $! liftFrequency freq
+    _ -> return reject
 
 -- Tools use requires significant intelligence and sometimes literacy.
-toolsFreq :: MonadClient m => ActorId -> m (Frequency RequestTimed)
+toolsFreq :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 toolsFreq aid = do
   cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   disco <- getsClient sdisco
@@ -372,9 +378,9 @@ toolsFreq aid = do
                   Just _ki -> effectToBenefit cops b $ jeffect i
         , benefit > 0
         , jsymbol i `elem` mastered ]
-  return $! toFreq "useFreq" $
-    useFreq eqpBag 1 CEqp
-    ++ useFreq floorItems 2 CGround
+  return $! liftFrequency $ toFreq "useFreq"
+         $ useFreq eqpBag 1 CEqp
+           ++ useFreq floorItems 2 CGround
 
 displace :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 displace aid = do
