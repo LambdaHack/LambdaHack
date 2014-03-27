@@ -66,45 +66,35 @@ actionStrategy aid = do
       lootIsWeapon = isJust $ strongestSword cops floorAssocs
       weaponinInv = isJust $ strongestSword cops invAssocs
       weaponAvailable = lootIsWeapon || weaponinInv
-      isDistant = (`elem` [ Ability.Trigger
-                          , Ability.Ranged
-                          , Ability.Tools
-                          , Ability.Chase ])
-      -- TODO: this is too fragile --- depends on order of abilities
-      (prefix, rest)    = break isDistant actorAbs
-      (distant, suffix) = partition isDistant rest
-      aFrequency :: Ability -> m (Frequency RequestTimed)
-      aFrequency Ability.Trigger = if foeVisible then return mzero
-                                   else triggerFreq aid
-      aFrequency Ability.Ranged  = rangedFreq aid
-      aFrequency Ability.Tools   = if not foeVisible then return mzero
-                                   else toolsFreq aid
-      aFrequency Ability.Chase   = if not foeVisible then return mzero
-                                   else chaseFreq
-      aFrequency ab              = assert `failure` "unexpected ability"
-                                          `twith` (ab, distant, actorAbs)
+      distant :: [(Ability, m (Frequency RequestTimed))]
+      distant =
+        [ (Ability.Trigger, if foeVisible then return mzero
+                            else triggerFreq aid)
+        , (Ability.Ranged, rangedFreq aid)
+        , (Ability.Tools, if not foeVisible then return mzero
+                          else toolsFreq aid)
+        , (Ability.Chase, if not foeVisible then return mzero
+                          else chaseFreq) ]
       chaseFreq :: MonadStateRead m => m (Frequency RequestTimed)
       chaseFreq = do
         st <- chase aid True
         return $! scaleFreq 30 $ bestVariant st
-      aStrategy :: Ability -> m (Strategy RequestTimed)
-      aStrategy Ability.Heal   = return reject  -- TODO
-      aStrategy Ability.Flee   = return reject  -- TODO
-      aStrategy Ability.Melee | foeVisible = melee aid
-      aStrategy Ability.Melee  = return reject
-      aStrategy Ability.Displace = displace aid
-      aStrategy Ability.Pickup | not foeVisible
-                                 || hasNoWeapon && weaponAvailable = pickup aid
-      aStrategy Ability.Pickup = return reject
-      aStrategy Ability.Wander = chase aid False
-      aStrategy ab             = assert `failure` "unexpected ability"
-                                        `twith`(ab, actorAbs)
-      sumS abis = do
-        fs <- mapM aStrategy abis
-        return $! msum fs
-      sumF abis = do
-        fs <- mapM aFrequency abis
-        return $! msum fs
+      prefix :: [(Ability, m (Strategy RequestTimed))]
+      prefix =
+        [ (Ability.Heal, return reject)  -- TODO
+        , (Ability.Flee, return reject)  -- TODO
+        , (Ability.Melee, if foeVisible then melee aid else return reject)
+        , (Ability.Displace, displace aid)
+        , (Ability.Pickup, if not foeVisible
+                              || hasNoWeapon && weaponAvailable
+                           then pickup aid
+                           else return reject) ]
+      suffix =
+        [ (Ability.Wander, chase aid False) ]
+      sumS abAction = fmap msum $ sequence $ map snd
+                      $ filter ((`elem` actorAbs) . fst) abAction
+      sumF abFreq = fmap msum $ sequence $ map snd
+                    $ filter ((`elem` actorAbs) . fst) abFreq
       combineDistant as = fmap liftFrequency $ sumF as
   sumPrefix <- sumS prefix
   comDistant <- combineDistant distant
