@@ -44,6 +44,23 @@ import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind as TileKind
 
+data FoeRequirement =
+    FoePresent  -- require that any foe is visible
+  | FoeAbsent  -- require that no foe is visible
+  deriving Eq
+
+checkFoe :: MonadClient m => ActorId -> FoeRequirement -> m Bool
+checkFoe aid foeR = do
+  btarget <- getsClient $ getTarget aid
+  let mfAid =
+        case btarget of
+          Just (TEnemy foeAid _) -> Just foeAid
+          _ -> Nothing
+      foeVisible = isJust mfAid
+  case foeR of
+    FoePresent -> return $! foeVisible
+    FoeAbsent -> return $! not foeVisible
+
 -- | AI strategy based on actor's sight, smell, intelligence, etc.
 -- Never empty.
 actionStrategy :: forall m. MonadClient m
@@ -51,25 +68,33 @@ actionStrategy :: forall m. MonadClient m
 actionStrategy aid = do
   mleader <- getsClient _sleader
   actorAbs <- actorAbilities aid mleader
-  let distant :: [(Ability, m (Frequency RequestTimed))]
+  let prefix :: [(Ability, m (Strategy RequestTimed))]
+      prefix =
+        [ (Ability.Heal, return reject)  -- TODO, when not under attack
+        , (Ability.Trigger,
+           fmap liftFrequency $ triggerFreq aid FoePresent)  -- flee via stairs
+        , (Ability.Flee, return reject)  -- TODO, when under melee attack
+        , (Ability.Displace, displace aid)  -- when others need access
+        , (Ability.Pickup, pickup aid) -- when no weapon and can pick up one
+        , (Ability.Melee, melee aid)  -- melee target or blocker
+        , (Ability.Displace, displace aid)  -- when path blocked
+        , (Ability.Pickup, pickup aid) ]  -- unconditionally
+      distant :: [(Ability, m (Frequency RequestTimed))]
       distant =
-        [ (Ability.Trigger, triggerFreq aid)
-        , (Ability.Ranged, rangedFreq aid)
-        , (Ability.Tools, toolsFreq aid)
-        , (Ability.Chase, chaseFreq) ]
+        [ (Ability.Trigger, triggerFreq aid FoeAbsent)
+        , (Ability.Ranged, rangedFreq aid)  -- obviously, only if foe visible
+        , (Ability.Tools, toolsFreq aid FoePresent)
+        , (Ability.Chase, chaseFreq) ]  -- if foe visible
       chaseFreq :: MonadStateRead m => m (Frequency RequestTimed)
       chaseFreq = do
-        st <- chase aid True
+        st <- chase aid FoePresent
         return $! scaleFreq 30 $ bestVariant st
-      prefix :: [(Ability, m (Strategy RequestTimed))]
-      prefix =
-        [ (Ability.Heal, return reject)  -- TODO
-        , (Ability.Flee, return reject)  -- TODO
-        , (Ability.Melee, melee aid)
-        , (Ability.Displace, displace aid)
-        , (Ability.Pickup, pickup aid) ]
       suffix =
-        [ (Ability.Wander, chase aid False) ]
+        [ (Ability.Melee, melee aid)  -- melee any
+        , (Ability.Trigger,
+           fmap liftFrequency $ triggerFreq aid FoePresent)  -- flee via stairs
+        , (Ability.Flee, return reject)  -- TODO, when foes still visible
+        , (Ability.Wander, chase aid FoeAbsent) ]  -- if no visible
       sumS abAction = fmap msum $ sequence $ map snd
                       $ filter ((`elem` actorAbs) . fst) abAction
       sumF abFreq = fmap msum $ sequence $ map snd
@@ -202,15 +227,11 @@ melee aid = do
     return $ liftFrequency freq
 
 -- Fast monsters don't pay enough attention to features.
-triggerFreq :: MonadClient m => ActorId -> m (Frequency RequestTimed)
-triggerFreq aid = do
- btarget <- getsClient $ getTarget aid
- let mfAid =
-      case btarget of
-        Just (TEnemy foeAid _) -> Just foeAid
-        _ -> Nothing
-     foeVisible = isJust mfAid
- if foeVisible then return mzero
+triggerFreq :: MonadClient m
+            => ActorId -> FoeRequirement -> m (Frequency RequestTimed)
+triggerFreq aid foeR = do
+ abort <- checkFoe aid foeR
+ if abort then return mzero
  else do
   cops@Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
   dungeon <- getsState sdungeon
@@ -321,15 +342,11 @@ rangedFreq aid = do
     _ -> return $! toFreq "throwFreq: no enemy target" []
 
 -- Tools use requires significant intelligence and sometimes literacy.
-toolsFreq :: MonadClient m => ActorId -> m (Frequency RequestTimed)
-toolsFreq aid = do
- btarget <- getsClient $ getTarget aid
- let mfAid =
-      case btarget of
-        Just (TEnemy foeAid _) -> Just foeAid
-        _ -> Nothing
-     foeVisible = isJust mfAid
- if not foeVisible then return mzero
+toolsFreq :: MonadClient m
+          => ActorId -> FoeRequirement -> m (Frequency RequestTimed)
+toolsFreq aid foeR = do
+ abort <- checkFoe aid foeR
+ if abort then return mzero
  else do
   cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   disco <- getsClient sdisco
@@ -394,21 +411,16 @@ displaceTowards aid source target = do
       _ -> return reject  -- many projectiles, can't displace
   else return reject
 
-chase :: MonadClient m => ActorId -> Bool -> m (Strategy RequestTimed)
-chase aid requireFoeVisible = do
- btarget <- getsClient $ getTarget aid
- let mfAid =
-      case btarget of
-        Just (TEnemy foeAid _) -> Just foeAid
-        _ -> Nothing
-     foeVisible = isJust mfAid
- if not foeVisible && requireFoeVisible then return mzero
+chase :: MonadClient m => ActorId -> FoeRequirement -> m (Strategy RequestTimed)
+chase aid foeR = do
+ abort <- checkFoe aid foeR
+ if abort then return mzero
  else do
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   str <- case mtgtMPath of
     Just (_, Just (p : q : _, (goal, _))) -> moveTowards aid p q goal
     _ -> return reject  -- goal reached
-  if foeVisible  -- don't pick fights, but displace, if the real foe is close
+  if foeR == FoePresent  -- displace, don't pick fights, if the target beckons
     then Traversable.mapM (moveOrRunAid True aid) str
     else Traversable.mapM (moveOrRunAid False aid) str
 
