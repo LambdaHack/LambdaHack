@@ -33,6 +33,7 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ActorKind
@@ -226,13 +227,12 @@ lookAtMove aid = do
     lookMsg <- lookAt False "" True (bpos body) aid ""
     msgAdd lookMsg
   fact <- getsState $ (EM.! bfid body) . sfactionD
-  Level{lxsize, lysize} <- getsState $ (EM.! blid body) . sdungeon
   if side == bfid body then do
     foes <- getsState $ actorList (isAtWar fact) (blid body)
-    when (foesAdjacent lxsize lysize (bpos body) foes) stopPlayBack
+    when (any (adjacent (bpos body) . bpos) foes) stopPlayBack
   else when (isAtWar fact side) $ do
     friends <- getsState $ actorNotProjList (== side) (blid body)
-    when (foesAdjacent lxsize lysize (bpos body) friends) stopPlayBack
+    when (any (adjacent (bpos body) . bpos) friends) stopPlayBack
 
 -- | Sentences such as \"Dog barks loudly.\".
 actorVerbMU :: MonadClientUI m => ActorId -> Actor -> MU.Part -> m ()

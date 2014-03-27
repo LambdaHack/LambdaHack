@@ -24,6 +24,7 @@ import Game.LambdaHack.Common.Ability (Ability)
 import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import qualified Game.LambdaHack.Common.Dice as Dice
 import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
@@ -45,9 +46,13 @@ import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind as TileKind
 
 data FoeRequirement =
-    FoePresent  -- require that any foe is visible
-  | FoeAbsent  -- require that no foe is visible
-  deriving Eq
+    FrPresent  -- require that the target foe is visible
+  | FrAbsent  -- require that the target foe is not visible
+  | FrAnyAdjacent  -- require that any non-dying foe is adjacent
+  | FrNot FoeRequirement
+  | FrAnd FoeRequirement FoeRequirement
+  | FrOr FoeRequirement FoeRequirement
+  | FrPredicate (Actor -> Bool)  -- concerns the actor, not the target foe
 
 checkFoe :: MonadClient m => ActorId -> FoeRequirement -> m Bool
 checkFoe aid foeR = do
@@ -58,47 +63,84 @@ checkFoe aid foeR = do
           _ -> Nothing
       foeVisible = isJust mfAid
   case foeR of
-    FoePresent -> return $! foeVisible
-    FoeAbsent -> return $! not foeVisible
+    FrPresent -> return $! foeVisible
+    FrAbsent -> return $! not foeVisible
+    FrAnyAdjacent -> do
+      b <- getsState $ getActorBody aid
+      fact <- getsState $ \s -> sfactionD s EM.! bfid b
+      allFoes <- getsState $ filter (not . actorDying . snd)
+                             . actorNotProjAssocs (isAtWar fact) (blid b)
+      return $! any (adjacent (bpos b) . bpos . snd) allFoes
+    FrNot fR -> fmap not $ checkFoe aid fR
+    FrAnd fR1 fR2 -> do
+      c1 <- checkFoe aid fR1
+      if c1 then checkFoe aid fR2 else return False
+    FrOr fR1 fR2 -> do
+      c1 <- checkFoe aid fR1
+      if not c1 then return False else checkFoe aid fR2
+    FrPredicate p -> do
+      b <- getsState $ getActorBody aid
+      return $ p b
 
 -- | AI strategy based on actor's sight, smell, intelligence, etc.
 -- Never empty.
 actionStrategy :: forall m. MonadClient m
                => ActorId -> m (Strategy RequestTimed)
 actionStrategy aid = do
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   mleader <- getsClient _sleader
   actorAbs <- actorAbilities aid mleader
-  let prefix :: [(Ability, m (Strategy RequestTimed))]
+  let hpTooLow b =
+        let kind = okind $ bkind b
+        in bhp b == 1 || 5 * bhp b < Dice.maxDice (ahp kind)
+      frhpTooLow = FrPredicate hpTooLow
+      frAlways = FrPredicate $ const True
+      prefix :: [(Ability, FoeRequirement, m (Strategy RequestTimed))]
       prefix =
-        [ (Ability.Heal, return reject)  -- TODO, when not under attack
-        , (Ability.Trigger,
-           fmap liftFrequency $ triggerFreq aid FoePresent)  -- flee via stairs
-        , (Ability.Flee, return reject)  -- TODO, when under melee attack
-        , (Ability.Displace, displace aid)  -- when others need access
-        , (Ability.Pickup, pickup aid) -- when no weapon and can pick up one
-        , (Ability.Melee, melee aid)  -- melee target or blocker
-        , (Ability.Displace, displace aid)  -- when path blocked
-        , (Ability.Pickup, pickup aid) ]  -- unconditionally
-      distant :: [(Ability, m (Frequency RequestTimed))]
+        [ (Ability.Heal, FrNot FrAnyAdjacent `FrAnd` frhpTooLow,
+           return reject)  -- TODO
+        , (Ability.Trigger, frhpTooLow,
+           fmap liftFrequency $ triggerFreq aid)  -- flee via stairs
+        , (Ability.Flee, FrAnyAdjacent `FrAnd` frhpTooLow,
+           return reject)  -- TODO
+        , (Ability.Displace, FrAnyAdjacent,
+           displace aid)  -- TODO: swap with foe, when others need access to foe
+        , (Ability.Pickup, frAlways,
+           pickup aid) -- TODO: only when no weapon and can pick up one
+        , (Ability.Melee, FrAnyAdjacent,
+           melee aid)  -- melee target or blocker only
+        , (Ability.Pickup, frAlways, pickup aid)  -- unconditionally
+        , (Ability.Displace, frAlways, displace aid) ]  -- when path blocked
+      distant :: [(Ability, FoeRequirement, m (Frequency RequestTimed))]
       distant =
-        [ (Ability.Trigger, triggerFreq aid FoeAbsent)
-        , (Ability.Ranged, rangedFreq aid)  -- obviously, only if foe visible
-        , (Ability.Tools, toolsFreq aid FoePresent)
-        , (Ability.Chase, chaseFreq) ]  -- if foe visible
+        [ (Ability.Trigger, FrAbsent,
+           triggerFreq aid)  -- no fleeing if foe close
+        , (Ability.Ranged, FrPresent, rangedFreq aid)
+        , (Ability.Tools, FrPresent, toolsFreq aid)  -- the tool can affect foe
+        , (Ability.Chase, FrPresent, chaseFreq) ]
       chaseFreq :: MonadStateRead m => m (Frequency RequestTimed)
       chaseFreq = do
-        st <- chase aid FoePresent
+        st <- chase aid True
         return $! scaleFreq 30 $ bestVariant st
       suffix =
-        [ (Ability.Melee, melee aid)  -- melee any
-        , (Ability.Trigger,
-           fmap liftFrequency $ triggerFreq aid FoePresent)  -- flee via stairs
-        , (Ability.Flee, return reject)  -- TODO, when foes still visible
-        , (Ability.Wander, chase aid FoeAbsent) ]  -- if no visible
-      sumS abAction = fmap msum $ sequence $ map snd
-                      $ filter ((`elem` actorAbs) . fst) abAction
-      sumF abFreq = fmap msum $ sequence $ map snd
-                    $ filter ((`elem` actorAbs) . fst) abFreq
+        [ (Ability.Melee, FrAnyAdjacent, melee aid)  -- TODO: melee any
+        , (Ability.Flee, frhpTooLow,
+           return reject)  -- TODO: can't fight back and enemies still close
+        , (Ability.Wander, frAlways, chase aid False) ]
+      -- TODO: don't msum not to evaluate until needed
+      filterFr :: (Ability, FoeRequirement, m a) -> m Bool
+      filterFr (ab, fr, _) =
+        if ab `elem` actorAbs
+        then checkFoe aid fr
+        else return False
+      sumS abAction = do
+        as <- filterM filterFr abAction
+        strats <- sequence $ map (\(_, _, m) -> m) as
+        return $! msum strats
+      sumF abFreq = do
+        as <- filterM filterFr abFreq
+        strats <- sequence $ map (\(_, _, m) -> m) as
+        return $! msum strats
       combineDistant as = fmap liftFrequency $ sumF as
   sumPrefix <- sumS prefix
   comDistant <- combineDistant distant
@@ -217,22 +259,16 @@ melee aid = do
   -- TODO: depending on actor kind, sometimes move this in strategy
   -- to a place after movement
   if not $ nullStrategy str1 then return str1 else do
-    Level{lxsize, lysize} <- getLevel $ blid b
     allFoes <- getsState $ filter (not . actorDying . snd)
                            . actorNotProjAssocs (isAtWar fact) (blid b)
-    let vic = vicinity lxsize lysize $ bpos b
-        adjFoes = filter ((`elem` vic) . bpos . snd) allFoes
+    let adjFoes = filter (adjacent (bpos b) . bpos . snd) allFoes
         -- TODO: prioritize somehow
         freq = uniformFreq "melee adjacent" $ map (ReqMelee aid . fst) adjFoes
     return $ liftFrequency freq
 
 -- Fast monsters don't pay enough attention to features.
-triggerFreq :: MonadClient m
-            => ActorId -> FoeRequirement -> m (Frequency RequestTimed)
-triggerFreq aid foeR = do
- abort <- checkFoe aid foeR
- if abort then return mzero
- else do
+triggerFreq :: MonadClient m => ActorId -> m (Frequency RequestTimed)
+triggerFreq aid = do
   cops@Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
   dungeon <- getsState sdungeon
   explored <- getsClient sexplored
@@ -342,12 +378,8 @@ rangedFreq aid = do
     _ -> return $! toFreq "throwFreq: no enemy target" []
 
 -- Tools use requires significant intelligence and sometimes literacy.
-toolsFreq :: MonadClient m
-          => ActorId -> FoeRequirement -> m (Frequency RequestTimed)
-toolsFreq aid foeR = do
- abort <- checkFoe aid foeR
- if abort then return mzero
- else do
+toolsFreq :: MonadClient m => ActorId -> m (Frequency RequestTimed)
+toolsFreq aid = do
   cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   disco <- getsClient sdisco
   b <- getsState $ getActorBody aid
@@ -411,18 +443,14 @@ displaceTowards aid source target = do
       _ -> return reject  -- many projectiles, can't displace
   else return reject
 
-chase :: MonadClient m => ActorId -> FoeRequirement -> m (Strategy RequestTimed)
-chase aid foeR = do
- abort <- checkFoe aid foeR
- if abort then return mzero
- else do
+chase :: MonadClient m => ActorId -> Bool -> m (Strategy RequestTimed)
+chase aid doDisplace = do
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   str <- case mtgtMPath of
     Just (_, Just (p : q : _, (goal, _))) -> moveTowards aid p q goal
     _ -> return reject  -- goal reached
-  if foeR == FoePresent  -- displace, don't pick fights, if the target beckons
-    then Traversable.mapM (moveOrRunAid True aid) str
-    else Traversable.mapM (moveOrRunAid False aid) str
+  -- If @doDisplace@: don't pick fights, assuming the target is more important.
+  Traversable.mapM (moveOrRunAid doDisplace aid) str
 
 moveTowards :: MonadClient m
             => ActorId -> Point -> Point -> Point -> m (Strategy Vector)

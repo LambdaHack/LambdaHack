@@ -8,14 +8,13 @@ module Game.LambdaHack.Common.ActorState
   , getInvBag, getCBag, getActorBag, nearbyFreePoints, whereTo
   , posToActors, posToActor, getItemBody, memActor, getActorBody
   , getCarriedAssocs, getEqpAssocs, getEqpKA, getInvAssocs, getFloorAssocs
-  , tryFindHeroK, foesAdjacent, getLocalTime, isSpawnFaction
+  , tryFindHeroK, getLocalTime, isSpawnFaction
   , itemPrice, calmEnough
   ) where
 
 import Control.Exception.Assert.Sugar
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
-import qualified Data.EnumSet as ES
 import Data.List
 import Data.Maybe
 
@@ -141,12 +140,6 @@ itemPrice (item, jcount) =
     '$' -> jcount
     '*' -> jcount * 100
     _   -> 0
-
-foesAdjacent :: X -> Y -> Point -> [Actor] -> Bool
-foesAdjacent lxsize lysize pos foes =
-  let vic = ES.fromList $ vicinity lxsize lysize pos
-      lfs = ES.fromList $ map bpos foes
-  in not $ ES.null $ ES.intersection vic lfs
 
 -- * These few operations look at, potentially, all levels of the dungeon.
 
