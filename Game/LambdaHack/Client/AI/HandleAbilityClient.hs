@@ -67,7 +67,7 @@ actionStrategy aid = do
       hpTooLow =
         let kind = okind $ bkind b
         in bhp b == 1 || 5 * bhp b < Dice.maxDice (ahp kind)
-      condhpTooLow = hpTooLow  -- require the actor's HP low enough
+      condHpTooLow = hpTooLow  -- require the actor's HP low enough
   mleader <- getsClient _sleader
   actorAbs <- actorAbilities aid mleader
   let stratToFreq :: MonadStateRead m
@@ -76,40 +76,59 @@ actionStrategy aid = do
       stratToFreq scale mstrat = do
         st <- mstrat
         return $! scaleFreq scale $ bestVariant st  -- TODO: flatten instead?
-      prefix :: [(Ability, Bool, m (Strategy RequestTimed))]
+      prefix, suffix :: [([Ability], Bool, m (Strategy RequestTimed))]
       prefix =
-        [ (Ability.Heal, not condAnyAdjacent && condhpTooLow,
-           return reject)  -- TODO
-        , (Ability.Trigger, condhpTooLow,
-           triggerFreq aid)  -- flee via stairs
-        , (Ability.Flee, condAnyAdjacent && condhpTooLow,
-           return reject)  -- TODO
-        , (Ability.Displace, condAnyAdjacent,
-           displace aid)  -- TODO: swap with foe, when others need access to foe
-        , (Ability.Pickup, True,
-           pickup aid) -- TODO: only when no weapon and can pick up one
-        , (Ability.Melee, condAnyAdjacent,
-           melee aid)  -- melee target or blocker only
-        , (Ability.Pickup, True, pickup aid)  -- unconditionally
-        , (Ability.Displace, True, displace aid)  -- when path blocked
-        , (Ability.Trigger, condAbsent,
-           triggerFreq aid) ]
-      distant :: [(Ability, Bool, m (Frequency RequestTimed))]
+        [ ( [Ability.FirstAid, Ability.Tools]
+          , not condAnyAdjacent && condHpTooLow
+          , return reject )  -- TODO
+        , ( [Ability.Trigger, Ability.Flee]
+          , condHpTooLow  -- flee via stairs
+          , triggerFreq aid )
+        , ( [Ability.Flee]
+          , condAnyAdjacent && condHpTooLow
+          , return reject )  -- TODO
+        , ( [Ability.Displace, Ability.Melee]
+          , condAnyAdjacent  -- TODO: swap with foe, when others need access
+          , displace aid )
+        , ( [Ability.Pickup, Ability.Melee]
+          , True  -- TODO: only when no weapon and can pick up one
+          , pickup aid )
+        , ( [Ability.Melee]
+          , condAnyAdjacent  -- melee target or blocker only
+          , melee aid )
+        , ( [Ability.Pickup]
+          , True  -- unconditionally, e.g., to give to other party members
+          , pickup aid )
+        , ( [Ability.Displace, Ability.Chase]
+          , True  -- when path blocked
+          , displace aid )
+        , ( [Ability.Trigger]
+          , condAbsent
+          , triggerFreq aid ) ]
+      distant :: [([Ability], Bool, m (Frequency RequestTimed))]
       distant =
-        [ (Ability.Ranged, condPresent,
-           stratToFreq 4 (rangedFreq aid))
-        , (Ability.Tools, condPresent,
-           stratToFreq 1 (toolsFreq aid))  -- tools can affect the foe
-        , (Ability.Chase, condPresent,
-           stratToFreq 30 (chase aid True)) ]
+        [ ( [Ability.Ranged]
+          , condPresent
+          , stratToFreq 4 (rangedFreq aid) )
+        , ( [Ability.Tools]
+          , condPresent
+          , stratToFreq 1 (toolsFreq aid) )  -- tools can affect the foe
+        , ( [Ability.Chase]
+          , condPresent
+          , stratToFreq 30 (chase aid True) ) ]
       suffix =
-        [ (Ability.Melee, condAnyAdjacent, melee aid)  -- TODO: melee any
-        , (Ability.Flee, condhpTooLow,
-           return reject)  -- TODO: can't fight back and enemies still close
-        , (Ability.Wander, True, chase aid False) ]
+        [ ( [Ability.Melee]
+          , condAnyAdjacent  -- TODO: melee any, if nothing better to do
+          , melee aid )
+        , ( [Ability.Flee]
+          , condHpTooLow  -- TODO: far from friends, enemies too close
+          , return reject )
+        , ( [Ability.Wander]
+          , True
+          , chase aid False ) ]
       -- TODO: don't msum not to evaluate until needed
-      checkAction :: (Ability, Bool, m a) -> Bool
-      checkAction (ab, cond, _) = cond && ab `elem` actorAbs
+      checkAction :: ([Ability], Bool, m a) -> Bool
+      checkAction (abts, cond, _) = cond && all (`elem` actorAbs) abts
       sumS abAction = do
         let as = filter checkAction abAction
         strats <- sequence $ map (\(_, _, m) -> m) as

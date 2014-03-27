@@ -10,14 +10,14 @@ import Data.Binary
 -- that any actor picks each turn, depending on the actor's characteristics
 -- and his environment.
 data Ability =
-    Heal      -- ^ heal if almost dead
-  | Flee      -- ^ flee if almost dead or far from friends
+    FirstAid  -- ^ try to heal if almost dead
+  | Flee      -- ^ flee if almost dead
   | Melee     -- ^ melee target
-  | Displace  -- ^ switch places with a friend
-  | Pickup    -- ^ gather items, if no foes visible
-  | Trigger   -- ^ trigger a feature
-  | Ranged    -- ^ attack the visible target opponent at range, some of the time
-  | Tools     -- ^ use items, if target opponent visible, some of the time
+  | Displace  -- ^ switch places with an actor
+  | Pickup    -- ^ gather items
+  | Trigger   -- ^ trigger a feature underneath
+  | Ranged    -- ^ attack the visible target opponent at range
+  | Tools     -- ^ use items
   | Chase     -- ^ chase the target, ignoring any actors on the way
   | Wander    -- ^ wander around, meleeing any opponents on the way
   deriving (Show, Eq, Ord, Enum, Bounded)
