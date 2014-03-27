@@ -51,9 +51,7 @@ data HumanCmd =
   | PickLeader !Int
   | MemberCycle
   | MemberBack
-  | Inventory
-  | Equipment
-  | Ground
+  | DescribeItem !CStore
   | AllOwned
   | SelectActor
   | SelectNone
@@ -124,10 +122,10 @@ cmdDescription cmd = case cmd of
   PickLeader{} -> "pick leader"
   MemberCycle -> "cycle among party members on the level"
   MemberBack  -> "cycle among party members in the dungeon"
-  Inventory   -> "display shared inventory of the party"
-  Equipment   -> "display personal equipment of the leader"
-  Ground      -> "display items on the ground under the leader"
-  AllOwned    -> "display all owned items"
+  DescribeItem CInv -> "describe shared inventory of the party"
+  DescribeItem CEqp -> "describe personal equipment of the leader"
+  DescribeItem CGround -> "describe items on the ground"
+  AllOwned    -> "describe all owned items"
   SelectActor -> "select (or deselect) a party member"
   SelectNone  -> "deselect (or select) all on the level"
   Clear       -> "clear messages"

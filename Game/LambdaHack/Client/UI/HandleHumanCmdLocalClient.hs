@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.UI.HandleHumanCmdLocalClient
   ( -- * Assorted commands
     gameDifficultyCycle
   , pickLeaderHuman, memberCycleHuman, memberBackHuman
-  , inventoryHuman, equipmentHuman, groundHuman, allOwnedHuman
+  , describeItemHuman, allOwnedHuman
   , selectActorHuman, selectNoneHuman, clearHuman, repeatHuman, recordHuman
   , historyHuman, markVisionHuman, markSmellHuman, markSuspectHuman
   , helpHuman, mainMenuHuman, macroHuman
@@ -172,16 +172,13 @@ memberBackHuman = do
       assert (success `blame` "same leader" `twith` (leader, np, b)) skip
       return mempty
 
--- * Inventory
+-- * DscribeItem
 
 -- TODO: When equipment is displayed, let TAB switch the leader (without
 -- announcing that) and show the equipment of the new leader.
--- | Display the common inventory of the whole party.
-inventoryHuman :: MonadClientUI m => m Slideshow
-inventoryHuman = cstoreMenu CInv
-
-cstoreMenu :: MonadClientUI m => CStore -> m Slideshow
-cstoreMenu cstore = do
+-- | Display items from a given container store and describe the chosen one.
+describeItemHuman :: MonadClientUI m => CStore -> m Slideshow
+describeItemHuman cstore = do
   Kind.COps{coactor=Kind.Ops{okind}, coitem} <- getsState scops
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -198,18 +195,6 @@ cstoreMenu cstore = do
   case ggi of
     Right ((_, item), _) -> promptToSlideshow $ itemDesc coitem disco item
     Left slides -> return slides
-
--- * Equipment
-
--- | Display equipment of the leader.
-equipmentHuman :: MonadClientUI m => m Slideshow
-equipmentHuman = cstoreMenu CEqp
-
--- * Ground
-
--- | Display items on the ground under the leader.
-groundHuman :: MonadClientUI m => m Slideshow
-groundHuman = cstoreMenu CGround
 
 -- * AllOwned
 

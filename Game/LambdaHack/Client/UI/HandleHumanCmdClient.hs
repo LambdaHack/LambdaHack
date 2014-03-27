@@ -55,9 +55,7 @@ cmdAction cmd = case cmd of
   PickLeader k -> fmap Left $ pickLeaderHuman k
   MemberCycle -> fmap Left memberCycleHuman
   MemberBack -> fmap Left memberBackHuman
-  Inventory -> fmap Left inventoryHuman
-  Equipment -> fmap Left equipmentHuman
-  Ground -> fmap Left groundHuman
+  DescribeItem cstore -> fmap Left $ describeItemHuman cstore
   AllOwned -> fmap Left allOwnedHuman
   SelectActor -> fmap Left selectActorHuman
   SelectNone -> addNoSlides selectNoneHuman

@@ -119,13 +119,14 @@ Below are the remaining keys for movement and terrain alteration.
 Item use related keys are as follows.
 
                 keys           command
-                I              display shared inventory
+                I              describe shared inventory of the party
                 g and ,        get an item
                 d              drop an item
-                E              display personal equipment
+                E              describe personal equipment of the leader
                 e              equip an item
                 s              stash and share an item
-                A              display all owned items
+                G              describe items on the ground
+                A              describe all owned items
                 q              quaff potion
                 r              read scroll
                 t              throw missile

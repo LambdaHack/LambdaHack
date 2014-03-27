@@ -89,15 +89,15 @@ standardKeys = KeyKind
       , ("i", (CmdMove, Macro "" ["KP_Begin"]))
 
       -- Item use
-      , ("I", (CmdItem, Inventory))
+      , ("I", (CmdItem, DescribeItem CInv))
       , ("g", (CmdItem, MoveItem [CGround] CEqp "get" "an item" True))
       , ("d", (CmdItem, MoveItem [CEqp, CInv] CGround "drop" "an item" False))
-      , ("E", (CmdItem, Equipment))
+      , ("E", (CmdItem, DescribeItem CEqp))
       , ("e", (CmdItem, MoveItem [CInv, CGround] CEqp
                                  "equip" "an item" False))
       , ("s", (CmdItem, MoveItem [CEqp] CInv
                                  "stash" "and share an item" False))
-      , ("G", (CmdItem, Ground))
+      , ("G", (CmdItem, DescribeItem CGround))
       , ("A", (CmdItem, AllOwned))
       , ("q", (CmdItem, Apply [ApplyItem { verb = "quaff"
                                          , object = "potion"

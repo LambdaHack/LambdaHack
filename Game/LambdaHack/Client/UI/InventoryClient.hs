@@ -83,7 +83,7 @@ getStoreItem :: MonadClientUI m
              -> CStore  -- ^ initial container
              -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
 getStoreItem invBlurb stdBlurb verb cInitial = do
-  let cLegalRaw = cInitial : delete cInitial [minBound..maxBound]
+  let cLegalRaw = cInitial : delete cInitial [CEqp, CInv, CGround]
   getItem (const True) invBlurb stdBlurb verb cLegalRaw cLegalRaw True ISuitable
 
 data ItemDialogState = INone | ISuitable | IAll
