@@ -1,15 +1,19 @@
--- | Inventory management.
+-- | Inventory management and party cycling.
 -- TODO: document
 module Game.LambdaHack.Client.UI.InventoryClient
-  ( getGroupItem, getAnyItem, getStoreItem
+  ( failMsg
+  , getGroupItem, getAnyItem, getStoreItem
+  , memberCycle, memberBack, pickLeader
   ) where
 
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.Char as Char
 import qualified Data.EnumMap.Strict as EM
+import Data.Function
 import qualified Data.IntMap.Strict as IM
 import Data.List
+import Data.Maybe
 import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -25,6 +29,7 @@ import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.WidgetClient
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
@@ -33,6 +38,12 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.RuleKind
+
+failMsg :: MonadClientUI m => Msg -> m Slideshow
+failMsg msg = do
+  modifyClient $ \cli -> cli {slastKey = Nothing}
+  stopPlayBack
+  assert (not $ T.null msg) $ promptToSlideshow msg
 
 -- | Let a human player choose any item from a given group.
 -- Note that this does not guarantee the chosen item belongs to the group,
@@ -50,7 +61,7 @@ getGroupItem syms itemsName verb cLegalRaw cLegalAfterCalm = do
   let cNotEmpty = not . EM.null . getCStoreBag
       cLegal = filter cNotEmpty cLegalAfterCalm  -- don't display empty stores
       p i = jsymbol i `elem` syms
-      tsuitable = makePhrase [MU.Capitalize (MU.Ws itemsName)]
+      tsuitable = const $ makePhrase [MU.Capitalize (MU.Ws itemsName)]
   getItem p tsuitable tsuitable verb cLegalRaw cLegal True INone
 
 -- | Let the human player choose any item from a list of items
@@ -64,10 +75,10 @@ getAnyItem :: MonadClientUI m
            -> Bool      -- ^ whether to ask for the number of items
            -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
 getAnyItem verb cLegalRaw cLegalAfterCalm askWhenLone askNumber = do
-  soc <- getItem (const True) "Items" "Items" verb
+  soc <- getItem (const True) (const "Items") (const "Items") verb
                  cLegalRaw cLegalAfterCalm askWhenLone INone
   case soc of
-    Left slides -> return $ Left slides
+    Left _ -> return soc
     Right (iidItem, (kAll, c)) -> do
       socK <- pickNumber askNumber kAll
       case socK of
@@ -77,10 +88,10 @@ getAnyItem verb cLegalRaw cLegalAfterCalm askWhenLone askNumber = do
 -- | Display all items from a store and let the human player choose any
 -- or switch to any other non-empty store.
 getStoreItem :: MonadClientUI m
-             => Text      -- ^ how to describe displayed items in inventory
-             -> Text      -- ^ how to describe displayed items elsewhere
-             -> MU.Part   -- ^ the verb describing the action
-             -> CStore  -- ^ initial container
+             => (Actor -> Text)  -- ^ how to describe suitable items in CInv
+             -> (Actor -> Text)  -- ^ how to describe suitable items elsewhere
+             -> MU.Part          -- ^ the verb describing the action
+             -> CStore           -- ^ initial container
              -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
 getStoreItem invBlurb stdBlurb verb cInitial = do
   let cLegalRaw = cInitial : delete cInitial [CEqp, CInv, CGround]
@@ -93,11 +104,11 @@ data ItemDialogState = INone | ISuitable | IAll
 -- item from a list of items.
 getItem :: MonadClientUI m
         => (Item -> Bool)   -- ^ which items to consider suitable
-        -> Text             -- ^ how to describe suitable items in inventory
-        -> Text             -- ^ how to describe suitable items elsewhere
+        -> (Actor -> Text)  -- ^ how to describe suitable items in CInv
+        -> (Actor -> Text)  -- ^ how to describe suitable items elsewhere
         -> MU.Part          -- ^ the verb describing the action
         -> [CStore]         -- ^ initial legal containers
-        -> [CStore]         -- ^ legal containers after Calm taken into account
+        -> [CStore]         -- ^ legal containers with Calm taken into account
         -> Bool             -- ^ whether to ask, when the only item
                             --   in the starting container is suitable
         -> ItemDialogState  -- ^ the dialog state to start in
@@ -131,20 +142,22 @@ data DefItemKey m = DefItemKey
   }
 
 transition :: forall m. MonadClientUI m
-           => (Item -> Bool)  -- ^ which items to consider suitable
-           -> Text            -- ^ how to describe suitable items in inventory
-           -> Text            -- ^ how to describe suitable items elsewhere
-           -> MU.Part         -- ^ the verb describing the action
+           => (Item -> Bool)   -- ^ which items to consider suitable
+           -> (Actor -> Text)  -- ^ how to describe suitable items in CInv
+           -> (Actor -> Text)  -- ^ how to describe suitable items elsewhere
+           -> MU.Part          -- ^ the verb describing the action
            -> [CStore]
            -> ItemDialogState
            -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
-transition _ tinvSuit tsuitable verb [] itemDialogState =
-  assert `failure` (tinvSuit, tsuitable, verb, itemDialogState)
+transition _ _ _ verb [] iDS = assert `failure` (verb, iDS)
 transition p tinvSuit tsuitable verb cLegal@(cCur:cRest) itemDialogState = do
   Kind.COps{corule} <- getsState scops
   let RuleKind{rsharedInventory} = Kind.stdRuleset corule
   (letterSlots, numberSlots) <- getsClient sslots
   leader <- getLeaderUI
+  body <- getsState $ getActorBody leader
+  fact <- getsState $ (EM.! bfid body) . sfactionD
+  hs <- partyAfterLeader leader
   bag <- getsState $ getCBag (CActor leader cCur)
   let getResult :: ItemId -> State -> ((ItemId, Item), (Int, CStore))
       getResult iid s = ((iid, getItemBody iid s), (bag EM.! iid, cCur))
@@ -194,6 +207,24 @@ transition p tinvSuit tsuitable verb cLegal@(cCur:cRest) itemDialogState = do
                                  `twith` bagNumberSlots
                Just (iid, _) -> fmap Right $ getsState $ getResult iid
            })
+        , (K.Tab, DefItemKey
+           { defLabel = "TAB"
+           , defCond = not (isSpawnFact fact
+                            || null (filter (\(_, b) ->
+                                               blid b == blid body) hs))
+           , defAction = \_ -> do
+               err <- memberCycle False
+               assert (err == mempty `blame` err) skip
+               transition p tinvSuit tsuitable verb cLegal itemDialogState
+           })
+        , (K.BackTab, DefItemKey
+           { defLabel = "SHIFT-TAB"
+           , defCond = not (isSpawnFact fact || null hs)
+           , defAction = \_ -> do
+               err <- memberBack False
+               assert (err == mempty `blame` err) skip
+               transition p tinvSuit tsuitable verb cLegal itemDialogState
+           })
         ]
       lettersDef :: DefItemKey m
       lettersDef = DefItemKey
@@ -207,7 +238,7 @@ transition p tinvSuit tsuitable verb cLegal@(cCur:cRest) itemDialogState = do
             _ -> assert `failure` "unexpected key:" `twith` K.showKey key
         }
       ppCur = ppCStore rsharedInventory cCur
-      tsuit = if cCur == CInv then tinvSuit else tsuitable
+      tsuit = if cCur == CInv then tinvSuit body else tsuitable body
       (labelLetterSlots, overLetterSlots, overNumberSlots, prompt) =
         case itemDialogState of
           INone     -> (suitableLetterSlots,
@@ -268,3 +299,74 @@ pickNumber askNumber kAll = do
           K.Return -> return $ Right kDefault
           _ -> assert `failure` "unexpected key:" `twith` kkm
   else return $ Right kAll
+
+-- | Switches current member to the next on the level, if any, wrapping.
+memberCycle :: MonadClientUI m => Bool -> m Slideshow
+memberCycle verbose = do
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
+  leader <- getLeaderUI
+  body <- getsState $ getActorBody leader
+  hs <- partyAfterLeader leader
+  case filter (\(_, b) -> blid b == blid body) hs of
+    _ | isSpawnFact fact -> failMsg "spawners cannot manually change leaders"
+    [] -> failMsg "Cannot pick any other member on this level."
+    (np, b) : _ -> do
+      success <- pickLeader verbose np
+      assert (success `blame` "same leader" `twith` (leader, np, b)) skip
+      return mempty
+
+-- | Switches current member to the previous in the whole dungeon, wrapping.
+memberBack :: MonadClientUI m => Bool -> m Slideshow
+memberBack verbose = do
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
+  leader <- getLeaderUI
+  hs <- partyAfterLeader leader
+  case reverse hs of
+    _ | isSpawnFact fact -> failMsg "spawners cannot manually change leaders"
+    [] -> failMsg "No other member in the party."
+    (np, b) : _ -> do
+      success <- pickLeader verbose np
+      assert (success `blame` "same leader" `twith` (leader, np, b)) skip
+      return mempty
+
+partyAfterLeader :: MonadStateRead m => ActorId -> m [(ActorId, Actor)]
+partyAfterLeader leader = do
+  faction <- getsState $ bfid . getActorBody leader
+  allA <- getsState $ EM.assocs . sactorD
+  s <- getState
+  let hs9 = mapMaybe (tryFindHeroK s faction) [0..9]
+      factionA = filter (\(_, body) ->
+        not (bproj body) && bfid body == faction) allA
+      hs = hs9 ++ deleteFirstsBy ((==) `on` fst) factionA hs9
+      i = fromMaybe (-1) $ findIndex ((== leader) . fst) hs
+      (lt, gt) = (take i hs, drop (i + 1) hs)
+  return $! gt ++ lt
+
+-- | Select a faction leader. False, if nothing to do.
+pickLeader :: MonadClientUI m => Bool -> ActorId -> m Bool
+pickLeader verbose aid = do
+  leader <- getLeaderUI
+  stgtMode <- getsClient stgtMode
+  if leader == aid
+    then return False -- already picked
+    else do
+      pbody <- getsState $ getActorBody aid
+      assert (not (bproj pbody) `blame` "projectile chosen as the leader"
+                                `twith` (aid, pbody)) skip
+      -- Even if it's already the leader, give his proper name, not 'you'.
+      let subject = partActor pbody
+      when verbose $ msgAdd $ makeSentence [subject, "picked as a leader"]
+      -- Update client state.
+      s <- getState
+      modifyClient $ updateLeader aid s
+      -- Move the cursor, if active, to the new level.
+      case stgtMode of
+        Nothing -> return ()
+        Just _ ->
+          modifyClient $ \cli -> cli {stgtMode = Just $ TgtMode $ blid pbody}
+      -- Inform about items, etc.
+      lookMsg <- lookAt False "" True (bpos pbody) aid ""
+      when verbose $ msgAdd lookMsg
+      return True

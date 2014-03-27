@@ -212,7 +212,7 @@ splitOverlay onBlank yspace (Overlay msg) (Overlay ls) =
 -- If the boolean flag is set, the overlay is displayed over a blank screen,
 -- including the bottom lines.
 newtype Slideshow = Slideshow {slideshow :: (Bool, [Overlay])}
-  deriving Show
+  deriving (Show, Eq)
 
 instance Monoid Slideshow where
   mempty = Slideshow (False, [])

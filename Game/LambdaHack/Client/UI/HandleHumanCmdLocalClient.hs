@@ -13,8 +13,6 @@ module Game.LambdaHack.Client.UI.HandleHumanCmdLocalClient
   , moveCursorHuman, tgtFloorHuman, tgtEnemyHuman
   , tgtUnknownHuman, tgtItemHuman, tgtStairHuman, tgtAscendHuman
   , epsIncrHuman, tgtClearHuman, cancelHuman, acceptHuman
-    -- * Helper definitions
-  , pickLeader
   ) where
 
 -- Cabal
@@ -24,7 +22,6 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.Function
 import qualified Data.IntMap.Strict as IM
 import Data.List
 import qualified Data.Map.Strict as M
@@ -68,12 +65,6 @@ import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
 
-failMsg :: MonadClientUI m => Msg -> m Slideshow
-failMsg msg = do
-  modifyClient $ \cli -> cli {slastKey = Nothing}
-  stopPlayBack
-  assert (not $ T.null msg) $ promptToSlideshow msg
-
 -- * GameDifficultyCycle
 
 gameDifficultyCycle :: MonadClientUI m => m ()
@@ -94,101 +85,35 @@ pickLeaderHuman k = do
     _ | isSpawnFact fact -> failMsg "spawners cannot manually change leaders"
     Nothing -> failMsg "No such member of the party."
     Just (aid, _) -> do
-      void $ pickLeader aid
+      void $ pickLeader True aid
       return mempty
 
 -- * MemberCycle
 
 -- | Switches current member to the next on the level, if any, wrapping.
 memberCycleHuman :: MonadClientUI m => m Slideshow
-memberCycleHuman = do
-  side <- getsClient sside
-  fact <- getsState $ (EM.! side) . sfactionD
-  leader <- getLeaderUI
-  body <- getsState $ getActorBody leader
-  hs <- partyAfterLeader leader
-  case filter (\(_, b) -> blid b == blid body) hs of
-    _ | isSpawnFact fact -> failMsg "spawners cannot manually change leaders"
-    [] -> failMsg "Cannot pick any other member on this level."
-    (np, b) : _ -> do
-      success <- pickLeader np
-      assert (success `blame` "same leader" `twith` (leader, np, b)) skip
-      return mempty
-
-partyAfterLeader :: MonadStateRead m => ActorId -> m [(ActorId, Actor)]
-partyAfterLeader leader = do
-  faction <- getsState $ bfid . getActorBody leader
-  allA <- getsState $ EM.assocs . sactorD
-  s <- getState
-  let hs9 = mapMaybe (tryFindHeroK s faction) [0..9]
-      factionA = filter (\(_, body) ->
-        not (bproj body) && bfid body == faction) allA
-      hs = hs9 ++ deleteFirstsBy ((==) `on` fst) factionA hs9
-      i = fromMaybe (-1) $ findIndex ((== leader) . fst) hs
-      (lt, gt) = (take i hs, drop (i + 1) hs)
-  return $! gt ++ lt
-
--- | Select a faction leader. False, if nothing to do.
-pickLeader :: MonadClientUI m => ActorId -> m Bool
-pickLeader actor = do
-  leader <- getLeaderUI
-  stgtMode <- getsClient stgtMode
-  if leader == actor
-    then return False -- already picked
-    else do
-      pbody <- getsState $ getActorBody actor
-      assert (not (bproj pbody) `blame` "projectile chosen as the leader"
-                                `twith` (actor, pbody)) skip
-      -- Even if it's already the leader, give his proper name, not 'you'.
-      let subject = partActor pbody
-      msgAdd $ makeSentence [subject, "picked as a leader"]
-      -- Update client state.
-      s <- getState
-      modifyClient $ updateLeader actor s
-      -- Move the cursor, if active, to the new level.
-      case stgtMode of
-        Nothing -> return ()
-        Just _ ->
-          modifyClient $ \cli -> cli {stgtMode = Just $ TgtMode $ blid pbody}
-      -- Inform about items, etc.
-      lookMsg <- lookAt False "" True (bpos pbody) actor ""
-      msgAdd lookMsg
-      return True
+memberCycleHuman = memberCycle True
 
 -- * MemberBack
 
 -- | Switches current member to the previous in the whole dungeon, wrapping.
 memberBackHuman :: MonadClientUI m => m Slideshow
-memberBackHuman = do
-  side <- getsClient sside
-  fact <- getsState $ (EM.! side) . sfactionD
-  leader <- getLeaderUI
-  hs <- partyAfterLeader leader
-  case reverse hs of
-    _ | isSpawnFact fact -> failMsg "spawners cannot manually change leaders"
-    [] -> failMsg "No other member in the party."
-    (np, b) : _ -> do
-      success <- pickLeader np
-      assert (success `blame` "same leader" `twith` (leader, np, b)) skip
-      return mempty
+memberBackHuman = memberBack True
 
 -- * DscribeItem
 
--- TODO: When equipment is displayed, let TAB switch the leader (without
--- announcing that) and show the equipment of the new leader.
 -- | Display items from a given container store and describe the chosen one.
 describeItemHuman :: MonadClientUI m => CStore -> m Slideshow
 describeItemHuman cstore = do
   Kind.COps{coactor=Kind.Ops{okind}, coitem} <- getsState scops
-  leader <- getLeaderUI
-  b <- getsState $ getActorBody leader
-  let subject = partActor b
-      kind = okind $ bkind b
-      verbInv = if calmEnough b kind
-                then "notice"
-                else "paw distractedly"
-      invBlurb = makePhrase [MU.Capitalize $ MU.SubjectVerbSg subject verbInv]
-      stdBlurb = makePhrase [MU.Capitalize $ MU.SubjectVerbSg subject "see"]
+  let subject body = partActor body
+      verbInv body = if calmEnough body $ okind $ bkind body
+                     then "notice"
+                     else "paw distractedly"
+      invBlurb body = makePhrase
+        [MU.Capitalize $ MU.SubjectVerbSg (subject body) (verbInv body)]
+      stdBlurb body = makePhrase
+        [MU.Capitalize $ MU.SubjectVerbSg (subject body) "see"]
       verb = "describe"
   ggi <- getStoreItem invBlurb stdBlurb verb cstore
   disco <- getsClient sdisco

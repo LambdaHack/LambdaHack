@@ -114,7 +114,7 @@ moveRunHuman run dir = do
             failWith "spawners cannot manually change leaders"
           else do
             -- Select adjacent actor by bumping into him. Takes no time.
-            success <- pickLeader target
+            success <- pickLeader True target
             assert (success `blame` "bump self"
                             `twith` (leader, target, tb)) skip
             return $ Left mempty
