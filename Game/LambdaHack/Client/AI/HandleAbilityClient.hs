@@ -45,100 +45,72 @@ import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind as TileKind
 
-data FoeRequirement =
-    FrPresent  -- require that the target foe is visible
-  | FrAbsent  -- require that the target foe is not visible
-  | FrAnyAdjacent  -- require that any non-dying foe is adjacent
-  | FrNot FoeRequirement
-  | FrAnd FoeRequirement FoeRequirement
-  | FrOr FoeRequirement FoeRequirement
-  | FrPredicate (Actor -> Bool)  -- concerns the actor, not the target foe
-
-checkFoe :: MonadClient m => ActorId -> FoeRequirement -> m Bool
-checkFoe aid foeR = do
-  btarget <- getsClient $ getTarget aid
-  let mfAid =
-        case btarget of
-          Just (TEnemy foeAid _) -> Just foeAid
-          _ -> Nothing
-      foeVisible = isJust mfAid
-  case foeR of
-    FrPresent -> return $! foeVisible
-    FrAbsent -> return $! not foeVisible
-    FrAnyAdjacent -> do
-      b <- getsState $ getActorBody aid
-      fact <- getsState $ \s -> sfactionD s EM.! bfid b
-      allFoes <- getsState $ filter (not . actorDying . snd)
-                             . actorNotProjAssocs (isAtWar fact) (blid b)
-      return $! any (adjacent (bpos b) . bpos . snd) allFoes
-    FrNot fR -> fmap not $ checkFoe aid fR
-    FrAnd fR1 fR2 -> do
-      c1 <- checkFoe aid fR1
-      if c1 then checkFoe aid fR2 else return False
-    FrOr fR1 fR2 -> do
-      c1 <- checkFoe aid fR1
-      if not c1 then return False else checkFoe aid fR2
-    FrPredicate p -> do
-      b <- getsState $ getActorBody aid
-      return $ p b
-
 -- | AI strategy based on actor's sight, smell, intelligence, etc.
 -- Never empty.
 actionStrategy :: forall m. MonadClient m
                => ActorId -> m (Strategy RequestTimed)
 actionStrategy aid = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-  mleader <- getsClient _sleader
-  actorAbs <- actorAbilities aid mleader
-  let hpTooLow b =
+  btarget <- getsClient $ getTarget aid
+  let mfAid =
+        case btarget of
+          Just (TEnemy foeAid _) -> Just foeAid
+          _ -> Nothing
+      condPresent = isJust mfAid  -- require that the target foe is visible
+      condAbsent = isNothing mfAid  -- require the target foe not visible
+  b <- getsState $ getActorBody aid
+  fact <- getsState $ \s -> sfactionD s EM.! bfid b
+  allFoes <- getsState $ filter (not . actorDying . snd)
+                         . actorNotProjAssocs (isAtWar fact) (blid b)
+  let condAnyAdjacent = -- require that any non-dying foe is adjacent
+        any (adjacent (bpos b) . bpos . snd) allFoes
+      hpTooLow =
         let kind = okind $ bkind b
         in bhp b == 1 || 5 * bhp b < Dice.maxDice (ahp kind)
-      frhpTooLow = FrPredicate hpTooLow
-      frAlways = FrPredicate $ const True
-      prefix :: [(Ability, FoeRequirement, m (Strategy RequestTimed))]
+      condhpTooLow = hpTooLow  -- require the actor's HP low enough
+  mleader <- getsClient _sleader
+  actorAbs <- actorAbilities aid mleader
+  let prefix :: [(Ability, Bool, m (Strategy RequestTimed))]
       prefix =
-        [ (Ability.Heal, FrNot FrAnyAdjacent `FrAnd` frhpTooLow,
+        [ (Ability.Heal, not condAnyAdjacent && condhpTooLow,
            return reject)  -- TODO
-        , (Ability.Trigger, frhpTooLow,
+        , (Ability.Trigger, condhpTooLow,
            fmap liftFrequency $ triggerFreq aid)  -- flee via stairs
-        , (Ability.Flee, FrAnyAdjacent `FrAnd` frhpTooLow,
+        , (Ability.Flee, condAnyAdjacent && condhpTooLow,
            return reject)  -- TODO
-        , (Ability.Displace, FrAnyAdjacent,
+        , (Ability.Displace, condAnyAdjacent,
            displace aid)  -- TODO: swap with foe, when others need access to foe
-        , (Ability.Pickup, frAlways,
+        , (Ability.Pickup, True,
            pickup aid) -- TODO: only when no weapon and can pick up one
-        , (Ability.Melee, FrAnyAdjacent,
+        , (Ability.Melee, condAnyAdjacent,
            melee aid)  -- melee target or blocker only
-        , (Ability.Pickup, frAlways, pickup aid)  -- unconditionally
-        , (Ability.Displace, frAlways, displace aid) ]  -- when path blocked
-      distant :: [(Ability, FoeRequirement, m (Frequency RequestTimed))]
+        , (Ability.Pickup, True, pickup aid)  -- unconditionally
+        , (Ability.Displace, True, displace aid) ]  -- when path blocked
+      distant :: [(Ability, Bool, m (Frequency RequestTimed))]
       distant =
-        [ (Ability.Trigger, FrAbsent,
+        [ (Ability.Trigger, condAbsent,
            triggerFreq aid)  -- no fleeing if foe close
-        , (Ability.Ranged, FrPresent, rangedFreq aid)
-        , (Ability.Tools, FrPresent, toolsFreq aid)  -- the tool can affect foe
-        , (Ability.Chase, FrPresent, chaseFreq) ]
+        , (Ability.Ranged, condPresent, rangedFreq aid)
+        , (Ability.Tools, condPresent, toolsFreq aid)  -- tool can affect foe
+        , (Ability.Chase, condPresent, chaseFreq) ]
       chaseFreq :: MonadStateRead m => m (Frequency RequestTimed)
       chaseFreq = do
         st <- chase aid True
         return $! scaleFreq 30 $ bestVariant st
       suffix =
-        [ (Ability.Melee, FrAnyAdjacent, melee aid)  -- TODO: melee any
-        , (Ability.Flee, frhpTooLow,
+        [ (Ability.Melee, condAnyAdjacent, melee aid)  -- TODO: melee any
+        , (Ability.Flee, condhpTooLow,
            return reject)  -- TODO: can't fight back and enemies still close
-        , (Ability.Wander, frAlways, chase aid False) ]
+        , (Ability.Wander, True, chase aid False) ]
       -- TODO: don't msum not to evaluate until needed
-      filterFr :: (Ability, FoeRequirement, m a) -> m Bool
-      filterFr (ab, fr, _) =
-        if ab `elem` actorAbs
-        then checkFoe aid fr
-        else return False
+      checkAction :: (Ability, Bool, m a) -> Bool
+      checkAction (ab, cond, _) = cond && ab `elem` actorAbs
       sumS abAction = do
-        as <- filterM filterFr abAction
+        let as = filter checkAction abAction
         strats <- sequence $ map (\(_, _, m) -> m) as
         return $! msum strats
       sumF abFreq = do
-        as <- filterM filterFr abFreq
+        let as = filter checkAction abFreq
         strats <- sequence $ map (\(_, _, m) -> m) as
         return $! msum strats
       combineDistant as = fmap liftFrequency $ sumF as
