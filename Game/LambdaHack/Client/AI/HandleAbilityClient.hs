@@ -137,9 +137,7 @@ pickup aid = do
         in escape && not isSpawner
       itemUsefulness item =
         case jkind disco item of
-          Nothing -> -- TODO: 30  -- experimenting is fun
-             -- for now, cheating:
-             effectToBenefit cops body (jeffect item)
+          Nothing -> 5  -- experimenting is fun
           Just _ki -> effectToBenefit cops body $ jeffect item
       desirableItem item k | fightsAgainstSpawners = itemUsefulness item /= 0
                                                      || itemPrice (item, k) > 0
@@ -311,8 +309,7 @@ rangedFreq aid = do
                           $ EM.keys bag
             , let benefit =
                     case jkind disco i of
-                      Nothing -> -- TODO: (undefined, 0)  --- for now, cheating
-                        effectToBenefit cops b (jeffect i)
+                      Nothing -> 5  -- experimenting is fun
                       Just _ki ->
                         let _kik = iokind _ki
                             _unneeded = isymbol _kik
@@ -352,7 +349,7 @@ toolsFreq aid = do
                       $ EM.keys bag
         , let benefit =
                 case jkind disco i of
-                  Nothing -> 30  -- experimenting is fun
+                  Nothing -> 5  -- experimenting is fun
                   Just _ki -> effectToBenefit cops b $ jeffect i
         , benefit > 0
         , jsymbol i `elem` mastered ]
