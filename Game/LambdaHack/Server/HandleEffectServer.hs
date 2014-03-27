@@ -171,14 +171,13 @@ effectDominate source target = do
   else do
     -- Announce domination before the actor changes sides.
     execSfxAtomic $ SfxEffect target Effect.Dominate
+    -- Only record the first domination as a kill.
+    when (boldfid tb == bfid tb) $ execUpdAtomic $ UpdRecordKill target 1
     -- TODO: Perhaps insert a turn of delay here to allow countermeasures.
     electLeader (bfid tb) (blid tb) target
     deduceKilled tb
     ais <- getsState $ getCarriedAssocs tb
     execUpdAtomic $ UpdLoseActor target tb ais
-    -- TODO:  perhaps increase
-    -- kill count here or record original factions and increase count only
-    -- when the recreated actor really dies.
     let baseSpeed = aspeed $ okind $ bkind tb
         bNew = tb {bfid = bfid sb, boldfid = bfid tb,
                    bcalm = 0, bspeed = baseSpeed}
