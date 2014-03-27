@@ -49,32 +49,14 @@ import Game.LambdaHack.Content.TileKind as TileKind
 actionStrategy :: forall m. MonadClient m
                => ActorId -> m (Strategy RequestTimed)
 actionStrategy aid = do
-  cops <- getsState scops
-  btarget <- getsClient $ getTarget aid
-  b@Actor{bpos, blid} <- getsState $ getActorBody aid
-  invAssocs <- getsState $ getInvAssocs b
-  eqpAssocs <- getsState $ getEqpAssocs b
-  floorAssocs <- getsState $ getFloorAssocs blid bpos
   mleader <- getsClient _sleader
   actorAbs <- actorAbilities aid mleader
-  let mfAid =
-        case btarget of
-          Just (TEnemy foeAid _) -> Just foeAid
-          _ -> Nothing
-      foeVisible = isJust mfAid
-      hasNoWeapon = isNothing $ strongestSword cops eqpAssocs
-      lootIsWeapon = isJust $ strongestSword cops floorAssocs
-      weaponinInv = isJust $ strongestSword cops invAssocs
-      weaponAvailable = lootIsWeapon || weaponinInv
-      distant :: [(Ability, m (Frequency RequestTimed))]
+  let distant :: [(Ability, m (Frequency RequestTimed))]
       distant =
-        [ (Ability.Trigger, if foeVisible then return mzero
-                            else triggerFreq aid)
+        [ (Ability.Trigger, triggerFreq aid)
         , (Ability.Ranged, rangedFreq aid)
-        , (Ability.Tools, if not foeVisible then return mzero
-                          else toolsFreq aid)
-        , (Ability.Chase, if not foeVisible then return mzero
-                          else chaseFreq) ]
+        , (Ability.Tools, toolsFreq aid)
+        , (Ability.Chase, chaseFreq) ]
       chaseFreq :: MonadStateRead m => m (Frequency RequestTimed)
       chaseFreq = do
         st <- chase aid True
@@ -83,12 +65,9 @@ actionStrategy aid = do
       prefix =
         [ (Ability.Heal, return reject)  -- TODO
         , (Ability.Flee, return reject)  -- TODO
-        , (Ability.Melee, if foeVisible then melee aid else return reject)
+        , (Ability.Melee, melee aid)
         , (Ability.Displace, displace aid)
-        , (Ability.Pickup, if not foeVisible
-                              || hasNoWeapon && weaponAvailable
-                           then pickup aid
-                           else return reject) ]
+        , (Ability.Pickup, pickup aid) ]
       suffix =
         [ (Ability.Wander, chase aid False) ]
       sumS abAction = fmap msum $ sequence $ map snd
@@ -113,8 +92,23 @@ waitBlockNow aid = returN "wait" $ ReqWait aid
 -- TODO: pick up best weapons first
 pickup :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 pickup aid = do
-  cops@Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
-  body <- getsState $ getActorBody aid
+ cops@Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
+ body <- getsState $ getActorBody aid
+ invAssocs <- getsState $ getInvAssocs body
+ eqpAssocs <- getsState $ getEqpAssocs body
+ floorAssocs <- getsState $ getFloorAssocs (blid body) (bpos body)
+ btarget <- getsClient $ getTarget aid
+ let hasNoWeapon = isNothing $ strongestSword cops eqpAssocs
+     lootIsWeapon = isJust $ strongestSword cops floorAssocs
+     weaponinInv = isJust $ strongestSword cops invAssocs
+     weaponAvailable = lootIsWeapon || weaponinInv
+     mfAid =
+      case btarget of
+        Just (TEnemy foeAid _) -> Just foeAid
+        _ -> Nothing
+     foeVisible = isJust mfAid
+ if foeVisible && not (hasNoWeapon && weaponAvailable) then return reject
+ else do
   fact <- getsState $ (EM.! bfid body) . sfactionD
   dungeon <- getsState sdungeon
   itemD <- getsState sitemD
@@ -142,7 +136,6 @@ pickup aid = do
       return $! returN "pickup" $ ReqMoveItem aid iid k CGround CEqp
     [] | calmEnough body kind -> do
       let RuleKind{ritemEqp, rsharedInventory} = Kind.stdRuleset corule
-      invAssocs <- getsState $ getInvAssocs body
       eqpKA <- getsState $ getEqpKA body
       let improve symbol =
             let bestInv = strongestItem invAssocs $ pSymbol cops symbol
@@ -211,6 +204,14 @@ melee aid = do
 -- Fast monsters don't pay enough attention to features.
 triggerFreq :: MonadClient m => ActorId -> m (Frequency RequestTimed)
 triggerFreq aid = do
+ btarget <- getsClient $ getTarget aid
+ let mfAid =
+      case btarget of
+        Just (TEnemy foeAid _) -> Just foeAid
+        _ -> Nothing
+     foeVisible = isJust mfAid
+ if foeVisible then return mzero
+ else do
   cops@Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
   dungeon <- getsState sdungeon
   explored <- getsClient sexplored
@@ -322,6 +323,14 @@ rangedFreq aid = do
 -- Tools use requires significant intelligence and sometimes literacy.
 toolsFreq :: MonadClient m => ActorId -> m (Frequency RequestTimed)
 toolsFreq aid = do
+ btarget <- getsClient $ getTarget aid
+ let mfAid =
+      case btarget of
+        Just (TEnemy foeAid _) -> Just foeAid
+        _ -> Nothing
+     foeVisible = isJust mfAid
+ if not foeVisible then return mzero
+ else do
   cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   disco <- getsClient sdisco
   b <- getsState $ getActorBody aid
@@ -386,7 +395,15 @@ displaceTowards aid source target = do
   else return reject
 
 chase :: MonadClient m => ActorId -> Bool -> m (Strategy RequestTimed)
-chase aid foeVisible = do
+chase aid requireFoeVisible = do
+ btarget <- getsClient $ getTarget aid
+ let mfAid =
+      case btarget of
+        Just (TEnemy foeAid _) -> Just foeAid
+        _ -> Nothing
+     foeVisible = isJust mfAid
+ if not foeVisible && requireFoeVisible then return mzero
+ else do
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   str <- case mtgtMPath of
     Just (_, Just (p : q : _, (goal, _))) -> moveTowards aid p q goal
