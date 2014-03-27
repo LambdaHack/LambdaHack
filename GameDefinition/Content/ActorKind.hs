@@ -1,7 +1,6 @@
 -- | Monsters and heroes for LambdaHack.
 module Content.ActorKind ( cdefs ) where
 
-import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Common.Dice
@@ -46,7 +45,7 @@ projectile = ActorKind  -- includes homing missiles
   , asmell  = False
   , aiq     = 0
   , aregen  = maxBound
-  , acanDo  = [Track]
+  , acanDo  = []
   }
 
 eye = ActorKind

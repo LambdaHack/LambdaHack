@@ -88,7 +88,6 @@ actionStrategy aid = do
         st <- chase aid True
         return $! scaleFreq 30 $ bestVariant st
       aStrategy :: Ability -> m (Strategy RequestTimed)
-      aStrategy Ability.Track  = return reject  -- TODO (remove?)
       aStrategy Ability.Heal   = return reject  -- TODO
       aStrategy Ability.Flee   = return reject  -- TODO
       aStrategy Ability.Melee | foeVisible = melee aid
