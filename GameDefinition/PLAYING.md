@@ -219,7 +219,7 @@ This gives the opponent a free blow, but can improve the tactical situation
 or aid escape.
 
 Slinging missiles at targets wounds them, consuming the weapon in the process.
-You may sling any item in your possession (press `?` to choose
+You may propel any item in your possession (press `?` to choose
 an item and press it again for a non-standard choice) or on the ground
 (press `-`). Only items of a few kinds inflict any damage.
 Whenever the monster's or hero's hit points reach zero, the combatant dies.
@@ -230,13 +230,12 @@ On Winning and Dying
 --------------------
 
 You win the game if you escape the dungeon alive or eliminate all opposition.
-If you escape the dungeon, your score is the sum of all gold
-you've plundered, plus 100 gold pieces for each gem, minus 100 gold
-for each hero you lost. If the game mode offers you no escape
-and so your goal is to eliminate you foes completely, your score is
-100 gold for each opponent killed, plus a bonus if you manage
-to kill all quickly.
+If you escape the dungeon, your score is based on the gold and precious gems
+you've plundered, plus a bonus based on the number of heroes you lost.
+If the game mode offers you no escape and so your goal is to eliminate
+your foes completely, your score is based on the number of turns
+you spent and, as a bonus, the number of enemies you killed.
 
-If all heroes die, your score is halved. You are free to start again
+If all heroes die, you don't get any bonus. You are free to start again
 from a different entrance to the dungeon, but all your previous wealth
 is gone and fresh, undaunted enemies bar your way.
