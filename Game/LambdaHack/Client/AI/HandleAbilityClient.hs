@@ -79,7 +79,15 @@ condFriendsFarM :: MonadClient m => ActorId -> m Bool
 condFriendsFarM _aid = return True  -- TODO
 
 condBlocksFriendsM :: MonadClient m => ActorId -> m Bool
-condBlocksFriendsM _aid = return True  -- TODO
+condBlocksFriendsM aid = do
+  b <- getsState $ getActorBody aid
+  fact <- getsState $ \s -> sfactionD s EM.! bfid b
+  ours <- getsState $ actorNotProjAssocs (== bfid b) (blid b)
+  targetD <- getsClient stargetD
+  let blocked aid2 = case EM.lookup aid2 targetD of
+        Just (_, Just (_ : q : _, _)) | q == bpos b -> True
+        _ -> False
+  return $! any blocked $ map fst ours
 
 condNoWeaponM :: MonadClient m => ActorId -> m Bool
 condNoWeaponM aid = do
@@ -126,29 +134,29 @@ actionStrategy aid = do
           , not condAnyAdjacent && condHpTooLow
           , return reject )  -- TODO
         , ( [Ability.Trigger, Ability.Flee]   -- TODO: don't return via
-          , condHpTooLow && condEnemiesClose  -- stairs at once
+          , condHpTooLow && condEnemiesClose  --   stairs at once
           , triggerFreq aid ) -- flee via stairs
         , ( [Ability.Flee]
           , condAnyAdjacent && condHpTooLow
           , return reject )  -- TODO
         , ( [Ability.Displace, Ability.Melee]
           , condAnyAdjacent && condBlocksFriends
-          , displace aid )  -- TODO: only swap with foe to expose him to others
+          , displaceFoe aid )  -- only swap with a foe to expose him to others
         , ( [Ability.Pickup, Ability.Melee]
           , condNoWeapon && condWeaponAvailable
           , pickup aid True )
         , ( [Ability.Melee]
           , condAnyAdjacent
-          , melee aid )  -- only melee target or blocker
+          , meleeBlocker aid )  -- only melee target or blocker
         , ( [Ability.Pickup]
           , True  -- unconditionally, e.g., to give to other party members
           , pickup aid False )
-        , ( [Ability.Displace, Ability.Chase]
-          , True  -- when path blocked
-          , displace aid )
         , ( [Ability.Trigger]
           , condAbsent  -- don't explore when target foe exists
-          , triggerFreq aid ) ]
+          , triggerFreq aid )
+        , ( [Ability.Displace, Ability.Chase]
+          , True
+          , displaceBlocker aid ) ]  -- fires up only when path blocked
       distant :: [([Ability], Bool, m (Frequency RequestTimed))]
       distant =
         [ ( [Ability.Ranged]
@@ -161,15 +169,15 @@ actionStrategy aid = do
           , condPresent
           , stratToFreq 30 (chase aid True) ) ]
       suffix =
-        [ ( [Ability.Melee]
-          , condAnyAdjacent
-          , melee aid )  -- TODO: melee any, if nothing better to do
-        , ( [Ability.Flee]
+        [ ( [Ability.Flee]
           , condHpTooLow && condFriendsFar && condEnemiesClose
           , return reject )
         , ( [Ability.Wander]
           , True
-          , chase aid False ) ]
+          , chase aid False )
+        , ( [Ability.Melee]
+          , condAnyAdjacent
+          , meleeAny aid ) ]  -- melee any, if can't even walk towards target
       -- TODO: don't msum not to evaluate until needed
       checkAction :: ([Ability], Bool, m a) -> Bool
       checkAction (abts, cond, _) = cond && all (`elem` actorAbs) abts
@@ -258,12 +266,12 @@ pSymbol cops c = case c of
   _ -> \_ -> Just 0
 
 -- Everybody melees in a pinch, even though some prefer ranged attacks.
-melee :: MonadClient m => ActorId -> m (Strategy RequestTimed)
-melee aid = do
+meleeBlocker :: MonadClient m => ActorId -> m (Strategy RequestTimed)
+meleeBlocker aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
-  str1 <- case mtgtMPath of
+  case mtgtMPath of
     Just (_, Just (_ : q : _, (goal, _))) -> do
       -- We prefer the goal (e.g., when no accessible, but adjacent),
       -- but accept @q@ even if it's only a blocking enemy position.
@@ -283,15 +291,18 @@ melee aid = do
           else return reject
         Nothing -> return reject
     _ -> return reject  -- probably no path to the foe, if any
-  -- TODO: depending on actor kind, sometimes move this in strategy
-  -- to a place after movement
-  if not $ nullStrategy str1 then return str1 else do
-    allFoes <- getsState $ filter (not . actorDying . snd)
-                           . actorNotProjAssocs (isAtWar fact) (blid b)
-    let adjFoes = filter (adjacent (bpos b) . bpos . snd) allFoes
-        -- TODO: prioritize somehow
-        freq = uniformFreq "melee adjacent" $ map (ReqMelee aid . fst) adjFoes
-    return $ liftFrequency freq
+
+-- Everybody melees in a pinch, even though some prefer ranged attacks.
+meleeAny :: MonadClient m => ActorId -> m (Strategy RequestTimed)
+meleeAny aid = do
+  b <- getsState $ getActorBody aid
+  fact <- getsState $ \s -> sfactionD s EM.! bfid b
+  allFoes <- getsState $ filter (not . actorDying . snd)
+                         . actorNotProjAssocs (isAtWar fact) (blid b)
+  let adjFoes = filter (adjacent (bpos b) . bpos . snd) allFoes
+      -- TODO: prioritize somehow
+      freq = uniformFreq "melee adjacent" $ map (ReqMelee aid . fst) adjFoes
+  return $ liftFrequency freq
 
 -- Fast monsters don't pay enough attention to features.
 triggerFreq :: MonadClient m => ActorId -> m (Strategy RequestTimed)
@@ -432,8 +443,26 @@ toolsFreq aid = do
          $ useFreq eqpBag 1 CEqp
            ++ useFreq floorItems 2 CGround
 
-displace :: MonadClient m => ActorId -> m (Strategy RequestTimed)
-displace aid = do
+displaceFoe :: MonadClient m => ActorId -> m (Strategy RequestTimed)
+displaceFoe aid = do
+  mtgtMPath <- getsClient $ EM.lookup aid . stargetD
+  let tgtPath = case mtgtMPath of
+        Just (_, Just (path, _)) -> path
+        _ -> []
+  b <- getsState $ getActorBody aid
+  fact <- getsState $ \s -> sfactionD s EM.! bfid b
+  allFoes <- getsState $ filter (not . actorDying . snd)
+                         . actorNotProjAssocs (isAtWar fact) (blid b)
+  let adjFoes = filter (adjacent (bpos b) . bpos . snd) allFoes
+      dispFoes = case filter ((`elem` tgtPath) . bpos . snd) adjFoes of
+        [] -> adjFoes
+        tgtFoes -> tgtFoes  -- prefer displacing along the path to target
+      vFoes = map ((`vectorToFrom` bpos b) . bpos . snd) dispFoes
+      str = liftFrequency $ uniformFreq "displaceFoe" vFoes
+  Traversable.mapM (moveOrRunAid True aid) str
+
+displaceBlocker :: MonadClient m => ActorId -> m (Strategy RequestTimed)
+displaceBlocker aid = do
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   str <- case mtgtMPath of
     Just (_, Just (p : q : _, _)) -> displaceTowards aid p q
@@ -478,6 +507,9 @@ chase aid doDisplace = do
     Just (_, Just (p : q : _, (goal, _))) -> moveTowards aid p q goal
     _ -> return reject  -- goal reached
   -- If @doDisplace@: don't pick fights, assuming the target is more important.
+  -- We'd normally melee the target earlier on via @Ability.Melee@, but for
+  -- actors that don't have this ability (and so melee only when forced to),
+  -- this is meaningul.
   Traversable.mapM (moveOrRunAid doDisplace aid) str
 
 moveTowards :: MonadClient m
@@ -517,6 +549,8 @@ moveTowards aid source target goal = do
     return $! foldr (.|) reject freqs
 
 -- | Actor moves or searches or alters or attacks. Displaces if @run@.
+-- This function is very general, even though it's often used in contexts
+-- when only one or two of the many cases can possibly occur.
 moveOrRunAid :: MonadStateRead m
              => Bool -> ActorId -> Vector -> m RequestTimed
 moveOrRunAid run source dir = do
@@ -534,11 +568,13 @@ moveOrRunAid run source dir = do
   tgts <- getsState $ posToActors tpos lid
   case tgts of
     [((target, _), _)] | run ->  -- can be a foe, as well as a friend
-      if accessible cops lvl spos tpos then
+      if accessible cops lvl spos tpos
+         && boldpos sb /= tpos -- avoid trivial Displace loops
+      then
         -- Displacing requires accessibility.
         return $! ReqDisplace source target
       else
-        -- If cannot displace, hit. No DisplaceAccess.
+        -- If cannot displace, hit. No DisplaceAccess failure.
         return $! ReqMelee source target
     ((target, _), _) : _ ->  -- can be a foe, as well as a friend (e.g., proj.)
       -- No problem if there are many projectiles at the spot. We just

@@ -18,8 +18,8 @@ data Ability =
   | Trigger   -- ^ trigger a feature underneath
   | Ranged    -- ^ attack the visible target opponent at range
   | Tools     -- ^ use items
-  | Chase     -- ^ chase the target, ignoring any actors on the way
-  | Wander    -- ^ wander around, meleeing any opponents on the way
+  | Chase     -- ^ try hard to get closer to the target
+  | Wander    -- ^ if nothing else to do, wander towards the target
   deriving (Show, Eq, Ord, Enum, Bounded)
 
 instance Binary Ability where
