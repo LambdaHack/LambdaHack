@@ -8,6 +8,7 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import Data.Maybe
 
+import Game.LambdaHack.Client.AI.ConditionClient
 import Game.LambdaHack.Client.AI.Preferences
 import Game.LambdaHack.Client.AI.Strategy
 import Game.LambdaHack.Client.Bfs
@@ -72,6 +73,8 @@ targetStrategy oldLeader aid = do
   -- TODO: we assume the actor eventually becomes a leader (or has the same
   -- set of abilities as the leader, anyway) and set his target accordingly.
   actorAbs <- actorAbilities aid (Just aid)
+  condHpTooLow <- condHpTooLowM aid
+  condNoFriendsAdj <- condNoFriendsAdjM aid
   let nearbyFoes = filter (\(_, body) ->
                              chessDist (bpos body) (bpos b) < nearby) allFoes
       unknownId = ouniqGroup "unknown space"
@@ -94,6 +97,7 @@ targetStrategy oldLeader aid = do
       -- TODO: make more common when weak ranged foes preferred, etc.
       focused = bspeed b < speedNormal
       canSmell = asmell $ okind $ bkind b
+      woundedAndAlone = condHpTooLow && condNoFriendsAdj
       setPath :: Target -> m (Strategy (Target, PathEtc))
       setPath tgt = do
         mpos <- aidTgtToPos aid (blid b) (Just tgt)
@@ -109,7 +113,7 @@ targetStrategy oldLeader aid = do
       pickNewTarget :: m (Strategy (Target, PathEtc))
       pickNewTarget = do
         -- TODO: for foes, items, etc. consider a few nearby, not just one
-        cfoes <- closestFoes aid
+        cfoes <- if woundedAndAlone then return [] else closestFoes aid
         case cfoes of
           (_, (a, _)) : _ -> setPath $ TEnemy a False
           [] -> do
@@ -163,6 +167,7 @@ targetStrategy oldLeader aid = do
              && a `notElem` map fst nearbyFoes  -- old one not close enough
              || blid body /= blid b  -- wrong level
              || actorDying body  -- foe already dying
+             || woundedAndAlone  -- weak actor better used for exploring
           then pickNewTarget
           else if bpos body == fst (snd updatedPath)
                then return $! returN "TEnemy" (oldTgt, updatedPath)
