@@ -1,6 +1,9 @@
 -- | Monsters and heroes for LambdaHack.
 module Content.ActorKind ( cdefs ) where
 
+import Data.List
+
+import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Common.Dice
@@ -88,5 +91,5 @@ nose = ActorKind
   , asmell  = True
   , aiq     = 0
   , aregen  = maxBound
-  , acanDo  = [minBound..maxBound]
+  , acanDo  = delete Ability.Flee [minBound..maxBound]
   }

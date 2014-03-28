@@ -8,7 +8,7 @@ module Game.LambdaHack.Common.Misc
   , Container(..), CStore(..)
     -- * Assorted
   , normalLevelBound, divUp, Freqs, breturn
-  , serverSaveName
+  , serverSaveName, nearby
   ) where
 
 import Control.Monad
@@ -24,6 +24,10 @@ import Data.Traversable (traverse)
 import GHC.Generics (Generic)
 
 import Game.LambdaHack.Common.Point
+
+-- | What distance signifies that two actors are "nearby".
+nearby :: Int
+nearby = 10
 
 serverSaveName :: String
 serverSaveName = "server.sav"

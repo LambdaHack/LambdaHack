@@ -22,6 +22,7 @@ import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
@@ -71,8 +72,7 @@ targetStrategy oldLeader aid = do
   -- TODO: we assume the actor eventually becomes a leader (or has the same
   -- set of abilities as the leader, anyway) and set his target accordingly.
   actorAbs <- actorAbilities aid (Just aid)
-  let nearby = 10
-      nearbyFoes = filter (\(_, body) ->
+  let nearbyFoes = filter (\(_, body) ->
                              chessDist (bpos body) (bpos b) < nearby) allFoes
       unknownId = ouniqGroup "unknown space"
       fightsAgainstSpawners =

@@ -17,7 +17,7 @@ data Ability =
   | Pickup    -- ^ gather items
   | Trigger   -- ^ trigger a feature underneath
   | Ranged    -- ^ attack the visible target opponent at range
-  | Tools     -- ^ use items
+  | UseTool   -- ^ use items
   | Chase     -- ^ try hard to get closer to the target
   | Wander    -- ^ if nothing else to do, wander towards the target
   deriving (Show, Eq, Ord, Enum, Bounded)

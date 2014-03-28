@@ -45,9 +45,9 @@ import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind as TileKind
 
--- | Require that the target foe is visible.
-condPresentM :: MonadClient m => ActorId -> m Bool
-condPresentM aid = do
+-- | Require that the target foe is visible by the party.
+condFoePresentM :: MonadClient m => ActorId -> m Bool
+condFoePresentM aid = do
   btarget <- getsClient $ getTarget aid
   let mfAid =
         case btarget of
@@ -72,22 +72,42 @@ condHpTooLowM aid = do
   let kind = okind $ bkind b
   return $! bhp b == 1 || 5 * bhp b < Dice.maxDice (ahp kind)
 
+condOnTriggerableM :: MonadClient m => ActorId -> m Bool
+condOnTriggerableM aid = do
+  Kind.COps{cotile} <- getsState scops
+  b <- getsState $ getActorBody aid
+  lvl <- getLevel $ blid b
+  let t = lvl `at` bpos b
+  return $! not $ null $ Tile.causeEffects cotile t
+
 condEnemiesCloseM :: MonadClient m => ActorId -> m Bool
-condEnemiesCloseM _aid = return True  -- TODO
+condEnemiesCloseM aid = do
+  b <- getsState $ getActorBody aid
+  fact <- getsState $ \s -> sfactionD s EM.! bfid b
+  allFoes <- getsState $ filter (not . actorDying . snd)
+                         . actorNotProjAssocs (isAtWar fact) (blid b)
+  return $! any ((< nearby) . chessDist (bpos b) . bpos . snd) allFoes
 
 condFriendsFarM :: MonadClient m => ActorId -> m Bool
-condFriendsFarM _aid = return True  -- TODO
+condFriendsFarM aid = do
+  b <- getsState $ getActorBody aid
+  fact <- getsState $ \s -> sfactionD s EM.! bfid b
+  let friendlyFid fid = fid == bfid b || isAllied fact fid
+  ours <- getsState $ actorNotProjAssocs friendlyFid (blid b)
+  let far (aid2, b2) = aid2 == aid
+                       || chessDist (bpos b) (bpos b2) > nearby `div` 3
+  return $! all far ours
 
 condBlocksFriendsM :: MonadClient m => ActorId -> m Bool
 condBlocksFriendsM aid = do
   b <- getsState $ getActorBody aid
-  fact <- getsState $ \s -> sfactionD s EM.! bfid b
   ours <- getsState $ actorNotProjAssocs (== bfid b) (blid b)
   targetD <- getsClient stargetD
-  let blocked aid2 = case EM.lookup aid2 targetD of
-        Just (_, Just (_ : q : _, _)) | q == bpos b -> True
-        _ -> False
-  return $! any blocked $ map fst ours
+  let blocked (aid2, _) = aid2 /= aid &&
+        case EM.lookup aid2 targetD of
+          Just (_, Just (_ : q : _, _)) | q == bpos b -> True
+          _ -> False
+  return $! any blocked ours
 
 condNoWeaponM :: MonadClient m => ActorId -> m Bool
 condNoWeaponM aid = do
@@ -111,10 +131,10 @@ condWeaponAvailableM aid = do
 actionStrategy :: forall m. MonadClient m
                => ActorId -> m (Strategy RequestTimed)
 actionStrategy aid = do
-  condPresent <- condPresentM aid
-  let condAbsent = not condPresent
+  condFoePresent <- condFoePresentM aid
   condAnyAdjacent <- condAnyAdjacentM aid
   condHpTooLow <- condHpTooLowM aid
+  condOnTriggerable <- condOnTriggerableM aid
   condEnemiesClose <- condEnemiesCloseM aid
   condFriendsFar <- condFriendsFarM aid
   condBlocksFriends <- condBlocksFriendsM aid
@@ -130,18 +150,18 @@ actionStrategy aid = do
         return $! scaleFreq scale $ bestVariant st  -- TODO: flatten instead?
       prefix, suffix :: [([Ability], Bool, m (Strategy RequestTimed))]
       prefix =
-        [ ( [Ability.FirstAid, Ability.Tools]
+        [ ( [Ability.FirstAid, Ability.UseTool]
           , not condAnyAdjacent && condHpTooLow
-          , return reject )  -- TODO
-        , ( [Ability.Trigger, Ability.Flee]   -- TODO: don't return via
-          , condHpTooLow && condEnemiesClose  --   stairs at once
-          , triggerFreq aid ) -- flee via stairs
+          , useTool aid True )  -- use only healing tools
+        , ( [Ability.Trigger, Ability.Flee]
+          , condOnTriggerable && condHpTooLow && condEnemiesClose
+          , trigger aid True ) -- flee via stairs, even if to wrong level
         , ( [Ability.Flee]
-          , condAnyAdjacent && condHpTooLow
-          , return reject )  -- TODO
+          , condAnyAdjacent && condHpTooLow && condFriendsFar  -- aggresive
+          , flee aid )
         , ( [Ability.Displace, Ability.Melee]
           , condAnyAdjacent && condBlocksFriends
-          , displaceFoe aid )  -- only swap with a foe to expose him to others
+          , displaceFoe aid )  -- only swap with an enemy foe to expose him
         , ( [Ability.Pickup, Ability.Melee]
           , condNoWeapon && condWeaponAvailable
           , pickup aid True )
@@ -152,32 +172,32 @@ actionStrategy aid = do
           , True  -- unconditionally, e.g., to give to other party members
           , pickup aid False )
         , ( [Ability.Trigger]
-          , condAbsent  -- don't explore when target foe exists
-          , triggerFreq aid )
+          , condOnTriggerable
+          , trigger aid False )
         , ( [Ability.Displace, Ability.Chase]
-          , True
+          , True  -- prevents some looping movement
           , displaceBlocker aid ) ]  -- fires up only when path blocked
       distant :: [([Ability], Bool, m (Frequency RequestTimed))]
       distant =
         [ ( [Ability.Ranged]
-          , condPresent
-          , stratToFreq 4 (rangedFreq aid) )
-        , ( [Ability.Tools]
-          , condPresent  -- tools can affect the foe
-          , stratToFreq 1 (toolsFreq aid) )
+          , condFoePresent  -- for high-value target, shoot even in melee
+          , stratToFreq 2 (ranged aid) )
+        , ( [Ability.UseTool]
+          , condFoePresent  -- tools can affect the target foe
+          , stratToFreq 1 (useTool aid False) )  -- use any tool
         , ( [Ability.Chase]
-          , condPresent
-          , stratToFreq 30 (chase aid True) ) ]
+          , condFoePresent && not condHpTooLow
+          , stratToFreq 20 (chase aid True) ) ]
       suffix =
         [ ( [Ability.Flee]
           , condHpTooLow && condFriendsFar && condEnemiesClose
-          , return reject )
-        , ( [Ability.Wander]
-          , True
-          , chase aid False )
+          , flee aid )  -- we assume fleeing usually gets us closer to friends
         , ( [Ability.Melee]
           , condAnyAdjacent
-          , meleeAny aid ) ]  -- melee any, if can't even walk towards target
+          , meleeAny aid )  -- melee any, to avoid being wounded for naught
+        , ( [Ability.Wander]
+          , True
+          , chase aid False ) ]
       -- TODO: don't msum not to evaluate until needed
       checkAction :: ([Ability], Bool, m a) -> Bool
       checkAction (abts, cond, _) = cond && all (`elem` actorAbs) abts
@@ -305,8 +325,8 @@ meleeAny aid = do
   return $ liftFrequency freq
 
 -- Fast monsters don't pay enough attention to features.
-triggerFreq :: MonadClient m => ActorId -> m (Strategy RequestTimed)
-triggerFreq aid = do
+trigger :: MonadClient m => ActorId -> Bool -> m (Strategy RequestTimed)
+trigger aid fleeViaStairs = do
   cops@Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
   dungeon <- getsState sdungeon
   explored <- getsClient sexplored
@@ -338,27 +358,26 @@ triggerFreq aid = do
                 && boldlid b == lid2  -- in the opposite direction
              then 0  -- avoid trivial loops (pushing, being pushed, etc.)
              else case actorsThere of
-               [] -> expBenefit
+               [] -> expBenefit + if fleeViaStairs then 1 else 0
                [((_, body), _)] | not (bproj body)
                                   && isAtWar fact (bfid body) ->
                  min 1 expBenefit  -- push the enemy if no better option
                _ -> 0  -- projectiles or non-enemies
-        F.Cause ef@Effect.Escape{} ->
+        F.Cause ef@Effect.Escape{} ->  -- flee via this way, too
           -- Only heroes escape but they first explore all for high score.
           if not (isHero && allExplored) then 0 else effectToBenefit cops b ef
-        F.Cause ef -> effectToBenefit cops b ef
+        F.Cause ef | not fleeViaStairs -> effectToBenefit cops b ef
         _ -> 0
       benFeat = zip (map ben feats) feats
-  return $! liftFrequency $ toFreq "triggerFreq"
+  return $! liftFrequency $ toFreq "trigger"
          $ [ (benefit, ReqTrigger aid (Just feat))
            | (benefit, feat) <- benFeat
            , benefit > 0 ]
 
 -- Actors require sight to use ranged combat and intelligence to throw
 -- or zap anything else than obvious physical missiles.
-rangedFreq :: MonadClient m
-           => ActorId -> m (Strategy RequestTimed)
-rangedFreq aid = do
+ranged :: MonadClient m => ActorId -> m (Strategy RequestTimed)
+ranged aid = do
   cops@Kind.COps{ coactor=Kind.Ops{okind}
                 , coitem=coitem@Kind.Ops{okind=iokind}
                 , corule
@@ -409,16 +428,16 @@ rangedFreq aid = do
                -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
                -- and no actors or obstracles along the path
                && steps == chessDist bpos fpos
-            then toFreq "throwFreq"
+            then toFreq "ranged"
                  $ throwFreq eqpBag 1 CEqp
                    ++ throwFreq floorItems 2 CGround
-            else toFreq "throwFreq: not possible" []
+            else toFreq "ranged: not possible" []
       return $! liftFrequency freq
     _ -> return reject
 
 -- Tools use requires significant intelligence and sometimes literacy.
-toolsFreq :: MonadClient m => ActorId -> m (Strategy RequestTimed)
-toolsFreq aid = do
+useTool :: MonadClient m => ActorId -> Bool -> m (Strategy RequestTimed)
+useTool aid onlyFirstAid = do
   cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   disco <- getsClient sdisco
   b <- getsState $ getActorBody aid
@@ -429,6 +448,10 @@ toolsFreq aid = do
       mastered | aiq mk < 5 = ""
                | aiq mk < 10 = "!"
                | otherwise = "!?"  -- literacy required
+      legal item | onlyFirstAid = case jeffect item of
+                                    Effect.Heal p | p > 0 -> True
+                                    _ -> False
+                 | otherwise = True
       useFreq bag multi container =
         [ (benefit * multi, ReqApply aid iid container)
         | (iid, i) <- map (\iid -> (iid, getItemBody iid s))
@@ -436,28 +459,52 @@ toolsFreq aid = do
         , let benefit =
                 case jkind disco i of
                   Nothing -> 5  -- experimenting is fun
-                  Just _ki -> effectToBenefit cops b $ jeffect i
+                  Just _ki | legal i -> effectToBenefit cops b $ jeffect i
+                  Just _ -> 0
         , benefit > 0
         , jsymbol i `elem` mastered ]
-  return $! liftFrequency $ toFreq "useFreq"
+  return $! liftFrequency $ toFreq "useTool"
          $ useFreq eqpBag 1 CEqp
            ++ useFreq floorItems 2 CGround
+
+-- If low on health, flee in panic --- not along path to target,
+-- but just as far from the attackers, as possible. Usually fleeing from
+-- foes will lead towards friends, but we don't insist on that.
+flee :: MonadClient m => ActorId -> m (Strategy RequestTimed)
+flee aid = do
+  cops <- getsState scops
+  b <- getsState $ getActorBody aid
+  fact <- getsState $ \s -> sfactionD s EM.! bfid b
+  allFoes <- getsState $ filter (not . actorDying . snd)
+                         . actorNotProjAssocs (isAtWar fact) (blid b)
+  lvl@Level{lxsize, lysize} <- getLevel $ blid b
+  let posFoes = map (bpos . snd) allFoes
+      accessibleHere = accessible cops lvl $ bpos b
+      myVic = filter accessibleHere $ vicinity lxsize lysize $ bpos b
+      dist p | null posFoes = assert `failure` b
+             | otherwise = minimum $ map (chessDist p) posFoes
+      vVic = map (\p -> (dist p, p `vectorToFrom` bpos b)) myVic
+      goodVic = filter ((> dist (bpos b)) . fst) vVic
+      sosoVic = filter ((== dist (bpos b)) . fst) vVic
+      fleeVic = if null goodVic then sosoVic else goodVic
+      str = liftFrequency $ toFreq "flee" fleeVic
+  Traversable.mapM (moveOrRunAid True aid) str
 
 displaceFoe :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 displaceFoe aid = do
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
-  let tgtPath = case mtgtMPath of
+  let tgtPath = case mtgtMPath of  -- prefer displacing along the path to target
         Just (_, Just (path, _)) -> path
         _ -> []
   b <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
   allFoes <- getsState $ filter (not . actorDying . snd)
                          . actorNotProjAssocs (isAtWar fact) (blid b)
-  let adjFoes = filter (adjacent (bpos b) . bpos . snd) allFoes
-      dispFoes = case filter ((`elem` tgtPath) . bpos . snd) adjFoes of
-        [] -> adjFoes
-        tgtFoes -> tgtFoes  -- prefer displacing along the path to target
-      vFoes = map ((`vectorToFrom` bpos b) . bpos . snd) dispFoes
+  let posFoes = map (bpos . snd) allFoes
+      adjFoes = filter (adjacent (bpos b)) posFoes
+      pathFoes = filter (`elem` tgtPath) adjFoes
+      dispFoes = if null pathFoes then adjFoes else pathFoes
+      vFoes = map (`vectorToFrom` bpos b) dispFoes
       str = liftFrequency $ uniformFreq "displaceFoe" vFoes
   Traversable.mapM (moveOrRunAid True aid) str
 
@@ -477,7 +524,7 @@ displaceTowards aid source target = do
   cops <- getsState scops
   b <- getsState $ getActorBody aid
   assert (source == bpos b && adjacent source target) skip
-  lvl <- getsState $ (EM.! blid b) . sdungeon
+  lvl <- getLevel $ blid b
   if boldpos b /= target -- avoid trivial loops
      && accessible cops lvl source target then do
     mBlocker <- getsState $ posToActors target (blid b)
@@ -518,7 +565,7 @@ moveTowards aid source target goal = do
   cops@Kind.COps{coactor=Kind.Ops{okind}, cotile} <- getsState scops
   b <- getsState $ getActorBody aid
   assert (source == bpos b && adjacent source target) skip
-  lvl <- getsState $ (EM.! blid b) . sdungeon
+  lvl <- getLevel $ blid b
   fact <- getsState $ (EM.! bfid b) . sfactionD
   friends <- getsState $ actorList (not . isAtWar fact) $ blid b
   let _mk = okind $ bkind b
