@@ -45,29 +45,73 @@ import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind as TileKind
 
--- | AI strategy based on actor's sight, smell, intelligence, etc.
--- Never empty.
-actionStrategy :: forall m. MonadClient m
-               => ActorId -> m (Strategy RequestTimed)
-actionStrategy aid = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+-- | Require that the target foe is visible.
+condPresentM :: MonadClient m => ActorId -> m Bool
+condPresentM aid = do
   btarget <- getsClient $ getTarget aid
   let mfAid =
         case btarget of
           Just (TEnemy foeAid _) -> Just foeAid
           _ -> Nothing
-      condPresent = isJust mfAid  -- require that the target foe is visible
-      condAbsent = isNothing mfAid  -- require the target foe not visible
+  return $! isJust mfAid
+
+-- | Require that any non-dying foe is adjacent.
+condAnyAdjacentM :: MonadClient m => ActorId -> m Bool
+condAnyAdjacentM aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
   allFoes <- getsState $ filter (not . actorDying . snd)
                          . actorNotProjAssocs (isAtWar fact) (blid b)
-  let condAnyAdjacent = -- require that any non-dying foe is adjacent
-        any (adjacent (bpos b) . bpos . snd) allFoes
-      hpTooLow =
-        let kind = okind $ bkind b
-        in bhp b == 1 || 5 * bhp b < Dice.maxDice (ahp kind)
-      condHpTooLow = hpTooLow  -- require the actor's HP low enough
+  return $! any (adjacent (bpos b) . bpos . snd) allFoes
+
+-- | Require the actor's HP is low enough.
+condHpTooLowM :: MonadClient m => ActorId -> m Bool
+condHpTooLowM aid = do
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  b <- getsState $ getActorBody aid
+  let kind = okind $ bkind b
+  return $! bhp b == 1 || 5 * bhp b < Dice.maxDice (ahp kind)
+
+condEnemiesCloseM :: MonadClient m => ActorId -> m Bool
+condEnemiesCloseM _aid = return True  -- TODO
+
+condFriendsFarM :: MonadClient m => ActorId -> m Bool
+condFriendsFarM _aid = return True  -- TODO
+
+condBlocksFriendsM :: MonadClient m => ActorId -> m Bool
+condBlocksFriendsM _aid = return True  -- TODO
+
+condNoWeaponM :: MonadClient m => ActorId -> m Bool
+condNoWeaponM aid = do
+  cops <- getsState scops
+  b <- getsState $ getActorBody aid
+  eqpAssocs <- getsState $ getEqpAssocs b
+  return $! isNothing $ strongestSword cops eqpAssocs
+
+condWeaponAvailableM :: MonadClient m => ActorId -> m Bool
+condWeaponAvailableM aid = do
+  cops <- getsState scops
+  b <- getsState $ getActorBody aid
+  floorAssocs <- getsState $ getFloorAssocs (blid b) (bpos b)
+  invAssocs <- getsState $ getInvAssocs b
+  let lootIsWeapon = isJust $ strongestSword cops floorAssocs
+      weaponinInv = isJust $ strongestSword cops invAssocs
+  return $! lootIsWeapon || weaponinInv
+
+-- | AI strategy based on actor's sight, smell, intelligence, etc.
+-- Never empty.
+actionStrategy :: forall m. MonadClient m
+               => ActorId -> m (Strategy RequestTimed)
+actionStrategy aid = do
+  condPresent <- condPresentM aid
+  let condAbsent = not condPresent
+  condAnyAdjacent <- condAnyAdjacentM aid
+  condHpTooLow <- condHpTooLowM aid
+  condEnemiesClose <- condEnemiesCloseM aid
+  condFriendsFar <- condFriendsFarM aid
+  condBlocksFriends <- condBlocksFriendsM aid
+  condNoWeapon <- condNoWeaponM aid
+  condWeaponAvailable <- condWeaponAvailableM aid
   mleader <- getsClient _sleader
   actorAbs <- actorAbilities aid mleader
   let stratToFreq :: MonadStateRead m
@@ -81,29 +125,29 @@ actionStrategy aid = do
         [ ( [Ability.FirstAid, Ability.Tools]
           , not condAnyAdjacent && condHpTooLow
           , return reject )  -- TODO
-        , ( [Ability.Trigger, Ability.Flee]
-          , condHpTooLow  -- flee via stairs
-          , triggerFreq aid )
+        , ( [Ability.Trigger, Ability.Flee]   -- TODO: don't return via
+          , condHpTooLow && condEnemiesClose  -- stairs at once
+          , triggerFreq aid ) -- flee via stairs
         , ( [Ability.Flee]
           , condAnyAdjacent && condHpTooLow
           , return reject )  -- TODO
         , ( [Ability.Displace, Ability.Melee]
-          , condAnyAdjacent  -- TODO: swap with foe, when others need access
-          , displace aid )
+          , condAnyAdjacent && condBlocksFriends
+          , displace aid )  -- TODO: only swap with foe to expose him to others
         , ( [Ability.Pickup, Ability.Melee]
-          , True  -- TODO: only when no weapon and can pick up one
-          , pickup aid )
+          , condNoWeapon && condWeaponAvailable
+          , pickup aid True )
         , ( [Ability.Melee]
-          , condAnyAdjacent  -- melee target or blocker only
-          , melee aid )
+          , condAnyAdjacent
+          , melee aid )  -- only melee target or blocker
         , ( [Ability.Pickup]
           , True  -- unconditionally, e.g., to give to other party members
-          , pickup aid )
+          , pickup aid False )
         , ( [Ability.Displace, Ability.Chase]
           , True  -- when path blocked
           , displace aid )
         , ( [Ability.Trigger]
-          , condAbsent
+          , condAbsent  -- don't explore when target foe exists
           , triggerFreq aid ) ]
       distant :: [([Ability], Bool, m (Frequency RequestTimed))]
       distant =
@@ -111,17 +155,17 @@ actionStrategy aid = do
           , condPresent
           , stratToFreq 4 (rangedFreq aid) )
         , ( [Ability.Tools]
-          , condPresent
-          , stratToFreq 1 (toolsFreq aid) )  -- tools can affect the foe
+          , condPresent  -- tools can affect the foe
+          , stratToFreq 1 (toolsFreq aid) )
         , ( [Ability.Chase]
           , condPresent
           , stratToFreq 30 (chase aid True) ) ]
       suffix =
         [ ( [Ability.Melee]
-          , condAnyAdjacent  -- TODO: melee any, if nothing better to do
-          , melee aid )
+          , condAnyAdjacent
+          , melee aid )  -- TODO: melee any, if nothing better to do
         , ( [Ability.Flee]
-          , condHpTooLow  -- TODO: far from friends, enemies too close
+          , condHpTooLow && condFriendsFar && condEnemiesClose
           , return reject )
         , ( [Ability.Wander]
           , True
@@ -153,30 +197,16 @@ waitBlockNow aid = returN "wait" $ ReqWait aid
 
 -- TODO: (most?) animals don't pick up. Everybody else does.
 -- TODO: pick up best weapons first
-pickup :: MonadClient m => ActorId -> m (Strategy RequestTimed)
-pickup aid = do
- cops@Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
- body <- getsState $ getActorBody aid
- invAssocs <- getsState $ getInvAssocs body
- eqpAssocs <- getsState $ getEqpAssocs body
- floorAssocs <- getsState $ getFloorAssocs (blid body) (bpos body)
- btarget <- getsClient $ getTarget aid
- let hasNoWeapon = isNothing $ strongestSword cops eqpAssocs
-     lootIsWeapon = isJust $ strongestSword cops floorAssocs
-     weaponinInv = isJust $ strongestSword cops invAssocs
-     weaponAvailable = lootIsWeapon || weaponinInv
-     mfAid =
-      case btarget of
-        Just (TEnemy foeAid _) -> Just foeAid
-        _ -> Nothing
-     foeVisible = isJust mfAid
- if foeVisible && not (hasNoWeapon && weaponAvailable) then return reject
- else do
+pickup :: MonadClient m => ActorId -> Bool -> m (Strategy RequestTimed)
+pickup aid onlyWeapon = do
+  cops@Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
+  body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD
   dungeon <- getsState sdungeon
   itemD <- getsState sitemD
   disco <- getsClient sdisco
   floorItems <- getsState $ getActorBag aid CGround
+  invAssocs <- getsState $ getInvAssocs body
   let fightsAgainstSpawners =
         let escape = any lescape $ EM.elems dungeon
             isSpawner = isSpawnFact fact
@@ -198,7 +228,8 @@ pickup aid = do
       updateItemSlot (Just aid) iid
       return $! returN "pickup" $ ReqMoveItem aid iid k CGround CEqp
     [] | calmEnough body kind -> do
-      let RuleKind{ritemEqp, rsharedInventory} = Kind.stdRuleset corule
+      let RuleKind{ritemEqp, ritemMelee, rsharedInventory} =
+            Kind.stdRuleset corule
       eqpKA <- getsState $ getEqpKA body
       let improve symbol =
             let bestInv = strongestItem invAssocs $ pSymbol cops symbol
@@ -216,7 +247,7 @@ pickup aid = do
                 -- To make room in limited equipment store or to share.
                 returN "yield" $ ReqMoveItem aid iidEqp k CEqp CInv
               _ -> reject
-      return $ msum $ map improve ritemEqp
+      return $ msum $ map improve (if onlyWeapon then ritemMelee else ritemEqp)
     _ -> return reject
 
 pSymbol :: Kind.COps -> Char -> Item -> Maybe Int
