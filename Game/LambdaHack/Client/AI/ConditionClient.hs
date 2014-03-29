@@ -46,9 +46,9 @@ condAnyFoeAdjacentM :: MonadStateRead m => ActorId -> m Bool
 condAnyFoeAdjacentM aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
-  allFoes <- getsState $ filter (not . actorDying . snd)
-                         . actorNotProjAssocs (isAtWar fact) (blid b)
-  return $! any (adjacent (bpos b) . bpos . snd) allFoes
+  allFoes <- getsState $ filter (not . actorDying)
+                         . actorNotProjList (isAtWar fact) (blid b)
+  return $! any (adjacent (bpos b) . bpos) allFoes
 
 -- | Require the actor's HP is low enough.
 condHpTooLowM :: MonadStateRead m => ActorId -> m Bool
@@ -70,18 +70,18 @@ condEnemiesCloseM :: MonadStateRead m => ActorId -> m Bool
 condEnemiesCloseM aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
-  allFoes <- getsState $ filter (not . actorDying . snd)
-                         . actorNotProjAssocs (isAtWar fact) (blid b)
-  return $! any ((< nearby) . chessDist (bpos b) . bpos . snd) allFoes
+  allFoes <- getsState $ filter (not . actorDying)
+                         . actorNotProjList (isAtWar fact) (blid b)
+  return $! any ((< nearby) . chessDist (bpos b) . bpos) allFoes
 
 condNoFriendsAdjM :: MonadStateRead m => ActorId -> m Bool
 condNoFriendsAdjM aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
   let friendlyFid fid = fid == bfid b || isAllied fact fid
-  ours <- getsState $ actorNotProjList friendlyFid (blid b)
+  friends <- getsState $ actorNotProjList friendlyFid (blid b)
   let notAdj b2 = not $ adjacent (bpos b) (bpos b2)
-  return $! all notAdj ours
+  return $! all notAdj friends
 
 condBlocksFriendsM :: MonadClient m => ActorId -> m Bool
 condBlocksFriendsM aid = do

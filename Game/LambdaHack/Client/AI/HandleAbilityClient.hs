@@ -401,10 +401,10 @@ flee aid = do
         _ -> []
   b <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
-  allFoes <- getsState $ filter (not . actorDying . snd)
-                         . actorNotProjAssocs (isAtWar fact) (blid b)
+  allFoes <- getsState $ filter (not . actorDying)
+                         . actorNotProjList (isAtWar fact) (blid b)
   lvl@Level{lxsize, lysize} <- getLevel $ blid b
-  let posFoes = map (bpos . snd) allFoes
+  let posFoes = map bpos allFoes
       accessibleHere = accessible cops lvl $ bpos b
       myVic = vicinity lxsize lysize $ bpos b
       dist p | null posFoes = assert `failure` b
@@ -434,9 +434,9 @@ displaceFoe aid = do
         _ -> []
   b <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
-  allFoes <- getsState $ filter (not . actorDying . snd)
-                         . actorNotProjAssocs (isAtWar fact) (blid b)
-  let posFoes = map (bpos . snd) allFoes
+  allFoes <- getsState $ filter (not . actorDying)
+                         . actorNotProjList (isAtWar fact) (blid b)
+  let posFoes = map bpos allFoes
       adjFoes = filter (adjacent (bpos b)) posFoes
       pathFoes = filter (`elem` tgtPath) adjFoes
       dispFoes = if null pathFoes then adjFoes else pathFoes

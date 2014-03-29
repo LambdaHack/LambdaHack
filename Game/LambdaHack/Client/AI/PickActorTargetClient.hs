@@ -75,10 +75,16 @@ targetStrategy oldLeader aid = do
   actorAbs <- actorAbilities aid (Just aid)
   condHpTooLow <- condHpTooLowM aid
   condNoFriendsAdj <- condNoFriendsAdjM aid
+  let friendlyFid fid = fid == bfid b || isAllied fact fid
+  friends <- getsState $ actorNotProjList friendlyFid (blid b)
   let nearbyF | fightsAgainstSpawners = nearby `div` 2  -- not aggresive
               | otherwise = nearby
       nearbyFoes = filter (\(_, body) ->
-                             chessDist (bpos body) (bpos b) < nearbyF) allFoes
+                             let cutoff =
+                                   if any (adjacent (bpos body) . bpos) friends
+                                   then 3 * nearbyF  -- attacks friends!
+                                   else nearbyF
+                             in chessDist (bpos body) (bpos b) < cutoff) allFoes
       unknownId = ouniqGroup "unknown space"
       fightsAgainstSpawners =
         let escape = any lescape $ EM.elems dungeon
