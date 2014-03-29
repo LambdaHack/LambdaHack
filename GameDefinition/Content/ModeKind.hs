@@ -125,15 +125,10 @@ playersDefense = Players
   { playersList = [ playerMonster { playerInitial = 1
                                   , playerAiLeader = False
                                   , playerUI = True }
-                  , playerAntiHero {playerName = "Green"}
-                  , playerAntiHero {playerName = "Yellow"}
-                  , playerAntiHero {playerName = "Cyan"} ]
-  , playersEnemy = [ ("Green", "Monster Hive")
-                   , ("Yellow", "Monster Hive")
-                   , ("Cyan", "Monster Hive") ]
-  , playersAlly = [ ("Green", "Yellow")
-                  , ("Green", "Cyan")
-                  , ("Yellow", "Cyan") ] }
+                  , playerAntiHero { playerName = "Yellow"
+                                   , playerInitial = 10 } ]
+  , playersEnemy = [("Yellow", "Monster Hive")]
+  , playersAlly = [] }
 
 
 playerHero, playerAntiHero, playerMonster, playerHorror :: Player
