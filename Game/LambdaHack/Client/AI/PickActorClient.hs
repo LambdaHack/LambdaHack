@@ -11,8 +11,10 @@ import Data.Maybe
 import Data.Ord
 
 import Game.LambdaHack.Client.AI.ConditionClient
+import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
+import qualified Game.LambdaHack.Common.Ability as Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
@@ -73,10 +75,13 @@ pickActorToMove refreshTarget oldAid = do
       -- TODO: this also takes melee into account, but not shooting.
       oursTgt <- fmap catMaybes $ mapM (refreshTarget oldAid) ours
       let actorWeak ((aid, _), _) = do
-            condHpTooLow <- condHpTooLowM aid
-            condAnyFoeAdjacent <- condAnyFoeAdjacentM aid
-            condNoFriendsAdj <- condNoFriendsAdjM aid
-            return $! condHpTooLow && condAnyFoeAdjacent && condNoFriendsAdj
+            actorAbs <- actorAbilities aid mleader
+            if Ability.Flee `notElem` actorAbs then return False
+            else do
+              condHpTooLow <- condHpTooLowM aid
+              condAnyFoeAdjacent <- condAnyFoeAdjacentM aid
+              condNoFriends <- condNoFriendsM aid
+              return $! condHpTooLow && condAnyFoeAdjacent && condNoFriends
       oursWeak <- filterM actorWeak oursTgt
       oursStrong <- filterM (fmap not . actorWeak) oursTgt  -- TODO: partitionM
       let targetTEnemy (_, (TEnemy{}, _)) = True

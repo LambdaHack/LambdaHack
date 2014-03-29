@@ -73,17 +73,28 @@ targetStrategy oldLeader aid = do
   -- TODO: we assume the actor eventually becomes a leader (or has the same
   -- set of abilities as the leader, anyway) and set his target accordingly.
   actorAbs <- actorAbilities aid (Just aid)
-  condHpTooLow <- condHpTooLowM aid
-  condNoFriendsAdj <- condNoFriendsAdjM aid
+  (woundedAndAlone, woundedOrAlone) <- do
+    if Ability.Flee `notElem` actorAbs then return (False, False)
+    else do
+      condHpTooLow <- condHpTooLowM aid
+      condNoFriends <- condNoFriendsM aid
+      return ( condHpTooLow && condNoFriends
+             , condHpTooLow || condNoFriends )
   let friendlyFid fid = fid == bfid b || isAllied fact fid
   friends <- getsState $ actorNotProjList friendlyFid (blid b)
-  let nearbyF | fightsAgainstSpawners = nearby `div` 2  -- not aggresive
-              | otherwise = nearby
+  -- TODO: refine all this when some actors specialize in ranged attacks
+  -- (then we have to target, but keep the distance, we can do similarly for
+  -- wounded or alone actors, perhaps only until they are shot first time,
+  -- and only if they can shoot at the moment)
+  let nearbyFights | fightsAgainstSpawners = nearby `div` 2  -- not aggresive
+                   | otherwise = nearby * 2
+      nearbyOr = if woundedOrAlone then nearbyFights `div` 2 else nearbyFights
+      nearbyAnd = if woundedAndAlone then 0 else nearbyOr
       nearbyFoes = filter (\(_, body) ->
                              let cutoff =
                                    if any (adjacent (bpos body) . bpos) friends
-                                   then 3 * nearbyF  -- attacks friends!
-                                   else nearbyF
+                                   then 3 * nearbyAnd  -- attacks friends!
+                                   else nearbyAnd
                              in chessDist (bpos body) (bpos b) < cutoff) allFoes
       unknownId = ouniqGroup "unknown space"
       fightsAgainstSpawners =
@@ -105,7 +116,6 @@ targetStrategy oldLeader aid = do
       -- TODO: make more common when weak ranged foes preferred, etc.
       focused = bspeed b < speedNormal
       canSmell = asmell $ okind $ bkind b
-      woundedAndAlone = condHpTooLow && condNoFriendsAdj
       setPath :: Target -> m (Strategy (Target, PathEtc))
       setPath tgt = do
         mpos <- aidTgtToPos aid (blid b) (Just tgt)
@@ -121,10 +131,7 @@ targetStrategy oldLeader aid = do
       pickNewTarget :: m (Strategy (Target, PathEtc))
       pickNewTarget = do
         -- TODO: for foes, items, etc. consider a few nearby, not just one
-        cfoes <- if fightsAgainstSpawners && null nearbyFoes  -- not aggresive
-                    || woundedAndAlone
-                 then return []
-                 else closestFoes aid
+        cfoes <- if null nearbyFoes then return [] else closestFoes aid
         case cfoes of
           (_, (a, _)) : _ -> setPath $ TEnemy a False
           [] -> do

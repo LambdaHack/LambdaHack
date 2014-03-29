@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.AI.ConditionClient
   , condHpTooLowM
   , condOnTriggerableM
   , condEnemiesCloseM
-  , condNoFriendsAdjM
+  , condNoFriendsM
   , condBlocksFriendsM
   , condNoWeaponM
   , condWeaponAvailableM
@@ -74,14 +74,14 @@ condEnemiesCloseM aid = do
                          . actorNotProjList (isAtWar fact) (blid b)
   return $! any ((< nearby) . chessDist (bpos b) . bpos) allFoes
 
-condNoFriendsAdjM :: MonadStateRead m => ActorId -> m Bool
-condNoFriendsAdjM aid = do
+condNoFriendsM :: MonadStateRead m => ActorId -> m Bool
+condNoFriendsM aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
   let friendlyFid fid = fid == bfid b || isAllied fact fid
   friends <- getsState $ actorNotProjList friendlyFid (blid b)
-  let notAdj b2 = not $ adjacent (bpos b) (bpos b2)
-  return $! all notAdj friends
+  let notCloseEnough b2 = chessDist (bpos b) (bpos b2) `notElem` [1, 2]
+  return $! all notCloseEnough friends
 
 condBlocksFriendsM :: MonadClient m => ActorId -> m Bool
 condBlocksFriendsM aid = do

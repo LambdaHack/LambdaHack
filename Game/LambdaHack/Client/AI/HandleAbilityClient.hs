@@ -57,7 +57,7 @@ actionStrategy aid = do
   condHpTooLow <- condHpTooLowM aid
   condOnTriggerable <- condOnTriggerableM aid
   condEnemiesClose <- condEnemiesCloseM aid
-  condNoFriendsAdj <- condNoFriendsAdjM aid
+  condNoFriends <- condNoFriendsM aid
   condBlocksFriends <- condBlocksFriendsM aid
   condNoWeapon <- condNoWeaponM aid
   condWeaponAvailable <- condWeaponAvailableM aid
@@ -78,7 +78,7 @@ actionStrategy aid = do
           , condOnTriggerable && condHpTooLow && condEnemiesClose
           , trigger aid True ) -- flee via stairs, even if to wrong level
         , ( [Ability.Flee]
-          , condAnyFoeAdjacent && condHpTooLow && condNoFriendsAdj
+          , condAnyFoeAdjacent && condHpTooLow && condNoFriends
           , flee aid )
         , ( [Ability.Displace, Ability.Melee]
           , condAnyFoeAdjacent && condBlocksFriends
@@ -106,12 +106,12 @@ actionStrategy aid = do
         , ( [Ability.UseTool]
           , condTgtEnemyPresent  -- tools can affect the target enemy
           , stratToFreq 1 (useTool aid False) )  -- use any tool
-        , ( [Ability.Chase]
-          , condTgtEnemyPresent && not condHpTooLow
+        , ( [Ability.Chase]  -- careful, even if no Ability.Flee
+          , condTgtEnemyPresent && not condHpTooLow && not condNoFriends
           , stratToFreq 20 (chase aid True) ) ]
       suffix =
         [ ( [Ability.Flee]
-          , condHpTooLow && condNoFriendsAdj && condEnemiesClose
+          , condHpTooLow && condNoFriends && condEnemiesClose
           , flee aid )  -- we assume fleeing usually gets us closer to friends
         , ( [Ability.Melee]
           , condAnyFoeAdjacent
