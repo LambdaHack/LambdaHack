@@ -75,8 +75,10 @@ targetStrategy oldLeader aid = do
   actorAbs <- actorAbilities aid (Just aid)
   condHpTooLow <- condHpTooLowM aid
   condNoFriendsAdj <- condNoFriendsAdjM aid
-  let nearbyFoes = filter (\(_, body) ->
-                             chessDist (bpos body) (bpos b) < nearby) allFoes
+  let nearbyF | fightsAgainstSpawners = nearby `div` 2  -- not aggresive
+              | otherwise = nearby
+      nearbyFoes = filter (\(_, body) ->
+                             chessDist (bpos body) (bpos b) < nearbyF) allFoes
       unknownId = ouniqGroup "unknown space"
       fightsAgainstSpawners =
         let escape = any lescape $ EM.elems dungeon
@@ -113,7 +115,10 @@ targetStrategy oldLeader aid = do
       pickNewTarget :: m (Strategy (Target, PathEtc))
       pickNewTarget = do
         -- TODO: for foes, items, etc. consider a few nearby, not just one
-        cfoes <- if woundedAndAlone then return [] else closestFoes aid
+        cfoes <- if fightsAgainstSpawners && null nearbyFoes  -- not aggresive
+                    || woundedAndAlone
+                 then return []
+                 else closestFoes aid
         case cfoes of
           (_, (a, _)) : _ -> setPath $ TEnemy a False
           [] -> do
