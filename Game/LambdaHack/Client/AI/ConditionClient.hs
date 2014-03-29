@@ -3,9 +3,10 @@
 module Game.LambdaHack.Client.AI.ConditionClient
   ( condTgtEnemyPresentM
   , condAnyFoeAdjacentM
+  , condThreatAdjacentM
   , condHpTooLowM
   , condOnTriggerableM
-  , condEnemiesCloseM
+  , condThreatCloseM
   , condNoFriendsM
   , condBlocksFriendsM
   , condNoWeaponM
@@ -39,9 +40,18 @@ condTgtEnemyPresentM aid = do
           _ -> Nothing
   return $! isJust mfAid
 
--- | Require that any non-low-HP foe is adjacent.
+-- | Require that any non-dying foe is adjacent.
 condAnyFoeAdjacentM :: MonadStateRead m => ActorId -> m Bool
 condAnyFoeAdjacentM aid = do
+  b <- getsState $ getActorBody aid
+  fact <- getsState $ \s -> sfactionD s EM.! bfid b
+  allFoes <- getsState $ filter (not . actorDying)
+                         . actorNotProjList (isAtWar fact) (blid b)
+  return $! any (adjacent (bpos b) . bpos) allFoes
+
+-- | Require that any non-low-HP foe is adjacent.
+condThreatAdjacentM :: MonadStateRead m => ActorId -> m Bool
+condThreatAdjacentM aid = do
   Kind.COps{coactor} <- getsState scops
   b <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
@@ -64,8 +74,9 @@ condOnTriggerableM aid = do
   let t = lvl `at` bpos b
   return $! not $ null $ Tile.causeEffects cotile t
 
-condEnemiesCloseM :: MonadStateRead m => ActorId -> m Bool
-condEnemiesCloseM aid = do
+-- | Require that any non-low-HP foe is nearby.
+condThreatCloseM :: MonadStateRead m => ActorId -> m Bool
+condThreatCloseM aid = do
   Kind.COps{coactor} <- getsState scops
   b <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid b

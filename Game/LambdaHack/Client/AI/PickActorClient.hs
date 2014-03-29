@@ -79,9 +79,9 @@ pickActorToMove refreshTarget oldAid = do
             if Ability.Flee `notElem` actorAbs then return False
             else do
               condHpTooLow <- condHpTooLowM aid
-              condAnyFoeAdjacent <- condAnyFoeAdjacentM aid
+              condThreatAdjacent <- condThreatAdjacentM aid
               condNoFriends <- condNoFriendsM aid
-              return $! condHpTooLow && condAnyFoeAdjacent && condNoFriends
+              return $! condHpTooLow && condThreatAdjacent && condNoFriends
       oursWeak <- filterM actorWeak oursTgt
       oursStrong <- filterM (fmap not . actorWeak) oursTgt  -- TODO: partitionM
       let targetTEnemy (_, (TEnemy{}, _)) = True

@@ -54,9 +54,10 @@ actionStrategy :: forall m. MonadClient m
 actionStrategy aid = do
   condTgtEnemyPresent <- condTgtEnemyPresentM aid
   condAnyFoeAdjacent <- condAnyFoeAdjacentM aid
+  condThreatAdjacent <- condThreatAdjacentM aid
   condHpTooLow <- condHpTooLowM aid
   condOnTriggerable <- condOnTriggerableM aid
-  condEnemiesClose <- condEnemiesCloseM aid
+  condThreatClose <- condThreatCloseM aid
   condNoFriends <- condNoFriendsM aid
   condBlocksFriends <- condBlocksFriendsM aid
   condNoWeapon <- condNoWeaponM aid
@@ -75,10 +76,10 @@ actionStrategy aid = do
           , not condAnyFoeAdjacent && condHpTooLow
           , useTool aid True )  -- use only healing tools
         , ( [Ability.Trigger, Ability.Flee]
-          , condOnTriggerable && condHpTooLow && condEnemiesClose
+          , condOnTriggerable && condHpTooLow && condThreatClose
           , trigger aid True ) -- flee via stairs, even if to wrong level
         , ( [Ability.Flee]
-          , condAnyFoeAdjacent && condHpTooLow && condNoFriends
+          , condThreatAdjacent && condHpTooLow && condNoFriends
           , flee aid )
         , ( [Ability.Displace, Ability.Melee]
           , condAnyFoeAdjacent && condBlocksFriends
@@ -111,7 +112,7 @@ actionStrategy aid = do
           , stratToFreq 20 (chase aid True) ) ]
       suffix =
         [ ( [Ability.Flee]
-          , condHpTooLow && condNoFriends && condEnemiesClose
+          , condHpTooLow && condNoFriends && condThreatClose
           , flee aid )  -- we assume fleeing usually gets us closer to friends
         , ( [Ability.Melee]
           , condAnyFoeAdjacent
