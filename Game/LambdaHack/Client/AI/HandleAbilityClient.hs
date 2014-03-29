@@ -336,7 +336,7 @@ ranged aid = do
                           $ EM.keys bag
             , let benefit =
                     case jkind disco i of
-                      Nothing -> 5  -- experimenting is fun
+                      Nothing -> -5  -- experimenting is fun
                       Just _ki ->
                         let _kik = iokind _ki
                             _unneeded = isymbol _kik
