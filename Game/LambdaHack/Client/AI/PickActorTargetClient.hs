@@ -66,7 +66,8 @@ targetStrategy oldLeader aid = do
   lvl <- getLevel $ blid b
   assert (not $ bproj b) skip  -- would work, but is probably a bug
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  allFoes <- getsState $ actorNotProjAssocs (isAtWar fact) (blid b)
+  allFoes <- getsState $ filter (not . actorDying . snd)
+                         . actorNotProjAssocs (isAtWar fact) (blid b)
   dungeon <- getsState sdungeon
   itemD <- getsState sitemD
   disco <- getsClient sdisco

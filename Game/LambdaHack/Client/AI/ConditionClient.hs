@@ -19,7 +19,6 @@ import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -29,7 +28,6 @@ import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
-import Game.LambdaHack.Content.ActorKind
 
 -- | Require that the target enemy is visible by the party.
 condTgtEnemyPresentM :: MonadClient m => ActorId -> m Bool
@@ -41,22 +39,22 @@ condTgtEnemyPresentM aid = do
           _ -> Nothing
   return $! isJust mfAid
 
--- | Require that any non-dying foe is adjacent.
+-- | Require that any non-low-HP foe is adjacent.
 condAnyFoeAdjacentM :: MonadStateRead m => ActorId -> m Bool
 condAnyFoeAdjacentM aid = do
+  Kind.COps{coactor} <- getsState scops
   b <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
-  allFoes <- getsState $ filter (not . actorDying)
+  allFoes <- getsState $ filter (not . hpTooLow coactor)
                          . actorNotProjList (isAtWar fact) (blid b)
   return $! any (adjacent (bpos b) . bpos) allFoes
 
 -- | Require the actor's HP is low enough.
-condHpTooLowM :: MonadStateRead m => ActorId -> m Bool
+condHpTooLowM :: MonadClient m => ActorId -> m Bool
 condHpTooLowM aid = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  Kind.COps{coactor} <- getsState scops
   b <- getsState $ getActorBody aid
-  let kind = okind $ bkind b
-  return $! bhp b == 1 || 5 * bhp b < Dice.maxDice (ahp kind)
+  return $! hpTooLow coactor b
 
 condOnTriggerableM :: MonadStateRead m => ActorId -> m Bool
 condOnTriggerableM aid = do
@@ -68,12 +66,14 @@ condOnTriggerableM aid = do
 
 condEnemiesCloseM :: MonadStateRead m => ActorId -> m Bool
 condEnemiesCloseM aid = do
+  Kind.COps{coactor} <- getsState scops
   b <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
-  allFoes <- getsState $ filter (not . actorDying)
+  allFoes <- getsState $ filter (not . hpTooLow coactor)
                          . actorNotProjList (isAtWar fact) (blid b)
   return $! any ((< nearby) . chessDist (bpos b) . bpos) allFoes
 
+-- Don't care if the friends dying or strong.
 condNoFriendsM :: MonadStateRead m => ActorId -> m Bool
 condNoFriendsM aid = do
   b <- getsState $ getActorBody aid
