@@ -189,6 +189,7 @@ effectDominate source target = do
         delta | boldfid tb == bfid tb = speedNegate halfSpeed  -- slow down
               | otherwise = speedZero
     when (delta /= speedZero) $ execUpdAtomic $ UpdHasteActor target delta
+    -- Focus on the dominated actor, by making him a leader.
     execUpdAtomic $ UpdLeadFaction (bfid sb) leaderOld (Just target)
     return True
 
@@ -331,15 +332,18 @@ effLvlGoUp aid k = do
   else if bproj b1 then
     assert `failure` "projectiles can't exit levels" `twith` (aid, k, b1)
   else do
-    let switch1 = switchLevels1 ((aid, b1), ais1)
+    let switch1 = void $ switchLevels1 ((aid, b1), ais1)
         switch2 = do
-          -- Move the actor to where the inhabitant was, if any.
-          switchLevels2 lid2 pos2 ((aid, b1), ais1)
+          -- Make the intiator of the stair move the leader,
+          -- to let him clear the stairs for other to follow.
+          let mlead = Just aid
+          -- Move the actor to where the inhabitants were, if any.
+          switchLevels2 lid2 pos2 ((aid, b1), ais1) mlead
           -- Verify only one non-projectile actor on every tile.
           !_ <- getsState $ posToActors pos1 lid1  -- assertion is inside
           !_ <- getsState $ posToActors pos2 lid2  -- assertion is inside
-          return Nothing
-    -- The actor is added to the new level, but there can be other actors
+          return ()
+    -- The actor will be added to the new level, but there can be other actors
     -- at his new position.
     inhabitants <- getsState $ posToActors pos2 lid2
     case inhabitants of
@@ -357,29 +361,40 @@ effLvlGoUp aid k = do
         execSfxAtomic $ SfxMsgFid (bfid b2) msg2
         -- Move the actor out of the way.
         switch1
-        -- Move the inhabitant out of the way.
-        mapM_ switchLevels1 inhabitants
-        -- Move the inhabitant to where the actor was.
-        mapM_ (switchLevels2 lid1 pos1) inhabitants
+        -- Move the inhabitant out of the way and to where the actor was.
+        let moveInh inh = do
+              -- Preserve old the leader, since the actor is pushed, so possibly
+              -- has nothing worhwhile to do on the new level (and could try
+              -- to switch back, if made a leader, leading to a loop).
+              inhMLead <- switchLevels1 inh
+              switchLevels2 lid1 pos1 inh inhMLead
+        mapM_ moveInh inhabitants
+        -- Move the actor to his destination.
         switch2
+    return Nothing
 
-switchLevels1 :: MonadAtomic m => ((ActorId, Actor), [(ItemId, Item)]) -> m ()
+switchLevels1 :: MonadAtomic m
+              => ((ActorId, Actor), [(ItemId, Item)]) -> m (Maybe ActorId)
 switchLevels1 ((aid, bOld), ais) = do
   let side = bfid bOld
   mleader <- getsState $ gleader . (EM.! side) . sfactionD
   -- Prevent leader pointing to a non-existing actor.
-  when (not (bproj bOld) && isJust mleader) $
-    -- Trouble, if the actors are of the same faction.
-    execUpdAtomic $ UpdLeadFaction side mleader Nothing
+  mlead <-
+    if not (bproj bOld) && isJust mleader then do
+      execUpdAtomic $ UpdLeadFaction side mleader Nothing
+      return mleader
+    else return Nothing
   -- Remove the actor from the old level.
   -- Onlookers see somebody disappear suddenly.
   -- @DestroyActorA@ is too loud, so use @LoseActorA@ instead.
   execUpdAtomic $ UpdLoseActor aid bOld ais
+  return mlead
 
 switchLevels2 :: MonadAtomic m
               => LevelId -> Point -> ((ActorId, Actor), [(ItemId, Item)])
+              -> Maybe ActorId
               -> m ()
-switchLevels2 lidNew posNew ((aid, bOld), ais) = do
+switchLevels2 lidNew posNew ((aid, bOld), ais) mlead = do
   let lidOld = blid bOld
       side = bfid bOld
   assert (lidNew /= lidOld `blame` "stairs looped" `twith` lidNew) skip
@@ -395,17 +410,11 @@ switchLevels2 lidNew posNew ((aid, bOld), ais) = do
                   , bpos = posNew
                   , boldpos = posNew  -- new level, new direction
                   , boldlid = lidOld }  -- record old level
-  mleader <- getsState $ gleader . (EM.! side) . sfactionD
   -- Materialize the actor at the new location.
   -- Onlookers see somebody appear suddenly. The actor himself
   -- sees new surroundings and has to reset his perception.
   execUpdAtomic $ UpdCreateActor aid bNew ais
-  -- Changing levels is so important, that the leader changes.
-  -- This also helps the actor clear the staircase and so avoid
-  -- being pushed back to the level he came from by another actor.
-  when (not (bproj bOld) && isNothing mleader) $
-    -- Trouble, if the actors are of the same faction.
-    execUpdAtomic $ UpdLeadFaction side Nothing (Just aid)
+  when (isJust mlead) $ execUpdAtomic $ UpdLeadFaction side Nothing mlead
 
 -- ** Escape
 
