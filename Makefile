@@ -12,16 +12,16 @@ xcplay:
 	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer
 
 xcfrontendCampaign:
-	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --maxFps 180 --savePrefix test --dumpInitRngs --automateAll --gameMode campaign --difficulty 1
+	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --maxFps 60 --savePrefix test --dumpInitRngs --automateAll --gameMode campaign --difficulty 1
 
 xcfrontendSkirmish:
-	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --maxFps 180 --savePrefix test --dumpInitRngs --automateAll --gameMode skirmish
+	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --maxFps 60 --savePrefix test --dumpInitRngs --automateAll --gameMode skirmish
 
 xcfrontendBattle:
-	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --maxFps 180 --savePrefix test --dumpInitRngs --automateAll --gameMode battle --difficulty 1
+	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --maxFps 60 --savePrefix test --dumpInitRngs --automateAll --gameMode battle --difficulty 1
 
 xcfrontendDefense:
-	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --maxFps 180 --savePrefix test --dumpInitRngs --automateAll --gameMode defense --difficulty 9
+	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --maxFps 60 --savePrefix test --dumpInitRngs --automateAll --gameMode defense --difficulty 9
 
 xcbenchCampaign:
 	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendNull --benchmark --stopAfter 60 --automateAll --gameMode campaign --difficulty 1 --setDungeonRng 42 --setMainRng 42
@@ -108,16 +108,16 @@ play:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer
 
 frontendCampaign:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --maxFps 180 --savePrefix test --dumpInitRngs --automateAll --gameMode campaign --difficulty 1
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --maxFps 60 --savePrefix test --dumpInitRngs --automateAll --gameMode campaign --difficulty 1
 
 frontendSkirmish:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --maxFps 180 --savePrefix test --dumpInitRngs --automateAll --gameMode skirmish
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --maxFps 60 --savePrefix test --dumpInitRngs --automateAll --gameMode skirmish
 
 frontendBattle:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --maxFps 180 --savePrefix test --dumpInitRngs --automateAll --gameMode battle --difficulty 1
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --maxFps 60 --savePrefix test --dumpInitRngs --automateAll --gameMode battle --difficulty 1
 
 frontendDefense:
-	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --maxFps 180 --savePrefix test --dumpInitRngs --automateAll --gameMode defense --difficulty 9
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --maxFps 60 --savePrefix test --dumpInitRngs --automateAll --gameMode defense --difficulty 9
 
 benchCampaign:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendNull --benchmark --stopAfter 60 --automateAll --gameMode campaign --difficulty 1 --setDungeonRng 42 --setMainRng 42
