@@ -19,8 +19,8 @@ import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
 
 class (Monad m, Functor m) => MonadStateRead m where
-  getState    :: m State
-  getsState   :: (State -> a) -> m a
+  getState  :: m State
+  getsState :: (State -> a) -> m a
 
 getLevel :: MonadStateRead m => LevelId -> m Level
 getLevel lid = getsState $ (EM.! lid) . sdungeon

@@ -10,11 +10,13 @@ import Data.List
 import Data.Maybe
 import Data.Ord
 
+import Game.LambdaHack.Client.AI.ConditionClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Frequency
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.MonadStateRead
@@ -24,7 +26,6 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.FactionKind
-import Game.LambdaHack.Common.Frequency
 
 pickActorToMove :: MonadClient m
                 => (ActorId -> (ActorId, Actor)
@@ -67,12 +68,19 @@ pickActorToMove refreshTarget oldAid = do
       -- and treat all party actors the same, eliminating candidates
       -- until we can't distinguish them any more, at which point we prefer
       -- the old leader, if he is among the best candidates
-      -- (to make the AI appear more human-like to easier to observe).
-      -- TODO: this also takes melee into account, not shooting.
+      -- (to make the AI appear more human-like and easier to observe).
+      -- TODO: this also takes melee into account, but not shooting.
       oursTgt <- fmap catMaybes $ mapM (refreshTarget oldAid) ours
+      let actorWeak ((aid, _), _) = do
+            condHpTooLow <- condHpTooLowM aid
+            condAnyFoeAdjacent <- condAnyFoeAdjacentM aid
+            condNoFriendsAdj <- condNoFriendsAdjM aid
+            return $! condHpTooLow && condAnyFoeAdjacent && condNoFriendsAdj
+      oursWeak <- filterM actorWeak oursTgt
+      oursStrong <- filterM (fmap not . actorWeak) oursTgt  -- TODO: partitionM
       let targetTEnemy (_, (TEnemy{}, _)) = True
           targetTEnemy _ = False
-          (oursTEnemy, oursOther) = partition targetTEnemy oursTgt
+          (oursTEnemy, oursOther) = partition targetTEnemy oursStrong
           -- These are not necessarily stuck (perhaps can go around),
           -- but their current path is blocked by friends.
           targetBlocked our@((_aid, _b), (_tgt, (path, _etc))) =
@@ -87,14 +95,15 @@ pickActorToMove refreshTarget oldAid = do
 --             && not (aid == oldAid && waitedLastTurn b time)  -- not stuck
 -- this only prevents staying stuck
           (oursBlocked, oursPos) = partition targetBlocked oursOther
-          valueOurs :: ((ActorId, Actor), (Target, PathEtc))
+          -- Lower overhead is better.
+          overheadOurs :: ((ActorId, Actor), (Target, PathEtc))
                     -> (Int, Int, Bool)
-          valueOurs our@((aid, b), (TEnemy{}, (_, (_, d)))) =
+          overheadOurs our@((aid, b), (TEnemy{}, (_, (_, d)))) =
             -- TODO: take weapon, walk and fight speed, etc. into account
             ( d + if targetBlocked our then 2 else 0  -- possible delay, hacky
             , - 10 * (bhp b `div` 10)
             , aid /= oldAid )
-          valueOurs ((aid, b), (_tgt, (_path, (goal, d)))) =
+          overheadOurs ((aid, b), (_tgt, (_path, (goal, d)))) =
             -- Keep proper formation, not too dense, not to sparse.
             let -- TODO: vary the parameters according to the stage of game,
                 -- enough equipment or not, game mode, level map, etc.
@@ -130,7 +139,7 @@ pickActorToMove refreshTarget oldAid = do
                                          else 9 + d `div` 10
                , sumCoeff
                , aid /= oldAid )
-          sortOurs = sortBy $ comparing valueOurs
+          sortOurs = sortBy $ comparing overheadOurs
           goodGeneric _our@((aid, b), (_tgt, _pathEtc)) =
             bhp b > 0  -- not incapacitated
             && not (aid == oldAid && waitedLastTurn b)  -- not stuck
@@ -140,13 +149,14 @@ pickActorToMove refreshTarget oldAid = do
           oursTEnemyGood = filter goodTEnemy oursTEnemy
           oursPosGood = filter goodGeneric oursPos
           oursBlockedGood = filter goodGeneric oursBlocked
-          candidates = sortOurs oursTEnemyGood
+          candidates = sortOurs oursWeak
+                       ++ sortOurs oursTEnemyGood
                        ++ sortOurs oursPosGood
                        ++ sortOurs oursBlockedGood
       case candidates of
         [] -> return (oldAid, oldBody)
         c : _ -> do
-          let best = takeWhile ((== valueOurs c) . valueOurs) candidates
+          let best = takeWhile ((== overheadOurs c) . overheadOurs) candidates
               freq = uniformFreq "candidates for AI leader" best
           ((aid, b), _) <- rndToAction $ frequency freq
           s <- getState
