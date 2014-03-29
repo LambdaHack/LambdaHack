@@ -40,7 +40,9 @@ targetStrategy oldLeader aid = do
   cops@Kind.COps{ cotile=cotile@Kind.Ops{ouniqGroup}
                 , coactor=Kind.Ops{okind}
                 , cofaction=Kind.Ops{okind=fokind} } <- getsState scops
-  modifyClient $ \cli -> cli {sbfsD = EM.delete aid (sbfsD cli)}
+
+  modifyClient $ \cli -> cli { sbfsD = EM.delete aid (sbfsD cli)
+                             , seps = seps cli + 1 }  -- randomize paths
   b <- getsState $ getActorBody aid
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   oldTgtUpdatedPath <- case mtgtMPath of
