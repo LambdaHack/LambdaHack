@@ -44,8 +44,9 @@ pickActorToMove refreshTarget oldAid = do
       abilityLeader = fAbilityLeader $ okind $ gkind fact
       abilityOther = fAbilityOther $ okind $ gkind fact
   mleader <- getsClient _sleader
-  ours <- getsState $ actorNotProjAssocs (== side) arena
-  let pickOld = do
+  oursRaw <- getsState $ actorNotProjAssocs (== side) arena
+  let ours = filter (not . actorDying . snd) oursRaw
+      pickOld = do
         void $ refreshTarget oldAid (oldAid, oldBody)
         return (oldAid, oldBody)
   case ours of
