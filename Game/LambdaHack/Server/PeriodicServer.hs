@@ -265,7 +265,7 @@ leadLevelFlip = do
               unless (null freqList) $ do
                 (lid, a) <- rndToAction $ frequency
                                         $ toFreq "leadLevel" freqList
-                unless (lid == blid body) $
+                unless (lid == blid body) $  -- flip levels rather than actors
                   execUpdAtomic
                   $ UpdLeadFaction (bfid body) (Just leader) (Just a)
   factionD <- getsState sfactionD

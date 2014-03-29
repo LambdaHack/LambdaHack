@@ -277,12 +277,14 @@ trigger aid fleeViaStairs = do
           in if boldpos b == bpos b   -- probably used stairs last turn
                 && boldlid b == lid2  -- in the opposite direction
              then 0  -- avoid trivial loops (pushing, being pushed, etc.)
-             else case actorsThere of
-               [] -> expBenefit + if fleeViaStairs then 1 else 0
-               [((_, body), _)] | not (bproj body)
-                                  && isAtWar fact (bfid body) ->
-                 min 1 expBenefit  -- push the enemy if no better option
-               _ -> 0  -- projectiles or non-enemies
+             else
+               if fleeViaStairs then 1 else 0
+               + case actorsThere of
+                   [] -> expBenefit
+                   [((_, body), _)] | not (bproj body)
+                                      && isAtWar fact (bfid body) ->
+                     min 1 expBenefit  -- push the enemy if no better option
+                   _ -> 0  -- projectiles or non-enemies
         F.Cause ef@Effect.Escape{} ->  -- flee via this way, too
           -- Only heroes escape but they first explore all for high score.
           if not (isHero && allExplored) then 0 else effectToBenefit cops b ef

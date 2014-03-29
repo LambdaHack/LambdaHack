@@ -27,6 +27,7 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
+import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
@@ -162,9 +163,9 @@ effectMindprobe target = do
 effectDominate :: (MonadAtomic m, MonadServer m)
                => ActorId -> ActorId -> m Bool
 effectDominate source target = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-  sb <- getsState (getActorBody source)
-  tb <- getsState (getActorBody target)
+  Kind.COps{coactor=Kind.Ops{okind}, cotile} <- getsState scops
+  sb <- getsState $ getActorBody source
+  tb <- getsState $ getActorBody target
   if bfid tb == bfid sb || bproj tb then do
     execSfxAtomic $ SfxEffect target Effect.NoEffect
     return False
@@ -182,15 +183,23 @@ effectDominate source target = do
         bNew = tb {bfid = bfid sb, boldfid = bfid tb,
                    bcalm = 0, bspeed = baseSpeed}
     execUpdAtomic $ UpdCreateActor target bNew ais
-    leaderOld <- getsState $ gleader . (EM.! bfid sb) . sfactionD
     -- Halve the speed as a side-effect of first domination, or keep it reset
     -- if dominating again. TODO: teach AI to prefer dominating again.
     let halfSpeed = speedScale (1%2) baseSpeed
         delta | boldfid tb == bfid tb = speedNegate halfSpeed  -- slow down
               | otherwise = speedZero
     when (delta /= speedZero) $ execUpdAtomic $ UpdHasteActor target delta
-    -- Focus on the dominated actor, by making him a leader.
-    execUpdAtomic $ UpdLeadFaction (bfid sb) leaderOld (Just target)
+    mleaderOld <- getsState $ gleader . (EM.! bfid sb) . sfactionD
+    -- Keep the leader if he is on stairs. We don't want to clog stairs.
+    keepLeader <- case mleaderOld of
+      Nothing -> return False
+      Just leaderOld -> do
+        body <- getsState $ getActorBody leaderOld
+        lvl <- getLevel $ blid body
+        return $! Tile.isStair cotile $ lvl `at` bpos body
+    unless keepLeader $
+      -- Focus on the dominated actor, by making him a leader.
+      execUpdAtomic $ UpdLeadFaction (bfid sb) mleaderOld (Just target)
     return True
 
 -- ** SummonFriend
