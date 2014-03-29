@@ -35,6 +35,7 @@ import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
+import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
@@ -255,7 +256,9 @@ trigger aid fleeViaStairs = do
   lvl <- getLevel $ blid b
   unexploredD <- unexploredDepth
   s <- getState
-  let unexploredCurrent = ES.notMember (blid b) explored
+  per <- getPerFid $ blid b
+  let canSee = ES.member (bpos b) (totalVisible per)
+      unexploredCurrent = ES.notMember (blid b) explored
       allExplored = ES.size explored == EM.size dungeon
       isHero = isHeroFact cops fact
       t = lvl `at` bpos b
@@ -280,11 +283,8 @@ trigger aid fleeViaStairs = do
              else
                if fleeViaStairs then 1 else 0
                + case actorsThere of
-                   [] -> expBenefit
-                   [((_, body), _)] | not (bproj body)
-                                      && isAtWar fact (bfid body) ->
-                     min 1 expBenefit  -- push the enemy if no better option
-                   _ -> 0  -- projectiles or non-enemies
+                   [] | canSee -> expBenefit
+                   _ -> min 1 expBenefit  -- risk pushing, if no better option
         F.Cause ef@Effect.Escape{} ->  -- flee via this way, too
           -- Only heroes escape but they first explore all for high score.
           if not (isHero && allExplored) then 0 else effectToBenefit cops b ef
