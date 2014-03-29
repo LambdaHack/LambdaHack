@@ -406,13 +406,20 @@ flee aid = do
   lvl@Level{lxsize, lysize} <- getLevel $ blid b
   let posFoes = map (bpos . snd) allFoes
       accessibleHere = accessible cops lvl $ bpos b
-      myVic = filter accessibleHere $ vicinity lxsize lysize $ bpos b
+      myVic = vicinity lxsize lysize $ bpos b
       dist p | null posFoes = assert `failure` b
              | otherwise = minimum $ map (chessDist p) posFoes
       dVic = map (dist &&& id) myVic
-      gtVic = filter ((> dist (bpos b)) . fst) dVic
-      eqVic = filter ((== dist (bpos b)) . fst) dVic
-      goodVic = if null gtVic then eqVic else gtVic
+      -- If can't flee, at least hit. Access not needed for melee.
+      hitVic = filter ((== 0) . fst) dVic
+      -- Flee, if possible. Access required.
+      accVic = filter (accessibleHere . snd) $ dVic
+      gtVic = filter ((> dist (bpos b)) . fst) accVic
+      -- At least don't get closer to enemies.
+      eqVic = filter ((== dist (bpos b)) . fst) accVic
+      goodVic = if not $ null gtVic then gtVic
+                else if not $ null hitVic then hitVic
+                else eqVic
       rewardPath (d, p) = if p `elem` tgtPath then (2 * d - 1, p) else (d, p)
       pathVic = map rewardPath goodVic
       vVic = map (second (`vectorToFrom` bpos b)) pathVic
