@@ -45,8 +45,7 @@ condAnyFoeAdjacentM :: MonadStateRead m => ActorId -> m Bool
 condAnyFoeAdjacentM aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
-  allFoes <- getsState $ filter (not . actorDying)
-                         . actorNotProjList (isAtWar fact) (blid b)
+  allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
   return $! any (adjacent (bpos b) . bpos) allFoes
 
 -- | Require that any non-low-HP foe is adjacent.
@@ -56,7 +55,7 @@ condThreatAdjacentM aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
   allFoes <- getsState $ filter (not . hpTooLow coactor)
-                         . actorNotProjList (isAtWar fact) (blid b)
+                         . actorRegularList (isAtWar fact) (blid b)
   return $! any (adjacent (bpos b) . bpos) allFoes
 
 -- | Require the actor's HP is low enough.
@@ -81,23 +80,23 @@ condThreatCloseM aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
   allFoes <- getsState $ filter (not . hpTooLow coactor)
-                         . actorNotProjList (isAtWar fact) (blid b)
+                         . actorRegularList (isAtWar fact) (blid b)
   return $! any ((< nearby) . chessDist (bpos b) . bpos) allFoes
 
--- Don't care if the friends dying or strong.
+-- Don't care if the friends low-hp or not.
 condNoFriendsM :: MonadStateRead m => ActorId -> m Bool
 condNoFriendsM aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
   let friendlyFid fid = fid == bfid b || isAllied fact fid
-  friends <- getsState $ actorNotProjList friendlyFid (blid b)
+  friends <- getsState $ actorRegularList friendlyFid (blid b)
   let notCloseEnough b2 = chessDist (bpos b) (bpos b2) `notElem` [1, 2]
   return $! all notCloseEnough friends
 
 condBlocksFriendsM :: MonadClient m => ActorId -> m Bool
 condBlocksFriendsM aid = do
   b <- getsState $ getActorBody aid
-  ours <- getsState $ actorNotProjAssocs (== bfid b) (blid b)
+  ours <- getsState $ actorRegularAssocs (== bfid b) (blid b)
   targetD <- getsClient stargetD
   let blocked (aid2, _) = aid2 /= aid &&
         case EM.lookup aid2 targetD of

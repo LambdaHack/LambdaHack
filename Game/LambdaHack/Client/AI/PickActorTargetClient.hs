@@ -68,8 +68,7 @@ targetStrategy oldLeader aid = do
   lvl <- getLevel $ blid b
   assert (not $ bproj b) skip  -- would work, but is probably a bug
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  allFoes <- getsState $ filter (not . actorDying . snd)
-                         . actorNotProjAssocs (isAtWar fact) (blid b)
+  allFoes <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
   dungeon <- getsState sdungeon
   itemD <- getsState sitemD
   disco <- getsClient sdisco
@@ -84,7 +83,7 @@ targetStrategy oldLeader aid = do
       return ( condHpTooLow && condNoFriends
              , condHpTooLow || condNoFriends )
   let friendlyFid fid = fid == bfid b || isAllied fact fid
-  friends <- getsState $ actorNotProjList friendlyFid (blid b)
+  friends <- getsState $ actorRegularList friendlyFid (blid b)
   -- TODO: refine all this when some actors specialize in ranged attacks
   -- (then we have to target, but keep the distance, we can do similarly for
   -- wounded or alone actors, perhaps only until they are shot first time,

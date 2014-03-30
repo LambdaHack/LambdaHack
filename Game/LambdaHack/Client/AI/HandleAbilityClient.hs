@@ -239,8 +239,7 @@ meleeAny :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 meleeAny aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
-  allFoes <- getsState $ filter (not . actorDying . snd)
-                         . actorNotProjAssocs (isAtWar fact) (blid b)
+  allFoes <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
   let adjFoes = filter (adjacent (bpos b) . bpos . snd) allFoes
       -- TODO: prioritize somehow
       freq = uniformFreq "melee adjacent" $ map (ReqMelee aid . fst) adjFoes
@@ -402,8 +401,7 @@ flee aid = do
         _ -> []
   b <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
-  allFoes <- getsState $ filter (not . actorDying)
-                         . actorNotProjList (isAtWar fact) (blid b)
+  allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
   lvl@Level{lxsize, lysize} <- getLevel $ blid b
   let posFoes = map bpos allFoes
       accessibleHere = accessible cops lvl $ bpos b
@@ -435,8 +433,7 @@ displaceFoe aid = do
         _ -> []
   b <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
-  allFoes <- getsState $ filter (not . actorDying)
-                         . actorNotProjList (isAtWar fact) (blid b)
+  allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
   let posFoes = map bpos allFoes
       adjFoes = filter (adjacent (bpos b)) posFoes
       pathFoes = filter (`elem` tgtPath) adjFoes

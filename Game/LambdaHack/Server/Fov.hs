@@ -36,7 +36,7 @@ levelPerception :: Kind.COps -> FovMode -> FactionId
                 -> Perception
 levelPerception cops@Kind.COps{cotile, coactor=Kind.Ops{okind}}
                 configFov fid lid lvl@Level{lxsize, lysize} s =
-  let hs = actorNotProjList (== fid) lid s
+  let hs = filter (not . bproj) $ actorList (== fid) lid s
       cR b = preachable $ computeReachable cops configFov lvl b
       totalReachable = PerceptionReachable $ concatMap cR hs
       -- TODO: give actors light sources explicitly or alter vision.

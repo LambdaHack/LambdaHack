@@ -46,9 +46,8 @@ pickActorToMove refreshTarget oldAid = do
       abilityLeader = fAbilityLeader $ okind $ gkind fact
       abilityOther = fAbilityOther $ okind $ gkind fact
   mleader <- getsClient _sleader
-  oursRaw <- getsState $ actorNotProjAssocs (== side) arena
-  let ours = filter (not . actorDying . snd) oursRaw
-      pickOld = do
+  ours <- getsState $ actorRegularAssocs (== side) arena
+  let pickOld = do
         void $ refreshTarget oldAid (oldAid, oldBody)
         return (oldAid, oldBody)
   case ours of
@@ -146,16 +145,16 @@ pickActorToMove refreshTarget oldAid = do
                , sumCoeff
                , aid /= oldAid )
           sortOurs = sortBy $ comparing overheadOurs
-          goodGeneric _our@((aid, b), (_tgt, _pathEtc)) =
-            bhp b > 0  -- not incapacitated
-            && not (aid == oldAid && waitedLastTurn b)  -- not stuck
+          goodGeneric ((aid, b), (_tgt, _pathEtc)) =
+            not (aid == oldAid && waitedLastTurn b)  -- not stuck
           goodTEnemy our@((_aid, b), (_tgt, (_path, (goal, _d)))) =
             not (adjacent (bpos b) goal) -- not in melee range already
             && goodGeneric our
+          oursWeakGood = filter goodGeneric oursWeak
           oursTEnemyGood = filter goodTEnemy oursTEnemy
           oursPosGood = filter goodGeneric oursPos
           oursBlockedGood = filter goodGeneric oursBlocked
-          candidates = sortOurs oursWeak
+          candidates = sortOurs oursWeakGood
                        ++ sortOurs oursTEnemyGood
                        ++ sortOurs oursPosGood
                        ++ sortOurs oursBlockedGood

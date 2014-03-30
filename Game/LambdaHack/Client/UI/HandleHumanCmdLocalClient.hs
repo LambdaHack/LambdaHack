@@ -170,7 +170,7 @@ selectNoneHuman :: (MonadClientUI m, MonadClient m) => m ()
 selectNoneHuman = do
   side <- getsClient sside
   lidV <- viewedLevel
-  oursAssocs <- getsState $ actorNotProjAssocs (== side) lidV
+  oursAssocs <- getsState $ actorRegularAssocs (== side) lidV
   let ours = ES.fromList $ map fst oursAssocs
   oldSel <- getsClient sselected
   let wasNone = ES.null $ ES.intersection ours oldSel

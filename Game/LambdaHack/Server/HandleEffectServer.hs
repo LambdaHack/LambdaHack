@@ -149,7 +149,7 @@ effectMindprobe target = do
   tb <- getsState $ getActorBody target
   let lid = blid tb
   fact <- getsState $ (EM.! bfid tb) . sfactionD
-  lb <- getsState $ actorNotProjList (isAtWar fact) lid
+  lb <- getsState $ actorRegularList (isAtWar fact) lid
   let nEnemy = length lb
   if nEnemy == 0 || bproj tb then do
     execSfxAtomic $ SfxEffect target Effect.NoEffect

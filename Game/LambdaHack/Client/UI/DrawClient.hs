@@ -294,8 +294,9 @@ drawSelected cli s drawnLevelId mleader width =
                    else cattr {Color.bg = Color.Magenta}
                | otherwise = cattr
           in ( (bhp > 0, bsymbol /= '@', bsymbol, bcolor, aid)
-             , Color.AttrChar sattr bsymbol )
-      ours = actorNotProjAssocs (== sside cli) drawnLevelId s
+             , Color.AttrChar sattr $ if bhp > 0 then bsymbol else '%' )
+      ours = filter (not . bproj . snd)
+             $ actorAssocs (== sside cli) drawnLevelId s
       maxViewed = width - 2
       -- Don't show anything if the only actor on the level is the leader.
       -- He's clearly highlighted on the level map, anyway.

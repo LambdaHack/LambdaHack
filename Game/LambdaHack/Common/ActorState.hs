@@ -3,7 +3,7 @@
 -- TODO: Document an export list after it's rewritten according to #17.
 module Game.LambdaHack.Common.ActorState
   ( fidActorNotProjAssocs, actorAssocsLvl, actorAssocs, actorList
-  , actorNotProjAssocsLvl, actorNotProjAssocs, actorNotProjList
+  , actorRegularAssocsLvl, actorRegularAssocs, actorRegularList
   , calculateTotal, sharedInv, sharedAllOwned, sharedAllOwnedFid
   , getInvBag, getCBag, getActorBag, nearbyFreePoints, whereTo
   , posToActors, posToActor, getItemBody, memActor, getActorBody
@@ -45,9 +45,9 @@ fidActorNotProjList fid s = map snd $ fidActorNotProjAssocs fid s
 actorAssocsLvl :: (FactionId -> Bool) -> Level -> ActorDict
                -> [(ActorId, Actor)]
 actorAssocsLvl p lvl actorD =
-  mapMaybe (\aid -> let actor = actorD EM.! aid
-                    in if p (bfid actor)
-                       then Just (aid, actor)
+  mapMaybe (\aid -> let b = actorD EM.! aid
+                    in if p (bfid b)
+                       then Just (aid, b)
                        else Nothing)
   $ concat $ EM.elems $ lprio lvl
 
@@ -63,20 +63,29 @@ actorList p lid s = map snd $ actorAssocs p lid s
 actorNotProjAssocsLvl :: (FactionId -> Bool) -> Level -> ActorDict
                       -> [(ActorId, Actor)]
 actorNotProjAssocsLvl p lvl actorD =
-  mapMaybe (\aid -> let actor = actorD EM.! aid
-                    in if not (bproj actor) && p (bfid actor)
-                       then Just (aid, actor)
+  mapMaybe (\aid -> let b = actorD EM.! aid
+                    in if not (bproj b) && p (bfid b)
+                       then Just (aid, b)
                        else Nothing)
   $ concat $ EM.elems $ lprio lvl
 
-actorNotProjAssocs :: (FactionId -> Bool) -> LevelId -> State
-                   -> [(ActorId, Actor)]
-actorNotProjAssocs p lid s =
-  actorNotProjAssocsLvl p (sdungeon s EM.! lid) (sactorD s)
+actorRegularAssocsLvl :: (FactionId -> Bool) -> Level -> ActorDict
+                      -> [(ActorId, Actor)]
+actorRegularAssocsLvl p lvl actorD =
+  mapMaybe (\aid -> let b = actorD EM.! aid
+                    in if not (bproj b) && bhp b > 0 && p (bfid b)
+                       then Just (aid, b)
+                       else Nothing)
+  $ concat $ EM.elems $ lprio lvl
 
-actorNotProjList :: (FactionId -> Bool) -> LevelId -> State
+actorRegularAssocs :: (FactionId -> Bool) -> LevelId -> State
+                   -> [(ActorId, Actor)]
+actorRegularAssocs p lid s =
+  actorRegularAssocsLvl p (sdungeon s EM.! lid) (sactorD s)
+
+actorRegularList :: (FactionId -> Bool) -> LevelId -> State
                  -> [Actor]
-actorNotProjList p lid s = map snd $ actorNotProjAssocs p lid s
+actorRegularList p lid s = map snd $ actorRegularAssocs p lid s
 
 -- | Finds an actor at a position on the current level.
 posToActor :: Point -> LevelId -> State

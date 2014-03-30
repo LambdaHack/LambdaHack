@@ -231,7 +231,7 @@ lookAtMove aid = do
     foes <- getsState $ actorList (isAtWar fact) (blid body)
     when (any (adjacent (bpos body) . bpos) foes) stopPlayBack
   else when (isAtWar fact side) $ do
-    friends <- getsState $ actorNotProjList (== side) (blid body)
+    friends <- getsState $ actorRegularList (== side) (blid body)
     when (any (adjacent (bpos body) . bpos) friends) stopPlayBack
 
 -- | Sentences such as \"Dog barks loudly.\".

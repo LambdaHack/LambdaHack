@@ -65,7 +65,7 @@ generateMonster lid = do
   lvl@Level{ldepth} <- getLevel lid
   s <- getState
   let f fid = isSpawnFaction fid s
-      spawns = actorNotProjList f lid s
+      spawns = actorRegularList f lid s
   depth <- getsState sdepth
   rc <- rndToAction $ monsterGenChance ldepth depth (length spawns)
   factionD <- getsState sfactionD
@@ -150,7 +150,7 @@ rollSpawnPos :: Kind.COps -> ES.EnumSet Point
 rollSpawnPos Kind.COps{cotile} visible
              lid Level{ltile, lxsize, lysize} fid s = do
   let factionDist = max lxsize lysize - 5
-      inhabitants = actorNotProjList (/= fid) lid s
+      inhabitants = actorList (/= fid) lid s  -- projectiles can have cameras
       as = actorList (const True) lid s
       isLit = Tile.isLit cotile
       distantAtLeast d p _ =
@@ -180,7 +180,7 @@ advanceTime aid = do
   -- Calm or worry actor by enemies felt (even if not seen)
   -- on the level within 3 tiles.
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  allFoes <- getsState $ actorNotProjList (isAtWar fact) (blid b)
+  allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
   let closeFoes = filter ((<= 3) . chessDist (bpos b) . bpos) allFoes
       calmMax = Dice.maxDice $ acalm $ okind $ bkind b
       calmCur = bcalm b
@@ -220,10 +220,9 @@ regenerateLevelHP lid = do
             deltaHP = min 1 (bhpMax - bhp m)
         in if (time `timeFit` timeTurn) `mod` regen /= 0
               || deltaHP <= 0
-              || bhp m <= 0
            then Nothing
            else Just a
-  toRegen <- getsState $ mapMaybe approve . actorNotProjAssocs (const True) lid
+  toRegen <- getsState $ mapMaybe approve . actorRegularAssocs (const True) lid
   mapM_ (\aid -> execUpdAtomic $ UpdHealActor aid 1) toRegen
 
 leadLevelFlip :: (MonadAtomic m, MonadServer m) => m ()
@@ -247,7 +246,8 @@ leadLevelFlip = do
               let ourLvl (lid, lvl) =
                     ( lid
                     , EM.size (lfloor lvl)
-                    , actorNotProjAssocsLvl (== bfid body) lvl actorD )
+                    , -- Drama levels skipped, hence @Regular@.
+                      actorRegularAssocsLvl (== bfid body) lvl actorD )
               ours <- getsState $ map ourLvl . EM.assocs . sdungeon
               -- Non-humans, being born in the dungeon, have a rough idea of
               -- the number of items left on the level and will focus
@@ -257,8 +257,7 @@ leadLevelFlip = do
               -- In addition, sole stranded actors tend to become leaders
               -- so that they can join the main force ASAP.
               let freqList = [ (k, (lid, a))
-                             | (lid, itemN, (a, b) : rest) <- ours
-                             , bhp b > 0  -- drama levels skipped
+                             | (lid, itemN, (a, _) : rest) <- ours
                              , not leaderStuck || lid /= blid body
                              , let len = 1 + (min 10 $ length rest)
                                    k = 1000000 `div` (3 * itemN + len) ]

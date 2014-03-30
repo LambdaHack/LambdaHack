@@ -118,7 +118,8 @@ makeLine :: MonadClient m => Actor -> Point -> Int -> m (Int, Int)
 makeLine body fpos eps = do
   cops <- getsState scops
   lvl@Level{lxsize, lysize} <- getLevel (blid body)
-  bs <- getsState $ actorNotProjList (const True) (blid body)
+  bs <- getsState $ filter (not . bproj)
+                    . actorList (const True) (blid body)
   let mbl = bla lxsize lysize eps (bpos body) fpos
   case mbl of
     Just bl@(pos1:_) -> do
