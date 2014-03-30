@@ -9,7 +9,7 @@ module Game.LambdaHack.Common.ActorState
   , posToActors, posToActor, getItemBody, memActor, getActorBody
   , getCarriedAssocs, getEqpAssocs, getEqpKA, getInvAssocs, getFloorAssocs
   , tryFindHeroK, getLocalTime, isSpawnFaction
-  , itemPrice, calmEnough
+  , itemPrice, calmEnough, regenHP
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -104,11 +104,11 @@ posToActors pos lid s =
              `blame` "many actors at the same position" `twith` l)
      l
 
-nearbyFreePoints :: Kind.Ops TileKind
-                 -> (Kind.Id TileKind -> Bool) -> Point -> LevelId -> State
+nearbyFreePoints :: (Kind.Id TileKind -> Bool) -> Point -> LevelId -> State
                  -> [Point]
-nearbyFreePoints cotile f start lid s =
-  let lvl@Level{lxsize, lysize} = sdungeon s EM.! lid
+nearbyFreePoints f start lid s =
+  let Kind.COps{cotile} = scops s
+      lvl@Level{lxsize, lysize} = sdungeon s EM.! lid
       as = actorList (const True) lid s
       good p = f (lvl `at` p)
                && Tile.isWalkable cotile (lvl `at` p)
@@ -267,3 +267,17 @@ getLocalTime lid s = ltime $ sdungeon s EM.! lid
 -- | Tell whether the faction can spawn actors.
 isSpawnFaction :: FactionId -> State -> Bool
 isSpawnFaction fid s = isSpawnFact $ sfactionD s EM.! fid
+
+regenHP :: Actor -> State -> Int
+regenHP b s =
+  let Kind.COps{coactor=Kind.Ops{okind}} = scops s
+      ak = okind $ bkind b
+      eqpAssocs = getEqpAssocs b s
+      regen = case strongestRegen eqpAssocs of
+        Just (k, _)  ->
+          let slowBaseRegen = 1000
+              ar = if aregen ak == maxBound then slowBaseRegen else aregen ak
+          in ar `div` (k + 1)
+        Nothing -> aregen ak
+      deltaHP = Dice.maxDice (ahp ak) - bhp b
+  in if deltaHP > 0 then max 1 regen else 0

@@ -205,25 +205,14 @@ advanceTime aid = do
 -- via sending an actor to a safe level and letting him regenerate there.
 regenerateLevelHP :: MonadAtomic m => LevelId -> m ()
 regenerateLevelHP lid = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   time <- getsState $ getLocalTime lid
-  s <- getState
-  let approve (a, m) =
-        let ak = okind $ bkind m
-            eqpAssocs = getEqpAssocs m s
-            regen = max 1 $
-                      aregen ak `div`
-                      case strongestRegen eqpAssocs of
-                        Just (k, _)  -> k + 1
-                        Nothing -> 1
-            bhpMax = Dice.maxDice (ahp ak)
-            deltaHP = min 1 (bhpMax - bhp m)
-        in if (time `timeFit` timeTurn) `mod` regen /= 0
-              || deltaHP <= 0
-           then Nothing
-           else Just a
-  toRegen <- getsState $ mapMaybe approve . actorRegularAssocs (const True) lid
-  mapM_ (\aid -> execUpdAtomic $ UpdHealActor aid 1) toRegen
+  let turnN = time `timeFit` timeTurn
+      approve (_, b) = do
+        regen <- getsState $ regenHP b
+        return $! regen /= 0 && turnN `mod` regen == 0
+  toRegen <- getsState $ actorRegularAssocs (const True) lid
+  appRegen <- filterM approve toRegen
+  mapM_ (\(aid, _) -> execUpdAtomic $ UpdHealActor aid 1) appRegen
 
 leadLevelFlip :: (MonadAtomic m, MonadServer m) => m ()
 leadLevelFlip = do

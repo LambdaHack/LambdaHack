@@ -209,10 +209,9 @@ effectCallFriend :: (MonadAtomic m, MonadServer m)
                    -> m Bool
 effectCallFriend power source target = assert (power > 0) $ do
   -- Obvious effect, nothing announced.
-  Kind.COps{cotile} <- getsState scops
   sm <- getsState (getActorBody source)
   tm <- getsState (getActorBody target)
-  ps <- getsState $ nearbyFreePoints cotile (const True) (bpos tm) (blid tm)
+  ps <- getsState $ nearbyFreePoints (const True) (bpos tm) (blid tm)
   summonFriends (bfid sm) (take power ps) (blid tm)
   return True
 
@@ -241,9 +240,8 @@ effectSummon :: (MonadAtomic m, MonadServer m)
              => Int -> ActorId -> m Bool
 effectSummon power target = assert (power > 0) $ do
   -- Obvious effect, nothing announced.
-  Kind.COps{cotile} <- getsState scops
   tm <- getsState (getActorBody target)
-  ps <- getsState $ nearbyFreePoints cotile (const True) (bpos tm) (blid tm)
+  ps <- getsState $ nearbyFreePoints (const True) (bpos tm) (blid tm)
   time <- getsState $ getLocalTime (blid tm)
   mfid <- pickFaction "summon" (const True)
   case mfid of
