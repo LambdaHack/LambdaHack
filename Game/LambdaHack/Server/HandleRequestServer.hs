@@ -205,10 +205,8 @@ reqDisplace source target = do
       atWar = isAtWar tfact (bfid sb)
       req = ReqDisplace source target
   if not adj then execFailure req DisplaceDistant
-  else if atWar && actorDying tb
-  then execFailure req DisplaceDying
-  else if atWar && any (adjacent tpos . bpos) sup
-  then execFailure req DisplaceSupported
+  else if atWar && (actorDying tb || any (adjacent tpos . bpos) sup)
+  then reqMelee source target  -- DisplaceDying, DisplaceSupported
   else do
     let lid = blid sb
     lvl <- getLevel lid
