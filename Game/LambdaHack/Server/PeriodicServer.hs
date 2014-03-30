@@ -18,11 +18,9 @@ import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
-import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Frequency
-import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.MonadStateRead
@@ -172,25 +170,11 @@ rollSpawnPos Kind.COps{cotile} visible
 -- that are updated once per his move (as opposed to once per a time unit).
 advanceTime :: MonadAtomic m => ActorId -> m ()
 advanceTime aid = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   b <- getsState $ getActorBody aid
-  eqpAssocs <- getsState $ getEqpAssocs b
   let t = ticksPerMeter $ bspeed b
   execUpdAtomic $ UpdAgeActor aid t
-  -- Calm or worry actor by enemies felt (even if not seen)
-  -- on the level within 3 tiles.
-  fact <- getsState $ (EM.! bfid b) . sfactionD
-  allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
-  let closeFoes = filter ((<= 3) . chessDist (bpos b) . bpos) allFoes
-      calmMax = Dice.maxDice $ acalm $ okind $ bkind b
-      calmCur = bcalm b
-      calmIncr = case strongestStead eqpAssocs of
-                   Just (k, _)  -> k + 1
-                   Nothing -> 1
-      deltaCalm = if null closeFoes
-                  then max 0 $ min calmIncr (calmMax - calmCur)
-                  else max (-1) (-calmCur)
-  when (deltaCalm /= 0) $ execUpdAtomic $ UpdCalmActor aid deltaCalm
+  calmDelta <- getsState $ regenCalmDelta b
+  when (calmDelta /= 0) $ execUpdAtomic $ UpdCalmActor aid calmDelta
 
 -- TODO: generalize to any list of items (or effects) applied to all actors
 -- every turn. Specify the list per level in config.
@@ -208,8 +192,8 @@ regenerateLevelHP lid = do
   time <- getsState $ getLocalTime lid
   let turnN = time `timeFit` timeTurn
       approve (_, b) = do
-        regen <- getsState $ regenHP b
-        return $! regen /= 0 && turnN `mod` regen == 0
+        hpPeriod <- getsState $ regenHPPeriod b
+        return $! hpPeriod /= 0 && turnN `mod` hpPeriod == 0
   toRegen <- getsState $ actorRegularAssocs (const True) lid
   appRegen <- filterM approve toRegen
   mapM_ (\(aid, _) -> execUpdAtomic $ UpdHealActor aid 1) appRegen

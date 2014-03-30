@@ -9,7 +9,7 @@ module Game.LambdaHack.Common.ActorState
   , posToActors, posToActor, getItemBody, memActor, getActorBody
   , getCarriedAssocs, getEqpAssocs, getEqpKA, getInvAssocs, getFloorAssocs
   , tryFindHeroK, getLocalTime, isSpawnFaction
-  , itemPrice, calmEnough, regenHP
+  , itemPrice, calmEnough, regenHPPeriod, regenCalmDelta
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -268,16 +268,35 @@ getLocalTime lid s = ltime $ sdungeon s EM.! lid
 isSpawnFaction :: FactionId -> State -> Bool
 isSpawnFaction fid s = isSpawnFact $ sfactionD s EM.! fid
 
-regenHP :: Actor -> State -> Int
-regenHP b s =
+regenHPPeriod :: Actor -> State -> Int
+regenHPPeriod b s =
   let Kind.COps{coactor=Kind.Ops{okind}} = scops s
       ak = okind $ bkind b
       eqpAssocs = getEqpAssocs b s
-      regen = case strongestRegen eqpAssocs of
+      regenPeriod = case strongestRegen eqpAssocs of
         Just (k, _)  ->
           let slowBaseRegen = 1000
               ar = if aregen ak == maxBound then slowBaseRegen else aregen ak
-          in ar `div` (k + 1)
+          in max 1 $ ar `div` (k + 1)
         Nothing -> aregen ak
-      deltaHP = Dice.maxDice (ahp ak) - bhp b
-  in if deltaHP > 0 then max 1 regen else 0
+      maxDeltaHP = Dice.maxDice (ahp ak) - bhp b
+  in if maxDeltaHP > 0 then regenPeriod else 0
+
+regenCalmDelta :: Actor -> State -> Int
+regenCalmDelta b s =
+  let Kind.COps{coactor=Kind.Ops{okind}} = scops s
+      ak = okind $ bkind b
+      eqpAssocs = getEqpAssocs b s
+      calmIncr = case strongestStead eqpAssocs of
+        Just (k, _)  -> k + 1
+        Nothing -> 1
+      maxDeltaCalm = Dice.maxDice (acalm ak) - bcalm b
+      minDeltaCalm = - bcalm b
+      -- Worry actor by enemies felt (even if not seen)
+      -- on the level within 3 tiles.
+      fact = (EM.! bfid b) . sfactionD $ s
+      allFoes = actorRegularList (isAtWar fact) (blid b) $ s
+      closeFoes = filter ((<= 3) . chessDist (bpos b) . bpos) allFoes
+  in if null closeFoes
+     then min calmIncr maxDeltaCalm
+     else max (-1) minDeltaCalm
