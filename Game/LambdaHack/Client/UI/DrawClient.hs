@@ -166,10 +166,11 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
       cursorGap = T.replicate (widthTgt - T.length pathCsr
                                         - T.length cursorText) " "
       cursorStatus = addAttr $ cursorText <> cursorGap <> pathCsr
-      leaderStatus = drawLeaderStatus cops s swaitTimes mleader
-                                      widthStats
+      minLeaderStatusWidth = 19  -- covers 3-digit HP
       selectedStatus = drawSelected cli s drawnLevelId mleader
-                                    (widthStats - length leaderStatus)
+                                    (widthStats - minLeaderStatusWidth)
+      leaderStatus = drawLeaderStatus cops s swaitTimes mleader
+                                      (widthStats - length selectedStatus)
       damageStatus = drawLeaderDamage cops s sdisco mleader
                                       (widthStats - length leaderStatus
                                                   - length selectedStatus)
@@ -215,17 +216,21 @@ drawArenaStatus explored Level{ldepth, ldesc, lseen, lclear} width =
       seenTxt | explored || seenN >= 100 = "all"
               | otherwise = T.justifyLeft 3 ' ' (tshow seenN <> "%")
       lvlN = T.justifyLeft 2 ' ' (tshow $ abs ldepth)
-      seenStatus = T.justifyLeft 11 ' ' ("[" <> seenTxt <+> "seen]")
+      seenStatus = "[" <> seenTxt <+> "seen] "
   in addAttr $ T.justifyLeft width ' '
              $ T.take 29 (lvlN <+> T.justifyLeft 26 ' ' ldesc) <+> seenStatus
 
 drawLeaderStatus :: Kind.COps -> State
                  -> Int -> Maybe ActorId -> Int
                  -> [Color.AttrChar]
-drawLeaderStatus cops s waitTimes mleader _width =
+drawLeaderStatus cops s waitTimes mleader width =
   let addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
       addColor c t = map (Color.AttrChar $ Color.Attr c Color.defBG)
                          (T.unpack t)
+      maxLeaderStatusWidth = 23  -- covers 3-digit HP and 2-digit Calmness
+      (calmHeaderText, hpHeaderText) = if width < maxLeaderStatusWidth
+                                       then ("C", "H")
+                                       else ("Calm", "HP")
       stats = case mleader of
         Just leader ->
           let Kind.COps{coactor=Kind.Ops{okind}} = cops
@@ -235,10 +240,10 @@ drawLeaderStatus cops s waitTimes mleader _width =
                 in ( braced b, regenHPPeriod b s, bcalmDelta b
                    , tshow (Dice.maxDice ahp), tshow bhp
                    , tshow (Dice.maxDice acalm), tshow bcalm )
-              calmAddAttr | calmDelta > 0 = addColor Color.Green
-                          | calmDelta < 0 = addColor Color.Red
+              calmAddAttr | calmDelta > 0 = addColor Color.BrGreen
+                          | calmDelta < 0 = addColor Color.BrRed
                           | otherwise = addAttr
-              calmHeader = calmAddAttr $ "C:"
+              calmHeader = calmAddAttr $ calmHeaderText <> ":"
               calmText = bcalmS <> "/" <> acalmS
               -- Indicate the actor is braced (was waiting last move).
               -- It's a useful feedback for the otherwise hard to observe
@@ -249,22 +254,22 @@ drawLeaderStatus cops s waitTimes mleader _width =
                         | otherwise = "/"
               bracePick | bracedL   = "}"
                         | otherwise = ":"
-              hpAddAttr | hpPeriod > 0 = addColor Color.Green
+              hpAddAttr | hpPeriod > 0 = addColor Color.BrGreen
                         | otherwise = addAttr
-              hpHeader = hpAddAttr $ "H" <> bracePick
+              hpHeader = hpAddAttr $ hpHeaderText <> bracePick
               hpText = bhpS <> slashPick <> ahpS
           in calmHeader <> addAttr (T.justifyRight 6 ' ' calmText <> " ")
              <> hpHeader <> addAttr (T.justifyRight 6 ' ' hpText <> " ")
-        Nothing -> addAttr $
-             "C: --/--"
-             <+> "H: --/--"
+        Nothing -> addAttr $ calmHeaderText <> ": --/-- "
+                             <> hpHeaderText <> ": --/-- "
   in stats
 
 drawLeaderDamage :: Kind.COps -> State -> Discovery
                  -> Maybe ActorId -> Int
                  -> [Color.AttrChar]
 drawLeaderDamage cops s sdisco mleader width =
-  let addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
+  let addColor t = map (Color.AttrChar $ Color.Attr Color.BrCyan Color.defBG)
+                   (T.unpack t)
       stats = case mleader of
         Just leader ->
           let b = getActorBody leader s
@@ -278,10 +283,10 @@ drawLeaderDamage cops s sdisco mleader width =
                         _ -> ""
                     Nothing -> "5d1"  -- TODO: ?
                 Nothing -> "5d1"  -- TODO; use the item 'fist'
-          in T.justifyLeft 8 ' '
-               ("D:" <> (if T.length damage < 6 then " " else "") <> damage)
-        Nothing -> "D: ---  "
-  in if T.length stats > width then [] else addAttr $ stats <> " "
+          in damage
+        Nothing -> ""
+  in if T.null stats || T.length stats >= width then []
+     else addColor $ stats <> " "
 
 -- TODO: colour some texts using the faction's colour
 drawSelected :: StateClient -> State -> LevelId -> Maybe ActorId -> Int
@@ -332,4 +337,6 @@ drawPlayerName cli s width =
       nameN n t = let firstWord = head $ T.words t
                   in if T.length firstWord > n then "" else firstWord
       ourName = nameN (width - 1) $ playerName $ gplayer fact
-  in if T.length ourName > width then [] else addAttr $ ourName <> " "
+  in if T.null ourName || T.length ourName >= width
+     then []
+     else addAttr $ ourName <> " "
