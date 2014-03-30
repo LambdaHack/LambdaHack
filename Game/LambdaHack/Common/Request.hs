@@ -71,6 +71,8 @@ data ReqFailure =
   | DisplaceDistant
   | DisplaceAccess
   | DisplaceProjectiles
+  | DisplaceDying
+  | DisplaceSupported
   | AlterDistant
   | AlterBlockActor
   | AlterBlockItem
@@ -93,6 +95,8 @@ showReqFailure reqFailure = case reqFailure of
   DisplaceDistant -> "trying to switch places with a distant actor"
   DisplaceAccess -> "switching places without access"
   DisplaceProjectiles -> "trying to switch places with multiple projectiles"
+  DisplaceDying -> "trying to switch places with a dying foe"
+  DisplaceSupported -> "trying to switch places with a supported foe"
   AlterDistant -> "trying to alter a distant tile"
   AlterBlockActor -> "blocked by an actor"
   AlterBlockItem -> "jammed by an item"

@@ -44,7 +44,7 @@ condTgtEnemyPresentM aid = do
 condAnyFoeAdjacentM :: MonadStateRead m => ActorId -> m Bool
 condAnyFoeAdjacentM aid = do
   b <- getsState $ getActorBody aid
-  fact <- getsState $ \s -> sfactionD s EM.! bfid b
+  fact <- getsState $ (EM.! bfid b) . sfactionD
   allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
   return $! any (adjacent (bpos b) . bpos) allFoes
 
@@ -53,7 +53,7 @@ condThreatAdjacentM :: MonadStateRead m => ActorId -> m Bool
 condThreatAdjacentM aid = do
   Kind.COps{coactor} <- getsState scops
   b <- getsState $ getActorBody aid
-  fact <- getsState $ \s -> sfactionD s EM.! bfid b
+  fact <- getsState $ (EM.! bfid b) . sfactionD
   allFoes <- getsState $ filter (not . hpTooLow coactor)
                          . actorRegularList (isAtWar fact) (blid b)
   return $! any (adjacent (bpos b) . bpos) allFoes
@@ -78,7 +78,7 @@ condThreatCloseM :: MonadStateRead m => ActorId -> m Bool
 condThreatCloseM aid = do
   Kind.COps{coactor} <- getsState scops
   b <- getsState $ getActorBody aid
-  fact <- getsState $ \s -> sfactionD s EM.! bfid b
+  fact <- getsState $ (EM.! bfid b) . sfactionD
   allFoes <- getsState $ filter (not . hpTooLow coactor)
                          . actorRegularList (isAtWar fact) (blid b)
   return $! any ((< nearby) . chessDist (bpos b) . bpos) allFoes
@@ -87,7 +87,7 @@ condThreatCloseM aid = do
 condNoFriendsM :: MonadStateRead m => ActorId -> m Bool
 condNoFriendsM aid = do
   b <- getsState $ getActorBody aid
-  fact <- getsState $ \s -> sfactionD s EM.! bfid b
+  fact <- getsState $ (EM.! bfid b) . sfactionD
   let friendlyFid fid = fid == bfid b || isAllied fact fid
   friends <- getsState $ actorRegularList friendlyFid (blid b)
   let notCloseEnough b2 = chessDist (bpos b) (bpos b2) `notElem` [1, 2]

@@ -152,13 +152,19 @@ displaceAid source target = do
   cops <- getsState scops
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  let adj = checkAdjacent sb tb
+  tfact <- getsState $ (EM.! bfid tb) . sfactionD
+  let friendlyFid fid = fid == bfid tb || isAllied tfact fid
+  sup <- getsState $ actorRegularList friendlyFid (blid tb)
+  let spos = bpos sb
+      tpos = bpos tb
+      adj = checkAdjacent sb tb
+      atWar = isAtWar tfact (bfid sb)
   if not adj then failSer DisplaceDistant
+  else if atWar && actorDying tb then failSer DisplaceDying
+  else if atWar && any (adjacent tpos . bpos) sup then failSer DisplaceSupported
   else do
     let lid = blid sb
     lvl <- getLevel lid
-    let spos = bpos sb
-        tpos = bpos tb
     -- Displacing requires full access.
     if accessible cops lvl spos tpos then do
       tgts <- getsState $ posToActors tpos lid

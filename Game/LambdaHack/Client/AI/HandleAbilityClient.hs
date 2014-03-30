@@ -427,14 +427,28 @@ flee aid = do
 
 displaceFoe :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 displaceFoe aid = do
+  cops <- getsState scops
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   let tgtPath = case mtgtMPath of  -- prefer displacing along the path to target
         Just (_, Just (path, _)) -> path
         _ -> []
   b <- getsState $ getActorBody aid
+  lvl <- getLevel $ blid b
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
   allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
-  let posFoes = map bpos allFoes
+  factionD <- getsState sfactionD
+  let foeFactionD = EM.filter (flip isAtWar (bfid b)) factionD
+      doSup (ffid, ffact) = do
+        let friendlyFid fid = fid == ffid || isAllied ffact fid
+        sup <- getsState $ actorRegularList friendlyFid (blid b)
+        return (ffid, sup)
+  sups <- fmap EM.fromAscList $ mapM doSup $ EM.assocs foeFactionD
+  let accessibleHere = accessible cops lvl $ bpos b  -- DisplaceAccess
+      displaceable body =  -- DisplaceAccess, DisplaceDying, DisplaceSupported
+        accessibleHere (bpos body)
+        && not (actorDying body)
+        && all (not . adjacent (bpos body) . bpos) (sups EM.! bfid body)
+      posFoes = map bpos $ filter displaceable allFoes
       adjFoes = filter (adjacent (bpos b)) posFoes
       pathFoes = filter (`elem` tgtPath) adjFoes
       dispFoes = if null pathFoes then adjFoes else pathFoes
@@ -460,11 +474,11 @@ displaceTowards aid source target = do
   assert (source == bpos b && adjacent source target) skip
   lvl <- getLevel $ blid b
   if boldpos b /= target -- avoid trivial loops
-     && accessible cops lvl source target then do
+     && accessible cops lvl source target then do  -- DisplaceAccess
     mBlocker <- getsState $ posToActors target (blid b)
     case mBlocker of
       [] -> return reject
-      [((aid2, _), _)] -> do
+      [((aid2, b2), _)] -> do
         mtgtMPath <- getsClient $ EM.lookup aid2 . stargetD
         case mtgtMPath of
           Just (tgt, Just (p : q : rest, (goal, len)))
@@ -475,10 +489,18 @@ displaceTowards aid source target = do
               return $! returN "displace friend"
                      $ target `vectorToFrom` source
           Just _ -> return reject
-          Nothing ->
-            return $! returN "displace other"
-                   $ target `vectorToFrom` source
-      _ -> return reject  -- many projectiles, can't displace
+          Nothing -> do
+            tfact <- getsState $ (EM.! bfid b2) . sfactionD
+            let friendlyFid fid = fid == bfid b2 || isAllied tfact fid
+            sup <- getsState $ actorRegularList friendlyFid (blid b2)
+            let displaceable =  -- DisplaceDying, DisplaceSupported
+                  not (isAtWar tfact (bfid b))
+                  || not (actorDying b2)
+                     && all (not . adjacent (bpos b2) . bpos) sup
+            if displaceable then
+              return $! returN "displace other" $ target `vectorToFrom` source
+            else return reject  -- DisplaceDying, DisplaceSupported
+      _ -> return reject  -- DisplaceProjectiles
   else return reject
 
 chase :: MonadClient m => ActorId -> Bool -> m (Strategy RequestTimed)
@@ -548,14 +570,20 @@ moveOrRunAid run source dir = do
   -- (tiles can't be invisible).
   tgts <- getsState $ posToActors tpos lid
   case tgts of
-    [((target, _), _)] | run ->  -- can be a foe, as well as a friend
-      if accessible cops lvl spos tpos
-         && boldpos sb /= tpos -- avoid trivial Displace loops
+    [((target, b2), _)] | run ->  do -- can be a foe, as well as a friend
+      tfact <- getsState $ (EM.! bfid b2) . sfactionD
+      let friendlyFid fid = fid == bfid b2 || isAllied tfact fid
+      sup <- getsState $ actorRegularList friendlyFid (blid b2)
+      if boldpos sb /= tpos -- avoid trivial Displace loops
+         && accessible cops lvl spos tpos -- DisplaceAccess
+         && (not (isAtWar tfact (bfid sb))
+                  || not (actorDying b2)  -- DisplaceDying
+                     && all (not . adjacent (bpos b2) . bpos) sup)
+                          -- DisplaceSupported
       then
-        -- Displacing requires accessibility.
         return $! ReqDisplace source target
       else
-        -- If cannot displace, hit. No DisplaceAccess failure.
+        -- If cannot displace, hit.
         return $! ReqMelee source target
     ((target, _), _) : _ ->  -- can be a foe, as well as a friend (e.g., proj.)
       -- No problem if there are many projectiles at the spot. We just
