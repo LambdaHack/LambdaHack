@@ -42,6 +42,7 @@ data Actor = Actor
   , bspeed      :: !Speed                -- ^ individual speed
   , bhp         :: !Int                  -- ^ current hit points
   , bcalm       :: !Int                  -- ^ current calm
+  , bcalmDelta  :: !Int                  -- ^ calm delta this turn
   , btrajectory :: !(Maybe [Vector])     -- ^ trajectory the actor must travel
   , bpos        :: !Point                -- ^ current position
   , boldpos     :: !Point                -- ^ previous position
@@ -91,6 +92,7 @@ actorTemplate bkind bsymbol bname bcolor bspeed bhp bcalm btrajectory
       binv    = EM.empty
       bwait   = False
       boldfid = bfid
+      bcalmDelta = 0
   in Actor{..}
 
 -- | Add time taken by a single step at the actor's current speed.
@@ -182,6 +184,7 @@ instance Binary Actor where
     put bspeed
     put bhp
     put bcalm
+    put bcalmDelta
     put btrajectory
     put bpos
     put boldpos
@@ -202,6 +205,7 @@ instance Binary Actor where
     bspeed <- get
     bhp <- get
     bcalm <- get
+    bcalmDelta <- get
     btrajectory <- get
     bpos <- get
     boldpos <- get

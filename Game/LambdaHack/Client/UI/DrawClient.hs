@@ -224,32 +224,41 @@ drawLeaderStatus :: Kind.COps -> State
                  -> [Color.AttrChar]
 drawLeaderStatus cops s waitTimes mleader _width =
   let addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
+      addColor c t = map (Color.AttrChar $ Color.Attr c Color.defBG)
+                         (T.unpack t)
       stats = case mleader of
         Just leader ->
           let Kind.COps{coactor=Kind.Ops{okind}} = cops
-              (bracedL, ahpS, bhpS, acalmS, bcalmS) =
+              (bracedL, hpPeriod, calmDelta, ahpS, bhpS, acalmS, bcalmS) =
                 let b@Actor{bkind, bhp, bcalm} = getActorBody leader s
                     ActorKind{ahp, acalm} = okind bkind
-                in ( braced b
+                in ( braced b, regenHPPeriod b s, bcalmDelta b
                    , tshow (Dice.maxDice ahp), tshow bhp
                    , tshow (Dice.maxDice acalm), tshow bcalm )
+              calmAddAttr | calmDelta > 0 = addColor Color.Green
+                          | calmDelta < 0 = addColor Color.Red
+                          | otherwise = addAttr
+              calmHeader = calmAddAttr $ "C:"
+              calmText = bcalmS <> "/" <> acalmS
               -- Indicate the actor is braced (was waiting last move).
               -- It's a useful feedback for the otherwise hard to observe
               -- 'wait' command.
-              slashes = ["|", "\\", "|", "/"]
+              slashes = ["/", "|", "\\", "|"]
               slashPick | bracedL =
                 slashes !! (max 0 (waitTimes - 1) `mod` length slashes)
                         | otherwise = "/"
               bracePick | bracedL   = "}"
                         | otherwise = ":"
+              hpAddAttr | hpPeriod > 0 = addColor Color.Green
+                        | otherwise = addAttr
+              hpHeader = hpAddAttr $ "H" <> bracePick
               hpText = bhpS <> slashPick <> ahpS
-              calmText = bcalmS <> "/" <> acalmS
-          in "C:" <> T.justifyRight 6 ' ' calmText
-             <+> "H" <> bracePick <> T.justifyRight 6 ' ' hpText
-        Nothing ->
+          in calmHeader <> addAttr (T.justifyRight 6 ' ' calmText <> " ")
+             <> hpHeader <> addAttr (T.justifyRight 6 ' ' hpText <> " ")
+        Nothing -> addAttr $
              "C: --/--"
              <+> "H: --/--"
-  in addAttr $ stats <> " "
+  in stats
 
 drawLeaderDamage :: Kind.COps -> State -> Discovery
                  -> Maybe ActorId -> Int

@@ -174,7 +174,8 @@ advanceTime aid = do
   let t = ticksPerMeter $ bspeed b
   execUpdAtomic $ UpdAgeActor aid t
   calmDelta <- getsState $ regenCalmDelta b
-  when (calmDelta /= 0) $ execUpdAtomic $ UpdCalmActor aid calmDelta
+  unless (calmDelta == 0 && bcalmDelta b == 0) $
+    execUpdAtomic $ UpdCalmActor aid calmDelta
 
 -- TODO: generalize to any list of items (or effects) applied to all actors
 -- every turn. Specify the list per level in config.

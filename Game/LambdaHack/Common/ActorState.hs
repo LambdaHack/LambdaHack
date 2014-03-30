@@ -278,7 +278,7 @@ regenHPPeriod b s =
           let slowBaseRegen = 1000
               ar = if aregen ak == maxBound then slowBaseRegen else aregen ak
           in max 1 $ ar `div` (k + 1)
-        Nothing -> aregen ak
+        Nothing -> if aregen ak == maxBound then 0 else aregen ak
       maxDeltaHP = Dice.maxDice (ahp ak) - bhp b
   in if maxDeltaHP > 0 then regenPeriod else 0
 
