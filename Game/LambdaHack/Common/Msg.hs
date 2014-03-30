@@ -4,13 +4,14 @@ module Game.LambdaHack.Common.Msg
   ( makePhrase, makeSentence
   , Msg, (<>), (<+>), tshow, toWidth, moreMsg, yesnoMsg, truncateMsg
   , Report, emptyReport, nullReport, singletonReport, addMsg
-  , splitReport, renderReport, findInReport
+  , splitReport, renderReport, findInReport, lastMsgOfReport
   , History, emptyHistory, lengthHistory, singletonHistory, mergeHistory
-  , addReport, renderHistory, takeHistory
+  , addReport, renderHistory, takeHistory, lastReportOfHistory
   , Overlay(overlay), emptyOverlay, truncateToOverlay, toOverlay
   , Slideshow(slideshow), splitOverlay, toSlideshow)
   where
 
+import Control.Exception.Assert.Sugar
 import Data.Binary
 import qualified Data.ByteString.Char8 as BS
 import Data.List
@@ -115,6 +116,12 @@ renderRepetition (s, n) = decodeUtf8 s <> "<x" <> tshow n <> ">"
 findInReport :: (BS.ByteString -> Bool) -> Report -> Maybe BS.ByteString
 findInReport f (Report xns) = find f $ map fst xns
 
+lastMsgOfReport :: Report -> (BS.ByteString, Report)
+lastMsgOfReport (Report rep) = case rep of
+  [] -> assert `failure` rep
+  (lmsg, 1) : repRest -> (lmsg, Report repRest)
+  (lmsg, n) : repRest -> (lmsg, Report $ (lmsg, n - 1) : repRest)
+
 -- | Split a string into lines. Avoids ending the line with a character
 -- other than whitespace or punctuation. Space characters are removed
 -- from the start, but never from the end of lines. Newlines are respected.
@@ -173,6 +180,11 @@ addReport (Report m) (History (Report h : hs)) =
 -- | Take the given prefix of reports from a history.
 takeHistory :: Int -> History -> History
 takeHistory k (History h) = History $ take k h
+
+lastReportOfHistory :: History -> Maybe Report
+lastReportOfHistory (History hist) = case hist of
+  [] -> Nothing
+  rep : _ -> Just rep
 
 -- | A series of screen lines that may or may not fit the width nor height
 -- of the screen. An overlay may be transformed by adding the first line

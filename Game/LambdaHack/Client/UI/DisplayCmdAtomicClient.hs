@@ -113,7 +113,17 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
       when (bhp b == Dice.maxDice ahp && bcalm b == Dice.maxDice acalm) $ do
         actorVerbMU aid b "recover fully"
         stopPlayBack
-  UpdCalmActor{} -> skip
+  UpdCalmActor aid calmDelta ->
+    when (calmDelta == -1) $ do  -- lower deltas come from hits and are obvious
+      side <- getsClient sside
+      b <- getsState $ getActorBody aid
+      when (bfid b == side) $ do
+        fact <- getsState $ (EM.! bfid b) . sfactionD
+        allFoes  <- getsState $ actorRegularList (isAtWar fact) (blid b)
+        let closeFoes = filter ((<= 3) . chessDist (bpos b) . bpos) allFoes
+        when (null closeFoes) $ do  -- obvious where the feeling comes from
+          aVerbMU aid "hear something"
+          msgDuplicateScrap
   UpdHasteActor aid delta ->
     aVerbMU aid $ if delta > speedZero
                   then "speed up"
@@ -268,6 +278,17 @@ aiVerbMU aid verb iid k = do
   let msg = makeSentence [ MU.SubjectVerbSg subject verb
                          , partItemWs coitem disco k item ]
   msgAdd msg
+
+msgDuplicateScrap :: MonadClientUI m => m ()
+msgDuplicateScrap = do
+  report <- getsClient sreport
+  history <- getsClient shistory
+  let (lastMsg, repRest) = lastMsgOfReport report
+      lastDup = isJust . findInReport (== lastMsg)
+      lastDuplicated = lastDup repRest
+                       || maybe False lastDup (lastReportOfHistory history)
+  when lastDuplicated $
+    modifyClient $ \cli -> cli {sreport = repRest}
 
 -- TODO: "XXX spots YYY"? or blink or show the changed cursor?
 createActorUI :: MonadClientUI m => ActorId -> Actor -> Bool -> MU.Part -> m ()
