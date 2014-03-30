@@ -95,7 +95,7 @@ difficultyBound :: Int
 difficultyBound = 9
 
 difficultyDefault :: Int
-difficultyDefault = 1 + (difficultyBound - 1) `div` 2
+difficultyDefault = (1 + difficultyBound) `div` 2
 
 -- The function is its own inverse.
 difficultyCoeff :: Int -> Int

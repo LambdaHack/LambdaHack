@@ -70,7 +70,7 @@ import Game.LambdaHack.Content.TileKind
 gameDifficultyCycle :: MonadClientUI m => m ()
 gameDifficultyCycle = do
   DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
-  let d = if sdifficultyCli > difficultyBound then 1 else sdifficultyCli + 1
+  let d = if sdifficultyCli >= difficultyBound then 1 else sdifficultyCli + 1
   modifyClient $ \cli -> cli {sdebugCli = (sdebugCli cli) {sdifficultyCli = d}}
   msgAdd $ "Next game difficulty set to" <+> tshow d <> "."
 
