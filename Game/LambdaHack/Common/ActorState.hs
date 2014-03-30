@@ -291,7 +291,6 @@ regenCalmDelta b s =
         Just (k, _)  -> k + 1
         Nothing -> 1
       maxDeltaCalm = Dice.maxDice (acalm ak) - bcalm b
-      minDeltaCalm = - bcalm b
       -- Worry actor by enemies felt (even if not seen)
       -- on the level within 3 tiles.
       fact = (EM.! bfid b) . sfactionD $ s
@@ -299,4 +298,4 @@ regenCalmDelta b s =
       closeFoes = filter ((<= 3) . chessDist (bpos b) . bpos) allFoes
   in if null closeFoes
      then min calmIncr maxDeltaCalm
-     else max (-1) minDeltaCalm
+     else -1  -- even if all calmness spent, keep informing the client

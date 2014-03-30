@@ -208,7 +208,7 @@ updHealActor aid n = assert (n /= 0) $
 
 updCalmActor :: MonadStateWrite m => ActorId -> Int -> m ()
 updCalmActor aid n =
-  updateActor aid $ \b -> b { bcalm = bcalm b + n
+  updateActor aid $ \b -> b { bcalm = max 0 $ bcalm b + n
                             , bcalmDelta = n }
 
 updHasteActor :: MonadStateWrite m => ActorId -> Speed -> m ()
