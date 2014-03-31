@@ -38,7 +38,7 @@ targetStrategy :: forall m. MonadClient m
                => ActorId -> ActorId -> m (Strategy (Target, PathEtc))
 targetStrategy oldLeader aid = do
   cops@Kind.COps{ cotile=cotile@Kind.Ops{ouniqGroup}
-                , coactor=Kind.Ops{okind}
+                , coactor=coactor@Kind.Ops{okind}
                 , cofaction=Kind.Ops{okind=fokind} } <- getsState scops
 
   modifyClient $ \cli -> cli { sbfsD = EM.delete aid (sbfsD cli)
@@ -75,29 +75,30 @@ targetStrategy oldLeader aid = do
   -- TODO: we assume the actor eventually becomes a leader (or has the same
   -- set of abilities as the leader, anyway) and set his target accordingly.
   actorAbs <- actorAbilities aid (Just aid)
-  (woundedAndAlone, woundedOrAlone) <- do
-    if Ability.Flee `notElem` actorAbs then return (False, False)
-    else do
-      condHpTooLow <- condHpTooLowM aid
-      condNoFriends <- condNoFriendsM aid
-      return ( condHpTooLow && condNoFriends
-             , condHpTooLow || condNoFriends )
+  condCannotProject <- condCannotProjectM aid
+  condNoFriends <- condNoFriendsM aid
+  condHpTooLow <- condHpTooLowM aid
   let friendlyFid fid = fid == bfid b || isAllied fact fid
   friends <- getsState $ actorRegularList friendlyFid (blid b)
   -- TODO: refine all this when some actors specialize in ranged attacks
   -- (then we have to target, but keep the distance, we can do similarly for
   -- wounded or alone actors, perhaps only until they are shot first time,
   -- and only if they can shoot at the moment)
-  let nearbyFights | fightsAgainstSpawners = nearby `div` 2  -- not aggresive
-                   | otherwise = nearby * 2
-      nearbyOr = if woundedOrAlone then nearbyFights `div` 2 else nearbyFights
-      nearbyAnd = if woundedAndAlone then 0 else nearbyOr
-      nearbyFoes = filter (\(_, body) ->
-                             let cutoff =
-                                   if any (adjacent (bpos body) . bpos) friends
-                                   then 3 * nearbyAnd  -- attacks friends!
-                                   else nearbyAnd
-                             in chessDist (bpos body) (bpos b) < cutoff) allFoes
+  let meleeNearby | fightsAgainstSpawners = nearby `div` 2  -- not aggresive
+                  | otherwise = nearby
+      rangedNearby = 2 * meleeNearby
+      targetableMelee body =
+        chessDist (bpos body) (bpos b) < meleeNearby
+        && (not condNoFriends  -- awaited friends arrived
+            || not condHpTooLow && null friends)  -- nobody to wait for
+      targetableRangedOrSpecial body =
+        chessDist (bpos body) (bpos b) < rangedNearby
+        && (not condCannotProject
+            || hpTooLow coactor body  -- easy prey
+            || any (adjacent (bpos body) . bpos) friends)  -- attacks friends!
+      targetableEnemy body =
+        targetableMelee body || targetableRangedOrSpecial body
+      nearbyFoes = filter (targetableEnemy . snd) allFoes
       unknownId = ouniqGroup "unknown space"
       fightsAgainstSpawners =
         let escape = any lescape $ EM.elems dungeon
@@ -116,7 +117,7 @@ targetStrategy oldLeader aid = do
                          $ EM.assocs bag
       desirable (_, (_, bag)) = desirableBag bag
       -- TODO: make more common when weak ranged foes preferred, etc.
-      focused = bspeed b < speedNormal
+      focused = bspeed b < speedNormal || condHpTooLow
       canSmell = asmell $ okind $ bkind b
       setPath :: Target -> m (Strategy (Target, PathEtc))
       setPath tgt = do
@@ -133,9 +134,9 @@ targetStrategy oldLeader aid = do
       pickNewTarget :: m (Strategy (Target, PathEtc))
       pickNewTarget = do
         -- TODO: for foes, items, etc. consider a few nearby, not just one
-        cfoes <- if null nearbyFoes then return [] else closestFoes aid
+        cfoes <- closestFoes nearbyFoes aid
         case cfoes of
-          (_, (a, _)) : _ -> setPath $ TEnemy a False
+          (_, (aid2, _)) : _ -> setPath $ TEnemy aid2 False
           [] -> do
             -- Tracking enemies is more important than exploring,
             -- and smelling actors are usually blind, so bad at exploring.
@@ -183,11 +184,9 @@ targetStrategy oldLeader aid = do
         TEnemy a _ -> do
           body <- getsState $ getActorBody a
           if not focused  -- prefers closer foes
-             && not (null nearbyFoes)  -- foes nearby
              && a `notElem` map fst nearbyFoes  -- old one not close enough
              || blid body /= blid b  -- wrong level
              || actorDying body  -- foe already dying
-             || woundedAndAlone  -- weak actor better used for exploring
           then pickNewTarget
           else if bpos body == fst (snd updatedPath)
                then return $! returN "TEnemy" (oldTgt, updatedPath)
@@ -255,8 +254,6 @@ targetStrategy oldLeader aid = do
                                       && allExplored)
           then pickNewTarget
           else return $! returN "TPoint" (oldTgt, updatedPath)
-        _ | not $ null allFoes ->
-          pickNewTarget  -- new likely foes location spotted, forget the old
         TEnemyPos _ lid p _ ->
           -- Chase last position even if foe hides or dies,
           -- to find his companions, loot, etc.

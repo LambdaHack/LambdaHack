@@ -21,7 +21,6 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Effect as Effect
-import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -265,11 +264,9 @@ closestItems aid = do
       return $! sortBy (comparing fst) ds
 
 -- | Closest (wrt paths) enemy actors.
-closestFoes :: MonadClient m => ActorId -> m [(Int, (ActorId, Actor))]
-closestFoes aid = do
-  body <- getsState $ getActorBody aid
-  fact <- getsState $ \s -> sfactionD s EM.! bfid body
-  foes <- getsState $ actorRegularAssocs (isAtWar fact) (blid body)
+closestFoes :: MonadClient m
+            => [(ActorId, Actor)] -> ActorId -> m [(Int, (ActorId, Actor))]
+closestFoes foes aid = do
   case foes of
     [] -> return []
     _ -> do

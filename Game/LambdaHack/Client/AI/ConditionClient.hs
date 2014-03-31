@@ -97,7 +97,8 @@ condNoFriendsM aid = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let friendlyFid fid = fid == bfid b || isAllied fact fid
   friends <- getsState $ actorRegularList friendlyFid (blid b)
-  let notCloseEnough b2 = chessDist (bpos b) (bpos b2) `notElem` [1, 2]
+  let notCloseEnough b2 = let dist = chessDist (bpos b) (bpos b2)
+                          in dist < 4 && dist > 0
   return $! all notCloseEnough friends
 
 condBlocksFriendsM :: MonadClient m => ActorId -> m Bool
