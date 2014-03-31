@@ -58,11 +58,11 @@ actionStrategy aid = do
   condHpTooLow <- condHpTooLowM aid
   condOnTriggerable <- condOnTriggerableM aid
   condThreatClose <- condThreatCloseM aid
-  condNoFriends <- condNoFriendsM aid
   condBlocksFriends <- condBlocksFriendsM aid
   condNoWeapon <- condNoWeaponM aid
   condWeaponAvailable <- condWeaponAvailableM aid
   condCannotProject <- condCannotProjectM aid
+  condNotCalmEnough <- condNotCalmEnoughM aid
   mleader <- getsClient _sleader
   actorAbs <- actorAbilities aid mleader
   let stratToFreq :: MonadStateRead m
@@ -73,21 +73,26 @@ actionStrategy aid = do
         return $! scaleFreq scale $ bestVariant st  -- TODO: flatten instead?
       prefix, suffix :: [([Ability], Bool, m (Strategy RequestTimed))]
       prefix =
-        [ ( [Ability.FirstAid, Ability.UseTool]
+        [ ( [Ability.FirstAid, Ability.UseTool]  -- even before using stairs
           , not condAnyFoeAdjacent && condHpTooLow
           , useTool aid True )  -- use only healing tools
         , ( [Ability.Trigger, Ability.Flee]
-          , condOnTriggerable && condHpTooLow && condThreatClose
+          , condOnTriggerable && condHpTooLow && not condTgtEnemyPresent
+            && condThreatClose
           , trigger aid True ) -- flee via stairs, even if to wrong level
         , ( [Ability.Flee]
-          , condThreatAdjacent && condHpTooLow && condNoFriends
+          , condThreatAdjacent && condHpTooLow
+            && not condTgtEnemyPresent && condNotCalmEnough
           , flee aid )
         , ( [Ability.Displace, Ability.Melee]
-          , condAnyFoeAdjacent && condBlocksFriends
+          , not condOnTriggerable && condAnyFoeAdjacent && condBlocksFriends
           , displaceFoe aid )  -- only swap with an enemy to expose him
         , ( [Ability.Pickup, Ability.Melee]
           , condNoWeapon && condWeaponAvailable
           , pickup aid True )
+        , ( [Ability.Trigger]
+          , condOnTriggerable && condThreatAdjacent && not condTgtEnemyPresent
+          , trigger aid False )  -- retreat calmly from unwanted fight
         , ( [Ability.Melee]
           , condAnyFoeAdjacent
           , meleeBlocker aid )  -- only melee target or blocker
@@ -106,15 +111,15 @@ actionStrategy aid = do
           , condTgtEnemyPresent && not condCannotProject
           , stratToFreq 2 (ranged aid) )
         , ( [Ability.UseTool]
-          , condTgtEnemyPresent  -- tools can affect the target enemy
+          , condTgtEnemyPresent && condThreatClose  -- tools can affect enemies
           , stratToFreq 1 (useTool aid False) )  -- use any tool
         , ( [Ability.Chase]  -- careful, even if no Ability.Flee
-          , condTgtEnemyPresent && not condHpTooLow && not condNoFriends
+          , condTgtEnemyPresent
           , stratToFreq 20 (chase aid True) ) ]
       suffix =
         [ ( [Ability.Flee]
-          , condHpTooLow && condNoFriends && condThreatClose
-          , flee aid )  -- we assume fleeing usually gets us closer to friends
+          , condThreatClose && not condTgtEnemyPresent && condNotCalmEnough
+          , flee aid )
         , ( [Ability.Melee]
           , condAnyFoeAdjacent
           , meleeAny aid )  -- melee any, to avoid being wounded for naught
@@ -281,11 +286,12 @@ trigger aid fleeViaStairs = do
           in if boldpos b == bpos b   -- probably used stairs last turn
                 && boldlid b == lid2  -- in the opposite direction
              then 0  -- avoid trivial loops (pushing, being pushed, etc.)
-             else
-               if fleeViaStairs then 1 else 0
-               + case actorsThere of
-                   [] | canSee -> expBenefit
-                   _ -> min 1 expBenefit  -- risk pushing, if no better option
+             else let eben = case actorsThere of
+                        [] | canSee -> expBenefit
+                        _ -> min 1 expBenefit  -- risk pushing
+                  in if fleeViaStairs
+                     then 1000 * eben + 1  -- strongly prefer correct direction
+                     else eben
         F.Cause ef@Effect.Escape{} ->  -- flee via this way, too
           -- Only heroes escape but they first explore all for high score.
           if not (isHero && allExplored) then 0 else effectToBenefit cops b ef

@@ -12,6 +12,7 @@ module Game.LambdaHack.Client.AI.ConditionClient
   , condWeaponAvailableM
   , condNoWeaponM
   , condCannotProjectM
+  , condNotCalmEnoughM
   , benefitList
   ) where
 
@@ -171,3 +172,10 @@ benefitList aid permitted = do
             then getsState $ getActorBag aid CInv
             else return EM.empty
   return $! ben CGround floorBag ++ ben CEqp eqpBag ++ ben CInv invBag
+
+condNotCalmEnoughM :: MonadClient m => ActorId -> m Bool
+condNotCalmEnoughM aid = do
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  b <- getsState $ getActorBody aid
+  let ak = okind $ bkind b
+  return $! not (calmEnough b ak)
