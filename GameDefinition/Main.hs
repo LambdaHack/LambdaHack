@@ -14,8 +14,8 @@ import qualified Content.RuleKind
 import qualified Content.TileKind
 import Game.LambdaHack.Client (exeFrontend)
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.SampleImplementation.SampleImplementationMonadClient (executorCli)
-import Game.LambdaHack.SampleImplementation.SampleImplementationMonadServer (executorSer)
+import Game.LambdaHack.SampleImplementation.SampleMonadClient (executorCli)
+import Game.LambdaHack.SampleImplementation.SampleMonadServer (executorSer)
 import Game.LambdaHack.Server (mainSer)
 
 -- | Tie the LambdaHack engine client, server and frontend code

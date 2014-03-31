@@ -23,8 +23,8 @@ import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.Content.KeyKind
-import Game.LambdaHack.Client.UI.DisplayCmdAtomicClient
-import Game.LambdaHack.Client.UI.HandleHumanCmdClient
+import Game.LambdaHack.Client.UI.DisplayAtomicClient
+import Game.LambdaHack.Client.UI.HandleHumanClient
 import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Client.UI.MonadClientUI

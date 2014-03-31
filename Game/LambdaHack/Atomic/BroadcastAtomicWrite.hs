@@ -1,7 +1,7 @@
 -- | Sending atomic commands to clients and executing them on the server.
 -- See
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
-module Game.LambdaHack.Atomic.HandleAndBroadcastWrite
+module Game.LambdaHack.Atomic.BroadcastAtomicWrite
   ( handleAndBroadcast
   ) where
 
@@ -13,15 +13,15 @@ import Data.Key (mapWithKeyM_)
 import Data.Maybe
 
 import Game.LambdaHack.Atomic.CmdAtomic
-import Game.LambdaHack.Atomic.HandleCmdAtomicWrite
+import Game.LambdaHack.Atomic.HandleAtomicWrite
 import Game.LambdaHack.Atomic.MonadStateWrite
-import Game.LambdaHack.Atomic.PosCmdAtomicRead
-import Game.LambdaHack.Common.MonadStateRead
+import Game.LambdaHack.Atomic.PosAtomicRead
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.State

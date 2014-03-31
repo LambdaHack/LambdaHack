@@ -1,12 +1,12 @@
 -- | Semantics of human player commands.
-module Game.LambdaHack.Client.UI.HandleHumanCmdClient
+module Game.LambdaHack.Client.UI.HandleHumanClient
   ( cmdHumanSem
   ) where
 
 import Data.Monoid
 
-import Game.LambdaHack.Client.UI.HandleHumanCmdGlobalClient
-import Game.LambdaHack.Client.UI.HandleHumanCmdLocalClient
+import Game.LambdaHack.Client.UI.HandleHumanGlobalClient
+import Game.LambdaHack.Client.UI.HandleHumanLocalClient
 import Game.LambdaHack.Client.UI.HumanCmd
 import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgClient

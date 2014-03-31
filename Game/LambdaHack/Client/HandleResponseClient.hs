@@ -8,7 +8,7 @@ import Control.Exception.Assert.Sugar
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Client.AI
-import Game.LambdaHack.Client.HandleCmdAtomicClient
+import Game.LambdaHack.Client.HandleAtomicClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.ProtocolClient
 import Game.LambdaHack.Client.State

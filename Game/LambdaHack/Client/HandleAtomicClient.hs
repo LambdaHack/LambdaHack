@@ -1,5 +1,5 @@
 -- | Handle atomic commands received by the client.
-module Game.LambdaHack.Client.HandleCmdAtomicClient
+module Game.LambdaHack.Client.HandleAtomicClient
   ( cmdAtomicSemCli, cmdAtomicFilterCli
   ) where
 

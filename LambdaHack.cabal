@@ -66,23 +66,23 @@ flag curses
 library
   exposed-modules:    Game.LambdaHack.Atomic
                       Game.LambdaHack.Atomic.CmdAtomic,
-                      Game.LambdaHack.Atomic.HandleAndBroadcastWrite,
-                      Game.LambdaHack.Atomic.HandleCmdAtomicWrite,
+                      Game.LambdaHack.Atomic.BroadcastAtomicWrite,
+                      Game.LambdaHack.Atomic.HandleAtomicWrite,
                       Game.LambdaHack.Atomic.MonadAtomic,
                       Game.LambdaHack.Atomic.MonadStateWrite,
-                      Game.LambdaHack.Atomic.PosCmdAtomicRead,
+                      Game.LambdaHack.Atomic.PosAtomicRead,
                       Game.LambdaHack.Client,
                       Game.LambdaHack.Client.AI
                       Game.LambdaHack.Client.AI.ConditionClient,
                       Game.LambdaHack.Client.AI.HandleAbilityClient,
                       Game.LambdaHack.Client.AI.PickActorClient
-                      Game.LambdaHack.Client.AI.PickActorTargetClient
+                      Game.LambdaHack.Client.AI.PickTargetClient
                       Game.LambdaHack.Client.AI.Preferences
                       Game.LambdaHack.Client.AI.Strategy,
                       Game.LambdaHack.Client.Bfs,
                       Game.LambdaHack.Client.BfsClient,
                       Game.LambdaHack.Client.CommonClient,
-                      Game.LambdaHack.Client.HandleCmdAtomicClient,
+                      Game.LambdaHack.Client.HandleAtomicClient,
                       Game.LambdaHack.Client.HandleResponseClient,
                       Game.LambdaHack.Client.ItemSlot,
                       Game.LambdaHack.Client.Key,
@@ -95,13 +95,13 @@ library
                       Game.LambdaHack.Client.UI.Config,
                       Game.LambdaHack.Client.UI.Content.KeyKind
                       Game.LambdaHack.Client.UI.DrawClient,
-                      Game.LambdaHack.Client.UI.DisplayCmdAtomicClient,
+                      Game.LambdaHack.Client.UI.DisplayAtomicClient,
                       Game.LambdaHack.Client.UI.Frontend,
                       Game.LambdaHack.Client.UI.Frontend.Chosen,
                       Game.LambdaHack.Client.UI.Frontend.Std,
-                      Game.LambdaHack.Client.UI.HandleHumanCmdGlobalClient,
-                      Game.LambdaHack.Client.UI.HandleHumanCmdLocalClient,
-                      Game.LambdaHack.Client.UI.HandleHumanCmdClient,
+                      Game.LambdaHack.Client.UI.HandleHumanGlobalClient,
+                      Game.LambdaHack.Client.UI.HandleHumanLocalClient,
+                      Game.LambdaHack.Client.UI.HandleHumanClient,
                       Game.LambdaHack.Client.UI.HumanCmd,
                       Game.LambdaHack.Client.UI.InventoryClient,
                       Game.LambdaHack.Client.UI.KeyBindings,
@@ -152,8 +152,8 @@ library
                       Game.LambdaHack.Content.PlaceKind,
                       Game.LambdaHack.Content.RuleKind,
                       Game.LambdaHack.Content.TileKind,
-                      Game.LambdaHack.SampleImplementation.SampleImplementationMonadClient,
-                      Game.LambdaHack.SampleImplementation.SampleImplementationMonadServer,
+                      Game.LambdaHack.SampleImplementation.SampleMonadClient,
+                      Game.LambdaHack.SampleImplementation.SampleMonadServer,
                       Game.LambdaHack.Server,
                       Game.LambdaHack.Server.Commandline,
                       Game.LambdaHack.Server.CommonServer,

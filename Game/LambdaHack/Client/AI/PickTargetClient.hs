@@ -1,5 +1,5 @@
 -- | Let AI pick the best target for an actor.
-module Game.LambdaHack.Client.AI.PickActorTargetClient
+module Game.LambdaHack.Client.AI.PickTargetClient
   ( targetStrategy
   ) where
 

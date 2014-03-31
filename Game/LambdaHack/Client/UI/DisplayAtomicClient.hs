@@ -1,5 +1,5 @@
 -- | Display atomic commands received by the client.
-module Game.LambdaHack.Client.UI.DisplayCmdAtomicClient
+module Game.LambdaHack.Client.UI.DisplayAtomicClient
   ( displayRespUpdAtomicUI, displayRespSfxAtomicUI
   ) where
 
@@ -148,7 +148,7 @@ displayRespUpdAtomicUI verbose cmd = case cmd of
         _ ->
           return ()
           -- TODO: report when server changes spawner's leader;
-          -- perhaps don't switch _sleader in HandleCmdAtomicClient,
+          -- perhaps don't switch _sleader in HandleAtomicClient,
           -- compare here and switch here? too hacky? fails for AI?
   UpdLeadFaction{} -> skip
   UpdDiplFaction fid1 fid2 _ toDipl -> do

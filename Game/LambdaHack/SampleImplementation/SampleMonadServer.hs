@@ -3,7 +3,7 @@
 -- component of the library, this implementation can be substituted.
 -- This module should not be imported anywhere except in 'Action'
 -- to expose the executor to any code using the library.
-module Game.LambdaHack.SampleImplementation.SampleImplementationMonadServer
+module Game.LambdaHack.SampleImplementation.SampleMonadServer
   ( executorSer
   ) where
 
@@ -14,8 +14,8 @@ import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 import System.FilePath
 
+import Game.LambdaHack.Atomic.BroadcastAtomicWrite
 import Game.LambdaHack.Atomic.CmdAtomic
-import Game.LambdaHack.Atomic.HandleAndBroadcastWrite
 import Game.LambdaHack.Atomic.MonadAtomic
 import Game.LambdaHack.Atomic.MonadStateWrite
 import Game.LambdaHack.Common.MonadStateRead

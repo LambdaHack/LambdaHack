@@ -1,7 +1,7 @@
 -- | Semantics of 'HumanCmd' client commands that do not return
 -- server commands. None of such commands takes game time.
 -- TODO: document
-module Game.LambdaHack.Client.UI.HandleHumanCmdLocalClient
+module Game.LambdaHack.Client.UI.HandleHumanLocalClient
   ( -- * Assorted commands
     gameDifficultyCycle
   , pickLeaderHuman, memberCycleHuman, memberBackHuman

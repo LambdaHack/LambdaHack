@@ -5,10 +5,10 @@ module Game.LambdaHack.Atomic
   , broadcastUpdAtomic,  broadcastSfxAtomic
     -- * CmdAtomic
   , CmdAtomic(..), UpdAtomic(..), SfxAtomic(..), HitAtomic(..)
-    -- * PosCmdAtomicRead
+    -- * PosAtomicRead
   , PosAtomic(..), posUpdAtomic, posSfxAtomic, seenAtomicCli, generalMoveItem
   ) where
 
 import Game.LambdaHack.Atomic.CmdAtomic
 import Game.LambdaHack.Atomic.MonadAtomic
-import Game.LambdaHack.Atomic.PosCmdAtomicRead
+import Game.LambdaHack.Atomic.PosAtomicRead
