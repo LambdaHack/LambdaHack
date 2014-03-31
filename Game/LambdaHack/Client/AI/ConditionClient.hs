@@ -9,13 +9,17 @@ module Game.LambdaHack.Client.AI.ConditionClient
   , condThreatCloseM
   , condNoFriendsM
   , condBlocksFriendsM
-  , condNoWeaponM
   , condWeaponAvailableM
+  , condNoWeaponM
+  , condCannotProjectM
+  , benefitList
   ) where
 
+import Control.Exception.Assert.Sugar
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 
+import Game.LambdaHack.Client.AI.Preferences
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Actor
@@ -29,6 +33,9 @@ import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
+import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.RuleKind
 
 -- | Require that the target enemy is visible by the party.
 condTgtEnemyPresentM :: MonadClient m => ActorId -> m Bool
@@ -104,13 +111,6 @@ condBlocksFriendsM aid = do
           _ -> False
   return $! any blocked ours
 
-condNoWeaponM :: MonadStateRead m => ActorId -> m Bool
-condNoWeaponM aid = do
-  cops <- getsState scops
-  b <- getsState $ getActorBody aid
-  eqpAssocs <- getsState $ getEqpAssocs b
-  return $! isNothing $ strongestSword cops eqpAssocs
-
 condWeaponAvailableM :: MonadStateRead m => ActorId -> m Bool
 condWeaponAvailableM aid = do
   cops <- getsState scops
@@ -120,3 +120,53 @@ condWeaponAvailableM aid = do
   let lootIsWeapon = isJust $ strongestSword cops floorAssocs
       weaponinInv = isJust $ strongestSword cops invAssocs
   return $! lootIsWeapon || weaponinInv
+
+condNoWeaponM :: MonadStateRead m => ActorId -> m Bool
+condNoWeaponM aid = do
+  cops <- getsState scops
+  b <- getsState $ getActorBody aid
+  eqpAssocs <- getsState $ getEqpAssocs b
+  return $! isNothing $ strongestSword cops eqpAssocs
+
+condCannotProjectM :: MonadClient m => ActorId -> m Bool
+condCannotProjectM aid = do
+  Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
+  b <- getsState $ getActorBody aid
+  let ak = okind $ bkind b
+      permitted = (if True  -- aiq mk >= 10 -- TODO; let server enforce?
+                   then ritemProject
+                   else ritemRanged)
+                  $ Kind.stdRuleset corule
+  benList <- benefitList aid permitted
+  let missiles = filter (maybe True (< 0) . fst . fst) benList
+  return $! not (asight ak) || not (calmEnough b ak) || null missiles
+
+benefitList :: MonadClient m
+            => ActorId -> [Char] -> m [((Maybe Int, CStore), (ItemId, Item))]
+benefitList aid permitted = do
+  cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  b <- getsState $ getActorBody aid
+  disco <- getsClient sdisco
+  itemD <- getsState sitemD
+  let ak = okind $ bkind b
+      getItemB iid =
+        fromMaybe (assert `failure` "item body not found"
+                          `twith` (iid, itemD)) $ EM.lookup iid itemD
+      ben cstore bag =
+        [ ((benefit, cstore), (iid, item))
+        | (iid, item) <- map (\iid -> (iid, getItemB iid))
+                         $ EM.keys bag
+        , let benefit = case jkind disco item of
+                Nothing -> Nothing
+                Just _ki ->
+                  let _kik = undefined -- iokind _ki
+                      _unneeded = isymbol _kik
+                  in Just $ effectToBenefit cops b (jeffect item)
+        , benefit /= Just 0
+        , jsymbol item `elem` permitted ]
+  floorBag <- getsState $ getActorBag aid CGround
+  eqpBag <- getsState $ getActorBag aid CEqp
+  invBag <- if calmEnough b ak
+            then getsState $ getActorBag aid CInv
+            else return EM.empty
+  return $! ben CGround floorBag ++ ben CEqp eqpBag ++ ben CInv invBag

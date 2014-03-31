@@ -62,6 +62,7 @@ actionStrategy aid = do
   condBlocksFriends <- condBlocksFriendsM aid
   condNoWeapon <- condNoWeaponM aid
   condWeaponAvailable <- condWeaponAvailableM aid
+  condCannotProject <- condCannotProjectM aid
   mleader <- getsClient _sleader
   actorAbs <- actorAbilities aid mleader
   let stratToFreq :: MonadStateRead m
@@ -101,8 +102,8 @@ actionStrategy aid = do
           , displaceBlocker aid ) ]  -- fires up only when path blocked
       distant :: [([Ability], Bool, m (Frequency RequestTimed))]
       distant =
-        [ ( [Ability.Ranged]
-          , condTgtEnemyPresent  -- for high-value target, shoot even in melee
+        [ ( [Ability.Ranged]  -- for high-value target, shoot even in melee
+          , condTgtEnemyPresent && not condCannotProject
           , stratToFreq 2 (ranged aid) )
         , ( [Ability.UseTool]
           , condTgtEnemyPresent  -- tools can affect the target enemy
@@ -300,25 +301,25 @@ trigger aid fleeViaStairs = do
 -- or zap anything else than obvious physical missiles.
 ranged :: MonadClient m => ActorId -> m (Strategy RequestTimed)
 ranged aid = do
-  cops@Kind.COps{ coactor=Kind.Ops{okind}
-                , coitem=coitem@Kind.Ops{okind=iokind}
-                , corule
-                } <- getsState scops
+  Kind.COps{ coactor=Kind.Ops{okind}
+           , coitem=coitem@Kind.Ops{okind=iokind}
+           , corule
+           } <- getsState scops
   btarget <- getsClient $ getTarget aid
   b@Actor{bkind, bpos, blid} <- getsState $ getActorBody aid
-  floorItems <- getsState $ getActorBag aid CGround
-  let eqpBag = beqp b
   mfpos <- aidTgtToPos aid blid btarget
   case (btarget, mfpos) of
     (Just TEnemy{}, Just fpos) -> do
       disco <- getsClient sdisco
-      itemD <- getsState sitemD
       let mk = okind bkind
           initalEps = 0
       (steps, eps) <- makeLine b fpos initalEps
-      let permitted = (if aiq mk >= 10 then ritemProject else ritemRanged)
+      let permitted = (if True  -- aiq mk >= 10 -- TODO; let server enforce?
+                       then ritemProject
+                       else ritemRanged)
                       $ Kind.stdRuleset corule
-          itemReaches item =
+      benList <- benefitList aid permitted
+      let itemReaches item =
             let lingerPercent = isLingering coitem disco item
                 toThrow = maybe 0 (itoThrow . iokind) $ jkind disco item
                 speed = speedFromWeight (jweight item) toThrow
@@ -326,33 +327,22 @@ ranged aid = do
                 totalRange = lingerPercent * range `div` 100
             in steps <= totalRange  -- probably enough range
                  -- TODO: make sure itoThrow identified after a single throw
-          getItemB iid =
-            fromMaybe (assert `failure` "item body not found"
-                              `twith` (iid, itemD)) $ EM.lookup iid itemD
-          throwFreq bag multi container =
-            [ (- benefit * multi,
-              ReqProject aid fpos eps iid container)
-            | (iid, i) <- map (\iid -> (iid, getItemB iid))
-                          $ EM.keys bag
-            , let benefit =
-                    case jkind disco i of
-                      Nothing -> -5  -- experimenting is fun
-                      Just _ki ->
-                        let _kik = iokind _ki
-                            _unneeded = isymbol _kik
-                        in effectToBenefit cops b (jeffect i)
-            , benefit < 0
-            , jsymbol i `elem` permitted
-            , itemReaches i ]
+          fRanged ((mben, cstore), (iid, item)) =
+            let benR = if cstore == CGround then 2 else 1
+                       * case mben of
+                           Nothing -> -5  -- experimenting is fun
+                           Just ben -> ben
+            in if benR < 0 && itemReaches item
+               then Just (-benR, ReqProject aid fpos eps iid cstore)
+               else Nothing
+          benRanged = mapMaybe fRanged benList
           freq =
             if asight mk  -- ProjectBlind
                && calmEnough b mk  -- ProjectNotCalm
                -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
                -- and no actors or obstracles along the path
                && steps == chessDist bpos fpos
-            then toFreq "ranged"
-                 $ throwFreq eqpBag 1 CEqp
-                   ++ throwFreq floorItems 2 CGround
+            then toFreq "ranged" benRanged
             else toFreq "ranged: not possible" []
       return $! liftFrequency freq
     _ -> return reject
@@ -360,34 +350,27 @@ ranged aid = do
 -- Tools use requires significant intelligence and sometimes literacy.
 useTool :: MonadClient m => ActorId -> Bool -> m (Strategy RequestTimed)
 useTool aid onlyFirstAid = do
-  cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-  disco <- getsClient sdisco
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   b <- getsState $ getActorBody aid
-  floorItems <- getsState $ getActorBag aid CGround
-  let eqpBag = beqp b
-  s <- getState
   let mk = okind $ bkind b
-      mastered | aiq mk < 5 = ""
+      permitted | aiq mk < 5 = ""
                | aiq mk < 10 = "!"
                | otherwise = "!?"  -- literacy required
-      legal item | onlyFirstAid = case jeffect item of
-                                    Effect.Heal p | p > 0 -> True
-                                    _ -> False
-                 | otherwise = True
-      useFreq bag multi container =
-        [ (benefit * multi, ReqApply aid iid container)
-        | (iid, i) <- map (\iid -> (iid, getItemBody iid s))
-                      $ EM.keys bag
-        , let benefit =
-                case jkind disco i of
-                  Nothing -> 5  -- experimenting is fun
-                  Just _ki | legal i -> effectToBenefit cops b $ jeffect i
-                  Just _ -> 0
-        , benefit > 0
-        , jsymbol i `elem` mastered ]
-  return $! liftFrequency $ toFreq "useTool"
-         $ useFreq eqpBag 1 CEqp
-           ++ useFreq floorItems 2 CGround
+  benList <- benefitList aid permitted
+  let itemLegal item | onlyFirstAid = case jeffect item of
+                                        Effect.Heal p | p > 0 -> True
+                                        _ -> False
+                     | otherwise = True
+      fTool ((mben, cstore), (iid, item)) =
+        let benR = if cstore == CGround then 2 else 1
+                   * case mben of
+                       Nothing -> 5  -- experimenting is fun
+                       Just ben -> ben
+        in if benR > 0 && itemLegal item
+           then Just (-benR, ReqApply aid iid cstore)
+           else Nothing
+      benTool = mapMaybe fTool benList
+  return $! liftFrequency $ toFreq "useTool" benTool
 
 -- If low on health, flee in panic --- not along path to target,
 -- but just as far from the attackers, as possible. Usually fleeing from
