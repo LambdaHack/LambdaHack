@@ -172,21 +172,16 @@ benGroundItems :: MonadClient m => ActorId -> m [((Int, Int), (ItemId, Item))]
 benGroundItems aid = do
   cops <- getsState scops
   body <- getsState $ getActorBody aid
-  fact <- getsState $ (EM.! bfid body) . sfactionD
-  dungeon <- getsState sdungeon
   itemD <- getsState sitemD
   disco <- getsClient sdisco
   floorItems <- getsState $ getActorBag aid CGround
-  let fightsAgainstSpawners =
-        let escape = any lescape $ EM.elems dungeon
-            isSpawner = isSpawnFact fact
-        in escape && not isSpawner
-      itemUsefulness item =
+  fightsSpawners <- fightsAgainstSpawners (bfid body)
+  let itemUsefulness item =
         case jkind disco item of
           Nothing -> 5  -- experimenting is fun
           Just _ki -> effectToBenefit cops body $ jeffect item
       desirableItem item use k
-        | fightsAgainstSpawners = use /= 0 || itemPrice (item, k) > 0
+        | fightsSpawners = use /= 0 || itemPrice (item, k) > 0
         | otherwise = use /= 0
       mapDesirable (iid, k) = let item = itemD EM.! iid
                                   use = itemUsefulness item

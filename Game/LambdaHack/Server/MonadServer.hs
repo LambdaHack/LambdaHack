@@ -34,9 +34,9 @@ import System.Time
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import qualified Game.LambdaHack.Common.Kind as Kind
-import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
@@ -49,7 +49,6 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.State
-import Game.LambdaHack.Common.File
 
 class MonadStateRead m => MonadServer m where
   getServer      :: m StateServer
@@ -132,7 +131,7 @@ registerScore status mbody fid = do
   date <- liftIO getClockTime
   DebugModeSer{sdifficultySer} <- getsServer sdebugSer
   factionD <- getsState sfactionD
-  dungeon <- getsState sdungeon
+  fightsSpawners <- fightsAgainstSpawners fid
   let path = dataDir </> scoresFile
       outputScore (worthMentioning, (ntable, pos)) =
         -- If not human, probably debugging, so dump instead of registering.
@@ -152,14 +151,10 @@ registerScore status mbody fid = do
       ourVic (fi, fa) | isAllied fact fi || fi == fid = Just $ gvictims fa
                       | otherwise = Nothing
       ourVictims = EM.unionsWith (+) $ mapMaybe ourVic $ EM.assocs factionD
-      fightsAgainstSpawners =
-        let escape = any lescape $ EM.elems dungeon
-            isSpawner = isSpawnFact fact
-        in escape && not isSpawner
       registeredScore =
         HighScore.register table total time status date diff
                            (playerName $ gplayer fact)
-                           ourVictims theirVictims fightsAgainstSpawners
+                           ourVictims theirVictims fightsSpawners
   outputScore registeredScore
 
 resetSessionStart :: MonadServer m => m ()

@@ -84,7 +84,8 @@ targetStrategy oldLeader aid = do
   -- (then we have to target, but keep the distance, we can do similarly for
   -- wounded or alone actors, perhaps only until they are shot first time,
   -- and only if they can shoot at the moment)
-  let meleeNearby | fightsAgainstSpawners = nearby `div` 2  -- not aggresive
+  fightsSpawners <- fightsAgainstSpawners (bfid b)
+  let meleeNearby | fightsSpawners = nearby `div` 2  -- not aggresive
                   | otherwise = nearby
       rangedNearby = 2 * meleeNearby
       targetableMelee body =
@@ -99,18 +100,14 @@ targetStrategy oldLeader aid = do
         targetableMelee body || targetableRangedOrSpecial body
       nearbyFoes = filter (targetableEnemy . snd) allFoes
       unknownId = ouniqGroup "unknown space"
-      fightsAgainstSpawners =
-        let escape = any lescape $ EM.elems dungeon
-            isSpawner = isSpawnFact fact
-        in escape && not isSpawner
       itemUsefulness item =
         case jkind disco item of
           Nothing -> -- TODO: 30  -- experimenting is fun
              -- for now, cheating:
              effectToBenefit cops b (jeffect item)
           Just _ki -> effectToBenefit cops b $ jeffect item
-      desirableItem item k | fightsAgainstSpawners = itemUsefulness item /= 0
-                                                     || itemPrice (item, k) > 0
+      desirableItem item k | fightsSpawners = itemUsefulness item /= 0
+                                              || itemPrice (item, k) > 0
                            | otherwise = itemUsefulness item /= 0
       desirableBag bag = any (\(iid, k) -> desirableItem (itemD EM.! iid) k)
                          $ EM.assocs bag

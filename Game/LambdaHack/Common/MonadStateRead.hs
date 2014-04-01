@@ -2,7 +2,7 @@
 -- player actions. Has no access to the the main action type.
 module Game.LambdaHack.Common.MonadStateRead
   ( MonadStateRead(..)
-  , getLevel, nUI, posOfContainer, posOfAid, actorConts
+  , getLevel, nUI, posOfContainer, posOfAid, actorConts, fightsAgainstSpawners
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -63,3 +63,12 @@ actorConts iid k aid cstore = case cstore of
   CInv -> do
     invs <- actorInvs iid k aid
     return $! map (\(n, aid2) -> (n, CActor aid2 CInv)) invs
+
+-- TODO: make a field of Faction?
+fightsAgainstSpawners :: MonadStateRead m => FactionId -> m Bool
+fightsAgainstSpawners fid = do
+  fact <- getsState $ (EM.! fid) . sfactionD
+  dungeon <- getsState sdungeon
+  let escape = any lescape $ EM.elems dungeon
+      isSpawner = isSpawnFact fact
+  return $! escape && not isSpawner

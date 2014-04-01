@@ -227,7 +227,7 @@ scoreToSlideshow total status = do
   date <- liftIO getClockTime
   scurDifficulty <- getsClient scurDifficulty
   factionD <- getsState sfactionD
-  dungeon <- getsState sdungeon
+  fightsSpawners <- fightsAgainstSpawners fid
   let showScore (ntable, pos) = HighScore.highSlideshow ntable pos
       diff | not $ playerUI $ gplayer fact = difficultyDefault
            | otherwise = scurDifficulty
@@ -238,14 +238,10 @@ scoreToSlideshow total status = do
       ourVic (fi, fa) | isAllied fact fi || fi == fid = Just $ gvictims fa
                       | otherwise = Nothing
       ourVictims = EM.unionsWith (+) $ mapMaybe ourVic $ EM.assocs factionD
-      fightsAgainstSpawners =
-        let escape = any lescape $ EM.elems dungeon
-            isSpawner = isSpawnFact fact
-        in escape && not isSpawner
       (worthMentioning, rScore) =
         HighScore.register table total time status date diff
                            (playerName $ gplayer fact)
-                           ourVictims theirVictims fightsAgainstSpawners
+                           ourVictims theirVictims fightsSpawners
   return $! if worthMentioning then showScore rScore else mempty
 
 getLeaderUI :: MonadClientUI m => m ActorId

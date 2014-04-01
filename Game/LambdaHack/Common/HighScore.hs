@@ -113,9 +113,9 @@ register :: ScoreTable  -- ^ old table
          -> Bool        -- ^ whether the faction fights against spawners
          -> (Bool, (ScoreTable, Int))
 register table total time status@Status{stOutcome} date difficulty gplayerName
-         ourVictims theirVictims fightsAgainstSpawners =
+         ourVictims theirVictims fightsSpawners =
   let pBase =
-        if fightsAgainstSpawners
+        if fightsSpawners
         -- Heroes rejoice in loot and mourn their victims.
         then fromIntegral total
         -- Spawners or skirmishers get no bonus from loot and no malus
@@ -131,7 +131,7 @@ register table total time status@Status{stOutcome} date difficulty gplayerName
                 else min 1000
                      $ sqrt $ fromIntegral survival
       pBonus =
-        if fightsAgainstSpawners
+        if fightsSpawners
         then max 0 (1000 - 100 * sum (EM.elems ourVictims))
         else 1000 + 100 * sum (EM.elems theirVictims)
       pSum :: Double
@@ -139,7 +139,7 @@ register table total time status@Status{stOutcome} date difficulty gplayerName
              then pBase + fromIntegral pBonus
              else pBase
       worthMentioning =
-        if fightsAgainstSpawners then total > 0 else not (EM.null theirVictims)
+        if fightsSpawners then total > 0 else not (EM.null theirVictims)
       points = (ceiling :: Double -> Int)
                $ pSum * 1.5 ^^ (- (difficultyCoeff difficulty))
       negTime = absoluteTimeNegate time
