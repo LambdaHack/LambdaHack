@@ -14,7 +14,7 @@ module Game.LambdaHack.Client.AI.ConditionClient
   , condDesirableFloorItemM
   , condMeleeBadM
   , benefitList
-  , benItemList
+  , benGroundItems
   , threatDistList
   ) where
 
@@ -118,10 +118,8 @@ condWeaponAvailableM aid = do
   cops <- getsState scops
   b <- getsState $ getActorBody aid
   floorAssocs <- getsState $ getFloorAssocs (blid b) (bpos b)
-  invAssocs <- getsState $ getInvAssocs b
   let lootIsWeapon = isJust $ strongestSword cops floorAssocs
-      weaponinInv = isJust $ strongestSword cops invAssocs
-  return $! lootIsWeapon || weaponinInv
+  return $! lootIsWeapon
 
 condNoWeaponM :: MonadStateRead m => ActorId -> m Bool
 condNoWeaponM aid = do
@@ -182,11 +180,11 @@ condNotCalmEnoughM aid = do
 
 condDesirableFloorItemM :: MonadClient m => ActorId -> m Bool
 condDesirableFloorItemM aid = do
-  benItemL <- benItemList aid
+  benItemL <- benGroundItems aid
   return $! not $ null benItemL
 
-benItemList :: MonadClient m => ActorId -> m [((Int, Int), (ItemId, Item))]
-benItemList aid = do
+benGroundItems :: MonadClient m => ActorId -> m [((Int, Int), (ItemId, Item))]
+benGroundItems aid = do
   cops <- getsState scops
   body <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid body) . sfactionD

@@ -107,7 +107,10 @@ actionStrategy aid = do
           , trigger aid False )
         , ( [Ability.Displace, Ability.Chase]  -- prevents some looping movement
           , not condDesirableFloorItem
-          , displaceBlocker aid ) ]  -- fires up only when path blocked
+          , displaceBlocker aid )  -- fires up only when path blocked
+        , ( [Ability.Pickup]  -- doesn't take long, very useful if safe
+          , not condAnyFoeAdj && not condDesirableFloorItem
+          , manageEqp aid ) ]  -- only possible if calm enough, so high priority
       distant :: [([Ability], Bool, m (Frequency RequestTimed))]
       distant =
         [ ( [Ability.Ranged]  -- for high-value target, shoot even in melee
@@ -161,39 +164,45 @@ waitBlockNow aid = returN "wait" $ ReqWait aid
 -- TODO: (most?) animals don't pick up. Everybody else does.
 pickup :: MonadClient m => ActorId -> Bool -> m (Strategy RequestTimed)
 pickup aid onlyWeapon = do
-  cops@Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
-  let RuleKind{ritemEqp, ritemMelee, rsharedInventory} = Kind.stdRuleset corule
-  body <- getsState $ getActorBody aid
-  invAssocs <- getsState $ getInvAssocs body
-  benItemL <- benItemList aid
-  let kind = okind $ bkind body
-      isWeapon (_, (_, item)) = jsymbol item `elem` ritemMelee
+  Kind.COps{corule} <- getsState scops
+  let RuleKind{ritemMelee} = Kind.stdRuleset corule
+  benItemL <- benGroundItems aid
+  let isWeapon (_, (_, item)) = jsymbol item `elem` ritemMelee
       filterWeapon | onlyWeapon = filter isWeapon
                    | otherwise = id
   case filterWeapon benItemL of
     ((_, k), (iid, _)) : _ -> do  -- pick up the best desirable item, if any
       updateItemSlot (Just aid) iid
       return $! returN "pickup" $ ReqMoveItem aid iid k CGround CEqp
-    [] | not onlyWeapon && calmEnough body kind -> do
-      eqpKA <- getsState $ getEqpKA body
-      let improve symbol =
-            let bestInv = strongestItem invAssocs $ pSymbol cops symbol
-                bestEqp = strongestItems eqpKA $ pSymbol cops symbol
-            in case (bestInv, bestEqp) of
-              (Just (_, (iidInv, _)), []) ->
-                returN "wield" $ ReqMoveItem aid iidInv 1 CInv CEqp
-              (Just (vInv, (iidInv, _)), (vEqp, _) : _)
-                | vInv > vEqp ->
-                returN "wield" $ ReqMoveItem aid iidInv 1 CInv CEqp
-              (_, (_, (k, (iidEqp, _))) : _) | k > 1 && rsharedInventory ->
-                -- To share the best items with others.
-                returN "yield" $ ReqMoveItem aid iidEqp (k - 1) CEqp CInv
-              (_, _ : (_, (k, (iidEqp, _))) : _) ->
-                -- To make room in limited equipment store or to share.
-                returN "yield" $ ReqMoveItem aid iidEqp k CEqp CInv
-              _ -> reject
-      return $ msum $ map improve (if onlyWeapon then ritemMelee else ritemEqp)
-    _ -> return reject
+    [] -> return reject
+
+manageEqp :: MonadClient m => ActorId -> m (Strategy RequestTimed)
+manageEqp aid = do
+  cops@Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
+  let RuleKind{ritemEqp, rsharedInventory} = Kind.stdRuleset corule
+  body <- getsState $ getActorBody aid
+  invAssocs <- getsState $ getInvAssocs body
+  let kind = okind $ bkind body
+  if calmEnough body kind then do
+    eqpKA <- getsState $ getEqpKA body
+    let improve symbol =
+          let bestInv = strongestItem invAssocs $ pSymbol cops symbol
+              bestEqp = strongestItems eqpKA $ pSymbol cops symbol
+          in case (bestInv, bestEqp) of
+            (Just (_, (iidInv, _)), []) ->
+              returN "wield" $ ReqMoveItem aid iidInv 1 CInv CEqp
+            (Just (vInv, (iidInv, _)), (vEqp, _) : _)
+              | vInv > vEqp ->
+              returN "wield" $ ReqMoveItem aid iidInv 1 CInv CEqp
+            (_, (_, (k, (iidEqp, _))) : _) | k > 1 && rsharedInventory ->
+              -- To share the best items with others.
+              returN "yield" $ ReqMoveItem aid iidEqp (k - 1) CEqp CInv
+            (_, _ : (_, (k, (iidEqp, _))) : _) ->
+              -- To make room in limited equipment store or to share.
+              returN "yield" $ ReqMoveItem aid iidEqp k CEqp CInv
+            _ -> reject
+    return $ msum $ map improve ritemEqp
+  else return reject
 
 pSymbol :: Kind.COps -> Char -> Item -> Maybe Int
 pSymbol cops c = case c of
