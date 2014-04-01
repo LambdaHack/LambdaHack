@@ -5,15 +5,14 @@ module Game.LambdaHack.Client.AI.ConditionClient
   , condAnyFoeAdjM
   , condHpTooLowM
   , condOnTriggerableM
-  , condNoFriendsM
   , condBlocksFriendsM
-  , condWeaponAvailableM
+  , condFloorWeaponM
   , condNoWeaponM
-  , condCannotProjectM
+  , condCanProjectM
   , condNotCalmEnoughM
   , condDesirableFloorItemM
   , condMeleeBadM
-  , benefitList
+  , benAvailableItems
   , benGroundItems
   , threatDistList
   ) where
@@ -88,20 +87,6 @@ threatDistList aid = do
   let addDist (aid2, b2) = (chessDist (bpos b) (bpos b2), (aid2, b2))
   return $! sort $ map addDist allThreats
 
--- Don't care if the friends low-hp or not.
-condNoFriendsM :: MonadStateRead m => ActorId -> m Bool
-condNoFriendsM aid = do
-  Kind.COps{coactor} <- getsState scops
-  b <- getsState $ getActorBody aid
-  fact <- getsState $ (EM.! bfid b) . sfactionD
-  let friendlyFid fid = fid == bfid b || isAllied fact fid
-  friends <- getsState $ actorRegularList friendlyFid (blid b)
-  let closeEnough b2 = let dist = chessDist (bpos b) (bpos b2)
-                       in dist < 4 && dist > 0
-      closeFriends = filter closeEnough friends
-      strongCloseFriends = filter (not . hpTooLow coactor) closeFriends
-  return $! length closeFriends < 3 && null strongCloseFriends
-
 condBlocksFriendsM :: MonadClient m => ActorId -> m Bool
 condBlocksFriendsM aid = do
   b <- getsState $ getActorBody aid
@@ -113,8 +98,8 @@ condBlocksFriendsM aid = do
           _ -> False
   return $! any blocked ours
 
-condWeaponAvailableM :: MonadStateRead m => ActorId -> m Bool
-condWeaponAvailableM aid = do
+condFloorWeaponM :: MonadStateRead m => ActorId -> m Bool
+condFloorWeaponM aid = do
   cops <- getsState scops
   b <- getsState $ getActorBody aid
   floorAssocs <- getsState $ getFloorAssocs (blid b) (bpos b)
@@ -128,8 +113,8 @@ condNoWeaponM aid = do
   eqpAssocs <- getsState $ getEqpAssocs b
   return $! isNothing $ strongestSword cops eqpAssocs
 
-condCannotProjectM :: MonadClient m => ActorId -> m Bool
-condCannotProjectM aid = do
+condCanProjectM :: MonadClient m => ActorId -> m Bool
+condCanProjectM aid = do
   Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
   b <- getsState $ getActorBody aid
   let ak = okind $ bkind b
@@ -137,13 +122,13 @@ condCannotProjectM aid = do
                    then ritemProject
                    else ritemRanged)
                   $ Kind.stdRuleset corule
-  benList <- benefitList aid permitted
+  benList <- benAvailableItems aid permitted
   let missiles = filter (maybe True (< 0) . fst . fst) benList
-  return $! not (asight ak) || not (calmEnough b ak) || null missiles
+  return $! asight ak && calmEnough b ak && not (null missiles)
 
-benefitList :: MonadClient m
+benAvailableItems :: MonadClient m
             => ActorId -> [Char] -> m [((Maybe Int, CStore), (ItemId, Item))]
-benefitList aid permitted = do
+benAvailableItems aid permitted = do
   cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   b <- getsState $ getActorBody aid
   disco <- getsClient sdisco
@@ -212,12 +197,17 @@ benGroundItems aid = do
 
 condMeleeBadM :: MonadClient m => ActorId -> m Bool
 condMeleeBadM aid = do
+  Kind.COps{coactor} <- getsState scops
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let friendlyFid fid = fid == bfid b || isAllied fact fid
   friends <- getsState $ actorRegularList friendlyFid (blid b)
-  condNoFriends <- condNoFriendsM aid
-  condHpTooLow <- condHpTooLowM aid
-  return $! condNoFriends  -- still not getting friends' help
+  let closeEnough b2 = let dist = chessDist (bpos b) (bpos b2)
+                       in dist < 4 && dist > 0
+      closeFriends = filter closeEnough friends
+      strongCloseFriends = filter (not . hpTooLow coactor) closeFriends
+      noFriendlyHelp = length closeFriends < 3 && null strongCloseFriends
+      condHpTooLow = hpTooLow coactor b
+  return $! noFriendlyHelp  -- still not getting friends' help
             && (condHpTooLow  -- too wounded to fight alone
                 || not (null friends))  -- friends somewhere, let's flee to them

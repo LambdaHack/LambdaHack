@@ -60,14 +60,14 @@ actionStrategy aid = do
   condOnTriggerable <- condOnTriggerableM aid
   condBlocksFriends <- condBlocksFriendsM aid
   condNoWeapon <- condNoWeaponM aid
-  condWeaponAvailable <- condWeaponAvailableM aid
-  condCannotProject <- condCannotProjectM aid
+  condFloorWeapon <- condFloorWeaponM aid
+  condCanProject <- condCanProjectM aid
   condNotCalmEnough <- condNotCalmEnoughM aid
   condDesirableFloorItem <- condDesirableFloorItemM aid
   condMeleeBad <- condMeleeBadM aid
   let condThreatAdj = not $ null $ takeWhile ((<= 1) . fst) threatDistL
       condThreatAtHand = not $ null $ takeWhile ((<= 2) . fst) threatDistL
-      condThreatClose = not $ null $ takeWhile ((<= nearby) . fst) threatDistL
+      condThreatNearby = not $ null $ takeWhile ((<= nearby) . fst) threatDistL
       condFastThreatAdj = any (\(_, (_, b)) -> bspeed b > bspeed body)
                           $ takeWhile ((<= 1) . fst) threatDistL
   mleader <- getsClient _sleader
@@ -86,7 +86,7 @@ actionStrategy aid = do
           , useTool aid True )  -- use only healing tools
         , ( [Ability.Trigger, Ability.Flee]
           , condOnTriggerable && (condNotCalmEnough || condHpTooLow)
-            && condThreatClose && not condTgtEnemyPresent
+            && condThreatNearby && not condTgtEnemyPresent
           , trigger aid True ) -- flee via stairs, even if to wrong level
                                -- may return via different stairs
         , ( [Ability.Flee]
@@ -97,7 +97,7 @@ actionStrategy aid = do
             && not condOnTriggerable && not condDesirableFloorItem
           , displaceFoe aid )  -- only swap with an enemy to expose him
         , ( [Ability.Pickup, Ability.Melee]
-          , condNoWeapon && condWeaponAvailable && not condHpTooLow
+          , condNoWeapon && condFloorWeapon && not condHpTooLow
           , pickup aid True )
         , ( [Ability.Melee]
           , condAnyFoeAdj
@@ -114,10 +114,10 @@ actionStrategy aid = do
       distant :: [([Ability], Bool, m (Frequency RequestTimed))]
       distant =
         [ ( [Ability.Ranged]  -- for high-value target, shoot even in melee
-          , condTgtEnemyPresent && not condCannotProject
+          , condTgtEnemyPresent && condCanProject
           , stratToFreq 5 (ranged aid) )
         , ( [Ability.UseTool]
-          , condTgtEnemyPresent || condThreatClose  -- tools can affect enemies
+          , condTgtEnemyPresent || condThreatNearby  -- tools can affect enemies
           , stratToFreq 2 (useTool aid False) )  -- use any tool
         , ( [Ability.Chase]
           , condTgtEnemyPresent && not condDesirableFloorItem
@@ -127,7 +127,7 @@ actionStrategy aid = do
           , True  -- unconditionally, e.g., to give to other party members
           , pickup aid False )
         , ( [Ability.Flee]
-          , condMeleeBad && (condNotCalmEnough && condThreatClose
+          , condMeleeBad && (condNotCalmEnough && condThreatNearby
                              || condThreatAtHand)
           , flee aid )
         , ( [Ability.Melee]
@@ -322,7 +322,7 @@ ranged aid = do
                        then ritemProject
                        else ritemRanged)
                       $ Kind.stdRuleset corule
-      benList <- benefitList aid permitted
+      benList <- benAvailableItems aid permitted
       let itemReaches item =
             let lingerPercent = isLingering coitem disco item
                 toThrow = maybe 0 (itoThrow . iokind) $ jkind disco item
@@ -360,7 +360,7 @@ useTool aid onlyFirstAid = do
       permitted | aiq mk < 5 = ""
                | aiq mk < 10 = "!"
                | otherwise = "!?"  -- literacy required
-  benList <- benefitList aid permitted
+  benList <- benAvailableItems aid permitted
   let itemLegal item | onlyFirstAid = case jeffect item of
                                         Effect.Heal p | p > 0 -> True
                                         _ -> False

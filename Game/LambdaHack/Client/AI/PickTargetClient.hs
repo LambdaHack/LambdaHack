@@ -75,7 +75,7 @@ targetStrategy oldLeader aid = do
   -- TODO: we assume the actor eventually becomes a leader (or has the same
   -- set of abilities as the leader, anyway) and set his target accordingly.
   actorAbs <- actorAbilities aid (Just aid)
-  condCannotProject <- condCannotProjectM aid
+  condCanProject <- condCanProjectM aid
   condMeleeBad <- condMeleeBadM aid
   condHpTooLow <- condHpTooLowM aid
   let friendlyFid fid = fid == bfid b || isAllied fact fid
@@ -92,7 +92,7 @@ targetStrategy oldLeader aid = do
         && not condMeleeBad
       targetableRangedOrSpecial body =
         chessDist (bpos body) (bpos b) < rangedNearby
-        && (not condCannotProject
+        && (condCanProject
             || hpTooLow coactor body  -- easy prey
             || any (adjacent (bpos body) . bpos) friends)  -- attacks friends!
       targetableEnemy body =
