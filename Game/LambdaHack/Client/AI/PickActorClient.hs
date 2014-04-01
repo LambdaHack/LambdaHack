@@ -73,14 +73,18 @@ pickActorToMove refreshTarget oldAid = do
       -- (to make the AI appear more human-like and easier to observe).
       -- TODO: this also takes melee into account, but not shooting.
       oursTgt <- fmap catMaybes $ mapM (refreshTarget oldAid) ours
-      let actorWeak ((aid, _), _) = do
+      let actorWeak ((aid, body), _) = do
             actorAbs <- actorAbilities aid mleader
             if Ability.Flee `notElem` actorAbs then return False
             else do
-              condHpTooLow <- condHpTooLowM aid
-              condThreatAdjacent <- condThreatAdjacentM aid
-              condNoFriends <- condNoFriendsM aid
-              return $! condHpTooLow && condThreatAdjacent && condNoFriends
+              condMeleeBad <- condMeleeBadM aid
+              threatDistL <- threatDistList aid
+              let condThreatAdj =
+                    not $ null $ takeWhile ((<= 1) . fst) threatDistL
+                  condFastThreatAdj =
+                    any (\(_, (_, b)) -> bspeed b > bspeed body)
+                    $ takeWhile ((<= 1) . fst) threatDistL
+              return $! condMeleeBad && not condFastThreatAdj && condThreatAdj
       oursWeak <- filterM actorWeak oursTgt
       oursStrong <- filterM (fmap not . actorWeak) oursTgt  -- TODO: partitionM
       let targetTEnemy (_, (TEnemy{}, _)) = True

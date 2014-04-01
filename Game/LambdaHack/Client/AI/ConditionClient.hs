@@ -2,22 +2,25 @@
 -- for picking the best action for an actor.
 module Game.LambdaHack.Client.AI.ConditionClient
   ( condTgtEnemyPresentM
-  , condAnyFoeAdjacentM
-  , condThreatAdjacentM
+  , condAnyFoeAdjM
   , condHpTooLowM
   , condOnTriggerableM
-  , condThreatCloseM
   , condNoFriendsM
   , condBlocksFriendsM
   , condWeaponAvailableM
   , condNoWeaponM
   , condCannotProjectM
   , condNotCalmEnoughM
+  , condDesirableFloorItemM
+  , condMeleeBadM
   , benefitList
+  , benItemList
+  , threatDistList
   ) where
 
 import Control.Exception.Assert.Sugar
 import qualified Data.EnumMap.Strict as EM
+import Data.List
 import Data.Maybe
 
 import Game.LambdaHack.Client.AI.Preferences
@@ -49,21 +52,11 @@ condTgtEnemyPresentM aid = do
   return $! isJust mfAid
 
 -- | Require that any non-dying foe is adjacent.
-condAnyFoeAdjacentM :: MonadStateRead m => ActorId -> m Bool
-condAnyFoeAdjacentM aid = do
+condAnyFoeAdjM :: MonadStateRead m => ActorId -> m Bool
+condAnyFoeAdjM aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
-  return $! any (adjacent (bpos b) . bpos) allFoes
-
--- | Require that any non-low-HP foe is adjacent.
-condThreatAdjacentM :: MonadStateRead m => ActorId -> m Bool
-condThreatAdjacentM aid = do
-  Kind.COps{coactor} <- getsState scops
-  b <- getsState $ getActorBody aid
-  fact <- getsState $ (EM.! bfid b) . sfactionD
-  allFoes <- getsState $ filter (not . hpTooLow coactor)
-                         . actorRegularList (isAtWar fact) (blid b)
   return $! any (adjacent (bpos b) . bpos) allFoes
 
 -- | Require the actor's HP is low enough.
@@ -81,26 +74,33 @@ condOnTriggerableM aid = do
   let t = lvl `at` bpos b
   return $! not $ null $ Tile.causeEffects cotile t
 
--- | Require that any non-low-HP foe is nearby.
-condThreatCloseM :: MonadStateRead m => ActorId -> m Bool
-condThreatCloseM aid = do
+-- | Produce the chess-distance-sorted list of non-low-HP foes on the level.
+-- We don't consider path-distance, because we are interested in how soon
+-- the foe can hit us, which can diverge greately from path distance
+-- for short distances.
+threatDistList :: MonadStateRead m => ActorId -> m [(Int, (ActorId, Actor))]
+threatDistList aid = do
   Kind.COps{coactor} <- getsState scops
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
-  allFoes <- getsState $ filter (not . hpTooLow coactor)
-                         . actorRegularList (isAtWar fact) (blid b)
-  return $! any ((< nearby) . chessDist (bpos b) . bpos) allFoes
+  allThreats <- getsState $ filter (not . hpTooLow coactor . snd)
+                          . actorRegularAssocs (isAtWar fact) (blid b)
+  let addDist (aid2, b2) = (chessDist (bpos b) (bpos b2), (aid2, b2))
+  return $! sort $ map addDist allThreats
 
 -- Don't care if the friends low-hp or not.
 condNoFriendsM :: MonadStateRead m => ActorId -> m Bool
 condNoFriendsM aid = do
+  Kind.COps{coactor} <- getsState scops
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   let friendlyFid fid = fid == bfid b || isAllied fact fid
   friends <- getsState $ actorRegularList friendlyFid (blid b)
-  let notCloseEnough b2 = let dist = chessDist (bpos b) (bpos b2)
-                          in dist < 4 && dist > 0
-  return $! all notCloseEnough friends
+  let closeEnough b2 = let dist = chessDist (bpos b) (bpos b2)
+                       in dist < 4 && dist > 0
+      closeFriends = filter closeEnough friends
+      strongCloseFriends = filter (not . hpTooLow coactor) closeFriends
+  return $! length closeFriends < 3 && null strongCloseFriends
 
 condBlocksFriendsM :: MonadClient m => ActorId -> m Bool
 condBlocksFriendsM aid = do
@@ -179,3 +179,47 @@ condNotCalmEnoughM aid = do
   b <- getsState $ getActorBody aid
   let ak = okind $ bkind b
   return $! not (calmEnough b ak)
+
+condDesirableFloorItemM :: MonadClient m => ActorId -> m Bool
+condDesirableFloorItemM aid = do
+  benItemL <- benItemList aid
+  return $! not $ null benItemL
+
+benItemList :: MonadClient m => ActorId -> m [((Int, Int), (ItemId, Item))]
+benItemList aid = do
+  cops <- getsState scops
+  body <- getsState $ getActorBody aid
+  fact <- getsState $ (EM.! bfid body) . sfactionD
+  dungeon <- getsState sdungeon
+  itemD <- getsState sitemD
+  disco <- getsClient sdisco
+  floorItems <- getsState $ getActorBag aid CGround
+  let fightsAgainstSpawners =
+        let escape = any lescape $ EM.elems dungeon
+            isSpawner = isSpawnFact fact
+        in escape && not isSpawner
+      itemUsefulness item =
+        case jkind disco item of
+          Nothing -> 5  -- experimenting is fun
+          Just _ki -> effectToBenefit cops body $ jeffect item
+      desirableItem item use k
+        | fightsAgainstSpawners = use /= 0 || itemPrice (item, k) > 0
+        | otherwise = use /= 0
+      mapDesirable (iid, k) = let item = itemD EM.! iid
+                                  use = itemUsefulness item
+                              in if desirableItem item use k
+                                 then Just ((use, k), (iid, item))
+                                 else Nothing
+  return $! reverse $ sort $ mapMaybe mapDesirable $ EM.assocs floorItems
+
+condMeleeBadM :: MonadClient m => ActorId -> m Bool
+condMeleeBadM aid = do
+  b <- getsState $ getActorBody aid
+  fact <- getsState $ (EM.! bfid b) . sfactionD
+  let friendlyFid fid = fid == bfid b || isAllied fact fid
+  friends <- getsState $ actorRegularList friendlyFid (blid b)
+  condNoFriends <- condNoFriendsM aid
+  condHpTooLow <- condHpTooLowM aid
+  return $! condNoFriends  -- still not getting friends' help
+            && (condHpTooLow  -- too wounded to fight alone
+                || not (null friends))  -- friends somewhere, let's flee to them

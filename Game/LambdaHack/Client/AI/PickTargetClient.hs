@@ -76,7 +76,7 @@ targetStrategy oldLeader aid = do
   -- set of abilities as the leader, anyway) and set his target accordingly.
   actorAbs <- actorAbilities aid (Just aid)
   condCannotProject <- condCannotProjectM aid
-  condNoFriends <- condNoFriendsM aid
+  condMeleeBad <- condMeleeBadM aid
   condHpTooLow <- condHpTooLowM aid
   let friendlyFid fid = fid == bfid b || isAllied fact fid
   friends <- getsState $ actorRegularList friendlyFid (blid b)
@@ -89,8 +89,7 @@ targetStrategy oldLeader aid = do
       rangedNearby = 2 * meleeNearby
       targetableMelee body =
         chessDist (bpos body) (bpos b) < meleeNearby
-        && (not condNoFriends  -- awaited friends arrived
-            || not condHpTooLow && null friends)  -- nobody to wait for
+        && not condMeleeBad
       targetableRangedOrSpecial body =
         chessDist (bpos body) (bpos b) < rangedNearby
         && (not condCannotProject
