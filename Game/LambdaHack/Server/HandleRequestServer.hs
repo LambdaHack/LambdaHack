@@ -59,8 +59,8 @@ handleRequestUI cmd = case cmd of
   ReqUITimed aid cmd2 -> handleRequestTimed aid cmd2 >> return True
   ReqUIGameRestart aid t d names -> reqGameRestart aid t d names >> return False
   ReqUIGameExit aid d -> reqGameExit aid d >> return False
-  ReqUIGameSave _ -> reqGameSave >> return False
-  ReqUIAutomate aid -> reqAutomate aid >> return False
+  ReqUIGameSave -> reqGameSave >> return False
+  ReqUIAutomate fid -> reqAutomate fid >> return False
   ReqUIPong _ -> return False
 
 handleRequestTimed :: (MonadAtomic m, MonadServer m)
@@ -441,7 +441,5 @@ reqGameSave = do
 
 -- * ReqAutomate
 
-reqAutomate :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
-reqAutomate aid = do
-  b <- getsState $ getActorBody aid
-  execUpdAtomic $ UpdAutoFaction (bfid b) True
+reqAutomate :: (MonadAtomic m, MonadServer m) => FactionId -> m ()
+reqAutomate fid = execUpdAtomic $ UpdAutoFaction fid True

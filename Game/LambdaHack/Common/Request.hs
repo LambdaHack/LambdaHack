@@ -28,8 +28,8 @@ data RequestUI =
     ReqUITimed !ActorId !RequestTimed
   | ReqUIGameRestart !ActorId !Text !Int ![(Int, Text)]
   | ReqUIGameExit !ActorId !Int
-  | ReqUIGameSave !ActorId
-  | ReqUIAutomate !ActorId
+  | ReqUIGameSave
+  | ReqUIAutomate !FactionId
   | ReqUIPong [CmdAtomic]
   deriving (Show, Eq)
 

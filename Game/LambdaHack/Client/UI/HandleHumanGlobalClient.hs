@@ -515,18 +515,17 @@ gameExitHuman = do
 
 gameSaveHuman :: MonadClientUI m => m RequestUI
 gameSaveHuman = do
-  leader <- getLeaderUI
   -- TODO: do not save to history:
   msgAdd "Saving game backup."
-  return $! ReqUIGameSave leader
+  return ReqUIGameSave
 
 -- * Automate; does not take time
 
 automateHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
 automateHuman = do
-  leader <- getLeaderUI
+  side <- getsClient sside
   -- TODO: do not save to history:
   go <- displayMore ColorBW "Ceding control to AI (ESC to regain)."
   if not go
     then failWith "Automation canceled."
-    else return $ Right $ ReqUIAutomate leader
+    else return $ Right $ ReqUIAutomate side
