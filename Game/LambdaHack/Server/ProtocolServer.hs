@@ -85,19 +85,11 @@ writeTQueueUI cmd responseS = do
 
 readTQueueAI :: MonadServerReadRequest m
              => TQueue RequestAI -> m RequestAI
-readTQueueAI requestS = do
-  cmd <- liftIO $ atomically $ STM.readTQueue requestS
-  debug <- getsServer $ sniffIn . sdebugSer
-  when debug $ debugRequestAI cmd
-  return $! cmd
+readTQueueAI requestS = liftIO $ atomically $ STM.readTQueue requestS
 
 readTQueueUI :: MonadServerReadRequest m
              => TQueue RequestUI -> m RequestUI
-readTQueueUI requestS = do
-  cmd <- liftIO $ atomically $ STM.readTQueue requestS
-  debug <- getsServer $ sniffIn . sdebugSer
-  when debug $ debugRequestUI cmd
-  return $! cmd
+readTQueueUI requestS = liftIO $ atomically $ STM.readTQueue requestS
 
 sendUpdateAI :: MonadServerReadRequest m
              => FactionId -> ResponseAI -> m ()
@@ -110,7 +102,10 @@ sendQueryAI :: MonadServerReadRequest m
 sendQueryAI fid aid = do
   conn <- getsDict $ snd . (EM.! fid)
   writeTQueueAI (RespQueryAI aid) $ responseS conn
-  readTQueueAI $ requestS conn
+  req <- readTQueueAI $ requestS conn
+  debug <- getsServer $ sniffIn . sdebugSer
+  when debug $ debugRequestAI aid req
+  return $! req
 
 sendPingAI :: (MonadAtomic m, MonadServerReadRequest m)
            => FactionId -> m ()
@@ -141,7 +136,10 @@ sendQueryUI fid aid = do
     Nothing -> assert `failure` "no channel for faction" `twith` fid
     Just conn -> do
       writeTQueueUI (RespQueryUI aid) $ responseS conn
-      readTQueueUI $ requestS conn
+      req <- readTQueueUI $ requestS conn
+      debug <- getsServer $ sniffIn . sdebugSer
+      when debug $ debugRequestUI aid req
+      return $! req
 
 sendPingUI :: (MonadAtomic m, MonadServerReadRequest m)
            => FactionId -> m ()

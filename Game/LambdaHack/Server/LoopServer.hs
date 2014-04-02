@@ -257,7 +257,9 @@ handleActors lid = do
         cmdS <- sendQueryUI side aid
         -- TODO: check that the command is legal first, report and reject,
         -- but do not crash (currently server asserts things and crashes)
-        let aidNew = aidOfRequestUI cmdS
+        let aidNew = case cmdS of
+              ReqUITimed aidN _ -> aidN
+              _ -> aid
         bPre <- switchLeader aidNew
         timed <-
           if bhp bPre <= 0 && not (bproj bPre) then do
@@ -285,7 +287,9 @@ handleActors lid = do
         let mainUIactor = playerUI (gplayer fact) && aidIsLeader
         when mainUIactor $ execUpdAtomic $ UpdRecordHistory side
         cmdS <- sendQueryAI side aid
-        let aidNew = aidOfRequestAI cmdS
+        let aidNew = case cmdS of
+              ReqAITimed aidN _ -> aidN
+              _ -> aid
         bPre <- switchLeader aidNew
         assert (not (bhp bPre <= 0 && not (bproj bPre))
                 `blame` "AI switches to an incapacitated actor"

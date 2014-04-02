@@ -3,7 +3,6 @@
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Common.Request
   ( RequestAI(..), RequestUI(..), RequestTimed(..)
-  , aidOfRequestAI, aidOfRequestUI
   , ReqFailure(..), showReqFailure
   ) where
 
@@ -46,24 +45,6 @@ data RequestTimed =
   | ReqApply !ItemId !CStore
   | ReqTrigger !(Maybe F.Feature)
   deriving (Show, Eq)
-
--- | The actor that starts performing the request (may be dead, after
--- the command is performed).
-aidOfRequestAI :: RequestAI -> ActorId
-aidOfRequestAI cmd = case cmd of
-  ReqAITimed aid _ -> aid
-  ReqAIPong -> toEnum (-1)  -- needed for --sniffIn
-
--- | The actor that starts performing the request (may be dead, after
--- the command is performed).
-aidOfRequestUI :: RequestUI -> ActorId
-aidOfRequestUI cmd = case cmd of
-  ReqUITimed aid _ -> aid
-  ReqUIGameRestart aid _ _ _ -> aid
-  ReqUIGameExit aid _ -> aid
-  ReqUIGameSave aid -> aid
-  ReqUIAutomate aid -> aid
-  ReqUIPong _ -> toEnum (-1)  -- needed for --sniffIn
 
 data ReqFailure =
     MoveNothing

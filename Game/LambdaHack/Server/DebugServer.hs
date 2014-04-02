@@ -59,15 +59,13 @@ debugPlain cmd cmdA = do
   ps <- posUpdAtomic cmdA
   debugPrint $ T.pack $ show (cmd, ps)  -- too large for pretty show
 
-debugRequestAI :: MonadServer m => RequestAI -> m ()
-debugRequestAI cmd = do
-  let aid = aidOfRequestAI cmd
+debugRequestAI :: MonadServer m => ActorId -> RequestAI -> m ()
+debugRequestAI aid cmd = do
   d <- debugAid aid "AI request" cmd
   debugPrint d
 
-debugRequestUI :: MonadServer m => RequestUI -> m ()
-debugRequestUI cmd = do
-  let aid = aidOfRequestUI cmd
+debugRequestUI :: MonadServer m => ActorId -> RequestUI -> m ()
+debugRequestUI aid cmd = do
   d <- debugAid aid "UI request" cmd
   debugPrint d
 
