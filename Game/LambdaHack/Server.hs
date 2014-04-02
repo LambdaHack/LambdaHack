@@ -16,7 +16,6 @@ import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.Thread
 import Game.LambdaHack.Server.Commandline
-import Game.LambdaHack.Server.HandleRequestServer
 import Game.LambdaHack.Server.LoopServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.ProtocolServer
@@ -43,14 +42,13 @@ mainSer !copsSlow  -- evaluate fully to discover errors ASAP and free memory
         exeSer exeFront = do
   sdebugNxt <- debugArgs
   let cops = speedupCOps False copsSlow
-      loopServer = loopSer sdebugNxt handleRequest
       exeServer executorUI executorAI = do
         -- Wait for clients to exit even in case of server crash
         -- (or server and client crash), which gives them time to save.
         -- TODO: send them a message to tell users "server crashed"
         -- and then let them exit.
         Ex.finally
-          (exeSer (loopServer executorUI executorAI cops))
+          (exeSer (loopSer sdebugNxt executorUI executorAI cops))
           (threadDelay 100000)  -- server crashed, show the error eventually
         waitForChildren childrenServer  -- no crash, wait indefinitely
   exeFront cops (sdebugCli sdebugNxt) exeServer

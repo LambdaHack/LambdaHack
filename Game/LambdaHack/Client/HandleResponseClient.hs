@@ -36,7 +36,8 @@ handleResponseAI cmd = case cmd of
     pong <- pongAI
     sendRequest pong
 
-handleResponseUI :: ( MonadAtomic m, MonadClientUI m
+handleResponseUI :: ( MonadClientUI m
+                    , MonadAtomic m
                     , MonadClientWriteRequest Request m )
                  => ResponseUI -> m ()
 handleResponseUI cmd = case cmd of

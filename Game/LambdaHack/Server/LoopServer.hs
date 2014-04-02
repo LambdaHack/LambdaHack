@@ -28,6 +28,7 @@ import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.EndServer
 import Game.LambdaHack.Server.Fov
+import Game.LambdaHack.Server.HandleRequestServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.PeriodicServer
 import Game.LambdaHack.Server.ProtocolServer
@@ -37,12 +38,11 @@ import Game.LambdaHack.Server.State
 -- | Start a game session. Loop, communicating with clients.
 loopSer :: (MonadAtomic m, MonadServerReadRequest m)
         => DebugModeSer
-        -> (Request -> m Bool)
         -> (FactionId -> ChanServer ResponseUI Request -> IO ())
         -> (FactionId -> ChanServer ResponseAI RequestTimed -> IO ())
         -> Kind.COps
         -> m ()
-loopSer sdebug handleRequest executorUI executorAI !cops = do
+loopSer sdebug executorUI executorAI !cops = do
   -- Recover states and launch clients.
   let updConn = updateConn executorUI executorAI
   restored <- tryRestore cops sdebug
@@ -101,7 +101,7 @@ loopSer sdebug handleRequest executorUI executorAI !cops = do
         marenas <- mapM factionArena $ EM.elems factionD
         let arenas = ES.toList $ ES.fromList $ catMaybes marenas
         assert (not $ null arenas) skip  -- game over not caught earlier
-        mapM_ (handleActors handleRequest) arenas
+        mapM_ handleActors arenas
         quit <- getsServer squit
         if quit then do
           -- In case of game save+exit or restart, don't age levels (endClip)
@@ -157,10 +157,8 @@ endClip arenas = do
 -- | Perform moves for individual actors, as long as there are actors
 -- with the next move time less or equal to the end of current cut-off.
 handleActors :: (MonadAtomic m, MonadServerReadRequest m)
-             => (Request -> m Bool)
-             -> LevelId
-             -> m ()
-handleActors handleRequest lid = do
+             => LevelId -> m ()
+handleActors lid = do
   -- The end of this clip, inclusive. This is used exclusively
   -- to decide which actors to process this time. Transparent to clients.
   timeCutOff <- getsServer $ EM.findWithDefault timeClip lid . sprocessed
@@ -193,20 +191,20 @@ handleActors handleRequest lid = do
       dieSer aid b True
       -- The attack animation for the projectile hit subsumes @DisplayPushD@,
       -- so not sending an extra @DisplayPushD@ here.
-      handleActors handleRequest lid
+      handleActors lid
     Just (aid, b) | maybe False null (btrajectory b) -> do
       -- A projectile drops to the ground due to obstacles or range.
       assert (bproj b) skip
       startActor aid
       dieSer aid b False
-      handleActors handleRequest lid
+      handleActors lid
     Just (aid, b) | bhp b <= 0 && not (bproj b) -> do
       -- An actor dies. Items drop to the ground
       -- and possibly a new leader is elected.
       startActor aid
       dieSer aid b False
       -- The death animation subsumes @DisplayPushD@, so not sending it here.
-      handleActors handleRequest lid
+      handleActors lid
     Just (aid, body) -> do
       startActor aid
       let side = bfid body
@@ -295,7 +293,7 @@ handleActors handleRequest lid = do
         setBWait cmdS aidNew bPre
         -- AI always takes time and so doesn't loop.
         advanceTime aidNew
-      handleActors handleRequest lid
+      handleActors lid
 
 gameExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()
 gameExit = do

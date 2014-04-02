@@ -8,7 +8,6 @@ module Game.LambdaHack.Client
   ) where
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Client.HandleResponseClient
 import Game.LambdaHack.Client.LoopClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.ProtocolClient
@@ -43,6 +42,6 @@ exeFrontend :: ( MonadAtomic m, MonadClientUI m
                -> IO ())
             -> IO ()
 exeFrontend executorUI executorAI copsClient cops sdebugCli exeServer =
-  srtFrontend (executorUI . loopUI handleResponseUI)
-              (executorAI . loopAI handleResponseAI)
+  srtFrontend (executorUI . loopUI)
+              (executorAI . loopAI)
               copsClient cops sdebugCli exeServer

@@ -9,6 +9,7 @@ import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
 
 import Game.LambdaHack.Atomic
+import Game.LambdaHack.Client.HandleResponseClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.ProtocolClient
 import Game.LambdaHack.Client.State
@@ -18,6 +19,7 @@ import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
+import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
@@ -39,12 +41,14 @@ initCli sdebugCli putSt = do
     _ ->  -- First visit ever, use the initial state.
       return False
 
-loopAI :: (MonadClientReadResponse ResponseAI m)
-       => (ResponseAI -> m ()) -> DebugModeCli -> m ()
-loopAI cmdClientAISem sdebugCli = do
+loopAI :: ( MonadAtomic m
+          , MonadClientReadResponse ResponseAI m
+          , MonadClientWriteRequest RequestTimed m )
+       => DebugModeCli -> m ()
+loopAI sdebugCli = do
   side <- getsClient sside
   restored <- initCli sdebugCli
-              $ \s -> cmdClientAISem $ RespUpdAtomicAI $ UpdResumeServer s
+              $ \s -> handleResponseAI $ RespUpdAtomicAI $ UpdResumeServer s
   cmd1 <- receiveResponse
   case (restored, cmd1) of
     (True, RespUpdAtomicAI UpdResume{}) -> return ()
@@ -56,7 +60,7 @@ loopAI cmdClientAISem sdebugCli = do
         <+> "not usable. Removing server savefile. Please restart now."
     (False, RespUpdAtomicAI UpdRestart{}) -> return ()
     _ -> assert `failure` "unexpected command" `twith` (side, restored, cmd1)
-  cmdClientAISem cmd1
+  handleResponseAI cmd1
   -- State and client state now valid.
   debugPrint $ "AI client" <+> tshow side <+> "started."
   loop
@@ -64,26 +68,29 @@ loopAI cmdClientAISem sdebugCli = do
  where
   loop = do
     cmd <- receiveResponse
-    cmdClientAISem cmd
+    handleResponseAI cmd
     quit <- getsClient squit
     unless quit loop
 
-loopUI :: (MonadClientUI m, MonadClientReadResponse ResponseUI m)
-       => (ResponseUI -> m ()) -> DebugModeCli -> m ()
-loopUI cmdClientUISem sdebugCli = do
+loopUI :: ( MonadClientUI m
+          , MonadAtomic m
+          , MonadClientReadResponse ResponseUI m
+          , MonadClientWriteRequest Request m )
+       => DebugModeCli -> m ()
+loopUI sdebugCli = do
   Kind.COps{corule} <- getsState scops
   let title = rtitle $ Kind.stdRuleset corule
   side <- getsClient sside
   restored <- initCli sdebugCli
-              $ \s -> cmdClientUISem $ RespUpdAtomicUI $ UpdResumeServer s
+              $ \s -> handleResponseUI $ RespUpdAtomicUI $ UpdResumeServer s
   cmd1 <- receiveResponse
   case (restored, cmd1) of
     (True, RespUpdAtomicUI UpdResume{}) -> do
       msgAdd $ "Welcome back to" <+> title <> "."
-      cmdClientUISem cmd1
+      handleResponseUI cmd1
     (True, RespUpdAtomicUI UpdRestart{}) -> do
       msgAdd $ "Starting a new" <+> title <+> "game."  -- ignore old savefile
-      cmdClientUISem cmd1
+      handleResponseUI cmd1
     (False, RespUpdAtomicUI UpdResume{}) -> do
       removeServerSave
       error $ T.unpack $
@@ -91,7 +98,7 @@ loopUI cmdClientUISem sdebugCli = do
         <+> "not usable. Removing server savefile. Please restart now."
     (False, RespUpdAtomicUI UpdRestart{}) -> do
       msgAdd $ "Welcome to" <+> title <> "!"
-      cmdClientUISem cmd1
+      handleResponseUI cmd1
     _ -> assert `failure` "unexpected command" `twith` (side, restored, cmd1)
   fact <- getsState $ (EM.! side) . sfactionD
   when (playerAiLeader $ gplayer fact) $
@@ -104,6 +111,6 @@ loopUI cmdClientUISem sdebugCli = do
  where
   loop = do
     cmd <- receiveResponse
-    cmdClientUISem cmd
+    handleResponseUI cmd
     quit <- getsClient squit
     unless quit loop
