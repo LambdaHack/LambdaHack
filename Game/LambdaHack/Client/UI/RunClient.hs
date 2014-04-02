@@ -39,7 +39,7 @@ import Game.LambdaHack.Content.TileKind
 
 -- | Continue running in the given direction.
 continueRun :: MonadClient m
-            => RunParams -> m (Either Msg (RunParams, RequestTimed))
+            => RunParams -> m (Either Msg (RunParams, ActorId, RequestTimed))
 continueRun paramOld =
   case paramOld of
     RunParams{ runMembers = []
@@ -64,7 +64,7 @@ continueRun paramOld =
                 paramNew = paramOld {runMembers = runMembersNew}
             return $! case runStopOrCmd of
               Left stopMsg -> assert `failure` (paramOld, stopMsg)
-              Right runCmd -> Right (paramNew, runCmd)
+              Right runCmd -> Right (paramNew, r, runCmd)
           Left runStopMsgCurrent -> do
             let runStopMsgNew = fromMaybe runStopMsgCurrent runStopMsg
                 paramNew = paramOld { runMembers = rs
@@ -89,7 +89,7 @@ continueRun paramOld =
                               , runStopMsg = runStopMsgNew }
       case mdirOrRunStopMsgCurrent of
         Left _ -> continueRun paramNew  -- run all undisturbed; only one time
-        Right dir -> return $ Right (paramNew, ReqMove r dir)
+        Right dir -> return $ Right (paramNew, r, ReqMove dir)
       -- The potential invisible actor is hit. War is started without asking.
     _ -> assert `failure` paramOld
 
@@ -108,7 +108,7 @@ moveRunAid source dir = do
         -- Movement requires full access.
         if accessible cops lvl spos tpos then
           -- The potential invisible actor is hit. War started without asking.
-          Right $ ReqMove source dir
+          Right $ ReqMove dir
         -- No access, so search and/or alter the tile. Non-walkability is
         -- not implied by the lack of access.
         else if not (Tile.isWalkable cotile t)
@@ -121,7 +121,7 @@ moveRunAid source dir = do
           if not $ EM.null $ lvl `atI` tpos then
             Left $ showReqFailure AlterBlockItem
           else
-            Right $ ReqAlter source tpos Nothing
+            Right $ ReqAlter tpos Nothing
             -- We don't use MoveSer, because we don't hit invisible actors.
             -- The potential invisible actor, e.g., in a wall or in
             -- an inaccessible doorway, is made known, taking a turn.

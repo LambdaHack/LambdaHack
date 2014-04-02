@@ -21,7 +21,7 @@ import Game.LambdaHack.Common.Request
 queryAI :: MonadClient m => ActorId -> m RequestAI
 queryAI oldAid = do
   (aidToMove, bToMove) <- pickActorToMove refreshTarget oldAid
-  fmap ReqAITimed $ pickAction (aidToMove, bToMove)
+  fmap (ReqAITimed aidToMove) $ pickAction (aidToMove, bToMove)
 
 pongAI :: MonadClient m => m RequestAI
 pongAI = return ReqAIPong

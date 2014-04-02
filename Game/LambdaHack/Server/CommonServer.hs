@@ -39,12 +39,11 @@ import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
 
 execFailure :: (MonadAtomic m, MonadServer m)
-            => RequestTimed -> ReqFailure -> m ()
-execFailure req failureSer = do
+            => ActorId -> RequestTimed -> ReqFailure -> m ()
+execFailure aid req failureSer = do
   -- Clients should rarely do that (only in case of invisible actors)
   -- so we report it, send a --more-- meeesage (if not AI), but do not crash
   -- (server should work OK with stupid clients, too).
-  let aid = aidOfRequestTimed req
   body <- getsState $ getActorBody aid
   let fid = bfid body
       msg = showReqFailure failureSer

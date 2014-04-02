@@ -101,7 +101,7 @@ moveRunHuman run dir = do
         -- TODO: stop running at invisible actor
       [((target, _), _)] | run ->
         -- Displacing requires accessibility, but it's checked later on.
-        displaceAid leader target
+        displaceAid target
       _ : _ : _ | run -> do
         assert (all (bproj . snd . fst) tgts) skip
         failSer DisplaceProjectiles
@@ -120,16 +120,17 @@ moveRunHuman run dir = do
             return $ Left mempty
         else
           -- Attacking does not require full access, adjacency is enough.
-          meleeAid leader target
+          meleeAid target
 
 -- | Actor atttacks an enemy actor or his own projectile.
 meleeAid :: MonadClientUI m
-         => ActorId -> ActorId -> m (SlideOrCmd RequestTimed)
-meleeAid source target = do
-  sb <- getsState $ getActorBody source
+         => ActorId -> m (SlideOrCmd RequestTimed)
+meleeAid target = do
+  leader <- getLeaderUI
+  sb <- getsState $ getActorBody leader
   tb <- getsState $ getActorBody target
   sfact <- getsState $ (EM.! bfid sb) . sfactionD
-  let returnCmd = return $ Right $ ReqMelee source target
+  let returnCmd = return $ Right $ ReqMelee target
   if not (bproj tb || isAtWar sfact (bfid tb)) then do
     go1 <- displayYesNo ColorBW
              "This attack will start a war. Are you sure?"
@@ -147,10 +148,11 @@ meleeAid source target = do
 
 -- | Actor swaps position with another.
 displaceAid :: MonadClientUI m
-            => ActorId -> ActorId -> m (SlideOrCmd RequestTimed)
-displaceAid source target = do
+            => ActorId -> m (SlideOrCmd RequestTimed)
+displaceAid target = do
   cops <- getsState scops
-  sb <- getsState $ getActorBody source
+  leader <- getLeaderUI
+  sb <- getsState $ getActorBody leader
   tb <- getsState $ getActorBody target
   tfact <- getsState $ (EM.! bfid tb) . sfactionD
   let friendlyFid fid = fid == bfid tb || isAllied tfact fid
@@ -169,9 +171,9 @@ displaceAid source target = do
     if accessible cops lvl spos tpos then do
       tgts <- getsState $ posToActors tpos lid
       case tgts of
-        [] -> assert `failure` (source, sb, target, tb)
+        [] -> assert `failure` (leader, sb, target, tb)
         [_] -> do
-          return $ Right $ ReqDisplace source target
+          return $ Right $ ReqDisplace target
         _ -> failSer DisplaceProjectiles
     else failSer DisplaceAccess
 
@@ -181,8 +183,7 @@ displaceAid source target = do
 waitHuman :: MonadClientUI m => m RequestTimed
 waitHuman = do
   modifyClient $ \cli -> cli {swaitTimes = abs (swaitTimes cli) + 1}
-  leader <- getLeaderUI
-  return $! ReqWait leader
+  return ReqWait
 
 -- * MoveItem
 
@@ -212,7 +213,7 @@ moveItemHuman cLegalRaw toCStore verbRaw auto = do
             msgAdd $ makeSentence
               [ MU.SubjectVerbSg subject verb
               , partItemWs coitem disco k item ]
-            return $ Right $ ReqMoveItem leader iid k fromCStore toCStore
+            return $ Right $ ReqMoveItem iid k fromCStore toCStore
       if fromCStore /= CGround then msgAndSer  -- slot already assigned
       else do
         updateItemSlot (Just leader) iid
@@ -279,11 +280,10 @@ projectEps ts tpos eps = do
         [] -> ("aim", "item")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
-  leader <- getLeaderUI
   ggi <- getGroupItem triggerSyms object1 verb1 cLegal cLegal
   case ggi of
     Right ((iid, _), (_, fromCStore)) -> do
-      return $ Right $ ReqProject leader tpos eps iid fromCStore
+      return $ Right $ ReqProject tpos eps iid fromCStore
     Left slides -> return $ Left slides
 
 triggerSymbols :: [Trigger] -> [Char]
@@ -310,7 +310,7 @@ applyHuman ts = do
   ggi <- getGroupItem triggerSyms object1 verb1 cLegalRaw cLegal
   case ggi of
     Right ((iid, _), (_, fromCStore)) -> do
-      return $ Right $ ReqApply leader iid fromCStore
+      return $ Right $ ReqApply iid fromCStore
     Left slides -> return $ Left slides
 
 -- * AlterDir
@@ -328,25 +328,23 @@ alterDirHuman ts = do
   me <- displayChoiceUI prompt emptyOverlay keys
   case me of
     Left slides -> failSlides slides
-    Right e -> do
-      leader <- getLeaderUI
-      K.handleDir configVi configLaptop e (flip (alterTile leader) ts)
-                                          (failWith "never mind")
+    Right e -> K.handleDir configVi configLaptop e (flip alterTile ts)
+                                                   (failWith "never mind")
 
 -- | Player tries to alter a tile using a feature.
 alterTile :: MonadClientUI m
-          => ActorId -> Vector -> [Trigger]
-          -> m (SlideOrCmd RequestTimed)
-alterTile source dir ts = do
+          => Vector -> [Trigger] -> m (SlideOrCmd RequestTimed)
+alterTile dir ts = do
   Kind.COps{cotile} <- getsState scops
-  b <- getsState $ getActorBody source
+  leader <- getLeaderUI
+  b <- getsState $ getActorBody leader
   lvl <- getLevel $ blid b
   let tpos = bpos b `shift` dir
       t = lvl `at` tpos
       alterFeats = alterFeatures ts
   case filter (\feat -> Tile.hasFeature cotile feat t) alterFeats of
     [] -> failWith $ guessAlter cotile alterFeats t
-    feat : _ -> return $ Right $ ReqAlter source tpos $ Just feat
+    feat : _ -> return $ Right $ ReqAlter tpos $ Just feat
 
 alterFeatures :: [Trigger] -> [F.Feature]
 alterFeatures [] = []
@@ -379,16 +377,13 @@ triggerTileHuman ts = do
     case mk of
       Nothing -> failWith  "never mind"
       Just k -> fmap Left $ tgtAscendHuman k
-  else do
-    leader <- getLeaderUI
-    triggerTile leader ts
+  else triggerTile ts
 
 -- | Player tries to trigger a tile using a feature.
-triggerTile :: MonadClientUI m
-            => ActorId -> [Trigger]
-            -> m (SlideOrCmd RequestTimed)
-triggerTile leader ts = do
+triggerTile :: MonadClientUI m => [Trigger] -> m (SlideOrCmd RequestTimed)
+triggerTile ts = do
   Kind.COps{cotile} <- getsState scops
+  leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   lvl <- getLevel $ blid b
   let t = lvl `at` bpos b
@@ -398,7 +393,7 @@ triggerTile leader ts = do
     feat : _ -> do
       go <- verifyTrigger leader feat
       case go of
-        Right () -> return $ Right $ ReqTrigger leader $ Just feat
+        Right () -> return $ Right $ ReqTrigger $ Just feat
         Left slides -> return $ Left slides
 
 triggerFeatures :: [Trigger] -> [F.Feature]

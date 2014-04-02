@@ -266,7 +266,7 @@ handleActors lid = do
             return False
           else handleRequestUI cmdS
         case cmdS of
-          ReqUITimed cmdT -> setBWait cmdT aidNew bPre
+          ReqUITimed _ cmdT -> setBWait cmdT aidNew bPre
           _ -> return ()
         -- Advance time once, after the leader switched perhaps many times.
         -- TODO: this is correct only when all heroes have the same
@@ -292,7 +292,7 @@ handleActors lid = do
                 `twith` (cmdS, bPre, side)) skip
         handleRequestAI cmdS
         case cmdS of
-          ReqAITimed cmdT -> setBWait cmdT aidNew bPre
+          ReqAITimed _ cmdT -> setBWait cmdT aidNew bPre
           _ -> return ()
         -- AI always takes time and so doesn't loop.
         advanceTime aidNew

@@ -154,11 +154,11 @@ actionStrategy aid = do
             -- Wait until friends sidestep; ensures strategy is never empty.
             -- TODO: try to switch leader away before that (we already
             -- switch him afterwards)
-            .| waitBlockNow aid
+            .| waitBlockNow
 
 -- | A strategy to always just wait.
-waitBlockNow :: ActorId -> Strategy RequestTimed
-waitBlockNow aid = returN "wait" $ ReqWait aid
+waitBlockNow :: Strategy RequestTimed
+waitBlockNow = returN "wait" ReqWait
 
 -- TODO: (most?) animals don't pick up. Everybody else does.
 pickup :: MonadClient m => ActorId -> Bool -> m (Strategy RequestTimed)
@@ -172,7 +172,7 @@ pickup aid onlyWeapon = do
   case filterWeapon benItemL of
     ((_, k), (iid, _)) : _ -> do  -- pick up the best desirable item, if any
       updateItemSlot (Just aid) iid
-      return $! returN "pickup" $ ReqMoveItem aid iid k CGround CEqp
+      return $! returN "pickup" $ ReqMoveItem iid k CGround CEqp
     [] -> return reject
 
 manageEqp :: MonadClient m => ActorId -> m (Strategy RequestTimed)
@@ -189,16 +189,16 @@ manageEqp aid = do
               bestEqp = strongestItems eqpKA $ pSymbol cops symbol
           in case (bestInv, bestEqp) of
             (Just (_, (iidInv, _)), []) ->
-              returN "wield" $ ReqMoveItem aid iidInv 1 CInv CEqp
+              returN "wield" $ ReqMoveItem iidInv 1 CInv CEqp
             (Just (vInv, (iidInv, _)), (vEqp, _) : _)
               | vInv > vEqp ->
-              returN "wield" $ ReqMoveItem aid iidInv 1 CInv CEqp
+              returN "wield" $ ReqMoveItem iidInv 1 CInv CEqp
             (_, (_, (k, (iidEqp, _))) : _) | k > 1 && rsharedInventory ->
               -- To share the best items with others.
-              returN "yield" $ ReqMoveItem aid iidEqp (k - 1) CEqp CInv
+              returN "yield" $ ReqMoveItem iidEqp (k - 1) CEqp CInv
             (_, _ : (_, (k, (iidEqp, _))) : _) ->
               -- To make room in limited equipment store or to share.
-              returN "yield" $ ReqMoveItem aid iidEqp k CEqp CInv
+              returN "yield" $ ReqMoveItem iidEqp k CEqp CInv
             _ -> reject
     return $ msum $ map improve ritemEqp
   else return reject
@@ -232,7 +232,7 @@ meleeBlocker aid = do
           -- attack the first one.
           body2 <- getsState $ getActorBody aid2
           if isAtWar fact (bfid body2) && not (actorDying body2) then
-            return $! returN "melee in the way" (ReqMelee aid aid2)
+            return $! returN "melee in the way" (ReqMelee aid2)
           else return reject
         Nothing -> return reject
     _ -> return reject  -- probably no path to the enemy, if any
@@ -245,7 +245,7 @@ meleeAny aid = do
   allFoes <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
   let adjFoes = filter (adjacent (bpos b) . bpos . snd) allFoes
       -- TODO: prioritize somehow
-      freq = uniformFreq "melee adjacent" $ map (ReqMelee aid . fst) adjFoes
+      freq = uniformFreq "melee adjacent" $ map (ReqMelee . fst) adjFoes
   return $ liftFrequency freq
 
 -- Fast monsters don't pay enough attention to features.
@@ -296,7 +296,7 @@ trigger aid fleeViaStairs = do
         _ -> 0
       benFeat = zip (map ben feats) feats
   return $! liftFrequency $ toFreq "trigger"
-         $ [ (benefit, ReqTrigger aid (Just feat))
+         $ [ (benefit, ReqTrigger (Just feat))
            | (benefit, feat) <- benFeat
            , benefit > 0 ]
 
@@ -336,7 +336,7 @@ ranged aid = do
                            Nothing -> -5  -- experimenting is fun
                            Just ben -> ben
             in if benR < 0 && itemReaches item
-               then Just (-benR, ReqProject aid fpos eps iid cstore)
+               then Just (-benR, ReqProject fpos eps iid cstore)
                else Nothing
           benRanged = mapMaybe fRanged benList
           freq =
@@ -370,7 +370,7 @@ useTool aid onlyFirstAid = do
                        Nothing -> 5  -- experimenting is fun
                        Just ben -> ben
         in if benR > 0 && itemLegal item
-           then Just (-benR, ReqApply aid iid cstore)
+           then Just (-benR, ReqApply iid cstore)
            else Nothing
       benTool = mapMaybe fTool benList
   return $! liftFrequency $ toFreq "useTool" benTool
@@ -568,19 +568,19 @@ moveOrRunAid run source dir = do
                      && all (not . adjacent (bpos b2) . bpos) sup)
                           -- DisplaceSupported
       then
-        return $! ReqDisplace source target
+        return $! ReqDisplace target
       else
         -- If cannot displace, hit.
-        return $! ReqMelee source target
+        return $! ReqMelee target
     ((target, _), _) : _ ->  -- can be a foe, as well as a friend (e.g., proj.)
       -- No problem if there are many projectiles at the spot. We just
       -- attack the first one.
       -- Attacking does not require full access, adjacency is enough.
-      return $! ReqMelee source target
+      return $! ReqMelee target
     [] -> do  -- move or search or alter
       if accessible cops lvl spos tpos then
         -- Movement requires full access.
-        return $! ReqMove source dir
+        return $! ReqMove dir
         -- The potential invisible actor is hit.
       else if not $ EM.null $ lvl `atI` tpos then
         -- This is, e.g., inaccessible open door with an item in it.
@@ -591,7 +591,7 @@ moveOrRunAid run source dir = do
                   || Tile.isClosable cotile t
                   || Tile.isChangeable cotile t) then
         -- No access, so search and/or alter the tile.
-        return $! ReqAlter source tpos Nothing
+        return $! ReqAlter tpos Nothing
       else
         -- Boring tile, no point bumping into it, do WaitSer if really idle.
         assert `failure` "AI causes MoveNothing or AlterNothing"

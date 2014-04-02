@@ -70,10 +70,10 @@ queryUI aid = do
                     then Just $ "Run stop:" <+> stopMsg
                     else Nothing
           humanCommand msg
-        Right (paramNew, runCmd) -> do
+        Right (paramNew, r, runCmd) -> do
           modifyClient $ \cli -> cli {srunning = Just paramNew}
           displayPush
-          return $ ReqUITimed runCmd
+          return $ ReqUITimed r runCmd
 
 -- | Determine and process the next human player command. The argument is
 -- the last stop message due to running, if any.
@@ -136,7 +136,7 @@ humanCommand msgRunStop = do
             -- and no slides could have been generated.
             modifyClient $ \cli -> cli {slastKey = Nothing}
             case cmdS of
-              ReqUITimed cmd ->
+              ReqUITimed _ cmd ->
                 modifyClient $ \cli -> cli {slastCmd = Just cmd}
               _ -> return ()
             return cmdS
