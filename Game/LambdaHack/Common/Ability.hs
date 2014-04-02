@@ -5,22 +5,18 @@ module Game.LambdaHack.Common.Ability
 
 import Data.Binary
 
--- | All possible AI actor abilities. AI chooses among these when considering
--- the next action to perform. The ability descriptions refer to the target
--- that any actor picks each turn, depending on the actor's characteristics
--- and his environment.
+-- | Actor and faction abilities corresponding to client-server requests.
 data Ability =
-    FirstAid  -- ^ try to heal if almost dead
-  | Flee      -- ^ flee if almost dead
-  | Melee     -- ^ melee target
-  | Displace  -- ^ switch places with an actor
-  | Pickup    -- ^ gather items
-  | Trigger   -- ^ trigger a feature underneath
-  | Ranged    -- ^ attack the visible target opponent at range
-  | UseTool   -- ^ use items
-  | Chase     -- ^ try hard to get closer to the target
-  | Wander    -- ^ if nothing else to do, wander towards the target
-  deriving (Show, Eq, Ord, Enum, Bounded)
+    AbMove
+  | AbMelee
+  | AbDisplace
+  | AbAlter
+  | AbWait
+  | AbMoveItem
+  | AbProject
+  | AbApply
+  | AbTrigger
+  deriving (Show, Eq, Enum, Bounded)
 
 instance Binary Ability where
   put = putWord8 . toEnum . fromEnum

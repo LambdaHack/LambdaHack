@@ -46,8 +46,8 @@ _noAbility, meleeAdjacent, _meleeAndRanged, allAbilities :: [Ability]
 
 _noAbility = []
 
-meleeAdjacent = [Melee]
+meleeAdjacent = [AbWait, AbMelee]
 
-_meleeAndRanged = [Melee, Ranged]  -- melee and reaction fire
+_meleeAndRanged = [AbWait, AbMelee, AbProject]  -- melee and reaction fire
 
 allAbilities = [minBound..maxBound]

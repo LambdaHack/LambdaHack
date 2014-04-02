@@ -16,7 +16,7 @@ import Game.LambdaHack.Client.BfsClient
 import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
-import qualified Game.LambdaHack.Common.Ability as Ability
+import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
@@ -142,7 +142,7 @@ targetStrategy oldLeader aid = do
                      else return []
             case smpos of
               [] -> do
-                citems <- if Ability.Pickup `elem` actorAbs
+                citems <- if AbMoveItem `elem` actorAbs
                           then closestItems aid
                           else return []
                 case filter desirable citems of
@@ -150,7 +150,7 @@ targetStrategy oldLeader aid = do
                     upos <- closestUnknown aid
                     case upos of
                       Nothing -> do
-                        ctriggers <- if Ability.Trigger `elem` actorAbs
+                        ctriggers <- if AbTrigger `elem` actorAbs
                                      then closestTriggers Nothing False aid
                                      else return []
                         case ctriggers of
@@ -214,7 +214,7 @@ targetStrategy oldLeader aid = do
              -- shows up) and not changed all the time mid-route
              -- to equally interesting, but perhaps a bit closer targets,
              -- most probably already targeted by other actors.
-             || (Ability.Pickup `notElem` actorAbs  -- closestItems
+             || (AbMoveItem `notElem` actorAbs  -- closestItems
                  || not (desirableBag (lvl `atI` pos)))
                 && (not canSmell  -- closestSmell
                     || pos == bpos b  -- in case server resends deleted smell
@@ -231,7 +231,7 @@ targetStrategy oldLeader aid = do
                         -- leaving the level or dungeon.
                         not (null allFoes)
                         || -- If all explored, escape/block escapes.
-                           (Ability.Trigger `notElem` actorAbs
+                           (AbTrigger `notElem` actorAbs
                             || not (Tile.isEscape cotile t && allExplored))
                            -- The next case is stairs in closestTriggers.
                            -- We don't determine if the stairs are interesting

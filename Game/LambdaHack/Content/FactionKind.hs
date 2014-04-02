@@ -12,8 +12,8 @@ data FactionKind = FactionKind
   { fsymbol        :: !Char       -- ^ a symbol
   , fname          :: !Text       -- ^ short description
   , ffreq          :: !Freqs      -- ^ frequency within groups
-  , fAbilityLeader :: ![Ability]  -- ^ AI abilities of the picked leader
-  , fAbilityOther  :: ![Ability]  -- ^ AI abilities of the other actors
+  , fAbilityLeader :: ![Ability]  -- ^ abilities of the picked leader
+  , fAbilityOther  :: ![Ability]  -- ^ abilities of the other actors
   }
   deriving Show
 

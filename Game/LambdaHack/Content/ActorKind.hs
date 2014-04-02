@@ -30,7 +30,7 @@ data ActorKind = ActorKind
   , asmell  :: !Bool       -- ^ can it smell?
   , aiq     :: !Int        -- ^ intelligence
   , aregen  :: !Int        -- ^ number of turns to regenerate 1 HP
-  , acanDo  :: ![Ability]  -- ^ the set of supported AI abilities
+  , acanDo  :: ![Ability]  -- ^ the set of supported abilities
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 

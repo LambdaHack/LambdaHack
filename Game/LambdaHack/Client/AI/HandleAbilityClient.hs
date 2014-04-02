@@ -22,8 +22,7 @@ import Game.LambdaHack.Client.BfsClient
 import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Common.Ability (Ability)
-import qualified Game.LambdaHack.Common.Ability as Ability
+import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Effect as Effect
@@ -80,60 +79,60 @@ actionStrategy aid = do
         return $! scaleFreq scale $ bestVariant st  -- TODO: flatten instead?
       prefix, suffix :: [([Ability], Bool, m (Strategy RequestTimed))]
       prefix =
-        [ ( [Ability.FirstAid, Ability.UseTool]
+        [ ( [AbApply]
           , condHpTooLow && not condAnyFoeAdj
             && not condOnTriggerable  -- don't block stairs, perhaps ascend
           , useTool aid True )  -- use only healing tools
-        , ( [Ability.Trigger, Ability.Flee]
+        , ( [AbTrigger]
           , condOnTriggerable && (condNotCalmEnough || condHpTooLow)
             && condThreatNearby && not condTgtEnemyPresent
           , trigger aid True ) -- flee via stairs, even if to wrong level
                                -- may return via different stairs
-        , ( [Ability.Flee]
+        , ( [AbMove]
           , condMeleeBad && not condFastThreatAdj && condThreatAdj
           , flee aid )
-        , ( [Ability.Displace, Ability.Melee]
+        , ( [AbDisplace, AbMelee]
           , condBlocksFriends && condAnyFoeAdj
             && not condOnTriggerable && not condDesirableFloorItem
           , displaceFoe aid )  -- only swap with an enemy to expose him
-        , ( [Ability.Pickup, Ability.Melee]
+        , ( [AbMoveItem, AbMelee]
           , condNoWeapon && condFloorWeapon && not condHpTooLow
           , pickup aid True )
-        , ( [Ability.Melee]
+        , ( [AbMelee]
           , condAnyFoeAdj
           , meleeBlocker aid )  -- only melee target or blocker
-        , ( [Ability.Trigger]
+        , ( [AbTrigger]
           , condOnTriggerable && not condDesirableFloorItem
           , trigger aid False )
-        , ( [Ability.Displace, Ability.Chase]  -- prevents some looping movement
+        , ( [AbDisplace]  -- prevents some looping movement
           , not condDesirableFloorItem
           , displaceBlocker aid )  -- fires up only when path blocked
-        , ( [Ability.Pickup]  -- doesn't take long, very useful if safe
+        , ( [AbMoveItem]  -- doesn't take long, very useful if safe
           , not condAnyFoeAdj && not condDesirableFloorItem
           , manageEqp aid ) ]  -- only possible if calm enough, so high priority
       distant :: [([Ability], Bool, m (Frequency RequestTimed))]
       distant =
-        [ ( [Ability.Ranged]  -- for high-value target, shoot even in melee
+        [ ( [AbProject]  -- for high-value target, shoot even in melee
           , condTgtEnemyPresent && condCanProject
           , stratToFreq 5 (ranged aid) )
-        , ( [Ability.UseTool]
+        , ( [AbApply]
           , condTgtEnemyPresent || condThreatNearby  -- tools can affect enemies
           , stratToFreq 2 (useTool aid False) )  -- use any tool
-        , ( [Ability.Chase]
+        , ( [AbMove]
           , condTgtEnemyPresent && not condDesirableFloorItem
           , stratToFreq (if condMeleeBad then 1 else 100) (chase aid True) ) ]
       suffix =
-        [ ( [Ability.Pickup]
+        [ ( [AbMoveItem]
           , True  -- unconditionally, e.g., to give to other party members
           , pickup aid False )
-        , ( [Ability.Flee]
+        , ( [AbMove]
           , condMeleeBad && (condNotCalmEnough && condThreatNearby
                              || condThreatAtHand)
           , flee aid )
-        , ( [Ability.Melee]
+        , ( [AbMelee]
           , condAnyFoeAdj
           , meleeAny aid )  -- melee any, to avoid being wounded for naught
-        , ( [Ability.Wander]
+        , ( [AbMove]
           , True
           , chase aid False ) ]
       -- TODO: don't msum not to evaluate until needed
@@ -498,7 +497,7 @@ chase aid doDisplace = do
     Just (_, Just (p : q : _, (goal, _))) -> moveTowards aid p q goal
     _ -> return reject  -- goal reached
   -- If @doDisplace@: don't pick fights, assuming the target is more important.
-  -- We'd normally melee the target earlier on via @Ability.Melee@, but for
+  -- We'd normally melee the target earlier on via @AbMelee@, but for
   -- actors that don't have this ability (and so melee only when forced to),
   -- this is meaningul.
   Traversable.mapM (moveOrRunAid doDisplace aid) str
