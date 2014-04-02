@@ -8,7 +8,7 @@
 -- influence the outcome of the evaluation.
 -- TODO: document
 module Game.LambdaHack.Server.HandleRequestServer
-  ( handleRequest, handleRequestTimed, reqMove
+  ( handleRequestAI, handleRequestUI, reqMove
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -47,13 +47,21 @@ import Game.LambdaHack.Server.State
 
 -- | The semantics of server commands. The resulting boolean value
 -- indicates if the command took some time.
-handleRequest :: (MonadAtomic m, MonadServer m) => Request -> m Bool
-handleRequest cmd = case cmd of
-  ReqTimed cmd2 -> handleRequestTimed cmd2 >> return True
-  ReqGameRestart aid t d names -> reqGameRestart aid t d names >> return False
-  ReqGameExit aid d -> reqGameExit aid d >> return False
-  ReqGameSave _ -> reqGameSave >> return False
-  ReqAutomate aid -> reqAutomate aid >> return False
+handleRequestAI :: (MonadAtomic m, MonadServer m) => RequestAI -> m ()
+handleRequestAI cmd = case cmd of
+  ReqAITimed cmd2 -> handleRequestTimed cmd2
+  ReqAIPong -> return ()
+
+-- | The semantics of server commands. The resulting boolean value
+-- indicates if the command took some time.
+handleRequestUI :: (MonadAtomic m, MonadServer m) => RequestUI -> m Bool
+handleRequestUI cmd = case cmd of
+  ReqUITimed cmd2 -> handleRequestTimed cmd2 >> return True
+  ReqUIGameRestart aid t d names -> reqGameRestart aid t d names >> return False
+  ReqUIGameExit aid d -> reqGameExit aid d >> return False
+  ReqUIGameSave _ -> reqGameSave >> return False
+  ReqUIAutomate aid -> reqAutomate aid >> return False
+  ReqUIPong _ -> return False
 
 handleRequestTimed :: (MonadAtomic m, MonadServer m) => RequestTimed -> m ()
 handleRequestTimed cmd = case cmd of
@@ -67,7 +75,6 @@ handleRequestTimed cmd = case cmd of
   ReqProject aid p eps iid cstore -> reqProject aid p eps iid cstore
   ReqApply aid iid cstore -> reqApply aid iid cstore
   ReqTrigger aid mfeat -> reqTrigger aid mfeat
-  ReqPongHack _ -> return ()
 
 -- * ReqMove
 

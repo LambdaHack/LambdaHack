@@ -26,10 +26,10 @@ import Game.LambdaHack.Common.State
 -- UI config and the definitions of game commands.
 exeFrontend :: ( MonadAtomic m, MonadClientUI m
                , MonadClientReadResponse ResponseUI m
-               , MonadClientWriteRequest Request m
+               , MonadClientWriteRequest RequestUI m
                , MonadAtomic n
                , MonadClientReadResponse ResponseAI n
-               , MonadClientWriteRequest RequestTimed n )
+               , MonadClientWriteRequest RequestAI n )
             => (m () -> SessionUI -> State -> StateClient
                 -> chanServerUI
                 -> IO ())

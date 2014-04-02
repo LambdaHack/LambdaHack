@@ -2,7 +2,8 @@
 -- See
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Common.Request
-  ( Request(..), RequestTimed(..), aidOfRequest, aidOfRequestTimed
+  ( RequestAI(..), RequestUI(..), RequestTimed(..)
+  , aidOfRequestAI, aidOfRequestUI, aidOfRequestTimed
   , ReqFailure(..), showReqFailure
   ) where
 
@@ -17,15 +18,23 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Vector
 
--- | Abstract syntax of server commands.
-data Request =
-    ReqTimed !RequestTimed
-  | ReqGameRestart !ActorId !Text !Int ![(Int, Text)]
-  | ReqGameExit !ActorId !Int
-  | ReqGameSave !ActorId
-  | ReqAutomate !ActorId
+-- | Cclient-server requests sent by AI clients.
+data RequestAI =
+    ReqAITimed !RequestTimed
+  | ReqAIPong
   deriving (Show, Eq)
 
+-- | Client-server requests sent by UI clients.
+data RequestUI =
+    ReqUITimed !RequestTimed
+  | ReqUIGameRestart !ActorId !Text !Int ![(Int, Text)]
+  | ReqUIGameExit !ActorId !Int
+  | ReqUIGameSave !ActorId
+  | ReqUIAutomate !ActorId
+  | ReqUIPong [CmdAtomic]
+  deriving (Show, Eq)
+
+-- | Client-server requests that take game time. Sent by both AI and UI clients.
 data RequestTimed =
     ReqMove !ActorId !Vector
   | ReqMelee !ActorId !ActorId
@@ -36,18 +45,25 @@ data RequestTimed =
   | ReqProject !ActorId !Point !Int !ItemId !CStore
   | ReqApply !ActorId !ItemId !CStore
   | ReqTrigger !ActorId !(Maybe F.Feature)
-  | ReqPongHack [CmdAtomic]
   deriving (Show, Eq)
 
--- | The actor that starts performing the command (may be dead, after
+-- | The actor that starts performing the request (may be dead, after
 -- the command is performed).
-aidOfRequest :: Request -> ActorId
-aidOfRequest cmd = case cmd of
-  ReqTimed cmd2 -> aidOfRequestTimed cmd2
-  ReqGameRestart aid _ _ _ -> aid
-  ReqGameExit aid _ -> aid
-  ReqGameSave aid -> aid
-  ReqAutomate aid -> aid
+aidOfRequestAI :: RequestAI -> ActorId
+aidOfRequestAI cmd = case cmd of
+  ReqAITimed cmd2 -> aidOfRequestTimed cmd2
+  ReqAIPong -> toEnum (-1)  -- needed for --sniffIn
+
+-- | The actor that starts performing the request (may be dead, after
+-- the command is performed).
+aidOfRequestUI :: RequestUI -> ActorId
+aidOfRequestUI cmd = case cmd of
+  ReqUITimed cmd2 -> aidOfRequestTimed cmd2
+  ReqUIGameRestart aid _ _ _ -> aid
+  ReqUIGameExit aid _ -> aid
+  ReqUIGameSave aid -> aid
+  ReqUIAutomate aid -> aid
+  ReqUIPong _ -> toEnum (-1)  -- needed for --sniffIn
 
 aidOfRequestTimed :: RequestTimed -> ActorId
 aidOfRequestTimed cmd = case cmd of
@@ -60,7 +76,6 @@ aidOfRequestTimed cmd = case cmd of
   ReqProject aid _ _ _ _ -> aid
   ReqApply aid _ _ -> aid
   ReqTrigger aid _ -> aid
-  ReqPongHack _ -> toEnum (-1)  -- needed for --sniffIn
 
 data ReqFailure =
     MoveNothing

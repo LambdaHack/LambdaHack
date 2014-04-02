@@ -49,8 +49,8 @@ data ChanServer resp req = ChanServer
 
 -- | Connections to the human-controlled client of a faction and
 -- to the AI client for the same faction.
-type ConnServerFaction = ( Maybe (ChanServer ResponseUI Request)
-                         , ChanServer ResponseAI RequestTimed )
+type ConnServerFaction = ( Maybe (ChanServer ResponseUI RequestUI)
+                         , ChanServer ResponseAI RequestAI )
 
 -- | Connection information for all factions, indexed by faction identifier.
 type ConnServerDict = EM.EnumMap FactionId ConnServerFaction
@@ -84,19 +84,19 @@ writeTQueueUI cmd responseS = do
   liftIO $ atomically $ STM.writeTQueue responseS cmd
 
 readTQueueAI :: MonadServerReadRequest m
-             => TQueue RequestTimed -> m RequestTimed
+             => TQueue RequestAI -> m RequestAI
 readTQueueAI requestS = do
   cmd <- liftIO $ atomically $ STM.readTQueue requestS
   debug <- getsServer $ sniffIn . sdebugSer
-  when debug $ debugRequestTimed cmd
+  when debug $ debugRequestAI cmd
   return $! cmd
 
 readTQueueUI :: MonadServerReadRequest m
-             => TQueue Request -> m Request
+             => TQueue RequestUI -> m RequestUI
 readTQueueUI requestS = do
   cmd <- liftIO $ atomically $ STM.readTQueue requestS
   debug <- getsServer $ sniffIn . sdebugSer
-  when debug $ debugRequest cmd
+  when debug $ debugRequestUI cmd
   return $! cmd
 
 sendUpdateAI :: MonadServerReadRequest m
@@ -106,7 +106,7 @@ sendUpdateAI fid cmd = do
   writeTQueueAI cmd $ responseS conn
 
 sendQueryAI :: MonadServerReadRequest m
-            => FactionId -> ActorId -> m RequestTimed
+            => FactionId -> ActorId -> m RequestAI
 sendQueryAI fid aid = do
   conn <- getsDict $ snd . (EM.! fid)
   writeTQueueAI (RespQueryAI aid) $ responseS conn
@@ -118,11 +118,11 @@ sendPingAI fid = do
   conn <- getsDict $ snd . (EM.! fid)
   writeTQueueAI RespPingAI $ responseS conn
   -- debugPrint $ "AI client" <+> tshow fid <+> "pinged..."
-  cmdHack <- readTQueueAI $ requestS conn
+  cmdPong <- readTQueueAI $ requestS conn
   -- debugPrint $ "AI client" <+> tshow fid <+> "responded."
-  case cmdHack of
-    ReqPongHack ats -> mapM_ execAtomic ats
-    _ -> assert `failure` (fid, cmdHack)
+  case cmdPong of
+    ReqAIPong -> return ()
+    _ -> assert `failure` (fid, cmdPong)
 
 sendUpdateUI :: MonadServerReadRequest m
              => FactionId -> ResponseUI -> m ()
@@ -134,7 +134,7 @@ sendUpdateUI fid cmd = do
       writeTQueueUI cmd $ responseS conn
 
 sendQueryUI :: (MonadAtomic m, MonadServerReadRequest m)
-            => FactionId -> ActorId -> m Request
+            => FactionId -> ActorId -> m RequestUI
 sendQueryUI fid aid = do
   cs <- getsDict $ fst . (EM.! fid)
   case cs of
@@ -152,11 +152,11 @@ sendPingUI fid = do
     Just conn -> do
       writeTQueueUI RespPingUI $ responseS conn
       -- debugPrint $ "UI client" <+> tshow fid <+> "pinged..."
-      cmdHack <- readTQueueUI $ requestS conn
+      cmdPong <- readTQueueUI $ requestS conn
       -- debugPrint $ "UI client" <+> tshow fid <+> "responded."
-      case cmdHack of
-        ReqTimed (ReqPongHack ats) -> mapM_ execAtomic ats
-        _ -> assert `failure` (fid, cmdHack)
+      case cmdPong of
+        ReqUIPong ats -> mapM_ execAtomic ats
+        _ -> assert `failure` (fid, cmdPong)
 
 killAllClients :: (MonadAtomic m, MonadServerReadRequest m) => m ()
 killAllClients = do
@@ -178,10 +178,10 @@ childrenServer = unsafePerformIO (newMVar [])
 -- that read and write directly to the channels.
 updateConn :: (MonadAtomic m, MonadServerReadRequest m)
            => (FactionId
-               -> ChanServer ResponseUI Request
+               -> ChanServer ResponseUI RequestUI
                -> IO ())
            -> (FactionId
-               -> ChanServer ResponseAI RequestTimed
+               -> ChanServer ResponseAI RequestAI
                -> IO ())
            -> m ()
 updateConn executorUI executorAI = do

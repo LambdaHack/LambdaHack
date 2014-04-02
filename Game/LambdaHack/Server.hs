@@ -31,9 +31,9 @@ mainSer :: (MonadAtomic m, MonadServerReadRequest m)
         => Kind.COps
         -> (m () -> IO ())
         -> (Kind.COps -> DebugModeCli
-            -> ((FactionId -> ChanServer ResponseUI Request
+            -> ((FactionId -> ChanServer ResponseUI RequestUI
                  -> IO ())
-                -> (FactionId -> ChanServer ResponseAI RequestTimed
+                -> (FactionId -> ChanServer ResponseAI RequestAI
                     -> IO ())
                 -> IO ())
             -> IO ())

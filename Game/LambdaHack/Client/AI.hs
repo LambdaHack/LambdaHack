@@ -18,13 +18,13 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request
 
-queryAI :: MonadClient m => ActorId -> m RequestTimed
+queryAI :: MonadClient m => ActorId -> m RequestAI
 queryAI oldAid = do
   (aidToMove, bToMove) <- pickActorToMove refreshTarget oldAid
-  pickAction (aidToMove, bToMove)
+  fmap ReqAITimed $ pickAction (aidToMove, bToMove)
 
-pongAI :: MonadClient m => m RequestTimed
-pongAI = return $ ReqPongHack []
+pongAI :: MonadClient m => m RequestAI
+pongAI = return ReqAIPong
 
 refreshTarget :: MonadClient m
               => ActorId -> (ActorId, Actor)

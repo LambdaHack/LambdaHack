@@ -41,7 +41,7 @@ import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
 
 -- | Handle the move of a UI player.
-queryUI :: MonadClientUI m => ActorId -> m Request
+queryUI :: MonadClientUI m => ActorId -> m RequestUI
 queryUI aid = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
@@ -73,19 +73,18 @@ queryUI aid = do
         Right (paramNew, runCmd) -> do
           modifyClient $ \cli -> cli {srunning = Just paramNew}
           displayPush
-          return $ ReqTimed runCmd
+          return $ ReqUITimed runCmd
 
 -- | Determine and process the next human player command. The argument is
 -- the last stop message due to running, if any.
 humanCommand :: forall m. MonadClientUI m
-             => Maybe Msg
-             -> m Request
+             => Maybe Msg -> m RequestUI
 humanCommand msgRunStop = do
   -- For human UI we invalidate whole @sbfsD@ at the start of each
   -- UI player input, which is an overkill, but doesn't affects
   -- screensavers, because they are UI, but not human.
   modifyClient $ \cli -> cli {sbfsD = EM.empty}
-  let loop :: Maybe (Bool, Overlay) -> m Request
+  let loop :: Maybe (Bool, Overlay) -> m RequestUI
       loop mover = do
         (lastBlank, over) <- case mover of
           Nothing -> do
@@ -137,7 +136,7 @@ humanCommand msgRunStop = do
             -- and no slides could have been generated.
             modifyClient $ \cli -> cli {slastKey = Nothing}
             case cmdS of
-              ReqTimed cmd ->
+              ReqUITimed cmd ->
                 modifyClient $ \cli -> cli {slastCmd = Just cmd}
               _ -> return ()
             return cmdS
@@ -163,12 +162,12 @@ humanCommand msgRunStop = do
       sli <- promptToSlideshow msg
       loop $ Just (False, head . snd $ slideshow sli)
 
-pongUI :: MonadClientUI m => m Request
+pongUI :: MonadClientUI m => m RequestUI
 pongUI = do
   escPressed <- tryTakeMVarSescMVar
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
-  let pong ats = return $ ReqTimed $ ReqPongHack ats
+  let pong ats = return $ ReqUIPong ats
       hasAiLeader = playerAiLeader $ gplayer fact
   if escPressed && hasAiLeader then do
     -- Ask server to turn off AI for the faction's leader.

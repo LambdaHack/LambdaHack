@@ -487,7 +487,7 @@ resendHuman = do
 
 -- * GameRestart; does not take time
 
-gameRestartHuman :: MonadClientUI m => Text -> m (SlideOrCmd Request)
+gameRestartHuman :: MonadClientUI m => Text -> m (SlideOrCmd RequestUI)
 gameRestartHuman t = do
   let msg = "You just requested a new" <+> t <+> "game."
   b1 <- displayMore ColorFull msg
@@ -503,35 +503,35 @@ gameRestartHuman t = do
       leader <- getLeaderUI
       DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
       Config{configHeroNames} <- askConfig
-      return $ Right $ ReqGameRestart leader t sdifficultyCli configHeroNames
+      return $ Right $ ReqUIGameRestart leader t sdifficultyCli configHeroNames
 
 -- * GameExit; does not take time
 
-gameExitHuman :: MonadClientUI m => m (SlideOrCmd Request)
+gameExitHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
 gameExitHuman = do
   go <- displayYesNo ColorFull "Really save and exit?"
   if go then do
     leader <- getLeaderUI
     DebugModeCli{sdifficultyCli} <- getsClient sdebugCli
-    return $ Right $ ReqGameExit leader sdifficultyCli
+    return $ Right $ ReqUIGameExit leader sdifficultyCli
   else failWith "Save and exit canceled."
 
 -- * GameSave; does not take time
 
-gameSaveHuman :: MonadClientUI m => m Request
+gameSaveHuman :: MonadClientUI m => m RequestUI
 gameSaveHuman = do
   leader <- getLeaderUI
   -- TODO: do not save to history:
   msgAdd "Saving game backup."
-  return $! ReqGameSave leader
+  return $! ReqUIGameSave leader
 
 -- * Automate; does not take time
 
-automateHuman :: MonadClientUI m => m (SlideOrCmd Request)
+automateHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
 automateHuman = do
   leader <- getLeaderUI
   -- TODO: do not save to history:
   go <- displayMore ColorBW "Ceding control to AI (ESC to regain)."
   if not go
     then failWith "Automation canceled."
-    else return $ Right $ ReqAutomate leader
+    else return $ Right $ ReqUIAutomate leader

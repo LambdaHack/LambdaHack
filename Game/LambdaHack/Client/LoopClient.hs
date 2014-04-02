@@ -43,7 +43,7 @@ initCli sdebugCli putSt = do
 
 loopAI :: ( MonadAtomic m
           , MonadClientReadResponse ResponseAI m
-          , MonadClientWriteRequest RequestTimed m )
+          , MonadClientWriteRequest RequestAI m )
        => DebugModeCli -> m ()
 loopAI sdebugCli = do
   side <- getsClient sside
@@ -75,7 +75,7 @@ loopAI sdebugCli = do
 loopUI :: ( MonadClientUI m
           , MonadAtomic m
           , MonadClientReadResponse ResponseUI m
-          , MonadClientWriteRequest Request m )
+          , MonadClientWriteRequest RequestUI m )
        => DebugModeCli -> m ()
 loopUI sdebugCli = do
   Kind.COps{corule} <- getsState scops

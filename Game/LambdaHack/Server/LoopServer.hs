@@ -39,8 +39,8 @@ import Game.LambdaHack.Server.State
 -- | Start a game session. Loop, communicating with clients.
 loopSer :: (MonadAtomic m, MonadServerReadRequest m)
         => DebugModeSer
-        -> (FactionId -> ChanServer ResponseUI Request -> IO ())
-        -> (FactionId -> ChanServer ResponseAI RequestTimed -> IO ())
+        -> (FactionId -> ChanServer ResponseUI RequestUI -> IO ())
+        -> (FactionId -> ChanServer ResponseAI RequestAI -> IO ())
         -> Kind.COps
         -> m ()
 loopSer sdebug executorUI executorAI !cops = do
@@ -225,10 +225,7 @@ handleActors lid = do
             return $! not hasAiLeader2
           else return True
         else return False
-      let switchLeader cmdS = do
-            -- TODO: check that the command is legal first, report and reject,
-            -- but do not crash (currently server asserts things and crashes)
-            let aidNew = aidOfRequest cmdS
+      let switchLeader aidNew = do
             bPre <- getsState $ getActorBody aidNew
             let leadAtoms =
                   if aidNew /= aid  -- switched, so aid must be leader
@@ -239,15 +236,15 @@ handleActors lid = do
                        assert (aidIsLeader
                                && not (bproj bPre)
                                && not (isSpawnFact fact)
-                               `blame` (aid, body, aidNew, bPre, cmdS, fact))
+                               `blame` (aid, body, aidNew, bPre, fact))
                          [UpdLeadFaction side mleader (Just aidNew)]
                   else []
             mapM_ execUpdAtomic leadAtoms
             assert (bfid bPre == side
                     `blame` "client tries to move other faction actors"
                     `twith` (bPre, side)) skip
-            return (aidNew, bPre)
-          setBWait (ReqTimed ReqWait{}) aidNew bPre = do
+            return bPre
+          setBWait ReqWait{} aidNew bPre = do
             let fromWait = bwait bPre
             unless fromWait $ execUpdAtomic $ UpdWaitActor aidNew fromWait True
           setBWait _ aidNew bPre = do
@@ -258,14 +255,19 @@ handleActors lid = do
         when timed $ advanceTime aid
       else if queryUI then do
         cmdS <- sendQueryUI side aid
-        (aidNew, bPre) <- switchLeader cmdS
+        -- TODO: check that the command is legal first, report and reject,
+        -- but do not crash (currently server asserts things and crashes)
+        let aidNew = aidOfRequestUI cmdS
+        bPre <- switchLeader aidNew
         timed <-
           if bhp bPre <= 0 && not (bproj bPre) then do
             execSfxAtomic
               $ SfxMsgFid side "You strain, fumble and faint from the exertion."
             return False
-          else handleRequest cmdS
-        setBWait cmdS aidNew bPre
+          else handleRequestUI cmdS
+        case cmdS of
+          ReqUITimed cmdT -> setBWait cmdT aidNew bPre
+          _ -> return ()
         -- Advance time once, after the leader switched perhaps many times.
         -- TODO: this is correct only when all heroes have the same
         -- speed and can't switch leaders by, e.g., aiming a wand
@@ -282,15 +284,16 @@ handleActors lid = do
         -- to avoid long reports, but we'd have to add -more- prompts.
         let mainUIactor = playerUI (gplayer fact) && aidIsLeader
         when mainUIactor $ execUpdAtomic $ UpdRecordHistory side
-        cmdTimed <- sendQueryAI side aid
-        let cmdS = ReqTimed cmdTimed
-        (aidNew, bPre) <- switchLeader cmdS
+        cmdS <- sendQueryAI side aid
+        let aidNew = aidOfRequestAI cmdS
+        bPre <- switchLeader aidNew
         assert (not (bhp bPre <= 0 && not (bproj bPre))
                 `blame` "AI switches to an incapacitated actor"
                 `twith` (cmdS, bPre, side)) skip
-        timed <- handleRequest cmdS
-        assert timed skip
-        setBWait cmdS aidNew bPre
+        handleRequestAI cmdS
+        case cmdS of
+          ReqAITimed cmdT -> setBWait cmdT aidNew bPre
+          _ -> return ()
         -- AI always takes time and so doesn't loop.
         advanceTime aidNew
       handleActors lid

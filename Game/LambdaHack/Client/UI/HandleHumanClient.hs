@@ -17,7 +17,7 @@ import Game.LambdaHack.Common.Request
 -- Some time cosuming commands are enabled in targeting mode, but cannot be
 -- invoked in targeting mode on a remote level (level different than
 -- the level of the leader).
-cmdHumanSem :: MonadClientUI m => HumanCmd -> m (SlideOrCmd Request)
+cmdHumanSem :: MonadClientUI m => HumanCmd -> m (SlideOrCmd RequestUI)
 cmdHumanSem cmd = do
   if noRemoteHumanCmd cmd then do
     -- If in targeting mode, check if the current level is the same
@@ -30,20 +30,20 @@ cmdHumanSem cmd = do
   else cmdAction cmd
 
 -- | Compute the basic action for a command and mark whether it takes time.
-cmdAction :: MonadClientUI m => HumanCmd -> m (SlideOrCmd Request)
+cmdAction :: MonadClientUI m => HumanCmd -> m (SlideOrCmd RequestUI)
 cmdAction cmd = case cmd of
   -- Global.
-  Move v -> fmap (fmap ReqTimed) $ moveRunHuman False v
-  Run v -> fmap (fmap ReqTimed) $ moveRunHuman True v
-  Wait -> fmap Right $ fmap ReqTimed waitHuman
+  Move v -> fmap (fmap ReqUITimed) $ moveRunHuman False v
+  Run v -> fmap (fmap ReqUITimed) $ moveRunHuman True v
+  Wait -> fmap Right $ fmap ReqUITimed waitHuman
   MoveItem cLegalRaw toCStore verbRaw _ auto ->
-    fmap (fmap ReqTimed) $ moveItemHuman cLegalRaw toCStore verbRaw auto
-  Project ts -> fmap (fmap ReqTimed) $ projectHuman ts
-  Apply ts -> fmap (fmap ReqTimed) $ applyHuman ts
-  AlterDir ts -> fmap (fmap ReqTimed) $ alterDirHuman ts
-  TriggerTile ts -> fmap (fmap ReqTimed) $ triggerTileHuman ts
-  StepToTarget -> fmap (fmap ReqTimed) stepToTargetHuman
-  Resend -> fmap (fmap ReqTimed) resendHuman
+    fmap (fmap ReqUITimed) $ moveItemHuman cLegalRaw toCStore verbRaw auto
+  Project ts -> fmap (fmap ReqUITimed) $ projectHuman ts
+  Apply ts -> fmap (fmap ReqUITimed) $ applyHuman ts
+  AlterDir ts -> fmap (fmap ReqUITimed) $ alterDirHuman ts
+  TriggerTile ts -> fmap (fmap ReqUITimed) $ triggerTileHuman ts
+  StepToTarget -> fmap (fmap ReqUITimed) stepToTargetHuman
+  Resend -> fmap (fmap ReqUITimed) resendHuman
 
   GameRestart t -> gameRestartHuman t
   GameExit -> gameExitHuman
@@ -82,5 +82,5 @@ cmdAction cmd = case cmd of
   Cancel -> fmap Left $ cancelHuman mainMenuHuman
   Accept -> fmap Left $ acceptHuman helpHuman
 
-addNoSlides :: Monad m => m () -> m (SlideOrCmd Request)
+addNoSlides :: Monad m => m () -> m (SlideOrCmd RequestUI)
 addNoSlides cmdCli = cmdCli >> return (Left mempty)

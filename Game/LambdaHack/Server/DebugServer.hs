@@ -1,18 +1,18 @@
 -- | Debug output for requests and responseQs.
 module Game.LambdaHack.Server.DebugServer
   ( debugResponseAI, debugResponseUI
-  , debugRequestTimed, debugRequest
+  , debugRequestAI, debugRequestUI
   ) where
 
 import Data.Text (Text)
 import qualified Data.Text as T
 
 import Game.LambdaHack.Atomic
-import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response
@@ -59,16 +59,16 @@ debugPlain cmd cmdA = do
   ps <- posUpdAtomic cmdA
   debugPrint $ T.pack $ show (cmd, ps)  -- too large for pretty show
 
-debugRequestTimed :: MonadServer m => RequestTimed -> m ()
-debugRequestTimed cmd = do
-  let aid = aidOfRequestTimed cmd
-  d <- debugAid aid "RequestTimed" cmd
+debugRequestAI :: MonadServer m => RequestAI -> m ()
+debugRequestAI cmd = do
+  let aid = aidOfRequestAI cmd
+  d <- debugAid aid "AI request" cmd
   debugPrint d
 
-debugRequest :: MonadServer m => Request -> m ()
-debugRequest cmd = do
-  let aid = aidOfRequest cmd
-  d <- debugAid aid "Request" cmd
+debugRequestUI :: MonadServer m => RequestUI -> m ()
+debugRequestUI cmd = do
+  let aid = aidOfRequestUI cmd
+  d <- debugAid aid "UI request" cmd
   debugPrint d
 
 data DebugAid a = DebugAid

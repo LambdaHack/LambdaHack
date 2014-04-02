@@ -21,7 +21,7 @@ storeUndo _atomic =
   maybe skip (\a -> modifyClient $ \cli -> cli {sundo = a : sundo cli})
     $ Nothing   -- TODO: undoCmdAtomic atomic
 
-handleResponseAI :: (MonadAtomic m, MonadClientWriteRequest RequestTimed m)
+handleResponseAI :: (MonadAtomic m, MonadClientWriteRequest RequestAI m)
                  => ResponseAI -> m ()
 handleResponseAI cmd = case cmd of
   RespUpdAtomicAI cmdA -> do
@@ -38,7 +38,7 @@ handleResponseAI cmd = case cmd of
 
 handleResponseUI :: ( MonadClientUI m
                     , MonadAtomic m
-                    , MonadClientWriteRequest Request m )
+                    , MonadClientWriteRequest RequestUI m )
                  => ResponseUI -> m ()
 handleResponseUI cmd = case cmd of
   RespUpdAtomicUI cmdA -> do
