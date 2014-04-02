@@ -44,9 +44,7 @@ debugResponseUI cmd = case cmd of
   RespSfxAtomicUI sfx -> do
     ps <- posSfxAtomic sfx
     debugPrint $ tshow (cmd, ps)
-  RespQueryUI aid -> do
-    d <- debugAid aid "RespQueryUI" cmd
-    debugPrint d
+  RespQueryUI -> debugPrint $ "RespQueryUI:" <+> tshow cmd
   RespPingUI -> debugPrint $ tshow cmd
 
 debugPretty :: (MonadServer m, Show a) => a -> UpdAtomic -> m ()

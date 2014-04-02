@@ -32,7 +32,6 @@ import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.RunClient
 import Game.LambdaHack.Client.UI.StartupFrontendClient
 import Game.LambdaHack.Client.UI.WidgetClient
-import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
@@ -41,19 +40,18 @@ import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.ModeKind
 
 -- | Handle the move of a UI player.
-queryUI :: MonadClientUI m => ActorId -> m RequestUI
-queryUI aid = do
+queryUI :: MonadClientUI m => m RequestUI
+queryUI = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
+  let leader = fromMaybe (assert `failure` fact) $ gleader fact
   -- When running, stop if disturbed. If not running, let the human
   -- player issue commands, until any command takes time.
-  leader <- getLeaderUI
-  assert (leader == aid `blame` "player moves not his leader"
-                        `twith` (leader, aid)) skip
   srunning <- getsClient srunning
   case srunning of
     Nothing -> humanCommand Nothing
-    Just RunParams{runMembers} | isSpawnFact fact && runMembers /= [aid] -> do
+    Just RunParams{runMembers}
+      | isSpawnFact fact && runMembers /= [leader] -> do
       stopRunning
       Config{configRunStopMsgs} <- askConfig
       let msg = if configRunStopMsgs

@@ -50,8 +50,8 @@ handleResponseUI cmd = case cmd of
   RespSfxAtomicUI sfx -> do
     displayRespSfxAtomicUI False sfx
     storeUndo $ SfxAtomic sfx
-  RespQueryUI aid -> do
-    cmdH <- queryUI aid
+  RespQueryUI -> do
+    cmdH <- queryUI
     sendRequest cmdH
   RespPingUI -> do
     pong <- pongUI

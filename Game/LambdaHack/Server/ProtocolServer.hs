@@ -135,7 +135,7 @@ sendQueryUI fid aid = do
   case cs of
     Nothing -> assert `failure` "no channel for faction" `twith` fid
     Just conn -> do
-      writeTQueueUI (RespQueryUI aid) $ responseS conn
+      writeTQueueUI RespQueryUI $ responseS conn
       req <- readTQueueUI $ requestS conn
       debug <- getsServer $ sniffIn . sdebugSer
       when debug $ debugRequestUI aid req

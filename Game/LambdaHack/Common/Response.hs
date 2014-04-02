@@ -19,6 +19,6 @@ data ResponseAI =
 data ResponseUI =
     RespUpdAtomicUI !UpdAtomic
   | RespSfxAtomicUI !SfxAtomic
-  | RespQueryUI !ActorId
+  | RespQueryUI
   | RespPingUI
   deriving Show
