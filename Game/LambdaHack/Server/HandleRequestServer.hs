@@ -8,7 +8,7 @@
 -- influence the outcome of the evaluation.
 -- TODO: document
 module Game.LambdaHack.Server.HandleRequestServer
-  ( handleRequest, handleRequestTimed
+  ( handleRequest, handleRequestTimed, reqMove
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -22,7 +22,6 @@ import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
-import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Faction
@@ -55,7 +54,6 @@ handleRequest cmd = case cmd of
   ReqGameExit aid d -> reqGameExit aid d >> return False
   ReqGameSave _ -> reqGameSave >> return False
   ReqAutomate aid -> reqAutomate aid >> return False
-  ReqSetTrajectory aid -> reqSetTrajectory aid
 
 handleRequestTimed :: (MonadAtomic m, MonadServer m) => RequestTimed -> m ()
 handleRequestTimed cmd = case cmd of
@@ -385,40 +383,6 @@ triggerEffect aid feats = do
           _ -> return False
   goes <- mapM triggerFeat feats
   return $! or goes
-
--- * ReqSetTrajectory
-
--- | Manage trajectory of a projectile.
---
--- Colliding with a wall or actor doesn't take time, because
--- the projectile does not move (the move is blocked).
--- Not advancing time forces dead projectiles to be destroyed ASAP.
--- Otherwise, with some timings, it can stay on the game map dead,
--- blocking path of human-controlled actors and alarming the hapless human.
-reqSetTrajectory :: (MonadAtomic m, MonadServer m) => ActorId -> m Bool
-reqSetTrajectory aid = do
-  cops <- getsState scops
-  b@Actor{bpos, btrajectory, blid, bcolor} <- getsState $ getActorBody aid
-  lvl <- getLevel blid
-  let clearTrajectory = do
-        execUpdAtomic $ UpdTrajectoryActor aid btrajectory (Just [])
-        return False
-  case btrajectory of
-    Just (d : lv) ->
-      if not $ accessibleDir cops lvl bpos d
-      then clearTrajectory
-      else do
-        when (length lv <= 1) $ do
-          let toColor = Color.BrBlack
-          when (bcolor /= toColor) $
-            execUpdAtomic $ UpdColorActor aid bcolor toColor
-        reqMove aid d
-        b2 <- getsState $ getActorBody aid
-        if actorDying b2 then return False
-        else do
-          execUpdAtomic $ UpdTrajectoryActor aid btrajectory (Just lv)
-          return True
-    _ -> assert `failure` "null trajectory" `twith` (aid, b)
 
 -- * ReqGameRestart
 

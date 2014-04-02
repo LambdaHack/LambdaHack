@@ -15,6 +15,7 @@ import qualified Data.Ord as Ord
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import qualified Game.LambdaHack.Common.Color as Color
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
@@ -253,8 +254,7 @@ handleActors lid = do
             let fromWait = bwait bPre
             when fromWait $ execUpdAtomic $ UpdWaitActor aidNew fromWait False
       if bproj body then do  -- TODO: perhaps check Track, not bproj
-        let cmdS = ReqSetTrajectory aid
-        timed <- handleRequest cmdS
+        timed <- setTrajectory aid
         when timed $ advanceTime aid
       else if queryUI then do
         cmdS <- sendQueryUI side aid
@@ -346,3 +346,36 @@ saveBkpAll unconditional = do
     mapWithKeyM_ ping factionD
     execUpdAtomic UpdSaveBkp
     saveServer
+
+-- TODO: move somewhere?
+-- | Manage trajectory of a projectile.
+--
+-- Colliding with a wall or actor doesn't take time, because
+-- the projectile does not move (the move is blocked).
+-- Not advancing time forces dead projectiles to be destroyed ASAP.
+-- Otherwise, with some timings, it can stay on the game map dead,
+-- blocking path of human-controlled actors and alarming the hapless human.
+setTrajectory :: (MonadAtomic m, MonadServer m) => ActorId -> m Bool
+setTrajectory aid = do
+  cops <- getsState scops
+  b@Actor{bpos, btrajectory, blid, bcolor} <- getsState $ getActorBody aid
+  lvl <- getLevel blid
+  let clearTrajectory = do
+        execUpdAtomic $ UpdTrajectoryActor aid btrajectory (Just [])
+        return False
+  case btrajectory of
+    Just (d : lv) ->
+      if not $ accessibleDir cops lvl bpos d
+      then clearTrajectory
+      else do
+        when (length lv <= 1) $ do
+          let toColor = Color.BrBlack
+          when (bcolor /= toColor) $
+            execUpdAtomic $ UpdColorActor aid bcolor toColor
+        reqMove aid d
+        b2 <- getsState $ getActorBody aid
+        if actorDying b2 then return False
+        else do
+          execUpdAtomic $ UpdTrajectoryActor aid btrajectory (Just lv)
+          return True
+    _ -> assert `failure` "null trajectory" `twith` (aid, b)

@@ -24,7 +24,6 @@ data Request =
   | ReqGameExit !ActorId !Int
   | ReqGameSave !ActorId
   | ReqAutomate !ActorId
-  | ReqSetTrajectory !ActorId
   deriving (Show, Eq)
 
 data RequestTimed =
@@ -49,7 +48,6 @@ aidOfRequest cmd = case cmd of
   ReqGameExit aid _ -> aid
   ReqGameSave aid -> aid
   ReqAutomate aid -> aid
-  ReqSetTrajectory aid -> aid
 
 aidOfRequestTimed :: RequestTimed -> ActorId
 aidOfRequestTimed cmd = case cmd of
