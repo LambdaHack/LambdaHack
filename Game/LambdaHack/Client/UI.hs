@@ -68,10 +68,11 @@ queryUI = do
                     then Just $ "Run stop:" <+> stopMsg
                     else Nothing
           humanCommand msg
-        Right (paramNew, r, runCmd) -> do
+        Right (paramNew, runCmd) -> do
           modifyClient $ \cli -> cli {srunning = Just paramNew}
           displayPush
-          return $ ReqUITimed r runCmd
+          leader2 <- getLeaderUI
+          return $ ReqUITimed leader2 runCmd
 
 -- | Determine and process the next human player command. The argument is
 -- the last stop message due to running, if any.

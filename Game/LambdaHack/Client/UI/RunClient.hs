@@ -39,7 +39,7 @@ import Game.LambdaHack.Content.TileKind
 
 -- | Continue running in the given direction.
 continueRun :: MonadClient m
-            => RunParams -> m (Either Msg (RunParams, ActorId, RequestTimed))
+            => RunParams -> m (Either Msg (RunParams, RequestTimed))
 continueRun paramOld =
   case paramOld of
     RunParams{ runMembers = []
@@ -62,9 +62,12 @@ continueRun paramOld =
             runStopOrCmd <- moveRunAid r dir
             let runMembersNew = if isJust runStopMsg then rs else rs ++ [r]
                 paramNew = paramOld {runMembers = runMembersNew}
-            return $! case runStopOrCmd of
+            case runStopOrCmd of
               Left stopMsg -> assert `failure` (paramOld, stopMsg)
-              Right runCmd -> Right (paramNew, r, runCmd)
+              Right runCmd -> do
+                s <- getState
+                modifyClient $ updateLeader r s
+                return $ Right (paramNew, runCmd)
           Left runStopMsgCurrent -> do
             let runStopMsgNew = fromMaybe runStopMsgCurrent runStopMsg
                 paramNew = paramOld { runMembers = rs
@@ -89,7 +92,10 @@ continueRun paramOld =
                               , runStopMsg = runStopMsgNew }
       case mdirOrRunStopMsgCurrent of
         Left _ -> continueRun paramNew  -- run all undisturbed; only one time
-        Right dir -> return $ Right (paramNew, r, ReqMove dir)
+        Right dir -> do
+          s <- getState
+          modifyClient $ updateLeader r s
+          return $ Right (paramNew, ReqMove dir)
       -- The potential invisible actor is hit. War is started without asking.
     _ -> assert `failure` paramOld
 
