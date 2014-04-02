@@ -225,31 +225,11 @@ handleActors lid = do
             return $! not hasAiLeader2
           else return True
         else return False
-      let switchLeader aidNew = do
+      let setBWait hasWait aidNew = do
             bPre <- getsState $ getActorBody aidNew
-            let leadAtoms =
-                  if aidNew /= aid  -- switched, so aid must be leader
-                  then -- Only a leader can change his faction's leader
-                       -- before the action is performed (e.g., via AI
-                       -- switching leaders). Then, the action can change
-                       -- the leader again (e.g., via killing the old leader).
-                       assert (aidIsLeader
-                               && not (bproj bPre)
-                               && not (isSpawnFact fact)
-                               `blame` (aid, body, aidNew, bPre, fact))
-                         [UpdLeadFaction side mleader (Just aidNew)]
-                  else []
-            mapM_ execUpdAtomic leadAtoms
-            assert (bfid bPre == side
-                    `blame` "client tries to move other faction actors"
-                    `twith` (bPre, side)) skip
-            return bPre
-          setBWait ReqWait{} aidNew bPre = do
             let fromWait = bwait bPre
-            unless fromWait $ execUpdAtomic $ UpdWaitActor aidNew fromWait True
-          setBWait _ aidNew bPre = do
-            let fromWait = bwait bPre
-            when fromWait $ execUpdAtomic $ UpdWaitActor aidNew fromWait False
+            when (hasWait /= fromWait) $
+              execUpdAtomic $ UpdWaitActor aidNew fromWait hasWait
       if bproj body then do  -- TODO: perhaps check Track, not bproj
         timed <- setTrajectory aid
         when timed $ advanceTime aid
@@ -257,19 +237,16 @@ handleActors lid = do
         cmdS <- sendQueryUI side aid
         -- TODO: check that the command is legal first, report and reject,
         -- but do not crash (currently server asserts things and crashes)
-        let aidNew = case cmdS of
-              ReqUITimed aidN _ -> aidN
-              _ -> aid
-        bPre <- switchLeader aidNew
-        timed <-
-          if bhp bPre <= 0 && not (bproj bPre) then do
-            execSfxAtomic
-              $ SfxMsgFid side "You strain, fumble and faint from the exertion."
-            return False
-          else handleRequestUI cmdS
-        case cmdS of
-          ReqUITimed _ cmdT -> setBWait cmdT aidNew bPre
-          _ -> return ()
+        timed <- handleRequestUI side cmdS
+        -- If the faction no longer has a leader, we assume he's dead
+        -- so we don't need to set bwait or btime for him.
+        aidNew <- if aidIsLeader then
+                    getsState $ gleader . (EM.! side) . sfactionD
+                  else return $ Just aid
+        let hasWait (ReqUITimed ReqWait{}) = True
+            hasWait (ReqUILeader _ cmd) = hasWait cmd
+            hasWait _ = False
+        maybe skip (setBWait (hasWait cmdS)) aidNew
         -- Advance time once, after the leader switched perhaps many times.
         -- TODO: this is correct only when all heroes have the same
         -- speed and can't switch leaders by, e.g., aiming a wand
@@ -278,7 +255,7 @@ handleActors lid = do
         -- RET waits .3s and gives back control,
         -- Any other key does the .3s wait and the action from the key
         -- at once.
-        when timed $ advanceTime aidNew
+        when timed $  maybe skip advanceTime aidNew
       else do
         -- Clear messages in the UI client (if any), if the actor
         -- is a leader (which happens when a UI client is fully
@@ -287,19 +264,16 @@ handleActors lid = do
         let mainUIactor = playerUI (gplayer fact) && aidIsLeader
         when mainUIactor $ execUpdAtomic $ UpdRecordHistory side
         cmdS <- sendQueryAI side aid
-        let aidNew = case cmdS of
-              ReqAITimed aidN _ -> aidN
-              _ -> aid
-        bPre <- switchLeader aidNew
-        assert (not (bhp bPre <= 0 && not (bproj bPre))
-                `blame` "AI switches to an incapacitated actor"
-                `twith` (cmdS, bPre, side)) skip
-        handleRequestAI cmdS
-        case cmdS of
-          ReqAITimed _ cmdT -> setBWait cmdT aidNew bPre
-          _ -> return ()
+        handleRequestAI side aid cmdS
+        aidNew <- if aidIsLeader then
+                    getsState $ gleader . (EM.! side) . sfactionD
+                  else return $ Just aid
+        let hasWait (ReqAITimed ReqWait{}) = True
+            hasWait (ReqAILeader _ cmd) = hasWait cmd
+            hasWait _ = False
+        maybe skip (setBWait (hasWait cmdS)) aidNew
         -- AI always takes time and so doesn't loop.
-        advanceTime aidNew
+        maybe skip advanceTime aidNew
       handleActors lid
 
 gameExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()

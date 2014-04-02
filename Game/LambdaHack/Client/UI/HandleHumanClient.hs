@@ -31,21 +31,19 @@ cmdHumanSem cmd = do
 
 -- | Compute the basic action for a command and mark whether it takes time.
 cmdAction :: MonadClientUI m => HumanCmd -> m (SlideOrCmd RequestUI)
-cmdAction cmd = do
- leader <- getLeaderUI
- case cmd of
+cmdAction cmd = case cmd of
   -- Global.
-  Move v -> fmap (fmap (ReqUITimed leader)) $ moveRunHuman False v
-  Run v -> fmap (fmap (ReqUITimed leader)) $ moveRunHuman True v
-  Wait -> fmap Right $ fmap (ReqUITimed leader) waitHuman
+  Move v -> fmap (fmap ReqUITimed) $ moveRunHuman False v
+  Run v -> fmap (fmap ReqUITimed) $ moveRunHuman True v
+  Wait -> fmap Right $ fmap ReqUITimed waitHuman
   MoveItem cLegalRaw toCStore verbRaw _ auto ->
-    fmap (fmap (ReqUITimed leader)) $ moveItemHuman cLegalRaw toCStore verbRaw auto
-  Project ts -> fmap (fmap (ReqUITimed leader)) $ projectHuman ts
-  Apply ts -> fmap (fmap (ReqUITimed leader)) $ applyHuman ts
-  AlterDir ts -> fmap (fmap (ReqUITimed leader)) $ alterDirHuman ts
-  TriggerTile ts -> fmap (fmap (ReqUITimed leader)) $ triggerTileHuman ts
-  StepToTarget -> fmap (fmap (ReqUITimed leader)) stepToTargetHuman
-  Resend -> fmap (fmap (ReqUITimed leader)) resendHuman
+    fmap (fmap ReqUITimed) $ moveItemHuman cLegalRaw toCStore verbRaw auto
+  Project ts -> fmap (fmap ReqUITimed) $ projectHuman ts
+  Apply ts -> fmap (fmap ReqUITimed) $ applyHuman ts
+  AlterDir ts -> fmap (fmap ReqUITimed) $ alterDirHuman ts
+  TriggerTile ts -> fmap (fmap ReqUITimed) $ triggerTileHuman ts
+  StepToTarget -> fmap (fmap ReqUITimed) stepToTargetHuman
+  Resend -> fmap (fmap ReqUITimed) resendHuman
 
   GameRestart t -> gameRestartHuman t
   GameExit -> gameExitHuman

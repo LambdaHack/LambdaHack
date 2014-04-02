@@ -523,9 +523,8 @@ gameSaveHuman = do
 
 automateHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
 automateHuman = do
-  side <- getsClient sside
   -- TODO: do not save to history:
   go <- displayMore ColorBW "Ceding control to AI (ESC to regain)."
   if not go
     then failWith "Automation canceled."
-    else return $ Right $ ReqUIAutomate side
+    else return $ Right ReqUIAutomate

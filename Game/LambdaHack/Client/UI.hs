@@ -48,7 +48,7 @@ queryUI = do
   -- When running, stop if disturbed. If not running, let the human
   -- player issue commands, until any command takes time.
   srunning <- getsClient srunning
-  case srunning of
+  req <- case srunning of
     Nothing -> humanCommand Nothing
     Just RunParams{runMembers}
       | isSpawnFact fact && runMembers /= [leader] -> do
@@ -71,8 +71,11 @@ queryUI = do
         Right (paramNew, runCmd) -> do
           modifyClient $ \cli -> cli {srunning = Just paramNew}
           displayPush
-          leader2 <- getLeaderUI
-          return $ ReqUITimed leader2 runCmd
+          return $ ReqUITimed runCmd
+  leader2 <- getLeaderUI
+  if leader2 /= leader
+    then return $! ReqUILeader leader2 req
+    else return $! req
 
 -- | Determine and process the next human player command. The argument is
 -- the last stop message due to running, if any.
@@ -135,7 +138,7 @@ humanCommand msgRunStop = do
             -- and no slides could have been generated.
             modifyClient $ \cli -> cli {slastKey = Nothing}
             case cmdS of
-              ReqUITimed _ cmd ->
+              ReqUITimed cmd ->
                 modifyClient $ \cli -> cli {slastCmd = Just cmd}
               _ -> return ()
             return cmdS

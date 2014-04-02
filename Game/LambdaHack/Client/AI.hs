@@ -3,6 +3,7 @@ module Game.LambdaHack.Client.AI
   ( queryAI, pongAI
   ) where
 
+import Control.Applicative
 import Control.Exception.Assert.Sugar
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
@@ -21,7 +22,10 @@ import Game.LambdaHack.Common.Request
 queryAI :: MonadClient m => ActorId -> m RequestAI
 queryAI oldAid = do
   (aidToMove, bToMove) <- pickActorToMove refreshTarget oldAid
-  fmap (ReqAITimed aidToMove) $ pickAction (aidToMove, bToMove)
+  req <- ReqAITimed <$> pickAction (aidToMove, bToMove)
+  if aidToMove /= oldAid
+    then return $! ReqAILeader aidToMove req
+    else return $! req
 
 pongAI :: MonadClient m => m RequestAI
 pongAI = return ReqAIPong

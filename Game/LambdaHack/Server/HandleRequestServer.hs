@@ -47,20 +47,31 @@ import Game.LambdaHack.Server.State
 
 -- | The semantics of server commands. The resulting boolean value
 -- indicates if the command took some time.
-handleRequestAI :: (MonadAtomic m, MonadServer m) => RequestAI -> m ()
-handleRequestAI cmd = case cmd of
-  ReqAITimed aid cmd2 -> handleRequestTimed aid cmd2
+handleRequestAI :: (MonadAtomic m, MonadServer m)
+                => FactionId -> ActorId -> RequestAI -> m ()
+handleRequestAI fid aid cmd = case cmd of
+  ReqAITimed cmdT -> handleRequestTimed aid cmdT
+  ReqAILeader aidNew cmd2 -> do
+    switchLeader fid aidNew
+    handleRequestAI fid aidNew cmd2
   ReqAIPong -> return ()
 
 -- | The semantics of server commands. The resulting boolean value
 -- indicates if the command took some time.
-handleRequestUI :: (MonadAtomic m, MonadServer m) => RequestUI -> m Bool
-handleRequestUI cmd = case cmd of
-  ReqUITimed aid cmd2 -> handleRequestTimed aid cmd2 >> return True
+handleRequestUI :: (MonadAtomic m, MonadServer m)
+                => FactionId -> RequestUI -> m Bool
+handleRequestUI fid cmd = case cmd of
+  ReqUITimed cmdT -> do
+    fact <- getsState $ (EM.! fid) . sfactionD
+    let aid = fromMaybe (assert `failure` fact) $ gleader fact
+    handleRequestTimed aid cmdT >> return True
+  ReqUILeader aidNew cmd2 -> do
+    switchLeader fid aidNew
+    handleRequestUI fid cmd2
   ReqUIGameRestart aid t d names -> reqGameRestart aid t d names >> return False
   ReqUIGameExit aid d -> reqGameExit aid d >> return False
   ReqUIGameSave -> reqGameSave >> return False
-  ReqUIAutomate fid -> reqAutomate fid >> return False
+  ReqUIAutomate -> reqAutomate fid >> return False
   ReqUIPong _ -> return False
 
 handleRequestTimed :: (MonadAtomic m, MonadServer m)
@@ -76,6 +87,22 @@ handleRequestTimed aid cmd = case cmd of
   ReqProject p eps iid cstore -> reqProject aid p eps iid cstore
   ReqApply iid cstore -> reqApply aid iid cstore
   ReqTrigger mfeat -> reqTrigger aid mfeat
+
+switchLeader :: MonadAtomic m
+             => FactionId -> ActorId -> m ()
+switchLeader fid aidNew = do
+  fact <- getsState $ (EM.! fid) . sfactionD
+  bPre <- getsState $ getActorBody aidNew
+  let mleader = gleader fact
+      leadAtoms = [UpdLeadFaction fid mleader (Just aidNew)]
+  mapM_ execUpdAtomic leadAtoms
+  assert (Just aidNew /= mleader
+          && not (bproj bPre)
+          && not (isSpawnFact fact)
+         `blame` (aidNew, bPre, fid, fact)) skip
+  assert (bfid bPre == fid
+          `blame` "client tries to move other faction actors"
+          `twith` (aidNew, bPre, fid, fact)) skip
 
 -- * ReqMove
 
