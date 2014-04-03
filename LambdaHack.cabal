@@ -286,5 +286,5 @@ executable LambdaHack
   ghc-options:        -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-monomorphism-restriction -fwarn-unrecognised-pragmas
   ghc-options:        -fno-warn-auto-orphans -fno-warn-implicit-prelude
   ghc-options:        -fno-ignore-asserts -funbox-strict-fields
-  ghc-options:        -threaded -with-rtsopts=-C0.005
+  ghc-options:        -threaded -with-rtsopts=-C0.005 -rtsopts
 -- ghc-options:       -with-rtsopts=-N  -- eats all cores
