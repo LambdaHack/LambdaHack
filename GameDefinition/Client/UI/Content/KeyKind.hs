@@ -148,6 +148,5 @@ standardKeys = KeyKind
 
       -- Debug and others not to display in help screens
       , ("CTRL-s", (CmdDebug, GameSave))
-      , ("CTRL-y", (CmdDebug, Resend))
       ]
   }

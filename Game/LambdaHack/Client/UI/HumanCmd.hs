@@ -39,7 +39,6 @@ data HumanCmd =
   | AlterDir    ![Trigger]
   | TriggerTile ![Trigger]
   | StepToTarget
-  | Resend
     -- Below this line, commands do not take time.
   | GameRestart !Text
   | GameExit
@@ -96,7 +95,6 @@ noRemoteHumanCmd cmd = case cmd of
   Apply{}       -> True
   AlterDir{}    -> True
   StepToTarget  -> True
-  Resend        -> True
   _             -> False
 
 -- | Description of player commands.
@@ -111,7 +109,6 @@ cmdDescription cmd = case cmd of
   AlterDir ts -> triggerDescription ts
   TriggerTile ts -> triggerDescription ts
   StepToTarget -> "make one step towards the target"
-  Resend      -> "resend last server command"
 
   GameRestart t -> "new" <+> t <+> "game"
   GameExit    -> "save and exit"

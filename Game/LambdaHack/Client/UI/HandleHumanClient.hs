@@ -43,7 +43,6 @@ cmdAction cmd = case cmd of
   AlterDir ts -> fmap (fmap ReqUITimed) $ alterDirHuman ts
   TriggerTile ts -> fmap (fmap ReqUITimed) $ triggerTileHuman ts
   StepToTarget -> fmap (fmap ReqUITimed) stepToTargetHuman
-  Resend -> fmap (fmap ReqUITimed) resendHuman
 
   GameRestart t -> gameRestartHuman t
   GameExit -> gameExitHuman

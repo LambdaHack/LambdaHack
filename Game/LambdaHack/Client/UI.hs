@@ -137,10 +137,6 @@ humanCommand msgRunStop = do
             -- Exit the loop and let other actors act. No next key needed
             -- and no slides could have been generated.
             modifyClient $ \cli -> cli {slastKey = Nothing}
-            case cmdS of
-              ReqUITimed cmd ->
-                modifyClient $ \cli -> cli {slastCmd = Just cmd}
-              _ -> return ()
             return cmdS
           Left slides -> do
             -- If no time taken, rinse and repeat.

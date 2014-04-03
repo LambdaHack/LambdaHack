@@ -33,7 +33,6 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
 import qualified Game.LambdaHack.Common.PointArray as PointArray
-import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
@@ -70,8 +69,6 @@ data StateClient = StateClient
   , slastKey     :: !(Maybe K.KM)  -- ^ last command key pressed
   , slastRecord  :: !LastRecord    -- ^ state of key sequence recording
   , slastPlay    :: ![K.KM]        -- ^ state of key sequence playback
-  , slastCmd     :: !(Maybe RequestTimed)
-                                   -- ^ last command sent to the server
   , swaitTimes   :: !Int           -- ^ player just waited this many times
   , _sleader     :: !(Maybe ActorId)
                                    -- ^ current picked party leader
@@ -144,7 +141,6 @@ defStateClient shistory sreport _sside sisAI =
     , slastKey = Nothing
     , slastRecord = ([], [], 0)
     , slastPlay = []
-    , slastCmd = Nothing
     , swaitTimes = 0
     , _sleader = Nothing  -- no heroes yet alive
     , _sside
@@ -256,7 +252,6 @@ instance Binary StateClient where
         slastKey = Nothing
         slastRecord = ([], [], 0)
         slastPlay = []
-        slastCmd = Nothing
         swaitTimes = 0
         squit = False
     return $! StateClient{..}

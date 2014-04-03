@@ -5,7 +5,7 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalClient
   ( -- * Commands that usually take time
     moveRunHuman, waitHuman, moveItemHuman
   , projectHuman, applyHuman, alterDirHuman, triggerTileHuman
-  , stepToTargetHuman, resendHuman
+  , stepToTargetHuman
     -- * Commands that never take time
   , gameRestartHuman, gameExitHuman, gameSaveHuman, automateHuman
   ) where
@@ -470,15 +470,6 @@ stepToTargetHuman = do
               failWith "actor in the path to target"
             else
               moveRunHuman False $ towards (bpos b) p1
-
--- * Resend
-
-resendHuman :: MonadClientUI m => m (SlideOrCmd RequestTimed)
-resendHuman = do
-  slastCmd <- getsClient slastCmd
-  case slastCmd of
-    Just cmd -> return $ Right cmd
-    Nothing -> failWith "no time-taking command to repeat"
 
 -- * GameRestart; does not take time
 
