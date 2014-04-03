@@ -25,6 +25,7 @@ standardKeys = KeyKind
       [ ("CTRL-x", (CmdMenu, GameExit))
       , ("CTRL-a", (CmdMenu, GameRestart "campaign"))
       , ("CTRL-k", (CmdMenu, GameRestart "skirmish"))
+      , ("CTRL-m", (CmdMenu, GameRestart "ambush"))
       , ("CTRL-e", (CmdMenu, GameRestart "defense"))
       , ("CTRL-d", (CmdMenu, GameDifficultyCycle))
 
@@ -148,5 +149,7 @@ standardKeys = KeyKind
 
       -- Debug and others not to display in help screens
       , ("CTRL-s", (CmdDebug, GameSave))
+      , ("CTRL-b", (CmdDebug, GameRestart "battle"))
+          -- TODO: actors can get stuck forever among rocks
       ]
   }

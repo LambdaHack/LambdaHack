@@ -46,7 +46,8 @@ pillar = TileKind
   , tname    = "rock"
   , tfreq    = [ ("cachable", 70)
                , ("legendLit", 100), ("legendDark", 100)
-               , ("noiseSet", 55), ("combatSet", 3), ("battleSet", 9) ]
+               , ("noiseSet", 55), ("skirmishSet", 3), ("ambushSet", 3)
+               , ("battleSet", 9) ]
   , tcolor   = BrWhite
   , tcolor2  = defFG
   , tfeature = []
@@ -63,7 +64,7 @@ pillarCache = TileKind
 tree = TileKind
   { tsymbol  = 'O'
   , tname    = "tree"
-  , tfreq    = [("combatSet", 8)]
+  , tfreq    = [("skirmishSet", 8), ("ambushSet", 8)]
   , tcolor   = BrGreen
   , tcolor2  = Green
   , tfeature = []
@@ -202,14 +203,14 @@ floorArenaLit = floorCorridorLit
   { tsymbol  = '.'
   , tname    = "stone floor"
   , tfreq    = [ ("floorArenaLit", 1)
-               , ("arenaSet", 1), ("noiseSet", 100), ("combatSet", 100) ]
+               , ("arenaSet", 1), ("noiseSet", 100), ("skirmishSet", 100) ]
   }
 floorActorLit = floorArenaLit
   { tfreq    = [("floorActorLit", 1), ("battleSet", 100)]
   , tfeature = CanActor : tfeature floorArenaLit
   }
 floorItemLit = floorArenaLit
-  { tfreq    = []
+  { tfreq    = [("ambushSet", 100)]
   , tfeature = CanItem : tfeature floorArenaLit
   }
 floorActorItemLit = floorItemLit

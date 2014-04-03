@@ -13,12 +13,12 @@ cdefs = ContentDef
   , getFreq = mfreq
   , validate = validateModeKind
   , content =
-      [campaign, skirmish, battle, pvp, coop, defense]
+      [campaign, skirmish, ambush, battle, pvp, coop, defense]
   }
-campaign,        skirmish, battle, pvp, coop, defense :: ModeKind
+campaign,        skirmish, ambush, battle, pvp, coop, defense :: ModeKind
 
 campaign = ModeKind
-  { msymbol  = 'r'
+  { msymbol  = 'a'
   , mname    = "campaign"
   , mfreq    = [("campaign", 1)]
   , mplayers = playersCampaign
@@ -30,7 +30,15 @@ skirmish = ModeKind
   , mname    = "skirmish"
   , mfreq    = [("skirmish", 1)]
   , mplayers = playersSkirmish
-  , mcaves   = cavesCombat
+  , mcaves   = cavesSkirmish
+  }
+
+ambush = ModeKind
+  { msymbol  = 'm'
+  , mname    = "ambush"
+  , mfreq    = [("ambush", 1)]
+  , mplayers = playersSkirmish
+  , mcaves   = cavesAmbush
   }
 
 battle = ModeKind
@@ -46,7 +54,7 @@ pvp = ModeKind
   , mname    = "PvP"
   , mfreq    = [("PvP", 1)]
   , mplayers = playersPvP
-  , mcaves   = cavesCombat
+  , mcaves   = cavesSkirmish
   }
 
 coop = ModeKind
@@ -169,13 +177,15 @@ playerHorror = Player
   }
 
 
-cavesCampaign, cavesCombat, cavesBattle :: Caves
+cavesCampaign, cavesSkirmish, cavesAmbush, cavesBattle :: Caves
 
 cavesCampaign = EM.fromList [ (toEnum (-1), ("caveRogue", Just True))
                             , (toEnum (-2), ("caveRogue", Nothing))
                             , (toEnum (-3), ("caveEmpty", Nothing))
                             , (toEnum (-10), ("caveNoise", Nothing))]
 
-cavesCombat = EM.fromList [(toEnum (-3), ("caveCombat", Nothing))]
+cavesSkirmish = EM.fromList [(toEnum (-3), ("caveSkirmish", Nothing))]
+
+cavesAmbush = EM.fromList [(toEnum (-5), ("caveAmbush", Nothing))]
 
 cavesBattle = EM.fromList [(toEnum (-3), ("caveBattle", Nothing))]

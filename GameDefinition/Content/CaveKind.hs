@@ -15,12 +15,12 @@ cdefs = ContentDef
   , getFreq = cfreq
   , validate = validateCaveKind
   , content =
-      [rogue, arena, empty, noise, combat, battle]
+      [rogue, arena, empty, noise, battle, skirmish, ambush]
   }
-rogue,        arena, empty, noise, combat, battle :: CaveKind
+rogue,        arena, empty, noise, battle, skirmish, ambush :: CaveKind
 
 rogue = CaveKind
-  { csymbol       = '$'
+  { csymbol       = 'R'
   , cname         = "A maze of twisty passages"
   , cfreq         = [("dng", 100), ("caveRogue", 1)]
   , cxsize        = fst normalLevelBound + 1
@@ -63,7 +63,7 @@ arena = rogue
   , clitCorTile   = "trailLit"
   }
 empty = rogue
-  { csymbol       = '.'
+  { csymbol       = 'E'
   , cname         = "Tall cavern"
   , cfreq         = [("dng", 20), ("caveEmpty", 1)]
   , cgrid         = DiceXY (d 2 + 1) 1
@@ -82,7 +82,7 @@ empty = rogue
   , clitCorTile   = "floorArenaLit"
   }
 noise = rogue
-  { csymbol       = '!'
+  { csymbol       = 'N'
   , cname         = "Glittering cave"
   , cfreq         = [("dng", 20), ("caveNoise", 1)]
   , cgrid         = DiceXY (2 * d 2) (d 2 + 1)
@@ -96,10 +96,10 @@ noise = rogue
   , cdarkCorTile  = "trailLit"  -- let trails give off light
   , clitCorTile   = "trailLit"
   }
-combat = rogue
-  { csymbol       = 'C'
-  , cname         = "Combat arena"
-  , cfreq         = [("caveCombat", 1)]
+battle = rogue  -- TODO: actors can get stuck forever among rocks
+  { csymbol       = 'B'
+  , cname         = "Battle field"
+  , cfreq         = [("caveBattle", 1)]
   , cgrid         = DiceXY (2 * d 2 + 3) (d 2 + 2)
   , cminPlaceSize = DiceXY 3 3
   , cmaxPlaceSize = DiceXY 5 5
@@ -111,13 +111,23 @@ combat = rogue
   , copenChance   = 0
   , citemNum      = 12 * d 2
   , citemFreq     = [(100, "useful")]
-  , cdefTile      = "combatSet"
+  , cdefTile      = "battleSet"
   , cdarkCorTile  = "trailLit"  -- let trails give off light
   , clitCorTile   = "floorArenaLit"
   }
-battle = combat  -- TODO: actors can get stuck forever among trees
-  { csymbol       = 'B'
-  , cname         = "Battle arena"
-  , cfreq         = [("caveBattle", 1)]
-  , cdefTile      = "battleSet"
+skirmish = battle
+  { csymbol       = 'S'
+  , cname         = "Skirmish arena"
+  , cfreq         = [("caveSkirmish", 1)]
+  , cnightChance  = 0
+  , cdefTile      = "skirmishSet"
+  }
+ambush = battle
+  { csymbol       = 'M'
+  , cname         = "Ambush scene"
+  , cfreq         = [("caveAmbush", 1)]
+  , cdarkChance   = 0
+  , cnightChance  = 100
+  , citemNum      = 24 * d 2
+  , cdefTile      = "ambushSet"
   }

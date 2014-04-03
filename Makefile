@@ -17,6 +17,9 @@ xcfrontendCampaign:
 xcfrontendSkirmish:
 	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --maxFps 60 --savePrefix test --dumpInitRngs --automateAll --gameMode skirmish
 
+xcfrontendAmbush:
+	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --maxFps 60 --savePrefix test --dumpInitRngs --automateAll --gameMode ambush
+
 xcfrontendBattle:
 	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --maxFps 60 --savePrefix test --dumpInitRngs --automateAll --gameMode battle --difficulty 1
 
@@ -47,9 +50,9 @@ xctest: xctest-short xctest-medium xctest-long
 
 xctest-short: xctest-short-new xctest-short-load
 
-xctest-medium: xctestCampaign-medium xctestSkirmish-medium xctestBattle-medium xctestPvP-medium xctestCoop-medium xctestDefense-medium
+xctest-medium: xctestCampaign-medium xctestSkirmish-medium xctestAmbush-medium xctestBattle-medium xctestPvP-medium xctestCoop-medium xctestDefense-medium
 
-xctest-long: xctestCampaign-long xctestSkirmish-long xctestBattle-long xctestPvP-long xctestCoop-long xctestDefense-long
+xctest-long: xctestCampaign-long xctestSkirmish-long xctestAmbush-long xctestBattle-long xctestPvP-long xctestCoop-long xctestDefense-long
 
 xctestCampaign-long:
 	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 600 --dumpInitRngs --automateAll --gameMode campaign --difficulty 1 > /tmp/stdtest.log
@@ -62,6 +65,12 @@ xctestSkirmish-long:
 
 xctestSkirmish-medium:
 	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 30 --dumpInitRngs --automateAll --gameMode skirmish > /tmp/stdtest.log
+
+xctestAmbush-long:
+	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 60 --dumpInitRngs --automateAll --gameMode ambush > /tmp/stdtest.log
+
+xctestAmbush-medium:
+	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 30 --dumpInitRngs --automateAll --gameMode ambush > /tmp/stdtest.log
 
 xctestBattle-long:
 	dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 600 --dumpInitRngs --automateAll --gameMode battle --difficulty 1 > /tmp/stdtest.log
@@ -90,6 +99,7 @@ xctestDefense-medium:
 xctest-short-new:
 	while true; do echo ' '; echo '.'; sleep 1; done | dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --savePrefix campaign --dumpInitRngs --gameMode campaign --frontendStd --stopAfter 0 > /tmp/stdtest.log
 	while true; do echo ' '; echo '.'; sleep 1; done | dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --savePrefix skirmish --dumpInitRngs --gameMode skirmish --frontendStd --stopAfter 0 > /tmp/stdtest.log
+	while true; do echo ' '; echo '.'; sleep 1; done | dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --savePrefix ambush --dumpInitRngs --gameMode ambush --frontendStd --stopAfter 0 > /tmp/stdtest.log
 	while true; do echo ' '; echo '.'; sleep 1; done | dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --savePrefix battle --dumpInitRngs --gameMode battle --frontendStd --stopAfter 0 > /tmp/stdtest.log
 	while true; do echo ' '; echo '.'; sleep 1; done | dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --savePrefix PvP --dumpInitRngs --gameMode PvP --frontendStd --stopAfter 0 > /tmp/stdtest.log
 	while true; do echo ' '; echo '.'; sleep 1; done | dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --newGame --savePrefix Coop --dumpInitRngs --gameMode Coop --frontendStd --stopAfter 0 > /tmp/stdtest.log
@@ -98,6 +108,7 @@ xctest-short-new:
 xctest-short-load:
 	while true; do echo ' '; echo '.'; sleep 1; done | dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --savePrefix campaign --dumpInitRngs --gameMode campaign --frontendStd --stopAfter 0 > /tmp/stdtest.log
 	while true; do echo ' '; echo '.'; sleep 1; done | dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --savePrefix skirmish --dumpInitRngs --gameMode skirmish --frontendStd --stopAfter 0 > /tmp/stdtest.log
+	while true; do echo ' '; echo '.'; sleep 1; done | dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --savePrefix ambush --dumpInitRngs --gameMode ambush --frontendStd --stopAfter 0 > /tmp/stdtest.log
 	while true; do echo ' '; echo '.'; sleep 1; done | dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --savePrefix battle --dumpInitRngs --gameMode battle --frontendStd --stopAfter 0 > /tmp/stdtest.log
 	while true; do echo ' '; echo '.'; sleep 1; done | dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --savePrefix PvP --dumpInitRngs --gameMode PvP --frontendStd --stopAfter 0 > /tmp/stdtest.log
 	while true; do echo ' '; echo '.'; sleep 1; done | dist/build/LambdaHack/LambdaHack +RTS -xc -RTS --dbgMsgSer --savePrefix Coop --dumpInitRngs --gameMode Coop --frontendStd --stopAfter 0 > /tmp/stdtest.log
@@ -112,6 +123,9 @@ frontendCampaign:
 
 frontendSkirmish:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --maxFps 60 --savePrefix test --dumpInitRngs --automateAll --gameMode skirmish
+
+frontendAmbush:
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --maxFps 60 --savePrefix test --dumpInitRngs --automateAll --gameMode ambush
 
 frontendBattle:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --maxFps 60 --savePrefix test --dumpInitRngs --automateAll --gameMode battle --difficulty 1
@@ -144,9 +158,9 @@ test: test-short test-medium test-long
 
 test-short: test-short-new test-short-load
 
-test-medium: testCampaign-medium testSkirmish-medium testBattle-medium testPvP-medium testCoop-medium testDefense-medium
+test-medium: testCampaign-medium testSkirmish-medium testAmbush-medium testBattle-medium testPvP-medium testCoop-medium testDefense-medium
 
-test-long: testCampaign-long testSkirmish-long testBattle-long testPvP-long testCoop-long testDefense-long
+test-long: testCampaign-long testSkirmish-long testAmbush-long testBattle-long testPvP-long testCoop-long testDefense-long
 
 testCampaign-long:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 600 --dumpInitRngs --automateAll --gameMode campaign --difficulty 1 > /tmp/stdtest.log
@@ -159,6 +173,12 @@ testSkirmish-long:
 
 testSkirmish-medium:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 30 --dumpInitRngs --automateAll --gameMode skirmish > /tmp/stdtest.log
+
+testAmbush-long:
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 60 --dumpInitRngs --automateAll --gameMode ambush > /tmp/stdtest.log
+
+testAmbush-medium:
+	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 30 --dumpInitRngs --automateAll --gameMode ambush > /tmp/stdtest.log
 
 testBattle-long:
 	dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --noMore --noDelay --noAnim --maxFps 100000 --savePrefix test --frontendStd --benchmark --stopAfter 600 --dumpInitRngs --automateAll --gameMode battle --difficulty 1 > /tmp/stdtest.log
@@ -187,6 +207,7 @@ testDefense-medium:
 test-short-new:
 	while true; do echo ' '; echo '.'; sleep 1; done | dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --savePrefix campaign --dumpInitRngs --gameMode campaign --frontendStd --stopAfter 0 > /tmp/stdtest.log
 	while true; do echo ' '; echo '.'; sleep 1; done | dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --savePrefix skirmish --dumpInitRngs --gameMode skirmish --frontendStd --stopAfter 0 > /tmp/stdtest.log
+	while true; do echo ' '; echo '.'; sleep 1; done | dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --savePrefix ambush --dumpInitRngs --gameMode ambush --frontendStd --stopAfter 0 > /tmp/stdtest.log
 	while true; do echo ' '; echo '.'; sleep 1; done | dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --savePrefix battle --dumpInitRngs --gameMode battle --frontendStd --stopAfter 0 > /tmp/stdtest.log
 	while true; do echo ' '; echo '.'; sleep 1; done | dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --savePrefix PvP --dumpInitRngs --gameMode PvP --frontendStd --stopAfter 0 > /tmp/stdtest.log
 	while true; do echo ' '; echo '.'; sleep 1; done | dist/build/LambdaHack/LambdaHack --dbgMsgSer --newGame --savePrefix Coop --dumpInitRngs --gameMode Coop --frontendStd --stopAfter 0 > /tmp/stdtest.log
@@ -195,6 +216,7 @@ test-short-new:
 test-short-load:
 	while true; do echo ' '; echo '.'; sleep 1; done | dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix campaign --dumpInitRngs --gameMode campaign --frontendStd --stopAfter 0 > /tmp/stdtest.log
 	while true; do echo ' '; echo '.'; sleep 1; done | dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix skirmish --dumpInitRngs --gameMode skirmish --frontendStd --stopAfter 0 > /tmp/stdtest.log
+	while true; do echo ' '; echo '.'; sleep 1; done | dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix ambush --dumpInitRngs --gameMode ambush --frontendStd --stopAfter 0 > /tmp/stdtest.log
 	while true; do echo ' '; echo '.'; sleep 1; done | dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix battle --dumpInitRngs --gameMode battle --frontendStd --stopAfter 0 > /tmp/stdtest.log
 	while true; do echo ' '; echo '.'; sleep 1; done | dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix PvP --dumpInitRngs --gameMode PvP --frontendStd --stopAfter 0 > /tmp/stdtest.log
 	while true; do echo ' '; echo '.'; sleep 1; done | dist/build/LambdaHack/LambdaHack --dbgMsgSer --savePrefix Coop --dumpInitRngs --gameMode Coop --frontendStd --stopAfter 0 > /tmp/stdtest.log
