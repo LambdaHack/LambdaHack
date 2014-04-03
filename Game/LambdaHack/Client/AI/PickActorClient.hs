@@ -74,12 +74,14 @@ pickActorToMove refreshTarget oldAid = do
       let actorWeak ((aid, body), _) = do
             condMeleeBad <- condMeleeBadM aid
             threatDistL <- threatDistList aid
+            fleeL <- fleeList aid
             let condThreatAdj =
                   not $ null $ takeWhile ((<= 1) . fst) threatDistL
                 condFastThreatAdj =
                   any (\(_, (_, b)) -> bspeed b > bspeed body)
                   $ takeWhile ((<= 1) . fst) threatDistL
-            return $! condMeleeBad && not condFastThreatAdj && condThreatAdj
+                condCanFlee = not (null fleeL || condFastThreatAdj)
+            return $! condMeleeBad && condThreatAdj && condCanFlee
       oursWeak <- filterM actorWeak oursTgt
       oursStrong <- filterM (fmap not . actorWeak) oursTgt  -- TODO: partitionM
       let targetTEnemy (_, (TEnemy{}, _)) = True

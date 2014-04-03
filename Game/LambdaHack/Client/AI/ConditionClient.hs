@@ -15,8 +15,10 @@ module Game.LambdaHack.Client.AI.ConditionClient
   , benAvailableItems
   , benGroundItems
   , threatDistList
+  , fleeList
   ) where
 
+import Control.Arrow ((&&&))
 import Control.Exception.Assert.Sugar
 import qualified Data.EnumMap.Strict as EM
 import Data.List
@@ -36,6 +38,7 @@ import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
+import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
@@ -206,3 +209,33 @@ condMeleeBadM aid = do
   return $! noFriendlyHelp  -- still not getting friends' help
             && (condHpTooLow  -- too wounded to fight alone
                 || not (null friends))  -- friends somewhere, let's flee to them
+
+fleeList :: MonadClient m => ActorId -> m [(Int, Point)]
+fleeList aid = do
+  cops <- getsState scops
+  mtgtMPath <- getsClient $ EM.lookup aid . stargetD
+  let tgtPath = case mtgtMPath of  -- prefer fleeing along the path to target
+        Just (_, Just (_ : path, _)) -> path
+        _ -> []
+  b <- getsState $ getActorBody aid
+  fact <- getsState $ \s -> sfactionD s EM.! bfid b
+  allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
+  lvl@Level{lxsize, lysize} <- getLevel $ blid b
+  let posFoes = map bpos allFoes
+      accessibleHere = accessible cops lvl $ bpos b
+      myVic = vicinity lxsize lysize $ bpos b
+      dist p | null posFoes = assert `failure` b
+             | otherwise = minimum $ map (chessDist p) posFoes
+      dVic = map (dist &&& id) myVic
+      -- Flee, if possible. Access required.
+      accVic = filter (accessibleHere . snd) $ dVic
+      gtVic = filter ((> dist (bpos b)) . fst) accVic
+      -- At least don't get closer to enemies, but don't stay adjacent.
+      eqVic = filter (\(d, _) -> d == dist (bpos b) && d > 1) accVic
+      rewardPath (d, p) =
+        if p `elem` tgtPath then Just (9 * d, p)
+        else if any (\q -> chessDist p q == 1) tgtPath then Just (d, p)
+        else Nothing
+      pathVic = mapMaybe rewardPath gtVic
+                ++ filter ((`elem` tgtPath) . snd) eqVic
+  return pathVic  -- keep it lazy, until other conditions verify danger

@@ -6,7 +6,7 @@ module Game.LambdaHack.Client.AI.HandleAbilityClient
   ) where
 
 import Control.Applicative
-import Control.Arrow (second, (&&&))
+import Control.Arrow (second)
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
@@ -71,11 +71,13 @@ actionStrategy aid = do
   condNotCalmEnough <- condNotCalmEnoughM aid
   condDesirableFloorItem <- condDesirableFloorItemM aid
   condMeleeBad <- condMeleeBadM aid
+  fleeL <- fleeList aid
   let condThreatAdj = not $ null $ takeWhile ((<= 1) . fst) threatDistL
       condThreatAtHand = not $ null $ takeWhile ((<= 2) . fst) threatDistL
       condThreatNearby = not $ null $ takeWhile ((<= nearby) . fst) threatDistL
       condFastThreatAdj = any (\(_, (_, b)) -> bspeed b > bspeed body)
                           $ takeWhile ((<= 1) . fst) threatDistL
+      condCanFlee = not (null fleeL || condFastThreatAdj)
   mleader <- getsClient _sleader
   actorAbs <- actorAbilities aid mleader
   let stratToFreq :: MonadStateRead m
@@ -97,8 +99,8 @@ actionStrategy aid = do
           , condOnTriggerable && (condNotCalmEnough || condHpTooLow)
             && condThreatNearby && not condTgtEnemyPresent )
         , ( [AbMove]
-          , flee aid
-          , condMeleeBad && not condFastThreatAdj && condThreatAdj )
+          , flee aid fleeL
+          , condMeleeBad && condThreatAdj && condCanFlee )
         , ( [AbDisplace]
           , displaceFoe aid  -- only swap with an enemy to expose him
           , condBlocksFriends && condAnyFoeAdj
@@ -138,9 +140,10 @@ actionStrategy aid = do
             <$> pickup aid False
           , True )  -- unconditionally, e.g., to give to other party members
         , ( [AbMove]
-          , flee aid
+          , flee aid fleeL
           , condMeleeBad && (condNotCalmEnough && condThreatNearby
-                             || condThreatAtHand) )
+                             || condThreatAtHand)
+            && condCanFlee )
         , ( [AbMelee], (toAny :: ToAny AbMelee)
             <$> meleeAny aid  -- avoid getting damaged for naught
           , condAnyFoeAdj )
@@ -264,7 +267,8 @@ meleeAny aid = do
   return $ liftFrequency freq
 
 -- Fast monsters don't pay enough attention to features.
-trigger :: MonadClient m => ActorId -> Bool -> m (Strategy (RequestTimed AbTrigger))
+trigger :: MonadClient m
+        => ActorId -> Bool -> m (Strategy (RequestTimed AbTrigger))
 trigger aid fleeViaStairs = do
   cops@Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
   dungeon <- getsState sdungeon
@@ -396,35 +400,11 @@ useTool aid onlyFirstAid = do
 -- foes will lead towards friends, but we don't insist on that.
 -- We use chess distances, not pathfinding, because melee can happen
 -- at path distance 2.
-flee :: MonadClient m => ActorId -> m (Strategy RequestAnyAbility)
-flee aid = do
-  cops <- getsState scops
-  mtgtMPath <- getsClient $ EM.lookup aid . stargetD
-  let tgtPath = case mtgtMPath of  -- prefer fleeing along the path to target
-        Just (_, Just (_ : path, _)) -> path
-        _ -> []
+flee :: MonadClient m
+     => ActorId -> [(Int, Point)] -> m (Strategy RequestAnyAbility)
+flee aid fleeL = do
   b <- getsState $ getActorBody aid
-  fact <- getsState $ \s -> sfactionD s EM.! bfid b
-  allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
-  lvl@Level{lxsize, lysize} <- getLevel $ blid b
-  let posFoes = map bpos allFoes
-      accessibleHere = accessible cops lvl $ bpos b
-      myVic = vicinity lxsize lysize $ bpos b
-      dist p | null posFoes = assert `failure` b
-             | otherwise = minimum $ map (chessDist p) posFoes
-      dVic = map (dist &&& id) myVic
-      -- Flee, if possible. Access required.
-      accVic = filter (accessibleHere . snd) $ dVic
-      gtVic = filter ((> dist (bpos b)) . fst) accVic
-      -- At least don't get closer to enemies, but don't stay adjacent.
-      eqVic = filter (\(d, _) -> d == dist (bpos b) && d > 1) accVic
-      rewardPath (d, p) =
-        if p `elem` tgtPath then Just (9 * d, p)
-        else if any (\q -> chessDist p q == 1) tgtPath then Just (d, p)
-        else Nothing
-      pathVic = mapMaybe rewardPath gtVic
-                ++ filter ((`elem` tgtPath) . snd) eqVic
-      vVic = map (second (`vectorToFrom` bpos b)) pathVic
+  let vVic = map (second (`vectorToFrom` bpos b)) fleeL
       str = liftFrequency $ toFreq "flee" vVic
   Traversable.mapM (moveOrRunAid True aid) str
 
