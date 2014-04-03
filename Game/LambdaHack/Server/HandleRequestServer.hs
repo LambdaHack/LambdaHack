@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs #-}
 -- | Semantics of request.
 -- A couple of them do not take time, the rest does.
 -- Note that since the results are atomic commands, which are executed
@@ -75,7 +76,7 @@ handleRequestUI fid cmd = case cmd of
   ReqUIPong _ -> return False
 
 handleRequestTimed :: (MonadAtomic m, MonadServer m)
-                   => ActorId -> RequestTimed -> m ()
+                   => ActorId -> RequestTimed a -> m ()
 handleRequestTimed aid cmd = case cmd of
   ReqMove target -> reqMove aid target
   ReqMelee target -> reqMelee aid target

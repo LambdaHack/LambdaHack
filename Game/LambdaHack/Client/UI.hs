@@ -71,7 +71,7 @@ queryUI = do
         Right (paramNew, runCmd) -> do
           modifyClient $ \cli -> cli {srunning = Just paramNew}
           displayPush
-          return $ ReqUITimed runCmd
+          return $! anyToUI $ runCmd
   leader2 <- getLeaderUI
   if leader2 /= leader
     then return $! ReqUILeader leader2 req

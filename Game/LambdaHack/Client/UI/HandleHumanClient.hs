@@ -3,6 +3,7 @@ module Game.LambdaHack.Client.UI.HandleHumanClient
   ( cmdHumanSem
   ) where
 
+import Control.Applicative
 import Data.Monoid
 
 import Game.LambdaHack.Client.UI.HandleHumanGlobalClient
@@ -33,16 +34,16 @@ cmdHumanSem cmd = do
 cmdAction :: MonadClientUI m => HumanCmd -> m (SlideOrCmd RequestUI)
 cmdAction cmd = case cmd of
   -- Global.
-  Move v -> fmap (fmap ReqUITimed) $ moveRunHuman False v
-  Run v -> fmap (fmap ReqUITimed) $ moveRunHuman True v
-  Wait -> fmap Right $ fmap ReqUITimed waitHuman
+  Move v -> fmap anyToUI <$> moveRunHuman False v
+  Run v -> fmap anyToUI <$> moveRunHuman True v
+  Wait -> Right <$> fmap ReqUITimed waitHuman
   MoveItem cLegalRaw toCStore verbRaw _ auto ->
-    fmap (fmap ReqUITimed) $ moveItemHuman cLegalRaw toCStore verbRaw auto
-  Project ts -> fmap (fmap ReqUITimed) $ projectHuman ts
-  Apply ts -> fmap (fmap ReqUITimed) $ applyHuman ts
-  AlterDir ts -> fmap (fmap ReqUITimed) $ alterDirHuman ts
-  TriggerTile ts -> fmap (fmap ReqUITimed) $ triggerTileHuman ts
-  StepToTarget -> fmap (fmap ReqUITimed) stepToTargetHuman
+    fmap ReqUITimed <$> moveItemHuman cLegalRaw toCStore verbRaw auto
+  Project ts -> fmap ReqUITimed <$> projectHuman ts
+  Apply ts -> fmap ReqUITimed <$> applyHuman ts
+  AlterDir ts -> fmap ReqUITimed <$> alterDirHuman ts
+  TriggerTile ts -> fmap ReqUITimed <$> triggerTileHuman ts
+  StepToTarget -> fmap anyToUI <$> stepToTargetHuman
 
   GameRestart t -> gameRestartHuman t
   GameExit -> gameExitHuman
@@ -51,35 +52,35 @@ cmdAction cmd = case cmd of
 
   -- Local.
   GameDifficultyCycle -> addNoSlides gameDifficultyCycle
-  PickLeader k -> fmap Left $ pickLeaderHuman k
-  MemberCycle -> fmap Left memberCycleHuman
-  MemberBack -> fmap Left memberBackHuman
-  DescribeItem cstore -> fmap Left $ describeItemHuman cstore
-  AllOwned -> fmap Left allOwnedHuman
-  SelectActor -> fmap Left selectActorHuman
+  PickLeader k -> Left <$> pickLeaderHuman k
+  MemberCycle -> Left <$> memberCycleHuman
+  MemberBack -> Left <$> memberBackHuman
+  DescribeItem cstore -> Left <$> describeItemHuman cstore
+  AllOwned -> Left <$> allOwnedHuman
+  SelectActor -> Left <$> selectActorHuman
   SelectNone -> addNoSlides selectNoneHuman
   Clear -> addNoSlides clearHuman
   Repeat n -> addNoSlides $ repeatHuman n
-  Record -> fmap Left recordHuman
-  History -> fmap Left historyHuman
+  Record -> Left <$> recordHuman
+  History -> Left <$> historyHuman
   MarkVision -> addNoSlides markVisionHuman
   MarkSmell -> addNoSlides markSmellHuman
   MarkSuspect -> addNoSlides markSuspectHuman
-  Help -> fmap Left helpHuman
-  MainMenu -> fmap Left mainMenuHuman
+  Help -> Left <$> helpHuman
+  MainMenu -> Left <$> mainMenuHuman
   Macro _ kms -> addNoSlides $ macroHuman kms
 
-  MoveCursor v k -> fmap Left $ moveCursorHuman v k
-  TgtFloor -> fmap Left tgtFloorHuman
-  TgtEnemy -> fmap Left tgtEnemyHuman
-  TgtUnknown -> fmap Left tgtUnknownHuman
-  TgtItem -> fmap Left tgtItemHuman
-  TgtStair up -> fmap Left $ tgtStairHuman up
-  TgtAscend k -> fmap Left $ tgtAscendHuman k
-  EpsIncr b -> fmap Left $ epsIncrHuman b
-  TgtClear -> fmap Left $ tgtClearHuman
-  Cancel -> fmap Left $ cancelHuman mainMenuHuman
-  Accept -> fmap Left $ acceptHuman helpHuman
+  MoveCursor v k -> Left <$> moveCursorHuman v k
+  TgtFloor -> Left <$> tgtFloorHuman
+  TgtEnemy -> Left <$> tgtEnemyHuman
+  TgtUnknown -> Left <$> tgtUnknownHuman
+  TgtItem -> Left <$> tgtItemHuman
+  TgtStair up -> Left <$> tgtStairHuman up
+  TgtAscend k -> Left <$> tgtAscendHuman k
+  EpsIncr b -> Left <$> epsIncrHuman b
+  TgtClear -> Left <$> tgtClearHuman
+  Cancel -> Left <$> cancelHuman mainMenuHuman
+  Accept -> Left <$> acceptHuman helpHuman
 
 addNoSlides :: Monad m => m () -> m (SlideOrCmd RequestUI)
 addNoSlides cmdCli = cmdCli >> return (Left mempty)

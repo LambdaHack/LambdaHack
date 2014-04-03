@@ -1,9 +1,11 @@
+{-# LANGUAGE DataKinds #-}
 -- | Semantics of abilities in terms of actions and the AI procedure
 -- for picking the best action for an actor.
 module Game.LambdaHack.Client.AI.HandleAbilityClient
   ( actionStrategy
   ) where
 
+import Control.Applicative
 import Control.Arrow (second, (&&&))
 import Control.Exception.Assert.Sugar
 import Control.Monad
@@ -46,10 +48,15 @@ import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind as TileKind
 
+type ToAny a = Strategy (RequestTimed a) -> Strategy RequestAnyAbility
+
+toAny :: ToAny a
+toAny strat = RequestAnyAbility <$> strat
+
 -- | AI strategy based on actor's sight, smell, intelligence, etc.
 -- Never empty.
 actionStrategy :: forall m. MonadClient m
-               => ActorId -> m (Strategy RequestTimed)
+               => ActorId -> m (Strategy RequestAnyAbility)
 actionStrategy aid = do
   body <- getsState $ getActorBody aid
   condTgtEnemyPresent <- condTgtEnemyPresentM aid
@@ -72,96 +79,104 @@ actionStrategy aid = do
   mleader <- getsClient _sleader
   actorAbs <- actorAbilities aid mleader
   let stratToFreq :: MonadStateRead m
-                  => Int -> m (Strategy RequestTimed)
-                  -> m (Frequency RequestTimed)
+                  => Int -> m (Strategy RequestAnyAbility)
+                  -> m (Frequency RequestAnyAbility)
       stratToFreq scale mstrat = do
         st <- mstrat
         return $! scaleFreq scale $ bestVariant st  -- TODO: flatten instead?
-      prefix, suffix :: [([Ability], Bool, m (Strategy RequestTimed))]
+      prefix, suffix :: [([Ability], m (Strategy RequestAnyAbility), Bool)]
       prefix =
-        [ ( [AbApply]
+        [ ( [AbApply], (toAny :: ToAny AbApply)
+            <$> useTool aid True  -- use only healing tools
           , condHpTooLow && not condAnyFoeAdj
-            && not condOnTriggerable  -- don't block stairs, perhaps ascend
-          , useTool aid True )  -- use only healing tools
-        , ( [AbTrigger]
+            && not condOnTriggerable )  -- don't block stairs, perhaps ascend
+        , ( [AbTrigger], (toAny :: ToAny AbTrigger)
+            <$> trigger aid True
+              -- flee via stairs, even if to wrong level
+              -- may return via different stairs
           , condOnTriggerable && (condNotCalmEnough || condHpTooLow)
-            && condThreatNearby && not condTgtEnemyPresent
-          , trigger aid True ) -- flee via stairs, even if to wrong level
-                               -- may return via different stairs
+            && condThreatNearby && not condTgtEnemyPresent )
         , ( [AbMove]
-          , condMeleeBad && not condFastThreatAdj && condThreatAdj
-          , flee aid )
-        , ( [AbDisplace, AbMelee]
+          , flee aid
+          , condMeleeBad && not condFastThreatAdj && condThreatAdj )
+        , ( [AbDisplace]
+          , displaceFoe aid  -- only swap with an enemy to expose him
           , condBlocksFriends && condAnyFoeAdj
-            && not condOnTriggerable && not condDesirableFloorItem
-          , displaceFoe aid )  -- only swap with an enemy to expose him
-        , ( [AbMoveItem, AbMelee]
-          , condNoWeapon && condFloorWeapon && not condHpTooLow
-          , pickup aid True )
-        , ( [AbMelee]
-          , condAnyFoeAdj
-          , meleeBlocker aid )  -- only melee target or blocker
-        , ( [AbTrigger]
-          , condOnTriggerable && not condDesirableFloorItem
-          , trigger aid False )
+            && not condOnTriggerable && not condDesirableFloorItem )
+        , ( [AbMoveItem], (toAny :: ToAny AbMoveItem)
+            <$> pickup aid True
+          , condNoWeapon && condFloorWeapon && not condHpTooLow )
+        , ( [AbMelee], (toAny :: ToAny AbMelee)
+            <$> meleeBlocker aid  -- only melee target or blocker
+          , condAnyFoeAdj )
+        , ( [AbTrigger], (toAny :: ToAny AbTrigger)
+            <$> trigger aid False
+          , condOnTriggerable && not condDesirableFloorItem )
         , ( [AbDisplace]  -- prevents some looping movement
-          , not condDesirableFloorItem
-          , displaceBlocker aid )  -- fires up only when path blocked
-        , ( [AbMoveItem]  -- doesn't take long, very useful if safe
-          , not condAnyFoeAdj && not condDesirableFloorItem
-          , manageEqp aid ) ]  -- only possible if calm enough, so high priority
-      distant :: [([Ability], Bool, m (Frequency RequestTimed))]
+          , displaceBlocker aid  -- fires up only when path blocked
+          , not condDesirableFloorItem )
+        , ( [AbMoveItem], (toAny :: ToAny AbMoveItem)
+            <$> manageEqp aid  -- doesn't take long, very useful if safe
+                               -- only if calm enough, so high priority
+          , not condAnyFoeAdj && not condDesirableFloorItem ) ]
+      distant :: [([Ability], m (Frequency RequestAnyAbility), Bool)]
       distant =
         [ ( [AbProject]  -- for high-value target, shoot even in melee
-          , condTgtEnemyPresent && condCanProject
-          , stratToFreq 5 (ranged aid) )
+          , stratToFreq 5 $ (toAny :: ToAny AbProject)
+            <$> ranged aid
+          , condTgtEnemyPresent && condCanProject )
         , ( [AbApply]
-          , condTgtEnemyPresent || condThreatNearby  -- tools can affect enemies
-          , stratToFreq 2 (useTool aid False) )  -- use any tool
+          , stratToFreq 2 $ (toAny :: ToAny AbApply)
+            <$> useTool aid False  -- use any tool
+          , condTgtEnemyPresent || condThreatNearby )  -- can affect enemies
         , ( [AbMove]
-          , condTgtEnemyPresent && not condDesirableFloorItem
-          , stratToFreq (if condMeleeBad then 1 else 100) (chase aid True) ) ]
+          , stratToFreq (if condMeleeBad then 1 else 100)
+            $ chase aid True
+          , condTgtEnemyPresent && not condDesirableFloorItem ) ]
       suffix =
-        [ ( [AbMoveItem]
-          , True  -- unconditionally, e.g., to give to other party members
-          , pickup aid False )
+        [ ( [AbMoveItem], (toAny :: ToAny AbMoveItem)
+            <$> pickup aid False
+          , True )  -- unconditionally, e.g., to give to other party members
         , ( [AbMove]
+          , flee aid
           , condMeleeBad && (condNotCalmEnough && condThreatNearby
-                             || condThreatAtHand)
-          , flee aid )
-        , ( [AbMelee]
-          , condAnyFoeAdj
-          , meleeAny aid )  -- melee any, to avoid being wounded for naught
+                             || condThreatAtHand) )
+        , ( [AbMelee], (toAny :: ToAny AbMelee)
+            <$> meleeAny aid  -- avoid getting damaged for naught
+          , condAnyFoeAdj )
         , ( [AbMove]
-          , True
-          , chase aid False ) ]
+          , chase aid False
+          , True )
+        , ( [AbWait], (toAny :: ToAny AbWait)
+            <$> waitBlockNow
+            -- Wait until friends sidestep; ensures strategy is never empty.
+            -- TODO: try to switch leader away before that (we already
+            -- switch him afterwards)
+          , True ) ]
       -- TODO: don't msum not to evaluate until needed
-      checkAction :: ([Ability], Bool, m a) -> Bool
-      checkAction (abts, cond, _) = cond && all (`elem` actorAbs) abts
+      checkAction :: ([Ability], m a, Bool) -> Bool
+      checkAction (abts, _, cond) = cond && all (`elem` actorAbs) abts
       sumS abAction = do
         let as = filter checkAction abAction
-        strats <- sequence $ map (\(_, _, m) -> m) as
+        strats <- sequence $ map (\(_, m, _) -> m) as
         return $! msum strats
       sumF abFreq = do
         let as = filter checkAction abFreq
-        strats <- sequence $ map (\(_, _, m) -> m) as
+        strats <- sequence $ map (\(_, m, _) -> m) as
         return $! msum strats
       combineDistant as = fmap liftFrequency $ sumF as
   sumPrefix <- sumS prefix
   comDistant <- combineDistant distant
   sumSuffix <- sumS suffix
   return $! sumPrefix .| comDistant .| sumSuffix
-            -- Wait until friends sidestep; ensures strategy is never empty.
-            -- TODO: try to switch leader away before that (we already
-            -- switch him afterwards)
-            .| waitBlockNow
 
 -- | A strategy to always just wait.
-waitBlockNow :: Strategy RequestTimed
-waitBlockNow = returN "wait" ReqWait
+waitBlockNow :: MonadClient m => m (Strategy (RequestTimed AbWait))
+waitBlockNow = return $! returN "wait" ReqWait
 
 -- TODO: (most?) animals don't pick up. Everybody else does.
-pickup :: MonadClient m => ActorId -> Bool -> m (Strategy RequestTimed)
+pickup :: MonadClient m
+       => ActorId -> Bool -> m (Strategy (RequestTimed AbMoveItem))
 pickup aid onlyWeapon = do
   Kind.COps{corule} <- getsState scops
   let RuleKind{ritemMelee} = Kind.stdRuleset corule
@@ -175,7 +190,7 @@ pickup aid onlyWeapon = do
       return $! returN "pickup" $ ReqMoveItem iid k CGround CEqp
     [] -> return reject
 
-manageEqp :: MonadClient m => ActorId -> m (Strategy RequestTimed)
+manageEqp :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbMoveItem))
 manageEqp aid = do
   cops@Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
   let RuleKind{ritemEqp, rsharedInventory} = Kind.stdRuleset corule
@@ -211,7 +226,7 @@ pSymbol cops c = case c of
   _ -> \_ -> Just 0
 
 -- Everybody melees in a pinch, even though some prefer ranged attacks.
-meleeBlocker :: MonadClient m => ActorId -> m (Strategy RequestTimed)
+meleeBlocker :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbMelee))
 meleeBlocker aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
@@ -238,7 +253,7 @@ meleeBlocker aid = do
     _ -> return reject  -- probably no path to the enemy, if any
 
 -- Everybody melees in a pinch, even though some prefer ranged attacks.
-meleeAny :: MonadClient m => ActorId -> m (Strategy RequestTimed)
+meleeAny :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbMelee))
 meleeAny aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
@@ -249,7 +264,7 @@ meleeAny aid = do
   return $ liftFrequency freq
 
 -- Fast monsters don't pay enough attention to features.
-trigger :: MonadClient m => ActorId -> Bool -> m (Strategy RequestTimed)
+trigger :: MonadClient m => ActorId -> Bool -> m (Strategy (RequestTimed AbTrigger))
 trigger aid fleeViaStairs = do
   cops@Kind.COps{cotile=Kind.Ops{okind}} <- getsState scops
   dungeon <- getsState sdungeon
@@ -302,7 +317,7 @@ trigger aid fleeViaStairs = do
 
 -- Actors require sight to use ranged combat and intelligence to throw
 -- or zap anything else than obvious physical missiles.
-ranged :: MonadClient m => ActorId -> m (Strategy RequestTimed)
+ranged :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbProject))
 ranged aid = do
   Kind.COps{ coactor=Kind.Ops{okind}
            , coitem=coitem@Kind.Ops{okind=iokind}
@@ -351,7 +366,8 @@ ranged aid = do
     _ -> return reject
 
 -- Tools use requires significant intelligence and sometimes literacy.
-useTool :: MonadClient m => ActorId -> Bool -> m (Strategy RequestTimed)
+useTool :: MonadClient m
+        => ActorId -> Bool -> m (Strategy (RequestTimed AbApply))
 useTool aid onlyFirstAid = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   b <- getsState $ getActorBody aid
@@ -380,7 +396,7 @@ useTool aid onlyFirstAid = do
 -- foes will lead towards friends, but we don't insist on that.
 -- We use chess distances, not pathfinding, because melee can happen
 -- at path distance 2.
-flee :: MonadClient m => ActorId -> m (Strategy RequestTimed)
+flee :: MonadClient m => ActorId -> m (Strategy RequestAnyAbility)
 flee aid = do
   cops <- getsState scops
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
@@ -412,7 +428,7 @@ flee aid = do
       str = liftFrequency $ toFreq "flee" vVic
   Traversable.mapM (moveOrRunAid True aid) str
 
-displaceFoe :: MonadClient m => ActorId -> m (Strategy RequestTimed)
+displaceFoe :: MonadClient m => ActorId -> m (Strategy RequestAnyAbility)
 displaceFoe aid = do
   cops <- getsState scops
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
@@ -443,7 +459,7 @@ displaceFoe aid = do
       str = liftFrequency $ uniformFreq "displaceFoe" vFoes
   Traversable.mapM (moveOrRunAid True aid) str
 
-displaceBlocker :: MonadClient m => ActorId -> m (Strategy RequestTimed)
+displaceBlocker :: MonadClient m => ActorId -> m (Strategy RequestAnyAbility)
 displaceBlocker aid = do
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   str <- case mtgtMPath of
@@ -490,7 +506,7 @@ displaceTowards aid source target = do
       _ -> return reject  -- DisplaceProjectiles
   else return reject
 
-chase :: MonadClient m => ActorId -> Bool -> m (Strategy RequestTimed)
+chase :: MonadClient m => ActorId -> Bool -> m (Strategy RequestAnyAbility)
 chase aid doDisplace = do
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   str <- case mtgtMPath of
@@ -542,7 +558,7 @@ moveTowards aid source target goal = do
 -- This function is very general, even though it's often used in contexts
 -- when only one or two of the many cases can possibly occur.
 moveOrRunAid :: MonadStateRead m
-             => Bool -> ActorId -> Vector -> m RequestTimed
+             => Bool -> ActorId -> Vector -> m RequestAnyAbility
 moveOrRunAid run source dir = do
   cops@Kind.COps{cotile} <- getsState scops
   sb <- getsState $ getActorBody source
@@ -568,19 +584,19 @@ moveOrRunAid run source dir = do
                      && all (not . adjacent (bpos b2) . bpos) sup)
                           -- DisplaceSupported
       then
-        return $! ReqDisplace target
+        return $! RequestAnyAbility $ ReqDisplace target
       else
         -- If cannot displace, hit.
-        return $! ReqMelee target
+        return $! RequestAnyAbility $ ReqMelee target
     ((target, _), _) : _ ->  -- can be a foe, as well as a friend (e.g., proj.)
       -- No problem if there are many projectiles at the spot. We just
       -- attack the first one.
       -- Attacking does not require full access, adjacency is enough.
-      return $! ReqMelee target
+      return $! RequestAnyAbility $ ReqMelee target
     [] -> do  -- move or search or alter
       if accessible cops lvl spos tpos then
         -- Movement requires full access.
-        return $! ReqMove dir
+        return $! RequestAnyAbility $ ReqMove dir
         -- The potential invisible actor is hit.
       else if not $ EM.null $ lvl `atI` tpos then
         -- This is, e.g., inaccessible open door with an item in it.
@@ -591,7 +607,7 @@ moveOrRunAid run source dir = do
                   || Tile.isClosable cotile t
                   || Tile.isChangeable cotile t) then
         -- No access, so search and/or alter the tile.
-        return $! ReqAlter tpos Nothing
+        return $! RequestAnyAbility $ ReqAlter tpos Nothing
       else
         -- Boring tile, no point bumping into it, do WaitSer if really idle.
         assert `failure` "AI causes MoveNothing or AlterNothing"

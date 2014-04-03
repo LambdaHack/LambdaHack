@@ -213,7 +213,9 @@ library
                       TypeFamilies, FlexibleContexts, FlexibleInstances,
                       DeriveFunctor, FunctionalDependencies,
                       GeneralizedNewtypeDeriving, TupleSections,
-                      DeriveFoldable, DeriveTraversable
+                      DeriveFoldable, DeriveTraversable,
+                      ExistentialQuantification, GADTs, StandaloneDeriving,
+                      DataKinds, KindSignatures
 --, DeriveGeneric
   ghc-options:        -Wall -fwarn-orphans -fwarn-tabs -fwarn-incomplete-uni-patterns -fwarn-incomplete-record-updates -fwarn-monomorphism-restriction -fwarn-unrecognised-pragmas
   ghc-options:        -fno-warn-auto-orphans -fno-warn-implicit-prelude

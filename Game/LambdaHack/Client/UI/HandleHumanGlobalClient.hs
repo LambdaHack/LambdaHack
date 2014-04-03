@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 -- | Semantics of 'Command.Cmd' client commands that return server commands.
 -- A couple of them do not take time, the rest does.
 -- TODO: document
@@ -10,6 +11,7 @@ module Game.LambdaHack.Client.UI.HandleHumanGlobalClient
   , gameRestartHuman, gameExitHuman, gameSaveHuman, automateHuman
   ) where
 
+import Control.Applicative
 import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
@@ -33,6 +35,7 @@ import Game.LambdaHack.Client.UI.MonadClientUI
 import Game.LambdaHack.Client.UI.MsgClient
 import Game.LambdaHack.Client.UI.RunClient
 import Game.LambdaHack.Client.UI.WidgetClient
+import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
@@ -57,7 +60,7 @@ import Game.LambdaHack.Content.TileKind
 -- * Move and Run
 
 moveRunHuman :: MonadClientUI m
-             => Bool -> Vector -> m (SlideOrCmd RequestTimed)
+             => Bool -> Vector -> m (SlideOrCmd RequestAnyAbility)
 moveRunHuman run dir = do
   tgtMode <- getsClient stgtMode
   if isJust tgtMode then
@@ -101,7 +104,7 @@ moveRunHuman run dir = do
         -- TODO: stop running at invisible actor
       [((target, _), _)] | run ->
         -- Displacing requires accessibility, but it's checked later on.
-        displaceAid target
+        fmap RequestAnyAbility <$> displaceAid target
       _ : _ : _ | run -> do
         assert (all (bproj . snd . fst) tgts) skip
         failSer DisplaceProjectiles
@@ -120,11 +123,11 @@ moveRunHuman run dir = do
             return $ Left mempty
         else
           -- Attacking does not require full access, adjacency is enough.
-          meleeAid target
+          fmap RequestAnyAbility <$> meleeAid target
 
 -- | Actor atttacks an enemy actor or his own projectile.
 meleeAid :: MonadClientUI m
-         => ActorId -> m (SlideOrCmd RequestTimed)
+         => ActorId -> m (SlideOrCmd (RequestTimed AbMelee))
 meleeAid target = do
   leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
@@ -148,7 +151,7 @@ meleeAid target = do
 
 -- | Actor swaps position with another.
 displaceAid :: MonadClientUI m
-            => ActorId -> m (SlideOrCmd RequestTimed)
+            => ActorId -> m (SlideOrCmd (RequestTimed AbDisplace))
 displaceAid target = do
   cops <- getsState scops
   leader <- getLeaderUI
@@ -180,7 +183,7 @@ displaceAid target = do
 -- * Wait
 
 -- | Leader waits a turn (and blocks, etc.).
-waitHuman :: MonadClientUI m => m RequestTimed
+waitHuman :: MonadClientUI m => m (RequestTimed AbWait)
 waitHuman = do
   modifyClient $ \cli -> cli {swaitTimes = abs (swaitTimes cli) + 1}
   return ReqWait
@@ -189,7 +192,7 @@ waitHuman = do
 
 moveItemHuman :: MonadClientUI m
               => [CStore] -> CStore -> Text -> Bool
-              -> m (SlideOrCmd RequestTimed)
+              -> m (SlideOrCmd (RequestTimed AbMoveItem))
 moveItemHuman cLegalRaw toCStore verbRaw auto = do
   assert (toCStore `notElem` cLegalRaw) skip
   Kind.COps{coactor=Kind.Ops{okind}, coitem} <- getsState scops
@@ -226,7 +229,7 @@ moveItemHuman cLegalRaw toCStore verbRaw auto = do
 -- * Project
 
 projectHuman :: MonadClientUI m
-             => [Trigger] -> m (SlideOrCmd RequestTimed)
+             => [Trigger] -> m (SlideOrCmd (RequestTimed AbProject))
 projectHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
@@ -241,7 +244,7 @@ projectHuman ts = do
         Just cause -> failWith cause
 
 projectPos :: MonadClientUI m
-           => [Trigger] -> Point -> m (SlideOrCmd RequestTimed)
+           => [Trigger] -> Point -> m (SlideOrCmd (RequestTimed AbProject))
 projectPos ts tpos = do
   Kind.COps{coactor=Kind.Ops{okind}, cotile} <- getsState scops
   leader <- getLeaderUI
@@ -273,7 +276,7 @@ projectPos ts tpos = do
 
 projectEps :: MonadClientUI m
            => [Trigger] -> Point -> Int
-           -> m (SlideOrCmd RequestTimed)
+           -> m (SlideOrCmd (RequestTimed AbProject))
 projectEps ts tpos eps = do
   let cLegal = [CEqp, CInv, CGround]  -- calm enough at this stage
       (verb1, object1) = case ts of
@@ -293,7 +296,8 @@ triggerSymbols (_ : ts) = triggerSymbols ts
 
 -- * Apply
 
-applyHuman :: MonadClientUI m => [Trigger] -> m (SlideOrCmd RequestTimed)
+applyHuman :: MonadClientUI m
+           => [Trigger] -> m (SlideOrCmd (RequestTimed AbApply))
 applyHuman ts = do
   let cLegalRaw = [CEqp, CInv, CGround]
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
@@ -316,7 +320,8 @@ applyHuman ts = do
 -- * AlterDir
 
 -- | Ask for a direction and alter a tile, if possible.
-alterDirHuman :: MonadClientUI m => [Trigger] -> m (SlideOrCmd RequestTimed)
+alterDirHuman :: MonadClientUI m
+              => [Trigger] -> m (SlideOrCmd (RequestTimed AbAlter))
 alterDirHuman ts = do
   Config{configVi, configLaptop} <- askConfig
   let verb1 = case ts of
@@ -333,7 +338,7 @@ alterDirHuman ts = do
 
 -- | Player tries to alter a tile using a feature.
 alterTile :: MonadClientUI m
-          => Vector -> [Trigger] -> m (SlideOrCmd RequestTimed)
+          => Vector -> [Trigger] -> m (SlideOrCmd (RequestTimed AbAlter))
 alterTile dir ts = do
   Kind.COps{cotile} <- getsState scops
   leader <- getLeaderUI
@@ -365,7 +370,7 @@ guessAlter _ _ _ = "never mind"
 
 -- | Leader tries to trigger the tile he's standing on.
 triggerTileHuman :: MonadClientUI m
-                 => [Trigger] -> m (SlideOrCmd RequestTimed)
+                 => [Trigger] -> m (SlideOrCmd (RequestTimed AbTrigger))
 triggerTileHuman ts = do
   tgtMode <- getsClient stgtMode
   if isJust tgtMode then do
@@ -380,7 +385,8 @@ triggerTileHuman ts = do
   else triggerTile ts
 
 -- | Player tries to trigger a tile using a feature.
-triggerTile :: MonadClientUI m => [Trigger] -> m (SlideOrCmd RequestTimed)
+triggerTile :: MonadClientUI m
+            => [Trigger] -> m (SlideOrCmd (RequestTimed AbTrigger))
 triggerTile ts = do
   Kind.COps{cotile} <- getsState scops
   leader <- getLeaderUI
@@ -446,7 +452,7 @@ guessTrigger _ _ _ = "never mind"
 
 -- * StepToTarget
 
-stepToTargetHuman :: MonadClientUI m => m (SlideOrCmd RequestTimed)
+stepToTargetHuman :: MonadClientUI m => m (SlideOrCmd RequestAnyAbility)
 stepToTargetHuman = do
   tgtMode <- getsClient stgtMode
   -- Movement is legal only outside targeting mode.

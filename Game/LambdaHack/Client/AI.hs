@@ -3,7 +3,6 @@ module Game.LambdaHack.Client.AI
   ( queryAI, pongAI
   ) where
 
-import Control.Applicative
 import Control.Exception.Assert.Sugar
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Text as T
@@ -22,7 +21,8 @@ import Game.LambdaHack.Common.Request
 queryAI :: MonadClient m => ActorId -> m RequestAI
 queryAI oldAid = do
   (aidToMove, bToMove) <- pickActorToMove refreshTarget oldAid
-  req <- ReqAITimed <$> pickAction (aidToMove, bToMove)
+  RequestAnyAbility reqAny <- pickAction (aidToMove, bToMove)
+  let req = ReqAITimed reqAny
   if aidToMove /= oldAid
     then return $! ReqAILeader aidToMove req
     else return $! req
@@ -61,7 +61,7 @@ refreshTarget oldLeader (aid, body) = do
     Just (tgt, Just pathEtc) -> Just ((aid, body), (tgt, pathEtc))
     _ -> Nothing
 
-pickAction :: MonadClient m => (ActorId, Actor) -> m RequestTimed
+pickAction :: MonadClient m => (ActorId, Actor) -> m RequestAnyAbility
 pickAction (aid, body) = do
   side <- getsClient sside
   assert (bfid body == side `blame` "AI tries to move enemy actor"

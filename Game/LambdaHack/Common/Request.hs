@@ -1,9 +1,10 @@
+{-# LANGUAGE ExistentialQuantification, GADTs, StandaloneDeriving, DataKinds, KindSignatures #-}
 -- | Abstract syntax of server commands.
 -- See
 -- <https://github.com/kosmikus/LambdaHack/wiki/Client-server-architecture>.
 module Game.LambdaHack.Common.Request
-  ( RequestAI(..), RequestUI(..), RequestTimed(..)
-  , ReqFailure(..), showReqFailure
+  ( RequestAI(..), RequestUI(..), RequestTimed(..), RequestAnyAbility(..)
+  , ReqFailure(..), showReqFailure, anyToUI
   ) where
 
 import Data.Text (Text)
@@ -16,40 +17,52 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Common.Ability
 
 -- TODO: make remove second arg from ReqLeader; this requires a separate
 -- channel for Ping, probably, and then client sends as many commands
 -- as it wants at once
 -- | Cclient-server requests sent by AI clients.
 data RequestAI =
-    ReqAITimed !RequestTimed
+    forall a. ReqAITimed !(RequestTimed a)
   | ReqAILeader !ActorId !RequestAI
   | ReqAIPong
-  deriving (Show, Eq)
+
+deriving instance Show RequestAI
 
 -- | Client-server requests sent by UI clients.
 data RequestUI =
-    ReqUITimed !RequestTimed
+    forall a. ReqUITimed !(RequestTimed a)
   | ReqUILeader !ActorId !RequestUI
   | ReqUIGameRestart !ActorId !Text !Int ![(Int, Text)]
   | ReqUIGameExit !ActorId !Int
   | ReqUIGameSave
   | ReqUIAutomate
   | ReqUIPong [CmdAtomic]
-  deriving (Show, Eq)
+
+deriving instance Show RequestUI
+
+data RequestAnyAbility = forall a. RequestAnyAbility !(RequestTimed a)
+
+deriving instance Show RequestAnyAbility
+
+anyToUI :: RequestAnyAbility -> RequestUI
+anyToUI (RequestAnyAbility cmd) = ReqUITimed cmd
 
 -- | Client-server requests that take game time. Sent by both AI and UI clients.
-data RequestTimed =
-    ReqMove !Vector
-  | ReqMelee !ActorId
-  | ReqDisplace !ActorId
-  | ReqAlter !Point !(Maybe F.Feature)
-  | ReqWait
-  | ReqMoveItem !ItemId !Int !CStore !CStore
-  | ReqProject !Point !Int !ItemId !CStore
-  | ReqApply !ItemId !CStore
-  | ReqTrigger !(Maybe F.Feature)
-  deriving (Show, Eq)
+data RequestTimed :: Ability -> * where
+  ReqMove :: !Vector -> RequestTimed AbMove
+  ReqMelee :: !ActorId -> RequestTimed AbMelee
+  ReqDisplace :: !ActorId -> RequestTimed AbDisplace
+  ReqAlter :: !Point -> !(Maybe F.Feature) -> RequestTimed AbAlter
+  ReqWait :: RequestTimed AbWait
+  ReqMoveItem :: !ItemId -> !Int -> !CStore -> !CStore
+              -> RequestTimed AbMoveItem
+  ReqProject :: !Point -> !Int -> !ItemId -> !CStore -> RequestTimed AbProject
+  ReqApply :: !ItemId -> !CStore -> RequestTimed AbApply
+  ReqTrigger :: !(Maybe F.Feature) -> RequestTimed AbTrigger
+
+deriving instance Show (RequestTimed a)
 
 data ReqFailure =
     MoveNothing

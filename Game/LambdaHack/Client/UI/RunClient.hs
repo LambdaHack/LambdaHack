@@ -39,7 +39,7 @@ import Game.LambdaHack.Content.TileKind
 
 -- | Continue running in the given direction.
 continueRun :: MonadClient m
-            => RunParams -> m (Either Msg (RunParams, RequestTimed))
+            => RunParams -> m (Either Msg (RunParams, RequestAnyAbility))
 continueRun paramOld =
   case paramOld of
     RunParams{ runMembers = []
@@ -95,13 +95,13 @@ continueRun paramOld =
         Right dir -> do
           s <- getState
           modifyClient $ updateLeader r s
-          return $ Right (paramNew, ReqMove dir)
+          return $ Right (paramNew, RequestAnyAbility $ ReqMove dir)
       -- The potential invisible actor is hit. War is started without asking.
     _ -> assert `failure` paramOld
 
 -- | Actor moves or searches or alters. No visible actor at the position.
 moveRunAid :: MonadClient m
-           => ActorId -> Vector -> m (Either Msg RequestTimed)
+           => ActorId -> Vector -> m (Either Msg RequestAnyAbility)
 moveRunAid source dir = do
   cops@Kind.COps{cotile} <- getsState scops
   sb <- getsState $ getActorBody source
@@ -114,7 +114,7 @@ moveRunAid source dir = do
         -- Movement requires full access.
         if accessible cops lvl spos tpos then
           -- The potential invisible actor is hit. War started without asking.
-          Right $ ReqMove dir
+          Right $ RequestAnyAbility $ ReqMove dir
         -- No access, so search and/or alter the tile. Non-walkability is
         -- not implied by the lack of access.
         else if not (Tile.isWalkable cotile t)
@@ -127,7 +127,7 @@ moveRunAid source dir = do
           if not $ EM.null $ lvl `atI` tpos then
             Left $ showReqFailure AlterBlockItem
           else
-            Right $ ReqAlter tpos Nothing
+            Right $ RequestAnyAbility $ ReqAlter tpos Nothing
             -- We don't use MoveSer, because we don't hit invisible actors.
             -- The potential invisible actor, e.g., in a wall or in
             -- an inaccessible doorway, is made known, taking a turn.
