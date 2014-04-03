@@ -231,15 +231,14 @@ reqDisplace source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   tfact <- getsState $ (EM.! bfid tb) . sfactionD
-  let friendlyFid fid = fid == bfid tb || isAllied tfact fid
-  sup <- getsState $ actorRegularList friendlyFid (blid tb)
   let spos = bpos sb
       tpos = bpos tb
       adj = checkAdjacent sb tb
       atWar = isAtWar tfact (bfid sb)
       req = ReqDisplace target
+  dEnemy <- getsState $ dispEnemy tb
   if not adj then execFailure source req DisplaceDistant
-  else if atWar && (actorDying tb || any (adjacent tpos . bpos) sup)
+  else if atWar && not dEnemy
   then reqMelee source target  -- DisplaceDying, DisplaceSupported
   else do
     let lid = blid sb

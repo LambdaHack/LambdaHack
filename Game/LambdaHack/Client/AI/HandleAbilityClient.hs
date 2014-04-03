@@ -419,18 +419,11 @@ displaceFoe aid = do
   lvl <- getLevel $ blid b
   fact <- getsState $ \s -> sfactionD s EM.! bfid b
   allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
-  factionD <- getsState sfactionD
-  let foeFactionD = EM.filter (flip isAtWar (bfid b)) factionD
-      doSup (ffid, ffact) = do
-        let friendlyFid fid = fid == ffid || isAllied ffact fid
-        sup <- getsState $ actorRegularList friendlyFid (blid b)
-        return (ffid, sup)
-  sups <- fmap EM.fromAscList $ mapM doSup $ EM.assocs foeFactionD
+  dEnemy <- getsState $ flip dispEnemy
   let accessibleHere = accessible cops lvl $ bpos b  -- DisplaceAccess
       displaceable body =  -- DisplaceAccess, DisplaceDying, DisplaceSupported
         accessibleHere (bpos body)
-        && not (actorDying body)
-        && all (not . adjacent (bpos body) . bpos) (sups EM.! bfid body)
+        && dEnemy body
       posFoes = map bpos $ filter displaceable allFoes
       adjFoes = filter (adjacent (bpos b)) posFoes
       pathFoes = filter (`elem` tgtPath) adjFoes
@@ -469,18 +462,12 @@ displaceTowards aid source target = do
               let newTgt = Just (tgt, Just (q : rest, (goal, len - 1)))
               modifyClient $ \cli ->
                 cli {stargetD = EM.alter (const $ newTgt) aid (stargetD cli)}
-              return $! returN "displace friend"
-                     $ target `vectorToFrom` source
+              return $! returN "displace friend" $ target `vectorToFrom` source
           Just _ -> return reject
           Nothing -> do
             tfact <- getsState $ (EM.! bfid b2) . sfactionD
-            let friendlyFid fid = fid == bfid b2 || isAllied tfact fid
-            sup <- getsState $ actorRegularList friendlyFid (blid b2)
-            let displaceable =  -- DisplaceDying, DisplaceSupported
-                  not (isAtWar tfact (bfid b))
-                  || not (actorDying b2)
-                     && all (not . adjacent (bpos b2) . bpos) sup
-            if displaceable then
+            dEnemy <- getsState $ dispEnemy b2
+            if not (isAtWar tfact (bfid b)) || dEnemy then
               return $! returN "displace other" $ target `vectorToFrom` source
             else return reject  -- DisplaceDying, DisplaceSupported
       _ -> return reject  -- DisplaceProjectiles
@@ -555,14 +542,11 @@ moveOrRunAid run source dir = do
   case tgts of
     [((target, b2), _)] | run ->  do -- can be a foe, as well as a friend
       tfact <- getsState $ (EM.! bfid b2) . sfactionD
-      let friendlyFid fid = fid == bfid b2 || isAllied tfact fid
-      sup <- getsState $ actorRegularList friendlyFid (blid b2)
+      dEnemy <- getsState $ dispEnemy b2
       if boldpos sb /= tpos -- avoid trivial Displace loops
          && accessible cops lvl spos tpos -- DisplaceAccess
          && (not (isAtWar tfact (bfid sb))
-                  || not (actorDying b2)  -- DisplaceDying
-                     && all (not . adjacent (bpos b2) . bpos) sup)
-                          -- DisplaceSupported
+             || dEnemy)  -- DisplaceDying, DisplaceSupported
       then
         return $! RequestAnyAbility $ ReqDisplace target
       else

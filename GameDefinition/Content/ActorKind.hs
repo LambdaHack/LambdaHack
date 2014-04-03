@@ -28,7 +28,7 @@ hero = ActorKind
   , aspeed  = toSpeed 2
   , asight  = True
   , asmell  = False
-  , aiq     = 15  -- higher that that leads to looping movement
+  , aiq     = 15
   , aregen  = maxBound
   , acanDo  = [minBound..maxBound]
   }

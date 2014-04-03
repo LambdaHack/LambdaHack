@@ -153,7 +153,7 @@ meleeAid target = do
 displaceAid :: MonadClientUI m
             => ActorId -> m (SlideOrCmd (RequestTimed AbDisplace))
 displaceAid target = do
-  cops <- getsState scops
+  cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
   tb <- getsState $ getActorBody target
@@ -164,9 +164,15 @@ displaceAid target = do
       tpos = bpos tb
       adj = checkAdjacent sb tb
       atWar = isAtWar tfact (bfid sb)
+      ak = okind $ bkind tb
   if not adj then failSer DisplaceDistant
-  else if atWar && actorDying tb then failSer DisplaceDying
-  else if atWar && any (adjacent tpos . bpos) sup then failSer DisplaceSupported
+  else if not (bproj tb) && atWar
+          && actorDying tb then failSer DisplaceDying
+  else if not (bproj tb) && atWar
+          && braced tb then failSer DisplaceBraced
+  else if not (bproj tb) && atWar
+          && aiq ak > 12
+          && any (adjacent tpos . bpos) sup then failSer DisplaceSupported
   else do
     let lid = blid sb
     lvl <- getLevel lid

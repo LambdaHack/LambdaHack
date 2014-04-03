@@ -9,7 +9,7 @@ module Game.LambdaHack.Common.ActorState
   , posToActors, posToActor, getItemBody, memActor, getActorBody
   , getCarriedAssocs, getEqpAssocs, getEqpKA, getInvAssocs, getFloorAssocs
   , tryFindHeroK, getLocalTime, isSpawnFaction
-  , itemPrice, calmEnough, regenHPPeriod, regenCalmDelta
+  , itemPrice, calmEnough, regenHPPeriod, regenCalmDelta, dispEnemy
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -299,3 +299,18 @@ regenCalmDelta b s =
   in if null closeFoes
      then min calmIncr maxDeltaCalm
      else -1  -- even if all calmness spent, keep informing the client
+
+-- TODO: base on items not/not only on iq.
+-- Check whether an actor can be displaced by an enemy. Generally, heroes can
+-- more easily resist displacement than monsters.
+dispEnemy :: Actor -> State -> Bool
+dispEnemy b s =
+  let Kind.COps{coactor=Kind.Ops{okind}} = scops s
+      ak = okind $ bkind b
+      fact = (EM.! bfid b) . sfactionD $ s
+      friendlyFid fid = fid == bfid b || isAllied fact fid
+      sup = actorRegularList friendlyFid (blid b) s
+  in bproj b
+     || not (actorDying b)
+        && not (braced b)
+        && not (aiq ak > 12 && any (adjacent (bpos b) . bpos) sup)
