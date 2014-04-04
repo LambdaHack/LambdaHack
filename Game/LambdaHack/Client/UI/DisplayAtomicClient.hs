@@ -136,7 +136,11 @@ displayRespUpdAtomicUI verbose _oldState cmd = case cmd of
   UpdLeadFaction fid (Just source) (Just target) -> do
     side <- getsClient sside
     when (fid == side) $ do
-      stopPlayBack
+      fact <- getsState $ (EM.! side) . sfactionD
+      -- Spawners can't run with multiple actors, so the following is not
+      -- a leader change while running, but rather server changing
+      -- spawner's leader, which the player should be alerted to.
+      when (isSpawnFact fact) stopPlayBack
       actorD <- getsState sactorD
       case EM.lookup source actorD of
         Just sb | bhp sb <= 0 -> assert (not $ bproj sb) $ do
