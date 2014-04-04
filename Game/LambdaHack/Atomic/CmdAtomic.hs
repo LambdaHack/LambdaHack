@@ -110,7 +110,7 @@ data SfxAtomic =
   | SfxCheck !ActorId !ItemId
   | SfxTrigger !ActorId !Point !F.Feature
   | SfxShun !ActorId !Point !F.Feature
-  | SfxEffect !ActorId !(Effect.Effect Int)
+  | SfxEffect !ActorId !ActorId !(Effect.Effect Int)
   | SfxMsgFid !FactionId !Msg
   | SfxMsgAll !Msg
   | SfxActorStart !ActorId

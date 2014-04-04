@@ -13,7 +13,6 @@ import qualified Data.EnumSet as ES
 import Data.List
 import Data.Maybe
 import Data.Text (Text)
-import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
@@ -175,9 +174,7 @@ dominateFid :: (MonadAtomic m, MonadServer m)
 dominateFid fid target = do
   Kind.COps{coactor=Kind.Ops{okind}, cotile} <- getsState scops
   tb <- getsState $ getActorBody target
-  -- Announce domination before the actor changes sides.
-  execSfxAtomic $ SfxEffect target Effect.Dominate
-  -- Only record the first domination as a kill.
+  -- Only record the initial domination as a kill.
   when (boldfid tb == bfid tb) $ execUpdAtomic $ UpdRecordKill target 1
   electLeader (bfid tb) (blid tb) target
   deduceKilled tb
@@ -212,11 +209,7 @@ advanceTime aid = do
     execUpdAtomic $ UpdCalmActor aid calmDelta
   bNew <- getsState $ getActorBody aid
   when (bcalm bNew < 5 && bcalm bNew > 0 && boldfid bNew /= bfid bNew) $ do
-    let subject = partActor b
-        verb = "remember past allegiance"
-        dominateMsg = makeSentence [MU.SubjectVerbSg subject verb]
-    execSfxAtomic $ SfxMsgFid (bfid bNew) $ dominateMsg
-    execSfxAtomic $ SfxMsgFid (boldfid bNew) $ dominateMsg
+    execSfxAtomic $ SfxEffect aid aid Effect.Dominate
     dominateFid (boldfid bNew) aid
 
 -- TODO: generalize to any list of items (or effects) applied to all actors

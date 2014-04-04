@@ -460,7 +460,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
     when verbose $ aVerbMU aid "trigger"  -- TODO: opens door, etc.
   SfxShun aid _p _ ->
     when verbose $ aVerbMU aid "shun"  -- TODO: shuns stairs down
-  SfxEffect aid effect -> do
+  SfxEffect source aid effect -> do
     b <- getsState $ getActorBody aid
     side <- getsClient sside
     let fid = bfid b
@@ -516,12 +516,20 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
                 [MU.CardinalWs nEnemy "howl", "of anger", "can be heard"]
           msgAdd msg
         Effect.Dominate -> do
-          if fid == side then do
+          if source == aid then
+            aVerbMU aid $ MU.Text "remember past allegiance"
+          else if fid == side then do
             aVerbMU aid $ MU.Text "black out, dominated by foes"
             void $ displayMore ColorFull ""
           else do
             fidName <- getsState $ gname . (EM.! fid) . sfactionD
             aVerbMU aid $ MU.Text $ "be no longer controlled by" <+> fidName
+          sb <- getsState $ getActorBody source
+          fidSourceName <- getsState $ gname . (EM.! bfid sb) . sfactionD
+          let subject = partActor b
+              verb = "be under"
+          msgAdd $ makeSentence
+            [MU.SubjectVerbSg subject verb, MU.Text fidSourceName, "control"]
         Effect.CallFriend{} -> skip
         Effect.Summon{} -> skip
         Effect.CreateItem{} -> skip
