@@ -70,7 +70,8 @@ effectSem :: (MonadAtomic m, MonadServer m)
 effectSem effect source target = case effect of
   Effect.NoEffect -> effectNoEffect target
   Effect.Heal p -> effectHeal p target
-  Effect.Hurt nDm p -> effectWound nDm p source target
+  Effect.Hurt nDm p -> effectHurt nDm p source target
+  Effect.Haste p -> effectHaste p target
   Effect.Mindprobe _ -> effectMindprobe target
   Effect.Dominate | source /= target -> effectDominate source target
   Effect.Dominate -> effectSem (Effect.Mindprobe undefined) source target
@@ -97,9 +98,9 @@ effectNoEffect target = do
 effectHeal :: MonadAtomic m => Int -> ActorId -> m Bool
 effectHeal power target = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-  tm <- getsState $ getActorBody target
-  let bhpMax = Dice.maxDice (ahp $ okind $ bkind tm)
-      deltaHP = min power (max 0 $ bhpMax - bhp tm)
+  tb <- getsState $ getActorBody target
+  let bhpMax = Dice.maxDice (ahp $ okind $ bkind tb)
+      deltaHP = min power (max 0 $ bhpMax - bhp tb)
   if deltaHP == 0
     then do
       execSfxAtomic $ SfxEffect target Effect.NoEffect
@@ -119,12 +120,12 @@ halveCalm target = do
       deltaCalm = calmMax `div` 2 - calmCur
   when (deltaCalm < 0) $ execUpdAtomic $ UpdCalmActor target deltaCalm
 
--- ** Wound
+-- ** Hurt
 
-effectWound :: (MonadAtomic m, MonadServer m)
+effectHurt :: (MonadAtomic m, MonadServer m)
             => Dice.Dice -> Int -> ActorId -> ActorId
             -> m Bool
-effectWound nDm power source target = do
+effectHurt nDm power source target = do
   n <- rndToAction $ castDice 0 0 nDm
   let deltaHP = - (n + power)
   if deltaHP >= 0
@@ -141,10 +142,30 @@ effectWound nDm power source target = do
         else Effect.Hurt nDm deltaHP{-hack-}
       return True
 
+-- ** Haste
+
+effectHaste :: MonadAtomic m => Int -> ActorId -> m Bool
+effectHaste power target = do
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  tb <- getsState $ getActorBody target
+  let baseSpeed = aspeed $ okind $ bkind tb
+      scaledSpeed = speedScale ((100 + fromIntegral power) % 100) baseSpeed
+      incrSpeed = speedAdd scaledSpeed (speedNegate (bspeed tb))
+      deltaSpeed = if (power > 0) == (incrSpeed > speedZero)
+                   then incrSpeed
+                   else speedZero
+  if deltaSpeed == speedZero
+    then do
+      execSfxAtomic $ SfxEffect target Effect.NoEffect
+      return False
+    else do
+      execUpdAtomic $ UpdHasteActor target deltaSpeed
+      execSfxAtomic $ SfxEffect target $ Effect.Haste power
+      return True
+
 -- ** Mindprobe
 
-effectMindprobe :: MonadAtomic m
-                => ActorId -> m Bool
+effectMindprobe :: MonadAtomic m => ActorId -> m Bool
 effectMindprobe target = do
   tb <- getsState $ getActorBody target
   let lid = blid tb
@@ -174,21 +195,15 @@ effectDominate source target = do
     execSfxAtomic $ SfxEffect target Effect.Dominate
     -- Only record the first domination as a kill.
     when (boldfid tb == bfid tb) $ execUpdAtomic $ UpdRecordKill target 1
-    -- TODO: Perhaps insert a turn of delay here to allow countermeasures.
     electLeader (bfid tb) (blid tb) target
     deduceKilled tb
     ais <- getsState $ getCarriedAssocs tb
     execUpdAtomic $ UpdLoseActor target tb ais
-    let baseSpeed = aspeed $ okind $ bkind tb
-        bNew = tb {bfid = bfid sb, boldfid = bfid tb,
-                   bcalm = 0, bspeed = baseSpeed}
+    let calmMax = Dice.maxDice $ acalm $ okind $ bkind tb
+        bNew = tb { bfid = bfid sb
+                  , boldfid = bfid tb
+                  , bcalm = calmMax `div` 2 }
     execUpdAtomic $ UpdCreateActor target bNew ais
-    -- Halve the speed as a side-effect of first domination, or keep it reset
-    -- if dominating again. TODO: teach AI to prefer dominating again.
-    let halfSpeed = speedScale (1%2) baseSpeed
-        delta | boldfid tb == bfid tb = speedNegate halfSpeed  -- slow down
-              | otherwise = speedZero
-    when (delta /= speedZero) $ execUpdAtomic $ UpdHasteActor target delta
     mleaderOld <- getsState $ gleader . (EM.! bfid sb) . sfactionD
     -- Keep the leader if he is on stairs. We don't want to clog stairs.
     keepLeader <- case mleaderOld of
@@ -209,10 +224,10 @@ effectCallFriend :: (MonadAtomic m, MonadServer m)
                    -> m Bool
 effectCallFriend power source target = assert (power > 0) $ do
   -- Obvious effect, nothing announced.
-  sm <- getsState (getActorBody source)
-  tm <- getsState (getActorBody target)
-  ps <- getsState $ nearbyFreePoints (const True) (bpos tm) (blid tm)
-  summonFriends (bfid sm) (take power ps) (blid tm)
+  sb <- getsState (getActorBody source)
+  tb <- getsState (getActorBody target)
+  ps <- getsState $ nearbyFreePoints (const True) (bpos tb) (blid tb)
+  summonFriends (bfid sb) (take power ps) (blid tb)
   return True
 
 summonFriends :: (MonadAtomic m, MonadServer m)
@@ -240,14 +255,14 @@ effectSummon :: (MonadAtomic m, MonadServer m)
              => Int -> ActorId -> m Bool
 effectSummon power target = assert (power > 0) $ do
   -- Obvious effect, nothing announced.
-  tm <- getsState (getActorBody target)
-  ps <- getsState $ nearbyFreePoints (const True) (bpos tm) (blid tm)
-  time <- getsState $ getLocalTime (blid tm)
+  tb <- getsState (getActorBody target)
+  ps <- getsState $ nearbyFreePoints (const True) (bpos tb) (blid tb)
+  time <- getsState $ getLocalTime (blid tb)
   mfid <- pickFaction "summon" (const True)
   case mfid of
     Nothing -> return False  -- no faction summons
     Just fid -> do
-      spawnMonsters (take power ps) (blid tm) time fid
+      spawnMonsters (take power ps) (blid tb) time fid
       return True
 
 -- | Roll a faction based on faction kind frequency key.
@@ -272,8 +287,8 @@ effectCreateItem :: (MonadAtomic m, MonadServer m)
                  => Int -> ActorId -> m Bool
 effectCreateItem power target = assert (power > 0) $ do
   -- Obvious effect, nothing announced.
-  tm <- getsState $ getActorBody target
-  void $ createItems power (bpos tm) (blid tm)
+  tb <- getsState $ getActorBody target
+  void $ createItems power (bpos tb) (blid tb)
   return True
 
 -- ** ApplyPerfume
@@ -286,10 +301,10 @@ effectApplyPerfume source target =
     execSfxAtomic $ SfxEffect target Effect.NoEffect
     return False
   else do
-    tm <- getsState $ getActorBody target
-    Level{lsmell} <- getLevel $ blid tm
+    tb <- getsState $ getActorBody target
+    Level{lsmell} <- getLevel $ blid tb
     let f p fromSm =
-          execUpdAtomic $ UpdAlterSmell (blid tm) p (Just fromSm) Nothing
+          execUpdAtomic $ UpdAlterSmell (blid tb) p (Just fromSm) Nothing
     mapWithKeyM_ f lsmell
     execSfxAtomic $ SfxEffect target Effect.ApplyPerfume
     return True
@@ -301,9 +316,9 @@ effectApplyPerfume source target =
 effectSteadfastness :: MonadAtomic m => Int -> ActorId -> m Bool
 effectSteadfastness power target = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-  tm <- getsState $ getActorBody target
-  let bcalmMax = Dice.maxDice (acalm $ okind $ bkind tm)
-      deltaCalm = min power (max 0 $ bcalmMax - bcalm tm)
+  tb <- getsState $ getActorBody target
+  let bcalmMax = Dice.maxDice (acalm $ okind $ bkind tb)
+      deltaCalm = min power (max 0 $ bcalmMax - bcalm tb)
   if deltaCalm == 0
     then do
       execSfxAtomic $ SfxEffect target Effect.NoEffect

@@ -22,7 +22,8 @@ data Effect a =
     NoEffect
   | Heal !Int
   | Hurt !Dice.Dice !a
-  | Mindprobe Int    -- the @Int@ is a lazy hack to send the result to clients
+  | Haste !Int  -- ^ positive or negative percent change
+  | Mindprobe Int  -- ^ the @Int@ is a lazy hack to send the result to clients
   | Dominate
   | CallFriend !Int
   | Summon !Int
@@ -46,6 +47,7 @@ effectTrav (Heal p) _ = return $! Heal p
 effectTrav (Hurt dice a) f = do
   b <- f a
   return $! Hurt dice b
+effectTrav (Haste p) _ = return $! Haste p
 effectTrav (Mindprobe x) _ = return $! Mindprobe x
 effectTrav Dominate _ = return Dominate
 effectTrav (CallFriend p) _ = return $! CallFriend p
@@ -67,9 +69,12 @@ effectToSuff effect f =
   case St.evalState (effectTrav effect $ return . f) () of
     NoEffect -> ""
     Heal p | p > 0 -> "of healing" <> affixBonus p
-    Heal 0 -> "of bloodletting"
+    Heal 0 -> assert `failure` effect
     Heal p -> "of wounding" <> affixBonus p
     Hurt dice t -> "(" <> tshow dice <> ")" <> t
+    Haste p | p > 0 -> "of speed" <> affixBonus p
+    Haste 0 -> assert `failure` effect
+    Haste p -> "of slowness" <> affixBonus (- p)
     Mindprobe{} -> "of soul searching"
     Dominate -> "of domination"
     CallFriend p -> "of aid calling" <> affixPower p
@@ -79,8 +84,8 @@ effectToSuff effect f =
     Regeneration t -> "of regeneration" <> t
     Steadfastness t -> "of steadfastness" <> t
     Ascend p | p > 0 -> "of ascending" <> affixPower p
-    Ascend p | p < 0 -> "of descending" <> affixPower (- p)
-    Ascend{} -> assert `failure` effect
+    Ascend 0 -> assert `failure` effect
+    Ascend p -> "of descending" <> affixPower (- p)
     Escape{} -> "of escaping"
 
 effectToSuffix :: Effect Int -> Text
