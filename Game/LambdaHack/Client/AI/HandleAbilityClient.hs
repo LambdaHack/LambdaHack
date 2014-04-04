@@ -411,25 +411,26 @@ flee aid fleeL = do
 displaceFoe :: MonadClient m => ActorId -> m (Strategy RequestAnyAbility)
 displaceFoe aid = do
   cops <- getsState scops
-  mtgtMPath <- getsClient $ EM.lookup aid . stargetD
-  let tgtPath = case mtgtMPath of  -- prefer displacing along the path to target
-        Just (_, Just (_ : path, _)) -> path
-        _ -> []
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
-  fact <- getsState $ \s -> sfactionD s EM.! bfid b
+  fact <- getsState $ (EM.! bfid b) . sfactionD
+  let friendlyFid fid = fid == bfid b || isAllied fact fid
+  friends <- getsState $ actorRegularList friendlyFid (blid b)
   allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
   dEnemy <- getsState $ flip dispEnemy
   let accessibleHere = accessible cops lvl $ bpos b  -- DisplaceAccess
       displaceable body =  -- DisplaceAccess, DisplaceDying, DisplaceSupported
         accessibleHere (bpos body)
+        && adjacent (bpos body) (bpos b)
         && dEnemy body
-      posFoes = map bpos $ filter displaceable allFoes
-      adjFoes = filter (adjacent (bpos b)) posFoes
-      pathFoes = filter (`elem` tgtPath) adjFoes
-      dispFoes = if null pathFoes then adjFoes else pathFoes
-      vFoes = map (`vectorToFrom` bpos b) dispFoes
-      str = liftFrequency $ uniformFreq "displaceFoe" vFoes
+      nFriends body = length $ filter (adjacent (bpos body) . bpos) friends
+      nFrHere = nFriends b + 1
+      vFoes = [ (nFr * nFr, bpos body `vectorToFrom` bpos b)
+              | body <- allFoes
+              , displaceable body
+              , let nFr = nFriends body
+              , nFr < nFrHere ]
+      str = liftFrequency $ toFreq "displaceFoe" vFoes
   Traversable.mapM (moveOrRunAid True aid) str
 
 displaceBlocker :: MonadClient m => ActorId -> m (Strategy RequestAnyAbility)
