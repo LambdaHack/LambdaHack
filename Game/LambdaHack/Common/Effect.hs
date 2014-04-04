@@ -25,6 +25,7 @@ data Effect a =
   | Haste !Int  -- ^ positive or negative percent change
   | Mindprobe Int  -- ^ the @Int@ is a lazy hack to send the result to clients
   | Dominate
+  | Impress
   | CallFriend !Int
   | Summon !Int
   | CreateItem !Int
@@ -50,6 +51,7 @@ effectTrav (Hurt dice a) f = do
 effectTrav (Haste p) _ = return $! Haste p
 effectTrav (Mindprobe x) _ = return $! Mindprobe x
 effectTrav Dominate _ = return Dominate
+effectTrav Impress _ = return Impress
 effectTrav (CallFriend p) _ = return $! CallFriend p
 effectTrav (Summon p) _ = return $! Summon p
 effectTrav (CreateItem p) _ = return $! CreateItem p
@@ -77,6 +79,7 @@ effectToSuff effect f =
     Haste p -> "of slowness" <> affixBonus (- p)
     Mindprobe{} -> "of soul searching"
     Dominate -> "of domination"
+    Impress -> "of impression"
     CallFriend p -> "of aid calling" <> affixPower p
     Summon p -> "of summoning" <> affixPower p
     CreateItem p -> "of item creation" <> affixPower p

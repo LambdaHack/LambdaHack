@@ -74,6 +74,7 @@ effectSem effect source target = case effect of
   Effect.Mindprobe _ -> effectMindprobe target
   Effect.Dominate | source /= target -> effectDominate source target
   Effect.Dominate -> effectSem (Effect.Mindprobe undefined) source target
+  Effect.Impress -> effectImpress source target
   Effect.CallFriend p -> effectCallFriend p source target
   Effect.Summon p -> effectSummon p target
   Effect.CreateItem p -> effectCreateItem p target
@@ -197,6 +198,21 @@ effectDominate source target = do
     dominateFid (bfid sb) target
     return True
 
+-- ** Impress
+
+effectImpress :: (MonadAtomic m, MonadServer m)
+              => ActorId -> ActorId -> m Bool
+effectImpress source target = do
+  sb <- getsState $ getActorBody source
+  tb <- getsState $ getActorBody target
+  if boldfid tb == bfid sb || bproj tb then do
+    execSfxAtomic $ SfxEffect source target Effect.NoEffect
+    return False
+  else do
+    execSfxAtomic $ SfxEffect source target Effect.Impress
+    execUpdAtomic $ UpdOldFidActor target (boldfid tb) (bfid sb)
+    return True
+
 -- ** SummonFriend
 
 effectCallFriend :: (MonadAtomic m, MonadServer m)
@@ -273,13 +289,11 @@ effectCreateItem power target = assert (power > 0) $ do
 
 -- ** ApplyPerfume
 
-effectApplyPerfume :: MonadAtomic m
+effectApplyPerfume :: (MonadAtomic m, MonadServer m)
                    => ActorId -> ActorId -> m Bool
 effectApplyPerfume source target =
   if source == target
-  then do
-    execSfxAtomic $ SfxEffect source target Effect.NoEffect
-    return False
+  then effectImpress source target
   else do
     tb <- getsState $ getActorBody target
     Level{lsmell} <- getLevel $ blid tb
@@ -287,6 +301,7 @@ effectApplyPerfume source target =
           execUpdAtomic $ UpdAlterSmell (blid tb) p (Just fromSm) Nothing
     mapWithKeyM_ f lsmell
     execSfxAtomic $ SfxEffect source target Effect.ApplyPerfume
+    void $ effectImpress source target
     return True
 
 -- ** Regeneration

@@ -60,6 +60,7 @@ handleUpdAtomic cmd = case cmd of
   UpdHealActor aid n -> updHealActor aid n
   UpdCalmActor aid n -> updCalmActor aid n
   UpdHasteActor aid delta -> updHasteActor aid delta
+  UpdOldFidActor aid fromFid toFid -> updOldFidActor aid fromFid toFid
   UpdTrajectoryActor aid fromT toT -> updTrajectoryActor aid fromT toT
   UpdColorActor aid fromCol toCol -> updColorActor aid fromCol toCol
   UpdQuitFaction fid mbody fromSt toSt -> updQuitFaction fid mbody fromSt toSt
@@ -228,15 +229,21 @@ updCalmActor aid n = do
 
 updHasteActor :: MonadStateWrite m => ActorId -> Speed -> m ()
 updHasteActor aid delta = assert (delta /= speedZero) $ do
-  updateActor aid $ \ b ->
+  updateActor aid $ \b ->
     let newSpeed = speedAdd (bspeed b) delta
     in assert (newSpeed >= speedZero
                `blame` "actor slowed below zero"
                `twith` (aid, delta, b, newSpeed))
        $ b {bspeed = newSpeed}
 
+updOldFidActor :: MonadStateWrite m => ActorId -> FactionId -> FactionId -> m ()
+updOldFidActor aid fromFid toFid = assert (fromFid /= toFid) $ do
+  updateActor aid $ \b ->
+    assert (boldfid b == fromFid `blame` (aid, fromFid, toFid, b))
+    $ b {boldfid = toFid}
+
 updTrajectoryActor :: MonadStateWrite m
-           => ActorId -> Maybe [Vector] -> Maybe [Vector] -> m ()
+                   => ActorId -> Maybe [Vector] -> Maybe [Vector] -> m ()
 updTrajectoryActor aid fromT toT = assert (fromT /= toT) $ do
   body <- getsState $ getActorBody aid
   assert (fromT == btrajectory body `blame` "unexpected actor trajectory"
@@ -244,7 +251,7 @@ updTrajectoryActor aid fromT toT = assert (fromT /= toT) $ do
   updateActor aid $ \b -> b {btrajectory = toT}
 
 updColorActor :: MonadStateWrite m
-            => ActorId -> Color.Color -> Color.Color -> m ()
+              => ActorId -> Color.Color -> Color.Color -> m ()
 updColorActor aid fromCol toCol = assert (fromCol /= toCol) $ do
   body <- getsState $ getActorBody aid
   assert (fromCol == bcolor body `blame` "unexpected actor color"
@@ -252,8 +259,8 @@ updColorActor aid fromCol toCol = assert (fromCol /= toCol) $ do
   updateActor aid $ \b -> b {bcolor = toCol}
 
 updQuitFaction :: MonadStateWrite m
-             => FactionId -> Maybe Actor -> Maybe Status -> Maybe Status
-             -> m ()
+               => FactionId -> Maybe Actor -> Maybe Status -> Maybe Status
+               -> m ()
 updQuitFaction fid mbody fromSt toSt = do
   assert (fromSt /= toSt `blame` (fid, mbody, fromSt, toSt)) skip
   assert (maybe True ((fid ==) . bfid) mbody) skip

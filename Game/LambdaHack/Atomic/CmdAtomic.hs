@@ -68,6 +68,7 @@ data UpdAtomic =
   | UpdHealActor !ActorId !Int
   | UpdCalmActor !ActorId !Int
   | UpdHasteActor !ActorId !Speed
+  | UpdOldFidActor !ActorId !FactionId !FactionId
   | UpdTrajectoryActor !ActorId !(Maybe [Vector]) !(Maybe [Vector])
   | UpdColorActor !ActorId !Color.Color !Color.Color
   -- Change faction attributes.
@@ -141,6 +142,7 @@ undoUpdAtomic cmd = case cmd of
   UpdHealActor aid n -> Just $ UpdHealActor aid (-n)
   UpdCalmActor aid n -> Just $ UpdCalmActor aid (-n)
   UpdHasteActor aid delta -> Just $ UpdHasteActor aid (speedNegate delta)
+  UpdOldFidActor aid fromFid toFid -> Just $ UpdOldFidActor aid toFid fromFid
   UpdTrajectoryActor aid fromT toT -> Just $ UpdTrajectoryActor aid toT fromT
   UpdColorActor aid fromCol toCol -> Just $ UpdColorActor aid toCol fromCol
   UpdQuitFaction fid mb fromSt toSt -> Just $ UpdQuitFaction fid mb toSt fromSt

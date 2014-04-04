@@ -128,6 +128,7 @@ displayRespUpdAtomicUI verbose _oldState cmd = case cmd of
     aVerbMU aid $ if delta > speedZero
                   then "speed up"
                   else "slow down"
+  UpdOldFidActor{} -> skip
   UpdTrajectoryActor{} -> skip
   UpdColorActor{} -> skip
   -- Change faction attributes.
@@ -461,6 +462,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
   SfxShun aid _p _ ->
     when verbose $ aVerbMU aid "shun"  -- TODO: shuns stairs down
   SfxEffect source aid effect -> do
+    sb <- getsState $ getActorBody source
     b <- getsState $ getActorBody aid
     side <- getsClient sside
     let fid = bfid b
@@ -517,19 +519,23 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           msgAdd msg
         Effect.Dominate -> do
           if source == aid then
-            aVerbMU aid $ MU.Text "remember past allegiance"
+            aVerbMU aid $ MU.Text "yield, under extreme pressure"
           else if fid == side then do
             aVerbMU aid $ MU.Text "black out, dominated by foes"
             void $ displayMore ColorFull ""
           else do
             fidName <- getsState $ gname . (EM.! fid) . sfactionD
             aVerbMU aid $ MU.Text $ "be no longer controlled by" <+> fidName
-          sb <- getsState $ getActorBody source
           fidSourceName <- getsState $ gname . (EM.! bfid sb) . sfactionD
           let subject = partActor b
               verb = "be under"
           msgAdd $ makeSentence
             [MU.SubjectVerbSg subject verb, MU.Text fidSourceName, "control"]
+        Effect.Impress{} ->
+          actorVerbMU aid b
+          $ if bfid sb == bfid b
+            then "get sobered and reinvigorated by the fragrant moisture"
+            else "be attracted and swayed by the sweet smell"
         Effect.CallFriend{} -> skip
         Effect.Summon{} -> skip
         Effect.CreateItem{} -> skip

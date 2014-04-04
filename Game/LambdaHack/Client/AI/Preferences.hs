@@ -24,10 +24,11 @@ effectToBenefit Kind.COps{coactor=Kind.Ops{okind}} b eff =
     Effect.Haste p -> p * 5
     Effect.Mindprobe{} -> 0            -- AI can't benefit yet
     Effect.Dominate -> -100
+    Effect.Impress -> -10
     (Effect.CallFriend p) -> p * 100
     Effect.Summon{} -> 1               -- may or may not spawn a friendly
     (Effect.CreateItem p) -> p * 20
-    Effect.ApplyPerfume -> 1           -- TODO: tweak vs smell mechanics
+    Effect.ApplyPerfume -> -10
     Effect.Regeneration p -> p
     Effect.Steadfastness p -> p
     Effect.Ascend{} -> 1               -- change levels sensibly, in teams

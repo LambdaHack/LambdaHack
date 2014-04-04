@@ -99,7 +99,7 @@ harpoon = ItemKind
 potion = ItemKind
   { isymbol  = '!'
   , iname    = "potion"
-  , ifreq    = [("useful", 15)]
+  , ifreq    = [("useful", 10)]
   , iflavour = zipFancy stdCol
   , icount   = 1
   , iverbApply   = "gulp down"
@@ -107,18 +107,16 @@ potion = ItemKind
   , iweight  = 200
   , itoThrow = -50  -- oily, bad grip
   , ifeature = []
-  , idesc    = "A flask of bubbly, and a little oily liquid of a suspect color."
+  , idesc    = "A flask of bubbly, slightly oily liquid of a suspect color."
   }
 potion1 = potion
-  { ifreq    = [("useful", 5)]
-  , ifeature = [Cause ApplyPerfume, Explode "fragrance"]
+  { ifeature = [Cause ApplyPerfume, Explode "fragrance"]
   }
 potion2 = potion
   { ifeature = [Cause $ Heal 5, Explode "mist healing"]
   }
 potion3 = potion
-  { ifreq    = [("useful", 5)]
-  , ifeature = [Cause $ Heal (-5), Explode "mist wounding"]
+  { ifeature = [Cause $ Heal (-5), Explode "mist wounding"]
   }
 ring = ItemKind
   { isymbol  = '='
@@ -172,7 +170,7 @@ sword = ItemKind
 wand = ItemKind
   { isymbol  = '/'
   , iname    = "wand"
-  , ifreq    = [("useful", 5)]
+  , ifreq    = [("useful", 2)]
   , iflavour = zipFancy brightCol
   , icount   = 1
   , iverbApply   = "snap"
@@ -180,14 +178,13 @@ wand = ItemKind
   , iweight  = 300
   , itoThrow = 25  -- magic
   , ifeature = [Fragile]
-  , idesc    = "Buzzing with dazzling light that shines even through hands that handle it."
+  , idesc    = "Buzzing with dazzling light that shines even through appendages that handle it."
   }
 wand1 = wand
   { ifeature = ifeature wand ++ [Cause Dominate]
   }
 wand2 = wand
-  { ifreq    = [("useful", 2)]
-  , ifeature = ifeature wand ++ [Cause $ Heal (-25)]
+  { ifeature = ifeature wand ++ [Cause $ Heal (-25)]
   }
 fist = sword
   { isymbol  = '@'
@@ -226,7 +223,7 @@ fragrance = ItemKind
   , iverbProject = "exude"
   , iweight  = 1
   , itoThrow = -93  -- the slowest that gets anywhere (1 step only)
-  , ifeature = [Fragile]
+  , ifeature = [Cause Impress, Fragile]
   , idesc    = ""
   }
 mist_healing = ItemKind
