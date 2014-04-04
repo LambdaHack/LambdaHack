@@ -208,7 +208,9 @@ advanceTime aid = do
   unless (calmDelta == 0 && bcalmDelta b == 0) $
     execUpdAtomic $ UpdCalmActor aid calmDelta
   bNew <- getsState $ getActorBody aid
-  when (bcalm bNew < 5 && bcalm bNew > 0 && boldfid bNew /= bfid bNew) $ do
+  -- We assume that within a turn, Calm never decreased to 0
+  -- without stopping at 1.
+  when (bcalm bNew == 1 && boldfid bNew /= bfid bNew) $ do
     execSfxAtomic $ SfxEffect aid aid Effect.Dominate
     dominateFid (boldfid bNew) aid
 

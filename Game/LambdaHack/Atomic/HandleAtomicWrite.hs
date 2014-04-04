@@ -17,6 +17,7 @@ import Game.LambdaHack.Atomic.MonadStateWrite
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
+import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -30,6 +31,7 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
+import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ModeKind as ModeKind
 import Game.LambdaHack.Content.TileKind as TileKind
 
@@ -207,9 +209,22 @@ updHealActor aid n = assert (n /= 0) $
   updateActor aid $ \b -> b {bhp = bhp b + n}
 
 updCalmActor :: MonadStateWrite m => ActorId -> Int -> m ()
-updCalmActor aid n =
-  updateActor aid $ \b -> b { bcalm = max 0 $ bcalm b + n
-                            , bcalmDelta = n }
+updCalmActor aid n = do
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  updateActor aid $ \b ->
+    let ak = okind $ bkind b
+        maxCalm = Dice.maxDice (acalm ak)
+        -- Going down, always stop once at @1@, going up, stop at @max - 1@.
+        newCalm = case compare n 0 of
+          EQ -> bcalm b
+          GT -> if bcalm b >= maxCalm - 1
+                then maxCalm
+                else min (maxCalm - 1) (bcalm b + n)
+          LT -> if bcalm b <= 1
+                then 0
+                else max 1 (bcalm b + n)
+    in b { bcalm = newCalm
+         , bcalmDelta = n }
 
 updHasteActor :: MonadStateWrite m => ActorId -> Speed -> m ()
 updHasteActor aid delta = assert (delta /= speedZero) $ do
