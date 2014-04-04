@@ -27,7 +27,6 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
-import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
@@ -184,37 +183,13 @@ effectMindprobe target = do
 effectDominate :: (MonadAtomic m, MonadServer m)
                => ActorId -> ActorId -> m Bool
 effectDominate source target = do
-  Kind.COps{coactor=Kind.Ops{okind}, cotile} <- getsState scops
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   if bfid tb == bfid sb || bproj tb then do
     execSfxAtomic $ SfxEffect target Effect.NoEffect
     return False
   else do
-    -- Announce domination before the actor changes sides.
-    execSfxAtomic $ SfxEffect target Effect.Dominate
-    -- Only record the first domination as a kill.
-    when (boldfid tb == bfid tb) $ execUpdAtomic $ UpdRecordKill target 1
-    electLeader (bfid tb) (blid tb) target
-    deduceKilled tb
-    ais <- getsState $ getCarriedAssocs tb
-    execUpdAtomic $ UpdLoseActor target tb ais
-    let calmMax = Dice.maxDice $ acalm $ okind $ bkind tb
-        bNew = tb { bfid = bfid sb
-                  , boldfid = bfid tb
-                  , bcalm = calmMax `div` 2 }
-    execUpdAtomic $ UpdCreateActor target bNew ais
-    mleaderOld <- getsState $ gleader . (EM.! bfid sb) . sfactionD
-    -- Keep the leader if he is on stairs. We don't want to clog stairs.
-    keepLeader <- case mleaderOld of
-      Nothing -> return False
-      Just leaderOld -> do
-        body <- getsState $ getActorBody leaderOld
-        lvl <- getLevel $ blid body
-        return $! Tile.isStair cotile $ lvl `at` bpos body
-    unless keepLeader $
-      -- Focus on the dominated actor, by making him a leader.
-      execUpdAtomic $ UpdLeadFaction (bfid sb) mleaderOld (Just target)
+    dominateFid (bfid sb) target
     return True
 
 -- ** SummonFriend

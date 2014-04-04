@@ -1,7 +1,7 @@
 -- | Server operations performed periodically in the game loop
 -- and related operations.
 module Game.LambdaHack.Server.PeriodicServer
-  ( spawnMonsters, generateMonster, addMonster, addHero
+  ( spawnMonsters, generateMonster, addMonster, addHero, dominateFid
   , advanceTime, regenerateLevelHP, leadLevelFlip
   ) where
 
@@ -13,11 +13,14 @@ import qualified Data.EnumSet as ES
 import Data.List
 import Data.Maybe
 import Data.Text (Text)
+import qualified NLP.Miniutter.English as MU
 
 import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
+import qualified Game.LambdaHack.Common.Dice as Dice
+import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Frequency
@@ -34,6 +37,7 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ModeKind
+import Game.LambdaHack.Server.CommonServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
 
@@ -166,9 +170,39 @@ rollSpawnPos Kind.COps{cotile} visible
     , distantAtLeast 3  -- otherwise a fast actor can walk and hit in one turn
     ]
 
+dominateFid :: (MonadAtomic m, MonadServer m)
+            => FactionId -> ActorId -> m ()
+dominateFid fid target = do
+  Kind.COps{coactor=Kind.Ops{okind}, cotile} <- getsState scops
+  tb <- getsState $ getActorBody target
+  -- Announce domination before the actor changes sides.
+  execSfxAtomic $ SfxEffect target Effect.Dominate
+  -- Only record the first domination as a kill.
+  when (boldfid tb == bfid tb) $ execUpdAtomic $ UpdRecordKill target 1
+  electLeader (bfid tb) (blid tb) target
+  deduceKilled tb
+  ais <- getsState $ getCarriedAssocs tb
+  execUpdAtomic $ UpdLoseActor target tb ais
+  let calmMax = Dice.maxDice $ acalm $ okind $ bkind tb
+      bNew = tb { bfid = fid
+                , boldfid = bfid tb
+                , bcalm = calmMax `div` 2 }
+  execUpdAtomic $ UpdSpotActor target bNew ais
+  mleaderOld <- getsState $ gleader . (EM.! fid) . sfactionD
+  -- Keep the leader if he is on stairs. We don't want to clog stairs.
+  keepLeader <- case mleaderOld of
+    Nothing -> return False
+    Just leaderOld -> do
+      body <- getsState $ getActorBody leaderOld
+      lvl <- getLevel $ blid body
+      return $! Tile.isStair cotile $ lvl `at` bpos body
+  unless keepLeader $
+    -- Focus on the dominated actor, by making him a leader.
+    execUpdAtomic $ UpdLeadFaction fid mleaderOld (Just target)
+
 -- | Advance the move time for the given actor and his status effects
 -- that are updated once per his move (as opposed to once per a time unit).
-advanceTime :: MonadAtomic m => ActorId -> m ()
+advanceTime :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 advanceTime aid = do
   b <- getsState $ getActorBody aid
   let t = ticksPerMeter $ bspeed b
@@ -176,6 +210,14 @@ advanceTime aid = do
   calmDelta <- getsState $ regenCalmDelta b
   unless (calmDelta == 0 && bcalmDelta b == 0) $
     execUpdAtomic $ UpdCalmActor aid calmDelta
+  bNew <- getsState $ getActorBody aid
+  when (bcalm bNew < 5 && bcalm bNew > 0 && boldfid bNew /= bfid bNew) $ do
+    let subject = partActor b
+        verb = "remember past allegiance"
+        dominateMsg = makeSentence [MU.SubjectVerbSg subject verb]
+    execSfxAtomic $ SfxMsgFid (bfid bNew) $ dominateMsg
+    execSfxAtomic $ SfxMsgFid (boldfid bNew) $ dominateMsg
+    dominateFid (boldfid bNew) aid
 
 -- TODO: generalize to any list of items (or effects) applied to all actors
 -- every turn. Specify the list per level in config.
