@@ -112,11 +112,14 @@ effectHeal power target = do
 
 halveCalm :: MonadAtomic m => ActorId -> m ()
 halveCalm target = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
   tb <- getsState $ getActorBody target
   let calmMax = Dice.maxDice $ acalm $ okind $ bkind tb
       calmCur = bcalm tb
-      deltaCalm = calmMax `div` 2 - calmCur
+      calmNew = if hpTooLow coactor tb
+                then 1  -- to trigger domination, etc.
+                else calmMax `div` 2
+      deltaCalm = calmCur - calmNew
   when (deltaCalm < 0) $ execUpdAtomic $ UpdCalmActor target deltaCalm
 
 -- ** Hurt
