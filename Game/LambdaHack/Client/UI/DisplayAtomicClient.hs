@@ -56,8 +56,8 @@ import Game.LambdaHack.Content.TileKind
 -- | Visualization of atomic actions for the client is perfomed
 -- in the global state after the command is executed and after
 -- the client state is modified by the command.
-displayRespUpdAtomicUI :: MonadClientUI m => Bool -> UpdAtomic -> m ()
-displayRespUpdAtomicUI verbose cmd = case cmd of
+displayRespUpdAtomicUI :: MonadClientUI m => Bool -> State -> UpdAtomic -> m ()
+displayRespUpdAtomicUI verbose _oldState cmd = case cmd of
   -- Create/destroy actors and items.
   UpdCreateActor aid body _ -> createActorUI aid body verbose "appear"
   UpdDestroyActor aid body _ -> do

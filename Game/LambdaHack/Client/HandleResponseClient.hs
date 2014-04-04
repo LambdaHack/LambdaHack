@@ -13,6 +13,7 @@ import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.ProtocolClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.Response
 
@@ -43,9 +44,12 @@ handleResponseUI :: ( MonadClientUI m
 handleResponseUI cmd = case cmd of
   RespUpdAtomicUI cmdA -> do
     cmds <- cmdAtomicFilterCli cmdA
-    mapM_ (\c -> cmdAtomicSemCli c
-                 >> execUpdAtomic c
-                 >> displayRespUpdAtomicUI False c) cmds
+    let handle c = do
+          oldState <- getState
+          cmdAtomicSemCli c
+          execUpdAtomic c
+          displayRespUpdAtomicUI False oldState c
+    mapM_ handle cmds
     mapM_ (storeUndo . UpdAtomic) cmds  -- TODO: only store cmdA?
   RespSfxAtomicUI sfx -> do
     displayRespSfxAtomicUI False sfx

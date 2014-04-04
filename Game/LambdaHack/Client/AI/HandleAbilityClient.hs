@@ -343,12 +343,12 @@ ranged aid = do
       benList <- benAvailableItems aid permitted
       let itemReaches item =
             let lingerPercent = isLingering coitem disco item
+                -- TODO: make itoThrow not secret
                 toThrow = maybe 0 (itoThrow . iokind) $ jkind disco item
                 speed = speedFromWeight (jweight item) toThrow
                 range = rangeFromSpeed speed
                 totalRange = lingerPercent * range `div` 100
             in steps <= totalRange  -- probably enough range
-                 -- TODO: make sure itoThrow identified after a single throw
           fRanged ((mben, cstore), (iid, item)) =
             let benR = (if cstore == CGround then 2 else 1)
                        * case mben of
