@@ -31,7 +31,6 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.Fov
@@ -272,13 +271,11 @@ addProjectile :: (MonadAtomic m, MonadServer m)
               => Point -> [Point] -> ItemId -> LevelId -> FactionId -> Time
               -> m ()
 addProjectile bpos rest iid blid bfid btime = do
-  Kind.COps{ coactor=coactor@Kind.Ops{okind}
-           , coitem=coitem@Kind.Ops{okind=iokind} } <- getsState scops
+  Kind.COps{coactor=coactor@Kind.Ops{okind}, coitem} <- getsState scops
   disco <- getsServer sdisco
   item <- getsState $ getItemBody iid
   let lingerPercent = isLingering coitem disco item
-      ik = iokind (fromJust $ jkind disco item)
-      speed = speedFromWeight (jweight item) (itoThrow ik)
+      speed = speedFromWeight (jweight item) (jtoThrow item)
       range = rangeFromSpeed speed
       adj | range < 5 = "falling"
           | otherwise = "flying"

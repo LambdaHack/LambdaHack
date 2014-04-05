@@ -44,7 +44,6 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind as TileKind
 
@@ -323,10 +322,7 @@ trigger aid fleeViaStairs = do
 -- or zap anything else than obvious physical missiles.
 ranged :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbProject))
 ranged aid = do
-  Kind.COps{ coactor=Kind.Ops{okind}
-           , coitem=coitem@Kind.Ops{okind=iokind}
-           , corule
-           } <- getsState scops
+  Kind.COps{coactor=Kind.Ops{okind}, coitem, corule} <- getsState scops
   btarget <- getsClient $ getTarget aid
   b@Actor{bkind, bpos, blid} <- getsState $ getActorBody aid
   mfpos <- aidTgtToPos aid blid btarget
@@ -343,9 +339,7 @@ ranged aid = do
       benList <- benAvailableItems aid permitted
       let itemReaches item =
             let lingerPercent = isLingering coitem disco item
-                -- TODO: make itoThrow not secret
-                toThrow = maybe 0 (itoThrow . iokind) $ jkind disco item
-                speed = speedFromWeight (jweight item) toThrow
+                speed = speedFromWeight (jweight item) (jtoThrow item)
                 range = rangeFromSpeed speed
                 totalRange = lingerPercent * range `div` 100
             in steps <= totalRange  -- probably enough range

@@ -76,6 +76,7 @@ data Item = Item
   , jflavour :: !Flavour       -- ^ individual flavour
   , jeffect  :: !(Effect Int)  -- ^ the effect when activated
   , jweight  :: !Int           -- ^ weight in grams, obvious enough
+  , jtoThrow :: !Int           -- ^ physical percentage bonus to throw speed
   }
   deriving (Show, Eq, Ord, Generic)
 
@@ -116,6 +117,7 @@ buildItem (FlavourMap flavour) discoRev ikChosen kind jeffect =
           [fl] -> fl
           _ -> flavour EM.! ikChosen
       jweight = iweight kind
+      jtoThrow = itoThrow kind
   in Item{..}
 
 -- | Generate an item based on level.
