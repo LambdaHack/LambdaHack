@@ -16,9 +16,9 @@ cdefs = ContentDef
   , getFreq = ifreq
   , validate = validateItemKind
   , content =
-      [amulet, dart, gem1, gem2, gem3, currency, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand1, wand2, fist, foot, tentacle, fragrance, mist_healing, mist_wounding, glass_piece, smoke]
+      [amulet, dart, gem1, gem2, gem3, currency, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, sword, wand1, wand2, fist, foot, tentacle, fragrance, mist_healing, mist_wounding, glass_piece, smoke]
   }
-amulet,        dart, gem1, gem2, gem3, currency, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, sword, wand1, wand2, fist, foot, tentacle, fragrance, mist_healing, mist_wounding, glass_piece, smoke :: ItemKind
+amulet,        dart, gem1, gem2, gem3, currency, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, sword, wand1, wand2, fist, foot, tentacle, fragrance, mist_healing, mist_wounding, glass_piece, smoke :: ItemKind
 
 gem, potion, scroll, wand :: ItemKind  -- generic templates
 
@@ -154,6 +154,10 @@ scroll2 = scroll
 scroll3 = scroll
   { ifeature = [Cause $ Ascend (-1)]
   }
+scroll4 = scroll
+  { ifreq    = [("useful", 1)]
+  , ifeature = [Cause Dominate]
+  }
 sword = ItemKind
   { isymbol  = ')'
   , iname    = "sword"
@@ -170,7 +174,7 @@ sword = ItemKind
 wand = ItemKind
   { isymbol  = '/'
   , iname    = "wand"
-  , ifreq    = [("useful", 2)]
+  , ifreq    = []  -- TODO: add charges, etc.  -- [("useful", 2)]
   , iflavour = zipFancy brightCol
   , icount   = 1
   , iverbApply   = "snap"
@@ -181,10 +185,10 @@ wand = ItemKind
   , idesc    = "Buzzing with dazzling light that shines even through appendages that handle it."
   }
 wand1 = wand
-  { ifeature = ifeature wand ++ [Cause Dominate]
+  { ifeature = ifeature wand ++ [Cause NoEffect]
   }
 wand2 = wand
-  { ifeature = ifeature wand ++ [Cause $ Heal (-25)]
+  { ifeature = ifeature wand ++ [Cause NoEffect]
   }
 fist = sword
   { isymbol  = '@'
