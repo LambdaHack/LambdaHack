@@ -547,6 +547,11 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         Effect.CreateItem{} -> skip
         Effect.ApplyPerfume ->
           msgAdd "The fragrance quells all scents in the vicinity."
+        Effect.Burn{} ->
+          if fid == side then
+            actorVerbMU aid b "feel burned"
+          else
+            actorVerbMU aid b "look burned"
         Effect.Regeneration{} -> skip
         Effect.Steadfastness{} -> skip
         Effect.Ascend k | k > 0 -> actorVerbMU aid b "find a way upstairs"

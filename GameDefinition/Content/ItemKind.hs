@@ -16,9 +16,9 @@ cdefs = ContentDef
   , getFreq = ifreq
   , validate = validateItemKind
   , content =
-      [amulet, dart, gem1, gem2, gem3, currency, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, sword, wand1, wand2, fist, foot, tentacle, fragrance, mist_healing, mist_wounding, glass_piece, smoke]
+      [amulet, brassLantern, dart, gem1, gem2, gem3, currency, harpoon, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, fragrance, mist_healing, mist_wounding, glass_piece, smoke]
   }
-amulet,        dart, gem1, gem2, gem3, currency, harpoon, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, sword, wand1, wand2, fist, foot, tentacle, fragrance, mist_healing, mist_wounding, glass_piece, smoke :: ItemKind
+amulet,        brassLantern, dart, gem1, gem2, gem3, currency, harpoon, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, fragrance, mist_healing, mist_wounding, glass_piece, smoke :: ItemKind
 
 gem, potion, scroll, wand :: ItemKind  -- generic templates
 
@@ -34,6 +34,19 @@ amulet = ItemKind
   , itoThrow = -50  -- not dense enough
   , ifeature = [Cause $ Regeneration (2 * d 3 + dl 10)]
   , idesc    = "A necklace of dried herbs and healing berries."
+  }
+brassLantern = ItemKind
+  { isymbol  = '('
+  , iname    = "brass lantern"
+  , ifreq    = [("useful", 2)]
+  , iflavour = zipPlain [BrWhite]
+  , icount   = 1
+  , iverbApply   = "burn"
+  , iverbProject = "heave"
+  , iweight  = 2400
+  , itoThrow = -30  -- hard to throw so that it opens and burns
+  , ifeature = [Cause $ Burn 4]
+  , idesc    = "Very bright and quite heavy brass lantern."
   }
 dart = ItemKind
   { isymbol  = '|'
@@ -95,6 +108,19 @@ harpoon = ItemKind
   , itoThrow = 0  -- cheap but deadly
   , ifeature = [Cause $ Hurt (2 * d 2) (d 2 + 2 * dl 2)]
   , idesc    = "A long, well balanced rod, with a cruel, barbed head."
+  }
+oilLamp = ItemKind
+  { isymbol  = '('
+  , iname    = "oil lamp"
+  , ifreq    = [("useful", 5)]
+  , iflavour = zipPlain [BrYellow]
+  , icount   = 1
+  , iverbApply   = "burn"
+  , iverbProject = "lob"
+  , iweight  = 1000
+  , itoThrow = -30  -- hard not to spill the oil while throwing
+  , ifeature = [Cause $ Burn 3]
+  , idesc    = "A clay lamp full of plant oil feeding a thick wick."
   }
 potion = ItemKind
   { isymbol  = '!'
@@ -189,6 +215,19 @@ wand1 = wand
   }
 wand2 = wand
   { ifeature = ifeature wand ++ [Cause NoEffect]
+  }
+woodenTorch = ItemKind
+  { isymbol  = '('
+  , iname    = "wooden torch"
+  , ifreq    = [("useful", 10)]
+  , iflavour = zipPlain [Brown]
+  , icount   = d 3
+  , iverbApply   = "burn"
+  , iverbProject = "fling"
+  , iweight  = 1200
+  , itoThrow = 0
+  , ifeature = [Cause $ Burn 2]
+  , idesc    = "A heavy wooden torch, burning with a weak fire."
   }
 fist = sword
   { isymbol  = '@'

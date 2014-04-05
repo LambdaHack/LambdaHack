@@ -79,6 +79,7 @@ effectSem effect source target = case effect of
   Effect.Summon p -> effectSummon p target
   Effect.CreateItem p -> effectCreateItem p target
   Effect.ApplyPerfume -> effectApplyPerfume source target
+  Effect.Burn p -> effectBurn p source target
   Effect.Regeneration p -> effectSem (Effect.Heal p) source target
   Effect.Steadfastness p -> effectSteadfastness p target
   Effect.Ascend p -> effectAscend p target
@@ -303,6 +304,15 @@ effectApplyPerfume source target =
     execSfxAtomic $ SfxEffect source target Effect.ApplyPerfume
     void $ effectImpress source target
     return True
+
+-- ** Burn
+
+effectBurn :: (MonadAtomic m, MonadServer m)
+           => Int -> ActorId -> ActorId -> m Bool
+effectBurn power source target = do
+  void $ effectHurt 0 (2 * power) source target  -- damage from impact and fire
+  execSfxAtomic $ SfxEffect target target $ Effect.Burn power
+  return True
 
 -- ** Regeneration
 

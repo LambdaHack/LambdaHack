@@ -30,6 +30,7 @@ data Effect a =
   | Summon !Int
   | CreateItem !Int
   | ApplyPerfume
+  | Burn !Int
   | Regeneration !a
   | Steadfastness !a
   | Ascend !Int
@@ -56,6 +57,7 @@ effectTrav (CallFriend p) _ = return $! CallFriend p
 effectTrav (Summon p) _ = return $! Summon p
 effectTrav (CreateItem p) _ = return $! CreateItem p
 effectTrav ApplyPerfume _ = return ApplyPerfume
+effectTrav (Burn p) _ = return $! Burn p
 effectTrav (Regeneration a) f = do
   b <- f a
   return $! Regeneration b
@@ -70,25 +72,26 @@ effectToSuff :: Show a => Effect a -> (a -> Text) -> Text
 effectToSuff effect f =
   case St.evalState (effectTrav effect $ return . f) () of
     NoEffect -> ""
-    Heal p | p > 0 -> "of healing" <> affixBonus p
+    Heal p | p > 0 -> "of healing" <+> affixBonus p
     Heal 0 -> assert `failure` effect
-    Heal p -> "of wounding" <> affixBonus p
-    Hurt dice t -> "(" <> tshow dice <> ")" <> t
-    Haste p | p > 0 -> "of speed" <> affixBonus p
+    Heal p -> "of wounding" <+> affixBonus p
+    Hurt dice t -> "(" <> tshow dice <> ")" <+> t
+    Haste p | p > 0 -> "of speed" <+> affixBonus p
     Haste 0 -> assert `failure` effect
-    Haste p -> "of slowness" <> affixBonus (- p)
+    Haste p -> "of slowness" <+> affixBonus (- p)
     Mindprobe{} -> "of soul searching"
     Dominate -> "of domination"
     Impress -> "of impression"
-    CallFriend p -> "of aid calling" <> affixPower p
-    Summon p -> "of summoning" <> affixPower p
-    CreateItem p -> "of item creation" <> affixPower p
+    CallFriend p -> "of aid calling" <+> affixPower p
+    Summon p -> "of summoning" <+> affixPower p
+    CreateItem p -> "of item creation" <+> affixPower p
     ApplyPerfume -> "of rose water"
-    Regeneration t -> "of regeneration" <> t
-    Steadfastness t -> "of steadfastness" <> t
-    Ascend p | p > 0 -> "of ascending" <> affixPower p
+    Burn p -> affixPower p
+    Regeneration t -> "of regeneration" <+> t
+    Steadfastness t -> "of steadfastness" <+> t
+    Ascend p | p > 0 -> "of ascending" <+> affixPower p
     Ascend 0 -> assert `failure` effect
-    Ascend p -> "of descending" <> affixPower (- p)
+    Ascend p -> "of descending" <+> affixPower (- p)
     Escape{} -> "of escaping"
 
 effectToSuffix :: Effect Int -> Text
@@ -98,10 +101,10 @@ affixPower :: Int -> Text
 affixPower p = case compare p 1 of
   EQ -> ""
   LT -> assert `failure` "power less than 1" `twith` p
-  GT -> " (+" <> tshow p <> ")"
+  GT -> "(+" <> tshow p <> ")"
 
 affixBonus :: Int -> Text
 affixBonus p = case compare p 0 of
   EQ -> ""
-  LT -> " (" <> tshow p <> ")"
-  GT -> " (+" <> tshow p <> ")"
+  LT -> "(" <> tshow p <> ")"
+  GT -> "(+" <> tshow p <> ")"

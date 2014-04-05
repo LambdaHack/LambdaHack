@@ -9,6 +9,7 @@ import qualified Game.LambdaHack.Common.Effect as Effect
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Content.ActorKind
 
+-- TODO: also take other ItemFeatures into account, e.g., splash damage.
 -- | How much AI benefits from applying the effect. Multipllied by item p.
 -- Negative means harm to the enemy when thrown at him. Effects with zero
 -- benefit won't ever be used, neither actively nor passively.
@@ -19,7 +20,7 @@ effectToBenefit Kind.COps{coactor=Kind.Ops{okind}} b eff =
     Effect.NoEffect -> 0
     (Effect.Heal p) -> if p > 0
                        then 10 * min p (Dice.maxDice (ahp kind) - bhp b)
-                       else max (-99) (5 * p)
+                       else max (-99) (10 * p)  -- usually splash damage
     (Effect.Hurt d p) -> -(min 99 $ 5 * p + round (5 * Dice.meanDice d))
     Effect.Haste p -> p * 5
     Effect.Mindprobe{} -> 0            -- AI can't benefit yet
@@ -29,6 +30,7 @@ effectToBenefit Kind.COps{coactor=Kind.Ops{okind}} b eff =
     Effect.Summon{} -> 1               -- may or may not spawn a friendly
     (Effect.CreateItem p) -> p * 20
     Effect.ApplyPerfume -> -10
+    (Effect.Burn p) -> -(15 * p)       -- splash damage
     Effect.Regeneration p -> p
     Effect.Steadfastness p -> p
     Effect.Ascend{} -> 1               -- change levels sensibly, in teams

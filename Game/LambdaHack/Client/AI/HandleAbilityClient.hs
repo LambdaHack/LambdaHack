@@ -225,7 +225,8 @@ pSymbol cops c = case c of
   ')' -> pMelee cops
   '\"' -> pRegen
   '=' -> pStead
-  _ -> \_ -> Just 0
+  '(' -> pBurn
+  _ -> \_ -> Nothing
 
 -- Everybody melees in a pinch, even though some prefer ranged attacks.
 meleeBlocker :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbMelee))

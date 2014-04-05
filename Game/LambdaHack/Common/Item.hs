@@ -9,8 +9,8 @@ module Game.LambdaHack.Common.Item
     ItemId, Item(..), jkind, buildItem, newItem
     -- * Item search
   , strongestItem, strongestItems
-  , strongestSword, strongestRegen, strongestStead
-  , pMelee, pRegen, pStead
+  , strongestSword, strongestRegen, strongestStead, strongestBurn
+  , pMelee, pRegen, pStead, pBurn
    -- * Item discovery types
   , ItemKindIx, Discovery, DiscoRev, serverDiscos
     -- * The @FlavourMap@ type
@@ -190,12 +190,12 @@ type ItemRev = HM.HashMap Item ItemId
 strongestItem :: [(ItemId, Item)] -> (Item -> Maybe Int)
               -> Maybe (Int, (ItemId, Item))
 strongestItem is p =
-  let ks = map (p . snd) is
-  in case zip ks is of
+  let vs = map (p . snd) is
+  in case zip vs is of
     [] -> Nothing
-    kis -> case maximum kis of
+    vis -> case maximum vis of
       (Nothing, _) -> Nothing
-      (Just k, iki) -> Just (k, iki)
+      (Just v, ii) -> Just (v, ii)
 
 strongestItems :: [(Int, (ItemId, Item))] -> (Item -> Maybe Int)
                -> [(Int, (Int, (ItemId, Item)))]
@@ -226,6 +226,12 @@ pStead i =  case jeffect i of Steadfastness k -> Just k; _ -> Nothing
 
 strongestStead :: [(ItemId, Item)] -> Maybe (Int, (ItemId, Item))
 strongestStead is = strongestItem is pStead
+
+pBurn :: Item -> Maybe Int
+pBurn i =  case jeffect i of Burn k -> Just k; _ -> Nothing
+
+strongestBurn :: [(ItemId, Item)] -> Maybe (Int, (ItemId, Item))
+strongestBurn is = strongestItem is pBurn
 
 isFragile :: Kind.Ops ItemKind -> Discovery -> Item -> Bool
 isFragile Kind.Ops{okind} disco i =
