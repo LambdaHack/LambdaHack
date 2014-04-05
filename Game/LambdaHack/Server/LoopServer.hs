@@ -350,7 +350,7 @@ setTrajectory aid = do
       if not $ accessibleDir cops lvl bpos d
       then clearTrajectory
       else do
-        when (length lv <= 1) $ do
+        when (null lv) $ do
           let toColor = Color.BrBlack
           when (bcolor /= toColor) $
             execUpdAtomic $ UpdColorActor aid bcolor toColor
