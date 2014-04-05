@@ -330,8 +330,10 @@ moveItemUI verbose iid k aid c1 c2 = do
   case (c1, c2) of
     (CGround, cstore) -> do
       when (bfid b == side) $ updateItemSlot (Just aid) iid
+      fact <- getsState $ (EM.! bfid b) . sfactionD
+      let hasAiLeader = playerAiLeader $ gplayer fact
       mleader <- getsClient _sleader
-      if Just aid == mleader then do
+      if Just aid == mleader && not hasAiLeader then do
         item <- getsState $ getItemBody iid
         disco <- getsClient sdisco
         (letterSlots, _) <- getsClient sslots
