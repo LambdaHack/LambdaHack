@@ -66,7 +66,7 @@ reinitGame = do
   let defLocal | knowMap = s
                | otherwise = localFromGlobal s
   discoS <- getsServer sdisco
-  let misteriousSymbols = ritemProject $ Kind.stdRuleset corule
+  let misteriousSymbols = ritemNeedId $ Kind.stdRuleset corule
       sdisco = let f ik = isymbol (okind ik) `notElem` misteriousSymbols
                in EM.filter f discoS
   sdebugCli <- getsServer $ sdebugCli . sdebugSer

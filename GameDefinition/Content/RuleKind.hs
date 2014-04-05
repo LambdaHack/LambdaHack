@@ -39,9 +39,10 @@ standard = RuleKind
   , rpathsVersion  = Self.version
   , ritemMelee     = ")"
   , ritemRanged    = "|"
-  , ritemEqp       = ")\"="
-  -- Don't waste weapons and armour, other party members can use.
-  , ritemProject   = "!?|/"
+  , ritemEqp       = ")\"=("
+  -- Don't waste weapons and armour, other party members can use them.
+  , ritemProject   = "!?|/("
+  , ritemNeedId    = "!?|/"
   -- The strings containing the default configuration file
   -- included from config.ui.default.
   , rcfgUIName = "config.ui"
