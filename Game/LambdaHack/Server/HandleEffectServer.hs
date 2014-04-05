@@ -121,7 +121,7 @@ halveCalm target = do
       calmNew = if hpTooLow coactor tb
                 then 1  -- to trigger domination, etc.
                 else calmMax `div` 2
-      deltaCalm = calmCur - calmNew
+      deltaCalm = calmNew - calmCur
   when (deltaCalm < 0) $ execUpdAtomic $ UpdCalmActor target deltaCalm
 
 -- ** Hurt
