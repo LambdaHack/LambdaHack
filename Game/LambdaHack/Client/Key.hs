@@ -3,7 +3,8 @@
 module Game.LambdaHack.Client.Key
   ( Key(..), showKey, handleDir, dirAllKey
   , moveBinding, mkKM, keyTranslate
-  , Modifier(..), KM(..), showKM, escKey, spaceKey
+  , Modifier(..), KM(..), showKM
+  , escKM, spaceKM, pgupKM, pgdnKM
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -85,11 +86,17 @@ showKM :: KM -> Text
 showKM KM{modifier=Control, key} = "CTRL-" <> showKey key
 showKM KM{modifier=NoModifier, key} = showKey key
 
-escKey :: KM
-escKey = KM {modifier = NoModifier, key = Esc}
+escKM :: KM
+escKM = KM {modifier = NoModifier, key = Esc}
 
-spaceKey :: KM
-spaceKey = KM {modifier = NoModifier, key = Space}
+spaceKM :: KM
+spaceKM = KM {modifier = NoModifier, key = Space}
+
+pgupKM :: KM
+pgupKM = KM {modifier = NoModifier, key = PgUp}
+
+pgdnKM :: KM
+pgdnKM = KM {modifier = NoModifier, key = PgDn}
 
 dirKeypadKey :: [Key]
 dirKeypadKey = [Home, Up, PgUp, Right, PgDn, Down, End, Left]
@@ -206,7 +213,9 @@ keyTranslate "KP_Left"       = Left
 keyTranslate "KP_Right"      = Right
 keyTranslate "KP_Home"       = Home
 keyTranslate "KP_End"        = End
+keyTranslate "Page_Up"       = PgUp
 keyTranslate "KP_Page_Up"    = PgUp
+keyTranslate "Page_Down"     = PgDn
 keyTranslate "KP_Page_Down"  = PgDn
 keyTranslate "KP_Begin"      = Begin
 keyTranslate "KP_Enter"      = Return

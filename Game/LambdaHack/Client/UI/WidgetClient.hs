@@ -32,7 +32,7 @@ getYesNo :: MonadClientUI m => SingleFrame -> m Bool
 getYesNo frame = do
   let keys = [ K.KM {key=K.Char 'y', modifier=K.NoModifier}
              , K.KM {key=K.Char 'n', modifier=K.NoModifier}
-             , K.escKey
+             , K.escKM
              ]
   K.KM {key} <- promptGetKey keys frame
   case key of
@@ -63,7 +63,7 @@ displayChoiceUI :: MonadClientUI m
                 => Msg -> Overlay -> [K.KM] -> m (Either Slideshow K.KM)
 displayChoiceUI prompt ov keys = do
   (_, ovs) <- fmap slideshow $ overlayToSlideshow (prompt <> ", ESC]") ov
-  let legalKeys = [K.spaceKey, K.escKey]
+  let legalKeys = [K.spaceKM, K.escKM]
         ++ keys
       loop [] = fmap Left $ promptToSlideshow "never mind"
       loop (x : xs) = do

@@ -121,7 +121,7 @@ humanCommand msgRunStop = do
                               then - swaitTimes cli
                               else 0}
               if Just km == lastKey
-                 || km == K.escKey && isNothing stgtMode && isJust mover
+                 || km == K.escKM && isNothing stgtMode && isJust mover
                 then do
                   modifyClient $ \cli -> cli {slastKey = Nothing}
                   cmdHumanSem Clear

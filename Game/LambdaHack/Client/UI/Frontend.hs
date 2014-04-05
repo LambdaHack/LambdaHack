@@ -65,18 +65,22 @@ promptGetKey fs keys frame = do
     then return km
     else promptGetKey fs keys frame
 
-getConfirmGeneric :: RawFrontend -> [K.KM] -> SingleFrame -> IO Bool
+getConfirmGeneric :: RawFrontend -> [K.KM] -> SingleFrame -> IO (Maybe Bool)
 getConfirmGeneric fs clearKeys frame = do
   let DebugModeCli{snoMore} = fdebugCli fs
   -- TODO: turn noMore off somehow when faction not under computer control;
   -- perhaps by adding a FrontReq request that turns it off/on?
   if snoMore then do
     fdisplay fs True (Just frame)
-    return True
+    return $ Just True
   else do
-    let extraKeys = [K.spaceKey, K.escKey]
+    let extraKeys = [K.spaceKM, K.escKM, K.pgupKM, K.pgdnKM]
     km <- promptGetKey fs (clearKeys ++ extraKeys) frame
-    return $! km /= K.escKey
+    return $! if km == K.escKM
+              then Nothing
+              else if km == K.pgupKM
+                   then Just False
+                   else Just True
 
 -- Read UI requests from the client and send them to the frontend,
 loopFrontend :: RawFrontend -> ChanFrontend -> IO ()
@@ -105,21 +109,24 @@ loopFrontend fs ChanFrontend{..} = loop
       FrontSlides{frontSlides = []} -> do
         -- Hack.
         fsyncFrames fs
-        writeKM K.spaceKey
+        writeKM K.spaceKM
         loop
       FrontSlides{..} -> do
-        let displayFrs frs =
+        let displayFrs frs srf =
               case frs of
                 [] -> assert `failure` "null slides" `twith` frs
                 [x] -> do
                   fdisplay fs False (Just x)
-                  writeKM K.spaceKey
+                  writeKM K.spaceKM
                 x : xs -> do
                   go <- getConfirmGeneric fs frontClear x
-                  if go
-                    then displayFrs xs
-                    else writeKM K.escKey
-        displayFrs frontSlides
+                  case go of
+                    Nothing -> writeKM K.escKM
+                    Just True -> displayFrs xs (x : srf)
+                    Just False -> case srf of
+                      [] -> displayFrs frs srf
+                      y : ys -> displayFrs (y : frs) ys
+        displayFrs frontSlides []
         loop
       FrontFinish ->
         return ()

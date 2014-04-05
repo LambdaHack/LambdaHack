@@ -118,7 +118,7 @@ getInitConfirms dm frontClear slides = do
       km <- readConnFrontend
       -- Don't clear ESC marker here, because the wait for confirms may
       -- block a ping and the ping would not see the ESC.
-      return $! km /= K.escKey
+      return $! km /= K.escKM
 
 displayFrame :: MonadClientUI m => Bool -> Maybe SingleFrame -> m ()
 displayFrame isRunning mf = do
@@ -202,7 +202,7 @@ syncFrames = do
   -- Hack.
   writeConnFrontend FrontSlides{frontClear=[], frontSlides=[]}
   km <- readConnFrontend
-  assert (km == K.spaceKey) skip
+  assert (km == K.spaceKM) skip
 
 tryTakeMVarSescMVar :: MonadClientUI m => m Bool
 tryTakeMVarSescMVar = do

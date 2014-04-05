@@ -61,7 +61,7 @@ nullStartup fdebugCli cont =
   Std.startup fdebugCli $ \_ ->
     cont $ RawFrontend
       { fdisplay = \_ _ -> return ()
-      , fpromptGetKey = \_ -> return K.escKey
+      , fpromptGetKey = \_ -> return K.escKM
       , fsyncFrames = return ()
       , fescMVar = Nothing
       , fdebugCli
