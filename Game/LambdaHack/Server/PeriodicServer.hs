@@ -204,15 +204,16 @@ advanceTime aid = do
   b <- getsState $ getActorBody aid
   let t = ticksPerMeter $ bspeed b
   execUpdAtomic $ UpdAgeActor aid t
-  calmDelta <- getsState $ regenCalmDelta b
-  unless (calmDelta == 0 && bcalmDelta b == 0) $
-    execUpdAtomic $ UpdCalmActor aid calmDelta
-  bNew <- getsState $ getActorBody aid
-  -- We assume that within a turn, Calm never decreased to 0
-  -- without stopping at 1.
-  when (bcalm bNew == 1 && boldfid bNew /= bfid bNew) $ do
-    execSfxAtomic $ SfxEffect aid aid Effect.Dominate
-    dominateFid (boldfid bNew) aid
+  unless (bproj b) $ do
+    calmDelta <- getsState $ regenCalmDelta b
+    unless (calmDelta == 0 && bcalmDelta b == 0) $
+      execUpdAtomic $ UpdCalmActor aid calmDelta
+    bNew <- getsState $ getActorBody aid
+    -- We assume that within a turn, Calm never decreased to 0
+    -- without stopping at 1.
+    when (bcalm bNew == 1 && boldfid bNew /= bfid bNew) $ do
+      execSfxAtomic $ SfxEffect aid aid Effect.Dominate
+      dominateFid (boldfid bNew) aid
 
 -- TODO: generalize to any list of items (or effects) applied to all actors
 -- every turn. Specify the list per level in config.
