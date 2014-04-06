@@ -17,9 +17,9 @@ cdefs = ContentDef
   , getFreq = ifreq
   , validate = validateItemKind
   , content =
-      [amulet, brassLantern, dart, gem1, gem2, gem3, currency, harpoon, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, fragrance, mist_healing, mist_wounding, burningOil1, burningOil2, burningOil3, burningOil4, explosion10, glass_piece, smoke]
+      [amulet, brassLantern, dart, gem1, gem2, gem3, currency, harpoon, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, fragrance, mist_healing, mist_wounding, burningOil1, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke]
   }
-amulet,        brassLantern, dart, gem1, gem2, gem3, currency, harpoon, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, fragrance, mist_healing, mist_wounding, burningOil1, burningOil2, burningOil3, burningOil4, explosion10, glass_piece, smoke :: ItemKind
+amulet,        brassLantern, dart, gem1, gem2, gem3, currency, harpoon, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, fragrance, mist_healing, mist_wounding, burningOil1, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke :: ItemKind
 
 gem, potion, scroll, wand :: ItemKind  -- generic templates
 
@@ -143,8 +143,7 @@ potion2 = potion
   { ifeature = [Cause $ Heal 5, Explode "healing mist"]
   }
 potion3 = potion
-  { iname    = "potion of explosion"
-  , ifeature = [Explode "explosion10"]
+  { ifeature = [Explode "explosion blast 10"]
   }
 ring = ItemKind
   { isymbol  = '='
@@ -301,19 +300,7 @@ burningOil1 = burningOil 1
 burningOil2 = burningOil 2
 burningOil3 = burningOil 3
 burningOil4 = burningOil 4
-explosion10 = ItemKind
-  { isymbol  = '\''
-  , iname    = "explosion"
-  , ifreq    = [("explosion", 1)]
-  , iflavour = zipFancy [BrWhite]
-  , icount   = d 2  -- strong, but not always hits target
-  , iverbApply   = "explode"
-  , iverbProject = "give off"
-  , iweight  = 1
-  , itoThrow = 0
-  , ifeature = [Cause $ Burn 10, Fragile, Linger 20]
-  , idesc    = ""
-  }
+explosionBlast10 = explosionBlast 10
 glass_piece = ItemKind  -- when blowing up windows
   { isymbol  = '\''
   , iname    = "glass piece"
@@ -354,4 +341,19 @@ burningOil n = ItemKind
   , itoThrow = min 0 $ n * 7 - 100
   , ifeature = [Cause $ Burn 1, Fragile]
   , idesc    = "Sticky, brightly burning oil."
+  }
+
+explosionBlast :: Int -> ItemKind
+explosionBlast n = ItemKind
+  { isymbol  = '\''
+  , iname    = "explosion blast"
+  , ifreq    = [("explosion blast" <+> tshow n, 1)]
+  , iflavour = zipPlain [BrWhite]
+  , icount   = 1 + 2 * d 2  -- strong, but few, so not always hits target
+  , iverbApply   = "blast"
+  , iverbProject = "give off"
+  , iweight  = 1
+  , itoThrow = 0
+  , ifeature = [Cause $ Burn n, Fragile, Linger 10]
+  , idesc    = ""
   }

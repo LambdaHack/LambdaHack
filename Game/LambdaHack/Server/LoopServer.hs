@@ -256,7 +256,7 @@ handleActors lid = do
         -- RET waits .3s and gives back control,
         -- Any other key does the .3s wait and the action from the key
         -- at once.
-        when timed $  maybe skip advanceTime aidNew
+        when timed $ maybe skip advanceTime aidNew
       else do
         -- Clear messages in the UI client (if any), if the actor
         -- is a leader (which happens when a UI client is fully
