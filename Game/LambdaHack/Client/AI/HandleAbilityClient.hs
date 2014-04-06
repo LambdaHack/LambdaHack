@@ -206,16 +206,19 @@ manageEqp aid = do
               bestEqp = strongestItems eqpKA $ pSymbol cops symbol
           in case (bestInv, bestEqp) of
             (Just (_, (iidInv, _)), []) ->
-              returN "wield" $ ReqMoveItem iidInv 1 CInv CEqp
+              returN "wield any" $ ReqMoveItem iidInv 1 CInv CEqp
             (Just (vInv, (iidInv, _)), (vEqp, _) : _)
               | vInv > vEqp ->
-              returN "wield" $ ReqMoveItem iidInv 1 CInv CEqp
+              returN "wield better" $ ReqMoveItem iidInv 1 CInv CEqp
+            (_, (_, (k, (iidEqp, itemEqp))) : _) | harmful body itemEqp ->
+              -- This item is harmful to this actor, take it off.
+              returN "yield harmful" $ ReqMoveItem iidEqp k CEqp CInv
             (_, (_, (k, (iidEqp, _))) : _) | k > 1 && rsharedInventory ->
               -- To share the best items with others.
-              returN "yield" $ ReqMoveItem iidEqp (k - 1) CEqp CInv
+              returN "yield rest" $ ReqMoveItem iidEqp (k - 1) CEqp CInv
             (_, _ : (_, (k, (iidEqp, _))) : _) ->
               -- To make room in limited equipment store or to share.
-              returN "yield" $ ReqMoveItem iidEqp k CEqp CInv
+              returN "yield worse" $ ReqMoveItem iidEqp k CEqp CInv
             _ -> reject
     return $ msum $ map improve ritemEqp
   else return reject
@@ -227,6 +230,11 @@ pSymbol cops c = case c of
   '=' -> pStead
   '(' -> pBurn
   _ -> \_ -> Nothing
+
+harmful :: Actor -> Item -> Bool
+harmful body item =
+  -- Fast actors want to hide in darkness to ambush opponents.
+  bspeed body > speedNormal && isJust (pBurn item)
 
 -- Everybody melees in a pinch, even though some prefer ranged attacks.
 meleeBlocker :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbMelee))

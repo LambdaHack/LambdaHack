@@ -216,19 +216,19 @@ strongestSword :: Kind.COps -> [(ItemId, Item)] -> Maybe (Int, (ItemId, Item))
 strongestSword cops is = strongestItem is $ pMelee cops
 
 pRegen :: Item -> Maybe Int
-pRegen i =  case jeffect i of Regeneration k -> Just k; _ -> Nothing
+pRegen i = case jeffect i of Regeneration k -> Just k; _ -> Nothing
 
 strongestRegen :: [(ItemId, Item)] -> Maybe (Int, (ItemId, Item))
 strongestRegen is = strongestItem is pRegen
 
 pStead :: Item -> Maybe Int
-pStead i =  case jeffect i of Steadfastness k -> Just k; _ -> Nothing
+pStead i = case jeffect i of Steadfastness k -> Just k; _ -> Nothing
 
 strongestStead :: [(ItemId, Item)] -> Maybe (Int, (ItemId, Item))
 strongestStead is = strongestItem is pStead
 
 pBurn :: Item -> Maybe Int
-pBurn i =  case jeffect i of Burn k -> Just k; _ -> Nothing
+pBurn i = case jeffect i of Burn k -> Just k; _ -> Nothing
 
 strongestBurn :: [(ItemId, Item)] -> Maybe (Int, (ItemId, Item))
 strongestBurn is = strongestItem is pBurn
