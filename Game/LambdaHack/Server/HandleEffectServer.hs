@@ -117,11 +117,12 @@ halveCalm target = do
   Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
   tb <- getsState $ getActorBody target
   let calmMax = Dice.maxDice $ acalm $ okind $ bkind tb
-      calmCur = bcalm tb
-      calmNew = if hpTooLow coactor tb
-                then 1  -- to trigger domination, etc.
-                else calmMax `div` 2
-      deltaCalm = calmNew - calmCur
+      calmDecr = max 0 $ bcalm tb - 1  -- decrease at least by 1, unless 0
+      calmUpperBound = if hpTooLow coactor tb
+                       then 1  -- to trigger domination, etc.
+                       else calmMax `div` 2
+      calmNew = min calmUpperBound calmDecr
+      deltaCalm = calmNew - bcalm tb
   when (deltaCalm < 0) $ execUpdAtomic $ UpdCalmActor target deltaCalm
 
 -- ** Hurt
@@ -207,7 +208,8 @@ effectImpress source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   if boldfid tb == bfid sb || bproj tb then do
-    execSfxAtomic $ SfxEffect source target Effect.NoEffect
+    -- TODO: Don't spam with shrapnel causing NoEffect and then uncomment.
+--    execSfxAtomic $ SfxEffect source target Effect.NoEffect
     return False
   else do
     execSfxAtomic $ SfxEffect source target Effect.Impress
