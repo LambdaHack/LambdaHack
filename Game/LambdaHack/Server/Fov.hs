@@ -108,7 +108,10 @@ litByActor fovMode lvl s body =
   let Kind.COps{cotile} = scops s
       eqpAssocs = getEqpAssocs body s
   in case strongestBurn eqpAssocs of
-    Just (radius, _) -> fullscan cotile fovMode radius (bpos body) lvl
+    Just (radius, _) ->
+      let scan = fullscan cotile fovMode radius (bpos body) lvl
+      -- Optimization: filter out positions that already have ambient light.
+      in filter (\pos -> not $ Tile.isLit cotile $ lvl `at` pos) scan
     Nothing -> []
 
 -- | Compute all lit positions on a level.
