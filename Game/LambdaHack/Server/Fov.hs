@@ -2,7 +2,8 @@
 -- See <https://github.com/kosmikus/LambdaHack/wiki/Fov-and-los>
 -- for discussion.
 module Game.LambdaHack.Server.Fov
-  ( dungeonPerception, levelPerception, fullscan
+  ( dungeonPerception, levelPerception
+  , PersLit, litInDungeon
   ) where
 
 import qualified Data.EnumMap.Strict as EM
@@ -11,6 +12,7 @@ import qualified Data.EnumSet as ES
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
+import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Perception
@@ -31,19 +33,27 @@ newtype PerceptionReachable = PerceptionReachable
     {preachable :: [Point]}
   deriving Show
 
+-- | All lit positions on a level.
+newtype PerceptionLit = PerceptionLit
+    {plit :: ES.EnumSet Point}
+  deriving Show
+
+type PersLit = EM.EnumMap LevelId PerceptionLit
+
 -- | Calculate perception of the level.
-levelPerception :: Kind.COps -> FovMode -> FactionId
+levelPerception :: PerceptionLit -> FovMode -> FactionId
                 -> LevelId -> Level -> State
                 -> Perception
-levelPerception cops@Kind.COps{cotile, coactor=Kind.Ops{okind}}
-                configFov fid lid lvl@Level{lxsize, lysize} s =
-  let hs = filter (not . bproj) $ actorList (== fid) lid s
-      cR b = preachable $ computeReachable cops configFov lvl b
-      totalReachable = PerceptionReachable $ concatMap cR hs
+levelPerception litHere fovMode fid lid lvl@Level{lxsize, lysize} s =
+  let cops@Kind.COps{cotile, coactor=Kind.Ops{okind}} = scops s
+      -- Dying actors included, to let them see their own demise.
+      ours = filter (not . bproj) $ actorList (== fid) lid s
+      cR b = preachable $ reachableFromActor cops fovMode lvl b
+      totalReachable = PerceptionReachable $ concatMap cR ours
       pAndVicinity p = p : vicinity lxsize lysize p
-      noctoBodies = map (\b -> (pAndVicinity $ bpos b, b)) hs
+      noctoBodies = map (\b -> (pAndVicinity $ bpos b, b)) ours
       nocto = concat $ map fst noctoBodies
-      ptotal = computeVisible cotile totalReachable lvl nocto
+      ptotal = visibleOnLevel cotile totalReachable litHere nocto lvl
       canSmell b = asmell $ okind $ bkind b
       -- We assume smell FOV radius is always 1, regardless of vision
       -- radius of the actor (and whether he can see at all).
@@ -52,16 +62,18 @@ levelPerception cops@Kind.COps{cotile, coactor=Kind.Ops{okind}}
   in Perception ptotal psmell
 
 -- | Calculate perception of a faction.
-factionPerception :: Kind.COps -> FovMode -> FactionId -> State
+factionPerception :: FovMode -> FactionId -> State -> PersLit
                   -> FactionPers
-factionPerception cops configFov fid s =
-  EM.mapWithKey (\lid lvl -> levelPerception cops configFov fid lid lvl s)
-                (sdungeon s)
+factionPerception fovMode fid s persLit =
+  let lvlPer lid lvl = let lit = persLit EM.! lid
+                       in levelPerception lit fovMode fid lid lvl s
+  in EM.mapWithKey lvlPer $ sdungeon s
 
 -- | Calculate the perception of the whole dungeon.
-dungeonPerception :: Kind.COps -> FovMode -> State -> Pers
-dungeonPerception cops configFov s =
-  let f fid _ = factionPerception cops configFov fid s
+dungeonPerception :: FovMode -> State -> Pers
+dungeonPerception fovMode s =
+  let persLit = litInDungeon fovMode s
+      f fid _ = factionPerception fovMode fid s persLit
   in EM.mapWithKey f $ sfactionD s
 
 -- | Compute positions visible (reachable and seen) by the party.
@@ -69,22 +81,48 @@ dungeonPerception cops configFov s =
 -- light source, e.g,, carried by an actor. A reachable and lit position
 -- is visible. Additionally, positions directly adjacent to an actor are
 -- assumed to be visible to him (through sound, touch, noctovision, whatever).
-computeVisible :: Kind.Ops TileKind -> PerceptionReachable
-               -> Level -> [Point] -> PerceptionVisible
-computeVisible cotile PerceptionReachable{preachable} lvl nocto =
-  let isVisible pos = Tile.isLit cotile (lvl `at` pos)
+visibleOnLevel :: Kind.Ops TileKind -> PerceptionReachable
+               -> PerceptionLit -> [Point] -> Level
+               -> PerceptionVisible
+visibleOnLevel cotile PerceptionReachable{preachable} PerceptionLit{plit}
+               nocto lvl =
+  let isVisible pos = Tile.isLit cotile (lvl `at` pos) || pos `ES.member` plit
   in PerceptionVisible $ ES.fromList $ nocto ++ filter isVisible preachable
 
--- | Compute positions reachable by the actor. Teachable are all fields
+-- | Compute positions reachable by the actor. Reachable are all fields
 -- on a visually unblocked path from the actor position.
-computeReachable :: Kind.COps -> FovMode -> Level -> Actor
-                 -> PerceptionReachable
-computeReachable Kind.COps{cotile, coactor=Kind.Ops{okind}}
-                 configFov lvl body =
+reachableFromActor :: Kind.COps -> FovMode -> Level -> Actor
+                   -> PerceptionReachable
+reachableFromActor Kind.COps{cotile, coactor=Kind.Ops{okind}}
+                   fovMode lvl body =
   let sight = asight $ okind $ bkind body
-      fovMode = if sight then configFov else Blind
+      fovModeOrBlind = if sight then fovMode else Blind
   in PerceptionReachable
-     $ fullscan cotile fovMode (bradius body) (bpos body) lvl
+     $ fullscan cotile fovModeOrBlind (bradius body) (bpos body) lvl
+
+-- | Compute positions lit by the actor. Note that the actor can be blind
+-- or a projectile, in which case he doesn't see his own light (but others,
+-- from his or other factions, possibly do).
+litByActor :: FovMode -> Level -> State -> Actor -> [Point]
+litByActor fovMode lvl s body =
+  let Kind.COps{cotile} = scops s
+      eqpAssocs = getEqpAssocs body s
+  in case strongestBurn eqpAssocs of
+    Just (radius, _) -> fullscan cotile fovMode radius (bpos body) lvl
+    Nothing -> []
+
+-- | Compute all lit positions on a level.
+litOnLevel :: FovMode -> LevelId -> Level -> State -> PerceptionLit
+litOnLevel fovMode lid lvl s =
+  let allBody = actorList (const True) lid s
+  in PerceptionLit $ ES.fromList
+     $ concatMap (litByActor fovMode lvl s) allBody
+
+-- | Compute all lit positions in the dungeon
+litInDungeon :: FovMode -> State -> PersLit
+litInDungeon fovMode s =
+  let litLvl lid lvl = litOnLevel fovMode lid lvl s
+  in EM.mapWithKey litLvl $ sdungeon s
 
 -- | Perform a full scan for a given position. Returns the positions
 -- that are currently in the field of view. The Field of View

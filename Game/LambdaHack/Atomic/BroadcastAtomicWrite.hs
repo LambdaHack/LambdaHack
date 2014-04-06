@@ -42,14 +42,15 @@ handleCmdAtomicServer posAtomic atomic =
     handleCmdAtomic atomic
 
 -- | Send an atomic action to all clients that can see it.
-handleAndBroadcast :: forall m. MonadStateWrite m
+handleAndBroadcast :: forall m a. MonadStateWrite m
                    => Bool -> Pers
-                   -> (FactionId -> LevelId -> m Perception)
+                   -> (a -> FactionId -> LevelId -> m Perception)
+                   -> m a
                    -> (FactionId -> ResponseAI -> m ())
                    -> (FactionId -> ResponseUI -> m ())
                    -> CmdAtomic
                    -> m ()
-handleAndBroadcast knowEvents persOld doResetFidPerception
+handleAndBroadcast knowEvents persOld doResetFidPerception dolitInDungeon
                    doSendUpdateAI doSendUpdateUI atomic = do
   -- Gather data from the old state.
   sOld <- getState
@@ -76,6 +77,8 @@ handleAndBroadcast knowEvents persOld doResetFidPerception
                      || fmap UpdAtomic atomicBroken == [atomic])) skip
   -- Perform the action on the server.
   handleCmdAtomicServer ps atomic
+  -- Update lights in the dungeon. This is lazy, may not be needed or only part.
+  persLit <- dolitInDungeon
   -- Send some actions to the clients, one faction at a time.
   let sendUI fid cmdUI =
         when (playerUI $ gplayer $ factionD EM.! fid) $ doSendUpdateUI fid cmdUI
@@ -103,7 +106,7 @@ handleAndBroadcast knowEvents persOld doResetFidPerception
         let perOld = persOld EM.! fid EM.! lid
             resetsFid = maybe True (fid `elem`) resets
         if resetsFid then do
-          perNew <- doResetFidPerception fid lid
+          perNew <- doResetFidPerception persLit fid lid
           let inPer = diffPer perNew perOld
               outPer = diffPer perOld perNew
           if nullPer outPer && nullPer inPer

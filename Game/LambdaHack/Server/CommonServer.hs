@@ -1,6 +1,6 @@
 -- | Server operations common to many modules.
 module Game.LambdaHack.Server.CommonServer
-  ( execFailure, resetFidPerception, getPerFid
+  ( execFailure, resetFidPerception, resetLitInDungeon, getPerFid
   , revealItems, deduceQuits, deduceKilled, electLeader
   , registerItem, createItems, projectFail
   ) where
@@ -54,16 +54,25 @@ execFailure aid req failureSer = do
 -- | Update the cached perception for the selected level, for a faction.
 -- The assumption is the level, and only the level, has changed since
 -- the previous perception calculation.
-resetFidPerception :: MonadServer m => FactionId -> LevelId -> m Perception
-resetFidPerception fid lid = do
-  cops <- getsState scops
+resetFidPerception :: MonadServer m
+                   => PersLit -> FactionId -> LevelId
+                   -> m Perception
+resetFidPerception persLit fid lid = do
   lvl <- getLevel lid
-  fovMode <- getsServer $ sfovMode . sdebugSer
-  per <- getsState
-         $ levelPerception cops (fromMaybe Digital fovMode) fid lid lvl
+  sfovMode <- getsServer $ sfovMode . sdebugSer
+  let fovMode = fromMaybe Digital sfovMode
+      lvlPer s = let lit = persLit EM.! lid
+                 in levelPerception lit fovMode fid lid lvl s
+  per <- getsState lvlPer
   let upd = EM.adjust (EM.adjust (const per) lid) fid
   modifyServer $ \ser -> ser {sper = upd (sper ser)}
   return $! per
+
+resetLitInDungeon :: MonadServer m => m PersLit
+resetLitInDungeon = do
+  sfovMode <- getsServer $ sfovMode . sdebugSer
+  let fovMode = fromMaybe Digital sfovMode
+  getsState $ litInDungeon fovMode
 
 getPerFid :: MonadServer m => FactionId -> LevelId -> m Perception
 getPerFid fid lid = do
