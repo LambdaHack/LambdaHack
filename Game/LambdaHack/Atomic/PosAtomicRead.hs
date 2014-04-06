@@ -162,36 +162,32 @@ singleContainer c = do
   (lid, p) <- posOfContainer c
   return $! PosSight lid [p]
 
--- Determines is a command resets FOV. @Nothing@ means it always does.
--- A list of faction means it does for each of the factions.
--- This is only an optimization to save perception and spot/lose computation.
+-- | Determines if a command resets FOV.
 --
--- Invariant: if @resetsFovCmdAtomic@ determines a faction does not need
+-- Invariant: if @resetsFovCmdAtomic@ determines we do not need
 -- to reset Fov, perception (@ptotal@ to be precise, @psmell@ is irrelevant)
--- of that faction does not change upon recomputation. Otherwise,
+-- of any faction does not change upon recomputation. Otherwise,
 -- save/restore would change game state.
-resetsFovCmdAtomic :: MonadStateRead m => UpdAtomic -> m (Maybe [FactionId])
+resetsFovCmdAtomic :: UpdAtomic -> Bool
 resetsFovCmdAtomic cmd = case cmd of
-  UpdCreateActor _ body _ -> return $ Just [bfid body]
-  UpdDestroyActor _ body _ -> return $ Just [bfid body]
-  UpdSpotActor _ body _ -> return $ Just [bfid body]
-  UpdLoseActor _ body _ -> return $ Just [bfid body]
-  UpdCreateItem{} -> return $ Just []  -- unless shines
-  UpdDestroyItem{} -> return $ Just []  -- ditto
-  UpdMoveActor aid _ _ -> fmap Just $ fidOfAid aid  -- assumption: has no light
--- TODO: MoveActorCarryingLIght _ _ _ -> return Nothing
-  UpdDisplaceActor source target -> do
-    sfid <- fidOfAid source
-    tfid <- fidOfAid target
-    return $ Just $ if source == target
-                    then []
-                    else sfid ++ tfid
-  UpdMoveItem{} -> return $ Just []  -- unless shiny
-  UpdAlterTile{} -> return Nothing  -- even if pos not visible initially
-  _ -> return $ Just []
-
-fidOfAid :: MonadStateRead m => ActorId -> m [FactionId]
-fidOfAid aid = getsState $ (: []) . bfid . getActorBody aid
+  -- Create/destroy actors and items.
+  UpdCreateActor{} -> True  -- may have a light source
+  UpdDestroyActor{} -> True
+  UpdCreateItem{} -> True  -- may be a light source
+  UpdDestroyItem{} -> True
+  UpdSpotActor{} -> True
+  UpdLoseActor{} -> True
+  UpdSpotItem{} -> True
+  UpdLoseItem{} -> True
+  -- Move actors and items.
+  UpdMoveActor{} -> True
+  UpdDisplaceActor{} -> True
+  UpdMoveItem{} -> True  -- light sources in inventory are doused
+  -- Alter map.
+  UpdAlterTile{} -> True  -- even if pos not visible initially
+  UpdSpotTile{} -> True
+  UpdLoseTile{} -> True
+  _ -> False
 
 -- | Decompose an atomic action. The original action is visible
 -- if it's positions are visible both before and after the action

@@ -59,20 +59,20 @@ handleAndBroadcast knowEvents persOld doResetFidPerception dolitInDungeon
     case atomic of
       UpdAtomic cmd -> do
         ps <- posUpdAtomic cmd
-        resets <- resetsFovCmdAtomic cmd
+        let resets = resetsFovCmdAtomic cmd
         atomicBroken <- breakUpdAtomic cmd
         psBroken <- mapM posUpdAtomic atomicBroken
         return (ps, resets, atomicBroken, psBroken)
       SfxAtomic sfx -> do
         ps <- posSfxAtomic sfx
-        return (ps, Just [], [], [])
+        return (ps, False, [], [])
   let atomicPsBroken = zip atomicBroken psBroken
   -- TODO: assert also that the sum of psBroken is equal to ps
   -- TODO: with deep equality these assertions can be expensive. Optimize.
   assert (case ps of
             PosSight{} -> True
             PosFidAndSight{} -> True
-            _ -> resets == Just []
+            _ -> not resets
                  && (null atomicBroken
                      || fmap UpdAtomic atomicBroken == [atomic])) skip
   -- Perform the action on the server.
@@ -104,8 +104,7 @@ handleAndBroadcast knowEvents persOld doResetFidPerception dolitInDungeon
           else breakSend fid perNew
       posLevel fid lid = do
         let perOld = persOld EM.! fid EM.! lid
-            resetsFid = maybe True (fid `elem`) resets
-        if resetsFid then do
+        if resets then do
           perNew <- doResetFidPerception persLit fid lid
           let inPer = diffPer perNew perOld
               outPer = diffPer perOld perNew
