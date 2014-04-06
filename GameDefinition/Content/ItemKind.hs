@@ -7,6 +7,7 @@ import Game.LambdaHack.Common.Dice
 import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.ItemFeature
+import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Content.ItemKind
 
 cdefs :: ContentDef ItemKind
@@ -16,9 +17,9 @@ cdefs = ContentDef
   , getFreq = ifreq
   , validate = validateItemKind
   , content =
-      [amulet, brassLantern, dart, gem1, gem2, gem3, currency, harpoon, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, fragrance, mist_healing, mist_wounding, glass_piece, smoke]
+      [amulet, brassLantern, dart, gem1, gem2, gem3, currency, harpoon, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, fragrance, mist_healing, mist_wounding, burningOil1, burningOil2, burningOil3, burningOil4, explosion10, glass_piece, smoke]
   }
-amulet,        brassLantern, dart, gem1, gem2, gem3, currency, harpoon, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, fragrance, mist_healing, mist_wounding, glass_piece, smoke :: ItemKind
+amulet,        brassLantern, dart, gem1, gem2, gem3, currency, harpoon, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, fragrance, mist_healing, mist_wounding, burningOil1, burningOil2, burningOil3, burningOil4, explosion10, glass_piece, smoke :: ItemKind
 
 gem, potion, scroll, wand :: ItemKind  -- generic templates
 
@@ -45,7 +46,7 @@ brassLantern = ItemKind
   , iverbProject = "heave"
   , iweight  = 2400
   , itoThrow = -30  -- hard to throw so that it opens and burns
-  , ifeature = [Cause $ Burn 4]
+  , ifeature = [Cause $ Burn 4, Explode "burning oil 4"]
   , idesc    = "Very bright and quite heavy brass lantern."
   }
 dart = ItemKind
@@ -119,7 +120,7 @@ oilLamp = ItemKind
   , iverbProject = "lob"
   , iweight  = 1000
   , itoThrow = -30  -- hard not to spill the oil while throwing
-  , ifeature = [Cause $ Burn 3]
+  , ifeature = [Cause $ Burn 3, Explode "burning oil 3"]
   , idesc    = "A clay lamp full of plant oil feeding a thick wick."
   }
 potion = ItemKind
@@ -139,10 +140,11 @@ potion1 = potion
   { ifeature = [Cause ApplyPerfume, Explode "fragrance"]
   }
 potion2 = potion
-  { ifeature = [Cause $ Heal 5, Explode "mist healing"]
+  { ifeature = [Cause $ Heal 5, Explode "healing mist"]
   }
 potion3 = potion
-  { ifeature = [Cause $ Heal (-5), Explode "mist wounding"]
+  { iname    = "potion of explosion"
+  , ifeature = [Explode "explosion10"]
   }
 ring = ItemKind
   { isymbol  = '='
@@ -193,7 +195,7 @@ sword = ItemKind
   , iverbApply   = "hit"
   , iverbProject = "heave"
   , iweight  = 2000
-  , itoThrow = -50  -- ensuring it hits with the tip costs speed
+  , itoThrow = -60  -- ensuring it hits with the tip costs speed
   , ifeature = [Cause $ Hurt (5 * d 1) (d 2 + 4 * dl 2)]
   , idesc    = "A standard heavy weapon. Does not penetrate very effectively, but hard to block."
   }
@@ -261,41 +263,58 @@ fragrance = ItemKind
   , iname    = "fragrance"
   , ifreq    = [("fragrance", 1)]
   , iflavour = zipFancy [BrMagenta]
-  , icount   = 5 * d 2
+  , icount   = 10 * d 2
   , iverbApply   = "smell"
   , iverbProject = "exude"
   , iweight  = 1
-  , itoThrow = -93  -- the slowest that gets anywhere (1 step only)
+  , itoThrow = -87  -- the slowest that travels at least 2 steps
   , ifeature = [Cause Impress, Fragile]
   , idesc    = ""
   }
 mist_healing = ItemKind
   { isymbol  = '\''
   , iname    = "mist"
-  , ifreq    = [("mist healing", 1)]
+  , ifreq    = [("healing mist", 1)]
   , iflavour = zipFancy [White]
-  , icount   = 12 * d 2
+  , icount   = 5 * d 2
   , iverbApply   = "inhale"
   , iverbProject = "blow"
   , iweight  = 1
-  , itoThrow = -87  -- the slowest that travels at least 2 steps
-  , ifeature = [Cause $ Heal 1, Fragile]
+  , itoThrow = -93  -- the slowest that gets anywhere (1 step only)
+  , ifeature = [Cause $ Heal 2, Fragile]
   , idesc    = ""
   }
 mist_wounding = ItemKind
   { isymbol  = '\''
   , iname    = "mist"
-  , ifreq    = [("mist wounding", 1)]
+  , ifreq    = [("wounding mist", 1)]
   , iflavour = zipFancy [White]
-  , icount   = 12 * d 2
+  , icount   = 5 * d 2
   , iverbApply   = "inhale"
   , iverbProject = "blow"
   , iweight  = 1
-  , itoThrow = -87
-  , ifeature = [Cause $ Heal (-1), Fragile]
+  , itoThrow = -93
+  , ifeature = [Cause $ Heal (-2), Fragile]
   , idesc    = ""
   }
-glass_piece = ItemKind
+burningOil1 = burningOil 1
+burningOil2 = burningOil 2
+burningOil3 = burningOil 3
+burningOil4 = burningOil 4
+explosion10 = ItemKind
+  { isymbol  = '\''
+  , iname    = "explosion"
+  , ifreq    = [("explosion", 1)]
+  , iflavour = zipFancy [BrWhite]
+  , icount   = d 2  -- strong, but not always hits target
+  , iverbApply   = "explode"
+  , iverbProject = "give off"
+  , iweight  = 1
+  , itoThrow = 0
+  , ifeature = [Cause $ Burn 10, Fragile, Linger 20]
+  , idesc    = ""
+  }
+glass_piece = ItemKind  -- when blowing up windows
   { isymbol  = '\''
   , iname    = "glass piece"
   , ifreq    = [("glass piece", 1)]
@@ -308,7 +327,7 @@ glass_piece = ItemKind
   , ifeature = [Cause $ Hurt (d 1) 0, Fragile, Linger 20]
   , idesc    = ""
   }
-smoke = ItemKind
+smoke = ItemKind  -- when stuff burns out
   { isymbol  = '\''
   , iname    = "smoke"
   , ifreq    = [("smoke", 1)]
@@ -320,4 +339,19 @@ smoke = ItemKind
   , itoThrow = -70
   , ifeature = [Fragile]
   , idesc    = ""
+  }
+
+burningOil :: Int -> ItemKind
+burningOil n = ItemKind
+  { isymbol  = '\''
+  , iname    = "burning oil"
+  , ifreq    = [("burning oil" <+> tshow n, 1)]
+  , iflavour = zipFancy [BrYellow]
+  , icount   = intToDice (n * 4) * d 2
+  , iverbApply   = "smear"
+  , iverbProject = "spit"
+  , iweight  = 1
+  , itoThrow = min 0 $ n * 7 - 100
+  , ifeature = [Cause $ Burn 1, Fragile]
+  , idesc    = "Sticky, brightly burning oil."
   }
