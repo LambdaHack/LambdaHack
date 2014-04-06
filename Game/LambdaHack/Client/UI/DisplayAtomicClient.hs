@@ -540,8 +540,10 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         Effect.Impress{} ->
           actorVerbMU aid b
           $ if bfid sb == bfid b
-            then "get sobered and reinvigorated by the fragrant moisture"
-            else "be attracted and swayed by the sweet smell"
+            then
+              "get sobered and refocused by the fragrant moisture"
+            else
+              "inhale the sweet smell that weakens resolve and erodes loyalty"
         Effect.CallFriend{} -> skip
         Effect.Summon{} -> skip
         Effect.CreateItem{} -> skip
