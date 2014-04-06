@@ -225,7 +225,7 @@ updCalmActor aid n = do
                 then 0
                 else max 1 (bcalm b + n)
     in b { bcalm = newCalm
-         , bcalmDelta = n }
+         , bcalmDelta = n }  -- records original delta, for "hears something"
 
 updHasteActor :: MonadStateWrite m => ActorId -> Speed -> m ()
 updHasteActor aid delta = assert (delta /= speedZero) $ do
