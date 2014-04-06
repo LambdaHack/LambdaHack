@@ -60,7 +60,7 @@ resetFidPerception fid lid = do
   lvl <- getLevel lid
   fovMode <- getsServer $ sfovMode . sdebugSer
   per <- getsState
-         $ levelPerception cops (fromMaybe (Digital 12) fovMode) fid lid lvl
+         $ levelPerception cops (fromMaybe Digital fovMode) fid lid lvl
   let upd = EM.adjust (EM.adjust (const per) lid) fid
   modifyServer $ \ser -> ser {sper = upd (sper ser)}
   return $! per

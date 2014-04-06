@@ -67,8 +67,8 @@ dungeonPerception cops configFov s =
 -- | Compute positions visible (reachable and seen) by the party.
 -- A position can be directly lit by an ambient shine or by a weak, portable
 -- light source, e.g,, carried by an actor. A reachable and lit position
--- is visible. Additionally, positions directly adjacent to an actor
--- are assumed to be visible to him (through sound, noctovision, whatever).
+-- is visible. Additionally, positions directly adjacent to an actor are
+-- assumed to be visible to him (through sound, touch, noctovision, whatever).
 computeVisible :: Kind.Ops TileKind -> PerceptionReachable
                -> Level -> [Point] -> PerceptionVisible
 computeVisible cotile PerceptionReachable{preachable} lvl nocto =
@@ -83,7 +83,8 @@ computeReachable Kind.COps{cotile, coactor=Kind.Ops{okind}}
                  configFov lvl body =
   let sight = asight $ okind $ bkind body
       fovMode = if sight then configFov else Blind
-  in PerceptionReachable $ fullscan cotile fovMode (bpos body) lvl
+  in PerceptionReachable
+     $ fullscan cotile fovMode (bradius body) (bpos body) lvl
 
 -- | Perform a full scan for a given position. Returns the positions
 -- that are currently in the field of view. The Field of View
@@ -91,16 +92,17 @@ computeReachable Kind.COps{cotile, coactor=Kind.Ops{okind}}
 -- The actor's own position is considred reachable by him.
 fullscan :: Kind.Ops TileKind  -- ^ tile content, determines clear tiles
          -> FovMode            -- ^ scanning mode
+         -> Int                -- ^ scanning radius
          -> Point              -- ^ position of the spectator
          -> Level              -- ^ the map that is scanned
          -> [Point]
-fullscan cotile fovMode spectatorPos lvl = spectatorPos :
+fullscan cotile fovMode r spectatorPos lvl = spectatorPos :
   case fovMode of
     Shadow ->
       concatMap (\tr -> map tr (Shadow.scan (isCl . tr) 1 (0, 1))) tr8
     Permissive ->
       concatMap (\tr -> map tr (Permissive.scan (isCl . tr))) tr4
-    Digital r ->
+    Digital ->
       concatMap (\tr -> map tr (Digital.scan r (isCl . tr))) tr4
     Blind ->  -- all actors feel adjacent positions (for easy exploration)
       let radiusOne = 1

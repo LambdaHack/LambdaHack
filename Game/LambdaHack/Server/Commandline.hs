@@ -7,7 +7,6 @@ import qualified Data.Text as T
 import System.Environment (getArgs)
 
 import Game.LambdaHack.Common.ClientOptions
-import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Server.State
 
 -- TODO: make more maintainable
@@ -42,7 +41,7 @@ debugArgs = do
         , "  --frontendNull  use no frontend at all (for AIvsAI benchmarks)"
         , "  --dbgMsgCli  let clients emit their internal debug messages"
         , "  --fovMode m  set a Field of View mode, where m can be"
-        , "    Digital r, r > 0"
+        , "    Digital"
         , "    Permissive"
         , "    Shadow"
         , "    Blind"
@@ -81,8 +80,6 @@ debugArgs = do
         (parseArgs rest) {smainRng = Just $ read s}
       parseArgs ("--dumpInitRngs" : rest) =
         (parseArgs rest) {sdumpInitRngs = True}
-      parseArgs ("--fovMode" : "Digital" : r : rest) | (read r :: Int) > 0 =
-        (parseArgs rest) {sfovMode = Just $ Digital $ read r}
       parseArgs ("--fovMode" : mode : rest) =
         (parseArgs rest) {sfovMode = Just $ read mode}
       parseArgs ("--dbgMsgSer" : rest) =

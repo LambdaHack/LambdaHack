@@ -54,6 +54,7 @@ data Actor = Actor
   , bwait       :: !Bool                 -- ^ is the actor waiting right now?
   , bfid        :: !FactionId            -- ^ faction the actor belongs to
   , boldfid     :: !FactionId            -- ^ previous faction of the actor
+  , bradius     :: !Int                  -- ^ FOV radius
   , bproj       :: !Bool                 -- ^ is a projectile? (shorthand only,
                                          --   this can be deduced from bkind)
   }
@@ -92,6 +93,7 @@ actorTemplate bkind bsymbol bname bcolor bspeed bhp bcalm btrajectory
       binv    = EM.empty
       bwait   = False
       boldfid = bfid
+      bradius = 12
       bcalmDelta = 0
   in Actor{..}
 
@@ -196,6 +198,7 @@ instance Binary Actor where
     put bwait
     put bfid
     put boldfid
+    put bradius
     put bproj
   get = do
     bkind <- get
@@ -217,5 +220,6 @@ instance Binary Actor where
     bwait <- get
     bfid <- get
     boldfid <- get
+    bradius <- get
     bproj <- get
     return $! Actor{..}

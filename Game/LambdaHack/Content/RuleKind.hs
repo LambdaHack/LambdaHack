@@ -64,10 +64,10 @@ data RuleKind = RuleKind
 -- when other similar modifiers are added.
 -- | Field Of View scanning mode.
 data FovMode =
-    Shadow        -- ^ restrictive shadow casting
-  | Permissive    -- ^ permissive FOV
-  | Digital !Int  -- ^ digital FOV with the given radius
-  | Blind         -- ^ only feeling out adjacent tiles by touch
+    Shadow      -- ^ restrictive shadow casting
+  | Permissive  -- ^ permissive FOV
+  | Digital     -- ^ digital FOV
+  | Blind       -- ^ only feeling out adjacent tiles by touch
   deriving (Show, Read)
 
 -- | A dummy instance of the 'Show' class, to satisfy general requirments
@@ -83,13 +83,13 @@ validateRuleKind _ = []
 instance Binary FovMode where
   put Shadow      = putWord8 0
   put Permissive  = putWord8 1
-  put (Digital r) = putWord8 2 >> put r
+  put Digital     = putWord8 2
   put Blind       = putWord8 3
   get = do
     tag <- getWord8
     case tag of
       0 -> return Shadow
       1 -> return Permissive
-      2 -> fmap Digital get
+      2 -> return Digital
       3 -> return Blind
       _ -> fail "no parse (FovMode)"

@@ -288,8 +288,7 @@ gameExit = do
   -- Verify that the saved perception is equal to future reconstructed.
   persSaved <- getsServer sper
   fovMode <- getsServer $ sfovMode . sdebugSer
-  pers <- getsState $ dungeonPerception cops
-                                        (fromMaybe (Digital 12) fovMode)
+  pers <- getsState $ dungeonPerception cops (fromMaybe Digital fovMode)
   assert (persSaved == pers `blame` "wrong saved perception"
                             `twith` (persSaved, pers)) skip
 

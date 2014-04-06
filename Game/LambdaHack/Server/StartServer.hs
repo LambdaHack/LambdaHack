@@ -51,7 +51,7 @@ initPer :: MonadServer m => m ()
 initPer = do
   cops <- getsState scops
   fovMode <- getsServer $ sfovMode . sdebugSer
-  pers <- getsState $ dungeonPerception cops (fromMaybe (Digital 12) fovMode)
+  pers <- getsState $ dungeonPerception cops (fromMaybe Digital fovMode)
   modifyServer $ \ser1 -> ser1 {sper = pers}
 
 reinitGame :: (MonadAtomic m, MonadServer m) => m ()
