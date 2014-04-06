@@ -26,6 +26,7 @@ import qualified Game.LambdaHack.Server.Fov.Digital as Digital
 import qualified Game.LambdaHack.Server.Fov.Permissive as Permissive
 import qualified Game.LambdaHack.Server.Fov.Shadow as Shadow
 
+-- | Visually reachable position (light passes through them to the actor).
 newtype PerceptionReachable = PerceptionReachable
     {preachable :: [Point]}
   deriving Show
@@ -39,16 +40,15 @@ levelPerception cops@Kind.COps{cotile, coactor=Kind.Ops{okind}}
   let hs = filter (not . bproj) $ actorList (== fid) lid s
       cR b = preachable $ computeReachable cops configFov lvl b
       totalReachable = PerceptionReachable $ concatMap cR hs
-      -- TODO: give actors light sources explicitly or alter vision.
       pAndVicinity p = p : vicinity lxsize lysize p
-      lightsBodies = map (\b -> (pAndVicinity $ bpos b, b)) hs
-      light = concat $ map fst lightsBodies
-      ptotal = computeVisible cotile totalReachable lvl light
+      noctoBodies = map (\b -> (pAndVicinity $ bpos b, b)) hs
+      nocto = concat $ map fst noctoBodies
+      ptotal = computeVisible cotile totalReachable lvl nocto
       canSmell b = asmell $ okind $ bkind b
       -- We assume smell FOV radius is always 1, regardless of vision
-      -- radius of the actor (if he can see at all).
+      -- radius of the actor (and whether he can see at all).
       psmell = PerceptionVisible $ ES.fromList
-               $ concat $ map fst $ filter (canSmell . snd) lightsBodies
+               $ concat $ map fst $ filter (canSmell . snd) noctoBodies
   in Perception ptotal psmell
 
 -- | Calculate perception of a faction.
@@ -56,7 +56,7 @@ factionPerception :: Kind.COps -> FovMode -> FactionId -> State
                   -> FactionPers
 factionPerception cops configFov fid s =
   EM.mapWithKey (\lid lvl -> levelPerception cops configFov fid lid lvl s)
-                $ sdungeon s
+                (sdungeon s)
 
 -- | Calculate the perception of the whole dungeon.
 dungeonPerception :: Kind.COps -> FovMode -> State -> Pers
@@ -64,41 +64,30 @@ dungeonPerception cops configFov s =
   let f fid _ = factionPerception cops configFov fid s
   in EM.mapWithKey f $ sfactionD s
 
--- | A position can be directly lit by an ambient shine or a weak, portable
--- light source, e.g,, carried by a hero. (Only lights of radius 0
--- are considered for now and it's assumed they do not reveal hero's position.
--- TODO: change this to be radius 1 noctovision and introduce stronger
--- light sources that show more but make the hero visible.)
--- A position is visible if it's reachable and either directly lit
--- or adjacent to one that is at once directly lit and reachable.
--- The last condition approximates being
--- on the same side of obstacles as the light source.
--- The approximation is not exact for multiple heroes, but the discrepancy
--- can be attributed to deduction based on combined vague visual hints,
--- e.g., if I don't see the reachable light seen by another hero,
--- there must be a wall in-between. Stray rays indicate doors,
--- moving shadows indicate monsters, etc.
+-- | Compute positions visible (reachable and seen) by the party.
+-- A position can be directly lit by an ambient shine or by a weak, portable
+-- light source, e.g,, carried by an actor. A reachable and lit position
+-- is visible. Additionally, positions directly adjacent to an actor
+-- are assumed to be visible to him (through sound, noctovision, whatever).
 computeVisible :: Kind.Ops TileKind -> PerceptionReachable
                -> Level -> [Point] -> PerceptionVisible
-computeVisible cotile PerceptionReachable{preachable} lvl lights =
+computeVisible cotile PerceptionReachable{preachable} lvl nocto =
   let isVisible pos = Tile.isLit cotile (lvl `at` pos)
-  in PerceptionVisible $ ES.fromList $ lights ++ filter isVisible preachable
+  in PerceptionVisible $ ES.fromList $ nocto ++ filter isVisible preachable
 
--- | Reachable are all fields on a visually unblocked path
--- from the hero position.
+-- | Compute positions reachable by the actor. Teachable are all fields
+-- on a visually unblocked path from the actor position.
 computeReachable :: Kind.COps -> FovMode -> Level -> Actor
                  -> PerceptionReachable
 computeReachable Kind.COps{cotile, coactor=Kind.Ops{okind}}
                  configFov lvl body =
   let sight = asight $ okind $ bkind body
       fovMode = if sight then configFov else Blind
-      ppos = bpos body
-      scan = fullscan cotile fovMode ppos lvl
-  in PerceptionReachable scan
+  in PerceptionReachable $ fullscan cotile fovMode (bpos body) lvl
 
 -- | Perform a full scan for a given position. Returns the positions
 -- that are currently in the field of view. The Field of View
--- algorithm to use, passed in the second argument, is set in the config file.
+-- algorithm to use is passed in the second argument.
 -- The actor's own position is considred reachable by him.
 fullscan :: Kind.Ops TileKind  -- ^ tile content, determines clear tiles
          -> FovMode            -- ^ scanning mode
