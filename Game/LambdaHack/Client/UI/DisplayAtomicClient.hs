@@ -74,24 +74,28 @@ displayRespUpdAtomicUI verbose _oldState cmd = case cmd of
   UpdSpotActor aid body _ -> createActorUI aid body verbose "be spotted"
   UpdLoseActor aid body _ ->
     destroyActorUI aid body "be missing in action" "be lost" verbose
-  UpdSpotItem iid item k c -> do
-    -- We assign slots to all items visible on the floor, but some of the slots
-    -- are later on recycled and then we report spotting the items again.
-    (letterSlots, numberSlots) <- getsClient sslots
-    case ( lookup iid $ map swap $ EM.assocs letterSlots
-         , lookup iid $ map swap $ IM.assocs numberSlots ) of
-      (Nothing, Nothing) -> do
-        updateItemSlot Nothing iid
-        scursorOld <- getsClient scursor
-        case scursorOld of
-          TEnemy{} -> return ()  -- probably too important to overwrite
-          TEnemyPos{} -> return ()
-          _ -> do
-            (lid, p) <- posOfContainer c
-            modifyClient $ \cli -> cli {scursor = TPoint lid p}
-        itemVerbMU item k "be spotted"
-        stopPlayBack
-      _ -> return ()  -- seen recently (still has a slot assigned)
+  UpdSpotItem iid item k c ->
+    case c of
+      CActor{} -> return ()  -- inventory management reported elsewhere
+      CFloor{} -> do
+        -- We assign slots to all items visible on the floor,
+        -- but some of the slots are later on recycled and then
+        -- we report spotting the items again.
+        (letterSlots, numberSlots) <- getsClient sslots
+        case ( lookup iid $ map swap $ EM.assocs letterSlots
+             , lookup iid $ map swap $ IM.assocs numberSlots ) of
+          (Nothing, Nothing) -> do
+            updateItemSlot Nothing iid
+            scursorOld <- getsClient scursor
+            case scursorOld of
+              TEnemy{} -> return ()  -- probably too important to overwrite
+              TEnemyPos{} -> return ()
+              _ -> do
+                (lid, p) <- posOfContainer c
+                modifyClient $ \cli -> cli {scursor = TPoint lid p}
+            itemVerbMU item k "be spotted"
+            stopPlayBack
+          _ -> return ()  -- seen recently (still has a slot assigned)
   UpdLoseItem{} -> skip
   -- Move actors and items.
   UpdMoveActor aid _ _ -> lookAtMove aid
