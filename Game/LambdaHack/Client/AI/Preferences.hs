@@ -30,7 +30,8 @@ effectToBenefit Kind.COps{coactor=Kind.Ops{okind}} b eff =
     Effect.Summon{} -> 1               -- may or may not spawn a friendly
     (Effect.CreateItem p) -> p * 20
     Effect.ApplyPerfume -> -10
-    (Effect.Burn p) -> -(15 * p)       -- splash damage
+    (Effect.Burn p) -> -(15 * p)       -- usually splash damage, etc.
+    (Effect.Blast p) -> -(5 * p)       -- unreliable
     Effect.Regeneration p -> p
     Effect.Steadfastness p -> p
     Effect.Ascend{} -> 1               -- change levels sensibly, in teams

@@ -80,6 +80,7 @@ effectSem effect source target = case effect of
   Effect.CreateItem p -> effectCreateItem p target
   Effect.ApplyPerfume -> effectApplyPerfume source target
   Effect.Burn p -> effectBurn p source target
+  Effect.Blast p -> effectBlast p source target
   Effect.Regeneration p -> effectSem (Effect.Heal p) source target
   Effect.Steadfastness p -> effectSteadfastness p target
   Effect.Ascend p -> effectAscend p target
@@ -314,6 +315,17 @@ effectBurn :: (MonadAtomic m, MonadServer m)
 effectBurn power source target = do
   void $ effectHurt 0 (2 * power) source target  -- damage from impact and fire
   execSfxAtomic $ SfxEffect target target $ Effect.Burn power
+  return True
+
+-- ** Blast
+
+effectBlast :: (MonadAtomic m, MonadServer m)
+              => Int -> ActorId -> ActorId -> m Bool
+effectBlast power _source target = do
+  -- TODO: make target deaf: prevents Calm decrease through proximity,
+  -- or makes it random or also doubles calm decrease through hits
+  -- or calm can't get above half --- all depends if it's temporary or not
+  execSfxAtomic $ SfxEffect target target $ Effect.Blast power
   return True
 
 -- ** Regeneration

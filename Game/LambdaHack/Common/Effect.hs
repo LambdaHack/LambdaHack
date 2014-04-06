@@ -31,6 +31,7 @@ data Effect a =
   | CreateItem !Int
   | ApplyPerfume
   | Burn !Int
+  | Blast !Int
   | Regeneration !a
   | Steadfastness !a
   | Ascend !Int
@@ -58,6 +59,7 @@ effectTrav (Summon p) _ = return $! Summon p
 effectTrav (CreateItem p) _ = return $! CreateItem p
 effectTrav ApplyPerfume _ = return ApplyPerfume
 effectTrav (Burn p) _ = return $! Burn p
+effectTrav (Blast p) _ = return $! Blast p
 effectTrav (Regeneration a) f = do
   b <- f a
   return $! Regeneration b
@@ -87,6 +89,7 @@ effectToSuff effect f =
     CreateItem p -> "of item creation" <+> affixPower p
     ApplyPerfume -> "of rose water"
     Burn p -> affixPower p
+    Blast p -> "of explosion" <+> affixPower p
     Regeneration t -> "of regeneration" <+> t
     Steadfastness t -> "of steadfastness" <+> t
     Ascend p | p > 0 -> "of ascending" <+> affixPower p

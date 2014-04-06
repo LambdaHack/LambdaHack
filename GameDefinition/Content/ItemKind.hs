@@ -143,7 +143,7 @@ potion2 = potion
   { ifeature = [Cause $ Heal 5, Explode "healing mist"]
   }
 potion3 = potion
-  { ifeature = [Explode "explosion blast 10"]
+  { ifeature = [Cause $ Blast 10, Explode "explosion blast 10"]
   }
 ring = ItemKind
   { isymbol  = '='
