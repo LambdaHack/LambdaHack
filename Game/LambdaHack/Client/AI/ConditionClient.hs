@@ -59,7 +59,7 @@ condAnyFoeAdjM aid = do
   b <- getsState $ getActorBody aid
   fact <- getsState $ (EM.! bfid b) . sfactionD
   allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
-  return $! any (adjacent (bpos b) . bpos) allFoes
+  return $ any (adjacent (bpos b) . bpos) allFoes  -- keep it lazy
 
 -- | Require the actor's HP is low enough.
 condHpTooLowM :: MonadClient m => ActorId -> m Bool
@@ -88,7 +88,7 @@ threatDistList aid = do
   allThreats <- getsState $ filter (not . hpTooLow coactor . snd)
                           . actorRegularAssocs (isAtWar fact) (blid b)
   let addDist (aid2, b2) = (chessDist (bpos b) (bpos b2), (aid2, b2))
-  return $! sort $ map addDist allThreats
+  return $ sort $ map addDist allThreats
 
 condBlocksFriendsM :: MonadClient m => ActorId -> m Bool
 condBlocksFriendsM aid = do
@@ -99,7 +99,7 @@ condBlocksFriendsM aid = do
         case EM.lookup aid2 targetD of
           Just (_, Just (_ : q : _, _)) | q == bpos b -> True
           _ -> False
-  return $! any blocked ours
+  return $ any blocked ours  -- keep it lazy
 
 condFloorWeaponM :: MonadStateRead m => ActorId -> m Bool
 condFloorWeaponM aid = do
@@ -107,14 +107,14 @@ condFloorWeaponM aid = do
   b <- getsState $ getActorBody aid
   floorAssocs <- getsState $ getFloorAssocs (blid b) (bpos b)
   let lootIsWeapon = isJust $ strongestSword cops floorAssocs
-  return $! lootIsWeapon
+  return $ lootIsWeapon  -- keep it lazy
 
 condNoWeaponM :: MonadStateRead m => ActorId -> m Bool
 condNoWeaponM aid = do
   cops <- getsState scops
   b <- getsState $ getActorBody aid
   eqpAssocs <- getsState $ getEqpAssocs b
-  return $! isNothing $ strongestSword cops eqpAssocs
+  return $ isNothing $ strongestSword cops eqpAssocs  -- keep it lazy
 
 condCanProjectM :: MonadClient m => ActorId -> m Bool
 condCanProjectM aid = do
@@ -127,7 +127,7 @@ condCanProjectM aid = do
                   $ Kind.stdRuleset corule
   benList <- benAvailableItems aid permitted
   let missiles = filter (maybe True (< 0) . fst . fst) benList
-  return $! asight ak && calmEnough b ak && not (null missiles)
+  return $ asight ak && calmEnough b ak && not (null missiles)  -- keep it lazy
 
 benAvailableItems :: MonadClient m
             => ActorId -> [Char] -> m [((Maybe Int, CStore), (ItemId, Item))]
@@ -157,7 +157,8 @@ benAvailableItems aid permitted = do
   invBag <- if calmEnough b ak
             then getsState $ getActorBag aid CInv
             else return EM.empty
-  return $! ben CGround floorBag ++ ben CEqp eqpBag ++ ben CInv invBag
+  return $ ben CGround floorBag ++ ben CEqp eqpBag ++ ben CInv invBag
+    -- keep it lazy
 
 condNotCalmEnoughM :: MonadClient m => ActorId -> m Bool
 condNotCalmEnoughM aid = do
@@ -169,7 +170,7 @@ condNotCalmEnoughM aid = do
 condDesirableFloorItemM :: MonadClient m => ActorId -> m Bool
 condDesirableFloorItemM aid = do
   benItemL <- benGroundItems aid
-  return $! not $ null benItemL
+  return $ not $ null benItemL  -- keep it lazy
 
 benGroundItems :: MonadClient m => ActorId -> m [((Int, Int), (ItemId, Item))]
 benGroundItems aid = do
@@ -191,7 +192,8 @@ benGroundItems aid = do
                               in if desirableItem item use k
                                  then Just ((use, k), (iid, item))
                                  else Nothing
-  return $! reverse $ sort $ mapMaybe mapDesirable $ EM.assocs floorItems
+  return $ reverse $ sort $ mapMaybe mapDesirable $ EM.assocs floorItems
+    -- keep it lazy
 
 condMeleeBadM :: MonadClient m => ActorId -> m Bool
 condMeleeBadM aid = do
@@ -206,9 +208,10 @@ condMeleeBadM aid = do
       strongCloseFriends = filter (not . hpTooLow coactor) closeFriends
       noFriendlyHelp = length closeFriends < 3 && null strongCloseFriends
       condHpTooLow = hpTooLow coactor b
-  return $! noFriendlyHelp  -- still not getting friends' help
-            && (condHpTooLow  -- too wounded to fight alone
-                || not (null friends))  -- friends somewhere, let's flee to them
+  return $ noFriendlyHelp  -- still not getting friends' help
+           && (condHpTooLow  -- too wounded to fight alone
+               || not (null friends))  -- friends somewhere, let's flee to them
+    -- keep it lazy
 
 fleeList :: MonadClient m => ActorId -> m [(Int, Point)]
 fleeList aid = do
