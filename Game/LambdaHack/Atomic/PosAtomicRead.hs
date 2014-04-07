@@ -136,7 +136,7 @@ posSfxAtomic cmd = case cmd of
   SfxShun aid p _ -> do
     (lid, pa) <- posOfAid aid
     return $! PosSight lid [pa, p]
-  SfxEffect _ aid _ -> singleAid aid
+  SfxEffect aid _ -> singleAid aid  -- sometimes we don't see source, OK
   SfxMsgFid fid _ -> return $! PosFid fid
   SfxMsgAll _ -> return PosAll
   SfxActorStart aid -> singleAid aid

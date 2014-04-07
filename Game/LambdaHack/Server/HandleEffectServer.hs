@@ -92,7 +92,7 @@ effectSem effect source target = case effect of
 
 effectNoEffect :: MonadAtomic m => ActorId -> m Bool
 effectNoEffect target = do
-  execSfxAtomic $ SfxEffect target target Effect.NoEffect
+  execSfxAtomic $ SfxEffect target Effect.NoEffect
   return False
 
 -- ** Heal
@@ -105,12 +105,12 @@ effectHeal power target = do
       deltaHP = min power (max 0 $ bhpMax - bhp tb)
   if deltaHP == 0
     then do
-      execSfxAtomic $ SfxEffect target target Effect.NoEffect
+      execSfxAtomic $ SfxEffect target Effect.NoEffect
       return False
     else do
       execUpdAtomic $ UpdHealActor target deltaHP
       when (deltaHP < 0) $ halveCalm target
-      execSfxAtomic $ SfxEffect target target $ Effect.Heal deltaHP
+      execSfxAtomic $ SfxEffect target $ Effect.Heal deltaHP
       return True
 
 halveCalm :: MonadAtomic m => ActorId -> m ()
@@ -140,13 +140,13 @@ effectHurt nDm power source target = do
   let deltaHP = - (n + power)
   if deltaHP >= 0
     then do
-      execSfxAtomic $ SfxEffect source target Effect.NoEffect
+      execSfxAtomic $ SfxEffect target Effect.NoEffect
       return False
     else do
       -- Damage the target.
       execUpdAtomic $ UpdHealActor target deltaHP
       halveCalm target
-      execSfxAtomic $ SfxEffect source target $
+      execSfxAtomic $ SfxEffect target $
         if source == target
         then Effect.Heal deltaHP
         else Effect.Hurt nDm deltaHP{-hack-}
@@ -166,11 +166,11 @@ effectHaste power target = do
                    else speedZero
   if deltaSpeed == speedZero
     then do
-      execSfxAtomic $ SfxEffect target target Effect.NoEffect
+      execSfxAtomic $ SfxEffect target Effect.NoEffect
       return False
     else do
       execUpdAtomic $ UpdHasteActor target deltaSpeed
-      execSfxAtomic $ SfxEffect target target $ Effect.Haste power
+      execSfxAtomic $ SfxEffect target $ Effect.Haste power
       return True
 
 -- ** Mindprobe
@@ -183,10 +183,10 @@ effectMindprobe target = do
   lb <- getsState $ actorRegularList (isAtWar fact) lid
   let nEnemy = length lb
   if nEnemy == 0 || bproj tb then do
-    execSfxAtomic $ SfxEffect target target Effect.NoEffect
+    execSfxAtomic $ SfxEffect target Effect.NoEffect
     return False
   else do
-    execSfxAtomic $ SfxEffect target target $ Effect.Mindprobe nEnemy
+    execSfxAtomic $ SfxEffect target $ Effect.Mindprobe nEnemy
     return True
 
 -- ** Dominate
@@ -197,11 +197,11 @@ effectDominate source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   if bfid tb == bfid sb || bproj tb then do
-    execSfxAtomic $ SfxEffect source target Effect.NoEffect
+    execSfxAtomic $ SfxEffect target Effect.NoEffect
     return False
   else do
     -- Announce domination before the actor changes sides.
-    execSfxAtomic $ SfxEffect source target Effect.Dominate
+    execSfxAtomic $ SfxEffect target Effect.Dominate
     dominateFid (bfid sb) target
     return True
 
@@ -214,10 +214,10 @@ effectImpress source target = do
   tb <- getsState $ getActorBody target
   if boldfid tb == bfid sb || bproj tb then do
     -- TODO: Don't spam with shrapnel causing NoEffect and then uncomment.
---    execSfxAtomic $ SfxEffect source target Effect.NoEffect
+--    execSfxAtomic $ SfxEffect target Effect.NoEffect
     return False
   else do
-    execSfxAtomic $ SfxEffect source target Effect.Impress
+    execSfxAtomic $ SfxEffect target Effect.Impress
     execUpdAtomic $ UpdOldFidActor target (boldfid tb) (bfid sb)
     return True
 
@@ -308,7 +308,7 @@ effectApplyPerfume source target =
     let f p fromSm =
           execUpdAtomic $ UpdAlterSmell (blid tb) p (Just fromSm) Nothing
     mapWithKeyM_ f lsmell
-    execSfxAtomic $ SfxEffect source target Effect.ApplyPerfume
+    execSfxAtomic $ SfxEffect target Effect.ApplyPerfume
     void $ effectImpress source target
     return True
 
@@ -318,7 +318,7 @@ effectBurn :: (MonadAtomic m, MonadServer m)
            => Int -> ActorId -> ActorId -> m Bool
 effectBurn power source target = do
   void $ effectHurt 0 (2 * power) source target  -- damage from impact and fire
-  execSfxAtomic $ SfxEffect target target $ Effect.Burn power
+  execSfxAtomic $ SfxEffect target $ Effect.Burn power
   return True
 
 -- ** Blast
@@ -329,7 +329,7 @@ effectBlast power _source target = do
   -- TODO: make target deaf: prevents Calm decrease through proximity,
   -- or makes it random or also doubles calm decrease through hits
   -- or calm can't get above half --- all depends if it's temporary or not
-  execSfxAtomic $ SfxEffect target target $ Effect.Blast power
+  execSfxAtomic $ SfxEffect target $ Effect.Blast power
   return True
 
 -- ** Regeneration
@@ -344,11 +344,11 @@ effectSteadfastness power target = do
       deltaCalm = min power (max 0 $ bcalmMax - bcalm tb)
   if deltaCalm == 0
     then do
-      execSfxAtomic $ SfxEffect target target Effect.NoEffect
+      execSfxAtomic $ SfxEffect target Effect.NoEffect
       return False
     else do
       execUpdAtomic $ UpdCalmActor target deltaCalm
-      execSfxAtomic $ SfxEffect target target $ Effect.Steadfastness deltaCalm
+      execSfxAtomic $ SfxEffect target $ Effect.Steadfastness deltaCalm
       return True
 
 -- ** Ascend
@@ -358,7 +358,7 @@ effectAscend power target = do
   mfail <- effLvlGoUp target power
   case mfail of
     Nothing -> do
-      execSfxAtomic $ SfxEffect target target $ Effect.Ascend power
+      execSfxAtomic $ SfxEffect target $ Effect.Ascend power
       return True
     Just failMsg -> do
       b <- getsState $ getActorBody target

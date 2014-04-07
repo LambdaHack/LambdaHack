@@ -471,8 +471,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
     when verbose $ aVerbMU aid "trigger"  -- TODO: opens door, etc.
   SfxShun aid _p _ ->
     when verbose $ aVerbMU aid "shun"  -- TODO: shuns stairs down
-  SfxEffect source aid effect -> do
-    sb <- getsState $ getActorBody source
+  SfxEffect aid effect -> do
     b <- getsState $ getActorBody aid
     side <- getsClient sside
     let fid = bfid b
@@ -528,7 +527,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
                 [MU.CardinalWs nEnemy "howl", "of anger", "can be heard"]
           msgAdd msg
         Effect.Dominate -> do
-          if source == aid then
+          if bcalm b == 1 then  -- sometimes only a coincidence, but who cares
             aVerbMU aid $ MU.Text "yield, under extreme pressure"
           else if fid == side then do
             aVerbMU aid $ MU.Text "black out, dominated by foes"
@@ -536,14 +535,15 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           else do
             fidName <- getsState $ gname . (EM.! fid) . sfactionD
             aVerbMU aid $ MU.Text $ "be no longer controlled by" <+> fidName
-          fidSourceName <- getsState $ gname . (EM.! bfid sb) . sfactionD
-          let subject = partActor b
-              verb = "be under"
-          msgAdd $ makeSentence
-            [MU.SubjectVerbSg subject verb, MU.Text fidSourceName, "control"]
+          -- TODO:
+          -- fidSourceName <- getsState $ gname . (EM.! bfid sb) . sfactionD
+          -- let subject = partActor b
+          --     verb = "be under"
+          -- msgAdd $ makeSentence
+          --   [MU.SubjectVerbSg subject verb, MU.Text fidSourceName, "control"]
         Effect.Impress{} ->
           actorVerbMU aid b
-          $ if bfid sb == bfid b
+          $ if boldfid b /= bfid b
             then
               "get sobered and refocused by the fragrant moisture"
             else
