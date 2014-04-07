@@ -9,7 +9,7 @@ module Game.LambdaHack.Common.ActorState
   , posToActors, posToActor, getItemBody, memActor, getActorBody
   , getCarriedAssocs, getEqpAssocs, getEqpKA, getInvAssocs, getFloorAssocs
   , tryFindHeroK, getLocalTime, isSpawnFaction
-  , itemPrice, calmEnough, regenHPPeriod, regenCalmDelta, dispEnemy
+  , itemPrice, calmEnough, regenHPPeriod, regenCalmDelta, actorInDark, dispEnemy
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -299,6 +299,16 @@ regenCalmDelta b s =
   in if null closeFoes
      then min calmIncr maxDeltaCalm
      else -1  -- even if all calmness spent, keep informing the client
+
+actorInDark :: Actor -> State -> Bool
+actorInDark b s =
+  let Kind.COps{cotile} = scops s
+      lvl = (EM.! blid b) . sdungeon $ s
+      eqpAssocs = getEqpAssocs b s
+--      floorAssocs = getFloorAssocs (blid b) (bpos b) s
+  in not (Tile.isLit cotile (lvl `at` bpos b))
+     && isNothing (strongestBurn eqpAssocs)
+--     && isNothing (strongestBurn floorAssocs)
 
 -- TODO: base on items not/not only on iq.
 -- Check whether an actor can be displaced by an enemy. Generally, heroes can

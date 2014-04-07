@@ -223,7 +223,7 @@ drawArenaStatus explored Level{ldepth, ldesc, lseen, lclear} width =
 drawLeaderStatus :: Kind.COps -> State
                  -> Int -> Maybe ActorId -> Int
                  -> [Color.AttrChar]
-drawLeaderStatus cops s waitTimes mleader width =
+drawLeaderStatus cops s waitT mleader width =
   let addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
       addColor c t = map (Color.AttrChar $ Color.Attr c Color.defBG)
                          (T.unpack t)
@@ -234,30 +234,30 @@ drawLeaderStatus cops s waitTimes mleader width =
       stats = case mleader of
         Just leader ->
           let Kind.COps{coactor=Kind.Ops{okind}} = cops
-              (bracedL, hpPeriod, calmDelta, ahpS, bhpS, acalmS, bcalmS) =
+              (darkL, bracedL, hpPeriod, calmDelta,
+               ahpS, bhpS, acalmS, bcalmS) =
                 let b@Actor{bkind, bhp, bcalm} = getActorBody leader s
                     ActorKind{ahp, acalm} = okind bkind
-                in ( braced b, regenHPPeriod b s, bcalmDelta b
+                in ( actorInDark b s, braced b, regenHPPeriod b s, bcalmDelta b
                    , tshow (Dice.maxDice ahp), tshow bhp
                    , tshow (Dice.maxDice acalm), tshow bcalm )
+              -- This is a valuable feedback for the otherwise hard to observe
+              -- 'wait' command.
+              slashes = ["/", "|", "\\", "|"]
+              slashPick = slashes !! (max 0 (waitT - 1) `mod` length slashes)
               calmAddAttr | calmDelta > 0 = addColor Color.BrGreen
                           | calmDelta < 0 = addColor Color.BrRed
                           | otherwise = addAttr
-              calmHeader = calmAddAttr $ calmHeaderText <> ":"
-              calmText = bcalmS <> "/" <> acalmS
-              -- Indicate the actor is braced (was waiting last move).
-              -- It's a useful feedback for the otherwise hard to observe
-              -- 'wait' command.
-              slashes = ["/", "|", "\\", "|"]
-              slashPick | bracedL =
-                slashes !! (max 0 (waitTimes - 1) `mod` length slashes)
-                        | otherwise = "/"
+              darkPick | darkL   = "."
+                       | otherwise = ":"
+              calmHeader = calmAddAttr $ calmHeaderText <> darkPick
+              calmText = bcalmS <>  (if darkL then slashPick else "/") <> acalmS
               bracePick | bracedL   = "}"
                         | otherwise = ":"
               hpAddAttr | hpPeriod > 0 = addColor Color.BrGreen
                         | otherwise = addAttr
               hpHeader = hpAddAttr $ hpHeaderText <> bracePick
-              hpText = bhpS <> slashPick <> ahpS
+              hpText = bhpS <> (if bracedL then slashPick else "/") <> ahpS
           in calmHeader <> addAttr (T.justifyRight 6 ' ' calmText <> " ")
              <> hpHeader <> addAttr (T.justifyRight 6 ' ' hpText <> " ")
         Nothing -> addAttr $ calmHeaderText <> ": --/-- "
