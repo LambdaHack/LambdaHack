@@ -62,16 +62,16 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
      cursorDesc targetDesc sfTop =
   let Kind.COps{cotile=cotile@Kind.Ops{okind=tokind, ouniqGroup}} = cops
       (lvl@Level{lxsize, lysize, lsmell, ltime}) = sdungeon s EM.! drawnLevelId
-      (bl, blLength, mblid) = case (cursorPos, mleader) of
+      (bl, mblid, mbpos) = case (cursorPos, mleader) of
         (Just cursor, Just leader) ->
           let Actor{bpos, blid} = getActorBody leader s
           in if blid /= drawnLevelId
-             then ([cursor], 0, Just blid)
+             then ( [cursor], Just blid, Just bpos )
              else ( fromMaybe [] $ bla lxsize lysize seps bpos cursor
-                  , chessDist bpos cursor
-                  , Just blid)
-        _ -> ([], 0, Nothing)
-      mpath = maybe Nothing (\(_, mp) -> if blLength == 0
+                  , Just blid
+                  , Just bpos )
+        _ -> ([], Nothing, Nothing)
+      mpath = maybe Nothing (\(_, mp) -> if null bl
                                          then Nothing
                                          else mp) bfsmpathRaw
       actorsHere = actorAssocs (const True) drawnLevelId s
@@ -144,18 +144,21 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
       widthX = 80
       widthTgt = 39
       widthStats = widthX - widthTgt
-      showN2 n = T.justifyRight 2 ' ' (tshow n)
       addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
       arenaStatus = drawArenaStatus (ES.member drawnLevelId sexplored) lvl
                                     widthStats
       displayPathText mp =
-        let len = case (mp, bfsmpathRaw) of
-              (Just target, Just (bfs, _)) | mblid == Just drawnLevelId ->
-                fromMaybe 0 (accessBfs bfs target)
-              _ -> 0
-            pText | len == 0 = ""
-                  | otherwise = "(path" <+> showN2 len <> ")"
-        in " " <> pText
+        let (plen, llen) = case (mp, bfsmpathRaw, mbpos) of
+              (Just target, Just (bfs, _), Just bpos)
+                | mblid == Just drawnLevelId ->
+                  (fromMaybe 0 (accessBfs bfs target), chessDist bpos target)
+              _ -> (0, 0)
+            pText | plen == 0 = ""
+                  | otherwise = "p" <> tshow plen
+            lText | llen == 0 = ""
+                  | otherwise = "l" <> tshow llen
+            bothText = pText <+> lText
+        in if T.null bothText then "" else " " <> bothText
       -- The indicators must fit, they are the actual information.
       pathCsr = displayPathText cursorPos
       trimTgtDesc n t = assert (not (T.null t) && n > 2) $
@@ -168,7 +171,7 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
                              in T.unwords $ init lw
              in fits <> ellipsis
       cursorText =
-        let n = widthTgt - T.length pathCsr - 8
+        let n = widthTgt - T.length pathCsr - 7
         in (if isJust stgtMode then "cursor>" else "Cursor:")
            <+> trimTgtDesc n cursorDesc
       cursorGap = T.replicate (widthTgt - T.length pathCsr
@@ -192,7 +195,7 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
       -- The indicators must fit, they are the actual information.
       pathTgt = displayPathText tgtPos
       targetText =
-        let n = widthTgt - T.length pathTgt - 8
+        let n = widthTgt - T.length pathTgt - 7
         in "Target:" <+> trimTgtDesc n targetDesc
       targetGap = T.replicate (widthTgt - T.length pathTgt
                                         - T.length targetText) " "
