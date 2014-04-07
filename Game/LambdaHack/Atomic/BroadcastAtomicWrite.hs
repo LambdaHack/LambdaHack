@@ -77,7 +77,7 @@ handleAndBroadcast knowEvents persOld doResetFidPerception dolitInDungeon
                      || fmap UpdAtomic atomicBroken == [atomic])) skip
   -- Perform the action on the server.
   handleCmdAtomicServer ps atomic
-  -- Update lights in the dungeon. This is lazy, may not be needed or only part.
+  -- Update lights in the dungeon. This is lazy, may not be needed or partially.
   persLit <- dolitInDungeon
   -- Send some actions to the clients, one faction at a time.
   let sendUI fid cmdUI =

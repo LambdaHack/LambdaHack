@@ -6,6 +6,7 @@ module Game.LambdaHack.Server.Fov
   , PersLit, litInDungeon
   ) where
 
+import qualified Data.EnumMap.Lazy as EML
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 
@@ -38,7 +39,7 @@ newtype PerceptionLit = PerceptionLit
     {plit :: ES.EnumSet Point}
   deriving Show
 
-type PersLit = EM.EnumMap LevelId PerceptionLit
+type PersLit = EML.EnumMap LevelId PerceptionLit
 
 -- | Calculate perception of the level.
 levelPerception :: PerceptionLit -> FovMode -> FactionId
@@ -65,7 +66,7 @@ levelPerception litHere fovMode fid lid lvl@Level{lxsize, lysize} s =
 factionPerception :: FovMode -> FactionId -> State -> PersLit
                   -> FactionPers
 factionPerception fovMode fid s persLit =
-  let lvlPer lid lvl = let lit = persLit EM.! lid
+  let lvlPer lid lvl = let lit = persLit EML.! lid
                        in levelPerception lit fovMode fid lid lvl s
   in EM.mapWithKey lvlPer $ sdungeon s
 
@@ -124,8 +125,8 @@ litOnLevel fovMode lid lvl s =
 -- | Compute all lit positions in the dungeon
 litInDungeon :: FovMode -> State -> PersLit
 litInDungeon fovMode s =
-  let litLvl lid lvl = litOnLevel fovMode lid lvl s
-  in EM.mapWithKey litLvl $ sdungeon s
+  let litLvl (lid, lvl) = (lid, litOnLevel fovMode lid lvl s)
+  in EML.fromDistinctAscList $ map litLvl $ EM.assocs $ sdungeon s
 
 -- | Perform a full scan for a given position. Returns the positions
 -- that are currently in the field of view. The Field of View
