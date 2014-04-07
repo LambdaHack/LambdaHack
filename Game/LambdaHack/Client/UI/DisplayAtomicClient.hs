@@ -528,15 +528,19 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
                 [MU.CardinalWs nEnemy "howl", "of anger", "can be heard"]
           msgAdd msg
         Effect.Dominate -> do
-          if bcalm b == 1 then  -- sometimes only a coincidence, but who cares
+          if bcalm b == 1 then do -- sometimes only a coincidence, but nm
             aVerbMU aid $ MU.Text "yield, under extreme pressure"
+            fidName <- getsState $ gname . (EM.! fid) . sfactionD
+            aVerbMU aid $ MU.Text $ "be no longer controlled by" <+> fidName
           else if fid == side then do
             aVerbMU aid $ MU.Text "black out, dominated by foes"
+            fidName <- getsState $ gname . (EM.! fid) . sfactionD
+            aVerbMU aid $ MU.Text $ "be no longer controlled by" <+> fidName
             void $ displayMore ColorFull ""
           else do
             fidName <- getsState $ gname . (EM.! fid) . sfactionD
             aVerbMU aid $ MU.Text $ "be no longer controlled by" <+> fidName
-          -- TODO:
+          -- TODO: replace the 2 top "be no longer" with:
           -- fidSourceName <- getsState $ gname . (EM.! bfid sb) . sfactionD
           -- let subject = partActor b
           --     verb = "be under"
