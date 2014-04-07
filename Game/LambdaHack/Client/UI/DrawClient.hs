@@ -116,7 +116,7 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
               (True, False)  -> Color.BrRed
               (False, True)  -> Color.Green
               (False, False) -> Color.Red
-            atttrOnPathOrLine = if Just pos0 `elem` [cursorPos, tgtPos]
+            atttrOnPathOrLine = if Just pos0 == cursorPos
                                 then inverseVideo {Color.fg = fgOnPathOrLine}
                                 else Color.defAttr {Color.fg = fgOnPathOrLine}
             (char, attr0) =
@@ -126,7 +126,7 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
                   ('*', atttrOnPathOrLine)  -- line takes precedence over path
                 _ | isJust stgtMode
                     && (maybe False (elem pos0) mpath) ->
-                  (';', atttrOnPathOrLine)
+                  (';', Color.defAttr {Color.fg = fgOnPathOrLine})
                 Just (aid, m) -> viewActor aid m
                 _ | smarkSmell && smlt > Delta timeZero ->
                   (timeDeltaToDigit smellTimeout smlt, rainbow pos0)
