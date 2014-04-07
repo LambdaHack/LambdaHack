@@ -44,5 +44,5 @@ validateActorKind l =
       sorted = sortBy cmp l
       nubbed = nubBy eq sorted
       tooSimilar = deleteFirstsBy eq sorted nubbed
-      tooVerbose = filter (\ak -> T.length (aname ak) > 25) l
+      tooVerbose = filter (\ak -> T.length (aname ak) > 23) l
   in tooSimilar ++ tooVerbose

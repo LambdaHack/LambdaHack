@@ -28,25 +28,27 @@ The currently chosen party leader is highlighted on the screen
 and his attributes are displayed at the bottommost status line,
 which in its most complex form may look as follows.
 
-    *@12 Adventurer D: 5d1+1 S: 20/50 H: 33/50 Target: basilisk  (path  7)
+    *@12 Adventurer  5d1+1 Calm: 20/50 HP: 33/50 Target: basilisk  [**___]
 
 The line starts with the list of party members (unless only one member
 resides on the currently displayed level) and the shortened name of the team.
-After 'D' comes the damage of the leader's weapon, after 'C' his current
-and maximum calm (composure, focus) and after 'H' his current and maximum
+Then comes the damage of the leader's weapon, after 'Calm' his current
+and maximum calm (composure, focus) and after 'HP' his current and maximum
 hit points (health). At the end, the personal target of the leader
-is described and the length of the shortest path to the target.
+is described, in this case a monster, with hit points drawn as a bar.
+
+ and the length of the shortest path to the target.
 
 The other status line relates to the dungeon and to the whole party.
 
-    5  Tall cavern  [33% seen] Cursor: exact spot (71,12)  (path  5)
+    5  Tall cavern   [33% seen] Cursor: exact spot (71,12)  p15 l15
 
 First comes the depth of the current level and its description.
 Then the approximate percentage of its explorable tiles already
 seen by the heroes. The cursor is the common target of the whole party,
 directly manipulated with movement keys in the targeting mode.
 The line ends with the length of the shortest path from the leader
-to the cursor position.
+to the cursor position and the straight-line distance between the points.
 
 
 Dungeon

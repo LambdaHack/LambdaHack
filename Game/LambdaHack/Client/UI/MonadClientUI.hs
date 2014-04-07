@@ -42,6 +42,7 @@ import Game.LambdaHack.Client.UI.Frontend as Frontend
 import Game.LambdaHack.Client.UI.KeyBindings
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
 import Game.LambdaHack.Common.Item
@@ -51,6 +52,7 @@ import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
 import Game.LambdaHack.Common.State
+import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ModeKind
 
 -- | The information that is constant across a client playing session,
@@ -162,7 +164,7 @@ drawOverlay onBlank dm over = do
   let anyPos = fromMaybe (Point 0 0) cursorPos
       pathFromLeader leader = fmap Just $ getCacheBfsAndPath leader anyPos
   bfsmpath <- maybe (return Nothing) pathFromLeader mleader
-  tgtDesc <- maybe (return "------") targetDescLeader mleader
+  tgtDesc <- maybe (return ("------", Nothing)) targetDescLeader mleader
   cursorDesc <- targetDescCursor
   return $! draw onBlank dm cops per lid mleader cursorPos tgtPos
                  bfsmpath cli s cursorDesc tgtDesc over
@@ -278,49 +280,65 @@ viewedLevel = do
   stgtMode <- getsClient stgtMode
   return $! maybe arena tgtLevelId stgtMode
 
-targetDesc :: MonadClientUI m => Maybe Target -> m Text
+targetDesc :: MonadClientUI m => Maybe Target -> m (Text, Maybe Text)
 targetDesc target = do
   lidV <- viewedLevel
   mleader <- getsClient _sleader
   case target of
-    Just (TEnemy a _) ->
-      getsState $ bname . getActorBody a
-    Just (TEnemyPos _ lid p _) ->
-      return $! if lid == lidV
-                then "hot spot" <+> (T.pack . show) p
-                else "a hot spot on level" <+> tshow (abs $ fromEnum lid)
-    Just (TPoint lid p) ->
-     if lid == lidV
-     then do
-       lvl <- getLevel lid
-       case EM.assocs $ lvl `atI` p of
-         [] -> return $! "exact spot" <+> (T.pack . show) p
-         [(iid, k)] -> do
-           Kind.COps{coitem} <- getsState scops
-           disco <- getsClient sdisco
-           item <- getsState $ getItemBody iid
-           let (name, stats) = partItem coitem disco item
-           return $! makePhrase $ if k == 1
-                                  then [name, stats]  -- "a sword" too verbose
-                                  else [MU.CarWs k name, stats]
-         _ -> return $! "many items at" <+> (T.pack . show) p
-     else return $! "an exact spot on level" <+> tshow (abs $ fromEnum lid)
+    Just (TEnemy aid _) -> do
+      Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+      side <- getsClient sside
+      b <- getsState $ getActorBody aid
+      let ak = okind $ bkind b
+          maxHP = Dice.maxDice $ ahp ak
+          percentage = 100 * bhp b `div` maxHP
+          stars | percentage < 20  = "[_____]"
+                | percentage < 40  = "[*____]"
+                | percentage < 60  = "[**___]"
+                | percentage < 80  = "[***__]"
+                | percentage < 100 = "[****_]"
+                | otherwise        = "[*****]"
+          hpIndicator = if bfid b == side then Nothing else Just stars
+      return (bname b, hpIndicator)
+    Just (TEnemyPos _ lid p _) -> do
+      let hotText = if lid == lidV
+                    then "hot spot" <+> (T.pack . show) p
+                    else "a hot spot on level" <+> tshow (abs $ fromEnum lid)
+      return (hotText, Nothing)
+    Just (TPoint lid p) -> do
+      pointedText <-
+        if lid == lidV
+        then do
+          lvl <- getLevel lid
+          case EM.assocs $ lvl `atI` p of
+            [] -> return $! "exact spot" <+> (T.pack . show) p
+            [(iid, k)] -> do
+              Kind.COps{coitem} <- getsState scops
+              disco <- getsClient sdisco
+              item <- getsState $ getItemBody iid
+              let (name, stats) = partItem coitem disco item
+              return $! makePhrase $ if k == 1
+                                     then [name, stats]  -- "a sword" too wordy
+                                     else [MU.CarWs k name, stats]
+            _ -> return $! "many items at" <+> (T.pack . show) p
+        else return $! "an exact spot on level" <+> tshow (abs $ fromEnum lid)
+      return (pointedText, Nothing)
     Just TVector{} ->
       case mleader of
-        Nothing -> return "a relative shift"
+        Nothing -> return ("a relative shift", Nothing)
         Just aid -> do
           tgtPos <- aidTgtToPos aid lidV target
           let invalidMsg = "an invalid relative shift"
               validMsg p = "shift to" <+> (T.pack . show) p
-          return $! maybe invalidMsg validMsg tgtPos
-    Nothing -> return "cursor location"
+          return (maybe invalidMsg validMsg tgtPos, Nothing)
+    Nothing -> return ("cursor location", Nothing)
 
-targetDescLeader :: MonadClientUI m => ActorId -> m Text
+targetDescLeader :: MonadClientUI m => ActorId -> m (Text, Maybe Text)
 targetDescLeader leader = do
   tgt <- getsClient $ getTarget leader
   targetDesc tgt
 
-targetDescCursor :: MonadClientUI m => m Text
+targetDescCursor :: MonadClientUI m => m (Text, Maybe Text)
 targetDescCursor = do
   scursor <- getsClient scursor
   targetDesc $ Just scursor

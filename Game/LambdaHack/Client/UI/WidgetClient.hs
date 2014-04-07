@@ -139,7 +139,7 @@ animate arena anim = do
   let anyPos = fromMaybe (Point 0 0) cursorPos
       pathFromLeader leader = fmap Just $ getCacheBfsAndPath leader anyPos
   bfsmpath <- maybe (return Nothing) pathFromLeader mleader
-  tgtDesc <- maybe (return "------") targetDescLeader mleader
+  tgtDesc <- maybe (return ("------", Nothing)) targetDescLeader mleader
   cursorDesc <- targetDescCursor
   let over = renderReport sreport
       topLineOnly = truncateToOverlay lxsize over

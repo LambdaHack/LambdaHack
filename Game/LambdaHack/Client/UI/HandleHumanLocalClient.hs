@@ -643,6 +643,6 @@ endTargeting = do
 endTargetingMsg :: MonadClientUI m => m ()
 endTargetingMsg = do
   leader <- getLeaderUI
-  targetMsg <- targetDescLeader leader
+  (targetMsg, _) <- targetDescLeader leader
   subject <- partAidLeader leader
   msgAdd $ makeSentence [MU.SubjectVerbSg subject "target", MU.Text targetMsg]

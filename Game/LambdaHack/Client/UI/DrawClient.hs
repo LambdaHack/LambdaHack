@@ -54,12 +54,12 @@ draw :: Bool -> ColorMode -> Kind.COps -> Perception -> LevelId
      -> Maybe ActorId -> Maybe Point -> Maybe Point
      -> Maybe (PointArray.Array BfsDistance, Maybe [Point])
      -> StateClient -> State
-     -> Text -> Text -> Overlay
+     -> (Text, Maybe Text) -> (Text, Maybe Text) -> Overlay
      -> SingleFrame
 draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
      cli@StateClient{ stgtMode, seps, sdisco, sexplored
                     , smarkVision, smarkSmell, smarkSuspect, swaitTimes } s
-     cursorDesc targetDesc sfTop =
+     (cursorDesc, mcursorHp) (targetDesc, mtargetHp) sfTop =
   let Kind.COps{cotile=cotile@Kind.Ops{okind=tokind, ouniqGroup}} = cops
       (lvl@Level{lxsize, lysize, lsmell, ltime}) = sdungeon s EM.! drawnLevelId
       (bl, mblid, mbpos) = case (cursorPos, mleader) of
@@ -147,7 +147,7 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
       addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
       arenaStatus = drawArenaStatus (ES.member drawnLevelId sexplored) lvl
                                     widthStats
-      displayPathText mp =
+      displayPathText mp mt =
         let (plen, llen) = case (mp, bfsmpathRaw, mbpos) of
               (Just target, Just (bfs, _), Just bpos)
                 | mblid == Just drawnLevelId ->
@@ -157,10 +157,10 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
                   | otherwise = "p" <> tshow plen
             lText | llen == 0 = ""
                   | otherwise = "l" <> tshow llen
-            bothText = pText <+> lText
-        in if T.null bothText then "" else " " <> bothText
+            text = fromMaybe (pText <+> lText) mt
+        in if T.null text then "" else " " <> text
       -- The indicators must fit, they are the actual information.
-      pathCsr = displayPathText cursorPos
+      pathCsr = displayPathText cursorPos mcursorHp
       trimTgtDesc n t = assert (not (T.null t) && n > 2) $
         if T.length t <= n then t
         else let ellipsis = "..."
@@ -193,7 +193,7 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
                                                     - length damageStatus
                                                     - length nameStatus) " "
       -- The indicators must fit, they are the actual information.
-      pathTgt = displayPathText tgtPos
+      pathTgt = displayPathText tgtPos mtargetHp
       targetText =
         let n = widthTgt - T.length pathTgt - 7
         in "Target:" <+> trimTgtDesc n targetDesc
