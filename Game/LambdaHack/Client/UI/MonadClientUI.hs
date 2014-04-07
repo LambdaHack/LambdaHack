@@ -27,6 +27,7 @@ import Data.Maybe
 import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
+import qualified NLP.Miniutter.English as MU
 import System.Time
 
 import Game.LambdaHack.Client.BfsClient
@@ -43,6 +44,8 @@ import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.HighScore as HighScore
+import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
@@ -287,9 +290,21 @@ targetDesc target = do
                 then "hot spot" <+> (T.pack . show) p
                 else "a hot spot on level" <+> tshow (abs $ fromEnum lid)
     Just (TPoint lid p) ->
-      return $! if lid == lidV
-                then "exact spot" <+> (T.pack . show) p
-                else "an exact spot on level" <+> tshow (abs $ fromEnum lid)
+     if lid == lidV
+     then do
+       lvl <- getLevel lid
+       case EM.assocs $ lvl `atI` p of
+         [] -> return $! "exact spot" <+> (T.pack . show) p
+         [(iid, k)] -> do
+           Kind.COps{coitem} <- getsState scops
+           disco <- getsClient sdisco
+           item <- getsState $ getItemBody iid
+           let (name, stats) = partItem coitem disco item
+           return $! makePhrase $ if k == 1
+                                  then [name, stats]  -- "a sword" too verbose
+                                  else [MU.CarWs k name, stats]
+         _ -> return $! "many items at" <+> (T.pack . show) p
+     else return $! "an exact spot on level" <+> tshow (abs $ fromEnum lid)
     Just TVector{} ->
       case mleader of
         Nothing -> return "a relative shift"

@@ -5,6 +5,7 @@ module Game.LambdaHack.Client.UI.DrawClient
   , draw
   ) where
 
+import Control.Exception.Assert.Sugar
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 import qualified Data.IntMap.Strict as IM
@@ -157,12 +158,19 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
         in " " <> pText
       -- The indicators must fit, they are the actual information.
       pathCsr = displayPathText cursorPos
-      -- TODO: when too long descriptions, use Csr and Tgt
+      trimTgtDesc n t = assert (not (T.null t) && n > 2) $
+        if T.length t <= n then t
+        else let ellipsis = "..."
+                 fitsPlusOne = T.take (n - T.length ellipsis + 1) t
+                 fits = if T.last fitsPlusOne == ' '
+                        then T.init fitsPlusOne
+                        else let lw = T.words fitsPlusOne
+                             in T.unwords $ init lw
+             in fits <> ellipsis
       cursorText =
-        let space = widthTgt - T.length pathCsr
-        in T.take space
-           $ (if isJust stgtMode then "cursor>" else "Cursor:")
-             <+> cursorDesc
+        let n = widthTgt - T.length pathCsr - 8
+        in (if isJust stgtMode then "cursor>" else "Cursor:")
+           <+> trimTgtDesc n cursorDesc
       cursorGap = T.replicate (widthTgt - T.length pathCsr
                                         - T.length cursorText) " "
       cursorStatus = addAttr $ cursorText <> cursorGap <> pathCsr
@@ -184,9 +192,8 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
       -- The indicators must fit, they are the actual information.
       pathTgt = displayPathText tgtPos
       targetText =
-        let space = widthTgt - T.length pathTgt
-        in T.take space
-           $ "Target:" <+> targetDesc
+        let n = widthTgt - T.length pathTgt - 8
+        in "Target:" <+> trimTgtDesc n targetDesc
       targetGap = T.replicate (widthTgt - T.length pathTgt
                                         - T.length targetText) " "
       targetStatus = addAttr $ targetText <> targetGap <> pathTgt
