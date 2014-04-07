@@ -257,7 +257,9 @@ meleeBlocker aid = do
           -- No problem if there are many projectiles at the spot. We just
           -- attack the first one.
           body2 <- getsState $ getActorBody aid2
-          if isAtWar fact (bfid body2) && not (actorDying body2) then
+          if not (bproj body2)  -- displacing saves a move
+             && isAtWar fact (bfid body2)
+             && not (actorDying body2) then
             return $! returN "melee in the way" (ReqMelee aid2)
           else return reject
         Nothing -> return reject
