@@ -303,7 +303,8 @@ msgDuplicateScrap = do
 createActorUI :: MonadClientUI m => ActorId -> Actor -> Bool -> MU.Part -> m ()
 createActorUI aid body verbose verb = do
   side <- getsClient sside
-  when (verbose || bfid body /= side) $ actorVerbMU aid body verb
+  when (bfid body /= side && not (bproj body) || verbose) $
+    actorVerbMU aid body verb
   when (bfid body /= side) $ do
     fact <- getsState $ (EM.! bfid body) . sfactionD
     when (not (bproj body) && isAtWar fact side) $ do
@@ -314,7 +315,7 @@ createActorUI aid body verbose verb = do
       -- into account.
       modifyClient $ \cli -> cli {scursor = TEnemy aid False}
     stopPlayBack
-  lookAtMove aid
+  when (bfid body == side && not (bproj body)) $ lookAtMove aid
 
 destroyActorUI :: MonadClientUI m
                => ActorId -> Actor -> MU.Part -> MU.Part -> Bool -> m ()
