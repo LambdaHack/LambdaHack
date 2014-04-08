@@ -472,7 +472,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
     when verbose $ aVerbMU aid "trigger"  -- TODO: opens door, etc.
   SfxShun aid _p _ ->
     when verbose $ aVerbMU aid "shun"  -- TODO: shuns stairs down
-  SfxEffect _fidSource aid effect -> do
+  SfxEffect fidSource aid effect -> do
     b <- getsState $ getActorBody aid
     side <- getsClient sside
     let fid = bfid b
@@ -528,30 +528,25 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
                 [MU.CardinalWs nEnemy "howl", "of anger", "can be heard"]
           msgAdd msg
         Effect.Dominate -> do
-          -- TODO: the faction that dominates should get the feedback, too
-          -- so perhaps this should not be in SfxEffect which depends
-          -- on the actor before domination being visible, or perhaps
-          -- Effect.Dominate should be sent twice: before and after,
-          -- but we currently have no way of knowing if we are before or after.
-          -- Fid of source in SfxEffect would help.
-          if bcalm b == 1 then do -- sometimes only a coincidence, but nm
-            aVerbMU aid $ MU.Text "yield, under extreme pressure"
+          -- For subsequent messages use the proper name, never "you".
+          let subject = partActor b
+          if fid /= fidSource then do  -- before domination
+            if bcalm b == 1 then do -- sometimes only a coincidence, but nm
+              aVerbMU aid $ MU.Text "yield, under extreme pressure"
+            else if fid == side then
+              aVerbMU aid $ MU.Text "black out, dominated by foes"
+            else
+              aVerbMU aid $ MU.Text "decide abrubtly to switch allegiance"
             fidName <- getsState $ gname . (EM.! fid) . sfactionD
-            aVerbMU aid $ MU.Text $ "be no longer controlled by" <+> fidName
-          else if fid == side then do
-            aVerbMU aid $ MU.Text "black out, dominated by foes"
-            fidName <- getsState $ gname . (EM.! fid) . sfactionD
-            aVerbMU aid $ MU.Text $ "be no longer controlled by" <+> fidName
-            void $ displayMore ColorFull ""
+            let verb = "be no longer controlled by"
+            msgAdd $ makeSentence
+              [MU.SubjectVerbSg subject verb, MU.Text fidName]
+            when (fid == side) $ void $ displayMore ColorFull ""
           else do
-            fidName <- getsState $ gname . (EM.! fid) . sfactionD
-            aVerbMU aid $ MU.Text $ "be no longer controlled by" <+> fidName
-          -- TODO: replace the 2 top "be no longer" with:
-          -- fidSourceName <- getsState $ gname . (EM.! bfid sb) . sfactionD
-          -- let subject = partActor b
-          --     verb = "be under"
-          -- msgAdd $ makeSentence
-          --   [MU.SubjectVerbSg subject verb, MU.Text fidSourceName, "control"]
+            fidSourceName <- getsState $ gname . (EM.! fidSource) . sfactionD
+            let verb = "be now under"
+            msgAdd $ makeSentence
+              [MU.SubjectVerbSg subject verb, MU.Text fidSourceName, "control"]
         Effect.Impress{} ->
           actorVerbMU aid b
           $ if boldfid b /= bfid b

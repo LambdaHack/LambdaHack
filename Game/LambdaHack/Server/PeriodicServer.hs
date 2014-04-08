@@ -215,6 +215,7 @@ advanceTime aid = do
       let execSfx = execSfxAtomic $ SfxEffect (boldfid bNew) aid Effect.Dominate
       execSfx
       dominateFid (boldfid bNew) aid
+      execSfx
 
 -- TODO: generalize to any list of items (or effects) applied to all actors
 -- every turn. Specify the list per level in config.

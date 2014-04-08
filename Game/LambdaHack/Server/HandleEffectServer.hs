@@ -201,6 +201,7 @@ effectDominate execSfx source target = do
   else do
     execSfx
     dominateFid (bfid sb) target
+    execSfx
     return True
 
 -- ** Impress
