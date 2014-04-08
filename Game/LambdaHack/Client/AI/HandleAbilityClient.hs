@@ -59,6 +59,7 @@ actionStrategy :: forall m. MonadClient m
 actionStrategy aid = do
   body <- getsState $ getActorBody aid
   condTgtEnemyPresent <- condTgtEnemyPresentM aid
+  condTgtEnemyRemembered <- condTgtEnemyRememberedM aid
   condAnyFoeAdj <- condAnyFoeAdjM aid
   threatDistL <- threatDistList aid
   condHpTooLow <- condHpTooLowM aid
@@ -131,9 +132,12 @@ actionStrategy aid = do
             <$> useTool aid False  -- use any tool
           , condTgtEnemyPresent || condThreatNearby )  -- can affect enemies
         , ( [AbMove]
-          , stratToFreq (if condMeleeBad then 1 else 100)
+          , stratToFreq (if not condTgtEnemyPresent || condMeleeBad
+                         then 1
+                         else 100)
             $ chase aid True
-          , condTgtEnemyPresent && not condDesirableFloorItem ) ]
+          , (condTgtEnemyPresent || condTgtEnemyRemembered)
+            && not condDesirableFloorItem ) ]
       suffix =
         [ ( [AbMoveItem], (toAny :: ToAny AbMoveItem)
             <$> pickup aid False

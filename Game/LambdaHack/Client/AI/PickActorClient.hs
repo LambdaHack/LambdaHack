@@ -85,6 +85,7 @@ pickActorToMove refreshTarget oldAid = do
       oursWeak <- filterM actorWeak oursTgt
       oursStrong <- filterM (fmap not . actorWeak) oursTgt  -- TODO: partitionM
       let targetTEnemy (_, (TEnemy{}, _)) = True
+          targetTEnemy (_, (TEnemyPos{}, _)) = True
           targetTEnemy _ = False
           (oursTEnemy, oursOther) = partition targetTEnemy oursStrong
           -- These are not necessarily stuck (perhaps can go around),
@@ -103,15 +104,16 @@ pickActorToMove refreshTarget oldAid = do
           (oursBlocked, oursPos) = partition targetBlocked oursOther
           -- Lower overhead is better.
           overheadOurs :: ((ActorId, Actor), (Target, PathEtc))
-                    -> (Int, Int, Bool)
-          overheadOurs our@((aid, b), (TEnemy{}, (_, (_, d)))) =
-            -- TODO: take weapon, walk and fight speed, etc. into account
-            ( d + if targetBlocked our then 2 else 0  -- possible delay, hacky
-            , - 10 * (bhp b `div` 10)
-            , aid /= oldAid )
-          overheadOurs ((aid, b), (_tgt, (_path, (goal, d)))) =
-            -- Keep proper formation, not too dense, not to sparse.
-            let -- TODO: vary the parameters according to the stage of game,
+                       -> (Int, Int, Bool)
+          overheadOurs our@((aid, b), (_, (_, (goal, d)))) =
+            if targetTEnemy our then
+              -- TODO: take weapon, walk and fight speed, etc. into account
+              ( d + if targetBlocked our then 2 else 0  -- possible delay, hacky
+              , - 10 * (bhp b `div` 10)
+              , aid /= oldAid )
+            else
+              -- Keep proper formation, not too dense, not to sparse.
+              let -- TODO: vary the parameters according to the stage of game,
                 -- enough equipment or not, game mode, level map, etc.
                 minSpread = 7
                 maxSpread = 12 * 2
@@ -139,18 +141,19 @@ pickActorToMove refreshTarget oldAid = do
 -- but to the sum of captain and sergant or something
                 sumCoeff | sumDist > maxSpread = - explorationValue
                          | otherwise = 0
-            in ( if d == 0 then d
-                 else max 1 $ minCoeff + if d < 10
-                                         then 3 + d `div` 4
-                                         else 9 + d `div` 10
-               , sumCoeff
-               , aid /= oldAid )
+              in ( if d == 0 then d
+                   else max 1 $ minCoeff + if d < 10
+                                           then 3 + d `div` 4
+                                           else 9 + d `div` 10
+                 , sumCoeff
+                 , aid /= oldAid )
           sortOurs = sortBy $ comparing overheadOurs
           goodGeneric ((aid, b), (_tgt, _pathEtc)) =
             not (aid == oldAid && waitedLastTurn b)  -- not stuck
-          goodTEnemy our@((_aid, b), (_tgt, (_path, (goal, _d)))) =
+          goodTEnemy our@((_aid, b), (TEnemy{}, (_path, (goal, _d)))) =
             not (adjacent (bpos b) goal) -- not in melee range already
             && goodGeneric our
+          goodTEnemy our = goodGeneric our
           oursWeakGood = filter goodGeneric oursWeak
           oursTEnemyGood = filter goodTEnemy oursTEnemy
           oursPosGood = filter goodGeneric oursPos

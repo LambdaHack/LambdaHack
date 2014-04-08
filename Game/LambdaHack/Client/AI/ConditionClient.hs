@@ -2,6 +2,7 @@
 -- for picking the best action for an actor.
 module Game.LambdaHack.Client.AI.ConditionClient
   ( condTgtEnemyPresentM
+  , condTgtEnemyRememberedM
   , condAnyFoeAdjM
   , condHpTooLowM
   , condOnTriggerableM
@@ -47,11 +48,18 @@ import Game.LambdaHack.Content.RuleKind
 condTgtEnemyPresentM :: MonadClient m => ActorId -> m Bool
 condTgtEnemyPresentM aid = do
   btarget <- getsClient $ getTarget aid
-  let mfAid =
-        case btarget of
-          Just (TEnemy enemyAid _) -> Just enemyAid
-          _ -> Nothing
-  return $! isJust mfAid
+  return $! case btarget of
+    Just TEnemy{} -> True
+    _ -> False
+
+-- | Require that the target enemy is remembered on the actor's level.
+condTgtEnemyRememberedM :: MonadClient m => ActorId -> m Bool
+condTgtEnemyRememberedM aid = do
+  b <- getsState $ getActorBody aid
+  btarget <- getsClient $ getTarget aid
+  return $! case btarget of
+    Just (TEnemyPos _ lid _ _) | lid == blid b -> True
+    _ -> False
 
 -- | Require that any non-dying foe is adjacent.
 condAnyFoeAdjM :: MonadStateRead m => ActorId -> m Bool

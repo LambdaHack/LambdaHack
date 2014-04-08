@@ -40,7 +40,6 @@ targetStrategy oldLeader aid = do
   cops@Kind.COps{ cotile=cotile@Kind.Ops{ouniqGroup}
                 , coactor=coactor@Kind.Ops{okind}
                 , cofaction=Kind.Ops{okind=fokind} } <- getsState scops
-
   modifyClient $ \cli -> cli { sbfsD = EM.delete aid (sbfsD cli)
                              , seps = seps cli + 1 }  -- randomize paths
   b <- getsState $ getActorBody aid
@@ -200,6 +199,15 @@ targetStrategy oldLeader aid = do
                         (oldTgt, ( bpos b : path
                                  , (p, fromMaybe (assert `failure` mpath)
                                        $ accessBfs bfs p) ))
+        TEnemyPos _ lid p _ ->
+          -- Chase last position even if foe hides or dies,
+          -- to find his companions, loot, etc.
+          if lid /= blid b  -- wrong level
+             || chessDist (bpos b) p >= nearby  -- too far and not visible
+          then pickNewTarget
+          else if p == bpos b
+               then tellOthersNothingHere p
+               else return $! returN "TEnemyPos" (oldTgt, updatedPath)
         _ | not $ null nearbyFoes ->
           pickNewTarget  -- prefer close foes to anything
         TPoint lid pos -> do
@@ -250,14 +258,6 @@ targetStrategy oldLeader aid = do
                                       && allExplored)
           then pickNewTarget
           else return $! returN "TPoint" (oldTgt, updatedPath)
-        TEnemyPos _ lid p _ ->
-          -- Chase last position even if foe hides or dies,
-          -- to find his companions, loot, etc.
-          if lid /= blid b  -- wrong level
-          then pickNewTarget
-          else if p == bpos b
-               then tellOthersNothingHere p
-               else return $! returN "TEnemyPos" (oldTgt, updatedPath)
         TVector{} -> pickNewTarget
   case oldTgtUpdatedPath of
     Just (oldTgt, updatedPath) -> updateTgt oldTgt updatedPath
