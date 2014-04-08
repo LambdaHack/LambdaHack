@@ -472,7 +472,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
     when verbose $ aVerbMU aid "trigger"  -- TODO: opens door, etc.
   SfxShun aid _p _ ->
     when verbose $ aVerbMU aid "shun"  -- TODO: shuns stairs down
-  SfxEffect aid effect -> do
+  SfxEffect _fidSource aid effect -> do
     b <- getsState $ getActorBody aid
     side <- getsClient sside
     let fid = bfid b
@@ -528,6 +528,12 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
                 [MU.CardinalWs nEnemy "howl", "of anger", "can be heard"]
           msgAdd msg
         Effect.Dominate -> do
+          -- TODO: the faction that dominates should get the feedback, too
+          -- so perhaps this should not be in SfxEffect which depends
+          -- on the actor before domination being visible, or perhaps
+          -- Effect.Dominate should be sent twice: before and after,
+          -- but we currently have no way of knowing if we are before or after.
+          -- Fid of source in SfxEffect would help.
           if bcalm b == 1 then do -- sometimes only a coincidence, but nm
             aVerbMU aid $ MU.Text "yield, under extreme pressure"
             fidName <- getsState $ gname . (EM.! fid) . sfactionD

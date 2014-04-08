@@ -212,7 +212,8 @@ advanceTime aid = do
     -- We assume that within a turn, Calm never decreased to 0
     -- without stopping at 1.
     when (bcalm bNew == 1 && boldfid bNew /= bfid bNew) $ do
-      execSfxAtomic $ SfxEffect aid Effect.Dominate
+      let execSfx = execSfxAtomic $ SfxEffect (boldfid bNew) aid Effect.Dominate
+      execSfx
       dominateFid (boldfid bNew) aid
 
 -- TODO: generalize to any list of items (or effects) applied to all actors

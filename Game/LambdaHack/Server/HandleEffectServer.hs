@@ -66,25 +66,28 @@ itemEffect source target miid item = do
 effectSem :: (MonadAtomic m, MonadServer m)
           => Effect.Effect Int -> ActorId -> ActorId
           -> m Bool
-effectSem effect source target = case effect of
-  Effect.NoEffect -> effectNoEffect target
-  Effect.Heal p -> effectHeal p target
-  Effect.Hurt nDm p -> effectHurt nDm p source target
-  Effect.Haste p -> effectHaste p target
-  Effect.Mindprobe _ -> effectMindprobe target
-  Effect.Dominate | source /= target -> effectDominate source target
-  Effect.Dominate -> effectSem (Effect.Mindprobe undefined) source target
-  Effect.Impress -> effectImpress source target
-  Effect.CallFriend p -> effectCallFriend p source target
-  Effect.Summon p -> effectSummon p target
-  Effect.CreateItem p -> effectCreateItem p target
-  Effect.ApplyPerfume -> effectApplyPerfume source target
-  Effect.Burn p -> effectBurn p source target
-  Effect.Blast p -> effectBlast p source target
-  Effect.Regeneration p -> effectSem (Effect.Heal p) source target
-  Effect.Steadfastness p -> effectSteadfastness p target
-  Effect.Ascend p -> effectAscend p target
-  Effect.Escape{} -> effectEscape target
+effectSem effect source target = do
+  sb <- getsState $ getActorBody source
+  let execSfx = execSfxAtomic $ SfxEffect (bfid sb) target effect
+  case effect of
+    Effect.NoEffect -> effectNoEffect target
+    Effect.Heal p -> effectHeal execSfx p target
+    Effect.Hurt nDm p -> effectHurt nDm p source target
+    Effect.Haste p -> effectHaste execSfx p target
+    Effect.Mindprobe _ -> effectMindprobe source target
+    Effect.Dominate | source /= target -> effectDominate execSfx source target
+    Effect.Dominate -> effectSem (Effect.Mindprobe undefined) source target
+    Effect.Impress -> effectImpress source target
+    Effect.CallFriend p -> effectCallFriend p source target
+    Effect.Summon p -> effectSummon p target
+    Effect.CreateItem p -> effectCreateItem p target
+    Effect.ApplyPerfume -> effectApplyPerfume execSfx source target
+    Effect.Burn p -> effectBurn execSfx p source target
+    Effect.Blast p -> effectBlast execSfx p source target
+    Effect.Regeneration p -> effectSem (Effect.Heal p) source target
+    Effect.Steadfastness p -> effectSteadfastness execSfx p target
+    Effect.Ascend p -> effectAscend execSfx p target
+    Effect.Escape{} -> effectEscape target
 
 -- + Individual semantic functions for effects
 
@@ -92,25 +95,25 @@ effectSem effect source target = case effect of
 
 effectNoEffect :: MonadAtomic m => ActorId -> m Bool
 effectNoEffect target = do
-  execSfxAtomic $ SfxEffect target Effect.NoEffect
+  tb <- getsState $ getActorBody target
+  -- FactionId is that of the target, as a simplification.
+  execSfxAtomic $ SfxEffect (bfid tb) target Effect.NoEffect
   return False
 
 -- ** Heal
 
-effectHeal :: MonadAtomic m => Int -> ActorId -> m Bool
-effectHeal power target = do
+effectHeal :: MonadAtomic m => m () -> Int -> ActorId -> m Bool
+effectHeal execSfx power target = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   tb <- getsState $ getActorBody target
   let bhpMax = Dice.maxDice (ahp $ okind $ bkind tb)
       deltaHP = min power (max 0 $ bhpMax - bhp tb)
   if deltaHP == 0
-    then do
-      execSfxAtomic $ SfxEffect target Effect.NoEffect
-      return False
+    then effectNoEffect target
     else do
       execUpdAtomic $ UpdHealActor target deltaHP
       when (deltaHP < 0) $ halveCalm target
-      execSfxAtomic $ SfxEffect target $ Effect.Heal deltaHP
+      execSfx
       return True
 
 halveCalm :: MonadAtomic m => ActorId -> m ()
@@ -136,17 +139,16 @@ effectHurt :: (MonadAtomic m, MonadServer m)
             => Dice.Dice -> Int -> ActorId -> ActorId
             -> m Bool
 effectHurt nDm power source target = do
+  sb <- getsState $ getActorBody source
   n <- rndToAction $ castDice 0 0 nDm
   let deltaHP = - (n + power)
   if deltaHP >= 0
-    then do
-      execSfxAtomic $ SfxEffect target Effect.NoEffect
-      return False
+    then effectNoEffect target
     else do
       -- Damage the target.
       execUpdAtomic $ UpdHealActor target deltaHP
       halveCalm target
-      execSfxAtomic $ SfxEffect target $
+      execSfxAtomic $ SfxEffect (bfid sb) target $
         if source == target
         then Effect.Heal deltaHP
         else Effect.Hurt nDm deltaHP{-hack-}
@@ -154,8 +156,8 @@ effectHurt nDm power source target = do
 
 -- ** Haste
 
-effectHaste :: MonadAtomic m => Int -> ActorId -> m Bool
-effectHaste power target = do
+effectHaste :: MonadAtomic m => m () -> Int -> ActorId -> m Bool
+effectHaste execSfx power target = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   tb <- getsState $ getActorBody target
   let baseSpeed = aspeed $ okind $ bkind tb
@@ -165,43 +167,39 @@ effectHaste power target = do
                    then incrSpeed
                    else speedZero
   if deltaSpeed == speedZero
-    then do
-      execSfxAtomic $ SfxEffect target Effect.NoEffect
-      return False
+    then effectNoEffect target
     else do
       execUpdAtomic $ UpdHasteActor target deltaSpeed
-      execSfxAtomic $ SfxEffect target $ Effect.Haste power
+      execSfx
       return True
 
 -- ** Mindprobe
 
-effectMindprobe :: MonadAtomic m => ActorId -> m Bool
-effectMindprobe target = do
+effectMindprobe :: MonadAtomic m => ActorId -> ActorId -> m Bool
+effectMindprobe source target = do
+  sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   let lid = blid tb
   fact <- getsState $ (EM.! bfid tb) . sfactionD
   lb <- getsState $ actorRegularList (isAtWar fact) lid
   let nEnemy = length lb
-  if nEnemy == 0 || bproj tb then do
-    execSfxAtomic $ SfxEffect target Effect.NoEffect
-    return False
+  if nEnemy == 0 || bproj tb then
+    effectNoEffect target
   else do
-    execSfxAtomic $ SfxEffect target $ Effect.Mindprobe nEnemy
+    execSfxAtomic $ SfxEffect (bfid sb) target $ Effect.Mindprobe nEnemy
     return True
 
 -- ** Dominate
 
 effectDominate :: (MonadAtomic m, MonadServer m)
-               => ActorId -> ActorId -> m Bool
-effectDominate source target = do
+               => m () -> ActorId -> ActorId -> m Bool
+effectDominate execSfx source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
-  if bfid tb == bfid sb || bproj tb then do
-    execSfxAtomic $ SfxEffect target Effect.NoEffect
-    return False
+  if bfid tb == bfid sb || bproj tb then
+    effectNoEffect target
   else do
-    -- Announce domination before the actor changes sides.
-    execSfxAtomic $ SfxEffect target Effect.Dominate
+    execSfx
     dominateFid (bfid sb) target
     return True
 
@@ -214,10 +212,10 @@ effectImpress source target = do
   tb <- getsState $ getActorBody target
   if boldfid tb == bfid sb || bproj tb then do
     -- TODO: Don't spam with shrapnel causing NoEffect and then uncomment.
---    execSfxAtomic $ SfxEffect target Effect.NoEffect
+    -- effectNoEffect target
     return False
   else do
-    execSfxAtomic $ SfxEffect target Effect.Impress
+    execSfxAtomic $ SfxEffect (bfid sb) target Effect.Impress
     execUpdAtomic $ UpdOldFidActor target (boldfid tb) (bfid sb)
     return True
 
@@ -271,8 +269,7 @@ effectSummon power target = assert (power > 0) $ do
 
 -- | Roll a faction based on faction kind frequency key.
 pickFaction :: MonadServer m
-            => Text
-            -> ((FactionId, Faction) -> Bool)
+            => Text -> ((FactionId, Faction) -> Bool)
             -> m (Maybe FactionId)
 pickFaction freqChoice ffilter = do
   Kind.COps{cofaction=Kind.Ops{okind}} <- getsState scops
@@ -298,8 +295,8 @@ effectCreateItem power target = assert (power > 0) $ do
 -- ** ApplyPerfume
 
 effectApplyPerfume :: (MonadAtomic m, MonadServer m)
-                   => ActorId -> ActorId -> m Bool
-effectApplyPerfume source target =
+                   => m () -> ActorId -> ActorId -> m Bool
+effectApplyPerfume execSfx source target =
   if source == target
   then effectImpress source target
   else do
@@ -308,61 +305,60 @@ effectApplyPerfume source target =
     let f p fromSm =
           execUpdAtomic $ UpdAlterSmell (blid tb) p (Just fromSm) Nothing
     mapWithKeyM_ f lsmell
-    execSfxAtomic $ SfxEffect target Effect.ApplyPerfume
+    execSfx
     void $ effectImpress source target
     return True
 
 -- ** Burn
 
 effectBurn :: (MonadAtomic m, MonadServer m)
-           => Int -> ActorId -> ActorId -> m Bool
-effectBurn power source target = do
-  void $ effectHurt 0 (2 * power) source target  -- damage from impact and fire
-  execSfxAtomic $ SfxEffect target $ Effect.Burn power
+           => m () -> Int -> ActorId -> ActorId -> m Bool
+effectBurn execSfx power source target = do
+  -- Damage from both impact and fire.
+  void $ effectHurt 0 (2 * power) source target
+  execSfx
   return True
 
 -- ** Blast
 
 effectBlast :: (MonadAtomic m, MonadServer m)
-              => Int -> ActorId -> ActorId -> m Bool
-effectBlast power _source target = do
+            => m () -> Int -> ActorId -> ActorId -> m Bool
+effectBlast execSfx _power _source _target = do
   -- TODO: make target deaf: prevents Calm decrease through proximity,
   -- or makes it random or also doubles calm decrease through hits
   -- or calm can't get above half --- all depends if it's temporary or not
-  execSfxAtomic $ SfxEffect target $ Effect.Blast power
+  execSfx
   return True
 
 -- ** Regeneration
 
 -- ** Steadfastness
 
-effectSteadfastness :: MonadAtomic m => Int -> ActorId -> m Bool
-effectSteadfastness power target = do
+effectSteadfastness :: MonadAtomic m => m () -> Int -> ActorId -> m Bool
+effectSteadfastness execSfx power target = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   tb <- getsState $ getActorBody target
   let bcalmMax = Dice.maxDice (acalm $ okind $ bkind tb)
       deltaCalm = min power (max 0 $ bcalmMax - bcalm tb)
   if deltaCalm == 0
-    then do
-      execSfxAtomic $ SfxEffect target Effect.NoEffect
-      return False
+    then effectNoEffect target
     else do
       execUpdAtomic $ UpdCalmActor target deltaCalm
-      execSfxAtomic $ SfxEffect target $ Effect.Steadfastness deltaCalm
+      execSfx
       return True
 
 -- ** Ascend
 
-effectAscend :: MonadAtomic m => Int -> ActorId -> m Bool
-effectAscend power target = do
+effectAscend :: MonadAtomic m => m () -> Int -> ActorId -> m Bool
+effectAscend execSfx power target = do
+  tb <- getsState $ getActorBody target
   mfail <- effLvlGoUp target power
   case mfail of
     Nothing -> do
-      execSfxAtomic $ SfxEffect target $ Effect.Ascend power
+      execSfx
       return True
     Just failMsg -> do
-      b <- getsState $ getActorBody target
-      execSfxAtomic $ SfxMsgFid (bfid b) failMsg
+      execSfxAtomic $ SfxMsgFid (bfid tb) failMsg
       return False
 
 effLvlGoUp :: MonadAtomic m => ActorId -> Int -> m (Maybe Msg)
@@ -436,8 +432,8 @@ switchLevels1 ((aid, bOld), ais) = do
   return mlead
 
 switchLevels2 :: MonadAtomic m
-              => LevelId -> Point -> ((ActorId, Actor), [(ItemId, Item)])
-              -> Maybe ActorId
+              => LevelId -> Point
+              -> ((ActorId, Actor), [(ItemId, Item)]) -> Maybe ActorId
               -> m ()
 switchLevels2 lidNew posNew ((aid, bOld), ais) mlead = do
   let lidOld = blid bOld
