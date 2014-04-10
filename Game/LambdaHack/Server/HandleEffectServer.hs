@@ -121,17 +121,14 @@ halveCalm target = do
   Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
   tb <- getsState $ getActorBody target
   let calmMax = Dice.maxDice $ acalm $ okind $ bkind tb
-      calmCur = bcalm tb
-      calmDecr = max 0 $ calmCur - 2
       calmUpperBound = if hpTooLow coactor tb
-                       then 1  -- to trigger domination, etc.
+                       then 0  -- to trigger domination, etc.
                        else calmMax `div` 2
-      calmNew = min calmUpperBound calmDecr
-      deltaCalm = calmNew - calmCur
-  -- HP loss decreases Calm by at least 2 (to overcome Calm regen,
-  -- when far from shooting foe) or by 0, to avoid "hears something"
-  -- when the decrease is -1.
-  when (deltaCalm < -1) $ execUpdAtomic $ UpdCalmActor target deltaCalm
+      deltaCalm = min (-2) (calmUpperBound - bcalm tb)
+  -- HP loss decreases Calm by at least 2, to overcome Calm regen,
+  -- when far from shooting foe and to avoid "hears something",
+  -- which is emitted for decrease -1.
+  execUpdAtomic $ UpdCalmActor target deltaCalm
 
 -- ** Hurt
 
@@ -340,8 +337,8 @@ effectSteadfastness execSfx power target = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   tb <- getsState $ getActorBody target
   let bcalmMax = Dice.maxDice (acalm $ okind $ bkind tb)
-      deltaCalm = min power (max 0 $ bcalmMax - bcalm tb)
-  if deltaCalm == 0
+      deltaCalm = min power (bcalmMax - bcalm tb)
+  if deltaCalm <= 0
     then effectNoEffect target
     else do
       execUpdAtomic $ UpdCalmActor target deltaCalm

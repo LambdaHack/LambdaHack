@@ -531,7 +531,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           -- For subsequent messages use the proper name, never "you".
           let subject = partActor b
           if fid /= fidSource then do  -- before domination
-            if bcalm b == 1 then do -- sometimes only a coincidence, but nm
+            if bcalm b == 0 then do -- sometimes only a coincidence, but nm
               aVerbMU aid $ MU.Text "yield, under extreme pressure"
             else if fid == side then
               aVerbMU aid $ MU.Text "black out, dominated by foes"
