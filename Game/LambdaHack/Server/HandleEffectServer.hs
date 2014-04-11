@@ -71,7 +71,7 @@ effectSem effect source target = do
   let execSfx = execSfxAtomic $ SfxEffect (bfid sb) target effect
   case effect of
     Effect.NoEffect -> effectNoEffect target
-    Effect.Heal p -> effectHeal execSfx p target
+    Effect.Heal p -> effectHeal execSfx p source target
     Effect.Hurt nDm p -> effectHurt nDm p source target
     Effect.Haste p -> effectHaste execSfx p target
     Effect.Mindprobe _ -> effectMindprobe source target
@@ -102,8 +102,8 @@ effectNoEffect target = do
 
 -- ** Heal
 
-effectHeal :: MonadAtomic m => m () -> Int -> ActorId -> m Bool
-effectHeal execSfx power target = do
+effectHeal :: MonadAtomic m => m () -> Int -> ActorId -> ActorId -> m Bool
+effectHeal execSfx power source target = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   tb <- getsState $ getActorBody target
   let bhpMax = Dice.maxDice (ahp $ okind $ bkind tb)
@@ -112,7 +112,7 @@ effectHeal execSfx power target = do
     then effectNoEffect target
     else do
       execUpdAtomic $ UpdHealActor target deltaHP
-      when (deltaHP < 0) $ halveCalm target
+      when (deltaHP < 0 && source /= target) $ halveCalm target
       execSfx
       return True
 
@@ -144,7 +144,7 @@ effectHurt nDm power source target = do
     else do
       -- Damage the target.
       execUpdAtomic $ UpdHealActor target deltaHP
-      halveCalm target
+      when (source /= target) $ halveCalm target
       execSfxAtomic $ SfxEffect (bfid sb) target $
         if source == target
         then Effect.Heal deltaHP

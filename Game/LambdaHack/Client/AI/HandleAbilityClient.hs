@@ -72,7 +72,7 @@ actionStrategy aid = do
   condDesirableFloorItem <- condDesirableFloorItemM aid
   condMeleeBad <- condMeleeBadM aid
   fleeL <- fleeList aid
-  let condThreatAdj = not $ null $ takeWhile ((<= 1) . fst) threatDistL
+  let condThreatAdj = not $ null $ takeWhile ((== 1) . fst) threatDistL
       condThreatAtHand = not $ null $ takeWhile ((<= 2) . fst) threatDistL
       condThreatNearby = not $ null $ takeWhile ((<= nearby) . fst) threatDistL
       condFastThreatAdj = any (\(_, (_, b)) -> bspeed b > bspeed body)

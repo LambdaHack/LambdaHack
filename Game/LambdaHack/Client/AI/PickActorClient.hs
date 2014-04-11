@@ -76,12 +76,15 @@ pickActorToMove refreshTarget oldAid = do
             threatDistL <- threatDistList aid
             fleeL <- fleeList aid
             let condThreatAdj =
-                  not $ null $ takeWhile ((<= 1) . fst) threatDistL
+                  not $ null $ takeWhile ((== 1) . fst) threatDistL
                 condFastThreatAdj =
                   any (\(_, (_, b)) -> bspeed b > bspeed body)
                   $ takeWhile ((<= 1) . fst) threatDistL
                 condCanFlee = not (null fleeL || condFastThreatAdj)
-            return $! condMeleeBad && condThreatAdj && condCanFlee
+            return $! if condThreatAdj
+                      then condMeleeBad && condCanFlee
+                      else bcalmDelta body < -1  -- hit by a projectile
+                        -- TODO: modify when reaction fire is possible
       oursWeak <- filterM actorWeak oursTgt
       oursStrong <- filterM (fmap not . actorWeak) oursTgt  -- TODO: partitionM
       let targetTEnemy (_, (TEnemy{}, _)) = True
