@@ -284,7 +284,7 @@ projectEps :: MonadClientUI m
            => [Trigger] -> Point -> Int
            -> m (SlideOrCmd (RequestTimed AbProject))
 projectEps ts tpos eps = do
-  let cLegal = [CEqp, CInv, CGround]  -- calm enough at this stage
+  let cLegal = [CGround, CEqp, CInv]  -- calm enough at this stage
       (verb1, object1) = case ts of
         [] -> ("aim", "item")
         tr : _ -> (verb tr, object tr)
@@ -305,7 +305,7 @@ triggerSymbols (_ : ts) = triggerSymbols ts
 applyHuman :: MonadClientUI m
            => [Trigger] -> m (SlideOrCmd (RequestTimed AbApply))
 applyHuman ts = do
-  let cLegalRaw = [CEqp, CInv, CGround]
+  let cLegalRaw = [CGround, CEqp, CInv]
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
