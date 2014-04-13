@@ -85,12 +85,19 @@ pickActorToMove refreshTarget oldAid = do
                       then condMeleeBad && condCanFlee
                       else bcalmDelta body < -1  -- hit by a projectile
                         -- TODO: modify when reaction fire is possible
+          actorHearning ((_aid, b), _) = do
+            allFoes <- getsState $ actorRegularList (isAtWar fact) (blid b)
+            let closeFoes = filter ((<= 3) . chessDist (bpos b) . bpos) allFoes
+            return $! bcalmDelta b == -1  -- hears an enemy
+                      && null closeFoes  -- the enemy not visible; a trap!
       oursWeak <- filterM actorWeak oursTgt
       oursStrong <- filterM (fmap not . actorWeak) oursTgt  -- TODO: partitionM
+      oursHearing <- filterM actorHearning oursStrong
+      oursNotHearing <- filterM (fmap not . actorHearning) oursStrong
       let targetTEnemy (_, (TEnemy{}, _)) = True
           targetTEnemy (_, (TEnemyPos{}, _)) = True
           targetTEnemy _ = False
-          (oursTEnemy, oursOther) = partition targetTEnemy oursStrong
+          (oursTEnemy, oursOther) = partition targetTEnemy oursNotHearing
           -- These are not necessarily stuck (perhaps can go around),
           -- but their current path is blocked by friends.
           targetBlocked our@((_aid, _b), (_tgt, (path, _etc))) =
@@ -158,13 +165,15 @@ pickActorToMove refreshTarget oldAid = do
             not (adjacent (bpos b) goal) -- not in melee range already
             && goodGeneric our
           goodTEnemy our = goodGeneric our
-          oursWeakGood = filter goodGeneric oursWeak
+          oursWeakGood = filter goodTEnemy oursWeak
           oursTEnemyGood = filter goodTEnemy oursTEnemy
           oursPosGood = filter goodGeneric oursPos
+          oursHearingGood = filter goodTEnemy oursHearing
           oursBlockedGood = filter goodGeneric oursBlocked
           candidates = sortOurs oursWeakGood
                        ++ sortOurs oursTEnemyGood
                        ++ sortOurs oursPosGood
+                       ++ sortOurs oursHearingGood
                        ++ sortOurs oursBlockedGood
       case candidates of
         [] -> return (oldAid, oldBody)
