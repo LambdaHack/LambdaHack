@@ -79,7 +79,7 @@ pickActorToMove refreshTarget oldAid = do
                   not $ null $ takeWhile ((== 1) . fst) threatDistL
                 condFastThreatAdj =
                   any (\(_, (_, b)) -> bspeed b > bspeed body)
-                  $ takeWhile ((<= 1) . fst) threatDistL
+                  $ takeWhile ((== 1) . fst) threatDistL
                 condCanFlee = not (null fleeL || condFastThreatAdj)
             return $! if condThreatAdj
                       then condMeleeBad && condCanFlee
@@ -116,7 +116,8 @@ pickActorToMove refreshTarget oldAid = do
               , aid /= oldAid )
             else
               -- Keep proper formation, not too dense, not to sparse.
-              let -- TODO: vary the parameters according to the stage of game,
+              let
+                -- TODO: vary the parameters according to the stage of game,
                 -- enough equipment or not, game mode, level map, etc.
                 minSpread = 7
                 maxSpread = 12 * 2

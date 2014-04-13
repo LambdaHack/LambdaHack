@@ -76,7 +76,7 @@ actionStrategy aid = do
       condThreatAtHand = not $ null $ takeWhile ((<= 2) . fst) threatDistL
       condThreatNearby = not $ null $ takeWhile ((<= nearby) . fst) threatDistL
       condFastThreatAdj = any (\(_, (_, b)) -> bspeed b > bspeed body)
-                          $ takeWhile ((<= 1) . fst) threatDistL
+                          $ takeWhile ((== 1) . fst) threatDistL
       condCanFlee = not (null fleeL || condFastThreatAdj)
   mleader <- getsClient _sleader
   actorAbs <- actorAbilities aid mleader

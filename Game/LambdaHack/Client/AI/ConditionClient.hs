@@ -218,7 +218,7 @@ condMeleeBadM aid = do
       condHpTooLow = hpTooLow coactor b
   return $ noFriendlyHelp  -- still not getting friends' help
            && (condHpTooLow  -- too wounded to fight alone
-               || not (null friends))  -- friends somewhere, let's flee to them
+               || length friends > 1)  -- friends somewhere, let's flee to them
     -- keep it lazy
 
 fleeList :: MonadClient m => ActorId -> m [(Int, Point)]
