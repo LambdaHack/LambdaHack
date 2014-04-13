@@ -92,12 +92,9 @@ findPathBfs isEnterable passUnknown source target sepsRaw bfs =
   in if targetDist == apartBfs
      then Nothing
      else
-       let eps = abs sepsRaw `mod` length moves
-           mix (x : xs) ys = x : mix ys xs
-           mix [] ys = ys
-           preferedMoves = let (ch1, ch2) = splitAt eps moves
-                               ch = ch2 ++ ch1
-                           in mix ch (reverse ch)
+       let eps = sepsRaw `mod` length moves
+           (ch1, ch2) = splitAt eps moves
+           preferedMoves = reverse ch2 ++ ch1  -- buzz
            track :: Point -> BfsDistance -> [Point] -> [Point]
            track pos oldDist suffix | oldDist == minKnownBfs =
              assert (pos == source

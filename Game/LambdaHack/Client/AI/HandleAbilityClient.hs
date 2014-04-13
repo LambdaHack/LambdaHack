@@ -341,19 +341,17 @@ ranged aid = do
   btarget <- getsClient $ getTarget aid
   b@Actor{bkind, bpos, blid} <- getsState $ getActorBody aid
   mfpos <- aidTgtToPos aid blid btarget
+  seps <- getsClient seps
   case (btarget, mfpos) of
     (Just TEnemy{}, Just fpos) -> do
       disco <- getsClient sdisco
       let mk = okind bkind
-          initalEps = 0
-      mnewEps <- makeLine b fpos initalEps
+      mnewEps <- makeLine b fpos seps
       case mnewEps of
         Just newEps | asight mk  -- ProjectBlind
                       && calmEnough b mk -> do  -- ProjectNotCalm
           -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
           -- and no actors or obstracles along the path.
-          modifyClient $ \cli -> cli {seps = newEps}
-            -- probably quicker @makeLine@ calculation next time
           let permitted = (if True  -- aiq mk >= 10 -- TODO; let server enforce?
                            then ritemProject
                            else ritemRanged)

@@ -125,7 +125,7 @@ defStateClient shistory sreport _sside sisAI =
     , scursor = if sisAI
                 then TVector $ Vector 30000 30000  -- invalid
                 else TVector $ Vector 1 1  -- a step south-east
-    , seps = 0
+    , seps = fromEnum _sside
     , stargetD = EM.empty
     , sexplored = ES.empty
     , sbfsD = EM.empty
