@@ -85,34 +85,29 @@ aidTgtToPos aid lidV tgt =
 -- (this is only checked for actors; positions let player
 -- shoot at obstacles, e.g., to destroy them).
 -- This assumes @aidTgtToPos@ does not return @Nothing@.
---
--- Modifies @seps@ in client state, if needed. This is the only place
--- where @seps@ is modified automatically. Note that this only happens
--- when the target is an actor.
+-- Returns a different @seps@, if needed to reach the target actor.
 --
 -- Note: Perception is not enough for the check,
 -- because the target actor can be obscured by a glass wall
 -- or be out of sight range, but in weapon range.
 aidTgtAims :: MonadClient m
-           => ActorId -> LevelId -> Maybe Target -> m (Maybe Text)
+           => ActorId -> LevelId -> Maybe Target -> m (Either Text Int)
 aidTgtAims aid lidV tgt = do
+  oldEps <- getsClient seps
   case tgt of
     Just (TEnemy a _) -> do
       body <- getsState $ getActorBody a
       let pos = bpos body
       b <- getsState $ getActorBody aid
       if blid b == lidV then do
-        seps <- getsClient seps
-        (steps, newEps) <- makeLine b pos seps
+        (steps, newEps) <- makeLine b pos oldEps
         if steps == chessDist (bpos b) pos
-          then do
-            modifyClient $ \cli -> cli {seps = newEps}
-            return Nothing
-          else return $ Just "aiming line to the opponent blocked"
-      else return $ Just "target opponent not on this level"
-    Just TEnemyPos{} -> return $ Just "target opponent not visible"
-    Just TPoint{} -> return Nothing
-    Just TVector{} -> return Nothing
+          then return $ Right newEps
+          else return $ Left "aiming line to the opponent blocked"
+      else return $ Left "target opponent not on this level"
+    Just TEnemyPos{} -> return $ Left "target opponent not visible"
+    Just TPoint{} -> return $ Right oldEps
+    Just TVector{} -> return $ Right oldEps
     Nothing -> do
       scursor <- getsClient scursor
       aidTgtAims aid lidV $ Just scursor

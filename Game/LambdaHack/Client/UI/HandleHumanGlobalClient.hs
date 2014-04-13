@@ -240,18 +240,29 @@ projectHuman ts = do
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   tgtPos <- leaderTgtToPos
+  tgt <- getsClient $ getTarget leader
   case tgtPos of
     Nothing -> failWith "last target invalid"
     Just pos | pos == bpos b -> failWith "cannot aim at oneself"
     Just pos -> do
+      -- Set cursor to the personal target, temporarily.
+      oldCursor <- getsClient scursor
+      modifyClient $ \cli -> cli {scursor = fromMaybe (scursor cli) tgt}
+      -- Show the targeting line, temporarily.
+      oldTgtMode <- getsClient stgtMode
+      lidV <- viewedLevel
+      modifyClient $ \cli -> cli {stgtMode = Just $ TgtMode lidV}
+      canAim <- leaderTgtAims
       oldEps <- getsClient seps
-      canAim <- leaderTgtAims  -- modifies @seps@
       outcome <- case canAim of
-        Nothing -> projectPos ts pos
-        Just cause -> failWith cause
-      case outcome of
-        Left _ -> modifyClient $ \cli -> cli {seps = oldEps}
-        Right _ -> skip
+        Right newEps -> do
+          -- Modify @seps@,, temporarily.
+          modifyClient $ \cli -> cli {seps = newEps}
+          projectPos ts pos
+        Left cause -> failWith cause
+      modifyClient $ \cli -> cli { stgtMode = oldTgtMode
+                                 , scursor = oldCursor
+                                 , seps = oldEps }
       return outcome
 
 projectPos :: MonadClientUI m

@@ -353,12 +353,12 @@ leaderTgtToPos = do
       tgt <- getsClient $ getTarget aid
       aidTgtToPos aid lidV tgt
 
-leaderTgtAims :: MonadClientUI m => m (Maybe Text)
+leaderTgtAims :: MonadClientUI m => m (Either Text Int)
 leaderTgtAims = do
   lidV <- viewedLevel
   mleader <- getsClient _sleader
   case mleader of
-    Nothing -> return $ Just "no leader to target with"
+    Nothing -> return $ Left "no leader to target with"
     Just aid -> do
       tgt <- getsClient $ getTarget aid
       aidTgtAims aid lidV tgt
