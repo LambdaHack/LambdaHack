@@ -113,25 +113,31 @@ aidTgtAims aid lidV tgt = do
       aidTgtAims aid lidV $ Just scursor
 
 -- | Counts the number of steps until the projectile would hit
--- an actor or obstacle.
+-- an actor or obstacle. Starts searching with the given eps and returns
+-- the first found eps for which the number reaches the distance between
+-- actor and target position, or Nothing if none can be found.
 makeLine :: MonadClient m => Actor -> Point -> Int -> m (Maybe Int)
-makeLine body fpos eps = do
+makeLine body fpos epsOld = do
   cops <- getsState scops
   lvl@Level{lxsize, lysize} <- getLevel (blid body)
   bs <- getsState $ filter (not . bproj)
                     . actorList (const True) (blid body)
   let dist = chessDist (bpos body) fpos
-      mbl = bla lxsize lysize eps (bpos body) fpos
-      valid = case mbl of
+      valid eps = case bla lxsize lysize eps (bpos body) fpos of
         Just bl ->
           let blDist = take dist bl
               blZip = zip (bpos body : blDist) blDist
               noActor p = all ((/= p) . bpos) bs || p == fpos
-          in dist > 1  -- ProjectBlockActor
-             && all noActor blDist
+          in all noActor blDist
              && all (uncurry $ accessible cops lvl) blZip
-        Nothing -> False  -- ProjectAimOnself
-  return $ if valid then Just eps else Nothing
+        Nothing -> assert `failure` (body, fpos, epsOld)
+      tryLines curEps | curEps >= epsOld + dist = Nothing
+      tryLines curEps = if valid curEps
+                        then Just curEps
+                        else tryLines (curEps + 1)
+  return $! if dist <= 1
+            then Nothing  -- ProjectBlockActor, ProjectAimOnself
+            else tryLines epsOld
 
 actorAbilities :: MonadClient m => ActorId -> Maybe ActorId -> m [Ability]
 actorAbilities aid mleader = do
