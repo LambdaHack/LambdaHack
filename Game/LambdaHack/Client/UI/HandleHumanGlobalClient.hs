@@ -244,10 +244,15 @@ projectHuman ts = do
     Nothing -> failWith "last target invalid"
     Just pos | pos == bpos b -> failWith "cannot aim at oneself"
     Just pos -> do
-      canAim <- leaderTgtAims
-      case canAim of
+      oldEps <- getsClient seps
+      canAim <- leaderTgtAims  -- modifies @seps@
+      outcome <- case canAim of
         Nothing -> projectPos ts pos
         Just cause -> failWith cause
+      case outcome of
+        Left _ -> modifyClient $ \cli -> cli {seps = oldEps}
+        Right _ -> skip
+      return outcome
 
 projectPos :: MonadClientUI m
            => [Trigger] -> Point -> m (SlideOrCmd (RequestTimed AbProject))

@@ -346,7 +346,8 @@ ranged aid = do
       disco <- getsClient sdisco
       let mk = okind bkind
           initalEps = 0
-      (steps, eps) <- makeLine b fpos initalEps
+      (steps, newEps) <- makeLine b fpos initalEps
+      modifyClient $ \cli -> cli {seps = newEps}  -- quicker eps calc. next time
       let permitted = (if True  -- aiq mk >= 10 -- TODO; let server enforce?
                        then ritemProject
                        else ritemRanged)
@@ -364,7 +365,7 @@ ranged aid = do
                            Nothing -> -5  -- experimenting is fun
                            Just ben -> ben
             in if benR < 0 && itemReaches item
-               then Just (-benR, ReqProject fpos eps iid cstore)
+               then Just (-benR, ReqProject fpos newEps iid cstore)
                else Nothing
           benRanged = mapMaybe fRanged benList
           freq =

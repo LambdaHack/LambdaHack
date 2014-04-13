@@ -86,6 +86,10 @@ aidTgtToPos aid lidV tgt =
 -- shoot at obstacles, e.g., to destroy them).
 -- This assumes @aidTgtToPos@ does not return @Nothing@.
 --
+-- Modifies @seps@ in client state, if needed. This is the only place
+-- where @seps@ is modified automatically. Note that this only happens
+-- when the target is an actor.
+--
 -- Note: Perception is not enough for the check,
 -- because the target actor can be obscured by a glass wall
 -- or be out of sight range, but in weapon range.
@@ -99,9 +103,11 @@ aidTgtAims aid lidV tgt = do
       b <- getsState $ getActorBody aid
       if blid b == lidV then do
         seps <- getsClient seps
-        (steps, _eps) <- makeLine b pos seps
+        (steps, newEps) <- makeLine b pos seps
         if steps == chessDist (bpos b) pos
-          then return Nothing
+          then do
+            modifyClient $ \cli -> cli {seps = newEps}
+            return Nothing
           else return $ Just "aiming line to the opponent blocked"
       else return $ Just "target opponent not on this level"
     Just TEnemyPos{} -> return $ Just "target opponent not visible"
@@ -113,7 +119,7 @@ aidTgtAims aid lidV tgt = do
 
 -- | Counts the number of steps until the projectile would hit
 -- an actor or obstacle. Prefers the given eps.
--- TODO: but modifies eps, if needed.
+-- TODO: but returns a modified eps, if needed.
 makeLine :: MonadClient m => Actor -> Point -> Int -> m (Int, Int)
 makeLine body fpos eps = do
   cops <- getsState scops
