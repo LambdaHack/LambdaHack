@@ -100,10 +100,10 @@ aidTgtAims aid lidV tgt = do
       let pos = bpos body
       b <- getsState $ getActorBody aid
       if blid b == lidV then do
-        (steps, newEps) <- makeLine b pos oldEps
-        if steps == chessDist (bpos b) pos
-          then return $ Right newEps
-          else return $ Left "aiming line to the opponent blocked"
+        mnewEps <- makeLine b pos oldEps
+        case mnewEps of
+          Just newEps -> return $ Right newEps
+          Nothing -> return $ Left "aiming line to the opponent blocked"
       else return $ Left "target opponent not on this level"
     Just TEnemyPos{} -> return $ Left "target opponent not visible"
     Just TPoint{} -> return $ Right oldEps
@@ -113,30 +113,25 @@ aidTgtAims aid lidV tgt = do
       aidTgtAims aid lidV $ Just scursor
 
 -- | Counts the number of steps until the projectile would hit
--- an actor or obstacle. Prefers the given eps.
--- TODO: but returns a modified eps, if needed.
-makeLine :: MonadClient m => Actor -> Point -> Int -> m (Int, Int)
+-- an actor or obstacle.
+makeLine :: MonadClient m => Actor -> Point -> Int -> m (Maybe Int)
 makeLine body fpos eps = do
   cops <- getsState scops
   lvl@Level{lxsize, lysize} <- getLevel (blid body)
   bs <- getsState $ filter (not . bproj)
                     . actorList (const True) (blid body)
-  let mbl = bla lxsize lysize eps (bpos body) fpos
-  case mbl of
-    Just bl@(pos1:_) -> do
-      let noActor p = any ((== p) . bpos) bs || p == fpos
-      case break noActor bl of
-        (flies, hits : _) -> do
-          let blRest = flies ++ [hits]
-              blZip = zip (bpos body : blRest) blRest
-              blAccess = takeWhile (uncurry $ accessible cops lvl) blZip
-          mab <- getsState $ posToActor pos1 (blid body)
-          if maybe True (bproj . snd . fst) mab then
-            return $ (length blAccess, eps)
-          else return (0, eps)  -- ProjectBlockActor
-        _ -> assert `failure` (body, fpos, bl)
-    Just [] -> assert `failure` (body, fpos)
-    Nothing -> return (0, eps)  -- ProjectAimOnself
+  let dist = chessDist (bpos body) fpos
+      mbl = bla lxsize lysize eps (bpos body) fpos
+      valid = case mbl of
+        Just bl ->
+          let blDist = take dist bl
+              blZip = zip (bpos body : blDist) blDist
+              noActor p = all ((/= p) . bpos) bs || p == fpos
+          in dist > 1  -- ProjectBlockActor
+             && all noActor blDist
+             && all (uncurry $ accessible cops lvl) blZip
+        Nothing -> False  -- ProjectAimOnself
+  return $ if valid then Just eps else Nothing
 
 actorAbilities :: MonadClient m => ActorId -> Maybe ActorId -> m [Ability]
 actorAbilities aid mleader = do

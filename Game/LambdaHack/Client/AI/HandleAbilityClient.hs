@@ -346,37 +346,36 @@ ranged aid = do
       disco <- getsClient sdisco
       let mk = okind bkind
           initalEps = 0
-      (steps, newEps) <- makeLine b fpos initalEps
-      modifyClient $ \cli -> cli {seps = newEps}  -- quicker eps calc. next time
-      let permitted = (if True  -- aiq mk >= 10 -- TODO; let server enforce?
-                       then ritemProject
-                       else ritemRanged)
-                      $ Kind.stdRuleset corule
-      benList <- benAvailableItems aid permitted
-      let itemReaches item =
-            let lingerPercent = isLingering coitem disco item
-                speed = speedFromWeight (jweight item) (jtoThrow item)
-                range = rangeFromSpeed speed
-                totalRange = lingerPercent * range `div` 100
-            in steps <= totalRange  -- probably enough range
-          fRanged ((mben, cstore), (iid, item)) =
-            let benR = (if cstore == CGround then 2 else 1)
-                       * case mben of
-                           Nothing -> -5  -- experimenting is fun
-                           Just ben -> ben
-            in if benR < 0 && itemReaches item
-               then Just (-benR, ReqProject fpos newEps iid cstore)
-               else Nothing
-          benRanged = mapMaybe fRanged benList
-          freq =
-            if asight mk  -- ProjectBlind
-               && calmEnough b mk  -- ProjectNotCalm
-               -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
-               -- and no actors or obstracles along the path
-               && steps == chessDist bpos fpos
-            then toFreq "ranged" benRanged
-            else toFreq "ranged: not possible" []
-      return $! liftFrequency freq
+      mnewEps <- makeLine b fpos initalEps
+      case mnewEps of
+        Just newEps | asight mk  -- ProjectBlind
+                      && calmEnough b mk -> do  -- ProjectNotCalm
+          -- ProjectAimOnself, ProjectBlockActor, ProjectBlockTerrain
+          -- and no actors or obstracles along the path.
+          modifyClient $ \cli -> cli {seps = newEps}
+            -- probably quicker @makeLine@ calculation next time
+          let permitted = (if True  -- aiq mk >= 10 -- TODO; let server enforce?
+                           then ritemProject
+                           else ritemRanged)
+                          $ Kind.stdRuleset corule
+          benList <- benAvailableItems aid permitted
+          let itemReaches item =
+                let lingerPercent = isLingering coitem disco item
+                    speed = speedFromWeight (jweight item) (jtoThrow item)
+                    range = rangeFromSpeed speed
+                    totalRange = lingerPercent * range `div` 100
+                in chessDist bpos fpos <= totalRange  -- probably enough range
+              fRanged ((mben, cstore), (iid, item)) =
+                let benR = (if cstore == CGround then 2 else 1)
+                           * case mben of
+                               Nothing -> -5  -- experimenting is fun
+                               Just ben -> ben
+                in if benR < 0 && itemReaches item
+                   then Just (-benR, ReqProject fpos newEps iid cstore)
+                   else Nothing
+              benRanged = mapMaybe fRanged benList
+          return $! liftFrequency $ toFreq "ranged" benRanged
+        _ -> return reject
     _ -> return reject
 
 -- Tools use requires significant intelligence and sometimes literacy.
