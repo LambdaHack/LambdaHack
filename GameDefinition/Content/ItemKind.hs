@@ -367,7 +367,9 @@ explosionBlast n = ItemKind
 
 makeIsOff :: ItemKind -> ItemKind
 makeIsOff k = let addOffText t = "OFF" <+> t
-                  turnOffText t = maybe t (<> "OFF") $ T.stripSuffix "ON" t
+                  turnOffText t = maybe (t <+> "OFF")  -- "useful OFF"
+                                        (<> "OFF")     -- "wooden torch OFF"
+                                        $ T.stripSuffix "ON" t
                   turnOnText t = maybe t (<> "ON") $ T.stripSuffix "OFF" t
                   turnFreq = map (first turnOffText) $ ifreq k
                   turnFeat IsOn = IsOff
