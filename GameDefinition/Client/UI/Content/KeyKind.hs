@@ -90,22 +90,31 @@ standardKeys = KeyKind
       , ("i", (CmdMove, Macro "" ["KP_Begin"]))
 
       -- Item use
+      , ("E", (CmdItem, DescribeItem CEqp))
       , ("I", (CmdItem, DescribeItem CInv))
+      , ("G", (CmdItem, DescribeItem CGround))
+      , ("A", (CmdItem, AllOwned))
       , ("g", (CmdItem, MoveItem [CGround] CEqp "get" "an item" True))
       , ("d", (CmdItem, MoveItem [CEqp, CInv] CGround "drop" "an item" False))
-      , ("E", (CmdItem, DescribeItem CEqp))
       , ("e", (CmdItem, MoveItem [CInv, CGround] CEqp
                                  "equip" "an item" False))
       , ("s", (CmdItem, MoveItem [CEqp] CInv
                                  "stash" "and share an item" False))
-      , ("G", (CmdItem, DescribeItem CGround))
-      , ("A", (CmdItem, AllOwned))
+      , ("a", (CmdItem, Apply [ApplyItem { verb = "apply"
+                                         , object = "item"
+                                         , symbol = ' ' }]))
       , ("q", (CmdItem, Apply [ApplyItem { verb = "quaff"
                                          , object = "potion"
                                          , symbol = '!' }]))
       , ("r", (CmdItem, Apply [ApplyItem { verb = "read"
                                          , object = "scroll"
                                          , symbol = '?' }]))
+      , ("CTRL-q", (CmdItem, Apply [ApplyItem { verb = "quench/activate"
+                                              , object = "tool"
+                                              , symbol = '(' }]))
+      , ("f", (CmdItem, Project [ApplyItem { verb = "fling"
+                                           , object = "item"
+                                           , symbol = ' ' }]))
       , ("t", (CmdItem, Project [ApplyItem { verb = "throw"
                                            , object = "missile"
                                            , symbol = '|' }]))

@@ -96,9 +96,11 @@ In targeting mode the same keys move the targeting cursor.
 
 Melee, searching for secret doors and opening closed doors
 can be done by bumping into a monster, a wall and a door, respectively.
-Few commands other than movement are necessary for casual play.
-Some are provided only as building blocks for more complex convenience
-commands, e.g., the autoexplore command (key `X`) could be defined
+Few commands other than movement, 'g'etting an item from the floor,
+'a'pplying an item and 'f'linging an item, are necessary for casual play.
+Some are provided only as specialized versions of more general commands
+or as building blocks for more complex convenience commands,
+e.g., the autoexplore command (key `X`) could be defined
 by the player as a macro using `BACKSPACE`, `CTRL-?`, `;` and `P`.
 
 Below are the remaining keys for movement and terrain alteration.
@@ -121,16 +123,19 @@ Below are the remaining keys for movement and terrain alteration.
 Item use related keys are as follows.
 
                 keys           command
-                I              describe shared inventory of the party
-                g and ,        get an item
-                d              drop an item
                 E              describe personal equipment of the leader
-                e              equip an item
-                s              stash and share an item
+                I              describe shared inventory of the party
                 G              describe items on the ground
                 A              describe all owned items
+                g and ,        get an item
+                d              drop an item
+                e              equip an item
+                s              stash and share an item
+                a              apply item
                 q              quaff potion
                 r              read scroll
+                CTRL-q         quench/activate tool
+                f              fling item
                 t              throw missile
                 z              zap wand
 
