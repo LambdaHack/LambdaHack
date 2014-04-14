@@ -201,6 +201,8 @@ dominateFid fid target = do
 -- that are updated once per his move (as opposed to once per a time unit).
 advanceTime :: (MonadAtomic m, MonadServer m) => ActorId -> m ()
 advanceTime aid = do
+  cops <- getsState scops
+  discoS <- getsServer sdisco
   b <- getsState $ getActorBody aid
   let t = ticksPerMeter $ bspeed b
   execUpdAtomic $ UpdAgeActor aid t
@@ -211,7 +213,7 @@ advanceTime aid = do
       dominateFid (boldfid b) aid
       execSfx
     else do
-      newCalmDelta <- getsState $ regenCalmDelta b
+      newCalmDelta <- getsState $ regenCalmDelta cops discoS b
       unless (newCalmDelta == 0 && bcalmDelta b == 0) $
         execUpdAtomic $ UpdCalmActor aid newCalmDelta
 
@@ -226,12 +228,14 @@ advanceTime aid = do
 -- so all actors need to regenerate, not just the leaders.
 -- Actors on frozen levels don't regenerate. This prevents cheating
 -- via sending an actor to a safe level and letting him regenerate there.
-regenerateLevelHP :: MonadAtomic m => LevelId -> m ()
+regenerateLevelHP :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
 regenerateLevelHP lid = do
+  cops <- getsState scops
+  discoS <- getsServer sdisco
   time <- getsState $ getLocalTime lid
   let turnN = time `timeFit` timeTurn
       approve (_, b) = do
-        hpPeriod <- getsState $ regenHPPeriod b
+        hpPeriod <- getsState $ regenHPPeriod cops discoS b
         return $! hpPeriod /= 0 && turnN `mod` hpPeriod == 0
   toRegen <- getsState $ actorRegularAssocs (const True) lid
   appRegen <- filterM approve toRegen

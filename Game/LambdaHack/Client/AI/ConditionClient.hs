@@ -109,20 +109,22 @@ condBlocksFriendsM aid = do
           _ -> False
   return $ any blocked ours  -- keep it lazy
 
-condFloorWeaponM :: MonadStateRead m => ActorId -> m Bool
+condFloorWeaponM :: MonadClient m => ActorId -> m Bool
 condFloorWeaponM aid = do
   cops <- getsState scops
+  disco <- getsClient sdisco
   b <- getsState $ getActorBody aid
   floorAssocs <- getsState $ getFloorAssocs (blid b) (bpos b)
-  let lootIsWeapon = isJust $ strongestSword cops floorAssocs
+  let lootIsWeapon = isJust $ strongestSword cops disco floorAssocs
   return $ lootIsWeapon  -- keep it lazy
 
-condNoWeaponM :: MonadStateRead m => ActorId -> m Bool
+condNoWeaponM :: MonadClient m => ActorId -> m Bool
 condNoWeaponM aid = do
   cops <- getsState scops
+  disco <- getsClient sdisco
   b <- getsState $ getActorBody aid
   eqpAssocs <- getsState $ getEqpAssocs b
-  return $ isNothing $ strongestSword cops eqpAssocs  -- keep it lazy
+  return $ isNothing $ strongestSword cops disco eqpAssocs  -- keep it lazy
 
 condCanProjectM :: MonadClient m => ActorId -> m Bool
 condCanProjectM aid = do

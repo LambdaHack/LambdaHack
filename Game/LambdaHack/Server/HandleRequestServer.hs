@@ -167,6 +167,7 @@ reqMove source dir = do
 reqMelee :: (MonadAtomic m, MonadServer m) => ActorId -> ActorId -> m ()
 reqMelee source target = do
   cops@Kind.COps{coitem=coitem@Kind.Ops{opick, okind}} <- getsState scops
+  discoS <- getsServer sdisco
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   let adj = checkAdjacent sb tb
@@ -184,7 +185,7 @@ reqMelee source target = do
       then case ais of
         [(iid, item)] -> return (Just iid, item)
         _ -> assert `failure` "projectile with wrong items" `twith` ais
-      else case strongestSword cops eqpAssocs of
+      else case strongestSword cops discoS eqpAssocs of
         Just (_, (iid, w)) -> return (Just iid, w)  -- weapon combat
         Nothing -> do  -- hand to hand combat
           let isHero = isHeroFact cops sfact
@@ -366,7 +367,7 @@ reqApply :: (MonadAtomic m, MonadServer m)
          -> m ()
 reqApply aid iid cstore = do
   Kind.COps{ coactor=Kind.Ops{okind}
-           , coitem=Kind.Ops{okind = iokind} } <- getsState scops
+           , coitem=Kind.Ops{okind=iokind} } <- getsState scops
   let applyItem = do
         -- We have to destroy the item before the effect affects the item
         -- or the actor holding it or standing on it (later on we could

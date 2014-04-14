@@ -279,6 +279,7 @@ handleActors lid = do
 
 gameExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()
 gameExit = do
+  discoS <- getsServer sdisco
   -- Kill all clients, including those that did not take part
   -- in the current game.
   -- Clients exit not now, but after they print all ending screens.
@@ -287,7 +288,7 @@ gameExit = do
   -- Verify that the saved perception is equal to future reconstructed.
   persAccumulated <- getsServer sper
   fovMode <- getsServer $ sfovMode . sdebugSer
-  pers <- getsState $ dungeonPerception (fromMaybe Digital fovMode)
+  pers <- getsState $ dungeonPerception discoS (fromMaybe Digital fovMode)
   assert (persAccumulated == pers `blame` "wrong accumulated perception"
                                   `twith` (persAccumulated, pers)) skip
 

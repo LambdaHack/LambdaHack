@@ -268,12 +268,12 @@ getLocalTime lid s = ltime $ sdungeon s EM.! lid
 isSpawnFaction :: FactionId -> State -> Bool
 isSpawnFaction fid s = isSpawnFact $ sfactionD s EM.! fid
 
-regenHPPeriod :: Actor -> State -> Int
-regenHPPeriod b s =
+regenHPPeriod :: Kind.COps -> Discovery -> Actor -> State -> Int
+regenHPPeriod cops disco b s =
   let Kind.COps{coactor=Kind.Ops{okind}} = scops s
       ak = okind $ bkind b
       eqpAssocs = getEqpAssocs b s
-      regenPeriod = case strongestRegen eqpAssocs of
+      regenPeriod = case strongestRegen cops disco eqpAssocs of
         Just (k, _)  ->
           let slowBaseRegen = 1000
               ar = if aregen ak == maxBound then slowBaseRegen else aregen ak
@@ -282,12 +282,12 @@ regenHPPeriod b s =
       maxDeltaHP = Dice.maxDice (ahp ak) - bhp b
   in if maxDeltaHP > 0 then regenPeriod else 0
 
-regenCalmDelta :: Actor -> State -> Int
-regenCalmDelta b s =
+regenCalmDelta :: Kind.COps -> Discovery -> Actor -> State -> Int
+regenCalmDelta cops disco b s =
   let Kind.COps{coactor=Kind.Ops{okind}} = scops s
       ak = okind $ bkind b
       eqpAssocs = getEqpAssocs b s
-      calmIncr = case strongestStead eqpAssocs of
+      calmIncr = case strongestStead cops disco eqpAssocs of
         Just (k, _)  -> k + 1
         Nothing -> 1
       maxDeltaCalm = Dice.maxDice (acalm ak) - bcalm b
@@ -300,14 +300,14 @@ regenCalmDelta b s =
      then min calmIncr maxDeltaCalm
      else -1  -- even if all calmness spent, keep informing the client
 
-actorInDark :: Actor -> State -> Bool
-actorInDark b s =
+actorInDark :: Kind.COps -> Discovery -> Actor -> State -> Bool
+actorInDark cops disco b s =
   let Kind.COps{cotile} = scops s
       lvl = (EM.! blid b) . sdungeon $ s
       eqpAssocs = getEqpAssocs b s
 --      floorAssocs = getFloorAssocs (blid b) (bpos b) s
   in not (Tile.isLit cotile (lvl `at` bpos b))
-     && isNothing (strongestBurn eqpAssocs)
+     && isNothing (strongestBurn cops disco eqpAssocs)
 --     && isNothing (strongestBurn floorAssocs)
 
 -- TODO: base on items not/not only on iq.

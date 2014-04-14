@@ -180,7 +180,7 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
       minLeaderStatusWidth = 19  -- covers 3-digit HP
       selectedStatus = drawSelected cli s drawnLevelId mleader
                                     (widthStats - minLeaderStatusWidth)
-      leaderStatus = drawLeaderStatus cops s swaitTimes mleader
+      leaderStatus = drawLeaderStatus cops sdisco s swaitTimes mleader
                                       (widthStats - length selectedStatus)
       damageStatus = drawLeaderDamage cops s sdisco mleader
                                       (widthStats - length leaderStatus
@@ -230,10 +230,10 @@ drawArenaStatus explored Level{ldepth, ldesc, lseen, lclear} width =
   in addAttr $ T.justifyLeft width ' '
              $ T.take 29 (lvlN <+> T.justifyLeft 26 ' ' ldesc) <+> seenStatus
 
-drawLeaderStatus :: Kind.COps -> State
+drawLeaderStatus :: Kind.COps -> Discovery -> State
                  -> Int -> Maybe ActorId -> Int
                  -> [Color.AttrChar]
-drawLeaderStatus cops s waitT mleader width =
+drawLeaderStatus cops sdisco s waitT mleader width =
   let addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
       addColor c t = map (Color.AttrChar $ Color.Attr c Color.defBG)
                          (T.unpack t)
@@ -248,7 +248,8 @@ drawLeaderStatus cops s waitT mleader width =
                ahpS, bhpS, acalmS, bcalmS) =
                 let b@Actor{bkind, bhp, bcalm} = getActorBody leader s
                     ActorKind{ahp, acalm} = okind bkind
-                in ( actorInDark b s, braced b, regenHPPeriod b s, bcalmDelta b
+                in ( actorInDark cops sdisco b s
+                   , braced b, regenHPPeriod cops sdisco b s, bcalmDelta b
                    , tshow (Dice.maxDice ahp), tshow bhp
                    , tshow (Dice.maxDice acalm), tshow bcalm )
               -- This is a valuable feedback for the otherwise hard to observe
@@ -284,7 +285,7 @@ drawLeaderDamage cops s sdisco mleader width =
         Just leader ->
           let b = getActorBody leader s
               eqpAssocs = getEqpAssocs b s
-              damage = case Item.strongestSword cops eqpAssocs of
+              damage = case Item.strongestSword cops sdisco eqpAssocs of
                 Just (_, (_, sw)) ->
                   case Item.jkind sdisco sw of
                     Just _ ->

@@ -71,9 +71,10 @@ resetFidPerception persLit fid lid = do
 
 resetLitInDungeon :: MonadServer m => m PersLit
 resetLitInDungeon = do
+  discoS <- getsServer sdisco
   sfovMode <- getsServer $ sfovMode . sdebugSer
   let fovMode = fromMaybe Digital sfovMode
-  getsState $ litInDungeon fovMode
+  getsState $ litInDungeon discoS fovMode
 
 getPerFid :: MonadServer m => FactionId -> LevelId -> m Perception
 getPerFid fid lid = do

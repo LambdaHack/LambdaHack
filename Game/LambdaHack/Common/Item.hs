@@ -205,6 +205,13 @@ strongestItems is p =
                          Just v -> Just (v, (k, (iid, item)))) is
   in reverse $ sort kis
 
+filterON :: Kind.COps -> Discovery -> [(ItemId, Item)] -> [(ItemId, Item)]
+filterON Kind.COps{coitem=Kind.Ops{okind}} disco is =
+  let isON (_iid, item) = case jkind disco item of
+        Nothing -> True  -- TODO: isOff should be exposed
+        Just ik -> IF.IsOff `notElem` ifeature (okind ik)
+  in filter isON is
+
 pMelee :: Kind.COps -> Item -> Maybe Int
 pMelee Kind.COps{corule} i =
   case jeffect i of
@@ -212,26 +219,31 @@ pMelee Kind.COps{corule} i =
       -> Just $ floor (Dice.meanDice d) + k
     _ -> Nothing
 
-strongestSword :: Kind.COps -> [(ItemId, Item)] -> Maybe (Int, (ItemId, Item))
-strongestSword cops is = strongestItem is $ pMelee cops
+strongestSword :: Kind.COps -> Discovery -> [(ItemId, Item)]
+               -> Maybe (Int, (ItemId, Item))
+strongestSword cops disco is =
+  strongestItem (filterON cops disco is) $ pMelee cops
 
 pRegen :: Item -> Maybe Int
 pRegen i = case jeffect i of Regeneration k -> Just k; _ -> Nothing
 
-strongestRegen :: [(ItemId, Item)] -> Maybe (Int, (ItemId, Item))
-strongestRegen is = strongestItem is pRegen
+strongestRegen :: Kind.COps -> Discovery -> [(ItemId, Item)]
+               -> Maybe (Int, (ItemId, Item))
+strongestRegen cops disco is = strongestItem (filterON cops disco is) pRegen
 
 pStead :: Item -> Maybe Int
 pStead i = case jeffect i of Steadfastness k -> Just k; _ -> Nothing
 
-strongestStead :: [(ItemId, Item)] -> Maybe (Int, (ItemId, Item))
-strongestStead is = strongestItem is pStead
+strongestStead :: Kind.COps -> Discovery -> [(ItemId, Item)]
+               -> Maybe (Int, (ItemId, Item))
+strongestStead cops disco is = strongestItem (filterON cops disco is) pStead
 
 pBurn :: Item -> Maybe Int
 pBurn i = case jeffect i of Burn k -> Just k; _ -> Nothing
 
-strongestBurn :: [(ItemId, Item)] -> Maybe (Int, (ItemId, Item))
-strongestBurn is = strongestItem is pBurn
+strongestBurn :: Kind.COps -> Discovery -> [(ItemId, Item)]
+              -> Maybe (Int, (ItemId, Item))
+strongestBurn cops disco is = strongestItem (filterON cops disco is) pBurn
 
 isFragile :: Kind.Ops ItemKind -> Discovery -> Item -> Bool
 isFragile Kind.Ops{okind} disco i =
