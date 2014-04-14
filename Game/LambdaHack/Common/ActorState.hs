@@ -4,7 +4,7 @@
 module Game.LambdaHack.Common.ActorState
   ( fidActorNotProjAssocs, actorAssocsLvl, actorAssocs, actorList
   , actorRegularAssocsLvl, actorRegularAssocs, actorRegularList
-  , calculateTotal, sharedInv, sharedAllOwned, sharedAllOwnedFid
+  , bagAssocs, calculateTotal, sharedInv, sharedAllOwned, sharedAllOwnedFid
   , getInvBag, getCBag, getActorBag, nearbyFreePoints, whereTo
   , posToActors, posToActor, getItemBody, memActor, getActorBody
   , getCarriedAssocs, getEqpAssocs, getEqpKA, getInvAssocs, getFloorAssocs
@@ -87,6 +87,16 @@ actorRegularList :: (FactionId -> Bool) -> LevelId -> State
                  -> [Actor]
 actorRegularList p lid s = map snd $ actorRegularAssocs p lid s
 
+getItemBody :: ItemId -> State -> Item
+getItemBody iid s =
+  fromMaybe (assert `failure` "item body not found"
+                    `twith` (iid, s)) $ EM.lookup iid $ sitemD s
+
+bagAssocs :: State -> ItemBag -> [(ItemId, Item)]
+bagAssocs s bag =
+  let iidItem iid = (iid, getItemBody iid s)
+  in map iidItem $ EM.keys bag
+
 -- | Finds an actor at a position on the current level.
 posToActor :: Point -> LevelId -> State
            -> Maybe ((ActorId, Actor), [(ItemId, Item)])
@@ -97,8 +107,8 @@ posToActors :: Point -> LevelId -> State
 posToActors pos lid s =
   let as = actorAssocs (const True) lid s
       aps = filter (\(_, b) -> bpos b == pos) as
-      f iid = (iid, getItemBody iid s)
-      g (aid, b) = ((aid, b), map f $ EM.keys (binv b) ++ EM.keys (beqp b))
+      g (aid, b) = ( (aid, b)
+                   , bagAssocs s (binv b) ++ bagAssocs s (beqp b) )
       l = map g aps
   in assert (length l <= 1 || all (bproj . snd . fst) l
              `blame` "many actors at the same position" `twith` l)
@@ -199,14 +209,10 @@ getActorBody aid s =
   $ EM.lookup aid $ sactorD s
 
 getCarriedAssocs :: Actor -> State -> [(ItemId, Item)]
-getCarriedAssocs b s =
-  let f iid = (iid, getItemBody iid s)
-  in map f $ EM.keys $ EM.unionWith (+) (binv b) (beqp b)
+getCarriedAssocs b s = bagAssocs s $ EM.unionWith (+) (binv b) (beqp b)
 
 getEqpAssocs :: Actor -> State -> [(ItemId, Item)]
-getEqpAssocs b s =
-  let f iid = (iid, getItemBody iid s)
-  in map f $ EM.keys $ beqp b
+getEqpAssocs b s = bagAssocs s $ beqp b
 
 getEqpKA :: Actor -> State -> [(Int, (ItemId, Item))]
 getEqpKA b s =
@@ -214,9 +220,7 @@ getEqpKA b s =
   in map f $ EM.assocs $ beqp b
 
 getInvAssocs :: Actor -> State -> [(ItemId, Item)]
-getInvAssocs b s =
-  let f iid = (iid, getItemBody iid s)
-  in map f $ EM.keys $ getInvBag b s
+getInvAssocs b s = bagAssocs s $ getInvBag b s
 
 getInvBag :: Actor -> State -> ItemBag
 getInvBag b s =
@@ -237,14 +241,7 @@ getActorBag aid CGround s = let b = getActorBody aid s
                             in sdungeon s EM.! blid b `atI` bpos b
 
 getFloorAssocs :: LevelId -> Point -> State -> [(ItemId, Item)]
-getFloorAssocs lid pos s =
-  let f iid = (iid, getItemBody iid s)
-  in map f $ EM.keys $ sdungeon s EM.! lid `atI` pos
-
-getItemBody :: ItemId -> State -> Item
-getItemBody iid s =
-  fromMaybe (assert `failure` "item body not found"
-                    `twith` (iid, s)) $ EM.lookup iid $ sitemD s
+getFloorAssocs lid pos s = bagAssocs s $ sdungeon s EM.! lid `atI` pos
 
 -- | Checks if the actor is present on the current level.
 -- The order of argument here and in other functions is set to allow
@@ -305,10 +302,10 @@ actorInDark cops disco b s =
   let Kind.COps{cotile} = scops s
       lvl = (EM.! blid b) . sdungeon $ s
       eqpAssocs = getEqpAssocs b s
---      floorAssocs = getFloorAssocs (blid b) (bpos b) s
+      floorAssocs = getFloorAssocs (blid b) (bpos b) s
   in not (Tile.isLit cotile (lvl `at` bpos b))
      && isNothing (strongestBurn cops disco eqpAssocs)
---     && isNothing (strongestBurn floorAssocs)
+     && isNothing (strongestBurn cops disco floorAssocs)
 
 -- TODO: base on items not/not only on iq.
 -- Check whether an actor can be displaced by an enemy. Generally, heroes can

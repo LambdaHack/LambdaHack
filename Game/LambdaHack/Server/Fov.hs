@@ -101,17 +101,14 @@ reachableFromActor Kind.COps{cotile, coactor=Kind.Ops{okind}}
   in PerceptionReachable
      $ fullscan cotile fovModeOrBlind (bradius body) (bpos body) lvl
 
--- | Compute positions lit by the actor. Note that the actor can be blind
--- or a projectile, in which case he doesn't see his own light (but others,
--- from his or other factions, possibly do).
-litByActor :: Discovery -> FovMode -> Level -> State -> Actor
+litByItems :: Discovery -> FovMode -> Level -> Point -> State
+           -> [(ItemId, Item)]
            -> [Point]
-litByActor disco fovMode lvl s body =
+litByItems disco fovMode lvl p s iis =
   let cops@Kind.COps{cotile} = scops s
-      eqpAssocs = getEqpAssocs body s
-  in case strongestBurn cops disco eqpAssocs of
+  in case strongestBurn cops disco iis of
     Just (radius, _) ->
-      let scan = fullscan cotile fovMode radius (bpos body) lvl
+      let scan = fullscan cotile fovMode radius p lvl
       -- Optimization: filter out positions that already have ambient light.
       in filter (\pos -> not $ Tile.isLit cotile $ lvl `at` pos) scan
     Nothing -> []
@@ -120,9 +117,15 @@ litByActor disco fovMode lvl s body =
 litOnLevel :: Discovery -> FovMode -> LevelId -> Level -> State
            -> PerceptionLit
 litOnLevel disco fovMode lid lvl s =
-  let allBody = actorList (const True) lid s
-  in PerceptionLit $ ES.fromList
-     $ concatMap (litByActor disco fovMode lvl s) allBody
+  let -- Compute positions lit by the actor. Note that the actor can be blind
+      -- or a projectile, in which case he doesn't see his own light
+      -- (but others, from his or other factions, possibly do).
+      litEqp b = litByItems disco fovMode lvl (bpos b) s (bagAssocs s $ beqp b)
+      litFromActors = concatMap litEqp $ actorList (const True) lid s
+      -- Compute positions lit by floor items.
+      litFloorBag (p, bag) = litByItems disco fovMode lvl p s (bagAssocs s bag)
+      litFromFloor = concatMap litFloorBag $ EM.assocs $ lfloor lvl
+  in PerceptionLit $ ES.fromList $ litFromActors ++ litFromFloor
 
 -- | Compute all lit positions in the dungeon
 litInDungeon :: Discovery -> FovMode -> State -> PersLit
