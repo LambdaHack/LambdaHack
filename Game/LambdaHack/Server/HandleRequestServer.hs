@@ -28,6 +28,7 @@ import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemFeature as IF
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -40,6 +41,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Server.CommonServer
 import Game.LambdaHack.Server.HandleEffectServer
@@ -205,7 +207,7 @@ reqMelee source target = do
           -- Deduct a hitpoint for a pierce of a projectile.
           when (bproj sb) $ execUpdAtomic $ UpdHealActor source (-1)
           -- Msgs inside itemEffect describe the target part.
-          itemEffect source target miid item
+          itemEffect source target miid item CEqp
     -- Projectiles can't be blocked (though can be sidestepped).
     -- Incapacitated actors can't block.
     if braced tb && not (bproj sb) && bhp tb > 0
@@ -292,9 +294,9 @@ reqAlter source tpos mfeat = do
             F.CloseTo tgroup -> Just tgroup
             F.ChangeTo tgroup -> Just tgroup
             _ -> Nothing
-        groupsToAlter = mapMaybe toAlter feats
+        groupsToAlterTo = mapMaybe toAlter feats
     as <- getsState $ actorList (const True) lid
-    if null groupsToAlter && serverTile == freshClientTile then
+    if null groupsToAlterTo && serverTile == freshClientTile then
       -- Neither searching nor altering possible; silly client.
       execFailure source req AlterNothing
     else do
@@ -304,7 +306,8 @@ reqAlter source tpos mfeat = do
             -- Search, in case some actors (of other factions?)
             -- don't know this tile.
             execUpdAtomic $ UpdSearchTile source tpos freshClientTile serverTile
-          mapM_ changeTo groupsToAlter
+          maybe skip changeTo $ listToMaybe groupsToAlterTo
+            -- TODO: pick another, if the first one void
           -- Perform an effect, if any permitted.
           void $ triggerEffect source feats
         else execFailure source req AlterBlockActor
@@ -362,6 +365,8 @@ reqApply :: (MonadAtomic m, MonadServer m)
          -> CStore   -- ^ the location of the item
          -> m ()
 reqApply aid iid cstore = do
+  Kind.COps{ coactor=Kind.Ops{okind}
+           , coitem=Kind.Ops{okind = iokind} } <- getsState scops
   let applyItem = do
         -- We have to destroy the item before the effect affects the item
         -- or the actor holding it or standing on it (later on we could
@@ -369,15 +374,22 @@ reqApply aid iid cstore = do
         -- This is OK, because we don't remove the item type
         -- from the item dictionary, just an individual copy from the container.
         item <- getsState $ getItemBody iid
-        -- TODO: don't destroy if not really used up; also, don't take time?
-        cs <- actorConts iid 1 aid cstore
-        mapM_ (\(_, c) -> execUpdAtomic $ UpdDestroyItem iid item 1 c) cs
-        execSfxAtomic $ SfxActivate aid iid
-        itemEffect aid aid (Just iid) item
+        discoS <- getsServer sdisco
+        let kindI = iokind $ fromJust $ jkind discoS item
+            onOff = any (`elem` [IF.IsOn, IF.IsOff]) $ ifeature kindI
+        if onOff then do
+          bag <- getsState $ getActorBag aid cstore
+          let k = bag EM.! iid
+          execSfxAtomic $ SfxActivate aid iid k
+        else do
+          -- TODO: don't destroy if not really used up; also, don't take time?
+          cs <- actorConts iid 1 aid cstore
+          mapM_ (\(_, c) -> execUpdAtomic $ UpdDestroyItem iid item 1 c) cs
+          execSfxAtomic $ SfxActivate aid iid 1
+        itemEffect aid aid (Just iid) item cstore
       req = ReqApply iid cstore
   if cstore /= CInv then applyItem
   else do
-    Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
     b <- getsState $ getActorBody aid
     let kind = okind $ bkind b
     if calmEnough b kind then applyItem
@@ -413,7 +425,7 @@ triggerEffect aid feats = do
           F.Cause ef -> do
             -- No block against tile, hence unconditional.
             execSfxAtomic $ SfxTrigger aid tpos feat
-            void $ effectSem ef aid aid
+            void $ effectSem ef aid aid Nothing
             return True
           _ -> return False
   goes <- mapM triggerFeat feats

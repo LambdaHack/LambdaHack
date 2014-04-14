@@ -466,8 +466,8 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
     msgAdd $ makeSentence [MU.SubjectVerbSg spart "shrink away from", tpart]
   SfxProject aid iid -> aiVerbMU aid "aim" iid 1
   SfxCatch aid iid -> aiVerbMU aid "catch" iid 1
-  SfxActivate aid iid -> aiVerbMU aid "activate"{-TODO-} iid 1
-  SfxCheck aid iid -> aiVerbMU aid "check" iid 1
+  SfxActivate aid iid k -> aiVerbMU aid "activate"{-TODO-} iid k
+  SfxCheck aid iid k -> aiVerbMU aid "check" iid k
   SfxTrigger aid _p _feat ->
     when verbose $ aVerbMU aid "trigger"  -- TODO: opens door, etc.
   SfxShun aid _p _ ->

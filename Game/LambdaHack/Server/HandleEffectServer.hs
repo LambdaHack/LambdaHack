@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 -- | Handle effects (most often caused by requests sent by clients).
 module Game.LambdaHack.Server.HandleEffectServer
   ( itemEffect, effectSem
@@ -20,8 +21,10 @@ import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemFeature as IF
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Point
@@ -30,6 +33,7 @@ import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
+import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Server.CommonServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.PeriodicServer
@@ -43,14 +47,15 @@ import Game.LambdaHack.Server.State
 -- is mutually recursive with @effect@ and so it's a part of @Effect@
 -- semantics.
 itemEffect :: (MonadAtomic m, MonadServer m)
-           => ActorId -> ActorId -> Maybe ItemId -> Item
+           => ActorId -> ActorId -> Maybe ItemId -> Item -> CStore
            -> m ()
-itemEffect source target miid item = do
+itemEffect source target miid item cstore = do
   postb <- getsState $ getActorBody source
   discoS <- getsServer sdisco
   let ik = fromJust $ jkind discoS item
       ef = jeffect item
-  b <- effectSem ef source target
+      miidCstore = fmap (, cstore) miid
+  b <- effectSem ef source target miidCstore
   -- The effect is interesting so the item gets identified, if seen
   -- (the item was at the source actor's position, so his old position
   -- is given, since the actor and/or the item may be moved by the effect;
@@ -64,9 +69,9 @@ itemEffect source target miid item = do
 -- The boolean result indicates if the effect was spectacular enough
 -- for the actors to identify it (and the item that caused it, if any).
 effectSem :: (MonadAtomic m, MonadServer m)
-          => Effect.Effect Int -> ActorId -> ActorId
+          => Effect.Effect Int -> ActorId -> ActorId -> Maybe (ItemId, CStore)
           -> m Bool
-effectSem effect source target = do
+effectSem effect source target miidCstore = do
   sb <- getsState $ getActorBody source
   let execSfx = execSfxAtomic $ SfxEffect (bfid sb) target effect
   case effect of
@@ -76,15 +81,16 @@ effectSem effect source target = do
     Effect.Haste p -> effectHaste execSfx p target
     Effect.Mindprobe _ -> effectMindprobe source target
     Effect.Dominate | source /= target -> effectDominate execSfx source target
-    Effect.Dominate -> effectSem (Effect.Mindprobe undefined) source target
+    Effect.Dominate ->
+      effectSem (Effect.Mindprobe undefined) source target miidCstore
     Effect.Impress -> effectImpress source target
     Effect.CallFriend p -> effectCallFriend p source target
     Effect.Summon p -> effectSummon p target
     Effect.CreateItem p -> effectCreateItem p target
     Effect.ApplyPerfume -> effectApplyPerfume execSfx source target
-    Effect.Burn p -> effectBurn execSfx p source target
+    Effect.Burn p -> effectBurn execSfx p source target miidCstore
     Effect.Blast p -> effectBlast execSfx p source target
-    Effect.Regeneration p -> effectSem (Effect.Heal p) source target
+    Effect.Regeneration p -> effectSem (Effect.Heal p) source target miidCstore
     Effect.Steadfastness p -> effectSteadfastness execSfx p target
     Effect.Ascend p -> effectAscend execSfx p target
     Effect.Escape{} -> effectEscape target
@@ -310,12 +316,42 @@ effectApplyPerfume execSfx source target =
 -- ** Burn
 
 effectBurn :: (MonadAtomic m, MonadServer m)
-           => m () -> Int -> ActorId -> ActorId -> m Bool
-effectBurn execSfx power source target = do
-  -- Damage from both impact and fire.
-  void $ effectHurt 0 (2 * power) source target
-  execSfx
-  return True
+           => m () -> Int -> ActorId -> ActorId -> Maybe (ItemId, CStore)
+           -> m Bool
+effectBurn execSfx power source target miidCstore = do
+  if source == target
+  then case miidCstore of
+    Just (iid, cstore) | cstore `elem` [CGround, CEqp] -> do
+      -- Toggle on/off.
+      Kind.COps{coitem=Kind.Ops{opick, okind}} <- getsState scops
+      flavour <- getsServer sflavour
+      discoRev <- getsServer sdiscoRev
+      discoS <- getsServer sdisco
+      item <- getsState $ getItemBody iid
+      let ikOld = fromJust $ jkind discoS item
+          kindOld = okind ikOld
+          toChange (IF.ChangeTo group) = Just group
+          toChange _ = Nothing
+          groupsToChangeTo = mapMaybe toChange $ ifeature kindOld
+      case groupsToChangeTo of
+        [] -> effectNoEffect target
+        group : _TODO -> do
+          ikNew <- rndToAction $ fmap (fromMaybe $ assert `failure` group)
+                                 $ opick group (const True)
+          let kindNew = okind ikNew
+              itemNew = buildItem flavour discoRev ikNew kindNew (jeffect item)
+          bag <- getsState $ getActorBag target cstore
+          let k = bag EM.! iid
+              container = CActor target cstore
+          execUpdAtomic $ UpdLoseItem iid item k container
+          void $ registerItem itemNew k container True
+          return False
+    _ -> effectNoEffect target
+  else do
+    -- Damage from both impact and fire.
+    void $ effectHurt 0 (2 * power) source target
+    execSfx
+    return True
 
 -- ** Blast
 
