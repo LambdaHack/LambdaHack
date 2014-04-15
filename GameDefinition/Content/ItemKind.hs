@@ -20,10 +20,10 @@ cdefs = ContentDef
   , getFreq = ifreq
   , validate = validateItemKind
   , content =
-      [amulet, brassLantern, dart, gem1, gem2, gem3, currency, harpoon, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, fragrance, mist_healing, mist_wounding, burningOil1, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke]
+      [amulet, brassLantern, dart, gem1, gem2, gem3, currency, harpoon, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke]
       ++ map makeIsOff [brassLantern, oilLamp, woodenTorch]
   }
-amulet,        brassLantern, dart, gem1, gem2, gem3, currency, harpoon, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, fragrance, mist_healing, mist_wounding, burningOil1, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke :: ItemKind
+amulet,        brassLantern, dart, gem1, gem2, gem3, currency, harpoon, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke :: ItemKind
 
 gem, potion, scroll, wand :: ItemKind  -- generic templates
 
@@ -269,7 +269,7 @@ fragrance = ItemKind
   , iname    = "fragrance"
   , ifreq    = [("fragrance", 1)]
   , iflavour = zipFancy [BrMagenta]
-  , icount   = 10 * d 2
+  , icount   = 15
   , iverbApply   = "smell"
   , iverbProject = "exude"
   , iweight  = 1
@@ -282,7 +282,7 @@ mist_healing = ItemKind
   , iname    = "mist"
   , ifreq    = [("healing mist", 1)]
   , iflavour = zipFancy [White]
-  , icount   = 5 * d 2
+  , icount   = 11
   , iverbApply   = "inhale"
   , iverbProject = "blow"
   , iweight  = 1
@@ -295,7 +295,7 @@ mist_wounding = ItemKind
   , iname    = "mist"
   , ifreq    = [("wounding mist", 1)]
   , iflavour = zipFancy [White]
-  , icount   = 5 * d 2
+  , icount   = 13
   , iverbApply   = "inhale"
   , iverbProject = "blow"
   , iweight  = 1
@@ -303,7 +303,6 @@ mist_wounding = ItemKind
   , ifeature = [Cause $ Heal (-2), Fragile]
   , idesc    = ""
   }
-burningOil1 = burningOil 1
 burningOil2 = burningOil 2
 burningOil3 = burningOil 3
 burningOil4 = burningOil 4
@@ -313,7 +312,7 @@ glass_piece = ItemKind  -- when blowing up windows
   , iname    = "glass piece"
   , ifreq    = [("glass piece", 1)]
   , iflavour = zipPlain [BrBlue]
-  , icount   = 10 * d 2
+  , icount   = 17
   , iverbApply   = "grate"
   , iverbProject = "toss"
   , iweight  = 10
@@ -326,7 +325,7 @@ smoke = ItemKind  -- when stuff burns out
   , iname    = "smoke"
   , ifreq    = [("smoke", 1)]
   , iflavour = zipPlain [BrBlack]
-  , icount   = 12 * d 2
+  , icount   = 19
   , iverbApply   = "inhale"
   , iverbProject = "blow"
   , iweight  = 1
@@ -341,7 +340,7 @@ burningOil n = ItemKind
   , iname    = "burning oil"
   , ifreq    = [("burning oil" <+> tshow n, 1)]
   , iflavour = zipFancy [BrYellow]
-  , icount   = intToDice (n * 4) * d 2
+  , icount   = intToDice (n * 6)
   , iverbApply   = "smear"
   , iverbProject = "spit"
   , iweight  = 1
@@ -356,7 +355,7 @@ explosionBlast n = ItemKind
   , iname    = "explosion blast"
   , ifreq    = [("explosion blast" <+> tshow n, 1)]
   , iflavour = zipPlain [BrWhite]
-  , icount   = 1 + 2 * d 2  -- strong, but few, so not always hits target
+  , icount   = 12  -- strong, but few, so not always hits target
   , iverbApply   = "blast"
   , iverbProject = "give off"
   , iweight  = 1

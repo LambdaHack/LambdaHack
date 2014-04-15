@@ -6,6 +6,7 @@ module Game.LambdaHack.Server.EndServer
 
 import Control.Exception.Assert.Sugar
 import Control.Monad
+import Data.Bits (xor)
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
 import Data.Text (Text)
@@ -21,7 +22,6 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Content.RuleKind
@@ -138,30 +138,32 @@ explodeItem aid b cgroup = do
   let container = CActor aid CEqp
   iid <- registerItem item n1 container False
   let Point x y = bpos b
-      projectN n = replicateM_ n $ do
-        tpxy <- rndToAction $ do
-          border <- randomR (1, 4)
-          -- We pick a point at the border, not inside, to have a uniform
-          -- distribution for the points the line goes through at each distance
-          -- from the source. Otherwise, e.g., the points on cardinal
-          -- and diagonal lines from the source would be more common.
-          case border :: Int of
-            1 -> fmap (Point (x - 10)) $ randomR (y - 10, y + 10)
-            2 -> fmap (Point (x + 10)) $ randomR (y - 10, y + 10)
-            3 -> fmap (flip Point (y - 10)) $ randomR (x - 10, x + 10)
-            4 -> fmap (flip Point (y + 10)) $ randomR (x - 10, x + 10)
-            _ -> assert `failure` border
-        let eps = px tpxy + py tpxy
-            req = ReqProject tpxy eps iid CEqp
-        mfail <- projectFail aid tpxy eps iid CEqp True
-        case mfail of
-          Nothing -> return ()
-          Just ProjectBlockTerrain -> return ()
-          Just failMsg -> execFailure aid req failMsg
-  projectN n1
-  bag2 <- getsState $ beqp . getActorBody aid
-  let mn2 = EM.lookup iid bag2
-  maybe skip projectN mn2  -- assume all shrapnels bounce off obstacles once
+      projectN k100 n = when (n > 7) $ do
+        -- We pick a point at the border, not inside, to have a uniform
+        -- distribution for the points the line goes through at each distance
+        -- from the source. Otherwise, e.g., the points on cardinal
+        -- and diagonal lines from the source would be more common.
+        let fuzz = 1 + (k100 `xor` (n1 * n)) `mod` 11
+        forM_ [ Point (x - 12) $ y + fuzz
+              , Point (x - 12) $ y - fuzz
+              , Point (x + 12) $ y + fuzz
+              , Point (x + 12) $ y - fuzz
+              , flip Point (y - 12) $ x + fuzz
+              , flip Point (y - 12) $ x - fuzz
+              , flip Point (y + 12) $ x + fuzz
+              , flip Point (y + 12) $ x - fuzz
+              ] $ \tpxy -> do
+          let req = ReqProject tpxy k100 iid CEqp
+          mfail <- projectFail aid tpxy k100 iid CEqp True
+          case mfail of
+            Nothing -> return ()
+            Just ProjectBlockTerrain -> return ()
+            Just failMsg -> execFailure aid req failMsg
+  -- All shrapnels bounce off obstacles many times before they destruct.
+  forM_ [101..201] $ \k100 -> do
+    bag2 <- getsState $ beqp . getActorBody aid
+    let mn2 = EM.lookup iid bag2
+    maybe skip (projectN k100) mn2
   bag3 <- getsState $ beqp . getActorBody aid
   let mn3 = EM.lookup iid bag3
   maybe skip (\k -> execUpdAtomic $ UpdLoseItem iid item k container) mn3
