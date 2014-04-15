@@ -28,6 +28,7 @@ import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Item as Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
@@ -283,8 +284,7 @@ drawLeaderDamage cops s sdisco mleader width =
                    (T.unpack t)
       stats = case mleader of
         Just leader ->
-          let b = getActorBody leader s
-              eqpAssocs = getEqpAssocs b s
+          let eqpAssocs = getActorAssocs leader CEqp s
               damage = case Item.strongestSword cops sdisco eqpAssocs of
                 Just (_, (_, sw)) ->
                   case Item.jkind sdisco sw of

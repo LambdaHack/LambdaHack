@@ -5,9 +5,9 @@ module Game.LambdaHack.Common.ActorState
   ( fidActorNotProjAssocs, actorAssocsLvl, actorAssocs, actorList
   , actorRegularAssocsLvl, actorRegularAssocs, actorRegularList
   , bagAssocs, calculateTotal, sharedInv, sharedAllOwned, sharedAllOwnedFid
-  , getInvBag, getCBag, getActorBag, nearbyFreePoints, whereTo
+  , getInvBag, getCBag, getActorBag, getCAssocs, getActorAssocs
+  , nearbyFreePoints, whereTo, getCarriedAssocs, getEqpKA
   , posToActors, posToActor, getItemBody, memActor, getActorBody
-  , getCarriedAssocs, getEqpAssocs, getEqpKA, getInvAssocs, getFloorAssocs
   , tryFindHeroK, getLocalTime, isSpawnFaction
   , itemPrice, calmEnough, regenHPPeriod, regenCalmDelta, actorInDark, dispEnemy
   ) where
@@ -211,16 +211,10 @@ getActorBody aid s =
 getCarriedAssocs :: Actor -> State -> [(ItemId, Item)]
 getCarriedAssocs b s = bagAssocs s $ EM.unionWith (+) (binv b) (beqp b)
 
-getEqpAssocs :: Actor -> State -> [(ItemId, Item)]
-getEqpAssocs b s = bagAssocs s $ beqp b
-
 getEqpKA :: Actor -> State -> [(Int, (ItemId, Item))]
 getEqpKA b s =
   let f (iid, k) = (k, (iid, getItemBody iid s))
   in map f $ EM.assocs $ beqp b
-
-getInvAssocs :: Actor -> State -> [(ItemId, Item)]
-getInvAssocs b s = bagAssocs s $ getInvBag b s
 
 getInvBag :: Actor -> State -> ItemBag
 getInvBag b s =
@@ -235,13 +229,18 @@ getCBag c s = case c of
   CActor aid cstore -> getActorBag aid cstore s
 
 getActorBag :: ActorId -> CStore -> State -> ItemBag
-getActorBag aid CInv s = getInvBag (getActorBody aid s) s
-getActorBag aid CEqp s = beqp $ getActorBody aid s
-getActorBag aid CGround s = let b = getActorBody aid s
-                            in sdungeon s EM.! blid b `atI` bpos b
+getActorBag aid cstore s =
+  let b = getActorBody aid s
+  in case cstore of
+    CInv -> getInvBag b s
+    CEqp -> beqp b
+    CGround -> sdungeon s EM.! blid b `atI` bpos b
 
-getFloorAssocs :: LevelId -> Point -> State -> [(ItemId, Item)]
-getFloorAssocs lid pos s = bagAssocs s $ sdungeon s EM.! lid `atI` pos
+getCAssocs :: Container -> State -> [(ItemId, Item)]
+getCAssocs c s = bagAssocs s $ getCBag c s
+
+getActorAssocs :: ActorId -> CStore -> State -> [(ItemId, Item)]
+getActorAssocs aid cstore s = bagAssocs s $ getActorBag aid cstore s
 
 -- | Checks if the actor is present on the current level.
 -- The order of argument here and in other functions is set to allow
@@ -269,7 +268,7 @@ regenHPPeriod :: Kind.COps -> Discovery -> Actor -> State -> Int
 regenHPPeriod cops disco b s =
   let Kind.COps{coactor=Kind.Ops{okind}} = scops s
       ak = okind $ bkind b
-      eqpAssocs = getEqpAssocs b s
+      eqpAssocs = bagAssocs s $ beqp b
       regenPeriod = case strongestRegen cops disco eqpAssocs of
         Just (k, _)  ->
           let slowBaseRegen = 1000
@@ -283,7 +282,7 @@ regenCalmDelta :: Kind.COps -> Discovery -> Actor -> State -> Int
 regenCalmDelta cops disco b s =
   let Kind.COps{coactor=Kind.Ops{okind}} = scops s
       ak = okind $ bkind b
-      eqpAssocs = getEqpAssocs b s
+      eqpAssocs = bagAssocs s $ beqp b
       calmIncr = case strongestStead cops disco eqpAssocs of
         Just (k, _)  -> k + 1
         Nothing -> 1
@@ -301,8 +300,8 @@ actorInDark :: Kind.COps -> Discovery -> Actor -> State -> Bool
 actorInDark cops disco b s =
   let Kind.COps{cotile} = scops s
       lvl = (EM.! blid b) . sdungeon $ s
-      eqpAssocs = getEqpAssocs b s
-      floorAssocs = getFloorAssocs (blid b) (bpos b) s
+      eqpAssocs = bagAssocs s $ beqp b
+      floorAssocs = getCAssocs (CFloor (blid b) (bpos b)) s
   in not (Tile.isLit cotile (lvl `at` bpos b))
      && isNothing (strongestBurn cops disco eqpAssocs)
      && isNothing (strongestBurn cops disco floorAssocs)

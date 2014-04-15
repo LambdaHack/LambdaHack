@@ -178,7 +178,7 @@ reqMelee source target = do
     let sfid = bfid sb
         tfid = bfid tb
     sfact <- getsState $ (EM.! sfid) . sfactionD
-    eqpAssocs <- getsState $ getEqpAssocs sb
+    eqpAssocs <- getsState $ getActorAssocs source CEqp
     ais <- getsState $ getCarriedAssocs sb
     (miid, item) <-
       if bproj sb   -- projectile

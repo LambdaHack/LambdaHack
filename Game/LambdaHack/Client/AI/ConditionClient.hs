@@ -114,8 +114,7 @@ condFloorWeaponM :: MonadClient m => ActorId -> m Bool
 condFloorWeaponM aid = do
   cops <- getsState scops
   disco <- getsClient sdisco
-  b <- getsState $ getActorBody aid
-  floorAssocs <- getsState $ getFloorAssocs (blid b) (bpos b)
+  floorAssocs <- getsState $ getActorAssocs aid CGround
   let lootIsWeapon = isJust $ strongestSword cops disco floorAssocs
   return $ lootIsWeapon  -- keep it lazy
 
@@ -123,8 +122,7 @@ condNoWeaponM :: MonadClient m => ActorId -> m Bool
 condNoWeaponM aid = do
   cops <- getsState scops
   disco <- getsClient sdisco
-  b <- getsState $ getActorBody aid
-  eqpAssocs <- getsState $ getEqpAssocs b
+  eqpAssocs <- getsState $ getActorAssocs aid CEqp
   return $ isNothing $ strongestSword cops disco eqpAssocs  -- keep it lazy
 
 condCanProjectM :: MonadClient m => ActorId -> m Bool
@@ -230,8 +228,8 @@ condLightBetraysM aid = do
   disco <- getsClient sdisco
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
-  eqpAss <- getsState $ getEqpAssocs b
-  floorAss <- getsState $ getFloorAssocs (blid b) (bpos b)
+  eqpAss <- getsState $ getActorAssocs aid CEqp
+  floorAss <- getsState $ getActorAssocs aid CGround
   return $! not (Tile.isLit cotile (lvl `at` bpos b))     -- in the dark, but
             && (isJust (strongestBurn cops disco eqpAss)  -- betrayed by light
                 || isJust (strongestBurn cops disco floorAss))

@@ -207,7 +207,7 @@ manageEqp aid = do
   cops@Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
   let RuleKind{ritemEqp, rsharedInventory} = Kind.stdRuleset corule
   body <- getsState $ getActorBody aid
-  invAssocs <- getsState $ getInvAssocs body
+  invAssocs <- getsState $ getActorAssocs aid CInv
   let kind = okind $ bkind body
   if calmEnough body kind then do
     eqpKA <- getsState $ getEqpKA body
