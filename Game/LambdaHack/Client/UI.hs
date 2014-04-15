@@ -45,9 +45,12 @@ queryUI = do
   side <- getsClient sside
   fact <- getsState $ (EM.! side) . sfactionD
   let leader = fromMaybe (assert `failure` fact) $ gleader fact
+  srunning <- getsClient srunning
+  hasPlayBack <- getsClient $ not . null . slastPlay
+  -- Sync frames so that ESC doesn't skip frames.
+  when (hasPlayBack || isJust srunning) syncFrames
   -- When running, stop if disturbed. If not running, let the human
   -- player issue commands, until any command takes time.
-  srunning <- getsClient srunning
   req <- case srunning of
     Nothing -> humanCommand Nothing
     Just RunParams{runMembers}
@@ -172,6 +175,6 @@ pongUI = do
     let atomicCmd = UpdAtomic $ UpdAutoFaction side False
     pong [atomicCmd]
   else do
-    -- Respond to the server normally.
-    when hasAiLeader syncFrames -- ping the frontend, too
+    -- Respond to the server normally, perhaps pinging the frontend, too.
+    when hasAiLeader syncFrames
     pong []
