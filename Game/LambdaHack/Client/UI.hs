@@ -46,9 +46,6 @@ queryUI = do
   fact <- getsState $ (EM.! side) . sfactionD
   let leader = fromMaybe (assert `failure` fact) $ gleader fact
   srunning <- getsClient srunning
-  hasPlayBack <- getsClient $ not . null . slastPlay
-  -- Sync frames so that ESC doesn't skip frames.
-  when (hasPlayBack || isJust srunning) syncFrames
   -- When running, stop if disturbed. If not running, let the human
   -- player issue commands, until any command takes time.
   req <- case srunning of

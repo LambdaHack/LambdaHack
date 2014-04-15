@@ -84,11 +84,13 @@ writeConnFrontend efr = do
 
 promptGetKey :: MonadClientUI m => [K.KM] -> SingleFrame -> m K.KM
 promptGetKey frontKM frontFr = do
-  escPressed <- tryTakeMVarSescMVar  -- this also clears the ESC marker
+  escPressed <- tryTakeMVarSescMVar  -- this also clears the ESC-pressed  marker
   lastPlayOld <- getsClient slastPlay
   km <- case lastPlayOld of
     km : kms | not escPressed && (null frontKM || km `elem` frontKM) -> do
-      displayFrame False $ Just frontFr
+      displayFrame True $ Just frontFr
+      -- Sync frames so that ESC doesn't skip frames.
+      syncFrames
       modifyClient $ \cli -> cli {slastPlay = kms}
       return km
     _ -> do
