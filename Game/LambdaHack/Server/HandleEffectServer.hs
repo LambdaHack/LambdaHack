@@ -143,19 +143,18 @@ effectHurt :: (MonadAtomic m, MonadServer m)
             -> m Bool
 effectHurt nDm power source target = do
   sb <- getsState $ getActorBody source
+  tb <- getsState $ getActorBody target
   n <- rndToAction $ castDice 0 0 nDm
-  let deltaHP = - (n + power)
-  if deltaHP >= 0
-    then effectNoEffect target
-    else do
-      -- Damage the target.
-      execUpdAtomic $ UpdHealActor target deltaHP
-      when (source /= target) $ halveCalm target
-      execSfxAtomic $ SfxEffect (bfid sb) target $
-        if source == target
-        then Effect.Heal deltaHP
-        else Effect.Hurt nDm deltaHP{-hack-}
-      return True
+  let block = braced tb && bhp tb > 0
+      deltaHP = - max 1 ((n + power) `div` if block then 2 else 1)
+  -- Damage the target.
+  execUpdAtomic $ UpdHealActor target deltaHP
+  when (source /= target) $ halveCalm target
+  execSfxAtomic $ SfxEffect (bfid sb) target $
+    if source == target
+    then Effect.Heal deltaHP
+    else Effect.Hurt nDm deltaHP{-hack-}
+  return True
 
 -- ** Haste
 

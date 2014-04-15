@@ -64,7 +64,7 @@ dart = ItemKind
   , iverbProject = "hurl"
   , iweight  = 50
   , itoThrow = 0  -- a cheap dart
-  , ifeature = [Cause $ Hurt (d 2) (d 2 + dl 2)]
+  , ifeature = [Cause $ Hurt (d 1) (d 2 + dl 2)]
   , idesc    = "Little, but sharp and easy to throw with great speed."
   }
 gem = ItemKind
@@ -112,7 +112,7 @@ harpoon = ItemKind
   , iverbProject = "hurl"
   , iweight  = 4000
   , itoThrow = 0  -- cheap but deadly
-  , ifeature = [Cause $ Hurt (2 * d 2) (d 2 + 2 * dl 2)]
+  , ifeature = [Cause $ Hurt (3 * d 1) (d 2 + 2 * dl 2)]
   , idesc    = "A long, well balanced rod, with a cruel, barbed head."
   }
 oilLamp = ItemKind

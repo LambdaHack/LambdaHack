@@ -16,7 +16,6 @@ import Control.Exception.Assert.Sugar
 import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.Maybe
-import Data.Ratio
 import Data.Text (Text)
 
 import Game.LambdaHack.Atomic
@@ -34,7 +33,6 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -202,22 +200,14 @@ reqMelee source target = do
               effect = fmap Dice.maxDice kindEffect
           return ( Nothing
                  , buildItem flavour discoRev h2hKind kind effect )
-    let performHit block = do
-          let hitA = if block then HitBlock else Hit
-          execSfxAtomic $ SfxStrike source target item hitA
-          -- Deduct a hitpoint for a pierce of a projectile.
-          when (bproj sb) $ execUpdAtomic $ UpdHealActor source (-1)
-          -- Msgs inside itemEffect describe the target part.
-          itemEffect source target miid item CEqp
-    -- Projectiles can't be blocked (though can be sidestepped).
     -- Incapacitated actors can't block.
-    if braced tb && not (bproj sb) && bhp tb > 0
-      then do
-        blocked <- rndToAction $ chance $ 1%2
-        if blocked
-          then execSfxAtomic $ SfxStrike source target item MissBlock
-          else performHit True
-      else performHit False
+    let block = braced tb && bhp tb > 0
+        hitA = if block then HitBlock else Hit
+    execSfxAtomic $ SfxStrike source target item hitA
+    -- Deduct a hitpoint for a pierce of a projectile.
+    when (bproj sb) $ execUpdAtomic $ UpdHealActor source (-1)
+    -- Msgs inside itemEffect describe the target part.
+    itemEffect source target miid item CEqp
     -- The only way to start a war is to slap an enemy. Being hit by
     -- and hitting projectiles count as unintentional friendly fire.
     let friendlyFire = bproj sb || bproj tb
