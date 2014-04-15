@@ -171,7 +171,7 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
                              in T.unwords $ init lw
              in fits <> ellipsis
       cursorText =
-        let n = widthTgt - T.length pathCsr - 7
+        let n = widthTgt - T.length pathCsr - 8
         in (if isJust stgtMode then "cursor>" else "Cursor:")
            <+> trimTgtDesc n cursorDesc
       cursorGap = T.replicate (widthTgt - T.length pathCsr
@@ -195,7 +195,7 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
       -- The indicators must fit, they are the actual information.
       pathTgt = displayPathText tgtPos mtargetHp
       targetText =
-        let n = widthTgt - T.length pathTgt - 7
+        let n = widthTgt - T.length pathTgt - 8
         in "Target:" <+> trimTgtDesc n targetDesc
       targetGap = T.replicate (widthTgt - T.length pathTgt
                                         - T.length targetText) " "
