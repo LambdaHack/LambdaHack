@@ -397,7 +397,7 @@ useTool aid onlyFirstAid = do
                        Nothing -> 5  -- experimenting is fun
                        Just ben -> ben
         in if benR > 0 && itemLegal item
-           then Just (-benR, ReqApply iid cstore)
+           then Just (benR, ReqApply iid cstore)
            else Nothing
       benTool = mapMaybe fTool benList
   return $! liftFrequency $ toFreq "useTool" benTool
