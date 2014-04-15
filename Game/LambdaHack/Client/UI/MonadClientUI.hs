@@ -291,7 +291,7 @@ targetDesc target = do
       b <- getsState $ getActorBody aid
       let ak = okind $ bkind b
           maxHP = Dice.maxDice $ ahp ak
-          percentage = 100 * bhp b `div` maxHP
+          percentage = 100 * bhp b `div` max 5 maxHP
           stars | percentage < 20  = "[_____]"
                 | percentage < 40  = "[*____]"
                 | percentage < 60  = "[**___]"

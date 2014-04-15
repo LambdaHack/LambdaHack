@@ -90,7 +90,7 @@ debugArgs = do
       parseArgs ("--maxFps" : n : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli =
-                       (sdebugCli debugSer) {smaxFps = Just $ read n}}
+                       (sdebugCli debugSer) {smaxFps = Just $ max 1 $ read n}}
       parseArgs ("--noDelay" : rest) =
         let debugSer = parseArgs rest
         in debugSer {sdebugCli = (sdebugCli debugSer) {snoDelay = True}}

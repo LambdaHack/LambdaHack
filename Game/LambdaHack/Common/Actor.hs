@@ -70,7 +70,7 @@ monsterGenChance :: Int -> Int -> Int -> Rnd Bool
 monsterGenChance n' depth' numMonsters =
   -- Mimics @castDice@.
   let n = abs n'
-      depth = abs depth'
+      depth = max 1 $ abs depth'
       -- On level 1, First 2 monsters appear fast.
       scaledDepth = 5 * n `div` depth
   in chance $ 1%(fromIntegral (100 * (numMonsters - scaledDepth)) `max` 10)

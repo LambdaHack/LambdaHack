@@ -21,10 +21,10 @@ import Text.Read
 
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.HumanCmd
+import Game.LambdaHack.Common.File
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Content.RuleKind
-import Game.LambdaHack.Common.File
 
 -- | Fully typed contents of the UI config file. This config
 -- is a part of a game client.
@@ -78,7 +78,7 @@ parseConfig cfg =
       configLaptop = not configVi && getOption "movementLaptopKeys_uk8o79jl"
       configFont = getOption "font"
       configHistoryMax = getOption "historyMax"
-      configMaxFps = getOption "maxFps"
+      configMaxFps = max 1 $ getOption "maxFps"
       configNoAnim = getOption "noAnim"
       configRunStopMsgs = getOption "runStopMsgs"
   in Config{..}
