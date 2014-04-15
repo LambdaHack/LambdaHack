@@ -32,6 +32,7 @@ import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
+import qualified Game.LambdaHack.Common.ItemFeature as IF
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -44,6 +45,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind as TileKind
 
@@ -71,6 +73,7 @@ actionStrategy aid = do
   condNotCalmEnough <- condNotCalmEnoughM aid
   condDesirableFloorItem <- condDesirableFloorItemM aid
   condMeleeBad <- condMeleeBadM aid
+  condLightBetrays <- condLightBetraysM aid
   fleeL <- fleeList aid
   let condThreatAdj = not $ null $ takeWhile ((== 1) . fst) threatDistL
       condThreatAtHand = not $ null $ takeWhile ((<= 2) . fst) threatDistL
@@ -89,7 +92,7 @@ actionStrategy aid = do
       prefix, suffix :: [([Ability], m (Strategy RequestAnyAbility), Bool)]
       prefix =
         [ ( [AbApply], (toAny :: ToAny AbApply)
-            <$> useTool aid True  -- use only healing tools
+            <$> applyItem aid ApplyFirstAid
           , condHpTooLow && not condAnyFoeAdj
             && not condOnTriggerable )  -- don't block stairs, perhaps ascend
         , ( [AbTrigger], (toAny :: ToAny AbTrigger)
@@ -129,7 +132,7 @@ actionStrategy aid = do
           , condTgtEnemyPresent && condCanProject )
         , ( [AbApply]
           , stratToFreq 2 $ (toAny :: ToAny AbApply)
-            <$> useTool aid False  -- use any tool
+            <$> applyItem aid ApplyAll  -- use any option or scroll
           , condTgtEnemyPresent || condThreatNearby )  -- can affect enemies
         , ( [AbMove]
           , stratToFreq (if not condTgtEnemyPresent || condMeleeBad
@@ -150,6 +153,9 @@ actionStrategy aid = do
         , ( [AbMelee], (toAny :: ToAny AbMelee)
             <$> meleeAny aid  -- avoid getting damaged for naught
           , condAnyFoeAdj )
+        , ( [AbApply], (toAny :: ToAny AbApply)  -- better to throw than quench
+            <$> applyItem aid QuenchLight
+          , condLightBetrays && bcalmDelta body < -1 )  -- hit by a projectile
         , ( [AbMove]
           , chase aid False
           , True )
@@ -376,31 +382,53 @@ ranged aid = do
         _ -> return reject
     _ -> return reject
 
--- Tools use requires significant intelligence and sometimes literacy.
-useTool :: MonadClient m
-        => ActorId -> Bool -> m (Strategy (RequestTimed AbApply))
-useTool aid onlyFirstAid = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+data ApplyItemGroup = ApplyAll | ApplyFirstAid | QuenchLight
+  deriving Eq
+
+-- Item application requires significant intelligence and sometimes literacy.
+applyItem :: MonadClient m
+          => ActorId -> ApplyItemGroup -> m (Strategy (RequestTimed AbApply))
+applyItem aid applyGroup = do
+  Kind.COps{ coactor=Kind.Ops{okind}
+           , coitem=Kind.Ops{okind=iokind} } <- getsState scops
+  disco <- getsClient sdisco
   b <- getsState $ getActorBody aid
   let mk = okind $ bkind b
-      permitted | aiq mk < 5 = ""
-               | aiq mk < 10 = "!"
-               | otherwise = "!?"  -- literacy required
+      permitted | applyGroup == QuenchLight = "("
+                | aiq mk < 5 = ""
+                | aiq mk < 10 = "!"
+                | otherwise = "!?"  -- literacy required
   benList <- benAvailableItems aid permitted
-  let itemLegal item | onlyFirstAid = case jeffect item of
-                                        Effect.Heal p | p > 0 -> True
-                                        _ -> False
-                     | otherwise = True
+  let itemLegal item = case applyGroup of
+        ApplyFirstAid ->
+          case jeffect item of
+            Effect.Heal p | p > 0 -> True
+            _ -> False
+        QuenchLight ->
+          case jeffect item of
+            Effect.Burn _ ->
+              case jkind disco item of
+                Nothing -> True  -- TODO: isOff should be exposed
+                Just ik -> IF.IsOff `notElem` ifeature (iokind ik)
+            _ -> False
+        ApplyAll -> True
+      coeff CGround = 2
+      coeff CEqp = 1
+      coeff CInv = if applyGroup == QuenchLight then 0 else 1
       fTool ((mben, cstore), (iid, item)) =
-        let benR = (if cstore == CGround then 2 else 1)
+        let benR = coeff cstore
                    * case mben of
                        Nothing -> 5  -- experimenting is fun
                        Just ben -> ben
-        in if benR > 0 && itemLegal item
-           then Just (benR, ReqApply iid cstore)
+        in if itemLegal item
+           then if benR > 0
+                then Just (benR, ReqApply iid cstore)
+                else if applyGroup == QuenchLight
+                     then Just (max 1 (abs benR), ReqApply iid cstore)
+                     else Nothing
            else Nothing
       benTool = mapMaybe fTool benList
-  return $! liftFrequency $ toFreq "useTool" benTool
+  return $! liftFrequency $ toFreq "applyItem" benTool
 
 -- If low on health or alone, flee in panic, close to the path to target
 -- and as far from the attackers, as possible. Usually fleeing from

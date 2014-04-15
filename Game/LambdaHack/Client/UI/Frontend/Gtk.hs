@@ -50,7 +50,7 @@ data FrontendSession = FrontendSession
       -- ^ Most recent full (not empty, not repeated) frame received
       -- and if any empty frame followed it. This mvar is locked
       -- for longer intervals to ensure that threads (possibly many)
-      -- add frames in an orderly manner, which is not done in real time,
+      -- add frames in an orderly manner. This is not done in real time,
       -- though sometimes the frame display subsystem has to poll
       -- for a frame, in which case the locking interval becomes meaningful.
   , sescMVar    :: !(Maybe (MVar ()))

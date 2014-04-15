@@ -13,6 +13,7 @@ module Game.LambdaHack.Client.AI.ConditionClient
   , condNotCalmEnoughM
   , condDesirableFloorItemM
   , condMeleeBadM
+  , condLightBetraysM
   , benAvailableItems
   , benGroundItems
   , threatDistList
@@ -222,6 +223,18 @@ condMeleeBadM aid = do
            && (condHpTooLow  -- too wounded to fight alone
                || length friends > 1)  -- friends somewhere, let's flee to them
     -- keep it lazy
+
+condLightBetraysM :: MonadClient m => ActorId -> m Bool
+condLightBetraysM aid = do
+  cops@Kind.COps{cotile} <- getsState scops
+  disco <- getsClient sdisco
+  b <- getsState $ getActorBody aid
+  lvl <- getLevel $ blid b
+  eqpAss <- getsState $ getEqpAssocs b
+  floorAss <- getsState $ getFloorAssocs (blid b) (bpos b)
+  return $! not (Tile.isLit cotile (lvl `at` bpos b))     -- in the dark, but
+            && (isJust (strongestBurn cops disco eqpAss)  -- betrayed by light
+                || isJust (strongestBurn cops disco floorAss))
 
 fleeList :: MonadClient m => ActorId -> m [(Int, Point)]
 fleeList aid = do
