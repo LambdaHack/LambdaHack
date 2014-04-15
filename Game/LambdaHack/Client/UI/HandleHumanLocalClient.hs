@@ -414,25 +414,20 @@ tgtFloorHuman = do
   cursorPos <- cursorToPos
   scursor <- getsClient scursor
   stgtMode <- getsClient stgtMode
-  side <- getsClient sside
-  fact <- getsState $ (EM.! side) . sfactionD
   bsAll <- getsState $ actorAssocs (const True) lidV
   let cursor = fromMaybe lpos cursorPos
       tgt = case scursor of
         _ | isNothing stgtMode ->  -- first key press: keep target
           scursor
-        TEnemy a False -> TEnemy a True
+        TEnemy a True -> TEnemy a False
         TEnemy{} -> TPoint lidV cursor
         TEnemyPos{} -> TPoint lidV cursor
         TPoint{} -> TVector $ cursor `vectorToFrom` lpos
         TVector{} ->
-          let isEnemy b = isAtWar fact (bfid b)
-                          && not (bproj b)
           -- For projectiles, we pick here the first that would be picked
           -- by '*', so that all other projectiles on the tile come next,
           -- without any intervening actors from other tiles.
-          in case find (\(_, m) -> Just (bpos m) == cursorPos) bsAll of
-            Just (im, m) | isEnemy m -> TEnemy im False
+          case find (\(_, m) -> Just (bpos m) == cursorPos) bsAll of
             Just (im, _) -> TEnemy im True
             Nothing -> TPoint lidV cursor
   modifyClient $ \cli -> cli {scursor = tgt, stgtMode = Just $ TgtMode lidV}
