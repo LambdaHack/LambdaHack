@@ -84,6 +84,7 @@ targetStrategy oldLeader aid = do
   -- wounded or alone actors, perhaps only until they are shot first time,
   -- and only if they can shoot at the moment)
   fightsSpawners <- fightsAgainstSpawners (bfid b)
+  explored <- getsClient sexplored
   let meleeNearby | fightsSpawners = nearby `div` 2  -- not aggresive
                   | otherwise = nearby
       rangedNearby = 2 * meleeNearby
@@ -114,18 +115,18 @@ targetStrategy oldLeader aid = do
       -- TODO: make more common when weak ranged foes preferred, etc.
       focused = bspeed b < speedNormal || condHpTooLow
       canSmell = asmell $ okind $ bkind b
-      setPath :: Target -> m (Strategy (Target, PathEtc))
-      setPath tgt = do
+      createPath :: Target -> m (Target, PathEtc)
+      createPath tgt = do
         mpos <- aidTgtToPos aid (blid b) (Just tgt)
         let p = fromMaybe (assert `failure` (b, tgt)) mpos
         (bfs, mpath) <- getCacheBfsAndPath aid p
-        case mpath of
+        return $! case mpath of
           Nothing -> assert `failure` "new target unreachable" `twith` (b, tgt)
-          Just path ->
-            return $! returN "pickNewTarget"
-              (tgt, ( bpos b : path
-                    , (p, fromMaybe (assert `failure` mpath)
-                          $ accessBfs bfs p) ))
+          Just path -> (tgt, ( bpos b : path
+                             , (p, fromMaybe (assert `failure` mpath)
+                                   $ accessBfs bfs p) ))
+      setPath :: Target -> m (Strategy (Target, PathEtc))
+      setPath tgt = fmap (returN "pickNewTarget") $ createPath tgt
       pickNewTarget :: m (Strategy (Target, PathEtc))
       pickNewTarget = do
         -- TODO: for foes, items, etc. consider a few nearby, not just one
@@ -146,24 +147,38 @@ targetStrategy oldLeader aid = do
                           else return []
                 case filter desirable citems of
                   [] -> do
-                    upos <- closestUnknown aid
+                    let lidExplored = ES.member (blid b) explored
+                    upos <- if lidExplored
+                            then return Nothing
+                            else closestUnknown aid
                     case upos of
                       Nothing -> do
-                        ctriggers <- if AbTrigger `elem` actorAbs
-                                     then closestTriggers Nothing False aid
-                                     else return []
-                        case ctriggers of
+                        csuspect <- if lidExplored
+                                    then return []
+                                    else closestSuspect aid
+                        case csuspect of
                           [] -> do
-                            getDistant <-
-                              rndToAction $ oneOf
-                              $ [fmap maybeToList . furthestKnown]
-                                ++ [ closestTriggers Nothing True
-                                   | EM.size dungeon > 1 ]
-                            kpos <- getDistant aid
-                            case kpos of
-                              [] -> return reject
+                            ctriggers <- if AbTrigger `elem` actorAbs
+                                         then closestTriggers Nothing False aid
+                                         else return []
+                            case ctriggers of
+                              [] -> do
+                                getDistant <-
+                                  rndToAction $ oneOf
+                                  $ [fmap maybeToList . furthestKnown]
+                                    ++ [ closestTriggers Nothing True
+                                       | EM.size dungeon > 1 ]
+                                kpos <- getDistant aid
+                                case kpos of
+                                  [] -> return reject
+                                  p : _ -> setPath $ TPoint (blid b) p
                               p : _ -> setPath $ TPoint (blid b) p
-                          p : _ -> setPath $ TPoint (blid b) p
+                          (p, pv) : _ -> do
+                            (_tgt, (path, (_goal, len))) <-
+                              createPath $ TPoint (blid b) pv
+                            return $ (returN "suspect target")
+                                   $ ( TPoint (blid b) p
+                                     , (path ++ [p], (p, len + 1)) )
                       Just p -> setPath $ TPoint (blid b) p
                   (_, (p, _)) : _ -> setPath $ TPoint (blid b) p
               (_, (p, _)) : _ -> setPath $ TPoint (blid b) p
@@ -211,7 +226,6 @@ targetStrategy oldLeader aid = do
         _ | not $ null nearbyFoes ->
           pickNewTarget  -- prefer close foes to anything
         TPoint lid pos -> do
-          explored <- getsClient sexplored
           let allExplored = ES.size explored == EM.size dungeon
               abilityLeader = fAbilityLeader $ fokind $ gkind fact
               abilityOther = fAbilityOther $ fokind $ gkind fact

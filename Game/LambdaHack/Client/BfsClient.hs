@@ -2,7 +2,7 @@
 -- | Breadth first search and realted algorithms using the client monad.
 module Game.LambdaHack.Client.BfsClient
   ( getCacheBfsAndPath, getCacheBfs, accessCacheBfs
-  , unexploredDepth, closestUnknown, closestSmell, furthestKnown
+  , unexploredDepth, closestUnknown, closestSuspect, closestSmell, furthestKnown
   , closestTriggers, closestItems, closestFoes
   ) where
 
@@ -31,6 +31,7 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.TileKind
 
 -- | Get cached BFS data and path or, if not stored, generate,
@@ -96,14 +97,10 @@ computeAnythingBFS fAnything aid = do
   cops@Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getsState scops
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
-  smarkSuspect <- getsClient smarkSuspect
-  sisAI <- getsClient sisAI
   -- We treat doors as an open tile and don't add an extra step for opening
   -- the doors, because other actors open and use them, too,
   -- so it's amortized. We treat unknown tiles specially.
-  let -- Suspect tiles treated as a kind of unknown.
-      passSuspect = smarkSuspect || sisAI  -- AI checks suspects ASAP
-      unknownId = ouniqGroup "unknown space"
+  let unknownId = ouniqGroup "unknown space"
       chAccess = checkAccess cops lvl
       chDoorAccess = checkDoorAccess cops lvl
       conditions = catMaybes [chAccess, chDoorAccess]
@@ -116,23 +113,16 @@ computeAnythingBFS fAnything aid = do
            then if allOK
                 then MoveToUnknown
                 else MoveBlocked
-           else if Tile.isSuspect cotile tt
-                then if passSuspect && allOK
-                     then MoveToUnknown
-                     else MoveBlocked
-                else if Tile.isPassable cotile tt && allOK
-                     then MoveToOpen
-                     else MoveBlocked
+           else if Tile.isPassable cotile tt && allOK
+                then MoveToOpen
+                else MoveBlocked
       -- Legality of move from an unknown tile, assuming unknown are open.
       passUnknown :: Point -> Point -> Bool
       passUnknown = case chAccess of  -- spos is unknown, so not a door
         Nothing -> \_ tpos -> let tt = lvl `at` tpos
                               in tt == unknownId
-                                 || passSuspect && Tile.isSuspect cotile tt
         Just ch -> \spos tpos -> let tt = lvl `at` tpos
-                                 in (tt == unknownId
-                                     || passSuspect
-                                        && Tile.isSuspect cotile tt)
+                                 in tt == unknownId
                                     && ch spos tpos
   fAnything isEnterable passUnknown aid
 
@@ -166,10 +156,8 @@ closestUnknown aid = do
       dist = bfs PointArray.! closestPos
   if dist >= apartBfs then do
     body <- getsState $ getActorBody aid
-    smarkSuspect <- getsClient smarkSuspect
-    sisAI <- getsClient sisAI
-    let passSuspect = smarkSuspect || sisAI
-    when passSuspect $  -- explored fully, including suspect tiles
+    lvl <- getLevel $ blid body
+    when (lclear lvl == lseen lvl) $  -- explored fully, mark it once for all
       modifyClient $ \cli ->
         cli {sexplored = ES.insert (blid body) (sexplored cli)}
     return Nothing
@@ -197,6 +185,27 @@ closestSmell aid = do
       let ts = mapMaybe (\x@(p, _) -> fmap (,x) (accessBfs bfs p)) smells
           ds = filter (\(d, _) -> d /= 0) ts  -- bpos of aid
       return $! sortBy (comparing (fst &&& absoluteTimeNegate . snd . snd)) ds
+
+-- | Closest (wrt paths) suspect tile. The first point of each pair
+-- is contains the suspect tile, the other is a walkable neighbour.
+closestSuspect :: MonadClient m => ActorId -> m [(Point, Point)]
+closestSuspect aid = do
+  Kind.COps{cotile} <- getsState scops
+  body <- getsState $ getActorBody aid
+  lvl@Level{lxsize, lysize} <- getLevel $ blid body
+  let f :: [Point] -> Point -> Kind.Id TileKind -> [Point]
+      f acc p t = if Tile.isSuspect cotile t then p : acc else acc
+  let suspect = PointArray.ifoldlA f [] $ ltile lvl
+  case suspect of
+    [] -> return []
+    _ -> do
+      bfs <- getCacheBfs aid
+      -- We assume no suspect tile belongs to BFS, so we check neighbours.
+      let dVicinity p = let vic = vicinity lxsize lysize p
+                            ppv pv = fmap (, (p, pv)) (accessBfs bfs pv)
+                        in mapMaybe ppv vic
+          ds = concatMap dVicinity suspect
+      return $! map snd $ sortBy (comparing fst) ds
 
 -- TODO: We assume linear dungeon in @unexploredD@,
 -- because otherwise we'd need to calculate shortest paths in a graph, etc.
