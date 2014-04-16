@@ -31,7 +31,6 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
-import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.TileKind
 
 -- | Get cached BFS data and path or, if not stored, generate,
@@ -187,13 +186,12 @@ closestSmell aid = do
           ds = filter (\(d, _) -> d /= 0) ts  -- bpos of aid
       return $! sortBy (comparing (fst &&& absoluteTimeNegate . snd . snd)) ds
 
--- | Closest (wrt paths) suspect tile. The first point of each pair
--- is contains the suspect tile, the other is a walkable neighbour.
-closestSuspect :: MonadClient m => ActorId -> m [(Point, Point)]
+-- | Closest (wrt paths) suspect tile.
+closestSuspect :: MonadClient m => ActorId -> m [Point]
 closestSuspect aid = do
   Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody aid
-  lvl@Level{lxsize, lysize} <- getLevel $ blid body
+  lvl <- getLevel $ blid body
   let f :: [Point] -> Point -> Kind.Id TileKind -> [Point]
       f acc p t = if Tile.isSuspect cotile t then p : acc else acc
   let suspect = PointArray.ifoldlA f [] $ ltile lvl
@@ -201,11 +199,7 @@ closestSuspect aid = do
     [] -> return []
     _ -> do
       bfs <- getCacheBfs aid
-      -- We assume no suspect tile belongs to BFS, so we check neighbours.
-      let dVicinity p = let vic = vicinity lxsize lysize p
-                            ppv pv = fmap (, (p, pv)) (accessBfs bfs pv)
-                        in mapMaybe ppv vic
-          ds = concatMap dVicinity suspect
+      let ds = mapMaybe (\p -> fmap (,p) (accessBfs bfs p)) suspect
       return $! map snd $ sortBy (comparing fst) ds
 
 -- TODO: We assume linear dungeon in @unexploredD@,

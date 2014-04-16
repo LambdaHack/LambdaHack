@@ -173,12 +173,7 @@ targetStrategy oldLeader aid = do
                                   [] -> return reject
                                   p : _ -> setPath $ TPoint (blid b) p
                               p : _ -> setPath $ TPoint (blid b) p
-                          (p, pv) : _ -> do
-                            (_tgt, (path, (_goal, len))) <-
-                              createPath $ TPoint (blid b) pv
-                            return $ (returN "suspect target")
-                                   $ ( TPoint (blid b) p
-                                     , (path ++ [p], (p, len + 1)) )
+                          p : _ -> setPath $ TPoint (blid b) p
                       Just p -> setPath $ TPoint (blid b) p
                   (_, (p, _)) : _ -> setPath $ TPoint (blid b) p
               (_, (p, _)) : _ -> setPath $ TPoint (blid b) p
