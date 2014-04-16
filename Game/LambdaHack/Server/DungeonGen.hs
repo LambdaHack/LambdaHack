@@ -148,27 +148,29 @@ levelFromCaveKind :: Kind.COps
 levelFromCaveKind Kind.COps{cotile}
                   CaveKind{..}
                   ldepth ltile lstair litemNum litemFreq lsecret lescape =
-  Level
-    { ldepth
-    , lprio = EM.empty
-    , lfloor = EM.empty
-    , ltile
-    , lxsize = cxsize
-    , lysize = cysize
-    , lsmell = EM.empty
-    , ldesc = cname
-    , lstair
-    , lseen = 0
-    , lclear = let f n t | Tile.isExplorable cotile t = n + 1
-                         | otherwise = n
-               in PointArray.foldlA f 0 ltile
-    , ltime = timeZero
-    , litemNum
-    , litemFreq
-    , lsecret
-    , lhidden = chidden
-    , lescape
-    }
+  let lvl = Level
+        { ldepth
+        , lprio = EM.empty
+        , lfloor = EM.empty
+        , ltile
+        , lxsize = cxsize
+        , lysize = cysize
+        , lsmell = EM.empty
+        , ldesc = cname
+        , lstair
+        , lseen = 0
+        , lclear = 0  -- calculated below
+        , ltime = timeZero
+        , litemNum
+        , litemFreq
+        , lsecret
+        , lhidden = chidden
+        , lescape
+        }
+      f n p t | Tile.isExplorable cotile t && not (isSecretPos lvl p) = n + 1
+              | otherwise = n
+      lclear = PointArray.ifoldlA f 0 ltile
+  in lvl {lclear}
 
 findGenerator :: Kind.COps -> Caves
               -> LevelId -> LevelId -> LevelId -> Int -> Int

@@ -98,8 +98,7 @@ isSuspect cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 -- so they should be set changeable to make them explorable.
 isExplorable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 {-# INLINE isExplorable #-}
-isExplorable cotile t =
-  isWalkable cotile t || isDoor cotile t || isChangeable cotile t
+isExplorable cotile t = isWalkable cotile t || isDoor cotile t
 
 -- | The player can't tell one tile from the other.
 lookSimilar :: TileKind -> TileKind -> Bool

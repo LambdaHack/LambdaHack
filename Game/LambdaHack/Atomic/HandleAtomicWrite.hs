@@ -324,10 +324,11 @@ updAlterTile lid p fromTile toTile = assert (fromTile /= toTile) $ do
                        `twith` (lid, p, fromTile, toTile, ts PointArray.! p))
                $ ts PointArray.// [(p, toTile)]
   updateLevel lid $ updateTile adj
-  case (Tile.isExplorable cotile fromTile, Tile.isExplorable cotile toTile) of
-    (False, True) -> updateLevel lid $ \lvl2 -> lvl2 {lseen = lseen lvl + 1}
-    (True, False) -> updateLevel lid $ \lvl2 -> lvl2 {lseen = lseen lvl - 1}
-    _ -> return ()
+  unless (isSecretPos lvl p) $
+    case (Tile.isExplorable cotile fromTile, Tile.isExplorable cotile toTile) of
+      (False, True) -> updateLevel lid $ \lvl2 -> lvl2 {lseen = lseen lvl + 1}
+      (True, False) -> updateLevel lid $ \lvl2 -> lvl2 {lseen = lseen lvl - 1}
+      _ -> return ()
 
 
 updAlterClear :: MonadStateWrite m => LevelId -> Int -> m ()
@@ -344,10 +345,10 @@ updSpotTile :: MonadStateWrite m
             => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
 updSpotTile lid ts = assert (not $ null ts) $ do
   Kind.COps{cotile} <- getsState scops
-  Level{ltile} <- getLevel lid
+  lvl1@Level{ltile} <- getLevel lid
   let adj tileMap = tileMap PointArray.// ts
   updateLevel lid $ updateTile adj
-  let f (p, t2) = do
+  let f (p, t2) = unless (isSecretPos lvl1 p) $ do
         let t1 = ltile PointArray.! p
         case (Tile.isExplorable cotile t1, Tile.isExplorable cotile t2) of
           (False, True) -> updateLevel lid $ \lvl -> lvl {lseen = lseen lvl+1}
@@ -361,6 +362,7 @@ updLoseTile :: MonadStateWrite m
             => LevelId -> [(Point, Kind.Id TileKind)] -> m ()
 updLoseTile lid ts = assert (not $ null ts) $ do
   Kind.COps{cotile=cotile@Kind.Ops{ouniqGroup}} <- getsState scops
+  lvl1 <- getLevel lid
   let unknownId = ouniqGroup "unknown space"
       matches _ [] = True
       matches tileMap ((p, ov) : rest) =
@@ -368,7 +370,7 @@ updLoseTile lid ts = assert (not $ null ts) $ do
       tu = map (second (const unknownId)) ts
       adj tileMap = assert (matches tileMap ts) $ tileMap PointArray.// tu
   updateLevel lid $ updateTile adj
-  let f (_, t1) =
+  let f (p, t1) = unless (isSecretPos lvl1 p) $
         when (Tile.isExplorable cotile t1) $
           updateLevel lid $ \lvl -> lvl {lseen = lseen lvl - 1}
   mapM_ f ts
