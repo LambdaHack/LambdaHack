@@ -3,7 +3,7 @@
 -- but not unique, way.
 module Game.LambdaHack.Common.Vector
   ( Vector(..), isUnit, isDiagonal, neg, chessDistVector, euclidDistSqVector
-  , moves, compassText, vicinity, vicinityCardinal
+  , moves, movesCardinal, movesDiagonal, compassText, vicinity, vicinityCardinal
   , shift, shiftBounded, trajectoryToPath, vectorToFrom, pathToTrajectory
   , RadianAngle, rotate, towards
   ) where
@@ -102,6 +102,10 @@ compassText v = let m = EM.fromList $ zip moves moveTexts
 -- | Vectors of all cardinal direction unit moves, clockwise, starting north.
 movesCardinal :: [Vector]
 movesCardinal = map (uncurry Vector) [(0, -1), (1, 0), (0, 1), (-1, 0)]
+
+-- | Vectors of all diagonal direction unit moves, clockwise, starting north.
+movesDiagonal :: [Vector]
+movesDiagonal = map (uncurry Vector) [(-1, -1), (1, -1), (1, 1), (-1, 1)]
 
 -- | All (8 at most) closest neighbours of a point within an area.
 vicinity :: X -> Y   -- ^ limit the search to this area

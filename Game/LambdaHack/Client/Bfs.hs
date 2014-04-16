@@ -92,16 +92,17 @@ findPathBfs isEnterable passUnknown source target sepsRaw bfs =
   in if targetDist == apartBfs
      then Nothing
      else
-       let eps = sepsRaw `mod` length moves
-           (ch1, ch2) = splitAt eps moves
-           preferedMoves = reverse ch2 ++ ch1  -- buzz
+       let eps = sepsRaw `mod` 4
+           (mc1, mc2) = splitAt eps movesCardinal
+           (md1, md2) = splitAt eps movesDiagonal
+           preferredMoves = mc1 ++ reverse mc2 ++ md2 ++ reverse md1  -- fuzz
            track :: Point -> BfsDistance -> [Point] -> [Point]
            track pos oldDist suffix | oldDist == minKnownBfs =
              assert (pos == source
                      `blame` (source, target, pos, suffix)) suffix
            track pos oldDist suffix | oldDist > minKnownBfs =
              let dist = pred oldDist
-                 children = map (shift pos) preferedMoves
+                 children = map (shift pos) preferredMoves
                  matchesDist p = bfs PointArray.! p == dist
                                  && isEnterable p pos == MoveToOpen
                  minP = fromMaybe (assert `failure` (pos, oldDist, children))
@@ -110,7 +111,7 @@ findPathBfs isEnterable passUnknown source target sepsRaw bfs =
            track pos oldDist suffix =
              let distUnknown = pred oldDist
                  distKnown = distUnknown .|. minKnownBfs
-                 children = map (shift pos) preferedMoves
+                 children = map (shift pos) preferredMoves
                  matchesDistUnknown p = bfs PointArray.! p == distUnknown
                                         && passUnknown p pos
                  matchesDistKnown p = bfs PointArray.! p == distKnown
