@@ -79,6 +79,7 @@ data UpdAtomic =
   | UpdRecordKill !ActorId !Int
   -- Alter map.
   | UpdAlterTile !LevelId !Point !(Kind.Id TileKind) !(Kind.Id TileKind)
+  | UpdAlterClear !LevelId !Int
   | UpdSearchTile !ActorId !Point !(Kind.Id TileKind) !(Kind.Id TileKind)
   | UpdSpotTile !LevelId ![(Point, Kind.Id TileKind)]
   | UpdLoseTile !LevelId ![(Point, Kind.Id TileKind)]
@@ -153,6 +154,7 @@ undoUpdAtomic cmd = case cmd of
   UpdRecordKill aid k -> Just $ UpdRecordKill aid (-k)
   UpdAlterTile lid p fromTile toTile ->
     Just $ UpdAlterTile lid p toTile fromTile
+  UpdAlterClear lid delta -> Just $ UpdAlterClear lid (-delta)
   UpdSearchTile aid p fromTile toTile ->
     Just $ UpdSearchTile aid p toTile fromTile
   UpdSpotTile lid ts -> Just $ UpdLoseTile lid ts

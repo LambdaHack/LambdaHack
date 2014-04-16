@@ -275,8 +275,13 @@ reqAlter source tpos mfeat = do
           -- No AlterD, because the effect is obvious (e.g., opened door).
           toTile <- rndToAction $ fmap (fromMaybe $ assert `failure` tgroup)
                                   $ opick tgroup (const True)
-          unless (toTile == serverTile) $
+          unless (toTile == serverTile) $ do
             execUpdAtomic $ UpdAlterTile lid tpos serverTile toTile
+            case (Tile.isExplorable cotile serverTile,
+                  Tile.isExplorable cotile toTile) of
+              (False, True) -> execUpdAtomic $ UpdAlterClear lid 1
+              (True, False) -> execUpdAtomic $ UpdAlterClear lid (-1)
+              _ -> return ()
         feats = case mfeat of
           Nothing -> TileKind.tfeature $ okind serverTile
           Just feat2 | Tile.hasFeature cotile feat2 serverTile -> [feat2]

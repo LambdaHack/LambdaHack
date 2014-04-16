@@ -68,6 +68,7 @@ handleUpdAtomic cmd = case cmd of
   UpdAutoFaction fid st -> updAutoFaction fid st
   UpdRecordKill aid k -> updRecordKill aid k
   UpdAlterTile lid p fromTile toTile -> updAlterTile lid p fromTile toTile
+  UpdAlterClear lid delta -> updAlterClear lid delta
   UpdSearchTile _ _ fromTile toTile ->
     assert (fromTile /= toTile) $ return ()  -- only for clients
   UpdSpotTile lid ts -> updSpotTile lid ts
@@ -305,12 +306,9 @@ updRecordKill aid k = do
 
 -- | Alter an attribute (actually, the only, the defining attribute)
 -- of a visible tile. This is similar to e.g., @TrajectoryActorA@.
--- We do not modify @lclear@ here, because we can't keep track of
--- alterations to unknown tiles. The server would need to send @lclear@
--- updates for each invisible tile alteration that affects it.
 updAlterTile :: MonadStateWrite m
-           => LevelId -> Point -> Kind.Id TileKind -> Kind.Id TileKind
-           -> m ()
+             => LevelId -> Point -> Kind.Id TileKind -> Kind.Id TileKind
+             -> m ()
 updAlterTile lid p fromTile toTile = assert (fromTile /= toTile) $ do
   Kind.COps{cotile} <- getsState scops
   lvl <- getLevel lid
@@ -330,6 +328,11 @@ updAlterTile lid p fromTile toTile = assert (fromTile /= toTile) $ do
     (False, True) -> updateLevel lid $ \lvl2 -> lvl2 {lseen = lseen lvl + 1}
     (True, False) -> updateLevel lid $ \lvl2 -> lvl2 {lseen = lseen lvl - 1}
     _ -> return ()
+
+
+updAlterClear :: MonadStateWrite m => LevelId -> Int -> m ()
+updAlterClear lid delta = assert (delta /= 0) $
+  updateLevel lid $ \lvl -> lvl {lclear = lclear lvl + delta}
 
 -- Notice previously invisible tiles. This is similar to @SpotActorA@,
 -- but done in bulk, because it often involves dozens of tiles pers move.

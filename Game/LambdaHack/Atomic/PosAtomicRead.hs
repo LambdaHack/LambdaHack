@@ -87,6 +87,7 @@ posUpdAtomic cmd = case cmd of
   UpdAutoFaction{} -> return PosAll
   UpdRecordKill aid _ -> singleFidAndAid aid
   UpdAlterTile lid p _ _ -> return $! PosSight lid [p]
+  UpdAlterClear{} -> return PosAll
   UpdSearchTile aid p _ _ -> do
     (lid, pos) <- posOfAid aid
     return $! PosSight lid [pos, p]

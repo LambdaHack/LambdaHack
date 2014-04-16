@@ -19,6 +19,7 @@ import Data.Maybe
 import Data.Text (Text)
 
 import Game.LambdaHack.Common.Actor
+import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Misc
@@ -31,7 +32,6 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.Common.Frequency
 
 -- | The complete dungeon is a map from level names to levels.
 type Dungeon = EM.EnumMap LevelId Level
@@ -75,8 +75,7 @@ data Level = Level
   , lstair    :: !([Point], [Point])
                              -- ^ destinations of (up, down) stairs
   , lseen     :: !Int        -- ^ currently remembered clear tiles
-  , lclear    :: !Int        -- ^ total number of initially clear tiles;
-                             --   set to 1 on clients when fully explored
+  , lclear    :: !Int        -- ^ total number of initially clear tiles
   , ltime     :: !Time       -- ^ date of the last activity on the level
   , litemNum  :: !Int        -- ^ number of initial items, 0 for clients
   , litemFreq :: !(Frequency Text)  -- ^ frequency of initial items,

@@ -94,7 +94,8 @@ isSuspect Kind.Ops{ospeedup = Just Kind.TileSpeedup{isSuspectTab}} =
 isSuspect cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
 -- | Whether a tile can be explored, possibly yielding a treasure.
--- Note that non-walkable tiles can hold treasure, e.g., caches.
+-- Note that non-walkable tiles can hold treasure, e.g., caches,
+-- so they should be set changeable to make them explorable.
 isExplorable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 {-# INLINE isExplorable #-}
 isExplorable cotile t =

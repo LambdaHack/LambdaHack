@@ -172,6 +172,9 @@ displayRespUpdAtomicUI verbose _oldState cmd = case cmd of
   UpdRecordKill{} -> skip
   -- Alter map.
   UpdAlterTile{} -> when verbose $ return ()  -- TODO: door opens
+  UpdAlterClear _ k -> msgAdd $ if k > 0
+                                then "You hear grinding noises."
+                                else "You hear fizzing noises."
   UpdSearchTile aid p fromTile toTile -> do
     Kind.COps{cotile = Kind.Ops{okind}} <- getsState scops
     b <- getsState $ getActorBody aid
