@@ -69,7 +69,8 @@ isWalkable Kind.Ops{ospeedup = Just Kind.TileSpeedup{isWalkableTab}} =
   \k -> Kind.accessTab isWalkableTab k
 isWalkable cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
--- | Whether actors can walk into a tile, perhaps opening a door first.
+-- | Whether actors can walk into a tile, perhaps opening a door first,
+-- perhaps a hidden door.
 -- Essential for efficiency of pathfinding, hence tabulated.
 isPassable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 {-# INLINE isPassable #-}
@@ -121,8 +122,9 @@ speedup allClear cotile =
       isLitTab = Kind.createTab cotile $ not . kindHasFeature F.Dark
       isWalkableTab = Kind.createTab cotile $ kindHasFeature F.Walkable
       isPassableTab = Kind.createTab cotile $ \tk ->
-        let getTo F.OpenTo{} = True
-            getTo F.Walkable = True
+        let getTo F.Walkable = True
+            getTo F.OpenTo{} = True
+            getTo F.Suspect = True
             getTo _ = False
         in any getTo $ tfeature tk
       isDoorTab = Kind.createTab cotile $ \tk ->

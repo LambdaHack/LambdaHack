@@ -107,10 +107,11 @@ computeAnythingBFS fAnything aid = do
       -- Legality of move from a known tile, assuming doors freely openable.
       isEnterable :: Point -> Point -> MoveLegal
       isEnterable spos tpos =
-        let tt = lvl `at` tpos
+        let st = lvl `at` spos
+            tt = lvl `at` tpos
             allOK = all (\f -> f spos tpos) conditions
         in if tt == unknownId
-           then if allOK
+           then if not (Tile.isSuspect cotile st) && allOK
                 then MoveToUnknown
                 else MoveBlocked
            else if Tile.isPassable cotile tt && allOK
