@@ -238,12 +238,7 @@ handleActors lid = do
         cmdS <- sendQueryUI side aid
         -- TODO: check that the command is legal first, report and reject,
         -- but do not crash (currently server asserts things and crashes)
-        timed <- handleRequestUI side cmdS
-        -- If the faction no longer has a leader, we assume he's dead
-        -- so we don't need to set bwait or btime for him.
-        aidNew <- if aidIsLeader then
-                    getsState $ gleader . (EM.! side) . sfactionD
-                  else return $ Just aid
+        aidNew <- handleRequestUI side cmdS
         let hasWait (ReqUITimed ReqWait{}) = True
             hasWait (ReqUILeader _ cmd) = hasWait cmd
             hasWait _ = False
@@ -256,7 +251,7 @@ handleActors lid = do
         -- RET waits .3s and gives back control,
         -- Any other key does the .3s wait and the action from the key
         -- at once.
-        when timed $ maybe skip advanceTime aidNew
+        maybe skip advanceTime aidNew
       else do
         -- Clear messages in the UI client (if any), if the actor
         -- is a leader (which happens when a UI client is fully
@@ -265,16 +260,13 @@ handleActors lid = do
         let mainUIactor = playerUI (gplayer fact) && aidIsLeader
         when mainUIactor $ execUpdAtomic $ UpdRecordHistory side
         cmdS <- sendQueryAI side aid
-        handleRequestAI side aid cmdS
-        aidNew <- if aidIsLeader then
-                    getsState $ gleader . (EM.! side) . sfactionD
-                  else return $ Just aid
+        aidNew <- handleRequestAI side aid cmdS
         let hasWait (ReqAITimed ReqWait{}) = True
             hasWait (ReqAILeader _ cmd) = hasWait cmd
             hasWait _ = False
-        maybe skip (setBWait (hasWait cmdS)) aidNew
+        setBWait (hasWait cmdS) aidNew
         -- AI always takes time and so doesn't loop.
-        maybe skip advanceTime aidNew
+        advanceTime aidNew
       handleActors lid
 
 gameExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()

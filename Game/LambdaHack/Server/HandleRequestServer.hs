@@ -46,34 +46,36 @@ import Game.LambdaHack.Server.HandleEffectServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.State
 
--- | The semantics of server commands. The resulting boolean value
--- indicates if the command took some time.
+-- | The semantics of server commands. The resulting actor id
+-- is of the actor that carried out the request.
 handleRequestAI :: (MonadAtomic m, MonadServer m)
-                => FactionId -> ActorId -> RequestAI -> m ()
+                => FactionId -> ActorId -> RequestAI -> m ActorId
 handleRequestAI fid aid cmd = case cmd of
-  ReqAITimed cmdT -> handleRequestTimed aid cmdT
+  ReqAITimed cmdT -> handleRequestTimed aid cmdT >> return aid
   ReqAILeader aidNew cmd2 -> do
     switchLeader fid aidNew
     handleRequestAI fid aidNew cmd2
-  ReqAIPong -> return ()
+  ReqAIPong -> return aid
 
--- | The semantics of server commands. The resulting boolean value
--- indicates if the command took some time.
+-- | The semantics of server commands. The resulting actor id
+-- is of the actor that carried out the request. @Nothing@ means
+-- the command took no time.
 handleRequestUI :: (MonadAtomic m, MonadServer m)
-                => FactionId -> RequestUI -> m Bool
+                => FactionId -> RequestUI -> m (Maybe ActorId)
 handleRequestUI fid cmd = case cmd of
   ReqUITimed cmdT -> do
     fact <- getsState $ (EM.! fid) . sfactionD
     let aid = fromMaybe (assert `failure` fact) $ gleader fact
-    handleRequestTimed aid cmdT >> return True
+    handleRequestTimed aid cmdT >> return (Just aid)
   ReqUILeader aidNew cmd2 -> do
     switchLeader fid aidNew
     handleRequestUI fid cmd2
-  ReqUIGameRestart aid t d names -> reqGameRestart aid t d names >> return False
-  ReqUIGameExit aid d -> reqGameExit aid d >> return False
-  ReqUIGameSave -> reqGameSave >> return False
-  ReqUIAutomate -> reqAutomate fid >> return False
-  ReqUIPong _ -> return False
+  ReqUIGameRestart aid t d names ->
+    reqGameRestart aid t d names >> return Nothing
+  ReqUIGameExit aid d -> reqGameExit aid d >> return Nothing
+  ReqUIGameSave -> reqGameSave >> return Nothing
+  ReqUIAutomate -> reqAutomate fid >> return Nothing
+  ReqUIPong _ -> return Nothing
 
 handleRequestTimed :: (MonadAtomic m, MonadServer m)
                    => ActorId -> RequestTimed a -> m ()
