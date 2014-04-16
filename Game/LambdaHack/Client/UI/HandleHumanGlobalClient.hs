@@ -542,6 +542,8 @@ gameSaveHuman = do
 
 automateHuman :: MonadClientUI m => m (SlideOrCmd RequestUI)
 automateHuman = do
+  -- BFS is not updated while automated, which would lead to corruption.
+  modifyClient $ \cli -> cli {stgtMode = Nothing}
   -- TODO: do not save to history:
   go <- displayMore ColorBW "Ceding control to AI (ESC to regain)."
   if not go
