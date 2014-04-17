@@ -118,10 +118,14 @@ playersCoop = Players
                   , playerAntiHero { playerName = "Green" }
                   , playerAntiHero { playerName = "Yellow" }
                   , playerAntiHero { playerName = "Cyan" }
-                  , playerAntiHero { playerName = "Red" }
-                  , playerAntiHero { playerName = "Blue" }
+                  , playerAntiHero { playerName = "Red"
+                                   , playerLeader = False }
+                  , playerAntiHero { playerName = "Blue"
+                                   , playerLeader = False }
                   , playerMonster { playerUI = True }
-                  , playerMonster { playerName = "Neutral Monster Hive" } ]
+                  , playerMonster { playerName = "Neutral Monster Hive" }
+                  , playerMonster { playerName = "Leaderless Monster Hive"
+                                  , playerLeader = False } ]
   , playersEnemy = [ ("Coral", "Monster Hive")
                    , ("Amber", "Monster Hive")
                    , ("Green", "Monster Hive")
@@ -136,7 +140,7 @@ playersCoop = Players
 
 playersDefense = Players
   { playersList = [ playerMonster { playerInitial = 1
-                                  , playerAiLeader = False
+                                  , playerAI = False
                                   , playerUI = True }
                   , playerAntiHero { playerName = "Yellow"
                                    , playerInitial = 10 }
@@ -153,12 +157,13 @@ playerHero = Player
   , playerSpawn = 0
   , playerEntry = toEnum (-1)
   , playerInitial = 3
-  , playerAiLeader = False
+  , playerLeader = True
+  , playerAI = False
   , playerUI = True
   }
 
 playerAntiHero = playerHero
-  { playerAiLeader = True
+  { playerAI = True
   , playerUI = False
   }
 
@@ -168,7 +173,8 @@ playerMonster = Player
   , playerSpawn = 66
   , playerEntry = toEnum (-3)
   , playerInitial = 5
-  , playerAiLeader = True
+  , playerLeader = True
+  , playerAI = True
   , playerUI = False
   }
 
@@ -178,7 +184,8 @@ playerAnimal = Player
   , playerSpawn = 33
   , playerEntry = toEnum (-2)
   , playerInitial = 3
-  , playerAiLeader = True
+  , playerLeader = False
+  , playerAI = True
   , playerUI = False
   }
 
@@ -188,7 +195,8 @@ playerHorror = Player
   , playerSpawn = 0
   , playerEntry = toEnum (-1)
   , playerInitial = 0
-  , playerAiLeader = True
+  , playerLeader = False
+  , playerAI = True
   , playerUI = False
   }
 

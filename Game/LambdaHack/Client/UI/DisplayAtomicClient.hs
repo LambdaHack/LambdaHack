@@ -339,9 +339,9 @@ moveItemUI verbose iid k aid c1 c2 = do
     (CGround, cstore) -> do
       when (bfid b == side) $ updateItemSlot (Just aid) iid
       fact <- getsState $ (EM.! bfid b) . sfactionD
-      let hasAiLeader = playerAiLeader $ gplayer fact
+      let underAI = playerAI $ gplayer fact
       mleader <- getsClient _sleader
-      if Just aid == mleader && not hasAiLeader then do
+      if Just aid == mleader && not underAI then do
         item <- getsState $ getItemBody iid
         disco <- getsClient sdisco
         (letterSlots, _) <- getsClient sslots
@@ -607,8 +607,8 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
         -- the request extra message may be shown, so the other frame is better.
         mleader <- getsClient _sleader
         fact <- getsState $ (EM.! bfid b) . sfactionD
-        let hasAiLeader = playerAiLeader $ gplayer fact
-        unless (Just aid == mleader && not hasAiLeader) $
+        let underAI = playerAI $ gplayer fact
+        unless (Just aid == mleader && not underAI) $
           -- Something new is gonna happen on this level (otherwise we'd send
           -- @UpdAgeLevel@ later on, with a larger time increment),
           -- so show crrent game state, before it changes.

@@ -262,11 +262,13 @@ updLeadFaction :: MonadStateWrite m
              => FactionId -> Maybe ActorId -> Maybe ActorId -> m ()
 updLeadFaction fid source target = assert (source /= target) $ do
   fact <- getsState $ (EM.! fid) . sfactionD
+  assert (playerLeader $ gplayer fact) skip  -- @PosNone@ ensure this
   mtb <- getsState $ \s -> fmap (flip getActorBody s) target
   assert (maybe True (not . bproj) mtb
           `blame` (fid, source, target, mtb, fact)) skip
-  assert (source == gleader fact `blame` "unexpected actor leader"
-                                 `twith` (fid, source, target, mtb, fact)) skip
+  assert (source == gleader fact
+          `blame` "unexpected actor leader"
+          `twith` (fid, source, target, mtb, fact)) skip
   let adj fa = fa {gleader = target}
   updateFaction fid adj
 
@@ -288,8 +290,8 @@ updAutoFaction :: MonadStateWrite m => FactionId -> Bool -> m ()
 updAutoFaction fid st = do
   let adj fact =
         let player = gplayer fact
-        in assert (playerAiLeader player == not st)
-           $ fact {gplayer = player {playerAiLeader = st}}
+        in assert (playerAI player == not st)
+           $ fact {gplayer = player {playerAI = st}}
   updateFaction fid adj
 
 -- | Record a given number (usually just 1, or -1 for undo) of actor kills

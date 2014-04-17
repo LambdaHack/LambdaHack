@@ -86,13 +86,13 @@ displayPush = do
   fact <- getsState $ (EM.! side) . sfactionD
   sls <- promptToSlideshow ""
   let slide = head . snd $ slideshow sls
-      hasAiLeader = playerAiLeader $ gplayer fact
+      underAI = playerAI $ gplayer fact
   frame <- drawOverlay False ColorFull slide
   -- Visually speed up (by remving all empty frames) the show of the sequence
   -- of the move frames if the player is running.
   srunning <- getsClient srunning
   lastPlay <- getsClient slastPlay
-  displayFrame (isJust srunning || not (null lastPlay) || hasAiLeader)
+  displayFrame (isJust srunning || not (null lastPlay) || underAI)
                (Just frame)
 
 displayPushIfLid :: MonadClientUI m => LevelId -> m ()

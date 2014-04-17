@@ -137,7 +137,7 @@ handleAndBroadcast knowEvents persOld doResetFidPerception dolitInDungeon
         PosFidAndSer fid2 -> when (fid == fid2) $ sendUpdate fid atomic
         PosSer -> return ()
         PosAll -> sendUpdate fid atomic
-        PosNone -> assert `failure` "illegal sending" `twith` (atomic, fid)
+        PosNone -> return ()
   mapWithKeyM_ (\fid _ -> send fid) factionD
 
 atomicRemember :: LevelId -> Perception -> State -> [UpdAtomic]

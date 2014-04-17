@@ -160,14 +160,12 @@ deduceQuits body status = do
 
 deduceKilled :: (MonadAtomic m, MonadServer m) => Actor -> m ()
 deduceKilled body = do
-  cops@Kind.COps{corule} <- getsState scops
+  Kind.COps{corule} <- getsState scops
   let firstDeathEnds = rfirstDeathEnds $ Kind.stdRuleset corule
       fid = bfid body
-  spawn <- getsState $ isSpawnFaction fid
   fact <- getsState $ (EM.! fid) . sfactionD
-  let horror = isHorrorFact cops fact
   mleader <- getsState $ gleader . (EM.! fid) . sfactionD
-  when (not spawn && not horror
+  when (playerLeader (gplayer fact)  -- animals irrelevant to victory
         && (isNothing mleader || firstDeathEnds)) $
     deduceQuits body $ Status Killed (fromEnum $ blid body) ""
 

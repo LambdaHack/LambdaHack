@@ -37,13 +37,14 @@ data Players = Players
 
 -- | Properties of a particular player.
 data Player = Player
-  { playerName     :: !Text     -- ^ name of the player
-  , playerFaction  :: !Text     -- ^ name of faction(s) the player can control
-  , playerSpawn    :: !Int      -- ^ spawning frequency
-  , playerEntry    :: !LevelId  -- ^ level where the initial members start
-  , playerInitial  :: !Int      -- ^ number of initial members
-  , playerAiLeader :: !Bool     -- ^ is the leader under AI control?
-  , playerUI       :: !Bool     -- ^ does the faction have a UI client
+  { playerName    :: !Text     -- ^ name of the player
+  , playerFaction :: !Text     -- ^ name of faction(s) the player can control
+  , playerSpawn   :: !Int      -- ^ spawning frequency
+  , playerEntry   :: !LevelId  -- ^ level where the initial members start
+  , playerInitial :: !Int      -- ^ number of initial members
+  , playerLeader  :: !Bool     -- ^ does the faction have leader?
+  , playerAI      :: !Bool     -- ^ is the faction under AI control?
+  , playerUI      :: !Bool     -- ^ does the faction have a UI client
                                 -- (for control or passive observation)
   }
   deriving (Show, Eq)
@@ -63,7 +64,8 @@ instance Binary Player where
     put playerSpawn
     put playerEntry
     put playerInitial
-    put playerAiLeader
+    put playerLeader
+    put playerAI
     put playerUI
   get = do
     playerName <- get
@@ -71,6 +73,7 @@ instance Binary Player where
     playerSpawn <- get
     playerEntry <- get
     playerInitial <- get
-    playerAiLeader <- get
+    playerLeader <- get
+    playerAI <- get
     playerUI <- get
     return $! Player{..}

@@ -135,7 +135,7 @@ registerScore status mbody fid = do
   let path = dataDir </> scoresFile
       outputScore (worthMentioning, (ntable, pos)) =
         -- If not human, probably debugging, so dump instead of registering.
-        if not $ playerAiLeader $ gplayer fact then
+        if not $ playerAI $ gplayer fact then
           if worthMentioning then
             liftIO $ encodeEOF path (ntable :: HighScore.ScoreTable)
           else return ()

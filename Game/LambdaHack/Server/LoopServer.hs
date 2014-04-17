@@ -215,15 +215,15 @@ handleActors lid = do
           aidIsLeader = mleader == Just aid
       queryUI <-
         if aidIsLeader && playerUI (gplayer fact) then do
-          let hasAiLeader = playerAiLeader $ gplayer fact
-          if hasAiLeader then do
+          let underAI = playerAI $ gplayer fact
+          if underAI then do
             -- If UI client for the faction completely under AI control,
             -- ping often to sync frames and to catch ESC,
             -- which switches off Ai control.
             sendPingUI side
             fact2 <- getsState $ (EM.! side) . sfactionD
-            let hasAiLeader2 = playerAiLeader $ gplayer fact2
-            return $! not hasAiLeader2
+            let underAI2 = playerAI $ gplayer fact2
+            return $! not underAI2
           else return True
         else return False
       let setBWait hasWait aidNew = do

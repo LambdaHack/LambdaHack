@@ -244,8 +244,9 @@ regenerateLevelHP lid = do
 leadLevelFlip :: (MonadAtomic m, MonadServer m) => m ()
 leadLevelFlip = do
   Kind.COps{cotile} <- getsState scops
-  let canFlip fact = playerAiLeader (gplayer fact)
-                     || isSpawnFact fact
+  let canFlip fact =
+        -- We don't have to check @playerLeader@: @gleader@ would be @Nothing@.
+        playerAI (gplayer fact) || isSpawnFact fact
       flipFaction fact | not $ canFlip fact = return ()
       flipFaction fact = do
         case gleader fact of

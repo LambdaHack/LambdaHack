@@ -92,7 +92,7 @@ createFactions Kind.COps{cofaction=Kind.Ops{opick}} players = do
         let cmap = mapFromFuns
                      [colorToTeamName, colorToPlainName, colorToFancyName]
             nameoc = lowercase playerName
-            prefix | playerAiLeader = "Autonomous"
+            prefix | playerAI = "Autonomous"
                    | otherwise = "Human"
             (gcolor, gname) = case M.lookup nameoc cmap of
               Nothing -> (Color.BrWhite, prefix <+> playerName)
@@ -150,7 +150,7 @@ gameReset cops@Kind.COps{coitem, comode=Kind.Ops{opick, okind}}
         modeKind <- fmap (fromMaybe $ assert `failure` smode)
                     $ opick smode (const True)
         let mode = okind modeKind
-            automate p = p {playerAiLeader = True}
+            automate p = p {playerAI = True}
             automatePS ps = ps {playersList = map automate $ playersList ps}
             players = if sautomateAll sdebug
                       then automatePS $ mplayers mode

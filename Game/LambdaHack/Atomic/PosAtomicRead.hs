@@ -9,6 +9,7 @@ module Game.LambdaHack.Atomic.PosAtomicRead
   ) where
 
 import Control.Exception.Assert.Sugar
+import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
 
 import Game.LambdaHack.Atomic.CmdAtomic
@@ -21,6 +22,8 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.State
+import Game.LambdaHack.Content.ModeKind as ModeKind
 
 -- All functions here that take an atomic action are executed
 -- in the state just before the action is executed.
@@ -82,7 +85,11 @@ posUpdAtomic cmd = case cmd of
   UpdTrajectoryActor aid _ _ -> singleAid aid
   UpdColorActor aid _ _ -> singleAid aid
   UpdQuitFaction{} -> return PosAll
-  UpdLeadFaction fid _ _ -> return $! PosFidAndSer fid
+  UpdLeadFaction fid _ _ -> do
+    fact <- getsState $ (EM.! fid) . sfactionD
+    return $! if playerLeader $ gplayer fact
+              then PosFidAndSer fid
+              else PosNone
   UpdDiplFaction{} -> return PosAll
   UpdAutoFaction{} -> return PosAll
   UpdRecordKill aid _ -> singleFidAndAid aid
@@ -248,7 +255,7 @@ seenAtomicSer :: PosAtomic -> Bool
 seenAtomicSer posAtomic =
   case posAtomic of
     PosFid _ -> False
-    PosNone -> assert `failure` "wrong position for server" `twith` posAtomic
+    PosNone -> False
     _ -> True
 
 lidOfPosAtomic :: PosAtomic -> Maybe LevelId
