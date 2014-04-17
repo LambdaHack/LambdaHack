@@ -240,9 +240,8 @@ targetStrategy oldLeader aid = do
                        in sml `timeDeltaToFrom` ltime lvl <= Delta timeZero)
                 && let t = lvl `at` pos
                    in if ES.notMember lid explored
-                      then  -- closestUnknown
-                        t /= unknownId
-                        && not (Tile.isSuspect cotile t)
+                      then t /= unknownId  -- closestUnknown
+                           && not (Tile.isSuspect cotile t)  -- closestSuspect
                       else  -- closestTriggers
                         -- Try to kill that very last enemy for his loot before
                         -- leaving the level or dungeon.

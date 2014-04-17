@@ -157,7 +157,8 @@ closestUnknown aid = do
   if dist >= apartBfs then do
     body <- getsState $ getActorBody aid
     lvl <- getLevel $ blid body
-    when (lclear lvl == lseen lvl) $  -- explored fully, mark it once for all
+    when (lclear lvl == lseen lvl) $ do  -- explored fully, mark it once for all
+      assert (lclear lvl >= lseen lvl) skip
       modifyClient $ \cli ->
         cli {sexplored = ES.insert (blid body) (sexplored cli)}
     return Nothing
@@ -196,7 +197,15 @@ closestSuspect aid = do
       f acc p t = if Tile.isSuspect cotile t then p : acc else acc
   let suspect = PointArray.ifoldlA f [] $ ltile lvl
   case suspect of
-    [] -> return []
+    [] -> do
+      -- If the level has inaccessible open areas (at least from some stairs)
+      -- here finally mark it explored, to enable transition to other levels.
+      -- We should generally avoid such levels, because digging and/or trying
+      -- to find other stairs leading to disconnected areas is not KISS
+      -- so we don't do this, so AI is at a disadvantage.
+      modifyClient $ \cli ->
+        cli {sexplored = ES.insert (blid body) (sexplored cli)}
+      return []
     _ -> do
       bfs <- getCacheBfs aid
       let ds = mapMaybe (\p -> fmap (,p) (accessBfs bfs p)) suspect
