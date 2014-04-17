@@ -32,6 +32,18 @@ wall = TileKind
   , tcolor   = defBG
   , tcolor2  = defBG
   , tfeature = [Dark]
+      -- Bedrock being dark is bad for AI (forces it to backtrack to explore
+      -- bedrock at corridor turns) and induces human micromanagement
+      -- if there can be corridors joined diagonally (humans have to check
+      -- with the cursor if the dark space is bedrock or unexplored).
+      -- Lit bedrock would be even worse for humans, because it's harder
+      -- to guess which tiles are unknown and which can be explored bedrock.
+      -- The setup of Allure is ideal, with lit bedrock that is easily
+      -- distinguished from an unknown tile. However, LH follows the NetHack,
+      -- not the Angband, visual tradition, so we can't improve the situation,
+      -- unless we turn to subtle shades of black or non-ASCII glyphs,
+      -- but that is yet different aesthetics and it's inconsistent
+      -- with console frontends.
   }
 hardRock = TileKind
   { tsymbol  = ' '
