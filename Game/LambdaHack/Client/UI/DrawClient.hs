@@ -73,6 +73,7 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
                   , Just bpos )
         _ -> ([], Nothing, Nothing)
       mpath = maybe Nothing (\(_, mp) -> if null bl
+                                            || mblid /= Just drawnLevelId
                                          then Nothing
                                          else mp) bfsmpathRaw
       actorsHere = actorAssocs (const True) drawnLevelId s
