@@ -14,9 +14,9 @@ cdefs = ContentDef
   , getFreq = afreq
   , validate = validateActorKind
   , content =
-      [hero, projectile, eye, fastEye, nose]
+      [hero, projectile, eye, fastEye, nose, armadillo, gilaMonster, komodoDragon, hyena, alligator]
   }
-hero,        projectile, eye, fastEye, nose :: ActorKind
+hero,        projectile, eye, fastEye, nose, armadillo, gilaMonster, komodoDragon, hyena, alligator :: ActorKind
 
 hero = ActorKind
   { asymbol = '@'
@@ -86,6 +86,76 @@ nose = ActorKind
   , aspeed  = toSpeed 1.8
   , asight  = False
   , asmell  = True
+  , aiq     = 0
+  , aregen  = maxBound
+  , acanDo  = [minBound..maxBound]
+  }
+armadillo = ActorKind
+  { asymbol = 'a'
+  , aname   = "giant armadillo"
+  , afreq   = [("animal", 10), ("horror", 10)]
+  , acolor  = Brown
+  , ahp     = 17 * d 4
+  , acalm   = 50
+  , aspeed  = toSpeed 1.8
+  , asight  = True
+  , asmell  = False
+  , aiq     = 0
+  , aregen  = maxBound
+  , acanDo  = [minBound..maxBound]
+  }
+gilaMonster = ActorKind
+  { asymbol = 'g'
+  , aname   = "Gila monster"
+  , afreq   = [("animal", 10), ("horror", 10)]
+  , acolor  = BrYellow
+  , ahp     = 5 * d 4
+  , acalm   = 50
+  , aspeed  = toSpeed 1.5
+  , asight  = True
+  , asmell  = False
+  , aiq     = 0
+  , aregen  = 20
+  , acanDo  = [minBound..maxBound]
+  }
+komodoDragon = ActorKind
+  { asymbol = 'd'
+  , aname   = "Komodo dragon"
+  , afreq   = [("animal", 10), ("horror", 10)]
+  , acolor  = Blue
+  , ahp     = 17 * d 4
+  , acalm   = 50
+  , aspeed  = toSpeed 2.5
+  , asight  = True
+  , asmell  = False
+  , aiq     = 0
+  , aregen  = 40
+  , acanDo  = [minBound..maxBound]
+  }
+hyena = ActorKind
+  { asymbol = 'h'
+  , aname   = "spotted hyena"
+  , afreq   = [("animal", 20), ("horror", 20)]
+  , acolor  = Red
+  , ahp     = 7 * d 4
+  , acalm   = 50
+  , aspeed  = toSpeed 3.5
+  , asight  = True
+  , asmell  = False
+  , aiq     = 0
+  , aregen  = maxBound
+  , acanDo  = [minBound..maxBound]
+  }
+alligator = ActorKind
+  { asymbol = 'a'
+  , aname   = "alligator"
+  , afreq   = [("animal", 10), ("horror", 10)]
+  , acolor  = Blue
+  , ahp     = 27 * d 4
+  , acalm   = 50
+  , aspeed  = toSpeed 1.7
+  , asight  = True
+  , asmell  = False
   , aiq     = 0
   , aregen  = maxBound
   , acanDo  = [minBound..maxBound]

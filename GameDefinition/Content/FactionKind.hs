@@ -13,9 +13,9 @@ cdefs = ContentDef
   , getFreq = ffreq
   , validate = validateFactionKind
   , content =
-      [hero, monster, horror]
+      [hero, monster, animal, horror]
   }
-hero,        monster, horror :: FactionKind
+hero,        monster, animal, horror :: FactionKind
 
 hero = FactionKind
   { fsymbol        = '@'
@@ -33,6 +33,14 @@ monster = FactionKind
   , fAbilityOther  = allAbilities
   }
 
+animal = FactionKind
+  { fsymbol        = 'd'
+  , fname          = "animal"
+  , ffreq          = [("animal", 1), ("summon", 50)]
+  , fAbilityLeader = animalAbility
+  , fAbilityOther  = animalAbility
+  }
+
 horror = FactionKind
   { fsymbol        = 'h'
   , fname          = "horror"
@@ -42,12 +50,14 @@ horror = FactionKind
   }
 
 
-_noAbility, meleeAdjacent, _meleeAndRanged, allAbilities :: [Ability]
+_noAbility, meleeAdjacent, _meleeAndRanged, animalAbility, allAbilities :: [Ability]
 
 _noAbility = []
 
 meleeAdjacent = [AbWait, AbMelee]
 
 _meleeAndRanged = [AbWait, AbMelee, AbProject]  -- melee and reaction fire
+
+animalAbility = [AbMove, AbMelee, AbDisplace, AbWait, AbTrigger]
 
 allAbilities = [minBound..maxBound]

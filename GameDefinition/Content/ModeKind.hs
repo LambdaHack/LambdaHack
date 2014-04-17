@@ -78,9 +78,11 @@ playersCampaign, playersSkirmish, playersBattle, playersPvP, playersCoop, player
 
 playersCampaign = Players
   { playersList = [ playerHero
-                  , playerMonster ]
-  , playersEnemy = [("Adventurer Party", "Monster Hive")]
-  , playersAlly = [] }
+                  , playerMonster
+                  , playerAnimal ]
+  , playersEnemy = [ ("Adventurer Party", "Monster Hive")
+                   , ("Adventurer Party", "Animal Kingdom") ]
+  , playersAlly = [("Monster Hive", "Animal Kingdom")] }
 
 playersSkirmish = Players
   { playersList = [ playerHero {playerName = "White"}
@@ -93,10 +95,13 @@ playersSkirmish = Players
 
 playersBattle = Players
   { playersList = [ playerHero {playerInitial = 5}
-                  , playerMonster { playerInitial = 30
-                                  , playerSpawn = 0 } ]
-  , playersEnemy = [("Adventurer Party", "Monster Hive")]
-  , playersAlly = [] }
+                  , playerMonster { playerInitial = 20
+                                  , playerSpawn = 0 }
+                  , playerAnimal { playerInitial = 10
+                                 , playerSpawn = 0 } ]
+  , playersEnemy = [ ("Adventurer Party", "Monster Hive")
+                   , ("Adventurer Party", "Animal Kingdom") ]
+  , playersAlly = [("Monster Hive", "Animal Kingdom")] }
 
 playersPvP = Players
   { playersList = [ playerHero {playerName = "Red"}
@@ -134,12 +139,13 @@ playersDefense = Players
                                   , playerAiLeader = False
                                   , playerUI = True }
                   , playerAntiHero { playerName = "Yellow"
-                                   , playerInitial = 10 } ]
-  , playersEnemy = [("Yellow", "Monster Hive")]
-  , playersAlly = [] }
+                                   , playerInitial = 10 }
+                  , playerAnimal ]
+  , playersEnemy = [ ("Yellow", "Monster Hive")
+                   , ("Yellow", "Animal Kingdom") ]
+  , playersAlly = [("Monster Hive", "Animal Kingdom")] }
 
-
-playerHero, playerAntiHero, playerMonster, playerHorror :: Player
+playerHero, playerAntiHero, playerMonster, playerAnimal, playerHorror :: Player
 
 playerHero = Player
   { playerName = "Adventurer Party"
@@ -159,9 +165,19 @@ playerAntiHero = playerHero
 playerMonster = Player
   { playerName = "Monster Hive"
   , playerFaction = "monster"
-  , playerSpawn = 50
+  , playerSpawn = 66
   , playerEntry = toEnum (-3)
   , playerInitial = 5
+  , playerAiLeader = True
+  , playerUI = False
+  }
+
+playerAnimal = Player
+  { playerName = "Animal Kingdom"
+  , playerFaction = "animal"
+  , playerSpawn = 33
+  , playerEntry = toEnum (-2)
+  , playerInitial = 3
   , playerAiLeader = True
   , playerUI = False
   }
