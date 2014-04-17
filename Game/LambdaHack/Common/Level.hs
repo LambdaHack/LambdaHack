@@ -134,9 +134,8 @@ accessibleDir :: Kind.COps -> Level -> Point -> Vector -> Bool
 accessibleDir cops lvl spos dir = accessible cops lvl spos $ spos `shift` dir
 
 isSecretPos :: Level -> Point -> Bool
-isSecretPos lvl p =
-  (lsecret lvl `Bits.rotateR` fromEnum p `Bits.xor` fromEnum p)
-  `mod` lhidden lvl == 0
+isSecretPos lvl (Point x y) =
+  (lsecret lvl `Bits.rotateR` x `Bits.xor` y + x) `mod` lhidden lvl == 0
 
 hideTile :: Kind.Ops TileKind -> Level -> Point -> Kind.Id TileKind
 hideTile cotile lvl p =
