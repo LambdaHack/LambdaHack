@@ -94,6 +94,14 @@ isSuspect Kind.Ops{ospeedup = Just Kind.TileSpeedup{isSuspectTab}} =
   \k -> Kind.accessTab isSuspectTab k
 isSuspect cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
 
+-- | Whether a tile kind (specified by its id) has a ChangeTo feature.
+-- Essential for efficiency of pathfinding, hence tabulated.
+isChangeable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
+{-# INLINE isChangeable #-}
+isChangeable Kind.Ops{ospeedup = Just Kind.TileSpeedup{isChangeableTab}} =
+  \k -> Kind.accessTab isChangeableTab k
+isChangeable cotile = assert `failure` "no speedup" `twith` Kind.obounds cotile
+
 -- | Whether a tile can be explored, possibly yielding a treasure.
 -- Note that non-walkable tiles can hold treasure, e.g., caches,
 -- so they should be set changeable to make them explorable.
@@ -133,6 +141,10 @@ speedup allClear cotile =
             getTo _ = False
         in any getTo $ tfeature tk
       isSuspectTab = Kind.createTab cotile $ kindHasFeature F.Suspect
+      isChangeableTab = Kind.createTab cotile $ \tk ->
+        let getTo F.ChangeTo{} = True
+            getTo _ = False
+        in any getTo $ tfeature tk
   in Kind.TileSpeedup {..}
 
 openTo :: Kind.Ops TileKind -> Kind.Id TileKind -> Rnd (Kind.Id TileKind)
@@ -193,13 +205,6 @@ isOpenable Kind.Ops{okind} t =
 isClosable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
 isClosable Kind.Ops{okind} t =
   let getTo F.CloseTo{} = True
-      getTo _ = False
-  in any getTo $ tfeature $ okind t
-
--- | Whether a tile kind (specified by its id) has a ChangeTo feature.
-isChangeable :: Kind.Ops TileKind -> Kind.Id TileKind -> Bool
-isChangeable Kind.Ops{okind} t =
-  let getTo F.ChangeTo{} = True
       getTo _ = False
   in any getTo $ tfeature $ okind t
 

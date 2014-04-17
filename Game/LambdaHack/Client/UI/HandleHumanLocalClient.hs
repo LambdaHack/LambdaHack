@@ -255,9 +255,6 @@ markSmellHuman = do
 
 markSuspectHuman :: MonadClientUI m => m ()
 markSuspectHuman = do
-  -- BFS takes suspect tiles into account depending on @smarkSuspect@,
-  -- so we need to invalidate the BFS data caches.
-  modifyClient $ \cli -> cli {sbfsD = EM.empty}
   modifyClient toggleMarkSuspect
   cur <- getsClient smarkSuspect
   msgAdd $ "Suspect terrain display toggled" <+> if cur then "on." else "off."

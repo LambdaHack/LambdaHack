@@ -113,7 +113,9 @@ computeAnythingBFS fAnything aid = do
            then if not (Tile.isSuspect cotile st) && allOK
                 then MoveToUnknown
                 else MoveBlocked
-           else if Tile.isPassable cotile tt && allOK
+           else if Tile.isPassable cotile tt
+                   && not (Tile.isChangeable cotile st)  -- takes time to change
+                   && allOK
                 then MoveToOpen
                 else MoveBlocked
       -- Legality of move from an unknown tile, assuming unknown are open.
@@ -195,7 +197,7 @@ closestSuspect aid = do
   lvl <- getLevel $ blid body
   let f :: [Point] -> Point -> Kind.Id TileKind -> [Point]
       f acc p t = if Tile.isSuspect cotile t then p : acc else acc
-  let suspect = PointArray.ifoldlA f [] $ ltile lvl
+      suspect = PointArray.ifoldlA f [] $ ltile lvl
   case suspect of
     [] -> do
       -- If the level has inaccessible open areas (at least from some stairs)
@@ -263,18 +265,24 @@ unexploredDepth = do
         in any unex . ascendInBranch dungeon p
   return unexploredD
 
--- | Closest (wrt paths) items.
-closestItems :: MonadClient m => ActorId -> m ([(Int, (Point, ItemBag))])
+-- | Closest (wrt paths) items and changeable tiles (e.g., item caches).
+closestItems :: MonadClient m => ActorId -> m ([(Int, (Point, Maybe ItemBag))])
 closestItems aid = do
+  Kind.COps{cotile} <- getsState scops
   body <- getsState $ getActorBody aid
-  Level{lfloor} <- getLevel $ blid body
+  lvl@Level{lfloor} <- getLevel $ blid body
   let items = EM.assocs lfloor
-  case items of
-    [] -> return []
-    _ -> do
-      bfs <- getCacheBfs aid
-      let ds = mapMaybe (\x@(p, _) -> fmap (,x) (accessBfs bfs p)) items
-      return $! sortBy (comparing fst) ds
+      f :: [Point] -> Point -> Kind.Id TileKind -> [Point]
+      f acc p t = if Tile.isChangeable cotile t then p : acc else acc
+      changeable = PointArray.ifoldlA f [] $ ltile lvl
+  if null items && null changeable then return []
+  else do
+    bfs <- getCacheBfs aid
+    let is = mapMaybe (\(p, bag) ->
+                        fmap (, (p, Just bag)) (accessBfs bfs p)) items
+        cs = mapMaybe (\p ->
+                        fmap (, (p, Nothing)) (accessBfs bfs p)) changeable
+    return $! sortBy (comparing fst) $ is ++ cs
 
 -- | Closest (wrt paths) enemy actors.
 closestFoes :: MonadClient m

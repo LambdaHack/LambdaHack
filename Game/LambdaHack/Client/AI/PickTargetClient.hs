@@ -111,7 +111,8 @@ targetStrategy oldLeader aid = do
                            | otherwise = itemUsefulness item /= 0
       desirableBag bag = any (\(iid, k) -> desirableItem (itemD EM.! iid) k)
                          $ EM.assocs bag
-      desirable (_, (_, bag)) = desirableBag bag
+      desirable (_, (_, Nothing)) = True
+      desirable (_, (_, Just bag)) = desirableBag bag
       -- TODO: make more common when weak ranged foes preferred, etc.
       focused = bspeed b < speedNormal || condHpTooLow
       canSmell = asmell $ okind $ bkind b

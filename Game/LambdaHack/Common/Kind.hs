@@ -17,6 +17,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 import Game.LambdaHack.Common.ContentDef
+import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Random
@@ -28,7 +29,6 @@ import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.PlaceKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind
-import Game.LambdaHack.Common.Frequency
 
 -- | Content identifiers for the content type @c@.
 newtype Id c = Id Word8
@@ -45,6 +45,7 @@ data instance Speedup TileKind = TileSpeedup
   , isPassableTab :: !Tab
   , isDoorTab :: !Tab
   , isSuspectTab :: !Tab
+  , isChangeableTab :: !Tab
   }
 
 newtype Tab = Tab (A.UArray (Id TileKind) Bool)
