@@ -214,7 +214,10 @@ reqMelee source target = do
     -- and hitting projectiles count as unintentional friendly fire.
     let friendlyFire = bproj sb || bproj tb
         fromDipl = EM.findWithDefault Unknown tfid (gdipl sfact)
-    unless (friendlyFire || isAtWar sfact tfid || sfid == tfid) $
+    unless (friendlyFire
+            || isAtWar sfact tfid  -- already at war
+            || isAllied sfact tfid  -- allies never at war
+            || sfid == tfid) $
       execUpdAtomic $ UpdDiplFaction sfid tfid fromDipl War
 
 -- * ReqDisplace

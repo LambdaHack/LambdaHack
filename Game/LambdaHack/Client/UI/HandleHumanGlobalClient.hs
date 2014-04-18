@@ -134,17 +134,16 @@ meleeAid target = do
   tb <- getsState $ getActorBody target
   sfact <- getsState $ (EM.! bfid sb) . sfactionD
   let returnCmd = return $ Right $ ReqMelee target
-  if not (bproj tb || isAtWar sfact (bfid tb)) then do
-    go1 <- displayYesNo ColorBW
-             "This attack will start a war. Are you sure?"
-    if not go1 then failWith "Attack canceled."
-    else if not (bproj tb || not (isAllied sfact (bfid tb))) then do
-      go2 <- displayYesNo ColorBW
-               "You are bound by an alliance. Really attack?"
-      if not go2 then failWith "Attack canceled."
-      else returnCmd
-    else returnCmd
-  else returnCmd
+      res | bproj tb || isAtWar sfact (bfid tb) = returnCmd
+          | isAllied sfact (bfid tb) = do
+            go1 <- displayYesNo ColorBW
+                     "You are bound by an alliance. Really attack?"
+            if not go1 then failWith "Attack canceled." else returnCmd
+          | otherwise = do
+            go2 <- displayYesNo ColorBW
+                     "This attack will start a war. Are you sure?"
+            if not go2 then failWith "Attack canceled." else returnCmd
+  res
   -- Seeing the actor prevents altering a tile under it, but that
   -- does not limit the player, he just doesn't waste a turn
   -- on a failed altering.
