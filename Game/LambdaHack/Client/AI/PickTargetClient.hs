@@ -30,6 +30,7 @@ import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
+import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ModeKind
@@ -65,7 +66,7 @@ targetStrategy oldLeader aid = do
         ([], _) -> assert `failure` (aid, b, mtgtMPath)
     Just (_, Nothing) -> return Nothing  -- path invalidated, e.g. SpotActorA
     Nothing -> return Nothing  -- no target assigned yet
-  lvl <- getLevel $ blid b
+  lvl@Level{lxsize, lysize} <- getLevel $ blid b
   assert (not $ bproj b) skip  -- would work, but is probably a bug
   fact <- getsState $ (EM.! bfid b) . sfactionD
   allFoes <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
@@ -148,9 +149,25 @@ targetStrategy oldLeader aid = do
                           then closestItems aid
                           else return []
                 case filter desirable citems of
+                  [] | not (playerLeader (gplayer fact)) -> do
+                    mtgtPrev <- getsClient $ getTarget aid
+                    let vOld = bpos b `vectorToFrom` boldpos b
+                        v = case (mtgtPrev, isUnit vOld) of
+                              (Just (TVector tgtPrev), True) ->
+                                if euclidDistSqVector tgtPrev vOld <= 2
+                                then tgtPrev
+                                else vOld
+                              (Just (TVector tgtPrev), False) -> tgtPrev
+                              (_, True) -> vOld
+                              (_, False) -> Vector 1 1  -- south-east
+                        -- Items and smells considered every 5 moves.
+                        -- Thanks to sentinels, @path@ is never null.
+                        path = trajectoryToPathBounded
+                                 lxsize lysize (bpos b) (replicate 5 v)
+                    return $! returN "tgt with no playerLeader"
+                      (TVector v, (bpos b : path, (last path, length path)))
                   [] -> do
                     let lidExplored = ES.member (blid b) explored
-                                      || not (playerLeader (gplayer fact))
                     upos <- if lidExplored
                             then return Nothing
                             else closestUnknown aid
@@ -162,18 +179,15 @@ targetStrategy oldLeader aid = do
                         case csuspect of
                           [] -> do
                             ctriggers <- if AbTrigger `elem` actorAbs
-                                            && playerLeader (gplayer fact)
                                          then closestTriggers Nothing False aid
                                          else return []
                             case ctriggers of
                               [] -> do
                                 getDistant <-
-                                  if not (playerLeader (gplayer fact))
-                                  then return $ fmap (: []) . furthestKnown
-                                  else rndToAction $ oneOf
-                                       $ [fmap (: []) . furthestKnown]
-                                         ++ [ closestTriggers Nothing True
-                                            | EM.size dungeon > 1 ]
+                                  rndToAction $ oneOf
+                                  $ [fmap (: []) . furthestKnown]
+                                    ++ [ closestTriggers Nothing True
+                                       | EM.size dungeon > 1 ]
                                 kpos <- getDistant aid
                                 case kpos of
                                   [] -> return reject
@@ -191,7 +205,7 @@ targetStrategy oldLeader aid = do
         pickNewTarget
       updateTgt :: Target -> PathEtc
                 -> m (Strategy (Target, PathEtc))
-      updateTgt oldTgt updatedPath = case oldTgt of
+      updateTgt oldTgt updatedPath@(_, (_, len)) = case oldTgt of
         TEnemy a _ -> do
           body <- getsState $ getActorBody a
           if not focused  -- prefers closer foes
@@ -272,6 +286,7 @@ targetStrategy oldLeader aid = do
                                       && allExplored)
           then pickNewTarget
           else return $! returN "TPoint" (oldTgt, updatedPath)
+        TVector{} | len > 1 -> return $! returN "TVector" (oldTgt, updatedPath)
         TVector{} -> pickNewTarget
   case oldTgtUpdatedPath of
     Just (oldTgt, updatedPath) -> updateTgt oldTgt updatedPath

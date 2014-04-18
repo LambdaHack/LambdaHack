@@ -4,7 +4,8 @@
 module Game.LambdaHack.Common.Vector
   ( Vector(..), isUnit, isDiagonal, neg, chessDistVector, euclidDistSqVector
   , moves, movesCardinal, movesDiagonal, compassText, vicinity, vicinityCardinal
-  , shift, shiftBounded, trajectoryToPath, vectorToFrom, pathToTrajectory
+  , shift, shiftBounded, trajectoryToPath, trajectoryToPathBounded
+  , vectorToFrom, pathToTrajectory
   , RadianAngle, rotate, towards
   ) where
 
@@ -141,7 +142,14 @@ shiftBounded lxsize lysize pos v@(Vector xv yv) =
 trajectoryToPath :: Point -> [Vector] -> [Point]
 trajectoryToPath _ [] = []
 trajectoryToPath start (v : vs) = let next = shift start v
-                           in next : trajectoryToPath next vs
+                                  in next : trajectoryToPath next vs
+
+-- | A list of points that a list of vectors leads to, bounded by level size.
+trajectoryToPathBounded :: X -> Y -> Point -> [Vector] -> [Point]
+trajectoryToPathBounded _ _ _ [] = []
+trajectoryToPathBounded lxsize lysize start (v : vs) =
+  let next = shiftBounded lxsize lysize start v
+  in next : trajectoryToPathBounded lxsize lysize next vs
 
 -- | The vector between the second point and the first. We have
 --

@@ -214,7 +214,8 @@ handleActors lid = do
           mleader = gleader fact
           aidIsLeader = mleader == Just aid
       queryUI <-
-        if aidIsLeader && playerUI (gplayer fact) then do
+        if playerUI (gplayer fact)
+           && (aidIsLeader || not (playerLeader (gplayer fact))) then do
           let underAI = playerAI $ gplayer fact
           if underAI then do
             -- If UI client for the faction completely under AI control,

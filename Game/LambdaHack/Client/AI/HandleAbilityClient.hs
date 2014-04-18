@@ -117,7 +117,8 @@ actionStrategy aid = do
             <$> meleeBlocker aid  -- only melee target or blocker
           , condAnyFoeAdj
             || AbDisplace `notElem` actorAbs  -- melee friends, not displace
-               && not (playerLeader $ gplayer fact) )  -- not restrained
+               && not (playerLeader $ gplayer fact)  -- not restrained
+               && (condTgtEnemyPresent || condTgtEnemyRemembered) )  -- excited
         , ( [AbTrigger], (toAny :: ToAny AbTrigger)
             <$> trigger aid False
           , condOnTriggerable && not condDesirableFloorItem )
@@ -524,9 +525,13 @@ displaceTowards aid source target = do
 
 chase :: MonadClient m => ActorId -> Bool -> m (Strategy RequestAnyAbility)
 chase aid doDisplace = do
+  body <- getsState $ getActorBody aid
+  fact <- getsState $ (EM.! bfid body) . sfactionD
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   str <- case mtgtMPath of
-    Just (_, Just (p : q : _, (goal, _))) -> moveTowards aid p q goal
+    Just (_, Just (p : q : _, (goal, _))) ->
+      -- With no leader, the goal is vague, so permit arbitrary detours.
+      moveTowards aid p q goal (not $ playerLeader (gplayer fact))
     _ -> return reject  -- goal reached
   -- If @doDisplace@: don't pick fights, assuming the target is more important.
   -- We'd normally melee the target earlier on via @AbMelee@, but for
@@ -535,8 +540,8 @@ chase aid doDisplace = do
   Traversable.mapM (moveOrRunAid doDisplace aid) str
 
 moveTowards :: MonadClient m
-            => ActorId -> Point -> Point -> Point -> m (Strategy Vector)
-moveTowards aid source target goal = do
+            => ActorId -> Point -> Point -> Point -> Bool -> m (Strategy Vector)
+moveTowards aid source target goal relaxed = do
   cops@Kind.COps{coactor=Kind.Ops{okind}, cotile} <- getsState scops
   b <- getsState $ getActorBody aid
   assert (source == bpos b && adjacent source target) skip
@@ -555,7 +560,9 @@ moveTowards aid source target goal = do
   else do
     let goesBack v = v == boldpos b `vectorToFrom` source
         nonincreasing p = chessDist source goal >= chessDist p goal
-        isSensible p = nonincreasing p && noFriends p && enterableHere p
+        isSensible p = (relaxed || nonincreasing p)
+                       && noFriends p
+                       && enterableHere p
         sensible = [ ((goesBack v, chessDist p goal), v)
                    | v <- moves, let p = source `shift` v, isSensible p ]
         sorted = sortBy (comparing fst) sensible
