@@ -46,6 +46,7 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind as TileKind
 
@@ -60,6 +61,7 @@ actionStrategy :: forall m. MonadClient m
                => ActorId -> m (Strategy RequestAnyAbility)
 actionStrategy aid = do
   body <- getsState $ getActorBody aid
+  fact <- getsState $ (EM.! bfid body) . sfactionD
   condTgtEnemyPresent <- condTgtEnemyPresentM aid
   condTgtEnemyRemembered <- condTgtEnemyRememberedM aid
   condAnyFoeAdj <- condAnyFoeAdjM aid
@@ -113,7 +115,9 @@ actionStrategy aid = do
           , condNoWeapon && condFloorWeapon && not condHpTooLow )
         , ( [AbMelee], (toAny :: ToAny AbMelee)
             <$> meleeBlocker aid  -- only melee target or blocker
-          , condAnyFoeAdj )
+          , condAnyFoeAdj
+            || AbDisplace `notElem` actorAbs  -- melee friends, not displace
+               && not (playerLeader $ gplayer fact) )  -- not restrained
         , ( [AbTrigger], (toAny :: ToAny AbTrigger)
             <$> trigger aid False
           , condOnTriggerable && not condDesirableFloorItem )
@@ -250,7 +254,9 @@ harmful body item =
 meleeBlocker :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbMelee))
 meleeBlocker aid = do
   b <- getsState $ getActorBody aid
-  fact <- getsState $ \s -> sfactionD s EM.! bfid b
+  fact <- getsState $ (EM.! bfid b) . sfactionD
+  mleader <- getsClient _sleader
+  actorAbs <- actorAbilities aid mleader
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   case mtgtMPath of
     Just (_, Just (_ : q : _, (goal, _))) -> do
@@ -267,9 +273,13 @@ meleeBlocker aid = do
           -- No problem if there are many projectiles at the spot. We just
           -- attack the first one.
           body2 <- getsState $ getActorBody aid2
-          if not (bproj body2)  -- displacing saves a move
-             && isAtWar fact (bfid body2)
-             && not (actorDying body2) then
+          if not (actorDying body2)  -- already dying
+             && (not (bproj body2)  -- displacing saves a move
+                 && isAtWar fact (bfid body2)  -- they at war with us
+                 || AbDisplace `notElem` actorAbs  -- melee, not displace
+                    && not (playerLeader $ gplayer fact)  -- not restrained
+                    && AbMove `elem` actorAbs  -- blocked move
+                    && bhp body2 < bhp b) then  -- respect power
             return $! returN "melee in the way" (ReqMelee aid2)
           else return reject
         Nothing -> return reject
@@ -279,7 +289,7 @@ meleeBlocker aid = do
 meleeAny :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbMelee))
 meleeAny aid = do
   b <- getsState $ getActorBody aid
-  fact <- getsState $ \s -> sfactionD s EM.! bfid b
+  fact <- getsState $ (EM.! bfid b) . sfactionD
   allFoes <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
   let adjFoes = filter (adjacent (bpos b) . bpos . snd) allFoes
       -- TODO: prioritize somehow
@@ -294,7 +304,7 @@ trigger aid fleeViaStairs = do
   dungeon <- getsState sdungeon
   explored <- getsClient sexplored
   b <- getsState $ getActorBody aid
-  fact <- getsState $ \s -> sfactionD s EM.! bfid b
+  fact <- getsState $ (EM.! bfid b) . sfactionD
   lvl <- getLevel $ blid b
   unexploredD <- unexploredDepth
   s <- getState
@@ -532,13 +542,6 @@ moveTowards aid source target goal = do
   friends <- getsState $ actorList (not . isAtWar fact) $ blid b
   let _mk = okind $ bkind b
       noFriends = unoccupied friends
-      -- Was:
-      -- noFriends | asight mk = unoccupied friends
-      --           | otherwise = const True
-      -- but this should be implemented on the server or, if not,
-      -- restricted to AI-only factions (e.g., animals).
-      -- Otherwise human players are tempted to tweak their AI clients
-      -- (as soon as we let them register their AI clients with the server).
       accessibleHere = accessible cops lvl source
       bumpableHere p =
         let t = lvl `at` p

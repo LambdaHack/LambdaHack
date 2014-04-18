@@ -42,7 +42,8 @@ data Player = Player
   , playerSpawn   :: !Int      -- ^ spawning frequency
   , playerEntry   :: !LevelId  -- ^ level where the initial members start
   , playerInitial :: !Int      -- ^ number of initial members
-  , playerLeader  :: !Bool     -- ^ does the faction have leader?
+  , playerLeader  :: !Bool     -- ^ leaderless factions can't be controlled
+                               --   by a human or a user-supplied AI client
   , playerAI      :: !Bool     -- ^ is the faction under AI control?
   , playerUI      :: !Bool     -- ^ does the faction have a UI client
                                 -- (for control or passive observation)
