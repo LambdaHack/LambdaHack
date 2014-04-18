@@ -13,16 +13,24 @@ cdefs = ContentDef
   , getFreq = ffreq
   , validate = validateFactionKind
   , content =
-      [hero, monster, animal, horror]
+      [hero, civilian, monster, animal, horror]
   }
-hero,        monster, animal, horror :: FactionKind
+hero,        civilian, monster, animal, horror :: FactionKind
 
 hero = FactionKind
-  { fsymbol        = '@'
+  { fsymbol        = '1'
   , fname          = "hero"
   , ffreq          = [("hero", 1)]
   , fAbilityLeader = allAbilities
   , fAbilityOther  = meleeAdjacent
+  }
+
+civilian = FactionKind
+  { fsymbol        = '@'
+  , fname          = "hero"
+  , ffreq          = [("civilian", 1)]
+  , fAbilityLeader = allAbilities
+  , fAbilityOther  = allAbilities  -- not coordinated by any leadership
   }
 
 monster = FactionKind

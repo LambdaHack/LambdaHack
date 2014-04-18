@@ -114,15 +114,16 @@ playersBattle = Players
 playersSafari = Players
   { playersList = [ playerMonster { playerName = "Monster Tourist Office"
                                   , playerSpawn = 0
-                                  , playerEntry = toEnum 1
+                                  , playerEntry = toEnum (-3)
                                   , playerInitial = 10
                                   , playerAI = False
                                   , playerUI = True }
-                  , playerAntiHero { playerName = "Hunam Convict Pack"
-                                   , playerLeader = False }
+                  , playerCivilian { playerName = "Hunam Convict Pack"
+                                   , playerEntry = toEnum (-3) }
                   , playerAnimal { playerName =
                                      "Animal Magnificent Specimen Variety"
-                                 , playerInitial = 10 } ]
+                                 , playerEntry = toEnum (-4)
+                                 , playerInitial = 20 } ]
   , playersEnemy = [ ("Monster Tourist Office", "Hunam Convict Pack")
                    , ("Monster Tourist Office",
                       "Animal Magnificent Specimen Variety") ]
@@ -175,7 +176,7 @@ playersDefense = Players
                    , ("Yellow", "Animal Kingdom") ]
   , playersAlly = [("Monster Hive", "Animal Kingdom")] }
 
-playerHero, playerAntiHero, playerMonster, playerAnimal, playerHorror :: Player
+playerHero, playerAntiHero, playerCivilian, playerMonster, playerAnimal, playerHorror :: Player
 
 playerHero = Player
   { playerName = "Adventurer Party"
@@ -190,6 +191,17 @@ playerHero = Player
 
 playerAntiHero = playerHero
   { playerAI = True
+  , playerUI = False
+  }
+
+playerCivilian = Player
+  { playerName = "Civilian Crowd"
+  , playerFaction = "civilian"
+  , playerSpawn = 0
+  , playerEntry = toEnum (-1)
+  , playerInitial = 3
+  , playerLeader = False  -- unorganized
+  , playerAI = True
   , playerUI = False
   }
 
@@ -240,5 +252,5 @@ cavesAmbush = EM.fromList [(toEnum (-5), ("caveAmbush", Nothing))]
 
 cavesBattle = EM.fromList [(toEnum (-3), ("caveBattle", Nothing))]
 
-cavesSafari = EM.fromList [ (toEnum (-1), ("caveAmbush", Nothing))
-                          , (toEnum (-2), ("caveBattle", Just False)) ]
+cavesSafari = EM.fromList [ (toEnum (-3), ("caveAmbush", Nothing))
+                          , (toEnum (-4), ("caveBattle", Just False)) ]

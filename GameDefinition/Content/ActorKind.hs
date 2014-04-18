@@ -20,9 +20,9 @@ hero,        projectile, eye, fastEye, nose, armadillo, gilaMonster, komodoDrago
 
 hero = ActorKind
   { asymbol = '@'
-  , aname   = "hero"
+  , aname   = "civilian"  -- modified, except in the civilian faction
   , afreq   = [("hero", 1)]
-  , acolor  = BrWhite  -- modified if many hero factions
+  , acolor  = BrBlack  -- modified, except in the civilian faction
   , ahp     = 50
   , acalm   = 50
   , aspeed  = toSpeed 2
