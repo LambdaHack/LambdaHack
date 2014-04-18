@@ -125,7 +125,6 @@ deduceQuits body status@Status{stOutcome}
   | stOutcome `elem` [Defeated, Camping, Restart, Conquer] =
     assert `failure` "no quitting to deduce" `twith` (status, body)
 deduceQuits body status = do
-  cops <- getsState scops
   let fid = bfid body
       mapQuitF statusF fids = mapM_ (quitF Nothing statusF) $ delete fid fids
   quitF (Just body) status fid
@@ -137,18 +136,23 @@ deduceQuits body status = do
   factionD <- getsState sfactionD
   let assocsInGame = filter (inGame . snd) $ EM.assocs factionD
       keysInGame = map fst assocsInGame
-      assocsNotHorror = filter (not . isHorrorFact cops . snd) assocsInGame
+      keepArena fact = playerLeader (gplayer fact) && not (isSpawnFact fact)
+      assocsKeepArena = filter (keepArena . snd) assocsInGame
       assocsUI = filter (playerUI . gplayer . snd) assocsInGame
-  case assocsNotHorror of
+      worldPeace =
+        all (\(fid1, _) -> all (\(_, fact2) -> not $ isAtWar fact2 fid1)
+                           assocsInGame)
+        assocsInGame
+  case assocsKeepArena of
     _ | null assocsUI ->
       -- Only non-UI players left in the game and they all win.
       mapQuitF status{stOutcome=Conquer} keysInGame
     [] ->
-      -- Only horrors remain, so they win.
+      -- Only leaderless or spawners remain (the latter perhaps with no actors),
+      -- so they win, or we could end up in a state with no active arenas.
       mapQuitF status{stOutcome=Conquer} keysInGame
-    (_, fact1) : rest | all (not . isAtWar fact1 . fst) rest ->
+    _ | worldPeace ->
       -- Nobody is at war any more, so all win.
-      -- TODO: check not at war with each other.
       mapQuitF status{stOutcome=Conquer} keysInGame
     _ | stOutcome status == Escape -> do
       -- Otherwise, in a game with many warring teams alive,

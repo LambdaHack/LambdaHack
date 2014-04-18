@@ -167,7 +167,7 @@ pongUI = do
   fact <- getsState $ (EM.! side) . sfactionD
   let pong ats = return $ ReqUIPong ats
       underAI = playerAI $ gplayer fact
-  if escPressed && underAI then do
+  if escPressed && underAI && playerLeader (gplayer fact) then do
     -- Ask server to turn off AI for the faction's leader.
     let atomicCmd = UpdAtomic $ UpdAutoFaction side False
     pong [atomicCmd]

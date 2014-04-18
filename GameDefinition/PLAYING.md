@@ -209,9 +209,9 @@ the least spoilery and the most fun, e.g.:
 Monsters
 --------
 
-Heroes are not alone in the dungeon. Monsters roam the dark caves
-and crawl from damp holes day and night. While heroes pay attention
-to all other party members and take care to move one at a time,
+Heroes are not alone in the dungeon. Monsters, natural and unnatural,
+roam the dark caves and crawl from damp holes day and night. While heroes
+pay attention to all other party members and take care to move one at a time,
 monsters don't care about each other and all move at once,
 sometimes brutally colliding by accident.
 
@@ -220,10 +220,10 @@ melee combat occurs. The best weapon equipped by each opponent
 is taken into account for calculating bonus damage. The total damage
 the current hero can potentially inflict is displayed at the bottom
 of the screen. The total damage potential of a monster may change
-as it finds and picks up new weapons. Heroes and monsters running into
-one another (with the `SHIFT` key) do not inflict damage, but change places.
-This gives the opponent a free blow, but can improve the tactical situation
-or aid escape.
+as it finds and picks up new weapons, if it's capable of that.
+Heroes and monsters running into one another (with the `SHIFT` key)
+do not inflict damage, but change places. This gives the opponent a free blow,
+but can improve the tactical situation or aid escape.
 
 Slinging missiles at targets wounds them, consuming the weapon in the process.
 You may propel any item in your possession (press `?` to choose

@@ -113,8 +113,8 @@ playersPvP = Players
   , playersAlly = [] }
 
 playersCoop = Players
-  { playersList = [ playerHero { playerName = "Coral" }
-                  , playerHero { playerName = "Amber" }
+  { playersList = [ playerAntiHero { playerName = "Coral" }
+                  , playerAntiHero { playerName = "Amber" }
                   , playerAntiHero { playerName = "Green" }
                   , playerAntiHero { playerName = "Yellow" }
                   , playerAntiHero { playerName = "Cyan" }
@@ -122,8 +122,8 @@ playersCoop = Players
                                    , playerLeader = False }
                   , playerAntiHero { playerName = "Blue"
                                    , playerLeader = False }
-                  , playerMonster { playerUI = True }
-                  , playerMonster { playerName = "Neutral Monster Hive" }
+                  , playerAnimal { playerUI = True }
+                  , playerMonster
                   , playerMonster { playerName = "Leaderless Monster Hive"
                                   , playerLeader = False } ]
   , playersEnemy = [ ("Coral", "Monster Hive")
@@ -132,7 +132,8 @@ playersCoop = Players
                    , ("Yellow", "Monster Hive")
                    , ("Cyan", "Monster Hive")
                    , ("Red", "Monster Hive")
-                   , ("Blue", "Monster Hive") ]
+                   , ("Blue", "Monster Hive")
+                   , ("Animal Kingdom", "Leaderless Monster Hive") ]
   , playersAlly = [ ("Coral", "Amber")
                   , ("Green", "Yellow")
                   , ("Green", "Cyan")

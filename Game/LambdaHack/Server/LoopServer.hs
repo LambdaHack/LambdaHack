@@ -255,9 +255,11 @@ handleActors lid = do
       else do
         -- Clear messages in the UI client (if any), if the actor
         -- is a leader (which happens when a UI client is fully
-        -- computer-controlled). We could record history more often,
-        -- to avoid long reports, but we'd have to add -more- prompts.
-        let mainUIactor = playerUI (gplayer fact) && aidIsLeader
+        -- computer-controlled) or if faction is leaderless.
+        -- We could record history more often, to avoid long reports,
+        -- but we'd have to add -more- prompts.
+        let mainUIactor = playerUI (gplayer fact)
+                          && (aidIsLeader || not (playerLeader (gplayer fact)))
         when mainUIactor $ execUpdAtomic $ UpdRecordHistory side
         cmdS <- sendQueryAI side aid
         aidNew <- handleRequestAI side aid cmdS

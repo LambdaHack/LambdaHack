@@ -204,10 +204,12 @@ advanceTime aid = do
   cops <- getsState scops
   discoS <- getsServer sdisco
   b <- getsState $ getActorBody aid
+  fact <- getsState $ (EM.! bfid b) . sfactionD
   let t = ticksPerMeter $ bspeed b
   execUpdAtomic $ UpdAgeActor aid t
   unless (bproj b) $ do
-    if bcalm b == 0 && boldfid b /= bfid b then do
+    if bcalm b == 0 && boldfid b /= bfid b
+       && playerLeader (gplayer fact) then do  -- animals never dominated
       let execSfx = execSfxAtomic $ SfxEffect (boldfid b) aid Effect.Dominate
       execSfx
       dominateFid (boldfid b) aid
