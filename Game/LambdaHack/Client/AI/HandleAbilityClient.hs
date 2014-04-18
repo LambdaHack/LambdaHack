@@ -219,14 +219,14 @@ manageEqp aid = do
           let bestInv = strongestItem invAssocs $ pSymbol cops symbol
               bestEqp = strongestItems eqpKA $ pSymbol cops symbol
           in case (bestInv, bestEqp) of
-            (Just (_, (iidInv, _)), []) ->
+            (_, (_, (k, (iidEqp, itemEqp))) : _) | harmful body itemEqp ->
+              -- This item is harmful to this actor, take it off.
+              returN "yield harmful" $ ReqMoveItem iidEqp k CEqp CInv
+            (Just (_, (iidInv, itemInv)), []) | not $ harmful body itemInv ->
               returN "wield any" $ ReqMoveItem iidInv 1 CInv CEqp
             (Just (vInv, (iidInv, _)), (vEqp, _) : _)
               | vInv > vEqp ->
               returN "wield better" $ ReqMoveItem iidInv 1 CInv CEqp
-            (_, (_, (k, (iidEqp, itemEqp))) : _) | harmful body itemEqp ->
-              -- This item is harmful to this actor, take it off.
-              returN "yield harmful" $ ReqMoveItem iidEqp k CEqp CInv
             (_, (_, (k, (iidEqp, _))) : _) | k > 1 && rsharedInventory ->
               -- To share the best items with others.
               returN "yield rest" $ ReqMoveItem iidEqp (k - 1) CEqp CInv
