@@ -318,7 +318,9 @@ trigger aid fleeViaStairs = do
       ben feat = case feat of
         F.Cause (Effect.Ascend k) ->  -- change levels sensibly, in teams
           let expBenefit =
-                if unexploredCurrent
+                if not (playerLeader (gplayer fact))
+                then 100  -- not-exploring faction, switch at will
+                else if unexploredCurrent
                 then 0  -- don't leave the level until explored
                 else if unexploredD (signum k) (blid b)
                 then 1000

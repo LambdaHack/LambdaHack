@@ -134,8 +134,8 @@ accessCacheBfs aid target = do
   bfs <- getCacheBfs aid
   return $! accessBfs bfs target
 
--- | Furthest (wrt paths) known position, except under the actor.
-furthestKnown :: MonadClient m => ActorId -> m (Maybe Point)
+-- | Furthest (wrt paths) known position.
+furthestKnown :: MonadClient m => ActorId -> m Point
 furthestKnown aid = do
   bfs <- getCacheBfs aid
   getMaxIndex <- rndToAction $ oneOf [ PointArray.maxIndexA
@@ -144,9 +144,7 @@ furthestKnown aid = do
       dist = bfs PointArray.! furthestPos
   return $! if dist <= apartBfs
             then assert `failure` (aid, furthestPos, dist)
-            else if dist == succ apartBfs  -- bpos of aid
-                 then Nothing
-                 else Just furthestPos
+            else furthestPos
 
 -- | Closest reachable unknown tile position, if any.
 closestUnknown :: MonadClient m => ActorId -> m (Maybe Point)

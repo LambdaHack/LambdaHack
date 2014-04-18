@@ -32,6 +32,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
+import Game.LambdaHack.Content.ModeKind
 
 -- | AI proposes possible targets for the actor. Never empty.
 targetStrategy :: forall m. MonadClient m
@@ -149,6 +150,7 @@ targetStrategy oldLeader aid = do
                 case filter desirable citems of
                   [] -> do
                     let lidExplored = ES.member (blid b) explored
+                                      || not (playerLeader (gplayer fact))
                     upos <- if lidExplored
                             then return Nothing
                             else closestUnknown aid
@@ -160,15 +162,18 @@ targetStrategy oldLeader aid = do
                         case csuspect of
                           [] -> do
                             ctriggers <- if AbTrigger `elem` actorAbs
+                                            && playerLeader (gplayer fact)
                                          then closestTriggers Nothing False aid
                                          else return []
                             case ctriggers of
                               [] -> do
                                 getDistant <-
-                                  rndToAction $ oneOf
-                                  $ [fmap maybeToList . furthestKnown]
-                                    ++ [ closestTriggers Nothing True
-                                       | EM.size dungeon > 1 ]
+                                  if not (playerLeader (gplayer fact))
+                                  then return $ fmap (: []) . furthestKnown
+                                  else rndToAction $ oneOf
+                                       $ [fmap (: []) . furthestKnown]
+                                         ++ [ closestTriggers Nothing True
+                                            | EM.size dungeon > 1 ]
                                 kpos <- getDistant aid
                                 case kpos of
                                   [] -> return reject
