@@ -13,9 +13,9 @@ cdefs = ContentDef
   , getFreq = mfreq
   , validate = validateModeKind
   , content =
-      [campaign, skirmish, ambush, battle, pvp, coop, defense]
+      [campaign, skirmish, ambush, battle, safari, pvp, coop, defense]
   }
-campaign,        skirmish, ambush, battle, pvp, coop, defense :: ModeKind
+campaign,        skirmish, ambush, battle, safari, pvp, coop, defense :: ModeKind
 
 campaign = ModeKind
   { msymbol  = 'a'
@@ -49,6 +49,14 @@ battle = ModeKind
   , mcaves   = cavesBattle
   }
 
+safari = ModeKind
+  { msymbol  = 'f'
+  , mname    = "safari"
+  , mfreq    = [("safari", 1)]
+  , mplayers = playersSafari
+  , mcaves   = cavesSafari
+  }
+
 pvp = ModeKind
   { msymbol  = 'v'
   , mname    = "PvP"
@@ -74,7 +82,7 @@ defense = ModeKind
   }
 
 
-playersCampaign, playersSkirmish, playersBattle, playersPvP, playersCoop, playersDefense :: Players
+playersCampaign, playersSkirmish, playersBattle, playersSafari, playersPvP, playersCoop, playersDefense :: Players
 
 playersCampaign = Players
   { playersList = [ playerHero
@@ -102,6 +110,23 @@ playersBattle = Players
   , playersEnemy = [ ("Adventurer Party", "Monster Hive")
                    , ("Adventurer Party", "Animal Kingdom") ]
   , playersAlly = [("Monster Hive", "Animal Kingdom")] }
+
+playersSafari = Players
+  { playersList = [ playerMonster { playerName = "Monster Tourist Office"
+                                  , playerSpawn = 0
+                                  , playerEntry = toEnum 1
+                                  , playerInitial = 10
+                                  , playerAI = False
+                                  , playerUI = True }
+                  , playerAntiHero { playerName = "Hunam Convict Pack"
+                                   , playerLeader = False }
+                  , playerAnimal { playerName =
+                                     "Animal Magnificent Specimen Variety"
+                                 , playerInitial = 10 } ]
+  , playersEnemy = [ ("Monster Tourist Office", "Hunam Convict Pack")
+                   , ("Monster Tourist Office",
+                      "Animal Magnificent Specimen Variety") ]
+  , playersAlly = [] }
 
 playersPvP = Players
   { playersList = [ playerHero {playerName = "Red"}
@@ -202,7 +227,7 @@ playerHorror = Player
   }
 
 
-cavesCampaign, cavesSkirmish, cavesAmbush, cavesBattle :: Caves
+cavesCampaign, cavesSkirmish, cavesAmbush, cavesBattle, cavesSafari :: Caves
 
 cavesCampaign = EM.fromList [ (toEnum (-1), ("caveRogue", Just True))
                             , (toEnum (-2), ("caveRogue", Nothing))
@@ -214,3 +239,6 @@ cavesSkirmish = EM.fromList [(toEnum (-3), ("caveSkirmish", Nothing))]
 cavesAmbush = EM.fromList [(toEnum (-5), ("caveAmbush", Nothing))]
 
 cavesBattle = EM.fromList [(toEnum (-3), ("caveBattle", Nothing))]
+
+cavesSafari = EM.fromList [ (toEnum (-1), ("caveAmbush", Nothing))
+                          , (toEnum (-2), ("caveBattle", Just False)) ]

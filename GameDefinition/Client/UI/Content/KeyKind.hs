@@ -160,5 +160,7 @@ standardKeys = KeyKind
       , ("CTRL-s", (CmdDebug, GameSave))
       , ("CTRL-b", (CmdDebug, GameRestart "battle"))
           -- TODO: actors can get stuck forever among rocks
+      , ("CTRL-f", (CmdDebug, GameRestart "safari"))
+          -- TODO: actors can have too little space in rooms to generate
       ]
   }
