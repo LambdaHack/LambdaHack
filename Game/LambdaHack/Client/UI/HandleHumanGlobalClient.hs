@@ -433,18 +433,17 @@ verifyTrigger :: MonadClientUI m
               => ActorId -> F.Feature -> m (SlideOrCmd ())
 verifyTrigger leader feat = case feat of
   F.Cause Effect.Escape{} -> do
-    cops <- getsState scops
     b <- getsState $ getActorBody leader
     side <- getsClient sside
     fact <- getsState $ (EM.! side) . sfactionD
-    let isHero = isHeroFact cops fact
-    if not isHero then failWith
+    if isSpawnFact fact then failWith
       "This is the way out, but where would you go in this alien world?"
     else do
       go <- displayYesNo ColorFull "This is the way out. Really leave now?"
       if not go then failWith "Game resumed."
       else do
         (_, total) <- getsState $ calculateTotal b
+        -- TODO: check the sum of loot in the whole dungeon before complaining.
         if total == 0 then do
           -- The player can back off at each of these steps.
           go1 <- displayMore ColorBW

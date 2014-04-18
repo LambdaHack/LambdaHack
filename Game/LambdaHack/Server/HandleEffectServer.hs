@@ -496,11 +496,10 @@ switchLevels2 lidNew posNew ((aid, bOld), ais) mlead = do
 effectEscape :: (MonadAtomic m, MonadServer m) => ActorId -> m Bool
 effectEscape aid = do
   -- Obvious effect, nothing announced.
-  cops <- getsState scops
   b <- getsState $ getActorBody aid
   let fid = bfid b
   fact <- getsState $ (EM.! fid) . sfactionD
-  if not (isHeroFact cops fact) || bproj b then
+  if isSpawnFact fact || bproj b then
     return False
   else do
     deduceQuits b $ Status Escape (fromEnum $ blid b) ""

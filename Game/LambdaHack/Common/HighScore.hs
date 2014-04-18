@@ -138,13 +138,11 @@ register table total time status@Status{stOutcome} date difficulty gplayerName
       pSum = if stOutcome `elem` [Conquer, Escape]
              then pBase + fromIntegral pBonus
              else pBase
-      worthMentioning =
-        if fightsSpawners then total > 0 else not (EM.null theirVictims)
       points = (ceiling :: Double -> Int)
                $ pSum * 1.5 ^^ (- (difficultyCoeff difficulty))
       negTime = absoluteTimeNegate time
       score = ScoreRecord{..}
-  in (worthMentioning, insertPos score table)
+  in (points > 0, insertPos score table)
 
 -- | Show a screenful of the high scores table.
 -- Parameter height is the number of (3-line) scores to be shown.

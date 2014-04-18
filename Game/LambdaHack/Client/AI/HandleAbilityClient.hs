@@ -312,7 +312,6 @@ trigger aid fleeViaStairs = do
   let canSee = ES.member (bpos b) (totalVisible per)
       unexploredCurrent = ES.notMember (blid b) explored
       allExplored = ES.size explored == EM.size dungeon
-      isHero = isHeroFact cops fact
       t = lvl `at` bpos b
       feats = TileKind.tfeature $ okind t
       ben feat = case feat of
@@ -341,8 +340,10 @@ trigger aid fleeViaStairs = do
                      then 1000 * eben + 1  -- strongly prefer correct direction
                      else eben
         F.Cause ef@Effect.Escape{} ->  -- flee via this way, too
-          -- Only heroes escape but they first explore all for high score.
-          if not (isHero && allExplored) then 0 else effectToBenefit cops b ef
+          -- Only non-spawners escape but they first explore all for high score.
+          if isSpawnFact fact || not allExplored
+          then 0
+          else effectToBenefit cops b ef
         F.Cause ef | not fleeViaStairs -> effectToBenefit cops b ef
         _ -> 0
       benFeat = zip (map ben feats) feats
