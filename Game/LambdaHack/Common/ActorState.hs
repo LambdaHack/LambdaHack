@@ -235,6 +235,7 @@ getActorBag aid cstore s =
     CInv -> getInvBag b s
     CEqp -> beqp b
     CGround -> sdungeon s EM.! blid b `atI` bpos b
+    CBody -> bbody b
 
 getCAssocs :: Container -> State -> [(ItemId, Item)]
 getCAssocs c s = bagAssocs s $ getCBag c s

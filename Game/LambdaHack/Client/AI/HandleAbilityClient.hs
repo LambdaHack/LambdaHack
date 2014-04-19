@@ -428,6 +428,7 @@ applyItem aid applyGroup = do
                 Just ik -> IF.IsOff `notElem` ifeature (iokind ik)
             _ -> False
         ApplyAll -> True
+      coeff CBody = 3  -- never destroyed by use
       coeff CGround = 2
       coeff CEqp = 1
       coeff CInv = if applyGroup == QuenchLight then 0 else 1

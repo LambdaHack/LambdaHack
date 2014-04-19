@@ -122,6 +122,7 @@ cmdDescription cmd = case cmd of
   DescribeItem CInv -> "describe shared inventory of the party"
   DescribeItem CEqp -> "describe personal equipment of the leader"
   DescribeItem CGround -> "describe items on the ground"
+  DescribeItem CBody -> "describe body parts"
   AllOwned    -> "describe all owned items"
   SelectActor -> "select (or deselect) a party member"
   SelectNone  -> "deselect (or select) all on the level"

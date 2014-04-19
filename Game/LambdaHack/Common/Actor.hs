@@ -50,6 +50,7 @@ data Actor = Actor
   , boldlid     :: !LevelId              -- ^ previous level
   , binv        :: !ItemBag              -- ^ personal inventory
   , beqp        :: !ItemBag              -- ^ personal equipment
+  , bbody       :: !ItemBag              -- ^ body parts
   , btime       :: !Time                 -- ^ absolute time of next action
   , bwait       :: !Bool                 -- ^ is the actor waiting right now?
   , bfid        :: !FactionId            -- ^ faction the actor belongs to
@@ -91,6 +92,7 @@ actorTemplate bkind bsymbol bname bcolor bspeed bhp bcalm btrajectory
   let boldpos = Point 0 0  -- make sure /= bpos, to tell it didn't switch level
       boldlid = blid
       binv    = EM.empty
+      bbody   = EM.empty
       bwait   = False
       boldfid = bfid
       bradius = 12
@@ -172,6 +174,7 @@ ppCStore rsharedInventory CInv = if rsharedInventory
                                  then "in shared inventory"
                                  else "in inventory"
 ppCStore _ CGround = "on the ground"
+ppCStore _ CBody = "in the body"
 
 ppContainer :: Bool -> Container -> Text
 ppContainer _ CFloor{} = "on the ground nearby"
@@ -194,6 +197,7 @@ instance Binary Actor where
     put boldlid
     put binv
     put beqp
+    put bbody
     put btime
     put bwait
     put bfid
@@ -216,6 +220,7 @@ instance Binary Actor where
     boldlid <- get
     binv <- get
     beqp <- get
+    bbody <- get
     btime <- get
     bwait <- get
     bfid <- get

@@ -63,6 +63,7 @@ actorConts iid k aid cstore = case cstore of
   CInv -> do
     invs <- actorInvs iid k aid
     return $! map (\(n, aid2) -> (n, CActor aid2 CInv)) invs
+  CBody -> return [(k, CActor aid CBody)]
 
 -- TODO: make a field of Faction?
 fightsAgainstSpawners :: MonadStateRead m => FactionId -> m Bool

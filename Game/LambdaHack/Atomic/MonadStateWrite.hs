@@ -76,6 +76,7 @@ insertItemActor iid k aid cstore = case cstore of
     insertItemFloor iid k (blid b) (bpos b)
   CEqp -> insertItemEqp iid k aid
   CInv -> insertItemInv iid k aid
+  CBody -> insertItemBody iid k aid
 
 insertItemEqp :: MonadStateWrite m => ItemId -> Int -> ActorId -> m ()
 insertItemEqp iid k aid = do
@@ -88,6 +89,12 @@ insertItemInv iid k aid = do
   let bag = EM.singleton iid k
       upd = EM.unionWith (+) bag
   updateActor aid $ \b -> b {binv = upd (binv b)}
+
+insertItemBody :: MonadStateWrite m => ItemId -> Int -> ActorId -> m ()
+insertItemBody iid k aid = do
+  let bag = EM.singleton iid k
+      upd = EM.unionWith (+) bag
+  updateActor aid $ \b -> b {bbody = upd (bbody b)}
 
 deleteItemContainer :: MonadStateWrite m
                     => ItemId -> Int -> Container -> m ()
@@ -112,6 +119,7 @@ deleteItemActor iid k aid cstore = case cstore of
     deleteItemFloor iid k (blid b) (bpos b)
   CEqp -> deleteItemEqp iid k aid
   CInv -> deleteItemInv iid k aid
+  CBody -> deleteItemBody iid k aid
 
 deleteItemEqp :: MonadStateWrite m => ItemId -> Int -> ActorId -> m ()
 deleteItemEqp iid k aid = do
@@ -120,6 +128,10 @@ deleteItemEqp iid k aid = do
 deleteItemInv :: MonadStateWrite m => ItemId -> Int -> ActorId -> m ()
 deleteItemInv iid k aid = do
   updateActor aid $ \b -> b {binv = rmFromBag k iid (binv b)}
+
+deleteItemBody :: MonadStateWrite m => ItemId -> Int -> ActorId -> m ()
+deleteItemBody iid k aid = do
+  updateActor aid $ \b -> b {bbody = rmFromBag k iid (bbody b)}
 
 rmFromBag :: Int -> ItemId -> ItemBag -> ItemBag
 rmFromBag k iid bag =
