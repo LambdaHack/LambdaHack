@@ -15,15 +15,15 @@ cdefs = ContentDef
   , getFreq = afreq
   , validate = validateActorKind
   , content =
-      [hero, projectile, eye, fastEye, nose, armadillo, gilaMonster, komodoDragon, hyena, alligator]
+      [warrior, adventurer, blacksmith, woodman, clerk, hairdresser, lawyer, peddler, taxCollector, projectile, eye, fastEye, nose, armadillo, gilaMonster, komodoDragon, hyena, alligator]
   }
-hero,        projectile, eye, fastEye, nose, armadillo, gilaMonster, komodoDragon, hyena, alligator :: ActorKind
+warrior,        adventurer, blacksmith, woodman, clerk, hairdresser, lawyer, peddler, taxCollector, projectile, eye, fastEye, nose, armadillo, gilaMonster, komodoDragon, hyena, alligator :: ActorKind
 
-hero = ActorKind
+warrior = ActorKind
   { asymbol = '@'
-  , aname   = "civilian"  -- modified, except in the civilian faction
-  , afreq   = [("hero", 1)]
-  , acolor  = BrBlack  -- modified, except in the civilian faction
+  , aname   = "warrior"  -- modified if in hero faction
+  , afreq   = [("hero", 1), ("civilian", 1)]
+  , acolor  = BrBlack  -- modified if in hero faction
   , ahp     = 50
   , acalm   = 50
   , aspeed  = toSpeed 2
@@ -34,6 +34,24 @@ hero = ActorKind
   , acanDo  = [minBound..maxBound]
   , aitems  = [("fist", CBody), ("foot", CBody)]
   }
+adventurer = warrior
+  { aname   = "adventurer" }
+blacksmith = warrior
+  { aname   = "blacksmith"  }
+woodman = warrior
+  { aname   = "woodman"  }
+
+clerk = warrior
+  { aname   = "clerk"
+  , afreq   = [("civilian", 1)] }
+hairdresser = clerk
+  { aname   = "hairdresser" }
+lawyer = clerk
+  { aname   = "lawyer" }
+peddler = clerk
+  { aname   = "peddler" }
+taxCollector = clerk
+  { aname   = "tax collector" }
 
 projectile = ActorKind  -- includes homing missiles
   { asymbol = '*'
@@ -96,6 +114,7 @@ nose = ActorKind
   , acanDo  = [minBound..maxBound]
   , aitems  = [("nose tip", CBody), ("lip", CBody)]
   }
+
 armadillo = ActorKind
   { asymbol = 'a'
   , aname   = "giant armadillo"

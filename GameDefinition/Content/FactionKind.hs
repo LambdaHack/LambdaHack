@@ -27,7 +27,7 @@ hero = FactionKind
 
 civilian = FactionKind
   { fsymbol        = '@'
-  , fname          = "hero"
+  , fname          = "civilian"
   , ffreq          = [("civilian", 1)]
   , fAbilityLeader = allAbilities
   , fAbilityOther  = allAbilities  -- not coordinated by any leadership
