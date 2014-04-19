@@ -31,6 +31,7 @@ data ActorKind = ActorKind
   , aiq     :: !Int        -- ^ intelligence
   , aregen  :: !Int        -- ^ number of turns to regenerate 1 HP
   , acanDo  :: ![Ability]  -- ^ the set of supported abilities
+  , aitems  :: ![(Text, CStore)]  -- ^ initial items
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53
 

@@ -20,10 +20,10 @@ cdefs = ContentDef
   , getFreq = ifreq
   , validate = validateItemKind
   , content =
-      [amulet, brassLantern, dart, gem1, gem2, gem3, currency, harpoon, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke]
+      [amulet, brassLantern, dart, gem1, gem2, gem3, currency, harpoon, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke]
       ++ map makeIsOff [brassLantern, oilLamp, woodenTorch]
   }
-amulet,        brassLantern, dart, gem1, gem2, gem3, currency, harpoon, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke :: ItemKind
+amulet,        brassLantern, dart, gem1, gem2, gem3, currency, harpoon, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke :: ItemKind
 
 gem, potion, scroll, wand :: ItemKind  -- generic templates
 
@@ -240,28 +240,127 @@ woodenTorch = ItemKind
 fist = sword
   { isymbol  = '@'
   , iname    = "fist"
-  , ifreq    = [("hth", 1), ("unarmed", 100)]
+  , ifreq    = [("fist", 100)]
+  , icount   = 2
   , iverbApply   = "punch"
-  , iverbProject = "ERROR, please report: iverbProject fist"
+  , iverbProject = "ERROR, please report: iverbProject"
   , ifeature = [Cause $ Hurt (5 * d 1) 0]
   , idesc    = ""
   }
-foot = sword
+foot = fist
   { isymbol  = '@'
   , iname    = "foot"
-  , ifreq    = [("hth", 1), ("unarmed", 50)]
+  , ifreq    = [("foot", 50)]
+  , icount   = 2
   , iverbApply   = "kick"
-  , iverbProject = "ERROR, please report: iverbProject foot"
   , ifeature = [Cause $ Hurt (5 * d 1) 0]
   , idesc    = ""
   }
-tentacle = sword
-  { isymbol  = 'S'
+tentacle = fist
+  { isymbol  = '@'
   , iname    = "tentacle"
-  , ifreq    = [("hth", 1), ("monstrous", 100)]
-  , iverbApply   = "hit"
-  , iverbProject = "ERROR, please report: iverbProject tentacle"
+  , ifreq    = [("tentacle", 50)]
+  , icount   = 4
+  , iverbApply   = "slap"
   , ifeature = [Cause $ Hurt (5 * d 1) 0]
+  , idesc    = ""
+  }
+lash = fist
+  { isymbol  = '@'
+  , iname    = "lash"
+  , ifreq    = [("lash", 100)]
+  , icount   = 1
+  , iverbApply   = "lash"
+  , ifeature = [Cause $ Hurt (5 * d 1) 0]
+  , idesc    = ""
+  }
+noseTip = fist
+  { isymbol  = '@'
+  , iname    = "nose tip"
+  , ifreq    = [("nose tip", 50)]
+  , icount   = 1
+  , iverbApply   = "poke"
+  , ifeature = [Cause $ Hurt (2 * d 1) 0]
+  , idesc    = ""
+  }
+lip = fist
+  { isymbol  = '@'
+  , iname    = "lip"
+  , ifreq    = [("lip", 10)]
+  , icount   = 2
+  , iverbApply   = "lap"
+  , ifeature = [Cause $ Hurt (1 * d 1) 0]
+  , idesc    = ""
+  }
+claw = fist
+  { isymbol  = '@'
+  , iname    = "claw"
+  , ifreq    = [("claw", 50)]
+  , icount   = 2  -- even if more, only the fore claws used for fighting
+  , iverbApply   = "slash"
+  , ifeature = [Cause $ Hurt (5 * d 1) 0]
+  , idesc    = ""
+  }
+smallClaw = fist
+  { isymbol  = '@'
+  , iname    = "small claw"
+  , ifreq    = [("small claw", 10)]
+  , icount   = 2
+  , iverbApply   = "slash"
+  , ifeature = [Cause $ Hurt (2 * d 1) 0]
+  , idesc    = ""
+  }
+snout = fist
+  { isymbol  = '@'
+  , iname    = "snout"
+  , ifreq    = [("snout", 10)]
+  , iverbApply   = "bite"
+  , ifeature = [Cause $ Hurt (2 * d 1) 0]
+  , idesc    = ""
+  }
+venomTooth = fist
+  { isymbol  = '@'
+  , iname    = "venom tooth"
+  , ifreq    = [("venom tooth", 100)]
+  , icount   = 2
+  , iverbApply   = "bite"
+  , ifeature = [Cause $ Hurt (3 * d 1) 7]
+  , idesc    = ""
+  }
+venomFang = fist
+  { isymbol  = '@'
+  , iname    = "venom fang"
+  , ifreq    = [("venom fang", 100)]
+  , icount   = 2
+  , iverbApply   = "bite"
+  , ifeature = [Cause $ Hurt (3 * d 1) 12]
+  , idesc    = ""
+  }
+largeTail = fist
+  { isymbol  = '@'
+  , iname    = "large tail"
+  , ifreq    = [("large tail", 50)]
+  , icount   = 1
+  , iverbApply   = "knock"
+  , ifeature = [Cause $ Hurt (7 * d 1) 0]
+  , idesc    = ""
+  }
+jaw = fist
+  { isymbol  = '@'
+  , iname    = "jaw"
+  , ifreq    = [("jaw", 20)]
+  , icount   = 1
+  , iverbApply   = "rip"
+  , ifeature = [Cause $ Hurt (5 * d 1) 0]
+  , idesc    = ""
+  }
+largeJaw = fist
+  { isymbol  = '@'
+  , iname    = "large jaw"
+  , ifreq    = [("large jaw", 100)]
+  , icount   = 1
+  , iverbApply   = "crush"
+  , ifeature = [Cause $ Hurt (10 * d 1) 0]
   , idesc    = ""
   }
 fragrance = ItemKind

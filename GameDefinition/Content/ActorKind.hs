@@ -4,6 +4,7 @@ module Content.ActorKind ( cdefs ) where
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Common.Dice
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ActorKind
 
@@ -31,6 +32,7 @@ hero = ActorKind
   , aiq     = 15
   , aregen  = maxBound
   , acanDo  = [minBound..maxBound]
+  , aitems  = [("fist", CBody), ("foot", CBody)]
   }
 
 projectile = ActorKind  -- includes homing missiles
@@ -46,6 +48,7 @@ projectile = ActorKind  -- includes homing missiles
   , aiq     = 0
   , aregen  = maxBound
   , acanDo  = []
+  , aitems  = []
   }
 
 eye = ActorKind
@@ -61,6 +64,7 @@ eye = ActorKind
   , aiq     = 8
   , aregen  = maxBound
   , acanDo  = [minBound..maxBound]
+  , aitems  = [("lash", CBody), ("tentacle", CBody)]
   }
 fastEye = ActorKind
   { asymbol = 'e'
@@ -75,6 +79,7 @@ fastEye = ActorKind
   , aiq     = 12
   , aregen  = 10  -- Regenerates fast (at max HP most of the time!).
   , acanDo  = [minBound..maxBound]
+  , aitems  = [("lash", CBody), ("tentacle", CBody), ("tentacle", CBody)]
   }
 nose = ActorKind
   { asymbol = 'n'
@@ -89,6 +94,7 @@ nose = ActorKind
   , aiq     = 0
   , aregen  = maxBound
   , acanDo  = [minBound..maxBound]
+  , aitems  = [("nose tip", CBody), ("lip", CBody)]
   }
 armadillo = ActorKind
   { asymbol = 'a'
@@ -98,25 +104,27 @@ armadillo = ActorKind
   , ahp     = 17 * d 4
   , acalm   = 50
   , aspeed  = toSpeed 1.8
-  , asight  = True
-  , asmell  = False
-  , aiq     = 0
+  , asight  = False
+  , asmell  = True
+  , aiq     = 2
   , aregen  = maxBound
   , acanDo  = [minBound..maxBound]
+  , aitems  = [("claw", CBody), ("snout", CBody)]
   }
 gilaMonster = ActorKind
   { asymbol = 'g'
   , aname   = "Gila monster"
   , afreq   = [("animal", 10), ("horror", 10)]
   , acolor  = BrYellow
-  , ahp     = 5 * d 4
+  , ahp     = 4 * d 4
   , acalm   = 50
   , aspeed  = toSpeed 1.5
   , asight  = True
-  , asmell  = False
+  , asmell  = True
   , aiq     = 0
   , aregen  = 20
   , acanDo  = [minBound..maxBound]
+  , aitems  = [("venom tooth", CBody), ("small claw", CBody)]
   }
 komodoDragon = ActorKind
   { asymbol = 'd'
@@ -126,11 +134,13 @@ komodoDragon = ActorKind
   , ahp     = 17 * d 4
   , acalm   = 50
   , aspeed  = toSpeed 2.5
-  , asight  = True
-  , asmell  = False
+  , asight  = True  -- low sight radius, bad hearing
+  , asmell  = True
   , aiq     = 0
   , aregen  = 40
   , acanDo  = [minBound..maxBound]
+  , aitems  = [("large tail", CBody), ("jaw", CBody), ("small claw", CBody)]
+                -- also, scales
   }
 hyena = ActorKind
   { asymbol = 'h'
@@ -141,10 +151,11 @@ hyena = ActorKind
   , acalm   = 50
   , aspeed  = toSpeed 3.5
   , asight  = True
-  , asmell  = False
-  , aiq     = 0
+  , asmell  = True
+  , aiq     = 5
   , aregen  = maxBound
   , acanDo  = [minBound..maxBound]
+  , aitems  = [("jaw", CBody)]
   }
 alligator = ActorKind
   { asymbol = 'a'
@@ -159,4 +170,5 @@ alligator = ActorKind
   , aiq     = 0
   , aregen  = maxBound
   , acanDo  = [minBound..maxBound]
+  , aitems  = [("largeJaw", CBody), ("large tail", CBody), ("claw", CBody)]
   }
