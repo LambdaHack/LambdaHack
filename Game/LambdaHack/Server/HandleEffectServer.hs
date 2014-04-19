@@ -34,6 +34,7 @@ import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Content.ActorKind
 import Game.LambdaHack.Content.FactionKind
 import Game.LambdaHack.Content.ItemKind
+import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.CommonServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.PeriodicServer
@@ -498,8 +499,9 @@ effectEscape aid = do
   -- Obvious effect, nothing announced.
   b <- getsState $ getActorBody aid
   let fid = bfid b
+      keepArena fact = playerLeader (gplayer fact) && not (isSpawnFact fact)
   fact <- getsState $ (EM.! fid) . sfactionD
-  if isSpawnFact fact || bproj b then
+  if not (keepArena fact) || bproj b then
     return False
   else do
     deduceQuits b $ Status Escape (fromEnum $ blid b) ""

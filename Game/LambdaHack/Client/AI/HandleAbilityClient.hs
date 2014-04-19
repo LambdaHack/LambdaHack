@@ -340,9 +340,11 @@ trigger aid fleeViaStairs = do
                   in if fleeViaStairs
                      then 1000 * eben + 1  -- strongly prefer correct direction
                      else eben
-        F.Cause ef@Effect.Escape{} ->  -- flee via this way, too
+        F.Cause ef@Effect.Escape{} -> do  -- flee via this way, too
           -- Only non-spawners escape but they first explore all for high score.
-          if isSpawnFact fact || not allExplored
+          let keepArena fact1 = playerLeader (gplayer fact1)
+                               && not (isSpawnFact fact1)
+          if not (keepArena fact) || not allExplored
           then 0
           else effectToBenefit cops b ef
         F.Cause ef | not fleeViaStairs -> effectToBenefit cops b ef
