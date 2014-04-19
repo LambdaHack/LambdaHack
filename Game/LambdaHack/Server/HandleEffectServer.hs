@@ -48,22 +48,21 @@ import Game.LambdaHack.Server.State
 -- is mutually recursive with @effect@ and so it's a part of @Effect@
 -- semantics.
 itemEffect :: (MonadAtomic m, MonadServer m)
-           => ActorId -> ActorId -> Maybe ItemId -> Item -> CStore
+           => ActorId -> ActorId -> ItemId -> Item -> CStore
            -> m ()
-itemEffect source target miid item cstore = do
+itemEffect source target iid item cstore = do
   postb <- getsState $ getActorBody source
   discoS <- getsServer sdisco
   let ik = fromJust $ jkind discoS item
       ef = jeffect item
-      miidCstore = fmap (, cstore) miid
+      miidCstore = Just (iid, cstore)
   b <- effectSem ef source target miidCstore
   -- The effect is interesting so the item gets identified, if seen
   -- (the item was at the source actor's position, so his old position
   -- is given, since the actor and/or the item may be moved by the effect;
   -- we'd need to track not only position of atomic commands and factions,
   -- but also which items they relate to, to be fully accurate).
-  let atomic iid = execUpdAtomic $ UpdDiscover (blid postb) (bpos postb) iid ik
-  when b $ maybe skip atomic miid
+  when b $ execUpdAtomic $ UpdDiscover (blid postb) (bpos postb) iid ik
 
 -- | The source actor affects the target actor, with a given effect and power.
 -- Both actors are on the current level and can be the same actor.

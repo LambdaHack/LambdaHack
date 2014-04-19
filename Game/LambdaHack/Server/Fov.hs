@@ -107,11 +107,11 @@ litByItems :: Discovery -> FovMode -> Level -> Point -> State
 litByItems disco fovMode lvl p s iis =
   let cops@Kind.COps{cotile} = scops s
   in case strongestBurn cops disco iis of
-    Just (radius, _) ->
+    (radius, _) : _ ->
       let scan = fullscan cotile fovMode radius p lvl
       -- Optimization: filter out positions that already have ambient light.
       in filter (\pos -> not $ Tile.isLit cotile $ lvl `at` pos) scan
-    Nothing -> []
+    [] -> []
 
 -- | Compute all lit positions on a level.
 litOnLevel :: Discovery -> FovMode -> LevelId -> Level -> State
@@ -120,8 +120,11 @@ litOnLevel disco fovMode lid lvl s =
   let -- Compute positions lit by the actor. Note that the actor can be blind
       -- or a projectile, in which case he doesn't see his own light
       -- (but others, from his or other factions, possibly do).
-      litEqp b = litByItems disco fovMode lvl (bpos b) s (bagAssocs s $ beqp b)
-      litFromActors = concatMap litEqp $ actorList (const True) lid s
+      eqpAssocs b = bagAssocs s $ beqp b
+      bodyAssocs b = bagAssocs s $ bbody b
+      allAssocs b = eqpAssocs b ++ bodyAssocs b
+      liActor b = litByItems disco fovMode lvl (bpos b) s (allAssocs b)
+      litFromActors = concatMap liActor $ actorList (const True) lid s
       -- Compute positions lit by floor items.
       litFloorBag (p, bag) = litByItems disco fovMode lvl p s (bagAssocs s bag)
       litFromFloor = concatMap litFloorBag $ EM.assocs $ lfloor lvl

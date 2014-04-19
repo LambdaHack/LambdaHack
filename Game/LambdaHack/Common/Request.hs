@@ -68,6 +68,7 @@ data ReqFailure =
     MoveNothing
   | MeleeSelf
   | MeleeDistant
+  | MeleeNoWeapon
   | DisplaceDistant
   | DisplaceAccess
   | DisplaceProjectiles
@@ -93,6 +94,7 @@ showReqFailure reqFailure = case reqFailure of
   MoveNothing -> "wasting time on moving into obstacle"
   MeleeSelf -> "trying to melee oneself"
   MeleeDistant -> "trying to melee a distant foe"
+  MeleeNoWeapon -> "trying to melee without a weapon nor combat body part"
   DisplaceDistant -> "trying to switch places with a distant actor"
   DisplaceAccess -> "switching places without access"
   DisplaceProjectiles -> "trying to switch places with multiple projectiles"

@@ -286,15 +286,17 @@ drawLeaderDamage cops s sdisco mleader width =
       stats = case mleader of
         Just leader ->
           let eqpAssocs = getActorAssocs leader CEqp s
-              damage = case Item.strongestSword cops sdisco eqpAssocs of
-                Just (_, (_, sw)) ->
+              bodyAssocs = getActorAssocs leader CBody s
+              allAssocs = eqpAssocs ++ bodyAssocs
+              damage = case Item.strongestSword cops sdisco allAssocs of
+                (_, (_, sw)) : _->
                   case Item.jkind sdisco sw of
                     Just _ ->
                       case jeffect sw of
                         Hurt dice p -> tshow dice <> "+" <> tshow p
                         _ -> ""
-                    Nothing -> "5d1"  -- TODO: ?
-                Nothing -> "5d1"  -- TODO; use the item 'fist'
+                    Nothing -> "???"
+                [] -> "0"
           in damage
         Nothing -> ""
   in if T.null stats || T.length stats >= width then []

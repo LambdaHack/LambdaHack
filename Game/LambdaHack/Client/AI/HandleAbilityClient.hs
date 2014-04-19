@@ -223,9 +223,9 @@ manageEqp aid = do
             (_, (_, (k, (iidEqp, itemEqp))) : _) | harmful body itemEqp ->
               -- This item is harmful to this actor, take it off.
               returN "yield harmful" $ ReqMoveItem iidEqp k CEqp CInv
-            (Just (_, (iidInv, itemInv)), []) | not $ harmful body itemInv ->
+            ( (_, (iidInv, itemInv)) : _, []) | not $ harmful body itemInv ->
               returN "wield any" $ ReqMoveItem iidInv 1 CInv CEqp
-            (Just (vInv, (iidInv, _)), (vEqp, _) : _)
+            ((vInv, (iidInv, _)) : _, (vEqp, _) : _)
               | vInv > vEqp ->
               returN "wield better" $ ReqMoveItem iidInv 1 CInv CEqp
             (_, (_, (k, (iidEqp, _))) : _) | k > 1 && rsharedInventory ->

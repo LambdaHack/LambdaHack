@@ -22,8 +22,6 @@ import Game.LambdaHack.Atomic
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.ClientOptions
-import qualified Game.LambdaHack.Common.Dice as Dice
-import Game.LambdaHack.Common.Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Item
@@ -33,6 +31,7 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -166,7 +165,7 @@ reqMove source dir = do
 -- attack the one specified.
 reqMelee :: (MonadAtomic m, MonadServer m) => ActorId -> ActorId -> m ()
 reqMelee source target = do
-  cops@Kind.COps{coitem=coitem@Kind.Ops{opick, okind}} <- getsState scops
+  cops <- getsState scops
   discoS <- getsServer sdisco
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
@@ -179,46 +178,41 @@ reqMelee source target = do
         tfid = bfid tb
     sfact <- getsState $ (EM.! sfid) . sfactionD
     eqpAssocs <- getsState $ getActorAssocs source CEqp
+    bodyAssocs <- getsState $ getActorAssocs source CBody
+    let allAssocs = eqpAssocs ++ bodyAssocs
     ais <- getsState $ getCarriedAssocs sb
-    (miid, item) <-
+    miidItem <-
       if bproj sb   -- projectile
       then case ais of
-        [(iid, item)] -> return (Just iid, item)
+        [(iid, item)] -> return $ Just (iid, item)
         _ -> assert `failure` "projectile with wrong items" `twith` ais
-      else case strongestSword cops discoS eqpAssocs of
-        Just (_, (iid, w)) -> return (Just iid, w)  -- weapon combat
-        Nothing -> do  -- hand to hand combat
-          let isHero = isHeroFact cops sfact
-              h2hGroup | isHero = "unarmed"
-                       | otherwise = "monstrous"
-          h2hKind <- rndToAction $ fmap (fromMaybe $ assert `failure` h2hGroup)
-                                   $ opick h2hGroup (const True)
-          flavour <- getsServer sflavour
-          discoRev <- getsServer sdiscoRev
-          let kind = okind h2hKind
-          let kindEffect = case causeIEffects coitem h2hKind of
-                [] -> NoEffect
-                eff : _TODO -> eff
-              effect = fmap Dice.maxDice kindEffect
-          return ( Nothing
-                 , buildItem flavour discoRev h2hKind kind effect )
-    -- Incapacitated actors can't block.
-    let block = braced tb && bhp tb > 0
-        hitA = if block then HitBlock else Hit
-    execSfxAtomic $ SfxStrike source target item hitA
-    -- Deduct a hitpoint for a pierce of a projectile.
-    when (bproj sb) $ execUpdAtomic $ UpdHealActor source (-1)
-    -- Msgs inside itemEffect describe the target part.
-    itemEffect source target miid item CEqp
-    -- The only way to start a war is to slap an enemy. Being hit by
-    -- and hitting projectiles count as unintentional friendly fire.
-    let friendlyFire = bproj sb || bproj tb
-        fromDipl = EM.findWithDefault Unknown tfid (gdipl sfact)
-    unless (friendlyFire
-            || isAtWar sfact tfid  -- already at war
-            || isAllied sfact tfid  -- allies never at war
-            || sfid == tfid) $
-      execUpdAtomic $ UpdDiplFaction sfid tfid fromDipl War
+      else case strongestSword cops discoS allAssocs of
+        [] -> return Nothing -- no weapon nor combat body part
+        iis@((maxS, _) : _) -> do
+          let maxIis = map snd $ takeWhile ((==maxS) . fst) iis
+          -- TODO: pick the item according to the frequency of its kind.
+          iidItem <- rndToAction $ oneOf maxIis
+          return $ Just iidItem
+    case miidItem of
+      Nothing -> execFailure source req MeleeNoWeapon
+      Just (iid, item) -> do
+        -- Incapacitated actors can't block.
+        let block = braced tb && bhp tb > 0
+            hitA = if block then HitBlock else Hit
+        execSfxAtomic $ SfxStrike source target item hitA
+        -- Deduct a hitpoint for a pierce of a projectile.
+        when (bproj sb) $ execUpdAtomic $ UpdHealActor source (-1)
+        -- Msgs inside itemEffect describe the target part.
+        itemEffect source target iid item CEqp
+        -- The only way to start a war is to slap an enemy. Being hit by
+        -- and hitting projectiles count as unintentional friendly fire.
+        let friendlyFire = bproj sb || bproj tb
+            fromDipl = EM.findWithDefault Unknown tfid (gdipl sfact)
+        unless (friendlyFire
+                || isAtWar sfact tfid  -- already at war
+                || isAllied sfact tfid  -- allies never at war
+                || sfid == tfid) $
+          execUpdAtomic $ UpdDiplFaction sfid tfid fromDipl War
 
 -- * ReqDisplace
 
@@ -388,7 +382,7 @@ reqApply aid iid cstore = do
           cs <- actorConts iid 1 aid cstore
           mapM_ (\(_, c) -> execUpdAtomic $ UpdDestroyItem iid item 1 c) cs
           execSfxAtomic $ SfxActivate aid iid 1
-        itemEffect aid aid (Just iid) item cstore
+        itemEffect aid aid iid item cstore
       req = ReqApply iid cstore
   if cstore /= CInv then applyItem
   else do

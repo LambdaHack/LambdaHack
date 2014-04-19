@@ -108,7 +108,9 @@ posToActors pos lid s =
   let as = actorAssocs (const True) lid s
       aps = filter (\(_, b) -> bpos b == pos) as
       g (aid, b) = ( (aid, b)
-                   , bagAssocs s (binv b) ++ bagAssocs s (beqp b) )
+                   , bagAssocs s (binv b)
+                     ++ bagAssocs s (beqp b)
+                     ++ bagAssocs s (bbody b) )
       l = map g aps
   in assert (length l <= 1 || all (bproj . snd . fst) l
              `blame` "many actors at the same position" `twith` l)
@@ -209,7 +211,8 @@ getActorBody aid s =
   $ EM.lookup aid $ sactorD s
 
 getCarriedAssocs :: Actor -> State -> [(ItemId, Item)]
-getCarriedAssocs b s = bagAssocs s $ EM.unionWith (+) (binv b) (beqp b)
+getCarriedAssocs b s =
+  bagAssocs s $ EM.unionsWith (+) [binv b, beqp b, bbody b]
 
 getEqpKA :: Actor -> State -> [(Int, (ItemId, Item))]
 getEqpKA b s =
@@ -270,12 +273,14 @@ regenHPPeriod cops disco b s =
   let Kind.COps{coactor=Kind.Ops{okind}} = scops s
       ak = okind $ bkind b
       eqpAssocs = bagAssocs s $ beqp b
-      regenPeriod = case strongestRegen cops disco eqpAssocs of
-        Just (k, _)  ->
+      bodyAssocs = bagAssocs s $ bbody b
+      allAssocs = eqpAssocs ++ bodyAssocs
+      regenPeriod = case strongestRegen cops disco allAssocs of
+        (k, _) : _ ->
           let slowBaseRegen = 1000
               ar = if aregen ak == maxBound then slowBaseRegen else aregen ak
           in max 1 $ ar `div` (k + 1)
-        Nothing -> if aregen ak == maxBound then 0 else aregen ak
+        [] -> if aregen ak == maxBound then 0 else aregen ak
       maxDeltaHP = Dice.maxDice (ahp ak) - bhp b
   in if maxDeltaHP > 0 then regenPeriod else 0
 
@@ -284,9 +289,11 @@ regenCalmDelta cops disco b s =
   let Kind.COps{coactor=Kind.Ops{okind}} = scops s
       ak = okind $ bkind b
       eqpAssocs = bagAssocs s $ beqp b
-      calmIncr = case strongestStead cops disco eqpAssocs of
-        Just (k, _)  -> k + 1
-        Nothing -> 1
+      bodyAssocs = bagAssocs s $ bbody b
+      allAssocs = eqpAssocs ++ bodyAssocs
+      calmIncr = case strongestStead cops disco allAssocs of
+        (k, _) : _ -> k + 1
+        [] -> 1
       maxDeltaCalm = Dice.maxDice (acalm ak) - bcalm b
       -- Worry actor by enemies felt (even if not seen)
       -- on the level within 3 tiles.
@@ -302,10 +309,12 @@ actorInDark cops disco b s =
   let Kind.COps{cotile} = scops s
       lvl = (EM.! blid b) . sdungeon $ s
       eqpAssocs = bagAssocs s $ beqp b
+      bodyAssocs = bagAssocs s $ bbody b
       floorAssocs = getCAssocs (CFloor (blid b) (bpos b)) s
   in not (Tile.isLit cotile (lvl `at` bpos b))
-     && isNothing (strongestBurn cops disco eqpAssocs)
-     && isNothing (strongestBurn cops disco floorAssocs)
+     && null (strongestBurn cops disco eqpAssocs)
+     && null (strongestBurn cops disco bodyAssocs)
+     && null (strongestBurn cops disco floorAssocs)
 
 -- TODO: base on items not/not only on iq.
 -- Check whether an actor can be displaced by an enemy. Generally, heroes can

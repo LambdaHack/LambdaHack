@@ -115,7 +115,7 @@ condFloorWeaponM aid = do
   cops <- getsState scops
   disco <- getsClient sdisco
   floorAssocs <- getsState $ getActorAssocs aid CGround
-  let lootIsWeapon = isJust $ strongestSword cops disco floorAssocs
+  let lootIsWeapon = not $ null $ strongestSword cops disco floorAssocs
   return $ lootIsWeapon  -- keep it lazy
 
 condNoWeaponM :: MonadClient m => ActorId -> m Bool
@@ -123,7 +123,9 @@ condNoWeaponM aid = do
   cops <- getsState scops
   disco <- getsClient sdisco
   eqpAssocs <- getsState $ getActorAssocs aid CEqp
-  return $ isNothing $ strongestSword cops disco eqpAssocs  -- keep it lazy
+  bodyAssocs <- getsState $ getActorAssocs aid CBody
+  let allAssocs = eqpAssocs ++ bodyAssocs
+  return $ null $ strongestSword cops disco allAssocs  -- keep it lazy
 
 condCanProjectM :: MonadClient m => ActorId -> m Bool
 condCanProjectM aid = do
@@ -222,6 +224,7 @@ condMeleeBadM aid = do
                || length friends > 1)  -- friends somewhere, let's flee to them
     -- keep it lazy
 
+-- Checks whether the actor stands in the dark, but is betrayed by a light,
 condLightBetraysM :: MonadClient m => ActorId -> m Bool
 condLightBetraysM aid = do
   cops@Kind.COps{cotile} <- getsState scops
@@ -229,10 +232,12 @@ condLightBetraysM aid = do
   b <- getsState $ getActorBody aid
   lvl <- getLevel $ blid b
   eqpAss <- getsState $ getActorAssocs aid CEqp
+  bodyAssocs <- getsState $ getActorAssocs aid CBody
   floorAss <- getsState $ getActorAssocs aid CGround
-  return $! not (Tile.isLit cotile (lvl `at` bpos b))     -- in the dark, but
-            && (isJust (strongestBurn cops disco eqpAss)  -- betrayed by light
-                || isJust (strongestBurn cops disco floorAss))
+  return $! not (Tile.isLit cotile (lvl `at` bpos b))     -- in the dark
+            && (not (null (strongestBurn cops disco eqpAss))  -- betrayed
+                || not (null (strongestBurn cops disco bodyAssocs))
+                || not (null (strongestBurn cops disco floorAss)))
 
 fleeList :: MonadClient m => ActorId -> m [(Int, Point)]
 fleeList aid = do

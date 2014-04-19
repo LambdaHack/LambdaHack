@@ -188,14 +188,12 @@ type ItemDict = EM.EnumMap ItemId Item
 type ItemRev = HM.HashMap Item ItemId
 
 strongestItem :: [(ItemId, Item)] -> (Item -> Maybe Int)
-              -> Maybe (Int, (ItemId, Item))
+              -> [(Int, (ItemId, Item))]
 strongestItem is p =
-  let vs = map (p . snd) is
-  in case zip vs is of
-    [] -> Nothing
-    vis -> case maximum vis of
-      (Nothing, _) -> Nothing
-      (Just v, ii) -> Just (v, ii)
+  let kis = mapMaybe (\(iid, item) -> case p item of
+                         Nothing -> Nothing
+                         Just v -> Just (v, (iid, item))) is
+  in reverse $ sort kis
 
 strongestItems :: [(Int, (ItemId, Item))] -> (Item -> Maybe Int)
                -> [(Int, (Int, (ItemId, Item)))]
@@ -220,7 +218,7 @@ pMelee Kind.COps{corule} i =
     _ -> Nothing
 
 strongestSword :: Kind.COps -> Discovery -> [(ItemId, Item)]
-               -> Maybe (Int, (ItemId, Item))
+               -> [(Int, (ItemId, Item))]
 strongestSword cops disco is =
   strongestItem (filterON cops disco is) $ pMelee cops
 
@@ -228,21 +226,21 @@ pRegen :: Item -> Maybe Int
 pRegen i = case jeffect i of Regeneration k -> Just k; _ -> Nothing
 
 strongestRegen :: Kind.COps -> Discovery -> [(ItemId, Item)]
-               -> Maybe (Int, (ItemId, Item))
+               -> [(Int, (ItemId, Item))]
 strongestRegen cops disco is = strongestItem (filterON cops disco is) pRegen
 
 pStead :: Item -> Maybe Int
 pStead i = case jeffect i of Steadfastness k -> Just k; _ -> Nothing
 
 strongestStead :: Kind.COps -> Discovery -> [(ItemId, Item)]
-               -> Maybe (Int, (ItemId, Item))
+               -> [(Int, (ItemId, Item))]
 strongestStead cops disco is = strongestItem (filterON cops disco is) pStead
 
 pBurn :: Item -> Maybe Int
 pBurn i = case jeffect i of Burn k -> Just k; _ -> Nothing
 
 strongestBurn :: Kind.COps -> Discovery -> [(ItemId, Item)]
-              -> Maybe (Int, (ItemId, Item))
+              -> [(Int, (ItemId, Item))]
 strongestBurn cops disco is = strongestItem (filterON cops disco is) pBurn
 
 isFragile :: Kind.Ops ItemKind -> Discovery -> Item -> Bool
