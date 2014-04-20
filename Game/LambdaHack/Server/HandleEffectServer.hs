@@ -239,16 +239,16 @@ summonFriends :: (MonadAtomic m, MonadServer m)
               => FactionId -> [Point] -> LevelId
               -> m ()
 summonFriends bfid ps lid = do
-  Kind.COps{ coactor=coactor@Kind.Ops{opick}
-           , cofaction=Kind.Ops{okind} } <- getsState scops
+  cops@Kind.COps{ coactor=Kind.Ops{opick}
+                , cofaction=Kind.Ops{okind} } <- getsState scops
   time <- getsState $ getLocalTime lid
-  factionD <- getsState sfactionD
-  let fact = okind $ gkind $ factionD EM.! bfid
+  fact <- getsState $ (EM.! bfid) . sfactionD
+  let fkind = okind $ gkind fact
   forM_ ps $ \p -> do
-    let summonName = fname fact
+    let summonName = fname fkind
     mk <- rndToAction $ fmap (fromMaybe $ assert `failure` summonName)
                         $ opick summonName (const True)
-    if mk == heroKindId coactor
+    if isHeroFact cops fact
       then addHero bfid p lid [] Nothing time
       else addMonster mk bfid p lid time
   -- No leader election needed, bebause an alive actor of the same faction

@@ -15,9 +15,9 @@ cdefs = ContentDef
   , getFreq = afreq
   , validate = validateActorKind
   , content =
-      [warrior, adventurer, blacksmith, woodman, clerk, hairdresser, lawyer, peddler, taxCollector, projectile, eye, fastEye, nose, armadillo, gilaMonster, komodoDragon, hyena, alligator]
+      [warrior, adventurer, blacksmith, forester, clerk, hairdresser, lawyer, peddler, taxCollector, projectile, eye, fastEye, nose, armadillo, gilaMonster, komodoDragon, hyena, alligator]
   }
-warrior,        adventurer, blacksmith, woodman, clerk, hairdresser, lawyer, peddler, taxCollector, projectile, eye, fastEye, nose, armadillo, gilaMonster, komodoDragon, hyena, alligator :: ActorKind
+warrior,        adventurer, blacksmith, forester, clerk, hairdresser, lawyer, peddler, taxCollector, projectile, eye, fastEye, nose, armadillo, gilaMonster, komodoDragon, hyena, alligator :: ActorKind
 
 warrior = ActorKind
   { asymbol = '@'
@@ -38,8 +38,8 @@ adventurer = warrior
   { aname   = "adventurer" }
 blacksmith = warrior
   { aname   = "blacksmith"  }
-woodman = warrior
-  { aname   = "woodman"  }
+forester = warrior
+  { aname   = "forester"  }
 
 clerk = warrior
   { aname   = "clerk"

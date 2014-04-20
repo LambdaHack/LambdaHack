@@ -94,11 +94,15 @@ addMonster :: (MonadAtomic m, MonadServer m)
            => Kind.Id ActorKind -> FactionId -> Point -> LevelId -> Time
            -> m ActorId
 addMonster ak bfid ppos lid time = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   let kind = okind ak
   hp <- rndToAction $ castDice 0 0 $ ahp kind
   calm <- rndToAction $ castDice 0 0 $ acalm kind
-  addActor ak bfid ppos lid hp calm (asymbol kind) (aname kind) "it"
+  fact <- getsState $ (EM.! bfid) . sfactionD
+  pronoun <- if isCivilianFact cops fact
+             then rndToAction $ oneOf ["he", "she"]
+             else return "it"
+  addActor ak bfid ppos lid hp calm (asymbol kind) (aname kind) pronoun
            (acolor kind) time
 
 -- | Create a new hero on the current level, close to the given position.

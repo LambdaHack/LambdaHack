@@ -2,7 +2,8 @@
 -- the hero faction battling the monster and the animal factions.
 module Game.LambdaHack.Common.Faction
   ( FactionId, FactionDict, Faction(..), Diplomacy(..), Outcome(..), Status(..)
-  , isHeroFact, isHorrorFact, isSpawnFact, isSummonFact, isAtWar, isAllied
+  , isHeroFact, isCivilianFact, isHorrorFact, isSpawnFact, isSummonFact
+  , isAtWar, isAllied
   , difficultyBound, difficultyDefault, difficultyCoeff
   ) where
 
@@ -66,6 +67,12 @@ isHeroFact :: Kind.COps -> Faction -> Bool
 isHeroFact Kind.COps{cofaction=Kind.Ops{okind}} fact =
   let kind = okind (gkind fact)
   in maybe False (> 0) $ lookup "hero" $ ffreq kind
+
+-- | Tell whether the faction consists of human civilians.
+isCivilianFact :: Kind.COps -> Faction -> Bool
+isCivilianFact Kind.COps{cofaction=Kind.Ops{okind}} fact =
+  let kind = okind (gkind fact)
+  in maybe False (> 0) $ lookup "civilian" $ ffreq kind
 
 -- | Tell whether the faction consists of summoned horrors only.
 isHorrorFact :: Kind.COps -> Faction -> Bool
