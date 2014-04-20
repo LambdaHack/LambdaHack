@@ -37,7 +37,7 @@ standard = RuleKind
   , rtitle         = "LambdaHack"
   , rpathsDataFile = Self.getDataFileName
   , rpathsVersion  = Self.version
-  , ritemMelee     = ")@"
+  , ritemMelee     = ")%"
   , ritemRanged    = "|"
   , ritemEqp       = ")\"=("
   -- Don't waste weapons and armour, other party members can use them.

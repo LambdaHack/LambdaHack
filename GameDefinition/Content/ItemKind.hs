@@ -238,7 +238,7 @@ woodenTorch = ItemKind
   , idesc    = "A heavy wooden torch, burning with a weak fire."
   }
 fist = sword
-  { isymbol  = '@'
+  { isymbol  = '%'
   , iname    = "fist"
   , ifreq    = [("fist", 100)]
   , icount   = 2
@@ -248,7 +248,7 @@ fist = sword
   , idesc    = ""
   }
 foot = fist
-  { isymbol  = '@'
+  { isymbol  = '%'
   , iname    = "foot"
   , ifreq    = [("foot", 50)]
   , icount   = 2
@@ -257,7 +257,7 @@ foot = fist
   , idesc    = ""
   }
 tentacle = fist
-  { isymbol  = '@'
+  { isymbol  = '%'
   , iname    = "tentacle"
   , ifreq    = [("tentacle", 50)]
   , icount   = 4
@@ -266,7 +266,7 @@ tentacle = fist
   , idesc    = ""
   }
 lash = fist
-  { isymbol  = '@'
+  { isymbol  = '%'
   , iname    = "lash"
   , ifreq    = [("lash", 100)]
   , icount   = 1
@@ -275,7 +275,7 @@ lash = fist
   , idesc    = ""
   }
 noseTip = fist
-  { isymbol  = '@'
+  { isymbol  = '%'
   , iname    = "nose tip"
   , ifreq    = [("nose tip", 50)]
   , icount   = 1
@@ -284,7 +284,7 @@ noseTip = fist
   , idesc    = ""
   }
 lip = fist
-  { isymbol  = '@'
+  { isymbol  = '%'
   , iname    = "lip"
   , ifreq    = [("lip", 10)]
   , icount   = 2
@@ -293,7 +293,7 @@ lip = fist
   , idesc    = ""
   }
 claw = fist
-  { isymbol  = '@'
+  { isymbol  = '%'
   , iname    = "claw"
   , ifreq    = [("claw", 50)]
   , icount   = 2  -- even if more, only the fore claws used for fighting
@@ -302,7 +302,7 @@ claw = fist
   , idesc    = ""
   }
 smallClaw = fist
-  { isymbol  = '@'
+  { isymbol  = '%'
   , iname    = "small claw"
   , ifreq    = [("small claw", 10)]
   , icount   = 2
@@ -311,7 +311,7 @@ smallClaw = fist
   , idesc    = ""
   }
 snout = fist
-  { isymbol  = '@'
+  { isymbol  = '%'
   , iname    = "snout"
   , ifreq    = [("snout", 10)]
   , iverbApply   = "bite"
@@ -319,7 +319,7 @@ snout = fist
   , idesc    = ""
   }
 venomTooth = fist
-  { isymbol  = '@'
+  { isymbol  = '%'
   , iname    = "venom tooth"
   , ifreq    = [("venom tooth", 100)]
   , icount   = 2
@@ -328,7 +328,7 @@ venomTooth = fist
   , idesc    = ""
   }
 venomFang = fist
-  { isymbol  = '@'
+  { isymbol  = '%'
   , iname    = "venom fang"
   , ifreq    = [("venom fang", 100)]
   , icount   = 2
@@ -337,7 +337,7 @@ venomFang = fist
   , idesc    = ""
   }
 largeTail = fist
-  { isymbol  = '@'
+  { isymbol  = '%'
   , iname    = "large tail"
   , ifreq    = [("large tail", 50)]
   , icount   = 1
@@ -346,7 +346,7 @@ largeTail = fist
   , idesc    = ""
   }
 jaw = fist
-  { isymbol  = '@'
+  { isymbol  = '%'
   , iname    = "jaw"
   , ifreq    = [("jaw", 20)]
   , icount   = 1
@@ -355,7 +355,7 @@ jaw = fist
   , idesc    = ""
   }
 largeJaw = fist
-  { isymbol  = '@'
+  { isymbol  = '%'
   , iname    = "large jaw"
   , ifreq    = [("large jaw", 100)]
   , icount   = 1
