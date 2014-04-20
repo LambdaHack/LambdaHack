@@ -3,7 +3,7 @@ module Game.LambdaHack.Content.ActorKind
   ( ActorKind(..), validateActorKind
   ) where
 
-import Control.Arrow ((&&&))
+import Data.Function
 import Data.List
 import qualified Data.Ord as Ord
 import Data.Text (Text)
@@ -37,13 +37,19 @@ data ActorKind = ActorKind
 
 -- | Filter a list of kinds, passing through only the incorrect ones, if any.
 --
--- Make sure actor kinds can be told apart on the level map.
+-- Make sure actor kinds can be told apart on the level map, unless they
+-- have the same behaviour and differ only by distribution, flavour
+-- and initial values that don't play any role afterwards.
 validateActorKind :: [ActorKind] -> [ActorKind]
 validateActorKind l =
-  let cmp = Ord.comparing $ asymbol &&& acolor
-      eq ka1 ka2 = cmp ka1 ka2 == Ord.EQ
-      sorted = sortBy cmp l
-      nubbed = nubBy eq sorted
-      tooSimilar = deleteFirstsBy eq sorted nubbed
+  let behaviour ka = (aspeed ka, ahp ka, acalm ka, asight ka, asmell ka,
+                      aiq ka, aregen ka, sort $ acanDo ka)
+      sortedBehaviour = sortBy (Ord.comparing behaviour) l
+      nubbedBehaviour = nubBy ((==) `on` behaviour) sortedBehaviour
+      screen ka = (asymbol ka, acolor ka)
+      eqScreen = (==) `on` screen
+      sortedScreen = sortBy (Ord.comparing screen) nubbedBehaviour
+      nubbedScreen = nubBy eqScreen sortedScreen
+      tooSimilar = deleteFirstsBy eqScreen sortedScreen nubbedScreen
       tooVerbose = filter (\ak -> T.length (aname ak) > 23) l
   in tooSimilar ++ tooVerbose

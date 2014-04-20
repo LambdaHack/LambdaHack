@@ -16,7 +16,7 @@ data Ability =
   | AbProject
   | AbApply
   | AbTrigger
-  deriving (Show, Eq, Enum, Bounded)
+  deriving (Show, Eq, Ord, Enum, Bounded)
 
 instance Binary Ability where
   put = putWord8 . toEnum . fromEnum
