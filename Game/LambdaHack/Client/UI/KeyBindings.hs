@@ -12,10 +12,10 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Tuple (swap)
 
+import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.UI.Config
 import Game.LambdaHack.Client.UI.Content.KeyKind
 import Game.LambdaHack.Client.UI.HumanCmd
-import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Common.Msg
 
 -- | Bindings and other information about human player commands.
@@ -55,10 +55,11 @@ stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
 keyHelp :: Binding -> Slideshow
 keyHelp Binding{bcmdList} =
   let
-    movBlurb =
-      [ "Move throughout the level with numerical keypad (left diagram)"
+    minimalBlurb =
+      [ "Move throughout a level with numerical keypad (left diagram)"
       , "or its compact laptop replacement (middle) or Vi text editor keys"
-      , "(right, also known as \"Rogue-like keys\"; can be enabled in config.ui.ini):"
+      , "(right, also known as \"Rogue-like keys\"; can be enabled in config.ui.ini)."
+      , "Run ahead, until anything disturbs you, with SHIFT (or CTRL) and a key."
       , ""
       , "               7 8 9          7 8 9          y k u"
       , "                \\|/            \\|/            \\|/"
@@ -66,13 +67,30 @@ keyHelp Binding{bcmdList} =
       , "                /|\\            /|\\            /|\\"
       , "               1 2 3          j k l          b j n"
       , ""
-      , "Run ahead, until anything disturbs you, with SHIFT (or CTRL) and a key."
-      , "Press '5' or 'i' or '.' to wait, bracing for blows next turn."
-      , "In targeting mode the same keys move the targeting cursor."
-      , ""
-      , "Search, open and attack by bumping into walls, doors and enemies."
-      , ""
       , "Press SPACE to see detailed command descriptions."
+      ]
+    movBlurb =
+      [ "Move throughout a level with numerical keypad (left diagram)"
+      , "or its compact laptop replacement (middle) or Vi text editor keys"
+      , "(right, also known as \"Rogue-like keys\"; can be enabled in config.ui.ini)."
+      , "Run ahead, until anything disturbs you, with SHIFT (or CTRL) and a key."
+      , ""
+      , "               7 8 9          7 8 9          y k u"
+      , "                \\|/            \\|/            \\|/"
+      , "               4-5-6          u-i-o          h-.-l"
+      , "                /|\\            /|\\            /|\\"
+      , "               1 2 3          j k l          b j n"
+      , ""
+      , "In targeting mode the very same keys move the targeting cursor."
+      , "Press '5' or 'i' or '.' to wait, bracing for blows, which reduces"
+      , "any damage taken and makes it impossible for foes to displace you."
+      , "You displace enemies or friends by bumping into them with SHIFT (or CTRL)."
+      , ""
+      , "Search, loot, open and attack by bumping into walls, doors and enemies."
+      , "The best object to attack with is automatically chosen from among"
+      , "weapons in your personal inventory and your unwounded body parts."
+      , ""
+      , "Press SPACE to see command descriptions."
       ]
     categoryBlurb =
       [ ""
@@ -87,6 +105,7 @@ keyHelp Binding{bcmdList} =
               $ T.justifyLeft 15 ' ' k
                 <> T.justifyLeft 41 ' ' h
     fmts s = " " <> T.justifyLeft 71 ' ' s
+    minimalText = map fmts minimalBlurb
     movText = map fmts movBlurb
     categoryText = map fmts categoryBlurb
     lastText = map fmts lastBlurb
@@ -99,7 +118,9 @@ keyHelp Binding{bcmdList} =
     keys cat = [ fmt (disp k) h
                | (k, (h, cat', _)) <- bcmdList, cat == cat', h /= "" ]
   in toSlideshow True
-    [ ["Basic keys. [press SPACE to advance]"] ++ [""]
+    [ ["Minimal cheat sheet for casual play. [press SPACE to see all commands]"] ++ [""]
+      ++ minimalText ++ [moreMsg]
+    , ["Movement. [press SPACE to advance]"] ++ [""]
       ++ movText ++ [moreMsg]
     , [categoryDescription CmdMove <> ". [press SPACE to advance]"] ++ [""]
       ++ [keyCaption] ++ keys CmdMove ++ categoryText ++ [moreMsg]

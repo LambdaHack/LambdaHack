@@ -19,7 +19,7 @@ data CmdCategory =
 
 categoryDescription :: CmdCategory -> Text
 categoryDescription CmdMenu = "Main Menu"
-categoryDescription CmdMove = "Movement and terrain alteration"
+categoryDescription CmdMove = "Terrain exploration and alteration"
 categoryDescription CmdItem = "Item use"
 categoryDescription CmdTgt = "Targeting"
 categoryDescription CmdAuto = "Automation"

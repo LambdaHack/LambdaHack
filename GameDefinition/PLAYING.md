@@ -87,14 +87,15 @@ in config.ui.ini).
                  /|\            /|\            /|\
                 1 2 3          j k l          b j n
 
+In targeting mode the same keys move the targeting cursor.
 `SHIFT` (or `CTRL`) and a movement key make the current party leader
 (and currently selected party members, if any) run in the indicated
 direction, until anything of interest is spotted.
 The '5', 'i' and '.' keys consume a turn and make you brace for combat,
-which confers a chance to block blows for the remainder of the turn.
-In targeting mode the same keys move the targeting cursor.
+which reduces any damage taken for a turn and makes it impossible
+for foes to displace you.
 
-Melee, searching for secret doors and opening closed doors
+Melee, searching for secret doors, looting and opening closed doors
 can be done by bumping into a monster, a wall and a door, respectively.
 Few commands other than movement, 'g'etting an item from the floor,
 'a'pplying an item and 'f'linging an item, are necessary for casual play.
@@ -103,7 +104,7 @@ or as building blocks for more complex convenience commands,
 e.g., the autoexplore command (key `X`) could be defined
 by the player as a macro using `BACKSPACE`, `CTRL-?`, `;` and `P`.
 
-Below are the remaining keys for movement and terrain alteration.
+Below are the remaining keys for terrain exploration and alteration.
 
                 keys           command
                 <              ascend a level
@@ -217,9 +218,9 @@ sometimes brutally colliding by accident.
 
 When the hero bumps into a monster or a monster attacks the hero,
 melee combat occurs. The best weapon equipped by each opponent
-is taken into account for calculating bonus damage. The total damage
-the current hero can potentially inflict is displayed at the bottom
-of the screen. The total damage potential of a monster may change
+is taken into account, as well as their body parts, for calculating damage.
+The damage the current hero can potentially inflict is displayed
+at the bottom of the screen. The damage potential of a monster may change
 as it finds and picks up new weapons, if it's capable of that.
 Heroes and monsters running into one another (with the `SHIFT` key)
 do not inflict damage, but change places. This gives the opponent a free blow,
