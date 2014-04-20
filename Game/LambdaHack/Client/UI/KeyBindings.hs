@@ -118,7 +118,8 @@ keyHelp Binding{bcmdList} =
     keys cat = [ fmt (disp k) h
                | (k, (h, cats, _)) <- bcmdList, cat `elem` cats, h /= "" ]
   in toSlideshow True
-    [ ["Minimal cheat sheet for casual play. [press SPACE to see all commands]"] ++ [""]
+    [ [categoryDescription CmdMinimal
+       <> ". [press SPACE to see all commands]"] ++ [""]
       ++ minimalText ++ [moreMsg]
     , ["Movement. [press SPACE to advance]"] ++ [""]
       ++ movText ++ [moreMsg]

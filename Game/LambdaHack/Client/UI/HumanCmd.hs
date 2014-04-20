@@ -14,7 +14,8 @@ import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Vector
 
 data CmdCategory =
-    CmdMenu | CmdMove | CmdItem | CmdTgt | CmdAuto | CmdMeta | CmdDebug
+    CmdMenu | CmdMove | CmdItem | CmdTgt | CmdAuto | CmdMeta
+  | CmdDebug | CmdMinimal
   deriving (Show, Read, Eq)
 
 categoryDescription :: CmdCategory -> Text
@@ -25,6 +26,7 @@ categoryDescription CmdTgt = "Targeting"
 categoryDescription CmdAuto = "Automation"
 categoryDescription CmdMeta = "Assorted"
 categoryDescription CmdDebug = "Debug"
+categoryDescription CmdMinimal = "Minimal cheat sheet for casual play"
 
 -- | Abstract syntax of player commands.
 data HumanCmd =
@@ -155,7 +157,7 @@ cmdDescription cmd = case cmd of
   EpsIncr True  -> "swerve targeting line"
   EpsIncr False -> "unswerve targeting line"
   TgtClear    -> "clear target/cursor"
-  Cancel      -> "cancel action"
+  Cancel      -> "cancel action, open Main Menu"
   Accept      -> "accept choice"
 
 triggerDescription :: [Trigger] -> Text

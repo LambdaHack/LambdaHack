@@ -30,7 +30,7 @@ standardKeys = KeyKind
       , ("CTRL-d", ([CmdMenu], GameDifficultyCycle))
 
       -- Movement and terrain alteration
-      , ("less", ([CmdMove], TriggerTile
+      , ("less", ([CmdMove, CmdMinimal], TriggerTile
            [ TriggerFeature { verb = "ascend"
                             , object = "a level"
                             , feature = F.Cause (Effect.Ascend 1) }
@@ -41,7 +41,7 @@ standardKeys = KeyKind
            [ TriggerFeature { verb = "ascend"
                             , object = "10 levels"
                             , feature = F.Cause (Effect.Ascend 10) } ]))
-      , ("greater", ([CmdMove], TriggerTile
+      , ("greater", ([CmdMove, CmdMinimal], TriggerTile
            [ TriggerFeature { verb = "descend"
                             , object = "a level"
                             , feature = F.Cause (Effect.Ascend (-1)) }
@@ -90,40 +90,41 @@ standardKeys = KeyKind
       , ("i", ([CmdMove], Macro "" ["KP_Begin"]))
 
       -- Item use
-      , ("E", ([CmdItem], DescribeItem CEqp))
+      , ("E", ([CmdItem, CmdMinimal], DescribeItem CEqp))
       , ("I", ([CmdItem], DescribeItem CInv))
       , ("G", ([CmdItem], DescribeItem CGround))
       , ("A", ([CmdItem], AllOwned))
-      , ("g", ([CmdItem], MoveItem [CGround] CEqp "get" "an item" True))
+      , ("g", ([CmdItem, CmdMinimal],
+               MoveItem [CGround] CEqp "get" "an item" True))
       , ("d", ([CmdItem], MoveItem [CEqp, CInv] CGround "drop" "an item" False))
       , ("e", ([CmdItem], MoveItem [CInv, CGround] CEqp
                                  "equip" "an item" False))
       , ("s", ([CmdItem], MoveItem [CEqp] CInv
                                  "stash" "and share an item" False))
-      , ("a", ([CmdItem], Apply [ApplyItem { verb = "apply"
-                                         , object = "item"
-                                         , symbol = ' ' }]))
+      , ("a", ([CmdItem, CmdMinimal], Apply [ApplyItem { verb = "apply"
+                                                       , object = "item"
+                                                       , symbol = ' ' }]))
       , ("q", ([CmdItem], Apply [ApplyItem { verb = "quaff"
-                                         , object = "potion"
-                                         , symbol = '!' }]))
+                                           , object = "potion"
+                                           , symbol = '!' }]))
       , ("r", ([CmdItem], Apply [ApplyItem { verb = "read"
-                                         , object = "scroll"
-                                         , symbol = '?' }]))
+                                           , object = "scroll"
+                                           , symbol = '?' }]))
       , ("CTRL-q", ([CmdItem], Apply [ApplyItem { verb = "quench/activate"
-                                              , object = "tool"
-                                              , symbol = '(' }]))
-      , ("f", ([CmdItem], Project [ApplyItem { verb = "fling"
-                                           , object = "item"
-                                           , symbol = ' ' }]))
+                                                , object = "tool"
+                                                , symbol = '(' }]))
+      , ("f", ([CmdItem, CmdMinimal], Project [ApplyItem { verb = "fling"
+                                                         , object = "item"
+                                                         , symbol = ' ' }]))
       , ("t", ([CmdItem], Project [ApplyItem { verb = "throw"
-                                           , object = "missile"
-                                           , symbol = '|' }]))
+                                             , object = "missile"
+                                             , symbol = '|' }]))
       , ("z", ([CmdItem], Project [ApplyItem { verb = "zap"
-                                           , object = "wand"
-                                           , symbol = '/' }]))
+                                             , object = "wand"
+                                             , symbol = '/' }]))
 
       -- Targeting
-      , ("KP_Multiply", ([CmdTgt], TgtEnemy))
+      , ("KP_Multiply", ([CmdTgt, CmdMinimal], TgtEnemy))
       , ("backslash", ([CmdTgt], Macro "" ["KP_Multiply"]))
       , ("slash", ([CmdTgt], TgtFloor))
       , ("plus", ([CmdTgt], EpsIncr True))
@@ -151,9 +152,9 @@ standardKeys = KeyKind
       , ("V", ([CmdMeta], MarkVision))
       , ("S", ([CmdMeta], MarkSmell))
       , ("Tab", ([CmdMeta], MemberCycle))
-      , ("ISO_Left_Tab", ([CmdMeta], MemberBack))
+      , ("ISO_Left_Tab", ([CmdMeta, CmdMinimal], MemberBack))
       , ("space", ([CmdMeta], Clear))
-      , ("Escape", ([CmdMeta], Cancel))
+      , ("Escape", ([CmdMeta, CmdMinimal], Cancel))
       , ("Return", ([CmdMeta], Accept))
 
       -- Debug and others not to display in help screens
