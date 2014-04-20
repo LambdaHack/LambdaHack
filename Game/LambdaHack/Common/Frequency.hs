@@ -123,4 +123,4 @@ meanFreq fr@(Frequency _ xs) = case filter ((> 0 ) . fst) xs of
   [] -> assert `failure` fr
   ys -> let sumP = sum $ map fst ys
             sumX = sum [ fromIntegral p * x | (p, x) <- ys ]
-        in if sumX == 0 then 0 else fromIntegral sumP % fromIntegral sumX
+        in if sumX == 0 then 0 else fromIntegral sumX % fromIntegral sumP

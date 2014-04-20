@@ -54,9 +54,6 @@ instance Num SimpleDice where
   signum = normalizeSimple . liftAName "signum" signum
   fromInteger n = renameFreq (tshow n) $ pure $ fromInteger n
 
-instance Show SimpleDice where
-  show = T.unpack . nameFrequency
-
 liftAName :: Text -> (Int -> Int) -> SimpleDice -> SimpleDice
 liftAName name f fr =
   let frRes = liftA f fr

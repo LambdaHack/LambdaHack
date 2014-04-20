@@ -189,7 +189,7 @@ reqMelee source target = do
       else case strongestSword cops discoS allAssocs of
         [] -> return Nothing -- no weapon nor combat body part
         iis@((maxS, _) : _) -> do
-          let maxIis = map snd $ takeWhile ((==maxS) . fst) iis
+          let maxIis = map snd $ takeWhile ((== maxS) . fst) iis
           -- TODO: pick the item according to the frequency of its kind.
           iidItem <- rndToAction $ oneOf maxIis
           return $ Just iidItem

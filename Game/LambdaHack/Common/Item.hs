@@ -32,6 +32,7 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Ix as Ix
 import Data.List
 import Data.Maybe
+import qualified Data.Ord as Ord
 import qualified Data.Set as S
 import Data.Text (Text)
 import GHC.Generics (Generic)
@@ -193,7 +194,7 @@ strongestItem is p =
   let kis = mapMaybe (\(iid, item) -> case p item of
                          Nothing -> Nothing
                          Just v -> Just (v, (iid, item))) is
-  in reverse $ sort kis
+  in sortBy (flip $ Ord.comparing fst) kis
 
 strongestItems :: [(Int, (ItemId, Item))] -> (Item -> Maybe Int)
                -> [(Int, (Int, (ItemId, Item)))]
@@ -201,7 +202,7 @@ strongestItems is p =
   let kis = mapMaybe (\(k, (iid, item)) -> case p item of
                          Nothing -> Nothing
                          Just v -> Just (v, (k, (iid, item)))) is
-  in reverse $ sort kis
+  in sortBy (flip $ Ord.comparing fst) kis
 
 filterON :: Kind.COps -> Discovery -> [(ItemId, Item)] -> [(ItemId, Item)]
 filterON Kind.COps{coitem=Kind.Ops{okind}} disco is =
