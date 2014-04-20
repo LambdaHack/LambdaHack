@@ -623,6 +623,7 @@ strike source target iid hitStatus = assert (source /= target) $ do
   tb <- getsState $ getActorBody target
   spart <- partActorLeader source sb
   tpart <- partActorLeader target tb
+  spronoun <- partPronounLeader source sb
   item <- getsState $ getItemBody iid
   let (verb, withWhat) | bproj sb = ("hit", False)
                        | otherwise =
@@ -631,7 +632,7 @@ strike source target iid hitStatus = assert (source /= target) $ do
           Just ik -> (iverbApply $ okind ik, True)
       isBodyPart = iid `EM.member` bbody sb
       partItemChoice = if isBodyPart
-                       then flip partItemWownW spart
+                       then flip partItemWownW spronoun
                        else partItemAW
       msg MissBlock =
         let (partBlock1, partBlock2) =

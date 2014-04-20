@@ -1,7 +1,8 @@
 -- | Common client monad operations.
 module Game.LambdaHack.Client.CommonClient
   ( getPerFid, aidTgtToPos, aidTgtAims, makeLine
-  , partAidLeader, partActorLeader, actorAbilities, updateItemSlot
+  , partAidLeader, partActorLeader, partPronounLeader
+  , actorAbilities, updateItemSlot
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -39,14 +40,23 @@ getPerFid lid = do
                               `twith` (lid, fper))
                       $ EM.lookup lid fper
 
--- | The part of speech describing the actor or a special name if a leader
--- of the observer's faction. The actor may not be present in the dungeon.
+-- | The part of speech describing the actor or "you" if a leader
+-- of the client's faction. The actor may be not present in the dungeon.
 partActorLeader :: MonadClient m => ActorId -> Actor -> m MU.Part
 partActorLeader aid b = do
   mleader <- getsClient _sleader
   return $! case mleader of
     Just leader | aid == leader -> "you"
     _ -> partActor b
+
+-- | The part of speech with the actor's pronoun or "you" if a leader
+-- of the client's faction. The actor may be not present in the dungeon.
+partPronounLeader :: MonadClient m => ActorId -> Actor -> m MU.Part
+partPronounLeader aid b = do
+  mleader <- getsClient _sleader
+  return $! case mleader of
+    Just leader | aid == leader -> "you"
+    _ -> partPronoun b
 
 -- | The part of speech describing the actor (designated by actor id
 -- and present in the dungeon) or a special name if a leader
