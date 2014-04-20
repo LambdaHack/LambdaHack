@@ -23,8 +23,10 @@ import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Frequency
+import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
@@ -51,9 +53,9 @@ spawnMonsters ps lid time fid = assert (not $ null ps) $ do
   fact <- getsState $ (EM.! fid) . sfactionD
   let spawnName = fname $ okind $ gkind fact
   laid <- forM ps $ \ p -> do
-    mk <- rndToAction $ fmap (fromMaybe $ assert `failure` spawnName)
+    ak <- rndToAction $ fmap (fromMaybe $ assert `failure` spawnName)
                         $ opick spawnName (const True)
-    addMonster mk fid p lid time
+    addMonster ak fid p lid time
   mleader <- getsState $ gleader . (EM.! fid) . sfactionD  -- just changed
   when (isNothing mleader) $
     execUpdAtomic $ UpdLeadFaction fid Nothing (Just $ head laid)
@@ -91,12 +93,12 @@ generateMonster lid = do
 addMonster :: (MonadAtomic m, MonadServer m)
            => Kind.Id ActorKind -> FactionId -> Point -> LevelId -> Time
            -> m ActorId
-addMonster mk bfid ppos lid time = do
+addMonster ak bfid ppos lid time = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-  let kind = okind mk
+  let kind = okind ak
   hp <- rndToAction $ castDice 0 0 $ ahp kind
   calm <- rndToAction $ castDice 0 0 $ acalm kind
-  addActor mk bfid ppos lid hp calm (asymbol kind) (aname kind)
+  addActor ak bfid ppos lid hp calm (asymbol kind) (aname kind)
            (acolor kind) time
 
 -- | Create a new hero on the current level, close to the given position.
@@ -126,24 +128,37 @@ addActor :: (MonadAtomic m, MonadServer m)
          => Kind.Id ActorKind -> FactionId -> Point -> LevelId -> Int -> Int
          -> Char -> Text -> Color.Color -> Time
          -> m ActorId
-addActor mk bfid pos lid hp calm bsymbol bname bcolor time = do
-  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
+addActor ak bfid pos lid hp calm bsymbol bname bcolor time = do
+  Kind.COps{coactor=coactor@Kind.Ops{okind}, coitem} <- getsState scops
+  aid <- getsServer sacounter
+  modifyServer $ \ser -> ser {sacounter = succ aid}
+  let kind = okind ak
+  -- Create actor.
   Faction{gplayer} <- getsState $ (EM.! bfid) . sfactionD
   DebugModeSer{sdifficultySer} <- getsServer sdebugSer
   nU <- nUI
   -- If no UI factions, the difficulty applies to heroes (for testing).
-  let diffHP | playerUI gplayer || nU == 0 && mk == heroKindId coactor =
+  let diffHP | playerUI gplayer || nU == 0 && ak == heroKindId coactor =
         (ceiling :: Double -> Int) $ fromIntegral hp
                                      * 1.5 ^^ difficultyCoeff sdifficultySer
              | otherwise = hp
-      kind = okind mk
       speed = aspeed kind
-      m = actorTemplate mk bsymbol bname bcolor speed diffHP calm
+      b = actorTemplate ak bsymbol bname bcolor speed diffHP calm
                         Nothing pos lid time bfid EM.empty False
-  acounter <- getsServer sacounter
-  modifyServer $ \ser -> ser {sacounter = succ acounter}
-  execUpdAtomic $ UpdCreateActor acounter m []
-  return $! acounter
+  execUpdAtomic $ UpdCreateActor aid b []
+  -- Create initial actor items.
+  flavour <- getsServer sflavour
+  discoRev <- getsServer sdiscoRev
+  Level{ldepth} <- getLevel lid
+  depth <- getsState sdepth
+  forM_ (aitems kind) $ \(ikText, cstore) -> do
+    let container = CActor aid cstore
+        itemFreq = toFreq "create aitems" [(1, ikText)]
+    (item, k, _) <- rndToAction
+                    $ newItem coitem flavour discoRev itemFreq ldepth depth
+    -- Here the items are inserted into the actor.
+    void $ registerItem item k container False
+  return $! aid
 
 rollSpawnPos :: Kind.COps -> ES.EnumSet Point
              -> LevelId -> Level -> FactionId -> State

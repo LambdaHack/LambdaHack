@@ -189,5 +189,5 @@ alligator = ActorKind
   , aiq     = 0
   , aregen  = maxBound
   , acanDo  = [minBound..maxBound]
-  , aitems  = [("largeJaw", CBody), ("large tail", CBody), ("claw", CBody)]
+  , aitems  = [("large jaw", CBody), ("large tail", CBody), ("claw", CBody)]
   }
