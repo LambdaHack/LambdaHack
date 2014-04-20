@@ -90,7 +90,7 @@ standardKeys = KeyKind
       , ("i", ([CmdMove], Macro "" ["KP_Begin"]))
 
       -- Item use
-      , ("E", ([CmdItem, CmdMinimal], DescribeItem CEqp))
+      , ("E", ([CmdItem], DescribeItem CEqp))
       , ("I", ([CmdItem], DescribeItem CInv))
       , ("G", ([CmdItem], DescribeItem CGround))
       , ("A", ([CmdItem], AllOwned))
@@ -152,7 +152,7 @@ standardKeys = KeyKind
       , ("V", ([CmdMeta], MarkVision))
       , ("S", ([CmdMeta], MarkSmell))
       , ("Tab", ([CmdMeta], MemberCycle))
-      , ("ISO_Left_Tab", ([CmdMeta, CmdMinimal], MemberBack))
+      , ("ISO_Left_Tab", ([CmdMeta], MemberBack))
       , ("space", ([CmdMeta], Clear))
       , ("Escape", ([CmdMeta, CmdMinimal], Cancel))
       , ("Return", ([CmdMeta], Accept))
