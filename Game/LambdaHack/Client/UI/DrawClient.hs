@@ -293,8 +293,10 @@ drawLeaderDamage cops s sdisco mleader width =
                   case Item.jkind sdisco sw of
                     Just _ ->
                       case jeffect sw of
-                        Hurt dice p -> tshow dice <> "+" <> tshow p
-                        _ -> ""
+                        Hurt dice p -> tshow dice <> if p == 0
+                                                     then ""
+                                                     else "+" <> tshow p
+                        _ -> "???"
                     Nothing -> "???"
                 [] -> "0"
           in damage
