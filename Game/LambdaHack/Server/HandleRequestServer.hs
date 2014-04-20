@@ -199,7 +199,7 @@ reqMelee source target = do
         -- Incapacitated actors can't block.
         let block = braced tb && bhp tb > 0
             hitA = if block then HitBlock else Hit
-        execSfxAtomic $ SfxStrike source target item hitA
+        execSfxAtomic $ SfxStrike source target iid hitA
         -- Deduct a hitpoint for a pierce of a projectile.
         when (bproj sb) $ execUpdAtomic $ UpdHealActor source (-1)
         -- Msgs inside itemEffect describe the target part.

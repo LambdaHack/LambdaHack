@@ -104,8 +104,8 @@ data UpdAtomic =
 instance Binary UpdAtomic
 
 data SfxAtomic =
-    SfxStrike !ActorId !ActorId !Item !HitAtomic
-  | SfxRecoil !ActorId !ActorId !Item !HitAtomic
+    SfxStrike !ActorId !ActorId !ItemId !HitAtomic
+  | SfxRecoil !ActorId !ActorId !ItemId !HitAtomic
   | SfxProject !ActorId !ItemId
   | SfxCatch !ActorId !ItemId
   | SfxActivate !ActorId !ItemId !Int
@@ -177,8 +177,8 @@ undoUpdAtomic cmd = case cmd of
 
 undoSfxAtomic :: SfxAtomic -> SfxAtomic
 undoSfxAtomic cmd = case cmd of
-  SfxStrike source target item b -> SfxRecoil source target item b
-  SfxRecoil source target item b -> SfxStrike source target item b
+  SfxStrike source target iid b -> SfxRecoil source target iid b
+  SfxRecoil source target iid b -> SfxStrike source target iid b
   SfxProject aid iid -> SfxCatch aid iid
   SfxCatch aid iid -> SfxProject aid iid
   SfxActivate aid iid k -> SfxCheck aid iid k

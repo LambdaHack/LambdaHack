@@ -18,7 +18,7 @@ module Game.LambdaHack.Common.Item
     -- * Inventory management types
   , ItemBag, ItemDict, ItemRev
     -- * Textual description
-  , partItem, partItemWs, partItemAW, itemDesc
+  , partItem, partItemWs, partItemAW, partItemWownW, itemDesc
     -- * Assorted
   , isFragile, isExplosive, isLingering, causeIEffects
   ) where
@@ -302,6 +302,11 @@ partItemAW :: Kind.Ops ItemKind -> Discovery -> Item -> MU.Part
 partItemAW coitem disco i =
   let (name, stats) = partItem coitem disco i
   in MU.AW $ MU.Phrase [name, stats]
+
+partItemWownW :: Kind.Ops ItemKind -> MU.Part -> Discovery -> Item -> MU.Part
+partItemWownW coitem partA disco i =
+  let (name, stats) = partItem coitem disco i
+  in MU.WownW partA $ MU.Phrase [name, stats]
 
 -- TODO: also print some data from kind and from item
 itemDesc :: Kind.Ops ItemKind -> Discovery -> Item -> Text

@@ -462,7 +462,7 @@ quitFactionUI fid mbody toSt = do
 
 displayRespSfxAtomicUI :: MonadClientUI m => Bool -> SfxAtomic -> m ()
 displayRespSfxAtomicUI verbose sfx = case sfx of
-  SfxStrike source target item b -> strike source target item b
+  SfxStrike source target iid b -> strike source target iid b
   SfxRecoil source target _ _ -> do
     spart <- partAidLeader source
     tpart <- partAidLeader target
@@ -615,25 +615,28 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           displayPush
 
 strike :: MonadClientUI m
-        => ActorId -> ActorId -> Item -> HitAtomic -> m ()
-strike source target item b = assert (source /= target) $ do
+       => ActorId -> ActorId -> ItemId -> HitAtomic -> m ()
+strike source target iid hitStatus = assert (source /= target) $ do
   Kind.COps{coitem=coitem@Kind.Ops{okind}} <- getsState scops
   disco <- getsClient sdisco
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   spart <- partActorLeader source sb
   tpart <- partActorLeader target tb
+  item <- getsState $ getItemBody iid
   let (verb, withWhat) | bproj sb = ("hit", False)
                        | otherwise =
         case jkind disco item of
-          Nothing -> ("hit", False)  -- not identified
-          Just ik -> let kind = okind ik
-                     in ( iverbApply kind
-                        , isNothing $ lookup "hth" $ ifreq kind )
+          Nothing -> ("hit", True)  -- not identified
+          Just ik -> (iverbApply $ okind ik, True)
+      isBodyPart = iid `EM.member` bbody sb
+      partItemChoice = if isBodyPart
+                       then flip partItemWownW spart
+                       else partItemAW
       msg MissBlock =
         let (partBlock1, partBlock2) =
               if withWhat
-              then ("swing", partItemAW coitem disco item)
+              then ("swing", partItemChoice coitem disco item)
               else ("try to", verb)
         in makeSentence
           [ MU.SubjectVerbSg spart partBlock1
@@ -643,12 +646,12 @@ strike source target item b = assert (source /= target) $ do
       msg _ = makeSentence $
         [MU.SubjectVerbSg spart verb, tpart]
         ++ if withWhat
-           then ["with", partItemAW coitem disco item]
+           then ["with", partItemChoice coitem disco item]
            else []
-  msgAdd $ msg b
+  msgAdd $ msg hitStatus
   let ps = (bpos tb, bpos sb)
       anim Hit = twirlSplash ps Color.BrRed Color.Red
       anim HitBlock = blockHit ps Color.BrRed Color.Red
       anim MissBlock = blockMiss ps
-  animFrs <- animate (blid sb) $ anim b
+  animFrs <- animate (blid sb) $ anim hitStatus
   displayActorStart sb animFrs
