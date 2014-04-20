@@ -111,11 +111,15 @@ addHero :: (MonadAtomic m, MonadServer m)
         -> Maybe Int -> Time
         -> m ActorId
 addHero bfid ppos lid heroNames mNumber time = do
-  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
-  Faction{gcolor, gplayer} <- getsState $ (EM.! bfid) . sfactionD
-  let kId = heroKindId coactor
-  hp <- rndToAction $ castDice 0 0 $ ahp $ okind kId
-  calm <- rndToAction $ castDice 0 0 $ acalm $ okind kId
+  Kind.COps{ coactor=Kind.Ops{okind, opick}
+           , cofaction=Kind.Ops{okind=fokind} } <- getsState scops
+  Faction{gcolor, gplayer, gkind} <- getsState $ (EM.! bfid) . sfactionD
+  let fName = fname $ fokind gkind
+  ak <- rndToAction $ fmap (fromMaybe $ assert `failure` fName)
+                      $ opick fName (const True)
+  let akind = okind ak
+  hp <- rndToAction $ castDice 0 0 $ ahp akind
+  calm <- rndToAction $ castDice 0 0 $ acalm akind
   mhs <- mapM (\n -> getsState $ \s -> tryFindHeroK s bfid n) [0..9]
   let freeHeroK = elemIndex Nothing mhs
       n = fromMaybe (fromMaybe 100 freeHeroK) mNumber
@@ -129,23 +133,23 @@ addHero bfid ppos lid heroNames mNumber time = do
         let (nameN, pronounN) = nameFromNumber n
         in (playerName gplayer <+> nameN, pronounN)
       startHP = hp - (min 10 $ hp `div` 10) * min 5 n
-  addActor kId bfid ppos lid startHP calm symbol name pronoun gcolor time
+  addActor ak bfid ppos lid startHP calm symbol name pronoun gcolor time
 
 addActor :: (MonadAtomic m, MonadServer m)
          => Kind.Id ActorKind -> FactionId -> Point -> LevelId -> Int -> Int
          -> Char -> Text -> Text -> Color.Color -> Time
          -> m ActorId
 addActor ak bfid pos lid hp calm bsymbol bname bpronoun bcolor time = do
-  Kind.COps{coactor=coactor@Kind.Ops{okind}, coitem} <- getsState scops
+  cops@Kind.COps{coactor=Kind.Ops{okind}, coitem} <- getsState scops
   aid <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ aid}
   let kind = okind ak
   -- Create actor.
-  Faction{gplayer} <- getsState $ (EM.! bfid) . sfactionD
+  fact@Faction{gplayer} <- getsState $ (EM.! bfid) . sfactionD
   DebugModeSer{sdifficultySer} <- getsServer sdebugSer
   nU <- nUI
   -- If no UI factions, the difficulty applies to heroes (for testing).
-  let diffHP | playerUI gplayer || nU == 0 && ak == heroKindId coactor =
+  let diffHP | playerUI gplayer || nU == 0 && isHeroFact cops fact =
         (ceiling :: Double -> Int) $ fromIntegral hp
                                      * 1.5 ^^ difficultyCoeff sdifficultySer
              | otherwise = hp

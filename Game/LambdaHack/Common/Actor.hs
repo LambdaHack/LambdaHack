@@ -6,7 +6,7 @@ module Game.LambdaHack.Common.Actor
     ActorId, monsterGenChance, partActor, partPronoun
     -- * The@ Acto@r type
   , Actor(..), actorTemplate, timeShiftFromSpeed, braced, waitedLastTurn
-  , actorDying, actorNewBorn, hpTooLow, unoccupied, heroKindId, projectileKindId
+  , actorDying, actorNewBorn, hpTooLow, unoccupied, projectileKindId
     -- * Assorted
   , ActorDict, smellTimeout, checkAdjacent
   , mapActorItems_, mapActorInv_, mapActorEqp_
@@ -139,10 +139,6 @@ hpTooLow Kind.Ops{okind} b =
 -- Does not check if the tile is walkable.
 unoccupied :: [Actor] -> Point -> Bool
 unoccupied actors pos = all (\b -> bpos b /= pos) actors
-
--- | The unique kind of heroes.
-heroKindId :: Kind.Ops ActorKind -> Kind.Id ActorKind
-heroKindId Kind.Ops{ouniqGroup} = ouniqGroup "hero"
 
 -- | The unique kind of projectiles.
 projectileKindId :: Kind.Ops ActorKind -> Kind.Id ActorKind
