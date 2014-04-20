@@ -42,7 +42,7 @@ data StateServer = StateServer
   , sstart     :: !ClockTime     -- ^ this session start time
   , sgstart    :: !ClockTime     -- ^ this game start time
   , sallTime   :: !Time          -- ^ clips since the start of the session
-  , sheroNames :: !(EM.EnumMap FactionId [(Int, Text)])
+  , sheroNames :: !(EM.EnumMap FactionId [(Int, (Text, Text))])
                                  -- ^ hero names sent by clients
   , sdebugSer  :: !DebugModeSer  -- ^ current debugging mode
   , sdebugNxt  :: !DebugModeSer  -- ^ debugging mode for the next game

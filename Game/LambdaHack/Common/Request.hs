@@ -34,7 +34,7 @@ deriving instance Show RequestAI
 data RequestUI =
     forall a. ReqUITimed !(RequestTimed a)
   | ReqUILeader !ActorId !RequestUI
-  | ReqUIGameRestart !ActorId !Text !Int ![(Int, Text)]
+  | ReqUIGameRestart !ActorId !Text !Int ![(Int, (Text, Text))]
   | ReqUIGameExit !ActorId !Int
   | ReqUIGameSave
   | ReqUIAutomate

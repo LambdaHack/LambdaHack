@@ -32,7 +32,7 @@ data Config = Config
   { -- commands
     configCommands    :: ![(K.KM, (CmdCategory, HumanCmd))]
     -- hero names
-  , configHeroNames   :: ![(Int, Text)]
+  , configHeroNames   :: ![(Int, (Text, Text))]
     -- ui
   , configVi          :: !Bool  -- ^ the option for Vi keys takes precendence
   , configLaptop      :: !Bool  -- ^ because the laptop keys are the default
@@ -58,9 +58,9 @@ parseConfig cfg =
             section = Ini.allItems "extra_commands" cfg
         in map mkCommand section
       configHeroNames =
-        let toNumber (ident, name) =
+        let toNumber (ident, nameAndPronoun) =
               case stripPrefix "HeroName_" ident of
-                Just n -> (read n, T.pack name)
+                Just n -> (read n, read nameAndPronoun)
                 Nothing -> assert `failure` "wrong hero name id" `twith` ident
             section = Ini.allItems "hero_names" cfg
         in map toNumber section

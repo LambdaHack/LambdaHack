@@ -3,7 +3,7 @@
 -- involves the 'State' or 'Action' type.
 module Game.LambdaHack.Common.Actor
   ( -- * Actor identifiers and related operations
-    ActorId, monsterGenChance, partActor
+    ActorId, monsterGenChance, partActor, partPronoun
     -- * The@ Acto@r type
   , Actor(..), actorTemplate, timeShiftFromSpeed, braced, waitedLastTurn
   , actorDying, actorNewBorn, hpTooLow, unoccupied, heroKindId, projectileKindId
@@ -38,6 +38,7 @@ data Actor = Actor
   { bkind       :: !(Kind.Id ActorKind)  -- ^ the kind of the actor
   , bsymbol     :: !Char                 -- ^ individual map symbol
   , bname       :: !Text                 -- ^ individual name
+  , bpronoun    :: !Text                 -- ^ individual pronoun
   , bcolor      :: !Color.Color          -- ^ individual map color
   , bspeed      :: !Speed                -- ^ individual speed
   , bhp         :: !Int                  -- ^ current hit points
@@ -80,14 +81,18 @@ monsterGenChance n' depth' numMonsters =
 partActor :: Actor -> MU.Part
 partActor b = MU.Text $ bname b
 
+-- | The part of speech containing the actor pronoun.
+partPronoun :: Actor -> MU.Part
+partPronoun b = MU.Text $ bpronoun b
+
 -- Actor operations
 
 -- | A template for a new actor.
-actorTemplate :: Kind.Id ActorKind -> Char -> Text
+actorTemplate :: Kind.Id ActorKind -> Char -> Text -> Text
               -> Color.Color -> Speed -> Int -> Int -> Maybe [Vector]
               -> Point -> LevelId -> Time -> FactionId -> ItemBag -> Bool
               -> Actor
-actorTemplate bkind bsymbol bname bcolor bspeed bhp bcalm btrajectory
+actorTemplate bkind bsymbol bname bpronoun bcolor bspeed bhp bcalm btrajectory
               bpos blid btime bfid beqp bproj =
   let boldpos = Point 0 0  -- make sure /= bpos, to tell it didn't switch level
       boldlid = blid
@@ -185,6 +190,7 @@ instance Binary Actor where
     put bkind
     put bsymbol
     put bname
+    put bpronoun
     put bcolor
     put bspeed
     put bhp
@@ -208,6 +214,7 @@ instance Binary Actor where
     bkind <- get
     bsymbol <- get
     bname <- get
+    bpronoun <- get
     bcolor <- get
     bspeed <- get
     bhp <- get

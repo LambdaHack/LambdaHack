@@ -98,12 +98,13 @@ addMonster ak bfid ppos lid time = do
   let kind = okind ak
   hp <- rndToAction $ castDice 0 0 $ ahp kind
   calm <- rndToAction $ castDice 0 0 $ acalm kind
-  addActor ak bfid ppos lid hp calm (asymbol kind) (aname kind)
+  addActor ak bfid ppos lid hp calm (asymbol kind) (aname kind) "it"
            (acolor kind) time
 
 -- | Create a new hero on the current level, close to the given position.
 addHero :: (MonadAtomic m, MonadServer m)
-        => FactionId -> Point -> LevelId -> [(Int, Text)] -> Maybe Int -> Time
+        => FactionId -> Point -> LevelId -> [(Int, (Text, Text))]
+        -> Maybe Int -> Time
         -> m ActorId
 addHero bfid ppos lid heroNames mNumber time = do
   Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
@@ -115,20 +116,22 @@ addHero bfid ppos lid heroNames mNumber time = do
   let freeHeroK = elemIndex Nothing mhs
       n = fromMaybe (fromMaybe 100 freeHeroK) mNumber
       symbol = if n < 1 || n > 9 then '@' else Char.intToDigit n
-      nameFromNumber 0 = "Captain"
-      nameFromNumber k = "Hero" <+> tshow k
-      name | gcolor == Color.BrWhite =
+      nameFromNumber 0 = ("Captain", "he")
+      nameFromNumber k | k `mod` 7 == 0 = ("Heroine" <+> tshow k, "she")
+      nameFromNumber k = ("Hero" <+> tshow k, "he")
+      (name, pronoun) | gcolor == Color.BrWhite =
         fromMaybe (nameFromNumber n) $ lookup n heroNames
            | otherwise =
-        playerName gplayer <+> nameFromNumber n
+        let (nameN, pronounN) = nameFromNumber n
+        in (playerName gplayer <+> nameN, pronounN)
       startHP = hp - (min 10 $ hp `div` 10) * min 5 n
-  addActor kId bfid ppos lid startHP calm symbol name gcolor time
+  addActor kId bfid ppos lid startHP calm symbol name pronoun gcolor time
 
 addActor :: (MonadAtomic m, MonadServer m)
          => Kind.Id ActorKind -> FactionId -> Point -> LevelId -> Int -> Int
-         -> Char -> Text -> Color.Color -> Time
+         -> Char -> Text -> Text -> Color.Color -> Time
          -> m ActorId
-addActor ak bfid pos lid hp calm bsymbol bname bcolor time = do
+addActor ak bfid pos lid hp calm bsymbol bname bpronoun bcolor time = do
   Kind.COps{coactor=coactor@Kind.Ops{okind}, coitem} <- getsState scops
   aid <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ aid}
@@ -143,7 +146,7 @@ addActor ak bfid pos lid hp calm bsymbol bname bcolor time = do
                                      * 1.5 ^^ difficultyCoeff sdifficultySer
              | otherwise = hp
       speed = aspeed kind
-      b = actorTemplate ak bsymbol bname bcolor speed diffHP calm
+      b = actorTemplate ak bsymbol bname bpronoun bcolor speed diffHP calm
                         Nothing pos lid time bfid EM.empty False
   execUpdAtomic $ UpdCreateActor aid b []
   -- Create initial actor items.

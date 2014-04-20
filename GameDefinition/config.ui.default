@@ -9,13 +9,13 @@
 ; Macro_1 = ("comma", (CmdItem, Macro "" ["g"]))
 
 ; [hero_names]
-; HeroName_0 = Haskell Alvin
-; HeroName_1 = Alonzo Barkley
-; HeroName_2 = Ines Galenti
-; HeroName_3 = Ernst Abraham
-; HeroName_4 = Samuel Saunders
-; HeroName_5 = Roger Robin
-; HeroName_6 = Christopher Flatt
+; HeroName_0 = ("Haskell Alvin", "he")
+; HeroName_1 = ("Alonzo Barkley", "he")
+; HeroName_2 = ("Ines Galenti", "she")
+; HeroName_3 = ("Ernst Abraham", "he")
+; HeroName_4 = ("Samuel Saunders", "he")
+; HeroName_5 = ("Roger Robin", "he")
+; HeroName_6 = ("Christopher Flatt", "he")
 
 ; [ui]
 ; movementViKeys_hjklyubn = False

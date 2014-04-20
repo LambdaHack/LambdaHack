@@ -433,7 +433,7 @@ triggerEffect aid feats = do
 -- so that they are available in the first game too,
 -- not only in subsequent, restarted, games.
 reqGameRestart :: (MonadAtomic m, MonadServer m)
-               => ActorId -> Text -> Int -> [(Int, Text)] -> m ()
+               => ActorId -> Text -> Int -> [(Int, (Text, Text))] -> m ()
 reqGameRestart aid stInfo d configHeroNames = do
   modifyServer $ \ser ->
     ser {sdebugNxt = (sdebugNxt ser) { sdifficultySer = d

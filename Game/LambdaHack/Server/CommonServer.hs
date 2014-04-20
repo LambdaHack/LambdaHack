@@ -299,7 +299,7 @@ addProjectile bpos rest iid blid bfid btime = do
       trajectoryLength = lingerPercent * range `div` 100
       dirTrajectory = take trajectoryLength $ pathToTrajectory (bpos : rest)
       kind = okind $ projectileKindId coactor
-      m = actorTemplate (projectileKindId coactor) (asymbol kind) name
+      m = actorTemplate (projectileKindId coactor) (asymbol kind) name "it"
                         (acolor kind) speed 0 maxBound (Just dirTrajectory)
                         bpos blid btime bfid (EM.singleton iid 1) True
   acounter <- getsServer sacounter
