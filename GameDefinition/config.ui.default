@@ -6,7 +6,7 @@
 
 ; [extra_commands]
 ; ; A handy shorthand with Vi keys:
-; Macro_1 = ("comma", (CmdItem, Macro "" ["g"]))
+; Macro_1 = ("comma", ([CmdItem], Macro "" ["g"]))
 
 ; [hero_names]
 ; HeroName_0 = ("Haskell Alvin", "he")

@@ -20,9 +20,9 @@ import Game.LambdaHack.Common.Msg
 
 -- | Bindings and other information about human player commands.
 data Binding = Binding
-  { bcmdMap  :: !(M.Map K.KM (Text, CmdCategory, HumanCmd))
+  { bcmdMap  :: !(M.Map K.KM (Text, [CmdCategory], HumanCmd))
                                         -- ^ binding of keys to commands
-  , bcmdList :: ![(K.KM, (Text, CmdCategory, HumanCmd))]
+  , bcmdList :: ![(K.KM, (Text, [CmdCategory], HumanCmd))]
                                         -- ^ the properly ordered list
                                         --   of commands for the help menu
   , brevMap  :: !(M.Map HumanCmd K.KM)  -- ^ and from commands to their keys
@@ -36,15 +36,15 @@ stdBinding :: KeyKind  -- ^ default key bindings from the content
 stdBinding copsClient !Config{configCommands, configVi, configLaptop} =
   let heroSelect k = ( K.KM { key=K.Char (Char.intToDigit k)
                             , modifier=K.NoModifier }
-                     , (CmdMeta, PickLeader k) )
+                     , ([CmdMeta], PickLeader k) )
       cmdWithHelp = rhumanCommands copsClient ++ configCommands
       cmdAll =
         cmdWithHelp
-        ++ [(K.mkKM "KP_Begin", (CmdMove, Wait))]
-        ++ K.moveBinding configVi configLaptop (\v -> (CmdMove, Move v))
-                                               (\v -> (CmdMove, Run v))
+        ++ [(K.mkKM "KP_Begin", ([CmdMove], Wait))]
+        ++ K.moveBinding configVi configLaptop (\v -> ([CmdMove], Move v))
+                                               (\v -> ([CmdMove], Run v))
         ++ fmap heroSelect [0..6]
-      mkDescribed (cat, cmd) = (cmdDescription cmd, cat, cmd)
+      mkDescribed (cats, cmd) = (cmdDescription cmd, cats, cmd)
   in Binding
   { bcmdMap = M.fromList $ map (second mkDescribed) cmdAll
   , bcmdList = map (second mkDescribed) cmdWithHelp
@@ -116,7 +116,7 @@ keyHelp Binding{bcmdList} =
                          , K.mkKM to == k ]
     disp k = T.concat $ intersperse " and " $ map K.showKM $ coImage k
     keys cat = [ fmt (disp k) h
-               | (k, (h, cat', _)) <- bcmdList, cat == cat', h /= "" ]
+               | (k, (h, cats, _)) <- bcmdList, cat `elem` cats, h /= "" ]
   in toSlideshow True
     [ ["Minimal cheat sheet for casual play. [press SPACE to see all commands]"] ++ [""]
       ++ minimalText ++ [moreMsg]

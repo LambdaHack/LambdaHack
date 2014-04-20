@@ -30,7 +30,7 @@ import Game.LambdaHack.Content.RuleKind
 -- is a part of a game client.
 data Config = Config
   { -- commands
-    configCommands    :: ![(K.KM, (CmdCategory, HumanCmd))]
+    configCommands    :: ![(K.KM, ([CmdCategory], HumanCmd))]
     -- hero names
   , configHeroNames   :: ![(Int, (Text, Text))]
     -- ui
@@ -53,7 +53,7 @@ parseConfig cfg =
               case stripPrefix "Macro_" ident of
                 Just _ ->
                   let (key, def) = read keydef
-                  in (K.mkKM key, def :: (CmdCategory, HumanCmd))
+                  in (K.mkKM key, def :: ([CmdCategory], HumanCmd))
                 Nothing -> assert `failure` "wrong macro id" `twith` ident
             section = Ini.allItems "extra_commands" cfg
         in map mkCommand section

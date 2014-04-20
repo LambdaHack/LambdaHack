@@ -290,7 +290,7 @@ mainMenuHuman = do
         let showKD cmd km = (K.showKM km, HumanCmd.cmdDescription cmd)
             revLookup cmd = maybe ("", "") (showKD cmd) $ M.lookup cmd brevMap
             cmds = [ (K.showKM km, desc)
-                   | (km, (desc, HumanCmd.CmdMenu, cmd)) <- bcmdList,
+                   | (km, (desc, [HumanCmd.CmdMenu], cmd)) <- bcmdList,
                      cmd /= HumanCmd.GameDifficultyCycle ]
         in [ (fst (revLookup HumanCmd.Cancel), "back to playing")
            , (fst (revLookup HumanCmd.Accept), "see more help") ]
