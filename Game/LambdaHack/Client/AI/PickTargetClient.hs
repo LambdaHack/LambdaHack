@@ -45,13 +45,17 @@ targetStrategy oldLeader aid = do
   modifyClient $ \cli -> cli { sbfsD = EM.delete aid (sbfsD cli)
                              , seps = seps cli + 773 }  -- randomize paths
   b <- getsState $ getActorBody aid
+  lvl@Level{lxsize, lysize} <- getLevel $ blid b
+  let stepAccesible mtgt@(Just (_, (p : q : _ : _, _))) = -- goal not adjacent
+        if accessible cops lvl p q then mtgt else Nothing
+      stepAccesible mtgt = mtgt  -- goal can be inaccessible, e.g., suspect
   mtgtMPath <- getsClient $ EM.lookup aid . stargetD
   oldTgtUpdatedPath <- case mtgtMPath of
     Just (tgt, Just path) -> do
       mvalidPos <- aidTgtToPos aid (blid b) (Just tgt)
       if isNothing mvalidPos then return Nothing  -- wrong level
       else return $! case path of
-        (p : q : rest, (goal, len)) ->
+        (p : q : rest, (goal, len)) -> stepAccesible $
           if bpos b == p
           then Just (tgt, path)  -- no move last turn
           else if bpos b == q
@@ -66,7 +70,6 @@ targetStrategy oldLeader aid = do
         ([], _) -> assert `failure` (aid, b, mtgtMPath)
     Just (_, Nothing) -> return Nothing  -- path invalidated, e.g. SpotActorA
     Nothing -> return Nothing  -- no target assigned yet
-  lvl@Level{lxsize, lysize} <- getLevel $ blid b
   assert (not $ bproj b) skip  -- would work, but is probably a bug
   fact <- getsState $ (EM.! bfid b) . sfactionD
   allFoes <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
