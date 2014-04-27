@@ -99,7 +99,7 @@ displayRespUpdAtomicUI verbose _oldState cmd = case cmd of
   UpdLoseItem{} -> skip
   -- Move actors and items.
   UpdMoveActor aid _ _ -> lookAtMove aid
-  UpdWaitActor aid _ _ -> when verbose $ aVerbMU aid "wait"
+  UpdWaitActor aid _ -> when verbose $ aVerbMU aid "wait"
   UpdDisplaceActor source target -> displaceActorUI source target
   UpdMoveItem iid k aid c1 c2 -> moveItemUI verbose iid k aid c1 c2
   -- Change actor attributes.

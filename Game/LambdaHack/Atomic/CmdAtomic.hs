@@ -60,7 +60,7 @@ data UpdAtomic =
   | UpdLoseItem !ItemId !Item !Int !Container
   -- Move actors and items.
   | UpdMoveActor !ActorId !Point !Point
-  | UpdWaitActor !ActorId !Bool !Bool
+  | UpdWaitActor !ActorId !Bool
   | UpdDisplaceActor !ActorId !ActorId
   | UpdMoveItem !ItemId !Int !ActorId !CStore !CStore
   -- Change actor attributes.
@@ -136,7 +136,7 @@ undoUpdAtomic cmd = case cmd of
   UpdSpotItem iid item k c -> Just $ UpdLoseItem iid item k c
   UpdLoseItem iid item k c -> Just $ UpdSpotItem iid item k c
   UpdMoveActor aid fromP toP -> Just $ UpdMoveActor aid toP fromP
-  UpdWaitActor aid fromWait toWait -> Just $ UpdWaitActor aid toWait fromWait
+  UpdWaitActor aid toWait -> Just $ UpdWaitActor aid (not toWait)
   UpdDisplaceActor source target -> Just $ UpdDisplaceActor target source
   UpdMoveItem iid k aid c1 c2 -> Just $ UpdMoveItem iid k aid c2 c1
   UpdAgeActor aid delta -> Just $ UpdAgeActor aid (timeDeltaReverse delta)

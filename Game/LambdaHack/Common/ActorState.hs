@@ -268,14 +268,14 @@ getLocalTime lid s = ltime $ sdungeon s EM.! lid
 isSpawnFaction :: FactionId -> State -> Bool
 isSpawnFaction fid s = isSpawnFact $ sfactionD s EM.! fid
 
-regenHPPeriod :: Kind.COps -> Discovery -> Actor -> State -> Int
-regenHPPeriod cops disco b s =
+regenHPPeriod :: Actor -> State -> Int
+regenHPPeriod b s =
   let Kind.COps{coactor=Kind.Ops{okind}} = scops s
       ak = okind $ bkind b
       eqpAssocs = bagAssocs s $ beqp b
       bodyAssocs = bagAssocs s $ bbody b
       allAssocs = eqpAssocs ++ bodyAssocs
-      regenPeriod = case strongestRegen cops disco allAssocs of
+      regenPeriod = case strongestRegen allAssocs of
         (k, _) : _ ->
           let slowBaseRegen = 1000
               ar = if aregen ak == maxBound then slowBaseRegen else aregen ak
@@ -284,14 +284,14 @@ regenHPPeriod cops disco b s =
       maxDeltaHP = Dice.maxDice (ahp ak) - bhp b
   in if maxDeltaHP > 0 then regenPeriod else 0
 
-regenCalmDelta :: Kind.COps -> Discovery -> Actor -> State -> Int
-regenCalmDelta cops disco b s =
+regenCalmDelta :: Actor -> State -> Int
+regenCalmDelta b s =
   let Kind.COps{coactor=Kind.Ops{okind}} = scops s
       ak = okind $ bkind b
       eqpAssocs = bagAssocs s $ beqp b
       bodyAssocs = bagAssocs s $ bbody b
       allAssocs = eqpAssocs ++ bodyAssocs
-      calmIncr = case strongestStead cops disco allAssocs of
+      calmIncr = case strongestStead allAssocs of
         (k, _) : _ -> k + 1
         [] -> 1
       maxDeltaCalm = Dice.maxDice (acalm ak) - bcalm b
@@ -304,17 +304,17 @@ regenCalmDelta cops disco b s =
      then min calmIncr maxDeltaCalm
      else -1  -- even if all calmness spent, keep informing the client
 
-actorInDark :: Kind.COps -> Discovery -> Actor -> State -> Bool
-actorInDark cops disco b s =
+actorInDark :: Actor -> State -> Bool
+actorInDark b s =
   let Kind.COps{cotile} = scops s
       lvl = (EM.! blid b) . sdungeon $ s
       eqpAssocs = bagAssocs s $ beqp b
       bodyAssocs = bagAssocs s $ bbody b
       floorAssocs = getCAssocs (CFloor (blid b) (bpos b)) s
   in not (Tile.isLit cotile (lvl `at` bpos b))
-     && null (strongestBurn cops disco eqpAssocs)
-     && null (strongestBurn cops disco bodyAssocs)
-     && null (strongestBurn cops disco floorAssocs)
+     && null (strongestBurn eqpAssocs)
+     && null (strongestBurn bodyAssocs)
+     && null (strongestBurn floorAssocs)
 
 -- TODO: base on items not/not only on iq.
 -- Check whether an actor can be displaced by an enemy. Generally, heroes can

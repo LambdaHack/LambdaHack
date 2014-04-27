@@ -166,7 +166,6 @@ reqMove source dir = do
 reqMelee :: (MonadAtomic m, MonadServer m) => ActorId -> ActorId -> m ()
 reqMelee source target = do
   cops <- getsState scops
-  discoS <- getsServer sdisco
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   let adj = checkAdjacent sb tb
@@ -186,7 +185,7 @@ reqMelee source target = do
       then case ais of
         [(iid, item)] -> return $ Just (iid, item)
         _ -> assert `failure` "projectile with wrong items" `twith` ais
-      else case strongestSword cops discoS allAssocs of
+      else case strongestSword cops allAssocs of
         [] -> return Nothing -- no weapon nor combat body part
         iis@((maxS, _) : _) -> do
           let maxIis = map snd $ takeWhile ((== maxS) . fst) iis
@@ -372,17 +371,20 @@ reqApply aid iid cstore = do
         item <- getsState $ getItemBody iid
         discoS <- getsServer sdisco
         let kindI = iokind $ fromJust $ jkind discoS item
-            onOff = any (`elem` [IF.IsOn, IF.IsOff]) $ ifeature kindI
-        if onOff then do
-          bag <- getsState $ getActorBag aid cstore
-          let k = bag EM.! iid
-          execSfxAtomic $ SfxActivate aid iid k
-        else do
+            consumable = IF.Consumable `elem` (ifeature kindI)
+        if consumable then do
           -- TODO: don't destroy if not really used up; also, don't take time?
           cs <- actorConts iid 1 aid cstore
           mapM_ (\(_, c) -> execUpdAtomic $ UpdDestroyItem iid item 1 c) cs
           execSfxAtomic $ SfxActivate aid iid 1
-        itemEffect aid aid iid item cstore
+          itemEffect aid aid iid item cstore
+        else do
+          let itemNew = item {jisOn = not $ jisOn item}
+          bag <- getsState $ getActorBag aid cstore
+          let k = bag EM.! iid
+              container = CActor aid cstore
+          execUpdAtomic $ UpdLoseItem iid item k container
+          void $ registerItem itemNew k container True
       req = ReqApply iid cstore
   if cstore /= CInv then applyItem
   else do

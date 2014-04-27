@@ -51,7 +51,7 @@ handleUpdAtomic cmd = case cmd of
   UpdSpotItem iid item k c -> updCreateItem iid item k c
   UpdLoseItem iid item k c -> updDestroyItem iid item k c
   UpdMoveActor aid fromP toP -> updMoveActor aid fromP toP
-  UpdWaitActor aid fromWait toWait -> updWaitActor aid fromWait toWait
+  UpdWaitActor aid toWait -> updWaitActor aid toWait
   UpdDisplaceActor source target -> updDisplaceActor source target
   UpdMoveItem iid k aid c1 c2 -> updMoveItem iid k aid c1 c2
   UpdAgeActor aid t -> updAgeActor aid t
@@ -175,11 +175,11 @@ updMoveActor aid fromP toP = assert (fromP /= toP) $ do
                           `twith` (aid, fromP, toP, bpos b, b)) skip
   updateActor aid $ \body -> body {bpos = toP, boldpos = fromP}
 
-updWaitActor :: MonadStateWrite m => ActorId -> Bool -> Bool -> m ()
-updWaitActor aid fromWait toWait = assert (fromWait /= toWait) $ do
+updWaitActor :: MonadStateWrite m => ActorId -> Bool -> m ()
+updWaitActor aid toWait = do
   b <- getsState $ getActorBody aid
-  assert (fromWait == bwait b `blame` "unexpected waited actor time"
-                              `twith` (aid, fromWait, toWait, bwait b, b)) skip
+  assert (toWait /= bwait b `blame` "unexpected waited actor time"
+                            `twith` (aid, toWait, bwait b, b)) skip
   updateActor aid $ \body -> body {bwait = toWait}
 
 updDisplaceActor :: MonadStateWrite m => ActorId -> ActorId -> m ()

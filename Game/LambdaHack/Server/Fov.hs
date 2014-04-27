@@ -71,9 +71,9 @@ factionPerception fovMode fid s persLit =
   in EM.mapWithKey lvlPer $ sdungeon s
 
 -- | Calculate the perception of the whole dungeon.
-dungeonPerception :: Discovery -> FovMode -> State -> Pers
-dungeonPerception disco fovMode s =
-  let persLit = litInDungeon disco fovMode s
+dungeonPerception :: FovMode -> State -> Pers
+dungeonPerception fovMode s =
+  let persLit = litInDungeon fovMode s
       f fid _ = factionPerception fovMode fid s persLit
   in EM.mapWithKey f $ sfactionD s
 
@@ -101,12 +101,10 @@ reachableFromActor Kind.COps{cotile, coactor=Kind.Ops{okind}}
   in PerceptionReachable
      $ fullscan cotile fovModeOrBlind (bradius body) (bpos body) lvl
 
-litByItems :: Discovery -> FovMode -> Level -> Point -> State
-           -> [(ItemId, Item)]
-           -> [Point]
-litByItems disco fovMode lvl p s iis =
-  let cops@Kind.COps{cotile} = scops s
-  in case strongestBurn cops disco iis of
+litByItems :: FovMode -> Level -> Point -> State -> [(ItemId, Item)] -> [Point]
+litByItems fovMode lvl p s iis =
+  let Kind.COps{cotile} = scops s
+  in case strongestBurn iis of
     (radius, _) : _ ->
       let scan = fullscan cotile fovMode radius p lvl
       -- Optimization: filter out positions that already have ambient light.
@@ -114,26 +112,25 @@ litByItems disco fovMode lvl p s iis =
     [] -> []
 
 -- | Compute all lit positions on a level.
-litOnLevel :: Discovery -> FovMode -> LevelId -> Level -> State
-           -> PerceptionLit
-litOnLevel disco fovMode lid lvl s =
+litOnLevel :: FovMode -> LevelId -> Level -> State -> PerceptionLit
+litOnLevel fovMode lid lvl s =
   let -- Compute positions lit by the actor. Note that the actor can be blind
       -- or a projectile, in which case he doesn't see his own light
       -- (but others, from his or other factions, possibly do).
       eqpAssocs b = bagAssocs s $ beqp b
       bodyAssocs b = bagAssocs s $ bbody b
       allAssocs b = eqpAssocs b ++ bodyAssocs b
-      liActor b = litByItems disco fovMode lvl (bpos b) s (allAssocs b)
+      liActor b = litByItems fovMode lvl (bpos b) s (allAssocs b)
       litFromActors = concatMap liActor $ actorList (const True) lid s
       -- Compute positions lit by floor items.
-      litFloorBag (p, bag) = litByItems disco fovMode lvl p s (bagAssocs s bag)
+      litFloorBag (p, bag) = litByItems fovMode lvl p s (bagAssocs s bag)
       litFromFloor = concatMap litFloorBag $ EM.assocs $ lfloor lvl
   in PerceptionLit $ ES.fromList $ litFromActors ++ litFromFloor
 
 -- | Compute all lit positions in the dungeon
-litInDungeon :: Discovery -> FovMode -> State -> PersLit
-litInDungeon disco fovMode s =
-  let litLvl (lid, lvl) = (lid, litOnLevel disco fovMode lid lvl s)
+litInDungeon :: FovMode -> State -> PersLit
+litInDungeon fovMode s =
+  let litLvl (lid, lvl) = (lid, litOnLevel fovMode lid lvl s)
   in EML.fromDistinctAscList $ map litLvl $ EM.assocs $ sdungeon s
 
 -- | Perform a full scan for a given position. Returns the positions

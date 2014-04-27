@@ -18,8 +18,7 @@ data Feature =
   | Explode !Text              -- ^ explode, producing this group of shrapnel
   | Fragile                    -- ^ breaks even when not hitting an enemy
   | Linger !Int                -- ^ fly for this percentage of 2 turns
-  | IsOn                       -- ^ the item is turned on
-  | IsOff                      -- ^ the item is turned off
+  | Consumable                 -- ^ can't be turned off, is consumed by use
   deriving (Show, Eq, Ord, Generic)
 
 instance Binary Feature

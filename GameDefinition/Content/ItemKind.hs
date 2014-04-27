@@ -1,9 +1,6 @@
 -- | Weapons and treasure for LambdaHack.
 module Content.ItemKind ( cdefs ) where
 
-import Control.Arrow (first)
-import qualified Data.Text as T
-
 import Game.LambdaHack.Common.Color
 import Game.LambdaHack.Common.ContentDef
 import Game.LambdaHack.Common.Dice
@@ -21,7 +18,6 @@ cdefs = ContentDef
   , validate = validateItemKind
   , content =
       [amulet, brassLantern, dart, gem1, gem2, gem3, currency, harpoon, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke]
-      ++ map makeIsOff [brassLantern, oilLamp, woodenTorch]
   }
 amulet,        brassLantern, dart, gem1, gem2, gem3, currency, harpoon, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke :: ItemKind
 
@@ -43,15 +39,14 @@ amulet = ItemKind
 brassLantern = ItemKind
   { isymbol  = '('
   , iname    = "brass lantern"
-  , ifreq    = [("useful", 2), ("brass lantern ON", 1)]
+  , ifreq    = [("useful", 2)]
   , iflavour = zipPlain [BrWhite]
   , icount   = 1
   , iverbApply   = "douse"
   , iverbProject = "heave"
   , iweight  = 2400
   , itoThrow = -30  -- hard to throw so that it opens and burns
-  , ifeature = [ Cause $ Burn 4, Explode "burning oil 4"
-               , IsOn, ChangeTo "brass lantern OFF" ]
+  , ifeature = [Cause $ Burn 4, Explode "burning oil 4"]
   , idesc    = "Very bright and quite heavy brass lantern."
   }
 dart = ItemKind
@@ -118,15 +113,14 @@ harpoon = ItemKind
 oilLamp = ItemKind
   { isymbol  = '('
   , iname    = "oil lamp"
-  , ifreq    = [("useful", 5), ("oil lamp ON", 1)]
+  , ifreq    = [("useful", 5)]
   , iflavour = zipPlain [BrYellow]
   , icount   = 1
   , iverbApply   = "douse"
   , iverbProject = "lob"
   , iweight  = 1000
   , itoThrow = -30  -- hard not to spill the oil while throwing
-  , ifeature = [ Cause $ Burn 3, Explode "burning oil 3"
-               , IsOn, ChangeTo "oil lamp OFF" ]
+  , ifeature = [Cause $ Burn 3, Explode "burning oil 3"]
   , idesc    = "A clay lamp full of plant oil feeding a thick wick."
   }
 potion = ItemKind
@@ -139,17 +133,20 @@ potion = ItemKind
   , iverbProject = "lob"
   , iweight  = 200
   , itoThrow = -50  -- oily, bad grip
-  , ifeature = []
+  , ifeature = [Consumable]
   , idesc    = "A flask of bubbly, slightly oily liquid of a suspect color."
   }
 potion1 = potion
-  { ifeature = [Cause ApplyPerfume, Explode "fragrance"]
+  { ifeature = ifeature potion
+               ++ [Cause ApplyPerfume, Explode "fragrance"]
   }
 potion2 = potion
-  { ifeature = [Cause $ Heal 5, Explode "healing mist"]
+  { ifeature = ifeature potion
+               ++ [Cause $ Heal 5, Explode "healing mist"]
   }
 potion3 = potion
-  { ifeature = [Cause $ Blast 10, Explode "explosion blast 10"]
+  { ifeature = ifeature potion
+               ++ [Cause $ Blast 10, Explode "explosion blast 10"]
   }
 ring = ItemKind
   { isymbol  = '='
@@ -174,22 +171,22 @@ scroll = ItemKind
   , iverbProject = "lob"
   , iweight  = 50
   , itoThrow = -75  -- bad shape, even rolled up
-  , ifeature = []
+  , ifeature = [Consumable]
   , idesc    = "A haphazardly scribbled piece of parchment. May contain directions or a secret call sign."
   }
 scroll1 = scroll
   { ifreq    = [("useful", 2)]
-  , ifeature = [Cause $ CallFriend 1]
+  , ifeature = ifeature scroll ++ [Cause $ CallFriend 1]
   }
 scroll2 = scroll
-  { ifeature = [Cause $ Summon 1]
+  { ifeature = ifeature scroll ++ [Cause $ Summon 1]
   }
 scroll3 = scroll
-  { ifeature = [Cause $ Ascend (-1)]
+  { ifeature = ifeature scroll ++ [Cause $ Ascend (-1)]
   }
 scroll4 = scroll
   { ifreq    = [("useful", 1)]
-  , ifeature = [Cause Dominate]
+  , ifeature = ifeature scroll ++ [Cause Dominate]
   }
 sword = ItemKind
   { isymbol  = ')'
@@ -226,15 +223,14 @@ wand2 = wand
 woodenTorch = ItemKind
   { isymbol  = '('
   , iname    = "wooden torch"
-  , ifreq    = [("useful", 10), ("wooden torch ON", 1)]
+  , ifreq    = [("useful", 10)]
   , iflavour = zipPlain [Brown]
   , icount   = d 3
   , iverbApply   = "douse"
   , iverbProject = "fling"
   , iweight  = 1200
   , itoThrow = 0
-  , ifeature = [ Cause $ Burn 2
-               , IsOn, ChangeTo "wooden torch OFF" ]
+  , ifeature = [Cause $ Burn 2]
   , idesc    = "A heavy wooden torch, burning with a weak fire."
   }
 fist = sword
@@ -462,18 +458,3 @@ explosionBlast n = ItemKind
   , ifeature = [Cause $ Burn n, Fragile, Linger 10]
   , idesc    = ""
   }
-
-makeIsOff :: ItemKind -> ItemKind
-makeIsOff k = let addOffText t = "OFF" <+> t
-                  turnOffText t = maybe (t <+> "OFF")  -- "useful OFF"
-                                        (<> "OFF")     -- "wooden torch OFF"
-                                        $ T.stripSuffix "ON" t
-                  turnOnText t = maybe t (<> "ON") $ T.stripSuffix "OFF" t
-                  turnFreq = map (first turnOffText) $ ifreq k
-                  turnFeat IsOn = IsOff
-                  turnFeat (ChangeTo t) = ChangeTo $ turnOnText t
-                  turnFeat feat = feat
-              in k { iname    = addOffText (iname k)
-                   , ifreq    = turnFreq
-                   , ifeature = map turnFeat (ifeature k)
-                   }

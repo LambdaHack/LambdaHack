@@ -68,7 +68,7 @@ loopSer sdebug executorUI executorAI !cops = do
       -- We dump RNG seeds here, in case the game wasn't run
       -- with --dumpInitRngs previously and we need to seeds.
       when (sdumpInitRngs sdebug) $ dumpRngs
-    _ -> do  -- Starting a new game.
+    _ -> do  -- Starting the first new game for this savefile.
       -- Set up commandline debug mode
       let mrandom = case restored of
             Just (_, ser) -> Just $ srandom ser
@@ -229,9 +229,8 @@ handleActors lid = do
         else return False
       let setBWait hasWait aidNew = do
             bPre <- getsState $ getActorBody aidNew
-            let fromWait = bwait bPre
-            when (hasWait /= fromWait) $
-              execUpdAtomic $ UpdWaitActor aidNew fromWait hasWait
+            when (hasWait /= bwait bPre) $
+              execUpdAtomic $ UpdWaitActor aidNew hasWait
       if bproj body then do  -- TODO: perhaps check Track, not bproj
         timed <- setTrajectory aid
         when timed $ advanceTime aid
@@ -274,7 +273,6 @@ handleActors lid = do
 
 gameExit :: (MonadAtomic m, MonadServerReadRequest m) => m ()
 gameExit = do
-  discoS <- getsServer sdisco
   -- Kill all clients, including those that did not take part
   -- in the current game.
   -- Clients exit not now, but after they print all ending screens.
@@ -283,7 +281,7 @@ gameExit = do
   -- Verify that the saved perception is equal to future reconstructed.
   persAccumulated <- getsServer sper
   fovMode <- getsServer $ sfovMode . sdebugSer
-  pers <- getsState $ dungeonPerception discoS (fromMaybe Digital fovMode)
+  pers <- getsState $ dungeonPerception (fromMaybe Digital fovMode)
   assert (persAccumulated == pers `blame` "wrong accumulated perception"
                                   `twith` (persAccumulated, pers)) skip
 

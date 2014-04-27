@@ -39,7 +39,7 @@ standard = RuleKind
   , rpathsVersion  = Self.version
   , ritemMelee     = ")%"
   , ritemRanged    = "|"
-  , ritemEqp       = ")\"=("
+  , ritemEqp       = ")\"=(["
   -- Don't waste weapons and armour, other party members can use them.
   , ritemProject   = "!?|/("
   , ritemNeedId    = "!?|/"

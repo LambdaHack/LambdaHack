@@ -32,7 +32,6 @@ import Game.LambdaHack.Common.Faction
 import qualified Game.LambdaHack.Common.Feature as F
 import Game.LambdaHack.Common.Frequency
 import Game.LambdaHack.Common.Item
-import qualified Game.LambdaHack.Common.ItemFeature as IF
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -45,7 +44,6 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.RuleKind
 import Game.LambdaHack.Content.TileKind as TileKind
@@ -405,9 +403,7 @@ data ApplyItemGroup = ApplyAll | ApplyFirstAid | QuenchLight
 applyItem :: MonadClient m
           => ActorId -> ApplyItemGroup -> m (Strategy (RequestTimed AbApply))
 applyItem aid applyGroup = do
-  Kind.COps{ coactor=Kind.Ops{okind}
-           , coitem=Kind.Ops{okind=iokind} } <- getsState scops
-  disco <- getsClient sdisco
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   b <- getsState $ getActorBody aid
   let mk = okind $ bkind b
       permitted | applyGroup == QuenchLight = "("
@@ -422,10 +418,7 @@ applyItem aid applyGroup = do
             _ -> False
         QuenchLight ->
           case jeffect item of
-            Effect.Burn _ ->
-              case jkind disco item of
-                Nothing -> True  -- TODO: isOff should be exposed
-                Just ik -> IF.IsOff `notElem` ifeature (iokind ik)
+            Effect.Burn _ -> not $ jisOn item
             _ -> False
         ApplyAll -> True
       coeff CBody = 3  -- never destroyed by use

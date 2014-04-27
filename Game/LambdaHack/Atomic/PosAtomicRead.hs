@@ -71,7 +71,7 @@ posUpdAtomic cmd = case cmd of
   UpdMoveActor aid fromP toP -> do
     (lid, _) <- posOfAid aid
     return $! PosSight lid [fromP, toP]
-  UpdWaitActor aid _ _ -> singleAid aid
+  UpdWaitActor aid _ -> singleAid aid
   UpdDisplaceActor source target -> do
     (slid, sp) <- posOfAid source
     (tlid, tp) <- posOfAid target

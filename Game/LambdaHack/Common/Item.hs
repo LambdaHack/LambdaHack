@@ -78,6 +78,7 @@ data Item = Item
   , jeffect  :: !(Effect Int)  -- ^ the effect when activated
   , jweight  :: !Int           -- ^ weight in grams, obvious enough
   , jtoThrow :: !Int           -- ^ physical percentage bonus to throw speed
+  , jisOn    :: !Bool          -- ^ the item is turned on
   }
   deriving (Show, Eq, Ord, Generic)
 
@@ -119,6 +120,7 @@ buildItem (FlavourMap flavour) discoRev ikChosen kind jeffect =
           _ -> flavour EM.! ikChosen
       jweight = iweight kind
       jtoThrow = itoThrow kind
+      jisOn = True
   in Item{..}
 
 -- | Generate an item based on level.
@@ -204,13 +206,6 @@ strongestItems is p =
                          Just v -> Just (v, (k, (iid, item)))) is
   in sortBy (flip $ Ord.comparing fst) kis
 
-filterON :: Kind.COps -> Discovery -> [(ItemId, Item)] -> [(ItemId, Item)]
-filterON Kind.COps{coitem=Kind.Ops{okind}} disco is =
-  let isON (_iid, item) = case jkind disco item of
-        Nothing -> True  -- TODO: isOff should be exposed
-        Just ik -> IF.IsOff `notElem` ifeature (okind ik)
-  in filter isON is
-
 pMelee :: Kind.COps -> Item -> Maybe Int
 pMelee Kind.COps{corule} i =
   case jeffect i of
@@ -218,31 +213,27 @@ pMelee Kind.COps{corule} i =
       -> Just $ floor (Dice.meanDice d) + k
     _ -> Nothing
 
-strongestSword :: Kind.COps -> Discovery -> [(ItemId, Item)]
-               -> [(Int, (ItemId, Item))]
-strongestSword cops disco is =
-  strongestItem (filterON cops disco is) $ pMelee cops
+strongestSword :: Kind.COps -> [(ItemId, Item)] -> [(Int, (ItemId, Item))]
+strongestSword cops is =
+  strongestItem (filter (jisOn . snd) is) $ pMelee cops
 
 pRegen :: Item -> Maybe Int
 pRegen i = case jeffect i of Regeneration k -> Just k; _ -> Nothing
 
-strongestRegen :: Kind.COps -> Discovery -> [(ItemId, Item)]
-               -> [(Int, (ItemId, Item))]
-strongestRegen cops disco is = strongestItem (filterON cops disco is) pRegen
+strongestRegen :: [(ItemId, Item)] -> [(Int, (ItemId, Item))]
+strongestRegen is = strongestItem (filter (jisOn . snd) is) pRegen
 
 pStead :: Item -> Maybe Int
 pStead i = case jeffect i of Steadfastness k -> Just k; _ -> Nothing
 
-strongestStead :: Kind.COps -> Discovery -> [(ItemId, Item)]
-               -> [(Int, (ItemId, Item))]
-strongestStead cops disco is = strongestItem (filterON cops disco is) pStead
+strongestStead :: [(ItemId, Item)] -> [(Int, (ItemId, Item))]
+strongestStead is = strongestItem (filter (jisOn . snd) is) pStead
 
 pBurn :: Item -> Maybe Int
 pBurn i = case jeffect i of Burn k -> Just k; _ -> Nothing
 
-strongestBurn :: Kind.COps -> Discovery -> [(ItemId, Item)]
-              -> [(Int, (ItemId, Item))]
-strongestBurn cops disco is = strongestItem (filterON cops disco is) pBurn
+strongestBurn :: [(ItemId, Item)] -> [(Int, (ItemId, Item))]
+strongestBurn is = strongestItem (filter (jisOn . snd) is) pBurn
 
 isFragile :: Kind.Ops ItemKind -> Discovery -> Item -> Bool
 isFragile Kind.Ops{okind} disco i =
@@ -291,7 +282,9 @@ partItem _cops disco i =
       (MU.Text $ flav <+> genericName, "")
     Just _ ->
       let eff = effectToSuffix $ jeffect i
-      in (MU.Text genericName, MU.Text eff)
+          turnedOff | jisOn i = ""
+                    | otherwise = "{OFF}"  -- TODO: mark with colour
+      in (MU.Text genericName, MU.Text $ eff <+> turnedOff)
 
 partItemWs :: Kind.Ops ItemKind -> Discovery -> Int -> Item -> MU.Part
 partItemWs coitem disco jcount i =

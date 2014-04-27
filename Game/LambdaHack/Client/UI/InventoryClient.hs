@@ -60,7 +60,7 @@ getGroupItem syms itemsName verb cLegalRaw cLegalAfterCalm = do
   getCStoreBag <- getsState $ \s cstore -> getCBag (CActor leader cstore) s
   let cNotEmpty = not . EM.null . getCStoreBag
       cLegal = filter cNotEmpty cLegalAfterCalm  -- don't display empty stores
-      p i = jsymbol i `elem` syms
+      p i = jsymbol i `elem` syms && jisOn i
       tsuitable = const $ makePhrase [MU.Capitalize (MU.Ws itemsName)]
   getItem p tsuitable tsuitable verb cLegalRaw cLegal True INone
 

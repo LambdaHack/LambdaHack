@@ -19,7 +19,7 @@ data ItemKind = ItemKind
   , ifreq        :: !Freqs         -- ^ frequency within groups
   , iflavour     :: ![Flavour]     -- ^ possible flavours
   , icount       :: !Dice.Dice     -- ^ created in that quantify
-  , iverbApply   :: !MU.Part       -- ^ the verb for applying and combat
+  , iverbApply   :: !MU.Part       -- ^ the verb for applying and melee
   , iverbProject :: !MU.Part       -- ^ the verb for projecting
   , iweight      :: !Int           -- ^ weight in grams
   , itoThrow     :: !Int           -- ^ percentage bonus to throw speed
