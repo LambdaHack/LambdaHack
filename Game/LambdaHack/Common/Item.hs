@@ -9,8 +9,9 @@ module Game.LambdaHack.Common.Item
     ItemId, Item(..), jkind, buildItem, newItem
     -- * Item search
   , strongestItem, strongestItems
-  , strongestSword, strongestRegen, strongestStead, strongestBurn
-  , pMelee, pRegen, pStead, pBurn
+  , strongestSword, strongestShield
+  , strongestRegen, strongestStead, strongestBurn
+  , pMelee, pArmor, pRegen, pStead, pBurn
    -- * Item discovery types
   , ItemKindIx, Discovery, DiscoRev, serverDiscos
     -- * The @FlavourMap@ type
@@ -216,6 +217,12 @@ pMelee Kind.COps{corule} i =
 strongestSword :: Kind.COps -> [(ItemId, Item)] -> [(Int, (ItemId, Item))]
 strongestSword cops is =
   strongestItem (filter (jisOn . snd) is) $ pMelee cops
+
+pArmor :: Item -> Maybe Int
+pArmor i = case jeffect i of ArmorMelee k -> Just k; _ -> Nothing
+
+strongestShield :: [(ItemId, Item)] -> [(Int, (ItemId, Item))]
+strongestShield is = strongestItem (filter (jisOn . snd) is) pArmor
 
 pRegen :: Item -> Maybe Int
 pRegen i = case jeffect i of Regeneration k -> Just k; _ -> Nothing

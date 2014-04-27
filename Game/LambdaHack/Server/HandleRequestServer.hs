@@ -176,16 +176,19 @@ reqMelee source target = do
     let sfid = bfid sb
         tfid = bfid tb
     sfact <- getsState $ (EM.! sfid) . sfactionD
-    eqpAssocs <- getsState $ getActorAssocs source CEqp
-    bodyAssocs <- getsState $ getActorAssocs source CBody
-    let allAssocs = eqpAssocs ++ bodyAssocs
+    seqpAssocs <- getsState $ getActorAssocs source CEqp
+    sbodyAssocs <- getsState $ getActorAssocs source CBody
+    let sallAssocs = seqpAssocs ++ sbodyAssocs
+    teqpAssocs <- getsState $ getActorAssocs target CEqp
+    tbodyAssocs <- getsState $ getActorAssocs target CBody
+    let tallAssocs = teqpAssocs ++ tbodyAssocs
     ais <- getsState $ getCarriedAssocs sb
     miidItem <-
       if bproj sb   -- projectile
       then case ais of
         [(iid, item)] -> return $ Just (iid, item)
         _ -> assert `failure` "projectile with wrong items" `twith` ais
-      else case strongestSword cops allAssocs of
+      else case strongestSword cops sallAssocs of
         [] -> return Nothing -- no weapon nor combat body part
         iis@((maxS, _) : _) -> do
           let maxIis = map snd $ takeWhile ((== maxS) . fst) iis
@@ -197,7 +200,13 @@ reqMelee source target = do
       Just (iid, item) -> do
         -- Incapacitated actors can't block.
         let block = braced tb && bhp tb > 0
-            hitA = if block then HitBlock else Hit
+            shield = not (null $ strongestShield sallAssocs)
+                     || not (null $ strongestShield tallAssocs)
+            hitA = if block && shield
+                   then MissBlock
+                   else if block || shield
+                        then HitBlock
+                        else Hit
         execSfxAtomic $ SfxStrike source target iid hitA
         -- Deduct a hitpoint for a pierce of a projectile.
         when (bproj sb) $ execUpdAtomic $ UpdHealActor source (-1)

@@ -22,6 +22,7 @@ effectToBenefit Kind.COps{coactor=Kind.Ops{okind}} b eff =
                        then 10 * min p (Dice.maxDice (ahp kind) - bhp b)
                        else max (-99) (10 * p)  -- usually splash damage
     (Effect.Hurt d p) -> -(min 99 $ 5 * p + round (5 * Dice.meanDice d))
+    Effect.ArmorMelee _ -> 5
     Effect.Haste p -> p * 5
     Effect.Mindprobe{} -> 0            -- AI can't benefit yet
     Effect.Dominate -> -100

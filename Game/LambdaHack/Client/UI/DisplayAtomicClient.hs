@@ -525,6 +525,7 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
           displayActorStart b animFrs
         Effect.Hurt{} -> skip
+        Effect.ArmorMelee{} -> skip
         Effect.Haste{} -> skip
         Effect.Mindprobe nEnemy -> do
           let msg = makeSentence

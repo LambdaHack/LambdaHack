@@ -76,6 +76,7 @@ effectSem effect source target miidCstore = do
     Effect.NoEffect -> effectNoEffect target
     Effect.Heal p -> effectHeal execSfx p source target
     Effect.Hurt nDm p -> effectHurt nDm p source target
+    Effect.ArmorMelee _ -> effectNoEffect target  -- TODO: separate passive effs
     Effect.Haste p -> effectHaste execSfx p target
     Effect.Mindprobe _ -> effectMindprobe source target
     Effect.Dominate | source /= target -> effectDominate execSfx source target
@@ -140,11 +141,24 @@ effectHurt :: (MonadAtomic m, MonadServer m)
             => Dice.Dice -> Int -> ActorId -> ActorId
             -> m Bool
 effectHurt nDm power source target = do
+  seqpAssocs <- getsState $ getActorAssocs source CEqp
+  sbodyAssocs <- getsState $ getActorAssocs source CBody
+  let sallAssocs = seqpAssocs ++ sbodyAssocs
+  teqpAssocs <- getsState $ getActorAssocs target CEqp
+  tbodyAssocs <- getsState $ getActorAssocs target CBody
+  let tallAssocs = teqpAssocs ++ tbodyAssocs
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   n <- rndToAction $ castDice 0 0 nDm
   let block = braced tb && bhp tb > 0
-      deltaHP = - max 1 ((n + power) `div` if block then 2 else 1)
+      sshieldMult = case strongestShield sallAssocs of
+        [] -> 100
+        (p, _) : _ -> p
+      tshieldMult = case strongestShield tallAssocs of
+        [] -> 100
+        (p, _) : _ -> p
+      mult = sshieldMult * tshieldMult * (if block then 100 else 50)
+      deltaHP = - max 1 (mult * (n + power) `divUp` (100 * 100 * 100))
   -- Damage the target.
   execUpdAtomic $ UpdHealActor target deltaHP
   when (source /= target) $ halveCalm target

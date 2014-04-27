@@ -22,6 +22,7 @@ data Effect a =
     NoEffect
   | Heal !Int
   | Hurt !Dice.Dice !a
+  | ArmorMelee !Int
   | Haste !Int  -- ^ positive or negative percent change
   | Mindprobe Int  -- ^ the @Int@ is a lazy hack to send the result to clients
   | Dominate
@@ -50,6 +51,7 @@ effectTrav (Heal p) _ = return $! Heal p
 effectTrav (Hurt dice a) f = do
   b <- f a
   return $! Hurt dice b
+effectTrav (ArmorMelee p) _ = return $! ArmorMelee p
 effectTrav (Haste p) _ = return $! Haste p
 effectTrav (Mindprobe x) _ = return $! Mindprobe x
 effectTrav Dominate _ = return Dominate
@@ -78,6 +80,7 @@ effectToSuff effect f =
     Heal 0 -> assert `failure` effect
     Heal p -> "of wounding" <+> affixBonus p
     Hurt dice t -> "(" <> tshow dice <> ")" <+> t
+    ArmorMelee p -> "[" <> tshow p <> "]"
     Haste p | p > 0 -> "of speed" <+> affixBonus p
     Haste 0 -> assert `failure` effect
     Haste p -> "of slowness" <+> affixBonus (- p)
