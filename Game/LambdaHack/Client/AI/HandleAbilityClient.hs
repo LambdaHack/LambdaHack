@@ -242,12 +242,21 @@ pSymbol cops c = case c of
   '\"' -> pRegen
   '=' -> pStead
   '(' -> pBurn
+  '[' -> pArmor
   _ -> \_ -> Nothing
 
 harmful :: Actor -> Item -> Bool
 harmful body item =
-  -- Fast actors want to hide in darkness to ambush opponents.
-  bspeed body > speedNormal && isJust (pBurn item)
+  -- Fast actors want to hide in darkness to ambush opponents and want
+  -- to hit hard for the short span they get to survive melee.
+  isJust (pBurn item `mplus` pArmor item) && bspeed body > speedNormal
+  -- TODO:
+  -- teach AI to turn shields OFF (or stash) when ganging up on an enemy
+  -- (friends close, only one enemy close)
+  -- and turning on afterwards (AI plays for time, especially spawners
+  -- so shields are preferable by default;
+  -- also, turning on when no friends and enemies close is too late,
+  -- AI should flee or fire at such times, not muck around with eqp)
 
 -- Everybody melees in a pinch, even though some prefer ranged attacks.
 meleeBlocker :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbMelee))
