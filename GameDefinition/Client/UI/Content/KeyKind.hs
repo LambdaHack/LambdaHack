@@ -98,24 +98,26 @@ standardKeys = KeyKind
                MoveItem [CGround] CEqp "get" "an item" True))
       , ("d", ([CmdItem], MoveItem [CEqp, CInv] CGround "drop" "an item" False))
       , ("e", ([CmdItem], MoveItem [CInv, CGround] CEqp
-                                 "equip" "an item" False))
+                                   "equip" "an item" False))
       , ("s", ([CmdItem], MoveItem [CEqp] CInv
-                                 "stash" "and share an item" False))
-      , ("a", ([CmdItem, CmdMinimal], Apply [ApplyItem { verb = "apply"
-                                                       , object = "activable item"
-                                                       , symbol = ' ' }]))
+                                   "stash" "and share an item" False))
+      , ("a", ([CmdItem, CmdMinimal], Apply
+           [ApplyItem { verb = "activate/deactivate"
+                      , object = "item"
+                      , symbol = ' ' }]))
       , ("q", ([CmdItem], Apply [ApplyItem { verb = "quaff"
                                            , object = "potion"
                                            , symbol = '!' }]))
       , ("r", ([CmdItem], Apply [ApplyItem { verb = "read"
                                            , object = "scroll"
                                            , symbol = '?' }]))
-      , ("CTRL-q", ([CmdItem], Apply [ApplyItem { verb = "quench/activate"
+      , ("CTRL-q", ([CmdItem], Apply [ApplyItem { verb = "activate/deactivate"
                                                 , object = "tool"
                                                 , symbol = '(' }]))
-      , ("f", ([CmdItem, CmdMinimal], Project [ApplyItem { verb = "fling"
-                                                         , object = "throwable item"
-                                                         , symbol = ' ' }]))
+      , ("f", ([CmdItem, CmdMinimal], Project
+           [ApplyItem { verb = "fling"
+                      , object = "throwable item"
+                      , symbol = ' ' }]))
       , ("t", ([CmdItem], Project [ApplyItem { verb = "throw"
                                              , object = "missile"
                                              , symbol = '|' }]))

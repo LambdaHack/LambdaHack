@@ -132,11 +132,11 @@ Item use related keys are as follows.
                 d              drop an item
                 e              equip an item
                 s              stash and share an item
-                a              apply item
+                a              activate/deactivate item
                 q              quaff potion
                 r              read scroll
-                CTRL-q         quench/activate tool
-                f              fling item
+                CTRL-q         activate/deactivate tool
+                f              fling throwable item
                 t              throw missile
                 z              zap wand
 
