@@ -130,7 +130,7 @@ actionStrategy aid = do
       distant :: [([Ability], m (Frequency RequestAnyAbility), Bool)]
       distant =
         [ ( [AbProject]  -- for high-value target, shoot even in melee
-          , stratToFreq 5 $ (toAny :: ToAny AbProject)
+          , stratToFreq 2 $ (toAny :: ToAny AbProject)
             <$> ranged aid
           , condTgtEnemyPresent && condCanProject )
         , ( [AbApply]
@@ -386,19 +386,23 @@ ranged aid = do
                            else ritemRanged)
                           $ Kind.stdRuleset corule
           benList <- benAvailableItems aid permitted
-          let itemReaches item =
+          let totalRange item =
                 let lingerPercent = isLingering coitem disco item
                     speed = speedFromWeight (jweight item) (jtoThrow item)
                     range = rangeFromSpeed speed
-                    totalRange = lingerPercent * range `div` 100
-                in chessDist bpos fpos <= totalRange  -- probably enough range
+                in lingerPercent * range `div` 100
               fRanged ((mben, cstore), (iid, item)) =
-                let benR = (if cstore == CGround then 2 else 1)
+                let trange = totalRange item
+                    bestRange = chessDist bpos fpos + 2  -- margin for fleeing
+                    rangeMult =  -- penalize wasted or unsafely low range
+                      10 + max 0 (10 - abs (trange - bestRange))
+                    benR = (if cstore == CGround then 2 else 1)
                            * case mben of
                                Nothing -> -5  -- experimenting is fun
                                Just ben -> ben
-                in if benR < 0 && itemReaches item
-                   then Just (-benR, ReqProject fpos newEps iid cstore)
+                in if benR < 0 && trange >= chessDist bpos fpos
+                   then Just ( -benR * rangeMult `div` 10
+                             , ReqProject fpos newEps iid cstore )
                    else Nothing
               benRanged = mapMaybe fRanged benList
           return $! liftFrequency $ toFreq "ranged" benRanged
