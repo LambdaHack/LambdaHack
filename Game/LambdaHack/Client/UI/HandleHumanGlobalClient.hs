@@ -299,12 +299,20 @@ projectEps :: MonadClientUI m
            => [Trigger] -> Point -> Int
            -> m (SlideOrCmd (RequestTimed AbProject))
 projectEps ts tpos eps = do
+  cops <- getsState scops
+  disco <- getsClient sdisco
+  leader <- getLeaderUI
+  sb <- getsState $ getActorBody leader
   let cLegal = [CGround, CEqp, CInv]  -- calm enough at this stage
       (verb1, object1) = case ts of
         [] -> ("aim", "item")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
-  ggi <- getGroupItem triggerSyms object1 verb1 cLegal cLegal
+      p item = let trange = totalRange cops disco item
+               in (jsymbol item `elem` triggerSyms || triggerSyms == [' '])
+                  && jisOn item
+                  && trange >= chessDist (bpos sb) tpos
+  ggi <- getGroupItem p object1 verb1 cLegal cLegal
   case ggi of
     Right ((iid, _), (_, fromCStore)) -> do
       return $ Right $ ReqProject tpos eps iid fromCStore
@@ -332,7 +340,8 @@ applyHuman ts = do
         [] -> ("activate", "item")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
-  ggi <- getGroupItem triggerSyms object1 verb1 cLegalRaw cLegal
+      p item = jsymbol item `elem` triggerSyms
+  ggi <- getGroupItem p object1 verb1 cLegalRaw cLegal
   case ggi of
     Right ((iid, _), (_, fromCStore)) -> do
       return $ Right $ ReqApply iid fromCStore

@@ -284,19 +284,17 @@ addProjectile :: (MonadAtomic m, MonadServer m)
               => Point -> [Point] -> ItemId -> LevelId -> FactionId -> Time
               -> m ()
 addProjectile bpos rest iid blid bfid btime = do
-  Kind.COps{coactor=coactor@Kind.Ops{okind}, coitem} <- getsState scops
+  cops@Kind.COps{coactor=coactor@Kind.Ops{okind}, coitem} <- getsState scops
   disco <- getsServer sdisco
   item <- getsState $ getItemBody iid
-  let lingerPercent = isLingering coitem disco item
-      speed = speedFromWeight (jweight item) (jtoThrow item)
-      range = rangeFromSpeed speed
-      adj | range < 5 = "falling"
+  let speed = speedFromWeight (jweight item) (jtoThrow item)
+      trange = totalRange cops disco item
+      adj | trange < 5 = "falling"
           | otherwise = "flying"
       -- Not much detail about a fast flying item.
       (object1, object2) = partItem coitem EM.empty item
       name = makePhrase [MU.AW $ MU.Text adj, object1, object2]
-      trajectoryLength = lingerPercent * range `div` 100
-      dirTrajectory = take trajectoryLength $ pathToTrajectory (bpos : rest)
+      dirTrajectory = take trange $ pathToTrajectory (bpos : rest)
       kind = okind $ projectileKindId coactor
       m = actorTemplate (projectileKindId coactor) (asymbol kind) name "it"
                         (acolor kind) speed 0 maxBound (Just dirTrajectory)

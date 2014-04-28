@@ -102,7 +102,7 @@ standardKeys = KeyKind
       , ("s", ([CmdItem], MoveItem [CEqp] CInv
                                  "stash" "and share an item" False))
       , ("a", ([CmdItem, CmdMinimal], Apply [ApplyItem { verb = "apply"
-                                                       , object = "item"
+                                                       , object = "activable item"
                                                        , symbol = ' ' }]))
       , ("q", ([CmdItem], Apply [ApplyItem { verb = "quaff"
                                            , object = "potion"
@@ -114,7 +114,7 @@ standardKeys = KeyKind
                                                 , object = "tool"
                                                 , symbol = '(' }]))
       , ("f", ([CmdItem, CmdMinimal], Project [ApplyItem { verb = "fling"
-                                                         , object = "item"
+                                                         , object = "throwable item"
                                                          , symbol = ' ' }]))
       , ("t", ([CmdItem], Project [ApplyItem { verb = "throw"
                                              , object = "missile"

@@ -10,6 +10,7 @@ module Game.LambdaHack.Common.ActorState
   , posToActors, posToActor, getItemBody, memActor, getActorBody
   , tryFindHeroK, getLocalTime, isSpawnFaction
   , itemPrice, calmEnough, regenHPPeriod, regenCalmDelta, actorInDark, dispEnemy
+  , totalRange
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -330,3 +331,11 @@ dispEnemy b s =
      || not (actorDying b)
         && not (braced b)
         && not (aiq ak > 12 && any (adjacent (bpos b) . bpos) sup)
+
+totalRange :: Kind.COps -> Discovery -> Item -> Int
+totalRange cops disco item =
+  let Kind.COps{coitem} = cops
+      lingerPercent = isLingering coitem disco item
+      speed = speedFromWeight (jweight item) (jtoThrow item)
+      range = rangeFromSpeed speed
+  in lingerPercent * range `div` 100

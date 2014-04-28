@@ -139,7 +139,8 @@ condCanProjectM aid = do
   return $ asight ak && calmEnough b ak && not (null missiles)  -- keep it lazy
 
 benAvailableItems :: MonadClient m
-            => ActorId -> [Char] -> m [((Maybe Int, CStore), (ItemId, Item))]
+                  => ActorId -> [Char]
+                  -> m [((Maybe Int, CStore), (ItemId, Item))]
 benAvailableItems aid permitted = do
   cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   b <- getsState $ getActorBody aid

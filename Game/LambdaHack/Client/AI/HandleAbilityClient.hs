@@ -366,7 +366,7 @@ trigger aid fleeViaStairs = do
 -- or zap anything else than obvious physical missiles.
 ranged :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbProject))
 ranged aid = do
-  Kind.COps{coactor=Kind.Ops{okind}, coitem, corule} <- getsState scops
+  cops@Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
   btarget <- getsClient $ getTarget aid
   b@Actor{bkind, bpos, blid} <- getsState $ getActorBody aid
   mfpos <- aidTgtToPos aid blid btarget
@@ -386,19 +386,14 @@ ranged aid = do
                            else ritemRanged)
                           $ Kind.stdRuleset corule
           benList <- benAvailableItems aid permitted
-          let totalRange item =
-                let lingerPercent = isLingering coitem disco item
-                    speed = speedFromWeight (jweight item) (jtoThrow item)
-                    range = rangeFromSpeed speed
-                in lingerPercent * range `div` 100
-              fRanged ((mben, cstore), (iid, item)) =
-                let trange = totalRange item
+          let fRanged ((mben, cstore), (iid, item)) =
+                let trange = totalRange cops disco item
                     bestRange = chessDist bpos fpos + 2  -- margin for fleeing
                     rangeMult =  -- penalize wasted or unsafely low range
                       10 + max 0 (10 - abs (trange - bestRange))
                     benR = (if cstore == CGround then 2 else 1)
                            * case mben of
-                               Nothing -> -5  -- experimenting is fun
+                               Nothing -> -20  -- experimenting is fun
                                Just ben -> ben
                 in if benR < 0 && trange >= chessDist bpos fpos
                    then Just ( -benR * rangeMult `div` 10
@@ -441,7 +436,7 @@ applyItem aid applyGroup = do
       fTool ((mben, cstore), (iid, item)) =
         let benR = coeff cstore
                    * case mben of
-                       Nothing -> 5  -- experimenting is fun
+                       Nothing -> 20  -- experimenting is fun
                        Just ben -> ben
         in if itemLegal item
            then if benR > 0

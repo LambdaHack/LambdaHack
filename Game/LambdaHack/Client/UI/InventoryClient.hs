@@ -49,18 +49,17 @@ failMsg msg = do
 -- Note that this does not guarantee the chosen item belongs to the group,
 -- as the player can override the choice.
 getGroupItem :: MonadClientUI m
-             => [Char]    -- ^ accepted item symbols
+             => (Item -> Bool)  -- ^ which items to consider suitable
              -> MU.Part   -- ^ name of the item group
              -> MU.Part   -- ^ the verb describing the action
              -> [CStore]  -- ^ initial legal containers
              -> [CStore]  -- ^ legal containers after Calm taken into account
              -> m (SlideOrCmd ((ItemId, Item), (Int, CStore)))
-getGroupItem syms itemsName verb cLegalRaw cLegalAfterCalm = do
+getGroupItem p itemsName verb cLegalRaw cLegalAfterCalm = do
   leader <- getLeaderUI
   getCStoreBag <- getsState $ \s cstore -> getCBag (CActor leader cstore) s
   let cNotEmpty = not . EM.null . getCStoreBag
       cLegal = filter cNotEmpty cLegalAfterCalm  -- don't display empty stores
-      p i = jsymbol i `elem` syms && jisOn i
       tsuitable = const $ makePhrase [MU.Capitalize (MU.Ws itemsName)]
   getItem p tsuitable tsuitable verb cLegalRaw cLegal True INone
 
