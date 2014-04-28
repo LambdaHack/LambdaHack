@@ -33,7 +33,9 @@ amulet = ItemKind
   , iverbProject = "cast"
   , iweight  = 30
   , itoThrow = -50  -- not dense enough
-  , ifeature = [Manifest $ Regeneration (2 * d 3 + dl 10)]
+  , iaspects = [Regeneration (2 * d 3 + dl 10)]
+  , ieffects = []
+  , ifeature = []
   , idesc    = "A necklace of dried herbs and healing berries."
   }
 brassLantern = ItemKind
@@ -46,7 +48,9 @@ brassLantern = ItemKind
   , iverbProject = "heave"
   , iweight  = 2400
   , itoThrow = -30  -- hard to throw so that it opens and burns
-  , ifeature = [Cause $ Burn 4, Explode "burning oil 4"]
+  , iaspects = [Light 4]
+  , ieffects = [Burn 4]
+  , ifeature = [Explode "burning oil 4"]
   , idesc    = "Very bright and quite heavy brass lantern."
   }
 dart = ItemKind
@@ -59,7 +63,9 @@ dart = ItemKind
   , iverbProject = "hurl"
   , iweight  = 50
   , itoThrow = 0  -- a cheap dart
-  , ifeature = [Cause $ Hurt (d 2) (d 3 + dl 3)]
+  , iaspects = []
+  , ieffects = [Hurt (d 2) (d 3 + dl 3)]
+  , ifeature = []
   , idesc    = "Little, but sharp and sturdy."
   }
 dart100 = ItemKind
@@ -72,7 +78,9 @@ dart100 = ItemKind
   , iverbProject = "hurl"
   , iweight  = 50
   , itoThrow = 100
-  , ifeature = [Cause $ Hurt (d 1) (d 2 + dl 2)]
+  , iaspects = []
+  , ieffects = [Hurt (d 1) (d 2 + dl 2)]
+  , ifeature = []
   , idesc    = "Subtly balanced for throws of great speed."
   }
 gem = ItemKind
@@ -85,6 +93,8 @@ gem = ItemKind
   , iverbProject = "toss"
   , iweight  = 50
   , itoThrow = 0
+  , iaspects = []
+  , ieffects = []
   , ifeature = []
   , idesc    = "Precious, though useless. Worth around 100 gold."
   }
@@ -107,6 +117,8 @@ currency = ItemKind
   , iverbProject = "toss"
   , iweight  = 31
   , itoThrow = 0
+  , iaspects = []
+  , ieffects = []
   , ifeature = []
   , idesc    = "Reliably valuable in every civilized place."
   }
@@ -120,7 +132,9 @@ harpoon = ItemKind
   , iverbProject = "hurl"
   , iweight  = 4000
   , itoThrow = 0  -- cheap but deadly
-  , ifeature = [Cause $ Hurt (3 * d 1) (d 2 + 2 * dl 2)]
+  , iaspects = []
+  , ieffects = [Hurt (3 * d 1) (d 2 + 2 * dl 2)]
+  , ifeature = []
   , idesc    = "A long, well balanced rod, with a cruel, barbed head."
   }
 oilLamp = ItemKind
@@ -133,7 +147,9 @@ oilLamp = ItemKind
   , iverbProject = "lob"
   , iweight  = 1000
   , itoThrow = -30  -- hard not to spill the oil while throwing
-  , ifeature = [Cause $ Burn 3, Explode "burning oil 3"]
+  , iaspects = [Light 3]
+  , ieffects = [Burn 3]
+  , ifeature = [Explode "burning oil 3"]
   , idesc    = "A clay lamp full of plant oil feeding a thick wick."
   }
 potion = ItemKind
@@ -146,20 +162,22 @@ potion = ItemKind
   , iverbProject = "lob"
   , iweight  = 200
   , itoThrow = -50  -- oily, bad grip
+  , iaspects = []
+  , ieffects = []
   , ifeature = [Consumable]
   , idesc    = "A flask of bubbly, slightly oily liquid of a suspect color."
   }
 potion1 = potion
-  { ifeature = ifeature potion
-               ++ [Cause ApplyPerfume, Explode "fragrance"]
+  { ieffects = [ApplyPerfume]
+  , ifeature = ifeature potion ++ [Explode "fragrance"]
   }
 potion2 = potion
-  { ifeature = ifeature potion
-               ++ [Cause $ Heal 5, Explode "healing mist"]
+  { ieffects = [Heal 5]
+  , ifeature = ifeature potion ++ [Explode "healing mist"]
   }
 potion3 = potion
-  { ifeature = ifeature potion
-               ++ [Cause $ Blast 10, Explode "explosion blast 10"]
+  { ieffects = [Blast 10]
+  , ifeature = ifeature potion ++ [Explode "explosion blast 10"]
   }
 ring = ItemKind
   { isymbol  = '='
@@ -171,7 +189,9 @@ ring = ItemKind
   , iverbProject = "toss"
   , iweight  = 15
   , itoThrow = 0
-  , ifeature = [Manifest $ Steadfastness (d 2 + 2 * dl 2)]
+  , iaspects = [Steadfastness (d 2 + 2 * dl 2)]
+  , ieffects = []
+  , ifeature = []
   , idesc    = "Cold, solid to the touch, perfectly round, engraved with the reminder of purpose."
   }
 scroll = ItemKind
@@ -184,22 +204,24 @@ scroll = ItemKind
   , iverbProject = "lob"
   , iweight  = 50
   , itoThrow = -75  -- bad shape, even rolled up
+  , iaspects = []
+  , ieffects = []
   , ifeature = [Consumable]
   , idesc    = "A haphazardly scribbled piece of parchment. May contain directions or a secret call sign."
   }
 scroll1 = scroll
   { ifreq    = [("useful", 2)]
-  , ifeature = ifeature scroll ++ [Cause $ CallFriend 1]
+  , ieffects = [CallFriend 1]
   }
 scroll2 = scroll
-  { ifeature = ifeature scroll ++ [Cause $ Summon 1]
+  { ieffects = [Summon 1]
   }
 scroll3 = scroll
-  { ifeature = ifeature scroll ++ [Cause $ Ascend (-1)]
+  { ieffects = [Ascend (-1)]
   }
 scroll4 = scroll
   { ifreq    = [("useful", 1)]
-  , ifeature = ifeature scroll ++ [Cause Dominate]
+  , ieffects = [Dominate]
   }
 shield = ItemKind
   { isymbol  = ']'
@@ -211,7 +233,9 @@ shield = ItemKind
   , iverbProject = "push"
   , iweight  = 3000
   , itoThrow = -80  -- unwieldy to throw and blunt
-  , ifeature = [Manifest $ ArmorMelee 50]
+  , iaspects = [ArmorMelee 50]
+  , ieffects = []
+  , ifeature = []
   , idesc    = "Large and unwieldy. Absorbs the precentage of melee damage, both dealt and sustained."
   }
 sword = ItemKind
@@ -224,7 +248,9 @@ sword = ItemKind
   , iverbProject = "heave"
   , iweight  = 2000
   , itoThrow = -60  -- ensuring it hits with the tip costs speed
-  , ifeature = [Cause $ Hurt (5 * d 1) (d 2 + 4 * dl 2)]
+  , iaspects = []
+  , ieffects = [Hurt (5 * d 1) (d 2 + 4 * dl 2)]
+  , ifeature = []
   , idesc    = "A standard heavy weapon. Does not penetrate very effectively, but hard to block."
   }
 wand = ItemKind
@@ -237,14 +263,16 @@ wand = ItemKind
   , iverbProject = "zap"
   , iweight  = 300
   , itoThrow = 25  -- magic
+  , iaspects = []
+  , ieffects = []
   , ifeature = [Fragile]
   , idesc    = "Buzzing with dazzling light that shines even through appendages that handle it."
   }
 wand1 = wand
-  { ifeature = ifeature wand ++ [Cause NoEffect]
+  { ieffects = [NoEffect]
   }
 wand2 = wand
-  { ifeature = ifeature wand ++ [Cause NoEffect]
+  { ieffects = [NoEffect]
   }
 woodenTorch = ItemKind
   { isymbol  = '('
@@ -256,7 +284,9 @@ woodenTorch = ItemKind
   , iverbProject = "fling"
   , iweight  = 1200
   , itoThrow = 0
-  , ifeature = [Cause $ Burn 2]
+  , iaspects = [Light 2]
+  , ieffects = [Burn 2]
+  , ifeature = []
   , idesc    = "A heavy wooden torch, burning with a weak fire."
   }
 fist = sword
@@ -266,7 +296,7 @@ fist = sword
   , icount   = 2
   , iverbApply   = "punch"
   , iverbProject = "ERROR, please report: iverbProject"
-  , ifeature = [Cause $ Hurt (5 * d 1) 0]
+  , ieffects = [Hurt (5 * d 1) 0]
   , idesc    = ""
   }
 foot = fist
@@ -275,7 +305,7 @@ foot = fist
   , ifreq    = [("foot", 50)]
   , icount   = 2
   , iverbApply   = "kick"
-  , ifeature = [Cause $ Hurt (5 * d 1) 0]
+  , ieffects = [Hurt (5 * d 1) 0]
   , idesc    = ""
   }
 tentacle = fist
@@ -284,7 +314,7 @@ tentacle = fist
   , ifreq    = [("tentacle", 50)]
   , icount   = 4
   , iverbApply   = "slap"
-  , ifeature = [Cause $ Hurt (5 * d 1) 0]
+  , ieffects = [Hurt (5 * d 1) 0]
   , idesc    = ""
   }
 lash = fist
@@ -293,7 +323,7 @@ lash = fist
   , ifreq    = [("lash", 100)]
   , icount   = 1
   , iverbApply   = "lash"
-  , ifeature = [Cause $ Hurt (5 * d 1) 0]
+  , ieffects = [Hurt (5 * d 1) 0]
   , idesc    = ""
   }
 noseTip = fist
@@ -302,7 +332,7 @@ noseTip = fist
   , ifreq    = [("nose tip", 50)]
   , icount   = 1
   , iverbApply   = "poke"
-  , ifeature = [Cause $ Hurt (2 * d 1) 0]
+  , ieffects = [Hurt (2 * d 1) 0]
   , idesc    = ""
   }
 lip = fist
@@ -311,7 +341,7 @@ lip = fist
   , ifreq    = [("lip", 10)]
   , icount   = 2
   , iverbApply   = "lap"
-  , ifeature = [Cause $ Hurt (1 * d 1) 0]
+  , ieffects = [Hurt (1 * d 1) 0]
   , idesc    = ""
   }
 claw = fist
@@ -320,7 +350,7 @@ claw = fist
   , ifreq    = [("claw", 50)]
   , icount   = 2  -- even if more, only the fore claws used for fighting
   , iverbApply   = "slash"
-  , ifeature = [Cause $ Hurt (5 * d 1) 0]
+  , ieffects = [Hurt (5 * d 1) 0]
   , idesc    = ""
   }
 smallClaw = fist
@@ -329,7 +359,7 @@ smallClaw = fist
   , ifreq    = [("small claw", 10)]
   , icount   = 2
   , iverbApply   = "slash"
-  , ifeature = [Cause $ Hurt (2 * d 1) 0]
+  , ieffects = [Hurt (2 * d 1) 0]
   , idesc    = ""
   }
 snout = fist
@@ -337,7 +367,7 @@ snout = fist
   , iname    = "snout"
   , ifreq    = [("snout", 10)]
   , iverbApply   = "bite"
-  , ifeature = [Cause $ Hurt (2 * d 1) 0]
+  , ieffects = [Hurt (2 * d 1) 0]
   , idesc    = ""
   }
 venomTooth = fist
@@ -346,7 +376,7 @@ venomTooth = fist
   , ifreq    = [("venom tooth", 100)]
   , icount   = 2
   , iverbApply   = "bite"
-  , ifeature = [Cause $ Hurt (3 * d 1) 7]
+  , ieffects = [Hurt (3 * d 1) 7]
   , idesc    = ""
   }
 venomFang = fist
@@ -355,7 +385,7 @@ venomFang = fist
   , ifreq    = [("venom fang", 100)]
   , icount   = 2
   , iverbApply   = "bite"
-  , ifeature = [Cause $ Hurt (3 * d 1) 12]
+  , ieffects = [Hurt (3 * d 1) 12]
   , idesc    = ""
   }
 largeTail = fist
@@ -364,7 +394,7 @@ largeTail = fist
   , ifreq    = [("large tail", 50)]
   , icount   = 1
   , iverbApply   = "knock"
-  , ifeature = [Cause $ Hurt (7 * d 1) 0]
+  , ieffects = [Hurt (7 * d 1) 0]
   , idesc    = ""
   }
 jaw = fist
@@ -373,7 +403,7 @@ jaw = fist
   , ifreq    = [("jaw", 20)]
   , icount   = 1
   , iverbApply   = "rip"
-  , ifeature = [Cause $ Hurt (5 * d 1) 0]
+  , ieffects = [Hurt (5 * d 1) 0]
   , idesc    = ""
   }
 largeJaw = fist
@@ -382,7 +412,7 @@ largeJaw = fist
   , ifreq    = [("large jaw", 100)]
   , icount   = 1
   , iverbApply   = "crush"
-  , ifeature = [Cause $ Hurt (10 * d 1) 0]
+  , ieffects = [Hurt (10 * d 1) 0]
   , idesc    = ""
   }
 fragrance = ItemKind
@@ -395,7 +425,9 @@ fragrance = ItemKind
   , iverbProject = "exude"
   , iweight  = 1
   , itoThrow = -87  -- the slowest that travels at least 2 steps
-  , ifeature = [Cause Impress, Fragile]
+  , iaspects = []
+  , ieffects = [Impress]
+  , ifeature = [Fragile]
   , idesc    = ""
   }
 mist_healing = ItemKind
@@ -408,7 +440,9 @@ mist_healing = ItemKind
   , iverbProject = "blow"
   , iweight  = 1
   , itoThrow = -93  -- the slowest that gets anywhere (1 step only)
-  , ifeature = [Cause $ Heal 2, Fragile]
+  , iaspects = []
+  , ieffects = [Heal 2]
+  , ifeature = [Fragile]
   , idesc    = ""
   }
 mist_wounding = ItemKind
@@ -421,7 +455,9 @@ mist_wounding = ItemKind
   , iverbProject = "blow"
   , iweight  = 1
   , itoThrow = -93
-  , ifeature = [Cause $ Heal (-2), Fragile]
+  , iaspects = []
+  , ieffects = [Heal (-2)]
+  , ifeature = [Fragile]
   , idesc    = ""
   }
 burningOil2 = burningOil 2
@@ -438,7 +474,9 @@ glass_piece = ItemKind  -- when blowing up windows
   , iverbProject = "toss"
   , iweight  = 10
   , itoThrow = 0
-  , ifeature = [Cause $ Hurt (d 1) 0, Fragile, Linger 20]
+  , iaspects = []
+  , ieffects = [Hurt (d 1) 0]
+  , ifeature = [Fragile, Linger 20]
   , idesc    = ""
   }
 smoke = ItemKind  -- when stuff burns out
@@ -451,6 +489,8 @@ smoke = ItemKind  -- when stuff burns out
   , iverbProject = "blow"
   , iweight  = 1
   , itoThrow = -70
+  , iaspects = []
+  , ieffects = []
   , ifeature = [Fragile]
   , idesc    = ""
   }
@@ -466,7 +506,9 @@ burningOil n = ItemKind
   , iverbProject = "spit"
   , iweight  = 1
   , itoThrow = min 0 $ n * 7 - 100
-  , ifeature = [Cause $ Burn 1, Fragile]
+  , iaspects = []
+  , ieffects = [Burn 1]
+  , ifeature = [Fragile]
   , idesc    = "Sticky oil, burning brightly."
   }
 
@@ -481,6 +523,8 @@ explosionBlast n = ItemKind
   , iverbProject = "give off"
   , iweight  = 1
   , itoThrow = 0
-  , ifeature = [Cause $ Burn n, Fragile, Linger 10]
+  , iaspects = []
+  , ieffects = [Burn n]
+  , ifeature = [Fragile, Linger 10]
   , idesc    = ""
   }

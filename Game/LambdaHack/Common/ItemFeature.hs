@@ -8,14 +8,9 @@ import Data.Binary
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
-import qualified Game.LambdaHack.Common.Dice as Dice
-import Game.LambdaHack.Common.Effect
-
 -- | All possible item features.
 data Feature =
-    Cause !(Effect Dice.Dice)  -- ^ cause the effect when triggered
-  | Manifest !(Aspect Dice.Dice)  -- ^ keep the aspect continuously
-  | ChangeTo !Text             -- ^ change to this item kind group when altered
+    ChangeTo !Text             -- ^ change to this item kind group when altered
   | Explode !Text              -- ^ explode, producing this group of shrapnel
   | Fragile                    -- ^ break even when not hitting an enemy
   | Linger !Int                -- ^ fly for this percentage of 2 turns

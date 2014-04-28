@@ -8,6 +8,7 @@ import qualified Data.Text as T
 import qualified NLP.Miniutter.English as MU
 
 import qualified Game.LambdaHack.Common.Dice as Dice
+import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Flavour
 import qualified Game.LambdaHack.Common.ItemFeature as IF
 import Game.LambdaHack.Common.Misc
@@ -23,7 +24,11 @@ data ItemKind = ItemKind
   , iverbProject :: !MU.Part       -- ^ the verb for projecting
   , iweight      :: !Int           -- ^ weight in grams
   , itoThrow     :: !Int           -- ^ percentage bonus to throw speed
-  , ifeature     :: ![IF.Feature]  -- ^ properties
+  , iaspects     :: ![Effect.Aspect Dice.Dice]
+                                   -- ^ cause the effect when triggered
+  , ieffects     :: ![Effect.Effect Dice.Dice]
+                                   -- ^ keep the aspect continuously
+  , ifeature     :: ![IF.Feature]  -- ^ other properties
   , idesc        :: !Text          -- ^ description
   }
   deriving Show  -- No Eq and Ord to make extending it logically sound, see #53

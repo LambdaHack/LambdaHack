@@ -21,7 +21,7 @@ module Game.LambdaHack.Common.Item
     -- * Textual description
   , partItem, partItemWs, partItemAW, partItemWownW, itemDesc
     -- * Assorted
-  , isFragile, isExplosive, isLingering, causeIEffects
+  , isFragile, isExplosive, isLingering
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -144,11 +144,12 @@ newItem coitem@Kind.Ops{opick, okind} flavour discoRev itemFreq ln depth = do
         if jcount == 0 then
           castItem $ count - 1
         else do
-          let kindEffect = case causeIEffects coitem ikChosen of
+          let kindEffect = case ieffects kind of
                 [] -> NoEffect
                 eff : _TODO -> eff
+          aspects <- mapM (flip aspectTrav (castDice ln depth)) (iaspects kind)
           effect <- effectTrav kindEffect (castDice ln depth)
-          return ( buildItem flavour discoRev ikChosen kind []{-TODO-} effect
+          return ( buildItem flavour discoRev ikChosen kind aspects effect
                  , jcount
                  , kind )
   castItem 10
@@ -281,12 +282,6 @@ isLingering Kind.Ops{okind} disco i =
       let getTo (IF.Linger percent) _acc = percent
           getTo _ acc = acc
       in foldr getTo 100 $ ifeature $ okind ik
-
-causeIEffects :: Kind.Ops ItemKind -> Kind.Id ItemKind -> [Effect Dice.Dice]
-causeIEffects Kind.Ops{okind} ik = do
-  let getTo (IF.Cause eff) acc = eff : acc
-      getTo _ acc = acc
-  foldr getTo [] $ ifeature $ okind ik
 
 -- | The part of speech describing the item.
 partItem :: Kind.Ops ItemKind -> Discovery -> Item -> (MU.Part, MU.Part)
