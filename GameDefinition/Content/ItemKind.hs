@@ -33,7 +33,7 @@ amulet = ItemKind
   , iverbProject = "cast"
   , iweight  = 30
   , itoThrow = -50  -- not dense enough
-  , ifeature = [Cause $ Regeneration (2 * d 3 + dl 10)]
+  , ifeature = [Manifest $ Regeneration (2 * d 3 + dl 10)]
   , idesc    = "A necklace of dried herbs and healing berries."
   }
 brassLantern = ItemKind
@@ -171,7 +171,7 @@ ring = ItemKind
   , iverbProject = "toss"
   , iweight  = 15
   , itoThrow = 0
-  , ifeature = [Cause $ Steadfastness (d 2 + 2 * dl 2)]
+  , ifeature = [Manifest $ Steadfastness (d 2 + 2 * dl 2)]
   , idesc    = "Cold, solid to the touch, perfectly round, engraved with the reminder of purpose."
   }
 scroll = ItemKind
@@ -211,7 +211,7 @@ shield = ItemKind
   , iverbProject = "push"
   , iweight  = 3000
   , itoThrow = -80  -- unwieldy to throw and blunt
-  , ifeature = [Cause $ ArmorMelee 50]
+  , ifeature = [Manifest $ ArmorMelee 50]
   , idesc    = "Large and unwieldy. Absorbs the precentage of melee damage, both dealt and sustained."
   }
 sword = ItemKind

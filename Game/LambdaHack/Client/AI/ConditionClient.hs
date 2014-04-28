@@ -113,17 +113,19 @@ condBlocksFriendsM aid = do
 condFloorWeaponM :: MonadClient m => ActorId -> m Bool
 condFloorWeaponM aid = do
   cops <- getsState scops
+  disco <- getsClient sdisco
   floorAssocs <- getsState $ getActorAssocs aid CGround
-  let lootIsWeapon = not $ null $ strongestSword cops floorAssocs
+  let lootIsWeapon = not $ null $ strongestSword cops disco floorAssocs
   return $ lootIsWeapon  -- keep it lazy
 
 condNoWeaponM :: MonadClient m => ActorId -> m Bool
 condNoWeaponM aid = do
   cops <- getsState scops
+  disco <- getsClient sdisco
   eqpAssocs <- getsState $ getActorAssocs aid CEqp
   bodyAssocs <- getsState $ getActorAssocs aid CBody
   let allAssocs = eqpAssocs ++ bodyAssocs
-  return $ null $ strongestSword cops allAssocs  -- keep it lazy
+  return $ null $ strongestSword cops disco allAssocs  -- keep it lazy
 
 condCanProjectM :: MonadClient m => ActorId -> m Bool
 condCanProjectM aid = do
@@ -233,9 +235,9 @@ condLightBetraysM aid = do
   bodyAssocs <- getsState $ getActorAssocs aid CBody
   floorAss <- getsState $ getActorAssocs aid CGround
   return $! not (Tile.isLit cotile (lvl `at` bpos b))     -- in the dark
-            && (not (null (strongestBurn eqpAss))  -- betrayed
-                || not (null (strongestBurn bodyAssocs))
-                || not (null (strongestBurn floorAss)))
+            && (not (null (strongestLight eqpAss))  -- betrayed
+                || not (null (strongestLight bodyAssocs))
+                || not (null (strongestLight floorAss)))
 
 fleeList :: MonadClient m => ActorId -> m [(Int, Point)]
 fleeList aid = do

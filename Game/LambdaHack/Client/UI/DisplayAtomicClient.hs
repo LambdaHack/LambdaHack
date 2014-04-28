@@ -525,8 +525,6 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
           animFrs <- animate (blid b) $ twirlSplash ps Color.BrRed Color.Red
           displayActorStart b animFrs
         Effect.Hurt{} -> skip
-        Effect.ArmorMelee{} -> skip
-        Effect.Haste{} -> skip
         Effect.Mindprobe nEnemy -> do
           let msg = makeSentence
                 [MU.CardinalWs nEnemy "howl", "of anger", "can be heard"]
@@ -573,12 +571,11 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
             actorVerbMU aid b "become deaf and disoriented"
           else
             actorVerbMU aid b "look bewildered"
-        Effect.Regeneration{} -> skip
-        Effect.Steadfastness{} -> skip
         Effect.Ascend k | k > 0 -> actorVerbMU aid b "find a way upstairs"
         Effect.Ascend k | k < 0 -> actorVerbMU aid b "find a way downstairs"
         Effect.Ascend{} -> assert `failure` sfx
         Effect.Escape{} -> skip
+        Effect.TimedAspect{} -> skip  -- TODO
   SfxMsgFid _ msg -> msgAdd msg
   SfxMsgAll msg -> msgAdd msg
   SfxActorStart aid -> do

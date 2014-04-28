@@ -313,9 +313,9 @@ actorInDark b s =
       bodyAssocs = bagAssocs s $ bbody b
       floorAssocs = getCAssocs (CFloor (blid b) (bpos b)) s
   in not (Tile.isLit cotile (lvl `at` bpos b))
-     && null (strongestBurn eqpAssocs)
-     && null (strongestBurn bodyAssocs)
-     && null (strongestBurn floorAssocs)
+     && null (strongestLight eqpAssocs)
+     && null (strongestLight bodyAssocs)
+     && null (strongestLight floorAssocs)
 
 -- TODO: base on items not/not only on iq.
 -- Check whether an actor can be displaced by an enemy. Generally, heroes can

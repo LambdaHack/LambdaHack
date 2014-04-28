@@ -13,10 +13,11 @@ import Game.LambdaHack.Common.Effect
 
 -- | All possible item features.
 data Feature =
-    Cause !(Effect Dice.Dice)  -- ^ causes the effect when triggered
-  | ChangeTo !Text             -- ^ changes to this item kind group when altered
+    Cause !(Effect Dice.Dice)  -- ^ cause the effect when triggered
+  | Manifest !(Aspect Dice.Dice)  -- ^ keep the aspect continuously
+  | ChangeTo !Text             -- ^ change to this item kind group when altered
   | Explode !Text              -- ^ explode, producing this group of shrapnel
-  | Fragile                    -- ^ breaks even when not hitting an enemy
+  | Fragile                    -- ^ break even when not hitting an enemy
   | Linger !Int                -- ^ fly for this percentage of 2 turns
   | Consumable                 -- ^ can't be turned off, is consumed by use
   deriving (Show, Eq, Ord, Generic)

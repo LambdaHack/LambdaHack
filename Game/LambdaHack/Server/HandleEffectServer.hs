@@ -9,7 +9,6 @@ import Control.Monad
 import qualified Data.EnumMap.Strict as EM
 import Data.Key (mapWithKeyM_)
 import Data.Maybe
-import Data.Ratio ((%))
 import Data.Text (Text)
 import qualified NLP.Miniutter.English as MU
 
@@ -76,8 +75,6 @@ effectSem effect source target miidCstore = do
     Effect.NoEffect -> effectNoEffect target
     Effect.Heal p -> effectHeal execSfx p source target
     Effect.Hurt nDm p -> effectHurt nDm p source target
-    Effect.ArmorMelee _ -> effectNoEffect target  -- TODO: separate passive effs
-    Effect.Haste p -> effectHaste execSfx p target
     Effect.Mindprobe _ -> effectMindprobe source target
     Effect.Dominate | source /= target -> effectDominate execSfx source target
     Effect.Dominate ->
@@ -89,10 +86,9 @@ effectSem effect source target miidCstore = do
     Effect.ApplyPerfume -> effectApplyPerfume execSfx source target
     Effect.Burn p -> effectBurn execSfx p source target
     Effect.Blast p -> effectBlast execSfx p source target
-    Effect.Regeneration p -> effectSem (Effect.Heal p) source target miidCstore
-    Effect.Steadfastness p -> effectSteadfastness execSfx p target
     Effect.Ascend p -> effectAscend execSfx p target
     Effect.Escape{} -> effectEscape target
+    Effect.TimedAspect{} -> effectNoEffect target  -- TODO
 
 -- + Individual semantic functions for effects
 
@@ -167,25 +163,6 @@ effectHurt nDm power source target = do
     then Effect.Heal deltaHP
     else Effect.Hurt nDm deltaHP{-hack-}
   return True
-
--- ** Haste
-
-effectHaste :: MonadAtomic m => m () -> Int -> ActorId -> m Bool
-effectHaste execSfx power target = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-  tb <- getsState $ getActorBody target
-  let baseSpeed = aspeed $ okind $ bkind tb
-      scaledSpeed = speedScale ((100 + fromIntegral power) % 100) baseSpeed
-      incrSpeed = speedAdd scaledSpeed (speedNegate (bspeed tb))
-      deltaSpeed = if (power > 0) == (incrSpeed > speedZero)
-                   then incrSpeed
-                   else speedZero
-  if deltaSpeed == speedZero
-    then effectNoEffect target
-    else do
-      execUpdAtomic $ UpdHasteActor target deltaSpeed
-      execSfx
-      return True
 
 -- ** Mindprobe
 
@@ -345,23 +322,6 @@ effectBlast execSfx _power _source _target = do
   -- or calm can't get above half --- all depends if it's temporary or not
   execSfx
   return True
-
--- ** Regeneration
-
--- ** Steadfastness
-
-effectSteadfastness :: MonadAtomic m => m () -> Int -> ActorId -> m Bool
-effectSteadfastness execSfx power target = do
-  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-  tb <- getsState $ getActorBody target
-  let bcalmMax = Dice.maxDice (acalm $ okind $ bkind tb)
-      deltaCalm = min power (bcalmMax - bcalm tb)
-  if deltaCalm <= 0
-    then effectNoEffect target
-    else do
-      execUpdAtomic $ UpdCalmActor target deltaCalm
-      execSfx
-      return True
 
 -- ** Ascend
 

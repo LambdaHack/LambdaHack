@@ -208,6 +208,7 @@ pickup aid onlyWeapon = do
 manageEqp :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbMoveItem))
 manageEqp aid = do
   cops@Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
+  disco <- getsClient sdisco
   let RuleKind{ritemEqp, rsharedInventory} = Kind.stdRuleset corule
   body <- getsState $ getActorBody aid
   invAssocs <- getsState $ getActorAssocs aid CInv
@@ -215,8 +216,8 @@ manageEqp aid = do
   if calmEnough body kind then do
     eqpKA <- getsState $ getEqpKA body
     let improve symbol =
-          let bestInv = strongestItem invAssocs $ pSymbol cops symbol
-              bestEqp = strongestItems eqpKA $ pSymbol cops symbol
+          let bestInv = strongestItem invAssocs $ pSymbol cops disco symbol
+              bestEqp = strongestItems eqpKA $ pSymbol cops disco symbol
           in case (bestInv, bestEqp) of
             (_, (_, (k, (iidEqp, itemEqp))) : _) | harmful body itemEqp ->
               -- This item is harmful to this actor, take it off.
@@ -236,12 +237,12 @@ manageEqp aid = do
     return $ msum $ map improve ritemEqp
   else return reject
 
-pSymbol :: Kind.COps -> Char -> Item -> Maybe Int
-pSymbol cops c = case c of
-  ')' -> pMelee cops
+pSymbol :: Kind.COps -> Discovery -> Char -> Item -> Maybe Int
+pSymbol cops disco c = case c of
+  ')' -> pMelee cops disco
   '\"' -> pRegen
   '=' -> pStead
-  '(' -> pBurn
+  '(' -> pLight
   '[' -> pArmor
   _ -> \_ -> Nothing
 
@@ -249,7 +250,7 @@ harmful :: Actor -> Item -> Bool
 harmful body item =
   -- Fast actors want to hide in darkness to ambush opponents and want
   -- to hit hard for the short span they get to survive melee.
-  isJust (pBurn item `mplus` pArmor item) && bspeed body > speedNormal
+  isJust (pLight item `mplus` pArmor item) && bspeed body > speedNormal
   -- TODO:
   -- teach AI to turn shields OFF (or stash) when ganging up on an enemy
   -- (friends close, only one enemy close)
@@ -425,9 +426,9 @@ applyItem aid applyGroup = do
             Effect.Heal p | p > 0 -> True
             _ -> False
         QuenchLight ->
-          case jeffect item of
-            Effect.Burn _ -> not $ jisOn item
-            _ -> False
+          case pLight item of
+            Just _ -> not $ jisOn item
+            Nothing -> False
         ApplyAll -> True
       coeff CBody = 3  -- never destroyed by use
       coeff CGround = 2

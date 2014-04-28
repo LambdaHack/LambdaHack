@@ -104,7 +104,7 @@ reachableFromActor Kind.COps{cotile, coactor=Kind.Ops{okind}}
 litByItems :: FovMode -> Level -> Point -> State -> [(ItemId, Item)] -> [Point]
 litByItems fovMode lvl p s iis =
   let Kind.COps{cotile} = scops s
-  in case strongestBurn iis of
+  in case strongestLight iis of
     (radius, _) : _ ->
       let scan = fullscan cotile fovMode radius p lvl
       -- Optimization: filter out positions that already have ambient light.

@@ -166,6 +166,7 @@ reqMove source dir = do
 reqMelee :: (MonadAtomic m, MonadServer m) => ActorId -> ActorId -> m ()
 reqMelee source target = do
   cops <- getsState scops
+  disco <- getsServer sdisco
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   let adj = checkAdjacent sb tb
@@ -188,7 +189,7 @@ reqMelee source target = do
       then case ais of
         [(iid, item)] -> return $ Just (iid, item)
         _ -> assert `failure` "projectile with wrong items" `twith` ais
-      else case strongestSword cops sallAssocs of
+      else case strongestSword cops disco sallAssocs of
         [] -> return Nothing -- no weapon nor combat body part
         iis@((maxS, _) : _) -> do
           let maxIis = map snd $ takeWhile ((== maxS) . fst) iis

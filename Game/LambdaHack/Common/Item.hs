@@ -10,8 +10,8 @@ module Game.LambdaHack.Common.Item
     -- * Item search
   , strongestItem, strongestItems
   , strongestSword, strongestShield
-  , strongestRegen, strongestStead, strongestBurn
-  , pMelee, pArmor, pRegen, pStead, pBurn
+  , strongestRegen, strongestStead, strongestLight
+  , pMelee, pArmor, pRegen, pStead, pLight
    -- * Item discovery types
   , ItemKindIx, Discovery, DiscoRev, serverDiscos
     -- * The @FlavourMap@ type
@@ -66,7 +66,6 @@ type Discovery = EM.EnumMap ItemKindIx (Kind.Id ItemKind)
 -- | The reverse map to @Discovery@, needed for item creation.
 type DiscoRev = EM.EnumMap (Kind.Id ItemKind) ItemKindIx
 
--- TODO: somehow hide from clients jeffect of unidentified items.
 -- | Game items in actor possesion or strewn around the dungeon.
 -- The fields @jsymbol@, @jname@ and @jflavour@ make it possible to refer to
 -- and draw an unidentified item. Full information about item is available
@@ -76,6 +75,7 @@ data Item = Item
   , jsymbol  :: !Char          -- ^ individual map symbol
   , jname    :: !Text          -- ^ individual generic name
   , jflavour :: !Flavour       -- ^ individual flavour
+  , jaspects :: ![Aspect Int]  -- ^ the aspects of the item
   , jeffect  :: !(Effect Int)  -- ^ the effect when activated
   , jweight  :: !Int           -- ^ weight in grams, obvious enough
   , jtoThrow :: !Int           -- ^ physical percentage bonus to throw speed
@@ -110,8 +110,8 @@ serverDiscos Kind.Ops{obounds, ofoldrWithKey} = do
 
 -- | Build an item with the given stats.
 buildItem :: FlavourMap -> DiscoRev
-          -> Kind.Id ItemKind -> ItemKind -> Effect Int -> Item
-buildItem (FlavourMap flavour) discoRev ikChosen kind jeffect =
+          -> Kind.Id ItemKind -> ItemKind -> [Aspect Int] -> Effect Int -> Item
+buildItem (FlavourMap flavour) discoRev ikChosen kind jaspects jeffect =
   let jkindIx  = discoRev EM.! ikChosen
       jsymbol  = isymbol kind
       jname    = iname kind
@@ -148,7 +148,7 @@ newItem coitem@Kind.Ops{opick, okind} flavour discoRev itemFreq ln depth = do
                 [] -> NoEffect
                 eff : _TODO -> eff
           effect <- effectTrav kindEffect (castDice ln depth)
-          return ( buildItem flavour discoRev ikChosen kind effect
+          return ( buildItem flavour discoRev ikChosen kind []{-TODO-} effect
                  , jcount
                  , kind )
   castItem 10
@@ -207,40 +207,52 @@ strongestItems is p =
                          Just v -> Just (v, (k, (iid, item)))) is
   in sortBy (flip $ Ord.comparing fst) kis
 
-pMelee :: Kind.COps -> Item -> Maybe Int
-pMelee Kind.COps{corule} i =
-  case jeffect i of
-    Hurt d k | jsymbol i `elem` ritemMelee (Kind.stdRuleset corule)
-      -> Just $ floor (Dice.meanDice d) + k
+pMelee :: Kind.COps -> Discovery -> Item -> Maybe Int
+pMelee Kind.COps{coitem=_coitem, corule} disco i =
+  case jkind disco i of
+    Just _kid | jsymbol i `elem` ritemMelee (Kind.stdRuleset corule) ->
+      let kindEffects = [jeffect i]  -- causeIEffects coitem kid
+          getP (Hurt d k) _ = Just $ floor (Dice.meanDice d) + k
+          getP _ acc = acc
+      in foldr getP Nothing kindEffects
     _ -> Nothing
 
-strongestSword :: Kind.COps -> [(ItemId, Item)] -> [(Int, (ItemId, Item))]
-strongestSword cops is =
-  strongestItem (filter (jisOn . snd) is) $ pMelee cops
+strongestSword :: Kind.COps -> Discovery -> [(ItemId, Item)]
+               -> [(Int, (ItemId, Item))]
+strongestSword cops disco is =
+  strongestItem (filter (jisOn . snd) is) $ pMelee cops disco
 
 pArmor :: Item -> Maybe Int
-pArmor i = case jeffect i of ArmorMelee k -> Just k; _ -> Nothing
+pArmor = let getP (ArmorMelee k) _ = Just k
+             getP _ acc = acc
+         in foldr getP Nothing . jaspects
 
 strongestShield :: [(ItemId, Item)] -> [(Int, (ItemId, Item))]
 strongestShield is = strongestItem (filter (jisOn . snd) is) pArmor
 
 pRegen :: Item -> Maybe Int
-pRegen i = case jeffect i of Regeneration k -> Just k; _ -> Nothing
+pRegen = let getP (Regeneration k) _ = Just k
+             getP _ acc = acc
+         in foldr getP Nothing . jaspects
 
 strongestRegen :: [(ItemId, Item)] -> [(Int, (ItemId, Item))]
 strongestRegen is = strongestItem (filter (jisOn . snd) is) pRegen
 
 pStead :: Item -> Maybe Int
-pStead i = case jeffect i of Steadfastness k -> Just k; _ -> Nothing
+pStead = let getP (Steadfastness k) _ = Just k
+             getP _ acc = acc
+         in foldr getP Nothing . jaspects
 
 strongestStead :: [(ItemId, Item)] -> [(Int, (ItemId, Item))]
 strongestStead is = strongestItem (filter (jisOn . snd) is) pStead
 
-pBurn :: Item -> Maybe Int
-pBurn i = case jeffect i of Burn k -> Just k; _ -> Nothing
+pLight :: Item -> Maybe Int
+pLight = let getP (Light k) _ = Just k
+             getP _ acc = acc
+         in foldr getP Nothing . jaspects
 
-strongestBurn :: [(ItemId, Item)] -> [(Int, (ItemId, Item))]
-strongestBurn is = strongestItem (filter (jisOn . snd) is) pBurn
+strongestLight :: [(ItemId, Item)] -> [(Int, (ItemId, Item))]
+strongestLight is = strongestItem (filter (jisOn . snd) is) pLight
 
 isFragile :: Kind.Ops ItemKind -> Discovery -> Item -> Bool
 isFragile Kind.Ops{okind} disco i =
@@ -278,20 +290,23 @@ causeIEffects Kind.Ops{okind} ik = do
 
 -- | The part of speech describing the item.
 partItem :: Kind.Ops ItemKind -> Discovery -> Item -> (MU.Part, MU.Part)
-partItem _cops disco i =
+partItem _coitem disco i =
   let genericName = jname i
       flav = flavourToName $ jflavour i
   in case jkind disco i of
     Nothing ->
-      -- TODO: really hide jeffect from a client that has not discovered
-      -- that individual item's properties (nor item kind, if there's only
-      -- one effect possible for the kind (plus effect deduction))
+      -- TODO: display the aspects even if item identity not known
+      -- and deduce item identity if there's nothing except the aspects
       (MU.Text $ flav <+> genericName, "")
-    Just _ ->
-      let eff = effectToSuffix $ jeffect i
+    Just _kid ->
+      let asps = map (TimedAspect 0) $ jaspects i  -- hack
+          efffectText = case asps ++ [jeffect i] of -- causeIEffects coitem kid of
+            [] -> ""
+            [eff] -> effectToSuffix eff
+            _ -> "of many effects"
           turnedOff | jisOn i = ""
                     | otherwise = "{OFF}"  -- TODO: mark with colour
-      in (MU.Text genericName, MU.Text $ eff <+> turnedOff)
+      in (MU.Text genericName, MU.Text $ efffectText <+> turnedOff)
 
 partItemWs :: Kind.Ops ItemKind -> Discovery -> Int -> Item -> MU.Part
 partItemWs coitem disco jcount i =

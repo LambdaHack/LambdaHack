@@ -287,7 +287,7 @@ drawLeaderDamage cops s sdisco mleader width =
           let eqpAssocs = getActorAssocs leader CEqp s
               bodyAssocs = getActorAssocs leader CBody s
               allAssocs = eqpAssocs ++ bodyAssocs
-              damage = case Item.strongestSword cops allAssocs of
+              damage = case Item.strongestSword cops sdisco allAssocs of
                 (_, (_, sw)) : _->
                   case Item.jkind sdisco sw of
                     Just _ ->
