@@ -17,9 +17,9 @@ cdefs = ContentDef
   , getFreq = ifreq
   , validate = validateItemKind
   , content =
-      [amulet, brassLantern, dart, gem1, gem2, gem3, currency, harpoon, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke]
+      [amulet, brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke]
   }
-amulet,        brassLantern, dart, gem1, gem2, gem3, currency, harpoon, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke :: ItemKind
+amulet,        brassLantern, dart, dart100, gem1, gem2, gem3, currency, harpoon, oilLamp, potion1, potion2, potion3, ring, scroll1, scroll2, scroll3, scroll4, shield, sword, wand1, wand2, woodenTorch, fist, foot, tentacle, lash, noseTip, lip, claw, smallClaw, snout, venomTooth, venomFang, largeTail, jaw, largeJaw, fragrance, mist_healing, mist_wounding, burningOil2, burningOil3, burningOil4, explosionBlast10, glass_piece, smoke :: ItemKind
 
 gem, potion, scroll, wand :: ItemKind  -- generic templates
 
@@ -59,8 +59,21 @@ dart = ItemKind
   , iverbProject = "hurl"
   , iweight  = 50
   , itoThrow = 0  -- a cheap dart
+  , ifeature = [Cause $ Hurt (d 2) (d 3 + dl 3)]
+  , idesc    = "Little, but sharp and sturdy."
+  }
+dart100 = ItemKind
+  { isymbol  = '|'
+  , iname    = "fine dart"
+  , ifreq    = [("useful", 20)]
+  , iflavour = zipPlain [BrRed]
+  , icount   = 3 * d 3
+  , iverbApply   = "snap"
+  , iverbProject = "hurl"
+  , iweight  = 50
+  , itoThrow = 100
   , ifeature = [Cause $ Hurt (d 1) (d 2 + dl 2)]
-  , idesc    = "Little, but sharp and easy to throw with great speed."
+  , idesc    = "Subtly balanced for throws of great speed."
   }
 gem = ItemKind
   { isymbol  = '*'
