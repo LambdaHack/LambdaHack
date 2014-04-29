@@ -38,6 +38,7 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ActorKind
+import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Content.TileKind
 
@@ -279,7 +280,7 @@ drawLeaderStatus cops s waitT mleader width =
 drawLeaderDamage :: Kind.COps -> State -> Discovery
                  -> Maybe ActorId -> Int
                  -> [Color.AttrChar]
-drawLeaderDamage cops s sdisco mleader width =
+drawLeaderDamage cops@Kind.COps{coitem=Kind.Ops{okind}} s sdisco mleader width =
   let addColor t = map (Color.AttrChar $ Color.Attr Color.BrCyan Color.defBG)
                    (T.unpack t)
       stats = case mleader of
@@ -290,13 +291,28 @@ drawLeaderDamage cops s sdisco mleader width =
               damage = case Item.strongestSword cops sdisco allAssocs of
                 (_, (_, item)) : _->
                   case Item.jkind sdisco item of
-                    Just _ ->
-                      let getP (Effect.Hurt dice p) _ =
-                            tshow dice <> if p == 0
+                    Just ik ->
+                      let getP :: Effect.Effect a -> Maybe (Dice.Dice, a)
+                               -> Maybe (Dice.Dice, a)
+                          getP (Effect.Hurt dice p) _ = Just (dice, p)
+                          getP _ acc = acc
+                          (mdice, mbonus) =
+                            case foldr getP Nothing (jeffects item) of
+                              Just (dice, p) -> (Just dice, Just p)
+                              Nothing ->
+                                let kind = okind ik
+                                in case foldr getP Nothing (ieffects kind) of
+                                  Just (dice, _) -> (Just dice, Nothing)
+                                  Nothing -> (Nothing, Nothing)
+                      in case mdice of
+                        Nothing -> "???"
+                        Just dice ->
+                          let bonusText = case mbonus of
+                                Nothing -> "+?"
+                                Just p -> if p == 0
                                           then ""
                                           else "+" <> tshow p
-                          getP _ acc = acc
-                      in foldr getP "???" (jeffects item)
+                          in tshow dice <> bonusText
                     Nothing -> "???"
                 [] -> "0"
           in damage

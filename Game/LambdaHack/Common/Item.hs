@@ -276,24 +276,27 @@ isToThrow = let getTo (IF.ToThrow percent) _acc = percent
 
 -- | The part of speech describing the item.
 partItem :: Kind.Ops ItemKind -> Discovery -> Item -> (MU.Part, MU.Part)
-partItem _coitem disco i =
+partItem Kind.Ops{okind} disco i =
   let genericName = jname i
       flav = flavourToName $ jflavour i
   in case jkind disco i of
-    Nothing ->
-      -- TODO: display the aspects even if item identity not known
-      -- and deduce item identity if there's nothing except the aspects
-      (MU.Text $ flav <+> genericName, "")
-    Just _kid ->
-      let effTs = map aspectToSuffix (jaspects i)
-                  ++ map effectToSuffix (jeffects i)
-          efffectText = case filter (not . T.null) effTs of
+    Nothing -> (MU.Text $ flav <+> genericName, "")
+    Just ik ->
+      let effTs0 = map aspectToSuffix (jaspects i)
+                   ++ map effectToSuffix (jeffects i)
+          effTs =
+            if not $ null effTs0 then effTs0
+            else let kind = okind ik
+                 in map kindAspectToSuffix (iaspects kind)
+                    ++ map kindEffectToSuffix (ieffects kind)
+          effectText = case filter (not . T.null) effTs of
             [] -> ""
             [effT] -> effT
+            [effT1, effT2] -> effT1 <+> "and" <+> effT2
             _ -> "of many effects"
           turnedOff | jisOn i = ""
                     | otherwise = "{OFF}"  -- TODO: mark with colour
-      in (MU.Text genericName, MU.Text $ efffectText <+> turnedOff)
+      in (MU.Text genericName, MU.Text $ effectText <+> turnedOff)
 
 partItemWs :: Kind.Ops ItemKind -> Discovery -> Int -> Item -> MU.Part
 partItemWs coitem disco jcount i =

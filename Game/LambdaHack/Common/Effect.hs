@@ -3,7 +3,8 @@
 -- involves the 'State' or 'Action' type.
 module Game.LambdaHack.Common.Effect
   ( Effect(..), Aspect(..)
-  , effectTrav, aspectTrav, effectToSuffix, aspectToSuffix
+  , effectTrav, aspectTrav
+  , effectToSuffix, aspectToSuffix, kindEffectToSuffix, kindAspectToSuffix
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -110,7 +111,7 @@ effectToSuff effect f =
     Summon p -> "of summoning" <+> affixPower p
     CreateItem p -> "of item creation" <+> affixPower p
     ApplyPerfume -> "of rose water"
-    Burn p -> affixPower p
+    Burn p -> affixPower p  -- accompanies Light
     Blast p -> "of explosion" <+> affixPower p
     Ascend p | p > 0 -> "of ascending" <+> affixPower p
     Ascend 0 -> assert `failure` effect
@@ -126,7 +127,7 @@ aspectTextToSuff aspect =
     Haste p | p > 0 -> "of speed" <+> affixBonus p
     Haste 0 -> assert `failure` aspect
     Haste p -> "of slowness" <+> affixBonus (- p)
-    Light p -> affixPower p
+    Light{} -> ""
     Regeneration t -> "of regeneration" <+> t
     Steadfastness t -> "of steadfastness" <+> t
     Explode{} -> ""
@@ -152,3 +153,9 @@ affixBonus p = case compare p 0 of
   EQ -> ""
   LT -> "(" <> tshow p <> ")"
   GT -> "(+" <> tshow p <> ")"
+
+kindEffectToSuffix :: Show a => Effect a -> Text
+kindEffectToSuffix effect = effectToSuff effect $ const "(?)"
+
+kindAspectToSuffix :: Show a => Aspect a -> Text
+kindAspectToSuffix aspect = aspectToSuff aspect $ const "(?)"
