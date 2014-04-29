@@ -46,6 +46,7 @@ data Aspect a =
   | Light !Int
   | Regeneration !a
   | Steadfastness !a
+  | Explode !Text  -- ^ explode, producing this group of shrapnel
   deriving (Show, Read, Eq, Ord, Generic, Functor)
 
 instance Hashable.Hashable a => Hashable.Hashable (Effect a)
@@ -91,6 +92,7 @@ aspectTrav (Regeneration a) f = do
 aspectTrav (Steadfastness a) f = do
   b <- f a
   return $! Steadfastness b
+aspectTrav (Explode t) _ = return $! Explode t
 
 -- | Suffix to append to a basic content name if the content causes the effect.
 effectToSuff :: Show a => Effect a -> (a -> Text) -> Text
@@ -127,6 +129,7 @@ aspectTextToSuff aspect =
     Light p -> affixPower p
     Regeneration t -> "of regeneration" <+> t
     Steadfastness t -> "of steadfastness" <+> t
+    Explode{} -> ""
 
 aspectToSuff :: Show a => Aspect a -> (a -> Text) -> Text
 aspectToSuff aspect f =

@@ -44,3 +44,4 @@ aspectToBenefit _cops _b asp =
     Effect.Light p -> p
     Effect.Regeneration p -> p
     Effect.Steadfastness p -> p
+    Effect.Explode{} -> 2

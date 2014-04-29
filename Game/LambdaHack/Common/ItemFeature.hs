@@ -12,7 +12,6 @@ import GHC.Generics (Generic)
 -- | All possible item features.
 data Feature =
     ChangeTo !Text             -- ^ change to this item kind group when altered
-  | Explode !Text              -- ^ explode, producing this group of shrapnel
   | Fragile                    -- ^ break even when not hitting an enemy
   | Linger !Int                -- ^ fly for this percentage of 2 turns
   | Consumable                 -- ^ can't be turned off, is consumed by use

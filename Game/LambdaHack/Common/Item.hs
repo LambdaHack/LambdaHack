@@ -256,15 +256,15 @@ strongestLight :: [(ItemId, Item)] -> [(Int, (ItemId, Item))]
 strongestLight is = strongestItem (filter (jisOn . snd) is) pLight
 
 isFragile :: Item -> Bool
-isFragile = let getTo IF.Fragile _acc = True
-                getTo IF.Explode{} _acc = True
-                getTo _ acc = acc
-            in foldr getTo False . jfeature
+isFragile item = let getTo IF.Fragile _acc = True
+                     getTo _ acc = acc
+                 in foldr getTo False (jfeature item)
+                    || isJust (isExplosive item)
 
 isExplosive :: Item -> Maybe Text
-isExplosive = let getTo (IF.Explode cgroup) _acc = Just cgroup
+isExplosive = let getTo (Explode cgroup) _acc = Just cgroup
                   getTo _ acc = acc
-              in foldr getTo Nothing . jfeature
+              in foldr getTo Nothing . jaspects
 
 isLingering :: Item -> Int
 isLingering = let getTo (IF.Linger percent) _acc = percent

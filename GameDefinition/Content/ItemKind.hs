@@ -48,9 +48,9 @@ brassLantern = ItemKind
   , iverbProject = "heave"
   , iweight  = 2400
   , itoThrow = -30  -- hard to throw so that it opens and burns
-  , iaspects = [Light 4]
+  , iaspects = [Light 4, Explode "burning oil 4"]
   , ieffects = [Burn 4]
-  , ifeature = [Explode "burning oil 4"]
+  , ifeature = []
   , idesc    = "Very bright and quite heavy brass lantern."
   }
 dart = ItemKind
@@ -147,9 +147,9 @@ oilLamp = ItemKind
   , iverbProject = "lob"
   , iweight  = 1000
   , itoThrow = -30  -- hard not to spill the oil while throwing
-  , iaspects = [Light 3]
+  , iaspects = [Light 3, Explode "burning oil 3"]
   , ieffects = [Burn 3]
-  , ifeature = [Explode "burning oil 3"]
+  , ifeature = []
   , idesc    = "A clay lamp full of plant oil feeding a thick wick."
   }
 potion = ItemKind
@@ -168,16 +168,16 @@ potion = ItemKind
   , idesc    = "A flask of bubbly, slightly oily liquid of a suspect color."
   }
 potion1 = potion
-  { ieffects = [ApplyPerfume]
-  , ifeature = ifeature potion ++ [Explode "fragrance"]
+  { iaspects = [Explode "fragrance"]
+  , ieffects = [ApplyPerfume]
   }
 potion2 = potion
-  { ieffects = [Heal 5]
-  , ifeature = ifeature potion ++ [Explode "healing mist"]
+  { iaspects = [Explode "healing mist"]
+  , ieffects = [Heal 5]
   }
 potion3 = potion
-  { ieffects = [Blast 10]
-  , ifeature = ifeature potion ++ [Explode "explosion blast 10"]
+  { iaspects = [Explode "explosion blast 10"]
+  , ieffects = [Blast 10]
   }
 ring = ItemKind
   { isymbol  = '='
