@@ -284,11 +284,10 @@ addProjectile :: (MonadAtomic m, MonadServer m)
               => Point -> [Point] -> ItemId -> LevelId -> FactionId -> Time
               -> m ()
 addProjectile bpos rest iid blid bfid btime = do
-  cops@Kind.COps{coactor=coactor@Kind.Ops{okind}, coitem} <- getsState scops
-  disco <- getsServer sdisco
+  Kind.COps{coactor=coactor@Kind.Ops{okind}, coitem} <- getsState scops
   item <- getsState $ getItemBody iid
   let speed = speedFromWeight (jweight item) (jtoThrow item)
-      trange = totalRange cops disco item
+      trange = totalRange item
       adj | trange < 5 = "falling"
           | otherwise = "flying"
       -- Not much detail about a fast flying item.

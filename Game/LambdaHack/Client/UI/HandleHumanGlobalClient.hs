@@ -299,8 +299,6 @@ projectEps :: MonadClientUI m
            => [Trigger] -> Point -> Int
            -> m (SlideOrCmd (RequestTimed AbProject))
 projectEps ts tpos eps = do
-  cops <- getsState scops
-  disco <- getsClient sdisco
   leader <- getLeaderUI
   sb <- getsState $ getActorBody leader
   let cLegal = [CGround, CEqp, CInv]  -- calm enough at this stage
@@ -308,7 +306,7 @@ projectEps ts tpos eps = do
         [] -> ("aim", "item")
         tr : _ -> (verb tr, object tr)
       triggerSyms = triggerSymbols ts
-      p item = let trange = totalRange cops disco item
+      p item = let trange = totalRange item
                in (jsymbol item `elem` triggerSyms || triggerSyms == [' '])
                   && jisOn item
                   && trange >= chessDist (bpos sb) tpos

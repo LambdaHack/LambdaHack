@@ -87,7 +87,7 @@ dieSer aid b hit = do
 dropAllItems :: (MonadAtomic m, MonadServer m)
              => ActorId -> Actor -> Bool -> m ()
 dropAllItems aid b hit = do
-  Kind.COps{coitem, corule} <- getsState scops
+  Kind.COps{corule} <- getsState scops
   let RuleKind{rsharedInventory} = Kind.stdRuleset corule
   discoS <- getsServer sdisco
   let container = CActor aid CEqp
@@ -106,11 +106,11 @@ dropAllItems aid b hit = do
                                             (CActor leader CInv)
               mapM_ execUpdAtomic upds
         mapActorInv_ g b
-  let isDestroyed item = hit || bproj b && isFragile coitem discoS item
+  let isDestroyed item = hit || bproj b && isFragile item
       f iid k = do
         item <- getsState $ getItemBody iid
         if isDestroyed item then
-          case isExplosive coitem discoS item of
+          case isExplosive item of
             Nothing ->
               -- Feedback from hit, or it's shrapnel, so no @UpdDestroyItem@.
               execUpdAtomic $ UpdLoseItem iid item k container

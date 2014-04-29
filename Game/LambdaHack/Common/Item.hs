@@ -78,6 +78,7 @@ data Item = Item
   , jflavour :: !Flavour       -- ^ individual flavour
   , jaspects :: ![Aspect Int]  -- ^ the aspects of the item
   , jeffects :: ![Effect Int]  -- ^ the effects when activated
+  , jfeature :: ![IF.Feature]  -- ^ other properties
   , jweight  :: !Int           -- ^ weight in grams, obvious enough
   , jtoThrow :: !Int           -- ^ physical percentage bonus to throw speed
   , jisOn    :: !Bool          -- ^ the item is turned on
@@ -121,6 +122,7 @@ buildItem (FlavourMap flavour) discoRev ikChosen kind jaspects jeffects =
         case iflavour kind of
           [fl] -> fl
           _ -> flavour EM.! ikChosen
+      jfeature = ifeature kind
       jweight = iweight kind
       jtoThrow = itoThrow kind
       jisOn = True
@@ -253,33 +255,21 @@ pLight = let getP (Light k) _ = Just k
 strongestLight :: [(ItemId, Item)] -> [(Int, (ItemId, Item))]
 strongestLight is = strongestItem (filter (jisOn . snd) is) pLight
 
-isFragile :: Kind.Ops ItemKind -> Discovery -> Item -> Bool
-isFragile Kind.Ops{okind} disco i =
-  case jkind disco i of
-    Nothing -> False
-    Just ik ->
-      let getTo IF.Fragile _acc = True
-          getTo IF.Explode{} _acc = True
-          getTo _ acc = acc
-      in foldr getTo False $ ifeature $ okind ik
+isFragile :: Item -> Bool
+isFragile = let getTo IF.Fragile _acc = True
+                getTo IF.Explode{} _acc = True
+                getTo _ acc = acc
+            in foldr getTo False . jfeature
 
-isExplosive :: Kind.Ops ItemKind -> Discovery -> Item -> Maybe Text
-isExplosive Kind.Ops{okind} disco i =
-  case jkind disco i of
-    Nothing -> Nothing
-    Just ik ->
-      let getTo (IF.Explode cgroup) _acc = Just cgroup
-          getTo _ acc = acc
-      in foldr getTo Nothing $ ifeature $ okind ik
+isExplosive :: Item -> Maybe Text
+isExplosive = let getTo (IF.Explode cgroup) _acc = Just cgroup
+                  getTo _ acc = acc
+              in foldr getTo Nothing . jfeature
 
-isLingering :: Kind.Ops ItemKind -> Discovery -> Item -> Int
-isLingering Kind.Ops{okind} disco i =
-  case jkind disco i of
-    Nothing -> 100
-    Just ik ->
-      let getTo (IF.Linger percent) _acc = percent
-          getTo _ acc = acc
-      in foldr getTo 100 $ ifeature $ okind ik
+isLingering :: Item -> Int
+isLingering = let getTo (IF.Linger percent) _acc = percent
+                  getTo _ acc = acc
+              in foldr getTo 100 . jfeature
 
 -- | The part of speech describing the item.
 partItem :: Kind.Ops ItemKind -> Discovery -> Item -> (MU.Part, MU.Part)

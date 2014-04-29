@@ -5,6 +5,7 @@ module Game.LambdaHack.Common.ItemFeature
   ) where
 
 import Data.Binary
+import qualified Data.Hashable as Hashable
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
@@ -16,5 +17,7 @@ data Feature =
   | Linger !Int                -- ^ fly for this percentage of 2 turns
   | Consumable                 -- ^ can't be turned off, is consumed by use
   deriving (Show, Eq, Ord, Generic)
+
+instance Hashable.Hashable Feature
 
 instance Binary Feature

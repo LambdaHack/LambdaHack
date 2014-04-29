@@ -38,7 +38,6 @@ import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Time
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.TileKind as TileKind
 import Game.LambdaHack.Server.CommonServer
 import Game.LambdaHack.Server.HandleEffectServer
@@ -370,8 +369,7 @@ reqApply :: (MonadAtomic m, MonadServer m)
          -> CStore   -- ^ the location of the item
          -> m ()
 reqApply aid iid cstore = do
-  Kind.COps{ coactor=Kind.Ops{okind}
-           , coitem=Kind.Ops{okind=iokind} } <- getsState scops
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   let applyItem = do
         -- We have to destroy the item before the effect affects the item
         -- or the actor holding it or standing on it (later on we could
@@ -379,9 +377,7 @@ reqApply aid iid cstore = do
         -- This is OK, because we don't remove the item type
         -- from the item dictionary, just an individual copy from the container.
         item <- getsState $ getItemBody iid
-        discoS <- getsServer sdisco
-        let kindI = iokind $ fromJust $ jkind discoS item
-            consumable = IF.Consumable `elem` (ifeature kindI)
+        let consumable = IF.Consumable `elem` jfeature item
         if consumable then do
           -- TODO: don't destroy if not really used up; also, don't take time?
           cs <- actorConts iid 1 aid cstore

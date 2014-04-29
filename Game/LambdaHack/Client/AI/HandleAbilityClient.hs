@@ -367,14 +367,13 @@ trigger aid fleeViaStairs = do
 -- or zap anything else than obvious physical missiles.
 ranged :: MonadClient m => ActorId -> m (Strategy (RequestTimed AbProject))
 ranged aid = do
-  cops@Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
+  Kind.COps{coactor=Kind.Ops{okind}, corule} <- getsState scops
   btarget <- getsClient $ getTarget aid
   b@Actor{bkind, bpos, blid} <- getsState $ getActorBody aid
   mfpos <- aidTgtToPos aid blid btarget
   seps <- getsClient seps
   case (btarget, mfpos) of
     (Just TEnemy{}, Just fpos) -> do
-      disco <- getsClient sdisco
       let mk = okind bkind
       mnewEps <- makeLine b fpos seps
       case mnewEps of
@@ -388,7 +387,7 @@ ranged aid = do
                           $ Kind.stdRuleset corule
           benList <- benAvailableItems aid permitted
           let fRanged ((mben, cstore), (iid, item)) =
-                let trange = totalRange cops disco item
+                let trange = totalRange item
                     bestRange = chessDist bpos fpos + 2  -- margin for fleeing
                     rangeMult =  -- penalize wasted or unsafely low range
                       10 + max 0 (10 - abs (trange - bestRange))
