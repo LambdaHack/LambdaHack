@@ -422,9 +422,9 @@ applyItem aid applyGroup = do
   benList <- benAvailableItems aid permitted
   let itemLegal item = case applyGroup of
         ApplyFirstAid ->
-          case jeffect item of
-            Effect.Heal p | p > 0 -> True
-            _ -> False
+          let getP (Effect.Heal p) _ | p > 0 = True
+              getP _ acc = acc
+          in foldr getP False (jeffects item)
         QuenchLight ->
           case pLight item of
             Just _ -> not $ jisOn item

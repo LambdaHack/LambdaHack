@@ -36,6 +36,7 @@ import Data.Maybe
 import qualified Data.Ord as Ord
 import qualified Data.Set as S
 import Data.Text (Text)
+import qualified Data.Text as T
 import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
 
@@ -76,7 +77,7 @@ data Item = Item
   , jname    :: !Text          -- ^ individual generic name
   , jflavour :: !Flavour       -- ^ individual flavour
   , jaspects :: ![Aspect Int]  -- ^ the aspects of the item
-  , jeffect  :: !(Effect Int)  -- ^ the effect when activated
+  , jeffects :: ![Effect Int]  -- ^ the effects when activated
   , jweight  :: !Int           -- ^ weight in grams, obvious enough
   , jtoThrow :: !Int           -- ^ physical percentage bonus to throw speed
   , jisOn    :: !Bool          -- ^ the item is turned on
@@ -110,8 +111,9 @@ serverDiscos Kind.Ops{obounds, ofoldrWithKey} = do
 
 -- | Build an item with the given stats.
 buildItem :: FlavourMap -> DiscoRev
-          -> Kind.Id ItemKind -> ItemKind -> [Aspect Int] -> Effect Int -> Item
-buildItem (FlavourMap flavour) discoRev ikChosen kind jaspects jeffect =
+          -> Kind.Id ItemKind -> ItemKind -> [Aspect Int] -> [Effect Int]
+          -> Item
+buildItem (FlavourMap flavour) discoRev ikChosen kind jaspects jeffects =
   let jkindIx  = discoRev EM.! ikChosen
       jsymbol  = isymbol kind
       jname    = iname kind
@@ -144,12 +146,9 @@ newItem coitem@Kind.Ops{opick, okind} flavour discoRev itemFreq ln depth = do
         if jcount == 0 then
           castItem $ count - 1
         else do
-          let kindEffect = case ieffects kind of
-                [] -> NoEffect
-                eff : _TODO -> eff
           aspects <- mapM (flip aspectTrav (castDice ln depth)) (iaspects kind)
-          effect <- effectTrav kindEffect (castDice ln depth)
-          return ( buildItem flavour discoRev ikChosen kind aspects effect
+          effects <- mapM (flip effectTrav (castDice ln depth)) (ieffects kind)
+          return ( buildItem flavour discoRev ikChosen kind aspects effects
                  , jcount
                  , kind )
   castItem 10
@@ -212,10 +211,9 @@ pMelee :: Kind.COps -> Discovery -> Item -> Maybe Int
 pMelee Kind.COps{coitem=_coitem, corule} disco i =
   case jkind disco i of
     Just _kid | jsymbol i `elem` ritemMelee (Kind.stdRuleset corule) ->
-      let kindEffects = [jeffect i]  -- causeIEffects coitem kid
-          getP (Hurt d k) _ = Just $ floor (Dice.meanDice d) + k
+      let getP (Hurt d k) _ = Just $ floor (Dice.meanDice d) + k
           getP _ acc = acc
-      in foldr getP Nothing kindEffects
+      in foldr getP Nothing (jeffects i)
     _ -> Nothing
 
 strongestSword :: Kind.COps -> Discovery -> [(ItemId, Item)]
@@ -294,10 +292,11 @@ partItem _coitem disco i =
       -- and deduce item identity if there's nothing except the aspects
       (MU.Text $ flav <+> genericName, "")
     Just _kid ->
-      let asps = map (TimedAspect 0) $ jaspects i  -- hack
-          efffectText = case asps ++ [jeffect i] of -- causeIEffects coitem kid of
+      let effTs = map aspectToSuffix (jaspects i)
+                  ++ map effectToSuffix (jeffects i)
+          efffectText = case filter (not . T.null) effTs of
             [] -> ""
-            [eff] -> effectToSuffix eff
+            [effT] -> effT
             _ -> "of many effects"
           turnedOff | jisOn i = ""
                     | otherwise = "{OFF}"  -- TODO: mark with colour

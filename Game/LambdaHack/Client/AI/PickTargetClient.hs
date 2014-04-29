@@ -6,7 +6,9 @@ module Game.LambdaHack.Client.AI.PickTargetClient
 import Control.Exception.Assert.Sugar
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
+import Data.List
 import Data.Maybe
+import Data.Ord
 
 import Game.LambdaHack.Client.AI.ConditionClient
 import Game.LambdaHack.Client.AI.Preferences
@@ -19,6 +21,7 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -75,7 +78,6 @@ targetStrategy oldLeader aid = do
   allFoes <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
   dungeon <- getsState sdungeon
   itemD <- getsState sitemD
-  disco <- getsClient sdisco
   -- TODO: we assume the actor eventually becomes a leader (or has the same
   -- set of abilities as the leader, anyway) and set his target accordingly.
   actorAbs <- actorAbilities aid (Just aid)
@@ -106,11 +108,16 @@ targetStrategy oldLeader aid = do
       nearbyFoes = filter (targetableEnemy . snd) allFoes
       unknownId = ouniqGroup "unknown space"
       itemUsefulness item =
-        case jkind disco item of
-          Nothing -> -- TODO: 30  -- experimenting is fun
-             -- for now, cheating:
-             effectToBenefit cops b (jeffect item)
-          Just _ki -> effectToBenefit cops b $ jeffect item
+        case map (Effect.TimedAspect 99) (jaspects item)
+                 ++ jeffects item of
+          [] -> 0
+          effs -> maximumBy (comparing abs)
+                            (map (effectToBenefit cops b) effs)
+        -- case jkind disco item of
+        --   Nothing -> -- TODO: 30  -- experimenting is fun
+        --      -- for now, cheating:
+        --      effectToBenefit cops b (jeffect item)
+        --   Just _ki -> effectToBenefit cops b $ jeffect item
       desirableItem item k | fightsSpawners = itemUsefulness item /= 0
                                               || itemPrice (item, k) > 0
                            | otherwise = itemUsefulness item /= 0

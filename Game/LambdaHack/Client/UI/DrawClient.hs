@@ -21,7 +21,7 @@ import Game.LambdaHack.Common.Actor as Actor
 import Game.LambdaHack.Common.ActorState
 import qualified Game.LambdaHack.Common.Color as Color
 import qualified Game.LambdaHack.Common.Dice as Dice
-import Game.LambdaHack.Common.Effect
+import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Item
@@ -288,14 +288,15 @@ drawLeaderDamage cops s sdisco mleader width =
               bodyAssocs = getActorAssocs leader CBody s
               allAssocs = eqpAssocs ++ bodyAssocs
               damage = case Item.strongestSword cops sdisco allAssocs of
-                (_, (_, sw)) : _->
-                  case Item.jkind sdisco sw of
+                (_, (_, item)) : _->
+                  case Item.jkind sdisco item of
                     Just _ ->
-                      case jeffect sw of
-                        Hurt dice p -> tshow dice <> if p == 0
-                                                     then ""
-                                                     else "+" <> tshow p
-                        _ -> "???"
+                      let getP (Effect.Hurt dice p) _ =
+                            tshow dice <> if p == 0
+                                          then ""
+                                          else "+" <> tshow p
+                          getP _ acc = acc
+                      in foldr getP "???" (jeffects item)
                     Nothing -> "???"
                 [] -> "0"
           in damage

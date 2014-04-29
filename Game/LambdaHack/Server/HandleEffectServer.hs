@@ -51,15 +51,15 @@ itemEffect source target iid item cstore = do
   postb <- getsState $ getActorBody source
   discoS <- getsServer sdisco
   let ik = fromJust $ jkind discoS item
-      ef = jeffect item
+      effs = jeffects item
       miidCstore = Just (iid, cstore)
-  b <- effectSem ef source target miidCstore
+  bs <- mapM (\ef -> effectSem ef source target miidCstore) effs
   -- The effect is interesting so the item gets identified, if seen
   -- (the item was at the source actor's position, so his old position
   -- is given, since the actor and/or the item may be moved by the effect;
   -- we'd need to track not only position of atomic commands and factions,
   -- but also which items they relate to, to be fully accurate).
-  when b $ execUpdAtomic $ UpdDiscover (blid postb) (bpos postb) iid ik
+  when (and bs) $ execUpdAtomic $ UpdDiscover (blid postb) (bpos postb) iid ik
 
 -- | The source actor affects the target actor, with a given effect and power.
 -- Both actors are on the current level and can be the same actor.

@@ -25,12 +25,14 @@ import Control.Exception.Assert.Sugar
 import qualified Data.EnumMap.Strict as EM
 import Data.List
 import Data.Maybe
+import Data.Ord
 
 import Game.LambdaHack.Client.AI.Preferences
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
+import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
@@ -42,7 +44,6 @@ import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ActorKind
-import Game.LambdaHack.Content.ItemKind
 import Game.LambdaHack.Content.RuleKind
 
 -- | Require that the target enemy is visible by the party.
@@ -156,12 +157,7 @@ benAvailableItems aid permitted = do
         [ ((benefit, cstore), (iid, item))
         | (iid, item) <- map (\iid -> (iid, getItemB iid))
                          $ EM.keys bag
-        , let benefit = case jkind disco item of
-                Nothing -> Nothing
-                Just _ki ->
-                  let _kik = undefined -- iokind _ki
-                      _unneeded = isymbol _kik
-                  in Just $ effectToBenefit cops b (jeffect item)
+        , let benefit = maxUsefulness cops disco b item
         , benefit /= Just 0
         , jsymbol item `elem` permitted ]
   floorBag <- getsState $ getActorBag aid CGround
@@ -192,20 +188,27 @@ benGroundItems aid = do
   disco <- getsClient sdisco
   floorItems <- getsState $ getActorBag aid CGround
   fightsSpawners <- fightsAgainstSpawners (bfid body)
-  let itemUsefulness item =
-        case jkind disco item of
-          Nothing -> 5  -- experimenting is fun
-          Just _ki -> effectToBenefit cops body $ jeffect item
-      desirableItem item use k
-        | fightsSpawners = use /= 0 || itemPrice (item, k) > 0
-        | otherwise = use /= 0
+  let desirableItem item use k
+        | fightsSpawners = use /= Just 0 || itemPrice (item, k) > 0
+        | otherwise = use /= Just 0
       mapDesirable (iid, k) = let item = itemD EM.! iid
-                                  use = itemUsefulness item
+                                  use = maxUsefulness cops disco body item
+                                  value = fromMaybe 5 use  -- experimenting fun
                               in if desirableItem item use k
-                                 then Just ((use, k), (iid, item))
+                                 then Just ((value, k), (iid, item))
                                  else Nothing
   return $ reverse $ sort $ mapMaybe mapDesirable $ EM.assocs floorItems
     -- keep it lazy
+
+maxUsefulness :: Kind.COps -> Discovery -> Actor -> Item -> Maybe Int
+maxUsefulness cops disco body item = do
+  case jkind disco item of
+    Nothing -> Nothing
+    Just _ki -> case map (Effect.TimedAspect 99) (jaspects item)
+                     ++ jeffects item of
+      [] -> Just 0
+      effs -> Just $ maximumBy (comparing abs)
+                               (map (effectToBenefit cops body) effs)
 
 condMeleeBadM :: MonadClient m => ActorId -> m Bool
 condMeleeBadM aid = do
