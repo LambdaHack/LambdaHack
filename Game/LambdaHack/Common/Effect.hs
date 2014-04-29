@@ -44,7 +44,6 @@ data Aspect a =
     NoAspect
   | ArmorMelee !Int
   | Haste !Int  -- ^ positive or negative percent change
-  | Light !Int
   | Regeneration !a
   | Steadfastness !a
   | Explode !Text  -- ^ explode, producing this group of shrapnel
@@ -86,7 +85,6 @@ aspectTrav :: Aspect a -> (a -> St.State s b) -> St.State s (Aspect b)
 aspectTrav NoAspect _ = return NoAspect
 aspectTrav (ArmorMelee p) _ = return $! ArmorMelee p
 aspectTrav (Haste p) _ = return $! Haste p
-aspectTrav (Light p) _ = return $! Light p
 aspectTrav (Regeneration a) f = do
   b <- f a
   return $! Regeneration b
@@ -111,7 +109,7 @@ effectToSuff effect f =
     Summon p -> "of summoning" <+> affixPower p
     CreateItem p -> "of item creation" <+> affixPower p
     ApplyPerfume -> "of rose water"
-    Burn p -> affixPower p  -- accompanies Light
+    Burn{} -> ""  -- often accompanies Light, too verbose, too boring
     Blast p -> "of explosion" <+> affixPower p
     Ascend p | p > 0 -> "of ascending" <+> affixPower p
     Ascend 0 -> assert `failure` effect
@@ -127,7 +125,6 @@ aspectTextToSuff aspect =
     Haste p | p > 0 -> "of speed" <+> affixBonus p
     Haste 0 -> assert `failure` aspect
     Haste p -> "of slowness" <+> affixBonus (- p)
-    Light{} -> ""
     Regeneration t -> "of regeneration" <+> t
     Steadfastness t -> "of steadfastness" <+> t
     Explode{} -> ""

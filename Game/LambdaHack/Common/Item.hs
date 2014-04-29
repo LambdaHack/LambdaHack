@@ -246,9 +246,9 @@ strongestStead :: [(ItemId, Item)] -> [(Int, (ItemId, Item))]
 strongestStead is = strongestItem (filter (jisOn . snd) is) pStead
 
 pLight :: Item -> Maybe Int
-pLight = let getP (Light k) _ = Just k
+pLight = let getP (IF.Light k) _ = Just k
              getP _ acc = acc
-         in foldr getP Nothing . jaspects
+         in foldr getP Nothing . jfeature
 
 strongestLight :: [(ItemId, Item)] -> [(Int, (ItemId, Item))]
 strongestLight is = strongestItem (filter (jisOn . snd) is) pLight

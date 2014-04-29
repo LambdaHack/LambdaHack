@@ -41,7 +41,6 @@ aspectToBenefit _cops _b asp =
     Effect.NoAspect -> 0
     Effect.ArmorMelee _ -> 5
     Effect.Haste p -> p * 5
-    Effect.Light p -> p
     Effect.Regeneration p -> p
     Effect.Steadfastness p -> p
     Effect.Explode{} -> 2

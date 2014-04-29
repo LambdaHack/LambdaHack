@@ -16,6 +16,7 @@ data Feature =
   | ToThrow !Int               -- ^ percentage bonus to throw speed
   | Linger !Int                -- ^ fly for this percentage of 2 turns
   | Consumable                 -- ^ can't be turned off, is consumed by use
+  | Light !Int                 -- ^ item shines with the given radius
   deriving (Show, Eq, Ord, Generic)
 
 instance Hashable.Hashable Feature

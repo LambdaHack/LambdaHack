@@ -46,9 +46,10 @@ brassLantern = ItemKind
   , iverbApply   = "douse"
   , iverbProject = "heave"
   , iweight  = 2400
-  , iaspects = [Light 4, Explode "burning oil 4"]
+  , iaspects = [Explode "burning oil 4"]
   , ieffects = [Burn 4]
-  , ifeature = [ToThrow (-30)]  -- hard to throw so that it opens and burns
+  , ifeature = [ ToThrow (-30)  -- hard to throw so that it opens and burns
+               , Light 4 ]
   , idesc    = "Very bright and quite heavy brass lantern."
   }
 dart = ItemKind
@@ -88,9 +89,9 @@ gem = ItemKind
   , iverbApply   = "crush"
   , iverbProject = "toss"
   , iweight  = 50
-  , iaspects = [Light 0]  -- just reflects strongly
+  , iaspects = []
   , ieffects = []
-  , ifeature = []
+  , ifeature = [Light 0]  -- just reflects strongly
   , idesc    = "Precious, though useless. Worth around 100 gold."
   }
 gem1 = gem
@@ -139,9 +140,10 @@ oilLamp = ItemKind
   , iverbApply   = "douse"
   , iverbProject = "lob"
   , iweight  = 1000
-  , iaspects = [Light 3, Explode "burning oil 3"]
+  , iaspects = [Explode "burning oil 3"]
   , ieffects = [Burn 3]
-  , ifeature = [ToThrow (-30)]  -- hard not to spill the oil while throwing
+  , ifeature = [ ToThrow (-30)  -- hard not to spill the oil while throwing
+               , Light 3 ]
   , idesc    = "A clay lamp full of plant oil feeding a thick wick."
   }
 potion = ItemKind
@@ -251,9 +253,10 @@ wand = ItemKind
   , iverbApply   = "snap"
   , iverbProject = "zap"
   , iweight  = 300
-  , iaspects = [Light 1]
+  , iaspects = []
   , ieffects = []
   , ifeature = [ ToThrow 25  -- magic
+               , Light 1
                , Fragile ]
   , idesc    = "Buzzing with dazzling light that shines even through appendages that handle it."
   }
@@ -272,9 +275,9 @@ woodenTorch = ItemKind
   , iverbApply   = "douse"
   , iverbProject = "fling"
   , iweight  = 1200
-  , iaspects = [Light 2]
+  , iaspects = []
   , ieffects = [Burn 2]
-  , ifeature = []
+  , ifeature = [Light 2]
   , idesc    = "A heavy wooden torch, burning with a weak fire."
   }
 fist = sword
@@ -427,9 +430,10 @@ mist_healing = ItemKind
   , iverbApply   = "inhale"
   , iverbProject = "blow"
   , iweight  = 1
-  , iaspects = [Light 0]
+  , iaspects = []
   , ieffects = [Heal 2]
   , ifeature = [ ToThrow (-93)  -- the slowest that gets anywhere (1 step only)
+               , Light 0
                , Fragile ]
   , idesc    = ""
   }
@@ -492,9 +496,10 @@ burningOil n = ItemKind
   , iverbApply   = "smear"
   , iverbProject = "spit"
   , iweight  = 1
-  , iaspects = [Light 1]
+  , iaspects = []
   , ieffects = [Burn 1]
   , ifeature = [ ToThrow (min 0 $ n * 7 - 100)
+               , Light 1
                , Fragile ]
   , idesc    = "Sticky oil, burning brightly."
   }
@@ -509,8 +514,8 @@ explosionBlast n = ItemKind
   , iverbApply   = "blast"
   , iverbProject = "give off"
   , iweight  = 1
-  , iaspects = [Light n]
+  , iaspects = []
   , ieffects = [Burn n]
-  , ifeature = [Fragile, Linger 10]
+  , ifeature = [Light n, Fragile, Linger 10]
   , idesc    = ""
   }
