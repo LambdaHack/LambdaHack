@@ -13,6 +13,7 @@ import GHC.Generics (Generic)
 data Feature =
     ChangeTo !Text             -- ^ change to this item kind group when altered
   | Fragile                    -- ^ break even when not hitting an enemy
+  | ToThrow !Int               -- ^ percentage bonus to throw speed
   | Linger !Int                -- ^ fly for this percentage of 2 turns
   | Consumable                 -- ^ can't be turned off, is consumed by use
   deriving (Show, Eq, Ord, Generic)

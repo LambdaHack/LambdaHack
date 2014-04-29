@@ -21,7 +21,7 @@ module Game.LambdaHack.Common.Item
     -- * Textual description
   , partItem, partItemWs, partItemAW, partItemWownW, itemDesc
     -- * Assorted
-  , isFragile, isExplosive, isLingering
+  , isFragile, isExplosive, isLingering, isToThrow
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -80,7 +80,6 @@ data Item = Item
   , jeffects :: ![Effect Int]  -- ^ the effects when activated
   , jfeature :: ![IF.Feature]  -- ^ other properties
   , jweight  :: !Int           -- ^ weight in grams, obvious enough
-  , jtoThrow :: !Int           -- ^ physical percentage bonus to throw speed
   , jisOn    :: !Bool          -- ^ the item is turned on
   }
   deriving (Show, Eq, Ord, Generic)
@@ -124,7 +123,6 @@ buildItem (FlavourMap flavour) discoRev ikChosen kind jaspects jeffects =
           _ -> flavour EM.! ikChosen
       jfeature = ifeature kind
       jweight = iweight kind
-      jtoThrow = itoThrow kind
       jisOn = True
   in Item{..}
 
@@ -270,6 +268,11 @@ isLingering :: Item -> Int
 isLingering = let getTo (IF.Linger percent) _acc = percent
                   getTo _ acc = acc
               in foldr getTo 100 . jfeature
+
+isToThrow :: Item -> Int
+isToThrow = let getTo (IF.ToThrow percent) _acc = percent
+                getTo _ acc = acc
+            in foldr getTo 0 . jfeature
 
 -- | The part of speech describing the item.
 partItem :: Kind.Ops ItemKind -> Discovery -> Item -> (MU.Part, MU.Part)

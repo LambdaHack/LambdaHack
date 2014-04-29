@@ -23,7 +23,6 @@ data ItemKind = ItemKind
   , iverbApply   :: !MU.Part       -- ^ the verb for applying and melee
   , iverbProject :: !MU.Part       -- ^ the verb for projecting
   , iweight      :: !Int           -- ^ weight in grams
-  , itoThrow     :: !Int           -- ^ percentage bonus to throw speed
   , iaspects     :: ![Effect.Aspect Dice.Dice]
                                    -- ^ cause the effect when triggered
   , ieffects     :: ![Effect.Effect Dice.Dice]

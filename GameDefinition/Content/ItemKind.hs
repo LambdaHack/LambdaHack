@@ -32,10 +32,9 @@ amulet = ItemKind
   , iverbApply   = "tear down"
   , iverbProject = "cast"
   , iweight  = 30
-  , itoThrow = -50  -- not dense enough
   , iaspects = [Regeneration (2 * d 3 + dl 10)]
   , ieffects = []
-  , ifeature = []
+  , ifeature = [ToThrow (-50)]  -- not dense enough
   , idesc    = "A necklace of dried herbs and healing berries."
   }
 brassLantern = ItemKind
@@ -47,10 +46,9 @@ brassLantern = ItemKind
   , iverbApply   = "douse"
   , iverbProject = "heave"
   , iweight  = 2400
-  , itoThrow = -30  -- hard to throw so that it opens and burns
   , iaspects = [Light 4, Explode "burning oil 4"]
   , ieffects = [Burn 4]
-  , ifeature = []
+  , ifeature = [ToThrow (-30)]  -- hard to throw so that it opens and burns
   , idesc    = "Very bright and quite heavy brass lantern."
   }
 dart = ItemKind
@@ -62,7 +60,6 @@ dart = ItemKind
   , iverbApply   = "snap"
   , iverbProject = "hurl"
   , iweight  = 50
-  , itoThrow = 0  -- a cheap dart
   , iaspects = []
   , ieffects = [Hurt (d 2) (d 3 + dl 3)]
   , ifeature = []
@@ -77,10 +74,9 @@ dart100 = ItemKind
   , iverbApply   = "snap"
   , iverbProject = "hurl"
   , iweight  = 50
-  , itoThrow = 100
   , iaspects = []
   , ieffects = [Hurt (d 1) (d 2 + dl 2)]
-  , ifeature = []
+  , ifeature = [ToThrow 100]
   , idesc    = "Subtly balanced for throws of great speed."
   }
 gem = ItemKind
@@ -92,7 +88,6 @@ gem = ItemKind
   , iverbApply   = "crush"
   , iverbProject = "toss"
   , iweight  = 50
-  , itoThrow = 0
   , iaspects = []
   , ieffects = []
   , ifeature = []
@@ -116,7 +111,6 @@ currency = ItemKind
   , iverbApply   = "grind"
   , iverbProject = "toss"
   , iweight  = 31
-  , itoThrow = 0
   , iaspects = []
   , ieffects = []
   , ifeature = []
@@ -131,7 +125,6 @@ harpoon = ItemKind
   , iverbApply   = "break up"
   , iverbProject = "hurl"
   , iweight  = 4000
-  , itoThrow = 0  -- cheap but deadly
   , iaspects = []
   , ieffects = [Hurt (3 * d 1) (d 2 + 2 * dl 2)]
   , ifeature = []
@@ -146,10 +139,9 @@ oilLamp = ItemKind
   , iverbApply   = "douse"
   , iverbProject = "lob"
   , iweight  = 1000
-  , itoThrow = -30  -- hard not to spill the oil while throwing
   , iaspects = [Light 3, Explode "burning oil 3"]
   , ieffects = [Burn 3]
-  , ifeature = []
+  , ifeature = [ToThrow (-30)]  -- hard not to spill the oil while throwing
   , idesc    = "A clay lamp full of plant oil feeding a thick wick."
   }
 potion = ItemKind
@@ -161,10 +153,10 @@ potion = ItemKind
   , iverbApply   = "gulp down"
   , iverbProject = "lob"
   , iweight  = 200
-  , itoThrow = -50  -- oily, bad grip
   , iaspects = []
   , ieffects = []
-  , ifeature = [Consumable]
+  , ifeature = [ ToThrow (-50)  -- oily, bad grip
+               , Consumable ]
   , idesc    = "A flask of bubbly, slightly oily liquid of a suspect color."
   }
 potion1 = potion
@@ -188,7 +180,6 @@ ring = ItemKind
   , iverbApply   = "squeeze down"
   , iverbProject = "toss"
   , iweight  = 15
-  , itoThrow = 0
   , iaspects = [Steadfastness (d 2 + 2 * dl 2)]
   , ieffects = []
   , ifeature = []
@@ -203,10 +194,10 @@ scroll = ItemKind
   , iverbApply   = "decipher"
   , iverbProject = "lob"
   , iweight  = 50
-  , itoThrow = -75  -- bad shape, even rolled up
   , iaspects = []
   , ieffects = []
-  , ifeature = [Consumable]
+  , ifeature = [ ToThrow (-75)  -- bad shape, even rolled up
+               , Consumable ]
   , idesc    = "A haphazardly scribbled piece of parchment. May contain directions or a secret call sign."
   }
 scroll1 = scroll
@@ -232,10 +223,9 @@ shield = ItemKind
   , iverbApply   = "bash"
   , iverbProject = "push"
   , iweight  = 3000
-  , itoThrow = -80  -- unwieldy to throw and blunt
   , iaspects = [ArmorMelee 50]
   , ieffects = []
-  , ifeature = []
+  , ifeature = [ToThrow (-80)]  -- unwieldy to throw and blunt
   , idesc    = "Large and unwieldy. Absorbs the precentage of melee damage, both dealt and sustained."
   }
 sword = ItemKind
@@ -247,10 +237,9 @@ sword = ItemKind
   , iverbApply   = "hit"
   , iverbProject = "heave"
   , iweight  = 2000
-  , itoThrow = -60  -- ensuring it hits with the tip costs speed
   , iaspects = []
   , ieffects = [Hurt (5 * d 1) (d 2 + 4 * dl 2)]
-  , ifeature = []
+  , ifeature = [ToThrow (-60)]  -- ensuring it hits with the tip costs speed
   , idesc    = "A standard heavy weapon. Does not penetrate very effectively, but hard to block."
   }
 wand = ItemKind
@@ -262,10 +251,10 @@ wand = ItemKind
   , iverbApply   = "snap"
   , iverbProject = "zap"
   , iweight  = 300
-  , itoThrow = 25  -- magic
   , iaspects = []
   , ieffects = []
-  , ifeature = [Fragile]
+  , ifeature = [ ToThrow 25  -- magic
+               , Fragile ]
   , idesc    = "Buzzing with dazzling light that shines even through appendages that handle it."
   }
 wand1 = wand
@@ -283,7 +272,6 @@ woodenTorch = ItemKind
   , iverbApply   = "douse"
   , iverbProject = "fling"
   , iweight  = 1200
-  , itoThrow = 0
   , iaspects = [Light 2]
   , ieffects = [Burn 2]
   , ifeature = []
@@ -424,10 +412,10 @@ fragrance = ItemKind
   , iverbApply   = "smell"
   , iverbProject = "exude"
   , iweight  = 1
-  , itoThrow = -87  -- the slowest that travels at least 2 steps
   , iaspects = []
   , ieffects = [Impress]
-  , ifeature = [Fragile]
+  , ifeature = [ ToThrow (-87)  -- the slowest that travels at least 2 steps
+               , Fragile ]
   , idesc    = ""
   }
 mist_healing = ItemKind
@@ -439,10 +427,10 @@ mist_healing = ItemKind
   , iverbApply   = "inhale"
   , iverbProject = "blow"
   , iweight  = 1
-  , itoThrow = -93  -- the slowest that gets anywhere (1 step only)
   , iaspects = []
   , ieffects = [Heal 2]
-  , ifeature = [Fragile]
+  , ifeature = [ ToThrow (-93)  -- the slowest that gets anywhere (1 step only)
+               , Fragile ]
   , idesc    = ""
   }
 mist_wounding = ItemKind
@@ -454,10 +442,10 @@ mist_wounding = ItemKind
   , iverbApply   = "inhale"
   , iverbProject = "blow"
   , iweight  = 1
-  , itoThrow = -93
   , iaspects = []
   , ieffects = [Heal (-2)]
-  , ifeature = [Fragile]
+  , ifeature = [ ToThrow (-93)  -- the slowest that gets anywhere (1 step only)
+               , Fragile ]
   , idesc    = ""
   }
 burningOil2 = burningOil 2
@@ -473,7 +461,6 @@ glass_piece = ItemKind  -- when blowing up windows
   , iverbApply   = "grate"
   , iverbProject = "toss"
   , iweight  = 10
-  , itoThrow = 0
   , iaspects = []
   , ieffects = [Hurt (d 1) 0]
   , ifeature = [Fragile, Linger 20]
@@ -488,10 +475,10 @@ smoke = ItemKind  -- when stuff burns out
   , iverbApply   = "inhale"
   , iverbProject = "blow"
   , iweight  = 1
-  , itoThrow = -70
   , iaspects = []
   , ieffects = []
-  , ifeature = [Fragile]
+  , ifeature = [ ToThrow (-70)
+               , Fragile ]
   , idesc    = ""
   }
 
@@ -505,10 +492,10 @@ burningOil n = ItemKind
   , iverbApply   = "smear"
   , iverbProject = "spit"
   , iweight  = 1
-  , itoThrow = min 0 $ n * 7 - 100
   , iaspects = []
   , ieffects = [Burn 1]
-  , ifeature = [Fragile]
+  , ifeature = [ ToThrow (min 0 $ n * 7 - 100)
+               , Fragile ]
   , idesc    = "Sticky oil, burning brightly."
   }
 
@@ -522,7 +509,6 @@ explosionBlast n = ItemKind
   , iverbApply   = "blast"
   , iverbProject = "give off"
   , iweight  = 1
-  , itoThrow = 0
   , iaspects = []
   , ieffects = [Burn n]
   , ifeature = [Fragile, Linger 10]

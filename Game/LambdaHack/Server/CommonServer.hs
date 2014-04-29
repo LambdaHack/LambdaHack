@@ -286,7 +286,7 @@ addProjectile :: (MonadAtomic m, MonadServer m)
 addProjectile bpos rest iid blid bfid btime = do
   Kind.COps{coactor=coactor@Kind.Ops{okind}, coitem} <- getsState scops
   item <- getsState $ getItemBody iid
-  let speed = speedFromWeight (jweight item) (jtoThrow item)
+  let speed = speedFromWeight (jweight item) (isToThrow item)
       trange = totalRange item
       adj | trange < 5 = "falling"
           | otherwise = "flying"
