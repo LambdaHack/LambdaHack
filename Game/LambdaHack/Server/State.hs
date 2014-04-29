@@ -27,6 +27,7 @@ import Game.LambdaHack.Content.RuleKind
 data StateServer = StateServer
   { sdisco     :: !Discovery     -- ^ full item discoveries data
   , sdiscoRev  :: !DiscoRev      -- ^ reverse disco map, used for item creation
+  , sdiscoSeed :: !DiscoSeed     -- ^ full item seed discoveries data
   , sitemRev   :: !ItemRev       -- ^ reverse id map, used for item creation
   , sflavour   :: !FlavourMap    -- ^ association of flavour to items
   , sacounter  :: !ActorId       -- ^ stores next actor index
@@ -91,6 +92,7 @@ emptyStateServer =
   StateServer
     { sdisco = EM.empty
     , sdiscoRev = EM.empty
+    , sdiscoSeed = EM.empty
     , sitemRev = HM.empty
     , sflavour = emptyFlavourMap
     , sacounter = toEnum 0
@@ -136,6 +138,7 @@ instance Binary StateServer where
   put StateServer{..} = do
     put sdisco
     put sdiscoRev
+    put sdiscoSeed
     put sitemRev
     put sflavour
     put sacounter
@@ -149,6 +152,7 @@ instance Binary StateServer where
   get = do
     sdisco <- get
     sdiscoRev <- get
+    sdiscoSeed <- get
     sitemRev <- get
     sflavour <- get
     sacounter <- get

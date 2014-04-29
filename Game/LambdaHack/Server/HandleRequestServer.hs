@@ -386,11 +386,13 @@ reqApply aid iid cstore = do
           itemEffect aid aid iid item cstore
         else do
           let itemNew = item {jisOn = not $ jisOn item}
+          sdiscoSeed <- getsServer sdiscoSeed
           bag <- getsState $ getActorBag aid cstore
           let k = bag EM.! iid
               container = CActor aid cstore
+              seed = sdiscoSeed EM.! iid
           execUpdAtomic $ UpdLoseItem iid item k container
-          void $ registerItem itemNew k container True
+          void $ registerItem itemNew seed k container True
       req = ReqApply iid cstore
   if cstore /= CInv then applyItem
   else do

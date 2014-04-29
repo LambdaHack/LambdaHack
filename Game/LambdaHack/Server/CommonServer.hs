@@ -187,8 +187,8 @@ electLeader fid lid aidDead = do
       execUpdAtomic $ UpdLeadFaction fid mleader mleaderNew
 
 registerItem :: (MonadAtomic m, MonadServer m)
-             => Item -> Int -> Container -> Bool -> m ItemId
-registerItem item k container verbose = do
+             => Item -> ItemSeed -> Int -> Container -> Bool -> m ItemId
+registerItem item seed k container verbose = do
   itemRev <- getsServer sitemRev
   let cmd = if verbose then UpdCreateItem else UpdSpotItem
   case HM.lookup item itemRev of
@@ -201,7 +201,8 @@ registerItem item k container verbose = do
       icounter <- getsServer sicounter
       modifyServer $ \ser ->
         ser { sicounter = succ icounter
-            , sitemRev = HM.insert item icounter (sitemRev ser) }
+            , sitemRev = HM.insert item icounter (sitemRev ser)
+            , sdiscoSeed = EM.insert icounter seed (sdiscoSeed ser)}
       execUpdAtomic $ cmd icounter item k container
       return $! icounter
 
@@ -215,9 +216,9 @@ createItems n pos lid = do
   depth <- getsState sdepth
   let container = CFloor lid pos
   replicateM_ n $ do
-    (item, k, _) <- rndToAction
-                    $ newItem coitem flavour discoRev litemFreq ldepth depth
-    void $ registerItem item k container True
+    (item, k, _, seed) <-
+      rndToAction $ newItem coitem flavour discoRev litemFreq ldepth depth
+    void $ registerItem item seed k container True
 
 projectFail :: (MonadAtomic m, MonadServer m)
             => ActorId    -- ^ actor projecting the item (is on current lvl)

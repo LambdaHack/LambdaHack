@@ -64,6 +64,7 @@ data StateClient = StateClient
                                    -- ^ moves are displayed up to this time
   , sundo        :: ![CmdAtomic]   -- ^ atomic commands performed to date
   , sdisco       :: !Discovery     -- ^ remembered item discoveries
+  , sdiscoSeed   :: !DiscoSeed     -- ^ remembered item seed discoveries
   , sfper        :: !FactionPers   -- ^ faction perception indexed by levels
   , srandom      :: !R.StdGen      -- ^ current random generator
   , slastKey     :: !(Maybe K.KM)  -- ^ last command key pressed
@@ -136,6 +137,7 @@ defStateClient shistory sreport _sside sisAI =
     , sdisplayed = EM.empty
     , sundo = []
     , sdisco = EM.empty
+    , sdiscoSeed = EM.empty
     , sfper = EM.empty
     , srandom = R.mkStdGen 42  -- will be set later
     , slastKey = Nothing
@@ -211,6 +213,7 @@ instance Binary StateClient where
     put sundo
     put sdisplayed
     put sdisco
+    put sdiscoSeed
     put (show srandom)
     put _sleader
     put _sside
@@ -235,6 +238,7 @@ instance Binary StateClient where
     sundo <- get
     sdisplayed <- get
     sdisco <- get
+    sdiscoSeed <- get
     g <- get
     _sleader <- get
     _sside <- get

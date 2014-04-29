@@ -14,6 +14,7 @@ module Game.LambdaHack.Common.Item
   , pMelee, pArmor, pRegen, pStead, pLight
    -- * Item discovery types
   , ItemKindIx, Discovery, DiscoRev, serverDiscos
+  , ItemSeed, DiscoSeed
     -- * The @FlavourMap@ type
   , FlavourMap, emptyFlavourMap, dungeonFlavourMap
     -- * Inventory management types
@@ -26,6 +27,7 @@ module Game.LambdaHack.Common.Item
 
 import Control.Exception.Assert.Sugar
 import Control.Monad
+import qualified Control.Monad.State as St
 import Data.Binary
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.Hashable as Hashable
@@ -39,6 +41,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import GHC.Generics (Generic)
 import qualified NLP.Miniutter.English as MU
+import System.Random (mkStdGen)
 
 import qualified Game.LambdaHack.Common.Dice as Dice
 import Game.LambdaHack.Common.Effect
@@ -66,6 +69,16 @@ type Discovery = EM.EnumMap ItemKindIx (Kind.Id ItemKind)
 
 -- | The reverse map to @Discovery@, needed for item creation.
 type DiscoRev = EM.EnumMap (Kind.Id ItemKind) ItemKindIx
+
+-- | A seed for rolling aspects and effects of an item
+-- Clients have partial knowledge of how item ids map to the seeds.
+-- They gain knowledge by identifying items.
+newtype ItemSeed = ItemSeed Int
+  deriving (Show, Eq, Ord, Enum, Hashable.Hashable, Binary)
+
+-- | The map of seed indexes to item seeds.
+-- The full map is known by the server.
+type DiscoSeed = EM.EnumMap ItemId ItemSeed
 
 -- | Game items in actor possesion or strewn around the dungeon.
 -- The fields @jsymbol@, @jname@ and @jflavour@ make it possible to refer to
@@ -129,10 +142,10 @@ buildItem (FlavourMap flavour) discoRev ikChosen kind jaspects jeffects =
 -- | Generate an item based on level.
 newItem :: Kind.Ops ItemKind -> FlavourMap -> DiscoRev
         -> Frequency Text -> Int -> Int
-        -> Rnd (Item, Int, ItemKind)
+        -> Rnd (Item, Int, ItemKind, ItemSeed)
 newItem coitem@Kind.Ops{opick, okind} flavour discoRev itemFreq ln depth = do
   itemGroup <- frequency itemFreq
-  let castItem :: Int -> Rnd (Item, Int, ItemKind)
+  let castItem :: Int -> Rnd (Item, Int, ItemKind, ItemSeed)
       castItem 0 | nullFreq itemFreq = assert `failure` "no fallback items"
                                               `twith` (itemFreq, ln, depth)
       castItem 0 = do
@@ -146,12 +159,23 @@ newItem coitem@Kind.Ops{opick, okind} flavour discoRev itemFreq ln depth = do
         if jcount == 0 then
           castItem $ count - 1
         else do
-          aspects <- mapM (flip aspectTrav (castDice ln depth)) (iaspects kind)
-          effects <- mapM (flip effectTrav (castDice ln depth)) (ieffects kind)
+          itemSeed <- fmap ItemSeed random
+          let (aspects, effects) = seedToAspectsEffects itemSeed kind ln depth
           return ( buildItem flavour discoRev ikChosen kind aspects effects
                  , jcount
-                 , kind )
+                 , kind
+                 , itemSeed )
   castItem 10
+
+seedToAspectsEffects :: ItemSeed -> ItemKind -> Int -> Int
+                     -> ([Aspect Int], [Effect Int])
+seedToAspectsEffects (ItemSeed itemSeed) kind ln depth =
+  let castD = castDice ln depth
+      rollAE = do
+        aspects <- mapM (flip aspectTrav castD) (iaspects kind)
+        effects <- mapM (flip effectTrav castD) (ieffects kind)
+        return (aspects, effects)
+  in St.evalState rollAE (mkStdGen itemSeed)
 
 -- | Flavours assigned by the server to item kinds, in this particular game.
 newtype FlavourMap = FlavourMap (EM.EnumMap (Kind.Id ItemKind) Flavour)

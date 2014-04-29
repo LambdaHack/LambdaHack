@@ -133,10 +133,10 @@ explodeItem aid b cgroup = do
   Level{ldepth} <- getLevel $ blid b
   depth <- getsState sdepth
   let itemFreq = toFreq "shrapnel group" [(1, cgroup)]
-  (item, n1, _) <- rndToAction
-                   $ newItem coitem flavour discoRev itemFreq ldepth depth
+  (item, n1, _, seed) <-
+    rndToAction $ newItem coitem flavour discoRev itemFreq ldepth depth
   let container = CActor aid CEqp
-  iid <- registerItem item n1 container False
+  iid <- registerItem item seed n1 container False
   let Point x y = bpos b
       projectN k100 n = when (n > 7) $ do
         -- We pick a point at the border, not inside, to have a uniform
