@@ -284,6 +284,7 @@ partItem Kind.Ops{okind} disco i =
     Just ik ->
       let effTs0 = map aspectToSuffix (jaspects i)
                    ++ map effectToSuffix (jeffects i)
+                   ++ map IF.featureToSuff (jfeature i)
           effTs =
             if not $ null effTs0 then effTs0
             else let kind = okind ik

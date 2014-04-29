@@ -1,13 +1,15 @@
 {-# LANGUAGE DeriveGeneric #-}
 -- | Item features.
 module Game.LambdaHack.Common.ItemFeature
-  ( Feature(..)
+  ( Feature(..), featureToSuff
   ) where
 
 import Data.Binary
 import qualified Data.Hashable as Hashable
 import Data.Text (Text)
 import GHC.Generics (Generic)
+
+import qualified Game.LambdaHack.Common.Effect as Effect
 
 -- | All possible item features.
 data Feature =
@@ -22,3 +24,13 @@ data Feature =
 instance Hashable.Hashable Feature
 
 instance Binary Feature
+
+featureToSuff :: Feature -> Text
+featureToSuff feat =
+  case feat of
+    ChangeTo{} -> ""
+    Fragile -> ""
+    ToThrow{} -> ""
+    Linger{} -> ""
+    Consumable -> ""
+    Light p -> Effect.affixPower p

@@ -5,6 +5,7 @@ module Game.LambdaHack.Common.Effect
   ( Effect(..), Aspect(..)
   , effectTrav, aspectTrav
   , effectToSuffix, aspectToSuffix, kindEffectToSuffix, kindAspectToSuffix
+  , affixPower
   ) where
 
 import Control.Exception.Assert.Sugar
