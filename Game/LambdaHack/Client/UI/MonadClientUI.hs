@@ -155,12 +155,8 @@ displayActorStart b frs = do
 -- | Draw the current level with the overlay on top.
 drawOverlay :: MonadClientUI m => Bool -> ColorMode -> Overlay -> m SingleFrame
 drawOverlay onBlank dm over = do
-  cops <- getsState scops
   lid <- viewedLevel
   mleader <- getsClient _sleader
-  s <- getState
-  cli <- getClient
-  per <- getPerFid lid
   tgtPos <- leaderTgtToPos
   cursorPos <- cursorToPos
   let anyPos = fromMaybe (Point 0 0) cursorPos
@@ -168,8 +164,7 @@ drawOverlay onBlank dm over = do
   bfsmpath <- maybe (return Nothing) pathFromLeader mleader
   tgtDesc <- maybe (return ("------", Nothing)) targetDescLeader mleader
   cursorDesc <- targetDescCursor
-  return $! draw onBlank dm cops per lid mleader cursorPos tgtPos
-                 bfsmpath cli s cursorDesc tgtDesc over
+  draw onBlank dm lid cursorPos tgtPos bfsmpath cursorDesc tgtDesc over
 
 stopPlayBack :: MonadClientUI m => m ()
 stopPlayBack = do

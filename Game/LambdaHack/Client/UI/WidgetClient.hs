@@ -11,7 +11,6 @@ import Data.Maybe
 import Data.Monoid
 
 import Game.LambdaHack.Client.BfsClient
-import Game.LambdaHack.Client.CommonClient
 import qualified Game.LambdaHack.Client.Key as K
 import Game.LambdaHack.Client.MonadClient hiding (liftIO)
 import Game.LambdaHack.Client.State
@@ -127,13 +126,9 @@ overlayToBlankSlideshow prompt overlay = do
 -- | Render animations on top of the current screen frame.
 animate :: MonadClientUI m => LevelId -> Animation -> m Frames
 animate arena anim = do
-  cops <- getsState scops
   sreport <- getsClient sreport
   mleader <- getsClient _sleader
   Level{lxsize, lysize} <- getLevel arena
-  cli <- getClient
-  s <- getState
-  per <- getPerFid arena
   tgtPos <- leaderTgtToPos
   cursorPos <- cursorToPos
   let anyPos = fromMaybe (Point 0 0) cursorPos
@@ -143,9 +138,9 @@ animate arena anim = do
   cursorDesc <- targetDescCursor
   let over = renderReport sreport
       topLineOnly = truncateToOverlay lxsize over
-      basicFrame =
-        draw False ColorFull cops per arena mleader
-             cursorPos tgtPos bfsmpath cli s cursorDesc tgtDesc topLineOnly
+  basicFrame <-
+    draw False ColorFull arena cursorPos tgtPos
+         bfsmpath cursorDesc tgtDesc topLineOnly
   snoAnim <- getsClient $ snoAnim . sdebugCli
   return $! if fromMaybe False snoAnim
             then [Just basicFrame]

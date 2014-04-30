@@ -15,6 +15,8 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 import Game.LambdaHack.Client.Bfs
+import Game.LambdaHack.Client.CommonClient
+import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Client.UI.Animation
 import Game.LambdaHack.Common.Actor as Actor
@@ -29,6 +31,7 @@ import qualified Game.LambdaHack.Common.Item as Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
+import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
@@ -52,16 +55,21 @@ data ColorMode =
 -- Pass at most a single page if overlay of text unchanged
 -- to the frontends to display separately or overlay over map,
 -- depending on the frontend.
-draw :: Bool -> ColorMode -> Kind.COps -> Perception -> LevelId
-     -> Maybe ActorId -> Maybe Point -> Maybe Point
+draw :: MonadClient m
+     => Bool -> ColorMode -> LevelId
+     -> Maybe Point -> Maybe Point
      -> Maybe (PointArray.Array BfsDistance, Maybe [Point])
-     -> StateClient -> State
      -> (Text, Maybe Text) -> (Text, Maybe Text) -> Overlay
-     -> SingleFrame
-draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
-     cli@StateClient{ stgtMode, seps, sdisco, sexplored
-                    , smarkVision, smarkSmell, smarkSuspect, swaitTimes } s
-     (cursorDesc, mcursorHp) (targetDesc, mtargetHp) sfTop =
+     -> m SingleFrame
+draw sfBlank dm drawnLevelId cursorPos tgtPos bfsmpathRaw
+     (cursorDesc, mcursorHp) (targetDesc, mtargetHp) sfTop = do
+  cops <- getsState scops
+  mleader <- getsClient _sleader
+  s <- getState
+  cli@StateClient{ stgtMode, seps, sexplored
+                 , smarkVision, smarkSmell, smarkSuspect, swaitTimes }
+    <- getClient
+  per <- getPerFid drawnLevelId
   let Kind.COps{cotile=cotile@Kind.Ops{okind=tokind, ouniqGroup}} = cops
       (lvl@Level{lxsize, lysize, lsmell, ltime}) = sdungeon s EM.! drawnLevelId
       (bl, mblid, mbpos) = case (cursorPos, mleader) of
@@ -181,17 +189,16 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
                                         - T.length cursorText) " "
       cursorStatus = addAttr $ cursorText <> cursorGap <> pathCsr
       minLeaderStatusWidth = 19  -- covers 3-digit HP
-      selectedStatus = drawSelected cli s drawnLevelId mleader
-                                    (widthStats - minLeaderStatusWidth)
-      leaderStatus = drawLeaderStatus cops s swaitTimes mleader
-                                      (widthStats - length selectedStatus)
-      damageStatus = drawLeaderDamage cops s sdisco mleader
-                                      (widthStats - length leaderStatus
-                                                  - length selectedStatus)
-      nameStatus = drawPlayerName cli s (widthStats - length leaderStatus
-                                                    - length selectedStatus
-                                                    - length damageStatus)
-      statusGap = addAttr $ T.replicate (widthStats - length leaderStatus
+  selectedStatus <- drawSelected drawnLevelId
+                                 (widthStats - minLeaderStatusWidth)
+  leaderStatus <- drawLeaderStatus swaitTimes
+                                   (widthStats - length selectedStatus)
+  damageStatus <- drawLeaderDamage (widthStats - length leaderStatus
+                                               - length selectedStatus)
+  nameStatus <- drawPlayerName (widthStats - length leaderStatus
+                                           - length selectedStatus
+                                           - length damageStatus)
+  let statusGap = addAttr $ T.replicate (widthStats - length leaderStatus
                                                     - length selectedStatus
                                                     - length damageStatus
                                                     - length nameStatus) " "
@@ -214,7 +221,7 @@ draw sfBlank dm cops per drawnLevelId mleader cursorPos tgtPos bfsmpathRaw
       sfLevel =  -- fully evaluated
         let f l y = let !line = fLine y in line : l
         in foldl' f [] [lysize-1,lysize-2..0]
-  in SingleFrame{..}
+  return $! SingleFrame{..}
 
 inverseVideo :: Color.Attr
 inverseVideo = Color.Attr { Color.fg = Color.bg Color.defAttr
@@ -233,9 +240,11 @@ drawArenaStatus explored Level{ldepth, ldesc, lseen, lclear} width =
   in addAttr $ T.justifyLeft width ' '
              $ T.take 29 (lvlN <+> T.justifyLeft 26 ' ' ldesc) <+> seenStatus
 
-drawLeaderStatus :: Kind.COps -> State -> Int -> Maybe ActorId -> Int
-                 -> [Color.AttrChar]
-drawLeaderStatus cops s waitT mleader width =
+drawLeaderStatus :: MonadClient m => Int -> Int -> m [Color.AttrChar]
+drawLeaderStatus waitT width = do
+  cops <- getsState scops
+  mleader <- getsClient _sleader
+  s <- getState
   let addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
       addColor c t = map (Color.AttrChar $ Color.Attr c Color.defBG)
                          (T.unpack t)
@@ -275,12 +284,14 @@ drawLeaderStatus cops s waitT mleader width =
              <> hpHeader <> addAttr (T.justifyRight 6 ' ' hpText <> " ")
         Nothing -> addAttr $ calmHeaderText <> ": --/-- "
                              <> hpHeaderText <> ": --/-- "
-  in stats
+  return $! stats
 
-drawLeaderDamage :: Kind.COps -> State -> Discovery
-                 -> Maybe ActorId -> Int
-                 -> [Color.AttrChar]
-drawLeaderDamage cops@Kind.COps{coitem=Kind.Ops{okind}} s sdisco mleader width =
+drawLeaderDamage :: MonadClient m => Int -> m [Color.AttrChar]
+drawLeaderDamage width = do
+  cops@Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
+  disco <- getsClient sdisco
+  mleader <- getsClient _sleader
+  s <- getState
   let addColor t = map (Color.AttrChar $ Color.Attr Color.BrCyan Color.defBG)
                    (T.unpack t)
       stats = case mleader of
@@ -288,9 +299,9 @@ drawLeaderDamage cops@Kind.COps{coitem=Kind.Ops{okind}} s sdisco mleader width =
           let eqpAssocs = getActorAssocs leader CEqp s
               bodyAssocs = getActorAssocs leader CBody s
               allAssocs = eqpAssocs ++ bodyAssocs
-              damage = case Item.strongestSword cops sdisco allAssocs of
+              damage = case Item.strongestSword cops disco allAssocs of
                 (_, (_, item)) : _->
-                  case Item.jkind sdisco item of
+                  case Item.jkind disco item of
                     Just ik ->
                       let getP :: Effect.Effect a -> Maybe (Dice.Dice, a)
                                -> Maybe (Dice.Dice, a)
@@ -317,15 +328,17 @@ drawLeaderDamage cops@Kind.COps{coitem=Kind.Ops{okind}} s sdisco mleader width =
                 [] -> "0"
           in damage
         Nothing -> ""
-  in if T.null stats || T.length stats >= width then []
-     else addColor $ stats <> " "
+  return $! if T.null stats || T.length stats >= width then []
+            else addColor $ stats <> " "
 
 -- TODO: colour some texts using the faction's colour
-drawSelected :: StateClient -> State -> LevelId -> Maybe ActorId -> Int
-             -> [Color.AttrChar]
-drawSelected cli s drawnLevelId mleader width =
-  let selected = sselected cli
-      viewOurs (aid, Actor{bsymbol, bcolor, bhp})
+drawSelected :: MonadClient m => LevelId -> Int -> m [Color.AttrChar]
+drawSelected drawnLevelId width = do
+  mleader <- getsClient _sleader
+  selected <- getsClient sselected
+  side <- getsClient sside
+  s <- getState
+  let viewOurs (aid, Actor{bsymbol, bcolor, bhp})
         | otherwise =
           let cattr = Color.defAttr {Color.fg = bcolor}
               sattr
@@ -342,7 +355,7 @@ drawSelected cli s drawnLevelId mleader width =
           in ( (bhp > 0, bsymbol /= '@', bsymbol, bcolor, aid)
              , Color.AttrChar sattr $ if bhp > 0 then bsymbol else '%' )
       ours = filter (not . bproj . snd)
-             $ actorAssocs (== sside cli) drawnLevelId s
+             $ actorAssocs (== side) drawnLevelId s
       maxViewed = width - 2
       -- Don't show anything if the only actor on the level is the leader.
       -- He's clearly highlighted on the level map, anyway.
@@ -355,20 +368,20 @@ drawSelected cli s drawnLevelId mleader width =
              in Color.AttrChar sattr char
       viewed = take maxViewed $ sort $ map viewOurs ours
       addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
-      allOurs = filter ((== sside cli) . bfid) $ EM.elems $ sactorD s
+      allOurs = filter ((== side) . bfid) $ EM.elems $ sactorD s
       party = if length allOurs <= 1
               then []
               else [star] ++ map snd viewed ++ addAttr " "
-  in party
+  return $! party
 
-drawPlayerName :: StateClient -> State -> Int
-               -> [Color.AttrChar]
-drawPlayerName cli s width =
+drawPlayerName :: MonadClient m => Int -> m [Color.AttrChar]
+drawPlayerName width = do
   let addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
-      fact = sfactionD s EM.! sside cli
-      nameN n t = let firstWord = head $ T.words t
+  side <- getsClient sside
+  fact <- getsState $ (EM.! side) . sfactionD
+  let nameN n t = let firstWord = head $ T.words t
                   in if T.length firstWord > n then "" else firstWord
       ourName = nameN (width - 1) $ playerName $ gplayer fact
-  in if T.null ourName || T.length ourName >= width
-     then []
-     else addAttr $ ourName <> " "
+  return $! if T.null ourName || T.length ourName >= width
+            then []
+            else addAttr $ ourName <> " "
