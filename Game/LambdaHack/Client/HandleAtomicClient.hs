@@ -125,6 +125,24 @@ cmdAtomicFilterCli cmd = case cmd of
         if jkindIx item `EM.notMember` disco
           then return []
           else return [cmd]
+  UpdDiscoverSeed _ _ iid _ -> do
+    itemD <- getsState sitemD
+    case EM.lookup iid itemD of
+      Nothing -> return []
+      Just _ -> do
+        discoSeed <- getsClient sdiscoSeed
+        if iid `EM.member` discoSeed
+          then return []
+          else return [cmd]
+  UpdCoverSeed _ _ iid _ -> do
+    itemD <- getsState sitemD
+    case EM.lookup iid itemD of
+      Nothing -> return []
+      Just _ -> do
+        discoSeed <- getsClient sdiscoSeed
+        if iid `EM.notMember` discoSeed
+          then return []
+          else return [cmd]
   UpdPerception lid outPer inPer -> do
     -- Here we cheat by setting a new perception outright instead of
     -- in @cmdAtomicSemCli@, to avoid computing perception twice.
@@ -210,6 +228,8 @@ cmdAtomicSemCli cmd = case cmd of
       modifyClient $ \cli -> cli {_sleader = target}
   UpdDiscover lid p iid ik -> discover lid p iid ik
   UpdCover lid p iid ik -> cover lid p iid ik
+  UpdDiscoverSeed lid p iid ik -> discoverSeed lid p iid ik
+  UpdCoverSeed lid p iid ik -> coverSeed lid p iid ik
   UpdPerception lid outPer inPer -> perception lid outPer inPer
   UpdRestart side sdisco sfper _ sdebugCli _ -> do
     shistory <- getsClient shistory
@@ -274,7 +294,7 @@ perception lid outPer inPer = do
     modifyClient $ \cli -> cli {sfper = f (sfper cli)}
 
 discover :: MonadClient m
-          => LevelId -> Point -> ItemId -> Kind.Id ItemKind -> m ()
+         => LevelId -> Point -> ItemId -> Kind.Id ItemKind -> m ()
 discover lid p iid ik = do
   item <- getsState $ getItemBody iid
   let f Nothing = Just ik
@@ -283,13 +303,29 @@ discover lid p iid ik = do
   modifyClient $ \cli -> cli {sdisco = EM.alter f (jkindIx item) (sdisco cli)}
 
 cover :: MonadClient m
-       => LevelId -> Point -> ItemId -> Kind.Id ItemKind -> m ()
+      => LevelId -> Point -> ItemId -> Kind.Id ItemKind -> m ()
 cover lid p iid ik = do
   item <- getsState $ getItemBody iid
   let f Nothing = assert `failure` "already covered" `twith` (lid, p, iid, ik)
       f (Just ik2) = assert (ik == ik2 `blame` "unexpected covered item kind"
                                        `twith` (ik, ik2)) Nothing
   modifyClient $ \cli -> cli {sdisco = EM.alter f (jkindIx item) (sdisco cli)}
+
+discoverSeed :: MonadClient m
+             => LevelId -> Point -> ItemId -> ItemSeed -> m ()
+discoverSeed lid p iid ik = do
+  let f Nothing = Just ik
+      f (Just ik2) = assert `failure` "already discovered"
+                            `twith` (lid, p, iid, ik, ik2)
+  modifyClient $ \cli -> cli {sdiscoSeed = EM.alter f iid (sdiscoSeed cli)}
+
+coverSeed :: MonadClient m
+          => LevelId -> Point -> ItemId -> ItemSeed -> m ()
+coverSeed lid p iid ik = do
+  let f Nothing = assert `failure` "already covered" `twith` (lid, p, iid, ik)
+      f (Just ik2) = assert (ik == ik2 `blame` "unexpected covered item kind"
+                                       `twith` (ik, ik2)) Nothing
+  modifyClient $ \cli -> cli {sdiscoSeed = EM.alter f iid (sdiscoSeed cli)}
 
 killExit :: MonadClient m => m ()
 killExit = modifyClient $ \cli -> cli {squit = True}

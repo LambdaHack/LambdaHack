@@ -114,6 +114,8 @@ posUpdAtomic cmd = case cmd of
   UpdAgeGame _ _ -> return PosAll
   UpdDiscover lid p _ _ -> return $! PosSight lid [p]
   UpdCover lid p _ _ -> return $! PosSight lid [p]
+  UpdDiscoverSeed lid p _ _ -> return $! PosSight lid [p]
+  UpdCoverSeed lid p _ _ -> return $! PosSight lid [p]
   UpdPerception{} -> return PosNone
   UpdRestart fid _ _ _ _ _ -> return $! PosFid fid
   UpdRestartServer _ -> return PosSer

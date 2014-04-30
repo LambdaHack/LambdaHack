@@ -77,9 +77,10 @@ handleUpdAtomic cmd = case cmd of
   UpdSpotSmell lid sms -> updSpotSmell lid sms
   UpdLoseSmell lid sms -> updLoseSmell lid sms
   UpdAgeGame t lids -> updAgeGame t lids
-  UpdDiscover{} -> return ()
-    -- Server keeps all atomic comands so the semantics
-  UpdCover{} -> return ()     -- of inverses has to be reasonably inverse.
+  UpdDiscover{} -> return ()      -- Server keeps all atomic comands
+  UpdCover{} -> return ()         -- so the semantics of inverses
+  UpdDiscoverSeed{} -> return ()  -- has to be reasonably inverse.
+  UpdCoverSeed{} -> return ()
   UpdPerception _ outPer inPer ->
     assert (not (nullPer outPer && nullPer inPer)) skip
   UpdRestart fid sdisco sfper s _ _ -> updRestart fid sdisco sfper s

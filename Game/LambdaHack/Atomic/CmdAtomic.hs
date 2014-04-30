@@ -90,6 +90,8 @@ data UpdAtomic =
   | UpdAgeGame !(Delta Time) ![LevelId]
   | UpdDiscover !LevelId !Point !ItemId !(Kind.Id ItemKind)
   | UpdCover !LevelId !Point !ItemId !(Kind.Id ItemKind)
+  | UpdDiscoverSeed !LevelId !Point !ItemId !ItemSeed
+  | UpdCoverSeed !LevelId !Point !ItemId !ItemSeed
   | UpdPerception !LevelId !Perception !Perception
   | UpdRestart !FactionId !Discovery !FactionPers !State !DebugModeCli !Text
   | UpdRestartServer !State
@@ -165,6 +167,8 @@ undoUpdAtomic cmd = case cmd of
   UpdAgeGame delta lids -> Just $ UpdAgeGame (timeDeltaReverse delta) lids
   UpdDiscover lid p iid ik -> Just $ UpdCover lid p iid ik
   UpdCover lid p iid ik -> Just $ UpdDiscover lid p iid ik
+  UpdDiscoverSeed lid p iid ik -> Just $ UpdCoverSeed lid p iid ik
+  UpdCoverSeed lid p iid ik -> Just $ UpdDiscoverSeed lid p iid ik
   UpdPerception lid outPer inPer -> Just $ UpdPerception lid inPer outPer
   UpdRestart{} -> Just cmd  -- here history ends; change direction
   UpdRestartServer{} -> Just cmd  -- here history ends; change direction
