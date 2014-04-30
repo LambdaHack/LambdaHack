@@ -40,7 +40,7 @@ type ToMulti = TQueue (FactionId, FrontReq)
 
 data FrontReq =
     FrontFrame {frontAc :: !AcFrame}
-      -- ^ show a frame, if the fid acitve, or save it to the client's queue
+      -- ^ show a frame, if the fid active, or save it to the client's queue
   | FrontKey {frontKM :: ![K.KM], frontFr :: !SingleFrame}
       -- ^ flush frames, possibly show fadeout/fadein and ask for a keypress
   | FrontSlides {frontClear :: ![K.KM], frontSlides :: ![SingleFrame]}
