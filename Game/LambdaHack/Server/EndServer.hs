@@ -134,7 +134,7 @@ explodeItem aid b cgroup = do
   depth <- getsState sdepth
   let itemFreq = toFreq "shrapnel group" [(1, cgroup)]
   (item, n1, _, seed) <-
-    rndToAction $ newItem coitem flavour discoRev itemFreq ldepth depth
+    rndToAction $ newItem coitem flavour discoRev itemFreq (blid b) ldepth depth
   let container = CActor aid CEqp
   iid <- registerItem item seed n1 container False
   let Point x y = bpos b

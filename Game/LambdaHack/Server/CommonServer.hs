@@ -217,7 +217,7 @@ createItems n pos lid = do
   let container = CFloor lid pos
   replicateM_ n $ do
     (item, k, _, seed) <-
-      rndToAction $ newItem coitem flavour discoRev litemFreq ldepth depth
+      rndToAction $ newItem coitem flavour discoRev litemFreq lid ldepth depth
     void $ registerItem item seed k container True
 
 projectFail :: (MonadAtomic m, MonadServer m)

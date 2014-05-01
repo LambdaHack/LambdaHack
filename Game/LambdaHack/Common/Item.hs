@@ -49,6 +49,7 @@ import Game.LambdaHack.Common.Flavour
 import Game.LambdaHack.Common.Frequency
 import qualified Game.LambdaHack.Common.ItemFeature as IF
 import qualified Game.LambdaHack.Common.Kind as Kind
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Content.ItemKind
@@ -86,6 +87,7 @@ type DiscoSeed = EM.EnumMap ItemId ItemSeed
 -- through the @jkindIx@ index as soon as the item is identified.
 data Item = Item
   { jkindIx  :: !ItemKindIx    -- ^ index pointing to the kind of the item
+  , jlid     :: !LevelId       -- ^ the level on which item was created
   , jsymbol  :: !Char          -- ^ individual map symbol
   , jname    :: !Text          -- ^ individual generic name
   , jflavour :: !Flavour       -- ^ individual flavour
@@ -123,10 +125,10 @@ serverDiscos Kind.Ops{obounds, ofoldrWithKey} = do
   return (discoS, discoRev)
 
 -- | Build an item with the given stats.
-buildItem :: FlavourMap -> DiscoRev
-          -> Kind.Id ItemKind -> ItemKind -> [Aspect Int] -> [Effect Int]
+buildItem :: FlavourMap -> DiscoRev -> Kind.Id ItemKind -> ItemKind -> LevelId
+          -> [Aspect Int] -> [Effect Int]
           -> Item
-buildItem (FlavourMap flavour) discoRev ikChosen kind jaspects jeffects =
+buildItem (FlavourMap flavour) discoRev ikChosen kind jlid jaspects jeffects =
   let jkindIx  = discoRev EM.! ikChosen
       jsymbol  = isymbol kind
       jname    = iname kind
@@ -141,16 +143,17 @@ buildItem (FlavourMap flavour) discoRev ikChosen kind jaspects jeffects =
 
 -- | Generate an item based on level.
 newItem :: Kind.Ops ItemKind -> FlavourMap -> DiscoRev
-        -> Frequency Text -> Int -> Int
+        -> Frequency Text -> LevelId -> Int -> Int
         -> Rnd (Item, Int, ItemKind, ItemSeed)
-newItem coitem@Kind.Ops{opick, okind} flavour discoRev itemFreq ln depth = do
+newItem coitem@Kind.Ops{opick, okind}
+        flavour discoRev itemFreq jlid ln depth = do
   itemGroup <- frequency itemFreq
   let castItem :: Int -> Rnd (Item, Int, ItemKind, ItemSeed)
       castItem 0 | nullFreq itemFreq = assert `failure` "no fallback items"
                                               `twith` (itemFreq, ln, depth)
       castItem 0 = do
         let newFreq = setFreq itemFreq itemGroup 0
-        newItem coitem flavour discoRev newFreq ln depth
+        newItem coitem flavour discoRev newFreq jlid ln depth
       castItem count = do
         ikChosen <- fmap (fromMaybe $ assert `failure` itemGroup)
                     $ opick itemGroup (const True)
@@ -161,7 +164,7 @@ newItem coitem@Kind.Ops{opick, okind} flavour discoRev itemFreq ln depth = do
         else do
           itemSeed <- fmap ItemSeed random
           let (aspects, effects) = seedToAspectsEffects itemSeed kind ln depth
-          return ( buildItem flavour discoRev ikChosen kind aspects effects
+          return ( buildItem flavour discoRev ikChosen kind jlid aspects effects
                  , jcount
                  , kind
                  , itemSeed )

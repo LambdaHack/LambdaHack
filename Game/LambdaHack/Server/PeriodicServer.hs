@@ -166,7 +166,7 @@ addActor ak bfid pos lid hp calm bsymbol bname bpronoun bcolor time = do
     let container = CActor aid cstore
         itemFreq = toFreq "create aitems" [(1, ikText)]
     (item, k, _, seed) <-
-      rndToAction $ newItem coitem flavour discoRev itemFreq ldepth depth
+      rndToAction $ newItem coitem flavour discoRev itemFreq lid ldepth depth
     -- Here the items are inserted into the actor.
     void $ registerItem item seed k container False
   return $! aid

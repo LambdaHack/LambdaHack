@@ -74,7 +74,7 @@ newtype FactionId = FactionId Int
 
 -- | Abstract level identifiers.
 newtype LevelId = LevelId Int
-  deriving (Show, Eq, Ord, Enum, Binary)
+  deriving (Show, Eq, Ord, Enum, Hashable.Hashable, Binary)
 
 -- | A unique identifier of an actor in the dungeon.
 newtype ActorId = ActorId Int
