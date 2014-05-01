@@ -89,9 +89,13 @@ revealItems :: (MonadAtomic m, MonadServer m)
 revealItems mfid mbody = do
   itemToF <- itemToFullServer
   dungeon <- getsState sdungeon
-  let discover b iid _numPieces = do
-        let ik = fst $ fst $ fromJust $ snd $ itemToF iid
-        execUpdAtomic $ UpdDiscover (blid b) (bpos b) iid ik
+  let discover b iid _numPieces =
+        case itemToF iid of
+          (_, Just ((ik, _), _)) -> do
+            execUpdAtomic $ UpdDiscover (blid b) (bpos b) iid ik
+            seed <- getsServer $ (EM.! iid) . sitemSeedD
+            execUpdAtomic $ UpdDiscoverSeed (blid b) (bpos b) iid seed
+          iF -> assert `failure` (mfid, mbody, iid, iF)
       f aid = do
         b <- getsState $ getActorBody aid
         let ourSide = maybe True (== bfid b) mfid

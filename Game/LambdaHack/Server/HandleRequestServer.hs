@@ -326,18 +326,21 @@ reqWait _ = return ()
 reqMoveItem :: (MonadAtomic m, MonadServer m)
             => ActorId -> ItemId -> Int -> CStore -> CStore -> m ()
 reqMoveItem aid iid k fromCStore toCStore = do
+  b <- getsState $ getActorBody aid
   let moveItem = do
         cs <- actorConts iid k aid fromCStore
         let gmove (ck, c) = do
               upds <- generalMoveItem iid ck c (CActor aid toCStore)
               mapM_ execUpdAtomic upds
         mapM_ gmove cs
+        when (fromCStore == CGround) $ do
+          seed <- getsServer $ (EM.! iid) . sitemSeedD
+          execUpdAtomic $ UpdDiscoverSeed (blid b) (bpos b) iid seed
       req = ReqMoveItem iid k fromCStore toCStore
   if k < 1 || fromCStore == toCStore then execFailure aid req ItemNothing
   else if fromCStore /= CInv && toCStore /= CInv then moveItem
   else do
     Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
-    b <- getsState $ getActorBody aid
     let kind = okind $ bkind b
     if calmEnough b kind then moveItem
     else execFailure aid req ItemNotCalm

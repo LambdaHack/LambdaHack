@@ -35,6 +35,7 @@ import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.CommonServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.PeriodicServer
+import Game.LambdaHack.Server.State
 
 -- + Semantics of effects
 
@@ -57,8 +58,10 @@ itemEffect source target iid (item, mfull) cstore = do
       -- is given, since the actor and/or the item may be moved by the effect;
       -- we'd need to track not only position of atomic commands and factions,
       -- but also which items they relate to, to be fully accurate).
-      when (and bs) $
+      when (and bs) $ do
         execUpdAtomic $ UpdDiscover (blid postb) (bpos postb) iid ik
+        seed <- getsServer $ (EM.! iid) . sitemSeedD
+        execUpdAtomic $ UpdDiscoverSeed (blid postb) (bpos postb) iid seed
     _ -> assert `failure` (source, target, iid, (item, mfull), cstore)
 
 -- | The source actor affects the target actor, with a given effect and power.
