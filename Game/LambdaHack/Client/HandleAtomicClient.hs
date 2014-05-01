@@ -107,16 +107,20 @@ cmdAtomicFilterCli cmd = case cmd of
                [UpdAlterSmell lid p msml fromSm, cmd]
              else
                [cmd]
-  UpdDiscover _ _ iid _ -> do
+  UpdDiscover lid p iid _ seed -> do
     itemD <- getsState sitemD
     case EM.lookup iid itemD of
       Nothing -> return []
       Just item -> do
         disco <- getsClient sdisco
         if jkindIx item `EM.member` disco
-          then return []
+          then do
+            discoAE <- getsClient sdiscoAE
+            if iid `EM.member` discoAE
+              then return []
+              else return [UpdDiscoverSeed lid p iid seed]
           else return [cmd]
-  UpdCover _ _ iid _ -> do
+  UpdCover lid p iid ik _ -> do
     itemD <- getsState sitemD
     case EM.lookup iid itemD of
       Nothing -> return []
@@ -124,7 +128,29 @@ cmdAtomicFilterCli cmd = case cmd of
         disco <- getsClient sdisco
         if jkindIx item `EM.notMember` disco
           then return []
-          else return [cmd]
+          else do
+            discoAE <- getsClient sdiscoAE
+            if iid `EM.notMember` discoAE
+              then return [cmd]
+              else return [UpdCoverKind lid p iid ik]
+  UpdDiscoverKind _ _ iid _ -> do
+    itemD <- getsState sitemD
+    case EM.lookup iid itemD of
+      Nothing -> return []
+      Just item -> do
+        disco <- getsClient sdisco
+        if jkindIx item `EM.notMember` disco
+        then return []
+        else return [cmd]
+  UpdCoverKind _ _ iid _ -> do
+    itemD <- getsState sitemD
+    case EM.lookup iid itemD of
+      Nothing -> return []
+      Just item -> do
+        disco <- getsClient sdisco
+        if jkindIx item `EM.notMember` disco
+        then return []
+        else return [cmd]
   UpdDiscoverSeed _ _ iid _ -> do
     itemD <- getsState sitemD
     case EM.lookup iid itemD of
@@ -234,10 +260,16 @@ cmdAtomicSemCli cmd = case cmd of
               || mleader == target  -- we changed the leader originally
               `blame` "unexpected leader" `twith` (cmd, mleader)) skip
       modifyClient $ \cli -> cli {_sleader = target}
-  UpdDiscover lid p iid ik -> discover lid p iid ik
-  UpdCover lid p iid ik -> cover lid p iid ik
-  UpdDiscoverSeed lid p iid ik -> discoverSeed lid p iid ik
-  UpdCoverSeed lid p iid ik -> coverSeed lid p iid ik
+  UpdDiscover lid p iid ik seed -> do
+    discoverKind lid p iid ik
+    discoverSeed lid p iid seed
+  UpdCover lid p iid ik seed -> do
+    coverSeed lid p iid seed
+    coverKind lid p iid ik
+  UpdDiscoverKind lid p iid ik -> discoverKind lid p iid ik
+  UpdCoverKind lid p iid ik -> coverKind lid p iid ik
+  UpdDiscoverSeed lid p iid seed -> discoverSeed lid p iid seed
+  UpdCoverSeed lid p iid seed -> coverSeed lid p iid seed
   UpdPerception lid outPer inPer -> perception lid outPer inPer
   UpdRestart side sdisco sfper _ sdebugCli _ -> do
     shistory <- getsClient shistory
@@ -301,18 +333,18 @@ perception lid outPer inPer = do
         f = EM.alter adj lid
     modifyClient $ \cli -> cli {sfper = f (sfper cli)}
 
-discover :: MonadClient m
-         => LevelId -> Point -> ItemId -> Kind.Id ItemKind -> m ()
-discover lid p iid ik = do
+discoverKind :: MonadClient m
+             => LevelId -> Point -> ItemId -> Kind.Id ItemKind -> m ()
+discoverKind lid p iid ik = do
   item <- getsState $ getItemBody iid
   let f Nothing = Just ik
       f Just{} = assert `failure` "already discovered"
                         `twith` (lid, p, iid, ik)
   modifyClient $ \cli -> cli {sdisco = EM.alter f (jkindIx item) (sdisco cli)}
 
-cover :: MonadClient m
-      => LevelId -> Point -> ItemId -> Kind.Id ItemKind -> m ()
-cover lid p iid ik = do
+coverKind :: MonadClient m
+          => LevelId -> Point -> ItemId -> Kind.Id ItemKind -> m ()
+coverKind lid p iid ik = do
   item <- getsState $ getItemBody iid
   let f Nothing = assert `failure` "already covered" `twith` (lid, p, iid, ik)
       f (Just ik2) = assert (ik == ik2 `blame` "unexpected covered item kind"

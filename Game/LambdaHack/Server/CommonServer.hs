@@ -92,9 +92,8 @@ revealItems mfid mbody = do
   let discover b iid _numPieces =
         case itemToF iid of
           (_, Just ((ik, _), _)) -> do
-            execUpdAtomic $ UpdDiscover (blid b) (bpos b) iid ik
             seed <- getsServer $ (EM.! iid) . sitemSeedD
-            execUpdAtomic $ UpdDiscoverSeed (blid b) (bpos b) iid seed
+            execUpdAtomic $ UpdDiscover (blid b) (bpos b) iid ik seed
           iF -> assert `failure` (mfid, mbody, iid, iF)
       f aid = do
         b <- getsState $ getActorBody aid

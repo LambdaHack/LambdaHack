@@ -117,9 +117,8 @@ dropAllItems aid b hit = do
               execUpdAtomic $ UpdLoseItem iid item k container
             Just cgroup -> do
               let ik = fst $ fst $ fromJust $ snd itemFull
-              execUpdAtomic $ UpdDiscover (blid b) (bpos b) iid ik
               seed <- getsServer $ (EM.! iid) . sitemSeedD
-              execUpdAtomic $ UpdDiscoverSeed (blid b) (bpos b) iid seed
+              execUpdAtomic $ UpdDiscover (blid b) (bpos b) iid ik seed
               -- Explosion provides feedback, so no @UpdDestroyItem@.
               execUpdAtomic $ UpdLoseItem iid item k container
               explodeItem aid b cgroup

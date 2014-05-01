@@ -199,32 +199,11 @@ displayRespUpdAtomicUI verbose _oldState cmd = case cmd of
   UpdLoseSmell{} -> skip
   -- Assorted.
   UpdAgeGame {} -> skip
-  UpdDiscover _ _ iid _ -> do
-    itemToF <- itemToFullClient
-    let itemFull = itemToF iid
-        (knownName, knownAEText) = partItem itemFull
-        itemSecret = case itemFull of
-          (item, Just _) -> (item, Nothing)
-          _ -> assert `failure` iid
-        (secretName, secretAEText) = partItem itemSecret
-        msg = makeSentence
-          [ "the", MU.SubjectVerbSg (MU.Phrase [secretName, secretAEText])
-                                    "turn out to be"
-          , MU.AW $ MU.Phrase [knownName, knownAEText] ]
-    when (knownAEText /= secretAEText) $ msgAdd msg
+  UpdDiscover _ _ iid _ _ -> discoverKind iid
   UpdCover{} ->  skip  -- don't spam when doing undo
-  UpdDiscoverSeed _ _ iid _ -> do
-    itemToF <- itemToFullClient
-    let itemFull = itemToF iid
-        (knownName, knownAEText) = partItem itemFull
-        itemSecret = case itemFull of
-          (item, Just (kk, Just _)) -> (item, Just (kk, Nothing))
-          _ -> assert `failure` iid
-        (secretName, secretAEText) = partItem itemSecret
-        msg = makeSentence
-          [ "the", MU.SubjectVerbSg secretName "turn out to be"
-          , MU.AW $ MU.Phrase [knownName, knownAEText] ]
-    when (knownAEText /= secretAEText) $ msgAdd msg
+  UpdDiscoverKind _ _ iid _ -> discoverKind iid
+  UpdCoverKind{} ->  skip  -- don't spam when doing undo
+  UpdDiscoverSeed _ _ iid _ -> discoverSeed iid
   UpdCoverSeed{} -> skip  -- don't spam when doing undo
   UpdPerception{} -> skip
   UpdRestart _ _ _ _ _ t -> do
@@ -453,6 +432,35 @@ quitFactionUI fid mbody toSt = do
       -- and put it before item and score screens (on blank background)
       unless (fmap stOutcome toSt == Just Camping) $ fadeOutOrIn True
     _ -> return ()
+
+discoverKind :: MonadClientUI m => ItemId ->  m ()
+discoverKind iid = do
+  itemToF <- itemToFullClient
+  let itemFull = itemToF iid
+      (knownName, knownAEText) = partItem itemFull
+      itemSecret = case itemFull of
+        (item, Just _) -> (item, Nothing)
+        _ -> assert `failure` iid
+      (secretName, secretAEText) = partItem itemSecret
+      msg = makeSentence
+        [ "the", MU.SubjectVerbSg (MU.Phrase [secretName, secretAEText])
+                                  "turn out to be"
+        , MU.AW $ MU.Phrase [knownName, knownAEText] ]
+  when (knownAEText /= secretAEText) $ msgAdd msg
+
+discoverSeed :: MonadClientUI m => ItemId ->  m ()
+discoverSeed iid = do
+    itemToF <- itemToFullClient
+    let itemFull = itemToF iid
+        (knownName, knownAEText) = partItem itemFull
+        itemSecret = case itemFull of
+          (item, Just (kk, Just _)) -> (item, Just (kk, Nothing))
+          _ -> assert `failure` iid
+        (_secretName, secretAEText) = partItem itemSecret
+        msg = makeSentence
+          [ MU.SubjectVerbSg "it" "turn out to be"
+          , MU.AW $ MU.Phrase [knownName, knownAEText] ]
+    when (knownAEText /= secretAEText) $ msgAdd msg
 
 -- * RespSfxAtomicUI
 

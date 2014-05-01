@@ -79,8 +79,10 @@ handleUpdAtomic cmd = case cmd of
   UpdAgeGame t lids -> updAgeGame t lids
   UpdDiscover{} -> return ()      -- We can't keep dicovered data in State,
   UpdCover{} -> return ()         -- because server saves all atomic commands
-  UpdDiscoverSeed{} -> return ()  -- to apply their inverses for undo,
-  UpdCoverSeed{} -> return ()     -- so they would wipe out server knowledge.
+  UpdDiscoverKind{} -> return ()  -- to apply their inverses for undo,
+  UpdCoverKind{} -> return ()     -- so they would wipe out server knowledge.
+  UpdDiscoverSeed{} -> return ()
+  UpdCoverSeed{} -> return ()
   UpdPerception _ outPer inPer ->
     assert (not (nullPer outPer && nullPer inPer)) skip
   UpdRestart fid sdisco sfper s _ _ -> updRestart fid sdisco sfper s

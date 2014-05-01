@@ -88,8 +88,10 @@ data UpdAtomic =
   | UpdLoseSmell !LevelId ![(Point, Time)]
   -- Assorted.
   | UpdAgeGame !(Delta Time) ![LevelId]
-  | UpdDiscover !LevelId !Point !ItemId !(Kind.Id ItemKind)
-  | UpdCover !LevelId !Point !ItemId !(Kind.Id ItemKind)
+  | UpdDiscover !LevelId !Point !ItemId !(Kind.Id ItemKind) !ItemSeed
+  | UpdCover !LevelId !Point !ItemId !(Kind.Id ItemKind) !ItemSeed
+  | UpdDiscoverKind !LevelId !Point !ItemId !(Kind.Id ItemKind)
+  | UpdCoverKind !LevelId !Point !ItemId !(Kind.Id ItemKind)
   | UpdDiscoverSeed !LevelId !Point !ItemId !ItemSeed
   | UpdCoverSeed !LevelId !Point !ItemId !ItemSeed
   | UpdPerception !LevelId !Perception !Perception
@@ -165,10 +167,12 @@ undoUpdAtomic cmd = case cmd of
   UpdSpotSmell lid sms -> Just $ UpdLoseSmell lid sms
   UpdLoseSmell lid sms -> Just $ UpdSpotSmell lid sms
   UpdAgeGame delta lids -> Just $ UpdAgeGame (timeDeltaReverse delta) lids
-  UpdDiscover lid p iid ik -> Just $ UpdCover lid p iid ik
-  UpdCover lid p iid ik -> Just $ UpdDiscover lid p iid ik
-  UpdDiscoverSeed lid p iid ik -> Just $ UpdCoverSeed lid p iid ik
-  UpdCoverSeed lid p iid ik -> Just $ UpdDiscoverSeed lid p iid ik
+  UpdDiscover lid p iid ik seed -> Just $ UpdCover lid p iid ik seed
+  UpdCover lid p iid ik seed -> Just $ UpdDiscover lid p iid ik seed
+  UpdDiscoverKind lid p iid ik -> Just $ UpdCoverKind lid p iid ik
+  UpdCoverKind lid p iid ik -> Just $ UpdDiscoverKind lid p iid ik
+  UpdDiscoverSeed lid p iid seed -> Just $ UpdCoverSeed lid p iid seed
+  UpdCoverSeed lid p iid seed -> Just $ UpdDiscoverSeed lid p iid seed
   UpdPerception lid outPer inPer -> Just $ UpdPerception lid inPer outPer
   UpdRestart{} -> Just cmd  -- here history ends; change direction
   UpdRestartServer{} -> Just cmd  -- here history ends; change direction
