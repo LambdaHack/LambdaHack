@@ -15,7 +15,7 @@ import Game.LambdaHack.Server.Fov.Common
 scan :: Distance        -- ^ visiblity radius
      -> (Bump -> Bool)  -- ^ clear tile predicate
      -> [Bump]
-scan r isClear =
+scan r isClear = assert (r > 0 `blame` r) $
   -- The scanned area is a square, which is a sphere in the chessboard metric.
   dscan 1 ( (Line (B 1 0) (B (-r) r), [B 0 0])
           , (Line (B 0 0) (B (r+1) r), [B 1 0]) )

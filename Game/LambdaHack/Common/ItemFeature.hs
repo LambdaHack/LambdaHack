@@ -33,4 +33,4 @@ featureToSuff feat =
     ToThrow{} -> ""
     Linger{} -> ""
     Consumable -> ""
-    Light p -> Effect.affixPower p
+    Light p -> Effect.affixBonus p

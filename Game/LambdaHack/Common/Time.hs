@@ -152,7 +152,7 @@ speedNegate (Speed n) = Speed (-n)
 
 -- | The number of time ticks it takes to walk 1 meter at the given speed.
 ticksPerMeter :: Speed -> Delta Time
-ticksPerMeter (Speed v) = Delta $ Time $ _ticksInSecond * sInMs `divUp` v
+ticksPerMeter (Speed v) = Delta $ Time $ _ticksInSecond * sInMs `divUp` max 1 v
 
 -- | Calculate projectile speed from item weight in grams
 -- and speed bonus in percents.

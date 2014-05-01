@@ -232,7 +232,7 @@ inverseVideo = Color.Attr { Color.fg = Color.bg Color.defAttr
 drawArenaStatus :: Bool -> Level -> Int -> [Color.AttrChar]
 drawArenaStatus explored Level{ldepth, ldesc, lseen, lclear} width =
   let addAttr t = map (Color.AttrChar Color.defAttr) (T.unpack t)
-      seenN = 100 * lseen `div` lclear
+      seenN = 100 * lseen `div` max 1 lclear
       seenTxt | explored || seenN >= 100 = "all"
               | otherwise = T.justifyLeft 3 ' ' (tshow seenN <> "%")
       lvlN = T.justifyLeft 2 ' ' (tshow $ abs ldepth)

@@ -144,7 +144,9 @@ fullscan :: Kind.Ops TileKind  -- ^ tile content, determines clear tiles
          -> Level              -- ^ the map that is scanned
          -> [Point]
 fullscan cotile fovMode r spectatorPos lvl = spectatorPos :
-  case fovMode of
+  if r <= 0
+  then []
+  else case fovMode of
     Shadow ->
       concatMap (\tr -> map tr (Shadow.scan (isCl . tr) 1 (0, 1))) tr8
     Permissive ->
