@@ -194,8 +194,7 @@ reqMelee source target = do
     case miid of
       Nothing -> execFailure source req MeleeNoWeapon
       Just iid -> do
-        -- Incapacitated actors can't block.
-        let block = braced tb && bhp tb > 0
+        let block = braced tb
             shield = not (null $ strongestShield sallAssocs)
                      || not (null $ strongestShield tallAssocs)
             hitA = if block && shield

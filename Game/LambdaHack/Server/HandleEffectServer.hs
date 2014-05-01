@@ -144,7 +144,7 @@ effectHurt nDm power source target = do
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   n <- rndToAction $ castDice 0 0 nDm
-  let block = braced tb && bhp tb > 0
+  let block = braced tb
       sshieldMult = case strongestShield sallAssocs of
         [] -> 100
         (p, _) : _ -> p
