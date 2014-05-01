@@ -49,7 +49,7 @@ brassLantern = ItemKind
   , iaspects = [Explode "burning oil 4"]
   , ieffects = [Burn 4]
   , ifeature = [ ToThrow (-30)  -- hard to throw so that it opens and burns
-               , Light 4 ]
+               , Light 4, Fragile ]
   , idesc    = "Very bright and quite heavy brass lantern."
   }
 dart = ItemKind
@@ -143,7 +143,7 @@ oilLamp = ItemKind
   , iaspects = [Explode "burning oil 3"]
   , ieffects = [Burn 3]
   , ifeature = [ ToThrow (-30)  -- hard not to spill the oil while throwing
-               , Light 3 ]
+               , Light 3, Fragile ]
   , idesc    = "A clay lamp full of plant oil feeding a thick wick."
   }
 potion = ItemKind
@@ -158,7 +158,7 @@ potion = ItemKind
   , iaspects = []
   , ieffects = []
   , ifeature = [ ToThrow (-50)  -- oily, bad grip
-               , Consumable ]
+               , Consumable, Fragile ]
   , idesc    = "A flask of bubbly, slightly oily liquid of a suspect color."
   }
 potion1 = potion
