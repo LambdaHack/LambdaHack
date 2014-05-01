@@ -130,8 +130,8 @@ cmdAtomicFilterCli cmd = case cmd of
     case EM.lookup iid itemD of
       Nothing -> return []
       Just _ -> do
-        discoSeed <- getsClient sdiscoSeed
-        if iid `EM.member` discoSeed
+        discoAE <- getsClient sdiscoAE
+        if iid `EM.member` discoAE
           then return []
           else return [cmd]
   UpdCoverSeed _ _ iid _ -> do
@@ -139,8 +139,8 @@ cmdAtomicFilterCli cmd = case cmd of
     case EM.lookup iid itemD of
       Nothing -> return []
       Just _ -> do
-        discoSeed <- getsClient sdiscoSeed
-        if iid `EM.notMember` discoSeed
+        discoAE <- getsClient sdiscoAE
+        if iid `EM.notMember` discoAE
           then return []
           else return [cmd]
   UpdPerception lid outPer inPer -> do
@@ -298,8 +298,8 @@ discover :: MonadClient m
 discover lid p iid ik = do
   item <- getsState $ getItemBody iid
   let f Nothing = Just ik
-      f (Just ik2) = assert `failure` "already discovered"
-                            `twith` (lid, p, iid, ik, ik2)
+      f Just{} = assert `failure` "already discovered"
+                        `twith` (lid, p, iid, ik)
   modifyClient $ \cli -> cli {sdisco = EM.alter f (jkindIx item) (sdisco cli)}
 
 cover :: MonadClient m
@@ -313,19 +313,28 @@ cover lid p iid ik = do
 
 discoverSeed :: MonadClient m
              => LevelId -> Point -> ItemId -> ItemSeed -> m ()
-discoverSeed lid p iid ik = do
-  let f Nothing = Just ik
-      f (Just ik2) = assert `failure` "already discovered"
-                            `twith` (lid, p, iid, ik, ik2)
-  modifyClient $ \cli -> cli {sdiscoSeed = EM.alter f iid (sdiscoSeed cli)}
+discoverSeed lid p iid seed = do
+  Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
+  disco <- getsClient sdisco
+  item <- getsState $ getItemBody iid
+  Level{ldepth} <- getLevel (jlid item)
+  depth <- getsState sdepth
+  case EM.lookup (jkindIx item) disco of
+    Nothing -> assert `failure` "kind not known"
+                      `twith` (lid, p, iid, seed)
+    Just ik -> do
+      let kind = okind ik
+          f Nothing = Just $ seedToAspectsEffects seed kind ldepth depth
+          f Just{} = assert `failure` "already discovered"
+                            `twith` (lid, p, iid, seed)
+      modifyClient $ \cli -> cli {sdiscoAE = EM.alter f iid (sdiscoAE cli)}
 
 coverSeed :: MonadClient m
           => LevelId -> Point -> ItemId -> ItemSeed -> m ()
 coverSeed lid p iid ik = do
   let f Nothing = assert `failure` "already covered" `twith` (lid, p, iid, ik)
-      f (Just ik2) = assert (ik == ik2 `blame` "unexpected covered item kind"
-                                       `twith` (ik, ik2)) Nothing
-  modifyClient $ \cli -> cli {sdiscoSeed = EM.alter f iid (sdiscoSeed cli)}
+      f Just{} = Nothing  -- checking that old and new agree is too much work
+  modifyClient $ \cli -> cli {sdiscoAE = EM.alter f iid (sdiscoAE cli)}
 
 killExit :: MonadClient m => m ()
 killExit = modifyClient $ \cli -> cli {squit = True}

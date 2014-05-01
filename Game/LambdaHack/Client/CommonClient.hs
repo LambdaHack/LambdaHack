@@ -2,7 +2,7 @@
 module Game.LambdaHack.Client.CommonClient
   ( getPerFid, aidTgtToPos, aidTgtAims, makeLine
   , partAidLeader, partActorLeader, partPronounLeader
-  , actorAbilities, updateItemSlot
+  , actorAbilities, updateItemSlot, fullAssocsClient, itemToFullClient
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -24,6 +24,7 @@ import Game.LambdaHack.Common.Faction
 import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
+import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
@@ -180,3 +181,20 @@ updateItemSlot maid iid = do
           modifyClient $ \cli ->
             cli { sslots = (letterSlots, IM.insert l iid numberSlots) }
     _ -> return ()  -- slot already assigned a letter or a number
+
+fullAssocsClient :: MonadClient m
+                 => ActorId -> [CStore] -> m [(ItemId, ItemFull)]
+fullAssocsClient aid cstores = do
+  cops <- getsState scops
+  disco <- getsClient sdisco
+  discoAE <- getsClient sdiscoAE
+  getsState $ fullAssocs cops disco discoAE aid cstores
+
+itemToFullClient :: MonadClient m => m (ItemId -> ItemFull)
+itemToFullClient = do
+  cops <- getsState scops
+  disco <- getsClient sdisco
+  discoAE <- getsClient sdiscoAE
+  s <- getState
+  let itemToF iid = itemToFull cops disco discoAE iid (getItemBody iid s)
+  return itemToF

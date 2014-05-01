@@ -310,10 +310,8 @@ targetDesc target = do
           case EM.assocs $ lvl `atI` p of
             [] -> return $! "exact spot" <+> (T.pack . show) p
             [(iid, k)] -> do
-              Kind.COps{coitem} <- getsState scops
-              disco <- getsClient sdisco
-              item <- getsState $ getItemBody iid
-              let (name, stats) = partItem coitem disco item
+              itemToF <- itemToFullClient
+              let (name, stats) = partItem (itemToF iid)
               return $! makePhrase $ if k == 1
                                      then [name, stats]  -- "a sword" too wordy
                                      else [MU.CarWs k name, stats]

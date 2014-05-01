@@ -89,7 +89,7 @@ dropAllItems :: (MonadAtomic m, MonadServer m)
 dropAllItems aid b hit = do
   Kind.COps{corule} <- getsState scops
   let RuleKind{rsharedInventory} = Kind.stdRuleset corule
-  discoS <- getsServer sdisco
+  itemToF <- itemToFullServer
   let container = CActor aid CEqp
       loseInv = do
         let g iid k = execUpdAtomic
@@ -109,13 +109,14 @@ dropAllItems aid b hit = do
   let isDestroyed item = hit || bproj b && isFragile item
       f iid k = do
         item <- getsState $ getItemBody iid
+        let itemFull = itemToF iid
         if isDestroyed item then
-          case isExplosive item of
+          case isExplosive itemFull of
             Nothing ->
               -- Feedback from hit, or it's shrapnel, so no @UpdDestroyItem@.
               execUpdAtomic $ UpdLoseItem iid item k container
             Just cgroup -> do
-              let ik = fromJust $ jkind discoS item
+              let ik = fst $ fst $ fromJust $ snd itemFull
               execUpdAtomic $ UpdDiscover (blid b) (bpos b) iid ik
               -- Explosion provides feedback, so no @UpdDestroyItem@.
               execUpdAtomic $ UpdLoseItem iid item k container
@@ -133,10 +134,10 @@ explodeItem aid b cgroup = do
   Level{ldepth} <- getLevel $ blid b
   depth <- getsState sdepth
   let itemFreq = toFreq "shrapnel group" [(1, cgroup)]
-  (item, n1, _, seed) <-
+  (itemKnown, seed, n1) <-
     rndToAction $ newItem coitem flavour discoRev itemFreq (blid b) ldepth depth
   let container = CActor aid CEqp
-  iid <- registerItem item seed n1 container False
+  iid <- registerItem itemKnown seed n1 container False
   let Point x y = bpos b
       projectN k100 n = when (n > 7) $ do
         -- We pick a point at the border, not inside, to have a uniform
@@ -166,4 +167,5 @@ explodeItem aid b cgroup = do
     maybe skip (projectN k100) mn2
   bag3 <- getsState $ beqp . getActorBody aid
   let mn3 = EM.lookup iid bag3
-  maybe skip (\k -> execUpdAtomic $ UpdLoseItem iid item k container) mn3
+  maybe skip (\k -> execUpdAtomic
+                    $ UpdLoseItem iid (fst itemKnown) k container) mn3

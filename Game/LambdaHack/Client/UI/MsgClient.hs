@@ -83,18 +83,17 @@ lookAt :: MonadClientUI m
        -> Text       -- ^ an extra sentence to print
        -> m Text
 lookAt detailed tilePrefix canSee pos aid msg = do
-  Kind.COps{coitem, cotile=cotile@Kind.Ops{okind}} <- getsState scops
+  Kind.COps{cotile=cotile@Kind.Ops{okind}} <- getsState scops
+  itemToF <- itemToFullClient
   lidV <- viewedLevel
   lvl <- getLevel lidV
   b <- getsState $ getActorBody aid
   subject <- partAidLeader aid
-  s <- getState
   let is = lvl `atI` pos
       verb = MU.Text $ if pos == bpos b
                        then "stand on"
                        else if canSee then "notice" else "remember"
-  disco <- getsClient sdisco
-  let nWs (iid, k) = partItemWs coitem disco k (getItemBody iid s)
+  let nWs (iid, k) = partItemWs k (itemToF iid)
       isd = case detailed of
               _ | EM.size is == 0 -> ""
               _ | EM.size is <= 2 ->
@@ -120,14 +119,10 @@ lookAt detailed tilePrefix canSee pos aid msg = do
 -- | Create a list of item names.
 itemOverlay :: MonadClient m => ItemBag -> ItemSlots -> m Overlay
 itemOverlay bag (letterSlots, numberSlots) = do
-  Kind.COps{coitem} <- getsState scops
-  s <- getState
-  disco <- getsClient sdisco
-  let pr (l, iid) =
-         makePhrase [ slotLabel l
-                    , partItemWs coitem disco (bag EM.! iid)
-                                 (getItemBody iid s) ]
-         <> " "
+  itemToF <- itemToFullClient
+  let pr (l, iid) = makePhrase [ slotLabel l
+                               , partItemWs (bag EM.! iid) (itemToF iid) ]
+                    <> " "
   return $! toOverlay $ map pr $ map (first Left) (EM.assocs letterSlots)
                                  ++ (map (first Right) (IM.assocs numberSlots))
 

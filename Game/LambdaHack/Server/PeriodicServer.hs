@@ -165,10 +165,10 @@ addActor ak bfid pos lid hp calm bsymbol bname bpronoun bcolor time = do
   forM_ (aitems kind) $ \(ikText, cstore) -> do
     let container = CActor aid cstore
         itemFreq = toFreq "create aitems" [(1, ikText)]
-    (item, k, _, seed) <-
+    (itemFull, seed, k) <-
       rndToAction $ newItem coitem flavour discoRev itemFreq lid ldepth depth
     -- Here the items are inserted into the actor.
-    void $ registerItem item seed k container False
+    void $ registerItem itemFull seed k container False
   return $! aid
 
 rollSpawnPos :: Kind.COps -> ES.EnumSet Point
@@ -239,7 +239,8 @@ advanceTime aid = do
       dominateFid (boldfid b) aid
       execSfx
     else do
-      newCalmDelta <- getsState $ regenCalmDelta b
+      allAssocs <- fullAssocsServer aid [CEqp, CBody]
+      newCalmDelta <- getsState $ regenCalmDelta b allAssocs
       unless (newCalmDelta == 0 && bcalmDelta b == 0) $
         execUpdAtomic $ UpdCalmActor aid newCalmDelta
 
@@ -258,8 +259,9 @@ regenerateLevelHP :: (MonadAtomic m, MonadServer m) => LevelId -> m ()
 regenerateLevelHP lid = do
   time <- getsState $ getLocalTime lid
   let turnN = time `timeFit` timeTurn
-      approve (_, b) = do
-        hpPeriod <- getsState $ regenHPPeriod b
+      approve (aid, b) = do
+        allAssocs <- fullAssocsServer aid [CEqp, CBody]
+        hpPeriod <- getsState $ regenHPPeriod b allAssocs
         return $! hpPeriod /= 0 && turnN `mod` hpPeriod == 0
   toRegen <- getsState $ actorRegularAssocs (const True) lid
   appRegen <- filterM approve toRegen

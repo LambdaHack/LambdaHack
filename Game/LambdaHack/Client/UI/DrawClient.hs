@@ -252,82 +252,77 @@ drawLeaderStatus waitT width = do
       (calmHeaderText, hpHeaderText) = if width < maxLeaderStatusWidth
                                        then ("C", "H")
                                        else ("Calm", "HP")
-      stats = case mleader of
-        Just leader ->
-          let Kind.COps{coactor=Kind.Ops{okind}} = cops
-              (darkL, bracedL, hpPeriod, calmDelta,
-               ahpS, bhpS, acalmS, bcalmS) =
-                let b@Actor{bkind, bhp, bcalm} = getActorBody leader s
-                    ActorKind{ahp, acalm} = okind bkind
-                in ( actorInDark b s
-                   , braced b, regenHPPeriod b s, bcalmDelta b
-                   , tshow (Dice.maxDice ahp), tshow bhp
-                   , tshow (Dice.maxDice acalm), tshow bcalm )
-              -- This is a valuable feedback for the otherwise hard to observe
-              -- 'wait' command.
-              slashes = ["/", "|", "\\", "|"]
-              slashPick = slashes !! (max 0 (waitT - 1) `mod` length slashes)
-              calmAddAttr | calmDelta > 0 = addColor Color.BrGreen
-                          | calmDelta < 0 = addColor Color.BrRed
-                          | otherwise = addAttr
-              darkPick | darkL   = "."
-                       | otherwise = ":"
-              calmHeader = calmAddAttr $ calmHeaderText <> darkPick
-              calmText = bcalmS <>  (if darkL then slashPick else "/") <> acalmS
-              bracePick | bracedL   = "}"
-                        | otherwise = ":"
-              hpAddAttr | hpPeriod > 0 = addColor Color.BrGreen
-                        | otherwise = addAttr
-              hpHeader = hpAddAttr $ hpHeaderText <> bracePick
-              hpText = bhpS <> (if bracedL then slashPick else "/") <> ahpS
-          in calmHeader <> addAttr (T.justifyRight 6 ' ' calmText <> " ")
-             <> hpHeader <> addAttr (T.justifyRight 6 ' ' hpText <> " ")
-        Nothing -> addAttr $ calmHeaderText <> ": --/-- "
-                             <> hpHeaderText <> ": --/-- "
-  return $! stats
+  case mleader of
+    Just leader -> do
+      allAssocs <- fullAssocsClient leader [CEqp, CBody]
+      let Kind.COps{coactor=Kind.Ops{okind}} = cops
+          (darkL, bracedL, hpPeriod, calmDelta,
+           ahpS, bhpS, acalmS, bcalmS) =
+            let b@Actor{bkind, bhp, bcalm} = getActorBody leader s
+                ActorKind{ahp, acalm} = okind bkind
+            in ( actorInDark b s
+               , braced b, regenHPPeriod b allAssocs s, bcalmDelta b
+               , tshow (Dice.maxDice ahp), tshow bhp
+               , tshow (Dice.maxDice acalm), tshow bcalm )
+          -- This is a valuable feedback for the otherwise hard to observe
+          -- 'wait' command.
+          slashes = ["/", "|", "\\", "|"]
+          slashPick = slashes !! (max 0 (waitT - 1) `mod` length slashes)
+          calmAddAttr | calmDelta > 0 = addColor Color.BrGreen
+                      | calmDelta < 0 = addColor Color.BrRed
+                      | otherwise = addAttr
+          darkPick | darkL   = "."
+                   | otherwise = ":"
+          calmHeader = calmAddAttr $ calmHeaderText <> darkPick
+          calmText = bcalmS <>  (if darkL then slashPick else "/") <> acalmS
+          bracePick | bracedL   = "}"
+                    | otherwise = ":"
+          hpAddAttr | hpPeriod > 0 = addColor Color.BrGreen
+                    | otherwise = addAttr
+          hpHeader = hpAddAttr $ hpHeaderText <> bracePick
+          hpText = bhpS <> (if bracedL then slashPick else "/") <> ahpS
+      return $! calmHeader <> addAttr (T.justifyRight 6 ' ' calmText <> " ")
+                <> hpHeader <> addAttr (T.justifyRight 6 ' ' hpText <> " ")
+    Nothing -> return $! addAttr $ calmHeaderText <> ": --/-- "
+                                   <> hpHeaderText <> ": --/-- "
 
 drawLeaderDamage :: MonadClient m => Int -> m [Color.AttrChar]
 drawLeaderDamage width = do
-  cops@Kind.COps{coitem=Kind.Ops{okind}} <- getsState scops
-  disco <- getsClient sdisco
+  cops <- getsState scops
   mleader <- getsClient _sleader
-  s <- getState
   let addColor t = map (Color.AttrChar $ Color.Attr Color.BrCyan Color.defBG)
                    (T.unpack t)
-      stats = case mleader of
-        Just leader ->
-          let eqpAssocs = getActorAssocs leader CEqp s
-              bodyAssocs = getActorAssocs leader CBody s
-              allAssocs = eqpAssocs ++ bodyAssocs
-              damage = case Item.strongestSword cops disco allAssocs of
-                (_, (_, item)) : _->
-                  case Item.jkind disco item of
-                    Just ik ->
-                      let getP :: Effect.Effect a -> Maybe (Dice.Dice, a)
-                               -> Maybe (Dice.Dice, a)
-                          getP (Effect.Hurt dice p) _ = Just (dice, p)
-                          getP _ acc = acc
-                          (mdice, mbonus) =
-                            case foldr getP Nothing (jeffects item) of
-                              Just (dice, p) -> (Just dice, Just p)
-                              Nothing ->
-                                let kind = okind ik
-                                in case foldr getP Nothing (ieffects kind) of
-                                  Just (dice, _) -> (Just dice, Nothing)
-                                  Nothing -> (Nothing, Nothing)
-                      in case mdice of
-                        Nothing -> "???"
-                        Just dice ->
-                          let bonusText = case mbonus of
-                                Nothing -> "+?"
-                                Just p -> if p == 0
-                                          then ""
-                                          else "+" <> tshow p
-                          in tshow dice <> bonusText
-                    Nothing -> "???"
-                [] -> "0"
-          in damage
-        Nothing -> ""
+  stats <- case mleader of
+    Just leader -> do
+      allAssocs <- fullAssocsClient leader [CEqp, CBody]
+      let damage = case Item.strongestSword cops allAssocs of
+            (_, (_, itemFull)) : _->
+              let getP :: Effect.Effect a -> Maybe (Dice.Dice, a)
+                       -> Maybe (Dice.Dice, a)
+                  getP (Effect.Hurt dice p) _ = Just (dice, p)
+                  getP _ acc = acc
+                  (mdice, mbonus) = case itemFull of
+                    (_, Just (_, Just ItemAspectEffect{jeffects})) ->
+                      case foldr getP Nothing jeffects of
+                          Just (dice, p) -> (Just dice, Just p)
+                          Nothing -> (Nothing, Nothing)
+                    (_, Just ((_, kind), Nothing)) ->
+                      case foldr getP Nothing (ieffects kind) of
+                        Just (dice, _) -> (Just dice, Nothing)
+                        Nothing -> (Nothing, Nothing)
+                    (_, Nothing) -> (Nothing, Nothing)
+              in case mdice of
+                Nothing -> "???"
+                Just dice ->
+                  let bonusText = case mbonus of
+                        Nothing -> "+?"
+                        Just p -> if p == 0
+                                  then ""
+                                  else "+" <> tshow p
+                  in tshow dice <> bonusText
+            [] -> "0"
+      return $! damage
+    Nothing -> return ""
   return $! if T.null stats || T.length stats >= width then []
             else addColor $ stats <> " "
 

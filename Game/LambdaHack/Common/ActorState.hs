@@ -6,11 +6,11 @@ module Game.LambdaHack.Common.ActorState
   , actorRegularAssocsLvl, actorRegularAssocs, actorRegularList
   , bagAssocs, calculateTotal, sharedInv, sharedAllOwned, sharedAllOwnedFid
   , getInvBag, getCBag, getActorBag, getCAssocs, getActorAssocs
-  , nearbyFreePoints, whereTo, getCarriedAssocs, getEqpKA
+  , nearbyFreePoints, whereTo, getCarriedAssocs
   , posToActors, posToActor, getItemBody, memActor, getActorBody
   , tryFindHeroK, getLocalTime, isSpawnFaction
   , itemPrice, calmEnough, regenHPPeriod, regenCalmDelta, actorInDark, dispEnemy
-  , totalRange
+  , totalRange, fullAssocs, itemToFull
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -215,11 +215,6 @@ getCarriedAssocs :: Actor -> State -> [(ItemId, Item)]
 getCarriedAssocs b s =
   bagAssocs s $ EM.unionsWith (+) [binv b, beqp b, bbody b]
 
-getEqpKA :: Actor -> State -> [(Int, (ItemId, Item))]
-getEqpKA b s =
-  let f (iid, k) = (k, (iid, getItemBody iid s))
-  in map f $ EM.assocs $ beqp b
-
 getInvBag :: Actor -> State -> ItemBag
 getInvBag b s =
   let RuleKind{rsharedInventory} = Kind.stdRuleset $ Kind.corule $ scops s
@@ -269,13 +264,10 @@ getLocalTime lid s = ltime $ sdungeon s EM.! lid
 isSpawnFaction :: FactionId -> State -> Bool
 isSpawnFaction fid s = isSpawnFact $ sfactionD s EM.! fid
 
-regenHPPeriod :: Actor -> State -> Int
-regenHPPeriod b s =
+regenHPPeriod :: Actor -> [(ItemId, ItemFull)] -> State -> Int
+regenHPPeriod b allAssocs s =
   let Kind.COps{coactor=Kind.Ops{okind}} = scops s
       ak = okind $ bkind b
-      eqpAssocs = bagAssocs s $ beqp b
-      bodyAssocs = bagAssocs s $ bbody b
-      allAssocs = eqpAssocs ++ bodyAssocs
       regenPeriod = case strongestRegen allAssocs of
         (k, _) : _ ->
           let slowBaseRegen = 1000
@@ -285,13 +277,10 @@ regenHPPeriod b s =
       maxDeltaHP = Dice.maxDice (ahp ak) - bhp b
   in if maxDeltaHP > 0 then regenPeriod else 0
 
-regenCalmDelta :: Actor -> State -> Int
-regenCalmDelta b s =
+regenCalmDelta :: Actor -> [(ItemId, ItemFull)] -> State -> Int
+regenCalmDelta b allAssocs s =
   let Kind.COps{coactor=Kind.Ops{okind}} = scops s
       ak = okind $ bkind b
-      eqpAssocs = bagAssocs s $ beqp b
-      bodyAssocs = bagAssocs s $ bbody b
-      allAssocs = eqpAssocs ++ bodyAssocs
       calmIncr = case strongestStead allAssocs of
         (k, _) : _ -> k + 1
         [] -> 1
@@ -338,3 +327,19 @@ totalRange item =
       speed = speedFromWeight (jweight item) (isToThrow item)
       range = rangeFromSpeed speed
   in lingerPercent * range `div` 100
+
+fullAssocs :: Kind.COps -> Discovery -> DiscoAE
+           -> ActorId -> [CStore] -> State
+           -> [(ItemId, ItemFull)]
+fullAssocs cops disco discoAE aid cstores s =
+  let allAssocs :: [(ItemId, Item)]
+      allAssocs = concatMap (\cstore -> getActorAssocs aid cstore s) cstores
+      iToFull (iid, item) = (iid, itemToFull cops disco discoAE iid item)
+  in map iToFull allAssocs
+
+itemToFull :: Kind.COps -> Discovery -> DiscoAE -> ItemId -> Item -> ItemFull
+itemToFull Kind.COps{coitem=Kind.Ops{okind}} disco discoAE iid item =
+  let full = case EM.lookup (jkindIx item) disco of
+        Nothing -> Nothing
+        Just ik -> Just ((ik, okind ik), EM.lookup iid discoAE)
+  in (item, full)

@@ -2,7 +2,7 @@
 module Game.LambdaHack.Server.CommonServer
   ( execFailure, resetFidPerception, resetLitInDungeon, getPerFid
   , revealItems, deduceQuits, deduceKilled, electLeader
-  , registerItem, createItems, projectFail
+  , registerItem, createItems, projectFail, fullAssocsServer, itemToFullServer
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -87,11 +87,10 @@ getPerFid fid lid = do
 revealItems :: (MonadAtomic m, MonadServer m)
             => Maybe FactionId -> Maybe Actor -> m ()
 revealItems mfid mbody = do
+  itemToF <- itemToFullServer
   dungeon <- getsState sdungeon
-  discoS <- getsServer sdisco
   let discover b iid _numPieces = do
-        item <- getsState $ getItemBody iid
-        let ik = fromJust $ jkind discoS item
+        let ik = fst $ fst $ fromJust $ snd $ itemToF iid
         execUpdAtomic $ UpdDiscover (blid b) (bpos b) iid ik
       f aid = do
         b <- getsState $ getActorBody aid
@@ -187,11 +186,11 @@ electLeader fid lid aidDead = do
       execUpdAtomic $ UpdLeadFaction fid mleader mleaderNew
 
 registerItem :: (MonadAtomic m, MonadServer m)
-             => Item -> ItemSeed -> Int -> Container -> Bool -> m ItemId
-registerItem item seed k container verbose = do
+             => ItemKnown -> ItemSeed -> Int -> Container -> Bool -> m ItemId
+registerItem itemKnown@(item, iae) seed k container verbose = do
   itemRev <- getsServer sitemRev
   let cmd = if verbose then UpdCreateItem else UpdSpotItem
-  case HM.lookup item itemRev of
+  case HM.lookup itemKnown itemRev of
     Just iid -> do
       -- TODO: try to avoid this case for createItems,
       -- to make items more interesting
@@ -201,8 +200,9 @@ registerItem item seed k container verbose = do
       icounter <- getsServer sicounter
       modifyServer $ \ser ->
         ser { sicounter = succ icounter
-            , sitemRev = HM.insert item icounter (sitemRev ser)
-            , sdiscoSeed = EM.insert icounter seed (sdiscoSeed ser)}
+            , sitemRev = HM.insert itemKnown icounter (sitemRev ser)
+            , sitemSeedD = EM.insert icounter seed (sitemSeedD ser)
+            , sdiscoAE = EM.insert icounter iae (sdiscoAE ser)}
       execUpdAtomic $ cmd icounter item k container
       return $! icounter
 
@@ -216,9 +216,9 @@ createItems n pos lid = do
   depth <- getsState sdepth
   let container = CFloor lid pos
   replicateM_ n $ do
-    (item, k, _, seed) <-
+    (itemKnown, seed, k) <-
       rndToAction $ newItem coitem flavour discoRev litemFreq lid ldepth depth
-    void $ registerItem item seed k container True
+    void $ registerItem itemKnown seed k container True
 
 projectFail :: (MonadAtomic m, MonadServer m)
             => ActorId    -- ^ actor projecting the item (is on current lvl)
@@ -285,14 +285,15 @@ addProjectile :: (MonadAtomic m, MonadServer m)
               => Point -> [Point] -> ItemId -> LevelId -> FactionId -> Time
               -> m ()
 addProjectile bpos rest iid blid bfid btime = do
-  Kind.COps{coactor=coactor@Kind.Ops{okind}, coitem} <- getsState scops
+  Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
+  itemToF <- itemToFullServer
   item <- getsState $ getItemBody iid
   let speed = speedFromWeight (jweight item) (isToThrow item)
       trange = totalRange item
       adj | trange < 5 = "falling"
           | otherwise = "flying"
       -- Not much detail about a fast flying item.
-      (object1, object2) = partItem coitem EM.empty item
+      (object1, object2) = partItem (itemToF iid)
       name = makePhrase [MU.AW $ MU.Text adj, object1, object2]
       dirTrajectory = take trange $ pathToTrajectory (bpos : rest)
       kind = okind $ projectileKindId coactor
@@ -302,3 +303,20 @@ addProjectile bpos rest iid blid bfid btime = do
   acounter <- getsServer sacounter
   modifyServer $ \ser -> ser {sacounter = succ acounter}
   execUpdAtomic $ UpdCreateActor acounter m [(iid, item)]
+
+fullAssocsServer :: MonadServer m
+                 => ActorId -> [CStore] -> m [(ItemId, ItemFull)]
+fullAssocsServer aid cstores = do
+  cops <- getsState scops
+  disco <- getsServer sdisco
+  discoAE <- getsServer sdiscoAE
+  getsState $ fullAssocs cops disco discoAE aid cstores
+
+itemToFullServer :: MonadServer m => m (ItemId -> ItemFull)
+itemToFullServer = do
+  cops <- getsState scops
+  disco <- getsServer sdisco
+  discoAE <- getsServer sdiscoAE
+  s <- getState
+  let itemToF iid = itemToFull cops disco discoAE iid (getItemBody iid s)
+  return itemToF

@@ -105,7 +105,8 @@ memberBackHuman = memberBack True
 -- | Display items from a given container store and describe the chosen one.
 describeItemHuman :: MonadClientUI m => CStore -> m Slideshow
 describeItemHuman cstore = do
-  Kind.COps{coactor=Kind.Ops{okind}, coitem} <- getsState scops
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  itemToF <- itemToFullClient
   let subject body = partActor body
       verbInv body = if calmEnough body $ okind $ bkind body
                      then "notice"
@@ -116,9 +117,8 @@ describeItemHuman cstore = do
         [MU.Capitalize $ MU.SubjectVerbSg (subject body) "see"]
       verb = "describe"
   ggi <- getStoreItem invBlurb stdBlurb verb cstore
-  disco <- getsClient sdisco
   case ggi of
-    Right ((_, item), _) -> promptToSlideshow $ itemDesc coitem disco item
+    Right ((iid, _), _) -> promptToSlideshow $ itemDesc (itemToF iid)
     Left slides -> return slides
 
 -- * AllOwned

@@ -165,7 +165,9 @@ reqMove source dir = do
 reqMelee :: (MonadAtomic m, MonadServer m) => ActorId -> ActorId -> m ()
 reqMelee source target = do
   cops <- getsState scops
-  disco <- getsServer sdisco
+  itemToF <- itemToFullServer
+  sallAssocs <- fullAssocsServer source [CEqp, CBody]
+  tallAssocs <- fullAssocsServer target [CEqp, CBody]
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   let adj = checkAdjacent sb tb
@@ -176,28 +178,22 @@ reqMelee source target = do
     let sfid = bfid sb
         tfid = bfid tb
     sfact <- getsState $ (EM.! sfid) . sfactionD
-    seqpAssocs <- getsState $ getActorAssocs source CEqp
-    sbodyAssocs <- getsState $ getActorAssocs source CBody
-    let sallAssocs = seqpAssocs ++ sbodyAssocs
-    teqpAssocs <- getsState $ getActorAssocs target CEqp
-    tbodyAssocs <- getsState $ getActorAssocs target CBody
-    let tallAssocs = teqpAssocs ++ tbodyAssocs
     ais <- getsState $ getCarriedAssocs sb
-    miidItem <-
+    miid <-
       if bproj sb   -- projectile
       then case ais of
-        [(iid, item)] -> return $ Just (iid, item)
+        [(iid, _)] -> return $ Just iid
         _ -> assert `failure` "projectile with wrong items" `twith` ais
-      else case strongestSword cops disco sallAssocs of
+      else case strongestSword cops sallAssocs of
         [] -> return Nothing -- no weapon nor combat body part
         iis@((maxS, _) : _) -> do
           let maxIis = map snd $ takeWhile ((== maxS) . fst) iis
           -- TODO: pick the item according to the frequency of its kind.
-          iidItem <- rndToAction $ oneOf maxIis
-          return $ Just iidItem
-    case miidItem of
+          (iid, _) <- rndToAction $ oneOf maxIis
+          return $ Just iid
+    case miid of
       Nothing -> execFailure source req MeleeNoWeapon
-      Just (iid, item) -> do
+      Just iid -> do
         -- Incapacitated actors can't block.
         let block = braced tb && bhp tb > 0
             shield = not (null $ strongestShield sallAssocs)
@@ -211,7 +207,7 @@ reqMelee source target = do
         -- Deduct a hitpoint for a pierce of a projectile.
         when (bproj sb) $ execUpdAtomic $ UpdHealActor source (-1)
         -- Msgs inside itemEffect describe the target part.
-        itemEffect source target iid item CEqp
+        itemEffect source target iid (itemToF iid) CEqp
         -- The only way to start a war is to slap an enemy. Being hit by
         -- and hitting projectiles count as unintentional friendly fire.
         let friendlyFire = bproj sb || bproj tb
@@ -370,6 +366,7 @@ reqApply :: (MonadAtomic m, MonadServer m)
          -> m ()
 reqApply aid iid cstore = do
   Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  itemToF <- itemToFullServer
   let applyItem = do
         -- We have to destroy the item before the effect affects the item
         -- or the actor holding it or standing on it (later on we could
@@ -377,22 +374,24 @@ reqApply aid iid cstore = do
         -- This is OK, because we don't remove the item type
         -- from the item dictionary, just an individual copy from the container.
         item <- getsState $ getItemBody iid
-        let consumable = IF.Consumable `elem` jfeature item
+        let itemFull = itemToF iid
+            consumable = IF.Consumable `elem` jfeature item
         if consumable then do
           -- TODO: don't destroy if not really used up; also, don't take time?
           cs <- actorConts iid 1 aid cstore
           mapM_ (\(_, c) -> execUpdAtomic $ UpdDestroyItem iid item 1 c) cs
           execSfxAtomic $ SfxActivate aid iid 1
-          itemEffect aid aid iid item cstore
+          itemEffect aid aid iid itemFull cstore
         else do
           let itemNew = item {jisOn = not $ jisOn item}
-          sdiscoSeed <- getsServer sdiscoSeed
           bag <- getsState $ getActorBag aid cstore
+          seed <- getsServer $ (EM.! iid) . sitemSeedD
           let k = bag EM.! iid
               container = CActor aid cstore
-              seed = sdiscoSeed EM.! iid
           execUpdAtomic $ UpdLoseItem iid item k container
-          void $ registerItem itemNew seed k container True
+          void $ registerItem (itemNew,
+                               fromJust $ snd $ fromJust $ snd itemFull)
+                              seed k container True
       req = ReqApply iid cstore
   if cstore /= CInv then applyItem
   else do

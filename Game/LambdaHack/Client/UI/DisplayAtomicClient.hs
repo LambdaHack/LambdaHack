@@ -64,17 +64,18 @@ displayRespUpdAtomicUI verbose _oldState cmd = case cmd of
     destroyActorUI aid body "die" "be destroyed" verbose
     side <- getsClient sside
     when (bfid body == side && not (bproj body)) stopPlayBack
-  UpdCreateItem iid item k c -> do
+  UpdCreateItem iid _ k c -> do
     Kind.COps{corule} <- getsState scops
     let RuleKind{rsharedInventory} = Kind.stdRuleset corule
     updateItemSlot Nothing iid
-    itemVerbMU item k $ MU.Text $ "appear" <+> ppContainer rsharedInventory c
+    itemVerbMU iid k $ MU.Text
+      $ "appear" <+> ppContainer rsharedInventory c
     stopPlayBack
-  UpdDestroyItem _ item k _ -> itemVerbMU item k "disappear"
+  UpdDestroyItem iid _ k _ -> itemVerbMU iid k "disappear"
   UpdSpotActor aid body _ -> createActorUI aid body verbose "be spotted"
   UpdLoseActor aid body _ ->
     destroyActorUI aid body "be missing in action" "be lost" verbose
-  UpdSpotItem iid item k c ->
+  UpdSpotItem iid _ k c ->
     case c of
       CActor{} -> return ()  -- inventory management reported elsewhere
       CFloor{} -> do
@@ -93,7 +94,7 @@ displayRespUpdAtomicUI verbose _oldState cmd = case cmd of
               _ -> do
                 (lid, p) <- posOfContainer c
                 modifyClient $ \cli -> cli {scursor = TPoint lid p}
-            itemVerbMU item k "be spotted"
+            itemVerbMU iid k "be spotted"
             stopPlayBack
           _ -> return ()  -- seen recently (still has a slot assigned)
   UpdLoseItem{} -> skip
@@ -199,25 +200,31 @@ displayRespUpdAtomicUI verbose _oldState cmd = case cmd of
   -- Assorted.
   UpdAgeGame {} -> skip
   UpdDiscover _ _ iid _ -> do
+    cops <- getsState scops
     disco <- getsClient sdisco
+    discoAE <- getsClient sdiscoAE
     item <- getsState $ getItemBody iid
     let ix = jkindIx item
-    Kind.COps{coitem} <- getsState scops
     let discoUnknown = EM.delete ix disco
-        (objUnknown1, objUnknown2) = partItem coitem discoUnknown item
+        itemFullUnknown = itemToFull cops discoUnknown discoAE iid item
+        (objUnknown1, objUnknown2) = partItem itemFullUnknown
+        itemFull = itemToFull cops disco discoAE iid item
         msg = makeSentence
           [ "the", MU.SubjectVerbSg (MU.Phrase [objUnknown1, objUnknown2])
                                     "turn out to be"
-          , partItemAW coitem disco item ]
+          , partItemAW itemFull ]
     msgAdd msg
   UpdCover _ _ iid ik -> do
+    cops <- getsState scops
+    discoAE <- getsClient sdiscoAE
     discoUnknown <- getsClient sdisco
     item <- getsState $ getItemBody iid
     let ix = jkindIx item
-    Kind.COps{coitem} <- getsState scops
     let disco = EM.insert ix ik discoUnknown
-        (objUnknown1, objUnknown2) = partItem coitem discoUnknown item
-        (obj1, obj2) = partItem coitem disco item
+        itemFullUnknown = itemToFull cops discoUnknown discoAE iid item
+        (objUnknown1, objUnknown2) = partItem itemFullUnknown
+        itemFull = itemToFull cops disco discoAE iid item
+        (obj1, obj2) = partItem itemFull
         msg = makeSentence
           [ "the", MU.SubjectVerbSg (MU.Phrase [obj1, obj2])
                                     "look like an ordinary"
@@ -267,28 +274,23 @@ aVerbMU aid verb = do
   b <- getsState $ getActorBody aid
   actorVerbMU aid b verb
 
-itemVerbMU :: MonadClientUI m => Item -> Int -> MU.Part -> m ()
-itemVerbMU item k verb = assert (k > 0) $ do
-  Kind.COps{coitem} <- getsState scops
-  disco <- getsClient sdisco
-  let subject = partItemWs coitem disco k item
+itemVerbMU :: MonadClientUI m => ItemId -> Int -> MU.Part -> m ()
+itemVerbMU iid k verb = assert (k > 0) $ do
+  itemToF <- itemToFullClient
+  let subject = partItemWs k (itemToF iid)
       msg | k > 1 = makeSentence [MU.SubjectVerb MU.PlEtc MU.Yes subject verb]
           | otherwise = makeSentence [MU.SubjectVerbSg subject verb]
   msgAdd msg
 
 _iVerbMU :: MonadClientUI m => ItemId -> Int -> MU.Part -> m ()
-_iVerbMU iid k verb = do
-  item <- getsState $ getItemBody iid
-  itemVerbMU item k verb
+_iVerbMU iid k verb = itemVerbMU iid k verb
 
 aiVerbMU :: MonadClientUI m => ActorId -> MU.Part -> ItemId -> Int -> m ()
 aiVerbMU aid verb iid k = do
-  Kind.COps{coitem} <- getsState scops
-  disco <- getsClient sdisco
-  item <- getsState $ getItemBody iid
+  itemToF <- itemToFullClient
   subject <- partAidLeader aid
   let msg = makeSentence [ MU.SubjectVerbSg subject verb
-                         , partItemWs coitem disco k item ]
+                         , partItemWs k (itemToF iid) ]
   msgAdd msg
 
 msgDuplicateScrap :: MonadClientUI m => m ()
@@ -332,7 +334,6 @@ destroyActorUI aid body verb verboseVerb verbose = do
 moveItemUI :: MonadClientUI m
            => Bool -> ItemId -> Int -> ActorId -> CStore -> CStore -> m ()
 moveItemUI verbose iid k aid c1 c2 = do
-  Kind.COps{coitem} <- getsState scops
   side <- getsClient sside
   b <- getsState $ getActorBody aid
   case (c1, c2) of
@@ -342,8 +343,7 @@ moveItemUI verbose iid k aid c1 c2 = do
       let underAI = playerAI $ gplayer fact
       mleader <- getsClient _sleader
       if Just aid == mleader && not underAI then do
-        item <- getsState $ getItemBody iid
-        disco <- getsClient sdisco
+        itemToF <- itemToFullClient
         (letterSlots, _) <- getsClient sslots
         bag <- getsState $ getCBag $ CActor aid cstore
         let n = bag EM.! iid
@@ -351,7 +351,7 @@ moveItemUI verbose iid k aid c1 c2 = do
           Just l -> msgAdd $ makePhrase
                       [ "\n"
                       , slotLabel $ Left l
-                      , partItemWs coitem disco n item
+                      , partItemWs n (itemToF iid)
                       , "\n" ]
           Nothing -> return ()
       else aiVerbMU aid "get" iid k
@@ -615,27 +615,26 @@ displayRespSfxAtomicUI verbose sfx = case sfx of
 strike :: MonadClientUI m
        => ActorId -> ActorId -> ItemId -> HitAtomic -> m ()
 strike source target iid hitStatus = assert (source /= target) $ do
-  Kind.COps{coitem=coitem@Kind.Ops{okind}} <- getsState scops
-  disco <- getsClient sdisco
+  itemToF <- itemToFullClient
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   spart <- partActorLeader source sb
   tpart <- partActorLeader target tb
   spronoun <- partPronounLeader source sb
-  item <- getsState $ getItemBody iid
-  let (verb, withWhat) | bproj sb = ("hit", False)
+  let itemFull = itemToF iid
+      (verb, withWhat) | bproj sb = ("hit", False)
                        | otherwise =
-        case jkind disco item of
-          Nothing -> ("hit", True)  -- not identified
-          Just ik -> (iverbApply $ okind ik, True)
+        case itemFull of
+          (_, Nothing) -> ("hit", True)  -- not identified
+          (_, Just ((_, kind), _)) -> (iverbApply kind, True)
       isBodyPart = iid `EM.member` bbody sb
       partItemChoice = if isBodyPart
-                       then flip partItemWownW spronoun
+                       then partItemWownW spronoun
                        else partItemAW
       msg MissBlock =
         let (partBlock1, partBlock2) =
               if withWhat
-              then ("swing", partItemChoice coitem disco item)
+              then ("swing", partItemChoice itemFull)
               else ("try to", verb)
         in makeSentence
           [ MU.SubjectVerbSg spart partBlock1
@@ -645,7 +644,7 @@ strike source target iid hitStatus = assert (source /= target) $ do
       msg _ = makeSentence $
         [MU.SubjectVerbSg spart verb, tpart]
         ++ if withWhat
-           then ["with", partItemChoice coitem disco item]
+           then ["with", partItemChoice itemFull]
            else []
   msgAdd $ msg hitStatus
   let ps = (bpos tb, bpos sb)

@@ -35,7 +35,6 @@ import Game.LambdaHack.Content.ModeKind
 import Game.LambdaHack.Server.CommonServer
 import Game.LambdaHack.Server.MonadServer
 import Game.LambdaHack.Server.PeriodicServer
-import Game.LambdaHack.Server.State
 
 -- + Semantics of effects
 
@@ -45,21 +44,22 @@ import Game.LambdaHack.Server.State
 -- is mutually recursive with @effect@ and so it's a part of @Effect@
 -- semantics.
 itemEffect :: (MonadAtomic m, MonadServer m)
-           => ActorId -> ActorId -> ItemId -> Item -> CStore
+           => ActorId -> ActorId -> ItemId -> ItemFull -> CStore
            -> m ()
-itemEffect source target iid item cstore = do
+itemEffect source target iid (item, mfull) cstore = do
   postb <- getsState $ getActorBody source
-  discoS <- getsServer sdisco
-  let ik = fromJust $ jkind discoS item
-      effs = jeffects item
-      miidCstore = Just (iid, cstore)
-  bs <- mapM (\ef -> effectSem ef source target miidCstore) effs
-  -- The effect is interesting so the item gets identified, if seen
-  -- (the item was at the source actor's position, so his old position
-  -- is given, since the actor and/or the item may be moved by the effect;
-  -- we'd need to track not only position of atomic commands and factions,
-  -- but also which items they relate to, to be fully accurate).
-  when (and bs) $ execUpdAtomic $ UpdDiscover (blid postb) (bpos postb) iid ik
+  case mfull of
+    Just ((ik, _), Just ItemAspectEffect{jeffects}) -> do
+      let miidCstore = Just (iid, cstore)
+      bs <- mapM (\ef -> effectSem ef source target miidCstore) jeffects
+      -- The effect is interesting so the item gets identified, if seen
+      -- (the item was at the source actor's position, so his old position
+      -- is given, since the actor and/or the item may be moved by the effect;
+      -- we'd need to track not only position of atomic commands and factions,
+      -- but also which items they relate to, to be fully accurate).
+      when (and bs) $
+        execUpdAtomic $ UpdDiscover (blid postb) (bpos postb) iid ik
+    _ -> assert `failure` (source, target, iid, (item, mfull), cstore)
 
 -- | The source actor affects the target actor, with a given effect and power.
 -- Both actors are on the current level and can be the same actor.
@@ -137,12 +137,8 @@ effectHurt :: (MonadAtomic m, MonadServer m)
             => Dice.Dice -> Int -> ActorId -> ActorId
             -> m Bool
 effectHurt nDm power source target = do
-  seqpAssocs <- getsState $ getActorAssocs source CEqp
-  sbodyAssocs <- getsState $ getActorAssocs source CBody
-  let sallAssocs = seqpAssocs ++ sbodyAssocs
-  teqpAssocs <- getsState $ getActorAssocs target CEqp
-  tbodyAssocs <- getsState $ getActorAssocs target CBody
-  let tallAssocs = teqpAssocs ++ tbodyAssocs
+  sallAssocs <- fullAssocsServer source [CEqp, CBody]
+  tallAssocs <- fullAssocsServer target [CEqp, CBody]
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   n <- rndToAction $ castDice 0 0 nDm

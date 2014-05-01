@@ -6,12 +6,9 @@ module Game.LambdaHack.Client.AI.PickTargetClient
 import Control.Exception.Assert.Sugar
 import qualified Data.EnumMap.Strict as EM
 import qualified Data.EnumSet as ES
-import Data.List
 import Data.Maybe
-import Data.Ord
 
 import Game.LambdaHack.Client.AI.ConditionClient
-import Game.LambdaHack.Client.AI.Preferences
 import Game.LambdaHack.Client.AI.Strategy
 import Game.LambdaHack.Client.Bfs
 import Game.LambdaHack.Client.BfsClient
@@ -21,9 +18,7 @@ import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
-import qualified Game.LambdaHack.Common.Effect as Effect
 import Game.LambdaHack.Common.Faction
-import Game.LambdaHack.Common.Item
 import qualified Game.LambdaHack.Common.Kind as Kind
 import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
@@ -45,6 +40,7 @@ targetStrategy oldLeader aid = do
   cops@Kind.COps{ cotile=cotile@Kind.Ops{ouniqGroup}
                 , coactor=coactor@Kind.Ops{okind}
                 , cofaction=Kind.Ops{okind=fokind} } <- getsState scops
+  itemToF <- itemToFullClient
   modifyClient $ \cli -> cli { sbfsD = EM.delete aid (sbfsD cli)
                              , seps = seps cli + 773 }  -- randomize paths
   b <- getsState $ getActorBody aid
@@ -107,21 +103,13 @@ targetStrategy oldLeader aid = do
         targetableMelee body || targetableRangedOrSpecial body
       nearbyFoes = filter (targetableEnemy . snd) allFoes
       unknownId = ouniqGroup "unknown space"
-      itemUsefulness item =
-        case map (Effect.TimedAspect 99) (jaspects item)
-                 ++ jeffects item of
-          [] -> 0
-          effs -> maximumBy (comparing abs)
-                            (map (effectToBenefit cops b) effs)
-        -- case jkind disco item of
-        --   Nothing -> -- TODO: 30  -- experimenting is fun
-        --      -- for now, cheating:
-        --      effectToBenefit cops b (jeffect item)
-        --   Just _ki -> effectToBenefit cops b $ jeffect item
-      desirableItem item k | fightsSpawners = itemUsefulness item /= 0
+      itemUsefulness iid = case maxUsefulness cops b  (itemToF iid) of
+        Just v -> v
+        Nothing -> 30  -- experimenting is fun
+      desirableItem iid item k | fightsSpawners = itemUsefulness iid /= 0
                                               || itemPrice (item, k) > 0
-                           | otherwise = itemUsefulness item /= 0
-      desirableBag bag = any (\(iid, k) -> desirableItem (itemD EM.! iid) k)
+                               | otherwise = itemUsefulness iid /= 0
+      desirableBag bag = any (\(iid, k) -> desirableItem iid (itemD EM.! iid) k)
                          $ EM.assocs bag
       desirable (_, (_, Nothing)) = True
       desirable (_, (_, Just bag)) = desirableBag bag

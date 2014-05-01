@@ -14,6 +14,7 @@ module Game.LambdaHack.Client.AI.ConditionClient
   , condDesirableFloorItemM
   , condMeleeBadM
   , condLightBetraysM
+  , maxUsefulness
   , benAvailableItems
   , benGroundItems
   , threatDistList
@@ -28,6 +29,7 @@ import Data.Maybe
 import Data.Ord
 
 import Game.LambdaHack.Client.AI.Preferences
+import Game.LambdaHack.Client.CommonClient
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
 import Game.LambdaHack.Common.Actor
@@ -114,19 +116,15 @@ condBlocksFriendsM aid = do
 condFloorWeaponM :: MonadClient m => ActorId -> m Bool
 condFloorWeaponM aid = do
   cops <- getsState scops
-  disco <- getsClient sdisco
-  floorAssocs <- getsState $ getActorAssocs aid CGround
-  let lootIsWeapon = not $ null $ strongestSword cops disco floorAssocs
+  floorAssocs <- fullAssocsClient aid [CGround]
+  let lootIsWeapon = not $ null $ strongestSword cops floorAssocs
   return $ lootIsWeapon  -- keep it lazy
 
 condNoWeaponM :: MonadClient m => ActorId -> m Bool
 condNoWeaponM aid = do
   cops <- getsState scops
-  disco <- getsClient sdisco
-  eqpAssocs <- getsState $ getActorAssocs aid CEqp
-  bodyAssocs <- getsState $ getActorAssocs aid CBody
-  let allAssocs = eqpAssocs ++ bodyAssocs
-  return $ null $ strongestSword cops disco allAssocs  -- keep it lazy
+  allAssocs <- fullAssocsClient aid [CEqp, CBody]
+  return $ null $ strongestSword cops allAssocs  -- keep it lazy
 
 condCanProjectM :: MonadClient m => ActorId -> m Bool
 condCanProjectM aid = do
@@ -146,8 +144,8 @@ benAvailableItems :: MonadClient m
                   -> m [((Maybe Int, CStore), (ItemId, Item))]
 benAvailableItems aid permitted = do
   cops@Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
+  itemToF <- itemToFullClient
   b <- getsState $ getActorBody aid
-  disco <- getsClient sdisco
   itemD <- getsState sitemD
   let ak = okind $ bkind b
       getItemB iid =
@@ -157,7 +155,7 @@ benAvailableItems aid permitted = do
         [ ((benefit, cstore), (iid, item))
         | (iid, item) <- map (\iid -> (iid, getItemB iid))
                          $ EM.keys bag
-        , let benefit = maxUsefulness cops disco b item
+        , let benefit = maxUsefulness cops b (itemToF iid)
         , benefit /= Just 0
         , jsymbol item `elem` permitted ]
   floorBag <- getsState $ getActorBag aid CGround
@@ -183,16 +181,16 @@ condDesirableFloorItemM aid = do
 benGroundItems :: MonadClient m => ActorId -> m [((Int, Int), (ItemId, Item))]
 benGroundItems aid = do
   cops <- getsState scops
+  itemToF <- itemToFullClient
   body <- getsState $ getActorBody aid
   itemD <- getsState sitemD
-  disco <- getsClient sdisco
   floorItems <- getsState $ getActorBag aid CGround
   fightsSpawners <- fightsAgainstSpawners (bfid body)
   let desirableItem item use k
         | fightsSpawners = use /= Just 0 || itemPrice (item, k) > 0
         | otherwise = use /= Just 0
       mapDesirable (iid, k) = let item = itemD EM.! iid
-                                  use = maxUsefulness cops disco body item
+                                  use = maxUsefulness cops body (itemToF iid)
                                   value = fromMaybe 5 use  -- experimenting fun
                               in if desirableItem item use k
                                  then Just ((value, k), (iid, item))
@@ -200,15 +198,15 @@ benGroundItems aid = do
   return $ reverse $ sort $ mapMaybe mapDesirable $ EM.assocs floorItems
     -- keep it lazy
 
-maxUsefulness :: Kind.COps -> Discovery -> Actor -> Item -> Maybe Int
-maxUsefulness cops disco body item = do
-  case jkind disco item of
-    Nothing -> Nothing
-    Just _ki -> case map (Effect.TimedAspect 99) (jaspects item)
-                     ++ jeffects item of
-      [] -> Just 0
-      effs -> Just $ maximumBy (comparing abs)
-                               (map (effectToBenefit cops body) effs)
+maxUsefulness :: Kind.COps -> Actor -> ItemFull -> Maybe Int
+maxUsefulness cops body itemFull = do
+  case itemFull of
+    (_, Just (_, Just ItemAspectEffect{jaspects, jeffects})) ->
+      case map (Effect.TimedAspect 99) jaspects ++ jeffects of
+        [] -> Just 0
+        effs -> Just $ maximumBy (comparing abs)
+                                 (map (effectToBenefit cops body) effs)
+    _ -> Nothing
 
 condMeleeBadM :: MonadClient m => ActorId -> m Bool
 condMeleeBadM aid = do

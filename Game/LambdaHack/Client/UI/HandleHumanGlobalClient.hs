@@ -200,7 +200,7 @@ moveItemHuman :: MonadClientUI m
               -> m (SlideOrCmd (RequestTimed AbMoveItem))
 moveItemHuman cLegalRaw toCStore verbRaw auto = do
   assert (toCStore `notElem` cLegalRaw) skip
-  Kind.COps{coactor=Kind.Ops{okind}, coitem} <- getsState scops
+  Kind.COps{coactor=Kind.Ops{okind}} <- getsState scops
   leader <- getLeaderUI
   b <- getsState $ getActorBody leader
   let kind = okind $ bkind b
@@ -213,14 +213,14 @@ moveItemHuman cLegalRaw toCStore verbRaw auto = do
   ggi <- if auto
          then getAnyItem verb cLegalRaw cLegal False False
          else getAnyItem verb cLegalRaw cLegal True True
+  itemToF <- itemToFullClient
   case ggi of
-    Right ((iid, item), (k, fromCStore)) -> do
+    Right ((iid, _), (k, fromCStore)) -> do
       let msgAndSer = do
-            disco <- getsClient sdisco
             subject <- partAidLeader leader
             msgAdd $ makeSentence
               [ MU.SubjectVerbSg subject verb
-              , partItemWs coitem disco k item ]
+              , partItemWs k (itemToF iid) ]
             return $ Right $ ReqMoveItem iid k fromCStore toCStore
       if fromCStore /= CGround then msgAndSer  -- slot already assigned
       else do

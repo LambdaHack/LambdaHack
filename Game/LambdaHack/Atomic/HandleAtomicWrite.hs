@@ -77,10 +77,10 @@ handleUpdAtomic cmd = case cmd of
   UpdSpotSmell lid sms -> updSpotSmell lid sms
   UpdLoseSmell lid sms -> updLoseSmell lid sms
   UpdAgeGame t lids -> updAgeGame t lids
-  UpdDiscover{} -> return ()      -- Server keeps all atomic comands
-  UpdCover{} -> return ()         -- so the semantics of inverses
-  UpdDiscoverSeed{} -> return ()  -- has to be reasonably inverse.
-  UpdCoverSeed{} -> return ()
+  UpdDiscover{} -> return ()      -- We can't keep dicovered data in State,
+  UpdCover{} -> return ()         -- because server saves all atomic commands
+  UpdDiscoverSeed{} -> return ()  -- to apply their inverses for undo,
+  UpdCoverSeed{} -> return ()     -- so they would wipe out server knowledge.
   UpdPerception _ outPer inPer ->
     assert (not (nullPer outPer && nullPer inPer)) skip
   UpdRestart fid sdisco sfper s _ _ -> updRestart fid sdisco sfper s
