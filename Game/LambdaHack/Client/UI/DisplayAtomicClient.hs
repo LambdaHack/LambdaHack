@@ -200,36 +200,32 @@ displayRespUpdAtomicUI verbose _oldState cmd = case cmd of
   -- Assorted.
   UpdAgeGame {} -> skip
   UpdDiscover _ _ iid _ -> do
-    cops <- getsState scops
-    disco <- getsClient sdisco
-    discoAE <- getsClient sdiscoAE
-    item <- getsState $ getItemBody iid
-    let ix = jkindIx item
-    let discoUnknown = EM.delete ix disco
-        itemFullUnknown = itemToFull cops discoUnknown discoAE iid item
-        (objUnknown1, objUnknown2) = partItem itemFullUnknown
-        itemFull = itemToFull cops disco discoAE iid item
+    itemToF <- itemToFullClient
+    let itemFull = itemToF iid
+        (knownName, knownAEText) = partItem itemFull
+        itemSecret = case itemFull of
+          (item, Just _) -> (item, Nothing)
+          _ -> assert `failure` iid
+        (secretName, secretAEText) = partItem itemSecret
         msg = makeSentence
-          [ "the", MU.SubjectVerbSg (MU.Phrase [objUnknown1, objUnknown2])
+          [ "the", MU.SubjectVerbSg (MU.Phrase [secretName, secretAEText])
                                     "turn out to be"
-          , partItemAW itemFull ]
-    msgAdd msg
-  UpdCover _ _ iid ik -> do
-    cops <- getsState scops
-    discoAE <- getsClient sdiscoAE
-    discoUnknown <- getsClient sdisco
-    item <- getsState $ getItemBody iid
-    let ix = jkindIx item
-    let disco = EM.insert ix ik discoUnknown
-        itemFullUnknown = itemToFull cops discoUnknown discoAE iid item
-        (objUnknown1, objUnknown2) = partItem itemFullUnknown
-        itemFull = itemToFull cops disco discoAE iid item
-        (obj1, obj2) = partItem itemFull
+          , MU.AW $ MU.Phrase [knownName, knownAEText] ]
+    when (knownAEText /= secretAEText) $ msgAdd msg
+  UpdCover{} ->  skip  -- don't spam when doing undo
+  UpdDiscoverSeed _ _ iid _ -> do
+    itemToF <- itemToFullClient
+    let itemFull = itemToF iid
+        (knownName, knownAEText) = partItem itemFull
+        itemSecret = case itemFull of
+          (item, Just (kk, Just _)) -> (item, Just (kk, Nothing))
+          _ -> assert `failure` iid
+        (secretName, secretAEText) = partItem itemSecret
         msg = makeSentence
-          [ "the", MU.SubjectVerbSg (MU.Phrase [obj1, obj2])
-                                    "look like an ordinary"
-          , objUnknown1, objUnknown2 ]
-    msgAdd msg
+          [ "the", MU.SubjectVerbSg secretName "turn out to be"
+          , MU.AW $ MU.Phrase [knownName, knownAEText] ]
+    when (knownAEText /= secretAEText) $ msgAdd msg
+  UpdCoverSeed{} -> skip  -- don't spam when doing undo
   UpdPerception{} -> skip
   UpdRestart _ _ _ _ _ t -> do
     msgAdd $ "New game started in" <+> t <+> "mode."
