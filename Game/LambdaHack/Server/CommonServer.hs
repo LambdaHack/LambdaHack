@@ -289,14 +289,13 @@ addProjectile :: (MonadAtomic m, MonadServer m)
               -> m ()
 addProjectile bpos rest iid blid bfid btime = do
   Kind.COps{coactor=coactor@Kind.Ops{okind}} <- getsState scops
-  itemToF <- itemToFullServer
   item <- getsState $ getItemBody iid
   let speed = speedFromWeight (jweight item) (isToThrow item)
       trange = totalRange item
       adj | trange < 5 = "falling"
           | otherwise = "flying"
       -- Not much detail about a fast flying item.
-      (object1, object2) = partItem (itemToF iid)
+      (object1, object2) = partItem (item, Nothing)
       name = makePhrase [MU.AW $ MU.Text adj, object1, object2]
       dirTrajectory = take trange $ pathToTrajectory (bpos : rest)
       kind = okind $ projectileKindId coactor
