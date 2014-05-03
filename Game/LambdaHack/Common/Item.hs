@@ -7,12 +7,13 @@
 module Game.LambdaHack.Common.Item
   ( -- * The @Item@ type
     ItemId, Item(..), buildItem, newItem, seedToAspectsEffects
-    -- * Item search
+    -- * Item strength
+  , strengthMelee, strengthArmor, strengthRegen, strengthStead, strengthLight
+  , strengthLingering, strengthToThrow, groupsExplosive, isFragile
   , strongestItem
   , strongestSword, strongestShield
   , strongestRegen, strongestStead, strongestLight
-  , pMelee, pArmor, pRegen, pStead, pLight
-   -- * Item discovery types
+    -- * Item discovery types
   , ItemKindIx, Discovery, DiscoRev, serverDiscos
   , ItemSeed, ItemSeedDict, ItemAspectEffect(..), DiscoAE, ItemFull
     -- * The @FlavourMap@ type
@@ -21,8 +22,6 @@ module Game.LambdaHack.Common.Item
   , ItemBag, ItemDict, ItemKnown, ItemRev
     -- * Textual description
   , partItem, partItemWs, partItemAW, partItemWownW, itemDesc, textAllAE
-    -- * Assorted
-  , isFragile, isExplosive, isLingering, isToThrow
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -231,88 +230,116 @@ type ItemKnown = (Item, ItemAspectEffect)
 -- in bijection.
 type ItemRev = HM.HashMap ItemKnown ItemId
 
-strongestItem :: [(ItemId, a)] -> (a -> Maybe Int)
-              -> [(Int, (ItemId, a))]
+strongestItem :: Ord b => [(ItemId, a)] -> (a -> [b]) -> [(b, (ItemId, a))]
 strongestItem is p =
-  let kis = mapMaybe (\(iid, item) -> case p item of
-                         Nothing -> Nothing
-                         Just v -> Just (v, (iid, item))) is
-  in sortBy (flip $ Ord.comparing fst) kis
+  let pv (iid, item) = map (\v -> (v, (iid, item))) (p item)
+      pis = concatMap pv is
+  in sortBy (flip $ Ord.comparing fst) pis
 
-pMelee :: Kind.COps -> ItemFull -> Maybe Int
-pMelee Kind.COps{corule}
-       (item, Just (_, Just ItemAspectEffect{jeffects})) =
+strengthAspect :: (Aspect Int -> [b]) -> ItemFull -> [b]
+strengthAspect f itemFull =
+  case itemFull of
+    (_, Just (_, Just ItemAspectEffect{jaspects})) -> concatMap f jaspects
+    (_, Just ((_, ItemKind{iaspects}), Nothing)) ->
+      -- Default for unknown power is 999 to encourage experimenting.
+      let trav x = St.evalState (aspectTrav x (return . const 999)) ()
+      in concatMap f $ map trav iaspects
+    (_, Nothing) -> []
+
+strengthEffect :: (Effect Int -> [b]) -> ItemFull -> [b]
+strengthEffect f itemFull =
+  case itemFull of
+    (_, Just (_, Just ItemAspectEffect{jeffects})) -> concatMap f jeffects
+    (_, Just ((_, ItemKind{ieffects}), Nothing)) ->
+      -- Default for unknown power is 999 to encourage experimenting.
+      let trav x = St.evalState (effectTrav x (return . const 999)) ()
+      in concatMap f $ map trav ieffects
+    (_, Nothing) -> []
+
+strengthFeature :: (IF.Feature -> [b]) -> Item -> [b]
+strengthFeature f item = concatMap f (jfeature item)
+
+strengthMelee :: Kind.COps -> ItemFull -> [Int]
+strengthMelee Kind.COps{corule} itemFull@(item, _) =
   if jsymbol item `elem` ritemMelee (Kind.stdRuleset corule)
-  then let getP (Hurt d k) _ = Just $ floor (Dice.meanDice d) + k
-           getP _ acc = acc
-       in foldr getP Nothing jeffects
-  else Nothing
-pMelee _ _ = Nothing
+  then let p (Hurt d k) = [floor (Dice.meanDice d) + k]
+           p _ = []
+       in strengthEffect p itemFull
+  else []
 
 strongestSword :: Kind.COps -> [(ItemId, ItemFull)]
                -> [(Int, (ItemId, ItemFull))]
 strongestSword cops is =
-  strongestItem (filter (jisOn . fst . snd) is) (pMelee cops)
+  strongestItem (filter (jisOn . fst . snd) is) (strengthMelee cops)
 
-pArmor :: ItemFull -> Maybe Int
-pArmor (_, Just (_, Just ItemAspectEffect{jaspects})) =
-  let getP (ArmorMelee k) _ = Just k
-      getP _ acc = acc
-  in foldr getP Nothing jaspects
-pArmor _ = Nothing
+strengthArmor :: ItemFull -> [Int]
+strengthArmor =
+  let p (ArmorMelee k) = [k]
+      p _ = []
+  in strengthAspect p
 
 strongestShield :: [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))]
-strongestShield is = strongestItem (filter (jisOn . fst . snd) is) pArmor
+strongestShield is = strongestItem (filter (jisOn . fst . snd) is) strengthArmor
 
-pRegen :: ItemFull -> Maybe Int
-pRegen (_, Just (_, Just ItemAspectEffect{jaspects})) =
-  let getP (Regeneration k) _ = Just k
-      getP _ acc = acc
-  in foldr getP Nothing jaspects
-pRegen _ = Nothing
+strengthRegen :: ItemFull -> [Int]
+strengthRegen =
+  let p (Regeneration k) = [k]
+      p _ = []
+  in strengthAspect p
 
 strongestRegen :: [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))]
-strongestRegen is = strongestItem (filter (jisOn . fst . snd) is) pRegen
+strongestRegen is = strongestItem (filter (jisOn . fst . snd) is) strengthRegen
 
-pStead :: ItemFull -> Maybe Int
-pStead (_, Just (_, Just ItemAspectEffect{jaspects})) =
-  let getP (Steadfastness k) _ = Just k
-      getP _ acc = acc
-  in foldr getP Nothing jaspects
-pStead _ = Nothing
+strengthStead :: ItemFull -> [Int]
+strengthStead =
+  let p (Steadfastness k) = [k]
+      p _ = []
+  in strengthAspect p
 
 strongestStead :: [(ItemId, ItemFull)] -> [(Int, (ItemId, ItemFull))]
-strongestStead is = strongestItem (filter (jisOn . fst . snd) is) pStead
+strongestStead is = strongestItem (filter (jisOn . fst . snd) is) strengthStead
 
-pLight :: Item -> Maybe Int
-pLight = let getP (IF.Light k) _ = Just k
-             getP _ acc = acc
-         in foldr getP Nothing . jfeature
+strengthLight :: Item -> [Int]
+strengthLight =
+  let p (IF.Light k) = [k]
+      p _ = []
+  in strengthFeature p
 
 strongestLight :: [(ItemId, Item)] -> [(Int, (ItemId, Item))]
-strongestLight is = strongestItem (filter (jisOn . snd) is) pLight
+strongestLight is = strongestItem (filter (jisOn . snd) is) strengthLight
 
 isFragile :: Item -> Bool
-isFragile = let getTo IF.Fragile _acc = True
-                getTo _ acc = acc
-            in foldr getTo False . jfeature
+isFragile item =
+  let p IF.Fragile = [()]
+      p _ = []
+  in case strengthFeature p item of
+    [] -> False
+    [()] -> True
+    vss -> assert `failure` (vss, item)
 
-isExplosive :: ItemFull -> Maybe Text
-isExplosive (_, Just (_, Just ItemAspectEffect{jaspects})) =
-  let getTo (Explode cgroup) _acc = Just cgroup
-      getTo _ acc = acc
-  in foldr getTo Nothing jaspects
-isExplosive _ = Nothing
+groupsExplosive :: ItemFull -> [Text]
+groupsExplosive =
+  let p (Explode cgroup) = [cgroup]
+      p _ = []
+  in strengthAspect p
 
-isLingering :: Item -> Int
-isLingering = let getTo (IF.Linger percent) _acc = percent
-                  getTo _ acc = acc
-              in foldr getTo 100 . jfeature
+strengthLingering :: Item -> Int
+strengthLingering item =
+  let p (IF.Linger percent) = [percent]
+      p _ = []
+  in case strengthFeature p item of
+    [] -> 100
+    [percent] -> percent
+    vs -> assert `failure` (vs, item)
 
-isToThrow :: Item -> Int
-isToThrow = let getTo (IF.ToThrow percent) _acc = percent
-                getTo _ acc = acc
-            in foldr getTo 0 . jfeature
+strengthToThrow :: Item -> Int
+strengthToThrow item =
+  let p (IF.ToThrow percent) = [percent]
+      p _ = []
+  in case strengthFeature p item of
+    [] -> 0
+    [percent] -> percent
+    vs -> assert `failure` (vs, item)
 
 -- | The part of speech describing the item.
 partItem :: ItemFull -> (MU.Part, MU.Part)

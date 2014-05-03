@@ -215,8 +215,8 @@ manageEqp aid = do
   let kind = okind $ bkind body
   if calmEnough body kind then do
     let improve symbol =
-          let bestInv = strongestItem invAssocs $ pSymbol cops symbol
-              bestEqp = strongestItem eqpAssocs $ pSymbol cops symbol
+          let bestInv = strongestItem invAssocs $ strengthSymbol cops symbol
+              bestEqp = strongestItem eqpAssocs $ strengthSymbol cops symbol
           in case (bestInv, bestEqp) of
             (_, (_, (iidEqp, itemEqp)) : _) | harmful body itemEqp -> do
               -- This item is harmful to this actor, take it off.
@@ -228,7 +228,7 @@ manageEqp aid = do
               | vInv > vEqp ->
               returN "wield better" $ ReqMoveItem iidInv 1 CInv CEqp
             (_, (_, (iidEqp, _)) : _) | beqp body EM.! iidEqp > 1
-                                             && rsharedInventory -> do
+                                        && rsharedInventory -> do
               -- To share the best items with others.
               let k = beqp body EM.! iidEqp
               returN "yield rest" $ ReqMoveItem iidEqp (k - 1) CEqp CInv
@@ -240,20 +240,20 @@ manageEqp aid = do
     return $ msum $ map improve ritemEqp
   else return reject
 
-pSymbol :: Kind.COps -> Char -> ItemFull -> Maybe Int
-pSymbol cops c = case c of
-  ')' -> pMelee cops
-  '\"' -> pRegen
-  '=' -> pStead
-  '(' -> pLight . fst
-  '[' -> pArmor
-  _ -> \_ -> Nothing
+strengthSymbol :: Kind.COps -> Char -> ItemFull -> [Int]
+strengthSymbol cops c = case c of
+  ')' -> strengthMelee cops
+  '\"' -> strengthRegen
+  '=' -> strengthStead
+  '(' -> strengthLight . fst
+  '[' -> strengthArmor
+  _ -> \_ -> []
 
 harmful :: Actor -> ItemFull -> Bool
 harmful body itemFull =
   -- Fast actors want to hide in darkness to ambush opponents and want
   -- to hit hard for the short span they get to survive melee.
-  isJust (pLight (fst itemFull)  `mplus` pArmor itemFull)
+  not (null (strengthLight (fst itemFull) ++ strengthArmor itemFull))
   && bspeed body > speedNormal
   -- TODO:
   -- teach AI to turn shields OFF (or stash) when ganging up on an enemy
@@ -433,9 +433,9 @@ applyItem aid applyGroup = do
               foldr getP False jeffects
             _ -> False
         QuenchLight ->
-          case pLight item of
-            Just _ -> not $ jisOn item
-            Nothing -> False
+          case strengthLight item of
+            _ : _ -> not $ jisOn item
+            [] -> False
         ApplyAll -> True
       coeff CBody = 3  -- never destroyed by use
       coeff CGround = 2

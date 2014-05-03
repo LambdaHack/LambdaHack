@@ -323,8 +323,8 @@ dispEnemy b s =
 
 totalRange :: Item -> Int
 totalRange item =
-  let lingerPercent = isLingering item
-      speed = speedFromWeight (jweight item) (isToThrow item)
+  let lingerPercent = strengthLingering item
+      speed = speedFromWeight (jweight item) (strengthToThrow item)
       range = rangeFromSpeed speed
   in lingerPercent * range `div` 100
 

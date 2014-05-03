@@ -164,17 +164,6 @@ atomicRemember lid inPer s =
       cotile = Kind.cotile (scops s)
       inTileMap = map (\p -> (p, hideTile cotile lvl p)) inFov
       atomicTile = if null inTileMap then [] else [UpdSpotTile lid inTileMap]
-      -- TODO: somehow also use this
-      -- bonus = case strongestSearch itemAssocs of
-      --          Just (k, _)  -> k + 1
-      --          Nothing -> 1
-      -- TODO: add 'search' that rescans FOV, perhaps with a bonus
-      -- TODO: add 'explore' that tells a tile is a hidden door, etc.
-      -- TODO: when explored tile is boring, display tips, monster scratches,
-      -- old inscriptions and other flavour, as in UnAngband
-      -- TODO: make floor paths from hidden tiles
-      -- TODO: perhaps decrease secrecy as lseen, ltime or lsmell increases
-      -- or a per-party counter increases
       -- Smells.
       inSmellFov = ES.elems $ smellVisible inPer
       inSm = mapMaybe (\p -> pMaybe p $ EM.lookup p (lsmell lvl)) inSmellFov

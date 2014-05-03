@@ -110,18 +110,15 @@ dropAllItems aid b hit = do
       f iid k = do
         item <- getsState $ getItemBody iid
         let itemFull = itemToF iid
-        if isDestroyed item then
-          case isExplosive itemFull of
-            Nothing ->
-              -- Feedback from hit, or it's shrapnel, so no @UpdDestroyItem@.
-              execUpdAtomic $ UpdLoseItem iid item k container
-            Just cgroup -> do
-              let ik = fst $ fst $ fromJust $ snd itemFull
-              seed <- getsServer $ (EM.! iid) . sitemSeedD
-              execUpdAtomic $ UpdDiscover (blid b) (bpos b) iid ik seed
-              -- Explosion provides feedback, so no @UpdDestroyItem@.
-              execUpdAtomic $ UpdLoseItem iid item k container
-              explodeItem aid b cgroup
+        if isDestroyed item then do
+          let expl = groupsExplosive itemFull
+          unless (null expl) $ do
+            let ik = fst $ fst $ fromJust $ snd itemFull
+            seed <- getsServer $ (EM.! iid) . sitemSeedD
+            execUpdAtomic $ UpdDiscover (blid b) (bpos b) iid ik seed
+          -- Feedback from hit, or it's shrapnel, so no @UpdDestroyItem@.
+          execUpdAtomic $ UpdLoseItem iid item k container
+          forM_ expl $ explodeItem aid b
         else
           execUpdAtomic $ UpdMoveItem iid k aid CEqp CGround
   mapActorEqp_ f b
