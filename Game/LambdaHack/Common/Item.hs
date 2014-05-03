@@ -20,7 +20,7 @@ module Game.LambdaHack.Common.Item
     -- * Inventory management types
   , ItemBag, ItemDict, ItemKnown, ItemRev
     -- * Textual description
-  , partItem, partItemWs, partItemAW, partItemWownW, itemDesc
+  , partItem, partItemWs, partItemAW, partItemWownW, itemDesc, textAllAE
     -- * Assorted
   , isFragile, isExplosive, isLingering, isToThrow
   ) where
@@ -318,18 +318,12 @@ isToThrow = let getTo (IF.ToThrow percent) _acc = percent
 partItem :: ItemFull -> (MU.Part, MU.Part)
 partItem (item, mfull) =
   let genericName = jname item
-      flav = flavourToName $ jflavour item
   in case mfull of
-    Nothing -> (MU.Text $ flav <+> genericName, "")
-    Just ((_, kind), miae) ->
-      let effTs = case miae of
-            Just ItemAspectEffect{jaspects, jeffects} ->
-              map aspectToSuffix jaspects
-              ++ map effectToSuffix jeffects
-              ++ map IF.featureToSuff (jfeature item)
-            Nothing -> map kindAspectToSuffix (iaspects kind)
-                       ++ map kindEffectToSuffix (ieffects kind)
-                       ++ map IF.featureToSuff (jfeature item)
+    Nothing ->
+      let flav = flavourToName $ jflavour item
+      in (MU.Text $ flav <+> genericName, "")
+    Just _ ->
+      let effTs = textAllAE (item, mfull)
           effectText = case filter (not . T.null) effTs of
             [] -> ""
             [effT] -> effT
@@ -338,6 +332,19 @@ partItem (item, mfull) =
           turnedOff | jisOn item = ""
                     | otherwise = "{OFF}"  -- TODO: mark with colour
       in (MU.Text genericName, MU.Text $ effectText <+> turnedOff)
+
+textAllAE :: ItemFull -> [Text]
+textAllAE (item, mfull) =
+  case mfull of
+    Nothing -> [""]
+    Just ((_, kind), miae) -> case miae of
+      Just ItemAspectEffect{jaspects, jeffects} ->
+        map aspectToSuffix jaspects
+        ++ map effectToSuffix jeffects
+        ++ map IF.featureToSuff (jfeature item)
+      Nothing -> map kindAspectToSuffix (iaspects kind)
+                 ++ map kindEffectToSuffix (ieffects kind)
+                 ++ map IF.featureToSuff (jfeature item)
 
 partItemWs :: Int -> ItemFull -> MU.Part
 partItemWs count itemFull =

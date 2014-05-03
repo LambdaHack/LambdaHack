@@ -46,9 +46,10 @@ handleResponseUI cmd = case cmd of
     cmds <- cmdAtomicFilterCli cmdA
     let handle c = do
           oldState <- getState
+          oldStateClient <- getClient
           cmdAtomicSemCli c
           execUpdAtomic c
-          displayRespUpdAtomicUI False oldState c
+          displayRespUpdAtomicUI False oldState oldStateClient c
     mapM_ handle cmds
     mapM_ (storeUndo . UpdAtomic) cmds  -- TODO: only store cmdA?
   RespSfxAtomicUI sfx -> do

@@ -56,8 +56,9 @@ import Game.LambdaHack.Content.TileKind
 -- | Visualization of atomic actions for the client is perfomed
 -- in the global state after the command is executed and after
 -- the client state is modified by the command.
-displayRespUpdAtomicUI :: MonadClientUI m => Bool -> State -> UpdAtomic -> m ()
-displayRespUpdAtomicUI verbose _oldState cmd = case cmd of
+displayRespUpdAtomicUI :: MonadClientUI m
+                       => Bool -> State -> StateClient -> UpdAtomic -> m ()
+displayRespUpdAtomicUI verbose _oldState oldStateClient cmd = case cmd of
   -- Create/destroy actors and items.
   UpdCreateActor aid body _ -> createActorUI aid body verbose "appear"
   UpdDestroyActor aid body _ -> do
@@ -199,11 +200,11 @@ displayRespUpdAtomicUI verbose _oldState cmd = case cmd of
   UpdLoseSmell{} -> skip
   -- Assorted.
   UpdAgeGame {} -> skip
-  UpdDiscover _ _ iid _ _ -> discoverKind iid
+  UpdDiscover _ _ iid _ _ -> discover oldStateClient iid
   UpdCover{} ->  skip  -- don't spam when doing undo
-  UpdDiscoverKind _ _ iid _ -> discoverKind iid
+  UpdDiscoverKind _ _ iid _ -> discover oldStateClient iid
   UpdCoverKind{} ->  skip  -- don't spam when doing undo
-  UpdDiscoverSeed _ _ iid _ -> discoverSeed iid
+  UpdDiscoverSeed _ _ iid _ -> discover oldStateClient iid
   UpdCoverSeed{} -> skip  -- don't spam when doing undo
   UpdPerception{} -> skip
   UpdRestart _ _ _ _ _ t -> do
@@ -433,34 +434,27 @@ quitFactionUI fid mbody toSt = do
       unless (fmap stOutcome toSt == Just Camping) $ fadeOutOrIn True
     _ -> return ()
 
-discoverKind :: MonadClientUI m => ItemId ->  m ()
-discoverKind iid = do
+discover :: MonadClientUI m => StateClient -> ItemId ->  m ()
+discover oldcli iid = do
+  cops <- getsState scops
   itemToF <- itemToFullClient
-  let itemFull = itemToF iid
+  let itemFull@(item, _) = itemToF iid
       (knownName, knownAEText) = partItem itemFull
-      itemSecret = case itemFull of
-        (item, Just _) -> (item, Nothing)
-        _ -> assert `failure` iid
+      -- Wipe out the whole knowledge of the item to make sure the two names
+      -- in the message differ even if, e.g., the item is described as
+      -- "of many effects".
+      itemSecret = (item, Nothing)
       (secretName, secretAEText) = partItem itemSecret
       msg = makeSentence
         [ "the", MU.SubjectVerbSg (MU.Phrase [secretName, secretAEText])
                                   "turn out to be"
         , MU.AW $ MU.Phrase [knownName, knownAEText] ]
-  when (knownAEText /= secretAEText) $ msgAdd msg
-
-discoverSeed :: MonadClientUI m => ItemId ->  m ()
-discoverSeed iid = do
-    itemToF <- itemToFullClient
-    let itemFull = itemToF iid
-        (knownName, knownAEText) = partItem itemFull
-        itemSecret = case itemFull of
-          (item, Just (kk, Just _)) -> (item, Just (kk, Nothing))
-          _ -> assert `failure` iid
-        (_secretName, secretAEText) = partItem itemSecret
-        msg = makeSentence
-          [ MU.SubjectVerbSg "it" "turn out to be"
-          , MU.AW $ MU.Phrase [knownName, knownAEText] ]
-    when (knownAEText /= secretAEText) $ msgAdd msg
+      oldItemFull = itemToFull cops (sdisco oldcli) (sdiscoAE oldcli) iid item
+  -- Compare descriptions of all aspects and effects to determine
+  -- if the discovery was meaningful to the player.
+  -- Note that transition from 1d1 to 1 is deemed meaningful, which is why 1d1
+  -- should be avoided in random item properties.
+  when (textAllAE itemFull /= textAllAE oldItemFull) $ msgAdd msg
 
 -- * RespSfxAtomicUI
 
