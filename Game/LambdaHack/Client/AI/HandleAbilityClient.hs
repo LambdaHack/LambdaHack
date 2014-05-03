@@ -292,8 +292,9 @@ meleeBlocker aid = do
                  || AbDisplace `notElem` actorAbs  -- melee, not displace
                     && not (playerLeader $ gplayer fact)  -- not restrained
                     && AbMove `elem` actorAbs  -- blocked move
-                    && bhp body2 < bhp b) then  -- respect power
-            return $! returN "melee in the way" (ReqMelee aid2)
+                    && bhp body2 < bhp b) then do -- respect power
+            mel <- meleeClient aid aid2
+            return $! returN "melee in the way" mel
           else return reject
         Nothing -> return reject
     _ -> return reject  -- probably no path to the enemy, if any
@@ -305,8 +306,9 @@ meleeAny aid = do
   fact <- getsState $ (EM.! bfid b) . sfactionD
   allFoes <- getsState $ actorRegularAssocs (isAtWar fact) (blid b)
   let adjFoes = filter (adjacent (bpos b) . bpos . snd) allFoes
+  mels <- mapM (meleeClient aid . fst) adjFoes
       -- TODO: prioritize somehow
-      freq = uniformFreq "melee adjacent" $ map (ReqMelee . fst) adjFoes
+  let freq = uniformFreq "melee adjacent" mels
   return $ liftFrequency freq
 
 -- Fast monsters don't pay enough attention to features.
@@ -585,7 +587,7 @@ moveTowards aid source target goal relaxed = do
 -- | Actor moves or searches or alters or attacks. Displaces if @run@.
 -- This function is very general, even though it's often used in contexts
 -- when only one or two of the many cases can possibly occur.
-moveOrRunAid :: MonadStateRead m
+moveOrRunAid :: MonadClient m
              => Bool -> ActorId -> Vector -> m RequestAnyAbility
 moveOrRunAid run source dir = do
   cops@Kind.COps{cotile} <- getsState scops
@@ -612,12 +614,12 @@ moveOrRunAid run source dir = do
         return $! RequestAnyAbility $ ReqDisplace target
       else
         -- If cannot displace, hit.
-        return $! RequestAnyAbility $ ReqMelee target
+        RequestAnyAbility <$> meleeClient source target
     ((target, _), _) : _ ->  -- can be a foe, as well as a friend (e.g., proj.)
       -- No problem if there are many projectiles at the spot. We just
       -- attack the first one.
       -- Attacking does not require full access, adjacency is enough.
-      return $! RequestAnyAbility $ ReqMelee target
+      RequestAnyAbility <$> meleeClient source target
     [] -> do  -- move or search or alter
       if accessible cops lvl spos tpos then
         -- Movement requires full access.

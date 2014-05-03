@@ -31,7 +31,6 @@ import Game.LambdaHack.Common.Level
 import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Point
-import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -79,7 +78,7 @@ handleRequestTimed :: (MonadAtomic m, MonadServer m)
                    => ActorId -> RequestTimed a -> m ()
 handleRequestTimed aid cmd = case cmd of
   ReqMove target -> reqMove aid target
-  ReqMelee target -> reqMelee aid target
+  ReqMelee target iid -> reqMelee aid target iid
   ReqDisplace target -> reqDisplace aid target
   ReqAlter tpos mfeat -> reqAlter aid tpos mfeat
   ReqWait -> reqWait aid
@@ -140,10 +139,12 @@ reqMove source dir = do
   -- We start by checking actors at the the target position.
   tgt <- getsState $ posToActor tpos lid
   case tgt of
-    Just ((target, tb), _) | not (bproj sb && bproj tb) ->  -- visible or not
-      -- Attacking does not require full access, adjacency is enough.
+    Just ((target, tb), _) | not (bproj sb && bproj tb) -> do  -- visible or not
       -- Projectiles are too small to hit each other.
-      reqMelee source target
+      -- Attacking does not require full access, adjacency is enough.
+      -- Here the only weapon of projectiles is picked, too.
+      weapon <- meleeServer source
+      reqMelee source target weapon
     _
       | accessible cops lvl spos tpos -> do
           -- Movement requires full access.
@@ -162,60 +163,44 @@ reqMove source dir = do
 -- but for melee and not using up the weapon.
 -- No problem if there are many projectiles at the spot. We just
 -- attack the one specified.
-reqMelee :: (MonadAtomic m, MonadServer m) => ActorId -> ActorId -> m ()
-reqMelee source target = do
-  cops <- getsState scops
+reqMelee :: (MonadAtomic m, MonadServer m)
+         => ActorId -> ActorId -> ItemId -> m ()
+reqMelee source target iid = do
   itemToF <- itemToFullServer
   sallAssocs <- fullAssocsServer source [CEqp, CBody]
   tallAssocs <- fullAssocsServer target [CEqp, CBody]
   sb <- getsState $ getActorBody source
   tb <- getsState $ getActorBody target
   let adj = checkAdjacent sb tb
-      req = ReqMelee target
+      req = ReqMelee target iid
   if source == target then execFailure source req MeleeSelf
   else if not adj then execFailure source req MeleeDistant
   else do
     let sfid = bfid sb
         tfid = bfid tb
     sfact <- getsState $ (EM.! sfid) . sfactionD
-    ais <- getsState $ getCarriedAssocs sb
-    miid <-
-      if bproj sb   -- projectile
-      then case ais of
-        [(iid, _)] -> return $ Just iid
-        _ -> assert `failure` "projectile with wrong items" `twith` ais
-      else case strongestSword cops sallAssocs of
-        [] -> return Nothing -- no weapon nor combat body part
-        iis@((maxS, _) : _) -> do
-          let maxIis = map snd $ takeWhile ((== maxS) . fst) iis
-          -- TODO: pick the item according to the frequency of its kind.
-          (iid, _) <- rndToAction $ oneOf maxIis
-          return $ Just iid
-    case miid of
-      Nothing -> execFailure source req MeleeNoWeapon
-      Just iid -> do
-        let block = braced tb
-            shield = not (null $ strongestShield sallAssocs)
-                     || not (null $ strongestShield tallAssocs)
-            hitA = if block && shield
-                   then MissBlock
-                   else if block || shield
-                        then HitBlock
-                        else Hit
-        execSfxAtomic $ SfxStrike source target iid hitA
-        -- Deduct a hitpoint for a pierce of a projectile.
-        when (bproj sb) $ execUpdAtomic $ UpdHealActor source (-1)
-        -- Msgs inside itemEffect describe the target part.
-        itemEffect source target iid (itemToF iid) CEqp
-        -- The only way to start a war is to slap an enemy. Being hit by
-        -- and hitting projectiles count as unintentional friendly fire.
-        let friendlyFire = bproj sb || bproj tb
-            fromDipl = EM.findWithDefault Unknown tfid (gdipl sfact)
-        unless (friendlyFire
-                || isAtWar sfact tfid  -- already at war
-                || isAllied sfact tfid  -- allies never at war
-                || sfid == tfid) $
-          execUpdAtomic $ UpdDiplFaction sfid tfid fromDipl War
+    let block = braced tb
+        shield = not (null $ strongestShield sallAssocs)
+                 || not (null $ strongestShield tallAssocs)
+        hitA = if block && shield
+               then MissBlock
+               else if block || shield
+                    then HitBlock
+                    else Hit
+    execSfxAtomic $ SfxStrike source target iid hitA
+    -- Deduct a hitpoint for a pierce of a projectile.
+    when (bproj sb) $ execUpdAtomic $ UpdHealActor source (-1)
+    -- Msgs inside itemEffect describe the target part.
+    itemEffect source target iid (itemToF iid) CEqp
+    -- The only way to start a war is to slap an enemy. Being hit by
+    -- and hitting projectiles count as unintentional friendly fire.
+    let friendlyFire = bproj sb || bproj tb
+        fromDipl = EM.findWithDefault Unknown tfid (gdipl sfact)
+    unless (friendlyFire
+            || isAtWar sfact tfid  -- already at war
+            || isAllied sfact tfid  -- allies never at war
+            || sfid == tfid) $
+      execUpdAtomic $ UpdDiplFaction sfid tfid fromDipl War
 
 -- * ReqDisplace
 
@@ -234,7 +219,9 @@ reqDisplace source target = do
   dEnemy <- getsState $ dispEnemy tb
   if not adj then execFailure source req DisplaceDistant
   else if atWar && not dEnemy
-  then reqMelee source target  -- DisplaceDying, DisplaceSupported
+  then do
+    weapon <- meleeServer source
+    reqMelee source target weapon  -- DisplaceDying, DisplaceSupported
   else do
     let lid = blid sb
     lvl <- getLevel lid

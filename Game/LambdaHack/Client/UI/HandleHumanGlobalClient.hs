@@ -133,7 +133,8 @@ meleeAid target = do
   sb <- getsState $ getActorBody leader
   tb <- getsState $ getActorBody target
   sfact <- getsState $ (EM.! bfid sb) . sfactionD
-  let returnCmd = return $ Right $ ReqMelee target
+  mel <- meleeClient leader target
+  let returnCmd = return $ Right mel
       res | bproj tb || isAtWar sfact (bfid tb) = returnCmd
           | isAllied sfact (bfid tb) = do
             go1 <- displayYesNo ColorBW

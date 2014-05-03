@@ -52,7 +52,7 @@ anyToUI (RequestAnyAbility cmd) = ReqUITimed cmd
 -- | Client-server requests that take game time. Sent by both AI and UI clients.
 data RequestTimed :: Ability -> * where
   ReqMove :: !Vector -> RequestTimed AbMove
-  ReqMelee :: !ActorId -> RequestTimed AbMelee
+  ReqMelee :: !ActorId -> !ItemId -> RequestTimed AbMelee
   ReqDisplace :: !ActorId -> RequestTimed AbDisplace
   ReqAlter :: !Point -> !(Maybe F.Feature) -> RequestTimed AbAlter
   ReqWait :: RequestTimed AbWait
@@ -68,7 +68,6 @@ data ReqFailure =
     MoveNothing
   | MeleeSelf
   | MeleeDistant
-  | MeleeNoWeapon
   | DisplaceDistant
   | DisplaceAccess
   | DisplaceProjectiles
@@ -94,7 +93,6 @@ showReqFailure reqFailure = case reqFailure of
   MoveNothing -> "wasting time on moving into obstacle"
   MeleeSelf -> "trying to melee oneself"
   MeleeDistant -> "trying to melee a distant foe"
-  MeleeNoWeapon -> "trying to melee without a weapon nor combat body part"
   DisplaceDistant -> "trying to switch places with a distant actor"
   DisplaceAccess -> "switching places without access"
   DisplaceProjectiles -> "trying to switch places with multiple projectiles"

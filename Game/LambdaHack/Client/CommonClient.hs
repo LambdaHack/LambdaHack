@@ -1,8 +1,10 @@
+{-# LANGUAGE DataKinds #-}
 -- | Common client monad operations.
 module Game.LambdaHack.Client.CommonClient
   ( getPerFid, aidTgtToPos, aidTgtAims, makeLine
   , partAidLeader, partActorLeader, partPronounLeader
   , actorAbilities, updateItemSlot, fullAssocsClient, itemToFullClient
+  , meleeClient
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -17,7 +19,7 @@ import qualified NLP.Miniutter.English as MU
 import Game.LambdaHack.Client.ItemSlot
 import Game.LambdaHack.Client.MonadClient
 import Game.LambdaHack.Client.State
-import Game.LambdaHack.Common.Ability (Ability)
+import Game.LambdaHack.Common.Ability
 import Game.LambdaHack.Common.Actor
 import Game.LambdaHack.Common.ActorState
 import Game.LambdaHack.Common.Faction
@@ -28,6 +30,8 @@ import Game.LambdaHack.Common.Misc
 import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.Random
+import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import Game.LambdaHack.Common.Vector
 import Game.LambdaHack.Content.ActorKind
@@ -198,3 +202,17 @@ itemToFullClient = do
   s <- getState
   let itemToF iid = itemToFull cops disco discoAE iid (getItemBody iid s)
   return itemToF
+
+-- Client has to choose the weapon based on its partial knowledge,
+-- because if server chose it, it would leak item discovery information.
+meleeClient :: MonadClient m => ActorId -> ActorId -> m (RequestTimed AbMelee)
+meleeClient source target = do
+  cops <- getsState scops
+  allAssocs <- fullAssocsClient source [CEqp, CBody]
+  case strongestSword cops allAssocs of
+    [] -> assert `failure` (source, target, allAssocs)
+    iis@((maxS, _) : _) -> do
+      let maxIis = map snd $ takeWhile ((== maxS) . fst) iis
+      -- TODO: pick the item according to the frequency of its kind.
+      (iid, _) <- rndToAction $ oneOf maxIis
+      return $! ReqMelee target iid

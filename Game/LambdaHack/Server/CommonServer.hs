@@ -1,8 +1,10 @@
+{-# LANGUAGE TupleSections #-}
 -- | Server operations common to many modules.
 module Game.LambdaHack.Server.CommonServer
   ( execFailure, resetFidPerception, resetLitInDungeon, getPerFid
   , revealItems, deduceQuits, deduceKilled, electLeader
   , registerItem, createItems, projectFail, fullAssocsServer, itemToFullServer
+  ,  meleeServer
   ) where
 
 import Control.Exception.Assert.Sugar
@@ -26,6 +28,7 @@ import Game.LambdaHack.Common.MonadStateRead
 import Game.LambdaHack.Common.Msg
 import Game.LambdaHack.Common.Perception
 import Game.LambdaHack.Common.Point
+import Game.LambdaHack.Common.Random
 import Game.LambdaHack.Common.Request
 import Game.LambdaHack.Common.State
 import qualified Game.LambdaHack.Common.Tile as Tile
@@ -322,3 +325,20 @@ itemToFullServer = do
   s <- getState
   let itemToF iid = itemToFull cops disco discoAE iid (getItemBody iid s)
   return itemToF
+
+-- Server has to pick a random weapon or it could leak item discovery
+-- information.
+meleeServer :: MonadServer m => ActorId -> m ItemId
+meleeServer source = do
+  cops <- getsState scops
+  sb <- getsState $ getActorBody source
+  allAssocs <- fullAssocsServer source [CEqp, CBody]
+  let strongest | bproj sb = map (1,) allAssocs
+                | otherwise = strongestSword cops allAssocs
+  case strongest of
+    [] -> assert `failure` (source, allAssocs)
+    iis -> do
+      let maxIis = map snd iis
+      -- TODO: pick the item according to the frequency of its kind.
+      (iid, _) <- rndToAction $ oneOf maxIis
+      return $! iid
